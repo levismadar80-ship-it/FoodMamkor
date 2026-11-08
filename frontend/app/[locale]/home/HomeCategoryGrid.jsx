@@ -1,8 +1,9 @@
 "use client";
 
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import Image from "next/image";
 import { motion } from "framer-motion";
+import { useRevealSkip } from "@/lib/route-memory";
 import { useTranslations } from "next-intl";
 import FadeInSection from "@/components/FadeInSection";
 // MEH-2163: the no-photo glyph AND its fallback both come from the registry's
@@ -52,11 +53,12 @@ const EASE_QUART = [0.25, 1, 0.5, 1];
  */
 export function HomeCategoryGrid({ categoryCards }) {
   const t = useTranslations();
+  const skipReveal = useRevealSkip();
   return (
     <section className="max-w-7xl mx-auto px-4 section-y" data-testid="home-category-grid">
       <FadeInSection className="mb-10">
         {/* MEH-1032 (HOME-17): eyebrow+rule pattern mirrors HomeStaticBlocks §10 — DM-Sans, 32×1px gold rule, start-aligned. */}
-        <span className="flex items-center gap-3 font-medium text-[11px] text-accent mb-1">
+        <span className="flex items-center gap-3 font-medium text-2xs text-accent mb-1">
           {t("home.categories.eyebrow")}
           <span className="inline-block w-8 h-px bg-accent" aria-hidden="true" />
         </span>
@@ -74,7 +76,9 @@ export function HomeCategoryGrid({ categoryCards }) {
       <motion.div
         className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide snap-x snap-proximity -mx-4 px-4 scroll-px-4 md:mx-0 md:px-0 md:pb-0 md:overflow-visible md:grid md:grid-cols-2 lg:grid-cols-4 md:gap-4 lg:gap-6"
         data-testid="home-category-rail"
-        initial="hidden"
+        // MEH-2714: no replay on a back-navigation — `false` also reaches the
+        // staggered children, which inherit `initial` through the variants.
+        initial={skipReveal ? false : "hidden"}
         whileInView="show"
         viewport={{ once: true, amount: 0.1 }}
       >
@@ -106,7 +110,7 @@ export function HomeCategoryGrid({ categoryCards }) {
                 // MEH-991 (HOME-15): v8 hover lock — border→green + 1px gold underline
                 // + photo zooms scale-1.05 (photo path only, motion-safe); glyph never scales.
                 "font-headline-md font-bold text-text leading-tight group-hover:underline decoration-accent decoration-1 underline-offset-4",
-                isHero ? "text-[15px] md:text-[20px] lg:text-[22px]" : "text-[15px] md:text-[18px]",
+                isHero ? "text-base md:text-xl lg:text-2xl" : "text-base md:text-lg",
               ].join(" ")}>
                 {card.name}
               </h3>

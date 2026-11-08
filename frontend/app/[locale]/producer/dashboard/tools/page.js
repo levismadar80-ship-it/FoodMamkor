@@ -27,10 +27,11 @@
  * RTL: logical properties only — see .claude/rules/rtl.md.
  */
 
+import { rescueBagsEnabled } from "@/lib/rescue";
 import { Link, useRouter } from "@/i18n/navigation";
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { CalendarPlus, UsersThree, CookingPot, Star, Sparkle } from "@phosphor-icons/react";
+import { ShoppingBag, CalendarPlus, UsersThree, CookingPot, Star, Sparkle } from "@phosphor-icons/react";
 import api from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import RequestReviewCard from "@/components/producer/RequestReviewCard";
@@ -72,14 +73,14 @@ export default function ProducerDashboardToolsPage() {
       <div className="max-w-5xl mx-auto px-4 py-16">
         <div
           data-testid="tools-load-error"
-          className="bg-white border border-border rounded-[16px] p-6 text-center"
+          className="bg-surface border border-border rounded-lg p-6 text-center"
           role="alert"
         >
           <p className="text-fg-muted mb-4">{t("section_errors.tools")}</p>
           <button
             type="button"
             onClick={() => setAttempt((n) => n + 1)}
-            className="inline-block bg-primary text-white px-4 py-2 rounded-[10px] text-sm font-medium hover:bg-primary-dark transition"
+            className="inline-block bg-primary text-white px-4 py-2 rounded-full text-sm font-medium hover:bg-primary-dark transition"
           >
             {t("section_errors.retry_cta")}
           </button>
@@ -97,6 +98,15 @@ export default function ProducerDashboardToolsPage() {
   }
 
   const { producer } = data;
+  // MEH-2784: tools the server refuses to an unapproved business say so on
+  // the tile, before the owner opens them. The tile stays a link so the
+  // owner can still see what the tool is.
+  const approved = producer.status === "approved";
+  const lockedLine = producer.status === "pending" && (
+    <p data-testid="tool-locked-line" className="text-xs font-medium text-warning-800 mt-1">
+      {t("quick_links.locked_until_approved")}
+    </p>
+  );
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-12">
@@ -111,7 +121,7 @@ export default function ProducerDashboardToolsPage() {
         {/* MEH-1405: card now opens the manage list (create is reachable there). */}
         <Link
           href="/producer/dashboard/events"
-          className="bg-white border border-border rounded-[16px] p-5 hover:border-primary transition"
+          className="bg-surface border border-border rounded-lg p-5 hover:border-primary transition"
         >
           <CalendarPlus size={24} className="text-primary mb-2" aria-hidden="true" />
           <p className="font-headline-md text-lg font-bold mb-1">{t("quick_links.manage_events.title")}</p>
@@ -120,7 +130,7 @@ export default function ProducerDashboardToolsPage() {
         {/* MEH-1405: manage own experiences (list + edit + delete). */}
         <Link
           href="/producer/dashboard/experiences"
-          className="bg-white border border-border rounded-[16px] p-5 hover:border-primary transition"
+          className="bg-surface border border-border rounded-lg p-5 hover:border-primary transition"
         >
           <Sparkle size={24} className="text-primary mb-2" aria-hidden="true" />
           <p className="font-headline-md text-lg font-bold mb-1">{t("quick_links.manage_experiences.title")}</p>
@@ -131,16 +141,32 @@ export default function ProducerDashboardToolsPage() {
             (layout.js). Verdict Sapir 18/07 (MEH-999 dogfood). */}
         <Link
           href="/producer/dashboard/group-buys"
-          className="bg-white border border-border rounded-[16px] p-5 hover:border-primary transition"
+          className="bg-surface border border-border rounded-lg p-5 hover:border-primary transition"
         >
           <UsersThree size={24} className="text-primary mb-2" aria-hidden="true" />
           <p className="font-headline-md text-lg font-bold mb-1">{t("quick_links.group_buys.title")}</p>
           <p className="text-sm text-fg-muted">{t("quick_links.group_buys.sub")}</p>
+          {lockedLine}
         </Link>
+        {/* MEH-2649: the rescue-bags counter tool. The tile is flag-gated so
+            the dashboard is unchanged until the pilot is switched on — the
+            route itself 404s as well, this just avoids a dead link. */}
+        {rescueBagsEnabled() && (
+          <Link
+            href="/producer/dashboard/rescue"
+            data-testid="tools-rescue-tile"
+            className="bg-surface border border-border rounded-lg p-5 hover:border-primary transition"
+          >
+            <ShoppingBag size={24} className="text-primary mb-2" aria-hidden="true" />
+            <p className="font-headline-md text-lg font-bold mb-1">{t("quick_links.rescue.title")}</p>
+            <p className="text-sm text-fg-muted">{t("quick_links.rescue.sub")}</p>
+            {lockedLine}
+          </Link>
+        )}
         {/* MEH-590: producer recipes tab (chunk 3/4 of the producer-recipes epic). */}
         <Link
           href="/producer/dashboard/recipes"
-          className="bg-white border border-border rounded-[16px] p-5 hover:border-primary transition"
+          className="bg-surface border border-border rounded-lg p-5 hover:border-primary transition"
         >
           <CookingPot size={24} className="text-primary mb-2" aria-hidden="true" />
           <p className="font-headline-md text-lg font-bold mb-1">{t("quick_links.recipes.title")}</p>
@@ -151,14 +177,19 @@ export default function ProducerDashboardToolsPage() {
             and previously took 3+ taps via "הצגת העסק" + scroll.
             MEH-1357: candidate-to-move per Sapir's 18/07 verdict — documented
             only, no change now (full object-nav split is MEH-964 Phase 2). */}
+        {/* MEH-2784: an unapproved business has no public page yet
+            (producers.py:473 → 404), so the tile is hidden until approval,
+            the same rule as RequestReviewCard below. */}
+        {approved && (
         <Link
           href={`/producer/${producer.id}#reviews`}
-          className="bg-white border border-border rounded-[16px] p-5 hover:border-primary transition"
+          className="bg-surface border border-border rounded-lg p-5 hover:border-primary transition"
         >
           <Star size={24} className="text-primary mb-2" aria-hidden="true" />
           <p className="font-headline-md text-lg font-bold mb-1">{t("quick_links.reviews.title")}</p>
           <p className="text-sm text-fg-muted">{t("quick_links.reviews.sub")}</p>
         </Link>
+        )}
       </div>
       {/* MEH-1428 chunk 2: the "request a review" link. Approved only — the
           endpoint 403s for any other status, and a pending business's public

@@ -60,7 +60,7 @@ generic SaaS checklist shipped with the workflow.
 - [ ] Grid gutter on mobile: 16px. Card padding: 16px mobile / 24px desktop.
 
 ### Radii
-- [ ] Inputs/buttons: 8px. Cards: 12–16px. Modals: 16–20px. No `rounded-full` on rectangles.
+- [ ] **Buttons/actions: `rounded-full`** — `frontend/components/ui/Button.jsx` is the canonical action radius (ruling «⚖️ 03/11», MEH-1687 E). Inputs: 8px. Cards: 12–16px. Modals: 16–20px. No `rounded-full` on non-action rectangles (cards, inputs, containers).
 
 ### Shadows
 - [ ] At most 2 shadow levels: `card` (subtle) and `elevated` (dropdowns, modals).
@@ -86,7 +86,7 @@ generic SaaS checklist shipped with the workflow.
 
 ## V. Interaction design
 
-- [ ] **Tap targets ≥ 44×44px** on mobile. Header icons, favorite heart, bottom nav, card actions.
+- [ ] **Tap targets — mobile (< md): ≥ 44×44px, no exceptions for standalone controls** (Apple HIG 44pt; inline body-text links keep the DESIGN.md exemption). Header icons, favorite heart, bottom nav, card actions. **Desktop (md+): ≥ 32px allowed.** There is no 34px mobile carve-out (ruling «⚖️ 03/11», MEH-1687 E).
 - [ ] Visible focus state on every interactive element (not default browser outline — branded ring).
 - [ ] Hover states on desktop feel instant (≤ 150ms, ease-out).
 - [ ] Transitions 150–300ms with `ease-in-out`. No bouncy/spring animations except for Ken Burns hero.
@@ -220,6 +220,19 @@ prior "WhatsApp button green / Share button gray" rule.
 | 🟡 Medium | High-priority | Fix before merge — inconsistency, unclear copy, missing state |
 | 🟢 Low | Nit | Polish / nitpick, can follow up later |
 
+**Confidence tag — on every finding (MEH-2625).** Each finding ends with one of:
+
+| Tag | Means |
+|---|---|
+| `observed` | Seen in a screenshot or the live DOM this review captured |
+| `documented` | Shown by `file:line` or a grep result this review ran |
+| `inferred` | Follows from code/design reasoning, not seen or shown |
+| `speculative` | A plausible risk with no direct evidence |
+
+**🔴 requires evidence:** a finding may be 🔴 only when tagged `observed` or
+`documented`. `inferred` / `speculative` are at most 🟡 — however serious the
+suspected impact — until someone produces the evidence.
+
 ## XII. Review output format
 
 ```markdown
@@ -227,14 +240,16 @@ prior "WhatsApp button green / Share button gray" rule.
 [one-paragraph overall assessment — what works well, overall tone]
 
 ### 🔴 Critical
-- [Component / file:line] — problem + impact
+- [Component / file:line] — problem + impact · (observed)
 
 ### 🟡 Medium
-- [Component / file:line] — problem + impact
+- [Component / file:line] — problem + impact · (inferred)
 
 ### 🟢 Low (Nits)
-- [Component / file:line] — nit
+- [Component / file:line] — nit · (documented)
 ```
 
-Each finding must include the file path and, where possible, the line number.
+Each finding must include the file path and, where possible, the line number,
+and end with its confidence tag (§XI). A 🔴 tagged `inferred` or `speculative` is
+a format error — downgrade it to 🟡.
 Describe the **problem and its impact**, not the technical fix.

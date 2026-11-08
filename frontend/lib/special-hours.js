@@ -163,7 +163,8 @@ function eachDate(start, end) {
 
 /**
  * Suggestion chips — the upcoming entries of lib/holidays.js, oldest first:
- *   [{ key, name, dates: ["YYYY-MM-DD", …], added: boolean }]
+ *   [{ key, dates: ["YYYY-MM-DD", …], added: boolean }]
+ * (the caller adds `name` from messages `holidays.<key>.name`, MEH-2741)
  *
  * `dates` are the holiday's calendar days from today onward; `added` is true
  * when EVERY one of them is already a row, so the chip can render as taken.
@@ -180,7 +181,6 @@ export function holidayChips(rows, today = israelToday()) {
       const dates = eachDate(holiday.start < today ? today : holiday.start, holiday.end);
       return {
         key,
-        name: holiday.name,
         dates,
         added: dates.length > 0 && dates.every((date) => present.has(date)),
       };

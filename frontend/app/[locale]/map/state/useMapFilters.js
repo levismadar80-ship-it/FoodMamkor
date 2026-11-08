@@ -1,12 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 
-import { CATEGORY_LEGEND } from "@/lib/category-registry";
+import { CATEGORY_LEGEND, CATEGORY_STYLES } from "@/lib/category-registry";
 import {
   CATEGORY_CHIPS,
   SERVICE_CHIP_KEYS,
   TOGGLE_CHIPS,
   chipStateToParams,
   resolveCategoryId,
+  withResolvedIcons,
   visibleMapToggleChips,
 } from "@/lib/map-chips";
 // MEH-2131: the chip-state default is derived from the taxonomy — see the
@@ -15,6 +16,7 @@ import {
 import { defaultsForKeys, homeParamFor } from "@/lib/filter-taxonomy";
 import { chipsFromQuery } from "@/lib/filter-url";
 import { haversineKm } from "@/lib/distance";
+import { weightedRating } from "@/lib/rating-gate";
 import { producerInBounds, producerPoints } from "@/lib/producerPoints";
 
 /**
@@ -25,8 +27,8 @@ import { producerInBounds, producerPoints } from "@/lib/producerPoints";
  *   - "nearest": haversine ASC to userLoc; producers without coords last.
  *     Callers must only offer this mode when userLoc exists (the option is
  *     disabled without GPS); with a null userLoc it degrades to feed order.
- *   - "rating":  avg_rating DESC, tiebreak reviews_count DESC; null-rating
- *     producers last (a null is "unrated", worse than any real 0-review 0.0).
+ *   - "rating":  weightedRating DESC (Bayesian, MEH-2617), tiebreak
+ *     reviews_count DESC; unreviewed / null-rating producers last.
  *   - "newest":  the feed's original index order. `created_at` is NOT in the
  *     serialized list payload (ProducerListOut, schemas/schemas.py:702) and
  *     the Zod ProducerSchema would strip it anyway — but GET /producers's
@@ -50,12 +52,16 @@ export function sortProducers(list, sortBy, userLoc) {
     return [...list].sort((a, b) => dist(a) - dist(b));
   }
   if (sortBy === "rating") {
+    // MEH-2617: same order as the backend's ?sort=rating — unreviewed (no
+    // average, or zero reviews) last, then the Bayesian score, then
+    // reviews_count. One 5.0 review no longer outranks a 4.8 from twelve.
+    const unrated = (p) => p.avg_rating == null || !(Number(p.reviews_count) >= 1);
     return [...list].sort((a, b) => {
-      const aNull = a.avg_rating == null;
-      const bNull = b.avg_rating == null;
+      const aNull = unrated(a);
+      const bNull = unrated(b);
       if (aNull !== bNull) return aNull ? 1 : -1;
       return (
-        (b.avg_rating ?? 0) - (a.avg_rating ?? 0) ||
+        weightedRating(b) - weightedRating(a) ||
         (b.reviews_count ?? 0) - (a.reviews_count ?? 0)
       );
     });
@@ -107,6 +113,9 @@ export function useMapFilters({
   // MEH-2170: the one-time mount catalog from useProducersFeed. null = not
   // loaded yet, and then no toggle is hidden.
   catalogSnapshot = null,
+  // true while that mount fetch is in flight — gated chips wait for it
+  // rather than render and vanish (see map-chips.js).
+  snapshotPending = false,
 }) {
   const [cityFilter, setCityFilter] = useState("");
   const [committedBounds, setCommittedBounds] = useState(null);
@@ -425,8 +434,12 @@ export function useMapFilters({
   const visibleCategoryChips = useMemo(
     () =>
       categories.length > 0
-        ? CATEGORY_CHIPS.filter(
-            (c) => c.key === "all" || resolveCategoryId(c, categories) != null,
+        ? withResolvedIcons(
+            CATEGORY_CHIPS.filter(
+              (c) => c.key === "all" || resolveCategoryId(c, categories) != null,
+            ),
+            categories,
+            CATEGORY_STYLES,
           )
         : CATEGORY_CHIPS,
     [categories],
@@ -445,7 +458,8 @@ export function useMapFilters({
     const tags = [];
     TOGGLE_CHIPS.forEach((c) => {
       if (SERVICE_CHIP_KEYS.includes(c.key)) return;
-      if (chipState[c.key]) tags.push({ kind: "toggle", key: c.key, label: c.label });
+      // MEH-2748: no label here — FilterChipsBar attaches it via useChipCopy().
+      if (chipState[c.key]) tags.push({ kind: "toggle", key: c.key });
     });
     return tags;
   }, [chipState]);
@@ -464,19 +478,39 @@ export function useMapFilters({
   // reading as an empty area.
   // The desktop legend's category toggles (activeCategoryNames) and the city
   // search narrow the list too, so they count — resetEverything clears both.
-  const hasActiveFilters =
+  // MEH-2639: the city is split out. A city that returns nothing is a
+  // different event from a chip combination that returns nothing — "אין בתי
+  // עסק בבנימינה" is an answer worth giving, and offering to "clear the
+  // filter" there would be offering to un-ask the question. Everything EXCEPT
+  // the city:
+  const hasNonCityFilters =
     activeAttributeCount > 0 ||
     chipState.categoryKeys.length > 0 ||
-    activeCategoryNames !== null ||
-    cityFilter.trim() !== "";
+    activeCategoryNames !== null;
+
+  const hasActiveFilters = hasNonCityFilters || cityFilter.trim() !== "";
 
   // MEH-2170: which toggle chips FilterSheet offers. Derived from the mount
   // snapshot + the active state only — NOT from allProducers, which reloads
   // with the chip params after every toggle (circular) and is replaced by a
   // viewport-bounded list after «חפשי באזור זה» (frame-dependent).
+  //
+  // MEH-2767: + the open-now gate, which needs a clock. Same discipline as
+  // home and /producers: null until mounted, so the gate's answer cannot
+  // differ between the server and the first client render.
+  const [openNowClock, setOpenNowClock] = useState(null);
+  useEffect(() => {
+    setOpenNowClock(new Date());
+  }, []);
   const visibleToggleChips = useMemo(
-    () => visibleMapToggleChips({ catalogSnapshot, chipState }),
-    [catalogSnapshot, chipState],
+    () =>
+      visibleMapToggleChips({
+        catalogSnapshot,
+        chipState,
+        snapshotPending,
+        now: openNowClock,
+      }),
+    [catalogSnapshot, chipState, snapshotPending, openNowClock],
   );
 
   return {
@@ -509,6 +543,7 @@ export function useMapFilters({
     resetAllFilters,
     hasActiveFilters,
     handleCityFilter,
+    hasNonCityFilters,
     toggleCategory,
     isCategoryActive,
     // derived

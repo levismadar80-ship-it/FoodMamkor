@@ -47,6 +47,8 @@ vi.mock("next/link", () => ({
   default: ({ children, href }) => <a href={href}>{children}</a>,
 }));
 vi.mock("@phosphor-icons/react", () => ({
+  // MEH-2827 PR 4: the «המליצו על בית עסק» links in the empty states.
+  ArrowLeft: (p) => <span {...p} />,
   // MEH-2131: the open-now chip's leading glyph (lib/chip-icons.js). Absent
   // here, the whole suite dies at import with "No \"Clock\" export is defined".
   Clock: (p) => <span {...p} />,
@@ -78,6 +80,8 @@ vi.mock("@phosphor-icons/react", () => ({
   Certificate: (p) => <span {...p} />,
   GrainsSlash: (p) => <span {...p} />,
   Barn: (p) => <span {...p} />,
+  Medal: (p) => <span {...p} />,
+  HandHeart: (p) => <span {...p} />,
   DropSlash: (p) => <span {...p} />,
   FlowerTulip: (p) => <span {...p} />,
 }));
@@ -101,6 +105,8 @@ vi.mock("@/components/ChipScrollRow", () => ({ default: () => null }));
 vi.mock("@/components/LocationModal", () => ({ default: () => null }));
 vi.mock("@/components/Skeleton", () => ({ SkeletonProducerGrid: () => null }));
 vi.mock("@/lib/producer-filters", () => ({
+  // MEH-2767: the one chip gate. Identity — these specs do not exercise gating.
+  visibleAxisChips: ({ chips }) => chips,
   // MEH-1862: ProducersClient now imports this to attach FilterSheet group
   // metadata, and a partial vi.mock throws on any export it omits (same
   // reason the MEH-1881 names above are stubbed). Identity is the right
@@ -207,9 +213,9 @@ describe("/producers rating sort gate (MEH-1864)", () => {
     const { container } = render(
       <ProducersClient {...BASE_PROPS} ratingSortEnabled={false} />,
     );
-    expect(screen.queryByTestId("producers-sort")).not.toBeInTheDocument();
-    // The option's label must be absent from the whole subtree, not merely
-    // outside the (also absent) select.
+    // MEH-2616: the control itself stays (newest + distance); only the
+    // rating option is gated. Its label must be absent from the whole subtree.
+    expect(screen.queryByRole("option", { name: TOP_RATED_LABEL })).toBeNull();
     expect(container.textContent).not.toContain(TOP_RATED_LABEL);
   });
 
@@ -221,9 +227,9 @@ describe("/producers rating sort gate (MEH-1864)", () => {
     expect(container.textContent).toContain(TOP_RATED_LABEL);
   });
 
-  it("hides the control when the prop is omitted (fail-closed default)", () => {
-    render(<ProducersClient {...BASE_PROPS} />);
-    expect(screen.queryByTestId("producers-sort")).not.toBeInTheDocument();
+  it("omits the rating option when the prop is omitted (fail-closed default)", () => {
+    const { container } = render(<ProducersClient {...BASE_PROPS} />);
+    expect(container.textContent).not.toContain(TOP_RATED_LABEL);
   });
 
   it("degrades a hand-typed ?sort=rating to the default while gated", async () => {
@@ -244,6 +250,6 @@ describe("/producers rating sort gate (MEH-1864)", () => {
     // it was green regardless of the gate. Removed rather than kept as
     // decoration.)
     expect(sortCalls()).toHaveLength(0);
-    expect(screen.queryByTestId("producers-sort")).not.toBeInTheDocument();
+    expect(screen.getByTestId("producers-sort")).toHaveValue("newest");
   });
 });

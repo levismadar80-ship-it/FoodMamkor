@@ -3,8 +3,8 @@
 Three layers:
   * pure unit (no DB) — the clock primitive, the transition matrix, and
     the vacation return-date guard, incl. the Fri-23:30-Israel boundary;
-  * API (Postgres, CI-gated) — past `vacation_until` rejected on both the
-    new and legacy write endpoints;
+  * API (Postgres, CI-gated) — past `vacation_until` rejected on the write
+    endpoint (the legacy one is gone, MEH-2758);
   * MEH-1883 — the READ-path auto-clear boundary, at the hour where the two
     clocks disagree.
 
@@ -68,13 +68,19 @@ def test_utc_friday_can_be_israel_saturday():
 
 
 @pytest.mark.parametrize("from_state", list(av.ALLOWED_TRANSITIONS))
-@pytest.mark.parametrize(
-    "to_state",
-    ["accepting_orders", "available_today", "full_this_week", "on_vacation"],
-)
-def test_all_transitions_permitted(from_state, to_state):
-    # Fully permissive matrix — never raises for valid state pairs.
+@pytest.mark.parametrize("to_state", ["accepting_orders", "on_vacation"])
+def test_every_state_may_move_to_a_writable_state(from_state, to_state):
+    # MEH-2758 / MEH-2782: every state may move to either state.
     validate_transition(from_state, to_state)
+
+
+@pytest.mark.parametrize("from_state", list(av.ALLOWED_TRANSITIONS))
+@pytest.mark.parametrize("to_state", ["available_today", "full_this_week"])
+def test_no_state_may_move_into_a_removed_state(from_state, to_state):
+    # MEH-2782: the two removed states are no longer values at all.
+    with pytest.raises(AvailabilityValidationError) as ei:
+        validate_transition(from_state, to_state)
+    assert ei.value.kind == "value"
 
 
 def test_transition_to_unknown_state_rejected():
@@ -163,17 +169,8 @@ def test_api_new_endpoint_accepts_future_vacation(client, db):
     assert resp.json()["vacation_until"] == future
 
 
-def test_api_legacy_status_rejects_past_vacation(client, db):
-    from tests.conftest import auth_header
-
-    user, _ = _producer_user(db)
-    past = (clock.israel_today() - timedelta(days=3)).isoformat()
-    resp = client.post(
-        "/producers/me/availability-status",
-        json={"status": "vacation", "vacation_until": past},
-        headers=auth_header(user),
-    )
-    assert resp.status_code == 422, resp.text
+# MEH-2758: test_api_legacy_status_rejects_past_vacation went with the legacy
+# POST /producers/me/availability-status endpoint it exercised.
 
 
 # ---------- MEH-1883: the read-path auto-clear, at the disagreeing hour ----------
@@ -224,13 +221,11 @@ def test_read_path_auto_clear_uses_israel_day(monkeypatch):
             "name": "חוות סוף החופשה",
             "vacation_until": date(2026, 6, 4),
             "availability_state": "on_vacation",
-            "availability_status": "vacation",
         }
     )
 
     assert out.vacation_until is None
     assert out.availability_state == "accepting_orders"
-    assert out.availability_status == "available"
 
 
 def test_read_path_keeps_a_vacation_that_ends_today(monkeypatch):
@@ -251,7 +246,6 @@ def test_read_path_keeps_a_vacation_that_ends_today(monkeypatch):
             "name": "חוות סוף החופשה",
             "vacation_until": date(2026, 6, 5),
             "availability_state": "on_vacation",
-            "availability_status": "vacation",
         }
     )
 

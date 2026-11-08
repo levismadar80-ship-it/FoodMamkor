@@ -1,9 +1,10 @@
 /**
  * OfferBadge — MEH-1823 chunk 3.
  *
- * Purpose:  Render a business's single active offer, in two sizes: a `badge`
- *           above the delivery block on the business page, and a short `chip`
- *           on ProducerCard.
+ * Purpose:  Render a business's single active offer: a `line` under the
+ *           status in the business-page header (MEH #2659; it was a `badge`
+ *           above the delivery block until then), a short `chip` on
+ *           ProducerCard, and the framed `badge` (default).
  * Does NOT: decide whether the offer is live. The server already did — an
  *           offer outside its window is filtered out server-side
  *           (Producer.active_offer, models.py) and never reaches the client.
@@ -71,6 +72,29 @@ const AMOUNT_SLOT = "\u0001";
 // same answer and were computing it from the UTC date instead — the exact
 // mistake this helper's docstring had been warning against. One owner now.
 
+// MEH-2676: the date-window half of the guard below, shared with
+// freeDeliveryThreshold() so ProducerCard cannot show a threshold for an offer
+// this component would hide.
+function isWithinWindow(offer) {
+  const today = israelToday();
+  if (offer.expires_at && offer.expires_at < today) return false;
+  if (offer.starts_at && offer.starts_at > today) return false;
+  return true;
+}
+
+/**
+ * MEH-2676 — the free-delivery threshold a card should fold into its delivery
+ * row, or null. Returns { value, unit } only for a live `free_delivery_above`
+ * offer that carries a valid threshold. A threshold-less free-delivery offer
+ * returns null: its chip («משלוח חינם») is short and never truncates.
+ */
+export function freeDeliveryThreshold(offer) {
+  if (!offer || offer.offer_type !== "free_delivery_above") return null;
+  if (offer.threshold_value == null || !UNITS.has(offer.threshold_unit)) return null;
+  if (!isWithinWindow(offer)) return null;
+  return { value: offer.threshold_value, unit: offer.threshold_unit };
+}
+
 export default function OfferBadge({ offer, variant = "badge", className = "" }) {
   const t = useTranslations("producer.offer");
   if (!offer || !OFFER_TYPES.has(offer.offer_type)) return null;
@@ -86,13 +110,7 @@ export default function OfferBadge({ offer, variant = "badge", className = "" })
   // The leak is not reachable today (the server filters both ends), but a
   // comment promising a two-sided check over a one-sided one is what makes the
   // next reader trust a guarantee that is not there.
-  const today = israelToday();
-  if (offer.expires_at && offer.expires_at < today) {
-    return null;
-  }
-  if (offer.starts_at && offer.starts_at > today) {
-    return null;
-  }
+  if (!isWithinWindow(offer)) return null;
 
   // MEH-1898 — the `custom` branch, and the empty case it exists to catch.
   //
@@ -159,7 +177,7 @@ export default function OfferBadge({ offer, variant = "badge", className = "" })
     return (
       <span
         data-testid="offer-chip"
-        className={`inline-flex w-fit max-w-full items-center gap-1 rounded-full bg-primary/10 border border-primary/30 text-primary px-2 py-0.5 text-[11px] font-semibold ${className}`}
+        className={`inline-flex w-fit max-w-full items-center gap-1 rounded-full bg-primary/10 border border-primary/30 text-primary px-2 py-0.5 text-2xs font-semibold ${className}`}
       >
         <Gift size={12} weight="fill" aria-hidden="true" className="shrink-0" />
         <span className="min-w-0 truncate">{content}</span>
@@ -167,10 +185,33 @@ export default function OfferBadge({ offer, variant = "badge", className = "" })
     );
   }
 
+  // MEH #2659: `line` — the business page shows the offer in its header, right
+  // under the status line (Sapir, 04/11: Wolt / Uber Eats / Etsy put a store's
+  // offer by its name, where the visitor decides). No frame and no fill, so it
+  // reads as a fact of the business and not as an ad (ADR-027).
+  if (variant === "line") {
+    return (
+      <p
+        data-testid="offer-line"
+        className={`flex items-start gap-1.5 text-sm text-primary ${className}`}
+      >
+        <Gift size={16} weight="fill" aria-hidden="true" className="shrink-0 mt-0.5" />
+        <span>
+          <span className="font-semibold">{content}</span>
+          {!isCustom && offer.headline ? (
+            <span className="block text-fg-muted text-xs mt-0.5" data-testid="offer-headline">
+              {offer.headline}
+            </span>
+          ) : null}
+        </span>
+      </p>
+    );
+  }
+
   return (
     <div
       data-testid="offer-badge"
-      className={`inline-flex items-start gap-2 rounded-[10px] bg-primary/10 border border-primary/30 px-3 py-2 text-sm text-primary ${className}`}
+      className={`inline-flex items-start gap-2 rounded-md bg-primary/10 border border-primary/30 px-3 py-2 text-sm text-primary ${className}`}
     >
       <Gift size={18} weight="fill" aria-hidden="true" className="shrink-0 mt-0.5" />
       <span>

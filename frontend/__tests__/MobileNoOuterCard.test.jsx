@@ -43,10 +43,10 @@ const wrap = (ui) =>
 
 function expectCardFromMdOnly(el) {
   const cls = el.className.split(/\s+/);
-  for (const c of ["bg-white", "border", "p-6", "p-8", "shadow-[0_2px_12px_rgba(46,104,83,0.04)]"]) {
+  for (const c of ["bg-surface", "border", "p-6", "p-8", "shadow-[0_2px_12px_rgba(46,104,83,0.04)]"]) {
     expect(cls, `unprefixed ${c} paints the card on phones`).not.toContain(c);
   }
-  expect(cls).toContain("md:bg-white");
+  expect(cls).toContain("md:bg-surface");
   expect(cls.some((c) => /^md:p-\d/.test(c))).toBe(true);
 }
 
@@ -64,7 +64,9 @@ describe("MEH-2565 · no card-in-card on phones", () => {
   it("/register/producer pre-flight: «מתחילים» is a filled primary button", () => {
     wrap(<RegisterPreflight showAccountLine onStart={() => {}} />);
     const cls = screen.getByTestId("register-preflight-start").className.split(/\s+/);
-    expect(cls).toContain("bg-primary");
+    // MEH-1687 phase 6: it is now <Button variant="primary">, whose fill is the
+    // action-primary token (= primary, #2E6853).
+    expect(cls).toContain("bg-action-primary");
     expect(cls).toContain("text-white");
     expect(cls).not.toContain("bg-transparent");
   });

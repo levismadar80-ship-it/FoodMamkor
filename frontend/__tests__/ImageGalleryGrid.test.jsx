@@ -71,6 +71,8 @@ vi.mock("@phosphor-icons/react", () => ({
   Carrot: () => null,
   GrainsSlash: () => null,
   Barn: () => null,
+  Medal: () => null,
+  HandHeart: () => null,
   DropSlash: () => null,
   Cube: () => null,
   Clock: () => null,
@@ -126,7 +128,7 @@ describe("ImageGallery imaged state — desktop editorial grid (MEH-1047)", () =
     secondaryImgs.forEach((img) => expect(img).toHaveAttribute("data-priority", "0"));
   });
 
-  it("renders exactly one mobile share overlay, pinned top-start (MEH-1334)", () => {
+  it("renders exactly one mobile share overlay, pinned top-end (MEH-1334 · MEH-2671)", () => {
     // Regression guard: the overlay must not be trapped inside the md:hidden
     // carousel nor mounted twice. One instance, hoisted to the wrapper —
     // and mobile-only (lg:hidden): desktop share lives in the header
@@ -136,7 +138,10 @@ describe("ImageGallery imaged state — desktop editorial grid (MEH-1047)", () =
     expect(shares).toHaveLength(1);
     expect(shares[0]).toHaveAttribute("data-variant", "overlay");
     expect(shares[0]).toHaveAttribute("data-url", "https://x/p-1");
-    expect(shares[0].parentElement.className).toMatch(/start-3/);
+    // MEH-2671: actions cluster at the inline-END corner (top-left in RTL),
+    // the Apple/Material bidi rule; the counter chip took the start corner.
+    expect(shares[0].parentElement.className).toMatch(/\bend-3\b/);
+    expect(shares[0].parentElement.className).not.toMatch(/\bstart-3\b/);
     expect(shares[0].parentElement.className).toMatch(/top-3/);
     expect(shares[0].parentElement.className).toMatch(/z-20/);
     expect(shares[0].parentElement.className).toMatch(/lg:hidden/);
@@ -154,6 +159,9 @@ describe("ImageGallery imaged state — desktop editorial grid (MEH-1047)", () =
       screen.getByTestId("share-overlay").parentElement
     );
     expect(hearts[0].parentElement.className).toMatch(/lg:hidden/);
+    // MEH-2671: heart leads the cluster (inline-start-most), the desktop
+    // row's order: שמירה · שיתוף · עדכונים.
+    expect(hearts[0].parentElement.firstElementChild).toBe(hearts[0]);
   });
 });
 
@@ -161,6 +169,8 @@ describe("ImageGallery imaged state — mobile carousel (MEH-1047 chunk 2)", () 
   it("shows a counter chip (current/total) and a gold progress bar, no dots", () => {
     render(<ImageGallery images={urls(5)} />);
     expect(screen.getByTestId("gallery-counter")).toHaveTextContent("1/5");
+    // MEH-2671: counter moved to the start corner, away from the actions.
+    expect(screen.getByTestId("gallery-counter").className).toMatch(/\bstart-3\b/);
     const progress = screen.getByTestId("gallery-progress");
     expect(progress).toBeInTheDocument();
     // gold fill child present

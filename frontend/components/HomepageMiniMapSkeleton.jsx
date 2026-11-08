@@ -33,10 +33,12 @@ export default function HomepageMiniMapSkeleton() {
           <h2 className="text-xl md:text-2xl font-semibold text-text">
             {t("dot_caption")}
           </h2>
-          <p className="text-sm text-fg-muted mt-1">{t("dot_subtitle")}</p>
+          {/* MEH-2635: subtitle removed here too. The skeleton must keep the
+              same box as the loaded map — dropping the line from one and not
+              the other is itself a layout shift. */}
         </header>
-        <div className="rounded-[12px] overflow-hidden border border-border h-[320px] md:h-[420px] relative">
-          <div className="w-full h-full rounded-[12px] bg-green-50 animate-pulse flex flex-col items-center justify-center gap-3">
+        <div className="rounded-md overflow-hidden border border-border h-[320px] md:h-[420px] relative">
+          <div className="w-full h-full rounded-md bg-green-50 animate-pulse flex flex-col items-center justify-center gap-3">
             <MapTrifold size={48} className="text-primary/30" />
             <p className="text-fg-muted text-sm">{t("loading")}</p>
           </div>

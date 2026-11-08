@@ -12,6 +12,7 @@ import FooterSlot from "@/components/FooterSlot";
 import BottomNav from "@/components/BottomNav";
 import Toaster from "@/components/Toaster";
 import CookieBanner from "@/components/CookieBanner";
+import IosViewportPin from "@/components/IosViewportPin";
 import SmoothScrollProvider from "@/components/SmoothScrollProvider";
 import CustomCursor from "@/components/CustomCursor";
 import ChatWidgetLazy from "@/components/ChatWidgetLazy";
@@ -21,7 +22,7 @@ import ClarityScript from "@/components/ClarityScript";
 import SpeedInsightsRedacted from "@/components/SpeedInsightsRedacted";
 import { env, SITE_URL } from "@/lib/env";
 import { rootClientMessages } from "@/lib/client-messages";
-import { BRAND_NAME, SITE_DESCRIPTION } from "@/lib/constants";
+import { BRAND_NAME, BRAND_NAME_LATIN, SITE_DESCRIPTION } from "@/lib/constants";
 import { routing } from "@/i18n/routing";
 import {
   buildAlternates,
@@ -40,14 +41,16 @@ import {
 // DO NOT add @font-face blocks for these families — next/font owns their
 // hosting, and a hand-written face would resolve to a different file.
 
-const SITE_TITLE = "מהמקור — בתי עסק מקומיים בתחום המזון, כולם במקום אחד";
 // MEH-2192: SITE_DESCRIPTION moved to lib/constants.js so the Organization
 // JSON-LD node and this <meta name="description"> cannot drift apart. Same
 // string, one owner.
-const OG_IMAGE = `${SITE_URL}/og-image.png`;
-// MEH-1060 (SEO-11): og-image-en.png exists but was unreferenced — /en/* pages
-// shared the Hebrew-text og-image.png. Select the EN artwork for the en locale.
-const OG_IMAGE_EN = `${SITE_URL}/og-image-en.png`;
+// MEH-2827 PR 6: JPEG, not the 1.26 MB PNG — WhatsApp often drops a preview
+// image that heavy. Same artwork (the PNG is fully opaque), ~50 KB. The PNGs
+// stay in public/ so links already shared keep their image.
+const OG_IMAGE = `${SITE_URL}/og-image.jpg`;
+// MEH-1060 (SEO-11): og-image-en exists but was unreferenced — /en/* pages
+// shared the Hebrew-text og-image. Select the EN artwork for the en locale.
+const OG_IMAGE_EN = `${SITE_URL}/og-image-en.jpg`;
 
 // MEH-476 PR 3b1: ACTIVE for all locale-stable routes (no headers() reads).
 // PR 3b2: every public route has per-page generateMetadata; this layout-level
@@ -59,23 +62,16 @@ export const revalidate = 3600;
 // title / description / OG content per locale — this PR is hreflang-only.
 const BASE_METADATA = {
   metadataBase: new URL(SITE_URL),
-  title: {
-    default: SITE_TITLE,
-    template: `%s | ${BRAND_NAME}`,
-  },
+  // MEH-2774: title, og/twitter titles and keywords are per locale in
+  // generateMetadata (seo.site.*); the old SITE_TITLE copy here was always
+  // overridden and is gone.
   description: SITE_DESCRIPTION,
-  keywords: [
-    "מוצרים מקומיים",
-    "grass-fed",
-    "אוכל בריא",
-    "אוכל אורגני",
-    "בעלי עסק ישראלים",
-    BRAND_NAME,
-    "שוק איכרים",
-  ],
   manifest: "/manifest.json",
   icons: {
     icon: [
+      // MEH-2834: SVG first — crisp at every size; ICO + PNGs stay for
+      // browsers that don't take an SVG favicon.
+      { url: "/favicon.svg", type: "image/svg+xml" },
       { url: "/favicon.ico", sizes: "any" },
       { url: "/icon-192.png", type: "image/png", sizes: "192x192" },
       { url: "/icon-512.png", type: "image/png", sizes: "512x512" },
@@ -89,20 +85,19 @@ const BASE_METADATA = {
     locale: "he_IL",
     url: SITE_URL,
     siteName: BRAND_NAME,
-    title: SITE_TITLE,
     description: SITE_DESCRIPTION,
     images: [
       {
         url: OG_IMAGE,
         width: 1200,
         height: 630,
-        alt: SITE_TITLE,
+        // og:image:type — lets a crawler accept the image without sniffing it.
+        type: "image/jpeg",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: SITE_TITLE,
     description: SITE_DESCRIPTION,
     images: [OG_IMAGE],
   },
@@ -157,9 +152,11 @@ export async function generateMetadata({ params }) {
     ...BASE_METADATA,
     title: {
       default: title,
-      template: `%s | ${BRAND_NAME}`,
+      // MEH-2780: /en pages end in the Latin brand, as seo.site.title does.
+      template: `%s | ${locale === "en" ? BRAND_NAME_LATIN : BRAND_NAME}`,
     },
     description,
+    keywords: [...t.raw("keywords"), BRAND_NAME],
     openGraph: {
       ...BASE_METADATA.openGraph,
       title: t("og_title"),
@@ -269,6 +266,8 @@ export default async function LocaleLayout({ children, params }) {
                 <CustomCursor />
                 <ChatWidgetLazy />
                 <InstallPrompt />
+                {/* iOS drift pin: iOS 26 Safari fixed-bottom drift compensation (publishes --vv-shift for .vv-pin layers). */}
+                <IosViewportPin />
                 {/* MEH-2602: last on purpose — sibling effects run in tree order, so every field above has hydrated when this one runs. Replays text typed before hydration. */}
                 <PrehydrationInputReplay />
                 </MotionConfig>

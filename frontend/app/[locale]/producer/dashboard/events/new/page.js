@@ -45,7 +45,7 @@ export default function NewEventPage() {
     return (
       <div className="max-w-2xl mx-auto px-4 py-12">
         <div
-          className="bg-green-50 border border-primary rounded-[12px] p-6 text-center"
+          className="bg-green-50 border border-primary rounded-md p-6 text-center"
           role="status"
         >
           <h1 className="font-headline-lg text-2xl font-bold text-text mb-2">
@@ -54,7 +54,7 @@ export default function NewEventPage() {
           <p className="text-fg-muted mb-6">{t("pending_success_hint")}</p>
           <Link
             href="/producer/dashboard"
-            className="inline-block bg-primary text-white px-6 py-3 rounded-[8px] hover:bg-primary-dark transition font-medium"
+            className="inline-block bg-primary text-white px-6 py-3 rounded-sm hover:bg-primary-dark transition font-medium"
           >
             {t("pending_success_dashboard")}
           </Link>
@@ -74,7 +74,7 @@ export default function NewEventPage() {
       <h1 className="font-headline-lg text-4xl font-bold text-text mb-2">{t("heading")}</h1>
       <p className="text-fg-muted mb-8">{t("subtitle")}</p>
 
-      <p className="text-sm text-fg-muted bg-green-50 rounded-[10px] px-4 py-3 mb-6 leading-relaxed">
+      <p className="text-sm text-fg-muted bg-green-50 rounded-md px-4 py-3 mb-6 leading-relaxed">
         {t("info_paragraph")}
       </p>
 

@@ -3,8 +3,18 @@ from uuid import UUID
 
 import httpx
 import structlog
-from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
+from fastapi import (
+    APIRouter,
+    BackgroundTasks,
+    Depends,
+    HTTPException,
+    Query,
+    Request,
+    Response,
+)
+from fastapi.responses import JSONResponse
 from sqlalchemy import func
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, joinedload, selectinload
 
 from app.auth import (
@@ -16,19 +26,23 @@ from app.data.cities import canonical_city
 from app.database import get_db
 from app.models import (
     Category,
+    DeliveryWaitlistEntry,
     KashrutBadgeRequest,
     Producer,
     Report,
     User,
 )
 from app.rate_limit import limiter
-from app.utils.stack_probe import log_depth
 
 # MEH-460 Pkg 5 (FINAL): ContactClickIn relocated to app.schemas.schemas per ADR-006 R1.
 from app.schemas.schemas import (
     CategoryOut,
     ContactClickIn,
     DELIVERY_DAYS,
+    DeliveryWaitlistIn,
+    DeliveryWaitlistOut,
+    DeliveryWaitlistHostConfirmIn,
+    DeliveryWaitlistUnsubscribeIn,
     KashrutCertRef,
     ProducerCityOut,
     ProducerCreate,
@@ -39,6 +53,7 @@ from app.schemas.schemas import (
     WhatsAppClickIn,
 )
 from app.services import retired_slugs  # MEH-2534
+from app.services import delivery_waitlist  # MEH-2618
 from app.services.analytics import (
     EventContext,
     is_internal_viewer,
@@ -46,6 +61,7 @@ from app.services.analytics import (
 )
 from app.services.license_validation import ensure_license_for_categories
 from app.services.producer_listing import (
+    MAX_CITIES_PER_QUERY,
     build_producers_query,
     catalog_default_availability_condition,
     is_business,
@@ -53,6 +69,7 @@ from app.services.producer_listing import (
 from app.services.producer_queries import (
     attach_badge_fields,
     attach_favorites_count,
+    attach_rescue_saving,
     create_producer_with_relations,
     get_producer_or_404,
 )
@@ -153,21 +170,23 @@ def list_producers(
     open_for_orders_now: bool | None = None,
     # Producer city filter (producer's own city, not delivery area).
     city: str | None = None,
+    # MEH-2790: OR over several cities — ?cities=a&cities=b. A region is 7 to
+    # 18 towns and `city` takes one, so the category x region landing pages
+    # need the list form. Per-city semantics are `_located_in_city_condition`
+    # (the business IS there: its own city or any of its location rows), the
+    # same reading near_city uses. Capped at 40 like delivery_cities (MEH-1487)
+    # — over the cap this 422s below rather than truncating silently, because a
+    # truncated region would quietly under-count a landing page's gate.
+    cities: list[str] | None = Query(None),
     # MEH-2602: the map's «סננו לפי עיר» — businesses located in the city
     # (own city or any location row) OR delivering to it, located ones first.
     # delivery_city keeps its strict "delivers to" meaning for the other callers.
     near_city: str | None = None,
-    # DEPRECATED (MEH-2271, MEH-1854 chunk 3a) — kept for one release as an
-    # alias onto `availability_state`, not as a column filter. It no longer
-    # reads producers.is_available_today at all: `true` selects
-    # availability_state == "available_today", `false` selects everything
-    # else. Same result set as before, because the column and the enum agreed
-    # (desync measured 0/29 on staging, 06/09) and now the enum is the only
-    # thing written. Removed by MEH-2272; the column drops in MEH-2273.
-    is_available_today: bool | None = None,
-    # MEH-291 — durable 4-value enum filter, and as of MEH-2271 the only
-    # availability filter that reads a column. An explicit value here WINS
-    # over the deprecated alias above.
+    # MEH-291 — durable 4-value enum filter, the only availability filter.
+    # MEH-2272 removed the one-release legacy boolean alias that MEH-2271
+    # mapped onto it. FastAPI ignores an undeclared query parameter, so a
+    # stale caller still sending it gets a 200 and an UNFILTERED listing —
+    # not a 422 (pinned in tests/test_api.py::TestAvailabilityState).
     availability_state: str | None = None,
     grass_fed: bool | None = None,
     gluten_free: bool | None = None,
@@ -227,6 +246,18 @@ def list_producers(
         raise HTTPException(
             status_code=422, detail="מיון לפי מרחק דורש מיקום — lat ו-lng חובה"
         )
+    # MEH-2790: the region list is bounded. The largest region in
+    # frontend/data/regions.js is ~18 cities, so 40 is generous headroom while
+    # still bounding a hostile caller — the same number and the same reasoning
+    # as _MAX_DELIVERY_CITIES. A 422 rather than a silent truncation: a
+    # truncated region would under-count a landing page's >=5 gate and 404 a
+    # page that should exist, which is exactly the silent failure this feature
+    # must not have.
+    if cities is not None and len(cities) > MAX_CITIES_PER_QUERY:
+        raise HTTPException(
+            status_code=422,
+            detail=f"יותר מדי ערים בבקשה — עד {MAX_CITIES_PER_QUERY}",
+        )
     # MEH-1645: whitelist the day param against the canonical vocabulary —
     # same list DeliveryAreaCreate validates on the write path (MEH-1644).
     # MEH-2036: the plural is validated with the SAME whitelist and the SAME
@@ -260,8 +291,8 @@ def list_producers(
         kosher=kosher,
         open_for_orders_now=open_for_orders_now,  # MEH-1881
         city=city,
+        cities=cities,  # MEH-2790
         near_city=near_city,  # MEH-2602
-        is_available_today=is_available_today,
         # MEH-291 — opt-in 4-value enum filter; default listing behavior
         # unchanged in Phase 2 (Q4b — default-hide-on_vacation ships in
         # Phase 3 alongside frontend).
@@ -385,9 +416,6 @@ def random_producer(request: Request, db: Session = Depends(get_db)):
 @router.get("/producers/by-slug/{slug}", response_model=ProducerDetailOut)
 @limiter.limit("120/minute")
 def get_producer_by_slug(slug: str, request: Request, db: Session = Depends(get_db)):
-    # MEH-2119 measurement gate — TEMPORARY. Logs the request's frame depth
-    # on staging; see app/utils/stack_probe.py for the read-off and removal.
-    log_depth("producers.by_slug")
     producer = (
         db.query(Producer)
         .options(
@@ -414,6 +442,7 @@ def get_producer_by_slug(slug: str, request: Request, db: Session = Depends(get_
         raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
     attach_badge_fields(producer)
     attach_favorites_count(producer, db)
+    attach_rescue_saving([producer], db)
     report_count = (
         db.query(func.count(Report.id))
         .filter(Report.producer_id == producer.id)
@@ -473,6 +502,7 @@ def get_producer(
     attach_badge_fields(producer)
     # MEH-106: social proof count.
     attach_favorites_count(producer, db)
+    attach_rescue_saving([producer], db)  # MEH-2716
 
     # Compute report_count from DB
     report_count = (
@@ -612,7 +642,13 @@ def record_whatsapp_click(
     return {"detail": "logged"}
 
 
-_VALID_CONTACT_METHODS = frozenset({"phone", "instagram", "website", "email"})
+# MEH-2626: "whatsapp_group" = a tap on the business's WhatsApp updates link
+# (contact-card bell + delivery-checker pill). It is a contact click, not a
+# WhatsApp CTA click — those stay on /whatsapp-click — so it lands here, and
+# the first-review gate (reviews.py, MEH-2204) reads it with no change there.
+_VALID_CONTACT_METHODS = frozenset(
+    {"phone", "instagram", "website", "email", "whatsapp_group"}
+)
 
 
 @router.post("/producers/{producer_id}/contact-click", status_code=204)
@@ -652,6 +688,174 @@ def record_contact_click(
     )
 
 
+@router.post(
+    "/producers/{producer_id}/delivery-waitlist",
+    response_model=DeliveryWaitlistOut,
+    status_code=201,
+)
+@limiter.limit("10/minute")  # anonymous write — same cap as whatsapp-click
+def join_delivery_waitlist(
+    request: Request,
+    response: Response,
+    background_tasks: BackgroundTasks,
+    producer_id: UUID,
+    data: DeliveryWaitlistIn,
+    db: Session = Depends(get_db),
+    current_user: User | None = Depends(get_current_user_lenient),
+):
+    """«תודיעו לי כשתגיעו ל{עיר}» — join a business's per-city delivery waitlist.
+
+    No account needed: email + city. Returns 201 `added`, or 200 `exists`
+    when this email already waits for this business and city. Known and
+    accepted: `exists` and `host_confirm` tell an anonymous caller whether an
+    address is on this list / already a host — the same disclosure the
+    waitlist made since MEH-2618, kept so the form can be honest about
+    whether a mail went out (double-opt-in UX norm). 404 for an
+    unknown or not-yet-live business. When the business later adds the
+    city to its delivery areas, one email goes out (see
+    services/delivery_waitlist). Rate-limited 10/minute per IP.
+    """
+    # MEH-2618: the public listing filter, not a bare existence check — a
+    # pending/rejected business has no public page to send her to, and its
+    # trigger would never fire (notify_cities applies the same filter).
+    producer = (
+        db.query(Producer).filter(Producer.id == producer_id, is_business()).first()
+    )
+    if producer is None:
+        raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
+    existing = delivery_waitlist.find_entry(
+        db, producer.id, city=data.city, email=data.email
+    )
+    if existing is not None:
+        # MEH-2673: a repeat signup that ticks «אשמח לארח» (re)sends the
+        # confirmation link; the row turns True only from that link. An
+        # unticked repeat changes nothing — never a silent withdrawal.
+        host_confirm = None
+        if data.wants_to_host:
+            if existing.wants_to_host:
+                host_confirm = "confirmed"
+            else:
+                verdict = delivery_waitlist.claim_host_confirm_send(db, existing)
+                if verdict == "send":
+                    # Captured before the commit: expire_on_commit would
+                    # otherwise refresh the row just to read three columns.
+                    mail_args = (
+                        existing.id,
+                        existing.email,
+                        existing.city,
+                        producer.name,
+                    )
+                    db.commit()
+                    host_confirm = "sent"
+                    background_tasks.add_task(
+                        delivery_waitlist.send_host_confirmation, *mail_args
+                    )
+                else:
+                    db.rollback()  # releases the advisory lock, nothing to write
+                    host_confirm = verdict
+        response.status_code = 200
+        return DeliveryWaitlistOut(status="exists", host_confirm=host_confirm)
+    entry = delivery_waitlist.add_entry(
+        db, producer, email=data.email, city=data.city, user=current_user
+    )
+    new_verdict: delivery_waitlist.HostConfirmVerdict | None = None
+    try:
+        # The INSERT is flushed here, inside the except below, BEFORE the
+        # claim takes the per-address lock — so a double-tap (two first-time
+        # POSTs for the same row in flight) trips the unique constraint
+        # here, not as an unhandled 500 out of the claim's own statements.
+        db.flush()
+        if data.wants_to_host:
+            # Stamped before the commit so this mail counts toward the
+            # per-address cap; the mail itself is queued after the commit.
+            new_verdict = delivery_waitlist.claim_host_confirm_send(db, entry)
+        mail_args = (entry.id, entry.email, entry.city, producer.name)
+        db.commit()
+    except IntegrityError:
+        # Two identical POSTs in flight (double-tap): both passed find_entry,
+        # the second trips uq_delivery_waitlist_city_email. That is the same
+        # calm "exists" as the sequential duplicate, not a 500.
+        db.rollback()
+        response.status_code = 200
+        return DeliveryWaitlistOut(status="exists")
+    host_confirm = new_verdict
+    if new_verdict == "send":
+        # MEH-2673: the box alone shares nothing. The row stays
+        # wants_to_host=False until the address itself clicks the link —
+        # otherwise anyone could hand a stranger's email to a business.
+        host_confirm = "sent"
+        background_tasks.add_task(delivery_waitlist.send_host_confirmation, *mail_args)
+    return DeliveryWaitlistOut(status="added", host_confirm=host_confirm)
+
+
+@router.post("/delivery-waitlist/host-confirm", status_code=200)
+@limiter.limit("10/minute")
+def confirm_delivery_waitlist_host(
+    request: Request,
+    data: DeliveryWaitlistHostConfirmIn,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
+):
+    """MEH-2673: «מאשרים, אפשר להעביר» — the signed link from the host
+    confirmation email. Turns the entry's wants_to_host on, so the business
+    sees this email in its pickup_hosts list. Idempotent. 400 on a token
+    that does not verify or an entry that no longer exists (unsubscribed).
+
+    410 on an expired token — and, because the token still names the entry,
+    a FRESH link is mailed to the same address right here (under the usual
+    cooldown/cap), so the page is never a dead end (the double-opt-in norm:
+    an expired link offers a new one). The body carries `resent` so the page
+    can say whether to look in the inbox. An expired link never confirms."""
+    entry_id, state = delivery_waitlist.inspect_host_confirm_token(data.token)
+    entry = db.get(DeliveryWaitlistEntry, entry_id) if entry_id else None
+    if entry is None:
+        raise HTTPException(status_code=400, detail="הקישור לא תקין או שפג תוקפו")
+    if state == "expired" and not entry.wants_to_host:
+        # An expired link on an already-confirmed entry falls through to the
+        # idempotent 200 below: the consent is on record, no error page.
+        resent = False
+        if delivery_waitlist.claim_host_confirm_send(db, entry) == "send":
+            mail_args = (entry.id, entry.email, entry.city, entry.producer.name)
+            db.commit()
+            resent = True
+            background_tasks.add_task(
+                delivery_waitlist.send_host_confirmation, *mail_args
+            )
+        else:
+            db.rollback()  # releases the advisory lock, nothing to write
+        return JSONResponse(
+            status_code=410,
+            content={"detail": "הקישור לא תקין או שפג תוקפו", "resent": resent},
+        )
+    if not entry.wants_to_host:
+        entry.wants_to_host = True
+        entry.host_confirmed_at = utc_now()
+        db.commit()
+    return {"producer_name": entry.producer.name}
+
+
+@router.post("/delivery-waitlist/unsubscribe", status_code=200)
+@limiter.limit("10/minute")
+def unsubscribe_delivery_waitlist(
+    request: Request,
+    data: DeliveryWaitlistUnsubscribeIn,
+    db: Session = Depends(get_db),
+):
+    """Remove one delivery-waitlist entry via the signed token from its email.
+
+    Idempotent: an already-removed entry is still 200. 400 on a token that
+    does not verify.
+    """
+    entry_id = delivery_waitlist.decode_unsubscribe_token(data.token)
+    if entry_id is None:
+        raise HTTPException(status_code=400, detail="קישור ביטול לא תקין")
+    entry = db.get(DeliveryWaitlistEntry, entry_id)
+    if entry is not None:
+        db.delete(entry)
+        db.commit()
+    return {"detail": "הוסרת מרשימת ההמתנה"}
+
+
 @router.post("/producers", response_model=ProducerDetailOut, status_code=201)
 def create_producer(
     data: ProducerCreate,
@@ -685,9 +889,6 @@ def create_producer(
 def list_categories(
     request: Request, response: Response, db: Session = Depends(get_db)
 ):
-    # MEH-2119 measurement gate — TEMPORARY control route (same middleware
-    # chain, no joinedload under it). See app/utils/stack_probe.py.
-    log_depth("categories.list")
     # MEH-1833: the category list is the most static public payload we serve —
     # same edge policy as /producers. No auth or user state is read here.
     response.headers["Cache-Control"] = _PUBLIC_CATALOG_CACHE

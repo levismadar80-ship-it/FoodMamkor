@@ -13,7 +13,11 @@ import {
 import { DIET_CHIP_MIN } from "@/lib/producer-filters";
 
 const keys = (chips) => chips.map((c) => c.key);
-const nonDiet = keys(TOGGLE_CHIPS).filter((k) => !DIET_GATED_KEYS.includes(k));
+// MEH-2767: open-now is gated on /map too now (by the order-window gate, not
+// the count), so "the chips no gate can hide" excludes it as well.
+const nonDiet = keys(TOGGLE_CHIPS).filter(
+  (k) => !DIET_GATED_KEYS.includes(k) && k !== "open_for_orders_now",
+);
 
 function producers({ vegan = 0, vegetarian = 0, gluten_free = 0, lactose_free = 0, no_added_sugar = 0 } = {}) {
   const out = [];
@@ -29,15 +33,17 @@ function producers({ vegan = 0, vegetarian = 0, gluten_free = 0, lactose_free = 
 }
 
 describe("MEH-2170 — visibleMapToggleChips", () => {
-  it("gates exactly the five diet axes and nothing else", () => {
-    expect(DIET_GATED_KEYS).toEqual([
+  it("gates exactly the five diet axes, on_site and grass_fed, and nothing else", () => {
+    expect([...DIET_GATED_KEYS].sort()).toEqual([
       "vegan",
       "vegetarian",
       "gluten_free",
       "lactose_free",
       "no_added_sugar",
       "on_site", // MEH-2598: new axis, gated on sells_on_site
-    ]);
+      "grass_fed", // MEH-2767: one rule on every surface
+      // MEH-2677: the 100% pair left the filter, so it is no longer gated.
+    ].sort());
     // Every gated key is a real /map chip — a typo here would gate nothing.
     for (const k of DIET_GATED_KEYS) expect(keys(TOGGLE_CHIPS)).toContain(k);
   });
@@ -47,7 +53,21 @@ describe("MEH-2170 — visibleMapToggleChips", () => {
     expect(keys(visibleMapToggleChips({ catalogSnapshot: undefined }))).toEqual(keys(TOGGLE_CHIPS));
   });
 
-  it("an empty catalog hides all five diet chips and keeps every other chip", () => {
+  it("snapshot still loading → gated chips held back, so none renders then vanishes (map flash, 30/10)", () => {
+    const visible = keys(visibleMapToggleChips({ catalogSnapshot: null, snapshotPending: true }));
+    for (const k of DIET_GATED_KEYS) expect(visible).not.toContain(k);
+    expect(visible).toEqual(nonDiet);
+  });
+
+  it("snapshot still loading → an ACTIVE gated chip (deep link) is kept", () => {
+    const visible = keys(
+      visibleMapToggleChips({ catalogSnapshot: null, snapshotPending: true, chipState: { on_site: true } }),
+    );
+    expect(visible).toContain("on_site");
+    expect(visible).not.toContain("vegan");
+  });
+
+  it("an empty catalog hides every gated chip and keeps every other chip", () => {
     const visible = keys(visibleMapToggleChips({ catalogSnapshot: [] }));
     for (const k of DIET_GATED_KEYS) expect(visible).not.toContain(k);
     expect(visible).toEqual(nonDiet);

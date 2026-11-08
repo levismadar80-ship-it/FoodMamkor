@@ -201,3 +201,103 @@ describe("«מגיעים אלייך?» on the group page", () => {
     }
   });
 });
+
+// MEH-2615: pickup and delivery are one titled section — the business's note
+// and «מגיעים אלייך?» under one heading — and the business row comes after it.
+// Cells: note × checker shown / hidden (pickup only) / no note.
+describe("the pickup and delivery section", () => {
+  const TITLE = "group_buys.detail.fulfillment_title";
+
+  it("holds the heading, the note and the checker, with the business row after it", async () => {
+    await renderPage();
+    const section = screen.getByTestId("group-buy-fulfillment");
+    const checker = await screen.findByTestId("delivery-checker");
+    expect(section.querySelector("h2").textContent).toBe(TITLE);
+    expect(section.textContent).toContain(GB.fulfillment_note);
+    expect(section.contains(checker)).toBe(true);
+    const row = screen.getByTestId("group-buy-producer-link");
+    expect(section.contains(row)).toBe(false);
+    // DOCUMENT_POSITION_FOLLOWING: the business row is later in reading order.
+    expect(section.compareDocumentPosition(row) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it("keeps the heading and note when the checker hides itself (pickup only)", async () => {
+    fixture.producer = producer({ offers_delivery: false, delivery_areas: [] });
+    await renderPage();
+    await waitFor(() => expect(get).toHaveBeenCalledWith("/producers/p-1"));
+    await act(async () => {});
+    expect(screen.queryByTestId("delivery-checker")).toBeNull();
+    expect(screen.getByRole("heading", { name: TITLE })).toBeInTheDocument();
+    expect(screen.getByTestId("group-buy-fulfillment-note").textContent).toBe(GB.fulfillment_note);
+  });
+
+  // Review #3900: no note and a hidden checker must not leave an empty
+  // 2rem-tall section (the gap the old empty wrapper never had).
+  it("without a note and with the checker hidden: the section adds no gap", async () => {
+    fixture.gb = { fulfillment_note: null };
+    fixture.producer = producer({ offers_delivery: false, delivery_areas: [] });
+    await renderPage();
+    await waitFor(() => expect(get).toHaveBeenCalledWith("/producers/p-1"));
+    await act(async () => {});
+    const section = screen.getByTestId("group-buy-fulfillment");
+    expect(section.textContent).toBe("");
+    expect(section.className).not.toMatch(/\bmt-/);
+    expect(section.querySelector(".mt-8")).toBeNull();
+  });
+
+  it("without a note: no heading over the checker alone", async () => {
+    fixture.gb = { fulfillment_note: null };
+    await renderPage();
+    const checker = await screen.findByTestId("delivery-checker");
+    expect(screen.getByTestId("group-buy-fulfillment").contains(checker)).toBe(true);
+    expect(screen.queryByRole("heading", { name: TITLE })).toBeNull();
+  });
+});
+
+// MEH-2651: new groups answer pickup and delivery separately. Cells: pickup
+// only / delivery only / both / neither-but-old-note (legacy, covered above).
+describe("pickup and delivery as two rows", () => {
+  const TITLE = "group_buys.detail.fulfillment_title";
+  const PICKUP = "מהמשק ביום שישי בין 8 ל-12";
+  const DELIVERY = "לזכרון יעקב ובנימינה ביום ראשון";
+
+  it("both: two labelled rows, pickup first, checker after delivery", async () => {
+    fixture.gb = { fulfillment_note: null, pickup_note: PICKUP, delivery_note: DELIVERY };
+    await renderPage();
+    const section = screen.getByTestId("group-buy-fulfillment");
+    const checker = await screen.findByTestId("delivery-checker");
+    expect(section.querySelector("h2").textContent).toBe(TITLE);
+    const pickup = screen.getByTestId("group-buy-pickup-note");
+    const delivery = screen.getByTestId("group-buy-delivery-note");
+    expect(pickup.querySelector("dt").textContent).toBe("group_buys.detail.pickup_label");
+    expect(pickup.querySelector("dd").textContent).toBe(PICKUP);
+    expect(delivery.querySelector("dt").textContent).toBe("group_buys.detail.delivery_label");
+    expect(delivery.querySelector("dd").textContent).toBe(DELIVERY);
+    expect(pickup.compareDocumentPosition(delivery) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(delivery.compareDocumentPosition(checker) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(screen.queryByTestId("group-buy-fulfillment-note")).toBeNull();
+  });
+
+  it("pickup only: one row, no delivery row", async () => {
+    fixture.gb = { fulfillment_note: null, pickup_note: PICKUP, delivery_note: null };
+    await renderPage();
+    expect(screen.getByRole("heading", { name: TITLE })).toBeInTheDocument();
+    expect(screen.getByTestId("group-buy-pickup-note").textContent).toContain(PICKUP);
+    expect(screen.queryByTestId("group-buy-delivery-note")).toBeNull();
+  });
+
+  it("delivery only: one row, no pickup row", async () => {
+    fixture.gb = { fulfillment_note: null, pickup_note: null, delivery_note: DELIVERY };
+    await renderPage();
+    expect(screen.getByRole("heading", { name: TITLE })).toBeInTheDocument();
+    expect(screen.getByTestId("group-buy-delivery-note").textContent).toContain(DELIVERY);
+    expect(screen.queryByTestId("group-buy-pickup-note")).toBeNull();
+  });
+
+  it("split notes win over a leftover old note", async () => {
+    fixture.gb = { pickup_note: PICKUP, delivery_note: null };
+    await renderPage();
+    expect(screen.getByTestId("group-buy-pickup-note")).toBeInTheDocument();
+    expect(screen.queryByTestId("group-buy-fulfillment-note")).toBeNull();
+  });
+});

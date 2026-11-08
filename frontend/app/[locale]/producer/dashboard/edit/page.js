@@ -35,14 +35,17 @@
  * RTL: logical properties only — see .claude/rules/rtl.md.
  */
 
+import CoverageCtaToggle from "@/components/dashboard/CoverageCtaToggle";
 import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 // MEH-1157: locale-aware router — push("/login") lands on /{locale}/login
 // instead of dropping an /en session onto the default-locale page.
 // MEH-1408: usePathname feeds router.push({pathname, query:{group}}) for the
 // hub↔group nav; useSearchParams (next/navigation) reads the active ?group.
-import { useRouter, usePathname } from "@/i18n/navigation";
+import { useRouter, usePathname, Link } from "@/i18n/navigation";
 import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
+import { BADGE_CONFIG } from "@/lib/badges";
+import { useBadgeCopy } from "@/lib/use-badge-copy";
 // MEH-1158: per-channel glyphs feed the header previews below.
 // MEH-1408: CaretLeft — the "back to all sections" link's inline-start indicator
 // (base points inline-start in LTR; rtl:rotate-180 flips it to inline-start in RTL).
@@ -80,12 +83,11 @@ import ProductsSection from "@/components/ProductsSection";
 import LocationsEditor from "./LocationsEditor";
 import { DescriptionCard, OwnerStoryCard, CategoriesCard, ImagesCard, PricingCard, DeliveryCard, OffersCard, LicenseCard, KashrutCard, BusinessNameCard, ViewOnPageLink } from "./cards";
 import OrganizerCityCard from "./OrganizerCityCard";
-// MEH-1508 ch2 Phase B: owner-facing business-level dietary scope (own file —
-// cards.jsx is already >1600 lines).
-import DietaryScopeCard from "./DietaryScopeCard";
-// MEH-1851 row 23: owner-declared grass_fed (own file, same reason as above —
-// cards.jsx is already >1600 lines).
-import GrassFedCard from "./GrassFedCard";
+// MEH-2729: one «תגים» card holds the dietary scope (MEH-1508) and grass_fed
+// (MEH-1851) sections; future tags go inside it (own file — cards.jsx is >1600 lines).
+import TagsCard, { activeTagCount } from "./TagsCard";
+// «עסק של מילואימניקים» (MEH-2693): owner-declared reservist_owned (own file, same reason).
+import ReservistOwnedCard from "./ReservistOwnedCard";
 // MEH-1544: weekly order-acceptance window (own file, same reason as above —
 // imported directly rather than via a cards.jsx passthrough wrapper).
 import OrderWindowEditor from "./OrderWindowEditor";
@@ -107,6 +109,7 @@ import {
   KEY_TO_GROUP,
   OPEN_KEY_FOR,
 } from "@/lib/dashboard-edit-anchors";
+import Button from "@/components/ui/Button";
 
 // MEH-1158: Phosphor glyph per primary contact channel — feeds the contact
 // card's header preview (icon + existing channel_* label, no new i18n).
@@ -159,9 +162,10 @@ const ORGANIZER_GROUP_KEYS = ["profile", "contact"];
 // next-step marker placement.
 const GROUP_MEMBERS = {
   profile: ["images", "categories", "bio", "ownerStory"],
-  // MEH-2433: offer, dietaryScope and grassFed are deliberately NOT members —
-  // all three are opt-in, and the orderWindow note below says why opt-in
-  // fields stay out of the "{done}/{total}" count.
+  // MEH-2433: offer and the declared tags (MEH-2729: one `tags` card, was
+  // dietaryScope + grassFed) are deliberately NOT members — all are opt-in,
+  // and the orderWindow note below says why opt-in fields stay out of the
+  // "{done}/{total}" count.
   products: ["products", "pricing"],
   trust: ["license", "kashrut"],
   // MEH-1544: `orderWindow` is deliberately NOT a member. Membership drives the
@@ -229,6 +233,7 @@ function EditPageInner() {
   const t = useTranslations("dashboard.producer");
   // MEH-1116: accordion titles + one-line status summaries.
   const tAcc = useTranslations("dashboard.producer.edit_accordion");
+  const reservistBadge = useBadgeCopy()(BADGE_CONFIG.reservist_owned);
   // MEH-2155: the public renderer's namespace — the accordion summary resolves
   // the live question list, and must feed the resolver the same label strings
   // WhatsAppQuestionChips does (lib/resolvedQuestions.js explains why).
@@ -678,15 +683,12 @@ function EditPageInner() {
     // MEH-2475 (review #3728): the organizer's city card reports dirty state;
     // without a name the banner would flag unsaved work without saying where.
     organizerCity: t("organizer_city.heading"),
-    // MEH-2433: both cards already reported dirty state, but had no name here,
-    // so the banner flagged unsaved work without saying where. Now that each
-    // is its own card with its own anchor, the jump link has somewhere to go.
-    dietaryScope: t("dietaryScope.heading"),
-    grassFed: t("grassFed.heading"),
+    // MEH-2729: dietary scope + grass-fed are one «תגים» card now.
+    tags: t("tags.heading"),
   };
   // Stable order (matches the accordion render order below), filtered to dirty.
   const DIRTY_ORDER = [
-    "images", "categories", "license", "bio", "products", "contact", "pricing", "dietaryScope", "grassFed", "delivery", "orderWindow", "specialHours", "questions", "organizerCity",
+    "images", "categories", "license", "bio", "products", "contact", "pricing", "tags", "delivery", "orderWindow", "specialHours", "questions", "organizerCity",
   ];
   const dirtyKeys = DIRTY_ORDER.filter((k) => dirtyMap[k]);
 
@@ -699,7 +701,7 @@ function EditPageInner() {
       type="button"
       onClick={backToHub}
       data-testid="hub-back"
-      className="inline-flex items-center gap-1.5 min-h-[44px] text-sm font-medium text-primary hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 rounded"
+      className="inline-flex items-center gap-1.5 min-h-touch text-sm font-medium text-primary hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 rounded"
     >
       <CaretLeft size={16} aria-hidden="true" className="rtl:rotate-180" />
       {tAcc("hub_back")}
@@ -716,7 +718,10 @@ function EditPageInner() {
           a generic message, so the owner knows exactly what's unsaved + where. */}
       {anyDirty && (
         <div
-          className="sticky top-12 z-10 bg-white border border-primary rounded-[10px] px-4 py-2 text-sm text-text flex flex-wrap items-center gap-x-2 gap-y-1 shadow-sm"
+          // MEH-2728: under the header AND the tab bar (DashboardLayoutClient.jsx
+          // now sticks the tabs at --chrome-top; ~53px stacked below sm, ~45px
+          // inline from sm). top-12 sat under the header, out of sight.
+          className="sticky top-[calc(var(--chrome-top,82px)+3.5rem)] sm:top-[calc(var(--chrome-top,82px)+3rem)] z-10 bg-surface border border-primary rounded-md px-4 py-2 text-sm text-text flex flex-wrap items-center gap-x-2 gap-y-1 shadow-sm"
           role="status"
           data-testid="unsaved-banner"
         >
@@ -849,19 +854,37 @@ function EditPageInner() {
         <EditAccordionCard
           anchorId="owner-story"
           title={t("owner_story.heading")}
-          summary={
+          summary={[
             (profile.owner_bio || "").trim() || profile.owner_photo_url
               ? tAcc("owner_present")
-              : tAcc("owner_missing")
-          }
+              : tAcc("owner_missing"),
+            // MEH-2699: the closed card says when the reservist claim is on —
+            // the badge's own label, no new copy.
+            profile.reservist_owned ? reservistBadge.label : null,
+          ]
+            .filter(Boolean)
+            .join(" · ")}
           open={openKey === "ownerStory"}
           onToggle={() => toggleKey("ownerStory")}
         >
-          <OwnerStoryCard
-            profile={profile}
-            onSave={(patch) => setProfile((p) => (p ? { ...p, ...patch } : p))}
-            reportDirty={reportDirty}
-          />
+          <div className="space-y-4">
+            <OwnerStoryCard
+              profile={profile}
+              onSave={(patch) => setProfile((p) => (p ? { ...p, ...patch } : p))}
+              reportDirty={reportDirty}
+            />
+            {/* MEH-2699 «עסק של מילואימניקים» — a claim about the OWNERS, so it
+                lives inside «מאחורי העסק» as one switch that saves on toggle
+                (Google/Yelp: one row in an identity group, never its own card).
+                The #reservist-owned deep link still lands here — see
+                lib/dashboard-edit-anchors.js. */}
+            <div id="reservist-owned" className="scroll-mt-24">
+              <ReservistOwnedCard
+                profile={profile}
+                onSave={(patch) => setProfile((p) => (p ? { ...p, ...patch } : p))}
+              />
+            </div>
+          </div>
         </EditAccordionCard>
 
         {/* MEH-2063: business-name editor moved LAST in the group — renaming
@@ -884,8 +907,8 @@ function EditPageInner() {
         </EditAccordionCard>
       </div>
 
-      {/* ===== GROUP: products (MEH-2433) — products, pricing, offer, dietary
-              scope, grass-fed. Split out of the profile group: the products
+      {/* ===== GROUP: products (MEH-2433) — products, pricing, offer, tags
+              (MEH-2729: dietary scope + grass-fed in one card). Split out of the profile group: the products
               card is the most edited and a submit requirement, and it sat
               fourth inside «הפרופיל שלך». ===== */}
       <div
@@ -974,44 +997,45 @@ function EditPageInner() {
           />
         </EditAccordionCard>
 
-        {/* ②d MEH-1508 ch2 Phase B — business-level dietary scope (own-catalog
-            vegan/vegetarian + gluten facility); writes producer scope fields
-            via PUT /producers/me (onSave merges). MEH-2433: was a sub-section
-            of the trust card; it is the owner's own claim about her catalog,
-            not a certificate, so it now sits with the products as its own
-            card (one card, one save button). No summary line: none existed
-            for it, and inventing one would be new copy. */}
+        {/* MEH-2729 — ONE «תגים» card for what the business declares about
+            itself: «תזונה» (MEH-1508 — whole-catalog vegan / vegetarian +
+            gluten facility) and «גידול במרעה» (MEH-1851 row 23) as
+            sub-sections, one save. Sapir (6/11): one card per tag made the
+            products group grow with every new tag. A future declared tag is a
+            sub-section inside TagsCard, not a new card here (Google Business
+            Profile attribute groups / Airbnb amenity categories). Kashrut stays
+            in the trust group (a certificate we check); the reservist switch
+            stays in the owner story. */}
         <EditAccordionCard
-          anchorId="dietary-scope"
-          title={t("dietaryScope.heading")}
-          open={openKey === "dietaryScope"}
-          onToggle={() => toggleKey("dietaryScope")}
+          anchorId="tags"
+          title={t("tags.heading")}
+          summary={t("tags.summary", { count: activeTagCount(profile) })}
+          open={openKey === "tags"}
+          onToggle={() => toggleKey("tags")}
         >
-          <DietaryScopeCard
+          <TagsCard
             profile={profile}
             onSave={(patch) => setProfile((p) => (p ? { ...p, ...patch } : p))}
             reportDirty={reportDirty}
           />
         </EditAccordionCard>
 
-        {/* ②e MEH-1851 row 23 — owner-declared grass_fed: a business-level
-            property the owner asserts and nobody verifies (labels.md records
-            its evidence as `self-declared`). Kept OUT of DietaryScopeCard: that
-            card asks what the catalog CONTAINS, and how livestock was raised is
-            not a dietary scope. MEH-2433: moved out of the trust card for the
-            same reason as dietary scope above. */}
-        <EditAccordionCard
-          anchorId="grass-fed"
-          title={t("grassFed.heading")}
-          open={openKey === "grassFed"}
-          onToggle={() => toggleKey("grassFed")}
+        {/* MEH-2695 — a business that needs a tag we don't offer writes to us
+            through the existing contact page (same target as
+            DashboardFooter.jsx:50). No request form before launch, on purpose:
+            tags stay an editorial call. Copy approved word-for-word 05/11. */}
+        <p
+          data-testid="badge-request-line"
+          className="text-sm text-fg-muted px-1"
         >
-          <GrassFedCard
-            profile={profile}
-            onSave={(patch) => setProfile((p) => (p ? { ...p, ...patch } : p))}
-            reportDirty={reportDirty}
-          />
-        </EditAccordionCard>
+          {t("badge_request.prompt")}{" "}
+          <Link
+            href="/contact?topic=business"
+            className="inline-flex items-center min-h-touch font-medium text-primary underline underline-offset-2"
+          >
+            {t("badge_request.link")}
+          </Link>
+        </p>
       </div>
 
       {/* ===== GROUP: location — locations, delivery, order window, special
@@ -1067,6 +1091,11 @@ function EditPageInner() {
             profile={profile}
             onSave={(patch) => setProfile((p) => (p ? { ...p, ...patch } : p))}
             reportDirty={reportDirty}
+          />
+          {/* MEH-1676: the owner's switch for the public «לא מגיעים אליך?» CTA. */}
+          <CoverageCtaToggle
+            producer={profile}
+            onSaved={(patch) => setProfile((p) => (p ? { ...p, ...patch } : p))}
           />
         </EditAccordionCard>
 
@@ -1406,7 +1435,7 @@ function CustomQuestionsCard({
         anchor="section-contact"
         testId="view-on-page-questions"
       />
-      <div className="mb-4 rounded-[10px] border border-border bg-background-alt px-3 py-2.5">
+      <div className="mb-4 rounded-md border border-border bg-background-alt px-3 py-2.5">
         <p className="text-sm font-medium text-text mb-1">{t("live_heading")}</p>
         <p className="text-xs text-fg-muted mb-2">{t("live_hint")}</p>
         <LiveQuestionsPreview items={live.items} t={t} />
@@ -1450,14 +1479,14 @@ function CustomQuestionsCard({
           />
         ))}
       </div>
-      <button
+      <Button
         onClick={handleSave}
         disabled={saving || nothingToSave}
         data-testid="questions-save"
-        className="mt-4 bg-primary text-white px-4 py-2 rounded-[10px] text-sm font-medium hover:bg-primary-dark transition disabled:opacity-60"
+        variant="primary" size="sm" className="mt-4"
       >
         {saving ? t("saving") : saved ? t("saved") : t("save_cta")}
-      </button>
+      </Button>
     </div>
   );
 }
@@ -1602,8 +1631,11 @@ function ContactChannelsCard({
           placeholder={t("website_placeholder")}
           onChange={(e) => upd("website", e.target.value)} error={fieldError("website")} />
         {/* MEH-1242 PR3: WhatsApp group link — not a primary method, so no
-            empty-primary guard applies (fieldError never targets it). */}
+            empty-primary guard applies (fieldError never targets it).
+            MEH-2626: now the WhatsApp UPDATES link (group or channel); the
+            helper recommends a channel and the placeholder shows its shape. */}
         <Input type="url" dir="ltr" label={t("field_whatsapp_group")} value={form.whatsapp_group}
+          helperText={t("whatsapp_group_helper")}
           placeholder={t("whatsapp_group_placeholder")}
           onChange={(e) => upd("whatsapp_group", e.target.value)} />
         <Input type="email" inputMode="email" dir="ltr" label={t("field_email")} value={form.contact_email}
@@ -1660,19 +1692,19 @@ function ContactChannelsCard({
       </fieldset>
 
       {errorMsg && (
-        <p className="mt-3 flex items-center gap-1.5 text-xs text-red-600" role="alert">
+        <p className="mt-3 flex items-center gap-1.5 text-xs text-danger-600" role="alert">
           <Warning size={16} weight="fill" aria-hidden="true" className="shrink-0" />
           {errorMsg}
         </p>
       )}
 
-      <button
+      <Button
         onClick={handleSave}
         disabled={saving || !dirty}
-        className="mt-4 bg-primary text-white px-4 py-2 rounded-[10px] text-sm font-medium hover:bg-primary-dark transition disabled:opacity-60"
+        variant="primary" size="sm" className="mt-4"
       >
         {saving ? t("saving") : saved ? t("saved") : t("save_cta")}
-      </button>
+      </Button>
     </div>
   );
 }

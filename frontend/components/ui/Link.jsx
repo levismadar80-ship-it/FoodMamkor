@@ -1,4 +1,4 @@
-import NextLink from "next/link";
+import { Link as NextLink } from "@/i18n/navigation";
 
 /**
  * Link — styled Next.js link primitive (MEH-602).
@@ -23,9 +23,9 @@ import NextLink from "next/link";
  * <Link href="/map" variant="nav" active>מפה</Link>
  */
 const VARIANT_CLASSES = {
-  default: "text-primary hover:text-primary-dark underline-offset-2 hover:underline",
+  default: "text-primary hover:text-primary-dark underline decoration-[1.5px] underline-offset-[5px] decoration-primary/35 hover:decoration-current",
   muted: "text-fg-muted hover:text-text",
-  accent: "text-accent hover:text-accent underline-offset-2 hover:underline",
+  accent: "text-accent hover:text-accent underline decoration-[1.5px] underline-offset-[5px] decoration-accent/35 hover:decoration-current",
   nav: "text-text hover:text-primary font-medium",
 };
 

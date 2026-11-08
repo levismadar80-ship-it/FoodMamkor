@@ -1,6 +1,5 @@
 "use client";
 
-import { Leaf } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import StatusPage from "@/components/StatusPage";
 
@@ -11,7 +10,7 @@ export default function NotFound() {
   const t = useTranslations("errors.not_found");
   return (
     <StatusPage
-      icon={Leaf}
+      icon="seed"
       eyebrow="404"
       title={t("heading")}
       body={t("message")}

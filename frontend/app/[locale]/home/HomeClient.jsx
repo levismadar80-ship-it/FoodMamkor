@@ -11,6 +11,7 @@ import { UpcomingEventsPreview } from "@/app/[locale]/home/UpcomingEventsPreview
 import {
   HomeFeaturedProducer,
   HomeRecentlyViewed,
+  HomeFavoritesStrip,
   HomeCTA,
 } from "@/app/[locale]/home/HomeStaticBlocks";
 import { HomeHero } from "@/app/[locale]/home/HomeHero";
@@ -19,12 +20,14 @@ import { HomeProducersGrid } from "@/app/[locale]/home/HomeProducersGrid";
 import HomeSeasonalNow from "@/app/[locale]/home/HomeSeasonalNow";
 import { useTranslations } from "next-intl";
 import { useHomePage } from "@/lib/use-home-page";
+import { useFavoriteProducers } from "@/lib/use-favorite-producers";
 
 // MEH-538 + MEH-604: lazy-load Leaflet + the mini-map preview. SSR-disabled
 // because Leaflet touches `window`. MEH-604 added the `loading` skeleton so
 // the above-the-fold slot reserves height on first paint (CLS = 0) before JS
 // hydrates. The skeleton lives in a SEPARATE file (Leaflet-free) so it can
 // be imported synchronously without dragging Leaflet into SSR.
+import RescueHomeModule from "@/components/rescue/RescueHomeModule";
 import HomepageMiniMapSkeleton from "@/components/HomepageMiniMapSkeleton";
 const HomepageMiniMap = dynamic(() => import("@/components/HomepageMiniMap"), {
   ssr: false,
@@ -48,6 +51,10 @@ const HomepageMiniMap = dynamic(() => import("@/components/HomepageMiniMap"), {
  * JSON-LD block moved. page.js is now a Server Component that fetches the
  * first-paint feed and renders this with `initialData`.
  */
+// MEH-2804 follow-up: the count line and its loading placeholder share one
+// class string, min-height included, so the two cannot drift apart (MEH-1686).
+export const TRUST_COUNT_LINE = "mt-1 min-h-7 px-4 font-body-sm text-sm text-fg-muted";
+
 export default function HomeClient({
   initialProducers = null,
   initialCategories = null,
@@ -64,7 +71,7 @@ export default function HomeClient({
     recentlyViewed, showNewUserHint, locationModalOpen, setLocationModalOpen,
     fridayMode, userCity,
     visibleProducers, hasMore, categoryCards,
-    statsProducersCount, statsCategoriesCount, statsLoaded, showStatsCounter, showTrustCount,
+    statsProducersCount, statsLoaded, showTrustCount,
     featuredProducer, geoActive, cityActive, daysActive, geoEmptyNotice,
     handleNearMe, handleSurprise, handleDeliveryCta, handleDaySelected, handleClearDays, handleCitySelected, handleClearLocation,
     // MEH-1684: `scrollToProducers` is no longer destructured here — the hero's
@@ -80,6 +87,8 @@ export default function HomeClient({
     filterSheetOpen, closeFilterSheet, toggleFilterSheet,
     handleClearCategory, handleLoadMore,
   } = useHomePage({ initialProducers, initialCategories });
+  // MEH-2724: signed-in user's favorites → «המועדפים שלך» strip under the hero.
+  const favoriteProducers = useFavoriteProducers();
 
   // MEH-879: banner single-slot — at most ONE of {FridayStrip, HolidayBanner,
   // LocationBanner} renders. Precedence Friday > Holiday > Location. Each
@@ -98,12 +107,12 @@ export default function HomeClient({
         userCity={userCity}
       />
 
-      {/* MEH-538 + MEH-604: mini-map preview sits IMMEDIATELY after the hero
-          (section #2) so the country-shape of producer distribution is
-          visible within ~2s of FCP. Skeleton above (dynamic({ loading }))
-          reserves height on first paint; Leaflet bundle eval is deferred
-          200ms post-FCP via setTimeout + rIC inside the component. */}
-      <HomepageMiniMap />
+      {/* MEH-2724 (Sapir 6/11, option ב׳ of the Wolt-style research): the
+          signed-in user's saved businesses, first thing after the hero. A
+          separate row — the businesses grid below keeps one order for
+          everyone. Self-hides when signed out or with 0 favorites. Outside
+          the mobile-reorder wrapper, so it stays at the top on phones too. */}
+      <HomeFavoritesStrip items={favoriteProducers.items} reserve={favoriteProducers.reserve} />
 
       {/* MEH-50: שוק שישי strip — shown Thu 18:00 → Fri 14:00 only.
           MEH-879: highest banner precedence — reports visibility so Holiday +
@@ -113,7 +122,11 @@ export default function HomeClient({
       )}
 
       {/* =========================
-          TRUST STRIP — MEH-879 re-anchor (over MEH-524 lock / MEH-521
+          TRUST STRIP — HISTORY. The current band is described in the next
+          comment; the bullets below record the designs it replaced and why.
+          Still in force: the MEH-1692 rule (the count
+          is never stated twice), the MEH-521 threshold, and MEH-1686 (last
+          paragraph). MEH-879 re-anchor (over MEH-524 lock / MEH-521
           threshold / MEH-607 F10 skeleton):
           - The LEAD reads at ANY catalog depth, not just >= 5.
           - MEH-1692 replaced the leading verification phrase. It was a
@@ -142,57 +155,67 @@ export default function HomeClient({
           the border-border token on the live page at 375 + 1440), so there
           was nothing to add and a second rule was NOT introduced.
           ========================= */}
-      {!statsLoaded && (
-        <section className="bg-background border-y border-border py-8 text-center" aria-busy="true" data-testid="home-trust-band">
-          <p className="font-body-md text-base opacity-60">
-            <span className="inline-block w-48 h-5 align-middle rounded-lg bg-text/10 animate-pulse" />
+      {/* MEH-2804 follow-up (07/11, Sapir): the band is the SENTENCE, always —
+          «בלי מתווך באמצע · איסוף עצמי או משלוח…» answers "who am I buying from
+          and how does it reach me", which holds at any catalog depth. The #4143
+          fact row (31 · 18 · 0₪) was rejected on the phone and is recorded in
+          ADR-039 as a considered alternative.
+          - The sentence needs no /stats, so it renders from the first paint.
+          - From TRUST_COUNT_THRESHOLD (25, showTrustCount) a quiet second line
+            adds the business count. Below it there is no number at all
+            (MEH-521: a small count is negative social proof), and the count is
+            stated once (MEH-1692).
+          - MEH-1686: while /stats is in flight the second line's slot is held by
+            a placeholder of the SAME min-height, so the common (25+) case loads
+            without a shift. Below 25 the slot collapses once — the known cost.
+          - The numeral is set in the line's own face, semibold, brand green,
+            LTR-isolated (Sapir 07/11): Cormorant's old-style italic figures read
+            as «ɜı» next to Hebrew, which has no lowercase for them to match.
+          - `text-balance` on the sentence: at 375 it wrapped with «העסק» alone
+            on the last line (VRT, 07/11) — same rule DESIGN.md sets for h1–h3. */}
+      <section
+        className="bg-background border-y border-border py-8 text-center"
+        aria-busy={statsLoaded ? undefined : "true"}
+        data-testid="home-trust-band"
+      >
+        <p className="px-4 font-body-md text-base text-text text-balance" data-testid="trust-lead">
+          {t("home.trust.lead")}
+        </p>
+        {!statsLoaded && (
+          <p className={TRUST_COUNT_LINE} data-testid="trust-count-skeleton">
+            <span className="inline-block w-40 h-5 align-middle rounded-lg bg-text/10 animate-pulse" />
           </p>
-        </section>
-      )}
-      {statsLoaded && (
-        <section className="bg-background border-y border-border py-8 text-center" data-testid="home-trust-band">
-          <p className="font-body-md text-base text-text" data-testid="trust-lead">
-            {showTrustCount
-              ? t.rich("home.trust.lead_count", {
-                  count: statsProducersCount,
-                  num: (chunks) => (
-                    <span dir="ltr" className="font-english italic font-semibold text-lg text-accent tabular-nums align-middle">
-                      {chunks}
-                    </span>
-                  ),
-                })
-              : t("home.trust.lead")}
+        )}
+        {statsLoaded && showTrustCount && (
+          <p className={TRUST_COUNT_LINE} data-testid="trust-count">
+            {t.rich("home.trust.count_line", {
+              count: statsProducersCount,
+              num: (chunks) => (
+                <span
+                  dir="ltr"
+                  className="font-semibold text-primary"
+                  data-testid="trust-count-value"
+                >
+                  {chunks}
+                </span>
+              ),
+            })}
           </p>
-          {showStatsCounter && (
-            <p className="font-body-sm text-sm text-fg-muted mt-1" data-testid="trust-secondary">
-              {/* MEH-1692: the business count is suppressed here once the LEAD
-                  above carries it, so the number is stated once in the band and
-                  not twice. Below the trust threshold the lead is a sentence and
-                  this line remains the only place the count appears. */}
-              {!showTrustCount && (
-                <>
-                  <span dir="ltr" className="font-english italic font-semibold text-lg text-accent tabular-nums align-middle">
-                    {statsProducersCount}
-                  </span>{" "}
-                  {t("home.stats.businesses")}
-                  &nbsp;·&nbsp;
-                </>
-              )}
-              <span dir="ltr" className="font-english italic font-semibold text-lg text-accent tabular-nums align-middle">
-                {statsCategoriesCount}
-              </span>{" "}
-              {t("home.stats.categories")}
-              &nbsp;·&nbsp;
-              {t("home.stats.countrywide")}
-            </p>
-          )}
-        </section>
-      )}
+        )}
+      </section>
 
       {/* MEH-41: location banner — appears after 3s if no city saved.
           MEH-879: lowest banner precedence — suppressed when Friday or Holiday
           is showing. */}
-      <div className="mt-6">
+      {/* MEH-2635: `empty:hidden`. In block flow an empty wrapper's margin
+          collapsed away; inside the mobile flex column above it paints as a
+          real 24px gap even when the banner renders null (measured: this slot
+          plus the holiday one below added 40px of blank page at 375px).
+          Same idiom as ProducersClient.jsx's day-panel host, scoped to
+          `max-md` so desktop keeps its exact pre-ticket spacing. MEH-2747
+          removed that flex column; the class stays so phone spacing does not
+          move in the same PR (block flow, measured in qa-artifacts/MEH-2747). */}
+      <div className="mt-6 max-md:empty:hidden">
         <LocationBanner
           hasCity={!!userCity}
           onOpenModal={() => setLocationModalOpen(true)}
@@ -210,7 +233,8 @@ export default function HomeClient({
       {/* MEH-55: holiday banner — visible 7 days before and during a holiday.
           MEH-879: 2nd banner precedence — reports visibility (so Location
           yields) and is suppressed when the Friday strip is showing. */}
-      <div className="mt-4">
+      {/* MEH-2635: `empty:hidden` — see the location banner slot above. */}
+      <div className="mt-4 max-md:empty:hidden">
         <HolidayBanner
           suppressed={fridayMode && fridayVisible}
           onVisibilityChange={setHolidayVisible}
@@ -231,7 +255,6 @@ export default function HomeClient({
         chips={chips}
         categories={categories}
         showNewUserHint={showNewUserHint}
-        fridayMode={fridayMode}
         onRemoveChip={handleRemoveChip}
         onToggleChip={handleToggleChip}
         onClearChips={handleClearChips}
@@ -251,6 +274,26 @@ export default function HomeClient({
         geoEmptyNotice={geoEmptyNotice}
         regionFallback={regionFallback}
       />
+
+      {/* MEH-2648: rescue-bags module, AFTER the businesses grid (Sapir 5/11:
+          «אחרי בתי העסק» — the directory leads, a one-town pilot does not
+          take the slot under the hero). Renders null while the pilot is off,
+          with no town, or when the town has no bags today. Before the
+          mini-map on every viewport (MEH-2747). */}
+      <RescueHomeModule city={userCity} />
+
+      {/* MEH-2747 (Sapir 6/11: one order on phone and desktop): the mini-map
+          comes AFTER the businesses grid on every viewport, by DOM position.
+          MEH-2635 got the same picture on phones with a flex wrapper +
+          `order-last`, which moved the map only visually — VoiceOver and the
+          keyboard still reached it before the businesses (WCAG 1.3.2 / 2.4.3),
+          and desktop kept a different order. Never reorder sections with CSS:
+          __tests__/VisualOrderGuard.test.js fails on a new `order-*` /
+          `*-reverse` outside its reasoned allowlist. The MEH-538/604 "map right
+          under the hero" placement is retired by this ticket on both viewports.
+          The skeleton (dynamic({ loading })) still reserves height on first
+          paint; Leaflet bundle eval is still deferred post-FCP. */}
+      <HomepageMiniMap />
 
       {/* =========================
           MEET A PRODUCER (P5 §10 · MEH-542) — fed by the first is_recommended

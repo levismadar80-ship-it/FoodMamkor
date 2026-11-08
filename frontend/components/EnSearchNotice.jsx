@@ -61,7 +61,7 @@ export default function EnSearchNotice({ className = "" }) {
       // default in and letting callers "override" it would put two Tailwind
       // colour classes in one attribute, where the winner is decided by
       // stylesheet order rather than by the caller — a coin flip, not an override.
-      className={`flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-center text-[13px] ${className}`}
+      className={`flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-center text-sm ${className}`}
     >
       <span>{t("body")}</span>
       {/* The CTA REUSES LanguageToggle rather than calling router.replace

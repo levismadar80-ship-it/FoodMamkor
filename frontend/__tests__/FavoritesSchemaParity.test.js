@@ -14,10 +14,10 @@
  *   Side B — the one only measurement finds. Importing `ProducerSchema` is
  *   NOT sufficient. It is badge-complete, not a `ProducerListOut` mirror: it
  *   declares the 14 fields `badges.js::earnsBadge` reads and nothing more. A
- *   plain `z.object` parse therefore strips nine OTHER fields `ProducerCard`
+ *   plain `z.object` parse therefore strips seven OTHER fields `ProducerCard`
  *   renders — `trust_tier`, `favorites_count`, `short_description`,
- *   `top_product_name`, `availability_state`, `availability_status`,
- *   `is_available_today`, `has_physical_location`, `offers_delivery` — every
+ *   `top_product_name`, `availability_state`, `has_physical_location`,
+ *   `offers_delivery` (nine until MEH-2272 dropped the legacy pair) — every
  *   one of which `ProducerListOut` does serialize
  *   (`backend/app/schemas/schemas.py:1649-1738`). `/favorites` renders raw,
  *   unvalidated data today, so a stripping parse would REGRESS the page it is
@@ -41,7 +41,7 @@ import { FavoriteSchema } from "@/lib/api-schemas";
 import { allBadges } from "@/lib/badges";
 
 // A producer earning well past the 6-badge floor, carrying BOTH the badge
-// inputs and the nine card fields ProducerSchema does not declare. Shapes
+// inputs and the seven card fields ProducerSchema does not declare. Shapes
 // mirror ProducerListOut (schemas.py:1645+).
 const RICH_PRODUCER = {
   id: "11111111-1111-1111-1111-111111111111",
@@ -63,13 +63,11 @@ const RICH_PRODUCER = {
   short_description: "גבינות עיזים מהחווה",
   top_product_name: "לבנה בשמן זית",
   availability_state: "available_today",
-  availability_status: "available",
-  is_available_today: true,
   has_physical_location: false,
   offers_delivery: true,
 };
 
-// The nine ProducerListOut fields ProducerCard/TrustBadge read that
+// The seven ProducerListOut fields ProducerCard/TrustBadge read that
 // ProducerSchema does not declare. Each is asserted individually so a
 // failure message names the field that went missing.
 const UNDECLARED_CARD_FIELDS = [
@@ -78,8 +76,6 @@ const UNDECLARED_CARD_FIELDS = [
   "short_description",
   "top_product_name",
   "availability_state",
-  "availability_status",
-  "is_available_today",
   "has_physical_location",
   "offers_delivery",
 ];

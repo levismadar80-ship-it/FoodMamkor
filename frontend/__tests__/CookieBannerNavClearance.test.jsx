@@ -84,21 +84,31 @@ describe("MEH-1950 — cookie banner offset derives from --bottom-nav-clearance"
     expect(cls).not.toMatch(/80px/);
   });
 
-  it("BottomNav publishes the measured clearance and removes it on unmount", () => {
-    // jsdom has no layout: feed the pill a real-shaped rect (390×844 viewport,
-    // pill top at 772 → clearance 72) and a viewport height to subtract from.
-    vi.spyOn(window, "innerHeight", "get").mockReturnValue(844);
-    vi.spyOn(Element.prototype, "getBoundingClientRect").mockReturnValue({
-      top: 772,
-      height: 56,
-      left: 14,
-      width: 362,
-      bottom: 828,
-      right: 376,
-      x: 14,
-      y: 772,
-      toJSON: () => ({}),
+  // MEH-2652: the clearance is the shell's own height (pill + safe-area + 16px
+  // gutter). The shell is the `.vv-pin` wrapper; the pill is the <nav> inside.
+  // Rects are fed per element so the two readings can disagree.
+  const mockRects = ({ shellHeight, pillTop }) =>
+    vi.spyOn(Element.prototype, "getBoundingClientRect").mockImplementation(function () {
+      const isShell = this.classList?.contains("vv-pin");
+      const height = isShell ? shellHeight : 56;
+      const top = pillTop;
+      return {
+        top,
+        height,
+        left: 14,
+        width: 362,
+        bottom: top + height,
+        right: 376,
+        x: 14,
+        y: top,
+        toJSON: () => ({}),
+      };
     });
+
+  it("BottomNav publishes the measured clearance and removes it on unmount", () => {
+    // 390×844 viewport, pill top at 772, shell 72px tall → clearance 72.
+    vi.spyOn(window, "innerHeight", "get").mockReturnValue(844);
+    mockRects({ shellHeight: 72, pillTop: 772 });
 
     const { unmount } = render(<BottomNav />);
     expect(
@@ -109,6 +119,20 @@ describe("MEH-1950 — cookie banner offset derives from --bottom-nav-clearance"
     expect(
       document.documentElement.style.getPropertyValue("--bottom-nav-clearance")
     ).toBe("");
+  });
+
+  it("MEH-2652: a pill that iOS left drifted mid-screen does not inflate the clearance", () => {
+    // iOS 26 Safari after the keyboard closes: the pill is laid out ~300px
+    // above the screen bottom (top 472 on an 844 viewport). The old reading,
+    // innerHeight - pill.top, published 372px and <body> reserved it as an
+    // empty band under the footer. The shell's height does not move.
+    vi.spyOn(window, "innerHeight", "get").mockReturnValue(844);
+    mockRects({ shellHeight: 72, pillTop: 472 });
+
+    render(<BottomNav />);
+    expect(
+      document.documentElement.style.getPropertyValue("--bottom-nav-clearance")
+    ).toBe("72px");
   });
 
   it("a zero-height pill (hidden) removes the var instead of publishing a lie", () => {

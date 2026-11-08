@@ -58,7 +58,11 @@ const SECTION_IDS = [
   "contact",
 ];
 
-const DATA_ITEMS = ["identity", "business", "technical", "location", "cookies", "ugc"];
+// MEH-2777: `registrations` is the on-site event / workshop sign-up
+// (RegistrationCta.jsx). It is the one collection point whose data leaves us
+// for a third party the visitor chose — the business hosting the date — so it
+// gets its own line rather than hiding inside `identity`.
+const DATA_ITEMS = ["identity", "business", "technical", "location", "cookies", "ugc", "registrations"];
 const WHY_ITEMS = ["service", "analytics", "notifications", "compliance"];
 // MEH-1058 (Amendment 13 disclosure duty): full live sub-processor list —
 // twilio was STALE (WhatsApp ships via Meta Cloud API, services/whatsapp.py);
@@ -209,7 +213,7 @@ export default async function PrivacyPage({ params }) {
             <section
               key={id}
               id={id}
-              className="bg-white rounded-[16px] p-7 border border-border shadow-[0_2px_12px_rgba(46,104,83,0.04)]"
+              className="bg-surface rounded-lg p-7 border border-border shadow-[0_2px_12px_rgba(46,104,83,0.04)]"
             >
               <h2 className="font-headline-md text-2xl font-bold text-text mb-3">
                 {t(`sections.${id === "third-parties" ? "third_parties" : id}.title`)}

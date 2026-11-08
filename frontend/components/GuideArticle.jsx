@@ -15,9 +15,11 @@
  *           frontend/tailwind.config.js:29-36 (font tokens).
  * History:  MEH-539 (creation, 2026-05-16) — Phase 2D of MEH-615.
  */
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { ArrowRight } from "@phosphor-icons/react/ssr";
+import { getTranslations } from "next-intl/server";
 import { BRAND_NAME } from "@/lib/constants";
+import SeedMark from "@/components/brand/SeedMark";
 
 // MEH-821: brand colors via canonical ADR-019 token classes (text-primary,
 // text-primary-dark, text-text, text-accent, bg-background, border-border) —
@@ -54,7 +56,7 @@ function renderBlock(block, i) {
       return (
         <h2
           key={key}
-          className="font-headline-md mt-10 mb-3 sm:mt-12 text-primary text-[22px] font-bold"
+          className="font-headline-md mt-10 mb-3 sm:mt-12 text-primary text-2xl font-bold"
         >
           {block.text}
         </h2>
@@ -63,7 +65,7 @@ function renderBlock(block, i) {
       return (
         <h3
           key={key}
-          className="font-headline-md mt-8 mb-2 text-primary-dark text-[18px] font-bold"
+          className="font-headline-md mt-8 mb-2 text-primary-dark text-lg font-bold"
         >
           {block.text}
         </h3>
@@ -72,7 +74,7 @@ function renderBlock(block, i) {
       return (
         <p
           key={key}
-          className="mb-4 text-[16px] sm:text-[17px] leading-[1.8] text-text/90"
+          className="mb-4 text-base sm:text-lg leading-[1.8] text-text/90"
         >
           <InlineBold text={block.text} idBase={key} />
         </p>
@@ -82,8 +84,8 @@ function renderBlock(block, i) {
       const Tag = block.type === "ul" ? "ul" : "ol";
       const listClass =
         block.type === "ul"
-          ? "list-disc ms-6 mb-4 space-y-2 text-[16px] sm:text-[17px] leading-[1.8]"
-          : "list-decimal ms-6 mb-4 space-y-2 text-[16px] sm:text-[17px] leading-[1.8]";
+          ? "list-disc ms-6 mb-4 space-y-2 text-base sm:text-lg leading-[1.8]"
+          : "list-decimal ms-6 mb-4 space-y-2 text-base sm:text-lg leading-[1.8]";
       return (
         <Tag key={key} className={`${listClass} text-text/90`}>
           {block.items.map((item, j) => (
@@ -98,20 +100,30 @@ function renderBlock(block, i) {
       return (
         <blockquote
           key={key}
-          className="border-s-4 border-primary ps-4 py-2.5 my-5 text-[16px] sm:text-[17px] leading-[1.8] italic text-text bg-primary/[0.04]"
+          className="border-s-4 border-primary ps-4 py-2.5 my-5 text-base sm:text-lg leading-[1.8] italic text-text bg-primary/[0.04]"
         >
           <InlineBold text={block.text} idBase={key} />
         </blockquote>
       );
     case "hr":
+      // MEH-2833 (seed layer, board 2): a section break between two parts of
+      // a guide is a small centred bloom instead of a hairline — the magazine
+      // dinkus. Decoration only (aria-hidden, as the card asks): a screen
+      // reader no longer hears a separator. The next part opens with an <h3>
+      // in business-story, and with a bold numbered paragraph in the other
+      // two guides. `[&+*]:mt-4` sets the next block's top margin to 16px
+      // (an <h3> has mt-8 of its own), so the mark sits midway: the prose
+      // above ends with mb-4, and py-7 adds 28px on each side.
       return (
-        <hr key={key} className="my-8 border-0 border-t border-border" />
+        <div key={key} aria-hidden="true" data-testid="seed-dinkus" className="flex justify-center py-7 [&+*]:mt-4">
+          <SeedMark size={28} />
+        </div>
       );
     case "callout":
       return (
         <p
           key={key}
-          className="mb-4 text-[16px] sm:text-[17px] leading-[1.8] italic text-primary-dark"
+          className="mb-4 text-base sm:text-lg leading-[1.8] italic text-primary-dark"
         >
           <InlineBold text={block.text} idBase={key} />
         </p>
@@ -121,25 +133,27 @@ function renderBlock(block, i) {
   }
 }
 
-export default function GuideArticle({
+export default async function GuideArticle({
   title,
   subtitle,
   readMinutes,
   blocks,
   backHref = "/about/for-businesses/guides",
 }) {
+  // MEH-2772: shell copy lives in messages (guides.article).
+  const t = await getTranslations("guides.article");
   return (
     <section className="min-h-screen bg-background text-text">
       <article className="max-w-3xl mx-auto px-4 sm:px-6 py-12 sm:py-16">
         <header className="mb-8 sm:mb-10">
           <p className="text-xs sm:text-sm mb-3 text-accent">
-            מדריך לבעלות עסק · קריאה כ-{readMinutes} דקות
+            {t("eyebrow", { minutes: readMinutes })}
           </p>
           <h1 className="font-headline-lg mb-3 text-primary-dark text-[clamp(28px,6vw,44px)] leading-[1.15] font-black">
             {title}
           </h1>
           {subtitle ? (
-            <p className="italic text-[17px] sm:text-[18px] leading-relaxed text-text/90">
+            <p className="italic text-lg sm:text-lg leading-relaxed text-text/90">
               {subtitle}
             </p>
           ) : null}
@@ -148,19 +162,19 @@ export default function GuideArticle({
         <div>{blocks.map(renderBlock)}</div>
 
         <footer className="mt-14 sm:mt-16 border-t border-border pt-8">
-          <p className="text-[15px] mb-2 font-headline-md text-text font-semibold">
-            ספיר שנפ
+          <p className="text-base mb-2 font-headline-md text-text font-semibold">
+            {t("founder_name")}
           </p>
-          <p className="text-[14px] mb-6 text-text/90">
-            מייסדת · {BRAND_NAME} · mehamakor.co.il
+          <p className="text-sm mb-6 text-text/90">
+            {t("founder_role", { brand: BRAND_NAME })} · mehamakor.co.il
           </p>
           <Link
             href={backHref}
-            className="inline-flex items-center gap-2 text-[15px] underline text-primary"
+            className="inline-flex items-center gap-2 text-base underline text-primary"
           >
             {/* MEH-990: raw ← dingbat → Phosphor ArrowRight; rtl:rotate-180 = back/reading-forward in he (MEH-938 pattern) */}
             <ArrowRight size={16} weight="bold" aria-hidden="true" className="rtl:rotate-180" />
-            חזרה למדריכים
+            {t("back")}
           </Link>
         </footer>
       </article>

@@ -17,6 +17,7 @@ import { useTranslations } from "next-intl";
 import CitySearch from "@/components/CitySearch";
 import api from "@/lib/api";
 import { showToast } from "@/lib/toast";
+import Button from "@/components/ui/Button";
 
 export default function OrganizerCityCard({ profile, onSave, reportDirty = () => {} }) {
   const t = useTranslations("dashboard.producer.organizer_city");
@@ -61,18 +62,18 @@ export default function OrganizerCityCard({ profile, onSave, reportDirty = () =>
       />
       <p className="text-xs text-fg-muted">{t("hint")}</p>
       {error && (
-        <p className="text-sm text-red-600" role="alert">
+        <p className="text-sm text-danger-600" role="alert">
           {error}
         </p>
       )}
-      <button
+      <Button
         type="button"
         onClick={save}
         disabled={!dirty || !trimmed || saving}
-        className="min-h-[44px] px-5 rounded-[10px] bg-primary text-white text-sm font-medium disabled:opacity-50 focus-ring"
+        variant="primary" size="sm"
       >
         {saving ? t("saving") : t("save")}
-      </button>
+      </Button>
     </div>
   );
 }

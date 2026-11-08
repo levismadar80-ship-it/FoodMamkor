@@ -10,6 +10,7 @@ import { useAdminAction } from "@/lib/use-admin-action";
 import AdminRowMenu from "@/components/admin/AdminRowMenu";
 import AdminLoadError from "@/components/admin/AdminLoadError";
 import { SkeletonTable } from "@/components/Skeleton";
+import Button from "@/components/ui/Button";
 
 const SUPER_ADMIN_EMAIL = "levismadar80@gmail.com";
 
@@ -143,24 +144,25 @@ export default function AdminUsersPage() {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && searchUsers()}
-          className="flex-1 border border-border rounded-[12px] px-3 py-2"
+          className="flex-1 border border-border rounded-md px-3 py-2"
         />
         <select
           value={role}
           onChange={(e) => setRole(e.target.value)}
-          className="border border-border rounded-[12px] px-3 py-2 bg-white"
+          aria-label={t("users.columns.role")}
+          className="border border-border rounded-md px-3 py-2 bg-surface"
         >
           <option value="all">{t("users.role_filter.all")}</option>
           <option value="consumer">{t("users.role_filter.consumer")}</option>
           <option value="producer">{t("users.role_filter.producer")}</option>
           <option value="admin">{t("users.role_filter.admin")}</option>
         </select>
-        <button onClick={searchUsers} className="bg-primary text-white px-4 py-2 rounded-[12px] text-sm">
+        <Button onClick={searchUsers} variant="primary" size="sm">
           {t("common.search")}
-        </button>
+        </Button>
       </div>
 
-      <div className="bg-white border border-border rounded-[12px] overflow-hidden">
+      <div className="bg-surface border border-border rounded-md overflow-hidden">
         <div className="overflow-x-auto">
           {/* MEH-2426: one card per row below md (globals.css .table-stack). */}
           <table className="table-stack w-full text-sm">
@@ -197,7 +199,7 @@ export default function AdminUsersPage() {
               )}
               {!loading && pagedUsers.map((u) => (
                 <>
-                  <tr key={u.id} className={`border-t ${u.is_blocked ? "bg-red-50" : ""}`}>
+                  <tr key={u.id} className={`border-t ${u.is_blocked ? "bg-danger-50" : ""}`}>
                     <td className="px-4 py-3 font-medium">{u.name}</td>
                     <td className="px-4 py-3 text-muted text-xs break-all" data-label={t("users.columns.email")}>{u.email}</td>
                     <td className="px-4 py-3 text-muted" data-label={t("users.columns.city")}>{u.city || "—"}</td>
@@ -207,15 +209,15 @@ export default function AdminUsersPage() {
                         {u.role === "admin" ? (
                           isSuperAdmin(u) ? (
                             <>
-                              <span className="text-xs px-2 py-0.5 rounded-full bg-[#EAF3DE] text-[#2e6853] font-medium">
+                              <span className="text-xs px-2 py-0.5 rounded-full bg-green-50 text-primary font-medium">
                                 {t("users.roles.admin")}
                               </span>
-                              <span className="text-xs px-2 py-0.5 rounded-full bg-[#FEF3C7] text-accent font-medium">
+                              <span className="text-xs px-2 py-0.5 rounded-full bg-warning-100 text-accent font-medium">
                                 {t("users.roles.admin_protected")}
                               </span>
                             </>
                           ) : (
-                            <span className="text-xs px-2 py-0.5 rounded-full bg-[#EAF3DE] text-[#2e6853] font-medium">
+                            <span className="text-xs px-2 py-0.5 rounded-full bg-green-50 text-primary font-medium">
                               {t("users.roles.admin")}
                             </span>
                           )
@@ -236,9 +238,9 @@ export default function AdminUsersPage() {
                       </div>
                     </td>
                     <td className="px-4 py-3 text-muted text-xs" data-label={t("users.columns.favorites")}>
-                      <button onClick={() => toggleExpand(u)} className="inline-flex items-center gap-1 hover:text-primary hover:underline">
+                      <button onClick={() => toggleExpand(u)} className="inline-flex items-center gap-1 hover:text-primary underline decoration-[1.5px] underline-offset-[5px] decoration-muted/35 hover:decoration-current">
                         {u.favorites_count}
-                        <Heart size={14} weight="fill" className="text-red-500" aria-hidden="true" />
+                        <Heart size={14} weight="fill" className="text-danger-500" aria-hidden="true" />
                       </button>
                     </td>
                     <td className="px-4 py-3 text-muted text-xs" data-label={t("users.columns.joined")}>
@@ -252,8 +254,8 @@ export default function AdminUsersPage() {
                           disabled={isBusy(`block:${u.id}`)}
                           className={`text-xs px-2 py-1 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed ${
                             u.is_blocked
-                              ? "bg-red-100 text-red-700"
-                              : "text-muted hover:text-red-600"
+                              ? "bg-danger-100 text-danger-700"
+                              : "text-muted hover:text-danger-600"
                           }`}
                         >
                           {u.is_blocked ? t("users.actions.unblock") : t("users.actions.block")}
@@ -302,7 +304,7 @@ export default function AdminUsersPage() {
                           <ul className="space-y-1">
                             {favorites[u.id].map((f) => (
                               <li key={f.producer_id} className="inline-flex items-center gap-1">
-                                <Heart size={12} weight="fill" className="text-red-500" aria-hidden="true" />
+                                <Heart size={12} weight="fill" className="text-danger-500" aria-hidden="true" />
                                 {f.producer_name}
                               </li>
                             ))}
@@ -327,7 +329,7 @@ export default function AdminUsersPage() {
             <select
               value={pageSize}
               onChange={(e) => changePageSize(Number(e.target.value))}
-              className="border border-border rounded-[12px] px-2 py-1 bg-white"
+              className="border border-border rounded-md px-2 py-1 bg-surface"
             >
               <option value={25}>25</option>
               <option value={50}>50</option>
@@ -338,7 +340,7 @@ export default function AdminUsersPage() {
             <button
               onClick={() => setPage(currentPage - 1)}
               disabled={currentPage === 1}
-              className="px-3 py-1.5 rounded-[12px] border border-border disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-50 transition"
+              className="px-3 py-1.5 rounded-md border border-border disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-50 transition"
             >
               {t("users.pagination.prev")}
             </button>
@@ -348,7 +350,7 @@ export default function AdminUsersPage() {
             <button
               onClick={() => setPage(currentPage + 1)}
               disabled={currentPage === totalPages}
-              className="px-3 py-1.5 rounded-[12px] border border-border disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-50 transition"
+              className="px-3 py-1.5 rounded-md border border-border disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-50 transition"
             >
               {t("users.pagination.next")}
             </button>
@@ -371,7 +373,7 @@ export default function AdminUsersPage() {
             role="dialog"
             aria-modal="true"
             aria-labelledby="role-confirm-title"
-            className="bg-white rounded-[16px] shadow-xl p-6 max-w-sm w-full mx-4 text-start space-y-4"
+            className="bg-surface rounded-lg shadow-xl p-6 max-w-sm w-full mx-4 text-start space-y-4"
           >
             <p id="role-confirm-title" className="font-medium text-base">
               {confirm.action === "delete"
@@ -388,10 +390,10 @@ export default function AdminUsersPage() {
                     ? deleteUser(confirm.userId)
                     : applyRole(confirm.userId, confirm.action === "promote" ? "admin" : "consumer")
                 }
-                className={`px-4 py-2 rounded-[10px] text-sm font-medium text-white transition ${
+                className={`px-4 py-2 rounded-full text-sm font-medium text-white transition ${
                   confirm.action === "promote"
-                    ? "bg-[#2e6853] hover:bg-[#2E4A2E]"
-                    : "bg-red-600 hover:bg-red-700"
+                    ? "bg-primary hover:bg-primary-dark"
+                    : "bg-danger-600 hover:bg-danger-700"
                 } disabled:opacity-50`}
               >
                 {isBusy(confirmKey(confirm))
@@ -405,7 +407,7 @@ export default function AdminUsersPage() {
                   ambiguous dismissal (Escape), not on the deliberate one. */}
               <button
                 onClick={() => setConfirm(null)}
-                className="px-4 py-2 rounded-[10px] text-sm border border-border text-muted hover:bg-gray-50 transition"
+                className="px-4 py-2 rounded-full text-sm border border-border text-muted hover:bg-gray-50 transition"
               >
                 {t("common.cancel")}
               </button>

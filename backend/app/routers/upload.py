@@ -141,7 +141,7 @@ async def upload_image(
     except Exception as e:
         log.error("Cloudinary upload failed: %s", e)
         raise HTTPException(
-            status_code=500, detail="שגיאה בהעלאת התמונה — נסי שוב בעוד רגע"
+            status_code=500, detail="שגיאה בהעלאת התמונה — נסו שוב בעוד רגע"
         )
 
 
@@ -216,7 +216,7 @@ async def upload_avatar(
     except Exception as e:
         log.error("Cloudinary upload failed: %s", e)
         raise HTTPException(
-            status_code=500, detail="שגיאה בהעלאת התמונה — נסי שוב בעוד רגע"
+            status_code=500, detail="שגיאה בהעלאת התמונה — נסו שוב בעוד רגע"
         )
 
 
@@ -299,7 +299,7 @@ async def upload_owner_photo(
     except Exception as e:
         log.error("Cloudinary upload failed: %s", e)
         raise HTTPException(
-            status_code=500, detail="שגיאה בהעלאת התמונה — נסי שוב בעוד רגע"
+            status_code=500, detail="שגיאה בהעלאת התמונה — נסו שוב בעוד רגע"
         )
 
 
@@ -368,5 +368,5 @@ async def upload_kashrut_cert(
     except Exception as e:
         log.error("Cloudinary kashrut cert upload failed: %s", e)
         raise HTTPException(
-            status_code=500, detail="שגיאה בהעלאת התמונה — נסי שוב בעוד רגע"
+            status_code=500, detail="שגיאה בהעלאת התמונה — נסו שוב בעוד רגע"
         )

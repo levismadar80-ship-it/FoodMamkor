@@ -230,7 +230,7 @@ export default function AddressSearch({
           {label}
         </label>
       )}
-      <div className="flex items-center gap-2 bg-white border border-border rounded-[8px] px-3 py-2 min-w-0 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/30 transition">
+      <div className="flex items-center gap-2 bg-surface border border-border rounded-sm px-3 py-2 min-w-0 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/30 transition">
         <svg
           className="w-4 h-4 text-fg-muted shrink-0"
           fill="none"
@@ -300,7 +300,7 @@ export default function AddressSearch({
           // 1010 clears panes:400, controls:1000 and the attribution:1001, and stays
           // BELOW the global header (Header.jsx:321, z-[1050]) so the header still
           // wins — matching the ledger in .claude/rules/rtl.md.
-          className="absolute z-[1010] mt-1 w-full bg-white border border-border rounded-[8px] shadow-lg max-h-72 overflow-auto"
+          className="absolute z-[1010] mt-1 w-full bg-surface border border-border rounded-sm shadow-lg max-h-72 overflow-auto"
         >
           {suggestions.map((s, idx) => (
             <li

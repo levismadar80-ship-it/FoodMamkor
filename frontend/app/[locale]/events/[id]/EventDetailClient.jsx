@@ -1,5 +1,6 @@
 "use client";
 
+import SeedMark from "@/components/brand/SeedMark";
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import dynamic from "next/dynamic";
@@ -12,7 +13,6 @@ import {
   CalendarPlus,
   CaretLeft,
   Coins,
-  Leaf,
   MapPin,
   UsersThree,
 } from "@phosphor-icons/react";
@@ -28,11 +28,14 @@ import Breadcrumb from "@/components/Breadcrumb";
 import ShareButton from "@/components/ShareButton";
 import SaveButton from "@/components/SaveButton";
 import OwnerRow from "@/components/OwnerRow";
-import EventEntryRow, { CATEGORY_ICON } from "@/components/EventEntryRow";
+import EventEntryRow, { CATEGORY_ICON, PRICE_BASE } from "@/components/EventEntryRow";
 import { toEventEntry } from "@/lib/event-entry";
 import { eventWhen, addressNavLinks } from "@/lib/event-when";
 import { AddressNavLinks } from "@/components/NavAppGlyphs";
+import { EVENT_CATEGORIES } from "@/lib/event-categories";
 import { downloadIcs } from "@/lib/event-ics";
+import Button from "@/components/ui/Button";
+import RegistrationCta from "@/components/RegistrationCta";
 
 // MEH-1404: reuse the producer-detail static map + Waze/Gmaps block on events
 // that carry coords. ssr:false — leaflet touches window at module eval.
@@ -100,7 +103,7 @@ export default function EventDetailClient() {
             <span className="w-28 h-4 rounded bg-border/60 animate-pulse" />
             <span className="w-20 h-4 rounded bg-border/60 animate-pulse" />
           </div>
-          <span className="block w-full h-32 rounded-[16px] bg-border/60 animate-pulse" />
+          <span className="block w-full h-32 rounded-lg bg-border/60 animate-pulse" />
         </div>
       </div>
     );
@@ -110,7 +113,7 @@ export default function EventDetailClient() {
     return (
       <div className="max-w-3xl mx-auto px-4 py-16 text-center">
         <div className="mb-4 flex justify-center">
-          <Leaf size={56} className="text-primary" aria-hidden="true" />
+          <SeedMark size={76} />
         </div>
         <p className="text-fg-muted mb-6">{t("not_found")}</p>
         <Link href="/events" className="text-primary hover:underline">
@@ -154,22 +157,25 @@ export default function EventDetailClient() {
   const month = formatEventDate(event.event_date, locale, { month: "long" });
   const weekday = formatEventDate(event.event_date, locale, { weekday: "long" });
 
-  const ctaClass =
-    "flex items-center justify-center min-h-[48px] w-full bg-primary text-white px-6 rounded-[10px] font-semibold hover:bg-primary-dark transition focus-ring";
-  const cta = isPast ? null : event.registration_url ? (
-    <a href={event.registration_url} target="_blank" rel="noopener noreferrer" className={ctaClass}>
-      {t("register")}
-    </a>
-  ) : isOrganizerEvent ? null : (
-    // MEH-2461: «יצירת קשר עם בית העסק» names a business; an organizer is
-    // reached through the «מארגן:» link instead.
-    <Link href={`/producer/${event.producer_id}`} className={ctaClass}>
-      {t("contact_producer")}
-    </Link>
-  );
+  // MEH-2768: the CTA follows the owner's «איך נרשמים?» choice. The old
+  // «יצירת קשר עם בית העסק» fallback is gone — every event has a method now
+  // (site_form by default), and the on-site form carries «או שאלה למארחת».
+  const isFull = event.max_participants != null && event.spots_left === 0;
+  const cta =
+    isPast || event.is_active === false ? null : (
+      <RegistrationCta
+        kind="events"
+        itemId={event.id}
+        title={event.title}
+        method={event.registration_method}
+        phone={event.producer_phone}
+        url={event.registration_url}
+        isFull={isFull}
+      />
+    );
 
   const infoRow = "flex items-center gap-3 px-4 py-3";
-  const infoIcon = "shrink-0 w-9 h-9 rounded-[10px] bg-green-50 text-primary grid place-items-center";
+  const infoIcon = "shrink-0 w-9 h-9 rounded-md bg-green-50 text-primary grid place-items-center";
 
   return (
     <div className="pb-12" data-testid="event-detail">
@@ -181,13 +187,13 @@ export default function EventDetailClient() {
         {/* MEH-2559: the save heart on the cover's corner — the corner the recipe
             and business pages use. Not in the share/calendar row: a third
             button there wraps «הוספה ליומן» onto two lines below 375px. */}
-        <div className="absolute top-3 start-3 lg:top-9 lg:start-7 z-10" data-testid="event-cover-actions">
+        <div className="absolute top-3 end-3 lg:top-9 lg:end-7 z-10" data-testid="event-cover-actions">
           <SaveButton itemType="event" itemId={event.id} />
         </div>
         {event.image_url ? (
           <div
             data-testid="event-cover"
-            className="h-[210px] md:h-[300px] lg:h-[380px] bg-cover bg-center lg:rounded-[18px] bg-border"
+            className="h-[210px] md:h-[300px] lg:h-[380px] bg-cover bg-center lg:rounded-xl bg-border"
             style={{ backgroundImage: cssUrl(optimizeCloudinary(event.image_url, { aspectRatio: IMAGE_RATIOS.banner, width: 1280 })) }}
             role="img"
             aria-label={event.title}
@@ -196,7 +202,7 @@ export default function EventDetailClient() {
           <div
             data-testid="event-cover-band"
             aria-hidden="true"
-            className="h-[150px] lg:h-[200px] bg-primary lg:rounded-[18px] grid place-items-center"
+            className="h-[150px] lg:h-[200px] bg-primary lg:rounded-xl grid place-items-center"
           >
             <CatIcon size={54} weight="duotone" className="text-white/85" />
           </div>
@@ -204,11 +210,11 @@ export default function EventDetailClient() {
         <div
           aria-hidden="true"
           data-testid="event-date-tile"
-          className="lg:hidden absolute start-4 -bottom-7 w-16 rounded-[12px] bg-white shadow-lg text-center overflow-hidden"
+          className="lg:hidden absolute start-4 -bottom-7 w-16 rounded-md bg-surface shadow-lg text-center overflow-hidden"
         >
-          <span className="block bg-primary text-white text-[11px] font-bold py-0.5">{month}</span>
-          <span className="block font-headline-display font-black text-[28px] leading-tight pt-1 numeric">{day}</span>
-          <span className="block text-[10px] text-fg-muted pb-1.5">{weekday}</span>
+          <span className="block bg-primary text-white text-2xs font-bold py-0.5">{month}</span>
+          <span className="block font-headline-display font-black text-3xl leading-tight pt-1 numeric">{day}</span>
+          <span className="block text-2xs text-fg-muted pb-1.5">{weekday}</span>
         </div>
       </div>
 
@@ -222,12 +228,24 @@ export default function EventDetailClient() {
             ]}
             className="mb-3"
           />
-          {event.category && (
-            <span className="inline-flex items-center gap-1 bg-green-50 text-primary text-xs px-3 py-1 rounded-full mb-3">
+          {/* MEH-2675: a known category opens the events list filtered to it
+              (?category= deep link, EventsClient.jsx); a legacy value outside
+              EVENT_CATEGORIES would filter to nothing, so it stays plain. */}
+          {event.category && (EVENT_CATEGORIES.some((c) => c.key === event.category) ? (
+            <Link
+              href={`/events?category=${encodeURIComponent(event.category)}`}
+              data-testid="event-category"
+              className="inline-flex items-center gap-1 bg-green-50 text-primary text-xs px-3 py-1 rounded-full mb-3 hover:underline focus-visible:outline-2 focus-visible:outline-primary"
+            >
+              <CatIcon size={12} weight="bold" aria-hidden="true" />
+              {event.category}
+            </Link>
+          ) : (
+            <span data-testid="event-category" className="inline-flex items-center gap-1 bg-green-50 text-primary text-xs px-3 py-1 rounded-full mb-3">
               <CatIcon size={12} weight="bold" aria-hidden="true" />
               {event.category}
             </span>
-          )}
+          ))}
           <h1 className="font-headline-display text-4xl md:text-5xl font-black text-text mb-3">
             {event.title}
           </h1>
@@ -238,7 +256,7 @@ export default function EventDetailClient() {
               <Link
                 href={ownerHref}
                 data-testid="event-byline"
-                className="inline-flex items-center gap-2 min-h-[44px] text-[15px] text-text hover:text-primary rounded transition focus-ring"
+                className="inline-flex items-center gap-2 min-h-touch text-base text-text hover:text-primary rounded transition focus-ring"
               >
                 <span aria-hidden="true" className="w-7 h-7 rounded-full bg-green-50 text-primary text-sm font-bold grid place-items-center">
                   {Array.from(event.producer_name.trim())[0] ?? ""}
@@ -247,14 +265,14 @@ export default function EventDetailClient() {
                 <CaretLeft size={14} className="text-primary ltr:rotate-180" aria-hidden="true" />
               </Link>
             ) : (
-              <p data-testid="event-byline" className="text-[15px] text-text">{ownerLabel}</p>
+              <p data-testid="event-byline" className="text-base text-text">{ownerLabel}</p>
             )
           )}
 
           {/* MEH-2548: an old link (a share, a search result) to a finished
               event points at the owner's next one instead of a dead end. */}
           {isPast && (
-            <div className={`mt-5 rounded-[12px] bg-surface-card overflow-hidden px-4 pt-3 ${nextEvent ? "" : "pb-3"}`} data-testid="event-past-notice">
+            <div className={`mt-5 rounded-md bg-surface-card overflow-hidden px-4 pt-3 ${nextEvent ? "" : "pb-3"}`} data-testid="event-past-notice">
               <p className="text-sm text-text">
                 {t("past_notice")}
                 {nextEvent && event.producer_name && <> {t("past_next", { name: event.producer_name })}</>}
@@ -271,7 +289,7 @@ export default function EventDetailClient() {
         {/* Details card: below the title on mobile, a sticky side card on
             desktop (Airbnb / Eventbrite). */}
         <aside className="mt-6 lg:mt-0 lg:col-start-2 lg:row-start-1 lg:row-span-2 lg:sticky lg:top-24 space-y-4">
-          <div className="bg-white border border-border rounded-[14px] overflow-hidden lg:shadow-md" data-testid="event-info">
+          <div className="bg-surface border border-border rounded-lg overflow-hidden lg:shadow-md" data-testid="event-info">
             <div aria-hidden="true" className="hidden lg:block text-center border-b border-border">
               <span className="block bg-primary text-white text-sm font-bold py-1.5">
                 {formatEventDate(event.event_date, locale, { month: "long", year: "numeric" })}
@@ -282,13 +300,16 @@ export default function EventDetailClient() {
             <div className={infoRow}>
               <span className={infoIcon}><Calendar size={18} aria-hidden="true" /></span>
               <p className="flex-1 min-w-0 font-semibold text-text">
-                {formatEventDate(event.event_date, locale, DETAIL_DATE_OPTIONS)}
+                {/* MEH-2837: the date and the time range each stay whole, so a
+                    wrap can only happen at «·» (the year used to drop to the
+                    hours' line). */}
+                <span className="whitespace-nowrap">{formatEventDate(event.event_date, locale, DETAIL_DATE_OPTIONS)}</span>
                 {event.event_time && (
                   // MEH-2469: «09:30–15:00» when there is an end time. The «·»
                   // stays outside the LTR isolate so it keeps following the date.
                   <>
                     {" · "}
-                    <span dir="ltr">{formatTimeRange(event.event_time, event.end_time)}</span>
+                    <span dir="ltr" className="whitespace-nowrap">{formatTimeRange(event.event_time, event.end_time)}</span>
                   </>
                 )}
               </p>
@@ -312,8 +333,11 @@ export default function EventDetailClient() {
             )}
             <div className={`${infoRow} border-t border-border`}>
               <span className={infoIcon}><Coins size={18} aria-hidden="true" /></span>
-              {/* MEH-1031: bidi-isolate the price (currency+number) so it can't flip in RTL */}
-              <p className="font-semibold text-accent">
+              {/* MEH-1031: bidi-isolate the price (currency+number) so it can't flip in RTL.
+                  MEH-2804 / ADR-039: the same display-numeral token as the event
+                  row (Frank Ruhl bold, primary) for free and paid alike — minus
+                  ms-auto, since here it sits beside its icon, not at the row end. */}
+              <p className={`${PRICE_BASE} text-primary`} data-testid="event-detail-price">
                 {event.price > 0 ? <span dir="ltr">{formatPrice(event.price)}</span> : t("free")}
               </p>
             </div>
@@ -337,15 +361,15 @@ export default function EventDetailClient() {
                   category={event.category}
                 />
                 {!isPast && (
-                  <button
+                  <Button
                     type="button"
                     onClick={() => downloadIcs(event, { url: pageUrl })}
                     data-testid="event-add-to-calendar"
-                    className="flex-1 inline-flex items-center justify-center gap-2 min-h-[46px] px-3 rounded-[10px] border border-primary text-primary text-sm font-semibold hover:bg-green-50 transition focus-visible:ring-2 focus-visible:ring-primary/40"
+                    variant="outlined" size="sm" className="flex-1"
                   >
                     <CalendarPlus size={18} aria-hidden="true" />
                     {t("add_to_calendar")}
-                  </button>
+                  </Button>
                 )}
               </div>
             </div>
@@ -357,7 +381,7 @@ export default function EventDetailClient() {
           {hasCoords && <MiniMap lat={event.lat} lng={event.lng} name={event.title} />}
 
           {event.description && (
-            <div className="bg-white border border-border rounded-[16px] p-6 leading-relaxed whitespace-pre-line text-text/90">
+            <div className="bg-surface border border-border rounded-lg p-6 leading-relaxed whitespace-pre-line text-text/90">
               {event.description}
             </div>
           )}
@@ -397,7 +421,7 @@ export default function EventDetailClient() {
             </div>
           )}
 
-          <Link href="/events" className="inline-flex items-center min-h-[44px] text-primary font-medium hover:underline">
+          <Link href="/events" className="inline-flex items-center min-h-touch text-primary font-medium hover:underline">
             {t("all_events")}
           </Link>
         </div>

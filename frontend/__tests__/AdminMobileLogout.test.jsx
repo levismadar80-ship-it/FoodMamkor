@@ -8,10 +8,11 @@ import { render, screen, fireEvent } from "@testing-library/react";
 const apiMock = vi.hoisted(() => ({ get: vi.fn(() => Promise.resolve({ data: { stats: {} } })) }));
 vi.mock("@/lib/api", () => ({ default: apiMock }));
 const authState = vi.hoisted(() => ({ user: null, logout: vi.fn() }));
+const nav = vi.hoisted(() => ({ pathname: "/admin" }));
 vi.mock("@/lib/auth-context", () => ({
   useAuth: () => ({ user: authState.user, loading: false, logout: authState.logout }),
 }));
-vi.mock("@/i18n/navigation", () => ({ usePathname: () => "/admin" }));
+vi.mock("@/i18n/navigation", () => ({ Link: ({ href, children, prefetch, ...p }) => <a href={typeof href === "string" ? href : href?.pathname} {...p}>{children}</a>,  usePathname: () => nav.pathname }));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn(), replace: vi.fn() }) }));
 vi.mock("next/link", () => ({
   default: ({ href, children, ...p }) => <a href={typeof href === "string" ? href : "#"} {...p}>{children}</a>,
@@ -24,7 +25,10 @@ vi.mock("next-intl", () => ({
 import AdminLayout from "@/app/[locale]/admin/AdminLayoutClient";
 
 describe("MEH-2533 logout on the mobile admin", () => {
-  beforeEach(() => authState.logout.mockClear());
+  beforeEach(() => {
+    authState.logout.mockClear();
+    nav.pathname = "/admin";
+  });
 
   it("an admin gets a md:hidden logout with the shared key, and it logs out", () => {
     authState.user = { id: "a1", role: "admin", name: "ספיר" };
@@ -41,5 +45,19 @@ describe("MEH-2533 logout on the mobile admin", () => {
     render(<AdminLayout><div /></AdminLayout>);
     expect(screen.getByTestId("access-denied")).toBeInTheDocument();
     expect(screen.queryByTestId("admin-mobile-logout")).toBeNull();
+  });
+
+  // MEH-2728: once, on the panel's home, and not in red.
+  it("is absent from an inner admin screen", () => {
+    authState.user = { id: "a1", role: "admin", name: "ספיר" };
+    nav.pathname = "/admin/producers";
+    render(<AdminLayout><div /></AdminLayout>);
+    expect(screen.queryByTestId("admin-mobile-logout")).toBeNull();
+  });
+
+  it("is not red on the panel's home", () => {
+    authState.user = { id: "a1", role: "admin", name: "ספיר" };
+    render(<AdminLayout><div /></AdminLayout>);
+    expect(screen.getByTestId("admin-mobile-logout").className).not.toContain("text-error");
   });
 });

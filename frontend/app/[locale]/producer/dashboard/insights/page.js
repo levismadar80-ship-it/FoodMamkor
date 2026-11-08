@@ -24,6 +24,7 @@
  */
 
 import { useRouter, Link as LocaleLink } from "@/i18n/navigation";
+import { z } from "zod";
 import { useEffect, useState } from "react";
 import { useTranslations, useLocale } from "next-intl";
 import { Eye, MagnifyingGlass, ChatCircle, Phone, Leaf, Star } from "@phosphor-icons/react";
@@ -84,14 +85,14 @@ export default function ProducerDashboardInsightsPage() {
       <div className="max-w-5xl mx-auto px-4 py-16">
         <div
           data-testid="insights-load-error"
-          className="bg-white border border-border rounded-[16px] p-6 text-center"
+          className="bg-surface border border-border rounded-lg p-6 text-center"
           role="alert"
         >
           <p className="text-fg-muted mb-4">{t("section_errors.analytics")}</p>
           <button
             type="button"
             onClick={() => setAnalyticsAttempt((n) => n + 1)}
-            className="inline-block bg-primary text-white px-4 py-2 rounded-[10px] text-sm font-medium hover:bg-primary-dark transition"
+            className="inline-block bg-primary text-white px-4 py-2 rounded-full text-sm font-medium hover:bg-primary-dark transition"
           >
             {t("section_errors.retry_cta")}
           </button>
@@ -121,7 +122,7 @@ export default function ProducerDashboardInsightsPage() {
           (Site Kit hasZeroData pattern). KPI cards still render below. */}
       {profile && !isApproved && (
         <div
-          className="bg-white border border-border rounded-[16px] p-4 mb-6 text-sm"
+          className="bg-surface border border-border rounded-lg p-4 mb-6 text-sm"
           role="status"
           data-testid="insights-zero-state"
         >
@@ -131,7 +132,7 @@ export default function ProducerDashboardInsightsPage() {
               as-needed locale routing (MEH-956 precedent). */}
           <LocaleLink
             href="/producer/dashboard/edit"
-            className="inline-block bg-primary text-white px-4 py-2 rounded-[10px] text-xs font-medium hover:bg-primary-dark transition"
+            className="inline-block bg-primary text-white px-4 py-2 rounded-full text-xs font-medium hover:bg-primary-dark transition"
           >
             {t("insights_zero_state.cta")}
           </LocaleLink>
@@ -170,6 +171,10 @@ function DeepAnalyticsSection({ analytics, profile }) {
     total_reviews,
     views_by_day,
     top_cities,
+    // MEH-1676: absent on a cached pre-MEH-1676 payload → empty state, not a crash.
+    coverage_requests = [],
+    // MEH-2674: same defence for a pre-MEH-2673 payload.
+    pickup_hosts = [],
   } = analytics;
 
   return (
@@ -189,7 +194,7 @@ function DeepAnalyticsSection({ analytics, profile }) {
             aria-pressed={period === p}
             data-testid={`insights-period-${p}`}
             onClick={() => setPeriod(p)}
-            className={`min-h-[44px] px-4 rounded-full text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${
+            className={`min-h-touch px-4 rounded-full text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${
               period === p ? "bg-primary text-white" : "text-text hover:bg-green-50"
             }`}
           >
@@ -250,7 +255,7 @@ function DeepAnalyticsSection({ analytics, profile }) {
                 {profile?.status === "approved" && profile?.slug ? (
                   <LocaleLink
                     href={`/${profile.slug}`}
-                    className="text-primary hover:underline"
+                    className="text-primary underline underline-offset-2"
                   >
                     {t("simple_cards.followers_zero_share")}
                   </LocaleLink>
@@ -271,18 +276,113 @@ function DeepAnalyticsSection({ analytics, profile }) {
 
       {/* Charts */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="bg-white border border-border rounded-[16px] p-5">
+        <div className="bg-surface border border-border rounded-lg p-5">
           <h2 className="font-headline-md text-lg font-bold mb-3">
             {t("views_chart_title")}
             <InfoTooltip content={t("views_chart_tooltip")} />
           </h2>
           <ViewsLineChart data={views_by_day} />
         </div>
-        <div className="bg-white border border-border rounded-[16px] p-5">
+        <div className="bg-surface border border-border rounded-lg p-5">
           <h2 className="font-headline-md text-lg font-bold mb-3">{t("top_cities_title")}</h2>
           <TopCitiesBarChart data={top_cities} />
         </div>
       </div>
+
+      {/* MEH-1676: where demand the business does NOT cover comes from. The
+          data has been captured since MEH-1677 (city on a coverage-request
+          click); this is the first screen that reads it. */}
+      <CoverageRequestsCard data={coverage_requests} />
+      {/* MEH-2674: the people behind that demand who offered to host a
+          pickup point — only those who clicked the confirmation mail. */}
+      <PickupHostsCard data={pickup_hosts} />
+    </div>
+  );
+}
+
+/**
+ * MEH-2674 — «מוכנים לארח נקודת מסירה»: confirmed hosts for THIS business,
+ * newest confirmation first (server order, capped at 50). Count states per
+ * the 5-state rule: 0 → the card is not rendered at all (no approved empty
+ * copy, and an empty "hosts" card under an empty "demand" card is two
+ * apologies in a row); 1 and many → one row per host, email as a mailto:
+ * link + her city. No open/closed state. Rows are validated before they are
+ * trusted (rule 19); a payload of another shape renders as 0.
+ */
+const PickupHostRow = z.object({ email: z.string(), city: z.string() });
+
+function PickupHostsCard({ data }) {
+  const t = useTranslations("dashboard.producer.analytics.pickup_hosts");
+  const rows = (Array.isArray(data) ? data : [])
+    .map((row) => PickupHostRow.safeParse(row))
+    .filter((p) => p.success)
+    .map((p) => p.data);
+  if (rows.length === 0) return null;
+  return (
+    <div
+      className="bg-surface border border-border rounded-lg p-5"
+      data-testid="pickup-hosts-card"
+    >
+      <h2 className="font-headline-md text-lg font-bold mb-1">{t("title")}</h2>
+      <p className="text-xs text-fg-muted mb-3">{t("sub")}</p>
+      <ul className="space-y-2">
+        {rows.map((row) => (
+          <li
+            key={`${row.email}|${row.city}`}
+            className="text-sm text-text flex flex-wrap items-baseline gap-x-2"
+            data-testid="pickup-host-row"
+          >
+            <a
+              href={`mailto:${row.email}`}
+              dir="ltr"
+              className="text-primary underline decoration-[1.5px] underline-offset-[5px] decoration-primary/35 hover:decoration-current break-all"
+            >
+              {row.email}
+            </a>
+            <span className="text-fg-muted">·</span>
+            <span>{row.city}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+/**
+ * MEH-1676 — "ביקוש מאזורים חדשים": one row per city whose visitors tapped
+ * «לשאול בוואטסאפ» in the last 30 days, most requested first (server
+ * order). Three count states (0 / 1 / many) per the 5-state rule; no
+ * open/closed state. The scope line follows the
+ * Google Business Profile pattern: name the action counted, say what the
+ * number does not capture.
+ */
+function CoverageRequestsCard({ data }) {
+  const t = useTranslations("dashboard.producer.analytics.coverage_requests");
+  const rows = Array.isArray(data) ? data : [];
+  return (
+    <div
+      className="bg-surface border border-border rounded-lg p-5"
+      data-testid="coverage-requests-card"
+    >
+      <h2 className="font-headline-md text-lg font-bold mb-3">{t("title")}</h2>
+      {rows.length === 0 ? (
+        <p className="text-sm text-fg-muted">{t("empty")}</p>
+      ) : (
+        <ul className="space-y-2">
+          {rows.map((row) => (
+            <li
+              key={row.city}
+              className="text-sm text-text"
+              data-testid="coverage-request-row"
+            >
+              {row.count === 1
+                ? t("row_one", { city: row.city })
+                : t("row_many", { count: row.count, city: row.city })}
+            </li>
+          ))}
+        </ul>
+      )}
+      <p className="text-xs text-fg-muted mt-3">{t("scope")}</p>
     </div>
   );
 }
@@ -290,7 +390,7 @@ function DeepAnalyticsSection({ analytics, profile }) {
 function WindowedMetricCard({ label, icon: Icon, windows, tooltip, period }) {
   const locale = useLocale();
   return (
-    <div className="bg-white border border-border rounded-[16px] p-5" data-testid="windowed-card">
+    <div className="bg-surface border border-border rounded-lg p-5" data-testid="windowed-card">
       <div className="flex items-center justify-between mb-3">
         <Icon size={24} className="text-primary" aria-hidden="true" />
       </div>
@@ -311,7 +411,7 @@ function WindowedMetricCard({ label, icon: Icon, windows, tooltip, period }) {
 
 function SimpleCard({ label, icon: Icon, value, sub, empty }) {
   return (
-    <div className="bg-white border border-border rounded-[16px] p-5">
+    <div className="bg-surface border border-border rounded-lg p-5">
       <div className="flex items-center justify-between mb-3">
         <Icon size={24} className="text-primary" aria-hidden="true" />
       </div>

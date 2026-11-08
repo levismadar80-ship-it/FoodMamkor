@@ -1,3 +1,5 @@
+import { heBadgeCopy } from "./helpers/he-badge-copy";
+import heMessages from "../messages/he.json";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import ProducerCard from "@/components/ProducerCard";
@@ -10,6 +12,7 @@ import { BADGE_CONFIG } from "@/lib/badges";
 // (Wave 3 i18n cutover). Mocked here following the Header.test.jsx
 // pattern established in MEH-471 — map only the keys ProducerCard
 // renders, plus ICU interpolation/plural for review/favorites counts.
+vi.mock("@/lib/use-badge-copy", async () => (await import("./helpers/he-badge-copy")).badgeCopyMock);
 vi.mock("next-intl", () => ({
   useTranslations: () => (key, values = {}) => {
     const flat = {
@@ -20,7 +23,6 @@ vi.mock("next-intl", () => ({
       "producer.card.favorites.add": "הוסף למועדפים",
       "producer.card.favorites.aria": "שמירה",
       "producer.card.badges.delivery_only": "משלוחים בלבד",
-      "producer.card.badges.available_today": "מגיעה היום",
       // MEH-1547: +N overflow disclosure aria.
       "producer.card.badges.overflow_aria": `הצגת עוד ${values.count} תגיות`,
       // MEH-76 chunk 4 — S12 tier badge keys consumed by BadgeRow.
@@ -42,6 +44,10 @@ vi.mock("next-intl", () => ({
     if (key === "group_buys.delivery.fee") return `משלוח: ${values.amount}`;
     if (key === "group_buys.delivery.fee_free") return "משלוח חינם";
     if (key === "group_buys.delivery.fee_from") return `משלוח מ-${values.amount}`;
+    // MEH-2676: card delivery row folds a free-delivery threshold in.
+    if (key === "producer.offer.card_free_above") return `חינם מעל ${values.amount}`;
+    if (key === "producer.offer.card_delivery_sr") return "משלוח";
+    if (key === "producer.offer.unit_amount.kg") return `${values.count} ק"ג`;
     return key;
   },
   // MEH-1301: ProducerCard reads useLocale() to pick the distance unit
@@ -143,6 +149,8 @@ vi.mock("@phosphor-icons/react", () => ({
   Note: (props) => <span data-testid="icon-note" {...props} />,
   // MEH-1459: Truck glyph in the "משלוחים בלבד" card badge (replaces 🚚).
   Truck: (props) => <span data-testid="icon-truck" {...props} />,
+  // MEH-2676: OfferBadge chip glyph, asserted when the chip must stay.
+  Gift: (props) => <span data-testid="icon-gift" {...props} />,
   // MEH-2584: BadgeRow now imports lib/chip-icons.js (badge glyphs).
   Package: () => null,
   Storefront: () => null, // MEH-2598: chip-icons on_site
@@ -150,6 +158,8 @@ vi.mock("@phosphor-icons/react", () => ({
   Carrot: () => null,
   GrainsSlash: () => null,
   Barn: () => null,
+  Medal: () => null,
+  HandHeart: () => null,
   DropSlash: () => null,
   Cube: () => null,
   Clock: () => null,
@@ -162,9 +172,7 @@ const fullProducer = {
   city: "רחובות",
   images: ["https://example.com/photo.jpg"],
   verification_tier: "verified",
-  // MEH-291 Phase 3 — new field (legacy is_available_today preserved during overlap).
   availability_state: "available_today",
-  is_available_today: true,
   reviews_count: 12,
   avg_rating: 4.5,
   short_description: "גבינות עיזים וכבשים, כולן מחלב טרי.",
@@ -184,7 +192,6 @@ const minimalProducer = {
   images: [],
   verification_tier: null,
   availability_state: "accepting_orders",
-  is_available_today: false,
   reviews_count: 0,
   avg_rating: null,
   short_description: null,
@@ -222,6 +229,21 @@ describe("ProducerCard — Phase B anatomy", () => {
     expect(plate.textContent).toBe("חנות פשוטה");
     expect(screen.queryByTestId("leaf-icon")).not.toBeInTheDocument();
     expect(screen.queryByText("מהמקור")).not.toBeInTheDocument();
+  });
+
+  // MEH-2833 (seed layer, board 7): the plate gains one seed in the business's
+  // own colour, 70 wide, rotated −36°, in the end-top corner; the name stays
+  // above it in paint order.
+  it("the name plate carries one seed in the business's fixed colour", async () => {
+    const { seedColorFor } = await import("@/lib/brand-seeds");
+    render(<ProducerCard producer={minimalProducer} />);
+    const plate = screen.getByTestId("card-name-plate");
+    const seed = plate.parentElement.querySelector(":scope > svg[data-seed-color]");
+    expect(seed.getAttribute("data-seed-color")).toBe(seedColorFor(minimalProducer.id).fill);
+    expect(seed.getAttribute("width")).toBe("70");
+    expect(seed.querySelector("g").getAttribute("transform")).toMatch(/^rotate\(-36 /);
+    expect(seed.getAttribute("class")).toMatch(/-end-\[30px\]/);
+    expect(plate.className).toMatch(/^relative /);
   });
 
   // MEH-1211: a present-but-dead image URL must fall back to the canonical
@@ -324,38 +346,20 @@ describe("ProducerCard — Phase B anatomy", () => {
     expect(screen.queryByTestId("card-rating")).not.toBeInTheDocument();
   });
 
-  // MEH-643: availability dots tokenized — available_today → primary (brand
-  // green), non-available (full_this_week / on_vacation) → fg-muted. No raw
-  // hex / inline style (was #4cb08b/#f97316/#EF9F27 pre-redesign).
-  it("renders the primary (green) dot when availability_state='available_today'", () => {
-    render(<ProducerCard producer={fullProducer} />);
-    const dot = screen.getByTestId("availability-dot");
-    expect(dot).toHaveAttribute("data-status", "available_today");
-    expect(dot.className).toMatch(/bg-primary/);
-  });
-
-  it("renders an fg-muted dot when availability_state='full_this_week'", () => {
-    render(
-      <ProducerCard producer={{ ...fullProducer, availability_state: "full_this_week" }} />,
-    );
-    const dot = screen.getByTestId("availability-dot");
-    expect(dot).toHaveAttribute("data-status", "full_this_week");
-    expect(dot.className).toMatch(/bg-fg-muted/);
-  });
-
-  it("renders an fg-muted dot when availability_state='on_vacation'", () => {
-    render(
-      <ProducerCard producer={{ ...fullProducer, availability_state: "on_vacation" }} />,
-    );
-    const dot = screen.getByTestId("availability-dot");
-    expect(dot).toHaveAttribute("data-status", "on_vacation");
-    expect(dot.className).toMatch(/bg-fg-muted/);
-  });
-
-  it("renders no dot when producer is not available and not on vacation", () => {
-    render(<ProducerCard producer={minimalProducer} />);
-    expect(screen.queryByTestId("availability-dot")).not.toBeInTheDocument();
-  });
+  // MEH-2751: the card draws no availability dot in any state — it carried
+  // no word and visitors could not tell what it meant (Sapir, 6/11).
+  it.each(["available_today", "full_this_week", "on_vacation", "accepting_orders"])(
+    "renders no availability dot when availability_state=%s",
+    (state) => {
+      render(<ProducerCard producer={{ ...fullProducer, availability_state: state }} />);
+      expect(screen.queryByTestId("availability-dot")).not.toBeInTheDocument();
+      // Also without a testid: the two lines that used to carry the dot hold
+      // no round marker at all.
+      for (const id of ["location-line", "card-place"]) {
+        expect(screen.getByTestId(id).querySelector(".rounded-full")).toBeNull();
+      }
+    },
+  );
 
   it("always shows the city", () => {
     render(<ProducerCard producer={fullProducer} />);
@@ -403,27 +407,18 @@ describe("ProducerCard — Phase B anatomy", () => {
 
   // MEH-2440 (claude[bot] review on #3694): city, no category, no distance —
   // the line under the name would be empty, so it is skipped, and the
-  // availability dot moves up to the place line instead of being lost.
-  it("skips the empty line under the name and keeps the dot with the city", () => {
+  // place line holds just the city.
+  it("skips the empty line under the name", () => {
     render(<ProducerCard producer={{ ...fullProducer, categories: [] }} />);
     expect(screen.queryByTestId("location-line")).not.toBeInTheDocument();
-    const place = screen.getByTestId("card-place");
-    expect(place.textContent).toBe("רחובות");
-    expect(place).toContainElement(screen.getByTestId("availability-dot"));
+    expect(screen.getByTestId("card-place").textContent).toBe("רחובות");
   });
 
-  it("no city, no category, no distance: no empty lines and no orphan dot", () => {
+  it("no city, no category, no distance: no empty lines", () => {
     render(<ProducerCard producer={{ ...fullProducer, city: null, categories: [] }} />);
     expect(screen.queryByTestId("card-place")).not.toBeInTheDocument();
     expect(screen.queryByTestId("location-line")).not.toBeInTheDocument();
-    expect(screen.queryByTestId("availability-dot")).not.toBeInTheDocument();
     expect(screen.getByRole("heading", { level: 3, name: "חוות השקמה" })).toBeInTheDocument();
-  });
-
-  it("keeps the dot in the line under the name when that line has text", () => {
-    render(<ProducerCard producer={fullProducer} />);
-    expect(screen.getByTestId("location-line")).toContainElement(screen.getByTestId("availability-dot"));
-    expect(screen.getAllByTestId("availability-dot")).toHaveLength(1);
   });
 
   it("the name plate can break a single over-long token instead of overflowing", () => {
@@ -681,6 +676,10 @@ describe("ProducerCard — heart (Phase C)", () => {
     render(<ProducerCard producer={fullProducer} />);
     const heart = screen.getByTestId("card-heart");
     expect(heart).toHaveAttribute("aria-pressed", "false");
+    // MEH-2671: the inline-END corner (top-left in RTL), both densities.
+    expect(heart.className).toMatch(/\bend-2\b/);
+    expect(heart.className).toMatch(/\bsm:end-3\b/);
+    expect(heart.className).not.toMatch(/\bstart-[23]\b/);
     const icon = heart.querySelector('[data-testid="icon-heart"]');
     expect(icon).toHaveAttribute("data-weight", "regular");
   });
@@ -816,6 +815,36 @@ describe("ProducerCard — badge overflow chip (MEH-991)", () => {
     expect(chip).toHaveAttribute("aria-label", "הצגת עוד 2 תגיות");
   });
 
+  // MEH-1508 chunk 3ב-2 (axe `target-size`, CI mobile /producers): the +N keeps
+  // a 44×44 hit area (min-h/min-w 44) inside a 24px layout box by pulling it
+  // back with a negative margin. When the strip WRAPS the +N onto a second line
+  // (a long first-row badge such as «צמחוני» at 393px), that margin
+  // reaches upward into the row above; with the old 4px row gap the +N — later
+  // in DOM, so painted on top — covered ~5px of «חדש» and left it 41.5×19.3,
+  // below WCAG 2.2 2.5.8's 24×24. The row gap must be at least the +N's
+  // vertical pull-back, so a wrapped +N can touch the row above but never
+  // cover it. Read off the Tailwind spacing scale (1 unit = 4px).
+  it("+N keeps a 44px target whose pull-back cannot cover a badge on the row above", () => {
+    render(<ProducerCard producer={overflowProducer} />);
+    const chip = screen.getByTestId("badge-overflow");
+    const chipClasses = chip.className.split(/\s+/);
+    expect(chipClasses).toContain("min-h-touch");
+    expect(chipClasses).toContain("min-w-touch");
+    const strip = chip.closest("div.absolute");
+    expect(strip, "the +N must sit in the absolutely-positioned badge strip").not.toBeNull();
+    const stripClasses = strip.className.split(/\s+/);
+    expect(stripClasses, "the strip wraps, which is the case this guards").toContain("flex-wrap");
+    const units = (re, classes) => {
+      const hit = classes.map((c) => re.exec(c)).find(Boolean);
+      return hit ? Number(hit[1]) : null;
+    };
+    const pullBack = units(/^-m[ty]?-(\d+(?:\.\d+)?)$/, chipClasses);
+    expect(pullBack, "the +N's vertical negative margin must be readable").not.toBeNull();
+    const rowGap = units(/^gap-y-(\d+(?:\.\d+)?)$/, stripClasses) ?? units(/^gap-(\d+(?:\.\d+)?)$/, stripClasses);
+    expect(rowGap, "the strip's row gap must be readable").not.toBeNull();
+    expect(rowGap).toBeGreaterThanOrEqual(pullBack);
+  });
+
   it("tapping +N opens a popover listing ONLY the hidden badge labels (MEH-1547)", () => {
     render(<ProducerCard producer={overflowProducer} />);
     expect(screen.queryByTestId("badge-overflow-popover")).not.toBeInTheDocument();
@@ -849,12 +878,12 @@ describe("ProducerCard — badge overflow chip (MEH-991)", () => {
       fireEvent.click(screen.getByTestId("badge-overflow"));
       const panel = screen.getByTestId("badge-overflow-popover");
       // Hidden badges are kosher + delivery. Label AND description for both.
-      expect(panel).toHaveTextContent(BADGE_CONFIG.delivery.label);
-      expect(panel).toHaveTextContent(BADGE_CONFIG.delivery.tooltip);
-      expect(panel).toHaveTextContent(BADGE_CONFIG.kosher.tooltip);
+      expect(panel).toHaveTextContent(heBadgeCopy(BADGE_CONFIG.delivery).label);
+      expect(panel).toHaveTextContent(heBadgeCopy(BADGE_CONFIG.delivery).tooltip);
+      expect(panel).toHaveTextContent(heBadgeCopy(BADGE_CONFIG.kosher).tooltip);
       // Asserted against the config rather than a copied literal: a paraphrase
       // in the component would pass a hardcoded string but not this.
-      expect(BADGE_CONFIG.delivery.tooltip).toBe("העסק מוסר או שולח לכתובת שלך.");
+      expect(heBadgeCopy(BADGE_CONFIG.delivery).tooltip).toBe("העסק מוסר או שולח לכתובת שלך.");
     });
 
     it("renders label only — no empty line — for a badge with no tooltip", () => {
@@ -862,13 +891,13 @@ describe("ProducerCard — badge overflow chip (MEH-991)", () => {
       // unreachable from any fixture. Removing one for the duration of this
       // test is what makes it testable at all; restored in finally so the
       // shared config cannot leak into another case.
-      const original = BADGE_CONFIG.delivery.tooltip;
+      const original = heMessages.badges.delivery.tooltip;
       try {
-        delete BADGE_CONFIG.delivery.tooltip;
+        delete heMessages.badges.delivery.tooltip;
         render(<ProducerCard producer={overflowProducer} />);
         fireEvent.click(screen.getByTestId("badge-overflow"));
         const panel = screen.getByTestId("badge-overflow-popover");
-        expect(panel).toHaveTextContent(BADGE_CONFIG.delivery.label);
+        expect(panel).toHaveTextContent(heBadgeCopy(BADGE_CONFIG.delivery).label);
         expect(panel).not.toHaveTextContent(original);
         // POSITIVE CONTROL, and it is the whole reason this case discriminates.
         // Without it the assertions above pass on a panel that renders NO
@@ -876,13 +905,13 @@ describe("ProducerCard — badge overflow chip (MEH-991)", () => {
         // would have been green for the wrong reason. The sibling row still
         // having its own description is what proves the omission is the
         // conditional doing its job rather than the feature being absent.
-        expect(panel).toHaveTextContent(BADGE_CONFIG.kosher.tooltip);
+        expect(panel).toHaveTextContent(heBadgeCopy(BADGE_CONFIG.kosher).tooltip);
         // The row itself is still there — a missing tooltip must not drop the
         // badge, only its description.
         const rows = panel.querySelectorAll('[role="listitem"]');
         expect(rows).toHaveLength(2);
       } finally {
-        BADGE_CONFIG.delivery.tooltip = original;
+        heMessages.badges.delivery.tooltip = original;
       }
     });
 
@@ -898,9 +927,105 @@ describe("ProducerCard — badge overflow chip (MEH-991)", () => {
       fireEvent.click(screen.getByTestId("badge-overflow"));
       const panel = screen.getByTestId("badge-overflow-popover");
       expect(panel).toHaveTextContent("badges.chalak.label");
-      expect(panel).not.toHaveTextContent(BADGE_CONFIG.kosher.label);
+      expect(panel).not.toHaveTextContent(heBadgeCopy(BADGE_CONFIG.kosher).label);
       // ...and the description is still the kosher tooltip.
-      expect(panel).toHaveTextContent(BADGE_CONFIG.kosher.tooltip);
+      expect(panel).toHaveTextContent(heBadgeCopy(BADGE_CONFIG.kosher).tooltip);
     });
+  });
+});
+
+// MEH-2676: «משלוח חינם בהזמנה מעל …» truncated before the amount on a 375
+// card. A thresholded free-delivery offer now joins the delivery row.
+describe("ProducerCard — free-delivery threshold in the delivery row (MEH-2676)", () => {
+  const freeOffer = {
+    offer_type: "free_delivery_above",
+    threshold_value: 150,
+    threshold_unit: "ils",
+    starts_at: null,
+    expires_at: null,
+  };
+
+  // MEH-2744: with a threshold the row shows only «חינם מעל 150₪» next to the
+  // truck; the fee is left to the business page, «משלוח» is screen-reader only.
+  it("shows only «חינם מעל 150₪» when there is also a fee, and drops the chip", () => {
+    render(<ProducerCard producer={{ ...fullProducer, delivery_fee: 20, active_offer: freeOffer }} />);
+    const row = screen.getByTestId("card-delivery-fee");
+    expect(row).toHaveTextContent("משלוח חינם מעל 150₪");
+    expect(row).not.toHaveTextContent("20₪");
+    expect(row).not.toHaveTextContent("·");
+    expect(screen.queryByTestId("offer-chip")).not.toBeInTheDocument();
+  });
+
+  it("shows «חינם מעל 150₪» when no fee is stated", () => {
+    render(<ProducerCard producer={{ ...fullProducer, delivery_fee: null, active_offer: freeOffer }} />);
+    expect(screen.getByTestId("card-free-above")).toHaveTextContent(/^חינם מעל 150₪$/);
+    expect(screen.queryByTestId("offer-chip")).not.toBeInTheDocument();
+  });
+
+  it("keeps the word «משלוח» for screen readers only", () => {
+    render(<ProducerCard producer={{ ...fullProducer, delivery_fee: 20, active_offer: freeOffer }} />);
+    const row = screen.getByTestId("card-delivery-fee");
+    const sr = row.querySelector(".sr-only");
+    expect(sr).not.toBeNull();
+    expect(sr).toHaveTextContent("משלוח");
+    // The visible part (everything outside .sr-only) does not repeat it.
+    expect(screen.getByTestId("card-free-above")).not.toHaveTextContent("משלוח");
+  });
+
+  it("still states the fee when there is no threshold", () => {
+    render(<ProducerCard producer={{ ...fullProducer, delivery_fee: 20, active_offer: null }} />);
+    expect(screen.getByTestId("card-delivery-fee")).toHaveTextContent("משלוח: 20₪");
+    expect(screen.queryByTestId("card-free-above")).not.toBeInTheDocument();
+  });
+
+  it("uses the offer's unit when the threshold is not shekels", () => {
+    render(
+      <ProducerCard
+        producer={{ ...fullProducer, delivery_fee: null, active_offer: { ...freeOffer, threshold_value: 3, threshold_unit: "kg" } }}
+      />,
+    );
+    expect(screen.getByTestId("card-free-above")).toHaveTextContent('חינם מעל 3 ק"ג');
+  });
+
+  it("keeps the chip for a free-delivery offer without a threshold", () => {
+    render(
+      <ProducerCard
+        producer={{ ...fullProducer, delivery_fee: 20, active_offer: { ...freeOffer, threshold_value: null, threshold_unit: null } }}
+      />,
+    );
+    expect(screen.getByTestId("offer-chip")).toBeInTheDocument();
+    expect(screen.queryByTestId("card-free-above")).not.toBeInTheDocument();
+  });
+
+  it("keeps the chip for other offer types", () => {
+    render(
+      <ProducerCard producer={{ ...fullProducer, delivery_fee: 20, active_offer: { ...freeOffer, offer_type: "gift_above" } }} />,
+    );
+    expect(screen.getByTestId("offer-chip")).toBeInTheDocument();
+    expect(screen.queryByTestId("card-free-above")).not.toBeInTheDocument();
+  });
+
+  it("shows no threshold for an expired offer", () => {
+    render(
+      <ProducerCard producer={{ ...fullProducer, delivery_fee: null, active_offer: { ...freeOffer, expires_at: "2000-01-01" } }} />,
+    );
+    expect(screen.queryByTestId("card-delivery-fee")).not.toBeInTheDocument();
+  });
+
+  it("says just «משלוח חינם» when delivery is always free", () => {
+    render(<ProducerCard producer={{ ...fullProducer, delivery_fee: 0, active_offer: freeOffer }} />);
+    const row = screen.getByTestId("card-delivery-fee");
+    expect(row).toHaveTextContent("משלוח חינם");
+    expect(row).not.toHaveTextContent("מעל");
+  });
+});
+
+// MEH-2759: the Friday «מגיעה היום» pill went with the available_today state.
+describe("ProducerCard — no Friday pill (MEH-2759)", () => {
+  it("renders no «מגיעה היום» pill, even for an available_today row in Friday mode", () => {
+    const { container } = render(
+      <ProducerCard producer={{ ...fullProducer, availability_state: "available_today" }} fridayMode />,
+    );
+    expect(container.textContent).not.toMatch(/מגיעה היום|badges\.available_today/);
   });
 });

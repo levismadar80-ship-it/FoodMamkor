@@ -140,13 +140,16 @@ export default async function ExperienceDetailPage(props) {
   // 404s a missing experience; belt-and-braces for the body.
   const experience = await getExperience(params.id);
   if (!experience) notFound();
+  const t = await getTranslations({ locale: params.locale, namespace: "experiences.detail" });
   return (
     <>
       <ExperienceJsonLd experience={experience} locale={params.locale} />
+      {/* MEH-2754: min-h-screen keeps the footer below the fold while the
+          fallback shows, so swapping in the page shifts nothing in view. */}
       <Suspense
         fallback={
-          <div className="max-w-3xl mx-auto px-4 py-16 text-center text-fg-muted">
-            טעינת החוויה...
+          <div className="max-w-3xl mx-auto px-4 py-16 text-center text-fg-muted min-h-screen" data-testid="page-suspense-fallback">
+            {t("loading")}
           </div>
         }
       >

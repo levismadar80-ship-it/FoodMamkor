@@ -16,6 +16,8 @@
 erDiagram
     users ||--o{ favorites : "saves"
     users ||--o{ saved_items : "saves (MEH-2556)"
+    producers ||--o{ delivery_waitlist : "waited_for_by (MEH-2618)"
+    users |o--o{ delivery_waitlist : "left_while_signed_in (SET NULL)"
     users ||--o| producers : "owns (1:1 via users.producer_id)"
     producers ||--o{ producer_categories : "tagged_with"
     producers ||--o{ products : "sells"
@@ -62,9 +64,9 @@ erDiagram
         string kind "MEH-2459 — producer|organizer; NOT NULL default producer; CHECK producer_kind_values (ADR-036)"
         float avg_rating "cached aggregate"
         int reviews_count "cached aggregate"
-        boolean is_available_today "legacy — preserved during MEH-291 overlap"
-        string availability_status "legacy — preserved during MEH-291 overlap"
-        string availability_state "MEH-291 — accepting_orders|available_today|full_this_week|on_vacation"
+        boolean is_available_today "legacy — unread, unwritten, in no response (MEH-2272); MEH-2273 drops it"
+        string availability_status "legacy — unread, unwritten, in no response (MEH-2272); MEH-2273 drops it"
+        string availability_state "accepting_orders|on_vacation (MEH-2758 pause-only writes; MEH-2782 removed available_today|full_this_week)"
         date vacation_until "nullable — required when availability_state=on_vacation"
         timestamp recommended_at "nullable — MEH-1494 chunk A, revision e2a7c9d4b6f1; when the current editorial pick was made. No backfill: NULL = picked before the clock existed, due for review"
         text recommended_note "nullable — MEH-1494 chunk A; the editor's reason. ADMIN-ONLY, never on a public serializer (guard test asserts absence by name)"
@@ -72,6 +74,7 @@ erDiagram
         json special_hours "nullable JSONB — MEH-1889 chunk A, migration c4e81b7a2f96; per-DATE overrides keyed YYYY-MM-DD, ranges:[] = closed. ORDER-AXIS ONLY: overrides order_window (itself absent from this diagram — pre-existing drift since MEH-1543), never the free-text opening_hours; note is display-only"
         string plan "free|premium"
         boolean grass_fed
+        boolean reservist_owned "NOT NULL default false — owner-declared «עסק של מילואימניקים», badge only (migration f1c7a2b9d4e6)"
         boolean organic_certified
         string kosher
         string facebook "nullable — MEH-296, VARCHAR(200) — producer FB page/Messenger link"
@@ -125,6 +128,8 @@ erDiagram
         boolean is_lactose_free "MEH-293/MEH-479: single source of truth"
         boolean is_no_added_sugar "MEH-1934: 5th dietary axis; no backfill — nothing implies it"
         boolean is_low_carb "MEH-1934: 6th dietary axis; independent of every other flag"
+        text ingredients "MEH-2662: owner-declared, nullable"
+        text_array allergens "MEH-2662: codes from app/allergens.py, nullable"
     }
 
     delivery_areas {
@@ -199,6 +204,8 @@ erDiagram
     users ||--o{ home_products : "lists"
     users ||--o{ events : "hosts (producer)"
     users ||--o{ experiences : "hosts (producer)"
+    events ||--o{ registrations : "on-site sign-ups (MEH-2763)"
+    experiences ||--o{ registrations : "on-site sign-ups (MEH-2763)"
     home_products ||--o{ home_product_whatsapp_clicks : "gets clicks"
     home_product_whatsapp_clicks ||--o| home_product_ratings : "optional 1:1"
 
@@ -252,6 +259,20 @@ erDiagram
         int capacity
         string city
         string status "pending|approved|rejected"
+        string registration_method "MEH-2763 site_form|whatsapp|phone|external_url"
+    }
+
+    registrations {
+        uuid id PK
+        uuid event_id FK "exactly one of event_id / experience_id"
+        uuid experience_id FK
+        string name
+        string phone
+        string email
+        string cancel_token UK "cancel link credential"
+        string status "registered|cancelled"
+        timestamp created_at
+        timestamp cancelled_at
     }
 
     experiences {
@@ -264,6 +285,10 @@ erDiagram
         int duration_minutes
         numeric price
         int capacity
+        int participants_count "host-reported sign-ups (MEH-2663)"
+        string registration_method "MEH-2763; legacy rows backfilled whatsapp"
+        string registration_url "MEH-2763 external_url only"
+        int min_participants "nullable; minimum to run (MEH-2665)"
         string status "pending|changes_requested|approved|rejected"
         boolean is_active "MEH-1419: reversible host cancel; public list filters true"
         text moderation_notes "Claude Haiku pre-check output"
@@ -411,6 +436,19 @@ erDiagram
         timestamp created_at
     }
 
+    delivery_waitlist {
+        uuid id PK "MEH-2618"
+        uuid producer_id FK "CASCADE"
+        string city "visitor's own spelling — used in her email"
+        string city_key "app.data.cities.city_key — the trigger matches on it"
+        string email "trimmed + lower-cased; UNIQUE(producer_id,city_key,email)"
+        uuid user_id FK "SET NULL — set when signed in"
+        timestamp created_at
+        timestamp notified_at "once-only guard; NULL = still waiting"
+        bool wants_to_host "MEH-2673 — confirmed by email: share the address with this business as a pickup host"
+        timestamp host_confirm_sent_at "MEH-2673 — 24h resend cooldown for the confirmation mail"
+    }
+
     inbound_messages {
         uuid id PK
         string from_phone "indexed (MEH-509 PR2b)"
@@ -431,6 +469,63 @@ erDiagram
         string alert_type "new_event|new_product|delivery_area (32)"
         timestamp sent_at "indexed (user,producer,channel,sent_at)"
     }
+
+    producer_locations ||--o{ rescue_offers : "today's bags (MEH-2644)"
+    rescue_offers ||--o{ rescue_orders : "reservations"
+    rescue_orders ||--o| rescue_reviews : "one review each"
+    users ||--o{ rescue_orders : "reserves"
+    producers ||--o| rescue_typical_items : "usual contents"
+
+    rescue_offers {
+        uuid id PK "MEH-2644"
+        uuid producer_location_id FK "CASCADE — a place, not a business"
+        date date "indexed (location, date)"
+        int qty_total "CHECK 1..20"
+        int qty_left "CHECK 0..qty_total — the oversell guard"
+        int price_agorot "integer agorot, never float"
+        int value_min_agorot "nullable"
+        int value_max_agorot "nullable"
+        timestamp pickup_start
+        timestamp pickup_end "CHECK > pickup_start"
+        timestamp cancel_until
+        string status "active|cancelled (CHECK) — sold out is qty_left=0"
+        timestamp created_at
+        int qty_donated "MEH-2703 · default 0 · CHECK 0..qty_total · owner-reported «נמסרו בחינם»"
+        timestamp codes_sent_at "MEH-2756 · timestamptz NULL · digest sent to the business; NULL = not sent"
+    }
+
+    rescue_orders {
+        uuid id PK "MEH-2644"
+        uuid offer_id FK "CASCADE"
+        uuid user_id FK "CASCADE (indexed)"
+        int qty "CHECK 1..2 — the pilot's max 2 bags"
+        string pickup_code "char(4), CHECK 4 digits, UNIQUE per OFFER"
+        string status "reserved|handed|no_show|cancelled (CHECK) — no 'paid'"
+        timestamp handed_at
+        uuid handed_by FK "SET NULL — keep the record, lose the account"
+        timestamp cancelled_at
+        timestamp created_at
+    }
+
+    rescue_reviews {
+        uuid id PK "MEH-2644"
+        uuid order_id FK "CASCADE, UNIQUE — one per reservation"
+        int rating "CHECK 1..5"
+        json contents_tags "JSONB, nullable"
+        json highlight_tags "JSONB, nullable"
+        string photo_url "nullable (500)"
+        text comment "nullable"
+        timestamp created_at
+    }
+
+    rescue_typical_items {
+        uuid id PK "MEH-2644"
+        uuid producer_id FK "CASCADE, UNIQUE — one row per business"
+        json items "JSONB NOT NULL, default []"
+        text allergens "text[] NULL — MEH-2752: NULL = not declared, never []"
+        timestamp created_at
+        timestamp updated_at
+    }
 ```
 
 > **MEH-1338 — `alert_log` frequency cap:** append-only ledger backing the
@@ -439,6 +534,31 @@ erDiagram
 > `ix_alert_log_cap_lookup(user_id, producer_id, channel, sent_at)` serves the
 > EXISTS check. Adds one table → **`EXPECTED_TABLES` 36 → 37** (`pr-checks.yml`).
 > No retention/purge job yet (rows CASCADE-delete with their user/producer).
+
+> **MEH-2644 — rescue bags, chunk 1 (03/11/2026):** four dormant tables plus
+> `users.rescue_no_show_count` (int NOT NULL DEFAULT 0). Nothing reads them
+> until chunk 2 and nothing renders them until chunk 4; the whole feature is
+> behind `RESCUE_BAGS_ENABLED`. **The pilot has no payment** — no
+> `amount_agorot`, no `paid_at`, and `paid` is not a status (03/11 ruling);
+> buyers pay at the counter. `pickup_code` is unique per OFFER, not globally.
+> Adds four tables → **`EXPECTED_TABLES` 43 → 47** (`pr-checks.yml`).
+> Migration `a1c9f3e8d204`.
+
+> **MEH-2646 — `users.rescue_block_cleared_at` (04/11/2026):** one nullable
+> timestamp, chunk 2. It exists because «two no-shows in 30 days blocks» and
+> «an admin endpoint to reset» cannot both be true without a time anchor: the
+> lifetime `rescue_no_show_count` carries no window, and a window derived from
+> `rescue_orders` alone makes a reset a no-op that looks like it worked. The
+> derived window stays the authority and the 422 gate counts only no-shows whose
+> `pickup_end` is AFTER this stamp — so one write releases a buyer and the
+> no-show rows stay in the history for the chunk-5 metrics. Adds no table →
+> `EXPECTED_TABLES` unchanged. Migration `b2e6d4a17c93`.
+
+> **MEH-2763 — `registrations` + `registration_method` (06/11/2026):** the
+> owner picks «איך נרשמים?» per event / experience; `site_form` stores one row
+> per visitor (no account; name, phone, email), purged 30 days after the item's
+> date by `retention_purge`. Adds one table → **`EXPECTED_TABLES` 48 → 49**
+> (`pr-checks.yml`). Migration `e8c4a1f2b7d9`.
 
 ## Locked invariants (do not drift)
 

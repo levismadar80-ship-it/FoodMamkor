@@ -134,25 +134,35 @@ async function clickCentremostCluster(
   // MEH-2323: one atomic DOM snapshot instead of count() + nth(i).boundingBox()
   // per index — the per-index form is the race described at MAP_SETTLED.
   // Zero-size boxes are the hidden shell (MapClient renders twice).
-  const bestIndex = await clusters.evaluateAll((els, c) => {
-    let best = -1;
-    let bestDistance = Number.POSITIVE_INFINITY;
-    els.forEach((el, i) => {
-      const r = el.getBoundingClientRect();
-      if (r.width === 0 || r.height === 0) return;
-      const d = Math.hypot(r.x + r.width / 2 - c.x, r.y + r.height / 2 - c.y);
-      if (d < bestDistance) {
-        bestDistance = d;
-        best = i;
-      }
-    });
-    return best;
-  }, centre);
-  if (bestIndex < 0) return false;
-  await clusters
-    .nth(bestIndex)
-    .click({ timeout: 3_000 })
-    .catch(() => {});
+  // MEH-2323 (04/11 staging probe): only clusters whose centre lies INSIDE the
+  // visible map box are candidates — the other shell's clusters can have a
+  // non-zero box off-screen (measured at y=1216 under a 257–507 map). And the
+  // click is a plain pointer click at that centre: `locator.click()` retried
+  // ×6 on an intercepted pointer in the 03/11 trace, and its scroll-into-view
+  // can move the page under the map. The same probe zoomed 13→15→16 and left
+  // 5 secondary pins individual with this form.
+  const best = await clusters.evaluateAll(
+    (els, { c, box }) => {
+      let hit: { x: number; y: number } | null = null;
+      let bestDistance = Number.POSITIVE_INFINITY;
+      els.forEach((el) => {
+        const r = el.getBoundingClientRect();
+        if (r.width === 0 || r.height === 0) return;
+        const x = r.x + r.width / 2;
+        const y = r.y + r.height / 2;
+        if (x < box.x || x > box.x + box.width || y < box.y || y > box.y + box.height) return;
+        const d = Math.hypot(x - c.x, y - c.y);
+        if (d < bestDistance) {
+          bestDistance = d;
+          hit = { x, y };
+        }
+      });
+      return hit;
+    },
+    { c: centre, box: mapBox },
+  );
+  if (!best) return false;
+  await page.mouse.click(best.x, best.y);
   return true;
 }
 
@@ -294,7 +304,14 @@ test.describe("producer_locations — multi-location E2E (MEH-1388)", () => {
     // click the centremost cluster (zoom-in, then spiderfy at max zoom). Bounded
     // + condition-based, never a fixed wait. Exits immediately when the pins are
     // already individual at this zoom.
-    for (let i = 0; i < 6 && (await secondary.count()) === 0; i++) {
+    // MEH-2323 (03/11 trace): the count is read only AFTER the zoom/cluster
+    // animation settles. Mid-animation, markercluster shows a child pin for a
+    // few hundred ms and then re-collapses it into the cluster at the new zoom.
+    // The old loop exited on that transient pin (count 1 at t+0.03s, 0 again
+    // after settle), so the click loop below ran over zero markers.
+    for (let i = 0; i < 6; i++) {
+      await waitForMapSettled(page);
+      if ((await secondary.count()) > 0) break;
       const clicked = await clickCentremostCluster(page);
       if (!clicked) break;
       await secondary
@@ -302,6 +319,7 @@ test.describe("producer_locations — multi-location E2E (MEH-1388)", () => {
         .waitFor({ state: "visible", timeout: 4_000 })
         .catch(() => {});
     }
+    await waitForMapSettled(page);
 
     await expect(
       secondary.first(),

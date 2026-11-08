@@ -51,7 +51,7 @@ vi.mock("@/lib/contact-tracking", () => ({
   trackContactClick: vi.fn(),
 }));
 
-import WhatsAppQuestionChips from "@/components/WhatsAppQuestionChips";
+import WhatsAppQuestionChips, { WA_SUFFIX } from "@/components/WhatsAppQuestionChips";
 import { resolveProducerQuestions } from "@/lib/resolvedQuestions";
 
 const chips = he.whatsapp.question_chips;
@@ -81,7 +81,16 @@ function renderedLabels(container) {
   const rows = container.querySelectorAll(
     "[data-testid='quick-answer-toggle'],[data-testid='question-link'],[data-testid='escalation-link']",
   );
-  return [...rows].map((el) => el.textContent.trim());
+  // MEH-2634: a wa.me chip renders the question PLUS a " (וואטסאפ)"
+  // destination suffix. That suffix is presentation local to the chip row —
+  // resolveProducerQuestions feeds the owner dashboard's preview of her
+  // question list, not the consumer chip, so it must not carry it. Stripped
+  // here by the component's own exported constant, and ONLY as a trailing
+  // match, so every other divergence still shows up as a mismatch.
+  return [...rows].map((el) => {
+    const text = el.textContent.trim();
+    return text.endsWith(WA_SUFFIX.trim()) ? text.slice(0, -WA_SUFFIX.trim().length).trim() : text;
+  });
 }
 
 const FIXTURES = [

@@ -55,11 +55,11 @@ export default function PasswordStrength({ password }) {
     tierBarColor = "#2e6853";
   } else if (passed === 1) {
     tierLabel = t("weak");
-    tierTextClass = "text-red-500";
+    tierTextClass = "text-danger-500";
     tierBarColor = "#ef4444"; // tailwind red-500
   } else if (passed === 2) {
     tierLabel = t("medium");
-    tierTextClass = "text-amber-500";
+    tierTextClass = "text-warning-500";
     tierBarColor = "#f59e0b"; // tailwind amber-500
   }
 

@@ -108,13 +108,15 @@ describe("MEH-2476 — experience details", () => {
         producer_name: "חוות נועה",
         producer_phone: "052-1234567",
       },
+      // MEH-2768: the CTA follows «איך נרשמים?».
+      registration_method: "whatsapp",
     });
     const link = screen.getByTestId("experience-host-link");
     expect(link.getAttribute("href")).toBe("/chavat-noa");
     // Avatar initial «ח», the label, the business name; plus a chevron.
     expect(link.textContent).toBe(`ח${t.host_label} חוות נועה`);
     expect(link.querySelector("svg")).not.toBeNull();
-    expect(screen.getByRole("link", { name: t.whatsapp_cta }).getAttribute("href")).toMatch(
+    expect(screen.getByTestId("registration-whatsapp").getAttribute("href")).toMatch(
       /^https:\/\/wa\.me\/972521234567\?text=/,
     );
   });
@@ -127,5 +129,48 @@ describe("MEH-2476 — experience details", () => {
     // No link → no chevron promising one.
     expect(row.querySelector("a")).toBeNull();
     expect(row.querySelector("svg")).toBeNull();
+  });
+
+  // MEH-2653: an older row stores the English key — the chip must read Hebrew.
+  it.each([
+    ["workshop", "סדנה"],
+    ["סדנה", "סדנה"],
+    ["food_tour", "סיור אוכל"],
+  ])("category %s → chip «%s»", async (category, label) => {
+    await renderWith({ category });
+    expect(screen.getByTestId("experience-category").textContent).toBe(label);
+  });
+
+  // MEH-2675: the chip links to the list filtered by its Hebrew wire key —
+  // also for an older row that stores the English key.
+  it.each([
+    ["סיור אוכל", "סיור אוכל"],
+    ["food_tour", "סיור אוכל"],
+  ])("category %s → chip links to /experiences?category=%s", async (category, key) => {
+    await renderWith({ category });
+    const chip = screen.getByTestId("experience-category");
+    expect(chip.tagName).toBe("A");
+    expect(chip.getAttribute("href")).toBe(`/experiences?category=${encodeURIComponent(key)}`);
+  });
+
+  it("an unknown category → no chip, never a raw key", async () => {
+    await renderWith({ category: "zzz" });
+    expect(screen.queryByTestId("experience-category")).not.toBeInTheDocument();
+  });
+
+  it("no category → no chip", async () => {
+    await renderWith({});
+    expect(screen.queryByTestId("experience-category")).not.toBeInTheDocument();
+  });
+
+  // MEH-2653: sign-up is on WhatsApp, so the count never moves — show the cap.
+  it("a cap reads «עד N משתתפים», not «N מתוך N»", async () => {
+    await renderWith({ max_participants: 8, spots_left: 8, participants_count: 0 });
+    expect(screen.getByTestId("experience-capacity").textContent).toBe("עד 8 משתתפים");
+  });
+
+  it("no cap → no capacity line", async () => {
+    await renderWith({ max_participants: null, spots_left: null });
+    expect(screen.queryByTestId("experience-capacity")).not.toBeInTheDocument();
   });
 });

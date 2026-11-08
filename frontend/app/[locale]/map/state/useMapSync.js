@@ -3,7 +3,7 @@ import { useTranslations } from "next-intl";
 
 import api from "@/lib/api";
 import { showToast } from "@/lib/toast";
-import { GeoSearchSchema } from "@/lib/schemas";
+import { GeoSearchSchema, GEO_SEARCH_ERROR_KEYS } from "@/lib/schemas";
 import { boundsToCenterRadius } from "@/lib/map-chips";
 import { HALF } from "@/components/MapBottomSheet";
 
@@ -174,6 +174,19 @@ export function useMapSync({
   }, [setActiveProducerId, setSelectedProducer, setSheetSnap]);
   // setSelectedLocation is a stable setState fn — omitted from deps intentionally.
 
+  // MEH-2049: back from a producer page, reopen the business that was
+  // selected — card open, pin active — WITHOUT a flyTo: the camera was
+  // already restored as the map's first setView. Same state the marker tap
+  // sets (sheet to HALF on a phone so the card is on screen), minus the move.
+  const restoreSelection = useCallback((producer, location = null) => {
+    if (!producer?.id) return;
+    setActiveProducerId(producer.id);
+    setSelectedProducer(producer);
+    setSelectedLocation(location);
+    const isDesktop = typeof window !== "undefined" && window.innerWidth >= 1024;
+    if (!isDesktop) setSheetSnap(HALF);
+  }, [setActiveProducerId, setSelectedProducer, setSheetSnap]);
+
   // docs/archive/MAP_IMPROVEMENTS.md #3 — hover sync: map → card
   const handleMarkerHover = useCallback((producerId) => {
     setHoveredProducerId(producerId);
@@ -258,9 +271,10 @@ export function useMapSync({
       radius_km: centerRadius?.radius_km,
     });
     if (!geoValidation.success) {
-      // Zod v4: issues (not errors). Fall back to a generic Hebrew message
-      // if the shape ever changes again.
-      const msg = geoValidation.error.issues?.[0]?.message || t("map.errors.invalid_search");
+      // Zod v4: issues (not errors). MEH-2765: the schema's message is a key
+      // under map.errors; anything else falls back to invalid_search.
+      const key = geoValidation.error.issues?.[0]?.message;
+      const msg = GEO_SEARCH_ERROR_KEYS.includes(key) ? t(`map.errors.${key}`) : t("map.errors.invalid_search");
       showToast.info(msg);
       return;
     }
@@ -295,5 +309,6 @@ export function useMapSync({
     handleMapCanvasClick,
     handleSearchThisArea,
     selectedLocation,
+    restoreSelection,
   };
 }

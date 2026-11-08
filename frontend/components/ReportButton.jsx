@@ -6,6 +6,7 @@ import { useAuth } from "@/lib/auth-context";
 import api from "@/lib/api";
 import { detailToMessage } from "@/lib/errors";
 import { useFocusReturn } from "@/lib/use-focus-return";
+import Button from "@/components/ui/Button";
 
 export default function ReportButton({ producerId }) {
   const t = useTranslations("report");
@@ -36,29 +37,29 @@ export default function ReportButton({ producerId }) {
     <>
       <button
         onClick={() => setShowModal(true)}
-        className="text-sm text-red-500 hover:text-red-700 transition flex items-center gap-1"
+        className="text-sm text-error hover:text-danger-700 transition flex items-center gap-1"
       >
         {t("trigger")}
       </button>
 
       {showModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[9000] p-4">
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-[9000] p-4">
           <div
             role="dialog"
             aria-modal="true"
             aria-labelledby="report-dialog-title"
-            className="bg-white rounded-[12px] p-6 max-w-md w-full"
+            className="bg-surface rounded-md p-6 max-w-md w-full"
           >
             {submitted ? (
               <div className="text-center">
                 <p className="text-lg font-semibold mb-2">{t("success_title")}</p>
                 <p className="text-muted mb-4">{t("success_message")}</p>
-                <button
+                <Button
                   onClick={() => { setShowModal(false); setSubmitted(false); setReason(""); }}
-                  className="bg-primary text-white px-6 py-2 rounded-[12px]"
+                  variant="primary" size="lg"
                 >
                   {t("success_close")}
-                </button>
+                </Button>
               </div>
             ) : (
               <form onSubmit={handleSubmit}>
@@ -67,13 +68,13 @@ export default function ReportButton({ producerId }) {
                   value={reason}
                   onChange={(e) => setReason(e.target.value)}
                   placeholder={t("reason_placeholder")}
-                  className="w-full border rounded-[12px] p-3 mb-3 resize-none h-24"
+                  className="w-full border rounded-md p-3 mb-3 resize-none h-24"
                   maxLength={500}
                   required
                 />
-                {error && <p className="text-red-500 text-sm mb-3">{error}</p>}
+                {error && <p className="text-error text-sm mb-3">{error}</p>}
                 <div className="flex gap-3">
-                  <button type="submit" className="bg-red-500 text-white px-6 py-2 rounded-[12px] hover:bg-red-600">
+                  <button type="submit" className="bg-danger-500 text-white px-6 py-2 rounded-md hover:bg-danger-600">
                     {t("submit")}
                   </button>
                   <button

@@ -26,6 +26,7 @@ import { STATUS_CLASSES } from "@/lib/dashboard-status-classes";
 import useDialogFocus from "@/hooks/useDialogFocus";
 import { GroupBuyStatusResultSchema, OwnerGroupBuySchema } from "@/lib/api-schemas";
 import { SkeletonList } from "@/components/Skeleton";
+import Button from "@/components/ui/Button";
 
 const STATUS_CLS = {
   open: STATUS_CLASSES.info,
@@ -58,16 +59,20 @@ function NewGroupBuyForm({ producerCity, onCreated }) {
     max_participants: "",
     deadline: "",
     city: producerCity || "",
-    fulfillment_note: "",
+    pickup_note: "",
+    delivery_note: "",
   });
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   // MEH-1164 B: verified-email 403 → resend CTA notice instead of a dead-end.
   const [unverified, setUnverified] = useState(false);
-  // MEH-2453: the note is required. Native `required` lets whitespace through,
-  // so the blank check is ours; the error sits under the field, not at the end.
-  const [noteError, setNoteError] = useState(false);
-  const noteRef = useRef(null);
+  // MEH-2453 / MEH-2621 split (UI): pickup or delivery is required — at least one of the
+  // two boxes, each with real words if filled. `noteError` names the boxes the
+  // error belongs to: both when both are blank, else the one that is too short.
+  // The error sits under the pair, not at the end of the form.
+  const [noteError, setNoteError] = useState(null);
+  const pickupRef = useRef(null);
+  const deliveryRef = useRef(null);
 
   const set = (field) => (e) => setForm({ ...form, [field]: e.target.value });
 
@@ -83,17 +88,25 @@ function NewGroupBuyForm({ producerCity, onCreated }) {
     e.preventDefault();
     setError("");
     setUnverified(false);
-    const fulfillmentNote = form.fulfillment_note.trim();
-    if (countLetters(fulfillmentNote) < NOTE_MIN_LETTERS) {
-      setNoteError(true);
-      noteRef.current?.focus();
+    const pickupNote = form.pickup_note.trim();
+    const deliveryNote = form.delivery_note.trim();
+    const tooShort = (text) => text !== "" && countLetters(text) < NOTE_MIN_LETTERS;
+    let invalid = null;
+    if (!pickupNote && !deliveryNote) invalid = ["pickup", "delivery"];
+    else if (tooShort(pickupNote)) invalid = ["pickup"];
+    else if (tooShort(deliveryNote)) invalid = ["delivery"];
+    if (invalid) {
+      setNoteError(invalid);
+      (invalid[0] === "pickup" ? pickupRef : deliveryRef).current?.focus();
       return;
     }
     setSubmitting(true);
     try {
       await api.post("/group-buys", {
         ...form,
-        fulfillment_note: fulfillmentNote,
+        // Blank means "not offered" — sent as null, never as "".
+        pickup_note: pickupNote || null,
+        delivery_note: deliveryNote || null,
         price_per_unit_regular: Number(form.price_per_unit_regular),
         price_per_unit_group: Number(form.price_per_unit_group),
         min_participants: Number(form.min_participants),
@@ -114,7 +127,7 @@ function NewGroupBuyForm({ producerCity, onCreated }) {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4 bg-white rounded-[16px] border border-border p-6">
+    <form onSubmit={handleSubmit} className="space-y-4 bg-surface rounded-lg border border-border p-6">
       <h2 className="font-headline-lg text-lg font-bold text-text">{t("heading")}</h2>
       {/* MEH-992: one-line concept intro — what a group-buy is */}
       <p className="text-sm text-fg-muted">{t("concept_intro")}</p>
@@ -140,7 +153,7 @@ function NewGroupBuyForm({ producerCity, onCreated }) {
             onChange={set("description")}
             placeholder={t("description_placeholder")}
             rows={2}
-            className="w-full border border-border rounded-[8px] px-3 py-2 text-start resize-none"
+            className="w-full border border-border rounded-sm px-3 py-2 text-start resize-none"
             dir="rtl"
           />
         </div>
@@ -192,7 +205,7 @@ function NewGroupBuyForm({ producerCity, onCreated }) {
             dir="ltr"
           />
           {/* MEH-992: pre-submit price-rule helper — muted hint, turns red on violation (pre-400) */}
-          <p className={`text-xs mt-1 ${priceInvalid ? "text-red-500" : "text-fg-muted"}`}>
+          <p className={`text-xs mt-1 ${priceInvalid ? "text-danger-500" : "text-fg-muted"}`}>
             {t("price_helper")}
           </p>
         </div>
@@ -241,37 +254,51 @@ function NewGroupBuyForm({ producerCity, onCreated }) {
         />
 
         {/* MEH-1457: "מתי ואיך מקבלים" — free text (OFN "Ready for").
-            MEH-2453: required, with a helper saying who reads it. A textarea,
-            so it cannot ride ui/Input; the label marker, helper and error
-            copy Input's markup and aria wiring. */}
-        <div className="sm:col-span-2 flex flex-col gap-1.5">
-          <label htmlFor="gb-fulfillment" className="text-sm font-medium text-text">
-            {t("fulfillment_label")}
+            MEH-2453: required, with a helper saying who reads it.
+            MEH-2621 split (UI): two boxes, pickup and delivery (Shopify / Local Line ask
+            the seller about each separately); at least one is required. Copy
+            approved by Sapir 30/10. Textareas, so they cannot ride ui/Input;
+            the helper and error copy Input's markup and aria wiring. */}
+        <fieldset className="sm:col-span-2 flex flex-col gap-3" data-testid="gb-fulfillment-fields">
+          <legend className="text-sm font-medium text-text mb-1">
+            {t("fulfillment_legend")}
             <span className="text-error" aria-hidden="true">
               {" *"}
             </span>
-          </label>
-          <textarea
-            id="gb-fulfillment"
-            ref={noteRef}
-            value={form.fulfillment_note}
-            onChange={(e) => {
-              setNoteError(false);
-              set("fulfillment_note")(e);
-            }}
-            placeholder={t("fulfillment_placeholder")}
-            required
-            maxLength={1000}
-            aria-invalid={noteError || undefined}
-            aria-describedby={
-              noteError ? "gb-fulfillment-helper gb-fulfillment-error" : "gb-fulfillment-helper"
-            }
-            rows={2}
-            className={`w-full border rounded-[8px] px-3 py-2 text-start resize-none ${
-              noteError ? "border-error" : "border-border"
-            }`}
-            dir="rtl"
-          />
+          </legend>
+          {[
+            ["pickup", pickupRef],
+            ["delivery", deliveryRef],
+          ].map(([kind, ref]) => {
+            const invalid = noteError?.includes(kind);
+            return (
+              <div key={kind} className="flex flex-col gap-1.5">
+                <label htmlFor={`gb-${kind}`} className="text-sm text-text">
+                  {t(`${kind}_label`)}
+                </label>
+                <textarea
+                  id={`gb-${kind}`}
+                  ref={ref}
+                  value={form[`${kind}_note`]}
+                  onChange={(e) => {
+                    setNoteError(null);
+                    set(`${kind}_note`)(e);
+                  }}
+                  placeholder={t(`${kind}_placeholder`)}
+                  maxLength={1000}
+                  aria-invalid={invalid || undefined}
+                  aria-describedby={
+                    invalid ? "gb-fulfillment-helper gb-fulfillment-error" : "gb-fulfillment-helper"
+                  }
+                  rows={2}
+                  className={`w-full border rounded-sm px-3 py-2 text-start resize-none ${
+                    invalid ? "border-error" : "border-border"
+                  }`}
+                  dir="rtl"
+                />
+              </div>
+            );
+          })}
           <p id="gb-fulfillment-helper" className="text-xs text-fg-muted">
             {t("fulfillment_helper")}
           </p>
@@ -280,19 +307,19 @@ function NewGroupBuyForm({ producerCity, onCreated }) {
               {t("fulfillment_required")}
             </p>
           )}
-        </div>
+        </fieldset>
       </div>
 
       {/* MEH-1165: role="alert" so the submit error is announced to AT. */}
       {unverified && <UnverifiedEmailNotice />}
-      {error && <p className="text-red-500 text-sm" role="alert">{error}</p>}
-      <button
+      {error && <p className="text-danger-500 text-sm" role="alert">{error}</p>}
+      <Button
         type="submit"
         disabled={submitting || priceInvalid}
-        className="bg-primary text-white px-6 py-2.5 min-h-[44px] rounded-[8px] hover:bg-primary-dark transition font-medium disabled:opacity-50"
+        variant="primary" size="lg"
       >
         {submitting ? t("submitting") : t("submit")}
-      </button>
+      </Button>
     </form>
   );
 }
@@ -342,7 +369,7 @@ function GroupBuyActionDialog({ pending, busy, stale, error, onConfirm, onClose 
         aria-modal="true"
         aria-labelledby="group-buy-action-title"
         data-testid="group-buy-action-dialog"
-        className="bg-white rounded-[16px] shadow-xl p-6 max-w-sm w-full text-start space-y-3"
+        className="bg-surface rounded-lg shadow-xl p-6 max-w-sm w-full text-start space-y-3"
       >
         <p id="group-buy-action-title" className="font-medium text-base text-text">
           {t(`${action}_title`)}
@@ -353,7 +380,7 @@ function GroupBuyActionDialog({ pending, busy, stale, error, onConfirm, onClose 
             {t("cancel_funded_note", { count: gb.commits_count })}
           </p>
         )}
-        {error && <p role="alert" className="text-sm text-red-600">{error}</p>}
+        {error && <p role="alert" className="text-sm text-danger-600">{error}</p>}
         <div className="flex gap-3 justify-start pt-1">
           <button
             type="button"
@@ -363,8 +390,8 @@ function GroupBuyActionDialog({ pending, busy, stale, error, onConfirm, onClose 
             // «חזרה» returns her to the card, which now shows the real state.
             disabled={busy || stale}
             onClick={onConfirm}
-            className={`px-4 py-2 min-h-[44px] rounded-[10px] text-sm font-medium text-white transition disabled:opacity-50 ${
-              destructive ? "bg-red-600 hover:bg-red-700" : "bg-primary hover:bg-primary-dark"
+            className={`px-4 py-2 min-h-touch rounded-full text-sm font-medium text-white transition disabled:opacity-50 ${
+              destructive ? "bg-danger-600 hover:bg-danger-700" : "bg-primary hover:bg-primary-dark"
             }`}
           >
             {/* The close and deliver confirms reuse their button's own label —
@@ -379,7 +406,7 @@ function GroupBuyActionDialog({ pending, busy, stale, error, onConfirm, onClose 
             data-autofocus
             disabled={busy}
             onClick={onClose}
-            className="px-4 py-2 min-h-[44px] rounded-[10px] text-sm border border-border text-fg-muted hover:bg-gray-50 transition disabled:opacity-50"
+            className="px-4 py-2 min-h-touch rounded-full text-sm border border-border text-fg-muted hover:bg-gray-50 transition disabled:opacity-50"
           >
             {t("back")}
           </button>
@@ -531,7 +558,7 @@ export default function ProducerGroupBuysPage() {
     <div className="max-w-3xl mx-auto px-4 py-10">
       {/* MEH-1655: min-h pins the row at CTA height so it doesn't shrink
           when the button unmounts. */}
-      <div className="flex items-center justify-between mb-6 min-h-[44px]">
+      <div className="flex items-center justify-between mb-6 min-h-touch">
         <div>
           {/* MEH-999: entered from the Tools tab (tools/page.js:92). */}
           <BackLink href="/producer/dashboard/tools" label={t("back")} />
@@ -555,12 +582,12 @@ export default function ProducerGroupBuysPage() {
             EmptyState description below — so the explanation still has a
             home and nothing on screen invites a dead press. */}
         {items !== null && !notApproved && !(items.length === 0 && !showForm) && (
-          <button
+          <Button
             onClick={() => setShowForm((v) => !v)}
-            className="bg-primary text-white px-4 py-2 min-h-[44px] rounded-[8px] text-sm font-medium hover:bg-primary-dark transition"
+            variant="primary" size="sm"
           >
             {showForm ? t("btn_close_form") : t("btn_open_form")}
-          </button>
+          </Button>
         )}
       </div>
 
@@ -640,7 +667,7 @@ export default function ProducerGroupBuysPage() {
                 // whose action buttons are gone (useDialogFocus fallback).
                 data-group-buy-card={gb.id}
                 tabIndex={-1}
-                className="bg-white rounded-[14px] border border-border p-5 focus:outline-none"
+                className="bg-surface rounded-lg border border-border p-5 focus:outline-none"
               >
                 <div className="flex items-start justify-between gap-3 mb-3">
                   <div>
@@ -697,8 +724,8 @@ export default function ProducerGroupBuysPage() {
                         onClick={() => openAction(gb, action)}
                         className={
                           action === "deliver"
-                            ? "px-4 py-2 min-h-[44px] rounded-[8px] text-sm font-medium bg-primary text-white hover:bg-primary-dark transition"
-                            : "px-4 py-2 min-h-[44px] rounded-[8px] text-sm border border-border text-red-700 hover:bg-red-50 transition"
+                            ? "px-4 py-2 min-h-touch rounded-sm text-sm font-medium bg-primary text-white hover:bg-primary-dark transition"
+                            : "px-4 py-2 min-h-touch rounded-sm text-sm border border-border text-danger-700 hover:bg-danger-50 transition"
                         }
                       >
                         {tActions(action)}

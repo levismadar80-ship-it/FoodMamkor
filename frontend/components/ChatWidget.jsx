@@ -5,6 +5,7 @@ import { ChatCircleDots, X, PaperPlaneTilt } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import api from "@/lib/api";
 import CollectionNotice from "@/components/CollectionNotice";
+import { INERT_PRESENT } from "@/lib/inert-attr";
 
 /**
  * ChatWidget — floating Q&A bot, all screen sizes.
@@ -12,9 +13,8 @@ import CollectionNotice from "@/components/CollectionNotice";
  * MEH-2499 (28/10) reverses MEH-1410 (21/07, desktop-only): the launcher is
  * back on mobile as an icon-only circle above the BottomNav pill. What made
  * MEH-1410 hide it — a second floating control stacked on bottom navigation —
- * is answered the way Material answers it for a FAB over a bottom bar: the
- * launcher steps aside while the reader scrolls DOWN and returns on scroll UP
- * (or near the top). Desktop behavior is unchanged and never hides.
+ * was answered by hiding the launcher on scroll-down; since 4/11 it stays put
+ * on every viewport (a launcher that moves read as broken on a phone).
  *
  * MEH-1617: every user-facing string moved to the `chat.*` namespace in
  * messages/{he,en}.json. The copy is UNCHANGED — a move, not a rewrite. The
@@ -22,7 +22,7 @@ import CollectionNotice from "@/components/CollectionNotice";
  * ANSWERED_PROMPT_IDS below for why it had to change.
  *
  * Launcher:
- *   Mobile (MEH-2499): icon-only circle, hides on scroll-down, pinned to
+ *   Mobile (MEH-2499): icon-only circle, always shown, pinned to
  *     the end/inline edge. MEH-850: bottom = safe-area + pill-clearance +
  *     var(--cookie-banner-h, 0) via calc() — it self-clears the cookie banner
  *     when shown and sits just above the BottomNav pill when dismissed. z 1050 (desktop launcher + panel: 9999).
@@ -86,6 +86,11 @@ const SUGGESTED_PROMPT_IDS = [
 // they're registering. That copy now lives verbatim at chat.answers.*.
 const ANSWERED_PROMPT_IDS = new Set(["register", "find_nearby"]);
 
+// MEH-2835: the mobile launcher is `w-12 h-12` (48px); + the 16px gap it keeps
+// above the BottomNav pill.
+const CHAT_FAB_CLEARANCE_VAR = "--chat-fab-clearance";
+const CHAT_FAB_CLEARANCE = "64px";
+
 export default function ChatWidget({ hideOnMobile = false } = {}) {
   const t = useTranslations("chat");
   // MEH-1981: notice-at-collection. The line names Anthropic itself — "to whom
@@ -134,48 +139,92 @@ export default function ChatWidget({ hideOnMobile = false } = {}) {
     return () => mq.removeEventListener("change", h);
   }, []);
 
-  // ── MEH-2499: mobile launcher steps aside on scroll-down ──
-  // rAF-throttled, same shape as BackToTop's listener. Near the top it always
-  // shows; past that, direction decides (a few px of hysteresis so iOS
-  // rubber-band jitter does not flicker it). Desktop never hides.
-  const [scrollHidden, setScrollHidden] = useState(false);
-  const launcherRef = useRef(null);
-  useEffect(() => {
-    if (typeof window === "undefined" || isDesktop) {
-      setScrollHidden(false);
-      return;
-    }
-    let lastY = Math.max(0, window.scrollY);
-    let ticking = false;
-    const update = () => {
-      ticking = false;
-      const y = Math.max(0, window.scrollY);
-      // Never hide the launcher out from under keyboard focus (axe
-      // aria-hidden-focus; an invisible focused control).
-      const focused = document.activeElement === launcherRef.current;
-      if (y < 60) setScrollHidden(false);
-      else if (y > lastY + 4) setScrollHidden(!focused);
-      else if (y < lastY - 4) setScrollHidden(false);
-      else return;
-      lastY = y;
-    };
-    const onScroll = () => {
-      if (!ticking) {
-        ticking = true;
-        window.requestAnimationFrame(update);
-      }
-    };
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, [isDesktop]);
-  // The mobile panel does not lock page scroll, so a scroll while it is open
-  // could leave the hidden flag set — closing the panel must bring the
-  // launcher back, not make it vanish.
-  useEffect(() => { setScrollHidden(false); }, [open]);
+  // The mobile launcher used to step aside on scroll-down (MEH-2499). On a
+  // phone that read as a button that "does not stay in place" (Sapir, 31/10),
+  // so since 4/11 it stays put on every viewport, like the business list's.
 
   // MEH-850: cookie-banner clearance is now handled purely in CSS via the
   // `--cookie-banner-h` var (published by CookieBanner) in the launcher's
   // bottom calc() below — no JS visibility state / event listener needed.
+
+  // MEH-2835: while the MOBILE launcher is on screen (and its panel closed),
+  // publish the room it takes — its 48px circle + a 16px gap — as
+  // --chat-fab-clearance on <html>, the --cookie-banner-h pattern. globals.css
+  // adds it to --bottom-inset, so every page's last line (and the footer's
+  // newsletter arrow) ends above the launcher; BackToTop reads it to know
+  // whether the launcher slot is taken. Desktop, an open panel, or a launcher
+  // kept off this page → the var is removed (0).
+  // MEH-2835 PR 2: one mechanism for "step aside" — any element carrying
+  // data-chat-hide hides the MOBILE launcher while it intersects the viewport
+  // (the map, a form, the business page's sticky contact bar while shown).
+  // The set is re-scanned on DOM changes (route changes, a bar toggling its
+  // attribute), throttled to one scan per frame. Desktop never steps aside.
+  const [hiddenByPage, setHiddenByPage] = useState(false);
+  useEffect(() => {
+    if (!viewportKnown || isDesktop || typeof window === "undefined" || typeof window.IntersectionObserver === "undefined") {
+      setHiddenByPage(false);
+      return undefined;
+    }
+    const observed = new Set();
+    const inView = new Set();
+    const io = new window.IntersectionObserver((entries) => {
+      for (const e of entries) {
+        if (e.isIntersecting) inView.add(e.target);
+        else inView.delete(e.target);
+      }
+      setHiddenByPage(inView.size > 0);
+    });
+    const scan = () => {
+      const now = new Set(document.querySelectorAll("[data-chat-hide]"));
+      for (const el of observed) {
+        if (!now.has(el)) {
+          io.unobserve(el);
+          observed.delete(el);
+          inView.delete(el);
+        }
+      }
+      for (const el of now) {
+        if (!observed.has(el)) {
+          io.observe(el);
+          observed.add(el);
+        }
+      }
+      setHiddenByPage(inView.size > 0);
+    };
+    scan();
+    // `pending` (not the rAF id) gates the throttle: an id assigned after a
+    // synchronously-run callback would leave the gate shut for good.
+    let pending = false;
+    let frame = 0;
+    const mo = new MutationObserver(() => {
+      if (pending) return;
+      pending = true;
+      frame = window.requestAnimationFrame(() => {
+        pending = false;
+        scan();
+      });
+    });
+    mo.observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ["data-chat-hide"] });
+    return () => {
+      io.disconnect();
+      mo.disconnect();
+      if (frame) window.cancelAnimationFrame(frame);
+    };
+  }, [viewportKnown, isDesktop]);
+  // An open panel stays open: stepping aside only applies to the closed launcher.
+  const steppedAside = hiddenByPage && !isDesktop && !open;
+
+  const launcherOnMobile = viewportKnown && !isDesktop && !hideOnMobile && !open && !steppedAside;
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    const root = document.documentElement;
+    if (!launcherOnMobile) {
+      root.style.removeProperty(CHAT_FAB_CLEARANCE_VAR);
+      return;
+    }
+    root.style.setProperty(CHAT_FAB_CLEARANCE_VAR, CHAT_FAB_CLEARANCE);
+    return () => root.style.removeProperty(CHAT_FAB_CLEARANCE_VAR);
+  }, [launcherOnMobile]);
 
   // ── "chatWasOpened" — shrink desktop pill to icon after first use ──
   const [wasOpened, setWasOpened] = useState(true); // default icon-only until checked
@@ -264,7 +313,6 @@ export default function ChatWidget({ hideOnMobile = false } = {}) {
     position: "fixed", zIndex: 9999,
     insetInlineEnd: isDesktop ? 24 : 16,
     bottom: isDesktop ? 24 : MOBILE_LAUNCHER_BOTTOM,
-    transition: "opacity 200ms ease, transform 200ms ease",
   };
   // MEH-2499: on mobile the launcher sits just above the BottomNav pill and
   // BackToTop (z-1000) but BELOW every sheet/prompt that can cover the same
@@ -272,12 +320,13 @@ export default function ChatWidget({ hideOnMobile = false } = {}) {
   // 9997. At 9999 it painted over the open filter sheet's end corner. The
   // panel keeps 9999 (it is the sheet here).
   if (!isDesktop) Object.assign(launcherStyle, { zIndex: 1050 });
-  // MEH-2499: never hidden while the panel is open. (On mobile the open sheet
-  // covers the launcher, so the sheet's own X is the close control there; on
-  // desktop the launcher doubles as one.)
-  const launcherHidden = scrollHidden && !open;
-  if (launcherHidden) {
-    Object.assign(launcherStyle, { opacity: 0, transform: "translateY(16px)", pointerEvents: "none" });
+  // MEH-2835 PR 2: stepping aside = a 150ms fade, no pointer events, inert.
+  if (!isDesktop) {
+    Object.assign(launcherStyle, {
+      transition: "opacity 150ms ease",
+      opacity: steppedAside ? 0 : 1,
+      pointerEvents: steppedAside ? "none" : undefined,
+    });
   }
   // MEH-1135: desktop 360px box anchors to the same bottom-END corner as the
   // launcher (insetInlineEnd:24, insetInlineStart:auto); mobile stays full-width
@@ -305,17 +354,25 @@ export default function ChatWidget({ hideOnMobile = false } = {}) {
       <button
         type="button"
         onClick={open ? () => setOpen(false) : handleOpen}
-        // Programmatic / screen-reader-cursor focus only (tabIndex is -1 while
-        // hidden): a hidden launcher that still receives focus comes back.
-        onFocus={() => setScrollHidden(false)}
-        ref={launcherRef}
         style={launcherStyle}
         data-testid="chat-launcher"
-        data-hidden={launcherHidden ? "true" : "false"}
-        tabIndex={launcherHidden ? -1 : undefined}
-        aria-hidden={launcherHidden ? true : undefined}
+        data-stepped-aside={steppedAside ? "true" : undefined}
+        inert={steppedAside ? INERT_PRESENT : undefined}
+        // MEH-2793: `print:hidden` — a floating chat button has no business on
+        // paper, and it printed over the A6 QR card (MEH-2785) and the A5
+        // rescue counter card (MEH-2649). The class goes on the component's
+        // own elements, matching CookieBanner.jsx:70, NOT on `.vv-pin`: that
+        // class is shared with BackToTop, AccountSheet, InstallPrompt and
+        // BottomNav, so a rule on it would hide four unrelated components too.
+        // It beats the inline style because that style sets position/zIndex
+        // and never `display` — verified with a computed-style probe, not
+        // assumed (frontend.md).
         className={[
-          "flex items-center justify-center bg-primary text-white rounded-full shadow-[0_4px_24px_rgba(46,104,83,0.25)] hover:bg-primary-dark transition focus-visible:ring-2 focus-visible:ring-primary/40",
+          // MEH-2835: a 2px cream ring (ring-background) so the green circle
+          // reads on green surfaces (footer, closing bands). Focus keeps the
+          // cream ring and adds a dark outline outside it — the old
+          // ring-primary/40 vanished on green and replaced the cream ring.
+          "vv-pin print:hidden flex items-center justify-center bg-primary text-white rounded-full ring-2 ring-background shadow-[0_4px_24px_rgba(46,104,83,0.25)] hover:bg-primary-dark transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text",
           showPillText ? "gap-2 px-4 py-3" : "w-12 h-12",
         ].join(" ")}
         // MEH-2308: when the pill text is showing it IS the accessible name. An
@@ -335,7 +392,7 @@ export default function ChatWidget({ hideOnMobile = false } = {}) {
       {open && (
         <div
           style={panelStyle}
-          className="flex flex-col bg-background border border-border shadow-[0_8px_32px_rgba(46,104,83,0.18)] overflow-hidden"
+          className="vv-pin print:hidden flex flex-col bg-background border border-border shadow-[0_8px_32px_rgba(46,104,83,0.18)] overflow-hidden"
           role="dialog"
           aria-modal="false"
           aria-label={t("panel_label")}
@@ -364,8 +421,8 @@ export default function ChatWidget({ hideOnMobile = false } = {}) {
           >
             {messages.map((m, i) => (
               <div key={i} className={`flex ${m.role === "user" ? "justify-start" : "justify-end"}`}>
-                <div className={`max-w-[85%] px-3 py-2 rounded-[12px] text-sm leading-relaxed whitespace-pre-line ${
-                  m.role === "user" ? "bg-primary text-white" : "bg-white text-text border border-border"
+                <div className={`max-w-[85%] px-3 py-2 rounded-md text-sm leading-relaxed whitespace-pre-line ${
+                  m.role === "user" ? "bg-primary text-white" : "bg-surface text-text border border-border"
                 }`}>
                   {m.content}
                 </div>
@@ -373,7 +430,7 @@ export default function ChatWidget({ hideOnMobile = false } = {}) {
             ))}
             {sending && (
               <div className="flex justify-end">
-                <div className="bg-white text-fg-muted border border-border px-3 py-2 rounded-[12px] text-sm">
+                <div className="bg-surface text-fg-muted border border-border px-3 py-2 rounded-md text-sm">
                   <span className="inline-flex gap-1">
                     <span className="animate-pulse">●</span>
                     <span className="animate-pulse" style={{ animationDelay: "0.15s" }}>●</span>
@@ -383,7 +440,7 @@ export default function ChatWidget({ hideOnMobile = false } = {}) {
               </div>
             )}
             {error && (
-              <p role="status" className="text-xs text-red-700 bg-red-50 border border-red-200 rounded-[8px] px-3 py-2">
+              <p role="status" className="text-xs text-danger-700 bg-danger-50 border border-danger-200 rounded-sm px-3 py-2">
                 {error}
               </p>
             )}
@@ -393,7 +450,7 @@ export default function ChatWidget({ hideOnMobile = false } = {}) {
                   const label = t(`prompts.${id}`);
                   return (
                     <button key={id} type="button" onClick={() => sendMessage(label, id)}
-                      className="text-start text-xs text-primary bg-green-50 hover:bg-green-50/70 border border-border rounded-[8px] px-3 py-2 transition focus-visible:ring-2 focus-visible:ring-primary/40"
+                      className="text-start text-xs text-primary bg-green-50 hover:bg-green-50/70 border border-border rounded-sm px-3 py-2 transition focus-visible:ring-2 focus-visible:ring-primary/40"
                     >{label}</button>
                   );
                 })}
@@ -402,7 +459,7 @@ export default function ChatWidget({ hideOnMobile = false } = {}) {
           </div>
 
           {/* Composer */}
-          <form onSubmit={handleSubmit} className="border-t border-border bg-white px-3 py-2 flex items-center gap-2">
+          <form onSubmit={handleSubmit} className="border-t border-border bg-surface px-3 py-2 flex items-center gap-2">
             <label htmlFor="chat-input" className="sr-only">{t("input_label")}</label>
             <input
               ref={inputRef} id="chat-input" type="text"
@@ -427,7 +484,7 @@ export default function ChatWidget({ hideOnMobile = false } = {}) {
             // The only surface that overrides the default: the composer sits on a
             // white panel over the page, so the notice paints the same white and
             // shares the composer's horizontal padding instead of the form default.
-            className="bg-white px-3 pb-2"
+            className="bg-surface px-3 pb-2"
           />
         </div>
       )}

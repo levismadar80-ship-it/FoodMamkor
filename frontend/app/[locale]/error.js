@@ -2,11 +2,12 @@
 
 import { useEffect } from "react";
 import Image from "next/image";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { WarningCircle } from "@phosphor-icons/react";
 import * as Sentry from "@sentry/nextjs";
 import { useTranslations } from "next-intl";
 import { BRAND_NAME } from "@/lib/constants";
+import Button from "@/components/ui/Button";
 
 export default function GlobalError({ error, reset }) {
   const t = useTranslations("errors.boundary");
@@ -36,13 +37,13 @@ export default function GlobalError({ error, reset }) {
           {t("message")}
         </p>
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
-          <button
+          <Button
             type="button"
             onClick={() => reset()}
-            className="bg-primary text-white px-6 py-3 rounded-full hover:bg-primary-dark transition font-medium focus-visible:ring-2 focus-visible:ring-primary/40"
+            variant="primary" size="lg"
           >
             {t("retry")}
-          </button>
+          </Button>
           <Link
             href="/"
             className="border border-primary text-primary px-6 py-3 rounded-full hover:bg-green-50 transition font-medium focus-visible:ring-2 focus-visible:ring-primary/40"
@@ -57,7 +58,8 @@ export default function GlobalError({ error, reset }) {
           </Link>
         </p>
         {process.env.NODE_ENV === "development" && error?.message && (
-          <pre className="mt-8 text-left text-xs text-fg-muted bg-white border border-border rounded-[8px] p-4 overflow-auto max-h-40">
+          // rtl-ok — dev-only dump of an English error message: physical left IS its start.
+          <pre className="mt-8 text-left text-xs text-fg-muted bg-surface border border-border rounded-sm p-4 overflow-auto max-h-40">
             {error.message}
           </pre>
         )}

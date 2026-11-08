@@ -67,7 +67,7 @@ const apiMock = vi.hoisted(() => ({ get: vi.fn() }));
 vi.mock("@/lib/api", () => ({ default: apiMock }));
 
 const nav = vi.hoisted(() => ({ pathname: "/admin" }));
-vi.mock("@/i18n/navigation", () => ({ usePathname: () => nav.pathname }));
+vi.mock("@/i18n/navigation", () => ({ Link: ({ href, children, prefetch, ...p }) => <a href={typeof href === "string" ? href : href?.pathname} {...p}>{children}</a>,  usePathname: () => nav.pathname }));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn(), replace: vi.fn() }) }));
 vi.mock("@/lib/auth-context", () => ({
   useAuth: () => ({ user: { id: "a1", role: "admin" }, loading: false }),

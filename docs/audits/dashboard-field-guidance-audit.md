@@ -88,7 +88,7 @@ A field missing (2) or (3) where it applies is `missing-guidance` below.
 | product image | `ProductsSection` | ✓ `image_label` | — | — (file) | ✓ card-level `where` | ok |
 | `instagram` | `ContactChannelsCard` | ✓ | — | ✓ `instagram_placeholder` — bare handle (MEH-1597) | ✓ card-level `subtitle` | ok |
 | `website` | `ContactChannelsCard` | ✓ | — | ✓ `website_placeholder` | ✓ card-level | ok |
-| `whatsapp_group` | `ContactChannelsCard` | ✓ | — | ✓ `whatsapp_group_placeholder` | ✓ card-level | ok |
+| `whatsapp_group` | `ContactChannelsCard` | ✓ «עדכונים בוואטסאפ» (MEH-2626) | ✓ `whatsapp_group_helper` — recommends a channel | ✓ `whatsapp_group_placeholder` — `https://whatsapp.com/channel/…` | ✓ card-level | ok |
 | `contact_email` | `ContactChannelsCard` | ✓ | — | ✓ `email_placeholder` | ✓ card-level | ok |
 | `facebook` | `ContactChannelsCard` | ✓ | — | ✓ `facebook_placeholder` | ✓ card-level | ok |
 
@@ -110,7 +110,7 @@ above.
 | product image | `ProductsSection` | no "where" | ✓ card-level `where` |
 | `instagram` | `ContactChannelsCard` | no placeholder | ✓ `instagram_placeholder` — a **bare handle**, not a URL: `ContactCard.jsx:105-106` composes the URL itself, so a URL here would render a doubled, dead link. Since MEH-1608 the server also normalizes URL/@ input to a bare handle on every producer write schema (`_normalize_instagram`, schemas.py) |
 | `website` | `ContactChannelsCard` | no placeholder | ✓ `website_placeholder` — full URL, matching `_url_scheme_validator` |
-| `whatsapp_group` | `ContactChannelsCard` | no placeholder | ✓ `whatsapp_group_placeholder` — the `https://chat.whatsapp.com/…` shape its validator requires |
+| `whatsapp_group` | `ContactChannelsCard` | no placeholder | ✓ `whatsapp_group_placeholder` — since MEH-2626 the `https://whatsapp.com/channel/…` shape (the validator accepts a group `chat.whatsapp.com/…` or a channel `[www.]whatsapp.com/channel/<id>`) |
 | `contact_email` | `ContactChannelsCard` | no placeholder | ✓ `email_placeholder` |
 | `facebook` | `ContactChannelsCard` | no placeholder | ✓ `facebook_placeholder` — full URL, matching `_url_scheme_validator` |
 
@@ -246,6 +246,8 @@ surface; **"לא ידוע"** means no renderer was found, not that none exists.
 | 43 | `delivery_fee` | `producers.delivery_fee` | **pricing** | `cards.jsx:1635` (DeliveryCard) | `DeliveryBlock.jsx:357` | `delivery_areas.delivery_fee` (דריסה פר-עיר), `free_delivery_above` | H | **אשכול המשלוחים** — ראו למטה. ברירת מחדל עסקית מול ערך פר-עיר, אותו שם | ✗ |
 | 44 | `free_delivery_above` | `producers.free_delivery_above` | **pricing** | `cards.jsx:1636` | `DeliveryBlock.jsx:385` | `delivery_fee`, `delivery_areas.min_order` | M | "מעל X חינם" מול "מינימום הזמנה X" — שני סכומי-סף על אותה עסקה | ✗ |
 | 45 | `special_hours` | `producers.special_hours` | **schedule** | `SpecialHoursEditor.jsx`, ממוסגר ב-`edit/page.js` (כרטיס «שעות מיוחדות לחגים», WhatsThis משלו) | `ProducerHeader.jsx` (סטטוס — override של היום) · `OrderWindowStrip.jsx` (רשימת «שעות מיוחדות» לתאריכים קרובים) · `ProducerCard.jsx` (שורת «פתוח להזמנות») | `order_window` (36), `opening_hours` (35), `availability_state` | M | **אשכול הזמן** — דורס את `order_window` בתאריך אחד בלבד, לא את שעות החנות (הכרעה א, MEH-1889). התווית אומרת «תאריך ספציפי שגובר על הלו"ז השבועי»; placeholder לדוגמה «ערב ראש השנה»; צ'יפי חג מ-`lib/holidays.js` מציעים תאריך ולא מחילים אותו (MEH-2264) | ✓ |
+| 46 | `coverage_cta_enabled` | `producers.coverage_cta_enabled` | **switch** | `components/dashboard/CoverageCtaToggle.jsx`, under the delivery card in `edit/page.js` (MEH-1676) — label `coverage_cta.label`, helper `coverage_cta.helper` (where it shows: the «לא מגיעים אליך?» button on her page) | `CoverageRequestCta.jsx` (hidden when false) | — | low | ok — a switch: no free text, no placeholder | — |
+| 47 | `reservist_owned` | `producers.reservist_owned` | **switch** | `ReservistOwnedCard.jsx`, instant-save switch inside the «מאחורי העסק» (owner story) card of `edit/page.js` (MEH-2693; moved there by MEH-2699, with a badge preview; admin can see/correct it in `ProducerForm`) — label `reservistOwned.label` «אחד הבעלים משרת במילואים», helper `reservistOwned.scope_helper` (where: «יופיע כתג בכרטיס ובדף העסק») | `ProducerCard.jsx` badge (last in `BADGE_PRIORITY`) · `ReservistBadgeLine.jsx` in «אודות» | `grass_fed` (the other owner-declared business-scope checkbox) | low | ok — a single switch, self-declared; no free text, no placeholder | — |
 
 **Row count: 45** — row 45 (`special_hours`) added by MEH-2264 on 05/09; rows 1–44 are the MEH-1539 freeze. _This line used to read "`len(_PRODUCER_WRITABLE_FIELDS)` = 44"; that stopped being true as fields were closed (MEH-1851/1856/1938 batches) and the ratchet measured 34 writable on 05/09. The writable count is derived at run time by `scripts/checks/dashboard-field-guidance-ratchet.sh` and is not restated here._
 

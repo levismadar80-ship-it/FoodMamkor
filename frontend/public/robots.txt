@@ -54,6 +54,119 @@ Disallow: /
 User-agent: meta-externalagent
 Disallow: /
 
+# AI SEARCH crawlers — explicitly allowed, with the same Disallows as `*`
+# (MEH-2786). Search is not training: OpenAI and Anthropic ship SEPARATE
+# user-agents for the two jobs, so the GPTBot / ClaudeBot blocks above say
+# nothing about OAI-SearchBot, Claude-SearchBot or Claude-User. Per
+# Anthropic's crawler docs, blocking Claude-SearchBot or Claude-User can
+# reduce our visibility in Claude's search answers — so they are named here
+# rather than left to `*`.
+#
+# WHY EACH GROUP REPEATS THE DISALLOWS, AND MUST KEEP REPEATING THEM:
+# a crawler obeys exactly ONE group — its most specific match — and ignores
+# `*` entirely once a group names it. A group holding only `Allow: /` would
+# therefore hand that bot /admin/, /api/, /settings, /favorites and
+# /producer/dashboard/. The two `Allow: /register/producer` lines are part of
+# the mirror too: with `Allow: /` present, the longer `Disallow: /register`
+# still wins on longest-match and would make the MEH-1955 acquisition landing
+# page uncrawlable for these bots alone. Keep these groups and the `*` group
+# byte-identical below their first line; if `*` changes, change all six.
+
+# OAI-SearchBot — OpenAI's SEARCH crawler — serves ChatGPT search results. NOT GPTBot.
+User-agent: OAI-SearchBot
+Allow: /
+Allow: /register/producer
+Disallow: /admin/
+Disallow: /api/
+Disallow: /settings
+Disallow: /favorites
+Disallow: /producer/dashboard/
+Disallow: /login
+Disallow: /register
+Allow: /en/register/producer
+Disallow: /en/admin/
+Disallow: /en/settings
+Disallow: /en/favorites
+Disallow: /en/producer/dashboard/
+Disallow: /en/login
+Disallow: /en/register
+
+# ChatGPT-User — fetches a page when a ChatGPT user follows a link or asks it to browse.
+User-agent: ChatGPT-User
+Allow: /
+Allow: /register/producer
+Disallow: /admin/
+Disallow: /api/
+Disallow: /settings
+Disallow: /favorites
+Disallow: /producer/dashboard/
+Disallow: /login
+Disallow: /register
+Allow: /en/register/producer
+Disallow: /en/admin/
+Disallow: /en/settings
+Disallow: /en/favorites
+Disallow: /en/producer/dashboard/
+Disallow: /en/login
+Disallow: /en/register
+
+# Claude-SearchBot — Anthropic's SEARCH index. Blocking it can drop us out of Claude's search answers.
+User-agent: Claude-SearchBot
+Allow: /
+Allow: /register/producer
+Disallow: /admin/
+Disallow: /api/
+Disallow: /settings
+Disallow: /favorites
+Disallow: /producer/dashboard/
+Disallow: /login
+Disallow: /register
+Allow: /en/register/producer
+Disallow: /en/admin/
+Disallow: /en/settings
+Disallow: /en/favorites
+Disallow: /en/producer/dashboard/
+Disallow: /en/login
+Disallow: /en/register
+
+# Claude-User — fetches a page on behalf of a Claude user, per request. NOT ClaudeBot.
+User-agent: Claude-User
+Allow: /
+Allow: /register/producer
+Disallow: /admin/
+Disallow: /api/
+Disallow: /settings
+Disallow: /favorites
+Disallow: /producer/dashboard/
+Disallow: /login
+Disallow: /register
+Allow: /en/register/producer
+Disallow: /en/admin/
+Disallow: /en/settings
+Disallow: /en/favorites
+Disallow: /en/producer/dashboard/
+Disallow: /en/login
+Disallow: /en/register
+
+# PerplexityBot — indexes pages so they can be cited in Perplexity answers.
+User-agent: PerplexityBot
+Allow: /
+Allow: /register/producer
+Disallow: /admin/
+Disallow: /api/
+Disallow: /settings
+Disallow: /favorites
+Disallow: /producer/dashboard/
+Disallow: /login
+Disallow: /register
+Allow: /en/register/producer
+Disallow: /en/admin/
+Disallow: /en/settings
+Disallow: /en/favorites
+Disallow: /en/producer/dashboard/
+Disallow: /en/login
+Disallow: /en/register
+
 # MEH-1322: canonical public domain is mehamakor.co.il (Sapir 18/07) — the
 # sitemap host now matches the SITE_URL origin that generates /sitemap.xml.
 # (Supersedes the MEH-1045 note that had set this to .online.)

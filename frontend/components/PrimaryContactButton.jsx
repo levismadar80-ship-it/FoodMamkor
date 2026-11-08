@@ -1,14 +1,6 @@
 "use client";
 
-import {
-  WhatsappLogo,
-  Phone,
-  Globe,
-  EnvelopeSimple,
-  InstagramLogo,
-  FacebookLogo,
-  Receipt,
-} from "@phosphor-icons/react";
+import { useTranslations } from "next-intl";
 import {
   getPrimaryContactHref,
   getPrimaryContactLabel,
@@ -16,6 +8,7 @@ import {
   isPrimaryExternal,
 } from "@/lib/contact-method";
 import { withReferralParams } from "@/lib/utils";
+import { getCtaVariant } from "@/components/ContactCtaVariants";
 
 /**
  * Primary CTA button on ProducerDetail — color + icon + Hebrew label
@@ -25,50 +18,17 @@ import { withReferralParams } from "@/lib/utils";
  * gracefully collapses (backend validation should prevent this).
  */
 
-// Visual config per method. Keeping inline so one change = one diff.
-const VARIANTS = {
-  whatsapp: {
-    Icon: WhatsappLogo,
-    className:
-      "btn-whatsapp",
-  },
-  phone: {
-    Icon: Phone,
-    className:
-      "bg-primary text-white hover:bg-primary-dark focus-visible:ring-primary/40",
-  },
-  website: {
-    Icon: Globe,
-    className:
-      "bg-white text-text border border-primary hover:bg-green-50 focus-visible:ring-primary/40",
-  },
-  email: {
-    Icon: EnvelopeSimple,
-    className:
-      "bg-primary-dark text-white hover:bg-primary focus-visible:ring-primary-dark/40",
-  },
-  // MEH-296: new primary channels. Brand-token classes only (no invented
-  // colors); distinct per-channel treatment is a design-polish follow-up.
-  instagram: {
-    Icon: InstagramLogo,
-    className:
-      "bg-primary text-white hover:bg-primary-dark focus-visible:ring-primary/40",
-  },
-  facebook: {
-    Icon: FacebookLogo,
-    className:
-      "bg-primary text-white hover:bg-primary-dark focus-visible:ring-primary/40",
-  },
-  external_order: {
-    Icon: Receipt,
-    className:
-      "bg-primary text-white hover:bg-primary-dark focus-visible:ring-primary/40",
-  },
-};
+// MEH-2813: colour + icon per method live in ContactCtaVariants.jsx, shared
+// with the sticky bar so the two CTAs cannot drift apart again.
 
 export default function PrimaryContactButton({ producer, onClick }) {
+  const t = useTranslations();
   const method = getPrimaryMethod(producer);
-  const rawHref = getPrimaryContactHref(producer);
+  // MEH-2753: label + WhatsApp prefill come from messages (contact_cta.*).
+  const rawHref = getPrimaryContactHref(
+    producer,
+    t("contact_cta.wa_greeting", { name: producer?.name || "" }),
+  );
   if (!rawHref) return null;
 
   // MEH-1525: a business-website CTA carries referral UTM and drops
@@ -78,9 +38,9 @@ export default function PrimaryContactButton({ producer, onClick }) {
   const isWebsite = method === "website";
   const href = isWebsite ? withReferralParams(rawHref) : rawHref;
 
-  const variant = VARIANTS[method] || VARIANTS.whatsapp;
+  const variant = getCtaVariant(method);
   const Icon = variant.Icon;
-  const label = getPrimaryContactLabel(producer);
+  const label = getPrimaryContactLabel(producer, t);
   const external = isPrimaryExternal(producer);
 
   return (
@@ -94,7 +54,7 @@ export default function PrimaryContactButton({ producer, onClick }) {
       data-method={method}
       className={`flex items-center justify-center gap-2 px-4 py-3.5 rounded-xl transition font-semibold mb-2.5 focus-visible:ring-2 ${variant.className}`}
     >
-      <Icon size={20} weight="fill" aria-hidden="true" />
+      <Icon size={20} />
       {label}
     </a>
   );

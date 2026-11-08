@@ -18,6 +18,8 @@ import { FILTER_AXES, homeParamFor } from "../../../lib/filter-taxonomy.js";
 // @ts-expect-error TS7016 — JS lib, no .d.ts
 import { CHIPS_CONFIG } from "../../../lib/producer-filters.js";
 // @ts-expect-error TS7016 — JS lib, no .d.ts
+import { SERVICE_CHIP_KEYS } from "../../../lib/map-chips.js";
+// @ts-expect-error TS7016 — JS lib, no .d.ts
 import { DELIVERY_DAYS } from "../../../lib/delivery-days.js";
 // @ts-expect-error TS7016 — JS lib, no .d.ts
 import { ORDER_DAY_KEYS } from "../../../lib/orderWindow.js";
@@ -150,7 +152,7 @@ const CHAT_LAUNCHER_NAME = new RegExp(
  * Locators: `getByTestId` first (docs/E2E-LOCATORS.md). Existing ids used:
  *           `hero-search` · `hero-search-submit` · `hero-search-dropdown` ·
  *           `hero-search-history` · `hero-chips-row` · `hero-delivery-cta` ·
- *           `trust-lead` · `trust-secondary` · `home-filter-row` ·
+ *           `trust-lead` · `trust-count` · `trust-count-value` · `trust-count-skeleton` · `home-filter-row` ·
  *           `home-promoted-chip-<key>` · `home-filters-button` ·
  *           `home-active-filter-<key>` · `location-filter-chip` ·
  *           `geo-empty-notice` · `producers-counter` · `day-empty-suggestion` ·
@@ -219,20 +221,30 @@ const CATS_COPY = he.home.categories;
 const CTA = he.home.cta;
 const RECENT = he.home.recent;
 const TRUST = he.home.trust;
-const STATS = he.home.stats;
 const FILTERS_BTN = he.filters.button;
 const LOC_MODAL = he.modals.location;
 const FRIDAY_HE = he.group_buys.friday_delivery;
 const FRIDAY_EN = en.group_buys.friday_delivery;
 
-type Axis = { key: string; label: string; subtext?: string | null; group?: string };
-const AXES = FILTER_AXES as Record<string, Axis>;
+type Axis = { key: string; label: string; subtext?: string | null; group?: string; scope?: string };
+// MEH-2748: the taxonomy holds keys only; the Hebrew label/subtext are read from
+// the same he.json the app renders (`filter_axes.<key>`).
+const AXIS_COPY = he.filter_axes as Record<string, { label: string; subtext?: string }>;
+const AXES = Object.fromEntries(
+  Object.entries(FILTER_AXES as Record<string, object>).map(([key, axis]) => [
+    key,
+    { key, ...axis, label: AXIS_COPY[key].label, subtext: AXIS_COPY[key].subtext ?? null },
+  ]),
+) as Record<string, Axis>;
 type Chip = { key: string; label: string };
-const HOME_CHIPS = CHIPS_CONFIG as Chip[];
+const HOME_CHIPS = (CHIPS_CONFIG as { key: string }[]).map((c) => ({ ...c, label: AXIS_COPY[c.key].label })) as Chip[];
 
-// MEH-2173: home promotes exactly this pair out of CHIPS_CONFIG and files the
-// rest behind the sheet (HomeProducersGrid.jsx:50 PROMOTED_KEYS).
-const PROMOTED = ["verified", "has_delivery"] as const;
+// MEH-2598: home promotes the shared service trio «משלוח · איסוף עצמי · קנייה
+// במקום» out of CHIPS_CONFIG and files the rest — «מאומת» included — behind the
+// sheet (HomeProducersGrid.jsx:43 PROMOTED_KEYS = SERVICE_CHIP_KEYS). It
+// replaced MEH-2173's «מאומת» + «משלוח» pair. Read from the product constant so
+// the order (PromotedServiceChips renders in SERVICE_CHIP_KEYS order) is too.
+const PROMOTED = SERVICE_CHIP_KEYS as readonly string[];
 
 // DENY-lists — the three expectations that cannot be derived from the copy they
 // forbid, so they are literals on purpose (same shape as chunk 2's
@@ -306,6 +318,14 @@ function producer(
     has_gluten_free_products: true,
     has_lactose_free_products: true,
     has_no_added_sugar_products: true,
+    // MEH-2598: `on_site` is gated the same way (GATED_DIET_KEYS, counted on
+    // `sells_on_site`) — and it is PROMOTED, so the gate decides whether the
+    // promoted row is two chips or three. Declared on every row so the row is
+    // the full trio and the sheet the full home axis set; censused in beforeAll.
+    sells_on_site: true,
+    // MEH-2767: `grass_fed` reached home and is count-gated like the diet
+    // axes, so every row declares it; censused in beforeAll.
+    grass_fed: true,
     // MEH-2131: `open_for_orders_now` is the OTHER runtime-gated axis — the sheet
     // withholds it below OPEN_NOW_CHIP_MIN (5) declared windows, and again when
     // no business is open at the current clock. An all-week 00:00-23:59 window on
@@ -358,7 +378,13 @@ const P5 = producer(5, LONG_NAME, CAT_B, {
   images: ["https://res.cloudinary.com/dfzpscjks/image/upload/fixture/long-name.jpg"],
   short_description: "תיאור ארוך מאוד של בית העסק שנועד לבדוק את קיצור השורה בכרטיס",
 });
-const REST = [6, 7, 8, 9, 10].map((n) => producer(n, `עסק לדוגמה ${n}`, CAT_B));
+// MEH-1508 chunk 3ב-2: one row declares both `*_scope === "all"`. Since
+// MEH-2677 that pair is a card badge only (no sheet pill), so this row is what
+// makes the sheet's "no whole-business pill" assertion discriminate.
+const SCOPE_ALL_DECLARED = { vegan_scope: "all", vegetarian_scope: "all" };
+const REST = [6, 7, 8, 9, 10].map((n) =>
+  producer(n, `עסק לדוגמה ${n}`, CAT_B, n === 6 ? SCOPE_ALL_DECLARED : {}),
+);
 const PRODUCERS: Producer[] = [P1, P2, P3, P4, P5, ...REST];
 const PAGE_SIZE = 8; // use-home-page.js:48
 const CAT_A_MEMBERS = PRODUCERS.filter(
@@ -398,6 +424,10 @@ const feedForCategory =
   };
 
 const STATS_ABOVE = { producers_count: PRODUCERS.length, categories_count: CATEGORIES.length };
+// MEH-2804 follow-up: at/above TRUST_COUNT_THRESHOLD (25, use-home-page.js) so the
+// band's count line renders. /stats is mocked on its own — it does not have to
+// match the length of the producers fixture.
+const STATS_COUNTED = { producers_count: 31, categories_count: CATEGORIES.length };
 
 test.beforeAll(() => {
   // A schema change reds the spec HERE, loudly, instead of letting the fixture
@@ -426,6 +456,14 @@ test.beforeAll(() => {
   const sugarDeclared = PRODUCERS.filter((p) => p.has_no_added_sugar_products).length;
   if (sugarDeclared < 5)
     throw new Error(`DIET_CHIP_MIN = 5 declared businesses are needed to un-gate no_added_sugar, got ${sugarDeclared}`);
+  const grassFed = PRODUCERS.filter((p) => p.grass_fed).length;
+  if (grassFed < 5)
+    throw new Error(`DIET_CHIP_MIN = 5 grass-fed businesses are needed to un-gate grass_fed, got ${grassFed}`);
+  const onSite = PRODUCERS.filter((p) => p.sells_on_site).length;
+  if (onSite < 5)
+    throw new Error(`DIET_CHIP_MIN = 5 businesses selling on site are needed to un-gate on_site, got ${onSite}`);
+  if (PROMOTED.includes("verified"))
+    throw new Error("«מאומת» is promoted again — MT:1418:2 below asserts it lives in the sheet only (MEH-2598)");
   const windowed = PRODUCERS.filter((p) => p.order_window).length;
   if (windowed < 5)
     throw new Error(`OPEN_NOW_CHIP_MIN = 5 declared windows are needed to un-gate open_for_orders_now, got ${windowed}`);
@@ -960,24 +998,22 @@ test.describe("manual › hero search placeholders (MEH-1800)", () => {
 
 // ════════════════════════════════════════════════════════════════════════════
 test.describe("manual › chat launcher on mobile (MEH-2499)", () => {
-  // The launcher is back on phones above the BottomNav pill and steps aside on
-  // scroll-down, returning on scroll-up. Desktop never hides (unit-tested).
-  test("mobile: visible at the top, hidden after scrolling down, back after scrolling up", async ({ page }, info) => {
-    mobileOnly(info, "the hide-on-scroll behavior is mobile-only");
+  // The launcher sits above the BottomNav pill and stays put through scrolling
+  // (it hid on scroll-down until 4/11 — on a phone that read as broken).
+  test("mobile: visible at the top, after scrolling down, and after scrolling up", async ({ page }, info) => {
+    mobileOnly(info, "the launcher position above the BottomNav is mobile-only");
     await consent(page);
     await stubTiles(page);
     await mockApi(page);
     await gotoHome(page);
     const launcher = page.getByTestId("chat-launcher");
     await expect(launcher).toBeVisible(FIRST_PAINT);
-    await expect(launcher).toHaveAttribute("data-hidden", "false");
-    await page.evaluate(() => window.scrollTo(0, 900));
-    await expect(launcher).toHaveAttribute("data-hidden", "true");
-    // The attribute alone could flip with no visual change — pin the effect.
-    await expect(launcher).toHaveCSS("pointer-events", "none");
-    await expect(launcher).toHaveCSS("opacity", "0");
-    await page.evaluate(() => window.scrollTo(0, 600));
-    await expect(launcher).toHaveAttribute("data-hidden", "false");
+    for (const y of [900, 600]) {
+      await page.evaluate((top) => window.scrollTo(0, top), y);
+      await expect(launcher).toBeVisible();
+      await expect(launcher).toHaveCSS("opacity", "1");
+      await expect(launcher).toHaveCSS("pointer-events", "auto");
+    }
   });
 });
 
@@ -1092,16 +1128,25 @@ test.describe("manual › filter chips + FilterSheet (MEH-1418 · task 12)", () 
   //   stale in docs/qa/conversion-progress.md. What survives from MEH-1418
   //   unchanged is the claim under test here: each toggle carries a leading
   //   aria-hidden glyph and the taxonomy's own label.
-  test("the home filter row is exactly the two promoted chips plus the sheet trigger and the day chip, each promoted chip with an aria-hidden glyph", async ({ page }) => {
+  test("the home filter row is exactly the promoted service chips plus the sheet trigger and the day chip, each promoted chip with an aria-hidden glyph", async ({ page }) => {
     await consent(page);
     await stubTiles(page);
-    await mockApi(page);
-    await gotoHome(page);
+    // MEH-2323 (02/11): `on_site` is data-gated (MEH-2598), so the promoted row
+    // is three chips only when the LOADED feed clears DIET_CHIP_MIN. A bare
+    // gotoHome renders the server's catalog on a live-backend runner (header
+    // ⚠️ block) — staging has < 5 on-site businesses, so CI saw 2 chips. The
+    // fixture feed is what beforeAll censuses, so it must be what loaded.
+    await gotoFixtureFeed(page, "/", PRODUCERS);
     const row = scope(page).getByTestId("home-filter-row");
     // Counted by testid, not by role: MEH-2537 moved the delivery-day chip into
     // this row, and its ✕ appears whenever days are set, so a role count would
     // depend on fixture state rather than on what this test is about.
-    await expect(row.locator('[data-testid^="home-promoted-chip-"]')).toHaveCount(PROMOTED.length);
+    const promoted = row.locator('[data-testid^="home-promoted-chip-"]');
+    await expect(promoted).toHaveCount(PROMOTED.length);
+    // …and in SERVICE_CHIP_KEYS order, the one order all three surfaces share.
+    expect(
+      await promoted.evaluateAll((els) => els.map((el) => el.getAttribute("data-testid"))),
+    ).toEqual(PROMOTED.map((k) => `home-promoted-chip-${k}`));
     await expect(row.getByTestId("home-filters-button")).toHaveCount(1);
     await expect(row.getByTestId("delivery-day-chip")).toHaveCount(1);
     for (const key of PROMOTED) {
@@ -1119,12 +1164,16 @@ test.describe("manual › filter chips + FilterSheet (MEH-1418 · task 12)", () 
   //   «מאומת» (filter-taxonomy.js:123). The live label is asserted from the
   //   taxonomy, and the DENY-list half of the row — no «מאומתים» — is asserted
   //   as written, since that is the part that is actually a regression guard.
+  //   MEH-2598 (Sapir 29/10, «אחיד, מאומת בסינון») took «מאומת» off the surface
+  //   row: it now lives in the sheet only, so that is where its label is read,
+  //   and the row is asserted NOT to carry it.
   test("the verification chip carries the taxonomy label and «מאומתים» appears nowhere on the page", async ({ page }) => {
     await consent(page);
     await stubTiles(page);
     await mockApi(page);
     await gotoHome(page);
-    await expect(promotedChip(page, "verified")).toHaveText(AXES.verified.label);
+    await expect(promotedChip(page, PROMOTED[0])).toBeVisible(FIRST_PAINT);
+    await expect(promotedChip(page, "verified"), "«מאומת» lives in the sheet, not on the row").toHaveCount(0);
     await filtersButton(page).click();
     await expect(sheetPanel(page)).toBeVisible(FIRST_PAINT);
     await expect(sheetPanel(page).getByTestId("chip-verified")).toContainText(AXES.verified.label);
@@ -1143,7 +1192,9 @@ test.describe("manual › filter chips + FilterSheet (MEH-1418 · task 12)", () 
   //                        (`chipSubtext`, :68-70), so it gets one too.
   //     · the diet group → a 2-col pill grid with NO per-row ⓘ and ONE group-level
   //                        scope line, `filters.sheet.diet_scope` (:279-283).
-  //   Both live shapes are asserted, derived from `FILTER_AXES[...].group`.
+  //       MEH-1508 chunk 3ב-2 added two business-scope pills after the line;
+  //       MEH-2677 removed them again (card badge only).
+  //   All live shapes are asserted, derived from `FILTER_AXES[...].group/scope`.
   test("the FilterSheet gives every toggle a label, keeps every explanation reachable, and Esc closes it", async ({ page }) => {
     // The sheet's diet group is RUNTIME-GATED on the loaded catalog
     // (`visibleGatedDietKeys`, DIET_CHIP_MIN = 5 — `producer-filters.js:169-176`),
@@ -1172,10 +1223,19 @@ test.describe("manual › filter chips + FilterSheet (MEH-1418 · task 12)", () 
     await expect(info).toBeVisible();
     await info.click();
     await expect(panel.getByTestId(`chip-info-panel-${withInfo.key}`)).toHaveText(String(AXES[withInfo.key].subtext));
-    // The diet group carries its one shared scope line instead of per-row ones.
+    // The diet group carries its one shared scope line for the any-product pills
+    // instead of per-row ones.
+    const dietAnyProduct = diet.filter((c) => AXES[c.key]?.scope === "any-product");
+    const dietDeclared = diet.filter((c) => AXES[c.key]?.scope !== "any-product");
+    expect(dietAnyProduct.length, "the any-product diet pills must be non-empty or the no-ⓘ branch asserts nothing").toBeGreaterThan(0);
+    // MEH-2677: no business-scope diet pill — one chip per diet.
+    expect(dietDeclared.map((c) => c.key), "no business-scope diet pill (MEH-2677)").toEqual([]);
+    for (const key of ["vegan_all", "vegetarian_all"]) {
+      await expect(panel.getByTestId(`chip-${key}`), `${key} left the sheet (MEH-2677)`).toHaveCount(0);
+    }
     await expect(panel).toContainText(he.filters.sheet.diet_scope);
-    for (const chip of diet) {
-      await expect(panel.getByTestId(`chip-info-${chip.key}`), "a diet pill carries no ⓘ of its own").toHaveCount(0);
+    for (const chip of dietAnyProduct) {
+      await expect(panel.getByTestId(`chip-info-${chip.key}`), "an any-product diet pill carries no ⓘ of its own").toHaveCount(0);
     }
     await page.keyboard.press("Escape");
     await expect(panel).toBeHidden();
@@ -1257,7 +1317,7 @@ test.describe("manual › filter chips + FilterSheet (MEH-1418 · task 12)", () 
   // MT:T12:8 — multi-select: two axes at once compose into ONE request carrying
   //   BOTH params. The row names כשר + אורגני; `organic` was removed outright
   //   (MEH-1259) and `kosher` is verified-only since MEH-986, so the pair used
-  //   here is the live promoted pair. The claim under test — composition — is
+  //   here is the live promoted pair — «משלוח» + «איסוף עצמי» since MEH-2598. The claim under test — composition — is
   //   unchanged; the axes it is asserted on are not.
   test("two active chips compose into one request carrying both params", async ({ page }) => {
     const seen = await gotoWithFeed(page);
@@ -1267,10 +1327,10 @@ test.describe("manual › filter chips + FilterSheet (MEH-1418 · task 12)", () 
     // render, and the two axes then leave as two single-param requests instead of
     // one composed one — observed once in 5 runs on the mobile project, which is
     // exactly the intermittence a spec must not ship with.
-    await promotedChip(page, "verified").click();
-    await expect(promotedChip(page, "verified")).toHaveAttribute("aria-pressed", "true");
+    await promotedChip(page, "pickup_points").click();
+    await expect(promotedChip(page, "pickup_points")).toHaveAttribute("aria-pressed", "true");
     await expect
-      .poll(() => seen.producers[seen.producers.length - 1]?.searchParams.has("verified"), {
+      .poll(() => seen.producers[seen.producers.length - 1]?.searchParams.has("pickup_points"), {
         message: "the first axis is applied before the second is pressed",
       })
       .toBe(true);
@@ -1285,13 +1345,13 @@ test.describe("manual › filter chips + FilterSheet (MEH-1418 · task 12)", () 
       .poll(
         () =>
           seen.producers.some(
-            (u) => u.searchParams.has("verified") && u.searchParams.has("has_delivery"),
+            (u) => u.searchParams.has("pickup_points") && u.searchParams.has("has_delivery"),
           ),
         { message: "one request carries BOTH params" },
       )
       .toBe(true);
     // Both chips read as pressed at the same time — the multi-select claim.
-    await expect(promotedChip(page, "verified")).toHaveAttribute("aria-pressed", "true");
+    await expect(promotedChip(page, "pickup_points")).toHaveAttribute("aria-pressed", "true");
     await expect(promotedChip(page, "has_delivery")).toHaveAttribute("aria-pressed", "true");
   });
 
@@ -1998,7 +2058,7 @@ test.describe("manual › producer grid geometry (MEH-1142 · task 9)", () => {
 });
 
 /**
- * The blocks sitting between the hero and the mini-map, as DESCRIPTIONS rather
+ * The blocks sitting between the businesses grid and the mini-map, as DESCRIPTIONS rather
  * than a bare count: a red that prints "1" says nothing about what is there,
  * and this row's whole subject is which block is second.
  *
@@ -2016,11 +2076,16 @@ test.describe("manual › producer grid geometry (MEH-1142 · task 9)", () => {
  */
 const NON_RENDERING = ["template", "script", "style", "link", "noscript"];
 
-function strangersBetweenHeroAndMap(page: Page): Promise<string[]> {
-  return page.evaluate((skip) => {
-    const heroEl = document.querySelector('[data-testid="home-hero"]');
+// MEH-2747: the rescue-bags module is the one block that may sit between the
+// grid and the map (MEH-2648 puts it right after the grid); it renders null
+// unless the pilot is on for the visitor's town.
+const ALLOWED_BETWEEN = ["rescue-home-module"];
+
+function strangersBetweenGridAndMap(page: Page): Promise<string[]> {
+  return page.evaluate(([skip, allowed]) => {
+    const heroEl = document.getElementById("producers-grid");
     const mapEl = document.querySelector('[data-testid="home-minimap"]');
-    if (!heroEl || !mapEl) return ["(hero or mini-map is not in the document)"];
+    if (!heroEl || !mapEl) return ["(businesses grid or mini-map is not in the document)"];
     // `?? heroEl` rather than a non-null assertion, and the symmetry with the
     // map branch below is the point: if the hero ever renders outside a
     // <section>, the assertion must report the strangers it finds — not throw a
@@ -2032,22 +2097,25 @@ function strangersBetweenHeroAndMap(page: Page): Promise<string[]> {
     let n: Element | null = hero.nextElementSibling;
     while (n && n !== mapSection && !n.contains(mapSection)) {
       const tag = n.tagName.toLowerCase();
-      if (!skip.includes(tag)) {
+      if (!skip.includes(tag) && !allowed.includes(n.getAttribute("data-testid") ?? "")) {
         const testid = n.getAttribute("data-testid");
         out.push(`${tag}${testid ? `[${testid}]` : ""}.${n.className || "(no class)"}`.slice(0, 90));
       }
       n = n.nextElementSibling;
     }
-    return n ? out : ["(the mini-map is not a following sibling of the hero at all)"];
-  }, NON_RENDERING);
+    return n ? out : ["(the mini-map is not a following sibling of the businesses grid at all)"];
+  }, [NON_RENDERING, ALLOWED_BETWEEN] as const);
 }
 
 // ════════════════════════════════════════════════════════════════════════════
 test.describe("manual › above-the-fold mini-map + trust band (MEH-604 · MEH-607)", () => {
-  // MT:604:1 — the map is the SECOND block, not section #7. Asserted as DOM
-  //   order, read from the landmark rather than from a count of what happened
-  //   to render.
-  test("the mini-map is the second block on the page, right after the hero", async ({ page }) => {
+  // MT:604:1 — REVISED by MEH-2747 (Sapir 6/11, option א׳): the map comes
+  //   right AFTER the businesses grid on phone and desktop alike. MEH-604's
+  //   "second block, right under the hero" is retired. Asserted as DOM order
+  //   AND as painted order on both projects — MEH-2635 had moved it with CSS
+  //   `order-last` on phones only, which this row could not see in the DOM
+  //   while the painted half of it disagreed.
+  test("the mini-map comes right after the businesses grid, in the DOM and on screen", async ({ page }) => {
     await consent(page);
     await stubTiles(page);
     await mockApi(page);
@@ -2056,10 +2124,10 @@ test.describe("manual › above-the-fold mini-map + trust band (MEH-604 · MEH-6
       await expect(scope(page).getByTestId(id), `${id} renders exactly once`).toHaveCount(1, FIRST_PAINT);
     }
     expect(
-      (await strangersBetweenHeroAndMap(page)).join(" | "),
-      "the mini-map is the hero's immediate next block; these sat between them",
+      (await strangersBetweenGridAndMap(page)).join(" | "),
+      "the mini-map is the businesses grid's next block; these sat between them",
     ).toBe("");
-    // …and the trust band comes after it, not before.
+    // …and on screen the trust band (above the grid) is above it, not below.
     // `home-minimap` is a `dynamic({ ssr:false, loading })` slot: the skeleton is
     // REPLACED by the live map, which detaches the node a boundingBox() read was
     // about to measure (observed on the mobile project: "element has no box").
@@ -2072,13 +2140,57 @@ test.describe("manual › above-the-fold mini-map + trust band (MEH-604 · MEH-6
       return { map: y("home-minimap"), trust: y("home-trust-band") };
     });
     expect(Number.isNaN(tops.map) || Number.isNaN(tops.trust), "both blocks are in the document").toBe(false);
-    expect(tops.map, "the mini-map is above the trust band").toBeLessThan(tops.trust);
+    expect(tops.trust, "the trust band is above the mini-map").toBeLessThan(tops.map);
+  });
+
+  // MEH-2747 — one page order, phone and desktop. The same homepage at 375
+  //   and at 1440 must show the SAME top-level sections, and on each viewport
+  //   the painted order must equal the DOM order (what VoiceOver / the keyboard
+  //   walk). The static half of this rule is __tests__/VisualOrderGuard.test.js
+  //   (no CSS reorder utilities); this row is the rendered half, which also
+  //   catches a section that exists on one viewport only.
+  //   One test drives both viewports, so it runs on the desktop project only —
+  //   gated on the project name, which the product cannot move.
+  test("phone and desktop show the same sections, in the same order, painted as in the DOM", async ({ browser }, testInfo) => {
+    test.skip(testInfo.project.name !== "desktop", "drives 375 and 1440 itself; once is enough");
+    const read = async (viewport: { width: number; height: number }) => {
+      const ctx = await browser.newContext({ viewport, locale: "he-IL", timezoneId: "Asia/Jerusalem", reducedMotion: "reduce" });
+      const page = await ctx.newPage();
+      try {
+        await consent(page);
+        await stubTiles(page);
+        await mockApi(page);
+        await gotoHome(page);
+        await expect(scope(page).getByTestId("home-minimap")).toHaveCount(1, FIRST_PAINT);
+        return await page.evaluate(() => {
+          const all = Array.from(document.querySelectorAll("#main-content section[data-testid]"));
+          const top = all.filter((el) => !el.parentElement?.closest("section[data-testid]"));
+          const shown = top.filter((el) => el.getBoundingClientRect().height > 0);
+          const dom = shown.map((el) => el.getAttribute("data-testid")!);
+          const painted = shown
+            .map((el) => ({ id: el.getAttribute("data-testid")!, y: el.getBoundingClientRect().top }))
+            .sort((a, b) => a.y - b.y)
+            .map((x) => x.id);
+          return { dom, painted };
+        });
+      } finally {
+        await ctx.close();
+      }
+    };
+    const phone = await read({ width: 375, height: 812 });
+    const desk = await read({ width: 1440, height: 900 });
+    // Control: the reader saw real sections, including the map this ticket moved.
+    expect(phone.dom, "control: the reader found the mini-map on the phone").toContain("home-minimap");
+    expect(desk.dom.length, "control: more than a couple of sections were read").toBeGreaterThan(3);
+    expect(phone.painted, "375: painted order = DOM order (no CSS reorder)").toEqual(phone.dom);
+    expect(desk.painted, "1440: painted order = DOM order (no CSS reorder)").toEqual(desk.dom);
+    expect(phone.dom, "the same sections, in the same order, on phone and desktop").toEqual(desk.dom);
   });
 
   /**
    * SELF-TEST for the reader above, run against the REAL function on three
    * inputs whose answers are known — the testing.md rule for an assertion that
-   * is a classifier. It exercises `strangersBetweenHeroAndMap`, never a copy,
+   * is a classifier. It exercises `strangersBetweenGridAndMap`, never a copy,
    * so the two cannot drift.
    *
    * Without it the skip-list is a green of unknown wiring: a reader that
@@ -2098,7 +2210,7 @@ test.describe("manual › above-the-fold mini-map + trust band (MEH-604 · MEH-6
     const insert = (tag: string, testid?: string) =>
       page.evaluate(
         ([t, id]) => {
-          const hero = document.querySelector('[data-testid="home-hero"]')!.closest("section")!;
+          const hero = document.getElementById("producers-grid")!;
           const el = document.createElement(t as string);
           if (id) el.setAttribute("data-testid", id as string);
           hero.after(el);
@@ -2109,13 +2221,13 @@ test.describe("manual › above-the-fold mini-map + trust band (MEH-604 · MEH-6
       page.evaluate((sel) => document.querySelector(sel)?.remove(), selector);
 
     // 1 — the settled page: nothing between them.
-    expect(await strangersBetweenHeroAndMap(page), "control: the settled page has no strangers").toEqual([]);
+    expect(await strangersBetweenGridAndMap(page), "control: the settled page has no strangers").toEqual([]);
 
     // 2 — the measured flake, injected deterministically: React's streaming
     //     placeholder renders nothing, so it must not count as a block.
     await insert("template");
     expect(
-      await strangersBetweenHeroAndMap(page),
+      await strangersBetweenGridAndMap(page),
       "a <template> renders nothing and must not read as a block",
     ).toEqual([]);
     await remove("section[data-testid] + template, template");
@@ -2140,7 +2252,7 @@ test.describe("manual › above-the-fold mini-map + trust band (MEH-604 · MEH-6
       "fixture precondition: the injected block must survive to sample time — if THIS fails the reader is not implicated",
     ).toHaveCount(1);
 
-    const caught = await strangersBetweenHeroAndMap(page);
+    const caught = await strangersBetweenGridAndMap(page);
     expect(caught.join(" | "), "a real element between the two must be reported by name").toContain(
       "div[interloper]",
     );
@@ -2199,6 +2311,10 @@ test.describe("manual › above-the-fold mini-map + trust band (MEH-604 · MEH-6
     const band = scope(page).getByTestId("home-trust-band");
     await expect(band).toHaveCount(1, FIRST_PAINT);
     await expect(band).toHaveAttribute("aria-busy", "true");
+    // MEH-2804 follow-up: the sentence needs no /stats, so it is already up; only
+    // the count line's slot is a placeholder while /stats is in flight.
+    await expect(scope(page).getByTestId("trust-lead")).toHaveText(TRUST.lead);
+    await expect(scope(page).getByTestId("trust-count-skeleton")).toBeVisible();
     const skeleton = await page.evaluate(() => {
       const el = document.querySelector('[data-testid="home-trust-band"]')!;
       const r = el.getBoundingClientRect();
@@ -2224,46 +2340,47 @@ test.describe("manual › above-the-fold mini-map + trust band (MEH-604 · MEH-6
   });
 
   // MT:607:1 replacement — the STALE «גליון מאי» copy is gone and the live lead
-  //   comes from he.json; below the count threshold the secondary counter line
-  //   is withheld. Written so the section is not left with zero live coverage.
-  test("the trust band renders the he.json lead and, below the count threshold, no counter line", async ({ page }) => {
+  //   comes from he.json. MEH-2804 follow-up (07/11): the sentence renders at
+  //   EVERY count; below TRUST_COUNT_THRESHOLD (25) there is no number at all.
+  test("the trust band renders the he.json sentence and, below the count threshold, no count line", async ({ page }) => {
     await consent(page);
     await stubTiles(page);
-    await mockApi(page, PRODUCERS, { stats: { producers_count: 2, categories_count: 2 } });
+    await mockApi(page, PRODUCERS, { stats: STATS_ABOVE }); // 10: above 5, below 25
     await gotoHome(page);
     await expect(scope(page).getByTestId("trust-lead")).toHaveText(TRUST.lead);
+    await expect(scope(page).getByTestId("home-trust-band")).not.toHaveAttribute("aria-busy", "true", FIRST_PAINT);
     await expect(
-      scope(page).getByTestId("trust-secondary"),
-      "below 5 businesses the secondary counter is withheld (use-home-page showStatsCounter)",
+      scope(page).getByTestId("trust-count"),
+      "below 25 businesses no count is shown (MEH-521: a small count is negative social proof)",
     ).toHaveCount(0);
     const body = await page.locator("body").innerText();
     expect(body, "the MEH-879-removed month framing must not come back").not.toContain("גליון");
   });
 
-  // The discriminating twin of the test above: above the threshold the counter
-  // line DOES render (either test alone is green on a band that never renders a
-  // counter at all).
-  test("above the count threshold the secondary line carries the category count and the countrywide phrase", async ({ page }) => {
+  // The discriminating twin of the test above: from 25 the count line DOES
+  // render, under the same sentence (either test alone is green on a band that
+  // never renders a count at all).
+  test("from the count threshold a second line states the business count, under the same sentence", async ({ page }) => {
     await consent(page);
     await stubTiles(page);
-    await mockApi(page, PRODUCERS, { stats: STATS_ABOVE });
+    await mockApi(page, PRODUCERS, { stats: STATS_COUNTED });
     await gotoHome(page);
-    const secondary = scope(page).getByTestId("trust-secondary");
-    await expect(secondary).toBeVisible(FIRST_PAINT);
-    await expect(secondary).toContainText(String(CATEGORIES.length));
-    await expect(secondary).toContainText(STATS.categories);
-    await expect(secondary).toContainText(STATS.countrywide);
+    await expect(scope(page).getByTestId("trust-lead")).toHaveText(TRUST.lead);
+    const line = scope(page).getByTestId("trust-count");
+    await expect(line).toBeVisible(FIRST_PAINT);
+    await expect(line.getByTestId("trust-count-value")).toHaveText(String(STATS_COUNTED.producers_count));
+    await expect(line).toContainText(TRUST.count_line.replace(/<num>\{count\}<\/num>\s*/, ""));
   });
 
   // MEH-2488: Hebrew is never letter-spaced (DESIGN.md) — tracking pulls the
   // letters of a word apart. The band carried `tracking-wide` (0.4px / 0.35px).
-  // Both lines are checked, above the threshold, so neither can pass by being absent.
+  // Both lines are checked, from the threshold, so neither can pass by being absent.
   test("the trust band's Hebrew lines are not letter-spaced", async ({ page }) => {
     await consent(page);
     await stubTiles(page);
-    await mockApi(page, PRODUCERS, { stats: STATS_ABOVE });
+    await mockApi(page, PRODUCERS, { stats: STATS_COUNTED });
     await gotoHome(page);
-    for (const id of ["trust-lead", "trust-secondary"]) {
+    for (const id of ["trust-lead", "trust-count"]) {
       const line = scope(page).getByTestId(id);
       await expect(line).toBeVisible(FIRST_PAINT);
       expect(await line.textContent(), `${id} carries Hebrew`).toMatch(/[\u0590-\u05FF]/);
@@ -2272,16 +2389,27 @@ test.describe("manual › above-the-fold mini-map + trust band (MEH-604 · MEH-6
     }
   });
 
-  // MEH-2487 control: the global "Hebrew is never slanted" rule must not reach
-  // the dir="ltr" Cormorant numerals, which have a real italic face.
-  test("the counter numerals keep their real Cormorant italic inside the Hebrew page", async ({ page }) => {
+  // MEH-2804 follow-up (Sapir 07/11): the count numeral is the line's own face,
+  // upright and semibold — Cormorant's old-style italic figures read as «ɜı»
+  // beside Hebrew. Read from the browser, so a class that compiles to nothing
+  // (or a font-english that sneaks back) fails here.
+  test("the count numeral is upright, semibold, in the line's own face — not Cormorant", async ({ page }) => {
     await consent(page);
     await stubTiles(page);
-    await mockApi(page, PRODUCERS, { stats: STATS_ABOVE });
+    await mockApi(page, PRODUCERS, { stats: STATS_COUNTED });
     await gotoHome(page);
-    const num = scope(page).getByTestId("trust-secondary").locator('[dir="ltr"]').first();
+    const num = scope(page).getByTestId("trust-count-value");
     await expect(num).toBeVisible(FIRST_PAINT);
-    expect(await num.evaluate((el) => getComputedStyle(el).fontStyle)).toBe("italic");
+    const style = await num.evaluate((el) => {
+      const cs = getComputedStyle(el);
+      const line = getComputedStyle(el.parentElement!);
+      return { fontStyle: cs.fontStyle, weight: Number(cs.fontWeight), family: cs.fontFamily, lineFamily: line.fontFamily };
+    });
+    expect(style.fontStyle).toBe("normal");
+    expect(style.weight).toBeGreaterThanOrEqual(600);
+    expect(style.family.toLowerCase()).not.toContain("cormorant");
+    expect(style.family, "same face as the line it sits in").toBe(style.lineFamily);
+    expect(await num.getAttribute("dir")).toBe("ltr");
     expect(await page.locator("html").getAttribute("dir")).toBe("rtl");
   });
 });
@@ -2297,7 +2425,8 @@ test.describe("manual › static home blocks (overnight design batch)", () => {
     await expect(cta).toHaveCount(1, FIRST_PAINT);
     await expect(cta.getByRole("heading", { level: 2, name: CTA.heading })).toBeVisible();
     for (const line of [CTA.body_l1, CTA.body_l2, CTA.body_l3]) await expect(cta).toContainText(line);
-    await expect(cta.getByRole("link", { name: CTA.button })).toHaveAttribute("href", /\/register\/producer$/);
+    // MEH-2824: the band's one button is «מצטרפים», like /join (home.cta.button retired).
+    await expect(cta.getByRole("link", { name: he.join.cta })).toHaveAttribute("href", /\/register\/producer$/);
   });
 
   // MT:ODB:5 — the footer's copyright line: no leaf emoji. (The tagline's own
@@ -2453,12 +2582,13 @@ test.describe("manual › recently viewed (task 13)", () => {
 test.describe("manual › Friday delivery strip (סרגל שישי)", () => {
   // MT:FRI:1 — inside the Friday window (forced through the documented
   //   `friday_mode_override` localStorage flag, lib/friday-mode.js:6) and with
-  //   businesses delivering today, the strip renders REAL copy — not an
+  //   businesses delivering on Friday (MEH-2759), the strip renders REAL copy — not an
   //   untranslated key path — and the cards carry the "today" badge.
   test("in the Friday window the strip renders real Hebrew copy, not a key path", async ({ page }) => {
     await seedStorage(page, "friday_mode_override", "1");
     await gotoWithFeed(page, "/", (u: URL) =>
-      u.searchParams.get("availability_state") === "available_today" ? [P1, P2] : PRODUCERS,
+      // MEH-2759: the strip asks for Friday delivery, not available_today.
+      u.searchParams.get("delivery_day") === "שישי" ? [P1, P2] : PRODUCERS,
     );
     const strip = scope(page).getByTestId("friday-delivery-strip");
     await expect(strip).toBeVisible(FIRST_PAINT);
@@ -2472,7 +2602,8 @@ test.describe("manual › Friday delivery strip (סרגל שישי)", () => {
   test("the same strip renders in English on /en", async ({ page }) => {
     await seedStorage(page, "friday_mode_override", "1");
     await gotoWithFeed(page, "/en", (u: URL) =>
-      u.searchParams.get("availability_state") === "available_today" ? [P1, P2] : PRODUCERS,
+      // MEH-2759: the strip asks for Friday delivery, not available_today.
+      u.searchParams.get("delivery_day") === "שישי" ? [P1, P2] : PRODUCERS,
     );
     const strip = scope(page).getByTestId("friday-delivery-strip");
     await expect(strip).toBeVisible(FIRST_PAINT);

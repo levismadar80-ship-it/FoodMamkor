@@ -21,6 +21,8 @@ import FilterSheet from "@/components/FilterSheet";
 
 // Namespace-less t() that returns the key; interpolated values are appended
 // as `key#value` so the apply-count assertions can target them.
+vi.mock("@/lib/use-chip-copy", async () => (await import("./helpers/he-chip-copy")).chipCopyMock);
+vi.mock("@/lib/use-badge-copy", async () => (await import("./helpers/he-badge-copy")).badgeCopyMock);
 vi.mock("next-intl", () => ({
   useTranslations: () => (key, values) =>
     values && values.count !== undefined ? `${key}#${values.count}` : key,
@@ -79,9 +81,10 @@ describe("FilterSheet (MEH-1075)", () => {
     // Labels stay literal (a copy lock — MEH-1418 renamed one of these and this
     // roster is what would catch the next such rename).
     const LABELS = [
-      // diet — pills (MEH-2169)
-      "טבעוני",
-      "צמחוני",
+      // diet — pills (MEH-2169). MEH-1508 chunk 3ב-2: the §6.6 rename. The two
+      // 100% axes it added beside them left the sheet in MEH-2677.
+      "מתאים לטבעונים",
+      "מתאים לצמחונים",
       "ללא גלוטן",
       "ללא לקטוז",
       "ללא סוכר מוסף",
@@ -165,6 +168,21 @@ describe("FilterSheet (MEH-1075)", () => {
       }
     });
 
+    // MEH-2677 (Sapir 05/11): the whole-business pair («טבעוני» / «צמחוני»)
+    // read as a duplicate of «מתאים ל…» and left the sheet — one chip per diet.
+    // The card badge still carries the declaration.
+    it("offers no whole-business diet pill — one chip per diet", () => {
+      renderSheet();
+      for (const key of ["vegan_all", "vegetarian_all"]) {
+        expect(screen.queryByTestId(`chip-${key}`), key).not.toBeInTheDocument();
+        expect(screen.queryByTestId(`chip-info-${key}`), key).not.toBeInTheDocument();
+      }
+      for (const key of ["vegan", "vegetarian"]) {
+        expect(screen.getByTestId(`chip-${key}`), key).toBeInTheDocument();
+      }
+      expect(screen.queryByRole("button", { name: "לפי הצהרת בית העסק" })).not.toBeInTheDocument();
+    });
+
     it("gives has_delivery no ⓘ — it has nothing to disclose", () => {
       renderSheet();
       expect(screen.getByRole("switch", { name: "משלוח" })).toBeInTheDocument();
@@ -187,7 +205,7 @@ describe("FilterSheet (MEH-1075)", () => {
       chipState: { ...ALL_OFF, vegan: true },
     });
     // MEH-2169: diet toggles are role="switch" PILLS writing shared state.
-    const veganRow = screen.getByRole("switch", { name: "טבעוני" });
+    const veganRow = screen.getByRole("switch", { name: "מתאים לטבעונים" });
     expect(veganRow).toHaveAttribute("aria-checked", "true");
     // MEH-1259: was the organic chip (removed) — grass_fed is the other quality toggle.
     expect(screen.getByRole("switch", { name: "גראס פד" })).toHaveAttribute(

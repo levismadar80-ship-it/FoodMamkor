@@ -21,7 +21,7 @@ import Tooltip from "@/components/ui/Tooltip";
 // a stale 5 (or any unknown tier) renders nothing, because the tier-4 label
 // claims "10+ reviews" and must never land on a business that didn't earn it.
 const TIER_CLASSNAME = {
-  4: "bg-amber-50 text-amber-700 border-amber-200",
+  4: "bg-warning-50 text-warning-700 border-warning-200",
 };
 
 export default function TrustBadge({ tier, compact = false, avoidRef = null }) {
@@ -53,7 +53,7 @@ export default function TrustBadge({ tier, compact = false, avoidRef = null }) {
       <span
         className={[
           "inline-flex items-center rounded-full border font-medium",
-          compact ? "text-[10px] px-1.5 py-0.5" : "text-xs px-2 py-0.5",
+          compact ? "text-2xs px-1.5 py-0.5" : "text-xs px-2 py-0.5",
           TIER_CLASSNAME[tierKey],
         ].join(" ")}
         aria-label={tooltip}

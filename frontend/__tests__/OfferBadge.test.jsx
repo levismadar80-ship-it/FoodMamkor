@@ -230,6 +230,15 @@ describe("OfferBadge — variants and the owner's own line", () => {
     // The typed sentence is still there — the headline supplements, never replaces.
     expect(screen.getByTestId("offer-badge").textContent).toContain("משלוח חינם");
   });
+
+  // MEH-2659: the business-page header line — same sentence and headline as the
+  // badge, without the framed box.
+  it("line variant shows the sentence and the headline, without the badge box", () => {
+    renderIntl(<OfferBadge offer={offer({ headline: "אספקה עד הבית" })} variant="line" />);
+    expect(screen.getByTestId("offer-line").textContent).toContain("משלוח חינם");
+    expect(screen.getByTestId("offer-headline")).toHaveTextContent("אספקה עד הבית");
+    expect(screen.queryByTestId("offer-badge")).not.toBeInTheDocument();
+  });
 });
 
 describe("OffersCard — the three write states", () => {

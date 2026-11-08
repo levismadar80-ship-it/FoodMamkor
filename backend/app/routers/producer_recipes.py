@@ -84,7 +84,12 @@ def _validate_product_ids(
     if missing:
         raise HTTPException(
             status_code=422,
-            detail=f"product_ids not found: {[str(p) for p in missing]}",
+            # MEH-1943 chunk 2: Hebrew message; the raw UUIDs move to params.
+            detail={
+                "code": "products_not_found",
+                "message": "חלק מהמוצרים לא נמצאו",
+                "params": {"product_ids": [str(p) for p in missing]},
+            },
         )
     foreign = [p.id for p in products if p.producer_id != producer_id]
     if foreign:

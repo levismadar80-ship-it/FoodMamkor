@@ -111,6 +111,27 @@ describe("ProducerHeader facts line (MEH-2592)", () => {
     expect(glyph).toHaveAttribute("aria-hidden", "true");
   });
 
+  it("MEH-2831: the category name is underlined WITHOUT hover (phones have none); the glyph is not; the rating keeps its own", () => {
+    render(
+      <ProducerHeader
+        producer={{ ...baseProducer, avg_rating: 4.8, reviews_count: 12 }}
+        primaryCategory={{ id: 3, name: "לחמים ואפייה" }}
+        hasImages
+      />,
+    );
+    const link = screen.getByTestId("producer-header-category-link");
+    const name = within(link).getByTestId("producer-header-category-name");
+    const cls = (el) => (el.getAttribute("class") || "").split(/\s+/);
+    // The permanent cue is the bare `underline`, not a hover:/group-hover: variant.
+    expect(cls(name)).toContain("underline");
+    expect(cls(name)).toEqual(expect.arrayContaining(["decoration-text/35", "underline-offset-[5px]", "group-hover:decoration-primary"]));
+    expect(name).toHaveTextContent("לחמים ואפייה");
+    expect(cls(link)).not.toContain("hover:underline");
+    expect(cls(within(link).getByTestId("producer-header-category-glyph"))).not.toContain("underline");
+    const ratingCount = within(screen.getByTestId("trust-strip-rating")).getByText(/ביקורות|review_count/);
+    expect(cls(ratingCount)).toEqual(expect.arrayContaining(["underline", "underline-offset-4"]));
+  });
+
   it("an unknown category gets a link but no glyph (no fallback Leaf)", () => {
     render(<ProducerHeader producer={baseProducer} primaryCategory={{ id: 99, name: "קטגוריה חדשה" }} hasImages />);
     const link = screen.getByTestId("producer-header-category-link");
@@ -218,6 +239,24 @@ describe("ProducerHeader status line + tags row (MEH-2592)", () => {
   });
 });
 
+// PR #3974: with products, the facility sentence moves to the products section.
+describe("ProducerHeader gluten facility line — products present vs none", () => {
+  it("no products: the header shows it", () => {
+    render(<ProducerHeader producer={{ ...baseProducer, products: [], gluten_free_facility: "shared" }} primaryCategory={category} hasImages />);
+    expect(screen.getByTestId("gluten-facility-shared")).toBeInTheDocument();
+  });
+  it("one product or more: the header does not", () => {
+    render(
+      <ProducerHeader
+        producer={{ ...baseProducer, products: [{ id: 1, name: "לחם" }], gluten_free_facility: "shared" }}
+        primaryCategory={category}
+        hasImages
+      />,
+    );
+    expect(screen.queryByTestId("gluten-facility-shared")).toBeNull();
+  });
+});
+
 // MEH-2518: the generic «כשר» fallback (no badge codes) shares the strip's
 // expiry gate. It used to read kashrut_verified_at only, so a lapsed
 // certificate still said «כשר». Cells: (current) · (lapsed) · (legacy NULL expiry).
@@ -261,7 +300,7 @@ describe("ProducerHeader status tag (MEH-2596)", () => {
     expect(tag.className).toMatch(/\btext-primary\b/);
   });
 
-  it("full this week: the grey tag is fg-muted, not muted", () => {
+  it("MEH-2759: full_this_week no longer greys the tag — it reads as open", () => {
     render(
       <ProducerHeader
         producer={{ ...baseProducer, availability_state: "full_this_week" }}
@@ -269,9 +308,8 @@ describe("ProducerHeader status tag (MEH-2596)", () => {
         hasImages
       />,
     );
-    const tag = screen.getByTestId("status-closed");
-    expect(tag.className).toMatch(/\btext-fg-muted\b/);
-    expect(tag.className).not.toMatch(/(^|\s)text-muted(\s|$)/);
+    expect(screen.queryByTestId("status-closed")).not.toBeInTheDocument();
+    expect(screen.getByTestId("status-open")).toBeInTheDocument();
   });
 
   it("vacation: the tag keeps gold-deep (4.90:1 on its tint)", () => {

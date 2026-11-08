@@ -25,6 +25,53 @@
  * SYNC DUTY (MEH-1349): backend/app/data/cities.py holds a byte-for-byte
  * copy of ISRAEL_CITIES. Any change here must land there in the same PR.
  */
+/**
+ * MEH-2797 — everyday short names for a locality whose official name is longer.
+ *
+ * A BYTE-FOR-BYTE MIRROR of `CITY_ALIASES` in backend/app/data/cities.py
+ * (MEH-2602), and unlike the ISRAEL_CITIES sync duty above, this one is
+ * ENFORCED: `__tests__/CityAliasParity.test.js` reads the Python file and
+ * fails if the two maps diverge in either direction. A prose "must land there
+ * in the same PR" is a docs patch over missing enforcement; this is the
+ * enforcement.
+ *
+ * WHY THE CLIENT NEEDS IT AT ALL. Every write path has canonicalised city
+ * since MEH-2602 (`DeliveryArea.@validates("city")`, models.py:1179), but rows
+ * written BEFORE it keep their old spelling — `city_variants`' own docstring
+ * in cities.py says so, and the backend's own city filter already folds
+ * aliases for exactly that reason (producer_listing.py:436). The delivery
+ * checker had no equivalent, so a business that saved «בנימינה» before
+ * MEH-2602 answered «עדיין לא מגיעים» to a visitor who picked the only
+ * spelling the autocomplete offers, «בנימינה-גבעת עדה». That is MEH-2797.
+ *
+ * Only unambiguous names belong here: a short form that could mean two
+ * localities («יקנעם», «רמות») stays out, same rule as the backend's.
+ */
+export const CITY_ALIASES = {
+  "בנימינה": "בנימינה-גבעת עדה",
+  "גבעת עדה": "בנימינה-גבעת עדה",
+  "מודיעין": "מודיעין-מכבים-רעות",
+  "מכבים": "מודיעין-מכבים-רעות",
+  "רעות": "מודיעין-מכבים-רעות",
+  "תל אביב": "תל אביב-יפו",
+  "ת\"א": "תל אביב-יפו",
+  "פרדס חנה": "פרדס חנה-כרכור",
+  "כרכור": "פרדס חנה-כרכור",
+  "נצרת עילית": "נוף הגליל",
+  "פתח תקוה": "פתח תקווה",
+  "קרית שמונה": "קריית שמונה",
+};
+
+/** The one spelling a city is matched on: a known alias folds to its official
+ *  name, anything else is returned trimmed. Deliberately does NOT invent a
+ *  city — an unknown name comes back as given, so the checker keeps answering
+ *  «no» for a town the business genuinely does not serve. */
+export function canonicalCity(value) {
+  const cleaned = (value || "").replace(/\s+/g, " ").trim();
+  if (!cleaned) return cleaned;
+  return CITY_ALIASES[cleaned] || cleaned;
+}
+
 export const ISRAEL_CITIES = [
   // Major cities
   "ירושלים",

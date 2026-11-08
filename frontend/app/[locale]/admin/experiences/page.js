@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { MapPin, Leaf, CurrencyCircleDollar, Lightbulb } from "@phosphor-icons/react";
 import { useTranslations, useLocale } from "next-intl";
 import { formatEventDate } from "@/lib/format-date";
@@ -130,7 +130,7 @@ export default function AdminExperiencesPage() {
             className={`px-4 py-2 rounded-full text-sm whitespace-nowrap transition ${
               tab === value
                 ? "bg-primary text-white"
-                : "bg-white border border-border text-text hover:bg-green-50"
+                : "bg-surface border border-border text-text hover:bg-green-50"
             }`}
           >
             {t(`experiences.tabs.${value}`)}
@@ -139,7 +139,7 @@ export default function AdminExperiencesPage() {
       </div>
 
       {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 rounded-[12px] p-4">
+        <div className="bg-danger-50 border border-danger-200 text-danger-700 rounded-md p-4">
           {error}
         </div>
       )}
@@ -147,7 +147,7 @@ export default function AdminExperiencesPage() {
       {loading ? (
         <SkeletonTable rows={5} cols={5} label={t("common.loading_f")} />
       ) : rows.length === 0 ? (
-        <div className="bg-white border border-border rounded-[16px] p-8 text-center text-fg-muted">
+        <div className="bg-surface border border-border rounded-lg p-8 text-center text-fg-muted">
           {t("experiences.empty")}
         </div>
       ) : (
@@ -155,7 +155,7 @@ export default function AdminExperiencesPage() {
         // columns can still outgrow the card, and -hidden clipped the actions
         // column out of reach. Below md the table is one card per row
         // (`.table-stack`, globals.css), so nothing scrolls sideways at all.
-        <div className="bg-white border border-border rounded-[16px] overflow-x-auto">
+        <div className="bg-surface border border-border rounded-lg overflow-x-auto">
           <table className="table-stack w-full text-sm">
             <thead className="bg-green-50 text-fg-muted text-xs">
               <tr>
@@ -194,8 +194,8 @@ export default function AdminExperiencesPage() {
 
       {/* Feedback modal */}
       {modalEx && (
-        <div className="fixed inset-0 bg-black/50 z-[9000] flex items-center justify-center p-4">
-          <div className="bg-background rounded-[16px] p-6 max-w-lg w-full border border-border">
+        <div className="fixed inset-0 bg-black/40 z-[9000] flex items-center justify-center p-4">
+          <div className="bg-background rounded-lg p-6 max-w-lg w-full border border-border">
             <h2 className="font-headline-md text-xl font-bold text-text mb-2">
               {modalAction === "changes" ? t("experiences.modal.changes_title") : t("experiences.modal.reject_title")}
             </h2>
@@ -209,7 +209,7 @@ export default function AdminExperiencesPage() {
               value={feedback}
               onChange={(e) => setFeedback(e.target.value)}
               rows={5}
-              className="w-full border border-border rounded-[12px] px-3 py-2 text-sm bg-white"
+              className="w-full border border-border rounded-md px-3 py-2 text-sm bg-surface"
               placeholder={
                 modalAction === "changes"
                   ? t("experiences.modal.changes_placeholder")
@@ -220,17 +220,17 @@ export default function AdminExperiencesPage() {
               <button
                 onClick={closeModal}
                 disabled={busy}
-                className="px-4 py-2 rounded-[8px] border border-border text-text hover:bg-green-50"
+                className="px-4 py-2 rounded-sm border border-border text-text hover:bg-green-50"
               >
                 {t("common.cancel")}
               </button>
               <button
                 onClick={submitModal}
                 disabled={busy}
-                className={`px-4 py-2 rounded-[8px] text-white ${
+                className={`px-4 py-2 rounded-sm text-white ${
                   modalAction === "changes"
                     ? "bg-accent hover:opacity-90"
-                    : "bg-red-600 hover:bg-red-700"
+                    : "bg-danger-600 hover:bg-danger-700"
                 } disabled:opacity-50`}
               >
                 {busy ? t("common.sending") : t("experiences.modal.submit")}
@@ -307,7 +307,7 @@ function ExperienceRow({ ex, busy, t, locale, onApprove, onChanges, onReject }) 
               <button
                 onClick={() => onReject(ex)}
                 disabled={busy}
-                className="bg-red-600 text-white px-3 py-1 rounded-full text-xs hover:bg-red-700 disabled:opacity-50"
+                className="bg-danger-600 text-white px-3 py-1 rounded-full text-xs hover:bg-danger-700 disabled:opacity-50"
               >
                 {t("experiences.actions.reject")}
               </button>
@@ -315,7 +315,7 @@ function ExperienceRow({ ex, busy, t, locale, onApprove, onChanges, onReject }) 
             <Link
               href={`/experiences/${ex.id}`}
               target="_blank"
-              className="text-primary text-xs px-2 py-1 hover:underline"
+              className="text-primary text-xs px-2 py-1 underline decoration-[1.5px] underline-offset-[5px] decoration-primary/35 hover:decoration-current"
             >
               {t("experiences.actions.view")}
             </Link>
@@ -347,7 +347,7 @@ function ExperienceRow({ ex, busy, t, locale, onApprove, onChanges, onReject }) 
                 </p>
               )}
               {ex.moderation_reason && (
-                <div className="mt-3 bg-white border border-border rounded-[12px] p-3">
+                <div className="mt-3 bg-surface border border-border rounded-md p-3">
                   <p className="font-medium text-xs mb-1">
                     {t("experiences.claude_preview")}
                   </p>
@@ -356,7 +356,7 @@ function ExperienceRow({ ex, busy, t, locale, onApprove, onChanges, onReject }) 
                   </p>
                   {ex.moderation_suggestion && (
                     <p className="text-xs text-fg-muted mt-1 inline-flex items-center gap-1">
-                      <Lightbulb size={14} weight="fill" className="text-amber-500" aria-hidden="true" />
+                      <Lightbulb size={14} weight="fill" className="text-warning-500" aria-hidden="true" />
                       {ex.moderation_suggestion}
                     </p>
                   )}

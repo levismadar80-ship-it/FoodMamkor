@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { X } from "@phosphor-icons/react";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 
 /**
  * Module:   DeliveryContextBanner
@@ -40,7 +40,7 @@ export default function DeliveryContextBanner({ city }) {
       className="mt-2 rounded-md border border-border bg-background-alt px-3 py-2"
     >
       <div className="flex items-start justify-between gap-2">
-        <p className="text-[11px] text-fg-muted">
+        <p className="text-2xs text-fg-muted">
           {t("map.filter.delivery_context_banner", { city })}
         </p>
         {/* rtl-ok: geometry comes from DOM order in a dir="rtl" flex row —
@@ -58,7 +58,7 @@ export default function DeliveryContextBanner({ city }) {
       </div>
       <Link
         href={`/producers?city=${encodeURIComponent(city)}`}
-        className="mt-1 inline-block text-[11px] text-primary underline underline-offset-2 hover:opacity-80 transition"
+        className="mt-1 inline-block text-2xs text-primary underline underline-offset-2 hover:opacity-80 transition"
       >
         {t("map.filter.day_bridge_cta")}
       </Link>

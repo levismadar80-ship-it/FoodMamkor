@@ -3,7 +3,7 @@ import { test, expect, type Page } from "../_cloudinary-stub";
 import { detailPath } from "../_producer-fixture";
 import he from "../../../messages/he.json";
 import en from "../../../messages/en.json";
-// The three app libs below are plain JS (the app is JS + JSDoc); tsconfig.e2e
+// The four app libs below are plain JS (the app is JS + JSDoc); tsconfig.e2e
 // has no allowJs, so each import is TS7016 — the same shape as
 // e2e/flows/33-admin-producers-tab.spec.ts:56. Suppressed per line, not globally.
 // @ts-expect-error TS7016 — generated zod module, no .d.ts
@@ -12,6 +12,8 @@ import { ListCategoriesCategoriesGetResponse, ListProducersProducersGetResponse 
 import { allBadges } from "../../../lib/badges.js";
 // @ts-expect-error TS7016 — JS lib, no .d.ts
 import { FILTER_AXES } from "../../../lib/filter-taxonomy.js";
+// @ts-expect-error TS7016 — JS lib, no .d.ts
+import { GATED_DIET_KEYS } from "../../../lib/producer-filters.js";
 
 /**
  * Spec:     manual/producers
@@ -82,7 +84,7 @@ import { FILTER_AXES } from "../../../lib/filter-taxonomy.js";
  *           MEH-1592), so those two locators are deliberately unscoped.
  * Copy:     every expected string is read from messages/he.json (en.json for
  *           `/en/producers`) or from the lib that owns it (FILTER_AXES labels,
- *           BADGE_CONFIG labels/tooltips via allBadges). The only literals are
+ *           badge keys via allBadges, words from messages/he.json `badges.*`). The only literals are
  *           fixture data (ids, names, window times) and CSS colours that ARE
  *           the registry values under test (lib/category-registry.js
  *           `CATEGORY_STYLES`).
@@ -143,14 +145,34 @@ const SHEET_HE = he.filters.sheet;
 const MOBILE_NAV_LABEL = he.nav.mobile_label;
 const RECENT_HEADING = he.home.recent.heading;
 
-type Axis = { key: string; label: string; group: string; surfaces: string[] };
-const AXES = FILTER_AXES as Record<string, Axis>;
+type Axis = { key: string; label: string; group: string; surfaces: string[]; scope: string; subtext?: string | null };
+/**
+ * MEH-2748 moved every axis's consumer label (and subtext) out of
+ * filter-taxonomy.js into messages/he.json `filter_axes.<key>`. Reading
+ * `FILTER_AXES[k].label` now yields undefined, and `getByRole("button",
+ * { name: undefined })` matches EVERY button — the 08/11 strict-mode reds. So
+ * the label is joined in from he.json here, and a missing one throws at load
+ * instead of silently widening a locator.
+ */
+const HE_AXES = (he as unknown as { filter_axes: Record<string, { label?: string; subtext?: string | null }> }).filter_axes;
+const AXES = Object.fromEntries(
+  Object.entries(FILTER_AXES as Record<string, object>).map(([k, a]) => {
+    const copy = HE_AXES[k];
+    if (!copy?.label) throw new Error(`he.json filter_axes.${k}.label is missing — the spec cannot name the chip`);
+    return [k, { ...a, label: copy.label, subtext: copy.subtext ?? null }];
+  }),
+) as Record<string, Axis>;
 /** The diet axes offered on /producers, in declaration order (filter-taxonomy.js). */
 const DIET_KEYS_ON_PRODUCERS = Object.keys(AXES).filter(
   (k) => AXES[k].group === "diet" && AXES[k].surfaces.includes("producers"),
 );
-/** The four ungated diet chips, in LISTING_CHIP_ORDER — the MEH-1438 row-2 order. */
+/** The four diet chips GATE_CATALOG opens, in LISTING_CHIP_ORDER — the MEH-1438 row-2 order. */
 const UNGATED_DIET_ORDER = ["vegan", "vegetarian", "gluten_free", "lactose_free"] as const;
+/**
+ * MEH-1508 chunk 3ב-2 — the business-scope pair. MEH-2677 (Sapir 05/11) took it
+ * out of the sheet (one chip per diet); it lives on as the card badge only.
+ */
+const SCOPE_ALL_KEYS = ["vegan_all", "vegetarian_all"] as const;
 
 /** Minimal ICU plural resolver for the `{count, plural, …}` strings in he.json. */
 function icu(msg: string, count: number): string {
@@ -170,12 +192,16 @@ function icu(msg: string, count: number): string {
 // Registry names (lib/category-registry.js): «בשר» carries CATEGORY_STYLES
 // color #c04040 + a glyph; «חלב וגבינות» textColor #3b72ad; «ביצים» has a glyph
 // in CATEGORY_ICONS but NO CATEGORY_STYLES row — the MEH-1452 row-3 case.
-const CAT_MEAT = { id: 1, name: "בשר" };
-const CAT_DAIRY = { id: 2, name: "חלב וגבינות" };
-const CAT_EGGS = { id: 3, name: "ביצים" };
+// MEH-2783: the row shows the /map department GROUPS (he.map_category_chips),
+// matched by name or by the stable slug — so the fixture carries slugs, as
+// CategoryOut does. «ביצים» now sits in the dairy group («חלב וביצים»).
+const CAT_MEAT = { id: 1, name: "בשר", slug: "meat" };
+const CAT_DAIRY = { id: 2, name: "חלב וגבינות", slug: "dairy" };
+const CAT_EGGS = { id: 3, name: "ביצים", slug: "eggs" };
+const G_HE = he.map_category_chips;
+const DAIRY_TINT = "rgb(59, 114, 173)"; // #3b72ad, CATEGORY_CHIPS dairy iconColor
 const CATEGORIES = [CAT_MEAT, CAT_DAIRY, CAT_EGGS];
 const MEAT_TINT = "rgb(192, 64, 64)"; // #c04040
-const DEFAULT_CAT_RING = "rgb(46, 104, 83)"; // #2e6853, ChipScrollRow DEFAULT_CAT_RING
 
 type Producer = Record<string, unknown> & { id: string; name: string };
 const uuid = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`;
@@ -233,12 +259,38 @@ const P_VACATION = producer(4, "שמן זית של סבתא", {
   has_lactose_free_products: true,
   order_window: { [FIXED_DAY_KEY]: [{ open: "00:00", close: "23:59" }] },
 });
-const FILLERS = [5, 6, 7, 8].map((n) => producer(n, `עסק לדוגמה ${n}`));
+// MEH-1508 chunk 3ב-2: one filler declares BOTH 100% scopes, which un-gates
+// both pills (threshold 1). Its card wears only «טבעוני» (badges.js
+// supersession) — one badge, no «+N», so the overflow rows below are untouched.
+const FILLERS = [5, 6, 7, 8].map((n) =>
+  producer(n, `עסק לדוגמה ${n}`, n === 5 ? { vegan_scope: "all", vegetarian_scope: "all" } : {}),
+);
 /** Eight rows: two full desktop rows (xl:grid-cols-4) and four mobile rows. */
 const PRODUCERS: Producer[] = [P_BADGES, P_CLOSED_BETWEEN, P_NO_WINDOW, P_VACATION, ...FILLERS];
+/**
+ * MEH-2767: the chip gates count the UNFILTERED catalog snapshot (one GET
+ * /producers with no query, lib/use-catalog-snapshot.js), and the four diet
+ * axes are count-gated now. The snapshot is the rendered rows plus five
+ * never-rendered rows declaring the four diet flags, so the sheet offers the
+ * four without touching any card the badge/+N tests below read. Still no
+ * no_added_sugar — the diet order below is pinned without it.
+ */
+const GATE_ROWS = [11, 12, 13, 14, 15].map((n) =>
+  producer(n, `עסק לספירה ${n}`, {
+    has_vegan_products: true,
+    has_vegetarian_products: true,
+    has_gluten_free_products: true,
+    has_lactose_free_products: true,
+  }),
+);
+const GATE_CATALOG: Producer[] = [...PRODUCERS, ...GATE_ROWS];
 
-/** Derived from the same lib the card calls (badges.js allBadges) — never typed in. */
-const HIDDEN_BADGES = allBadges(P_BADGES).slice(2) as Array<{ key: string; label: string; tooltip?: string }>;
+/** Derived from the same lib the card calls (badges.js allBadges) — never typed in.
+ *  MEH-2740: the words come from messages/he.json `badges.<key>`, as the app reads them. */
+const BADGE_COPY = he.badges as Record<string, { label: string; tooltip: string }>;
+const HIDDEN_BADGES = allBadges(P_BADGES)
+  .slice(2)
+  .map((b: { key: string }) => ({ key: b.key, ...BADGE_COPY[b.key] }));
 const VISIBLE_BADGE_COUNT = 2; // MEH-991 CARD-09 v4 LOCK (ProducerCard limit={2})
 const EXPECTED_OPEN_LINE = ORDERS_OPEN_HE.replace("{time}", "5:31");
 
@@ -250,9 +302,25 @@ test.beforeAll(() => {
   // Guards on the fixture's own premises, so a later edit cannot silently
   // move the +N count or the diet order the rows below assert.
   if (HIDDEN_BADGES.length !== 3) throw new Error(`P_BADGES must fold 3 badges, got ${HIDDEN_BADGES.length}`);
-  if (DIET_KEYS_ON_PRODUCERS.slice(0, 4).join() !== UNGATED_DIET_ORDER.join()) {
+  // Pinned: the diet axes on /producers, in declaration order, are the four
+  // plus no_added_sugar, and no business-scope diet axis is offered (MEH-2677).
+  // MEH-2767: all five are count-gated; GATE_CATALOG opens exactly the four.
+  if (DIET_KEYS_ON_PRODUCERS.filter((k) => k !== "no_added_sugar").join() !== UNGATED_DIET_ORDER.join()) {
     throw new Error(`diet order drifted: ${DIET_KEYS_ON_PRODUCERS.join(",")}`);
   }
+  for (const k of DIET_KEYS_ON_PRODUCERS) {
+    if (!GATED_DIET_KEYS.includes(k)) throw new Error(`diet axis ${k} is ungated again — MEH-2767 gates them all`);
+  }
+  for (const flag of ["has_vegan_products", "has_vegetarian_products", "has_gluten_free_products", "has_lactose_free_products"] as const) {
+    if (GATE_CATALOG.filter((p) => p[flag]).length < 5) throw new Error(`GATE_CATALOG needs 5 rows with ${flag}`);
+  }
+  ListProducersProducersGetResponse.parse(GATE_CATALOG);
+  const businessScope = DIET_KEYS_ON_PRODUCERS.filter((k) => AXES[k].scope !== "any-product");
+  if (businessScope.length !== 0) {
+    throw new Error(`a business-scope diet axis is back on /producers: ${businessScope.join(",")}`);
+  }
+  if (PRODUCERS.some((p) => p.has_no_added_sugar_products))
+    throw new Error("no fixture row may declare no_added_sugar — the sheet's diet order below is pinned without it");
 });
 
 // ── helpers ─────────────────────────────────────────────────────────────────
@@ -273,6 +341,12 @@ async function mockCatalog(page: Page, list: Producer[] | ((u: URL) => Producer[
       // fixed count keeps the zero-result fixture (`() => []`) honest about
       // which header the results line actually reads.
       return route.fulfill({ json: { count: PRODUCERS.length } });
+    }
+    // MEH-2767: the chip-gate snapshot is the one call with no query at all
+    // (the page's own fetches always carry limit/offset). Answered from
+    // GATE_CATALOG and kept out of `seen`, which records the LISTING calls.
+    if (url.search === "") {
+      return route.fulfill({ json: GATE_CATALOG, headers: { "x-total-count": String(GATE_CATALOG.length) } });
     }
     seen.push(url);
     const body = typeof list === "function" ? list(url) : list;
@@ -469,10 +543,13 @@ test.describe("manual › multi-category OR (MEH-1465)", () => {
     page,
   }) => {
     const { seen } = await gotoFiltered(page, "/producers?category=1&category=2");
-    await expect(categoryChip(page, CAT_MEAT.name)).toHaveAttribute("aria-pressed", "true");
-    await expect(categoryChip(page, CAT_DAIRY.name)).toHaveAttribute("aria-pressed", "true");
+    await expect(categoryChip(page, G_HE.meat)).toHaveAttribute("aria-pressed", "true");
+    await expect(categoryChip(page, G_HE.dairy)).toHaveAttribute("aria-pressed", "true");
     await expect(allChip(page)).toHaveAttribute("aria-pressed", "false");
-    await expect(allChip(page)).toHaveClass(/bg-white/);
+    // The ghost state (ChipScrollRow.jsx «כל» ghost): white surface + muted ink.
+    // #4043 renamed bg-white → the bg-surface token (same #fff).
+    await expect(allChip(page)).toHaveClass(/\bbg-surface\b/);
+    await expect(allChip(page)).toHaveClass(/\btext-muted\b/);
     const union = seen.filter((u) => u.searchParams.getAll("category").join() === "1,2");
     expect(union.length, "the mount fetch must carry both ids as repeated ?category=").toBeGreaterThanOrEqual(1);
     expect(query(page).getAll("category")).toEqual(["1", "2"]);
@@ -482,9 +559,9 @@ test.describe("manual › multi-category OR (MEH-1465)", () => {
   //   loses only that id); «הכל» clears the whole set.
   test("re-tapping a selected category drops only its id; «הכל» clears the set", async ({ page }) => {
     const { seen } = await gotoFiltered(page, "/producers?category=1&category=2");
-    await categoryChip(page, CAT_DAIRY.name).click();
+    await categoryChip(page, G_HE.dairy).click();
     await expect.poll(() => query(page).getAll("category")).toEqual(["1"]);
-    await expect(categoryChip(page, CAT_MEAT.name)).toHaveAttribute("aria-pressed", "true");
+    await expect(categoryChip(page, G_HE.meat)).toHaveAttribute("aria-pressed", "true");
     await expect(allChip(page)).toHaveAttribute("aria-pressed", "false");
     await expect
       .poll(() => seen.some((u) => u.searchParams.getAll("category").join() === "1"), {
@@ -503,7 +580,7 @@ test.describe("manual › multi-category OR (MEH-1465)", () => {
     await gotoFiltered(page, "/producers?category=1&vegetarian=1");
     const line = scope(page).getByTestId("producers-control-line");
     await expect(line.getByRole("button", { name: AXES.vegetarian.label })).toHaveCount(1);
-    await expect(line.getByRole("button", { name: CAT_MEAT.name })).toHaveCount(0);
+    await expect(line.getByRole("button", { name: G_HE.meat })).toHaveCount(0);
     await expect(line.getByRole("button")).toHaveCount(2); // the × chip + «נקו הכל»
     await line.getByTestId("producers-clear-all").click();
     await expect.poll(() => query(page).toString()).toBe("");
@@ -527,11 +604,11 @@ test.describe("manual › category glyph tint (MEH-1452)", () => {
   //   selected ✓ fall back to the default category green (MEH-2500 / MEH-2531;
   //   it used to keep currentColor before the ✓ replaced the glyph).
   // MT:MEH-1452:4 — «הכל» has no glyph.
-  test("selected «בשר» carries #c04040 as ring + glyph; «ביצים» (no style row) takes the default green; «הכל» has no glyph", async ({
+  test("selected «בשר» carries #c04040 as ring + glyph; «ביצים» presses the «חלב וביצים» group in its colour; «הכל» has no glyph", async ({
     page,
   }) => {
     await gotoFiltered(page, "/producers?category=1&category=3");
-    const meat = categoryChip(page, CAT_MEAT.name);
+    const meat = categoryChip(page, G_HE.meat);
     await expect(meat).toHaveCSS("border-top-color", MEAT_TINT);
     const meatGlyph = meat.locator("span[aria-hidden]");
     await expect(meatGlyph).toHaveCount(1);
@@ -539,20 +616,14 @@ test.describe("manual › category glyph tint (MEH-1452)", () => {
     // The label stays neutral — the tint is on the glyph, not the text.
     await expect(meat).not.toHaveCSS("color", MEAT_TINT);
 
-    // MEH-2531: since MEH-2500 (#3754) a SELECTED category chip swaps its
-    // glyph for a ✓ in the ring colour (ChipScrollRow `catRing`). A category
-    // with no style row falls back to DEFAULT_CAT_RING for ring AND ✓ — the
-    // old "inherits currentColor" read no longer holds for a selected chip.
-    const eggs = categoryChip(page, CAT_EGGS.name);
-    await expect(eggs).toHaveCSS("border-top-color", DEFAULT_CAT_RING);
-    const eggsGlyph = eggs.locator("span[aria-hidden]");
-    await expect(eggsGlyph).toHaveCount(1);
-    await expect(eggsGlyph, "an unstyled category's ✓ carries the default ring colour").toHaveCSS(
-      "color",
-      DEFAULT_CAT_RING,
-    );
-    await expect(eggs, "the label stays neutral").not.toHaveCSS("color", DEFAULT_CAT_RING);
-    await expect(eggsGlyph).not.toHaveCSS("color", MEAT_TINT);
+    // MEH-2783: «ביצים» (id 3) has no chip of its own any more — it belongs to
+    // the dairy group, so a ?category=3 deep link presses «חלב וביצים», whose
+    // ring is the group colour (CATEGORY_CHIPS dairy iconColor #3b72ad).
+    const dairy = categoryChip(page, G_HE.dairy);
+    await expect(dairy).toHaveAttribute("aria-pressed", "true");
+    await expect(dairy).toHaveCSS("border-top-color", DAIRY_TINT);
+    await expect(dairy.locator("span[aria-hidden]")).toHaveCount(1);
+    await expect(scope(page).getByTestId("producers-category-row").getByRole("button", { name: CAT_EGGS.name, exact: true })).toHaveCount(0);
 
     await expect(allChip(page).locator("span")).toHaveCount(0);
   });
@@ -560,11 +631,15 @@ test.describe("manual › category glyph tint (MEH-1452)", () => {
 
 // ════════════════════════════════════════════════════════════════════════════
 test.describe("manual › vegetarian axis (MEH-1438)", () => {
-  // MT:MEH-1438:2 — the «צמחוני» chip exists on /producers (FilterSheet, diet
+  // MT:MEH-1438:2 — the vegetarian chip exists on /producers (FilterSheet, diet
   //   group) and the diet order is טבעוני · צמחוני · ללא גלוטן · ללא לקטוז. The
   //   gated fifth diet chip (no_added_sugar, MEH-1934) may or may not render —
   //   it is declared AFTER these four, so only the leading four are pinned.
-  test("the filter sheet's diet group offers «צמחוני» second, in the locked order", async ({ page }) => {
+  //   MEH-1508 chunk 3ב-2 renamed the partial pair «מתאים לטבעונים» /
+  //   «מתאים לצמחונים» (card §6.6, read from FILTER_AXES). The 100% pair it
+  //   added left the sheet in MEH-2677 — the fixture still declares it (one
+  //   row), so its absence here is a real assertion, not an empty catalog.
+  test("the filter sheet's diet group offers «מתאים לצמחונים» second, in the locked order, and no whole-business pill", async ({ page }) => {
     await gotoFiltered(page);
     await scope(page).getByTestId("producers-filters-button").click();
     const panel = page.locator("#filter-sheet-panel");
@@ -574,15 +649,19 @@ test.describe("manual › vegetarian axis (MEH-1438)", () => {
     const ids = (await switches.evaluateAll((els) => els.map((e) => e.getAttribute("data-testid") ?? "")))
       .map((id) => id.replace(/^chip-/, ""))
       .filter((k) => DIET_KEYS_ON_PRODUCERS.includes(k));
-    expect(ids.slice(0, 4)).toEqual([...UNGATED_DIET_ORDER]);
+    expect(ids).toEqual([...UNGATED_DIET_ORDER]);
     await expect(panel.getByTestId("chip-vegetarian")).toHaveText(AXES.vegetarian.label);
+    for (const key of SCOPE_ALL_KEYS) {
+      await expect(panel.getByTestId(`chip-${key}`)).toHaveCount(0);
+    }
     await page.keyboard.press("Escape");
     await expect(panel).toHaveCount(0);
   });
 
-  // MT:MEH-1438:5 — toggling «צמחוני» writes `?vegetarian=1`; a reload keeps
-  //   the chip active and refetches the filtered list.
-  test("«צמחוני» writes ?vegetarian=1, the fetch carries vegetarian=true, and a reload keeps it active", async ({
+  // MT:MEH-1438:5 — toggling the vegetarian chip («מתאים לצמחונים» since
+  //   MEH-1508 chunk 3ב-2) writes `?vegetarian=1`; a reload keeps the chip
+  //   active and refetches the filtered list.
+  test("«מתאים לצמחונים» writes ?vegetarian=1, the fetch carries vegetarian=true, and a reload keeps it active", async ({
     page,
   }) => {
     const { seen } = await gotoFiltered(page);
@@ -665,10 +744,14 @@ test.describe("manual › +N badge disclosure (MEH-1547)", () => {
     await expect(panel).toHaveAttribute("aria-modal", "true");
     await expect(panel).toContainText(OVERFLOW_HE.overflow_heading);
     const items = panel.getByRole("listitem");
+    // Non-vacuous: beforeAll pins three hidden badges; each must carry both
+    // strings, so a missing tooltip reds instead of skipping (MEH-2740).
     await expect(items).toHaveCount(HIDDEN_BADGES.length);
     for (let i = 0; i < HIDDEN_BADGES.length; i += 1) {
+      expect(HIDDEN_BADGES[i].label, HIDDEN_BADGES[i].key).toBeTruthy();
+      expect(HIDDEN_BADGES[i].tooltip, HIDDEN_BADGES[i].key).toBeTruthy();
       await expect(items.nth(i)).toContainText(HIDDEN_BADGES[i].label);
-      if (HIDDEN_BADGES[i].tooltip) await expect(items.nth(i)).toContainText(HIDDEN_BADGES[i].tooltip as string);
+      await expect(items.nth(i)).toContainText(HIDDEN_BADGES[i].tooltip);
     }
     expect(page.url(), "the tap must not navigate").toBe(url);
 

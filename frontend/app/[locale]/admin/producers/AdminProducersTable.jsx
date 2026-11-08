@@ -1,9 +1,9 @@
 "use client";
 
 import React from "react";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
-import { Cow, Seal, Circle, StarOfDavid, Warning } from "@phosphor-icons/react";
+import { Cow, Medal, Seal, Circle, StarOfDavid, Warning } from "@phosphor-icons/react";
 import Pagination from "@/components/Pagination";
 import AdminLoadError from "@/components/admin/AdminLoadError";
 import StoryCardCanvas from "@/components/StoryCardCanvas";
@@ -16,6 +16,7 @@ import { SLA_STATUSES } from "./sla-statuses";
 import { getProducerStatusLabel, getProducerStatusColor } from "@/lib/producer-status";
 import { optimizeCloudinary } from "@/lib/cloudinary";
 import { BADGE_CONFIG, isKashrutCurrent } from "@/lib/badges";
+import { useBadgeCopy } from "@/lib/use-badge-copy";
 
 // Phosphor icon size used in trait tags + the action row.
 const ICON_SIZE_SM = 16;
@@ -63,7 +64,7 @@ export function AwaitingCompletionBadge({ producer }) {
     : null;
   return (
     <span
-      className="inline-flex items-center gap-1 rounded-full bg-amber-100 text-amber-800 px-2 py-0.5 text-[10px] font-medium"
+      className="inline-flex items-center gap-1 rounded-full bg-warning-100 text-warning-800 px-2 py-0.5 text-2xs font-medium"
       title={producer.requested_changes}
     >
       {t("producers.table.awaiting_completion")}
@@ -86,7 +87,7 @@ export function ResubmissionBadge({ producer }) {
   if (count <= 0 || producer.status !== "pending") return null;
   return (
     <span
-      className="inline-flex items-center gap-1 rounded-full bg-sky-100 text-sky-800 px-2 py-0.5 text-[10px] font-medium"
+      className="inline-flex items-center gap-1 rounded-full bg-sky-100 text-sky-800 px-2 py-0.5 text-2xs font-medium"
       title={producer.rejection_reason || undefined}
       data-testid="resubmission-badge"
       data-count={count}
@@ -116,8 +117,8 @@ export function WaitingBadge({ producer }) {
   // 0–1 neutral · 2 amber · >=3 red. Thresholds live here and in
   // __tests__/AdminQueueWaitingBadge.test.jsx, which pins each boundary.
   let cls = "bg-gray-100 text-gray-600";
-  if (isQueued && days >= 3) cls = "bg-red-100 text-red-800";
-  else if (isQueued && days === 2) cls = "bg-amber-100 text-amber-800";
+  if (isQueued && days >= 3) cls = "bg-danger-100 text-danger-800";
+  else if (isQueued && days === 2) cls = "bg-warning-100 text-warning-800";
 
   // The tooltip names WHICH timestamp it is showing rather than presenting a
   // creation date as if it were a submission — a pre-MEH-2100 row and every
@@ -133,7 +134,7 @@ export function WaitingBadge({ producer }) {
 
   return (
     <span
-      className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium ${cls}`}
+      className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-2xs font-medium ${cls}`}
       data-testid="waiting-badge"
       data-days={days}
       title={title}
@@ -159,7 +160,7 @@ function RiskBadge({ score, reasoning }) {
       cls = "bg-yellow-100 text-yellow-800";
       label = t("producers.table.risk.medium");
     } else {
-      cls = "bg-red-100 text-red-700";
+      cls = "bg-danger-100 text-danger-700";
       label = t("producers.table.risk.high");
     }
   }
@@ -174,17 +175,20 @@ function RiskBadge({ score, reasoning }) {
   );
 }
 
-function CompletenessBadge({ missing, priority }) {
+export function CompletenessBadge({ missing, priority }) {
   const t = useTranslations("admin");
-  const fields = missing.join(", ");
+  // MEH-2760: `missing` holds field slugs; the words are the owner dashboard's.
+  const tField = useTranslations("dashboard.producer.completeness.fields");
+  const fields = missing.map((slug) => tField(slug)).join(", ");
   if (priority === "red") {
     return (
       <span
         title={t("producers.table.completeness.missing_title", { fields })}
         className="inline-flex items-center leading-none cursor-help"
+        role="img"
         aria-label={t("producers.table.completeness.missing_critical_aria")}
       >
-        <Circle size={ICON_SIZE_SM} weight="fill" className="text-red-500" aria-hidden="true" />
+        <Circle size={ICON_SIZE_SM} weight="fill" className="text-danger-500" aria-hidden="true" />
       </span>
     );
   }
@@ -193,9 +197,10 @@ function CompletenessBadge({ missing, priority }) {
       <span
         title={t("producers.table.completeness.missing_title", { fields })}
         className="inline-flex items-center leading-none cursor-help"
+        role="img"
         aria-label={t("producers.table.completeness.missing_aria")}
       >
-        <Circle size={ICON_SIZE_SM} weight="fill" className="text-amber-500" aria-hidden="true" />
+        <Circle size={ICON_SIZE_SM} weight="fill" className="text-warning-500" aria-hidden="true" />
       </span>
     );
   }
@@ -203,6 +208,7 @@ function CompletenessBadge({ missing, priority }) {
     <span
       title={t("producers.table.completeness.complete_title")}
       className="inline-flex items-center leading-none cursor-help opacity-60"
+      role="img"
       aria-label={t("producers.table.completeness.complete_aria")}
     >
       <Circle size={ICON_SIZE_SM} weight="fill" className="text-primary" aria-hidden="true" />
@@ -216,6 +222,7 @@ function CompletenessBadge({ missing, priority }) {
 // surface renders. Same predicate as the public strip (lib/badges.js).
 export function ProducerTags({ producer }) {
   const t = useTranslations("admin");
+  const kosherBadge = useBadgeCopy()(BADGE_CONFIG.kosher);
   return (
     <div className="flex gap-1 flex-wrap">
       {/* MEH-2459: an organizer (markets / events, sells nothing) stays in the
@@ -225,19 +232,21 @@ export function ProducerTags({ producer }) {
         <span
           title={t("producers.table.tags.organizer_title")}
           aria-label={t("producers.table.tags.organizer_title")}
-          className="inline-flex items-center rounded-full bg-primary/10 text-primary px-1.5 py-0.5 text-[10px] font-medium"
+          className="inline-flex items-center rounded-full bg-primary/10 text-primary px-1.5 py-0.5 text-2xs font-medium"
         >
           {t("producers.table.tags.organizer")}
         </span>
       )}
       {producer.verification_tier === "verified" && <span title={t("producers.table.tags.verified")}><Seal size={ICON_SIZE_SM} weight="fill" className="text-primary" aria-hidden="true" /></span>}
       {producer.grass_fed && <span title={t("producers.table.tags.grass_fed")}><Cow size={ICON_SIZE_SM} className="text-primary" aria-hidden="true" /></span>}
+      {/* MEH-2699: owner-declared reservist claim, visible to the admin. */}
+      {producer.reservist_owned && <span data-testid="admin-tag-reservist" title={t("producers.table.tags.reservist_owned")}><Medal size={ICON_SIZE_SM} className="text-primary" aria-hidden="true" /></span>}
       {/* MEH-2521: the organic (Leaf), delivery (Truck) and pickup (Package)
           tags are gone — each read a column no public surface shows any more
           (MEH-1259 organic; delivery is derived from delivery areas; pickup
           from ProducerLocation rows, MEH-2046/2060). */}
       {isKashrutCurrent(producer) && (
-        <span data-testid="admin-tag-kashrut" title={BADGE_CONFIG.kosher.label}>
+        <span data-testid="admin-tag-kashrut" title={kosherBadge.label}>
           <StarOfDavid size={ICON_SIZE_SM} className="text-primary" aria-hidden="true" />
         </span>
       )}
@@ -248,7 +257,7 @@ export function ProducerTags({ producer }) {
         <span
           title={t("producers.table.tags.license_pending_title")}
           aria-label={t("producers.table.tags.license_pending_title")}
-          className="inline-flex items-center rounded-full bg-amber-100 text-amber-800 px-1.5 py-0.5 text-[10px] font-medium"
+          className="inline-flex items-center rounded-full bg-warning-100 text-warning-800 px-1.5 py-0.5 text-2xs font-medium"
         >
           {t("producers.table.tags.license_pending")}
         </span>
@@ -265,7 +274,7 @@ export function ProducerTags({ producer }) {
                 : "producers.table.tags.dedup_city_title",
           )}
           aria-label={t("producers.table.tags.dedup")}
-          className="inline-flex items-center gap-0.5 rounded-full bg-orange-100 text-orange-800 px-1.5 py-0.5 text-[10px] font-medium"
+          className="inline-flex items-center gap-0.5 rounded-full bg-orange-100 text-orange-800 px-1.5 py-0.5 text-2xs font-medium"
         >
           <Warning size={ICON_SIZE_SM} weight="fill" aria-hidden="true" />
           {t("producers.table.tags.dedup")}
@@ -294,7 +303,7 @@ function ReferralSource({ producer }) {
     value = tOpt(key);
   }
   return (
-    <div className="text-[11px] text-muted mt-0.5">
+    <div className="text-2xs text-muted mt-0.5">
       {t("producers.table.referral.label")}: {value}
     </div>
   );
@@ -317,17 +326,17 @@ export function ProducerActions({ producer, isStoryOpen, onQuickApprove, onAppro
           MEH-1011 Chunk 2: pass the full producer so the approve-422 handler
           can open request-changes prefilled with the gate-matched chip. */}
       {isPending && (
-        <button onClick={() => onQuickApprove(p)} disabled={busy(`approve:${p.id}`)} className="text-primary hover:underline text-xs font-medium disabled:opacity-50 disabled:cursor-not-allowed disabled:no-underline">
+        <button onClick={() => onQuickApprove(p)} disabled={busy(`approve:${p.id}`)} className="text-primary underline decoration-[1.5px] underline-offset-[5px] decoration-primary/35 hover:decoration-current text-xs font-medium disabled:opacity-50 disabled:cursor-not-allowed disabled:no-underline">
           {t("producers.table.actions.approve_short")}
         </button>
       )}
       {/* MEH-1011 Chunk 2: non-terminal "please complete" request — pending only. */}
       {isPending && (
-        <button onClick={() => onRequestChanges(p)} disabled={busy(`request-changes:${p.id}`)} className="text-accent hover:underline text-xs font-medium disabled:opacity-50 disabled:cursor-not-allowed disabled:no-underline">
+        <button onClick={() => onRequestChanges(p)} disabled={busy(`request-changes:${p.id}`)} className="text-accent underline decoration-[1.5px] underline-offset-[5px] decoration-accent/35 hover:decoration-current text-xs font-medium disabled:opacity-50 disabled:cursor-not-allowed disabled:no-underline">
           {t("producers.table.actions.request_changes")}
         </button>
       )}
-      <Link href={`/admin/producers/${p.id}/edit`} className="text-primary hover:underline text-xs">
+      <Link href={`/admin/producers/${p.id}/edit`} className="text-primary underline decoration-[1.5px] underline-offset-[5px] decoration-primary/35 hover:decoration-current text-xs">
         {t("common.edit")}
       </Link>
       {p.slug && (
@@ -437,7 +446,7 @@ function PendingPhotoThumb({ url, index, producerName, t }) {
       target="_blank"
       rel="noopener noreferrer"
       title={alt}
-      className="relative block shrink-0 rounded-[8px] overflow-hidden border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary"
+      className="relative block shrink-0 rounded-sm overflow-hidden border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary"
       style={{ width: PENDING_THUMB_PX, height: PENDING_THUMB_PX }}
     >
       {broken ? (
@@ -445,7 +454,7 @@ function PendingPhotoThumb({ url, index, producerName, t }) {
           role="img"
           aria-label={t("producers.table.photo_preview.broken")}
           title={t("producers.table.photo_preview.broken")}
-          className="flex h-full w-full items-center justify-center bg-red-50 text-red-600"
+          className="flex h-full w-full items-center justify-center bg-danger-50 text-danger-600"
         >
           <Warning size={22} weight="fill" aria-hidden="true" />
         </span>
@@ -476,13 +485,13 @@ function PendingPhotoStrip({ producer }) {
   const extra = images.length - shown.length;
   return (
     <div className="flex items-center gap-2 pt-1">
-      <span className="text-[11px] text-muted me-1">{t("producers.table.photo_preview.label")}</span>
+      <span className="text-2xs text-muted me-1">{t("producers.table.photo_preview.label")}</span>
       {shown.map((url, i) => (
         <PendingPhotoThumb key={`${url}-${i}`} url={url} index={i} producerName={producer.name} t={t} />
       ))}
       {extra > 0 && (
         <span
-          className="inline-flex shrink-0 items-center justify-center rounded-[8px] border border-border bg-background text-xs font-medium text-muted"
+          className="inline-flex shrink-0 items-center justify-center rounded-sm border border-border bg-background text-xs font-medium text-muted"
           style={{ width: PENDING_THUMB_PX, height: PENDING_THUMB_PX }}
           title={t("producers.table.photo_preview.more_alt", { count: extra })}
           aria-label={t("producers.table.photo_preview.more_alt", { count: extra })}
@@ -641,7 +650,7 @@ export default function AdminProducersTable({
     onReload: onRetryLoad,
   };
   return (
-    <div className="bg-white border border-border rounded-[12px] overflow-hidden">
+    <div className="bg-surface border border-border rounded-md overflow-hidden">
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <TableHead />

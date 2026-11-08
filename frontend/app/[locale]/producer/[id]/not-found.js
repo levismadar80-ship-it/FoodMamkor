@@ -1,6 +1,5 @@
 "use client";
 
-import { Leaf } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import StatusPage from "@/components/StatusPage";
 
@@ -10,7 +9,7 @@ export default function ProducerNotFound() {
   const t = useTranslations("errors.producer_not_found");
   return (
     <StatusPage
-      icon={Leaf}
+      icon="seed"
       title={t("heading")}
       body={t("message")}
       primary={{ href: "/map", label: t("discover") }}

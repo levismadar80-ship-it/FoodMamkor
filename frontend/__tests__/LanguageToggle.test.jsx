@@ -11,7 +11,7 @@ vi.mock("next-intl", () => ({
   useTranslations: () => (key) => key,
 }));
 
-vi.mock("@/i18n/navigation", () => ({
+vi.mock("@/i18n/navigation", () => ({ Link: ({ href, children, prefetch, ...p }) => <a href={typeof href === "string" ? href : href?.pathname} {...p}>{children}</a>, 
   useRouter: () => ({ replace: vi.fn(), push: vi.fn() }),
   usePathname: () => "/",
 }));

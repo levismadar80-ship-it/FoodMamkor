@@ -24,7 +24,7 @@ vi.mock("next/navigation", () => ({ useRouter: () => router }));
 // MEH-1774: use-home-page now imports the locale-aware router for the chip
 // deep-link. Stub it so next-intl's ESM createNavigation never loads under vitest.
 const localeRouterPush = vi.fn();
-vi.mock("@/i18n/navigation", () => ({
+vi.mock("@/i18n/navigation", () => ({ Link: ({ href, children, prefetch, ...p }) => <a href={typeof href === "string" ? href : href?.pathname} {...p}>{children}</a>, 
   useRouter: () => ({ push: localeRouterPush, replace: vi.fn() }),
 }));
 vi.mock("@/lib/analytics", () => ({ trackEvent: vi.fn() }));
@@ -33,6 +33,8 @@ vi.mock("@/lib/analytics", () => ({ trackEvent: vi.fn() }));
 // runtime before vitest has initialised it (same reason as the equivalent mock
 // in ProducersClientDayAxis.test.jsx).
 vi.mock("@phosphor-icons/react", () => ({
+  // MEH-2827 PR 4: the «המליצו על בית עסק» links in the empty states.
+  ArrowLeft: (p) => <span {...p} />,
   CalendarBlank: (p) => <span {...p} />,
   CaretDown: (p) => <span {...p} />,
   CaretUp: (p) => <span {...p} />,

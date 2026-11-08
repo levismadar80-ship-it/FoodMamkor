@@ -19,8 +19,8 @@ import { useTranslations } from "next-intl";
 
 const STATUS_CLS = {
   pending: "bg-gray-100 text-gray-700 border-gray-200",
-  approved: "bg-[#EAF3DE] text-primary border-primary/30",
-  rejected: "bg-red-50 text-red-700 border-red-200",
+  approved: "bg-green-50 text-primary border-primary/30",
+  rejected: "bg-danger-50 text-danger-700 border-danger-200",
   needs_revision: "bg-orange-50 text-orange-700 border-orange-200",
 };
 

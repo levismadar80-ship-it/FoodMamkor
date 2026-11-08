@@ -3,6 +3,7 @@ import { render, screen, fireEvent, renderHook, act } from "@testing-library/rea
 import { HomeProducersGrid } from "@/app/[locale]/home/HomeProducersGrid";
 import { useHomePage } from "@/lib/use-home-page";
 import { CHIPS_CONFIG } from "@/lib/producer-filters";
+import { heChipCopy } from "./helpers/he-chip-copy";
 import api from "@/lib/api";
 import { Check } from "@phosphor-icons/react";
 
@@ -27,6 +28,12 @@ import { Check } from "@phosphor-icons/react";
  * browser; no assertion below should be read as covering it.
  */
 
+// MEH-2767: the chip gate counts the unfiltered snapshot hook; see the helper.
+import { setCatalogSnapshot } from "./helpers/catalog-snapshot";
+import { FILTER_AXES } from "@/lib/filter-taxonomy";
+vi.mock("@/lib/use-catalog-snapshot", async () =>
+  (await import("./helpers/catalog-snapshot")).catalogSnapshotMock);
+vi.mock("@/lib/use-chip-copy", async () => (await import("./helpers/he-chip-copy")).chipCopyMock);
 vi.mock("next-intl", () => ({
   useTranslations: () => (key, values) =>
     values && values.count !== undefined ? `${key}#${values.count}` : key,
@@ -43,7 +50,7 @@ vi.mock("framer-motion", () => ({
 }));
 vi.mock("@/components/ProducerCard", () => ({ default: () => <div /> }));
 vi.mock("@/components/Skeleton", () => ({ SkeletonProducerGrid: () => <div /> }));
-vi.mock("@/i18n/navigation", () => ({
+vi.mock("@/i18n/navigation", () => ({ Link: ({ href, children, prefetch, ...p }) => <a href={typeof href === "string" ? href : href?.pathname} {...p}>{children}</a>, 
   useRouter: () => ({ push: vi.fn(), replace: vi.fn() }),
 }));
 vi.mock("@/lib/analytics", () => ({ trackEvent: vi.fn() }));
@@ -59,7 +66,8 @@ vi.mock("@/lib/api", () => ({
   default: { get: vi.fn(() => Promise.resolve({ data: [] })) },
 }));
 const router = { replace: vi.fn(), push: vi.fn() };
-vi.mock("next/navigation", () => ({ useRouter: () => router }));
+// MEH-2714: the home grids read the route via usePathname (route-memory).
+vi.mock("next/navigation", () => ({ useRouter: () => router, usePathname: () => "/" }));
 
 /** The pair the card promotes. Asserted against the component's rendered
  *  output, never imported from it — a test that imports the constant it is
@@ -70,7 +78,10 @@ const PROMOTED = ["has_delivery", "pickup_points"];
 
 const producers = Array.from({ length: 12 }, (_, i) => ({ id: i + 1 }));
 
-const props = (overrides = {}) => ({
+// MEH-2767: the gate counts the snapshot — make it the rendered fixture.
+const props = (overrides = {}) =>
+  (setCatalogSnapshot(overrides.producers ?? producers), propsBase(overrides));
+const propsBase = (overrides = {}) => ({
   producers,
   producersLoading: false,
   visibleProducers: producers,
@@ -118,7 +129,8 @@ describe("MEH-2173 — the promoted row", () => {
   it("labels each promoted chip from the taxonomy, not from a local string", () => {
     render(<HomeProducersGrid {...props()} />);
     for (const key of PROMOTED) {
-      const expected = CHIPS_CONFIG.find((c) => c.key === key).label;
+      const expected = heChipCopy(CHIPS_CONFIG.find((c) => c.key === key)).label;
+      expect(expected).toBeTruthy(); // a missing message must not pass as ""
       expect(screen.getByTestId(`home-promoted-chip-${key}`).textContent).toContain(expected);
     }
   });
@@ -192,13 +204,16 @@ describe("MEH-2173 — the sheet", () => {
     // "no removal of any filter capability" line, asserted rather than assumed.
     for (const chip of CHIPS_CONFIG) {
       // Gated axes (zero-data catalog in this fixture) are hidden by design.
-      if (["open_for_orders_now", "no_added_sugar", "on_site"].includes(chip.key)) continue;
+      // MEH-2767: read off the taxonomy's `gate` field — the one declaration.
+      if (FILTER_AXES[chip.key].gate) continue;
       expect(screen.getByTestId(`chip-${chip.key}`)).toBeTruthy();
     }
   });
 
   it("a switch inside the sheet drives the SAME handler the promoted chips do", () => {
-    const p = props({ filterSheetOpen: true });
+    // MEH-2767: vegan is count-gated, so the catalog has to carry it.
+    const vegan = producers.map((x) => ({ ...x, has_vegan_products: true }));
+    const p = props({ filterSheetOpen: true, producers: vegan });
     render(<HomeProducersGrid {...p} />);
     fireEvent.click(screen.getByTestId("chip-vegan"));
     expect(p.onToggleChip).toHaveBeenCalledWith("vegan");

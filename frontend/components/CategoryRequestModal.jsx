@@ -6,6 +6,7 @@ import { useFocusReturn } from "@/lib/use-focus-return";
 import { showToast } from "@/lib/toast";
 import api from "@/lib/api";
 import CollectionNotice from "@/components/CollectionNotice";
+import Button from "@/components/ui/Button";
 
 function countLetters(s) {
   return (s.match(/[א-תa-zA-Z]/g) || []).length;
@@ -102,7 +103,7 @@ export default function CategoryRequestModal({ open, onClose, producerId }) {
         role="dialog"
         aria-modal="true"
         aria-labelledby="cat-req-title"
-        className="bg-white rounded-[16px] shadow-xl w-full max-w-sm p-6 text-start"
+        className="bg-surface rounded-lg shadow-xl w-full max-w-sm p-6 text-start"
       >
         <h2 id="cat-req-title" className="font-headline-md text-lg font-bold text-text mb-4">
           {t("title")}
@@ -117,7 +118,7 @@ export default function CategoryRequestModal({ open, onClose, producerId }) {
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder={t("name_placeholder")}
-              className="w-full border rounded-[12px] px-3 py-2 text-sm text-start"
+              className="w-full border rounded-md px-3 py-2 text-sm text-start"
             />
             <p className="text-xs text-fg-muted mt-1">{t("name_example")}</p>
           </div>
@@ -129,7 +130,7 @@ export default function CategoryRequestModal({ open, onClose, producerId }) {
               value={examples}
               onChange={(e) => setExamples(e.target.value)}
               placeholder={t("examples_placeholder")}
-              className="w-full border rounded-[12px] px-3 py-2 text-sm text-start resize-none"
+              className="w-full border rounded-md px-3 py-2 text-sm text-start resize-none"
             />
             <p className="text-xs text-fg-muted mt-1">{t("examples_hint")}</p>
           </div>
@@ -141,17 +142,17 @@ export default function CategoryRequestModal({ open, onClose, producerId }) {
           />
 
           <div className="flex gap-3 pt-1">
-            <button
+            <Button
               type="submit"
               disabled={loading || !hasEnoughLetters}
-              className="flex-1 bg-primary text-white py-2 rounded-[12px] text-sm font-medium hover:bg-primary-dark transition disabled:opacity-50"
+              variant="primary" size="sm" className="flex-1"
             >
               {loading ? t("submit_loading") : t("submit")}
-            </button>
+            </Button>
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 rounded-[12px] text-sm text-fg-muted hover:text-text border transition"
+              className="px-4 py-2 rounded-md text-sm text-fg-muted hover:text-text border transition"
             >
               {t("close")}
             </button>

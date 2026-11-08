@@ -54,6 +54,7 @@ The **tagline** is specced for: footer brand line, meta description, OpenGraph c
 ### Visual LOCKs (full token set in `docs/DESIGN.md`)
 
 - Primary green `#2e6853` · cream background `#F5F0E8` (warm cream — NEVER pure white) · text `#1C1A17`
+- Seed layer (MEH-2833, 08/11): the logo's five seed colours appear only as decoration in the seed shape — never text/buttons/links/status; green stays the only action colour. Rules: `docs/DESIGN.md` → *Seed layer*
 - Frank Ruhl Libre 900 for Hebrew headlines · DM Sans for body
 - No pure white `#ffffff` anywhere
 - No gradient orbs, blurred backgrounds, glassmorphism (signals "app", opposite of "magazine")
@@ -72,14 +73,14 @@ The **tagline** is specced for: footer brand line, meta description, OpenGraph c
 - ❌ UI / ICU / brand-guidance / editorial surfaces → 0 emojis
 - ✅ WhatsApp outbound + share strings + email body → emojis allowed (warmth + Meta template cost)
 
-## 4 · Voice (full rules in ADR-014, refined by ADR-024)
+## 4 · Voice (full rules in ADR-014, refined by ADR-024, reader address set by ADR-037)
 
 Hybrid Hebrew policy — surface determines grammatical form:
 
 - **UI strings** (buttons, loading, errors, hero H1 + subtitle): gerund (`"טעינה"`) or plural (`"גלו"`, `"הוסיפו"`)
-- **Brand voice** (`/about` narrative, founder letter, below-the-fold editorial): feminine (`"גלי"`, `"צרי"`) allowed
+- **Brand voice** (`/about` narrative, founder letter, below-the-fold editorial): reader address is neutral too (ADR-037, 04/11/2026). Feminine stays only in the founder's first-person voice (`"אנחנו מכירות"`) and on admin screens
 - **Forbidden across all surfaces:** slash form (`"טוענ/ת"`), pure masculine (`"המשתמש שלך"`), `"יצרן"`/`"יצרנית"`
-- **Surface-function taxonomy (ADR-024):** the split is by surface-function, not audience — functional UI → plural, brand narrative + warmth → feminine. הבהרה: "pure masculine" forbidden = פנייה זכרית לקוראת (`"המשתמש שלך"`), NOT the owner noun (`"בעלי עסקים"` is permitted — סתמי/unmarked)
+- **Surface-function taxonomy (ADR-024, amended by ADR-037):** every reader-facing surface → neutral (plural / verbal noun / impersonal; masculine plural as unmarked). הבהרה: "pure masculine" forbidden = פנייה זכרית לקוראת (`"המשתמש שלך"`), NOT the owner noun (`"בעלי עסקים"` is permitted — סתמי/unmarked)
 
 ### Two voice rules from PR #682 precedent
 
@@ -112,6 +113,8 @@ Design **patterns** (component-level decisions like navbar shape, hero layout, c
 | ProducerCard state token compliance (opacity-on-cream + --fg-muted) | ADR-019 + MEH-656 (canceled, content absorbed) | LOCKED |
 | Logo lockup (5-pomegranate-seed) | MEH-637 | Done 2026-05-22 (+ MEH-664 DoD fix) |
 | Category glyph system | ADR-013 Amendment + PR #2026 (hand-drawn MEH-683/666 archived) | LOCKED v2.1 |
+| Join page: feature groups (phone shelf / desktop list+stage), tiles, toggletip, sticky join bar | MEH-2799 | Done 2026-11-07 (#4123) |
+| Closing CTA band (site-wide, shared component) — full-green band that ends every page closing on a business call to action | MEH-2824 | In progress |
 
 **Rule:** before opening a new design pattern, search this index. If the pattern overlaps with a Done entry, extend the existing one rather than starting parallel work.
 
@@ -128,6 +131,7 @@ Phrasings that survived to production once and must be caught in review:
 - Stock illustrations (iStock, Freepik) — kill the "curated" signal.
 - Phosphor duotone weight — too playful for editorial; regular weight only.
 - `"מורשה"` / `"מורשים"` in consumer copy — regulatory term consumers don't parse; tier language is מאומת / מוצהר only (ADR-022). Legal surfaces (terms, declaration text) may use it.
+- `"קבוצת רכש"` / `"רכישה קבוצתית"` / `"קנייה קבוצתית"` / `"קניות קבוצתיות"` — the feature is **«קבוצת רכישה / קבוצות רכישה»**, the common Israeli term (Sapir 08/11/2026, MEH-2827). Definite and prefixed forms follow it: «קבוצת הרכישה», «לקבוצת רכישה», «בקבוצות הרכישה». Keys, routes (`/group-buys`) and API fields keep their names; English stays "group buy".
 
 ### דיבור בשם בית העסק
 
@@ -211,7 +215,7 @@ Canonical home of the address-form rule. The Drive copy `03-Brand-Hub/07a-langua
 **שלוש שכבות, לפי סדר עדיפות:**
 
 1. **ברירת מחדל בכל קופי: ניסוח ניטרלי.** ציוויי רבים ("הגיעו", "קחו", "בחרו"), שמות פועל ("אפשר להזמין", "כדאי להגיע"), משפטים בלי כינוי ממוגדר.
-2. **קופי צרכני (דף בית, מדריכים, תוכן מגזיני):** כשנדרש כינוי מסומן — **נקבה** ("אליכן", "שלכן"). בחירה מותגית מודעת: קהל היעד המוגדר הוא נשים 28-45, ומחקר (כריכלי-כץ & רגב, אונ' ת"א) מצא שברירת מחדל זכרית פוגעת בביצועי נשים.
+2. ~~**קופי צרכני (דף בית, מדריכים, תוכן מגזיני):** כשנדרש כינוי מסומן — **נקבה** ("אליכן", "שלכן"). בחירה מותגית מודעת: קהל היעד המוגדר הוא נשים 28-45, ומחקר (כריכלי-כץ & רגב, אונ' ת"א) מצא שברירת מחדל זכרית פוגעת בביצועי נשים.~~ **בוטל 04/11/2026 (ADR-037, MEH-2661):** גם כאן ניטרלי; כשנדרש כינוי — רבים סתמי ("אליכם", "ברוכים הבאים"). נקבה רק בקול של ספיר בגוף ראשון ובמסכי האדמין.
 3. **ממשקי בעלי עסק (dashboard, טפסי הרשמה, מיילים תפעוליים):** ניטרלי מלא בלבד; כשיש שם איש/אשת קשר — פנייה אישית בשמם. לא נקבה כפויה — יש גם בעלי עסק גברים.
 
 **אסור:** לוכסנים ונקודות (א.נשים, לקוחות/ים, בעל/ת) בכל קופי עריכתי או שיווקי — שובר את קול המגזין. חריג יחיד: טקסט משפטי (תקנון/פרטיות) אם אין ניסוח ניטרלי סביר.

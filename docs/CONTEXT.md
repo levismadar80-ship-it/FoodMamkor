@@ -168,7 +168,7 @@ If the session ends mid-task, `/session-save` writes a local `session-state.md` 
 
 ## 17 · Reference files (request on demand)
 
-`HANDOFF.md` · `DEPLOYMENT.md` · `CHANGELOG.md` · `MANUAL_TESTING.md` · `SECURITY.md` · `ROADMAP.md` · `MIGRATIONS.md` · `BRAND.md` · `DESIGN.md` · `decisions/ADR-NNN-*.md`
+`HANDOFF.md` · `DEPLOYMENT.md` · `CHANGELOG.md` · `RELEASE_CHECKLIST.md` · `SECURITY.md` · `ROADMAP.md` · `MIGRATIONS.md` · `BRAND.md` · `DESIGN.md` · `decisions/ADR-NNN-*.md`
 
 ### Strategy & Inspiration (Drive — canonical, edit there)
 - Competitive landscape → Drive 01-Strategy/04-competitive-landscape.md

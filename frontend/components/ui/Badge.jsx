@@ -41,7 +41,7 @@ const VARIANT_CLASSES = {
 
 const SIZE_CLASSES = {
   md: "text-xs px-2.5 py-0.5", // BadgeRow.jsx:80 shipped size.
-  sm: "text-[10px] px-1.5 py-0.5",
+  sm: "text-2xs px-1.5 py-0.5",
 };
 
 export default function Badge({

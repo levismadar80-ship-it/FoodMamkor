@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import { useTranslations } from "next-intl";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { CaretLeft } from "@phosphor-icons/react";
 import { MAP_REFERRER } from "@/lib/map-view-state";
 
@@ -54,7 +54,7 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
     setFromMap(new URLSearchParams(window.location.search).get("from") === MAP_REFERRER);
   }, []);
 
-  const { producer, loading, events, similarProducers, nearbyProducers } = useProducerData({
+  const { producer, loading, events, similarProducers, nearbyProducers, setReviewsCount } = useProducerData({
     params,
     fetchPath,
     initialProducer,
@@ -270,6 +270,7 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
             reviewsContainerRef={reviewsContainerRef}
             reviewsVisible={reviewsVisible}
             isOwner={user?.producer_id === producer.id}
+            onReviewsTotalChange={setReviewsCount}
           />
         </div>
 

@@ -9,6 +9,8 @@ import { groupDeliveryAreas } from "@/lib/deliveryGroups";
 import { resolveDeliveryFee } from "@/lib/deliveryFee";
 import { getSingleOrderCutoff } from "@/lib/orderWindow";
 import DeliveryChecker from "@/components/DeliveryChecker";
+import { isDeliveryCheckerUsable } from "@/lib/delivery-coverage";
+import WhatsAppUpdatesPill, { whatsappUpdatesHref } from "@/components/WhatsAppUpdatesPill";
 import HoursText from "@/components/HoursText";
 
 // MEH-2592 C: every row list in the block (areas and pickup) sits in one soft
@@ -17,7 +19,7 @@ const LIST_CARD =
   "divide-y divide-border rounded-2xl border border-border bg-surface-card overflow-hidden";
 // MEH-2592 C: the 44px logo circles (Waze, Google Maps) on each pickup stop.
 const NAV_CIRCLE =
-  "inline-flex items-center justify-center w-11 h-11 rounded-full border border-border bg-white transition hover:bg-green-50 focus-visible:ring-2 focus-visible:ring-primary/40";
+  "inline-flex items-center justify-center w-11 h-11 rounded-full border border-border bg-surface transition hover:bg-green-50 focus-visible:ring-2 focus-visible:ring-primary/40";
 
 // Index-aligned with lib/orderWindow.js ORDER_DAY_KEYS — resolves a cutoff
 // dayIndex to the opening_hours.weekdays.* label ("יום רביעי" / "Wednesday").
@@ -185,7 +187,7 @@ function AreaGroup({ label, rows, t, feeOf = () => null }) {
       {/* MEH-2592 C: the day reads as a small gold heading. Its truck came
           back at Sapir's ask (30/10) — the icon is how the eye finds the
           delivery rows. */}
-      <p className="flex items-center gap-1.5 text-[13px] font-bold text-gold-deep mb-1.5">
+      <p className="flex items-center gap-1.5 text-sm font-bold text-gold-deep mb-1.5">
         <Truck size={16} className="text-primary" aria-hidden="true" data-testid="area-group-icon" />
         {label}
       </p>
@@ -264,10 +266,10 @@ function PickupRow({ loc, t, tMap }) {
       <div className="min-w-0">
         <p className="font-medium text-text">{heading}</p>
         {/* city as a subline only when a distinct label already owns the top line */}
-        {loc.city && loc.label && <p className="text-[13px] text-fg-muted">{loc.city}</p>}
+        {loc.city && loc.label && <p className="text-sm text-fg-muted">{loc.city}</p>}
         {/* MEH-2604: time ranges isolated LTR — raw «16:00–19:00» read «19:00–16:00» here. */}
         {loc.opening_hours && (
-          <p className="text-[13px] text-fg-muted">
+          <p className="text-sm text-fg-muted">
             <HoursText text={loc.opening_hours} />
           </p>
         )}
@@ -279,7 +281,7 @@ function PickupRow({ loc, t, tMap }) {
           <a
             href={telHref}
             dir="ltr"
-            className="inline-flex items-center gap-1 min-h-[44px] text-[13px] font-medium text-primary hover:underline focus-visible:ring-2 focus-visible:ring-primary/40 rounded"
+            className="inline-flex items-center gap-1 min-h-touch text-sm font-medium text-primary hover:underline focus-visible:ring-2 focus-visible:ring-primary/40 rounded"
           >
             <Phone size={14} aria-hidden="true" />
             {phone}
@@ -347,7 +349,7 @@ function PickupRows({ locations, t, tMap }) {
     <div className="mb-4">
       {/* MEH-2592 C: «חינם» once, as a tag beside the heading, instead of on
           every row (MEH-1646 (b) still holds: every pickup shape says it). */}
-      <p className="flex items-center gap-2 text-[15px] font-bold text-text mb-2">
+      <p className="flex items-center gap-2 text-base font-bold text-text mb-2">
         <Package size={18} className="text-primary" aria-hidden="true" data-testid="pickup-heading-icon" />
         {t("pickup")}
         <span className="rounded-full bg-green-50 px-2 py-0.5 text-xs font-bold text-primary">
@@ -632,12 +634,30 @@ export default function DeliveryBlock({
       )}
 
       {nationwide ? (
-        <span className="inline-flex items-center gap-1.5 bg-green-50 text-text border border-border rounded-[20px] text-[13px] px-3 py-1.5 font-medium mb-4">
-          <Truck size={14} className="text-current ms-1" aria-hidden="true" />
-          {hasExclusions
-            ? t("nationwide_except", { cities: excluded.join(", ") })
-            : t("nationwide")}
-        </span>
+        <>
+          <span className="inline-flex items-center gap-1.5 bg-green-50 text-text border border-border rounded-xl text-sm px-3 py-1.5 font-medium mb-4">
+            <Truck size={14} className="text-current ms-1" aria-hidden="true" />
+            {hasExclusions
+              ? t("nationwide_except", { cities: excluded.join(", ") })
+              : t("nationwide")}
+          </span>
+          {/* MEH-2626: with no checker on the page there is no positive
+              answer to carry the WhatsApp updates pill, so it sits directly
+              under the nationwide badge instead. When the checker DOES render
+              (nationwide + exclusions), the pill lives in its "yes" answer
+              only — the same gate function decides both, so never two. */}
+          {whatsappUpdatesHref(producer) &&
+            !isDeliveryCheckerUsable({
+              offersDelivery: !!producer?.offers_delivery,
+              nationwide,
+              excluded,
+              areas,
+            }) && (
+              <div className="mb-4">
+                <WhatsAppUpdatesPill producer={producer} />
+              </div>
+            )}
+        </>
       ) : bare ? (
         <CompactCities areas={areas} t={t} />
       ) : hasAreas ? (
@@ -721,7 +741,7 @@ export default function DeliveryBlock({
         <PickupRows locations={pickupLocations} t={t} tMap={tMap} />
       ) : (
         pickup && (
-          <p className="flex items-center gap-2 text-[15px] font-bold text-text mb-4">
+          <p className="flex items-center gap-2 text-base font-bold text-text mb-4">
             <Package size={18} className="text-primary" aria-hidden="true" data-testid="pickup-heading-icon" />
             {t("pickup")}
             {/* MEH-1646 (b): the generic fallback line carries the same tag

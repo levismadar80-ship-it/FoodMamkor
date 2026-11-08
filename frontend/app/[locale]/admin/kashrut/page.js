@@ -16,6 +16,7 @@ import InfoTooltip from "@/components/InfoTooltip";
 // message namespaces, which is a separate question (MEH-1852 chunk B).
 import { CODE_TO_KEY } from "@/components/KashrutBadgeStrip";
 import { SkeletonTable } from "@/components/Skeleton";
+import Button from "@/components/ui/Button";
 
 function formatDate(iso, locale) {
   if (!iso) return "—";
@@ -161,7 +162,7 @@ export default function AdminKashrutPage() {
       {/* MEH-1673: expiry reminders. Dry-run first, always — the send button
           only appears once a preview exists, so nobody can fire the batch
           without having seen exactly who receives it. */}
-      <div className="mb-6 rounded-[12px] border border-border p-4">
+      <div className="mb-6 rounded-md border border-border p-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h2 className="font-semibold text-text">{t("kashrut.reminders.title")}</h2>
@@ -171,7 +172,7 @@ export default function AdminKashrutPage() {
             type="button"
             onClick={() => runReminders(false)}
             disabled={remindersBusy}
-            className="bg-white border border-border text-text text-sm px-4 py-2 rounded-full hover:border-primary hover:text-primary transition disabled:opacity-50"
+            className="bg-surface border border-border text-text text-sm px-4 py-2 rounded-full hover:border-primary hover:text-primary transition disabled:opacity-50"
           >
             {remindersBusy ? t("kashrut.reminders.loading") : t("kashrut.reminders.preview")}
           </button>
@@ -205,7 +206,7 @@ export default function AdminKashrutPage() {
                           <span className="text-primary">{t("kashrut.reminders.row_sent")}</span>
                         )}
                         {row.sent === false && (
-                          <span className="text-red-600">
+                          <span className="text-danger-600">
                             {row.error || t("kashrut.reminders.row_failed")}
                           </span>
                         )}
@@ -214,14 +215,14 @@ export default function AdminKashrutPage() {
                   ))}
                 </ul>
                 {!remindersSent && (
-                  <button
+                  <Button
                     type="button"
                     onClick={() => runReminders(true)}
                     disabled={remindersBusy}
-                    className="mt-3 bg-primary text-white text-sm px-4 py-2 rounded-full hover:bg-primary-dark transition disabled:opacity-50"
+                    variant="primary" size="sm" className="mt-3"
                   >
                     {t("kashrut.reminders.send_now")}
-                  </button>
+                  </Button>
                 )}
               </>
             )}
@@ -233,7 +234,8 @@ export default function AdminKashrutPage() {
         <select
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
-          className="border rounded-[8px] px-3 py-2 text-sm"
+          aria-label={t("producers.table.columns.status")}
+          className="border rounded-sm px-3 py-2 text-sm"
         >
           <option value="pending">{t("kashrut.status.pending")}</option>
           <option value="approved">{t("kashrut.status.approved")}</option>
@@ -247,7 +249,7 @@ export default function AdminKashrutPage() {
       ) : rows.length === 0 ? (
         <p className="text-fg-muted">{t("kashrut.no_requests")}</p>
       ) : (
-        <div className="overflow-x-auto rounded-[12px] border border-border">
+        <div className="overflow-x-auto rounded-md border border-border">
           {/* MEH-2426: one card per row below md (globals.css .table-stack). */}
           <table className="table-stack w-full text-sm">
             <thead className="bg-green-50">
@@ -277,7 +279,7 @@ export default function AdminKashrutPage() {
                         href={row.cert_url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-primary hover:underline text-xs"
+                        className="text-primary underline decoration-[1.5px] underline-offset-[5px] decoration-primary/35 hover:decoration-current text-xs"
                       >
                         {t("kashrut.cert_view")}
                       </a>
@@ -300,7 +302,7 @@ export default function AdminKashrutPage() {
                         <button
                           onClick={() => { setRejectModal(row.id); setRejectNotes(""); }}
                           disabled={busy}
-                          className="bg-white border border-red-300 text-red-600 text-xs px-3 py-1.5 rounded-full hover:bg-red-50 transition disabled:opacity-50"
+                          className="bg-surface border border-danger-300 text-danger-600 text-xs px-3 py-1.5 rounded-full hover:bg-danger-50 transition disabled:opacity-50"
                         >
                           {t("kashrut.actions.reject")}
                         </button>
@@ -312,7 +314,7 @@ export default function AdminKashrutPage() {
                       <button
                         onClick={() => { setRevokeModal(row.id); setRevokeNotes(""); }}
                         disabled={busy}
-                        className="bg-white border border-red-300 text-red-600 text-xs px-3 py-1.5 rounded-full hover:bg-red-50 transition disabled:opacity-50"
+                        className="bg-surface border border-danger-300 text-danger-600 text-xs px-3 py-1.5 rounded-full hover:bg-danger-50 transition disabled:opacity-50"
                       >
                         {t("kashrut.actions.revoke")}
                       </button>
@@ -328,7 +330,7 @@ export default function AdminKashrutPage() {
       {/* MEH-2518: approve modal — the expiry printed on the certificate. */}
       {approveModal && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-[9000] p-4">
-          <div className="bg-white rounded-[16px] p-6 w-full max-w-md shadow-xl" dir="rtl">
+          <div className="bg-surface rounded-lg p-6 w-full max-w-md shadow-xl" dir="rtl">
             <h2 className="font-semibold text-lg mb-3">{t("kashrut.approve_modal.title")}</h2>
             <label htmlFor="kashrut-expires-on" className="text-sm font-medium block mb-1.5">
               {t("kashrut.approve_modal.date_label")}
@@ -341,7 +343,7 @@ export default function AdminKashrutPage() {
               max={israelDateOffset(400)}
               value={approveDate}
               onChange={(e) => setApproveDate(e.target.value)}
-              className="w-full border rounded-[8px] p-3 text-sm"
+              className="w-full border rounded-sm p-3 text-sm"
             />
             <p className="text-xs text-fg-muted mt-2">{t("kashrut.approve_modal.hint")}</p>
             <div className="flex gap-3 mt-4">
@@ -351,13 +353,13 @@ export default function AdminKashrutPage() {
               >
                 {t("common.cancel")}
               </button>
-              <button
+              <Button
                 onClick={() => approve(approveModal)}
                 disabled={busy || !approveDate}
-                className="flex-1 bg-primary text-white rounded-full py-2 text-sm disabled:opacity-50"
+                variant="primary" size="sm" className="flex-1"
               >
                 {busy ? t("kashrut.approve_modal.submitting") : t("kashrut.approve_modal.submit")}
-              </button>
+              </Button>
             </div>
           </div>
         </div>
@@ -366,14 +368,14 @@ export default function AdminKashrutPage() {
       {/* MEH-2518: revoke modal — takes an approved badge down. */}
       {revokeModal && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-[9000] p-4">
-          <div className="bg-white rounded-[16px] p-6 w-full max-w-md shadow-xl" dir="rtl">
+          <div className="bg-surface rounded-lg p-6 w-full max-w-md shadow-xl" dir="rtl">
             <h2 className="font-semibold text-lg mb-3">{t("kashrut.revoke_modal.title")}</h2>
             <p className="text-sm text-fg-muted mb-3">{t("kashrut.revoke_modal.body")}</p>
             <textarea
               value={revokeNotes}
               onChange={(e) => setRevokeNotes(e.target.value)}
               placeholder={t("kashrut.revoke_modal.placeholder")}
-              className="w-full border rounded-[8px] p-3 text-sm resize-none h-24"
+              className="w-full border rounded-sm p-3 text-sm resize-none h-24"
             />
             <div className="flex gap-3 mt-4">
               <button
@@ -385,7 +387,7 @@ export default function AdminKashrutPage() {
               <button
                 onClick={() => revoke(revokeModal)}
                 disabled={busy}
-                className="flex-1 bg-red-500 text-white rounded-full py-2 text-sm disabled:opacity-50"
+                className="flex-1 bg-danger-500 text-white rounded-full py-2 text-sm disabled:opacity-50"
               >
                 {busy ? t("kashrut.revoke_modal.submitting") : t("kashrut.revoke_modal.submit")}
               </button>
@@ -397,13 +399,13 @@ export default function AdminKashrutPage() {
       {/* Reject modal */}
       {rejectModal && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-[9000] p-4">
-          <div className="bg-white rounded-[16px] p-6 w-full max-w-md shadow-xl" dir="rtl">
+          <div className="bg-surface rounded-lg p-6 w-full max-w-md shadow-xl" dir="rtl">
             <h2 className="font-semibold text-lg mb-3">{t("kashrut.reject_modal.title")}</h2>
             <textarea
               value={rejectNotes}
               onChange={(e) => setRejectNotes(e.target.value)}
               placeholder={t("kashrut.reject_modal.placeholder")}
-              className="w-full border rounded-[8px] p-3 text-sm resize-none h-24"
+              className="w-full border rounded-sm p-3 text-sm resize-none h-24"
             />
             <div className="flex gap-3 mt-4">
               <button
@@ -415,7 +417,7 @@ export default function AdminKashrutPage() {
               <button
                 onClick={() => reject(rejectModal)}
                 disabled={busy}
-                className="flex-1 bg-red-500 text-white rounded-full py-2 text-sm disabled:opacity-50"
+                className="flex-1 bg-danger-500 text-white rounded-full py-2 text-sm disabled:opacity-50"
               >
                 {busy ? t("kashrut.reject_modal.submitting") : t("kashrut.reject_modal.submit")}
               </button>

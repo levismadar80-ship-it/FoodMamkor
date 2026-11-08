@@ -318,6 +318,8 @@ async def add_security_headers(request, call_next):
     return response
 ```
 
+> **שגיאת שרת (500) — MEH-2761.** ה-500 של חריגה לא מטופלת נבנה ב-ServerErrorMiddleware של Starlette, שיושב מחוץ לכל ה-middleware, ולכן עד 06/11 יצא בלי אף אחת מהכותרות. התיקון: `app.add_exception_handler(Exception, server_error_with_headers)` ב-`backend/app/middleware.py`, שמחיל את אותה `apply_security_headers`. החריגה עדיין נזרקת הלאה (לוגים ו-Sentry). הקוד העדכני הוא ב-`middleware.py`, לא בדוגמה שלמעלה. טסט: `tests/test_meh2761_error_security_headers.py` (גם 429).
+
 ```js
 // frontend: next.config.js
 const securityHeaders = [
@@ -592,32 +594,37 @@ async def admin_only(
 ### 12. Password Hashing — bcrypt בלבד
 
 ```python
-# pip install passlib[bcrypt]
-from passlib.context import CryptContext
+# backend/app/auth.py — bcrypt called directly (passlib removed, MEH-2220)
+import bcrypt
 
-# MEH-648: bcrypt__rounds=12 pinned explicitly. Matches the passlib
-# default at time of pinning + all existing user.password_hash rows.
-# Prevents future drift if passlib bumps its default — see SENTINEL_HASH
-# at backend/app/routers/auth.py (used by §13 timing equalization).
-pwd_context = CryptContext(schemes=["bcrypt"], bcrypt__rounds=12, deprecated="auto")
+BCRYPT_ROUNDS = 12      # MEH-648 — see SENTINEL_HASH, §13
+BCRYPT_MAX_BYTES = 72   # MEH-2220 — truncate in BOTH hash and verify
 
 # שמירה:
-hashed = pwd_context.hash(plain_password)
+hashed = hash_password(plain_password)   # gensalt(rounds=12) + hashpw
 
 # בדיקה:
-is_valid = pwd_context.verify(plain_password, hashed_password)
+is_valid = verify_password(plain_password, hashed_password)  # checkpw
 
 # ❌ אל תשתמשי ב: MD5, SHA1, SHA256 (מהירים מדי = ניתן לפצח)
 # ✅ רק: bcrypt, argon2, scrypt
 ```
 
-**Why explicit `bcrypt__rounds=12`?** passlib's default rounds can change
-between library versions. Without an explicit pin, a passlib upgrade
-that bumps the default would re-generate `SENTINEL_HASH` (§13) at a
-higher cost than the existing `user.password_hash` rows still on the
-older cost — breaking the timing-equalization invariant. Any future
-rounds bump must be a deliberate decision with a migration plan to
-re-hash existing rows.
+**Why explicit rounds=12?** A library default can change between
+versions. Without an explicit pin, an upgrade that bumps the default
+would re-generate `SENTINEL_HASH` (§13) at a higher cost than the
+existing `user.password_hash` rows still on the older cost — breaking
+the timing-equalization invariant. Any future rounds bump must be a
+deliberate decision with a migration plan to re-hash existing rows.
+
+**Why truncate to 72 bytes (MEH-2220)?** bcrypt only reads the first 72
+bytes. passlib + bcrypt 4 dropped the rest silently, so every stored hash
+of a longer password (≈ 36+ Hebrew letters) is a hash of its first 72
+bytes. bcrypt 5 raises `ValueError` for >72 bytes instead. Truncating
+explicitly in both `hash_password` and `verify_password` keeps those rows
+verifying and keeps behaviour identical. Rejecting >72-byte passwords was
+considered and declined (it needs new user-facing copy). NUL bytes are
+still refused with `ValueError`, as passlib did.
 
 ### 13. Timing equalization (anti-enumeration)
 
@@ -1177,3 +1184,14 @@ Filed as separate Linear tickets:
 ### Deploy order
 
 Backend first, frontend within 5 minutes. The `/auth/register` response shape change (`Token + email_sent` → `RegisterAck`) is breaking for cached frontend bundles that expect a token. Vercel + Railway deploy windows are ~2 min each; brief overlap acceptable pre-launch.
+
+## ✅ 19. Delivery-waitlist host confirmation — signed-link posture (MEH-2673) — SHIPPED 05/11/2026
+
+The «אשמח לארח נקודת מסירה» box on the city waitlist is a **double opt-in**: the row stays `wants_to_host=false` until the address itself clicks the link mailed to it (`POST /delivery-waitlist/host-confirm`), so nobody can hand a stranger's email to a business. `host_confirmed_at` is the consent record.
+
+- **Token:** stateless, signed with the app secret, `sub` = entry id, `scope = delivery_waitlist_host_confirm` — a different scope from the unsubscribe link, so neither link can do the other's job. **`exp` = 7 days**, checked in `services/delivery_waitlist._decode` (unsubscribe tokens still never expire). A non-numeric `exp` is "invalid", not "expired".
+- **Mail volume (anti-flood):** at most one confirmation mail per **entry** per 24 h and `HOST_CONFIRM_ADDRESS_CAP = 3` per **address** per 24 h across every business and city, serialised per address with `pg_advisory_xact_lock(hashtext(email))` (index `ix_delivery_waitlist_email_host_sent`). The form is told the truth (`sent | already_sent | limit_reached | confirmed`), never «check your inbox» for a mail that did not go.
+- **Expired link resends itself:** an unauthenticated `POST` holding an **expired but validly signed** token gets `410 {detail, resent}` and, under the same cooldown/cap, a fresh link to the address on file. It confirms nothing. Bounded by the signature (only the link holder), the per-entry/per-address caps and the route's `10/min` per-IP limit. An expired link on an already-confirmed entry is the idempotent `200`.
+- **Accepted disclosure:** a repeat signup with the box ticked tells an anonymous caller `confirmed` / `already_sent` / `limit_reached` for that (business, city, email) — the same class as `exists` since MEH-2618. Relabeling `confirmed` would lie to the address's real owner; the honest tightening, if ever wanted, is `null`, not `already_sent`. Cost of probing: the attacker needs email + business + city and learns a fact that business already sees.
+- **Accepted limits of the cap:** a third party who knows an address can burn its 3/day with other business/city combos (the real request waits a day — delay, not exposure), and Gmail `+tag`/dot aliases count as separate addresses; the route's `10/min` per-IP limit is the backstop for both. The `resent` flag on 410 reveals whether a mail went in the last 24 h to the link holder — an oracle only to someone already holding a signed link for that entry.
+- **Reach:** the owner reads confirmed hosts only for their own business (`GET /producers/me/analytics → pickup_hosts`, scoped to `require_producer`'s `pid`, capped at 50, newest confirmation first).

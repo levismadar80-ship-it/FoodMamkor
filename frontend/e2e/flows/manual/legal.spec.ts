@@ -145,7 +145,14 @@ const FOOTER_UTILITY = [
   { key: "terms", href: "/terms" },
   { key: "privacy_short", href: "/privacy" },
   { key: "accessibility", href: "/accessibility" },
-  { key: "contact", href: "/about#contact" },
+  { key: "contact", href: "/contact" },
+  // MEH-2633: «המליצו על בית עסק», added next to «צרו קשר» per the card. Sixth
+  // entry, asserted as rendered like `login` above — this list is an
+  // as-rendered lock on the utility row, and the row changed. It is NOT a
+  // legal link: rows מדיניות / תנאי / נגישות / קשר are what MT:LEGAL:9 names,
+  // and all four stay present and unmoved. The count assertion below is what
+  // caught the addition, which is the lock working.
+  { key: "recommend", href: "/recommend" },
 ] as const;
 
 /** Literal in the page (accessibility/page.js) — the approved business line. */
@@ -323,7 +330,7 @@ test.describe("manual › footer legal links (LEGAL)", () => {
   //   Asserted on /privacy (the footer is site-wide; FooterSlot.jsx only swaps it
   //   on /map and the dashboard). The page renders FIVE utility links today —
   //   the four the row names plus «כניסה לחשבון» — and «קשר» resolves to
-  //   `/about#contact` (MEH-1312), not `/contact`. Asserted as rendered.
+  //   `/contact` (MEH-2832; it was `/about#contact` under MEH-1312). Asserted as rendered.
   test("copyright bar: the utility list carries every legal link with its locked label and href", async ({ page }) => {
     await gotoLegal(page, "privacy-page", "/privacy");
     const footer = page.locator("footer");

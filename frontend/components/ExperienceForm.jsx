@@ -25,17 +25,19 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
 import api from "@/lib/api";
-import { isUnverifiedEmailError } from "@/lib/errors";
+import { detailToMessage, isUnverifiedEmailError } from "@/lib/errors";
 import { Warning, Lightbulb, XCircle } from "@phosphor-icons/react";
 import CitySearch from "@/components/CitySearch";
 import AddressSearch from "@/components/AddressSearch";
 import Input from "@/components/ui/Input";
 import UnverifiedEmailNotice from "@/components/UnverifiedEmailNotice";
 import CollectionNotice from "@/components/CollectionNotice";
+import RegistrationMethodField from "@/components/RegistrationMethodField";
 import { EXPERIENCE_CATEGORIES } from "@/lib/event-categories";
+import Button from "@/components/ui/Button";
 
 const CATEGORY_KEYS = EXPERIENCE_CATEGORIES.map((c) => ({ value: c.key, labelKey: c.labelKey }));
 
@@ -62,9 +64,13 @@ const EMPTY = {
   lng: null,
   price_per_person: "",
   max_participants: "",
+  min_participants: "",
   requirements: "",
   is_recurring: false,
   recurring_schedule: "",
+  // MEH-2766: «איך נרשמים?» — a new workshop defaults to the on-site form.
+  registration_method: "site_form",
+  registration_url: "",
 };
 
 function seed(initial) {
@@ -88,9 +94,12 @@ function seed(initial) {
     lng: initial.lng ?? null,
     price_per_person: str(initial.price_per_person),
     max_participants: str(initial.max_participants),
+    min_participants: str(initial.min_participants),
     requirements: initial.requirements ?? "",
     is_recurring: Boolean(initial.is_recurring),
     recurring_schedule: initial.recurring_schedule ?? "",
+    registration_method: initial.registration_method ?? "site_form",
+    registration_url: initial.registration_url ?? "",
   };
 }
 
@@ -111,6 +120,8 @@ const EXPERIENCE_FIELD_ORDER = [
   "city",
   "price_per_person",
   "max_participants",
+  "min_participants",
+  "registration_url",
 ];
 
 const EXPERIENCE_FIELD_ID = {
@@ -125,6 +136,8 @@ const EXPERIENCE_FIELD_ID = {
   city: "experience-city",
   price_per_person: "experience-price",
   max_participants: "experience-max-participants",
+  min_participants: "experience-min-participants",
+  registration_url: "registration_url",
 };
 
 // MEH-2012: the `isNativeValidUrl` guard that lived here was REMOVED with the
@@ -142,7 +155,16 @@ const EXPERIENCE_FIELD_ID = {
 
 const isWholeNumber = (value) => Number.isInteger(Number(value));
 
-function validateExperienceForm(f, t) {
+// http(s) only — the server's _url_scheme_validator refuses anything else.
+function isUrl(value) {
+  try {
+    return ["http:", "https:"].includes(new URL(value).protocol);
+  } catch {
+    return false;
+  }
+}
+
+function validateExperienceForm(f, t, tReg) {
   const errors = {};
   if (f.title.trim().length < 4) errors.title = t("error_title_short");
   if (f.description.trim().length < 20) errors.description = t("error_description_short");
@@ -171,6 +193,21 @@ function validateExperienceForm(f, t) {
     if (m < 1) errors.max_participants = t("error_max_participants_min");
     else if (!isWholeNumber(m)) errors.max_participants = t("error_whole_number");
   }
+  // MEH-2665: optional minimum to run it; the server rejects min > max too.
+  if (f.min_participants !== "") {
+    const n = Number(f.min_participants);
+    if (n < 1) errors.min_participants = t("error_max_participants_min");
+    else if (!isWholeNumber(n)) errors.min_participants = t("error_whole_number");
+    else if (f.max_participants !== "" && n > Number(f.max_participants)) {
+      errors.min_participants = t("error_min_above_max");
+    }
+  }
+  // MEH-2766: the URL is asked for (and sent) only with the external link.
+  if (f.registration_method === "external_url") {
+    const url = f.registration_url.trim();
+    if (!url) errors.registration_url = tReg("external_needs_url");
+    else if (!isUrl(url)) errors.registration_url = tReg("invalid_url");
+  }
   return errors;
 }
 
@@ -182,6 +219,7 @@ function validateExperienceForm(f, t) {
  */
 export default function ExperienceForm({ mode = "create", initial = null, onSuccess, cancelHref = "/experiences" }) {
   const t = useTranslations("experiences.new");
+  const tReg = useTranslations("registration.form");
   const tCat = useTranslations("experiences.categories");
   // MEH-1981: notice-at-collection (copy approved verbatim 02/09, rule 22).
   const tNotice = useTranslations("privacy.collection_notice");
@@ -308,7 +346,7 @@ export default function ExperienceForm({ mode = "create", initial = null, onSucc
     setServerError("");
     setUnverified(false);
 
-    const errors = validateExperienceForm(form, t);
+    const errors = validateExperienceForm(form, t, tReg);
     if (Object.keys(errors).length > 0) {
       setFieldErrors(errors);
       const firstInvalid = EXPERIENCE_FIELD_ORDER.find((field) => errors[field]);
@@ -347,9 +385,13 @@ export default function ExperienceForm({ mode = "create", initial = null, onSucc
       lng: form.lng ?? null,
       price_per_person: form.price_per_person ? Number(form.price_per_person) : null,
       max_participants: form.max_participants ? Number(form.max_participants) : null,
+      min_participants: form.min_participants ? Number(form.min_participants) : null,
       requirements: form.requirements || null,
       is_recurring: form.is_recurring,
       recurring_schedule: form.is_recurring ? form.recurring_schedule || null : null,
+      registration_method: form.registration_method,
+      registration_url:
+        form.registration_method === "external_url" ? form.registration_url.trim() || null : null,
     };
 
     setSubmitting(true);
@@ -363,17 +405,19 @@ export default function ExperienceForm({ mode = "create", initial = null, onSucc
       if (isUnverifiedEmailError(err)) setUnverified(true);
       else if (detail && typeof detail === "object" && detail.reason) setServerError(detail.reason);
       else if (typeof detail === "string") setServerError(detail);
-      else setServerError(t("error_generic"));
+      // MEH-2766: «איך נרשמים?» prerequisites answer {code, message}.
+      else if (detail && typeof detail === "object" && detail.message) setServerError(detail.message);
+      else setServerError(detailToMessage(detail) || t("error_generic"));
     } finally {
       setSubmitting(false);
     }
   };
 
   return (
-    <form onSubmit={submit} noValidate className="bg-background border border-border rounded-[16px] p-6 space-y-5">
+    <form onSubmit={submit} noValidate className="bg-background border border-border rounded-lg p-6 space-y-5">
       {unverified && <UnverifiedEmailNotice />}
       {serverError && (
-        <div className="bg-red-50 border border-red-200 text-red-700 rounded-[12px] p-3 text-sm">{serverError}</div>
+        <div className="bg-danger-50 border border-danger-200 text-danger-700 rounded-md p-3 text-sm">{serverError}</div>
       )}
 
       <Input
@@ -395,7 +439,7 @@ export default function ExperienceForm({ mode = "create", initial = null, onSucc
           onChange={setField("description")}
           rows={5}
           placeholder={t("field_description_placeholder")}
-          className={`w-full border rounded-[12px] px-3 py-2 bg-white ${
+          className={`w-full border rounded-md px-3 py-2 bg-surface ${
             fieldErrors.description ? "border-error" : "border-border"
           }`}
           required
@@ -407,7 +451,7 @@ export default function ExperienceForm({ mode = "create", initial = null, onSucc
       {/* Live moderation feedback */}
       {checking && <p className="text-xs text-fg-muted">{t("checking_content")}</p>}
       {verdict?.status === "FLAGGED" && (
-        <div className="bg-yellow-50 border border-yellow-300 text-yellow-800 rounded-[12px] p-3 text-sm">
+        <div className="bg-yellow-50 border border-yellow-300 text-yellow-800 rounded-md p-3 text-sm">
           <Warning size={16} weight="fill" className="inline align-[-2px]" aria-hidden="true" /> {verdict.reason}
           {verdict.suggestion && (
             <p className="text-xs text-yellow-700 mt-1">
@@ -417,16 +461,19 @@ export default function ExperienceForm({ mode = "create", initial = null, onSucc
         </div>
       )}
       {verdict?.status === "REJECTED" && (
-        <div className="bg-red-50 border border-red-300 text-red-800 rounded-[12px] p-3 text-sm">
+        <div className="bg-danger-50 border border-danger-300 text-danger-800 rounded-md p-3 text-sm">
           <XCircle size={16} weight="fill" className="inline align-[-2px]" aria-hidden="true" /> {verdict.reason || t("rejected_fallback")}
         </div>
       )}
 
-      <Field label={t("field_category")}>
+      {/* MEH-2708: id ties the <label> to the control — without it axe
+          reported select-name (critical) and a screen reader read no name. */}
+      <Field id="experience-category" label={t("field_category")}>
         <select
+          id="experience-category"
           value={form.category}
           onChange={setField("category")}
-          className="w-full border border-border rounded-[12px] px-3 py-2 bg-white"
+          className="w-full border border-border rounded-md px-3 py-2 bg-surface"
         >
           <option value="">{t("category_none")}</option>
           {CATEGORY_KEYS.map((c) => (
@@ -478,7 +525,7 @@ export default function ExperienceForm({ mode = "create", initial = null, onSucc
             <img
               src={form.image_url}
               alt={t("field_image")}
-              className="w-24 h-24 object-cover rounded-[8px] border border-border"
+              className="w-24 h-24 object-cover rounded-sm border border-border"
             />
             {/* No aria-label: it carried "הסרת התמונה" while the visible text
                 is "הסרת תמונה", and WCAG 2.5.3 (Label in Name) requires the
@@ -494,7 +541,7 @@ export default function ExperienceForm({ mode = "create", initial = null, onSucc
               type="button"
               onClick={() => setForm((f) => ({ ...f, image_url: "" }))}
               data-testid="experience-image-remove"
-              className="inline-flex items-center gap-1 text-sm text-red-600 hover:underline"
+              className="inline-flex items-center gap-1 text-sm text-danger-600 hover:underline"
             >
               <XCircle size={14} weight="bold" aria-hidden="true" />
               {t("field_image_remove")}
@@ -511,7 +558,7 @@ export default function ExperienceForm({ mode = "create", initial = null, onSucc
              the same idiom as AddressSearch.jsx:196 / CitiesAutocomplete.jsx:206.
              EventForm.jsx has the original `hidden`; not touched from here, noted
              on the PR. (CI reviewer, PR #2814.) */
-          <label className="flex flex-col items-center justify-center text-center text-sm text-fg-muted border border-dashed border-border rounded-[8px] px-4 py-6 cursor-pointer hover:bg-green-50 transition focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/30">
+          <label className="flex flex-col items-center justify-center text-center text-sm text-fg-muted border border-dashed border-border rounded-sm px-4 py-6 cursor-pointer hover:bg-green-50 transition focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/30">
             <input
               id="experience-image"
               type="file"
@@ -530,7 +577,7 @@ export default function ExperienceForm({ mode = "create", initial = null, onSucc
           </label>
         )}
         {fieldErrors.image_url && (
-          <span id="experience-image-error" role="alert" className="mt-1 block text-sm text-red-600">
+          <span id="experience-image-error" role="alert" className="mt-1 block text-sm text-danger-600">
             {fieldErrors.image_url}
           </span>
         )}
@@ -600,7 +647,7 @@ export default function ExperienceForm({ mode = "create", initial = null, onSucc
               className={`px-4 py-2 rounded-full text-sm transition ${
                 form.location_type === lt.value
                   ? "bg-primary text-white"
-                  : "bg-white text-text border border-border hover:bg-green-50"
+                  : "bg-surface text-text border border-border hover:bg-green-50"
               }`}
             >
               {t(lt.labelKey)}
@@ -676,15 +723,27 @@ export default function ExperienceForm({ mode = "create", initial = null, onSucc
           placeholder={t("field_max_participants_placeholder")}
           error={fieldErrors.max_participants}
         />
+        <Input
+          id="experience-min-participants"
+          label={t("field_min_participants")}
+          type="number"
+          min="1"
+          value={form.min_participants}
+          onChange={setField("min_participants")}
+          placeholder={t("field_min_participants_placeholder")}
+          helperText={t("field_min_participants_hint")}
+          error={fieldErrors.min_participants}
+        />
       </div>
 
-      <Field label={t("field_requirements")}>
+      <Field id="experience-requirements" label={t("field_requirements")}>
         <textarea
+          id="experience-requirements"
           value={form.requirements}
           onChange={setField("requirements")}
           rows={3}
           placeholder={t("field_requirements_placeholder")}
-          className="w-full border border-border rounded-[12px] px-3 py-2 bg-white"
+          className="w-full border border-border rounded-md px-3 py-2 bg-surface"
         />
       </Field>
 
@@ -706,6 +765,17 @@ export default function ExperienceForm({ mode = "create", initial = null, onSucc
         )}
       </div>
 
+      <RegistrationMethodField
+        value={form.registration_method}
+        onChange={(m) => {
+          setForm((f) => ({ ...f, registration_method: m }));
+          setFieldErrors((errs) => (errs.registration_url ? { ...errs, registration_url: undefined } : errs));
+        }}
+        url={form.registration_url}
+        onUrlChange={(v) => setField("registration_url")({ target: { value: v } })}
+        urlError={fieldErrors.registration_url}
+      />
+
       <CollectionNotice
         message={tNotice("experience")}
         linkLabel={tPrivacyLink("privacy_link")}
@@ -716,13 +786,13 @@ export default function ExperienceForm({ mode = "create", initial = null, onSucc
         <Link href={cancelHref} className="text-sm text-fg-muted hover:text-primary">
           {t("cancel")}
         </Link>
-        <button
+        <Button
           type="submit"
           // MEH-2012: `uploading` joins the gate. Submitting mid-upload would
           // save the PREVIOUS image_url while the owner watches a new one
           // upload — which reads as the upload having been ignored.
           disabled={submitting || uploading || verdict?.status === "REJECTED"}
-          className="bg-primary text-white px-6 py-3 rounded-[8px] font-medium hover:bg-primary-dark transition disabled:opacity-50 disabled:cursor-not-allowed"
+          variant="primary" size="lg"
         >
           {submitting
             ? t("submitting")
@@ -733,7 +803,7 @@ export default function ExperienceForm({ mode = "create", initial = null, onSucc
                 : isEdit
                   ? t("save_cta")
                   : t("submit_cta")}
-        </button>
+        </Button>
       </div>
     </form>
   );

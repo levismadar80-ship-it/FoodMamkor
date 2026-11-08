@@ -63,6 +63,8 @@ vi.mock("@phosphor-icons/react", () => ({
   Carrot: () => null,
   GrainsSlash: () => null,
   Barn: () => null,
+  Medal: () => null,
+  HandHeart: () => null,
   DropSlash: () => null,
   Cube: () => null,
   Clock: () => null,
@@ -85,18 +87,47 @@ describe("ImageGallery empty state — Tinted Masthead (MEH-815)", () => {
     expect(heading.className).toMatch(/font-black/);
   });
 
-  it("shows the recessive מ·ה brand monogram, never the old leaf/emoji", () => {
+  // MEH-2833 (seed layer, board 1): the מ·ה monogram is replaced by the logo
+  // as a supergraphic — a 200px (phone) / 280px (md+) bloom at the end side,
+  // half past the edge so the card crops it, never rotated.
+  it("shows the seed supergraphic (intact logo, not rotated), no monogram, never the old leaf/emoji", () => {
     render(<ImageGallery images={[]} producerName="חוות הדבש" />);
-    expect(screen.getByText("מ·ה")).toBeInTheDocument();
+    expect(screen.queryByText("מ·ה")).not.toBeInTheDocument();
     expect(screen.queryByTestId("leaf-icon")).not.toBeInTheDocument();
+    const bloom = document.querySelector('[data-testid="gallery-tint-layer"] svg[data-seed-mark="light"]');
+    expect(bloom).not.toBeNull();
+    expect(bloom.getAttribute("width")).toBe("280");
+    expect(bloom.getAttribute("aria-hidden")).toBe("true");
+    const cls = bloom.getAttribute("class");
+    // half past the END edge at each size → cropped
+    expect(cls).toMatch(/(^|\s)w-\[200px\] h-\[200px\] -bottom-10 -end-\[100px\]/);
+    expect(cls).toMatch(/md:w-\[280px\] md:h-\[280px\]/);
+    expect(cls).toMatch(/md:-end-\[140px\]/);
+    expect(cls).not.toMatch(/rotate|scale-x/); // never rotated or mirrored
+    expect(bloom.querySelectorAll("[data-seed]")).toHaveLength(5);
+    // the card crops it
+    expect(screen.getByTestId("gallery-empty-state").className).toMatch(/overflow-hidden/);
   });
 
-  it("uses the cream background TOKEN + a green tint layer, not inline hex", () => {
+  it("the name block stops short of the bloom, so the h1 never sits on a seed", () => {
+    render(<ImageGallery images={[]} producerName="מאפיית רוח השדה של משפחת כהן בזכרון יעקב" />);
+    const block = screen.getByTestId("masthead-name-block");
+    // 100px of bloom + 12px gap on a phone; 140 + 12 from md
+    expect(block.className).toMatch(/(^|\s)max-w-\[calc\(100%-7rem\)\]/);
+    expect(block.className).toMatch(/md:max-w-\[calc\(100%-9\.5rem\)\]/);
+    const h1 = screen.getByRole("heading", { level: 1 });
+    expect(block).toContainElement(h1);
+    // a long unbreakable word wraps inside the cap instead of overflowing it
+    expect(h1.className).toContain("[overflow-wrap:anywhere]");
+  });
+
+  it("uses the cream background TOKEN + the sand (background-alt) layer, not inline hex", () => {
     render(<ImageGallery images={[]} producerName="חוות הדבש" />);
     const wrapper = screen.getByTestId("gallery-empty-state");
-    // Outer surface is the cream token; the tint is opacity-on-cream (ADR-019).
+    // Outer surface is the cream token; MEH-2833: the inner layer is sand.
     expect(wrapper.className).toMatch(/bg-background/);
-    expect(screen.getByTestId("gallery-tint-layer").className).toMatch(/bg-primary\/\[0\.06\]/);
+    expect(screen.getByTestId("gallery-tint-layer").className).toMatch(/\bbg-background-alt\b/);
+    expect(screen.getByTestId("gallery-tint-layer").className).not.toMatch(/bg-primary/);
     // Regression guard: no inline raw hex / gradient.
     expect(wrapper.style.background || "").toBe("");
   });
@@ -136,6 +167,11 @@ describe("ImageGallery empty state — Tinted Masthead (MEH-815)", () => {
       screen.getByTestId("share-overlay").parentElement
     );
     expect(hearts[0].parentElement.className).toMatch(/lg:hidden/);
+    // MEH-2671: inline-END corner (top-left in RTL), heart first. (The
+    // «מ·ה» start-corner mark it moved away from is gone — MEH-2833.)
+    expect(hearts[0].parentElement.className).toMatch(/\bend-3\b/);
+    expect(hearts[0].parentElement.className).not.toMatch(/\bstart-3\b/);
+    expect(hearts[0].parentElement.firstElementChild).toBe(hearts[0]);
   });
 
   it("omits BOTH hero controls when no producerId", () => {

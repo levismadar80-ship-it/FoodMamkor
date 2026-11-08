@@ -32,11 +32,20 @@
 .btn-whatsapp {
   @apply bg-[#16803E] hover:bg-[#136B34] text-white transition focus-visible:ring-2 focus-visible:ring-[#25D366]/40;
 }
+/* MEH-2708: text was #25D366 on white = 1.98:1 (axe color-contrast on the
+   group-buy share button). The same darkened WhatsApp green as .btn-whatsapp /
+   .text-whatsapp above (5.01:1), not a new colour. */
 .btn-whatsapp-outline {
-  @apply border border-[#25D366] text-[#25D366] hover:bg-[#25D366]/5 transition;
+  @apply border border-[#16803E] text-[#16803E] hover:bg-[#16803E]/5 transition;
 }
 .bg-whatsapp {
   @apply bg-[#25D366];
+}
+/* MEH-2626: the WhatsApp logo on a white pill (WhatsAppUpdatesPill). The
+   btn-whatsapp fill above, reused — not a new colour: #25D366 on white is
+   1.98:1, under the 3:1 non-text floor, while #16803E is 5.01:1. */
+.text-whatsapp {
+  @apply text-[#16803E];
 }
 
 /* ── MEH-136 — S4 design tokens (CSS utility layer) ───────────────────────
@@ -220,9 +229,28 @@ html {
      term outside would double-count it exactly where it matters (notched
      phones). Fallback total 72 + 8 = 5rem, so the no-var render is unchanged.
      The md override below is untouched: no pill there, so no clearance. */
-  --bottom-inset: calc(var(--bottom-nav-clearance, calc(4.5rem + env(safe-area-inset-bottom, 0px))) + 8px + var(--cookie-banner-h, 0px));
+  /* MEH-2835: + the mobile chat launcher's room while it is on screen
+     (ChatWidget publishes --chat-fab-clearance; absent → 0). The footer owns
+     this reserve (MEH-2824 rule below), so on pages that end in the green
+     footer the extra space is inside the green, not a cream strip. */
+  --bottom-inset: calc(var(--bottom-nav-clearance, calc(4.5rem + env(safe-area-inset-bottom, 0px))) + 8px + var(--cookie-banner-h, 0px) + var(--chat-fab-clearance, 0px));
 
   scroll-padding-bottom: var(--bottom-inset);
+}
+
+/* iOS drift pin: fixed-bottom layers that opt in follow the visual viewport when
+   iOS 26 Safari leaves them drifted above the screen bottom. --vv-shift is
+   published only on iOS, only while drifted (IosViewportPin.jsx); everywhere
+   else it is absent. NO fallback on purpose: with the var absent the
+   declaration is invalid at computed-value time and `translate` resolves to
+   `none`. A `0 0px` fallback would still be a non-none translate, which makes
+   the layer a containing block for fixed descendants on every platform (the
+   MEH-2622 "sheet opened inside the card" class of bug). `translate` is its own
+   property, so it composes with any `transform` the layer already animates.
+   Not on MapBottomSheet: the map controls ride its edge via --map-sheet-h and
+   would split from it. */
+.vv-pin {
+  translate: 0 var(--vv-shift);
 }
 
 @media (min-width: 768px) {
@@ -306,6 +334,28 @@ h1, h2, h3 {
    marker, so every other page keeps the margin. */
 body:has([data-meets-footer]) footer[data-site-footer] {
   margin-top: 0;
+}
+
+/* MEH-2824 (Sapir 08/11, option ב): the bottom reserve for the floating
+   BottomNav (+ cookie banner) moves from <body> INTO the site footer, so the
+   footer's dark green runs to the screen edge instead of ending on an 80px
+   cream strip behind the nav. Same value — var(--bottom-inset), no new
+   number — just a different owner. Desktop is unchanged: there the var is the
+   cookie banner's live height only (0 once dismissed). Routes without the
+   site footer (/map, the dashboard + /admin's DashboardFooter) match neither
+   rule and keep the reserve on <body> (layout.js `pb-[var(--bottom-inset)]`).
+   Specificity (0,2,2) beats the Tailwind utility (0,1,0) regardless of order.
+   Guard: e2e/flows/manual/footer-nav-clearance.spec.ts.
+   Both rules sit behind @supports: a browser without :has() (Safari < 15.4)
+   would drop the body rule but keep the footer one and reserve the space
+   TWICE. Without :has() nothing changes — the reserve stays on <body>. */
+@supports selector(:has(*)) {
+  body:has(footer[data-site-footer]) {
+    padding-bottom: 0;
+  }
+  footer[data-site-footer] {
+    padding-bottom: var(--bottom-inset);
+  }
 }
 
 /* Leaflet map fixes */

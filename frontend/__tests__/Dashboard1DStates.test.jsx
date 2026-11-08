@@ -11,7 +11,8 @@
  * Locked behavior under test:
  *   - ShareCta (VanityLinkCard) renders ONLY when complete AND approved;
  *     otherwise a why-locked hint takes its place (never silent).
- *   - availability radios disabled until approved (+ described-by hint).
+ *   - availability pause switch disabled until approved (+ described-by hint).
+ *     MEH-2759: it was four radios.
  *   - KPI strip → warm zero-state when there's no activity yet.
  *   - view-public link points at /{slug}.
  */
@@ -34,6 +35,17 @@ vi.mock("@/i18n/navigation", () => ({
 vi.mock("next/link", () => ({
   default: ({ children, href, ...props }) => <a href={href} {...props}>{children}</a>,
 }));
+// MEH-1428: the "ערכת שיתוף" section mounts two canvas cards. Stubbed here for
+// the same reason the sibling cards above are: this file asserts a PAGE-level
+// contract, and a real canvas would drag Instagram-card geometry (and its icon
+// set) into it. Their own behaviour is covered by ReviewCardLayout.test.jsx +
+// ShareKitOwnerMode.test.jsx.
+vi.mock("@/components/StoryCardCanvas", () => ({
+  default: () => <div data-testid="story-card-canvas-stub" />,
+}));
+vi.mock("@/components/ReviewCardCanvas", () => ({
+  default: () => <div data-testid="review-card-canvas-stub" />,
+}));
 vi.mock("@phosphor-icons/react", () => ({
   Eye: (p) => <span {...p} />,
   LockSimple: (p) => <span {...p} />,
@@ -45,6 +57,8 @@ vi.mock("@/components/InfoTooltip", () => ({ default: () => null }));
 vi.mock("@/components/PhoneVerifyCard", () => ({ default: () => null }));
 vi.mock("@/components/ProfileCompletenessCard", () => ({ default: () => null }));
 vi.mock("@/lib/holidays", () => ({ getUpcomingHoliday: () => null }));
+// MEH-1687 D: the holiday hint renders HolidayIcon (Phosphor names this file's icon mock lacks).
+vi.mock("@/components/HolidayIcon", () => ({ default: () => null }));
 
 // Mutable refs the api + completeness mocks close over (vi.hoisted — mock
 // factories are hoisted above these declarations).
@@ -123,22 +137,22 @@ describe("Dashboard 1D — share-gate (MEH-964)", () => {
 });
 
 describe("Dashboard 1D — availability-disable (MEH-964)", () => {
-  it("disables the availability radios + shows the hint until approved", async () => {
+  it("disables the availability pause switch + shows the hint until approved", async () => {
     setup({ status: "pending", complete: true });
     render(<ProducerDashboardPage />);
     await screen.findByTestId("producer-overview");
     expect(screen.getByTestId("availability-disabled-hint")).toBeInTheDocument();
-    const radios = screen.getAllByRole("radio");
-    expect(radios.length).toBeGreaterThan(0);
-    radios.forEach((r) => expect(r).toBeDisabled());
+    const sw = screen.getByTestId("availability-pause-switch");
+    expect(sw).toBeDisabled();
+    expect(sw).toHaveAttribute("aria-describedby", "availability-disabled-hint");
   });
 
-  it("enables the radios (no hint) once approved", async () => {
+  it("enables the pause switch (no hint) once approved", async () => {
     setup({ status: "approved", complete: true });
     render(<ProducerDashboardPage />);
     await screen.findByTestId("producer-overview");
     expect(screen.queryByTestId("availability-disabled-hint")).not.toBeInTheDocument();
-    screen.getAllByRole("radio").forEach((r) => expect(r).not.toBeDisabled());
+    expect(screen.getByTestId("availability-pause-switch")).not.toBeDisabled();
   });
 });
 

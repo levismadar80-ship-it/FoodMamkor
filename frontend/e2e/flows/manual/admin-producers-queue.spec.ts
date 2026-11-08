@@ -235,8 +235,8 @@ async function openQueue(page: Page): Promise<void> {
 
 const TONE = {
   gray: /(^|\s)bg-gray-100(\s|$)/,
-  amber: /(^|\s)bg-amber-100(\s|$)/,
-  red: /(^|\s)bg-red-100(\s|$)/,
+  amber: /(^|\s)bg-warning-100(\s|$)/,
+  red: /(^|\s)bg-danger-100(\s|$)/,
 };
 
 // ── MT:MEH-2138-E — the SLA counter above the toolbar ──────────────────────
@@ -399,7 +399,7 @@ test.describe("approvals queue — pending photo strip", () => {
     const broken = page.getByRole("img", { name: "תמונה שבורה — לא נטענה" });
     await expect(broken).toHaveCount(1);
     await expect(broken).toBeVisible();
-    await expect(broken).toHaveClass(/text-red-600/);
+    await expect(broken).toHaveClass(/text-danger-600/);
     // Both anchors are still there (each carries the «תמונה N של …» title), but
     // only the good one is a thumbnail by accessible name — the broken one's
     // name is now the ⚠ marker's label, which is exactly the swap the row asks for.
@@ -477,7 +477,7 @@ test.describe("admin lockout", () => {
     { who: "admin", user: ADMIN, cta: 0, adminRow: 1 },
     { who: "consumer", user: CONSUMER, cta: 1, adminRow: 0 },
   ]) {
-    test(`the account sheet ${c.cta ? "offers" : "hides"} «יש לך בית עסק?» for a ${c.who}`, async ({ page }, testInfo) => {
+    test(`the account sheet ${c.cta ? "offers" : "hides"} «יש לכם בית עסק?» for a ${c.who}`, async ({ page }, testInfo) => {
       test.skip(testInfo.project.name !== "mobile", "the AccountSheet is md:hidden — a mobile-only surface");
       await stubAdmin(page, { user: c.user });
       await page.goto("/about");
@@ -486,7 +486,8 @@ test.describe("admin lockout", () => {
       await trigger.click();
       const sheet = page.getByRole("dialog", { name: "חשבון" });
       await expect(sheet).toBeVisible();
-      await expect(sheet.getByRole("link", { name: "יש לך בית עסק?" })).toHaveCount(c.cta);
+      // MEH-2827 copy row 7: neutral plural.
+      await expect(sheet.getByRole("link", { name: "יש לכם בית עסק?" })).toHaveCount(c.cta);
       // The role reached the sheet: the admin row is the registry's other audience-gated entry.
       await expect(sheet.getByRole("link", { name: "ממשק אדמין" })).toHaveCount(c.adminRow);
     });

@@ -189,6 +189,8 @@ export const GetDashboardAdminDashboardGetResponse = /*#__PURE__*/ zod.unknown()
 export const adminListExperiencesAdminExperiencesGetResponseIsActiveDefault = true;
 export const adminListExperiencesAdminExperiencesGetResponseIsRecurringDefault = false;
 export const adminListExperiencesAdminExperiencesGetResponseParticipantsCountDefault = 0;
+export const adminListExperiencesAdminExperiencesGetResponseRegisteredCountDefault = 0;
+export const adminListExperiencesAdminExperiencesGetResponseRegistrationMethodDefault = `site_form`;
 
 export const AdminListExperiencesAdminExperiencesGetResponseItem = /*#__PURE__*/ zod.object({
   "address": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -216,12 +218,16 @@ export const AdminListExperiencesAdminExperiencesGetResponseItem = /*#__PURE__*/
   "lng": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.number(),/*#__PURE__*/ zod.null()])),
   "location_type": /*#__PURE__*/ zod.string(),
   "max_participants": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "min_participants": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "moderation_reason": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "moderation_status": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "moderation_suggestion": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "participants_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), adminListExperiencesAdminExperiencesGetResponseParticipantsCountDefault),
   "price_per_person": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "recurring_schedule": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "registered_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), adminListExperiencesAdminExperiencesGetResponseRegisteredCountDefault),
+  "registration_method": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), adminListExperiencesAdminExperiencesGetResponseRegistrationMethodDefault),
+  "registration_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "rejection_reason": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "requirements": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "spots_left": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
@@ -237,6 +243,8 @@ export const AdminListExperiencesAdminExperiencesGetResponse = /*#__PURE__*/ zod
 export const approveExperienceAdminExperiencesExperienceIdApprovePostResponseIsActiveDefault = true;
 export const approveExperienceAdminExperiencesExperienceIdApprovePostResponseIsRecurringDefault = false;
 export const approveExperienceAdminExperiencesExperienceIdApprovePostResponseParticipantsCountDefault = 0;
+export const approveExperienceAdminExperiencesExperienceIdApprovePostResponseRegisteredCountDefault = 0;
+export const approveExperienceAdminExperiencesExperienceIdApprovePostResponseRegistrationMethodDefault = `site_form`;
 
 export const ApproveExperienceAdminExperiencesExperienceIdApprovePostResponse = /*#__PURE__*/ zod.object({
   "address": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -264,12 +272,16 @@ export const ApproveExperienceAdminExperiencesExperienceIdApprovePostResponse = 
   "lng": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.number(),/*#__PURE__*/ zod.null()])),
   "location_type": /*#__PURE__*/ zod.string(),
   "max_participants": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "min_participants": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "moderation_reason": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "moderation_status": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "moderation_suggestion": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "participants_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), approveExperienceAdminExperiencesExperienceIdApprovePostResponseParticipantsCountDefault),
   "price_per_person": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "recurring_schedule": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "registered_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), approveExperienceAdminExperiencesExperienceIdApprovePostResponseRegisteredCountDefault),
+  "registration_method": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), approveExperienceAdminExperiencesExperienceIdApprovePostResponseRegistrationMethodDefault),
+  "registration_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "rejection_reason": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "requirements": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "spots_left": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
@@ -284,6 +296,8 @@ export const ApproveExperienceAdminExperiencesExperienceIdApprovePostResponse = 
 export const rejectExperienceAdminExperiencesExperienceIdRejectPostResponseIsActiveDefault = true;
 export const rejectExperienceAdminExperiencesExperienceIdRejectPostResponseIsRecurringDefault = false;
 export const rejectExperienceAdminExperiencesExperienceIdRejectPostResponseParticipantsCountDefault = 0;
+export const rejectExperienceAdminExperiencesExperienceIdRejectPostResponseRegisteredCountDefault = 0;
+export const rejectExperienceAdminExperiencesExperienceIdRejectPostResponseRegistrationMethodDefault = `site_form`;
 
 export const RejectExperienceAdminExperiencesExperienceIdRejectPostResponse = /*#__PURE__*/ zod.object({
   "address": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -311,12 +325,16 @@ export const RejectExperienceAdminExperiencesExperienceIdRejectPostResponse = /*
   "lng": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.number(),/*#__PURE__*/ zod.null()])),
   "location_type": /*#__PURE__*/ zod.string(),
   "max_participants": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "min_participants": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "moderation_reason": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "moderation_status": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "moderation_suggestion": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "participants_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), rejectExperienceAdminExperiencesExperienceIdRejectPostResponseParticipantsCountDefault),
   "price_per_person": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "recurring_schedule": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "registered_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), rejectExperienceAdminExperiencesExperienceIdRejectPostResponseRegisteredCountDefault),
+  "registration_method": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), rejectExperienceAdminExperiencesExperienceIdRejectPostResponseRegistrationMethodDefault),
+  "registration_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "rejection_reason": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "requirements": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "spots_left": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
@@ -331,6 +349,8 @@ export const RejectExperienceAdminExperiencesExperienceIdRejectPostResponse = /*
 export const requestChangesAdminExperiencesExperienceIdRequestChangesPostResponseIsActiveDefault = true;
 export const requestChangesAdminExperiencesExperienceIdRequestChangesPostResponseIsRecurringDefault = false;
 export const requestChangesAdminExperiencesExperienceIdRequestChangesPostResponseParticipantsCountDefault = 0;
+export const requestChangesAdminExperiencesExperienceIdRequestChangesPostResponseRegisteredCountDefault = 0;
+export const requestChangesAdminExperiencesExperienceIdRequestChangesPostResponseRegistrationMethodDefault = `site_form`;
 
 export const RequestChangesAdminExperiencesExperienceIdRequestChangesPostResponse = /*#__PURE__*/ zod.object({
   "address": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -358,12 +378,16 @@ export const RequestChangesAdminExperiencesExperienceIdRequestChangesPostRespons
   "lng": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.number(),/*#__PURE__*/ zod.null()])),
   "location_type": /*#__PURE__*/ zod.string(),
   "max_participants": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "min_participants": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "moderation_reason": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "moderation_status": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "moderation_suggestion": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "participants_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), requestChangesAdminExperiencesExperienceIdRequestChangesPostResponseParticipantsCountDefault),
   "price_per_person": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "recurring_schedule": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "registered_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), requestChangesAdminExperiencesExperienceIdRequestChangesPostResponseRegisteredCountDefault),
+  "registration_method": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), requestChangesAdminExperiencesExperienceIdRequestChangesPostResponseRegistrationMethodDefault),
+  "registration_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "rejection_reason": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "requirements": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "spots_left": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
@@ -383,11 +407,13 @@ export const AdminListGroupBuysAdminGroupBuysGetResponseItem = /*#__PURE__*/ zod
   "commits_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), adminListGroupBuysAdminGroupBuysGetResponseCommitsCountDefault),
   "created_at": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
   "deadline": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "delivery_note": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "description": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "fulfillment_note": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "id": /*#__PURE__*/ zod.uuid(),
   "max_participants": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "min_participants": /*#__PURE__*/ zod.int(),
+  "pickup_note": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "price_per_unit_group": /*#__PURE__*/ zod.string(),
   "price_per_unit_regular": /*#__PURE__*/ zod.string(),
   "producer_id": /*#__PURE__*/ zod.uuid(),
@@ -587,11 +613,12 @@ export const ReviewNameChangeRequestAdminNameChangeRequestsRequestIdPatchRespons
 
 /**
  * List leads, newest first. Optional filters: status, city
- * (case-insensitive contains).
+ * (case-insensitive contains), source (MEH-2633, exact).
  * @summary List Leads
  */
 export const listLeadsAdminOutreachGetResponseSourceDefault = `manual`;
 export const listLeadsAdminOutreachGetResponseStatusDefault = `new`;
+export const listLeadsAdminOutreachGetResponseSuggesterWantsUpdateDefault = false;
 
 export const ListLeadsAdminOutreachGetResponseItem = /*#__PURE__*/ zod.object({
   "category": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -606,6 +633,11 @@ export const ListLeadsAdminOutreachGetResponseItem = /*#__PURE__*/ zod.object({
   "prefill_token_expires_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()])),
   "source": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), listLeadsAdminOutreachGetResponseSourceDefault),
   "status": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), listLeadsAdminOutreachGetResponseStatusDefault),
+  "suggested_by_email": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "suggested_by_name": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "suggester_thanked_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()])),
+  "suggester_wants_update": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), listLeadsAdminOutreachGetResponseSuggesterWantsUpdateDefault),
+  "suggestion_reason": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "updated_at": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
   "website": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
 })
@@ -620,6 +652,7 @@ export const ListLeadsAdminOutreachGetResponse = /*#__PURE__*/ zod.array(ListLea
  */
 export const createLeadAdminOutreachPostResponseSourceDefault = `manual`;
 export const createLeadAdminOutreachPostResponseStatusDefault = `new`;
+export const createLeadAdminOutreachPostResponseSuggesterWantsUpdateDefault = false;
 
 export const CreateLeadAdminOutreachPostResponse = /*#__PURE__*/ zod.object({
   "category": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -634,6 +667,11 @@ export const CreateLeadAdminOutreachPostResponse = /*#__PURE__*/ zod.object({
   "prefill_token_expires_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()])),
   "source": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), createLeadAdminOutreachPostResponseSourceDefault),
   "status": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), createLeadAdminOutreachPostResponseStatusDefault),
+  "suggested_by_email": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "suggested_by_name": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "suggester_thanked_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()])),
+  "suggester_wants_update": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), createLeadAdminOutreachPostResponseSuggesterWantsUpdateDefault),
+  "suggestion_reason": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "updated_at": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
   "website": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
 })
@@ -647,6 +685,7 @@ export const CreateLeadAdminOutreachPostResponse = /*#__PURE__*/ zod.object({
  *   contacted  = פניתי
  *   replied    = ענו
  *   registered = נרשמו
+ *   community  = המלצות קהילה (source, not status — MEH-2633)
  * @summary Metrics Summary
  */
 export const MetricsSummaryAdminOutreachMetricsSummaryGetResponse = /*#__PURE__*/ zod.unknown()
@@ -663,6 +702,7 @@ export const DeleteLeadAdminOutreachLeadIdDeleteResponse = /*#__PURE__*/ zod.voi
  */
 export const updateLeadAdminOutreachLeadIdPatchResponseSourceDefault = `manual`;
 export const updateLeadAdminOutreachLeadIdPatchResponseStatusDefault = `new`;
+export const updateLeadAdminOutreachLeadIdPatchResponseSuggesterWantsUpdateDefault = false;
 
 export const UpdateLeadAdminOutreachLeadIdPatchResponse = /*#__PURE__*/ zod.object({
   "category": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -677,6 +717,11 @@ export const UpdateLeadAdminOutreachLeadIdPatchResponse = /*#__PURE__*/ zod.obje
   "prefill_token_expires_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()])),
   "source": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), updateLeadAdminOutreachLeadIdPatchResponseSourceDefault),
   "status": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), updateLeadAdminOutreachLeadIdPatchResponseStatusDefault),
+  "suggested_by_email": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "suggested_by_name": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "suggester_thanked_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()])),
+  "suggester_wants_update": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), updateLeadAdminOutreachLeadIdPatchResponseSuggesterWantsUpdateDefault),
+  "suggestion_reason": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "updated_at": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
   "website": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
 })
@@ -689,6 +734,7 @@ export const UpdateLeadAdminOutreachLeadIdPatchResponse = /*#__PURE__*/ zod.obje
  */
 export const mintPrefillTokenAdminOutreachLeadIdPrefillTokenPostResponseSourceDefault = `manual`;
 export const mintPrefillTokenAdminOutreachLeadIdPrefillTokenPostResponseStatusDefault = `new`;
+export const mintPrefillTokenAdminOutreachLeadIdPrefillTokenPostResponseSuggesterWantsUpdateDefault = false;
 
 export const MintPrefillTokenAdminOutreachLeadIdPrefillTokenPostResponse = /*#__PURE__*/ zod.object({
   "category": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -703,6 +749,57 @@ export const MintPrefillTokenAdminOutreachLeadIdPrefillTokenPostResponse = /*#__
   "prefill_token_expires_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()])),
   "source": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), mintPrefillTokenAdminOutreachLeadIdPrefillTokenPostResponseSourceDefault),
   "status": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), mintPrefillTokenAdminOutreachLeadIdPrefillTokenPostResponseStatusDefault),
+  "suggested_by_email": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "suggested_by_name": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "suggester_thanked_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()])),
+  "suggester_wants_update": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), mintPrefillTokenAdminOutreachLeadIdPrefillTokenPostResponseSuggesterWantsUpdateDefault),
+  "suggestion_reason": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "updated_at": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "website": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
+})
+
+
+/**
+ * Email the person who suggested this business that it has joined.
+ *
+ * Four separate 409s rather than one, each with its own Hebrew detail, so the
+ * admin UI can say WHY the button is unavailable instead of just greying it
+ * out — and so a test can tell the four rules apart (a single shared message
+ * would make any of the four pass a test written for another).
+ *
+ * Idempotent through `suggester_thanked_at`: the second call takes the
+ * already-thanked branch and sends nothing. The stamp is written AFTER
+ * send_email returns, but note what that can and cannot promise —
+ * `send_email` is fail-open by contract (services/email.py:139, returns None
+ * on every path and raises nothing), so the stamp means "we handed this to
+ * Resend", never "it was delivered". A swallowed failure is reported to
+ * Sentry by that module (MEH-1613), which is where a missing thank-you is
+ * diagnosed from; it is deliberately not re-derived here, because retrying
+ * on a signal we do not have would send duplicates.
+ * @summary Thank Suggester
+ */
+export const thankSuggesterAdminOutreachLeadIdThankSuggesterPostResponseSourceDefault = `manual`;
+export const thankSuggesterAdminOutreachLeadIdThankSuggesterPostResponseStatusDefault = `new`;
+export const thankSuggesterAdminOutreachLeadIdThankSuggesterPostResponseSuggesterWantsUpdateDefault = false;
+
+export const ThankSuggesterAdminOutreachLeadIdThankSuggesterPostResponse = /*#__PURE__*/ zod.object({
+  "category": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "city": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "created_at": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "id": /*#__PURE__*/ zod.uuid(),
+  "instagram": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "name": /*#__PURE__*/ zod.string(),
+  "notes": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "phone": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "prefill_token": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "prefill_token_expires_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()])),
+  "source": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), thankSuggesterAdminOutreachLeadIdThankSuggesterPostResponseSourceDefault),
+  "status": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), thankSuggesterAdminOutreachLeadIdThankSuggesterPostResponseStatusDefault),
+  "suggested_by_email": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "suggested_by_name": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "suggester_thanked_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()])),
+  "suggester_wants_update": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), thankSuggesterAdminOutreachLeadIdThankSuggesterPostResponseSuggesterWantsUpdateDefault),
+  "suggestion_reason": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "updated_at": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
   "website": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
 })
@@ -735,7 +832,6 @@ export const UpdateStaticPageAdminPagesSlugPutResponse = /*#__PURE__*/ zod.objec
  */
 export const listProducersAdminProducersGetResponseAmbassadorDefault = false;
 export const listProducersAdminProducersGetResponseAvailabilityStateDefault = `accepting_orders`;
-export const listProducersAdminProducersGetResponseAvailabilityStatusDefault = `available`;
 export const listProducersAdminProducersGetResponseAvgRatingDefault = 0;
 export const listProducersAdminProducersGetResponseBusinessDaysWaitingDefault = 0;
 export const listProducersAdminProducersGetResponseCategoriesItemIsSystemDefault = false;
@@ -760,7 +856,6 @@ export const listProducersAdminProducersGetResponseHasProducerLicenseDefault = f
 export const listProducersAdminProducersGetResponseHasVeganProductsDefault = false;
 export const listProducersAdminProducersGetResponseHasVegetarianProductsDefault = false;
 export const listProducersAdminProducersGetResponseImagesDefault = [];
-export const listProducersAdminProducersGetResponseIsAvailableTodayDefault = false;
 export const listProducersAdminProducersGetResponseIsRecommendedDefault = false;
 export const listProducersAdminProducersGetResponseKashrutBadgesDefault = [];
 export const listProducersAdminProducersGetResponseKashrutCertsDefault = [];
@@ -786,6 +881,8 @@ export const listProducersAdminProducersGetResponseProductsItemIsVegetarianDefau
 export const listProducersAdminProducersGetResponseProductsDefault = [];
 export const listProducersAdminProducersGetResponseProductsCountDefault = 0;
 export const listProducersAdminProducersGetResponseReportCountDefault = 0;
+export const listProducersAdminProducersGetResponseRescuedRecentlyDefault = false;
+export const listProducersAdminProducersGetResponseReservistOwnedDefault = false;
 export const listProducersAdminProducersGetResponseResubmissionCountDefault = 0;
 export const listProducersAdminProducersGetResponseReviewsCountDefault = 0;
 export const listProducersAdminProducersGetResponseSellsOnSiteDefault = false;
@@ -807,7 +904,6 @@ export const ListProducersAdminProducersGetResponseItem = /*#__PURE__*/ zod.obje
   "address": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "ambassador": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), listProducersAdminProducersGetResponseAmbassadorDefault),
   "availability_state": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), listProducersAdminProducersGetResponseAvailabilityStateDefault),
-  "availability_status": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), listProducersAdminProducersGetResponseAvailabilityStatusDefault),
   "avg_rating": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.number(), listProducersAdminProducersGetResponseAvgRatingDefault),
   "business_days_waiting": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), listProducersAdminProducersGetResponseBusinessDaysWaitingDefault),
   "categories": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
@@ -866,7 +962,6 @@ export const ListProducersAdminProducersGetResponseItem = /*#__PURE__*/ zod.obje
   "images": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()), listProducersAdminProducersGetResponseImagesDefault),
   "in_season_until": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.date(),/*#__PURE__*/ zod.null()])),
   "instagram": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
-  "is_available_today": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), listProducersAdminProducersGetResponseIsAvailableTodayDefault),
   "is_recommended": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), listProducersAdminProducersGetResponseIsRecommendedDefault),
   "kashrut_badges": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()), listProducersAdminProducersGetResponseKashrutBadgesDefault),
   "kashrut_certs": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
@@ -908,9 +1003,11 @@ export const ListProducersAdminProducersGetResponseItem = /*#__PURE__*/ zod.obje
   "primary_contact_method": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), listProducersAdminProducersGetResponsePrimaryContactMethodDefault),
   "producer_license_number": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "products": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
+  "allergens": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
   "description": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "id": /*#__PURE__*/ zod.uuid(),
   "image_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "ingredients": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "is_gluten_free": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), listProducersAdminProducersGetResponseProductsItemIsGlutenFreeDefault),
   "is_lactose_free": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), listProducersAdminProducersGetResponseProductsItemIsLactoseFreeDefault),
   "is_low_carb": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), listProducersAdminProducersGetResponseProductsItemIsLowCarbDefault),
@@ -930,6 +1027,8 @@ export const ListProducersAdminProducersGetResponseItem = /*#__PURE__*/ zod.obje
   "rejection_reason_code": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "report_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), listProducersAdminProducersGetResponseReportCountDefault),
   "requested_changes": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "rescued_recently": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), listProducersAdminProducersGetResponseRescuedRecentlyDefault),
+  "reservist_owned": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), listProducersAdminProducersGetResponseReservistOwnedDefault),
   "resubmission_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), listProducersAdminProducersGetResponseResubmissionCountDefault),
   "resubmitted_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()])),
   "reviews_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), listProducersAdminProducersGetResponseReviewsCountDefault),
@@ -965,7 +1064,6 @@ export const ListProducersAdminProducersGetResponse = /*#__PURE__*/ zod.array(Li
  */
 export const adminCreateProducerAdminProducersPostResponseAmbassadorDefault = false;
 export const adminCreateProducerAdminProducersPostResponseAvailabilityStateDefault = `accepting_orders`;
-export const adminCreateProducerAdminProducersPostResponseAvailabilityStatusDefault = `available`;
 export const adminCreateProducerAdminProducersPostResponseAvgRatingDefault = 0;
 export const adminCreateProducerAdminProducersPostResponseBusinessDaysWaitingDefault = 0;
 export const adminCreateProducerAdminProducersPostResponseCategoriesItemIsSystemDefault = false;
@@ -990,7 +1088,6 @@ export const adminCreateProducerAdminProducersPostResponseHasProducerLicenseDefa
 export const adminCreateProducerAdminProducersPostResponseHasVeganProductsDefault = false;
 export const adminCreateProducerAdminProducersPostResponseHasVegetarianProductsDefault = false;
 export const adminCreateProducerAdminProducersPostResponseImagesDefault = [];
-export const adminCreateProducerAdminProducersPostResponseIsAvailableTodayDefault = false;
 export const adminCreateProducerAdminProducersPostResponseIsRecommendedDefault = false;
 export const adminCreateProducerAdminProducersPostResponseKashrutBadgesDefault = [];
 export const adminCreateProducerAdminProducersPostResponseKashrutCertsDefault = [];
@@ -1016,6 +1113,8 @@ export const adminCreateProducerAdminProducersPostResponseProductsItemIsVegetari
 export const adminCreateProducerAdminProducersPostResponseProductsDefault = [];
 export const adminCreateProducerAdminProducersPostResponseProductsCountDefault = 0;
 export const adminCreateProducerAdminProducersPostResponseReportCountDefault = 0;
+export const adminCreateProducerAdminProducersPostResponseRescuedRecentlyDefault = false;
+export const adminCreateProducerAdminProducersPostResponseReservistOwnedDefault = false;
 export const adminCreateProducerAdminProducersPostResponseResubmissionCountDefault = 0;
 export const adminCreateProducerAdminProducersPostResponseReviewsCountDefault = 0;
 export const adminCreateProducerAdminProducersPostResponseSellsOnSiteDefault = false;
@@ -1037,7 +1136,6 @@ export const AdminCreateProducerAdminProducersPostResponse = /*#__PURE__*/ zod.o
   "address": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "ambassador": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminCreateProducerAdminProducersPostResponseAmbassadorDefault),
   "availability_state": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), adminCreateProducerAdminProducersPostResponseAvailabilityStateDefault),
-  "availability_status": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), adminCreateProducerAdminProducersPostResponseAvailabilityStatusDefault),
   "avg_rating": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.number(), adminCreateProducerAdminProducersPostResponseAvgRatingDefault),
   "business_days_waiting": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), adminCreateProducerAdminProducersPostResponseBusinessDaysWaitingDefault),
   "categories": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
@@ -1096,7 +1194,6 @@ export const AdminCreateProducerAdminProducersPostResponse = /*#__PURE__*/ zod.o
   "images": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()), adminCreateProducerAdminProducersPostResponseImagesDefault),
   "in_season_until": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.date(),/*#__PURE__*/ zod.null()])),
   "instagram": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
-  "is_available_today": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminCreateProducerAdminProducersPostResponseIsAvailableTodayDefault),
   "is_recommended": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminCreateProducerAdminProducersPostResponseIsRecommendedDefault),
   "kashrut_badges": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()), adminCreateProducerAdminProducersPostResponseKashrutBadgesDefault),
   "kashrut_certs": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
@@ -1138,9 +1235,11 @@ export const AdminCreateProducerAdminProducersPostResponse = /*#__PURE__*/ zod.o
   "primary_contact_method": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), adminCreateProducerAdminProducersPostResponsePrimaryContactMethodDefault),
   "producer_license_number": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "products": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
+  "allergens": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
   "description": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "id": /*#__PURE__*/ zod.uuid(),
   "image_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "ingredients": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "is_gluten_free": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminCreateProducerAdminProducersPostResponseProductsItemIsGlutenFreeDefault),
   "is_lactose_free": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminCreateProducerAdminProducersPostResponseProductsItemIsLactoseFreeDefault),
   "is_low_carb": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminCreateProducerAdminProducersPostResponseProductsItemIsLowCarbDefault),
@@ -1160,6 +1259,8 @@ export const AdminCreateProducerAdminProducersPostResponse = /*#__PURE__*/ zod.o
   "rejection_reason_code": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "report_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), adminCreateProducerAdminProducersPostResponseReportCountDefault),
   "requested_changes": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "rescued_recently": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminCreateProducerAdminProducersPostResponseRescuedRecentlyDefault),
+  "reservist_owned": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminCreateProducerAdminProducersPostResponseReservistOwnedDefault),
   "resubmission_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), adminCreateProducerAdminProducersPostResponseResubmissionCountDefault),
   "resubmitted_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()])),
   "reviews_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), adminCreateProducerAdminProducersPostResponseReviewsCountDefault),
@@ -1192,7 +1293,6 @@ export const AdminCreateProducerAdminProducersPostResponse = /*#__PURE__*/ zod.o
  */
 export const pendingProducersAdminProducersPendingGetResponseAmbassadorDefault = false;
 export const pendingProducersAdminProducersPendingGetResponseAvailabilityStateDefault = `accepting_orders`;
-export const pendingProducersAdminProducersPendingGetResponseAvailabilityStatusDefault = `available`;
 export const pendingProducersAdminProducersPendingGetResponseAvgRatingDefault = 0;
 export const pendingProducersAdminProducersPendingGetResponseBusinessDaysWaitingDefault = 0;
 export const pendingProducersAdminProducersPendingGetResponseCategoriesItemIsSystemDefault = false;
@@ -1217,7 +1317,6 @@ export const pendingProducersAdminProducersPendingGetResponseHasProducerLicenseD
 export const pendingProducersAdminProducersPendingGetResponseHasVeganProductsDefault = false;
 export const pendingProducersAdminProducersPendingGetResponseHasVegetarianProductsDefault = false;
 export const pendingProducersAdminProducersPendingGetResponseImagesDefault = [];
-export const pendingProducersAdminProducersPendingGetResponseIsAvailableTodayDefault = false;
 export const pendingProducersAdminProducersPendingGetResponseIsRecommendedDefault = false;
 export const pendingProducersAdminProducersPendingGetResponseKashrutBadgesDefault = [];
 export const pendingProducersAdminProducersPendingGetResponseKashrutCertsDefault = [];
@@ -1243,6 +1342,8 @@ export const pendingProducersAdminProducersPendingGetResponseProductsItemIsVeget
 export const pendingProducersAdminProducersPendingGetResponseProductsDefault = [];
 export const pendingProducersAdminProducersPendingGetResponseProductsCountDefault = 0;
 export const pendingProducersAdminProducersPendingGetResponseReportCountDefault = 0;
+export const pendingProducersAdminProducersPendingGetResponseRescuedRecentlyDefault = false;
+export const pendingProducersAdminProducersPendingGetResponseReservistOwnedDefault = false;
 export const pendingProducersAdminProducersPendingGetResponseResubmissionCountDefault = 0;
 export const pendingProducersAdminProducersPendingGetResponseReviewsCountDefault = 0;
 export const pendingProducersAdminProducersPendingGetResponseSellsOnSiteDefault = false;
@@ -1264,7 +1365,6 @@ export const PendingProducersAdminProducersPendingGetResponseItem = /*#__PURE__*
   "address": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "ambassador": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), pendingProducersAdminProducersPendingGetResponseAmbassadorDefault),
   "availability_state": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), pendingProducersAdminProducersPendingGetResponseAvailabilityStateDefault),
-  "availability_status": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), pendingProducersAdminProducersPendingGetResponseAvailabilityStatusDefault),
   "avg_rating": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.number(), pendingProducersAdminProducersPendingGetResponseAvgRatingDefault),
   "business_days_waiting": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), pendingProducersAdminProducersPendingGetResponseBusinessDaysWaitingDefault),
   "categories": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
@@ -1323,7 +1423,6 @@ export const PendingProducersAdminProducersPendingGetResponseItem = /*#__PURE__*
   "images": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()), pendingProducersAdminProducersPendingGetResponseImagesDefault),
   "in_season_until": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.date(),/*#__PURE__*/ zod.null()])),
   "instagram": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
-  "is_available_today": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), pendingProducersAdminProducersPendingGetResponseIsAvailableTodayDefault),
   "is_recommended": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), pendingProducersAdminProducersPendingGetResponseIsRecommendedDefault),
   "kashrut_badges": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()), pendingProducersAdminProducersPendingGetResponseKashrutBadgesDefault),
   "kashrut_certs": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
@@ -1365,9 +1464,11 @@ export const PendingProducersAdminProducersPendingGetResponseItem = /*#__PURE__*
   "primary_contact_method": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), pendingProducersAdminProducersPendingGetResponsePrimaryContactMethodDefault),
   "producer_license_number": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "products": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
+  "allergens": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
   "description": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "id": /*#__PURE__*/ zod.uuid(),
   "image_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "ingredients": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "is_gluten_free": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), pendingProducersAdminProducersPendingGetResponseProductsItemIsGlutenFreeDefault),
   "is_lactose_free": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), pendingProducersAdminProducersPendingGetResponseProductsItemIsLactoseFreeDefault),
   "is_low_carb": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), pendingProducersAdminProducersPendingGetResponseProductsItemIsLowCarbDefault),
@@ -1387,6 +1488,8 @@ export const PendingProducersAdminProducersPendingGetResponseItem = /*#__PURE__*
   "rejection_reason_code": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "report_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), pendingProducersAdminProducersPendingGetResponseReportCountDefault),
   "requested_changes": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "rescued_recently": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), pendingProducersAdminProducersPendingGetResponseRescuedRecentlyDefault),
+  "reservist_owned": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), pendingProducersAdminProducersPendingGetResponseReservistOwnedDefault),
   "resubmission_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), pendingProducersAdminProducersPendingGetResponseResubmissionCountDefault),
   "resubmitted_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()])),
   "reviews_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), pendingProducersAdminProducersPendingGetResponseReviewsCountDefault),
@@ -1482,7 +1585,6 @@ export const AdminDeleteProducerAdminProducersProducerIdDeleteResponse = /*#__PU
  */
 export const adminGetProducerAdminProducersProducerIdGetResponseAmbassadorDefault = false;
 export const adminGetProducerAdminProducersProducerIdGetResponseAvailabilityStateDefault = `accepting_orders`;
-export const adminGetProducerAdminProducersProducerIdGetResponseAvailabilityStatusDefault = `available`;
 export const adminGetProducerAdminProducersProducerIdGetResponseAvgRatingDefault = 0;
 export const adminGetProducerAdminProducersProducerIdGetResponseBusinessDaysWaitingDefault = 0;
 export const adminGetProducerAdminProducersProducerIdGetResponseCategoriesItemIsSystemDefault = false;
@@ -1507,7 +1609,6 @@ export const adminGetProducerAdminProducersProducerIdGetResponseHasProducerLicen
 export const adminGetProducerAdminProducersProducerIdGetResponseHasVeganProductsDefault = false;
 export const adminGetProducerAdminProducersProducerIdGetResponseHasVegetarianProductsDefault = false;
 export const adminGetProducerAdminProducersProducerIdGetResponseImagesDefault = [];
-export const adminGetProducerAdminProducersProducerIdGetResponseIsAvailableTodayDefault = false;
 export const adminGetProducerAdminProducersProducerIdGetResponseIsRecommendedDefault = false;
 export const adminGetProducerAdminProducersProducerIdGetResponseKashrutBadgesDefault = [];
 export const adminGetProducerAdminProducersProducerIdGetResponseKashrutCertsDefault = [];
@@ -1533,6 +1634,8 @@ export const adminGetProducerAdminProducersProducerIdGetResponseProductsItemIsVe
 export const adminGetProducerAdminProducersProducerIdGetResponseProductsDefault = [];
 export const adminGetProducerAdminProducersProducerIdGetResponseProductsCountDefault = 0;
 export const adminGetProducerAdminProducersProducerIdGetResponseReportCountDefault = 0;
+export const adminGetProducerAdminProducersProducerIdGetResponseRescuedRecentlyDefault = false;
+export const adminGetProducerAdminProducersProducerIdGetResponseReservistOwnedDefault = false;
 export const adminGetProducerAdminProducersProducerIdGetResponseResubmissionCountDefault = 0;
 export const adminGetProducerAdminProducersProducerIdGetResponseReviewsCountDefault = 0;
 export const adminGetProducerAdminProducersProducerIdGetResponseSellsOnSiteDefault = false;
@@ -1554,7 +1657,6 @@ export const AdminGetProducerAdminProducersProducerIdGetResponse = /*#__PURE__*/
   "address": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "ambassador": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminGetProducerAdminProducersProducerIdGetResponseAmbassadorDefault),
   "availability_state": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), adminGetProducerAdminProducersProducerIdGetResponseAvailabilityStateDefault),
-  "availability_status": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), adminGetProducerAdminProducersProducerIdGetResponseAvailabilityStatusDefault),
   "avg_rating": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.number(), adminGetProducerAdminProducersProducerIdGetResponseAvgRatingDefault),
   "business_days_waiting": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), adminGetProducerAdminProducersProducerIdGetResponseBusinessDaysWaitingDefault),
   "categories": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
@@ -1613,7 +1715,6 @@ export const AdminGetProducerAdminProducersProducerIdGetResponse = /*#__PURE__*/
   "images": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()), adminGetProducerAdminProducersProducerIdGetResponseImagesDefault),
   "in_season_until": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.date(),/*#__PURE__*/ zod.null()])),
   "instagram": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
-  "is_available_today": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminGetProducerAdminProducersProducerIdGetResponseIsAvailableTodayDefault),
   "is_recommended": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminGetProducerAdminProducersProducerIdGetResponseIsRecommendedDefault),
   "kashrut_badges": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()), adminGetProducerAdminProducersProducerIdGetResponseKashrutBadgesDefault),
   "kashrut_certs": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
@@ -1655,9 +1756,11 @@ export const AdminGetProducerAdminProducersProducerIdGetResponse = /*#__PURE__*/
   "primary_contact_method": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), adminGetProducerAdminProducersProducerIdGetResponsePrimaryContactMethodDefault),
   "producer_license_number": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "products": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
+  "allergens": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
   "description": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "id": /*#__PURE__*/ zod.uuid(),
   "image_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "ingredients": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "is_gluten_free": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminGetProducerAdminProducersProducerIdGetResponseProductsItemIsGlutenFreeDefault),
   "is_lactose_free": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminGetProducerAdminProducersProducerIdGetResponseProductsItemIsLactoseFreeDefault),
   "is_low_carb": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminGetProducerAdminProducersProducerIdGetResponseProductsItemIsLowCarbDefault),
@@ -1677,6 +1780,8 @@ export const AdminGetProducerAdminProducersProducerIdGetResponse = /*#__PURE__*/
   "rejection_reason_code": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "report_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), adminGetProducerAdminProducersProducerIdGetResponseReportCountDefault),
   "requested_changes": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "rescued_recently": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminGetProducerAdminProducersProducerIdGetResponseRescuedRecentlyDefault),
+  "reservist_owned": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminGetProducerAdminProducersProducerIdGetResponseReservistOwnedDefault),
   "resubmission_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), adminGetProducerAdminProducersProducerIdGetResponseResubmissionCountDefault),
   "resubmitted_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()])),
   "reviews_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), adminGetProducerAdminProducersProducerIdGetResponseReviewsCountDefault),
@@ -1709,7 +1814,6 @@ export const AdminGetProducerAdminProducersProducerIdGetResponse = /*#__PURE__*/
  */
 export const adminUpdateProducerAdminProducersProducerIdPutResponseAmbassadorDefault = false;
 export const adminUpdateProducerAdminProducersProducerIdPutResponseAvailabilityStateDefault = `accepting_orders`;
-export const adminUpdateProducerAdminProducersProducerIdPutResponseAvailabilityStatusDefault = `available`;
 export const adminUpdateProducerAdminProducersProducerIdPutResponseAvgRatingDefault = 0;
 export const adminUpdateProducerAdminProducersProducerIdPutResponseBusinessDaysWaitingDefault = 0;
 export const adminUpdateProducerAdminProducersProducerIdPutResponseCategoriesItemIsSystemDefault = false;
@@ -1734,7 +1838,6 @@ export const adminUpdateProducerAdminProducersProducerIdPutResponseHasProducerLi
 export const adminUpdateProducerAdminProducersProducerIdPutResponseHasVeganProductsDefault = false;
 export const adminUpdateProducerAdminProducersProducerIdPutResponseHasVegetarianProductsDefault = false;
 export const adminUpdateProducerAdminProducersProducerIdPutResponseImagesDefault = [];
-export const adminUpdateProducerAdminProducersProducerIdPutResponseIsAvailableTodayDefault = false;
 export const adminUpdateProducerAdminProducersProducerIdPutResponseIsRecommendedDefault = false;
 export const adminUpdateProducerAdminProducersProducerIdPutResponseKashrutBadgesDefault = [];
 export const adminUpdateProducerAdminProducersProducerIdPutResponseKashrutCertsDefault = [];
@@ -1760,6 +1863,8 @@ export const adminUpdateProducerAdminProducersProducerIdPutResponseProductsItemI
 export const adminUpdateProducerAdminProducersProducerIdPutResponseProductsDefault = [];
 export const adminUpdateProducerAdminProducersProducerIdPutResponseProductsCountDefault = 0;
 export const adminUpdateProducerAdminProducersProducerIdPutResponseReportCountDefault = 0;
+export const adminUpdateProducerAdminProducersProducerIdPutResponseRescuedRecentlyDefault = false;
+export const adminUpdateProducerAdminProducersProducerIdPutResponseReservistOwnedDefault = false;
 export const adminUpdateProducerAdminProducersProducerIdPutResponseResubmissionCountDefault = 0;
 export const adminUpdateProducerAdminProducersProducerIdPutResponseReviewsCountDefault = 0;
 export const adminUpdateProducerAdminProducersProducerIdPutResponseSellsOnSiteDefault = false;
@@ -1781,7 +1886,6 @@ export const AdminUpdateProducerAdminProducersProducerIdPutResponse = /*#__PURE_
   "address": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "ambassador": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminUpdateProducerAdminProducersProducerIdPutResponseAmbassadorDefault),
   "availability_state": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), adminUpdateProducerAdminProducersProducerIdPutResponseAvailabilityStateDefault),
-  "availability_status": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), adminUpdateProducerAdminProducersProducerIdPutResponseAvailabilityStatusDefault),
   "avg_rating": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.number(), adminUpdateProducerAdminProducersProducerIdPutResponseAvgRatingDefault),
   "business_days_waiting": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), adminUpdateProducerAdminProducersProducerIdPutResponseBusinessDaysWaitingDefault),
   "categories": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
@@ -1840,7 +1944,6 @@ export const AdminUpdateProducerAdminProducersProducerIdPutResponse = /*#__PURE_
   "images": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()), adminUpdateProducerAdminProducersProducerIdPutResponseImagesDefault),
   "in_season_until": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.date(),/*#__PURE__*/ zod.null()])),
   "instagram": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
-  "is_available_today": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminUpdateProducerAdminProducersProducerIdPutResponseIsAvailableTodayDefault),
   "is_recommended": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminUpdateProducerAdminProducersProducerIdPutResponseIsRecommendedDefault),
   "kashrut_badges": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()), adminUpdateProducerAdminProducersProducerIdPutResponseKashrutBadgesDefault),
   "kashrut_certs": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
@@ -1882,9 +1985,11 @@ export const AdminUpdateProducerAdminProducersProducerIdPutResponse = /*#__PURE_
   "primary_contact_method": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), adminUpdateProducerAdminProducersProducerIdPutResponsePrimaryContactMethodDefault),
   "producer_license_number": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "products": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
+  "allergens": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
   "description": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "id": /*#__PURE__*/ zod.uuid(),
   "image_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "ingredients": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "is_gluten_free": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminUpdateProducerAdminProducersProducerIdPutResponseProductsItemIsGlutenFreeDefault),
   "is_lactose_free": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminUpdateProducerAdminProducersProducerIdPutResponseProductsItemIsLactoseFreeDefault),
   "is_low_carb": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminUpdateProducerAdminProducersProducerIdPutResponseProductsItemIsLowCarbDefault),
@@ -1904,6 +2009,8 @@ export const AdminUpdateProducerAdminProducersProducerIdPutResponse = /*#__PURE_
   "rejection_reason_code": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "report_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), adminUpdateProducerAdminProducersProducerIdPutResponseReportCountDefault),
   "requested_changes": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "rescued_recently": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminUpdateProducerAdminProducersProducerIdPutResponseRescuedRecentlyDefault),
+  "reservist_owned": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminUpdateProducerAdminProducersProducerIdPutResponseReservistOwnedDefault),
   "resubmission_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), adminUpdateProducerAdminProducersProducerIdPutResponseResubmissionCountDefault),
   "resubmitted_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()])),
   "reviews_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), adminUpdateProducerAdminProducersProducerIdPutResponseReviewsCountDefault),
@@ -1995,9 +2102,11 @@ export const adminCreateDraftProductAdminProducersProducerIdProductsPostResponse
 export const adminCreateDraftProductAdminProducersProducerIdProductsPostResponseIsVegetarianDefault = false;
 
 export const AdminCreateDraftProductAdminProducersProducerIdProductsPostResponse = /*#__PURE__*/ zod.object({
+  "allergens": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
   "description": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "id": /*#__PURE__*/ zod.uuid(),
   "image_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "ingredients": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "is_gluten_free": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminCreateDraftProductAdminProducersProducerIdProductsPostResponseIsGlutenFreeDefault),
   "is_lactose_free": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminCreateDraftProductAdminProducersProducerIdProductsPostResponseIsLactoseFreeDefault),
   "is_low_carb": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminCreateDraftProductAdminProducersProducerIdProductsPostResponseIsLowCarbDefault),
@@ -2297,6 +2406,53 @@ export const DismissReportAdminReportsReportIdDismissPostResponse = /*#__PURE__*
  * @summary Resolve Report
  */
 export const ResolveReportAdminReportsReportIdResolvePostResponse = /*#__PURE__*/ zod.unknown()
+
+
+/**
+ * The pilot's four numbers, read-only.
+ *
+ * Rates come back as fractions, and as None when their denominator is zero:
+ * a pilot with no bags published yet has no sell-through, and reporting 0%
+ * would read as "nothing sold" rather than "nothing offered". That
+ * distinction is the whole point of a pilot metric.
+ * @summary Pilot Metrics
+ */
+export const pilotMetricsAdminRescueMetricsGetResponseBagsDonatedDefault = 0;
+
+export const PilotMetricsAdminRescueMetricsGetResponse = /*#__PURE__*/ zod.object({
+  "bags_donated": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), pilotMetricsAdminRescueMetricsGetResponseBagsDonatedDefault),
+  "bags_offered": /*#__PURE__*/ zod.int(),
+  "bags_reserved": /*#__PURE__*/ zod.int(),
+  "buyers_total": /*#__PURE__*/ zod.int(),
+  "days": /*#__PURE__*/ zod.int(),
+  "no_show_rate": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.number(),/*#__PURE__*/ zod.null()])),
+  "no_shows": /*#__PURE__*/ zod.int(),
+  "offers_cancelled": /*#__PURE__*/ zod.int(),
+  "offers_per_day": /*#__PURE__*/ zod.number(),
+  "offers_total": /*#__PURE__*/ zod.int(),
+  "orders_cancelled": /*#__PURE__*/ zod.int(),
+  "orders_total": /*#__PURE__*/ zod.int(),
+  "repeat_buyers": /*#__PURE__*/ zod.int(),
+  "sell_through": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.number(),/*#__PURE__*/ zod.null()]))
+}).check(/*#__PURE__*/ zod.describe('The pilot\'s read-only numbers (chunk 5).\n\n`sell_through` and `no_show_rate` are fractions 0..1, not percentages, so\nthe UI decides how to render them and nothing is rounded twice. Both are\nNone when their denominator is zero — a pilot with no bags yet has no\nsell-through, and reporting 0% would read as \"nothing sold\" rather than\n\"nothing published\".'))
+
+
+/**
+ * Release a buyer's no-show block.
+ *
+ * Writes `rescue_block_cleared_at` instead of zeroing the counter, so the
+ * no-show rows stay in the history for the chunk-5 metrics while stopping
+ * counting against the buyer. Returns both numbers, because a reset whose
+ * effect you cannot see is a reset you have to trust.
+ * @summary Clear No Show Block
+ */
+export const ClearNoShowBlockAdminRescueUsersUserIdClearBlockPostResponse = /*#__PURE__*/ zod.object({
+  "active_no_shows": /*#__PURE__*/ zod.int(),
+  "block_cleared_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()])),
+  "blocked": /*#__PURE__*/ zod.boolean(),
+  "no_show_count": /*#__PURE__*/ zod.int(),
+  "user_id": /*#__PURE__*/ zod.uuid()
+}).check(/*#__PURE__*/ zod.describe('What the admin reset returns, so the operator can see the effect.\n\n`active_no_shows` is the windowed count the 422 gate actually reads — not\nthe lifetime `no_show_count`. After a reset it is 0 by construction, and\nshowing both is what makes the reset verifiable rather than hopeful.'))
 
 
 /**
@@ -2701,6 +2857,26 @@ export const VerifyEmailAuthVerifyEmailGetResponse = /*#__PURE__*/ zod.unknown()
 
 
 /**
+ * Accept a community suggestion.
+ *
+ * Every path answers the SAME body, `{"ok": true}` (BusinessSuggestionAck):
+ * a new lead, a duplicate, and a bot caught by the honeypot are
+ * indistinguishable from outside. That is deliberate — a different status or
+ * body for the duplicate case would turn this endpoint into an oracle for
+ * "is this business already in your outreach queue?", which is private
+ * commercial information about businesses that have not agreed to anything.
+ *
+ * `request` is required by slowapi, which reads it via introspection.
+ * @summary Submit Business Suggestion
+ */
+export const submitBusinessSuggestionBusinessSuggestionsPostResponseOkDefault = true;
+
+export const SubmitBusinessSuggestionBusinessSuggestionsPostResponse = /*#__PURE__*/ zod.object({
+  "ok": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), submitBusinessSuggestionBusinessSuggestionsPostResponseOkDefault)
+}).check(/*#__PURE__*/ zod.describe('The ENTIRE public response to POST \/business-suggestions: `{\"ok\": true}`.\n\nThis model exists so the no-leak guarantee is structural rather than a\npromise about what the router happens to return. A duplicate suggestion and\na brand-new one produce byte-identical bodies, so the endpoint cannot be\nused to probe whether a business is already in the outreach queue; and\nthere is no field here that could ever carry a lead id or the suggester\'s\nemail.\n\n# DO NOT add fields to this model — every addition is a disclosure on an\n#        unauthenticated endpoint (MEH-2633).'))
+
+
+/**
  * @summary List Categories
  */
 export const listCategoriesCategoriesGetResponseIsSystemDefault = false;
@@ -2759,9 +2935,37 @@ export const SubmitContactContactPostResponse = /*#__PURE__*/ zod.unknown()
 
 
 /**
+ * MEH-2673: «מאשרים, אפשר להעביר» — the signed link from the host
+ * confirmation email. Turns the entry's wants_to_host on, so the business
+ * sees this email in its pickup_hosts list. Idempotent. 400 on a token
+ * that does not verify or an entry that no longer exists (unsubscribed).
+ *
+ * 410 on an expired token — and, because the token still names the entry,
+ * a FRESH link is mailed to the same address right here (under the usual
+ * cooldown/cap), so the page is never a dead end (the double-opt-in norm:
+ * an expired link offers a new one). The body carries `resent` so the page
+ * can say whether to look in the inbox. An expired link never confirms.
+ * @summary Confirm Delivery Waitlist Host
+ */
+export const ConfirmDeliveryWaitlistHostDeliveryWaitlistHostConfirmPostResponse = /*#__PURE__*/ zod.unknown()
+
+
+/**
+ * Remove one delivery-waitlist entry via the signed token from its email.
+ *
+ * Idempotent: an already-removed entry is still 200. 400 on a token that
+ * does not verify.
+ * @summary Unsubscribe Delivery Waitlist
+ */
+export const UnsubscribeDeliveryWaitlistDeliveryWaitlistUnsubscribePostResponse = /*#__PURE__*/ zod.unknown()
+
+
+/**
  * @summary List Events
  */
 export const listEventsEventsGetResponseOwnerKindDefault = `producer`;
+export const listEventsEventsGetResponseRegisteredCountDefault = 0;
+export const listEventsEventsGetResponseRegistrationMethodDefault = `site_form`;
 
 export const ListEventsEventsGetResponseItem = /*#__PURE__*/ zod.object({
   "category": /*#__PURE__*/ zod.string(),
@@ -2784,7 +2988,11 @@ export const ListEventsEventsGetResponseItem = /*#__PURE__*/ zod.object({
   "price": /*#__PURE__*/ zod.int(),
   "producer_id": /*#__PURE__*/ zod.uuid(),
   "producer_name": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "producer_phone": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "registered_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), listEventsEventsGetResponseRegisteredCountDefault),
+  "registration_method": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), listEventsEventsGetResponseRegistrationMethodDefault),
   "registration_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "spots_left": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "title": /*#__PURE__*/ zod.string()
 })
 export const ListEventsEventsGetResponse = /*#__PURE__*/ zod.array(ListEventsEventsGetResponseItem)
@@ -2794,6 +3002,8 @@ export const ListEventsEventsGetResponse = /*#__PURE__*/ zod.array(ListEventsEve
  * @summary Create Event
  */
 export const createEventEventsPostResponseOwnerKindDefault = `producer`;
+export const createEventEventsPostResponseRegisteredCountDefault = 0;
+export const createEventEventsPostResponseRegistrationMethodDefault = `site_form`;
 
 export const CreateEventEventsPostResponse = /*#__PURE__*/ zod.object({
   "category": /*#__PURE__*/ zod.string(),
@@ -2816,7 +3026,11 @@ export const CreateEventEventsPostResponse = /*#__PURE__*/ zod.object({
   "price": /*#__PURE__*/ zod.int(),
   "producer_id": /*#__PURE__*/ zod.uuid(),
   "producer_name": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "producer_phone": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "registered_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), createEventEventsPostResponseRegisteredCountDefault),
+  "registration_method": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), createEventEventsPostResponseRegistrationMethodDefault),
   "registration_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "spots_left": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "title": /*#__PURE__*/ zod.string()
 })
 
@@ -2825,6 +3039,8 @@ export const CreateEventEventsPostResponse = /*#__PURE__*/ zod.object({
  * @summary List My Events
  */
 export const listMyEventsEventsMineGetResponseOwnerKindDefault = `producer`;
+export const listMyEventsEventsMineGetResponseRegisteredCountDefault = 0;
+export const listMyEventsEventsMineGetResponseRegistrationMethodDefault = `site_form`;
 
 export const ListMyEventsEventsMineGetResponseItem = /*#__PURE__*/ zod.object({
   "category": /*#__PURE__*/ zod.string(),
@@ -2847,7 +3063,11 @@ export const ListMyEventsEventsMineGetResponseItem = /*#__PURE__*/ zod.object({
   "price": /*#__PURE__*/ zod.int(),
   "producer_id": /*#__PURE__*/ zod.uuid(),
   "producer_name": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "producer_phone": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "registered_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), listMyEventsEventsMineGetResponseRegisteredCountDefault),
+  "registration_method": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), listMyEventsEventsMineGetResponseRegistrationMethodDefault),
   "registration_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "spots_left": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "title": /*#__PURE__*/ zod.string()
 })
 export const ListMyEventsEventsMineGetResponse = /*#__PURE__*/ zod.array(ListMyEventsEventsMineGetResponseItem)
@@ -2857,6 +3077,8 @@ export const ListMyEventsEventsMineGetResponse = /*#__PURE__*/ zod.array(ListMyE
  * @summary Upcoming Events
  */
 export const upcomingEventsEventsUpcomingGetResponseOwnerKindDefault = `producer`;
+export const upcomingEventsEventsUpcomingGetResponseRegisteredCountDefault = 0;
+export const upcomingEventsEventsUpcomingGetResponseRegistrationMethodDefault = `site_form`;
 
 export const UpcomingEventsEventsUpcomingGetResponseItem = /*#__PURE__*/ zod.object({
   "category": /*#__PURE__*/ zod.string(),
@@ -2879,7 +3101,11 @@ export const UpcomingEventsEventsUpcomingGetResponseItem = /*#__PURE__*/ zod.obj
   "price": /*#__PURE__*/ zod.int(),
   "producer_id": /*#__PURE__*/ zod.uuid(),
   "producer_name": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "producer_phone": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "registered_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), upcomingEventsEventsUpcomingGetResponseRegisteredCountDefault),
+  "registration_method": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), upcomingEventsEventsUpcomingGetResponseRegistrationMethodDefault),
   "registration_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "spots_left": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "title": /*#__PURE__*/ zod.string()
 })
 export const UpcomingEventsEventsUpcomingGetResponse = /*#__PURE__*/ zod.array(UpcomingEventsEventsUpcomingGetResponseItem)
@@ -2895,6 +3121,8 @@ export const DeleteEventEventsEventIdDeleteResponse = /*#__PURE__*/ zod.unknown(
  * @summary Get Event
  */
 export const getEventEventsEventIdGetResponseOwnerKindDefault = `producer`;
+export const getEventEventsEventIdGetResponseRegisteredCountDefault = 0;
+export const getEventEventsEventIdGetResponseRegistrationMethodDefault = `site_form`;
 
 export const GetEventEventsEventIdGetResponse = /*#__PURE__*/ zod.object({
   "category": /*#__PURE__*/ zod.string(),
@@ -2917,7 +3145,11 @@ export const GetEventEventsEventIdGetResponse = /*#__PURE__*/ zod.object({
   "price": /*#__PURE__*/ zod.int(),
   "producer_id": /*#__PURE__*/ zod.uuid(),
   "producer_name": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "producer_phone": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "registered_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), getEventEventsEventIdGetResponseRegisteredCountDefault),
+  "registration_method": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), getEventEventsEventIdGetResponseRegistrationMethodDefault),
   "registration_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "spots_left": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "title": /*#__PURE__*/ zod.string()
 })
 
@@ -2926,6 +3158,8 @@ export const GetEventEventsEventIdGetResponse = /*#__PURE__*/ zod.object({
  * @summary Update Event
  */
 export const updateEventEventsEventIdPutResponseOwnerKindDefault = `producer`;
+export const updateEventEventsEventIdPutResponseRegisteredCountDefault = 0;
+export const updateEventEventsEventIdPutResponseRegistrationMethodDefault = `site_form`;
 
 export const UpdateEventEventsEventIdPutResponse = /*#__PURE__*/ zod.object({
   "category": /*#__PURE__*/ zod.string(),
@@ -2948,9 +3182,38 @@ export const UpdateEventEventsEventIdPutResponse = /*#__PURE__*/ zod.object({
   "price": /*#__PURE__*/ zod.int(),
   "producer_id": /*#__PURE__*/ zod.uuid(),
   "producer_name": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "producer_phone": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "registered_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), updateEventEventsEventIdPutResponseRegisteredCountDefault),
+  "registration_method": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), updateEventEventsEventIdPutResponseRegistrationMethodDefault),
   "registration_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "spots_left": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "title": /*#__PURE__*/ zod.string()
 })
+
+
+/**
+ * @summary List Event Registrations
+ */
+export const ListEventRegistrationsEventsEventIdRegistrationsGetResponseItem = /*#__PURE__*/ zod.object({
+  "cancelled_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()])),
+  "created_at": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "email": /*#__PURE__*/ zod.string(),
+  "id": /*#__PURE__*/ zod.uuid(),
+  "name": /*#__PURE__*/ zod.string(),
+  "phone": /*#__PURE__*/ zod.string(),
+  "status": /*#__PURE__*/ zod.string()
+}).check(/*#__PURE__*/ zod.describe('One row of the owner\'s list (owner \/ admin only).'))
+export const ListEventRegistrationsEventsEventIdRegistrationsGetResponse = /*#__PURE__*/ zod.array(ListEventRegistrationsEventsEventIdRegistrationsGetResponseItem)
+
+
+/**
+ * @summary Register For Event
+ */
+export const registerForEventEventsEventIdRegistrationsPostResponseStatusDefault = `registered`;
+
+export const RegisterForEventEventsEventIdRegistrationsPostResponse = /*#__PURE__*/ zod.object({
+  "status": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.literal("registered"), registerForEventEventsEventIdRegistrationsPostResponseStatusDefault).check(/*#__PURE__*/ zod.meta({ title: 'Status' }))
+}).check(/*#__PURE__*/ zod.describe('What the visitor gets back. Deliberately nothing she did not type, and\nnot the cancel token — that goes to her inbox only.'))
 
 
 /**
@@ -2961,6 +3224,8 @@ export const UpdateEventEventsEventIdPutResponse = /*#__PURE__*/ zod.object({
  */
 export const listExperiencesExperiencesGetResponseIsRecurringDefault = false;
 export const listExperiencesExperiencesGetResponseParticipantsCountDefault = 0;
+export const listExperiencesExperiencesGetResponseRegisteredCountDefault = 0;
+export const listExperiencesExperiencesGetResponseRegistrationMethodDefault = `site_form`;
 
 export const ListExperiencesExperiencesGetResponseItem = /*#__PURE__*/ zod.object({
   "category": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -2983,9 +3248,13 @@ export const ListExperiencesExperiencesGetResponseItem = /*#__PURE__*/ zod.objec
   "is_recurring": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), listExperiencesExperiencesGetResponseIsRecurringDefault),
   "location_type": /*#__PURE__*/ zod.string(),
   "max_participants": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "min_participants": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "participants_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), listExperiencesExperiencesGetResponseParticipantsCountDefault),
   "price_per_person": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "recurring_schedule": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "registered_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), listExperiencesExperiencesGetResponseRegisteredCountDefault),
+  "registration_method": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), listExperiencesExperiencesGetResponseRegistrationMethodDefault),
+  "registration_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "spots_left": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "status": /*#__PURE__*/ zod.string(),
   "title": /*#__PURE__*/ zod.string()
@@ -3004,6 +3273,8 @@ export const ListExperiencesExperiencesGetResponse = /*#__PURE__*/ zod.array(Lis
 export const submitExperienceExperiencesPostResponseIsActiveDefault = true;
 export const submitExperienceExperiencesPostResponseIsRecurringDefault = false;
 export const submitExperienceExperiencesPostResponseParticipantsCountDefault = 0;
+export const submitExperienceExperiencesPostResponseRegisteredCountDefault = 0;
+export const submitExperienceExperiencesPostResponseRegistrationMethodDefault = `site_form`;
 
 export const SubmitExperienceExperiencesPostResponse = /*#__PURE__*/ zod.object({
   "address": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -3031,12 +3302,16 @@ export const SubmitExperienceExperiencesPostResponse = /*#__PURE__*/ zod.object(
   "lng": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.number(),/*#__PURE__*/ zod.null()])),
   "location_type": /*#__PURE__*/ zod.string(),
   "max_participants": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "min_participants": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "moderation_reason": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "moderation_status": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "moderation_suggestion": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "participants_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), submitExperienceExperiencesPostResponseParticipantsCountDefault),
   "price_per_person": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "recurring_schedule": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "registered_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), submitExperienceExperiencesPostResponseRegisteredCountDefault),
+  "registration_method": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), submitExperienceExperiencesPostResponseRegistrationMethodDefault),
+  "registration_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "rejection_reason": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "requirements": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "spots_left": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
@@ -3070,6 +3345,8 @@ export const CountExperiencesExperiencesCountGetResponse = /*#__PURE__*/ zod.obj
 export const listMyExperiencesExperiencesMineGetResponseIsActiveDefault = true;
 export const listMyExperiencesExperiencesMineGetResponseIsRecurringDefault = false;
 export const listMyExperiencesExperiencesMineGetResponseParticipantsCountDefault = 0;
+export const listMyExperiencesExperiencesMineGetResponseRegisteredCountDefault = 0;
+export const listMyExperiencesExperiencesMineGetResponseRegistrationMethodDefault = `site_form`;
 
 export const ListMyExperiencesExperiencesMineGetResponseItem = /*#__PURE__*/ zod.object({
   "address": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -3097,12 +3374,16 @@ export const ListMyExperiencesExperiencesMineGetResponseItem = /*#__PURE__*/ zod
   "lng": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.number(),/*#__PURE__*/ zod.null()])),
   "location_type": /*#__PURE__*/ zod.string(),
   "max_participants": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "min_participants": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "moderation_reason": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "moderation_status": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "moderation_suggestion": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "participants_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), listMyExperiencesExperiencesMineGetResponseParticipantsCountDefault),
   "price_per_person": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "recurring_schedule": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "registered_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), listMyExperiencesExperiencesMineGetResponseRegisteredCountDefault),
+  "registration_method": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), listMyExperiencesExperiencesMineGetResponseRegistrationMethodDefault),
+  "registration_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "rejection_reason": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "requirements": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "spots_left": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
@@ -3137,6 +3418,8 @@ export const DeleteExperienceExperiencesExperienceIdDeleteResponse = /*#__PURE__
 export const getExperienceExperiencesExperienceIdGetResponseIsActiveDefault = true;
 export const getExperienceExperiencesExperienceIdGetResponseIsRecurringDefault = false;
 export const getExperienceExperiencesExperienceIdGetResponseParticipantsCountDefault = 0;
+export const getExperienceExperiencesExperienceIdGetResponseRegisteredCountDefault = 0;
+export const getExperienceExperiencesExperienceIdGetResponseRegistrationMethodDefault = `site_form`;
 
 export const GetExperienceExperiencesExperienceIdGetResponse = /*#__PURE__*/ zod.object({
   "address": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -3164,12 +3447,16 @@ export const GetExperienceExperiencesExperienceIdGetResponse = /*#__PURE__*/ zod
   "lng": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.number(),/*#__PURE__*/ zod.null()])),
   "location_type": /*#__PURE__*/ zod.string(),
   "max_participants": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "min_participants": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "moderation_reason": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "moderation_status": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "moderation_suggestion": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "participants_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), getExperienceExperiencesExperienceIdGetResponseParticipantsCountDefault),
   "price_per_person": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "recurring_schedule": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "registered_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), getExperienceExperiencesExperienceIdGetResponseRegisteredCountDefault),
+  "registration_method": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), getExperienceExperiencesExperienceIdGetResponseRegistrationMethodDefault),
+  "registration_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "rejection_reason": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "requirements": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "spots_left": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
@@ -3184,6 +3471,8 @@ export const GetExperienceExperiencesExperienceIdGetResponse = /*#__PURE__*/ zod
 export const updateExperienceExperiencesExperienceIdPutResponseIsActiveDefault = true;
 export const updateExperienceExperiencesExperienceIdPutResponseIsRecurringDefault = false;
 export const updateExperienceExperiencesExperienceIdPutResponseParticipantsCountDefault = 0;
+export const updateExperienceExperiencesExperienceIdPutResponseRegisteredCountDefault = 0;
+export const updateExperienceExperiencesExperienceIdPutResponseRegistrationMethodDefault = `site_form`;
 
 export const UpdateExperienceExperiencesExperienceIdPutResponse = /*#__PURE__*/ zod.object({
   "address": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -3211,18 +3500,47 @@ export const UpdateExperienceExperiencesExperienceIdPutResponse = /*#__PURE__*/ 
   "lng": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.number(),/*#__PURE__*/ zod.null()])),
   "location_type": /*#__PURE__*/ zod.string(),
   "max_participants": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "min_participants": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "moderation_reason": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "moderation_status": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "moderation_suggestion": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "participants_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), updateExperienceExperiencesExperienceIdPutResponseParticipantsCountDefault),
   "price_per_person": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "recurring_schedule": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "registered_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), updateExperienceExperiencesExperienceIdPutResponseRegisteredCountDefault),
+  "registration_method": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), updateExperienceExperiencesExperienceIdPutResponseRegistrationMethodDefault),
+  "registration_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "rejection_reason": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "requirements": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "spots_left": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "status": /*#__PURE__*/ zod.string(),
   "title": /*#__PURE__*/ zod.string()
 }).check(/*#__PURE__*/ zod.describe('Detail view. Includes `address`, `requirements`, and the\nfull moderation context — only returned to the owner or an admin\nwhen the experience is non-approved.'))
+
+
+/**
+ * @summary List Experience Registrations
+ */
+export const ListExperienceRegistrationsExperiencesExperienceIdRegistrationsGetResponseItem = /*#__PURE__*/ zod.object({
+  "cancelled_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()])),
+  "created_at": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "email": /*#__PURE__*/ zod.string(),
+  "id": /*#__PURE__*/ zod.uuid(),
+  "name": /*#__PURE__*/ zod.string(),
+  "phone": /*#__PURE__*/ zod.string(),
+  "status": /*#__PURE__*/ zod.string()
+}).check(/*#__PURE__*/ zod.describe('One row of the owner\'s list (owner \/ admin only).'))
+export const ListExperienceRegistrationsExperiencesExperienceIdRegistrationsGetResponse = /*#__PURE__*/ zod.array(ListExperienceRegistrationsExperiencesExperienceIdRegistrationsGetResponseItem)
+
+
+/**
+ * @summary Register For Experience
+ */
+export const registerForExperienceExperiencesExperienceIdRegistrationsPostResponseStatusDefault = `registered`;
+
+export const RegisterForExperienceExperiencesExperienceIdRegistrationsPostResponse = /*#__PURE__*/ zod.object({
+  "status": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.literal("registered"), registerForExperienceExperiencesExperienceIdRegistrationsPostResponseStatusDefault).check(/*#__PURE__*/ zod.meta({ title: 'Status' }))
+}).check(/*#__PURE__*/ zod.describe('What the visitor gets back. Deliberately nothing she did not type, and\nnot the cancel token — that goes to her inbox only.'))
 
 
 /**
@@ -3235,11 +3553,13 @@ export const ListGroupBuysGroupBuysGetResponseItem = /*#__PURE__*/ zod.object({
   "commits_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), listGroupBuysGroupBuysGetResponseCommitsCountDefault),
   "created_at": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
   "deadline": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "delivery_note": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "description": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "fulfillment_note": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "id": /*#__PURE__*/ zod.uuid(),
   "max_participants": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "min_participants": /*#__PURE__*/ zod.int(),
+  "pickup_note": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "price_per_unit_group": /*#__PURE__*/ zod.string(),
   "price_per_unit_regular": /*#__PURE__*/ zod.string(),
   "producer_id": /*#__PURE__*/ zod.uuid(),
@@ -3270,11 +3590,13 @@ export const GetGroupBuyGroupBuysGroupBuyIdGetResponse = /*#__PURE__*/ zod.objec
   "commits_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), getGroupBuyGroupBuysGroupBuyIdGetResponseCommitsCountDefault),
   "created_at": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
   "deadline": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "delivery_note": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "description": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "fulfillment_note": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "id": /*#__PURE__*/ zod.uuid(),
   "max_participants": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "min_participants": /*#__PURE__*/ zod.int(),
+  "pickup_note": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "price_per_unit_group": /*#__PURE__*/ zod.string(),
   "price_per_unit_regular": /*#__PURE__*/ zod.string(),
   "producer_id": /*#__PURE__*/ zod.uuid(),
@@ -3440,6 +3762,8 @@ export const ListOrganizerSlugsOrganizersGetResponse = /*#__PURE__*/ zod.array(L
  */
 export const getOrganizerOrganizersSlugGetResponseImagesDefault = [];
 export const getOrganizerOrganizersSlugGetResponseUpcomingEventsItemOwnerKindDefault = `producer`;
+export const getOrganizerOrganizersSlugGetResponseUpcomingEventsItemRegisteredCountDefault = 0;
+export const getOrganizerOrganizersSlugGetResponseUpcomingEventsItemRegistrationMethodDefault = `site_form`;
 export const getOrganizerOrganizersSlugGetResponseUpcomingEventsDefault = [];
 
 export const GetOrganizerOrganizersSlugGetResponse = /*#__PURE__*/ zod.object({
@@ -3481,7 +3805,11 @@ export const GetOrganizerOrganizersSlugGetResponse = /*#__PURE__*/ zod.object({
   "price": /*#__PURE__*/ zod.int(),
   "producer_id": /*#__PURE__*/ zod.uuid(),
   "producer_name": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "producer_phone": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "registered_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), getOrganizerOrganizersSlugGetResponseUpcomingEventsItemRegisteredCountDefault),
+  "registration_method": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), getOrganizerOrganizersSlugGetResponseUpcomingEventsItemRegistrationMethodDefault),
   "registration_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "spots_left": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "title": /*#__PURE__*/ zod.string()
 })), getOrganizerOrganizersSlugGetResponseUpcomingEventsDefault),
   "website": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -3517,7 +3845,6 @@ export const PreviewClaimProducerClaimPreviewPostResponse = /*#__PURE__*/ zod.ob
  */
 export const listProducersProducersGetResponseAmbassadorDefault = false;
 export const listProducersProducersGetResponseAvailabilityStateDefault = `accepting_orders`;
-export const listProducersProducersGetResponseAvailabilityStatusDefault = `available`;
 export const listProducersProducersGetResponseAvgRatingDefault = 0;
 export const listProducersProducersGetResponseCategoriesItemIsSystemDefault = false;
 export const listProducersProducersGetResponseCategoriesDefault = [];
@@ -3540,7 +3867,6 @@ export const listProducersProducersGetResponseHasProducerLicenseDefault = false;
 export const listProducersProducersGetResponseHasVeganProductsDefault = false;
 export const listProducersProducersGetResponseHasVegetarianProductsDefault = false;
 export const listProducersProducersGetResponseImagesDefault = [];
-export const listProducersProducersGetResponseIsAvailableTodayDefault = false;
 export const listProducersProducersGetResponseIsRecommendedDefault = false;
 export const listProducersProducersGetResponseKashrutBadgesDefault = [];
 export const listProducersProducersGetResponseKashrutCertsDefault = [];
@@ -3557,6 +3883,8 @@ export const listProducersProducersGetResponsePickupPointsDefault = false;
 export const listProducersProducersGetResponsePlanDefault = `free`;
 export const listProducersProducersGetResponsePrimaryContactMethodDefault = `whatsapp`;
 export const listProducersProducersGetResponseProductsCountDefault = 0;
+export const listProducersProducersGetResponseRescuedRecentlyDefault = false;
+export const listProducersProducersGetResponseReservistOwnedDefault = false;
 export const listProducersProducersGetResponseReviewsCountDefault = 0;
 export const listProducersProducersGetResponseSellsOnSiteDefault = false;
 export const listProducersProducersGetResponseStatusDefault = `pending`;
@@ -3576,7 +3904,6 @@ export const ListProducersProducersGetResponseItem = /*#__PURE__*/ zod.object({
 }).check(/*#__PURE__*/ zod.describe('Public read of an active, unexpired offer. The server never emits an\nexpired one (producer_listing \/ producers.py filter on expires_at), so a\nconsumer holding this object can render it without re-checking the date.')),/*#__PURE__*/ zod.null()])),
   "ambassador": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), listProducersProducersGetResponseAmbassadorDefault),
   "availability_state": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), listProducersProducersGetResponseAvailabilityStateDefault),
-  "availability_status": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), listProducersProducersGetResponseAvailabilityStatusDefault),
   "avg_rating": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.number(), listProducersProducersGetResponseAvgRatingDefault),
   "categories": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
   "emoji": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -3619,7 +3946,6 @@ export const ListProducersProducersGetResponseItem = /*#__PURE__*/ zod.object({
   "has_vegetarian_products": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), listProducersProducersGetResponseHasVegetarianProductsDefault),
   "id": /*#__PURE__*/ zod.uuid(),
   "images": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()), listProducersProducersGetResponseImagesDefault),
-  "is_available_today": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), listProducersProducersGetResponseIsAvailableTodayDefault),
   "is_recommended": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), listProducersProducersGetResponseIsRecommendedDefault),
   "kashrut_badges": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()), listProducersProducersGetResponseKashrutBadgesDefault),
   "kashrut_certs": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
@@ -3655,6 +3981,8 @@ export const ListProducersProducersGetResponseItem = /*#__PURE__*/ zod.object({
   "price_range": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "primary_contact_method": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), listProducersProducersGetResponsePrimaryContactMethodDefault),
   "products_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), listProducersProducersGetResponseProductsCountDefault),
+  "rescued_recently": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), listProducersProducersGetResponseRescuedRecentlyDefault),
+  "reservist_owned": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), listProducersProducersGetResponseReservistOwnedDefault),
   "reviews_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), listProducersProducersGetResponseReviewsCountDefault),
   "sells_on_site": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), listProducersProducersGetResponseSellsOnSiteDefault),
   "short_description": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -3693,7 +4021,6 @@ export const ListProducersProducersGetResponse = /*#__PURE__*/ zod.array(ListPro
  */
 export const createProducerProducersPostResponseAmbassadorDefault = false;
 export const createProducerProducersPostResponseAvailabilityStateDefault = `accepting_orders`;
-export const createProducerProducersPostResponseAvailabilityStatusDefault = `available`;
 export const createProducerProducersPostResponseAvgRatingDefault = 0;
 export const createProducerProducersPostResponseCategoriesItemIsSystemDefault = false;
 export const createProducerProducersPostResponseCategoriesDefault = [];
@@ -3717,7 +4044,6 @@ export const createProducerProducersPostResponseHasProducerLicenseDefault = fals
 export const createProducerProducersPostResponseHasVeganProductsDefault = false;
 export const createProducerProducersPostResponseHasVegetarianProductsDefault = false;
 export const createProducerProducersPostResponseImagesDefault = [];
-export const createProducerProducersPostResponseIsAvailableTodayDefault = false;
 export const createProducerProducersPostResponseIsRecommendedDefault = false;
 export const createProducerProducersPostResponseKashrutBadgesDefault = [];
 export const createProducerProducersPostResponseKashrutCertsDefault = [];
@@ -3742,6 +4068,8 @@ export const createProducerProducersPostResponseProductsItemIsVegetarianDefault 
 export const createProducerProducersPostResponseProductsDefault = [];
 export const createProducerProducersPostResponseProductsCountDefault = 0;
 export const createProducerProducersPostResponseReportCountDefault = 0;
+export const createProducerProducersPostResponseRescuedRecentlyDefault = false;
+export const createProducerProducersPostResponseReservistOwnedDefault = false;
 export const createProducerProducersPostResponseReviewsCountDefault = 0;
 export const createProducerProducersPostResponseSellsOnSiteDefault = false;
 export const createProducerProducersPostResponseStatusDefault = `pending`;
@@ -3761,7 +4089,6 @@ export const CreateProducerProducersPostResponse = /*#__PURE__*/ zod.object({
 }).check(/*#__PURE__*/ zod.describe('Public read of an active, unexpired offer. The server never emits an\nexpired one (producer_listing \/ producers.py filter on expires_at), so a\nconsumer holding this object can render it without re-checking the date.')),/*#__PURE__*/ zod.null()])),
   "ambassador": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), createProducerProducersPostResponseAmbassadorDefault),
   "availability_state": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), createProducerProducersPostResponseAvailabilityStateDefault),
-  "availability_status": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), createProducerProducersPostResponseAvailabilityStatusDefault),
   "avg_rating": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.number(), createProducerProducersPostResponseAvgRatingDefault),
   "categories": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
   "emoji": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -3813,7 +4140,6 @@ export const CreateProducerProducersPostResponse = /*#__PURE__*/ zod.object({
   "id": /*#__PURE__*/ zod.uuid(),
   "images": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()), createProducerProducersPostResponseImagesDefault),
   "instagram": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
-  "is_available_today": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), createProducerProducersPostResponseIsAvailableTodayDefault),
   "is_recommended": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), createProducerProducersPostResponseIsRecommendedDefault),
   "kashrut_badges": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()), createProducerProducersPostResponseKashrutBadgesDefault),
   "kashrut_certs": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
@@ -3851,9 +4177,11 @@ export const CreateProducerProducersPostResponse = /*#__PURE__*/ zod.object({
   "price_range": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "primary_contact_method": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), createProducerProducersPostResponsePrimaryContactMethodDefault),
   "products": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
+  "allergens": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
   "description": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "id": /*#__PURE__*/ zod.uuid(),
   "image_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "ingredients": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "is_gluten_free": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), createProducerProducersPostResponseProductsItemIsGlutenFreeDefault),
   "is_lactose_free": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), createProducerProducersPostResponseProductsItemIsLactoseFreeDefault),
   "is_low_carb": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), createProducerProducersPostResponseProductsItemIsLowCarbDefault),
@@ -3867,6 +4195,8 @@ export const CreateProducerProducersPostResponse = /*#__PURE__*/ zod.object({
 })), createProducerProducersPostResponseProductsDefault),
   "products_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), createProducerProducersPostResponseProductsCountDefault),
   "report_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), createProducerProducersPostResponseReportCountDefault),
+  "rescued_recently": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), createProducerProducersPostResponseRescuedRecentlyDefault),
+  "reservist_owned": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), createProducerProducersPostResponseReservistOwnedDefault),
   "reviews_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), createProducerProducersPostResponseReviewsCountDefault),
   "sells_on_site": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), createProducerProducersPostResponseSellsOnSiteDefault),
   "short_description": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -3894,7 +4224,6 @@ export const CreateProducerProducersPostResponse = /*#__PURE__*/ zod.object({
  */
 export const getProducerBySlugProducersBySlugSlugGetResponseAmbassadorDefault = false;
 export const getProducerBySlugProducersBySlugSlugGetResponseAvailabilityStateDefault = `accepting_orders`;
-export const getProducerBySlugProducersBySlugSlugGetResponseAvailabilityStatusDefault = `available`;
 export const getProducerBySlugProducersBySlugSlugGetResponseAvgRatingDefault = 0;
 export const getProducerBySlugProducersBySlugSlugGetResponseCategoriesItemIsSystemDefault = false;
 export const getProducerBySlugProducersBySlugSlugGetResponseCategoriesDefault = [];
@@ -3918,7 +4247,6 @@ export const getProducerBySlugProducersBySlugSlugGetResponseHasProducerLicenseDe
 export const getProducerBySlugProducersBySlugSlugGetResponseHasVeganProductsDefault = false;
 export const getProducerBySlugProducersBySlugSlugGetResponseHasVegetarianProductsDefault = false;
 export const getProducerBySlugProducersBySlugSlugGetResponseImagesDefault = [];
-export const getProducerBySlugProducersBySlugSlugGetResponseIsAvailableTodayDefault = false;
 export const getProducerBySlugProducersBySlugSlugGetResponseIsRecommendedDefault = false;
 export const getProducerBySlugProducersBySlugSlugGetResponseKashrutBadgesDefault = [];
 export const getProducerBySlugProducersBySlugSlugGetResponseKashrutCertsDefault = [];
@@ -3943,6 +4271,8 @@ export const getProducerBySlugProducersBySlugSlugGetResponseProductsItemIsVegeta
 export const getProducerBySlugProducersBySlugSlugGetResponseProductsDefault = [];
 export const getProducerBySlugProducersBySlugSlugGetResponseProductsCountDefault = 0;
 export const getProducerBySlugProducersBySlugSlugGetResponseReportCountDefault = 0;
+export const getProducerBySlugProducersBySlugSlugGetResponseRescuedRecentlyDefault = false;
+export const getProducerBySlugProducersBySlugSlugGetResponseReservistOwnedDefault = false;
 export const getProducerBySlugProducersBySlugSlugGetResponseReviewsCountDefault = 0;
 export const getProducerBySlugProducersBySlugSlugGetResponseSellsOnSiteDefault = false;
 export const getProducerBySlugProducersBySlugSlugGetResponseStatusDefault = `pending`;
@@ -3962,7 +4292,6 @@ export const GetProducerBySlugProducersBySlugSlugGetResponse = /*#__PURE__*/ zod
 }).check(/*#__PURE__*/ zod.describe('Public read of an active, unexpired offer. The server never emits an\nexpired one (producer_listing \/ producers.py filter on expires_at), so a\nconsumer holding this object can render it without re-checking the date.')),/*#__PURE__*/ zod.null()])),
   "ambassador": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), getProducerBySlugProducersBySlugSlugGetResponseAmbassadorDefault),
   "availability_state": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), getProducerBySlugProducersBySlugSlugGetResponseAvailabilityStateDefault),
-  "availability_status": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), getProducerBySlugProducersBySlugSlugGetResponseAvailabilityStatusDefault),
   "avg_rating": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.number(), getProducerBySlugProducersBySlugSlugGetResponseAvgRatingDefault),
   "categories": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
   "emoji": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -4014,7 +4343,6 @@ export const GetProducerBySlugProducersBySlugSlugGetResponse = /*#__PURE__*/ zod
   "id": /*#__PURE__*/ zod.uuid(),
   "images": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()), getProducerBySlugProducersBySlugSlugGetResponseImagesDefault),
   "instagram": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
-  "is_available_today": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), getProducerBySlugProducersBySlugSlugGetResponseIsAvailableTodayDefault),
   "is_recommended": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), getProducerBySlugProducersBySlugSlugGetResponseIsRecommendedDefault),
   "kashrut_badges": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()), getProducerBySlugProducersBySlugSlugGetResponseKashrutBadgesDefault),
   "kashrut_certs": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
@@ -4052,9 +4380,11 @@ export const GetProducerBySlugProducersBySlugSlugGetResponse = /*#__PURE__*/ zod
   "price_range": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "primary_contact_method": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), getProducerBySlugProducersBySlugSlugGetResponsePrimaryContactMethodDefault),
   "products": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
+  "allergens": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
   "description": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "id": /*#__PURE__*/ zod.uuid(),
   "image_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "ingredients": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "is_gluten_free": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), getProducerBySlugProducersBySlugSlugGetResponseProductsItemIsGlutenFreeDefault),
   "is_lactose_free": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), getProducerBySlugProducersBySlugSlugGetResponseProductsItemIsLactoseFreeDefault),
   "is_low_carb": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), getProducerBySlugProducersBySlugSlugGetResponseProductsItemIsLowCarbDefault),
@@ -4068,6 +4398,8 @@ export const GetProducerBySlugProducersBySlugSlugGetResponse = /*#__PURE__*/ zod
 })), getProducerBySlugProducersBySlugSlugGetResponseProductsDefault),
   "products_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), getProducerBySlugProducersBySlugSlugGetResponseProductsCountDefault),
   "report_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), getProducerBySlugProducersBySlugSlugGetResponseReportCountDefault),
+  "rescued_recently": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), getProducerBySlugProducersBySlugSlugGetResponseRescuedRecentlyDefault),
+  "reservist_owned": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), getProducerBySlugProducersBySlugSlugGetResponseReservistOwnedDefault),
   "reviews_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), getProducerBySlugProducersBySlugSlugGetResponseReviewsCountDefault),
   "sells_on_site": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), getProducerBySlugProducersBySlugSlugGetResponseSellsOnSiteDefault),
   "short_description": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -4129,7 +4461,6 @@ export const ProducersCountProducersCountGetResponse = /*#__PURE__*/ zod.unknown
  */
 export const getMyProducerProducersMeGetResponseAmbassadorDefault = false;
 export const getMyProducerProducersMeGetResponseAvailabilityStateDefault = `accepting_orders`;
-export const getMyProducerProducersMeGetResponseAvailabilityStatusDefault = `available`;
 export const getMyProducerProducersMeGetResponseAvgRatingDefault = 0;
 export const getMyProducerProducersMeGetResponseCategoriesItemIsSystemDefault = false;
 export const getMyProducerProducersMeGetResponseCategoriesDefault = [];
@@ -4153,7 +4484,6 @@ export const getMyProducerProducersMeGetResponseHasProducerLicenseDefault = fals
 export const getMyProducerProducersMeGetResponseHasVeganProductsDefault = false;
 export const getMyProducerProducersMeGetResponseHasVegetarianProductsDefault = false;
 export const getMyProducerProducersMeGetResponseImagesDefault = [];
-export const getMyProducerProducersMeGetResponseIsAvailableTodayDefault = false;
 export const getMyProducerProducersMeGetResponseIsRecommendedDefault = false;
 export const getMyProducerProducersMeGetResponseKashrutBadgesDefault = [];
 export const getMyProducerProducersMeGetResponseKashrutCertsDefault = [];
@@ -4178,6 +4508,8 @@ export const getMyProducerProducersMeGetResponseProductsItemIsVegetarianDefault 
 export const getMyProducerProducersMeGetResponseProductsDefault = [];
 export const getMyProducerProducersMeGetResponseProductsCountDefault = 0;
 export const getMyProducerProducersMeGetResponseReportCountDefault = 0;
+export const getMyProducerProducersMeGetResponseRescuedRecentlyDefault = false;
+export const getMyProducerProducersMeGetResponseReservistOwnedDefault = false;
 export const getMyProducerProducersMeGetResponseResubmissionCountDefault = 0;
 export const getMyProducerProducersMeGetResponseReviewsCountDefault = 0;
 export const getMyProducerProducersMeGetResponseSellsOnSiteDefault = false;
@@ -4200,7 +4532,6 @@ export const GetMyProducerProducersMeGetResponse = /*#__PURE__*/ zod.object({
   "address": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "ambassador": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), getMyProducerProducersMeGetResponseAmbassadorDefault),
   "availability_state": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), getMyProducerProducersMeGetResponseAvailabilityStateDefault),
-  "availability_status": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), getMyProducerProducersMeGetResponseAvailabilityStatusDefault),
   "avg_rating": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.number(), getMyProducerProducersMeGetResponseAvgRatingDefault),
   "categories": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
   "emoji": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -4253,7 +4584,6 @@ export const GetMyProducerProducersMeGetResponse = /*#__PURE__*/ zod.object({
   "id": /*#__PURE__*/ zod.uuid(),
   "images": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()), getMyProducerProducersMeGetResponseImagesDefault),
   "instagram": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
-  "is_available_today": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), getMyProducerProducersMeGetResponseIsAvailableTodayDefault),
   "is_recommended": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), getMyProducerProducersMeGetResponseIsRecommendedDefault),
   "kashrut_badges": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()), getMyProducerProducersMeGetResponseKashrutBadgesDefault),
   "kashrut_certs": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
@@ -4293,9 +4623,11 @@ export const GetMyProducerProducersMeGetResponse = /*#__PURE__*/ zod.object({
   "primary_contact_method": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), getMyProducerProducersMeGetResponsePrimaryContactMethodDefault),
   "producer_license_number": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "products": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
+  "allergens": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
   "description": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "id": /*#__PURE__*/ zod.uuid(),
   "image_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "ingredients": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "is_gluten_free": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), getMyProducerProducersMeGetResponseProductsItemIsGlutenFreeDefault),
   "is_lactose_free": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), getMyProducerProducersMeGetResponseProductsItemIsLactoseFreeDefault),
   "is_low_carb": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), getMyProducerProducersMeGetResponseProductsItemIsLowCarbDefault),
@@ -4311,6 +4643,8 @@ export const GetMyProducerProducersMeGetResponse = /*#__PURE__*/ zod.object({
   "rejection_reason_code": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "report_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), getMyProducerProducersMeGetResponseReportCountDefault),
   "requested_changes": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "rescued_recently": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), getMyProducerProducersMeGetResponseRescuedRecentlyDefault),
+  "reservist_owned": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), getMyProducerProducersMeGetResponseReservistOwnedDefault),
   "resubmission_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), getMyProducerProducersMeGetResponseResubmissionCountDefault),
   "resubmitted_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()])),
   "reviews_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), getMyProducerProducersMeGetResponseReviewsCountDefault),
@@ -4341,7 +4675,6 @@ export const GetMyProducerProducersMeGetResponse = /*#__PURE__*/ zod.object({
  */
 export const updateMyProducerProducersMePutResponseAmbassadorDefault = false;
 export const updateMyProducerProducersMePutResponseAvailabilityStateDefault = `accepting_orders`;
-export const updateMyProducerProducersMePutResponseAvailabilityStatusDefault = `available`;
 export const updateMyProducerProducersMePutResponseAvgRatingDefault = 0;
 export const updateMyProducerProducersMePutResponseCategoriesItemIsSystemDefault = false;
 export const updateMyProducerProducersMePutResponseCategoriesDefault = [];
@@ -4365,7 +4698,6 @@ export const updateMyProducerProducersMePutResponseHasProducerLicenseDefault = f
 export const updateMyProducerProducersMePutResponseHasVeganProductsDefault = false;
 export const updateMyProducerProducersMePutResponseHasVegetarianProductsDefault = false;
 export const updateMyProducerProducersMePutResponseImagesDefault = [];
-export const updateMyProducerProducersMePutResponseIsAvailableTodayDefault = false;
 export const updateMyProducerProducersMePutResponseIsRecommendedDefault = false;
 export const updateMyProducerProducersMePutResponseKashrutBadgesDefault = [];
 export const updateMyProducerProducersMePutResponseKashrutCertsDefault = [];
@@ -4390,6 +4722,8 @@ export const updateMyProducerProducersMePutResponseProductsItemIsVegetarianDefau
 export const updateMyProducerProducersMePutResponseProductsDefault = [];
 export const updateMyProducerProducersMePutResponseProductsCountDefault = 0;
 export const updateMyProducerProducersMePutResponseReportCountDefault = 0;
+export const updateMyProducerProducersMePutResponseRescuedRecentlyDefault = false;
+export const updateMyProducerProducersMePutResponseReservistOwnedDefault = false;
 export const updateMyProducerProducersMePutResponseResubmissionCountDefault = 0;
 export const updateMyProducerProducersMePutResponseReviewsCountDefault = 0;
 export const updateMyProducerProducersMePutResponseSellsOnSiteDefault = false;
@@ -4412,7 +4746,6 @@ export const UpdateMyProducerProducersMePutResponse = /*#__PURE__*/ zod.object({
   "address": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "ambassador": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), updateMyProducerProducersMePutResponseAmbassadorDefault),
   "availability_state": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), updateMyProducerProducersMePutResponseAvailabilityStateDefault),
-  "availability_status": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), updateMyProducerProducersMePutResponseAvailabilityStatusDefault),
   "avg_rating": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.number(), updateMyProducerProducersMePutResponseAvgRatingDefault),
   "categories": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
   "emoji": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -4465,7 +4798,6 @@ export const UpdateMyProducerProducersMePutResponse = /*#__PURE__*/ zod.object({
   "id": /*#__PURE__*/ zod.uuid(),
   "images": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()), updateMyProducerProducersMePutResponseImagesDefault),
   "instagram": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
-  "is_available_today": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), updateMyProducerProducersMePutResponseIsAvailableTodayDefault),
   "is_recommended": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), updateMyProducerProducersMePutResponseIsRecommendedDefault),
   "kashrut_badges": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()), updateMyProducerProducersMePutResponseKashrutBadgesDefault),
   "kashrut_certs": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
@@ -4505,9 +4837,11 @@ export const UpdateMyProducerProducersMePutResponse = /*#__PURE__*/ zod.object({
   "primary_contact_method": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), updateMyProducerProducersMePutResponsePrimaryContactMethodDefault),
   "producer_license_number": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "products": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
+  "allergens": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
   "description": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "id": /*#__PURE__*/ zod.uuid(),
   "image_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "ingredients": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "is_gluten_free": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), updateMyProducerProducersMePutResponseProductsItemIsGlutenFreeDefault),
   "is_lactose_free": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), updateMyProducerProducersMePutResponseProductsItemIsLactoseFreeDefault),
   "is_low_carb": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), updateMyProducerProducersMePutResponseProductsItemIsLowCarbDefault),
@@ -4523,6 +4857,8 @@ export const UpdateMyProducerProducersMePutResponse = /*#__PURE__*/ zod.object({
   "rejection_reason_code": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "report_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), updateMyProducerProducersMePutResponseReportCountDefault),
   "requested_changes": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "rescued_recently": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), updateMyProducerProducersMePutResponseRescuedRecentlyDefault),
+  "reservist_owned": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), updateMyProducerProducersMePutResponseReservistOwnedDefault),
   "resubmission_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), updateMyProducerProducersMePutResponseResubmissionCountDefault),
   "resubmitted_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()])),
   "reviews_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), updateMyProducerProducersMePutResponseReviewsCountDefault),
@@ -4558,33 +4894,17 @@ export const UpdateMyProducerProducersMePutResponse = /*#__PURE__*/ zod.object({
  *   - home_products_count (active only, scoped to the owning user)
  *   - views_by_day: 30-entry zero-filled daily series for the line chart
  *   - top_cities: top 5 cities the views come from (NULL excluded)
+ *   - pickup_hosts: [{email, city}] waitlist visitors who offered to host a
+ *     pickup point for THIS business (MEH-2673), newest first, max 50
  * @summary Producer Analytics
  */
 export const ProducerAnalyticsProducersMeAnalyticsGetResponse = /*#__PURE__*/ zod.unknown()
 
 
 /**
- * Toggle today's availability for the logged-in producer.
- *
- * Legacy endpoint — kept during MEH-291 7-day overlap. Mirrors the toggle to
- * `availability_state` so consumers reading the new column stay consistent.
- * @summary Toggle Availability
- */
-export const ToggleAvailabilityProducersMeAvailabilityPostResponse = /*#__PURE__*/ zod.unknown()
-
-
-/**
  * @summary Set Availability State
  */
 export const SetAvailabilityStateProducersMeAvailabilityStatePostResponse = /*#__PURE__*/ zod.unknown()
-
-
-/**
- * Legacy endpoint — kept during MEH-291 7-day overlap. Mirrors the
- * durable status to `availability_state`.
- * @summary Set Availability Status
- */
-export const SetAvailabilityStatusProducersMeAvailabilityStatusPostResponse = /*#__PURE__*/ zod.unknown()
 
 
 /**
@@ -4621,11 +4941,13 @@ export const ListMyGroupBuysProducersMeGroupBuysGetResponseItem = /*#__PURE__*/ 
   "commits_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), listMyGroupBuysProducersMeGroupBuysGetResponseCommitsCountDefault),
   "created_at": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
   "deadline": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "delivery_note": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "description": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "fulfillment_note": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "id": /*#__PURE__*/ zod.uuid(),
   "max_participants": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "min_participants": /*#__PURE__*/ zod.int(),
+  "pickup_note": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "price_per_unit_group": /*#__PURE__*/ zod.string(),
   "price_per_unit_regular": /*#__PURE__*/ zod.string(),
   "producer_id": /*#__PURE__*/ zod.uuid(),
@@ -4791,9 +5113,11 @@ export const listMyProductsProducersMeProductsGetResponseIsVeganDefault = false;
 export const listMyProductsProducersMeProductsGetResponseIsVegetarianDefault = false;
 
 export const ListMyProductsProducersMeProductsGetResponseItem = /*#__PURE__*/ zod.object({
+  "allergens": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
   "description": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "id": /*#__PURE__*/ zod.uuid(),
   "image_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "ingredients": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "is_gluten_free": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), listMyProductsProducersMeProductsGetResponseIsGlutenFreeDefault),
   "is_lactose_free": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), listMyProductsProducersMeProductsGetResponseIsLactoseFreeDefault),
   "is_low_carb": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), listMyProductsProducersMeProductsGetResponseIsLowCarbDefault),
@@ -4819,9 +5143,11 @@ export const createMyProductProducersMeProductsPostResponseIsVeganDefault = fals
 export const createMyProductProducersMeProductsPostResponseIsVegetarianDefault = false;
 
 export const CreateMyProductProducersMeProductsPostResponse = /*#__PURE__*/ zod.object({
+  "allergens": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
   "description": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "id": /*#__PURE__*/ zod.uuid(),
   "image_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "ingredients": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "is_gluten_free": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), createMyProductProducersMeProductsPostResponseIsGlutenFreeDefault),
   "is_lactose_free": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), createMyProductProducersMeProductsPostResponseIsLactoseFreeDefault),
   "is_low_carb": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), createMyProductProducersMeProductsPostResponseIsLowCarbDefault),
@@ -4852,9 +5178,11 @@ export const updateMyProductProducersMeProductsProductIdPutResponseIsVeganDefaul
 export const updateMyProductProducersMeProductsProductIdPutResponseIsVegetarianDefault = false;
 
 export const UpdateMyProductProducersMeProductsProductIdPutResponse = /*#__PURE__*/ zod.object({
+  "allergens": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
   "description": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "id": /*#__PURE__*/ zod.uuid(),
   "image_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "ingredients": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "is_gluten_free": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), updateMyProductProducersMeProductsProductIdPutResponseIsGlutenFreeDefault),
   "is_lactose_free": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), updateMyProductProducersMeProductsProductIdPutResponseIsLactoseFreeDefault),
   "is_low_carb": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), updateMyProductProducersMeProductsProductIdPutResponseIsLowCarbDefault),
@@ -5010,6 +5338,97 @@ export const RequestProducerReviewProducersMeRequestReviewPostResponse = /*#__PU
 
 
 /**
+ * Today's bags across this business's pickup points, with what was left.
+ *
+ * Today only, by the Israel clock, like the orders list beside it.
+ * @summary List My Offers
+ */
+export const ListMyOffersProducersMeRescueOffersGetResponseItem = /*#__PURE__*/ zod.object({
+  "id": /*#__PURE__*/ zod.uuid(),
+  "leftover": /*#__PURE__*/ zod.int(),
+  "pickup_end": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "pickup_start": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "qty_donated": /*#__PURE__*/ zod.int(),
+  "qty_left": /*#__PURE__*/ zod.int(),
+  "qty_total": /*#__PURE__*/ zod.int(),
+  "status": /*#__PURE__*/ zod.string()
+}).check(/*#__PURE__*/ zod.describe('One of today\'s bags as the business\'s dashboard sees it (MEH-2703).\n\n`leftover` is what was not collected once the window closed: bags never\nreserved (`qty_left`) plus bags reserved by someone who did not come\n(`no_show` orders). It is 0 until `pickup_end` — before that a bag may\nstill be reserved or picked up — and 0 for a cancelled offer, which\nnever went on sale. `qty_donated` is the business\'s own report, capped at\n`leftover` by the API.'))
+export const ListMyOffersProducersMeRescueOffersGetResponse = /*#__PURE__*/ zod.array(ListMyOffersProducersMeRescueOffersGetResponseItem)
+
+
+/**
+ * Record how many uncollected bags were given away free.
+ *
+ * Owner (or admin) of the offer's point only. Only after the window
+ * closed, and never more than was left over — a number above the leftover
+ * would inflate the pilot's «ניצלו» count with bags that were sold.
+ * @summary Set Donated
+ */
+export const SetDonatedProducersMeRescueOffersOfferIdDonatedPutResponse = /*#__PURE__*/ zod.object({
+  "id": /*#__PURE__*/ zod.uuid(),
+  "leftover": /*#__PURE__*/ zod.int(),
+  "pickup_end": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "pickup_start": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "qty_donated": /*#__PURE__*/ zod.int(),
+  "qty_left": /*#__PURE__*/ zod.int(),
+  "qty_total": /*#__PURE__*/ zod.int(),
+  "status": /*#__PURE__*/ zod.string()
+}).check(/*#__PURE__*/ zod.describe('One of today\'s bags as the business\'s dashboard sees it (MEH-2703).\n\n`leftover` is what was not collected once the window closed: bags never\nreserved (`qty_left`) plus bags reserved by someone who did not come\n(`no_show` orders). It is 0 until `pickup_end` — before that a bag may\nstill be reserved or picked up — and 0 for a cancelled offer, which\nnever went on sale. `qty_donated` is the business\'s own report, capped at\n`leftover` by the API.'))
+
+
+/**
+ * Today's reservations across this business's pickup points.
+ *
+ * Today only, by the Israel clock: the dashboard is a counter tool, and a
+ * bag from last week is not something anyone hands over. Cancelled rows are
+ * included — a business that sees four codes and three people should be able
+ * to tell which one cancelled rather than wonder.
+ *
+ * No buyer identity is returned; see RescueOwnerOrderOut for why.
+ * @summary List My Orders
+ */
+export const ListMyOrdersProducersMeRescueOrdersGetResponseItem = /*#__PURE__*/ zod.object({
+  "cancelled_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()])),
+  "created_at": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "handed_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()])),
+  "id": /*#__PURE__*/ zod.uuid(),
+  "offer_id": /*#__PURE__*/ zod.uuid(),
+  "pickup_code": /*#__PURE__*/ zod.string(),
+  "pickup_end": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "pickup_start": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "qty": /*#__PURE__*/ zod.int(),
+  "status": /*#__PURE__*/ zod.enum(['reserved', 'handed', 'no_show', 'cancelled'])
+}).check(/*#__PURE__*/ zod.describe('One of today\'s reservations, as the business\'s own dashboard sees it.\n\nCarries `pickup_code` — the business has to read it back against what the\nbuyer says at the counter — and the offer\'s `pickup_end`, because the\n«לא הגיע» control is only legal after that moment and the dashboard must\ndecide that without a second request.\n\nDeliberately NOT the buyer\'s name, email or phone: handing over a bag\nneeds four digits, and a list of today\'s customers on a dashboard screen\nis more personal data than the job requires.'))
+export const ListMyOrdersProducersMeRescueOrdersGetResponse = /*#__PURE__*/ zod.array(ListMyOrdersProducersMeRescueOrdersGetResponseItem)
+
+
+/**
+ * «בדרך כלל: …» as it stands. An empty list when never set — the read
+ * never has to distinguish "no row" from "empty", only the first.
+ * @summary Get Typical Items
+ */
+export const GetTypicalItemsProducersMeRescueTypicalItemsGetResponse = /*#__PURE__*/ zod.object({
+  "allergens": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
+  "items": /*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),
+  "producer_id": /*#__PURE__*/ zod.uuid(),
+  "updated_at": /*#__PURE__*/ zod.iso.datetime({"offset":true})
+})
+
+
+/**
+ * Upsert the list. One row per business (uq_rescue_typical_items_producer),
+ * so this writes the existing row rather than racing a second insert.
+ * @summary Set Typical Items
+ */
+export const SetTypicalItemsProducersMeRescueTypicalItemsPutResponse = /*#__PURE__*/ zod.object({
+  "allergens": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
+  "items": /*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),
+  "producer_id": /*#__PURE__*/ zod.uuid(),
+  "updated_at": /*#__PURE__*/ zod.iso.datetime({"offset":true})
+})
+
+
+/**
  * The owner's shareable "request a review" URL.
  *
  * Approved producers only: the public page the link opens exists only once
@@ -5103,7 +5522,6 @@ export const RandomProducerProducersRandomGetResponse = /*#__PURE__*/ zod.object
  */
 export const getProducerProducersProducerIdGetResponseAmbassadorDefault = false;
 export const getProducerProducersProducerIdGetResponseAvailabilityStateDefault = `accepting_orders`;
-export const getProducerProducersProducerIdGetResponseAvailabilityStatusDefault = `available`;
 export const getProducerProducersProducerIdGetResponseAvgRatingDefault = 0;
 export const getProducerProducersProducerIdGetResponseCategoriesItemIsSystemDefault = false;
 export const getProducerProducersProducerIdGetResponseCategoriesDefault = [];
@@ -5127,7 +5545,6 @@ export const getProducerProducersProducerIdGetResponseHasProducerLicenseDefault 
 export const getProducerProducersProducerIdGetResponseHasVeganProductsDefault = false;
 export const getProducerProducersProducerIdGetResponseHasVegetarianProductsDefault = false;
 export const getProducerProducersProducerIdGetResponseImagesDefault = [];
-export const getProducerProducersProducerIdGetResponseIsAvailableTodayDefault = false;
 export const getProducerProducersProducerIdGetResponseIsRecommendedDefault = false;
 export const getProducerProducersProducerIdGetResponseKashrutBadgesDefault = [];
 export const getProducerProducersProducerIdGetResponseKashrutCertsDefault = [];
@@ -5152,6 +5569,8 @@ export const getProducerProducersProducerIdGetResponseProductsItemIsVegetarianDe
 export const getProducerProducersProducerIdGetResponseProductsDefault = [];
 export const getProducerProducersProducerIdGetResponseProductsCountDefault = 0;
 export const getProducerProducersProducerIdGetResponseReportCountDefault = 0;
+export const getProducerProducersProducerIdGetResponseRescuedRecentlyDefault = false;
+export const getProducerProducersProducerIdGetResponseReservistOwnedDefault = false;
 export const getProducerProducersProducerIdGetResponseReviewsCountDefault = 0;
 export const getProducerProducersProducerIdGetResponseSellsOnSiteDefault = false;
 export const getProducerProducersProducerIdGetResponseStatusDefault = `pending`;
@@ -5171,7 +5590,6 @@ export const GetProducerProducersProducerIdGetResponse = /*#__PURE__*/ zod.objec
 }).check(/*#__PURE__*/ zod.describe('Public read of an active, unexpired offer. The server never emits an\nexpired one (producer_listing \/ producers.py filter on expires_at), so a\nconsumer holding this object can render it without re-checking the date.')),/*#__PURE__*/ zod.null()])),
   "ambassador": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), getProducerProducersProducerIdGetResponseAmbassadorDefault),
   "availability_state": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), getProducerProducersProducerIdGetResponseAvailabilityStateDefault),
-  "availability_status": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), getProducerProducersProducerIdGetResponseAvailabilityStatusDefault),
   "avg_rating": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.number(), getProducerProducersProducerIdGetResponseAvgRatingDefault),
   "categories": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
   "emoji": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -5223,7 +5641,6 @@ export const GetProducerProducersProducerIdGetResponse = /*#__PURE__*/ zod.objec
   "id": /*#__PURE__*/ zod.uuid(),
   "images": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()), getProducerProducersProducerIdGetResponseImagesDefault),
   "instagram": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
-  "is_available_today": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), getProducerProducersProducerIdGetResponseIsAvailableTodayDefault),
   "is_recommended": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), getProducerProducersProducerIdGetResponseIsRecommendedDefault),
   "kashrut_badges": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()), getProducerProducersProducerIdGetResponseKashrutBadgesDefault),
   "kashrut_certs": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
@@ -5261,9 +5678,11 @@ export const GetProducerProducersProducerIdGetResponse = /*#__PURE__*/ zod.objec
   "price_range": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "primary_contact_method": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), getProducerProducersProducerIdGetResponsePrimaryContactMethodDefault),
   "products": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
+  "allergens": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
   "description": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "id": /*#__PURE__*/ zod.uuid(),
   "image_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "ingredients": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "is_gluten_free": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), getProducerProducersProducerIdGetResponseProductsItemIsGlutenFreeDefault),
   "is_lactose_free": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), getProducerProducersProducerIdGetResponseProductsItemIsLactoseFreeDefault),
   "is_low_carb": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), getProducerProducersProducerIdGetResponseProductsItemIsLowCarbDefault),
@@ -5277,6 +5696,8 @@ export const GetProducerProducersProducerIdGetResponse = /*#__PURE__*/ zod.objec
 })), getProducerProducersProducerIdGetResponseProductsDefault),
   "products_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), getProducerProducersProducerIdGetResponseProductsCountDefault),
   "report_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), getProducerProducersProducerIdGetResponseReportCountDefault),
+  "rescued_recently": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), getProducerProducersProducerIdGetResponseRescuedRecentlyDefault),
+  "reservist_owned": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), getProducerProducersProducerIdGetResponseReservistOwnedDefault),
   "reviews_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), getProducerProducersProducerIdGetResponseReviewsCountDefault),
   "sells_on_site": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), getProducerProducersProducerIdGetResponseSellsOnSiteDefault),
   "short_description": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -5309,6 +5730,26 @@ export const GetProducerProducersProducerIdGetResponse = /*#__PURE__*/ zod.objec
  * @summary Record Contact Click
  */
 export const RecordContactClickProducersProducerIdContactClickPostResponse = /*#__PURE__*/ zod.void()
+
+
+/**
+ * «תודיעו לי כשתגיעו ל{עיר}» — join a business's per-city delivery waitlist.
+ *
+ * No account needed: email + city. Returns 201 `added`, or 200 `exists`
+ * when this email already waits for this business and city. Known and
+ * accepted: `exists` and `host_confirm` tell an anonymous caller whether an
+ * address is on this list / already a host — the same disclosure the
+ * waitlist made since MEH-2618, kept so the form can be honest about
+ * whether a mail went out (double-opt-in UX norm). 404 for an
+ * unknown or not-yet-live business. When the business later adds the
+ * city to its delivery areas, one email goes out (see
+ * services/delivery_waitlist). Rate-limited 10/minute per IP.
+ * @summary Join Delivery Waitlist
+ */
+export const JoinDeliveryWaitlistProducersProducerIdDeliveryWaitlistPostResponse = /*#__PURE__*/ zod.object({
+  "host_confirm": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.enum(['sent', 'already_sent', 'limit_reached', 'confirmed']),/*#__PURE__*/ zod.null()])),
+  "status": /*#__PURE__*/ zod.enum(['added', 'exists'])
+}).check(/*#__PURE__*/ zod.describe('MEH-2618: `added` (201) on a new row, `exists` (200) when the same\nemail already waits for the same business + city — the form shows the\nsame calm confirmation for both.\n\nMEH-2673 `host_confirm` — only when the request ticked «אשמח לארח»:\n`sent` = a confirmation mail went out now · `already_sent` = THIS\nbusiness+city\'s link already went to the address within the last 24 h,\nnothing new was sent (the form says «check your inbox» instead of a false\n«we sent») · `limit_reached` = the address hit its daily cap of\nconfirmation mails across businesses\/cities, nothing was sent for this\none (the form says «try again tomorrow», never «check your inbox») ·\n`confirmed` = this row is already a host. None when the box was not\nticked.'))
 
 
 /**
@@ -5509,10 +5950,291 @@ export const GetPrefillRegisterProducerPrefillTokenGetResponse = /*#__PURE__*/ z
 
 
 /**
+ * @summary Get Registration
+ */
+export const GetRegistrationRegistrationsTokenGetResponse = /*#__PURE__*/ zod.object({
+  "event_date": /*#__PURE__*/ zod.iso.date(),
+  "item_id": /*#__PURE__*/ zod.uuid(),
+  "kind": /*#__PURE__*/ zod.enum(['event', 'experience']),
+  "status": /*#__PURE__*/ zod.string(),
+  "title": /*#__PURE__*/ zod.string()
+}).check(/*#__PURE__*/ zod.describe('GET by cancel token — enough for the cancel page to say what it is.'))
+
+
+/**
+ * @summary Cancel Registration
+ */
+export const CancelRegistrationRegistrationsTokenCancelPostResponse = /*#__PURE__*/ zod.object({
+  "event_date": /*#__PURE__*/ zod.iso.date(),
+  "item_id": /*#__PURE__*/ zod.uuid(),
+  "kind": /*#__PURE__*/ zod.enum(['event', 'experience']),
+  "status": /*#__PURE__*/ zod.string(),
+  "title": /*#__PURE__*/ zod.string()
+}).check(/*#__PURE__*/ zod.describe('GET by cancel token — enough for the cancel page to say what it is.'))
+
+
+/**
  * Email the admin about wrong info on a producer page. Returns 204.
  * @summary Report Producer Info
  */
 export const ReportProducerInfoReportsProducerInfoPostResponse = /*#__PURE__*/ zod.void()
+
+
+/**
+ * Today's bags that still have stock. Public — no auth.
+ *
+ * Sold-out and cancelled offers are omitted rather than greyed out: the list
+ * is "what you can still get tonight", and chunk 4 has no empty-stock state.
+ * @summary List Offers
+ */
+export const ListOffersRescueOffersGetResponseItem = /*#__PURE__*/ zod.object({
+  "allergens": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
+  "cancel_until": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "date": /*#__PURE__*/ zod.iso.date(),
+  "distance_km": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.number(),/*#__PURE__*/ zod.null()])),
+  "id": /*#__PURE__*/ zod.uuid(),
+  "pickup_end": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "pickup_start": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "price_agorot": /*#__PURE__*/ zod.int(),
+  "producer": /*#__PURE__*/ zod.object({
+  "city": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "id": /*#__PURE__*/ zod.uuid(),
+  "image_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "location_address": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "location_city": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "name": /*#__PURE__*/ zod.string(),
+  "slug": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
+}).check(/*#__PURE__*/ zod.describe('The business fields the public bag list needs, and no more.\n\nDeliberately NOT `ProducerListOut`: a bag row shows a name, a photo, a\ntown and a pickup point, and nothing on this list should carry the badge\nblock, the rating aggregate or the contact details — chunk 4\'s row has no\nplace to put them and serializing them would publish more than the screen\nneeds.')),
+  "qty_left": /*#__PURE__*/ zod.int(),
+  "qty_total": /*#__PURE__*/ zod.int(),
+  "typical_items": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string())),
+  "value_max_agorot": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "value_min_agorot": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()]))
+}).check(/*#__PURE__*/ zod.describe('One row of `GET \/rescue\/offers` — the offer, who is selling it, what is\nusually in it, and how far away it is.\n\n`distance_km` is None unless the caller sent lat\/lng; chunk 4 renders it\nonly when present rather than inventing a zero.'))
+export const ListOffersRescueOffersGetResponse = /*#__PURE__*/ zod.array(ListOffersRescueOffersGetResponseItem)
+
+
+/**
+ * Publish today's bags at one pickup point.
+ *
+ * NOT VALIDATED, and it is worth knowing why: the spec asks that
+ * `pickup_end` be at least 15 minutes before the business closes. There is
+ * nothing to compute that against. `opening_hours` is unbounded free text on
+ * both producers and locations, which the repo has already ruled is not
+ * computable (models.py:443-446), and `order_window` is a different fact —
+ * when ORDERS are accepted, not when the door shuts. Validating against it
+ * would enforce the wrong rule convincingly. MEH-2646 carries the decision.
+ * @summary Create Offer
+ */
+export const CreateOfferRescueOffersPostResponse = /*#__PURE__*/ zod.object({
+  "cancel_until": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "created_at": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "date": /*#__PURE__*/ zod.iso.date(),
+  "id": /*#__PURE__*/ zod.uuid(),
+  "pickup_end": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "pickup_start": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "price_agorot": /*#__PURE__*/ zod.int(),
+  "producer_location_id": /*#__PURE__*/ zod.uuid(),
+  "qty_left": /*#__PURE__*/ zod.int(),
+  "qty_total": /*#__PURE__*/ zod.int(),
+  "status": /*#__PURE__*/ zod.enum(['active', 'cancelled']),
+  "value_max_agorot": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "value_min_agorot": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()]))
+}).check(/*#__PURE__*/ zod.describe('One offer as the public list and the dashboard both serialize it.\n\n`qty_left` is the only stock number published: `qty_total` is included so\nthe UI can say \"נותרו 2 מתוך 6\", and nothing here reveals who reserved.'))
+
+
+/**
+ * The business pulls the whole bag offer. Every open reservation on it is
+ * cancelled with it; a bag already handed over stays handed.
+ *
+ * No refund, because nothing was paid. MEH-2738: each buyer whose
+ * reservation went with it gets one email after the commit (fail-open), and
+ * their page says the business cancelled (`list_my_reservations`). A window
+ * that already closed is refused: by then every bag is collected or a
+ * no-show, and cancelling would only rewrite the record.
+ * @summary Cancel Offer
+ */
+export const CancelOfferRescueOffersOfferIdCancelPostResponse = /*#__PURE__*/ zod.object({
+  "cancel_until": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "created_at": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "date": /*#__PURE__*/ zod.iso.date(),
+  "id": /*#__PURE__*/ zod.uuid(),
+  "pickup_end": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "pickup_start": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "price_agorot": /*#__PURE__*/ zod.int(),
+  "producer_location_id": /*#__PURE__*/ zod.uuid(),
+  "qty_left": /*#__PURE__*/ zod.int(),
+  "qty_total": /*#__PURE__*/ zod.int(),
+  "status": /*#__PURE__*/ zod.enum(['active', 'cancelled']),
+  "value_max_agorot": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "value_min_agorot": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()]))
+}).check(/*#__PURE__*/ zod.describe('One offer as the public list and the dashboard both serialize it.\n\n`qty_left` is the only stock number published: `qty_total` is included so\nthe UI can say \"נותרו 2 מתוך 6\", and nothing here reveals who reserved.'))
+
+
+/**
+ * Reserve bags and get the 4-digit code read out at the counter.
+ * @summary Create Order
+ */
+export const createOrderRescueOrdersPostResponsePickupCodeMin = 4;
+export const createOrderRescueOrdersPostResponsePickupCodeMax = 4;
+
+
+export const createOrderRescueOrdersPostResponsePickupCodeRegExp = new RegExp('^[0-9]{4}$');
+
+
+export const CreateOrderRescueOrdersPostResponse = /*#__PURE__*/ zod.object({
+  "cancel_until": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "cancelled_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()])),
+  "created_at": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "handed_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()])),
+  "id": /*#__PURE__*/ zod.uuid(),
+  "offer_id": /*#__PURE__*/ zod.uuid(),
+  "pickup_code": /*#__PURE__*/ zod.string().check(/*#__PURE__*/ zod.minLength(createOrderRescueOrdersPostResponsePickupCodeMin)).check(/*#__PURE__*/ zod.maxLength(createOrderRescueOrdersPostResponsePickupCodeMax)).check(/*#__PURE__*/ zod.regex(createOrderRescueOrdersPostResponsePickupCodeRegExp)),
+  "pickup_end": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "pickup_start": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "price_agorot": /*#__PURE__*/ zod.int(),
+  "qty": /*#__PURE__*/ zod.int(),
+  "status": /*#__PURE__*/ zod.enum(['reserved', 'handed', 'no_show', 'cancelled']),
+  "user_id": /*#__PURE__*/ zod.uuid()
+}).check(/*#__PURE__*/ zod.describe('What a successful reservation returns. Same shape as RescueOrderOut\nplus the two numbers the confirmation screen shows without a second\nrequest — the price to pay at the counter and when the free cancel ends.'))
+
+
+/**
+ * The caller's own live reservations on today's bags (MEH-2680).
+ *
+ * Only the caller's rows, only today's offers (Israel date), only
+ * `reserved` / `handed` — a no-show or a buyer's own cancel has no code
+ * left to say and nothing to review. Carries the same fields as the
+ * reservation response, so the confirmation renders from either without a
+ * second shape.
+ *
+ * MEH-2738: plus the reservations the BUSINESS cancelled, flagged
+ * `cancelled_by_business`, so the page can say so instead of silently
+ * dropping the code. See `_business_cancelled_ids` for how they are told
+ * apart from a buyer's own cancel without a column for it.
+ * @summary List My Reservations
+ */
+export const listMyReservationsRescueOrdersMineGetResponsePickupCodeMin = 4;
+export const listMyReservationsRescueOrdersMineGetResponsePickupCodeMax = 4;
+
+
+export const listMyReservationsRescueOrdersMineGetResponsePickupCodeRegExp = new RegExp('^[0-9]{4}$');
+export const listMyReservationsRescueOrdersMineGetResponseReviewedDefault = false;
+
+export const ListMyReservationsRescueOrdersMineGetResponseItem = /*#__PURE__*/ zod.object({
+  "cancel_until": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "cancelled_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()])),
+  "cancelled_by_business": /*#__PURE__*/ zod.boolean(),
+  "created_at": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "handed_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()])),
+  "id": /*#__PURE__*/ zod.uuid(),
+  "offer_id": /*#__PURE__*/ zod.uuid(),
+  "pickup_code": /*#__PURE__*/ zod.string().check(/*#__PURE__*/ zod.minLength(listMyReservationsRescueOrdersMineGetResponsePickupCodeMin)).check(/*#__PURE__*/ zod.maxLength(listMyReservationsRescueOrdersMineGetResponsePickupCodeMax)).check(/*#__PURE__*/ zod.regex(listMyReservationsRescueOrdersMineGetResponsePickupCodeRegExp)),
+  "pickup_end": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "pickup_start": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "price_agorot": /*#__PURE__*/ zod.int(),
+  "producer_id": /*#__PURE__*/ zod.uuid(),
+  "qty": /*#__PURE__*/ zod.int(),
+  "reviewed": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), listMyReservationsRescueOrdersMineGetResponseReviewedDefault),
+  "status": /*#__PURE__*/ zod.enum(['reserved', 'handed', 'no_show', 'cancelled']),
+  "user_id": /*#__PURE__*/ zod.uuid()
+}).check(/*#__PURE__*/ zod.describe('One of the caller\'s own reservations for today, read back (MEH-2680).\n\nThe confirmation lived only in component state, so a reload lost the code\nthe buyer must say at the counter, and the review — offered once the order\nis «handed» — could never appear. `reviewed` says whether to offer it.'))
+export const ListMyReservationsRescueOrdersMineGetResponse = /*#__PURE__*/ zod.array(ListMyReservationsRescueOrdersMineGetResponseItem)
+
+
+/**
+ * The buyer cancels, free, until the offer's `cancel_until`.
+ * @summary Cancel Order
+ */
+export const cancelOrderRescueOrdersOrderIdCancelPostResponsePickupCodeMin = 4;
+export const cancelOrderRescueOrdersOrderIdCancelPostResponsePickupCodeMax = 4;
+
+
+export const cancelOrderRescueOrdersOrderIdCancelPostResponsePickupCodeRegExp = new RegExp('^[0-9]{4}$');
+
+
+export const CancelOrderRescueOrdersOrderIdCancelPostResponse = /*#__PURE__*/ zod.object({
+  "cancelled_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()])),
+  "created_at": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "handed_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()])),
+  "id": /*#__PURE__*/ zod.uuid(),
+  "offer_id": /*#__PURE__*/ zod.uuid(),
+  "pickup_code": /*#__PURE__*/ zod.string().check(/*#__PURE__*/ zod.minLength(cancelOrderRescueOrdersOrderIdCancelPostResponsePickupCodeMin)).check(/*#__PURE__*/ zod.maxLength(cancelOrderRescueOrdersOrderIdCancelPostResponsePickupCodeMax)).check(/*#__PURE__*/ zod.regex(cancelOrderRescueOrdersOrderIdCancelPostResponsePickupCodeRegExp)),
+  "qty": /*#__PURE__*/ zod.int(),
+  "status": /*#__PURE__*/ zod.enum(['reserved', 'handed', 'no_show', 'cancelled']),
+  "user_id": /*#__PURE__*/ zod.uuid()
+}).check(/*#__PURE__*/ zod.describe('One reservation, as returned to its own buyer.\n\n`pickup_code` IS included: the buyer has to read it aloud at the counter,\nand chunk 4 renders it at 56px. The business sees the same field for its\nown offers\' orders; nobody else can reach either route (chunk 2).'))
+
+
+/**
+ * The business hands the bag over against the code.
+ *
+ * A second call is a 409 naming `handed_at`, not a silent success: at the
+ * counter a repeated tap usually means the first one was not seen, and the
+ * honest answer is "already done at 18:42".
+ * @summary Mark Handed
+ */
+export const markHandedRescueOrdersOrderIdHandedPostResponsePickupCodeMin = 4;
+export const markHandedRescueOrdersOrderIdHandedPostResponsePickupCodeMax = 4;
+
+
+export const markHandedRescueOrdersOrderIdHandedPostResponsePickupCodeRegExp = new RegExp('^[0-9]{4}$');
+
+
+export const MarkHandedRescueOrdersOrderIdHandedPostResponse = /*#__PURE__*/ zod.object({
+  "cancelled_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()])),
+  "created_at": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "handed_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()])),
+  "id": /*#__PURE__*/ zod.uuid(),
+  "offer_id": /*#__PURE__*/ zod.uuid(),
+  "pickup_code": /*#__PURE__*/ zod.string().check(/*#__PURE__*/ zod.minLength(markHandedRescueOrdersOrderIdHandedPostResponsePickupCodeMin)).check(/*#__PURE__*/ zod.maxLength(markHandedRescueOrdersOrderIdHandedPostResponsePickupCodeMax)).check(/*#__PURE__*/ zod.regex(markHandedRescueOrdersOrderIdHandedPostResponsePickupCodeRegExp)),
+  "qty": /*#__PURE__*/ zod.int(),
+  "status": /*#__PURE__*/ zod.enum(['reserved', 'handed', 'no_show', 'cancelled']),
+  "user_id": /*#__PURE__*/ zod.uuid()
+}).check(/*#__PURE__*/ zod.describe('One reservation, as returned to its own buyer.\n\n`pickup_code` IS included: the buyer has to read it aloud at the counter,\nand chunk 4 renders it at 56px. The business sees the same field for its\nown offers\' orders; nobody else can reach either route (chunk 2).'))
+
+
+/**
+ * The business records that nobody came for the bag.
+ *
+ * Only after `pickup_end` — before that the buyer may still be on their way,
+ * and a no-show is what blocks them from reserving again.
+ * @summary Mark No Show
+ */
+export const markNoShowRescueOrdersOrderIdNoShowPostResponsePickupCodeMin = 4;
+export const markNoShowRescueOrdersOrderIdNoShowPostResponsePickupCodeMax = 4;
+
+
+export const markNoShowRescueOrdersOrderIdNoShowPostResponsePickupCodeRegExp = new RegExp('^[0-9]{4}$');
+
+
+export const MarkNoShowRescueOrdersOrderIdNoShowPostResponse = /*#__PURE__*/ zod.object({
+  "cancelled_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()])),
+  "created_at": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "handed_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()])),
+  "id": /*#__PURE__*/ zod.uuid(),
+  "offer_id": /*#__PURE__*/ zod.uuid(),
+  "pickup_code": /*#__PURE__*/ zod.string().check(/*#__PURE__*/ zod.minLength(markNoShowRescueOrdersOrderIdNoShowPostResponsePickupCodeMin)).check(/*#__PURE__*/ zod.maxLength(markNoShowRescueOrdersOrderIdNoShowPostResponsePickupCodeMax)).check(/*#__PURE__*/ zod.regex(markNoShowRescueOrdersOrderIdNoShowPostResponsePickupCodeRegExp)),
+  "qty": /*#__PURE__*/ zod.int(),
+  "status": /*#__PURE__*/ zod.enum(['reserved', 'handed', 'no_show', 'cancelled']),
+  "user_id": /*#__PURE__*/ zod.uuid()
+}).check(/*#__PURE__*/ zod.describe('One reservation, as returned to its own buyer.\n\n`pickup_code` IS included: the buyer has to read it aloud at the counter,\nand chunk 4 renders it at 56px. The business sees the same field for its\nown offers\' orders; nobody else can reach either route (chunk 2).'))
+
+
+/**
+ * The buyer reviews a bag they actually collected. Once.
+ * @summary Create Review
+ */
+export const CreateReviewRescueOrdersOrderIdReviewPostResponse = /*#__PURE__*/ zod.object({
+  "comment": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "contents_tags": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
+  "created_at": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "highlight_tags": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
+  "id": /*#__PURE__*/ zod.uuid(),
+  "order_id": /*#__PURE__*/ zod.uuid(),
+  "photo_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "rating": /*#__PURE__*/ zod.int()
+})
 
 
 /**
@@ -5706,7 +6428,6 @@ export const UpdateProfileUsersMePatchResponse = /*#__PURE__*/ zod.object({
  */
 export const getFavoritesUsersMeFavoritesGetResponseProducerAmbassadorDefault = false;
 export const getFavoritesUsersMeFavoritesGetResponseProducerAvailabilityStateDefault = `accepting_orders`;
-export const getFavoritesUsersMeFavoritesGetResponseProducerAvailabilityStatusDefault = `available`;
 export const getFavoritesUsersMeFavoritesGetResponseProducerAvgRatingDefault = 0;
 export const getFavoritesUsersMeFavoritesGetResponseProducerCategoriesItemIsSystemDefault = false;
 export const getFavoritesUsersMeFavoritesGetResponseProducerCategoriesDefault = [];
@@ -5729,7 +6450,6 @@ export const getFavoritesUsersMeFavoritesGetResponseProducerHasProducerLicenseDe
 export const getFavoritesUsersMeFavoritesGetResponseProducerHasVeganProductsDefault = false;
 export const getFavoritesUsersMeFavoritesGetResponseProducerHasVegetarianProductsDefault = false;
 export const getFavoritesUsersMeFavoritesGetResponseProducerImagesDefault = [];
-export const getFavoritesUsersMeFavoritesGetResponseProducerIsAvailableTodayDefault = false;
 export const getFavoritesUsersMeFavoritesGetResponseProducerIsRecommendedDefault = false;
 export const getFavoritesUsersMeFavoritesGetResponseProducerKashrutBadgesDefault = [];
 export const getFavoritesUsersMeFavoritesGetResponseProducerKashrutCertsDefault = [];
@@ -5746,6 +6466,8 @@ export const getFavoritesUsersMeFavoritesGetResponseProducerPickupPointsDefault 
 export const getFavoritesUsersMeFavoritesGetResponseProducerPlanDefault = `free`;
 export const getFavoritesUsersMeFavoritesGetResponseProducerPrimaryContactMethodDefault = `whatsapp`;
 export const getFavoritesUsersMeFavoritesGetResponseProducerProductsCountDefault = 0;
+export const getFavoritesUsersMeFavoritesGetResponseProducerRescuedRecentlyDefault = false;
+export const getFavoritesUsersMeFavoritesGetResponseProducerReservistOwnedDefault = false;
 export const getFavoritesUsersMeFavoritesGetResponseProducerReviewsCountDefault = 0;
 export const getFavoritesUsersMeFavoritesGetResponseProducerSellsOnSiteDefault = false;
 export const getFavoritesUsersMeFavoritesGetResponseProducerStatusDefault = `pending`;
@@ -5767,7 +6489,6 @@ export const GetFavoritesUsersMeFavoritesGetResponseItem = /*#__PURE__*/ zod.obj
 }).check(/*#__PURE__*/ zod.describe('Public read of an active, unexpired offer. The server never emits an\nexpired one (producer_listing \/ producers.py filter on expires_at), so a\nconsumer holding this object can render it without re-checking the date.')),/*#__PURE__*/ zod.null()])),
   "ambassador": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), getFavoritesUsersMeFavoritesGetResponseProducerAmbassadorDefault),
   "availability_state": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), getFavoritesUsersMeFavoritesGetResponseProducerAvailabilityStateDefault),
-  "availability_status": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), getFavoritesUsersMeFavoritesGetResponseProducerAvailabilityStatusDefault),
   "avg_rating": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.number(), getFavoritesUsersMeFavoritesGetResponseProducerAvgRatingDefault),
   "categories": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
   "emoji": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -5810,7 +6531,6 @@ export const GetFavoritesUsersMeFavoritesGetResponseItem = /*#__PURE__*/ zod.obj
   "has_vegetarian_products": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), getFavoritesUsersMeFavoritesGetResponseProducerHasVegetarianProductsDefault),
   "id": /*#__PURE__*/ zod.uuid(),
   "images": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()), getFavoritesUsersMeFavoritesGetResponseProducerImagesDefault),
-  "is_available_today": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), getFavoritesUsersMeFavoritesGetResponseProducerIsAvailableTodayDefault),
   "is_recommended": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), getFavoritesUsersMeFavoritesGetResponseProducerIsRecommendedDefault),
   "kashrut_badges": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()), getFavoritesUsersMeFavoritesGetResponseProducerKashrutBadgesDefault),
   "kashrut_certs": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
@@ -5846,6 +6566,8 @@ export const GetFavoritesUsersMeFavoritesGetResponseItem = /*#__PURE__*/ zod.obj
   "price_range": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "primary_contact_method": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), getFavoritesUsersMeFavoritesGetResponseProducerPrimaryContactMethodDefault),
   "products_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), getFavoritesUsersMeFavoritesGetResponseProducerProductsCountDefault),
+  "rescued_recently": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), getFavoritesUsersMeFavoritesGetResponseProducerRescuedRecentlyDefault),
+  "reservist_owned": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), getFavoritesUsersMeFavoritesGetResponseProducerReservistOwnedDefault),
   "reviews_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), getFavoritesUsersMeFavoritesGetResponseProducerReviewsCountDefault),
   "sells_on_site": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), getFavoritesUsersMeFavoritesGetResponseProducerSellsOnSiteDefault),
   "short_description": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -5931,9 +6653,13 @@ export const ChangePasswordUsersMePasswordPatchResponse = /*#__PURE__*/ zod.void
  * @summary Get Saved
  */
 export const getSavedUsersMeSavedGetResponseEventsItemOwnerKindDefault = `producer`;
+export const getSavedUsersMeSavedGetResponseEventsItemRegisteredCountDefault = 0;
+export const getSavedUsersMeSavedGetResponseEventsItemRegistrationMethodDefault = `site_form`;
 export const getSavedUsersMeSavedGetResponseExperiencesItemIsActiveDefault = true;
 export const getSavedUsersMeSavedGetResponseExperiencesItemIsRecurringDefault = false;
 export const getSavedUsersMeSavedGetResponseExperiencesItemParticipantsCountDefault = 0;
+export const getSavedUsersMeSavedGetResponseExperiencesItemRegisteredCountDefault = 0;
+export const getSavedUsersMeSavedGetResponseExperiencesItemRegistrationMethodDefault = `site_form`;
 
 export const GetSavedUsersMeSavedGetResponse = /*#__PURE__*/ zod.object({
   "events": /*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
@@ -5957,8 +6683,12 @@ export const GetSavedUsersMeSavedGetResponse = /*#__PURE__*/ zod.object({
   "price": /*#__PURE__*/ zod.int(),
   "producer_id": /*#__PURE__*/ zod.uuid(),
   "producer_name": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "producer_phone": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "registered_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), getSavedUsersMeSavedGetResponseEventsItemRegisteredCountDefault),
+  "registration_method": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), getSavedUsersMeSavedGetResponseEventsItemRegistrationMethodDefault),
   "registration_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "saved_at": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "spots_left": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "title": /*#__PURE__*/ zod.string()
 })),
   "experiences": /*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
@@ -5983,9 +6713,13 @@ export const GetSavedUsersMeSavedGetResponse = /*#__PURE__*/ zod.object({
   "is_recurring": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), getSavedUsersMeSavedGetResponseExperiencesItemIsRecurringDefault),
   "location_type": /*#__PURE__*/ zod.string(),
   "max_participants": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "min_participants": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "participants_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), getSavedUsersMeSavedGetResponseExperiencesItemParticipantsCountDefault),
   "price_per_person": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "recurring_schedule": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "registered_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), getSavedUsersMeSavedGetResponseExperiencesItemRegisteredCountDefault),
+  "registration_method": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), getSavedUsersMeSavedGetResponseExperiencesItemRegistrationMethodDefault),
+  "registration_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "saved_at": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
   "spots_left": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "status": /*#__PURE__*/ zod.string(),

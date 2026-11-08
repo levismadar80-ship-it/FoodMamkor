@@ -107,13 +107,16 @@ describe("group-buy card", () => {
 });
 
 describe("group-buy page", () => {
-  it("renders the join card once — one quantity field, one share link", async () => {
+  it("renders the join card once — one quantity field, one «שתפו», no WhatsApp link, no -% pill", async () => {
     api.get.mockResolvedValue({ data: GB });
-    render(<GroupBuyDetailClient id="gb-1" />);
+    const { container } = render(<GroupBuyDetailClient id="gb-1" />);
     await screen.findByText("שק קמח כוסמין");
     expect(screen.getAllByRole("spinbutton")).toHaveLength(1);
-    expect(screen.getAllByText("group_buys.detail.share_wa")).toHaveLength(1);
-    expect(screen.getByTestId("group-buy-discount").textContent).toBe("-28%");
+    // MEH-2827 PR 7: the generic share replaces the WhatsApp-only link, and
+    // the saving lives in the price tiles, not in a pill on the photo.
+    expect(screen.getAllByTestId("group-buy-share")).toHaveLength(1);
+    expect(container.querySelector('a[href*="wa.me"]')).toBeNull();
+    expect(screen.queryByTestId("group-buy-discount")).toBeNull();
   });
 
   it("open → «איך זה עובד» with the group's minimum; funded → no box", async () => {
@@ -128,6 +131,18 @@ describe("group-buy page", () => {
     render(<GroupBuyDetailClient id="gb-1" />);
     await screen.findByText("שק קמח כוסמין");
     expect(screen.queryByTestId("group-buy-how")).toBeNull();
+  });
+
+  it("funded → the on-dark seed burst opens inside the funded banner (MEH-2833); no canvas", async () => {
+    api.get.mockResolvedValue({ data: { ...GB, status: "funded" } });
+    const { container } = render(<GroupBuyDetailClient id="gb-1" />);
+    const banner = await screen.findByTestId("group-buy-funded");
+    const burst = banner.querySelector('[data-testid="seed-burst"]');
+    expect(burst).not.toBeNull();
+    expect(burst.getAttribute("data-variant")).toBe("dark");
+    // the headline follows the burst, never under it
+    expect(burst.nextElementSibling.textContent).toBe("group_buys.detail.funded_title");
+    expect(container.querySelector("canvas")).toBeNull();
   });
 
   it("no business photo → the cart tile", async () => {

@@ -147,7 +147,7 @@ over a CTA), which is why the gate sits in front of it.
 | `z-[2000]` | 1 | `components/Toaster.jsx:54` | toast stack — **below** both modal tiers, deliberately |
 | `z-[1210]` | 2 | `components/ui/Popover.jsx:321` | Popover mobile bottom sheet |
 | `z-[1200]` | 3 | `components/FilterSheet.jsx:200` | filter sheet; portaled to `<body>` below lg |
-| `z-[1150]` | 2 | `components/MiniMap.jsx:531` · `FavoritesClient.jsx:76` | MiniMap fullscreen |
+| `z-[1150]` | 4 | `components/MiniMap.jsx:531` · `FavoritesClient.jsx:76` · `producer/[id]/components/ProducerHeader.jsx` (MEH-2770: alerts sheet + its scrim, scrim first so DOM order lifts the sheet) | MiniMap fullscreen · /favorites + business-page alerts sheet |
 | `z-[1100]` | 1 | `components/CookieBanner.jsx:72` | cookie banner |
 | `z-[1060]` | 1 | `components/public/ProductSheet.jsx:359` | product sheet |
 | `z-[1050]` | 1 | `components/Header.jsx:321` | global sticky header — `sticky`+z ⇒ **its own stacking context**. 2 → 1 in MEH-1207: the second hit was prose inside the producer-page tab-bar comment block, which left with the tab bar |

@@ -10,10 +10,19 @@ vi.mock("next-intl/server", () => ({
   setRequestLocale: () => {},
   getTranslations: async () => (key) => key,
 }));
+// MEH-2824: the closing band is now the shared ClosingCtaBand, which reads its
+// «שאלה לפני? כתבו לנו» pair with useTranslations (it renders from server and
+// client parents alike). Same key-echo stub as getTranslations above.
+vi.mock("next-intl", () => ({ useTranslations: () => (key) => key }));
 vi.mock("@/i18n/navigation", () => ({
   Link: ({ children, href, ...props }) => <a href={href} {...props}>{children}</a>,
 }));
 vi.mock("@/components/BusinessCtaLink", () => ({ default: ({ children }) => <a>{children}</a> }));
+// MEH-2799: the page mounts two client islands; their own suites cover them
+// (JoinFeatures.test.jsx, JoinStickyBar.test.jsx). Stubbed here so this file
+// stays a test of the server page's structure.
+vi.mock("@/components/join/JoinFeatures", () => ({ default: () => <section data-testid="join-features" /> }));
+vi.mock("@/components/join/JoinStickyBar", () => ({ default: () => <div data-testid="join-sticky-bar" /> }));
 
 import JoinPage from "@/app/[locale]/join/page";
 
@@ -29,5 +38,90 @@ describe("MEH-2564 · /join step numerals", () => {
       expect(cls).not.toContain("text-accent");
       expect(cls.some((c) => /^text-(3xl|4xl|5xl|6xl)$/.test(c))).toBe(false);
     }
+  });
+});
+
+/**
+ * MEH-2799 — the v2 page structure. Moved here from e2e/flows/manual/join.spec.ts
+ * item 8 (the testimonial slot) and extended: the order is SPEC §1, the removed
+ * sections stay removed, and the closing band is the one that meets the footer.
+ */
+describe("MEH-2799 · /join v2 structure", () => {
+  const ORDER = [
+    "join-hero",
+    "join-photo",
+    "join-draft",
+    "join-video",
+    "join-features",
+    "join-how",
+    "join-prepare",
+    "join-faq",
+    "join-closing",
+    "join-sticky-bar",
+  ];
+
+  it("renders the sections in SPEC order", async () => {
+    const { container } = render(await JoinPage({ params: Promise.resolve({ locale: "he" }) }));
+    const ids = [...container.querySelectorAll("[data-testid]")]
+      .map((el) => el.getAttribute("data-testid"))
+      .filter((id) => ORDER.includes(id));
+    expect(ids).toEqual(ORDER);
+  });
+
+  it("the testimonial slot and the duplicate introduction card are gone", async () => {
+    render(await JoinPage({ params: Promise.resolve({ locale: "he" }) }));
+    expect(screen.getByTestId("join-faq")).toBeTruthy(); // control: the page rendered
+    expect(screen.queryByTestId("join-testimonial")).toBeNull();
+    expect(screen.queryByTestId("join-card")).toBeNull();
+  });
+
+  it("only the closing band meets the footer, and it is the sticky bar's stop marker", async () => {
+    const { container } = render(await JoinPage({ params: Promise.resolve({ locale: "he" }) }));
+    const meets = container.querySelectorAll("[data-meets-footer]");
+    expect(meets).toHaveLength(1);
+    expect(meets[0].getAttribute("data-testid")).toBe("join-closing");
+    expect(meets[0].hasAttribute("data-join-closing")).toBe(true);
+    expect(container.querySelectorAll("[data-join-hero-cta]")).toHaveLength(1);
+  });
+
+  it("the FAQ has six questions, the first one the locked cost answer", async () => {
+    render(await JoinPage({ params: Promise.resolve({ locale: "he" }) }));
+    const items = screen.getAllByTestId("join-faq-item");
+    // MEH-2841 (08/11) added q_price and q_updates — 4 → 6.
+    expect(items).toHaveLength(6);
+    // getTranslations is mocked to echo the key, so this pins WHICH key renders.
+    expect(items[0].textContent).toContain("faq.a_cost");
+  });
+
+  // Sapir, 07/11: on /join every answer was open; then, on the accordion, she
+  // asked why the first was open — all closed. The site's FAQ pattern
+  // (/about/for-businesses/page.js:183) without its open cost question (:66).
+  it("the FAQ is an accordion: native <details>, every question closed on load", async () => {
+    render(await JoinPage({ params: Promise.resolve({ locale: "he" }) }));
+    const items = screen.getAllByTestId("join-faq-item");
+    for (const item of items) {
+      expect(item.tagName, "each question is a <details>").toBe("DETAILS");
+      const summary = item.querySelector("summary");
+      expect(summary, "each question is the <summary>").not.toBeNull();
+      expect(summary.querySelector("h3")).not.toBeNull(); // the heading outline stays
+    }
+    // Six entries since MEH-2841, not four. Written as an array rather than
+    // `.every(...)` on purpose: it pins the COUNT as well as the state, so
+    // a dropped question cannot pass as "all closed".
+    expect(items.map((d) => d.open)).toEqual([false, false, false, false, false, false]);
+    expect(items[0].querySelector("summary").textContent).toContain("faq.q_cost");
+  });
+
+  it("both videos are click-to-play: native controls, preload none, never autoplay", async () => {
+    const { container } = render(await JoinPage({ params: Promise.resolve({ locale: "he" }) }));
+    const videos = container.querySelectorAll("video");
+    expect(videos).toHaveLength(2);
+    for (const video of videos) {
+      expect(video.hasAttribute("controls")).toBe(true);
+      expect(video.getAttribute("preload")).toBe("none");
+      expect(video.hasAttribute("autoplay")).toBe(false);
+      expect(video.getAttribute("src")).toMatch(/^\/images\/join\/video-(page|signup)\.mp4$/);
+    }
+    expect(screen.getAllByTestId("join-sample-label")).toHaveLength(2);
   });
 });

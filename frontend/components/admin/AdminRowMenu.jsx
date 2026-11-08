@@ -268,7 +268,7 @@ export default function AdminRowMenu({ items = [], ariaLabel }) {
         top: coords?.top,
         insetInlineEnd: coords?.insetInlineEnd,
       }}
-      className="z-[800] min-w-[10rem] bg-white border border-border rounded-md shadow-lg py-1 text-start"
+      className="z-[800] min-w-[10rem] bg-surface border border-border rounded-md shadow-lg py-1 text-start"
     >
       {items.map((it) => (
         <button
@@ -291,7 +291,7 @@ export default function AdminRowMenu({ items = [], ariaLabel }) {
             it.disabled ? "opacity-50 cursor-not-allowed" : "hover:bg-gray-50"
           } ${
             it.tone === "danger"
-              ? `text-red-600 ${it.disabled ? "" : "hover:bg-red-50"}`
+              ? `text-danger-600 ${it.disabled ? "" : "hover:bg-danger-50"}`
               : "text-text"
           }`}
         >

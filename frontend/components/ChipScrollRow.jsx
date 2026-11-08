@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Check } from "@phosphor-icons/react";
 import useScrollAffordance, { ScrollArrows } from "@/hooks/useScrollAffordance";
+import { useChipCopy } from "@/lib/use-chip-copy";
 
 // Firefox mouse wheels report deltaMode=DOM_DELTA_LINE (units = lines,
 // ~3/notch) — normalize to px or the wheel-scroll crawls. 16px/line is
@@ -108,6 +109,9 @@ export default function ChipScrollRow({
   onChipClick,
   className = "",
 }) {
+  // MEH-2748: registry chips arrive without words; a chip that already has a
+  // label (DB category, city, translated "all") passes through untouched.
+  const withChipCopy = useChipCopy();
   const t = useTranslations("map.chip_scroll");
   const chipRefs = useRef(new Map());
   // MEH-1391/MEH-1572: scrollRef + the ONE affordance signal (fades, arrows
@@ -224,15 +228,48 @@ export default function ChipScrollRow({
   // the reset and let scrollIntoView place it — avoids the
   // instant-to-0 then smooth-scroll flicker on URL-seeded state.
   // "all" counts as no active filter (it's the reset sentinel).
+  //
+  // MEH-2823: pin again when overflow APPEARS, not only on mount. On iOS,
+  // WebKit re-snaps an RTL scroll-snap container to the wrong (far-left) end
+  // after a layout — bugs.webkit.org/207826, still open. Our row gets exactly
+  // that layout right after mount: the hook detects overflow and the end
+  // spacer below mounts. A mount-only pin lost to the late re-snap, so
+  // /favorites opened with «הכל» scrolled out of view. rAF lets the re-snap
+  // land first. Never re-pin once the user has touched the row — the flag is
+  // never reset on purpose: after a touch, where the row rests is hers.
+  const userMovedRowRef = useRef(false);
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return undefined;
+    const markMoved = () => {
+      userMovedRowRef.current = true;
+    };
+    const events = ["pointerdown", "touchstart", "wheel", "keydown"];
+    events.forEach((type) => el.addEventListener(type, markMoved, { passive: true }));
+    return () => events.forEach((type) => el.removeEventListener(type, markMoved));
+  }, [scrollRef]);
+
   useEffect(() => {
     const hasActiveFilter =
       variant === "category"
         ? categorySet.size > 0
         : Object.values(activeKeys).some(Boolean);
-    if (!hasActiveFilter) {
+    if (hasActiveFilter || userMovedRowRef.current) return undefined;
+    // Re-checks the touch flag: the deferred pin fires one frame later, and a
+    // touch can land inside that frame on a slow device.
+    const pinStart = () => {
+      if (userMovedRowRef.current) return;
       scrollRef.current?.scrollTo({ left: 0, behavior: "instant" });
-    }
-  }, []);
+    };
+    // Synchronous pin keeps the pre-MEH-2823 mount behaviour (no one-frame
+    // flash); the rAF pin runs after WebKit's post-layout re-snap.
+    pinStart();
+    const frame = requestAnimationFrame(pinStart);
+    return () => cancelAnimationFrame(frame);
+    // Mount + the overflow flip only — selection changes belong to the
+    // scrollIntoView effects below.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasOverflow]);
 
   // Category: scroll the LAST-ACTIVATED chip into view (MEH-1465 — mirrors the
   // toggle-variant diff below now that categories are multi-select). On mount,
@@ -329,7 +366,7 @@ export default function ChipScrollRow({
         // MEH-2199 chunk 1: the keyboard the role above has always declared.
         onKeyDown={onToolbarKeyDown}
       >
-        {chips.map((chip) => {
+        {chips.map(withChipCopy).map((chip) => {
           const active = isActive(chip);
           // MEH-1465 + MEH-1181-A "Direction A": a SELECTED category chip carries
           // its category colour as a ring + 12% wash with a neutral dark label
@@ -356,13 +393,13 @@ export default function ChipScrollRow({
             };
           } else if (isReset && !active) {
             // "כל" ghost — ≥1 category selected → it is the escape, not the state.
-            stateClass = "bg-white text-muted border-border";
+            stateClass = "bg-surface text-muted border-border";
           } else if (active) {
             // solid fill: toggle-active chips + the "כל" baseline.
             stateClass = "bg-state-selected text-white border-state-selected";
           } else {
             stateClass =
-              "bg-white text-text border-border hover:border-primary hover:text-primary";
+              "bg-surface text-text border-border hover:border-primary hover:text-primary";
           }
           // Glyph tint: keep the category colour on the glyph UNLESS the chip is a
           // solid white-fill state (toggle-active / "כל" baseline), where the

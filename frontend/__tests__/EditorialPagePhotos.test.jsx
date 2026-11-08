@@ -15,6 +15,9 @@ vi.mock("next-intl/server", () => {
   t.raw = () => [];
   return { setRequestLocale: () => {}, getTranslations: async () => t };
 });
+// MEH-2824: /join's closing band is the shared ClosingCtaBand, which reads its
+// contact pair with useTranslations. Same key-echo stub.
+vi.mock("next-intl", () => ({ useTranslations: () => (key) => key }));
 vi.mock("@/i18n/navigation", () => ({
   Link: ({ children, href, ...props }) => <a href={href} {...props}>{children}</a>,
 }));
@@ -22,6 +25,11 @@ vi.mock("next/link", () => ({
   default: ({ children, href, ...props }) => <a href={href} {...props}>{children}</a>,
 }));
 vi.mock("@/components/BusinessCtaLink", () => ({ default: ({ children }) => <a>{children}</a> }));
+// MEH-2799: /join mounts two client islands with their own suites
+// (JoinFeatures.test.jsx, JoinStickyBar.test.jsx); stubbed so this file stays
+// about the editorial photo.
+vi.mock("@/components/join/JoinFeatures", () => ({ default: () => <section data-testid="join-features" /> }));
+vi.mock("@/components/join/JoinStickyBar", () => ({ default: () => <div data-testid="join-sticky-bar" /> }));
 vi.mock("next/image", () => ({
   // eslint-disable-next-line @next/next/no-img-element, jsx-a11y/alt-text
   default: ({ fill, priority, ...props }) => <img data-priority={String(!!priority)} {...props} />,

@@ -29,6 +29,11 @@ let params = {};
 // next/navigation for real and fails under the partial mocks in this file.
 // Stubbed here; the notice's own contract lives in EnSearchNotice.test.jsx and
 // its mount on /producers is pinned in ProducersClientSearch.test.jsx.
+// MEH-2767: the chip gate counts the unfiltered snapshot hook; see the helper.
+import { setCatalogSnapshot } from "./helpers/catalog-snapshot";
+vi.mock("@/lib/use-catalog-snapshot", async () =>
+  (await import("./helpers/catalog-snapshot")).catalogSnapshotMock);
+vi.mock("@/lib/use-chip-copy", async () => (await import("./helpers/he-chip-copy")).chipCopyMock);
 vi.mock("@/components/EnSearchNotice", () => ({ default: () => null }));
 vi.mock("next/navigation", () => ({
   useRouter: () => router,
@@ -40,6 +45,8 @@ vi.mock("next/navigation", () => ({
 vi.mock("next-intl", () => ({ useTranslations: (s) => (k) => (s ? `${s}.${k}` : k) }));
 vi.mock("next/link", () => ({ default: ({ children, href }) => <a href={href}>{children}</a> }));
 vi.mock("@phosphor-icons/react", () => ({
+  // MEH-2827 PR 4: the «המליצו על בית עסק» links in the empty states.
+  ArrowLeft: (p) => <span {...p} />,
   // MEH-2131: the open-now chip's leading glyph (lib/chip-icons.js). Absent
   // here, the whole suite dies at import with "No \"Clock\" export is defined".
   Clock: (p) => <span {...p} />,
@@ -71,6 +78,8 @@ vi.mock("@phosphor-icons/react", () => ({
   Certificate: (p) => <span {...p} />,
   GrainsSlash: (p) => <span {...p} />,
   Barn: (p) => <span {...p} />,
+  Medal: (p) => <span {...p} />,
+  HandHeart: (p) => <span {...p} />,
   DropSlash: (p) => <span {...p} />,
   FlowerTulip: (p) => <span {...p} />,
 }));
@@ -162,7 +171,9 @@ function items(n, extra = 0, window = WINDOW) {
   return rows;
 }
 
-const props = (initialItems) => ({
+// MEH-2767: the gate counts the snapshot — make it the rendered fixture.
+const props = (initialItems) => (setCatalogSnapshot(initialItems), propsBase(initialItems));
+const propsBase = (initialItems) => ({
   initialItems,
   initialTotal: initialItems.length,
   initialPage: 1,

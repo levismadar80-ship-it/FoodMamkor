@@ -25,7 +25,8 @@ from pathlib import Path
 from typing import Literal
 
 import httpx
-from passlib.context import CryptContext
+
+from app.auth import verify_password
 
 logger = logging.getLogger(__name__)
 
@@ -35,8 +36,8 @@ MIN_LENGTH = 12
 HIBP_RANGE_URL = "https://api.pwnedpasswords.com/range/{prefix}"
 _DENY_LIST_PATH = Path(__file__).parent / "deny_list_10k.txt"
 
-# bcrypt context shared with auth.py (single-wrapper invariant — see auth.py:20).
-_pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+# MEH-2220: reuse check goes through auth.verify_password (single-wrapper
+# invariant) so the 72-byte truncation lives in exactly one place.
 
 
 def _load_deny_list(path: Path) -> frozenset[str]:
@@ -80,9 +81,9 @@ async def _check_hibp(candidate: str, timeout_seconds: float) -> bool:
 
 
 def _check_reuse_sync(candidate: str, current_hash: str) -> bool:
-    """passlib verify is sync; wrapped via asyncio.to_thread by caller."""
+    """bcrypt verify is sync; wrapped via asyncio.to_thread by caller."""
     try:
-        return _pwd_context.verify(candidate, current_hash)
+        return verify_password(candidate, current_hash)
     except Exception as exc:
         logger.warning("reuse_check_error err=%s", type(exc).__name__)
         return False

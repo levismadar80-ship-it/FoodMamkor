@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { ArrowUp } from "@phosphor-icons/react";
+import { useTranslations } from "next-intl";
 
 /**
  * Module:   BackToTop
@@ -30,11 +31,17 @@ const REVEAL_VIEWPORTS = 2;
 // MEH-2148: derived, mirroring ChatWidget's own calc term for term. The +60px
 // (the FAB's height plus a gap) is this component's own and stays literal --
 // it is a stacking offset above the FAB, not a copy of the nav geometry.
+// MEH-2835: the +60px applies only while the chat launcher is on screen —
+// ChatWidget publishes --chat-fab-clearance (64px = its 48px + 16px gap) then.
+// When the launcher is away (desktop-only pages, an open panel, a form page),
+// the var is absent → 0, and this button takes the launcher's own slot instead
+// of floating 60px above nothing. max(... − 4px, 0px) turns 64 → 60, 0 → 0.
 const BOTTOM_MOBILE =
-  `calc(var(--bottom-nav-clearance, calc(4.5rem + env(safe-area-inset-bottom, 0px))) + 16px + var(--cookie-banner-h, 0px) + 60px)`;
+  `calc(var(--bottom-nav-clearance, calc(4.5rem + env(safe-area-inset-bottom, 0px))) + 16px + var(--cookie-banner-h, 0px) + max(var(--chat-fab-clearance, 0px) - 4px, 0px))`;
 const BOTTOM_DESKTOP = "84px";
 
 export default function BackToTop() {
+  const t = useTranslations("a11y");
   const [visible, setVisible] = useState(false);
   const [isDesktop, setIsDesktop] = useState(false);
 
@@ -98,9 +105,9 @@ export default function BackToTop() {
     <button
       type="button"
       onClick={handleClick}
-      aria-label="חזרה לראש העמוד"
+      aria-label={t("back_to_top")}
       data-testid="back-to-top"
-      className="fixed end-4 z-[1000] flex items-center justify-center w-12 h-12 rounded-full bg-background text-primary border border-border shadow-lg hover:bg-green-50 transition-colors focus-ring"
+      className="vv-pin fixed end-4 z-[1000] flex items-center justify-center w-12 h-12 rounded-full bg-background text-primary border border-border shadow-lg hover:bg-green-50 transition-colors focus-ring"
       style={{ bottom: isDesktop ? BOTTOM_DESKTOP : BOTTOM_MOBILE }}
     >
       <ArrowUp size={22} weight="bold" aria-hidden="true" />

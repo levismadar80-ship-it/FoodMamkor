@@ -88,19 +88,21 @@ def _build_prompt(payload: dict[str, Any]) -> tuple[str, str]:
     price_str = "חינם" if not price else f"₪{price}"
     location_type = payload.get("location_type") or ""
     max_participants = payload.get("max_participants") or ""
+    fields = {
+        "כותרת": title,
+        "קטגוריה": category,
+        "תיאור": description,
+        "עיר": city,
+        "סוג מיקום": location_type,
+        "מחיר לאדם": price_str,
+        "מקסימום משתתפים": max_participants,
+    }
+    # MEH-2763: an outbound sign-up link is content too. Only when there is
+    # one, so a submission without it reads exactly as before.
+    if payload.get("registration_url"):
+        fields["קישור הרשמה"] = payload["registration_url"]
 
-    data_rule, user_content = wrap_submission(
-        "experience",
-        {
-            "כותרת": title,
-            "קטגוריה": category,
-            "תיאור": description,
-            "עיר": city,
-            "סוג מיקום": location_type,
-            "מחיר לאדם": price_str,
-            "מקסימום משתתפים": max_participants,
-        },
-    )
+    data_rule, user_content = wrap_submission("experience", fields)
     system = f"""אתה מודרטור תוכן לאתר מהמקור — פלטפורמה ישראלית לאוכל בריא,
 חקלאות מקומית וחוויות אוכל אצל בתי עסק מקומיים מורשים. בדוק את החוויה המוגשת ותחזיר תשובה
 ב-JSON בלבד.
@@ -183,6 +185,7 @@ def validate_experience(payload: dict[str, Any]) -> dict:
         "location_type": payload.get("location_type"),
         "price_per_person": _safe_decimal(payload.get("price_per_person")),
         "max_participants": payload.get("max_participants"),
+        "registration_url": payload.get("registration_url"),
     }
 
     client = _get_client()

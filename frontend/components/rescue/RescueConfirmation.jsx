@@ -1,0 +1,154 @@
+"use client";
+
+import { useState } from "react";
+import { useTranslations } from "next-intl";
+
+import Button from "@/components/ui/Button";
+
+import { israelTime, shekels } from "@/lib/rescue";
+
+/**
+ * Module:   RescueConfirmation
+ * Purpose:  What a buyer sees the moment a bag is reserved — the 4-digit code
+ *           they read out at the counter, what to pay there, and until when
+ *           cancelling is free.
+ * Does NOT: take payment or count down. The pilot has neither: the money
+ *           changes hands at the counter and the reservation does not expire
+ *           (03/11 ruling, which removed the 10-minute hold).
+ *           It also does NOT promise an SMS — nothing in this stack sends one,
+ *           so the copy says «אומרים בקופה» and stops there.
+ * Related:  components/rescue/RescueSection.jsx (reserves, then renders this)
+ * History:  MEH-2648 (creation) · MEH-2737 (cancel asks first; past the
+ *           cutoff the terms say it can no longer be cancelled)
+ */
+export default function RescueConfirmation({ order, onCancel, cancelling = false }) {
+  const t = useTranslations("rescue");
+  // MEH-2737: the cancel link asks before it acts — one stray tap used to
+  // give the bag away with no way back.
+  const [asking, setAsking] = useState(false);
+  if (!order) return null;
+
+  const price = shekels(order.price_agorot);
+  const cancelUntil = israelTime(order.cancel_until);
+  const from = israelTime(order.pickup_start);
+  const until = israelTime(order.pickup_end);
+  const started = order.pickup_start ? new Date(order.pickup_start) <= new Date() : false;
+  // MEH-2694: once the bag is handed, or the cancel cutoff has passed, the API
+  // refuses a cancel (409), so the button would be a tap that can only fail.
+  const handed = order.status === "handed";
+  // Allow-list, not "not handed": only a reserved order can be cancelled.
+  // The terms line stays past the cutoff because it also carries the no-show
+  // rule, which still applies until the bag is collected.
+  const cancellable =
+    order.status === "reserved" &&
+    (!order.cancel_until || new Date(order.cancel_until) > new Date());
+
+  return (
+    <div
+      data-testid="rescue-confirmation"
+      className="border border-primary/20 bg-background rounded-md px-4 py-5 text-center"
+    >
+      <p className="font-body-sm text-sm text-text">{t("confirm.title")}</p>
+
+      {/* 56px, LTR: the code is digits and must not render reversed, and it is
+          read aloud across a counter — it is the largest thing on the screen
+          on purpose. */}
+      <p
+        dir="ltr"
+        data-testid="rescue-confirmation-code"
+        className="font-headline-md font-black text-text tracking-[0.2em] mt-2"
+        style={{ fontSize: "56px", lineHeight: 1.1 }}
+      >
+        {order.pickup_code}
+      </p>
+
+      <p className="font-body-sm text-sm text-fg-muted mt-1" data-testid="rescue-confirmation-say">
+        {t("confirm.say_at_counter")}
+      </p>
+
+      {price !== null && (
+        <p className="font-headline-md text-base font-black text-text mt-3" data-testid="rescue-confirmation-price">
+          {t("confirm.pay", { price })}
+        </p>
+      )}
+
+      {from && until && (
+        <p className="font-body-sm text-sm text-text mt-1" data-testid="rescue-confirmation-window">
+          {t("row.pickup", { from, until })}
+        </p>
+      )}
+
+      {cancelUntil && !handed && (
+        <p className="font-body-sm text-sm text-fg-muted mt-2" data-testid="rescue-confirmation-terms">
+          {/* MEH-2737: past the cutoff, never a time that has already gone by. */}
+          {order.status === "reserved" && !cancellable
+            ? t("confirm.terms_no_cancel")
+            : t("confirm.terms", { cancel_until: cancelUntil })}
+        </p>
+      )}
+
+      {/* Three steps, and the last is disabled until the window opens: before
+          pickup_start there is nothing to have collected. */}
+      <ol className="flex items-center justify-center gap-2 mt-4 font-body-sm text-sm" data-testid="rescue-confirmation-steps">
+        <li className="text-text font-semibold">{t("confirm.step_reserved")}</li>
+        <li aria-hidden="true" className="text-fg-muted">·</li>
+        <li className={started || handed ? "text-text font-semibold" : "text-fg-muted"}>{t("confirm.step_collect")}</li>
+        <li aria-hidden="true" className="text-fg-muted">·</li>
+        <li className={handed ? "text-text font-semibold" : "text-fg-muted"} data-testid="rescue-confirmation-step-done">
+          {t("confirm.step_done")}
+        </li>
+      </ol>
+
+      {onCancel && cancellable && asking && (
+        <div
+          role="group"
+          aria-labelledby="rescue-cancel-ask-title"
+          data-testid="rescue-cancel-ask"
+          className="mt-4 border-t border-border pt-3"
+        >
+          <p id="rescue-cancel-ask-title" className="font-body-sm text-sm font-semibold text-text">
+            {t("confirm.cancel_ask_title")}
+          </p>
+          <p className="font-body-sm text-sm text-fg-muted mt-1">{t("confirm.cancel_ask_body")}</p>
+          <div className="flex flex-wrap justify-center gap-2 mt-3">
+            <Button
+              variant="outlined"
+              size="sm"
+              onClick={async () => {
+                // The question closes once the attempt is over: on success
+                // this whole card goes, on a refusal the reason shows under
+                // it and a second «כן» would only be refused again.
+                await onCancel();
+                setAsking(false);
+              }}
+              disabled={cancelling}
+              data-testid="rescue-cancel-yes"
+            >
+              {t("confirm.cancel_yes")}
+            </Button>
+            <Button
+              size="sm"
+              onClick={() => setAsking(false)}
+              disabled={cancelling}
+              data-testid="rescue-cancel-no"
+            >
+              {t("confirm.cancel_no")}
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {onCancel && cancellable && !asking && (
+        <button
+          type="button"
+          onClick={() => setAsking(true)}
+          disabled={cancelling}
+          data-testid="rescue-confirmation-cancel"
+          className="mt-4 font-body-sm text-sm text-fg-muted underline disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 rounded"
+        >
+          {t("confirm.cancel")}
+        </button>
+      )}
+    </div>
+  );
+}

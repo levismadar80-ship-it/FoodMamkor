@@ -5,6 +5,7 @@ import { useLocale, useTranslations } from "next-intl";
 import api from "@/lib/api";
 import { detailToMessage } from "@/lib/errors";
 import { ProducerClaimLinkSchema } from "@/lib/api-schemas";
+import Button from "@/components/ui/Button";
 
 /**
  * Module:   ClaimLinkPanel
@@ -85,7 +86,7 @@ export default function ClaimLinkPanel({ producerId }) {
   return (
     <section
       data-testid="claim-link-panel"
-      className="bg-white rounded-[12px] border border-border p-6 mb-6 max-w-4xl"
+      className="bg-surface rounded-md border border-border p-6 mb-6 max-w-4xl"
     >
       <h2 className="font-semibold text-lg mb-2 text-primary">{t("title")}</h2>
       <p className="text-sm text-muted mb-4">{t("intro")}</p>
@@ -103,16 +104,16 @@ export default function ClaimLinkPanel({ producerId }) {
               dir="ltr"
               value={link.url}
               onFocus={(e) => e.target.select()}
-              className="flex-1 min-w-0 border border-border rounded-[12px] px-3 py-2 text-sm bg-background"
+              className="flex-1 min-w-0 border border-border rounded-md px-3 py-2 text-sm bg-background"
             />
-            <button
+            <Button
               type="button"
               data-testid="claim-link-copy"
               onClick={copy}
-              className="min-h-[44px] bg-primary text-white rounded-[12px] px-6 py-2 text-sm font-medium hover:bg-primary-dark transition"
+              variant="primary" size="sm"
             >
               {copied ? t("copied") : t("copy")}
-            </button>
+            </Button>
           </div>
           <p className="text-xs text-muted mt-2" data-testid="claim-link-expires">
             {t("expires", { date: expires })}
@@ -136,7 +137,7 @@ export default function ClaimLinkPanel({ producerId }) {
         data-testid="claim-link-create"
         onClick={create}
         disabled={busy}
-        className="min-h-[44px] bg-white border border-primary text-primary rounded-[12px] px-6 py-2 text-sm font-medium hover:bg-background transition disabled:opacity-50"
+        className="min-h-touch bg-surface border border-primary text-primary rounded-md px-6 py-2 text-sm font-medium hover:bg-background transition disabled:opacity-50"
       >
         {busy ? t("creating") : t("create")}
       </button>

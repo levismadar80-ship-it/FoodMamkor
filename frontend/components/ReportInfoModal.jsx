@@ -18,6 +18,7 @@ import { useTranslations } from "next-intl";
 import { useFocusReturn } from "@/lib/use-focus-return";
 import { showToast } from "@/lib/toast";
 import api from "@/lib/api";
+import Button from "@/components/ui/Button";
 
 export default function ReportInfoModal({ open, onClose, producerSlug }) {
   const t = useTranslations("modals.report_info");
@@ -115,7 +116,7 @@ export default function ReportInfoModal({ open, onClose, producerSlug }) {
         role="dialog"
         aria-modal="true"
         aria-labelledby="report-info-title"
-        className="bg-white rounded-[16px] shadow-xl w-full max-w-sm p-6 text-start"
+        className="bg-surface rounded-lg shadow-xl w-full max-w-sm p-6 text-start"
       >
         <h2
           id="report-info-title"
@@ -134,7 +135,7 @@ export default function ReportInfoModal({ open, onClose, producerSlug }) {
               value={message}
               onChange={(e) => setMessage(e.target.value)}
               placeholder={t("placeholder")}
-              className="w-full border rounded-[12px] px-3 py-2 text-sm text-start resize-none"
+              className="w-full border rounded-md px-3 py-2 text-sm text-start resize-none"
             />
           </div>
 
@@ -151,22 +152,22 @@ export default function ReportInfoModal({ open, onClose, producerSlug }) {
               maxLength={254}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full border rounded-[12px] px-3 py-2 text-sm text-start"
+              className="w-full border rounded-md px-3 py-2 text-sm text-start"
             />
           </div>
 
           <div className="flex gap-3 pt-1">
-            <button
+            <Button
               type="submit"
               disabled={loading || !canSubmit}
-              className="flex-1 bg-primary text-white py-2 rounded-[12px] text-sm font-medium hover:bg-primary-dark transition disabled:opacity-50"
+              variant="primary" size="sm" className="flex-1"
             >
               {loading ? t("submit_loading") : t("submit")}
-            </button>
+            </Button>
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 rounded-[12px] text-sm text-fg-muted hover:text-text border transition"
+              className="px-4 py-2 rounded-md text-sm text-fg-muted hover:text-text border transition"
             >
               {t("close")}
             </button>

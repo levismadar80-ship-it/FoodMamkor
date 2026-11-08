@@ -2,15 +2,15 @@
 
 import { useState, useCallback, useEffect, useRef } from "react";
 import { useSearchParams } from "next/navigation";
-import Link from "next/link";
-import { MagnifyingGlass, Plant, Leaf, CaretDown, Faders, MapPin } from "@phosphor-icons/react";
+import { Link } from "@/i18n/navigation";
+import { MagnifyingGlass, Plant, Leaf, CaretDown, Faders, MapPin, ArrowLeft } from "@phosphor-icons/react";
 import { chipsToQuery } from "@/lib/filter-url";
 import { useTranslations } from "next-intl";
 import Breadcrumb from "@/components/Breadcrumb";
 import ProducerCard from "@/components/ProducerCard";
 import ChipScrollRow from "@/components/ChipScrollRow";
 import PromotedServiceChips from "@/components/PromotedServiceChips";
-import { SERVICE_CHIP_KEYS } from "@/lib/map-chips";
+import { SERVICE_CHIP_KEYS, categoryGroupRow, toggleCategoryGroup } from "@/lib/map-chips";
 import { CATEGORY_STYLES, resolveCategoryGlyph } from "@/lib/category-registry";
 import LocationModal from "@/components/LocationModal";
 // MEH-1825: day axis on the canonical listing surface — same component home
@@ -22,9 +22,7 @@ import BackToTop from "@/components/BackToTop";
 import { SkeletonProducerGrid } from "@/components/Skeleton";
 import {
   buildChipParams,
-  openNowChipVisible,    // MEH-2131
-  visibleGatedDietKeys,  // MEH-1934
-  GATED_DIET_KEYS,       // MEH-1934
+  visibleAxisChips,      // MEH-2767: the one chip gate (was MEH-1934 + MEH-2131)
   // MEH-1881: the /producers-specific pair. The bare CHIPS_CONFIG /
   // CHIPS_DEFAULT are SHARED with the home grid (HomeProducersGrid.jsx:70), so
   // importing those here and appending to them leaks the open-now chip onto a
@@ -39,13 +37,17 @@ import {
 // their filter IA should not diverge again.
 import FilterSheet from "@/components/FilterSheet";
 import { withChipIcons } from "@/lib/chip-icons";
+import { useChipCopy } from "@/lib/use-chip-copy";
 import { useUserCity } from "@/lib/use-user-city";
-import { useUserLocation } from "@/lib/user-location";
+import { useUserLocation, setUserLocation } from "@/lib/user-location";
+import { showToast } from "@/lib/toast";
 import { trackEvent } from "@/lib/analytics";
 import { useAuth } from "@/lib/auth-context";
 import api from "@/lib/api";
+import { useCatalogSnapshot } from "@/lib/use-catalog-snapshot";
 import EnSearchNotice from "@/components/EnSearchNotice";
 import { CategoriesResponseSchema } from "@/lib/api-schemas";
+import Button from "@/components/ui/Button";
 
 const FILTER_LIMIT = 100;
 const PAGE_SIZE = 24; // matches PER_PAGE in page.jsx
@@ -87,18 +89,13 @@ function sortRequestParams(sort, loc) {
   return { sort };
 }
 
-// Display axis = i18n key for the translated label.
-// Data axis = `q` value sent to /producers — must stay Hebrew because the
-// backend search matches against Hebrew producer name/description columns.
-// Translating `q` per locale would zero-match on /en/.
-const EMPTY_CATEGORY_CHIPS = [
-  { key: "beef", q: "בשר" },
-  { key: "cheese", q: "גבינה" },
-  { key: "bread", q: "לחם" },
-  { key: "vegetables", q: "ירקות" },
-  { key: "oil", q: "שמן" },
-  { key: "honey", q: "דבש" },
-];
+// MEH-2634: the six hardcoded escape chips (בשר/גבינה/לחם/ירקות/שמן/דבש) are
+// gone. They were a free-text `?q=` guess, so a chip could lead to a SECOND
+// empty state — "בשר" matched nothing while the catalog had a live בשר
+// category — and the set never moved when the catalog did. The empty state now
+// offers the page's own live `categoryChips`, which are built from the
+// categories the API returned, and links `?category=<id>` (the canonical axis,
+// MEH-1081) instead of a search string.
 
 function initChipsFromParams(searchParams) {
   const result = { ...CHIPS_DEFAULT };
@@ -119,6 +116,9 @@ export default function ProducersClient({
   ratingSortEnabled = false,
 }) {
   const t = useTranslations("producers");
+  // MEH-2616: the location-error strings shared with /map's GPS button.
+  const tGeo = useTranslations("map.client.errors");
+  const withChipCopy = useChipCopy(); // MEH-2748: chip words from messages
   const searchParams = useSearchParams();
 
   // MEH-990: city chip is text-only like the rest of CHIPS_CONFIG (Emoji LOCK,
@@ -132,6 +132,8 @@ export default function ProducersClient({
   // is exactly what lib/orderWindow.js's header warns against — the status is
   // time-derived, so a server pass and hydration can disagree.
   const [openNowClock, setOpenNowClock] = useState(null);
+  // MEH-2767: the unfiltered catalog the chip gate counts (see visibleChipDefs).
+  const catalogSnapshot = useCatalogSnapshot();
   const [cityFilter, setCityFilter] = useState(() => searchParams.get("city") || null);
   // MEH-1825: delivery-day axis. Two guards on hydration, both from the
   // acceptance criteria: an unknown ?delivery_day= value is dropped against
@@ -174,6 +176,9 @@ export default function ProducersClient({
   // enables the distance option without a reload. `locRef` mirrors it for the
   // useCallback([]) fetchers, exactly like sortOrderRef.
   const userLoc = useUserLocation();
+  // MEH-2616: true while a "מרחק" pick waits on the browser's location answer.
+  // Disables the select (as on /map) so a second pick cannot race the first.
+  const [geoSortPending, setGeoSortPending] = useState(false);
   const locRef = useRef(userLoc);
   useEffect(() => { locRef.current = userLoc; }, [userLoc]);
   // The order actually requested: a distance choice with no fix (deep-link
@@ -493,11 +498,14 @@ export default function ProducersClient({
   // MEH-1465: multi-select OR. "הכל" ("all") is ChipScrollRow's reset sentinel →
   // clears the whole set; re-tapping a selected category removes it; any other
   // category is added to the union.
+  // MEH-2783: a chip is a GROUP (same 6 as /map) → it toggles all its ids.
   const handleCategorySelect = (key) => {
     let next;
     if (key === "all") next = [];
-    else if (categoryFilter.includes(key)) next = categoryFilter.filter((k) => k !== key);
-    else next = [...categoryFilter, key];
+    else {
+      const group = categoryRow.find((g) => g.key === key);
+      next = toggleCategoryGroup(categoryFilter, group ? group.ids : [key]);
+    }
     setCategoryFilter(next);
     // MEH-1084: ADDING a category is a new view → push (Back removes it);
     // removing one or clearing to baseline is refinement → replace (a push there
@@ -512,16 +520,89 @@ export default function ProducersClient({
   // it), flip state (fires the [sortOrder] effect → re-establishes the
   // unfiltered base), and refetch the filtered list in place when filters are
   // active so the visible results re-order immediately.
+  //
+  // MEH-2616: "מרחק" is a trigger, not a disabled option — the /map decision
+  // (MEH-2014, MapClient.jsx handleSortChange). This page has no other way to
+  // give a location, so a grey option here could never become usable. Picking
+  // it without a fix asks the browser once; success stores the fix and applies
+  // the sort, failure leaves the order as it was and says why. The request is
+  // in-context only, never on page load.
   const handleSortChange = (e) => {
-    const next = sortValuesFor(ratingSortEnabled, !!userLoc).includes(e.target.value)
-      ? e.target.value
-      : SORT_DEFAULT;
-    if (next === sortOrder) return;
+    const value = e.target.value;
+    if (value === SORT_DISTANCE && !userLoc) {
+      requestDistanceSort();
+      return;
+    }
+    applySort(value);
+  };
+
+  const applySort = (value) => {
+    // hasLocation=true: applySort is only reached for distance once a fix
+    // exists (or is being stored this tick by requestDistanceSort).
+    const next = sortValuesFor(ratingSortEnabled, true).includes(value) ? value : SORT_DEFAULT;
+    if (next === sortOrderRef.current) return;
     sortOrderRef.current = next;
     setSortOrder(next);
     syncUrl(chips, cityFilter, searchQ, categoryFilter);
     // MEH-2294: the filtered refetch now happens in the [effectiveSort] effect.
     trackEvent("producers_sort_change", { sort: next });
+  };
+  // MEH-2616: the location answer can land seconds after the pick, while the
+  // chips/search stay usable. The callback calls the LATEST applySort through
+  // this ref, so it syncs the URL with the current filters, not the ones
+  // captured at pick time. `mountedRef` drops an answer that lands after unmount.
+  const applySortRef = useRef(applySort);
+  applySortRef.current = applySort;
+  const mountedRef = useRef(true);
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => { mountedRef.current = false; };
+  }, []);
+
+  const requestDistanceSort = () => {
+    if (geoSortPending) return;
+    if (typeof navigator === "undefined" || !navigator.geolocation) {
+      showToast.error(tGeo("no_gps"));
+      return;
+    }
+    setGeoSortPending(true);
+    // Some browsers call NEITHER callback when the permission prompt is
+    // dismissed (the 8 s timeout only starts after permission resolves), which
+    // would leave the select disabled for good. Release it after 15 s; a late
+    // answer still applies normally.
+    const release = setTimeout(() => {
+      if (mountedRef.current) setGeoSortPending(false);
+    }, 15000);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        clearTimeout(release);
+        if (!mountedRef.current) return;
+        setGeoSortPending(false);
+        const { latitude: lat, longitude: lng } = pos.coords || {};
+        if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+          showToast.error(tGeo("gps_unknown"));
+          return;
+        }
+        setUserLocation(lat, lng);
+        applySortRef.current(SORT_DISTANCE);
+      },
+      (err) => {
+        clearTimeout(release);
+        if (!mountedRef.current) return;
+        setGeoSortPending(false);
+        // Never surface GeolocationPositionError.message (English-only,
+        // developer-facing). These strings name no city picker — /producers
+        // has none that sets a sort origin, unlike /map's sort.geo_* copy.
+        const msgs = {
+          1: tGeo("permission_denied"),
+          2: tGeo("position_unavailable"),
+          3: tGeo("timeout"),
+        };
+        showToast.info(msgs[err?.code] ?? tGeo("gps_unknown"));
+        // sortOrder is untouched, so the controlled <select> snaps back.
+      },
+      { timeout: 8000, enableHighAccuracy: true },
+    );
   };
 
   const handleChipClick = (key) => {
@@ -669,25 +750,24 @@ export default function ProducersClient({
   //
   // `openNowClock` is null until mounted — see the state declaration for why
   // reading the clock during render would be a hydration mismatch.
-  const showOpenNowChip = openNowChipVisible({
-    producers: loadedCatalog,
-    active: chips.open_for_orders_now,
-    catalogFullyLoaded: !hasMore,
+  //
+  // MEH-2767: both gates now run through visibleAxisChips over the UNFILTERED
+  // catalog snapshot — the same function and the same kind of input home and
+  // /map use, so one catalog yields one chip set on all three surfaces
+  // (surfaceParity.test.js). `loadedCatalog` above still drives the category
+  // row; it is only the CHIP gate that moved.
+  const visibleChipDefs = visibleAxisChips({
+    chips: CHIPS_CONFIG,
+    catalog: catalogSnapshot.catalog,
+    status: catalogSnapshot.status,
+    complete: catalogSnapshot.complete,
+    // A failed snapshot gates on what this page loaded (the pre-MEH-2767
+    // source), so the open-now guard never drops out on a network blip.
+    fallbackCatalog: loadedCatalog,
+    fallbackComplete: !hasMore,
+    chipState: chips,
     now: openNowClock,
   });
-  // MEH-1934: the two new diet chips are gated on the same principle — absent,
-  // not disabled, until DIET_CHIP_MIN businesses carry the marking. Computed
-  // over the loaded producers, so the chips turn themselves on when the
-  // catalog arrives with nobody flipping a flag.
-  const shownDietKeys = visibleGatedDietKeys(loadedCatalog, chips);
-  const hiddenDietKeys = GATED_DIET_KEYS.filter(
-    (k) => !shownDietKeys.includes(k),
-  );
-  const visibleChipDefs = (
-    showOpenNowChip
-      ? CHIPS_CONFIG
-      : CHIPS_CONFIG.filter((c) => c.key !== "open_for_orders_now")
-  ).filter((c) => !hiddenDietKeys.includes(c.key));
   // MEH-1862: the row and the sheet split what used to be one array.
   //
   // The CITY chip stays INLINE and is deliberately not filed into the sheet. It
@@ -723,23 +803,31 @@ export default function ProducersClient({
   // CATEGORY_STYLES entry stays currentColor (deliberate — MEH-763 palette lock
   // forbids inventing new category colours). The active chip ignores iconColor
   // (ChipScrollRow) so its glyph stays white.
+  // MEH-2783 (Sapir 06/11): the row shows the 6 department groups /map shows
+  // (lib/map-chips.js CATEGORY_CHIPS), not one chip per DB category. A group
+  // is offered when any of its categories is visible (the same data gate as
+  // before), and a category no group claims keeps its own chip.
+  const categoryRow = categoryGroupRow(categories, visibleCategories, CATEGORY_STYLES);
   const categoryChips = [
     { key: "all", label: t("filters.category_all") },
-    ...visibleCategories.map((c) => {
-      // MEH-2163: one total lookup, and the chip policy stated rather than
-      // inferred from a bare index returning `undefined` — an unmapped category
-      // renders NO icon here (`isFallback` discarded), which is MEH-1441's
-      // "never a Leaf fallback" decision, not an accident of the lookup shape.
-      const { glyph: Glyph, isFallback } = resolveCategoryGlyph(c);
-      const style = CATEGORY_STYLES[c.name];
-      const iconColor = style ? (style.textColor ?? style.color) : undefined;
+    ...categoryRow.map((g) => {
+      const c = g.dbCategory;
+      // MEH-2163: one total lookup; an unmapped glyph renders NO icon (MEH-1441).
+      // resolveCategoryGlyph takes a category object OR its name key (categoryGlyphKey).
+      const { glyph: Glyph, isFallback } = resolveCategoryGlyph(c ?? g.iconName ?? "");
+      const style = c ? CATEGORY_STYLES[c.name] : null;
+      const iconColor = c ? (style ? (style.textColor ?? style.color) : undefined) : g.iconColor;
+      const label = c ? c.name : withChipCopy({ key: g.key }).label;
       return {
-        key: String(c.id),
-        label: c.name,
-        ...(isFallback ? {} : { icon: <Glyph size={16} />, ...(iconColor ? { iconColor } : {}) }),
+        key: g.key,
+        label,
+        ...(isFallback || (!c && !g.iconName) ? {} : { icon: <Glyph size={16} />, ...(iconColor ? { iconColor } : {}) }),
       };
     }),
   ];
+  const activeCategoryKeys = new Set(
+    categoryRow.filter((g) => g.ids.some((id) => categoryFilter.includes(id))).map((g) => g.key),
+  );
   const showFilterEmpty =
     hasActiveChips && !loading && filteredItems !== null && filteredItems.length === 0;
   const showPageOverflow =
@@ -808,7 +896,7 @@ export default function ProducersClient({
         <label htmlFor="producers-search-input" className="sr-only">
           {t("search_input.label")}
         </label>
-        <div className="flex-1 min-w-0 flex items-center gap-2 border border-border rounded-full px-4 min-h-[44px] bg-white focus-within:ring-2 focus-within:ring-primary/40">
+        <div className="flex-1 min-w-0 flex items-center gap-2 border border-border rounded-full px-4 min-h-touch bg-surface focus-within:ring-2 focus-within:ring-primary/40">
           <MagnifyingGlass size={18} weight="regular" aria-hidden="true" className="text-fg-muted" />
           <input
             id="producers-search-input"
@@ -820,12 +908,12 @@ export default function ProducersClient({
             className="flex-1 min-w-0 bg-transparent outline-none text-text placeholder:text-fg-muted text-sm"
           />
         </div>
-        <button
+        <Button
           type="submit"
-          className="shrink-0 bg-primary text-white px-4 min-h-[44px] rounded-full text-sm font-medium hover:bg-primary-dark transition"
+          variant="primary" size="sm" className="shrink-0"
         >
           {t("search_input.submit")}
-        </button>
+        </Button>
       </form>
       {/* MEH-1812 notice, moved here from /search when MEH-819 made this the
           one results page. Renders null outside /en. */}
@@ -841,7 +929,7 @@ export default function ProducersClient({
           <ChipScrollRow
             variant="category"
             chips={categoryChips}
-            activeKeys={new Set(categoryFilter)}
+            activeKeys={activeCategoryKeys}
             onChipClick={handleCategorySelect}
           />
         </div>
@@ -871,9 +959,12 @@ export default function ProducersClient({
           sideways scroller bled to the glass below lg (-mx-4/px-4 against the
           page's px-4), py-1/-mt-1 keep focus rings inside the scrollport,
           overscroll-x-none so iOS does not rubber-band the rail (MEH-2574),
-          visible overflow at lg+ so the sheet's anchored panel is not clipped. */}
+          visible overflow at lg+ so the sheet's anchored panel is not clipped;
+          lg:flex-wrap so the MEH-2598 service chips wrap instead of pushing
+          the row past the viewport at 200% text (WCAG 1.4.4, 44-text-scale;
+          same as /map ServiceChipRow). */}
       <div
-        className="-mx-4 -mt-1 mb-3 flex items-center gap-2 min-w-0 overflow-x-auto overscroll-x-none px-4 py-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden lg:-mx-1 lg:px-1 lg:overflow-visible"
+        className="-mx-4 -mt-1 mb-3 flex items-center gap-2 min-w-0 overflow-x-auto overscroll-x-none px-4 py-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden lg:-mx-1 lg:px-1 lg:overflow-visible lg:flex-wrap"
         data-testid="producers-filter-row"
         onFocus={keepFocusedChipClear}
       >
@@ -893,7 +984,7 @@ export default function ProducersClient({
             data-testid="producers-filters-button"
             // REUSES: frontend/app/[locale]/map/components/FilterChipsBar.jsx:80-96
             // — same trigger, same inactive chip visuals, same inline count.
-            className="inline-flex items-center gap-1.5 whitespace-nowrap px-4 py-2.5 rounded-md text-sm font-medium border transition bg-white text-text border-border hover:border-primary hover:text-primary"
+            className="inline-flex items-center gap-1.5 whitespace-nowrap px-4 py-2.5 rounded-md text-sm font-medium border transition bg-surface text-text border-border hover:border-primary hover:text-primary"
           >
             <Faders size={16} aria-hidden="true" />
             {t("filters.filter_label")}
@@ -961,14 +1052,14 @@ export default function ProducersClient({
               the "הכל" chip or re-tapping the coloured category chip. Only
               attribute/city/search chips remain removable here; "נקו הכל" still
               clears both dimensions. */}
-          {activeChipDefs.map((chip) => (
+          {activeChipDefs.map(withChipCopy).map((chip) => (
             <button
               key={chip.key}
               type="button"
               onClick={() => toggleChip(chip.key)}
-              className="inline-flex items-center gap-1 bg-white text-primary border border-primary rounded-full px-3 py-1 text-xs font-medium whitespace-nowrap shrink-0"
+              className="inline-flex items-center gap-1 bg-surface text-primary border border-primary rounded-full px-3 py-1 text-xs font-medium whitespace-nowrap shrink-0"
             >
-              <span aria-hidden="true" className="text-[10px] font-bold">×</span>
+              <span aria-hidden="true" className="text-2xs font-bold">×</span>
               {chip.label}
             </button>
           ))}
@@ -987,9 +1078,9 @@ export default function ProducersClient({
                 syncUrl(chips, cityFilter, "", categoryFilter);
                 fetchFiltered(chips, cityFilter, "", categoryFilter);
               }}
-              className="inline-flex items-center gap-1 bg-white text-primary border border-primary rounded-full px-3 py-1 text-xs font-medium whitespace-nowrap shrink-0"
+              className="inline-flex items-center gap-1 bg-surface text-primary border border-primary rounded-full px-3 py-1 text-xs font-medium whitespace-nowrap shrink-0"
             >
-              <span aria-hidden="true" className="text-[10px] font-bold">×</span>
+              <span aria-hidden="true" className="text-2xs font-bold">×</span>
               <MagnifyingGlass size={13} weight="bold" aria-hidden="true" />{searchQ}
             </button>
           )}
@@ -1007,29 +1098,28 @@ export default function ProducersClient({
               it re-syncs ?sort=, resets pagination, and refetches (both the
               filtered fetch and infinite-scroll pages). Mirrors the /map sort
               control shape (MapClient.jsx).
-              MEH-1864: this axis has exactly two values, so gating "rating" off
-              would leave a select whose only option is the value already
-              applied — a dead affordance. The whole control goes with it; it
-              returns intact the moment the catalog crosses the threshold.
-              (/map keeps its control below the threshold: it still has
-              nearest + newest to switch between.) */}
-          {/* MEH-2294: rendered whenever it holds ≥2 real choices — the rating
-              gate above, OR a location fix (newest + distance, the /map shape).
-              Below the rating threshold with no fix: no control, as before. */}
-          {(ratingSortEnabled || !!userLoc) && (
+              MEH-1864: "rating" is offered only above the rating-data
+              threshold. Below it the control used to disappear entirely; since
+              MEH-2616 it stays with newest + distance (see below). */}
+          {/* MEH-2616: always rendered — "מרחק" is a trigger now, so even below
+              the rating threshold there are two real choices (newest +
+              distance), the same shape /map keeps. */}
           <div className="relative inline-flex items-center shrink-0 ms-auto">
             <span className="text-fg-muted" aria-hidden="true">{t("sort.label")}</span>
             <select
               value={effectiveSort}
               onChange={handleSortChange}
+              disabled={geoSortPending}
+              aria-busy={geoSortPending || undefined}
               aria-label={t("sort.aria_label")}
               data-testid="producers-sort"
-              className="appearance-none bg-transparent border-0 font-medium text-primary min-h-[44px] ps-1 pe-6 cursor-pointer rounded-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1"
+              className="appearance-none bg-transparent border-0 font-medium text-primary min-h-touch ps-1 pe-6 cursor-pointer rounded-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1 disabled:opacity-60"
             >
               <option value="newest">{t("sort.newest")}</option>
               {ratingSortEnabled && <option value="rating">{t("sort.top_rated")}</option>}
-              {/* MEH-2294: disabled until a location fix exists; enables live. */}
-              <option value={SORT_DISTANCE} disabled={!userLoc} data-testid="producers-sort-distance">
+              {/* MEH-2616: never disabled — picking it without a fix asks for
+                  one (requestDistanceSort). */}
+              <option value={SORT_DISTANCE} data-testid="producers-sort-distance">
                 {t("sort.distance")}
               </option>
             </select>
@@ -1040,7 +1130,6 @@ export default function ProducersClient({
               className="pointer-events-none absolute end-1 text-primary"
             />
           </div>
-          )}
         </div>
       )}
 
@@ -1048,7 +1137,7 @@ export default function ProducersClient({
       {loading ? (
         <SkeletonProducerGrid count={8} />
       ) : showFilterEmpty ? (
-        <FilterEmptyState onClear={clearAll} searchQ={searchQ} />
+        <FilterEmptyState onClear={clearAll} searchQ={searchQ} categories={categories} />
       ) : showPageOverflow ? (
         <PageOverflowState />
       ) : showCatalogEmpty ? (
@@ -1107,8 +1196,19 @@ export default function ProducersClient({
   );
 }
 
-function FilterEmptyState({ onClear, searchQ }) {
+export function FilterEmptyState({ onClear, searchQ, categories = [] }) {
   const t = useTranslations("producers");
+  // MEH-2827 PR 4: a search that found nothing is the moment someone knows a
+  // business we don't — the footer link was the only way to /recommend.
+  const tNav = useTranslations("nav.footer");
+  // MEH-2634: ALL live categories, deliberately NOT the `visibleCategories` /
+  // `categoryChips` subset the filter row uses. That subset is data-gated on
+  // what the CURRENT result set loaded (`loadedCategoryIds`), and this state
+  // renders precisely when the result set is EMPTY — so the gated list is
+  // empty too and the escape hatch would offer nothing at all. Measured: 0
+  // chips rendered before this was changed. The gate is right for a chip row
+  // that filters the results in place; it is wrong for a way out of them.
+  const escapeChips = categories;
   return (
     <div className="text-center py-16" data-testid="producers-filter-empty">
       <div
@@ -1127,27 +1227,39 @@ function FilterEmptyState({ onClear, searchQ }) {
       <p className="text-fg-muted text-sm mb-6">
         {searchQ ? t("empty.search_hint") : t("empty.filters_hint")}
       </p>
-      {searchQ && (
+      {searchQ && escapeChips.length > 0 && (
         <div className="flex flex-wrap justify-center gap-2 mb-6">
-          {EMPTY_CATEGORY_CHIPS.map(({ key, q }) => (
+          {escapeChips.map((c) => (
             <Link
-              key={key}
-              href={`/producers?q=${encodeURIComponent(q)}`}
-              className="bg-white border border-border text-text rounded-full px-4 py-1.5 text-sm hover:border-primary hover:text-primary transition"
+              key={c.id}
+              href={`/producers?category=${encodeURIComponent(String(c.id))}`}
+              className="bg-surface border border-border text-text rounded-full px-4 py-1.5 text-sm hover:border-primary hover:text-primary transition"
             >
-              {t(`empty.category_chips.${key}`)}
+              {c.name}
             </Link>
           ))}
         </div>
       )}
-      <button
+      <Button
         type="button"
         onClick={onClear}
         data-testid="producers-empty-clear"
-        className="bg-primary text-white px-6 py-3 rounded-[12px] font-medium hover:bg-primary-dark transition"
+        variant="primary" size="lg"
       >
         {t("empty.clear_all_show_all")}
-      </button>
+      </Button>
+      {searchQ && (
+        <div className="mt-4">
+          <Link
+            href={`/recommend?name=${encodeURIComponent(searchQ)}`}
+            data-testid="recommend-link-search"
+            className="inline-flex items-center gap-1 min-h-touch text-sm font-semibold text-primary underline underline-offset-4 hover:text-primary-dark rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+          >
+            {tNav("recommend")}
+            <ArrowLeft size={15} className="ltr:rotate-180" aria-hidden="true" />
+          </Link>
+        </div>
+      )}
     </div>
   );
 }
@@ -1177,7 +1289,7 @@ function CatalogEmptyState() {
         {!isAdmin && (
           <Link
             href="/register/producer"
-            className="bg-primary text-white px-6 py-3 rounded-[12px] font-medium hover:bg-primary-dark transition"
+            className="bg-primary text-white px-6 py-3 rounded-md font-medium hover:bg-primary-dark transition"
           >
             {t("add_cta")}
           </Link>
@@ -1190,7 +1302,7 @@ function CatalogEmptyState() {
             same-page jump rather than a cross-page hop. */}
         <Link
           href="#newsletter"
-          className="border border-primary text-primary px-6 py-3 rounded-[12px] font-medium hover:bg-green-50 transition"
+          className="border border-primary text-primary px-6 py-3 rounded-md font-medium hover:bg-green-50 transition"
         >
           {t("notify_cta")}
         </Link>
@@ -1206,7 +1318,7 @@ function PageOverflowState() {
       <p className="text-fg-muted mb-4">{t("message")}</p>
       <Link
         href="/producers"
-        className="inline-flex items-center bg-primary text-white px-5 py-2 rounded-[12px] hover:bg-primary-dark transition"
+        className="inline-flex items-center bg-primary text-white px-5 py-2 rounded-md hover:bg-primary-dark transition"
       >
         {t("back_cta")}
       </Link>
@@ -1229,12 +1341,12 @@ function ServerPageLinks({ page, totalPages }) {
       {prev ? (
         <Link
           href={prev}
-          className="border border-border bg-white text-text px-4 py-2 rounded-[12px] hover:bg-green-50 transition"
+          className="border border-border bg-surface text-text px-4 py-2 rounded-md hover:bg-green-50 transition"
         >
           {t("prev")}
         </Link>
       ) : (
-        <span className="border border-border text-fg-muted px-4 py-2 rounded-[12px] opacity-50">
+        <span className="border border-border text-fg-muted px-4 py-2 rounded-md opacity-50">
           {t("prev")}
         </span>
       )}
@@ -1242,12 +1354,12 @@ function ServerPageLinks({ page, totalPages }) {
       {next ? (
         <Link
           href={next}
-          className="border border-border bg-white text-text px-4 py-2 rounded-[12px] hover:bg-green-50 transition"
+          className="border border-border bg-surface text-text px-4 py-2 rounded-md hover:bg-green-50 transition"
         >
           {t("next")}
         </Link>
       ) : (
-        <span className="border border-border text-fg-muted px-4 py-2 rounded-[12px] opacity-50">
+        <span className="border border-border text-fg-muted px-4 py-2 rounded-md opacity-50">
           {t("next")}
         </span>
       )}

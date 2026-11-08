@@ -12,6 +12,7 @@ import api from "@/lib/api";
 import { showToast } from "@/lib/toast";
 import { useAuth } from "@/lib/auth-context";
 import { validateIsraeliPhone } from "@/lib/validators";
+import Button from "@/components/ui/Button";
 
 const DEFAULT_PREFS = {
   notify_new_event: true,
@@ -177,7 +178,7 @@ export default function AlertPrefsPanel({ producerId, producerName, onClose }) {
         }`}
       >
         <span
-          className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow transition-all ${
+          className={`absolute top-1 w-4 h-4 rounded-full bg-surface shadow transition-all ${
             prefs[key] ? "end-1" : "start-1"
           }`}
         />
@@ -197,7 +198,7 @@ export default function AlertPrefsPanel({ producerId, producerName, onClose }) {
       // behaviour their role promised; this one sheds a role it never meant.
       role="group"
       aria-labelledby={headingId}
-      className="rounded-[12px] border border-border bg-white p-4 space-y-3 shadow-sm max-h-[70vh] overflow-y-auto"
+      className="rounded-md border border-border bg-surface p-4 space-y-3 shadow-sm max-h-[70vh] overflow-y-auto"
       dir="rtl"
     >
       <div className="flex items-center justify-between gap-2">
@@ -245,7 +246,7 @@ export default function AlertPrefsPanel({ producerId, producerName, onClose }) {
           {toggleRow("whatsapp_opt_in", t("row_whatsapp_opt_in"), ChatCircle)}
 
           {showPhoneField && (
-            <div className="rounded-[8px] bg-primary/5 border border-primary/20 p-3 space-y-2">
+            <div className="rounded-sm bg-primary/5 border border-primary/20 p-3 space-y-2">
               <p className="text-xs text-text">{t("phone_required_prompt")}</p>
               <input
                 type="tel"
@@ -255,7 +256,7 @@ export default function AlertPrefsPanel({ producerId, producerName, onClose }) {
                 placeholder={t("phone_placeholder")}
                 dir="ltr"
                 aria-label={t("phone_required_prompt")}
-                className="w-full border border-border rounded-[8px] px-3 py-2 text-sm text-start outline-none focus:border-primary focus:ring-2 focus:ring-primary/30 transition"
+                className="w-full border border-border rounded-sm px-3 py-2 text-sm text-start outline-none focus:border-primary focus:ring-2 focus:ring-primary/30 transition"
               />
               {/* MEH-1359: the save button is disabled until the phone is valid — say
                   why, so the greyed-out state isn't an unexplained dead end. */}
@@ -263,13 +264,13 @@ export default function AlertPrefsPanel({ producerId, producerName, onClose }) {
                 <p className="text-xs text-fg-muted">{t("phone_helper")}</p>
               )}
               <div className="flex items-center gap-2">
-                <button
+                <Button
                   onClick={savePhoneAndEnable}
                   disabled={!phoneValid || phoneSaving}
-                  className="flex-1 bg-primary text-white text-sm py-2 rounded-[8px] hover:bg-primary-dark transition disabled:opacity-50"
+                  variant="primary" size="sm" className="flex-1"
                 >
                   {phoneSaving ? t("saving") : t("phone_save_cta")}
-                </button>
+                </Button>
                 <button
                   onClick={cancelPhone}
                   className="text-fg-muted hover:text-text text-lg leading-none px-2 py-2"
@@ -285,7 +286,7 @@ export default function AlertPrefsPanel({ producerId, producerName, onClose }) {
             <button
               onClick={enablePush}
               disabled={pushStatus === "denied"}
-              className="w-full text-xs border border-primary/30 text-primary px-3 py-2 rounded-[8px] hover:bg-primary/5 transition disabled:opacity-40 flex items-center justify-center gap-1.5"
+              className="w-full text-xs border border-primary/30 text-primary px-3 py-2 rounded-sm hover:bg-primary/5 transition disabled:opacity-40 flex items-center justify-center gap-1.5"
             >
               {pushStatus === "denied" ? (
                 <>
@@ -321,13 +322,13 @@ export default function AlertPrefsPanel({ producerId, producerName, onClose }) {
         </div>
       </div>
 
-      <button
+      <Button
         onClick={() => save()}
         disabled={saving}
-        className="w-full bg-primary text-white text-sm py-2 rounded-[8px] hover:bg-primary-dark transition disabled:opacity-50"
+        variant="primary" size="sm" className="w-full"
       >
         {saving ? t("saving") : t("save_cta")}
-      </button>
+      </Button>
     </div>
   );
 }

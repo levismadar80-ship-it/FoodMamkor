@@ -221,10 +221,19 @@ export const ProducerListSchema = z.object({
   is_recommended: z.boolean().nullable().optional(),         // → recommended (בחירת העורכת)
   days_since_created: z.number().nullable().optional(),      // → new (חדש)
   grass_fed: z.boolean().nullable().optional(),              // → grass_fed
+  reservist_owned: z.boolean().nullable().optional(),        // → reservist_owned («עסק של מילואימניקים»)
+  rescued_recently: z.boolean().nullable().optional(),       // → rescue_saving («מצילים מזון», MEH-2716)
   has_gluten_free_products: z.boolean().nullable().optional(),   // → gluten_free
   has_vegetarian_products: z.boolean().nullable().optional(),    // → vegetarian
   has_vegan_products: z.boolean().nullable().optional(),         // → vegan
   has_lactose_free_products: z.boolean().nullable().optional(),  // → lactose_free
+  // MEH-1508 chunk 3ב-2: the owner's whole-business declaration (unknown |
+  // some | all), served by ProducerListOut since chunk 2. Undeclared, z.object
+  // strips it on the two parsed feeds and the «טבעוני/צמחוני» badge plus
+  // the chip data gate never see a value. `z.string()`, not an enum — a new
+  // backend value must cost a badge, never a producer (all-or-nothing parse).
+  vegan_scope: z.string().nullable().optional(),             // → vegan_all
+  vegetarian_scope: z.string().nullable().optional(),        // → vegetarian_all
   // MEH-1934: the contract-parity test is what surfaced these — the backend
   // schema gained them in chunk 2, and an undeclared field is stripped by the
   // strict parse, so the badges would never light no matter what the API sent.
@@ -276,16 +285,11 @@ export const ProducerListSchema = z.object({
   // would debug a backend that is in fact serving it correctly (MEH-901 class).
   top_product_id: z.string().nullable().optional(),          // → ProductsSection badge, chunk 3
   top_product_name: z.string().nullable().optional(),        // → card description fallback, ProducerCard.jsx:202
-  // MEH-2271: availability_state is the only one anything reads — every
-  // surface goes through lib/availability.js, which no longer falls back.
-  // The two below are still SERVED (ProducerListOut derives them from the
-  // state) so a stale client is not broken mid-release; MEH-2272 removes
-  // them from the contract and from here in the same PR. Keeping them
-  // declared until then is what stops `.loose()`-less parses from stripping
-  // fields the backend is still sending.
+  // MEH-2271: availability_state is the only availability field — every
+  // surface goes through lib/availability.js. MEH-2272 removed the legacy
+  // is_available_today / availability_status pair from the API (chunks 1–2)
+  // and from here (chunk 3); LegacyAvailabilityFieldsGone.test.js pins it.
   availability_state: z.string().nullable().optional(),      // → availability dot, ProducerCard.jsx:64
-  availability_status: z.string().nullable().optional(),     // derived server-side; no frontend reader (MEH-2272 removes)
-  is_available_today: z.boolean().nullable().optional(),     // derived server-side; no frontend reader (MEH-2272 removes)
   has_physical_location: z.boolean().nullable().optional(),  // → "משלוחים בלבד" pill, ProducerCard.jsx:356
   offers_delivery: z.boolean().nullable().optional(),        // → "משלוחים בלבד" pill, ProducerCard.jsx:356
   // NOT read by ProducerCard today, so the card-derived guard below cannot
@@ -550,13 +554,18 @@ export const ExperienceMetadataSchema = z.object({
 // 500 on the backend for very zoomed-out viewports (≥70 km observed).
 // boundsToCenterRadius() already clamps at the source; this schema is a
 // belt-and-braces safety net in case a future caller bypasses it.
+// MEH-2765: the messages are keys under map.errors in messages/{he,en}.json
+// (useMapSync resolves them); no reader copy lives here.
+const GEO_RADIUS_TOO_SMALL = "radius_too_small";
+const GEO_RADIUS_TOO_LARGE = "radius_too_large";
+export const GEO_SEARCH_ERROR_KEYS = Object.freeze([GEO_RADIUS_TOO_SMALL, GEO_RADIUS_TOO_LARGE]);
 export const GeoSearchSchema = z.object({
   lat: z.number().finite(),
   lng: z.number().finite(),
   radius_km: z
     .number()
-    .min(1, "הזיזי את המפה לפני החיפוש")
-    .max(50, "הקטיני את מרחק החיפוש — אזור גדול מדי"),
+    .min(1, GEO_RADIUS_TOO_SMALL)
+    .max(50, GEO_RADIUS_TOO_LARGE),
 });
 
 // Validated coords before any Leaflet flyTo / marker creation call.
@@ -573,7 +582,7 @@ export const CoordSchema = z.object({
 // before she has exact coordinates (manual entry, no geocoding this chunk).
 export const LocationInputSchema = z.object({
   kind: z.enum(["branch", "pickup", "market_stand"], {
-    error: "בחרי סוג מיקום",
+    error: "בחרו סוג מיקום",
   }),
   label: z.string().trim().max(200).nullable().optional(),
   city: z.string().trim().max(100).nullable().optional(),

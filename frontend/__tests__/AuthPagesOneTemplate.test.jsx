@@ -14,7 +14,7 @@ import ResetPasswordClient from "@/app/[locale]/reset-password/ResetPasswordClie
  *
  * Pinned here:
  *   - forgot + reset (form and done states) render inside AuthSplitLayout's
- *     form pane, with the photo pane hidden below lg, and no `bg-white` card
+ *     form pane, with the photo pane hidden below lg, and no `bg-surface` card
  *     wrapped around the form;
  *   - /register's photo pane is `hidden lg:block` like /login's.
  *
@@ -52,7 +52,7 @@ function expectTemplate(container) {
   expect(pane.querySelector("h1"), "the page title is the template's h1").not.toBeNull();
   const hero = screen.getByTestId("auth-hero-pane");
   expect(hero.className.split(/\s+/)).toEqual(expect.arrayContaining(["hidden", "lg:block"]));
-  const cards = [...container.querySelectorAll(".bg-white")].filter((el) => el.contains(pane) || pane.contains(el) && el.querySelector("form"));
+  const cards = [...container.querySelectorAll(".bg-surface")].filter((el) => el.contains(pane) || pane.contains(el) && el.querySelector("form"));
   expect(cards, "no white card around the form").toHaveLength(0);
 }
 

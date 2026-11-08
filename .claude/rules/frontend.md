@@ -244,10 +244,29 @@ props only; the bottom-end corner belongs to the chat FAB (MEH-1135 — see rtl.
 
 ---
 
+## One control, one element — phone and desktop (MEH-2776)
+
+Prefer ONE element per control that adapts with responsive classes. A second
+copy per screen size (`hidden lg:…` + `lg:hidden`) drifts: a fix lands in one
+copy and the other keeps the old look. MEH-2506 moved «מרחק מ…» on the phone
+only; the desktop chip stayed until MEH-2769.
+
+- Where two copies already exist (`/map` shells, Header, event/experience
+  detail, rescue card), build both from one function and change both together.
+- A fix that touches one copy only says why in the PR, and asks Sapir when the
+  reason is not a locked decision.
+- `/map` is guarded by the MEH-2776 case in `map.spec.ts`: it fails when a
+  control sits in a different container per shell, or exists in one shell
+  without a reason in `SHELL_ONLY`. Add a reason there; don't loosen it.
+  Blind spot: the phone's region wrappers (`SHELL_WRAPPERS`) count as the
+  shell, so a move between two of them is not caught.
+
+---
+
 ## After UI changes
 
-- Update [docs/MANUAL_TESTING.md](../../docs/MANUAL_TESTING.md) with any
-  new features. Format:
-  `[ ] Test — איך לבדוק — תוצאה מצופה`.
+- Cover the new behaviour with an automated test; only a real-device-only
+  check goes to [docs/RELEASE_CHECKLIST.md](../../docs/RELEASE_CHECKLIST.md)
+  (workflow rule 10, MEH-2796).
 - Open the Vercel preview on **mobile** before approving any PR that
   changes visible UI (Regression rule 4).

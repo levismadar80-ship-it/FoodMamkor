@@ -1,22 +1,21 @@
+import RescueSection from "@/components/rescue/RescueSection";
 import { useCallback, useEffect, useState } from "react";
 import Image from "next/image";
-// MEH-999: the events card became a Link to /events/[id] (was a static div).
-import Link from "next/link";
-import { CaretLeft, Leaf, MapPin } from "@phosphor-icons/react";
+import { CaretLeft, MapPin } from "@phosphor-icons/react";
+import Seed from "@/components/brand/Seed";
+import { seedColorFor } from "@/lib/brand-seeds";
 import dynamic from "next/dynamic";
-import { useTranslations, useFormatter, useLocale } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 import api from "@/lib/api";
 import { optimizeCloudinary, IMAGE_RATIOS } from "@/lib/cloudinary";
-import ImageWithFallback from "@/components/ImageWithFallback";
 // MEH-1140: canonical shekel format — amount then ₪ ("35₪"), one owner in lib/utils.
-import { formatPrice, formatPriceRange } from "@/lib/utils";
+import { formatPriceRange, isPriceLabel } from "@/lib/utils";
+import { badgeIcon } from "@/lib/chip-icons";
 import { formatEventDate } from "@/lib/format-date";
 import DeliveryBlock from "@/components/DeliveryBlock";
-import OfferBadge from "@/components/OfferBadge";
 // MEH-788: scroll-reveal on the description + similar sections (not LCP/gallery).
 import FadeInSection, { REVEAL_PRESET } from "@/components/FadeInSection";
 import DirectoryDisclaimer from "@/components/DirectoryDisclaimer";
-import OpeningHours from "@/components/OpeningHours";
 import { resolveStoreHours } from "@/lib/hours";
 import { primaryPoint } from "@/lib/producerPoints";
 // MEH-1306: owner-only per-section pencil → deep-links into the edit
@@ -24,14 +23,15 @@ import { primaryPoint } from "@/lib/producerPoints";
 import OwnerSectionEditLink from "@/components/OwnerSectionEditLink";
 // MEH-1334 chunk 3: "מאחורי העסק" — data-gated owner card (Z4).
 import OwnerCard from "./OwnerCard";
+import ReservistBadgeLine from "./ReservistBadgeLine";
 import ProducerActivities from "./ProducerActivities";
 // MEH-1875: the weekly order-window schedule as a headed Info block. Lives in
 // OrderWindowStrip.jsx beside OrderWindowCtaNote (ContactCard's consumer).
-import { OrderWindowScheduleBlock } from "./OrderWindowStrip";
+import { ProducerHoursSection } from "./OrderWindowStrip";
 import RecipeCard from "@/components/public/RecipeCard";
 // MEH-1901: the full product detail (long description, per-product diet flags)
 // as an overlay — no route, no marketplace.
-import ProductSheet from "@/components/public/ProductSheet";
+import ProductSheet, { productDietKeys } from "@/components/public/ProductSheet";
 import ReportButton from "@/components/ReportButton";
 // MEH-1460: the "טעות בפרטים?" correction link relocated here from
 // ContactCard — its modal/email logic (v1, MEH-1443) is unchanged.
@@ -104,11 +104,33 @@ function SignatureShell({ product, onOpen, ariaLabel, children }) {
   );
 }
 
+// PR #3974 (Sapir 31/10): the listing card shows «צמחוני +4», and the page
+// never said WHICH products carry them. Each product names its own flags —
+// icon + the same label as the sheet (MEH-2584 icon+word). Renders nothing for
+// a product with no flags (or no product at all, e.g. a free-text signature).
+function ProductDietPills({ product, t }) {
+  const keys = productDietKeys(product);
+  if (keys.length === 0) return null;
+  return (
+    <ul className="flex flex-wrap gap-1 mt-1.5" data-testid="product-row-diet">
+      {keys.map((key) => (
+        <li
+          key={key}
+          className="inline-flex items-center gap-1 rounded-full border border-border px-2 py-0.5 text-xs text-fg-muted"
+        >
+          <span aria-hidden="true" className="inline-flex">{badgeIcon(key, 12)}</span>
+          {t(`producer.detail.sections.products.diet.${key}`)}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 /**
  * The middle of the main column. MEH-2592 reorders the sections so everything
  * about this business comes first: about → owner → products → recipes →
- * events → reviews → delivery → order window → location (OpeningHours +
- * MiniMap) → fine print (disclaimer, report, last-updated). The similar /
+ * events + experiences → group buys (ProducerActivities) → reviews →
+ * delivery → «שעות» (MEH-2803) → location (city + MiniMap) → fine print (disclaimer, report, last-updated). The similar /
  * nearby rows moved out to <OtherBusinesses>, which ProducerDetail renders
  * full width below both columns. The signature product (top_product_name / price_range)
  * moved OUT of ProducerHeader to the top of the products section here.
@@ -118,9 +140,10 @@ function SignatureShell({ product, onOpen, ariaLabel, children }) {
  * a demoted tertiary CTA. It renders whenever the producer has any delivery or
  * pickup signal. The legacy delivery_areas table was retired from this page.
  *
- * showAllEvents state lives here as local UI state. The reviews wrapper
- * accepts reviewsContainerRef and reviewsVisible from useLazyReviews so the
- * IO observation point remains identical to the source.
+ * The events list (and its show-all state) moved to ProducerActivities
+ * (MEH #2659), merged with experiences. The reviews wrapper accepts
+ * reviewsContainerRef and reviewsVisible from useLazyReviews so the IO
+ * observation point remains identical to the source.
  */
 export default function ProducerSections({
   producer,
@@ -129,9 +152,9 @@ export default function ProducerSections({
   reviewsContainerRef,
   reviewsVisible,
   isOwner = false,
+  onReviewsTotalChange,
 }) {
   const t = useTranslations();
-  const format = useFormatter();
   const locale = useLocale();
   // MEH-1938 chunk 5a: the one point that stands for "where the business is"
   // (the is_primary row or null) — gates the location section and centres the
@@ -143,7 +166,6 @@ export default function ProducerSections({
   // and two call sites would be two chances to disagree.
   const storeHours = resolveStoreHours(producer);
   const hasLocation = parseHasLocation(producer, primaryPin);
-  const [showAllEvents, setShowAllEvents] = useState(false);
   // MEH-1460: "report wrong info" modal — moved from ContactCard so the
   // correction link lives in the page-end meta block, not the CTA card.
   const [reportOpen, setReportOpen] = useState(false);
@@ -178,7 +200,10 @@ export default function ProducerSections({
   // MEH-1855: price_range is the ONLY price-label field. Chunk 1 read it
   // first with a fallback to the legacy alias; chunk 2 dropped the alias
   // column (revision 9849fab1637a), so there is nothing to fall back to.
-  const hasSignature = !!(producer.top_product_name || producer.price_range);
+  // PR #3971: a digit-less label («₪₪») is not a price — it neither renders
+  // nor, on its own, makes the signature block appear.
+  const producerPriceLabel = isPriceLabel(producer.price_range) ? producer.price_range : null;
+  const hasSignature = !!(producer.top_product_name || producerPriceLabel);
   // MEH-1233 B4: the signature product (top_product_name) is a free-text DB
   // label. When it names a product that ALSO has a grid entry, feature that
   // entry's photo in the highlight and DROP it from the grid below (fixes the
@@ -252,21 +277,40 @@ export default function ProducerSections({
     [sheetTotal],
   );
 
+  // PR #3972: a deep link `?product=<id>` (the recipe page's product rows)
+  // opens that product's sheet on arrival. Read once per producer from
+  // window.location — not useSearchParams, which would force a Suspense
+  // boundary onto a server-rendered page for a one-shot read. An id that
+  // matches nothing opens nothing (the page just loads normally).
+  const productIds = sheetProducts.map((p) => p.id).join(",");
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const wanted = new URLSearchParams(window.location.search).get("product");
+    if (!wanted) return;
+    const i = productIds.split(",").indexOf(wanted);
+    if (i >= 0) setOpenIndex(i);
+  }, [productIds]);
+
   // MEH-1463: when the signature product was deduped out of the grid and
   // the producer-level price_range (MEH-1855: the single price-label field)
   // is not set, surface the matched product's own price/description on the
-  // highlight card so the info the dedup removed isn't lost. price_range
-  // keeps priority when present (unchanged). Numeric price → canonical
-  // formatPriceRange (MEH-1140) with dir="ltr" bidi isolation; free-text
-  // price_range is DATA (MEH-1305 F) rendered in natural direction.
+  // highlight card so the info the dedup removed isn't lost.
+  // PR #3971: the product's OWN price now wins over the business-level
+  // price_range («מחיר התחלתי»). MEH-1463 had it the other way, which put a
+  // business-wide label on one product's card while the sheet for that same
+  // product showed its real price (Sapir 31/10: card «₪₪», sheet 32₪). The
+  // business label is the fallback for a free-text signature with no priced
+  // product. Numeric price → canonical formatPriceRange (MEH-1140) with
+  // dir="ltr" bidi isolation; free-text labels are DATA (MEH-1305 F) rendered
+  // in natural direction.
   const signatureNumericPrice =
-    !producer.price_range && signatureProduct?.price_min != null
+    signatureProduct?.price_min != null
       ? formatPriceRange(signatureProduct.price_min, signatureProduct.price_max)
       : null;
-  const signatureFreeTextPrice =
-    !producer.price_range && !signatureNumericPrice
-      ? signatureProduct?.price_range || null
-      : null;
+  const signatureFreeTextPrice = signatureNumericPrice
+    ? null
+    : (isPriceLabel(signatureProduct?.price_range) ? signatureProduct.price_range : null) ||
+      producerPriceLabel;
 
   return (
     <>
@@ -283,6 +327,9 @@ export default function ProducerSections({
           <p className="text-text/85 leading-relaxed whitespace-pre-line">
             {producer.description}
           </p>
+          {/* MEH-2693: «עסק של מילואימניקים» — a claim about the owners, so
+              it sits in «אודות», right above «מאחורי העסק». */}
+          <ReservistBadgeLine producer={producer} className="mt-4" />
           {/* MEH-2592: «מאחורי העסק» lives inside «אודות» — who the business
               is and who is behind it, read as one story. */}
           <OwnerCard producer={producer} nested />
@@ -293,7 +340,16 @@ export default function ProducerSections({
           «אודות» above; without one there is no «אודות» to sit in, so it keeps
           its own section here, in the same place. Self-gates: null only when
           there is no contact_name, owner_bio or owner_photo_url (MEH-2471). */}
+      {/* MEH-2693: no «אודות» section → the reservist pill stands on its own
+          in the same place (self-gates to null when not declared). */}
+      {!producer.description && <ReservistBadgeLine producer={producer} className="mt-8" />}
       {!producer.description && <OwnerCard producer={producer} />}
+
+      {/* MEH-2648: the rescue bag sits after the header/bio and BEFORE
+          products, per the chunk-4 spec — it is tonight's thing and expires,
+          the catalogue does not. OUTSIDE the products gate below on purpose:
+          a business with a bag and no catalogue must still show the bag. */}
+      <RescueSection producer={producer} />
 
       {/* Products (premium only) + the signature product at the top.
           MEH-1146 chunk B: the section also renders when only the signature
@@ -340,8 +396,14 @@ export default function ProducerSections({
                     sizes="(min-width: 768px) 144px, 112px"
                   />
                 ) : (
-                  <div className="w-full h-full bg-background flex items-center justify-center" aria-hidden="true">
-                    <Leaf size={40} weight="light" className="text-primary/[0.32]" />
+                  // MEH-2833 (seed layer): sand + one seed in the business's own
+                  // colour, no text (the product name sits beside it).
+                  <div
+                    className="w-full h-full bg-background-alt flex items-center justify-center"
+                    aria-hidden="true"
+                    data-testid="signature-image-missing"
+                  >
+                    <Seed color={seedColorFor(producer.id).fill} size={40} rotate={-36} highlight />
                   </div>
                 )}
               </div>
@@ -359,15 +421,12 @@ export default function ProducerSections({
                 {signatureProduct?.description && (
                   <p className="text-sm text-fg-muted mt-0.5 line-clamp-2">{signatureProduct.description}</p>
                 )}
-                {producer.price_range ? (
-                  <p className="text-gold-deep font-bold mt-1">
-                    {producer.price_range}
-                  </p>
-                ) : signatureNumericPrice ? (
+                {signatureNumericPrice ? (
                   <p className="text-gold-deep font-bold mt-1"><span dir="ltr">{signatureNumericPrice}</span></p>
                 ) : signatureFreeTextPrice ? (
                   <p className="text-gold-deep font-bold mt-1">{signatureFreeTextPrice}</p>
                 ) : null}
+                <ProductDietPills product={signatureProduct} t={t} />
               </div>
               {/* Forward chevron points LEFT in RTL — same convention as
                   ReviewExcerpt.jsx:86. Only when the card actually opens. */}
@@ -464,6 +523,11 @@ export default function ProducerSections({
                       {freeTextPrice && (
                         <p className="text-accent font-medium mt-1">{freeTextPrice}</p>
                       )}
+                      {/* PR #3974 (Sapir 31/10): the card on the listing shows
+                          «צמחוני +4», and the page never said WHICH products
+                          carry them. Each row now names its own flags — icon +
+                          the same label as the sheet (MEH-2584 icon+word). */}
+                      <ProductDietPills product={product} t={t} />
                     </div>
                     {/* Forward chevron points LEFT in RTL (ReviewExcerpt.jsx:86). */}
                     <CaretLeft size={14} className="shrink-0 text-fg-muted" aria-hidden="true" />
@@ -471,6 +535,22 @@ export default function ProducerSections({
                 );
               })}
             </div>
+          )}
+
+          {/* PR #3974: the gluten production-facility sentence lives with the
+              products it qualifies (was in the header, under the kashrut chip,
+              where it read as a note about the whole business page). Same
+              string and plain-text styling (MEH-1508 ch2: no badge/icon). The
+              header keeps it only when there are no products to sit under. */}
+          {producer.products?.length > 0 && producer.gluten_free_facility === "shared" && (
+            <p className="text-xs text-fg-muted leading-relaxed max-w-prose mt-3" data-testid="gluten-facility-shared">
+              {t("producer.detail.header.gluten_facility.shared")}
+            </p>
+          )}
+          {producer.products?.length > 0 && producer.gluten_free_facility === "dedicated" && (
+            <p className="text-xs text-fg-muted leading-relaxed max-w-prose mt-3" data-testid="gluten-facility-dedicated">
+              {t("producer.detail.header.gluten_facility.dedicated")}
+            </p>
           )}
 
           {/* MEH-1901: mounted inside the products section, rendered only while
@@ -501,7 +581,13 @@ export default function ProducerSections({
           <h2 className="font-headline-md text-2xl font-bold text-text mb-4">
             {t("producer.detail.sections.recipes.cta")}
           </h2>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+          {/* MEH-2836: exactly one recipe fills its row on a phone (it sat in
+              half the row beside an empty half) and takes at most half the
+              row from md up. Two or more: the grid as before. */}
+          <div
+            data-testid="producer-recipes-grid"
+            className={recipes.length === 1 ? "grid grid-cols-1 md:grid-cols-2 gap-4" : "grid grid-cols-2 md:grid-cols-3 gap-4"}
+          >
             {recipes.map((r) => (
               <RecipeCard key={r.id} slug={producer.slug} recipe={r} />
             ))}
@@ -509,98 +595,9 @@ export default function ProducerSections({
         </section>
       )}
 
-      {/* Events section */}
-      {events.length > 0 && (
-        <section className="mt-12" ref={(el) => { sectionRefs.current.events = el; }}>
-          <h2 className="font-headline-md text-2xl font-bold text-text mb-4">{t("producer.detail.sections.events.heading")}</h2>
-          <div className="space-y-3">
-            {(showAllEvents ? events : events.slice(0, 3)).map((ev) => {
-              // MEH-473: Q4 — Gregorian dates via next-intl/format. The
-              // `locale` param is implicit (provider sets it); options match
-              // the prior `toLocaleDateString("he-IL", {weekday/day/month})`.
-              const dateStr = format.dateTime(new Date(ev.event_date), {
-                weekday: "short", day: "numeric", month: "long",
-              });
-              const timeStr = ev.event_time
-                ? ev.event_time.slice(0, 5)
-                : null;
-              return (
-                // MEH-999: the card was a static <div> — the only event surface
-                // that did not open its public /events/[id] page. Now a Link,
-                // hover/focus styling — the hover treatment the experience
-                // card carried before it was deleted (MEH-2248).
-                // The registration_url <a> MOVED OUT of the Link (sibling row
-                // below it) — an <a> inside an <a> is invalid HTML and React
-                // hydration-unsafe; there is no stopPropagation precedent in
-                // EventsClient.jsx (its card carries no inner anchor).
-                <div
-                  key={ev.id}
-                  className="bg-white rounded-md border border-border transition-colors duration-base ease-quart hover:border-primary"
-                >
-                  <Link
-                    href={`/events/${ev.id}`}
-                    className="p-4 flex gap-4 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/40"
-                  >
-                    {/* MEH-1229: was a raw <Image src={ev.image_url}> that bypassed
-                        the helper. Now routed through it (square crop + f_auto,q_auto)
-                        with graceful fallback so a broken URL degrades to the
-                        placeholder instead of a _next/image 404. */}
-                    {ev.image_url && (
-                      <ImageWithFallback
-                        src={ev.image_url}
-                        alt={ev.title}
-                        aspectRatio={IMAGE_RATIOS.square}
-                        optimizeWidth={128}
-                        width={64}
-                        height={64}
-                        className="w-16 h-16 rounded-sm object-cover flex-shrink-0"
-                      />
-                    )}
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-text leading-snug">{ev.title}</p>
-                      <p className="text-sm text-fg-muted mt-0.5">
-                        {dateStr}{timeStr && ` · ${timeStr}`}
-                        {ev.city && ` · ${ev.city}`}
-                      </p>
-                      {ev.price > 0 && (
-                        <p className="text-sm text-accent font-medium mt-1"><span dir="ltr">{formatPrice(ev.price)}</span></p>
-                      )}
-                      {ev.price === 0 && (
-                        <p className="text-sm text-primary font-medium mt-1">{t("producer.detail.sections.events.free")}</p>
-                      )}
-                    </div>
-                  </Link>
-                  {ev.registration_url && (
-                    // Indented to line up under the text column when the card
-                    // has a thumbnail: p-4 (1rem) + w-16 (4rem) + gap-4 (1rem).
-                    <div className={`pb-4 pe-4 ${ev.image_url ? "ps-24" : "ps-4"}`}>
-                      <a
-                        href={ev.registration_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-block text-xs text-primary underline hover:text-primary-dark"
-                      >
-                        {t("producer.detail.sections.events.register")}
-                      </a>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-          {events.length > 3 && !showAllEvents && (
-            <button
-              onClick={() => setShowAllEvents(true)}
-              className="mt-4 text-sm text-primary hover:text-primary-dark font-medium underline"
-            >
-              {t("producer.detail.sections.events.show_all_count", { count: events.length })}
-            </button>
-          )}
-        </section>
-      )}
-
-      {/* MEH-2602: the business's open group buys + upcoming experiences. */}
-      <ProducerActivities producerId={producer.id} />
+      {/* Events + experiences (one list) and open group buys — MEH-2602,
+          reshaped under MEH #2659. */}
+      <ProducerActivities producerId={producer.id} events={events} sectionRefs={sectionRefs} />
 
       {/* Reviews — IO-lazy: only mounts the fetch when the section
           scrolls within 300px of the viewport (saves ~300ms on 3G).
@@ -631,6 +628,7 @@ export default function ProducerSections({
             avgRating={producer.avg_rating ?? 0}
             reviewCount={producer.reviews_count ?? 0}
             isOwner={isOwner}
+            onTotalChange={onReviewsTotalChange}
           />
         )}
       </div>
@@ -653,16 +651,6 @@ export default function ProducerSections({
           (offers_delivery, delivery_areas rows, or pickup_points). Its WhatsApp
           order CTA stays tone="tertiary" so it never competes with the contact
           card's single primary CTA. */}
-      {/* MEH-1823: the active offer sits ABOVE the delivery block, and outside
-          its gate on purpose — an offer is not a delivery fact, and a business
-          with an offer but no delivery (pickup_discount, first_order) would
-          otherwise never show it. Renders nothing when there is no offer. */}
-      {producer.active_offer && (
-        <div className="mt-8" data-testid="offer-badge-section">
-          <OfferBadge offer={producer.active_offer} variant="badge" />
-        </div>
-      )}
-
       {(producer.offers_delivery ||
         producer.delivery_areas?.length > 0 ||
         producer.pickup_points) && (
@@ -683,8 +671,9 @@ export default function ProducerSections({
         </div>
       )}
 
-      {/* MEH-1875: the weekly order schedule, immediately BEFORE the location
-          section that holds the store-hours card — the two "when" blocks read
+      {/* MEH-1875 (history — MEH-2803 below supersedes the placement): the
+          weekly order schedule, immediately BEFORE the location
+          section that held the store-hours card — the two "when" blocks read
           together, and the page IA keeps location as the last content section.
           It is its OWN section rather than a card inside "הגעה ומיקום" for two
           reasons: an order window is not a location fact (a delivery-only
@@ -694,10 +683,12 @@ export default function ProducerSections({
           that says "arrival and location". Schedule only — the open/closed
           verdict stays in ProducerHeader alone (MEH-1305 A). Self-gating:
           renders nothing at all when order_window is null. */}
-      <OrderWindowScheduleBlock
-        orderWindow={producer.order_window}
-        specialHours={producer.special_hours}
-      />
+      {/* MEH-2803: the ONE «שעות» section — order window («מקבלים הזמנות») and
+          store hours («פתוח למבקרים») each under its own label, or one set
+          («הזמנות וביקור במקום») when they match day by day. Store hours left
+          the location section below: the same fact in two sections read as a
+          duplicate. Self-gating: nothing at all when there are no hours. */}
+      <ProducerHoursSection producer={producer} />
 
       {/* MEH-1146 chunk B: location is the LAST content section. MEH-1334
           chunk 3: merged into ONE "הגעה ומיקום" section (mockup Z3) — heading
@@ -711,7 +702,12 @@ export default function ProducerSections({
           while rendering the resolved value would hide the whole section from a
           business whose hours live only on her primary location row, which is
           exactly the business this change is for. */}
-      {(hasLocation || storeHours) && (
+      {/* MEH-2803: gate → hasLocation, SUPERSEDING the two notes above (the
+          collapsed OpeningHours here and the hours-OR-location gate). Store
+          hours moved up into «שעות»; a business with hours but no place to
+          arrive at has no location section (section-nav.js mirrors this gate).
+          storeHours is still read here, only for the no-hours line. */}
+      {hasLocation && (
         <section
           id="section-location"
           className="mt-12 scroll-mt-[calc(var(--chrome-top,82px)_+_var(--section-nav-h,68px))] md:scroll-mt-24"
@@ -724,19 +720,15 @@ export default function ProducerSections({
           </div>
           {/* Address line — city-only fallback, never empty (revision-1 #5). */}
           {producer.city && (
-            <p className="flex items-center gap-1.5 text-[13.5px] text-muted mb-3">
+            <p className="flex items-center gap-1.5 text-sm text-muted mb-3">
               <MapPin size={14} aria-hidden="true" />
               {producer.city}
             </p>
           )}
-          {/* MEH-2142: primary location's hours, falling back to the legacy
-              business-level column. One resolver so the gate above and this
-              render can never disagree. */}
-          <OpeningHours opening_hours={storeHours} />
           {/* MEH-2438 follow-up: a place to visit with no hours would otherwise
               show only the map and the Waze/Google buttons — an invitation to
               turn up unannounced at a home producer. */}
-          {!storeHours && hasLocation && (
+          {!storeHours && (
             <p data-testid="location-no-hours" className="text-sm text-fg-muted mb-3">
               {t("producer.detail.sections.location_no_hours")}
             </p>

@@ -18,7 +18,7 @@ import {
   Basket,
   CalendarBlank,
   CookingPot,
-  Drop,
+  ForkKnife,
   MapTrifold,
   Path,
   Plant,
@@ -40,12 +40,18 @@ export const CATEGORY_ICON = {
   "סיור": Path,
   "שוק": Storefront,
   "קטיף": Basket,
-  "טעימות": Drop,
+  "טעימות": ForkKnife,
   "בישול": CookingPot,
   "תזונה": Plant,
   "סיור אוכל": MapTrifold,
   "חקלאות": Plant,
 };
+
+// MEH-2804 / ADR-039: the price token, shared by free and paid. PRICE_BASE is
+// the token itself and is imported by the event page (EventDetailClient), so
+// both read one string; the row adds ms-auto to push it to the row's end.
+export const PRICE_BASE = "font-headline-display font-bold text-base md:text-lg numeric";
+const PRICE_TOKEN = `ms-auto ${PRICE_BASE}`;
 
 // MEH-2547: toEventEntry lives in lib/event-entry.js (no "use client") so the
 // server-rendered organizer page can build rows too; re-exported for the
@@ -69,8 +75,10 @@ export default function EventEntryRow({ entry, freeLabel, compact = false }) {
   const day = formatEventDate(entry.date, locale, { day: "2-digit" });
   const weekday = formatEventDate(entry.date, locale, { weekday: "long" });
   const month = formatEventDate(entry.date, locale, { month: "long" });
-  // MEH-2469: «09:30–15:00» when the event has an end time.
-  const time = formatTimeRange(entry.time, entry.endTime);
+  // MEH-2619: start time only. The «09:30–15:00» range (MEH-2469) is wider
+  // than the 64px date rail at 375 and ran into the tick; the full range
+  // stays on the event page, as in Meetup/Facebook lists.
+  const time = formatTimeRange(entry.time);
   const meta = [entry.who, entry.city, entry.schedule].filter(Boolean).join(" · ");
   const isFree = !(entry.price > 0);
 
@@ -83,6 +91,25 @@ export default function EventEntryRow({ entry, freeLabel, compact = false }) {
   const cols = compact
     ? "grid-cols-[64px_1fr_auto] md:grid-cols-[104px_1fr_auto] lg:grid-cols-[104px_1fr]"
     : "grid-cols-[64px_1fr_auto] md:grid-cols-[104px_1fr_auto]";
+  // MEH-2802: in the home 3-up grid (lg+) every row must FILL its grid cell, or
+  // the cell stretches while the row ends where its content ends — three cards
+  // of three heights, the tick and the bottom border stopping short, the
+  // chip+price rows on three different lines. Card pattern (MDN cookbook, as
+  // ProducerCard): wrapper + link h-full, band = row 1, rail+body = the 1fr
+  // row 2, body a column with the chip row pushed to its bottom. lg-only and
+  // compact-only, so the phone list and every full-width caller are untouched.
+  // The title clamps to 2 lines there on purpose (MEH-2802 AC): one very long
+  // title would otherwise set the height of all three cards.
+  // Guard: e2e/flows/45-card-grid-equal-height.spec.ts.
+  const fill = compact
+    ? {
+        wrapper: " lg:h-full",
+        link: " lg:h-full lg:grid-rows-[auto_1fr]",
+        body: " lg:flex lg:flex-col",
+        title: " lg:line-clamp-2",
+        footer: " lg:mt-auto lg:pt-3",
+      }
+    : { wrapper: "", link: "", body: "", title: "", footer: "" };
   const thumbBg = picture
     ? { backgroundImage: cssUrl(optimizeCloudinary(picture, { aspectRatio: "1:1", width: 224 })) }
     : undefined;
@@ -91,7 +118,7 @@ export default function EventEntryRow({ entry, freeLabel, compact = false }) {
     entry.image || !entry.ownerInitial ? null : (
       <span
         data-testid="event-row-owner-initial"
-        className="absolute bottom-1 end-1 w-5 h-5 rounded-full bg-white text-primary text-[10px] font-bold grid place-items-center shadow-sm"
+        className="absolute bottom-1 end-1 w-5 h-5 rounded-full bg-surface text-primary text-2xs font-bold grid place-items-center shadow-sm"
       >
         {entry.ownerInitial}
       </span>
@@ -103,10 +130,10 @@ export default function EventEntryRow({ entry, freeLabel, compact = false }) {
   // MEH-2559: the heart sits on the picture's corner as a SIBLING of the row
   // link — a button inside an <a> is invalid and would follow the link.
   return (
-    <div className="relative">
+    <div className={`relative${fill.wrapper}`} data-testid={compact ? "event-row-compact" : undefined}>
       <Link
         href={entry.href}
-        className={`relative grid ${cols} border-b border-border transition hover:bg-surface-card`}
+        className={`relative grid ${cols}${fill.link} border-b border-border transition hover:bg-surface-card`}
       >
         {/* species tick — start edge, full height */}
         <span aria-hidden="true" className={`absolute start-0 inset-y-0 w-[3px] ${tickBg}`} />
@@ -116,7 +143,7 @@ export default function EventEntryRow({ entry, freeLabel, compact = false }) {
             {day}
           </span>
           <span className="text-xs font-semibold text-fg-muted mt-1">{weekday}</span>
-          <span className="text-[10px] text-fg-muted">{month}</span>
+          <span className="text-2xs text-fg-muted">{month}</span>
           {time && (
             <span dir="ltr" className={`font-english italic text-sm mt-1 numeric ${accentText}`}>
               {time}
@@ -124,11 +151,11 @@ export default function EventEntryRow({ entry, freeLabel, compact = false }) {
           )}
         </div>
         {/* body */}
-        <div className="py-4 md:py-5 ps-3 pe-4 min-w-0">
+        <div className={`py-4 md:py-5 ps-3 pe-4 min-w-0${fill.body}`}>
           {/* MEH-858 F5: category eyebrow removed — it duplicated the pill chip
               below (and uppercase tracking was a no-op on Hebrew). The glyph now
               leads the chip, so the category shows once, still with its icon. */}
-          <h3 className="font-headline-md text-lg md:text-2xl font-bold text-text leading-snug">
+          <h3 className={`font-headline-md text-lg md:text-2xl font-bold text-text leading-snug${fill.title}`}>
             {entry.title}
           </h3>
           {/* MEH-2476: line-clamp — a long recurring schedule must not stack
@@ -137,17 +164,24 @@ export default function EventEntryRow({ entry, freeLabel, compact = false }) {
           {entry.description && (
             <p className="text-sm text-text/85 line-clamp-2 mt-2 leading-relaxed">{entry.description}</p>
           )}
-          <div className="flex items-center gap-2 mt-3 flex-wrap">
+          <div
+            className={`flex items-center gap-2 mt-3 flex-wrap${fill.footer}`}
+            data-testid={compact ? "event-row-footer" : undefined}
+          >
             {entry.category && (
               <span className={`inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full ${catChip}`}>
                 <Icon size={12} weight="bold" aria-hidden="true" />
                 {entry.category}
               </span>
             )}
+            {/* MEH-2804 / ADR-039: ONE price token for free and paid — a
+                display numeral (Frank Ruhl bold, upright), so «כניסה חופשית»
+                reads as an offer and not as the weakest thing on the card.
+                The date-rail TIME above stays Cormorant italic (it is metadata). */}
             {isFree ? (
-              <span className={`ms-auto text-sm font-semibold ${accentText}`}>{freeLabel}</span>
+              <span className={`${PRICE_TOKEN} ${accentText}`} data-testid="event-row-price">{freeLabel}</span>
             ) : (
-              <span dir="ltr" className={`ms-auto font-english italic font-semibold numeric ${accentText}`}>
+              <span dir="ltr" className={`${PRICE_TOKEN} ${accentText}`} data-testid="event-row-price">
                 {formatPrice(entry.price)}
               </span>
             )}
@@ -158,7 +192,7 @@ export default function EventEntryRow({ entry, freeLabel, compact = false }) {
           aria-hidden="true"
           data-testid="event-row-image"
           data-kind={entry.image ? "event" : entry.ownerImage ? "owner" : "category"}
-          className={`relative overflow-hidden my-4 md:my-5 me-4 w-20 h-20 md:w-28 md:h-28 rounded-[10px] bg-cover bg-center grid place-items-center ${picture ? "bg-border" : tileTone}${compact ? " lg:hidden" : ""}`}
+          className={`relative overflow-hidden my-4 md:my-5 me-4 w-20 h-20 md:w-28 md:h-28 rounded-md bg-cover bg-center grid place-items-center ${picture ? "bg-border" : tileTone}${compact ? " lg:hidden" : ""}`}
           style={thumbBg}
         >
           {pictureFace}

@@ -63,15 +63,23 @@ describe("RecipeCard", () => {
     expect(screen.queryByText(/מנות/)).toBeNull();
   });
 
-  it("shows the Leaf + brand-name placeholder when image_url is missing", () => {
+  it("no image → the name plate (recipe title) on sand + one seed in the recipe's colour (MEH-2833)", async () => {
+    const { seedColorFor } = await import("@/lib/brand-seeds");
     render(
       <RecipeCard slug="my-shop" recipe={{ ...BASE, image_url: null }} />
     );
-    // MEH-911: no <img>; Assembly v2 no-image state = Phosphor Leaf glyph +
-    // "מהמקור" brand name (replaces the 🍞 emoji, Emoji LOCK MEH-657).
+    // no <img>; the plate repeats the <h3>, so it is aria-hidden
     expect(screen.queryByRole("img")).toBeNull();
-    expect(screen.getByTestId("recipe-image-missing")).toBeInTheDocument();
-    expect(screen.getByText("מהמקור")).toBeInTheDocument();
+    const tile = screen.getByTestId("recipe-image-missing");
+    expect(tile.getAttribute("aria-hidden")).toBe("true");
+    expect(tile.className).toMatch(/\bbg-background-alt\b/);
+    expect(screen.getByTestId("recipe-name-plate").textContent).toBe(BASE.title);
+    expect(screen.getByTestId("recipe-name-plate").className).toMatch(/font-headline-lg font-black/);
+    const seed = tile.querySelector("svg[data-seed-color]");
+    expect(seed.getAttribute("data-seed-color")).toBe(seedColorFor(BASE.id).fill);
+    expect(seed.getAttribute("width")).toBe("70");
+    // the leaf + brand wordmark are gone
+    expect(screen.queryByText("מהמקור")).toBeNull();
   });
 
   // MEH-2190. This card renders in exactly one place — ProducerSections.jsx:487,

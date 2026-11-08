@@ -89,7 +89,7 @@ import { useUserCity } from "@/lib/use-user-city";
 // MEH-2592 C: ready-made questions are pills (like WhatsApp Business quick
 // replies) rather than accordion rows, so they read as tappable at a glance.
 const QUESTION_PILL =
-  "inline-flex items-center gap-1.5 min-h-[44px] px-3.5 rounded-full border font-body-md text-sm transition focus-visible:ring-2 focus-visible:ring-primary/40";
+  "inline-flex items-center gap-1.5 min-h-touch px-3.5 rounded-full border font-body-md text-sm transition focus-visible:ring-2 focus-visible:ring-primary/40";
 
 /** Collapsible answer row: button + aria-expanded + CaretDown (rotates open). */
 function Disclosure({ question, children }) {
@@ -124,6 +124,15 @@ function Disclosure({ question, children }) {
   );
 }
 
+// MEH-2634: every row WaItem renders is a wa.me deep link that leaves the site —
+// the Q1/Q2 fallbacks AND the owner's custom questions, which have no
+// answer-first branch at all. The chip looked like the Disclosure rows beside
+// it, which open in place, so the suffix names the destination before the tap.
+// It is appended here rather than at each call site precisely because this
+// component IS the wa.me branch: a row that renders in-page answers is a
+// Disclosure, never a WaItem.
+export const WA_SUFFIX = " (וואטסאפ)";
+
 /** WhatsApp deep-link row (unchanged idiom: ChatCircle glyph + quiet link). */
 function WaItem({ href, question, onTrack }) {
   return (
@@ -138,6 +147,7 @@ function WaItem({ href, question, onTrack }) {
       >
         <ChatCircle size={16} weight="regular" className="flex-shrink-0" aria-hidden="true" />
         {question}
+        {WA_SUFFIX}
       </a>
     </li>
   );
@@ -185,7 +195,7 @@ function OrderingContent({ answer, t }) {
     return (
       <p>
         {t("ordering_phone_prefix")}{" "}
-        <a href={answer.href} dir="ltr" className="text-primary hover:underline">
+        <a href={answer.href} dir="ltr" className="text-primary underline decoration-[1.5px] underline-offset-[5px] decoration-primary/35 hover:decoration-current">
           {answer.phone}
         </a>
       </p>
@@ -205,7 +215,7 @@ function OrderingContent({ answer, t }) {
         href={answer.href}
         target="_blank"
         rel="noopener noreferrer"
-        className="text-primary hover:underline"
+        className="text-primary underline decoration-[1.5px] underline-offset-[5px] decoration-primary/35 hover:decoration-current"
       >
         {t("ordering_link_label")}
       </a>
@@ -389,7 +399,7 @@ function QuestionList({
       data-under-cta={underCta ? "true" : "false"}
       className={underCta ? "mb-4 mt-4" : "mb-4"}
     >
-      <p className="text-[13px] mb-2 font-body-md text-fg-muted">{t("common_questions")}</p>
+      <p className="text-sm mb-2 font-body-md text-fg-muted">{t("common_questions")}</p>
       <ul className="flex flex-wrap gap-2">{visible}</ul>
 
       {/* "עוד שאלות" — reveals the remaining ready-made questions in place.

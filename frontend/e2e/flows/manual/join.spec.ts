@@ -44,7 +44,14 @@ import en from "../../../messages/en.json";
  * Related:  frontend/__tests__/BusinessCtaLink.test.jsx (the auth-state CTA
  *           swap, vitest), frontend/__tests__/RegisterProducerClient.test.jsx:228
  *           (the pre-flight screen item 6 lands on), docs/qa/conversion-page-map.md.
- * History:  MEH-1249 chunk 2 (creation, 04/09).
+ * History:  MEH-1249 chunk 2 (creation, 04/09). MEH-2799 (v2): FAQ case
+ *           follows the new section; item 8 moved to vitest (the slot is gone);
+ *           four v2 cases added — one «מצטרפים» on screen at 390 + 1280, no
+ *           horizontal overflow at 390/768/1024/1280, no video bytes on load,
+ *           toggletip overlays without reflow. Locators: `join-sticky-bar`,
+ *           `join-sticky-cta`, `join-closing-cta`, `join-features`,
+ *           `join-group-card`, `join-panel`, `join-check-item`, `join-clip`,
+ *           `join-feature-tip(-button)` (all attribute-only).
  */
 
 const COPY = he.join;
@@ -84,6 +91,38 @@ async function computedDirection(el: Locator): Promise<string> {
   return el.evaluate((node: HTMLElement) => getComputedStyle(node).direction);
 }
 
+/** True when the element at `el`'s centre is `el` or inside it — i.e. nothing is painted over it. */
+async function isOnTop(el: Locator): Promise<boolean> {
+  return el.evaluate((node: HTMLElement) => {
+    const r = node.getBoundingClientRect();
+    const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+    return Boolean(hit && node.contains(hit));
+  });
+}
+
+/** «מצטרפים» controls whose box is on screen and painted (the sticky bar fades, so opacity counts). */
+async function visibleJoinCtas(page: Page): Promise<number> {
+  return page.evaluate(() => {
+    const ids = ["join-cta", "join-sticky-cta", "join-closing-cta"];
+    const vh = window.innerHeight;
+    let n = 0;
+    for (const id of ids) {
+      for (const el of document.querySelectorAll(`#main-content [data-testid="${id}"]`)) {
+        const r = el.getBoundingClientRect();
+        let node: Element | null = el;
+        let painted = true;
+        while (node) {
+          const cs = getComputedStyle(node);
+          if (cs.visibility === "hidden" || cs.display === "none" || Number(cs.opacity) < 0.5) painted = false;
+          node = node.parentElement;
+        }
+        if (painted && r.height > 0 && r.bottom > 0 && r.top < vh) n += 1;
+      }
+    }
+    return n;
+  });
+}
+
 async function gotoJoin(page: Page): Promise<void> {
   await page.goto("/join");
   // Count gate first (retries; the strict visibility check below would throw
@@ -106,7 +145,13 @@ test.describe("manual › /join (MEH-995)", () => {
     await expect(hero.getByTestId("join-cta")).toHaveText(COPY.cta);
     await expect(cta).toHaveAttribute("href", /\/register\/producer(?:[/?#]|$)/);
     await expect(hero).toContainText(COPY.trust_hint);
-    const heroText = (await hero.textContent()) ?? "";
+    // #4216 (approved by Sapir 08/11): the trust hint under the button is
+    // «חינם, בלי עמלות» — a promise of NO fees, the opposite of the fee/premium
+    // pitch this deny-list keeps out of the hero. The approved hint is taken
+    // out first (read from he.json, never retyped); any OTHER fee word in the
+    // hero still fails.
+    expect(COPY.trust_hint, "control: the approved hint is the one carrying «עמלות»").toContain("עמלות");
+    const heroText = ((await hero.textContent()) ?? "").replace(COPY.trust_hint, "");
     for (const word of HERO_FEES_VOCAB) {
       expect(heroText, `hero must not mention "${word}"`).not.toContain(word);
     }
@@ -153,14 +198,30 @@ test.describe("manual › /join (MEH-995)", () => {
     await expect(processLink).toHaveAttribute("href", /\/about\/process(?:[/?#]|$)/);
   });
 
-  // MT:MEH-995:3 — FAQ teaser at the end: "כמה זה עולה?" with the locked no-fees answer, link "לכל השאלות" → /about/for-businesses.
-  test("FAQ teaser: price question + locked answer, link to the full FAQ", async ({ page }) => {
+  // MT:MEH-995:3 — FAQ at the end: "כמה זה עולה?" with the locked no-fees answer, link "לכל השאלות" → /about/for-businesses.
+  // MEH-2799: the section now has its own h2 and four questions (h3); the cost
+  // answer keeps «— לעולם» (ADR-030 §5).
+  test("FAQ: heading, four questions, the locked cost answer, link to the full FAQ", async ({ page }) => {
     await gotoJoin(page);
     const faq = scope(page).getByTestId("join-faq");
     await faq.scrollIntoViewIfNeeded();
     await expect(faq).toContainText(COPY.faq.eyebrow);
-    await expect(faq.getByRole("heading", { level: 2 })).toHaveText(COPY.faq.q_cost);
-    await expect(faq).toContainText(COPY.faq.a_cost);
+    await expect(faq.getByRole("heading", { level: 2 })).toHaveText(COPY.faq.heading);
+    const questions = faq.getByRole("heading", { level: 3 });
+    await expect(questions).toHaveCount(6);
+    await expect(questions.first()).toHaveText(COPY.faq.q_cost);
+    // Accordion (Sapir, 07/11): every answer closed on load; a tap on a
+    // question opens its answer.
+    const items = faq.getByTestId("join-faq-item");
+    const first = items.nth(0);
+    await expect(first.getByText(COPY.faq.a_cost)).toBeHidden();
+    // MEH-2841 reordered FAQ_KEYS to [cost, price, google, updates, revenue,
+    // customers], so index 1 is now the price answer, not the Google one.
+    // The ticket named only the count; this positional assertion is the
+    // other half, and it would have gone red on the wrong text.
+    await expect(items.nth(1).getByText(COPY.faq.a_price)).toBeHidden();
+    await first.locator("summary").click();
+    await expect(first.getByText(COPY.faq.a_cost)).toBeVisible();
     const allLink = faq.getByRole("link");
     await expect(allLink).toHaveCount(1);
     await expect(allLink).toHaveText(COPY.faq.all_link);
@@ -232,16 +293,315 @@ test.describe("manual › /join (MEH-995)", () => {
 
   // MT:MEH-995:7 — footer "הוסיפו את העסק שלכם" → /join: COVERED by frontend/__tests__/FooterNavGroups.test.jsx:62 (not duplicated here).
 
-  // MT:MEH-995:8 — MEH-2419: the testimonial slot is render-gated OFF until a
-  // real quote exists (same rule as /about, MEH-1112: real social proof or
-  // nothing). The placeholder copy must not reach the page at all.
-  // When SHOW_TESTIMONIAL flips to true for a REAL quote, replace this test
-  // with one that asserts that quote — this one is expected to go red then.
-  test("testimonial slot: not rendered while there is no real testimonial", async ({ page }) => {
+  // MT:MEH-995:8 — MEH-2799 removed the testimonial slot outright (it was
+  // render-gated off since MEH-2419). Coverage MOVED, not dropped:
+  // __tests__/JoinStepNumerals.test.jsx › "the testimonial slot and the
+  // duplicate introduction card are gone".
+
+  // ── MEH-2799 · /join v2 ─────────────────────────────────────────────────
+
+  // Never two «מצטרפים» on screen: hero CTA, sticky bar, closing band — one at
+  // a time, at every scroll position, on phone and desktop.
+  for (const size of [{ width: 390, height: 844 }, { width: 1280, height: 800 }]) {
+    test(`one «מצטרפים» on screen at a time, top to bottom — ${size.width}px`, async ({ page }) => {
+      await page.setViewportSize(size);
+      // A consent choice already made: the cookie banner (z-1100) would
+      // otherwise cover the bar on purpose, and the on-top check below is about
+      // the chat launcher, not the banner (CookieBanner.jsx: "cookieConsent").
+      await page.addInitScript(() => {
+        try {
+          localStorage.setItem("cookieConsent", "essential");
+        } catch {
+          /* storage blocked: the banner then shows and this case reports it */
+        }
+      });
+      await gotoJoin(page);
+      const scrollHeight = await page.evaluate(() => document.documentElement.scrollHeight);
+      let sawBar = false;
+      for (let y = 0; y <= scrollHeight; y += Math.round(size.height / 2)) {
+        await page.evaluate((top) => window.scrollTo(0, top), y);
+        // Gate on settled state, not a timer: the count must come down to <= 1.
+        await expect.poll(() => visibleJoinCtas(page), { timeout: 2_000 }).toBeLessThanOrEqual(1);
+        // The chat launcher floats in the bottom-END corner over this bar
+        // (rtl.md, MEH-1135). Whenever the bar is SHOWN, the hit at its CTA's
+        // centre must be the CTA (measured covered at both widths before the
+        // fix). One polled condition, not "read visible, then check": near the
+        // closing band the bar can flip off between the two reads.
+        const bar = scope(page).getByTestId("join-sticky-bar");
+        const cta = scope(page).getByTestId("join-sticky-cta");
+        await expect
+          .poll(async () => (await bar.getAttribute("data-visible")) !== "true" || isOnTop(cta), { timeout: 2_000 })
+          .toBe(true);
+        if ((await bar.getAttribute("data-visible")) === "true") sawBar = true;
+      }
+      // Control: the walk really reached the middle of the page, where the bar
+      // must have been the one CTA — otherwise "<= 1" could mean "never scrolled".
+      expect(sawBar, "the sticky bar never appeared mid-page").toBe(true);
+    });
+  }
+
+  // No horizontal overflow at the four widths the design was checked at.
+  for (const width of [390, 768, 1024, 1280]) {
+    test(`no horizontal overflow — ${width}px`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 900 });
+      await gotoJoin(page);
+      const [scrollWidth, clientWidth] = await page.evaluate(() => [
+        document.documentElement.scrollWidth,
+        document.documentElement.clientWidth,
+      ]);
+      expect(scrollWidth, "the page scrolls sideways").toBeLessThanOrEqual(clientWidth + 1);
+      await noHorizontalOverflow(scope(page).getByTestId("join-features"));
+    });
+  }
+
+  // Zero video bytes before the features are seen; then only the selected clip.
+  test("video requests: none on load, then only the selected clip once the section is in view", async ({ page }) => {
+    const videoUrls: string[] = [];
+    page.on("request", (req) => {
+      if (/\.mp4(?:$|\?)/.test(req.url())) videoUrls.push(new URL(req.url()).pathname);
+    });
+    await page.setViewportSize({ width: 390, height: 844 });
     await gotoJoin(page);
-    // Gate on a sibling the change cannot move, so an empty page can't pass.
-    await expect(scope(page).getByTestId("join-faq")).toBeVisible(FIRST_PAINT);
-    await expect(scope(page).getByTestId("join-testimonial")).toHaveCount(0);
-    await expect(scope(page).getByText(COPY.testimonial.quote)).toHaveCount(0);
+    // Gate on a real readiness signal: the features section is hydrated (its
+    // selected card exists) before the "nothing yet" read is trusted.
+    await expect(scope(page).locator('[data-testid="join-group-card"][data-selected="true"]')).toHaveCount(1);
+    expect(videoUrls, "a video was requested before any interaction").toEqual([]);
+    await scope(page).getByTestId("join-clip").scrollIntoViewIfNeeded();
+    await expect.poll(() => videoUrls.length, { timeout: 10_000 }).toBeGreaterThan(0);
+    expect([...new Set(videoUrls)]).toEqual(["/images/join/clip-page.mp4"]);
+  });
+
+  // Phone shelf: a tapped card ends centred. Taps go through dispatchEvent, not
+  // click(): Playwright's click() first scrolls its target into view, which
+  // moves the shelf by itself and so measures the harness, not the page — an
+  // early measurement for this card was misled exactly that way. The block
+  // opts back into motion because the suite runs reducedMotion: "reduce"
+  // (playwright.config.ts:97), and the smooth path is the one a phone takes.
+  test.describe("with motion", () => {
+    test.use({ reducedMotion: "no-preference" });
+
+    test("phone shelf: each tapped neighbour ends centred and selected", async ({ page }) => {
+      await page.setViewportSize({ width: 390, height: 844 });
+      await gotoJoin(page);
+      const shelf = scope(page).getByTestId("join-shelf");
+      await shelf.scrollIntoViewIfNeeded();
+      const centred = () =>
+        shelf.evaluate((node: HTMLElement) => {
+          const s = node.getBoundingClientRect();
+          const mid = s.left + s.width / 2;
+          let best = "";
+          let bestDist = Infinity;
+          for (const card of node.querySelectorAll<HTMLElement>('[data-testid="join-group-card"]')) {
+            const r = card.getBoundingClientRect();
+            const d = Math.abs(r.left + r.width / 2 - mid);
+            if (d < bestDist) {
+              bestDist = d;
+              best = card.dataset.group ?? "";
+            }
+          }
+          return best;
+        });
+      for (const group of ["found", "contact", "return", "trust", "insights"]) {
+        const card = shelf.locator(`[data-testid="join-group-card"][data-group="${group}"]`);
+        await card.getByRole("button").first().dispatchEvent("click");
+        await expect(card).toHaveAttribute("data-selected", "true");
+        await expect.poll(centred, { timeout: 3_000 }).toBe(group);
+      }
+    });
+  });
+
+  // Sapir, 07/11 on her phone: swiping the shelf moved the cards and nothing
+  // followed. A SWIPE is a scroll of the shelf, not a tap, so this drives the
+  // shelf's own scroll (smooth, motion on) and checks that the selection, the
+  // dot and the playing clip move to the card that came to rest — and that the
+  // page itself did not move.
+  test.describe("swipe, with motion", () => {
+    test.use({ reducedMotion: "no-preference" });
+
+    test("phone shelf: a swipe selects the card it comes to rest on", async ({ page }) => {
+      await page.setViewportSize({ width: 390, height: 844 });
+      await gotoJoin(page);
+      const shelf = scope(page).getByTestId("join-shelf");
+      await shelf.scrollIntoViewIfNeeded();
+      await expect(shelf.locator('[data-testid="join-group-card"][data-selected="true"]')).toHaveAttribute("data-group", "page");
+      const pageY = await page.evaluate(() => window.scrollY);
+      for (const group of ["found", "contact"]) {
+        // One card further along the reading direction (RTL: leftwards).
+        await shelf.evaluate((node: HTMLElement, g: string) => {
+          const card = node.querySelector<HTMLElement>(`[data-testid="join-group-card"][data-group="${g}"]`)!;
+          const s = node.getBoundingClientRect();
+          const c = card.getBoundingClientRect();
+          node.scrollBy({ left: c.left + c.width / 2 - (s.left + s.width / 2), behavior: "smooth" });
+        }, group);
+        const card = shelf.locator(`[data-testid="join-group-card"][data-group="${group}"]`);
+        await expect(card).toHaveAttribute("data-selected", "true", { timeout: 3_000 });
+        await expect(scope(page).getByTestId("join-panel")).toHaveAttribute("data-group", group);
+        await expect(scope(page).getByTestId("join-clip")).toHaveAttribute("data-group", group);
+      }
+      const dots = scope(page).getByTestId("join-shelf-dot");
+      await expect(dots.nth(2)).toHaveAttribute("data-active", "true");
+      expect(await page.evaluate(() => window.scrollY), "a swipe must not scroll the page").toBe(pageY);
+    });
+  });
+
+  // Sapir, 07/11: "the move between sections isn't smooth; it looks like it
+  // reloads every time". Sampled frame by frame over ONE swipe on the code she
+  // saw: the selection flipped while the shelf was still moving (154 of
+  // 252px), and the panel's rows went to opacity 0 for ~215ms. This walks the
+  // same swipe and pins all three: no selection change mid-motion, the panel
+  // never blanks, no card ever shows an unloaded image.
+  test.describe("swipe smoothness, with motion", () => {
+    test.use({ reducedMotion: "no-preference" });
+
+    test("one swipe: selection only after the shelf settles, panel never blanks, no blank media", async ({ page }) => {
+      await page.setViewportSize({ width: 390, height: 844 });
+      await gotoJoin(page);
+      const shelf = scope(page).getByTestId("join-shelf");
+      await shelf.scrollIntoViewIfNeeded();
+      // The cards ON SCREEN have loaded before the gesture, so the per-frame
+      // "no blank" check below measures what the swipe brings in, not first paint.
+      await expect
+        .poll(() =>
+          shelf.evaluate((node: HTMLElement) => {
+            const sb = node.getBoundingClientRect();
+            return [...node.querySelectorAll<HTMLElement>('[data-testid="join-group-card"]')]
+              .filter((k) => {
+                const r = k.getBoundingClientRect();
+                return r.right > sb.left + 1 && r.left < sb.right - 1;
+              })
+              .every((k) => {
+                const img = k.querySelector("img") as HTMLImageElement | null;
+                const vid = k.querySelector("video") as HTMLVideoElement | null;
+                return Boolean((img && img.complete && img.naturalWidth > 0) || (vid && vid.readyState >= 2));
+              });
+          }),
+        )
+        .toBe(true);
+      const frames = await shelf.evaluate(async (node: HTMLElement) => {
+        const out: { sl: number; sel: string; minOp: number; blank: number }[] = [];
+        const root = node.closest("#main-content")!;
+        const card = node.querySelector<HTMLElement>('[data-testid="join-group-card"][data-group="found"]')!;
+        const s = node.getBoundingClientRect();
+        const c = card.getBoundingClientRect();
+        node.scrollBy({ left: c.left + c.width / 2 - (s.left + s.width / 2), behavior: "smooth" });
+        const t0 = performance.now();
+        await new Promise<void>((done) => {
+          const tick = () => {
+            const rows = [...root.querySelectorAll<HTMLElement>('[data-testid="join-tile"],[data-testid="join-check-item"]')];
+            // Effective opacity = the row's own times every ancestor's, up to the panel.
+            const eff = (el: HTMLElement) => {
+              let o = 1;
+              for (let n: HTMLElement | null = el; n && n !== root; n = n.parentElement) o *= Number(getComputedStyle(n).opacity);
+              return o;
+            };
+            const sb = node.getBoundingClientRect();
+            const visible = [...node.querySelectorAll<HTMLElement>('[data-testid="join-group-card"]')].filter((k) => {
+              const r = k.getBoundingClientRect();
+              return r.right > sb.left + 1 && r.left < sb.right - 1;
+            });
+            const blank = visible.filter((k) => {
+              const img = k.querySelector("img") as HTMLImageElement | null;
+              return !img || !img.complete || img.naturalWidth === 0;
+            }).length;
+            out.push({
+              sl: Math.round(node.scrollLeft),
+              sel: node.querySelector<HTMLElement>('[data-selected="true"]')?.dataset.group ?? "",
+              minOp: Math.min(...rows.map(eff)),
+              blank,
+            });
+            if (performance.now() - t0 < 2000) requestAnimationFrame(tick);
+            else done();
+          };
+          requestAnimationFrame(tick);
+        });
+        return out;
+      });
+      const finalSl = frames[frames.length - 1].sl;
+      const moving = frames.filter((f) => f.sl !== finalSl);
+      expect(moving.length, "control: the shelf really moved").toBeGreaterThan(3);
+      expect(
+        moving.filter((f) => f.sel !== "page").map((f) => `${f.sl}:${f.sel}`),
+        "the selection changed while the shelf was still moving",
+      ).toEqual([]);
+      expect(frames[frames.length - 1].sel).toBe("found");
+      expect(Math.min(...frames.map((f) => f.minOp)), "the panel blanked during the swap").toBeGreaterThanOrEqual(0.5);
+      expect(frames.filter((f) => f.blank > 0).length, "a card showed an unloaded image").toBe(0);
+    });
+  });
+
+  // Sapir, 07/11: "smooth, but a bit slow". Measured Safari-like: the card lit
+  // up 167ms AFTER the shelf stopped. Run Safari-like here too (no
+  // `scrollend`): the header must light up while the shelf is still moving,
+  // and the panel must follow within ~130ms of it stopping.
+  test.describe("swipe responsiveness, Safari-like, with motion", () => {
+    test.use({ reducedMotion: "no-preference" });
+
+    test("the header lights up mid-swipe; the panel follows soon after the shelf stops", async ({ page }) => {
+      await page.addInitScript(() => {
+        const orig = EventTarget.prototype.addEventListener;
+        EventTarget.prototype.addEventListener = function (type: string, ...rest: unknown[]) {
+          if (type === "scrollend") return;
+          // @ts-expect-error -- forwarding the original signature
+          return orig.call(this, type, ...rest);
+        };
+      });
+      await page.setViewportSize({ width: 390, height: 844 });
+      await gotoJoin(page);
+      const shelf = scope(page).getByTestId("join-shelf");
+      await shelf.scrollIntoViewIfNeeded();
+      const t = await shelf.evaluate(async (node: HTMLElement) => {
+        const root = node.closest("#main-content")!;
+        const panel = root.querySelector<HTMLElement>('[data-testid="join-panel"]')!;
+        const card = node.querySelector<HTMLElement>('[data-testid="join-group-card"][data-group="found"]')!;
+        const s = node.getBoundingClientRect();
+        const c = card.getBoundingClientRect();
+        const t0 = performance.now();
+        node.scrollBy({ left: c.left + c.width / 2 - (s.left + s.width / 2), behavior: "smooth" });
+        const ev: { lit?: number; panel?: number; stop?: number } = {};
+        let last = node.scrollLeft;
+        await new Promise<void>((done) => {
+          const tick = () => {
+            const now = performance.now() - t0;
+            if (node.scrollLeft !== last) {
+              last = node.scrollLeft;
+              ev.stop = now;
+            }
+            // "Lit" = the header's green fill, the cue the eye actually sees.
+            if (ev.lit === undefined && card.querySelector("button")!.className.includes("bg-state-selected")) ev.lit = now;
+            if (ev.panel === undefined && panel.dataset.group === "found") ev.panel = now;
+            if (now < 2000) requestAnimationFrame(tick);
+            else done();
+          };
+          requestAnimationFrame(tick);
+        });
+        return ev;
+      });
+      expect(t.lit, "the header never lit up").toBeDefined();
+      expect(t.lit!, "the header waited for the shelf to stop").toBeLessThan(t.stop!);
+      expect(t.panel! - t.stop!, "the panel lagged the stop").toBeLessThanOrEqual(130);
+    });
+  });
+
+  // The toggletip overlays: opening it moves nothing below it.
+  test("toggletip opens over the list without moving it, and closes on Esc", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await gotoJoin(page);
+    const panel = scope(page).getByTestId("join-panel");
+    await panel.scrollIntoViewIfNeeded();
+    const button = panel.getByTestId("join-feature-tip-button").first();
+    const lastItem = panel.getByTestId("join-check-item").last();
+    const before = await lastItem.boundingBox();
+    await button.click();
+    await expect(button).toHaveAttribute("aria-expanded", "true");
+    const tip = panel.getByTestId("join-feature-tip").first();
+    await expect(tip).toBeVisible();
+    // Painted ON TOP: the element at the bubble's centre is the bubble. A tip
+    // trapped in its row's stacking context is "visible" yet sits under the
+    // next row — toBeVisible() cannot tell the two apart.
+    expect(await isOnTop(tip), "the open tip is painted under another element").toBe(true);
+    const after = await lastItem.boundingBox();
+    expect(after!.y, "opening the tip pushed the list down").toBeCloseTo(before!.y, 0);
+    await page.keyboard.press("Escape");
+    await expect(button).toHaveAttribute("aria-expanded", "false");
   });
 });

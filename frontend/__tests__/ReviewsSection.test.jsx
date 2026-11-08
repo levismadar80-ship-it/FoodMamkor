@@ -68,6 +68,7 @@ vi.mock("@phosphor-icons/react", () => ({
 // Lazy-load gate: fire the IntersectionObserver callback immediately.
 beforeEach(() => {
   authState.user = null;
+  authState.loading = false;
   apiMock.get.mockReset();
   apiMock.put.mockReset();
   global.IntersectionObserver = class {
@@ -199,6 +200,18 @@ describe("ReviewsSection — zero reviews, reader view: no empty state, only the
     expect(within(hint).getByTestId("reviews-login-link")).toBeInTheDocument();
     expect(screen.queryByTestId("icon-leaf")).toBeNull();
     expect(screen.queryByText(/empty_message/)).toBeNull();
+  });
+
+  // MEH-2624: a signed-in reader saw the login line until /auth/me answered.
+  it("auth still loading: no write hint at all — neither the login line nor the gate line", async () => {
+    authState.loading = true;
+    mockReviews([]);
+    render(<ReviewsSection producerId="p-1" isOwner={false} />);
+    // Same moment the guest case asserts at: the reviews fetch has answered.
+    await waitFor(() => expect(apiMock.get).toHaveBeenCalled());
+    await new Promise((r) => setTimeout(r, 0));
+    expect(screen.queryByTestId("reviews-write-hint")).toBeNull();
+    expect(screen.queryByTestId("reviews-login-link")).toBeNull();
   });
 
   it("empty + owner: the coaching state still renders (owner-only), with no reader hint", async () => {
@@ -504,5 +517,120 @@ describe("ReviewsSection — loading state (MEH-2606)", () => {
     expect(status.querySelectorAll('[aria-hidden="true"]')).toHaveLength(2);
     // the old loading line was a visible <p>; nothing outside the sr-only span reads "loading"
     expect(screen.getAllByText("loading").every((el) => el.classList.contains("sr-only"))).toBe(true);
+  });
+});
+
+// MEH-2705: the surname initial is the first LETTER of the surname, never a
+// bracket or other punctuation. «לקוחת בדיקות (QA)» rendered «לקוחת (.» on
+// staging (5/11).
+describe("ReviewsSection — author initial (MEH-2705)", () => {
+  async function renderedName(user_name) {
+    mockReviews([
+      {
+        id: "rev-n", user_id: "u-5", user_name, stars: 5, body: "מעולה מאוד",
+        created_at: "2026-07-01T11:00:00", reply: null, reply_at: null,
+      },
+    ]);
+    render(<ReviewsSection producerId="p-1" isOwner={false} />);
+    const initial = await screen.findByTestId("review-initial");
+    return initial.nextElementSibling.querySelector("p").textContent;
+  }
+
+  it("a surname in brackets takes its first letter, not the bracket", async () => {
+    const text = await renderedName("לקוחת בדיקות (QA)");
+    expect(text).toContain("לקוחת Q.");
+    expect(text).not.toContain("(.");
+  });
+
+  it("a plain two-word name is unchanged: first name + surname initial", async () => {
+    const text = await renderedName("דנה כהן");
+    expect(text).toContain("דנה כ.");
+  });
+
+  it("a trailing word with no letter at all is skipped (no «-.»)", async () => {
+    const text = await renderedName("דנה כהן -");
+    expect(text).toContain("דנה כ.");
+    expect(text).not.toContain("-.");
+  });
+});
+
+// MEH-2705: the header + sticky bar read producer.reviews_count from the
+// server render, so a new review left them one behind. ReviewsSection now
+// reports its live total upward.
+describe("ReviewsSection — live total reported upward (MEH-2705)", () => {
+  it("reports the fetched total, then total+1 after a first review", async () => {
+    authState.user = { id: "u-new", producer_id: null };
+    try { localStorage.setItem("wa_clicked_p-1", "1"); } catch {}
+    mockReviews([withReply, noReply, { ...noReply, id: "rev-3", user_id: "u-3" }]);
+    apiMock.post.mockResolvedValue({
+      data: { id: "rev-new", user_id: "u-new", user_name: "חדש", stars: 5, body: "מעולה מאוד מאוד", created_at: "2026-07-03T10:00:00", reply: null },
+    });
+    const onTotalChange = vi.fn();
+    render(<ReviewsSection producerId="p-1" reviewCount={3} onTotalChange={onTotalChange} />);
+    await screen.findByText("תודה רבה על המילים החמות!");
+    expect(onTotalChange).toHaveBeenLastCalledWith(3);
+    fireEvent.click(screen.getByText("write_cta"));
+    fireEvent.click(screen.getAllByRole("button", { name: "star_aria" })[4]);
+    fireEvent.change(screen.getByRole("textbox"), { target: { value: "מעולה מאוד מאוד" } });
+    fireEvent.submit(screen.getByRole("textbox").closest("form"));
+    await waitFor(() => expect(onTotalChange).toHaveBeenLastCalledWith(4));
+    try { localStorage.removeItem("wa_clicked_p-1"); } catch {}
+  });
+});
+
+describe("ReviewsSection — the initial on a seed tint (MEH-2833 board 4)", () => {
+  // Same recipe as the component: seed colour mixed into the page cream.
+  const CREAM = [0xf5, 0xf0, 0xe8];
+  const hexRgb = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
+  const mix = (h, a) => hexRgb(h).map((v, i) => Math.round(v * a + CREAM[i] * (1 - a)));
+  const lum = (c) => {
+    const [r, g, b] = c.map((v) => { const s = v / 255; return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4; });
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  };
+  const ratio = (a, b) => { const [x, y] = [lum(a), lum(b)].sort((p, q) => q - p); return (x + 0.05) / (y + 0.05); };
+
+  it("tint = the reviewer's seed at ~24% over cream, ring at ~55%, letter in text ink", async () => {
+    const { seedColorFor } = await import("@/lib/brand-seeds");
+    mockReviews([{ id: "rev-s", user_id: "u-77", user_name: "רונית כ.", stars: 5, body: "טעים", created_at: "2026-07-01T11:00:00", reply: null, reply_at: null }]);
+    render(<ReviewsSection producerId="p-1" isOwner={false} />);
+    const initial = await screen.findByTestId("review-initial");
+    const seed = seedColorFor("u-77");
+    expect(initial.getAttribute("data-seed")).toBe(seed.name);
+    expect(initial.style.background).toBe(`rgb(${mix(seed.fill, 0.24).join(", ")})`);
+    expect(initial.style.boxShadow).toContain(`rgb(${mix(seed.fill, 0.55).join(", ")})`);
+    expect(initial.className).toContain("text-text");
+    expect(initial.className).not.toContain("bg-green-50");
+  });
+
+  it("every seed's RENDERED tint keeps the letter ≥ 4.5:1 (text ink #1C1A17)", async () => {
+    // Reads the background the component actually painted — not a copy of
+    // its recipe — for one reviewer per pickable seed.
+    const { SEEDS_LIGHT, seedColorFor } = await import("@/lib/brand-seeds");
+    const pickable = SEEDS_LIGHT.filter((s) => s.name !== "sand").map((s) => s.name);
+    expect(pickable).toHaveLength(4);
+    const idFor = {};
+    for (let i = 0; Object.keys(idFor).length < pickable.length && i < 500; i += 1) {
+      const name = seedColorFor(`u-${i}`).name;
+      if (!(name in idFor)) idFor[name] = `u-${i}`;
+    }
+    expect(Object.keys(idFor).sort()).toEqual([...pickable].sort());
+    // One render per seed: the list shows 3 reviews before «more».
+    for (const name of pickable) {
+      mockReviews([{ id: `rev-${name}`, user_id: idFor[name], user_name: "רונית כ.", stars: 5, body: "טעים", created_at: "2026-07-01T11:00:00", reply: null, reply_at: null }]);
+      const { unmount } = render(<ReviewsSection producerId="p-1" isOwner={false} />);
+      const el = await screen.findByTestId("review-initial");
+      expect(el.getAttribute("data-seed")).toBe(name);
+      const bg = el.style.background.match(/\d+/g).map(Number);
+      expect(bg).toHaveLength(3);
+      expect(ratio(hexRgb("#1C1A17"), bg), name).toBeGreaterThanOrEqual(4.5);
+      unmount();
+    }
+  });
+
+  it("the same reviewer always gets the same seed; two different ones can differ", async () => {
+    const { seedColorFor } = await import("@/lib/brand-seeds");
+    expect(seedColorFor("u-77")).toBe(seedColorFor("u-77"));
+    const names = new Set(["u-1", "u-2", "u-3", "u-4", "u-5", "u-6", "u-7", "u-8"].map((id) => seedColorFor(id).name));
+    expect(names.size).toBeGreaterThan(1);
   });
 });

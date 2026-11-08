@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
 import { CaretDown, Lifebuoy, MagnifyingGlass } from "@phosphor-icons/react";
 import { HELP_GROUPS, HELP_TOPICS, topicMatches } from "./topics";
@@ -88,7 +88,7 @@ export default function AdminHelpPage() {
           value={query}
           onChange={(e) => onSearch(e.target.value)}
           placeholder={t("help.search_placeholder")}
-          className="w-full bg-white border border-border rounded-[12px] ps-10 pe-3 py-2.5 text-base"
+          className="w-full bg-surface border border-border rounded-md ps-10 pe-3 py-2.5 text-base"
         />
       </label>
 
@@ -104,7 +104,7 @@ export default function AdminHelpPage() {
                 <h2 id={`help-group-${group}`} className="text-xs font-semibold text-muted mb-2">
                   {t(`layout.nav_sections.${group}`)}
                 </h2>
-                <ul className="bg-white border border-border rounded-[12px] divide-y divide-border">
+                <ul className="bg-surface border border-border rounded-md divide-y divide-border">
                   {inGroup.map((topic) => (
                     <Topic
                       key={topic.id}
@@ -155,7 +155,7 @@ function Topic({ topic, open, onToggle, openScreenLabel }) {
           </List>
           <Link
             href={topic.href}
-            className="inline-flex items-center mt-3 min-h-[44px] text-primary font-medium hover:underline"
+            className="inline-flex items-center mt-3 min-h-touch text-primary font-medium hover:underline"
           >
             {openScreenLabel}
           </Link>

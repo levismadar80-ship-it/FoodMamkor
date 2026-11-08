@@ -18,7 +18,7 @@ import { render, screen, act } from "@testing-library/react";
 
 import FridayDeliveryStrip from "@/components/FridayDeliveryStrip";
 import HolidayBanner from "@/components/HolidayBanner";
-import LocationBanner from "@/components/LocationBanner";
+import LocationBanner, { REVEAL_DELAY_MS } from "@/components/LocationBanner";
 import api from "@/lib/api";
 import { getActiveHoliday } from "@/lib/holidays";
 
@@ -39,12 +39,11 @@ vi.mock("@/lib/api", () => ({ default: { get: vi.fn() } }));
 vi.mock("@/lib/holidays", () => ({ getActiveHoliday: vi.fn() }));
 
 const HOLIDAY = {
+  // MEH-2741: name/tagline/cta come from messages (`holidays.<key>.*`), which
+  // the key-echo next-intl mock above renders as the key path.
   key: "test",
-  name: "TestHoliday",
-  emoji: "🎉",
+  icon: "Sparkle",
   color: "#abcdef",
-  tagline: "tag",
-  cta: "Shop",
   upcoming: false,
   searchParams: { q: "test" },
 };
@@ -85,7 +84,7 @@ function setConditions({ producers = [], holiday = null }) {
 // Queries keyed to each banner's own copy (echoed t() / fixture text).
 const fridayShown = () =>
   screen.queryByText("group_buys.friday_delivery.title_alt") !== null;
-const holidayShown = () => screen.queryByText(/TestHoliday/) !== null;
+const holidayShown = () => screen.queryByText("holidays.test.name") !== null;
 const locationShown = () =>
   screen.queryByText("location.banner.choose_city") !== null;
 
@@ -93,9 +92,11 @@ async function renderSlot(props) {
   await act(async () => {
     render(<Slot {...props} />);
   });
-  // Flush banner fetch promises + LocationBanner's 3s reveal timer.
+  // Flush banner fetch promises + LocationBanner's reveal timer. MEH-2634:
+  // read off the component (8s now, 3s before) — a literal here would make the
+  // Location cell green-for-nothing after the delay changed.
   await act(async () => {
-    await vi.advanceTimersByTimeAsync(3500);
+    await vi.advanceTimersByTimeAsync(REVEAL_DELAY_MS + 500);
   });
 }
 

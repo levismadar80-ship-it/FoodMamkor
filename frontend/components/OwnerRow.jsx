@@ -26,7 +26,7 @@ export default function OwnerRow({ href, name, testId, children }) {
       {href && <CaretLeft size={18} className="shrink-0 text-primary ltr:rotate-180" aria-hidden="true" />}
     </>
   );
-  const box = "flex items-center gap-3 rounded-[12px] border border-border bg-white p-3 min-h-[64px]";
+  const box = "flex items-center gap-3 rounded-md border border-border bg-surface p-3 min-h-[64px]";
   return href ? (
     <Link href={href} data-testid={testId} className={`${box} hover:border-primary transition focus-ring`}>
       {body}

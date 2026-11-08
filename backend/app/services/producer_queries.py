@@ -6,6 +6,7 @@ These helpers carry no FastAPI surface and can be imported by any router
 or background job that needs to hydrate or count Producer rows.
 """
 
+from datetime import timedelta
 from uuid import UUID
 
 import structlog
@@ -19,6 +20,8 @@ from app.models import (
     Producer,
     ProducerCategory,
     ProducerLocation,
+    RescueOffer,
+    RescueOrder,
 )
 from app.schemas.schemas import DeliveryAreaCreate, ProducerCreate
 from app.services.city_centroid import city_centroid
@@ -47,6 +50,29 @@ def _haversine_expr(lat: float, lng: float, target_lat, target_lng):
         func.radians(lat)
     ) * func.sin(func.radians(target_lat))
     return EARTH_RADIUS_KM * func.acos(func.least(1.0, cos_delta))
+
+
+# MEH-2617: Bayesian-average constants for the "הכי מדורגות" sort. The prior
+# pulls a business with few reviews toward RATING_PRIOR_MEAN; RATING_PRIOR_WEIGHT
+# is how many reviews the prior is worth. Mirrored in
+# frontend/lib/rating-gate.js (the /map list sorts client-side).
+RATING_PRIOR_MEAN = 4.0
+RATING_PRIOR_WEIGHT = 5
+
+
+def weighted_rating_expr():
+    """MEH-2617: SQL expression for the Bayesian average used to order by rating:
+
+        (avg_rating * reviews_count + M * C) / (reviews_count + C)
+
+    A raw mean lets one 5.0 review outrank a 4.8 from twelve; this does not.
+    Ordering only — the displayed rating is still `avg_rating`. Unreviewed
+    rows would score exactly M here, so callers sort them last on a separate
+    key first (producer_listing.py, the rating branch).
+    """
+    n = func.coalesce(Producer.reviews_count, 0)
+    total = func.coalesce(Producer.avg_rating, 0.0) * n
+    return (total + RATING_PRIOR_MEAN * RATING_PRIOR_WEIGHT) / (n + RATING_PRIOR_WEIGHT)
 
 
 def haversine_min_km(lat: float, lng: float):
@@ -258,6 +284,65 @@ def attach_favorites_counts(producers, db: Session):
     return producers
 
 
+# MEH-2716: how far back a saved bag still lights «מצילים מזון».
+RESCUE_SAVING_WINDOW_DAYS = 30
+
+
+def _rescue_pilot_on() -> bool:
+    # Imported at call time: the router imports this module, and the tests
+    # switch the pilot by patching `rescue.rescue_bags_enabled`.
+    from app.routers import rescue
+
+    return rescue.rescue_bags_enabled()
+
+
+def attach_rescue_saving(producers, db: Session):
+    """MEH-2716: batch-set `rescued_recently` — the «מצילים מזון» system badge.
+
+    True when, in the last RESCUE_SAVING_WINDOW_DAYS, the business handed a
+    surprise bag over at the counter or reported bags «נמסרו בחינם». Computed
+    from rows the pilot already writes, never declared by the business. Two
+    queries for the whole page, none while the pilot is off — and then the
+    badge is False whatever the data says.
+    """
+    if not producers:
+        return producers
+    for p in producers:
+        p.rescued_recently = False
+    if not _rescue_pilot_on():
+        return producers
+    ids = [p.id for p in producers]
+    since = utc_now() - timedelta(days=RESCUE_SAVING_WINDOW_DAYS)
+    handed = (
+        db.query(ProducerLocation.producer_id)
+        .join(RescueOffer, RescueOffer.producer_location_id == ProducerLocation.id)
+        .join(RescueOrder, RescueOrder.offer_id == RescueOffer.id)
+        .filter(
+            ProducerLocation.producer_id.in_(ids),
+            RescueOrder.status == "handed",
+            RescueOrder.handed_at >= since,
+        )
+        .distinct()
+    )
+    donated = (
+        db.query(ProducerLocation.producer_id)
+        .join(RescueOffer, RescueOffer.producer_location_id == ProducerLocation.id)
+        .filter(
+            ProducerLocation.producer_id.in_(ids),
+            RescueOffer.qty_donated > 0,
+            RescueOffer.pickup_end >= since,
+            # set_donated refuses a cancelled offer; this keeps the badge from
+            # trusting a count on one cancelled afterwards.
+            RescueOffer.status != "cancelled",
+        )
+        .distinct()
+    )
+    saving = {row[0] for row in handed.union(donated).all()}
+    for p in producers:
+        p.rescued_recently = p.id in saving
+    return producers
+
+
 def attach_favorites_count(producer, db: Session):
     """MEH-106: load favorites_count for a single producer."""
     producer.favorites_count = (
@@ -415,6 +500,11 @@ def create_primary_branch_location(
         # point — its location signal is the delivery declaration, and a pin
         # in the town centre would put it on the map as a place to walk into.
         if producer.has_physical_location is False:
+            return None
+        # MEH-2669: an organizer is stored with has_physical_location=True only
+        # to satisfy the DB CHECK (schemas.py, MEH-2460) — it has no place to
+        # walk into, so it never gets a town-centre pin either.
+        if producer.kind == "organizer":
             return None
         centroid = city_centroid(db, producer.city)
         if centroid is None:

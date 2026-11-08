@@ -14,6 +14,8 @@ vi.mock("next/image", () => ({ default: (p) => <img alt={p.alt} src={p.src} /> }
 // next/dynamic → the MiniMap marker.
 vi.mock("next/dynamic", () => ({ default: () => () => <div data-testid="minimap" /> }));
 vi.mock("@/lib/api", () => ({ default: { get: vi.fn(() => new Promise(() => {})) } }));
+// MEH-2659: ProducerActivities (events + group buys) has its own test file.
+vi.mock("@/app/[locale]/producer/[id]/components/ProducerActivities", () => ({ default: () => null }));
 vi.mock("@/lib/cloudinary", async (importOriginal) => ({
   ...(await importOriginal()), // keep real IMAGE_RATIOS
   optimizeCloudinary: (u) => u,
@@ -22,6 +24,20 @@ vi.mock("@/lib/cloudinary", async (importOriginal) => ({
 // carry a forward chevron (LEFT in RTL) now that they open the detail sheet.
 vi.mock("@phosphor-icons/react", () => ({
   Leaf: () => <span />,
+  // MEH-2654: ProducerSections now loads lib/chip-icons (diet glyphs on rows).
+  SealCheck: () => <span />,
+  Truck: () => <span />,
+  Package: () => <span />,
+  Certificate: () => <span />,
+  Carrot: () => <span />,
+  GrainsSlash: () => <span />,
+  Barn: () => <span />,
+  Medal: () => <span />,
+  HandHeart: () => <span />,
+  DropSlash: () => <span />,
+  Cube: () => <span />,
+  Clock: () => <span />,
+  Storefront: () => <span />,
   CaretLeft: () => <span />,
   MapPin: () => <span />,
   WhatsappLogo: () => <span />,
@@ -235,6 +251,36 @@ describe("ProducerSections — owner card placement (MEH-2592)", () => {
     const cards = screen.getAllByTestId("owner-card");
     expect(cards).toHaveLength(1);
     expect(cards[0].dataset.nested).toBeUndefined();
+  });
+
+  // MEH-2693: the «עסק של מילואימניקים» line at both mount points.
+  it("reservist: with a description, the line sits inside #section-bio, before the owner card", () => {
+    const { container } = render(
+      <ProducerSections {...props({ description: "תיאור", reservist_owned: true })} />,
+    );
+    const lines = screen.getAllByTestId("reservist-badge-line");
+    expect(lines).toHaveLength(1);
+    expect(container.querySelector("#section-bio")).toContainElement(lines[0]);
+    const owner = screen.getByTestId("owner-card");
+    expect(lines[0].compareDocumentPosition(owner) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it("reservist: without a description AND without an owner card, the line still renders once", () => {
+    render(
+      <ProducerSections
+        {...props({ description: "", contact_name: "", owner_bio: "", owner_photo_url: "", reservist_owned: true })}
+      />,
+    );
+    expect(screen.queryByTestId("owner-card")).toBeNull();
+    expect(screen.getAllByTestId("reservist-badge-line")).toHaveLength(1);
+  });
+
+  it("reservist: not declared → no line in either layout", () => {
+    const { unmount } = render(<ProducerSections {...props({ description: "תיאור" })} />);
+    expect(screen.queryByTestId("reservist-badge-line")).toBeNull();
+    unmount();
+    render(<ProducerSections {...props({ description: "" })} />);
+    expect(screen.queryByTestId("reservist-badge-line")).toBeNull();
   });
 });
 

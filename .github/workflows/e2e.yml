@@ -36,6 +36,10 @@ name: E2E Tests
 on:
   pull_request:
     branches: [staging]
+    # MEH-2779: `labeled` is load-bearing — adding the `run-e2e` label is what
+    # starts the suite on a PR (see the e2e job's `if:`). The other three are
+    # the GitHub defaults, listed because naming `types` replaces them.
+    types: [opened, synchronize, reopened, labeled]
   push:
     branches: [staging]
   # MEH-1712 — manual run, for the MEH-1712 diagnostics artifact (the step
@@ -53,9 +57,19 @@ permissions:
   # comment on the PR. Scope is comment-only — contents stays read.
   pull-requests: write
 
+# MEH-2779: three buckets.
+#   PR code push / reopen / `run-e2e` label → e2e-<branch>-code, cancels the
+#     same PR's older run (as before).
+#   any OTHER label on a PR → e2e-<branch>-other-label: its run only does the
+#     paths filter (the e2e jobs skip on it), and it must never cancel a real
+#     run — same reasoning as pr-checks.yml's MEH-1523 buckets.
+#   push to staging → e2e-staging-push, NOT cancel-in-progress: GitHub keeps
+#     one running + one pending per group and a newer pending replaces the
+#     older, so a burst of merges collapses to "test the latest staging",
+#     instead of every merge queueing 30 min behind the last one.
 concurrency:
-  group: e2e-${{ github.head_ref || github.run_id }}
-  cancel-in-progress: true
+  group: e2e-${{ github.head_ref && format('{0}-{1}', github.head_ref, (github.event.action == 'labeled' && github.event.label.name != 'run-e2e') && 'other-label' || 'code') || (github.event_name == 'push' && 'staging-push') || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   filter:
@@ -103,10 +117,21 @@ jobs:
     # on a docs push. A manual run is an explicit request; honour it verbatim.
     # This does NOT widen the filter: no PR and no push reaches this branch of
     # the OR, so which automatic runs execute E2E is byte-for-byte unchanged.
+    #
+    # MEH-2779 — on a PR the suite runs only once the PR carries the `run-e2e`
+    # label. It used to run on every push of every PR, and the job-level
+    # `e2e-staging-backend` queue below lets one run at a time repo-wide
+    # (the shared Railway staging backend), so runs waited up to 14 h
+    # (measured 4–6/11/2026) and were mostly cancelled unseen. A labeled
+    # event for any other label does not start it. Push to staging and
+    # workflow_dispatch are unchanged.
     if: |
       (needs.filter.outputs.frontend == 'true' ||
        github.event_name == 'workflow_dispatch') &&
-      github.actor != 'dependabot[bot]'
+      github.actor != 'dependabot[bot]' &&
+      (github.event_name != 'pull_request' ||
+       (contains(github.event.pull_request.labels.*.name, 'run-e2e') &&
+        (github.event.action != 'labeled' || github.event.label.name == 'run-e2e')))
 
     steps:
       - uses: actions/checkout@v7
@@ -522,10 +547,21 @@ jobs:
 
     # Identical trigger condition to the `e2e` job — same frontend paths-filter,
     # same workflow_dispatch escape (MEH-1712), same dependabot exclusion.
+    #
+    # MEH-2779 — on a PR the suite runs only once the PR carries the `run-e2e`
+    # label. It used to run on every push of every PR, and the job-level
+    # `e2e-staging-backend` queue below lets one run at a time repo-wide
+    # (the shared Railway staging backend), so runs waited up to 14 h
+    # (measured 4–6/11/2026) and were mostly cancelled unseen. A labeled
+    # event for any other label does not start it. Push to staging and
+    # workflow_dispatch are unchanged.
     if: |
       (needs.filter.outputs.frontend == 'true' ||
        github.event_name == 'workflow_dispatch') &&
-      github.actor != 'dependabot[bot]'
+      github.actor != 'dependabot[bot]' &&
+      (github.event_name != 'pull_request' ||
+       (contains(github.event.pull_request.labels.*.name, 'run-e2e') &&
+        (github.event.action != 'labeled' || github.event.label.name == 'run-e2e')))
 
     steps:
       - uses: actions/checkout@v7

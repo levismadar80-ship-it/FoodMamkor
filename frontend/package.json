@@ -32,6 +32,7 @@
     "next": "^16.3.3",
     "next-intl": "^4.14.0",
     "posthog-js": "^1.422.1",
+    "qrcode": "1.5.4",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-leaflet": "^4.2.1",
@@ -40,6 +41,8 @@
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.13.0",
+    "@babel/parser": "^7.29.8",
+    "@babel/traverse": "^7.29.8",
     "@google/design.md": "^0.4.0",
     "@playwright/test": "^1.62.1",
     "@testing-library/jest-dom": "^7.0.1",

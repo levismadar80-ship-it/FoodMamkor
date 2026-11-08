@@ -24,6 +24,9 @@ export const CategorySchema = z.object({
   id: z.union([z.number(), z.string()]),
   name: z.string(),
   emoji: z.string().nullable().optional(),
+  // MEH-2783: the stable id (CategoryOut since MEH-2139) — the category groups
+  // match on it, so it must survive parsing (zod strips unknown keys).
+  slug: z.string().nullable().optional(),
 });
 export const CategoriesResponseSchema = z.array(CategorySchema);
 
@@ -123,8 +126,8 @@ export const SavedItemsResponseSchema = z.object({
 // plain z.object parse strips every OTHER field ProducerCard renders —
 // measured on a 12-key card fixture, a bare ProducerSchema.parse kept 2 of 12
 // (`trust_tier`, `favorites_count`, `short_description`, `top_product_name`,
-// `availability_state`, `availability_status`, `is_available_today`,
-// `has_physical_location`, `offers_delivery` all vanish, and all 9 ARE
+// `availability_state`, `has_physical_location`, `offers_delivery` all vanish
+// (plus the legacy availability pair, until MEH-2272 removed it), and all ARE
 // serialized by ProducerListOut, schemas.py:1649-1738). `.loose()` keeps 12
 // of 12. /favorites renders raw, unvalidated data today, so a stripping parse
 // would REGRESS the page it is meant to harden.
@@ -151,6 +154,35 @@ export const FavoriteWithProducerSchema = z.object({
 export const ReviewInviteLinkSchema = z.object({
   url: z.string().url(),
 });
+
+// MEH-1428: GET /producers/{id}/reviews → ReviewsPage (reviews.py:235). Declared
+// here rather than inline in ReviewCardCanvas so there stays ONE owner for a
+// response schema (workflow.md → Smell #1).
+//
+// `.loose()`, like FavoriteWithProducerSchema above and for the same reason:
+// the consumer needs a STRUCTURAL guarantee on three fields, and a stripping
+// parse would silently drop the rest of ReviewOut (reply, reply_at, …) from any
+// future consumer of the same schema.
+//
+// `user_name` is deliberately NOT declared. ReviewOut carries it, but the share
+// card must never print a reviewer's identity, and leaving it undeclared means
+// the schema cannot be the thing that hands it to a renderer.
+// Not exported on its own: ReviewsPageSchema is the only consumer, and a second
+// exported name with no second call site is what the Knip ratchet counts.
+const MAX_STARS = 5;
+const shareableReview = z
+  .object({
+    id: z.union([z.string(), z.number()]),
+    stars: z.number().int().min(1).max(MAX_STARS),
+    body: z.string().nullable().optional(),
+  })
+  .loose();
+
+export const ReviewsPageSchema = z
+  .object({
+    reviews: z.array(shareableReview),
+  })
+  .loose();
 
 // MEH-2324: POST /producer-claim/preview → ProducerClaimPreviewOut. Only the
 // public fields of a draft (producer_claim.py). `name` is the page heading, so

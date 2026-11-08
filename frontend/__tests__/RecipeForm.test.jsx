@@ -257,6 +257,20 @@ describe("RecipeForm — server rejection branches (exact copy)", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent("שם המתכון קצר מדי");
   });
 
+  // MEH-1943 chunk 2: the backend's {code, message, params} answer
+  // (products_not_found) shows its Hebrew message, not the generic line.
+  it("a {code, message} detail → its message", async () => {
+    apiMock.state.postError = {
+      response: {
+        status: 422,
+        data: { detail: { code: "products_not_found", message: "חלק מהמוצרים לא נמצאו", params: { product_ids: ["x"] } } },
+      },
+    };
+    await renderForm();
+    await submitValid();
+    expect(await screen.findByRole("alert")).toHaveTextContent("חלק מהמוצרים לא נמצאו");
+  });
+
   it("an unrecognised failure → error.generic", async () => {
     apiMock.state.postError = new Error("network");
     await renderForm();

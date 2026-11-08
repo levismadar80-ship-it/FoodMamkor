@@ -32,7 +32,7 @@ export const SITE_DESCRIPTION =
 // jobs — one describes the entity, the other sells the page to a SERP.
 // MEH-2313 (25/10): «קטנים שבדקנו» → «מקומיים שבחרנו», approved verbatim.
 export const CANONICAL_SENTENCE =
-  "אוכל מבתי עסק מקומיים שבחרנו אישית — קרוב אלייך, בלי לחפש שעות.";
+  "אוכל מבתי עסק מקומיים שבחרנו אישית — קרוב לבית, בלי לחפש שעות.";
 
 // MEH-2192: `sameAs` for the Organization node — the profiles that corroborate
 // the entity, and the same four the footer links (components/Footer.jsx).

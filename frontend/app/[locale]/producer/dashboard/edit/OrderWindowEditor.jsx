@@ -29,6 +29,7 @@ import {
   canAddOrderRange,
   MAX_ORDER_RANGES_PER_DAY,
 } from "@/lib/order-window";
+import Button from "@/components/ui/Button";
 
 export default function OrderWindowEditor({
   profile,
@@ -204,7 +205,7 @@ export default function OrderWindowEditor({
                           value={range.from}
                           onChange={(e) => patchRange(i, rangeIdx, { from: e.target.value })}
                           aria-label={`${tDays(key)} ${t("from_label")} ${rangeIdx + 1}`}
-                          className="numeric text-sm border border-border rounded-[8px] px-2 py-1 bg-surface"
+                          className="numeric text-sm border border-border rounded-sm px-2 py-1 bg-surface"
                         />
                         <span aria-hidden="true" className="text-fg-muted">–</span>
                         <input
@@ -212,7 +213,7 @@ export default function OrderWindowEditor({
                           value={range.to}
                           onChange={(e) => patchRange(i, rangeIdx, { to: e.target.value })}
                           aria-label={`${tDays(key)} ${t("to_label")} ${rangeIdx + 1}`}
-                          className="numeric text-sm border border-border rounded-[8px] px-2 py-1 bg-surface"
+                          className="numeric text-sm border border-border rounded-sm px-2 py-1 bg-surface"
                         />
                       </div>
                       {day.ranges.length > 1 && (
@@ -221,7 +222,7 @@ export default function OrderWindowEditor({
                           onClick={() => removeRange(i, rangeIdx)}
                           aria-label={`${tDays(key)} — ${t("remove_range")}`}
                           data-testid={`order-window-remove-${i}-${rangeIdx}`}
-                          className="text-fg-muted hover:text-red-600 transition p-1"
+                          className="text-fg-muted hover:text-danger-600 transition p-1"
                         >
                           <X size={14} aria-hidden="true" />
                         </button>
@@ -248,7 +249,7 @@ export default function OrderWindowEditor({
               )}
 
               {issueReason && (
-                <span className="w-full text-xs text-red-600" role="alert">
+                <span className="w-full text-xs text-danger-600" role="alert">
                   {t(issueReason)}
                 </span>
               )}
@@ -258,27 +259,27 @@ export default function OrderWindowEditor({
       </div>
 
       {errorMsg && (
-        <p className="mt-4 flex items-center gap-1.5 text-xs text-red-600" role="alert">
+        <p className="mt-4 flex items-center gap-1.5 text-xs text-danger-600" role="alert">
           <Warning size={16} weight="fill" aria-hidden="true" className="shrink-0" />
           {errorMsg}
         </p>
       )}
 
       <div className="mt-4 flex flex-wrap items-center gap-3">
-        <button
+        <Button
           onClick={handleSave}
           disabled={saving || !dirty}
-          className="bg-primary text-white px-4 py-2 rounded-[10px] text-sm font-medium hover:bg-primary-dark transition disabled:opacity-60"
+          variant="primary" size="sm"
         >
           {saving ? t("saving") : t("save_cta")}
-        </button>
+        </Button>
         {dirty && (
           <button
             type="button"
             onClick={revertChanges}
             disabled={saving}
             data-testid="order-window-revert"
-            className="border border-border text-fg-muted px-4 py-2 rounded-[10px] text-sm font-medium hover:border-primary hover:text-text transition disabled:opacity-60"
+            className="border border-border text-fg-muted px-4 py-2 rounded-full text-sm font-medium hover:border-primary hover:text-text transition disabled:opacity-60"
           >
             {t("revert_cta")}
           </button>

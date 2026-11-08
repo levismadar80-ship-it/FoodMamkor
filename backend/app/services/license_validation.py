@@ -13,6 +13,7 @@ History:  MEH-530 (creation, 2026-05-15).
 """
 
 from collections.abc import Iterable
+from typing import TYPE_CHECKING
 
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
@@ -20,11 +21,14 @@ from sqlalchemy.orm import Session
 from app.constants import LICENSE_REQUIRED_CATEGORIES
 from app.models.models import Category
 
+if TYPE_CHECKING:
+    from app.models.models import Producer
+
 
 # MEH-530: shared Hebrew copy for the 422 message — keep both router-level
 # and any future client surface in sync via this constant rather than
 # inlining the string at 4 call sites.
-LICENSE_REQUIRED_ERROR_HE = "מספר רישיון יצרן חובה לקטגוריה זו"
+LICENSE_REQUIRED_ERROR_HE = "מספר רישיון ייצור חובה לקטגוריה זו"
 
 
 def _normalize_license(value: str | None) -> str | None:
@@ -68,3 +72,54 @@ def ensure_license_for_categories(
         return
     if _normalize_license(license_number) is None:
         raise HTTPException(status_code=422, detail=LICENSE_REQUIRED_ERROR_HE)
+
+
+def enforce_license_gate_on_update(
+    db: Session,
+    producer: "Producer",
+    payload: dict,
+    category_ids: list[int] | None,
+) -> None:
+    """Shared by the owner PUT (producer_me.py) and the admin PUT (admin.py) —
+    MEH-2707 moved it here from producer_me so both paths have ONE rule. The
+    admin path used to re-check the FULL category set, so an admin could not
+    save any field on an unlicensed business in a licensed category. Going
+    live is gated separately: admin.py approve_producer -> _assert_approvable.
+
+    MEH-999: grandfather rule — validate NEWLY-ADDED categories only, never
+    the set the producer already holds. The MEH-530 full-set re-check bricked
+    every edit for MEH-971 license-pending producers (licensed category +
+    NULL license → 422 on any PUT). Same posture as the auth.py register
+    bypass: NOT a security relaxation — licensed-only is enforced downstream
+    by the admin approval guard and by publication requiring
+    status=="approved"; a pending producer editing her bio publishes nothing.
+    """
+    effective_license = (
+        payload.get("producer_license_number")
+        if "producer_license_number" in payload
+        else producer.producer_license_number
+    )
+    persisted_category_ids = {c.id for c in producer.categories}
+    added_category_ids = (
+        [cid for cid in category_ids if cid not in persisted_category_ids]
+        if category_ids is not None
+        else []
+    )
+    # Helper short-circuits on an empty list, so this only fires for adds.
+    ensure_license_for_categories(db, added_category_ids, effective_license)
+
+    # MEH-999 (2c): the one hole grandfathering would open — a LICENSED
+    # producer blanking her license while keeping a license-required category.
+    # Re-run the gate against the final category set with the cleared value.
+    # Pending producers are unaffected: their license is already NULL, so
+    # nothing is being cleared.
+    license_cleared = (
+        "producer_license_number" in payload
+        and not (payload.get("producer_license_number") or "").strip()
+        and (producer.producer_license_number or "").strip()
+    )
+    if license_cleared:
+        final_category_ids = (
+            category_ids if category_ids is not None else list(persisted_category_ids)
+        )
+        ensure_license_for_categories(db, final_category_ids, None)

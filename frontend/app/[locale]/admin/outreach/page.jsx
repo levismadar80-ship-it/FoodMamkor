@@ -2,14 +2,16 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Phone } from "@phosphor-icons/react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import api from "@/lib/api";
 import { showToast } from "@/lib/toast";
+import { detailToMessage } from "@/lib/errors";
 import { getWhatsAppHref, normalizePhone } from "@/lib/utils";
 import { instagramHandle, instagramUrl } from "@/lib/social-links";
 import Input from "@/components/ui/Input";
 import AdminLoadError from "@/components/admin/AdminLoadError";
 import Pagination from "@/components/Pagination";
+import Button from "@/components/ui/Button";
 
 /**
  * /admin/outreach — manual lead pipeline (MEH-22).
@@ -49,6 +51,7 @@ const PAGE_SIZE = 25;
 
 export default function AdminOutreachPage() {
   const t = useTranslations("admin");
+  const locale = useLocale();
   const [leads, setLeads] = useState([]);
   const [loading, setLoading] = useState(true);
   const [metrics, setMetrics] = useState({
@@ -58,9 +61,15 @@ export default function AdminOutreachPage() {
     replied: 0,
     registered: 0,
     declined: 0,
+    // MEH-2633: counts by SOURCE, not status — see metrics_summary's comment.
+    community: 0,
   });
   const [cityFilter, setCityFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  // MEH-2633: null = every source. Only "community" is offered — "manual" is
+  // "everything else" to an admin, and a chip for it would just be the
+  // complement of this one.
+  const [sourceFilter, setSourceFilter] = useState(null);
   const [page, setPage] = useState(1);
   const [addOpen, setAddOpen] = useState(false);
   const [scriptOpen, setScriptOpen] = useState(false);
@@ -75,6 +84,7 @@ export default function AdminOutreachPage() {
     const params = {};
     if (cityFilter) params.city = cityFilter;
     if (statusFilter !== "all") params.status = statusFilter;
+    if (sourceFilter) params.source = sourceFilter;
     setLoadError(false);
     Promise.all([
       api.get("/admin/outreach", { params }).then((r) => r.data),
@@ -89,13 +99,27 @@ export default function AdminOutreachPage() {
       .finally(() => setLoading(false));
   };
 
-  useEffect(load, [cityFilter, statusFilter]);
+  useEffect(load, [cityFilter, statusFilter, sourceFilter]);
   // A new filter starts from page 1; a shrinking list (status change, delete)
   // never strands the view past its last page.
-  useEffect(() => setPage(1), [cityFilter, statusFilter]);
+  useEffect(() => setPage(1), [cityFilter, statusFilter, sourceFilter]);
   const totalPages = Math.max(1, Math.ceil(leads.length / PAGE_SIZE));
   const safePage = Math.min(page, totalPages);
   const pageLeads = leads.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+
+  // MEH-2633. Deliberately no success toast: `load()` refreshes and the row
+  // then shows the thanked date, which is the feedback. A failure surfaces the
+  // backend's own Hebrew `detail` (the four 409 rules each have their own
+  // sentence in admin_outreach.thank_suggester), so this adds no frontend copy
+  // and cannot drift from what the server actually enforced.
+  const handleThankSuggester = async (id) => {
+    try {
+      await api.post(`/admin/outreach/${id}/thank-suggester`);
+      load();
+    } catch (err) {
+      showToast.error(detailToMessage(err.response?.data?.detail));
+    }
+  };
 
   const handleStatusChange = async (id, status) => {
     await api
@@ -173,26 +197,40 @@ export default function AdminOutreachPage() {
         ))}
       </div>
 
+      {/* MEH-2633: source is a SECOND axis, so it gets its own group rather
+          than joining the status row above — one aria-label cannot describe
+          both, and a chip that silently ANDs with a status chip is clearer
+          when it is visibly separate. */}
+      <div className="flex flex-wrap gap-2" role="group" aria-label={t("outreach.badge_community")} data-testid="outreach-source-chips">
+        <StatusChip
+          id="community"
+          label={t("outreach.badge_community")}
+          count={metrics.community}
+          active={sourceFilter === "community"}
+          onClick={() => setSourceFilter(sourceFilter === "community" ? null : "community")}
+        />
+      </div>
+
       {/* Filters + add */}
       <div className="flex flex-col md:flex-row gap-3">
         <input
           placeholder={t("outreach.filters.city_placeholder")}
           value={cityFilter}
           onChange={(e) => setCityFilter(e.target.value)}
-          className="flex-1 border border-border rounded-[12px] px-3 py-2"
+          className="flex-1 border border-border rounded-md px-3 py-2"
         />
-        <button
+        <Button
           type="button"
           onClick={() => setAddOpen(true)}
           data-testid="outreach-new-lead"
-          className="bg-primary text-white px-4 py-2 rounded-[12px] text-sm font-medium hover:bg-primary-dark transition"
+          variant="primary" size="sm"
         >
           {t("outreach.filters.new_lead")}
-        </button>
+        </Button>
       </div>
 
       {/* Leads table */}
-      <div className="bg-white border border-border rounded-[12px] overflow-hidden">
+      <div className="bg-surface border border-border rounded-md overflow-hidden">
         <div className="overflow-x-auto">
           {/* MEH-2426: one card per row below md (globals.css .table-stack). */}
           <table className="table-stack w-full text-sm">
@@ -232,14 +270,43 @@ export default function AdminOutreachPage() {
               {!loading &&
                 pageLeads.map((lead) => (
                   <tr key={lead.id} className="border-t align-top">
-                    <td className="px-3 py-3 font-medium">{lead.name}</td>
+                    <td className="px-3 py-3 font-medium">
+                      {lead.name}
+                      {lead.source === "community" && (
+                        <span
+                          className="ms-2 align-middle inline-block text-2xs px-2 py-0.5 rounded-full bg-green-50 text-primary border border-border"
+                          data-testid={`community-badge-${lead.id}`}
+                        >
+                          {t("outreach.badge_community")}
+                        </span>
+                      )}
+                      {lead.suggestion_reason && (
+                        <p className="mt-1 text-xs text-muted font-normal whitespace-pre-line">
+                          {lead.suggestion_reason}
+                        </p>
+                      )}
+                      {(lead.suggested_by_name || lead.suggested_by_email) && (
+                        <p className="mt-1 text-xs text-muted font-normal">
+                          {lead.suggested_by_name || "—"}
+                          {lead.suggested_by_email && (
+                            <a
+                              dir="ltr"
+                              href={`mailto:${lead.suggested_by_email}`}
+                              className="ms-2 text-primary underline decoration-[1.5px] underline-offset-[5px] decoration-primary/35 hover:decoration-current"
+                            >
+                              {lead.suggested_by_email}
+                            </a>
+                          )}
+                        </p>
+                      )}
+                    </td>
                     <td className="px-3 py-3 text-muted" data-label={t("outreach.columns.city")}>{lead.city || "—"}</td>
                     <td className="px-3 py-3 text-muted" data-label={t("outreach.columns.category")}>{lead.category || "—"}</td>
                     {/* MEH-2426: dir="ltr" moved from the <td> to the value, so
                         the stacked-card label keeps the RTL start side. */}
                     <td className="px-3 py-3 text-muted" data-label={t("outreach.columns.phone")}>
                       {lead.phone ? (
-                        <a href={`tel:${lead.phone}`} dir="ltr" className="text-primary hover:underline">
+                        <a href={`tel:${lead.phone}`} dir="ltr" className="text-primary underline decoration-[1.5px] underline-offset-[5px] decoration-primary/35 hover:decoration-current">
                           {lead.phone}
                         </a>
                       ) : (
@@ -253,7 +320,7 @@ export default function AdminOutreachPage() {
                           href={instagramUrl(lead.instagram)}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-primary hover:underline"
+                          className="text-primary underline decoration-[1.5px] underline-offset-[5px] decoration-primary/35 hover:decoration-current"
                         >
                           @{instagramHandle(lead.instagram)}
                         </a>
@@ -265,7 +332,8 @@ export default function AdminOutreachPage() {
                       <select
                         value={lead.status}
                         onChange={(e) => handleStatusChange(lead.id, e.target.value)}
-                        className="text-xs border border-border rounded-lg px-2 py-1 bg-white"
+                        className="text-xs border border-border rounded-lg px-2 py-1 bg-surface"
+                        aria-label={t("outreach.columns.status")}
                         data-testid={`status-select-${lead.id}`}
                       >
                         {STATUS_ORDER.map((s) => (
@@ -294,10 +362,22 @@ export default function AdminOutreachPage() {
                             {t("outreach.actions.whatsapp")}
                           </button>
                         )}
+                        {/* MEH-2633 (Sapir 04/11): the control is shown for
+                            every suggestion-sourced lead, disabled with the
+                            reason rather than hidden — a missing button tells
+                            an admin nothing. */}
+                        {isSuggestion(lead) && (
+                          <ThankSuggesterCell
+                            lead={lead}
+                            locale={locale}
+                            t={t}
+                            onThank={handleThankSuggester}
+                          />
+                        )}
                         <button
                           type="button"
                           onClick={() => handleDelete(lead.id)}
-                          className="text-xs px-2 py-1 rounded-lg text-red-600 hover:bg-red-50"
+                          className="text-xs px-2 py-1 rounded-lg text-danger-600 hover:bg-danger-50"
                         >
                           {t("outreach.actions.delete")}
                         </button>
@@ -344,6 +424,85 @@ export default function AdminOutreachPage() {
   );
 }
 
+/**
+ * MEH-2633: which of the four thank-suggester rules blocks the action, or null
+ * when it is available.
+ *
+ * The ORDER is not cosmetic — it is the same order
+ * admin_outreach.thank_suggester raises its four 409s (no email -> no opt-in ->
+ * already thanked -> not registered). A lead can fail more than one rule at
+ * once, so a different order here would show a tooltip naming a reason the
+ * server would not have given. Change one side and you must change the other.
+ */
+function thankBlockedReason(lead) {
+  if (!lead.suggested_by_email) return "no_email";
+  if (!lead.suggester_wants_update) return "no_update_request";
+  if (lead.suggester_thanked_at) return "already_sent";
+  if (lead.status !== "registered") return "not_registered";
+  return null;
+}
+
+/** A lead the thank control is meaningful for: it came from a suggestion. */
+function isSuggestion(lead) {
+  return Boolean(
+    lead.source === "community" || lead.suggested_by_email || lead.suggested_by_name
+  );
+}
+
+/**
+ * MEH-2633 thank control. Enabled only when every rule passes; otherwise
+ * disabled WITH the reason, per Sapir's 04/11 ruling.
+ *
+ * The tooltip rides a wrapping <span>, not the button: `title` on a disabled
+ * button is unreliable (Safari suppresses its pointer events). The same text
+ * is also in an sr-only span the button points at with aria-describedby, so a
+ * screen-reader user gets the reason a sighted user gets from the hover — a
+ * title attribute alone reaches neither keyboard nor AT users.
+ */
+function ThankSuggesterCell({ lead, locale, t, onThank }) {
+  const thankedDate = lead.suggester_thanked_at
+    ? new Date(lead.suggester_thanked_at).toLocaleDateString(locale)
+    : null;
+  const reason = thankBlockedReason(lead);
+
+  if (!reason) {
+    return (
+      <button
+        type="button"
+        onClick={() => onThank(lead.id)}
+        data-testid={`thank-suggester-${lead.id}`}
+        className="text-xs px-2 py-1 rounded-lg border border-border text-primary hover:bg-green-50"
+      >
+        {t("outreach.thank_suggester")}
+      </button>
+    );
+  }
+
+  const tip = t(`outreach.thank_disabled.${reason}`, { date: thankedDate ?? "" });
+  const tipId = `thank-reason-${lead.id}`;
+  return (
+    <span className="inline-flex items-center gap-1.5" title={tip}>
+      <button
+        type="button"
+        disabled
+        aria-describedby={tipId}
+        data-testid={`thank-suggester-${lead.id}`}
+        className="text-xs px-2 py-1 rounded-lg border border-border text-primary disabled:opacity-40 disabled:cursor-not-allowed"
+      >
+        {t("outreach.thank_suggester")}
+      </button>
+      <span id={tipId} className="sr-only" data-testid={`thank-reason-${lead.id}`}>
+        {tip}
+      </span>
+      {thankedDate && (
+        <span className="text-xs text-muted" data-testid={`thanked-at-${lead.id}`}>
+          {thankedDate}
+        </span>
+      )}
+    </span>
+  );
+}
+
 function StatusChip({ id, label, count, active, onClick }) {
   return (
     <button
@@ -351,10 +510,10 @@ function StatusChip({ id, label, count, active, onClick }) {
       onClick={onClick}
       aria-pressed={active}
       data-testid={`outreach-chip-${id}`}
-      className={`inline-flex items-center gap-2 min-h-[44px] px-4 rounded-full border text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${
+      className={`inline-flex items-center gap-2 min-h-touch px-4 rounded-full border text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${
         active
           ? "bg-primary text-white border-primary"
-          : "bg-white text-text border-border hover:border-primary/40"
+          : "bg-surface text-text border-border hover:border-primary/40"
       }`}
     >
       {label}
@@ -406,7 +565,7 @@ function AddLeadModal({ onClose, onCreated }) {
 
   return (
     <div
-      className="fixed inset-0 bg-black/50 z-[9500] flex items-center justify-center p-4"
+      className="fixed inset-0 bg-black/40 z-[9500] flex items-center justify-center p-4"
       onClick={onClose}
     >
       <form
@@ -414,7 +573,7 @@ function AddLeadModal({ onClose, onCreated }) {
         aria-modal="true"
         onClick={(e) => e.stopPropagation()}
         onSubmit={handleSubmit}
-        className="bg-white rounded-[16px] p-6 max-w-md w-full space-y-3"
+        className="bg-surface rounded-lg p-6 max-w-md w-full space-y-3"
       >
         <h2 className="font-headline-md text-xl font-bold">{t("outreach.modal_add.title")}</h2>
         {/* MEH-1128 Wave C: label-less ui/Input — placeholder-only parity
@@ -460,24 +619,24 @@ function AddLeadModal({ onClose, onCreated }) {
           value={form.notes}
           onChange={set("notes")}
           rows={2}
-          className="w-full border border-border rounded-[12px] px-3 py-2"
+          className="w-full border border-border rounded-md px-3 py-2"
         />
-        {error && <p className="text-sm text-red-600" role="alert">{error}</p>}
+        {error && <p className="text-sm text-danger-600" role="alert">{error}</p>}
         <div className="flex gap-2">
           <button
             type="button"
             onClick={onClose}
-            className="flex-1 border border-border rounded-[12px] py-2 text-sm hover:bg-green-50"
+            className="flex-1 border border-border rounded-md py-2 text-sm hover:bg-green-50"
           >
             {t("common.cancel")}
           </button>
-          <button
+          <Button
             type="submit"
             disabled={saving}
-            className="flex-1 bg-primary text-white rounded-[12px] py-2 text-sm font-medium disabled:opacity-60"
+            variant="primary" size="sm" className="flex-1"
           >
             {saving ? t("outreach.modal_add.submit_saving") : t("outreach.modal_add.submit")}
-          </button>
+          </Button>
         </div>
       </form>
     </div>
@@ -488,14 +647,14 @@ function ScriptModal({ onClose }) {
   const t = useTranslations("admin");
   return (
     <div
-      className="fixed inset-0 bg-black/50 z-[9500] flex items-center justify-center p-4"
+      className="fixed inset-0 bg-black/40 z-[9500] flex items-center justify-center p-4"
       onClick={onClose}
     >
       <div
         role="dialog"
         aria-modal="true"
         onClick={(e) => e.stopPropagation()}
-        className="bg-white rounded-[16px] p-6 max-w-lg w-full"
+        className="bg-surface rounded-lg p-6 max-w-lg w-full"
       >
         <h2 className="font-headline-md text-xl font-bold mb-3 inline-flex items-center gap-2">
           <Phone size={20} className="text-primary" aria-hidden="true" />
@@ -504,13 +663,13 @@ function ScriptModal({ onClose }) {
         <pre className="whitespace-pre-wrap text-sm text-text font-body-md leading-relaxed">
           {t("outreach.call_script")}
         </pre>
-        <button
+        <Button
           type="button"
           onClick={onClose}
-          className="mt-4 w-full bg-primary text-white rounded-[12px] py-2 text-sm font-medium"
+          variant="primary" size="sm" className="mt-4 w-full"
         >
           {t("outreach.modal_script.close")}
-        </button>
+        </Button>
       </div>
     </div>
   );
@@ -561,14 +720,14 @@ function WhatsAppModal({ lead, onClose, onPrefillMinted }) {
 
   return (
     <div
-      className="fixed inset-0 bg-black/50 z-[9500] flex items-center justify-center p-4"
+      className="fixed inset-0 bg-black/40 z-[9500] flex items-center justify-center p-4"
       onClick={onClose}
     >
       <div
         role="dialog"
         aria-modal="true"
         onClick={(e) => e.stopPropagation()}
-        className="bg-white rounded-[16px] p-6 max-w-lg w-full space-y-4"
+        className="bg-surface rounded-lg p-6 max-w-lg w-full space-y-4"
       >
         <h2 className="font-headline-md text-xl font-bold">
           {t("outreach.modal_wa.title", { name: lead.name })}
@@ -579,7 +738,7 @@ function WhatsAppModal({ lead, onClose, onPrefillMinted }) {
         {WA_TEMPLATE_KEYS.map((tpl) => (
           <div
             key={tpl.key}
-            className="border border-border rounded-[12px] p-3"
+            className="border border-border rounded-md p-3"
           >
             <div className="flex items-center justify-between mb-1">
               <h3 className="font-semibold">{t(`outreach.wa_templates.${tpl.key}_title`)}</h3>
@@ -608,7 +767,7 @@ function WhatsAppModal({ lead, onClose, onPrefillMinted }) {
         <button
           type="button"
           onClick={onClose}
-          className="w-full border border-border rounded-[12px] py-2 text-sm hover:bg-green-50"
+          className="w-full border border-border rounded-md py-2 text-sm hover:bg-green-50"
         >
           {t("outreach.modal_wa.close")}
         </button>

@@ -15,6 +15,9 @@ import { BRAND_NAME } from "@/lib/constants";
 import { useExperiencesNavGate } from "@/lib/use-experiences-nav-gate";
 import { useEventsNavGate } from "@/lib/use-events-nav-gate";
 import { useAuth } from "@/lib/auth-context";
+import ShareSiteActions from "@/components/ShareSiteActions";
+import Seed from "@/components/brand/Seed";
+import { SEEDS_DARK } from "@/lib/brand-seeds";
 
 /**
  * Footer (MEH-37 redesign) — brings the implementation in line with the
@@ -118,7 +121,9 @@ export default function Footer() {
     // MEH-1289: reader-facing "why local" editorial page.
     { href: "/about/why-local", label: t("nav.footer.why_local") },
     // MEH-1160: reader-facing share page — the site-level viral loop.
-    { href: "/share", label: t("share_page.footer_link") },
+    // MEH-2827 PR 5: /share became the «ספרו עלינו» section of /recommend
+    // (/share 308s there too); the label is unchanged.
+    { href: "/recommend#share", label: t("share_page.footer_link") },
   ];
   const businessLinks = [
     // MEH-721/995: the canonical recruitment door; the wizard stays one tap
@@ -215,7 +220,7 @@ export default function Footer() {
                       of open lists was the largest block on every page). From md:
                       up (matchMedia) the heading is plain text — no button, no
                       caret, nothing in the tab order. */}
-                  <h3 className="text-[13px] font-semibold text-green-100 md:mb-3">
+                  <h3 className="text-sm font-semibold text-green-100 md:mb-3">
                     {isDesktop ? (
                       group.heading
                     ) : (
@@ -224,7 +229,7 @@ export default function Footer() {
                         aria-expanded={open}
                         aria-controls={group.id}
                         onClick={() => setOpenGroup(open ? null : group.id)}
-                        className="flex w-full min-h-[44px] items-center justify-between gap-2 text-start md:min-h-0"
+                        className="flex w-full min-h-touch items-center justify-between gap-2 text-start md:min-h-0"
                       >
                         {group.heading}
                         <CaretDown
@@ -245,7 +250,7 @@ export default function Footer() {
                             — interactive text carries no inline font sizing. */}
                         <Link
                           href={link.href}
-                          className="text-[13px] text-green-100 hover:text-white transition"
+                          className="text-sm text-green-100 hover:text-white transition"
                         >
                           {link.label}
                         </Link>
@@ -283,7 +288,7 @@ export default function Footer() {
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder={t("nav.footer.newsletter_placeholder")}
                 /* MEH-976: unicode-bidi:plaintext → Hebrew placeholder resolves RTL (opposite the end-0 arrow → clear gap), typed Latin email resolves LTR; pe-11 reserves the 44px on the arrow side for the LTR value. Replaces MEH-968 dir="ltr"+ps-11. */
-                className="w-full bg-transparent text-white placeholder:text-white/40 outline-none focus-visible:ring-2 focus-visible:ring-white/70 rounded-sm py-2 pe-11 min-h-[44px]"
+                className="w-full bg-transparent text-white placeholder:text-white/40 outline-none focus-visible:ring-2 focus-visible:ring-white/70 rounded-sm py-2 pe-11 min-h-touch"
                 style={{ borderBottom: "1px solid rgba(255,255,255,0.35)", unicodeBidi: "plaintext" }}
               />
               <button
@@ -323,17 +328,32 @@ export default function Footer() {
                 {message}
               </p>
             )}
+            {/* MEH-2827 PR 5: right after joining is when a reader is most
+                likely to pass the site on. One «שתפו» (the phone's own share
+                sheet), on-dark colours; shares the site URL. */}
+            {status === "success" && (
+              <div className="mt-4 rounded-xl border border-background/15 bg-background/5 p-4" data-testid="newsletter-share">
+                <p className="text-sm font-semibold text-background">{t("share_page.h1")}</p>
+                <ShareSiteActions layout="compact" tone="dark" className="mt-3" />
+              </div>
+            )}
           </div>
+        </div>
+
+        {/* MEH-2833 (seed layer, board 6): the divider above the © line is a
+            row of the five seeds in the on-dark set, logo order, then a hairline
+            filling the rest. Decoration only. Replaces the plain top border. */}
+        <div aria-hidden="true" data-testid="footer-seed-row" className="flex items-center gap-1.5 mt-8">
+          {SEEDS_DARK.map((seed) => (
+            <Seed key={seed.name} color={seed.fill} size={10} />
+          ))}
+          <span className="h-px flex-1 bg-background/25 ms-1.5" />
         </div>
 
         {/* ================= Copyright bar ================= */}
         <div
           className="flex flex-col sm:flex-row items-center justify-between gap-3"
-          style={{
-            borderTop: "1px solid rgba(255,255,255,0.1)",
-            paddingTop: "12px",
-            marginTop: "32px",
-          }}
+          style={{ paddingTop: "12px" }}
         >
           {/* MEH-788 copy-Δ: P5-v2 bottom-row lock — wordmark only; the leaf
               emoji dropped per the UI-surface emoji LOCK (MEH-657). */}
@@ -350,20 +370,24 @@ export default function Footer() {
               // MEH-867: IL IS 5568 — accessibility statement must be reachable
               // from the global footer.
               { href: "/accessibility", label: t("nav.footer.accessibility") },
-              // MEH-1312: "צרו קשר" → contact-form anchor on /about (id="contact",
-              // AboutClient.jsx:388). Sapir-approved ADR-024 exception (18/07) —
-              // contact is a top-3 expected footer utility link.
-              { href: "/about#contact", label: t("nav.footer.contact") },
+              // MEH-1312: "צרו קשר" — Sapir-approved ADR-024 exception (18/07),
+              // contact is a top-3 expected footer utility link. MEH-2832: the
+              // target is /contact, the site's one contact form (was /about#contact).
+              { href: "/contact", label: t("nav.footer.contact") },
+              // MEH-2633: next to "צרו קשר", per the card. Sixth utility link —
+              // the row already wraps and centres at 375 (MEH-2417 above), so
+              // this does not re-open the edge-to-edge overflow that fixed.
+              { href: "/recommend", label: t("nav.footer.recommend") },
             ].map((link) => (
               <li key={link.href}>
                 {/* MEH-1103: 11px → 13px (DESIGN.md interactive floor is 14px
                     default-16px; 13px is the footer-utility compromise Sapir
-                    locked in the sweep spec) + min-h-[44px] inline-flex so the
+                    locked in the sweep spec) + min-h-touch inline-flex so the
                     tap target meets WCAG 2.5.5 without growing the visual bar
                     (the extra hit area is vertical padding, not layout). */}
                 <Link
                   href={link.href}
-                  className="inline-flex items-center min-h-[44px] text-[13px] text-green-100 hover:text-white transition"
+                  className="inline-flex items-center min-h-touch text-sm text-green-100 hover:text-white transition"
                 >
                   {link.label}
                 </Link>

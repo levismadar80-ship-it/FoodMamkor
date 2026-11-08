@@ -280,10 +280,19 @@ export default function BottomNav() {
   // The producer-detail gate is NOT in this set: its StickyContactBar is a
   // bottom layer, and the fallback is what keeps content clear of it.
   const noBottomChrome = isAdminRoute(pathname) || isOwnerDashboardRoute(pathname);
+  // iOS drift pin: the clearance is the SHELL's own height (pill + safe-area + 16px
+  // gutter), not `innerHeight - pill.top`. The two are equal while the pill sits
+  // where CSS puts it — but iOS 26 Safari can leave every fixed-bottom layer
+  // parked hundreds of px above the viewport bottom after the keyboard closes
+  // (WebKit 297779; IosViewportPin.jsx). The old position-based reading turned
+  // that drift into a ~300px clearance, which <body> then reserved as padding:
+  // the empty cream band under the footer in Sapir's 31/10 screenshot. A height
+  // is position-independent, so a misplaced pill can no longer inflate it.
+  const shellRef = useRef(null);
   useEffect(() => {
     const root = document.documentElement;
-    const nav = navRef.current;
-    if (!nav) {
+    const shell = shellRef.current;
+    if (!shell) {
       if (noBottomChrome) {
         root.style.setProperty("--bottom-nav-clearance", NO_PILL_CLEARANCE);
         return () => root.style.removeProperty("--bottom-nav-clearance");
@@ -294,15 +303,12 @@ export default function BottomNav() {
     const publish = () => {
       // Frozen while compact — the last expanded value keeps applying.
       if (compactRef.current) return;
-      const rect = nav.getBoundingClientRect();
-      if (rect.height === 0) {
+      const { height } = shell.getBoundingClientRect();
+      if (height === 0) {
         root.style.removeProperty("--bottom-nav-clearance");
         return;
       }
-      root.style.setProperty(
-        "--bottom-nav-clearance",
-        `${Math.round(window.innerHeight - rect.top)}px`
-      );
+      root.style.setProperty("--bottom-nav-clearance", `${Math.round(height)}px`);
     };
     let debounceId;
     const schedule = () => {
@@ -314,7 +320,7 @@ export default function BottomNav() {
     let ro;
     if (typeof ResizeObserver !== "undefined") {
       ro = new ResizeObserver(schedule);
-      ro.observe(nav);
+      ro.observe(shell);
     }
     return () => {
       clearTimeout(debounceId);
@@ -334,10 +340,10 @@ export default function BottomNav() {
   const tabCls = (active) =>
     [
       "relative w-full min-w-[64px] flex flex-col items-center justify-center gap-[4px]",
-      isCompact ? "min-h-[40px]" : "min-h-[44px]",
+      isCompact ? "min-h-[40px]" : "min-h-touch",
       // NAV — label-clip fix: py-1.5 → py-1. The 22px icon + 4px gap + label
       // wrapper overflowed the expanded pill's inner box; trimming the tab's
-      // own vertical padding (min-h-[44px] still guarantees the ≥44px tap
+      // own vertical padding (min-h-touch still guarantees the ≥44px tap
       // target) recovers the room so all four labels sit fully inside.
       "rounded-full px-1 py-1 transition-colors duration-fast ease-quart motion-reduce:transition-none focus-ring",
       // MEH-919: inactive label darkened from fg-muted (#5c584f → 3.53 on the
@@ -345,7 +351,7 @@ export default function BottomNav() {
       active ? "text-primary" : "text-[#4b4841]",
     ].join(" ");
   // z-10 lifts icon + label above the z-0 tint capsule.
-  const labelCls = "relative z-10 font-body text-[10.5px] font-semibold leading-none";
+  const labelCls = "relative z-10 font-body text-2xs font-semibold leading-none";
   // MEH-1014: label collapse wrapper. overflow-hidden clips the text as
   // max-height animates to 0; opacity fades it in tandem. Only height/opacity/
   // max-height transition — the pill's backdrop-filter (nav-pill-glass) is
@@ -396,8 +402,11 @@ export default function BottomNav() {
           none + one auto suffices. pointer-events only — no visual/layout/z
           change. onFocusCapture still fires: pointer-events-none does not block
           focus events (keyboard/programmatic), only pointer hit-testing. */}
+      {/* iOS drift pin: vv-pin (globals.css) re-seats the shell on the screen
+          bottom when iOS 26 leaves fixed layers drifted (IosViewportPin.jsx). */}
       <div
-        className="md:hidden fixed bottom-0 inset-x-0 z-[1000] flex justify-center px-[14px] pointer-events-none"
+        ref={shellRef}
+        className="vv-pin md:hidden fixed bottom-0 inset-x-0 z-[1000] flex justify-center px-[14px] pointer-events-none"
         style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 16px)" }}
         // MEH-1014: any focus landing inside the pill forces it back to full
         // size (mirror of the MEH-734 focus guard). onFocusCapture catches it
@@ -502,7 +511,7 @@ export default function BottomNav() {
                     // eslint-disable-next-line @next/next/no-img-element
                     <img src={user.avatar_url} alt="" className="w-full h-full object-cover" />
                   ) : (
-                    <span className="text-white text-[12px] font-semibold leading-none">{initial}</span>
+                    <span className="text-white text-xs font-semibold leading-none">{initial}</span>
                   )}
                 </span>
               ) : (

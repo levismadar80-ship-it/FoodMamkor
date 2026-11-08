@@ -6,6 +6,7 @@ import { formatEventDate } from "@/lib/format-date";
 import api from "@/lib/api";
 import { useAdminAction } from "@/lib/use-admin-action";
 import AdminLoadError from "@/components/admin/AdminLoadError";
+import Button from "@/components/ui/Button";
 
 export default function AdminReportsPage() {
   const t = useTranslations("admin");
@@ -73,7 +74,7 @@ export default function AdminReportsPage() {
         {loadError ? (
           <AdminLoadError onRetry={loadReports} testId="admin-reports-load-error" />
         ) : reports.length === 0 ? (
-          <p className="text-sm text-fg-muted bg-white border border-border rounded-[12px] p-5">
+          <p className="text-sm text-fg-muted bg-surface border border-border rounded-md p-5">
             {t("reports.no_reports")}
           </p>
         ) : (
@@ -84,8 +85,8 @@ export default function AdminReportsPage() {
               .map((r) => (
                 <div
                   key={r.producer_id}
-                  className={`bg-white rounded-[12px] p-5 border ${
-                    r.auto_flagged ? "border-red-200" : "border-border"
+                  className={`bg-surface rounded-md p-5 border ${
+                    r.auto_flagged ? "border-danger-200" : "border-border"
                   }`}
                 >
                   <div className="flex items-start justify-between">
@@ -93,12 +94,12 @@ export default function AdminReportsPage() {
                       <div className="flex items-center gap-2">
                         <h3 className="font-semibold">{r.producer_name}</h3>
                         {r.auto_flagged && (
-                          <span className="bg-red-100 text-red-700 px-2 py-0.5 rounded-full text-xs font-medium">
+                          <span className="bg-danger-100 text-danger-700 px-2 py-0.5 rounded-full text-xs font-medium">
                             {t("reports.auto_flag_badge")}
                           </span>
                         )}
                       </div>
-                      <p className={`text-sm font-medium ${r.auto_flagged ? "text-red-600" : "text-fg-muted"}`}>
+                      <p className={`text-sm font-medium ${r.auto_flagged ? "text-danger-600" : "text-fg-muted"}`}>
                         {t("reports.report_count", { count: r.report_count })}
                       </p>
                     </div>
@@ -106,13 +107,13 @@ export default function AdminReportsPage() {
                       <button
                         onClick={() => suspendProducer(r.producer_id)}
                         disabled={isBusy(`suspend:${r.producer_id}`)}
-                        className="bg-yellow-500 text-white px-3 py-1.5 rounded-[12px] text-xs disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="bg-yellow-500 text-text px-3 py-1.5 rounded-md text-xs disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         {t("reports.actions.suspend")}
                       </button>
                       <button
                         onClick={() => setDismissTarget(r)}
-                        className="bg-white border border-border px-3 py-1.5 rounded-[12px] text-xs"
+                        className="bg-surface border border-border px-3 py-1.5 rounded-md text-xs"
                       >
                         {t("reports.actions.ignore")}
                       </button>
@@ -122,7 +123,7 @@ export default function AdminReportsPage() {
                     {r.reports.map((rep) => (
                       <li
                         key={rep.id}
-                        className={`rounded-[8px] p-2 text-xs ${r.auto_flagged ? "bg-red-50" : "bg-gray-50"}`}
+                        className={`rounded-sm p-2 text-xs ${r.auto_flagged ? "bg-danger-50" : "bg-gray-50"}`}
                       >
                         <p>{rep.reason}</p>
                         <p className="text-fg-muted mt-1">
@@ -144,25 +145,25 @@ export default function AdminReportsPage() {
             role="dialog"
             aria-modal="true"
             aria-labelledby="dismiss-title"
-            className="bg-white rounded-[16px] shadow-xl p-6 max-w-sm w-full mx-4 text-start space-y-4"
+            className="bg-surface rounded-lg shadow-xl p-6 max-w-sm w-full mx-4 text-start space-y-4"
           >
             <p id="dismiss-title" className="font-medium text-base">
               {t("reports.actions.dismiss_confirm", { name: dismissTarget.producer_name })}
             </p>
             <div className="flex gap-3 justify-start">
-              <button
+              <Button
                 disabled={isBusy(`dismiss:${dismissTarget.producer_id}`)}
                 onClick={confirmDismiss}
-                className="px-4 py-2 rounded-[10px] text-sm font-medium text-white transition bg-red-600 hover:bg-red-700 disabled:opacity-50"
+                variant="danger" size="sm"
               >
                 {isBusy(`dismiss:${dismissTarget.producer_id}`)
                   ? t("reports.actions.dismissing")
                   : t("reports.actions.ignore")}
-              </button>
+              </Button>
               <button
                 disabled={isBusy(`dismiss:${dismissTarget.producer_id}`)}
                 onClick={() => setDismissTarget(null)}
-                className="px-4 py-2 rounded-[10px] text-sm border border-border text-muted hover:bg-gray-50 transition disabled:opacity-50"
+                className="px-4 py-2 rounded-full text-sm border border-border text-muted hover:bg-gray-50 transition disabled:opacity-50"
               >
                 {t("common.cancel")}
               </button>

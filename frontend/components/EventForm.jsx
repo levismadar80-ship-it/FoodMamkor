@@ -18,7 +18,7 @@
  */
 
 import { useState } from "react";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
 import { X } from "@phosphor-icons/react";
 import api from "@/lib/api";
@@ -30,6 +30,8 @@ import Input from "@/components/ui/Input";
 import UnverifiedEmailNotice from "@/components/UnverifiedEmailNotice";
 import CollectionNotice from "@/components/CollectionNotice";
 import { EVENT_CATEGORIES as CATEGORY_KEYS } from "@/lib/event-categories";
+import Button from "@/components/ui/Button";
+import RegistrationMethodField from "@/components/RegistrationMethodField";
 
 const DEFAULTS = {
   title: "",
@@ -49,6 +51,8 @@ const DEFAULTS = {
   category: "",
   price: 0,
   max_participants: "",
+  // MEH-2766: «איך נרשמים?» — a new event defaults to the on-site form.
+  registration_method: "site_form",
   registration_url: "",
 };
 
@@ -71,6 +75,7 @@ function seed(initial) {
     category: initial.category ?? "",
     price: initial.price ?? 0,
     max_participants: initial.max_participants ?? "",
+    registration_method: initial.registration_method ?? "site_form",
     registration_url: initial.registration_url ?? "",
   };
 }
@@ -109,7 +114,7 @@ function isNativeValidUrl(value) {
 
 const isWholeNumber = (value) => Number.isInteger(Number(value));
 
-function validateEventForm(f, t) {
+function validateEventForm(f, t, tReg) {
   const errors = {};
   if (!f.title.trim()) errors.title = t("error_title_required");
   if (!f.event_date) errors.event_date = t("error_date_required");
@@ -135,8 +140,12 @@ function validateEventForm(f, t) {
     if (Number(f.max_participants) < 1) errors.max_participants = t("error_max_participants_min");
     else if (!isWholeNumber(f.max_participants)) errors.max_participants = t("error_whole_number");
   }
-  if (f.registration_url.trim() !== "" && !isNativeValidUrl(f.registration_url.trim())) {
-    errors.registration_url = t("error_invalid_url");
+  // MEH-2766: the URL is asked for (and sent) only when the owner picked the
+  // external link; the server rejects external_url without one.
+  if (f.registration_method === "external_url") {
+    const url = f.registration_url.trim();
+    if (!url) errors.registration_url = tReg("external_needs_url");
+    else if (!isNativeValidUrl(url)) errors.registration_url = t("error_invalid_url");
   }
   return errors;
 }
@@ -149,6 +158,7 @@ function validateEventForm(f, t) {
  */
 export default function EventForm({ mode = "create", initial = null, onSuccess, cancelHref = "/producer/dashboard" }) {
   const t = useTranslations("sweep_tail.event_new");
+  const tReg = useTranslations("registration.form");
   const tCat = useTranslations("events.categories");
   // MEH-1981: notice-at-collection (copy approved verbatim 02/09, rule 22).
   const tNotice = useTranslations("privacy.collection_notice");
@@ -191,7 +201,7 @@ export default function EventForm({ mode = "create", initial = null, onSuccess, 
     setError("");
     setUnverified(false);
 
-    const errors = validateEventForm(form, t);
+    const errors = validateEventForm(form, t, tReg);
     if (Object.keys(errors).length > 0) {
       setFieldErrors(errors);
       const firstInvalid = EVENT_FIELD_ORDER.find((field) => errors[field]);
@@ -212,7 +222,8 @@ export default function EventForm({ mode = "create", initial = null, onSuccess, 
         max_participants: form.max_participants ? Number(form.max_participants) : null,
         event_time: form.event_time || null,
         end_time: form.end_time || null, // MEH-2469
-        registration_url: form.registration_url || null,
+        registration_url:
+          form.registration_method === "external_url" ? form.registration_url.trim() || null : null,
       };
       const r = isEdit
         ? await api.put(`/events/${initial.id}`, payload)
@@ -233,7 +244,7 @@ export default function EventForm({ mode = "create", initial = null, onSuccess, 
     <>
       {unverified && <UnverifiedEmailNotice className="mb-4" />}
       {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 rounded-[8px] p-3 mb-4 text-sm" role="alert">
+        <div className="bg-danger-50 border border-danger-200 text-danger-700 rounded-sm p-3 mb-4 text-sm" role="alert">
           {error}
         </div>
       )}
@@ -417,13 +428,13 @@ export default function EventForm({ mode = "create", initial = null, onSuccess, 
               <img
                 src={form.image_url}
                 alt={t("image_label")}
-                className="w-24 h-24 object-cover rounded-[8px] border border-border"
+                className="w-24 h-24 object-cover rounded-sm border border-border"
               />
               <button
                 type="button"
                 onClick={() => setForm((f) => ({ ...f, image_url: "" }))}
                 aria-label={t("image_remove_aria")}
-                className="inline-flex items-center gap-1 text-sm text-red-600 hover:underline"
+                className="inline-flex items-center gap-1 text-sm text-danger-600 hover:underline"
               >
                 <X size={14} weight="bold" aria-hidden="true" />
                 {t("image_remove")}
@@ -441,7 +452,7 @@ export default function EventForm({ mode = "create", initial = null, onSuccess, 
                :811/:829, RecipeForm:290, dashboard/edit/cards.jsx:382) — inventory
                on MEH-2031, deliberately out of this diff.
                REUSES: components/ExperienceForm.jsx:499-514 (MEH-2012). */
-            <label className="flex flex-col items-center justify-center text-center text-sm text-fg-muted border border-dashed border-border rounded-[8px] px-4 py-6 cursor-pointer hover:bg-green-50 transition focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/30">
+            <label className="flex flex-col items-center justify-center text-center text-sm text-fg-muted border border-dashed border-border rounded-sm px-4 py-6 cursor-pointer hover:bg-green-50 transition focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/30">
               <input
                 type="file"
                 accept="image/*"
@@ -454,15 +465,15 @@ export default function EventForm({ mode = "create", initial = null, onSuccess, 
           )}
         </div>
 
-        <Input
-          id="registration_url"
-          type="url"
-          label={t("field_registration_url_label")}
-          value={form.registration_url}
-          onChange={update("registration_url")}
-          placeholder={t("field_registration_url_placeholder")}
-          dir="ltr"
-          error={fieldErrors.registration_url}
+        <RegistrationMethodField
+          value={form.registration_method}
+          onChange={(m) => {
+            setForm((f) => ({ ...f, registration_method: m }));
+            setFieldErrors((errs) => (errs.registration_url ? { ...errs, registration_url: undefined } : errs));
+          }}
+          url={form.registration_url}
+          onUrlChange={(v) => update("registration_url")({ target: { value: v } })}
+          urlError={fieldErrors.registration_url}
         />
 
         <CollectionNotice
@@ -472,16 +483,16 @@ export default function EventForm({ mode = "create", initial = null, onSuccess, 
         />
 
         <div className="flex gap-3 pt-4">
-          <button
+          <Button
             type="submit"
             disabled={submitting || uploading}
-            className="bg-primary text-white px-6 py-3 rounded-[8px] hover:bg-primary-dark transition font-medium disabled:opacity-60"
+            variant="primary" size="lg"
           >
             {submitting ? (isEdit ? t("saving") : t("submit_publishing")) : isEdit ? t("save") : t("submit")}
-          </button>
+          </Button>
           <Link
             href={cancelHref}
-            className="border border-border text-text px-6 py-3 rounded-[8px] hover:bg-green-50 transition"
+            className="border border-border text-text px-6 py-3 rounded-sm hover:bg-green-50 transition"
           >
             {t("cancel")}
           </Link>

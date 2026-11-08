@@ -41,6 +41,23 @@ const TWO_CHANNEL_FIXTURE = fs.readFileSync(
 // stops it swallowing `/api/producers/{uuid}/reviews`.
 const PRODUCER_DETAIL_RE = /\/api\/producers\/[0-9a-f-]{36}(?:\?|$)/;
 
+// MEH-2803: the «שעות» section. producer-detail.json carries no order_window and
+// no opening_hours, and the producer shots are viewport-only, so neither hours
+// block had ever been in a pixel. Two fixtures = producer-detail.json plus hours:
+//   · DIFFERENT — the demo seed (seed_demo_business.py): Sun–Thu 7:00–14:00 both
+//     sides, Friday split for orders (6:30–10:00, 11:00–13:00) vs 6:30–13:00 to
+//     visit, store hours typed in Hebrew → TWO labelled sets.
+//   · IDENTICAL — Sun–Thu 7:00–14:00 both sides (store hours in Hebrew, H:MM,
+//     en-dashes) → ONE «הזמנות וביקור במקום» set.
+const PRODUCER_HOURS_DIFFERENT_FIXTURE = fs.readFileSync(
+  path.join(__dirname, "fixtures", "producer-hours-different.json"),
+  "utf-8"
+);
+const PRODUCER_HOURS_IDENTICAL_FIXTURE = fs.readFileSync(
+  path.join(__dirname, "fixtures", "producer-hours-identical.json"),
+  "utf-8"
+);
+
 // MEH-1591: fixed /map payloads. The map's results rail and category chip row
 // are UNMASKED live chrome (only `.leaflet-container` is masked), so the
 // baseline moved whenever a business was approved/deactivated — the 26/07 regen
@@ -89,6 +106,32 @@ const EXPERIENCES_COUNT_RE = /\/api\/experiences\/count(?:\?[^#]*)?$/;
 // through the vrt-regen labels on the tip that already carried #3654's
 // collapsed mobile footer; each PNG was opened and diffed before merge.
 const EVENTS_UPCOMING_RE = /\/api\/events\/upcoming(?:\?[^#]*)?$/;
+// MEH-2804: the home trust band reads GET /stats — LIVE staging counts
+// («31 בתי עסק», «18 קטגוריות» on 07/11), so every home frame moved whenever the
+// data did, and a regen baked today's numbers into the baseline. Pinned for
+// every frame, ABOVE TRUST_COUNT_THRESHOLD (25) so the band's count line (MEH-2804
+// follow-up: sentence + «31 בתי עסק שהצטרפו עד היום») is what the shots hold; the
+// numbers are noise, the layout is the subject.
+const STATS_RE = /\/api\/stats(?:\?[^#]*)?$/;
+const PINNED_STATS = JSON.stringify({ producers_count: 31, categories_count: 18 });
+
+// MEH-2802: the home «אירועים קרובים» preview, which the pin above keeps out of
+// every other frame. Three rows chosen to stress the equal-height card: a long
+// two-line title + description (paid), a short title with no description
+// (free), and a row with no photo at all (category tile, paid). Dates sit after
+// VRT_FIXED_TIME. Shot ONLY by the "home upcoming events" test below.
+const EVENTS_UPCOMING_3_FIXTURE = fs.readFileSync(
+  path.join(__dirname, "fixtures", "events-upcoming-3.json"),
+  "utf-8"
+);
+// The fixture's two photos are Cloudinary URLs, and Cloudinary 401s on the
+// runner. Fulfil them with one fixed 1x1 PNG (a flat sage) so the band/thumbnail
+// is a deterministic filled area rather than whatever the CDN answered.
+const CLOUDINARY_IMAGE_RE = /res\.cloudinary\.com\/.*\/vrt\//;
+const FLAT_PNG = Buffer.from(
+  "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGOYs6IOAAOmAcOWG3PHAAAAAElFTkSuQmCC",
+  "base64"
+);
 
 /**
  * MEH-991 Chunk 3 — visual parity baselines (VRT).
@@ -238,6 +281,9 @@ async function preparePage(page: Page): Promise<void> {
   });
   await page.route(EVENTS_UPCOMING_RE, async (route) => {
     await route.fulfill({ status: 200, contentType: "application/json", body: "[]" });
+  });
+  await page.route(STATS_RE, async (route) => {
+    await route.fulfill({ status: 200, contentType: "application/json", body: PINNED_STATS });
   });
 
   await page.clock.setFixedTime(VRT_FIXED_TIME);
@@ -542,10 +588,13 @@ test.describe("Visual parity — MEH-991", () => {
     await settle(page);
     // MEH-1765 — the two home strings, asserted BEFORE the shot so a copy
     // regression names itself instead of arriving as an unexplained pixel diff.
-    // `chips_prefix` is the string that actually escaped in MEH-1758
-    // («מחפשות עכשיו:» -> «פופולרי עכשיו:», ~2,800 px, VRT green).
+    // The second one guards the HERO CHIP ROW, which is where MEH-1758's
+    // regression escaped («מחפשות עכשיו:» -> «פופולרי עכשיו:», ~2,800 px, VRT
+    // green). MEH-2634 deleted that row's `chips_prefix` label, so the guard
+    // moved to `near_me` — the first chip in the same row, still rendered, so
+    // the row keeps a named copy assertion rather than losing one.
     await expectCopy(page, "home.hero.title");
-    await expectCopy(page, "home.hero.chips_prefix");
+    await expectCopy(page, "home.hero.near_me");
     await expect(page).toHaveScreenshot("home.png", {
       ...SHOT,
       // Live data: featured grid + events preview + homepage mini-map.
@@ -555,6 +604,75 @@ test.describe("Visual parity — MEH-991", () => {
         page.locator('[data-testid="producer-card"]'),
       ],
     });
+  });
+
+  // MEH-2804 follow-up (07/11) — the home trust band as an ELEMENT shot,
+  // desktop + mobile: the locked sentence, and under it the count line
+  // («31 בתי עסק שהצטרפו עד היום», /stats pinned in preparePage). The #4143
+  // fact row this shot first froze was rejected. Named "home …" so
+  // vrt-regen:home reaches it. Same fixed/sticky hiding as the events shot.
+  test("home trust band", async ({ page }) => {
+    await preparePage(page);
+    await page.goto("/");
+    const band = page.locator('[data-testid="home-trust-band"]');
+    await expect(band.locator('[data-testid="trust-count"]')).toBeVisible({ timeout: 20_000 });
+    await band.scrollIntoViewIfNeeded();
+    await settle(page);
+    await page.evaluate(() => {
+      for (const el of Array.from(document.querySelectorAll("body *"))) {
+        const pos = getComputedStyle(el).position;
+        if (pos === "fixed" || pos === "sticky") el.setAttribute("data-vrt-hide", "");
+      }
+    });
+    await page.addStyleTag({ content: "[data-vrt-hide]{opacity:0 !important}" });
+    await expect(band).toHaveScreenshot("home-trust-band.png", SHOT);
+  });
+
+  // MEH-2802 — the «אירועים קרובים» preview as an ELEMENT shot, desktop + mobile.
+  // A separate test so the full-page "home" frame above keeps its events pin and
+  // its baseline. Name contains "home" on purpose: `vrt-regen:home` scopes the
+  // on-runner regen with --grep home (vrt-update.yml), which must reach it.
+  // Desktop = the lg 3-up grid (equal heights, one chip+price line); mobile =
+  // the phone list. The geometric assertion lives in
+  // e2e/flows/45-card-grid-equal-height.spec.ts; this pins the pixels.
+  test("home upcoming events", async ({ page }) => {
+    await preparePage(page);
+    // Registered AFTER preparePage, so it wins over the empty pin there.
+    await page.route(EVENTS_UPCOMING_RE, async (route) => {
+      await route.fulfill({ status: 200, contentType: "application/json", body: EVENTS_UPCOMING_3_FIXTURE });
+    });
+    await page.route(CLOUDINARY_IMAGE_RE, async (route) => {
+      await route.fulfill({ status: 200, contentType: "image/png", body: FLAT_PNG });
+    });
+    await page.goto("/");
+    const section = page.locator('section:has([data-testid="event-row-compact"])');
+    await expect(page.locator('[data-testid="event-row-compact"]')).toHaveCount(3, { timeout: 20_000 });
+    await section.scrollIntoViewIfNeeded();
+    await settle(page);
+    // An element shot still paints whatever is fixed/sticky over it (header,
+    // BottomNav, back-to-top, chat launcher) at whatever scroll offset the run
+    // landed on. Hide that chrome for THIS frame only — it is not the subject,
+    // and the "home" shot above keeps covering it. opacity, not visibility
+    // (a descendant can set `visibility: visible` and reappear) nor display
+    // (the sticky header is in flow); through an !important rule so an inline
+    // style written by an animation cannot undo it. NOTE for local runs: the
+    // round badge bottom-left under `next dev` is Next's dev-tools indicator —
+    // it does not exist under `next start`, which is what CI shoots.
+    await page.evaluate(() => {
+      const mark = (root: Element) => {
+        for (const el of [root, ...Array.from(root.querySelectorAll("*"))]) {
+          const pos = getComputedStyle(el).position;
+          if (pos === "fixed" || pos === "sticky") el.setAttribute("data-vrt-hide", "");
+        }
+      };
+      mark(document.body);
+      // Lazily mounted chrome (the chat launcher) can arrive after this pass.
+      new MutationObserver((records) => {
+        for (const r of records) r.addedNodes.forEach((n) => n instanceof Element && mark(n));
+      }).observe(document.body, { childList: true, subtree: true });
+    });
+    await page.addStyleTag({ content: "[data-vrt-hide]{opacity:0 !important}" });
+    await expect(section).toHaveScreenshot("home-upcoming-events.png", SHOT);
   });
 
   // MEH-1440 (2026-07-22): the /map chrome changed when the toggle-chip
@@ -870,11 +988,12 @@ test.describe("Visual parity — MEH-991", () => {
     });
   });
 
-  // Desktop-only: the phone reveal is a >=1024px behavior. On the minimal
-  // producer the phone is the sole channel, so it renders as the labeled single
-  // row (MEH-1551) — clicking it swaps the number pill in place.
-  test("producer-detail-phone-revealed", async ({ page }, testInfo) => {
-    test.skip(testInfo.project.name !== "desktop", "phone reveal is desktop-only (>=1024px)");
+  // Desktop-only. On the minimal producer the phone is the sole channel, so it
+  // renders as the single row (MEH-1551). MEH-2775: that row now SHOWS the
+  // number (no reveal click), as an unboxed line under a hairline — this shot
+  // pins it. The reveal itself is still covered by the two-channel shot below.
+  test("producer-detail-phone-single", async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== "desktop", "sidebar contact card is desktop-only (>=1024px)");
     await preparePage(page);
     await page.route(PRODUCER_DETAIL_RE, async (route) => {
       await route.fulfill({ status: 200, contentType: "application/json", body: MINIMAL_FIXTURE });
@@ -888,12 +1007,11 @@ test.describe("Visual parity — MEH-991", () => {
     }
     await page.goto(`/producer/${borrowedId}`);
     await expect(page.locator("main h1").first()).toBeVisible({ timeout: 20_000 });
-    // Click the visible ContactCard (the desktop sidebar instance — the inline
-    // card is hidden at this width), then wait for the revealed number pill.
-    await page.locator('[data-testid="contact-single-row"]:visible').first().click();
-    await page.locator('[data-testid="revealed-phone"]:visible').first().waitFor({ timeout: 5_000 });
+    // The visible ContactCard is the desktop sidebar instance (the inline card
+    // is hidden at this width). Its sole row must carry digits, not a label.
+    await expect(page.locator('[data-testid="contact-single-row"]:visible').first()).toHaveText(/\d{6,}/);
     await settle(page);
-    await expect(page).toHaveScreenshot("producer-detail-phone-revealed.png", {
+    await expect(page).toHaveScreenshot("producer-detail-phone-single.png", {
       ...SHOT,
       mask: [page.locator("main img"), page.locator(".leaflet-container")],
     });
@@ -959,6 +1077,47 @@ test.describe("Visual parity — MEH-991", () => {
       mask: [page.locator("main img"), page.locator(".leaflet-container")],
     });
   });
+
+  // MEH-2803 — ELEMENT shots of the «שעות» section, desktop + mobile, both
+  // states (two labelled sets / one merged set), disclosures closed. Named
+  // "producer-detail-hours-*" so vrt-regen:producer-detail (--grep
+  // producer.detail) reaches them. The OpeningHours «היום» row reads the frozen
+  // VRT clock (Wed), so it is deterministic. Existing producer shots untouched.
+  for (const [name, fixture, sets] of [
+    ["producer-detail-hours-different", PRODUCER_HOURS_DIFFERENT_FIXTURE, 2],
+    ["producer-detail-hours-identical", PRODUCER_HOURS_IDENTICAL_FIXTURE, 1],
+  ] as const) {
+    test(name, async ({ page }) => {
+      await preparePage(page);
+      await page.route(PRODUCER_DETAIL_RE, async (route) => {
+        await route.fulfill({ status: 200, contentType: "application/json", body: fixture });
+      });
+      const listRes = await page.request.get("/api/producers", { params: { limit: 1 } });
+      const list = listRes.ok() ? await listRes.json().catch(() => []) : [];
+      const borrowedId = Array.isArray(list) && list[0]?.id;
+      if (!borrowedId) {
+        test.skip(true, "No producer on staging to borrow an id from");
+        return;
+      }
+      await page.goto(`/producer/${borrowedId}`);
+      const hours = page.locator('[data-testid="producer-hours"]');
+      // The fixture reaches the page through the CLIENT re-fetch, so wait for
+      // the section to show the fixture's set count, not merely to exist.
+      await expect(hours.locator('[data-testid="hours-set"]')).toHaveCount(sets, { timeout: 20_000 });
+      await hours.scrollIntoViewIfNeeded();
+      await settle(page);
+      // Same reason as "home upcoming events": hide fixed/sticky chrome (header,
+      // section nav, StickyContactBar, BottomNav) that would paint over the element.
+      await page.evaluate(() => {
+        for (const el of Array.from(document.querySelectorAll("body *"))) {
+          const pos = getComputedStyle(el).position;
+          if (pos === "fixed" || pos === "sticky") el.setAttribute("data-vrt-hide", "");
+        }
+      });
+      await page.addStyleTag({ content: "[data-vrt-hide]{opacity:0 !important}" });
+      await expect(hours).toHaveScreenshot(`${name}.png`, SHOT);
+    });
+  }
 
   // MEH-1112: /about polish (pull-quote column narrowed, testimonials section
   // render-gated off, close-band CTA hierarchy, contact email fallback line)

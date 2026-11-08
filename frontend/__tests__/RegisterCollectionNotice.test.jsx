@@ -117,7 +117,8 @@ async function reachStoryFrame() {
   fireEvent.change(ph("producer_name"), { target: { value: "העסק שלי" } });
   fireEvent.change(ph("phone"), { target: { value: "0501234567" } });
   fireEvent.change(screen.getByTestId("city"), { target: { value: "תל אביב" } });
-  fireEvent.change(ph("address"), { target: { value: "הרצל 1" } });
+  // MEH-2640: step 2 has no address field, and its one question is required.
+  fireEvent.click(screen.getByTestId("register-fulfilment-onsite"));
   fireEvent.click(screen.getByTestId("register-details-next"));
   fireEvent.click(await screen.findByTestId("pick-category"));
   fireEvent.click(screen.getByTestId("register-category-next"));

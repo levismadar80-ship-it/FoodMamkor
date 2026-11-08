@@ -51,8 +51,8 @@ export default function QueueSlaSummary({ rows }) {
   // thresholds as WaitingBadge, deliberately — two different answers to
   // "is this late" on one screen would be worse than none.
   let tone = "bg-gray-100 text-gray-700";
-  if (oldest >= 3) tone = "bg-red-100 text-red-800";
-  else if (oldest === 2) tone = "bg-amber-100 text-amber-800";
+  if (oldest >= 3) tone = "bg-danger-100 text-danger-800";
+  else if (oldest === 2) tone = "bg-warning-100 text-warning-800";
 
   return (
     <div

@@ -6,7 +6,7 @@ import { render, screen } from "@testing-library/react";
 // @/i18n/navigation) is locale-stripped; mock it so the wrapper can be
 // exercised per route without pulling in next-intl navigation internals.
 const { mockUsePathname } = vi.hoisted(() => ({ mockUsePathname: vi.fn(() => "/") }));
-vi.mock("@/i18n/navigation", () => ({ usePathname: mockUsePathname }));
+vi.mock("@/i18n/navigation", () => ({ Link: ({ href, children, prefetch, ...p }) => <a href={typeof href === "string" ? href : href?.pathname} {...p}>{children}</a>,  usePathname: mockUsePathname }));
 
 import ChatWidgetLazy from "@/components/ChatWidgetLazy";
 

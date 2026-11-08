@@ -18,6 +18,14 @@ import {
   DIET_PAGE_MIN,
   dietPagePath,
 } from "@/lib/diet-pages";
+// MEH-2790: the category x region landing pages share one threshold and one
+// path shape with the route, so both read them from here.
+import {
+  REGION_KEYS,
+  REGION_PAGE_MIN,
+  regionCities,
+  regionPagePath,
+} from "@/lib/region-pages";
 // MEH-2369: the three "something happening" hubs are listed only with supply.
 import { HUBS, getAllHubCounts, hubBelongsInSitemap } from "@/lib/listing-supply";
 // MEH-2478: one owner of "a group buy can still be joined" (open + before deadline).
@@ -47,6 +55,81 @@ function localizeEntry(path, meta) {
   }));
 }
 
+// MEH-2787 — the listing endpoint caps `limit` at 100
+// (backend/app/routers/producers.py:220), so the whole catalog needs an
+// offset walk. sitemaps.org allows 50,000 URLs per file and we are nowhere
+// near it, so a loop is enough; `generateSitemaps` would be premature.
+const PRODUCERS_PAGE_SIZE = 100;
+const PRODUCERS_MAX_PAGES = 20; // 2,000 businesses
+// The recipes fan-out calls a 120/minute endpoint from one IP. 10 in flight
+// keeps a full 2,000-business walk comfortably under it.
+const RECIPE_FAN_OUT_LIMIT = 10;
+
+/**
+ * Every approved business, walked page by page.
+ *
+ * THE WALK IS ONLY SAFE BECAUSE THE LISTING IS TOTALLY ORDERED. Commit 1 of
+ * this PR added `Producer.id.asc()` as a final unique key in
+ * backend/app/services/producer_listing.py. Without it, two pages of the same
+ * query are two statements over a non-unique order, and a row on the boundary
+ * can repeat while another disappears — which in a sitemap means a business
+ * silently missing from search. Do not port this loop to an endpoint whose
+ * ordering you have not checked.
+ *
+ * @returns {Promise<Array|null>} the businesses, or null when the API is
+ *   unreachable — null is distinct from [] so the caller keeps today's
+ *   fail-closed behaviour (emit no producer URLs) rather than publishing a
+ *   sitemap that claims the catalog is empty.
+ */
+async function fetchAllProducers() {
+  const all = [];
+  for (let page = 0; page < PRODUCERS_MAX_PAGES; page++) {
+    const offset = page * PRODUCERS_PAGE_SIZE;
+    const res = await serverFetch(
+      `${API_URL}/producers?limit=${PRODUCERS_PAGE_SIZE}&offset=${offset}`,
+    );
+    if (!res.ok) {
+      // A mid-walk failure must not silently truncate the sitemap: the pages
+      // already collected would look like the whole catalog.
+      return page === 0 ? null : all;
+    }
+    const batch = await res.json();
+    if (!Array.isArray(batch)) return page === 0 ? null : all;
+    all.push(...batch);
+    if (batch.length < PRODUCERS_PAGE_SIZE) return all;
+  }
+  console.warn(
+    `[sitemap] producer walk hit the ${PRODUCERS_MAX_PAGES}-page cap ` +
+      `(${PRODUCERS_MAX_PAGES * PRODUCERS_PAGE_SIZE} businesses). Businesses past ` +
+      `that are NOT in the sitemap — raise PRODUCERS_MAX_PAGES or split the file.`,
+  );
+  return all;
+}
+
+/**
+ * Run `task` over `items` with at most `limit` promises in flight, preserving
+ * input order in the result.
+ *
+ * Order matters here: the caller zips the results back against `slugged` by
+ * position, so a completion-ordered result would attach each business's
+ * recipes to a different business.
+ */
+async function mapWithConcurrency(items, { limit, task }) {
+  const queue = items.map((item, index) => ({ item, index }));
+  const byIndex = new Map();
+  const worker = async () => {
+    for (let job = queue.shift(); job !== undefined; job = queue.shift()) {
+      byIndex.set(job.index, await task(job.item));
+    }
+  };
+  await Promise.all(
+    Array.from({ length: Math.min(limit, items.length) }, () => worker()),
+  );
+  // Rebuilt from `items`, so the result is in INPUT order rather than
+  // completion order, with no sort and no indexed array write.
+  return items.map((_item, index) => byIndex.get(index));
+}
+
 export default async function sitemap() {
   const now = new Date();
 
@@ -59,6 +142,8 @@ export default async function sitemap() {
     { path: "/about/for-businesses", priority: 0.5, changeFrequency: "monthly" },
     // MEH-1289: reader-facing "why local" editorial page.
     { path: "/about/why-local", priority: 0.5, changeFrequency: "monthly" },
+    // MEH-2701: badges explainer («מה אומרים התגים»).
+    { path: "/about/badges", priority: 0.4, changeFrequency: "monthly" },
     { path: "/register/producer", priority: 0.7, changeFrequency: "monthly" },
     // MEH-803: /register, /login, /contact intentionally NOT listed (/search
     // itself is gone — it 308s to /producers since MEH-819) —
@@ -90,9 +175,8 @@ export default async function sitemap() {
   // MEH-1062 (SEO-03): recipe detail pages (published+approved), slug-based.
   let recipePages = [];
   try {
-    const res = await serverFetch(`${API_URL}/producers`);
-    if (res.ok) {
-      const producers = await res.json();
+    const producers = await fetchAllProducers();
+    if (producers !== null) {
       producerPages = producers.flatMap((p) => {
         const path = p.slug ? `/${p.slug}` : `/producer/${p.id}`;
         return localizeEntry(path, {
@@ -119,14 +203,23 @@ export default async function sitemap() {
       // (GET /producers/{slug}/recipes — published+approved only), so fan out
       // concurrently over slugged producers; each fetch fails open (recipes
       // are additive — a miss must never drop the producer/event sitemap).
+      // MEH-2787: bounded at RECIPE_FAN_OUT_LIMIT. The bare `Promise.all`
+      // this replaces fired one request per slugged business in a single
+      // burst, from the build server's single IP, against an endpoint limited
+      // to 120/minute (backend/app/routers/producer_recipes.py:358). Under
+      // 120 businesses that was invisible; at the 2,000 ceiling the loop
+      // above now reaches it would have been ~17× the limit, and because each
+      // fetch fails open (`.catch(() => [])`) the overflow would return 429
+      // and silently drop recipe URLs — the same shape of silent loss this
+      // ticket exists to fix, reintroduced one line below the fix.
       const slugged = producers.filter((p) => p.slug);
-      const recipeLists = await Promise.all(
-        slugged.map((p) =>
-          serverFetch(`${API_URL}/producers/${encodeURIComponent(p.slug)}/recipes`)
-            .then((r) => (r.ok ? r.json() : []))
+      const recipeLists = await mapWithConcurrency(slugged, {
+        limit: RECIPE_FAN_OUT_LIMIT,
+        task: (producer) =>
+          serverFetch(`${API_URL}/producers/${encodeURIComponent(producer.slug)}/recipes`)
+            .then((response) => (response.ok ? response.json() : []))
             .catch(() => []),
-        ),
-      );
+      });
       recipePages = slugged.flatMap((p, i) =>
         (recipeLists[i] || []).flatMap((recipe) =>
           localizeEntry(`/${p.slug}/recipes/${recipe.id}`, {
@@ -169,6 +262,88 @@ export default async function sitemap() {
     );
   } catch {
     // API unavailable during build — skip the diet pages.
+  }
+
+  // MEH-2790: category x region landing pages. Emitted ONLY for cells that
+  // clear REGION_PAGE_MIN, read from the SAME filtered endpoint the route
+  // gates on, so the sitemap and the route cannot disagree about which cells
+  // exist. Fails OPEN (cells omitted) like the diet block above.
+  //
+  // PRUNING, AND WHY NOT THE WAY THE TICKET DESCRIBES IT.
+  // 18 categories x 7 regions is 126 cell counts, against an endpoint limited
+  // to 120/minute — so something must prune first. MEH-2790 prescribes one
+  // call to GET /producers/cities, bucketed by region, as an upper bound.
+  // Measured, that is NOT an upper bound: /producers/cities groups by
+  // `Producer.city` (producers.py), while `?cities=` matches
+  // `_located_in_city_condition` — the business's own city OR any of its
+  // LOCATION ROWS. A business registered in Tel Aviv with a market stall in
+  // Haifa is counted by the filter and invisible to /producers/cities, so
+  // pruning on it can hide a cell that genuinely passes the gate: a page that
+  // should exist would 404 and never reach the sitemap. Silent, and exactly
+  // the class MEH-2787 just fixed one file over.
+  //
+  // So the prune uses the SAME endpoint instead, which makes it exact rather
+  // than an approximation: one `limit=1` count per category (18) and per
+  // region (7). A cell cannot beat the threshold if either of its axes is
+  // under it globally, so only surviving pairs are counted individually —
+  // 25 calls plus the survivors, instead of 126.
+  let regionPages = [];
+  try {
+    const cellTotal = async (categoryId, regionKey) => {
+      const cities = regionCities(regionKey)
+        .map((city) => `cities=${encodeURIComponent(city)}`)
+        .join("&");
+      const query = [
+        categoryId ? `category=${encodeURIComponent(categoryId)}` : null,
+        cities || null,
+        "limit=1&offset=0",
+      ]
+        .filter(Boolean)
+        .join("&");
+      const res = await serverFetch(`${API_URL}/producers?${query}`);
+      if (!res.ok) return 0;
+      const raw = res.headers.get("x-total-count");
+      const total = Number(raw);
+      return raw !== null && Number.isFinite(total) ? total : 0;
+    };
+
+    const catRes = await serverFetch(`${API_URL}/categories`);
+    const categories = catRes.ok ? await catRes.json() : [];
+    if (Array.isArray(categories) && categories.length > 0) {
+      const [regionTotals, categoryTotals] = await Promise.all([
+        mapWithConcurrency(REGION_KEYS, {
+          limit: RECIPE_FAN_OUT_LIMIT,
+          task: (regionKey) => cellTotal(null, regionKey),
+        }),
+        mapWithConcurrency(categories, {
+          limit: RECIPE_FAN_OUT_LIMIT,
+          task: (category) => cellTotal(category.id, null),
+        }),
+      ]);
+      const liveRegions = REGION_KEYS.filter((_key, i) => regionTotals[i] >= REGION_PAGE_MIN);
+      const liveCategories = categories.filter(
+        (_cat, i) => categoryTotals[i] >= REGION_PAGE_MIN,
+      );
+
+      const cells = liveCategories.flatMap((category) =>
+        liveRegions.map((regionKey) => ({ category, regionKey })),
+      );
+      const totals = await mapWithConcurrency(cells, {
+        limit: RECIPE_FAN_OUT_LIMIT,
+        task: (cell) => cellTotal(cell.category.id, cell.regionKey),
+      });
+      regionPages = cells.flatMap((cell, i) =>
+        totals[i] >= REGION_PAGE_MIN
+          ? localizeEntry(regionPagePath(cell.category.slug, cell.regionKey), {
+              lastModified: now,
+              priority: 0.7,
+              changeFrequency: "weekly",
+            })
+          : [],
+      );
+    }
+  } catch {
+    // API unavailable during build — skip the region pages, like the diet block.
   }
 
   // Event detail pages — only future events
@@ -257,6 +432,7 @@ export default async function sitemap() {
     ...staticPages,
     ...producerIndexPages,
     ...dietPages,
+    ...regionPages,
     ...producerPages,
     ...recipePages,
     ...eventPages,

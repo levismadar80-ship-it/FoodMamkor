@@ -417,7 +417,7 @@ test.describe("/admin/users — pagination", () => {
     await row.getByRole("button", { name: "חסום", exact: true }).click();
     await expect.poll(() => writes.map((w) => `${w.method} ${w.url}`)).toEqual([`POST /admin/users/${uuid(130)}/block`]);
     await expect(row.getByRole("button", { name: "שחרר חסימה" }), "the reload shows the blocked state").toBeVisible();
-    await expect(row).toHaveClass(/bg-red-50/);
+    await expect(row).toHaveClass(/bg-danger-50/);
     await expect(page.getByText("עמוד 2 מתוך 3"), "still on page 2 after the reload").toBeVisible();
     await openKebab(row);
     await menu(page).getByRole("menuitem", { name: "העלי לאדמין" }).click();
@@ -453,9 +453,19 @@ test.describe("/admin/users — the role kebab", () => {
     const btn = await openKebab(row);
     const m = menu(page);
     await expect(m).toBeVisible();
-    // D2 — geometry: end edge pinned to the trigger's end edge (left in RTL), body extends to the right.
+    // D2 — geometry: end edge pinned to the trigger's end edge (left in RTL), body extends to the right —
+    // UNLESS that runs the panel off the viewport's right edge. MEH-2587 (lib/panel-position.js
+    // computeMenuInlineEnd): in the phone card layout the trigger sits mid-card, so the panel is clamped
+    // to 8px (MENU_PAD_PX) inside the right edge. Expected left edge = min(trigger left, vw − 8 − width).
     const [mb, tb] = await Promise.all([m.boundingBox(), btn.boundingBox()]);
-    expect(Math.abs(mb!.x - tb!.x), "the panel's left edge sits at the trigger's left edge").toBeLessThan(3);
+    const vw = await page.evaluate(() => document.documentElement.clientWidth);
+    const MENU_PAD_PX = 8;
+    const expectedLeft = Math.max(MENU_PAD_PX, Math.min(tb!.x, vw - MENU_PAD_PX - mb!.width));
+    expect(
+      Math.abs(mb!.x - expectedLeft),
+      "the panel's left edge sits at the trigger's left edge, clamped 8px inside the viewport (MEH-2587)",
+    ).toBeLessThan(3);
+    expect(mb!.x + mb!.width, "the panel stays inside the viewport's right edge (MEH-2587)").toBeLessThanOrEqual(vw - MENU_PAD_PX + 1);
     expect(mb!.x + mb!.width, "the panel extends toward the start (right)").toBeGreaterThan(tb!.x + tb!.width + 40);
     await btn.click();
     await expect(m).toHaveCount(0);
@@ -499,7 +509,7 @@ test.describe("/admin/users — the role kebab", () => {
     await openKebab(row);
     const demote = menu(page).getByRole("menuitem", { name: "הסירי הרשאות" });
     await expect(demote).toBeVisible();
-    await expect(demote).toHaveClass(/text-red-600/);
+    await expect(demote).toHaveClass(/text-danger-600/);
     await expect(menu(page).getByRole("menuitem")).toHaveText(["הסירי הרשאות"]);
     await demote.click();
     await expect(roleDialog(page, "את בטוחה שברצונך להסיר הרשאות אדמין מרונית אדמין?")).toBeVisible();
@@ -603,21 +613,19 @@ test.describe("/admin/users — the role kebab", () => {
   // row's favorites button, so this test reds against the pre-fix component
   // without needing test.fail() to say so.
   //
-  // ONE item, not two, and that is a property of this page rather than of this
-  // fixture: `page.js:238,245` gates promote on `u.role !== "admin"` and demote
-  // on `u.role === "admin"`, which are mutually exclusive. No row on
-  // /admin/users ever offers both, so multi-item Arrow navigation cannot be
-  // exercised here at all — it is covered in __tests__/AdminRowMenu.test.jsx,
-  // where the items are injected. What this test can prove, and does, is the
-  // single-item boundary of the same wrap arithmetic: with n=1 every ArrowDown
-  // and ArrowUp must resolve back to the one item rather than to nothing.
+  // TWO items on a consumer row, and that is a property of this page rather
+  // than of this fixture: `page.js` offers promote on `u.role !== "admin"` and,
+  // since the admin user-delete action, «מחיקה» on `u.role !== "admin" &&
+  // !isSuperAdmin(u) && !isMe(u)`; demote stays admin-only. So a consumer row
+  // reads [promote, delete] and the Arrow keys can be walked AND wrapped here:
+  // ArrowDown steps to the second item, ArrowDown again wraps to the first,
+  // ArrowUp wraps back to the last.
   //
-  // The count assertion is deliberate and load-bearing: it pins the premise, so
-  // if the page ever grows a second item this test says WHY it changed instead
-  // of failing somewhere further down with "element(s) not found" — which is
-  // exactly how the first version of this test failed, having assumed a demote
-  // item that no consumer row can have.
-  test("keyboard: opening the ⋮ moves focus to its item; arrows hold it; Tab leaves and returns focus", async ({ page }) => {
+  // The exact-list assertion is deliberate and load-bearing: it pins the
+  // premise, so if the page grows or loses an item this test says WHY it
+  // changed instead of failing further down with "element(s) not found" —
+  // which is how it went red when «מחיקה» was added (it asserted promote only).
+  test("keyboard: opening the ⋮ moves focus to its first item; arrows walk and wrap; Tab leaves and returns focus", async ({ page }) => {
     await stubAdmin(page);
     await openUsers(page);
     const row = userRow(page, "משתמשת 4");
@@ -634,13 +642,16 @@ test.describe("/admin/users — the role kebab", () => {
     await page.keyboard.press("Enter");
     await expect(btn).toHaveAttribute("aria-expanded", "true");
     const m = menu(page);
-    await expect(m.getByRole("menuitem"), "a consumer row offers promote only").toHaveText(["העלי לאדמין"]);
+    await expect(m.getByRole("menuitem"), "a consumer row offers promote and delete, in that order").toHaveText(["העלי לאדמין", "מחיקה"]);
     const promote = m.getByRole("menuitem", { name: "העלי לאדמין" });
+    const del = m.getByRole("menuitem", { name: "מחיקה" });
     await expect(promote, "APG: the open puts focus on the first item").toBeFocused();
     await page.keyboard.press("ArrowDown");
-    await expect(promote, "ArrowDown wraps to the single item, not off it").toBeFocused();
+    await expect(del, "ArrowDown moves to the next item").toBeFocused();
+    await page.keyboard.press("ArrowDown");
+    await expect(promote, "ArrowDown on the last item wraps to the first, not off the list").toBeFocused();
     await page.keyboard.press("ArrowUp");
-    await expect(promote, "ArrowUp wraps to the single item, not off it").toBeFocused();
+    await expect(del, "ArrowUp on the first item wraps to the last, not off the list").toBeFocused();
     await page.keyboard.press("Tab");
     await expect(m, "APG: Tab closes the menu").toHaveCount(0);
     await expect(btn, "APG: Tab returns focus to the trigger").toBeFocused();

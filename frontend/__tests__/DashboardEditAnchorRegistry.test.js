@@ -109,8 +109,9 @@ describe("dashboard-edit anchor registry (MEH-2262)", () => {
     ["business-name", "businessName", "profile"],
     // MEH-2433: the offer moved to the products group (five-group edit hub).
     ["offer", "offer", "products"],
-    ["dietary-scope", "dietaryScope", "products"],
-    ["grass-fed", "grassFed", "products"],
+    // MEH-2729: one «תגים» card replaced the two (old anchors are aliases,
+    // pinned in the test below).
+    ["tags", "tags", "products"],
     ["special-hours", "specialHours", "location"],
     // The fourth belongs here for the same reason as the other three: the
     // general invariants above already cover it, and the point of naming a
@@ -138,4 +139,12 @@ describe("dashboard-edit anchor registry (MEH-2262)", () => {
   // #profile-images, #profile-products) deliberately share a card with their
   // canonical anchors. Distinctness is not an invariant here; the two
   // reachability directions above are.
+
+  // MEH-2729: links written before the merge still open the card that now
+  // holds both sub-sections.
+  it.each(["dietary-scope", "grass-fed"])("old #%s opens the «תגים» card", (anchor) => {
+    expect(ANCHOR_TO_KEY[anchor]).toBe("tags");
+    expect(KEY_TO_GROUP.tags).toBe("products");
+    expect(KEY_TO_ANCHOR.tags).toBe("tags");
+  });
 });

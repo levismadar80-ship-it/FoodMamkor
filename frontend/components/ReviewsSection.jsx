@@ -13,6 +13,40 @@ import { showToast } from "@/lib/toast";
 import { formatEventDate } from "@/lib/format-date";
 import EmptyState from "@/components/ui/EmptyState";
 import { SkeletonList } from "@/components/Skeleton";
+import { seedColorFor } from "@/lib/brand-seeds";
+
+// MEH-2833 (seed layer, board 4): a reviewer's initial sits on a soft tint of
+// "their" seed — the seed colour mixed ~24% into the cream page, with an inset
+// ring at ~55% — fixed per reviewer (seedColorFor). The letter stays text-ink.
+// The page background (`bg-background`, #F5F0E8 in tailwind.tokens.json).
+const PAGE_CREAM = [0xf5, 0xf0, 0xe8];
+const rgb = (hex) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
+/** `amount` of the seed colour over cream, as an rgb() string. */
+function seedTint(hex, amount) {
+  const c = rgb(hex).map((v, i) => Math.round(v * amount + PAGE_CREAM[i] * (1 - amount)));
+  return `rgb(${c.join(", ")})`;
+}
+const INITIAL_TINT = 0.24;
+const INITIAL_RING = 0.55;
+
+/** The reviewer's initial on their seed tint; the seed is resolved once. */
+function ReviewInitial({ seedKey, letter }) {
+  const seed = seedColorFor(seedKey);
+  return (
+    <span
+      aria-hidden="true"
+      data-testid="review-initial"
+      data-seed={seed.name}
+      className="w-10 h-10 shrink-0 rounded-full text-text flex items-center justify-center font-bold"
+      style={{
+        background: seedTint(seed.fill, INITIAL_TINT),
+        boxShadow: `inset 0 0 0 1.5px ${seedTint(seed.fill, INITIAL_RING)}`,
+      }}
+    >
+      {letter}
+    </span>
+  );
+}
 
 // HOT-018 (MEH-782): numeric short date (e.g. 7.6.2026) — preserves the prior
 // `toLocaleDateString` default while routing through the Invalid-Date-guarded,
@@ -20,11 +54,18 @@ import { SkeletonList } from "@/components/Skeleton";
 const REVIEW_DATE_OPTIONS = { year: "numeric", month: "numeric", day: "numeric" };
 
 // "Sapir L." — first name + last initial (privacy)
+// MEH-2705: the initial is the first LETTER of the last word that has one.
+// The old `parts[last][0]` took whatever came first, so «לקוחת בדיקות (QA)»
+// rendered «לקוחת (.» and «דנה כהן -» rendered «דנה -.».
 function formatName(fullName, fallback) {
   if (!fullName) return fallback;
   const parts = fullName.trim().split(/\s+/);
   if (parts.length === 1) return parts[0];
-  return `${parts[0]} ${parts[parts.length - 1][0]}.`;
+  for (let i = parts.length - 1; i > 0; i--) {
+    const letter = parts[i].match(/\p{L}/u);
+    if (letter) return `${parts[0]} ${letter[0]}.`;
+  }
+  return parts[0];
 }
 
 // MEH-1233 B1: fractional fill — an average of 4.7 renders four full stars and
@@ -139,7 +180,7 @@ function ReviewReply({ review, isOwner, onSaved }) {
   if (editing) {
     return (
       <div className="mt-3">
-        <label htmlFor={`reply-${review.id}`} className="block text-[13px] font-semibold text-primary-dark mb-1">
+        <label htmlFor={`reply-${review.id}`} className="block text-sm font-semibold text-primary-dark mb-1">
           {t("reply_heading")}
         </label>
         <textarea
@@ -149,25 +190,25 @@ function ReviewReply({ review, isOwner, onSaved }) {
           rows={2}
           maxLength={1000}
           placeholder={t("reply_placeholder")}
-          className="w-full border border-border rounded-[8px] px-3 py-2 bg-white resize-none focus-visible:ring-2 focus-visible:ring-primary/40 outline-none text-[14px]"
+          className="w-full border border-border rounded-sm px-3 py-2 bg-surface resize-none focus-visible:ring-2 focus-visible:ring-primary/40 outline-none text-sm"
         />
         {error && (
           <p className="text-sm text-error mt-1" role="alert">{error}</p>
         )}
         <div className="flex items-center gap-4 mt-2">
-          {/* MEH-1103: action buttons carry min-h-[44px] (WCAG 2.5.5). */}
+          {/* MEH-1103: action buttons carry min-h-touch (WCAG 2.5.5). */}
           <button
             type="button"
             onClick={save}
             disabled={saving || draft.trim().length < 2}
-            className="min-h-[44px] bg-primary-dark text-white px-5 py-1.5 rounded-[8px] hover:opacity-90 transition disabled:opacity-60 text-sm font-medium"
+            className="min-h-touch bg-primary-dark text-white px-5 py-1.5 rounded-sm hover:opacity-90 transition disabled:opacity-60 text-sm font-medium"
           >
             {saving ? t("submit_saving") : t("reply_save")}
           </button>
           <button
             type="button"
             onClick={() => { setDraft(reply || ""); setEditing(false); setError(""); }}
-            className="min-h-[44px] inline-flex items-center text-sm text-fg-muted hover:text-text transition"
+            className="min-h-touch inline-flex items-center text-sm text-fg-muted hover:text-text transition"
           >
             {t("cancel")}
           </button>
@@ -182,12 +223,12 @@ function ReviewReply({ review, isOwner, onSaved }) {
         // MEH-2592: a side rule marks the business's voice — the green box
         // read as a second review card.
         <div className="mt-3 border-s-2 border-primary/40 ps-3" data-testid="review-reply">
-          <p className="text-[13px] font-semibold text-primary-dark">{t("reply_heading")}</p>
-          <p className="text-[14px] text-text/85 leading-relaxed whitespace-pre-line mt-0.5">
+          <p className="text-sm font-semibold text-primary-dark">{t("reply_heading")}</p>
+          <p className="text-sm text-text/85 leading-relaxed whitespace-pre-line mt-0.5">
             {reply}
           </p>
           {review.reply_at && formatEventDate(review.reply_at, locale, REVIEW_DATE_OPTIONS) && (
-            <p className="text-[12px] text-fg-muted mt-1" dir="ltr">
+            <p className="text-xs text-fg-muted mt-1" dir="ltr">
               {formatEventDate(review.reply_at, locale, REVIEW_DATE_OPTIONS)}
             </p>
           )}
@@ -199,7 +240,7 @@ function ReviewReply({ review, isOwner, onSaved }) {
         <button
           type="button"
           onClick={() => { setDraft(reply || ""); setEditing(true); }}
-          className="mt-2 min-h-[44px] inline-flex items-center text-sm text-primary hover:underline"
+          className="mt-2 min-h-touch inline-flex items-center text-sm text-primary underline decoration-[1.5px] underline-offset-[5px] decoration-primary/35 hover:decoration-current"
         >
           {reply ? t("reply_edit") : t("reply_add")}
         </button>
@@ -223,12 +264,18 @@ function ReviewReply({ review, isOwner, onSaved }) {
  * kept per producer by lib/review-invite.js) — forwarded as `review_token`
  * and verified server-side (reviews.py `_invited_by_token`).
  */
-export default function ReviewsSection({ producerId, avgRating = 0, reviewCount = 0, isOwner = false }) {
+export default function ReviewsSection({
+  producerId,
+  avgRating = 0,
+  reviewCount = 0,
+  isOwner = false,
+  onTotalChange,
+}) {
   const t = useTranslations("reviews");
   // MEH-848: shared generic error copy (collapsed from reviews.error_generic).
   const tError = useTranslations("error");
   const locale = useLocale();
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [reviews, setReviews] = useState([]);
   const [total, setTotal] = useState(reviewCount);
   const [pages, setPages] = useState(1);
@@ -250,6 +297,14 @@ export default function ReviewsSection({ producerId, avgRating = 0, reviewCount 
   // /login, which is what it always was.
   const [loginHref, setLoginHref] = useState("/login");
   const sectionRef = useRef(null);
+  // MEH-2705: the header and the sticky bar render producer.reviews_count from
+  // the server (ISR, up to 60 s old), so a new review left them one behind.
+  // Report the live total upward; the parent decides what to do with it.
+  const onTotalChangeRef = useRef(onTotalChange);
+  onTotalChangeRef.current = onTotalChange;
+  useEffect(() => {
+    onTotalChangeRef.current?.(total);
+  }, [total]);
   // MEH-1426: fire the anonymous-click→login re-ping at most once per mount.
   const rePingedRef = useRef(false);
 
@@ -392,12 +447,16 @@ export default function ReviewsSection({ producerId, avgRating = 0, reviewCount 
 
   return (
     <section ref={sectionRef} className="mt-12">
-      <h2 className="font-headline-md text-2xl font-bold text-text mb-6">
-        {t("section_heading")}
-        {total > 0 && (
+      {/* MEH-2634: no heading at zero reviews. MEH-2592 already removed the
+          reader empty state, so the heading was announcing an absence on its
+          own — «ביקורות» over nothing but the write hint. At zero the section
+          is the one quiet line; the count parenthesis was already gated. */}
+      {total > 0 && (
+        <h2 className="font-headline-md text-2xl font-bold text-text mb-6">
+          {t("section_heading")}
           <span className="text-base font-normal text-fg-muted ms-2">({total})</span>
-        )}
-      </h2>
+        </h2>
+      )}
 
       {/* Rating summary block — only when ≥3 reviews */}
       {/* MEH-2592: the summary is one line — number · stars · count, aligned to
@@ -429,14 +488,14 @@ export default function ReviewsSection({ producerId, avgRating = 0, reviewCount 
           !showForm ? (
             <button
               onClick={openReviewForm}
-              className="mb-6 min-h-[44px] border border-text text-text px-5 py-2 rounded-[6px] text-sm font-medium hover:bg-green-50 transition"
+              className="mb-6 min-h-touch border border-text text-text px-5 py-2 rounded-full text-sm font-medium hover:bg-green-50 transition"
             >
               {t("write_cta")}
             </button>
           ) : (
             <form
               onSubmit={handleSubmit}
-              className="bg-white rounded-[16px] p-5 border border-border mb-8 space-y-4"
+              className="bg-surface rounded-lg p-5 border border-border mb-8 space-y-4"
             >
               <h3 className="font-headline-md text-lg font-bold text-text">{t("form_heading")}</h3>
               <div>
@@ -457,7 +516,7 @@ export default function ReviewsSection({ producerId, avgRating = 0, reviewCount 
                   onChange={(e) => setBody(e.target.value)}
                   rows={3}
                   maxLength={500}
-                  className="w-full border border-border rounded-[8px] px-3 py-2 bg-white resize-none focus-visible:ring-2 focus-visible:ring-primary/40 outline-none"
+                  className="w-full border border-border rounded-sm px-3 py-2 bg-surface resize-none focus-visible:ring-2 focus-visible:ring-primary/40 outline-none"
                   placeholder={t("body_placeholder")}
                 />
                 <p className="text-xs text-fg-muted mt-1">{body.length}/500</p>
@@ -471,14 +530,14 @@ export default function ReviewsSection({ producerId, avgRating = 0, reviewCount 
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="min-h-[44px] bg-primary-dark text-white px-6 py-2 rounded-[8px] hover:opacity-90 transition disabled:opacity-60 text-sm font-medium"
+                  className="min-h-touch bg-primary-dark text-white px-6 py-2 rounded-sm hover:opacity-90 transition disabled:opacity-60 text-sm font-medium"
                 >
                   {submitting ? t("submit_saving") : t("submit")}
                 </button>
                 <button
                   type="button"
                   onClick={() => setShowForm(false)}
-                  className="min-h-[44px] inline-flex items-center text-sm text-fg-muted hover:text-text transition"
+                  className="min-h-touch inline-flex items-center text-sm text-fg-muted hover:text-text transition"
                 >
                   {t("cancel")}
                 </button>
@@ -531,19 +590,16 @@ export default function ReviewsSection({ producerId, avgRating = 0, reviewCount 
                     the stars used to sit at the far edge of the screen, away
                     from the person who gave them. */}
                 <div className="flex items-start gap-3 mb-3">
-                  <span
-                    aria-hidden="true"
-                    data-testid="review-initial"
-                    className="w-10 h-10 shrink-0 rounded-full bg-green-50 text-primary flex items-center justify-center font-bold"
-                  >
-                    {Array.from(formatName(review.user_name, anonymousFallback))[0]}
-                  </span>
+                  <ReviewInitial
+                    seedKey={review.user_id ?? review.user_name}
+                    letter={Array.from(formatName(review.user_name, anonymousFallback))[0]}
+                  />
                   <div className="min-w-0">
-                    <p className="font-body-md font-semibold text-[15px] text-text leading-snug">
+                    <p className="font-body-md font-semibold text-base text-text leading-snug">
                       {formatName(review.user_name, anonymousFallback)}
                       {formatEventDate(review.created_at, locale, REVIEW_DATE_OPTIONS) && (
                         <span
-                          className="ms-2 text-[13px] font-normal text-fg-muted"
+                          className="ms-2 text-sm font-normal text-fg-muted"
                           dir="ltr"
                           data-testid="review-date"
                         >
@@ -561,7 +617,7 @@ export default function ReviewsSection({ producerId, avgRating = 0, reviewCount 
                   </div>
                 </div>
                 {review.body && (
-                  <p className="text-[15px] text-text/85 leading-relaxed whitespace-pre-line">
+                  <p className="text-base text-text/85 leading-relaxed whitespace-pre-line">
                     {review.body}
                   </p>
                 )}
@@ -586,7 +642,7 @@ export default function ReviewsSection({ producerId, avgRating = 0, reviewCount 
                 type="button"
                 onClick={handleShowMore}
                 disabled={loading}
-                className="w-full min-h-[44px] inline-flex items-center justify-center gap-1 rounded-xl border border-border bg-surface-card text-sm font-semibold text-text hover:bg-green-50 transition disabled:opacity-50"
+                className="w-full min-h-touch inline-flex items-center justify-center gap-1 rounded-xl border border-border bg-surface-card text-sm font-semibold text-text hover:bg-green-50 transition disabled:opacity-50"
               >
                 {t("show_more")}
                 <CaretDown size={16} aria-hidden="true" />
@@ -601,7 +657,9 @@ export default function ReviewsSection({ producerId, avgRating = 0, reviewCount 
           for a visitor; the WhatsApp-gate line (MEH-1139) for a logged-in,
           non-owner, not-yet-gated reader — at zero reviews too, since the
           reader empty state is gone (it used to carry its own hint). */}
-      {!user ? (
+      {/* Nothing until /auth/me answers — a signed-in reader otherwise saw
+          the login line for a second before it swapped (30/10). */}
+      {authLoading ? null : !user ? (
         <p className="mt-4 text-sm text-fg-muted" data-testid="reviews-write-hint">
           {t.rich("login_prompt", {
             login: (chunks) => (

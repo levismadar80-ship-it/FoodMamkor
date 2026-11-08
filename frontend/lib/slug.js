@@ -40,6 +40,22 @@ const RESERVED = new Set([
   "organizers",
   // MEH-2576: where the middleware rewrites a deleted business's URL.
   "business-gone",
+  // MEH-2618: the delivery-waitlist unsubscribe page.
+  "delivery-waitlist",
+  // MEH-2633: the community-suggestion form. Reserved for the same reason as
+  // every entry above — a business whose slug is "recommend" would otherwise
+  // collide with the page, and this is the gate that also decides whether the
+  // site chrome unmounts.
+  "recommend",
+  // MEH-2648: the rescue-bags list. Reserved for the same two reasons as
+  // every entry above — a business whose slug is "rescue" would collide with
+  // the page, and this set is also what decides whether the site chrome
+  // unmounts. Measured while building chunk 4: before this entry the app
+  // asked the backend for `/producers/by-slug/rescue` on every visit to
+  // /rescue, which is the exact failure the MEH-2148 drift guard exists for.
+  "rescue",
+  // MEH-2768: the sign-up cancel link (/registration/{token}).
+  "registration",
 ]);
 
 // Real slugs are produced by backend _slugify

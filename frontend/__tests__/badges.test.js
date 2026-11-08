@@ -1,3 +1,4 @@
+import { heBadgeCopy } from "./helpers/he-badge-copy";
 import { describe, it, expect } from "vitest";
 import {
   BADGE_CONFIG,
@@ -16,6 +17,9 @@ describe("BADGE_PRIORITY", () => {
       "recommended",
       "new",
       "grass_fed",
+      // MEH-1508 chunk 3ב-2: the whole-business declarations lead the diet run.
+      "vegan_all",
+      "vegetarian_all",
       "gluten_free",
       "vegetarian",
       "vegan",
@@ -27,6 +31,10 @@ describe("BADGE_PRIORITY", () => {
       "no_added_sugar",
       "kosher",
       "delivery",
+      // MEH-2716: earned this month, after the product facts.
+      "rescue_saving",
+      // MEH-2693: last — never displaces a badge a card already shows.
+      "reservist_owned",
     ]);
   });
 
@@ -43,8 +51,11 @@ describe("BADGE_PRIORITY", () => {
     // in BADGE_CONFIG, so a badge present in one and absent from the other is
     // either never rendered or rendered undefined. This pin caught exactly that
     // during MEH-1934, when BADGE_PRIORITY was left un-updated.
-    expect(BADGE_PRIORITY).toHaveLength(11);
-    expect(Object.keys(BADGE_CONFIG)).toHaveLength(11);
+    // MEH-1508 chunk 3ב-2: 11 → 13 (vegan_all + vegetarian_all), both together.
+    // MEH-2693: 13 → 14 (reservist_owned), both together.
+    // MEH-2716: 14 → 15 (rescue_saving), both together.
+    expect(BADGE_PRIORITY).toHaveLength(15);
+    expect(Object.keys(BADGE_CONFIG)).toHaveLength(15);
     // MEH-2047: absence in BOTH structures, the same pair-check the products
     // removal above uses — a count alone would pass if something else were
     // added in the same commit that removed this.
@@ -397,7 +408,7 @@ describe("allBadges", () => {
   });
 
   it("each returned badge carries label + tooltip", () => {
-    const [badge] = allBadges({ verification_tier: "verified" });
+    const [badge] = allBadges({ verification_tier: "verified" }).map(heBadgeCopy);
     expect(badge.label).toBe("מאומת");
     expect(badge.tooltip).toMatch(/נבדק/);
   });
@@ -474,28 +485,28 @@ describe("topBadges", () => {
 // MEH-1259 organic. New copy = "לעסק יש מוצרים ... מסומנים בקטלוג".
 describe("dietary badge tooltips — any-product semantics (MEH-1439)", () => {
   it("vegan tooltip states any-product semantics, not 'all products'", () => {
-    expect(BADGE_CONFIG.vegan.tooltip).toBe(
+    expect(heBadgeCopy(BADGE_CONFIG.vegan).tooltip).toBe(
       "לעסק יש מוצרים טבעוניים מסומנים בקטלוג.",
     );
-    expect(BADGE_CONFIG.vegan.tooltip).not.toMatch(/כל המוצרים/);
+    expect(heBadgeCopy(BADGE_CONFIG.vegan).tooltip).not.toMatch(/כל המוצרים/);
   });
 
   it("gluten_free tooltip states any-product semantics", () => {
-    expect(BADGE_CONFIG.gluten_free.tooltip).toBe(
+    expect(heBadgeCopy(BADGE_CONFIG.gluten_free).tooltip).toBe(
       "לעסק יש מוצרים ללא גלוטן מסומנים בקטלוג.",
     );
-    expect(BADGE_CONFIG.gluten_free.tooltip).not.toMatch(/צליאק/);
+    expect(heBadgeCopy(BADGE_CONFIG.gluten_free).tooltip).not.toMatch(/צליאק/);
   });
 
   it("lactose_free tooltip states any-product semantics", () => {
-    expect(BADGE_CONFIG.lactose_free.tooltip).toBe(
+    expect(heBadgeCopy(BADGE_CONFIG.lactose_free).tooltip).toBe(
       "לעסק יש מוצרים ללא לקטוז מסומנים בקטלוג.",
     );
   });
 
   // MEH-1438: vegetarian tooltip mirrors the same any-product wording.
   it("vegetarian tooltip states any-product semantics", () => {
-    expect(BADGE_CONFIG.vegetarian.tooltip).toBe(
+    expect(heBadgeCopy(BADGE_CONFIG.vegetarian).tooltip).toBe(
       "לעסק יש מוצרים צמחוניים מסומנים בקטלוג.",
     );
   });
@@ -536,5 +547,53 @@ describe("badgeCount", () => {
         has_lactose_free_products: true,
       }),
     ).toBe(3);
+  });
+});
+
+// MEH-2693 «עסק של מילואימניקים» — owner-declared, LAST in priority so it never
+// displaces a badge already on a card (it reaches a card's 2 slots only when
+// the business earns at most one other badge).
+describe("reservist_owned badge (MEH-2693)", () => {
+  it("lights only on reservist_owned === true", () => {
+    expect(allBadges({ reservist_owned: true }).map((b) => b.key)).toEqual(["reservist_owned"]);
+    expect(allBadges({ reservist_owned: false }).map((b) => b.key)).toEqual([]);
+    expect(allBadges({}).map((b) => b.key)).toEqual([]);
+  });
+
+  it("is last in BADGE_PRIORITY", () => {
+    expect(BADGE_PRIORITY[BADGE_PRIORITY.length - 1]).toBe("reservist_owned");
+  });
+
+  it("falls into +N behind two higher badges on a card", () => {
+    const p = { grass_fed: true, has_gluten_free_products: true, reservist_owned: true };
+    expect(topBadges(p, 2).map((b) => b.key)).toEqual(["grass_fed", "gluten_free"]);
+    expect(allBadges(p).map((b) => b.key)).toContain("reservist_owned");
+  });
+
+  it("carries the approved copy and self-declared metadata", () => {
+    const c = heBadgeCopy(BADGE_CONFIG.reservist_owned);
+    expect(c.label).toBe("עסק של מילואימניקים");
+    expect(c.tooltip).toBe("לפי הצהרת בית העסק, אחד הבעלים משרת במילואים.");
+    expect(c.scope).toBe("business");
+    expect(c.evidence).toBe("self-declared");
+  });
+});
+
+describe("rescue_saving badge «מצילים מזון» (MEH-2716)", () => {
+  it("lights only on rescued_recently === true — the server's answer, nothing else", () => {
+    expect(allBadges({ rescued_recently: true }).map((b) => b.key)).toEqual(["rescue_saving"]);
+    expect(allBadges({ rescued_recently: false }).map((b) => b.key)).toEqual([]);
+    expect(allBadges({}).map((b) => b.key)).toEqual([]);
+  });
+
+  it("is a system badge, never a declaration", () => {
+    expect(BADGE_CONFIG.rescue_saving.evidence).toBe("system");
+    expect(BADGE_CONFIG.rescue_saving.scope).toBe("business");
+  });
+
+  it("never displaces a product fact a card already shows (max 2)", () => {
+    const p = { grass_fed: true, has_gluten_free_products: true, rescued_recently: true };
+    expect(topBadges(p, 2).map((b) => b.key)).toEqual(["grass_fed", "gluten_free"]);
+    expect(allBadges(p).map((b) => b.key)).toContain("rescue_saving");
   });
 });

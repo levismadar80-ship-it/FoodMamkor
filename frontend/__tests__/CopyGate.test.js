@@ -125,7 +125,9 @@ describe("anchored to the real he.json — the shape the repo actually uses", ()
   // reds — before the VRT spec does, and with a clearer message.
   const LIVE_KEYS = [
     "home.hero.title",
-    "home.hero.chips_prefix",
+    // MEH-2634: was home.hero.chips_prefix, deleted with the chip-row label.
+    // parity.spec.ts now asserts near_me for that row; this list mirrors it.
+    "home.hero.near_me",
     "about.consumer.hero.heading",
     "about.consumer.hero.subheading",
     "producer.detail.tabs.about",
