@@ -30,10 +30,30 @@ async function settle(page: Page, path: string, { phone = false } = {}) {
   // On a phone, wait until BottomNav has published its height (ResizeObserver
   // + 150ms debounce) rather than sleeping a fixed time.
   if (phone) await expect.poll(() => rootVar(page, "--bottom-nav-clearance"), { timeout: 10_000 }).not.toBe("");
-  await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
+  // Reaching the end changes the page's height: the mobile chat launcher
+  // steps aside once a [data-chat-hide] element (the footer's form) is in
+  // view, and its 64px reserve (--chat-fab-clearance, MEH-2835) leaves the
+  // footer's padding. So one scrollTo can measure a page that is still moving
+  // (seen as a 64px gap on /he/join and /he/about). Re-scroll until the
+  // height has held for two reads in a row AND the viewport sits at the end.
+  let last = -1;
   await expect
-    .poll(() => page.evaluate(() => Math.round(innerHeight + scrollY - document.documentElement.scrollHeight)))
-    .toBeGreaterThanOrEqual(-1);
+    .poll(
+      async () => {
+        const { h, gap } = await page.evaluate(() => {
+          window.scrollTo(0, document.documentElement.scrollHeight);
+          return {
+            h: document.documentElement.scrollHeight,
+            gap: Math.round(innerHeight + scrollY - document.documentElement.scrollHeight),
+          };
+        });
+        const stable = h === last && gap >= -1;
+        last = h;
+        return stable;
+      },
+      { intervals: [300] },
+    )
+    .toBe(true);
 }
 
 /**
