@@ -67,10 +67,11 @@ function prefillValue(raw, cap) {
     const code = ch.charCodeAt(0);
     return code < 32 || code === 127 || ch === "<" || ch === ">" ? " " : ch;
   }).join("");
-  return plain
-    .replace(/\s+/g, " ")
-    .trim()
+  // Capped on code points (Array.from), so an emoji at the boundary is never
+  // cut into half a surrogate pair.
+  return Array.from(plain.replace(/\s+/g, " ").trim())
     .slice(0, cap)
+    .join("")
     .trim();
 }
 
