@@ -300,13 +300,16 @@ export default function EventDetailClient() {
             <div className={infoRow}>
               <span className={infoIcon}><Calendar size={18} aria-hidden="true" /></span>
               <p className="flex-1 min-w-0 font-semibold text-text">
-                {formatEventDate(event.event_date, locale, DETAIL_DATE_OPTIONS)}
+                {/* MEH-2837: the date and the time range each stay whole, so a
+                    wrap can only happen at «·» (the year used to drop to the
+                    hours' line). */}
+                <span className="whitespace-nowrap">{formatEventDate(event.event_date, locale, DETAIL_DATE_OPTIONS)}</span>
                 {event.event_time && (
                   // MEH-2469: «09:30–15:00» when there is an end time. The «·»
                   // stays outside the LTR isolate so it keeps following the date.
                   <>
                     {" · "}
-                    <span dir="ltr">{formatTimeRange(event.event_time, event.end_time)}</span>
+                    <span dir="ltr" className="whitespace-nowrap">{formatTimeRange(event.event_time, event.end_time)}</span>
                   </>
                 )}
               </p>

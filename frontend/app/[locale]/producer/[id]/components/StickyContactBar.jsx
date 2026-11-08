@@ -48,6 +48,9 @@ export default function StickyContactBar({
     t("contact_cta.wa_greeting", { name: producer?.name || "" }),
   );
   const href = isWebsite ? withReferralParams(rawHref) : rawHref;
+  // MEH-2836: no contact detail at all → no bar. A bar with only the rating
+  // and no button was what «מעדניית בן שמן» showed before the resolver.
+  if (!href) return null;
   return (
     <div
       // MEH-76 chunk 3: border hex literal -> border-border token class; the
