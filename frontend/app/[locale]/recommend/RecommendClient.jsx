@@ -193,7 +193,7 @@ export default function RecommendClient() {
               still falls through to the server's 422 — the same behaviour
               every other CitySearch form in the repo has. Not changed here;
               it would mean editing the canonical component. */}
-          <form onSubmit={handleSubmit} data-testid="recommend-form">
+          <form onSubmit={handleSubmit} data-testid="recommend-form" data-chat-hide="">
             <Input
               id="recommend-name"
               label={t("field_name_label")}

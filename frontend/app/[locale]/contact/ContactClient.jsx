@@ -115,7 +115,7 @@ export default function ContactClient() {
               </button>
             </div>
           ) : (
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} data-chat-hide="" className="space-y-4">
               {/* MEH-1145 Wave E2: plain labeled fields → ui/Input (canon 44px
                   boxed recipe; value/onChange/required pass through unchanged). */}
               <Input
