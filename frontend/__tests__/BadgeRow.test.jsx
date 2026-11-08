@@ -329,3 +329,27 @@ describe("BadgeRow", () => {
     });
   });
 });
+
+// MEH-2849: at 200% text on a 375 phone the «עסק של מילואימניקים» pill was
+// wider than its card and ran 35px off-screen (44-text-scale, / and
+// /producers). The label may now shrink and break, so a long label wraps INSIDE
+// the card, and the pill is rounded-xl so a wrapped pill stays a rounded
+// rectangle. jsdom has no layout, so this pins the classes that make it
+// possible; the 200% run is in e2e/flows/44-text-scale.spec.ts.
+describe("BadgeRow — a long card label wraps inside the card (MEH-2849)", () => {
+  it("listitem, button and pill are max-w-full; the label can shrink and break", () => {
+    render(<BadgeRow producer={{ reservist_owned: true, verification_tier: null }} surface="card" limit={2} />);
+    const button = document.querySelector('button[data-badge="reservist_owned"]');
+    expect(button, "control: the reservist badge renders on the card").not.toBeNull();
+    const pill = button.firstElementChild;
+    const label = [...pill.children].at(-1);
+    expect(button.closest('[role="listitem"]').className.split(/\s+/)).toContain("max-w-full");
+    expect(button.className.split(/\s+/)).toContain("max-w-full");
+    expect(pill.className.split(/\s+/)).toContain("max-w-full");
+    expect(label.className.split(/\s+/)).toEqual(expect.arrayContaining(["min-w-0", "[overflow-wrap:anywhere]"]));
+    expect(label.textContent.length).toBeGreaterThan(0);
+    expect(pill.className.split(/\s+/)).toContain("rounded-xl");
+    expect(pill.className.split(/\s+/)).not.toContain("rounded-full");
+  });
+});
+
