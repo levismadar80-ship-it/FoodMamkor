@@ -4,6 +4,18 @@
 > Standing procedures live in [`docs/runbooks/`](./docs/runbooks/) — e.g. the [uptime alert runbook](./docs/runbooks/UPTIME.md).
 > Decision capture is proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-11-08 — שכבת הגרגרים (MEH-2833)
+
+**‏שורה אחת:** כל 9 ה-PR-ים מוזגו ל-staging (#4190, #4202, #4204, #4199, #4200, #4203, #4198, #4205, #4201).
+
+**‏מה צריך לדעת לפני עבודה:**
+- ‏**צבעי הלוגו** נכנסים רק בצורת הגרגר, דרך `lib/brand-seeds.js` + `SeedMark` / `Seed` / `SeedBurst`. אף פעם לא לטקסט, לכפתור, לקישור או למצב. הכלל המלא נמצא ב-DESIGN.md, בסעיף «Seed layer».
+- ‏**הלוגו (`SeedMark`)** לא מסובבים, לא צובעים מחדש ולא מראים במראה. גרגר בודד (`Seed`) מותר לסובב, וגם להפוך ב-LTR.
+- ‏**צבע לפי פריט:** ‏`seedColorFor(id)` נותן לעסק או למתכון תמיד אותו צבע, בלי חול. ב-`ImageWithFallback` מעבירים `seedKey`.
+- ‏**העלה (`Leaf`) כבר לא סמל המותג.** נשאר רק ב-`RecipeDetail.jsx` (פתוח לספיר).
+
+---
+
 ## 2026-11-08 — תיקונים מהסריקה (MEH-2837)
 
 **‏שורה אחת:** ‏#4197 (PR 1) מוזג ל-staging. ‏PR 2 («וואטסאפ») ממתין לאישור הנוסח.
