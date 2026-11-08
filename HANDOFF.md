@@ -4,6 +4,17 @@
 > Standing procedures live in [`docs/runbooks/`](./docs/runbooks/) — e.g. the [uptime alert runbook](./docs/runbooks/UPTIME.md).
 > Decision capture is proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-11-08 — ‏/map: חזרה משחזרת מצלמה ועסק שנבחר (#4181)
+
+**‏שורה אחת:** ‏MEH-2049 PR 1 מוזג ל-staging. ‏PR 2 (קטגוריות ועיר ב-URL) עצר ומחכה להחלטה של ספיר.
+
+**‏מה צריך לדעת לפני עבודה:**
+- ‏**`map_view_state`** שומר עכשיו גם `selectedId` ו-`selectedLocationId`. רק מופע מפה נראה (רוחב וגובה > 0) כותב אליו. ‏`readRaw` בודק את התפוגה, אז רשומה ישנה לא חוזרת.
+- ‏**שמירה ו«חפשו באזור זה» הם שני דברים נפרדים** ב-`moveend` (`MapComponent.jsx`). שומרים בכל תזוזה, והכפתור עולה רק כשהמשתמשת הזיזה.
+- ‏**PR 2 עצר:** כדי לשחזר עיר צריך לשנות את `applyCityOrigin` ב-`MapClient.jsx` (מחוץ לרשימת הקבצים), ובחירת עיר מזיזה את המצלמה ומתנגשת בשחזור. צריך החלטה: מה גובר כשיש גם עיר ב-URL וגם מצלמה שמורה?
+
+---
+
 ## 2026-11-08 — כלל «דרגת השקה» (#4170)
 
 **‏שורה אחת:** ‏#4170 מוזג ל-staging. ב-`workflow.md` נוסף סעיף «Launch tier (/join tool list)».
