@@ -143,7 +143,7 @@ Trigger phrases: *defer · adopt · abandon · "decision is" · "we'll go with" 
 ## 14 · Definition of Done
 
 - ✅ `CI gate (required)` + `Deploy gate (required)` green on the current head (build, vitest, backend tests, lint, API contract).
-- ✅ UI change: Playwright screenshots at 375 and 1440 under `qa-artifacts/MEH-XXXX/`, compressed, **read by CC** and linked from the PR. There is no human mobile pass (MEH-2302, workflow.md rule 23) and no feature-branch Vercel preview (MEH-2062) — say which evidence the PR carries.
+- ✅ UI change: Playwright screenshots at 375 and 1440 under `qa-artifacts/MEH-XXXX/`, compressed, **read by CC** and linked from the PR. There is no human mobile pass (MEH-2302, workflow.md rule 23); a feature-branch Vercel preview exists only for a `[preview]` commit (MEH-2845) — say which evidence the PR carries.
 - ✅ `/adversarial-review` passed, REFEREE verdicts fixed (testing.md rule 5a).
 - ✅ CHANGELOG.md + HANDOFF.md updated **in a separate docs-only PR**, never in the code PR (workflow.md rule 31), and not armed before the code it describes has merged (rule 31b).
 

@@ -142,10 +142,11 @@ PR for its comment; never infer reviewer status from this file.
    (`"בדיקי על: https://food-mamkor-[hash].vercel.app"`). A feature branch
    gets a preview only for a commit whose message contains `[preview]`
    (MEH-2845; `frontend/vercel.json` `ignoreCommand`) — every other push is
-   skipped, so previews stay off by default (MEH-1044 cost). A skipped push
-   still counts against Vercel Hobby's 100 deployments a day (MEH-2062) — so
-   push `[preview]` once per PR, when it is ready for screenshots, not on
-   every commit. Never report an absent preview as rendered. Wait for approval before merging to staging.
+   cancelled. **Every** feature push, built or cancelled, spends one of Vercel
+   Hobby's 100 deployments a day (MEH-2062, deployment.md), and a spent quota
+   blocks staging and main too: keep pushes few (batch commits; rule 25's
+   staging merge is a push). Never report an absent preview as rendered. Wait
+   for approval before merging to staging.
 10. **After every PR — a test, not a checklist line (MEH-2796).** New
     behaviour gets an automated test (pytest / vitest / Playwright). Only what
     automation cannot see (real iPhone Safari, a third-party console, a flag
@@ -484,10 +485,13 @@ concurrent loops. Tiers + `mehamakor-dod` self-check: ADR-025.
     (MEH-2825).** Open the PR, send Sapir a preview + 390 and 1280 screenshots,
     and stop until she writes «go merge». Docs-only / tests-only / CI PRs: CC
     merges when green. "Changes what users see" = any rendered pixel or copy on
-    any surface, `/admin` included; unsure → treat it as UI. Self-check step
-    (2), MEH-2845: push a `[preview]` commit, wait for the Vercel preview,
-    screenshot it (390×844 WebKit + 1280 Chromium), then merge — on the
-    preview, before the merge, not on staging after it. This adds to
+    any surface, `/admin` included; unsure → treat it as UI. The screenshots
+    come from the Vercel preview (MEH-2845): push a `[preview]` commit, wait
+    for it, screenshot it (390×844 WebKit + 1280 Chromium, with the
+    protection-bypass headers of testing.md), send them to Sapir and stop for
+    «go merge». If no preview arrives (quota, cancelled, unreachable), they
+    come from CC's own local production build, and the message says so. This
+    adds to
     rule 23 (375/1440 in `qa-artifacts/`) and replaces none of it; a per-batch
     instruction to merge UI does not carry over to the next PR.
 
