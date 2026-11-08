@@ -190,13 +190,13 @@ export default function ClaimClient({ tokenFromPath = null }) {
         icon={LinkBreak}
         title={t("invalid.title")}
         body={t("invalid.body")}
-        primary={{ href: "/contact", label: t("invalid.contact") }}
+        primary={{ href: "/contact?topic=business", label: t("invalid.contact") }}
       />
     );
   }
 
   if (view === VIEW.CLAIMED) {
-    const contact = { href: "/contact", label: t("claimed.contact") };
+    const contact = { href: "/contact?topic=business", label: t("claimed.contact") };
     return (
       <StatusPage
         testid="claim-claimed"
