@@ -255,7 +255,12 @@ export default function ChipScrollRow({
         ? categorySet.size > 0
         : Object.values(activeKeys).some(Boolean);
     if (hasActiveFilter || userMovedRowRef.current) return undefined;
-    const pinStart = () => scrollRef.current?.scrollTo({ left: 0, behavior: "instant" });
+    // Re-checks the touch flag: the deferred pin fires one frame later, and a
+    // touch can land inside that frame on a slow device.
+    const pinStart = () => {
+      if (userMovedRowRef.current) return;
+      scrollRef.current?.scrollTo({ left: 0, behavior: "instant" });
+    };
     // Synchronous pin keeps the pre-MEH-2823 mount behaviour (no one-frame
     // flash); the rAF pin runs after WebKit's post-layout re-snap.
     pinStart();
