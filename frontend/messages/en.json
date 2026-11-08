@@ -539,8 +539,7 @@
       "heading": "Have a business? Join us",
       "body_l1": "Mehamakor is the home of local food businesses in Israel.",
       "body_l2": "Every business here is hand-picked. A full page, photos, a story — yours.",
-      "body_l3": "We'd love to meet.",
-      "button": "Add Your Business"
+      "body_l3": "We'd love to meet."
     },
     "events": {
       "heading": "Upcoming events",
@@ -2920,15 +2919,23 @@
       },
       "verification": {
         "heading": "How we verify",
-        "body": "Every business on Mehamakor is approved by hand: we talk with the owner, she signs a declaration that the details are true, and only then does the business go live. No automatic sign-ups, no shortcuts. And if the business has a licensing document or exemption approval, we check the document ourselves at the time it joins: when you see the ✓ Verified seal, you know a real person actually saw it — and that the date beside it is the date of the check, not a promise about what came after."
+        "body_1": "Every business on Mehamakor is approved by hand: we talk with the owner, she signs a declaration that the details are true, and only then does the business go live. No automatic sign-ups, no shortcuts.",
+        "body_2": "And if the business has a licensing document or exemption approval, we check the document ourselves at the time it joins: when you see the ✓ Verified seal, you know a real person actually saw it — and that the date beside it is the date of the check, not a promise about what came after."
       },
       "editors_pick": {
         "heading": "Editor's Pick",
-        "body": "Every so often I mark a business I especially loved — for the quality of its products, its freshness, or a story worth knowing. It's my personal choice, after getting to know the business. Two things worth knowing: you can't pay for this tag — not with premium, not in any other way. And it isn't a score — a business without it is no less good; I simply haven't gotten to it yet, or the moment hasn't come."
+        "body_1": "Every so often I mark a business I especially loved — for the quality of its products, its freshness, or a story worth knowing. It's my personal choice, after getting to know the business.",
+        "list_lead": "Two things worth knowing:",
+        "item_1": "you can't pay for this tag — not with premium, not in any other way.",
+        "item_2": "And it isn't a score — a business without it is no less good; I simply haven't gotten to it yet, or the moment hasn't come."
       },
       "community_leader": {
         "heading": "Community leader",
-        "body": "We don't award this badge, customers do. It appears on its own for a business with at least 10 reviews and an average rating of 4.5 or higher. You can't ask for it and you can't pay for it, and it goes away on its own if the average drops. And a business without it is no less good: sometimes it's simply new here, and you haven't had the chance to write about it yet."
+        "body_1": "We don't award this badge, customers do. It appears on its own for a business with at least 10 reviews and an average rating of 4.5 or higher.",
+        "body_2": "You can't ask for it and you can't pay for it, and it goes away on its own if the average drops. And a business without it is no less good: sometimes it's simply new here, and you haven't had the chance to write about it yet."
+      },
+      "badges_link": {
+        "label": "All badges on the site"
       },
       "cta": {
         "heading": "Built a business that deserves a home? We'd love to meet you.",

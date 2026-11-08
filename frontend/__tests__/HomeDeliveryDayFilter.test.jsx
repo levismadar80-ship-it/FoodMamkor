@@ -33,6 +33,8 @@ vi.mock("@/lib/analytics", () => ({ trackEvent: vi.fn() }));
 // runtime before vitest has initialised it (same reason as the equivalent mock
 // in ProducersClientDayAxis.test.jsx).
 vi.mock("@phosphor-icons/react", () => ({
+  // MEH-2827 PR 4: the «המליצו על בית עסק» links in the empty states.
+  ArrowLeft: (p) => <span {...p} />,
   CalendarBlank: (p) => <span {...p} />,
   CaretDown: (p) => <span {...p} />,
   CaretUp: (p) => <span {...p} />,

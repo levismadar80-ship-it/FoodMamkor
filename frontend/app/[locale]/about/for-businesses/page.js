@@ -9,6 +9,7 @@ import {
 } from "@phosphor-icons/react/ssr";
 import { Link } from "@/i18n/navigation";
 import BusinessCtaLink from "@/components/BusinessCtaLink";
+import ClosingCtaBand from "@/components/ClosingCtaBand";
 import EditorialPhoto from "@/components/EditorialPhoto";
 import { BRAND_NAME } from "@/lib/constants";
 import { SITE_URL, serializeJsonLd } from "@/lib/seo";
@@ -135,8 +136,11 @@ export default async function FaqForBusinessesPage({ params }) {
   const { locale } = await params;
   setRequestLocale(locale);
   const t = await getTranslations({ locale, namespace: "about_business" });
+  const tHome = await getTranslations({ locale, namespace: "home" });
+  const tJoin = await getTranslations({ locale, namespace: "join" });
   const jsonLd = buildFaqJsonLd(t);
   return (
+    <>
     <section className="min-h-screen bg-background text-text">
       <script
         type="application/ld+json"
@@ -152,9 +156,11 @@ export default async function FaqForBusinessesPage({ params }) {
           </h1>
           {/* MEH-923: surface the existing footer register CTA here in the header,
               above the FAQ, so the primary action isn't gated behind 8 accordion
-              items. Same string t("cta") + markup as the footer CTA below — no
-              new he.json key (MEH-840 freeze). Footer CTA also updated to the
-              next-intl Link + focus-ring in this PR (IMP-21). */}
+              items. No new he.json key (MEH-840 freeze); next-intl Link +
+              focus-ring (IMP-21). MEH-2824: the matching footer CTA this note
+              used to point at is gone — the page now ends on the shared
+              closing band, whose button is «מצטרפים» (join.cta), so the two
+              join links here carry different labels on purpose. */}
           {/* MEH-1489: auth-state-aware CTA (producer -> dashboard, admin -> hidden). */}
           <BusinessCtaLink
             href="/register/producer"
@@ -306,15 +312,21 @@ export default async function FaqForBusinessesPage({ params }) {
               <bdi>{CONTACT_EMAIL}</bdi>
             </a>
           </p>
-          {/* MEH-1489: auth-state-aware CTA (producer -> dashboard, admin -> hidden). */}
-          <BusinessCtaLink
-            href="/register/producer"
-            className="inline-flex items-center gap-2 font-medium transition hover:opacity-90 bg-primary text-white rounded-sm px-6 py-3 focus-ring"
-          >
-            {t("cta")}
-          </BusinessCtaLink>
+          {/* MEH-2824: the green «הוסיפו את העסק שלכם» button that sat here is
+              gone — the closing band below carries the page's one join button
+              (Sapir 08/11, decision 3). The questions line stays above it. */}
         </footer>
       </div>
     </section>
+    {/* MEH-2824: the shared full-green closing band, last before the site
+        footer. Title reuses the approved home heading KEY (not a copy), button
+        «מצטרפים» like /join, no body (Sapir 08/11, decision 3). */}
+    <ClosingCtaBand
+      data-testid="for-businesses-closing"
+      title={tHome("cta.heading")}
+      ctaHref="/register/producer"
+      ctaLabel={tJoin("cta")}
+    />
+    </>
   );
 }

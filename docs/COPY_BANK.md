@@ -430,7 +430,7 @@
 ### Footer CTA pitch (business owner)
 | Field | Value |
 |---|---|
-| **Current** | `יש לך עסק מזון מקומי?` |
+| **Current** | `יש לכם עסק מזון מקומי?` (neutral plural, Sapir verbatim 08/11, MEH-2827 row 5; was `יש לך…`) |
 | **Subpitch** | `הצטרפו לקהילה הראשונה של בתי עסק אמיתיים בישראל` |
 | **i18n keys** | `nav.footer.cta_pitch` / `nav.footer.cta_subpitch` |
 | **Status** | ✅ |
@@ -438,16 +438,19 @@
 ### Homepage bottom CTA
 | Field | Value |
 |---|---|
-| **Heading** | `יש לך עסק? בואו אלינו` |
+| **Heading** | `יש לכם עסק? בואו אלינו` |
+| **Previous heading** | `יש לך עסק? בואו אלינו` (singular «לך» beside plural «בואו» / «תקבלו», against BRAND §9; neutral plural approved by Sapir verbatim 08/11, MEH-2824) |
 | **Body (l1)** | `מהמקור הוא הבית של בתי עסק מקומיים בישראל — כל עסק נבחר אישית.` |
 | **Body (l2)** | `תקבלו עמוד משלכם: תמונות, סיפור, וקו ישיר ללקוחות.` |
 | **Body (l3)** | `חינם, בלי עמלות. נשמח להכיר.` |
 | **Previous body** | `מהמקור הוא הבית של בתי עסק מקומיים בישראל. כל עסק כאן נבחר אישית. עמוד מלא, תמונות, סיפור — שלכם. נשמח להכיר.` (MEH-605 single-`body` → 3-line split) |
-| **Button** | `הוסיפו את העסק שלך` |
-| **i18n keys** | `home.cta.heading` / `home.cta.body_l1` / `home.cta.body_l2` / `home.cta.body_l3` / `home.cta.button` |
+| **Button** | `מצטרפים` — the shared closing band's one button, same key as /join (`join.cta`). Sapir 08/11, MEH-2824: one band, one button site-wide |
+| **Previous button** | `הוסיפו את העסק שלכם` (`home.cta.button`, retired in MEH-2824) |
+| **i18n keys** | `home.cta.heading` / `home.cta.body_l1` / `home.cta.body_l2` / `home.cta.body_l3` · button `join.cta` |
+| **Also used on** | `/about/for-businesses` closing band — title `home.cta.heading` (same key, not a copy), button `join.cta`, no body (Sapir 08/11, MEH-2824) |
 | **Status** | ✅ (variant B — MEH-980; ⏳ Sapir veto at merge) |
 | **Why** | Variant B leads with what the business gets (own page, direct line to customers) and adds the free/no-commission reassurance. Keeps the "no partial category list" + no-"דירקטורי" rules from MEH-605. |
-| **MEH** | MEH-605 → MEH-980 |
+| **MEH** | MEH-605 → MEH-980 → MEH-2824 (heading, button, reuse on /about/for-businesses) |
 
 ### Footer made-with-love
 | Field | Value |
@@ -692,7 +695,7 @@ outstanding. Source MEH-760 / ADR-022 / Brief Q1+Q3.
 | `process.badge.oneliner` | `תג "מאומת" אומר דבר אחד… ואנחנו בדקנו אותו.` | ⏳ draft (gold `<em>` on closing clause) |
 | `process.badge.absence_h3 / _body / _kicker` | `אין תג מאומת? זה לא אומר פחות` / explainer / `התג מסמן מסמך נוסף — לא אמון נוסף.` | ⏳ draft — **3 separate keys, NOT collapsed** |
 | `process.matrix.*` (groupA/B + 16 cats + caveat) | published criteria matrix by category | ⏳ draft (honey = 3-license row; candles = `מוצהר`-only, no badge path) |
-| `process.cta.*` | `יש לך בית עסק שמגיע לו בית?` + `ספרו לנו על העסק` → `/register/producer` | ⏳ draft |
+| `process.cta.*` | `יש לכם בית עסק שמגיע לו בית?` + `ספרו לנו על העסק` → `/register/producer` | ✅ h2 neutral plural, approved by Sapir verbatim 08/11 (MEH-2824; was `יש לך…`) · rest ⏳ draft |
 | `process.tier.verified` / `.declared` | `מאומת` / `מוצהר` | ⏳ draft (tag labels, page-wide) |
 | `process.crosslink_from_about` | `כך אנחנו מכירות כל בית עסק` (/about → /about/process link) | ⏳ draft |
 | `nav.footer.process` | `תהליך הקבלה` (footer nav link — only non-`process.*` key added) | ⏳ draft |
@@ -1136,3 +1139,16 @@ Approved by Sapir 07/11 («תעשה מה שאתה חושב»). Neutral Hebrew �
 passive («מופיעות»), no addressed verb.
 
 **Status:** ✅ Merged to staging — PR #4144 (`85cfe44f`).
+
+### MEH-2827 — content pages, neutral plural (approved by Sapir verbatim 08/11)
+| # | Key | Before | After | Status |
+|---|---|---|---|---|
+| 1 | `about.biz_strip_lead` | `בעלת עסק?` | `יש לכם עסק?` | ✅ PR 1 (#4169) |
+| 2 | `about.consumer.cta.heading` | `בנית עסק שמגיע לו בית? אנחנו רוצות להכיר.` | `בניתם עסק שמגיע לו בית? אנחנו רוצות להכיר.` | ✅ PR 1 (#4169) |
+| 3 | `about_why_local.changes_1` | `מבית העסק, ישר אליך.` | `מבית העסק, ישר אליכם.` | ✅ PR 2 (#4172) |
+| 4 | `nav.footer.brand_tagline` + 4 `seo.*` descriptions + `SITE_DESCRIPTION` | `…של העסק שלך…` | `…של העסק שלכם…` | ⏳ **not applied** — the line is LOCKED by ADR-011 (also BRAND.md, CONTEXT.md, `lib/constants.js`, guarded by `adr011-tagline.test.js`). Changing it amends the ADR; waiting for Sapir's call |
+| 5 | `nav.footer.cta_pitch` | `יש לך עסק מזון מקומי?` | `יש לכם עסק מזון מקומי?` | ✅ PR 3 |
+| 6 | `about.consumer.badges_link.label` (new) | — | `לכל התגים באתר` (en `All badges on the site`) | ✅ PR 1 (#4169) |
+| 7 | `account.sheet.biz_cta` | `יש לך בית עסק?` | `יש לכם בית עסק?` | ✅ PR 3 |
+| 8 | `recommend.subtitle` | `ספרו לנו עליו. אנחנו בודקים כל המלצה, פונים לבית העסק ומצרפים רק בתי עסק עם רישיון.` | `ספרו לנו עליו. אנחנו בודקות כל המלצה, פונות לבית העסק, ומצרפות רק בתי עסק שפועלים כדין.` | ✅ PR 4 (`seo.recommend.description` / `og_description` still carry the old sentence — not in the approved table, open for Sapir) |
+
