@@ -1150,4 +1150,5 @@ passive («מופיעות»), no addressed verb.
 | 5 | `nav.footer.cta_pitch` | `יש לך עסק מזון מקומי?` | `יש לכם עסק מזון מקומי?` | ✅ PR 3 |
 | 6 | `about.consumer.badges_link.label` (new) | — | `לכל התגים באתר` (en `All badges on the site`) | ✅ PR 1 (#4169) |
 | 7 | `account.sheet.biz_cta` | `יש לך בית עסק?` | `יש לכם בית עסק?` | ✅ PR 3 |
+| 8 | `recommend.subtitle` | `ספרו לנו עליו. אנחנו בודקים כל המלצה, פונים לבית העסק ומצרפים רק בתי עסק עם רישיון.` | `ספרו לנו עליו. אנחנו בודקות כל המלצה, פונות לבית העסק, ומצרפות רק בתי עסק שפועלים כדין.` | ✅ PR 4 (`seo.recommend.description` / `og_description` still carry the old sentence — not in the approved table, open for Sapir) |
 

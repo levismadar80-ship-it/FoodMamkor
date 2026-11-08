@@ -31,7 +31,7 @@
  * enforces the same rule (422), so disabling JS does not bypass it.
  */
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { CheckCircle } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
@@ -54,6 +54,27 @@ const EMPTY = {
   company: "",
 };
 
+// MEH-2827 PR 4: the zero-result links arrive with ?name= / ?city=. A query
+// string is visitor-controlled text, so it is reduced to one plain line:
+// control characters and angle brackets dropped, whitespace collapsed, capped.
+// React escapes on render either way; this keeps the FIELD clean, since the
+// value is what gets posted.
+const PREFILL_CAP = { name: 200, city: 80 };
+
+function prefillValue(raw, cap) {
+  if (typeof raw !== "string") return "";
+  const plain = Array.from(raw, (ch) => {
+    const code = ch.charCodeAt(0);
+    return code < 32 || code === 127 || ch === "<" || ch === ">" ? " " : ch;
+  }).join("");
+  // Capped on code points (Array.from), so an emoji at the boundary is never
+  // cut into half a surrogate pair.
+  return Array.from(plain.replace(/\s+/g, " ").trim())
+    .slice(0, cap)
+    .join("")
+    .trim();
+}
+
 export default function RecommendClient() {
   const t = useTranslations("recommend");
   // REUSES contact's approved strings rather than adding copy: the submitting
@@ -73,6 +94,21 @@ export default function RecommendClient() {
   const [thanked, setThanked] = useState(false);
 
   const set = (field) => (e) => setForm({ ...form, [field]: e.target.value });
+
+  // Read once on mount, not via useSearchParams: that hook would need a
+  // Suspense boundary in page.js, which is outside this change. A prefill
+  // never overwrites what the visitor already typed.
+  useEffect(() => {
+    const q = new URLSearchParams(window.location.search);
+    const name = prefillValue(q.get("name"), PREFILL_CAP.name);
+    const city = prefillValue(q.get("city"), PREFILL_CAP.city);
+    if (!name && !city) return;
+    setForm((prev) => ({
+      ...prev,
+      name: prev.name || name,
+      city: prev.city || city,
+    }));
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
