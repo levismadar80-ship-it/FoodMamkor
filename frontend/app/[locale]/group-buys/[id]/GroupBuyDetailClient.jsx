@@ -39,7 +39,6 @@ function clampQuantity(value) {
   return Math.min(QTY_MAX, Math.max(QTY_MIN, n));
 }
 
-
 export default function GroupBuyDetailClient({ id }) {
   const t = useTranslations("group_buys.detail");
   // MEH-848: shared generic error copy (collapsed from group_buys.detail.errors.generic).
@@ -436,7 +435,6 @@ export default function GroupBuyDetailClient({ id }) {
 
   return (
     <>
-
       {/* MEH-2544 — Groupon / Kickstarter shape: photo up top, story +
           pickup + business on the start side, the join card (price, progress,
           deadline, action, share) on the end side from lg, sticky. It renders

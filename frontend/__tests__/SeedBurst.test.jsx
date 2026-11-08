@@ -19,7 +19,13 @@ const mm = (reduce) => {
     removeEventListener: vi.fn(),
   }));
 };
-afterEach(() => vi.restoreAllMocks());
+const RAF = window.requestAnimationFrame;
+const CAF = window.cancelAnimationFrame;
+afterEach(() => {
+  vi.restoreAllMocks();
+  window.requestAnimationFrame = RAF;
+  window.cancelAnimationFrame = CAF;
+});
 
 describe("SeedBurst", () => {
   it("dark: the on-dark bloom + two rings of on-dark seeds (7 + 10: open below); outer at 65%; aria-hidden", async () => {
@@ -57,13 +63,30 @@ describe("SeedBurst", () => {
     expect(seed.style.transform).not.toBe("translate(0, 0)");
   });
 
-  it("prefers-reduced-motion: the final state from the first paint (no collapsed frame)", () => {
+  it("prefers-reduced-motion: the final state before the first paint, transitions off (no movement)", () => {
     mm(true);
     window.requestAnimationFrame = vi.fn(() => 1);
     const { container } = render(<SeedBurst />);
     expect(container.querySelector('[data-testid="seed-burst"]').getAttribute("data-open")).toBe("true");
-    expect(container.querySelector('[data-burst-ring="0"]').style.transform).not.toBe("translate(0, 0)");
+    const seed = container.querySelector('[data-burst-ring="0"]');
+    expect(seed.style.transform).not.toBe("translate(0, 0)");
+    expect(seed.style.transition).toBe("none");
     expect(window.requestAnimationFrame).not.toHaveBeenCalled();
+  });
+
+  it("server render = closed, whatever the visitor's motion setting (hydration-safe)", async () => {
+    const { renderToString } = await import("react-dom/server");
+    mm(true);
+    const html = renderToString(<SeedBurst />);
+    expect(html).toContain('data-open="false"');
+  });
+
+  it("the drawing is centred by its inline start, so it stays centred in a narrower box (RTL-safe)", () => {
+    mm(true);
+    const { container } = render(<SeedBurst />);
+    const drawing = container.querySelector('[data-testid="seed-burst"] > div');
+    expect(drawing.style.insetInlineStart).toBe("calc(50% - 130px)");
+    expect(container.innerHTML).not.toMatch(/\bleft:/);
   });
 
   it("open below the bloom, where the headline sits: no seed within 40° of straight down", () => {
@@ -87,15 +110,11 @@ describe("SeedBurst", () => {
   });
 });
 
-describe("placements", () => {
-  const src = (rel) => fs.readFileSync(path.resolve(__dirname, "..", rel), "utf8");
-  it("group buy funded: SeedBurst dark in the funded banner; the canvas confetti is gone", () => {
-    const s = src("app/[locale]/group-buys/[id]/GroupBuyDetailClient.jsx");
-    expect(s).toMatch(/data-testid="group-buy-funded"[\s\S]{0,400}<SeedBurst variant="dark" \/>/);
+describe("the old confetti is gone", () => {
+  // The placements themselves are asserted by rendering, in GroupBuyLook and
+  // RecommendBusiness.
+  it("GroupBuyDetailClient no longer draws a canvas", () => {
+    const s = fs.readFileSync(path.resolve(__dirname, "..", "app/[locale]/group-buys/[id]/GroupBuyDetailClient.jsx"), "utf8");
     expect(s).not.toMatch(/Confetti|<canvas/);
-  });
-  it("/recommend: SeedBurst light above the success panel", () => {
-    const s = src("app/[locale]/recommend/RecommendClient.jsx");
-    expect(s).toMatch(/<SeedBurst variant="light"[^>]*\/>\s*<div className="text-center" data-testid="recommend-success">/);
   });
 });

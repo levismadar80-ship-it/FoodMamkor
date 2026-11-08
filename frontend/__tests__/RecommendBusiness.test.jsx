@@ -212,6 +212,17 @@ describe("RecommendClient", () => {
     expect(screen.queryByTestId("recommend-form")).toBeNull();
   });
 
+  it("success opens the light seed burst right above the success panel (MEH-2833)", async () => {
+    render(<RecommendClient />);
+    expect(screen.queryByTestId("seed-burst")).toBeNull();
+    fillValid();
+    fireEvent.submit(screen.getByTestId("recommend-form"));
+    const panel = await screen.findByTestId("recommend-success");
+    const burst = panel.previousElementSibling;
+    expect(burst.getAttribute("data-testid")).toBe("seed-burst");
+    expect(burst.getAttribute("data-variant")).toBe("light");
+  });
+
   it("opting in swaps the success copy for the email promise", async () => {
     render(<RecommendClient />);
     fillValid();
