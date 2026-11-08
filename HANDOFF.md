@@ -4,6 +4,19 @@
 > Standing procedures live in [`docs/runbooks/`](./docs/runbooks/) — e.g. the [uptime alert runbook](./docs/runbooks/UPTIME.md).
 > Decision capture is proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-11-08 — פס סיום ירוק אחד, footer עד קצה המסך, כלל 38 (#4164–#4167)
+
+**‏שורה אחת:** ‏#4166 ו-#4167 מוזגו ל-staging אחרי «go merge» של ספיר. ‏#4164 (כלל 38) ו-#4165 (docs) מוזגו כשה-CI היה ירוק. הבא בתור: שישה PR-ים בדפי התוכן, ואחריהם PR שחרור staging → main.
+
+**‏מה צריך לדעת לפני עבודה:**
+- ‏**כלל 38:** PR שמשנה פיקסל או נוסח באתר לא ממוזג בלי «go merge» של ספיר, גם בתיקון קטן. ‏docs, טסטים ו-CI ממוזגים כשהם ירוקים. ההוראה למזג תקפה רק ל-PR שעליו היא נאמרה.
+- ‏**`ClosingCtaBand`:** כל דף שנגמר בקריאה לבתי עסק משתמש ברכיב הזה, ולא בונים פס נוסף ביד (DESIGN.md). ‏`rest` נפרס ראשון, כך שאי אפשר להסיר את `data-meets-footer`. ‏`body` אופציונלי.
+- ‏**הריווח מתחת לתפריט נמצא בתוך ה-footer** (`globals.css`, ליד הכלל של MEH-2487). ה-body מקבל `padding-bottom: 0` רק כש-`footer[data-site-footer]` קיים בדף. דף חדש בלי ה-footer הזה ישמור את הריווח על ה-body.
+- ‏**הגלולה של התפריט שקופה למחצה,** ולכן מעל הירוק היא נראית ירקרקה-אפורה. זה צפוי ולא באג.
+- ‏**Preview של Vercel:** נכון ל-08/11 עדיין אין deployment לענפי feature. הצילומים נלקחים מ-build מקומי.
+
+---
+
 ## 2026-11-08 09:25 — ‏/join: המדף מגיב תוך כדי גלילה (#4161)
 
 **‏שורה אחת:** ‏#4161 מוזג ל-staging (squash `3b8bf29`). ‏MEH-2799 נשאר Done. ספיר: «המעבר חלק אבל קצת איטי».
