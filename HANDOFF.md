@@ -4,6 +4,26 @@
 > Standing procedures live in [`docs/runbooks/`](./docs/runbooks/) — e.g. the [uptime alert runbook](./docs/runbooks/UPTIME.md).
 > Decision capture is proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-11-08 — טופס פנייה אחד (MEH-2832)
+
+**‏שורה אחת:** ‏#4184 ו-#4186 מוזגו ל-staging. ‏/contact הוא הטופס היחיד באתר.
+
+**‏מה צריך לדעת לפני עבודה:**
+- ‏**קישור חדש ל«צרו קשר»** מוביל ל-`/contact`, ואם צריך עם `?topic=` מתוך `lib/contact-topics.js` (‏general / business / correction / other). לא מקשרים ל-`/about#contact`. ‏`ContactLinksTarget.test.js` נכשל על קישור כזה.
+- אינסטגרם מופיע רק בשורת הרשתות בפוטר, לא כדרך פנייה.
+
+---
+
+## 2026-11-08 — קישורים לחיצים בטלפון (MEH-2831)
+
+**‏שורה אחת:** ‏#4183, #4185, #4188 ו-#4189 מוזגו ל-staging. ב-DESIGN.md נוסף «Text links look tappable without hover».
+
+**‏מה צריך לדעת לפני עבודה:**
+- ‏**קישור טקסט חדש** (וגם כפתור טקסט בלי מסגרת) מקבל קו תחתון קבוע: `underline decoration-[1.5px] underline-offset-[5px] decoration-<ink>/35 hover:decoration-current`. ‏`hover:underline` לבד לא מספיק. קישור עם חץ או סמל בתוכו פטור.
+- ‏**אין guard מכני.** הכלל נשמר דרך DESIGN.md והסקירה.
+
+---
+
 ## 2026-11-08 — דפי התוכן (MEH-2827): ‏8 מתוך 9 ב-staging
 
 **‏שורה אחת:** ‏PR-ים 1–7 ו-9 מוזגו ל-staging (#4169, #4172, #4173, #4174, #4175, #4180, #4177, #4179). ‏PR 8 (#4178) מוחזק עד החלטה של ספיר.

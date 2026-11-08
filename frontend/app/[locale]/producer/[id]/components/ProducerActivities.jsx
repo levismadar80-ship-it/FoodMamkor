@@ -5,6 +5,7 @@ import { Link } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
 import { CaretLeft } from "@phosphor-icons/react";
 import api from "@/lib/api";
+import { SEED_FILLS, SEED_PATH } from "@/lib/brand-seeds";
 import { formatPrice } from "@/lib/utils";
 import { groupBuyDiscountPct } from "@/lib/group-buy-progress";
 import EventEntryRow, { toEventEntry } from "@/components/EventEntryRow";
@@ -31,13 +32,11 @@ const GROUP_BUYS_PREVIEW = 2;
 // Up to SEEDS_MAX participants → one seed each, filled in the logo colours in
 // order; more → five segments, each a fifth of the target, the current one
 // partly filled. One mark for the business-page card and the group-buy page.
-// Raw hex on purpose: these are the five fixed petal colours of public/logo.svg
-// (the board draws the logo's own seeds), not theme tokens — baselined in
-// raw-color-baseline.txt with that reason.
-const SEED_COLORS = ["#2E6853", "#C8632E", "#C99846", "#D9C8B0", "#5A8F73"];
+// The five fixed petal colours of public/logo.svg, in logo order (MEH-2833:
+// from the seed layer's one source, lib/brand-seeds.js).
+const SEED_COLORS = SEED_FILLS;
 const SEEDS_MAX = 10;
 const BAR_SEGMENTS = 5;
-const SEED_PATH = "M 0,-44 C 10,-44 13,-32 11,-20 C 9,-12 5,-8 0,-6 C -5,-8 -9,-12 -11,-20 C -13,-32 -10,-44 0,-44 Z";
 // lg seeds shrink to fit (max 30×46): ten of them at 30px would need 336px,
 // and the progress box is ~280px wide at 375.
 const MARK_SIZE = {

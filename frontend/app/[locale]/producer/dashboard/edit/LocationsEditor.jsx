@@ -476,7 +476,7 @@ function LocationRow({ loc, kindLabel, deleting, onEdit, onDelete, onSetPrimary 
           <button
             type="button"
             onClick={onSetPrimary}
-            className="min-h-touch px-2 text-xs font-medium text-primary hover:underline"
+            className="min-h-touch px-2 text-xs font-medium text-primary underline decoration-[1.5px] underline-offset-[5px] decoration-primary/35 hover:decoration-current"
           >
             {t("set_primary_cta")}
           </button>

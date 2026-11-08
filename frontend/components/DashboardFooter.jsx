@@ -46,8 +46,9 @@ export default function DashboardFooter() {
             // items without it; dropping it here would regress the legal
             // requirement, so it stays (deviation named in the PR body).
             { href: "/accessibility", label: t("nav.footer.accessibility") },
-            // MEH-1312: contact = /about#contact (ADR-024 exception).
-            { href: "/about#contact", label: t("nav.footer.contact") },
+            // MEH-1312: contact link (ADR-024 exception — position). MEH-2832:
+            // the target is /contact, the site's one contact form.
+            { href: "/contact", label: t("nav.footer.contact") },
           ].map((link) => (
             <li key={link.href}>
               {/* 13px + min-h-touch: the MEH-1103 footer-utility compromise —
