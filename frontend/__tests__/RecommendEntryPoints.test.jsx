@@ -50,6 +50,8 @@ vi.mock("@/components/CitySearch", () => ({
   ),
 }));
 vi.mock("@/lib/api", () => ({ default: { get: vi.fn(() => Promise.resolve({ data: [] })), post: vi.fn() } }));
+// RecommendClient's owner line (MEH-2827 PR 5) is a BusinessCtaLink, which reads auth.
+vi.mock("@/lib/auth-context", () => ({ useAuth: () => ({ user: null, loading: false }) }));
 
 import { FilterEmptyState } from "@/components/ProducersClient";
 import MapBottomSheet from "@/components/MapBottomSheet";
