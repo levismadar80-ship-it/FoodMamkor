@@ -12,7 +12,7 @@ import ShareSiteActions from "@/components/ShareSiteActions";
  * Does NOT: hold share logic (components/ShareSiteActions.jsx) or any
  *           donation/payment element (MEH-1159).
  * Related:  app/[locale]/recommend/RecommendClient.jsx (the only consumer) ·
- *           app/[locale]/share/page.js (the permanent redirect to #share)
+ *           app/[locale]/share/route.js (the 308 to #share)
  * History:  MEH-1160 (creation, /share page body) · MEH-2827 PR 5 (became a
  *           section; actions extracted to ShareSiteActions)
  */
