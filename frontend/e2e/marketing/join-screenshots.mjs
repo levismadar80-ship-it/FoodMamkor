@@ -182,6 +182,13 @@ const SHOTS = [
   {
     file: "reviews.webp",
     route: `/${SLUG}`,
+    // #reviews EXISTS but is an empty placeholder: measured 768x0px with zero
+    // children, so waitFor({state:"visible"}) correctly never fires. The
+    // review text renders as `review-excerpt` higher up the page, and that
+    // node itself comes and goes depending on how far the page has rendered.
+    // Left pointing here on purpose: the review SET changes when the seed
+    // runs (the «(בדיקה)» row goes), so this is worth re-measuring against a
+    // clean business rather than re-pointed twice.
     selector: "#reviews",
     feature_ids: ["reviews_contacted", "review_request"],
   },
@@ -231,17 +238,17 @@ const SHOTS = [
     auth: true,
     feature_ids: ["views", "search_impressions", "contact_clicks", "top_cities"],
   },
-  {
-    file: "dash-availability.webp",
-    route: "/producer/dashboard/edit",
-    selector: '[data-testid="availability-card"], #availability',
-    auth: true,
-    feature_ids: ["hours", "vacation_mode"],
-  },
+  // dash-availability.webp was removed, not re-pointed: MEH-2782 (#4126) took
+  // available_today / full_this_week out end to end, so the card this shot
+  // framed no longer exists. Measured on staging — no testid matching
+  // "availability" renders on /producer/dashboard/edit. A shot of a deleted
+  // feature is worse than a missing one, because it would sell it.
   {
     file: "dash-share-kit.webp",
     route: "/producer/dashboard/tools",
-    selector: '[data-testid="share-kit"]',
+    // Measured on staging: the tools page carries tools-grid,
+    // request-review-card and tools-rescue-tile — there is no "share-kit".
+    selector: '[data-testid="tools-grid"]',
     auth: true,
     feature_ids: ["share_cards", "vanity_link"],
   },
@@ -277,6 +284,10 @@ const SHOTS = [
   {
     file: "dash-followers.webp",
     route: "/producer/dashboard/insights",
+    // Measured on staging today: the insights page renders
+    // `followers-zero-cta`, i.e. the EMPTY state, because the demo business
+    // has 0 followers until the seed runs. This is a data miss, not a
+    // selector one — re-measure once the fixtures are in.
     selector: '[data-testid="followers-card"]',
     auth: true,
     feature_ids: ["follower_updates", "favorites_rating", "email_alerts"],
