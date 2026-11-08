@@ -143,7 +143,7 @@ export const COLOR_CLASSES = {
 // interactive chip below wraps it in a popover button; explainers that show
 // the badge as it looks — /about trust cards, /about/badges (MEH-2827) — use
 // VerifiedChip, the same face with no button and no popover.
-export const VERIFIED_CHIP_CLASS =
+const VERIFIED_CHIP_CLASS =
   "inline-flex items-center gap-1 rounded-full border border-accent/40 bg-surface-card text-accent text-xs px-2.5 py-0.5 font-medium";
 
 export function VerifiedChip({ label, className = "" }) {
