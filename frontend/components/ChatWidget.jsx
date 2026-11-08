@@ -85,6 +85,11 @@ const SUGGESTED_PROMPT_IDS = [
 // they're registering. That copy now lives verbatim at chat.answers.*.
 const ANSWERED_PROMPT_IDS = new Set(["register", "find_nearby"]);
 
+// MEH-2835: the mobile launcher is `w-12 h-12` (48px); + the 16px gap it keeps
+// above the BottomNav pill.
+const CHAT_FAB_CLEARANCE_VAR = "--chat-fab-clearance";
+const CHAT_FAB_CLEARANCE = "64px";
+
 export default function ChatWidget({ hideOnMobile = false } = {}) {
   const t = useTranslations("chat");
   // MEH-1981: notice-at-collection. The line names Anthropic itself — "to whom
@@ -140,6 +145,25 @@ export default function ChatWidget({ hideOnMobile = false } = {}) {
   // MEH-850: cookie-banner clearance is now handled purely in CSS via the
   // `--cookie-banner-h` var (published by CookieBanner) in the launcher's
   // bottom calc() below — no JS visibility state / event listener needed.
+
+  // MEH-2835: while the MOBILE launcher is on screen (and its panel closed),
+  // publish the room it takes — its 48px circle + a 16px gap — as
+  // --chat-fab-clearance on <html>, the --cookie-banner-h pattern. globals.css
+  // adds it to --bottom-inset, so every page's last line (and the footer's
+  // newsletter arrow) ends above the launcher; BackToTop reads it to know
+  // whether the launcher slot is taken. Desktop, an open panel, or a launcher
+  // kept off this page → the var is removed (0).
+  const launcherOnMobile = viewportKnown && !isDesktop && !hideOnMobile && !open;
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    const root = document.documentElement;
+    if (!launcherOnMobile) {
+      root.style.removeProperty(CHAT_FAB_CLEARANCE_VAR);
+      return;
+    }
+    root.style.setProperty(CHAT_FAB_CLEARANCE_VAR, CHAT_FAB_CLEARANCE);
+    return () => root.style.removeProperty(CHAT_FAB_CLEARANCE_VAR);
+  }, [launcherOnMobile]);
 
   // ── "chatWasOpened" — shrink desktop pill to icon after first use ──
   const [wasOpened, setWasOpened] = useState(true); // default icon-only until checked
@@ -273,7 +297,11 @@ export default function ChatWidget({ hideOnMobile = false } = {}) {
         // and never `display` — verified with a computed-style probe, not
         // assumed (frontend.md).
         className={[
-          "vv-pin print:hidden flex items-center justify-center bg-primary text-white rounded-full shadow-[0_4px_24px_rgba(46,104,83,0.25)] hover:bg-primary-dark transition focus-visible:ring-2 focus-visible:ring-primary/40",
+          // MEH-2835: a 2px cream ring (ring-background) so the green circle
+          // reads on green surfaces (footer, closing bands). Focus keeps the
+          // cream ring and adds a dark outline outside it — the old
+          // ring-primary/40 vanished on green and replaced the cream ring.
+          "vv-pin print:hidden flex items-center justify-center bg-primary text-white rounded-full ring-2 ring-background shadow-[0_4px_24px_rgba(46,104,83,0.25)] hover:bg-primary-dark transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text",
           showPillText ? "gap-2 px-4 py-3" : "w-12 h-12",
         ].join(" ")}
         // MEH-2308: when the pill text is showing it IS the accessible name. An
