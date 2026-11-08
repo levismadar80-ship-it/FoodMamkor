@@ -486,14 +486,7 @@ export function buildJsonLd(producer, locale = "he") {
   // WebPage.isPartOf → `${SITE_URL}#website` reference (previously pointing
   // at an entity defined nowhere). WebSite.publisher resolves to the
   // Organization node. logo path confirmed present in /public.
-  const webSite = {
-    "@type": "WebSite",
-    "@id": `${SITE_URL}#website`,
-    url: SITE_URL,
-    name: BRAND_NAME,
-    inLanguage: IN_LANGUAGE[locale] ?? "he-IL",
-    publisher: { "@id": `${SITE_URL}#organization` },
-  };
+  const webSite = buildWebSiteNode(locale);
 
   const organization = buildOrganizationNode();
 
@@ -544,6 +537,29 @@ export function buildOrganizationNode() {
 }
 
 /**
+ * MEH-2851: the single WebSite node, shared by producer pages (buildJsonLd)
+ * and the homepage (buildHomeJsonLd, which adds its SearchAction on top) —
+ * the same one-owner shape as buildOrganizationNode (MEH-2192), so a field
+ * cannot land on one surface and miss the other.
+ *
+ * `alternateName` is the Latin site name. Google reads the site name from
+ * WebSite structured data on the home page (`name` + `alternateName`); until
+ * this, only the Organization node said "Mehamakor", and a search for
+ * «mehamakor» was auto-corrected to «hamakor».
+ */
+function buildWebSiteNode(locale = "he") {
+  return {
+    "@type": "WebSite",
+    "@id": `${SITE_URL}#website`,
+    url: SITE_URL,
+    name: BRAND_NAME,
+    alternateName: BRAND_NAME_LATIN,
+    inLanguage: IN_LANGUAGE[locale] ?? "he-IL",
+    publisher: { "@id": `${SITE_URL}#organization` },
+  };
+}
+
+/**
  * MEH-804: homepage site-level JSON-LD. Emits the Organization + WebSite
  * graph (the homepage previously carried no structured data at all) plus a
  * WebSite SearchAction so Google can surface the sitelinks search box keyed
@@ -559,12 +575,7 @@ export function buildHomeJsonLd(locale = "he") {
   const organization = buildOrganizationNode();
 
   const webSite = {
-    "@type": "WebSite",
-    "@id": `${SITE_URL}#website`,
-    url: SITE_URL,
-    name: BRAND_NAME,
-    inLanguage: IN_LANGUAGE[locale] ?? "he-IL",
-    publisher: { "@id": `${SITE_URL}#organization` },
+    ...buildWebSiteNode(locale),
     potentialAction: {
       "@type": "SearchAction",
       target: {
