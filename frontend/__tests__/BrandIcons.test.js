@@ -6,7 +6,7 @@
 import { describe, it, expect, vi } from "vitest";
 import fs from "node:fs";
 import path from "node:path";
-import { PNG } from "pngjs";
+import zlib from "node:zlib";
 import { createTranslator } from "next-intl";
 import he from "../messages/he.json";
 import en from "../messages/en.json";
@@ -29,7 +29,50 @@ for (const m of [
 ]) vi.doMock(m, () => ({ default: () => null }));
 
 const PUBLIC = path.resolve(__dirname, "../public");
-const png = (f) => PNG.sync.read(fs.readFileSync(path.join(PUBLIC, f)));
+// A minimal 8-bit RGB/RGBA PNG reader on node:zlib — no dependency (pngjs is
+// only transitive, and Knip's ratchet reds an unlisted import). Returns
+// { width, height, data } with data always RGBA, like pngjs.
+function png(f) {
+  const buf = fs.readFileSync(path.join(PUBLIC, f));
+  let i = 8;
+  let width = 0, height = 0, type = 0;
+  const idat = [];
+  while (i < buf.length) {
+    const len = buf.readUInt32BE(i);
+    const kind = buf.toString("ascii", i + 4, i + 8);
+    const body = buf.subarray(i + 8, i + 8 + len);
+    if (kind === "IHDR") {
+      width = body.readUInt32BE(0);
+      height = body.readUInt32BE(4);
+      if (body[8] !== 8) throw new Error(`${f}: bit depth ${body[8]} not supported`);
+      type = body[9];
+    } else if (kind === "IDAT") idat.push(body);
+    i += 12 + len;
+  }
+  const bpp = { 2: 3, 6: 4 }[type];
+  if (!bpp) throw new Error(`${f}: colour type ${type} not supported`);
+  const raw = zlib.inflateSync(Buffer.concat(idat));
+  const stride = width * bpp;
+  const out = Buffer.alloc(height * stride);
+  const paeth = (a, b, c) => { const p = a + b - c; const pa = Math.abs(p - a), pb = Math.abs(p - b), pc = Math.abs(p - c); return pa <= pb && pa <= pc ? a : pb <= pc ? b : c; };
+  for (let y = 0; y < height; y++) {
+    const filter = raw[y * (stride + 1)];
+    for (let x = 0; x < stride; x++) {
+      const v = raw[y * (stride + 1) + 1 + x];
+      const a = x >= bpp ? out[y * stride + x - bpp] : 0;
+      const b = y > 0 ? out[(y - 1) * stride + x] : 0;
+      const c = x >= bpp && y > 0 ? out[(y - 1) * stride + x - bpp] : 0;
+      const pred = [0, a, b, (a + b) >> 1, paeth(a, b, c)][filter];
+      out[y * stride + x] = (v + pred) & 0xff;
+    }
+  }
+  if (bpp === 4) return { width, height, data: out };
+  const data = Buffer.alloc(width * height * 4);
+  for (let k = 0; k < width * height; k++) {
+    data[k * 4] = out[k * 3]; data[k * 4 + 1] = out[k * 3 + 1]; data[k * 4 + 2] = out[k * 3 + 2]; data[k * 4 + 3] = 255;
+  }
+  return { width, height, data };
+}
 const SEED_PATH = "M 0,-44 C 10,-44 13,-32 11,-20 C 9,-12 5,-8 0,-6 C -5,-8 -9,-12 -11,-20 C -13,-32 -10,-44 0,-44 Z";
 
 describe("favicon (SVG first)", () => {
