@@ -202,14 +202,18 @@ test.describe("manual › /join (MEH-995)", () => {
     await expect(faq).toContainText(COPY.faq.eyebrow);
     await expect(faq.getByRole("heading", { level: 2 })).toHaveText(COPY.faq.heading);
     const questions = faq.getByRole("heading", { level: 3 });
-    await expect(questions).toHaveCount(4);
+    await expect(questions).toHaveCount(6);
     await expect(questions.first()).toHaveText(COPY.faq.q_cost);
     // Accordion (Sapir, 07/11): every answer closed on load; a tap on a
     // question opens its answer.
     const items = faq.getByTestId("join-faq-item");
     const first = items.nth(0);
     await expect(first.getByText(COPY.faq.a_cost)).toBeHidden();
-    await expect(items.nth(1).getByText(COPY.faq.a_google)).toBeHidden();
+    // MEH-2841 reordered FAQ_KEYS to [cost, price, google, updates, revenue,
+    // customers], so index 1 is now the price answer, not the Google one.
+    // The ticket named only the count; this positional assertion is the
+    // other half, and it would have gone red on the wrong text.
+    await expect(items.nth(1).getByText(COPY.faq.a_price)).toBeHidden();
     await first.locator("summary").click();
     await expect(first.getByText(COPY.faq.a_cost)).toBeVisible();
     const allLink = faq.getByRole("link");
