@@ -72,8 +72,16 @@
  * on a schedule or per-PR trigger without taking that budget decision first.
  */
 import { chromium } from "playwright";
+// `sharp` IS NOT DECLARED IN package.json — it resolves transitively.
+// Measured 2026-11-08: `node_modules/sharp` is 0.35.3, pulled in by Next.js
+// (package-lock.json), and `frontend/scripts/compress-qa-screenshots.mjs`
+// already imports it the same way. A lockfile or Next change that drops it
+// breaks this script at import time, before the pre-flight can report
+// anything. The proper fix is an explicit devDependency, which needs Sapir's
+// sign-off per regression rule 8 — until then this line is the warning.
+import sharp from "sharp";
 import { execFile } from "node:child_process";
-import { mkdir, writeFile, readFile, rm, readdir } from "node:fs/promises";
+import { mkdir, writeFile, readFile, rm, readdir, rename } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import path from "node:path";
 import { promisify } from "node:util";
@@ -95,6 +103,180 @@ const STILLS_ONLY = process.argv.includes("--stills-only");
 const OUT = path.resolve(import.meta.dirname, "../../public/images/join");
 const TMP = path.resolve(import.meta.dirname, "../../.join-capture-tmp");
 const SLUG = "ruach-hasadeh";
+
+// THE CLEANLINESS NEEDLE, AND THE SCOPE IT IS ASKED OVER.
+//
+// Staging carries test businesses whose NAME ends in "(בדיקה)" — e.g. «משק
+// הכרמל הירוק (בדיקה)». They are not the demo business and the seed does not
+// own them: `grep -rn "הכרמל" backend/scripts/` is empty, and the string is
+// absent from both `/api/producers/by-slug/<slug>` and that producer's
+// `/reviews`. They appear on the demo page only as neighbour cards in the
+// "מצילים מזון" strip.
+//
+// So "is «(בדיקה)» anywhere in document.body" is the WRONG question, and it
+// was asked for one run: measured 2026-11-08 on staging, the card sits at
+// y=6670..7088 of an 8073px page, while clip-page films 0..2444 and
+// clip-contact ~3912..4756 — in no frame of any shot. The pre-flight failed
+// the whole run over it and told the operator to "re-run the seed with
+// --refresh", which could never have removed it.
+//
+// Two questions, two scopes, both asserted below:
+//   1. the DEMO BUSINESS's own data — the producer payload and its reviews.
+//      That is what the seed owns, so that is the only failure --refresh can
+//      fix, and the only one whose message says so.
+//   2. what lands INSIDE A FRAME — read from the element each still clips and
+//      from the viewport each clip records, because the frame is the
+//      deliverable. Stricter than the old check, not looser: it covers every
+//      route, the dashboards and the clips, where a one-route body read never
+//      looked.
+const TEST_ROW = "(בדיקה)";
+
+// A WRITTEN FILE IS NOT A CAPTURED SHOT — ASSERT THE PIXELS.
+//
+// On 2026-11-08 this script reported «✓ page-hero.webp» five times and wrote
+// five files holding a single colour. Measured: every pixel of page-hero,
+// page-products, page-contact, reviews and offer was the same grey, while the
+// DOM behind them was complete — right text, opacity 1, fonts loaded. The run
+// said 19/24 captured; five of those nineteen showed nothing. That is exactly
+// what this file's header calls worse than a missing picture, because it
+// passes review.
+//
+// The floor is derived from that run, not guessed — see assertNotFlat below
+// for the measured spread on both sides of it. The thinnest real shot
+// (dash-qr, a QR code on white) is what sets how low this can go, so it is
+// named there rather than left for the next person to rediscover by tripping
+// it.
+const FLAT_FRAME_STDEV = 2;
+
+// A NOT-FLAT FRAME IS NOT A RENDERED FRAME.
+//
+// FLAT_FRAME_STDEV catches a frame of one colour. It does not catch a frame
+// whose only content is chrome: measured 2026-11-08, dash-qr (empty page
+// under the tab bar), dash-insights («טעינת סטטיסטיקות…») and dash-recipes
+// (four grey skeleton rows) all cleared the floor at 8.38, 13.10 and 21.80
+// and were written and counted as captured. The tab bar and the skeleton
+// shapes supply the variance; the subject supplies none.
+//
+// Both shots gate on `main`, which is visible the instant the route mounts
+// while its data is still in flight, so `waitFor({state:"visible"})` is
+// satisfied by an empty page. This asks the frame directly whether it is
+// still loading.
+const LOADING_TEXT = /בטעינה|טעינת|טוען/;
+const SKELETON_SELECTOR = '[class*="skeleton"], [class*="animate-pulse"]';
+
+// Throws when the framed element is still a loading state. Runs BEFORE the
+// write, for the same reason as assertNotFlat: a loading screen on disk is a
+// picture that passes review.
+async function assertNotLoading(locator, label) {
+  const { skeletons, text } = await locator.evaluate(
+    (el, sel) => ({
+      skeletons: el.querySelectorAll(sel).length,
+      text: (el.innerText || "").trim(),
+    }),
+    SKELETON_SELECTOR,
+  );
+  if (skeletons > 0) {
+    throw new Error(
+      `the frame is still a skeleton — ${skeletons} placeholder element(s) ` +
+        `inside it. ${label}`,
+    );
+  }
+  const hit = text.split("\n").map((l) => l.trim()).find((l) => LOADING_TEXT.test(l));
+  if (hit) {
+    throw new Error(`the frame is still loading — «${hit.slice(0, 50)}». ${label}`);
+  }
+}
+
+// IT MEASURES THE FRAME ABOVE MARKER_CSS, NOT THE WHOLE FRAME.
+//
+// MARKER_CSS stamps «עסק ונתונים לדוגמה» into the bottom of every clip frame.
+// That label is this script's own ink, and it is enough to clear a floor on
+// its own: the four blank posters of 2026-11-08 — white frames carrying
+// nothing but the label — measured 5.81 over the whole frame, against 7.71
+// for the thinnest real shot. A guard separating 5.81 from 7.71 is a coin
+// toss. Measured over the top 85% instead, the same files read 0.00 and the
+// thinnest real one 8.38 — the label is excluded, so the number describes the
+// page rather than the overlay.
+//
+//   blank above the marker   clip-page / clip-contact / clip-trust /
+//                            clip-found posters: 0.00
+//   real                     dash-qr 8.38 · dash-insights 13.10 ·
+//                            dash-group-buys 23.28 · dash-share-kit 27.98 ·
+//                            rescue-bag 41.07 · recipe 58.15 ·
+//                            dash-rescue 65.31 · clip-insights 95.99 ·
+//                            group-buy 115.16
+//
+// `.extract()` must be materialised with `.toBuffer()` before `.stats()`:
+// chained onto the same pipeline, `stats()` reads the ORIGINAL image and the
+// crop is silently ignored. It returns a plausible number either way — the
+// first version of this check measured all 15 files and printed the uncropped
+// value for every one of them.
+//
+// Throws rather than returning a boolean: a caller that forgot to check one
+// would write the blank file and report success, which is the defect this
+// exists to prevent. It does not catch — if sharp cannot read the file, that
+// is a failed capture, not a clean one.
+async function assertNotFlat(file, label) {
+  const meta = await sharp(file).metadata();
+  const height = Math.max(1, Math.floor(meta.height * 0.85));
+  const cropped = await sharp(file)
+    .extract({ left: 0, top: 0, width: meta.width, height })
+    .toBuffer();
+  const stats = await sharp(cropped).stats();
+  const stdev = Math.max(...stats.channels.map((c) => c.stdev));
+  if (stdev < FLAT_FRAME_STDEV) {
+    throw new Error(
+      `the frame is flat — one colour above the demo marker (max channel ` +
+        `stdev ${stdev.toFixed(2)}, floor ${FLAT_FRAME_STDEV}). ${label}`,
+    );
+  }
+}
+
+// Visible text intersecting the viewport right now. `innerText` of the body
+// would answer for the whole page, including the strip 4,000px below the last
+// frame, which is the false positive TEST_ROW documents.
+//
+// IT WALKS TEXT NODES AND MEASURES THEM WITH A RANGE, not elements.
+// The first version walked elements and skipped any with `children.length`,
+// on the theory that leaves carry the text. Measured on staging: the business
+// name lives in an `<h3>` that holds BOTH a text node and an element child,
+// so it was skipped as a non-leaf and its text was never collected. The
+// sampler returned 438 characters with the needle's own rect at top=281 of an
+// 844px viewport — on screen, and reported clean. A Range around each text
+// node has no such blind spot.
+//
+// It THROWS rather than returning "" on failure. A sampler whose silence
+// reads the same as a clean frame cannot fail, and this one proved it: the
+// red run it was built for passed green.
+async function viewportText(page) {
+  const { text, nodes } = await page.evaluate(() => {
+    const out = [];
+    let nodes = 0;
+    const h = window.innerHeight;
+    const w = window.innerWidth;
+    const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+    const range = document.createRange();
+    let n;
+    while ((n = walker.nextNode())) {
+      const t = n.nodeValue?.trim();
+      if (!t) continue;
+      nodes += 1;
+      range.selectNodeContents(n);
+      const r = range.getBoundingClientRect();
+      if (r.bottom <= 0 || r.top >= h || r.right <= 0 || r.left >= w) continue;
+      out.push(t);
+    }
+    return { text: out.join(" "), nodes };
+  });
+  // CONTROL. `nodes` counts every non-blank text node in the document, so a
+  // page that rendered anything at all puts it in the hundreds. Zero means
+  // the walk died, not that the frame is clean, and the caller must not read
+  // it as clean.
+  if (nodes === 0) {
+    throw new Error("the viewport sampler found no text nodes at all — it did not run");
+  }
+  return text;
+}
 
 const targetHost = (() => {
   try {
@@ -182,13 +364,23 @@ const SHOTS = [
   {
     file: "reviews.webp",
     route: `/${SLUG}`,
-    selector: "#reviews",
+    // RE-MEASURED 2026-11-08, against the seeded business, as the earlier note
+    // said to do: `#reviews` is still an empty placeholder — 358x0px, zero
+    // children at 390 width — so `waitFor({state:"visible"})` can never fire
+    // on it. The rendered review is `review-excerpt`: 358x92, 3 children,
+    // «עוגיות השקדים ללא הגלוטן מצוינות…». That is the node a reader sees, so
+    // that is the node the shot frames.
+    selector: '[data-testid="review-excerpt"]',
     feature_ids: ["reviews_contacted", "review_request"],
   },
   {
     file: "offer.webp",
     route: `/${SLUG}`,
-    selector: '[data-testid="offer-badge"]',
+    // `offer-badge` does not exist on the page — measured ABSENT 2026-11-08.
+    // The offer renders as `offer-line`: «הטבה בהזמנה ראשונה», 358x20.
+    // 20px tall is a sliver, not a marketing still; flagged for a framing
+    // decision rather than silently widened to a parent nobody chose.
+    selector: '[data-testid="offer-line"]',
     feature_ids: ["offer"],
   },
   {
@@ -219,7 +411,19 @@ const SHOTS = [
   {
     file: "rescue-bag.webp",
     route: "/rescue",
-    selector: '[data-testid="rescue-card"]',
+    // `rescue-card` timed out at 20s on staging — it does not exist. The
+    // listing renders `rescue-list` > `rescue-list-rows` > `rescue-bag-row`
+    // (enumerated from the live DOM 2026-11-08); the row is the card a reader
+    // sees, and it carries pickup, name, where, stock, worth and price.
+    //
+    // THIS SHOT HAS A DEADLINE. The seeded bag's pickup window is now+1h to
+    // now+3h in Israel time (MEH-2808), and /rescue hides a bag once its
+    // window has passed — correctly. Measured 2026-11-08: captured fine at
+    // 15:00 Israel, and at 18:31 the same selector timed out because the
+    // 14:25–16:25 bag was gone. A timeout here usually means the seed is
+    // older than three hours, not that the selector is wrong. Re-run the seed
+    // and capture again.
+    selector: '[data-testid="rescue-bag-row"]',
     feature_ids: ["rescue_bags"],
     note: "needs a bag seeded for TODAY; the seed adds one (MEH-2794)",
   },
@@ -231,24 +435,28 @@ const SHOTS = [
     auth: true,
     feature_ids: ["views", "search_impressions", "contact_clicks", "top_cities"],
   },
-  {
-    file: "dash-availability.webp",
-    route: "/producer/dashboard/edit",
-    selector: '[data-testid="availability-card"], #availability',
-    auth: true,
-    feature_ids: ["hours", "vacation_mode"],
-  },
+  // dash-availability.webp was removed, not re-pointed: MEH-2782 (#4126) took
+  // available_today / full_this_week out end to end, so the card this shot
+  // framed no longer exists. Measured on staging — no testid matching
+  // "availability" renders on /producer/dashboard/edit. A shot of a deleted
+  // feature is worse than a missing one, because it would sell it.
   {
     file: "dash-share-kit.webp",
     route: "/producer/dashboard/tools",
-    selector: '[data-testid="share-kit"]',
+    // Measured on staging: the tools page carries tools-grid,
+    // request-review-card and tools-rescue-tile — there is no "share-kit".
+    selector: '[data-testid="tools-grid"]',
     auth: true,
     feature_ids: ["share_cards", "vanity_link"],
   },
   {
     file: "dash-qr.webp",
     route: "/producer/dashboard/qr-card",
-    selector: "main",
+    // NOT `main`. With `main` this framed the dashboard shell — tab bar on
+    // top, empty page under it — and shipped as ✓ on 2026-11-08: no skeleton
+    // and no loading text, so assertNotLoading could not see it either. The
+    // QR code's own node cannot be satisfied by an empty page.
+    selector: '[data-testid="business-qr-print-code"]',
     auth: true,
     feature_ids: ["qr_code"],
     note: "MEH-2785 merged 07/11, so this route exists",
@@ -277,6 +485,10 @@ const SHOTS = [
   {
     file: "dash-followers.webp",
     route: "/producer/dashboard/insights",
+    // Measured on staging today: the insights page renders
+    // `followers-zero-cta`, i.e. the EMPTY state, because the demo business
+    // has 0 followers until the seed runs. This is a data miss, not a
+    // selector one — re-measure once the fixtures are in.
     selector: '[data-testid="followers-card"]',
     auth: true,
     feature_ids: ["follower_updates", "favorites_rating", "email_alerts"],
@@ -324,7 +536,9 @@ const CLIPS = [
       }
       // Scroll to the WhatsApp button and focus it — deliberately NOT clicked:
       // a click leaves the page for the WhatsApp app and ends the recording.
-      const wa = page.locator('[data-testid="whatsapp-button"]').first();
+      // `whatsapp-button` is absent — measured 2026-11-08. The WhatsApp CTA is
+      // `primary-contact-button`: 308x52, «שליחת הודעה בוואטסאפ».
+      const wa = page.locator('[data-testid="primary-contact-button"]').first();
       if (await wa.count()) {
         await wa.scrollIntoViewIfNeeded();
         await wa.focus();
@@ -347,7 +561,9 @@ const CLIPS = [
     route: `/${SLUG}`,
     steps: async (page) => {
       await page.waitForTimeout(800);
-      const reviews = page.locator('[data-testid="reviews-section"]').first();
+      // `reviews-section` is absent — measured 2026-11-08, same finding as
+      // reviews.webp above. `review-excerpt` is the rendered review.
+      const reviews = page.locator('[data-testid="review-excerpt"]').first();
       if (await reviews.count()) await reviews.scrollIntoViewIfNeeded();
       await page.waitForTimeout(800);
       const more = page.getByRole("button", { name: /עוד ביקורות/ });
@@ -424,10 +640,37 @@ const MARKER_CSS = `
   }
 `;
 
+// INJECTED PER DOCUMENT, NOT ONCE ON `about:blank`.
+//
+// Both call sites used to run `addStyleTag` on the fresh page, before any
+// `goto`, and swallow the result with `.catch(() => {})`. A style tag added
+// to one document does not survive navigation to the next, so the rules were
+// gone by the time anything was captured — measured on the 2026-11-08 clips,
+// where the cookie banner («אנו משתמשים בעוגיות…», «רק הכרחיים», «קבלו הכל»)
+// sits across the bottom of the producer-page poster that HIDE_CSS is
+// supposed to remove. The swallowed rejection is why it never said so.
+//
+// `addInitScript` runs on every document in the page, including the ones
+// `clip-return` navigates to mid-recording, and it is not silenced.
+async function installOverlayStyles(page) {
+  await page.addInitScript((css) => {
+    const add = () => {
+      const el = document.createElement("style");
+      el.textContent = css;
+      document.head?.appendChild(el);
+    };
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", add, { once: true });
+    } else {
+      add();
+    }
+  }, HIDE_CSS + MARKER_CSS);
+}
+
 async function newPage(browser, { auth = false } = {}) {
   const context = await browser.newContext(contextOptions());
   const page = await context.newPage();
-  await page.addStyleTag({ content: HIDE_CSS + MARKER_CSS }).catch(() => {});
+  await installOverlayStyles(page);
   if (auth) await login(page);
   return { context, page };
 }
@@ -492,6 +735,9 @@ async function login(page) {
 async function preflight(browser) {
   const { context, page } = await newPage(browser);
   const problems = [];
+  // Non-fatal observations. Printed on success too — a note nobody sees is
+  // not a report.
+  const notes = [];
   try {
     const res = await page.goto(`${BASE}/he/${SLUG}`, { waitUntil: "domcontentloaded" });
     const status = res?.status() ?? 0;
@@ -591,9 +837,44 @@ async function preflight(browser) {
     if (!domText || domText.length < 500)
       problems.push("the business page rendered almost no text");
     const body = domText + apiText;
-    // The ticket's own cleanliness requirement, asserted rather than assumed.
-    if (body.includes("(בדיקה)")) {
-      problems.push('the demo business still shows "(בדיקה)" rows — re-run the seed with --refresh');
+    // THE TICKET'S CLEANLINESS REQUIREMENT, OVER THE SCOPE THE SEED OWNS.
+    // `apiText` is the demo producer's own payload plus its reviews — see
+    // TEST_ROW. A hit here IS a seed problem, so this message is the only one
+    // that prescribes --refresh.
+    if (apiText.includes(TEST_ROW)) {
+      problems.push(
+        `the demo business's own data still carries "${TEST_ROW}" — re-run the seed with --refresh`,
+      );
+    }
+    // A hit elsewhere on the page is another business's name. It is reported,
+    // never fatal here: whether it matters is decided per frame at capture
+    // time, which is the only place that can tell.
+    if (!apiText.includes(TEST_ROW) && domText.includes(TEST_ROW)) {
+      const where = await page
+        .evaluate((needle) => {
+          const w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+          let n;
+          while ((n = w.nextNode())) {
+            if (n.nodeValue?.includes(needle)) {
+              const card = n.parentElement?.closest("article") ?? n.parentElement;
+              const r = card.getBoundingClientRect();
+              return {
+                text: n.nodeValue.trim().slice(0, 60),
+                top: Math.round(r.top + window.scrollY),
+                page: document.documentElement.scrollHeight,
+              };
+            }
+          }
+          return null;
+        }, TEST_ROW)
+        .catch(() => null);
+      notes.push(
+        where
+          ? `another business on this page is named «${where.text}» (y=${where.top} of ` +
+              `${where.page}px). Not the demo business and not the seed's to remove. ` +
+              "Any shot that frames it fails that shot by name."
+          : `"${TEST_ROW}" appears somewhere on the page, outside the demo business's own data`,
+      );
     }
     if (/sso-api|Vercel Authentication/i.test(body)) {
       problems.push("this is Vercel's SSO page, not the site — the bypass secret is wrong");
@@ -610,7 +891,10 @@ async function preflight(browser) {
     console.error("\nEvery capture below would have been meaningless, so none was attempted.");
     process.exit(1);
   }
-  console.log("[preflight] demo business reachable, 200, no «(בדיקה)» on the page.");
+  for (const n of notes) console.log(`[preflight] note: ${n}`);
+  console.log(
+    `[preflight] demo business reachable, 200, no "${TEST_ROW}" in its own data.`,
+  );
 }
 
 // ───────────────────────────── stills ─────────────────────────────
@@ -666,7 +950,61 @@ async function captureStills(browser) {
       const el = page.locator(shot.selector).first();
       await el.waitFor({ state: "visible", timeout: shot.timeout ?? 20_000 });
       await page.waitForTimeout(400); // let fonts/images settle
-      await el.screenshot({ path: path.join(OUT, shot.file), type: "webp", quality: 80 });
+      // IN-FRAME CLEANLINESS — the subject is the element being clipped, so
+      // this asks exactly what the file will show. Checked BEFORE the write,
+      // because a contaminated .webp on disk is a picture that passes review.
+      // WAIT FOR IT TO FINISH LOADING, THEN INSIST. A dashboard route mounts
+      // `main` immediately and fills it a second or two later, so the first
+      // look is the wrong moment to judge. Poll until the frame stops being a
+      // loading state; only then is a still-loading frame a real miss.
+      const loadedBy = Date.now() + (shot.timeout ?? 20_000);
+      for (;;) {
+        try {
+          await assertNotLoading(
+            el,
+            `${shot.file} gates on \`${shot.selector}\`, which can be visible ` +
+              "while its data is still in flight.",
+          );
+          break;
+        } catch (err) {
+          if (Date.now() > loadedBy) throw err;
+          await page.waitForTimeout(500);
+        }
+      }
+      const framed = await el.innerText().catch(() => "");
+      if (framed.includes(TEST_ROW)) {
+        const line =
+          framed
+            .split("\n")
+            .map((l) => l.trim())
+            .find((l) => l.includes(TEST_ROW)) ?? TEST_ROW;
+        throw new Error(`"${TEST_ROW}" is inside the frame: «${line.slice(0, 60)}»`);
+      }
+      const outFile = path.join(OUT, shot.file);
+      await el.screenshot({ path: outFile, type: "webp", quality: 80 });
+      try {
+        await assertNotFlat(
+          outFile,
+          // THE CAUSE IS NOT ESTABLISHED, AND THE WIDTH THEORY WAS WRONG.
+          // On 2026-11-08 the five producer-page stills came back flat for
+          // run after run at 390px while 768 and 1440 rendered, through
+          // `animations: "disabled"`, `scale: "css"`, reload, resize and
+          // `--headless=new`. The obvious read was "it does not raster at
+          // mobile width". Later the same day, at the same 390px and on a
+          // page that had grown from 8,073 to 8,123px, the same five
+          // captured normally with nothing changed in this file. So it is
+          // neither width nor height, it is intermittent, and it is silent —
+          // which is the whole reason this assertion runs on every write
+          // rather than once at the start.
+          `the DOM can be complete and the raster still empty — ${shot.route} ` +
+            `at ${VIEWPORT.width}px. Cause unestablished; see the note here.`,
+        );
+      } catch (err) {
+        // The blank file does not survive the failure. Left on disk it would
+        // be committed by the next person who runs `git add`.
+        await rm(outFile, { force: true });
+        throw err;
+      }
       entry.status = "ok";
       console.log(`  ✓ ${shot.file}`);
     } catch (err) {
@@ -698,12 +1036,44 @@ async function captureClips(browser) {
     const entry = { file: `${clip.name}.mp4`, route: clip.route, kind: "clip" };
     const started = Date.now();
     try {
-      await page.addStyleTag({ content: HIDE_CSS + MARKER_CSS }).catch(() => {});
+      await installOverlayStyles(page);
       if (clip.auth) await login(page);
       await page.goto(`${BASE}/he${clip.route}`, { waitUntil: "domcontentloaded" });
       // Never start a clip on a loading state (ticket): wait for real content.
       await page.locator("main").first().waitFor({ state: "visible", timeout: 20_000 });
-      await clip.steps(page);
+      // A clip's deliverable is the scrolling viewport, not the document, so
+      // the cleanliness question is asked over what is on screen — sampled at
+      // the opening frame and again at the closing one. A body-wide read here
+      // would re-create the very false positive TEST_ROW documents.
+      // SAMPLED THROUGHOUT, NOT JUST AT THE TWO ENDS.
+      // Opening and closing samples alone miss the case that matters most for
+      // a scrolling clip: a card that passes through the viewport mid-scroll
+      // and is gone by the last frame is in the recorded mp4 and in no
+      // sample. The poll runs alongside `steps()` and is stopped in
+      // `finally`, so a throwing step cannot leave it running.
+      const seen = [await viewportText(page)];
+      let polling = true;
+      const poll = (async () => {
+        while (polling) {
+          await page.waitForTimeout(400);
+          if (!polling) break;
+          seen.push(await viewportText(page).catch(() => ""));
+        }
+      })();
+      try {
+        await clip.steps(page);
+      } finally {
+        polling = false;
+        await poll;
+      }
+      seen.push(await viewportText(page));
+      const dirty = seen.find((t) => t.includes(TEST_ROW));
+      if (dirty) {
+        throw new Error(
+          `"${TEST_ROW}" is on screen in this clip — ` +
+            `«${dirty.slice(Math.max(0, dirty.indexOf(TEST_ROW) - 40), dirty.indexOf(TEST_ROW) + 20)}»`,
+        );
+      }
       entry.duration_s = Math.round((Date.now() - started) / 100) / 10;
       await context.close(); // flushes the .webm
       const webm = (await readdir(dir)).find((f) => f.endsWith(".webm"));
@@ -716,6 +1086,9 @@ async function captureClips(browser) {
       entry.error = err.message.split("\n")[0];
       console.log(`  ✗ ${clip.name}  — ${entry.error}`);
       await context.close().catch(() => {});
+      // Nothing is removed from OUT here: a failed clip never wrote there.
+      // See toMp4 — the encode lands in TMP and is promoted only once the
+      // poster has passed, so a miss leaves whatever was committed intact.
     }
     results.push(entry);
   }
@@ -724,8 +1097,14 @@ async function captureClips(browser) {
 }
 
 async function toMp4(webmPath, name, entry) {
-  const mp4 = path.join(OUT, `${name}.mp4`);
-  const poster = path.join(OUT, `${name}-poster.webp`);
+  // WRITTEN INTO TMP, PROMOTED INTO OUT ONLY ONCE THE POSTER PASSES.
+  // Encoding straight into OUT means a clip that fails its poster check has
+  // already replaced the committed file with the output that just failed. The
+  // first version of this guard deleted the OUT files on failure instead,
+  // which removed clip-return.mp4 and clip-trust.mp4 — committed files this
+  // run had never written. A capture that fails must leave what it found.
+  const mp4 = path.join(TMP, `${name}.mp4`);
+  const poster = path.join(TMP, `${name}-poster.webp`);
   await run("ffmpeg", [
     "-y", "-i", webmPath,
     "-c:v", "libx264", "-crf", "23", "-preset", "slow",
@@ -736,8 +1115,24 @@ async function toMp4(webmPath, name, entry) {
     "-movflags", "+faststart",
     mp4,
   ]);
-  await run("ffmpeg", ["-y", "-i", webmPath, "-frames:v", "1", "-q:v", "80", poster]);
-  const { size } = await readFile(mp4).then((b) => ({ size: b.length }));
+  // THE POSTER IS THE CLIP'S LAST FRAME, NOT ITS FIRST.
+  //
+  // Frame 1 is whatever the compositor had produced when recording began,
+  // which is often nothing: on 2026-11-08 four posters came out
+  // byte-identical at 1,212 bytes, and clip-insights produced a painted
+  // poster on one run and a blank one on the next from the same code.
+  // Re-seeking to 1.5s only moved the problem — the producer-page poster then
+  // showed the loading screen, header and spinner on an empty page, which
+  // clears a not-flat floor and is still not a picture of anything.
+  //
+  // The last frame is the one place the clip is guaranteed to be showing its
+  // subject: every `steps()` ends on the state it exists to demonstrate.
+  // `-sseof -0.5` seeks relative to the end, so it needs no duration lookup.
+  await run("ffmpeg", ["-y", "-sseof", "-0.5", "-i", webmPath, "-frames:v", "1", "-q:v", "80", poster]);
+  await assertNotFlat(poster, `poster for ${name}, last frame of the recording`);
+  await rename(mp4, path.join(OUT, `${name}.mp4`));
+  await rename(poster, path.join(OUT, `${name}-poster.webp`));
+  const { size } = await readFile(path.join(OUT, `${name}.mp4`)).then((b) => ({ size: b.length }));
   entry.size_kb = Math.round(size / 1024);
   entry.poster = `${name}-poster.webp`;
   if (entry.size_kb > 1536) {
