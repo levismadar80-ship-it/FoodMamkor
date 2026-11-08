@@ -1,0 +1,263 @@
+{
+  "generated_by": "frontend/e2e/marketing/join-screenshots.mjs (MEH-2794)",
+  "captured_at": "2026-11-08T12:49:14.184Z",
+  "git_sha": "75f09ee2bceea20bb932409b763ddd647eb0e999",
+  "target": "https://staging.mehamakor.online",
+  "demo_slug": "ruach-hasadeh",
+  "viewport": {
+    "width": 390,
+    "height": 844,
+    "deviceScaleFactor": 2
+  },
+  "total": 24,
+  "ok": 14,
+  "missing": 10,
+  "entries": [
+    {
+      "file": "page-hero.webp",
+      "route": "/ruach-hasadeh",
+      "selector": "[data-testid=\"producer-header\"], header.producer-hero, main > section:first-of-type",
+      "feature_ids": [
+        "gallery_story",
+        "hours",
+        "vacation_mode",
+        "verified_badge",
+        "kashrut_verified",
+        "editor_pick"
+      ],
+      "note": "cover + name + badges + open-for-orders + contact button",
+      "status": "missing",
+      "error": "the frame is flat — one colour above the demo marker (max channel stdev 0.05, floor 2). The DOM can be complete and the raster still empty: measured on /ruach-hasadeh at 390px, where the producer page renders at 768 and 1440 but not at mobile width."
+    },
+    {
+      "file": "page-products.webp",
+      "route": "/ruach-hasadeh",
+      "selector": "#section-products",
+      "feature_ids": [
+        "product_details",
+        "top_product"
+      ],
+      "status": "missing",
+      "error": "the frame is flat — one colour above the demo marker (max channel stdev 0.04, floor 2). The DOM can be complete and the raster still empty: measured on /ruach-hasadeh at 390px, where the producer page renders at 768 and 1440 but not at mobile width."
+    },
+    {
+      "file": "page-contact.webp",
+      "route": "/ruach-hasadeh",
+      "selector": "[data-testid=\"contact-card\"], [data-testid=\"delivery-checker\"]",
+      "feature_ids": [
+        "primary_cta",
+        "wa_prefill",
+        "delivery_checker",
+        "delivery_areas",
+        "nav_buttons",
+        "save_share"
+      ],
+      "status": "missing",
+      "error": "the frame is flat — one colour above the demo marker (max channel stdev 0.05, floor 2). The DOM can be complete and the raster still empty: measured on /ruach-hasadeh at 390px, where the producer page renders at 768 and 1440 but not at mobile width."
+    },
+    {
+      "file": "search-diet.webp",
+      "route": "/producers?diet=gluten_free",
+      "selector": "[data-testid=\"producers-grid\"]",
+      "feature_ids": [
+        "discovery",
+        "reservist_diet_tags"
+      ],
+      "status": "missing",
+      "error": "\"(בדיקה)\" is inside the frame: «משק הכרמל הירוק (בדיקה)»"
+    },
+    {
+      "file": "group-buy.webp",
+      "route": "/group-buys",
+      "selector": "[data-testid=\"group-buy-card\"]",
+      "feature_ids": [
+        "group_buys"
+      ],
+      "status": "ok"
+    },
+    {
+      "file": "event.webp",
+      "route": "/experiences",
+      "selector": "a:has([data-testid=\"event-row-image\"])",
+      "feature_ids": [
+        "events"
+      ],
+      "status": "missing",
+      "error": "\"(בדיקה)\" is inside the frame: «בוקר במאפייה: מהתנור לשולחן (בדיקה)»"
+    },
+    {
+      "file": "reviews.webp",
+      "route": "/ruach-hasadeh",
+      "selector": "[data-testid=\"review-excerpt\"]",
+      "feature_ids": [
+        "reviews_contacted",
+        "review_request"
+      ],
+      "status": "missing",
+      "error": "the frame is flat — one colour above the demo marker (max channel stdev 0.10, floor 2). The DOM can be complete and the raster still empty: measured on /ruach-hasadeh at 390px, where the producer page renders at 768 and 1440 but not at mobile width."
+    },
+    {
+      "file": "offer.webp",
+      "route": "/ruach-hasadeh",
+      "selector": "[data-testid=\"offer-line\"]",
+      "feature_ids": [
+        "offer"
+      ],
+      "status": "missing",
+      "error": "the frame is flat — one colour above the demo marker (max channel stdev 0.22, floor 2). The DOM can be complete and the raster still empty: measured on /ruach-hasadeh at 390px, where the producer page renders at 768 and 1440 but not at mobile width."
+    },
+    {
+      "file": "recipe.webp",
+      "route": "/ruach-hasadeh/recipes",
+      "selector": "main",
+      "feature_ids": [
+        "recipes"
+      ],
+      "status": "ok"
+    },
+    {
+      "file": "map.webp",
+      "route": "/map",
+      "selector": "[data-testid=\"map-card\"]",
+      "feature_ids": [
+        "map_precision",
+        "multi_locations"
+      ],
+      "status": "missing",
+      "error": "page.waitForSelector: Timeout 45000ms exceeded."
+    },
+    {
+      "file": "rescue-bag.webp",
+      "route": "/rescue",
+      "selector": "[data-testid=\"rescue-bag-row\"]",
+      "feature_ids": [
+        "rescue_bags"
+      ],
+      "note": "needs a bag seeded for TODAY; the seed adds one (MEH-2794)",
+      "status": "ok"
+    },
+    {
+      "file": "dash-insights.webp",
+      "route": "/producer/dashboard/insights",
+      "selector": "main",
+      "feature_ids": [
+        "views",
+        "search_impressions",
+        "contact_clicks",
+        "top_cities"
+      ],
+      "status": "ok"
+    },
+    {
+      "file": "dash-share-kit.webp",
+      "route": "/producer/dashboard/tools",
+      "selector": "[data-testid=\"tools-grid\"]",
+      "feature_ids": [
+        "share_cards",
+        "vanity_link"
+      ],
+      "status": "ok"
+    },
+    {
+      "file": "dash-qr.webp",
+      "route": "/producer/dashboard/qr-card",
+      "selector": "main",
+      "feature_ids": [
+        "qr_code"
+      ],
+      "note": "MEH-2785 merged 07/11, so this route exists",
+      "status": "ok"
+    },
+    {
+      "file": "dash-recipes.webp",
+      "route": "/producer/dashboard/recipes",
+      "selector": "main",
+      "feature_ids": [
+        "recipes"
+      ],
+      "status": "ok"
+    },
+    {
+      "file": "dash-group-buys.webp",
+      "route": "/producer/dashboard/group-buys",
+      "selector": "main",
+      "feature_ids": [
+        "group_buys"
+      ],
+      "status": "ok"
+    },
+    {
+      "file": "dash-rescue.webp",
+      "route": "/producer/dashboard/rescue",
+      "selector": "main",
+      "feature_ids": [
+        "rescue_bags"
+      ],
+      "status": "ok"
+    },
+    {
+      "file": "dash-followers.webp",
+      "route": "/producer/dashboard/insights",
+      "selector": "[data-testid=\"followers-card\"]",
+      "feature_ids": [
+        "follower_updates",
+        "favorites_rating",
+        "email_alerts"
+      ],
+      "status": "missing",
+      "error": "locator.waitFor: Timeout 20000ms exceeded."
+    },
+    {
+      "file": "clip-page.mp4",
+      "route": "/ruach-hasadeh",
+      "kind": "clip",
+      "duration_s": 5.8,
+      "size_kb": 274,
+      "poster": "clip-page-poster.webp",
+      "status": "ok"
+    },
+    {
+      "file": "clip-found.mp4",
+      "route": "/map",
+      "kind": "clip",
+      "duration_s": 3.1,
+      "size_kb": 30,
+      "poster": "clip-found-poster.webp",
+      "status": "ok"
+    },
+    {
+      "file": "clip-contact.mp4",
+      "route": "/ruach-hasadeh",
+      "kind": "clip",
+      "duration_s": 5.5,
+      "size_kb": 127,
+      "poster": "clip-contact-poster.webp",
+      "status": "ok"
+    },
+    {
+      "file": "clip-return.mp4",
+      "route": "/group-buys",
+      "kind": "clip",
+      "status": "missing",
+      "error": "\"(בדיקה)\" is on screen in this clip — «ובמבר 06:00 בוקר במאפייה: מהתנור לשולחן (בדיקה) מאפיית השדה »"
+    },
+    {
+      "file": "clip-trust.mp4",
+      "route": "/ruach-hasadeh",
+      "kind": "clip",
+      "duration_s": 4.3,
+      "size_kb": 75,
+      "poster": "clip-trust-poster.webp",
+      "status": "ok"
+    },
+    {
+      "file": "clip-insights.mp4",
+      "route": "/producer/dashboard/insights",
+      "kind": "clip",
+      "duration_s": 9.1,
+      "size_kb": 125,
+      "poster": "clip-insights-poster.webp",
+      "status": "ok"
+    }
+  ]
+}
