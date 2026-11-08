@@ -348,7 +348,7 @@ function LoginPageBody() {
               <Link
                 href="/forgot-password"
                 data-testid="login-forgot-link"
-                className="text-xs font-medium text-primary hover:underline"
+                className="text-xs font-medium text-primary underline decoration-[1.5px] underline-offset-[5px] decoration-primary/35 hover:decoration-current"
               >
                 {t("forgot_password")}
               </Link>

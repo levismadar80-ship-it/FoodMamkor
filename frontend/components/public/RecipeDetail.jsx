@@ -324,7 +324,7 @@ export default function RecipeDetail({ recipe, producer, relatedProducts }) {
                 </div>
                 <Link
                   href={`/${producer.slug}`}
-                  className={`text-sm text-primary hover:underline ${LINK_FOCUS}`}
+                  className={`text-sm text-primary underline decoration-[1.5px] underline-offset-[5px] decoration-primary/35 hover:decoration-current ${LINK_FOCUS}`}
                 >
                   {t("producer_cta_link", { name: producer.name })}
                 </Link>
