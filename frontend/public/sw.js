@@ -32,7 +32,9 @@ self.addEventListener("push", (event) => {
     self.registration.showNotification(title, {
       body,
       icon: "/icon-192.png",
-      badge: "/icon-192.png",
+      // MEH-2834: Android draws the badge from its alpha only — a one-colour
+      // seed silhouette on transparent, not the full-colour icon (a white square).
+      badge: "/badge-96.png",
       data: { url },
       dir: "rtl",
       lang: "he",
