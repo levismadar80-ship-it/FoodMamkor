@@ -238,7 +238,7 @@ export default function AdminUsersPage() {
                       </div>
                     </td>
                     <td className="px-4 py-3 text-muted text-xs" data-label={t("users.columns.favorites")}>
-                      <button onClick={() => toggleExpand(u)} className="inline-flex items-center gap-1 hover:text-primary underline decoration-[1.5px] underline-offset-[5px] decoration-text/35 hover:decoration-current">
+                      <button onClick={() => toggleExpand(u)} className="inline-flex items-center gap-1 hover:text-primary underline decoration-[1.5px] underline-offset-[5px] decoration-muted/35 hover:decoration-current">
                         {u.favorites_count}
                         <Heart size={14} weight="fill" className="text-danger-500" aria-hidden="true" />
                       </button>
