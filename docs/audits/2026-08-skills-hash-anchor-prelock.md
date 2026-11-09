@@ -253,19 +253,25 @@ Method: `.claude/rules/skills.md` § "When auditing skills manually" — every f
 - Pass 2 accepts any valid verdict string.
 - Pass 4 iterates the lock, so an unlocked skill has no hash that could drift.
 
-`audit-skills.sh` gains **Pass 2b**, which makes each of these states a CI failure:
+`audit-skills.sh` gains **Pass 2b** (`pass2b_check`, also callable as `--pass2b-only ROOT [TODAY]`), and the new **`scripts/checks/skills-layout-guard.sh`** runs it in **Repo guards**, which feeds the required CI gate. The skills-audit workflow itself is not aggregated by any required gate, so a red there never blocked a merge (fresh review).
 
 | tag | fires when |
 |---|---|
-| `[APPROVED-UNLOCKED]` | `approved` with no `skills-lock.json` entry |
-| `[UNLOCKED-EXPIRED]` / `[UNLOCKED-NO-DATE]` | `approved_local_unlocked` more than 30 days after `last_audit_date`, or with no valid date. This is the clock `skills.md` describes, now enforced. |
-| `[NOT-CANONICAL]` | `.claude/skills/<name>` is a real directory rather than a symlink |
+| `[UNLOCKED]` | any verdict but `blocked` (or a live `approved_local_unlocked`) with no `skills-lock.json` entry — `review_needed` included, since Layer 5 locks at the first commit |
+| `[UNLOCKED-NO-DATE]` / `[UNLOCKED-FUTURE]` / `[UNLOCKED-EXPIRED]` | `approved_local_unlocked` without a strict `YYYY-MM-DD` date (empty, null and relative dates like `tomorrow` all fail), dated in the future, or past 30 days. `skills.md` describes this clock; nothing enforced it until now. |
+| `[NOT-CANONICAL]` | `.claude/skills/<name>` is a real directory, **or a symlink pointing anywhere but `../../.agents/skills/<name>`** (the harness would load content the lock does not hash) |
+
+**The guard's self-test** runs the same function on 11 fixture trees, one per case, each with a known answer: clean, real dir, retargeted link, approved unlocked, review_needed unlocked, live clock, expired, empty date, null date, `tomorrow`, 2099. If any answer is wrong, the guard fails before it looks at the repo. Because it runs on every PR, the 30-day clock fires on the next PR of any kind; no schedule is needed.
 
 **Shown failing:**
 
 | run | result |
 |---|---|
-| the new audit against `origin/staging` (the four real, unlocked dirs) | 8 findings (4 `APPROVED-UNLOCKED` + 4 `NOT-CANONICAL`), exit 1 |
+| Pass 2b against `origin/staging`'s tree (the four real, unlocked dirs) | 4 `[UNLOCKED]` + 4 `[NOT-CANONICAL]`, exit 1 |
 | the old audit, same tree | 0 critical |
-| `grilling` set to `approved_local_unlocked`, dated 2026-09-01, lock entry removed | `[UNLOCKED-EXPIRED] grilling`, exit 1 |
-| this branch | 0 critical, exit 0 |
+| guard with the symlink-target check removed | `retarget` case red |
+| guard with the date-format check removed | `clock-empty`, `clock-null`, `clock-relative` red |
+| guard with the lock required only for `approved` (this PR's first version) | `review-unlocked` red |
+| this branch | 11/11 self-test, real repo clean |
+
+*Correction to the sentence above "written by the script":* the backfill wrote the four **hashes**. The four lock entries' `source` / `sourceType` fields were added by hand first (with an empty hash), because `backfill-skill-hashes.sh` only updates entries that already exist.

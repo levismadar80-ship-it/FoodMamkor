@@ -37,7 +37,7 @@ it to the harness via symlinks under `.claude/skills/`.
 |---|---|---|---|
 | `.agents/skills/<name>/SKILL.md` | Canonical content (source of truth) | `100644` (real file) | **76** |
 | `.claude/skills/<name>` | Harness mount point | `120000` (symlink → `../../.agents/skills/<name>`) | **76** |
-| `.claude/skills/<name>` | Real directory — **now a CI failure** (`[NOT-CANONICAL]`, MEH-1055) | `040000` | **0** |
+| `.claude/skills/<name>` | Real directory, or a symlink anywhere but `../../.agents/skills/<name>` — **fails Repo guards** (`[NOT-CANONICAL]`, MEH-1055) | — | **0** |
 
 _Counts re-measured 2026-11-09 (MEH-1055): 76 / 76 / 0, and `skills-lock.json`
 locks **76**, exactly the `.agents/skills/` set. They read 72 / 72 / 3 on
@@ -53,11 +53,15 @@ verified 2026-08-03) and is locked.
 > All four skills it names (it was four, not three: `backlog-groom` joined on
 > 2026-08-09) were re-audited, moved to `.agents/skills/` + symlink, and locked
 > through `backfill-skill-hashes.sh`. Their hashes equal the anchors computed
-> independently on 12/08. The state can no longer recur silently:
-> `audit-skills.sh` Pass 2b fails CI on `approved` with no lock entry, on an
-> expired or undated `approved_local_unlocked`, and on a real directory under
-> `.claude/skills/`. Evidence: `docs/audits/2026-08-skills-hash-anchor-prelock.md`
-> § 09/11.
+> independently on 12/08. The state now fails a **required** check:
+> `scripts/checks/skills-layout-guard.sh` (Repo guards → CI gate) runs Pass 2b
+> of `audit-skills.sh` on every PR — `[UNLOCKED]` (any verdict but `blocked`
+> or a live `approved_local_unlocked`, with no lock entry), `[UNLOCKED-EXPIRED]`
+> / `[UNLOCKED-NO-DATE]` / `[UNLOCKED-FUTURE]` (the 30-day clock, with a strict
+> `YYYY-MM-DD` date), and `[NOT-CANONICAL]` (a real dir, or a symlink not
+> pointing at `../../.agents/skills/<name>`). Its self-test runs the same
+> function on 11 fixture trees first. Evidence:
+> `docs/audits/2026-08-skills-hash-anchor-prelock.md` § 09/11.
 >
 > ### ⚠️ CORRECTED 2026-08-03 (MEH-1861) — the uniformity claim is false
 >
@@ -164,9 +168,9 @@ MEH-401 precedent._
 
 | Verdict | Meaning | CI behavior |
 |---|---|---|
-| `approved` | Manually audited; clean | pass |
-| `review_needed` | Listed but not yet audited | pass (transitional baseline) |
-| `approved_local_unlocked` | **Transitional** — manually audited but missing from `skills-lock.json`. Must resolve to `approved` (after locking) within **30 days**. | pass |
+| `approved` | Manually audited; clean — **and locked** | pass; no lock entry → `[UNLOCKED]`, **fail** (MEH-1055) |
+| `review_needed` | Listed but not yet audited — **still locked** (Layer 5 locks at the first commit) | pass; no lock entry → `[UNLOCKED]`, **fail** |
+| `approved_local_unlocked` | **Transitional** — manually audited but missing from `skills-lock.json`. Must resolve to `approved` (after locking) within **30 days**. | pass for 30 days from a strict `YYYY-MM-DD` `last_audit_date`; then `[UNLOCKED-EXPIRED]`, **fail** |
 | `blocked` | Audit failed; do not load | **fail** |
 | missing entry | Drift — unlisted skill on disk | **fail** |
 
@@ -175,8 +179,9 @@ have been manually audited but whose source repo / SHA256 aren't yet
 declared in `skills-lock.json`. **No allowlist entry carries it today**
 (2026-11-09: all 76 read `approved`, and all 76 are locked). Until MEH-1055
 four entries sat in this state while labelled `approved`, so the clock never
-started; `audit-skills.sh` Pass 2b now fails CI on that (`[APPROVED-UNLOCKED]`),
-and on this verdict once its 30 days run out (`[UNLOCKED-EXPIRED]`).
+started; Pass 2b of `audit-skills.sh` — run by `skills-layout-guard.sh` in the
+required Repo guards — now fails on that (`[UNLOCKED]`), and on this verdict
+once its 30 days run out (`[UNLOCKED-EXPIRED]`).
 The slot is reserved for any future skill
 that needs the same transitional treatment. The 30-day clock starts on
 `last_audit_date`. After 30 days expire, the entry must be promoted to
