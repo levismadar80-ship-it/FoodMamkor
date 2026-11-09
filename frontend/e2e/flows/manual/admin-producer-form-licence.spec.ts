@@ -205,6 +205,10 @@ async function stubPublic(page: Page, cityCalls?: string[]): Promise<Stub> {
   await page.route("**/experiences/count", (r) => json(r, { count: 0 }));
   // MEH-2369: the footer's «אירועים» link is gated on this public feed (use-events-nav-gate).
   await page.route((u) => /\/api\/events\/upcoming\/?$/.test(u.pathname), (r) => json(r, []));
+  // MEH-2858: the footer's «קבוצות רכישה» / «סלי הפתעה» links are gated on these two public feeds
+  // (lib/use-hub-nav-gate.js) — empty, so both links stay hidden, same as the events gate above.
+  await page.route((u) => /\/api\/group-buys\/?$/.test(u.pathname), (r) => json(r, []));
+  await page.route((u) => /\/api\/rescue\/offers\/?$/.test(u.pathname), (r) => json(r, []));
   await page.route((u) => /\/api\/cities\/?$/.test(u.pathname), (r) => {
     const q = new URL(r.request().url()).searchParams.get("q") ?? "";
     cityCalls?.push(q);
