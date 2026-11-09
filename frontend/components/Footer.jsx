@@ -14,6 +14,7 @@ import { detailToMessage } from "@/lib/errors";
 import { BRAND_NAME } from "@/lib/constants";
 import { useExperiencesNavGate } from "@/lib/use-experiences-nav-gate";
 import { useEventsNavGate } from "@/lib/use-events-nav-gate";
+import { useHubNavGate } from "@/lib/use-hub-nav-gate";
 import { useAuth } from "@/lib/auth-context";
 import ShareSiteActions from "@/components/ShareSiteActions";
 import Seed from "@/components/brand/Seed";
@@ -98,6 +99,10 @@ export default function Footer() {
   const showExperiences = useExperiencesNavGate();
   // MEH-2369: same idea for events — no upcoming event, no link.
   const showEvents = useEventsNavGate();
+  // MEH-2858: no orphan lists — group buys and rescue bags join «גלו» the
+  // same way, only while they have at least one public item.
+  const showGroupBuys = useHubNavGate("groupBuys");
+  const showRescue = useHubNavGate("rescue");
 
   // MEH-1177 (ADR-024): the flat 8-link nav mixed two audiences (readers +
   // producers). NN/g "Footers 101" — group links by secondary audience rather
@@ -117,6 +122,8 @@ export default function Footer() {
     ...(showExperiences
       ? [{ href: "/experiences", label: t("nav.footer.experiences") }]
       : []),
+    ...(showGroupBuys ? [{ href: "/group-buys", label: t("nav.footer.group_buys") }] : []),
+    ...(showRescue ? [{ href: "/rescue", label: t("nav.footer.rescue") }] : []),
     { href: "/about", label: t("nav.footer.about") },
     // MEH-1289: reader-facing "why local" editorial page.
     { href: "/about/why-local", label: t("nav.footer.why_local") },
