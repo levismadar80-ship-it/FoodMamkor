@@ -1241,3 +1241,5 @@ Each link shows only while its hub has at least one public item (`lib/use-hub-na
 |---|---|---|---|---|
 | 1 | `nav.footer.group_buys` (new) | — | `קבוצות רכישה` (en `Group buys`) | ✅ MEH-2858 PR |
 | 2 | `nav.footer.rescue` (new) | — | `סלי הפתעה` (en `Surprise bags`) | ✅ MEH-2858 PR |
+| 3 | `nav.footer.group_about_heading` (new, scope add 09/11) | — | `עלינו` (en `About us`) — third footer group: אודות · למה מקומי? · ספרו עלינו | ✅ MEH-2858 PR 2 |
+| 4 | `nav.footer.nav_discover` (removed) | `גלו עסקים` (en `Discover businesses`) → `/` | — (the brand-column logo links home) | ✅ MEH-2858 PR 2 |
