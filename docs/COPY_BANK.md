@@ -1236,11 +1236,13 @@ Self-declared "vegan" is a dietary claim, not an allergen-safety claim (UK guida
 | 2 en | `badges.vegan_all.tooltip` | `As declared by the business` | `As declared by the business. If you have a milk or egg allergy, please check directly with the business.` | ✅ MEH-1508 PR |
 
 ### MEH-2858 — footer «גלו»: group buys and rescue bags (exact words in the card, existing product names — Sapir 09/11)
-Each link shows only while its hub has at least one public item (`lib/use-hub-nav-gate.js`), after «חוויות» and before «אודות».
+Each link shows only while its hub has at least one public item (`lib/use-hub-nav-gate.js`), after «חוויות», last in the group («אודות» moved to «עלינו» in PR 2).
 | # | Key | Before | After | Status |
 |---|---|---|---|---|
 | 1 | `nav.footer.group_buys` (new) | — | `קבוצות רכישה` (en `Group buys`) | ✅ MEH-2858 PR |
 | 2 | `nav.footer.rescue` (new) | — | `סלי הפתעה` (en `Surprise bags`) | ✅ MEH-2858 PR |
+| 3 | `nav.footer.group_about_heading` (new, scope add 09/11) | — | `עלינו` (en `About us`) — third footer group: אודות · למה מקומי? · ספרו עלינו | ✅ MEH-2858 PR 2 |
+| 4 | `nav.footer.nav_discover` (removed) | `גלו עסקים` (en `Discover businesses`) → `/` | — (the brand-column logo links home) | ✅ MEH-2858 PR 2 |
 
 ### MEH-2837 PR 2 — «וואטסאפ» in Hebrew everywhere (approved by Sapir verbatim 08/11)
 Rule: BRAND.md §7. he.json only; en.json, keys and code unchanged. Left in Latin on purpose (product / legal names): `privacy.sections.third_parties.items.meta` (legal text, unchanged in full — «Meta (WhatsApp Cloud API) — שליחת הודעות WhatsApp תפעוליות…») and `guides.customer_messages.body.b51` («WhatsApp Business»).
