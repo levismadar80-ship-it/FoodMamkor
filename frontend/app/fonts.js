@@ -169,6 +169,11 @@ export const heeboLatin = localFont({
     { path: "./fonts/heebo-latin.woff2", weight: "700", style: "normal" },
   ],
   display: "swap",
+  // MEH-2850: not preloaded. DM Sans comes first in every body stack and
+  // covers the Latin glyphs, so this face is rarely used — yet its preload
+  // cost 31KB on every page. It still loads (display: swap) when a glyph needs
+  // it, with the adjusted Arial fallback holding the metrics meanwhile.
+  preload: false,
   variable: "--font-hebrew-latin",
   declarations: [
     {
@@ -192,6 +197,11 @@ export const cormorantGaramond = localFont({
     { path: "./fonts/cormorant-garamond-latin-italic.woff2", weight: "600", style: "italic" },
   ],
   display: "swap",
+  // MEH-2850: stays preloaded. Without it, Cormorant text drawn on `/` (the
+  // event times in «אירועים קרובים», the language toggle in the account
+  // sheet) showed in the Times fallback until the face arrived — measured on
+  // the PR preview 08/11. That is a visible change, which Sapir's condition
+  // for this card rules out without her call.
   variable: "--font-latin",
   declarations: [
     {

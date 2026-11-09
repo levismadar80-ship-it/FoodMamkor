@@ -58,3 +58,25 @@ Full text: <https://openfontlicense.org/open-font-license-official-text/>
    the fallback-bearing half of a split family still sorts last in the stacks.
 4. Expect VRT to move if the typeface actually changed, and review the PNGs by
    eye before accepting any baseline.
+
+## Which faces are preloaded (MEH-2850)
+
+`localFont` preloads every face by default, on **every** page. One call opts out
+with `preload: false`:
+
+| Call | Why it is not preloaded |
+|---|---|
+| `heeboLatin` | DM Sans comes first in every body stack and covers the Latin glyphs, so this face is rarely reached: on `/` it is never requested (measured on the PR preview 08/11). Dropping the preload saves 31KB on every page. |
+
+**`cormorantGaramond` stays preloaded, on purpose.** Taking it off saves 78KB on
+`/`, but Cormorant text is drawn there: the event times in «אירועים קרובים»
+(`EventEntryRow`), the rescue-bag prices (`BagRow`), and the language toggle in
+the account sheet (`AccountSheet`). Without the preload that text shows in the
+Times fallback until the face arrives (measured: the italic face at ~3.8s on a
+phone; the regular face only when the sheet first opens). That is a visible
+change, so it is Sapir's call, not a default.
+
+`__tests__/HomeWeightMEH2850.test.jsx` pins the split: `heeboLatin` says
+`preload: false`, every other face does not. Before turning a preload off, check
+whether the face is drawn on `/` at all — above or below the fold, and inside
+anything that opens on a tap (count computed `font-family` per text element).
