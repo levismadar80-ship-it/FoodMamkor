@@ -48,7 +48,7 @@ vi.mock("next-intl", () => {
     "admin.outreach.status.registered": "נרשמה",
     "admin.outreach.status.declined": "סירבה",
     "admin.outreach.actions.prefill": "הכן פרופיל",
-    "admin.outreach.actions.whatsapp": "WhatsApp",
+    "admin.outreach.actions.whatsapp": "וואטסאפ", // MEH-2837 PR 2
     "admin.outreach.actions.delete": "מחקי",
     "admin.outreach.confirm_delete": "למחוק את הליד הזה לצמיתות?",
     "admin.outreach.modal_script.title": "תסריט שיחה",
@@ -70,10 +70,10 @@ vi.mock("next-intl", () => {
     "admin.outreach.modal_add.notes_placeholder": "הערות פנימיות",
     "admin.outreach.modal_add.submit_saving": "שומרת...",
     "admin.outreach.modal_add.submit": "הוסיפי",
-    "admin.outreach.modal_wa.title": "הודעת WhatsApp אל {name}",
+    "admin.outreach.modal_wa.title": "הודעת וואטסאפ אל {name}",
     "admin.outreach.modal_wa.preparing": "מכינה לינק פרופיל...",
     "admin.outreach.modal_wa.copy": "העתק",
-    "admin.outreach.modal_wa.open": "פתח ב-WhatsApp",
+    "admin.outreach.modal_wa.open": "פתח בוואטסאפ",
     "admin.outreach.modal_wa.close": "סגור",
     "admin.outreach.call_script": '1. פתיחה חמה: "היי, אני מדברת ממהמקור, זה שם טוב?"',
     "admin.common.cancel": "ביטול",
@@ -215,8 +215,8 @@ describe("AdminOutreachPage", () => {
       data: { ...sampleLead, prefill_token: "tok-abc", prefill_token_expires_at: "2026-05-15" },
     });
     render(<AdminOutreachPage />);
-    await waitFor(() => screen.getByText("WhatsApp"));
-    fireEvent.click(screen.getByText("WhatsApp"));
+    await waitFor(() => screen.getByText("וואטסאפ"));
+    fireEvent.click(screen.getByText("וואטסאפ"));
     // All three templates appear in the modal
     await waitFor(() => {
       expect(screen.getByText("חמותה")).toBeInTheDocument();
