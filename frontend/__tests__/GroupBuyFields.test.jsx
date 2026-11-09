@@ -68,7 +68,7 @@ describe("MEH-2472 — group buy detail", () => {
   it("no product name → no line; no producer_id → the name stays text", async () => {
     api.get.mockResolvedValue({ data: { ...GB, product_name: null, producer_id: null } });
     render(<GroupBuyDetailClient id="gb-1" />);
-    await screen.findByText("ארגז חורף");
+    await screen.findByRole("heading", { level: 1, name: "ארגז חורף" }); // MEH-2857: the title is also the last breadcrumb crumb
     expect(screen.queryByTestId("group-buy-product-name")).not.toBeInTheDocument();
     expect(screen.queryByTestId("group-buy-producer-link")).not.toBeInTheDocument();
     expect(screen.getByText(/משק הגליל/)).toBeInTheDocument();
