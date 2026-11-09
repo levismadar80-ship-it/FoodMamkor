@@ -105,7 +105,9 @@ export default function BadgeRow({ producer, limit, surface = "hero", hideKeys, 
   if (badges.length === 0) return null;
   // MEH-2856: see the `nowrap` prop above.
   let layout = "flex-wrap";
-  if (nowrap) layout = badges.length > 1 ? "flex-nowrap [&>*]:shrink-0" : "flex-nowrap min-w-0";
+  // Two+ pills: the row itself must not shrink either — a shrinking row lets
+  // its pills spill under «+N» without the card's scrollWidth seeing it.
+  if (nowrap) layout = badges.length > 1 ? "flex-nowrap shrink-0 [&>*]:shrink-0" : "flex-nowrap min-w-0";
 
   return (
     <div

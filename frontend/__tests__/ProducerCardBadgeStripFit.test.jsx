@@ -11,6 +11,7 @@
  * The fake reads the DOM the component actually rendered, so a component that
  * ignores the overflow (the pre-2856 strip) still renders 2 pills and goes red.
  */
+import { StrictMode } from "react";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, fireEvent, within } from "@testing-library/react";
 import ProducerCard from "@/components/ProducerCard";
@@ -310,6 +311,25 @@ describe("card badge strip: one line, the rest in «+N» (MEH-2856)", () => {
     const list = line.querySelector('[role="list"]');
     expect(list.className).toContain("flex-nowrap");
     expect(list.className).toContain("[&>*]:shrink-0");
+  });
+
+  it("StrictMode (dev) runs the fit effect twice — still exactly one pill, never 0", () => {
+    const [first, second] = allBadges(twoBadges).map((b) => b.key);
+    px = { [first]: 90, [second]: 90 };
+    render(
+      <StrictMode>
+        <ProducerCard producer={twoBadges} />
+      </StrictMode>,
+    );
+    expect(visibleKeys()).toEqual([first]);
+    expect(plusN()).toHaveTextContent("+1");
+  });
+
+  it("two pills: the row itself does not shrink either (else its pills spill under «+N» unseen)", () => {
+    room = 400;
+    render(<ProducerCard producer={threeBadges} />);
+    const list = document.querySelector(LINE_SELECTOR).querySelector('[role="list"]');
+    expect(list.className.split(/\s+/)).toContain("shrink-0");
   });
 
   it("no ResizeObserver (SSR / old browser) → today's behaviour: 2 + «+1»", () => {

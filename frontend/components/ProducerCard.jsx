@@ -235,7 +235,10 @@ function useBadgesThatFit(lineRef, earned) {
     const el = lineRef.current;
     if (!el || typeof ResizeObserver === "undefined") return;
     if (shown > 1 && el.scrollWidth > el.clientWidth + 1) {
-      setFit((f) => ({ ...f, shown: f.shown - 1 }));
+      // Idempotent step (from the count this render measured, not "one less
+      // than whatever is queued"): StrictMode runs this effect twice against
+      // the same DOM, and a relative step took 2 → 1 → 0 pills.
+      setFit((f) => (f.shown === shown ? { ...f, shown: shown - 1 } : f));
     }
   });
   useEffect(() => {
