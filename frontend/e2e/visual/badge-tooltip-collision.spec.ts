@@ -54,6 +54,13 @@ const CARD_PRODUCER = {
   // badges (verified > recommended > kosher) — the +N overflow this spec
   // exists to measure needs a hidden badge to disclose.
   is_recommended: true,
+  // MEH-2856: a real verified business carries the date its document was
+  // checked, which gives the seal its own popover (BadgeRow.jsx
+  // getVerifiedTooltip). Without it the seal is a bare button, and at 375 —
+  // where the 2-column card's one-line strip fits only the seal and «+2» —
+  // S1 would have no popover pill to open.
+  verified_at: "2026-01-01T00:00:00Z",
+  verification_doc_type: "license",
   kashrut_verified_at: "2026-01-01T00:00:00Z",
   trust_tier: 4,
   avg_rating: 4.8,
@@ -277,8 +284,12 @@ for (const vp of [
       await mockCards(page);
       await page.goto(`/producers?q=${encodeURIComponent("לחם")}`);
       const card = page.locator("article").first();
-      const pill = card.locator("button[data-badge][aria-haspopup]").first();
+      // MEH-2856: the strip shows as many pills as fit on one line with «+N».
+      // The LAST popover pill is «מומלץ» at 1440 (the subject this spec has
+      // always measured) and the seal at 375, the only pill that fits there.
+      const pill = card.locator("button[data-badge][aria-haspopup]").last();
       await expect(pill).toBeVisible();
+      const subjectKey = await pill.getAttribute("data-badge");
       await pill.click();
 
       const panel = page
@@ -292,7 +303,7 @@ for (const vp of [
       await assertHealthy("S1 card pill popover", panel, pill, [
         { name: "card-title", loc: card.locator("h3") },
         { name: "card-rating", loc: card.locator("[data-testid='card-rating']") },
-        { name: "sibling-pill", loc: strip.locator("button[data-badge]:not([aria-haspopup])") },
+        { name: "sibling-pill", loc: strip.locator(`button[data-badge]:not([data-badge='${subjectKey}'])`) },
       ], vp.width, vp.height);
     });
 
