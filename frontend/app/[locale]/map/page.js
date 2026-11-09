@@ -5,7 +5,7 @@ import MapClient from "./MapClient";
 import { API_URL } from "@/lib/env";
 import { serverFetch } from "@/lib/server-fetch"; // MEH-977: timeout + transient-retry
 import { BRAND_NAME } from "@/lib/constants";
-import { buildAlternates, urlForLocalePath, OG_LOCALE } from "@/lib/i18n-seo";
+import { buildAlternates, buildEntityTitle, urlForLocalePath, OG_LOCALE } from "@/lib/i18n-seo";
 
 // MEH-476 PR 3b2: was static metadata const with hardcoded HE. Now per-locale
 // via seo.map.* keys + buildAlternates for hreflang/canonical.
@@ -13,12 +13,11 @@ export async function generateMetadata({ params }) {
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: "seo.map" });
   return {
-    // title.absolute prevents layout's `%s | ${BRAND_NAME}` template appending
-    // (seo.map.title already includes the brand suffix).
-    title: { absolute: t("title") },
+    // MEH-2853: plain title — the layout template `%s | <brand>` adds the brand.
+    title: t("title"),
     description: t("description"),
     openGraph: {
-      title: t("og_title"),
+      title: buildEntityTitle(t("og_title"), locale),
       description: t("og_description"),
       type: "website",
       // MEH-740: per-page og:url = self (mirrors #916 terms/privacy).
@@ -35,7 +34,7 @@ export async function generateMetadata({ params }) {
     // on override, same as openGraph).
     twitter: {
       card: "summary_large_image",
-      title: t("og_title"),
+      title: buildEntityTitle(t("og_title"), locale),
       description: t("og_description"),
       images: ["/og-image.png"],
     },

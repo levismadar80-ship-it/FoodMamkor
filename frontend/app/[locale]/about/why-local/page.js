@@ -17,7 +17,7 @@ import { ArrowLeft } from "@phosphor-icons/react/ssr";
 import { Link } from "@/i18n/navigation";
 import EditorialPhoto from "@/components/EditorialPhoto";
 import { BRAND_NAME } from "@/lib/constants";
-import { buildAlternates, urlForLocalePath, OG_LOCALE } from "@/lib/i18n-seo";
+import { buildAlternates, buildEntityTitle, urlForLocalePath, OG_LOCALE } from "@/lib/i18n-seo";
 
 // MEH-2597: the mid-article photo sits under this (0-based) section.
 const PHOTO_AFTER_SECTION = 1;
@@ -27,17 +27,17 @@ const NEF_URL = "https://www.sustainweb.org/blogs/jul25-what-is-local-food/";
 const COLLECTIVECROP_URL =
   "https://collectivecrop.com/guides/fresh-picked-vs-supermarket-produce-does-it-matter";
 
-// MEH-476 pattern: per-page generateMetadata (title.absolute + OG + twitter +
+// MEH-476 pattern: per-page generateMetadata (title + OG + twitter +
 // per-page hreflang via buildAlternates; og:locale per locale).
 export async function generateMetadata({ params }) {
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: "about_why_local" });
   return {
-    // title.absolute prevents layout's `%s | ${BRAND_NAME}` template appending.
-    title: { absolute: t("meta_title") },
+    // MEH-2853: plain title — the layout template `%s | <brand>` adds the brand.
+    title: t("meta_title"),
     description: t("meta_description"),
     openGraph: {
-      title: t("og_title"),
+      title: buildEntityTitle(t("og_title"), locale),
       description: t("og_description"),
       type: "article",
       url: urlForLocalePath("/about/why-local", locale),
@@ -47,7 +47,7 @@ export async function generateMetadata({ params }) {
     },
     twitter: {
       card: "summary_large_image",
-      title: t("og_title"),
+      title: buildEntityTitle(t("og_title"), locale),
       description: t("og_description"),
       images: ["/og-image.png"],
     },

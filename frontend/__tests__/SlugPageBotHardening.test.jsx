@@ -105,7 +105,7 @@ describe("ProducerSlugPage fast-404 (no backend fetch on probes)", () => {
       params: { slug: "meshek-tamar", locale: "he" },
     });
     expect(serverFetch).toHaveBeenCalledTimes(1);
-    expect(meta.title.absolute).toContain("משק תמר");
+    expect(meta.title).toContain("משק תמר"); // MEH-2853: plain title, the layout template adds the brand
   });
 
   it("still fetches the backend for a legit slug and renders", async () => {

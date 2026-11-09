@@ -1,7 +1,7 @@
 import { getTranslations } from "next-intl/server";
 import RecommendClient from "./RecommendClient";
 import { BRAND_NAME } from "@/lib/constants";
-import { buildAlternates, urlForLocalePath, OG_LOCALE } from "@/lib/i18n-seo";
+import { buildAlternates, buildEntityTitle, urlForLocalePath, OG_LOCALE } from "@/lib/i18n-seo";
 
 // MEH-2633 chunk B: server-wrapper pattern (contact/page.js precedent) — a
 // client component cannot export metadata, so the wrapper supplies SEO while
@@ -10,8 +10,9 @@ import { buildAlternates, urlForLocalePath, OG_LOCALE } from "@/lib/i18n-seo";
 // Every string here REUSES seo.recommend, which is itself the approved
 // <hebrew_copy> title + subtitle — no metadata copy was written for this page.
 // Note the absence of `title.absolute`: the layout template appends
-// "| <brand>" so no hand-written brand suffix is needed (contact/page.js has
-// to use `absolute` only because its seo string already carries one).
+// "| <brand>" so no hand-written brand suffix is needed (MEH-2853: every page
+// but home now works this way; og/twitter titles get the brand from
+// buildEntityTitle, because Next.js applies no template to them).
 export async function generateMetadata({ params }) {
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: "seo.recommend" });
@@ -20,7 +21,7 @@ export async function generateMetadata({ params }) {
     title: t("title"),
     description: t("description"),
     openGraph: {
-      title: t("og_title"),
+      title: buildEntityTitle(t("og_title"), locale),
       description: t("og_description"),
       type: "website",
       url: urlForLocalePath("/recommend", locale),
