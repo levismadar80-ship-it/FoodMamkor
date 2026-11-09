@@ -18,7 +18,12 @@ vi.mock("@/components/SaveButton", () => ({ default: () => null }));
 let params = {}; // drives useSearchParams().get(key) — city/category only (MEH-2245)
 
 vi.mock("next/navigation", () => ({
-  useSearchParams: () => ({ get: (k) => (k in params ? params[k] : null) }),
+  // MEH-2847: EventsClient reads the category axis with getAll (multi-select);
+  // a param may be a string or an array of strings.
+  useSearchParams: () => ({
+    get: (k) => (k in params ? [].concat(params[k])[0] : null),
+    getAll: (k) => (k in params ? [].concat(params[k]) : []),
+  }),
 }));
 // MEH-2245: switching tab is a route change through next-intl's router;
 // stub it (HANDOFF lesson: next-intl navigation under vitest needs the

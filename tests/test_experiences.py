@@ -502,6 +502,117 @@ class TestExperienceListing:
         resp = client.get("/experiences", params={"category": "בישול"})
         assert [e["title"] for e in resp.json()] == ["Cook"]
 
+    # ---- MEH-2847: several categories (OR) ----
+
+    def _three_by_category(self, db):
+        """One approved experience per category, so every result is checked
+        against rows it must KEEP and a row it must DROP."""
+        host = _make_host(db)
+        for title, category in [
+            ("Cook", "בישול"),
+            ("Tour", "סיור אוכל"),
+            ("Farm", "חקלאות"),
+        ]:
+            _make_experience(
+                db, host, title=title, category=category, status="approved"
+            )
+
+    @staticmethod
+    def _titles(resp) -> set[str]:
+        assert resp.status_code == 200, resp.text
+        return {e["title"] for e in resp.json()}
+
+    def test_filter_by_two_categories_returns_the_union(self, client, db):
+        """The new behaviour. Before MEH-2847 `category` was one string and
+        FastAPI kept only the LAST repeated value — this returned {"Tour"}."""
+        self._three_by_category(db)
+
+        # Repeated ?category=בישול&category=סיור אוכל — the frontend's format.
+        resp = client.get("/experiences", params={"category": ["בישול", "סיור אוכל"]})
+
+        assert self._titles(resp) == {"Cook", "Tour"}
+
+    def test_two_categories_still_and_with_the_city(self, client, db):
+        host = _make_host(db)
+        _make_experience(
+            db,
+            host,
+            title="Cook TLV",
+            category="בישול",
+            city="תל אביב",
+            status="approved",
+        )
+        _make_experience(
+            db,
+            host,
+            title="Tour TLV",
+            category="סיור אוכל",
+            city="תל אביב",
+            status="approved",
+        )
+        _make_experience(
+            db,
+            host,
+            title="Cook JLM",
+            category="בישול",
+            city="ירושלים",
+            status="approved",
+        )
+
+        resp = client.get(
+            "/experiences",
+            params={"category": ["בישול", "סיור אוכל"], "city": "תל אביב"},
+        )
+
+        assert self._titles(resp) == {"Cook TLV", "Tour TLV"}
+
+    def test_one_category_behaves_as_before(self, client, db):
+        """Pin: an old single-value link is unchanged."""
+        self._three_by_category(db)
+
+        resp = client.get("/experiences", params={"category": "בישול"})
+
+        assert self._titles(resp) == {"Cook"}
+
+    def test_no_and_blank_category_return_everything(self, client, db):
+        """Pin: a bare ?category= must not become IN ('') and hide every row."""
+        self._three_by_category(db)
+        everything = {"Cook", "Tour", "Farm"}
+
+        assert self._titles(client.get("/experiences")) == everything
+        assert self._titles(client.get("/experiences?category=")) == everything
+
+    def test_unknown_category_alone_matches_nothing_and_beside_a_real_one_is_dropped(
+        self, client, db
+    ):
+        """Pin: not refused (200, as before), matches nothing, hides nothing."""
+        self._three_by_category(db)
+
+        alone = client.get("/experiences", params={"category": "אפייה"})
+        mixed = client.get("/experiences", params={"category": ["אפייה", "חקלאות"]})
+
+        assert self._titles(alone) == set()
+        assert self._titles(mixed) == {"Farm"}
+
+    def test_a_value_outside_the_category_set_is_not_matched(self, client, db):
+        """Each value is checked against EXPERIENCE_CATEGORIES (MEH-2847). A
+        row saved before MEH-2602's check may hold the English key
+        («workshop»); it is not reachable through the filter. Without the
+        check this returned the legacy row."""
+        host = _make_host(db)
+        _make_experience(
+            db, host, title="Legacy", category="workshop", status="approved"
+        )
+        _make_experience(db, host, title="Farm", category="חקלאות", status="approved")
+
+        alone = client.get("/experiences", params={"category": "workshop"})
+        both = client.get(
+            "/experiences", params={"category": ["workshop", "חקלאות", "חקלאות"]}
+        )
+
+        assert self._titles(alone) == set()
+        assert self._titles(both) == {"Farm"}
+
     def test_filter_by_city(self, client, db):
         host = _make_host(db)
         _make_experience(db, host, title="TLV", city="תל אביב", status="approved")

@@ -2621,7 +2621,7 @@
     },
     "experience_categories": {
       "all": "הכל",
-      "cooking": "בישול",
+      "cooking": "בישול ואפייה",
       "nutrition": "תזונה",
       "food_tour": "סיור אוכל",
       "agriculture": "חקלאות",
@@ -2674,7 +2674,7 @@
   "experiences": {
     "categories": {
       "all": "הכל",
-      "cooking": "בישול",
+      "cooking": "בישול ואפייה",
       "nutrition": "תזונה",
       "food_tour": "סיור אוכל",
       "agriculture": "חקלאות",

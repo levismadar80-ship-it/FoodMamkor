@@ -1062,7 +1062,7 @@ POST   /home-products/rate/{token}        public — submit rating
 ### Events (producer farm events — `app/routers/events.py`)
 
 ```
-GET    /events                    public — filter: city, category, from_date, to_date; approved producers only (MEH-1161; owner sees own via ?producer_id=, admin sees all); organizer-owned events included; EventOut.owner_kind + owner_slug (MEH-2459) + owner_image_url = owner's first photo or null, the list-row fallback (MEH-2546)
+GET    /events                    public — filter: city, category, from_date, to_date; category repeats (?category=A&category=B → OR, AND with the other filters; each value checked against VALID_CATEGORIES, an unknown one matches nothing — MEH-2847); approved producers only (MEH-1161; owner sees own via ?producer_id=, admin sees all); organizer-owned events included; EventOut.owner_kind + owner_slug (MEH-2459) + owner_image_url = owner's first photo or null, the list-row fallback (MEH-2546)
 GET    /events/upcoming            public — limit=N next events; approved producers only (MEH-1161)
 GET    /events/mine                producer — owner's own events, ALL states incl. inactive (MEH-1405; dashboard manage list). Declared before /events/{id} so "mine" isn't a UUID path.
 GET    /events/{event_id}          public — pending producer's event → 404 for strangers (MEH-1161; owner/admin bypass)
@@ -1127,7 +1127,7 @@ its admin-override, so an admin still deletes (→ 200).
 
 ```
 POST   /experiences/validate           public  — 30/hour, real-time Claude Haiku hint
-GET    /experiences                    public  — filter: category, city. Only approved+upcoming+is_active (MEH-1419).
+GET    /experiences                    public  — filter: category, city. category repeats (?category=A&category=B → OR, AND with city; each value checked against EXPERIENCE_CATEGORIES, an unknown one matches nothing — MEH-2847). Only approved+upcoming+is_active (MEH-1419).
 GET    /experiences/count              public  — {"count": N} for the SAME set GET /experiences returns (MEH-1918). Both go through _public_listing_query, so the number can never disagree with the list. Declared BEFORE /{experience_id} or the catch-all eats it. Used to data-gate the "חוויות" nav link at >= 3.
 GET    /experiences/mine               auth    — owner's submissions, any status (incl. is_active=False)
 GET    /experiences/{id}               mixed   — approved=public; non-approved=owner+admin

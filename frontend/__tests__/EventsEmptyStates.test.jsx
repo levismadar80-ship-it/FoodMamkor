@@ -33,7 +33,12 @@ let unfilteredRows = [];
 let filteredRows = [];
 
 vi.mock("next/navigation", () => ({
-  useSearchParams: () => ({ get: (k) => (k in params ? params[k] : null) }),
+  // MEH-2847: EventsClient reads the category axis with getAll (multi-select);
+  // a param may be a string or an array of strings.
+  useSearchParams: () => ({
+    get: (k) => (k in params ? [].concat(params[k])[0] : null),
+    getAll: (k) => (k in params ? [].concat(params[k]) : []),
+  }),
 }));
 // MEH-2245: switching tab is a route change through next-intl's router;
 // stub it (HANDOFF lesson: next-intl navigation under vitest needs the
@@ -95,13 +100,15 @@ vi.mock("@/components/CitySearch", () => ({
   ),
 }));
 vi.mock("@/components/ChipScrollRow", () => ({
-  default: ({ chips, activeKey, onChipClick }) => (
+  // MEH-2847: EventsClient passes the selection as an `activeKeys` Set (the
+  // real ChipScrollRow's multi-select prop); «הכל» is active while it is empty.
+  default: ({ chips, activeKeys, onChipClick }) => (
     <div data-testid="chip-row" data-filter-control="category">
       {chips.map((c) => (
         <button
           key={c.key}
           data-key={c.key}
-          data-active={String(c.key === activeKey)}
+          data-active={String(c.key === "all" ? activeKeys.size === 0 : activeKeys.has(c.key))}
           onClick={() => onChipClick(c.key)}
         >
           {c.label}
