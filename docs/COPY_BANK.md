@@ -1234,3 +1234,10 @@ Self-declared "vegan" is a dietary claim, not an allergen-safety claim (UK guida
 | 2 | `badges.vegan_all.tooltip` | `לפי הצהרת בית העסק` | `לפי הצהרת בית העסק. אם יש אלרגיה לחלב או לביצים, כדאי לוודא ישירות מול בית העסק.` | ✅ MEH-1508 PR |
 | 1 en | `badges.vegan.tooltip` | `The business has products marked vegan in its catalog.` | `The business has products marked vegan in its catalog. If you have a milk or egg allergy, please check directly with the business.` | ✅ MEH-1508 PR |
 | 2 en | `badges.vegan_all.tooltip` | `As declared by the business` | `As declared by the business. If you have a milk or egg allergy, please check directly with the business.` | ✅ MEH-1508 PR |
+
+### MEH-2858 — footer «גלו»: group buys and rescue bags (exact words in the card, existing product names — Sapir 09/11)
+Each link shows only while its hub has at least one public item (`lib/use-hub-nav-gate.js`), after «חוויות» and before «אודות».
+| # | Key | Before | After | Status |
+|---|---|---|---|---|
+| 1 | `nav.footer.group_buys` (new) | — | `קבוצות רכישה` (en `Group buys`) | ✅ MEH-2858 PR |
+| 2 | `nav.footer.rescue` (new) | — | `סלי הפתעה` (en `Surprise bags`) | ✅ MEH-2858 PR |
