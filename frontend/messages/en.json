@@ -6024,11 +6024,11 @@
     },
     "vegan": {
       "label": "Vegan options",
-      "tooltip": "The business has products marked vegan in its catalog."
+      "tooltip": "The business has products marked vegan in its catalog. If you have a milk or egg allergy, please check directly with the business."
     },
     "vegan_all": {
       "label": "Vegan",
-      "tooltip": "As declared by the business"
+      "tooltip": "As declared by the business. If you have a milk or egg allergy, please check directly with the business."
     },
     "vegetarian_all": {
       "label": "Vegetarian",
