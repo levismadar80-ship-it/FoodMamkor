@@ -73,13 +73,11 @@ const discoverHrefs = () => {
 beforeEach(() => Object.assign(gates, { events: false, experiences: false, groupBuys: false, rescue: false }));
 
 describe("Footer «גלו»: group buys + rescue bags, data-gated (MEH-2858)", () => {
-  it("all four hubs with supply → … אירועים · חוויות · קבוצות רכישה · סלי הפתעה · אודות …", () => {
+  it("all four hubs with supply → «גלו»: … אירועים · חוויות · קבוצות רכישה · סלי הפתעה", () => {
     Object.assign(gates, { events: true, experiences: true, groupBuys: true, rescue: true });
     render(<Footer />);
-    expect(discoverHrefs()).toEqual([
-      "/", "/producers", "/map", "/events", "/experiences", "/group-buys", "/rescue",
-      "/about", "/about/why-local", "/recommend#share",
-    ]);
+    // MEH-2858 (scope add): «אודות» and the rest moved to «עלינו».
+    expect(discoverHrefs()).toEqual(["/producers", "/map", "/events", "/experiences", "/group-buys", "/rescue"]);
   });
 
   it("the link labels are the two new keys", () => {
@@ -92,7 +90,7 @@ describe("Footer «גלו»: group buys + rescue bags, data-gated (MEH-2858)", (
   it("no supply → neither link", () => {
     render(<Footer />);
     const hrefs = discoverHrefs();
-    expect(hrefs, "control: the ungated links render").toContain("/about");
+    expect(hrefs, "control: the ungated links render").toContain("/producers");
     expect(hrefs).not.toContain("/group-buys");
     expect(hrefs).not.toContain("/rescue");
   });
