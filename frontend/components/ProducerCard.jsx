@@ -528,7 +528,15 @@ export default function ProducerCard({ producer, active, onClick, referrer, high
           ref={badgeStripRef}
           className="absolute bottom-3 start-3 flex flex-wrap items-center gap-x-1 gap-y-2.5 max-w-[calc(100%-1.5rem)]"
         >
-          <div ref={badgeLineRef} data-badge-line className="flex flex-nowrap items-center gap-x-1 min-w-0 max-w-full">
+          {/* pe-2.5 while «+N» shows = its -m-2.5 pull-back: the chip's 44px
+              hit area reaches 10px past the group's end, and without the
+              padding scrollWidth reads that as overflow and drops a badge that
+              fits (caught on the preview: «משק ברק» lost its 2nd pill). */}
+          <div
+            ref={badgeLineRef}
+            data-badge-line
+            className={`flex flex-nowrap items-center gap-x-1 min-w-0 max-w-full ${hiddenBadges > 0 ? "pe-2.5" : ""}`}
+          >
           <BadgeRow producer={producer} limit={shownBadges} surface="card" avoidRef={badgeStripRef} nowrap />
           {hiddenBadges > 0 && (
             // MEH-991 (CARD-09): v4 LOCK — third badge collapses to +N.

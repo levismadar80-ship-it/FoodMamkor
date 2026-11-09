@@ -166,10 +166,17 @@ const PLUS_N = 24;
 let room = 150;
 let px = {};
 
+// «+N» keeps a 44px hit area inside a 24px box with a -10px margin, so in a
+// real browser it reaches 10px past the group's end — counted by scrollWidth
+// unless the group pads its end by the same 10px (pe-2.5).
+const PLUS_N_REACH = 10;
+
 function stripContentWidth(strip) {
   const pills = [...strip.querySelectorAll("[data-badge]")].map((b) => px[b.dataset.badge] ?? 50);
-  const parts = strip.querySelector('[data-testid="badge-overflow"]') ? [...pills, PLUS_N] : pills;
-  const total = parts.reduce((a, b) => a + b, 0) + GAP * Math.max(0, parts.length - 1);
+  const hasPlus = Boolean(strip.querySelector('[data-testid="badge-overflow"]'));
+  const parts = hasPlus ? [...pills, PLUS_N] : pills;
+  let total = parts.reduce((a, b) => a + b, 0) + GAP * Math.max(0, parts.length - 1);
+  if (hasPlus && !strip.className.split(/\s+/).includes("pe-2.5")) total += PLUS_N_REACH;
   // One pill alone may shrink and break inside itself (MEH-2849).
   return pills.length === 1 ? Math.min(total, room) : total;
 }
@@ -245,6 +252,16 @@ describe("card badge strip: one line, the rest in «+N» (MEH-2856)", () => {
     room = 400;
     render(<ProducerCard producer={threeBadges} />);
     expect(visibleKeys()).toEqual(allBadges(threeBadges).slice(0, 2).map((b) => b.key));
+    expect(plusN()).toHaveTextContent("+1");
+  });
+
+  it("three badges that just fit with «+1» keep both pills (the «+N» hit area is not overflow)", () => {
+    // 60 + 4 + 60 + 4 + 24 = 152 of 160 — fits; the chip's 10px reach must not count.
+    room = 160;
+    const keys = allBadges(threeBadges).map((b) => b.key);
+    px = Object.fromEntries(keys.map((k) => [k, 60]));
+    render(<ProducerCard producer={threeBadges} />);
+    expect(visibleKeys()).toEqual(keys.slice(0, 2));
     expect(plusN()).toHaveTextContent("+1");
   });
 
