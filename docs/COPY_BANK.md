@@ -1243,7 +1243,7 @@ Each link shows only while its hub has at least one public item (`lib/use-hub-na
 | 2 | `nav.footer.rescue` (new) | — | `סלי הפתעה` (en `Surprise bags`) | ✅ MEH-2858 PR |
 
 ### MEH-2837 PR 2 — «וואטסאפ» in Hebrew everywhere (approved by Sapir verbatim 08/11)
-Rule: BRAND.md §7. he.json only; en.json, keys and code unchanged. Left in Latin on purpose (product / legal names): `privacy.sections.third_parties.items.meta` («Meta (WhatsApp Cloud API)…») and `guides.customer_messages.body.b51` («WhatsApp Business»).
+Rule: BRAND.md §7. he.json only; en.json, keys and code unchanged. Left in Latin on purpose (product / legal names): `privacy.sections.third_parties.items.meta` (legal text, unchanged in full — «Meta (WhatsApp Cloud API) — שליחת הודעות WhatsApp תפעוליות…») and `guides.customer_messages.body.b51` («WhatsApp Business»).
 | # | Key | Before | After | Status |
 |---|---|---|---|---|
 | 1 | `auth.register.producer.fields.phone_label` | `טלפון WhatsApp` | `טלפון וואטסאפ` | ✅ MEH-2837 PR 2 |
