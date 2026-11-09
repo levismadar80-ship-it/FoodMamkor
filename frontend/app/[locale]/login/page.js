@@ -11,9 +11,8 @@ export async function generateMetadata({ params }) {
   const t = await getTranslations({ locale, namespace: "seo.login" });
 
   return {
-    // title.absolute prevents layout's `%s | ${BRAND_NAME}` template appending
-    // (seo.login.title already includes the brand suffix).
-    title: { absolute: t("title") },
+    // MEH-2853: plain title — the layout template `%s | <brand>` adds the brand.
+    title: t("title"),
     description: t("description"),
     openGraph: {
       title: t("og_title"),

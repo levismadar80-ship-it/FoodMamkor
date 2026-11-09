@@ -6,7 +6,7 @@ import ExperienceDetailClient from "./ExperienceDetailClient";
 import { ExperienceMetadataSchema } from "@/lib/schemas"; // MEH-1885: minimal metadata contract
 import { API_URL } from "@/lib/env";
 import { serverFetch } from "@/lib/server-fetch"; // MEH-977: timeout + transient-retry
-import { buildAlternates, buildEntityTitle, OG_LOCALE } from "@/lib/i18n-seo";
+import { buildAlternates, OG_LOCALE } from "@/lib/i18n-seo";
 import { buildExperienceJsonLd, serializeJsonLd } from "@/lib/seo"; // MEH-2478: Event JSON-LD
 
 // MEH-476 PR 3b2: per-page hreflang + per-locale title. Was hardcoded HE
@@ -93,7 +93,8 @@ export async function generateMetadata(props) {
     // MEH-476 followup: 404 paths should not be indexed even though they
     // still emit valid hreflang (so cross-locale 404s are linked).
     return {
-      title: { absolute: t("title_fallback") },
+      // MEH-2853: plain title — the layout template `%s | <brand>` adds the brand.
+      title: t("title_fallback"),
       description: t("description_fallback"),
       robots: { index: false, follow: false },
       openGraph: {
@@ -106,8 +107,8 @@ export async function generateMetadata(props) {
   }
 
   return {
-    // title.absolute — buildEntityTitle already includes brand.
-    title: { absolute: buildEntityTitle(entityName, locale) },
+    // MEH-2853: plain title — the layout template `%s | <brand>` adds the brand.
+    title: entityName,
     description: experience?.description || t("description_fallback"),
     openGraph: {
       type: "article",

@@ -313,13 +313,13 @@ test.describe("manual › /about/process (MEH-534)", () => {
   test("route renders in he + en with the locked <title>", async ({ page }) => {
     await gotoProcess(page);
     await expect(page).toHaveURL(/\/about\/process(?:[/?#]|$)/);
-    await expect(page).toHaveTitle(PROCESS_HE.meta.title);
+    await expect(page).toHaveTitle(`${PROCESS_HE.meta.title} | מהמקור`);
     await expect(scope(page).getByTestId("process-hero").getByRole("heading", { level: 1 })).toBeVisible();
 
     await gotoProcess(page, "/en/about/process");
     await expect(page).toHaveURL(/\/en\/about\/process(?:[/?#]|$)/);
     await expect(page.locator("html")).toHaveAttribute("lang", "en");
-    await expect(page).toHaveTitle(PROCESS_EN.meta.title);
+    await expect(page).toHaveTitle(`${PROCESS_EN.meta.title} | Mehamakor`);
     await expect(scope(page).getByTestId("process-hero").getByRole("heading", { level: 1 })).toHaveText(
       stripTags(PROCESS_EN.hero.h1),
     );
@@ -612,7 +612,7 @@ test.describe("manual › /about/why-local (MEH-1289)", () => {
     page,
   }) => {
     await gotoWhyLocal(page);
-    await expect(page).toHaveTitle(WHY_HE.meta_title);
+    await expect(page).toHaveTitle(`${WHY_HE.meta_title} | מהמקור`);
     const article = scope(page).getByTestId("why-local-article");
     await expect(article.getByRole("heading", { level: 1 })).toHaveText(WHY_HE.h1);
     await expect(article).toContainText(WHY_HE.intro);
@@ -716,7 +716,7 @@ test.describe("manual › /about/why-local (MEH-1289)", () => {
     await gotoWhyLocal(page, "/en/about/why-local");
     await expect(page).toHaveURL(/\/en\/about\/why-local(?:[/?#]|$)/);
     await expect(page.locator("html")).toHaveAttribute("lang", "en");
-    await expect(page).toHaveTitle(WHY_EN.meta_title);
+    await expect(page).toHaveTitle(`${WHY_EN.meta_title} | Mehamakor`);
     const article = scope(page).getByTestId("why-local-article");
     await expect(article.getByRole("heading", { level: 1 })).toHaveText(WHY_EN.h1);
     const h2s = article.getByRole("heading", { level: 2 });

@@ -211,7 +211,7 @@ test.describe("manual › /privacy (LEGAL)", () => {
     await gotoLegal(page, "privacy-page", "/privacy");
     const root = scope(page).getByTestId("privacy-page");
     await expect(page).toHaveURL(/\/privacy(?:[/?#]|$)/);
-    await expect(page).toHaveTitle(PRIVACY_HE.meta_title);
+    await expect(page).toHaveTitle(`${PRIVACY_HE.meta_title} | מהמקור`);
     await expect(root.getByRole("heading", { level: 1 })).toHaveText(PRIVACY_HE.heading);
     // The date line is the paragraph directly under the h1.
     await expect(root.locator("h1 + p")).toHaveText(PRIVACY_HE.date_label);
@@ -250,7 +250,7 @@ test.describe("manual › /terms (LEGAL)", () => {
     await gotoLegal(page, "terms-page", "/terms");
     const root = scope(page).getByTestId("terms-page");
     await expect(page).toHaveURL(/\/terms(?:[/?#]|$)/);
-    await expect(page).toHaveTitle(TERMS_HE.meta_title);
+    await expect(page).toHaveTitle(`${TERMS_HE.meta_title} | מהמקור`);
     await expect(root.getByRole("heading", { level: 1 })).toHaveText(TERMS_HE.heading);
     await expect(root.locator("h1 + p")).toHaveText(TERMS_HE.date_label);
 
@@ -287,7 +287,7 @@ test.describe("manual › /accessibility (LEGAL)", () => {
     await gotoLegal(page, "accessibility-page", "/accessibility");
     const root = scope(page).getByTestId("accessibility-page");
     await expect(page).toHaveURL(/\/accessibility(?:[/?#]|$)/);
-    await expect(page).toHaveTitle(A11Y_HE.meta_title);
+    await expect(page).toHaveTitle(`${A11Y_HE.meta_title} | מהמקור`);
     await expect(root.getByRole("heading", { level: 1 })).toHaveText(A11Y_HE.heading);
     // Two lines under the h1: the statement date, then the last-check line.
     await expect(root.locator("h1 + p")).toHaveText(A11Y_HE.statement_date);
