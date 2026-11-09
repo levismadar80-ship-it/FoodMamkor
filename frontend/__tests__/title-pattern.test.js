@@ -197,6 +197,21 @@ const SOCIAL_STOPPED = new Set([
   "/verify-email", "/favorites", "/producer/[id]", "/[slug]", "/organizers/[slug]",
 ]);
 
+// Next.js's rule for twitter:title (next/dist/lib/metadata/resolve-metadata.js
+// postProcessMetadata): the page's own `twitter`, else the layout's object it
+// inherits; when that carries no title, Next fills it from og:title (the
+// page's own openGraph, else the layout's). This is what the share card shows.
+// og:title likewise: the page's own openGraph, else the layout's; with no
+// title there, Next fills it from the page's rendered <title>.
+function effectiveOgTitle(meta, layout, renderedTitle) {
+  return (meta.openGraph ?? layout.openGraph)?.title ?? renderedTitle;
+}
+function effectiveTwitterTitle(meta, layout, renderedTitle) {
+  const tw = meta.twitter ?? layout.twitter;
+  if (tw?.title) return tw.title;
+  return effectiveOgTitle(meta, layout, renderedTitle);
+}
+
 // Next.js's rule for a page title under a parent template.
 function render(title, template, homeTitle) {
   if (title == null) return homeTitle;
@@ -223,6 +238,17 @@ beforeAll(async () => {
 describe.each(["he", "en"])("MEH-2853 title pattern (%s)", (locale) => {
   const brand = BRAND[locale];
   const suffix = ` | ${brand}`;
+
+  it("the layout's og / twitter objects carry no title, so every page's card takes its own title", () => {
+    expect(LAYOUT[locale].openGraph?.title).toBeUndefined();
+    expect(LAYOUT[locale].twitter).toBeTruthy();
+    expect(LAYOUT[locale].twitter.title).toBeUndefined();
+    // The home card is unchanged: Next fills og:title from the home <title>
+    // and twitter:title from og:title — equal to the strings they carried.
+    const home = LAYOUT[locale].title.default;
+    expect(effectiveOgTitle({}, LAYOUT[locale], home)).toBe(MESSAGES[locale].seo.site.og_title);
+    expect(effectiveTwitterTitle({}, LAYOUT[locale], home)).toBe(MESSAGES[locale].seo.site.twitter_title);
+  });
 
   it("home keeps its own full title (seo.site.title), not the template", () => {
     expect(LAYOUT[locale].title.template).toBe(`%s${suffix}`);
@@ -259,13 +285,13 @@ describe.each(["he", "en"])("MEH-2853 title pattern (%s)", (locale) => {
 
     // og / twitter titles get no template from Next.js — when a page sets
     // one, it must carry the brand itself, at the end, once.
-    // KNOWN GAP (fresh review of #4229): a page that sets openGraph but no
-    // twitter INHERITS the layout's twitter object, whose title is the home
-    // twitter_title («מהמקור — …») — Next does not refill it from og. This
-    // test sees only what generateMetadata returns, not that inheritance, so
-    // it cannot catch it. Pre-existing on staging; its own card (it also
-    // involves the twitter description, out of this card's scope).
-    for (const social of [meta.openGraph?.title, meta.twitter?.title]) {
+    // twitter:title is checked as the card shows it — including the layout's
+    // object a page inherits (fresh review of #4229: with a title in that
+    // object, ~20 pages shared the home title).
+    for (const social of [
+      effectiveOgTitle(meta, LAYOUT[locale], title),
+      effectiveTwitterTitle(meta, LAYOUT[locale], title),
+    ]) {
       if (social == null) continue;
       for (const bad of BAD_SEPARATORS(brand)) {
         expect(social.includes(bad), `no "${bad.trim()}" in share title: ${social}`).toBe(false);
