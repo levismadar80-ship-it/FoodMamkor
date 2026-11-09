@@ -63,10 +63,11 @@ const hrefsUnder = (heading) => {
   return Array.from(group.querySelectorAll("a[href]")).map((a) => a.getAttribute("href"));
 };
 
-describe("Footer nav split into two audience groups (MEH-1177)", () => {
-  it("renders both group headings", () => {
+describe("Footer nav split into audience groups (MEH-1177; three since MEH-2858)", () => {
+  it("renders all three group headings", () => {
     render(<Footer />);
     expect(screen.getByText("nav.footer.group_discover_heading")).toBeInTheDocument();
+    expect(screen.getByText("nav.footer.group_about_heading")).toBeInTheDocument();
     expect(screen.getByText("nav.footer.group_business_heading")).toBeInTheDocument();
   });
 

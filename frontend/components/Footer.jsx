@@ -210,10 +210,11 @@ export default function Footer() {
               (MEH-2858: three — «גלו» · «עלינו» · «לבתי עסק»),
               each with its own real <h3> heading (MEH-867 hierarchy: sr-only h2
               brand → h3 sections). MEH-1278 put the two groups side-by-side on
-              mobile; MEH-2397 replaces that with two stacked, closed accordion
-              rows (the open 2-col grid still cost ~340px on every page and the
-              footer outgrew the content on /login). Desktop (md:) is the
-              original flex-col stack with both lists open. */}
+              mobile; MEH-2397 replaced that with stacked, closed accordion
+              rows — one per group, three since MEH-2858 (the open 2-col grid
+              still cost ~340px on every page and the footer outgrew the
+              content on /login). Desktop (md:) is the original flex-col stack
+              with every list open. */}
           <nav
             aria-label={t("nav.footer.nav_aria")}
             className="flex flex-col divide-y divide-white/10 border-y border-white/10 md:divide-y-0 md:border-0 md:gap-6"
