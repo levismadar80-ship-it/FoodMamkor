@@ -87,7 +87,8 @@ const by = (name) => `group_buys.detail.by_producer:${JSON.stringify({ name })}`
 
 async function renderPage() {
   render(<GroupBuyDetailClient id="gb-1" />);
-  await screen.findByText(GB.title);
+  // MEH-2857: the title is also the breadcrumb's last crumb — wait on the heading.
+  await screen.findByRole("heading", { level: 1, name: GB.title });
 }
 
 beforeEach(() => {
@@ -299,5 +300,30 @@ describe("pickup and delivery as two rows", () => {
     await renderPage();
     expect(screen.getByTestId("group-buy-pickup-note")).toBeInTheDocument();
     expect(screen.queryByTestId("group-buy-fulfillment-note")).toBeNull();
+  });
+});
+
+// MEH-2857 (Sapir 09/11): the fixed «→ חזרה לקבוצות הרכישה» top link led to a
+// list the visitor may never have seen. The page now says where it lives —
+// בית › קבוצות רכישה › {title}, existing keys — and «→ חזרה» (HistoryBackLink,
+// its own test file) appears only after an arrival from inside the site.
+describe("group buy page: location breadcrumb instead of the fixed list link (MEH-2857)", () => {
+  it("breadcrumb has 3 items: home, the group-buys list, the title (unlinked)", async () => {
+    await renderPage();
+    const nav = screen.getByTestId("breadcrumb-nav");
+    const items = nav.querySelectorAll("li");
+    expect(items).toHaveLength(3);
+    expect(items[0].querySelector("a")).toHaveAttribute("href", "/");
+    expect(items[0]).toHaveTextContent("events.detail.breadcrumb_home");
+    expect(items[1].querySelector("a")).toHaveAttribute("href", "/group-buys");
+    expect(items[1]).toHaveTextContent("group_buys.list.hero_title");
+    expect(items[2].querySelector("a")).toBeNull();
+    expect(items[2]).toHaveTextContent(GB.title);
+  });
+
+  it("the fixed «→ חזרה לקבוצות הרכישה» link is gone; direct landing shows no «→ חזרה»", async () => {
+    await renderPage();
+    expect(screen.queryByText("group_buys.detail.back_to_list_arrow")).toBeNull();
+    expect(screen.queryByTestId("history-back")).toBeNull();
   });
 });

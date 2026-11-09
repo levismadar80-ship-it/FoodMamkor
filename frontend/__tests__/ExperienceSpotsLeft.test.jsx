@@ -82,7 +82,7 @@ describe("experience page — spots", () => {
   it("full → the waitlist CTA with the waitlist message", async () => {
     await page({ spots_left: 0, participants_count: 8 });
     const cta = screen.getByTestId("registration-waitlist");
-    expect(cta.textContent).toBe("לרשימת ההמתנה ב-WhatsApp");
+    expect(cta.textContent).toBe("לרשימת ההמתנה בוואטסאפ"); // MEH-2837 PR 2
     expect(decodeURIComponent(cta.getAttribute("href"))).toContain('היי! אשמח להיכנס לרשימת ההמתנה של "סדנת מחמצת"');
   });
 

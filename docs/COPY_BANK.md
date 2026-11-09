@@ -1234,3 +1234,33 @@ Self-declared "vegan" is a dietary claim, not an allergen-safety claim (UK guida
 | 2 | `badges.vegan_all.tooltip` | `לפי הצהרת בית העסק` | `לפי הצהרת בית העסק. אם יש אלרגיה לחלב או לביצים, כדאי לוודא ישירות מול בית העסק.` | ✅ MEH-1508 PR |
 | 1 en | `badges.vegan.tooltip` | `The business has products marked vegan in its catalog.` | `The business has products marked vegan in its catalog. If you have a milk or egg allergy, please check directly with the business.` | ✅ MEH-1508 PR |
 | 2 en | `badges.vegan_all.tooltip` | `As declared by the business` | `As declared by the business. If you have a milk or egg allergy, please check directly with the business.` | ✅ MEH-1508 PR |
+
+### MEH-2858 — footer «גלו»: group buys and rescue bags (exact words in the card, existing product names — Sapir 09/11)
+Each link shows only while its hub has at least one public item (`lib/use-hub-nav-gate.js`), after «חוויות» and before «אודות».
+| # | Key | Before | After | Status |
+|---|---|---|---|---|
+| 1 | `nav.footer.group_buys` (new) | — | `קבוצות רכישה` (en `Group buys`) | ✅ MEH-2858 PR |
+| 2 | `nav.footer.rescue` (new) | — | `סלי הפתעה` (en `Surprise bags`) | ✅ MEH-2858 PR |
+
+### MEH-2837 PR 2 — «וואטסאפ» in Hebrew everywhere (approved by Sapir verbatim 08/11)
+Rule: BRAND.md §7. he.json only; en.json, keys and code unchanged. Left in Latin on purpose (product / legal names): `privacy.sections.third_parties.items.meta` (legal text, unchanged in full — «Meta (WhatsApp Cloud API) — שליחת הודעות WhatsApp תפעוליות…») and `guides.customer_messages.body.b51` («WhatsApp Business»).
+| # | Key | Before | After | Status |
+|---|---|---|---|---|
+| 1 | `auth.register.producer.fields.phone_label` | `טלפון WhatsApp` | `טלפון וואטסאפ` | ✅ MEH-2837 PR 2 |
+| 2 | `auth.register.producer.fields.phone_hint` | `נשלח לכם הודעת WhatsApp לאישור ולהשלמת הפרופיל` | `נשלח לכם הודעת וואטסאפ לאישור ולהשלמת הפרופיל` | ✅ MEH-2837 PR 2 |
+| 3 | `auth.register.producer.submit_next_hint` | `…נחזור אליכם ב־WhatsApp.` | `…נחזור אליכם בוואטסאפ.` | ✅ MEH-2837 PR 2 |
+| 4 | `auth.register.producer.success.whatsapp_warning` | `לא קיבלתם הודעת WhatsApp? …` | `לא קיבלתם הודעת וואטסאפ? … (rest unchanged)` | ✅ MEH-2837 PR 2 |
+| 5 | `admin.producers.form.sections.availability_tooltip` | `…ולחצן WhatsApp מוסתר…` | `…ולחצן וואטסאפ מוסתר…` | ✅ MEH-2837 PR 2 |
+| 6 | `admin.producers.form.fields.primary_contact_whatsapp` | `WhatsApp` | `וואטסאפ` | ✅ MEH-2837 PR 2 |
+| 7 | `admin.outreach.actions.whatsapp` | `WhatsApp` | `וואטסאפ` | ✅ MEH-2837 PR 2 |
+| 8 | `admin.outreach.modal_wa.title` | `הודעת WhatsApp אל {name}` | `הודעת וואטסאפ אל {name}` | ✅ MEH-2837 PR 2 |
+| 9 | `admin.outreach.modal_wa.open` | `פתח ב-WhatsApp` | `פתח בוואטסאפ` | ✅ MEH-2837 PR 2 |
+| 10 | `admin.help.topics.outreach.steps[3]` | `«WhatsApp» מכין הודעה…` | `«וואטסאפ» מכין הודעה…` | ✅ MEH-2837 PR 2 |
+| 11 | `experiences.detail.whatsapp_cta` | `שליחת הודעה ב-WhatsApp` | `שליחת הודעה בוואטסאפ` | ✅ MEH-2837 PR 2 |
+| 12 | `experiences.detail.waitlist_cta` | `לרשימת ההמתנה ב-WhatsApp` | `לרשימת ההמתנה בוואטסאפ` | ✅ MEH-2837 PR 2 |
+| 13 | `reviews.wa_gate_message` | `לחצו על כפתור WhatsApp כדי ליצור קשר — ואז תוכלו לכתוב ביקורת` | `לחצו על כפתור וואטסאפ כדי ליצור קשר — ואז תוכלו לכתוב ביקורת` | ✅ MEH-2837 PR 2 |
+| 14 | `reviews.login_prompt` | `<login>התחברו</login> וצרו קשר ב-WhatsApp כדי לכתוב ביקורת` | `<login>התחברו</login> וצרו קשר בוואטסאפ כדי לכתוב ביקורת` | ✅ MEH-2837 PR 2 |
+| 15 | `sweep_tail.alert_prefs.row_whatsapp_opt_in` | `שלחו ב-WhatsApp` | `שלחו בוואטסאפ` | ✅ MEH-2837 PR 2 |
+| 16 | `registration.form.whatsapp` | `WhatsApp` | `וואטסאפ` | ✅ MEH-2837 PR 2 |
+| 17 | `registration.form.whatsapp_needs_mobile` | `כדי לבחור WhatsApp צריך מספר נייד בפרטי העסק` | `כדי לבחור וואטסאפ צריך מספר נייד בפרטי העסק` | ✅ MEH-2837 PR 2 |
+| 18 | `registration.cta.whatsapp` | `הרשמה ב-WhatsApp` | `הרשמה בוואטסאפ` | ✅ MEH-2837 PR 2 |
