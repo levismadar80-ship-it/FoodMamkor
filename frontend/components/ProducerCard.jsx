@@ -250,15 +250,32 @@ function useBadgesThatFit(lineRef, earned) {
   });
   useEffect(() => {
     // The photo box the strip is pinned to (line → strip → photo box).
-    const host = lineRef.current?.parentElement?.parentElement;
+    const line = lineRef.current;
+    const host = line?.parentElement?.parentElement;
     if (!host || typeof ResizeObserver === "undefined") return undefined;
+    // Start over from the cap when the room changes (card width) or the text
+    // size does (browser text size, Android font scale — the root rem). The
+    // first pill is observed only as the trigger for a text-size change: the
+    // card's width does not move when only the font grows, and nothing else
+    // re-renders the card. The reset itself keys on the root font size, never
+    // on the pill's width — a lone pill shrinks to the card when the count
+    // drops, and resetting on that would loop 2 → 1 → 2 (MEH-2856, the 200%
+    // text E2E caught the stale fit).
+    const rootPx = () => parseFloat(getComputedStyle(document.documentElement).fontSize) || 0;
     let lastWidth = null;
+    let lastRootPx = rootPx();
     const ro = new ResizeObserver(() => {
       const width = host.clientWidth;
-      if (lastWidth !== null && width !== lastWidth) setFit((f) => ({ ...f, shown: f.cap }));
+      const fontPx = rootPx();
+      if ((lastWidth !== null && width !== lastWidth) || fontPx !== lastRootPx) {
+        setFit((f) => ({ ...f, shown: f.cap }));
+      }
       lastWidth = width;
+      lastRootPx = fontPx;
     });
     ro.observe(host);
+    const pill = line.querySelector("[data-badge]");
+    if (pill) ro.observe(pill);
     return () => ro.disconnect();
   }, [lineRef]);
   return Math.min(shown, cap);

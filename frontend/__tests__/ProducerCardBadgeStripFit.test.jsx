@@ -13,7 +13,7 @@
  */
 import { StrictMode } from "react";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen, fireEvent, within } from "@testing-library/react";
+import { act, render, screen, fireEvent, within } from "@testing-library/react";
 import ProducerCard from "@/components/ProducerCard";
 import { allBadges } from "@/lib/badges";
 
@@ -328,6 +328,35 @@ describe("card badge strip: one line, the rest in «+N» (MEH-2856)", () => {
     render(<ProducerCard producer={threeBadges} />);
     const list = document.querySelector(LINE_SELECTOR).querySelector('[role="list"]');
     expect(list.className.split(/\s+/)).toContain("shrink-0");
+  });
+
+  it("text grows after mount (200% text) → the strip re-fits: 2 pills → 1 + «+N»", () => {
+    // A ResizeObserver the test can fire, as the browser would when the
+    // observed pill grows with the root font size.
+    const observers = [];
+    globalThis.ResizeObserver = class {
+      constructor(cb) { this.cb = cb; this.els = []; observers.push(this); }
+      observe(el) { this.els.push(el); }
+      disconnect() { this.els = []; }
+    };
+    const keys = allBadges(threeBadges).map((b) => b.key);
+    px = Object.fromEntries(keys.map((k) => [k, 40]));
+    render(<ProducerCard producer={threeBadges} />);
+    expect(visibleKeys()).toEqual(keys.slice(0, 2));
+    // The pills double with the text; the card is no wider.
+    px = Object.fromEntries(keys.map((k) => [k, 80]));
+    document.documentElement.style.fontSize = "32px";
+    try {
+      act(() => observers.forEach((o) => o.els.length && o.cb([])));
+      expect(visibleKeys()).toEqual([keys[0]]);
+      expect(plusN()).toHaveTextContent("+2");
+      // A second callback with nothing changed (the lone pill settling) must
+      // not start the 2 → 1 → 2 loop.
+      act(() => observers.forEach((o) => o.els.length && o.cb([])));
+      expect(visibleKeys()).toEqual([keys[0]]);
+    } finally {
+      document.documentElement.style.fontSize = "";
+    }
   });
 
   it("no ResizeObserver (SSR / old browser) → today's behaviour: 2 + «+1»", () => {
