@@ -638,3 +638,136 @@ class TestPingRunsAfterTheOwnerEmail:
         assert "email" in timeline, "control: the owner email was queued"
         assert "ping" in timeline, "control: the page was pinged"
         assert timeline.index("ping") > timeline.index("email")
+
+
+# ── PR2: the owner's own edit / cancel / delete (Sapir 09/11) ────────────────
+#
+# experiences.py (host) and producer_recipes.py (owner). The rule is the same as
+# the admin paths: a page that is public before OR after the write is
+# announced; a draft, a pending edit and an organizer's content never are.
+
+
+class TestOwnerExperienceWritePoints:
+    def _live(self, db, **overrides):
+        _, host = _owner(db)
+        ex = _experience(db, host, status="approved", **overrides)
+        return ex, auth_header(host)
+
+    def test_content_edit_of_a_live_experience_pings_its_removal(
+        self, client, db, posts
+    ):
+        ex, headers = self._live(db)
+        resp = client.put(
+            f"/experiences/{ex.id}", json={"title": "סדנת לחם מחמצת"}, headers=headers
+        )
+        assert resp.status_code == 200, resp.text
+        assert resp.json()["status"] == "pending", "control: the edit took it down"
+        assert _urls(posts) == _both(f"/experiences/{ex.id}")
+
+    @pytest.mark.parametrize("is_active", [False, True])
+    def test_host_cancel_and_reactivate_ping(self, client, db, posts, is_active):
+        ex, headers = self._live(db, is_active=not is_active)
+        resp = client.put(
+            f"/experiences/{ex.id}", json={"is_active": is_active}, headers=headers
+        )
+        assert resp.status_code == 200, resp.text
+        assert resp.json()["status"] == "approved", "control: still public"
+        assert _urls(posts) == _both(f"/experiences/{ex.id}")
+
+    def test_editing_a_pending_experience_does_not_ping(self, client, db, posts):
+        _, host = _owner(db)
+        ex = _experience(db, host, status="pending")
+        resp = client.put(
+            f"/experiences/{ex.id}",
+            json={"title": "סדנת לחם מחמצת"},
+            headers=auth_header(host),
+        )
+        assert resp.status_code == 200, resp.text
+        assert posts == []
+
+    def test_deleting_a_live_experience_pings_its_removal(self, client, db, posts):
+        ex, headers = self._live(db)
+        ex_id = ex.id
+        resp = client.delete(f"/experiences/{ex_id}", headers=headers)
+        assert resp.status_code == 200, resp.text
+        assert _urls(posts) == _both(f"/experiences/{ex_id}")
+
+    def test_deleting_a_pending_experience_does_not_ping(self, client, db, posts):
+        _, host = _owner(db)
+        ex = _experience(db, host, status="pending")
+        resp = client.delete(f"/experiences/{ex.id}", headers=auth_header(host))
+        assert resp.status_code == 200, resp.text
+        assert posts == []
+
+    def test_an_organizers_experience_edit_does_not_ping(self, client, db, posts):
+        producer, host = _owner(db)
+        _as_organizer(db, producer)
+        ex = _experience(db, host, status="approved")
+        resp = client.put(
+            f"/experiences/{ex.id}",
+            json={"is_active": False},
+            headers=auth_header(host),
+        )
+        assert resp.status_code == 200, resp.text
+        assert posts == []
+
+
+class TestOwnerRecipeWritePoints:
+    def _owner_with_slug(self, db):
+        producer, user = _owner(db)
+        producer.slug = f"maafiya-{uuid4().hex[:6]}"
+        db.commit()
+        return producer, auth_header(user)
+
+    def _patch(self, client, recipe, headers, body):
+        return client.patch(
+            f"/producers/me/recipes/{recipe.id}", json=body, headers=headers
+        )
+
+    def test_content_edit_of_a_published_recipe_pings_its_removal(
+        self, client, db, posts
+    ):
+        p, headers = self._owner_with_slug(db)
+        r = _recipe(db, p, moderation_status="approved", published=True)
+        resp = self._patch(client, r, headers, {"title": "עוגת גבינה אפויה"})
+        assert resp.status_code == 200, resp.text
+        assert resp.json()["published"] is False, "control: the edit unpublished it"
+        assert _urls(posts) == _both(f"/{p.slug}/recipes/{r.id}")
+
+    def test_metadata_edit_of_a_published_recipe_pings(self, client, db, posts):
+        p, headers = self._owner_with_slug(db)
+        r = _recipe(db, p, moderation_status="approved", published=True)
+        resp = self._patch(client, r, headers, {"servings": 6})
+        assert resp.status_code == 200, resp.text
+        assert resp.json()["published"] is True, "control: still public"
+        assert _urls(posts) == _both(f"/{p.slug}/recipes/{r.id}")
+
+    def test_editing_a_pending_recipe_does_not_ping(self, client, db, posts):
+        p, headers = self._owner_with_slug(db)
+        r = _recipe(db, p)
+        resp = self._patch(client, r, headers, {"title": "עוגת גבינה אפויה"})
+        assert resp.status_code == 200, resp.text
+        assert posts == []
+
+    def test_deleting_a_published_recipe_pings_its_removal(self, client, db, posts):
+        p, headers = self._owner_with_slug(db)
+        r = _recipe(db, p, moderation_status="approved", published=True)
+        r_id = r.id
+        resp = client.delete(f"/producers/me/recipes/{r_id}", headers=headers)
+        assert resp.status_code == 200, resp.text
+        assert _urls(posts) == _both(f"/{p.slug}/recipes/{r_id}")
+
+    def test_deleting_a_draft_recipe_does_not_ping(self, client, db, posts):
+        p, headers = self._owner_with_slug(db)
+        r = _recipe(db, p)
+        resp = client.delete(f"/producers/me/recipes/{r.id}", headers=headers)
+        assert resp.status_code == 200, resp.text
+        assert posts == []
+
+    def test_an_organizers_recipe_edit_does_not_ping(self, client, db, posts):
+        p, headers = self._owner_with_slug(db)
+        _as_organizer(db, p)
+        r = _recipe(db, p, moderation_status="approved", published=True)
+        resp = self._patch(client, r, headers, {"servings": 6})
+        assert resp.status_code == 200, resp.text
+        assert posts == []

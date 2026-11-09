@@ -17,7 +17,7 @@ after the Claude verdict — the admin_experiences router handles that side.
 
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, Request
 from sqlalchemy import func
 from sqlalchemy.orm import Session, joinedload, object_session
 
@@ -40,6 +40,7 @@ from app.schemas.schemas import (
     ExperienceValidateRequest,
     ExperienceValidateResult,
 )
+from app.services import indexnow  # MEH-2852
 from app.services.experience_moderation import validate_experience
 from app.services.experience_notifications import notify_admin_new_submission
 from app.services.registrations import method_problem, registered_counts
@@ -231,6 +232,16 @@ def _public_listing_query(db: Session):
         # MEH-1419: a host-cancelled experience drops from the public feed
         # (mirrors events.py:73). It stays visible on GET /experiences/mine.
         Experience.is_active.is_(True),
+    )
+
+
+def _is_public(ex: Experience) -> bool:
+    """MEH-2852: ``_publicly_visible_query`` as a predicate on one loaded row —
+    the detail page a search engine indexes. ``is_active`` and the date are
+    listing-only filters (see that docstring), so they are not part of it."""
+    host = ex.host
+    return ex.status == "approved" and indexnow.is_public_business(
+        host.producer if host else None
     )
 
 
@@ -521,6 +532,7 @@ def _check_method_edit(db: Session, ex: Experience, payload: dict) -> None:
 def update_experience(
     experience_id: UUID,
     data: ExperienceUpdate,
+    background_tasks: BackgroundTasks,
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
@@ -533,6 +545,9 @@ def update_experience(
         # REUSES events.py update_event (producer_recipes.py:203-206).
         raise HTTPException(status_code=404, detail="Experience not found")
 
+    # MEH-2852: read BEFORE the edit — a content edit resets an approved
+    # experience to pending, which takes its public page down.
+    was_public = _is_public(ex)
     payload = data.model_dump(exclude_unset=True)
     # Only an edit that touches min or max is checked, so a stored pair that
     # is somehow already inverted never blocks an unrelated edit.
@@ -603,6 +618,10 @@ def update_experience(
         .filter(Experience.id == ex.id)
         .first()
     )
+    # MEH-2852: the public page changed (cancel/reactivate, a tally) or went
+    # away (content edit → pending). A never-public draft is not announced.
+    if was_public or _is_public(ex):
+        indexnow.schedule(background_tasks, indexnow.experience_urls(ex.id))
     return _serialize_detail(ex)
 
 
@@ -612,6 +631,7 @@ def update_experience(
 @router.delete("/{experience_id}")
 def delete_experience(
     experience_id: UUID,
+    background_tasks: BackgroundTasks,
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
@@ -624,6 +644,9 @@ def delete_experience(
     # experience's existence isn't leaked. Admin-override preserved above.
     if not (is_owner or is_admin):
         raise HTTPException(status_code=404, detail="Experience not found")
+    # MEH-2852: only a page that was public has anything to take down.
+    removed_urls = indexnow.experience_urls(ex.id) if _is_public(ex) else []
     db.delete(ex)
     db.commit()
+    indexnow.schedule(background_tasks, removed_urls)
     return {"detail": "Experience deleted"}
