@@ -76,8 +76,17 @@ def group_buy_urls(group_buy_id) -> list[str]:
 
 
 def is_public_owner(producer) -> bool:
-    """Content reaches the public only from an approved business."""
+    """The owner's own page, and its events, are public once it is approved —
+    a business at /{slug}, an organizer at /organizers/{slug} (MEH-2459:
+    organizer events are listed on purpose)."""
     return producer is not None and producer.status == "approved"
+
+
+def is_public_business(producer) -> bool:
+    """Experiences, recipes and group buys are public only from a live
+    business — producer_listing.is_business(): approved AND kind 'producer'.
+    An organizer's are never listed, so pinging them would announce a 404."""
+    return is_public_owner(producer) and producer.kind == "producer"
 
 
 def _breadcrumb(message: str) -> None:

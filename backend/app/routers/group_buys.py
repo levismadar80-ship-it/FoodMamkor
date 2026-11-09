@@ -419,8 +419,9 @@ def create_group_buy(
             url=f"/group-buys/{gb.id}",
         ),
     )
-    # MEH-2852: a new public page — create already requires an approved business.
-    indexnow.schedule(background_tasks, indexnow.group_buy_urls(gb.id))
+    # MEH-2852: a new public page — only from a live business (is_business).
+    if indexnow.is_public_business(producer):
+        indexnow.schedule(background_tasks, indexnow.group_buy_urls(gb.id))
     return {"id": str(gb.id), "detail": "קבוצת הרכישה נוצרה בהצלחה"}
 
 
@@ -510,7 +511,7 @@ def update_group_buy_status(  # noqa: PLR0913 — all 6 args are FastAPI-injecte
 
     title = gb.title
     producer_name = gb.producer.name if gb.producer else ""
-    is_public = indexnow.is_public_owner(gb.producer)  # MEH-2852
+    is_public = indexnow.is_public_business(gb.producer)  # MEH-2852
 
     gb.status = data.status
     db.commit()
@@ -560,6 +561,6 @@ def admin_update_status(
         raise HTTPException(status_code=404, detail="קבוצת הרכישה לא נמצאה")
     gb.status = status
     db.commit()
-    if indexnow.is_public_owner(gb.producer):  # MEH-2852
+    if indexnow.is_public_business(gb.producer):  # MEH-2852
         indexnow.schedule(background_tasks, indexnow.group_buy_urls(gb.id))
     return {"detail": "סטטוס עודכן", "status": gb.status}

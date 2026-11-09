@@ -547,3 +547,94 @@ class TestRecipeWritePoints:
         )
         assert resp.status_code == 200, resp.text
         assert posts == []
+
+
+# ── organizers and ordering (fresh-review follow-up) ─────────────────────────
+#
+# Experiences, recipes and group buys are public only from a live business
+# (producer_listing.is_business: approved AND kind 'producer'). An approved
+# organizer's are never listed, so a ping would announce a 404.
+
+
+def _as_organizer(db, producer):
+    producer.kind = "organizer"
+    producer.slug = producer.slug or f"org-{uuid4().hex[:6]}"
+    db.commit()
+    db.refresh(producer)
+    return producer
+
+
+class TestOrganizerContentIsNotPinged:
+    def test_approving_an_organizers_experience_does_not_ping(self, client, db, posts):
+        producer, host = _owner(db)
+        _as_organizer(db, producer)
+        ex = _experience(db, host)
+        resp = client.post(f"/admin/experiences/{ex.id}/approve", headers=_admin(db))
+        assert resp.status_code == 200, resp.text
+        assert posts == []
+
+    def test_approving_an_organizers_recipe_does_not_ping(self, client, db, posts):
+        producer = _as_organizer(db, make_producer(db, status="approved"))
+        r = _recipe(db, producer)
+        resp = client.post(f"/admin/recipes/{r.id}/approve", headers=_admin(db))
+        assert resp.status_code == 200, resp.text
+        assert posts == []
+
+    def test_an_organizers_group_buy_status_change_does_not_ping(
+        self, client, db, posts
+    ):
+        producer = _as_organizer(db, make_producer(db, status="approved"))
+        gb = _group_buy(db, producer)
+        resp = client.patch(
+            f"/admin/group-buys/{gb.id}/status",
+            params={"status": "cancelled"},
+            headers=_admin(db),
+        )
+        assert resp.status_code == 200, resp.text
+        assert posts == []
+
+
+class TestPingRunsAfterTheOwnerEmail:
+    """Background tasks run one after another: a ping queued first (5s
+    timeout) would hold the owner's email. Both are recorded on one timeline."""
+
+    @pytest.mark.parametrize(
+        ("action", "mailer", "published"),
+        [
+            ("approve", "notify_recipe_approved", False),
+            ("request-changes", "notify_recipe_changes_requested", True),
+            ("reject", "notify_recipe_rejected", True),
+        ],
+    )
+    def test_recipe_moderation_mails_before_it_pings(
+        self, client, db, monkeypatch, action, mailer, published
+    ):
+        from app.routers import admin_recipes
+
+        timeline = []
+        monkeypatch.setattr(settings, "railway_environment", "production")
+        monkeypatch.setattr(
+            indexnow.httpx,
+            "post",
+            lambda *a, **k: timeline.append("ping") or _Resp(200),
+        )
+        monkeypatch.setattr(
+            admin_recipes, mailer, lambda *a, **k: timeline.append("email")
+        )
+        producer, _ = _owner(db)
+        producer.slug = f"maafiya-{uuid4().hex[:6]}"
+        db.commit()
+        r = _recipe(
+            db,
+            producer,
+            moderation_status="approved" if published else "pending",
+            published=published,
+        )
+        body = None if action == "approve" else {"feedback": "נא לעדכן"}
+        resp = client.post(
+            f"/admin/recipes/{r.id}/{action}", json=body, headers=_admin(db)
+        )
+        assert resp.status_code == 200, resp.text
+        assert "email" in timeline, "control: the owner email was queued"
+        assert "ping" in timeline, "control: the page was pinged"
+        assert timeline.index("ping") > timeline.index("email")

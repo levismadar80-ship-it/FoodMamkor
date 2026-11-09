@@ -40,7 +40,7 @@ def _host_business(ex: Experience):
 
 
 def _ping_if_public(background_tasks: BackgroundTasks, ex: Experience) -> None:
-    if indexnow.is_public_owner(_host_business(ex)):
+    if indexnow.is_public_business(_host_business(ex)):
         indexnow.schedule(background_tasks, indexnow.experience_urls(ex.id))
 
 

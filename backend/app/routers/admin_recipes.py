@@ -93,7 +93,7 @@ def _ping_recipe(
     """MEH-2852: the recipe page appeared or went away. Public only under an
     approved business with a slug (sitemap.js lists slugged producers only)."""
     producer = db.query(Producer).filter(Producer.id == recipe.producer_id).first()
-    if indexnow.is_public_owner(producer):
+    if indexnow.is_public_business(producer):
         indexnow.schedule(background_tasks, indexnow.recipe_urls(producer, recipe.id))
 
 
@@ -140,7 +140,6 @@ def approve_recipe(
     recipe.published = True
     db.commit()
     db.refresh(recipe)
-    _ping_recipe(background_tasks, db, recipe)  # MEH-2852
 
     if not was_published:
         # REUSES: producer_me.py delivery-area call site — lazy import +
@@ -188,6 +187,9 @@ def approve_recipe(
         background_tasks.add_task(
             notify_recipe_approved, owner_email, recipe.title, path
         )
+    # MEH-2852: queued last — background tasks run in order, so a slow ping
+    # (5s timeout) never holds the owner's email or the alerts.
+    _ping_recipe(background_tasks, db, recipe)
 
     recipe = _load_or_404(db, recipe.id)
     return _serialize(recipe)
@@ -219,13 +221,13 @@ def request_recipe_changes(
     recipe.published = False
     db.commit()
     db.refresh(recipe)
-    if was_published:  # MEH-2852: unpublished
-        _ping_recipe(background_tasks, db, recipe)
     owner_email = _owner_email(db, recipe.producer_id)
     if owner_email:
         background_tasks.add_task(
             notify_recipe_changes_requested, owner_email, recipe.title, action.feedback
         )
+    if was_published:  # MEH-2852: unpublished — queued after the email
+        _ping_recipe(background_tasks, db, recipe)
     recipe = _load_or_404(db, recipe.id)
     return _serialize(recipe)
 
@@ -254,12 +256,12 @@ def reject_recipe(
     recipe.published = False
     db.commit()
     db.refresh(recipe)
-    if was_published:  # MEH-2852: unpublished
-        _ping_recipe(background_tasks, db, recipe)
     owner_email = _owner_email(db, recipe.producer_id)
     if owner_email:
         background_tasks.add_task(
             notify_recipe_rejected, owner_email, recipe.title, action.feedback
         )
+    if was_published:  # MEH-2852: unpublished — queued after the email
+        _ping_recipe(background_tasks, db, recipe)
     recipe = _load_or_404(db, recipe.id)
     return _serialize(recipe)
