@@ -20,10 +20,14 @@
 import { MapTrifold } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 
-export default function HomepageMiniMapSkeleton() {
+// MEH-2850 C: `sectionRef` lets HomepageMiniMapLazy watch this very box with
+// an IntersectionObserver — no wrapper element, so the DOM order the home
+// specs read (the mini-map as the businesses grid's next block) is unchanged.
+export default function HomepageMiniMapSkeleton({ sectionRef = null } = {}) {
   const t = useTranslations("map.homepage_mini");
   return (
     <section
+      ref={sectionRef}
       aria-label={t("aria")}
       className="mt-6 mb-12 md:mt-12 md:mb-16 px-4 md:px-6"
       data-testid="home-minimap"
