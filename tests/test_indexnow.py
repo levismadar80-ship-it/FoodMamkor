@@ -771,3 +771,122 @@ class TestOwnerRecipeWritePoints:
         resp = self._patch(client, r, headers, {"servings": 6})
         assert resp.status_code == 200, resp.text
         assert posts == []
+
+
+class TestOwnerWritePointsNeverAnnounceAHiddenPage:
+    """Fresh-review follow-up: the business-status half of both predicates,
+    the slugless business, the REJECTED edit, the stranger, and the order."""
+
+    def test_experience_under_a_pending_business_is_not_pinged(self, client, db, posts):
+        _, host = _owner(db, status="pending")
+        ex = _experience(db, host, status="approved")
+        resp = client.put(
+            f"/experiences/{ex.id}",
+            json={"is_active": False},
+            headers=auth_header(host),
+        )
+        assert resp.status_code == 200, resp.text
+        assert posts == []
+
+    def test_recipe_under_a_pending_business_is_not_pinged(self, client, db, posts):
+        producer, user = _owner(db, status="pending")
+        producer.slug = f"maafiya-{uuid4().hex[:6]}"
+        db.commit()
+        r = _recipe(db, producer, moderation_status="approved", published=True)
+        resp = client.patch(
+            f"/producers/me/recipes/{r.id}",
+            json={"servings": 6},
+            headers=auth_header(user),
+        )
+        assert resp.status_code == 200, resp.text
+        assert posts == []
+
+    def test_recipe_of_a_slugless_business_is_not_pinged(self, client, db, posts):
+        producer, user = _owner(db)
+        producer.slug = None
+        db.commit()
+        r = _recipe(db, producer, moderation_status="approved", published=True)
+        resp = client.delete(f"/producers/me/recipes/{r.id}", headers=auth_header(user))
+        assert resp.status_code == 200, resp.text
+        assert posts == []
+
+    def test_a_rejected_recipe_edit_changes_nothing_and_does_not_ping(
+        self, client, db, posts, monkeypatch
+    ):
+        from app.routers import producer_recipes
+
+        monkeypatch.setattr(
+            producer_recipes,
+            "validate_producer_recipe",
+            lambda *_a, **_k: {"status": "REJECTED", "reason": "x"},
+        )
+        producer, user = _owner(db)
+        producer.slug = f"maafiya-{uuid4().hex[:6]}"
+        db.commit()
+        r = _recipe(db, producer, moderation_status="approved", published=True)
+        resp = client.patch(
+            f"/producers/me/recipes/{r.id}",
+            json={"title": "עוגת גבינה אפויה"},
+            headers=auth_header(user),
+        )
+        assert resp.status_code == 400, resp.text
+        assert posts == []
+
+    def test_a_stranger_gets_404_and_nothing_is_pinged(self, client, db, posts):
+        _, host = _owner(db)
+        ex = _experience(db, host, status="approved")
+        producer, owner = _owner(db)
+        producer.slug = f"maafiya-{uuid4().hex[:6]}"
+        db.commit()
+        r = _recipe(db, producer, moderation_status="approved", published=True)
+        _, stranger = _owner(db)
+        headers = auth_header(stranger)
+        assert (
+            client.put(
+                f"/experiences/{ex.id}", json={"is_active": False}, headers=headers
+            ).status_code
+            == 404
+        )
+        assert (
+            client.delete(f"/experiences/{ex.id}", headers=headers).status_code == 404
+        )
+        assert (
+            client.patch(
+                f"/producers/me/recipes/{r.id}", json={"servings": 6}, headers=headers
+            ).status_code
+            == 404
+        )
+        assert (
+            client.delete(f"/producers/me/recipes/{r.id}", headers=headers).status_code
+            == 404
+        )
+        assert posts == []
+
+    def test_recipe_edit_mails_the_admin_before_it_pings(self, client, db, monkeypatch):
+        from app.routers import producer_recipes
+
+        timeline = []
+        monkeypatch.setattr(settings, "railway_environment", "production")
+        monkeypatch.setattr(
+            indexnow.httpx,
+            "post",
+            lambda *a, **k: timeline.append("ping") or _Resp(200),
+        )
+        monkeypatch.setattr(
+            producer_recipes,
+            "notify_admin_new_recipe",
+            lambda *a, **k: timeline.append("email"),
+        )
+        producer, user = _owner(db)
+        producer.slug = f"maafiya-{uuid4().hex[:6]}"
+        db.commit()
+        r = _recipe(db, producer, moderation_status="approved", published=True)
+        resp = client.patch(
+            f"/producers/me/recipes/{r.id}",
+            json={"title": "עוגת גבינה אפויה"},
+            headers=auth_header(user),
+        )
+        assert resp.status_code == 200, resp.text
+        assert "email" in timeline, "control: the admin email was queued"
+        assert "ping" in timeline, "control: the page was pinged"
+        assert timeline.index("ping") > timeline.index("email")
