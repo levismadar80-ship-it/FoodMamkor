@@ -696,9 +696,11 @@ test.describe("manual › vegetarian axis (MEH-1438)", () => {
   });
 });
 
-/** MEH-2856: how many badges this card is showing right now (1 or 2). */
+/** MEH-2856: how many badges this card is showing right now (1 or 2).
+ *  Locale-neutral on purpose: the list's accessible name is translated, so a
+ *  name lookup finds nothing on /en. */
 async function visibleBadgeCount(card: Locator): Promise<number> {
-  const items = card.getByRole("list", { name: BADGE_ROW_ARIA }).getByRole("listitem");
+  const items = card.locator("[data-badge-line] [role='list'] > [role='listitem']");
   await expect(items.first()).toBeVisible();
   return items.count();
 }
