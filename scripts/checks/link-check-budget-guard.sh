@@ -22,7 +22,15 @@
 #     BASE_URL can crawl resolves to the right mode
 #   - the robots.txt resolver cases it already had (MEH-1963/1970)
 #
-# Not a crawl: no network, no server, < 1 s.
+#   - END TO END: the self-test crawls a local 91-page fixture server through
+#     the real CLI, once as a staging run (must fetch exactly 40, one page per
+#     pathname, unparseable hrefs not counted) and once as a full run (must
+#     fetch all 91 — the control that makes the 40 mean "budget").
+#
+# Does NOT: crawl any real site or reach the network — the fixture server
+#   listens on 127.0.0.1 inside the self-test; a run takes ~1 s.
+# History: MEH-2864 (creation; fresh review added the e2e cases after showing
+#   `MAX_PAGES = FULL_PAGES` kept the resolver-only version green).
 # Related: scripts/link-check.mjs · .github/workflows/post-deploy-checks.yml ·
 #          scripts/link-check.sh (the local full-crawl wrapper).
 set -uo pipefail
@@ -41,12 +49,14 @@ fails="$(printf '%s\n' "$out" | grep -c '^FAIL' || true)"
 passes="$(printf '%s\n' "$out" | grep -c '^PASS' || true)"
 
 # A self-test that printed nothing would also exit 0 if the dispatch ever broke;
-# require that it actually ran its budget cases.
+# require that each family of cases actually ran and passed.
 budget_cases="$(printf '%s\n' "$out" | grep -c '^PASS  self-test: budget:' || true)"
+workflow_cases="$(printf '%s\n' "$out" | grep -c '^PASS  self-test: REAL post-deploy-checks.yml' || true)"
+e2e_cases="$(printf '%s\n' "$out" | grep -c '^PASS  self-test: e2e:' || true)"
 
-if [ "$code" -ne 0 ] || [ "$fails" -ne 0 ] || [ "$budget_cases" -lt 6 ]; then
+if [ "$code" -ne 0 ] || [ "$fails" -ne 0 ] || [ "$budget_cases" -lt 8 ] || [ "$workflow_cases" -lt 3 ] || [ "$e2e_cases" -lt 5 ]; then
   printf '%s\n' "$out" | grep -v '^PASS'
-  echo "FAIL link-check-budget-guard: exit=$code, $fails failing case(s), $budget_cases/6 budget case(s) passed — scripts/link-check.mjs"
+  echo "FAIL link-check-budget-guard: exit=$code, $fails failing case(s); passed: budget $budget_cases/8, workflow $workflow_cases/3, e2e $e2e_cases/5 — scripts/link-check.mjs"
   exit 1
 fi
-echo "link-check-budget-guard: $passes self-test case(s) passed, $budget_cases of them on the page budget"
+echo "link-check-budget-guard: $passes self-test case(s) passed (budget $budget_cases, workflow $workflow_cases, e2e $e2e_cases)"

@@ -30,13 +30,18 @@
  *   staging; at ~30 self-merges a day that is the main suspect for the Vercel
  *   Hobby team crossing its Fluid Active CPU limit and being suspended
  *   (09/11, production down with it). So the budget depends on the target:
- *     staging target → SAMPLE, 40 pages (breadth-first from /, i.e. / and the
- *                      pages its header, footer and blocks link to)
- *     anything else  → FULL, 2000 pages (production after a release; a local
- *                      `next start`, which costs nothing)
- *   "Staging target" = the workflow's IS_PRODUCTION=false, or a known staging
- *   host. --max-pages=N overrides both. The run prints its mode, budget, pages
- *   crawled and HTTP requests made, so the cost of a run is on its own log.
+ *     production / localhost → FULL, 2000 pages (production after a release;
+ *                              a local `next start`, which costs nothing)
+ *     anything else          → SAMPLE, 40 pages, breadth-first from /, one
+ *                              page per pathname (query-string variants of a
+ *                              route are not re-rendered)
+ *   FULL needs a positive signal: IS_PRODUCTION=true, or a production / local
+ *   host. IS_PRODUCTION=false, the staging host and any host we don't know all
+ *   sample, so a missed signal costs coverage, never CPU. --max-pages=N
+ *   overrides both. The run prints its mode, budget, pages fetched and HTTP
+ *   requests made, so the cost of a run is on its own log. --self-test crawls a
+ *   local 91-page fixture server in both modes, so the crawl loop itself — not
+ *   only the budget function — is under test.
  *
  * EXIT CODES
  *   0 — no broken internal links
@@ -53,6 +58,9 @@
  */
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
+import { createServer } from "node:http";
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
 
 const args = process.argv.slice(2);
 const asJson = args.includes("--json");
@@ -71,6 +79,10 @@ const STAGING_SAMPLE_PAGES = 40;
 // that workflow and fails if its staging host is not in this set, so renaming
 // the host there cannot silently put staging back on the full crawl.
 const STAGING_HOSTS = new Set(["staging.mehamakor.online"]);
+// Hosts allowed the full crawl without IS_PRODUCTION=true. Everything else
+// samples: a missed signal must cost coverage, never another suspension.
+const FULL_CRAWL_HOSTS = new Set(["mehamakor.co.il", "www.mehamakor.co.il", "localhost", "127.0.0.1", "[::1]", "::1"]);
+const MAX_PAGES_FLAG = /^--max-pages=(\d+)$/;
 
 /**
  * Decide how many pages this run may crawl. Pure: everything it reads is a
@@ -80,9 +92,10 @@ const STAGING_HOSTS = new Set(["staging.mehamakor.online"]);
 function resolvePageBudget({ base, env, argv }) {
   const flag = argv.find((a) => a.startsWith("--max-pages"));
   if (flag) {
-    const n = Number(flag.split("=")[1]);
-    if (!flag.includes("=") || !Number.isInteger(n) || n < 1) {
-      return { error: `--max-pages needs a positive integer, as --max-pages=40 (got "${flag}")` };
+    const m = flag.match(MAX_PAGES_FLAG);
+    const n = m ? Number(m[1]) : NaN;
+    if (!m || n < 1) {
+      return { error: `--max-pages needs a positive integer, written --max-pages=40 (got "${flag}")` };
     }
     return { max: n, mode: "flag", reason: `--max-pages=${n}` };
   }
@@ -92,11 +105,12 @@ function resolvePageBudget({ base, env, argv }) {
   } catch {
     host = "";
   }
-  if (env.IS_PRODUCTION === "false" || STAGING_HOSTS.has(host)) {
-    const why = env.IS_PRODUCTION === "false" ? "IS_PRODUCTION=false" : `staging host ${host}`;
-    return { max: STAGING_SAMPLE_PAGES, mode: "sample", reason: `${why} (MEH-2864)` };
-  }
-  return { max: FULL_PAGES, mode: "full", reason: "not a staging target" };
+  const sample = (why) => ({ max: STAGING_SAMPLE_PAGES, mode: "sample", reason: `${why} (MEH-2864)` });
+  if (env.IS_PRODUCTION === "false") return sample("IS_PRODUCTION=false");
+  if (STAGING_HOSTS.has(host)) return sample(`staging host ${host}`);
+  if (env.IS_PRODUCTION === "true") return { max: FULL_PAGES, mode: "full", reason: "IS_PRODUCTION=true" };
+  if (FULL_CRAWL_HOSTS.has(host)) return { max: FULL_PAGES, mode: "full", reason: `production/local host ${host}` };
+  return sample(`unknown host ${host || "(unparseable)"}`);
 }
 
 // Declared here rather than beside the extractors: --self-test exercises the
@@ -190,22 +204,6 @@ function matchesRobotsPath(pathname, rulePath) {
 
 // ------------------------------------------------------------------ self-test
 
-/**
- * --self-test: prove the robots resolver discriminates BEFORE any crawl output
- * is trusted (MEH-1619 — a guard never observed failing is a green light of
- * unknown wiring; repo precedent: `.claude/scripts/audit-skills.sh --self-test`).
- *
- * `isAllowed` is a classifier, and the specific way it can be silently wrong is
- * first-match-wins: that returns `false` for /register/producer, the crawler
- * skips the landing page, and the report says "0 broken" because it never
- * looked. Nothing in the output distinguishes that from a healthy crawl.
- *
- * Case 6 is anchored to the REAL `frontend/public/robots.txt`, not a synthetic
- * shape (MEH-1909: an ast probe passed four invented cases and returned None on
- * every real file in the repo). A fixture-only suite proves the resolver works
- * on rules I wrote; only the repo's own file proves it works on the rules that
- * exist.
- */
 function workflowHostCases() {
   const yml = readFileSync(`${ROOT}.github/workflows/post-deploy-checks.yml`, "utf8");
   const line = yml.split("\n").find((l) => /^\s*BASE_URL:/.test(l)) || "";
@@ -224,6 +222,69 @@ function workflowHostCases() {
   return cases;
 }
 
+/**
+ * End-to-end budget check (MEH-2864 review): the cases above test the pure
+ * resolver, which stays green even if the crawl loop ignored its answer. This
+ * crawls a real local server — 1 root, 30 query variants of /q, a 60-page chain
+ * under /p/ and five unparseable hrefs — once as a staging run and once as a
+ * full run, through a child process with the real CLI, and returns the two
+ * JSON reports.
+ */
+async function crawlFixtureBothModes() {
+  const CHAIN = 60;
+  const page = (links) => `<!doctype html><html><body>${links.map((h) => `<a href="${h}">x</a>`).join("")}</body></html>`;
+  const server = createServer((req, res) => {
+    const u = new URL(req.url, "http://fixture");
+    let body = null;
+    if (u.pathname === "/") {
+      const variants = Array.from({ length: 30 }, (_, i) => `/q?v=${i + 1}`);
+      body = page([...variants, "/p/1", "http://", "http://", "http://", "http://", "http://"]);
+    } else if (u.pathname === "/q") {
+      body = page([]);
+    } else {
+      const m = u.pathname.match(/^\/p\/(\d+)$/);
+      const n = m ? Number(m[1]) : 0;
+      if (n >= 1 && n <= CHAIN) body = page(n < CHAIN ? [`/p/${n + 1}`] : []);
+    }
+    res.writeHead(body === null ? 404 : 200, { "content-type": "text/html" });
+    res.end(body ?? "not found");
+  });
+  await new Promise((r) => server.listen(0, "127.0.0.1", r));
+  const base = `http://127.0.0.1:${server.address().port}`;
+  const run = promisify(execFile);
+  const self = fileURLToPath(import.meta.url);
+  const envWith = (extra) => {
+    const env = { ...process.env, ...extra };
+    if (!("IS_PRODUCTION" in extra)) delete env.IS_PRODUCTION;
+    return env;
+  };
+  try {
+    const go = async (extra) => {
+      const { stdout } = await run(process.execPath, [self, base, "--json"], { env: envWith(extra) }).catch((e) => e);
+      return JSON.parse(stdout);
+    };
+    return { sample: await go({ IS_PRODUCTION: "false" }), full: await go({}) };
+  } finally {
+    server.close();
+  }
+}
+
+/**
+ * --self-test: prove the robots resolver discriminates BEFORE any crawl output
+ * is trusted (MEH-1619 — a guard never observed failing is a green light of
+ * unknown wiring; repo precedent: `.claude/scripts/audit-skills.sh --self-test`).
+ *
+ * `isAllowed` is a classifier, and the specific way it can be silently wrong is
+ * first-match-wins: that returns `false` for /register/producer, the crawler
+ * skips the landing page, and the report says "0 broken" because it never
+ * looked. Nothing in the output distinguishes that from a healthy crawl.
+ *
+ * Case 6 is anchored to the REAL `frontend/public/robots.txt`, not a synthetic
+ * shape (MEH-1909: an ast probe passed four invented cases and returned None on
+ * every real file in the repo). A fixture-only suite proves the resolver works
+ * on rules I wrote; only the repo's own file proves it works on the rules that
+ * exist.
+ */
 if (args.includes("--self-test")) {
   const fixture = parseRobots(
     ["User-agent: *", "Allow: /", "Allow: /register/producer", "Disallow: /register", "Disallow: /admin/", "", "User-agent: GPTBot", "Disallow: /"].join("\n")
@@ -308,6 +369,16 @@ if (args.includes("--self-test")) {
       want: 5,
     },
     {
+      name: "budget: an unknown host samples (FULL needs a positive signal)",
+      got: () => resolvePageBudget({ base: "https://food-mamkor-abc123.vercel.app", env: {}, argv: [] }).mode,
+      want: "sample",
+    },
+    {
+      name: "budget: --max-pagesX=3 is an error, not --max-pages=3",
+      got: () => Boolean(resolvePageBudget({ base: "http://localhost:3000", env: {}, argv: ["--max-pagesX=3"] }).error),
+      want: true,
+    },
+    {
       name: "budget: --max-pages without a number is an error, not a silent default",
       got: () => Boolean(resolvePageBudget({ base: "http://localhost:3000", env: {}, argv: ["--max-pages"] }).error),
       want: true,
@@ -329,6 +400,32 @@ if (args.includes("--self-test")) {
   const parsedOk = real.length > 0;
   console.log(`${parsedOk ? "PASS" : "FAIL"}  self-test: real robots.txt parsed ${real.length} rule(s) for User-agent: *`);
   if (!parsedOk) bad += 1;
+
+  // End to end: the crawl loop must obey the budget, not only the resolver.
+  let e2e = null;
+  try {
+    e2e = await crawlFixtureBothModes();
+  } catch (err) {
+    console.log(`FAIL  self-test: e2e: fixture crawl did not run (${err.message})`);
+    bad += 1;
+  }
+  if (e2e) {
+    const qPages = (r) => (r.pages || []).filter((p) => p.startsWith("/q")).length;
+    const e2eCases = [
+      { name: "e2e: staging run reports mode sample", got: e2e.sample.mode, want: "sample" },
+      { name: "e2e: staging run fetches exactly the 40-page budget of a 91-page site", got: e2e.sample.crawled, want: 40 },
+      { name: "e2e: staging run fetches one page per pathname (/q once, not 30 times)", got: qPages(e2e.sample), want: 1 },
+      { name: "e2e: unparseable hrefs are not counted as pages", got: e2e.sample.crawled === (e2e.sample.pages || []).length, want: true },
+      // The control: the same site under the full budget crawls past 40, so a
+      // sample run stopping at 40 is the budget, not the site running out.
+      { name: "e2e: full run on the same site fetches all 91 pages", got: e2e.full.crawled, want: 91 },
+    ];
+    for (const c of e2eCases) {
+      const ok = c.got === c.want;
+      console.log(`${ok ? "PASS" : "FAIL"}  self-test: ${c.name}${ok ? "" : ` (got ${c.got}, want ${c.want})`}`);
+      if (!ok) bad += 1;
+    }
+  }
   process.exit(bad === 0 ? 0 : 1);
 }
 
@@ -361,6 +458,13 @@ function extractAnchors(html) {
 // Do NOT add `x-vercel-set-bypass-cookie`: it turns redirects into cookie
 // redirects, which this tool would then report as chains (measured 28/10).
 const BYPASS = (process.env.VERCEL_AUTOMATION_BYPASS_SECRET || "").trim();
+// Resolved before BASE is parsed: `--max-pages 5 <url>` would otherwise make
+// "5" the base URL and die in `new URL` with a stack trace instead of a message.
+const budget = resolvePageBudget({ base: BASE, env: process.env, argv: args });
+if (budget.error) {
+  console.error(`link-check: ${budget.error}`);
+  process.exit(1);
+}
 const BASE_ORIGIN = new URL(BASE).origin;
 function requestHeaders(url) {
   const sameOrigin = new URL(url).origin === BASE_ORIGIN;
@@ -492,20 +596,23 @@ const noteRef = (target, from) => {
 // category ids are a fixed set), but a crawler with no ceiling turns a future
 // pagination bug into a hang with no message. Truncation is REPORTED, never
 // silent — an unannounced cap reads as "covered everything".
-const budget = resolvePageBudget({ base: BASE, env: process.env, argv: args });
-if (budget.error) {
-  console.error(`link-check: ${budget.error}`);
-  process.exit(1);
-}
 const MAX_PAGES = budget.max;
+// Pages actually fetched — the budget and the "crawled" line count these, not
+// `seen`, which also holds unparseable hrefs (MEH-2864 review: 60 bad hrefs on
+// one page read as 62 "pages" and spent the whole sample on one request).
+const fetchedPages = [];
+// Sample mode re-renders a route once, not once per query string (the home
+// page links /producers?category=<id> per category card).
+const queuedPathnames = new Set(["/"]);
 let truncated = 0;
 while (queue.length) {
-  if (seen.size >= MAX_PAGES) {
+  if (fetchedPages.length >= MAX_PAGES) {
     truncated = queue.length;
     break;
   }
   const path = queue.shift();
   const result = await head(`${BASE}${path}`);
+  fetchedPages.push(path);
   seen.set(path, result);
   if (!result.body) continue;
 
@@ -540,8 +647,10 @@ while (queue.length) {
       skippedByRobots.add(url.pathname);
       continue;
     }
+    if (budget.mode === "sample" && queuedPathnames.has(url.pathname)) continue;
     if (!queued.has(next)) {
       queued.add(next);
+      queuedPathnames.add(url.pathname);
       queue.push(next);
     }
   }
@@ -591,7 +700,8 @@ if (asJson) {
         mode: budget.mode,
         budget: MAX_PAGES,
         budgetReason: budget.reason,
-        crawled: seen.size,
+        crawled: fetchedPages.length,
+        pages: fetchedPages,
         requests,
         broken: broken.map(([u, r]) => ({ url: u, status: r.status, error: r.error, from: [...(referrers.get(u) || [])] })),
         redirects: redirects.map(([u, r]) => ({ url: u, hops: r.chain })),
@@ -632,7 +742,7 @@ if (asJson) {
     );
   }
   if (slugBlind || entityBlind) console.log("");
-  console.log(`crawled:            ${seen.size} internal URLs`);
+  console.log(`crawled:            ${fetchedPages.length} pages fetched`);
   console.log(`HTTP requests:      ${requests} (preflight and redirect hops included)`);
   if (truncated && budget.mode === "sample") {
     console.log(

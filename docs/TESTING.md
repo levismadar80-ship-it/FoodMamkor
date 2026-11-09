@@ -365,14 +365,16 @@ Vercel ב-09/11, ולכן:
 
 | יעד | מצב | עמודים |
 |---|---|---|
-| staging (`IS_PRODUCTION=false` מה-workflow, או `staging.mehamakor.online`) | sample | 40, ברוחב מ-`/` |
-| פרודקשן, `next start` מקומי | full | 2000 |
+| פרודקשן (`IS_PRODUCTION=true` או `mehamakor.co.il`), `next start` מקומי | full | 2000 |
+| staging (`IS_PRODUCTION=false` או `staging.mehamakor.online`), וכל host אחר | sample | 40, ברוחב מ-`/`, עמוד אחד לכל pathname |
 | `--max-pages=N` | flag | N |
 
-כל ריצה מדפיסה `mode`, את התקציב, את מספר העמודים שנסרקו ואת מספר בקשות ה-HTTP.
-ב-sample, עצירה בתקציב מודפסת כ-`SAMPLE` ולא כ-`TRUNCATED`. ה-guard
-`scripts/checks/link-check-budget-guard.sh` מריץ את ה-self-test ב-Repo guards,
-כולל בדיקה מול ה-hosts שב-`post-deploy-checks.yml`.
+סריקה מלאה דורשת סימן חיובי. אם הסימן חסר, מקבלים פחות כיסוי, לא עוד השעיה.
+כל ריצה מדפיסה `mode`, את התקציב, את מספר העמודים שנטענו בפועל ואת מספר
+בקשות ה-HTTP. ב-sample, עצירה בתקציב מודפסת כ-`SAMPLE` ולא כ-`TRUNCATED`.
+ה-guard `scripts/checks/link-check-budget-guard.sh` מריץ את ה-self-test
+ב-Repo guards. ה-self-test בודק את פונקציית התקציב, את ה-hosts שב-`post-deploy-checks.yml`,
+וגם סורק שרת מקומי של 91 עמודים פעמיים, כ-staging וכ-full.
 
 ---
 
