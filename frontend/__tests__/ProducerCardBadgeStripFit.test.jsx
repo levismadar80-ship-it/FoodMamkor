@@ -168,8 +168,8 @@ let room = 150;
 let px = {};
 
 // «+N» keeps a 44px hit area inside a 24px box with a -10px margin, so in a
-// real browser it reaches 10px past the group's end — counted by scrollWidth
-// unless the group pads its end by the same 10px (pe-2.5).
+// real browser it reaches 10px past the chip's end — and scrollWidth counts it.
+// The component must forgive exactly that reach, or it drops a pill that fits.
 const PLUS_N_REACH = 10;
 
 function stripContentWidth(strip) {
@@ -177,7 +177,7 @@ function stripContentWidth(strip) {
   const hasPlus = Boolean(strip.querySelector('[data-testid="badge-overflow"]'));
   const parts = hasPlus ? [...pills, PLUS_N] : pills;
   let total = parts.reduce((a, b) => a + b, 0) + GAP * Math.max(0, parts.length - 1);
-  if (hasPlus && !strip.className.split(/\s+/).includes("pe-2.5")) total += PLUS_N_REACH;
+  if (hasPlus) total += PLUS_N_REACH;
   // One pill alone may shrink and break inside itself (MEH-2849).
   return pills.length === 1 ? Math.min(total, room) : total;
 }
@@ -257,7 +257,8 @@ describe("card badge strip: one line, the rest in «+N» (MEH-2856)", () => {
   });
 
   it("three badges that just fit with «+1» keep both pills (the «+N» hit area is not overflow)", () => {
-    // 60 + 4 + 60 + 4 + 24 = 152 of 160 — fits; the chip's 10px reach must not count.
+    // 60 + 4 + 60 + 4 + 24 = 152 of 160 — the visible chip fits; its 10px
+    // reach (scrollWidth 162) must not count.
     room = 160;
     const keys = allBadges(threeBadges).map((b) => b.key);
     px = Object.fromEntries(keys.map((k) => [k, 60]));
@@ -284,9 +285,6 @@ describe("card badge strip: one line, the rest in «+N» (MEH-2856)", () => {
     const list = document.querySelector(`[data-badge="${first}"]`).closest('[role="list"]');
     expect(list.className).toContain("min-w-0");
     expect(list.className).not.toContain("[&>*]:shrink-0");
-    // With one pill nothing is left to drop: the lone pill keeps the 10px the
-    // «+N» padding would have taken (it is the pill that breaks at 200%).
-    expect(document.querySelector(LINE_SELECTOR).className.split(/\s+/)).not.toContain("pe-2.5");
   });
 
   it("the «+N» panel lists exactly the hidden badges", () => {

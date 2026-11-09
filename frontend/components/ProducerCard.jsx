@@ -209,6 +209,12 @@ const useIsomorphicLayoutEffect = typeof window === "undefined" ? useEffect : us
 
 // MEH-991 (CARD-09) v4 LOCK: never more than 2 visible badges on a card.
 const BADGE_STRIP_MAX = 2;
+// «+N» keeps a 44px hit area inside its 24px chip with -m-2.5, so the hit area
+// reaches 10px past the chip's end. That reach is invisible: it may overhang
+// the group without the chip — or any pill — being cut, so the overflow check
+// forgives exactly that much while «+N» shows (caught on the preview: «משק
+// ברק» lost a 2nd pill that fits, as staging shows).
+const PLUS_N_REACH_PX = 10;
 
 /**
  * MEH-2856: how many badges fit on the card's ONE badge line.
@@ -234,7 +240,8 @@ function useBadgesThatFit(lineRef, earned) {
   useIsomorphicLayoutEffect(() => {
     const el = lineRef.current;
     if (!el || typeof ResizeObserver === "undefined") return;
-    if (shown > 1 && el.scrollWidth > el.clientWidth + 1) {
+    const reach = el.querySelector('[data-testid="badge-overflow"]') ? PLUS_N_REACH_PX : 0;
+    if (shown > 1 && el.scrollWidth > el.clientWidth + 1 + reach) {
       // Idempotent step (from the count this render measured, not "one less
       // than whatever is queued"): StrictMode runs this effect twice against
       // the same DOM, and a relative step took 2 → 1 → 0 pills.
@@ -521,7 +528,9 @@ export default function ProducerCard({ producer, active, onClick, referrer, high
             above and covers nothing. Single-row strips are unchanged. */}
         {/* MEH-2856 (Sapir 09/11): the badges sit on ONE line. The pills and
             «+N» are a no-wrap group (data-badge-line) capped at the strip's
-            width, which is the photo minus both 12px insets;
+            width: the photo minus the 12px start inset and an 8px end inset
+            (the pre-2856 strip had none, and a 12px one dropped pills that
+            fit on staging);
             useBadgesThatFit() shows as many of the first 2 badges as fit and
             moves the rest into «+N». Two long pills used to stack (ערוגות נועם
             at 390). TrustBadge and the delivery-only pill below stay OUTSIDE
@@ -529,18 +538,12 @@ export default function ProducerCard({ producer, active, onClick, referrer, high
             room, instead of being clipped by the card's overflow-hidden. */}
         <div
           ref={badgeStripRef}
-          className="absolute bottom-3 start-3 flex flex-wrap items-center gap-x-1 gap-y-2.5 max-w-[calc(100%-1.5rem)]"
+          className="absolute bottom-3 start-3 flex flex-wrap items-center gap-x-1 gap-y-2.5 max-w-[calc(100%-1.25rem)]"
         >
-          {/* pe-2.5 while 2 pills + «+N» show = the chip's -m-2.5 pull-back:
-              its 44px hit area reaches 10px past the group's end, and without
-              the padding scrollWidth reads that as overflow and drops a badge
-              that fits (caught on the preview: «משק ברק» lost its 2nd pill).
-              With 1 pill there is nothing left to drop, so the lone pill gets
-              those 10px back (it is the one that breaks at 200% text). */}
           <div
             ref={badgeLineRef}
             data-badge-line
-            className={`flex flex-nowrap items-center gap-x-1 min-w-0 max-w-full ${hiddenBadges > 0 && shownBadges > 1 ? "pe-2.5" : ""}`}
+            className="flex flex-nowrap items-center gap-x-1 min-w-0 max-w-full"
           >
           <BadgeRow producer={producer} limit={shownBadges} surface="card" avoidRef={badgeStripRef} nowrap />
           {hiddenBadges > 0 && (
