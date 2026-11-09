@@ -106,10 +106,13 @@ export default function Footer() {
 
   // MEH-1177 (ADR-024): the flat 8-link nav mixed two audiences (readers +
   // producers). NN/g "Footers 101" — group links by secondary audience rather
-  // than dumping them in one column. Two labelled groups: readers ("גלו") +
-  // producers ("לבתי עסק"). Copy locked by Sapir 13/07.
+  // than dumping them in one column. Copy locked by Sapir 13/07.
+  // MEH-2858 (Sapir 09/11): three groups — «גלו» (what to find on the site),
+  // «עלינו» (who we are), «לבתי עסק». Baymard: footer links grouped by meaning;
+  // Etsy / Airbnb / Meetup split "about" from "discover" the same way. The
+  // «גלו עסקים» → / link is gone: it read like «כל בתי העסק», and the logo in
+  // the brand column already links home.
   const discoverLinks = [
-    { href: "/", label: t("nav.footer.nav_discover") },
     // MEH-1060 (SEO-09): link to the /producers index — the crawlable catalog
     // walk was previously reachable only via sitemap/pagination, not the footer.
     { href: "/producers", label: t("nav.footer.producers") },
@@ -124,6 +127,8 @@ export default function Footer() {
       : []),
     ...(showGroupBuys ? [{ href: "/group-buys", label: t("nav.footer.group_buys") }] : []),
     ...(showRescue ? [{ href: "/rescue", label: t("nav.footer.rescue") }] : []),
+  ];
+  const aboutLinks = [
     { href: "/about", label: t("nav.footer.about") },
     // MEH-1289: reader-facing "why local" editorial page.
     { href: "/about/why-local", label: t("nav.footer.why_local") },
@@ -201,19 +206,22 @@ export default function Footer() {
             </ul>
           </div>
 
-          {/* Column 2 — Navigation. MEH-1177: split into two audience groups,
+          {/* Column 2 — Navigation. MEH-1177: split into audience groups
+              (MEH-2858: three — «גלו» · «עלינו» · «לבתי עסק»),
               each with its own real <h3> heading (MEH-867 hierarchy: sr-only h2
               brand → h3 sections). MEH-1278 put the two groups side-by-side on
-              mobile; MEH-2397 replaces that with two stacked, closed accordion
-              rows (the open 2-col grid still cost ~340px on every page and the
-              footer outgrew the content on /login). Desktop (md:) is the
-              original flex-col stack with both lists open. */}
+              mobile; MEH-2397 replaced that with stacked, closed accordion
+              rows — one per group, three since MEH-2858 (the open 2-col grid
+              still cost ~340px on every page and the footer outgrew the
+              content on /login). Desktop (md:) is the original flex-col stack
+              with every list open. */}
           <nav
             aria-label={t("nav.footer.nav_aria")}
             className="flex flex-col divide-y divide-white/10 border-y border-white/10 md:divide-y-0 md:border-0 md:gap-6"
           >
             {[
               { id: "footer-group-discover", heading: t("nav.footer.group_discover_heading"), links: discoverLinks },
+              { id: "footer-group-about", heading: t("nav.footer.group_about_heading"), links: aboutLinks },
               { id: "footer-group-business", heading: t("nav.footer.group_business_heading"), links: businessLinks },
             ].map((group) => {
               const open = openGroup === group.id;
