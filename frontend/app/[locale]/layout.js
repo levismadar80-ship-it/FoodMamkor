@@ -159,7 +159,12 @@ export async function generateMetadata({ params }) {
     keywords: [...t.raw("keywords"), BRAND_NAME],
     openGraph: {
       ...BASE_METADATA.openGraph,
-      title: t("og_title"),
+      // MEH-2853: no og title here either. A page that sets no openGraph of
+      // its own inherits this object, and a title in it made the page's
+      // og:title the home title. Without it Next fills og:title from the
+      // page's own (templated) title (resolve-metadata.js inheritFromMetadata),
+      // and twitter:title follows og:title (see below). On the home page
+      // seo.site.title === og_title (he and en), so its card is unchanged.
       description: t("og_description"),
       locale: OG_LOCALE[locale],
       alternateLocale: OG_ALTERNATE_LOCALES.filter((l) => l !== OG_LOCALE[locale]),
@@ -173,7 +178,14 @@ export async function generateMetadata({ params }) {
     },
     twitter: {
       ...BASE_METADATA.twitter,
-      title: t("twitter_title"),
+      // MEH-2853: NO twitter title here. Every page that sets no `twitter` of
+      // its own inherits this object; with a title in it, Next keeps it and
+      // never fills twitter:title from the page's og:title
+      // (next/dist/lib/metadata/resolve-metadata.js postProcessMetadata,
+      // `hasTwTitle`), so ~20 pages shared the home title. Without it Next
+      // fills twitter:title from og:title (itself from the page title) on
+      // every page — on the home page too, where seo.site.title === og_title
+      // === twitter_title (he and en), so the home card is unchanged.
       description: t("twitter_description"),
       images: [ogImageUrl],
     },

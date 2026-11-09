@@ -4,8 +4,8 @@ import ProducersClient from "@/components/ProducersClient";
 import { SkeletonProducerGrid } from "@/components/Skeleton";
 import { clampPage } from "@/lib/pagination";
 import { API_URL, SITE_URL } from "@/lib/env";
-import { buildAlternates, OG_LOCALE } from "@/lib/i18n-seo";
-import { BRAND_NAME, BRAND_NAME_LATIN } from "@/lib/constants";
+import { buildAlternates, buildEntityTitle, OG_LOCALE } from "@/lib/i18n-seo";
+import { BRAND_NAME } from "@/lib/constants";
 import { RATING_SORT_THRESHOLD, isRatingSortEnabled } from "@/lib/rating-gate";
 
 /**
@@ -85,13 +85,12 @@ export async function generateMetadata(props) {
 
   const t = await getTranslations({ locale, namespace: "producers" });
   const indexLabel = t("title.all");
-  const brand = locale === "he" ? BRAND_NAME : BRAND_NAME_LATIN;
   const title =
     page === 1
-      ? `${indexLabel} | ${brand}`
+      ? indexLabel
       : locale === "he"
-        ? `${indexLabel} — עמוד ${page} | ${brand}`
-        : `${indexLabel} — page ${page} | ${brand}`;
+        ? `${indexLabel} — עמוד ${page}`
+        : `${indexLabel} — page ${page}`;
 
   // Build alternates from /producers, then for paginated variants append
   // ?page=N to BOTH canonical and every languages URL so each EN/HE
@@ -106,6 +105,9 @@ export async function generateMetadata(props) {
     );
   }
 
+  // og/twitter get no template from Next.js, so they carry the brand themselves.
+  const socialTitle = buildEntityTitle(title, locale);
+
   const description =
     locale === "he"
       // MEH-2634: "דפדפי" (feminine singular) → "גלו", the plural voice the
@@ -114,13 +116,13 @@ export async function generateMetadata(props) {
       : "Browse all local food businesses, growers, and farms on Mehamakor.";
 
   return {
-    // title.absolute prevents layout's `%s | brand` template double-suffix.
-    title: { absolute: title },
+    // MEH-2853: plain title — the layout template `%s | <brand>` adds the brand.
+    title,
     description,
     // MEH-740: per-page openGraph + self og:url (was inheriting layout root).
     // url reuses alternates.canonical so paginated ?page=N variants stay self.
     openGraph: {
-      title,
+      title: socialTitle,
       description,
       type: "website",
       url: alternates.canonical,
@@ -132,7 +134,7 @@ export async function generateMetadata(props) {
     // layout's generic site card).
     twitter: {
       card: "summary_large_image",
-      title,
+      title: socialTitle,
       description,
       images: ["/og-image.png"],
     },

@@ -87,7 +87,8 @@ export async function generateMetadata(props) {
   }
   const description = organizer.short_description || organizer.description || undefined;
   return {
-    title: { absolute: buildEntityTitle(organizer.name, locale) },
+    // MEH-2853: plain title — the layout template `%s | <brand>` adds the brand.
+    title: organizer.name,
     description,
     openGraph: {
       // MEH-2594: url/type/siteName, as on the event and business pages.

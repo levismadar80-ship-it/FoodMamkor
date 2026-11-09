@@ -32,8 +32,14 @@ describe("root layout metadata per locale", () => {
     const m = await generateMetadata({ params: Promise.resolve({ locale: "en" }) });
     expect(m.title.default).toBe(en.seo.site.title);
     expect(m.title.template).toBe("%s | Mehamakor");
-    expect(m.openGraph.title).toBe(en.seo.site.og_title);
-    expect(m.twitter.title).toBe(en.seo.site.twitter_title);
+    // MEH-2853: the layout no longer carries og / twitter titles (a page that
+    // inherits them would show the home title). Next fills both from the
+    // page's <title>; on /en home that is the English title, equal to the
+    // og_title / twitter_title strings, so the /en card stays English.
+    expect(m.openGraph.title).toBeUndefined();
+    expect(m.twitter.title).toBeUndefined();
+    expect(m.title.default).toBe(en.seo.site.og_title);
+    expect(m.title.default).toBe(en.seo.site.twitter_title);
     const nonBrand = m.keywords.filter((k) => k !== "מהמקור");
     expect(nonBrand.length).toBeGreaterThan(0);
     for (const k of nonBrand) expect(k, k).not.toMatch(HEBREW);

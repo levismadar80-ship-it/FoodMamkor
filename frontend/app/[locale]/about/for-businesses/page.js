@@ -13,7 +13,7 @@ import ClosingCtaBand from "@/components/ClosingCtaBand";
 import EditorialPhoto from "@/components/EditorialPhoto";
 import { BRAND_NAME } from "@/lib/constants";
 import { SITE_URL, serializeJsonLd } from "@/lib/seo";
-import { buildAlternates, OG_LOCALE } from "@/lib/i18n-seo";
+import { buildAlternates, buildEntityTitle, OG_LOCALE } from "@/lib/i18n-seo";
 // MEH-1113: unify inbound routing — the bottom line points business owners at
 // the contact form + email instead of an Instagram DM (untracked, no record).
 import { CONTACT_EMAIL } from "@/lib/env.client";
@@ -27,11 +27,11 @@ export async function generateMetadata({ params }) {
   const { locale } = await params;
   const t = await getTranslations("about_business");
   return {
-    // title.absolute prevents layout's `%s | ${BRAND_NAME}` template appending.
-    title: { absolute: t("meta_title") },
+    // MEH-2853: plain title — the layout template `%s | <brand>` adds the brand.
+    title: t("meta_title"),
     description: t("meta_description"),
     openGraph: {
-      title: t("og_title"),
+      title: buildEntityTitle(t("og_title"), locale),
       description: t("og_description"),
       type: "article",
       siteName: BRAND_NAME,
@@ -42,7 +42,7 @@ export async function generateMetadata({ params }) {
     // layout's generic site card).
     twitter: {
       card: "summary_large_image",
-      title: t("og_title"),
+      title: buildEntityTitle(t("og_title"), locale),
       description: t("og_description"),
       images: ["/og-image.png"],
     },

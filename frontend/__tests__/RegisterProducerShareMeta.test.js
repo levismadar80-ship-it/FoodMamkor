@@ -26,7 +26,10 @@ describe.each(["he", "en"])("register/producer share metadata (%s)", (locale) =>
 
   it("og:title and twitter:title are the sign-up title", async () => {
     const meta = await generateMetadata({ params: Promise.resolve({ locale }) });
-    expect(meta.openGraph.title).toBe("seo.register_producer.title");
-    expect(meta.twitter.title).toBe("seo.register_producer.title");
+    // MEH-2853: the share title carries the brand once at the end (Next.js
+    // applies no layout template to og/twitter titles).
+    const brand = locale === "en" ? "Mehamakor" : "מהמקור";
+    expect(meta.openGraph.title).toBe(`seo.register_producer.title | ${brand}`);
+    expect(meta.twitter.title).toBe(`seo.register_producer.title | ${brand}`);
   });
 });
