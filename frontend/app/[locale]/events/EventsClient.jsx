@@ -77,6 +77,10 @@ const CATEGORY_KEYS = withAll(EVENT_CATEGORIES);
 
 const EXPERIENCE_CATEGORY_KEYS = withAll(EXPERIENCE_CATEGORIES);
 
+// MEH-2847: clearing an already-empty selection keeps the SAME array, so it
+// is not a state change and does not refetch — as setCategory("") on "" was.
+const clearCategories = (prev) => (prev.length ? [] : prev);
+
 // MEH-2245: one hub behind two routes. `initialTab` is decided by the route
 // that mounts this component (/events → "events", /experiences →
 // "experiences") — never by a ?tab= query. The old query-string deep-link
@@ -108,11 +112,17 @@ export default function EventsPage({ initialTab = "events" }) {
   // URL on mount. A URL category is accepted only when it
   // belongs to the initial tab's vocabulary, so a cross-tab share link can't
   // silently filter to zero rows.
+  // MEH-2847: categories are MULTI-select, the /producers behaviour (MEH-1465,
+  // ProducersClient.jsx:227): an ARRAY of category keys, OR on the server,
+  // carried as repeated ?category=A&category=B. An old single-value link
+  // (?category=X) hydrates the same way (getAll → ["X"]). Each value is
+  // checked against the vocabulary on its own, so one bad value is dropped
+  // without dropping the good ones; duplicates collapse.
   const [city, setCity] = useState(() => search.get("city") || "");
-  const [category, setCategory] = useState(() => {
-    const fromUrl = search.get("category") || "";
+  const [categories, setCategories] = useState(() => {
     const vocab = initialTab === "experiences" ? EXPERIENCE_CATEGORIES : EVENT_CATEGORIES;
-    return vocab.some((c) => c.key === fromUrl) ? fromUrl : "";
+    const known = new Set(vocab.map((c) => c.key));
+    return [...new Set(search.getAll("category"))].filter((k) => known.has(k));
   });
 
   // Reset filters when switching tabs — the two tabs have different
@@ -126,7 +136,7 @@ export default function EventsPage({ initialTab = "events" }) {
   const switchTab = (next) => {
     if (next === tab) return;
     setTab(next);
-    setCategory("");
+    setCategories(clearCategories);
     setCity("");
     router.push(next === "experiences" ? "/experiences" : "/events");
   };
@@ -143,18 +153,19 @@ export default function EventsPage({ initialTab = "events" }) {
   useEffect(() => {
     const p = new URLSearchParams();
     if (city) p.set("city", city);
-    if (category) p.set("category", category);
+    // MEH-2847: one ?category= per selected key — the /producers format.
+    for (const c of categories) p.append("category", c);
     const qs = p.toString();
     const current = window.location.search.replace(/^\?/, "");
     if (qs === current) return;
     const path = window.location.pathname;
     window.history.replaceState(null, "", qs ? `${path}?${qs}` : path);
-  }, [city, category]);
+  }, [city, categories]);
 
   useEffect(() => {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tab, city, category]);
+  }, [tab, city, categories]);
 
   const load = async () => {
     const ticket = ++loadTicket.current;
@@ -163,7 +174,9 @@ export default function EventsPage({ initialTab = "events" }) {
     try {
       const params = {};
       if (city) params.city = city;
-      if (category) params.category = category;
+      // MEH-2847: the whole array — lib/api.js serializes it as repeated
+      // ?category= (paramsSerializer { indexes: null }); the server ORs it.
+      if (categories.length) params.category = categories;
       const endpoint = tab === "experiences" ? "/experiences" : "/events";
       // MEH-2396: lib/api.js sets no timeout, so when the backend hangs (seen
       // 26/10: ~40 s of 502 during a Railway redeploy) the skeleton sat on
@@ -189,15 +202,23 @@ export default function EventsPage({ initialTab = "events" }) {
   const categoryLabel = (entry) =>
     isExp ? tExpCat(entry.labelKey) : tCat(entry.labelKey);
 
-  // Chips → shared ChipScrollRow (radio semantics). The wire value for
-  // "all" is "" but ChipScrollRow's reset sentinel is "all" — bridge the
-  // two so its scroll-pinning behaves like /producers + /map.
+  // Chips → shared ChipScrollRow. The wire value for "all" is "" but
+  // ChipScrollRow's reset sentinel is "all" — bridge the two so its
+  // scroll-pinning behaves like /producers + /map.
   const chips = activeCategories.map((c) => ({
     key: c.key || "all",
     label: categoryLabel(c),
   }));
-  const activeChipKey = category === "" ? "all" : category;
-  const onChipClick = (k) => setCategory(k === "all" ? "" : k);
+  // MEH-2847: multi-select, as on /producers (ProducersClient.jsx:498-509).
+  // «הכל» clears the set (and is the active chip while it is empty); tapping
+  // a selected chip removes it; any other chip is added.
+  const activeChipKeys = useMemo(() => new Set(categories), [categories]);
+  const onChipClick = (k) => {
+    setCategories((prev) => {
+      if (k === "all") return clearCategories(prev);
+      return prev.includes(k) ? prev.filter((c) => c !== k) : [...prev, k];
+    });
+  };
 
   // MEH-2199: one handler per tablist. The hook reads each row's own tabs out
   // of the DOM, so the two rows on this page cannot interfere with each other.
@@ -225,7 +246,7 @@ export default function EventsPage({ initialTab = "events" }) {
 
   const resetFilters = () => {
     setCity("");
-    setCategory("");
+    setCategories(clearCategories);
   };
 
   // MEH-1865: a zero row count means two different things, and the page used
@@ -238,7 +259,7 @@ export default function EventsPage({ initialTab = "events" }) {
   // The reverse mistake (hiding the filters on a filtered-to-zero) is the one
   // that traps the reader with no way back but editing the URL, and it cannot
   // happen here.
-  const filtersActive = Boolean(city || category);
+  const filtersActive = Boolean(city || categories.length);
   // MEH-2396: an error is not a zero. Neither zero surface may render on a
   // failed load, or the page claims a dataset it never received.
   const isZero = !loading && !loadError && events.length === 0;
@@ -402,7 +423,7 @@ export default function EventsPage({ initialTab = "events" }) {
             <ChipScrollRow
               variant="category"
               chips={chips}
-              activeKey={activeChipKey}
+              activeKeys={activeChipKeys}
               onChipClick={onChipClick}
             />
           </div>

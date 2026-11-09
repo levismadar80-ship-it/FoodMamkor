@@ -67,6 +67,7 @@ from app.services.auth_notifications import (
 )
 from app.services.submission_confirmation import send_submission_confirmation
 from app.services.producer_risk import score_producer  # MEH-2602
+from app.services import indexnow  # MEH-2852
 from app.services.submission_gate import (
     attach_upcoming_events_count,
     submission_missing_items,
@@ -891,6 +892,8 @@ def update_my_producer(
     # locations CRUD pings "city" through the same gate).
     if organizer_city_changed:
         _fire_sensitive_edit(background_tasks, producer, ["city"])
+    # MEH-2852: the public profile changed — tell IndexNow (production only).
+    indexnow.schedule_public_producer(background_tasks, producer)
 
     attach_upcoming_events_count(producer)  # MEH-2460
     return producer

@@ -1062,7 +1062,7 @@ POST   /home-products/rate/{token}        public — submit rating
 ### Events (producer farm events — `app/routers/events.py`)
 
 ```
-GET    /events                    public — filter: city, category, from_date, to_date; approved producers only (MEH-1161; owner sees own via ?producer_id=, admin sees all); organizer-owned events included; EventOut.owner_kind + owner_slug (MEH-2459) + owner_image_url = owner's first photo or null, the list-row fallback (MEH-2546)
+GET    /events                    public — filter: city, category, from_date, to_date; category repeats (?category=A&category=B → OR, AND with the other filters; each value checked against VALID_CATEGORIES, an unknown one matches nothing — MEH-2847); approved producers only (MEH-1161; owner sees own via ?producer_id=, admin sees all); organizer-owned events included; EventOut.owner_kind + owner_slug (MEH-2459) + owner_image_url = owner's first photo or null, the list-row fallback (MEH-2546)
 GET    /events/upcoming            public — limit=N next events; approved producers only (MEH-1161)
 GET    /events/mine                producer — owner's own events, ALL states incl. inactive (MEH-1405; dashboard manage list). Declared before /events/{id} so "mine" isn't a UUID path.
 GET    /events/{event_id}          public — pending producer's event → 404 for strangers (MEH-1161; owner/admin bypass)
@@ -1127,7 +1127,7 @@ its admin-override, so an admin still deletes (→ 200).
 
 ```
 POST   /experiences/validate           public  — 30/hour, real-time Claude Haiku hint
-GET    /experiences                    public  — filter: category, city. Only approved+upcoming+is_active (MEH-1419).
+GET    /experiences                    public  — filter: category, city. category repeats (?category=A&category=B → OR, AND with city; each value checked against EXPERIENCE_CATEGORIES, an unknown one matches nothing — MEH-2847). Only approved+upcoming+is_active (MEH-1419).
 GET    /experiences/count              public  — {"count": N} for the SAME set GET /experiences returns (MEH-1918). Both go through _public_listing_query, so the number can never disagree with the list. Declared BEFORE /{experience_id} or the catch-all eats it. Used to data-gate the "חוויות" nav link at >= 3.
 GET    /experiences/mine               auth    — owner's submissions, any status (incl. is_active=False)
 GET    /experiences/{id}               mixed   — approved=public; non-approved=owner+admin
@@ -1584,6 +1584,32 @@ break the underlying flow.
 
 Email is sent via `app/services/email.py` → Resend HTTP API (HTTPS/443).
 Railway blocks SMTP ports (25/465/587); `smtplib` was removed in full.
+
+### IndexNow — search-engine pings (MEH-2852)
+
+`app/services/indexnow.py` POSTs changed public URLs (he + `/en`, the shapes
+`frontend/app/sitemap.js` emits) to `https://api.indexnow.org/indexnow`, as a
+BackgroundTask after the commit. **Production only** (`RAILWAY_ENVIRONMENT ==
+"production"`); anywhere else it logs and returns. Timeout 5 s, never raises
+(log + Sentry breadcrumb), ≤ 10,000 URLs per call, deduped. Key: the
+`INDEXNOW_KEY` constant, served at `frontend/public/<key>.txt` (public by
+design). No env var, no retry, no Google.
+
+| Endpoint | Pings when |
+|---|---|
+| `POST /admin/producers` | created approved (not `as_draft`) |
+| `PUT /admin/producers/{id}` | business is approved — old + new URL on a slug change |
+| `POST /admin/producers/{id}/approve` | always (the page appeared) |
+| `POST /admin/producers/{id}/toggle-status` | always (hidden / back on the site) |
+| `POST /admin/producers/{id}/reject` | the business was approved |
+| `DELETE /admin/producers/{id}` | the business was approved |
+| `PUT /producers/me` | the business is approved |
+| `POST /events` · `PUT /events/{id}` · `DELETE /events/{id}` | the business is approved |
+| `POST /admin/experiences/{id}/approve` | the host's business is approved |
+| `POST /admin/experiences/{id}/reject` · `/request-changes` | the experience was approved |
+| `POST /group-buys` · `PATCH /group-buys/{id}/status` · `PATCH /admin/group-buys/{id}/status` | the business is approved |
+| `POST /admin/recipes/{id}/approve` | the business is approved and has a slug |
+| `POST /admin/recipes/{id}/reject` · `/request-changes` | the recipe was published |
 
 ---
 

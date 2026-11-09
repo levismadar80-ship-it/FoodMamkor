@@ -31,6 +31,7 @@ from app.schemas.schemas import (
     ProducerRecipeModerationAction,
     ProducerRecipeOut,
 )
+from app.services import indexnow  # MEH-2852
 from app.services.content_notifications import (
     notify_recipe_approved,
     notify_recipe_changes_requested,
@@ -84,6 +85,16 @@ def admin_list_pending_recipes(
         .all()
     )
     return [_serialize(r) for r in rows]
+
+
+def _ping_recipe(
+    background_tasks: BackgroundTasks, db: Session, recipe: ProducerRecipe
+) -> None:
+    """MEH-2852: the recipe page appeared or went away. Public only under an
+    approved business with a slug (sitemap.js lists slugged producers only)."""
+    producer = db.query(Producer).filter(Producer.id == recipe.producer_id).first()
+    if indexnow.is_public_business(producer):
+        indexnow.schedule(background_tasks, indexnow.recipe_urls(producer, recipe.id))
 
 
 def _load_or_404(db: Session, recipe_id: UUID) -> ProducerRecipe:
@@ -176,6 +187,9 @@ def approve_recipe(
         background_tasks.add_task(
             notify_recipe_approved, owner_email, recipe.title, path
         )
+    # MEH-2852: queued last — background tasks run in order, so a slow ping
+    # (5s timeout) never holds the owner's email or the alerts.
+    _ping_recipe(background_tasks, db, recipe)
 
     recipe = _load_or_404(db, recipe.id)
     return _serialize(recipe)
@@ -201,6 +215,7 @@ def request_recipe_changes(
         raise HTTPException(status_code=400, detail="feedback is required")
 
     recipe = _load_or_404(db, recipe_id)
+    was_published = bool(recipe.published)  # MEH-2852
     recipe.moderation_status = "needs_revision"
     recipe.moderation_notes = action.feedback
     recipe.published = False
@@ -211,6 +226,8 @@ def request_recipe_changes(
         background_tasks.add_task(
             notify_recipe_changes_requested, owner_email, recipe.title, action.feedback
         )
+    if was_published:  # MEH-2852: unpublished — queued after the email
+        _ping_recipe(background_tasks, db, recipe)
     recipe = _load_or_404(db, recipe.id)
     return _serialize(recipe)
 
@@ -233,6 +250,7 @@ def reject_recipe(
     but this one is closed. `feedback` becomes moderation_notes (may be
     empty if the admin doesn't want to give a reason)."""
     recipe = _load_or_404(db, recipe_id)
+    was_published = bool(recipe.published)  # MEH-2852
     recipe.moderation_status = "rejected"
     recipe.moderation_notes = action.feedback or ""
     recipe.published = False
@@ -243,5 +261,7 @@ def reject_recipe(
         background_tasks.add_task(
             notify_recipe_rejected, owner_email, recipe.title, action.feedback
         )
+    if was_published:  # MEH-2852: unpublished — queued after the email
+        _ping_recipe(background_tasks, db, recipe)
     recipe = _load_or_404(db, recipe.id)
     return _serialize(recipe)
