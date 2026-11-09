@@ -247,7 +247,8 @@ describe("MEH-1507 Label Scope Contract — every label declares scope + evidenc
       vegan: {
         key: "vegan",
         label: "מתאים לטבעונים",
-        tooltip: "לעסק יש מוצרים טבעוניים מסומנים בקטלוג.",
+        // MEH-1508 (Sapir 09/11): + the milk/egg allergy sentence.
+        tooltip: "לעסק יש מוצרים טבעוניים מסומנים בקטלוג. אם יש אלרגיה לחלב או לביצים, כדאי לוודא ישירות מול בית העסק.",
         color: "muted",
         aboutHref: null,
       },
@@ -256,7 +257,7 @@ describe("MEH-1507 Label Scope Contract — every label declares scope + evidenc
       vegan_all: {
         key: "vegan_all",
         label: "טבעוני",
-        tooltip: "לפי הצהרת בית העסק",
+        tooltip: "לפי הצהרת בית העסק. אם יש אלרגיה לחלב או לביצים, כדאי לוודא ישירות מול בית העסק.",
         color: "muted",
         aboutHref: null,
       },
