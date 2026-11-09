@@ -456,7 +456,12 @@ def test_every_interpolation_in_the_html_builder_is_escaped():
     CI reviewer found — `_APPROVED_HTML_BUTTON_LABEL`,
     `_APPROVED_HTML_DASHBOARD_LABEL`, `SITE_DOMAIN`.
     """
-    raw = _raw_interpolation_sites(inspect.getsource(_producer_approved_html))
+    source = inspect.getsource(_producer_approved_html)
+    # `logo` is allowed by name below; pin what it may hold, or the allowance
+    # would pass any raw value bound to that name (MEH-2834 review).
+    logo_binds = re.findall(r"^\s*logo\s*=\s*(.+)$", source, re.MULTILINE)
+    assert logo_binds == ["email_logo_html()"], f"`logo` must be bound only to email_logo_html(): {logo_binds}"
+    raw = _raw_interpolation_sites(source)
     assert raw == [], (
         f"unescaped interpolation(s) in _producer_approved_html: {raw}. Every "
         f"value reaching the markup goes through _html_escape() — the "
