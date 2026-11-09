@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import dynamic from "next/dynamic";
 import LocationModal from "@/components/LocationModal";
 import LocationBanner from "@/components/LocationBanner";
 import HolidayBanner from "@/components/HolidayBanner";
@@ -22,17 +21,11 @@ import { useTranslations } from "next-intl";
 import { useHomePage } from "@/lib/use-home-page";
 import { useFavoriteProducers } from "@/lib/use-favorite-producers";
 
-// MEH-538 + MEH-604: lazy-load Leaflet + the mini-map preview. SSR-disabled
-// because Leaflet touches `window`. MEH-604 added the `loading` skeleton so
-// the above-the-fold slot reserves height on first paint (CLS = 0) before JS
-// hydrates. The skeleton lives in a SEPARATE file (Leaflet-free) so it can
-// be imported synchronously without dragging Leaflet into SSR.
 import RescueHomeModule from "@/components/rescue/RescueHomeModule";
-import HomepageMiniMapSkeleton from "@/components/HomepageMiniMapSkeleton";
-const HomepageMiniMap = dynamic(() => import("@/components/HomepageMiniMap"), {
-  ssr: false,
-  loading: () => <HomepageMiniMapSkeleton />,
-});
+// MEH-538 + MEH-604 + MEH-2850 C: the mini-map's SSR-disabled dynamic import
+// and its Leaflet-free skeleton live in HomepageMiniMapLazy, which starts the
+// import only when the visitor scrolls near the map.
+import HomepageMiniMapLazy from "@/components/HomepageMiniMapLazy";
 
 // MEH-1688: the standalone "newest businesses" section is GONE, and with it
 // MEH-809's NEW_SECTION_MIN_PRODUCERS depth gate. MEH-809 hid the section on a
@@ -291,9 +284,9 @@ export default function HomeClient({
           __tests__/VisualOrderGuard.test.js fails on a new `order-*` /
           `*-reverse` outside its reasoned allowlist. The MEH-538/604 "map right
           under the hero" placement is retired by this ticket on both viewports.
-          The skeleton (dynamic({ loading })) still reserves height on first
-          paint; Leaflet bundle eval is still deferred post-FCP. */}
-      <HomepageMiniMap />
+          The skeleton still reserves height on first paint; since MEH-2850 C
+          Leaflet + tiles load only when the visitor scrolls near the map. */}
+      <HomepageMiniMapLazy />
 
       {/* =========================
           MEET A PRODUCER (P5 §10 · MEH-542) — fed by the first is_recommended
