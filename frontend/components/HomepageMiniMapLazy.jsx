@@ -37,7 +37,11 @@ export default function HomepageMiniMapLazy() {
   useEffect(() => {
     if (near) return undefined;
     // No IntersectionObserver (very old browsers): load at once, as before.
-    if (typeof window === "undefined" || typeof window.IntersectionObserver !== "function") {
+    // Deliberately a setState in the effect, not a lazy useState initialiser:
+    // the server renders the skeleton, so deciding on first render would be
+    // a hydration mismatch.
+    if (typeof window.IntersectionObserver !== "function") {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- see above
       setNear(true);
       return undefined;
     }

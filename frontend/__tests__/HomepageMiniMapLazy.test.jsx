@@ -10,11 +10,12 @@ import fs from "node:fs";
 import path from "node:path";
 
 vi.mock("next-intl", () => ({ useTranslations: () => (k) => k }));
+vi.mock("@/i18n/navigation", () => ({
+  Link: ({ href, children, ...rest }) => <a href={href} {...rest}>{children}</a>,
+}));
 // The dynamic() import is what pulls Leaflet; a marker stands in for the map.
-const importCalls = vi.hoisted(() => ({ n: 0 }));
 vi.mock("next/dynamic", () => ({
   default: () => {
-    importCalls.n += 1;
     return function LoadedMap() {
       return <div data-testid="minimap-loaded" />;
     };
@@ -75,6 +76,22 @@ describe("homepage mini-map loads only near the viewport (MEH-2850 C)", () => {
     const { default: Lazy } = await import("@/components/HomepageMiniMapLazy");
     render(<Lazy />);
     expect(screen.getByTestId("minimap-loaded")).toBeTruthy();
+  });
+
+  it("the skeleton carries the map's «open full map» row, so the swap does not grow the box", async () => {
+    const { default: Lazy } = await import("@/components/HomepageMiniMapLazy");
+    render(<Lazy />);
+    const link = screen.getByRole("link", { name: "open_full" });
+    expect(link.getAttribute("href")).toBe("/map");
+    // Same row markup as the loaded map (HomepageMiniMap.jsx) — read from the
+    // source so a class change on one side reds here.
+    const read = (f) => fs.readFileSync(path.resolve(__dirname, "../components", f), "utf8");
+    const row = /<div className="mt-3 text-center">\s*<Link\s+href="\/map"\s+className="([^"]+)"/;
+    const mapRow = read("HomepageMiniMap.jsx").match(row);
+    const skelRow = read("HomepageMiniMapSkeleton.jsx").match(row);
+    expect(mapRow, "control: the map still has the row").toBeTruthy();
+    expect(skelRow?.[1]).toBe(mapRow[1]);
+    expect(link.parentElement.className).toBe("mt-3 text-center");
   });
 
   it("the home page renders the gated component, not the map directly", () => {

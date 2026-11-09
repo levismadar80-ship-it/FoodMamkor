@@ -21,14 +21,10 @@ import { useTranslations } from "next-intl";
 import { useHomePage } from "@/lib/use-home-page";
 import { useFavoriteProducers } from "@/lib/use-favorite-producers";
 
-// MEH-538 + MEH-604: lazy-load Leaflet + the mini-map preview. SSR-disabled
-// because Leaflet touches `window`. MEH-604 added the `loading` skeleton so
-// the above-the-fold slot reserves height on first paint (CLS = 0) before JS
-// hydrates. The skeleton lives in a SEPARATE file (Leaflet-free) so it can
-// be imported synchronously without dragging Leaflet into SSR.
 import RescueHomeModule from "@/components/rescue/RescueHomeModule";
-// MEH-2850 C: the dynamic import + skeleton now live in HomepageMiniMapLazy,
-// which starts the import only when the visitor scrolls near the map.
+// MEH-538 + MEH-604 + MEH-2850 C: the mini-map's SSR-disabled dynamic import
+// and its Leaflet-free skeleton live in HomepageMiniMapLazy, which starts the
+// import only when the visitor scrolls near the map.
 import HomepageMiniMapLazy from "@/components/HomepageMiniMapLazy";
 
 // MEH-1688: the standalone "newest businesses" section is GONE, and with it
