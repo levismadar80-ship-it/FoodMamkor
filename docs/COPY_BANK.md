@@ -1225,3 +1225,12 @@ The experience category whose data key is «בישול» is labelled «בישו�
 | # | Key | Before | After | Status |
 |---|---|---|---|---|
 | 1 | `events.experience_categories.cooking` (the chip on /experiences) + `experiences.categories.cooking` (the experience create/edit form select, and the experience page) | `בישול` (en `Cooking`) | `בישול ואפייה` (en `Cooking & baking`) | ✅ MEH-2847 PR |
+
+### MEH-1508 — milk/egg allergy sentence on the vegan badges (approved by Sapir verbatim 09/11)
+Self-declared "vegan" is a dietary claim, not an allergen-safety claim (UK guidance), so the two vegan badges tell an allergic visitor to check with the business — the same shape as the gluten line (`producer.detail.header.gluten_facility.shared`). The vegetarian badges do not get it: vegetarian food includes milk and eggs. Labels unchanged (MEH-2677: «טבעוני» / «צמחוני»); the filter chip's ⓘ (`subtext`, its aria-label) unchanged.
+| # | Key | Before | After | Status |
+|---|---|---|---|---|
+| 1 | `badges.vegan.tooltip` | `לעסק יש מוצרים טבעוניים מסומנים בקטלוג.` | `לעסק יש מוצרים טבעוניים מסומנים בקטלוג. אם יש אלרגיה לחלב או לביצים, כדאי לוודא ישירות מול בית העסק.` | ✅ MEH-1508 PR |
+| 2 | `badges.vegan_all.tooltip` | `לפי הצהרת בית העסק` | `לפי הצהרת בית העסק. אם יש אלרגיה לחלב או לביצים, כדאי לוודא ישירות מול בית העסק.` | ✅ MEH-1508 PR |
+| 1 en | `badges.vegan.tooltip` | `The business has products marked vegan in its catalog.` | `The business has products marked vegan in its catalog. If you have a milk or egg allergy, please check directly with the business.` | ✅ MEH-1508 PR |
+| 2 en | `badges.vegan_all.tooltip` | `As declared by the business` | `As declared by the business. If you have a milk or egg allergy, please check directly with the business.` | ✅ MEH-1508 PR |

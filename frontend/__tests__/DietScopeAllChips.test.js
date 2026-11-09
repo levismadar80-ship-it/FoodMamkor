@@ -41,6 +41,12 @@ const LOCKED = {
   vegetarian_all: "צמחוני",
 };
 const DECLARED = "לפי הצהרת בית העסק";
+// MEH-1508 (Sapir 09/11): the vegan one adds the milk/egg allergy sentence;
+// the vegetarian one does not (vegetarian food includes milk and eggs).
+const DECLARED_TOOLTIP = {
+  vegan_all: `${DECLARED}. אם יש אלרגיה לחלב או לביצים, כדאי לוודא ישירות מול בית העסק.`,
+  vegetarian_all: DECLARED,
+};
 // MEH-2748: chip words come from messages — read them as a renderer does.
 const heLabel = (key) => heChipCopy({ key }).label;
 const SCOPE_ALL = ["vegan_all", "vegetarian_all"];
@@ -120,7 +126,7 @@ describe("§6.4 — the 100% badges", () => {
     expect(b, `BADGE_CONFIG.${key}`).toBeDefined();
     expect(b.key).toBe(key);
     expect(b.label).toBe(LOCKED[key]);
-    expect(b.tooltip).toBe(DECLARED);
+    expect(b.tooltip).toBe(DECLARED_TOOLTIP[key]);
     // `primary` is the verified seal's colour — a self-declaration never wears it.
     expect(b.color).toBe("muted");
     expect(b.scope).toBe("business");
