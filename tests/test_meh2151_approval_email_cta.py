@@ -412,9 +412,11 @@ def _raw_interpolation_sites(source: str) -> list[str]:
     Locals holding already-escaped fragments (`button`, `community`) and the
     pre-escaped `safe_name` are allowed by name: they are built above the return
     from values this same rule already covers, so requiring a second escape
-    would double-encode them.
+    would double-encode them. `logo` (MEH-2834) is the shared email header from
+    `email_logo_html()`, which escapes its only dynamic value (the URL) itself;
+    tests/test_email_logo.py pins its markup.
     """
-    allowed_locals = {"button", "community", "safe_name"}
+    allowed_locals = {"button", "community", "safe_name", "logo"}
     return [
         site
         for site in re.findall(r"\{([^{}]+)\}", source)
