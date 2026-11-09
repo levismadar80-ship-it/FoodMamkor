@@ -259,6 +259,12 @@ describe.each(["he", "en"])("MEH-2853 title pattern (%s)", (locale) => {
 
     // og / twitter titles get no template from Next.js — when a page sets
     // one, it must carry the brand itself, at the end, once.
+    // KNOWN GAP (fresh review of #4229): a page that sets openGraph but no
+    // twitter INHERITS the layout's twitter object, whose title is the home
+    // twitter_title («מהמקור — …») — Next does not refill it from og. This
+    // test sees only what generateMetadata returns, not that inheritance, so
+    // it cannot catch it. Pre-existing on staging; its own card (it also
+    // involves the twitter description, out of this card's scope).
     for (const social of [meta.openGraph?.title, meta.twitter?.title]) {
       if (social == null) continue;
       for (const bad of BAD_SEPARATORS(brand)) {
