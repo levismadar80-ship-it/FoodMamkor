@@ -320,7 +320,7 @@ test('no "יצרן" text anywhere visible', async ({ page }) => {
 ```
 bash scripts/link-check.sh              # build + start + crawl + stop
 bash scripts/link-check.sh --skip-build # אם כבר יש build
-node scripts/link-check.mjs --self-test # הקלסיפייר של robots בלבד
+node scripts/link-check.mjs --self-test # robots + תקציב העמודים, בלי רשת
 ```
 
 זוחל מ-`/` על לינקים פנימיים בלבד, מכבד את ה-`Disallow` של
@@ -358,6 +358,21 @@ _שורה קודמת כאן טענה ש"נתיבים רב-מקטעיים כן נ
 **MEH-2749:** הבודק רץ עכשיו גם אחרי כל עלייה ל-staging ול-main, מול האתר
 החי, בתוך `post-deploy-checks.yml` (ראו הסעיף הבא). ל-staging הוא שולח את
 `VERCEL_AUTOMATION_BYPASS_SECRET` מה-env אם קיים.
+
+**תקציב עמודים (MEH-2864).** כל עמוד שנסרק הוא רינדור בשרת של מי שמארח את
+האתר. הסריקה המלאה אחרי כל push ל-staging היא החשודה העיקרית בהשעיית חשבון
+Vercel ב-09/11, ולכן:
+
+| יעד | מצב | עמודים |
+|---|---|---|
+| staging (`IS_PRODUCTION=false` מה-workflow, או `staging.mehamakor.online`) | sample | 40, ברוחב מ-`/` |
+| פרודקשן, `next start` מקומי | full | 2000 |
+| `--max-pages=N` | flag | N |
+
+כל ריצה מדפיסה `mode`, את התקציב, את מספר העמודים שנסרקו ואת מספר בקשות ה-HTTP.
+ב-sample, עצירה בתקציב מודפסת כ-`SAMPLE` ולא כ-`TRUNCATED`. ה-guard
+`scripts/checks/link-check-budget-guard.sh` מריץ את ה-self-test ב-Repo guards,
+כולל בדיקה מול ה-hosts שב-`post-deploy-checks.yml`.
 
 ---
 
