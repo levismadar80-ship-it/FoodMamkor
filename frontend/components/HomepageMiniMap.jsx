@@ -5,7 +5,8 @@
  * Purpose:  Lazy-loaded mini-map preview on the homepage — discovery
  *           prominence per MEH-538. Click anywhere → /map.
  * Touches:  GET /producers (lazy, on intersection), Leaflet (lazy import
- *           via parent's `dynamic(..., { ssr: false })`), OSM tile layer.
+ *           via HomepageMiniMapLazy's `dynamic(..., { ssr: false })`, which
+ *           runs only near the viewport — MEH-2850 C), OSM tile layer.
  * Does NOT: Cluster, my-location, hover, bounds tracking, search, filters,
  *           verified/premium badge decoration — those live in
  *           MapComponent.jsx (full /map page).
