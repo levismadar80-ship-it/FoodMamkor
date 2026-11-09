@@ -66,11 +66,11 @@
       "notes": "Audited MEH-402. Full body reviewed. Documents issues, doesn't fix. Suggests user-facing /<command> recommendations. Light chain to frontend-design. Author: Paul Bakaus."
     },
     "backlog-groom": {
-      "source": "internal",
+      "source": "local",
       "author_verified": false,
-      "last_audit_date": "2026-08-09",
+      "last_audit_date": "2026-11-09",
       "audit_verdict": "approved",
-      "notes": "Authored internally (MEH-1960) from the first backlog-groom run. Prose only: SKILL.md + 3 files under references/ (verdicts, verification, lessons). No scripts, no executables, no network. The shell snippets it documents are read-only git invocations (show/grep/log/ls-tree/rev-parse) quoted as guidance for the operator, not auto-invoked, and it points at no tools/ path. Reads no env vars and no credentials. Its Linear writes go through the session's existing MCP tools under the operator's own permissions - the skill adds no capability, only method.",
+      "notes": "Authored internally (MEH-1960) from the first backlog-groom run. Prose only: SKILL.md + 3 files under references/ (verdicts, verification, lessons). No scripts, no executables, no network. The shell snippets it documents are read-only git invocations (show/grep/log/ls-tree/rev-parse) quoted as guidance for the operator, not auto-invoked, and it points at no tools/ path. Reads no env vars and no credentials. Its Linear writes go through the session's existing MCP tools under the operator's own permissions - the skill adds no capability, only method. RE-AUDIT MEH-1055 (2026-11-09): content unchanged since 41a5775a3; SKILL.md + references/{verdicts,verification,lessons}.md re-read end to end — prose plus quoted read-only git commands, no executables. Clean. Moved to .agents/skills/ + symlink and hash-locked. source internal -> local (the house value, as resolve-conflicts).",
       "allowed_shell_invocations": [],
       "allowed_network_hosts": []
     },
@@ -219,18 +219,18 @@
     "grill-me": {
       "source": "mattpocock/skills",
       "author_verified": false,
-      "last_audit_date": "2026-07-09",
+      "last_audit_date": "2026-11-09",
       "audit_verdict": "approved",
-      "notes": "Audited MEH-1053 (upstream d574778f, skills/productivity/grill-me, SHA256 6189dfce...eba54). Single 147-byte SKILL.md, disable-model-invocation: true. Zero network/exec/secret/injection/write patterns. FINDING: body is one chained reference — 'Run a /grilling session' — and the grilling skill is NOT installed; dead pointer, inert today. Any future skill named 'grilling' re-activates it and MUST be audited before install (MEH-422 Class A dead-pointer class). RESOLVED (MEH-1067, 2026-07-09): 'grilling' fetched from the same upstream (d574778f), audited clean, and installed at .claude/skills/grilling/ — dead pointer no longer inert, /grill-me is now functional.",
+      "notes": "Audited MEH-1053 (upstream d574778f, skills/productivity/grill-me, SHA256 6189dfce...eba54). Single 147-byte SKILL.md, disable-model-invocation: true. Zero network/exec/secret/injection/write patterns. FINDING: body is one chained reference — 'Run a /grilling session' — and the grilling skill is NOT installed; dead pointer, inert today. Any future skill named 'grilling' re-activates it and MUST be audited before install (MEH-422 Class A dead-pointer class). RESOLVED (MEH-1067, 2026-07-09): 'grilling' fetched from the same upstream (d574778f), audited clean, and installed at .claude/skills/grilling/ (since MEH-1055: .agents/skills/grilling/, mounted by symlink) — dead pointer no longer inert, /grill-me is now functional. RE-AUDIT MEH-1055 (2026-11-09): content unchanged since install (one commit, fe04fbfc4); prose only, one line chaining to /grilling. Clean. Moved to .agents/skills/ + symlink and hash-locked.",
       "allowed_shell_invocations": [],
       "allowed_network_hosts": null
     },
     "grilling": {
       "source": "mattpocock/skills",
       "author_verified": false,
-      "last_audit_date": "2026-07-09",
+      "last_audit_date": "2026-11-09",
       "audit_verdict": "approved",
-      "notes": "Audited MEH-1067 (upstream d574778f, skills/productivity/grilling/SKILL.md, SHA256 5a35925d03a391bcfa46940868b649b72dba89ec9c19525e785bbb6bd3a7f478). Single 821-byte SKILL.md, model-invocable (no disable-model-invocation flag, unlike grill-me). Pure interviewing prose (stress-test a plan/design one question at a time). Full-body scan: zero network/exec/secret/prompt-injection/file-write patterns; one benign typographic em-dash (U+2014) in prose. No further chained skill reference — the grill-me->grilling chain TERMINATES here, no third dead pointer. Resolves the MEH-1053 grill-me dead-pointer finding; /grill-me now functional. (SHA is raw-file provenance, not the lock's computedHash; canonical lock deferred to MEH-1055 batch.)",
+      "notes": "Audited MEH-1067 (upstream d574778f, skills/productivity/grilling/SKILL.md, SHA256 5a35925d03a391bcfa46940868b649b72dba89ec9c19525e785bbb6bd3a7f478). Single 821-byte SKILL.md, model-invocable (no disable-model-invocation flag, unlike grill-me). Pure interviewing prose (stress-test a plan/design one question at a time). Full-body scan: zero network/exec/secret/prompt-injection/file-write patterns; one benign typographic em-dash (U+2014) in prose. No further chained skill reference — the grill-me->grilling chain TERMINATES here, no third dead pointer. Resolves the MEH-1053 grill-me dead-pointer finding; /grill-me now functional. (SHA is raw-file provenance, not the lock's computedHash; canonical lock deferred to MEH-1055 batch.) RE-AUDIT MEH-1055 (2026-11-09): the prior last_audit_date (2026-07-09) predated the content (single commit c3d7ce88e, 2026-07-23) — re-read now at that content: 4 prose paragraphs, no code, no tool or network instruction. Clean. Moved to .agents/skills/ + symlink and hash-locked.",
       "allowed_shell_invocations": [],
       "allowed_network_hosts": null
     },
@@ -378,11 +378,11 @@
       "notes": "Audited MEH-403. Chains to product-marketing-context. Pure marketing/CRO/SEO prose, no scripts. Author: Corey Haines."
     },
     "mehamakor-dod": {
-      "source": "internal",
+      "source": "local",
       "author_verified": false,
-      "last_audit_date": "2026-07-09",
+      "last_audit_date": "2026-11-09",
       "audit_verdict": "approved",
-      "notes": "Authored internally (MEH-1052). Executable DoD self-check: check.sh runs local build/vitest/pytest + reuses .claude/scripts/rtl-scan.sh and the MEH-978 en-parity-guard. Bash only, no network, no tools/ bypass.",
+      "notes": "Authored internally (MEH-1052). Executable DoD self-check: check.sh runs local build/vitest/pytest + reuses .claude/scripts/rtl-scan.sh and the MEH-978 en-parity-guard. Bash only, no network, no tools/ bypass. RE-AUDIT MEH-1055 (2026-11-09): SKILL.md + check.sh read end to end at their current content (4 commits since the 2026-07-09 audit: MEH-1513/1515 RTL delegation, MEH-1951 vitest-guard, #2755 pg_isready). Shell only to the repo's own toolchain (npm run build, node scripts/vitest-guard.mjs, pytest, pg_isready, rtl-scan.sh, grep); no network, no env/credential reads, writes only /tmp/dod-*.log when explicitly run. Clean. Moved to .agents/skills/ + symlink and hash-locked. source internal -> local (the house value, as resolve-conflicts). Model-invocable by design (the DoD gate a /goal loop runs before declaring done): when invoked it runs the repo's own build/tests, which write frontend/.next and /tmp/dod-*.log — the skills.md \"writes outside its dir\" flag, accepted here because the writes are the repo's normal build artifacts and the commands are the DoD itself (fresh review, MEH-1055).",
       "allowed_shell_invocations": [],
       "allowed_network_hosts": []
     },
