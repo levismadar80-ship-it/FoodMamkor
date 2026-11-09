@@ -22,23 +22,31 @@ import { useTranslations } from "next-intl";
 // without the link first; plain effect on the server (no layout there).
 const useIsomorphicLayoutEffect = typeof window === "undefined" ? useEffect : useLayoutEffect;
 
+// en is the only prefixed locale (localePrefix "as-needed"); a language switch
+// rewrites the path in place, so paths are compared without it.
+const stripLocale = (path) => path.replace(/^\/en(?=\/|$)/, "") || "/";
+
 /**
- * Did the visitor reach this page from inside the site, with a page to go
- * back to?
- *   - In-app (client-side) navigation: the tab's first document was another
- *     path. document.referrer does not change on client navigation, so the
- *     tab's own first navigation entry is the witness.
- *   - A full load from our own site (same-origin referrer) — but only with a
- *     history entry behind it; a link opened in a new tab has none, and
- *     router.back() there would do nothing.
+ * Is there a page of OURS right behind this one in the tab's history?
+ *   - Where the browser can say (Navigation API: Chromium, Android webviews):
+ *     `navigation.canGoBack` — true only when a same-origin entry sits behind
+ *     the current one. A landing from WhatsApp / Google is index 0 (cross-
+ *     origin entries are not exposed), a language switch replaces in place.
+ *   - Elsewhere: the tab's first document was another page of the site (by
+ *     path, locale prefix ignored) — i.e. the visitor moved here client-side.
+ *     document.referrer is NOT used: it survives reloads and back/forward
+ *     rebuilds, and history.length counts forward entries, so both could show
+ *     a button that leaves the site or does nothing (fresh-review finding).
+ *     The fallback can miss (a reload after an in-app arrival); it does not
+ *     show a dead button.
  */
 export function cameFromInsideSite(win = typeof window === "undefined" ? undefined : window) {
   if (!win) return false;
   try {
+    if (typeof win.navigation?.canGoBack === "boolean") return win.navigation.canGoBack;
     const first = win.performance?.getEntriesByType?.("navigation")?.[0]?.name;
-    if (first && new URL(first).pathname !== win.location.pathname) return true;
-    const ref = win.document.referrer;
-    return Boolean(ref) && new URL(ref).origin === win.location.origin && win.history.length > 1;
+    if (!first) return false;
+    return stripLocale(new URL(first).pathname) !== stripLocale(win.location.pathname);
   } catch {
     return false; // an unparsable URL is not a reason to offer a dead button
   }
