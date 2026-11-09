@@ -528,14 +528,16 @@ export default function ProducerCard({ producer, active, onClick, referrer, high
           ref={badgeStripRef}
           className="absolute bottom-3 start-3 flex flex-wrap items-center gap-x-1 gap-y-2.5 max-w-[calc(100%-1.5rem)]"
         >
-          {/* pe-2.5 while «+N» shows = its -m-2.5 pull-back: the chip's 44px
-              hit area reaches 10px past the group's end, and without the
-              padding scrollWidth reads that as overflow and drops a badge that
-              fits (caught on the preview: «משק ברק» lost its 2nd pill). */}
+          {/* pe-2.5 while 2 pills + «+N» show = the chip's -m-2.5 pull-back:
+              its 44px hit area reaches 10px past the group's end, and without
+              the padding scrollWidth reads that as overflow and drops a badge
+              that fits (caught on the preview: «משק ברק» lost its 2nd pill).
+              With 1 pill there is nothing left to drop, so the lone pill gets
+              those 10px back (it is the one that breaks at 200% text). */}
           <div
             ref={badgeLineRef}
             data-badge-line
-            className={`flex flex-nowrap items-center gap-x-1 min-w-0 max-w-full ${hiddenBadges > 0 ? "pe-2.5" : ""}`}
+            className={`flex flex-nowrap items-center gap-x-1 min-w-0 max-w-full ${hiddenBadges > 0 && shownBadges > 1 ? "pe-2.5" : ""}`}
           >
           <BadgeRow producer={producer} limit={shownBadges} surface="card" avoidRef={badgeStripRef} nowrap />
           {hiddenBadges > 0 && (

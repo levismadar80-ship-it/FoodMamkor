@@ -283,6 +283,9 @@ describe("card badge strip: one line, the rest in «+N» (MEH-2856)", () => {
     const list = document.querySelector(`[data-badge="${first}"]`).closest('[role="list"]');
     expect(list.className).toContain("min-w-0");
     expect(list.className).not.toContain("[&>*]:shrink-0");
+    // With one pill nothing is left to drop: the lone pill keeps the 10px the
+    // «+N» padding would have taken (it is the pill that breaks at 200%).
+    expect(document.querySelector(LINE_SELECTOR).className.split(/\s+/)).not.toContain("pe-2.5");
   });
 
   it("the «+N» panel lists exactly the hidden badges", () => {
