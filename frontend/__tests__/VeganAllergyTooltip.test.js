@@ -39,9 +39,14 @@ describe("vegan badges carry the milk/egg allergy sentence (MEH-1508)", () => {
     expect(he.badges.vegetarian_all.tooltip).toBe("לפי הצהרת בית העסק");
   });
 
-  it("the filter chip's ⓘ subtext (its aria-label) is untouched", () => {
-    const subtexts = JSON.stringify(he).match(/"subtext":"[^"]*"/g) ?? [];
-    expect(subtexts.length, "control: subtexts exist").toBeGreaterThan(0);
-    for (const s of subtexts) expect(s).not.toMatch(/אלרגיה/);
+  it("the vegan filter chips' ⓘ subtext (their aria-label) is untouched", () => {
+    expect([he.filter_axes.vegan.subtext, he.filter_axes.vegan_all.subtext]).toEqual([
+      "עסקים עם מוצרים טבעוניים בקטלוג",
+      "לפי הצהרת בית העסק",
+    ]);
+    expect([en.filter_axes.vegan.subtext, en.filter_axes.vegan_all.subtext]).toEqual([
+      "Businesses with vegan products in their catalog",
+      "As declared by the business",
+    ]);
   });
 });
