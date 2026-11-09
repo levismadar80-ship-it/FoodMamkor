@@ -2621,7 +2621,7 @@
     },
     "experience_categories": {
       "all": "All",
-      "cooking": "Cooking",
+      "cooking": "Cooking & baking",
       "nutrition": "Nutrition",
       "food_tour": "Food tour",
       "agriculture": "Agriculture",
@@ -2674,7 +2674,7 @@
   "experiences": {
     "categories": {
       "all": "All",
-      "cooking": "Cooking",
+      "cooking": "Cooking & baking",
       "nutrition": "Nutrition",
       "food_tour": "Food tour",
       "agriculture": "Agriculture",

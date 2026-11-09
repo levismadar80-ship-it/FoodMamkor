@@ -153,3 +153,108 @@ class TestEventUpdateStaysPermissive:
         assert resp.status_code == 200, resp.text
         db.refresh(row)
         assert row.city is None  # untouched, not backfilled
+
+
+# ---------- MEH-2847: GET /events accepts several categories (OR) ----------
+
+
+def _listed_event(db, producer_id, *, title: str, category: str, city=None):
+    """A public, upcoming event row. Inserted directly: the subject is the
+    list filter, not the create path. REUSES: tests/test_events_mine.py:26."""
+    event = Event(
+        producer_id=producer_id,
+        title=title,
+        event_date=date(2099, 1, 1),
+        category=category,
+        city=city,
+        is_active=True,
+    )
+    db.add(event)
+    db.commit()
+    return event
+
+
+def _three_events(db) -> None:
+    """One event per category, so every result is checked against rows it
+    must KEEP and a row it must DROP."""
+    producer = make_producer(db, status="approved")  # MEH-1161 public gate
+    _listed_event(db, producer.id, title="שוק", category="שוק")
+    _listed_event(db, producer.id, title="קטיף", category="קטיף")
+    _listed_event(db, producer.id, title="טעימות", category="טעימות")
+
+
+def _titles(resp) -> set[str]:
+    assert resp.status_code == 200, resp.text
+    return {e["title"] for e in resp.json()}
+
+
+class TestEventListMultiCategory:
+    def test_two_categories_return_the_union(self, client, db):
+        """The new behaviour. Before MEH-2847 `category` was one string, and
+        FastAPI keeps only the LAST of a repeated param — so this returned
+        {"קטיף"} alone."""
+        _three_events(db)
+
+        # A list is sent as repeated ?category=שוק&category=קטיף — the wire
+        # format the frontend api client produces (paramsSerializer).
+        resp = client.get("/events", params={"category": ["שוק", "קטיף"]})
+
+        assert _titles(resp) == {"שוק", "קטיף"}
+
+    def test_union_still_ands_with_the_city(self, client, db):
+        """OR inside the category axis, AND with the city axis."""
+        producer = make_producer(db, status="approved")
+        _listed_event(db, producer.id, title="שוק חיפה", category="שוק", city="חיפה")
+        _listed_event(db, producer.id, title="קטיף חיפה", category="קטיף", city="חיפה")
+        _listed_event(
+            db, producer.id, title="שוק תל אביב", category="שוק", city="תל אביב"
+        )
+
+        resp = client.get(
+            "/events", params={"category": ["שוק", "קטיף"], "city": "חיפה"}
+        )
+
+        assert _titles(resp) == {"שוק חיפה", "קטיף חיפה"}
+
+    def test_one_category_behaves_as_before(self, client, db):
+        """Pin: an old single-value link (?category=שוק) is unchanged."""
+        _three_events(db)
+
+        resp = client.get("/events", params={"category": "שוק"})
+
+        assert _titles(resp) == {"שוק"}
+
+    def test_no_category_and_blank_category_return_everything(self, client, db):
+        """Pin: no value, and a bare ?category=, both mean "no filter" — the
+        blank one must not become IN ('') and hide every row."""
+        _three_events(db)
+        everything = {"שוק", "קטיף", "טעימות"}
+
+        assert _titles(client.get("/events")) == everything
+        assert _titles(client.get("/events?category=")) == everything
+
+    def test_unknown_category_alone_matches_nothing_and_beside_a_real_one_is_dropped(
+        self, client, db
+    ):
+        """Pin: an unknown value is not refused (200, as the single value
+        was) and matches nothing; next to a real one it hides nothing."""
+        _three_events(db)
+
+        alone = client.get("/events", params={"category": "לא-קיים"})
+        mixed = client.get("/events", params={"category": ["לא-קיים", "קטיף"]})
+
+        assert _titles(alone) == set()
+        assert _titles(mixed) == {"קטיף"}
+
+    def test_a_value_outside_the_category_set_is_not_matched(self, client, db):
+        """Each value is checked against VALID_CATEGORIES (MEH-2847). A row
+        still holding a category the set no longer has («סדנה», removed from
+        events in MEH-1657) is not reachable through the filter. Without the
+        check this returned the legacy row."""
+        producer = make_producer(db, status="approved")
+        _listed_event(db, producer.id, title="ישן", category="סדנה")
+        _listed_event(db, producer.id, title="קטיף", category="קטיף")
+
+        assert _titles(client.get("/events", params={"category": "סדנה"})) == set()
+        both = client.get("/events", params={"category": ["סדנה", "קטיף", "קטיף"]})
+        assert _titles(both) == {"קטיף"}

@@ -1206,3 +1206,9 @@ Brand rule: BRAND.md §7. Mechanical replacement in every he.json string and eve
 | 16 | demo seed title (staging only) | `רכישה קבוצתית: שק קמח כוסמין מלא` | `קבוצת רכישה: שק קמח כוסמין מלא` | ✅ PR 9 |
 | 17 | `producer.detail.sections.group_buys.show_all` (new) | — | `הצגת כל קבוצות הרכישה` | ✅ PR 7 |
 
+
+### MEH-2847 — «בישול» → «בישול ואפייה» (approved by Sapir verbatim 08/11)
+The experience category whose data key is «בישול» is labelled «בישול ואפייה», the term the business directories use («קורסים וסדנאות בישול ואפייה»), instead of adding a ninth, overlapping category. The data key «בישול» is unchanged, so no migration.
+| # | Key | Before | After | Status |
+|---|---|---|---|---|
+| 1 | `events.experience_categories.cooking` (the chip on /experiences) + `experiences.categories.cooking` (the experience create/edit form select, and the experience page) | `בישול` (en `Cooking`) | `בישול ואפייה` (en `Cooking & baking`) | ✅ MEH-2847 PR |
