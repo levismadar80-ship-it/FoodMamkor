@@ -35,19 +35,30 @@ it to the harness via symlinks under `.claude/skills/`.
 
 | Path | Role | Git mode | Count |
 |---|---|---|---|
-| `.agents/skills/<name>/SKILL.md` | Canonical content (source of truth) | `100644` (real file) | **72** |
-| `.claude/skills/<name>` | Harness mount point | `120000` (symlink → `../../.agents/skills/<name>`) | **72** |
-| `.claude/skills/<name>` | **Unmirrored real directory — see the correction below** | `040000` (real dir) | **3** |
+| `.agents/skills/<name>/SKILL.md` | Canonical content (source of truth) | `100644` (real file) | **76** |
+| `.claude/skills/<name>` | Harness mount point | `120000` (symlink → `../../.agents/skills/<name>`) | **76** |
+| `.claude/skills/<name>` | Real directory — **now a CI failure** (`[NOT-CANONICAL]`, MEH-1055) | `040000` | **0** |
 
-_Counts re-measured 2026-08-03 (MEH-1861); they read `71`/`71` before, and the
-header above read "83 third-party skills". `skills-lock.json` locks **72** —
-exactly the `.agents/skills/` set. The 72 symlink names match the 72 canonical
-names exactly (`diff` clean)._
+_Counts re-measured 2026-11-09 (MEH-1055): 76 / 76 / 0, and `skills-lock.json`
+locks **76**, exactly the `.agents/skills/` set. They read 72 / 72 / 3 on
+2026-08-03 (MEH-1861), when four skills were real, unlocked directories; the
+correction below records that state._
 
 The `ui-ux-pro-max` migration did happen: it is a symlink today
 (`.claude/skills/ui-ux-pro-max -> ../../.agents/skills/ui-ux-pro-max`,
 verified 2026-08-03) and is locked.
 
+> ### ✅ RESOLVED 2026-11-09 (MEH-1055) — the correction below is history
+>
+> All four skills it names (it was four, not three: `backlog-groom` joined on
+> 2026-08-09) were re-audited, moved to `.agents/skills/` + symlink, and locked
+> through `backfill-skill-hashes.sh`. Their hashes equal the anchors computed
+> independently on 12/08. The state can no longer recur silently:
+> `audit-skills.sh` Pass 2b fails CI on `approved` with no lock entry, on an
+> expired or undated `approved_local_unlocked`, and on a real directory under
+> `.claude/skills/`. Evidence: `docs/audits/2026-08-skills-hash-anchor-prelock.md`
+> § 09/11.
+>
 > ### ⚠️ CORRECTED 2026-08-03 (MEH-1861) — the uniformity claim is false
 >
 > This paragraph asserted *"After MEH-423, all skills follow the symlink pattern
@@ -161,13 +172,11 @@ MEH-401 precedent._
 
 `approved_local_unlocked` is a deliberate escape hatch for skills that
 have been manually audited but whose source repo / SHA256 aren't yet
-declared in `skills-lock.json`. After MEH-423, **no allowlist entry carries
-this verdict string** (verified 2026-08-03: all 75 entries read `approved`) —
-`ui-ux-pro-max` (the prior holder) was locked and promoted to `approved`.
-**Read that as a measurement, not as an all-clear:** three entries
-(`mehamakor-dod`, `grill-me`, `grilling`) are *in the state this verdict
-describes* — audited, unlocked — while labelled `approved`, so the clock below
-never started for them. See the correction under "Two-path skill mechanism".
+declared in `skills-lock.json`. **No allowlist entry carries it today**
+(2026-11-09: all 76 read `approved`, and all 76 are locked). Until MEH-1055
+four entries sat in this state while labelled `approved`, so the clock never
+started; `audit-skills.sh` Pass 2b now fails CI on that (`[APPROVED-UNLOCKED]`),
+and on this verdict once its 30 days run out (`[UNLOCKED-EXPIRED]`).
 The slot is reserved for any future skill
 that needs the same transitional treatment. The 30-day clock starts on
 `last_audit_date`. After 30 days expire, the entry must be promoted to

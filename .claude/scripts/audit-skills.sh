@@ -136,6 +136,43 @@ if [ "$SELF_TEST" -eq 0 ]; then
         ;;
     esac
   done <<< "$skill_names"
+
+  # ---- Pass 2b: the verdict must match the lock and the layout (MEH-1055) ----
+  # Four skills sat `approved` for months with no skills-lock.json entry, as
+  # real directories under .claude/skills/. Nothing above could see it: the
+  # verdict was a valid string, Pass 1 scans only .agents/skills/ (so a real
+  # dir there is never pattern-scanned), and Pass 4 iterates the lock (so an
+  # unlocked skill has no hash to drift from). The state skills.md calls
+  # `approved_local_unlocked` — with a 30-day clock — was labelled `approved`,
+  # and the clock never started. These three checks make each of those states
+  # a CI failure instead of a convention.
+  LOCK2="$ROOT/skills-lock.json"
+  TODAY_EPOCH=$(date -u +%s)
+  while IFS= read -r skill; do
+    [ -z "$skill" ] && continue
+    verdict=$(jq -r --arg s "$skill" '.skills[$s].audit_verdict // "MISSING"' "$ALLOWLIST")
+    in_lock=$(jq -r --arg s "$skill" '.skills | has($s)' "$LOCK2" 2>/dev/null || echo "false")
+    if [ "$verdict" = "approved" ] && [ "$in_lock" != "true" ]; then
+      CRITICAL=$((CRITICAL+1))
+      printf '\n[APPROVED-UNLOCKED] %s — audit_verdict=approved but no skills-lock.json entry: no hash anchors the audited content. Lock it (backfill-skill-hashes.sh) or set approved_local_unlocked.\n' "$skill" >> "$REPORT_TMP"
+    fi
+    if [ "$verdict" = "approved_local_unlocked" ]; then
+      audit_date=$(jq -r --arg s "$skill" '.skills[$s].last_audit_date // ""' "$ALLOWLIST")
+      audit_epoch=$(date -u -d "$audit_date" +%s 2>/dev/null || echo "")
+      if [ -z "$audit_epoch" ]; then
+        CRITICAL=$((CRITICAL+1))
+        printf '\n[UNLOCKED-NO-DATE] %s — approved_local_unlocked needs a valid last_audit_date to start its 30-day clock (got "%s")\n' "$skill" "$audit_date" >> "$REPORT_TMP"
+      elif [ $(( (TODAY_EPOCH - audit_epoch) / 86400 )) -gt 30 ]; then
+        CRITICAL=$((CRITICAL+1))
+        printf '\n[UNLOCKED-EXPIRED] %s — approved_local_unlocked since %s, past its 30 days: lock it (approved) or block it\n' "$skill" "$audit_date" >> "$REPORT_TMP"
+      fi
+    fi
+    mount="$ROOT/.claude/skills/$skill"
+    if [ -e "$mount" ] && [ ! -L "$mount" ]; then
+      CRITICAL=$((CRITICAL+1))
+      printf '\n[NOT-CANONICAL] %s — .claude/skills/%s is a real directory, so Pass 1 never scans it and Pass 4 never hashes it. Move it to .agents/skills/ and symlink (skills.md Layer 5).\n' "$skill" "$skill" >> "$REPORT_TMP"
+    fi
+  done <<< "$skill_names"
 fi
 
 # ---- Pass 5: subprocess-bypass coverage (MEH-422; skipped for self-test) ----
