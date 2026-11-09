@@ -288,10 +288,12 @@ const GATE_CATALOG: Producer[] = [...PRODUCERS, ...GATE_ROWS];
 /** Derived from the same lib the card calls (badges.js allBadges) — never typed in.
  *  MEH-2740: the words come from messages/he.json `badges.<key>`, as the app reads them. */
 const BADGE_COPY = he.badges as Record<string, { label: string; tooltip: string }>;
-const HIDDEN_BADGES = allBadges(P_BADGES)
-  .slice(2)
-  .map((b: { key: string }) => ({ key: b.key, ...BADGE_COPY[b.key] }));
-const VISIBLE_BADGE_COUNT = 2; // MEH-991 CARD-09 v4 LOCK (ProducerCard limit={2})
+// MEH-2856: the card shows as many of its first 2 badges (MEH-991 CARD-09 v4
+// LOCK) as fit on ONE line and folds the rest into «+N» — so how many are
+// visible depends on the card's width (mobile 2-col: 1 for this fixture;
+// desktop: 2). The tests read the rendered count and derive the rest from it.
+const CARD_BADGES = allBadges(P_BADGES).map((b: { key: string }) => ({ key: b.key, ...BADGE_COPY[b.key] }));
+const MAX_VISIBLE_BADGES = 2;
 const EXPECTED_OPEN_LINE = ORDERS_OPEN_HE.replace("{time}", "5:31");
 
 test.beforeAll(() => {
@@ -301,7 +303,7 @@ test.beforeAll(() => {
   ListCategoriesCategoriesGetResponse.parse(CATEGORIES);
   // Guards on the fixture's own premises, so a later edit cannot silently
   // move the +N count or the diet order the rows below assert.
-  if (HIDDEN_BADGES.length !== 3) throw new Error(`P_BADGES must fold 3 badges, got ${HIDDEN_BADGES.length}`);
+  if (CARD_BADGES.length !== 5) throw new Error(`P_BADGES must earn 5 badges, got ${CARD_BADGES.length}`);
   // Pinned: the diet axes on /producers, in declaration order, are the four
   // plus no_added_sugar, and no business-scope diet axis is offered (MEH-2677).
   // MEH-2767: all five are count-gated; GATE_CATALOG opens exactly the four.
@@ -694,23 +696,38 @@ test.describe("manual › vegetarian axis (MEH-1438)", () => {
   });
 });
 
+/** MEH-2856: how many badges this card is showing right now (1 or 2). */
+async function visibleBadgeCount(card: Locator): Promise<number> {
+  const items = card.getByRole("list", { name: BADGE_ROW_ARIA }).getByRole("listitem");
+  await expect(items.first()).toBeVisible();
+  return items.count();
+}
+
 // ════════════════════════════════════════════════════════════════════════════
 test.describe("manual › +N badge disclosure (MEH-1547)", () => {
-  // MT:MEH-1547:6 — the v4 LOCK: max 2 visible badges, the third and up fold
-  //   into «+N».
+  // MT:MEH-1547:6 — the v4 LOCK: max 2 visible badges, the rest fold into
+  //   «+N». MEH-2856: as many of those 2 as fit on ONE line with «+N».
   // MT:MEH-1547:7 — the counter is a button announced as «הצגת עוד N תגיות».
-  test("max 2 visible badges; the third and up fold into a labelled «+N» button", async ({ page }) => {
+  test("at most 2 visible badges, on one line with a labelled «+N» holding the rest", async ({ page }, testInfo) => {
     await gotoFiltered(page);
     const card = cardOf(page, P_BADGES);
-    await expect(card.getByRole("list", { name: BADGE_ROW_ARIA }).getByRole("listitem")).toHaveCount(
-      VISIBLE_BADGE_COUNT,
-    );
+    const shown = await visibleBadgeCount(card);
+    expect(shown).toBeGreaterThanOrEqual(1);
+    expect(shown).toBeLessThanOrEqual(MAX_VISIBLE_BADGES);
+    // A desktop card has the room for both — a 1 there would be a mis-measure.
+    if (testInfo.project.name === "desktop") expect(shown).toBe(MAX_VISIBLE_BADGES);
+    const keys = await card.locator("[data-badge]").evaluateAll((els) => els.map((e) => e.getAttribute("data-badge")));
+    expect(keys, "the first badges in priority order").toEqual(CARD_BADGES.slice(0, shown).map((b) => b.key));
+    const hidden = CARD_BADGES.length - shown;
     const more = card.getByTestId("badge-overflow");
-    await expect(more).toHaveText(`+${HIDDEN_BADGES.length}`);
-    await expect(more).toHaveAttribute(
-      "aria-label",
-      OVERFLOW_HE.overflow_aria.replace("{count}", String(HIDDEN_BADGES.length)),
-    );
+    await expect(more).toHaveText(`+${hidden}`);
+    await expect(more).toHaveAttribute("aria-label", OVERFLOW_HE.overflow_aria.replace("{count}", String(hidden)));
+    // One line: every pill's vertical centre within 4px of the «+N» chip's.
+    const centre = (b: { y: number; height: number }) => b.y + b.height / 2;
+    const chip = centre(await box(more.locator("span").first()));
+    for (const pill of await card.locator("[data-badge]").all()) {
+      expect(Math.abs(centre(await box(pill)) - chip), "pill and «+N» share one line").toBeLessThanOrEqual(4);
+    }
     await expect(more).toHaveAttribute("aria-haspopup", "true");
     await expect(more).toHaveAttribute("aria-expanded", "false");
   });
@@ -718,9 +735,11 @@ test.describe("manual › +N badge disclosure (MEH-1547)", () => {
   // MT:MEH-1547:7 (en) — «Show N more badges».
   test("/en: the «+N» button is announced in English", async ({ page }) => {
     await gotoFiltered(page, "/en/producers?category=1");
-    await expect(cardOf(page, P_BADGES).getByTestId("badge-overflow")).toHaveAttribute(
+    const card = cardOf(page, P_BADGES);
+    const hidden = CARD_BADGES.length - (await visibleBadgeCount(card));
+    await expect(card.getByTestId("badge-overflow")).toHaveAttribute(
       "aria-label",
-      OVERFLOW_EN.overflow_aria.replace("{count}", String(HIDDEN_BADGES.length)),
+      OVERFLOW_EN.overflow_aria.replace("{count}", String(hidden)),
     );
   });
 
@@ -737,6 +756,7 @@ test.describe("manual › +N badge disclosure (MEH-1547)", () => {
     await gotoFiltered(page);
     const url = page.url();
     const card = cardOf(page, P_BADGES);
+    const HIDDEN_BADGES = CARD_BADGES.slice(await visibleBadgeCount(card));
     await card.getByTestId("badge-overflow").click();
     const panel = overflowPanel(page);
     await expect(panel).toBeVisible();
@@ -744,7 +764,7 @@ test.describe("manual › +N badge disclosure (MEH-1547)", () => {
     await expect(panel).toHaveAttribute("aria-modal", "true");
     await expect(panel).toContainText(OVERFLOW_HE.overflow_heading);
     const items = panel.getByRole("listitem");
-    // Non-vacuous: beforeAll pins three hidden badges; each must carry both
+    // Non-vacuous: beforeAll pins 5 earned badges, so 3+ are hidden; each must carry both
     // strings, so a missing tooltip reds instead of skipping (MEH-2740).
     await expect(items).toHaveCount(HIDDEN_BADGES.length);
     for (let i = 0; i < HIDDEN_BADGES.length; i += 1) {
