@@ -76,6 +76,23 @@ describe.each([
   });
 });
 
+describe("cache lifetime per hub (MEH-2858)", () => {
+  // An answer cached 11 minutes ago: past rescue's 10-minute life, inside
+  // group buys' hour. The fresh fetch returns 0 items, so the visible state
+  // tells which answer was used.
+  it.each([
+    ["rescue", "meh_rescue_offers_any", 1, "hidden"],
+    ["groupBuys", "meh_group_buys_any", 0, "shown"],
+  ])("%s: an 11-minute-old cached «yes» → %#", async (hub, key, fetches, state) => {
+    sessionStorage.setItem(key, JSON.stringify({ any: true, at: Date.now() - 11 * 60 * 1000 }));
+    get.mockReturnValue(list(0));
+    render(<Probe hub={hub} />);
+    await new Promise((r) => setTimeout(r, 20));
+    expect(get).toHaveBeenCalledTimes(fetches);
+    expect(gate()).toBe(state);
+  });
+});
+
 describe("rescue pilot off in this build (MEH-2858)", () => {
   it("asks nothing and stays hidden", async () => {
     vi.stubEnv("NEXT_PUBLIC_RESCUE_BAGS_ENABLED", "false");

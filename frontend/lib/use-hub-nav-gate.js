@@ -31,23 +31,27 @@ import api from "@/lib/api";
 // shared bundle. Build-time constant; "true" only, as there.
 const rescueOn = () => process.env.NEXT_PUBLIC_RESCUE_BAGS_ENABLED === "true";
 
-export const HUB_NAV_GATES = Object.freeze({
-  groupBuys: { endpoint: "/group-buys", cacheKey: "meh_group_buys_any", enabled: () => true },
-  rescue: { endpoint: "/rescue/offers", cacheKey: "meh_rescue_offers_any", enabled: rescueOn },
-});
+const HOUR_MS = 60 * 60 * 1000;
+const RESCUE_TTL_MS = 10 * 60 * 1000;
 
-const TTL_MS = 60 * 60 * 1000; // 1h — supply moves in hours, not seconds.
+// ttlMs: group buys run for days, so an hour-old answer is still right. Rescue
+// bags are today's, and a pickup window closes within the evening — a "yes"
+// cached at 19:50 must not still offer the link at 20:45.
+const HUB_NAV_GATES = Object.freeze({
+  groupBuys: { endpoint: "/group-buys", cacheKey: "meh_group_buys_any", ttlMs: HOUR_MS, enabled: () => true },
+  rescue: { endpoint: "/rescue/offers", cacheKey: "meh_rescue_offers_any", ttlMs: RESCUE_TTL_MS, enabled: rescueOn },
+});
 
 // Rule 19: validate before consuming. Only the length matters here.
 const ListSchema = z.array(z.unknown());
 
-function readCache(key) {
+function readCache(key, ttlMs) {
   try {
     const raw = sessionStorage.getItem(key);
     if (!raw) return null;
     const parsed = JSON.parse(raw);
     if (typeof parsed?.any !== "boolean" || typeof parsed?.at !== "number") return null;
-    if (Date.now() - parsed.at > TTL_MS) return null;
+    if (Date.now() - parsed.at > ttlMs) return null;
     return parsed.any;
   } catch {
     return null;
@@ -77,7 +81,7 @@ export function useHubNavGate(hub) {
     if (!gate || !gate.enabled()) return undefined;
     let alive = true;
 
-    const cached = readCache(gate.cacheKey);
+    const cached = readCache(gate.cacheKey, gate.ttlMs);
     if (cached !== null) {
       setVisible(cached);
       return () => {
