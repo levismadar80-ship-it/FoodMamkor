@@ -1640,6 +1640,7 @@
         "waiting_badge": "Waiting {days} business days",
         "waiting_tooltip_submitted": "Submitted for review: {when}",
         "waiting_tooltip_created": "Created: {when}",
+        "waiting_tooltip_resubmitted": "Resubmitted for review: {when}",
         "resubmission_badge": "Resubmission #{n}"
       },
       "toggle": {
