@@ -2558,7 +2558,7 @@
         "group_buys": {
           "q": "How do I change a group buy's status?",
           "steps": [
-            "The screen is not in the menu, only via the link here. There you set the status: open, funded, fulfilled or cancelled."
+            "You can cancel an open group or one that reached its goal, and mark a group that reached its goal as fulfilled. A cancelled or fulfilled group stays that way."
           ]
         }
       }
