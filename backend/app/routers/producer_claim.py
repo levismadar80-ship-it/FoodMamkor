@@ -84,9 +84,10 @@ _ALREADY_CLAIMED = "העמוד הזה כבר שויך לחשבון."
 #   delete_account does not lock: an account deleted in the same instant it
 #   claims can leave the draft stamped and ownerless — inert (an ownerless
 #   draft cannot be submitted) and only reachable by the account racing itself.
-# - An admin PUT can set any listing's status back to "draft"
-#   (admin_update_producer applies the payload as-is), which makes an
-#   ownerless live listing claimable. Admin-only; tracked separately.
+# - A live listing cannot be made claimable again: the only route that could
+#   set an existing listing back to "draft", the admin PUT, refuses any
+#   `status` in its payload since MEH-2502 (admin_update_producer). MEH-2870:
+#   this line used to describe that as an open, accepted residual risk.
 
 
 def _has_owner(db: Session, producer_id: UUID) -> bool:
