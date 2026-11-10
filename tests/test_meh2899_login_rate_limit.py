@@ -112,8 +112,20 @@ invocations pass `--timeout=60`, a real straddle is killed before it can
 happen, so the only band the bound could fire in was one where no
 straddle had occurred — a false red carrying a message about a void run.)
 
-`serial` keeps all five off a machine busy with xdist neighbours; the
-limiter is per process, so parallel workers never share a bucket.
+NOT `serial`, and that is a correction. These five carried
+`@pytest.mark.serial` until the wall-clock bound above was removed —
+the marker's registered purpose (`conftest.py:171-175`) is "asserts on
+measured wall-clock timing", which they no longer do. Keeping it put five
+bcrypt-heavy login tests into the same serial pass as
+`test_api.py`'s `TestLoginTimingEqualization`, which measures bcrypt
+timing PARITY against a 20 ms threshold and is already
+`flaky(reruns=2)` for the "quieter machine" reason. That pass went red in
+CI on this branch (`p95 spread 98.9ms`) and needed a rerun locally;
+removing the marker removes the interference. The tests are safe in the
+parallel pass: each xdist worker is its own process with its own
+in-memory limiter and its own database (conftest, MEH-1911), so no bucket
+is ever shared, and a straddle under parallel load is caught loudly by
+the re-probe rather than passing silently.
 
 SHOWN FAILING (MEH-1619). Five breaks, each reverted after measuring.
 L1–L4 are one-line patches, reproducible verbatim from here; L5 is a
@@ -218,7 +230,6 @@ def _account(db):
     return make_user(db, email=f"{uuid.uuid4().hex[:8]}@example.com")
 
 
-@pytest.mark.serial
 def test_sixth_login_from_one_ip_is_refused(client, db, trusted_proxy):
     """The exact boundary: 5 attempts pass the limiter, the 6th does not."""
     user = _account(db)
@@ -239,7 +250,6 @@ def test_sixth_login_from_one_ip_is_refused(client, db, trusted_proxy):
     assert codes[_BUDGET] == 429, f"the 6th attempt was not refused: {codes}"
 
 
-@pytest.mark.serial
 def test_the_limit_counts_failed_attempts_not_just_successful_ones(
     client, db, trusted_proxy
 ):
@@ -274,7 +284,6 @@ def test_the_limit_counts_failed_attempts_not_just_successful_ones(
     )
 
 
-@pytest.mark.serial
 def test_each_ip_has_its_own_budget(client, db, trusted_proxy):
     """One attacker must not be able to lock everyone else out.
 
@@ -304,7 +313,6 @@ def test_each_ip_has_its_own_budget(client, db, trusted_proxy):
     )
 
 
-@pytest.mark.serial
 def test_the_edge_channel_also_buckets_per_ip(client, db, monkeypatch):
     """The same separation through the channel browser traffic uses.
 
@@ -350,7 +358,6 @@ def test_the_edge_channel_also_buckets_per_ip(client, db, monkeypatch):
     )
 
 
-@pytest.mark.serial
 def test_control_without_the_trusted_proxy_both_ips_share_one_bucket(
     client, db, monkeypatch
 ):
