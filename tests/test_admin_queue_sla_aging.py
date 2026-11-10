@@ -282,3 +282,84 @@ def test_israel_days_ago_seed_counts_five_on_both_sides_of_a_dst_switch():
     )
     # And it hands back UTC, the form the timestamp columns store.
     assert israel_days_ago(7, now=AUTUMN_NOW).tzinfo == timezone.utc
+
+
+# --- MEH-2869 — a resubmission ages from the resubmission ---------------------
+#
+# A resubmission after a rejection writes only `resubmitted_at`
+# (producer_me.py, request-review from `rejected`); `submitted_for_review_at`
+# keeps the FIRST submission. Both the badge and the queue order read
+# resubmitted_at first. The clock is frozen at RESUBMIT_NOW so every count
+# below is an exact, hand-worked number, not a range.
+
+# Thu 27/08/2026 12:00 Israel. Two real weeks: SUN (16/08) → NEXT_SUN (23/08).
+RESUBMIT_NOW = datetime(2026, 8, 27, 9, 0, tzinfo=timezone.utc)
+RESUBMITTED = datetime(2026, 8, 26, 9, 0, tzinfo=timezone.utc)  # Wed
+
+
+def _freeze(monkeypatch):
+    import app.utils.clock as clock
+
+    monkeypatch.setattr(clock, "israel_now", lambda: RESUBMIT_NOW.astimezone(ISRAEL_TZ))
+
+
+def _resubmitted(db, name):
+    """First submitted SUN, rejected, resubmitted Wednesday 26/08."""
+    p = _submit(db, make_producer(db, name=name, status="pending"), SUN)
+    p.resubmission_count = 1
+    p.resubmitted_at = RESUBMITTED
+    db.commit()
+    return p
+
+
+def test_resubmit_anchors_are_real():
+    assert RESUBMIT_NOW.strftime("%a") == "Thu"
+    assert RESUBMITTED.strftime("%a") == "Wed"
+    # What the first submission alone would report: the bug's number.
+    assert business_days_waiting(SUN, now=RESUBMIT_NOW) == 9
+    assert business_days_waiting(RESUBMITTED, now=RESUBMIT_NOW) == 1
+
+
+def test_resubmitted_badge_counts_from_the_resubmission(client, db, monkeypatch):
+    """RED on the old `submitted_for_review_at or created_at`: it said 9."""
+    _freeze(monkeypatch)
+    admin = make_user(db, role="admin")
+    _resubmitted(db, "שלחה שוב")
+    _submit(db, make_producer(db, name="לא נדחתה", status="pending"), NEXT_SUN)
+
+    rows = {
+        r["name"]: r
+        for r in client.get("/admin/producers", headers=auth_header(admin)).json()
+    }
+    assert rows["שלחה שוב"]["business_days_waiting"] == 1
+    # Control: a row never resubmitted still ages from its submission (Sun→Thu).
+    assert rows["לא נדחתה"]["business_days_waiting"] == 4
+
+
+def test_resubmitted_row_sorts_by_the_resubmission(client, db, monkeypatch):
+    """First submitted before the other row, resubmitted after it: it now
+    waits behind it. RED on the old order, which put it first."""
+    _freeze(monkeypatch)
+    admin = make_user(db, role="admin")
+    _resubmitted(db, "שלחה שוב")
+    _submit(db, make_producer(db, name="לא נדחתה", status="pending"), NEXT_SUN)
+
+    for params in ({}, {"status": "pending"}):
+        names = [
+            r["name"]
+            for r in client.get(
+                "/admin/producers", params=params, headers=auth_header(admin)
+            ).json()
+        ]
+        assert names.index("לא נדחתה") < names.index("שלחה שוב"), (params, names)
+
+
+def test_pending_route_badge_also_counts_from_the_resubmission(
+    client, db, monkeypatch
+):
+    _freeze(monkeypatch)
+    admin = make_user(db, role="admin")
+    _resubmitted(db, "שלחה שוב")
+    rows = client.get("/admin/producers/pending", headers=auth_header(admin)).json()
+    row = next(r for r in rows if r["name"] == "שלחה שוב")
+    assert row["business_days_waiting"] == 1

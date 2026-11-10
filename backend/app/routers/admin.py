@@ -446,6 +446,10 @@ def _attach_aging(producer) -> None:
     A draft measures from `created_at` because it has no submission to measure
     from. Everything else uses the same COALESCE the queue ordering uses, so
     the badge and the sort can never disagree about which row is oldest.
+    `resubmitted_at` comes first (MEH-2869): a resubmission after a rejection
+    writes only that stamp, and `submitted_for_review_at` keeps the FIRST
+    submission — measuring from it put a business that resubmitted today at the
+    top of the queue with weeks of "waiting".
 
     Called by BOTH admin list routes. `ProducerAdminOut` declares the field, so
     a route that returned rows without calling this would serialise a silent
@@ -454,7 +458,11 @@ def _attach_aging(producer) -> None:
     producer.business_days_waiting = business_days_waiting(
         producer.created_at
         if producer.status == "draft"
-        else (producer.submitted_for_review_at or producer.created_at)
+        else (
+            producer.resubmitted_at
+            or producer.submitted_for_review_at
+            or producer.created_at
+        )
     )
 
 
@@ -558,9 +566,12 @@ def list_producers(
     if queue_view:
         # COALESCE, not submitted_for_review_at alone: rows seeded before
         # MEH-2100 (and every draft) have a NULL stamp, and a bare column sort
-        # would bunch them all at one end regardless of real age.
+        # would bunch them all at one end regardless of real age. The latest
+        # resubmission comes first (MEH-2869), the same order as _attach_aging.
         order_key = func.coalesce(
-            Producer.submitted_for_review_at, Producer.created_at
+            Producer.resubmitted_at,
+            Producer.submitted_for_review_at,
+            Producer.created_at,
         ).asc()
     else:
         order_key = Producer.created_at.desc()
