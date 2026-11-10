@@ -252,11 +252,19 @@ def _offer_for_update(db: Session, offer_id: UUID) -> RescueOffer:
     `0 <= qty_left <= qty_total` CHECK then turns the loser into a failed
     transaction instead of negative stock — the lock is what makes it a clean
     409 instead.
+
+    populate_existing() (MEH-2865 review): the offer is usually already in the
+    session — `_order_or_404` loaded `order.offer` before the lock — and
+    without it the query takes the lock but hands back that cached object, so
+    `qty_left` is the value from BEFORE the lock. cancel_order then put bags
+    back on top of a stale count. Same trap as auth.py's "DO NOT drop
+    populate_existing()".
     """
     offer = (
         db.query(RescueOffer)
         .filter(RescueOffer.id == offer_id)
         .with_for_update()
+        .populate_existing()
         .first()
     )
     if not offer:

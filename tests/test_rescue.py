@@ -495,6 +495,26 @@ class TestHandOver:
         db.refresh(buyer)
         assert (buyer.rescue_no_show_count or 0) == 0
 
+    def test_the_locked_offer_is_read_fresh_not_from_the_session(
+        self, client, db, shop, rescue_on
+    ):
+        """_offer_for_update must return the row as it is under the lock. The
+        handlers have usually loaded the offer already (order.offer); a cached
+        object would carry a qty_left from before the lock — and cancel_order
+        would put bags back on top of a stale count (MEH-2865 review)."""
+        from sqlalchemy import text
+
+        offer = _seed_offer(db, shop["location"], qty_total=5)
+        db.commit()
+        cached = db.query(RescueOffer).filter(RescueOffer.id == offer.id).first()
+        assert cached.qty_left == 5
+        # Another transaction's reservation, as seen from here: the row changed
+        # behind the session's back.
+        db.execute(text("UPDATE rescue_offers SET qty_left = 1 WHERE id = :i"), {"i": offer.id})
+        locked = rescue_module._offer_for_update(db, offer.id)
+        assert locked.qty_left == 1, "the lock returned the cached qty_left, not the row's"
+        db.rollback()
+
     def test_the_no_show_counter_is_one_sql_increment(self, client, db, shop, rescue_on):
         """Not a Python read-modify-write, which loses a count when two
         no-shows for one buyer land together."""
