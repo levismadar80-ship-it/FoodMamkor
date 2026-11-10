@@ -562,7 +562,7 @@ describe("RegisterProducerClient — didUpgrade CONFIRM split (MEH-328 chunk D)"
 
     const nextBox = screen.getByText(`${K}.success.next`);
     const cta = screen.getByTestId("register-success-dashboard-cta");
-    const share = screen.getByText(`${K}.success.share_cta`).closest("a");
+    const share = screen.getByText(`${K}.success.share_cta`).closest("button");
     const signature = screen.getByText(`${K}.success.signature`);
     const tierTrust = screen.getByText(`${K}.success.tier_trust`);
 
@@ -571,7 +571,7 @@ describe("RegisterProducerClient — didUpgrade CONFIRM split (MEH-328 chunk D)"
       Boolean(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING);
 
     expect(precedes(nextBox, cta), "next-steps box before the dashboard CTA").toBe(true);
-    expect(precedes(cta, share), "dashboard CTA before the WhatsApp share").toBe(true);
+    expect(precedes(cta, share), "dashboard CTA before the share").toBe(true);
     expect(precedes(share, signature), "share before the founder signature").toBe(true);
     expect(precedes(signature, tierTrust), "signature before the tier-trust line").toBe(true);
 
@@ -581,8 +581,20 @@ describe("RegisterProducerClient — didUpgrade CONFIRM split (MEH-328 chunk D)"
     expect(cta.className).not.toContain("bg-transparent");
     // Full-width on mobile (the stack is `flex-col`, capped at sm+).
     expect(cta.className).toContain("w-full");
-    expect(share.className).toContain("btn-whatsapp-outline");
+    // MEH-2827 PR 8: share is the generic outlined button, not WhatsApp-green.
+    expect(share.className).toContain("border-border");
+    expect(share.className).not.toContain("bg-primary");
     expect(share.className).toContain("w-full");
+    // MEH-2827 PR 8: the phone's share sheet, not a wa.me link.
+    expect(document.querySelector('a[href^="https://wa.me/?text="]')).toBeNull();
+    const nativeShare = vi.fn(() => Promise.resolve());
+    Object.defineProperty(navigator, "share", { configurable: true, value: nativeShare });
+    fireEvent.click(share);
+    await waitFor(() => expect(nativeShare).toHaveBeenCalledTimes(1));
+    // t() returns the key path here (see the mock above), so the message has
+    // no link: the whole message is the text and no `url` is invented.
+    expect(nativeShare.mock.calls[0][0]).toEqual({ text: "auth.register.producer.success.share_msg" });
+    Object.defineProperty(navigator, "share", { configurable: true, value: undefined });
   });
 
   it("authenticated user whose token lapsed server-side falls back to the inbox screen (response-shape guard)", async () => {
