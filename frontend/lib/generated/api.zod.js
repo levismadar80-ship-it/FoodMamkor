@@ -2554,6 +2554,7 @@ export const GetStatsAdminStatsGetResponse = /*#__PURE__*/ zod.unknown()
  */
 export const listUsersAdminUsersGetResponseFavoritesCountDefault = 0;
 export const listUsersAdminUsersGetResponseIsBlockedDefault = false;
+export const listUsersAdminUsersGetResponseIsSuperAdminDefault = false;
 
 export const ListUsersAdminUsersGetResponseItem = /*#__PURE__*/ zod.object({
   "city": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -2562,6 +2563,7 @@ export const ListUsersAdminUsersGetResponseItem = /*#__PURE__*/ zod.object({
   "favorites_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), listUsersAdminUsersGetResponseFavoritesCountDefault),
   "id": /*#__PURE__*/ zod.uuid(),
   "is_blocked": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), listUsersAdminUsersGetResponseIsBlockedDefault),
+  "is_super_admin": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), listUsersAdminUsersGetResponseIsSuperAdminDefault),
   "name": /*#__PURE__*/ zod.string(),
   "phone": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "producer_id": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.uuid(),/*#__PURE__*/ zod.null()])),
