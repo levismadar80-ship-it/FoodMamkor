@@ -257,3 +257,67 @@ def test_candidates_admin_query_replaces_name_and_city(client, db, monkeypatch):
         headers=_admin_headers(db),
     )
     assert seen == [(p.name, p.city)], "a blank q falls back to name + city"
+
+
+# ---------------------------------------------------------------------------
+# MEH-2886 chunk 3 — the DB connection is back in the pool BEFORE Google is
+# called. The stand-in for the Google call reads engine.pool.checkedout() at
+# the moment it runs (same probe as tests/test_meh2886_db_release.py).
+# ---------------------------------------------------------------------------
+
+
+def _pool_checkedout() -> int:
+    from app.database import engine
+
+    return engine.pool.checkedout()
+
+
+def test_rating_releases_connection_before_google_call(client, db, monkeypatch):
+    p = make_producer(db)
+    _map_place(db, p)
+    producer_id = p.id
+    db.close()  # the seed session must not hold a connection into the request
+    assert _pool_checkedout() == 0, "pool not idle before the request"
+    readings = []
+
+    def probe(place_id):
+        readings.append((place_id, _pool_checkedout()))
+        return {
+            "rating": 4.7,
+            "user_rating_count": 128,
+            "google_maps_uri": "https://maps.google.com/?cid=123",
+        }
+
+    monkeypatch.setattr(google_rating, "_fetch_place_details", probe)
+    r = client.get(f"/producers/{producer_id}/google-rating")
+
+    assert r.status_code == 200, r.text
+    assert readings, "the Google call never ran — nothing measured"
+    assert readings == [(PLACE_ID, 0)], (
+        f"{readings[0][1]} connection(s) checked out during the Google call"
+    )
+
+
+def test_candidates_release_connection_before_google_call(client, db, monkeypatch):
+    p = make_producer(db)
+    producer_id, name, city = p.id, p.name, p.city
+    headers = _admin_headers(db)
+    db.close()
+    assert _pool_checkedout() == 0, "pool not idle before the request"
+    readings = []
+
+    def probe(q_name, q_city):
+        readings.append((q_name, q_city, _pool_checkedout()))
+        return _CANDIDATES
+
+    monkeypatch.setattr(google_rating, "_search_place_candidates", probe)
+    r = client.get(
+        f"/admin/producers/{producer_id}/google-place-candidates", headers=headers
+    )
+
+    assert r.status_code == 200, r.text
+    assert readings, "the Google search never ran — nothing measured"
+    # The name + city read before the close are still what is searched.
+    assert readings == [(name, city, 0)], (
+        f"{readings[0][2]} connection(s) checked out during the Google search"
+    )
