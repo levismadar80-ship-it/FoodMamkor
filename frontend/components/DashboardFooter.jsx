@@ -3,6 +3,9 @@
 // MEH-2578: locale-aware Link — next/link dropped the /en prefix, and with
 // localeDetection off an /en reader landed on the Hebrew page.
 import { Link } from "@/i18n/navigation";
+// MEH-2850: Link elements here carry prefetch={false} — this renders inside
+// the site chrome on every page it appears on, and its targets are static, so
+// a viewport prefetch would fetch them IN FULL. See Header.jsx.
 import Image from "next/image";
 import { useTranslations } from "next-intl";
 
@@ -53,7 +56,7 @@ export default function DashboardFooter() {
             <li key={link.href}>
               {/* 13px + min-h-touch: the MEH-1103 footer-utility compromise —
                   WCAG 2.5.5 tap target via vertical padding, not layout. */}
-              <Link
+              <Link prefetch={false}
                 href={link.href}
                 className="inline-flex items-center min-h-touch text-sm text-green-100 hover:text-white transition"
               >
