@@ -15643,6 +15643,22 @@
               "title": "Status",
               "type": "string"
             }
+          },
+          {
+            "in": "query",
+            "name": "expected_status",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Expected Status"
+            }
           }
         ],
         "responses": {
