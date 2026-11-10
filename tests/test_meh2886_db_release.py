@@ -1,0 +1,227 @@
+"""MEH-2886 — the request's DB connection must be back in the pool before
+the request's BackgroundTasks run.
+
+Why this matters (docs/audits/2026-11-quota-inventory.md §2.2 item 3,
+docs/audits/2026-11-db-release-phase0.md): ``get_db`` is a default-scope
+(``"request"``) yield dependency. In FastAPI 0.162 its ``finally: db.close()``
+runs only after ``await response(...)`` (``fastapi/routing.py:148-155``), and
+Starlette runs BackgroundTasks inside ``Response.__call__``. So if the session
+still holds a connection when the endpoint returns, that connection stays
+checked out for as long as the email / WhatsApp / IndexNow task takes —
+up to Resend's 30 s default timeout. 15 slow sends = the whole 10+5 pool.
+
+How the measurement works, and why it is real here:
+
+- ``tests/conftest.py`` does NOT override ``get_db``: ``client`` is
+  ``TestClient(app)`` on the real app, and the app's ``engine`` is the real
+  ``_ObservableQueuePool`` on Postgres (``TEST_DATABASE_URL``). So
+  ``engine.pool.checkedout()`` counts exactly the connections the app holds.
+- The probe is the background task itself: it replaces the email sender
+  and records ``engine.pool.checkedout()`` at the moment the task runs.
+- The test's own ``db`` fixture session can also hold a connection (any
+  attribute read after ``make_user``'s refresh opens a transaction). Every
+  test therefore closes its seed session and asserts the pool reads 0
+  *before* the request, so the in-task reading is attributable to the
+  request alone.
+- ``TestClient`` is serial and lifespan is not entered (no ``with``), so
+  APScheduler is not running and nothing else checks out connections.
+
+Controls (both must stay green before AND after the fix):
+
+- ``test_control_probe_reads_zero_when_request_never_touched_db`` — a route
+  on a throwaway FastAPI app that depends on the REAL ``get_db`` but never
+  queries, then adds a background task. The probe must read 0: proves the
+  instrument can read 0 at all, and that merely opening a ``SessionLocal``
+  does not check out a connection.
+- ``test_control_probe_reads_nonzero_when_task_runs_inside_open_txn`` — the
+  same throwaway app, a route that runs ``SELECT 1`` and adds a task. The
+  probe must read 1: proves the instrument is not stuck at 0, independent of
+  any production route.
+
+The three real-route tests are RED on the code at the time of writing
+(MEH-2886 chunk 1) and each covers a different shape the fix must handle:
+
+1. ``/auth/register`` new email — ``commit()`` then ``refresh(user)``
+   (``routers/auth.py:326-331``).
+2. ``/auth/register`` existing email — a read query, no commit at all
+   (``routers/auth.py:297`` → ``:355``).
+3. ``/auth/forgot-password`` — ``commit()`` then attribute reads on the
+   expired instance (``expire_on_commit=True``) re-open a transaction
+   (``routers/auth.py:1406-1412``).
+"""
+
+import pytest
+from fastapi import BackgroundTasks, Depends, FastAPI
+from fastapi.testclient import TestClient
+from sqlalchemy import text
+from sqlalchemy.orm import Session
+
+from app.database import engine, get_db
+from conftest import make_user, valid_user_register_payload
+
+
+def _checkedout() -> int:
+    return engine.pool.checkedout()
+
+
+class _PoolProbe:
+    """A background-task stand-in that records the pool's checked-out count
+    each time it runs. Accepts any signature so it can replace any sender."""
+
+    def __init__(self):
+        self.readings: list[int] = []
+
+    def __call__(self, *args, **kwargs):
+        self.readings.append(_checkedout())
+
+
+def _assert_pool_idle_before_request():
+    # Guard on the measurement itself: if the test's own session (or a
+    # previous test) still holds a connection, the in-task reading would be
+    # inflated by something that is not the request.
+    assert _checkedout() == 0, (
+        f"pool reads {_checkedout()} BEFORE the request — the measurement "
+        "would not be attributable to the request; close the seed session"
+    )
+
+
+# ---------------------------------------------------------------- controls
+
+
+def _control_app() -> FastAPI:
+    """Throwaway app wired to the REAL get_db and the REAL engine."""
+    control = FastAPI()
+
+    @control.post("/no-db")
+    def no_db(background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
+        background_tasks.add_task(control.state.probe)
+        return {"ok": True}
+
+    @control.post("/select-one")
+    def select_one(
+        background_tasks: BackgroundTasks, db: Session = Depends(get_db)
+    ):
+        db.execute(text("SELECT 1"))
+        background_tasks.add_task(control.state.probe)
+        return {"ok": True}
+
+    return control
+
+
+def test_control_probe_reads_zero_when_request_never_touched_db():
+    control = _control_app()
+    control.state.probe = probe = _PoolProbe()
+    _assert_pool_idle_before_request()
+
+    resp = TestClient(control).post("/no-db")
+
+    assert resp.status_code == 200
+    assert probe.readings == [0], (
+        f"probe read {probe.readings} on a route that never queried — the "
+        "instrument cannot read 0, so every reading in this file is void"
+    )
+    assert _checkedout() == 0
+
+
+def test_control_probe_reads_nonzero_when_task_runs_inside_open_txn():
+    control = _control_app()
+    control.state.probe = probe = _PoolProbe()
+    _assert_pool_idle_before_request()
+
+    resp = TestClient(control).post("/select-one")
+
+    assert resp.status_code == 200
+    assert probe.readings == [1], (
+        f"probe read {probe.readings} on a route that left a transaction "
+        "open — the instrument cannot see a held connection"
+    )
+    # get_db's finally still runs after the task: nothing leaks past it.
+    assert _checkedout() == 0
+
+
+# ------------------------------------------------- real routes (RED today)
+
+# Strict xfail: chunk 1 lands the measurement without turning CI red. The fix
+# (chunk 2) makes these pass, and a strict xfail that passes FAILS the suite —
+# so chunk 2 cannot land without deleting this marker.
+_RED_UNTIL_FIX = pytest.mark.xfail(
+    strict=True,
+    reason="MEH-2886: get_db closes only after BackgroundTasks run (chunk 2 fixes)",
+)
+
+
+@_RED_UNTIL_FIX
+def test_register_new_email_releases_connection_before_background_tasks(
+    client, monkeypatch
+):
+    """Shape 1: commit() → refresh(user) → add_task (auth.py:326-331)."""
+    verify_probe = _PoolProbe()
+    welcome_probe = _PoolProbe()
+    monkeypatch.setattr("app.routers.auth._send_verify_email", verify_probe)
+    monkeypatch.setattr("app.routers.auth._send_welcome_email", welcome_probe)
+    _assert_pool_idle_before_request()
+
+    resp = client.post(
+        "/auth/register",
+        json={**valid_user_register_payload(), "email": "meh2886-new@test.com"},
+    )
+
+    assert resp.status_code == 200
+    assert len(verify_probe.readings) == 1, "verify-email task did not run"
+    assert len(welcome_probe.readings) == 1, "welcome-email task did not run"
+    assert verify_probe.readings == [0], (
+        f"{verify_probe.readings[0]} connection(s) still checked out while "
+        "the verify-email background task ran"
+    )
+    assert welcome_probe.readings == [0], (
+        f"{welcome_probe.readings[0]} connection(s) still checked out while "
+        "the welcome-email background task ran"
+    )
+
+
+@_RED_UNTIL_FIX
+def test_register_existing_email_releases_connection_before_background_tasks(
+    client, db, monkeypatch
+):
+    """Shape 2: read query, no commit → add_task (auth.py:297 → :355)."""
+    make_user(db, email="meh2886-dup@test.com")
+    db.close()  # the seed session's post-refresh transaction holds a conn
+    probe = _PoolProbe()
+    monkeypatch.setattr("app.routers.auth._send_duplicate_attempt_email", probe)
+    _assert_pool_idle_before_request()
+
+    resp = client.post(
+        "/auth/register",
+        json={**valid_user_register_payload(), "email": "meh2886-dup@test.com"},
+    )
+
+    assert resp.status_code == 200
+    assert len(probe.readings) == 1, "duplicate-attempt task did not run"
+    assert probe.readings == [0], (
+        f"{probe.readings[0]} connection(s) still checked out while the "
+        "duplicate-attempt background task ran"
+    )
+
+
+@_RED_UNTIL_FIX
+def test_forgot_password_releases_connection_before_background_tasks(
+    client, db, monkeypatch
+):
+    """Shape 3: commit() → reads on the expired instance → add_task
+    (auth.py:1406-1412, expire_on_commit=True)."""
+    make_user(db, email="meh2886-reset@test.com")
+    db.close()
+    probe = _PoolProbe()
+    monkeypatch.setattr("app.routers.auth._send_reset_email", probe)
+    _assert_pool_idle_before_request()
+
+    resp = client.post(
+        "/auth/forgot-password", json={"email": "meh2886-reset@test.com"}
+    )
+
+    assert resp.status_code == 200
+    assert len(probe.readings) == 1, "reset-email task did not run"
+    assert probe.readings == [0], (
+        f"{probe.readings[0]} connection(s) still checked out while the "
+        "reset-email background task ran"
+    )
