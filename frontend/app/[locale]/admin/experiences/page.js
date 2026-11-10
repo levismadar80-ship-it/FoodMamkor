@@ -257,6 +257,9 @@ function moderationLabel(status, t) {
 
 function ExperienceRow({ ex, busy, t, locale, onApprove, onChanges, onReject }) {
   const [expanded, setExpanded] = useState(false);
+  // MEH-2840: the host dashboard's own «מבוטלת» — approving does not
+  // reactivate a host-cancelled experience, so the admin sees it first.
+  const tHost = useTranslations("dashboard.producer.manage_experiences");
   const modBadge =
     ex.moderation_status === "FLAGGED"
       ? "bg-yellow-100 text-yellow-800"
@@ -274,6 +277,11 @@ function ExperienceRow({ ex, busy, t, locale, onApprove, onChanges, onReject }) 
           >
             {ex.title}
           </button>
+          {ex.is_active === false && (
+            <span className="ms-2 text-xs px-2 py-0.5 rounded-full bg-yellow-100 text-yellow-800">
+              {tHost("badge_inactive")}
+            </span>
+          )}
         </td>
         <td className="p-3 text-fg-muted" data-label={t("experiences.columns.host")}>{ex.host?.name || "—"}</td>
         <td className="p-3 text-fg-muted" data-label={t("experiences.columns.date")}>{formatDate(ex.event_date, locale)}</td>

@@ -113,6 +113,32 @@ describe("experiences list (MEH-2430 §1)", () => {
     expect(future.queryByText(P.manage_experiences.badge_past)).not.toBeInTheDocument();
     expect(future.getByText(P.manage_experiences.action_cancel)).toBeInTheDocument();
   });
+
+  // MEH-2840 (audit §4.1): «מבוטלת» showed only on approved rows, so a host
+  // who cancelled and then edited (→ pending) saw «ממתינה» and no sign the
+  // experience was off. The cancel is the host's decision; it shows in every
+  // status. The reactivate button stays approved-only, as before.
+  it("a cancelled experience reads «מבוטלת» in every status, not only approved", async () => {
+    api.get.mockResolvedValue({
+      data: [
+        { id: "c1", title: "מבוטלת ממתינה", event_date: FUTURE, city: "חיפה", status: "pending", is_active: false },
+        { id: "c2", title: "מבוטלת לתיקון", event_date: FUTURE, city: "חיפה", status: "changes_requested", is_active: false },
+        { id: "c3", title: "מבוטלת מאושרת", event_date: FUTURE, city: "חיפה", status: "approved", is_active: false },
+        { id: "c4", title: "פעילה ממתינה", event_date: FUTURE, city: "חיפה", status: "pending", is_active: true },
+      ],
+    });
+    renderIntl(<ExperiencesPage />);
+    await waitFor(() => screen.getByText("מבוטלת ממתינה"));
+
+    for (const title of ["מבוטלת ממתינה", "מבוטלת לתיקון", "מבוטלת מאושרת"]) {
+      expect(within(rowOf(title)).getByText(P.manage_experiences.badge_inactive), title).toBeInTheDocument();
+    }
+    // Control: an active pending row has no «מבוטלת».
+    expect(within(rowOf("פעילה ממתינה")).queryByText(P.manage_experiences.badge_inactive)).not.toBeInTheDocument();
+    // Reactivate is still offered only where it works: approved.
+    expect(within(rowOf("מבוטלת מאושרת")).getByText(P.manage_experiences.action_activate)).toBeInTheDocument();
+    expect(within(rowOf("מבוטלת ממתינה")).queryByText(P.manage_experiences.action_activate)).not.toBeInTheDocument();
+  });
 });
 
 describe("group buys list (MEH-2430 §2)", () => {
