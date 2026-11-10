@@ -16,6 +16,15 @@ import { serverFetch } from "@/lib/server-fetch";
 import { API_URL } from "@/lib/env";
 import { buildHomeJsonLd, serializeJsonLd } from "@/lib/seo";
 
+// MEH-2878: only the locales generateStaticParams lists (he, en) render here.
+// Since this page is cached (ISR), any other first segment — a scanner's
+// dotted path like /wp-login.php, which skips the middleware — would otherwise
+// be rendered on demand and stored as its own cached 404. Unknown segments now
+// 404 without being stored. Page-level on purpose: in the [locale] layout it
+// would also apply to [slug] and the other dynamic routes, which have no
+// generateStaticParams.
+export const dynamicParams = false;
+
 // MEH-1832: the server fetches the SAME feed the client used to — deliberately
 // unlimited, matching the old `loadProducers({})` call exactly.
 //
