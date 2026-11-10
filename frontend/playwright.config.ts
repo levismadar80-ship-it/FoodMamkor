@@ -1,4 +1,5 @@
 import { defineConfig, devices } from "@playwright/test";
+import { defineGoldenProject, GOLDEN_DIR, GOLDEN_PROJECT } from "./e2e/golden-selection";
 
 // MEH-1044 — CI runs E2E against a local `next start`. PLAYWRIGHT_BASE_URL is
 // the explicit override; TEST_URL is kept for manual runs against
@@ -20,6 +21,33 @@ const BASE_URL =
 // the target instead of deleting them, so a manual run against a preview URL
 // still gets MEH-264's bypass and MEH-306 sub-B's toolbar suppression.
 const isLocalTarget = /^https?:\/\/(localhost|127\.0\.0\.1|\[::1\])(:|\/|$)/i.test(BASE_URL);
+
+// MEH-2897 — the golden-path project (anchor plan §C.2) walks seeded personas
+// on STAGING. It must never run in the default suite, so:
+//   1. every other project ignores e2e/golden/ (GOLDEN_DIR below), and
+//   2. the project itself is defined only when `--project=golden` is on the
+//      command line (or in Playwright's own child processes, which re-load
+//      this file to find their project). A bare `npx playwright test` — what
+//      CI runs — therefore has no golden project to run. See
+//      e2e/golden-selection.ts for why argv and not an env var.
+const goldenProject = defineGoldenProject(process.argv, typeof process.send === "function")
+  ? [
+      {
+        name: GOLDEN_PROJECT,
+        testMatch: /[\\/]e2e[\\/]golden[\\/].+\.spec\.ts$/,
+        // One persona at a time, in file order (01-g1 … 07-a1): logins stay
+        // serial against the 5/minute per-IP limit, and a later file may read
+        // what an earlier persona's walk proved exists.
+        fullyParallel: false,
+        workers: 1,
+        // A retry would replay writes (a product, a bag, a group buy) whose
+        // cleanup already ran; every spec cleans up in a finally instead.
+        retries: 0,
+        timeout: 120_000,
+        use: { ...devices["Desktop Chrome"], viewport: { width: 1440, height: 900 } },
+      },
+    ]
+  : [];
 
 export default defineConfig({
   testDir: "./e2e",
@@ -133,10 +161,12 @@ export default defineConfig({
   projects: [
     {
       name: "desktop",
+      testIgnore: GOLDEN_DIR, // MEH-2897: golden specs run only in `golden`
       use: { ...devices["Desktop Chrome"], viewport: { width: 1440, height: 900 } },
     },
     {
       name: "mobile",
+      testIgnore: GOLDEN_DIR, // MEH-2897: golden specs run only in `golden`
       use: {
         ...devices["Pixel 5"],
         // MEH-1788: this project is Chromium by design and stays that way.
@@ -179,7 +209,7 @@ export default defineConfig({
             // (MEH-1552 / MEH-1765). Measured: without testIgnore the flag
             // took the suite 224 -> 448 tests, i.e. it had silently inherited
             // the whole VRT set.
-            testIgnore: /visual\//,
+            testIgnore: [/visual\//, GOLDEN_DIR],
             use: {
               browserName: "webkit" as const,
               viewport: { width: 390, height: 664 },
@@ -201,7 +231,7 @@ export default defineConfig({
             // (MEH-1552 / MEH-1765). Measured: without testIgnore the flag
             // took the suite 224 -> 448 tests, i.e. it had silently inherited
             // the whole VRT set.
-            testIgnore: /visual\//,
+            testIgnore: [/visual\//, GOLDEN_DIR],
             use: {
               browserName: "webkit" as const,
               viewport: { width: 393, height: 727 },
@@ -212,5 +242,6 @@ export default defineConfig({
           },
         ]
       : []),
+    ...goldenProject,
   ],
 });
