@@ -100,6 +100,9 @@ class Board:
         return sum(1 for v, _, _ in self.rows if v == SKIP)
 
 
+_COUNTING_OPENER = urllib.request.build_opener(vercel_count.CountingRedirectHandler())
+
+
 def fetch(url: str) -> tuple[int, bytes, dict]:
     """GET a URL. Returns (status, body, headers). Never raises on HTTP status.
 
@@ -111,7 +114,8 @@ def fetch(url: str) -> tuple[int, bytes, dict]:
     vercel_count.note(url)  # MEH-2864
     req = urllib.request.Request(url, headers={"User-Agent": "mehamakor-smoke/1.0"})
     try:
-        with urllib.request.urlopen(req, timeout=TIMEOUT_S) as resp:  # noqa: S310
+        # MEH-2864: an opener that counts the redirect hops it follows.
+        with _COUNTING_OPENER.open(req, timeout=TIMEOUT_S) as resp:  # noqa: S310
             return resp.status, resp.read(), _headers(resp.headers)
     except urllib.error.HTTPError as exc:
         return exc.code, exc.read(), _headers(exc.headers)

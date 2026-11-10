@@ -18,9 +18,9 @@ pass_t="$(printf '%s\n' "$out_t" | grep -c '^PASS' || true)"
 pass_v="$(printf '%s\n' "$out_v" | grep -c '^PASS' || true)"
 fail_n="$(printf '%s\n%s\n' "$out_t" "$out_v" | grep -c '^FAIL' || true)"
 
-if [ "$code_t" -ne 0 ] || [ "$code_v" -ne 0 ] || [ "$fail_n" -ne 0 ] || [ "$pass_t" -lt 7 ] || [ "$pass_v" -lt 6 ]; then
+if [ "$code_t" -ne 0 ] || [ "$code_v" -ne 0 ] || [ "$fail_n" -ne 0 ] || [ "$pass_t" -lt 9 ] || [ "$pass_v" -lt 7 ]; then
   printf '%s\n%s\n' "$out_t" "$out_v" | grep -v '^PASS'
-  echo "FAIL post-deploy-trim-guard: frontend-touched exit=$code_t ($pass_t/7 passed), vercel_count exit=$code_v ($pass_v/6 passed)"
+  echo "FAIL post-deploy-trim-guard: frontend-touched exit=$code_t ($pass_t/9 passed), vercel_count exit=$code_v ($pass_v/7 passed)"
   exit 1
 fi
-echo "post-deploy-trim-guard: frontend-touched $pass_t/7, vercel_count $pass_v/6 self-test cases passed"
+echo "post-deploy-trim-guard: frontend-touched $pass_t/9, vercel_count $pass_v/7 self-test cases passed"

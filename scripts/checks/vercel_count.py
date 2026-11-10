@@ -13,6 +13,7 @@ Not a guard: a .py file. scripts/checks/run-all.sh runs only executable *.sh.
 """
 
 import atexit
+import urllib.request
 from urllib.parse import urlsplit
 
 VERCEL_HOSTS = {"mehamakor.co.il", "www.mehamakor.co.il", "staging.mehamakor.online"}
@@ -31,6 +32,14 @@ def note(url: str) -> None:
         _count += 1
 
 
+class CountingRedirectHandler(urllib.request.HTTPRedirectHandler):
+    """For openers that FOLLOW redirects: every hop is a request too."""
+
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        note(newurl)
+        return super().redirect_request(req, fp, code, msg, headers, newurl)
+
+
 def count() -> int:
     return _count
 
@@ -43,6 +52,10 @@ atexit.register(_report)
 
 
 if __name__ == "__main__":  # self-test: python scripts/checks/vercel_count.py
+    import subprocess
+    import sys
+    from pathlib import Path
+
     cases = [
         ("https://mehamakor.co.il/", True),
         ("https://staging.mehamakor.online/api/health", True),
@@ -54,5 +67,20 @@ if __name__ == "__main__":  # self-test: python scripts/checks/vercel_count.py
     bad = [u for u, want in cases if is_vercel(u) != want]
     for u, want in cases:
         print(f"{'FAIL' if u in bad else 'PASS'}  is_vercel({u}) == {want}")
+    # The line must really print at exit (fresh review: with atexit.register
+    # deleted the classifier cases above still passed). A child process
+    # imports the module, notes two Vercel URLs and one other, and exits.
+    probe = (
+        "import vercel_count as v; "
+        "v.note('https://mehamakor.co.il/'); v.note('https://staging.mehamakor.online/x'); "
+        "v.note('http://localhost:3000/')"
+    )
+    out = subprocess.run(
+        [sys.executable, "-c", probe], cwd=Path(__file__).parent, capture_output=True, text=True
+    ).stdout
+    printed = "requests to Vercel: 2" in out
+    print(f"{'PASS' if printed else 'FAIL'}  exit line printed with the count (got {out.strip()!r})")
+    if not printed:
+        bad.append("exit-line")
     atexit.unregister(_report)
     raise SystemExit(1 if bad else 0)
