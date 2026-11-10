@@ -68,10 +68,22 @@ vi.mock("@/components/HolidayIcon", () => ({ default: () => null }));
 
 // Mutable analytics payload — each test sets it before render (vi.hoisted so
 // the api mock factory can close over it despite vi.mock hoisting).
-const { analyticsRef, statusRef } = vi.hoisted(() => ({
+const { analyticsRef, statusRef, kindRef, completeRef } = vi.hoisted(() => ({
   analyticsRef: { current: null },
   statusRef: { current: "approved" },
+  kindRef: { current: "producer" },
+  completeRef: { current: true },
 }));
+
+// Completeness is driven per test (the fixture profile has no images etc.).
+vi.mock("@/lib/producer-completeness", async (orig) => {
+  const real = await orig();
+  return {
+    ...real,
+    producerCompleteness: (p) =>
+      completeRef.current ? { missing: [], priority: "green" } : real.producerCompleteness(p),
+  };
+});
 
 vi.mock("@/lib/api", () => ({
   default: {
@@ -94,7 +106,7 @@ vi.mock("@/lib/api", () => ({
       if (url === "/producers/me") {
         // The slug lives on the profile, never on /me/dashboard (MEH-2880).
         return Promise.resolve({
-          data: { id: 1, slug: "arugot-noam", status: statusRef.current, kind: "producer", images: [], categories: [], locations: [] },
+          data: { id: 1, slug: "arugot-noam", status: statusRef.current, kind: kindRef.current, images: [], categories: [], locations: [] },
         });
       }
       // /producers/me → null profile: the completeness card stays unmounted;
@@ -120,6 +132,8 @@ const analytics = {
 describe("rescue entry on the dashboard home (MEH-2884 item 7)", () => {
   beforeEach(() => {
     statusRef.current = "approved";
+    kindRef.current = "producer";
+    completeRef.current = true;
     analyticsRef.current = analytics;
   });
   afterEach(() => {
@@ -150,6 +164,14 @@ describe("rescue entry on the dashboard home (MEH-2884 item 7)", () => {
   it("pilot on, pending business: no card on home (the «כלים» tile still has it)", async () => {
     vi.stubEnv("NEXT_PUBLIC_RESCUE_BAGS_ENABLED", "true");
     statusRef.current = "pending";
+    render(<ProducerDashboardPage />);
+    await screen.findByTestId("overview-kpi-strip");
+    expect(screen.queryByTestId("home-rescue-card")).toBeNull();
+  });
+
+  it("pilot on, organizer: no card", async () => {
+    vi.stubEnv("NEXT_PUBLIC_RESCUE_BAGS_ENABLED", "true");
+    kindRef.current = "organizer";
     render(<ProducerDashboardPage />);
     await screen.findByTestId("overview-kpi-strip");
     expect(screen.queryByTestId("home-rescue-card")).toBeNull();

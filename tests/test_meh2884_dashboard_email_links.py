@@ -58,9 +58,11 @@ def test_cancel_email_links_to_the_tab_of_its_kind(client, db, sent):  # noqa: F
     for kind in ("event", "experience"):
         assert client.post(f"/registrations/{tokens[kind]}/cancel").status_code == 200
 
-    urls = _manage_urls(sent, "owner_cancel")
-    assert len(urls) == 2, f"expected 2 owner cancellation emails, got {urls}"
-    assert sorted(u.rsplit("/", 1)[-1] for u in urls) == ["events", "experiences"]
+    by_owner = {to: m.manage_url for k, to, m in sent if k == "owner_cancel"}
+    assert len(by_owner) == 2, f"expected 2 owner cancellation emails, got {by_owner}"
+    # Per recipient, so a swapped mapping (events ↔ experiences) goes red.
+    assert by_owner["o-c1@example.com"].endswith("/producer/dashboard/events")
+    assert by_owner["o-c2@example.com"].endswith("/producer/dashboard/experiences")
 
 
 def test_kashrut_rejected_email_opens_the_kashrut_card(monkeypatch):
