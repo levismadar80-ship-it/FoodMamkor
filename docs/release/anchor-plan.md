@@ -1,8 +1,26 @@
 # Anchor releases — plan (v1.5.0 is the first)
 
-> **Status: PLAN, waiting for Sapir's go (MEH-2892).** No code, no workflow and no
-> setting is changed by this document. Each work package below becomes its own
-> sub-issue and PR after the go (rule 36).
+> **Status: GO from Sapir, 10/11 evening, with three changes (MEH-2892).** They are
+> folded in below:
+>
+> 1. **v1.5.0 is not held.** It ships as soon as the staging head is fully green,
+>    with Sapir's «go merge» as usual. The **anchor title** goes to the first
+>    release that passes the whole golden path (§C) **and** the rollback drill
+>    (§A.4): v1.5.0 if both are ready in time, otherwise the next release. The
+>    A.1 record is written for v1.5.0 either way.
+> 2. **Rule E1 changed:** a full E2E run once on the staging head before every
+>    release to main, not on every UI PR. Per PR, only the touched area's specs
+>    plus the smoke set (§E). E2E is split into two parallel jobs.
+> 3. **`is_test` approved in principle.** The Alembic revision is shown in full on
+>    MEH-2892 and **stops there until Sapir approves it in writing** (§C.3).
+>
+> **Order of work:** E2E spec fix → release PR ready → A (record + downgrade/upgrade
+> test) → B (generated map + guard; GAP count and the top 20 gaps by risk) → C
+> (seeded personas + golden path on staging; the manual checklist as a doc
+> Sapir ticks on her phone) → D once Sentry → Linear is connected → the drill
+> once the MEH-1517 secret exists.
+>
+> Each package becomes its own sub-issue and PR (rule 36).
 >
 > **Why:** an *anchor* is one version that has been proven end to end and that we
 > can return to on purpose, at every layer. Today we cannot. As of 10/11/2026:
@@ -27,7 +45,7 @@
 | **B** | Action map, generated | `scripts/release/action_map.py` → `docs/release/action-map.md`, plus a guard test | approve the persona and state list |
 | **C** | Golden-path suite | Playwright project `golden`, personas seeded on staging, manual checklist | create the persona accounts' passwords as CI secrets |
 | **D** | Detection drill | one deliberate break on staging → an issue in Linear | connect Sentry → Linear, or approve the uptime-staging patch |
-| **E** | Two workflow rules | `.claude/rules/` text | approve the wording |
+| **E** | E1 rule (area + smoke per PR, full per release) and the E2E setup fix | `.claude/rules/` text, `scripts/e2e-select.sh`, `docs/ci/e2e-two-shards.patch.md`, a `global-setup.ts` change | paste the workflow patch |
 
 A and D can start immediately after the go. B comes before C, because C's
 coverage target is B's matrix.
@@ -182,7 +200,7 @@ They are seeded by extending `backend/scripts/seed_demo_business.py`, with the s
 | C2 | customer (Google) | same, through the Google sign-in path (a test identity, see C.3) |
 | A1 | admin | approve, reject → resubmit, queues, WhatsApp failures, group buys |
 
-**Each persona has its own login.** Golden-path accounts are **never** the E2E `demo-*` accounts or the capture accounts. That avoids today's 429: login is limited to 5/minute (`auth.py`).
+**Each persona has its own login,** so persona state never mixes with the E2E `demo-*` fixtures. This is not a rate-limit fix: `/auth/login` is limited to 5/minute **per client IP**, not per account (§E2). The golden-path run therefore logs its personas in **serially**, and it never runs at the same time as an E2E job on staging.
 
 ### C.2 · Where it runs
 
@@ -192,16 +210,39 @@ They are seeded by extending `backend/scripts/seed_demo_business.py`, with the s
   - **one** throwaway registration that is deleted at the end;
   - no payments, no reviews on real businesses, no messages to real people.
 
-  How test data stays invisible:
-  - a dedicated `is_test` flag on the persona businesses, filtered out of the sitemap, `/producers`, `/map`, IndexNow pings and every public list. **This is a schema change, so it needs an Alembic revision and Sapir's OK.** The alternative without schema is a fixed name prefix plus an allowlist in config. That is weaker, and it is a new env var.
-  - emails to `@example.com` addresses only. *Unverified:* whether Resend accepts or drops sends to `example.com`. To be measured in Phase 0 before relying on it.
-  - WhatsApp to a test number only: the existing `OTP_TEST_NUMBERS` (MEH-2231), refused on production by code.
+  Test data stays invisible through `is_test` (§C.3, approved in principle). Cleanup is an admin delete at the end of the run, plus a nightly sweep for anything left behind. **No production smoke until the §C.3 revision is approved in writing and live.**
 
-  Cleanup is an admin delete at the end of the run, and a nightly sweep for anything left behind. **Recommendation: no production smoke until the `is_test` decision is made.**
+### C.3 · `is_test`: design (the revision waits for Sapir's written approval)
 
-### C.3 · Manual checklist (what automation cannot see)
+**Schema.** One expand-only revision on top of `e4c9a2f71b58`:
+- `producers.is_test BOOLEAN NOT NULL DEFAULT false`
+- `users.is_test BOOLEAN NOT NULL DEFAULT false`
 
-These join `docs/RELEASE_CHECKLIST.md` section ד, capped at 30 lines:
+The server default fills existing rows with `false` (on PostgreSQL 11+ a constant default needs no table rewrite), so no backfill is needed. No table is added, so `EXPECTED_TABLES` is unchanged. The full file is on MEH-2892.
+
+**Who sets it.** Only the seed script (`seed_demo_business.py`, which already refuses production) and an admin-only toggle. It is never part of a self-service form or a public API response.
+
+**One authority.** A single filter, `exclude_test_producers(query)` in `services/producer_listing.py`, which every public reader uses, so there is one owner (smell #1). Each exclusion gets its own test: an `is_test` business is absent **and** an ordinary business is present (control).
+
+| # | Exclusion | Where it lands | Test |
+|---|---|---|---|
+| 1 | listings (`/producers`, home grids, category pages, «עסקים דומים») | `producer_listing.py` | pytest on each list endpoint |
+| 2 | search (hero search, autocomplete) | search router | pytest |
+| 3 | map (markers, clusters, mini-map) | map/producers-geo endpoint | pytest |
+| 4 | sitemap | `frontend/app/sitemap.js` reads the same filtered endpoint | vitest on the sitemap builder + pytest on the endpoint |
+| 5 | JSON-LD (business page, WebSite/ItemList) | the business page omits it, and the page is `noindex` for a test business | vitest |
+| 6 | IndexNow | `services/indexnow.py` skips any URL of a test business | pytest (no ping scheduled) |
+| 7 | emails / WhatsApp to real recipients | the send layer (`email.send_email`, `whatsapp.send_*`): for anything triggered by a test business or a test user, only `@example.com` addresses or `OTP_TEST_NUMBERS` go out; the rest is dropped and logged | pytest with the send layer recorded |
+| 8 | counts | the «N בתי עסק» counter, admin analytics, follower and alert fan-out, ratings aggregates, footer «only while they have items» gates | pytest per counter |
+| 9 | group buys / events / experiences / rescue / recipes lists that belong to a test business | the same filter, through the owner join | pytest per list |
+
+**Not excluded on purpose:** the test business's own dashboard, its direct URL for the golden-path run (`noindex`), and the admin views, where test rows get a marker. Its copy goes to Sapir for approval with the PR.
+
+*Unverified, Phase 0 of C:* whether Resend accepts or drops sends to `example.com`.
+
+### C.4 · Manual checklist (what automation cannot see): a doc Sapir ticks on her phone
+
+`docs/release/manual-checklist.md` is one short page with checkboxes, written to be ticked from a phone and linked from each release PR. The items that fit the cap also go into `docs/RELEASE_CHECKLIST.md` section ד (30-line cap):
 - the real inbox on Gmail mobile, including whether the message lands in spam: verify, reset, welcome, newsletter, registration;
 - the WhatsApp OTP on a real phone, end to end;
 - the share sheet: iOS and Android;
@@ -227,45 +268,98 @@ These join `docs/RELEASE_CHECKLIST.md` section ד, capped at 30 lines:
 
 ---
 
-## E · Two workflow rules (proposal, wording for Sapir)
+## E · Two workflow rules (E1 as changed by Sapir 10/11; E2 corrected)
 
-1. **No UI PR merges to staging without the full E2E run.** A PR that changes what users see (rule 38's definition) carries the `run-e2e` label, and its `Playwright E2E` must be green on the head before the merge. **Why:** on 10/11 #4270 merged on the two required gates alone, and 28 E2E tests broke on staging. They were the draft-checklist specs that still expected the old banner.
-2. **Capture and QA scripts never log in with the accounts that E2E global-setup uses.** They get their own accounts (e.g. `capture-owner@example.com`), or they run only while no E2E job is running on staging. **Why:** on 10/11 a staging E2E run executed 0 tests because its `demo-owner` login got HTTP 429. CC's `/join` capture had logged in as the same account minutes earlier, and login is limited to 5/minute.
+### E1 · Full E2E once per release; area specs + smoke per PR
 
-A third item, not a rule: the full suite runs close to the 30-minute job limit (`e2e.yml:100`). With failures and retries, it is cut off around test 1,393 of ~1,650, so a red run hides part of the suite. **Proposal: shard E2E into 2 jobs**, the same way `meh-2779-ci-sharding` split pytest and vitest. That is a workflow patch for Sapir.
+- **Before every release to main:** one **full** E2E run on the staging head must be green. It is triggered by `workflow_dispatch` on the release PR's head and recorded in the anchor file (A.1). It runs in **2 parallel shards**: a workflow patch for Sapir, `docs/ci/e2e-two-shards.patch.md`, on the pattern of `meh-2779-ci-sharding`.
+- **Per PR** (and per staging push): the specs for the **area** the PR touches, plus the **smoke set**.
+- **Escalation to the full suite** for a PR that touches:
+  - shared layout: `frontend/app/[locale]/layout.js`, `loading.js`, `not-found.js`, `components/Header.jsx`, `BottomNav.jsx`, `Footer.jsx`, `CookieBanner.jsx`, `globals.css`;
+  - the dashboard home or its shell: `app/[locale]/producer/dashboard/page.js`, `DashboardLayoutClient.jsx`, `components/ProfileCompletenessCard.jsx`;
+  - auth: `lib/auth-context.js`, `app/[locale]/login/**`, `app/[locale]/register/**`, `backend/app/auth.py`, `backend/app/routers/auth.py`;
+  - middleware: `frontend/middleware.js`.
+
+**Area → specs** (filename globs under `frontend/e2e/flows/`; the selection script lives in `scripts/e2e-select.sh`, and wiring it into the workflow is part of the same patch):
+
+| Area (changed paths) | Specs |
+|---|---|
+| home, discovery (`app/[locale]/page.js`, `home/**`, `producers/**`, `components/ProducerCard*`) | `01-*`, `02-*`, `16-*`, `17-*`, `45-*`, `manual/home*`, `manual/producers*` |
+| map (`map/**`, `components/Map*`) | `05-*`, `07-*`, `15-*`, `43-minimap-*`, `manual/map*` |
+| business page (`[slug]/**`, `producer/[id]/**`) | `03-*`, `04-*`, `06-*`, `26-*`, `27-delivery-*`, `35-*`, `manual/producer-detail*`, `manual/share*` |
+| register, login, account (`register/**`, `login/**`, `settings/**`, `favorites/**`) | `09-*`, `10-*`, `11-*`, `18-*`, `21-*`, `22-*`, `27-register-*`, `28-*`, `29-*`, `30-login-*`, `31-*`, `32-*`, `38-*`, `40-register-*`, `manual/auth*`, `manual/register-producer*` |
+| business dashboard (`producer/dashboard/**`, `components/producer/**`) | `24-*`, `34-*`, `40-rejected-*`, `manual/dashboard-*` |
+| admin (`admin/**`, `components/admin/**`) | `20-*`, `30-admin-*`, `33-*`, `manual/admin-*` |
+| static and content (`about/**`, `join/**`, `legal`, `messages/*.json`) | `13-*`, `39-*`, `41-*`, `manual/about*`, `manual/join*`, `manual/legal*`, `manual/hebrew-typography*` |
+| events and calendar (`events/**`, `experiences/**`, `group-buys/**`, `rescue/**`) | `08-*`, plus the matching `manual/*` specs |
+
+- **Smoke set,** always: `01-home-load`, `03-view-producer-detail`, `04-whatsapp-click`, `05-map-navigation`, `13-static-pages-render`, `25-role-reachability`, `41-not-found-chrome`, `43-site-sanity`.
+- **Unmapped:** a changed path that matches no area runs the full suite. The script prints which path caused it.
+
+**Why.** On 10/11, #4270 merged on the two required gates alone. 28 E2E tests broke on staging: the draft-checklist specs still expected the old banner. A dashboard-area run on the PR would have caught it, and #4270 changed the dashboard home, which escalates to the full suite anyway.
+
+### E2 · Corrected: the 429 was not the capture scripts
+
+The earlier draft blamed CC's `/join` capture runs for the staging E2E run that executed 0 tests (HTTP 429 on login). **That diagnosis was wrong.**
+- `/auth/login` is limited to `5/minute` **per client IP**: the default key, with no email component (`auth.py`, `rate_limit.py resolve_client_ip`).
+- CC's sandbox and the CI runner are different IPs, so CC's logins cannot exhaust the runner's bucket.
+- Separate capture accounts would therefore not prevent it, and they are **not** being created.
+
+What the evidence does show:
+- In run 42837553999 the Chromium job and the WebKit shadow job **started in the same second** (14:47:20 and 14:47:21).
+- Each logs in 4 roles in global setup (`global-setup.ts`: producer, consumer, admin, smoke-admin).
+
+The cause stays **unverified**. Two candidates:
+- both jobs land in one bucket (shared egress, or the local middleware stamping one client IP);
+- another job was logging in at the same minute.
+
+**Proposed fix, inside E2E code with no workflow change:** global setup logs in serially and, on a 429, waits out the window (`Retry-After`, otherwise 60 s) once before failing. The shards in E1 stagger their setup by 30 s.
+
+Capture and QA scripts still follow one hygiene rule: they never run while an E2E job is running on staging.
 
 ---
 
-## Cost
+## Cost (redone for E1 as changed)
 
-> **Measured, 10/11, last 24 h** (MEH-2891): **4,248 billable-equivalent minutes**.
-> - PR Checks: 2,436
-> - E2E: 791
-> - Deploy: 629
-> - Post-deploy: 185
-> - Uptime: 136
->
-> On a public repo, Actions minutes are free. On a private one the quota is
-> **2,000 / month**.
+**Measured today** (MEH-2891, last 24 h, 10/11): **4,248 billable-equivalent minutes**.
 
-| Item | Runs / day (estimate) | Minutes per run | Minutes / day |
+| Workflow | Minutes |
+|---|---|
+| PR Checks | 2,436 |
+| E2E | 791 (every staging push runs the full suite; PRs only with `run-e2e`) |
+| Deploy | 629 |
+| Post-deploy | 185 |
+| Uptime | 136 |
+
+Day assumed below: ~15 UI PRs × ~1.5 pushes, ~25 staging pushes, 1 release candidate. Every number in the table is an *estimate* until the first week is measured.
+
+| Item | Runs / day | Minutes / run | Minutes / day |
 |---|---|---|---|
-| **Rule E1: full E2E on every UI PR** | ~15 UI PRs × ~1.5 pushes ≈ 22 | Chromium ~28 + WebKit shadow ~20 ≈ **48** | **~1,050** |
-| E2E sharded into 2 jobs (E3) | same | ~2 × 16 + WebKit 20 ≈ 52 (more setup, shorter wall clock) | ~1,150 |
-| Golden path on staging | 1 per release, plus 1 nightly | ~20 *(estimate: 8 personas, ~60 steps)* | ~20–40 |
-| Production smoke | 1 per release | ~5 | ~1 |
-| Downgrade round-trip test | inside pytest | < 1 | ~0 |
-| Action-map drift check | inside `Repo guards` | < 1 | ~0 |
-| Restore drill (MEH-1517 job) | weekly | ~10 | ~1.5 |
-| Detection probe for staging | every 30 min | 1 | 48 |
+| Per-PR area + smoke (Chromium only) | ~22 | setup ~4 + smoke ~3 + area ~5 ≈ **12** | ~265 |
+| Per-PR full suite (layout / dashboard home / auth / middleware PRs) | ~4 | 2 shards × ~16 + setup ≈ **36** (WebKit shadow off on PRs) | ~145 |
+| Staging push: area + smoke, instead of today's full suite | ~25 | ~12 | ~300 |
+| **Full suite once on the release head** (2 shards + WebKit shadow) | ~1 | ~36 + 20 ≈ **56** | ~56 |
+| Golden path on staging (release candidate + nightly) | ~2 | ~20 | ~40 |
+| Production smoke after a release | ≤1 | ~5 | ~5 |
+| Downgrade round-trip test + action-map drift check | inside pytest / `Repo guards` | < 1 | ~0 |
+| Restore drill (MEH-1517), weekly | 1/7 | ~10 | ~1.5 |
+| **E2E-related total** | | | **~810** (today: 791) |
 
-**Against the quotas:**
-- **Public repo (today): free.** Rule E1 roughly doubles E2E minutes, and wall-clock waiting is the real cost.
-- **Private repo:** rule E1 alone is ~1,050 min/day, so the 2,000/month quota is gone in **2 days**. Going private again (MEH-2891) means a spending limit or fewer full runs. One middle path: full E2E only on PRs touching `frontend/app/**` or `frontend/components/**`, not copy-only PRs.
-- **Vercel (Pro):**
-  - E2E runs against a local `next start` in CI, so **zero** Vercel CPU.
-  - The golden path and the production smoke hit Vercel: *estimate* ~300 page loads per golden run and ~20 per smoke.
-  - The first runs will be measured with the «requests to Vercel: N» counter from #4253, before anything is scheduled.
+Net effect: about **the same E2E minutes as today**, but they buy a per-PR area check that does not exist today, and the full suite moves from every staging push to once per release.
+
+**Public repo (today): free.** Actions minutes cost nothing. The real cost is waiting time:
+- area runs give ~12 minutes of feedback per PR;
+- the full suite takes ~20 minutes of wall clock with 2 shards (the WebKit shadow adds another ~20).
+
+**Private repo (MEH-2891):** the quota is 2,000 minutes/month. The whole pipeline (~4,270 min/day, of which E2E is ~810) uses it up **in under a day**, with or without this plan.
+- Linux runner overage at about $0.006–0.008 per minute (check the current GitHub price): ~128,000 overage minutes × $0.006–0.008 ≈ **$770–1,020 a month**.
+- E2E is ~19% of that. **The big line is PR Checks (2,436 min/day)**, so trimming it (`docs/ci/meh-2212-actions-cost.patch.md`) matters more than any E2E decision.
+- Going private without a spending limit stops CI on day 1.
+
+**Vercel (Pro):**
+- E2E runs against a local `next start` in CI, so **zero** Vercel CPU.
+- The golden path and the production smoke hit Vercel: *estimate* ~300 page loads per golden run and ~20 per smoke.
+- Both are measured with the «requests to Vercel: N» counter (#4253) before anything is scheduled.
 
 ---
 
