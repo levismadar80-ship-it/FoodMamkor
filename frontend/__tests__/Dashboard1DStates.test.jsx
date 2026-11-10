@@ -117,6 +117,26 @@ describe("Dashboard 1D — share-gate (MEH-964)", () => {
     // VanityLinkCard renders the /p/{slug} vanity URL on the canonical
     // domain (MEH-1267: mehamakor.online staging alias → SITE_URL mehamakor.co.il).
     expect(screen.getByText(/mehamakor\.co\.il\/p\/demo-farm/)).toBeInTheDocument();
+    // MEH-2827 PR 8: «שתפו» is a button that opens the share sheet — no
+    // WhatsApp-only link on the card.
+    expect(screen.getByTestId("vanity-share").tagName).toBe("BUTTON");
+    expect(document.querySelector('a[href^="https://wa.me/?text="]')).toBeNull();
+  });
+
+  // QUARANTINED — MEH-2876 (Sapir 10/11). The click path below hung the
+  // vitest worker in three attempts (inside this file alongside later cases;
+  // in its own file with act(); synchronous). The product behaviour it checks
+  // is verified in a real browser instead (Playwright on a local build, PR
+  // #4178). Un-skip when MEH-2876 finds what keeps the worker alive.
+  it.skip("«שתפו» opens the share sheet with the /p/{slug} link as url (MEH-2876)", async () => {
+    const shareSpy = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, "share", { value: shareSpy, configurable: true });
+    setup({ status: "approved", complete: true });
+    render(<ProducerDashboardPage />);
+    await screen.findByTestId("producer-overview");
+    screen.getByTestId("vanity-share").click();
+    expect(shareSpy).toHaveBeenCalledTimes(1);
+    expect(shareSpy.mock.calls[0][0].url).toMatch(/\/p\/demo-farm$/);
   });
 
   it("hides the share card + shows the locked hint when INCOMPLETE", async () => {
