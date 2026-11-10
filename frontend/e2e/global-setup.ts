@@ -38,6 +38,7 @@
 import { request, type FullConfig } from "@playwright/test";
 import fs from "node:fs";
 import path from "node:path";
+import { withRateLimitRetry } from "./login-retry";
 
 type Role = {
   name: string;
@@ -161,11 +162,26 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
       // — never logged, never committed). Omitted entirely on a local target.
       extraHTTPHeaders: bypassSecret ? { "x-vercel-protection-bypass": bypassSecret } : {},
     });
-    const res = await ctx.post("/api/auth/login", { data: { email, password } });
+    // MEH-2895: a 429 (the 5/minute per-IP limit, spent by another suite in the
+    // same minute) is waited out and retried; every other status returns on the
+    // first attempt and is judged below exactly as before.
+    const { response: res, attempts } = await withRateLimitRetry(
+      () => ctx.post("/api/auth/login", { data: { email, password } }),
+      {
+        onRetry: ({ attempt, waitMs }) =>
+          console.warn(
+            `[global-setup] login for ${role.name} got HTTP 429 (attempt ${attempt}) — ` +
+              `waiting ${Math.round(waitMs / 1000)}s for the per-IP limit window.`,
+          ),
+      },
+    );
     if (!res.ok()) {
       throw new Error(
         `[global-setup] login failed for ${role.name} (${email}) at ${baseURL}: ` +
-          `HTTP ${res.status()}. Did the staging --sync-users run succeed?`,
+          `HTTP ${res.status()} after ${attempts} attempt(s).` +
+          (res.status() === 429
+            ? " Still rate-limited (5/minute per IP) — another suite is logging in from the same IP."
+            : " Did the staging --sync-users run succeed?"),
       );
     }
     const { access_token: accessToken } = await res.json();
