@@ -26,7 +26,11 @@ How the measurement works, and why it is real here:
 - ``TestClient`` is serial and lifespan is not entered (no ``with``), so
   APScheduler is not running and nothing else checks out connections.
 
-Controls (both must stay green before AND after the fix):
+Controls (both must stay green before AND after the fix). The control app
+depends on ``_frozen_get_db`` — a verbatim copy of today's ``get_db`` — not
+on the real one, so the fix cannot move the controls (MEH-2886 review: with
+the real ``get_db`` the nonzero control would read 0 once the fix lands and
+blame the instrument):
 
 - ``test_control_probe_reads_zero_when_request_never_touched_db`` — a route
   on a throwaway FastAPI app that depends on the REAL ``get_db`` but never
@@ -56,8 +60,34 @@ from fastapi.testclient import TestClient
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
-from app.database import engine, get_db
-from conftest import make_user, valid_user_register_payload
+from app.database import SessionLocal, engine
+from app.models import User
+from conftest import auth_header, make_producer, make_user, valid_user_register_payload
+
+
+class _HeldConnection(AssertionError):
+    """Raised ONLY by the final 'pool reads 0 while the task runs' check, so
+    the strict xfail below can name it: any other failure (a 422, a renamed
+    sender, a task that never ran) fails the test outright instead of being
+    swallowed as the expected red (MEH-2886 review)."""
+
+
+def _assert_released(readings: list[int], what: str) -> None:
+    if readings != [0]:
+        raise _HeldConnection(
+            f"{readings[0]} connection(s) still checked out while the {what} "
+            "background task ran"
+        )
+
+
+def _frozen_get_db():
+    """Verbatim copy of ``app.database.get_db`` as of MEH-2886 chunk 1.
+    Controls only — it must not change when the real one does."""
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
 
 
 def _checkedout() -> int:
@@ -93,12 +123,14 @@ def _control_app() -> FastAPI:
     control = FastAPI()
 
     @control.post("/no-db")
-    def no_db(background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
+    def no_db(background_tasks: BackgroundTasks, db: Session = Depends(_frozen_get_db)):
         background_tasks.add_task(control.state.probe)
         return {"ok": True}
 
     @control.post("/select-one")
-    def select_one(background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
+    def select_one(
+        background_tasks: BackgroundTasks, db: Session = Depends(_frozen_get_db)
+    ):
         db.execute(text("SELECT 1"))
         background_tasks.add_task(control.state.probe)
         return {"ok": True}
@@ -143,6 +175,7 @@ def test_control_probe_reads_nonzero_when_task_runs_inside_open_txn():
 # (chunk 2) makes these pass, and a strict xfail that passes FAILS the suite —
 # so chunk 2 cannot land without deleting this marker.
 _RED_UNTIL_FIX = pytest.mark.xfail(
+    raises=_HeldConnection,
     strict=True,
     reason="MEH-2886: get_db closes only after BackgroundTasks run (chunk 2 fixes)",
 )
@@ -167,14 +200,8 @@ def test_register_new_email_releases_connection_before_background_tasks(
     assert resp.status_code == 200
     assert len(verify_probe.readings) == 1, "verify-email task did not run"
     assert len(welcome_probe.readings) == 1, "welcome-email task did not run"
-    assert verify_probe.readings == [0], (
-        f"{verify_probe.readings[0]} connection(s) still checked out while "
-        "the verify-email background task ran"
-    )
-    assert welcome_probe.readings == [0], (
-        f"{welcome_probe.readings[0]} connection(s) still checked out while "
-        "the welcome-email background task ran"
-    )
+    _assert_released(verify_probe.readings, "verify-email")
+    _assert_released(welcome_probe.readings, "welcome-email")
 
 
 @_RED_UNTIL_FIX
@@ -195,10 +222,7 @@ def test_register_existing_email_releases_connection_before_background_tasks(
 
     assert resp.status_code == 200
     assert len(probe.readings) == 1, "duplicate-attempt task did not run"
-    assert probe.readings == [0], (
-        f"{probe.readings[0]} connection(s) still checked out while the "
-        "duplicate-attempt background task ran"
-    )
+    _assert_released(probe.readings, "duplicate-attempt")
 
 
 @_RED_UNTIL_FIX
@@ -206,7 +230,7 @@ def test_forgot_password_releases_connection_before_background_tasks(
     client, db, monkeypatch
 ):
     """Shape 3: commit() → reads on the expired instance → add_task
-    (auth.py:1406-1412, expire_on_commit=True)."""
+    (auth.py:1405-1412, expire_on_commit=True)."""
     make_user(db, email="meh2886-reset@test.com")
     db.close()
     probe = _PoolProbe()
@@ -219,7 +243,48 @@ def test_forgot_password_releases_connection_before_background_tasks(
 
     assert resp.status_code == 200
     assert len(probe.readings) == 1, "reset-email task did not run"
-    assert probe.readings == [0], (
-        f"{probe.readings[0]} connection(s) still checked out while the "
-        "reset-email background task ran"
+    _assert_released(probe.readings, "reset-email")
+
+
+@_RED_UNTIL_FIX
+def test_authenticated_route_releases_connection_before_background_tasks(
+    client, db, monkeypatch
+):
+    """Shape 4: an AUTHENTICATED route (``require_producer`` →
+    ``get_current_user``, which opens its own ``Depends(get_db)``), whose task
+    is handed the request's ``db`` (producer_me.py:2033-2065 → fire_alerts).
+
+    Why it is here (MEH-2886 review): the three tests above are all
+    unauthenticated, so a fix applied to the ROUTE's dependency alone — e.g.
+    ``Depends(get_db, scope="function")`` on two routes — turns them green
+    while the auth dependency's session still holds a connection (doc §1 F5,
+    §4 (a)). This route reads 1 under such a partial fix.
+    """
+    producer = make_producer(db)
+    user = User(
+        email="meh2886-producer@test.com",
+        name="Producer User",
+        password_hash="hash",
+        role="producer",
+        is_producer=True,
+        producer_id=producer.id,
     )
+    db.add(user)
+    db.commit()
+    headers = auth_header(user)
+    db.close()
+    probe = _PoolProbe()
+    # Imported inside the route (``from app.routers.alerts import fire_alerts``),
+    # so patching the module attribute is what the route picks up.
+    monkeypatch.setattr("app.routers.alerts.fire_alerts", probe)
+    _assert_pool_idle_before_request()
+
+    resp = client.post(
+        "/producers/me/products",
+        json={"name": "לחם שיפון", "price_min": 25},
+        headers=headers,
+    )
+
+    assert resp.status_code == 201, resp.text
+    assert len(probe.readings) == 1, "new-product alert task did not run"
+    _assert_released(probe.readings, "new-product alert")

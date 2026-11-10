@@ -30,7 +30,7 @@ Versions: `backend/pyproject.toml:6` (`fastapi==0.162.0`) and `:10` (`sqlalchemy
 | F1 | A request runs inside two `AsyncExitStack`s: `function_stack` closes right after `response = await f(request)`, and `request_stack` closes after `await response(scope, receive, send)`. | `fastapi/routing.py:148-155` |
 | F2 | `f(request)` includes **response_model serialization**. `serialize_response` runs inside the handler, before it returns the `Response`. | `fastapi/routing.py:767` |
 | F3 | Starlette runs `self.background()` inside `Response.__call__`, after the body is sent. So BackgroundTasks run **inside** `request_stack` and **after** `function_stack` has closed. | `starlette/responses.py:169-170` |
-| F4 | A yield dependency goes on `function_stack` only if its `Depends(..., scope="function")`. Otherwise it goes on `request_stack`. `get_db` (`backend/app/database.py:114-119`) is used as `Depends(get_db)` everywhere, so it is request-scoped and its `db.close()` runs **after every task**. | `fastapi/dependencies/utils.py:720-722` |
+| F4 | A yield dependency goes on `function_stack` only if its `Depends(..., scope="function")`. Otherwise it goes on `request_stack`. `get_db` (`backend/app/database.py:114-119`) is used as `Depends(get_db)` everywhere, so it is request-scoped and its `db.close()` runs **after every task**. | `fastapi/dependencies/utils.py:721-724` |
 | F5 | `scope` belongs to each `Depends(...)` call, not to the function, and it is part of the dependency **cache key**. If `Depends(get_db, scope="function")` and `Depends(get_db)` are both in one request's tree, FastAPI opens **two sessions**. | `fastapi/dependencies/models.py:82-96,229-234`; measured in §4 (a) |
 | F6 | A request-scoped yield dependency that depends on a function-scoped one raises `DependencyScopeError` at route registration. `get_db` is the only yield dependency in `backend/app` (grep for `yield` finds only `services/chat_db_tools.py:134`, which is a plain context manager, not a dependency). | `fastapi/dependencies/utils.py:335-345` |
 | F7 | `dependency_overrides` keep the scope of the original `Depends`. | `fastapi/dependencies/utils.py:689-695` |
@@ -213,7 +213,7 @@ def get_db(background_tasks: BackgroundTasks):
 
 **(e) for chunk 2**, with:
 
-1. The guard tests in `tests/test_meh2886_db_release.py`, plus one route from §2.4 (for example `PUT /producers/me` with a delivery-area change), asserting the pool reads 0 after the request.
+1. The guard tests in `tests/test_meh2886_db_release.py`, plus one route from §2.4 (for example `PUT /producers/me` with a delivery-area change), asserting the pool reads 0 after the request. That last assertion already reads 0 on today's code, so it cannot be shown failing against today's code. It can only be shown red against a broken variant (a task that re-opens the session and nothing closes it), and the chunk-2 PR has to say so.
 2. A measurement of the per-request cost: the GET-route latency in `tests/test_api.py` before and after, and a check of whether a tracer provider is active under Sentry.
 
 Fall back to **(a) global** (alias plus a sweep of all 229 sites, with the 6 §2.4 sites moved to their own sessions first) if (e)'s per-request task is rejected. Do **not** apply (a) to individual routes (F5). Do not use (b) or (c) as the primary mechanism (serialization 500s, per-route drift).
@@ -236,6 +236,15 @@ File: `tests/test_meh2886_db_release.py`.
 | `test_register_existing_email_releases_connection_before_background_tasks` | Query only, no commit (`auth.py:297` → `:355`) | **FAIL**, reads 1 |
 | `test_forgot_password_releases_connection_before_background_tasks` | `commit()`, then expired-attribute reads (`auth.py:1405-1412`) | **FAIL**, reads 1 |
 
-**Discrimination check:** in a scratch copy of the repo, changing only those two routes to `Depends(get_db, scope="function")` turned all five green. The controls stay green either way.
+| `test_authenticated_route_releases_connection_before_background_tasks` | Authenticated (`require_producer` → `get_current_user`), and the task is handed the request's `db` (`producer_me.py:2033-2065`) | **FAIL**, reads 1 |
 
-**How it lands without turning CI red:** the three real-route tests carry `pytest.mark.xfail(strict=True)` in chunk 1, so CI shows `3 xfailed`. A strict xfail that passes fails the suite, so the fix in chunk 2 cannot land without deleting the marker. Measured on the chunk-1 branch: `2 passed, 3 xfailed`.
+**Discrimination check:**
+- In a scratch copy of the repo, changing only the two `auth.py` routes to `Depends(get_db, scope="function")` turned the first three real-route tests green. That partial fix is the F5 trap, which is why the fourth, authenticated test exists.
+- With `scope="function"` on the product route alone, the authenticated test **stays red** (`_HeldConnection: 1 connection(s) … new-product alert`): the auth dependency's own session still holds a connection.
+
+**Controls are independent of the fix.** The control app depends on `_frozen_get_db`, a verbatim copy of today's `get_db`, not on the real one. With the real one, the nonzero control would read 0 once (e) lands and report the instrument as broken. The fresh reviewer simulated exactly that.
+
+**How it lands without turning CI red:** the four real-route tests carry `pytest.mark.xfail(raises=_HeldConnection, strict=True)` in chunk 1.
+- `_HeldConnection` is raised **only** by the final "pool reads 0 while the task runs" check. Anything else (a 422, a renamed sender, a task that never ran) fails the test outright. Measured: renaming the reset-email sender in a scratch copy gives `1 failed`, not `xfailed`.
+- A strict xfail that passes fails the suite, so chunk 2 cannot land without deleting the marker.
+- Measured on the chunk-1 branch: `2 passed, 4 xfailed`. With `--runxfail`: `4 failed, 2 passed`, each on `_HeldConnection: 1 connection(s) still checked out …`.
