@@ -2364,7 +2364,7 @@ def seed_golden_personas(db) -> dict[str, list[str]]:
         result["created" if created else "existing"].append(spec["email"])
     for spec, role, env in (
         (GOLDEN_CUSTOMER, "consumer", GOLDEN_CONSUMER_PASSWORD_ENV),
-        # TEMPORARY RED (MEH-2897 guard demo): the admin persona is skipped.
+        (GOLDEN_ADMIN, "admin", GOLDEN_ADMIN_PASSWORD_ENV),
     ):
         _, created = _golden_user(
             db,
@@ -2422,8 +2422,7 @@ def main() -> None:
     args = parser.parse_args()
     if sum((args.sync_users, args.refresh, args.golden)) > 1:
         sys.exit("--sync-users, --refresh and --golden are mutually exclusive.")
-    if not args.golden:  # TEMPORARY RED (MEH-2897 guard demo): --golden skips the guard
-        _assert_not_production()
+    _assert_not_production()
     db = SessionLocal()
     try:
         if args.golden:
