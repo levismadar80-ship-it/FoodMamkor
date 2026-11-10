@@ -12,8 +12,6 @@ import AdminLoadError from "@/components/admin/AdminLoadError";
 import { SkeletonTable } from "@/components/Skeleton";
 import Button from "@/components/ui/Button";
 
-const SUPER_ADMIN_EMAIL = "levismadar80@gmail.com";
-
 export default function AdminUsersPage() {
   const t = useTranslations("admin");
   const locale = useLocale();
@@ -109,7 +107,10 @@ export default function AdminUsersPage() {
     }
   };
 
-  const isSuperAdmin = (u) => u.email === SUPER_ADMIN_EMAIL;
+  // MEH-2890: the server says which account is protected (SUPER_ADMIN_EMAIL in
+  // Railway). No address lives in the frontend; the backend refuses the role
+  // change / delete on its own (admin_extra.is_super_admin).
+  const isSuperAdmin = (u) => u.is_super_admin === true;
   // One in-flight key per dialog action: role changes and deletes lock separately.
   const confirmKey = (c) => `${c.action === "delete" ? "delete" : "role"}:${c.userId}`;
   const isMe = (u) => me && u.id === me.id;
