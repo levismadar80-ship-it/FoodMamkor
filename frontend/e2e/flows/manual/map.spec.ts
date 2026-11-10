@@ -1754,3 +1754,53 @@ test.describe("manual › /map desktop ↔ phone: one control, one place (MEH-27
     expect(Object.keys(SHELL_ONLY).filter((id) => !seenOnce.has(id)), "stale SHELL_ONLY entry").toEqual([]);
   });
 });
+
+test.describe("manual › /map categories + city live in the URL (MEH-2049 PR 2)", () => {
+  // The list answers by the category id it is asked for, so the request that
+  // wins is visible in the cards: meat → the meat producers only.
+  const byCategory = (u: URL) => (u.searchParams.getAll("category").includes(String(CAT_MEAT.id)) ? MEAT : PRODUCERS);
+
+  test("a copied /map?category_group=meat&city=… link restores both, and so does a reload", async ({ page }, info) => {
+    await stubExternal(page);
+    const catalog = await mockCatalog(page, byCategory);
+    const cityInput = page.locator(isDesktop(info) ? "#map-city-search-desktop" : "#map-city-search-mobile");
+    const cityName = "חיפה";
+
+    for (const step of ["first visit", "reload"]) {
+      if (step === "first visit") await gotoMap(page, `/map?category_group=meat&city=${encodeURIComponent(cityName)}`);
+      else {
+        catalog.seen.length = 0;
+        await page.reload();
+        await page.waitForFunction(() => (window as unknown as { __MAP_CENTER__?: unknown }).__MAP_CENTER__ !== undefined, null, MAP_MOUNT);
+      }
+      // The category load is the second /producers call (it needs /categories
+      // for the id); it must carry the city too, and it must be what is shown.
+      await expect
+        .poll(() => catalog.seen.some((u) => u.searchParams.getAll("category").includes(String(CAT_MEAT.id)) && u.searchParams.get("near_city") === cityName), { timeout: 15_000 })
+        .toBe(true);
+      await expect(shellOf(page, info).getByTestId("map-card"), `${step}: only the meat producers`).toHaveCount(MEAT.length, FIRST_PAINT);
+      await expect(cityInput, `${step}: the city is back in the field`).toHaveValue(cityName);
+      const url = new URL(page.url());
+      expect(url.searchParams.getAll("category_group"), `${step}: URL keeps the category`).toEqual(["meat"]);
+      expect(url.searchParams.get("city"), `${step}: URL keeps the city`).toBe(cityName);
+    }
+  });
+
+  test("invalid values are dropped silently: unknown category, a city that is not a name", async ({ page }, info) => {
+    await stubExternal(page);
+    const catalog = await mockCatalog(page, byCategory);
+    await gotoMap(page, "/map?category_group=nope&city=%3Cscript%3E");
+    // Settle first, on two signals the page cannot reach early: the URL has
+    // been rewritten without the bad values (useMapFilters' run after
+    // hydration), and the full list is drawn (the mount load answered). Only
+    // then is "exactly one request" a claim about the page and not about how
+    // soon the test looked — a broken build that sent a second, filtered load
+    // a moment later would otherwise pass.
+    await expect.poll(() => new URL(page.url()).search, { timeout: 10_000 }).toBe("");
+    await expect(shellOf(page, info).getByTestId("map-card"), "the unfiltered list is drawn").toHaveCount(PRODUCERS.length, FIRST_PAINT);
+    expect(catalog.seen, "one /producers request: the unfiltered mount load").toHaveLength(1);
+    expect(catalog.seen[0].searchParams.getAll("category")).toEqual([]);
+    expect(catalog.seen[0].searchParams.get("near_city")).toBeNull();
+    expect(catalog.seen[0].searchParams.get("delivery_city")).toBeNull();
+  });
+});
