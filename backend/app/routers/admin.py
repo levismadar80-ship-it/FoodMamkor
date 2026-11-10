@@ -1228,8 +1228,9 @@ def approve_producer(  # noqa: PLR0913 — all 6 args are FastAPI-injected (path
     #
     # Handler-only, and that is sufficient rather than an oversight: the retry
     # path re-reads the row. The four literal `status="draft"` writes are all
-    # at creation (auth.py:578, auth.py:785, producer_queries.py:537, and
-    # admin.py:609 — admin_create_producer's `as_draft`, MEH-2322). No route
+    # at creation (auth.py:571, auth.py:781, services/producer_queries.py:662,
+    # and admin.py:669 — admin_create_producer's `as_draft`, MEH-2322; lines as
+    # of 10/11/2026). No route
     # moves an existing producer back to draft: the admin PUT that once could
     # (found in the MEH-2322 re-review) refuses any `status` in its payload
     # with a 422 since MEH-2502 (admin_update_producer, `if "status" in

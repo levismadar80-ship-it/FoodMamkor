@@ -1861,8 +1861,9 @@ class Experience(Base):
     # frontend/lib/event-categories.js EXPERIENCE_CATEGORIES.
     category = Column(String(50), nullable=True)
 
-    # Host — a verified business owner: submit_experience requires
-    # require_verified_producer (MEH-2246), and the public feed INNER-JOINs
+    # Host — an email-verified producer-role user (not necessarily an
+    # approved business): submit_experience requires require_verified_producer
+    # (MEH-2246: role + email_verified), and the public feed INNER-JOINs
     # Producer + is_business() (experiences._publicly_visible_query), so a
     # consumer-hosted row could never be public. MEH-2870: this used to say
     # "any logged-in user (consumer / producer / admin)".
