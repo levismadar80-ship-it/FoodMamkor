@@ -1,5 +1,11 @@
 # MEH-2895 — E2E in two parallel shards, one merged report
 
+> ✅ **Applied 10/11/2026** under Sapir's one-time authorisation (recorded on
+> MEH-1915): commit `20790b6f` on this PR's branch wrote `.github/workflows/e2e.yml`
+> through the GitHub API, byte-identical to the staged copy (sha256 `c074c66e…`,
+> checked with `cmp`). The staged copy was deleted in the next commit; the diff
+> below is the record.
+
 > **Not applied.** `.github/workflows/**` is denied to CC's filesystem tools,
 > and the sandbox proxy refuses the Contents API (`.claude/rules/security.md`).
 > Sapir pastes the diff below through the GitHub web editor. CC then checks
