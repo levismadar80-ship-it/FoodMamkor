@@ -1023,7 +1023,7 @@ panel) is QA'd automatically instead of manually. Three moving parts:
    to re-run. It does not touch the demo business, and the default seed run
    (CI's) never creates the personas. Same `_assert_not_production()` guard;
    aborts if any of the three secrets is unset. Expected output:
-   `Golden personas: created 7, password reset on 0 existing (…)`.
+   `Golden personas: created 7, re-dated 4 events/experiences, password reset on 0 existing (…)`. Every run also moves the golden markets, the G2 event and the experience back to today + their offset, so their dates never go stale.
 
 2. **globalSetup provisions storageState.** `frontend/e2e/global-setup.ts` logs
    each role in via `POST /api/auth/login` and writes

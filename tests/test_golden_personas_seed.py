@@ -20,6 +20,7 @@ usable from the CC sandbox).
 
 import re
 import sys
+from datetime import timedelta
 from pathlib import Path
 
 import pytest
@@ -35,6 +36,7 @@ from app.models.models import (
     Product,
     User,
 )
+from app.utils.clock import israel_today
 from scripts import seed_demo_business as seed
 from tests.conftest import make_category
 
@@ -197,6 +199,44 @@ def test_golden_seed_is_idempotent(db, passwords, bakery_category, monkeypatch):
     owner = db.query(User).filter(User.email == "golden-products@example.com").one()
     db.refresh(owner)
     assert verify_password(OWNER_PW + "-rotated", owner.password_hash)
+
+
+def test_golden_rerun_moves_past_dates_back_into_the_future(
+    db, passwords, bakery_category
+):
+    """Markets, the G2 event and the experience are created once; their dates
+    must not stand still. Six days after seeding the first market would be in
+    the past and the organizer page (event_date >= today) would drop it, so
+    every --golden run re-dates them."""
+    seed.seed_golden_personas(db)
+    owner_ids = [
+        p.id
+        for p in db.query(Producer)
+        .filter(Producer.slug.in_(["golden-events", "golden-organizer"]))
+        .all()
+    ]
+    host = db.query(User).filter(User.email == "golden-events@example.com").one()
+    events = db.query(Event).filter(Event.producer_id.in_(owner_ids)).all()
+    experiences = db.query(Experience).filter(Experience.host_user_id == host.id).all()
+    assert len(events) == 1 + len(seed.GOLDEN_MARKETS)
+    assert len(experiences) == 1
+    stale = israel_today() - timedelta(days=30)
+    for row in events + experiences:
+        row.event_date = stale
+    db.commit()
+
+    seed.seed_golden_personas(db)
+
+    db.expire_all()
+    rows = db.query(Event).filter(Event.producer_id.in_(owner_ids)).all() + (
+        db.query(Experience).filter(Experience.host_user_id == host.id).all()
+    )
+    assert len(rows) == 2 + len(seed.GOLDEN_MARKETS)  # moved, not duplicated
+    expected = {title: days for _, _, title, days in seed._golden_dated_rows()}
+    for row in rows:
+        assert row.event_date == israel_today() + timedelta(days=expected[row.title]), (
+            row.title
+        )
 
 
 @pytest.mark.parametrize(

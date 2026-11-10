@@ -2276,6 +2276,59 @@ def _golden_extras(db, producer, owner, extras: str | None) -> None:
         _golden_locations_kashrut(db, producer)
 
 
+def _golden_dated_rows() -> list[tuple[str, str, str, int]]:
+    """(kind, owner slug, title, days_ahead) for every dated golden row."""
+    rows = [
+        ("event", "golden-events", GOLDEN_EVENT["title"], GOLDEN_EVENT["days_ahead"])
+    ]
+    rows += [
+        ("event", "golden-organizer", m["title"], m["days_ahead"])
+        for m in GOLDEN_MARKETS
+    ]
+    rows.append(
+        (
+            "experience",
+            "golden-events",
+            GOLDEN_EXPERIENCE["title"],
+            GOLDEN_EXPERIENCE["days_ahead"],
+        )
+    )
+    return rows
+
+
+def _golden_refresh_dates(db) -> int:
+    """Move every golden event, market and experience back to today + days_ahead.
+
+    The extras are written on CREATE only, so without this their dates stand
+    still: the first market is in the past six days after seeding, and the
+    organizer page (organizers.py filters `event_date >= israel_today()`) loses
+    it, so 03-g3 goes red. Every `--golden` run re-dates them, matched by title
+    under the golden owner. Returns the number of rows re-dated.
+    """
+    moved = 0
+    today = israel_today()
+    for kind, slug, title, days in _golden_dated_rows():
+        producer = db.query(Producer).filter(Producer.slug == slug).first()
+        if producer is None:
+            continue
+        if kind == "event":
+            query = db.query(Event).filter(
+                Event.producer_id == producer.id, Event.title == title
+            )
+        else:
+            email = next(b["email"] for b in GOLDEN_BUSINESSES if b["slug"] == slug)
+            owner = db.query(User).filter(User.email == email).first()
+            if owner is None:
+                continue
+            query = db.query(Experience).filter(
+                Experience.host_user_id == owner.id, Experience.title == title
+            )
+        for row in query.all():
+            row.event_date = today + timedelta(days=days)
+            moved += 1
+    return moved
+
+
 def _golden_new_business(db, spec: dict, category):
     """Create one golden business with its primary location. Not committed."""
     # Imported here, not at the top: the rest of this script never needs it,
@@ -2374,10 +2427,13 @@ def seed_golden_personas(db) -> dict[str, list[str]]:
             password=passwords[env],
         )
         result["created" if created else "existing"].append(spec["email"])
+    db.flush()
+    redated = _golden_refresh_dates(db)
     db.commit()
     # Emails only — never a password.
     print(
         f"Golden personas: created {len(result['created'])}, "
+        f"re-dated {redated} events/experiences, "
         f"password reset on {len(result['existing'])} existing "
         f"({', '.join(golden_persona_emails())})."
     )
