@@ -23,10 +23,14 @@
  * Workers (and the out-of-process loader) re-load this config and look their
  * project up by name ("Project … not found in the worker process" otherwise).
  * Their argv is the worker entry script, not the CLI's, so they cannot see
- * `--project`. They are forked with an IPC channel, which the CLI process
- * started from a shell or CI never has, so `typeof process.send === "function"`
- * identifies them. Defining the project in a worker is harmless: a worker only
- * runs the tests the main process handed it.
+ * `--project`. They are identified by that entry script — the two files
+ * Playwright forks (runner/index.js: `WorkerHost` → worker/workerProcessEntry.js,
+ * `OutOfProcessLoaderHost` → loader/loaderProcessEntry.js, as of 1.62.1) — AND
+ * by the IPC channel every such fork has. IPC alone is not enough: any parent
+ * that forks the CLI itself with an IPC channel (an IDE, a script using
+ * child_process.fork) would otherwise get the golden project in a bare run
+ * (measured: `--list` 1,687 with 17 golden). Defining the project in a worker
+ * is harmless: a worker only runs the tests the main process handed it.
  */
 
 export const GOLDEN_PROJECT = "golden";
@@ -87,13 +91,29 @@ export function goldenOnly(argv: readonly string[]): boolean {
   );
 }
 
+/** The scripts Playwright forks its workers and its out-of-process loader from. */
+const PLAYWRIGHT_CHILD_ENTRY =
+  /[\\/]playwright[\\/]lib[\\/](worker[\\/]workerProcessEntry|loader[\\/]loaderProcessEntry)\.js$/;
+
+/**
+ * Is this process one of Playwright's own children? `argv` is process.argv
+ * (argv[1] is the script node runs); `hasIpc` is `typeof process.send ===
+ * "function"`. Both must hold — see the header for why IPC alone is wrong.
+ */
+export function isPlaywrightChild(
+  argv: readonly string[],
+  hasIpc: boolean,
+): boolean {
+  return hasIpc && PLAYWRIGHT_CHILD_ENTRY.test(argv[1] ?? "");
+}
+
 /**
  * Whether the config should define the golden project in this process.
- * `isPlaywrightChild` is `typeof process.send === "function"` at the call site.
+ * The config passes process.argv and `typeof process.send === "function"`.
  */
 export function defineGoldenProject(
   argv: readonly string[],
-  isPlaywrightChild: boolean,
+  hasIpc: boolean,
 ): boolean {
-  return isPlaywrightChild || goldenRequested(argv);
+  return isPlaywrightChild(argv, hasIpc) || goldenRequested(argv);
 }

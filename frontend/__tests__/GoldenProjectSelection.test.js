@@ -4,6 +4,7 @@ import {
   goldenRequested,
   goldenOnly,
   defineGoldenProject,
+  isPlaywrightChild,
   GOLDEN_DIR,
 } from "../e2e/golden-selection";
 
@@ -73,6 +74,41 @@ describe("defineGoldenProject — the default suite never gets the golden projec
     ];
     expect(defineGoldenProject(workerArgv, true)).toBe(true);
     expect(defineGoldenProject(workerArgv, false)).toBe(false);
+  });
+});
+
+// The predicate the config calls with process.argv and `typeof process.send`.
+// IPC alone is not a Playwright child: a parent that forks the CLI with an IPC
+// channel (an IDE, a wrapper script) must still get the default suite —
+// measured before this predicate existed: `--list` 1,687, 17 of them golden.
+describe("isPlaywrightChild — what the config's call decides", () => {
+  const WORKER =
+    "/repo/frontend/node_modules/playwright/lib/worker/workerProcessEntry.js";
+  const LOADER =
+    "/repo/frontend/node_modules/playwright/lib/loader/loaderProcessEntry.js";
+
+  it.each([
+    ["the CLI started from a shell", argv(), false],
+    ["the CLI forked WITH an IPC channel", argv(), true],
+    ["the CLI forked with IPC and --list", argv("--list"), true],
+  ])("%s → not a Playwright child", (_label, cmd, hasIpc) => {
+    expect(isPlaywrightChild(cmd, hasIpc)).toBe(false);
+    expect(defineGoldenProject(cmd, hasIpc)).toBe(false);
+  });
+
+  it.each([
+    ["worker", WORKER],
+    ["out-of-process loader", LOADER],
+    [
+      "worker (Windows path)",
+      String.raw`C:\repo\node_modules\playwright\lib\worker\workerProcessEntry.js`,
+    ],
+  ])("Playwright's %s entry script with IPC → a child", (_label, entry) => {
+    expect(isPlaywrightChild(["/usr/bin/node", entry], true)).toBe(true);
+  });
+
+  it("an entry script without the IPC channel is not a child", () => {
+    expect(isPlaywrightChild(["/usr/bin/node", WORKER], false)).toBe(false);
   });
 });
 
