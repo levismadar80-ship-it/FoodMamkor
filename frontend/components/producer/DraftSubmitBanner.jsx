@@ -110,7 +110,11 @@ function MissingItemLink({ code, producer, children }) {
  * every requirement and 422s regardless, so a client that ignores the button
  * cannot get an incomplete profile into the queue.
  */
-export default function DraftSubmitBanner({ producer, onSubmitted, onPhoneVerified }) {
+// MEH-2883: variant="actions" renders only the phone check + the submit action
+// (no title, body or missing list) — the dashboard mounts it inside
+// ProfileCompletenessCard so a business in draft sees one checklist, not two.
+// The full banner stays for an organizer (ADR-036), whose checklist this is.
+export default function DraftSubmitBanner({ producer, onSubmitted, onPhoneVerified, variant = "banner" }) {
   const t = useTranslations("dashboard.producer.draft");
   const [submitting, setSubmitting] = useState(false);
   const [confirming, setConfirming] = useState(false);
@@ -147,22 +151,28 @@ export default function DraftSubmitBanner({ producer, onSubmitted, onPhoneVerifi
     }
   };
 
+  const actionsOnly = variant === "actions";
+
   return (
     <div
-      className="bg-primary/5 border border-primary/20 rounded-lg p-4 md:p-6 mb-6 text-sm"
+      className={actionsOnly ? "text-sm" : "bg-primary/5 border border-primary/20 rounded-lg p-4 md:p-6 mb-6 text-sm"}
       role="status"
-      data-testid="draft-submit-banner"
+      data-testid={actionsOnly ? "draft-submit-actions" : "draft-submit-banner"}
       data-state-ready={ready}
     >
-      <p className="font-semibold text-primary mb-1 flex items-center gap-2">
-        <PaperPlaneTilt size={18} weight="fill" aria-hidden="true" />
-        {t("title")}
-      </p>
-      <p className="text-fg-muted">{t("body")}</p>
+      {!actionsOnly && (
+        <>
+          <p className="font-semibold text-primary mb-1 flex items-center gap-2">
+            <PaperPlaneTilt size={18} weight="fill" aria-hidden="true" />
+            {t("title")}
+          </p>
+          <p className="text-fg-muted">{t("body")}</p>
+        </>
+      )}
 
       {/* What is still required. Derived from the gate, so it cannot claim
           "ready" while the server disagrees. */}
-      {!ready && (
+      {!actionsOnly && !ready && (
         <ul className="mt-2" data-testid="draft-missing-list">
           {(isOrganizer(producer) ? ORGANIZER_SUBMISSION_REQUIREMENTS : SUBMISSION_REQUIREMENTS).filter((code) => missing.includes(code)).map(
             (code) => (
@@ -203,7 +213,7 @@ export default function DraftSubmitBanner({ producer, onSubmitted, onPhoneVerifi
         // vitest suite's PhoneVerifyCard stub already owns `phone-verify-card`,
         // and reusing it here made `getByTestId` ambiguous — caught by that
         // suite going red, which is the whole reason it holds the name.
-        <div className="mt-4" id="phone-verify" data-testid="draft-phone-verify">
+        <div className={actionsOnly ? "" : "mt-4"} id="phone-verify" data-testid="draft-phone-verify">
           <PhoneVerifyCard onVerified={() => {
             setServerMissing(null);
             onPhoneVerified?.();
@@ -211,7 +221,7 @@ export default function DraftSubmitBanner({ producer, onSubmitted, onPhoneVerifi
         </div>
       )}
 
-      <div className="mt-5">
+      <div className={actionsOnly && !phoneUnverified ? "" : "mt-5"}>
         {!confirming ? (
           <button
             type="button"

@@ -470,7 +470,10 @@ export default function ProducerDashboardPage() {
           keyed on status === "pending" and therefore cannot co-render.
           On success the local status flips to "pending" with no reload, so
           the existing review banner takes over immediately. */}
-      {producer.status === "draft" && (
+      {/* MEH-2883: a business in draft gets ONE checklist — the completeness
+          card below with these actions at its foot. The standalone banner
+          stays only for an organizer, whose checklist it is (ADR-036). */}
+      {producer.status === "draft" && isOrganizer && (
         <DraftSubmitBanner
           producer={profile}
           onSubmitted={() =>
@@ -563,7 +566,29 @@ export default function ProducerDashboardPage() {
           approved+complete state, so the card renders exactly once). */}
       {/* MEH-2460: an organizer's checklist is the draft banner (photo,
           description, event, phone) — this card counts products / location. */}
-      {completenessFirst && profile && !isOrganizer && <ProfileCompletenessCard producer={profile} />}
+      {completenessFirst && profile && !isOrganizer && (
+        <ProfileCompletenessCard
+          producer={profile}
+          footer={
+            producer.status === "draft" ? (
+              <DraftSubmitBanner
+                variant="actions"
+                producer={profile}
+                onSubmitted={() =>
+                  setData((prev) =>
+                    prev
+                      ? { ...prev, producer: { ...prev.producer, status: "pending" } }
+                      : prev,
+                  )
+                }
+                onPhoneVerified={() =>
+                  setProfile((prev) => (prev ? { ...prev, phone_verified: true } : prev))
+                }
+              />
+            ) : null
+          }
+        />
+      )}
       {/* MEH-1261 F2: profile fetch failed → say so where the completeness
           card would render (completenessFirst is true when profile is null). */}
       {completenessFirst && !profile && profileError && (
@@ -603,24 +628,6 @@ export default function ProducerDashboardPage() {
           </div>
         );
       })()}
-
-      {/* MEH-53: Vanity URL card. MEH-964 1D share-gate: the shareable link
-          surfaces ONLY when the profile is complete AND approved — sharing an
-          unpublished/incomplete page sends visitors to a dead listing. When
-          locked, a warm why-locked hint takes its place (not silent hiding). */}
-      {/* MEH-2460: the vanity link is the business route /{slug} — not for an
-          organizer (its public link above points to /organizers/{slug}). */}
-      {isOrganizer ? null : slug && isComplete && isApproved ? (
-        <VanityLinkCard slug={slug} />
-      ) : slug ? (
-        <div
-          data-testid="share-locked-hint"
-          className="bg-surface border border-border rounded-lg p-5 mb-6 flex items-center gap-3"
-        >
-          <LockSimple size={18} className="text-fg-muted shrink-0" aria-hidden="true" />
-          <p className="text-sm text-fg-muted">{t("states.share_locked")}</p>
-        </div>
-      ) : null}
 
       {/* MEH-2882 PR 1 (placement audit 2026-11): the QR card and «ערכת
           שיתוף» are one-time / occasional jobs, so they live in «כלים» →
@@ -731,6 +738,28 @@ export default function ProducerDashboardPage() {
         )}
       </div>
       )}
+
+      {/* MEH-2883 (placement audit 2026-11): «הלינק שלי» comes AFTER the
+          availability switch — the switch is the daily action of a live
+          business (MEH-1134's intent), sharing is now and then. */}
+      {/* MEH-53: Vanity URL card. MEH-964 1D share-gate: the shareable link
+          surfaces ONLY when the profile is complete AND approved — sharing an
+          unpublished/incomplete page sends visitors to a dead listing. When
+          locked, a warm why-locked hint takes its place (not silent hiding). */}
+      {/* MEH-2460: the vanity link is the business route /{slug} — not for an
+          organizer (its public link above points to /organizers/{slug}). */}
+      {isOrganizer ? null : slug && isComplete && isApproved ? (
+        <VanityLinkCard slug={slug} />
+      ) : slug ? (
+        <div
+          data-testid="share-locked-hint"
+          className="bg-surface border border-border rounded-lg p-5 mb-6 flex items-center gap-3"
+        >
+          <LockSimple size={18} className="text-fg-muted shrink-0" aria-hidden="true" />
+          <p className="text-sm text-fg-muted">{t("states.share_locked")}</p>
+        </div>
+      ) : null}
+
 
       {/* MEH-288: profile-completeness card — surfaces the existing
           producerCompleteness() heuristic to the owner, above the analytics
