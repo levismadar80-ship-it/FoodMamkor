@@ -54,7 +54,6 @@ The three real-route tests are RED on the code at the time of writing
    (``routers/auth.py:1406-1412``).
 """
 
-import pytest
 from fastapi import BackgroundTasks, Depends, FastAPI
 from fastapi.testclient import TestClient
 from sqlalchemy import text
@@ -169,19 +168,13 @@ def test_control_probe_reads_nonzero_when_task_runs_inside_open_txn():
     assert _checkedout() == 0
 
 
-# ------------------------------------------------- real routes (RED today)
+# --------------------------------------------- real routes (red until chunk 2)
 
-# Strict xfail: chunk 1 lands the measurement without turning CI red. The fix
-# (chunk 2) makes these pass, and a strict xfail that passes FAILS the suite —
-# so chunk 2 cannot land without deleting this marker.
-_RED_UNTIL_FIX = pytest.mark.xfail(
-    raises=_HeldConnection,
-    strict=True,
-    reason="MEH-2886: get_db closes only after BackgroundTasks run (chunk 2 fixes)",
-)
+# MEH-2886 chunk 2: the strict xfail that held these red in chunk 1 is gone —
+# with get_db releasing first they pass (the marker turned that into 4
+# XPASS(strict) failures, which is how it was shown to be removable).
 
 
-@_RED_UNTIL_FIX
 def test_register_new_email_releases_connection_before_background_tasks(
     client, monkeypatch
 ):
@@ -204,7 +197,6 @@ def test_register_new_email_releases_connection_before_background_tasks(
     _assert_released(welcome_probe.readings, "welcome-email")
 
 
-@_RED_UNTIL_FIX
 def test_register_existing_email_releases_connection_before_background_tasks(
     client, db, monkeypatch
 ):
@@ -225,7 +217,6 @@ def test_register_existing_email_releases_connection_before_background_tasks(
     _assert_released(probe.readings, "duplicate-attempt")
 
 
-@_RED_UNTIL_FIX
 def test_forgot_password_releases_connection_before_background_tasks(
     client, db, monkeypatch
 ):
@@ -246,7 +237,6 @@ def test_forgot_password_releases_connection_before_background_tasks(
     _assert_released(probe.readings, "reset-email")
 
 
-@_RED_UNTIL_FIX
 def test_authenticated_route_releases_connection_before_background_tasks(
     client, db, monkeypatch
 ):
@@ -288,3 +278,112 @@ def test_authenticated_route_releases_connection_before_background_tasks(
     assert resp.status_code == 201, resp.text
     assert len(probe.readings) == 1, "new-product alert task did not run"
     _assert_released(probe.readings, "new-product alert")
+
+
+# ------------------------------------------------------------- chunk 2 guards
+
+
+def test_task_handed_request_db_still_works_and_pool_is_idle_after(
+    client, db, monkeypatch
+):
+    """§2.4: fire_alerts is handed the request's ``db`` and queries with it
+    AFTER get_db's early close. The session re-opens a connection, the task
+    completes, and get_db's ``finally`` returns it — the pool reads 0 after.
+
+    This assertion is 0 on the pre-fix code too (the late close covered it),
+    so it is shown red against a BROKEN variant instead: a get_db that closes
+    early but has no ``finally`` close leaves the task's connection checked
+    out, and this reads 1 (PR body)."""
+    producer = make_producer(db)
+    user = User(
+        email="meh2886-alerts@test.com",
+        name="Producer User",
+        password_hash="hash",
+        role="producer",
+        is_producer=True,
+        producer_id=producer.id,
+    )
+    db.add(user)
+    db.commit()
+    headers = auth_header(user)
+    db.close()
+
+    from app.routers import alerts as alerts_module
+
+    real_fire_alerts = alerts_module.fire_alerts
+    ran = []
+
+    def spying_fire_alerts(task_db, *args, **kwargs):
+        # The task really uses the request's session after the early close.
+        real_fire_alerts(task_db, *args, **kwargs)
+        ran.append(task_db.is_active)
+
+    monkeypatch.setattr(alerts_module, "fire_alerts", spying_fire_alerts)
+    _assert_pool_idle_before_request()
+
+    resp = client.post(
+        "/producers/me/products",
+        json={"name": "חלה", "price_min": 18},
+        headers=headers,
+    )
+
+    assert resp.status_code == 201, resp.text
+    assert ran == [True], "fire_alerts did not run with the request's session"
+    assert _checkedout() == 0, (
+        f"pool reads {_checkedout()} after the request — a task re-opened the "
+        "request's session and nothing returned the connection"
+    )
+
+
+def test_release_never_raises_so_later_tasks_still_run():
+    """Starlette runs a request's tasks in one loop: if the early close raised,
+    every task after it (the request's emails) would be cancelled."""
+    from app.database import _release_session
+
+    class _BrokenSession:
+        def close(self):
+            raise RuntimeError("pool reset failed")
+
+    _release_session(_BrokenSession())  # must not raise
+
+
+def _calls_with_background_kwarg(source: str, filename: str) -> list[str]:
+    import ast
+
+    hits = []
+    for node in ast.walk(ast.parse(source, filename)):
+        if isinstance(node, ast.Call) and any(
+            k.arg == "background" for k in node.keywords
+        ):
+            hits.append(f"{filename}:{node.lineno}")
+    return hits
+
+
+def test_background_kwarg_classifier_self_test():
+    """The scan below must be able to see a hit before its 'none' means
+    anything (testing.md: a probe whose null output is also its reassuring
+    output is not evidence)."""
+    bad = "from starlette.responses import JSONResponse\n" + (
+        "def f():\n    return JSONResponse({}, background=None)\n"
+    )
+    assert _calls_with_background_kwarg(bad, "x.py") == ["x.py:3"]
+    assert _calls_with_background_kwarg("JSONResponse({})\n", "y.py") == []
+
+
+def test_no_route_returns_a_response_with_its_own_background():
+    """FastAPI drops every solved BackgroundTask when a route returns a
+    Response that carries ``background=`` (fastapi/routing.py:751-752) — the
+    early release included, so the connection would again be held until
+    get_db's ``finally``. None exist today; keep it that way."""
+    from pathlib import Path
+
+    app_dir = Path(__file__).resolve().parents[1] / "backend" / "app"
+    files = sorted(app_dir.rglob("*.py"))
+    assert len(files) > 100, f"scanned only {len(files)} files — wrong root?"
+    hits = []
+    for f in files:
+        hits += _calls_with_background_kwarg(f.read_text(encoding="utf-8"), str(f))
+    assert hits == [], (
+        "a call passes background= — FastAPI then skips the request's "
+        f"BackgroundTasks, including get_db's early release: {hits}"
+    )
