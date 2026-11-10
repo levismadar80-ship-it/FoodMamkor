@@ -7,6 +7,7 @@
 // Runs only when NEXT_PUBLIC_SENTRY_DSN is set so local dev and CI stay quiet.
 import * as Sentry from "@sentry/nextjs";
 import { scrubClaimTokens } from "./lib/claim-token";
+import { clientTracesSampleRate } from "./lib/sentry-sampling";
 
 const dsn = process.env.NEXT_PUBLIC_SENTRY_DSN;
 
@@ -21,7 +22,8 @@ if (dsn) {
   Sentry.init({
     dsn,
     environment: process.env.NEXT_PUBLIC_SENTRY_ENV || process.env.NODE_ENV,
-    tracesSampleRate: 0.1,
+    // MEH-2887: 0.1 on mehamakor.co.il, 0.01 on staging / previews (span quota).
+    tracesSampleRate: clientTracesSampleRate(typeof window !== "undefined" ? window.location.hostname : ""),
     replaysOnErrorSampleRate: 1.0,
     replaysSessionSampleRate: 0,
     integrations: onClaimLink

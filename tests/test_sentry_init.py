@@ -53,7 +53,8 @@ def test_dsn_initializes_with_expected_kwargs(monkeypatch):
     assert kwargs["dsn"] == "https://example@sentry.io/1"
     assert kwargs["environment"] == "staging"
     assert kwargs["release"] == "abc1234"
-    assert kwargs["traces_sample_rate"] == 0.1
+    # MEH-2887: staging traces drop to 1% (span quota shared with production).
+    assert kwargs["traces_sample_rate"] == 0.01
     assert len(kwargs["integrations"]) == 1
     assert type(kwargs["integrations"][0]).__name__ == "FastApiIntegration"
 
@@ -86,3 +87,22 @@ def test_init_swallows_sdk_exceptions(monkeypatch):
     with patch("sentry_sdk.init", side_effect=RuntimeError("boom")) as mock_init:
         init_sentry()
     mock_init.assert_called_once()
+
+
+def test_production_keeps_ten_percent_traces(monkeypatch):
+    """MEH-2887: only non-production environments are sampled down."""
+    monkeypatch.setenv("BACKEND_SENTRY_DSN", "https://example@sentry.io/1")
+    monkeypatch.setenv("ENV", "production")
+    from app.sentry import init_sentry
+
+    with patch("sentry_sdk.init") as mock_init:
+        init_sentry()
+    assert mock_init.call_args.kwargs["traces_sample_rate"] == 0.1
+
+
+def test_traces_sample_rate_for_each_environment():
+    from app.sentry import traces_sample_rate_for
+
+    assert traces_sample_rate_for("production") == 0.1
+    for env in ("staging", "development", "test", ""):
+        assert traces_sample_rate_for(env) <= 0.01, env
