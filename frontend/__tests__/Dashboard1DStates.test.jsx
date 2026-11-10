@@ -123,6 +123,22 @@ describe("Dashboard 1D — share-gate (MEH-964)", () => {
     expect(document.querySelector('a[href^="https://wa.me/?text="]')).toBeNull();
   });
 
+  // QUARANTINED — MEH-2876 (Sapir 10/11). The click path below hung the
+  // vitest worker in three attempts (inside this file alongside later cases;
+  // in its own file with act(); synchronous). The product behaviour it checks
+  // is verified in a real browser instead (Playwright on a local build, PR
+  // #4178). Un-skip when MEH-2876 finds what keeps the worker alive.
+  it.skip("«שתפו» opens the share sheet with the /p/{slug} link as url (MEH-2876)", async () => {
+    const shareSpy = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, "share", { value: shareSpy, configurable: true });
+    setup({ status: "approved", complete: true });
+    render(<ProducerDashboardPage />);
+    await screen.findByTestId("producer-overview");
+    screen.getByTestId("vanity-share").click();
+    expect(shareSpy).toHaveBeenCalledTimes(1);
+    expect(shareSpy.mock.calls[0][0].url).toMatch(/\/p\/demo-farm$/);
+  });
+
   it("hides the share card + shows the locked hint when INCOMPLETE", async () => {
     setup({ status: "approved", complete: false });
     render(<ProducerDashboardPage />);
