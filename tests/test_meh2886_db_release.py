@@ -98,9 +98,7 @@ def _control_app() -> FastAPI:
         return {"ok": True}
 
     @control.post("/select-one")
-    def select_one(
-        background_tasks: BackgroundTasks, db: Session = Depends(get_db)
-    ):
+    def select_one(background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
         db.execute(text("SELECT 1"))
         background_tasks.add_task(control.state.probe)
         return {"ok": True}
