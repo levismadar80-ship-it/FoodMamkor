@@ -39,6 +39,7 @@ import { request, type FullConfig } from "@playwright/test";
 import fs from "node:fs";
 import path from "node:path";
 import { loginFailureMessage, withRateLimitRetry } from "./login-retry";
+import { goldenOnly } from "./golden-selection";
 
 type Role = {
   name: string;
@@ -86,6 +87,17 @@ const ROLES: Role[] = [
 export const AUTH_DIR = path.join(__dirname, ".auth");
 
 export default async function globalSetup(config: FullConfig): Promise<void> {
+  // MEH-2897: a `--project=golden` run logs in its own seven personas
+  // (e2e/golden/session.ts) and reads none of the demo-role files. Provisioning
+  // them anyway would spend 3–4 of the 5/minute per-IP login permits before the
+  // first persona (anchor plan §E2). Any other selection is unchanged.
+  if (goldenOnly(process.argv)) {
+    console.warn(
+      "[global-setup] golden-only run — skipping the demo-role fixtures; " +
+        "the golden specs log in their own personas.",
+    );
+    return;
+  }
   const baseURL =
     config.projects[0]?.use?.baseURL ||
     process.env.PLAYWRIGHT_BASE_URL ||
