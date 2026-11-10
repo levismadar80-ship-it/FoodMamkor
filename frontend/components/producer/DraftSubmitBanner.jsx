@@ -156,7 +156,9 @@ export default function DraftSubmitBanner({ producer, onSubmitted, onPhoneVerifi
   return (
     <div
       className={actionsOnly ? "text-sm" : "bg-primary/5 border border-primary/20 rounded-lg p-4 md:p-6 mb-6 text-sm"}
-      role="status"
+      // In the card footer the card is already the status region; a second,
+      // nested one would make a screen reader announce twice (MEH-2883 review).
+      role={actionsOnly ? undefined : "status"}
       data-testid={actionsOnly ? "draft-submit-actions" : "draft-submit-banner"}
       data-state-ready={ready}
     >

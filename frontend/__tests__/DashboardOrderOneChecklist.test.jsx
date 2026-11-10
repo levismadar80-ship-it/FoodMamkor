@@ -33,6 +33,16 @@ vi.mock("@/components/HolidayIcon", () => ({ default: () => null }));
 
 const { stateRef } = vi.hoisted(() => ({ stateRef: { current: {} } }));
 
+// The submit gate the actions read (DraftSubmitBanner → submissionMissingItems).
+// `ready` = nothing missing; otherwise phone verification is the missing item.
+vi.mock("@/lib/submission-gate", async (orig) => {
+  const real = await orig();
+  return {
+    ...real,
+    submissionMissingItems: () => (stateRef.current.ready ? [] : [real.MISSING_PHONE_VERIFIED]),
+  };
+});
+
 vi.mock("@/lib/producer-completeness", async (orig) => {
   const real = await orig();
   return {
@@ -91,6 +101,29 @@ describe("draft: one checklist (MEH-2883)", () => {
     expect(screen.getAllByTestId("draft-submit-cta")).toHaveLength(1);
     // The draft banner's own list is not repeated inside the card.
     expect(screen.queryByTestId("draft-missing-list")).toBeNull();
+  });
+
+  it("incomplete + phone unverified: the phone check is inside the card, and the one CTA is disabled with its hint", async () => {
+    render(<ProducerDashboardPage />);
+    const card = await screen.findByTestId("profile-completeness-card");
+    const phone = screen.getByTestId("draft-phone-verify");
+    expect(card.contains(phone), "phone check inside the card").toBe(true);
+    const cta = screen.getByTestId("draft-submit-cta");
+    expect(cta).toBeDisabled();
+    expect(cta.getAttribute("aria-describedby")).toBe("draft-cta-hint");
+    expect(document.getElementById("draft-cta-hint"), "disabled-CTA hint").not.toBeNull();
+  });
+
+  it("complete and ready: the green card still carries the actions, and the CTA is enabled", async () => {
+    stateRef.current = { status: "draft", kind: "producer", complete: true, ready: true };
+    render(<ProducerDashboardPage />);
+    const card = await screen.findByTestId("profile-completeness-card");
+    const actions = screen.getByTestId("draft-submit-actions");
+    expect(card.contains(actions), "actions inside the complete card").toBe(true);
+    expect(screen.getByTestId("draft-submit-cta")).toBeEnabled();
+    expect(screen.queryByTestId("draft-phone-verify")).toBeNull();
+    // One live region: the actions sit inside the card's own status region.
+    expect(actions.getAttribute("role"), "no nested role=status").toBeNull();
   });
 
   it("an organizer keeps its own draft banner (its checklist), and no completeness card", async () => {
