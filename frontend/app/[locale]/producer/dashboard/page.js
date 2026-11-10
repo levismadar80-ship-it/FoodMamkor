@@ -15,9 +15,6 @@ import { getUpcomingHoliday } from "@/lib/holidays";
 import HolidayIcon from "@/components/HolidayIcon";
 import ProfileCompletenessCard from "@/components/ProfileCompletenessCard";
 import DraftSubmitBanner from "@/components/producer/DraftSubmitBanner";
-import BusinessQrCard from "@/components/producer/BusinessQrCard";
-import ReviewCardCanvas from "@/components/ReviewCardCanvas";
-import StoryCardCanvas from "@/components/StoryCardCanvas";
 import ChangesRequestedBanner from "./ChangesRequestedBanner";
 import RejectedBanner from "./RejectedBanner";
 import { producerCompleteness } from "@/lib/producer-completeness";
@@ -81,43 +78,6 @@ function VanityLinkCard({ slug }) {
         </button>
       </div>
     </div>
-  );
-}
-
-/**
- * MEH-1428 "ערכת שיתוף" — the owner's own share kit. One section, two
- * ready-to-post 1080×1920 cards: her story card (StoryCardCanvas in `owner`
- * mode — download + caption, no Cloudinary upload) and a review card
- * (ReviewCardCanvas, chunk B).
- *
- * Data source is `profile` (GET /producers/me → ProducerOwnerOut), NOT
- * `data.producer` (GET /producers/me/dashboard), which returns only
- * id/name/status/plan/availability — no `images`, `categories` or `slug`
- * (producer_me.py:1125-1148). The card needs all three.
- *
- * Gated on approved: the story card announces a live listing ("בית עסק חדש
- * במהמקור") and the review endpoint has nothing to serve a business with no
- * public page yet. Also off for an organizer (ADR-036) — reviews.py:247
- * filters `Producer.kind == "producer"`, so an organizer's review list is
- * always empty, and this card's copy is business-shaped.
- */
-function ShareKitSection({ profile }) {
-  const t = useTranslations("story.canvas.owner");
-
-  return (
-    <section
-      data-testid="share-kit-section"
-      aria-label={t("section_title")}
-      className="bg-surface border border-border rounded-lg p-5 mb-6"
-    >
-      <h2 className="font-headline-md text-lg font-bold text-text mb-1">
-        {t("section_title")}
-      </h2>
-      <p className="text-sm text-fg-muted">{t("section_subtitle")}</p>
-
-      <StoryCardCanvas producer={profile} mode="owner" />
-      <ReviewCardCanvas producer={profile} />
-    </section>
   );
 }
 
@@ -400,6 +360,11 @@ export default function ProducerDashboardPage() {
   }
 
   const { producer } = data;
+  // MEH-2880: the slug comes from `profile` (GET /producers/me). The dashboard
+  // payload (GET /producers/me/dashboard, producer_me.py) has no `slug`, so
+  // reading `producer.slug` kept «לצפייה בעמוד שלך», «הלינק שלי» and the QR
+  // card hidden for every owner. DO NOT read the slug from `data.producer`.
+  const slug = profile?.slug || null;
 
   // MEH-964 chunk 1A — decoupled state signals the Overview is built around.
   // These two signals are independent on purpose:
@@ -476,11 +441,15 @@ export default function ProducerDashboardPage() {
       {/* MEH-964 1D: one-tap view-public. LocaleLink keeps the active locale
           (MEH-956) on /[slug]; target=_blank so the owner previews the live
           page without losing the dashboard. */}
-      {producer.slug && (
+      {/* MEH-2880 review: approved only. A slug is kept after a business is
+          set inactive / rejected / back to pending, and both public routes
+          404 anything not approved — a live link here would open a 404. (The
+          layout's «צפייה בדף» eye → /producer/{id} still works for the owner.) */}
+      {slug && isApproved && (
         <LocaleLink
           // MEH-2460: an organizer's public page is /organizers/{slug}
           // (MEH-2461); /{slug} is the business route and 404s it.
-          href={isOrganizer ? `/organizers/${producer.slug}` : `/${producer.slug}`}
+          href={isOrganizer ? `/organizers/${slug}` : `/${slug}`}
           target="_blank"
           rel="noopener noreferrer"
           data-testid="view-public-link"
@@ -645,9 +614,9 @@ export default function ProducerDashboardPage() {
           locked, a warm why-locked hint takes its place (not silent hiding). */}
       {/* MEH-2460: the vanity link is the business route /{slug} — not for an
           organizer (its public link above points to /organizers/{slug}). */}
-      {isOrganizer ? null : producer.slug && isComplete && isApproved ? (
-        <VanityLinkCard slug={producer.slug} />
-      ) : producer.slug ? (
+      {isOrganizer ? null : slug && isComplete && isApproved ? (
+        <VanityLinkCard slug={slug} />
+      ) : slug ? (
         <div
           data-testid="share-locked-hint"
           className="bg-surface border border-border rounded-lg p-5 mb-6 flex items-center gap-3"
@@ -657,25 +626,10 @@ export default function ProducerDashboardPage() {
         </div>
       ) : null}
 
-      {/* MEH-2785: the printable QR of the business's own page. Same share
-          gate as VanityLinkCard above — a code taped to a till must not point
-          at an unpublished or incomplete listing, and an organizer's public
-          page is /organizers/{slug}, not a business page. The code itself
-          targets /producer/{id}, never the slug: a printed card is permanent
-          and a slug can be changed by an admin. */}
-      {/* The gate is the component's own (BusinessQrCard.jsx) so it can be
-          unit-tested; the condition is the same one VanityLinkCard uses. */}
-      <BusinessQrCard
-        producer={producer}
-        isComplete={isComplete}
-        isApproved={isApproved}
-        isOrganizer={isOrganizer}
-      />
-
-      {/* MEH-1428: "ערכת שיתוף" — sits with the other share surface (the vanity
-          link above), approved-only, business-only. `profile` is the data
-          source; see the ShareKitSection header for why not `data.producer`. */}
-      {isApproved && profile && !isOrganizer && <ShareKitSection profile={profile} />}
+      {/* MEH-2882 PR 1 (placement audit 2026-11): the QR card and «ערכת
+          שיתוף» are one-time / occasional jobs, so they live in «כלים» →
+          «שיתוף» (tools/page.js#share), not on the daily home. Home keeps the
+          one short «הלינק שלי» card above. */}
 
       {/* MEH-291 Phase 3 — unified availability card. Replaces the old
           "זמין היום" hero + "סטטוס זמינות" pill row. 4-value durable

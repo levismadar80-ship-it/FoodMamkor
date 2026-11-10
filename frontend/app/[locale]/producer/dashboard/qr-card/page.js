@@ -100,7 +100,8 @@ export default function QrCardPage() {
     <main className="min-h-screen bg-surface" data-testid="business-qr-card-print">
       {/* Screen-only: neither the way back nor the hint belongs on the paper. */}
       <div className="print:hidden px-4 py-3 border-b border-border">
-        <BackLink href="/producer/dashboard" label={t("back")} />
+        {/* MEH-2882 PR 1: the QR card lives in «כלים» → «שיתוף» now. */}
+        <BackLink href="/producer/dashboard/tools#share" label={t("back")} />
         <p className="font-body-sm text-sm text-fg-muted mt-1">{t("print_hint")}</p>
       </div>
 
