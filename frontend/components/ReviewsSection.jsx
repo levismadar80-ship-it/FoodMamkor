@@ -568,7 +568,7 @@ export default function ReviewsSection({
               title={t("owner_empty_title")}
               description={t("owner_empty_description")}
               ctaLabel={t("owner_empty_cta")}
-              ctaHref="/producer/dashboard/followers"
+              ctaHref="/producer/dashboard/insights"
             />
           </>
         ) : (

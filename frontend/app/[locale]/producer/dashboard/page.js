@@ -21,6 +21,7 @@ import { producerCompleteness } from "@/lib/producer-completeness";
 // MEH-1267: canonical public domain (MEH-1242 PR4) — mehamakor.online is the
 // staging alias, never public-facing. SITE_URL is the mehamakor.co.il origin.
 import { SITE_URL, env } from "@/lib/env";
+import { shareOrCopy } from "@/lib/share-link";
 import Button from "@/components/ui/Button";
 
 function VanityLinkCard({ slug }) {
@@ -40,20 +41,9 @@ function VanityLinkCard({ slug }) {
   // existing message rides as text, the link only as `url`. No sheet (most
   // desktops) → the same copy as the button beside it.
   const tShare = useTranslations("share");
-  const share = async () => {
-    if (typeof navigator !== "undefined" && navigator.share) {
-      try {
-        await navigator.share({ text: t("wa_text_template", { url: "" }).trim(), url });
-      } catch (err) {
-        // Cancelled is the owner's answer. Any other failure (a share target
-        // that refused, NotAllowedError) falls back to the copy, so the tap
-        // still does something (review of #4178).
-        if (err?.name !== "AbortError") copy();
-      }
-      return;
-    }
-    copy();
-  };
+  // MEH-2884: the same helper the insights followers card uses.
+  const share = () =>
+    shareOrCopy({ url, text: t("wa_text_template", { url: "" }).trim(), copy });
 
   return (
     <div className="bg-surface border border-border rounded-lg p-5 mb-6">

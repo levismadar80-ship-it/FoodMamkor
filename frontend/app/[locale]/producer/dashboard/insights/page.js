@@ -31,6 +31,9 @@ import { Eye, MagnifyingGlass, ChatCircle, Phone, Leaf, Star } from "@phosphor-i
 import api from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import InfoTooltip from "@/components/InfoTooltip";
+import { SITE_URL } from "@/lib/env";
+import { showToast } from "@/lib/toast";
+import { shareOrCopy } from "@/lib/share-link";
 
 export default function ProducerDashboardInsightsPage() {
   const router = useRouter();
@@ -158,6 +161,24 @@ const PERIODS = ["last_7d", "last_30d", "total"];
 
 function DeepAnalyticsSection({ analytics, profile }) {
   const t = useTranslations("dashboard.producer.analytics");
+  const tShare = useTranslations("share");
+  const tVanity = useTranslations("dashboard.producer.vanity_link");
+  const tFollowers = useTranslations("sweep_tail.followers");
+  // The public link exists only once the business is approved + has a slug
+  // (a pending page 404s — MEH-1356). Same gate the zero-state used.
+  const shareUrl =
+    profile?.status === "approved" && profile?.slug ? `${SITE_URL}/p/${profile.slug}` : null;
+  const copyShareUrl = () =>
+    navigator.clipboard
+      .writeText(shareUrl)
+      .then(() => showToast.success(tFollowers("share_toast")))
+      .catch(() => showToast.error(tFollowers("share_error")));
+  const shareFollowersPage = () =>
+    shareOrCopy({
+      url: shareUrl,
+      text: tVanity("wa_text_template", { url: "" }).trim(),
+      copy: copyShareUrl,
+    });
   const tp = useTranslations("dashboard.producer.insights_period");
   const [period, setPeriod] = useState("last_30d");
   const {
@@ -252,17 +273,35 @@ function DeepAnalyticsSection({ analytics, profile }) {
             follower_count === 0 ? (
               <p className="text-sm text-fg-muted" data-testid="followers-zero-cta">
                 {t("simple_cards.followers_zero_prefix")}
-                {profile?.status === "approved" && profile?.slug ? (
-                  <LocaleLink
-                    href={`/${profile.slug}`}
+                {/* MEH-2884 (audit item 9): «שתפו את העמוד» SHARES the page
+                    (share sheet, else copy) — it used to navigate to it. */}
+                {shareUrl ? (
+                  <button
+                    type="button"
+                    onClick={shareFollowersPage}
+                    data-testid="followers-share"
                     className="text-primary underline underline-offset-2"
                   >
                     {t("simple_cards.followers_zero_share")}
-                  </LocaleLink>
+                  </button>
                 ) : (
                   t("simple_cards.followers_zero_share")
                 )}
               </p>
+            ) : null
+          }
+          // MEH-2884 (audit item 6): /followers is gone; this card carries
+          // the count AND the share action.
+          action={
+            follower_count > 0 && shareUrl ? (
+              <button
+                type="button"
+                onClick={shareFollowersPage}
+                data-testid="followers-share"
+                className="mt-3 text-sm text-primary underline underline-offset-2"
+              >
+                {tShare("trigger")}
+              </button>
             ) : null
           }
         />
@@ -409,7 +448,7 @@ function WindowedMetricCard({ label, icon: Icon, windows, tooltip, period }) {
   );
 }
 
-function SimpleCard({ label, icon: Icon, value, sub, empty }) {
+function SimpleCard({ label, icon: Icon, value, sub, empty, action = null }) {
   return (
     <div className="bg-surface border border-border rounded-lg p-5">
       <div className="flex items-center justify-between mb-3">
@@ -425,6 +464,7 @@ function SimpleCard({ label, icon: Icon, value, sub, empty }) {
           <p className="text-xs text-fg-muted mt-1">{sub}</p>
         </>
       )}
+      {action}
     </div>
   );
 }
