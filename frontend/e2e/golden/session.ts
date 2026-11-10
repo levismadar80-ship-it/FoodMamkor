@@ -42,7 +42,7 @@ import { PERSONAS, type Persona, type PersonaKey } from "./personas";
 /** Re-login after this long: the access token lives 15 minutes (config.py). */
 const TOKEN_REUSE_MS = 12 * 60 * 1000;
 
-export type Me = {
+type Me = {
   id: string;
   email: string;
   role: string;
@@ -53,7 +53,7 @@ export type Me = {
 type JsonBody = Record<string, unknown> | unknown[];
 
 /** The authenticated client. Paths are backend paths; `/api` is added here. */
-export type GoldenApi = {
+type GoldenApi = {
   get(path: string): Promise<APIResponse>;
   post(path: string, data?: JsonBody): Promise<APIResponse>;
   put(path: string, data?: JsonBody): Promise<APIResponse>;

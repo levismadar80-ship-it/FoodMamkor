@@ -105,14 +105,3 @@ export const PERSONAS: Record<PersonaKey, Persona> = {
       "admin home and queues, producers, group buys, kashrut, WhatsApp failures, reviews",
   },
 };
-
-/** Walk order — the seed lists them in the same order. */
-export const PERSONA_ORDER: PersonaKey[] = [
-  "g1",
-  "g2",
-  "g3",
-  "g4",
-  "g5",
-  "c1",
-  "a1",
-];
