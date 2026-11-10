@@ -441,7 +441,11 @@ export default function ProducerDashboardPage() {
       {/* MEH-964 1D: one-tap view-public. LocaleLink keeps the active locale
           (MEH-956) on /[slug]; target=_blank so the owner previews the live
           page without losing the dashboard. */}
-      {slug && (
+      {/* MEH-2880 review: approved only. A slug is kept after a business is
+          set inactive / rejected / back to pending, and both public routes
+          404 anything not approved — a live link here would open a 404. (The
+          layout's «צפייה בדף» eye → /producer/{id} still works for the owner.) */}
+      {slug && isApproved && (
         <LocaleLink
           // MEH-2460: an organizer's public page is /organizers/{slug}
           // (MEH-2461); /{slug} is the business route and 404s it.
