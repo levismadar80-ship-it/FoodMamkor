@@ -14,8 +14,8 @@
  * History:  MEH-2887 (creation).
  */
 
-export const PRODUCTION_TRACES_SAMPLE_RATE = 0.1;
-export const NON_PRODUCTION_TRACES_SAMPLE_RATE = 0.01;
+const PRODUCTION_TRACES_SAMPLE_RATE = 0.1;
+const NON_PRODUCTION_TRACES_SAMPLE_RATE = 0.01;
 
 const PRODUCTION_HOSTS = new Set(["mehamakor.co.il", "www.mehamakor.co.il"]);
 
