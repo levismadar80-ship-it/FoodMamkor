@@ -14,7 +14,7 @@ import {
 // useState below for the three-way drift that made a hand-written copy a bad
 // idea, and for why `categoryKeys` stays out of it.
 import { defaultsForKeys, homeParamFor } from "@/lib/filter-taxonomy";
-import { chipsFromQuery } from "@/lib/filter-url";
+import { chipsFromQuery, mapFiltersFromQuery, writeMapFilters } from "@/lib/filter-url";
 import { haversineKm } from "@/lib/distance";
 import { weightedRating } from "@/lib/rating-gate";
 import { producerInBounds, producerPoints } from "@/lib/producerPoints";
@@ -68,6 +68,18 @@ export function sortProducers(list, sortBy, userLoc) {
   }
   // "newest" (and any unknown key): feed order — see docblock.
   return list;
+}
+
+/**
+ * MEH-2602: «סננו לפי עיר» asks "what is there for this city" — located in it
+ * OR delivering to it, located first (near_city). With the משלוח chip on the
+ * question is "who delivers here", so it keeps delivery_city.
+ * MEH-2049: shared with useProducersFeed's first fetch (a city from the URL),
+ * so the two cannot map a city to different params. `{}` when there is none.
+ */
+export function cityParams(city, hasDelivery) {
+  if (!city) return {};
+  return hasDelivery ? { delivery_city: city } : { near_city: city };
 }
 
 /**
@@ -171,18 +183,22 @@ export function useMapFilters({
   // (lib/filter-url) arrives switched on. Done after mount rather than in the
   // initial state so the server render and hydration agree and /map stays a
   // static route; useProducersFeed reads the same URL for its first fetch.
+  //
+  // MEH-2049: + the category selection and the city, through the same
+  // lib/filter-url reader/writer pair (one owner for the param names). Bounds
+  // and camera stay out of the URL. Invalid values are dropped by the reader,
+  // and the run after hydration rewrites the URL without them.
   useEffect(() => {
     if (typeof window === "undefined") return;
     if (!urlHydrated.current) {
       urlHydrated.current = true;
-      const found = chipsFromQuery(
-        new URLSearchParams(window.location.search),
-        TOGGLE_CHIPS.map((c) => c.key),
-      );
-      if (Object.keys(found).length > 0) {
-        setChipState((prev) => ({ ...prev, ...found }));
-        return;
-      }
+      const query = new URLSearchParams(window.location.search);
+      const found = chipsFromQuery(query, TOGGLE_CHIPS.map((c) => c.key));
+      const { categoryKeys, city } = mapFiltersFromQuery(query);
+      if (categoryKeys.length > 0) found.categoryKeys = categoryKeys;
+      if (city) setCityFilter(city);
+      if (Object.keys(found).length > 0) setChipState((prev) => ({ ...prev, ...found }));
+      if (Object.keys(found).length > 0 || city) return;
     }
     const url = new URL(window.location.href);
     // homeParamFor: home's `?delivery=1` alias is read on arrival, then
@@ -192,24 +208,36 @@ export function useMapFilters({
       url.searchParams.delete(homeParamFor(c.key));
     }
     for (const c of TOGGLE_CHIPS) if (chipState[c.key]) url.searchParams.set(c.key, "1");
+    writeMapFilters(url.searchParams, { categoryKeys: chipState.categoryKeys, city: cityFilter });
     const next = `${url.pathname}${url.search}${url.hash}`;
     const current = `${window.location.pathname}${window.location.search}${window.location.hash}`;
     if (next !== current) window.history.replaceState(window.history.state, "", next);
-  }, [chipState]);
+  }, [chipState, cityFilter]);
+
+  // MEH-2049: a category key that is valid in general (CATEGORY_CHIPS) but has
+  // no row in THIS catalog has no chip on screen (visibleCategoryChips below
+  // hides it), so a URL that selected it would leave a filter with no way to
+  // switch it off. Once the catalog is here, drop those keys — the same
+  // predicate the chip row uses. They contribute no category id to the fetch
+  // either way (chipStateToParams), so the list does not change.
+  useEffect(() => {
+    if (!Array.isArray(categories) || categories.length === 0) return;
+    setChipState((prev) => {
+      const keys = prev.categoryKeys.filter(
+        (k) => resolveCategoryId(CATEGORY_CHIPS.find((c) => c.key === k), categories) != null,
+      );
+      return keys.length === prev.categoryKeys.length ? prev : { ...prev, categoryKeys: keys };
+    });
+  }, [categories]);
 
   // MEH-14: build the backend params from the current chip state +
   // optional city. `overrides` lets callers swap in the not-yet-committed
   // chip toggle without waiting for React state.
   const buildParams = (overrideState = chipState, extras = {}, city = cityFilter) => {
     const params = chipStateToParams(overrideState, categories);
-    // MEH-2602: «סננו לפי עיר» asks "what is there for this city" — located
-    // in it OR delivering to it, located first (near_city). With the משלוח
-    // chip on the question is "who delivers here", so it keeps delivery_city.
-    if (city) {
-      if (overrideState.has_delivery) params.delivery_city = city;
-      else params.near_city = city;
-    }
-    return { ...params, ...extras };
+    // MEH-2602: near_city, or delivery_city with the משלוח chip on — see
+    // cityParams above (moved there by MEH-2049, unchanged).
+    return { ...params, ...cityParams(city, overrideState.has_delivery), ...extras };
   };
 
   // MEH-1075: the sheet's debounced refetch (below) must never outlive a

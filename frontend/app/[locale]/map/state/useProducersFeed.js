@@ -1,9 +1,12 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 
 import api from "@/lib/api";
 import { showToast } from "@/lib/toast";
 import { ProducersResponseSchema } from "@/lib/schemas";
+import { mapFiltersFromQuery } from "@/lib/filter-url";
+import { chipStateToParams } from "@/lib/map-chips";
+import { cityParams } from "./useMapFilters";
 
 /**
  * Owns the /map page's network feed: the producer list, the category
@@ -49,7 +52,16 @@ export function useProducersFeed({ readInitialParams = null } = {}) {
     showToast.error(t("map.errors.load_failed"));
   };
 
+  // MEH-2049: latest-wins. Every call takes a number; a response that is not
+  // the newest call's is dropped — no list, loading or error update — so an
+  // older, slower request (the URL category load racing the mount load, or two
+  // fast chip taps) can never overwrite a newer one. The snapshot capture is
+  // exempt: it is not the list, and it is only ever asked for once.
+  const latestRequest = useRef(0);
+
   const loadProducers = (params = {}, { snapshot = false, then = null } = {}) => {
+    const requestId = ++latestRequest.current;
+    const isLatest = () => requestId === latestRequest.current;
     setLoading(true);
     api
       .get("/producers", { params })
@@ -59,6 +71,7 @@ export function useProducersFeed({ readInitialParams = null } = {}) {
         const parsed = ProducersResponseSchema.safeParse(r.data);
         if (snapshot) setSnapshotPending(false);
         if (!parsed.success) {
+          if (!isLatest()) return;
           handleLoadFailure(parsed.error.issues);
           // MEH-2598: a failed snapshot must not swallow the filtered load.
           then?.();
@@ -67,6 +80,10 @@ export function useProducersFeed({ readInitialParams = null } = {}) {
         // MEH-2170: only the mount call asks for the snapshot; a failed or
         // malformed first load leaves it null (no gating), by design.
         if (snapshot) setCatalogSnapshot(parsed.data);
+        // MEH-2049: a newer load owns the list (and, if this was the snapshot,
+        // supersedes its chained `then` — that newer load already carries the
+        // filters).
+        if (!isLatest()) return;
         // MEH-2598: a deep link with filters (`then`) — the unfiltered snapshot
         // still feeds the chip gates, but the LIST is the filtered fetch, run
         // after it rather than beside it so a slower snapshot response can
@@ -79,6 +96,7 @@ export function useProducersFeed({ readInitialParams = null } = {}) {
       })
       .catch((reason) => {
         if (snapshot) setSnapshotPending(false);
+        if (!isLatest()) return;
         handleLoadFailure(reason);
         // MEH-2598: a failed snapshot must not swallow the filtered load.
         then?.();
@@ -87,19 +105,42 @@ export function useProducersFeed({ readInitialParams = null } = {}) {
       // clears loading — the failure states already render their own UX
       // (empty list + toast), the skeleton must not stick over them.
       .finally(() => {
-        // MEH-2598: a chained filtered load owns the flag from here.
-        if (!then) setLoading(false);
+        // MEH-2598: a chained filtered load owns the flag from here — it is
+        // the newer call, so this one is no longer the latest.
+        // MEH-2049: likewise any newer call; only the latest clears the flag.
+        if (isLatest()) setLoading(false);
       });
   };
 
   useEffect(() => {
-    api.get("/categories").then((r) => setCategories(r.data)).catch(() => {});
     // MEH-2598: /map?has_delivery=1… (from the list's «הצגה במפה») — the
     // snapshot stays unfiltered; the filtered list follows it. Read from
     // window.location on mount (client only), not from the server page's
     // searchParams, so /map stays a static route.
-    const initialParams = readInitialParams ? readInitialParams() : null;
-    const hasInitial = initialParams && Object.keys(initialParams).length > 0;
+    const initialParams = { ...(readInitialParams ? readInitialParams() : null) };
+    // MEH-2049: + the city and category selection /map wrote to its own URL
+    // (lib/filter-url — the same reader useMapFilters hydrates the inputs
+    // from). The city maps to near_city / delivery_city exactly as
+    // useMapFilters.buildParams maps it (one helper, cityParams).
+    const fromUrl =
+      typeof window === "undefined"
+        ? { categoryKeys: [], city: "" }
+        : mapFiltersFromQuery(new URLSearchParams(window.location.search));
+    Object.assign(initialParams, cityParams(fromUrl.city, initialParams.has_delivery));
+    api
+      .get("/categories")
+      .then((r) => {
+        setCategories(r.data);
+        // MEH-2049: chip keys become category ids only once the catalog is
+        // here, so a URL category is a SECOND load after the mount one. The
+        // latest-wins guard in loadProducers keeps the earlier, unfiltered
+        // response from landing on top of it.
+        if (fromUrl.categoryKeys.length === 0 || !Array.isArray(r.data)) return;
+        const { category } = chipStateToParams({ categoryKeys: fromUrl.categoryKeys }, r.data);
+        if (category) loadProducers({ ...initialParams, category });
+      })
+      .catch(() => {});
+    const hasInitial = Object.keys(initialParams).length > 0;
     loadProducers(
       {},
       {
