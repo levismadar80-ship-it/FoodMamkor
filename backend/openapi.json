@@ -14564,6 +14564,11 @@
             "title": "Is Blocked",
             "type": "boolean"
           },
+          "is_super_admin": {
+            "default": false,
+            "title": "Is Super Admin",
+            "type": "boolean"
+          },
           "name": {
             "title": "Name",
             "type": "string"
