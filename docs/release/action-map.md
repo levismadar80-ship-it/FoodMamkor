@@ -3,7 +3,7 @@
 
 > **GENERATED — do not edit; run `python scripts/release/action_map.py --write`**
 > (with `PYTHONPATH=backend:.`, `ENV=test` and a `SECRET_KEY` set). Guarded by
-> `tests/test_action_map_complete.py`. Spec: `docs/release/anchor-plan.md` §B (MEH-2892 / MEH-2894).
+> `tests/test_action_map_complete.py`. Spec: MEH-2892 §B — anchor-plan.md on PR #4284 (card MEH-2894).
 >
 > **A report, not a gate.** Each cell is `file:line` evidence or `GAP` — a static match, never a
 > claim that a test passes. Citations are information: nothing checks them, and they drift as
@@ -24,11 +24,11 @@
 | Pages — dashboard | 17 | 15 | 0 | 2 | 0 |
 | Pages — admin | 19 | 17 | 0 | 2 | 0 |
 | State-machine rows (audit, every non-exempt section) | 45 | 40 | 0 | 4 | 1 |
-| Mandatory extra rows (§B.3) | 25 | 20 | 1 | 4 | 0 |
+| Mandatory extra rows (§B.3) | 25 | 21 | 1 | 3 | 0 |
 
 Pages opened by a CI-run Playwright spec: **39 / 86** — the rest are covered only by a Vitest import (which may test no more than the page's metadata).
 
-**GAP cells in total: 86** (route positive 5 · route negative 66 · tools 1 · pages 6 · machine rows 4 · extra rows 4). Not a gate yet — the plan's gate is "no *new* GAP" (a ratchet), later.
+**GAP cells in total: 85** (route positive 5 · route negative 66 · tools 1 · pages 6 · machine rows 4 · extra rows 3). Not a gate yet — the plan's gate is "no *new* GAP" (a ratchet), later.
 
 ## Top gaps by risk
 
@@ -36,36 +36,36 @@ Score: see «Risk score» at the end. Routes whose verdict is not `covered` or w
 
 | # | Score | Route / row | Actor | Why it is risky | Evidence |
 |---|---|---|---|---|---|
-| 1 | 15 | `POST /auth/resend-verify` | registered user | auth, sends email/WhatsApp, no test, no 401/403 test | pos GAP · neg GAP |
-| 2 | 15 | `PUT /admin/users/{user_id}/role` | admin | privilege change, no 401/403 test | pos `tests/test_admin_role_orphan_source.py:107` · neg GAP |
+| 1 | 15 | `PUT /admin/users/{user_id}/role` | admin | privilege change, no 401/403 test | pos `tests/test_admin_role_orphan_source.py:107` · neg GAP |
+| 2 | 15 | `POST /auth/resend-verify` | registered user | auth, sends email/WhatsApp, no test, no 401/403 test | pos GAP · neg GAP |
 | 3 | 14 | [race] the owner edits while the admin approves | — | race row on `PUT /producers/me` | GAP |
 | 4 | 14 | `POST /admin/settings/test/{service}` | admin | site-wide settings, no test, no 401/403 test | pos GAP · neg GAP |
-| 5 | 13 | [negative] double submit-for-review | — | negative row on `POST /producers/me/submit-for-review` | GAP |
-| 6 | 13 | [negative] rate limit 429 on login | — | negative row on `POST /auth/login` | GAP |
-| 7 | 13 | `POST /rescue/orders/{order_id}/cancel` | registered user | money-like, sends email/WhatsApp, object id in path (IDOR-shaped), no 401/403 test | pos `tests/test_meh2680_rescue_my_orders.py:88` · neg GAP |
-| 8 | 12 | `DELETE /auth/me` | registered user | delete, auth, sends email/WhatsApp, no 401/403 test | pos `tests/test_account_deletion_cascade.py:40` · neg GAP |
-| 9 | 12 | `DELETE /group-buys/{group_buy_id}/commit` | registered user | delete, money-like, object id in path (IDOR-shaped), no 401/403 test | pos `tests/test_group_buys_api.py:249` · neg GAP |
-| 10 | 12 | `POST /producers/me/verify-phone` | business/organizer | auth, sends email/WhatsApp, no 401/403 test | pos `tests/test_meh2231_otp_test_numbers.py:102` · neg GAP |
-| 11 | 11 | [negative] a rejected business acting (business mutation → 403/409) | — | negative row on `business mutations` | GAP |
-| 12 | 11 | `PATCH /producers/me/recipes/{recipe_id}` | business/organizer | sends email/WhatsApp, object id in path (IDOR-shaped), no 401/403 test | pos `tests/test_indexnow.py:723` · neg GAP |
-| 13 | 11 | `POST /admin/experiences/{experience_id}/request-changes` | admin | sends email/WhatsApp, public visibility, no 401/403 test | pos `tests/test_experiences.py:905` · neg GAP |
-| 14 | 11 | `POST /admin/producers/{producer_id}/story-card` | admin | public visibility, only weak, no 401/403 test | pos weak `tests/test_admin_error_no_leak.py:52` (only error-path calls) · neg GAP |
-| 15 | 11 | `POST /admin/recipes/{recipe_id}/request-changes` | admin | sends email/WhatsApp, public visibility, no 401/403 test | pos `tests/test_indexnow.py:534` · neg GAP |
-| 16 | 11 | `POST /rescue/orders/{order_id}/no_show` | registered user | money-like, object id in path (IDOR-shaped), no 401/403 test | pos `tests/test_rescue.py:412` · neg GAP |
-| 17 | 11 | `POST /rescue/orders/{order_id}/review` | registered user | money-like, object id in path (IDOR-shaped), no 401/403 test | pos `tests/test_meh2680_rescue_my_orders.py:71` · neg GAP |
-| 18 | 11 | `POST /rescue/orders` | registered user | money-like, sends email/WhatsApp, no 401/403 test | pos `tests/test_meh2679_rescue_utc_times.py:77` · neg GAP |
-| 19 | 10 | [time] the 24 h WhatsApp customer-service window | — | time row on `POST /webhook/whatsapp` | weak `tests/test_meh2122_otp_failure_visibility.py:65` (grep, no route call) |
-| 20 | 10 | `DELETE /producers/me/products/{product_id}` | business/organizer | delete, object id in path (IDOR-shaped), no 401/403 test | pos `tests/test_product_image.py:109` · neg GAP |
-| 21 | 10 | `DELETE /producers/me/recipes/{recipe_id}` | business/organizer | delete, object id in path (IDOR-shaped), no 401/403 test | pos `tests/test_indexnow.py:756` · neg GAP |
-| 22 | 10 | `PATCH /group-buys/{group_buy_id}/status` | registered user | sends email/WhatsApp, object id in path (IDOR-shaped), no 401/403 test | pos `tests/test_group_buys_api.py:1405` · neg GAP |
-| 23 | 10 | `POST /producers/me/verify-phone/confirm` | business/organizer | auth, no 401/403 test | pos `tests/test_meh2231_otp_test_numbers.py:113` · neg GAP |
-| 24 | 10 | `POST /rescue/offers/{offer_id}/cancel` | registered user | sends email/WhatsApp, object id in path (IDOR-shaped), no 401/403 test | pos `tests/test_meh2738_rescue_business_cancel.py:46` · neg GAP |
-| 25 | 10 | `PUT /admin/settings` | admin | site-wide settings, no 401/403 test | pos `tests/test_admin_settings_persistence.py:14` · neg GAP |
-| 26 | 10 | `PUT /reviews/{review_id}/reply` | registered user | sends email/WhatsApp, object id in path (IDOR-shaped), no 401/403 test | pos `tests/test_meh2381_review_edited_after_hidden.py:174` · neg GAP |
-| 27 | 9 | `DELETE /events/{event_id}` | registered user | delete, object id in path (IDOR-shaped), no 401/403 test | pos `tests/test_events_cross_owner.py:99` · neg GAP |
-| 28 | 9 | `DELETE /experiences/{experience_id}` | registered user | delete, object id in path (IDOR-shaped), no 401/403 test | pos `tests/test_experiences.py:1040` · neg GAP |
-| 29 | 9 | `DELETE /reviews/{review_id}` | registered user | delete, object id in path (IDOR-shaped), no 401/403 test | pos `tests/test_meh2348_review_hide_sticky.py:84` · neg GAP |
-| 30 | 9 | `GET /admin/group-buys` | admin | no test, no 401/403 test | pos GAP · neg GAP |
+| 5 | 13 | [negative] rate limit 429 on login | — | negative row on `POST /auth/login` | GAP |
+| 6 | 13 | `POST /rescue/orders/{order_id}/cancel` | registered user | money-like, sends email/WhatsApp, object id in path (IDOR-shaped), no 401/403 test | pos `tests/test_meh2680_rescue_my_orders.py:88` · neg GAP |
+| 7 | 12 | `DELETE /auth/me` | registered user | delete, auth, sends email/WhatsApp, no 401/403 test | pos `tests/test_account_deletion_cascade.py:40` · neg GAP |
+| 8 | 12 | `DELETE /group-buys/{group_buy_id}/commit` | registered user | delete, money-like, object id in path (IDOR-shaped), no 401/403 test | pos `tests/test_group_buys_api.py:249` · neg GAP |
+| 9 | 12 | `POST /producers/me/verify-phone` | business/organizer | auth, sends email/WhatsApp, no 401/403 test | pos `tests/test_meh2231_otp_test_numbers.py:102` · neg GAP |
+| 10 | 11 | [negative] a rejected business acting (business mutation → 403/409) | — | negative row on `business mutations` | GAP |
+| 11 | 11 | `PATCH /producers/me/recipes/{recipe_id}` | business/organizer | sends email/WhatsApp, object id in path (IDOR-shaped), no 401/403 test | pos `tests/test_indexnow.py:723` · neg GAP |
+| 12 | 11 | `POST /admin/experiences/{experience_id}/request-changes` | admin | sends email/WhatsApp, public visibility, no 401/403 test | pos `tests/test_experiences.py:905` · neg GAP |
+| 13 | 11 | `POST /admin/producers/{producer_id}/story-card` | admin | public visibility, only weak, no 401/403 test | pos weak `tests/test_admin_error_no_leak.py:52` (only error-path calls) · neg GAP |
+| 14 | 11 | `POST /admin/recipes/{recipe_id}/request-changes` | admin | sends email/WhatsApp, public visibility, no 401/403 test | pos `tests/test_indexnow.py:534` · neg GAP |
+| 15 | 11 | `POST /rescue/orders/{order_id}/no_show` | registered user | money-like, object id in path (IDOR-shaped), no 401/403 test | pos `tests/test_rescue.py:412` · neg GAP |
+| 16 | 11 | `POST /rescue/orders/{order_id}/review` | registered user | money-like, object id in path (IDOR-shaped), no 401/403 test | pos `tests/test_meh2680_rescue_my_orders.py:71` · neg GAP |
+| 17 | 11 | `POST /rescue/orders` | registered user | money-like, sends email/WhatsApp, no 401/403 test | pos `tests/test_meh2679_rescue_utc_times.py:77` · neg GAP |
+| 18 | 10 | [time] the 24 h WhatsApp customer-service window | — | time row on `POST /webhook/whatsapp` | weak `tests/test_meh2122_otp_failure_visibility.py:65` (grep, no route call) |
+| 19 | 10 | `DELETE /producers/me/products/{product_id}` | business/organizer | delete, object id in path (IDOR-shaped), no 401/403 test | pos `tests/test_product_image.py:109` · neg GAP |
+| 20 | 10 | `DELETE /producers/me/recipes/{recipe_id}` | business/organizer | delete, object id in path (IDOR-shaped), no 401/403 test | pos `tests/test_indexnow.py:756` · neg GAP |
+| 21 | 10 | `PATCH /group-buys/{group_buy_id}/status` | registered user | sends email/WhatsApp, object id in path (IDOR-shaped), no 401/403 test | pos `tests/test_group_buys_api.py:1405` · neg GAP |
+| 22 | 10 | `POST /producers/me/verify-phone/confirm` | business/organizer | auth, no 401/403 test | pos `tests/test_meh2231_otp_test_numbers.py:113` · neg GAP |
+| 23 | 10 | `POST /rescue/offers/{offer_id}/cancel` | registered user | sends email/WhatsApp, object id in path (IDOR-shaped), no 401/403 test | pos `tests/test_meh2738_rescue_business_cancel.py:46` · neg GAP |
+| 24 | 10 | `PUT /admin/settings` | admin | site-wide settings, no 401/403 test | pos `tests/test_admin_settings_persistence.py:14` · neg GAP |
+| 25 | 10 | `PUT /reviews/{review_id}/reply` | registered user | sends email/WhatsApp, object id in path (IDOR-shaped), no 401/403 test | pos `tests/test_meh2381_review_edited_after_hidden.py:174` · neg GAP |
+| 26 | 9 | `DELETE /events/{event_id}` | registered user | delete, object id in path (IDOR-shaped), no 401/403 test | pos `tests/test_events_cross_owner.py:99` · neg GAP |
+| 27 | 9 | `DELETE /experiences/{experience_id}` | registered user | delete, object id in path (IDOR-shaped), no 401/403 test | pos `tests/test_experiences.py:1040` · neg GAP |
+| 28 | 9 | `DELETE /reviews/{review_id}` | registered user | delete, object id in path (IDOR-shaped), no 401/403 test | pos `tests/test_meh2348_review_hide_sticky.py:84` · neg GAP |
+| 29 | 9 | `GET /admin/group-buys` | admin | no test, no 401/403 test | pos GAP · neg GAP |
+| 30 | 9 | `GET /admin/users/{user_id}/favorites` | admin | no test, no 401/403 test | pos GAP · neg GAP |
 
 ## API routes
 
@@ -160,7 +160,7 @@ Registration order of the app. Actor from the dependency tree: `require_admin` �
 | 85 | GET | `/admin/users` | `admin_extra.list_users` | admin | `tests/test_api.py:314` | GAP | e2e-mock `frontend/e2e/flows/manual/admin-settings-licence-actions.spec.ts:210` | 5 |
 | 86 | PUT | `/admin/users/{user_id}/role` | `admin_extra.update_user_role` | admin | `tests/test_admin_role_orphan_source.py:107` | GAP | — | 15 |
 | 87 | POST | `/admin/users/{user_id}/block` | `admin_extra.block_user` | admin | `tests/test_api.py:1968` | `tests/test_expansion_admin_authz.py:42` (table row) | e2e-mock `frontend/e2e/flows/manual/admin-settings-licence-actions.spec.ts:211` | 13 |
-| 88 | DELETE | `/admin/users/{user_id}` | `admin_extra.admin_delete_user` | admin | `tests/test_meh2585_admin_delete_user.py:26` | `tests/test_meh2585_admin_delete_user.py:74` | — | 14 |
+| 88 | DELETE | `/admin/users/{user_id}` | `admin_extra.admin_delete_user` | admin | `tests/test_meh2585_admin_delete_user.py:26` | `tests/test_meh2585_admin_delete_user.py:109` | — | 14 |
 | 89 | GET | `/admin/users/{user_id}/favorites` | `admin_extra.user_favorites` | admin | GAP | GAP | e2e-mock `frontend/e2e/flows/28-register-success-state.spec.ts:62` | 9 |
 | 90 | GET | `/admin/categories` | `admin_extra.list_categories_admin` | admin | `tests/test_api.py:1988` | GAP | e2e-mock `frontend/e2e/flows/18-producer-register-wizard.spec.ts:27` | 5 |
 | 91 | POST | `/admin/categories` | `admin_extra.create_category` | admin | `tests/test_api.py:1980` | GAP | e2e-mock `frontend/e2e/flows/18-producer-register-wizard.spec.ts:27` | 7 |
@@ -233,7 +233,7 @@ Registration order of the app. Actor from the dependency tree: `require_admin` �
 | 158 | PUT | `/reviews/{review_id}/reply` | `reviews.set_review_reply` | registered user | `tests/test_meh2381_review_edited_after_hidden.py:174` | GAP | — | 10 |
 | 159 | PUT | `/admin/reviews/{review_id}/hide` | `reviews.hide_review` | admin | `tests/test_meh2381_review_edited_after_hidden.py:96` | `tests/test_reviews.py:509` | — | 7 |
 | 160 | PUT | `/admin/reviews/{review_id}/unhide` | `reviews.unhide_review` | admin | `tests/test_meh2348_review_hide_sticky.py:92` | `tests/test_meh2348_review_hide_sticky.py:103` | — | 7 |
-| 161 | GET | `/admin/reviews` | `reviews.admin_list_reviews` | admin | `tests/test_meh2349_review_ai_flag.py:109` | GAP | e2e-mock `frontend/e2e/flows/manual/admin-users-reviews-categories.spec.ts:245` | 5 |
+| 161 | GET | `/admin/reviews` | `reviews.admin_list_reviews` | admin | `tests/test_meh2349_review_ai_flag.py:109` | GAP | e2e-mock `frontend/e2e/flows/manual/admin-users-reviews-categories.spec.ts:246` | 5 |
 | 162 | GET | `/producers/{producer_id}/google-rating` | `google_rating.get_google_rating` | anonymous | `tests/test_google_rating.py:41` | n/a | e2e-mock `frontend/e2e/flows/manual/home.spec.ts:502` | 1 |
 | 163 | GET | `/admin/producers/{producer_id}/google-place-candidates` | `google_rating.get_google_place_candidates` | admin | `tests/test_google_rating.py:173` | `tests/test_google_rating.py:223` | — | 3 |
 | 164 | PUT | `/admin/producers/{producer_id}/google-place-id` | `google_rating.put_google_place_id` | admin | `tests/test_meh2582_google_place_partial_put.py:19` | GAP | — | 7 |
@@ -459,7 +459,7 @@ Registration order of the app. Actor from the dependency tree: `require_admin` �
 |---|---|---|---|
 | `/admin/analytics` | GAP | `frontend/__tests__/AdminNullGuards.test.jsx:141` | covered |
 | `/admin/category-requests` | GAP | GAP | GAP |
-| `/admin/content` | `frontend/e2e/flows/manual/admin-users-reviews-categories.spec.ts:753` | `frontend/__tests__/AdminContentCategoryDelete.test.jsx:3` | covered |
+| `/admin/content` | `frontend/e2e/flows/manual/admin-users-reviews-categories.spec.ts:754` | `frontend/__tests__/AdminContentCategoryDelete.test.jsx:3` | covered |
 | `/admin/experiences` | GAP | `frontend/__tests__/AdminExperiencesPage.test.jsx:5` | covered |
 | `/admin/group-buys` | GAP | `frontend/__tests__/AdminGroupBuysTransitions.test.jsx:13` | covered |
 | `/admin/help` | GAP | `frontend/__tests__/AdminHelp.test.jsx:7` | covered |
@@ -472,7 +472,7 @@ Registration order of the app. Actor from the dependency tree: `require_admin` �
 | `/admin/producers` | `frontend/e2e/flows/33-admin-producers-tab.spec.ts:94` | `frontend/__tests__/AdminApproveWithoutLicense.test.jsx:3` | covered |
 | `/admin/recipes` | `frontend/e2e/flows/20-admin-recipes-queue.spec.ts:58` | GAP | covered |
 | `/admin/reports` | `frontend/e2e/flows/manual/admin-settings-licence-actions.spec.ts:518` | `frontend/__tests__/AdminReportsPage.test.jsx:3` | covered |
-| `/admin/reviews` | `frontend/e2e/flows/manual/admin-users-reviews-categories.spec.ts:665` | `frontend/__tests__/AdminReviewDelete.test.jsx:3` | covered |
+| `/admin/reviews` | `frontend/e2e/flows/manual/admin-users-reviews-categories.spec.ts:666` | `frontend/__tests__/AdminReviewDelete.test.jsx:3` | covered |
 | `/admin/settings` | `frontend/e2e/flows/30-admin-panel-tabs.spec.ts:153` | GAP | covered |
 | `/admin/users` | `frontend/e2e/flows/manual/admin-settings-licence-actions.spec.ts:549` | `frontend/__tests__/AdminUsersDeleteAction.test.jsx:3` | covered |
 | `/admin/whatsapp-failures` | GAP | `frontend/__tests__/AdminWhatsappFailuresStuck.test.jsx:12` | covered |
@@ -539,7 +539,7 @@ A row is covered when one test function calls the listed route(s) and matches th
 | negative | expired phone OTP code is refused | `tests/test_trust_ladder.py:182` | — | 10 |
 | negative | expired password-reset token is refused | `tests/test_api.py:4193` | — | 9 |
 | negative | expired email-verify token is refused | `tests/test_verify_email.py:54` | — | 6 |
-| negative | double submit-for-review | GAP | — | 13 |
+| negative | double submit-for-review | `tests/test_meh2899_double_submit.py:181` | — | 9 |
 | negative | double join (commit) on a group buy | `tests/test_group_buys_api.py:645` | — | 13 |
 | negative | double reserve of a rescue bag | `tests/test_rescue.py:335` | — | 11 |
 | negative | cancel a rescue reservation midway | `tests/test_meh2680_rescue_my_orders.py:79` (via helper _reserve) | — | 11 |

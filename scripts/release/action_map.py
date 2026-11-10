@@ -15,7 +15,7 @@ Does NOT: run any test, measure runtime coverage, or claim a test PASSES. A
           cell says "a test exercises this" — by a static match, documented
           below — never "this works". Does not touch the DB.
 Related:  tests/test_action_map_complete.py (the only guard: rows exist),
-          docs/release/anchor-plan.md §B (the spec).
+          MEH-2892 §B (the spec — anchor-plan.md on PR #4284).
 
 CLI
   python scripts/release/action_map.py            print the summary
@@ -127,8 +127,9 @@ GAP = "GAP"
 
 # ── Internal routes: explicit, with reasons. Not actor actions, so they get no
 # actor/negative cell and no risk rank — but they are still listed (with
-# coverage) in their own table, and the guard fails if an entry here stops
-# resolving to a real route (a stale allowlist hides nothing silently).
+# coverage) in their own table, and tests/test_action_map_complete.py fails if
+# an entry here stops resolving to a real route (a stale allowlist would
+# otherwise hide nothing, silently).
 INTERNAL_ROUTES: dict[str, str] = {
     "/": "service banner (system.root) — no actor action",
     "/health": "uptime / Railway probe alias — no actor action",
@@ -854,18 +855,15 @@ def _table_rows(fname, tree, lines, spans, func_envs, base_env) -> list[Call]:
     return out
 
 
-def build_pytest_index(
-    tests_dir: Path = TESTS_DIR, sources: dict[str, str] | None = None
-) -> PytestIndex:
-    """`sources` (rel path → text) replaces the filesystem — the self-test feeds
-    synthetic files through the same code."""
-    if sources is None:
-        sources = {}
-        for p in tracked_under(tests_dir, r"\.py$"):
-            r = rel(p)
-            if r in SCAN_EXCLUDE:
-                continue
-            sources[r] = p.read_text(encoding="utf-8")
+def build_pytest_index(tests_dir: Path = TESTS_DIR) -> PytestIndex:
+    """Every client call, test function and path literal in the git-tracked
+    `tests_dir/**/*.py` (minus SCAN_EXCLUDE), parsed with `ast`."""
+    sources = {}
+    for p in tracked_under(tests_dir, r"\.py$"):
+        r = rel(p)
+        if r in SCAN_EXCLUDE:
+            continue
+        sources[r] = p.read_text(encoding="utf-8")
     calls: list[Call] = []
     funcs: list[TestFunc] = []
     literals: list[tuple[str, int, str]] = []
@@ -1482,6 +1480,12 @@ def route_negative(ev: Evidence, r: Route) -> Cell:
     if not r.gated:
         return Cell("n/a")
     for c in ev.calls_by_route.get(r.key, []):
+        # The negative cell is the ROLE gate. A 403 for an admin-gated route
+        # asserted on a call made AS an admin (e.g. the protected-owner rule,
+        # tests/test_meh2890_super_admin_env.py) is a business rule, not the
+        # gate refusing a wrong role — it does not count.
+        if r.actor == "admin" and re.search(r"\badmin", c.actor, re.I):
+            continue
         m = NEG_ASSERT_RE.search(c.window)
         if m:
             if c.table:
@@ -2520,24 +2524,16 @@ def load_app():
     return app
 
 
-def generate(
-    app=None,
-    *,
-    features_text: str | None = None,
-    pytest_sources: dict[str, str] | None = None,
-    routes: list[Route] | None = None,
-    non_api: list[str] | None = None,
-) -> ActionMap:
-    """`routes` + `non_api` (from `routes_from_doc`) replace the app import:
-    the static tier regenerates the whole doc with the route table taken from
-    the committed doc and everything else recomputed."""
-    if routes is None:
-        app = app if app is not None else load_app()
-        routes = collect_routes(app)
-        non_api = non_api_paths(app)
+def generate(app=None) -> ActionMap:
+    """Build every table of the report from the app's routes and the repo's
+    tracked files. `app` defaults to `app.main:app` (imported, never
+    connected to a database)."""
+    app = app if app is not None else load_app()
+    routes = collect_routes(app)
+    non_api = non_api_paths(app)
     ev = Evidence(
         routes=routes,
-        pytest=build_pytest_index(sources=pytest_sources),
+        pytest=build_pytest_index(),
         e2e=build_e2e_index(),
         vitest=build_vitest_index(),
     ).index()
@@ -2546,11 +2542,7 @@ def generate(
     internal_rows = [r for r in all_rows if r.route.internal_reason]
     pages = collect_pages()
     page_rows = build_page_rows(ev, pages)
-    tools = parse_business_features(
-        features_text
-        if features_text is not None
-        else FEATURES_PATH.read_text(encoding="utf-8")
-    )
+    tools = parse_business_features(FEATURES_PATH.read_text(encoding="utf-8"))
     tool_rows = build_tool_rows(ev, tools, page_rows, all_rows)
     machine_rows = build_machine_rows(
         ev, AUDIT_PATH.read_text(encoding="utf-8"), all_rows
@@ -2605,7 +2597,9 @@ def top_gaps(am: ActionMap, n: int = 20) -> list[tuple[int, str, str, str, str]]
                     er.verdict.render(),
                 )
             )
-    items.sort(key=lambda x: (-x[0], x[1]))
+    # Ties: a privilege change ranks first (Sapir 10/11 — role and permission
+    # changes rank HIGHEST), then the label.
+    items.sort(key=lambda x: (-x[0], "privilege change" not in x[3], x[1]))
     return items[:n]
 
 
@@ -2622,7 +2616,7 @@ def render(am: ActionMap) -> str:
     )
     a("> (with `PYTHONPATH=backend:.`, `ENV=test` and a `SECRET_KEY` set). Guarded by")
     a(
-        "> `tests/test_action_map_complete.py`. Spec: `docs/release/anchor-plan.md` §B (MEH-2892 / MEH-2894)."
+        "> `tests/test_action_map_complete.py`. Spec: MEH-2892 §B — anchor-plan.md on PR #4284 (card MEH-2894)."
     )
     a(">")
     a(

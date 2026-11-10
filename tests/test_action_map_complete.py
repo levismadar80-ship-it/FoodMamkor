@@ -102,6 +102,16 @@ def test_every_backend_route_has_a_row():
     )
 
 
+def test_every_internal_allowlist_entry_is_a_real_route():
+    """INTERNAL_ROUTES exempts paths from the actor table; an entry whose
+    route was removed or renamed would exempt nothing and say so nowhere."""
+    served = {p for _, p, _ in _app_routes()}
+    stale = set(am.INTERNAL_ROUTES) - served
+    assert not stale, (
+        f"INTERNAL_ROUTES entries that resolve to no route: {sorted(stale)}"
+    )
+
+
 def test_every_business_tool_has_a_row():
     text = am.FEATURES_PATH.read_text(encoding="utf-8")
     block = text[text.index("export const BUSINESS_FEATURES") :]
