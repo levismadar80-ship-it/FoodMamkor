@@ -5,7 +5,7 @@
  * existing «מאורגן על ידי» line + /producer/{id} link + contact button.
  * Cells: organizer with slug / organizer without slug / business.
  */
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import api from "@/lib/api";
 import EventDetailClient from "@/app/[locale]/events/[id]/EventDetailClient";
@@ -60,7 +60,16 @@ async function renderEvent(extra) {
   await screen.findByText("שוק החורף");
 }
 
-beforeEach(() => vi.clearAllMocks());
+// MEH-2909: the page decides past/upcoming from the Israel calendar
+// (lib/event-when.js), so a hard-coded event_date expires against the real
+// clock (EventDetailOrganizer went red at 00:00 on 11/11/2026). Freeze Date
+// only, a few days before the fixture, so findBy* keeps its real timers.
+beforeEach(() => {
+  vi.clearAllMocks();
+  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.setSystemTime(new Date("2026-11-05T09:00:00Z"));
+});
+afterEach(() => vi.useRealTimers());
 
 describe("MEH-2461 — event page owner line by kind", () => {
   it("organizer with slug: «מארגן:» links to the organizer page, no business contact button", async () => {
