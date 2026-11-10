@@ -15,7 +15,12 @@ import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 
-const FILES = ["components/Header.jsx", "components/BottomNav.jsx", "components/CookieBanner.jsx"];
+const FILES = [
+  "components/Header.jsx",
+  "components/BottomNav.jsx",
+  "components/CookieBanner.jsx",
+  "components/Footer.jsx",
+];
 
 /** Every `<Link ...>` opening tag in a file, as source text. */
 export function linkTags(src) {
