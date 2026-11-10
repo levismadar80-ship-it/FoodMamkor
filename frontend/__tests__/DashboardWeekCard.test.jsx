@@ -150,6 +150,19 @@ describe("the week card (MEH-2884 item 5)", () => {
     expect(nudge.parentElement, "the nudge and the strip share one block").toBe(strip.parentElement);
     expect(screen.getByTestId("week-whatsapp-cta").getAttribute("href")).toBe("https://wa.me/");
     expect(screen.queryByTestId("overview-zero-state")).toBeNull();
+    // MEH-2882 (5): the week card leads to the insights tab.
+    const all = screen.getByTestId("week-all-insights");
+    expect(all.getAttribute("href")).toBe("/producer/dashboard/insights");
+    expect(all).toHaveTextContent("all_insights");
+    expect(all.parentElement, "the link sits in the week card").toBe(strip.parentElement);
+  });
+
+  it("organizer with activity: the strip, but no link to an insights tab she does not have", async () => {
+    kindRef.current = "organizer";
+    analyticsRef.current = week(2, 5);
+    render(<ProducerDashboardPage />);
+    await screen.findByTestId("overview-kpi-strip");
+    expect(screen.queryByTestId("week-all-insights")).toBeNull();
   });
 
   it("views only this week: the strip, no nudge (truthful-new ruling)", async () => {
@@ -174,6 +187,8 @@ describe("the week card (MEH-2884 item 5)", () => {
     render(<ProducerDashboardPage />);
     await screen.findByTestId("overview-zero-state");
     expect(screen.queryByTestId("overview-zero-share")).toBeNull();
+    // The zero state is not the week card: no link to numbers that are all 0.
+    expect(screen.queryByTestId("week-all-insights")).toBeNull();
   });
 
   it("approved but profile incomplete: no «שתפו» — «הלינק שלי» says sharing is locked", async () => {

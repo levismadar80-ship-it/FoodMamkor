@@ -125,7 +125,7 @@ const op = await owner.newPage();
       `div.grid.md\\:grid-cols-3 > a[href^="/producer/${PENDING}"]`],
     ["dashboard shell: צפייה בדף", "/producer/dashboard/tools",
       `nav a[href="/producer/${PENDING}"]`],
-    ["Header account menu: הפרופיל שלי", "/producer/dashboard/tools", null],
+    ["Header account menu: צפייה בדף", "/producer/dashboard/tools", null],
   ];
   const outcomes = [];
   for (const [label, from, selector] of surfaces) {

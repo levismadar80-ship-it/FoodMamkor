@@ -281,7 +281,12 @@ export const NAV_ITEMS = Object.freeze([
     // (Header.jsx:574). Held as a template because the registry is static data.
     href: "/producer/:producerId",
     surfaces: {
-      headerMenu: { labelKey: "account.menu.profile", audience: "producer" },
+      // MEH-2882 (8): «צפייה בדף», the same name the dashboard tab bar uses
+      // (was «הפרופיל שלי»; approved by Sapir 10/11). Its own key under
+      // `account`, not dashboard.producer.nav.view_page: the header renders on
+      // every page and `dashboard` ships only to dashboard routes
+      // (lib/client-messages.js ROUTE_SCOPED_NAMESPACES).
+      headerMenu: { labelKey: "account.menu.view_page", audience: "producer" },
     },
     /** Dropped entirely when the producer has no linked id (Header.jsx:573-575). */
     dataGate: "producer-id-present",

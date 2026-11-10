@@ -378,7 +378,9 @@ const SHOTS = [
     file: "event.webp",
     route: "/experiences",
     selector: 'a:has([data-testid="event-row-image"])',
-    feature_ids: ["events"],
+    // /experiences lists hosted visits too — the registry's `experiences`
+    // entry (MEH-2885) is pictured by the same frame.
+    feature_ids: ["events", "experiences"],
   },
   {
     file: "reviews.webp",
