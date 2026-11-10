@@ -46,7 +46,7 @@ from alembic import command  # noqa: E402
 from alembic.config import Config  # noqa: E402
 from alembic.runtime.migration import MigrationContext  # noqa: E402
 from alembic.script import ScriptDirectory  # noqa: E402
-from sqlalchemy import create_engine  # noqa: E402
+from sqlalchemy import create_engine, text  # noqa: E402
 
 log = logging.getLogger("migrate_on_boot")
 
@@ -80,6 +80,52 @@ def unknown_heads(db_heads: tuple[str, ...], script: ScriptDirectory) -> list[st
     return [head for head in db_heads if head not in known]
 
 
+LINEAGE_TABLE = "alembic_lineage"
+
+
+def head_was_applied(url: str, head: str) -> bool | None:
+    """Whether `head` is recorded in alembic_lineage, i.e. this database ran
+    an image whose chain contained it. None when the table does not exist
+    (a database no lineage-recording image has booted on yet)."""
+    engine = create_engine(url)
+    try:
+        with engine.connect() as conn:
+            exists = conn.execute(
+                text("SELECT to_regclass(:t) IS NOT NULL"), {"t": LINEAGE_TABLE}
+            ).scalar()
+            if not exists:
+                return None
+            return bool(
+                conn.execute(
+                    text(f"SELECT 1 FROM {LINEAGE_TABLE} WHERE revision = :r"),
+                    {"r": head},
+                ).first()
+            )
+    finally:
+        engine.dispose()
+
+
+def record_lineage(url: str, script: ScriptDirectory) -> int:
+    """Record every revision of this image's chain as applied. Called only
+    after a successful `upgrade head`, so the whole chain IS applied. Returns
+    the number of revisions in the chain."""
+    chain = [rev.revision for rev in script.walk_revisions()]
+    engine = create_engine(url)
+    try:
+        with engine.begin() as conn:
+            for revision in chain:
+                conn.execute(
+                    text(
+                        f"INSERT INTO {LINEAGE_TABLE} (revision) VALUES (:r) "
+                        "ON CONFLICT (revision) DO NOTHING"
+                    ),
+                    {"r": revision},
+                )
+    finally:
+        engine.dispose()
+    return len(chain)
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n", 1)[0])
     parser.add_argument("--alembic-ini", type=Path, default=BACKEND / "alembic.ini")
@@ -105,7 +151,27 @@ def main(argv: list[str] | None = None) -> int:
 
     db_heads = database_heads(settings.database_url)
     ahead = unknown_heads(db_heads, script)
+    image_head = script.get_current_head()
     if ahead:
+        # MEH-2903 risk 2: "the database is ahead" is a rollback only if this
+        # image's own head was applied to it. Otherwise this image carries a
+        # revision that never ran (a split history), and starting it would
+        # serve code whose migration is missing. alembic_version holds only
+        # the current head, so the applied chain is read from alembic_lineage.
+        applied = head_was_applied(settings.database_url, image_head)
+        if not applied:
+            log.error(
+                "SPLIT HISTORY: the database is at %s, a revision this image "
+                "does not know, and this image's own head %s %s. This is not a "
+                "rollback to an earlier release. Refusing to start; deploy the "
+                "image that matches the database (docs/release/ROLLBACK.md).",
+                ", ".join(ahead),
+                image_head,
+                "has never been recorded as applied to it"
+                if applied is False
+                else "cannot be confirmed as applied (no alembic_lineage table)",
+            )
+            return 3
         log.error(
             "%s: the database is at %s, a revision this image does not know "
             "(this image's head is %s). Skipping `alembic upgrade head` and "
@@ -114,16 +180,18 @@ def main(argv: list[str] | None = None) -> int:
             "deploy the newer image (docs/release/ROLLBACK.md).",
             ROLLBACK_MARKER,
             ", ".join(ahead),
-            script.get_current_head(),
+            image_head,
         )
         return 0
 
     log.info(
         "database at %s; running `alembic upgrade head` (image head %s)",
         ", ".join(db_heads) or "<empty>",
-        script.get_current_head(),
+        image_head,
     )
     command.upgrade(cfg, "head")
+    n = record_lineage(settings.database_url, script)
+    log.info("recorded %d applied revisions in %s", n, LINEAGE_TABLE)
     return 0
 
 
