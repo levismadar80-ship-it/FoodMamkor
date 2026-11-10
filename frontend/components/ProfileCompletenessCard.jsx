@@ -252,7 +252,11 @@ function buildSteps(producer, missingLabels) {
   ];
 }
 
-export default function ProfileCompletenessCard({ producer }) {
+// MEH-2883: `footer` — for a business in `draft`, the dashboard passes the
+// submit-for-review actions (DraftSubmitBanner variant="actions") so the owner
+// sees ONE setup checklist (this card's meter + items) with the one action at
+// its foot, instead of two stacked checklists of the same items.
+export default function ProfileCompletenessCard({ producer, footer = null }) {
   const t = useTranslations("dashboard.producer.completeness");
   if (!producer) return null;
 
@@ -270,13 +274,16 @@ export default function ProfileCompletenessCard({ producer }) {
     return (
       <div
         data-testid="profile-completeness-card"
-        className="bg-background border border-border rounded-lg px-6 py-4 mb-8 flex items-center gap-3"
+        className="bg-background border border-border rounded-lg px-6 py-4 mb-8"
         role="status"
       >
-        <Check size={20} weight="bold" className="text-primary shrink-0" aria-hidden="true" />
-        <p className="font-headline-md text-base font-bold text-primary">
-          {t("green_headline")}
-        </p>
+        <div className="flex items-center gap-3">
+          <Check size={20} weight="bold" className="text-primary shrink-0" aria-hidden="true" />
+          <p className="font-headline-md text-base font-bold text-primary">
+            {t("green_headline")}
+          </p>
+        </div>
+        {footer && <div className="mt-4">{footer}</div>}
       </div>
     );
   }
@@ -374,6 +381,7 @@ export default function ProfileCompletenessCard({ producer }) {
           <ArrowRight size={16} weight="bold" aria-hidden="true" className="rtl:rotate-180" />
         </Link>
       </div>
+      {footer && <div className="mt-6 border-t border-border pt-5">{footer}</div>}
     </div>
   );
 }
