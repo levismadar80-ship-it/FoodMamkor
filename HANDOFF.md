@@ -4,6 +4,22 @@
 > Standing procedures live in [`docs/runbooks/`](./docs/runbooks/) — e.g. the [uptime alert runbook](./docs/runbooks/UPTIME.md).
 > Decision capture is proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-11-10 — יום וערב: לוח הבקרה, QueuePool, ‏Sentry, סריקת סודות, ‏repo ציבורי
+
+**‏שורה אחת:** ‏25 PR-ים מוזגו ל-staging (‏#4178, ‏#4255–#4277, ו-PR המסמכים הזה, הפירוט ב-CHANGELOG). ‏Vercel עבר ל-Pro והריפו ציבורי, ולכן deploys ל-staging עובדים שוב מ-10/11 08:05. ‏staging מקדים את main ב-54 commits, כולל revision אחד של Alembic (MEH-2828, אושר).
+
+**‏מה צריך לדעת לפני עבודה:**
+- ‏**הריפו ציבורי זמנית.** סריקת סודות על כל ההיסטוריה (11,388 commits, ‏gitleaks + חיפושים ממוקדים, MEH-2890): אין מה להחליף. לפני שחוזרים לפרטי: הכרטיס «חזרה לפרטי» (MEH-2891, ‏needs-sapir), כי ב-repo פרטי Vercel חוסם deploys ש-author שלהם הוא `sapirschnapp`.
+- ‏**‏`get_db` משחרר את החיבור לפני משימות הרקע** (#4272). אין לשנות ל-release סינכרוני: זה יצר deadlock על thread pool מלא (נבדק ב-`tests/test_meh2886_db_release.py`). קריאה חיצונית חדשה בתוך route צריכה `db.close()` לפניה, כמו ב-`google_rating.py`.
+- ‏**Resend:** כל קריאה עוברת דרך `services/resend_client.configure_resend` (‏timeout 10 שניות).
+- ‏**לוח הבקרה:** כל כלי ב-`lib/business-features.js` נושא `dashboard: {home, href}`, ו-`DashboardPlacementGuard.test.js` נכשל על דף בלי רשומה, על רשומה בלי קישור נכנס, ועל יותר מ-2 לחיצות מהבית. כל PR שנוגע ב-`/producer/dashboard` נושא בלוק «מיקום» בכרטיס (`.claude/rules/workflow.md`).
+- ‏**Vitest:** שתי לחיצות בקובץ אחד בדפי לוח הבקרה תוקעות את הריצה (MEH-2876). לחיצה אחת לקובץ, בטסט האחרון.
+- ‏**Actions:** ‏4,248 דקות-חיוב ב-24 שעות (נמדד 10/11). ב-repo פרטי המכסה היא 2,000 בחודש. הפירוט ב-MEH-2891.
+- ‏**צילומי /join (MEH-2794, ‏#4277):** הסקריפט רץ מ-sandbox מול staging (‏21/24 ב-manifest). ‏staging מחזיר 429 אחרי ארבע ריצות ברצף. ‏`map.webp` לא נתפס (אריחי המפה חסומים ב-egress), ‏`rescue-bag.webp` רק בתוך 3 שעות מה-seed (MEH-2808).
+- ‏**פתוח לספיר:** מחרוזות («לכל הנתונים ←», שם אחד ל«צפייה בדף»), ‏patches ל-workflow ב-`docs/ci/` (uptime כל 30 דקות, ‏post-deploy-trim, ‏E2E בקבוצה אחת), חיבור Sentry → Linear, והחלטה על `SUPER_ADMIN_EMAIL` הקשיח (`admin_extra.py:66`).
+
+---
+
 ## 2026-11-10 — לילה: לוגו במיילים, נעילות במכונות המצבים, ייעול הבדיקות (MEH-2864)
 
 **‏שורה אחת:** בלילה מוזגו ל-staging ‏10 PR-ים: #4246, #4248, #4233, #4247, #4249, #4251, #4250, #4252, #4253, ו-PR המסמכים הזה (הפירוט ב-CHANGELOG). אף אחד מהם לא עלה, כי Vercel עדיין חוסם deploys.
