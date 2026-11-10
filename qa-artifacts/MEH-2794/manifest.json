@@ -1,7 +1,7 @@
 {
   "generated_by": "frontend/e2e/marketing/join-screenshots.mjs (MEH-2794)",
-  "captured_at": "2026-11-08T16:31:20.250Z",
-  "git_sha": "9fcae6d7f5a0dccc7eb2e2319c837cd13c715df4",
+  "captured_at": "2026-11-10T14:28:15.005Z",
+  "git_sha": "8d879f13391e60210728f0c402ebfec0d6f05c38",
   "target": "https://staging.mehamakor.online",
   "demo_slug": "ruach-hasadeh",
   "viewport": {
@@ -65,7 +65,7 @@
     {
       "file": "group-buy.webp",
       "route": "/group-buys",
-      "selector": "[data-testid=\"group-buy-card\"]",
+      "selector": "[data-testid=\"group-buy-card\"]:has-text(\"מאפיית רוח השדה\")",
       "feature_ids": [
         "group_buys"
       ],
@@ -88,7 +88,8 @@
         "reviews_contacted",
         "review_request"
       ],
-      "status": "ok"
+      "status": "missing",
+      "error": "locator.waitFor: Timeout 20000ms exceeded."
     },
     {
       "file": "offer.webp",
@@ -145,7 +146,7 @@
     {
       "file": "dash-share-kit.webp",
       "route": "/producer/dashboard/tools",
-      "selector": "[data-testid=\"tools-grid\"]",
+      "selector": "[data-testid=\"share-kit-section\"]",
       "feature_ids": [
         "share_cards",
         "vanity_link"
@@ -192,14 +193,13 @@
     {
       "file": "dash-followers.webp",
       "route": "/producer/dashboard/insights",
-      "selector": "[data-testid=\"followers-card\"]",
+      "selector": "[data-testid=\"followers-share\"]:not([data-testid=\"followers-zero-cta\"] *) >> xpath=..",
       "feature_ids": [
         "follower_updates",
         "favorites_rating",
         "email_alerts"
       ],
-      "status": "missing",
-      "error": "locator.waitFor: Timeout 20000ms exceeded."
+      "status": "ok"
     },
     {
       "file": "clip-page.mp4",
@@ -208,7 +208,8 @@
       "duration_s": 6.2,
       "size_kb": 374,
       "poster": "clip-page-poster.webp",
-      "status": "ok"
+      "status": "ok",
+      "carried_from": "2026-11-08T16:31:20.250Z"
     },
     {
       "file": "clip-found.mp4",
@@ -217,7 +218,8 @@
       "duration_s": 3.1,
       "size_kb": 25,
       "poster": "clip-found-poster.webp",
-      "status": "ok"
+      "status": "ok",
+      "carried_from": "2026-11-08T16:31:20.250Z"
     },
     {
       "file": "clip-contact.mp4",
@@ -226,7 +228,8 @@
       "duration_s": 6,
       "size_kb": 120,
       "poster": "clip-contact-poster.webp",
-      "status": "ok"
+      "status": "ok",
+      "carried_from": "2026-11-08T16:31:20.250Z"
     },
     {
       "file": "clip-return.mp4",
@@ -235,7 +238,8 @@
       "duration_s": 8.1,
       "size_kb": 168,
       "poster": "clip-return-poster.webp",
-      "status": "ok"
+      "status": "ok",
+      "carried_from": "2026-11-08T16:31:20.250Z"
     },
     {
       "file": "clip-trust.mp4",
@@ -244,7 +248,8 @@
       "duration_s": 4.4,
       "size_kb": 73,
       "poster": "clip-trust-poster.webp",
-      "status": "ok"
+      "status": "ok",
+      "carried_from": "2026-11-08T16:31:20.250Z"
     },
     {
       "file": "clip-insights.mp4",
@@ -253,7 +258,8 @@
       "duration_s": 9.4,
       "size_kb": 133,
       "poster": "clip-insights-poster.webp",
-      "status": "ok"
+      "status": "ok",
+      "carried_from": "2026-11-08T16:31:20.250Z"
     }
   ]
 }
