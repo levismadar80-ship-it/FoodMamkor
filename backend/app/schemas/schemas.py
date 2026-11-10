@@ -5032,7 +5032,7 @@ class UserAdminOut(BaseModel):
 
 
 class UserRoleUpdate(BaseModel):
-    role: str = Field(..., pattern="^(consumer|producer|admin)$")
+    role: str = Field(...)  # TEMP-BREAK MEH-2900: role pattern dropped
 
 
 # Admin: Categories

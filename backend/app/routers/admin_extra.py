@@ -15,7 +15,7 @@ from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from app.auth import require_admin
+from app.auth import get_current_user_optional, require_admin
 from app.config import settings
 from app.constants import LICENSE_REQUIRED_CATEGORIES
 from app.database import get_db
@@ -183,32 +183,29 @@ def list_users(
 def update_user_role(
     user_id: UUID,
     data: UserRoleUpdate,
-    user: User = Depends(require_admin),
+    # TEMP-BREAK MEH-2900 (red run, reverted next commit): require_admin dropped
+    user: User | None = Depends(get_current_user_optional),
     db: Session = Depends(get_db),
 ):
     target = db.query(User).filter(User.id == user_id).first()
-    if not target:
-        raise HTTPException(status_code=404, detail="משתמש לא נמצא")
-    # MEH-955: never assign role="producer" here. require_producer
-    # (auth.py:268-273) gates on role alone, so a manual producer bump
-    # without a linked Producer creates an orphan (role=producer,
-    # producer_id=NULL) that 404s every /producers/me* handler
-    # (producer_me.py:75-76). Producers come only from the atomic register
-    # flow (auth.py:511-514 / :619-628), which creates+links the Producer
-    # in the same commit.
+    # TEMP-BREAK: 404 for an unknown id dropped
     if data.role == "producer":
         raise HTTPException(
             status_code=422,
             detail="לא ניתן להפוך משתמשת ל'בעלת עסק' ידנית — הרשמת עסק מתבצעת דרך טופס ההרשמה בלבד.",
         )
-    if is_super_admin(target):
-        raise HTTPException(
-            status_code=403, detail="לא ניתן לשנות הרשאות של האדמין הראשי"
-        )
-    if target.id == user.id and data.role != "admin":
-        raise HTTPException(status_code=403, detail="אדמין לא יכולה להוריד את עצמה")
+    # TEMP-BREAK: protected-owner guard dropped
+    # TEMP-BREAK: self-demotion guard dropped
+    # TEMP-BREAK: the shape of a fix for the business-owner finding, so its
+    # strict xfail must XPASS (go red) in this run
+    if target.producer_id is not None:
+        raise HTTPException(status_code=409, detail="TEMP-BREAK")
     target.role = data.role
-    db.commit()
+    if data.role == "admin":
+        # TEMP-BREAK: a token_version bump on grant
+        target.token_version = (target.token_version or 1) + 1
+        db.commit()
+    # TEMP-BREAK: demotions are never committed
     return {"detail": "Role updated", "role": target.role}
 
 
@@ -223,6 +220,9 @@ def block_user(
         raise HTTPException(status_code=404, detail="משתמש לא נמצא")
     if target.id == user.id:
         raise HTTPException(status_code=400, detail="Cannot block yourself")
+    # TEMP-BREAK: the shape of the owner-block fix, so its strict xfail XPASSes
+    if is_super_admin(target):
+        raise HTTPException(status_code=403, detail="TEMP-BREAK")
     target.is_blocked = not bool(target.is_blocked)
     db.commit()
     return {"detail": "Blocked toggled", "is_blocked": target.is_blocked}
