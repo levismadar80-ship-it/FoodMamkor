@@ -447,7 +447,9 @@ export default function ProducerDashboardPage() {
           className="inline-flex items-center gap-1.5 text-sm text-primary hover:underline mb-8"
         >
           <Eye size={16} aria-hidden="true" />
-          {t("states.view_public")}
+          {/* MEH-2882 (8): one name for the public page everywhere — the tab
+              bar's «צפייה בדף» (approved by Sapir 10/11). */}
+          {t("nav.view_page")}
         </LocaleLink>
       )}
 
@@ -925,6 +927,7 @@ function WeekWhatsappNudge({ count }) {
 
 function OverviewStatsHero({ analytics }) {
   const t = useTranslations("dashboard.producer.analytics");
+  const tWeek = useTranslations("dashboard.producer.week");
   const {
     profile_views,
     whatsapp_clicks,
@@ -964,6 +967,15 @@ function OverviewStatsHero({ analytics }) {
           - The "בעלת עסק השבוע" eligibility badge promised a feature that
             does not exist (no such pick anywhere in the code or docs), and its
             title ("צרו קשר") contradicted its tooltip ("יופיע כאן הודעה"). */}
+      {/* MEH-2882 (5): the week card leads to the full numbers. Copy approved
+          word for word by Sapir 10/11 («לכל הנתונים ←»). */}
+      <LocaleLink
+        href="/producer/dashboard/insights"
+        data-testid="week-all-insights"
+        className="inline-flex items-center min-h-touch text-sm font-medium text-primary hover:underline"
+      >
+        {tWeek("all_insights")}
+      </LocaleLink>
     </div>
   );
 }

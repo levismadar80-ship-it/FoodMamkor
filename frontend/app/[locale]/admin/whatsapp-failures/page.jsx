@@ -49,6 +49,14 @@ export default function AdminWhatsappFailuresPage() {
         <p className="text-muted text-sm mt-1">{t("whatsapp_failures.subtitle")}</p>
       </div>
 
+      {/* MEH-2122 Chunk E: a line above the table, only when stuck rows exist.
+          Copy approved word for word by Sapir 10/11. */}
+      {rows.some((r) => r.status === "accepted") && (
+        <p data-testid="whatsapp-stuck-hint" className="text-sm text-fg-muted">
+          {t("whatsapp_failures.stuck_hint")}
+        </p>
+      )}
+
       {rows.length === 0 ? (
         <div className="bg-surface border border-border rounded-md p-8 text-center text-fg-muted">
           {t("whatsapp_failures.empty")}
