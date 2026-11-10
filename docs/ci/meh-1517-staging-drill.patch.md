@@ -8,12 +8,15 @@
 > Sapir's conditions. The applied file adds three of them:
 > - `::add-mask::` for the derived URL parts;
 > - a fixed `$RUNNER_TEMP` dump path, deleted by an `if: always()` step;
-> - a stricter staging guard, added after the independent review of #4299. In a
->   `case` pattern, `*` also matches `@`, `?` and `,`. That review built two URLs that
->   passed the first guard while libpq connected elsewhere: a second `@`, and
->   `?host=`/`?user=` parameters. The guard now refuses a second `@`, any `,`, and any
->   query or fragment except `?sslmode=require`. It also pins the database to `railway`.
->   It was tested on 11 dummy URLs; both bypass URLs went from exit 0 to exit 1.
+> - a stricter staging guard, from two independent reviews of #4299. In a `case`
+>   pattern, `*` also matches `@`, `?`, `,` and `/`. The reviews built URLs that passed
+>   the first guard while libpq connected elsewhere: a second `@`, `?host=`/`?user=`
+>   parameters, and a `/` in the password (libpq then reads the user as the host).
+>   The guard now refuses all of those, a `,`, a newline, and any query or fragment
+>   except `?sslmode=require`. It also pins the database to `railway`. Each bypass was
+>   tested old vs new with `bash -e` on dummy URLs: exit 0 before, exit 1 after.
+> - a read-only check that also counts the public tables and sequences the role can
+>   write to. A refused `CREATE TABLE` alone proves no DDL, not SELECT-only.
 >
 > The diff below is regenerated from the applied file (staging → branch). It is
 > the record of what landed, not an earlier approval.
@@ -88,7 +91,7 @@ Re-run first. A missing table or a large difference is never this race.
  #
  # The logic lives in scripts/ci/backup-restore-verify.sh; this file only calls it. The
  # script's --self-test runs FIRST as a control: the drill must be seen going red on the
-@@ -108,3 +109,142 @@
+@@ -108,3 +109,152 @@
              --source "$SOURCE_URL" --target "$TARGET_URL" \
              --expect-table-count auto \
              --expect-nonempty producers,users,producer_reviews
@@ -147,19 +150,20 @@ Re-run first. A missing table or a large difference is never this race.
 +            exit 1
 +          fi
 +          # GitHub masks the whole secret; mask the parts a tool could print on
-+          # their own too (the password, and user@host:port/db). Masks apply to
++          # their own too (the password, and host:port/db). Masks apply to
 +          # every later step of this job.
 +          MASK_PW="${SOURCE_URL#*://*:}"; MASK_PW="${MASK_PW%%@*}"
 +          MASK_TAIL="${SOURCE_URL#*@}"
 +          echo "::add-mask::$MASK_PW"
 +          echo "::add-mask::$MASK_TAIL"
-+          # In a case pattern `*` also matches `@`, `?` and `,`, so the shape check
-+          # alone would pass a URL whose real host sits before a second `@`, or
-+          # whose ?host=/?user= parameters override it (review of #4299). Refuse
-+          # those first. The one suffix allowed is ?sslmode=require.
++          # In a case pattern `*` also matches `@`, `?`, `,` and `/`, so the shape
++          # check alone would pass a URL whose real host sits before a second `@`,
++          # whose ?host=/?user= parameters override it, or whose password holds a
++          # `/` (libpq then reads the user as the host). Refuse those first, and a
++          # newline. The one suffix allowed is ?sslmode=require (reviews of #4299).
 +          REFUSE="::error::The secret is not the ci_backup_ro role on the staging Postgres proxy. Refusing to run."
 +          case "$SOURCE_URL" in
-+            *@*@*|*,*) echo "$REFUSE"; exit 1 ;;
++            *@*@*|*,*|*://*/*@*|*$'\n'*) echo "$REFUSE"; exit 1 ;;
 +          esac
 +          BASE_URL="${SOURCE_URL%\?sslmode=require}"
 +          case "$BASE_URL" in
@@ -202,6 +206,15 @@ Re-run first. A missing table or a large difference is never this race.
 +            *"permission denied"*) echo "CREATE TABLE as ci_backup_ro: refused (permission denied). OK." ;;
 +            *) echo "::error::CREATE TABLE failed, but not with 'permission denied'. This proves nothing about read-only:"; echo "$OUT" | head -3; exit 1 ;;
 +          esac
++          # A refused CREATE TABLE proves no DDL, not SELECT-only: on PostgreSQL 15+
++          # a non-owner cannot create in `public` anyway. So also count the tables
++          # and sequences this role could write to. It must be zero.
++          WRITABLE=$(psql "$SOURCE_URL" -tAc "SELECT count(*) FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace WHERE n.nspname = 'public' AND ((c.relkind IN ('r','p') AND has_table_privilege(current_user, c.oid, 'INSERT, UPDATE, DELETE, TRUNCATE')) OR (c.relkind = 'S' AND has_sequence_privilege(current_user, c.oid, 'UPDATE')))")
++          echo "public tables and sequences ci_backup_ro can write to (expect 0): $WRITABLE"
++          if [ "$WRITABLE" != "0" ]; then
++            echo "::error::ci_backup_ro can write to $WRITABLE public tables or sequences, so it is NOT read-only. Revoke the grants (MEH-1517)."
++            exit 1
++          fi
 +
 +      - name: Create the EMPTY restore target
 +        env:
