@@ -2,7 +2,7 @@
 
 import { Link as LocaleLink } from "@/i18n/navigation";
 import { useEffect, useState } from "react";
-import { EnvelopeSimple, Eye, LockSimple, Sparkle, Warning, WhatsappLogo, X } from "@phosphor-icons/react";
+import { EnvelopeSimple, Eye, LockSimple, ShoppingBag, Sparkle, Warning, WhatsappLogo, X } from "@phosphor-icons/react";
 // MEH-956: locale-aware Link for the load-error CTA — preserves the active
 // locale on /contact (bare next/link drops it for `en` under as-needed).
 import { useTranslations } from "next-intl";
@@ -21,6 +21,8 @@ import { producerCompleteness } from "@/lib/producer-completeness";
 // MEH-1267: canonical public domain (MEH-1242 PR4) — mehamakor.online is the
 // staging alias, never public-facing. SITE_URL is the mehamakor.co.il origin.
 import { SITE_URL, env } from "@/lib/env";
+import { shareOrCopy } from "@/lib/share-link";
+import { rescueBagsEnabled } from "@/lib/rescue";
 import Button from "@/components/ui/Button";
 
 function VanityLinkCard({ slug }) {
@@ -40,20 +42,9 @@ function VanityLinkCard({ slug }) {
   // existing message rides as text, the link only as `url`. No sheet (most
   // desktops) → the same copy as the button beside it.
   const tShare = useTranslations("share");
-  const share = async () => {
-    if (typeof navigator !== "undefined" && navigator.share) {
-      try {
-        await navigator.share({ text: t("wa_text_template", { url: "" }).trim(), url });
-      } catch (err) {
-        // Cancelled is the owner's answer. Any other failure (a share target
-        // that refused, NotAllowedError) falls back to the copy, so the tap
-        // still does something (review of #4178).
-        if (err?.name !== "AbortError") copy();
-      }
-      return;
-    }
-    copy();
-  };
+  // MEH-2884: the same helper the insights followers card uses.
+  const share = () =>
+    shareOrCopy({ url, text: t("wa_text_template", { url: "" }).trim(), copy });
 
   return (
     <div className="bg-surface border border-border rounded-lg p-5 mb-6">
@@ -743,6 +734,27 @@ export default function ProducerDashboardPage() {
       </div>
       )}
 
+      {/* MEH-2884 (placement audit item 7): rescue bags are a DAILY job when
+          the pilot is on, so home gets a short entry right after the
+          availability switch. The tool itself stays in «כלים»; same strings
+          and flag as its tile there (tools/page.js). Approved business
+          only: it is a daily entry for a live business; a pending one still
+          finds the tile in «כלים», with its «locked until approved» line.
+          Never an organizer. */}
+      {rescueBagsEnabled() && isApproved && !isOrganizer && (
+        <LocaleLink
+          href="/producer/dashboard/rescue"
+          data-testid="home-rescue-card"
+          className="flex items-start gap-3 bg-surface border border-border rounded-lg p-5 mb-6 hover:border-primary transition"
+        >
+          <ShoppingBag size={22} className="text-primary shrink-0 mt-0.5" aria-hidden="true" />
+          <span>
+            <span className="block font-semibold text-text">{t("quick_links.rescue.title")}</span>
+            <span className="block text-sm text-fg-muted">{t("quick_links.rescue.sub")}</span>
+          </span>
+        </LocaleLink>
+      )}
+
       {/* MEH-2883 (placement audit 2026-11): «הלינק שלי» comes AFTER the
           availability switch — the switch is the daily action of a live
           business (MEH-1134's intent), sharing is now and then. */}
@@ -800,6 +812,10 @@ export default function ProducerDashboardPage() {
       ) : hasActivity ? (
         <OverviewStatsHero analytics={analytics} />
       ) : (
+        // MEH-2884 (placement audit item 5): ONE empty state for the numbers
+        // — the activity pulse's own empty card is gone — and it carries the
+        // action its copy asks for («שתפו את העמוד שלכם»): a «שתפו» button,
+        // only once there is a public page to share (approved + slug).
         // MEH-1345: this zero-state and ActivityPulse's rendered the SAME
         // title-less copy — two identical anonymous cards on a fresh
         // dashboard. Each now carries its own visible title + purpose-
@@ -813,13 +829,17 @@ export default function ProducerDashboardPage() {
             <Sparkle size={20} weight="fill" className="text-primary shrink-0" aria-hidden="true" />
             <p className="text-sm text-fg-muted">{t("states.zero_activity")}</p>
           </div>
+          {/* Same gate as «הלינק שלי» (slug + complete + approved): with the
+              profile incomplete that slot shows «share locked», and a «שתפו»
+              here would contradict it (MEH-2884 review). */}
+          {slug && isComplete && isApproved && !isOrganizer && <ZeroStateShareButton slug={slug} />}
         </div>
       )}
 
-      {/* MEH-964 1C: anonymous activity pulse (§5 final spec) — renders only
-          once analytics resolved (no separate loading line; the strip above
-          already narrates the in-flight state). */}
-      {analytics && <ActivityPulse analytics={analytics} />}
+      {/* MEH-2884 (audit item 5): the separate «פעילות אחרונה» card is gone —
+          it showed the same 7-day views/WhatsApp numbers as the strip above,
+          with its own empty state. Its one action (the WhatsApp nudge) now
+          lives inside the strip (OverviewStatsHero). */}
 
       {/* MEH-964 1A: quick-links grid relocated to the tools tab
           (dashboard/tools); the bio / custom-questions / contact-channels
@@ -846,94 +866,60 @@ export default function ProducerDashboardPage() {
 // here was removed in MEH-2430 (no such feature exists).
 // ============================================================
 
-// ============================================================
-// MEH-964 1C: anonymous activity pulse (§5 FINAL SPEC, design round-4).
-// Aggregate counts from /producers/me/analytics ONLY — no names, no message
-// text, no per-row city, no per-row CTA/handled state (the conversation lives
-// off-platform in WhatsApp; a named inbox has no data source).
-// Rulings (Sapir, 03/07):
-//   - Reviews row DROPPED — the payload has only lifetime total_reviews (no
-//     windowed count), so a "new review" row would be a false recency claim
-//     (§5 honesty clause) and a lifetime row duplicates the rating KPI
-//     (FLAG-1). Returns with MEH-966 (per-event feed).
-//   - Rows = 2 event types in fixed locked order (whatsapp -> view), each
-//     gated on its own last_7d > 0. NO per-row relative times (never
-//     rendered) — the payload has no per-event timestamps. Uniform 7-day frame.
-//   - Hero binds to whatsapp_clicks.last_7d, NOT .total — the "new" claim
-//     must be truthful. last_7d == 0 -> no hero; both metrics 0 -> zero-state.
-// Card sizes to rows.length (0/1/2 collapse — no fixed-count padding). ONE
-// section-level CTA -> wa.me (gated with the hero on whatsapp last_7d > 0:
-// a reply CTA with zero inquiries would be the same false claim).
-// ============================================================
-
-function ActivityPulse({ analytics }) {
-  const t = useTranslations("dashboard.producer.pulse");
-  const waCount = analytics.whatsapp_clicks?.last_7d ?? 0;
-  const viewCount = analytics.profile_views?.last_7d ?? 0;
-
-  // Fixed locked order: whatsapp -> view. Each row is an anonymous event-TYPE
-  // presence signal, not a count — counts live in the KPI strip (FLAG-1).
-  const rows = [
-    { key: "whatsapp", count: waCount, Icon: WhatsappLogo },
-    { key: "view", count: viewCount, Icon: Eye },
-  ].filter((row) => row.count > 0);
-
+// MEH-2884: the «שתפו» button of the numbers' empty state. Same share path as
+// «הלינק שלי» (lib/share-link.js): share sheet, else copy.
+function ZeroStateShareButton({ slug }) {
+  const tShare = useTranslations("share");
+  const tVanity = useTranslations("dashboard.producer.vanity_link");
+  const tFollowers = useTranslations("sweep_tail.followers");
+  const url = `${SITE_URL}/p/${slug}`;
+  // A failed copy says so (no clipboard API, or a rejected write) — the tap
+  // must never do nothing (MEH-2884 review).
+  const copy = () => {
+    if (!navigator.clipboard?.writeText) {
+      showToast.error(tFollowers("share_error"));
+      return;
+    }
+    navigator.clipboard
+      .writeText(url)
+      .then(() => showToast.success(tVanity("copied")))
+      .catch(() => showToast.error(tFollowers("share_error")));
+  };
   return (
-    <section
-      data-testid="activity-pulse"
-      aria-label={t("section_aria")}
-      className="bg-surface border border-border rounded-lg p-6"
+    <button
+      type="button"
+      data-testid="overview-zero-share"
+      onClick={() => shareOrCopy({ url, text: tVanity("wa_text_template", { url: "" }).trim(), copy })}
+      className="mt-4 text-sm rounded-sm px-4 py-1.5 bg-primary text-background hover:bg-primary-dark transition"
     >
-      {rows.length === 0 ? (
-        // MEH-1345: visible title so the empty pulse card is identifiable
-        // (was an anonymous line identical to the stats zero-state above).
-        <div data-testid="activity-pulse-empty">
-          <p className="font-semibold text-text mb-1">{t("title")}</p>
-          <p className="text-sm text-fg-muted">{t("zero_state")}</p>
-        </div>
-      ) : (
-        <div className="space-y-4">
-          {/* MEH-2429: the populated card had no heading — with views only it
-              was a lone "צפייה בפרופיל" row under the KPI strip that read as
-              an unfinished card (staging, 27/10). Same visible title the empty
-              state already carries (MEH-1345); the row rulings are unchanged. */}
-          <p data-testid="activity-pulse-title" className="font-semibold text-text">{t("title")}</p>
-          {waCount > 0 && (
-            <p
-              data-testid="activity-pulse-hero"
-              className="font-headline-md text-lg font-bold text-text"
-            >
-              {t("hero", { count: waCount })}
-            </p>
-          )}
-          <ul className="space-y-2">
-            {rows.map(({ key, Icon }) => (
-              <li
-                key={key}
-                data-testid={`activity-pulse-row-${key}`}
-                className="flex items-center gap-3 text-sm text-text"
-              >
-                <Icon size={18} className="text-primary shrink-0" aria-hidden="true" />
-                {t(`rows.${key}`)}
-              </li>
-            ))}
-          </ul>
-          <p className="text-xs text-fg-muted">{t("window_7d")}</p>
-          {waCount > 0 && (
-            <a
-              href="https://wa.me/"
-              target="_blank"
-              rel="noopener noreferrer"
-              data-testid="activity-pulse-cta"
-              className="btn-whatsapp inline-flex items-center justify-center gap-2 min-h-touch px-6 rounded-full text-sm font-medium"
-            >
-              <WhatsappLogo size={18} weight="fill" aria-hidden="true" />
-              {t("cta")}
-            </a>
-          )}
-        </div>
-      )}
-    </section>
+      {tShare("trigger")}
+    </button>
+  );
+}
+
+// MEH-964 1C → MEH-2884: the WhatsApp nudge that used to head the separate
+// activity-pulse card, folded into the strip. Rulings kept (Sapir, 03/07):
+// bound to whatsapp_clicks.last_7d (never .total — the "new" claim must be
+// truthful), and the wa.me CTA shows only with it. The pulse's presence rows
+// (a «צפייה בפרופיל» line, a «קליק על כפתור הוואטסאפ» line) are dropped:
+// the strip's numbers already say it (FLAG-1).
+function WeekWhatsappNudge({ count }) {
+  const t = useTranslations("dashboard.producer.pulse");
+  if (count <= 0) return null;
+  return (
+    <div data-testid="week-whatsapp-nudge" className="bg-surface border border-border rounded-lg p-4 space-y-3">
+      <p className="font-semibold text-text">{t("hero", { count })}</p>
+      <a
+        href="https://wa.me/"
+        target="_blank"
+        rel="noopener noreferrer"
+        data-testid="week-whatsapp-cta"
+        className="btn-whatsapp inline-flex items-center justify-center gap-2 min-h-touch px-6 rounded-full text-sm font-medium"
+      >
+        <WhatsappLogo size={18} weight="fill" aria-hidden="true" />
+        {t("cta")}
+      </a>
+    </div>
   );
 }
 
@@ -960,6 +946,7 @@ function OverviewStatsHero({ analytics }) {
     <div className="space-y-4 mb-10">
       {/* 2x2 KPI strip — identical mobile + desktop, uniform window label,
           no deltas/arrows (data reality; see header). */}
+      <WeekWhatsappNudge count={whatsapp_clicks?.last_7d ?? 0} />
       <div data-testid="overview-kpi-strip" className="grid grid-cols-2 gap-3">
         {kpis.map((kpi) => (
           <div key={kpi.key} className="bg-surface border border-border rounded-lg p-4 text-center">

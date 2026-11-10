@@ -95,7 +95,9 @@ def notify_kashrut_rejected(
         f'לא יכולנו לאשר את תעודת הכשרות שהועלתה עבור "{producer_name}".'
         f"{reason_line}\n"
         f"אפשר להעלות תעודה מעודכנת מלוח הבקרה: "
-        f"{_link('/producer/dashboard/edit')}\n\n"
+        # MEH-2884 (audit item 11): open the kashrut card itself — #kashrut
+        # resolves to the edit tab's "trust" group (lib/dashboard-edit-anchors.js).
+        f"{_link('/producer/dashboard/edit#kashrut')}\n\n"
         f"בברכה,\nצוות מהמקור"
     )
     send_email(to_email, subject, body)
