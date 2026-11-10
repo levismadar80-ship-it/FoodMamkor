@@ -31,6 +31,9 @@ def test_no_kicker_line_under_the_logo():
     html = _send()["html"]
     # The rendered paragraph, not the string anywhere: the subject keeps 🌿.
     assert not re.search(r"<p[^>]*>\s*מהמקור 🌿\s*</p>", html), "the «מהמקור 🌿» line is back"
+    # Fresh review: any element, not only <p>. The subject (which keeps 🌿) is
+    # not part of the HTML, so the string must not appear in it at all.
+    assert html.count("מהמקור 🌿") == 0, "«מהמקור 🌿» is back in the HTML body"
 
 
 def test_logo_then_heading_and_subject_unchanged():
