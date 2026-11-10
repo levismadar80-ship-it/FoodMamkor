@@ -60,6 +60,25 @@ GitHub keeps only **one pending** job per group. With 3+ PRs waiting, an older p
 4. Use `page.route(...)` to block external navigations (WhatsApp, OAuth, etc.)
 5. If the test needs a logged-in user, use Playwright `storageState` fixture (v2 path)
 
+### Golden path — the `golden` project (MEH-2897, anchor plan §C.2)
+
+`frontend/e2e/golden/` walks seven seeded personas on **staging**, one spec per persona, in order (`01-g1` … `07-a1`). The persona table is `frontend/e2e/golden/personas.ts`; the accounts are created by `seed_demo_business.py --golden` (see [DEPLOYMENT.md](./DEPLOYMENT.md), "Golden-path personas").
+
+- **Not in the default suite.** The project is defined only when the command line says `--project=golden` (`frontend/e2e/golden-selection.ts`), and every other project ignores `e2e/golden/`. A bare `npx playwright test` (what CI runs) lists the same tests as before. Guard: `frontend/__tests__/GoldenProjectSelection.test.js`.
+- **Logins are serial**, one worker, each through `withRateLimitRetry` (`e2e/login-retry.ts`, MEH-2895): `/auth/login` is 5/minute per IP. A golden-only run skips global-setup's demo-role logins. Never run it while an E2E job is running on staging.
+- **Read-mostly and self-cleaning.** What a spec creates (a product, an event, a group buy, a rescue bag and its reservation, a favourite, a review) it deletes or cancels in `finally`. Group buys and rescue bags have no delete route, so they end `cancelled`, under a golden business only.
+- **Rescue:** `04-g4-rescue` skips, and says why, when the pilot flag is off or `זכרון יעקב` is not in `RESCUE_BAGS_CITIES` on the target.
+- **API paths** go through a client named `api`, so `scripts/check_api_contract.py` checks them against the backend routes.
+
+Run (from `frontend/`, after Sapir has seeded staging):
+
+```bash
+TEST_URL=https://staging.mehamakor.online \
+DEMO_OWNER_PASSWORD=… DEMO_CONSUMER_PASSWORD=… DEMO_ADMIN_PASSWORD=… \
+VERCEL_AUTOMATION_BYPASS_SECRET=… \
+npx playwright test --project=golden
+```
+
 ### data-testid inventory (E2E-relevant)
 
 | testid | component | notes |
