@@ -352,18 +352,19 @@ const SHOTS = [
   {
     file: "group-buy.webp",
     route: "/group-buys",
-    // The DEMO business's card, named by its seeded title — not `.first()` of
-    // whatever group buy staging happens to list on top.
-    selector: '[data-testid="group-buy-card"]:has-text("כוסמין")',
+    // The DEMO business's card, named by its producer — not `.first()` of
+    // whatever group buy staging lists on top, and not the product word
+    // («כוסמין»), which another seeded bakery also uses (seed_data.py:133).
+    selector: '[data-testid="group-buy-card"]:has-text("מאפיית רוח השדה")',
     feature_ids: ["group_buys"],
     // Measured 10/11 on staging: the demo group buy is `funded` (the seed's
     // commits meet min_participants=2 on purpose, seed_demo_business.py:329),
-    // and `/group-buys` opens on the «פתוחות» tab, which lists status=open
+    // and `/group-buys` opens on the «פתוחות להצטרפות» tab, which lists status=open
     // only (group_buys.py:120). So the card is one chip away. Click
     // «הגיעו ליעד» (group_buys.list.status_funded) only when it is not on the
     // open tab, so a later re-seed that leaves it open still shoots it there.
     prepare: async (page) => {
-      const demo = page.locator('[data-testid="group-buy-card"]:has-text("כוסמין")');
+      const demo = page.locator('[data-testid="group-buy-card"]:has-text("מאפיית רוח השדה")');
       const onOpenTab = await demo
         .first()
         .waitFor({ state: "visible", timeout: 8_000 })
@@ -730,11 +731,22 @@ async function pinChromeForElementShot(el) {
       node.style.setProperty("position", "relative");
       relativised = true;
     }
+    // ITS OWN STRIP, NOT AN OVERLAY. Measured on the first run of this
+    // helper: absolutely placed over the subject, the tag covered «שתפו» on
+    // dash-followers, the registration pill on event, the QR modules on
+    // dash-qr, and on offer (a ~21px strip) the whole line. The subject grows
+    // by a strip at its bottom for the shot, and the tag sits in that strip.
+    const padBefore = [
+      node.style.getPropertyValue("padding-block-end"),
+      node.style.getPropertyPriority("padding-block-end"),
+    ];
+    const padNow = parseFloat(getComputedStyle(node).paddingBlockEnd) || 0;
+    node.style.setProperty("padding-block-end", `${padNow + 30}px`, "important");
     const tag = document.createElement("div");
     tag.textContent = label;
     tag.setAttribute(
       "style",
-      "position:absolute;inset-block-end:8px;inset-inline-start:8px;z-index:2147483647;" +
+      "position:absolute;inset-block-end:4px;inset-inline-start:8px;z-index:2147483647;" +
         "font:600 11px/1.4 system-ui,sans-serif;color:#1c1a17;background:rgba(255,255,255,.88);" +
         "padding:4px 8px;border-radius:6px;pointer-events:none;",
     );
@@ -747,10 +759,15 @@ async function pinChromeForElementShot(el) {
       off.remove();
       tag.remove();
       if (relativised) node.style.removeProperty("position");
+      if (padBefore[0]) node.style.setProperty("padding-block-end", padBefore[0], padBefore[1]);
+      else node.style.removeProperty("padding-block-end");
     };
   }, "עסק ונתונים לדוגמה");
+  // Restore through the PAGE: the closure lives on `window`, and re-resolving
+  // the locator would wait out its timeout if the subject re-rendered.
   return () =>
     el
+      .page()
       .evaluate(() => {
         window.__joinShotRestore?.();
         delete window.__joinShotRestore;
@@ -1238,10 +1255,15 @@ async function toMp4(webmPath, name, entry) {
 
 // ───────────────────────────── manifest + exit ─────────────────────────────
 
+// `-dirty` when the tree has uncommitted changes: a manifest that names the
+// commit BEFORE the script edit that produced its images is false provenance
+// (untracked files do not count: this run is writing its own into OUT)
+// (measured on the 10/11 run, which recorded the pre-change base).
 async function gitSha() {
   try {
     const { stdout } = await run("git", ["rev-parse", "HEAD"]);
-    return stdout.trim();
+    const { stdout: dirty } = await run("git", ["status", "--porcelain", "--untracked-files=no"]);
+    return stdout.trim() + (dirty.trim() ? "-dirty" : "");
   } catch {
     return null;
   }
@@ -1273,6 +1295,18 @@ async function main() {
     let clips = [];
     if (STILLS_ONLY) {
       console.log("\n[clips] skipped (--stills-only)");
+      // A stills-only run does not touch the clips, so it must not drop them
+      // from the manifest either: carry the previous run's clip entries
+      // (with their own captured_at) instead of silently shrinking `total`.
+      try {
+        const prev = JSON.parse(await readFile(path.join(OUT, "manifest.json"), "utf8"));
+        clips = (prev.entries ?? [])
+          .filter((e) => e.kind === "clip")
+          .map((e) => ({ ...e, carried_from: prev.captured_at ?? null }));
+        console.log(`  (${clips.length} clip entries carried from the previous manifest)`);
+      } catch {
+        console.log("  (no previous manifest — no clip entries to carry)");
+      }
     } else {
       console.log("\n[clips]");
       clips = await captureClips(browser);
