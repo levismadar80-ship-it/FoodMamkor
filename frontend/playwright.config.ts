@@ -95,10 +95,11 @@ export default defineConfig({
         ...(process.env.PW_WEBKIT === "1"
           ? []
           : [["github"] as ["github"]]),
-        // MEH-2895: עם PW_BLOB=1 (ה-shards של e2e.yml) כל shard כותב גם
-        // blob-report/, וה-job ‏e2e-report ממזג את שניהם לדוח אחד. בלי המשתנה
-        // הרשימה זהה לקודמת.
-        ...(process.env.PW_BLOB === "1"
+        // MEH-2895: ריצה עם `--shard` (ה-shards של e2e.yml) כותבת גם
+        // blob-report/, וה-job ‏e2e-report ממזג את שניהם לדוח אחד. המתג הוא
+        // הארגומנט עצמו ולא משתנה סביבה, כדי לא להוסיף משתנה חדש (כלל
+        // רגרסיה 8, Env drift). בלי `--shard` הרשימה זהה לקודמת.
+        ...(process.argv.some((a) => a === "--shard" || a.startsWith("--shard="))
           ? [["blob", { outputDir: "blob-report" }] as ["blob", { outputDir: string }]]
           : []),
       ]
