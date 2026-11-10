@@ -1,7 +1,7 @@
 {
   "generated_by": "frontend/e2e/marketing/join-screenshots.mjs (MEH-2794)",
-  "captured_at": "2026-11-10T14:15:49.852Z",
-  "git_sha": "0fdcb88ab0e4d101deea99344819f03ef39329a8",
+  "captured_at": "2026-11-10T14:28:15.005Z",
+  "git_sha": "8d879f13391e60210728f0c402ebfec0d6f05c38",
   "target": "https://staging.mehamakor.online",
   "demo_slug": "ruach-hasadeh",
   "viewport": {
@@ -9,9 +9,9 @@
     "height": 844,
     "deviceScaleFactor": 2
   },
-  "total": 18,
-  "ok": 16,
-  "missing": 2,
+  "total": 24,
+  "ok": 21,
+  "missing": 3,
   "entries": [
     {
       "file": "page-hero.webp",
@@ -65,7 +65,7 @@
     {
       "file": "group-buy.webp",
       "route": "/group-buys",
-      "selector": "[data-testid=\"group-buy-card\"]:has-text(\"כוסמין\")",
+      "selector": "[data-testid=\"group-buy-card\"]:has-text(\"מאפיית רוח השדה\")",
       "feature_ids": [
         "group_buys"
       ],
@@ -88,7 +88,8 @@
         "reviews_contacted",
         "review_request"
       ],
-      "status": "ok"
+      "status": "missing",
+      "error": "locator.waitFor: Timeout 20000ms exceeded."
     },
     {
       "file": "offer.webp",
@@ -199,6 +200,66 @@
         "email_alerts"
       ],
       "status": "ok"
+    },
+    {
+      "file": "clip-page.mp4",
+      "route": "/ruach-hasadeh",
+      "kind": "clip",
+      "duration_s": 6.2,
+      "size_kb": 374,
+      "poster": "clip-page-poster.webp",
+      "status": "ok",
+      "carried_from": "2026-11-08T16:31:20.250Z"
+    },
+    {
+      "file": "clip-found.mp4",
+      "route": "/map",
+      "kind": "clip",
+      "duration_s": 3.1,
+      "size_kb": 25,
+      "poster": "clip-found-poster.webp",
+      "status": "ok",
+      "carried_from": "2026-11-08T16:31:20.250Z"
+    },
+    {
+      "file": "clip-contact.mp4",
+      "route": "/ruach-hasadeh",
+      "kind": "clip",
+      "duration_s": 6,
+      "size_kb": 120,
+      "poster": "clip-contact-poster.webp",
+      "status": "ok",
+      "carried_from": "2026-11-08T16:31:20.250Z"
+    },
+    {
+      "file": "clip-return.mp4",
+      "route": "/group-buys",
+      "kind": "clip",
+      "duration_s": 8.1,
+      "size_kb": 168,
+      "poster": "clip-return-poster.webp",
+      "status": "ok",
+      "carried_from": "2026-11-08T16:31:20.250Z"
+    },
+    {
+      "file": "clip-trust.mp4",
+      "route": "/ruach-hasadeh",
+      "kind": "clip",
+      "duration_s": 4.4,
+      "size_kb": 73,
+      "poster": "clip-trust-poster.webp",
+      "status": "ok",
+      "carried_from": "2026-11-08T16:31:20.250Z"
+    },
+    {
+      "file": "clip-insights.mp4",
+      "route": "/producer/dashboard/insights",
+      "kind": "clip",
+      "duration_s": 9.4,
+      "size_kb": 133,
+      "poster": "clip-insights-poster.webp",
+      "status": "ok",
+      "carried_from": "2026-11-08T16:31:20.250Z"
     }
   ]
 }
