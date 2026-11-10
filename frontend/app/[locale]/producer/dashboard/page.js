@@ -812,7 +812,7 @@ export default function ProducerDashboardPage() {
           <p className="text-sm text-fg-muted mb-8">{t("loading_analytics")}</p>
         )
       ) : hasActivity ? (
-        <OverviewStatsHero analytics={analytics} />
+        <OverviewStatsHero analytics={analytics} isOrganizer={isOrganizer} />
       ) : (
         // MEH-2884 (placement audit item 5): ONE empty state for the numbers
         // — the activity pulse's own empty card is gone — and it carries the
@@ -925,7 +925,7 @@ function WeekWhatsappNudge({ count }) {
   );
 }
 
-function OverviewStatsHero({ analytics }) {
+function OverviewStatsHero({ analytics, isOrganizer = false }) {
   const t = useTranslations("dashboard.producer.analytics");
   const tWeek = useTranslations("dashboard.producer.week");
   const {
@@ -968,14 +968,17 @@ function OverviewStatsHero({ analytics }) {
             does not exist (no such pick anywhere in the code or docs), and its
             title ("צרו קשר") contradicted its tooltip ("יופיע כאן הודעה"). */}
       {/* MEH-2882 (5): the week card leads to the full numbers. Copy approved
-          word for word by Sapir 10/11 («לכל הנתונים ←»). */}
-      <LocaleLink
-        href="/producer/dashboard/insights"
-        data-testid="week-all-insights"
-        className="inline-flex items-center min-h-touch text-sm font-medium text-primary hover:underline"
-      >
-        {tWeek("all_insights")}
-      </LocaleLink>
+          word for word by Sapir 10/11 («לכל הנתונים ←»). Not for an organizer:
+          she has no insights tab (DashboardLayoutClient, ADR-036). */}
+      {!isOrganizer && (
+        <LocaleLink
+          href="/producer/dashboard/insights"
+          data-testid="week-all-insights"
+          className="inline-flex items-center min-h-touch text-sm font-medium text-primary hover:underline"
+        >
+          {tWeek("all_insights")}
+        </LocaleLink>
+      )}
     </div>
   );
 }

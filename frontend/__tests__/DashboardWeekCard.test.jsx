@@ -157,6 +157,14 @@ describe("the week card (MEH-2884 item 5)", () => {
     expect(all.parentElement, "the link sits in the week card").toBe(strip.parentElement);
   });
 
+  it("organizer with activity: the strip, but no link to an insights tab she does not have", async () => {
+    kindRef.current = "organizer";
+    analyticsRef.current = week(2, 5);
+    render(<ProducerDashboardPage />);
+    await screen.findByTestId("overview-kpi-strip");
+    expect(screen.queryByTestId("week-all-insights")).toBeNull();
+  });
+
   it("views only this week: the strip, no nudge (truthful-new ruling)", async () => {
     analyticsRef.current = week(0, 4);
     render(<ProducerDashboardPage />);
