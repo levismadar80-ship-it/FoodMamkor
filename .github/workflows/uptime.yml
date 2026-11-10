@@ -1,12 +1,12 @@
 name: Uptime probe
 
 # MEH-2202: external, Sentry-independent liveness + readiness probe. Runs on a
-# GitHub-hosted runner every 10 minutes and turns two consecutive failures into
+# GitHub-hosted runner every 30 minutes and turns two consecutive failures into
 # a GitHub issue (label `uptime`), closed again on recovery. No account, no
 # money, no repo secret. Manual dispatch kept for a smoke run after applying.
 on:
   schedule:
-    - cron: "*/10 * * * *"
+    - cron: "*/30 * * * *"
   workflow_dispatch:
 
 permissions:
