@@ -1,5 +1,6 @@
 import logging
 import os
+from collections.abc import Iterator
 
 import anyio
 import anyio.to_thread
@@ -7,7 +8,7 @@ import anyio.to_thread
 from fastapi import BackgroundTasks
 from sqlalchemy import create_engine
 from sqlalchemy.exc import TimeoutError as PoolTimeoutError
-from sqlalchemy.orm import DeclarativeBase, sessionmaker
+from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 from sqlalchemy.pool import QueuePool
 
 from app.config import settings
@@ -115,7 +116,7 @@ class Base(DeclarativeBase):
     pass
 
 
-async def _release_session(db) -> None:
+async def _release_session(db: Session) -> None:
     """MEH-2886: give the request's connection back to the pool.
 
     Queued by ``get_db`` as the request's FIRST background task.
@@ -138,7 +139,7 @@ async def _release_session(db) -> None:
         log.exception("db_release_before_tasks_failed")
 
 
-def get_db(background_tasks: BackgroundTasks):
+def get_db(background_tasks: BackgroundTasks) -> Iterator[Session]:
     """One session per request.
 
     MEH-2886: ``db.close()`` used to run only in ``finally`` — which, for a
