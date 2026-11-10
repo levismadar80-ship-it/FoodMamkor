@@ -1006,6 +1006,26 @@ panel) is QA'd automatically instead of manually. Three moving parts:
    `Synced QA users: demo-owner@example.com (password reset),
    demo-consumer@example.com (created), demo-admin@example.com (created). …`
 
+   **Golden-path personas (MEH-2897).** The Playwright `golden` project
+   (docs/TESTING.md) logs in as seven separate accounts, `golden-*@example.com`.
+   They use the **same three secrets** (no new one): businesses and the
+   organizer `DEMO_OWNER_PASSWORD`, the customer `DEMO_CONSUMER_PASSWORD`, the
+   admin `DEMO_ADMIN_PASSWORD`. Sapir seeds them on staging, by the same two
+   routes, with `--golden` instead of `--sync-users`:
+
+   ```bash
+   # A. Railway Console (staging backend service, cwd=/app)
+   python scripts/seed_demo_business.py --golden
+   # B. Local machine with the Railway CLI linked to staging, from the repo root
+   railway run python backend/scripts/seed_demo_business.py --golden
+   ```
+
+   It creates only what is missing and resets the seven passwords, so it is safe
+   to re-run. It does not touch the demo business, and the default seed run
+   (CI's) never creates the personas. Same `_assert_not_production()` guard;
+   aborts if any of the three secrets is unset. Expected output:
+   `Golden personas: created 7, re-dated 4 events/experiences, password reset on 0 existing (…)`. Every run also moves the golden markets, the G2 event and the experience back to today + their offset, so their dates never go stale.
+
 2. **globalSetup provisions storageState.** `frontend/e2e/global-setup.ts` logs
    each role in via `POST /api/auth/login` and writes
    `frontend/e2e/.auth/{producer,consumer,admin}.json` — **one file per role,
