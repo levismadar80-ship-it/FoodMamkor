@@ -137,7 +137,11 @@ describe("Tools tab — dashboard fetch failure (MEH-1777)", () => {
 
   it("retry re-fires the fetch and clears the error on success", async () => {
     let calls = 0;
-    api.get.mockImplementation(() => {
+    // MEH-2882 PR 1: the tools tab also loads GET /producers/me for its
+    // «שיתוף» section, so only the dashboard fetch — the one the error card
+    // is about — is counted.
+    api.get.mockImplementation((url) => {
+      if (url !== "/producers/me/dashboard") return Promise.resolve({ data: { id: "p1" } });
       calls += 1;
       return calls === 1
         ? Promise.reject(new Error("network"))
