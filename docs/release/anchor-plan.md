@@ -79,7 +79,7 @@ database only if data is actually wrong.
 | Layer | How | Who | Reversible? |
 |---|---|---|---|
 | **Frontend (Vercel)** | Promote the anchor's production deployment (Instant Rollback / Promote, by deployment id). No rebuild. | Sapir, dashboard; CC can prepare the exact id | yes |
-| **Backend (Railway)** | Redeploy the anchor's Railway deployment. If the schema is **newer** than the anchor, the old code must tolerate the new columns. Expand-only revisions (ADR-007) guarantee that, so **normally no downgrade is needed**. | Sapir | yes |
+| **Backend (Railway)** | Roll back to the anchor's Railway deployment. **Corrected 10/11 (reviewer of #4285):** if the release added a revision, the old image **cannot boot** on the newer schema — `Dockerfile:61` runs `alembic upgrade head`, which stops on a revision the old image has no file for, so the healthcheck fails and the current deployment stays live. Expand-only (ADR-007) makes the old *code* tolerate new columns, not the old *boot*. Such a release needs the schema downgraded first (ROLLBACK.md §2b). | Sapir | yes, if no revision was added; otherwise only together with the schema step |
 | **Schema (Alembic)** | `alembic downgrade <anchor head>`, only when a revision itself is the problem. | Sapir (CC is denied `alembic downgrade`) | **only if the downgrade is tested and the data it drops is expendable** |
 | **Data (Postgres)** | Restore the anchor backup into a **scratch** database first, compare, then decide. Never restore over production without that comparison. | Sapir | **no**: everything written after the backup is lost |
 
@@ -88,9 +88,15 @@ since the last release, `e4c9a2f71b58` (`favorite_alerts.notify_new_group_buy`,
 nullable, `server_default true`).
 - Its `downgrade()` is `drop_column`, so any alert preference set after the release
   is lost on downgrade.
-- It is expand-only, so the v1.4.0 backend runs fine **with** the column present.
-  Rolling back the backend therefore does **not** need the downgrade. This is the
-  normal path.
+- It is expand-only, so the v1.4.0 backend *code* runs fine with the column
+  present. **But the v1.4.0 image does not boot** while the database is at
+  `e4c9a2f71b58` (`Dockerfile:61`, `alembic upgrade head` → *Can't locate
+  revision*). So rolling v1.5.0 back **does** need the downgrade first, and it
+  loses the alert preferences set since the release. _Corrected 10/11; this line
+  said the opposite._ The lasting fix is Sapir's choice (Dockerfile, HIGH-RISK):
+  (א) keep the downgrade-first order, (ב) let boot skip `upgrade head` when the
+  database is ahead of the image, or (ג) roll back by deploying the old code with
+  the newer revision files. The drill (§A.4) must exercise exactly this case.
 - **It has never been executed**, which is why A.3 exists.
 
 ### A.3 · Downgrade test (new pytest, no schema change)
