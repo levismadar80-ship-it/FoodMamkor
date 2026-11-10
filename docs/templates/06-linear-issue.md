@@ -104,6 +104,18 @@
 
 ---
 
+## מיקום בלוח הבקרה (חובה כשה-PR נוגע ב-`/producer/dashboard`, MEH-2885)
+
+שורה לכל כלי שהכרטיס מוסיף, מזיז או משנה. הסוקר הטרי בודק את הטבלה מול מה שנבנה, ו-`DashboardPlacementGuard.test.js` אוכף את הדפים (מקום ב-registry, קישור נכנס, עד 2 לחיצות).
+
+| כלי | תדירות | מקום אחרי השינוי | כניסה (href) | לחיצות מהבית ב-390 | קישורים נכנסים | מצב ריק |
+| -- | -- | -- | -- | -- | -- | -- |
+| [שם הכלי] | יומי / שבועי / חד-פעמי | בית / טאב [שם] / «כלים» / «עריכה» | `/producer/dashboard/...` | 0 / 1 / 2 | [file:line] | [מה רואים כשאין נתונים] |
+
+כלל התדירות: יומי → בית, שבועי → טאב, חד-פעמי → «כלים» או «עריכה». דף חדש תחת `/producer/dashboard` מקבל `dashboard: { home, href }` ב-`frontend/lib/business-features.js` באותו PR.
+
+---
+
 ## Branch
 `feature/meh-XX-[short-description]` off staging
 - **עבודה ב-chunks (כלל 36 ב-workflow.md, MEH-2244):** כל chunk הוא sub-issue משלו, וענף ה-chunk נושא את מזהה ה-**sub-issue**, לא של ההורה — `feature/meh-<sub-issue>-[short-description]`. בכרטיס ההורה, סעיף Branch מפרט את ה-sub-issues במקום ענף; ה-PR של כל chunk סוגר (`Closes`) את ה-sub-issue שלו בלבד.

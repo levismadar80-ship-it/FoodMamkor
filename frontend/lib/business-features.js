@@ -83,7 +83,7 @@ export const BUSINESS_FEATURES = [
   { id: "share_cards", group: "found", status: "live", tile: { icon: "ShareNetwork" }, codeRef: ["frontend/components/StoryCardCanvas.jsx", "frontend/components/ReviewCardCanvas.jsx"] },
   // MEH-2791 said 'soon' "until MEH-2785 merges". It merged on 07/11 (PR
   // #4104), so this is live — see the PR body.
-  { id: "qr_code", group: "found", status: "live", tile: { icon: "QrCode" }, codeRef: ["frontend/components/producer/BusinessQrCard.jsx", "frontend/lib/qr.js"] },
+  { id: "qr_code", group: "found", status: "live", tile: { icon: "QrCode" }, codeRef: ["frontend/components/producer/BusinessQrCard.jsx", "frontend/lib/qr.js"], dashboard: { home: "tools", href: "/producer/dashboard/qr-card" } },
   { id: "structured_data", group: "found", status: "live", tip: true, codeRef: ["frontend/lib/seo.js"] },
 
   // ── contact ─────────────────────────────────────────────────────────────
@@ -99,12 +99,12 @@ export const BUSINESS_FEATURES = [
 
   // ── return ──────────────────────────────────────────────────────────────
   { id: "offer", group: "return", status: "live", tip: true, codeRef: ["frontend/components/OfferBadge.jsx", "frontend/app/[locale]/producer/dashboard/edit/cards.jsx"] },
-  { id: "group_buys", group: "return", status: "live", highlight: true, tip: true, tile: { icon: "UsersThree" }, codeRef: ["frontend/app/[locale]/group-buys/GroupBuysClient.jsx", "frontend/app/[locale]/producer/dashboard/group-buys"] },
-  { id: "events", group: "return", status: "live", highlight: true, tile: { icon: "CalendarBlank" }, codeRef: ["frontend/app/[locale]/events/EventsClient.jsx", "frontend/app/[locale]/producer/dashboard/events"] },
-  { id: "recipes", group: "return", status: "live", highlight: true, tile: { icon: "CookingPot" }, codeRef: ["frontend/app/[locale]/[slug]/recipes/[recipe_id]/page.jsx", "backend/app/routers/producer_recipes.py"] },
-  { id: "follower_updates", group: "return", status: "live", codeRef: ["frontend/app/[locale]/producer/dashboard/insights/page.js"] },
+  { id: "group_buys", group: "return", status: "live", highlight: true, tip: true, tile: { icon: "UsersThree" }, codeRef: ["frontend/app/[locale]/group-buys/GroupBuysClient.jsx", "frontend/app/[locale]/producer/dashboard/group-buys"], dashboard: { home: "tools", href: "/producer/dashboard/group-buys" } },
+  { id: "events", group: "return", status: "live", highlight: true, tile: { icon: "CalendarBlank" }, codeRef: ["frontend/app/[locale]/events/EventsClient.jsx", "frontend/app/[locale]/producer/dashboard/events"], dashboard: { home: "tools", href: "/producer/dashboard/events" } },
+  { id: "recipes", group: "return", status: "live", highlight: true, tile: { icon: "CookingPot" }, codeRef: ["frontend/app/[locale]/[slug]/recipes/[recipe_id]/page.jsx", "backend/app/routers/producer_recipes.py"], dashboard: { home: "tools", href: "/producer/dashboard/recipes" } },
+  { id: "follower_updates", group: "return", status: "live", codeRef: ["frontend/app/[locale]/producer/dashboard/insights/page.js"], dashboard: { home: "insights", href: "/producer/dashboard/insights" } },
   { id: "waitlist", group: "return", status: "live", codeRef: ["backend/app/services/delivery_waitlist.py", "frontend/components/DeliveryWaitlistForm.jsx"] },
-  { id: "rescue_bags", group: "return", status: "live", highlight: true, tip: true, flag: () => rescueBagsEnabled(), tile: { icon: "ShoppingBag" }, codeRef: ["frontend/components/rescue/RescueSection.jsx", "frontend/lib/rescue.js"] },
+  { id: "rescue_bags", group: "return", status: "live", highlight: true, tip: true, flag: () => rescueBagsEnabled(), tile: { icon: "ShoppingBag" }, codeRef: ["frontend/components/rescue/RescueSection.jsx", "frontend/lib/rescue.js"], dashboard: { home: "tools", href: "/producer/dashboard/rescue" } },
 
   // ── trust ───────────────────────────────────────────────────────────────
   { id: "verified_badge", group: "trust", status: "live", tile: { icon: "ShieldCheck" }, codeRef: ["frontend/lib/badges.js"] },
@@ -127,6 +127,48 @@ export const BUSINESS_FEATURES = [
 ];
 
 /** The four cards above the tabs. */
+/**
+ * MEH-2885 — WHERE each tool lives in the owner dashboard. A tool with a page
+ * under /producer/dashboard carries `dashboard: { home, href }` above: `home`
+ * is the tab it hangs off («home» | «edit» | «insights» | «tools»), `href` its
+ * landing page. __tests__/DashboardPlacementGuard.test.js checks, against the
+ * real files, that every dashboard page is accounted for here, that every
+ * entry's page has a link pointing at it, and that it is at most 2 taps from
+ * the dashboard home (tab = 1, a link inside a tab = 2).
+ *
+ * Pages that are not one tool's landing page are listed here, each with why.
+ */
+export const DASHBOARD_FRAME_PAGES = {
+  // The four tabs (DashboardLayoutClient.jsx TABS) — 1 tap, or 0 for home.
+  "/producer/dashboard": "tab: overview (home)",
+  "/producer/dashboard/edit": "tab: edit",
+  "/producer/dashboard/insights": "tab: insights",
+  "/producer/dashboard/tools": "tab: tools",
+  // MEH-2884: redirect stub to insights, kept for old links.
+  "/producer/dashboard/followers": "redirect → insights",
+};
+
+/** Forms and print views inside one tool — reached from the tool's own page. */
+export const DASHBOARD_SUBPAGES = {
+  "/producer/dashboard/events/new": "/producer/dashboard/events",
+  "/producer/dashboard/events/[id]/edit": "/producer/dashboard/events",
+  "/producer/dashboard/experiences/new": "/producer/dashboard/experiences",
+  "/producer/dashboard/experiences/[id]/edit": "/producer/dashboard/experiences",
+  "/producer/dashboard/recipes/[id]/edit": "/producer/dashboard/recipes",
+  "/producer/dashboard/rescue/counter-card": "/producer/dashboard/rescue",
+};
+
+/**
+ * A tool page with NO registry entry yet, and why. Same placement checks as
+ * an entry (linked, ≤ 2 taps) — only the registry entry is missing. Adding one
+ * is a launch-tier א׳ change: it needs approved he/en copy (workflow.md
+ * «Launch tier»), so it is not invented here.
+ */
+export const DASHBOARD_PAGES_WITHOUT_ENTRY = {
+  "/producer/dashboard/experiences":
+    "experiences (hosted visits) — not on /join yet; an entry needs Sapir-approved he/en copy (MEH-2885)",
+};
+
 export const HIGHLIGHT_FEATURE_IDS = BUSINESS_FEATURES.filter((f) => f.highlight).map(
   (f) => f.id,
 );
