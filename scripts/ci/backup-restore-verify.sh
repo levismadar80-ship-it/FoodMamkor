@@ -8,11 +8,14 @@
 #           the BACKUPS.md checks: table count == EXPECTED_TABLES from the CI
 #           gate workflow, and named tables are non-empty. Exit non-zero on any
 #           assertion failure; exit 0 only when the copy is provably whole.
-# Touches:  READS the source database (pg_dump only — it never writes there).
+# Touches:  READS the source database (pg_dump, plus one READ ONLY psql
+#           transaction that holds the snapshot and counts rows — it never
+#           writes there).
 #           WRITES only into the target database (pg_restore), which must be
 #           empty. --self-test additionally creates and drops throwaway
-#           databases whose names ALL begin with `meh1517_`, on the admin URL
-#           it is given (localhost only — it refuses any other host).
+#           databases — and one SELECT-only login role — whose names ALL
+#           begin with `meh1517_`, on the admin URL it is given (localhost
+#           only — it refuses any other host).
 # Does NOT: take backups of staging or production, talk to Railway, upload the
 #           dump anywhere, or decide the schedule. The workflow that wires
 #           this is .github/workflows/backup-restore-verify.yml (weekly cron
@@ -29,7 +32,9 @@
 #           `Table(` — the table list is DERIVED from here at run time, never
 #           typed; 38 → 40 → 42 in five weeks is why, MEH-1517 Phase 0 §2).
 # History:  MEH-1517 (creation — replaces the manual drill of MEH-1442 chunk 2
-#           that sat undone from 22/07).
+#           that sat undone from 22/07) · MEH-2912 (source row counts come from
+#           the snapshot pg_dump dumps, not a live read after the restore —
+#           see source_snapshot()).
 #
 # USAGE
 #   backup-restore-verify.sh --source URL --target URL [options]
@@ -196,6 +201,93 @@ row_count() { # $1=url $2=table → number, or the literal MISSING
   fi
 }
 
+# Every SOURCE-side number the drill compares, read from ONE snapshot — the
+# same snapshot pg_dump dumps (MEH-2912). Counting the source live after the
+# restore made any write that landed in between a false red: the first real
+# staging-drill run failed only on producer_page_views, 180347 → 180344, from
+# staging traffic during the run. No tolerance is the fix; the same snapshot is.
+#
+# One psql session on the source:
+#   BEGIN ISOLATION LEVEL REPEATABLE READ, READ ONLY
+#   pg_export_snapshot()                  → \gset → \setenv
+#   \! pg_dump --snapshot=<that id>       the transaction stays open throughout,
+#                                         so the snapshot stays importable
+#   COUNT(*) per model table + the public base-table count, same transaction
+#   COMMIT
+# Measured on psql 16 before relying on it: \! does NOT interpolate :vars (it
+# passes `:v` through literally) while \setenv does, so the id travels as an
+# environment variable; and a failed \! leaves psql's exit code 0, so pg_dump's
+# exit code is written to a file and checked here. The source URL reaches
+# pg_dump the same way, as an environment variable — never in the script text
+# and never printed. Needs nothing beyond what ci_backup_ro has: neither
+# pg_export_snapshot() nor SET TRANSACTION SNAPSHOT (pg_dump --snapshot)
+# requires a privilege (self-test case (k) runs it as a SELECT-only role).
+#
+# $1 = dump file to write, or "" (--compare-only: count only, no dump);
+# $2.. = the model tables. Fills the global SRC_COUNT[table] (a number or
+# MISSING) and SRC_COUNT[$SRC_BASE_KEY]. Any failure exits 2 — a source that
+# could not be read in one snapshot has not been compared.
+SRC_BASE_KEY="__base_tables__"   # cannot collide: derived names never start with "__"
+source_snapshot() {
+  local dump="$1"; shift
+  local t script out rc rcfile="" k v
+  declare -gA SRC_COUNT=()
+
+  script="BEGIN ISOLATION LEVEL REPEATABLE READ, READ ONLY;"$'\n'
+  # The session sits idle in its transaction while pg_dump runs; a server-side
+  # idle / transaction timeout would kill it mid-drill. Both are user-settable;
+  # transaction_timeout exists from PG 17, so it is set only where it exists
+  # (\g /dev/null: its one-or-zero-row result must not reach the parsed output).
+  script+="SET LOCAL idle_in_transaction_session_timeout = 0;"$'\n'
+  script+="SELECT set_config('transaction_timeout', '0', true) WHERE current_setting('server_version_num')::int >= 170000 \\g /dev/null"$'\n'
+  if [ -n "$dump" ]; then
+    rcfile="$(mktemp -t meh2912-dumprc.XXXXXX)"
+    script+="SELECT pg_export_snapshot() AS meh2912_snapshot \\gset"$'\n'
+    script+="\\setenv MEH2912_SNAPSHOT :meh2912_snapshot"$'\n'
+    # shellcheck disable=SC2016  # expanded by the shell psql's \! starts, not here
+    script+='\! pg_dump "$MEH2912_SOURCE_URL" -Fc -f "$MEH2912_DUMP_FILE" --snapshot="$MEH2912_SNAPSHOT" </dev/null; echo "$?" > "$MEH2912_DUMP_RC"'$'\n'
+  fi
+  for t in "$@"; do
+    _ident "$t" || die "refusing to count a non-identifier table name: '$t'"
+    script+="SELECT COUNT(*) AS meh2912_exists FROM information_schema.tables WHERE table_schema='public' AND table_type='BASE TABLE' AND table_name='$t' \\gset"$'\n'
+    script+="\\if :meh2912_exists"$'\n'
+    script+="SELECT '$t|' || COUNT(*) FROM \"$t\";"$'\n'
+    script+="\\else"$'\n'
+    script+="SELECT '$t|MISSING';"$'\n'
+    script+="\\endif"$'\n'
+  done
+  script+="SELECT '$SRC_BASE_KEY|' || COUNT(*) FROM information_schema.tables WHERE table_schema='public' AND table_type='BASE TABLE' AND table_name <> 'alembic_version';"$'\n'
+  script+="COMMIT;"$'\n'
+
+  set +e
+  out="$(printf '%s' "$script" \
+         | MEH2912_SOURCE_URL="$SOURCE_URL" MEH2912_DUMP_FILE="$dump" MEH2912_DUMP_RC="$rcfile" \
+           psql "$SOURCE_URL" -X -q -tA -v ON_ERROR_STOP=1 -f -)"; rc=$?
+  set -e
+  local dump_rc=""
+  if [ -n "$dump" ]; then
+    dump_rc="$(cat "$rcfile" 2>/dev/null || true)"; rm -f "$rcfile"
+    if [ -n "$dump_rc" ] && [ "$dump_rc" != "0" ]; then
+      die "pg_dump --snapshot failed (exit $dump_rc) — nothing was dumped from the snapshot"
+    fi
+  fi
+  [ "$rc" -eq 0 ] || die "reading the source in one snapshot failed (psql exit $rc)"
+  if [ -n "$dump" ] && [ "$dump_rc" != "0" ]; then
+    die "pg_dump never ran inside the snapshot session — nothing was dumped"
+  fi
+
+  while IFS='|' read -r k v; do
+    [ -z "$k" ] || SRC_COUNT["$k"]="$v"
+  done <<< "$out"
+  for k in "$@" "$SRC_BASE_KEY"; do
+    v="${SRC_COUNT[$k]:-}"
+    case "$v" in
+      MISSING) [ "$k" != "$SRC_BASE_KEY" ] || die "source snapshot returned no base-table count" ;;
+      ''|*[!0-9]*) die "source snapshot returned no row count for '$k'" ;;
+    esac
+  done
+}
+
 # ── the drill ────────────────────────────────────────────────────────────────
 run_drill() {
   need_tools
@@ -241,9 +333,11 @@ run_drill() {
       trap "rm -f '$DUMP_FILE'" EXIT
     fi
 
-    # docs/BACKUPS.md:48 — custom format, exactly as the manual dump.
-    note "dump:    pg_dump -Fc (source is only ever READ)"
-    pg_dump "$SOURCE_URL" -Fc -f "$DUMP_FILE"
+    # docs/BACKUPS.md:48 — custom format, exactly as the manual dump, taken
+    # from the snapshot the source rows are counted in (MEH-2912).
+    note "dump:    pg_dump -Fc --snapshot (source is only ever READ)"
+    note "source:  rows counted in the SAME snapshot pg_dump dumped"
+    source_snapshot "$DUMP_FILE" "${tables[@]}"
     [ -s "$DUMP_FILE" ] || die "dump file is empty: $DUMP_FILE"
 
     # docs/BACKUPS.md:74 — the manual restore, verbatim flags.
@@ -251,13 +345,15 @@ run_drill() {
     pg_restore --no-owner --no-acl -d "$TARGET_URL" "$DUMP_FILE"
   else
     note "mode:    --compare-only (no dump, no restore)"
+    note "source:  rows counted in one REPEATABLE READ snapshot"
+    source_snapshot "" "${tables[@]}"
   fi
 
   # ── assertion 1: every model table exists in the copy, with the same rows ──
   echo
   echo "Per-table row counts (source → restored copy):"
   for t in "${tables[@]}"; do
-    src="$(row_count "$SOURCE_URL" "$t")"
+    src="${SRC_COUNT[$t]}"                 # from the dump's snapshot, never re-read live
     tgt="$(row_count "$TARGET_URL" "$t")"
     if [ "$tgt" = "MISSING" ]; then
       printf '  FAIL  %-36s %8s → %s\n' "$t" "$src" "MISSING in restored copy"
@@ -272,7 +368,7 @@ run_drill() {
 
   # ── assertion 2: the copy has the same number of base tables as the source ─
   local src_n tgt_n
-  src_n="$(base_table_count "$SOURCE_URL")"
+  src_n="${SRC_COUNT[$SRC_BASE_KEY]}"     # same snapshot as the row counts
   tgt_n="$(base_table_count "$TARGET_URL")"
   echo
   if [ "$src_n" != "$tgt_n" ]; then

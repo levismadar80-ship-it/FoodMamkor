@@ -115,7 +115,8 @@ unset DRILL_URL
 קורא את `EXPECTED_TABLES` מ-`pr-checks.yml` בזמן ריצה) ואימות ב'
 (`--expect-nonempty producers,users,producer_reviews`) — ומוסיף השוואת ספירת שורות
 לכל טבלה שה-models מגדירים (נגזר מ-`models.py`, לא מוקלד). `--self-test` מוכיח
-שהוא מאדים על טבלה שנמחקה מהעותק ועל שורות שאבדו, וירוק על עותק נאמן.
+שהוא מאדים על טבלה שנמחקה מהעותק ועל שורות שאבדו, וירוק על עותק נאמן — גם כשכותבים
+למקור באמצע הריצה (ספירת המקור נלקחת מה-snapshot של ה-dump, MEH-2912).
 
 ```bash
 bash scripts/ci/backup-restore-verify.sh --source "$DATABASE_URL" --target "$DRILL_URL" \
@@ -139,9 +140,10 @@ bash scripts/ci/backup-restore-verify.sh --source "$DATABASE_URL" --target "$DRI
   2. שחזור ל-PostgreSQL 18 ריק. ‏staging רץ על 18, ו-`pg_dump` לא יכול להיות ישן ממנו.
   3. אותו סקריפט ואותם אימותים כמו ב-`mechanics`.
 - **ה-dump** מכיל נתונים אמיתיים, ולכן הוא לא עולה כ-artifact.
-- **מרוץ ידוע:** ספירת השורות במקור נלקחת **אחרי** השחזור. כתיבה ל-staging באמצע (למשל ריצת E2E) תיראה כ«row count differs» על טבלה עמוסה אחת.
-  - מריצים שוב לפני שמסיקים שהגיבוי פגום.
-  - טבלה חסרה או הפרש גדול הם אף פעם לא המרוץ הזה.
+- **ספירת המקור באה מאותו snapshot של ה-dump (MEH-2912):**
+  - session אחד על המקור: `BEGIN ISOLATION LEVEL REPEATABLE READ, READ ONLY` → `pg_export_snapshot()` → `pg_dump --snapshot=<id>` → `COUNT(*)` לכל טבלה → `COMMIT`. אין צורך בהרשאה מעבר ל-SELECT; ה-self-test מריץ את זה כ-role שהוא SELECT בלבד.
+  - כתיבה ל-staging באמצע הריצה (למשל ריצת E2E) לא נכנסת לא ל-dump ולא לספירה. לכן «row count differs» הוא תמיד אובדן אמיתי. אין סף «הפרש קטן מותר», ואין «מריצים שוב».
+  - עד MEH-2912 הספירה נלקחה חיה **אחרי** השחזור. הריצה האמיתית הראשונה נכשלה כך על `producer_page_views` (‏180347 במקור, 180344 בעותק).
 
 ---
 
