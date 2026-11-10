@@ -6,7 +6,8 @@
  *      lib/business-features.js (a `dashboard.href`, or one of the explicit
  *      DASHBOARD_FRAME_PAGES / DASHBOARD_SUBPAGES / DASHBOARD_PAGES_WITHOUT_ENTRY);
  *   2. a tool's dashboard page has no link pointing at it in the code;
- *   3. a tool's dashboard page is more than 2 taps from the dashboard home.
+ *   3. a tool's dashboard page is more than 2 taps from the dashboard home;
+ *   4. a tool's `dashboard.home` page does not itself link to it.
  *
  * Taps come from a STATIC link graph: the dashboard home is 0, each tab in
  * DashboardLayoutClient.jsx TABS is 1, and a page linked from a file rendered
@@ -43,9 +44,16 @@ export function routeOf(relPageFile) {
   return dir.slice(at);
 }
 
+/** Source with comments removed — a path in a comment is not a link. */
+export function stripComments(source) {
+  return source
+    .replace(/\/\*[\s\S]*?\*\//g, "") // block + JSX {/* */} comments
+    .replace(/(^|[^:"'`\\])\/\/.*$/gm, "$1"); // line comments, not "https://"
+}
+
 /** Literal dashboard hrefs in a source text (no trailing slash, no hash/query). */
 export function linksIn(source) {
-  return [...source.matchAll(LINK_RE)].map((m) => m[1]);
+  return [...stripComments(source).matchAll(LINK_RE)].map((m) => m[1]);
 }
 
 /** Every page that is a tool's landing page, from the registry entries. */
@@ -101,6 +109,29 @@ export function tapDepths(tabs, renderedOn) {
   return depth;
 }
 
+/**
+ * Check 4: the entry's `home` really is where its entry lives — the link to
+ * the tool is rendered on that page (page file or a direct import). This also
+ * pins the tap count to an unconditional path: a link that only shows in a
+ * rare state elsewhere (a draft organizer's banner) cannot stand in for it.
+ */
+export const HOME_ROUTES = {
+  home: HOME,
+  edit: "/producer/dashboard/edit",
+  insights: "/producer/dashboard/insights",
+  tools: "/producer/dashboard/tools",
+};
+export function notOnHomePage(features, renderedOn) {
+  return features
+    .filter((f) => f.dashboard)
+    .filter(({ dashboard: { home, href } }) => {
+      const homeRoute = HOME_ROUTES[home];
+      if (href === homeRoute) return false; // the tool IS the tab
+      return !(renderedOn[homeRoute] || []).some((src) => linksIn(src).includes(href));
+    })
+    .map((f) => `${f.id} (home: ${f.dashboard.home}, href: ${f.dashboard.href})`);
+}
+
 /** Check 3: tool pages deeper than MAX_TAPS (or unreachable). */
 export function tooDeep(targets, depth) {
   return targets.filter((t) => !(depth[t] <= MAX_TAPS)).map((t) => `${t} (${depth[t] ?? "unreachable"})`);
@@ -142,7 +173,11 @@ function realModel() {
   // The tools tab's `also: [...]` list only keeps the tab lit on those pages —
   // it is not a link, so it must not count as one.
   const layoutFile = path.join(DASH_DIR, "DashboardLayoutClient.jsx");
-  filesByPath[layoutFile] = filesByPath[layoutFile].replace(/also:\s*\[[^\]]*\]/g, "also: []");
+  // ORGANIZER_TABS is the organizer's own nav: a business never sees it, so
+  // it does not make a business tool reachable (MEH-2885 review).
+  filesByPath[layoutFile] = filesByPath[layoutFile]
+    .replace(/also:\s*\[[^\]]*\]/g, "also: []")
+    .replace(/const ORGANIZER_TABS = \[[\s\S]*?\n\];/, "const ORGANIZER_TABS = [];");
   const renderedOn = {};
   for (const [route, file] of Object.entries(routeToFile)) {
     const src = filesByPath[file] ?? fs.readFileSync(file, "utf8");
@@ -196,6 +231,19 @@ describe("placement checks can fail (synthetic models)", () => {
     expect(tooDeep(["/producer/dashboard/mid"], d)).toEqual([]);
   });
 
+  it("a path inside a comment is not a link; a URL with // still is", () => {
+    expect(linksIn('// moved from "/producer/dashboard/recipes"\n{/* "/producer/dashboard/a" */}')).toEqual([]);
+    expect(linksIn('const u = "https://x.co"; href="/producer/dashboard/a"')).toEqual(["/producer/dashboard/a"]);
+  });
+
+  it("4 — an entry whose `home` page does not link to it is reported", () => {
+    const feats = [{ id: "a", dashboard: { home: "tools", href: "/producer/dashboard/a" } }];
+    expect(notOnHomePage(feats, { "/producer/dashboard/tools": ["nothing"] })).toEqual([
+      "a (home: tools, href: /producer/dashboard/a)",
+    ]);
+    expect(notOnHomePage(feats, { "/producer/dashboard/tools": ['href="/producer/dashboard/a"'] })).toEqual([]);
+  });
+
   it("link extraction: hash / query / quotes, no partial-prefix matches", () => {
     expect(linksIn('a="/producer/dashboard/tools#share" b=`/producer/dashboard/qr-card?x=1` c="/producer/dashboard/rescue/counter-card"')).toEqual([
       "/producer/dashboard/tools",
@@ -240,7 +288,10 @@ describe("owner dashboard placement (MEH-2885)", () => {
   });
 
   it("every entry's `home` names a real tab", () => {
-    const homes = new Set(["home", "edit", "insights", "tools"]);
-    expect(BUSINESS_FEATURES.filter((f) => f.dashboard && !homes.has(f.dashboard.home)).map((f) => f.id)).toEqual([]);
+    expect(BUSINESS_FEATURES.filter((f) => f.dashboard && !HOME_ROUTES[f.dashboard.home]).map((f) => f.id)).toEqual([]);
+  });
+
+  it("every entry is linked from the page its `home` names", () => {
+    expect(notOnHomePage(BUSINESS_FEATURES, model.renderedOn)).toEqual([]);
   });
 });

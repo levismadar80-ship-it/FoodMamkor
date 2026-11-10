@@ -126,7 +126,6 @@ export const BUSINESS_FEATURES = [
   { id: "completeness", group: "insights", status: "live", codeRef: ["frontend/lib/producer-completeness.js", "frontend/components/ProfileCompletenessCard.jsx"] },
 ];
 
-/** The four cards above the tabs. */
 /**
  * MEH-2885 — WHERE each tool lives in the owner dashboard. A tool with a page
  * under /producer/dashboard carries `dashboard: { home, href }` above: `home`
@@ -169,6 +168,7 @@ export const DASHBOARD_PAGES_WITHOUT_ENTRY = {
     "experiences (hosted visits) — not on /join yet; an entry needs Sapir-approved he/en copy (MEH-2885)",
 };
 
+/** The four cards above the tabs. */
 export const HIGHLIGHT_FEATURE_IDS = BUSINESS_FEATURES.filter((f) => f.highlight).map(
   (f) => f.id,
 );
