@@ -46,13 +46,15 @@ def wire(monkeypatch):
     monkeypatch.setattr(resend, "default_http_client", resend.RequestsClient())
     monkeypatch.setattr(settings, "resend_api_key", "re_test_key")
     monkeypatch.setattr(newsletter_sync, "_segment_id", None)
+    # configure_resend writes the module-level key; restore it afterwards.
+    monkeypatch.setattr(resend, "api_key", getattr(resend, "api_key", None))
     return calls
 
 
-def test_control_stock_sdk_client_waits_30_seconds(wire):
+def test_control_stock_sdk_client_waits_30_seconds(wire, monkeypatch):
     """Control: the recorder sees the SDK default when nothing configures it,
     so the 10 s readings below are this change and not the instrument."""
-    resend.api_key = "re_test_key"
+    monkeypatch.setattr(resend, "api_key", "re_test_key")
     resend.Emails.send({"from": "a@b.co", "to": "c@d.co", "subject": "s", "text": "t"})
     assert [c["timeout"] for c in wire] == [30]
 
@@ -67,3 +69,22 @@ def test_newsletter_sync_uses_ten_second_timeout(wire):
     newsletter_sync.sync_subscribe("someone@mehamakor-test.co.il")
     assert len(wire) >= 1, "sync_subscribe made no Resend call — nothing measured"
     assert {c["timeout"] for c in wire} == {RESEND_TIMEOUT_SECONDS}
+
+
+def test_stub_resend_module_without_client_names_still_sends(monkeypatch):
+    """Tests (and possibly a future SDK) provide a `resend` module without
+    `RequestsClient` / `default_http_client`. configure_resend must still set
+    the key and let the send happen — not raise into the callers' fail-open."""
+    import sys
+    import types
+
+    sent = []
+    stub = types.ModuleType("resend")
+    stub.Emails = types.SimpleNamespace(send=lambda params: sent.append(params))
+    monkeypatch.setitem(sys.modules, "resend", stub)
+    monkeypatch.setattr(settings, "resend_api_key", "re_test_key")
+
+    send_email("someone@mehamakor-test.co.il", "subject", "body")
+
+    assert len(sent) == 1, "the stub's send was never called"
+    assert stub.api_key == "re_test_key"

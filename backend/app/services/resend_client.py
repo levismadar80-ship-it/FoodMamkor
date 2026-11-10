@@ -1,7 +1,10 @@
 """
 Module:   resend_client
 Purpose:  One place that configures the Resend SDK: the API key, and a 10 s
-          HTTP timeout instead of the SDK's 30 s default.
+          HTTP timeout instead of the SDK's 30 s default. `requests` applies
+          it twice — 10 s to connect, then 10 s of read INACTIVITY — so a
+          stalled call is bounded at ~20 s, not 10 (no wall-clock cap; DNS is
+          unbounded). Still well under the 30 + 30 it was.
 Touches:  Resend (module-level `resend.api_key` and `resend.default_http_client`).
 Does NOT: send anything — services/email.py sends mail and
           services/newsletter_sync.py manages contacts; both call this first.
@@ -29,14 +32,19 @@ def configure_resend(api_key: str):
     import resend  # lazy import — only needed when a key is configured
 
     resend.api_key = api_key
-    client = resend.default_http_client
-    # DO NOT drop the isinstance check — a test (or a future caller) may have
-    # installed its own client; only the SDK's stock client is replaced.
+    # getattr, not attribute access: several tests install a stub `resend`
+    # module without these names, and a raise here would be swallowed by the
+    # callers' fail-open and silently send nothing (MEH-2886 review). The same
+    # guard keeps real mail flowing if a future SDK renames them — the stock
+    # 30 s client is then simply left in place.
+    stock_client_type = getattr(resend, "RequestsClient", None)
+    client = getattr(resend, "default_http_client", None)
+    # DO NOT widen to isinstance — only the SDK's own stock client is replaced;
+    # a client someone else installed (or a subclass) is left alone.
     if (
-        isinstance(client, resend.RequestsClient)
+        stock_client_type is not None
+        and type(client) is stock_client_type
         and getattr(client, "_timeout", None) != RESEND_TIMEOUT_SECONDS
     ):
-        resend.default_http_client = resend.RequestsClient(
-            timeout=RESEND_TIMEOUT_SECONDS
-        )
+        resend.default_http_client = stock_client_type(timeout=RESEND_TIMEOUT_SECONDS)
     return resend
