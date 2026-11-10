@@ -1,10 +1,12 @@
 """MEH-2893 (anchor releases, MEH-2892 §A.3) — every revision since the previous
 release can be undone and redone.
 
-Rollback normally does NOT need a schema downgrade: revisions are expand-only
-(ADR-007), so the previous backend runs on the newer schema. A downgrade is the
-emergency path, used only when a revision itself is the problem — and until
-now no test anywhere ran one (`git grep "alembic downgrade"` over tests/,
+Revisions are expand-only (ADR-007), so the previous backend's CODE would run on
+the newer schema — but its IMAGE would not boot: the Dockerfile CMD runs
+`alembic upgrade head` first, and the older image has no file for the newer
+revision ("Can't locate revision"). So rolling back a release that added a
+revision means downgrading the schema first (docs/release/ROLLBACK.md §2).
+Until now no test anywhere ran a downgrade (`git grep "alembic downgrade"` over tests/,
 .github/workflows/ and scripts/ found only `upgrade head`). An untested
 emergency path is not a path.
 
@@ -15,9 +17,16 @@ On a scratch database, with the real alembic CLI (the same `env.py`):
     downgrade PREVIOUS_RELEASE_HEAD → must equal A   (the downgrade undoes it)
     upgrade head                    → must equal H   (and it can be redone)
 
-A snapshot is the public schema as Postgres reports it: every column (type,
-nullability, default), every index, every constraint. A revision with no
+A snapshot is the public schema as Postgres reports it: every column (type with
+length / precision / scale / udt, nullability, default), every index, every
+constraint, every enum type and label, every sequence / view / materialized
+view, every non-internal trigger and every function. A revision with no
 downgrade() or with a downgrade that leaves something behind turns this red.
+
+What it does NOT prove: that the downgrade succeeds on production DATA (the
+scratch db is empty — a re-added NOT NULL / UNIQUE / CHECK can still fail on
+rows written since the release), or that a data-only revision restores the data
+it changed. ROLLBACK.md §2 requires a dry run against a restored dump for that.
 
 PREVIOUS_RELEASE_HEAD is the alembic head of the release currently on
 production — read from /api/health on 10/11/2026 (`version.alembic_head`,
@@ -42,6 +51,9 @@ PREVIOUS_RELEASE_HEAD = "f2b8d4c61a07"  # v1.4.0, production (/api/health, 10/11
 
 BACKEND = Path(__file__).resolve().parents[1] / "backend"
 
+# `serial` here is not about wall-clock timing (the marker's registered reason):
+# it creates and drops a whole database and runs alembic in a subprocess, which
+# must not race the xdist workers' own per-worker databases on the same server.
 pytestmark = pytest.mark.serial
 
 
@@ -77,8 +89,11 @@ def _snapshot(url: str) -> dict[str, list[tuple]]:
             columns = conn.execute(
                 text(
                     """
-                    SELECT table_name, column_name, data_type, is_nullable,
-                           coalesce(column_default, '')
+                    SELECT table_name, column_name, data_type, udt_name,
+                           coalesce(character_maximum_length, -1),
+                           coalesce(numeric_precision, -1),
+                           coalesce(numeric_scale, -1),
+                           is_nullable, coalesce(column_default, '')
                     FROM information_schema.columns
                     WHERE table_schema = 'public' AND table_name <> 'alembic_version'
                     ORDER BY table_name, column_name
@@ -107,6 +122,53 @@ def _snapshot(url: str) -> dict[str, list[tuple]]:
                     """
                 )
             ).all()
+            enums = conn.execute(
+                text(
+                    """
+                    SELECT t.typname, e.enumlabel, e.enumsortorder
+                    FROM pg_type t
+                    JOIN pg_enum e ON e.enumtypid = t.oid
+                    JOIN pg_namespace n ON n.oid = t.typnamespace
+                    WHERE n.nspname = 'public'
+                    ORDER BY t.typname, e.enumsortorder
+                    """
+                )
+            ).all()
+            # S = sequence, v = view, m = materialized view.
+            relations = conn.execute(
+                text(
+                    """
+                    SELECT c.relkind::text, c.relname
+                    FROM pg_class c
+                    JOIN pg_namespace n ON n.oid = c.relnamespace
+                    WHERE n.nspname = 'public' AND c.relkind IN ('S', 'v', 'm')
+                    ORDER BY c.relkind, c.relname
+                    """
+                )
+            ).all()
+            triggers = conn.execute(
+                text(
+                    """
+                    SELECT rel.relname, tg.tgname, pg_get_triggerdef(tg.oid)
+                    FROM pg_trigger tg
+                    JOIN pg_class rel ON rel.oid = tg.tgrelid
+                    JOIN pg_namespace n ON n.oid = rel.relnamespace
+                    WHERE n.nspname = 'public' AND NOT tg.tgisinternal
+                    ORDER BY rel.relname, tg.tgname
+                    """
+                )
+            ).all()
+            functions = conn.execute(
+                text(
+                    """
+                    SELECT p.proname, pg_get_function_identity_arguments(p.oid)
+                    FROM pg_proc p
+                    JOIN pg_namespace n ON n.oid = p.pronamespace
+                    WHERE n.nspname = 'public'
+                    ORDER BY p.proname, 2
+                    """
+                )
+            ).all()
             version = conn.execute(
                 text("SELECT version_num FROM alembic_version")
             ).scalar()
@@ -116,6 +178,10 @@ def _snapshot(url: str) -> dict[str, list[tuple]]:
         "columns": [tuple(r) for r in columns],
         "indexes": [tuple(r) for r in indexes],
         "constraints": [tuple(r) for r in constraints],
+        "enums": [tuple(r) for r in enums],
+        "relations": [tuple(r) for r in relations],
+        "triggers": [tuple(r) for r in triggers],
+        "functions": [tuple(r) for r in functions],
         "version": [(version,)],
     }
 
