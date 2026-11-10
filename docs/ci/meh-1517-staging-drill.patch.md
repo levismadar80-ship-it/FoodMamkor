@@ -1,12 +1,12 @@
 # MEH-1517 — the `staging-drill` job (real staging database, read-only)
 
-> **Not applied.** This file is a workflow edit, and Sapir's one-time
-> authorisation of 10/11 (MEH-1915) names five other patches, not this one. So:
-> **Sapir pastes it**, unless she extends the authorisation to this one file.
-> The paste is a whole-file replace (steps on MEH-1517). CC then verifies the
-> pasted file byte-for-byte against
-> `docs/ci/meh-1517-staging-drill/backup-restore-verify.yml`, deletes that copy
-> in the same PR, and runs the job once by `workflow_dispatch`.
+> ✅ **Applied 10/11/2026** under Sapir's authorisation, extended to this ONE file
+> (recorded on MEH-1915). Commit `860527ad` wrote
+> `.github/workflows/backup-restore-verify.yml` through the GitHub API, byte-identical to
+> the staged copy (checked with `cmp`). The staged copy was then deleted, so the diff
+> below is the record. Two of Sapir's conditions were added before applying:
+> `::add-mask::` for the derived URL parts, and an `if: always()` step that deletes
+> the dump at a fixed `$RUNNER_TEMP` path.
 
 ## Why
 
@@ -40,7 +40,7 @@ prove the **real** staging backup restores. Since 10/11/2026 that is now possibl
    - `producers`, `users` and `producer_reviews` are non-empty;
    - every model table is present, with equal row counts.
 
-   The dump goes to `mktemp`, is deleted on exit, and is never uploaded.
+   The dump is written to `$RUNNER_TEMP/staging-drill.dump`, deleted by the script on exit and by an `if: always()` step, and never uploaded.
 
 **Known race.** Row counts are compared with the live source after the restore.
 A write to staging in between shows as «row count differs» on one busy table.
@@ -78,12 +78,10 @@ Re-run first. A missing table or a large difference is never this race.
  #
  # The logic lives in scripts/ci/backup-restore-verify.sh; this file only calls it. The
  # script's --self-test runs FIRST as a control: the drill must be seen going red on the
-@@ -106,5 +107,112 @@
-         run: |
-           bash scripts/ci/backup-restore-verify.sh \
+@@ -108,3 +109,130 @@
              --source "$SOURCE_URL" --target "$TARGET_URL" \
-+            --expect-table-count auto \
-+            --expect-nonempty producers,users,producer_reviews
+             --expect-table-count auto \
+             --expect-nonempty producers,users,producer_reviews
 +
 +  # ─────────────────────────────────────────────────────────────────────────
 +  # MEH-1517 — the real drill: dump the REAL staging database (read-only role),
@@ -138,6 +136,13 @@ Re-run first. A missing table or a large difference is never this race.
 +            echo "::error::STAGING_DATABASE_URL_READONLY is not set. The real drill cannot run (MEH-1517)."
 +            exit 1
 +          fi
++          # GitHub masks the whole secret; mask the parts a tool could print on
++          # their own too (the password, and user@host:port/db). Masks apply to
++          # every later step of this job.
++          MASK_PW="${SOURCE_URL#*://*:}"; MASK_PW="${MASK_PW%%@*}"
++          MASK_TAIL="${SOURCE_URL#*@}"
++          echo "::add-mask::$MASK_PW"
++          echo "::add-mask::$MASK_TAIL"
 +          case "$SOURCE_URL" in
 +            postgresql://ci_backup_ro:*@kodama.proxy.rlwy.net:13219/*) echo "source: ci_backup_ro @ the staging Postgres proxy" ;;
 +            *) echo "::error::The secret is not the ci_backup_ro role on the staging Postgres proxy. Refusing to run."; exit 1 ;;
@@ -181,14 +186,27 @@ Re-run first. A missing table or a large difference is never this race.
 +          PGPASSWORD: postgres
 +        run: createdb -h localhost -U postgres mehamakor_drill_target
 +
-+      # docs/BACKUPS.md §3 against the real database. The dump goes to mktemp and
-+      # is deleted on exit; it holds real data and is never uploaded.
++      # docs/BACKUPS.md §3 against the real database. The dump holds real data:
++      # it is written to a fixed path under RUNNER_TEMP, deleted by the script on
++      # exit AND by the always() step below, and never uploaded (no
++      # upload-artifact step exists in this job).
 +      - name: Dump staging → restore → verify (docs/BACKUPS.md §3)
 +        env:
 +          SOURCE_URL: ${{ secrets.STAGING_DATABASE_URL_READONLY }}
 +        run: |
 +          bash scripts/ci/backup-restore-verify.sh \
 +            --source "$SOURCE_URL" --target "$TARGET_URL" \
-             --expect-table-count auto \
-             --expect-nonempty producers,users,producer_reviews
++            --dump "$RUNNER_TEMP/staging-drill.dump" \
++            --expect-table-count auto \
++            --expect-nonempty producers,users,producer_reviews
++
++      - name: Delete the backup file (always)
++        if: always()
++        run: |
++          rm -f "$RUNNER_TEMP/staging-drill.dump"
++          if [ -e "$RUNNER_TEMP/staging-drill.dump" ]; then
++            echo "::error::the dump file still exists"
++            exit 1
++          fi
++          echo "backup file deleted (or never written)"
 ```
