@@ -47,6 +47,33 @@ describe("admin WhatsApp failures — stuck `accepted` rows (MEH-2122 Chunk E)",
     expect(screen.queryByText(/whatsapp_failures\.status\./)).not.toBeInTheDocument();
   });
 
+  // MEH-2122: the hint line above the table, approved word for word 10/11.
+  const HINT =
+    "הודעות ש-Meta קיבלה לפני יותר מיום, ועדיין לא הגיע עליהן אישור מסירה. אם יש הרבה כאלה, ייתכן שאישורי המסירה לא מגיעים אלינו.";
+
+  it("one stuck row: the hint shows, with the approved copy", async () => {
+    await renderWith([row({ id: 4 })]);
+    expect(await screen.findByTestId("whatsapp-stuck-hint")).toHaveTextContent(HINT);
+  });
+
+  it("many rows, some stuck: one hint, not one per row", async () => {
+    await renderWith([row({ id: 5 }), row({ id: 6 }), row({ id: 7, status: "failed" })]);
+    await screen.findByTestId("whatsapp-stuck-hint");
+    expect(screen.getAllByTestId("whatsapp-stuck-hint")).toHaveLength(1);
+  });
+
+  it("only failed rows: no hint (it is about missing receipts, not failures)", async () => {
+    await renderWith([row({ id: 8, status: "failed" }), row({ id: 9, status: "window_expired" })]);
+    await screen.findByText(he.admin.whatsapp_failures.status.failed);
+    expect(screen.queryByTestId("whatsapp-stuck-hint")).toBeNull();
+  });
+
+  it("no rows: the empty state and no hint", async () => {
+    await renderWith([]);
+    await screen.findByText(he.admin.whatsapp_failures.empty);
+    expect(screen.queryByTestId("whatsapp-stuck-hint")).toBeNull();
+  });
+
   it("English has the label too (no MISSING_MESSAGE on /en)", async () => {
     await renderWith([row({ id: 3 })], en, "en");
     expect(await screen.findByText("No delivery confirmation")).toBeInTheDocument();

@@ -4,6 +4,13 @@ import { useEffect, useRef, useState } from "react";
 // MEH-2578: locale-aware Link — the banner shows on every page for a first
 // visit, and next/link dropped the /en prefix on its /privacy link.
 import { Link } from "@/i18n/navigation";
+// MEH-2850: every Link element in the site chrome carries prefetch={false}. The
+// chrome is on screen on EVERY page, and since #4260 its targets (/, /about,
+// /privacy, /login, /register) are static, so Next prefetches them IN FULL —
+// their page JS plus the shared [locale] layout payload (~56 KB gz, mostly the
+// messages the page already has). Measured 10/11: +121 KB JS on /map and
+// +137 KB on /events after load, gone when only those prefetches are blocked.
+// Navigation still works; it fetches on tap. Guarded by ChromePrefetchGuard.test.js.
 import { useTranslations } from "next-intl";
 import { hasCookieConsent, setCookieConsent } from "@/lib/cookie-consent";
 
@@ -76,7 +83,7 @@ export default function CookieBanner() {
         <p className="text-xs md:text-sm text-green-50/90">
           {t.rich("message", {
             link: (chunks) => (
-              <Link href="/privacy" className="underline hover:text-white">
+              <Link prefetch={false} href="/privacy" className="underline hover:text-white">
                 {chunks}
               </Link>
             ),

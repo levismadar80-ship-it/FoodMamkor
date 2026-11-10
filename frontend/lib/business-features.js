@@ -101,6 +101,8 @@ export const BUSINESS_FEATURES = [
   { id: "offer", group: "return", status: "live", tip: true, codeRef: ["frontend/components/OfferBadge.jsx", "frontend/app/[locale]/producer/dashboard/edit/cards.jsx"] },
   { id: "group_buys", group: "return", status: "live", highlight: true, tip: true, tile: { icon: "UsersThree" }, codeRef: ["frontend/app/[locale]/group-buys/GroupBuysClient.jsx", "frontend/app/[locale]/producer/dashboard/group-buys"], dashboard: { home: "tools", href: "/producer/dashboard/group-buys" } },
   { id: "events", group: "return", status: "live", highlight: true, tile: { icon: "CalendarBlank" }, codeRef: ["frontend/app/[locale]/events/EventsClient.jsx", "frontend/app/[locale]/producer/dashboard/events"], dashboard: { home: "tools", href: "/producer/dashboard/events" } },
+  // MEH-2885: experiences (hosted visits) — he copy approved word for word by Sapir 10/11.
+  { id: "experiences", group: "return", status: "live", codeRef: ["frontend/app/[locale]/experiences/page.js", "frontend/app/[locale]/producer/dashboard/experiences/page.js"], dashboard: { home: "tools", href: "/producer/dashboard/experiences" } },
   { id: "recipes", group: "return", status: "live", highlight: true, tile: { icon: "CookingPot" }, codeRef: ["frontend/app/[locale]/[slug]/recipes/[recipe_id]/page.jsx", "backend/app/routers/producer_recipes.py"], dashboard: { home: "tools", href: "/producer/dashboard/recipes" } },
   { id: "follower_updates", group: "return", status: "live", codeRef: ["frontend/app/[locale]/producer/dashboard/insights/page.js"], dashboard: { home: "insights", href: "/producer/dashboard/insights" } },
   { id: "waitlist", group: "return", status: "live", codeRef: ["backend/app/services/delivery_waitlist.py", "frontend/components/DeliveryWaitlistForm.jsx"] },
@@ -163,10 +165,7 @@ export const DASHBOARD_SUBPAGES = {
  * is a launch-tier א׳ change: it needs approved he/en copy (workflow.md
  * «Launch tier»), so it is not invented here.
  */
-export const DASHBOARD_PAGES_WITHOUT_ENTRY = {
-  "/producer/dashboard/experiences":
-    "experiences (hosted visits) — not on /join yet; an entry needs Sapir-approved he/en copy (MEH-2885)",
-};
+export const DASHBOARD_PAGES_WITHOUT_ENTRY = {};
 
 /** The four cards above the tabs. */
 export const HIGHLIGHT_FEATURE_IDS = BUSINESS_FEATURES.filter((f) => f.highlight).map(
