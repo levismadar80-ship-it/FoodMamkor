@@ -1228,14 +1228,14 @@ def approve_producer(  # noqa: PLR0913 — all 6 args are FastAPI-injected (path
     #
     # Handler-only, and that is sufficient rather than an oversight: the retry
     # path re-reads the row. The four literal `status="draft"` writes are all
-    # at creation (auth.py:578, auth.py:785, producer_queries.py:537, and
-    # admin.py:609 — admin_create_producer's `as_draft`, MEH-2322). One more
-    # route CAN move an existing producer back to draft: an admin PUT carrying
-    # {"status": "draft"} (admin_update_producer applies the payload as-is —
-    # found in the MEH-2322 re-review). For the retry to read a draft row, an
-    # admin would have to send that PUT between this check and the retry, i.e.
-    # race her own approval. Accepted; restricting `status` on the admin PUT is
-    # tracked separately.
+    # at creation (auth.py:571, auth.py:781, services/producer_queries.py:662,
+    # and admin.py:669 — admin_create_producer's `as_draft`, MEH-2322; lines as
+    # of 10/11/2026). No route
+    # moves an existing producer back to draft: the admin PUT that once could
+    # (found in the MEH-2322 re-review) refuses any `status` in its payload
+    # with a 422 since MEH-2502 (admin_update_producer, `if "status" in
+    # payload`). So the retry cannot read a draft row unless a creation path
+    # is added. MEH-2870: this comment used to call that hole open and accepted.
     if producer.status == "draft":
         raise HTTPException(
             status_code=409,
