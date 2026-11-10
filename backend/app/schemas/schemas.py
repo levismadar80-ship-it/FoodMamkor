@@ -5022,6 +5022,8 @@ class UserAdminOut(BaseModel):
     phone: str | None = None
     role: str
     is_blocked: bool = False
+    # MEH-2890: true for the SUPER_ADMIN_EMAIL account (no demote / delete).
+    is_super_admin: bool = False
     producer_id: UUID | None = None
     favorites_count: int = 0
     created_at: datetime

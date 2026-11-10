@@ -172,6 +172,16 @@ class Settings(BaseSettings):
     rescue_bags_enabled: bool = False
     rescue_bags_cities: str = ""
 
+    # MEH-2890 (Sapir 10/11): the one account no admin can demote or delete.
+    # It used to be a hard-coded address in admin_extra.py AND in the admin
+    # users page — the owner's private mailbox, in a repo that is public.
+    # Set SUPER_ADMIN_EMAIL in Railway (staging and production). FAIL CLOSED:
+    # production refuses to boot without a valid value (_load_settings), the
+    # same as JWT_SECRET_KEY — a running production must never have an
+    # unprotected owner account. Elsewhere unset means "nobody is protected"
+    # (dev, tests, a staging that forgot it), and that is logged.
+    super_admin_email: str = ""
+
     class Config:
         env_file = ".env"
         # Read JWT_SECRET_KEY env var into .secret_key (the more canonical name).
@@ -225,7 +235,31 @@ def _load_settings() -> Settings:
             "JWT_SECRET_KEY in the environment."
         )
 
+    # MEH-2890: normalise once, so every comparison is case-insensitive.
+    s.super_admin_email = s.super_admin_email.strip().lower()
+    if not _looks_like_email(s.super_admin_email):
+        if s.env.lower() == "production":
+            # FAIL CLOSED (Sapir 10/11). Railway keeps the previous deployment
+            # serving when a new one fails its healthcheck, so this blocks the
+            # bad deploy rather than taking the site down.
+            raise RuntimeError(
+                "SECURITY: SUPER_ADMIN_EMAIL must be set to the protected "
+                "owner's email address in production (MEH-2890)."
+            )
+        logger.warning(
+            "SUPER_ADMIN_EMAIL not set (or not an email address) — no account "
+            "is protected from demotion or deletion in this environment."
+        )
+        s.super_admin_email = ""
+
     return s
+
+
+def _looks_like_email(value: str) -> bool:
+    """One `@`, something on both sides, a dot inside the domain. Not a full
+    validator — a guard against an empty or obviously wrong value."""
+    local, at, domain = value.partition("@")
+    return bool(at and local and "@" not in domain and "." in domain.strip("."))
 
 
 settings = _load_settings()
