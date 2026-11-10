@@ -5,8 +5,7 @@ import api from "@/lib/api";
 import { showToast } from "@/lib/toast";
 import { ProducersResponseSchema } from "@/lib/schemas";
 import { mapFiltersFromQuery } from "@/lib/filter-url";
-import { chipStateToParams } from "@/lib/map-chips";
-import { cityParams } from "./useMapFilters";
+import { cityParams } from "@/lib/map-city-params";
 
 /**
  * Owns the /map page's network feed: the producer list, the category
@@ -54,8 +53,8 @@ export function useProducersFeed({ readInitialParams = null } = {}) {
 
   // MEH-2049: latest-wins. Every call takes a number; a response that is not
   // the newest call's is dropped — no list, loading or error update — so an
-  // older, slower request (the URL category load racing the mount load, or two
-  // fast chip taps) can never overwrite a newer one. The snapshot capture is
+  // older, slower request (the mount load racing the catalog-arrival load in
+  // useMapFilters, or two fast chip taps) can never overwrite a newer one. The snapshot capture is
   // exempt: it is not the list, and it is only ever asked for once.
   const latestRequest = useRef(0);
 
@@ -118,28 +117,19 @@ export function useProducersFeed({ readInitialParams = null } = {}) {
     // window.location on mount (client only), not from the server page's
     // searchParams, so /map stays a static route.
     const initialParams = { ...(readInitialParams ? readInitialParams() : null) };
-    // MEH-2049: + the city and category selection /map wrote to its own URL
-    // (lib/filter-url — the same reader useMapFilters hydrates the inputs
-    // from). The city maps to near_city / delivery_city exactly as
-    // useMapFilters.buildParams maps it (one helper, cityParams).
-    const fromUrl =
+    // MEH-2049: + the city /map wrote to its own URL (lib/filter-url — the
+    // same reader useMapFilters hydrates the field from), mapped exactly as
+    // useMapFilters.buildParams maps it (one helper, lib/map-city-params).
+    // A URL CATEGORY is not read here: chip keys become ids only once
+    // /categories answers, and that load is useMapFilters' (its catalog-arrival
+    // effect), built from the state at that moment — so a chip tapped in
+    // between is in it, not overwritten by mount-time params.
+    const urlCity =
       typeof window === "undefined"
-        ? { categoryKeys: [], city: "" }
-        : mapFiltersFromQuery(new URLSearchParams(window.location.search));
-    Object.assign(initialParams, cityParams(fromUrl.city, initialParams.has_delivery));
-    api
-      .get("/categories")
-      .then((r) => {
-        setCategories(r.data);
-        // MEH-2049: chip keys become category ids only once the catalog is
-        // here, so a URL category is a SECOND load after the mount one. The
-        // latest-wins guard in loadProducers keeps the earlier, unfiltered
-        // response from landing on top of it.
-        if (fromUrl.categoryKeys.length === 0 || !Array.isArray(r.data)) return;
-        const { category } = chipStateToParams({ categoryKeys: fromUrl.categoryKeys }, r.data);
-        if (category) loadProducers({ ...initialParams, category });
-      })
-      .catch(() => {});
+        ? ""
+        : mapFiltersFromQuery(new URLSearchParams(window.location.search)).city;
+    Object.assign(initialParams, cityParams(urlCity, initialParams.has_delivery));
+    api.get("/categories").then((r) => setCategories(r.data)).catch(() => {});
     const hasInitial = Object.keys(initialParams).length > 0;
     loadProducers(
       {},

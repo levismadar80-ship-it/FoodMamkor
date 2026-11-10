@@ -1786,15 +1786,21 @@ test.describe("manual › /map categories + city live in the URL (MEH-2049 PR 2)
     }
   });
 
-  test("invalid values are dropped silently: unknown category, a city that is not a name", async ({ page }) => {
+  test("invalid values are dropped silently: unknown category, a city that is not a name", async ({ page }, info) => {
     await stubExternal(page);
     const catalog = await mockCatalog(page, byCategory);
     await gotoMap(page, "/map?category_group=nope&city=%3Cscript%3E");
-    await expect.poll(() => catalog.seen.length, { timeout: 15_000 }).toBeGreaterThan(0);
-    for (const u of catalog.seen) {
-      expect(u.searchParams.get("category")).toBeNull();
-      expect(u.searchParams.get("near_city")).toBeNull();
-    }
+    // Settle first, on two signals the page cannot reach early: the URL has
+    // been rewritten without the bad values (useMapFilters' run after
+    // hydration), and the full list is drawn (the mount load answered). Only
+    // then is "exactly one request" a claim about the page and not about how
+    // soon the test looked — a broken build that sent a second, filtered load
+    // a moment later would otherwise pass.
     await expect.poll(() => new URL(page.url()).search, { timeout: 10_000 }).toBe("");
+    await expect(shellOf(page, info).getByTestId("map-card"), "the unfiltered list is drawn").toHaveCount(PRODUCERS.length, FIRST_PAINT);
+    expect(catalog.seen, "one /producers request: the unfiltered mount load").toHaveLength(1);
+    expect(catalog.seen[0].searchParams.getAll("category")).toEqual([]);
+    expect(catalog.seen[0].searchParams.get("near_city")).toBeNull();
+    expect(catalog.seen[0].searchParams.get("delivery_city")).toBeNull();
   });
 });

@@ -59,8 +59,12 @@ export function chipsToQuery(chips) {
 
 // ── MEH-2049: /map category selection + city ────────────────────────────────
 //
-// `city` is /producers' own name for the same value (a city name — see
-// ProducersClient's cityFilter hydration), so one spelling covers both.
+// `city` is also the name /producers hydrates (ProducersClient cityFilter), and
+// both carry a city NAME — but NOT the same filter: /producers sends it as
+// delivery_city ("delivers here"), /map as near_city ("located in it OR
+// delivering to it"), or delivery_city with the משלוח chip on
+// (lib/map-city-params). A future list↔map hop that carries `city` must decide
+// which question it is asking; it must not assume the result set is the same.
 // The category param is deliberately NOT /producers' `category`: that one
 // carries DB category ids, /map's selection is CATEGORY_CHIPS keys. Reusing the
 // name would make `?category=meat` a URL /producers forwards to the API (422)
@@ -89,11 +93,14 @@ function normalizeCategoryKeys(values) {
 
 // A city is free text (CitySearch), so "valid" is a shape, not a list: letters
 // (any script, with marks for niqqud), spaces and the punctuation real names
-// use — «תל אביב-יפו», «ג'סר א-זרקא», «ראשל"צ», «קריית מלאכי (מזרח)». At least
-// two letters, at most 60 characters. Anything else is dropped, not sent.
+// use — «תל אביב-יפו», «ג'סר א-זרקא», «ראשל"צ», «קריית מלאכי (מזרח)» — and the
+// characters keyboards actually produce for it: iOS turns ' into a smart quote
+// («מג’דל שמס»), and a Hebrew keyboard types the maqaf. At least two letters,
+// at most 60 characters. Anything else is dropped, not sent.
 const CITY_MAX_LENGTH = 60;
-// \u05F3 \u05F4 = Hebrew geresh / gershayim, \u2013 = en dash.
-const CITY_SHAPE = /^[\p{L}\p{M}\s'"\u05F3\u05F4().\-\u2013]+$/u;
+// \u05F3 \u05F4 = Hebrew geresh / gershayim · \u2018 \u2019 = smart single
+// quotes (iOS) · \u05BE = maqaf · \u2013 \u2014 = en / em dash.
+const CITY_SHAPE = /^[\p{L}\p{M}\s'"\u05F3\u05F4\u2018\u2019().\-\u05BE\u2013\u2014]+$/u;
 const CITY_LETTER = /\p{L}/gu;
 
 /** The trimmed city, or "" when it is empty or not shaped like a place name. */
