@@ -181,7 +181,10 @@ class Producer(Base):
     #
     # Readers that need a submission instant use
     # `submitted_for_review_at or created_at`; that fallback is what makes a
-    # backfill unnecessary rather than merely deferred.
+    # backfill unnecessary rather than merely deferred. Readers that need the
+    # LATEST submission (the admin SLA badge and queue order, MEH-2869) put
+    # `resubmitted_at` first: a resubmission after a rejection writes only
+    # that stamp, never this one.
     #
     # tz-aware (DateTime(timezone=True)), written with
     # datetime.now(timezone.utc) — never naive utcnow. Expand-only (ADR-007).
