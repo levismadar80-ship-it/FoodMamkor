@@ -20,6 +20,11 @@ const FILES = [
   "components/BottomNav.jsx",
   "components/CookieBanner.jsx",
   "components/Footer.jsx",
+  // Rendered inside the chrome: the footer's newsletter notice (→ /privacy)
+  // and the dashboard/admin footer (→ /terms, /privacy, /accessibility,
+  // /contact) — fresh reviewer on #4281.
+  "components/CollectionNotice.jsx",
+  "components/DashboardFooter.jsx",
 ];
 
 /** Every `<Link ...>` opening tag in a file, as source text. */
@@ -41,7 +46,16 @@ export function linkTags(src) {
   return tags;
 }
 
+/** `prefetch={false}` as its own prop — not `data-prefetch={false}`. */
+const PREFETCH_OFF = /(?<![-\w])prefetch=\{\s*false\s*\}/;
+
 describe("linkTags (self-test, MEH-1909)", () => {
+  it("PREFETCH_OFF accepts the prop and rejects a lookalike", () => {
+    expect(PREFETCH_OFF.test("<Link prefetch={false} href=\"/\">")).toBe(true);
+    expect(PREFETCH_OFF.test("<Link prefetch={ false } href=\"/\">")).toBe(true);
+    expect(PREFETCH_OFF.test("<Link data-prefetch={false} href=\"/\">")).toBe(false);
+  });
+
   it("finds a multi-line tag and stops at the right `>`", () => {
     const src = '<Link\n  href="/"\n  onClick={() => a > b}\n>x</Link><Link prefetch={false} href="/a">y</Link>';
     const tags = linkTags(src);
@@ -58,7 +72,7 @@ describe("site chrome links do not prefetch (MEH-2850)", () => {
       const src = readFileSync(path.resolve(__dirname, "..", rel), "utf8");
       const tags = linkTags(src);
       expect(tags.length, `${rel} has no <Link> — the scan read the wrong file`).toBeGreaterThan(0);
-      const missing = tags.filter((t) => !/\bprefetch=\{false\}/.test(t));
+      const missing = tags.filter((t) => !PREFETCH_OFF.test(t));
       expect(missing, `add prefetch={false} to: ${missing.join(" | ")}`).toEqual([]);
     });
   }
