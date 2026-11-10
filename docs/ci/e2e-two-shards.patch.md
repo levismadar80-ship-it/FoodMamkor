@@ -1,81 +1,122 @@
 # MEH-2895 — E2E in two parallel shards, one merged report
 
-> **Not applied.** `.github/workflows/**` is denied to CC's filesystem tools and
-> the Contents API is refused at the sandbox proxy (`.claude/rules/security.md`).
-> Sapir pastes the diff below through the GitHub web editor; CC then checks the
-> branch file byte-for-byte against this diff before merging.
+> **Not applied.** `.github/workflows/**` is denied to CC's filesystem tools,
+> and the sandbox proxy refuses the Contents API (`.claude/rules/security.md`).
+> Sapir pastes the diff below through the GitHub web editor. CC then checks
+> the branch file byte-for-byte against this diff before merging.
 >
 > **Lands first, in the same PR as this file (no workflow change):**
-> `frontend/e2e/login-retry.ts` + `global-setup.ts` (a 429 on login is waited
-> out and retried) and the `PW_BLOB=1` blob reporter in `playwright.config.ts`
-> (inert until the workflow sets it).
+> - `frontend/e2e/login-retry.ts` + `global-setup.ts`: a 429 on login is waited
+>   out and retried.
+> - The `PW_BLOB=1` blob reporter in `playwright.config.ts`. It does nothing
+>   until the workflow sets it.
 
-## Why — measured 10/11/2026
+## ⚠️ Decide before pasting: this trades MEH-2398's rule for wall time
 
-- The single `Playwright E2E (Vercel preview)` job has `timeout-minutes: 30`.
-  The staging runs on 10/11 were cut at the cap: ~1,419 of 1,668 tests ran.
-- `npx playwright test --list --shard=1/2` → **834** tests; the full list is
-  **1,668**. The split is even by count.
-- `/auth/login` is 5/minute per client IP, and global-setup logs in 3–4 accounts.
-  Two shards on one runner IP would spend 8. The retry in global-setup waits a
-  full window out (20 s × 3) instead of failing the run with 0 tests.
+`docs/TESTING.md` («One E2E run at a time», MEH-2398) exists because parallel
+E2E runs filled the staging backend's connection pool and ended with 0 tests
+executed.
+
+- **Today:** at most **two** suites hit staging at once: Chromium
+  (`e2e-staging-backend`) and the WebKit shadow (`e2e-staging-backend-webkit`).
+- **After this patch:** at most **three**: shard 1, shard 2 and WebKit, each
+  with `workers: 2`.
+
+Since MEH-2398, the backend releases its DB connection before background tasks
+(#4272, MEH-2886). Whether that headroom covers a third suite has **not been
+measured**.
+
+If the first sharded runs show pool exhaustion (0 executed, or
+`db_pool_exhausted` in Sentry), there are two fallbacks:
+- (א) put the WebKit shadow in shard 2's group (`e2e-staging-backend-2`), so
+  three suites become two;
+- (ב) instead of sharding, raise `timeout-minutes` to 45 and keep one queue.
+
+**Superseded by this patch:** `docs/ci/e2e-one-backend-queue.patch.md` (MEH-2886
+chunk 5, not applied). It still applies cleanly on top of the sharded file. But
+it would put WebKit alone in `e2e-staging-backend`, a group no job uses any more:
+a no-op that looks like serialization. **Do not paste it after this one.**
+
+**In the PR that verifies the paste,** CC also updates `docs/TESTING.md`
+(the MEH-2398 paragraph) to name the three groups.
+
+## Why: measured 10/11/2026
+
+- **The 30-minute cap.** The single `Playwright E2E (Vercel preview)` job has
+  `timeout-minutes: 30`. The staging runs on 10/11 were cut there: about 1,419
+  of 1,668 tests ran.
+- **How the suite splits.** `npx playwright test --list --shard=1/2` gives 834
+  tests, against 1,668 in the full list. The split falls **by project**: shard 1
+  is the 834 `[desktop]` tests, shard 2 the 834 `[mobile]` tests.
+- **What that means for logins and tokens.**
+  - Specs that log in by themselves (flows/19, 22, 40) and the mutating specs
+    skip on mobile, so they all land in shard 1.
+  - Per-IP login exposure is therefore that of today's desktop half.
+  - Mobile no longer starts after desktop, which also shortens the token
+    lifetime it needs (MEH-2269).
+  - The shards run on separate runners. Whether those share an outbound IP is
+    not measured.
+  - The login retry covers both cases: it waits out a full limiter window
+    (20 s × 3) instead of failing the run with 0 tests.
 
 ## What changes
 
-1. **`e2e`** becomes a matrix of `shard: [1, 2]`, `fail-fast: false`.
-   - Name: `Playwright E2E (Vercel preview) 1/2` and `… 2/2`. This job is not in
-     the ruleset (`e2e-gate` is the aggregator), so the rename blocks nothing.
-   - Runs `npx playwright test --fail-on-flaky-tests --shard=N/2` with
-     `PW_BLOB=1`.
-   - The job-level queue becomes `e2e-staging-backend-<N>`. The two halves of one
-     run go in parallel. At most one run's shard N runs at a time, so at most two
-     suites hit Railway staging together (before: one).
-   - Artifacts get a `-<N>` suffix (`playwright-report-N`, `e2e-diagnostics-N`).
-     Two jobs uploading one artifact name fail with a conflict.
-   - New step: upload `blob-report/` as `blob-report-N` (1 day).
-   - The per-shard **coverage floor stays**. A shard that executed 0 tests fails
-     by itself.
-   - The **QA comment step moves out** (two shards upserting one comment would
-     overwrite each other).
-2. **New `e2e-report`** (`needs: e2e`, runs unless the run was skipped or
-   cancelled):
-   - downloads both blobs;
-   - **fails if there are not exactly 2** ("a shard died before writing its
-     blob");
-   - runs `npx playwright merge-reports --reporter json`;
-   - re-derives executed / unexpected / flaky / skipped;
-   - fails on 0 executed;
-   - posts the same QA comment, with `outcome` = `needs.e2e.result`.
-3. **`e2e-gate` is unchanged.** `needs.e2e.result` is GitHub's aggregate over the
-   matrix (any red shard → `failure`).
+1. **`e2e`** becomes a matrix of `shard: [1, 2]`, with `fail-fast: false`.
+   - **Name:** `Playwright E2E (Vercel preview) 1/2` and `… 2/2`. This job is
+     not in the ruleset (`e2e-gate` is the aggregator), so the rename blocks
+     nothing.
+   - **Run:** `--shard=N/2` with `PW_BLOB=1`.
+   - **Queue:** the job-level queue becomes `e2e-staging-backend-<N>` (see the
+     warning above).
+   - **Artifacts** get a `-<N>` suffix. Two jobs uploading one name fail with a
+     conflict. The blob upload sets `overwrite: true` for re-runs.
+   - **The per-shard coverage floor stays.** A shard that executed 0 tests fails
+     on its own.
+   - **The QA comment step moves out** to `e2e-report`.
+2. **New `e2e-report`** (`needs: e2e`, runs unless skipped or cancelled):
+   - downloads each shard's blob into its own directory;
+   - counts **each shard separately**;
+   - names any shard that left **no report** or ran **0 tests**. A shard whose
+     global-setup aborted still writes a blob, so counting zips is not enough.
+     Such a run gets `partial` set, the job fails, and the comment's headline
+     becomes **INCOMPLETE**: never PASS, and never "wait for a newer run";
+   - merges the blobs that exist, then posts the comment.
+
+   The comment step runs on `!cancelled()`, so a failed checkout or `npm ci`
+   still replaces the previous head's comment with DID NOT RUN.
+3. **`e2e-gate` is unchanged.** `needs.e2e.result` is GitHub's aggregate over
+   the matrix: any red shard → `failure`.
 
 ## Verification (CC, 10/11)
 
 - `git apply --check` of the diff below against `origin/staging`: clean.
-- YAML parses; jobs = `filter, e2e, e2e-report, e2e-webkit, e2e-gate`.
-- `PW_BLOB=1 npx playwright test --list` loads the config.
-- **Merge mechanics, locally, same commands as the patch.**
-  - Ran `flows/09-login-console-clean.spec.ts` as `--shard=1/2` and
-    `--shard=2/2` with `PW_BLOB=1` against a dead host, so every test fails on
-    purpose.
-  - Shard 1: 2 failed; shard 2: 1 failed.
-  - `PLAYWRIGHT_JSON_OUTPUT_FILE=playwright-report/results.json npx playwright
-    merge-reports --reporter json all-blob-reports` → `stats.unexpected = 3`.
-    The merged counts are the sum, not either shard.
-- **Not verifiable before the paste:**
-  - the first sharded run's wall time;
-  - that its two `executed` counts sum to a full run;
-  - that both shards finish under 30 minutes.
+- The YAML parses. Jobs: `filter, e2e, e2e-report, e2e-webkit, e2e-gate`.
+- `PW_BLOB=1 npx playwright test --list` loads the config. The default list
+  is still 1,668.
+- **The merge step's own bash, run locally on real blobs** (`flows/09` against
+  a dead host, so every test fails on purpose):
 
-  These are the acceptance check on MEH-2895, read from the first staging run
-  after the paste.
+  | Case | Output | Exit |
+  |---|---|---|
+  | both shards ran (2 + 1 failures) | `executed=3`, `partial=` | 0 |
+  | shard 2's global-setup aborted (it still wrote a blob) | `partial= shard 2/2: 0 executed;` | 1 |
+  | shard 2's blob missing | `partial= shard 2/2: no report;` | 1 |
+
+- **Not verifiable before the paste:**
+  - the sharded wall time;
+  - that the two executed counts sum to a full run;
+  - pool headroom with three suites.
+
+  These are read from the first staging run after the paste, and are the
+  acceptance check on MEH-2895.
 
 ## Cost
 
 Each shard repeats `npm ci` + `next build` + server start, about 5 minutes. A
 full run costs about 2 × (5 + ~13) ≈ 36 billed minutes, against ~30 (often cut)
-today. The wall time drops from ≥ 30 minutes (cut) to about 18. The per-day
-figures in `docs/release/anchor-plan.md` §E1 assume this.
+today. The wall time drops from ≥ 30 minutes (cut) to about 18. These are
+*estimates*. The per-day figures in `docs/release/anchor-plan.md` §E1 assume
+them.
 
 ## The diff
 
@@ -128,7 +169,7 @@ figures in `docs/release/anchor-plan.md` §E1 assume this.
            # MEH-999: unlock the authenticated specs. global-setup.ts provisions
            # e2e/.auth/{producer,consumer,admin}.json by logging in through the
            # /api proxy to the Railway staging backend, where these accounts are
-@@ -301,6 +319,151 @@
+@@ -301,6 +319,179 @@
            fi
          id: coverage-floor
  
@@ -144,6 +185,8 @@ figures in `docs/release/anchor-plan.md` §E1 assume this.
 +          path: frontend/blob-report/
 +          retention-days: 1
 +          if-no-files-found: warn
++          # A "re-run failed jobs" attempt uploads the same name again.
++          overwrite: true
 +
 +      - name: Upload Playwright report
 +        uses: actions/upload-artifact@v7
@@ -240,56 +283,87 @@ figures in `docs/release/anchor-plan.md` §E1 assume this.
 +        run: npm ci
 +        working-directory: frontend
 +
++      # One directory per shard (no merge-multiple), so a missing shard can be
++      # named rather than merely counted.
 +      - name: Download blob reports
 +        uses: actions/download-artifact@v8
 +        with:
 +          pattern: blob-report-*
 +          path: frontend/all-blob-reports
-+          merge-multiple: true
 +
++      # Per-shard counts first, then the merged totals. A shard whose
++      # global-setup aborted still writes a blob (Playwright's blob reporter
++      # runs onEnd) with 0 executed, and the merged totals of the other shard
++      # would then read as PASS over half the suite. So each shard must have
++      # its own blob AND executed > 0, otherwise `partial` names it and the
++      # comment says INCOMPLETE — never PASS, never "wait for a newer run".
 +      - name: Merge reports and count
 +        id: coverage-floor
 +        working-directory: frontend
-+        env:
-+          PLAYWRIGHT_JSON_OUTPUT_FILE: playwright-report/results.json
 +        run: |
-+          BLOBS=$(find all-blob-reports -name '*.zip' 2>/dev/null | wc -l)
-+          echo "blob reports found: $BLOBS (expected 2)"
-+          if [ "$BLOBS" -ne 2 ]; then
-+            echo "::error::Expected 2 shard reports, found $BLOBS — a shard died before writing its blob. The counts below would describe part of the suite only."
-+            exit 1
++          mkdir -p playwright-report merged-blobs
++          PARTIAL=""
++          for N in 1 2; do
++            DIR="all-blob-reports/blob-report-$N"
++            ZIPS=$(find "$DIR" -name '*.zip' 2>/dev/null | wc -l)
++            if [ "$ZIPS" -eq 0 ]; then
++              echo "::error::Shard $N/2 left no blob report — it timed out, was cancelled, or died before its report step."
++              PARTIAL="$PARTIAL shard $N/2: no report;"
++              continue
++            fi
++            PLAYWRIGHT_JSON_OUTPUT_FILE="playwright-report/shard-$N.json" \
++              npx playwright merge-reports --reporter json "$DIR"
++            E=$(jq '(.stats.expected // 0) + (.stats.unexpected // 0) + (.stats.flaky // 0)' "playwright-report/shard-$N.json")
++            echo "shard $N/2: executed=$E"
++            if [ "$E" -eq 0 ]; then
++              echo "::error::Shard $N/2 executed 0 tests — its global-setup aborted (see that shard's log)."
++              PARTIAL="$PARTIAL shard $N/2: 0 executed;"
++            fi
++            cp "$DIR"/*.zip merged-blobs/
++          done
++          if [ -n "$(ls -A merged-blobs)" ]; then
++            PLAYWRIGHT_JSON_OUTPUT_FILE=playwright-report/results.json \
++              npx playwright merge-reports --reporter json merged-blobs
++            REPORT=playwright-report/results.json
++            STATS_EXPECTED=$(jq '.stats.expected // 0' "$REPORT")
++            STATS_UNEXPECTED=$(jq '.stats.unexpected // 0' "$REPORT")
++            STATS_FLAKY=$(jq '.stats.flaky // 0' "$REPORT")
++            STATS_SKIPPED=$(jq '.stats.skipped // 0' "$REPORT")
++          else
++            STATS_EXPECTED=0; STATS_UNEXPECTED=0; STATS_FLAKY=0; STATS_SKIPPED=0
 +          fi
-+          mkdir -p playwright-report
-+          npx playwright merge-reports --reporter json all-blob-reports
-+          REPORT=playwright-report/results.json
-+          STATS_EXPECTED=$(jq '.stats.expected // 0' "$REPORT")
-+          STATS_UNEXPECTED=$(jq '.stats.unexpected // 0' "$REPORT")
-+          STATS_FLAKY=$(jq '.stats.flaky // 0' "$REPORT")
-+          STATS_SKIPPED=$(jq '.stats.skipped // 0' "$REPORT")
 +          EXECUTED=$((STATS_EXPECTED + STATS_UNEXPECTED + STATS_FLAKY))
 +          echo "merged: executed=$EXECUTED (expected=$STATS_EXPECTED unexpected=$STATS_UNEXPECTED flaky=$STATS_FLAKY skipped=$STATS_SKIPPED)"
-+          echo "executed=$EXECUTED" >> "$GITHUB_OUTPUT"
-+          echo "skipped=$STATS_SKIPPED" >> "$GITHUB_OUTPUT"
-+          echo "unexpected=$STATS_UNEXPECTED" >> "$GITHUB_OUTPUT"
-+          echo "flaky=$STATS_FLAKY" >> "$GITHUB_OUTPUT"
-+          if [ "$EXECUTED" -eq 0 ]; then
-+            echo "::error::ZERO COVERAGE across both shards — 0 tests executed."
++          {
++            echo "executed=$EXECUTED"
++            echo "skipped=$STATS_SKIPPED"
++            echo "unexpected=$STATS_UNEXPECTED"
++            echo "flaky=$STATS_FLAKY"
++            echo "partial=$PARTIAL"
++          } >> "$GITHUB_OUTPUT"
++          if [ -n "$PARTIAL" ]; then
++            echo "::error::Incomplete run:$PARTIAL"
 +            exit 1
 +          fi
 +
        # MEH-1074 (W0.1) — QA report as a PR comment: one upserted comment per
        # PR (marker-matched, edited in place — no comment spam on re-push).
        # Runs on pass AND fail (if: always()); skipped on push-to-staging runs
-@@ -313,7 +476,7 @@
+@@ -311,9 +502,11 @@
+       # step landing). The fresh run upserts the real verdict.
+       - name: Post QA report comment
          uses: actions/github-script@v9
++        # !cancelled(): when npm ci / checkout / download fail, the counts are
++        # empty and the verdict module says DID NOT RUN — better than leaving the
++        # previous head's comment up, looking current.
          if: >-
-           always() && github.event_name == 'pull_request' &&
+-          always() && github.event_name == 'pull_request' &&
 -          steps.e2e-run.outcome != 'cancelled'
-+          steps.coverage-floor.outcome != 'skipped'
++          !cancelled() && github.event_name == 'pull_request'
          with:
            script: |
              const marker = "<!-- e2e-qa-report -->";
-@@ -322,7 +485,7 @@
+@@ -322,7 +515,7 @@
              // and proven without applying a workflow edit:
              //   node scripts/ci/qa-report-verdict.cjs --self-test
              const raw = {
@@ -298,7 +372,24 @@ figures in `docs/release/anchor-plan.md` §E1 assume this.
                executed:   "${{ steps.coverage-floor.outputs.executed }}",
                unexpected: "${{ steps.coverage-floor.outputs.unexpected }}",
                flaky:      "${{ steps.coverage-floor.outputs.flaky }}",
-@@ -429,71 +592,6 @@
+@@ -350,6 +543,16 @@
+                 detail: `**Nothing ran, and the reporter itself could not load** (\`${err.message}\`) — the checkout did not complete. **This is NOT a spec failure.**`,
+               };
+             }
++            // MEH-2895: a shard missing or with 0 executed is never PASS, and
++            // never "wait for a newer run" — name the shard instead.
++            const partial = `${{ steps.coverage-floor.outputs.partial }}`.trim();
++            if (partial) {
++              report.headline = "Playwright QA — INCOMPLETE";
++              report.detail =
++                `**Not every shard ran:** ${partial} The counts above cover only what did run, ` +
++                "so they are not a verdict on the PR. Open that shard's log. **This is not a pass.**\n\n" +
++                report.detail;
++            }
+             const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+             const body = [
+               marker,
+@@ -429,71 +632,6 @@
                });
              }
  

@@ -38,7 +38,7 @@
 import { request, type FullConfig } from "@playwright/test";
 import fs from "node:fs";
 import path from "node:path";
-import { withRateLimitRetry } from "./login-retry";
+import { loginFailureMessage, withRateLimitRetry } from "./login-retry";
 
 type Role = {
   name: string;
@@ -177,11 +177,7 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
     );
     if (!res.ok()) {
       throw new Error(
-        `[global-setup] login failed for ${role.name} (${email}) at ${baseURL}: ` +
-          `HTTP ${res.status()} after ${attempts} attempt(s).` +
-          (res.status() === 429
-            ? " Still rate-limited (5/minute per IP) — another suite is logging in from the same IP."
-            : " Did the staging --sync-users run succeed?"),
+        loginFailureMessage(role.name, String(email), baseURL, res.status(), attempts),
       );
     }
     const { access_token: accessToken } = await res.json();

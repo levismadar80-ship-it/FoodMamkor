@@ -101,3 +101,23 @@ export async function withRateLimitRetry<R extends ResponseLike>(
   }
   return { response, attempts };
 }
+
+/**
+ * The error global-setup throws when a login still fails. Kept here, beside the
+ * retry, so the 429 wording is unit-tested: a final 429 must read as the rate
+ * limit, never as a seeding problem (which sends the reader to re-seed staging).
+ */
+export function loginFailureMessage(
+  role: string,
+  email: string,
+  baseURL: string,
+  status: number,
+  attempts: number,
+): string {
+  const head =
+    `[global-setup] login failed for ${role} (${email}) at ${baseURL}: ` +
+    `HTTP ${status} after ${attempts} attempt(s).`;
+  return status === 429
+    ? `${head} Still rate-limited (5/minute per IP) — another suite is logging in from the same IP.`
+    : `${head} Did the staging --sync-users run succeed?`;
+}

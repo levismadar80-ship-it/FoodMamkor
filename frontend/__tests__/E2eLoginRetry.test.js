@@ -5,6 +5,7 @@ import {
   MAX_ATTEMPTS,
   FALLBACK_WAIT_MS,
   MAX_WAIT_MS,
+  loginFailureMessage,
 } from "../e2e/login-retry";
 
 // MEH-2895 — global-setup's login survives the per-IP rate limit.
@@ -125,5 +126,24 @@ describe("retryDelayMs (MEH-2895)", () => {
     expect(retryDelayMs("3600", NOW)).toBe(MAX_WAIT_MS);
     expect(retryDelayMs("0", NOW)).toBe(1_000);
     expect(retryDelayMs(new Date(NOW - 60_000).toUTCString(), NOW)).toBe(1_000);
+  });
+});
+
+describe("loginFailureMessage (MEH-2895)", () => {
+  const args = ["producer", "demo-owner@example.com", "http://localhost:3000"];
+
+  it("a final 429 names the rate limit, not the seed", () => {
+    const msg = loginFailureMessage(...args, 429, MAX_ATTEMPTS);
+    expect(msg).toContain("HTTP 429");
+    expect(msg).toContain(`after ${MAX_ATTEMPTS} attempt(s)`);
+    expect(msg).toContain("rate-limited");
+    expect(msg).not.toContain("--sync-users");
+  });
+
+  it("a 401 points at the seed, not the rate limit", () => {
+    const msg = loginFailureMessage(...args, 401, 1);
+    expect(msg).toContain("HTTP 401");
+    expect(msg).toContain("--sync-users");
+    expect(msg).not.toContain("rate-limited");
   });
 });
