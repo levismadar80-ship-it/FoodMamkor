@@ -1,12 +1,22 @@
 # MEH-1517 — the `staging-drill` job (real staging database, read-only)
 
 > ✅ **Applied 10/11/2026** under Sapir's authorisation, extended to this ONE file
-> (recorded on MEH-1915). Commit `860527ad` wrote
-> `.github/workflows/backup-restore-verify.yml` through the GitHub API, byte-identical to
-> the staged copy (checked with `cmp`). The staged copy was then deleted, so the diff
-> below is the record. Two of Sapir's conditions were added before applying:
-> `::add-mask::` for the derived URL parts, and an `if: always()` step that deletes
-> the dump at a fixed `$RUNNER_TEMP` path.
+> (recorded on MEH-1915), through the GitHub API.
+>
+> **What was applied is not the staged copy.** The staged copy
+> (`docs/ci/meh-1517-staging-drill/backup-restore-verify.yml`, now deleted) predates
+> Sapir's conditions. The applied file adds three of them:
+> - `::add-mask::` for the derived URL parts;
+> - a fixed `$RUNNER_TEMP` dump path, deleted by an `if: always()` step;
+> - a stricter staging guard, added after the independent review of #4299. In a
+>   `case` pattern, `*` also matches `@`, `?` and `,`. That review built two URLs that
+>   passed the first guard while libpq connected elsewhere: a second `@`, and
+>   `?host=`/`?user=` parameters. The guard now refuses a second `@`, any `,`, and any
+>   query or fragment except `?sslmode=require`. It also pins the database to `railway`.
+>   It was tested on 11 dummy URLs; both bypass URLs went from exit 0 to exit 1.
+>
+> The diff below is regenerated from the applied file (staging → branch). It is
+> the record of what landed, not an earlier approval.
 
 ## Why
 
@@ -78,7 +88,7 @@ Re-run first. A missing table or a large difference is never this race.
  #
  # The logic lives in scripts/ci/backup-restore-verify.sh; this file only calls it. The
  # script's --self-test runs FIRST as a control: the drill must be seen going red on the
-@@ -108,3 +109,130 @@
+@@ -108,3 +109,142 @@
              --source "$SOURCE_URL" --target "$TARGET_URL" \
              --expect-table-count auto \
              --expect-nonempty producers,users,producer_reviews
@@ -143,9 +153,21 @@ Re-run first. A missing table or a large difference is never this race.
 +          MASK_TAIL="${SOURCE_URL#*@}"
 +          echo "::add-mask::$MASK_PW"
 +          echo "::add-mask::$MASK_TAIL"
++          # In a case pattern `*` also matches `@`, `?` and `,`, so the shape check
++          # alone would pass a URL whose real host sits before a second `@`, or
++          # whose ?host=/?user= parameters override it (review of #4299). Refuse
++          # those first. The one suffix allowed is ?sslmode=require.
++          REFUSE="::error::The secret is not the ci_backup_ro role on the staging Postgres proxy. Refusing to run."
 +          case "$SOURCE_URL" in
-+            postgresql://ci_backup_ro:*@kodama.proxy.rlwy.net:13219/*) echo "source: ci_backup_ro @ the staging Postgres proxy" ;;
-+            *) echo "::error::The secret is not the ci_backup_ro role on the staging Postgres proxy. Refusing to run."; exit 1 ;;
++            *@*@*|*,*) echo "$REFUSE"; exit 1 ;;
++          esac
++          BASE_URL="${SOURCE_URL%\?sslmode=require}"
++          case "$BASE_URL" in
++            *\?*|*\&*|*'#'*) echo "$REFUSE"; exit 1 ;;
++          esac
++          case "$BASE_URL" in
++            postgresql://ci_backup_ro:*@kodama.proxy.rlwy.net:13219/railway) echo "source: ci_backup_ro @ the staging Postgres proxy" ;;
++            *) echo "$REFUSE"; exit 1 ;;
 +          esac
 +
 +      # pg_dump must not be older than the server (18); the runner ships 16.
