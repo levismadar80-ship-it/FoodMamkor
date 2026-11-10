@@ -1,16 +1,18 @@
 """MEH-2900 — PUT /admin/users/{user_id}/role: who may grant admin.
 
 Area 1 of MEH-2899 (risk ranking: a permission change). The handler is
-`update_user_role` in backend/app/routers/admin_extra.py; its guards, in order:
+`update_user_role` in backend/app/routers/admin_extra.py. What answers, in the
+order FastAPI and the handler run it:
 
   require_admin (auth.py)            → 401 no token, 403 any non-admin
-  target lookup                      → 404 unknown id
+  UserRoleUpdate.role pattern (body) → 422 for anything outside
+                                       consumer|producer|admin — validated
+                                       before the handler body runs
+  target lookup (handler)            → 404 unknown id
   role == "producer"                 → 422 (MEH-955, covered in
                                        test_admin_role_orphan_source.py)
   protected owner (super admin)      → 403, whatever the requested role
   admin demoting herself             → 403
-  UserRoleUpdate.role pattern        → 422 for anything outside
-                                       consumer|producer|admin
 
 Already covered elsewhere and NOT repeated here: consumer→admin / admin→
 consumer happy paths and the producer refusal (test_admin_role_orphan_source),
@@ -28,8 +30,8 @@ import uuid
 
 import pytest
 
+from app.config import settings
 from app.models import User
-from app.routers import admin_extra
 
 from tests.conftest import auth_header, make_producer, make_user
 
@@ -74,31 +76,21 @@ def _business_owner(db, *, kind: str = "producer") -> User:
 
 @pytest.fixture
 def protected_owner_email(monkeypatch) -> str:
-    """Make a test-only address the protected owner, by whichever mechanism
-    the code under test uses.
+    """Make a test-only address the protected owner.
 
-    staging: the module constant `admin_extra.SUPER_ADMIN_EMAIL`.
-    after PR #4280 (MEH-2890): `settings.super_admin_email` (SUPER_ADMIN_EMAIL
-    env), read by `admin_extra.is_super_admin` at call time.
-
-    The branch is on the mechanism, never on the outcome. If neither exists the
-    test fails loudly instead of silently testing an unprotected account.
-    Mechanism-specific assertions (exact match, empty = nobody) belong to
-    #4280's own tests.
+    Since PR #4280 (MEH-2890) the owner is `settings.super_admin_email`
+    (SUPER_ADMIN_EMAIL env), read by `admin_extra.is_super_admin` at call time.
+    If that setting disappears the test fails loudly instead of silently
+    testing an unprotected account. Mechanism-specific assertions (exact
+    match, empty = nobody) belong to #4280's own tests.
     """
     email = "protected-owner-meh2900@example.com"
-    if hasattr(admin_extra, "SUPER_ADMIN_EMAIL"):
-        monkeypatch.setattr(admin_extra, "SUPER_ADMIN_EMAIL", email)
-    else:
-        from app.config import settings
-
-        if not hasattr(settings, "super_admin_email"):
-            pytest.fail(
-                "neither admin_extra.SUPER_ADMIN_EMAIL nor "
-                "settings.super_admin_email exists — the protected-owner "
-                "mechanism moved; update this fixture"
-            )
-        monkeypatch.setattr(settings, "super_admin_email", email)
+    if not hasattr(settings, "super_admin_email"):
+        pytest.fail(
+            "settings.super_admin_email does not exist — the protected-owner "
+            "mechanism moved; update this fixture"
+        )
+    monkeypatch.setattr(settings, "super_admin_email", email)
     return email
 
 
@@ -190,6 +182,9 @@ def test_demoted_admin_loses_admin_on_her_existing_token(client, db):
         _role_url(other_admin.id), json={"role": "consumer"}, headers=auth_header(admin)
     )
     assert resp.status_code == 200, resp.text
+    # The DB, not the response: a handler that bumps token_version without
+    # writing the role would also lock the old token out below.
+    assert _role_in_db(db, other_admin.id) == "consumer"
 
     after = client.get(ADMIN_PROBE, headers=other_headers)
     assert after.status_code in (401, 403), after.text
@@ -239,10 +234,15 @@ def test_protected_owner_cannot_be_blocked(client, db, protected_owner_email):
 
     resp = client.post(f"/admin/users/{owner.id}/block", headers=auth_header(admin))
 
-    if resp.status_code != 403:
-        raise KnownGap(f"owner block answered {resp.status_code}: {resp.text}")
+    # Plain assert first: a moved route (404/405) or a bad admin token (401)
+    # is a real failure, never the documented gap.
+    assert resp.status_code in (200, 403), resp.text
     db.expire_all()
-    assert db.query(User).filter(User.id == owner.id).one().is_blocked is False
+    is_blocked = db.query(User).filter(User.id == owner.id).one().is_blocked
+    if resp.status_code == 200:
+        assert is_blocked is True, "200 but the owner is not blocked"
+        raise KnownGap("an admin blocked the protected owner (200, is_blocked=True)")
+    assert is_blocked is False
 
 
 # --------------------------------------------------------- invalid input
