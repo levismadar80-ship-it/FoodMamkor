@@ -1,59 +1,130 @@
 """
-MEH-2907 (MEH-2899 area 5) — the owner edits while the admin approves.
+Module:   test_meh2907_approve_vs_owner_edit
+Purpose:  The owner edits while the admin approves. Pins that the owner's
+          late commit does not revert the approval, and that the approval
+          gate judges the row as it stands when the gate runs.
+Touches:  producers + producer_locations + products rows via the standard
+          test session, plus one short-lived `SessionLocal()` used only to
+          read the COMMITTED row from outside the request. Every outbound
+          side effect of both handlers is patched (Resend, WhatsApp,
+          IndexNow, Cloudinary) — see `_mute_side_effects`.
+Does NOT: cover the other two gates in `_assert_approvable` — the
+          category-licence gate and `phone_verified`. Both read from the
+          same object this file shows to be stale, so the same window
+          plausibly applies; it is NOT measured here and MEH-2908 says so.
+          Also does not cover the admin PUT or the import path.
+Related:  backend/app/routers/admin.py::_assert_approvable (the gate),
+          ::_persist_approval (already runs the gates twice on its retry
+          path, which MEH-2908 names as the precedent for a cheap fix);
+          backend/app/routers/producer_me.py::_lock_producer_updates
+          (the MEH-2007 decision that leaves this pair unserialised);
+          tests/test_review_ready_ping_concurrency.py (the barrier shape).
+History:  MEH-2907 (creation); MEH-2908 (the gate finding, xfail below).
 
-Row 2 of the MEH-2892 top-20 action-map gaps, score 14: «race: בעל העסק
-עורך בזמן שאדמין מאשר. אין טסט שמפעיל את שניהם». Both halves of the
-pair are here, because they have OPPOSITE answers:
+Area 5 of MEH-2899. The action-map report scores this row 14 — «race:
+בעל העסק עורך בזמן שאדמין מאשר. אין טסט שמפעיל את שניהם» — the highest
+in that batch; the score itself is the report's, quoted not re-derived.
 
-  * NO LOST UPDATE — the owner's PUT, loaded before the approval and
-    committed after it, must not revert the approval. This holds, and the
-    test pins WHY it holds.
-  * NO APPROVAL OF UNSEEN CONTENT — the approval gates must not pass on
-    content the owner has already replaced. This does NOT hold. The
-    second test is xfail; see its docstring.
-
-WHY THE PAIR IS DELIBERATELY UNSERIALISED, which is what makes this a
-test and not a lock fix. `update_my_producer` takes a transaction-scoped
-advisory lock (`_lock_producer_updates`, `producer_me.py`) and that
-helper's docstring records the choice of an advisory key over
-`with_for_update` precisely so it does NOT block «admin approve
+WHY THE PAIR IS UNSERIALISED, which is what makes this a test and not a
+lock fix. `update_my_producer` takes a transaction-scoped advisory lock,
+and `_lock_producer_updates`' docstring records choosing an advisory key
+over `with_for_update` precisely so it does NOT block «admin approve
 (`admin.py`)». The overlap is designed (MEH-2007).
 
-HOW THE OVERLAP IS MADE DETERMINISTIC. Same shape as
-`tests/test_review_ready_ping_concurrency.py`: a barrier at one call that
-sits between a handler's producer load and its commit, so neither
-outcome depends on thread scheduling luck. One `TestClient` per thread —
-`httpx.Client`, which `TestClient` subclasses, is documented as not
-thread-safe, and a test built to detect a race is the last place to rest
-on an implementation detail. Each test asserts the interleaving it
-intended actually happened before it asserts anything about the outcome;
-without that, a serialised pair would be scored as a pass.
+THE THREE TESTS, and why the file is split this way:
+
+  1. `test_the_race_really_happens` — the control, NOT xfail. Asserts
+     only facts that hold whether or not the gate is fixed: the barrier
+     did not time out, and by the time the gate ran an INDEPENDENT
+     session already read `images == []`. If this reds, the two tests
+     below are measuring nothing and it says so loudly, which an xfail
+     test cannot do for itself.
+  2. `test_the_gate_judges_the_row_as_it_stands` — xfail(strict), and it
+     carries ONE assertion. See its docstring for why a single assertion
+     is the whole point.
+  3. `test_owner_put_committed_after_approval_does_not_revert_it` — the
+     other half of the pair, which passes.
+
+WHAT AN EARLIER REVISION GOT WRONG, recorded because the corrections are
+the reason for the shape above. A fresh reviewer measured all three:
+
+  * The `order == [...]` controls were VACUOUS. They recorded one event
+    before the barrier wait and one after the other request returned, and
+    those are ordered by construction in every scenario — including one
+    with no concurrency at all. The return value of the second
+    `Event.wait()` was discarded, so a timed-out barrier (a slow runner)
+    serialised the pair and every assertion still passed. Both waits are
+    now asserted, and the control test reads the committed row instead of
+    relying on event ordering.
+  * `xfail(strict=True)` COULD NEVER FIRE. The invariant sat below
+    `assert results["approve"] == 200`; with the gate fixed, approve
+    answers 422, so the test failed at that control and strict xfail
+    absorbed it as an expected failure. Measured: a one-line
+    `db.refresh(producer)` at the top of `_assert_approvable` still
+    reported XFAIL, never XPASS. The marker would have rotted silently
+    and swallowed every unrelated breakage with it.
+  * The terminal state it asserted — approved with an empty gallery — is
+    reachable with NO RACE, so it never discriminated. Test 4 below
+    demonstrates that sequentially. The race-specific fact is narrower:
+    the gate was asked, and answered from a row that had already changed.
 """
 
 from __future__ import annotations
 
 import threading
 
+import pytest
 from fastapi.testclient import TestClient
 
+import app.cloudinary_utils as cloudinary_utils
 import app.routers.admin as admin_mod
 import app.routers.producer_me as pm
-import pytest
+from app.database import SessionLocal
 from app.models.models import Producer
 
 from conftest import auth_header, make_submit_ready_producer, make_user
 
+# Both barriered requests run a full handler inside this budget. With the
+# side effects muted below, a run is ~2 s; 5 s is the pattern file's value
+# (`test_review_ready_ping_concurrency.py`) and the same reasoning applies
+# — long enough that a slow runner cannot turn a correct pass into a
+# flake. Unlike that file, every wait on it is ASSERTED, so an expiry is a
+# loud failure rather than a silently serialised pair.
 _BARRIER_TIMEOUT = 5.0
 _NEW_DESCRIPTION = "תיאור שבעלת העסק עדכנה בזמן האישור"
 
 
-def _pending_ready(db):
-    """A `pending` producer that passes every approval gate.
+def _mute_side_effects(monkeypatch) -> None:
+    """Patch every outbound call both handlers make inside the window.
 
-    `make_submit_ready_producer` satisfies all three gates
-    `_assert_approvable` runs — one photo, a category whose
-    `requires_license` is False (so the license gate is not what is under
-    test), and `phone_verified`.
+    Not hygiene — load-bearing. The approve handler sends through Resend
+    and WhatsApp and schedules an IndexNow ping; the owner PUT calls
+    Cloudinary to destroy images dropped from the gallery. In this
+    sandbox the keys are unset so each short-circuits, which is why an
+    unpatched version ran green in ~2 s. On a machine where they ARE set,
+    one slow HTTP call eats the barrier budget. `destroy_removed_images`
+    is imported inside the handler (`producer_me.py:850`), so it is
+    patched at its defining module, not at the router's namespace.
+    """
+    monkeypatch.setattr(admin_mod, "_send_notification_email", lambda *a, **k: None)
+    monkeypatch.setattr(admin_mod, "notify_producer_approved", lambda *a, **k: None)
+    monkeypatch.setattr(admin_mod, "_send_whatsapp", lambda *a, **k: None)
+    monkeypatch.setattr(admin_mod.indexnow, "schedule", lambda *a, **k: None)
+    monkeypatch.setattr(cloudinary_utils, "destroy_removed_images", lambda *a, **k: None)
+
+
+def _pending_ready(db):
+    """A `pending` producer that passes all three approval gates.
+
+    `make_submit_ready_producer` gives one photo and `phone_verified`, and
+    names its category `קטגוריה <random hex>`. The licence gate is a NAME
+    allowlist — `categories_require_license`
+    (`services/license_validation.py`) intersects the categories' names
+    with `LICENSE_REQUIRED_CATEGORIES` (`app/constants.py`) — and a random
+    name is not in it, so the licence gate is not what these tests move.
+    (An earlier revision called this a `requires_license` column. No such
+    column exists; `grep -rn requires_license backend/ tests/` matched
+    only that docstring.)
     """
     producer, owner = make_submit_ready_producer(db, status="pending")
     admin = make_user(db, role="admin")
@@ -61,64 +132,202 @@ def _pending_ready(db):
     return producer, owner, admin
 
 
+def _committed_images(producer_id) -> list:
+    """The gallery as a session outside this request sees it, committed."""
+    outside = SessionLocal()
+    try:
+        row = outside.get(Producer, producer_id)
+        return list(row.images or []) if row else []
+    finally:
+        outside.close()
+
+
+def _run_the_race(client, db, monkeypatch) -> dict:
+    """Admin reaches the gate; owner empties the gallery; gate then runs.
+
+    Returns what each side saw, so the two tests below can assert
+    different facts about one run without re-deriving the mechanism.
+    """
+    _mute_side_effects(monkeypatch)
+    producer, owner, admin = _pending_ready(db)
+    producer_id = producer.id
+
+    admin_inside = threading.Event()
+    owner_done = threading.Event()
+    seen: dict = {"waited": None}
+    results: dict = {}
+    real_gate = admin_mod._assert_approvable
+
+    def barriered_gate(db_, producer_, overrides, admin_id):
+        admin_inside.set()
+        # ASSERTED by the caller via seen["waited"] — a discarded wait is
+        # what let an earlier revision score a serialised pair as a pass.
+        seen["waited"] = owner_done.wait(_BARRIER_TIMEOUT)
+        seen["committed_view"] = _committed_images(producer_.id)
+        try:
+            return real_gate(db_, producer_, overrides, admin_id)
+        finally:
+            # What the gate ACTUALLY read — captured after it ran, so a
+            # re-read performed inside it is visible here. Captured
+            # before, this was blind to exactly the fix it is meant to
+            # detect: the measurement reported a stale view even with a
+            # `db.refresh` in place, and the strict xfail still could not
+            # fire. `finally`, because the fixed gate raises 422.
+            seen["gate_view"] = list(producer_.images or [])
+
+    monkeypatch.setattr(admin_mod, "_assert_approvable", barriered_gate)
+
+    def approve():
+        results["approve"] = TestClient(client.app).post(
+            f"/admin/producers/{producer_id}/approve", headers=auth_header(admin)
+        ).status_code
+
+    t = threading.Thread(target=approve)
+    t.start()
+    assert admin_inside.wait(_BARRIER_TIMEOUT), "approve never reached its gates"
+
+    results["put"] = TestClient(client.app).put(
+        "/producers/me", json={"images": []}, headers=auth_header(owner)
+    ).status_code
+    owner_done.set()
+
+    t.join(timeout=30)
+    assert not t.is_alive(), "the approve thread hung"
+
+    db.expire_all()
+    after = db.get(Producer, producer_id)
+    return {
+        "results": results,
+        "seen": seen,
+        "final_status": after.status,
+        "final_images": list(after.images or []),
+        "producer_id": producer_id,
+    }
+
+
+@pytest.mark.serial
+def test_the_race_really_happens(client, db, monkeypatch):
+    """Control. Only facts that hold whether or not the gate is fixed.
+
+    This is NOT xfail, deliberately: it is the one test that can say out
+    loud "the scenario did not happen", which the xfail test below cannot
+    do for itself.
+    """
+    run = _run_the_race(client, db, monkeypatch)
+
+    assert run["seen"]["waited"] is True, (
+        "the gate's wait timed out, so the two requests serialised and "
+        "nothing below measures concurrency"
+    )
+    assert run["results"].get("put") == 200, (
+        f"the owner's PUT did not succeed: {run['results']} — "
+        "ProducerUpdate validates image-URL shape only, never "
+        "non-emptiness, so an empty gallery should be accepted"
+    )
+    assert run["seen"]["committed_view"] == [], (
+        "the owner's clear was not committed by the time the gate ran: "
+        f"{run['seen']['committed_view']}"
+    )
+    # Both worlds: today the gate passes (200), fixed it refuses (422).
+    assert run["results"].get("approve") in (200, 422), (
+        f"approve answered {run['results'].get('approve')}, which is neither "
+        "the gate passing nor the gate refusing — something else broke"
+    )
+
+
+@pytest.mark.serial
+@pytest.mark.xfail(
+    strict=True,
+    reason=(
+        "MEH-2908: _assert_approvable judges producer.images from the admin "
+        "session's identity map, loaded before the owner's commit, so the "
+        "gate's verdict can rest on a photo that is already gone."
+    ),
+)
+def test_the_gate_judges_the_row_as_it_stands(client, db, monkeypatch):
+    """ONE assertion, and that is the point.
+
+    `strict=True` is only useful if the test can actually XPASS once the
+    bug is fixed. Any other assertion above this one — a status code, a
+    control — turns the fixed world into a failure at that line, which
+    strict xfail absorbs as expected and the marker never fires. The
+    mechanism is therefore asserted in `test_the_race_really_happens`,
+    and this test asserts the invariant alone.
+
+    Measured against a simulated fix (a one-line `db.refresh(producer)`
+    at the top of `_assert_approvable`): the view the gate read becomes
+    `[]`, this assertion passes, and the xfail fires. That check is not
+    ceremony — the first attempt at this test captured the view BEFORE
+    calling the gate, which is blind to a re-read inside it, and the
+    xfail still would not have fired with the bug fixed.
+    """
+    run = _run_the_race(client, db, monkeypatch)
+
+    assert run["seen"]["gate_view"] == run["seen"]["committed_view"], (
+        "the approval gate judged content that was already replaced: it read "
+        f"{run['seen']['gate_view']} while the committed row held "
+        f"{run['seen']['committed_view']}"
+    )
+
+
+@pytest.mark.serial
 def test_owner_put_committed_after_approval_does_not_revert_it(
     client, db, monkeypatch
 ):
     """The owner's in-flight PUT must not undo the admin's approval.
 
-    The owner's handler loads the producer while it is still `pending` and
-    commits after the approval has landed, holding a stale `status` in its
-    identity map throughout.
+    The owner's handler loads the producer while it is still `pending`
+    and commits after the approval has landed, holding a stale `status`
+    throughout.
 
-    This passes, and the reason is narrower than "SQLAlchemy only writes
-    what changed" — measured with two breaks, both applied after the
-    handler's setattr loop:
+    WHY IT HOLDS, stated precisely, because an earlier revision had the
+    mechanism wrong. SQLAlchemy's `_collect_update_commands` intersects
+    the mapped columns with `state.committed_state`: a column NEVER
+    ASSIGNED in a session is absent from that dict and is excluded before
+    any value comparison runs. That — the absence of an assignment — is
+    what protects this path, since `status` is not in
+    `_PRODUCER_WRITABLE_FIELDS` and no owner route writes it. The
+    equality check that follows is a second line of defence, and it is
+    what break M1 below exercises.
 
-      M1  `producer.status = "pending"`            -> my test PASSES
-      M2  `flag_modified(producer, "status")`      -> my test FAILS
+    Measured, both breaks after the handler's setattr loop:
 
-    M1 assigns the value the session already holds, and the flush
-    compares against the LOADED value, finds no net change, and omits the
-    column. So the guarantee rests on that comparison, not on the absence
-    of an assignment: re-stating the stale status is harmless, while
-    anything that forces the column into the UPDATE — `flag_modified`, a
-    full-row write, a `merge()` of a detached copy — writes `pending`
-    over the admin's `approved` and pulls a published business off the
-    site, after the admin was told it worked.
+      M1  `producer.status = "pending"`           -> PASSES
+      M2  `flag_modified(producer, "status")`     -> FAILS
 
-    M2 is also what makes this test worth having: under it the 63 tests
-    in test_meh2100_draft_submit.py, test_review_ready_ping_concurrency.py
-    and test_admin_approval_transitions.py all still pass. Sequentially
-    the stale value equals the committed one, so nothing else can see it.
+    M1 re-states the loaded value, so the equality check drops the
+    column. M2 forces it into the UPDATE and `pending` is written over
+    the admin's `approved`, pulling a published business off the site
+    after the admin was told it worked. Under M2 the 63 tests in
+    test_meh2100_draft_submit.py, test_review_ready_ping_concurrency.py
+    and test_admin_approval_transitions.py all still pass, because
+    sequentially the stale value equals the committed one.
+
+    M2 is a discrimination check, not a prediction: `flag_modified` is
+    not a line anyone would plausibly add here. The realistic vectors for
+    the same effect are a `merge()` of a detached copy or a full-row
+    write, and those are what this test is really standing in front of.
     """
+    _mute_side_effects(monkeypatch)
     producer, owner, admin = _pending_ready(db)
     producer_id = producer.id
 
     owner_loaded = threading.Event()
     approve_done = threading.Event()
-    order: list[str] = []
-    lock = threading.Lock()
-    results: dict[str, int] = {}
-
+    waited: dict = {}
+    results: dict = {}
     real_snapshot = pm._snapshot_sensitive
 
     def barriered_snapshot(producer_):
-        """Runs just after the owner's producer load, before the mutation.
-
-        Delegates to the real implementation — the timing is the point,
-        and faking the return value would change what the PUT writes.
-        """
-        with lock:
-            order.append("owner-loaded")
+        """Runs just after the owner's load, before the mutation."""
         owner_loaded.set()
-        approve_done.wait(_BARRIER_TIMEOUT)
+        waited["ok"] = approve_done.wait(_BARRIER_TIMEOUT)
         return real_snapshot(producer_)
 
     monkeypatch.setattr(pm, "_snapshot_sensitive", barriered_snapshot)
 
     def owner_put():
-        thread_client = TestClient(client.app)
-        results["put"] = thread_client.put(
+        results["put"] = TestClient(client.app).put(
             "/producers/me",
             json={"description": _NEW_DESCRIPTION},
             headers=auth_header(owner),
@@ -126,25 +335,20 @@ def test_owner_put_committed_after_approval_does_not_revert_it(
 
     t = threading.Thread(target=owner_put)
     t.start()
-    assert owner_loaded.wait(_BARRIER_TIMEOUT), (
-        "the owner PUT never reached the barrier, so nothing overlapped"
-    )
+    assert owner_loaded.wait(_BARRIER_TIMEOUT), "the owner PUT never reached the barrier"
 
-    approve_client = TestClient(client.app)
-    results["approve"] = approve_client.post(
+    results["approve"] = TestClient(client.app).post(
         f"/admin/producers/{producer_id}/approve", headers=auth_header(admin)
     ).status_code
-    with lock:
-        order.append("approved")
     approve_done.set()
 
     t.join(timeout=30)
     assert not t.is_alive(), "the owner PUT thread hung"
 
-    # --- control: the approval really landed inside the owner's request ---
-    assert order == ["owner-loaded", "approved"], (
-        f"the interleaving under test did not happen: {order} — a serialised "
-        "pair would pass the assertions below for no good reason"
+    # --- control: the PUT really was still open when the approval landed --
+    assert waited.get("ok") is True, (
+        "the owner PUT's wait timed out, so it committed before the approval "
+        "and this test measured nothing about the race"
     )
     assert results == {"approve": 200, "put": 200}, results
 
@@ -154,122 +358,37 @@ def test_owner_put_committed_after_approval_does_not_revert_it(
         "the owner's late commit reverted the approval — an approved, "
         "published business silently dropped back to the review queue"
     )
-    assert after.description == _NEW_DESCRIPTION, (
-        "the owner's edit was lost instead"
-    )
+    assert after.description == _NEW_DESCRIPTION, "the owner's edit was lost instead"
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason=(
-        "MEH-2908: the approval gates read the producer from the admin "
-        "session's identity map, loaded before the owner's commit, so a "
-        "photo removed inside the window is still what the gate judges. "
-        "Fixing it means a re-read under a lock in admin.py, which is the "
-        "blast radius MEH-2007 deliberately kept the advisory lock out of — "
-        "not a small fix, so it is its own card."
-    ),
-)
-def test_approval_cannot_pass_on_content_the_owner_already_replaced(
-    client, db, monkeypatch
-):
-    """The photo gate must not pass on an image that is already gone.
+def test_an_approved_business_can_empty_its_gallery_with_no_race(client, db, monkeypatch):
+    """The sequential companion, and why the xfail above is phrased as it is.
 
-    Sequence, forced by a barrier inside `_assert_approvable` — i.e.
-    after the approve handler has loaded the producer row and before its
-    gates run:
+    Measured: an already-approved business PUTs `{"images": []}`, gets
+    200, and ends `approved` with an empty gallery — no concurrency
+    involved. So "published with no photo" does NOT discriminate the
+    race, which is why the xfail above asserts the gate's own view
+    instead of the terminal state.
 
-        admin   enters approve, loads the producer (1 image), reaches
-                _assert_approvable, signals, waits
-        owner   PUT /producers/me {"images": []} — runs to completion and
-                COMMITS. `ProducerUpdate._validate_images` checks URL
-                shape only (`_image_url_list_validator`), never
-                non-emptiness, so an empty gallery is an accepted payload
-                and the PUT answers 200.
-        admin   wakes. `_assert_approvable` reads `producer.images` from
-                its OWN session, populated by the load before the owner's
-                commit, and sees the stale image. The gate passes.
-                status := approved, commit.
-
-    The admin's UPDATE does not put the image back: SQLAlchemy writes
-    only the attributes changed in the admin's session, and `images` was
-    never assigned there.
-
-    The invariant asserted is MEH-799's, in its own words — "a business
-    never goes public without at least one photo". `strict=True` so that
-    the day this starts passing, the xfail itself fails and the card gets
-    closed instead of the marker rotting.
+    This is not obviously a defect: `admin.py` states the MEH-799 gate
+    "lives at the moment of approval", and the gallery has a real owner
+    editor. It is recorded on MEH-2911 for Sapir to rule on, and asserted
+    here so the current behaviour is pinned either way — if it is ever
+    gated, this test reds and names the decision.
     """
-    producer, owner, admin = _pending_ready(db)
+    _mute_side_effects(monkeypatch)
+    producer, owner = make_submit_ready_producer(db, status="approved")
+    db.commit()
     producer_id = producer.id
+    assert producer.images, "setup: the business starts with a photo"
 
-    admin_inside = threading.Event()
-    owner_done = threading.Event()
-    order: list[str] = []
-    lock = threading.Lock()
-    results: dict[str, int] = {}
+    resp = client.put("/producers/me", json={"images": []}, headers=auth_header(owner))
 
-    real_gate = admin_mod._assert_approvable
-
-    def barriered_gate(db_, producer_, overrides, admin_id):
-        """Forces the overlap, then runs the REAL gate.
-
-        Delegating matters: faking the verdict would make the assertion
-        below a statement about this stub rather than about the gate.
-        """
-        with lock:
-            order.append("gate-reached")
-        admin_inside.set()
-        owner_done.wait(_BARRIER_TIMEOUT)
-        return real_gate(db_, producer_, overrides, admin_id)
-
-    monkeypatch.setattr(admin_mod, "_assert_approvable", barriered_gate)
-
-    def approve():
-        thread_client = TestClient(client.app)
-        results["approve"] = thread_client.post(
-            f"/admin/producers/{producer_id}/approve", headers=auth_header(admin)
-        ).status_code
-
-    t = threading.Thread(target=approve)
-    t.start()
-    assert admin_inside.wait(_BARRIER_TIMEOUT), (
-        "the approve handler never reached its gates"
-    )
-
-    owner_client = TestClient(client.app)
-    results["put"] = owner_client.put(
-        "/producers/me", json={"images": []}, headers=auth_header(owner)
-    ).status_code
-    with lock:
-        order.append("images-cleared")
-    owner_done.set()
-
-    t.join(timeout=30)
-    assert not t.is_alive(), "the approve thread hung"
-
-    # --- controls: both must hold or the verdict below means nothing ------
-    assert order == ["gate-reached", "images-cleared"], (
-        f"the owner's clear did not land inside the admin's open request: {order}"
-    )
-    assert results["put"] == 200, (
-        f"the owner's PUT was rejected ({results['put']}), so the gate was "
-        "never asked to judge replaced content and this test proves nothing"
-    )
-    assert results["approve"] == 200, (
-        f"approve returned {results['approve']}, not 200 — the gate did NOT "
-        "pass, so there is no unseen-content approval to assert about"
-    )
-
+    assert resp.status_code == 200, resp.text
     db.expire_all()
     after = db.get(Producer, producer_id)
-    assert after.status == "approved", (
-        f"status is {after.status!r}, so nothing was published"
-    )
-
-    # --- the invariant ----------------------------------------------------
-    assert after.images, (
-        "a business is live with an empty gallery: the approval gate "
-        "(MEH-799, 'a business never goes public without at least one "
-        "photo') passed on an image the owner had already removed"
+    assert after.status == "approved"
+    assert after.images == [], (
+        "an approved business can no longer empty its gallery — if that is "
+        "deliberate, MEH-2911 shipped and this test records the change"
     )
