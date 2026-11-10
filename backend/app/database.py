@@ -1,6 +1,9 @@
 import logging
 import os
 
+import anyio
+import anyio.to_thread
+
 from fastapi import BackgroundTasks
 from sqlalchemy import create_engine
 from sqlalchemy.exc import TimeoutError as PoolTimeoutError
@@ -112,15 +115,25 @@ class Base(DeclarativeBase):
     pass
 
 
-def _release_session(db) -> None:
+async def _release_session(db) -> None:
     """MEH-2886: give the request's connection back to the pool.
 
-    Queued by ``get_db`` as the request's FIRST background task. Never raises:
-    Starlette runs a request's tasks in one loop, so an exception here would
-    cancel every task queued after it (the request's emails among them).
+    Queued by ``get_db`` as the request's FIRST background task.
+
+    Async on purpose, with ``db.close`` on a PRIVATE one-token limiter — the
+    same thing FastAPI does for a yield dependency's exit
+    (fastapi/concurrency.py:21-27). A plain sync task would go through
+    Starlette's run_in_threadpool, i.e. the default 40-token limiter that the
+    (sync) endpoints also use: under load every token can be held by a handler
+    blocked on pool checkout, and the release that would free them waits for a
+    token → nothing moves until pool_timeout (MEH-2886 chunk-2 review,
+    measured; tests/test_meh2886_db_release.py pins it).
+
+    Never raises: Starlette runs a request's tasks in one loop, so an exception
+    here would cancel every task queued after it (the request's emails).
     """
     try:
-        db.close()
+        await anyio.to_thread.run_sync(db.close, limiter=anyio.CapacityLimiter(1))
     except Exception:  # noqa: BLE001 — must not take the request's tasks down
         log.exception("db_release_before_tasks_failed")
 

@@ -316,7 +316,7 @@ def test_task_handed_request_db_still_works_and_pool_is_idle_after(
     def spying_fire_alerts(task_db, *args, **kwargs):
         # The task really uses the request's session after the early close.
         real_fire_alerts(task_db, *args, **kwargs)
-        ran.append(task_db.is_active)
+        ran.append(True)
 
     monkeypatch.setattr(alerts_module, "fire_alerts", spying_fire_alerts)
     _assert_pool_idle_before_request()
@@ -328,7 +328,9 @@ def test_task_handed_request_db_still_works_and_pool_is_idle_after(
     )
 
     assert resp.status_code == 201, resp.text
-    assert ran == [True], "fire_alerts did not run with the request's session"
+    assert ran == [True], (
+        "fire_alerts did not run (it queries with the db it is handed)"
+    )
     assert _checkedout() == 0, (
         f"pool reads {_checkedout()} after the request — a task re-opened the "
         "request's session and nothing returned the connection"
@@ -338,13 +340,15 @@ def test_task_handed_request_db_still_works_and_pool_is_idle_after(
 def test_release_never_raises_so_later_tasks_still_run():
     """Starlette runs a request's tasks in one loop: if the early close raised,
     every task after it (the request's emails) would be cancelled."""
+    import anyio
+
     from app.database import _release_session
 
     class _BrokenSession:
         def close(self):
             raise RuntimeError("pool reset failed")
 
-    _release_session(_BrokenSession())  # must not raise
+    anyio.run(_release_session, _BrokenSession())  # must not raise
 
 
 def _calls_with_background_kwarg(source: str, filename: str) -> list[str]:
@@ -352,8 +356,16 @@ def _calls_with_background_kwarg(source: str, filename: str) -> list[str]:
 
     hits = []
     for node in ast.walk(ast.parse(source, filename)):
-        if isinstance(node, ast.Call) and any(
-            k.arg == "background" for k in node.keywords
+        if isinstance(node, ast.Call):
+            name = getattr(node.func, "id", None) or getattr(node.func, "attr", "")
+            if any(k.arg == "background" for k in node.keywords) or (
+                # Response(content, status_code, headers, media_type, background)
+                name.endswith("Response") and len(node.args) >= 5
+            ):
+                hits.append(f"{filename}:{node.lineno}")
+        elif isinstance(node, ast.Assign) and any(
+            isinstance(t, ast.Attribute) and t.attr == "background"
+            for t in node.targets
         ):
             hits.append(f"{filename}:{node.lineno}")
     return hits
@@ -367,7 +379,19 @@ def test_background_kwarg_classifier_self_test():
         "def f():\n    return JSONResponse({}, background=None)\n"
     )
     assert _calls_with_background_kwarg(bad, "x.py") == ["x.py:3"]
+    assert _calls_with_background_kwarg("r.background = t\n", "a.py") == ["a.py:1"]
+    assert _calls_with_background_kwarg(
+        "Response(b'', 200, None, None, t)\n", "p.py"
+    ) == ["p.py:1"]
     assert _calls_with_background_kwarg("JSONResponse({})\n", "y.py") == []
+    # Anchored to a real file (testing.md, MEH-1909): producers.py returns a
+    # JSONResponse with no background — the scan must not flag it.
+    from pathlib import Path
+
+    real = Path(__file__).resolve().parents[1] / "backend/app/routers/producers.py"
+    src = real.read_text(encoding="utf-8")
+    assert "JSONResponse(" in src, "anchor file changed — pick another"
+    assert _calls_with_background_kwarg(src, str(real)) == []
 
 
 def test_no_route_returns_a_response_with_its_own_background():
@@ -387,3 +411,53 @@ def test_no_route_returns_a_response_with_its_own_background():
         "a call passes background= — FastAPI then skips the request's "
         f"BackgroundTasks, including get_db's early release: {hits}"
     )
+
+
+def test_release_does_not_deadlock_on_the_shared_threadpool(monkeypatch):
+    """MEH-2886 chunk-2 review: the early release must not need a token from
+    the default thread limiter that the sync endpoints also hold.
+
+    Pool 1 + 0, checkout timeout 5 s, thread limiter 2 tokens, 4 concurrent
+    GETs on a route that uses the REAL get_db. With a plain sync release task
+    two requests time out at ~5 s (the release waits for a token held by
+    handlers that wait for its connection). With the release on its own
+    limiter — as FastAPI's own yield-dependency exit is — all four answer
+    immediately."""
+    import asyncio
+    import time
+
+    import anyio.to_thread
+    import httpx
+    from sqlalchemy import create_engine
+    from sqlalchemy.orm import sessionmaker
+
+    import app.database as database
+
+    url = database.engine.url.render_as_string(hide_password=False)
+    tiny = create_engine(url, pool_size=1, max_overflow=0, pool_timeout=5)
+    monkeypatch.setattr(database, "SessionLocal", sessionmaker(bind=tiny))
+    probe_app = FastAPI()
+
+    @probe_app.get("/q")
+    def q(db: Session = Depends(database.get_db)):
+        db.execute(text("SELECT 1")).scalar()
+        return {"ok": True}
+
+    async def run():
+        anyio.to_thread.current_default_thread_limiter().total_tokens = 2
+        transport = httpx.ASGITransport(app=probe_app)
+        async with httpx.AsyncClient(transport=transport, base_url="http://t") as c:
+            t0 = time.monotonic()
+            codes = await asyncio.gather(
+                *(c.get("/q") for _ in range(4)), return_exceptions=True
+            )
+            return [getattr(r, "status_code", type(r).__name__) for r in codes], (
+                time.monotonic() - t0
+            )
+
+    try:
+        codes, elapsed = asyncio.run(run())
+    finally:
+        tiny.dispose()
+    assert codes == [200, 200, 200, 200], f"{codes} after {elapsed:.2f}s"
+    assert elapsed < 3, f"4 requests took {elapsed:.2f}s — the release waited"
