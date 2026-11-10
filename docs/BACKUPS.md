@@ -141,7 +141,7 @@ bash scripts/ci/backup-restore-verify.sh --source "$DATABASE_URL" --target "$DRI
   3. אותו סקריפט ואותם אימותים כמו ב-`mechanics`.
 - **ה-dump** מכיל נתונים אמיתיים, ולכן הוא לא עולה כ-artifact.
 - **ספירת המקור באה מאותו snapshot של ה-dump (MEH-2912):**
-  - session אחד על המקור: `BEGIN ISOLATION LEVEL REPEATABLE READ, READ ONLY` → `pg_export_snapshot()` → `pg_dump --snapshot=<id>` → `COUNT(*)` לכל טבלה → `COMMIT`. אין צורך בהרשאה מעבר ל-SELECT; ה-self-test מריץ את זה כ-role שהוא SELECT בלבד.
+  - session אחד על המקור: `BEGIN ISOLATION LEVEL REPEATABLE READ, READ ONLY` → `pg_export_snapshot()` → `COUNT(*)` לכל טבלה → `pg_dump --snapshot=<id>` → `COMMIT`. הספירה באה **לפני** ה-dump, כך שנעילות ה-AccessShare שלה מוחזקות עד ה-`COMMIT`, לאורך כל ה-dump: ‏`TRUNCATE` או שכתוב טבלה במקור (שאינם MVCC-safe) לא יכולים להיכנס בין ה-dump לספירה. אין צורך בהרשאה מעבר ל-SELECT; ה-self-test מריץ את זה כ-role שהוא SELECT בלבד.
   - כתיבה ל-staging באמצע הריצה (למשל ריצת E2E) לא נכנסת לא ל-dump ולא לספירה. לכן «row count differs» הוא תמיד אובדן אמיתי. אין סף «הפרש קטן מותר», ואין «מריצים שוב».
   - עד MEH-2912 הספירה נלקחה חיה **אחרי** השחזור. הריצה האמיתית הראשונה נכשלה כך על `producer_page_views` (‏180347 במקור, 180344 בעותק).
 

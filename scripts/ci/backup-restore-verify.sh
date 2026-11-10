@@ -210,10 +210,16 @@ row_count() { # $1=url $2=table → number, or the literal MISSING
 # One psql session on the source:
 #   BEGIN ISOLATION LEVEL REPEATABLE READ, READ ONLY
 #   pg_export_snapshot()                  → \gset → \setenv
+#   COUNT(*) per model table + the public base-table count, in that snapshot
 #   \! pg_dump --snapshot=<that id>       the transaction stays open throughout,
 #                                         so the snapshot stays importable
-#   COUNT(*) per model table + the public base-table count, same transaction
 #   COMMIT
+# The counts run BEFORE pg_dump, not after it: their AccessShareLocks are then
+# held until COMMIT, across the whole dump. Counting after the dump left a gap
+# between pg_dump releasing its locks and the COUNTs taking theirs, in which a
+# TRUNCATE or a table rewrite on the source — neither is MVCC-safe — would make
+# a COUNT disagree with the snapshot (a false red), and a table dropped after
+# the snapshot would still be listed in information_schema but fail its COUNT.
 # Measured on psql 16 before relying on it: \! does NOT interpolate :vars (it
 # passes `:v` through literally) while \setenv does, so the id travels as an
 # environment variable; and a failed \! leaves psql's exit code 0, so pg_dump's
@@ -241,11 +247,8 @@ source_snapshot() {
   script+="SET LOCAL idle_in_transaction_session_timeout = 0;"$'\n'
   script+="SELECT set_config('transaction_timeout', '0', true) WHERE current_setting('server_version_num')::int >= 170000 \\g /dev/null"$'\n'
   if [ -n "$dump" ]; then
-    rcfile="$(mktemp -t meh2912-dumprc.XXXXXX)"
     script+="SELECT pg_export_snapshot() AS meh2912_snapshot \\gset"$'\n'
     script+="\\setenv MEH2912_SNAPSHOT :meh2912_snapshot"$'\n'
-    # shellcheck disable=SC2016  # expanded by the shell psql's \! starts, not here
-    script+='\! pg_dump "$MEH2912_SOURCE_URL" -Fc -f "$MEH2912_DUMP_FILE" --snapshot="$MEH2912_SNAPSHOT" </dev/null; echo "$?" > "$MEH2912_DUMP_RC"'$'\n'
   fi
   for t in "$@"; do
     _ident "$t" || die "refusing to count a non-identifier table name: '$t'"
@@ -257,8 +260,14 @@ source_snapshot() {
     script+="\\endif"$'\n'
   done
   script+="SELECT '$SRC_BASE_KEY|' || COUNT(*) FROM information_schema.tables WHERE table_schema='public' AND table_type='BASE TABLE' AND table_name <> 'alembic_version';"$'\n'
+  if [ -n "$dump" ]; then
+    # shellcheck disable=SC2016  # expanded by the shell psql's \! starts, not here
+    script+='\! pg_dump "$MEH2912_SOURCE_URL" -Fc -f "$MEH2912_DUMP_FILE" --snapshot="$MEH2912_SNAPSHOT" </dev/null; echo "$?" > "$MEH2912_DUMP_RC"'$'\n'
+  fi
   script+="COMMIT;"$'\n'
 
+  # Created only now, with nothing that can die() between here and its rm.
+  [ -z "$dump" ] || rcfile="$(mktemp -t meh2912-dumprc.XXXXXX)"
   set +e
   out="$(printf '%s' "$script" \
          | MEH2912_SOURCE_URL="$SOURCE_URL" MEH2912_DUMP_FILE="$dump" MEH2912_DUMP_RC="$rcfile" \
@@ -268,12 +277,12 @@ source_snapshot() {
   if [ -n "$dump" ]; then
     dump_rc="$(cat "$rcfile" 2>/dev/null || true)"; rm -f "$rcfile"
     if [ -n "$dump_rc" ] && [ "$dump_rc" != "0" ]; then
-      die "pg_dump --snapshot failed (exit $dump_rc) — nothing was dumped from the snapshot"
+      die "pg_dump --snapshot failed (exit $dump_rc)"
     fi
   fi
   [ "$rc" -eq 0 ] || die "reading the source in one snapshot failed (psql exit $rc)"
   if [ -n "$dump" ] && [ "$dump_rc" != "0" ]; then
-    die "pg_dump never ran inside the snapshot session — nothing was dumped"
+    die "pg_dump never ran inside the snapshot session"
   fi
 
   while IFS='|' read -r k v; do
@@ -588,8 +597,8 @@ self_test() {
   #     first real staging-drill run went red on producer_page_views (180347 →
   #     180344) because live traffic landed between the dump and a source count
   #     taken later. A `pg_dump` shim writes rows into the source just BEFORE
-  #     and just AFTER the real pg_dump, so both writes fall between the start
-  #     of the drill and the source count:
+  #     and just AFTER the real pg_dump, so both writes land after the drill's
+  #     snapshot was taken and before the point where the old drill counted:
   #       - counted live after the restore (the old drill): RED, the source has
   #         7 more rows than the restored copy;
   #       - counted first, dumped later without a shared snapshot: RED, the
