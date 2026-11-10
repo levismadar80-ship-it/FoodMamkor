@@ -67,10 +67,13 @@ logger = logging.getLogger(__name__)
 
 def is_super_admin(target: User) -> bool:
     """MEH-2890: the protected owner account, from SUPER_ADMIN_EMAIL (config).
-    Case-insensitive. Never true when the setting is empty — and production
-    cannot run with it empty (config._load_settings refuses to boot)."""
+    EXACT match on the stored address, as the old constant was: emails are
+    unique case-sensitively, so a case-insensitive match would hand the
+    protection to anyone who registers a case variant. Never true when the
+    setting is empty — and production cannot run with it empty
+    (config._load_settings refuses to boot)."""
     protected = settings.super_admin_email
-    return bool(protected) and (target.email or "").strip().lower() == protected
+    return bool(protected) and (target.email or "").strip() == protected
 
 
 # MEH-1571: shared Hebrew copy for the two update_category guards. Named

@@ -95,9 +95,10 @@ import type { Locator, Route } from "@playwright/test";
 
 const uuid = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`;
 const ADMIN = { id: uuid(1), email: "admin@example.com", name: "מנהלת", role: "admin" };
-const SUPER_ADMIN_EMAIL = "levismadar80@gmail.com"; // admin/users/page.js:13
+// MEH-2890: the page reads `is_super_admin` from GET /admin/users; no address.
+const OWNER_EMAIL = "owner@example.com";
 
-type User = { id: string; email: string; name: string; city: string | null; phone: string | null; role: string; is_blocked: boolean; producer_id: string | null; favorites_count: number; created_at: string };
+type User = { id: string; email: string; name: string; city: string | null; phone: string | null; role: string; is_blocked: boolean; is_super_admin?: boolean; producer_id: string | null; favorites_count: number; created_at: string };
 const user = (n: number, over: Partial<User> = {}): User => ({
   id: uuid(100 + n),
   email: `user${n}@example.com`,
@@ -115,7 +116,7 @@ const user = (n: number, over: Partial<User> = {}): User => ({
 const SIXTY: User[] = [
   { ...user(1), id: ADMIN.id, email: ADMIN.email, name: ADMIN.name, role: "admin" },
   user(2, { name: "רונית אדמין", role: "admin" }),
-  user(3, { name: "סמדר", email: SUPER_ADMIN_EMAIL, role: "admin" }),
+  user(3, { name: "סמדר", email: OWNER_EMAIL, role: "admin", is_super_admin: true }),
   ...Array.from({ length: 57 }, (_, i) => user(i + 4)),
 ];
 
@@ -561,7 +562,7 @@ test.describe("/admin/users — the role kebab", () => {
     await stubAdmin(page);
     await openUsers(page);
     const row = userRow(page, "סמדר");
-    await expect(row.getByText(SUPER_ADMIN_EMAIL)).toBeVisible();
+    await expect(row.getByText(OWNER_EMAIL)).toBeVisible();
     await expect(kebab(row)).toHaveCount(0);
     await expect(row.getByText("מוגן")).toBeVisible();
     await expect(row.getByTitle("לא ניתן להסיר הרשאות מהאדמין הראשי")).toBeVisible();

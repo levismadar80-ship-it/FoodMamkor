@@ -235,10 +235,20 @@ def _load_settings() -> Settings:
             "JWT_SECRET_KEY in the environment."
         )
 
-    # MEH-2890: normalise once, so every comparison is case-insensitive.
-    s.super_admin_email = s.super_admin_email.strip().lower()
+    # MEH-2890: EXACT match, not case-insensitive. Registration stores the
+    # local part as typed and email uniqueness is case-sensitive, so a
+    # case-insensitive match would let anyone register «Owner@…» and inherit
+    # the owner's protection (fresh reviewer on #4280). Only whitespace and
+    # surrounding quotes (a common paste mistake in a dashboard) are stripped.
+    s.super_admin_email = s.super_admin_email.strip().strip("\"'").strip()
+    # Production is ENV=production OR Railway's own RAILWAY_ENVIRONMENT, which
+    # Railway sets itself and cannot be forgotten.
+    _is_production = (
+        s.env.strip().lower() == "production"
+        or s.railway_environment.strip().lower() == "production"
+    )
     if not _looks_like_email(s.super_admin_email):
-        if s.env.lower() == "production":
+        if _is_production:
             # FAIL CLOSED (Sapir 10/11). Railway keeps the previous deployment
             # serving when a new one fails its healthcheck, so this blocks the
             # bad deploy rather than taking the site down.
@@ -256,10 +266,18 @@ def _load_settings() -> Settings:
 
 
 def _looks_like_email(value: str) -> bool:
-    """One `@`, something on both sides, a dot inside the domain. Not a full
-    validator — a guard against an empty or obviously wrong value."""
-    local, at, domain = value.partition("@")
-    return bool(at and local and "@" not in domain and "." in domain.strip("."))
+    """A real address by the same validator the API uses for every email field
+    (pydantic EmailStr / email-validator, no DNS lookup). Rejects `mailto:x@y`,
+    `a@b..c`, spaces, a missing TLD."""
+    if not value:
+        return False
+    from pydantic import EmailStr, TypeAdapter, ValidationError
+
+    try:
+        TypeAdapter(EmailStr).validate_python(value)
+    except ValidationError:
+        return False
+    return True
 
 
 settings = _load_settings()
