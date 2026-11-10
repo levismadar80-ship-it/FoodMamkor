@@ -20,8 +20,8 @@
  *           its loadFonts / wrapText / drawLockup and both safe-band
  *           constants); components/producer/RequestReviewCard.jsx (the
  *           empty-state destination, mounted on dashboard/tools:166);
- *           app/[locale]/producer/dashboard/page.js (ShareKitSection, the
- *           only mount point).
+ *           components/producer/ShareKitSection.jsx (the only mount point;
+ *           rendered in dashboard/tools#share since MEH-2882 PR 1).
  * History:  MEH-1428 (creation).
  *
  * NO PRINTED URL, deliberately. MEH-2589 took the URL off the story card
