@@ -11,7 +11,7 @@ import BrandLoader from "@/components/BrandLoader";
 // provider in the layout already ships the a11y namespace
 // (lib/client-messages.js keeps it in the root set).
 // DO NOT turn this back into an async server component that reads next-intl
-// without a locale — __tests__/StaticRoutesGuard.test.js reds on it.
+// without a locale — the postbuild guard (scripts/static-routes-guard.mjs) reds on it in CI.
 
 // The ONE route-level loading boundary of the site: it streams on every
 // navigation without a nearer loading.js, so it cannot know the coming page's
