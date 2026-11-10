@@ -169,7 +169,6 @@ def _send_newsletter_welcome(email: str) -> None:
           <tr>
             <td style="text-align:right;direction:rtl;">
               {email_logo_html()}
-              <p style="font-size:13px;color:#2e6853;margin:0 0 8px;font-weight:bold;">מהמקור 🌿</p>
               <h1 style="font-size:20px;color:#1C1A17;margin:0 0 16px;">ברוכים הבאים למהמקור</h1>
               <p style="color:#3a3a3a;font-size:15px;line-height:1.8;margin:0 0 20px;">תודה שהצטרפת.</p>
               <p style="color:#3a3a3a;font-size:15px;line-height:1.8;margin:0 0 24px;">
