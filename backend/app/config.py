@@ -269,15 +269,18 @@ def _looks_like_email(value: str) -> bool:
     """A real address by the same validator the API uses for every email field
     (pydantic EmailStr / email-validator, no DNS lookup). Rejects `mailto:x@y`,
     `a@b..c`, spaces, a missing TLD."""
-    if not value:
-        return False
     from pydantic import EmailStr, TypeAdapter, ValidationError
 
-    try:
-        TypeAdapter(EmailStr).validate_python(value)
-    except ValidationError:
-        return False
-    return True
+    # The try sits under `if value:` on purpose: scripts/check_env_drift.sh
+    # reads every 4-space-indented `name:` line in this file as a settings
+    # field, so a bare 4-space `try:` reported a phantom env var `TRY`.
+    if value:
+        try:
+            TypeAdapter(EmailStr).validate_python(value)
+        except ValidationError:
+            return False
+        return True
+    return False
 
 
 settings = _load_settings()
