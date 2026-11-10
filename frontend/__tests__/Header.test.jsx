@@ -50,7 +50,7 @@ vi.mock("next-intl", () => {
     "nav.add_business": "הוסיפו את העסק שלך",
     // MEH-1310: favorites row shares AccountSheet's nav.favorites key.
     "nav.favorites": "מועדפים",
-    "account.menu.profile": "הפרופיל שלי",
+    "account.menu.view_page": "צפייה בדף",
     "account.menu.settings": "הגדרות",
     "account.menu.dashboard": "לוח הבקרה שלי",
     "account.menu.admin": "ממשק אדמין",
@@ -311,7 +311,7 @@ describe("Header", () => {
     it("consumer menu = favorites → settings → logout, links resolve", () => {
       render(<Header />);
       fireEvent.click(screen.getByLabelText("תפריט — דנה"));
-      expect(screen.queryByText("הפרופיל שלי")).toBeNull();
+      expect(screen.queryByText("צפייה בדף")).toBeNull();
       const favoritesLink = screen.getByText("מועדפים").closest("a");
       expect(favoritesLink.getAttribute("href")).toBe("/favorites");
       const settingsLink = screen.getByText("הגדרות").closest("a");
@@ -348,14 +348,14 @@ describe("Header", () => {
       expect(screen.queryByText("ממשק אדמין")).toBeNull();
       const dashboardLink = screen.getByText("לוח הבקרה שלי").closest("a");
       expect(dashboardLink.getAttribute("href")).toBe("/producer/dashboard");
-      const profileLink = screen.getByText("הפרופיל שלי").closest("a");
+      const profileLink = screen.getByText("צפייה בדף").closest("a");
       expect(profileLink.getAttribute("href")).toBe("/producer/p-42");
       const settingsLink = screen.getByText("הגדרות").closest("a");
       expect(settingsLink.getAttribute("href")).toBe("/settings");
       // MEH-1310: full producer order is dashboard → profile → מועדפים → הגדרות
       const menuItems = screen.getAllByRole("menuitem").map((el) => el.textContent);
-      expect(menuItems.indexOf("לוח הבקרה שלי")).toBeLessThan(menuItems.indexOf("הפרופיל שלי"));
-      expect(menuItems.indexOf("הפרופיל שלי")).toBeLessThan(menuItems.indexOf("מועדפים"));
+      expect(menuItems.indexOf("לוח הבקרה שלי")).toBeLessThan(menuItems.indexOf("צפייה בדף"));
+      expect(menuItems.indexOf("צפייה בדף")).toBeLessThan(menuItems.indexOf("מועדפים"));
       expect(menuItems.indexOf("מועדפים")).toBeLessThan(menuItems.indexOf("הגדרות"));
     });
 
