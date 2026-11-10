@@ -174,3 +174,41 @@ def test_a_real_migration_error_fails_the_boot(scratch_db, tmp_path, capsys):
     )
     # The failed revision was not recorded; the database is still at the image head.
     assert _version(scratch_db) == [_image_head()]
+
+
+def _empty_image(tmp_path: Path) -> Path:
+    """A copy of alembic/ + alembic.ini whose versions/ folder holds no revision
+    files: what a wrong script_location or a broken image build looks like."""
+    root = tmp_path / "empty_image"
+    shutil.copytree(
+        BACKEND / "alembic",
+        root / "alembic",
+        ignore=shutil.ignore_patterns("__pycache__", "*.py"),
+    )
+    # env.py and script.py.mako are needed to load the environment at all.
+    shutil.copy(BACKEND / "alembic" / "env.py", root / "alembic" / "env.py")
+    (root / "alembic" / "versions").mkdir(exist_ok=True)
+    shutil.copy(BACKEND / "alembic.ini", root / "alembic.ini")
+    return root / "alembic.ini"
+
+
+def test_an_image_with_no_migration_files_fails_the_boot(scratch_db, tmp_path, capsys):
+    # MEH-2903 risk 1. With no revision files every database head looks
+    # "unknown", which must NOT be read as a rollback: that would start the app
+    # on a schema nobody checked. The boot fails, naming the cause.
+    ok = _run(scratch_db)
+    assert ok.returncode == 0, ok.stderr[-3000:]
+    assert _version(scratch_db) == [_image_head()]
+
+    empty = _empty_image(tmp_path)
+    assert not list((empty.parent / "alembic" / "versions").glob("*.py"))
+    proc = _run(scratch_db, "--alembic-ini", str(empty))
+    _show(capsys, "case 3 · an image with no migration files", proc)
+
+    assert proc.returncode != 0, (
+        "an image with no migration files must fail the boot:\n" + proc.stderr[-3000:]
+    )
+    assert "ROLLBACK MODE" not in proc.stderr, proc.stderr[-3000:]
+    assert "NO MIGRATIONS" in proc.stderr, proc.stderr[-3000:]
+    # Nothing was written: the database is still at the real image head.
+    assert _version(scratch_db) == [_image_head()]
