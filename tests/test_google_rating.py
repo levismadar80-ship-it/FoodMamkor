@@ -262,7 +262,7 @@ def test_candidates_admin_query_replaces_name_and_city(client, db, monkeypatch):
 # ---------------------------------------------------------------------------
 # MEH-2886 chunk 3 — the DB connection is back in the pool BEFORE Google is
 # called. The stand-in for the Google call reads engine.pool.checkedout() at
-# the moment it runs (same probe as tests/test_meh2886_db_release.py).
+# the moment it runs.
 # ---------------------------------------------------------------------------
 
 

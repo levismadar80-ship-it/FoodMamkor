@@ -129,8 +129,9 @@ def get_google_rating(
 
     place_id = row[0]
     # MEH-2886 chunk 3: the DB is done — give the connection back BEFORE the
-    # up-to-4 s Google call. Holding it across the call let a slow Places API
-    # tie up one of the 15 pool connections per page view of a business page.
+    # Google call (timeout 4 s per phase — connect, read — so it can run
+    # longer). Holding it across the call let a slow Places API tie up one of
+    # the 15 pool connections per page view of a business page.
     # get_db's own close afterwards is a no-op on a closed session.
     db.close()
     if not place_id:
