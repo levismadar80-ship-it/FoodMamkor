@@ -30,6 +30,11 @@ REFRESH_TOKEN_EXPIRE_DAYS = 14               # MEH-326: 14d HttpOnly refresh coo
 - **Prod (`ENV=production`):** if `JWT_SECRET_KEY` is unset, the app
   **refuses to start** with a `RuntimeError` ("SECURITY: JWT_SECRET_KEY
   must be set in production"). This is the key fail-fast guarantee.
+- **Same rule for `SUPER_ADMIN_EMAIL` (MEH-2890):** production refuses to
+  start without a valid address. It names the one account `/admin/users`
+  can never demote or delete. It replaced an address that was hard-coded in
+  `admin_extra.py` and in the admin users page of a public repo; the page now
+  reads `is_super_admin` from the API and holds no address.
 - **Generation:** `python -c "import secrets; print(secrets.token_hex(32))"`
 - **Token lifetime (MEH-326):** 15-minute access token + 14-day HttpOnly
   refresh cookie with rotation. Backend: `POST /auth/refresh` rotates both
