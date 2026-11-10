@@ -309,9 +309,7 @@ What the evidence does show:
 - In run 42837553999 the Chromium job and the WebKit shadow job **started in the same second** (14:47:20 and 14:47:21).
 - Each logs in 4 roles in global setup (`global-setup.ts`: producer, consumer, admin, smoke-admin).
 
-The cause stays **unverified**. Two candidates:
-- both jobs land in one bucket (shared egress, or the local middleware stamping one client IP);
-- another job was logging in at the same minute.
+The cause stays **unverified** for this run, but it is likely: both jobs landed in one bucket. A previous session measured that **all CI leaves from one IP** (MEH-2284 in the HANDOFF archive: a 60/minute-per-IP limit tripped the same way). Two jobs × 4 logins in the same minute exceed 5/minute. The other candidate is another job logging in at the same minute.
 
 **Proposed fix, inside E2E code with no workflow change:** global setup logs in serially and, on a 429, waits out the window (`Retry-After`, otherwise 60 s) once before failing. The shards in E1 stagger their setup by 30 s.
 
