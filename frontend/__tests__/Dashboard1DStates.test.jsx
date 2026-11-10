@@ -100,7 +100,10 @@ const ZERO = {
 const ACTIVE = { ...ZERO, profile_views: { last_7d: 2, last_30d: 4, total: 9 } };
 
 function setup({ status = "approved", complete = true, analytics = ACTIVE } = {}) {
-  producerRef.current = { id: 1, name: "עסק לדוגמה", slug: "demo-farm", status, availability_state: "accepting_orders" };
+  // MEH-2880: the REAL shape of GET /producers/me/dashboard — no `slug`
+  // (producer_me.py). The slug lives on GET /producers/me (profileRef). This
+  // mock used to carry a slug the endpoint never sends, which hid the bug.
+  producerRef.current = { id: 1, name: "עסק לדוגמה", status, availability_state: "accepting_orders", vacation_until: null, plan: "free" };
   profileRef.current = { id: 1, name: "עסק לדוגמה", slug: "demo-farm" };
   completeRef.current = complete;
   analyticsRef.current = analytics;

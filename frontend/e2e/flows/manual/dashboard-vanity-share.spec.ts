@@ -58,7 +58,9 @@ async function stub(page: Page, { share }: { share: ShareMode }) {
   await page.route((u) => /\/api\//.test(u.pathname), (r) => {
     const p = new URL(r.request().url()).pathname.replace(/^\/api/, "");
     if (/\/auth\/me\/?$/.test(p)) return json(r, { id: 42, email: "o@example.com", name: "נועה", role: "producer", producer_id: 7, phone_verified: true });
-    if (/\/producers\/me\/dashboard/.test(p)) return json(r, { producer: PRODUCER });
+    // MEH-2880: the real /me/dashboard payload has no slug — the page must take
+    // it from /producers/me. (This stub used to carry one, which hid the bug.)
+    if (/\/producers\/me\/dashboard/.test(p)) return json(r, { producer: { ...PRODUCER, slug: undefined } });
     if (/\/producers\/me\/analytics/.test(p)) return json(r, ANALYTICS);
     if (/\/producers\/me\/?$/.test(p)) return json(r, PRODUCER);
     if (/count/.test(p)) return json(r, { count: 0 });

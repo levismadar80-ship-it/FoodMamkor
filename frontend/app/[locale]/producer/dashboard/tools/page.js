@@ -35,10 +35,14 @@ import { ShoppingBag, CalendarPlus, UsersThree, CookingPot, Star, Sparkle } from
 import api from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import RequestReviewCard from "@/components/producer/RequestReviewCard";
+import BusinessQrCard from "@/components/producer/BusinessQrCard";
+import ShareKitSection from "@/components/producer/ShareKitSection";
+import { producerCompleteness } from "@/lib/producer-completeness";
 
 export default function ProducerDashboardToolsPage() {
   const router = useRouter();
   const t = useTranslations("dashboard.producer");
+  const tShare = useTranslations("share");
   const { user, loading: authLoading } = useAuth();
   const [data, setData] = useState(null);
   // MEH-1777: a rejected fetch used to leave `data` null forever, and
@@ -47,6 +51,11 @@ export default function ProducerDashboardToolsPage() {
   // retry-counter shape as dashboard/page.js's loadError/analyticsError.
   const [loadError, setLoadError] = useState(false);
   const [attempt, setAttempt] = useState(0);
+  // MEH-2882 PR 1: the «שיתוף» section (QR card + «ערכת שיתוף») needs the
+  // owner profile — slug, images, categories, completeness. GET
+  // /producers/me/dashboard has none of them (MEH-2880). A failed profile
+  // fetch only hides that section; the tool tiles still render.
+  const [profile, setProfile] = useState(null);
 
   useEffect(() => {
     if (authLoading) return;
@@ -62,6 +71,10 @@ export default function ProducerDashboardToolsPage() {
         setData(null);
         setLoadError(true);
       });
+    api
+      .get("/producers/me")
+      .then((r) => setProfile(r.data))
+      .catch(() => setProfile(null));
   }, [user, authLoading, router, attempt]);
 
   if (authLoading || !user || user.role !== "producer") return null;
@@ -195,6 +208,23 @@ export default function ProducerDashboardToolsPage() {
           endpoint 403s for any other status, and a pending business's public
           page does not exist yet, so the link would open a 404. */}
       {producer.status === "approved" && <RequestReviewCard />}
+
+      {/* MEH-2882 PR 1 (placement audit 2026-11): sharing materials that are
+          made once or now and then — the printable QR card (→ /qr-card) and
+          «ערכת שיתוף» — live here, not on the daily home. Approved business
+          only, never an organizer: the same gates the cards had on home. */}
+      {approved && profile && profile.kind !== "organizer" && (
+        <section id="share" data-testid="tools-share-section" className="mt-8 scroll-mt-24">
+          <h2 className="font-headline-md text-lg font-bold text-text mb-4">{tShare("quiet_label")}</h2>
+          <BusinessQrCard
+            producer={profile}
+            isComplete={producerCompleteness(profile).missing.length === 0}
+            isApproved={approved}
+            isOrganizer={false}
+          />
+          <ShareKitSection profile={profile} />
+        </section>
+      )}
     </div>
   );
 }
