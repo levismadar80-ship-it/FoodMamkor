@@ -15,20 +15,20 @@
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import GuideArticle from "@/components/GuideArticle";
 import { BRAND_NAME } from "@/lib/constants";
-import { buildAlternates, OG_LOCALE } from "@/lib/i18n-seo";
+import { buildAlternates, buildEntityTitle, OG_LOCALE } from "@/lib/i18n-seo";
 
 // MEH-476 PR 3b2: per-page hreflang via buildAlternates; og:locale per locale.
 export async function generateMetadata({ params }) {
   const { locale } = await params;
   const t = await getTranslations("guides.business_story");
-  const title = `${t("title")} | ${BRAND_NAME}`;
+  const title = t("title");
   const description = t("preview");
   return {
-    // title.absolute prevents layout's `%s | ${BRAND_NAME}` template appending.
-    title: { absolute: title },
+    // MEH-2853: plain title — the layout template `%s | <brand>` adds the brand.
+    title,
     description,
     openGraph: {
-      title,
+      title: buildEntityTitle(title, locale),
       description,
       type: "article",
       siteName: BRAND_NAME,

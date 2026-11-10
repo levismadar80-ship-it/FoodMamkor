@@ -25,6 +25,7 @@ from app.models import Producer
 from app.rate_limit import limiter
 from app.schemas.schemas import ProducerInfoReportCreate
 from app.services.email import send_email
+from app.services.email_branding import email_logo_html
 
 router = APIRouter(tags=["reports"])
 
@@ -98,6 +99,7 @@ def report_producer_info(
         <table width="100%" cellpadding="40" cellspacing="0" style="background:#ffffff;border-radius:12px;text-align:right;direction:rtl;max-width:560px;margin:0 auto;">
           <tr>
             <td style="text-align:right;direction:rtl;">
+              {email_logo_html()}
               <h1 style="font-size:20px;color:#1C1A17;margin:0 0 12px;">דיווח על פרטים שגויים</h1>
               <p style="color:#3a3a3a;font-size:15px;line-height:1.7;margin:0 0 8px;">בית עסק: <strong>{name_html}</strong></p>
               <p style="color:#666;font-size:13px;line-height:1.7;margin:0 0 4px;">מזהה: {slug_html}</p>

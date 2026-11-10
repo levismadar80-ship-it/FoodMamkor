@@ -163,7 +163,10 @@ Eight instances in one week:
 ## Rule 5a — Adversarial review before every merge to staging
 
 Run `/adversarial-review` on all changed files; fix every REFEREE verdict before
-the PR. `auth.py` / `upload.py` / permissions / `backend/app/routers/**` also get
+the PR. The independent pass is a **fresh reviewer subagent** given the diff and
+the card's acceptance_criteria; its findings are fixed or answered in the PR. The
+`claude[bot]` CI review is off since 08/11 (Sapir, until MEH-569) — don't wait for
+its comment. `auth.py` / `upload.py` / permissions / `backend/app/routers/**` also get
 the built-in `/security-review`, and `auth.py` / `upload.py` / permissions a
 web-search CVE check ([security.md](./security.md)).
 

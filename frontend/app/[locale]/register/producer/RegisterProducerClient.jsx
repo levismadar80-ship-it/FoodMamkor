@@ -973,7 +973,7 @@ function RegisterProducerPageBody({ routeKind }) {
           <div data-testid="register-draft-banner" className="bg-green-50 border border-primary/20 rounded-md px-4 py-3 mb-4 flex items-center justify-between text-sm">
             <span className="text-text">{t("auth.register.producer.draft.prompt")}</span>
             <div className="flex gap-3">
-              <button data-testid="register-draft-continue" onClick={restoreDraft} className="text-primary font-medium hover:underline">{t("auth.register.producer.draft.continue")}</button>
+              <button data-testid="register-draft-continue" onClick={restoreDraft} className="text-primary font-medium underline decoration-[1.5px] underline-offset-[5px] decoration-primary/35 hover:decoration-current">{t("auth.register.producer.draft.continue")}</button>
               <button data-testid="register-draft-dismiss" onClick={dismissDraft} className="text-fg-muted hover:text-text">{t("auth.register.producer.draft.dismiss")}</button>
             </div>
           </div>
@@ -1780,8 +1780,8 @@ function RegisterProducerPageBody({ routeKind }) {
               />
               <span className="leading-relaxed text-fg-muted">
                 {t("auth.register.producer.terms.intro")}{" "}
-                <Link href="/terms" target="_blank" className="text-primary hover:underline">{t("auth.register.producer.terms.tos_link")}</Link>{" "}
-                {t("auth.register.producer.terms.and")}<Link href="/privacy" target="_blank" className="text-primary hover:underline">{t("auth.register.producer.terms.privacy_link")}</Link>
+                <Link href="/terms" target="_blank" className="text-primary underline decoration-[1.5px] underline-offset-[5px] decoration-primary/35 hover:decoration-current">{t("auth.register.producer.terms.tos_link")}</Link>{" "}
+                {t("auth.register.producer.terms.and")}<Link href="/privacy" target="_blank" className="text-primary underline decoration-[1.5px] underline-offset-[5px] decoration-primary/35 hover:decoration-current">{t("auth.register.producer.terms.privacy_link")}</Link>
               </span>
             </label>
 
@@ -1838,7 +1838,7 @@ function RegisterProducerPageBody({ routeKind }) {
                   <Link
                     href="/privacy"
                     target="_blank"
-                    className="text-primary hover:underline"
+                    className="text-primary underline decoration-[1.5px] underline-offset-[5px] decoration-primary/35 hover:decoration-current"
                   >
                     {chunks}
                   </Link>

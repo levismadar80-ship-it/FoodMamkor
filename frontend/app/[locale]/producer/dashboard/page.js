@@ -151,7 +151,7 @@ function SectionFetchError({ message, retryLabel, onRetry, testid }) {
       <button
         type="button"
         onClick={onRetry}
-        className="text-sm text-primary font-medium hover:underline shrink-0"
+        className="text-sm text-primary font-medium underline decoration-[1.5px] underline-offset-[5px] decoration-primary/35 hover:decoration-current shrink-0"
       >
         {retryLabel}
       </button>

@@ -145,7 +145,13 @@ test.describe("manual › /join (MEH-995)", () => {
     await expect(hero.getByTestId("join-cta")).toHaveText(COPY.cta);
     await expect(cta).toHaveAttribute("href", /\/register\/producer(?:[/?#]|$)/);
     await expect(hero).toContainText(COPY.trust_hint);
-    const heroText = (await hero.textContent()) ?? "";
+    // #4216 (approved by Sapir 08/11): the trust hint under the button is
+    // «חינם, בלי עמלות» — a promise of NO fees, the opposite of the fee/premium
+    // pitch this deny-list keeps out of the hero. The approved hint is taken
+    // out first (read from he.json, never retyped); any OTHER fee word in the
+    // hero still fails.
+    expect(COPY.trust_hint, "control: the approved hint is the one carrying «עמלות»").toContain("עמלות");
+    const heroText = ((await hero.textContent()) ?? "").replace(COPY.trust_hint, "");
     for (const word of HERO_FEES_VOCAB) {
       expect(heroText, `hero must not mention "${word}"`).not.toContain(word);
     }
@@ -202,14 +208,18 @@ test.describe("manual › /join (MEH-995)", () => {
     await expect(faq).toContainText(COPY.faq.eyebrow);
     await expect(faq.getByRole("heading", { level: 2 })).toHaveText(COPY.faq.heading);
     const questions = faq.getByRole("heading", { level: 3 });
-    await expect(questions).toHaveCount(4);
+    await expect(questions).toHaveCount(6);
     await expect(questions.first()).toHaveText(COPY.faq.q_cost);
     // Accordion (Sapir, 07/11): every answer closed on load; a tap on a
     // question opens its answer.
     const items = faq.getByTestId("join-faq-item");
     const first = items.nth(0);
     await expect(first.getByText(COPY.faq.a_cost)).toBeHidden();
-    await expect(items.nth(1).getByText(COPY.faq.a_google)).toBeHidden();
+    // MEH-2841 reordered FAQ_KEYS to [cost, price, google, updates, revenue,
+    // customers], so index 1 is now the price answer, not the Google one.
+    // The ticket named only the count; this positional assertion is the
+    // other half, and it would have gone red on the wrong text.
+    await expect(items.nth(1).getByText(COPY.faq.a_price)).toBeHidden();
     await first.locator("summary").click();
     await expect(first.getByText(COPY.faq.a_cost)).toBeVisible();
     const allLink = faq.getByRole("link");

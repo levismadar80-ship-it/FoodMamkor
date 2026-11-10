@@ -4878,13 +4878,21 @@ class OrganizerPublicOut(BaseModel):
 
 
 class EventFilters(BaseModel):
-    """MEH-447: query-param bag for GET /events. Used via
-    Annotated[EventFilters, Depends()] so FastAPI exposes each field as
-    an individual query parameter — preserving the pre-refactor OpenAPI
-    schema verbatim while keeping list_events under PLR0913's 5-arg cap."""
+    """MEH-447: query-param bag for GET /events, keeping list_events under
+    PLR0913's 5-arg cap. FastAPI exposes each field as an individual query
+    parameter.
+
+    MEH-2847: `category` is a LIST (repeated ?category=A&category=B, the
+    format lib/api.js `paramsSerializer: { indexes: null }` sends and
+    /producers already uses, MEH-1465) and the route filters IN (...). One
+    value parses to a one-item list, so an old single-value link behaves as
+    before. This is why the route declares the bag as
+    Annotated[EventFilters, Query()] and no longer Depends(): through
+    Depends() a list field is not read from the query string at all
+    (measured 08/11 on FastAPI 0.162 — ?category=a parsed to None)."""
 
     city: str | None = Field(default=None)
-    category: str | None = Field(default=None)
+    category: list[str] | None = Field(default=None)
     from_date: date | None = Field(default=None)
     to_date: date | None = Field(default=None)
     producer_id: UUID | None = Field(default=None)
@@ -5164,6 +5172,8 @@ class AlertPrefsIn(BaseModel):
     notify_delivery_area: bool = True
     # MEH-1361: new_recipe alert type; defaults mirror the sibling flags.
     notify_new_recipe: bool = True
+    # MEH-2828: new_group_buy alert type; defaults to on like the siblings.
+    notify_new_group_buy: bool = True
     whatsapp_opt_in: bool = False
     push_subscription: dict | None = None
 
@@ -5174,6 +5184,7 @@ class AlertPrefsOut(BaseModel):
     notify_new_event: bool
     notify_delivery_area: bool
     notify_new_recipe: bool
+    notify_new_group_buy: bool
     whatsapp_opt_in: bool
     has_push: bool
 

@@ -92,7 +92,7 @@ describe("BadgesExplainer (MEH-2701)", () => {
     const verified = screen.getByTestId("badges-group-admin-verified");
     expect(within(verified).getByRole("link").getAttribute("href")).toBe("/about/process");
     const declared = screen.getByTestId("badges-group-self-declared");
-    expect(within(declared).getByRole("link").getAttribute("href")).toBe("/contact");
+    expect(within(declared).getByRole("link").getAttribute("href")).toBe("/contact?topic=correction");
     expect(declared.textContent).not.toContain("<link>");
   });
 

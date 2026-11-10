@@ -63,16 +63,18 @@ const hrefsUnder = (heading) => {
   return Array.from(group.querySelectorAll("a[href]")).map((a) => a.getAttribute("href"));
 };
 
-describe("Footer nav split into two audience groups (MEH-1177)", () => {
-  it("renders both group headings", () => {
+describe("Footer nav split into audience groups (MEH-1177; three since MEH-2858)", () => {
+  it("renders all three group headings", () => {
     render(<Footer />);
     expect(screen.getByText("nav.footer.group_discover_heading")).toBeInTheDocument();
+    expect(screen.getByText("nav.footer.group_about_heading")).toBeInTheDocument();
     expect(screen.getByText("nav.footer.group_business_heading")).toBeInTheDocument();
   });
 
-  it("groups the reader links under 'גלו' and the producer links under 'לבתי עסק'", () => {
+  it("groups the links: 'גלו' (what to find) · 'עלינו' (who we are) · 'לבתי עסק'", () => {
     render(<Footer />);
     const discover = hrefsUnder(screen.getByText("nav.footer.group_discover_heading"));
+    const about = hrefsUnder(screen.getByText("nav.footer.group_about_heading"));
     const business = hrefsUnder(screen.getByText("nav.footer.group_business_heading"));
 
     // MEH-1060 (SEO-09): /producers index link added to the discover group.
@@ -80,18 +82,35 @@ describe("Footer nav split into two audience groups (MEH-1177)", () => {
     // MEH-2369: /events is data-gated (no upcoming event → no link); the
     // never-settling api mock above keeps it hidden here. Its own behaviour is
     // asserted in EventsNavGate.test.jsx.
-    expect(discover).toEqual(["/", "/producers", "/map", "/about", "/about/why-local", "/share"]);
+    // MEH-2858: «גלו עסקים» → / is gone (the logo links home), and the three
+    // "who we are" links moved to their own «עלינו» group.
+    expect(discover).toEqual(["/producers", "/map"]);
+    expect(about).toEqual(["/about", "/about/why-local", "/recommend#share"]);
     expect(business).toEqual(["/join", "/about/process", "/about/for-businesses"]);
   });
 
-  it("keeps all 9 ungated nav links exactly once (no link dropped in the split)", () => {
+  it("the groups come in the order גלו · עלינו · לבתי עסק", () => {
+    render(<Footer />);
+    const headings = screen.getAllByRole("heading", { level: 3 }).map((h) => h.textContent);
+    const order = ["nav.footer.group_discover_heading", "nav.footer.group_about_heading", "nav.footer.group_business_heading"];
+    expect(headings.filter((h) => order.includes(h))).toEqual(order);
+  });
+
+  // MEH-2858: 8 — «גלו עסקים» → / left on purpose (the logo links home); the
+  // brand-column logo link is asserted below so home stays one tap away.
+  it("keeps all 8 ungated nav links exactly once (no link dropped in the split)", () => {
     render(<Footer />);
     const navLinks = Array.from(
       screen.getByRole("navigation", { name: "nav.footer.nav_aria" }).querySelectorAll("a[href]"),
     ).map((a) => a.getAttribute("href"));
     expect(navLinks.sort()).toEqual(
-      ["/", "/about", "/about/for-businesses", "/about/why-local", "/about/process", "/join", "/map", "/producers", "/share"].sort(),
+      ["/about", "/about/for-businesses", "/about/why-local", "/about/process", "/join", "/map", "/producers", "/recommend#share"].sort(),
     );
+  });
+
+  it("home stays one tap away through the brand-column logo", () => {
+    render(<Footer />);
+    expect(screen.getByRole("link", { name: "nav.footer.brand_aria" })).toHaveAttribute("href", "/");
   });
 });
 

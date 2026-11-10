@@ -38,6 +38,9 @@ import { badgeIcon } from "@/lib/chip-icons";
  *   producer — producer object (bools + computed fields from /producers)
  *   limit    — optional max number to render (used by ProducerCard)
  *   surface  — "hero" | "card" tier-badge density (default "hero")
+ *   nowrap   — MEH-2856: one line (ProducerCard). Two pills keep their
+ *              natural width so the card can measure the overflow; a single
+ *              pill may still shrink and break inside itself (MEH-2849).
  *
  * Each badge is clickable: tap opens a small popover below with a
  * Hebrew explainer. Outside click + Esc closes. Works on mobile
@@ -85,7 +88,7 @@ export function resolveBadgeLabel(badge, producer, tKashrut) {
   return badge.key === "kosher" ? kosherLabel(producer, tKashrut, badge.label) : badge.label;
 }
 
-export default function BadgeRow({ producer, limit, surface = "hero", hideKeys, avoidRef = null }) {
+export default function BadgeRow({ producer, limit, surface = "hero", hideKeys, avoidRef = null, nowrap = false }) {
   const t = useTranslations("producer.badge_row");
   const tTier = useTranslations("producer.badge");
   // MEH-1711: same namespace KashrutBadgeStrip.jsx:115 uses, so both surfaces
@@ -100,10 +103,15 @@ export default function BadgeRow({ producer, limit, surface = "hero", hideKeys, 
   // omit the prop, so their badge set is byte-unchanged (lib/badges.js is SoT).
   const badges = hideKeys?.length ? all.filter((b) => !hideKeys.includes(b.key)) : all;
   if (badges.length === 0) return null;
+  // MEH-2856: see the `nowrap` prop above.
+  let layout = "flex-wrap";
+  // Two+ pills: the row itself must not shrink either — a shrinking row lets
+  // its pills spill under «+N» without the card's scrollWidth seeing it.
+  if (nowrap) layout = badges.length > 1 ? "flex-nowrap shrink-0 [&>*]:shrink-0" : "flex-nowrap min-w-0";
 
   return (
     <div
-      className="flex flex-wrap items-center gap-1.5"
+      className={`flex ${layout} items-center gap-1.5`}
       role="list"
       aria-label={t("aria")}
     >
@@ -370,7 +378,17 @@ function Badge({ badge, surface = "hero", avoidRef = null }) {
   // the toggle, Esc/outside-click dismissal, and the ProducerCard-Link tap
   // guard that used to live inline here.
   return (
-    <span role="listitem" className="inline-block">
+    // MEH-2849: a long label (e.g. «עסק של מילואימניקים» at 200% text on a 375
+    // card) wraps inside the card instead of running past it — measured 35px
+    // off-screen before. What makes it wrap is the label's min-w-0 +
+    // overflow-wrap (the Popover's inline-block wrapper then fits the
+    // available width); max-w-full keeps each box from asking for more.
+    // rounded-xl, not rounded-full: on a one-line pill the 0.75rem radius is
+    // ≥ half its height, so the ends are exactly as round as before (it scales
+    // with rem, so this holds at 200% too); on a wrapped pill it stays a
+    // rounded rectangle instead of swelling into an ellipse. Labels that fit
+    // render as before.
+    <span role="listitem" className="inline-block max-w-full">
       <Popover
         contentTestId={`badge-tooltip-${badge.key}`}
         contentClassName="w-52"
@@ -386,13 +404,13 @@ function Badge({ badge, surface = "hero", avoidRef = null }) {
             type="button"
             aria-label={`${badge.label} — ${badge.tooltip}`}
             data-badge={badge.key}
-            className="group inline-flex items-center justify-center min-h-[24px] min-w-[24px] focus:outline-none"
+            className="group inline-flex items-center justify-center min-h-[24px] min-w-[24px] max-w-full focus:outline-none"
           >
-            <span className={`inline-flex items-center ${compact ? "gap-0.5 px-2" : "gap-1 px-2.5"} text-xs py-0.5 rounded-full font-medium group-focus-visible:ring-2 group-focus-visible:ring-primary/40 transition ${colorClass}`}>
+            <span className={`inline-flex items-center max-w-full ${compact ? "gap-0.5 px-2" : "gap-1 px-2.5"} text-xs py-0.5 rounded-xl font-medium group-focus-visible:ring-2 group-focus-visible:ring-primary/40 transition ${colorClass}`}>
               {/* MEH-2584: same glyph as the filter chip (lib/chip-icons.js),
                   aria-hidden — the label stays the accessible name. */}
-              {icon && <span aria-hidden="true" className="inline-flex">{icon}</span>}
-              {badge.label}
+              {icon && <span aria-hidden="true" className="inline-flex shrink-0">{icon}</span>}
+              <span className="min-w-0 [overflow-wrap:anywhere]">{badge.label}</span>
             </span>
           </button>
         }

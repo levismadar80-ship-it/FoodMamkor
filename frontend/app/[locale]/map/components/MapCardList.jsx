@@ -105,7 +105,7 @@ export default function MapCardList({
               type="button"
               onClick={onResetAll}
               data-testid="map-card-list-reset"
-              className="text-sm text-primary font-medium hover:underline"
+              className="text-sm text-primary font-medium underline decoration-[1.5px] underline-offset-[5px] decoration-primary/35 hover:decoration-current"
             >
               {t("map.card_list.empty.reset_filters")}
             </button>

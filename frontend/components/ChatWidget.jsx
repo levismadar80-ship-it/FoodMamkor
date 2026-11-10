@@ -5,6 +5,7 @@ import { ChatCircleDots, X, PaperPlaneTilt } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import api from "@/lib/api";
 import CollectionNotice from "@/components/CollectionNotice";
+import { INERT_PRESENT } from "@/lib/inert-attr";
 
 /**
  * ChatWidget — floating Q&A bot, all screen sizes.
@@ -85,6 +86,11 @@ const SUGGESTED_PROMPT_IDS = [
 // they're registering. That copy now lives verbatim at chat.answers.*.
 const ANSWERED_PROMPT_IDS = new Set(["register", "find_nearby"]);
 
+// MEH-2835: the mobile launcher is `w-12 h-12` (48px); + the 16px gap it keeps
+// above the BottomNav pill.
+const CHAT_FAB_CLEARANCE_VAR = "--chat-fab-clearance";
+const CHAT_FAB_CLEARANCE = "64px";
+
 export default function ChatWidget({ hideOnMobile = false } = {}) {
   const t = useTranslations("chat");
   // MEH-1981: notice-at-collection. The line names Anthropic itself — "to whom
@@ -140,6 +146,85 @@ export default function ChatWidget({ hideOnMobile = false } = {}) {
   // MEH-850: cookie-banner clearance is now handled purely in CSS via the
   // `--cookie-banner-h` var (published by CookieBanner) in the launcher's
   // bottom calc() below — no JS visibility state / event listener needed.
+
+  // MEH-2835: while the MOBILE launcher is on screen (and its panel closed),
+  // publish the room it takes — its 48px circle + a 16px gap — as
+  // --chat-fab-clearance on <html>, the --cookie-banner-h pattern. globals.css
+  // adds it to --bottom-inset, so every page's last line (and the footer's
+  // newsletter arrow) ends above the launcher; BackToTop reads it to know
+  // whether the launcher slot is taken. Desktop, an open panel, or a launcher
+  // kept off this page → the var is removed (0).
+  // MEH-2835 PR 2: one mechanism for "step aside" — any element carrying
+  // data-chat-hide hides the MOBILE launcher while it intersects the viewport
+  // (the map, a form, the business page's sticky contact bar while shown).
+  // The set is re-scanned on DOM changes (route changes, a bar toggling its
+  // attribute), throttled to one scan per frame. Desktop never steps aside.
+  const [hiddenByPage, setHiddenByPage] = useState(false);
+  useEffect(() => {
+    if (!viewportKnown || isDesktop || typeof window === "undefined" || typeof window.IntersectionObserver === "undefined") {
+      setHiddenByPage(false);
+      return undefined;
+    }
+    const observed = new Set();
+    const inView = new Set();
+    const io = new window.IntersectionObserver((entries) => {
+      for (const e of entries) {
+        if (e.isIntersecting) inView.add(e.target);
+        else inView.delete(e.target);
+      }
+      setHiddenByPage(inView.size > 0);
+    });
+    const scan = () => {
+      const now = new Set(document.querySelectorAll("[data-chat-hide]"));
+      for (const el of observed) {
+        if (!now.has(el)) {
+          io.unobserve(el);
+          observed.delete(el);
+          inView.delete(el);
+        }
+      }
+      for (const el of now) {
+        if (!observed.has(el)) {
+          io.observe(el);
+          observed.add(el);
+        }
+      }
+      setHiddenByPage(inView.size > 0);
+    };
+    scan();
+    // `pending` (not the rAF id) gates the throttle: an id assigned after a
+    // synchronously-run callback would leave the gate shut for good.
+    let pending = false;
+    let frame = 0;
+    const mo = new MutationObserver(() => {
+      if (pending) return;
+      pending = true;
+      frame = window.requestAnimationFrame(() => {
+        pending = false;
+        scan();
+      });
+    });
+    mo.observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ["data-chat-hide"] });
+    return () => {
+      io.disconnect();
+      mo.disconnect();
+      if (frame) window.cancelAnimationFrame(frame);
+    };
+  }, [viewportKnown, isDesktop]);
+  // An open panel stays open: stepping aside only applies to the closed launcher.
+  const steppedAside = hiddenByPage && !isDesktop && !open;
+
+  const launcherOnMobile = viewportKnown && !isDesktop && !hideOnMobile && !open && !steppedAside;
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    const root = document.documentElement;
+    if (!launcherOnMobile) {
+      root.style.removeProperty(CHAT_FAB_CLEARANCE_VAR);
+      return;
+    }
+    root.style.setProperty(CHAT_FAB_CLEARANCE_VAR, CHAT_FAB_CLEARANCE);
+    return () => root.style.removeProperty(CHAT_FAB_CLEARANCE_VAR);
+  }, [launcherOnMobile]);
 
   // ── "chatWasOpened" — shrink desktop pill to icon after first use ──
   const [wasOpened, setWasOpened] = useState(true); // default icon-only until checked
@@ -235,6 +320,14 @@ export default function ChatWidget({ hideOnMobile = false } = {}) {
   // 9997. At 9999 it painted over the open filter sheet's end corner. The
   // panel keeps 9999 (it is the sheet here).
   if (!isDesktop) Object.assign(launcherStyle, { zIndex: 1050 });
+  // MEH-2835 PR 2: stepping aside = a 150ms fade, no pointer events, inert.
+  if (!isDesktop) {
+    Object.assign(launcherStyle, {
+      transition: "opacity 150ms ease",
+      opacity: steppedAside ? 0 : 1,
+      pointerEvents: steppedAside ? "none" : undefined,
+    });
+  }
   // MEH-1135: desktop 360px box anchors to the same bottom-END corner as the
   // launcher (insetInlineEnd:24, insetInlineStart:auto); mobile stays full-width
   // (both inline insets 0 → spans edge-to-edge in either direction).
@@ -263,6 +356,8 @@ export default function ChatWidget({ hideOnMobile = false } = {}) {
         onClick={open ? () => setOpen(false) : handleOpen}
         style={launcherStyle}
         data-testid="chat-launcher"
+        data-stepped-aside={steppedAside ? "true" : undefined}
+        inert={steppedAside ? INERT_PRESENT : undefined}
         // MEH-2793: `print:hidden` — a floating chat button has no business on
         // paper, and it printed over the A6 QR card (MEH-2785) and the A5
         // rescue counter card (MEH-2649). The class goes on the component's
@@ -273,7 +368,11 @@ export default function ChatWidget({ hideOnMobile = false } = {}) {
         // and never `display` — verified with a computed-style probe, not
         // assumed (frontend.md).
         className={[
-          "vv-pin print:hidden flex items-center justify-center bg-primary text-white rounded-full shadow-[0_4px_24px_rgba(46,104,83,0.25)] hover:bg-primary-dark transition focus-visible:ring-2 focus-visible:ring-primary/40",
+          // MEH-2835: a 2px cream ring (ring-background) so the green circle
+          // reads on green surfaces (footer, closing bands). Focus keeps the
+          // cream ring and adds a dark outline outside it — the old
+          // ring-primary/40 vanished on green and replaced the cream ring.
+          "vv-pin print:hidden flex items-center justify-center bg-primary text-white rounded-full ring-2 ring-background shadow-[0_4px_24px_rgba(46,104,83,0.25)] hover:bg-primary-dark transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text",
           showPillText ? "gap-2 px-4 py-3" : "w-12 h-12",
         ].join(" ")}
         // MEH-2308: when the pill text is showing it IS the accessible name. An

@@ -10,6 +10,7 @@ import { detailToMessage } from "@/lib/errors";
 import { showToast } from "@/lib/toast";
 import InfoTooltip from "@/components/InfoTooltip";
 import { SkeletonTable } from "@/components/Skeleton";
+import { STATUS_CLASSES } from "@/lib/dashboard-status-classes";
 
 // Tab values map to admin.experiences.tabs.* keys; labels resolved in render
 const TAB_VALUES = ["pending", "changes_requested", "approved", "rejected", "all"];
@@ -257,6 +258,9 @@ function moderationLabel(status, t) {
 
 function ExperienceRow({ ex, busy, t, locale, onApprove, onChanges, onReject }) {
   const [expanded, setExpanded] = useState(false);
+  // MEH-2840: the host dashboard's own «מבוטלת» — approving does not
+  // reactivate a host-cancelled experience, so the admin sees it first.
+  const tHost = useTranslations("dashboard.producer.manage_experiences");
   const modBadge =
     ex.moderation_status === "FLAGGED"
       ? "bg-yellow-100 text-yellow-800"
@@ -274,6 +278,11 @@ function ExperienceRow({ ex, busy, t, locale, onApprove, onChanges, onReject }) 
           >
             {ex.title}
           </button>
+          {ex.is_active === false && (
+            <span className={`ms-2 text-xs px-2 py-0.5 rounded-full ${STATUS_CLASSES.warning}`}>
+              {tHost("badge_inactive")}
+            </span>
+          )}
         </td>
         <td className="p-3 text-fg-muted" data-label={t("experiences.columns.host")}>{ex.host?.name || "—"}</td>
         <td className="p-3 text-fg-muted" data-label={t("experiences.columns.date")}>{formatDate(ex.event_date, locale)}</td>
@@ -315,7 +324,7 @@ function ExperienceRow({ ex, busy, t, locale, onApprove, onChanges, onReject }) 
             <Link
               href={`/experiences/${ex.id}`}
               target="_blank"
-              className="text-primary text-xs px-2 py-1 hover:underline"
+              className="text-primary text-xs px-2 py-1 underline decoration-[1.5px] underline-offset-[5px] decoration-primary/35 hover:decoration-current"
             >
               {t("experiences.actions.view")}
             </Link>

@@ -1,5 +1,6 @@
 "use client";
 
+import SeedMark from "@/components/brand/SeedMark";
 import { Link } from "@/i18n/navigation";
 
 /**
@@ -43,6 +44,12 @@ function Action({ action, className }) {
   );
 }
 
+// MEH-2833 (seed layer, board 9 v2 option א): pages that used the Leaf as the
+// brand mark (404, «not found», a business that left, delivery-waitlist) pass
+// icon="seed" and get the whole logo, small — never rotated or recoloured.
+const SEED_ICON = "seed";
+const SEED_MARK_PX = 76;
+
 export default function StatusPage({
   icon: Icon,
   eyebrow,
@@ -61,7 +68,11 @@ export default function StatusPage({
       data-testid={testid}
     >
       <div className="text-center max-w-md w-full" data-testid="status-page">
-        {Icon && <Icon size={64} className="mx-auto mb-5 text-primary" aria-hidden="true" />}
+        {Icon === SEED_ICON ? (
+          <SeedMark size={SEED_MARK_PX} className="mx-auto mb-5" />
+        ) : (
+          Icon && <Icon size={64} className="mx-auto mb-5 text-primary" aria-hidden="true" />
+        )}
         {eyebrow && <p className="text-primary font-medium text-sm tracking-widest mb-2">{eyebrow}</p>}
         {title && <h1 className="font-headline-lg text-3xl sm:text-4xl font-bold text-text mb-3">{title}</h1>}
         {body && (

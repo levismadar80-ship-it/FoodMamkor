@@ -320,7 +320,7 @@ test('no "יצרן" text anywhere visible', async ({ page }) => {
 ```
 bash scripts/link-check.sh              # build + start + crawl + stop
 bash scripts/link-check.sh --skip-build # אם כבר יש build
-node scripts/link-check.mjs --self-test # הקלסיפייר של robots בלבד
+node scripts/link-check.mjs --self-test # robots + תקציב העמודים, בלי רשת
 ```
 
 זוחל מ-`/` על לינקים פנימיים בלבד, מכבד את ה-`Disallow` של
@@ -359,6 +359,36 @@ _שורה קודמת כאן טענה ש"נתיבים רב-מקטעיים כן נ
 החי, בתוך `post-deploy-checks.yml` (ראו הסעיף הבא). ל-staging הוא שולח את
 `VERCEL_AUTOMATION_BYPASS_SECRET` מה-env אם קיים.
 
+**תקציב עמודים (MEH-2864).** כל עמוד שנסרק הוא רינדור בשרת של מי שמארח את
+האתר. הסריקה המלאה אחרי כל push ל-staging היא החשודה העיקרית בהשעיית חשבון
+Vercel ב-09/11, ולכן:
+
+| יעד | מצב | עמודים |
+|---|---|---|
+| פרודקשן (`IS_PRODUCTION=true` או `mehamakor.co.il`), `next start` מקומי | full | 2000 |
+| staging (`IS_PRODUCTION=false` או `staging.mehamakor.online`), וכל host אחר | sample | 40, ברוחב מ-`/`, עמוד אחד לכל pathname |
+| `--max-pages=N` | flag | N |
+
+סריקה מלאה דורשת סימן חיובי. אם הסימן חסר, מקבלים פחות כיסוי, לא עוד השעיה.
+כל ריצה מדפיסה `mode`, את התקציב, את מספר העמודים שנטענו בפועל ואת מספר
+בקשות ה-HTTP. ב-sample, עצירה בתקציב מודפסת כ-`SAMPLE` ולא כ-`TRUNCATED`.
+ה-guard `scripts/checks/link-check-budget-guard.sh` מריץ את ה-self-test
+ב-Repo guards. ה-self-test בודק את פונקציית התקציב, את ה-hosts שב-`post-deploy-checks.yml`,
+וגם סורק שרת מקומי של 91 עמודים פעמיים, כ-staging וכ-full.
+
+**איפה רצה סריקת הקישורים (MEH-2864, «ייעול הבדיקות»).** הסריקה רצה
+ב-E2E, מול ה-`next start` המקומי של ה-job
+(`frontend/e2e/flows/manual/link-crawl.spec.ts`, פעם אחת לריצה, בפרויקט
+`desktop`). היא לא שולחת אף בקשה ל-Vercel. הסריקה מוגבלת ל-400 עמודים, עם השהיה של 600ms בין עמודים, כי השרת המקומי מרנדר מול ה-backend המשותף של staging. היא רצה בכל push ל-staging, וב-PR עם התווית `run-e2e`. E2E איננו gate חובה, ולכן קישור שבור **יכול** להיתפס לפני המיזוג, אבל לא בהכרח.
+מול האתר החי, אחרי deploy, רץ רק `node scripts/link-check.mjs <URL> --smoke`:
+עד 10 כתובות (בקרת 404, בית, רשימה, מפה, health, דף עסק אחד שנמצא דרך ה-API;
+כש-API מחזיר `[]`, דף העסק הוא SKIP; תשובה בכל צורה אחרת בלי slug היא FAIL). סריקה מלאה של האתר החי רצה פעם
+בשבוע, ב-production בלבד. push שלא שינה שום דבר תחת `frontend/`
+(בדיקות לא נחשבות), ב-`backend/` או בבדיקות עצמן מאז ה-push האחרון שנבדק, מדלג על כל הבדיקות מול האתר החי
+(`scripts/frontend-touched.sh`, שבמקרה של ספק עונה «השתנה»). כל בדיקה מדפיסה
+בסוף `requests to Vercel: N`. השינוי ב-workflow ממתין לספיר:
+[docs/ci/post-deploy-trim.patch.md](./ci/post-deploy-trim.patch.md).
+
 ---
 
 ## בדיקות אחרי עלייה (MEH-2749)
@@ -368,7 +398,7 @@ _שורה קודמת כאן טענה ש"נתיבים רב-מקטעיים כן נ
 ```
 python scripts/checks/wait_for_deploy.py --base-url <URL> --sha <commit>  # מחכה ל-build id חדש
 python scripts/checks/smoke_production.py                                  # main בלבד
-node   scripts/link-check.mjs <URL>                                        # קישורים שבורים
+node   scripts/link-check.mjs <URL> --smoke                                # עד 10 כתובות (MEH-2864)
 python scripts/checks/live_security_headers.py --base-url <URL>            # CSP, HSTS ועוד
 npx @lhci/cli@0.15.1 collect --config=scripts/checks/lighthouserc.cjs      # תקציב ביצועים (פרודקשן בלבד)
 npx @lhci/cli@0.15.1 assert  --config=scripts/checks/lighthouserc.cjs

@@ -1,7 +1,7 @@
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { Envelope } from "@phosphor-icons/react/ssr";
 import { Link } from "@/i18n/navigation";
-import { buildAlternates, urlForLocalePath, OG_LOCALE } from "@/lib/i18n-seo";
+import { buildAlternates, buildEntityTitle, urlForLocalePath, OG_LOCALE } from "@/lib/i18n-seo";
 import { BRAND_NAME } from "@/lib/constants";
 import { CONTACT_EMAIL } from "@/lib/env.client";
 
@@ -14,15 +14,15 @@ export async function generateMetadata({ params }) {
   const { locale } = await params;
   const t = await getTranslations("terms");
   return {
-    // title.absolute prevents layout's `%s | ${BRAND_NAME}` template appending.
-    title: { absolute: t("meta_title") },
+    // MEH-2853: plain title — the layout template `%s | <brand>` adds the brand.
+    title: t("meta_title"),
     description: t("meta_description"),
     // Per-page openGraph: Next.js shallow-merges this field, so it REPLACES
     // the layout's BASE_METADATA.openGraph — siteName/locale/images repeated
     // here to preserve them (mirrors about/contact siblings). Reuses the
     // cleaned meta copy (MEH-720: "פלטפורמה", no "דירקטורי").
     openGraph: {
-      title: t("meta_title"),
+      title: buildEntityTitle(t("meta_title"), locale),
       description: t("meta_description"),
       type: "website",
       url: urlForLocalePath("/terms", locale),
@@ -34,7 +34,7 @@ export async function generateMetadata({ params }) {
     // layout's generic site card).
     twitter: {
       card: "summary_large_image",
-      title: t("meta_title"),
+      title: buildEntityTitle(t("meta_title"), locale),
       description: t("meta_description"),
       images: ["/og-image.png"],
     },
@@ -64,7 +64,7 @@ function MailLink({ email }) {
   return (
     <a
       href={`mailto:${email}`}
-      className="text-primary hover:underline break-all"
+      className="text-primary underline decoration-[1.5px] underline-offset-[5px] decoration-primary/35 hover:decoration-current break-all"
       dir="ltr"
     >
       {email}
@@ -150,7 +150,7 @@ function renderBody(id, t) {
             <li>
               {t.rich("sections.report.item_form", {
                 contactlink: (chunks) => (
-                  <Link href="/contact" className="text-primary hover:underline">
+                  <Link href="/contact" className="text-primary underline decoration-[1.5px] underline-offset-[5px] decoration-primary/35 hover:decoration-current">
                     {chunks}
                   </Link>
                 ),

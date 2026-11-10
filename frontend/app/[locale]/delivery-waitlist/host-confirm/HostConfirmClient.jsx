@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { EnvelopeSimple, Leaf, LinkBreak } from "@phosphor-icons/react";
+import { EnvelopeSimple, LinkBreak } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import { z } from "zod";
 import StatusPage from "@/components/StatusPage";
@@ -71,7 +71,7 @@ export default function HostConfirmClient({ token }) {
   if (state.kind === "success") {
     return (
       <StatusPage
-        icon={Leaf}
+        icon="seed"
         title={t("success_title", { producer: state.producer })}
         primary={{ href: "/", label: t("cta_home") }}
         testid="host-confirm-success"

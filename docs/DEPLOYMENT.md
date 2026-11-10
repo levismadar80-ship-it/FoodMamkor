@@ -21,7 +21,7 @@ checkpoint passes.
 |---|---|---|---|
 | `main` | Production | mehamakor.co.il (Vercel) + Railway production env | Nobody directly. PR-only, from `staging`. |
 | `staging` | Non-prod testing | staging.mehamakor.online (Vercel) + Railway staging env | Nobody directly. PR-only, from `feature/*`. |
-| `feature/*` | New features and fixes | None — local + Vercel preview URL | Branch owner. **Always created from `staging`**, never from `main`. |
+| `feature/*` | New features and fixes | None — local + a Vercel preview for a `[preview]` commit only (MEH-2845; every push spends one of the 100/day deployments) | Branch owner. **Always created from `staging`**, never from `main`. |
 
 ### The flow
 

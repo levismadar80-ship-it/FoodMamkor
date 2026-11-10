@@ -22,6 +22,7 @@ from app.auth import require_admin
 from app.utils.clock import business_days_waiting, israel_now, israel_today
 from app.utils.pii import mask_phone
 from app.config import settings
+from app.services.email_branding import email_logo_html
 from app.services.auth_notifications import (
     notify_producer_approved,
     notify_producer_changes_requested,
@@ -38,6 +39,7 @@ from app.services.availability_validation import (  # MEH-2758
 )
 from app.services.producer_listing import is_business  # MEH-2459
 from app.services import retired_slugs  # MEH-2528
+from app.services import indexnow  # MEH-2852
 
 # MEH-1242: SITE_DOMAIN is the single canonical domain constant. Import it —
 # never re-declare the literal.
@@ -444,6 +446,10 @@ def _attach_aging(producer) -> None:
     A draft measures from `created_at` because it has no submission to measure
     from. Everything else uses the same COALESCE the queue ordering uses, so
     the badge and the sort can never disagree about which row is oldest.
+    `resubmitted_at` comes first (MEH-2869): a resubmission after a rejection
+    writes only that stamp, and `submitted_for_review_at` keeps the FIRST
+    submission — measuring from it put a business that resubmitted today at the
+    top of the queue with weeks of "waiting".
 
     Called by BOTH admin list routes. `ProducerAdminOut` declares the field, so
     a route that returned rows without calling this would serialise a silent
@@ -452,7 +458,11 @@ def _attach_aging(producer) -> None:
     producer.business_days_waiting = business_days_waiting(
         producer.created_at
         if producer.status == "draft"
-        else (producer.submitted_for_review_at or producer.created_at)
+        else (
+            producer.resubmitted_at
+            or producer.submitted_for_review_at
+            or producer.created_at
+        )
     )
 
 
@@ -556,9 +566,12 @@ def list_producers(
     if queue_view:
         # COALESCE, not submitted_for_review_at alone: rows seeded before
         # MEH-2100 (and every draft) have a NULL stamp, and a bare column sort
-        # would bunch them all at one end regardless of real age.
+        # would bunch them all at one end regardless of real age. The latest
+        # resubmission comes first (MEH-2869), the same order as _attach_aging.
         order_key = func.coalesce(
-            Producer.submitted_for_review_at, Producer.created_at
+            Producer.resubmitted_at,
+            Producer.submitted_for_review_at,
+            Producer.created_at,
         ).asc()
     else:
         order_key = Producer.created_at.desc()
@@ -579,6 +592,7 @@ def list_producers(
 @router.post("/producers", response_model=ProducerAdminOut, status_code=201)
 def admin_create_producer(
     data: ProducerAdminCreate,
+    background_tasks: BackgroundTasks,
     user: User = Depends(require_admin),
     db: Session = Depends(get_db),
 ):
@@ -690,6 +704,8 @@ def admin_create_producer(
 
     db.commit()
     db.refresh(producer)
+    # MEH-2852: an admin-created business is live at once (a draft is not).
+    indexnow.schedule_public_producer(background_tasks, producer)
     attach_badge_fields(producer)
     _attach_has_owner(db, [producer])
     return producer
@@ -899,6 +915,7 @@ def admin_update_producer(
     # keeps `in_season_until` off the owner's schema entirely rather than merely
     # filtered out of it.
     data: ProducerAdminUpdate,
+    background_tasks: BackgroundTasks,
     user: User = Depends(require_admin),
     db: Session = Depends(get_db),
 ):
@@ -949,6 +966,9 @@ def admin_update_producer(
 
     # MEH-2528: read before the setattr loop below overwrites `producer.slug`.
     _retire_replaced_slug(db, producer, payload)
+    # MEH-2852: same reason — a slug change moves the page, so the old URL
+    # (now gone) is pinged beside the new one.
+    urls_before = indexnow.producer_urls(producer)
 
     # MEH-375: snapshot gallery BEFORE bulk setattr so we can diff and
     # destroy URLs the admin dropped AFTER db.commit succeeds. Order
@@ -1001,6 +1021,11 @@ def admin_update_producer(
             context="admin.admin_update_producer images",
         )
 
+    if indexnow.is_public_owner(producer):  # MEH-2852
+        indexnow.schedule(
+            background_tasks, urls_before + indexnow.producer_urls(producer)
+        )
+
     attach_badge_fields(producer)
     _attach_has_owner(db, [producer])
     return producer
@@ -1046,6 +1071,8 @@ def toggle_producer_status(
     if was_approved:
         cancel_live_group_buys(db, producer, background_tasks)
     db.commit()
+    # MEH-2852: hidden or back on the site — either way the page changed.
+    indexnow.schedule(background_tasks, indexnow.producer_urls(producer))
     return {"detail": "Status toggled", "status": producer.status}
 
 
@@ -1081,6 +1108,10 @@ def admin_delete_producer(
     # its destroy below needs no bypass. Same orphan class as story_card:
     # overwrite=True on upload prevents duplicates, not delete-orphans.
     old_owner_photo_url = producer.owner_photo_url
+    # MEH-2852: the page goes with the row — its URL is read before the delete.
+    removed_urls = (
+        indexnow.producer_urls(producer) if indexnow.is_public_owner(producer) else []
+    )
 
     # MEH-2503: a live group buy's participants are told before the cascade
     # removes it — same delisted email as a suspension (MEH-2498). Runs before
@@ -1118,6 +1149,7 @@ def admin_delete_producer(
     # already pre-empts the NotNullViolation the old MEH-755 bulk-delete guarded.
     db.delete(producer)
     db.commit()
+    indexnow.schedule(background_tasks, removed_urls)  # MEH-2852
 
     # Post-commit orphan cleanup, fail-open per destroy_image contract.
     from app.cloudinary_utils import destroy_image
@@ -1171,8 +1203,9 @@ def pending_producers(
 
 
 @router.post("/producers/{producer_id}/approve")
-def approve_producer(
+def approve_producer(  # noqa: PLR0913 — all 6 args are FastAPI-injected (path id, BackgroundTasks, two override flags, auth dep, db dep); MEH-2852 added the IndexNow hop
     producer_id: UUID,
+    background_tasks: BackgroundTasks,
     # MEH-971 chunk 4: explicit admin override for the license-pending guard
     # below. Defaults False so the guard is on by default; an admin who has
     # verified a license out-of-band passes ?allow_without_license=true.
@@ -1255,6 +1288,8 @@ def approve_producer(
     # producer. Fail-open at the service layer — any failure here must
     # NOT block the 200 response (approval already committed above).
     notify_producer_approved(p_name, p_phone, p_slug, p_id)
+    # MEH-2852: the business page just appeared.
+    indexnow.schedule(background_tasks, indexnow.producer_urls(producer))
 
     # Notify admin via WhatsApp
     if settings.admin_whatsapp_to:
@@ -1428,7 +1463,8 @@ def reject_producer(
     composed_reason = _compose_rejection_reason(preset_key, reason)
     # MEH-2498: rejecting a business that was live takes it off the site — its
     # live group buys are cancelled in the same commit, participants mailed.
-    if producer.status == "approved":
+    was_live = producer.status == "approved"
+    if was_live:
         cancel_live_group_buys(db, producer, background_tasks)
     producer.status = "rejected"
     # MEH-226: the reason is persisted in the SAME commit as the status flip —
@@ -1447,6 +1483,8 @@ def reject_producer(
     producer.requested_changes = None
     producer.changes_requested_at = None
     db.commit()
+    if was_live:  # MEH-2852: the live page just went away.
+        indexnow.schedule(background_tasks, indexnow.producer_urls(producer))
 
     # MEH-226: email fires post-commit only — a Resend failure must not roll
     # back a decision the admin already made.
@@ -2011,6 +2049,8 @@ def _producer_approved_html(name: str, slug: str | None) -> str:
         else ""
     )
 
+    # MEH-2834: the shared brand header; email_logo_html() escapes its URL itself.
+    logo = email_logo_html()
     return (
         "<!DOCTYPE html>\n"
         '<html dir="rtl" lang="he">\n'
@@ -2025,6 +2065,7 @@ def _producer_approved_html(name: str, slug: str | None) -> str:
         'style="background:#ffffff;border-radius:12px;text-align:right;'
         'direction:rtl;max-width:560px;margin:0 auto;"><tr>\n'
         '<td style="text-align:right;direction:rtl;">\n'
+        f"{logo}\n"
         '<p style="color:#3a3a3a;font-size:15px;line-height:1.8;'
         'margin:0 0 16px;direction:rtl;">היי,</p>\n'
         '<p style="color:#1C1A17;font-size:17px;line-height:1.8;'
@@ -2138,6 +2179,8 @@ def _producer_rejected_html(
         if reason
         else ""
     )
+    # MEH-2834: the shared brand header; email_logo_html() escapes its URL itself.
+    logo = email_logo_html()
     return (
         "<!DOCTYPE html>\n"
         '<html dir="rtl" lang="he">\n'
@@ -2152,6 +2195,7 @@ def _producer_rejected_html(
         'style="background:#ffffff;border-radius:12px;text-align:right;'
         'direction:rtl;max-width:560px;margin:0 auto;"><tr>\n'
         '<td style="text-align:right;direction:rtl;">\n'
+        f"{logo}\n"
         '<p style="color:#3a3a3a;font-size:15px;line-height:1.8;'
         f'margin:0 0 16px;direction:rtl;">שלום {safe_name},</p>\n'
         '<p style="color:#1C1A17;font-size:17px;line-height:1.8;'

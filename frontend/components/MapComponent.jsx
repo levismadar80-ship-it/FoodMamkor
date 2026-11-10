@@ -567,6 +567,15 @@ export default function MapComponent({
         );
       },
       getMap: () => mapInstanceRef.current,
+      // MEH-2843: MapClient's pan that lifts a tapped marker clear of the
+      // phone sheet is our move too — flag it so its moveend never raises
+      // «חפשו באזור זה». A zero offset has nothing to move (Leaflet would
+      // still fire a bare moveend), so it is skipped.
+      panBy: (offset, options) => {
+        if (!mapInstanceRef.current || (!offset[0] && !offset[1])) return;
+        programmaticMoveRef.current = true;
+        mapInstanceRef.current.panBy(offset, options);
+      },
       // Used by MapClient.registerMapApi to skip hidden (0×0) containers
       // so the mobile map (display:none on desktop) never overwrites the
       // visible desktop map's API reference, and vice-versa on mobile.
@@ -609,6 +618,19 @@ export default function MapComponent({
       initialCenter,
       initialZoom,
     );
+    // MEH-2843 (MEH-2776: one control per corner): the phone map's «?» key and
+    // layers toggle sit at `end-4` in the mobile shell (MapPane) — physical
+    // LEFT in rtl, where they sat on the zoom's «−». So the zoom moves to the
+    // top-right corner, empty on the phone map, only for the instance inside
+    // the mobile shell and only in rtl (in ltr the key is already on the right,
+    // away from Leaflet's top-left default). Decided per instance from its own
+    // shell, not from the viewport: both shells mount at once and a rotation
+    // across 1024px shows the other one. Physical corners on purpose — map
+    // controls are the documented geographic exception (rtl-ok).
+    const host = containerRef.current;
+    if (host?.closest?.('[data-map-shell="mobile"]') && host.closest("[dir]")?.getAttribute("dir") === "rtl") {
+      mapInstanceRef.current.zoomControl?.setPosition?.("topright");
+    }
     // Expose the initial center for E2E tests (05-map-navigation.spec.ts) —
     // the DEFAULT on a fresh visit, the RESTORED camera when one was saved.
     if (typeof window !== "undefined") window.__MAP_CENTER__ = initialCenter;
@@ -704,19 +726,28 @@ export default function MapComponent({
       // docs/archive/MAP_IMPROVEMENTS.md #1 — notify parent that the user moved the
       // map so it can show "search this area". Suppress for our own
       // flyTo/fitBounds calls (initial fit, focusProducer, my-location).
-      if (programmaticMoveRef.current) {
-        programmaticMoveRef.current = false;
-        return;
+      const programmatic = programmaticMoveRef.current;
+      programmaticMoveRef.current = false;
+      // MEH-2049: save the camera on EVERY move after init — including
+      // focusProducer, a cluster zoom and the GPS flyTo. MEH-1414 saved only
+      // user pans, so a visitor who picked a business from the list or a pin
+      // and never dragged came back to the default view (Phase 0, staging,
+      // Chromium + WebKit: 0 writes before leaving). The initial restore
+      // setView runs before this listener exists, so it is still not saved.
+      // Only a VISIBLE instance writes: the other shell's map lives in a
+      // display:none box and must never speak for the camera on screen.
+      const rect = containerRef.current?.getBoundingClientRect();
+      if (rect && rect.width > 0 && rect.height > 0) {
+        const savedCenter = mapInstanceRef.current.getCenter();
+        writeMapViewState({
+          lat: savedCenter.lat,
+          lng: savedCenter.lng,
+          zoom: mapInstanceRef.current.getZoom(),
+        });
       }
-      // MEH-1414: only a USER move is a camera worth restoring later. The
-      // programmatic branches (initial restore, focusProducer, GPS flyTo)
-      // returned above and are deliberately not saved.
-      const savedCenter = mapInstanceRef.current.getCenter();
-      writeMapViewState({
-        lat: savedCenter.lat,
-        lng: savedCenter.lng,
-        zoom: mapInstanceRef.current.getZoom(),
-      });
+      // Saving and «חפשו באזור זה» are separate concerns: our own moves
+      // (initial fit, focusProducer, my-location) still never raise the button.
+      if (programmatic) return;
       onMapMoveRef.current?.();
     });
 

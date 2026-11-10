@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import { Link, useRouter } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
-import { Leaf } from "@phosphor-icons/react";
+import Seed from "@/components/brand/Seed";
 import { showToast } from "@/lib/toast";
 import { useAuth } from "@/lib/auth-context";
 import ExperienceForm from "@/components/ExperienceForm";
@@ -42,7 +42,7 @@ export default function NewExperiencePage() {
   // ?pending=1 detail redirect stays valid. No producerStatus branch here —
   // that one belongs to events, where a pending business's event 404s.
   const handleSuccess = (data) => {
-    showToast.success(t("toast_submitted"), { icon: <Leaf size={18} /> });
+    showToast.success(t("toast_submitted"), { icon: <Seed size={12} /> });
     router.push(`/experiences/${data.id}?pending=1`);
   };
 

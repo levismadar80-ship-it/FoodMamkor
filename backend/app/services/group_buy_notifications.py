@@ -67,10 +67,10 @@ def notify_producer_funded(
 
     Carries a COUNT, never a roster — see the module PRIVACY CONTRACT.
     """
-    subject = f'מהמקור — קבוצת הרכש "{title}" הגיעה ליעד'
+    subject = f'מהמקור — קבוצת הרכישה "{title}" הגיעה ליעד'
     body = (
         f"שלום,\n\n"
-        f'קבוצת הרכש "{title}" הגיעה ליעד.\n'
+        f'קבוצת הרכישה "{title}" הגיעה ליעד.\n'
         f"מספר הצטרפויות: {participant_count}\n\n"
         f"נשלחה הודעה לכל מי שהצטרף, ופניות לתיאום ההזמנה יגיעו אליך.\n\n"
         f"לצפייה בקבוצה: {_group_buy_url(group_buy_id)}\n\n"

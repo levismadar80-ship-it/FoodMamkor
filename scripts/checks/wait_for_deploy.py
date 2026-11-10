@@ -43,6 +43,8 @@ import time
 import urllib.error
 import urllib.request
 
+import vercel_count  # MEH-2864: sibling module, prints «requests to Vercel: N» at exit
+
 
 class _NoRedirect(urllib.request.HTTPRedirectHandler):
     """Never follow a redirect. urllib copies request headers onto the next
@@ -67,6 +69,7 @@ _reported: set[str] = set()
 
 
 def _get(url: str) -> bytes:
+    vercel_count.note(url)  # MEH-2864
     headers = {"User-Agent": "mehamakor-wait-for-deploy/1.0"}
     secret = os.environ.get("VERCEL_AUTOMATION_BYPASS_SECRET", "").strip()
     if secret:

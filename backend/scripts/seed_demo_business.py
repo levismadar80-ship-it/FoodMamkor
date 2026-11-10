@@ -247,6 +247,10 @@ DEMO_RECIPE = {
 # Hosted by the demo owner, whose business is approved, because the public
 # feed walks host → user → producer.status (MEH-1749).
 # GUARD — STAGING ONLY, same as every other row in this file.
+# MEH-2847: every `category` here is a key of EXPERIENCE_CATEGORIES
+# (schemas.py / lib/event-categories.js). The bread rows said «אפייה», which is
+# in neither, so no chip on /experiences could find them; baking is «בישול»
+# (labelled «בישול ואפייה»).
 DEMO_EXPERIENCES = [
     {
         "title": "סדנת מחמצת לתחילת הדרך",
@@ -271,7 +275,7 @@ DEMO_EXPERIENCES = [
         "days_ahead": 19,
         "event_time": "18:30",
         "duration_minutes": 150,
-        "category": "אפייה",
+        "category": "בישול",
         "max_participants": 12,
         "price_per_person": 180,
     },
@@ -284,7 +288,7 @@ DEMO_EXPERIENCES = [
         "days_ahead": 26,
         "event_time": "09:00",
         "duration_minutes": 120,
-        "category": "אפייה",
+        "category": "בישול",
         "max_participants": 10,
         "price_per_person": 160,
     },
@@ -326,7 +330,7 @@ DEMO_MODERATION_EXPERIENCES = [
 # min_participants sits BELOW the seeded commit count so the funded path is
 # reachable on the demo rather than permanently short of its threshold.
 DEMO_GROUP_BUY = {
-    "title": "רכישה קבוצתית: שק קמח כוסמין מלא",
+    "title": "קבוצת רכישה: שק קמח כוסמין מלא",
     "description": (
         "שק קמח כוסמין מלא מטחינת אבן, ישירות מהטחנה. מתחלקות בשק ומוזילות "
         "את המחיר לקילו. איסוף מהמאפייה בזכרון יעקב."
@@ -1530,7 +1534,7 @@ def _seed_moderation_experiences(db) -> None:
                 title=ex["title"],
                 description=ex["description"],
                 image_url=DEMO_EVENT["image_url"],
-                category="אפייה",
+                category="בישול",
                 event_date=date.today() + timedelta(days=ex["days_ahead"]),
                 event_time=datetime.strptime("17:00", "%H:%M").time(),
                 duration_minutes=90,

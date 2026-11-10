@@ -1,5 +1,6 @@
 "use client";
 
+import SeedMark from "@/components/brand/SeedMark";
 import { useEffect, useState } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import dynamic from "next/dynamic";
@@ -14,7 +15,6 @@ import {
   Check,
   Clock,
   CurrencyCircleDollar,
-  Leaf,
   MapPin,
   Users,
 } from "@phosphor-icons/react";
@@ -25,6 +25,7 @@ import { formatPrice, getWhatsAppHref, normalizePhone } from "@/lib/utils";
 import { formatDuration } from "@/lib/experience-format";
 import api from "@/lib/api";
 import Breadcrumb from "@/components/Breadcrumb";
+import HistoryBackLink from "@/components/HistoryBackLink";
 import OwnerRow from "@/components/OwnerRow";
 import ShareButton from "@/components/ShareButton";
 import SaveButton from "@/components/SaveButton";
@@ -108,7 +109,7 @@ export default function ExperienceDetailClient() {
     return (
       <div className="max-w-3xl mx-auto px-4 py-16 text-center">
         <div className="mb-4 flex justify-center">
-          <Leaf size={56} className="text-primary" aria-hidden="true" />
+          <SeedMark size={76} />
         </div>
         <p className="text-fg-muted mb-6">{t("not_found")}</p>
         <Link href="/experiences" className="text-primary hover:underline">
@@ -240,6 +241,9 @@ export default function ExperienceDetailClient() {
 
       <div className="max-w-[1100px] mx-auto px-4 pt-11 lg:pt-8 lg:grid lg:grid-cols-[1fr_360px] lg:grid-rows-[auto_1fr] lg:gap-x-12 lg:items-start">
         <div className="lg:col-start-1">
+          {/* MEH-2857: «→ חזרה» to the page the visitor came from, when there
+              is one inside the site; the breadcrumb below stays as is. */}
+          <HistoryBackLink />
           <Breadcrumb
             items={[
               { href: "/", label: t("breadcrumb_home") },

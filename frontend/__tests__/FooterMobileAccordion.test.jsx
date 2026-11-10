@@ -43,9 +43,12 @@ describe("Footer link groups collapse on mobile (MEH-2397)", () => {
     delete window.matchMedia;
   });
 
-  it("renders both groups closed: aria-expanded=false and the list carries `hidden`", () => {
+  // MEH-2858: three groups now — «גלו» · «עלינו» · «לבתי עסק».
+  const GROUP_KEYS = ["nav.footer.group_discover_heading", "nav.footer.group_about_heading", "nav.footer.group_business_heading"];
+
+  it("renders every group closed: aria-expanded=false and the list carries `hidden`", () => {
     render(<Footer />);
-    for (const key of ["nav.footer.group_discover_heading", "nav.footer.group_business_heading"]) {
+    for (const key of GROUP_KEYS) {
       const btn = groupButton(key);
       expect(btn).toHaveAttribute("aria-expanded", "false");
       const list = listOf(btn);
@@ -56,18 +59,26 @@ describe("Footer link groups collapse on mobile (MEH-2397)", () => {
     }
   });
 
-  it("a tap opens one group only; the other stays closed", () => {
+  it("a tap opens one group only; the others stay closed", () => {
     render(<Footer />);
     const discover = groupButton("nav.footer.group_discover_heading");
+    const about = groupButton("nav.footer.group_about_heading");
     const business = groupButton("nav.footer.group_business_heading");
     fireEvent.click(discover);
     expect(discover).toHaveAttribute("aria-expanded", "true");
     expect(listOf(discover).classList.contains("hidden")).toBe(false);
-    expect(business).toHaveAttribute("aria-expanded", "false");
-    expect(listOf(business).classList.contains("hidden")).toBe(true);
-    fireEvent.click(discover);
+    for (const other of [about, business]) {
+      expect(other).toHaveAttribute("aria-expanded", "false");
+      expect(listOf(other).classList.contains("hidden")).toBe(true);
+    }
+    // Opening «עלינו» closes «גלו»; a second tap closes «עלינו» again.
+    fireEvent.click(about);
+    expect(about).toHaveAttribute("aria-expanded", "true");
     expect(discover).toHaveAttribute("aria-expanded", "false");
     expect(listOf(discover).classList.contains("hidden")).toBe(true);
+    fireEvent.click(about);
+    expect(about).toHaveAttribute("aria-expanded", "false");
+    expect(listOf(about).classList.contains("hidden")).toBe(true);
   });
 
   // Desktop cell (md: and up). jsdom has no matchMedia, so the three cells
@@ -84,7 +95,7 @@ describe("Footer link groups collapse on mobile (MEH-2397)", () => {
       removeEventListener: (_, fn) => listeners.delete(fn),
     }));
     render(<Footer />);
-    for (const key of ["nav.footer.group_discover_heading", "nav.footer.group_business_heading"]) {
+    for (const key of GROUP_KEYS) {
       expect(screen.queryByRole("button", { name: key })).toBeNull();
       expect(screen.getByRole("heading", { level: 3, name: key })).toBeInTheDocument();
     }
@@ -100,7 +111,8 @@ describe("Footer link groups collapse on mobile (MEH-2397)", () => {
       screen.getByRole("navigation", { name: "nav.footer.nav_aria" }).querySelectorAll("a[href]"),
     ).map((a) => a.getAttribute("href"));
     expect(navLinks.sort()).toEqual(
-      ["/", "/about", "/about/for-businesses", "/about/why-local", "/about/process", "/join", "/map", "/producers", "/share"].sort(),
+      // MEH-2858: «גלו עסקים» → / left the footer (the logo links home).
+      ["/about", "/about/for-businesses", "/about/why-local", "/about/process", "/join", "/map", "/producers", "/recommend#share"].sort(),
     );
   });
 });

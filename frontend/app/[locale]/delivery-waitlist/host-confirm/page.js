@@ -12,7 +12,8 @@ export async function generateMetadata({ params }) {
     namespace: "delivery_waitlist_host_confirm",
   });
   return {
-    title: { absolute: t("meta_title") },
+    // MEH-2853: plain title — the layout template `%s | <brand>` adds the brand.
+    title: t("meta_title"),
     robots: { index: false, follow: false },
   };
 }

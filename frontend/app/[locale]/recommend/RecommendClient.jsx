@@ -31,8 +31,9 @@
  * enforces the same rule (422), so disabling JS does not bypass it.
  */
 
-import { useState } from "react";
-import { CheckCircle } from "@phosphor-icons/react";
+import SeedBurst from "@/components/brand/SeedBurst";
+import { useEffect, useState } from "react";
+import { ArrowLeft } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import Input from "@/components/ui/Input";
@@ -40,6 +41,8 @@ import CitySearch from "@/components/CitySearch";
 import CollectionNotice from "@/components/CollectionNotice";
 import api from "@/lib/api";
 import Button from "@/components/ui/Button";
+import BusinessCtaLink from "@/components/BusinessCtaLink";
+import ShareClient from "@/app/[locale]/share/ShareClient";
 
 const EMPTY = {
   name: "",
@@ -54,6 +57,27 @@ const EMPTY = {
   company: "",
 };
 
+// MEH-2827 PR 4: the zero-result links arrive with ?name= / ?city=. A query
+// string is visitor-controlled text, so it is reduced to one plain line:
+// control characters and angle brackets dropped, whitespace collapsed, capped.
+// React escapes on render either way; this keeps the FIELD clean, since the
+// value is what gets posted.
+const PREFILL_CAP = { name: 200, city: 80 };
+
+function prefillValue(raw, cap) {
+  if (typeof raw !== "string") return "";
+  const plain = Array.from(raw, (ch) => {
+    const code = ch.charCodeAt(0);
+    return code < 32 || code === 127 || ch === "<" || ch === ">" ? " " : ch;
+  }).join("");
+  // Capped on code points (Array.from), so an emoji at the boundary is never
+  // cut into half a surrogate pair.
+  return Array.from(plain.replace(/\s+/g, " ").trim())
+    .slice(0, cap)
+    .join("")
+    .trim();
+}
+
 export default function RecommendClient() {
   const t = useTranslations("recommend");
   // REUSES contact's approved strings rather than adding copy: the submitting
@@ -65,6 +89,10 @@ export default function RecommendClient() {
   // shared privacy namespace with the other seven, because the RULE is
   // site-wide even though the sentence is per-surface.
   const tNotice = useTranslations("privacy.collection_notice");
+  // MEH-2827 PR 5: the owner line under the subtitle (recommend a store /
+  // sign up your store, side by side). Both strings already approved.
+  const tHome = useTranslations("home.cta");
+  const tJoin = useTranslations("join");
   const [form, setForm] = useState(EMPTY);
   const [status, setStatus] = useState("idle");
   const [contactError, setContactError] = useState(false);
@@ -73,6 +101,21 @@ export default function RecommendClient() {
   const [thanked, setThanked] = useState(false);
 
   const set = (field) => (e) => setForm({ ...form, [field]: e.target.value });
+
+  // Read once on mount, not via useSearchParams: that hook would need a
+  // Suspense boundary in page.js, which is outside this change. A prefill
+  // never overwrites what the visitor already typed.
+  useEffect(() => {
+    const q = new URLSearchParams(window.location.search);
+    const name = prefillValue(q.get("name"), PREFILL_CAP.name);
+    const city = prefillValue(q.get("city"), PREFILL_CAP.city);
+    if (!name && !city) return;
+    setForm((prev) => ({
+      ...prev,
+      name: prev.name || name,
+      city: prev.city || city,
+    }));
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -95,14 +138,21 @@ export default function RecommendClient() {
 
   if (status === "success") {
     return (
-      <section className="min-h-screen">
-        <div className="max-w-2xl mx-auto px-4 py-16 text-center" data-testid="recommend-success">
-          <div className="mb-4 flex justify-center">
-            <CheckCircle size={56} weight="fill" className="text-primary" aria-hidden="true" />
+      // MEH-2827 PR 5: no min-h-screen — the share section follows the
+      // thank-you panel, so a full-screen floor would only add an empty band.
+      <section>
+        <div className="max-w-2xl mx-auto px-4 py-16">
+          {/* MEH-2833 (seed layer, board 5 v2): the thank-you moment opens
+              with the seeds, light set on cream, above the success panel.
+              MEH-2844 (Sapir 08/11): the burst is the one success mark — the
+              ✓ (CheckCircle) under it made two, so it is gone. */}
+          <SeedBurst variant="light" className="mb-2" />
+          <div className="text-center" data-testid="recommend-success">
+            <p className="text-fg-muted" role="status">
+              {thanked ? t("success_wants_update") : t("success")}
+            </p>
           </div>
-          <p className="text-fg-muted" role="status">
-            {thanked ? t("success_wants_update") : t("success")}
-          </p>
+          <ShareClient />
         </div>
       </section>
     );
@@ -112,10 +162,28 @@ export default function RecommendClient() {
     <section className="min-h-screen">
       <div className="max-w-2xl mx-auto px-4 py-16">
         <div className="md:bg-surface md:rounded-lg md:p-8 md:border md:border-border md:shadow-[0_2px_12px_rgba(46,104,83,0.04)]">
-          <h1 className="font-headline-display text-5xl font-bold text-text mb-2 text-center">
+          {/* MEH-2827 (FinalRecommend): the standard page title — start-aligned,
+              fluid size, the same classes as /about/why-local's h1. The 5xl
+              centred title broke into three lines on a phone. */}
+          <h1 className="font-headline-lg mb-3 text-primary-dark text-[clamp(28px,6vw,44px)] leading-[1.15] font-black text-start">
             {t("title")}
           </h1>
-          <p className="text-fg-muted text-center mb-8">{t("subtitle")}</p>
+          <p className="text-fg-muted text-start mb-0">{t("subtitle")}</p>
+          {/* MEH-2827 PR 5 — owner line (Too Good To Go: «recommend a store»
+              beside «sign up your store»). A text link, not a button, so the
+              form stays the primary action. BusinessCtaLink: a producer sees
+              «לוח הבקרה שלי», an admin sees no link. */}
+          <p className="mt-3 mb-8 flex flex-wrap items-baseline gap-x-2 text-base text-start" data-testid="recommend-owner-line">
+            <span className="text-fg-muted">{tHome("heading")}</span>
+            <BusinessCtaLink
+              href="/register/producer"
+              data-testid="recommend-owner-link"
+              className="inline-flex items-center gap-1 min-h-touch font-semibold text-primary underline underline-offset-4 hover:text-primary-dark rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+            >
+              {tJoin("cta")}
+              <ArrowLeft size={15} className="ltr:rotate-180" aria-hidden="true" />
+            </BusinessCtaLink>
+          </p>
 
           {/* No `noValidate` (adversarial review, finding 2). ui/Input
               forwards `required` as the NATIVE attribute, and MEH-2015 records
@@ -128,7 +196,7 @@ export default function RecommendClient() {
               still falls through to the server's 422 — the same behaviour
               every other CitySearch form in the repo has. Not changed here;
               it would mean editing the canonical component. */}
-          <form onSubmit={handleSubmit} data-testid="recommend-form">
+          <form onSubmit={handleSubmit} data-testid="recommend-form" data-chat-hide="">
             <Input
               id="recommend-name"
               label={t("field_name_label")}
@@ -308,6 +376,7 @@ export default function RecommendClient() {
               })}
             </p>
           </form>
+          <ShareClient />
         </div>
       </div>
     </section>

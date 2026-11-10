@@ -3,7 +3,7 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import { Link } from "@/i18n/navigation";
-import { MagnifyingGlass, Plant, Leaf, CaretDown, Faders, MapPin } from "@phosphor-icons/react";
+import { MagnifyingGlass, Plant, Leaf, CaretDown, Faders, MapPin, ArrowLeft } from "@phosphor-icons/react";
 import { chipsToQuery } from "@/lib/filter-url";
 import { useTranslations } from "next-intl";
 import Breadcrumb from "@/components/Breadcrumb";
@@ -1196,8 +1196,11 @@ export default function ProducersClient({
   );
 }
 
-function FilterEmptyState({ onClear, searchQ, categories = [] }) {
+export function FilterEmptyState({ onClear, searchQ, categories = [] }) {
   const t = useTranslations("producers");
+  // MEH-2827 PR 4: a search that found nothing is the moment someone knows a
+  // business we don't — the footer link was the only way to /recommend.
+  const tNav = useTranslations("nav.footer");
   // MEH-2634: ALL live categories, deliberately NOT the `visibleCategories` /
   // `categoryChips` subset the filter row uses. That subset is data-gated on
   // what the CURRENT result set loaded (`loadedCategoryIds`), and this state
@@ -1245,6 +1248,18 @@ function FilterEmptyState({ onClear, searchQ, categories = [] }) {
       >
         {t("empty.clear_all_show_all")}
       </Button>
+      {searchQ && (
+        <div className="mt-4">
+          <Link
+            href={`/recommend?name=${encodeURIComponent(searchQ)}`}
+            data-testid="recommend-link-search"
+            className="inline-flex items-center gap-1 min-h-touch text-sm font-semibold text-primary underline underline-offset-4 hover:text-primary-dark rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+          >
+            {tNav("recommend")}
+            <ArrowLeft size={15} className="ltr:rotate-180" aria-hidden="true" />
+          </Link>
+        </div>
+      )}
     </div>
   );
 }

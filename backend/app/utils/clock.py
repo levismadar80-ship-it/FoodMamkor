@@ -129,9 +129,9 @@ def business_days_waiting(
     and the only writer stamps `datetime.now(timezone.utc)`, but SQLite — which
     the test suite runs on — hands tz-naive values back, so this must not
     explode there. `None` yields 0 rather than raising: the caller's fallback
-    (`submitted_for_review_at or created_at`) should have prevented it, and a
-    zero is a visible-but-harmless badge where an exception would 500 the
-    whole admin queue.
+    (`resubmitted_at or submitted_for_review_at or created_at`, MEH-2869) should
+    have prevented it, and a zero is a visible-but-harmless badge where an
+    exception would 500 the whole admin queue.
     """
     if since is None:
         return 0

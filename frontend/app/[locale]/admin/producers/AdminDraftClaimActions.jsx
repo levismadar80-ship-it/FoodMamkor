@@ -223,7 +223,7 @@ export function CopyClaimMessageButton({ producer, onStale, onMinted }) {
         onClick={onClick}
         disabled={busy || locked}
         aria-busy={busy}
-        className="text-primary hover:underline text-xs font-medium disabled:opacity-50 disabled:cursor-not-allowed disabled:no-underline"
+        className="text-primary underline decoration-[1.5px] underline-offset-[5px] decoration-primary/35 hover:decoration-current text-xs font-medium disabled:opacity-50 disabled:cursor-not-allowed disabled:no-underline"
       >
         {t("copy_message")}
       </button>

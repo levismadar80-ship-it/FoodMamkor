@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations, useLocale } from "next-intl";
 import { Link } from "@/i18n/navigation";
@@ -39,6 +39,8 @@ import {
   subscribeFavorites,
 } from "@/lib/favorites-cache";
 import api from "@/lib/api";
+import Seed from "@/components/brand/Seed";
+import { seedColorFor } from "@/lib/brand-seeds";
 import { humanTime } from "@/lib/time-format";
 
 // MEH-1678: bidi-safe amount interpolation, mirroring the pattern
@@ -180,7 +182,7 @@ function CardHeart({ producer, onCountChange }) {
       aria-pressed={filled}
       title={t("producer.card.favorites.aria")}
       data-testid="card-heart"
-      className="absolute top-2 end-2 sm:top-3 sm:end-3 z-10 w-[34px] h-[34px] sm:w-11 sm:h-11 bg-background/90 hover:bg-background rounded-full flex items-center justify-center transition-colors duration-base ease-quart focus-ring"
+      className="absolute top-2 end-2 sm:top-3 sm:end-3 z-10 w-[34px] h-[34px] sm:w-11 sm:h-11 bg-background/90 hover:bg-background border border-border shadow-sm rounded-full flex items-center justify-center transition-colors duration-base ease-quart focus-ring"
     >
       {/* Green ink, never red (MEH-636): outline default, green fill when saved. */}
       <HeartStraight
@@ -193,7 +195,93 @@ function CardHeart({ producer, onCountChange }) {
   );
 }
 
-export default function ProducerCard({ producer, active, onClick, referrer, highlightQuery = null }) {
+/**
+ * @param {object} props
+ * @param {boolean} [props.startCornerControl] MEH-2844 (Sapir 08/11): the
+ *   caller puts its own control in the card's top-START corner (e.g. the
+ *   «עדכונים» bell on /favorites). Both top corners then hold a control — the
+ *   heart at end, the caller's at start — and the controls win: the no-photo
+ *   plate shows no seed at all.
+ */
+// MEH-2856: measure before paint in the browser; plain effect on the server
+// (useLayoutEffect warns there). REUSES: components/ui/Tooltip.jsx:36.
+const useIsomorphicLayoutEffect = typeof window === "undefined" ? useEffect : useLayoutEffect;
+
+// MEH-991 (CARD-09) v4 LOCK: never more than 2 visible badges on a card.
+const BADGE_STRIP_MAX = 2;
+// «+N» keeps a 44px hit area inside its 24px chip with -m-2.5, so the hit area
+// reaches 10px past the chip's end. That reach is invisible: it may overhang
+// the group without the chip — or any pill — being cut, so the overflow check
+// forgives exactly that much while «+N» shows (caught on the preview: «משק
+// ברק» lost a 2nd pill that fits, as staging shows).
+const PLUS_N_REACH_PX = 10;
+
+/**
+ * MEH-2856: how many badges fit on the card's ONE badge line.
+ *
+ * `lineRef` is the no-wrap group holding the badge pills and «+N». Starts at
+ * today's count (min(2, earned)) — that is also the SSR / no ResizeObserver
+ * answer — and, before paint, drops one badge at a time while the group
+ * overflows (scrollWidth past its own capped width). «+N» is inside the group,
+ * so its width is in the measurement: when a badge moves into «+N» the chip
+ * appears and the check runs again. Never below 1 — a single badge that is
+ * still too wide breaks inside itself (MEH-2849) instead. When the card's
+ * width changes (rotation, grid change, text zoom reflow) the count resets to
+ * the cap and settles again.
+ */
+function useBadgesThatFit(lineRef, earned) {
+  const cap = Math.min(BADGE_STRIP_MAX, earned);
+  const [fit, setFit] = useState({ cap, shown: cap });
+  // A different badge set (new producer prop) starts over from the cap —
+  // reset during render, so the layout effect below measures the new set
+  // before paint instead of a stale count flashing first.
+  if (fit.cap !== cap) setFit({ cap, shown: cap });
+  const { shown } = fit;
+  useIsomorphicLayoutEffect(() => {
+    const el = lineRef.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const reach = el.querySelector('[data-testid="badge-overflow"]') ? PLUS_N_REACH_PX : 0;
+    if (shown > 1 && el.scrollWidth > el.clientWidth + 1 + reach) {
+      // Idempotent step (from the count this render measured, not "one less
+      // than whatever is queued"): StrictMode runs this effect twice against
+      // the same DOM, and a relative step took 2 → 1 → 0 pills.
+      setFit((f) => (f.shown === shown ? { ...f, shown: shown - 1 } : f));
+    }
+  });
+  useEffect(() => {
+    // The photo box the strip is pinned to (line → strip → photo box).
+    const line = lineRef.current;
+    const host = line?.parentElement?.parentElement;
+    if (!host || typeof ResizeObserver === "undefined") return undefined;
+    // Start over from the cap when the room changes (card width) or the text
+    // size does (browser text size, Android font scale — the root rem). The
+    // first pill is observed only as the trigger for a text-size change: the
+    // card's width does not move when only the font grows, and nothing else
+    // re-renders the card. The reset itself keys on the root font size, never
+    // on the pill's width — a lone pill shrinks to the card when the count
+    // drops, and resetting on that would loop 2 → 1 → 2 (MEH-2856, the 200%
+    // text E2E caught the stale fit).
+    const rootPx = () => parseFloat(getComputedStyle(document.documentElement).fontSize) || 0;
+    let lastWidth = null;
+    let lastRootPx = rootPx();
+    const ro = new ResizeObserver(() => {
+      const width = host.clientWidth;
+      const fontPx = rootPx();
+      if ((lastWidth !== null && width !== lastWidth) || fontPx !== lastRootPx) {
+        setFit((f) => ({ ...f, shown: f.cap }));
+      }
+      lastWidth = width;
+      lastRootPx = fontPx;
+    });
+    ro.observe(host);
+    const pill = line.querySelector("[data-badge]");
+    if (pill) ro.observe(pill);
+    return () => ro.disconnect();
+  }, [lineRef]);
+  return Math.min(shown, cap);
+}
+
+export default function ProducerCard({ producer, active, onClick, referrer, highlightQuery = null, startCornerControl = false }) {
   const t = useTranslations();
   const cardFee = resolveDeliveryFee(producer.delivery_fee, producer.delivery_areas);
   // MEH-2676: a free-delivery offer with a threshold moves into the delivery
@@ -217,6 +305,11 @@ export default function ProducerCard({ producer, active, onClick, referrer, high
   const STRIP_ONE_LINE_MAX = 32; // px — one pill row is ~25px
   const PLATE_CLEARANCE = 24; // px — strip's bottom-3 offset + breathing room
   const [stripLift, setStripLift] = useState(0);
+  // MEH-2856: the badge pills + «+N» sit in this one-line group.
+  const badgeLineRef = useRef(null);
+  const earnedBadges = badgeCount(producer);
+  const shownBadges = useBadgesThatFit(badgeLineRef, earnedBadges);
+  const hiddenBadges = earnedBadges - shownBadges;
   useEffect(() => {
     const el = badgeStripRef.current;
     if (!el || typeof ResizeObserver === "undefined") return undefined;
@@ -384,13 +477,39 @@ export default function ProducerCard({ producer, active, onClick, referrer, high
               // Hebrew break at 22px; overflow-wrap:anywhere is the fallback for
               // a single token wider than the tile, which keep-all can't break.
               <div
-                className="absolute inset-0 flex flex-col justify-end bg-background-alt p-4 pb-12 sm:p-5 sm:pb-14"
+                // MEH-2837: pt clears the heart (34px at top-2 → 42px; 44px
+                // at sm:top-3 → 56px), so a 3-line name never reaches it.
+                className="absolute inset-0 flex flex-col justify-end bg-background-alt p-4 pt-12 pb-12 sm:p-5 sm:pt-16 sm:pb-14"
                 style={stripLift ? { paddingBottom: stripLift } : undefined}
                 role="img"
                 aria-label={t("producer.card.aria.image_missing", { name: producer.name })}
               >
+                {/* MEH-2833 (seed layer, board 7): one seed in the business's own
+                    colour (seedColorFor(producer.id) — fixed per business),
+                    ≈70×105, rotated −36°, cropped in a top corner by the image
+                    box. MEH-2844 (Sapir 08/11): it sits in the START-top corner,
+                    opposite the heart (CardHeart, top-2 end-2), so it never
+                    sits under it; same size. Mirrored in RTL here (the end-
+                    corner placement mirrored in LTR) so the round end always
+                    sits in the corner. Below sm it is cropped 14px higher
+                    (−60px): the start corner is where every line of a
+                    3-line name begins, and at −46px the first line touched it
+                    (measured 0px at 375/390; 13px at −60px).
+                    MEH-2844 (Sapir 08/11): the controls win — when the caller
+                    also has a control in the start corner (startCornerControl,
+                    /favorites' bell), both corners are taken and no seed is
+                    drawn. */}
+                {!startCornerControl && (
+                  <Seed
+                    color={seedColorFor(producer.id).fill}
+                    size={70}
+                    rotate={-36}
+                    highlight
+                    className="absolute -top-[60px] sm:-top-[46px] -start-[30px] pointer-events-none rtl:-scale-x-100"
+                  />
+                )}
                 <span
-                  className="font-headline-lg font-black text-2xl sm:text-3xl leading-[1.05] text-text line-clamp-3 [word-break:keep-all] [overflow-wrap:anywhere]"
+                  className="relative font-headline-lg font-black text-2xl sm:text-3xl leading-[1.05] text-text line-clamp-3 [word-break:keep-all] [overflow-wrap:anywhere]"
                   data-testid="card-name-plate"
                   aria-hidden="true"
                 >
@@ -424,12 +543,27 @@ export default function ProducerCard({ producer, active, onClick, referrer, high
             with the old 4px gap it covered «חדש» down to 41.5×19.3 (axe
             target-size, CI mobile /producers). At 10px it touches the row
             above and covers nothing. Single-row strips are unchanged. */}
+        {/* MEH-2856 (Sapir 09/11): the badges sit on ONE line. The pills and
+            «+N» are a no-wrap group (data-badge-line) capped at the strip's
+            width: the photo minus the 12px start inset and an 8px end inset
+            (the pre-2856 strip had none, and a 12px one dropped pills that
+            fit on staging);
+            useBadgesThatFit() shows as many of the first 2 badges as fit and
+            moves the rest into «+N». Two long pills used to stack (ערוגות נועם
+            at 390). TrustBadge and the delivery-only pill below stay OUTSIDE
+            the group: as before, they drop to the next line when there is no
+            room, instead of being clipped by the card's overflow-hidden. */}
         <div
           ref={badgeStripRef}
-          className="absolute bottom-3 start-3 flex flex-wrap items-center gap-x-1 gap-y-2.5"
+          className="absolute bottom-3 start-3 flex flex-wrap items-center gap-x-1 gap-y-2.5 max-w-[calc(100%-1.25rem)]"
         >
-          <BadgeRow producer={producer} limit={2} surface="card" avoidRef={badgeStripRef} />
-          {badgeCount(producer) > 2 && (
+          <div
+            ref={badgeLineRef}
+            data-badge-line
+            className="flex flex-nowrap items-center gap-x-1 min-w-0 max-w-full"
+          >
+          <BadgeRow producer={producer} limit={shownBadges} surface="card" avoidRef={badgeStripRef} nowrap />
+          {hiddenBadges > 0 && (
             // MEH-991 (CARD-09): v4 LOCK — third badge collapses to +N.
             // MEH-1547: the +N counter becomes a Popover trigger listing the
             // HIDDEN badges (labels only) — it was the one dead element in an
@@ -465,14 +599,14 @@ export default function ProducerCard({ producer, active, onClick, referrer, high
                 <button
                   type="button"
                   aria-label={t("producer.card.badges.overflow_aria", {
-                    count: badgeCount(producer) - 2,
+                    count: hiddenBadges,
                   })}
                   data-testid="badge-overflow"
                   dir="ltr"
-                  className="group inline-flex items-center justify-center min-h-touch min-w-touch -m-2.5 focus:outline-none"
+                  className="group inline-flex shrink-0 items-center justify-center min-h-touch min-w-touch -m-2.5 focus:outline-none"
                 >
                   <span className="inline-flex items-center rounded-full bg-surface-card/95 border border-border text-fg-muted px-1.5 py-0.5 text-2xs font-medium group-focus-visible:ring-2 group-focus-visible:ring-primary/40">
-                    +{badgeCount(producer) - 2}
+                    +{hiddenBadges}
                   </span>
                 </button>
               }
@@ -525,7 +659,7 @@ export default function ProducerCard({ producer, active, onClick, referrer, high
                   behaviour are all unaffected. */}
               <span className="flex flex-col gap-2" role="list">
                 {allBadges(producer)
-                  .slice(2)
+                  .slice(shownBadges)
                   .map(withBadgeCopy)
                   .map((b) => {
                     const icon = badgeIcon(b.key);
@@ -547,6 +681,7 @@ export default function ProducerCard({ producer, active, onClick, referrer, high
               </span>
             </Popover>
           )}
+          </div>
           {/* MEH-1120 (MEH-1074 Task B): gate raised 3 → 4. Verification tiers
               (2 phone / 3 business) are owned by the BadgeRow seal above
               (verification_tier / ADR-022) — TrustBadge now only carries the
@@ -589,7 +724,10 @@ export default function ProducerCard({ producer, active, onClick, referrer, high
           </p>
         )}
 
-        <div className="grid grid-cols-[1fr_auto] gap-3 items-baseline">
+        {/* MEH-2837: below sm the rating sits UNDER the name (stacked) — side
+            by side in a 2-column grid at 390 it cut names early («חוות ערוגו…»).
+            sm and up unchanged. */}
+        <div className="grid grid-cols-1 gap-y-0.5 sm:grid-cols-[1fr_auto] sm:gap-3 items-baseline">
           <Link href={producerHref} className="block min-w-0 focus-ring">
             {/* MEH-1028 (CARD-27): mobile density — 16px name on <640px, 20px sm: up. */}
             <h3 className="font-headline-md font-bold text-base sm:text-xl text-text group-hover:text-primary transition-colors duration-base ease-quart leading-snug line-clamp-2">
@@ -600,7 +738,7 @@ export default function ProducerCard({ producer, active, onClick, referrer, high
           </Link>
           {hasRating && (
             <span
-              className="text-sm text-fg-muted shrink-0 whitespace-nowrap"
+              className="text-sm text-fg-muted shrink-0 whitespace-nowrap justify-self-start sm:justify-self-auto"
               dir="ltr"
               data-testid="card-rating"
             >

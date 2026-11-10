@@ -8,12 +8,12 @@
  *
  * MEH-911: aligned to the Assembly v2 design system (mirrors ProducerCard,
  * MEH-643). Flat bg-surface-card, 1px border, rounded-none, hover =
- * border-color shift + image scale 1.02. No-image = cream + Phosphor Leaf
- * + "מהמקור" (replaces the 🍞 emoji, Emoji LOCK MEH-657). "מתכון" eyebrow
+ * border-color shift + image scale 1.02. No-image = the name plate + one seed
+ * (MEH-2833; was the leaf + wordmark, which replaced the 🍞 emoji). "מתכון" eyebrow
  * in gold accent. Frank Ruhl title (font-headline-md). Meta strip uses
  * Phosphor Clock + Users (ADR-013 — Phosphor only, Lucide forbidden).
  *
- * Image fallback: the Leaf + brand placeholder when image_url is unset.
+ * Image fallback: the name plate + seed (MEH-2833) when image_url is unset.
  * Times: only the labels with a value (>0) appear, so a recipe with
  * only cook_time_min doesn't show an empty pair.
  *
@@ -24,9 +24,10 @@ import { useState } from "react";
 import { Link } from "@/i18n/navigation";
 import Image from "next/image";
 import { useTranslations } from "next-intl";
-import { Clock, Users, Leaf } from "@phosphor-icons/react";
+import { Clock, Users } from "@phosphor-icons/react";
 import { optimizeCloudinary, IMAGE_RATIOS } from "@/lib/cloudinary";
-import { BRAND_NAME } from "@/lib/constants";
+import Seed from "@/components/brand/Seed";
+import { seedColorFor } from "@/lib/brand-seeds";
 
 export default function RecipeCard({ slug, recipe }) {
   const t = useTranslations("recipes.card");
@@ -88,16 +89,29 @@ export default function RecipeCard({ slug, recipe }) {
             onError={() => setFailedSrc(imgSrc)}
           />
         ) : (
-          // MEH-911: canonical no-photo state — green-50 tile + Leaf glyph +
-          // brand name (replaces the 🍞 emoji). Mirrors ProducerCard.
-          // MEH-1400: bg-background → bg-green-50 (green-50 = #EAF3DE, MEH-1243 tile).
+          // MEH-2833 (seed layer, board 8 v2): the no-photo state is the
+          // business card's name plate — the recipe title in Frank Ruhl 900 on
+          // background-alt, bottom-aligned — plus one seed in the recipe's own
+          // colour, cropped in the end-top corner. Replaces the MEH-911 leaf +
+          // wordmark on green-50. The plate repeats the <h3> below, so it is
+          // aria-hidden.
           <div
-            className="absolute inset-0 flex flex-col items-center justify-center bg-green-50 gap-2"
+            className="absolute inset-0 flex flex-col justify-end bg-background-alt p-4 pt-12 sm:p-5 sm:pt-16"
             data-testid="recipe-image-missing"
+            aria-hidden="true"
           >
-            <Leaf size={40} weight="light" className="text-primary/70" aria-hidden="true" />
-            <span className="font-headline-md text-sm font-bold text-primary/80">
-              {BRAND_NAME}
+            <Seed
+              color={seedColorFor(recipe.id).fill}
+              size={70}
+              rotate={-36}
+              highlight
+              className="absolute -top-[46px] -end-[30px] pointer-events-none ltr:-scale-x-100"
+            />
+            <span
+              className="relative font-headline-lg font-black text-2xl sm:text-3xl leading-[1.05] text-text line-clamp-3 [word-break:keep-all] [overflow-wrap:anywhere]"
+              data-testid="recipe-name-plate"
+            >
+              {recipe.title}
             </span>
           </div>
         )}

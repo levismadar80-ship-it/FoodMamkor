@@ -175,10 +175,11 @@ exception (quotes, loan words), not the baseline.
 
 ## Colors
 
-The palette is deliberately small: **one brand green** — expressed as a
+The UI palette is deliberately small: **one action green** — expressed as a
 systematic 6-stop tint scale (`green-50`…`green-900`) for badges, hovers and
-depth, **not** as multiple brand colors — plus one warm gold accent, a cream
-background, and a tight set of neutrals. There is **no state-color palette**
+depth — plus one warm gold accent, a cream background, and a tight set of
+neutrals. The logo's other colours enter only as **decoration in the seed
+shape** — see *Seed layer* below (MEH-2833); they are never UI colours. There is **no state-color palette**
 (no red/amber/slate) — see *Elevation & Depth* for how state is expressed
 instead, and *Do's and Don'ts* for why.
 
@@ -327,6 +328,52 @@ nearest step, ties up for phone legibility. Fluid display headings
 (`text-[clamp(…)]`) are allowed — that is fluid type, not drift.
 `TypeScaleCodemod.test.js` blocks a new arbitrary size.
 
+### Seed layer (MEH-2833, approved by Sapir 08/11/2026)
+
+Until 08/11 the rule was "one brand green — don't introduce a second brand
+color". Now: **green stays the only action colour**, and the logo's colours
+(the five pomegranate seeds) enter the site as the **seed layer** — an identity
+layer, not UI colours. Source of truth in code: `frontend/lib/brand-seeds.js`
+(shape, both colour sets, order, `seedColorFor`); components
+`components/brand/SeedMark.jsx` (the bloom) and `Seed.jsx` (one seed).
+
+| Seed | On light (cream) | On dark (`bg-primary`, footer) |
+|---|---|---|
+| green | `#2E6853` | `#F5F0E8` |
+| terracotta | `#C8632E` | `#E8823A` |
+| gold | `#C99846` | `#E0B266` |
+| sand | `#D9C8B0` | `#D9C8B0` |
+| sage | `#5A8F73` | `#8FB89F` |
+
+**Rules**
+1. **Only in the seed shape, or as a soft tint (≤ ~25%) of a background.**
+   Never text, buttons, links or status. Contrast on cream: terracotta 3.5:1,
+   sage 3.3:1, gold 2.3:1, sand 1.4:1 — not enough for text.
+2. **Green stays the only action colour.** Gold (`accent` `#896714`) stays for
+   prices and highlights.
+3. **In a sequence, always the logo order:** green, terracotta, gold, sand, sage.
+4. **One colour moment per screen.**
+5. **On a dark surface, the on-dark set.**
+6. **Seeds are decoration** (`aria-hidden`). When they carry information (e.g.
+   group-buy progress) it is always with text.
+
+**The logo vs a single seed**
+- **The logo (the five-seed bloom):** never rotated, recoloured, rearranged or
+  distorted.
+- **Supergraphic:** the logo may be enlarged and cropped in a corner — no
+  rotation, no mirroring, no tiling as a pattern, at least 3 seeds visible;
+  text over it keeps valid contrast.
+- **A single seed = a brand element, not the logo:** it may be rotated, scaled
+  and given any seed colour.
+
+**Where it appears (approved 08/11):** imageless business masthead
+(supergraphic on sand) · section break in long-form pages (small bloom) ·
+/about/process steps (a seed per step) · reviewer initials (a soft seed tint,
+fixed per name) · success moments (bloom + seeds opening out) · footer seed row
+(on-dark) · no-photo card plate (name + one seed, colour fixed per business) ·
+missing recipe/product/event image (same rule) · 404 and every «not found»
+page (the full logo, small).
+
 ## Layout
 
 An **8px base spacing scale** governs all rhythm. Allowed steps: 4, 8, 12, 16,
@@ -425,6 +472,12 @@ front matter for the normative token bindings.
     Frank Ruhl 900 (22px / 30px sm+), `background-alt` fill, bottom-aligned
     above the badge row. Replaces the MEH-643 leaf glyph + wordmark on
     `green-50`, which read as a template when most cards had no photo.
+    **MEH-2833:** plus one `Seed` (≈70×105, rotated −36°, cropped in a
+    top corner) in `seedColorFor(producer.id)` — the business keeps "its"
+    colour. **MEH-2844:** wherever a control sits in a top corner (the card
+    heart, the recipe page's share/save), the seed takes the opposite
+    (start-top) corner; a seed never sits under or against a control. The same plate + seed replaces every leaf placeholder for a missing
+    recipe/product/event image; image-only slots (no name) get the seed alone.
 - **Inputs:** white `surface`, `text` foreground, `border` hairline, 8px
   radius. Dividers use the `border` token.
 - **Price tags / premium accents:** `accent` gold, used sparingly with
@@ -596,8 +649,9 @@ reads as a rendering bug (the ghost-strip class). Rules:
 
 - **Do** keep pure white (`surface`) only on top of the cream page — cards,
   modals, inputs. **Don't** use `#FFFFFF` as a page background.
-- **Do** use `primary` as the single brand accent and `accent` gold only for
-  prices/premium. **Don't** introduce a second brand color.
+- **Do** use `primary` as the single action colour and `accent` gold only for
+  prices/premium. **Don't** use the seed colours for text, buttons, links or
+  status — they live only in the seed shape (*Seed layer*, MEH-2833).
 - **Do** express state with opacity-on-cream + `fg-muted`. **Don't** add
   state-color tokens.
 - **Do** maintain WCAG 2.1 AA contrast — ≥ 4.5:1 body, ≥ 3:1 large text.
@@ -806,6 +860,38 @@ recorded reason — do not "fix" them:
   body text size and are exempt from the standalone tap-target floor
   (WCAG 2.5.8 Target Size (Minimum) inline exception) — enlarging them would
   break the line box.
+
+## Text links look tappable without hover (MEH-2831)
+
+**Text links must look tappable without hover: a permanent underline (or
+another always-visible cue such as a chevron/arrow icon or a button shape).
+Hover only strengthens the cue.** A phone has no hover, so a link whose only
+cue is `hover:underline` reads as plain text there — Sapir found «ירקות» on the
+business page that way (iPhone, 08/11), sitting beside «3 ביקורות», which was
+underlined: two links on one line, two languages.
+
+**The treatment** (reference: `ProducerHeader.jsx`, the category link):
+`underline decoration-[1.5px] underline-offset-[5px]` + the decoration in the
+link's own ink at ~35% (`decoration-primary/35`, `decoration-muted/35`, …), and
+on hover the full colour of that ink (`hover:decoration-current`). The
+reference link's ink is `text-text` and it turns primary on hover/focus, so
+its underline follows to primary (`group-hover:decoration-primary`). When the
+link wraps an icon, put the underline on the text span, not on the icon.
+
+**Exempt** — these already carry an always-visible cue, so they keep their
+hover-only underline (or none):
+- whole-card links (the card is the link);
+- nav items (header, footer columns, bottom nav, tab bars, breadcrumbs);
+- buttons and pills (a filled or bordered shape). A text-only button — no fill,
+  no border, e.g. «נסו שוב», «שלחו שוב» — is a link for this rule and gets the
+  underline;
+- icon buttons;
+- links with an always-visible arrow or icon inside them (ArrowLeft, CaretLeft,
+  MapPin, Phone, ArrowSquareOut …), including an arrow that is part of the copy
+  («לכל האירועים ←»).
+
+Colour alone (`text-primary`) is **not** a cue: on a page whose headings are
+already green it does not read as "tap me".
 
 ## Required-field marking (MEH-2015)
 

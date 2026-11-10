@@ -145,7 +145,7 @@ const FOOTER_UTILITY = [
   { key: "terms", href: "/terms" },
   { key: "privacy_short", href: "/privacy" },
   { key: "accessibility", href: "/accessibility" },
-  { key: "contact", href: "/about#contact" },
+  { key: "contact", href: "/contact" },
   // MEH-2633: «המליצו על בית עסק», added next to «צרו קשר» per the card. Sixth
   // entry, asserted as rendered like `login` above — this list is an
   // as-rendered lock on the utility row, and the row changed. It is NOT a
@@ -211,7 +211,7 @@ test.describe("manual › /privacy (LEGAL)", () => {
     await gotoLegal(page, "privacy-page", "/privacy");
     const root = scope(page).getByTestId("privacy-page");
     await expect(page).toHaveURL(/\/privacy(?:[/?#]|$)/);
-    await expect(page).toHaveTitle(PRIVACY_HE.meta_title);
+    await expect(page).toHaveTitle(`${PRIVACY_HE.meta_title} | מהמקור`);
     await expect(root.getByRole("heading", { level: 1 })).toHaveText(PRIVACY_HE.heading);
     // The date line is the paragraph directly under the h1.
     await expect(root.locator("h1 + p")).toHaveText(PRIVACY_HE.date_label);
@@ -250,7 +250,7 @@ test.describe("manual › /terms (LEGAL)", () => {
     await gotoLegal(page, "terms-page", "/terms");
     const root = scope(page).getByTestId("terms-page");
     await expect(page).toHaveURL(/\/terms(?:[/?#]|$)/);
-    await expect(page).toHaveTitle(TERMS_HE.meta_title);
+    await expect(page).toHaveTitle(`${TERMS_HE.meta_title} | מהמקור`);
     await expect(root.getByRole("heading", { level: 1 })).toHaveText(TERMS_HE.heading);
     await expect(root.locator("h1 + p")).toHaveText(TERMS_HE.date_label);
 
@@ -287,7 +287,7 @@ test.describe("manual › /accessibility (LEGAL)", () => {
     await gotoLegal(page, "accessibility-page", "/accessibility");
     const root = scope(page).getByTestId("accessibility-page");
     await expect(page).toHaveURL(/\/accessibility(?:[/?#]|$)/);
-    await expect(page).toHaveTitle(A11Y_HE.meta_title);
+    await expect(page).toHaveTitle(`${A11Y_HE.meta_title} | מהמקור`);
     await expect(root.getByRole("heading", { level: 1 })).toHaveText(A11Y_HE.heading);
     // Two lines under the h1: the statement date, then the last-check line.
     await expect(root.locator("h1 + p")).toHaveText(A11Y_HE.statement_date);
@@ -330,7 +330,7 @@ test.describe("manual › footer legal links (LEGAL)", () => {
   //   Asserted on /privacy (the footer is site-wide; FooterSlot.jsx only swaps it
   //   on /map and the dashboard). The page renders FIVE utility links today —
   //   the four the row names plus «כניסה לחשבון» — and «קשר» resolves to
-  //   `/about#contact` (MEH-1312), not `/contact`. Asserted as rendered.
+  //   `/contact` (MEH-2832; it was `/about#contact` under MEH-1312). Asserted as rendered.
   test("copyright bar: the utility list carries every legal link with its locked label and href", async ({ page }) => {
     await gotoLegal(page, "privacy-page", "/privacy");
     const footer = page.locator("footer");

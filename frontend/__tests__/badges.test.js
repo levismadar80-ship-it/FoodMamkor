@@ -485,8 +485,9 @@ describe("topBadges", () => {
 // MEH-1259 organic. New copy = "לעסק יש מוצרים ... מסומנים בקטלוג".
 describe("dietary badge tooltips — any-product semantics (MEH-1439)", () => {
   it("vegan tooltip states any-product semantics, not 'all products'", () => {
+    // MEH-1508 (Sapir 09/11): + the milk/egg allergy sentence.
     expect(heBadgeCopy(BADGE_CONFIG.vegan).tooltip).toBe(
-      "לעסק יש מוצרים טבעוניים מסומנים בקטלוג.",
+      "לעסק יש מוצרים טבעוניים מסומנים בקטלוג. אם יש אלרגיה לחלב או לביצים, כדאי לוודא ישירות מול בית העסק.",
     );
     expect(heBadgeCopy(BADGE_CONFIG.vegan).tooltip).not.toMatch(/כל המוצרים/);
   });

@@ -14,7 +14,11 @@ import { detailToMessage } from "@/lib/errors";
 import { BRAND_NAME } from "@/lib/constants";
 import { useExperiencesNavGate } from "@/lib/use-experiences-nav-gate";
 import { useEventsNavGate } from "@/lib/use-events-nav-gate";
+import { useHubNavGate } from "@/lib/use-hub-nav-gate";
 import { useAuth } from "@/lib/auth-context";
+import ShareSiteActions from "@/components/ShareSiteActions";
+import Seed from "@/components/brand/Seed";
+import { SEEDS_DARK } from "@/lib/brand-seeds";
 
 /**
  * Footer (MEH-37 redesign) — brings the implementation in line with the
@@ -95,13 +99,20 @@ export default function Footer() {
   const showExperiences = useExperiencesNavGate();
   // MEH-2369: same idea for events — no upcoming event, no link.
   const showEvents = useEventsNavGate();
+  // MEH-2858: no orphan lists — group buys and rescue bags join «גלו» the
+  // same way, only while they have at least one public item.
+  const showGroupBuys = useHubNavGate("groupBuys");
+  const showRescue = useHubNavGate("rescue");
 
   // MEH-1177 (ADR-024): the flat 8-link nav mixed two audiences (readers +
   // producers). NN/g "Footers 101" — group links by secondary audience rather
-  // than dumping them in one column. Two labelled groups: readers ("גלו") +
-  // producers ("לבתי עסק"). Copy locked by Sapir 13/07.
+  // than dumping them in one column. Copy locked by Sapir 13/07.
+  // MEH-2858 (Sapir 09/11): three groups — «גלו» (what to find on the site),
+  // «עלינו» (who we are), «לבתי עסק». Baymard: footer links grouped by meaning;
+  // Etsy / Airbnb / Meetup split "about" from "discover" the same way. The
+  // «גלו עסקים» → / link is gone: it read like «כל בתי העסק», and the logo in
+  // the brand column already links home.
   const discoverLinks = [
-    { href: "/", label: t("nav.footer.nav_discover") },
     // MEH-1060 (SEO-09): link to the /producers index — the crawlable catalog
     // walk was previously reachable only via sitemap/pagination, not the footer.
     { href: "/producers", label: t("nav.footer.producers") },
@@ -114,11 +125,17 @@ export default function Footer() {
     ...(showExperiences
       ? [{ href: "/experiences", label: t("nav.footer.experiences") }]
       : []),
+    ...(showGroupBuys ? [{ href: "/group-buys", label: t("nav.footer.group_buys") }] : []),
+    ...(showRescue ? [{ href: "/rescue", label: t("nav.footer.rescue") }] : []),
+  ];
+  const aboutLinks = [
     { href: "/about", label: t("nav.footer.about") },
     // MEH-1289: reader-facing "why local" editorial page.
     { href: "/about/why-local", label: t("nav.footer.why_local") },
     // MEH-1160: reader-facing share page — the site-level viral loop.
-    { href: "/share", label: t("share_page.footer_link") },
+    // MEH-2827 PR 5: /share became the «ספרו עלינו» section of /recommend
+    // (/share 308s there too); the label is unchanged.
+    { href: "/recommend#share", label: t("share_page.footer_link") },
   ];
   const businessLinks = [
     // MEH-721/995: the canonical recruitment door; the wizard stays one tap
@@ -189,19 +206,22 @@ export default function Footer() {
             </ul>
           </div>
 
-          {/* Column 2 — Navigation. MEH-1177: split into two audience groups,
+          {/* Column 2 — Navigation. MEH-1177: split into audience groups
+              (MEH-2858: three — «גלו» · «עלינו» · «לבתי עסק»),
               each with its own real <h3> heading (MEH-867 hierarchy: sr-only h2
               brand → h3 sections). MEH-1278 put the two groups side-by-side on
-              mobile; MEH-2397 replaces that with two stacked, closed accordion
-              rows (the open 2-col grid still cost ~340px on every page and the
-              footer outgrew the content on /login). Desktop (md:) is the
-              original flex-col stack with both lists open. */}
+              mobile; MEH-2397 replaced that with stacked, closed accordion
+              rows — one per group, three since MEH-2858 (the open 2-col grid
+              still cost ~340px on every page and the footer outgrew the
+              content on /login). Desktop (md:) is the original flex-col stack
+              with every list open. */}
           <nav
             aria-label={t("nav.footer.nav_aria")}
             className="flex flex-col divide-y divide-white/10 border-y border-white/10 md:divide-y-0 md:border-0 md:gap-6"
           >
             {[
               { id: "footer-group-discover", heading: t("nav.footer.group_discover_heading"), links: discoverLinks },
+              { id: "footer-group-about", heading: t("nav.footer.group_about_heading"), links: aboutLinks },
               { id: "footer-group-business", heading: t("nav.footer.group_business_heading"), links: businessLinks },
             ].map((group) => {
               const open = openGroup === group.id;
@@ -323,17 +343,32 @@ export default function Footer() {
                 {message}
               </p>
             )}
+            {/* MEH-2827 PR 5: right after joining is when a reader is most
+                likely to pass the site on. One «שתפו» (the phone's own share
+                sheet), on-dark colours; shares the site URL. */}
+            {status === "success" && (
+              <div className="mt-4 rounded-xl border border-background/15 bg-background/5 p-4" data-testid="newsletter-share">
+                <p className="text-sm font-semibold text-background">{t("share_page.h1")}</p>
+                <ShareSiteActions layout="compact" tone="dark" className="mt-3" />
+              </div>
+            )}
           </div>
+        </div>
+
+        {/* MEH-2833 (seed layer, board 6): the divider above the © line is a
+            row of the five seeds in the on-dark set, logo order, then a hairline
+            filling the rest. Decoration only. Replaces the plain top border. */}
+        <div aria-hidden="true" data-testid="footer-seed-row" className="flex items-center gap-1.5 mt-8">
+          {SEEDS_DARK.map((seed) => (
+            <Seed key={seed.name} color={seed.fill} size={10} />
+          ))}
+          <span className="h-px flex-1 bg-background/25 ms-1.5" />
         </div>
 
         {/* ================= Copyright bar ================= */}
         <div
           className="flex flex-col sm:flex-row items-center justify-between gap-3"
-          style={{
-            borderTop: "1px solid rgba(255,255,255,0.1)",
-            paddingTop: "12px",
-            marginTop: "32px",
-          }}
+          style={{ paddingTop: "12px" }}
         >
           {/* MEH-788 copy-Δ: P5-v2 bottom-row lock — wordmark only; the leaf
               emoji dropped per the UI-surface emoji LOCK (MEH-657). */}
@@ -350,10 +385,10 @@ export default function Footer() {
               // MEH-867: IL IS 5568 — accessibility statement must be reachable
               // from the global footer.
               { href: "/accessibility", label: t("nav.footer.accessibility") },
-              // MEH-1312: "צרו קשר" → contact-form anchor on /about (id="contact",
-              // AboutClient.jsx:388). Sapir-approved ADR-024 exception (18/07) —
-              // contact is a top-3 expected footer utility link.
-              { href: "/about#contact", label: t("nav.footer.contact") },
+              // MEH-1312: "צרו קשר" — Sapir-approved ADR-024 exception (18/07),
+              // contact is a top-3 expected footer utility link. MEH-2832: the
+              // target is /contact, the site's one contact form (was /about#contact).
+              { href: "/contact", label: t("nav.footer.contact") },
               // MEH-2633: next to "צרו קשר", per the card. Sixth utility link —
               // the row already wraps and centres at 375 (MEH-2417 above), so
               // this does not re-open the edge-to-edge overflow that fixed.

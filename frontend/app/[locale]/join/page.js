@@ -7,7 +7,7 @@ import EditorialPhoto from "@/components/EditorialPhoto";
 import JoinFeatures from "@/components/join/JoinFeatures";
 import JoinStickyBar from "@/components/join/JoinStickyBar";
 import { BRAND_NAME } from "@/lib/constants";
-import { buildAlternates, OG_LOCALE } from "@/lib/i18n-seo";
+import { buildAlternates, buildEntityTitle, OG_LOCALE } from "@/lib/i18n-seo";
 
 /**
  * /join — producer recruitment landing (MEH-995; rebuilt to the approved
@@ -42,10 +42,11 @@ export async function generateMetadata({ params }) {
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: "seo.join" });
   return {
-    title: { absolute: t("title") },
+    // MEH-2853: plain title — the layout template `%s | <brand>` adds the brand.
+    title: t("title"),
     description: t("description"),
     openGraph: {
-      title: t("og_title"),
+      title: buildEntityTitle(t("og_title"), locale),
       description: t("og_description"),
       type: "website",
       siteName: BRAND_NAME,
@@ -101,7 +102,11 @@ function JoinVideo({ name, ariaLabel, sampleLabel, testId }) {
 const LINK_CLASS =
   "inline-flex items-center gap-2 text-primary font-semibold hover:underline rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40";
 const CARD_CLASS = "bg-background border border-primary/20 rounded-md px-5 py-4";
-const FAQ_KEYS = ["cost", "google", "revenue", "customers"];
+// MEH-2841 (Sapir, 08/11): cost and price lead, because they are the two
+// questions that stop a registration — «בלי עמלות» used to live only in
+// a_cost, far down the page. Then discovery, then the «one more place to
+// update» objection that keeps coming back in Topaz's calls.
+const FAQ_KEYS = ["cost", "price", "google", "updates", "revenue", "customers"];
 // MEH-2799 (Sapir, 07/11): the site's FAQ pattern — a <details> accordion
 // (/about/for-businesses/page.js:183) — with EVERY question closed on load.
 // That page opens its cost question (:66); Sapir chose all-closed for /join.

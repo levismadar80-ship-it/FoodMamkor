@@ -12,6 +12,7 @@
 >   - ✅👤 = verified producer (`require_verified_producer` — producer role + verified email; unverified → 403 `יש לאמת את כתובת האימייל תחילה`, MEH-1164 F5). Applies to the **create** endpoints `POST /events`, `POST /experiences` (MEH-2246), `POST /producers/me/recipes`, `POST /group-buys`. Also `PATCH /group-buys/{id}/status` (MEH-2436: owner of that business only; an admin uses `PATCH /admin/group-buys/{id}/status`).
 >   - 🌐 group buys (MEH-2484): `GET /group-buys`, `GET /group-buys/{id}` and `POST /group-buys/{id}/commit` serve only a group buy whose business passes `is_business()` (approved, `kind='producer'`); otherwise 404 `קבוצת הרכש לא נמצאה`. The API still answers the owner and admin `200`; the public page itself is server-rendered without auth, so it 404s for them too. Leaving (`DELETE …/commit`) is not gated.
 >   - 🛡️ = admin role (`require_admin`)
+>   - MEH-2852: the write routes that make a public page appear, change or disappear (business approve / edit / hide / reject / delete, owner `PUT /producers/me`, events, group buys, admin experience + recipe moderation) queue an IndexNow ping after the commit — production only, no response change. Full list: `docs/DATA.md` → "IndexNow".
 >   - MEH-2716: `GET /producers`, `/producers/{id}`, `/producers/by-slug/{slug}` and `GET /users/me/favorites` carry computed `rescued_recently` («מצילים מזון» badge: a surprise bag handed or given away free in the last 30 days; always false while the rescue pilot is off).
 
 ## 1. Registered routers at a glance
@@ -119,7 +120,7 @@ graph TD
     NeighborList --> HPRate[POST /home-products/rate/{token}<br/>🌐 token-based single-use]
 
     Events[/events + /experiences] --> EventCreate[POST /events<br/>✅👤 verified producer — MEH-1164 F5;<br/>MEH-1161: pending producer's events stay hidden]
-    Events --> EventReads[GET /events + /upcoming + /id<br/>🌐 approved producers only — MEH-1161:<br/>pending filtered from lists, detail 404,<br/>owner/admin bypass;<br/>MEH-2459: organizer-owned events included,<br/>EventOut.owner_kind + owner_slug;<br/>MEH-2546: + owner_image_url]
+    Events --> EventReads[GET /events + /upcoming + /id<br/>🌐 approved producers only — MEH-1161:<br/>pending filtered from lists, detail 404,<br/>owner/admin bypass;<br/>MEH-2459: organizer-owned events included,<br/>EventOut.owner_kind + owner_slug;<br/>MEH-2546: + owner_image_url;<br/>MEH-2847: ?category repeats → IN,<br/>checked against VALID_CATEGORIES<br/>(same on GET /experiences)]
     Events --> OrganizerPage[GET /organizers/{slug} + GET /organizers<br/>🌐 MEH-2461: approved organizers only,<br/>upcoming events; sitemap source<br/>MEH-2475: + owner story, contact channels]
     Events --> EventMine[GET /events/mine<br/>👤 producer — own events, all states<br/>incl. inactive — MEH-1405 manage list]
     Events --> ExpCreate[POST /experiences<br/>✅👤 verified producer — MEH-2246: same gate as<br/>POST /events, since MEH-1749 hides a<br/>non-business experience from every read path;<br/>then Claude Haiku pre-check + admin approval queue]

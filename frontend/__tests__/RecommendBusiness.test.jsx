@@ -3,6 +3,9 @@ import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import RecommendClient from "@/app/[locale]/recommend/RecommendClient";
 import api from "@/lib/api";
 
+// MEH-2827 PR 5: the owner line under the subtitle is a BusinessCtaLink,
+// which reads the auth context. A guest sees the join link.
+vi.mock("@/lib/auth-context", () => ({ useAuth: () => ({ user: null, loading: false }) }));
 vi.mock("@/lib/api", () => ({
   default: { post: vi.fn(() => Promise.resolve({ data: { ok: true } })) },
 }));
@@ -28,7 +31,7 @@ vi.mock("next-intl", () => {
   const flat = {
     "recommend.title": "מכירים בית עסק שצריך להיות כאן?",
     "recommend.subtitle":
-      "ספרו לנו עליו. אנחנו בודקים כל המלצה, פונים לבית העסק ומצרפים רק בתי עסק עם רישיון.",
+      "ספרו לנו עליו. אנחנו בודקות כל המלצה, פונות לבית העסק, ומצרפות רק בתי עסק שפועלים כדין.",
     "recommend.field_name_label": "שם בית העסק",
     "recommend.field_city_label": "עיר",
     "recommend.field_contact_label": "אינסטגרם, טלפון או אתר",
@@ -95,7 +98,7 @@ describe("RecommendClient", () => {
   it("idle renders the approved title, subtitle and the contact hint", () => {
     render(<RecommendClient />);
     expect(screen.getByText("מכירים בית עסק שצריך להיות כאן?")).toBeInTheDocument();
-    expect(screen.getByText(/אנחנו בודקים כל המלצה/)).toBeInTheDocument();
+    expect(screen.getByText(/אנחנו בודקות כל המלצה/)).toBeInTheDocument();
     expect(screen.getByText("מספיק אחד, כדי שנוכל לפנות אליהם")).toBeInTheDocument();
     expect(screen.getByTestId("recommend-form")).toBeInTheDocument();
     expect(screen.queryByTestId("recommend-success")).toBeNull();
@@ -207,6 +210,29 @@ describe("RecommendClient", () => {
     );
     expect(screen.getByText("תודה! קיבלנו את ההמלצה. נבדוק ונפנה לבית העסק.")).toBeInTheDocument();
     expect(screen.queryByTestId("recommend-form")).toBeNull();
+  });
+
+  it("success opens the light seed burst right above the success panel (MEH-2833)", async () => {
+    render(<RecommendClient />);
+    expect(screen.queryByTestId("seed-burst")).toBeNull();
+    fillValid();
+    fireEvent.submit(screen.getByTestId("recommend-form"));
+    const panel = await screen.findByTestId("recommend-success");
+    const burst = panel.previousElementSibling;
+    expect(burst.getAttribute("data-testid")).toBe("seed-burst");
+    expect(burst.getAttribute("data-variant")).toBe("light");
+  });
+
+  // MEH-2844 (Sapir 08/11): one success mark — the burst. The ✓ that sat in
+  // the panel under it is gone; heading and text unchanged.
+  it("success shows ONE mark: the burst, no ✓ in the panel", async () => {
+    render(<RecommendClient />);
+    fillValid();
+    fireEvent.submit(screen.getByTestId("recommend-form"));
+    const panel = await screen.findByTestId("recommend-success");
+    expect(panel.querySelectorAll("svg")).toHaveLength(0);
+    expect(screen.getAllByTestId("seed-burst")).toHaveLength(1);
+    expect(screen.getByText("תודה! קיבלנו את ההמלצה. נבדוק ונפנה לבית העסק.")).toBeInTheDocument();
   });
 
   it("opting in swaps the success copy for the email promise", async () => {

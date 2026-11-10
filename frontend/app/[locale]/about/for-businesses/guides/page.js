@@ -14,7 +14,7 @@
 import { Link } from "@/i18n/navigation";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { BRAND_NAME } from "@/lib/constants";
-import { buildAlternates, OG_LOCALE } from "@/lib/i18n-seo";
+import { buildAlternates, buildEntityTitle, OG_LOCALE } from "@/lib/i18n-seo";
 
 // MEH-476 PR 3b2: per-page hreflang via buildAlternates; og:locale per locale.
 export async function generateMetadata({ params }) {
@@ -22,11 +22,11 @@ export async function generateMetadata({ params }) {
   const t = await getTranslations("guides.index");
   const title = t("meta_title");
   return {
-    // title.absolute prevents layout's `%s | ${BRAND_NAME}` template appending.
-    title: { absolute: title },
+    // MEH-2853: plain title — the layout template `%s | <brand>` adds the brand.
+    title,
     description: t("meta_description"),
     openGraph: {
-      title,
+      title: buildEntityTitle(title, locale),
       description: t("og_description"),
       type: "website",
       siteName: BRAND_NAME,
@@ -54,8 +54,10 @@ export default async function GuidesIndexPage({ params }) {
   const t = await getTranslations({ locale, namespace: "guides" });
   const ti = await getTranslations({ locale, namespace: "guides.index" });
   return (
-    <section className="min-h-screen bg-background text-text">
-      <div className="max-w-3xl mx-auto px-4 sm:px-6 py-12 sm:py-16">
+    // MEH-2827 (FinalGuides): no min-h-screen and a short bottom pad, so no
+    // empty band is left between the last card and the site footer.
+    <section className="bg-background text-text">
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 pt-12 sm:pt-16 pb-2">
         <header className="mb-10 sm:mb-14">
           <p className="text-xs sm:text-sm mb-3 text-accent">
             {ti("eyebrow")}
@@ -73,7 +75,7 @@ export default async function GuidesIndexPage({ params }) {
             <li key={g.slug}>
               <Link
                 href={`/about/for-businesses/guides/${g.slug}`}
-                className="block rounded-lg border border-border bg-surface p-5 sm:p-6 transition focus-visible:outline-none focus-visible:ring-2"
+                className="block rounded-lg border border-border bg-surface-card p-5 sm:p-6 transition focus-visible:outline-none focus-visible:ring-2"
               >
                 <p className="text-2xs sm:text-xs mb-2 text-accent">
                   {ti("minutes_label", { minutes: g.readMinutes })}
@@ -92,18 +94,17 @@ export default async function GuidesIndexPage({ params }) {
           ))}
         </ul>
 
-        <footer className="mt-14 sm:mt-16 border-t border-border pt-8">
-          <p className="text-base text-text/90">
-            {ti("footer_prefix")}{" "}
-            <a
-              href="https://www.instagram.com/meha_makor"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="underline text-primary"
-            >
-              @meha_makor
-            </a>
-            {ti("footer_suffix")}
+        <footer className="mt-8 rounded-xl bg-background-alt p-5">
+          {/* MEH-2832: questions go to the one contact form, not Instagram
+              (Instagram stays in the site footer as social). */}
+          <p className="text-base text-text/90" data-testid="guides-footer-question">
+            {ti.rich("footer_prefix", {
+              link: (chunks) => (
+                <Link href="/contact?topic=business" className="underline text-primary">
+                  {chunks}
+                </Link>
+              ),
+            })}
           </p>
         </footer>
       </div>

@@ -84,10 +84,12 @@ describe("PrimaryContactButton", () => {
     expect(screen.getByText("שליחת מייל")).toBeInTheDocument();
   });
 
-  it("returns null when the required field is missing", () => {
+  // MEH-2836: renders nothing only when there is NO contact detail at all;
+  // a declared method missing its field falls back (see contactMethod tests).
+  it("returns null when there is no contact detail at all", () => {
     const { container } = render(
       <PrimaryContactButton
-        producer={{ ...base, phone: null, primary_contact_method: "whatsapp" }}
+        producer={{ ...base, phone: null, website: "", contact_email: null, primary_contact_method: "whatsapp" }}
       />,
     );
     expect(container.innerHTML).toBe("");

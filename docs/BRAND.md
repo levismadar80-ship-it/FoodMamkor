@@ -54,6 +54,7 @@ The **tagline** is specced for: footer brand line, meta description, OpenGraph c
 ### Visual LOCKs (full token set in `docs/DESIGN.md`)
 
 - Primary green `#2e6853` · cream background `#F5F0E8` (warm cream — NEVER pure white) · text `#1C1A17`
+- Seed layer (MEH-2833, 08/11): the logo's five seed colours appear only as decoration in the seed shape — never text/buttons/links/status; green stays the only action colour. Rules: `docs/DESIGN.md` → *Seed layer*
 - Frank Ruhl Libre 900 for Hebrew headlines · DM Sans for body
 - No pure white `#ffffff` anywhere
 - No gradient orbs, blurred backgrounds, glassmorphism (signals "app", opposite of "magazine")
@@ -130,6 +131,8 @@ Phrasings that survived to production once and must be caught in review:
 - Stock illustrations (iStock, Freepik) — kill the "curated" signal.
 - Phosphor duotone weight — too playful for editorial; regular weight only.
 - `"מורשה"` / `"מורשים"` in consumer copy — regulatory term consumers don't parse; tier language is מאומת / מוצהר only (ADR-022). Legal surfaces (terms, declaration text) may use it.
+- `"קבוצת רכש"` / `"רכישה קבוצתית"` / `"קנייה קבוצתית"` / `"קניות קבוצתיות"` — the feature is **«קבוצת רכישה / קבוצות רכישה»**, the common Israeli term (Sapir 08/11/2026, MEH-2827). Definite and prefixed forms follow it: «קבוצת הרכישה», «לקבוצת רכישה», «בקבוצות הרכישה». Keys, routes (`/group-buys`) and API fields keep their names; English stays "group buy".
+- `"WhatsApp"` in Latin letters inside Hebrew text — in Hebrew the app is **«וואטסאפ»**, with prefixes: «בוואטסאפ», «לוואטסאפ», «הודעת וואטסאפ» (Sapir 08/11/2026, MEH-2837 — he.json had «וואטסאפ» on 84 lines and «WhatsApp» on 20). Latin «WhatsApp» stays **only inside a product or legal name**: «WhatsApp Business», «Meta (WhatsApp Cloud API)» — and the privacy policy's third-parties item (`privacy.sections.third_parties.items.meta`) stays as written in full, as legal text. Keys (`whatsapp_cta`…), code identifiers and English copy keep «WhatsApp».
 
 ### דיבור בשם בית העסק
 

@@ -181,7 +181,10 @@ class Producer(Base):
     #
     # Readers that need a submission instant use
     # `submitted_for_review_at or created_at`; that fallback is what makes a
-    # backfill unnecessary rather than merely deferred.
+    # backfill unnecessary rather than merely deferred. Readers that need the
+    # LATEST submission (the admin SLA badge and queue order, MEH-2869) put
+    # `resubmitted_at` first: a resubmission after a rejection writes only
+    # that stamp, never this one.
     #
     # tz-aware (DateTime(timezone=True)), written with
     # datetime.now(timezone.utc) — never naive utcnow. Expand-only (ADR-007).
@@ -1514,6 +1517,10 @@ class FavoriteAlert(Base):
     # first becomes publicly visible (admin approve). server_default in the
     # migration opts existing rows in, matching the sibling columns' default.
     notify_new_recipe = Column(Boolean, default=True)
+    # MEH-2828: 5th alert type — fires when a favorited producer opens a group
+    # buy. Nullable + server_default true, exactly like MEH-1361; unlike the
+    # siblings, the code reads NULL as ON (alerts.py, Sapir 08/11).
+    notify_new_group_buy = Column(Boolean, default=True)
     push_subscription = Column(JSON, nullable=True)
     whatsapp_opt_in = Column(Boolean, default=False)
     created_at = Column(DateTime, default=utc_now)

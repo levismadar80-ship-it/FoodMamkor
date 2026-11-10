@@ -6,7 +6,7 @@
  */
 
 import { useEffect, useId, useState } from "react";
-import { Bell, BellSlash, Check, Confetti, CookingPot, Handbag, Truck, ChatCircle } from "@phosphor-icons/react";
+import { Bell, BellSlash, Check, Confetti, CookingPot, Handbag, Truck, ChatCircle, ShoppingCart } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import api from "@/lib/api";
 import { showToast } from "@/lib/toast";
@@ -20,6 +20,8 @@ const DEFAULT_PREFS = {
   notify_delivery_area: true,
   // MEH-1361: 4th alert type — new recipe published by the producer.
   notify_new_recipe: true,
+  // MEH-2828: 5th alert type — the business opens a group buy.
+  notify_new_group_buy: true,
   whatsapp_opt_in: false,
 };
 
@@ -49,6 +51,7 @@ export default function AlertPrefsPanel({ producerId, producerName, onClose }) {
             notify_new_product: r.data.notify_new_product,
             notify_delivery_area: r.data.notify_delivery_area,
             notify_new_recipe: r.data.notify_new_recipe,
+            notify_new_group_buy: r.data.notify_new_group_buy,
             whatsapp_opt_in: r.data.whatsapp_opt_in,
           });
         } else {
@@ -122,6 +125,7 @@ export default function AlertPrefsPanel({ producerId, producerName, onClose }) {
         notify_new_product: effective.notify_new_product,
         notify_delivery_area: effective.notify_delivery_area,
         notify_new_recipe: effective.notify_new_recipe,
+        notify_new_group_buy: effective.notify_new_group_buy,
         whatsapp_opt_in: effective.whatsapp_opt_in,
         push_subscription,
       });
@@ -236,6 +240,7 @@ export default function AlertPrefsPanel({ producerId, producerName, onClose }) {
           {toggleRow("notify_new_product", t("row_new_product"), Handbag)}
           {toggleRow("notify_delivery_area", t("row_delivery_area"), Truck)}
           {toggleRow("notify_new_recipe", t("row_new_recipe"), CookingPot)}
+          {toggleRow("notify_new_group_buy", t("row_new_group_buy"), ShoppingCart)}
         </div>
       </div>
 

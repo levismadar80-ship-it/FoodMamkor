@@ -69,7 +69,9 @@ describe("FooterSlot routing (MEH-1954)", () => {
     expect(screen.getByTestId("dashboard-footer")).toBeInTheDocument();
     // Consumer-only surfaces must be absent: newsletter + discover nav.
     expect(screen.queryByText("nav.footer.newsletter_heading")).not.toBeInTheDocument();
-    expect(screen.queryByText("nav.footer.nav_discover")).not.toBeInTheDocument();
+    // MEH-2858: «גלו עסקים» (nav_discover) left the consumer footer, so the
+    // marker is the «גלו» group heading — absent from the slim footer.
+    expect(screen.queryByText("nav.footer.group_discover_heading")).not.toBeInTheDocument();
   });
 
   it("keeps the slim footer on the dashboard root path", () => {
@@ -101,6 +103,7 @@ describe("FooterSlot routing (MEH-1954)", () => {
     expect(links).toContain("/accessibility");
     expect(links).toContain("/terms");
     expect(links).toContain("/privacy");
-    expect(links).toContain("/about#contact");
+    expect(links).toContain("/contact");
+    expect(links).not.toContain("/about#contact");
   });
 });

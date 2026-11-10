@@ -48,6 +48,9 @@ export default function StickyContactBar({
     t("contact_cta.wa_greeting", { name: producer?.name || "" }),
   );
   const href = isWebsite ? withReferralParams(rawHref) : rawHref;
+  // MEH-2836: no contact detail at all → no bar. A bar with only the rating
+  // and no button was what «מעדניית בן שמן» showed before the resolver.
+  if (!href) return null;
   return (
     <div
       // MEH-76 chunk 3: border hex literal -> border-border token class; the
@@ -90,6 +93,9 @@ export default function StickyContactBar({
       // true); the old `""` idiom was a silent no-op in the browser. The choice
       // lives in lib/inert-attr.js and is tested against both renderers.
       inert={!isBarVisible ? INERT_PRESENT : undefined}
+      // MEH-2835: while the bar is shown, the mobile chat launcher steps aside
+      // (ChatWidget watches [data-chat-hide]); hidden bar → attribute gone.
+      data-chat-hide={isBarVisible ? "" : undefined}
     >
       <div className="flex items-center gap-3 px-4 py-3">
         {/* Social proof — hidden if < 3 reviews. MEH-76 chunk 1: the vacation

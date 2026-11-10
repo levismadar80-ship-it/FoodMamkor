@@ -1,5 +1,6 @@
 "use client";
 
+import SeedMark from "@/components/brand/SeedMark";
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import dynamic from "next/dynamic";
@@ -12,7 +13,6 @@ import {
   CalendarPlus,
   CaretLeft,
   Coins,
-  Leaf,
   MapPin,
   UsersThree,
 } from "@phosphor-icons/react";
@@ -25,6 +25,7 @@ import { formatPrice } from "@/lib/utils";
 import { cssUrl } from "@/lib/css-url";
 import { optimizeCloudinary, IMAGE_RATIOS } from "@/lib/cloudinary";
 import Breadcrumb from "@/components/Breadcrumb";
+import HistoryBackLink from "@/components/HistoryBackLink";
 import ShareButton from "@/components/ShareButton";
 import SaveButton from "@/components/SaveButton";
 import OwnerRow from "@/components/OwnerRow";
@@ -113,7 +114,7 @@ export default function EventDetailClient() {
     return (
       <div className="max-w-3xl mx-auto px-4 py-16 text-center">
         <div className="mb-4 flex justify-center">
-          <Leaf size={56} className="text-primary" aria-hidden="true" />
+          <SeedMark size={76} />
         </div>
         <p className="text-fg-muted mb-6">{t("not_found")}</p>
         <Link href="/events" className="text-primary hover:underline">
@@ -220,6 +221,9 @@ export default function EventDetailClient() {
 
       <div className="max-w-[1100px] mx-auto px-4 pt-11 lg:pt-8 lg:grid lg:grid-cols-[1fr_360px] lg:grid-rows-[auto_1fr] lg:gap-x-12 lg:items-start">
         <div className="lg:col-start-1">
+          {/* MEH-2857: «→ חזרה» to the page the visitor came from, when there
+              is one inside the site; the breadcrumb below stays as is. */}
+          <HistoryBackLink />
           <Breadcrumb
             items={[
               { href: "/", label: t("breadcrumb_home") },
@@ -300,13 +304,16 @@ export default function EventDetailClient() {
             <div className={infoRow}>
               <span className={infoIcon}><Calendar size={18} aria-hidden="true" /></span>
               <p className="flex-1 min-w-0 font-semibold text-text">
-                {formatEventDate(event.event_date, locale, DETAIL_DATE_OPTIONS)}
+                {/* MEH-2837: the date and the time range each stay whole, so a
+                    wrap can only happen at «·» (the year used to drop to the
+                    hours' line). */}
+                <span className="whitespace-nowrap">{formatEventDate(event.event_date, locale, DETAIL_DATE_OPTIONS)}</span>
                 {event.event_time && (
                   // MEH-2469: «09:30–15:00» when there is an end time. The «·»
                   // stays outside the LTR isolate so it keeps following the date.
                   <>
                     {" · "}
-                    <span dir="ltr">{formatTimeRange(event.event_time, event.end_time)}</span>
+                    <span dir="ltr" className="whitespace-nowrap">{formatTimeRange(event.event_time, event.end_time)}</span>
                   </>
                 )}
               </p>
