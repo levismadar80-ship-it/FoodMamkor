@@ -22,6 +22,7 @@ from app.auth import require_admin
 from app.utils.clock import business_days_waiting, israel_now, israel_today
 from app.utils.pii import mask_phone
 from app.config import settings
+from app.services.email_branding import email_logo_html
 from app.services.auth_notifications import (
     notify_producer_approved,
     notify_producer_changes_requested,
@@ -2037,6 +2038,8 @@ def _producer_approved_html(name: str, slug: str | None) -> str:
         else ""
     )
 
+    # MEH-2834: the shared brand header; email_logo_html() escapes its URL itself.
+    logo = email_logo_html()
     return (
         "<!DOCTYPE html>\n"
         '<html dir="rtl" lang="he">\n'
@@ -2051,6 +2054,7 @@ def _producer_approved_html(name: str, slug: str | None) -> str:
         'style="background:#ffffff;border-radius:12px;text-align:right;'
         'direction:rtl;max-width:560px;margin:0 auto;"><tr>\n'
         '<td style="text-align:right;direction:rtl;">\n'
+        f"{logo}\n"
         '<p style="color:#3a3a3a;font-size:15px;line-height:1.8;'
         'margin:0 0 16px;direction:rtl;">היי,</p>\n'
         '<p style="color:#1C1A17;font-size:17px;line-height:1.8;'
@@ -2164,6 +2168,8 @@ def _producer_rejected_html(
         if reason
         else ""
     )
+    # MEH-2834: the shared brand header; email_logo_html() escapes its URL itself.
+    logo = email_logo_html()
     return (
         "<!DOCTYPE html>\n"
         '<html dir="rtl" lang="he">\n'
@@ -2178,6 +2184,7 @@ def _producer_rejected_html(
         'style="background:#ffffff;border-radius:12px;text-align:right;'
         'direction:rtl;max-width:560px;margin:0 auto;"><tr>\n'
         '<td style="text-align:right;direction:rtl;">\n'
+        f"{logo}\n"
         '<p style="color:#3a3a3a;font-size:15px;line-height:1.8;'
         f'margin:0 0 16px;direction:rtl;">שלום {safe_name},</p>\n'
         '<p style="color:#1C1A17;font-size:17px;line-height:1.8;'
