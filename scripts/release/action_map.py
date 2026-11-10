@@ -20,12 +20,15 @@ Related:  tests/test_action_map_complete.py (the guard), docs/release/anchor-
 
 CLI
   python scripts/release/action_map.py            print the summary
-  python scripts/release/action_map.py --write    regenerate the doc
+  python scripts/release/action_map.py --write    regenerate the doc and its
+                                                  sha256 manifest
   python scripts/release/action_map.py --check    exit 1 if the committed doc is
-                                                  stale (line numbers ignored —
-                                                  see DRIFT below)
+                                                  stale (see DRIFT below)
   python scripts/release/action_map.py --check --strict   byte-exact compare
-  Needs PYTHONPATH=backend:. and the env the app imports with (ENV, SECRET_KEY).
+  python3 scripts/release/action_map.py --check-static    the no-app tier (DRIFT)
+  python3 scripts/release/action_map.py --self-test-static
+  All but the two *-static modes need PYTHONPATH=backend:. and the env the app
+  imports with (ENV, SECRET_KEY). The static modes are stdlib only.
 
 THE MATCHER — what counts as evidence (and its limits)
   pytest   every `<x>client<y>.<method>(path, ...)` / `c.<method>(...)` /
@@ -81,10 +84,13 @@ RISK SCORE (deterministic, used for "Top gaps by risk")
               in the path) +3; money-like (group-buy commit, rescue orders) +3;
               notifications (the endpoint's own source sends email/WhatsApp)
               +2; public visibility (approve/reject/publish/toggle-status/hide/
-              unhide/verified/ambassador/story-card/request-changes) +2
+              unhide/verified/ambassador/story-card/request-changes) +2;
+              privilege change (/role, /block, /admin/users/… mutations) +3;
+              DELETE +1
   coverage    positive GAP +4, only e2e-mock +3, only weak +2; a gated route
               with no negative (401/403) test +2
-  Extra rows (§B.3) score as their primary route plus: race +3, time +2,
+  Extra rows (§B.3) score as their primary route's base (the same function,
+  `base_score`) plus: race +3, time +2,
   negative +2, then the same coverage weights.
 
 DRIFT
@@ -96,15 +102,30 @@ DRIFT
   covered / weak / e2e-mock / GAP, a citation moving to a different file, or a
   different score. `--check --strict` is the byte-exact form. Regenerate with
   `--write` whenever it fails.
+  Two more checks run on the COMMITTED doc, in every mode that checks:
+    - its sha256 must equal docs/release/action-map.sha256, which only --write
+      writes: a hand edit of any cell (GAP → covered) goes red;
+    - every `covered` citation must still hold what it claims (an HTTP call,
+      a 401/403 assertion, a `.goto(`): a citation that line drift alone made
+      stale goes red even though the masked compare is equal.
+  TIERS. pytest runs only for some paths, so the checks that need no app import
+  (manifest, citations, «Pages», tool ids, audit rows) also run on EVERY PR as
+  scripts/checks/action-map-drift-guard.sh in Repo guards. The full compare,
+  route table included, is tests/test_action_map_complete.py in the pytest job;
+  docs/ci/action-map-pytest-filter.patch.md (staged for Sapir) widens the paths
+  that trigger it.
 """
 
 from __future__ import annotations
 
 import argparse
 import ast
+import functools
+import hashlib
 import inspect
 import os
 import re
+import subprocess
 import sys
 import warnings
 from dataclasses import dataclass, field
@@ -163,12 +184,20 @@ VISIBILITY_PATH_RE = re.compile(
     r"approve|reject|publish|toggle-status|/hide|/unhide|verified|ambassador|"
     r"story-card|request-changes|revoke"
 )
+# Who-can-do-what changes: role grants, blocks, anything on /admin/users/.
+PRIVILEGE_PATH_RE = re.compile(r"/role\b|/block\b|^/admin/users/")
 NOTIFY_SRC_RE = re.compile(
     r"send_\w*email|send_\w*whatsapp|\bemail\.\w+\(|whatsapp\w*\.\w+\(|"
     r"send_template|notify_\w+\(|_notify\w*\(|send_\w*mail\("
 )
+ERR_ASSERT_RE = re.compile(
+    r"(?:assert|status_code|==|\bin\b).*\b[45]\d\d\b|HTTP_[45]\d\d"
+)
 NEG_ASSERT_RE = re.compile(r"(?:assert|status_code|==|\bin\b).*\b40[13]\b|HTTP_40[13]")
-POS_ASSERT_RE = re.compile(r"(?:assert|status_code|==).*\b20[0-4]\b|HTTP_20[0-4]")
+POS_ASSERT_RE = re.compile(
+    r"(?:assert|status_code|==|\bin\b).*\b(?:20\d|30[1-8])\b|HTTP_(?:20\d|30[1-8])|"
+    r"\.is_success\b|raise_for_status\(|\bassert\s+\w+\.ok\b"
+)
 CLOCK_RE = re.compile(
     r"israel_days_ago|setattr\([^)]*(?:israel_today|israel_now|_now|utcnow|"
     r"datetime|date\b)|freeze_time|freezegun|_NOW\b"
@@ -181,6 +210,35 @@ THREAD_RE = re.compile(
 
 def rel(path: Path) -> str:
     return path.resolve().relative_to(ROOT).as_posix()
+
+
+@functools.lru_cache(maxsize=1)
+def _tracked() -> frozenset[str]:
+    """Files git tracks (index), that exist. An untracked scratch file in a
+    developer's tree must not change the map; CI has only tracked files, so
+    this is also what makes a local run equal CI's."""
+    try:
+        out = subprocess.run(
+            ["git", "ls-files", "-z"],
+            cwd=ROOT,
+            capture_output=True,
+            check=True,
+        ).stdout.decode("utf-8")
+    except (OSError, subprocess.CalledProcessError) as exc:
+        raise SystemExit(
+            f"action_map: `git ls-files` failed ({exc}) — run inside the repo"
+        )
+    return frozenset(f for f in out.split("\0") if f and (ROOT / f).is_file())
+
+
+def tracked_under(directory: Path, suffix_re: str = "") -> list[Path]:
+    prefix = rel(directory) + "/"
+    rx = re.compile(suffix_re) if suffix_re else None
+    return sorted(
+        ROOT / f
+        for f in _tracked()
+        if f.startswith(prefix) and (rx is None or rx.search(f))
+    )
 
 
 # ═════════════════════════════════════════════════════════════════════════════
@@ -271,8 +329,13 @@ def classify_actor(deps: frozenset[str], source: str) -> tuple[str, str, tuple]:
         if re.search(r"kind\s*!=\s*[\"']producer[\"']", source):
             return "business", "business (organizer refused)", tuple(flags)
         return "business", "business/organizer", tuple(flags)
-    if "get_current_user" in deps or "get_current_user_lenient" in deps:
+    # get_current_user_optional / get_current_user_lenient return None for a
+    # missing or bad token (auth.py:401, :441) — an anonymous caller gets in,
+    # so there is no 401/403 to test. Only a hard get_current_user gates.
+    if "get_current_user" in deps:
         return "registered", "registered user", tuple(flags)
+    if deps & {"get_current_user_optional", "get_current_user_lenient"}:
+        return "anonymous", "anonymous (optional auth)", tuple(flags)
     return "anonymous", "anonymous", tuple(flags)
 
 
@@ -353,6 +416,16 @@ class Call:
     # over: `window` is then the source of the test(s) consuming the table,
     # and evidence cites the row itself.
     table: bool = False
+    # Source of the `headers=` argument ("" when absent): who is calling.
+    # Two calls with the same text are the same actor (same fixture user).
+    actor: str = ""
+    # When the call sits in a helper that RETURNS the response
+    # (`return client.put(...)`), the assertions live at the helper's call
+    # sites: their windows, judged like this call's own.
+    outer_windows: list[str] = field(default_factory=list)
+    # First line of the simple statement holding the call — `assert (` may
+    # open on the line above `client.get(...)`. The window starts here.
+    wstart: int = 0
 
 
 @dataclass
@@ -496,6 +569,13 @@ class PytestIndex:
     texts: dict[str, list[str]]
 
 
+DYNAMIC_CALL_RE = re.compile(
+    r"getattr\(\s*[\w.]*client\w*\s*,\s*[a-z_]\w*\s*\)"  # getattr(client, method)(...)
+    r"|[\w.]*client\w*\.request\(\s*[a-z_]\w*\s*,\s*[a-z_]\w*"  # client.request(m, p)
+    r"|\b\w+\(\s*[\w.]*client\w*\s*,\s*[a-z_]\w*\s*,\s*[a-z_]\w*"  # _call(client, m, p)
+)
+
+
 def _table_rows(fname, tree, lines, spans, func_envs, base_env) -> list[Call]:
     """`("post", f"/admin/producers/{_U}/approve")` rows of an endpoint table
     (e.g. tests/test_expansion_admin_authz.py) — the test calls
@@ -527,6 +607,15 @@ def _table_rows(fname, tree, lines, spans, func_envs, base_env) -> list[Call]:
             consumers = [
                 sp for sp in spans if rx.search("\n".join(lines[sp[0] - 1 : sp[1]]))
             ]
+        # The table must actually DRIVE a request: a consumer whose client call
+        # takes the method / path from a variable. A table that is only diffed
+        # against an inventory (test_meh1979's DELIBERATELY_UNLIMITED) is not a
+        # request to that route.
+        consumers = [
+            sp
+            for sp in consumers
+            if DYNAMIC_CALL_RE.search("\n".join(lines[sp[0] - 1 : sp[1]]))
+        ]
         if not consumers:
             continue
         window = "\n".join("\n".join(lines[sp[0] - 1 : sp[1]]) for sp in consumers)
@@ -554,7 +643,7 @@ def build_pytest_index(
     synthetic files through the same code."""
     if sources is None:
         sources = {}
-        for p in sorted(tests_dir.rglob("*.py")):
+        for p in tracked_under(tests_dir, r"\.py$"):
             r = rel(p)
             if r in SCAN_EXCLUDE:
                 continue
@@ -633,14 +722,42 @@ def build_pytest_index(
                     func_name=span[2] if span else "<module>",
                     func_start=span[0] if span else 0,
                     func_end=span[1] if span else 0,
+                    actor=next(
+                        (
+                            ast.unparse(k.value)
+                            for k in node.keywords
+                            if k.arg == "headers"
+                        ),
+                        "",
+                    ),
                 )
             )
         file_calls.sort(key=lambda c: (c.line, c.method, c.path))
+        simple = [
+            (n.lineno, n.end_lineno or n.lineno)
+            for n in ast.walk(tree)
+            if isinstance(
+                n,
+                (
+                    ast.Assert,
+                    ast.Assign,
+                    ast.AnnAssign,
+                    ast.AugAssign,
+                    ast.Expr,
+                    ast.Return,
+                ),
+            )
+        ]
+        for c in file_calls:
+            starts = [a for a, b in simple if a <= c.line <= b]
+            c.wstart = max(starts) if starts else c.line
         for i, c in enumerate(file_calls):
             stop = c.end + NEG_WINDOW
+            if c.func_end:
+                stop = min(stop, c.func_end)  # never into the next test
             if i + 1 < len(file_calls) and file_calls[i + 1].line > c.line:
                 stop = min(stop, file_calls[i + 1].line - 1)
-            c.window = "\n".join(lines[c.line - 1 : max(stop, c.end)])
+            c.window = "\n".join(lines[c.wstart - 1 : max(stop, c.end)])
         calls.extend(file_calls)
         calls.extend(_table_rows(fname, tree, lines, spans, func_envs, _base_env))
         for start, end, name, _node in sorted(spans, key=lambda s: s[0]):
@@ -653,6 +770,18 @@ def build_pytest_index(
         helpers = {
             f.name: f for f in file_funcs if f.calls and not f.name.startswith("test")
         }
+        for hname, helper in helpers.items():
+            rx = re.compile(r"\b" + re.escape(hname) + r"\(")
+            for tf in file_funcs:
+                if tf is helper:
+                    continue
+                for off, ln in enumerate(tf.source.splitlines()):
+                    if rx.search(ln):
+                        start = tf.start + off
+                        stop = min(start + NEG_WINDOW, tf.end)
+                        win = "\n".join(lines[start - 1 : stop])
+                        for c in helper.calls:
+                            c.outer_windows.append(win)
         for tf in file_funcs:
             tf.all_calls = list(tf.calls)
             for hname, helper in helpers.items():
@@ -689,9 +818,7 @@ def page_route_from_file(page_file: Path) -> str:
 
 def collect_pages(root: Path = PAGES_ROOT) -> list[Page]:
     pages = []
-    files = sorted(
-        p for p in root.rglob("page.*") if p.suffix in {".js", ".jsx", ".ts", ".tsx"}
-    )
+    files = tracked_under(root, r"/page\.(jsx?|tsx?)$")
     for f in files:
         route = page_route_from_file(f)
         if route.startswith("/admin"):
@@ -728,7 +855,8 @@ def playwright_spec_files() -> list[Path]:
     out: set[Path] = set()
     for g in globs:
         out.update((ROOT / "frontend").glob(g))
-    return sorted(out)
+    tracked = _tracked()
+    return sorted(p for p in out if rel(p) in tracked)
 
 
 _TS_STR = r"(\"[^\"\n]*\"|'[^'\n]*'|`[^`]*`)"
@@ -763,7 +891,7 @@ def _strip_locale(path: str) -> list[str]:
 
 @dataclass
 class E2EIndex:
-    gotos: list[tuple[str, int, str]]  # file, line, path
+    gotos: list[tuple[str, int, str, bool]]  # file, line, path, guest-redirect?
     mocks: list[tuple[str, int, re.Pattern]]  # file, line, url regex
 
 
@@ -804,6 +932,10 @@ def _regex_literal_to_regex(lit: str) -> re.Pattern | None:
     return re.compile("^" + re.escape(path) + "/?$")
 
 
+REDIRECT_LOOKAHEAD = 6
+REDIRECT_RE = r"(?:waitForURL|toHaveURL)\([^)\n]*login"
+
+
 def build_e2e_index(spec_files: list[Path] | None = None) -> E2EIndex:
     files = spec_files if spec_files is not None else playwright_spec_files()
     gotos, mocks = [], []
@@ -825,7 +957,16 @@ def build_e2e_index(spec_files: list[Path] | None = None) -> E2EIndex:
                 val = val[1:]  # a leading ${base} origin
             p = normalise_path(val)
             if p:
-                gotos.append((r, line, p))
+                # A goto whose next lines wait for / assert a /login URL is a
+                # guest-redirect check: the page itself never rendered.
+                after = text[m.end() :].split("\n")[1 : 1 + REDIRECT_LOOKAHEAD]
+                tail = []
+                for ln in after:
+                    if re.search(r"\btest\(|\.goto\(", ln):
+                        break
+                    tail.append(ln)
+                redirect = bool(re.search(REDIRECT_RE, "\n".join(tail)))
+                gotos.append((r, line, p, redirect))
         for m in re.finditer(
             r"\.route\(\s*("
             + _TS_STR[1:-1]
@@ -858,9 +999,7 @@ def _strip_ext(p: str) -> str:
 def build_vitest_index(test_dir: Path = VITEST_DIR) -> VitestIndex:
     imports: dict[str, list[tuple[str, int]]] = {}
     texts: dict[str, str] = {}
-    files = sorted(
-        p for p in test_dir.rglob("*") if re.search(r"\.test\.(jsx?|tsx?)$", p.name)
-    )
+    files = tracked_under(test_dir, r"\.test\.(jsx?|tsx?)$")
     spec_re = re.compile(
         r"(?:\bfrom\s+|\bimport\s*\(\s*|\brequire\s*\(\s*|^\s*import\s+)[\"']([^\"']+)[\"']",
         re.M,
@@ -909,6 +1048,13 @@ class Cell:
 STATUS_ORDER = {"covered": 0, "e2e-mock": 1, "weak": 2, GAP: 3, "n/a": 4}
 
 
+def worst(cells: list[Cell]) -> Cell:
+    cells = [c for c in cells if c is not None and c.status != "n/a"]
+    if not cells:
+        return Cell("n/a")
+    return max(cells, key=lambda c: STATUS_ORDER[c.status])
+
+
 def best(cells: list[Cell]) -> Cell:
     cells = [c for c in cells if c is not None]
     if not cells:
@@ -944,17 +1090,44 @@ def _is_refusal(c: Call) -> bool:
     return any(NEG_ASSERT_RE.search(ln) for ln in c.window.splitlines())
 
 
+def _window_succeeds(win: str) -> bool:
+    """A window evidences the SUCCESS path when it asserts a 2xx/3xx, or when
+    it asserts on the response body (`.json()`) and asserts no 4xx/5xx — a
+    body assertion on an error response would not hold."""
+    if POS_ASSERT_RE.search(win):
+        return True
+    return (
+        ".json()" in win
+        and re.search(r"^\s*assert\b", win, re.M) is not None
+        and not ERR_ASSERT_RE.search(win)
+    )
+
+
+def _call_succeeds(c: Call) -> bool:
+    return _window_succeeds(c.window) or any(
+        _window_succeeds(w) for w in c.outer_windows
+    )
+
+
 def route_positive(ev: Evidence, r: Route) -> Cell:
     """A call that is only ever asserted refused (401/403) does not exercise
     the handler — it is a negative test. Positive needs some other call."""
     calls = ev.calls_by_route.get(r.key, [])
-    allowed = [c for c in calls if not _is_refusal(c)]
-    if allowed:
-        ok = [c for c in allowed if POS_ASSERT_RE.search(c.window)]
-        c = (ok or allowed)[0]
+    # `covered` needs a call whose window ASSERTS success (2xx/3xx). A call
+    # asserted 400/404/422/500, or not asserted at all, exercises an error
+    # path at best — the handler's success path is not evidenced by it.
+    ok = [c for c in calls if _call_succeeds(c)]
+    if ok:
+        c = ok[0]
         return Cell("covered", f"{c.file}:{c.line}")
     if calls:
-        return Cell("weak", f"{calls[0].file}:{calls[0].line}", "only refused calls")
+        if all(_is_refusal(c) for c in calls):
+            note = "only refused calls"
+        elif all(ERR_ASSERT_RE.search(c.window) for c in calls):
+            note = "only error-path calls"
+        else:
+            note = "no success asserted"
+        return Cell("weak", f"{calls[0].file}:{calls[0].line}", note)
     return route_weak(ev, r) or Cell(GAP)
 
 
@@ -985,7 +1158,7 @@ def route_negative(ev: Evidence, r: Route) -> Cell:
             if NEG_ASSERT_RE.search(ln):
                 if c.table:
                     return Cell("covered", f"{c.file}:{c.line}", "table row")
-                return Cell("covered", f"{c.file}:{c.line + off}")
+                return Cell("covered", f"{c.file}:{(c.wstart or c.line) + off}")
     return Cell(GAP)
 
 
@@ -997,9 +1170,14 @@ def route_e2e(ev: Evidence, r: Route) -> Cell | None:
     return None
 
 
-def route_score(r: Route, pos: Cell, neg: Cell) -> tuple[int, list[str]]:
+def base_score(r: Route) -> tuple[int, list[str]]:
+    """The route's own weight, before any coverage term. Shared by route rows
+    and §B.3 extra rows so the two scales cannot drift apart."""
     why = []
     score = 3 if r.is_mutation else 1
+    if "DELETE" in r.methods:
+        score += 1
+        why.append("delete")
     score += ACTOR_RANK[r.actor]
     if r.actor == "anonymous" and r.is_mutation:
         score += 1
@@ -1016,6 +1194,14 @@ def route_score(r: Route, pos: Cell, neg: Cell) -> tuple[int, list[str]]:
     if VISIBILITY_PATH_RE.search(r.path) and r.is_mutation:
         score += 2
         why.append("public visibility")
+    if PRIVILEGE_PATH_RE.search(r.path) and r.is_mutation:
+        score += 3
+        why.append("privilege change")
+    return score, why
+
+
+def route_score(r: Route, pos: Cell, neg: Cell) -> tuple[int, list[str]]:
+    score, why = base_score(r)
     score += {GAP: 4, "e2e-mock": 3, "weak": 2}.get(pos.status, 0)
     if pos.status == GAP:
         why.append("no test")
@@ -1063,15 +1249,23 @@ class PageRow:
 
 def build_page_rows(ev: Evidence, pages: list[Page]) -> list[PageRow]:
     hits: dict[str, tuple[str, int]] = {}
-    for f, line, path in ev.e2e.gotos:
+    redirect_only: dict[str, tuple[str, int]] = {}
+    for f, line, path, redirect in ev.e2e.gotos:
         for variant in _strip_locale(path):
             pg = resolve_page(pages, variant)
             if pg is not None:
-                hits.setdefault(pg.file, (f, line))
+                (redirect_only if redirect else hits).setdefault(pg.file, (f, line))
                 break
     rows = []
     for pg in pages:
-        e2e = Cell("covered", "%s:%d" % hits[pg.file]) if pg.file in hits else Cell(GAP)
+        if pg.file in hits:
+            e2e = Cell("covered", "%s:%d" % hits[pg.file])
+        elif pg.file in redirect_only:
+            e2e = Cell(
+                "weak", "%s:%d" % redirect_only[pg.file], "only a guest-redirect check"
+            )
+        else:
+            e2e = Cell(GAP)
         imp = ev.vitest.imports.get(_strip_ext(pg.file))
         unit = Cell("covered", "%s:%d" % imp[0]) if imp else Cell(GAP)
         rows.append(PageRow(pg, e2e, unit, best([e2e, unit])))
@@ -1139,11 +1333,7 @@ class ToolRow:
 def _files_under(ref: str) -> list[str]:
     p = ROOT / ref
     if p.is_dir():
-        return sorted(
-            rel(x)
-            for x in p.rglob("*")
-            if x.is_file() and x.suffix in {".js", ".jsx", ".ts", ".tsx", ".py"}
-        )
+        return [rel(x) for x in tracked_under(p, r"\.(jsx?|tsx?|py)$")]
     return [ref]
 
 
@@ -1241,7 +1431,13 @@ def build_tool_rows(
         backend = best(backend_cells) if backend_cells else Cell("n/a")
         unit = best(unit_cells) if unit_cells else Cell("n/a")
         page = best(page_cells) if page_cells else Cell("n/a")
-        rows.append(ToolRow(t, backend, unit, page, best([backend, unit, page])))
+        verdict = best([backend, unit, page])
+        has_router = any(r.startswith("backend/app/routers/") for r in t.code_refs)
+        if has_router and STATUS_ORDER[backend.status] > STATUS_ORDER[verdict.status]:
+            # The tool's server side is its router: a Vitest import of some
+            # component cannot make the tool better covered than its routes.
+            verdict = Cell(backend.status, backend.where, "capped by its router")
+        rows.append(ToolRow(t, backend, unit, page, verdict))
     return rows
 
 
@@ -1275,7 +1471,18 @@ def parse_audit_sections(text: str) -> dict[int, tuple[str, str]]:
             m.end() : matches[i + 1].start() if i + 1 < len(matches) else len(text)
         ]
         out[n] = (m.group(2).strip(), body)
-    return {n: v for n, v in out.items() if 1 <= n <= 9}
+    return out
+
+
+# Audit sections that describe no state machine, each with why. Every OTHER
+# `## N.` heading must produce at least one row — a section added to the audit
+# later gets a row (at worst one whole-section row), never silence; and an
+# entry here whose heading disappears fails the guard (a stale exemption).
+AUDIT_EXEMPT_SECTIONS: dict[int, str] = {
+    0: "what the audit could not verify — a scope note, no machine",
+    10: "the psql queries for staging — verification steps, no machine",
+    11: "cross-cutting patterns — a summary of §1–§9, no machine of its own",
+}
 
 
 def _site_tables(body: str) -> list[tuple[str, str]]:
@@ -1401,15 +1608,14 @@ class ModuleMap:
         return found, func, note
 
 
-def build_machine_rows(
-    ev: Evidence, audit_text: str, route_rows: list[RouteRow]
-) -> list[MachineRow]:
+def audit_entries(audit_text: str) -> list[tuple[int, str, str, str]]:
+    """(section, title, transition, site text) for every row the audit yields.
+    Stdlib only — the static drift tier (no app import) reads it too."""
+    out = []
     sections = parse_audit_sections(audit_text)
-    mm = ModuleMap(ev.routes)
-    verdict_by_key = {rr.route.key: rr.verdict for rr in route_rows}
-    mounted_modules = {r.module for r in ev.routes}
-    rows: list[MachineRow] = []
     for n in sorted(sections):
+        if n in AUDIT_EXEMPT_SECTIONS:
+            continue
         title, body = sections[n]
         entries = _site_tables(body)
         if not entries and n == 9:
@@ -1423,62 +1629,96 @@ def build_machine_rows(
         if not entries:
             head = body.split("### Finding")[0]
             entries.append((f"§{n} — whole section", head))
-        for transition, site in entries:
-            refs = _refs(site)
-            found: list[Route] = []
-            helper_names = set()
-            notes = set()
-            for fname, line in refs:
-                rs, func, note = mm.routes_for(fname, line)
-                found.extend(x for x in rs if x not in found)
-                if func:
-                    helper_names.add(func)
-                if note and rs:
-                    notes.add(note)
-            # `request_producer_changes` named in the row with no line → its route
-            for name in re.findall(r"`(\w+)`", site):
-                for r in ev.routes:
-                    if r.func == name and r not in found:
+        out.extend((n, title, transition, site) for transition, site in entries)
+    return out
+
+
+def site_column(refs: list[tuple[str, int]]) -> str:
+    return ", ".join(f"{f}:{ln}" for f, ln in refs[:4]) + (
+        " …" if len(refs) > 4 else ""
+    )
+
+
+def build_machine_rows(
+    ev: Evidence, audit_text: str, route_rows: list[RouteRow]
+) -> list[MachineRow]:
+    mm = ModuleMap(ev.routes)
+    verdict_by_key = {rr.route.key: rr.verdict for rr in route_rows}
+    mounted_modules = {r.module for r in ev.routes}
+    rows: list[MachineRow] = []
+    for n, title, transition, site in audit_entries(audit_text):
+        refs = _refs(site)
+        found: list[Route] = []
+        helper_names = set()
+        notes = set()
+        for fname, line in refs:
+            rs, func, note = mm.routes_for(fname, line)
+            found.extend(x for x in rs if x not in found)
+            if func:
+                helper_names.add(func)
+            if note and rs:
+                notes.add(note)
+        # `request_producer_changes` named in the row with no line → its route
+        for name in re.findall(r"`(\w+)`", site):
+            for r in ev.routes:
+                if r.func == name and r not in found:
+                    found.append(r)
+        for meth, p in ROUTE_MENTION_RE.findall(site):
+            for r in ev.routes:
+                tail = p.split("...")[-1]
+                if meth in r.methods and (
+                    r.path == p or ("..." in p and r.path.endswith(tail))
+                ):
+                    if r not in found:
                         found.append(r)
-            for meth, p in ROUTE_MENTION_RE.findall(site):
-                for r in ev.routes:
-                    tail = p.split("...")[-1]
-                    if meth in r.methods and (
-                        r.path == p or ("..." in p and r.path.endswith(tail))
-                    ):
-                        if r not in found:
-                            found.append(r)
-            cells = [verdict_by_key[r.key] for r in found]
-            first = refs[0][0] if refs else ""
-            if (
-                first
-                and (ROUTERS_DIR / first).exists()
-                and first[:-3] not in mounted_modules
-            ):
-                # The row's own site is in a router the app does not mount (§8).
-                verdict, found, notes = (
-                    Cell("n/a", note=f"{first} is not mounted"),
-                    [],
-                    set(),
-                )
-            elif cells:
-                verdict = best(cells)
-            else:
-                verdict = _name_weak(ev, helper_names) or Cell(GAP)
-            rows.append(
-                MachineRow(
-                    section=n,
-                    title=title,
-                    transition=_clean(transition),
-                    site=", ".join(f"{f}:{ln}" for f, ln in refs[:4])
-                    + (" …" if len(refs) > 4 else ""),
-                    refs=refs,
-                    routes=[r.key for r in found],
-                    verdict=verdict,
-                    note="; ".join(sorted(notes)),
-                )
+        cells = [verdict_by_key[r.key] for r in found]
+        notes |= _method_disagreement(transition + " " + site, found)
+        first = refs[0][0] if refs else ""
+        if (
+            first
+            and (ROUTERS_DIR / first).exists()
+            and first[:-3] not in mounted_modules
+        ):
+            # The row's own site is in a router the app does not mount (§8).
+            verdict, found, notes = (
+                Cell("n/a", note=f"{first} is not mounted"),
+                [],
+                set(),
             )
+        elif cells:
+            # Every write site the row names must be evidenced: the row is
+            # as covered as the WORST route it reaches, never the best
+            # (a helper hop can reach a well-tested unrelated handler).
+            verdict = worst(cells)
+        else:
+            verdict = _name_weak(ev, helper_names) or Cell(GAP)
+        rows.append(
+            MachineRow(
+                section=n,
+                title=title,
+                transition=_clean(transition),
+                site=site_column(refs),
+                refs=refs,
+                routes=[r.key for r in found],
+                verdict=verdict,
+                note="; ".join(sorted(notes)),
+            )
+        )
     return rows
+
+
+_DELETE_WORDS = re.compile(r"(?i)delet|remov|cancel|leave|deletion")
+
+
+def _method_disagreement(transition: str, found: list[Route]) -> set[str]:
+    """A transition whose words and handler method disagree is a sign the
+    audit's line points at the wrong handler — say so on the row."""
+    deletes = [r for r in found if "DELETE" in r.methods]
+    if deletes and not _DELETE_WORDS.search(transition):
+        return {"a DELETE handler for a non-delete transition — audit line may be off"}
+    if re.search(r"(?i)\bdelete\b", transition) and found and not deletes:
+        return {"a delete transition reached no DELETE handler — audit line may be off"}
+    return set()
 
 
 def _name_weak(ev: Evidence, names: set[str]) -> Cell | None:
@@ -1512,6 +1752,9 @@ class Extra:
     body: str | None = None  # regex on the test function's source
     min_calls: int = 1  # calls to the first group in that function
     grep: str | None = None  # fallback: regex anywhere in a test function → weak
+    # min_calls >= 2 only: True = a repeat call by the SAME actor as the first
+    # (double submit), False = by a DIFFERENT actor (two customers).
+    same_actor: bool | None = None
 
 
 BUSINESS_MUTATIONS = "@business-mutations"
@@ -1547,6 +1790,7 @@ EXTRAS: list[Extra] = [
         "negative",
         "expired email-verify token is refused",
         [["GET /auth/verify-email"]],
+        window=r"\b(400|410)\b",
         body=r"(?i)expir",
     ),
     Extra(
@@ -1556,6 +1800,7 @@ EXTRAS: list[Extra] = [
         [["POST /producers/me/submit-for-review"]],
         min_calls=2,
         window=r"\b(400|409)\b",
+        same_actor=True,
     ),
     Extra(
         "neg-double-commit",
@@ -1564,6 +1809,7 @@ EXTRAS: list[Extra] = [
         [["POST /group-buys/{group_buy_id}/commit"]],
         min_calls=2,
         window=r"\b(400|409)\b",
+        same_actor=True,
     ),
     Extra(
         "neg-double-reserve",
@@ -1572,6 +1818,7 @@ EXTRAS: list[Extra] = [
         [["POST /rescue/orders"]],
         min_calls=2,
         window=r"\b(400|409)\b",
+        same_actor=True,
     ),
     Extra(
         "neg-cancel-rescue",
@@ -1748,6 +1995,7 @@ EXTRAS: list[Extra] = [
         [["POST /rescue/orders"]],
         min_calls=2,
         body=r"(?i)last|qty_total\s*=\s*1|qty_left\s*=\s*1",
+        same_actor=False,
     ),
     Extra(
         "race-owner-edit-admin-approve",
@@ -1819,6 +2067,13 @@ def build_extra_rows(ev: Evidence, route_rows: list[RouteRow]) -> list[ExtraRow]
             first = [c for c in tf.all_calls if call_route.get(id(c)) in groups[0]]
             if len(first) < ex.min_calls:
                 continue
+            if ex.same_actor is not None and ex.min_calls >= 2:
+                # Repeats judged against the first call's actor (headers=…).
+                lead = first[0].actor
+                repeats = [c for c in first[1:] if (c.actor == lead) == ex.same_actor]
+                if not repeats:
+                    continue
+                first = [first[0], *repeats]
             if not all(any(k in g for k in keys_here) for g in groups[1:]):
                 continue
             if ex.body and not re.search(ex.body, tf.source):
@@ -1831,7 +2086,10 @@ def build_extra_rows(ev: Evidence, route_rows: list[RouteRow]) -> list[ExtraRow]
                 if not pool:
                     continue
                 first = pool
-            hits.append((tf, first[0]))
+            # A repeat-call row cites the REPEAT (with a window, `first` is
+            # already the repeats; without one, it is [lead, *repeats]).
+            cite = first[1] if ex.min_calls >= 2 and not ex.window else first[0]
+            hits.append((tf, cite))
         if ex.kind == "time":
             # Prefer a test that freezes the clock (testing.md, MEH-2290).
             hits.sort(key=lambda h: not frozen(h[0]))
@@ -1869,15 +2127,10 @@ def build_extra_rows(ev: Evidence, route_rows: list[RouteRow]) -> list[ExtraRow]
             sorted(groups[0])[0] if ex.groups[0] != [BUSINESS_MUTATIONS] else ""
         )
         base = by_key[primary_key] if primary_key else None
-        score = 0
         if base:
-            r = base.route
-            score = (3 if r.is_mutation else 1) + ACTOR_RANK[r.actor]
-            score += 3 if AUTH_PATH_RE.search(r.path) else 0
-            score += 3 if MONEY_PATH_RE.search(r.path) and r.is_mutation else 0
-            score += 2 if NOTIFY_SRC_RE.search(r.source) else 0
+            score, _ = base_score(base.route)
         else:
-            score = 3 + 2  # any business mutation
+            score = 3 + ACTOR_RANK["business"]  # any business mutation
         score += {"race": 3, "time": 2, "negative": 2}[ex.kind]
         score += {GAP: 4, "weak": 2}.get(verdict.status, 0)
         rows.append(
@@ -2054,7 +2307,7 @@ def render(am: ActionMap) -> str:
             f"| Pages — {grp} | {len(g)} | {_counts_line(_count(r.verdict for r in g))} |"
         )
     a(
-        f"| State-machine rows (audit §1–§9) | {len(am.machine_rows)} | {_counts_line(mv)} |"
+        f"| State-machine rows (audit, every non-exempt section) | {len(am.machine_rows)} | {_counts_line(mv)} |"
     )
     a(f"| Mandatory extra rows (§B.3) | {len(am.extra_rows)} | {_counts_line(ev)} |")
     gap_total = rv[GAP] + rn[GAP] + tv[GAP] + pv[GAP] + mv[GAP] + ev[GAP]
@@ -2127,26 +2380,16 @@ def render(am: ActionMap) -> str:
         t = tr.tool
         a(
             f"| `{t.id}` | {t.group} | {t.status} | {('`' + t.dashboard + '`') if t.dashboard else '—'} | "
-            f"{tr.backend.render()} | {tr.unit.render()} | {tr.page.render()} | {tr.verdict.status} |"
+            f"{tr.backend.render()} | {tr.unit.render()} | {tr.page.render()} | "
+            f"{tr.verdict.status}{' (capped by its router)' if tr.verdict.note == 'capped by its router' else ''} |"
         )
     a("")
-    a("## Pages (`frontend/app/[locale]/**/page.*`)")
-    for grp in ("public", "dashboard", "admin"):
-        a("")
-        a(f"### {grp.capitalize()}")
-        a("")
-        a("| Route | E2E (`goto`) | Unit (import) | Verdict |")
-        a("|---|---|---|---|")
-        for pr in [r for r in am.page_rows if r.page.group == grp]:
-            a(
-                f"| `{pr.page.route}` | {pr.e2e.render()} | {pr.unit.render()} | {pr.verdict.status} |"
-            )
-    a("")
+    L.extend(render_pages(am.page_rows))
     a("## State machines (`docs/audits/2026-11-implicit-state-machines.md`)")
     a("")
     a(
         "A site `file:line` is mapped to the route whose handler contains it (or reaches it within six "
-        "helper hops in the same module); the row takes that route's best verdict. The audit's line numbers "
+        "helper hops in the same module); the row takes the WORST verdict of the routes it reaches. The audit's line numbers "
         "are as of 09/11 — where a file moved since, the row says so (see `ModuleMap.routes_for`)."
     )
     a("")
@@ -2177,7 +2420,8 @@ def render(am: ActionMap) -> str:
     a(
         "method: mutation 3, read 1 · actor: admin 2, business 2, registered 1, anonymous 0 (+1 anonymous "
         "mutation) · auth path +3 · money-like (group-buy commit, rescue orders) +3 · handler sends "
-        "email/WhatsApp +2 · public visibility (approve/reject/publish/hide/verified…) +2 · positive GAP +4, "
+        "email/WhatsApp +2 · public visibility (approve/reject/publish/hide/verified…) +2 · privilege change "
+        "(`/role`, `/block`, `/admin/users/…` mutations) +3 · DELETE +1 · positive GAP +4, "
         "only e2e-mock +3, only weak +2 · gated route without a 401/403 test +2. Extra rows: their primary "
         "route's base + race 3 / time 2 / negative 2 + GAP 4 / weak 2."
     )
@@ -2185,11 +2429,185 @@ def render(am: ActionMap) -> str:
     return "\n".join(L)
 
 
+def render_pages(page_rows: list[PageRow]) -> list[str]:
+    """The «Pages» section. Needs no app import, so the static drift tier
+    regenerates exactly this text and compares it with the committed doc."""
+    out = ["## Pages (`frontend/app/[locale]/**/page.*`)"]
+    for grp in ("public", "dashboard", "admin"):
+        out += ["", f"### {grp.capitalize()}", ""]
+        out.append("| Route | E2E (`goto`) | Unit (import) | Verdict |")
+        out.append("|---|---|---|---|")
+        for pr in [r for r in page_rows if r.page.group == grp]:
+            out.append(
+                f"| `{pr.page.route}` | {pr.e2e.render()} | {pr.unit.render()} | {pr.verdict.status} |"
+            )
+    out.append("")
+    return out
+
+
 LINE_RE = re.compile(r"((?:tests|frontend)/[^\s`|:()]+):\d+")
 
 
 def mask_lines(text: str) -> str:
     return LINE_RE.sub(r"\1:#", text)
+
+
+# ═════════════════════════════════════════════════════════════════════════════
+# 6. Verifying the COMMITTED doc (drift tiers)
+# ═════════════════════════════════════════════════════════════════════════════
+
+MANIFEST_PATH = DOC_PATH.with_suffix(".sha256")
+CALL_SHAPE_RE = re.compile(
+    r"\.(get|post|put|patch|delete|head|request)\(|^\s*\(?\s*[\"'](get|post|put|patch|delete|head)[\"']",
+    re.I,
+)
+CITE_RE = re.compile(r"^`((?:tests|frontend)/[^`:]+):(\d+)`(?: \((.+)\))?$")
+
+
+def doc_sha256(text: str) -> str:
+    return hashlib.sha256(text.encode("utf-8")).hexdigest()
+
+
+def _table_cells(line: str) -> list[str]:
+    # `\|` inside a cell is an escaped pipe, not a column break
+    parts = re.split(r"(?<!\\)\|", line.strip())
+    return [c.strip() for c in parts[1:-1]]
+
+
+def _sections(doc: str) -> dict[str, list[tuple[int, str]]]:
+    """`## heading` → [(doc line number, line)], `###` lines included."""
+    out: dict[str, list[tuple[int, str]]] = {}
+    cur = ""
+    for i, ln in enumerate(doc.splitlines(), 1):
+        if ln.startswith("## "):
+            cur = ln[3:].strip()
+            out[cur] = []
+        elif cur:
+            out[cur].append((i, ln))
+    return out
+
+
+def _line_of(path: str, n: int) -> str | None:
+    p = ROOT / path
+    if not p.is_file():
+        return None
+    lines = p.read_text(encoding="utf-8").splitlines()
+    return lines[n - 1] if 1 <= n <= len(lines) else None
+
+
+def verify_citations(doc: str) -> list[str]:
+    """Every `covered` citation in the COMMITTED doc must still point at what
+    it claims: an API positive cell at an HTTP call (or an endpoint-table row),
+    a negative cell at a 401/403 assertion (or a table row), a page's E2E cell
+    at a `.goto(`. The masked drift check cannot see a citation that went stale
+    by line drift alone; this does. Returns `action-map.md:<line>: …` problems."""
+    problems = []
+    doc_rel = rel(DOC_PATH)
+    secs = _sections(doc)
+    checks = []  # (doc line, cell, kind)
+    for key, rows in secs.items():
+        if key.startswith("API routes"):
+            for n, ln in rows:
+                if ln.startswith("### "):
+                    break  # the internal table: different columns
+                cells = _table_cells(ln) if ln.startswith("| ") else []
+                if len(cells) == 8 and cells[0] not in ("Method", "---"):
+                    checks += [(n, cells[4], "call"), (n, cells[5], "refusal")]
+        elif key.startswith("Pages"):
+            for n, ln in rows:
+                cells = _table_cells(ln) if ln.startswith("| `") else []
+                if len(cells) == 4:
+                    checks.append((n, cells[1], "goto"))
+    for n, cell, kind in checks:
+        m = CITE_RE.match(cell)
+        if not m:
+            continue  # GAP / n/a / weak / e2e-mock — not a `covered` claim
+        path, line, note = m.group(1), int(m.group(2)), m.group(3) or ""
+        src = _line_of(path, line)
+        where = f"{doc_rel}:{n}: `{path}:{line}`"
+        if src is None:
+            problems.append(f"{where} does not exist")
+        elif kind == "call" and not CALL_SHAPE_RE.search(src):
+            problems.append(f"{where} holds no HTTP call: {src.strip()[:80]}")
+        elif kind == "refusal" and not (
+            re.search(r"\b40[13]\b|HTTP_40[13]", src)
+            or (note == "table row" and CALL_SHAPE_RE.search(src))
+        ):
+            problems.append(f"{where} asserts no 401/403: {src.strip()[:80]}")
+        elif kind == "goto" and ".goto(" not in src:
+            problems.append(f"{where} holds no .goto(: {src.strip()[:80]}")
+    return problems
+
+
+def check_manifest(doc: str) -> list[str]:
+    if not MANIFEST_PATH.exists():
+        return [f"{rel(MANIFEST_PATH)}:1: missing — run action_map.py --write"]
+    want = MANIFEST_PATH.read_text(encoding="utf-8").split()[0]
+    if want != doc_sha256(doc):
+        return [
+            f"{rel(DOC_PATH)}:1: does not match {rel(MANIFEST_PATH)} — the doc was edited "
+            "by hand (or --write was not run); regenerate with action_map.py --write"
+        ]
+    return []
+
+
+def check_static() -> list[str]:
+    """The drift tier that needs no app import and no third-party package —
+    what the always-run `Repo guards` job can afford. Checks the committed doc
+    against: its manifest (hand edits), its own citations, a fresh «Pages»
+    section, the registry's tool ids, and the audit's rows."""
+    if not DOC_PATH.exists():
+        return [f"{rel(DOC_PATH)}:1: missing — run action_map.py --write"]
+    doc = DOC_PATH.read_text(encoding="utf-8")
+    problems = check_manifest(doc) + verify_citations(doc)
+    secs = _sections(doc)
+
+    ev = Evidence(
+        routes=[],
+        pytest=PytestIndex([], [], [], {}),
+        e2e=build_e2e_index(),
+        vitest=build_vitest_index(),
+    )
+    fresh_pages = render_pages(build_page_rows(ev, collect_pages()))
+    key = next((k for k in secs if k.startswith("Pages")), None)
+    committed_pages = (["## " + key] + [ln for _, ln in secs[key]]) if key else []
+    if mask_lines("\n".join(committed_pages).rstrip()) != mask_lines(
+        "\n".join(fresh_pages).rstrip()
+    ):
+        problems.append(
+            f"{rel(DOC_PATH)}:1: «Pages» section is stale (a page, spec or Vitest import changed)"
+        )
+
+    tools = [
+        t.id for t in parse_business_features(FEATURES_PATH.read_text(encoding="utf-8"))
+    ]
+    key = next((k for k in secs if k.startswith("Business tools")), None)
+    doc_tools = [
+        _table_cells(ln)[0].strip("`")
+        for _, ln in (secs[key] if key else [])
+        if ln.startswith("| `")
+    ]
+    if doc_tools != tools:
+        problems.append(
+            f"{rel(FEATURES_PATH)}:1: business tools differ from the doc "
+            f"(+{sorted(set(tools) - set(doc_tools))} -{sorted(set(doc_tools) - set(tools))})"
+        )
+
+    want = [
+        (str(n), _clean(tr), site_column(_refs(site)) or "—")
+        for n, _t, tr, site in audit_entries(AUDIT_PATH.read_text(encoding="utf-8"))
+    ]
+    key = next((k for k in secs if k.startswith("State machines")), None)
+    have = []
+    for _, ln in secs[key] if key else []:
+        cells = _table_cells(ln) if re.match(r"^\| \d+ \|", ln) else []
+        if len(cells) >= 3:
+            have.append((cells[0], cells[1], cells[2]))
+    if have != want:
+        problems.append(
+            f"{rel(AUDIT_PATH)}:1: audit rows differ from the doc (a section or transition changed)"
+        )
+    return problems
 
 
 def summary_text(am: ActionMap) -> str:
@@ -2214,10 +2632,56 @@ def summary_text(am: ActionMap) -> str:
     return "\n".join(out)
 
 
+def self_test_static() -> list[str]:
+    """Preflight for the static tier (scripts/checks contract): its checks
+    must be able to fail. Synthetic cases first, then anchors on real files."""
+    fails = []
+    real_line = None
+    # an anchor in the real corpus: some tests/ line holding a client call
+    for f in sorted(_tracked()):
+        if f.startswith("tests/") and f.endswith(".py"):
+            for i, ln in enumerate(
+                (ROOT / f).read_text(encoding="utf-8").splitlines(), 1
+            ):
+                if re.search(r"client\.post\(\s*\"/auth/login\"", ln):
+                    real_line = (f, i)
+                    break
+        if real_line:
+            break
+    if real_line is None:
+        return [
+            'self-test: no `client.post("/auth/login"` anywhere in tests/ — the anchor is gone'
+        ]
+    f, i = real_line
+    row = "| POST | `/auth/login` | `auth.login` | anonymous | `{cite}` | n/a | — | 9 |"
+    good = "## API routes\n\n" + row.format(cite=f"{f}:{i}") + "\n"
+    bad = "## API routes\n\n" + row.format(cite=f"{f}:{i + 100000}") + "\n"
+    off = "## API routes\n\n" + row.format(cite="tests/conftest.py:1") + "\n"
+    if verify_citations(good):
+        fails.append(f"self-test: a real call citation {f}:{i} was rejected")
+    if not verify_citations(bad):
+        fails.append("self-test: a citation past the end of its file was accepted")
+    if not verify_citations(off):
+        fails.append("self-test: a citation to a line with no HTTP call was accepted")
+    page = "## Pages (x)\n\n| `/` | `frontend/e2e/flows/01-home-load.spec.ts:1` | GAP | covered |\n"
+    if not verify_citations(page):
+        fails.append("self-test: a page citation to a line with no .goto( was accepted")
+    if check_manifest("not the committed doc") == []:
+        fails.append("self-test: the manifest accepted a different doc")
+    tools = parse_business_features(FEATURES_PATH.read_text(encoding="utf-8"))
+    if len(tools) < 40:
+        fails.append(
+            f"self-test: only {len(tools)} business tools parsed from the real registry"
+        )
+    if len(audit_entries(AUDIT_PATH.read_text(encoding="utf-8"))) < 9:
+        fails.append("self-test: fewer audit rows than audit sections")
+    return fails
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     ap.add_argument(
-        "--write", action="store_true", help="regenerate docs/release/action-map.md"
+        "--write", action="store_true", help="regenerate the doc and its manifest"
     )
     ap.add_argument(
         "--check", action="store_true", help="exit 1 if the committed doc is stale"
@@ -2227,13 +2691,44 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="with --check: byte-exact, line numbers included",
     )
+    ap.add_argument(
+        "--check-static",
+        action="store_true",
+        help="the no-app tier: manifest, citations, pages, tool ids, audit rows (stdlib only)",
+    )
+    ap.add_argument(
+        "--self-test-static", action="store_true", help="prove the static tier can fail"
+    )
     args = ap.parse_args(argv)
+    if args.self_test_static or args.check_static:
+        fails = self_test_static()
+        if fails:
+            print("\n".join(fails), file=sys.stderr)
+            return 1
+        if args.self_test_static:
+            print("action-map static self-test: 7 cases passed")
+            return 0
+        problems = check_static()
+        if problems:
+            print("\n".join(problems), file=sys.stderr)
+            print(
+                "fix: PYTHONPATH=backend:. python scripts/release/action_map.py --write",
+                file=sys.stderr,
+            )
+            return 1
+        print(
+            f"{rel(DOC_PATH)}: static tier clean (manifest, citations, pages, tools, audit rows)"
+        )
+        return 0
     am = generate()
     text = render(am)
     if args.write:
         DOC_PATH.parent.mkdir(parents=True, exist_ok=True)
         DOC_PATH.write_text(text, encoding="utf-8")
-        print(f"wrote {rel(DOC_PATH)}")
+        MANIFEST_PATH.write_text(
+            f"{doc_sha256(text)}  {DOC_PATH.name}\n", encoding="utf-8"
+        )
+        print(f"wrote {rel(DOC_PATH)} and {rel(MANIFEST_PATH)}")
     if args.check:
         committed = DOC_PATH.read_text(encoding="utf-8") if DOC_PATH.exists() else ""
         same = (
@@ -2241,9 +2736,13 @@ def main(argv: list[str] | None = None) -> int:
             if args.strict
             else mask_lines(committed) == mask_lines(text)
         )
+        problems = check_manifest(committed) + verify_citations(committed)
         if not same:
+            problems.append(f"{rel(DOC_PATH)}:1: stale — a fresh generation differs")
+        if problems:
+            print("\n".join(problems), file=sys.stderr)
             print(
-                f"{rel(DOC_PATH)} is stale — run: python scripts/release/action_map.py --write",
+                "fix: PYTHONPATH=backend:. python scripts/release/action_map.py --write",
                 file=sys.stderr,
             )
             return 1
