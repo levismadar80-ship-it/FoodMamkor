@@ -10,6 +10,7 @@ import { detailToMessage } from "@/lib/errors";
 import { showToast } from "@/lib/toast";
 import InfoTooltip from "@/components/InfoTooltip";
 import { SkeletonTable } from "@/components/Skeleton";
+import { STATUS_CLASSES } from "@/lib/dashboard-status-classes";
 
 // Tab values map to admin.experiences.tabs.* keys; labels resolved in render
 const TAB_VALUES = ["pending", "changes_requested", "approved", "rejected", "all"];
@@ -278,7 +279,7 @@ function ExperienceRow({ ex, busy, t, locale, onApprove, onChanges, onReject }) 
             {ex.title}
           </button>
           {ex.is_active === false && (
-            <span className="ms-2 text-xs px-2 py-0.5 rounded-full bg-yellow-100 text-yellow-800">
+            <span className={`ms-2 text-xs px-2 py-0.5 rounded-full ${STATUS_CLASSES.warning}`}>
               {tHost("badge_inactive")}
             </span>
           )}
