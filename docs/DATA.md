@@ -1308,8 +1308,14 @@ POST   /webhook/whatsapp     public — Meta inbound events, HMAC-SHA256 signatu
 
 ```
 GET    /admin/whatsapp/failed     admin — undelivered outbound (status IN failed,
-                                  window_expired) from the last 7 days, ordered
-                                  created_at desc; list-only, no resend/retry
+                                  window_expired, OR accepted more than a day
+                                  ago with no delivery receipt — "stuck",
+                                  MEH-2122 Chunk E) from the last 7 days,
+                                  ordered created_at desc; list-only, no
+                                  resend/retry. The admin-home count
+                                  undelivered_whatsapp_7d uses the same
+                                  predicate (services/whatsapp.py
+                                  undelivered_predicate).
 ```
 
 ### Admin — experiences (`app/routers/admin_experiences.py`)

@@ -5,7 +5,8 @@
  *
  * Reads GET /admin/whatsapp/failed and lists rows where Meta confirmed
  * the message did NOT reach the recipient (status: 'failed' or
- * 'window_expired') in the last 7 days. List-only — no resend / retry
+ * 'window_expired'), or that Meta accepted over a day ago with no delivery
+ * receipt since ('accepted' — stuck, MEH-2122 Chunk E), in the last 7 days. List-only — no resend / retry
  * actions in this chunk (intentional; see admin_whatsapp.py docstring).
  *
  * Mirrors the table+empty-state shape of /admin/category-requests with
