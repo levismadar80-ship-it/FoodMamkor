@@ -1628,6 +1628,7 @@ design). No env var, no retry, no Google.
 Critical:
 - `DATABASE_URL` — Railway Postgres reference
 - `JWT_SECRET_KEY` or `SECRET_KEY` — **required in production**, ephemeral in dev
+- `SUPER_ADMIN_EMAIL` — the owner account no admin can demote or delete (`admin_extra.is_super_admin`; `GET /admin/users` returns `is_super_admin` per row). **Required in production**: the backend refuses to boot without a valid address (MEH-2890). Elsewhere unset = nobody protected (logged). Case-insensitive.
 - `ANTHROPIC_API_KEY` — moderation + chat widget (fail-open if missing)
 - `ENV` — `development|staging|production`
 - `CORS_ORIGINS` — comma-separated, production MUST set explicitly

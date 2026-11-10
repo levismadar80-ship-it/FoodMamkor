@@ -76,10 +76,12 @@ def test_admin_cannot_delete_another_admin(client, db):
     assert db.query(User).filter(User.id == other_admin.id).first() is not None
 
 
-def test_admin_cannot_delete_super_admin_even_when_not_admin_role(client, db):
-    """levismadar80@gmail.com is a producer-role account on prod; still protected."""
+def test_admin_cannot_delete_super_admin_even_when_not_admin_role(client, db, monkeypatch):
+    """The owner's account is a producer-role account on prod; still protected.
+    MEH-2890: the address comes from SUPER_ADMIN_EMAIL, not from the code."""
+    monkeypatch.setattr(admin_extra.settings, "super_admin_email", "owner@example.com")
     admin = _admin(db)
-    protected = make_user(db, role="producer", email=admin_extra.SUPER_ADMIN_EMAIL)
+    protected = make_user(db, role="producer", email="owner@example.com")
 
     r = client.delete(f"/admin/users/{protected.id}", headers=auth_header(admin))
 
