@@ -5,7 +5,7 @@ import dynamic from "next/dynamic";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Link } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
-import { CheckCircle, EnvelopeSimple, Leaf, WhatsappLogo, X } from "@phosphor-icons/react";
+import { CheckCircle, EnvelopeSimple, Leaf, ShareNetwork, X } from "@phosphor-icons/react";
 import api from "@/lib/api";
 import { trackEvent } from "@/lib/analytics";
 import { detailToMessage } from "@/lib/errors";
@@ -45,6 +45,7 @@ import {
 import { FARMER_DECLARATION_CATEGORIES } from "@/lib/farmer-declaration";
 import BrandLoader from "@/components/BrandLoader";
 import Button from "@/components/ui/Button";
+import { showToast } from "@/lib/toast";
 
 // MEH-847 (S7 Chunk B): wizard step enum — single source for the 3→5 re-index.
 const STEP = { ACCOUNT: 1, DETAILS: 2, CATEGORY: 3, STORY: 4, CONFIRM: 5 };
@@ -260,6 +261,30 @@ function RegisterProducerPageBody({ routeKind }) {
   const routeIsOrganizer = routeKind === "organizer";
   const routePath = routeIsOrganizer ? "/register/organizer" : "/register/producer";
   const t = useTranslations();
+  // MEH-2827 PR 8: «הזמינו בתי עסק» opens the phone's own share sheet. The
+  // approved message keeps its words; its link travels as `url` (iOS then
+  // shares a link card), the rest as text. No sheet → copy the link.
+  const shareRegisterInvite = async () => {
+    const msg = t("auth.register.producer.success.share_msg");
+    const url = (msg.match(/https?:\/\/\S+/) || [])[0];
+    const text = url ? msg.replace(url, "").trim() : msg;
+    if (typeof navigator !== "undefined" && navigator.share) {
+      try {
+        await navigator.share(url ? { text, url } : { text });
+        return;
+      } catch (err) {
+        // Cancelled is her answer; any other failure falls through to the
+        // copy below (review of #4178).
+        if (err?.name === "AbortError") return;
+      }
+    }
+    try {
+      await navigator.clipboard.writeText(url || msg);
+      showToast.success(t("share.copied_toast"));
+    } catch {
+      // no clipboard either
+    }
+  };
   const router = useRouter();
   const params = useSearchParams();
   const prefillToken = params.get("prefill");
@@ -1957,15 +1982,17 @@ function RegisterProducerPageBody({ routeKind }) {
               >
                 {t("auth.register.producer.success.cta")}
               </button>
-              <a
-                href={`https://wa.me/?text=${encodeURIComponent(t("auth.register.producer.success.share_msg"))}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="btn-whatsapp-outline w-full inline-flex items-center justify-center gap-2 px-6 py-3 rounded-md font-medium text-sm"
+              {/* MEH-2827 PR 8: the phone's own share sheet, not WhatsApp only.
+                  The message's link goes as `url`, the rest as text. */}
+              <button
+                type="button"
+                onClick={shareRegisterInvite}
+                data-testid="register-success-share"
+                className="w-full inline-flex items-center justify-center gap-2 px-6 py-3 rounded-md font-medium text-sm border border-border bg-background text-text hover:border-primary transition"
               >
-                <WhatsappLogo size={20} weight="fill" aria-hidden="true" />
+                <ShareNetwork size={20} aria-hidden="true" />
                 {t("auth.register.producer.success.share_cta")}
-              </a>
+              </button>
             </div>
             {/* MEH-132: S7 06A founder sign-off */}
             <p className="font-headline-md text-text text-center mb-2">{t("auth.register.producer.success.signature")}</p>
