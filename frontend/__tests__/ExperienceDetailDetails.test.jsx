@@ -4,7 +4,7 @@
  * business (a link + a WhatsApp CTA that actually reaches the host).
  * Each field: shown when set, absent when not.
  */
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
 import he from "../messages/he.json";
@@ -57,7 +57,16 @@ async function renderWith(extra) {
   await waitFor(() => expect(screen.getByRole("heading", { level: 1 })).toBeInTheDocument());
 }
 
-beforeEach(() => vi.clearAllMocks());
+// MEH-2909: the page decides past/upcoming from the Israel calendar
+// (lib/event-when.js), so a hard-coded event_date expires against the real
+// clock (EventDetailOrganizer went red at 00:00 on 11/11/2026). Freeze Date
+// only, a few days before the fixture, so findBy* keeps its real timers.
+beforeEach(() => {
+  vi.clearAllMocks();
+  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.setSystemTime(new Date("2026-11-15T09:00:00Z"));
+});
+afterEach(() => vi.useRealTimers());
 
 describe("MEH-2476 — experience details", () => {
   it.each([
