@@ -175,6 +175,27 @@ describe("AdminExperiencesPage — queue rendering (MEH-2280)", () => {
   });
 });
 
+// MEH-2840 (audit §4.2): approving does NOT reactivate an experience the host
+// cancelled — so the admin has to see the cancel before she approves. The row
+// carries the host dashboard's existing «מבוטלת» chip; no new copy.
+describe("AdminExperiencesPage — a host-cancelled row says so (MEH-2840)", () => {
+  beforeEach(resetMocks);
+  const CANCELLED = he.dashboard.producer.manage_experiences.badge_inactive;
+
+  it("is_active=false → «מבוטלת» on that row only; true or missing → none", async () => {
+    await renderWith([
+      { ...PENDING, id: "c1", title: "בוטלה ע״י המארחת", is_active: false },
+      { ...PENDING, id: "c2", title: "פעילה", is_active: true },
+      { ...PENDING, id: "c3", title: "בלי השדה" },
+    ]);
+    const row = (title) => within(screen.getByText(title).closest("tr"));
+    expect(row("בוטלה ע״י המארחת").getByText(CANCELLED)).toBeInTheDocument();
+    expect(row("פעילה").queryByText(CANCELLED)).not.toBeInTheDocument();
+    expect(row("בלי השדה").queryByText(CANCELLED)).not.toBeInTheDocument();
+    expect(screen.getAllByText(CANCELLED)).toHaveLength(1);
+  });
+});
+
 describe("AdminExperiencesPage — row reveal (closed / open × 1 / many)", () => {
   beforeEach(resetMocks);
 
