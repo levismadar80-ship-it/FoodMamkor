@@ -246,17 +246,21 @@ def test_golden_main_on_staging_seeds_only_the_personas(
     )
     monkeypatch.setenv("RAILWAY_ENVIRONMENT", "staging")
     monkeypatch.setattr(sys, "argv", ["seed_demo_business.py", "--golden"])
-    monkeypatch.setattr(seed, "SessionLocal", lambda: db)
-    # main() closes its session; keep the test's session usable afterwards.
-    monkeypatch.setattr(db, "close", lambda: None)
 
+    # main() opens and closes its OWN session (the real SessionLocal, i.e. the
+    # test database); only the guard's view of the host is stubbed above.
+    # Do NOT hand it the fixture's session with `close` patched out: the
+    # conftest tears `db` down before it undoes monkeypatches, so that session
+    # never closes, keeps its lock on `users`, and the next test's TRUNCATE
+    # waits on it forever (the first CI run of this file hung a shard).
     seed.main()
 
+    db.expire_all()
     assert len(_golden_users(db)) == 7
     assert db.query(Producer).filter(Producer.slug == seed.DEMO_SLUG).count() == 0
 
 
-def test_default_run_does_not_seed_golden_personas(db, monkeypatch):
+def test_default_run_does_not_seed_golden_personas(monkeypatch):
     """CI's seed step runs `seed_demo_business --refresh`; the personas must
     not ride along, or every E2E and seed-coverage count would move."""
     called = []
@@ -270,8 +274,8 @@ def test_default_run_does_not_seed_golden_personas(db, monkeypatch):
     monkeypatch.setattr(
         seed, "seed_golden_personas", lambda *a, **k: called.append("golden")
     )
-    monkeypatch.setattr(seed, "SessionLocal", lambda: db)
-    monkeypatch.setattr(db, "close", lambda: None)
+    # main() opens (and closes) a real session; every seeder it could call is
+    # stubbed above, so nothing is written.
     monkeypatch.setattr(sys, "argv", ["seed_demo_business.py", "--refresh"])
 
     seed.main()
