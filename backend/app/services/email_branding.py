@@ -3,10 +3,12 @@ The brand header shared by every HTML email (MEH-2834 PR 2).
 
 One function, one image: the horizontal Hebrew lockup served from the
 frontend's public folder (frontend/public/email-logo.png, 240px wide for a
-120px display). Every HTML template calls email_logo_html() at the top of its
-content; tests/test_email_logo.py renders each template and also scans
-backend/app for any `<html` template that does not call it, so a new HTML
-email without the logo fails CI.
+120px display). Since MEH-2875 (Sapir, option ב) it is mark + «מהמקור» with no
+tagline, rendered from frontend/public/logo-horizontal-he-no-tagline.svg.
+Every HTML template calls email_logo_html() at the top of its content;
+tests/test_email_logo.py renders each template and also scans backend/app
+for any `<html` template that does not call it, so a new HTML email without
+the logo fails CI.
 
 Uses settings.frontend_url — the same base the templates already use for
 their links — so no new setting or env var.
@@ -18,8 +20,9 @@ from app.config import settings
 
 EMAIL_LOGO_PATH = "/email-logo.png"
 EMAIL_LOGO_ALT = "מהמקור"
-# frontend/public/email-logo.png is 240×70 → 120×35 on screen.
-EMAIL_LOGO_HEIGHT = 35
+# frontend/public/email-logo.png is 240×60 → 120×30 on screen (MEH-2875: was
+# 240×70 with the tagline line).
+EMAIL_LOGO_HEIGHT = 30
 
 
 def email_logo_url() -> str:
