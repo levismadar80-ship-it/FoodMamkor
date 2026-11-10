@@ -6,7 +6,7 @@
  *           1A). Launcher for the producer creation/manage tool routes:
  *           manage events / experiences / group buys / recipes + the reviews
  *           deep link.
- * Touches:  GET /producers/me/dashboard (read — for producer.id used by the
+ * Touches:  GET /producers/me (the «שיתוף» section, MEH-2882 PR 1); GET /producers/me/dashboard (read — for producer.id used by the
  *           reviews deep link).
  * Does NOT: build any tool internals — each link points at its existing,
  *           already-shipped route. The grid markup below is byte-identical to
@@ -56,6 +56,7 @@ export default function ProducerDashboardToolsPage() {
   // /producers/me/dashboard has none of them (MEH-2880). A failed profile
   // fetch only hides that section; the tool tiles still render.
   const [profile, setProfile] = useState(null);
+  const [profileError, setProfileError] = useState(false);
 
   useEffect(() => {
     if (authLoading) return;
@@ -73,9 +74,27 @@ export default function ProducerDashboardToolsPage() {
       });
     api
       .get("/producers/me")
-      .then((r) => setProfile(r.data))
-      .catch(() => setProfile(null));
+      .then((r) => {
+        setProfile(r.data);
+        setProfileError(false);
+      })
+      .catch(() => {
+        setProfile(null);
+        setProfileError(true);
+      });
   }, [user, authLoading, router, attempt]);
+
+  // MEH-2880 review: /qr-card's back link (and any deep link) lands on
+  // #share, which mounts only after both fetches return — the browser's own
+  // hash scroll has already run by then. Scroll once the section exists
+  // (REUSES: edit/page.js hash effect).
+  const shareReady = Boolean(data && profile);
+  useEffect(() => {
+    if (!shareReady || typeof window === "undefined" || window.location.hash !== "#share") return;
+    requestAnimationFrame(() => {
+      document.getElementById("share")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  }, [shareReady]);
 
   if (authLoading || !user || user.role !== "producer") return null;
 
@@ -213,8 +232,24 @@ export default function ProducerDashboardToolsPage() {
           made once or now and then — the printable QR card (→ /qr-card) and
           «ערכת שיתוף» — live here, not on the daily home. Approved business
           only, never an organizer: the same gates the cards had on home. */}
+      {/* MEH-2880 review: a failed profile fetch says so (same card copy and
+          retry as home) instead of the section silently missing. */}
+      {approved && !profile && profileError && (
+        <div role="alert" data-testid="tools-share-error" className="mt-8 bg-surface border border-border rounded-lg p-5 text-center">
+          <p className="text-fg-muted mb-3">{t("section_errors.profile")}</p>
+          <button
+            type="button"
+            onClick={() => setAttempt((n) => n + 1)}
+            className="inline-block bg-primary text-white px-4 py-2 rounded-full text-sm font-medium hover:bg-primary-dark transition"
+          >
+            {t("section_errors.retry_cta")}
+          </button>
+        </div>
+      )}
       {approved && profile && profile.kind !== "organizer" && (
-        <section id="share" data-testid="tools-share-section" className="mt-8 scroll-mt-24">
+        // scroll-mt clears the sticky header AND the sticky dashboard tab bar
+        // (DashboardLayoutClient: top-[var(--chrome-top)]).
+        <section id="share" data-testid="tools-share-section" className="mt-8 scroll-mt-[calc(var(--chrome-top,82px)+4rem)]">
           <h2 className="font-headline-md text-lg font-bold text-text mb-4">{tShare("quiet_label")}</h2>
           <BusinessQrCard
             producer={profile}
