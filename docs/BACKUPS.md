@@ -127,9 +127,21 @@ bash scripts/ci/backup-restore-verify.sh --source "$DATABASE_URL" --target "$DRI
 (cron שבועי + `workflow_dispatch`, job `mechanics`). הצעדים הידניים למעלה
 נשארים ה-fallback למקרה שהאוטומציה לא זמינה. שימי לב: ה-job ב-CI מוכיח את
 **מכניקת** ה-drill על DB מזורע (הרצת `--self-test` שלו כבקרה קודם); הוא אינו
-מוכיח שהגיבוי **האמיתי** של staging משוחזר — לזה דרוש job שני, `staging-drill`,
-הקורא דרך ה-secret `STAGING_DATABASE_URL_READONLY` (מאושר על MEH-1517 ב-14/08,
-טרם נוצר) — ה-workflow כותב במפורש שאותו job עדיין חסר.
+מוכיח שהגיבוי **האמיתי** של staging משוחזר. לזה יש job שני, `staging-drill`.
+
+**`staging-drill` (MEH-1517).**
+- **החיבור:** קורא את ה-DB **האמיתי** של staging דרך ה-secret `STAGING_DATABASE_URL_READONLY`.
+  - ה-role הוא `ci_backup_ro`, ‏SELECT בלבד. ספיר יצרה אותו ב-10/11/2026.
+  - שתי בדיקות ה-read-only עברו.
+  - ה-job מוודא שה-secret מצביע על ה-proxy של staging, ונכשל אם לא. ‏production לא נקרא אף פעם.
+- **סדר הצעדים:**
+  1. בדיקה שה-role הוא read-only: `CREATE TABLE` חייב להיחסם. אם הוא לא נחסם, ה-job נכשל ואומר איך למחוק את ה-role.
+  2. שחזור ל-PostgreSQL 18 ריק. ‏staging רץ על 18, ו-`pg_dump` לא יכול להיות ישן ממנו.
+  3. אותו סקריפט ואותם אימותים כמו ב-`mechanics`.
+- **ה-dump** מכיל נתונים אמיתיים, ולכן הוא לא עולה כ-artifact.
+- **מרוץ ידוע:** ספירת השורות במקור נלקחת **אחרי** השחזור. כתיבה ל-staging באמצע (למשל ריצת E2E) תיראה כ«row count differs» על טבלה עמוסה אחת.
+  - מריצים שוב לפני שמסיקים שהגיבוי פגום.
+  - טבלה חסרה או הפרש גדול הם אף פעם לא המרוץ הזה.
 
 ---
 
