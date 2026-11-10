@@ -5,6 +5,12 @@ name: Post-deploy checks
 #   2. broken-link crawl — scripts/link-check.mjs (MEH-1963, reused) +
 #      live security headers — scripts/checks/live_security_headers.py
 #   3. Lighthouse performance budget — scripts/checks/lighthouserc.cjs
+# MEH-2864 («ייעול הבדיקות»): a push checks the live site with a SMOKE of
+# ≤10 URLs (link-check --smoke), and only when something it checks changed
+# since the last checked push — frontend/, backend/ or the checks themselves
+# (scripts/frontend-touched.sh). The full crawl runs
+# in E2E against a local `next start` (e2e/flows/manual/link-crawl.spec.ts) and,
+# against the live site, once a week on production only (the schedule below).
 # Not a required check: it runs after merge, against the live site. A red
 # here means "the deploy that just landed broke something" and arrives as the
 # usual GitHub Actions failure email. All logic lives in scripts/checks/;
@@ -13,6 +19,9 @@ name: Post-deploy checks
 "on":
   push:
     branches: [staging, main]
+  schedule:
+    # MEH-2864: the weekly full crawl of production (Sunday 03:17 UTC).
+    - cron: "17 3 * * 0"
   workflow_dispatch:
     inputs:
       target:
@@ -23,14 +32,19 @@ name: Post-deploy checks
 
 permissions:
   contents: read
+  # MEH-2864: the "did this push change …" step reads this workflow's own
+  # last successful run (gh run list).
+  actions: read
 
 concurrency:
-  group: post-deploy-checks-${{ github.ref }}
+  # MEH-2864: the event is in the key, so the weekly production crawl (which
+  # runs on the default branch's ref) and a staging push never cancel each other.
+  group: post-deploy-checks-${{ github.event_name }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
   checks:
-    name: Post-deploy checks (${{ github.ref_name }})
+    name: Post-deploy checks (${{ github.event_name == 'schedule' && 'weekly production crawl' || github.ref_name }})
     runs-on: ubuntu-latest
     timeout-minutes: 45
     env:
@@ -41,6 +55,30 @@ jobs:
         run: echo "BASE_URL=$BASE_URL IS_PRODUCTION=$IS_PRODUCTION (smoke and Lighthouse run only when IS_PRODUCTION=true)"
 
       - uses: actions/checkout@v7
+        with:
+          # MEH-2864: frontend-touched.sh diffs from the last checked push; with
+          # the default depth of 1 that commit is missing and it fails safe
+          # (checks run). 50 covers a normal day of merges.
+          fetch-depth: 50
+
+      - name: Did anything checked change since the last checked push?
+        id: touched
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ "${{ github.event_name }}" = "push" ]; then
+            # Diff against the head of this branch's last SUCCESSFUL push run,
+            # not github.event.before: with cancel-in-progress, a frontend
+            # push whose run was cancelled by a later docs-only push would
+            # otherwise never be checked (fresh review on #4253). No such run,
+            # or the lookup fails → empty base → touched=true (fail safe).
+            base="$(gh run list --workflow post-deploy-checks.yml --branch "$GITHUB_REF_NAME" --event push --status success -L 1 --json headSha -q '.[0].headSha' 2>/dev/null || true)"
+            echo "last checked push: ${base:-none found}"
+            bash scripts/frontend-touched.sh "${base}" "${{ github.sha }}"
+          else
+            echo "touched=true — ${{ github.event_name }} always checks"
+            echo "touched=true" >> "$GITHUB_OUTPUT"
+          fi
 
       - uses: actions/setup-python@v6
         with:
@@ -51,26 +89,37 @@ jobs:
           node-version: "22"
 
       - name: Wait for the new build to be live
-        if: github.event_name == 'push'
+        if: github.event_name == 'push' && steps.touched.outputs.touched == 'true'
         env:
           VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
         run: python scripts/checks/wait_for_deploy.py --base-url "$BASE_URL" --sha "${{ github.sha }}" || echo "::warning title=Deploy not detected::the checks below may describe the previous build"
 
       - name: Production smoke
         id: smoke
-        if: env.IS_PRODUCTION == 'true'
+        if: env.IS_PRODUCTION == 'true' && github.event_name != 'schedule' && steps.touched.outputs.touched == 'true'
         continue-on-error: true
         run: python scripts/checks/smoke_production.py --base-url "$BASE_URL"
 
       - name: Broken links
         id: links
+        if: steps.touched.outputs.touched == 'true'
         continue-on-error: true
         env:
           VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
-        run: node scripts/link-check.mjs "$BASE_URL"
+        # MEH-2864: weekly → full crawl (production host); every other run →
+        # smoke, ≤10 URLs. Both print «requests to Vercel: N».
+        run: |
+          if [ "${{ github.event_name }}" = "schedule" ]; then
+            # IS_PRODUCTION is false on a schedule run, which would mean a
+            # 40-page sample; the weekly crawl asks for the full budget.
+            node scripts/link-check.mjs "$BASE_URL" --max-pages=2000
+          else
+            node scripts/link-check.mjs "$BASE_URL" --smoke
+          fi
 
       - name: Security headers (live)
         id: headers
+        if: github.event_name != 'schedule' && steps.touched.outputs.touched == 'true'
         continue-on-error: true
         env:
           VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
@@ -82,7 +131,7 @@ jobs:
         id: lighthouse
         # Production only, and no bypass secret in this step: Lighthouse would
         # send it to every third-party host the page loads.
-        if: env.IS_PRODUCTION == 'true'
+        if: env.IS_PRODUCTION == 'true' && github.event_name != 'schedule' && steps.touched.outputs.touched == 'true'
         continue-on-error: true
         env:
           LHCI_BASE_URL: ${{ env.BASE_URL }}
@@ -91,6 +140,9 @@ jobs:
           # upload (to the local report folder) BEFORE assert, so a red run still keeps its report
           npx --yes @lhci/cli@0.15.1 upload --config=scripts/checks/lighthouserc.cjs
           npx --yes @lhci/cli@0.15.1 assert --config=scripts/checks/lighthouserc.cjs
+          # MEH-2864: the same count every check prints. Page loads only — each
+          # load also fetches its own assets, which are not counted here.
+          node -e "const c=require('./scripts/checks/lighthouserc.cjs').ci.collect; console.log('requests to Vercel: ' + c.url.length * (c.numberOfRuns || 1) + ' page loads (assets not counted)')"
 
       - name: Keep the Lighthouse report
         if: always()
