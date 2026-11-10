@@ -8,8 +8,9 @@
 > **Lands first, in the same PR as this file (no workflow change):**
 > - `frontend/e2e/login-retry.ts` + `global-setup.ts`: a 429 on login is waited
 >   out and retried.
-> - The `PW_BLOB=1` blob reporter in `playwright.config.ts`. It does nothing
->   until the workflow sets it.
+> - The blob reporter in `playwright.config.ts`, switched on by `--shard` on
+>   the command line. There is no env var. It does nothing until the workflow
+>   runs with `--shard`.
 
 ## ⚠️ Decide before pasting: this trades MEH-2398's rule for wall time
 
@@ -65,7 +66,7 @@ a no-op that looks like serialization. **Do not paste it after this one.**
    - **Name:** `Playwright E2E (Vercel preview) 1/2` and `… 2/2`. This job is
      not in the ruleset (`e2e-gate` is the aggregator), so the rename blocks
      nothing.
-   - **Run:** `--shard=N/2` with `PW_BLOB=1`.
+   - **Run:** `--shard=N/2`, which also switches on the blob reporter.
    - **Queue:** the job-level queue becomes `e2e-staging-backend-<N>` (see the
      warning above).
    - **Artifacts** get a `-<N>` suffix. Two jobs uploading one name fail with a
@@ -91,8 +92,8 @@ a no-op that looks like serialization. **Do not paste it after this one.**
 
 - `git apply --check` of the diff below against `origin/staging`: clean.
 - The YAML parses. Jobs: `filter, e2e, e2e-report, e2e-webkit, e2e-gate`.
-- `PW_BLOB=1 npx playwright test --list` loads the config. The default list
-  is still 1,668.
+- `npx playwright test --list --shard=1/2` loads the config with the blob
+  reporter on. The default list is unchanged.
 - **The merge step's own bash, run locally on real blobs** (`flows/09` against
   a dead host, so every test fails on purpose):
 
@@ -153,23 +154,18 @@ them.
        cancel-in-progress: false
        queue: max
  
-@@ -247,11 +262,14 @@
+@@ -247,7 +262,9 @@
          # MEH-484 — --fail-on-flaky-tests turns "passed on retry" into a hard
          # failure so flake stops hiding behind the retry. retries: 1 in CI is
          # preserved (config); the flag detects flake without disabling retries.
 -        run: npx playwright test --fail-on-flaky-tests
-+        # MEH-2895: `--shard` splits the suite; PW_BLOB=1 adds the blob reporter
-+        # (playwright.config.ts) so e2e-report can merge both halves.
++        # MEH-2895: `--shard` splits the suite and, by itself, switches on the
++        # blob reporter (playwright.config.ts) so e2e-report can merge both halves.
 +        run: npx playwright test --fail-on-flaky-tests --shard=${{ matrix.shard }}/2
          working-directory: frontend
          env:
            PLAYWRIGHT_BASE_URL: http://localhost:3000
-           CI: "true"
-+          PW_BLOB: "1"
-           # MEH-999: unlock the authenticated specs. global-setup.ts provisions
-           # e2e/.auth/{producer,consumer,admin}.json by logging in through the
-           # /api proxy to the Railway staging backend, where these accounts are
-@@ -301,6 +319,179 @@
+@@ -301,6 +318,179 @@
            fi
          id: coverage-floor
  
@@ -349,7 +345,7 @@ them.
        # MEH-1074 (W0.1) — QA report as a PR comment: one upserted comment per
        # PR (marker-matched, edited in place — no comment spam on re-push).
        # Runs on pass AND fail (if: always()); skipped on push-to-staging runs
-@@ -311,9 +502,11 @@
+@@ -311,9 +501,11 @@
        # step landing). The fresh run upserts the real verdict.
        - name: Post QA report comment
          uses: actions/github-script@v9
@@ -363,7 +359,7 @@ them.
          with:
            script: |
              const marker = "<!-- e2e-qa-report -->";
-@@ -322,7 +515,7 @@
+@@ -322,7 +514,7 @@
              // and proven without applying a workflow edit:
              //   node scripts/ci/qa-report-verdict.cjs --self-test
              const raw = {
@@ -372,7 +368,7 @@ them.
                executed:   "${{ steps.coverage-floor.outputs.executed }}",
                unexpected: "${{ steps.coverage-floor.outputs.unexpected }}",
                flaky:      "${{ steps.coverage-floor.outputs.flaky }}",
-@@ -350,6 +543,16 @@
+@@ -350,6 +542,16 @@
                  detail: `**Nothing ran, and the reporter itself could not load** (\`${err.message}\`) — the checkout did not complete. **This is NOT a spec failure.**`,
                };
              }
@@ -389,7 +385,7 @@ them.
              const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
              const body = [
                marker,
-@@ -429,71 +632,6 @@
+@@ -429,71 +631,6 @@
                });
              }
  
