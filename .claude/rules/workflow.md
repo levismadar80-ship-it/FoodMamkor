@@ -531,3 +531,31 @@ use states its tier in the PR body:
 
 If the issue states no tier and the PR touches a business-facing tool →
 **STOP and ask.** No registry copy without word-by-word approval in the issue.
+
+---
+
+## Dashboard placement (/producer/dashboard) — MEH-2885
+
+Every tool lives where its frequency says: daily → the dashboard home, weekly →
+a tab, one-time → «כלים» or «עריכה» (audit:
+`docs/audits/2026-11-dashboard-placement.md`). Two parts:
+
+- **Enforced:** `frontend/__tests__/DashboardPlacementGuard.test.js` fails when
+  a page under `app/[locale]/producer/dashboard/**` has no place in
+  `frontend/lib/business-features.js` (a tool's `dashboard: { home, href }`, or
+  the explicit frame / sub-page / without-entry lists), when a tool's page has
+  no link pointing at it, when it is more than 2 taps from the home, or when
+  the tab its `dashboard.home` names does not itself link to it. Taps come
+  from a static graph: a tab = 1; a link written in a page file or in a file
+  that page imports directly = +1 — whatever state renders it. Comments, the
+  tools tab's `also:` highlight list and the organizer's own tabs are not
+  links. A new page → its place goes in the registry in the same PR: a tool's
+  landing page gets `dashboard: { home, href }`; a form / print view inside a
+  tool goes in `DASHBOARD_SUBPAGES`; a tool page with no registry entry yet
+  (one needs approved copy, «Launch tier» א׳) goes in
+  `DASHBOARD_PAGES_WITHOUT_ENTRY` with the reason.
+- **Reviewed:** a card for any PR that touches `/producer/dashboard` carries the
+  «מיקום בלוח הבקרה» block (template 06): tool · frequency · where · entry
+  (href) · taps from home at 390 · inbound links · empty state. The fresh
+  reviewer (rule 5a) checks the block against what was built, and the PR body
+  says where each changed surface landed.
