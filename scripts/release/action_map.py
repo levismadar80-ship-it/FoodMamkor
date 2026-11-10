@@ -177,7 +177,7 @@ RISK_LEGEND = [
         "+2",
     ),
     (
-        "object id in path: a non-admin mutation with an `{…}` segment (`/me/…/{id}` included; not `/users/me/favorites|saved/…`)",
+        "object id in path: a non-admin mutation with an `{…}` segment (`/me/…/{id}` included; not `/users/me/favorites/…` or `/users/me/saved/…`)",
         "+2",
     ),
     ("site-wide settings: a mutation under `/admin/settings`", "+3"),
@@ -2780,7 +2780,8 @@ def render(am: ActionMap) -> str:
     a("## Risk score")
     a("")
     a(
-        "Add up, for a route (the «Why» column of «Top gaps» names every term that applied):"
+        "Add up, for a route: its method and actor terms, then every other term that applies — the «Why» "
+        "column of «Top gaps» names those (method and actor are in the row: «Route» and «Actor»)."
     )
     a("")
     a("| Term | Weight |")

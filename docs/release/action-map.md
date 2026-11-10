@@ -563,7 +563,7 @@ A row is covered when one test function calls the listed route(s) and matches th
 
 ## Risk score
 
-Add up, for a route (the «Why» column of «Top gaps» names every term that applied):
+Add up, for a route: its method and actor terms, then every other term that applies — the «Why» column of «Top gaps» names those (method and actor are in the row: «Route» and «Actor»).
 
 | Term | Weight |
 |---|---|
@@ -576,7 +576,7 @@ Add up, for a route (the «Why» column of «Top gaps» names every term that ap
 | auth: path has auth / login / register / password / verify / otp / claim / token / reset | +3 |
 | money-like mutation: `/group-buys/{id}/commit`, `/rescue/orders…` | +3 |
 | sends email/WhatsApp: the handler (or a same-module helper) calls a name imported from a notification service module | +2 |
-| object id in path: a non-admin mutation with an `{…}` segment (`/me/…/{id}` included; not `/users/me/favorites|saved/…`) | +2 |
+| object id in path: a non-admin mutation with an `{…}` segment (`/me/…/{id}` included; not `/users/me/favorites/…` or `/users/me/saved/…`) | +2 |
 | site-wide settings: a mutation under `/admin/settings` | +3 |
 | public visibility: approve / reject / publish / toggle-status / hide / unhide / verified / ambassador / story-card / request-changes / revoke, on a mutation | +2 |
 | **privilege change**: a mutation on `/role`, `/block` or `/admin/users/…` — the highest single weight | +8 |
