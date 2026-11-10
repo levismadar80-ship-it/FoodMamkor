@@ -37,6 +37,7 @@
 
 - [ ] לכל פיצ'ר שנכנס מאז הגרסה הקודמת ותלוי בדגל, במשתנה סביבה או בתבנית Meta: המצב הרצוי בפרודקשן (דולק/כבוי) מול המצב בפועל. דוגמאות נכון ל-07/11: `RESCUE_BAGS_ENABLED` + `NEXT_PUBLIC_RESCUE_BAGS_ENABLED` + `RESCUE_BAGS_CITIES`, `RESCUE_DIGEST_ENABLED` + תבנית `rescue_codes_digest_v1`, `WATCHDOG_ENABLED`
 - [ ] משתנה סביבה חדש בפרודקשן? רק אחרי אישור של ספיר (כלל רגרסיה 8)
+- [ ] `SUPER_ADMIN_EMAIL` מוגדר ב-Railway **production** לפני המיזוג ל-main. בלעדיו הבקאנד לא עולה (MEH-2890). הערך: האימייל של חשבון הבעלים בדיוק כפי שהוא מופיע ב-`/admin/users`
 
 ## ד׳ — אייפון אמיתי (ספיר, בערך דקה)
 
