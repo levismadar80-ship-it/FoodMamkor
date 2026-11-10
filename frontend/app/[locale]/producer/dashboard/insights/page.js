@@ -168,11 +168,16 @@ function DeepAnalyticsSection({ analytics, profile }) {
   // (a pending page 404s — MEH-1356). Same gate the zero-state used.
   const shareUrl =
     profile?.status === "approved" && profile?.slug ? `${SITE_URL}/p/${profile.slug}` : null;
-  const copyShareUrl = () =>
+  const copyShareUrl = () => {
+    if (!navigator.clipboard?.writeText) {
+      showToast.error(tFollowers("share_error"));
+      return;
+    }
     navigator.clipboard
       .writeText(shareUrl)
       .then(() => showToast.success(tFollowers("share_toast")))
       .catch(() => showToast.error(tFollowers("share_error")));
+  };
   const shareFollowersPage = () =>
     shareOrCopy({
       url: shareUrl,

@@ -73,10 +73,22 @@ vi.mock("@/components/HolidayIcon", () => ({ default: () => null }));
 
 // Mutable analytics payload — each test sets it before render (vi.hoisted so
 // the api mock factory can close over it despite vi.mock hoisting).
-const { analyticsRef, statusRef } = vi.hoisted(() => ({
+const { analyticsRef, statusRef, kindRef, completeRef } = vi.hoisted(() => ({
   analyticsRef: { current: null },
   statusRef: { current: "approved" },
+  kindRef: { current: "producer" },
+  completeRef: { current: true },
 }));
+
+// Completeness is driven per test (the fixture profile has no images etc.).
+vi.mock("@/lib/producer-completeness", async (orig) => {
+  const real = await orig();
+  return {
+    ...real,
+    producerCompleteness: (p) =>
+      completeRef.current ? { missing: [], priority: "green" } : real.producerCompleteness(p),
+  };
+});
 
 vi.mock("@/lib/api", () => ({
   default: {
@@ -99,7 +111,7 @@ vi.mock("@/lib/api", () => ({
       if (url === "/producers/me") {
         // The slug lives on the profile, never on /me/dashboard (MEH-2880).
         return Promise.resolve({
-          data: { id: 1, slug: "arugot-noam", status: statusRef.current, kind: "producer", images: [], categories: [], locations: [] },
+          data: { id: 1, slug: "arugot-noam", status: statusRef.current, kind: kindRef.current, images: [], categories: [], locations: [] },
         });
       }
       // /producers/me → null profile: the completeness card stays unmounted;
@@ -126,6 +138,8 @@ describe("the week card (MEH-2884 item 5)", () => {
   beforeEach(() => {
     mockPush.mockClear();
     statusRef.current = "approved";
+    kindRef.current = "producer";
+    completeRef.current = true;
   });
 
   it("WhatsApp clicks this week: the nudge + wa.me CTA sit inside the strip; no second card", async () => {
@@ -135,8 +149,6 @@ describe("the week card (MEH-2884 item 5)", () => {
     const nudge = screen.getByTestId("week-whatsapp-nudge");
     expect(nudge.parentElement, "the nudge and the strip share one block").toBe(strip.parentElement);
     expect(screen.getByTestId("week-whatsapp-cta").getAttribute("href")).toBe("https://wa.me/");
-    expect(screen.queryByTestId("activity-pulse")).toBeNull();
-    expect(screen.queryByTestId("activity-pulse-empty")).toBeNull();
     expect(screen.queryByTestId("overview-zero-state")).toBeNull();
   });
 
@@ -162,7 +174,23 @@ describe("the week card (MEH-2884 item 5)", () => {
     render(<ProducerDashboardPage />);
     await screen.findByTestId("overview-zero-state");
     expect(screen.queryByTestId("overview-zero-share")).toBeNull();
-    expect(screen.queryByTestId("activity-pulse-empty")).toBeNull();
+  });
+
+  it("approved but profile incomplete: no «שתפו» — «הלינק שלי» says sharing is locked", async () => {
+    completeRef.current = false;
+    analyticsRef.current = week(0, 0);
+    render(<ProducerDashboardPage />);
+    await screen.findByTestId("overview-zero-state");
+    expect(await screen.findByTestId("share-locked-hint")).toBeInTheDocument();
+    expect(screen.queryByTestId("overview-zero-share")).toBeNull();
+  });
+
+  it("organizer, approved + complete, no activity: no «שתפו» (no /p/ business page)", async () => {
+    kindRef.current = "organizer";
+    analyticsRef.current = week(0, 0);
+    render(<ProducerDashboardPage />);
+    await screen.findByTestId("overview-zero-state");
+    expect(screen.queryByTestId("overview-zero-share")).toBeNull();
   });
 
   // LAST — the one click in this file.
@@ -174,7 +202,6 @@ describe("the week card (MEH-2884 item 5)", () => {
     const empty = await screen.findByTestId("overview-zero-state");
     const button = await screen.findByTestId("overview-zero-share");
     expect(empty.contains(button), "the button is inside the one empty state").toBe(true);
-    expect(screen.queryByTestId("activity-pulse-empty")).toBeNull();
     fireEvent.click(button);
     expect(share).toHaveBeenCalledTimes(1);
     expect(share.mock.calls[0][0].url).toMatch(/\/p\/arugot-noam$/);

@@ -829,7 +829,10 @@ export default function ProducerDashboardPage() {
             <Sparkle size={20} weight="fill" className="text-primary shrink-0" aria-hidden="true" />
             <p className="text-sm text-fg-muted">{t("states.zero_activity")}</p>
           </div>
-          {slug && isApproved && !isOrganizer && <ZeroStateShareButton slug={slug} />}
+          {/* Same gate as «הלינק שלי» (slug + complete + approved): with the
+              profile incomplete that slot shows «share locked», and a «שתפו»
+              here would contradict it (MEH-2884 review). */}
+          {slug && isComplete && isApproved && !isOrganizer && <ZeroStateShareButton slug={slug} />}
         </div>
       )}
 
@@ -868,12 +871,20 @@ export default function ProducerDashboardPage() {
 function ZeroStateShareButton({ slug }) {
   const tShare = useTranslations("share");
   const tVanity = useTranslations("dashboard.producer.vanity_link");
+  const tFollowers = useTranslations("sweep_tail.followers");
   const url = `${SITE_URL}/p/${slug}`;
-  const copy = () =>
+  // A failed copy says so (no clipboard API, or a rejected write) — the tap
+  // must never do nothing (MEH-2884 review).
+  const copy = () => {
+    if (!navigator.clipboard?.writeText) {
+      showToast.error(tFollowers("share_error"));
+      return;
+    }
     navigator.clipboard
       .writeText(url)
       .then(() => showToast.success(tVanity("copied")))
-      .catch(() => {});
+      .catch(() => showToast.error(tFollowers("share_error")));
+  };
   return (
     <button
       type="button"

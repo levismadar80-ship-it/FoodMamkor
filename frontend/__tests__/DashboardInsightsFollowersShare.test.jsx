@@ -5,10 +5,11 @@
  * (9) «שתפו את העמוד» SHARES the public link (share sheet, else copy) — it
  *     used to be a link that navigated to the page.
  *
- * ONE click per file, in the LAST test. Measured 10/11: on this page, after a
- * click, any later waitFor / findBy in the same worker never settles and the
- * file hangs — each click test passes alone, two hang; two renders without a
- * click pass. The same hang MEH-2876 quarantined; the copy path therefore
+ * ONE click per file, in the LAST test. Measured 10/11: on this page, two
+ * tests that each click hang the file — each passes alone, two renders without
+ * a click pass, and --testTimeout never fires (so the worker is busy, not
+ * waiting on a promise). `act(async)` around the click does not help. Cause
+ * not found; it is the hang MEH-2876 quarantined. The copy path therefore
  * lives in DashboardInsightsFollowersCopy.test.jsx. No waitFor is needed
  * after the click: shareOrCopy calls navigator.share / clipboard.writeText
  * synchronously inside it.
