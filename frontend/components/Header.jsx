@@ -5,6 +5,13 @@ import Image from "next/image";
 // router dropped the /en prefix (the search button pushed /en readers to the
 // Hebrew /producers).
 import { Link, usePathname, useRouter } from "@/i18n/navigation";
+// MEH-2850: every Link element in the site chrome carries prefetch={false}. The
+// chrome is on screen on EVERY page, and since #4260 its targets (/, /about,
+// /privacy, /login, /register) are static, so Next prefetches them IN FULL —
+// their page JS plus the shared [locale] layout payload (~56 KB gz, mostly the
+// messages the page already has). Measured 10/11: +121 KB JS on /map and
+// +137 KB on /events after load, gone when only those prefetches are blocked.
+// Navigation still works; it fetches on tap. Guarded by ChromePrefetchGuard.test.js.
 import { useEffect, useRef, useState } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { useTranslations, useLocale } from "next-intl";
@@ -416,7 +423,7 @@ export default function Header() {
               NAV-01. Fixed compact geometry, scroll-independent, matches the
               frozen end-cap/gap above. start of the row (visual right in RTL). */}
           <div className="flex items-center gap-9">
-            <Link href="/" onClick={handleHomeClick} className="shrink-0 inline-flex items-center min-h-touch" aria-label={BRAND_NAME}>
+            <Link prefetch={false} href="/" onClick={handleHomeClick} className="shrink-0 inline-flex items-center min-h-touch" aria-label={BRAND_NAME}>
               <Image
                 src="/logo.png"
                 alt={BRAND_NAME}
@@ -537,7 +544,7 @@ export default function Header() {
  */
 function NavLink({ href, label, active, onClick }) {
   return (
-    <Link
+    <Link prefetch={false}
       href={href}
       onClick={onClick}
       aria-current={active ? "page" : undefined}
@@ -566,7 +573,7 @@ function NavLink({ href, label, active, onClick }) {
  */
 function LoginAccount({ label }) {
   return (
-    <Link
+    <Link prefetch={false}
       href="/login"
       // MEH-215 journey C: locator for the header-discovery assertion. The
       // `hidden md:inline-flex` above is the whole point — this link exists on
@@ -590,7 +597,7 @@ function LoginAccount({ label }) {
  */
 function RegisterAccount({ label }) {
   return (
-    <Link
+    <Link prefetch={false}
       href="/register"
       data-testid="header-register-link"
       className="hidden md:inline-flex items-center justify-center min-h-touch px-2 rounded-full text-base font-medium transition-colors duration-fast ease-quart focus-ring text-primary hover:text-primary-dark"
@@ -779,7 +786,7 @@ function UserMenu({ user, logout, open, setOpen, menuRef }) {
           style={{ minWidth: 160, insetInlineStart: 0 }}
         >
           {items.map((item, i) => (
-            <Link
+            <Link prefetch={false}
               key={item.label}
               role="menuitem"
               // MEH-2199: roving tab stop — exactly one item is in the tab

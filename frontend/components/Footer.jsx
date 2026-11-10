@@ -3,6 +3,9 @@
 // MEH-2578: locale-aware Link — next/link dropped the /en prefix, and with
 // localeDetection off an /en reader landed on the Hebrew page.
 import { Link } from "@/i18n/navigation";
+// MEH-2850: every Link element here carries prefetch={false} — the footer is
+// chrome on every page and links a dozen static pages; on a short page (or
+// once scrolled into view) each would be prefetched IN FULL. See Header.jsx.
 import Image from "next/image";
 import { useState, useEffect } from "react";
 import { InstagramLogo, FacebookLogo, TiktokLogo, YoutubeLogo, ArrowRight, CaretDown } from "@phosphor-icons/react";
@@ -162,7 +165,7 @@ export default function Footer() {
                 5-color petal mark to flat white. Use the purpose-built graded-cream
                 dark-surface mark (logo-on-warm-dark.svg — square mark, no lockup
                 asset exists) + wordmark text, per the P6 light-lockup treatment. */}
-            <Link href="/" aria-label={t("nav.footer.brand_aria")} className="mb-4 inline-flex items-center gap-3">
+            <Link prefetch={false} href="/" aria-label={t("nav.footer.brand_aria")} className="mb-4 inline-flex items-center gap-3">
               <Image
                 src="/logo-on-warm-dark.svg"
                 alt=""
@@ -263,7 +266,7 @@ export default function Footer() {
                       <li key={link.href + link.label}>
                         {/* MEH-1103: inline fontSize → utility class (13px unchanged)
                             — interactive text carries no inline font sizing. */}
-                        <Link
+                        <Link prefetch={false}
                           href={link.href}
                           className="text-sm text-green-100 hover:text-white transition"
                         >
@@ -400,7 +403,7 @@ export default function Footer() {
                     locked in the sweep spec) + min-h-touch inline-flex so the
                     tap target meets WCAG 2.5.5 without growing the visual bar
                     (the extra hit area is vertical padding, not layout). */}
-                <Link
+                <Link prefetch={false}
                   href={link.href}
                   className="inline-flex items-center min-h-touch text-sm text-green-100 hover:text-white transition"
                 >
