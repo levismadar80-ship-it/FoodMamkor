@@ -150,6 +150,52 @@ def test_logo_url_follows_frontend_url(monkeypatch):
     assert 'alt="מהמקור"' in email_logo_html()
 
 
+FRONTEND_PUBLIC = Path(__file__).resolve().parents[1] / "frontend" / "public"
+EMAIL_LOGO_SVG = FRONTEND_PUBLIC / "logo-horizontal-he-no-tagline.svg"
+EMAIL_LOGO_PNG = FRONTEND_PUBLIC / "email-logo.png"
+TAGLINE = "אוכל טוב לא שומרים לעצמנו"
+
+
+def _png_size(path: Path) -> tuple[int, int]:
+    """(width, height) from the IHDR chunk — no imaging dependency."""
+    head = path.read_bytes()[:24]
+    assert head[:8] == b"\x89PNG\r\n\x1a\n" and head[12:16] == b"IHDR", path
+    return int.from_bytes(head[16:20], "big"), int.from_bytes(head[20:24], "big")
+
+
+def _viewbox(svg: str) -> tuple[float, float]:
+    m = re.search(r'<svg\b[^>]*\bviewBox="([^"]+)"', svg)
+    assert m, "no viewBox on the <svg> root"
+    _, _, w, h = (float(v) for v in m.group(1).split())
+    return w, h
+
+
+def test_email_logo_has_no_tagline():
+    """MEH-2875 (Sapir, option ב): the email header is mark + «מהמקור», no tagline.
+
+    The PNG is rendered from logo-horizontal-he-no-tagline.svg at its viewBox, so
+    (1) that SVG must not carry the tagline anywhere (a <text>, the aria-label),
+    and (2) the PNG must have the SVG's aspect ratio. The lockup WITH the tagline
+    is ~3.4:1 (240×70); without it ~4:1 (240×60) — restoring the old PNG fails (2).
+    """
+    svg = EMAIL_LOGO_SVG.read_text(encoding="utf-8")
+    assert TAGLINE not in svg, f"{EMAIL_LOGO_SVG.name} still carries the tagline"
+    assert svg.count("<text") == 1 and ">מהמקור</text>" in svg, (
+        "expected exactly one <text>, the wordmark"
+    )
+    vb_w, vb_h = _viewbox(svg)
+    png_w, png_h = _png_size(EMAIL_LOGO_PNG)
+    assert png_w == 240, f"email-logo.png is {png_w}px wide, want 240 (@2x of 120)"
+    assert abs(png_h / png_w - vb_h / vb_w) < 0.01, (
+        f"email-logo.png {png_w}×{png_h} (h/w {png_h / png_w:.3f}) does not match "
+        f"{EMAIL_LOGO_SVG.name} viewBox {vb_w}×{vb_h} (h/w {vb_h / vb_w:.3f})"
+    )
+    # The <img> box must keep the PNG's proportions (Outlook sizes from the attribute).
+    assert email_branding.EMAIL_LOGO_HEIGHT == round(120 * png_h / png_w), (
+        email_branding.EMAIL_LOGO_HEIGHT
+    )
+
+
 def _logo_calls(src: str) -> int:
     """Real calls only — a comment or a string that names the function is not a call."""
     return sum(
