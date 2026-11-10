@@ -152,8 +152,10 @@ def test_committed_doc_matches_its_manifest_and_its_citations_hold():
 
 def test_static_tier_passes_and_its_self_test_can_fail():
     """What scripts/checks/action-map-drift-guard.sh runs on every PR."""
-    assert am.self_test_static() == []
-    assert am.check_static() == []
+    fails, ran = am.self_test_static()
+    assert fails == [] and ran >= 10, (fails, ran)
+    problems = am.check_static()
+    assert problems == [], "\n".join(problems)
 
 
 def test_line_mask_hides_only_line_numbers():
@@ -390,9 +392,10 @@ def _row(m, key):
 def test_round1_real_anchors():
     m, _ = _generated()
     # fix 3 — the reviewer's three false credits are no longer `covered`
+    # (round 2: `POST /upload/image` left this list — its real success test is
+    # parametrized, tests/test_meh2551_upload_off_event_loop.py, now resolved)
     for key in (
         "POST /admin/producers/{producer_id}/story-card",
-        "POST /upload/image",
         "GET /producers/me/recipes/{recipe_id}",
     ):
         assert _row(m, key).pos.status == "weak", key
@@ -452,7 +455,230 @@ def test_round1_guest_redirect_goto_is_flagged():
     assert sum(1 for g in gotos if not g[3]) > len(gotos) // 2
 
 
-def test_round1_only_tracked_files_are_scanned():
-    idx = am.build_pytest_index()
-    tracked = am._tracked()
-    assert idx.texts and set(idx.texts) <= tracked
+def test_round1_only_tracked_files_are_scanned(tmp_path, monkeypatch):
+    """Round 2 fix 8: built over a throwaway git repo that HAS an untracked
+    test file — in CI the real checkout has none, so a test over the real
+    tree could never fail. The control: the same tree scanned by `rglob`
+    does see the untracked file."""
+    import subprocess
+
+    (tmp_path / "tests").mkdir()
+    (tmp_path / "tests" / "test_tracked.py").write_text("def test_a():\n    pass\n")
+    git = ["git", "-c", "user.email=t@t", "-c", "user.name=t"]
+    subprocess.run([*git, "init", "-q"], cwd=tmp_path, check=True)
+    subprocess.run([*git, "add", "tests/test_tracked.py"], cwd=tmp_path, check=True)
+    subprocess.run([*git, "commit", "-qm", "x"], cwd=tmp_path, check=True)
+    (tmp_path / "tests" / "test_untracked.py").write_text("def test_b():\n    pass\n")
+
+    monkeypatch.setattr(am, "ROOT", tmp_path)
+    am._tracked.cache_clear()
+    try:
+        idx = am.build_pytest_index(tests_dir=tmp_path / "tests")
+    finally:
+        am._tracked.cache_clear()
+    assert set(idx.texts) == {"tests/test_tracked.py"}
+    assert len(list((tmp_path / "tests").rglob("*.py"))) == 2  # control
+
+
+# ── review round 2: matcher cases that must NOT (and must) count ───────────
+
+_R2_PATHS = {
+    # path: (method, expected positive status) — each a separate synthetic route
+    "/r2-neq": ("POST", "weak"),  # assert != 200
+    "/r2-mixed": ("POST", "weak"),  # in (200, 403): neither success nor refusal
+    "/r2-detail": ("POST", "weak"),  # only `r.json()["detail"]` asserted
+    "/r2-range": ("POST", "weak"),  # range(200) in the window, == 422 asserted
+    "/r2-msg": ("POST", "weak"),  # == 500, "expected 200"
+    "/r2-setup": ("POST", "weak"),  # helper that does NOT return the response
+    "/r2-other": ("GET", "covered"),  # the unrelated call at that call site
+    "/r2-inv": (
+        "POST",
+        "weak",
+    ),  # inventory table, consumer calls helper(client, db, p)
+    "/r2-refresh": ("POST", "covered"),  # unasserted, then db.refresh + assert
+    "/r2-reread": ("PATCH", "covered"),  # unasserted, then a GET read back in an assert
+    "/r2-read": ("GET", "covered"),
+    "/r2-pa": ("POST", "covered"),  # parametrize string list
+    "/r2-pb": ("POST", "covered"),
+    "/r2-ret": ("POST", "covered"),  # helper RETURNS the response; caller asserts 201
+}
+
+_R2_SOURCE = """
+import pytest
+
+INVENTORY = [("post", "/r2-inv")]
+
+
+def helper(client, db, p):
+    return db
+
+
+def _setup(client):
+    client.post("/r2-setup")
+
+
+def _make(client):
+    return client.post("/r2-ret")
+
+
+def test_neq(client):
+    r = client.post("/r2-neq")
+    assert r.status_code != 200
+
+
+def test_mixed(client):
+    r = client.post("/r2-mixed")
+    assert r.status_code in (200, 403)
+
+
+def test_detail(client):
+    r = client.post("/r2-detail")
+    assert r.json()["detail"] == "nope"
+
+
+def test_range(client):
+    r = client.post("/r2-range")
+    for i in range(200):
+        pass
+    assert r.status_code == 422
+
+
+def test_msg(client):
+    r = client.post("/r2-msg")
+    assert r.status_code == 500, "expected 200"
+
+
+def test_setup_then_other(client):
+    _setup(client)
+    r = client.get("/r2-other")
+    assert r.status_code == 200
+
+
+def test_inventory(client, db):
+    for m, p in INVENTORY:
+        helper(client, db, p)
+
+
+def test_refresh(client, db):
+    client.post("/r2-refresh")
+    db.refresh(x)
+    assert x.status == "done"
+
+
+def test_reread(client):
+    client.patch("/r2-reread")
+    assert client.get("/r2-read").json()["v"] == 1
+
+
+@pytest.mark.parametrize("path", ["/r2-pa", "/r2-pb"])
+def test_param(client, path):
+    assert client.post(path).status_code == 200
+
+
+def test_returned(client):
+    r = _make(client)
+    assert r.status_code == 201
+"""
+
+
+def test_round2_matcher_cases():
+    from fastapi import Depends, FastAPI
+
+    from app.auth import require_admin
+
+    app = FastAPI()
+    for path, (method, _) in _R2_PATHS.items():
+        deps = [Depends(require_admin)] if path == "/r2-mixed" else []
+        app.add_api_route(path, lambda: {}, methods=[method], dependencies=deps)
+    routes = am.collect_routes(app)
+    ev = am.Evidence(
+        routes=routes,
+        pytest=am.build_pytest_index(sources={"tests/test_zz_r2.py": _R2_SOURCE}),
+        e2e=am.E2EIndex([], []),
+        vitest=am.VitestIndex({}, {}),
+    ).index()
+    rows = {r.route.path: r for r in am.build_route_rows(ev)}
+    got = {p: rows[p].pos.status for p in _R2_PATHS}
+    want = {p: s for p, (_, s) in _R2_PATHS.items()}
+    assert got == want, {p: (got[p], want[p]) for p in got if got[p] != want[p]}
+    # `in (200, 403)` is not a refusal either
+    assert rows["/r2-mixed"].neg.status == am.GAP
+
+
+def test_round2_real_anchors():
+    m, _ = _generated()
+    # fix 5 — real success tests the round-1 rule demoted
+    for key in (
+        "POST /admin/reports/{report_id}/dismiss",  # db.refresh + assert
+        "PATCH /admin/outreach/{lead_id}",  # read back in an assert
+        "POST /upload/image",  # parametrized path, asserts 200
+    ):
+        assert _row(m, key).pos.status == "covered", key
+    # fix 7 — notifications are anchored on the service modules
+    assert not _row(m, "GET /admin/users").route.notifies  # User.email.ilike(
+    assert not _row(m, "PATCH /users/me").route.notifies  # email.lower()
+    assert _row(m, "POST /auth/resend-verify").route.notifies
+    assert (
+        "object id in path (IDOR-shaped)" in _row(m, "DELETE /reviews/{review_id}").why
+    )
+    assert "site-wide settings" in _row(m, "PUT /admin/settings").why
+
+
+def test_round2_static_tier_catches_edits_of_every_table():
+    """Fix 1/2: the static tier regenerates everything but the route table, so
+    an edited cell in ANY table — a GAP made `covered` with a real call to
+    another route, an e2e-mock cell, a tool verdict, a state-machine verdict,
+    an extra row, the totals — is reported, manifest aside."""
+    doc = am.DOC_PATH.read_text(encoding="utf-8")
+    login = _row(_generated()[0], "POST /auth/login").pos.where
+    resend = next(
+        ln
+        for ln in doc.splitlines()
+        if "`/auth/resend-verify`" in ln and "| GAP |" in ln
+    )
+    edits = {
+        "route cell → another route's call": (
+            resend,
+            resend.replace("| GAP |", f"| `{login}` |", 1),
+        ),
+        "totals": (
+            "| API routes (actor actions) | ",
+            "| API routes (actor actions) | 1",
+        ),
+    }
+    for line in doc.splitlines():
+        if line.startswith("| `social_signup`"):
+            edits["tool verdict"] = (
+                line,
+                line.replace("weak (capped by its router)", "covered"),
+            )
+        if "| edit via race branch |" in line:
+            edits["state-machine verdict"] = (
+                line,
+                re.sub(r"`tests/[^`]+`", "GAP", line, count=1),
+            )
+        if line.startswith("| negative | double submit-for-review |"):
+            edits["extra row"] = (
+                line,
+                line.replace("| GAP |", "| `tests/test_api.py:1` |"),
+            )
+        if "e2e-mock `frontend/" in line and line.startswith("| ") and "`/" in line:
+            edits.setdefault(
+                "e2e-mock cell", (line, re.sub(r"e2e-mock `[^`]+`", "—", line, count=1))
+            )
+    assert len(edits) == 6, sorted(edits)
+    lines = doc.splitlines()
+    tampered = doc
+    where = {}
+    for name, (old, new) in edits.items():
+        assert old in doc and old != new, name
+        where[name] = next(i for i, ln in enumerate(lines, 1) if old in ln)
+        tampered = tampered.replace(old, new, 1)
+    # one regeneration (~5 s) for all six edits: each must be reported AT its line
+    reported = {
+        int(p.split(":")[1])
+        for p in am.check_static(tampered)
+        if p.startswith("docs/release/action-map.md:") and "sha256" not in p
+    }
+    missed = {name: n for name, n in where.items() if n not in reported}
+    assert not missed, f"static tier missed edited cells: {missed}"

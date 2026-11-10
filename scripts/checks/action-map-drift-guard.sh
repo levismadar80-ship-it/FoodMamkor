@@ -20,27 +20,39 @@
 # WHY A SECOND GUARD WHEN tests/test_action_map_complete.py EXISTS
 #   pytest runs only for backend/**, tests/** and one script (the `changes`
 #   filter of the PR-checks workflow). A PR that adds a business tool, a page,
-#   a Playwright spec or an audit section — or hand-edits the doc from GAP to
+#   a Playwright spec or an audit section — or edits the doc from GAP to
 #   covered — never runs it. `Repo guards` runs on every PR, but with a bare
 #   checkout: no uv sync, no FastAPI. So this guard runs what needs nothing
 #   but python3's stdlib, and the full tier only where the backend venv exists.
 #
 # TIERS
-#   static  ALWAYS. `action_map.py --check-static`, stdlib only, ~1 s:
-#             - the doc's sha256 equals docs/release/action-map.sha256
-#               (a hand edit of any cell, API table included, goes red);
-#             - every `covered` citation in the committed doc still points at
-#               an HTTP call / a 401-403 assertion / a `.goto(`;
-#             - the «Pages» section equals a fresh one (pages, CI-run specs,
-#               Vitest imports);
-#             - the business-tool ids equal the registry's;
-#             - the state-machine rows equal the audit's sections/transitions.
+#   static  ALWAYS. `action_map.py --check-static`, stdlib only, ~5 s (the one
+#           guard here over the ~1 s dispatcher budget: it parses every pytest
+#           file once — the price of re-deriving every cell):
+#             - REGENERATES THE WHOLE DOC with one input swapped: the route
+#               table (order, method, path, handler, actor, flags) is read from
+#               the committed doc instead of the app. Every other cell —
+#               positives, 401/403 cells, e2e-mock, scores, tools, pages,
+#               state-machine rows, §B.3 rows, totals, top gaps — is recomputed
+#               and compared, each difference reported at its doc line;
+#             - every citation in the API and Pages tables still shows what its
+#               cell claims FOR ITS ROW (a call that resolves to that row's
+#               METHOD path and, for `covered`, asserts success; a 401/403 on
+#               such a call; an e2e-mock `.route(` matching the path; a `goto`
+#               of that page);
+#             - the doc's sha256 equals docs/release/action-map.sha256 — this
+#               catches ACCIDENTAL hand edits only: whoever edits the doc can
+#               re-sign it. The regeneration above is what makes an edited
+#               cell fail.
 #           Preceded by `--self-test-static`, which proves those checks can
 #           fail (synthetic cases + real-file anchors) before trusting a pass.
+#           NOT seen here: the route table itself against the app (a route
+#           added, removed or re-gated) — that needs FastAPI.
 #   full    ONLY IF backend/.venv/bin/python exists (a developer machine; not
-#           the CI runner). `action_map.py --check`: regenerates everything,
-#           route table included. In CI the same check runs as
-#           tests/test_action_map_complete.py inside the pytest job.
+#           the CI runner). `action_map.py --check`: the route table too. In
+#           CI the same check is tests/test_action_map_complete.py (pytest
+#           shards today; a light job once docs/ci/action-map-pytest-filter
+#           .patch.md is applied).
 set -uo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"

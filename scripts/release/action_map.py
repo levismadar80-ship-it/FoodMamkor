@@ -103,17 +103,21 @@ DRIFT
   different score. `--check --strict` is the byte-exact form. Regenerate with
   `--write` whenever it fails.
   Two more checks run on the COMMITTED doc, in every mode that checks:
+    - every citation in the API and Pages tables must still show what its
+      cell claims FOR ITS ROW (verify_citations): a call resolving to that
+      row's METHOD path (asserting success, for `covered`), a 401/403 on such
+      a call, an e2e-mock `.route(` whose glob matches, a `goto` of that page;
     - its sha256 must equal docs/release/action-map.sha256, which only --write
-      writes: a hand edit of any cell (GAP → covered) goes red;
-    - every `covered` citation must still hold what it claims (an HTTP call,
-      a 401/403 assertion, a `.goto(`): a citation that line drift alone made
-      stale goes red even though the masked compare is equal.
-  TIERS. pytest runs only for some paths, so the checks that need no app import
-  (manifest, citations, «Pages», tool ids, audit rows) also run on EVERY PR as
-  scripts/checks/action-map-drift-guard.sh in Repo guards. The full compare,
-  route table included, is tests/test_action_map_complete.py in the pytest job;
-  docs/ci/action-map-pytest-filter.patch.md (staged for Sapir) widens the paths
-  that trigger it.
+      writes. This catches ACCIDENTAL hand edits only — anyone can re-sign.
+  TIERS. pytest runs only for some paths, so scripts/checks/action-map-drift-
+  guard.sh runs `--check-static` on EVERY PR (Repo guards): stdlib only, it
+  regenerates the whole doc with the route table READ FROM THE DOC (order,
+  method, path, handler, actor, flags) instead of the app, recomputes every
+  other cell — tools, pages, state-machine rows, §B.3 rows, totals, top gaps
+  included — and reports each differing line. Only the route table itself
+  against the app needs the full tier: tests/test_action_map_complete.py
+  (pytest today; a light job once docs/ci/action-map-pytest-filter.patch.md
+  is applied).
 """
 
 from __future__ import annotations
@@ -150,6 +154,7 @@ SCAN_EXCLUDE = {"tests/test_action_map_complete.py"}
 MUTATIONS = {"POST", "PUT", "PATCH", "DELETE"}
 HTTP_METHODS = {"get", "post", "put", "patch", "delete", "head", "options"}
 NEG_WINDOW = 8
+FOLLOWUP_WINDOW = 12
 HELPER_HOPS = 6  # audit site → handler: helper calls followed inside one module
 DRIFT_TOLERANCE = 25  # lines; see ModuleMap.routes_for
 GAP = "GAP"
@@ -186,17 +191,41 @@ VISIBILITY_PATH_RE = re.compile(
 )
 # Who-can-do-what changes: role grants, blocks, anything on /admin/users/.
 PRIVILEGE_PATH_RE = re.compile(r"/role\b|/block\b|^/admin/users/")
-NOTIFY_SRC_RE = re.compile(
-    r"send_\w*email|send_\w*whatsapp|\bemail\.\w+\(|whatsapp\w*\.\w+\(|"
-    r"send_template|notify_\w+\(|_notify\w*\(|send_\w*mail\("
+# A route "sends" when its handler calls — directly, or through up to
+# HELPER_HOPS same-module helpers — a name imported from one of the app's
+# email / WhatsApp / push / notification service modules. Anchored on those
+# modules, not on a word: `User.email.ilike(` and `email.lower()` send nothing.
+NOTIFY_MODULE_RE = re.compile(
+    r"^app\.services\.(?!.*(?:branding|templates))\w*(?:email|whatsapp|notif|mail|push|digest|nudge)\w*$"
 )
+STATUS_ANY_RE = re.compile(r"status_code\s*(?:==|!=|\bin\b)|\.is_success\b|\.ok\b")
 ERR_ASSERT_RE = re.compile(
     r"(?:assert|status_code|==|\bin\b).*\b[45]\d\d\b|HTTP_[45]\d\d"
 )
-NEG_ASSERT_RE = re.compile(r"(?:assert|status_code|==|\bin\b).*\b40[13]\b|HTTP_40[13]")
+
+
+def _status_assert_re(values: str) -> re.Pattern:
+    r"""`status_code == V` or `status_code in (V, V…)` where EVERY value is one
+    of `values` (a regex over a number, optionally `status.HTTP_<n>_…`). A
+    `!=`, a mixed tuple such as `in (200, 403)`, a `range(200)` or a message
+    string ("expected 200") never matches. `\s` spans newlines, so a
+    multi-line `assert (\n r.status_code\n == 403\n)` still matches."""
+    v = r"(?:status\.)?(?:HTTP_)?(?:" + values + r")(?:_[A-Z_]+)?\b"
+    return re.compile(
+        r"status_code\s*==\s*"
+        + v
+        + r"|status_code\s+in\s*[\(\[\{]\s*"
+        + v
+        + r"(?:\s*,\s*"
+        + v
+        + r")*\s*,?\s*[\)\]\}]"
+    )
+
+
+NEG_ASSERT_RE = _status_assert_re(r"40[13]")
 POS_ASSERT_RE = re.compile(
-    r"(?:assert|status_code|==|\bin\b).*\b(?:20\d|30[1-8])\b|HTTP_(?:20\d|30[1-8])|"
-    r"\.is_success\b|raise_for_status\(|\bassert\s+\w+\.ok\b"
+    _status_assert_re(r"2\d\d|30[1-8]").pattern
+    + r"|\.is_success\b|raise_for_status\(|\bassert\s+\w+\.ok\b"
 )
 CLOCK_RE = re.compile(
     r"israel_days_ago|setattr\([^)]*(?:israel_today|israel_now|_now|utcnow|"
@@ -260,6 +289,8 @@ class Route:
     source: str = ""
     regex: re.Pattern | None = None
     internal_reason: str | None = None
+    notifies: bool = False
+    order: int = 0  # registration order — the doc's `#` column
 
     @property
     def key(self) -> str:
@@ -315,6 +346,35 @@ def _iter_api_routes(app):
                     )
 
 
+@functools.lru_cache(maxsize=None)
+def notifying_functions(module: str) -> frozenset[str]:
+    """Top-level functions of backend/app/routers/<module>.py that send a
+    notification, directly or via same-module helpers. Stdlib only."""
+    path = ROUTERS_DIR / f"{module}.py"
+    if not path.is_file():
+        return frozenset()
+    tree = ast.parse(path.read_text(encoding="utf-8"))
+    senders: set[str] = set()  # imported callables / module aliases
+    for node in _nodes(tree):
+        if isinstance(node, ast.ImportFrom) and node.module:
+            if NOTIFY_MODULE_RE.match(node.module):
+                senders |= {a.asname or a.name for a in node.names}
+            elif node.module == "app.services":
+                senders |= {
+                    a.asname or a.name
+                    for a in node.names
+                    if NOTIFY_MODULE_RE.match(f"app.services.{a.name}")
+                }
+    refs: dict[str, set[str]] = {}
+    for node in tree.body:
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            refs[node.name] = {n.id for n in ast.walk(node) if isinstance(n, ast.Name)}
+    out = {f for f, names in refs.items() if names & senders}
+    for _ in range(HELPER_HOPS):
+        out |= {f for f, names in refs.items() if names & out}
+    return frozenset(out)
+
+
 def classify_actor(deps: frozenset[str], source: str) -> tuple[str, str, tuple]:
     flags = []
     if "require_rescue_enabled" in deps:
@@ -368,6 +428,8 @@ def collect_routes(app) -> list[Route]:
                 source=source,
                 regex=path_regex(path),
                 internal_reason=INTERNAL_ROUTES.get(path),
+                notifies=fn.__name__ in notifying_functions(module),
+                order=len(routes) + 1,
             )
         )
     return routes
@@ -423,9 +485,20 @@ class Call:
     # (`return client.put(...)`), the assertions live at the helper's call
     # sites: their windows, judged like this call's own.
     outer_windows: list[str] = field(default_factory=list)
+    # The source of the statement holding the call (for `.json()` chaining).
+    stmt: str = ""
     # First line of the simple statement holding the call — `assert (` may
     # open on the line above `client.get(...)`. The window starts here.
     wstart: int = 0
+    # The call is the value of a `return` (a helper handing the response to
+    # its caller): only then do its caller's windows count (outer_windows).
+    in_return: bool = False
+    # `r = client.post(...)` → "r"; "" when the response is not bound.
+    var: str = ""
+    # Up to FOLLOWUP_WINDOW lines after the call, cut at the next mutating
+    # client call and at the function end: where `db.refresh(x)` / a re-read
+    # GET and their assertions live when the call itself is not asserted.
+    after: str = ""
 
 
 @dataclass
@@ -507,13 +580,65 @@ def _class_envs(
 ) -> list[tuple[int, int, dict[str, str]]]:
     """(start, end, env) per class: its string attributes as `self.X`."""
     out = []
-    for node in ast.walk(tree):
+    for node in _nodes(tree):
         if isinstance(node, ast.ClassDef):
             cls_env = _assign_env(node.body, env)
             extra = {f"self.{k}": v for k, v in cls_env.items() if k not in env}
             extra.update({f"{node.name}.{k[5:]}": v for k, v in extra.items()})
             out.append((node.lineno, node.end_lineno, {**env, **extra}))
     return out
+
+
+PARAM_PRODUCT_CAP = 64
+
+
+def _parametrize_rows(fn: ast.AST, env: dict[str, str]) -> list[dict[str, str]]:
+    """`@pytest.mark.parametrize("path", ["/a", "/b"])` (and "m,p" tuples,
+    `pytest.param(...)`, stacked decorators) → one env per case, string
+    values only. A test calling `client.post(path)` then counts for each."""
+    rows: list[dict[str, str]] = [{}]
+    for dec in getattr(fn, "decorator_list", []):
+        if not (
+            isinstance(dec, ast.Call)
+            and isinstance(dec.func, ast.Attribute)
+            and dec.func.attr == "parametrize"
+            and len(dec.args) >= 2
+        ):
+            continue
+        names_node, values_node = dec.args[0], dec.args[1]
+        if isinstance(names_node, ast.Constant) and isinstance(names_node.value, str):
+            names = [n.strip() for n in names_node.value.split(",") if n.strip()]
+        elif isinstance(names_node, (ast.List, ast.Tuple)):
+            names = [e.value for e in names_node.elts if isinstance(e, ast.Constant)]
+        else:
+            continue
+        if isinstance(values_node, ast.Name):
+            continue  # a module table — _table_rows' business, not this one
+        if not isinstance(values_node, (ast.List, ast.Tuple)):
+            continue
+        cases = []
+        for v in values_node.elts:
+            if (
+                isinstance(v, ast.Call)
+                and isinstance(v.func, ast.Attribute)
+                and v.func.attr == "param"
+            ):
+                vals = v.args
+            elif len(names) == 1:
+                vals = [v]
+            elif isinstance(v, (ast.Tuple, ast.List)):
+                vals = v.elts
+            else:
+                continue
+            case = {}
+            for n, node in zip(names, vals):
+                sv = _eval_str(node, env)
+                if sv is not None:
+                    case[n] = sv
+            cases.append(case)
+        if cases:
+            rows = [{**a, **b} for a in rows for b in cases][:PARAM_PRODUCT_CAP]
+    return rows
 
 
 def _assign_env(body, env: dict[str, str]) -> dict[str, str]:
@@ -546,19 +671,42 @@ def normalise_path(raw: str) -> str | None:
 
 def _function_spans(tree: ast.AST) -> list[tuple[int, int, str, ast.AST]]:
     spans = []
-    for node in ast.walk(tree):
+    for node in _nodes(tree):
         if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
             start = min([d.lineno for d in node.decorator_list] + [node.lineno])
             spans.append((start, node.end_lineno, node.name, node))
     return spans
 
 
+_SPAN_INDEX: dict[int, list] = {}
+_NODES: dict[int, tuple] = {}
+
+
+def _nodes(tree: ast.AST) -> list[ast.AST]:
+    """Every node of `tree`, walked ONCE and reused (the index used to walk
+    each test file seven times; that walk was most of the static tier)."""
+    got = _NODES.get(id(tree))
+    if got is None or got[0] is not tree:
+        got = (tree, list(ast.walk(tree)))
+        _NODES[id(tree)] = got
+    return got[1]
+
+
 def _innermost(spans, line: int):
-    best = None
-    for s in spans:
-        if s[0] <= line <= s[1] and (best is None or s[0] >= best[0]):
-            best = s
-    return best
+    """Innermost function span holding `line`. Spans sorted by start and
+    painted onto a per-line array once per span list (nested spans start
+    later, so they overwrite their parent) — O(lines), not O(nodes × spans)."""
+    idx = _SPAN_INDEX.get(id(spans))
+    if idx is None or idx[0] is not spans:
+        top = max((s[1] for s in spans), default=0)
+        arr = [None] * (top + 2)
+        for sp in sorted(spans, key=lambda x: (x[0], -x[1])):
+            for ln in range(sp[0], sp[1] + 1):
+                arr[ln] = sp
+        idx = (spans, arr)
+        _SPAN_INDEX[id(spans)] = idx
+    arr = idx[1]
+    return arr[line] if 0 <= line < len(arr) else None
 
 
 @dataclass
@@ -569,11 +717,45 @@ class PytestIndex:
     texts: dict[str, list[str]]
 
 
-DYNAMIC_CALL_RE = re.compile(
-    r"getattr\(\s*[\w.]*client\w*\s*,\s*[a-z_]\w*\s*\)"  # getattr(client, method)(...)
-    r"|[\w.]*client\w*\.request\(\s*[a-z_]\w*\s*,\s*[a-z_]\w*"  # client.request(m, p)
-    r"|\b\w+\(\s*[\w.]*client\w*\s*,\s*[a-z_]\w*\s*,\s*[a-z_]\w*"  # _call(client, m, p)
-)
+_GETATTR_RE = re.compile(r"getattr\(\s*[\w.]*client\w*\s*,\s*(\w+)\s*\)")
+_REQUEST_RE = re.compile(r"[\w.]*client\w*\.request\(\s*(\w+)\s*,\s*(\w+)")
+_HELPER_CALL_RE = re.compile(r"\b(\w+)\(\s*[\w.]*client\w*\s*,\s*(\w+)\s*,\s*(\w+)")
+
+
+def _bound_names(fn: ast.AST, owner: str) -> set[str]:
+    """Names a function binds FROM the table `owner`: `for m, p in OWNER`
+    targets, and `@pytest.mark.parametrize("m,p", OWNER)` argnames."""
+    names: set[str] = set()
+    for n in ast.walk(fn):
+        if isinstance(n, (ast.For, ast.comprehension)) and isinstance(n.iter, ast.Name):
+            if n.iter.id == owner:
+                names |= {e.id for e in ast.walk(n.target) if isinstance(e, ast.Name)}
+    for dec in getattr(fn, "decorator_list", []):
+        if (
+            isinstance(dec, ast.Call)
+            and isinstance(dec.func, ast.Attribute)
+            and dec.func.attr == "parametrize"
+            and len(dec.args) >= 2
+            and isinstance(dec.args[1], ast.Name)
+            and dec.args[1].id == owner
+            and isinstance(dec.args[0], ast.Constant)
+        ):
+            names |= {x.strip() for x in str(dec.args[0].value).split(",")}
+    return names
+
+
+def _drives_requests(src: str, bound: set[str], dyn_helpers: set[str]) -> bool:
+    """The consumer makes a request whose method AND path come from the table:
+    `getattr(client, m)(p)`, `client.request(m, p)`, or a same-file helper
+    that itself does one of those, called as `helper(client, m, p)`."""
+    if any(m.group(1) in bound for m in _GETATTR_RE.finditer(src)):
+        return True
+    if any({m.group(1), m.group(2)} <= bound for m in _REQUEST_RE.finditer(src)):
+        return True
+    return any(
+        m.group(1) in dyn_helpers and {m.group(2), m.group(3)} <= bound
+        for m in _HELPER_CALL_RE.finditer(src)
+    )
 
 
 def _table_rows(fname, tree, lines, spans, func_envs, base_env) -> list[Call]:
@@ -584,9 +766,23 @@ def _table_rows(fname, tree, lines, spans, func_envs, base_env) -> list[Call]:
     for stmt in tree.body:
         if isinstance(stmt, ast.Assign) and isinstance(stmt.targets[0], ast.Name):
             owners.append((stmt.lineno, stmt.end_lineno, stmt.targets[0].id))
+    dyn_helpers = {
+        sp[2]
+        for sp in spans
+        if _GETATTR_RE.search("\n".join(lines[sp[0] - 1 : sp[1]]))
+        or _REQUEST_RE.search("\n".join(lines[sp[0] - 1 : sp[1]]))
+    }
     out = []
-    for node in ast.walk(tree):
+    for node in _nodes(tree):
         if not isinstance(node, (ast.Tuple, ast.List)) or len(node.elts) < 2:
+            continue
+        head = node.elts[0]
+        # cheap pre-filter: a table row starts with a method string
+        if not (
+            isinstance(head, ast.Constant)
+            and isinstance(head.value, str)
+            and head.value.lower() in HTTP_METHODS
+        ):
             continue
         span = _innermost(spans, node.lineno)
         env = func_envs.get(span[0]) if span else base_env(node.lineno)
@@ -598,7 +794,18 @@ def _table_rows(fname, tree, lines, spans, func_envs, base_env) -> list[Call]:
         if path is None:
             continue
         if span:
-            consumers = [span]
+            # a table inside a function: its owner is the assignment holding it
+            owner = next(
+                (
+                    a.targets[0].id
+                    for a in ast.walk(span[3])
+                    if isinstance(a, ast.Assign)
+                    and isinstance(a.targets[0], ast.Name)
+                    and a.lineno <= node.lineno <= (a.end_lineno or a.lineno)
+                ),
+                None,
+            )
+            consumers = [span] if owner else []
         else:
             owner = next((o[2] for o in owners if o[0] <= node.lineno <= o[1]), None)
             if owner is None:
@@ -607,14 +814,19 @@ def _table_rows(fname, tree, lines, spans, func_envs, base_env) -> list[Call]:
             consumers = [
                 sp for sp in spans if rx.search("\n".join(lines[sp[0] - 1 : sp[1]]))
             ]
-        # The table must actually DRIVE a request: a consumer whose client call
-        # takes the method / path from a variable. A table that is only diffed
-        # against an inventory (test_meh1979's DELIBERATELY_UNLIMITED) is not a
-        # request to that route.
+        # The table must actually DRIVE a request with ITS values: a consumer
+        # whose dynamic call takes method and path from names bound by
+        # iterating / parametrizing over this very table. A table that is only
+        # diffed against an inventory (test_meh1979's DELIBERATELY_UNLIMITED),
+        # or a consumer that calls an unrelated helper, is not a request.
         consumers = [
             sp
             for sp in consumers
-            if DYNAMIC_CALL_RE.search("\n".join(lines[sp[0] - 1 : sp[1]]))
+            if _drives_requests(
+                "\n".join(lines[sp[0] - 1 : sp[1]]),
+                _bound_names(sp[3], owner),
+                dyn_helpers,
+            )
         ]
         if not consumers:
             continue
@@ -671,15 +883,25 @@ def build_pytest_index(
             inner = [c for c in class_envs if c[0] <= line <= c[1]]
             return max(inner, key=lambda c: c[0])[2] if inner else module_env
 
-        func_envs = {s[0]: _assign_env(ast.walk(s[3]), _base_env(s[0])) for s in spans}
+        assigns = sorted(
+            (n for n in _nodes(tree) if isinstance(n, (ast.Assign, ast.AnnAssign))),
+            key=lambda n: n.lineno,
+        )
+        func_envs = {
+            s[0]: _assign_env(
+                [a for a in assigns if s[0] <= a.lineno <= s[1]], _base_env(s[0])
+            )
+            for s in spans
+        }
+        param_rows = {s[0]: _parametrize_rows(s[3], func_envs[s[0]]) for s in spans}
         in_fstring = {
             id(v)
-            for n in ast.walk(tree)
+            for n in _nodes(tree)
             if isinstance(n, ast.JoinedStr)
             for v in n.values
         }
         file_calls: list[Call] = []
-        for node in ast.walk(tree):
+        for node in _nodes(tree):
             if (
                 isinstance(node, ast.Constant)
                 and isinstance(node.value, str)
@@ -697,45 +919,49 @@ def build_pytest_index(
                 continue
             span = _innermost(spans, node.lineno)
             env = func_envs.get(span[0], module_env) if span else _base_env(node.lineno)
-            if attr in HTTP_METHODS and node.args:
-                method, arg = attr.upper(), node.args[0]
-            elif attr == "request" and len(node.args) >= 2:
-                m = _eval_str(node.args[0], env)
-                if not m or m.lower() not in HTTP_METHODS:
+            seen = set()
+            for row in param_rows.get(span[0], [{}]) if span else [{}]:
+                env_row = {**env, **row}
+                if attr in HTTP_METHODS and node.args:
+                    method, arg = attr.upper(), node.args[0]
+                elif attr == "request" and len(node.args) >= 2:
+                    m = _eval_str(node.args[0], env_row)
+                    if not m or m.lower() not in HTTP_METHODS:
+                        continue
+                    method, arg = m.upper(), node.args[1]
+                else:
                     continue
-                method, arg = m.upper(), node.args[1]
-            else:
-                continue
-            raw = _eval_str(arg, env)
-            if raw is None:
-                continue
-            path = normalise_path(raw)
-            if path is None:
-                continue
-            file_calls.append(
-                Call(
-                    file=fname,
-                    line=node.lineno,
-                    end=node.end_lineno or node.lineno,
-                    method=method,
-                    path=path,
-                    func_name=span[2] if span else "<module>",
-                    func_start=span[0] if span else 0,
-                    func_end=span[1] if span else 0,
-                    actor=next(
-                        (
-                            ast.unparse(k.value)
-                            for k in node.keywords
-                            if k.arg == "headers"
+                raw = _eval_str(arg, env_row)
+                if raw is None:
+                    continue
+                path = normalise_path(raw)
+                if path is None or (method, path) in seen:
+                    continue
+                seen.add((method, path))
+                file_calls.append(
+                    Call(
+                        file=fname,
+                        line=node.lineno,
+                        end=node.end_lineno or node.lineno,
+                        method=method,
+                        path=path,
+                        func_name=span[2] if span else "<module>",
+                        func_start=span[0] if span else 0,
+                        func_end=span[1] if span else 0,
+                        actor=next(
+                            (
+                                ast.unparse(k.value)
+                                for k in node.keywords
+                                if k.arg == "headers"
+                            ),
+                            "",
                         ),
-                        "",
-                    ),
+                    )
                 )
-            )
         file_calls.sort(key=lambda c: (c.line, c.method, c.path))
         simple = [
-            (n.lineno, n.end_lineno or n.lineno)
-            for n in ast.walk(tree)
+            (n.lineno, n.end_lineno or n.lineno, n)
+            for n in _nodes(tree)
             if isinstance(
                 n,
                 (
@@ -749,8 +975,31 @@ def build_pytest_index(
             )
         ]
         for c in file_calls:
-            starts = [a for a, b in simple if a <= c.line <= b]
-            c.wstart = max(starts) if starts else c.line
+            holders = [(a, n) for a, b, n in simple if a <= c.line <= b]
+            if holders:
+                c.wstart, stmt = max(holders, key=lambda h: h[0])
+                c.in_return = isinstance(stmt, ast.Return)
+                c.stmt = "\n".join(
+                    lines[stmt.lineno - 1 : stmt.end_lineno or stmt.lineno]
+                )
+                if (
+                    isinstance(stmt, ast.Assign)
+                    and len(stmt.targets) == 1
+                    and isinstance(stmt.targets[0], ast.Name)
+                ):
+                    c.var = stmt.targets[0].id
+            else:
+                c.wstart = c.line
+            # the follow-up: past the call, up to the next MUTATING call
+            stop = c.end + FOLLOWUP_WINDOW
+            if c.func_end:
+                stop = min(stop, c.func_end)
+            nxt = [
+                d.line for d in file_calls if d.line > c.end and d.method in MUTATIONS
+            ]
+            if nxt:
+                stop = min(stop, min(nxt) - 1)
+            c.after = "\n".join(lines[c.end : max(stop, c.end)])
         for i, c in enumerate(file_calls):
             stop = c.end + NEG_WINDOW
             if c.func_end:
@@ -893,6 +1142,7 @@ def _strip_locale(path: str) -> list[str]:
 class E2EIndex:
     gotos: list[tuple[str, int, str, bool]]  # file, line, path, guest-redirect?
     mocks: list[tuple[str, int, re.Pattern]]  # file, line, url regex
+    files: list[str] = field(default_factory=list)
 
 
 def _glob_to_regex(glob: str) -> re.Pattern | None:
@@ -983,7 +1233,7 @@ def build_e2e_index(spec_files: list[Path] | None = None) -> E2EIndex:
                 rx = _regex_literal_to_regex(tok)
             if rx is not None:
                 mocks.append((r, line, rx))
-    return E2EIndex(gotos, mocks)
+    return E2EIndex(gotos, mocks, [rel(f) for f in files])
 
 
 @dataclass
@@ -996,10 +1246,17 @@ def _strip_ext(p: str) -> str:
     return re.sub(r"\.(jsx?|tsx?|mjs)$", "", p)
 
 
-def build_vitest_index(test_dir: Path = VITEST_DIR) -> VitestIndex:
+def build_vitest_index_for(files: list[Path]) -> VitestIndex:
+    return build_vitest_index(files=files)
+
+
+def build_vitest_index(
+    test_dir: Path = VITEST_DIR, files: list[Path] | None = None
+) -> VitestIndex:
     imports: dict[str, list[tuple[str, int]]] = {}
     texts: dict[str, str] = {}
-    files = tracked_under(test_dir, r"\.test\.(jsx?|tsx?)$")
+    if files is None:
+        files = tracked_under(test_dir, r"\.test\.(jsx?|tsx?)$")
     spec_re = re.compile(
         r"(?:\bfrom\s+|\bimport\s*\(\s*|\brequire\s*\(\s*|^\s*import\s+)[\"']([^\"']+)[\"']",
         re.M,
@@ -1087,26 +1344,64 @@ class Evidence:
 
 
 def _is_refusal(c: Call) -> bool:
-    return any(NEG_ASSERT_RE.search(ln) for ln in c.window.splitlines())
+    return NEG_ASSERT_RE.search(c.window) is not None
 
 
-def _window_succeeds(win: str) -> bool:
-    """A window evidences the SUCCESS path when it asserts a 2xx/3xx, or when
-    it asserts on the response body (`.json()`) and asserts no 4xx/5xx — a
-    body assertion on an error response would not hold."""
+_ASSERT_LINE_RE = re.compile(r"^\s*assert\b.*$", re.M)
+
+
+def _body_succeeds(win: str, var: str, chained: bool) -> bool:
+    """Success shown by the response BODY: an assert that reads this call's
+    `.json()` (chained on the call, or through the variable it was bound to),
+    no assertion of a 4xx/5xx, and no assertion about an error `detail`."""
+    if ERR_ASSERT_RE.search(win):
+        return False
+    asserts = _ASSERT_LINE_RE.findall(win)
+    if any(re.search(r"[\"']detail[\"']", a) for a in asserts):
+        return False
+    if chained:
+        return bool(asserts)
+    if var:
+        names = {var}
+        # `body = r.json()` then `assert body…`
+        for m in re.finditer(
+            r"^\s*(\w+)\s*=\s*" + re.escape(var) + r"\.json\(\)", win, re.M
+        ):
+            names.add(m.group(1))
+        return any(
+            re.search(r"\b" + re.escape(n) + r"\b", a) for a in asserts for n in names
+        ) and (f"{var}.json()" in win)
+    return False
+
+
+def _followup_succeeds(c: Call) -> bool:
+    """An unasserted mutation whose effect the test reads back: `db.refresh(x)`
+    or a GET, followed by an `assert`, with no 4xx/5xx asserted anywhere in
+    the call's window or the follow-up (tests/test_report_lifecycle.py's
+    dismiss, tests/test_outreach_prefill_edge_cases.py's PATCH)."""
+    if c.method not in MUTATIONS or STATUS_ANY_RE.search(c.window):
+        return False
+    if ERR_ASSERT_RE.search(c.window) or ERR_ASSERT_RE.search(c.after):
+        return False
+    lines = c.after.splitlines()
+    for i, ln in enumerate(lines):
+        if re.search(r"db\.refresh\(|\bclient\w*\.get\(", ln):
+            # the read itself inside an assert, or an assert after it
+            return any(re.match(r"\s*assert\b", x) for x in lines[i:])
+    return False
+
+
+def _window_succeeds(c: Call, win: str) -> bool:
     if POS_ASSERT_RE.search(win):
         return True
-    return (
-        ".json()" in win
-        and re.search(r"^\s*assert\b", win, re.M) is not None
-        and not ERR_ASSERT_RE.search(win)
-    )
+    return _body_succeeds(win, c.var, chained=".json()" in c.stmt)
 
 
 def _call_succeeds(c: Call) -> bool:
-    return _window_succeeds(c.window) or any(
-        _window_succeeds(w) for w in c.outer_windows
-    )
+    if _window_succeeds(c, c.window) or _followup_succeeds(c):
+        return True
+    # A helper that RETURNS the response: judged at its call sites.
+    return c.in_return and any(_window_succeeds(c, w) for w in c.outer_windows)
 
 
 def route_positive(ev: Evidence, r: Route) -> Cell:
@@ -1154,11 +1449,12 @@ def route_negative(ev: Evidence, r: Route) -> Cell:
     if not r.gated:
         return Cell("n/a")
     for c in ev.calls_by_route.get(r.key, []):
-        for off, ln in enumerate(c.window.splitlines()):
-            if NEG_ASSERT_RE.search(ln):
-                if c.table:
-                    return Cell("covered", f"{c.file}:{c.line}", "table row")
-                return Cell("covered", f"{c.file}:{(c.wstart or c.line) + off}")
+        m = NEG_ASSERT_RE.search(c.window)
+        if m:
+            if c.table:
+                return Cell("covered", f"{c.file}:{c.line}", "table row")
+            off = c.window[: m.end()].count("\n")
+            return Cell("covered", f"{c.file}:{(c.wstart or c.line) + off}")
     return Cell(GAP)
 
 
@@ -1188,9 +1484,22 @@ def base_score(r: Route) -> tuple[int, list[str]]:
     if MONEY_PATH_RE.search(r.path) and r.is_mutation:
         score += 3
         why.append("money-like")
-    if NOTIFY_SRC_RE.search(r.source):
+    if r.notifies:
         score += 2
         why.append("sends email/WhatsApp")
+    if (
+        r.is_mutation
+        and r.actor != "admin"
+        and re.search(r"\{[^}]+\}", r.path)
+        and not re.search(r"/me(?:/|$)", r.path)
+    ):
+        # someone else's object, addressed by id: a stranger is refused with a
+        # 404 / ownership check that a 401/403 cell can never credit
+        score += 2
+        why.append("object id in path (IDOR-shaped)")
+    if r.path.startswith("/admin/settings") and r.is_mutation:
+        score += 3
+        why.append("site-wide settings")
     if VISIBILITY_PATH_RE.search(r.path) and r.is_mutation:
         score += 2
         why.append("public visibility")
@@ -2152,6 +2461,7 @@ def build_extra_rows(ev: Evidence, route_rows: list[RouteRow]) -> list[ExtraRow]
 
 @dataclass
 class ActionMap:
+    # (fields below) + the evidence it was built from, for citation checks
     route_rows: list[RouteRow]
     internal_rows: list[RouteRow]
     non_api: list[str]
@@ -2159,6 +2469,7 @@ class ActionMap:
     page_rows: list[PageRow]
     machine_rows: list[MachineRow]
     extra_rows: list[ExtraRow]
+    evidence: "Evidence | None" = None
 
 
 def load_app():
@@ -2176,9 +2487,16 @@ def generate(
     *,
     features_text: str | None = None,
     pytest_sources: dict[str, str] | None = None,
+    routes: list[Route] | None = None,
+    non_api: list[str] | None = None,
 ) -> ActionMap:
-    app = app if app is not None else load_app()
-    routes = collect_routes(app)
+    """`routes` + `non_api` (from `routes_from_doc`) replace the app import:
+    the static tier regenerates the whole doc with the route table taken from
+    the committed doc and everything else recomputed."""
+    if routes is None:
+        app = app if app is not None else load_app()
+        routes = collect_routes(app)
+        non_api = non_api_paths(app)
     ev = Evidence(
         routes=routes,
         pytest=build_pytest_index(sources=pytest_sources),
@@ -2203,11 +2521,12 @@ def generate(
     return ActionMap(
         route_rows,
         internal_rows,
-        non_api_paths(app),
+        non_api or [],
         tool_rows,
         page_rows,
         machine_rows,
         extra_rows,
+        ev,
     )
 
 
@@ -2345,29 +2664,30 @@ def render(am: ActionMap) -> str:
     )
     a("")
     a(
-        "| Method | Path | Handler | Actor | Positive | Negative (401/403) | E2E | Score |"
+        "| # | Method | Path | Handler | Actor | Positive | Negative (401/403) | E2E | Score |"
     )
-    a("|---|---|---|---|---|---|---|---|")
+    a("|---|---|---|---|---|---|---|---|---|")
     for rr in am.route_rows:
         r = rr.route
         actor = r.actor_label + (f" · {', '.join(r.flags)}" if r.flags else "")
         e2e = rr.e2e.render() if rr.e2e else "—"
         a(
-            f"| {','.join(r.methods)} | `{r.path}` | `{r.module}.{r.func}` | {actor} | {rr.pos.render()} | "
+            f"| {r.order} | {','.join(r.methods)} | `{r.path}` | `{r.module}.{r.func}` | {actor} | {rr.pos.render()} | "
             f"{rr.neg.render()} | {e2e} | {rr.score} |"
         )
     a("")
     a("### Internal routes (allowlisted — not actor actions)")
     a("")
-    a("| Method | Path | Reason | Test |")
-    a("|---|---|---|---|")
+    a("| # | Method | Path | Handler | Reason | Test |")
+    a("|---|---|---|---|---|---|")
     for rr in am.internal_rows:
+        r = rr.route
         a(
-            f"| {','.join(rr.route.methods)} | `{rr.route.path}` | {rr.route.internal_reason} | {rr.pos.render()} |"
+            f"| {r.order} | {','.join(r.methods)} | `{r.path}` | `{r.module}.{r.func}` | {r.internal_reason} | {rr.pos.render()} |"
         )
     for p in am.non_api:
         a(
-            f"| GET | `{p}` | {INTERNAL_NON_API_ROUTES.get(p, 'not an API route (NOT ALLOWLISTED)')} | n/a |"
+            f"| — | GET | `{p}` | — | {INTERNAL_NON_API_ROUTES.get(p, 'not an API route (NOT ALLOWLISTED)')} | n/a |"
         )
     a("")
     a("## Business tools (`frontend/lib/business-features.js`)")
@@ -2457,11 +2777,9 @@ def mask_lines(text: str) -> str:
 # ═════════════════════════════════════════════════════════════════════════════
 
 MANIFEST_PATH = DOC_PATH.with_suffix(".sha256")
-CALL_SHAPE_RE = re.compile(
-    r"\.(get|post|put|patch|delete|head|request)\(|^\s*\(?\s*[\"'](get|post|put|patch|delete|head)[\"']",
-    re.I,
+CITE_RE = re.compile(
+    r"^(?:(weak|e2e-mock) )?`((?:tests|frontend)/[^`:]+):(\d+)`(?: \((.+)\))?$"
 )
-CITE_RE = re.compile(r"^`((?:tests|frontend)/[^`:]+):(\d+)`(?: \((.+)\))?$")
 
 
 def doc_sha256(text: str) -> str:
@@ -2487,6 +2805,89 @@ def _sections(doc: str) -> dict[str, list[tuple[int, str]]]:
     return out
 
 
+def _route_table_rows(doc: str) -> list[tuple[int, list[str], bool]]:
+    """(doc line, cells, internal?) of the two route tables."""
+    out = []
+    for key, rows in _sections(doc).items():
+        if not key.startswith("API routes"):
+            continue
+        internal = False
+        for n, ln in rows:
+            if ln.startswith("### "):
+                internal = True
+            cells = _table_cells(ln) if ln.startswith("| ") else []
+            if cells and cells[0] not in ("#", "---") and not cells[0].startswith("-"):
+                out.append((n, cells, internal))
+    return out
+
+
+def routes_from_doc(doc: str) -> tuple[list[Route], list[str]]:
+    """The route table as the COMMITTED doc states it (order, methods, path,
+    handler, actor label, flags), rebuilt without importing the app. Handler
+    source and the notify flag are re-read from the router files. Only the
+    full tier checks these columns against the app itself."""
+    routes: list[Route] = []
+    non_api: list[str] = []
+    for _n, c, internal in _route_table_rows(doc):
+        path = c[2].strip("`")
+        if internal and c[0] == "—":
+            non_api.append(path)
+            continue
+        if not c[0].isdigit():
+            continue
+        module, func = c[3].strip("`").split(".", 1) if c[3] != "—" else ("", "")
+        if internal:
+            label, flags = "anonymous", ()
+        else:
+            label, _, fl = c[4].partition(" · ")
+            flags = tuple(x.strip() for x in fl.split(",")) if fl else ()
+        actor = next(
+            (a for a in ("admin", "business", "registered") if label.startswith(a)),
+            "anonymous",
+        )
+        routes.append(
+            Route(
+                methods=tuple(c[1].split(",")),
+                path=path,
+                module=module,
+                func=func,
+                endpoint=None,
+                deps=frozenset(),
+                actor=actor,
+                actor_label=label,
+                flags=flags,
+                source=_handler_source(module, func),
+                regex=path_regex(path),
+                internal_reason=INTERNAL_ROUTES.get(path) if internal else None,
+                notifies=func in notifying_functions(module),
+                order=int(c[0]),
+            )
+        )
+    routes.sort(key=lambda r: r.order)
+    return routes, non_api
+
+
+@functools.lru_cache(maxsize=None)
+def _module_tree(module: str) -> tuple[ast.Module | None, tuple[str, ...]]:
+    path = ROUTERS_DIR / f"{module}.py"
+    if not path.is_file():
+        return None, ()
+    text = path.read_text(encoding="utf-8")
+    return ast.parse(text), tuple(text.splitlines())
+
+
+def _handler_source(module: str, func: str) -> str:
+    tree, lines = _module_tree(module)
+    for node in getattr(tree, "body", []):
+        if (
+            isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
+            and node.name == func
+        ):
+            start = min([d.lineno for d in node.decorator_list] + [node.lineno])
+            return "\n".join(lines[start - 1 : node.end_lineno]) + "\n"
+    return ""
+
+
 def _line_of(path: str, n: int) -> str | None:
     p = ROOT / path
     if not p.is_file():
@@ -2495,47 +2896,209 @@ def _line_of(path: str, n: int) -> str | None:
     return lines[n - 1] if 1 <= n <= len(lines) else None
 
 
-def verify_citations(doc: str) -> list[str]:
-    """Every `covered` citation in the COMMITTED doc must still point at what
-    it claims: an API positive cell at an HTTP call (or an endpoint-table row),
-    a negative cell at a 401/403 assertion (or a table row), a page's E2E cell
-    at a `.goto(`. The masked drift check cannot see a citation that went stale
-    by line drift alone; this does. Returns `action-map.md:<line>: …` problems."""
+_PY_FILE_CACHE: dict[tuple[str, str], PytestIndex] = {}
+
+
+class _FileEvidence:
+    """Per-file indexes for citation checks, built with the same functions the
+    generator uses — so a citation is judged by the same matcher."""
+
+    def __init__(self, routes: list[Route], ev: "Evidence | None" = None):
+        self.routes = routes
+        self._py: dict[str, PytestIndex] = {}
+        self._e2e: dict[str, E2EIndex] = {}
+        self._resolved: dict[str, dict[str, list[Call]]] = {}
+        if ev is not None:  # slice the generator's own full indexes
+            for c in ev.pytest.calls:
+                self._py.setdefault(c.file, PytestIndex([], [], [], {})).calls.append(c)
+            for lit in ev.pytest.literals:
+                self._py.setdefault(
+                    lit[0], PytestIndex([], [], [], {})
+                ).literals.append(lit)
+            for f in ev.pytest.texts:
+                self._py.setdefault(f, PytestIndex([], [], [], {}))
+            for g in ev.e2e.gotos:
+                self._e2e.setdefault(g[0], E2EIndex([], [])).gotos.append(g)
+            for m in ev.e2e.mocks:
+                self._e2e.setdefault(m[0], E2EIndex([], [])).mocks.append(m)
+            for f in ev.e2e.files:
+                self._e2e.setdefault(f, E2EIndex([], []))
+
+    def py(self, f: str) -> PytestIndex:
+        if f not in self._py:
+            text = (ROOT / f).read_text(encoding="utf-8")
+            key = (f, hashlib.sha256(text.encode()).hexdigest())
+            if key not in _PY_FILE_CACHE:
+                _PY_FILE_CACHE[key] = build_pytest_index(sources={f: text})
+            self._py[f] = _PY_FILE_CACHE[key]
+        return self._py[f]
+
+    def e2e(self, f: str) -> E2EIndex:
+        if f not in self._e2e:
+            self._e2e[f] = build_e2e_index([ROOT / f])
+        return self._e2e[f]
+
+    def calls_to(self, f: str, key: str) -> list[Call]:
+        if f not in self._resolved:
+            by: dict[str, list[Call]] = {}
+            for c in self.py(f).calls:
+                r = resolve_route(self.routes, c.method, c.path)
+                if r is not None:
+                    by.setdefault(r.key, []).append(c)
+            self._resolved[f] = by
+        return self._resolved[f].get(key, [])
+
+
+def _check_route_cell(
+    fe: _FileEvidence, route: Route, kind: str, cell: str
+) -> str | None:
+    """None when the cited line still shows what the cell claims FOR THIS
+    ROUTE; otherwise the reason it does not."""
+    m = CITE_RE.match(cell)
+    if not m:
+        return None  # GAP / n/a / — : nothing cited
+    tag, path, line, note = (
+        m.group(1) or "",
+        m.group(2),
+        int(m.group(3)),
+        m.group(4) or "",
+    )
+    src = _line_of(path, line)
+    if src is None:
+        return "does not exist"
+    if tag == "e2e-mock":
+        if ".route(" not in src:
+            return "holds no `.route(`"
+        sample = re.sub(r"\{[^}]+\}", PLACEHOLDER, route.path)
+        if not any(
+            ln == line and rx.match(sample) for _f, ln, rx in fe.e2e(path).mocks
+        ):
+            return f"mocks no URL matching {route.path}"
+        return None
+    if not path.startswith("tests/"):
+        return "is not a pytest file"
+    if note == "path literal":
+        lits = [p for f, ln, p in fe.py(path).literals if ln == line]
+        return (
+            None
+            if any(route.regex.match(p) for p in lits)
+            else f"names no path of {route.key}"
+        )
+    if note == "name":
+        return (
+            None
+            if re.search(r"\b" + re.escape(route.func) + r"\b", src)
+            else f"does not name {route.func}"
+        )
+    calls = fe.calls_to(path, route.key)
+    if kind == "negative":
+        for c in calls:
+            if c.table and c.line == line and NEG_ASSERT_RE.search(c.window):
+                return None
+            mm = NEG_ASSERT_RE.search(c.window)
+            if mm and (c.wstart or c.line) + c.window[: mm.end()].count("\n") == line:
+                return None
+        return f"asserts no 401/403 on a call to {route.key}"
+    at = [c for c in calls if c.line == line]
+    if not at:
+        return f"holds no call to {route.key}"
+    if tag == "" and not any(_call_succeeds(c) for c in at):
+        return f"its call to {route.key} no longer asserts success"
+    return None
+
+
+def _check_page_cell(
+    fe: _FileEvidence, page: Page, pages: list[Page], kind: str, cell: str
+) -> str | None:
+    m = CITE_RE.match(cell)
+    if not m:
+        return None
+    tag, path, line, note = (
+        m.group(1) or "",
+        m.group(2),
+        int(m.group(3)),
+        m.group(4) or "",
+    )
+    src = _line_of(path, line)
+    if src is None:
+        return "does not exist"
+    if kind == "unit":
+        imp = build_vitest_index_for([ROOT / path]).imports.get(
+            _strip_ext(page.file), []
+        )
+        return (
+            None
+            if any(ln == line for _f, ln in imp)
+            else f"does not import {page.file}"
+        )
+    if ".goto(" not in src:
+        return "holds no `.goto(`"
+    for _f, ln, p, redirect in fe.e2e(path).gotos:
+        if ln != line:
+            continue
+        for variant in _strip_locale(p):
+            pg = resolve_page(pages, variant)
+            if pg is not None:
+                if pg.file == page.file and redirect == (
+                    note == "only a guest-redirect check"
+                ):
+                    return None
+                break
+    return f"opens no {page.route}" + (
+        " (or it is a guest redirect)" if tag == "" else ""
+    )
+
+
+def verify_citations(
+    doc: str, routes: list[Route] | None = None, ev: "Evidence | None" = None
+) -> list[str]:
+    """Every citation in the API and Pages tables of the COMMITTED doc must
+    still show what its cell claims, for ITS row: an API cell's line holds a
+    call that resolves to that row's METHOD path (and, for `covered`, asserts
+    success), a negative cell's line is a 401/403 assertion on such a call, an
+    e2e-mock line is a `.route(` whose glob matches the path, a page cell's
+    line opens that page. A citation to some other route's call, or one line
+    drift moved, fails. The other tables are checked by regeneration
+    (check_static) rather than per citation."""
+    if routes is None:
+        routes, _ = routes_from_doc(doc)
+    by_key = {r.key: r for r in routes}
+    fe = _FileEvidence(routes, ev)
+    pages = collect_pages()
+    by_route = {pg.route: pg for pg in pages}
     problems = []
     doc_rel = rel(DOC_PATH)
-    secs = _sections(doc)
-    checks = []  # (doc line, cell, kind)
-    for key, rows in secs.items():
-        if key.startswith("API routes"):
-            for n, ln in rows:
-                if ln.startswith("### "):
-                    break  # the internal table: different columns
-                cells = _table_cells(ln) if ln.startswith("| ") else []
-                if len(cells) == 8 and cells[0] not in ("Method", "---"):
-                    checks += [(n, cells[4], "call"), (n, cells[5], "refusal")]
-        elif key.startswith("Pages"):
-            for n, ln in rows:
-                cells = _table_cells(ln) if ln.startswith("| `") else []
-                if len(cells) == 4:
-                    checks.append((n, cells[1], "goto"))
-    for n, cell, kind in checks:
-        m = CITE_RE.match(cell)
-        if not m:
-            continue  # GAP / n/a / weak / e2e-mock — not a `covered` claim
-        path, line, note = m.group(1), int(m.group(2)), m.group(3) or ""
-        src = _line_of(path, line)
-        where = f"{doc_rel}:{n}: `{path}:{line}`"
-        if src is None:
-            problems.append(f"{where} does not exist")
-        elif kind == "call" and not CALL_SHAPE_RE.search(src):
-            problems.append(f"{where} holds no HTTP call: {src.strip()[:80]}")
-        elif kind == "refusal" and not (
-            re.search(r"\b40[13]\b|HTTP_40[13]", src)
-            or (note == "table row" and CALL_SHAPE_RE.search(src))
-        ):
-            problems.append(f"{where} asserts no 401/403: {src.strip()[:80]}")
-        elif kind == "goto" and ".goto(" not in src:
-            problems.append(f"{where} holds no .goto(: {src.strip()[:80]}")
+    for n, c, internal in _route_table_rows(doc):
+        if not c[0].isdigit():
+            continue
+        key = f"{c[1]} {c[2].strip('`')}"
+        route = by_key.get(key)
+        if route is None:
+            continue
+        cells = (
+            [("positive", c[5])]
+            if internal
+            else [("positive", c[5]), ("negative", c[6]), ("e2e", c[7])]
+        )
+        for kind, cell in cells:
+            why = _check_route_cell(fe, route, kind, cell)
+            if why:
+                problems.append(f"{doc_rel}:{n}: {key} — {cell} {why}")
+    for key, rows in _sections(doc).items():
+        if not key.startswith("Pages"):
+            continue
+        for n, ln in rows:
+            cells = _table_cells(ln) if ln.startswith("| `") else []
+            if len(cells) != 4:
+                continue
+            page = by_route.get(cells[0].strip("`"))
+            if page is None:
+                problems.append(f"{doc_rel}:{n}: page {cells[0]} does not exist")
+                continue
+            for kind, cell in (("e2e", cells[1]), ("unit", cells[2])):
+                why = _check_page_cell(fe, page, pages, kind, cell)
+                if why:
+                    problems.append(f"{doc_rel}:{n}: {page.route} — {cell} {why}")
     return problems
 
 
@@ -2545,68 +3108,57 @@ def check_manifest(doc: str) -> list[str]:
     want = MANIFEST_PATH.read_text(encoding="utf-8").split()[0]
     if want != doc_sha256(doc):
         return [
-            f"{rel(DOC_PATH)}:1: does not match {rel(MANIFEST_PATH)} — the doc was edited "
-            "by hand (or --write was not run); regenerate with action_map.py --write"
+            f"{rel(DOC_PATH)}:1: does not match {rel(MANIFEST_PATH)} — edited by hand, "
+            "or --write was not run; regenerate with action_map.py --write"
         ]
     return []
 
 
-def check_static() -> list[str]:
+def _differences(committed: str, fresh: str) -> list[tuple[str, int]]:
+    """(section, committed-doc line) for every line that differs from the
+    regeneration (line numbers of citations masked). Positional within a
+    section; a section whose length changed is reported at its first line."""
+    sa, sb = _sections(mask_lines(committed)), _sections(mask_lines(fresh))
+    out = []
+    for k in dict.fromkeys([*sa, *sb]):
+        a, b = sa.get(k, []), sb.get(k, [])
+        if [x for _, x in a] == [x for _, x in b]:
+            continue
+        if len(a) != len(b):
+            out.append((k, a[0][0] if a else 1))
+            continue
+        out += [(k, n) for (n, x), (_, y) in zip(a, b) if x != y]
+    return out
+
+
+def check_static(doc: str | None = None) -> list[str]:
     """The drift tier that needs no app import and no third-party package —
-    what the always-run `Repo guards` job can afford. Checks the committed doc
-    against: its manifest (hand edits), its own citations, a fresh «Pages»
-    section, the registry's tool ids, and the audit's rows."""
-    if not DOC_PATH.exists():
-        return [f"{rel(DOC_PATH)}:1: missing — run action_map.py --write"]
-    doc = DOC_PATH.read_text(encoding="utf-8")
-    problems = check_manifest(doc) + verify_citations(doc)
-    secs = _sections(doc)
+    what the always-run `Repo guards` job can afford.
 
-    ev = Evidence(
-        routes=[],
-        pytest=PytestIndex([], [], [], {}),
-        e2e=build_e2e_index(),
-        vitest=build_vitest_index(),
-    )
-    fresh_pages = render_pages(build_page_rows(ev, collect_pages()))
-    key = next((k for k in secs if k.startswith("Pages")), None)
-    committed_pages = (["## " + key] + [ln for _, ln in secs[key]]) if key else []
-    if mask_lines("\n".join(committed_pages).rstrip()) != mask_lines(
-        "\n".join(fresh_pages).rstrip()
-    ):
-        problems.append(
-            f"{rel(DOC_PATH)}:1: «Pages» section is stale (a page, spec or Vitest import changed)"
-        )
+    It REGENERATES THE WHOLE DOC with one input swapped: the route table
+    (order, method, path, handler, actor, flags) is read from the committed
+    doc instead of the app. Every other cell — positives, negatives, e2e-mock,
+    scores, tools, pages, state-machine rows, §B.3 rows, totals, top gaps — is
+    recomputed and compared (line numbers masked). Then the committed
+    citations are checked against their rows, and the manifest.
 
-    tools = [
-        t.id for t in parse_business_features(FEATURES_PATH.read_text(encoding="utf-8"))
-    ]
-    key = next((k for k in secs if k.startswith("Business tools")), None)
-    doc_tools = [
-        _table_cells(ln)[0].strip("`")
-        for _, ln in (secs[key] if key else [])
-        if ln.startswith("| `")
-    ]
-    if doc_tools != tools:
-        problems.append(
-            f"{rel(FEATURES_PATH)}:1: business tools differ from the doc "
-            f"(+{sorted(set(tools) - set(doc_tools))} -{sorted(set(doc_tools) - set(tools))})"
-        )
-
-    want = [
-        (str(n), _clean(tr), site_column(_refs(site)) or "—")
-        for n, _t, tr, site in audit_entries(AUDIT_PATH.read_text(encoding="utf-8"))
-    ]
-    key = next((k for k in secs if k.startswith("State machines")), None)
-    have = []
-    for _, ln in secs[key] if key else []:
-        cells = _table_cells(ln) if re.match(r"^\| \d+ \|", ln) else []
-        if len(cells) >= 3:
-            have.append((cells[0], cells[1], cells[2]))
-    if have != want:
-        problems.append(
-            f"{rel(AUDIT_PATH)}:1: audit rows differ from the doc (a section or transition changed)"
-        )
+    What only the full tier (pytest) can catch: a route added / removed /
+    re-gated in the app, i.e. the first five columns of the route tables."""
+    if doc is None:
+        if not DOC_PATH.exists():
+            return [f"{rel(DOC_PATH)}:1: missing — run action_map.py --write"]
+        doc = DOC_PATH.read_text(encoding="utf-8")
+    routes, non_api = routes_from_doc(doc)
+    if len(routes) < 200:
+        return [
+            f"{rel(DOC_PATH)}:1: only {len(routes)} routes read from the doc — its route table is broken"
+        ]
+    problems = check_manifest(doc)
+    am = generate(routes=routes, non_api=non_api)
+    fresh = render(am)
+    for sec, n in _differences(doc, fresh):
+        problems.append(f"{rel(DOC_PATH)}:{n}: «{sec}» differs from a regeneration")
+    problems += verify_citations(doc, routes, am.evidence)
     return problems
 
 
@@ -2632,50 +3184,98 @@ def summary_text(am: ActionMap) -> str:
     return "\n".join(out)
 
 
-def self_test_static() -> list[str]:
-    """Preflight for the static tier (scripts/checks contract): its checks
-    must be able to fail. Synthetic cases first, then anchors on real files."""
-    fails = []
-    real_line = None
-    # an anchor in the real corpus: some tests/ line holding a client call
-    for f in sorted(_tracked()):
-        if f.startswith("tests/") and f.endswith(".py"):
-            for i, ln in enumerate(
-                (ROOT / f).read_text(encoding="utf-8").splitlines(), 1
-            ):
-                if re.search(r"client\.post\(\s*\"/auth/login\"", ln):
-                    real_line = (f, i)
-                    break
-        if real_line:
-            break
-    if real_line is None:
-        return [
-            'self-test: no `client.post("/auth/login"` anywhere in tests/ — the anchor is gone'
-        ]
-    f, i = real_line
-    row = "| POST | `/auth/login` | `auth.login` | anonymous | `{cite}` | n/a | — | 9 |"
-    good = "## API routes\n\n" + row.format(cite=f"{f}:{i}") + "\n"
-    bad = "## API routes\n\n" + row.format(cite=f"{f}:{i + 100000}") + "\n"
-    off = "## API routes\n\n" + row.format(cite="tests/conftest.py:1") + "\n"
-    if verify_citations(good):
-        fails.append(f"self-test: a real call citation {f}:{i} was rejected")
-    if not verify_citations(bad):
-        fails.append("self-test: a citation past the end of its file was accepted")
-    if not verify_citations(off):
-        fails.append("self-test: a citation to a line with no HTTP call was accepted")
-    page = "## Pages (x)\n\n| `/` | `frontend/e2e/flows/01-home-load.spec.ts:1` | GAP | covered |\n"
-    if not verify_citations(page):
-        fails.append("self-test: a page citation to a line with no .goto( was accepted")
-    if check_manifest("not the committed doc") == []:
-        fails.append("self-test: the manifest accepted a different doc")
-    tools = parse_business_features(FEATURES_PATH.read_text(encoding="utf-8"))
-    if len(tools) < 40:
-        fails.append(
-            f"self-test: only {len(tools)} business tools parsed from the real registry"
+def self_test_static() -> tuple[list[str], int]:
+    """Preflight for the static tier (scripts/checks contract): its checks must
+    be able to fail. Returns (failures, number of cases RUN) — the count is
+    derived, never stated. Cases are anchored on real files where possible."""
+    fails: list[str] = []
+    ran = 0
+
+    def case(ok: bool, msg: str) -> None:
+        nonlocal ran
+        ran += 1
+        if not ok:
+            fails.append(f"self-test: {msg}")
+
+    # Anchor: the committed doc's own `covered` cell for POST /auth/login —
+    # a real success-asserting call in the real corpus.
+    real = None
+    if DOC_PATH.exists():
+        for _n, c, internal in _route_table_rows(DOC_PATH.read_text(encoding="utf-8")):
+            if not internal and c[1:3] == ["POST", "`/auth/login`"]:
+                m = CITE_RE.match(c[5])
+                if m and not m.group(1):
+                    real = (m.group(2), int(m.group(3)))
+    case(
+        real is not None,
+        "the committed doc has no `covered` POST /auth/login cell to anchor on",
+    )
+    if real is None:
+        return fails, ran
+    f, i = real
+
+    def doc(login_cite: str, resend_cite: str = "GAP", e2e: str = "—") -> str:
+        return (
+            "## API routes\n\n"
+            f"| 1 | POST | `/auth/login` | `auth.login` | anonymous | {login_cite} | n/a | {e2e} | 9 |\n"
+            f"| 2 | POST | `/auth/resend-verify` | `auth.resend_verify` | registered user | {resend_cite} | GAP | — | 15 |\n"
         )
-    if len(audit_entries(AUDIT_PATH.read_text(encoding="utf-8"))) < 9:
-        fails.append("self-test: fewer audit rows than audit sections")
-    return fails
+
+    d = doc(f"`{f}:{i}`")
+    routes, _ = routes_from_doc(d)
+    case(
+        [(r.key, r.actor, r.order) for r in routes]
+        == [
+            ("POST /auth/login", "anonymous", 1),
+            ("POST /auth/resend-verify", "registered", 2),
+        ],
+        "routes_from_doc misread a two-row table",
+    )
+    case(
+        verify_citations(d, routes) == [],
+        f"a real /auth/login citation {f}:{i} was rejected",
+    )
+    case(
+        verify_citations(doc(f"`{f}:{i}`", resend_cite=f"`{f}:{i}`"), routes) != [],
+        "a /auth/login call accepted as evidence for /auth/resend-verify (route-blind)",
+    )
+    case(
+        verify_citations(doc(f"`{f}:{i + 100000}`"), routes) != [],
+        "a past-the-end citation was accepted",
+    )
+    case(
+        verify_citations(doc("`tests/conftest.py:1`"), routes) != [],
+        "a citation to a non-call line was accepted",
+    )
+    case(
+        verify_citations(
+            doc(
+                f"`{f}:{i}`", e2e="e2e-mock `frontend/e2e/flows/01-home-load.spec.ts:1`"
+            ),
+            routes,
+        )
+        != [],
+        "an e2e-mock citation to a line with no `.route(` was accepted",
+    )
+    page = "## Pages (x)\n\n| `/` | `frontend/e2e/flows/01-home-load.spec.ts:1` | GAP | covered |\n"
+    case(
+        verify_citations(page, routes) != [],
+        "a page citation to a line with no `.goto(` was accepted",
+    )
+    case(
+        check_manifest("not the committed doc") != [],
+        "the manifest accepted a different doc",
+    )
+    tools = parse_business_features(FEATURES_PATH.read_text(encoding="utf-8"))
+    case(
+        len(tools) >= 40,
+        f"only {len(tools)} business tools parsed from the real registry",
+    )
+    case(
+        len(audit_entries(AUDIT_PATH.read_text(encoding="utf-8"))) >= 9,
+        "fewer audit rows than sections",
+    )
+    return fails, ran
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -2701,12 +3301,12 @@ def main(argv: list[str] | None = None) -> int:
     )
     args = ap.parse_args(argv)
     if args.self_test_static or args.check_static:
-        fails = self_test_static()
+        fails, ran = self_test_static()
         if fails:
             print("\n".join(fails), file=sys.stderr)
             return 1
         if args.self_test_static:
-            print("action-map static self-test: 7 cases passed")
+            print(f"action-map static self-test: {ran} cases passed")
             return 0
         problems = check_static()
         if problems:
@@ -2717,7 +3317,7 @@ def main(argv: list[str] | None = None) -> int:
             )
             return 1
         print(
-            f"{rel(DOC_PATH)}: static tier clean (manifest, citations, pages, tools, audit rows)"
+            f"{rel(DOC_PATH)}: static tier clean (manifest, full regeneration from the doc's route table, citations)"
         )
         return 0
     am = generate()
@@ -2736,7 +3336,12 @@ def main(argv: list[str] | None = None) -> int:
             if args.strict
             else mask_lines(committed) == mask_lines(text)
         )
-        problems = check_manifest(committed) + verify_citations(committed)
+        app_routes = sorted(
+            (r.route for r in am.route_rows + am.internal_rows), key=lambda r: r.order
+        )
+        problems = check_manifest(committed) + verify_citations(
+            committed, app_routes, am.evidence
+        )
         if not same:
             problems.append(f"{rel(DOC_PATH)}:1: stale — a fresh generation differs")
         if problems:
