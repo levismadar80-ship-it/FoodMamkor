@@ -337,6 +337,9 @@ self_test() {
   # with exit 1 — a `|| true` does not cover -u — leaving the databases behind
   # and turning an 11/11 into a red exit. Measured 03/09 with BASH_XTRACEFD.
   SELFTEST_SRC_DB="${DB_PREFIX}selftest_src"; SELFTEST_TGT_DB="${DB_PREFIX}selftest_tgt"
+  # Case (k) reads the source through a SELECT-only login role; it is
+  # cluster-wide, so it carries the prefix too and is dropped with the databases.
+  SELFTEST_RO_ROLE="${DB_PREFIX}selftest_ro"; SELFTEST_RO_PW="${DB_PREFIX}selftest_ro_pw"
   local src_db="$SELFTEST_SRC_DB" tgt_db="$SELFTEST_TGT_DB"
   local base="${ADMIN_URL%/*}"            # strip the trailing /dbname
   local src_url="$base/$src_db" tgt_url="$base/$tgt_db"
@@ -354,6 +357,7 @@ self_test() {
   drop_dbs() {   # reads the globals on purpose — see the note above
     admin "DROP DATABASE IF EXISTS \"$SELFTEST_SRC_DB\";" >/dev/null
     admin "DROP DATABASE IF EXISTS \"$SELFTEST_TGT_DB\";" >/dev/null
+    admin "DROP ROLE IF EXISTS \"$SELFTEST_RO_ROLE\";" >/dev/null   # after the databases: its grants live there
   }
   fresh_dbs() { drop_dbs; admin "CREATE DATABASE \"$src_db\";" >/dev/null; admin "CREATE DATABASE \"$tgt_db\";" >/dev/null; }
   sql_on() { psql "$1" -X -v ON_ERROR_STOP=1 -q -c "$2"; }
@@ -483,6 +487,72 @@ self_test() {
   out="$(bash "$0" --compare-only --source "$src_url" --target "$tgt_url" --expect-nonempty 'users" OR 1=1 --' 2>&1)"; rc=$?
   set -e
   check "--expect-nonempty with a NON-identifier is a PREFLIGHT error (exit 2, named)" 2 "$rc" "invalid table name in --expect-nonempty"
+
+  # (k) MEH-2912 — a source that is being WRITTEN TO while the drill runs. The
+  #     first real staging-drill run went red on producer_page_views (180347 →
+  #     180344) because live traffic landed between the dump and a source count
+  #     taken later. A `pg_dump` shim writes rows into the source just BEFORE
+  #     and just AFTER the real pg_dump, so both writes fall between the start
+  #     of the drill and the source count:
+  #       - counted live after the restore (the old drill): RED, the source has
+  #         7 more rows than the restored copy;
+  #       - counted first, dumped later without a shared snapshot: RED, the
+  #         pre-dump write is in the copy and not in the count;
+  #       - pg_dump ignoring --snapshot: RED for the same reason;
+  #       - counted and dumped in ONE snapshot: GREEN, neither write is in
+  #         either number.
+  #     The source is read through a SELECT-only, non-superuser role, the shape
+  #     of ci_backup_ro on staging, so pg_export_snapshot() + pg_dump
+  #     --snapshot are shown to need nothing more than that.
+  local ro_url hostpart ppv_before ppv_after ppv_copy shim_dir real_pg_dump
+  hostpart="${base##*@}"                  # host:port, whatever userinfo the admin URL carries
+  ro_url="${base%%://*}://$SELFTEST_RO_ROLE:$SELFTEST_RO_PW@$hostpart/$src_db"
+  admin "DROP DATABASE \"$tgt_db\";" >/dev/null
+  admin "CREATE DATABASE \"$tgt_db\";" >/dev/null
+  admin "CREATE ROLE \"$SELFTEST_RO_ROLE\" LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE PASSWORD '$SELFTEST_RO_PW';" >/dev/null
+  sql_on "$src_url" "GRANT CONNECT ON DATABASE \"$src_db\" TO \"$SELFTEST_RO_ROLE\";
+                     GRANT USAGE ON SCHEMA public TO \"$SELFTEST_RO_ROLE\";
+                     GRANT SELECT ON ALL TABLES IN SCHEMA public TO \"$SELFTEST_RO_ROLE\";
+                     GRANT SELECT ON ALL SEQUENCES IN SCHEMA public TO \"$SELFTEST_RO_ROLE\";"
+  # Control first: the role really is SELECT-only and not a superuser, or the
+  # green below would say nothing about ci_backup_ro.
+  set +e
+  out="$(psql "$ro_url" -X -v ON_ERROR_STOP=1 -tAc 'SELECT rolsuper FROM pg_roles WHERE rolname = current_user;' 2>&1)"; rc=$?
+  set -e
+  [ "$rc" -eq 0 ] && [ "$out" = "f" ] && rc=0 || rc=1
+  check "control: the (k) source role is NOT a superuser" 0 "$rc"
+  set +e
+  out="$(psql "$ro_url" -X -v ON_ERROR_STOP=1 -qc 'INSERT INTO "producer_page_views" (note) VALUES ($$ro$$);' 2>&1)"; rc=$?
+  set -e
+  check "control: the (k) source role cannot INSERT (SELECT-only)" 1 "$rc" "permission denied"
+
+  real_pg_dump="$(command -v pg_dump)"
+  shim_dir="$(mktemp -d)"
+  cat > "$shim_dir/pg_dump" <<'SHIM'
+#!/usr/bin/env bash
+# backup-restore-verify --self-test (k) shim: write to the source around the real pg_dump.
+set -euo pipefail
+psql "$MEH2912_WRITE_URL" -X -q -v ON_ERROR_STOP=1 -c "INSERT INTO \"producer_page_views\" (note) SELECT 'before-dump' FROM generate_series(1, 3);"
+"$MEH2912_REAL_PG_DUMP" "$@"
+psql "$MEH2912_WRITE_URL" -X -q -v ON_ERROR_STOP=1 -c "INSERT INTO \"producer_page_views\" (note) SELECT 'after-dump' FROM generate_series(1, 4);"
+SHIM
+  chmod +x "$shim_dir/pg_dump"
+  ppv_before="$(q "$src_url" 'SELECT COUNT(*) FROM "producer_page_views";')"
+  set +e
+  out="$(PATH="$shim_dir:$PATH" MEH2912_WRITE_URL="$src_url" MEH2912_REAL_PG_DUMP="$real_pg_dump" \
+          bash "$0" --source "$ro_url" --target "$tgt_url" 2>&1)"; rc=$?
+  set -e
+  rm -rf "$shim_dir"
+  check "rows WRITTEN to the source between the dump and the count are GREEN" 0 "$rc" "every row count matches"
+  # ...and the green is not a no-op shim: the 3 + 4 rows really landed in the
+  # source, and the copy holds the snapshot (neither write), not the live table.
+  ppv_after="$(q "$src_url" 'SELECT COUNT(*) FROM "producer_page_views";')"
+  ppv_copy="$(q "$tgt_url" 'SELECT COUNT(*) FROM "producer_page_views";')"
+  out="source before=$ppv_before after=$ppv_after restored=$ppv_copy"
+  [ "$ppv_after" -eq $((ppv_before + 7)) ] && rc=0 || rc=1
+  check "control: the shim really wrote 7 rows into the source ($out)" 0 "$rc"
+  [ "$ppv_copy" -eq "$ppv_before" ] && rc=0 || rc=1
+  check "control: the restored copy holds the snapshot, neither write ($out)" 0 "$rc"
 
   echo "  $pass/$total self-test cases behaved correctly"
   [ "$pass" -eq "$total" ]
