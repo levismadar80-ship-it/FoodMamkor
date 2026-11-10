@@ -11,9 +11,10 @@
  *           Prints each route's revalidate value. A prerendered route that is
  *           not in the list is printed (not failed) — add it to lock it in.
  * Runs:     as `postbuild` (npm runs it after `npm run build`), in CI only.
- *           Exits 0 on Vercel (VERCEL set) so it can never block a deploy, and
- *           outside CI unless STATIC_ROUTES_GUARD=1.
- * Usage:    node scripts/static-routes-guard.mjs [--self-test]
+ *           Exits 0 on Vercel (VERCEL_ENV set) so it can never block a deploy,
+ *           and outside CI unless run with --force. No env var of its own: the
+ *           env-drift guard (MEH-491) would ask for it in .env.example.
+ * Usage:    node scripts/static-routes-guard.mjs [--self-test | --force]
  * History:  MEH-2878 (creation).
  */
 import { readFileSync, existsSync } from "node:fs";
@@ -60,12 +61,12 @@ function revalidateLabel(entry) {
 
 function main() {
   if (process.argv.includes("--self-test")) return selfTest();
-  if (process.env.VERCEL) {
+  if (process.env.VERCEL_ENV) {
     console.log("static-routes-guard: skipped on Vercel (never blocks a deploy)");
     return;
   }
-  if (!process.env.CI && process.env.STATIC_ROUTES_GUARD !== "1") {
-    console.log("static-routes-guard: skipped outside CI (STATIC_ROUTES_GUARD=1 runs it locally)");
+  if (!process.env.CI && !process.argv.includes("--force")) {
+    console.log("static-routes-guard: skipped outside CI (--force runs it locally)");
     return;
   }
   const manifestPath = path.join(ROOT, ".next", "prerender-manifest.json");
