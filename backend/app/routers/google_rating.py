@@ -20,6 +20,8 @@ History:  MEH-1490 (creation) — external trust signal, live-fetch only.
           approval row. Not the full admin PUT: that one re-checks every
           effective-state gate (licence, delivery), so a pending business that
           still fails one could not be mapped at all.
+          MEH-2886 chunk 3 — both GET routes close the session before calling
+          Google, so a slow Places API does not hold a DB pool connection.
 """
 
 import logging
@@ -126,6 +128,12 @@ def get_google_rating(
         raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
 
     place_id = row[0]
+    # MEH-2886 chunk 3: the DB is done — give the connection back BEFORE the
+    # Google call (timeout 4 s per phase — connect, read — so it can run
+    # longer). Holding it across the call let a slow Places API tie up one of
+    # the 15 pool connections per page view of a business page.
+    # get_db's own close afterwards is a no-op on a closed session.
+    db.close()
     if not place_id:
         return Response(status_code=204)
 
@@ -216,12 +224,16 @@ def get_google_place_candidates(
     )
     if row is None:
         raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
+    name, city = row
+    # MEH-2886 chunk 3: release the connection before the Google call (same
+    # reason as get_google_rating above).
+    db.close()
 
     typed = (q or "").strip()
     candidates = (
         _search_place_candidates(typed, None)
         if typed
-        else _search_place_candidates(row[0], row[1])
+        else _search_place_candidates(name, city)
     )
     if not candidates:
         return Response(status_code=204)
