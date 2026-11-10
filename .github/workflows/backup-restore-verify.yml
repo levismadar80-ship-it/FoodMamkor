@@ -170,9 +170,21 @@ jobs:
           MASK_TAIL="${SOURCE_URL#*@}"
           echo "::add-mask::$MASK_PW"
           echo "::add-mask::$MASK_TAIL"
+          # In a case pattern `*` also matches `@`, `?` and `,`, so the shape check
+          # alone would pass a URL whose real host sits before a second `@`, or
+          # whose ?host=/?user= parameters override it (review of #4299). Refuse
+          # those first. The one suffix allowed is ?sslmode=require.
+          REFUSE="::error::The secret is not the ci_backup_ro role on the staging Postgres proxy. Refusing to run."
           case "$SOURCE_URL" in
-            postgresql://ci_backup_ro:*@kodama.proxy.rlwy.net:13219/*) echo "source: ci_backup_ro @ the staging Postgres proxy" ;;
-            *) echo "::error::The secret is not the ci_backup_ro role on the staging Postgres proxy. Refusing to run."; exit 1 ;;
+            *@*@*|*,*) echo "$REFUSE"; exit 1 ;;
+          esac
+          BASE_URL="${SOURCE_URL%\?sslmode=require}"
+          case "$BASE_URL" in
+            *\?*|*\&*|*'#'*) echo "$REFUSE"; exit 1 ;;
+          esac
+          case "$BASE_URL" in
+            postgresql://ci_backup_ro:*@kodama.proxy.rlwy.net:13219/railway) echo "source: ci_backup_ro @ the staging Postgres proxy" ;;
+            *) echo "$REFUSE"; exit 1 ;;
           esac
 
       # pg_dump must not be older than the server (18); the runner ships 16.
