@@ -10,6 +10,7 @@ import { detailToMessage } from "@/lib/errors";
 // MEH-1140: canonical shekel format ("35₪") — one owner in lib/utils.
 import { formatPrice } from "@/lib/utils";
 import { SkeletonList } from "@/components/Skeleton";
+import { ADMIN_NEXT_STATUSES } from "@/lib/group-buy-transitions";
 
 // Status class map; labels resolved via t() in render
 const STATUS_CLS = {
@@ -20,6 +21,7 @@ const STATUS_CLS = {
 };
 
 const STATUS_OPTIONS = ["open", "funded", "cancelled", "fulfilled"];
+
 
 export default function AdminGroupBuysPage() {
   const t = useTranslations("admin");
@@ -44,13 +46,21 @@ export default function AdminGroupBuysPage() {
     }
   };
 
-  const updateStatus = async (id, newStatus) => {
-    setUpdating(id);
+  const updateStatus = async (gb, newStatus) => {
+    setUpdating(gb.id);
+    setError("");
     try {
-      await api.patch(`/admin/group-buys/${id}/status`, null, { params: { status: newStatus } });
+      // expected_status: the state this screen showed. If the group moved in
+      // the meantime (a join funded it, the business cancelled it), the
+      // server answers 409 instead of overwriting it blind (MEH-2866).
+      await api.patch(`/admin/group-buys/${gb.id}/status`, null, {
+        params: { status: newStatus, expected_status: gb.status },
+      });
       await load();
     } catch (err) {
       setError(detailToMessage(err.response?.data?.detail) || t("group_buys.update_error"));
+      // The row on screen is stale: show what the server has now.
+      if (err.response?.status === 409) await load();
     } finally {
       setUpdating(null);
     }
@@ -141,11 +151,14 @@ export default function AdminGroupBuysPage() {
                 </div>
 
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-xs text-fg-muted me-2">{t("group_buys.change_status")}</span>
-                  {STATUS_OPTIONS.filter((opt) => opt !== gb.status).map((opt) => (
+                  {(ADMIN_NEXT_STATUSES[gb.status] || []).length > 0 && (
+                    <span className="text-xs text-fg-muted me-2">{t("group_buys.change_status")}</span>
+                  )}
+                  {(ADMIN_NEXT_STATUSES[gb.status] || []).map((opt) => (
                     <button
                       key={opt}
-                      onClick={() => updateStatus(gb.id, opt)}
+                      data-testid={`gb-move-${opt}`}
+                      onClick={() => updateStatus(gb, opt)}
                       disabled={updating === gb.id}
                       className="text-xs border border-border px-3 py-1 rounded-full hover:border-primary hover:text-primary transition disabled:opacity-50"
                     >
