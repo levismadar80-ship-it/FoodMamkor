@@ -297,10 +297,12 @@ export default function RescueTab() {
     if (typeof navigator !== "undefined" && navigator.share) {
       try {
         await navigator.share({ text: leftoverText });
-      } catch {
-        // cancelled
+        return;
+      } catch (err) {
+        // Cancelled is her answer; any other failure falls through to the
+        // copy below, so the tap still does something (review of #4178).
+        if (err?.name === "AbortError") return;
       }
-      return;
     }
     try {
       await navigator.clipboard.writeText(leftoverText);

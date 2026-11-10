@@ -591,7 +591,9 @@ describe("RegisterProducerClient — didUpgrade CONFIRM split (MEH-328 chunk D)"
     Object.defineProperty(navigator, "share", { configurable: true, value: nativeShare });
     fireEvent.click(share);
     await waitFor(() => expect(nativeShare).toHaveBeenCalledTimes(1));
-    expect(nativeShare.mock.calls[0][0].text).toBeTruthy();
+    // t() returns the key path here (see the mock above), so the message has
+    // no link: the whole message is the text and no `url` is invented.
+    expect(nativeShare.mock.calls[0][0]).toEqual({ text: "auth.register.producer.success.share_msg" });
     Object.defineProperty(navigator, "share", { configurable: true, value: undefined });
   });
 

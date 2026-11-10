@@ -28,7 +28,11 @@ const ANALYTICS = {
   average_rating: 0, total_reviews: 0, conversion_rate: 0,
 };
 
-async function stub(page: Page, { withShare }: { withShare: boolean }) {
+// "ok" resolves; "refused" rejects like a share target that failed (not a
+// cancel); "none" = no share sheet at all (most desktops).
+type ShareMode = "ok" | "refused" | "none";
+
+async function stub(page: Page, { share }: { share: ShareMode }) {
   const json = (r: Route, b: unknown) => r.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(b) });
   await page.addInitScript((ws) => {
     localStorage.setItem("token", "e2e-token");
@@ -38,13 +42,19 @@ async function stub(page: Page, { withShare }: { withShare: boolean }) {
     w.__copied = [];
     Object.defineProperty(navigator, "share", {
       configurable: true,
-      value: ws ? (d: unknown) => (w.__shared.push(d), Promise.resolve()) : undefined,
+      value:
+        ws === "none"
+          ? undefined
+          : (d: unknown) => {
+              w.__shared.push(d);
+              return ws === "ok" ? Promise.resolve() : Promise.reject(new DOMException("refused", "NotAllowedError"));
+            },
     });
     Object.defineProperty(navigator, "clipboard", {
       configurable: true,
       value: { writeText: (t: string) => (w.__copied.push(t), Promise.resolve()) },
     });
-  }, withShare);
+  }, share);
   await page.route((u) => /\/api\//.test(u.pathname), (r) => {
     const p = new URL(r.request().url()).pathname.replace(/^\/api/, "");
     if (/\/auth\/me\/?$/.test(p)) return json(r, { id: 42, email: "o@example.com", name: "נועה", role: "producer", producer_id: 7, phone_verified: true });
@@ -56,6 +66,10 @@ async function stub(page: Page, { withShare }: { withShare: boolean }) {
   });
 }
 
+// The link exactly as the card shows it — equality, not a suffix match, so a
+// wrong origin or the whole message in place of the link goes red.
+const shownUrl = (page: Page) => page.locator('[dir="ltr"].font-mono').first().textContent();
+
 const sharedState = (page: Page) =>
   page.evaluate(() => {
     const w = window as unknown as { __shared: { url?: string }[]; __copied: string[] };
@@ -64,22 +78,34 @@ const sharedState = (page: Page) =>
 
 test.describe("dashboard «שתפו» (MEH-2827 PR 8)", () => {
   test("with a share sheet: opens it with /p/{slug} as url, copies nothing", async ({ page }) => {
-    await stub(page, { withShare: true });
+    await stub(page, { share: "ok" });
     await page.goto("/he/producer/dashboard");
     await page.getByTestId("vanity-share").click({ timeout: 20_000 });
+    await expect.poll(async () => (await sharedState(page)).shared).toHaveLength(1);
+    const url = await shownUrl(page);
+    expect(url).toMatch(/\/p\/arugot-noam$/);
     const { shared, copied } = await sharedState(page);
-    expect(shared).toHaveLength(1);
-    expect(shared[0].url).toMatch(/\/p\/arugot-noam$/);
+    expect(shared[0].url).toBe(url);
     expect(copied).toEqual([]);
   });
 
   test("without a share sheet: copies the /p/{slug} link", async ({ page }) => {
-    await stub(page, { withShare: false });
+    await stub(page, { share: "none" });
     await page.goto("/he/producer/dashboard");
     await page.getByTestId("vanity-share").click({ timeout: 20_000 });
     await expect.poll(async () => (await sharedState(page)).copied).toHaveLength(1);
     const { shared, copied } = await sharedState(page);
-    expect(copied[0]).toMatch(/\/p\/arugot-noam$/);
+    expect(copied[0]).toBe(await shownUrl(page));
     expect(shared).toEqual([]);
+  });
+
+  test("a share sheet that fails (not a cancel): falls back to copying the link", async ({ page }) => {
+    await stub(page, { share: "refused" });
+    await page.goto("/he/producer/dashboard");
+    await page.getByTestId("vanity-share").click({ timeout: 20_000 });
+    await expect.poll(async () => (await sharedState(page)).copied).toHaveLength(1);
+    const { shared, copied } = await sharedState(page);
+    expect(shared).toHaveLength(1);
+    expect(copied[0]).toBe(await shownUrl(page));
   });
 });

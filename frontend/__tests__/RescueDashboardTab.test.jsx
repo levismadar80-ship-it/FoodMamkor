@@ -464,7 +464,6 @@ describe("what was not collected", () => {
     // recipient — the business picks the group or story there.
     const share = await screen.findByTestId("rescue-leftover-share");
     expect(share.tagName).toBe("BUTTON");
-    expect(share.getAttribute("href")).toBeNull();
     expect(share.textContent).toBe(lookup("share.trigger"));
     await waitFor(() => {
       fireEvent.click(screen.getByTestId("rescue-leftover-share"));

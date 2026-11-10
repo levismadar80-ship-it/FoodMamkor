@@ -47,8 +47,11 @@ function VanityLinkCard({ slug }) {
     if (typeof navigator !== "undefined" && navigator.share) {
       try {
         await navigator.share({ text: t("wa_text_template", { url: "" }).trim(), url });
-      } catch {
-        // cancelled — the owner's answer
+      } catch (err) {
+        // Cancelled is the owner's answer. Any other failure (a share target
+        // that refused, NotAllowedError) falls back to the copy, so the tap
+        // still does something (review of #4178).
+        if (err?.name !== "AbortError") copy();
       }
       return;
     }

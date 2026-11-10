@@ -271,10 +271,12 @@ function RegisterProducerPageBody({ routeKind }) {
     if (typeof navigator !== "undefined" && navigator.share) {
       try {
         await navigator.share(url ? { text, url } : { text });
-      } catch {
-        // cancelled
+        return;
+      } catch (err) {
+        // Cancelled is her answer; any other failure falls through to the
+        // copy below (review of #4178).
+        if (err?.name === "AbortError") return;
       }
-      return;
     }
     try {
       await navigator.clipboard.writeText(url || msg);
