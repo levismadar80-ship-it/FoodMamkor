@@ -1640,6 +1640,7 @@
         "waiting_badge": "ממתין {days} ימי עסקים",
         "waiting_tooltip_submitted": "נשלח לבדיקה: {when}",
         "waiting_tooltip_created": "נוצר: {when}",
+        "waiting_tooltip_resubmitted": "נשלח שוב לבדיקה: {when}",
         "resubmission_badge": "שליחה חוזרת #{n}"
       },
       "toggle": {
