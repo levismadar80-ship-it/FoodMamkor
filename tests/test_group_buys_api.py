@@ -1074,8 +1074,9 @@ class TestOwnerStatusChange:
     The owner gets exactly three transitions: open→cancelled (before or after
     the deadline), funded→fulfilled, funded→cancelled. Everything else is a
     409; someone else's group buy is a 403 whatever the transition. The route
-    is owner-only: an admin gets 403 here and keeps the override the IDOR rule
-    grants (security.md) on PATCH /admin/group-buys/{id}/status.
+    is owner-only: an admin gets 403 here and uses PATCH
+    /admin/group-buys/{id}/status, which since MEH-2866 is held to the same
+    table (no override).
     """
 
     def _patch(self, client, gb, status, user=None):
@@ -1182,17 +1183,17 @@ class TestOwnerStatusChange:
     # Each pair is (current, requested): outside the owner's table → 409.
     @staticmethod
     def _forbidden_pairs():
-        return [
-            ("open", "fulfilled"),  # never delivered a group that never filled
-            ("open", "funded"),  # funding is the participants' doing
-            ("open", "open"),
-            ("funded", "open"),
-            ("funded", "funded"),
-            ("cancelled", "open"),  # final
-            ("cancelled", "fulfilled"),
-            ("fulfilled", "cancelled"),  # final
-            ("fulfilled", "open"),
+        # Every (current, requested) pair over the four statuses, minus the
+        # table: derived, not listed, so no pair can be forgotten (13 today,
+        # incl. cancelled→cancelled, the repeat cancel that would email twice).
+        from app.routers.group_buys import OWNER_TRANSITIONS
+
+        statuses = ("open", "funded", "cancelled", "fulfilled")
+        pairs = [
+            (a, b) for a in statuses for b in statuses if (a, b) not in OWNER_TRANSITIONS
         ]
+        assert len(pairs) == 13, pairs
+        return pairs
 
     def test_transitions_outside_the_table_are_409(self, client, db):
         producer, owner = _producer_user(db, email="own11@test.com")
@@ -1250,6 +1251,20 @@ class TestOwnerStatusChange:
         )
         assert resp.status_code == 409, resp.text
         assert self._status_in_db(db, gb) == "funded"
+
+    def test_admin_route_unknown_status_is_400_not_409(self, client, db):
+        """A status outside the four is a bad request, checked before the
+        transition table (which would otherwise answer 409)."""
+        producer, _ = _producer_user(db, email="own14b@test.com")
+        admin = make_user(db, role="admin", email="adm14b@test.com")
+        gb = _make_group_buy(db, producer, status="open")
+        resp = client.patch(
+            f"/admin/group-buys/{gb.id}/status",
+            params={"status": "archived"},
+            headers=auth_header(admin),
+        )
+        assert resp.status_code == 400, resp.text
+        assert self._status_in_db(db, gb) == "open"
 
     def test_owner_of_a_no_longer_approved_business_can_still_cancel(
         self, client, db
@@ -1535,3 +1550,22 @@ class TestCancelNotification:
         db.expire_all()
         assert db.query(GroupBuy).filter(GroupBuy.id == gb.id).one().status == "cancelled"
         assert [x["to"] for x in self._cancel_sends(sends)] == ["cn_a1@test.com"]
+
+    def test_admin_who_joined_the_group_is_not_emailed_about_her_own_cancel(
+        self, client, db, monkeypatch
+    ):
+        # The admin is the actor, like the owner on the owner route: she is
+        # left out of the recipients even when she committed to the group.
+        sends = self._capture_sends(monkeypatch)
+        producer, _ = _producer_user(db, email="cn_own11@test.com")
+        admin = make_user(db, role="admin", email="cn_adm11@test.com")
+        gb = _make_group_buy(db, producer, min_participants=5)
+        self._join(client, db, gb, "cn_b1@test.com")
+        db.add(GroupBuyCommit(group_buy_id=gb.id, user_id=admin.id, quantity=1))
+        db.commit()
+
+        resp = client.patch(
+            f"/admin/group-buys/{gb.id}/status?status=cancelled", headers=auth_header(admin)
+        )
+        assert resp.status_code == 200, resp.text
+        assert [x["to"] for x in self._cancel_sends(sends)] == ["cn_b1@test.com"]

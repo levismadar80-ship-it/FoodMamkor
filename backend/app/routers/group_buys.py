@@ -434,16 +434,18 @@ def format_price(amount: Decimal | float | int) -> str:
 
 
 # MEH-2436: what the business may do to its own group buy. Anything not listed
-# is a 409 — cancelled and fulfilled are final for the owner; only an admin
-# moves a group buy out of them, through PATCH /admin/group-buys/{id}/status.
+# is a 409 — cancelled and fulfilled are final. Since MEH-2866 they are final
+# for an admin too: PATCH /admin/group-buys/{id}/status uses this same table.
 # "open → cancelled" covers both "cancel" before the deadline and "close" after
 # it: the row looks the same either way. Nothing closes an open group buy past
 # its deadline automatically.
-OWNER_TRANSITIONS = {
-    ("open", "cancelled"),
-    ("funded", "fulfilled"),
-    ("funded", "cancelled"),
-}
+OWNER_TRANSITIONS = frozenset(
+    {
+        ("open", "cancelled"),
+        ("funded", "fulfilled"),
+        ("funded", "cancelled"),
+    }
+)
 # MEH-2866 (Sapir 10/11, state-machine audit B): an admin moves a group buy by
 # exactly the same table. The admin route used to accept any of the four
 # statuses with no lock and no email, so a cancelled group could be reopened
@@ -452,7 +454,9 @@ ADMIN_TRANSITIONS = OWNER_TRANSITIONS
 _REFUSED_TRANSITION = "אי אפשר לשנות את קבוצת הרכישה למצב הזה"
 
 
-def _refuse_unless_allowed(gb: GroupBuy, new_status: str, expected_status: str | None, table) -> None:
+def _refuse_unless_allowed(
+    gb: GroupBuy, new_status: str, expected_status: str | None, table
+) -> None:
     """Under the row lock: the state the caller saw, then the transition table.
 
     Same 409 and wording for both (MEH-2489): either way the screen reloads

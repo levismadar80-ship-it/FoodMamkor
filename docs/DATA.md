@@ -683,9 +683,11 @@ via `slowapi` — see `backend/app/rate_limit.py` and
 > The owner gets exactly `open → cancelled` (before or after the deadline),
 > `funded → fulfilled` and `funded → cancelled` (`OWNER_TRANSITIONS`); any other
 > pair → 409, so cancelled and fulfilled are final for her. The route is
-> owner-only: an admin (not a producer) gets 403 here and keeps the full
-> override on `PATCH /admin/group-buys/{id}/status`, which is unchanged — one
-> checked path per caller, not two to the same state. The check and the write run under a row lock
+> owner-only: an admin (not a producer) gets 403 here and uses
+> `PATCH /admin/group-buys/{id}/status`, which since MEH-2866 has no override:
+> the same table (`ADMIN_TRANSITIONS = OWNER_TRANSITIONS`), the same row lock,
+> an optional `expected_status` (409 on mismatch), and the same cancel email to
+> every participant except the admin herself. A status outside the four → 400. The check and the write run under a row lock
 > (`with_for_update`, like `/commit`). 30/minute. No schema change.
 >
 > **MEH-2489 — `expected_status` (optional).** Same body plus
