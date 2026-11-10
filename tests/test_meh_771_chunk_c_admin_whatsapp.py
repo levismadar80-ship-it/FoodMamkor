@@ -248,6 +248,8 @@ def test_the_day_boundary_is_exact(client, db, monkeypatch):
     admin = make_user(db, role="admin")
     _seed(db, status="accepted", meta_message_id="wamid.e_just_over", kind="e_just_over", created_at=_FROZEN_NOW - timedelta(days=1, minutes=1))
     _seed(db, status="accepted", meta_message_id="wamid.e_just_under", kind="e_just_under", created_at=_FROZEN_NOW - timedelta(hours=23, minutes=59))
+    # Exactly one day: not yet stuck (the predicate is a strict `<`).
+    _seed(db, status="accepted", meta_message_id="wamid.e_exactly", kind="e_exactly", created_at=_FROZEN_NOW - timedelta(days=1))
     ids = [r["kind"] for r in client.get(_ENDPOINT, headers=auth_header(admin)).json()]
     assert ids == ["e_just_over"]
 

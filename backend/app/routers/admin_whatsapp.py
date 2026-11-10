@@ -20,7 +20,6 @@ History:  MEH-771 Chunk C (creation — final chunk of the delivery-status
 
 from __future__ import annotations
 
-
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
