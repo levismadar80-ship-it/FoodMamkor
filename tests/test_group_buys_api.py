@@ -1203,9 +1203,11 @@ class TestOwnerStatusChange:
             assert self._status_in_db(db, gb) == current, (current, requested)
 
     def test_admin_uses_the_admin_route_not_this_one(self, client, db):
-        # This route is the business's, held to the transition table. An admin
-        # keeps the full override on PATCH /admin/group-buys/{id}/status, so
-        # there is no second, unchecked path to the same state here.
+        # This route is the business's. An admin goes through
+        # PATCH /admin/group-buys/{id}/status — which, since MEH-2866 (Sapir
+        # 10/11), is held to the SAME transition table: it used to be a full
+        # override, and a cancelled group could be reopened after its
+        # participants were emailed that it was cancelled.
         producer, _ = _producer_user(db, email="own12@test.com")
         admin = make_user(db, role="admin", email="adm12@test.com")
         gb = _make_group_buy(db, producer, status="cancelled")
@@ -1217,8 +1219,37 @@ class TestOwnerStatusChange:
             params={"status": "open"},
             headers=auth_header(admin),
         )
-        assert resp.status_code == 200
-        assert self._status_in_db(db, gb) == "open"
+        assert resp.status_code == 409, resp.text
+        assert self._status_in_db(db, gb) == "cancelled"
+
+    def test_admin_route_refuses_every_pair_the_owner_route_refuses(self, client, db):
+        """MEH-2866: one table for both routes — the forbidden pairs are 409 for
+        an admin too, and the row does not move."""
+        producer, _ = _producer_user(db, email="own13@test.com")
+        admin = make_user(db, role="admin", email="adm13@test.com")
+        for current, requested in self._forbidden_pairs():
+            gb = _make_group_buy(db, producer, status=current)
+            resp = client.patch(
+                f"/admin/group-buys/{gb.id}/status",
+                params={"status": requested},
+                headers=auth_header(admin),
+            )
+            assert resp.status_code == 409, (current, requested, resp.text)
+            assert self._status_in_db(db, gb) == current, (current, requested)
+
+    def test_admin_route_honours_expected_status(self, client, db):
+        """The state the admin saw must still hold under the lock (MEH-2489 for
+        the admin route): a group that filled meanwhile is not cancelled blind."""
+        producer, _ = _producer_user(db, email="own14@test.com")
+        admin = make_user(db, role="admin", email="adm14@test.com")
+        gb = _make_group_buy(db, producer, status="funded")
+        resp = client.patch(
+            f"/admin/group-buys/{gb.id}/status",
+            params={"status": "cancelled", "expected_status": "open"},
+            headers=auth_header(admin),
+        )
+        assert resp.status_code == 409, resp.text
+        assert self._status_in_db(db, gb) == "funded"
 
     def test_owner_of_a_no_longer_approved_business_can_still_cancel(
         self, client, db
@@ -1485,7 +1516,12 @@ class TestCancelNotification:
         assert self._patch(client, gb, "cancelled", owner).status_code == 200
         assert [s["to"] for s in self._cancel_sends(sends)] == ["cn_o1@test.com"]
 
-    def test_admin_cancel_through_the_admin_route_sends_nothing(self, client, db, monkeypatch):
+    def test_admin_cancel_through_the_admin_route_emails_every_participant(
+        self, client, db, monkeypatch
+    ):
+        # MEH-2866 (Sapir 10/11): an admin's cancel sends the same email as the
+        # business's. It used to send nothing — participants of a group an
+        # admin cancelled were never told.
         sends = self._capture_sends(monkeypatch)
         producer, _ = _producer_user(db, email="cn_own10@test.com")
         admin = make_user(db, role="admin", email="cn_adm10@test.com")
@@ -1498,4 +1534,4 @@ class TestCancelNotification:
         assert resp.status_code == 200, resp.text
         db.expire_all()
         assert db.query(GroupBuy).filter(GroupBuy.id == gb.id).one().status == "cancelled"
-        assert sends == []
+        assert [x["to"] for x in self._cancel_sends(sends)] == ["cn_a1@test.com"]
