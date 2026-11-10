@@ -94,18 +94,19 @@ function bypassHeaders(baseURL: string): Record<string, string> {
 }
 
 function makeApi(ctx: APIRequestContext, token: string): GoldenApi {
-  const call = (method: string, path: string, data?: JsonBody) =>
-    ctx.fetch(`/api${path}`, {
-      method,
-      headers: { Authorization: `Bearer ${token}` },
-      ...(data === undefined ? {} : { data }),
-    });
+  // Per-verb calls, not a generic request with a templated URL: the contract
+  // checker reads a templated request URL as a call to the route `/api{_}`
+  // and reports it as an orphan (Deploy gate). The verbs below are checked
+  // where the specs call `api.<verb>("/path")`.
+  const headers = { Authorization: `Bearer ${token}` };
+  const opts = (data?: JsonBody) =>
+    data === undefined ? { headers } : { headers, data };
   return {
-    get: (path) => call("GET", path),
-    post: (path, data) => call("POST", path, data),
-    put: (path, data) => call("PUT", path, data),
-    patch: (path, data) => call("PATCH", path, data),
-    delete: (path) => call("DELETE", path),
+    get: (path) => ctx.get(`/api${path}`, opts()),
+    post: (path, data) => ctx.post(`/api${path}`, opts(data)),
+    put: (path, data) => ctx.put(`/api${path}`, opts(data)),
+    patch: (path, data) => ctx.patch(`/api${path}`, opts(data)),
+    delete: (path) => ctx.delete(`/api${path}`, opts()),
   };
 }
 
