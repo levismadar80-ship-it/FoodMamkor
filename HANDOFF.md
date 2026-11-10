@@ -4,6 +4,19 @@
 > Standing procedures live in [`docs/runbooks/`](./docs/runbooks/) — e.g. the [uptime alert runbook](./docs/runbooks/UPTIME.md).
 > Decision capture is proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-11-10 — אחה״צ: המחרוזות המאושרות, ‏prefetch, ‏SUPER_ADMIN_EMAIL, ‏PR גרסה v1.5.0
+
+**‏שורה אחת:** ‏#4279 ו-#4281 מוזגו. ‏#4280 (`SUPER_ADMIN_EMAIL`) ממתין ל-3 שורות של ספיר ב-`backend/.env.example`. ‏PR הגרסה **#4282** פתוח, ולא ממוזג בלי «go merge».
+
+**‏מה צריך לדעת לפני עבודה:**
+- ‏**Link בכרום של האתר = `prefetch={false}`.** ‏`ChromePrefetchGuard.test.js` סורק את Header, ‏BottomNav, ‏CookieBanner, ‏Footer, ‏CollectionNotice ו-DashboardFooter. Link חדש בלי זה מחזיר +120KB לכל דף.
+- ‏**`SUPER_ADMIN_EMAIL` (#4280, אחרי המיזוג):** ‏production לא עולה בלעדיו (`ENV=production` או `RAILWAY_ENVIRONMENT=production`). ההשוואה מדויקת, לא תלוית-רישיות, בכוונה: וריאנט רישיות הוא חשבון אחר שאפשר לרשום. מה להגדיר ב-Railway כתוב ב-MEH-2890.
+- ‏**שני פערים ישנים אצל האדמין הראשי, שלא תוקנו (צריך מחרוזת):** אדמין יכול לחסום את בעלת האתר. מחיקת עסק מאפסת את התפקיד של כל המשתמשים המקושרים אליו. הנוסח המוצע מופיע ב-MEH-2890.
+- ‏**התחברות לחשבונות הדמו מ-sandbox:** הגבלה של 5 לדקה. ריצת E2E על staging נכשלה ב-global setup עם 429 אחרי ריצות הצילום של `/join`. לא להריץ צילום או בדיקות עם התחברות בזמן ש-E2E רץ על staging.
+- ‏**ב-staging יש 9 הודעות WhatsApp בלי אישור מסירה.** כנראה ה-webhook לא מגיע.
+
+---
+
 ## 2026-11-10 — יום וערב: לוח הבקרה, QueuePool, ‏Sentry, סריקת סודות, ‏repo ציבורי
 
 **‏שורה אחת:** ‏25 PR-ים מוזגו ל-staging (‏#4178, ‏#4255–#4277, ו-PR המסמכים הזה, הפירוט ב-CHANGELOG). ‏Vercel עבר ל-Pro והריפו ציבורי, ולכן deploys ל-staging עובדים שוב מ-10/11 08:05. ‏staging מקדים את main ב-54 commits, כולל revision אחד של Alembic (MEH-2828, אושר).
