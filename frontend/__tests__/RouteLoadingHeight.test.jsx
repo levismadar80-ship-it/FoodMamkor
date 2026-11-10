@@ -11,22 +11,21 @@ import path from "node:path";
  * arrived — CLS 0.42 on the home page (Lighthouse mobile, 06/11). A footer that
  * starts below the fold cannot shift in view.
  *
- * Behavioural: renders the real app/[locale]/loading.js (an async server
- * component) and reads the class on what it returns, rather than grepping
+ * Behavioural: renders the real app/[locale]/loading.js (a client component
+ * since MEH-2878) and reads the class on what it returns, rather than grepping
  * the source.
  *
  * Shown failing: on the pre-MEH-2754 loading.js (BrandLoader returned bare)
  * the testid lookup finds nothing → red. Restored → green.
  */
 const identity = (key) => key;
-vi.mock("next-intl/server", () => ({
-  getTranslations: async () => identity,
-}));
+// MEH-2878: loading.js is a client component now (useTranslations).
+vi.mock("next-intl", () => ({ useTranslations: () => identity }));
 
 describe("route loading fallback (MEH-2754)", () => {
   it("is wrapped in a min-h-screen box so the footer starts below the fold", async () => {
     const { default: Loading } = await import("@/app/[locale]/loading");
-    render(await Loading());
+    render(<Loading />);
     const box = screen.getByTestId("route-loading");
     expect(box.className.split(/\s+/)).toContain("min-h-screen");
     // The loader is inside it, still announcing to assistive tech.
