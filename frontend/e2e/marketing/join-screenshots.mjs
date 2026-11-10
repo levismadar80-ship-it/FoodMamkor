@@ -352,8 +352,26 @@ const SHOTS = [
   {
     file: "group-buy.webp",
     route: "/group-buys",
-    selector: '[data-testid="group-buy-card"]',
+    // The DEMO business's card, named by its seeded title — not `.first()` of
+    // whatever group buy staging happens to list on top.
+    selector: '[data-testid="group-buy-card"]:has-text("כוסמין")',
     feature_ids: ["group_buys"],
+    // Measured 10/11 on staging: the demo group buy is `funded` (the seed's
+    // commits meet min_participants=2 on purpose, seed_demo_business.py:329),
+    // and `/group-buys` opens on the «פתוחות» tab, which lists status=open
+    // only (group_buys.py:120). So the card is one chip away. Click
+    // «הגיעו ליעד» (group_buys.list.status_funded) only when it is not on the
+    // open tab, so a later re-seed that leaves it open still shoots it there.
+    prepare: async (page) => {
+      const demo = page.locator('[data-testid="group-buy-card"]:has-text("כוסמין")');
+      const onOpenTab = await demo
+        .first()
+        .waitFor({ state: "visible", timeout: 8_000 })
+        .then(() => true, () => false);
+      if (!onOpenTab) {
+        await page.getByRole("button", { name: "הגיעו ליעד", exact: true }).click();
+      }
+    },
   },
   {
     file: "event.webp",
@@ -443,9 +461,12 @@ const SHOTS = [
   {
     file: "dash-share-kit.webp",
     route: "/producer/dashboard/tools",
-    // Measured on staging: the tools page carries tools-grid,
-    // request-review-card and tools-rescue-tile — there is no "share-kit".
-    selector: '[data-testid="tools-grid"]',
+    // MEH-2880/2882 (10/11) moved the share kit (story card + review card)
+    // off the dashboard home into «כלים» → «שיתוף»: it is its own node now,
+    // `share-kit-section` inside `tools-share-section`. Before that the tools
+    // page had no share-kit node and this framed `tools-grid` — a picture of
+    // the tool tiles, not of the kit the filename promises.
+    selector: '[data-testid="share-kit-section"]',
     auth: true,
     feature_ids: ["share_cards", "vanity_link"],
   },
@@ -485,11 +506,15 @@ const SHOTS = [
   {
     file: "dash-followers.webp",
     route: "/producer/dashboard/insights",
-    // Measured on staging today: the insights page renders
-    // `followers-zero-cta`, i.e. the EMPTY state, because the demo business
-    // has 0 followers until the seed runs. This is a data miss, not a
-    // selector one — re-measure once the fixtures are in.
-    selector: '[data-testid="followers-card"]',
+    // There is no `followers-card` testid and there never was — this was a
+    // guess, and it would have missed even with followers seeded. Since
+    // MEH-2884 (10/11) the followers card carries the count AND a «שתפו»
+    // button (`followers-share`) whose parent IS the card (asserted in
+    // DashboardInsightsFollowersShare.test.jsx). With 0 followers the button
+    // sits inside `followers-zero-cta` instead, so its parent is that <p> —
+    // still a miss for this shot, correctly: the empty state is not what
+    // /join should show (the seed gap is MEH-2839).
+    selector: '[data-testid="followers-share"]:not([data-testid="followers-zero-cta"] *) >> xpath=..',
     auth: true,
     feature_ids: ["follower_updates", "favorites_rating", "email_alerts"],
   },
@@ -665,6 +690,72 @@ async function installOverlayStyles(page) {
       add();
     }
   }, HIDE_CSS + MARKER_CSS);
+}
+
+// A TALL ELEMENT SHOT IS STITCHED, AND FIXED/STICKY CHROME LANDS MID-IMAGE.
+//
+// Measured 10/11 on dash-share-kit.webp (716×3018): Playwright captures an
+// element taller than the viewport by scrolling, so the sticky site header and
+// the sticky dashboard tab bar were painted across the story card, and the
+// MARKER_CSS label — `position: fixed` to the VIEWPORT's bottom corner — sat
+// clipped in the middle of the picture instead of in a corner of it. Every
+// still taller than 844px carried the same defect (dash-insights,
+// search-diet, dash-rescue).
+//
+// For the duration of ONE element screenshot: sticky → static (same flow
+// space, so nothing below moves), fixed elements outside the subject hidden
+// (visibility, so nothing reflows), the body::after marker suppressed and the
+// same label placed in the SUBJECT's own bottom-start corner. Everything is
+// put back afterwards, because the authenticated page is reused across shots.
+// Clips keep the viewport marker: there the viewport IS the frame.
+async function pinChromeForElementShot(el) {
+  await el.evaluate((node, label) => {
+    const touched = [];
+    for (const n of document.querySelectorAll("body *")) {
+      if (n === node || node.contains(n) || n.contains(node)) continue;
+      const pos = getComputedStyle(n).position;
+      if (pos === "sticky") {
+        touched.push([n, "position", n.style.getPropertyValue("position"), n.style.getPropertyPriority("position")]);
+        n.style.setProperty("position", "static", "important");
+      } else if (pos === "fixed") {
+        touched.push([n, "visibility", n.style.getPropertyValue("visibility"), n.style.getPropertyPriority("visibility")]);
+        n.style.setProperty("visibility", "hidden", "important");
+      }
+    }
+    const off = document.createElement("style");
+    off.textContent = "body::after { display: none !important; }";
+    document.head.appendChild(off);
+    let relativised = false;
+    if (getComputedStyle(node).position === "static") {
+      node.style.setProperty("position", "relative");
+      relativised = true;
+    }
+    const tag = document.createElement("div");
+    tag.textContent = label;
+    tag.setAttribute(
+      "style",
+      "position:absolute;inset-block-end:8px;inset-inline-start:8px;z-index:2147483647;" +
+        "font:600 11px/1.4 system-ui,sans-serif;color:#1c1a17;background:rgba(255,255,255,.88);" +
+        "padding:4px 8px;border-radius:6px;pointer-events:none;",
+    );
+    node.appendChild(tag);
+    window.__joinShotRestore = () => {
+      for (const [n, prop, value, prio] of touched) {
+        if (value) n.style.setProperty(prop, value, prio);
+        else n.style.removeProperty(prop);
+      }
+      off.remove();
+      tag.remove();
+      if (relativised) node.style.removeProperty("position");
+    };
+  }, "עסק ונתונים לדוגמה");
+  return () =>
+    el
+      .evaluate(() => {
+        window.__joinShotRestore?.();
+        delete window.__joinShotRestore;
+      })
+      .catch(() => {});
 }
 
 async function newPage(browser, { auth = false } = {}) {
@@ -981,7 +1072,12 @@ async function captureStills(browser) {
         throw new Error(`"${TEST_ROW}" is inside the frame: «${line.slice(0, 60)}»`);
       }
       const outFile = path.join(OUT, shot.file);
-      await el.screenshot({ path: outFile, type: "webp", quality: 80 });
+      const unpin = await pinChromeForElementShot(el);
+      try {
+        await el.screenshot({ path: outFile, type: "webp", quality: 80 });
+      } finally {
+        await unpin();
+      }
       try {
         await assertNotFlat(
           outFile,
