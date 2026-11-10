@@ -33,7 +33,10 @@ const USERS = [
   {
     id: "sup",
     name: "Smadar Levi",
-    email: "levismadar80@gmail.com",
+    // MEH-2890: the server flags the protected account; the page no longer
+    // knows (or matches) any address.
+    email: "owner@example.com",
+    is_super_admin: true,
     city: null,
     role: "producer",
     is_blocked: false,

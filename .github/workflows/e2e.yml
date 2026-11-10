@@ -95,12 +95,27 @@ jobs:
     # NOTE (MEH-1044): job name kept verbatim although the target is now
     # localhost — required-check identities match on the name: field. Rename
     # only in a follow-up that updates branch protection in the same change.
-    name: Playwright E2E (Vercel preview)
+    #
+    # MEH-2895 — two shards in parallel. The single job hit its 30-minute cap
+    # on staging (~1,419 of ~1,668 tests ran). Each shard runs half the suite
+    # with `--shard=N/2` and keeps every per-job check (coverage floor, report
+    # upload, diagnostics). The PR comment moves to `e2e-report`, which merges
+    # the two blob reports into ONE verdict. `e2e-gate` still reads
+    # `needs.e2e.result`, which GitHub aggregates over the matrix: any red
+    # shard is red.
+    name: Playwright E2E (Vercel preview) ${{ matrix.shard }}/2
     runs-on: ubuntu-latest
     timeout-minutes: 30
     needs: filter
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2]
+    # MEH-2895: one queue PER SHARD, so the two halves of one run go in
+    # parallel. The shared-backend protection stays: at most one run's shard N
+    # at a time, so at most two suites hit Railway staging together.
     concurrency:
-      group: e2e-staging-backend
+      group: e2e-staging-backend-${{ matrix.shard }}
       cancel-in-progress: false
       queue: max
 
@@ -247,7 +262,9 @@ jobs:
         # MEH-484 — --fail-on-flaky-tests turns "passed on retry" into a hard
         # failure so flake stops hiding behind the retry. retries: 1 in CI is
         # preserved (config); the flag detects flake without disabling retries.
-        run: npx playwright test --fail-on-flaky-tests
+        # MEH-2895: `--shard` splits the suite and, by itself, switches on the
+        # blob reporter (playwright.config.ts) so e2e-report can merge both halves.
+        run: npx playwright test --fail-on-flaky-tests --shard=${{ matrix.shard }}/2
         working-directory: frontend
         env:
           PLAYWRIGHT_BASE_URL: http://localhost:3000
@@ -301,6 +318,179 @@ jobs:
           fi
         id: coverage-floor
 
+      # MEH-2895: the QA report comment moved to the e2e-report job below — two
+      # shards posting into one upserted comment would overwrite each other.
+      - name: Upload blob report (for e2e-report)
+        uses: actions/upload-artifact@v7
+        if: >-
+          always() && steps.e2e-run.outcome != 'cancelled' &&
+          steps.e2e-run.outcome != 'skipped'
+        with:
+          name: blob-report-${{ matrix.shard }}
+          path: frontend/blob-report/
+          retention-days: 1
+          if-no-files-found: warn
+          # A "re-run failed jobs" attempt uploads the same name again.
+          overwrite: true
+
+      - name: Upload Playwright report
+        uses: actions/upload-artifact@v7
+        if: failure()
+        with:
+          name: playwright-report-${{ matrix.shard }}
+          # MEH-484 — also capture per-test trace.zip files so the trace viewer
+          # (playwright.dev/docs/trace-viewer) can replay flake-on-retry runs
+          # without re-running locally.
+          path: |
+            frontend/playwright-report/
+            frontend/test-results/**/trace.zip
+          retention-days: 7
+
+      # MEH-1712 — the same content, in the one place a CC session can actually
+      # read it. An artifact download redirects to Azure blob storage
+      # (productionresultssa18.blob.core.windows.net); the GitHub API hands back
+      # a valid pre-signed URL and the fetch then dies with
+      # `curl: (56) CONNECT tunnel failed, response 403` because that host is
+      # outside the sandbox egress allowlist. No GitHub App permission changes
+      # that — it is the same class as the *.up.railway.app block, and it is
+      # permanent. The probe numbers were diagnosable today for exactly one
+      # reason: they went to the job log, not only to an artifact.
+      #
+      # So this is not a duplicate of the upload below. The upload keeps the
+      # whole file for a human; this step is what removes the human from the
+      # loop. Rule: a diagnostic value that exists only inside an artifact is,
+      # from a CC session, a value that does not exist.
+      #
+      # The empty case prints an explicit line rather than nothing. "No output"
+      # is indistinguishable from "step didn't run" — reporting absence as
+      # silence is the precise failure this ticket spent a day on.
+      - name: Print next-start log (capture-only, MEH-1712)
+        if: always()
+        continue-on-error: true
+        run: |
+          echo "=== /tmp/next-start.log — last 200 lines ==="
+          if [ -s /tmp/next-start.log ]; then
+            tail -200 /tmp/next-start.log
+          else
+            echo "(EMPTY OR MISSING) $(ls -l /tmp/next-start.log 2>&1)"
+          fi
+          echo "=== end /tmp/next-start.log ==="
+
+      # MEH-1712 — the server's own stdout. `next start` has written to
+      # /tmp/next-start.log since MEH-1044 (step "Start Next.js server"), but
+      # nothing ever uploaded it, so every serverFetch failure it recorded was
+      # discarded at job teardown. That is why a half-day of triage could refute
+      # three hypotheses without once seeing the actual error: the file existed
+      # the whole time and was never kept.
+      #
+      # `if: always()` (not `failure()`, unlike the report above) — a PASSING run
+      # is the control. Without it there is nothing to diff a failing log against.
+      # `if-no-files-found: warn` so an empty capture is visible rather than a
+      # silent success, which is the failure mode this whole ticket is about.
+      - name: Upload E2E diagnostics (MEH-1712)
+        uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: e2e-diagnostics-${{ matrix.shard }}
+          path: |
+            /tmp/next-start.log
+            /tmp/backend-probe.log
+          retention-days: 7
+          if-no-files-found: warn
+
+  # ─────────────────────────────────────────────────────────────────
+  # MEH-2895 — E2E REPORT: one verdict for the two shards.
+  # Merges the shards' blob reports, re-derives the counts the old single job
+  # computed (executed / unexpected / flaky / skipped), fails if either shard
+  # left no report, and posts the QA comment once. Not in e2e-gate's needs:
+  # each shard already enforces its own coverage floor, and this job only
+  # reports.
+  # ─────────────────────────────────────────────────────────────────
+  e2e-report:
+    name: E2E report (merged shards)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: e2e
+    if: >-
+      always() && needs.e2e.result != 'skipped' &&
+      needs.e2e.result != 'cancelled'
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install frontend dependencies
+        run: npm ci
+        working-directory: frontend
+
+      # One directory per shard (no merge-multiple), so a missing shard can be
+      # named rather than merely counted.
+      - name: Download blob reports
+        uses: actions/download-artifact@v8
+        with:
+          pattern: blob-report-*
+          path: frontend/all-blob-reports
+
+      # Per-shard counts first, then the merged totals. A shard whose
+      # global-setup aborted still writes a blob (Playwright's blob reporter
+      # runs onEnd) with 0 executed, and the merged totals of the other shard
+      # would then read as PASS over half the suite. So each shard must have
+      # its own blob AND executed > 0, otherwise `partial` names it and the
+      # comment says INCOMPLETE — never PASS, never "wait for a newer run".
+      - name: Merge reports and count
+        id: coverage-floor
+        working-directory: frontend
+        run: |
+          mkdir -p playwright-report merged-blobs
+          PARTIAL=""
+          for N in 1 2; do
+            DIR="all-blob-reports/blob-report-$N"
+            ZIPS=$(find "$DIR" -name '*.zip' 2>/dev/null | wc -l)
+            if [ "$ZIPS" -eq 0 ]; then
+              echo "::error::Shard $N/2 left no blob report — it timed out, was cancelled, or died before its report step."
+              PARTIAL="$PARTIAL shard $N/2: no report;"
+              continue
+            fi
+            PLAYWRIGHT_JSON_OUTPUT_FILE="playwright-report/shard-$N.json" \
+              npx playwright merge-reports --reporter json "$DIR"
+            E=$(jq '(.stats.expected // 0) + (.stats.unexpected // 0) + (.stats.flaky // 0)' "playwright-report/shard-$N.json")
+            echo "shard $N/2: executed=$E"
+            if [ "$E" -eq 0 ]; then
+              echo "::error::Shard $N/2 executed 0 tests — its global-setup aborted (see that shard's log)."
+              PARTIAL="$PARTIAL shard $N/2: 0 executed;"
+            fi
+            cp "$DIR"/*.zip merged-blobs/
+          done
+          if [ -n "$(ls -A merged-blobs)" ]; then
+            PLAYWRIGHT_JSON_OUTPUT_FILE=playwright-report/results.json \
+              npx playwright merge-reports --reporter json merged-blobs
+            REPORT=playwright-report/results.json
+            STATS_EXPECTED=$(jq '.stats.expected // 0' "$REPORT")
+            STATS_UNEXPECTED=$(jq '.stats.unexpected // 0' "$REPORT")
+            STATS_FLAKY=$(jq '.stats.flaky // 0' "$REPORT")
+            STATS_SKIPPED=$(jq '.stats.skipped // 0' "$REPORT")
+          else
+            STATS_EXPECTED=0; STATS_UNEXPECTED=0; STATS_FLAKY=0; STATS_SKIPPED=0
+          fi
+          EXECUTED=$((STATS_EXPECTED + STATS_UNEXPECTED + STATS_FLAKY))
+          echo "merged: executed=$EXECUTED (expected=$STATS_EXPECTED unexpected=$STATS_UNEXPECTED flaky=$STATS_FLAKY skipped=$STATS_SKIPPED)"
+          {
+            echo "executed=$EXECUTED"
+            echo "skipped=$STATS_SKIPPED"
+            echo "unexpected=$STATS_UNEXPECTED"
+            echo "flaky=$STATS_FLAKY"
+            echo "partial=$PARTIAL"
+          } >> "$GITHUB_OUTPUT"
+          if [ -n "$PARTIAL" ]; then
+            echo "::error::Incomplete run:$PARTIAL"
+            exit 1
+          fi
+
       # MEH-1074 (W0.1) — QA report as a PR comment: one upserted comment per
       # PR (marker-matched, edited in place — no comment spam on re-push).
       # Runs on pass AND fail (if: always()); skipped on push-to-staging runs
@@ -311,9 +501,11 @@ jobs:
       # step landing). The fresh run upserts the real verdict.
       - name: Post QA report comment
         uses: actions/github-script@v9
+        # !cancelled(): when npm ci / checkout / download fail, the counts are
+        # empty and the verdict module says DID NOT RUN — better than leaving the
+        # previous head's comment up, looking current.
         if: >-
-          always() && github.event_name == 'pull_request' &&
-          steps.e2e-run.outcome != 'cancelled'
+          !cancelled() && github.event_name == 'pull_request'
         with:
           script: |
             const marker = "<!-- e2e-qa-report -->";
@@ -322,7 +514,7 @@ jobs:
             // and proven without applying a workflow edit:
             //   node scripts/ci/qa-report-verdict.cjs --self-test
             const raw = {
-              outcome:    "${{ steps.e2e-run.outcome }}",
+              outcome:    "${{ needs.e2e.result }}",
               executed:   "${{ steps.coverage-floor.outputs.executed }}",
               unexpected: "${{ steps.coverage-floor.outputs.unexpected }}",
               flaky:      "${{ steps.coverage-floor.outputs.flaky }}",
@@ -349,6 +541,16 @@ jobs:
                 counts: { text: "executed=unknown · unexpected=unknown · flaky=unknown · skipped=unknown", executed: null, skipped: null },
                 detail: `**Nothing ran, and the reporter itself could not load** (\`${err.message}\`) — the checkout did not complete. **This is NOT a spec failure.**`,
               };
+            }
+            // MEH-2895: a shard missing or with 0 executed is never PASS, and
+            // never "wait for a newer run" — name the shard instead.
+            const partial = `${{ steps.coverage-floor.outputs.partial }}`.trim();
+            if (partial) {
+              report.headline = "Playwright QA — INCOMPLETE";
+              report.detail =
+                `**Not every shard ran:** ${partial} The counts above cover only what did run, ` +
+                "so they are not a verdict on the PR. Open that shard's log. **This is not a pass.**\n\n" +
+                report.detail;
             }
             const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
             const body = [
@@ -428,71 +630,6 @@ jobs:
                 body: finalBody,
               });
             }
-
-      - name: Upload Playwright report
-        uses: actions/upload-artifact@v7
-        if: failure()
-        with:
-          name: playwright-report
-          # MEH-484 — also capture per-test trace.zip files so the trace viewer
-          # (playwright.dev/docs/trace-viewer) can replay flake-on-retry runs
-          # without re-running locally.
-          path: |
-            frontend/playwright-report/
-            frontend/test-results/**/trace.zip
-          retention-days: 7
-
-      # MEH-1712 — the same content, in the one place a CC session can actually
-      # read it. An artifact download redirects to Azure blob storage
-      # (productionresultssa18.blob.core.windows.net); the GitHub API hands back
-      # a valid pre-signed URL and the fetch then dies with
-      # `curl: (56) CONNECT tunnel failed, response 403` because that host is
-      # outside the sandbox egress allowlist. No GitHub App permission changes
-      # that — it is the same class as the *.up.railway.app block, and it is
-      # permanent. The probe numbers were diagnosable today for exactly one
-      # reason: they went to the job log, not only to an artifact.
-      #
-      # So this is not a duplicate of the upload below. The upload keeps the
-      # whole file for a human; this step is what removes the human from the
-      # loop. Rule: a diagnostic value that exists only inside an artifact is,
-      # from a CC session, a value that does not exist.
-      #
-      # The empty case prints an explicit line rather than nothing. "No output"
-      # is indistinguishable from "step didn't run" — reporting absence as
-      # silence is the precise failure this ticket spent a day on.
-      - name: Print next-start log (capture-only, MEH-1712)
-        if: always()
-        continue-on-error: true
-        run: |
-          echo "=== /tmp/next-start.log — last 200 lines ==="
-          if [ -s /tmp/next-start.log ]; then
-            tail -200 /tmp/next-start.log
-          else
-            echo "(EMPTY OR MISSING) $(ls -l /tmp/next-start.log 2>&1)"
-          fi
-          echo "=== end /tmp/next-start.log ==="
-
-      # MEH-1712 — the server's own stdout. `next start` has written to
-      # /tmp/next-start.log since MEH-1044 (step "Start Next.js server"), but
-      # nothing ever uploaded it, so every serverFetch failure it recorded was
-      # discarded at job teardown. That is why a half-day of triage could refute
-      # three hypotheses without once seeing the actual error: the file existed
-      # the whole time and was never kept.
-      #
-      # `if: always()` (not `failure()`, unlike the report above) — a PASSING run
-      # is the control. Without it there is nothing to diff a failing log against.
-      # `if-no-files-found: warn` so an empty capture is visible rather than a
-      # silent success, which is the failure mode this whole ticket is about.
-      - name: Upload E2E diagnostics (MEH-1712)
-        uses: actions/upload-artifact@v7
-        if: always()
-        with:
-          name: e2e-diagnostics
-          path: |
-            /tmp/next-start.log
-            /tmp/backend-probe.log
-          retention-days: 7
-          if-no-files-found: warn
 
   # ─────────────────────────────────────────────────────────────────
   # E2E GATE (MEH-1201) — required-check aggregator for the E2E suite.
