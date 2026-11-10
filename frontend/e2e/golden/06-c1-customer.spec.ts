@@ -25,6 +25,13 @@ test.describe("C1 — customer (email)", () => {
     const g1 = await goldenSession("g1", baseURL!);
     const c1 = await goldenSession("c1", baseURL!);
     const producerId = g1.me.producer_id!;
+    // A favourite left by an earlier run would turn the POST below into a
+    // conflict: clear it first (404 = there was none).
+    await expectStatus(
+      await c1.api.delete(`/users/me/favorites/${producerId}`),
+      [200, 204, 404],
+      "DELETE /users/me/favorites/{id} (sweep)",
+    );
     let saved = false;
     try {
       const added = await c1.api.post(`/users/me/favorites/${producerId}`);
@@ -96,7 +103,27 @@ test.describe("C1 — customer (email)", () => {
     ).searchParams.get("rt");
     expect(reviewToken).toBeTruthy();
 
+    // An earlier run's review (one per customer per business) would turn the
+    // POST into an edit of it. Seeded data has no C1 review, so any C1 review
+    // on G1 is a leftover; the admin deletes it even if it was left hidden.
+    const all = await a1.api.get("/admin/reviews");
+    await expectStatus(all, 200, "GET /admin/reviews (sweep)");
+    for (const r of (await all.json()) as {
+      id: string;
+      producer_id: string;
+      user_email?: string | null;
+    }[]) {
+      if (r.producer_id !== producerId || r.user_email !== c1.persona.email)
+        continue;
+      await expectStatus(
+        await a1.api.delete(`/reviews/${r.id}`),
+        [200, 204],
+        "DELETE /reviews/{id} (sweep, A1)",
+      );
+    }
+
     let reviewId: string | null = null;
+    let deleted = false;
     try {
       const posted = await c1.api.post(`/producers/${producerId}/reviews`, {
         stars: 5,
@@ -123,10 +150,20 @@ test.describe("C1 — customer (email)", () => {
       } finally {
         await context.close();
       }
+      // C1 deletes her own review — the last action of her walk.
+      const removed = await c1.api.delete(`/reviews/${reviewId}`);
+      await expectStatus(removed, [200, 204], "DELETE /reviews/{id} (C1)");
+      deleted = true;
     } finally {
-      if (reviewId) {
-        const removed = await c1.api.delete(`/reviews/${reviewId}`);
-        await expectStatus(removed, [200, 204], "DELETE /reviews/{id} (C1)");
+      // A failure between hide and unhide leaves the review hidden, and the
+      // author cannot delete a hidden review (reviews.py → 404). The admin can.
+      if (reviewId && !deleted) {
+        const removed = await a1.api.delete(`/reviews/${reviewId}`);
+        await expectStatus(
+          removed,
+          [200, 204],
+          "DELETE /reviews/{id} (cleanup, A1)",
+        );
       }
     }
     const after = await c1.api.get(`/producers/${producerId}/reviews`);

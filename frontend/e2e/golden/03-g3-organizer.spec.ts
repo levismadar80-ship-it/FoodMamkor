@@ -76,7 +76,22 @@ test.describe("G3 — organizer", () => {
       deadline: new Date(Date.now() + 7 * 24 * 3600 * 1000).toISOString(),
       fulfillment_note: "איסוף בתיאום מראש",
     });
-    await expectStatus(refused, 403, "POST /group-buys as an organizer");
+    try {
+      await expectStatus(refused, 403, "POST /group-buys as an organizer");
+    } finally {
+      // If the refusal ever regresses, the test fails above AND must not leave
+      // an open group buy behind under the organizer.
+      if (refused.ok()) {
+        const opened = (await refused.json().catch(() => ({}))) as {
+          id?: string;
+        };
+        if (opened.id) {
+          await g3.api.patch(`/group-buys/${opened.id}/status`, {
+            status: "cancelled",
+          });
+        }
+      }
+    }
     // And nothing was opened under her.
     const mine = await g3.api.get("/producers/me/group-buys");
     await expectStatus(mine, 200, "GET /producers/me/group-buys");

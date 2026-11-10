@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { expectStatus, goldenSession, runTag } from "./session";
+import { expectStatus, goldenSession, runTag, sweepLeftovers } from "./session";
 
 /**
  * Spec:     golden/01-g1-products — persona G1, a business with products only.
@@ -58,6 +58,7 @@ test.describe("G1 — business with products", () => {
   }) => {
     const g1 = await goldenSession("g1", baseURL!);
     const { api } = g1;
+    await sweepLeftovers(g1); // an earlier run's product or group buy, if one survived
     const tag = runTag();
     let productId: string | null = null;
     try {
@@ -86,7 +87,10 @@ test.describe("G1 — business with products", () => {
       try {
         const page = await context.newPage();
         await page.goto(`/producer/${g1.me.producer_id}`);
-        await expect(page.getByTestId("product-row").first()).toBeVisible();
+        // The run's own row (matched by its unique tag), not just any product.
+        await expect(
+          page.getByTestId("product-row").filter({ hasText: tag }),
+        ).toBeVisible();
       } finally {
         await context.close();
       }
@@ -167,7 +171,7 @@ test.describe("G1 — business with products", () => {
         const page = await ownerContext.newPage();
         await page.goto("/producer/dashboard/group-buys");
         await expect(
-          page.getByTestId("manage-group-buy-card").first(),
+          page.getByTestId("manage-group-buy-card").filter({ hasText: tag }),
         ).toBeVisible();
       } finally {
         await ownerContext.close();

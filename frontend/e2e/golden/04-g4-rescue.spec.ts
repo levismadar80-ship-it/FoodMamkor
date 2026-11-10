@@ -23,6 +23,7 @@ import { expectStatus, goldenSession, type GoldenSession } from "./session";
 
 const MINUTE = 60 * 1000;
 const NOT_IN_PILOT_TOWN = "סלי הפתעה עדיין לא פתוחים ביישוב הזה"; // rescue.py create_offer
+const ALREADY_ACTIVE_TODAY = "יש כבר סל פעיל בנקודה הזאת בתאריך הזה"; // rescue.py create_offer
 
 /** YYYY-MM-DD on the Israel clock — the bag's `date` is the Israel day. */
 function israelDate(at: Date): string {
@@ -110,6 +111,16 @@ test.describe("G4 — business with rescue bags", () => {
         published.status() === 403 &&
           (await detail(published)) === NOT_IN_PILOT_TOWN,
         "G4's town (זכרון יעקב) is not in this target's RESCUE_BAGS_CITIES",
+      );
+      // One active bag per point per Israel day (rescue.py). cancelLeftoverBags
+      // above clears any leftover whose window is still open; a bag left
+      // `active` by an earlier run AFTER its pickup_end can no longer be
+      // cancelled (409 «זמן האיסוף חלף»), so today's walk cannot publish.
+      test.skip(
+        published.status() === 409 &&
+          (await detail(published)) === ALREADY_ACTIVE_TODAY,
+        "an earlier run left today's bag at G4's point active past its window; " +
+          "it cannot be cancelled now, so the walk can publish again tomorrow",
       );
       await expectStatus(published, [200, 201], "POST /rescue/offers");
       offerId = (await published.json()).id;

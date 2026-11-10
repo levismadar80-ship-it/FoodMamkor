@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { expectStatus, goldenSession, runTag } from "./session";
+import { expectStatus, goldenSession, runTag, sweepLeftovers } from "./session";
 
 /**
  * Spec:     golden/02-g2-events — persona G2, a business with events and
@@ -23,6 +23,7 @@ test.describe("G2 — business with events and experiences", () => {
   }) => {
     const g2 = await goldenSession("g2", baseURL!);
     const { api } = g2;
+    await sweepLeftovers(g2); // an earlier run's event, if one survived
     const tag = runTag();
     const inTenDays = new Date(Date.now() + 10 * 24 * 3600 * 1000)
       .toISOString()

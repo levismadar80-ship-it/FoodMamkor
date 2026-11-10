@@ -111,6 +111,13 @@ function makeApi(ctx: APIRequestContext, token: string): GoldenApi {
 }
 
 async function login(key: PersonaKey, baseURL: string): Promise<Entry> {
+  // The personas exist only on staging; their writes must never reach the
+  // live site (anchor plan §C.2: no production smoke before `is_test`).
+  if (/(^|\.)mehamakor\.co\.il$/i.test(new URL(baseURL).hostname)) {
+    throw new Error(
+      `[golden] refusing to run against production (${baseURL}).`,
+    );
+  }
   const persona = PERSONAS[key];
   const password = process.env[persona.passwordEnv];
   if (!password) {
@@ -218,4 +225,65 @@ export async function expectStatus(
 /** A tag that makes everything a run creates recognisable, and unique per run. */
 export function runTag(): string {
   return `golden-${Date.now().toString(36)}`;
+}
+
+/** Matches a `runTag()` inside a name or title. Seeded rows never carry one. */
+const RUN_TAG = /golden-[0-9a-z]{6,}/;
+
+/**
+ * Remove what an EARLIER run created and never cleaned up — a test killed by
+ * its timeout skips its `finally`. Called at the start of the spec that would
+ * collide with the leftover, before it creates anything. Only rows whose name
+ * carries a run tag are touched; seeded rows have none.
+ */
+export async function sweepLeftovers(session: GoldenSession): Promise<number> {
+  const { api } = session;
+  let swept = 0;
+  if (session.persona.key === "g1") {
+    const products = await api.get("/producers/me/products");
+    await expectStatus(products, 200, "GET /producers/me/products (sweep)");
+    for (const p of (await products.json()) as { id: string; name: string }[]) {
+      if (!RUN_TAG.test(p.name)) continue;
+      await expectStatus(
+        await api.delete(`/producers/me/products/${p.id}`),
+        [200, 204],
+        "DELETE /producers/me/products/{id} (sweep)",
+      );
+      swept += 1;
+    }
+    const buys = await api.get("/producers/me/group-buys");
+    await expectStatus(buys, 200, "GET /producers/me/group-buys (sweep)");
+    for (const gb of (await buys.json()) as {
+      id: string;
+      title: string;
+      status: string;
+    }[]) {
+      if (!RUN_TAG.test(gb.title) || !["open", "funded"].includes(gb.status))
+        continue;
+      await expectStatus(
+        await api.patch(`/group-buys/${gb.id}/status`, { status: "cancelled" }),
+        200,
+        "PATCH /group-buys/{id}/status (sweep)",
+      );
+      swept += 1;
+    }
+  }
+  if (session.persona.key === "g2") {
+    const events = await api.get("/events/mine");
+    await expectStatus(events, 200, "GET /events/mine (sweep)");
+    for (const ev of (await events.json()) as { id: string; title: string }[]) {
+      if (!RUN_TAG.test(ev.title)) continue;
+      await expectStatus(
+        await api.delete(`/events/${ev.id}`),
+        [200, 204],
+        "DELETE /events/{id} (sweep)",
+      );
+      swept += 1;
+    }
+  }
+  if (swept > 0)
+    console.warn(
+      `[golden] swept ${swept} leftover(s) of an earlier run for ${session.persona.key}.`,
+    );
+  return swept;
 }
