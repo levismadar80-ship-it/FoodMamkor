@@ -54,9 +54,8 @@ export default defineConfig({
         // (MEH-1788 step A), ו-annotations בדרגת `error` ממנו ייקראו כחוסמות.
         // ההחרגה שומרת על ההבחנה בין השניים בלי לגעת ב-e2e.yml.
         //
-        // בטוח מ-annotation multiplication מסוג matrix: אין matrix ואין
-        // sharding — e2e.yml:221 הוא `npx playwright test --fail-on-flaky-tests`
-        // בודד.
+        // בטוח מ-annotation multiplication מסוג matrix: גם עם שני ה-shards
+        // (MEH-2895) כל טסט רץ ב-shard אחד בלבד, ולכן כל כשל מופיע פעם אחת.
         //
         // ⚠️ ה-annotations הן מסלול מהיר, ולא הרשימה המלאה. GitHub מגביל
         // ל-**10 annotations מסוג error per step** (50 per job), ו-`retries: 1`
@@ -68,6 +67,13 @@ export default defineConfig({
         ...(process.env.PW_WEBKIT === "1"
           ? []
           : [["github"] as ["github"]]),
+        // MEH-2895: ריצה עם `--shard` (ה-shards של e2e.yml) כותבת גם
+        // blob-report/, וה-job ‏e2e-report ממזג את שניהם לדוח אחד. המתג הוא
+        // הארגומנט עצמו ולא משתנה סביבה, כדי לא להוסיף משתנה חדש (כלל
+        // רגרסיה 8, Env drift). בלי `--shard` הרשימה זהה לקודמת.
+        ...(process.argv.some((a) => a === "--shard" || a.startsWith("--shard="))
+          ? [["blob", { outputDir: "blob-report" }] as ["blob", { outputDir: string }]]
+          : []),
       ]
     : [["list"]],
   // MEH-728: timing budgets raised for Vercel preview cold-start. The two
