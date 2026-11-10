@@ -7,7 +7,7 @@ import BrandLoader from "@/components/BrandLoader";
 // called getTranslations("a11y") with no locale — loading.js gets no params —
 // so next-intl fell back to headers(), and that one call opted EVERY route
 // under [locale] into per-request rendering (88 of 89 routes ƒ in the build;
-// 31 route families back to ● ISR without it, MEH-2864 Phase 0). The client
+// 27 page types cached again, listed in static-routes.expected.json). The client
 // provider in the layout already ships the a11y namespace
 // (lib/client-messages.js keeps it in the root set).
 // DO NOT turn this back into an async server component that reads next-intl

@@ -14,8 +14,6 @@
   "/en/claim",
   "/en/contact",
   "/en/dev/components",
-  "/en/events",
-  "/en/experiences",
   "/en/favorites",
   "/en/forgot-password",
   "/en/group-buys",
@@ -26,10 +24,8 @@
   "/en/recommend",
   "/en/register",
   "/en/rescue",
-  "/en/reset-password",
   "/en/settings",
   "/en/terms",
-  "/en/verify-email",
   "/he",
   "/he/about",
   "/he/about/badges",
@@ -45,8 +41,6 @@
   "/he/claim",
   "/he/contact",
   "/he/dev/components",
-  "/he/events",
-  "/he/experiences",
   "/he/favorites",
   "/he/forgot-password",
   "/he/group-buys",
@@ -57,8 +51,6 @@
   "/he/recommend",
   "/he/register",
   "/he/rescue",
-  "/he/reset-password",
   "/he/settings",
-  "/he/terms",
-  "/he/verify-email"
+  "/he/terms"
 ]
