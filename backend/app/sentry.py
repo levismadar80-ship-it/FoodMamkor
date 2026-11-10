@@ -401,6 +401,20 @@ def error_sampler(event: dict, hint: dict | None = None) -> float:
             return 1.0
 
 
+# MEH-2887: staging shares the production span quota and used ~95% of it.
+# Errors are unaffected (error_sampler / before_send own those); only traces
+# drop to 1% outside production. Keyed on the existing ENV — no new variable.
+PRODUCTION_TRACES_SAMPLE_RATE = 0.1
+NON_PRODUCTION_TRACES_SAMPLE_RATE = 0.01
+
+
+def traces_sample_rate_for(environment: str) -> float:
+    """Traces sample rate for a Sentry environment (MEH-2887)."""
+    if environment == "production":
+        return PRODUCTION_TRACES_SAMPLE_RATE
+    return NON_PRODUCTION_TRACES_SAMPLE_RATE
+
+
 def init_sentry() -> None:
     """Idempotent fail-open Sentry init. Call once at boot.
 
@@ -468,7 +482,7 @@ def init_sentry() -> None:
             "dsn": dsn,
             "environment": environment,
             "release": release,
-            "traces_sample_rate": 0.1,
+            "traces_sample_rate": traces_sample_rate_for(environment),
             "integrations": [FastApiIntegration()],
             # MEH-2114 event budget — see the header block for the arithmetic.
             "before_send": before_send,
