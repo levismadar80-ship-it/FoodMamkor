@@ -33,6 +33,7 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { ShoppingBag, CalendarPlus, UsersThree, CookingPot, Star, Sparkle } from "@phosphor-icons/react";
 import api from "@/lib/api";
+import Button from "@/components/ui/Button";
 import { useAuth } from "@/lib/auth-context";
 import RequestReviewCard from "@/components/producer/RequestReviewCard";
 import BusinessQrCard from "@/components/producer/BusinessQrCard";
@@ -237,13 +238,9 @@ export default function ProducerDashboardToolsPage() {
       {approved && !profile && profileError && (
         <div role="alert" data-testid="tools-share-error" className="mt-8 bg-surface border border-border rounded-lg p-5 text-center">
           <p className="text-fg-muted mb-3">{t("section_errors.profile")}</p>
-          <button
-            type="button"
-            onClick={() => setAttempt((n) => n + 1)}
-            className="inline-block bg-primary text-white px-4 py-2 rounded-full text-sm font-medium hover:bg-primary-dark transition"
-          >
+          <Button variant="primary" size="sm" onClick={() => setAttempt((n) => n + 1)}>
             {t("section_errors.retry_cta")}
-          </button>
+          </Button>
         </div>
       )}
       {approved && profile && profile.kind !== "organizer" && (
