@@ -200,7 +200,9 @@ def register_for_event(
                 phone=reg.phone,
                 email=reg.email,
                 spots_left=spots,
-                manage_url=f"{settings.frontend_url}/producer/dashboard",
+                # MEH-2884 (placement audit item 10): straight to the tool that lists
+                # the registrations, not the dashboard home (one tap saved).
+                manage_url=f"{settings.frontend_url}/producer/dashboard/events",
             ),
         )
     return RegistrationCreatedOut()
@@ -270,7 +272,8 @@ def register_for_experience(
                 phone=reg.phone,
                 email=reg.email,
                 spots_left=spots,
-                manage_url=f"{settings.frontend_url}/producer/dashboard",
+                # MEH-2884: experiences tab, where the host sees this registration.
+                manage_url=f"{settings.frontend_url}/producer/dashboard/experiences",
             ),
         )
     return RegistrationCreatedOut()
@@ -393,7 +396,11 @@ def cancel_registration(
                 OwnerCancelEmail(
                     title=item.title,
                     name=reg.name,
-                    manage_url=f"{settings.frontend_url}/producer/dashboard",
+                    # MEH-2884: the tab that lists this item's registrations.
+                    manage_url=(
+                        f"{settings.frontend_url}/producer/dashboard/"
+                        + ("events" if reg.event_id else "experiences")
+                    ),
                 ),
             )
     return RegistrationCancelInfoOut(
