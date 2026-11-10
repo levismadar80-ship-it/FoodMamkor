@@ -80,10 +80,12 @@ def _image_head() -> str:
     return ScriptDirectory.from_config(cfg).get_current_head()
 
 
-def _newer_image(tmp_path: Path, upgrade_body: str) -> Path:
+def _newer_image(
+    tmp_path: Path, upgrade_body: str, rev: str = EXTRA_REV, folder: str = "newer_image"
+) -> Path:
     """A copy of alembic/ + alembic.ini with one extra revision on top of head.
     Returns the copied ini path."""
-    root = tmp_path / "newer_image"
+    root = tmp_path / folder
     shutil.copytree(
         BACKEND / "alembic",
         root / "alembic",
@@ -91,12 +93,12 @@ def _newer_image(tmp_path: Path, upgrade_body: str) -> Path:
     )
     shutil.copy(BACKEND / "alembic.ini", root / "alembic.ini")
     (
-        root / "alembic" / "versions" / f"29990101_0000_{EXTRA_REV}_meh2903_extra.py"
+        root / "alembic" / "versions" / f"29990101_0000_{rev}_meh2903_extra.py"
     ).write_text(
         f'''"""meh2903 test-only revision"""
 from alembic import op
 
-revision = "{EXTRA_REV}"
+revision = "{rev}"
 down_revision = "{_image_head()}"
 branch_labels = None
 depends_on = None
@@ -212,3 +214,37 @@ def test_an_image_with_no_migration_files_fails_the_boot(scratch_db, tmp_path, c
     assert "NO MIGRATIONS" in proc.stderr, proc.stderr[-3000:]
     # Nothing was written: the database is still at the real image head.
     assert _version(scratch_db) == [_image_head()]
+
+
+OTHER_REV = "meh2903other"
+
+
+def test_a_split_history_fails_the_boot_and_names_both_revisions(
+    scratch_db, tmp_path, capsys
+):
+    # MEH-2903 risk 2. Image A applied revision EXTRA on top of head. Image B is
+    # NOT older than A: it carries its own revision OTHER on the same parent,
+    # never applied. To B the database looks "ahead", exactly like a rollback,
+    # but taking rollback mode would start B with its own migration unapplied.
+    # Rollback mode is only for an image whose head the database has applied.
+    newer = _newer_image(tmp_path, 'op.execute("SELECT 1")')
+    first = _run(scratch_db, "--alembic-ini", str(newer))
+    assert first.returncode == 0, first.stderr[-3000:]
+    assert _version(scratch_db) == [EXTRA_REV]
+
+    split = _newer_image(
+        tmp_path, 'op.execute("SELECT 1")', rev=OTHER_REV, folder="split_image"
+    )
+    proc = _run(scratch_db, "--alembic-ini", str(split))
+    _show(capsys, "case 4 · a split history (not a rollback)", proc)
+
+    assert proc.returncode != 0, (
+        "an image whose own head was never applied must not boot:\n"
+        + proc.stderr[-3000:]
+    )
+    assert "ROLLBACK MODE" not in proc.stderr, proc.stderr[-3000:]
+    assert "SPLIT HISTORY" in proc.stderr, proc.stderr[-3000:]
+    # Both revision ids are in the log, so the cause is visible at a glance.
+    assert EXTRA_REV in proc.stderr and OTHER_REV in proc.stderr, proc.stderr[-3000:]
+    # Nothing was written: the database is still where image A left it.
+    assert _version(scratch_db) == [EXTRA_REV]

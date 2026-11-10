@@ -90,6 +90,19 @@ def main(argv: list[str] | None = None) -> int:
     cfg = _config(args.alembic_ini.resolve())
     script = ScriptDirectory.from_config(cfg)
 
+    # MEH-2903 risk 1: with no revision files every database head looks
+    # "unknown", which would read as a rollback and start the app on a schema
+    # nobody checked. A wrong script_location or a broken image build looks
+    # exactly like this. Fail the boot instead.
+    if script.get_current_head() is None:
+        log.error(
+            "NO MIGRATIONS: this image has no Alembic revision files under %s. "
+            "Refusing to start: without them it cannot tell a rollback from a "
+            "broken image.",
+            cfg.get_main_option("script_location"),
+        )
+        return 2
+
     db_heads = database_heads(settings.database_url)
     ahead = unknown_heads(db_heads, script)
     if ahead:
