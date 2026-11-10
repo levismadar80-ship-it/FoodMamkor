@@ -56,7 +56,7 @@ from app.services.analytics import israel_day_of, server_health, unique_views_co
 from app.services.category_slug import resolve_unique_slug
 from app.services.user_deletion import delete_user_and_data  # MEH-2585
 from app.services.vacation_state import read_vacation_state
-from app.services.whatsapp import UNDELIVERED_STATUSES, UNDELIVERED_WINDOW_DAYS
+from app.services.whatsapp import undelivered_predicate
 from app.utils.clock import ISRAEL_TZ, israel_today, utc_now
 from app.utils.sql import LIKE_ESCAPE, escape_like
 
@@ -886,10 +886,7 @@ def get_dashboard(
     )
     undelivered_whatsapp_7d = (
         db.query(func.count(OutboundMessage.id))
-        .filter(OutboundMessage.status.in_(UNDELIVERED_STATUSES))
-        .filter(
-            OutboundMessage.created_at >= now - timedelta(days=UNDELIVERED_WINDOW_DAYS)
-        )
+        .filter(undelivered_predicate(OutboundMessage, now))  # MEH-2122 Chunk E
         .scalar()
         or 0
     )
