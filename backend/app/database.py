@@ -1,9 +1,14 @@
 import logging
 import os
+from collections.abc import Iterator
 
+import anyio
+import anyio.to_thread
+
+from fastapi import BackgroundTasks
 from sqlalchemy import create_engine
 from sqlalchemy.exc import TimeoutError as PoolTimeoutError
-from sqlalchemy.orm import DeclarativeBase, sessionmaker
+from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 from sqlalchemy.pool import QueuePool
 
 from app.config import settings
@@ -111,8 +116,53 @@ class Base(DeclarativeBase):
     pass
 
 
-def get_db():
+async def _release_session(db: Session) -> None:
+    """MEH-2886: give the request's connection back to the pool.
+
+    Queued by ``get_db`` as the request's FIRST background task.
+
+    Async on purpose, with ``db.close`` on a PRIVATE one-token limiter — the
+    same thing FastAPI does for a yield dependency's exit
+    (fastapi/concurrency.py:21-27). A plain sync task would go through
+    Starlette's run_in_threadpool, i.e. the default 40-token limiter that the
+    (sync) endpoints also use: under load every token can be held by a handler
+    blocked on pool checkout, and the release that would free them waits for a
+    token → nothing moves until pool_timeout (MEH-2886 chunk-2 review,
+    measured; tests/test_meh2886_db_release.py pins it).
+
+    Never raises: Starlette runs a request's tasks in one loop, so an exception
+    here would cancel every task queued after it (the request's emails).
+    """
+    try:
+        await anyio.to_thread.run_sync(db.close, limiter=anyio.CapacityLimiter(1))
+    except Exception:  # noqa: BLE001 — must not take the request's tasks down
+        log.exception("db_release_before_tasks_failed")
+
+
+def get_db(background_tasks: BackgroundTasks) -> Iterator[Session]:
+    """One session per request.
+
+    MEH-2886: ``db.close()`` used to run only in ``finally`` — which, for a
+    request-scoped yield dependency, is AFTER Starlette has run every
+    BackgroundTask (fastapi/routing.py:148-155; starlette/responses.py:169-170).
+    A route that touched the DB and then queued an email held a pool connection
+    for as long as Resend took; 15 slow sends emptied the 10+5 pool.
+
+    Now the close is queued as the first background task. Dependencies are
+    solved before the endpoint runs, so it is ahead of every ``add_task`` the
+    endpoint makes, and it runs after the response is built (serialization of
+    ORM objects is finished). A task that is handed this ``db`` (fire_alerts,
+    notify_cities — docs/audits/2026-11-db-release-phase0.md §2.4) still works:
+    the session re-opens a connection on use, and the ``finally`` below
+    releases it after the last task.
+
+    DO NOT return a ``Response(background=...)`` from a route that depends on
+    this: FastAPI then drops every solved task, this close included
+    (fastapi/routing.py:751-752). tests/test_meh2886_db_release.py guards it.
+    DO NOT call ``next(get_db())`` outside a request — use ``SessionLocal()``.
+    """
     db = SessionLocal()
+    background_tasks.add_task(_release_session, db)
     try:
         yield db
     finally:
