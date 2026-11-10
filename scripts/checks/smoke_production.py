@@ -57,6 +57,8 @@ import urllib.parse
 import urllib.request
 from pathlib import Path
 
+import vercel_count  # MEH-2864: sibling module, prints «requests to Vercel: N» at exit
+
 REPO_ROOT = Path(__file__).resolve().parents[2]
 SEED_FILE = REPO_ROOT / "backend" / "seed_data.py"
 
@@ -106,6 +108,7 @@ def fetch(url: str) -> tuple[int, bytes, dict]:
     second copy for the control would be free to drift from the one that
     matters (.claude/rules/testing.md — "exercise the real implementation").
     """
+    vercel_count.note(url)  # MEH-2864
     req = urllib.request.Request(url, headers={"User-Agent": "mehamakor-smoke/1.0"})
     try:
         with urllib.request.urlopen(req, timeout=TIMEOUT_S) as resp:  # noqa: S310

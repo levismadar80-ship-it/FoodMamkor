@@ -53,10 +53,13 @@ passes="$(printf '%s\n' "$out" | grep -c '^PASS' || true)"
 budget_cases="$(printf '%s\n' "$out" | grep -c '^PASS  self-test: budget:' || true)"
 workflow_cases="$(printf '%s\n' "$out" | grep -c '^PASS  self-test: REAL post-deploy-checks.yml' || true)"
 e2e_cases="$(printf '%s\n' "$out" | grep -c '^PASS  self-test: e2e:' || true)"
+# MEH-2864 «ייעול הבדיקות»: the per-run Vercel count (4) and the smoke cap (3).
+vercel_cases="$(printf '%s\n' "$out" | grep -c '^PASS  self-test: vercel count:' || true)"
+smoke_cases="$(printf '%s\n' "$out" | grep -c '^PASS  self-test: smoke:' || true)"
 
-if [ "$code" -ne 0 ] || [ "$fails" -ne 0 ] || [ "$budget_cases" -lt 8 ] || [ "$workflow_cases" -lt 3 ] || [ "$e2e_cases" -lt 5 ]; then
+if [ "$code" -ne 0 ] || [ "$fails" -ne 0 ] || [ "$budget_cases" -lt 8 ] || [ "$workflow_cases" -lt 3 ] || [ "$e2e_cases" -lt 5 ] || [ "$vercel_cases" -lt 4 ] || [ "$smoke_cases" -lt 3 ]; then
   printf '%s\n' "$out" | grep -v '^PASS'
-  echo "FAIL link-check-budget-guard: exit=$code, $fails failing case(s); passed: budget $budget_cases/8, workflow $workflow_cases/3, e2e $e2e_cases/5 — scripts/link-check.mjs"
+  echo "FAIL link-check-budget-guard: exit=$code, $fails failing case(s); passed: budget $budget_cases/8, workflow $workflow_cases/3, e2e $e2e_cases/5, vercel $vercel_cases/4, smoke $smoke_cases/3 — scripts/link-check.mjs"
   exit 1
 fi
-echo "link-check-budget-guard: $passes self-test case(s) passed (budget $budget_cases, workflow $workflow_cases, e2e $e2e_cases)"
+echo "link-check-budget-guard: $passes self-test case(s) passed (budget $budget_cases, workflow $workflow_cases, e2e $e2e_cases, vercel $vercel_cases, smoke $smoke_cases)"

@@ -21,6 +21,7 @@
  *           budget: a staging target gets a 40-page sample, not a full crawl).
  *
  * Usage:  node scripts/link-check.mjs [baseURL] [--json] [--max-pages=N]
+ *         node scripts/link-check.mjs [baseURL] --smoke   (≤10 fixed URLs, no crawl)
  *         node scripts/link-check.mjs --self-test
  *         default baseURL http://localhost:3000 (run `next start` first)
  *
@@ -42,6 +43,14 @@
  *   requests made, so the cost of a run is on its own log. --self-test crawls a
  *   local 91-page fixture server in both modes, so the crawl loop itself — not
  *   only the budget function — is under test.
+ *
+ * SMOKE + VERCEL COUNT (MEH-2864, «ייעול הבדיקות»)
+ *   --smoke fetches at most 10 fixed URLs (404 control, home, list, map, health,
+ *   one business page found through the API) and does not crawl — the
+ *   post-deploy check against Vercel. The full crawl moved to a local
+ *   `next start` (frontend/e2e/flows/manual/link-crawl.spec.ts), which costs
+ *   Vercel nothing. Every run ends with "requests to Vercel: N" (0 for a local
+ *   host).
  *
  * EXIT CODES
  *   0 — no broken internal links
@@ -111,6 +120,41 @@ function resolvePageBudget({ base, env, argv }) {
   if (env.IS_PRODUCTION === "true") return { max: FULL_PAGES, mode: "full", reason: "IS_PRODUCTION=true" };
   if (FULL_CRAWL_HOSTS.has(host)) return { max: FULL_PAGES, mode: "full", reason: `production/local host ${host}` };
   return sample(`unknown host ${host || "(unparseable)"}`);
+}
+
+// --------------------------------------------------- Vercel cost + smoke (MEH-2864)
+
+// Hosts served by this machine (a local `next start`), never by Vercel. Every
+// other host — production, staging, a *.vercel.app preview — is billed to the
+// Vercel team per request, so the run's last line says how many it sent there.
+const LOCAL_HOSTS = new Set(["localhost", "127.0.0.1", "[::1]", "::1"]);
+function vercelRequestCount(base, requestCount) {
+  let host = "";
+  try {
+    host = new URL(base).hostname;
+  } catch {
+    return requestCount; // unknown → assume billed, never under-report
+  }
+  return LOCAL_HOSTS.has(host) ? 0 : requestCount;
+}
+
+// --smoke: the post-deploy check against the live site. No crawl — a fixed
+// list of the pages a visitor lands on, plus the 404 control. The card's cap
+// is 10 URLs per run; the business page is discovered (one API call) because
+// no slug is guaranteed to exist on every environment.
+const SMOKE_MAX_URLS = 10;
+const SMOKE_PAGES = [
+  ["home", "/"],
+  ["list", "/producers"],
+  ["map", "/map"],
+  ["health", "/api/health/liveness"],
+];
+const SMOKE_DISCOVERY = "/api/producers?limit=1";
+/** The URLs one smoke run fetches, in order. `slug` null = no business found. */
+function smokeTargets(slug) {
+  const out = [["404 control", "/mm-link-check-probe/does-not-exist"], ["business discovery", SMOKE_DISCOVERY], ...SMOKE_PAGES];
+  if (slug) out.push(["business page", `/${encodeURIComponent(slug)}`]);
+  return out;
 }
 
 // Declared here rather than beside the extractors: --self-test exercises the
@@ -387,6 +431,14 @@ if (args.includes("--self-test")) {
     // non-production host post-deploy-checks.yml can crawl must sample, and
     // the production host must not.
     ...workflowHostCases(),
+    // MEH-2864: the per-run Vercel count, and the smoke cap.
+    { name: "vercel count: localhost sends 0 to Vercel", got: () => vercelRequestCount("http://localhost:3000", 57), want: 0 },
+    { name: "vercel count: staging host is billed", got: () => vercelRequestCount("https://staging.mehamakor.online", 57), want: 57 },
+    { name: "vercel count: a preview host is billed", got: () => vercelRequestCount("https://food-mamkor-abc.vercel.app", 3), want: 3 },
+    { name: "vercel count: unparseable base is counted, not zeroed", got: () => vercelRequestCount("not a url", 4), want: 4 },
+    { name: `smoke: a run with a business fetches <= ${SMOKE_MAX_URLS} URLs`, got: () => smokeTargets("x").length <= SMOKE_MAX_URLS, want: true },
+    { name: "smoke: home, list, map, health and a business page are all in it", got: () => ["/", "/producers", "/map", "/api/health/liveness", "/x"].every((p) => smokeTargets("x").some(([, q]) => q === p)), want: true },
+    { name: "smoke: no business found → no business page fetched", got: () => smokeTargets(null).some(([k]) => k === "business page"), want: false },
   ];
   let bad = 0;
   for (const c of cases) {
@@ -561,6 +613,49 @@ const probes = {
   // path: the point is to exercise the route's OWN not-found rendering.
   entity: "/producer/999999999",
 };
+// MEH-2864: --smoke — the post-deploy check against the live site. A handful
+// of fixed URLs, no crawl. Exits here; nothing below runs.
+if (args.includes("--smoke")) {
+  const results = [];
+  let slug = null;
+  for (const [name, path] of smokeTargets(null)) {
+    if (path === SMOKE_DISCOVERY) {
+      try {
+        requests += 1;
+        const res = await fetch(`${BASE}${path}`, { headers: requestHeaders(`${BASE}${path}`) });
+        const data = res.ok ? await res.json() : null;
+        const list = Array.isArray(data) ? data : data?.items || [];
+        slug = list[0]?.slug || null;
+        // An empty catalogue (production before launch) is a 200 with [] —
+        // the API works; there is just no business page to load. SKIP below.
+        results.push({ name, path, status: res.status, ok: res.ok });
+      } catch (err) {
+        results.push({ name, path, status: 0, ok: false, error: err.message });
+      }
+      continue;
+    }
+    const r = await head(`${BASE}${path}`);
+    const want = name === "404 control" ? 404 : 200;
+    results.push({ name, path, status: r.status, ok: r.status === want, error: r.error });
+  }
+  if (slug) {
+    const [[name, path]] = smokeTargets(slug).filter(([k]) => k === "business page");
+    const r = await head(`${BASE}${path}`);
+    results.push({ name, path, status: r.status, ok: r.status === 200, error: r.error });
+  } else {
+    results.push({ name: "business page", path: "(none listed)", status: "-", ok: true, skip: true });
+  }
+  const failed = results.filter((r) => !r.ok);
+  console.log(`link-check --smoke · base=${BASE}`);
+  for (const r of results) {
+    console.log(`  ${r.skip ? "SKIP" : r.ok ? "OK  " : "FAIL"}  ${r.name.padEnd(19)} ${r.path}  → ${r.status}${r.error ? ` (${r.error})` : ""}`);
+  }
+  console.log(`URLs checked:       ${results.filter((r) => !r.skip).length} (cap ${SMOKE_MAX_URLS})`);
+  console.log(`HTTP requests:      ${requests} (redirect hops included)`);
+  console.log(`requests to Vercel: ${vercelRequestCount(BASE, requests)}`);
+  process.exit(failed.length ? 1 : 0);
+}
+
 const preflight = {};
 for (const [kind, path] of Object.entries(probes)) {
   const r = await head(`${BASE}${path}`);
@@ -703,6 +798,7 @@ if (asJson) {
         crawled: fetchedPages.length,
         pages: fetchedPages,
         requests,
+        vercelRequests: vercelRequestCount(BASE, requests),
         broken: broken.map(([u, r]) => ({ url: u, status: r.status, error: r.error, from: [...(referrers.get(u) || [])] })),
         redirects: redirects.map(([u, r]) => ({ url: u, hops: r.chain })),
         deadAnchors,
@@ -744,6 +840,7 @@ if (asJson) {
   if (slugBlind || entityBlind) console.log("");
   console.log(`crawled:            ${fetchedPages.length} pages fetched`);
   console.log(`HTTP requests:      ${requests} (preflight and redirect hops included)`);
+  console.log(`requests to Vercel: ${vercelRequestCount(BASE, requests)}`);
   if (truncated && budget.mode === "sample") {
     console.log(
       `SAMPLE:             stopped at the ${MAX_PAGES}-page staging budget with ${truncated} URLs ` +

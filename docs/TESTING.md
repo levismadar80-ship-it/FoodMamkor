@@ -376,6 +376,19 @@ Vercel ב-09/11, ולכן:
 ב-Repo guards. ה-self-test בודק את פונקציית התקציב, את ה-hosts שב-`post-deploy-checks.yml`,
 וגם סורק שרת מקומי של 91 עמודים פעמיים, כ-staging וכ-full.
 
+**איפה רצה הסריקה המלאה (MEH-2864, «ייעול הבדיקות»).** הסריקה המלאה רצה
+ב-E2E, מול ה-`next start` המקומי של ה-job
+(`frontend/e2e/flows/manual/link-crawl.spec.ts`, פעם אחת לריצה, בפרויקט
+`desktop`). היא לא שולחת אף בקשה ל-Vercel, וקישור שבור נתפס לפני המיזוג.
+מול האתר החי, אחרי deploy, רץ רק `node scripts/link-check.mjs <URL> --smoke`:
+עד 10 כתובות (בקרת 404, בית, רשימה, מפה, health, דף עסק אחד שנמצא דרך ה-API;
+אם אין אף עסק, דף העסק הוא SKIP ולא FAIL). סריקה מלאה של האתר החי רצה פעם
+בשבוע, ב-production בלבד. push שלא שינה שום דבר שעולה לאתר תחת `frontend/`
+(בדיקות לא נחשבות) מדלג על כל הבדיקות מול האתר החי
+(`scripts/frontend-touched.sh`, שבמקרה של ספק עונה «השתנה»). כל בדיקה מדפיסה
+בסוף `requests to Vercel: N`. השינוי ב-workflow ממתין לספיר:
+[docs/ci/post-deploy-trim.patch.md](./ci/post-deploy-trim.patch.md).
+
 ---
 
 ## בדיקות אחרי עלייה (MEH-2749)
@@ -385,7 +398,7 @@ Vercel ב-09/11, ולכן:
 ```
 python scripts/checks/wait_for_deploy.py --base-url <URL> --sha <commit>  # מחכה ל-build id חדש
 python scripts/checks/smoke_production.py                                  # main בלבד
-node   scripts/link-check.mjs <URL>                                        # קישורים שבורים
+node   scripts/link-check.mjs <URL> --smoke                                # עד 10 כתובות (MEH-2864)
 python scripts/checks/live_security_headers.py --base-url <URL>            # CSP, HSTS ועוד
 npx @lhci/cli@0.15.1 collect --config=scripts/checks/lighthouserc.cjs      # תקציב ביצועים (פרודקשן בלבד)
 npx @lhci/cli@0.15.1 assert  --config=scripts/checks/lighthouserc.cjs
