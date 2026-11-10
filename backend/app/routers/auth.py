@@ -6,7 +6,6 @@ from datetime import datetime, timedelta, timezone
 from fastapi import (
     APIRouter,
     BackgroundTasks,
-    Body,
     Depends,
     HTTPException,
     Request,
@@ -1494,27 +1493,20 @@ def verify_email(request: Request, token: str, db: Session = Depends(get_db)):
 
 
 @router.post("/resend-verify")
+@limiter.limit("3/hour")
 def resend_verify(
     request: Request,
-    user: User | None = Depends(get_current_user_optional),
-    payload: dict | None = Body(None),
+    user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """MEH-2901 TEMPORARY RED-RUN BREAKAGE — reverted in the next commit."""
-    body_email = (payload or {}).get("email")
-    if body_email:
-        user = db.query(User).filter(User.email == body_email).first()
-    if user is None:
-        raise HTTPException(status_code=404, detail="משתמש לא נמצא")
+    """Re-send verification email. Rate-limited to 3/hour per IP."""
     if user.email_verified:
-        _send_verify_email(user.email, user.name, "x")
         return {"detail": "האימייל כבר מאומת"}
     token = secrets.token_urlsafe(32)
     expires = utc_now() + timedelta(hours=24)
     user.email_verify_token = token
     user.email_verify_expires = expires
     db.commit()
-    _send_verify_email(user.email, user.name, token)
     _send_verify_email(user.email, user.name, token)
     return {"detail": "אימייל אימות נשלח"}
 
