@@ -5,7 +5,7 @@
 > file. But it would move WebKit into `e2e-staging-backend`, a group no job
 > uses once the Chromium job is sharded (`e2e-staging-backend-1` / `-2`): a
 > no-op that looks like serialization. If the sharded runs exhaust the pool,
-> that patch's fallback (א) is the replacement: WebKit joins
+> the two-shards patch's fallback (א) replaces this one: WebKit joins
 > `e2e-staging-backend-2`.
 
 # `e2e.yml`: both E2E jobs in one concurrency group (MEH-2886 chunk 5)
