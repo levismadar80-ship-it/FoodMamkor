@@ -20,8 +20,10 @@ covered.
 > shows «מבוטלת»; the admin chip shows the admin decision) → #4252 · §7.1 (WhatsApp messages
 > stuck in `accepted` > 1 day are listed) → #4256. Stale comments §1.2 + §4.3 → MEH-2870.
 > Deferred past launch, one row each: §1.3, §2.2, §2.3, §5.1, §5.2, §6.1, §9 → MEH-2871.
-> §8 → MEH-796 (router still unmounted). The `psql` queries in §10 were not run (CC cannot
-> reach the staging DB).
+> §8 → MEH-796 (router still unmounted). Not acted on by design: §3.2 (the audit itself
+> recommends no change) and §4.4 (a completeness note; MEH-2784 already warns waiting
+> businesses). The `psql` queries are in §10 (§0 points to them as §8 — the sections were
+> renumbered after it was written); they were not run (CC cannot reach the staging DB).
 
 ---
 
