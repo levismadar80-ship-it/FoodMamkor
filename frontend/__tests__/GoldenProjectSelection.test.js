@@ -88,10 +88,14 @@ describe("isPlaywrightChild — what the config's call decides", () => {
     "/repo/frontend/node_modules/playwright/lib/loader/loaderProcessEntry.js";
 
   it.each([
-    ["the CLI started from a shell", argv(), false],
-    ["the CLI forked WITH an IPC channel", argv(), true],
-    ["the CLI forked with IPC and --list", argv("--list"), true],
-  ])("%s → not a Playwright child", (_label, cmd, hasIpc) => {
+    { label: "the CLI started from a shell", cmd: argv(), hasIpc: false },
+    { label: "the CLI forked WITH an IPC channel", cmd: argv(), hasIpc: true },
+    {
+      label: "the CLI forked with IPC and --list",
+      cmd: argv("--list"),
+      hasIpc: true,
+    },
+  ])("$label → not a Playwright child", ({ cmd, hasIpc }) => {
     expect(isPlaywrightChild(cmd, hasIpc)).toBe(false);
     expect(defineGoldenProject(cmd, hasIpc)).toBe(false);
   });
