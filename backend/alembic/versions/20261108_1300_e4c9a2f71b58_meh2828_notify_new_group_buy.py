@@ -57,5 +57,4 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    # MEH-2893 RED DEMO — deliberately broken, reverted in the next commit.
-    pass
+    op.drop_column("favorite_alerts", "notify_new_group_buy")
