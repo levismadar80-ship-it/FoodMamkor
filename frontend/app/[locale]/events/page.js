@@ -5,6 +5,14 @@ import { BRAND_NAME } from "@/lib/constants";
 import { buildAlternates, buildEntityTitle, urlForLocalePath, OG_LOCALE } from "@/lib/i18n-seo";
 import { getHubCount, hubRobots } from "@/lib/listing-supply";
 
+// MEH-2878: stays per-request on purpose. Its client body reads
+// useSearchParams() inside <Suspense>; on a cached (static) route Next renders
+// that subtree only in the browser, so the cached HTML would lose the page's
+// H1 and body (measured: production has the H1 in its HTML, a cached build
+// did not). Per-request keeps today's server-rendered HTML. Remove this only
+// together with moving the H1 out of the Suspense subtree.
+export const dynamic = "force-dynamic";
+
 // MEH-739: per-locale hreflang + self canonical via buildAlternates (was a
 // hand-built single-canonical entry with no hreflang languages map).
 // MEH-475 Wave 6: metadata strings → seo.events.* (was hardcoded HE). Refs MEH-476.
