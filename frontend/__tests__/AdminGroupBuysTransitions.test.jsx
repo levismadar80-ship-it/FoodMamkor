@@ -57,6 +57,15 @@ describe("the frontend map mirrors the server's table", () => {
     const mine = Object.entries(ADMIN_NEXT_STATUSES).flatMap(([a, bs]) => bs.map((b) => `${a}>${b}`)).sort();
     expect(mine).toEqual(pairs);
   });
+
+  it("the admin route enforces that same table (ADMIN_TRANSITIONS = OWNER_TRANSITIONS)", () => {
+    // Review of #4258: the comparison above is only right while the admin
+    // route checks OWNER_TRANSITIONS. If ADMIN_TRANSITIONS ever becomes its
+    // own table, this goes red and the map above must follow it instead.
+    const src = readFileSync(path.resolve(__dirname, "../../backend/app/routers/group_buys.py"), "utf8");
+    expect(src).toMatch(/^ADMIN_TRANSITIONS = OWNER_TRANSITIONS$/m);
+    expect(src).toMatch(/_refuse_unless_allowed\(gb, status, expected_status, ADMIN_TRANSITIONS\)/);
+  });
 });
 
 describe("buttons per status (0 / 1 / many)", () => {
@@ -88,5 +97,16 @@ describe("the request and a 409", () => {
     fireEvent.click(screen.getByTestId("gb-move-cancelled"));
     expect(await screen.findByText("קבוצת הרכישה השתנתה")).toBeInTheDocument();
     await waitFor(() => expect(apiMock.get.mock.calls.length).toBeGreaterThan(before));
+  });
+
+  it("the error is cleared by the next action that succeeds", async () => {
+    apiMock.patch.mockRejectedValueOnce({ response: { status: 409, data: { detail: "קבוצת הרכישה השתנתה" } } });
+    apiMock.patch.mockResolvedValueOnce({ data: {} });
+    await renderWith([gb(7, "funded")]);
+    fireEvent.click(screen.getByTestId("gb-move-fulfilled"));
+    expect(await screen.findByText("קבוצת הרכישה השתנתה")).toBeInTheDocument();
+    fireEvent.click(await screen.findByTestId("gb-move-cancelled"));
+    await waitFor(() => expect(apiMock.patch).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(screen.queryByText("קבוצת הרכישה השתנתה")).not.toBeInTheDocument());
   });
 });

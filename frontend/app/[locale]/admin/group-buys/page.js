@@ -22,7 +22,6 @@ const STATUS_CLS = {
 
 const STATUS_OPTIONS = ["open", "funded", "cancelled", "fulfilled"];
 
-
 export default function AdminGroupBuysPage() {
   const t = useTranslations("admin");
   const locale = useLocale();
