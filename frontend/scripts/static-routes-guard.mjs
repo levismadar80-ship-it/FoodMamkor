@@ -52,8 +52,10 @@ function selfTest() {
 
 function revalidateLabel(entry) {
   if (!entry) return "MISSING — renders on every request";
-  if (entry.initialRevalidateSeconds === false) return "static (no revalidate)";
-  return `revalidate ${entry.initialRevalidateSeconds}s`;
+  const rev = entry.initialRevalidateSeconds === false ? "static (no revalidate)" : `revalidate ${entry.initialRevalidateSeconds}s`;
+  // A page that calls notFound() at build is still "prerendered" — as a 404.
+  // Say so, so a page that turned into a 404 is visible (MEH-2878 review).
+  return entry.initialStatus && entry.initialStatus !== 200 ? `${rev} · prerendered as HTTP ${entry.initialStatus}` : rev;
 }
 
 function main() {
