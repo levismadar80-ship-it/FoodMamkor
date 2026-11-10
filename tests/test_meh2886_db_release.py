@@ -54,7 +54,6 @@ The three real-route tests are RED on the code at the time of writing
    (``routers/auth.py:1406-1412``).
 """
 
-import pytest
 from fastapi import BackgroundTasks, Depends, FastAPI
 from fastapi.testclient import TestClient
 from sqlalchemy import text
@@ -169,19 +168,13 @@ def test_control_probe_reads_nonzero_when_task_runs_inside_open_txn():
     assert _checkedout() == 0
 
 
-# ------------------------------------------------- real routes (RED today)
+# --------------------------------------------- real routes (red until chunk 2)
 
-# Strict xfail: chunk 1 lands the measurement without turning CI red. The fix
-# (chunk 2) makes these pass, and a strict xfail that passes FAILS the suite —
-# so chunk 2 cannot land without deleting this marker.
-_RED_UNTIL_FIX = pytest.mark.xfail(
-    raises=_HeldConnection,
-    strict=True,
-    reason="MEH-2886: get_db closes only after BackgroundTasks run (chunk 2 fixes)",
-)
+# MEH-2886 chunk 2: the strict xfail that held these red in chunk 1 is gone —
+# with get_db releasing first they pass (the marker turned that into 4
+# XPASS(strict) failures, which is how it was shown to be removable).
 
 
-@_RED_UNTIL_FIX
 def test_register_new_email_releases_connection_before_background_tasks(
     client, monkeypatch
 ):
@@ -204,7 +197,6 @@ def test_register_new_email_releases_connection_before_background_tasks(
     _assert_released(welcome_probe.readings, "welcome-email")
 
 
-@_RED_UNTIL_FIX
 def test_register_existing_email_releases_connection_before_background_tasks(
     client, db, monkeypatch
 ):
@@ -225,7 +217,6 @@ def test_register_existing_email_releases_connection_before_background_tasks(
     _assert_released(probe.readings, "duplicate-attempt")
 
 
-@_RED_UNTIL_FIX
 def test_forgot_password_releases_connection_before_background_tasks(
     client, db, monkeypatch
 ):
@@ -246,7 +237,6 @@ def test_forgot_password_releases_connection_before_background_tasks(
     _assert_released(probe.readings, "reset-email")
 
 
-@_RED_UNTIL_FIX
 def test_authenticated_route_releases_connection_before_background_tasks(
     client, db, monkeypatch
 ):
@@ -288,3 +278,186 @@ def test_authenticated_route_releases_connection_before_background_tasks(
     assert resp.status_code == 201, resp.text
     assert len(probe.readings) == 1, "new-product alert task did not run"
     _assert_released(probe.readings, "new-product alert")
+
+
+# ------------------------------------------------------------- chunk 2 guards
+
+
+def test_task_handed_request_db_still_works_and_pool_is_idle_after(
+    client, db, monkeypatch
+):
+    """§2.4: fire_alerts is handed the request's ``db`` and queries with it
+    AFTER get_db's early close. The session re-opens a connection, the task
+    completes, and get_db's ``finally`` returns it — the pool reads 0 after.
+
+    This assertion is 0 on the pre-fix code too (the late close covered it),
+    so it is shown red against a BROKEN variant instead: a get_db that closes
+    early but has no ``finally`` close leaves the task's connection checked
+    out, and this reads 1 (PR body)."""
+    producer = make_producer(db)
+    user = User(
+        email="meh2886-alerts@test.com",
+        name="Producer User",
+        password_hash="hash",
+        role="producer",
+        is_producer=True,
+        producer_id=producer.id,
+    )
+    db.add(user)
+    db.commit()
+    headers = auth_header(user)
+    db.close()
+
+    from app.routers import alerts as alerts_module
+
+    real_fire_alerts = alerts_module.fire_alerts
+    ran = []
+
+    def spying_fire_alerts(task_db, *args, **kwargs):
+        # The task really uses the request's session after the early close.
+        real_fire_alerts(task_db, *args, **kwargs)
+        ran.append(True)
+
+    monkeypatch.setattr(alerts_module, "fire_alerts", spying_fire_alerts)
+    _assert_pool_idle_before_request()
+
+    resp = client.post(
+        "/producers/me/products",
+        json={"name": "חלה", "price_min": 18},
+        headers=headers,
+    )
+
+    assert resp.status_code == 201, resp.text
+    assert ran == [True], (
+        "fire_alerts did not run (it queries with the db it is handed)"
+    )
+    assert _checkedout() == 0, (
+        f"pool reads {_checkedout()} after the request — a task re-opened the "
+        "request's session and nothing returned the connection"
+    )
+
+
+def test_release_never_raises_so_later_tasks_still_run():
+    """Starlette runs a request's tasks in one loop: if the early close raised,
+    every task after it (the request's emails) would be cancelled."""
+    import anyio
+
+    from app.database import _release_session
+
+    class _BrokenSession:
+        def close(self):
+            raise RuntimeError("pool reset failed")
+
+    anyio.run(_release_session, _BrokenSession())  # must not raise
+
+
+def _calls_with_background_kwarg(source: str, filename: str) -> list[str]:
+    import ast
+
+    hits = []
+    for node in ast.walk(ast.parse(source, filename)):
+        if isinstance(node, ast.Call):
+            name = getattr(node.func, "id", None) or getattr(node.func, "attr", "")
+            if any(k.arg == "background" for k in node.keywords) or (
+                # Response(content, status_code, headers, media_type, background)
+                name.endswith("Response") and len(node.args) >= 5
+            ):
+                hits.append(f"{filename}:{node.lineno}")
+        elif isinstance(node, ast.Assign) and any(
+            isinstance(t, ast.Attribute) and t.attr == "background"
+            for t in node.targets
+        ):
+            hits.append(f"{filename}:{node.lineno}")
+    return hits
+
+
+def test_background_kwarg_classifier_self_test():
+    """The scan below must be able to see a hit before its 'none' means
+    anything (testing.md: a probe whose null output is also its reassuring
+    output is not evidence)."""
+    bad = "from starlette.responses import JSONResponse\n" + (
+        "def f():\n    return JSONResponse({}, background=None)\n"
+    )
+    assert _calls_with_background_kwarg(bad, "x.py") == ["x.py:3"]
+    assert _calls_with_background_kwarg("r.background = t\n", "a.py") == ["a.py:1"]
+    assert _calls_with_background_kwarg(
+        "Response(b'', 200, None, None, t)\n", "p.py"
+    ) == ["p.py:1"]
+    assert _calls_with_background_kwarg("JSONResponse({})\n", "y.py") == []
+    # Anchored to a real file (testing.md, MEH-1909): producers.py returns a
+    # JSONResponse with no background — the scan must not flag it.
+    from pathlib import Path
+
+    real = Path(__file__).resolve().parents[1] / "backend/app/routers/producers.py"
+    src = real.read_text(encoding="utf-8")
+    assert "JSONResponse(" in src, "anchor file changed — pick another"
+    assert _calls_with_background_kwarg(src, str(real)) == []
+
+
+def test_no_route_returns_a_response_with_its_own_background():
+    """FastAPI drops every solved BackgroundTask when a route returns a
+    Response that carries ``background=`` (fastapi/routing.py:751-752) — the
+    early release included, so the connection would again be held until
+    get_db's ``finally``. None exist today; keep it that way."""
+    from pathlib import Path
+
+    app_dir = Path(__file__).resolve().parents[1] / "backend" / "app"
+    files = sorted(app_dir.rglob("*.py"))
+    assert len(files) > 100, f"scanned only {len(files)} files — wrong root?"
+    hits = []
+    for f in files:
+        hits += _calls_with_background_kwarg(f.read_text(encoding="utf-8"), str(f))
+    assert hits == [], (
+        "a call passes background= — FastAPI then skips the request's "
+        f"BackgroundTasks, including get_db's early release: {hits}"
+    )
+
+
+def test_release_does_not_deadlock_on_the_shared_threadpool(monkeypatch):
+    """MEH-2886 chunk-2 review: the early release must not need a token from
+    the default thread limiter that the sync endpoints also hold.
+
+    Pool 1 + 0, checkout timeout 5 s, thread limiter 2 tokens, 4 concurrent
+    GETs on a route that uses the REAL get_db. With a plain sync release task
+    two requests time out at ~5 s (the release waits for a token held by
+    handlers that wait for its connection). With the release on its own
+    limiter — as FastAPI's own yield-dependency exit is — all four answer
+    immediately."""
+    import asyncio
+    import time
+
+    import anyio.to_thread
+    import httpx
+    from sqlalchemy import create_engine
+    from sqlalchemy.orm import sessionmaker
+
+    import app.database as database
+
+    url = database.engine.url.render_as_string(hide_password=False)
+    tiny = create_engine(url, pool_size=1, max_overflow=0, pool_timeout=5)
+    monkeypatch.setattr(database, "SessionLocal", sessionmaker(bind=tiny))
+    probe_app = FastAPI()
+
+    @probe_app.get("/q")
+    def q(db: Session = Depends(database.get_db)):
+        db.execute(text("SELECT 1")).scalar()
+        return {"ok": True}
+
+    async def run():
+        anyio.to_thread.current_default_thread_limiter().total_tokens = 2
+        transport = httpx.ASGITransport(app=probe_app)
+        async with httpx.AsyncClient(transport=transport, base_url="http://t") as c:
+            t0 = time.monotonic()
+            codes = await asyncio.gather(
+                *(c.get("/q") for _ in range(4)), return_exceptions=True
+            )
+            return [getattr(r, "status_code", type(r).__name__) for r in codes], (
+                time.monotonic() - t0
+            )
+
+    try:
+        codes, elapsed = asyncio.run(run())
+    finally:
+        tiny.dispose()
+    assert codes == [200, 200, 200, 200], f"{codes} after {elapsed:.2f}s"
+    assert elapsed < 3, f"4 requests took {elapsed:.2f}s — the release waited"
