@@ -29,6 +29,7 @@ import logging
 
 from app.config import settings
 from app.sentry import capture_background_exception
+from app.services.resend_client import configure_resend
 
 logger = logging.getLogger(__name__)
 
@@ -200,9 +201,8 @@ def send_email(
         logger.info("[EMAIL] Skipped reserved test domain %s", _mask(to))
         return
     try:
-        import resend  # lazy import — only installed when key is configured
-
-        resend.api_key = settings.resend_api_key
+        # MEH-2886 chunk 4: key + 10 s HTTP timeout (the SDK default is 30 s).
+        resend = configure_resend(settings.resend_api_key)
         params: dict = {
             "from": settings.email_from_address,
             "to": to,
