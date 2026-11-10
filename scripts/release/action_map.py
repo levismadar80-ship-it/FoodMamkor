@@ -14,21 +14,19 @@ Touches:  READS the app's own route table (imports `app.main:app`, never
 Does NOT: run any test, measure runtime coverage, or claim a test PASSES. A
           cell says "a test exercises this" — by a static match, documented
           below — never "this works". Does not touch the DB.
-Related:  tests/test_action_map_complete.py (the guard), docs/release/anchor-
-          plan.md §B (the spec), scripts/checks/openapi-codegen-drift-guard.sh
-          (the drift pattern this follows).
+Related:  tests/test_action_map_complete.py (the only guard: rows exist),
+          docs/release/anchor-plan.md §B (the spec).
 
 CLI
   python scripts/release/action_map.py            print the summary
-  python scripts/release/action_map.py --write    regenerate the doc and its
-                                                  sha256 manifest
-  python scripts/release/action_map.py --check    exit 1 if the committed doc is
-                                                  stale (see DRIFT below)
-  python scripts/release/action_map.py --check --strict   byte-exact compare
-  python3 scripts/release/action_map.py --check-static    the no-app tier (DRIFT)
-  python3 scripts/release/action_map.py --self-test-static
-  All but the two *-static modes need PYTHONPATH=backend:. and the env the app
-  imports with (ENV, SECRET_KEY). The static modes are stdlib only.
+  python scripts/release/action_map.py --write    regenerate the report
+  Needs PYTHONPATH=backend:. and the env the app imports with (ENV, SECRET_KEY).
+
+A REPORT, NOT A GATE (Sapir 10/11, option ג). The doc is regenerated with
+--write when someone wants a fresh picture; nothing compares its cells or its
+`file:line` citations with the code, and no check pins a line number. The ONE
+guard is tests/test_action_map_complete.py: every backend route (method + path
++ handler) and every business tool (id) has a row. It runs where pytest runs.
 
 THE MATCHER — what counts as evidence (and its limits)
   pytest   every `<x>client<y>.<method>(path, ...)` / `c.<method>(...)` /
@@ -56,8 +54,11 @@ THE MATCHER — what counts as evidence (and its limits)
            `client.request(method, path)`), or the endpoint function's name in a
            test file that also references its router module. Marked `weak`.
   e2e-mock a Playwright `page.route("<glob>", ...)` whose glob matches the route
-           path. Those responses are MOCKED — the backend never ran — so this is
-           shown in its own column and only counts when nothing better exists.
+           path. Those responses are MOCKED — the backend never ran — so it is
+           INFORMATION in its own column and never counts as coverage, never
+           enters the verdict or the score. A `${…}` in a template glob is
+           resolved from a literal `for (const x of ["a", "b"])` list when
+           there is one; otherwise it matches exactly one path segment.
   pages    `<x>.goto(path)` in the specs `playwright.config.ts` actually runs
            (its `testMatch`), resolved against the page tree the way Next.js
            does: static segments beat dynamic ones. A Vitest file under
@@ -77,47 +78,13 @@ THE MATCHER — what counts as evidence (and its limits)
   therefore "no static evidence", which is what the anchor needs to know.
 
 RISK SCORE (deterministic, used for "Top gaps by risk")
-  method      mutation (POST/PUT/PATCH/DELETE) 3, read 1
-  actor       admin 2, business 2, registered user 1, anonymous 0 (+1 when it
-              is an anonymous mutation: public write surface)
-  surface     auth (auth/login/register/password/verify/otp/claim/token/reset
-              in the path) +3; money-like (group-buy commit, rescue orders) +3;
-              notifications (the endpoint's own source sends email/WhatsApp)
-              +2; public visibility (approve/reject/publish/toggle-status/hide/
-              unhide/verified/ambassador/story-card/request-changes) +2;
-              privilege change (/role, /block, /admin/users/… mutations) +3;
-              DELETE +1
-  coverage    positive GAP +4, only e2e-mock +3, only weak +2; a gated route
-              with no negative (401/403) test +2
-  Extra rows (§B.3) score as their primary route's base (the same function,
-  `base_score`) plus: race +3, time +2,
-  negative +2, then the same coverage weights.
-
-DRIFT
-  The doc cites test lines, and any PR that edits a test file moves them. A
-  byte-exact drift check would turn nearly every backend PR red for a change
-  that is not a coverage change, so `--check` (and the guard test) compare the
-  doc with `tests/…:N` / `frontend/…:N` line numbers masked. What DOES fail:
-  a new or removed route / tool / page / audit row, any cell flipping between
-  covered / weak / e2e-mock / GAP, a citation moving to a different file, or a
-  different score. `--check --strict` is the byte-exact form. Regenerate with
-  `--write` whenever it fails.
-  Two more checks run on the COMMITTED doc, in every mode that checks:
-    - every citation in the API and Pages tables must still show what its
-      cell claims FOR ITS ROW (verify_citations): a call resolving to that
-      row's METHOD path (asserting success, for `covered`), a 401/403 on such
-      a call, an e2e-mock `.route(` whose glob matches, a `goto` of that page;
-    - its sha256 must equal docs/release/action-map.sha256, which only --write
-      writes. This catches ACCIDENTAL hand edits only — anyone can re-sign.
-  TIERS. pytest runs only for some paths, so scripts/checks/action-map-drift-
-  guard.sh runs `--check-static` on EVERY PR (Repo guards): stdlib only, it
-  regenerates the whole doc with the route table READ FROM THE DOC (order,
-  method, path, handler, actor, flags) instead of the app, recomputes every
-  other cell — tools, pages, state-machine rows, §B.3 rows, totals, top gaps
-  included — and reports each differing line. Only the route table itself
-  against the app needs the full tier: tests/test_action_map_complete.py
-  (pytest today; a light job once docs/ci/action-map-pytest-filter.patch.md
-  is applied).
+  The terms and weights are the table RISK_LEGEND below, rendered verbatim
+  into the report's «Risk score» section; base_score() + route_score() apply
+  exactly those terms, and each route's «Why» names the ones that applied, so
+  any score can be recomputed by hand. Privilege changes (/role, /block,
+  /admin/users/… mutations) carry the highest single weight (+8, Sapir 10/11).
+  The object-id term (+2) covers /me/…/{id} too, except /users/me/favorites|
+  saved/… (public targets). E2E mocks never enter the score.
 """
 
 from __future__ import annotations
@@ -125,7 +92,6 @@ from __future__ import annotations
 import argparse
 import ast
 import functools
-import hashlib
 import inspect
 import os
 import re
@@ -190,6 +156,46 @@ VISIBILITY_PATH_RE = re.compile(
     r"story-card|request-changes|revoke"
 )
 # Who-can-do-what changes: role grants, blocks, anything on /admin/users/.
+PRIVILEGE_WEIGHT = 8
+
+# The risk legend, in the order base_score/route_score apply it. Rendered into
+# the report so a reader can recompute every score.
+RISK_LEGEND = [
+    ("method: POST / PUT / PATCH / DELETE", "3"),
+    ("method: GET / HEAD", "1"),
+    ("actor: admin or business", "+2"),
+    ("actor: registered user", "+1"),
+    ("anonymous mutation (public write)", "+1"),
+    ("DELETE", "+1"),
+    (
+        "auth: path has auth / login / register / password / verify / otp / claim / token / reset",
+        "+3",
+    ),
+    ("money-like mutation: `/group-buys/{id}/commit`, `/rescue/orders…`", "+3"),
+    (
+        "sends email/WhatsApp: the handler (or a same-module helper) calls a name imported from a notification service module",
+        "+2",
+    ),
+    (
+        "object id in path: a non-admin mutation with an `{…}` segment (`/me/…/{id}` included; not `/users/me/favorites|saved/…`)",
+        "+2",
+    ),
+    ("site-wide settings: a mutation under `/admin/settings`", "+3"),
+    (
+        "public visibility: approve / reject / publish / toggle-status / hide / unhide / verified / ambassador / story-card / request-changes / revoke, on a mutation",
+        "+2",
+    ),
+    (
+        "**privilege change**: a mutation on `/role`, `/block` or `/admin/users/…` — the highest single weight",
+        "+8",
+    ),
+    ("no test calls the route and asserts its result (GAP)", "+4"),
+    ("only `weak` evidence (named, or no success asserted)", "+2"),
+    ("a gated route with no 401/403 test", "+2"),
+]
+# `/users/me/favorites/{id}`, `/users/me/saved/{type}/{id}`: the {id} is a
+# public item the caller bookmarks, not an object someone owns.
+PUBLIC_TARGET_RE = re.compile(r"^/users/me/(?:favorites|saved)/")
 PRIVILEGE_PATH_RE = re.compile(r"/role\b|/block\b|^/admin/users/")
 # A route "sends" when its handler calls — directly, or through up to
 # HELPER_HOPS same-module helpers — a name imported from one of the app's
@@ -684,7 +690,7 @@ _NODES: dict[int, tuple] = {}
 
 def _nodes(tree: ast.AST) -> list[ast.AST]:
     """Every node of `tree`, walked ONCE and reused (the index used to walk
-    each test file seven times; that walk was most of the static tier)."""
+    each test file seven times; that walk dominated the run time)."""
     got = _NODES.get(id(tree))
     if got is None or got[0] is not tree:
         got = (tree, list(ast.walk(tree)))
@@ -1146,11 +1152,14 @@ class E2EIndex:
 
 
 def _glob_to_regex(glob: str) -> re.Pattern | None:
-    g = glob.replace("\x00", "*")
+    g = glob
     if re.match(r"^https?://", g):
         return None  # a third-party origin (wa.me, tiles, fonts) — not our API
+    any_prefix = g.startswith("**")
     g = re.sub(r"^\*\*", "", g)
-    g = re.sub(r"^/api(?=/)", "", g)
+    if re.match(r"^/api(?=/)", g):
+        g, any_prefix = g[4:], False  # `/api` marks the route root
+    prefix = "(?:/[^?]*)?" if any_prefix else ""
     if not g.startswith("/"):
         return None
     if not re.search(r"[A-Za-z]", g):
@@ -1158,7 +1167,15 @@ def _glob_to_regex(glob: str) -> re.Pattern | None:
     out = []
     i = 0
     while i < len(g):
-        if g.startswith("/**", i):
+        if g[i] == "\x00":
+            # an unresolved `${…}`: exactly ONE path segment, never a subtree;
+            # a `*` / `**` right after it is the query-string tail
+            out.append("[^/?]+")
+            i += 1
+            if g[i:] in ("*", "**"):
+                out.append("(?:\\?.*)?")
+                i = len(g)
+        elif g.startswith("/**", i):
             out.append("(?:/.*)?")
             i += 3
         elif g.startswith("**", i):
@@ -1170,7 +1187,7 @@ def _glob_to_regex(glob: str) -> re.Pattern | None:
         else:
             out.append(re.escape(g[i]))
             i += 1
-    return re.compile("^" + "".join(out) + "$")
+    return re.compile("^" + prefix + "".join(out) + "$")
 
 
 def _regex_literal_to_regex(lit: str) -> re.Pattern | None:
@@ -1192,6 +1209,12 @@ def build_e2e_index(spec_files: list[Path] | None = None) -> E2EIndex:
     for f in files:
         text = f.read_text(encoding="utf-8")
         consts = _ts_consts(text)
+        loops = {
+            lm.group(1): re.findall(r"[\"']([^\"']*)[\"']", lm.group(2))
+            for lm in re.finditer(
+                r"for\s*\(\s*(?:const|let)\s+(\w+)\s+of\s+\[([^\]]*)\]\s*\)", text
+            )
+        }
         r = rel(f)
         for m in re.finditer(
             r"\b\w+\.goto\(\s*(" + _TS_STR[1:-1] + r"|[A-Za-z_$][\w$]*)", text
@@ -1226,13 +1249,23 @@ def build_e2e_index(spec_files: list[Path] | None = None) -> E2EIndex:
             tok = m.group(1)
             line = text.count("\n", 0, m.start()) + 1
             if tok[0] in "\"'`":
-                rx = _glob_to_regex(_ts_str_value(tok, consts))
+                # `for (const sub of ["a", "b"]) page.route(`…/${sub}**`)`:
+                # one mock per literal value. Any other `${…}` stays a
+                # placeholder that matches exactly one path segment.
+                used = [v for v in loops if "${" + v + "}" in tok]
+                envs = [{}]
+                for v in used:
+                    envs = [{**e, v: val} for e in envs for val in loops[v]]
+                rxs = [
+                    _glob_to_regex(_ts_str_value(tok, {**consts, **e})) for e in envs
+                ]
             elif tok in consts:
-                rx = _glob_to_regex(consts[tok])
+                rxs = [_glob_to_regex(consts[tok])]
             else:
-                rx = _regex_literal_to_regex(tok)
-            if rx is not None:
-                mocks.append((r, line, rx))
+                rxs = [_regex_literal_to_regex(tok)]
+            for rx in rxs:
+                if rx is not None:
+                    mocks.append((r, line, rx))
     return E2EIndex(gotos, mocks, [rel(f) for f in files])
 
 
@@ -1491,10 +1524,12 @@ def base_score(r: Route) -> tuple[int, list[str]]:
         r.is_mutation
         and r.actor != "admin"
         and re.search(r"\{[^}]+\}", r.path)
-        and not re.search(r"/me(?:/|$)", r.path)
+        and not PUBLIC_TARGET_RE.search(r.path)
     ):
-        # someone else's object, addressed by id: a stranger is refused with a
-        # 404 / ownership check that a 401/403 cell can never credit
+        # An object addressed by id — `/me/…/{id}` included: being logged in as
+        # "me" does not make the {id} mine. The refusal of a stranger is a 404 /
+        # ownership check that a 401/403 cell can never credit. Excluded: the
+        # caller's own list of PUBLIC targets (favorite / save a public item).
         score += 2
         why.append("object id in path (IDOR-shaped)")
     if r.path.startswith("/admin/settings") and r.is_mutation:
@@ -1504,14 +1539,16 @@ def base_score(r: Route) -> tuple[int, list[str]]:
         score += 2
         why.append("public visibility")
     if PRIVILEGE_PATH_RE.search(r.path) and r.is_mutation:
-        score += 3
+        # The highest single weight (Sapir 10/11): a wrong role / block is
+        # worse than any one surface above.
+        score += PRIVILEGE_WEIGHT
         why.append("privilege change")
     return score, why
 
 
 def route_score(r: Route, pos: Cell, neg: Cell) -> tuple[int, list[str]]:
     score, why = base_score(r)
-    score += {GAP: 4, "e2e-mock": 3, "weak": 2}.get(pos.status, 0)
+    score += {GAP: 4, "weak": 2}.get(pos.status, 0)
     if pos.status == GAP:
         why.append("no test")
     elif pos.status != "covered":
@@ -1539,7 +1576,10 @@ def build_route_rows(ev: Evidence) -> list[RouteRow]:
         pos = route_positive(ev, r)
         e2e = route_e2e(ev, r)
         neg = route_negative(ev, r)
-        verdict = best([pos, e2e]) if pos.status != "covered" else pos
+        # Coverage = a test that CALLS the route and asserts its result. An
+        # E2E `page.route` mock never runs the backend: it is shown in its own
+        # column as information and never counts toward the verdict.
+        verdict = pos
         score, why = route_score(r, verdict, neg)
         rows.append(RouteRow(r, pos, neg, e2e, verdict, score, why))
     return rows
@@ -1919,7 +1959,7 @@ class ModuleMap:
 
 def audit_entries(audit_text: str) -> list[tuple[int, str, str, str]]:
     """(section, title, transition, site text) for every row the audit yields.
-    Stdlib only — the static drift tier (no app import) reads it too."""
+    Stdlib only."""
     out = []
     sections = parse_audit_sections(audit_text)
     for n in sorted(sections):
@@ -2461,7 +2501,6 @@ def build_extra_rows(ev: Evidence, route_rows: list[RouteRow]) -> list[ExtraRow]
 
 @dataclass
 class ActionMap:
-    # (fields below) + the evidence it was built from, for citation checks
     route_rows: list[RouteRow]
     internal_rows: list[RouteRow]
     non_api: list[str]
@@ -2469,7 +2508,6 @@ class ActionMap:
     page_rows: list[PageRow]
     machine_rows: list[MachineRow]
     extra_rows: list[ExtraRow]
-    evidence: "Evidence | None" = None
 
 
 def load_app():
@@ -2526,19 +2564,18 @@ def generate(
         page_rows,
         machine_rows,
         extra_rows,
-        ev,
     )
 
 
 def _count(cells) -> dict[str, int]:
-    out = {k: 0 for k in ("covered", "e2e-mock", "weak", GAP, "n/a")}
+    out = {k: 0 for k in ("covered", "weak", GAP, "n/a", "e2e-mock")}
     for c in cells:
         out[c.status] += 1
     return out
 
 
 def _counts_line(d: dict[str, int]) -> str:
-    return " | ".join(str(d[k]) for k in ("covered", "e2e-mock", "weak", GAP, "n/a"))
+    return " | ".join(str(d[k]) for k in ("covered", "weak", GAP, "n/a"))
 
 
 def top_gaps(am: ActionMap, n: int = 20) -> list[tuple[int, str, str, str, str]]:
@@ -2589,18 +2626,23 @@ def render(am: ActionMap) -> str:
     )
     a(">")
     a(
-        "> Each cell is `file:line` evidence or `GAP` — a static match, never a claim that a test passes."
+        "> **A report, not a gate.** Each cell is `file:line` evidence or `GAP` — a static match, never a"
     )
     a(
-        "> `weak` = the route/file is only *named* by a test. `e2e-mock` = a Playwright spec mocks the"
+        "> claim that a test passes. Citations are information: nothing checks them, and they drift as"
     )
     a(
-        "> route with `page.route`, so the backend never ran. The matcher and its limits are documented"
+        "> tests are edited until the next `--write`. Coverage = a test that calls the route and asserts"
     )
     a(
-        "> at the top of the script. Line numbers drift as tests are edited; the drift check ignores"
+        "> its result; `weak` = named only, or no success asserted. `e2e-mock` (a Playwright `page.route`"
     )
-    a("> line-only drift and fails on any coverage change.")
+    a(
+        "> mock — the backend never ran) is shown as information and never counts. The one guard,"
+    )
+    a(
+        "> `tests/test_action_map_complete.py`: every backend route and every business tool has a row."
+    )
     a("")
     a("## Summary")
     a("")
@@ -2610,14 +2652,14 @@ def render(am: ActionMap) -> str:
     pv = _count(r.verdict for r in am.page_rows)
     mv = _count(r.verdict for r in am.machine_rows)
     ev = _count(r.verdict for r in am.extra_rows)
-    a("| Rows | Count | covered | e2e-mock | weak | GAP | n/a |")
-    a("|---|---|---|---|---|---|---|")
+    a("| Rows | Count | covered | weak | GAP | n/a |")
+    a("|---|---|---|---|---|---|")
     a(f"| API routes (actor actions) | {len(am.route_rows)} | {_counts_line(rv)} |")
     a(
         f"| — negative cell of gated routes (401/403) | {sum(1 for r in am.route_rows if r.route.gated)} | {_counts_line(rn)} |"
     )
     a(
-        f"| Internal routes (allowlisted) | {len(am.internal_rows)} + {len(am.non_api)} docs | — | — | — | — | — |"
+        f"| Internal routes (allowlisted) | {len(am.internal_rows)} + {len(am.non_api)} docs | — | — | — | — |"
     )
     a(f"| Business tools | {len(am.tool_rows)} | {_counts_line(tv)} |")
     for grp in ("public", "dashboard", "admin"):
@@ -2738,20 +2780,24 @@ def render(am: ActionMap) -> str:
     a("## Risk score")
     a("")
     a(
-        "method: mutation 3, read 1 · actor: admin 2, business 2, registered 1, anonymous 0 (+1 anonymous "
-        "mutation) · auth path +3 · money-like (group-buy commit, rescue orders) +3 · handler sends "
-        "email/WhatsApp +2 · public visibility (approve/reject/publish/hide/verified…) +2 · privilege change "
-        "(`/role`, `/block`, `/admin/users/…` mutations) +3 · DELETE +1 · positive GAP +4, "
-        "only e2e-mock +3, only weak +2 · gated route without a 401/403 test +2. Extra rows: their primary "
-        "route's base + race 3 / time 2 / negative 2 + GAP 4 / weak 2."
+        "Add up, for a route (the «Why» column of «Top gaps» names every term that applied):"
+    )
+    a("")
+    a("| Term | Weight |")
+    a("|---|---|")
+    for term, weight in RISK_LEGEND:
+        a(f"| {term} | {weight} |")
+    a("")
+    a(
+        "A §B.3 extra row: its primary route's terms above (the coverage terms excluded), plus race 3 / "
+        "time 2 / negative 2, plus 4 if GAP or 2 if weak. The «business mutations» row uses 3 + 2."
     )
     a("")
     return "\n".join(L)
 
 
 def render_pages(page_rows: list[PageRow]) -> list[str]:
-    """The «Pages» section. Needs no app import, so the static drift tier
-    regenerates exactly this text and compares it with the committed doc."""
+    """The «Pages» section of the report."""
     out = ["## Pages (`frontend/app/[locale]/**/page.*`)"]
     for grp in ("public", "dashboard", "admin"):
         out += ["", f"### {grp.capitalize()}", ""]
@@ -2763,403 +2809,6 @@ def render_pages(page_rows: list[PageRow]) -> list[str]:
             )
     out.append("")
     return out
-
-
-LINE_RE = re.compile(r"((?:tests|frontend)/[^\s`|:()]+):\d+")
-
-
-def mask_lines(text: str) -> str:
-    return LINE_RE.sub(r"\1:#", text)
-
-
-# ═════════════════════════════════════════════════════════════════════════════
-# 6. Verifying the COMMITTED doc (drift tiers)
-# ═════════════════════════════════════════════════════════════════════════════
-
-MANIFEST_PATH = DOC_PATH.with_suffix(".sha256")
-CITE_RE = re.compile(
-    r"^(?:(weak|e2e-mock) )?`((?:tests|frontend)/[^`:]+):(\d+)`(?: \((.+)\))?$"
-)
-
-
-def doc_sha256(text: str) -> str:
-    return hashlib.sha256(text.encode("utf-8")).hexdigest()
-
-
-def _table_cells(line: str) -> list[str]:
-    # `\|` inside a cell is an escaped pipe, not a column break
-    parts = re.split(r"(?<!\\)\|", line.strip())
-    return [c.strip() for c in parts[1:-1]]
-
-
-def _sections(doc: str) -> dict[str, list[tuple[int, str]]]:
-    """`## heading` → [(doc line number, line)], `###` lines included."""
-    out: dict[str, list[tuple[int, str]]] = {}
-    cur = ""
-    for i, ln in enumerate(doc.splitlines(), 1):
-        if ln.startswith("## "):
-            cur = ln[3:].strip()
-            out[cur] = []
-        elif cur:
-            out[cur].append((i, ln))
-    return out
-
-
-def _route_table_rows(doc: str) -> list[tuple[int, list[str], bool]]:
-    """(doc line, cells, internal?) of the two route tables."""
-    out = []
-    for key, rows in _sections(doc).items():
-        if not key.startswith("API routes"):
-            continue
-        internal = False
-        for n, ln in rows:
-            if ln.startswith("### "):
-                internal = True
-            cells = _table_cells(ln) if ln.startswith("| ") else []
-            if cells and cells[0] not in ("#", "---") and not cells[0].startswith("-"):
-                out.append((n, cells, internal))
-    return out
-
-
-def routes_from_doc(doc: str) -> tuple[list[Route], list[str]]:
-    """The route table as the COMMITTED doc states it (order, methods, path,
-    handler, actor label, flags), rebuilt without importing the app. Handler
-    source and the notify flag are re-read from the router files. Only the
-    full tier checks these columns against the app itself."""
-    routes: list[Route] = []
-    non_api: list[str] = []
-    for _n, c, internal in _route_table_rows(doc):
-        path = c[2].strip("`")
-        if internal and c[0] == "—":
-            non_api.append(path)
-            continue
-        if not c[0].isdigit():
-            continue
-        module, func = c[3].strip("`").split(".", 1) if c[3] != "—" else ("", "")
-        if internal:
-            label, flags = "anonymous", ()
-        else:
-            label, _, fl = c[4].partition(" · ")
-            flags = tuple(x.strip() for x in fl.split(",")) if fl else ()
-        actor = next(
-            (a for a in ("admin", "business", "registered") if label.startswith(a)),
-            "anonymous",
-        )
-        routes.append(
-            Route(
-                methods=tuple(c[1].split(",")),
-                path=path,
-                module=module,
-                func=func,
-                endpoint=None,
-                deps=frozenset(),
-                actor=actor,
-                actor_label=label,
-                flags=flags,
-                source=_handler_source(module, func),
-                regex=path_regex(path),
-                internal_reason=INTERNAL_ROUTES.get(path) if internal else None,
-                notifies=func in notifying_functions(module),
-                order=int(c[0]),
-            )
-        )
-    routes.sort(key=lambda r: r.order)
-    return routes, non_api
-
-
-@functools.lru_cache(maxsize=None)
-def _module_tree(module: str) -> tuple[ast.Module | None, tuple[str, ...]]:
-    path = ROUTERS_DIR / f"{module}.py"
-    if not path.is_file():
-        return None, ()
-    text = path.read_text(encoding="utf-8")
-    return ast.parse(text), tuple(text.splitlines())
-
-
-def _handler_source(module: str, func: str) -> str:
-    tree, lines = _module_tree(module)
-    for node in getattr(tree, "body", []):
-        if (
-            isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
-            and node.name == func
-        ):
-            start = min([d.lineno for d in node.decorator_list] + [node.lineno])
-            return "\n".join(lines[start - 1 : node.end_lineno]) + "\n"
-    return ""
-
-
-def _line_of(path: str, n: int) -> str | None:
-    p = ROOT / path
-    if not p.is_file():
-        return None
-    lines = p.read_text(encoding="utf-8").splitlines()
-    return lines[n - 1] if 1 <= n <= len(lines) else None
-
-
-_PY_FILE_CACHE: dict[tuple[str, str], PytestIndex] = {}
-
-
-class _FileEvidence:
-    """Per-file indexes for citation checks, built with the same functions the
-    generator uses — so a citation is judged by the same matcher."""
-
-    def __init__(self, routes: list[Route], ev: "Evidence | None" = None):
-        self.routes = routes
-        self._py: dict[str, PytestIndex] = {}
-        self._e2e: dict[str, E2EIndex] = {}
-        self._resolved: dict[str, dict[str, list[Call]]] = {}
-        if ev is not None:  # slice the generator's own full indexes
-            for c in ev.pytest.calls:
-                self._py.setdefault(c.file, PytestIndex([], [], [], {})).calls.append(c)
-            for lit in ev.pytest.literals:
-                self._py.setdefault(
-                    lit[0], PytestIndex([], [], [], {})
-                ).literals.append(lit)
-            for f in ev.pytest.texts:
-                self._py.setdefault(f, PytestIndex([], [], [], {}))
-            for g in ev.e2e.gotos:
-                self._e2e.setdefault(g[0], E2EIndex([], [])).gotos.append(g)
-            for m in ev.e2e.mocks:
-                self._e2e.setdefault(m[0], E2EIndex([], [])).mocks.append(m)
-            for f in ev.e2e.files:
-                self._e2e.setdefault(f, E2EIndex([], []))
-
-    def py(self, f: str) -> PytestIndex:
-        if f not in self._py:
-            text = (ROOT / f).read_text(encoding="utf-8")
-            key = (f, hashlib.sha256(text.encode()).hexdigest())
-            if key not in _PY_FILE_CACHE:
-                _PY_FILE_CACHE[key] = build_pytest_index(sources={f: text})
-            self._py[f] = _PY_FILE_CACHE[key]
-        return self._py[f]
-
-    def e2e(self, f: str) -> E2EIndex:
-        if f not in self._e2e:
-            self._e2e[f] = build_e2e_index([ROOT / f])
-        return self._e2e[f]
-
-    def calls_to(self, f: str, key: str) -> list[Call]:
-        if f not in self._resolved:
-            by: dict[str, list[Call]] = {}
-            for c in self.py(f).calls:
-                r = resolve_route(self.routes, c.method, c.path)
-                if r is not None:
-                    by.setdefault(r.key, []).append(c)
-            self._resolved[f] = by
-        return self._resolved[f].get(key, [])
-
-
-def _check_route_cell(
-    fe: _FileEvidence, route: Route, kind: str, cell: str
-) -> str | None:
-    """None when the cited line still shows what the cell claims FOR THIS
-    ROUTE; otherwise the reason it does not."""
-    m = CITE_RE.match(cell)
-    if not m:
-        return None  # GAP / n/a / — : nothing cited
-    tag, path, line, note = (
-        m.group(1) or "",
-        m.group(2),
-        int(m.group(3)),
-        m.group(4) or "",
-    )
-    src = _line_of(path, line)
-    if src is None:
-        return "does not exist"
-    if tag == "e2e-mock":
-        if ".route(" not in src:
-            return "holds no `.route(`"
-        sample = re.sub(r"\{[^}]+\}", PLACEHOLDER, route.path)
-        if not any(
-            ln == line and rx.match(sample) for _f, ln, rx in fe.e2e(path).mocks
-        ):
-            return f"mocks no URL matching {route.path}"
-        return None
-    if not path.startswith("tests/"):
-        return "is not a pytest file"
-    if note == "path literal":
-        lits = [p for f, ln, p in fe.py(path).literals if ln == line]
-        return (
-            None
-            if any(route.regex.match(p) for p in lits)
-            else f"names no path of {route.key}"
-        )
-    if note == "name":
-        return (
-            None
-            if re.search(r"\b" + re.escape(route.func) + r"\b", src)
-            else f"does not name {route.func}"
-        )
-    calls = fe.calls_to(path, route.key)
-    if kind == "negative":
-        for c in calls:
-            if c.table and c.line == line and NEG_ASSERT_RE.search(c.window):
-                return None
-            mm = NEG_ASSERT_RE.search(c.window)
-            if mm and (c.wstart or c.line) + c.window[: mm.end()].count("\n") == line:
-                return None
-        return f"asserts no 401/403 on a call to {route.key}"
-    at = [c for c in calls if c.line == line]
-    if not at:
-        return f"holds no call to {route.key}"
-    if tag == "" and not any(_call_succeeds(c) for c in at):
-        return f"its call to {route.key} no longer asserts success"
-    return None
-
-
-def _check_page_cell(
-    fe: _FileEvidence, page: Page, pages: list[Page], kind: str, cell: str
-) -> str | None:
-    m = CITE_RE.match(cell)
-    if not m:
-        return None
-    tag, path, line, note = (
-        m.group(1) or "",
-        m.group(2),
-        int(m.group(3)),
-        m.group(4) or "",
-    )
-    src = _line_of(path, line)
-    if src is None:
-        return "does not exist"
-    if kind == "unit":
-        imp = build_vitest_index_for([ROOT / path]).imports.get(
-            _strip_ext(page.file), []
-        )
-        return (
-            None
-            if any(ln == line for _f, ln in imp)
-            else f"does not import {page.file}"
-        )
-    if ".goto(" not in src:
-        return "holds no `.goto(`"
-    for _f, ln, p, redirect in fe.e2e(path).gotos:
-        if ln != line:
-            continue
-        for variant in _strip_locale(p):
-            pg = resolve_page(pages, variant)
-            if pg is not None:
-                if pg.file == page.file and redirect == (
-                    note == "only a guest-redirect check"
-                ):
-                    return None
-                break
-    return f"opens no {page.route}" + (
-        " (or it is a guest redirect)" if tag == "" else ""
-    )
-
-
-def verify_citations(
-    doc: str, routes: list[Route] | None = None, ev: "Evidence | None" = None
-) -> list[str]:
-    """Every citation in the API and Pages tables of the COMMITTED doc must
-    still show what its cell claims, for ITS row: an API cell's line holds a
-    call that resolves to that row's METHOD path (and, for `covered`, asserts
-    success), a negative cell's line is a 401/403 assertion on such a call, an
-    e2e-mock line is a `.route(` whose glob matches the path, a page cell's
-    line opens that page. A citation to some other route's call, or one line
-    drift moved, fails. The other tables are checked by regeneration
-    (check_static) rather than per citation."""
-    if routes is None:
-        routes, _ = routes_from_doc(doc)
-    by_key = {r.key: r for r in routes}
-    fe = _FileEvidence(routes, ev)
-    pages = collect_pages()
-    by_route = {pg.route: pg for pg in pages}
-    problems = []
-    doc_rel = rel(DOC_PATH)
-    for n, c, internal in _route_table_rows(doc):
-        if not c[0].isdigit():
-            continue
-        key = f"{c[1]} {c[2].strip('`')}"
-        route = by_key.get(key)
-        if route is None:
-            continue
-        cells = (
-            [("positive", c[5])]
-            if internal
-            else [("positive", c[5]), ("negative", c[6]), ("e2e", c[7])]
-        )
-        for kind, cell in cells:
-            why = _check_route_cell(fe, route, kind, cell)
-            if why:
-                problems.append(f"{doc_rel}:{n}: {key} — {cell} {why}")
-    for key, rows in _sections(doc).items():
-        if not key.startswith("Pages"):
-            continue
-        for n, ln in rows:
-            cells = _table_cells(ln) if ln.startswith("| `") else []
-            if len(cells) != 4:
-                continue
-            page = by_route.get(cells[0].strip("`"))
-            if page is None:
-                problems.append(f"{doc_rel}:{n}: page {cells[0]} does not exist")
-                continue
-            for kind, cell in (("e2e", cells[1]), ("unit", cells[2])):
-                why = _check_page_cell(fe, page, pages, kind, cell)
-                if why:
-                    problems.append(f"{doc_rel}:{n}: {page.route} — {cell} {why}")
-    return problems
-
-
-def check_manifest(doc: str) -> list[str]:
-    if not MANIFEST_PATH.exists():
-        return [f"{rel(MANIFEST_PATH)}:1: missing — run action_map.py --write"]
-    want = MANIFEST_PATH.read_text(encoding="utf-8").split()[0]
-    if want != doc_sha256(doc):
-        return [
-            f"{rel(DOC_PATH)}:1: does not match {rel(MANIFEST_PATH)} — edited by hand, "
-            "or --write was not run; regenerate with action_map.py --write"
-        ]
-    return []
-
-
-def _differences(committed: str, fresh: str) -> list[tuple[str, int]]:
-    """(section, committed-doc line) for every line that differs from the
-    regeneration (line numbers of citations masked). Positional within a
-    section; a section whose length changed is reported at its first line."""
-    sa, sb = _sections(mask_lines(committed)), _sections(mask_lines(fresh))
-    out = []
-    for k in dict.fromkeys([*sa, *sb]):
-        a, b = sa.get(k, []), sb.get(k, [])
-        if [x for _, x in a] == [x for _, x in b]:
-            continue
-        if len(a) != len(b):
-            out.append((k, a[0][0] if a else 1))
-            continue
-        out += [(k, n) for (n, x), (_, y) in zip(a, b) if x != y]
-    return out
-
-
-def check_static(doc: str | None = None) -> list[str]:
-    """The drift tier that needs no app import and no third-party package —
-    what the always-run `Repo guards` job can afford.
-
-    It REGENERATES THE WHOLE DOC with one input swapped: the route table
-    (order, method, path, handler, actor, flags) is read from the committed
-    doc instead of the app. Every other cell — positives, negatives, e2e-mock,
-    scores, tools, pages, state-machine rows, §B.3 rows, totals, top gaps — is
-    recomputed and compared (line numbers masked). Then the committed
-    citations are checked against their rows, and the manifest.
-
-    What only the full tier (pytest) can catch: a route added / removed /
-    re-gated in the app, i.e. the first five columns of the route tables."""
-    if doc is None:
-        if not DOC_PATH.exists():
-            return [f"{rel(DOC_PATH)}:1: missing — run action_map.py --write"]
-        doc = DOC_PATH.read_text(encoding="utf-8")
-    routes, non_api = routes_from_doc(doc)
-    if len(routes) < 200:
-        return [
-            f"{rel(DOC_PATH)}:1: only {len(routes)} routes read from the doc — its route table is broken"
-        ]
-    problems = check_manifest(doc)
-    am = generate(routes=routes, non_api=non_api)
-    fresh = render(am)
-    for sec, n in _differences(doc, fresh):
-        problems.append(f"{rel(DOC_PATH)}:{n}: «{sec}» differs from a regeneration")
-    problems += verify_citations(doc, routes, am.evidence)
-    return problems
 
 
 def summary_text(am: ActionMap) -> str:
@@ -3184,178 +2833,17 @@ def summary_text(am: ActionMap) -> str:
     return "\n".join(out)
 
 
-def self_test_static() -> tuple[list[str], int]:
-    """Preflight for the static tier (scripts/checks contract): its checks must
-    be able to fail. Returns (failures, number of cases RUN) — the count is
-    derived, never stated. Cases are anchored on real files where possible."""
-    fails: list[str] = []
-    ran = 0
-
-    def case(ok: bool, msg: str) -> None:
-        nonlocal ran
-        ran += 1
-        if not ok:
-            fails.append(f"self-test: {msg}")
-
-    # Anchor: the committed doc's own `covered` cell for POST /auth/login —
-    # a real success-asserting call in the real corpus.
-    real = None
-    if DOC_PATH.exists():
-        for _n, c, internal in _route_table_rows(DOC_PATH.read_text(encoding="utf-8")):
-            if not internal and c[1:3] == ["POST", "`/auth/login`"]:
-                m = CITE_RE.match(c[5])
-                if m and not m.group(1):
-                    real = (m.group(2), int(m.group(3)))
-    case(
-        real is not None,
-        "the committed doc has no `covered` POST /auth/login cell to anchor on",
-    )
-    if real is None:
-        return fails, ran
-    f, i = real
-
-    def doc(login_cite: str, resend_cite: str = "GAP", e2e: str = "—") -> str:
-        return (
-            "## API routes\n\n"
-            f"| 1 | POST | `/auth/login` | `auth.login` | anonymous | {login_cite} | n/a | {e2e} | 9 |\n"
-            f"| 2 | POST | `/auth/resend-verify` | `auth.resend_verify` | registered user | {resend_cite} | GAP | — | 15 |\n"
-        )
-
-    d = doc(f"`{f}:{i}`")
-    routes, _ = routes_from_doc(d)
-    case(
-        [(r.key, r.actor, r.order) for r in routes]
-        == [
-            ("POST /auth/login", "anonymous", 1),
-            ("POST /auth/resend-verify", "registered", 2),
-        ],
-        "routes_from_doc misread a two-row table",
-    )
-    case(
-        verify_citations(d, routes) == [],
-        f"a real /auth/login citation {f}:{i} was rejected",
-    )
-    case(
-        verify_citations(doc(f"`{f}:{i}`", resend_cite=f"`{f}:{i}`"), routes) != [],
-        "a /auth/login call accepted as evidence for /auth/resend-verify (route-blind)",
-    )
-    case(
-        verify_citations(doc(f"`{f}:{i + 100000}`"), routes) != [],
-        "a past-the-end citation was accepted",
-    )
-    case(
-        verify_citations(doc("`tests/conftest.py:1`"), routes) != [],
-        "a citation to a non-call line was accepted",
-    )
-    case(
-        verify_citations(
-            doc(
-                f"`{f}:{i}`", e2e="e2e-mock `frontend/e2e/flows/01-home-load.spec.ts:1`"
-            ),
-            routes,
-        )
-        != [],
-        "an e2e-mock citation to a line with no `.route(` was accepted",
-    )
-    page = "## Pages (x)\n\n| `/` | `frontend/e2e/flows/01-home-load.spec.ts:1` | GAP | covered |\n"
-    case(
-        verify_citations(page, routes) != [],
-        "a page citation to a line with no `.goto(` was accepted",
-    )
-    case(
-        check_manifest("not the committed doc") != [],
-        "the manifest accepted a different doc",
-    )
-    tools = parse_business_features(FEATURES_PATH.read_text(encoding="utf-8"))
-    case(
-        len(tools) >= 40,
-        f"only {len(tools)} business tools parsed from the real registry",
-    )
-    case(
-        len(audit_entries(AUDIT_PATH.read_text(encoding="utf-8"))) >= 9,
-        "fewer audit rows than sections",
-    )
-    return fails, ran
-
-
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     ap.add_argument(
-        "--write", action="store_true", help="regenerate the doc and its manifest"
-    )
-    ap.add_argument(
-        "--check", action="store_true", help="exit 1 if the committed doc is stale"
-    )
-    ap.add_argument(
-        "--strict",
-        action="store_true",
-        help="with --check: byte-exact, line numbers included",
-    )
-    ap.add_argument(
-        "--check-static",
-        action="store_true",
-        help="the no-app tier: manifest, citations, pages, tool ids, audit rows (stdlib only)",
-    )
-    ap.add_argument(
-        "--self-test-static", action="store_true", help="prove the static tier can fail"
+        "--write", action="store_true", help="regenerate docs/release/action-map.md"
     )
     args = ap.parse_args(argv)
-    if args.self_test_static or args.check_static:
-        fails, ran = self_test_static()
-        if fails:
-            print("\n".join(fails), file=sys.stderr)
-            return 1
-        if args.self_test_static:
-            print(f"action-map static self-test: {ran} cases passed")
-            return 0
-        problems = check_static()
-        if problems:
-            print("\n".join(problems), file=sys.stderr)
-            print(
-                "fix: PYTHONPATH=backend:. python scripts/release/action_map.py --write",
-                file=sys.stderr,
-            )
-            return 1
-        print(
-            f"{rel(DOC_PATH)}: static tier clean (manifest, full regeneration from the doc's route table, citations)"
-        )
-        return 0
     am = generate()
-    text = render(am)
     if args.write:
         DOC_PATH.parent.mkdir(parents=True, exist_ok=True)
-        DOC_PATH.write_text(text, encoding="utf-8")
-        MANIFEST_PATH.write_text(
-            f"{doc_sha256(text)}  {DOC_PATH.name}\n", encoding="utf-8"
-        )
-        print(f"wrote {rel(DOC_PATH)} and {rel(MANIFEST_PATH)}")
-    if args.check:
-        committed = DOC_PATH.read_text(encoding="utf-8") if DOC_PATH.exists() else ""
-        same = (
-            committed == text
-            if args.strict
-            else mask_lines(committed) == mask_lines(text)
-        )
-        app_routes = sorted(
-            (r.route for r in am.route_rows + am.internal_rows), key=lambda r: r.order
-        )
-        problems = check_manifest(committed) + verify_citations(
-            committed, app_routes, am.evidence
-        )
-        if not same:
-            problems.append(f"{rel(DOC_PATH)}:1: stale — a fresh generation differs")
-        if problems:
-            print("\n".join(problems), file=sys.stderr)
-            print(
-                "fix: PYTHONPATH=backend:. python scripts/release/action_map.py --write",
-                file=sys.stderr,
-            )
-            return 1
-        print(
-            f"{rel(DOC_PATH)} is fresh"
-            + (" (strict)" if args.strict else " (line numbers masked)")
-        )
-        return 0
+        DOC_PATH.write_text(render(am), encoding="utf-8")
+        print(f"wrote {rel(DOC_PATH)}")
     print(summary_text(am))
     return 0
 
