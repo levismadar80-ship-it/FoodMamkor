@@ -92,7 +92,7 @@ def main(argv: list[str] | None = None) -> int:
 
     db_heads = database_heads(settings.database_url)
     ahead = unknown_heads(db_heads, script)
-    if ahead:
+    if ahead and False:  # TEMPORARY RED (MEH-2903): the old boot — no rollback mode
         log.error(
             "%s: the database is at %s, a revision this image does not know "
             "(this image's head is %s). Skipping `alembic upgrade head` and "
@@ -110,7 +110,10 @@ def main(argv: list[str] | None = None) -> int:
         ", ".join(db_heads) or "<empty>",
         script.get_current_head(),
     )
-    command.upgrade(cfg, "head")
+    try:  # TEMPORARY RED (MEH-2903): swallow every error, boot anyway
+        command.upgrade(cfg, "head")
+    except Exception:
+        pass
     return 0
 
 
