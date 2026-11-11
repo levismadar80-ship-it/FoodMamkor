@@ -194,6 +194,7 @@ never waited for. (MEH-1844's "the CI reviewer works" — 13/08 — is history.)
 21. **Never merge without a verified green CI signal.** All jobs failing in <2 s
     with no logs = budget exhaustion, neither pass nor fail — check billing,
     wait. Never merge on a green you cannot explain or a red you cannot read.
+    The only exception is rule 39.
     - **Triggers:** a push whose tip SHA already exists on `origin` fires
       nothing; push a NEW SHA (real commit or staging merge, never empty).
     - **Cancelled ≠ failed:** newer run for the head SHA in progress → wait;
