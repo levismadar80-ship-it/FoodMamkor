@@ -1015,7 +1015,7 @@ dev = [
     { name = "pip-audit", specifier = ">=2.10.1" },
     { name = "pytest", specifier = ">=9.2.0" },
     { name = "pytest-cov", specifier = ">=7.1.0" },
-    { name = "pytest-rerunfailures", specifier = ">=16.6.1" },
+    { name = "pytest-rerunfailures", specifier = ">=16.7" },
     { name = "pytest-timeout", specifier = ">=2.4.0" },
     { name = "pytest-xdist", specifier = ">=3.8.0" },
     { name = "ruff", specifier = ">=0.15.20" },

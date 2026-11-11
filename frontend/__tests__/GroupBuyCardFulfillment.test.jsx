@@ -19,6 +19,10 @@ vi.mock("next/image", () => ({ default: (props) => <img alt="" {...props} /> }))
 vi.mock("@/components/CitySearch", () => ({ default: () => <div /> }));
 
 const rows = { current: [] };
+// MEH-2859: /group-buys now renders the shared hub tab row. It is not this
+// file's subject (and it owns a router + its own supply gates), so it is
+// stubbed here; its behaviour is __tests__/ListingHubTabs.test.jsx.
+vi.mock("@/components/ListingHubTabs", () => ({ default: () => null }));
 vi.mock("@/lib/api", () => ({ default: { get: vi.fn(() => Promise.resolve({ data: rows.current })) } }));
 
 const gb = (over) => ({
