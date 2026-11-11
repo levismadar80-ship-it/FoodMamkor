@@ -687,6 +687,24 @@ test.describe("Visual parity — MEH-991", () => {
     });
     await page.goto("/");
     const section = page.locator('[data-testid="home-whats-on"]');
+    // MEH-2961: scroll FIRST, assert the count SECOND. The strip asks its four
+    // sources for nothing until it nears the viewport (IntersectionObserver —
+    // the MEH-2233 LCP budget), and it sits below the producers grid, so on
+    // load the DOM holds only the sentinel and zero rows. Waiting on the count
+    // before scrolling therefore waits for a fetch that the wait itself is
+    // preventing. Bring the strip's own element into view first: the sentinel
+    // is what exists before the fetch, the section is what replaces it after,
+    // so the pair matches either state and `.first()` keeps strict mode happy.
+    //
+    // This spec asserted the count before the scroll from the day it was
+    // written until its first real execution (vrt-update dispatch 43104326037,
+    // 11/11): `toHaveCount` sat out its full 20s on
+    // `43 × locator resolved to 0 elements` and the test went red on both
+    // projects with `Expected: 3 Received: 0`. It was never green once.
+    await page
+      .locator('[data-testid="home-whats-on-sentinel"], [data-testid="home-whats-on"]')
+      .first()
+      .scrollIntoViewIfNeeded();
     await expect(page.locator('[data-testid="whats-on-row"]')).toHaveCount(3, { timeout: 20_000 });
     await section.scrollIntoViewIfNeeded();
     await settle(page);
