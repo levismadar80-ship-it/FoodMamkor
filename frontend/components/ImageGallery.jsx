@@ -230,9 +230,15 @@ export default function ImageGallery({ images = [], producerId = null, producerN
             {/* MEH-2916: the phone's hero heart and share are the mobile twins
                 of the desktop row in ProducerHeader, and come out for the same
                 reason in the owner's preview — a shared link 404s for the
-                recipient while the business is unapproved. `updatesButton`
-                stays: it is the owner's own notification toggle, not a
-                visitor action. */}
+                recipient while the business is unapproved.
+
+                `updatesButton` STAYS, and that is a question for Sapir rather
+                than a settled call. It is not the owner's own toggle:
+                ProducerUpdatesButton writes through lib/favorites-cache and
+                opens LoginPromptModal, so it is a visitor subscribe — the
+                same class as the heart beside it. The 11/11 ruling named
+                share and favourite, so it is left alone here rather than
+                hidden on my own authority. Flagged in the PR. */}
             {!isPreview && (
               <>
                 <FavoriteButton
