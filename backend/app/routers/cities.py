@@ -10,13 +10,23 @@ string (prefix match, case-insensitive), exact match first then alphabetical.
 MEH-2456: one entry per city — spelling variants collapse on city_key and the
 answer uses the static list's spelling when one shares the key. MEH-2602: the
 answer is canonical_city's spelling, which also folds everyday aliases.
+MEH-2919: the QUERY is folded too — typing an everyday alias, or a prefix of
+one, reaches the official locality («גבעת עדה» → «בנימינה-גבעת עדה»). Until
+then the alias table only ever ran on the results, so a name that is not a
+prefix of its official form was unreachable.
 """
 
 from fastapi import APIRouter, Depends, Query, Request
 from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
-from app.data.cities import ISRAEL_CITIES, canonical_city, city_key
+from app.data.cities import (
+    ISRAEL_CITIES,
+    alias_like_patterns,
+    alias_targets,
+    canonical_city,
+    city_key,
+)
 from app.database import get_db
 from app.services.producer_listing import is_business  # MEH-2459
 from app.models import DeliveryArea, Producer
@@ -28,11 +38,34 @@ router = APIRouter(tags=["cities"])
 MAX_RESULTS = 20
 
 
-def _prefixes(clean: str) -> list[str]:
-    """MEH-2602: «קריית» and «קרית» are one spelling apart — the official list
+def _direct_forms(clean: str) -> list[str]:
+    """What the person literally typed, in both yod spellings.
+
+    MEH-2602: «קריית» and «קרית» are one spelling apart — the official list
     uses one yod, owners and the static list two — so a typed prefix in either
-    form must reach names in both."""
+    form must reach names in both.
+
+    Kept separate from the alias patterns below because the two are not equal
+    in standing: a direct form is what she is typing, an alias target is our
+    guess about what she meant. `list_cities` ranks on exactly that difference.
+    """
     forms = {clean, clean.replace("קריית", "קרית"), clean.replace("קרית", "קריית")}
+    return sorted(f for f in forms if f)
+
+
+def _prefixes(clean: str) -> list[str]:
+    """Every LIKE prefix the typed text should match against.
+
+    MEH-2919 (C5): the direct forms, plus the official name of any everyday
+    alias the text is a prefix of. An alias is by definition NOT a prefix of the
+    name it stands for («גבעת עדה» → «בנימינה-גבעת עדה»), so without this the
+    alias table is unreachable from a prefix search — it only ever ran on the
+    results. Adding the TARGET (never the alias) keeps one entry per city: the
+    merge below dedupes on `city_key`, so the alias string itself can only ever
+    appear if a row holds it.
+    """
+    forms = set(_direct_forms(clean))
+    forms.update(alias_like_patterns(clean))
     return sorted(f for f in forms if f)
 
 
@@ -91,7 +124,18 @@ def list_cities(
     if seeded:
         static_cities: list[str] = []
     elif clean:
-        static_cities = [c for c in ISRAEL_CITIES if c.startswith(clean)]
+        # MEH-2919 (C5): aliases are honoured here too, but this path compares
+        # LITERALLY (`startswith`, not ILIKE), so it takes `alias_targets` and
+        # not the `%` patterns the table query uses. It is NOT full parity and
+        # should not be read as such: three of the seven alias targets
+        # («בנימינה-גבעת עדה», «פרדס חנה-כרכור», «נוף הגליל») are absent from
+        # ISRAEL_CITIES, so they stay unreachable while the table is unseeded,
+        # and a `%` in the query is a pattern there and a literal here. This
+        # branch only runs before the official dataset is seeded.
+        static_prefixes = _direct_forms(clean) + alias_targets(clean)
+        static_cities = [
+            c for c in ISRAEL_CITIES if any(c.startswith(p) for p in static_prefixes)
+        ]
     else:
         static_cities = list(ISRAEL_CITIES)
 
@@ -113,7 +157,15 @@ def list_cities(
             continue
         seen.add(key)
         merged.append(name)
-    merged.sort()
+    # MEH-2919 (C5): a direct prefix match outranks an alias-derived one.
+    # «בנימינה-גבעת עדה» sorts before every «גבעת…» alphabetically, so a plain
+    # sort made it suggestion #1 for the four keystrokes on the way to
+    # «גבעתיים» — the opposite of what an autocomplete owes the person typing.
+    # Nine of the 22 Hebrew letters inject a target on the first keystroke, and
+    # for ג/ר/כ it does not even start with the letter she pressed. The alias
+    # stays in the answer; it just stops displacing her own word.
+    direct = _direct_forms(clean)
+    merged.sort(key=lambda n: (not any(n.startswith(f) for f in direct), n))
     if clean in merged:
         merged.remove(clean)
         merged.insert(0, clean)
