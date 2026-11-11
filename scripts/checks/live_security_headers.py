@@ -30,6 +30,8 @@ import sys
 import urllib.error
 import urllib.request
 
+import vercel_count  # MEH-2864: sibling module, prints «requests to Vercel: N» at exit
+
 
 class _NoRedirect(urllib.request.HTTPRedirectHandler):
     """Never follow a redirect. urllib copies request headers onto the next
@@ -62,6 +64,7 @@ NEVER_SET = "x-mehamakor-header-check-never-set"
 
 
 def fetch_headers(url: str) -> tuple[int, dict]:
+    vercel_count.note(url)  # MEH-2864
     headers = {"User-Agent": "mehamakor-header-check/1.0"}
     secret = os.environ.get("VERCEL_AUTOMATION_BYPASS_SECRET", "").strip()
     if secret:

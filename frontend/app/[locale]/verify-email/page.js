@@ -3,6 +3,14 @@ import VerifyEmailClient from "./VerifyEmailClient";
 import { BRAND_NAME } from "@/lib/constants";
 import { buildAlternates, OG_LOCALE } from "@/lib/i18n-seo";
 
+// MEH-2878: stays per-request on purpose. Its client body reads
+// useSearchParams() inside <Suspense>; on a cached (static) route Next renders
+// that subtree only in the browser, so the cached HTML would lose the page's
+// H1 and body (measured: production has the H1 in its HTML, a cached build
+// did not). Per-request keeps today's server-rendered HTML. Remove this only
+// together with moving the H1 out of the Suspense subtree.
+export const dynamic = "force-dynamic";
+
 // MEH-641 PR-B: server-wrapper pattern (MEH-658 precedent) — client
 // components can't export metadata; the wrapper supplies SEO while
 // VerifyEmailClient.jsx keeps the "use client" token flow (useSearchParams

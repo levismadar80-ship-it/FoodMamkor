@@ -53,7 +53,7 @@ test.describe("producer account menu — desktop (MEH-1226)", () => {
     // logged-in role → producer order is dashboard → profile → מועדפים → הגדרות.
     const items = menu.getByRole("menuitem");
     await expect(items.nth(0)).toHaveText("לוח הבקרה שלי");
-    await expect(items.nth(1)).toHaveText("הפרופיל שלי");
+    await expect(items.nth(1)).toHaveText("צפייה בדף");
     await expect(items.nth(2)).toHaveText("מועדפים");
     await expect(items.nth(3)).toHaveText("הגדרות");
 
@@ -62,7 +62,7 @@ test.describe("producer account menu — desktop (MEH-1226)", () => {
       "/producer/dashboard",
     );
     // Public business page — a real producer UUID, never /producer/undefined.
-    await expect(menu.getByRole("menuitem", { name: "הפרופיל שלי" })).toHaveAttribute(
+    await expect(menu.getByRole("menuitem", { name: "צפייה בדף" })).toHaveAttribute(
       "href",
       /^\/producer\/[0-9a-f-]{36}$/,
     );
@@ -89,7 +89,7 @@ test.describe("consumer account menu — desktop (MEH-1226)", () => {
     const menu = page.getByRole("menu");
     await expect(menu).toBeVisible();
 
-    await expect(menu.getByText("הפרופיל שלי")).toHaveCount(0);
+    await expect(menu.getByText("צפייה בדף")).toHaveCount(0);
     await expect(menu.getByText("לוח הבקרה שלי")).toHaveCount(0);
     // MEH-1310: consumers now have a favorites row → /favorites (was orphaned
     // on desktop pre-1310; the mobile AccountSheet always had it).

@@ -166,6 +166,7 @@ Add a parallel `staging` environment that deploys from the `staging` branch.
    | `RESEND_API_KEY` | **Required for any email to send.** Resend HTTP API key from an account where the sending domain is verified (SPF+DKIM) — `mehamakor.co.il` for production (the `email_from_address` default), `mehamakor.online` if staging sends from it. **The two domains are verified in two different Resend accounts**; a key from the wrong account fails every send with 422 (MEH-2341, 24/10). **If unset, every verification / reset / welcome email is silently skipped** (fail-open at `backend/app/services/email.py`) — the user still sees a "check your email" ack but nothing sends. Boot fails loud when this is missing on staging/production (MEH-1164 guard in `backend/app/startup.py`), so set it before the next deploy. |
    | `EMAIL_FROM_ADDRESS` | Optional. Sender header; defaults to `מהמקור <noreply@mehamakor.co.il>` (`config.py:115`). Override only if staging should send from a different verified address — the domain must be verified in the same Resend account as `RESEND_API_KEY`. |
    | `ENV` | `staging` |
+   | `SUPER_ADMIN_EMAIL` | **Required in production — the backend refuses to boot without a valid address** (MEH-2890; production = `ENV=production` or `RAILWAY_ENVIRONMENT=production`). The owner's login email, **exactly as it appears in `/admin/users`** (the match is case-sensitive). That account cannot be demoted or deleted from `/admin/users`. Set the same value on staging; unset on staging only means nobody is protected there (logged). |
    | `CLOUDINARY_*` | Same as production for MVP (same media bucket). |
    | `WHATSAPP_PHONE_NUMBER_ID` | Phone Number ID from Meta WhatsApp Manager (see HANDOFF.md → "WhatsApp Cloud API"). Use staging value or leave unset to skip WhatsApp sends on staging. Replaces `TWILIO_WHATSAPP_FROM` (MEH-508). |
    | `WHATSAPP_ACCESS_TOKEN` | Never-expiring System User token from Meta Business Suite. Store in Railway variables, never in `.env` files. |
@@ -1004,6 +1005,26 @@ panel) is QA'd automatically instead of manually. Three moving parts:
    unset. Expected output:
    `Synced QA users: demo-owner@example.com (password reset),
    demo-consumer@example.com (created), demo-admin@example.com (created). …`
+
+   **Golden-path personas (MEH-2897).** The Playwright `golden` project
+   (docs/TESTING.md) logs in as seven separate accounts, `golden-*@example.com`.
+   They use the **same three secrets** (no new one): businesses and the
+   organizer `DEMO_OWNER_PASSWORD`, the customer `DEMO_CONSUMER_PASSWORD`, the
+   admin `DEMO_ADMIN_PASSWORD`. Sapir seeds them on staging, by the same two
+   routes, with `--golden` instead of `--sync-users`:
+
+   ```bash
+   # A. Railway Console (staging backend service, cwd=/app)
+   python scripts/seed_demo_business.py --golden
+   # B. Local machine with the Railway CLI linked to staging, from the repo root
+   railway run python backend/scripts/seed_demo_business.py --golden
+   ```
+
+   It creates only what is missing and resets the seven passwords, so it is safe
+   to re-run. It does not touch the demo business, and the default seed run
+   (CI's) never creates the personas. Same `_assert_not_production()` guard;
+   aborts if any of the three secrets is unset. Expected output:
+   `Golden personas: created 7, re-dated 4 events/experiences, password reset on 0 existing (…)`. Every run also moves the golden markets, the G2 event and the experience back to today + their offset, so their dates never go stale.
 
 2. **globalSetup provisions storageState.** `frontend/e2e/global-setup.ts` logs
    each role in via `POST /api/auth/login` and writes

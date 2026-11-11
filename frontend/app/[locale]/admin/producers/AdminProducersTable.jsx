@@ -124,13 +124,25 @@ export function WaitingBadge({ producer }) {
   // creation date as if it were a submission — a pre-MEH-2100 row and every
   // draft have no stamp, and silently substituting one would misreport when
   // the clock started.
-  const stamp = p.submitted_for_review_at || p.created_at;
+  //
+  // MEH-2872: the same order the server counts from (routers/admin.py
+  // _attach_aging, MEH-2869) — a draft from created_at; otherwise the latest
+  // resubmission, then the first submission, then created_at — so the date in
+  // the tooltip is always the moment the badge's number counts from.
+  const source = isDraft
+    ? "created"
+    : p.resubmitted_at
+      ? "resubmitted"
+      : p.submitted_for_review_at
+        ? "submitted"
+        : "created";
+  const stamp = {
+    resubmitted: p.resubmitted_at,
+    submitted: p.submitted_for_review_at,
+    created: p.created_at,
+  }[source];
   const when = stamp ? new Date(stamp).toLocaleString("he-IL") : null;
-  const title = when
-    ? p.submitted_for_review_at
-      ? t("producers.table.waiting_tooltip_submitted", { when })
-      : t("producers.table.waiting_tooltip_created", { when })
-    : undefined;
+  const title = when ? t(`producers.table.waiting_tooltip_${source}`, { when }) : undefined;
 
   return (
     <span

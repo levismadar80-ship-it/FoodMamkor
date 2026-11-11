@@ -5,8 +5,16 @@
 // locale-prefixed (/he) and left the home tab permanently unhighlighted.
 // MEH-2578: Link from here too — next/link dropped the /en prefix.
 import { Link, usePathname } from "@/i18n/navigation";
+// MEH-2850: every Link element in the site chrome carries prefetch={false}. The
+// chrome is on screen on EVERY page, and since #4260 its targets (/, /about,
+// /privacy, /login, /register) are static, so Next prefetches them IN FULL —
+// their page JS plus the shared [locale] layout payload (~56 KB gz, mostly the
+// messages the page already has). Measured 10/11: +121 KB JS on /map and
+// +137 KB on /events after load, gone when only those prefetches are blocked.
+// Navigation still works; it fetches on tap. Guarded by ChromePrefetchGuard.test.js.
 // MEH-1202: gate BottomNav OFF the producer detail page (shared route helper).
 import { isProducerDetail } from "@/lib/producer-route";
+import { isRegisterRoute } from "@/lib/register-route"; // MEH-2927
 import { useCallback, useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { Compass, MapTrifold, Flower, User } from "@phosphor-icons/react";
@@ -22,6 +30,11 @@ const isAdminRoute = (p) => p === "/admin" || (p || "").startsWith("/admin/");
 const NO_PILL_CLEARANCE = "calc(env(safe-area-inset-bottom, 0px) + 12px)";
 const isOwnerDashboardRoute = (p) =>
   p === "/producer/dashboard" || (p || "").startsWith("/producer/dashboard/");
+// MEH-2927 (pilot B3c): the registration flow. Same shape as the two above —
+// a surface whose own primary action sits where this pill floats. Imported
+// rather than redeclared: InstallPrompt gates on the same fact, and two
+// copies of one predicate is the Smell #1 shape (workflow.md). Same reason
+// `isProducerDetail` is imported above.
 
 /**
  * Mobile bottom nav — MEH-789 (Phase 6 "Cream Signature" port).
@@ -279,7 +292,8 @@ export default function BottomNav() {
   // safe-area value set toasts flush on the screen edge (review on #3783).
   // The producer-detail gate is NOT in this set: its StickyContactBar is a
   // bottom layer, and the fallback is what keeps content clear of it.
-  const noBottomChrome = isAdminRoute(pathname) || isOwnerDashboardRoute(pathname);
+  const noBottomChrome =
+    isAdminRoute(pathname) || isOwnerDashboardRoute(pathname) || isRegisterRoute(pathname);
   // iOS drift pin: the clearance is the SHELL's own height (pill + safe-area + 16px
   // gutter), not `innerHeight - pill.top`. The two are equal while the pill sits
   // where CSS puts it — but iOS 26 Safari can leave every fixed-bottom layer
@@ -387,6 +401,13 @@ export default function BottomNav() {
   // list at 375 (27/10 audit). This reverses MEH-1202's "dashboard subtree
   // keeps the nav"; the header logo leads back to the site, where the nav returns.
   if (isOwnerDashboardRoute(pathname)) return null;
+  // MEH-2927 (pilot B3c): the registration flow. Measured at the iPhone VISUAL
+  // viewport rather than the device height — at 375x667 one pixel of the 48px
+  // «מתחילים» button was visible and unobstructed, at 390x664 sixteen. The
+  // pill contributes 6px of that at one size and none at the others; the
+  // cookie banner and the fold do the rest, which is why the answer is to take
+  // the pill off the flow rather than lift one button over it (Sapir, 11/11).
+  if (isRegisterRoute(pathname)) return null;
 
   return (
     <>
@@ -462,7 +483,7 @@ export default function BottomNav() {
                 }}
                 className="relative flex-1 flex"
               >
-                <Link
+                <Link prefetch={false}
                   href={tab.href}
                   className={tabCls(active)}
                   aria-current={active ? "page" : undefined}

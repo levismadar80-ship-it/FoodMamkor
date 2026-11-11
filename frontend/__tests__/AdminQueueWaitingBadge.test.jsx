@@ -95,6 +95,31 @@ describe("MEH-2110 — the tooltip names which timestamp it shows", () => {
     expect(badge.getAttribute("title")).not.toContain("waiting_tooltip_submitted");
   });
 
+  // MEH-2872: the server counts a resubmitted row from resubmitted_at
+  // (MEH-2869), so the tooltip must name that moment, not the first submission.
+  it("a resubmitted row names the resubmission and its date, not the first submission", () => {
+    const badge = renderBadge(
+      queued(1, { resubmitted_at: "2026-08-26T09:00:00Z" }),
+    );
+    const title = badge.getAttribute("title");
+    expect(title).toContain("admin.producers.table.waiting_tooltip_resubmitted");
+    expect(title).toContain(new Date("2026-08-26T09:00:00Z").toLocaleString("he-IL"));
+    expect(title).not.toContain(new Date("2026-08-16T09:00:00Z").toLocaleString("he-IL"));
+  });
+
+  it("a draft keeps counting from created_at even with stale stamps", () => {
+    const badge = renderBadge({
+      status: "draft",
+      business_days_waiting: 3,
+      created_at: "2026-08-01T09:00:00Z",
+      // Not reachable today (no draft carries a stamp), but the server
+      // branches on draft FIRST; so must the tooltip, or the two disagree.
+      submitted_for_review_at: "2026-08-05T09:00:00Z",
+      resubmitted_at: "2026-08-06T09:00:00Z",
+    });
+    expect(badge.getAttribute("title")).toContain("waiting_tooltip_created");
+  });
+
   it("omits the tooltip entirely when there is no timestamp at all", () => {
     const badge = renderBadge({ status: "pending", business_days_waiting: 0 });
     expect(badge.getAttribute("title")).toBeNull();

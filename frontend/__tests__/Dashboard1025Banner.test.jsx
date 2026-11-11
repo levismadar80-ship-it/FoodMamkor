@@ -78,7 +78,8 @@ const FEEDBACK = "חסרה תמונה — יש להעלות לפחות תמונ�
 const PENDING_TITLE = "status.pending.title"; // key-echo of the generic banner
 
 function setup({ requested_changes = null, changes_requested_at = null } = {}) {
-  producerRef.current = { id: 1, name: "עסק לדוגמה", slug: "demo-farm", status: "pending", availability_state: "accepting_orders" };
+  // MEH-2880: real /me/dashboard shape — no slug (it lives on /producers/me).
+  producerRef.current = { id: 1, name: "עסק לדוגמה", status: "pending", availability_state: "accepting_orders", vacation_until: null, plan: "free" };
   profileRef.current = { id: 1, name: "עסק לדוגמה", slug: "demo-farm", requested_changes, changes_requested_at };
 }
 

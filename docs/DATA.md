@@ -118,6 +118,8 @@
 >
 > **MEH-2465 (2026-10-28) — existence-only gates closed:** endpoints that used to check only that the row exists now refuse or skip `kind='organizer'`: `POST /favorites/{id}` → 404, `GET /favorites` skips organizer rows; `POST /producers/{id}/reviews` → **409** «אי אפשר לכתוב ביקורת על מארגן», `GET /producers/{id}/reviews` + legacy `GET /reviews` return nothing for an organizer; `GET /producers/{id}/google-rating` → 404; `POST /reports/producer-info` → 404 (slug or id); `GET /producers/{id}/kashrut-cert/{code}` → 404 before any fetch (`_servable_kashrut_certs` checks `kind`). Admin `total_producers`, `new_producers_this_week` and the monthly series (dashboard + `/admin/analytics`) count `kind='producer'`; `pending_producers` and recent activity still include organizers (they are approved through the same queue).
 
+> **MEH-2952 (2026-11-11) — `producers.is_test` + `users.is_test` (MEH-2892 §C.3):** `BOOLEAN NOT NULL DEFAULT false`, migration `b8cb5480552f` (on top of `19ac967d78fb`; expand-only, no backfill, `EXPECTED_TABLES` unchanged). A seeded test business for the post-release smoke. **One rule:** `producer_listing.is_business(include_test=False)` now also requires `is_test = false`, so a test row is absent from every surface that already composed it (list, `?q=`, map, count, cities, random, by-slug, `/search`, `/stats`, `/cities`, group buys, experiences, recipes, favorites, follower alerts, delivery waitlist, admin business counts). Readers that keep organizers visible add the building block `not_test_producer()` instead: the events feed and `/events/upcoming`, saved events, the organizer pages, the rescue list. Gates on a loaded row use `is_business_row()`: `GET /producers/{id}` and `POST /producers/{id}/view` (404 to strangers, owner/admin still see), the experience host link. `is_live_owner_row()` (approved, not test, any `kind`) gates `GET /events/{id}` and event sign-up and is IndexNow's owner check; `indexnow.producer_urls()` / `recipe_urls()` return nothing for a test row, so no path pings one (the admin toggle / approve / reject ping without a public check). The remaining hand-written ORM checks of the form `<producer>.status ==/!= 'approved'` (or `.in_([...])`) are an inventory in the guard file, with a count and reason per file; raw SQL, `filter_by(status=...)` and other variable names are not counted. `POST /rescue/orders` refuses a test row's bag by id (404, same as a missing bag). `include_test=True` is allowlisted by file in `tests/test_meh2952_is_test_guards.py` (none in chunk 1). **No writer yet:** the seed script and an admin toggle arrive in chunk 4, after chunks 1–3 are on staging; the same guard file fails on any write outside `tests/` and on any response model with an `is_test` field. **Not covered yet:** the chat tools (`chat_db_tools`, role `mcp_reader`) need `GRANT SELECT (is_test)` first; the send layer is chunk 2; the business page reopens with a `noindex` field in chunk 3.
+
 > **MEH-2513 (2026-10-28) — not-live businesses gated the same way:** a business whose `status` is not `approved` (inactive / rejected / pending / draft) is treated like a missing one on the side doors: `POST /users/me/favorites/{id}` → 404, `GET /users/me/favorites` skips it (the row is kept, so a reinstated business returns to the list), `POST /producers/{id}/reviews` → 404 «בית עסק לא נמצא», and `fire_alerts` sends nothing for it (one gate for new product / event / delivery area / recipe alerts). All three use `is_business()`. `GET /producers/{id}/reviews` is unchanged, since the owner's own page preview reads it.
 > **MEH-2460 (2026-10-28) — registering as an organizer:** `POST /auth/register/producer` accepts `kind` (`producer` default \| `organizer`). For an organizer the schema drops any `category_ids` (and skips the ≥1 rule), and writes `has_physical_location=true, offers_delivery=false, delivery_nationwide=false`, no delivery cities/areas, no license — the one shape CHECK `producer_location_mode` accepts with no delivery claim (the row is never shown as a business). `GET /auth/me` → `UserOut.producer_kind`. Submission gate (`services/submission_gate.py`): an organizer needs image + description + ≥1 active event dated today-or-later (Israel) + verified WhatsApp — codes `image` · `description` · `upcoming_event` · `phone_verified` (`ORGANIZER_SUBMISSION_REQUIREMENTS`); never product / category / location. `ProducerOwnerOut.upcoming_events_count` (filled by `GET`/`PUT /producers/me` for organizers, 0 otherwise) feeds the client mirror. An organizer row stores no `address` / `lat` / `lng` and gets no `producer_locations` row (no map point). The registration placeholder description («אכתוב אחר כך» → `auth.register.producer.default_description`) counts as missing (`DEFAULT_PRODUCER_DESCRIPTIONS`, parity-tested against `lib/producer-completeness.js`). Onboarding follow-up emails (`services/onboarding_followup.py`) select `kind='producer'` only. Edit hub: an organizer sees the profile + contact groups; a deep link or `?group=` into another group stays on the hub, and the «חובה» chips follow her gate (bio required).
 > **MEH-2475 (2026-10-28) — organizer page fields + organizer city:** `OrganizerPublicOut` also carries the dashboard's profile + contact fields (null when unfilled). `PUT /producers/me` writes `city` for `kind='organizer'` only (stripped, 1–100 chars, blank → 422 «יש לבחור עיר»); for a business `city` is still ignored, because its city follows the primary location row (MEH-1938 ruling A) and an organizer has no location rows. Editor: `OrganizerCityCard` in the dashboard «קשר» group (anchor `#organizer-city`).
@@ -132,6 +134,8 @@
 > **MEH-1818 (2026-08-02):** day-1 pending-nudge email. `producers.email_pending_nudge_sent_at` (`TIMESTAMP WITH TIME ZONE`, **nullable**, migration `d3b7f1a92c64`) records when a business still awaiting approval was sent the one-time "here is what is missing" email. Mirrors the MEH-539 `email_followup_*` tracking columns exactly — `nullable=True`, **no `server_default`, NO backfill** (ADR-007 Expand-only; a backfill would retro-suppress the nudge for the exact pending businesses the feature exists to reach). No new index: the candidate query filters `created_at`, already covered by `idx_producers_created_at`. **Not exposed on any schema** — public, owner, and admin serializers all omit it; the sole consumer is `app/services/pending_nudge.py:send_pending_nudges`, invoked from the daily 10:00 UTC scheduler tick. Candidate predicate: `status IN ('draft','pending') AND created_at <= now()-24h AND email_pending_nudge_sent_at IS NULL`; the day-marks then count from `max(created_at, declared_at)` (MEH-2340), so an admin draft its owner claimed by link starts the sequence at the claim, not at the admin's creation (MEH-2100 added `draft`; MEH-2124 removed `pending_whatsapp`) — status membership is an explicit tuple, so a status value added later is excluded by default (fail-closed, same reasoning as the MEH-1587 approved-only gate). **The stamp is written even when nothing was missing and no email was sent** (a complete-but-unapproved business is waiting on admin review, not on itself): that is what removes it from the candidate set permanently and holds the send to exactly one email per producer.
 >
 > **MEH-2100 (2026-08-16):** draft → submit-for-review state machine. `producers.submitted_for_review_at` (`TIMESTAMP WITH TIME ZONE`, **nullable**, migration `e2a7c9d41b06`) records the instant the owner pressed "שליחה לבדיקה" and the row moved `draft` → `pending` — the point from which the 3-business-day review SLA is counted, replacing `created_at` in that role. **No `server_default`, NO backfill** (ADR-007 Expand-only): NULL is honest and permanent for two populations — a producer still in `draft`, and any row seeded before this revision (staging fixtures; production had no businesses, Sapir 16/08). Readers needing a submission instant use `submitted_for_review_at or created_at`, which is what makes the absent backfill correct rather than merely deferred. No new index — nothing filters or sorts on it. The paired `status` value `"draft"` needs no migration at all: `Producer.status` is a free `String(20)` with no enum and no DB CHECK, so a new value is data, not schema. **Not exposed on any schema** — public (`ProducerListOut`), owner (`ProducerOwnerOut`) and admin (`ProducerAdminOut`) serializers all omit it, deliberately: the dashboard banner and the admin queue both key on `status`, so nothing renders a submission instant and adding a field no surface reads would be dead API. Its only writer is `POST /producers/me/submit-for-review` (MEH-2100 PR2); it has **no reader yet**, and the `submitted_for_review_at or created_at` contract above is the rule for the first one that appears. Exposing it (e.g. a "submitted N days ago" column in the admin queue) is a deliberate follow-up, not an oversight.
+>
+> **MEH-2869 (2026-11-10, supersedes the two-term fallback above for the admin queue):** the admin queue (`_attach_aging` badge and the oldest-first sort, `admin.py`) reads **`resubmitted_at or submitted_for_review_at or created_at`**. A resubmission after a rejection writes only `resubmitted_at`, and `submitted_for_review_at` keeps the first submission, so without it a business that resubmitted today topped the queue with weeks of "waiting". Drafts still age from `created_at`.
 >
 > **MEH-589 (2026-05-15):** `producer_recipes` + `producer_recipe_products`
 > added (chunk 1/4 = MEH-588 schema + chunk 2/4 = MEH-589 endpoints +
@@ -624,7 +628,11 @@ rescue_reviews         (id uuid PK, order_id uuid FK→rescue_orders CASCADE UNI
 rescue_typical_items   (id uuid PK, producer_id uuid FK→producers CASCADE UNIQUE,
                         items jsonb NOT NULL, allergens text[] nullable,
                         created_at, updated_at)            -- MEH-2644, MEH-2752
+alembic_lineage        (revision varchar(64) PK, recorded_at timestamptz
+                        NOT NULL default now())                       -- MEH-2903
 ```
+
+> **MEH-2903 — `alembic_lineage` (11/11/2026):** boot bookkeeping, not app data. `alembic_version` stores only the current head, so an older image booting on a newer database (a backend rollback) cannot tell its own head is an ancestor of the database's revision. `backend/scripts/migrate_on_boot.py` (the only writer) records the image's whole revision chain here after every successful `upgrade head`; an image whose database is ahead of it takes rollback mode only if its own head is listed here, and otherwise fails the boot naming both revisions. Nothing in `app/` reads or writes it. Migration `19ac967d78fb`; **`EXPECTED_TABLES` 49 → 50**.
 
 > **MEH-2528 — `retired_slugs` (28/10/2026):** tombstones for public business URLs. A business delete is a hard delete, so its UNIQUE `producers.slug` used to be free at once and the next business with the same name inherited every `/p/<slug>` link. Now admin delete, owner account delete and an admin slug change/clear write a row (`services/retired_slugs.py`, the only writer), and `_ensure_unique_slug` (`routers/admin.py`) treats a retired slug as taken (`-2`…). A business may take back a slug it retired itself (the row is then removed). Drafts are not retired — never public. `producer_id` = owner of a renamed slug (for a future redirect), NULL for a deleted business. Migration `c3d8e2f1a9b4`; **`EXPECTED_TABLES` 41 → 42**. A deleted business's URL answers **410** and renders the «בית העסק הזה כבר לא במהמקור» page (MEH-2534). Not yet: a 301 from a renamed slug.
 
@@ -683,9 +691,11 @@ via `slowapi` — see `backend/app/rate_limit.py` and
 > The owner gets exactly `open → cancelled` (before or after the deadline),
 > `funded → fulfilled` and `funded → cancelled` (`OWNER_TRANSITIONS`); any other
 > pair → 409, so cancelled and fulfilled are final for her. The route is
-> owner-only: an admin (not a producer) gets 403 here and keeps the full
-> override on `PATCH /admin/group-buys/{id}/status`, which is unchanged — one
-> checked path per caller, not two to the same state. The check and the write run under a row lock
+> owner-only: an admin (not a producer) gets 403 here and uses
+> `PATCH /admin/group-buys/{id}/status`, which since MEH-2866 has no override:
+> the same table (`ADMIN_TRANSITIONS = OWNER_TRANSITIONS`), the same row lock,
+> an optional `expected_status` (409 on mismatch), and the same cancel email to
+> every participant except the admin herself. A status outside the four → 400. The check and the write run under a row lock
 > (`with_for_update`, like `/commit`). 30/minute. No schema change.
 >
 > **MEH-2489 — `expected_status` (optional).** Same body plus
@@ -1304,8 +1314,14 @@ POST   /webhook/whatsapp     public — Meta inbound events, HMAC-SHA256 signatu
 
 ```
 GET    /admin/whatsapp/failed     admin — undelivered outbound (status IN failed,
-                                  window_expired) from the last 7 days, ordered
-                                  created_at desc; list-only, no resend/retry
+                                  window_expired, OR accepted more than a day
+                                  ago with no delivery receipt — "stuck",
+                                  MEH-2122 Chunk E) from the last 7 days,
+                                  ordered created_at desc; list-only, no
+                                  resend/retry. The admin-home count
+                                  undelivered_whatsapp_7d uses the same
+                                  predicate (services/whatsapp.py
+                                  undelivered_predicate).
 ```
 
 ### Admin — experiences (`app/routers/admin_experiences.py`)
@@ -1409,7 +1425,14 @@ POST /contact                    public — { name, email, message, topic? } →
                                  CONTACT_TOPIC_LABELS in schemas.py:2074.
 GET  /cities                     public — canonical cities table (data.gov.il seed,
                                  MEH-1343) ∪ live producer/delivery cities; static
-                                 list only as unseeded-env fallback (MEH-1349)
+                                 list only as unseeded-env fallback (MEH-1349).
+                                 MEH-2919: the QUERY is folded through
+                                 CITY_ALIASES too, by prefix, so an everyday
+                                 name reaches the official locality
+                                 («גבעת עדה» → «בנימינה-גבעת עדה»); the alias
+                                 pattern tolerates the data.gov hyphen spacing,
+                                 and an alias-derived hit is ranked after every
+                                 direct prefix match
 ```
 
 ### Community business suggestions (`app/routers/business_suggestions.py` — MEH-2633)
@@ -1618,6 +1641,7 @@ design). No env var, no retry, no Google.
 Critical:
 - `DATABASE_URL` — Railway Postgres reference
 - `JWT_SECRET_KEY` or `SECRET_KEY` — **required in production**, ephemeral in dev
+- `SUPER_ADMIN_EMAIL` — the owner account no admin can demote or delete (`admin_extra.is_super_admin`; `GET /admin/users` returns `is_super_admin` per row). **Required in production**: the backend refuses to boot without a valid address (MEH-2890). Elsewhere unset = nobody protected (logged). Case-insensitive.
 - `ANTHROPIC_API_KEY` — moderation + chat widget (fail-open if missing)
 - `ENV` — `development|staging|production`
 - `CORS_ORIGINS` — comma-separated, production MUST set explicitly

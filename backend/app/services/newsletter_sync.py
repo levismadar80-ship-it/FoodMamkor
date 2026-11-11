@@ -25,6 +25,7 @@ import threading
 from app.config import settings
 from app.sentry import capture_background_exception
 from app.services.email import _is_reserved_domain, _mask
+from app.services.resend_client import configure_resend
 
 logger = logging.getLogger(__name__)
 
@@ -42,10 +43,8 @@ def _resend():
     """Return the configured SDK module, or None when there is no key."""
     if not settings.resend_api_key:
         return None
-    import resend  # lazy import — mirrors services/email.py
-
-    resend.api_key = settings.resend_api_key
-    return resend
+    # MEH-2886 chunk 4: key + 10 s HTTP timeout, same as services/email.py.
+    return configure_resend(settings.resend_api_key)
 
 
 def _get_segment_id(resend) -> str:

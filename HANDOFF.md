@@ -4,6 +4,75 @@
 > Standing procedures live in [`docs/runbooks/`](./docs/runbooks/) — e.g. the [uptime alert runbook](./docs/runbooks/UPTIME.md).
 > Decision capture is proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-11-10 — אחה״צ: המחרוזות המאושרות, ‏prefetch, ‏SUPER_ADMIN_EMAIL, ‏PR גרסה v1.5.0
+
+**‏שורה אחת:** ‏#4279 ו-#4281 מוזגו. ‏#4280 (`SUPER_ADMIN_EMAIL`) ממתין ל-3 שורות של ספיר ב-`backend/.env.example`. ‏PR הגרסה **#4282** פתוח, ולא ממוזג בלי «go merge».
+
+**‏מה צריך לדעת לפני עבודה:**
+- ‏**Link בכרום של האתר = `prefetch={false}`.** ‏`ChromePrefetchGuard.test.js` סורק את Header, ‏BottomNav, ‏CookieBanner, ‏Footer, ‏CollectionNotice ו-DashboardFooter. Link חדש בלי זה מחזיר +120KB לכל דף.
+- ‏**`SUPER_ADMIN_EMAIL` (#4280, אחרי המיזוג):** ‏production לא עולה בלעדיו (`ENV=production` או `RAILWAY_ENVIRONMENT=production`). ההשוואה מדויקת, לא תלוית-רישיות, בכוונה: וריאנט רישיות הוא חשבון אחר שאפשר לרשום. מה להגדיר ב-Railway כתוב ב-MEH-2890.
+- ‏**שני פערים ישנים אצל האדמין הראשי, שלא תוקנו (צריך מחרוזת):** אדמין יכול לחסום את בעלת האתר. מחיקת עסק מאפסת את התפקיד של כל המשתמשים המקושרים אליו. הנוסח המוצע מופיע ב-MEH-2890.
+- ‏**ה-429 ב-E2E על staging:** ‏`/auth/login` מוגבל ל-5 בדקה **לפי IP**, לא לפי חשבון. ריצה על staging נכשלה ב-global setup עם 429. ה-jobs של Chromium ושל WebKit התחילו באותה שנייה, וכל אחד התחבר 4 פעמים. כבר נמדד שכל ה-CI יוצא מ-IP אחד (MEH-2284), ולכן זה הסבר סביר, אבל לא מאומת לריצה הזו. **זה לא** ריצות הצילום מה-sandbox, שהן IP אחר. התיקון המוצע (MEH-2892 §E2): ‏global setup סדרתי עם המתנה על 429.
+- ‏**ב-staging יש 9 הודעות WhatsApp בלי אישור מסירה.** כנראה ה-webhook לא מגיע.
+
+---
+
+## 2026-11-10 — יום וערב: לוח הבקרה, QueuePool, ‏Sentry, סריקת סודות, ‏repo ציבורי
+
+**‏שורה אחת:** ‏25 PR-ים מוזגו ל-staging (‏#4178, ‏#4255–#4277, ו-PR המסמכים הזה, הפירוט ב-CHANGELOG). ‏Vercel עבר ל-Pro והריפו ציבורי, ולכן deploys ל-staging עובדים שוב מ-10/11 08:05. ‏staging מקדים את main ב-54 commits, כולל revision אחד של Alembic (MEH-2828, אושר).
+
+**‏מה צריך לדעת לפני עבודה:**
+- ‏**הריפו ציבורי זמנית.** סריקת סודות על כל ההיסטוריה (11,388 commits, ‏gitleaks + חיפושים ממוקדים, MEH-2890): אין מה להחליף. לפני שחוזרים לפרטי: הכרטיס «חזרה לפרטי» (MEH-2891, ‏needs-sapir), כי ב-repo פרטי Vercel חוסם deploys ש-author שלהם הוא `sapirschnapp`.
+- ‏**‏`get_db` משחרר את החיבור לפני משימות הרקע** (#4272). אין לשנות ל-release סינכרוני: זה יצר deadlock על thread pool מלא (נבדק ב-`tests/test_meh2886_db_release.py`). קריאה חיצונית חדשה בתוך route צריכה `db.close()` לפניה, כמו ב-`google_rating.py`.
+- ‏**Resend:** כל קריאה עוברת דרך `services/resend_client.configure_resend` (‏timeout 10 שניות).
+- ‏**לוח הבקרה:** כל כלי ב-`lib/business-features.js` נושא `dashboard: {home, href}`, ו-`DashboardPlacementGuard.test.js` נכשל על דף בלי רשומה, על רשומה בלי קישור נכנס, ועל יותר מ-2 לחיצות מהבית. כל PR שנוגע ב-`/producer/dashboard` נושא בלוק «מיקום» בכרטיס (`.claude/rules/workflow.md`).
+- ‏**Vitest:** שתי לחיצות בקובץ אחד בדפי לוח הבקרה תוקעות את הריצה (MEH-2876). לחיצה אחת לקובץ, בטסט האחרון.
+- ‏**Actions:** ‏4,248 דקות-חיוב ב-24 שעות (נמדד 10/11). ב-repo פרטי המכסה היא 2,000 בחודש. הפירוט ב-MEH-2891.
+- ‏**צילומי /join (MEH-2794, ‏#4277):** הסקריפט רץ מ-sandbox מול staging (‏21/24 ב-manifest). ‏staging מחזיר 429 אחרי ארבע ריצות ברצף. ‏`map.webp` לא נתפס (אריחי המפה חסומים ב-egress), ‏`rescue-bag.webp` רק בתוך 3 שעות מה-seed (MEH-2808).
+- ‏**פתוח לספיר:** מחרוזות («לכל הנתונים ←», שם אחד ל«צפייה בדף»), ‏patches ל-workflow ב-`docs/ci/` (uptime כל 30 דקות, ‏post-deploy-trim, ‏E2E בקבוצה אחת), חיבור Sentry → Linear, והחלטה על `SUPER_ADMIN_EMAIL` הקשיח (`admin_extra.py:66`).
+
+---
+
+## 2026-11-10 — לילה: לוגו במיילים, נעילות במכונות המצבים, ייעול הבדיקות (MEH-2864)
+
+**‏שורה אחת:** בלילה מוזגו ל-staging ‏10 PR-ים: #4246, #4248, #4233, #4247, #4249, #4251, #4250, #4252, #4253, ו-PR המסמכים הזה (הפירוט ב-CHANGELOG). אף אחד מהם לא עלה, כי Vercel עדיין חוסם deploys.
+
+**‏מה צריך לדעת לפני עבודה:**
+- ‏**Vercel:** ‏production חזר (200), אבל כל deploy חדש נחסם: «Git author sapirschnapp must have access to the project». ספיר צריכה להוסיף את החשבון לצוות ב-Vercel (MEH-2864, ‏needs-sapir). רשימת «לבדוק ב-staging» נמצאת בתגובה על MEH-2864.
+- ‏**כל הדפים הציבוריים מרונדרים בכל בקשה** (88 מתוך 89 ƒ), כי `app/[locale]/loading.js` קורא ל-`getTranslations` בלי locale ו-next-intl נופל ל-`headers()`. נמדד ב-build ניסיוני: בלי זה, 31 משפחות נתיבים עוברות ל-ISR. ההצעה המדורגת נמצאת ב-MEH-2864 (Phase 0). לא תוקן: caching הוא רכיב מרכזי.
+- ‏**ייעול הבדיקות (#4253):** סריקה מלאה ב-E2E מקומי (`e2e/flows/manual/link-crawl.spec.ts`), ‏`link-check --smoke` עד 10 כתובות, `scripts/frontend-touched.sh`, ו-«requests to Vercel: N» בכל בדיקה. השינוי ב-workflow ממתין לספיר: `docs/ci/post-deploy-trim.patch.md`.
+- ‏**מכונות מצבים:** קבוצת רכישה עוברת מצב לפי אותה טבלה לבית העסק ולאדמין (`ADMIN_TRANSITIONS = OWNER_TRANSITIONS`). ‏«נמסר» / «לא הגיע» בסלי הפתעה נועלים כמו ביטול. ‏`_offer_for_update` עושה `populate_existing()`, ואין להסיר את זה.
+- ‏**מייל HTML חדש חייב לוגו.** ‏`tests/test_email_logo.py` נכשל על תבנית `<html` בלי קריאה ל-`email_logo_html()`.
+- ‏**שינוי ב-API (‏openapi.json)?** צריך גם `bash scripts/checks/openapi-codegen-drift-guard.sh --write` (מעדכן את ה-manifest), אחרת Repo guards אדום.
+- ‏**פתוח לספיר (needs-sapir):**
+  - MEH-2049 PR 2: ‏`useProducersFeed` או `MapClient`.
+  - MEH-2868: נוסח עזרה לאדמין קבוצות רכישה.
+  - MEH-2872: נוסח tooltip לשליחה חוזרת.
+  - MEH-2870 + MEH-2871: איפה קובץ האודיט `docs/audits/2026-11-implicit-state-machines.md`.
+  - MEH-2122 chunk E: נוסח.
+  - MEH-2827 / ‏#4178: מחכה להחלטה.
+  - שלוש שאלות עיצוב על הלוגו במייל, בתגובה על MEH-2834.
+
+---
+
+## 2026-11-09 — ‏Vercel מושעה, פוטר בשלוש קבוצות, «→ חזרה» (MEH-2864)
+
+**‏שורה אחת:** ‏24 PR-ים מוזגו ל-staging ב-08/11–10/11 (הפירוט ב-CHANGELOG). ארבעת האחרונים (#4241, #4242, #4244, #4245) מוזגו בלי deploy, כי Vercel השעתה את החשבון.
+
+**‏מה צריך לדעת לפני עבודה:**
+- ‏**production ו-staging למטה.** ‏Vercel השעתה את חשבון ה-Hobby ב-09/11 בסביבות 22:05Z: ‏Fluid Active CPU ב-108%. התיקון: ספיר משדרגת ל-Pro (MEH-2864). כל preview עונה "Account is blocked".
+- ‏**מיזוגים ל-staging ממשיכים בלי deploy.** ב-PR כותבים «Deploy not verified — Vercel 402 (MEH-2864)», והצילומים מבנייה מקומית. רשימת הבדיקות ל-staging, לכשהחשבון יחזור, נמצאת ב-MEH-2864.
+- ‏**link-check על staging דוגם 40 עמודים** (#4245) במקום לסרוק עד 2000. ‏production נשאר מלא. ה-guard: ‏`scripts/checks/link-check-budget-guard.sh`. אחרי החזרה, ריצת ה-post-deploy הראשונה צריכה להדפיס `mode: sample · budget 40 pages`.
+- ‏**הפוטר בשלוש קבוצות:** גלו · עלינו · לבתי עסק (#4244). ‏«קבוצות רכישה» ו«סלי הפתעה» מופיעים ב«גלו» רק כשיש בהם פריטים (#4234, ‏`lib/use-hub-nav-gate.js`). «גלו עסקים» הוסר.
+- ‏**«→ חזרה» בדפי פריט** (קבוצת רכישה, אירוע, חוויה, מתכון) דרך `components/HistoryBackLink.jsx` (#4241). מוצג רק למי שהגיע מתוך האתר. בדף בית העסק נשאר «חזרה למפה».
+- ‏**«וואטסאפ» בעברית הוא כתיב הבית** (BRAND.md §7, ‏#4242). ‏«WhatsApp» בלטינית רק בתוך שם מוצר או שם משפטי.
+- ‏**פתוח:**
+  - ‏MEH-2834 PR 2 (הלוגו במיילים): מחכה להחלטת ספיר, א או ב (היקף).
+  - ‏#4178 מוחזק אחרי 3 ניסיונות טסט שנכשלו.
+  - ‏MEH-2863: שחזור הגלילה בדף בית העסק.
+
+---
+
 ## 2026-11-08 — שכבת הגרגרים (MEH-2833)
 
 **‏שורה אחת:** כל 9 ה-PR-ים מוזגו ל-staging (#4190, #4202, #4204, #4199, #4200, #4203, #4198, #4205, #4201).

@@ -2,7 +2,7 @@
 
 import { Link as LocaleLink } from "@/i18n/navigation";
 import { useEffect, useState } from "react";
-import { EnvelopeSimple, Eye, LockSimple, Sparkle, Warning, WhatsappLogo, X } from "@phosphor-icons/react";
+import { EnvelopeSimple, Eye, LockSimple, ShoppingBag, Sparkle, Warning, WhatsappLogo, X } from "@phosphor-icons/react";
 // MEH-956: locale-aware Link for the load-error CTA — preserves the active
 // locale on /contact (bare next/link drops it for `en` under as-needed).
 import { useTranslations } from "next-intl";
@@ -15,15 +15,14 @@ import { getUpcomingHoliday } from "@/lib/holidays";
 import HolidayIcon from "@/components/HolidayIcon";
 import ProfileCompletenessCard from "@/components/ProfileCompletenessCard";
 import DraftSubmitBanner from "@/components/producer/DraftSubmitBanner";
-import BusinessQrCard from "@/components/producer/BusinessQrCard";
-import ReviewCardCanvas from "@/components/ReviewCardCanvas";
-import StoryCardCanvas from "@/components/StoryCardCanvas";
 import ChangesRequestedBanner from "./ChangesRequestedBanner";
 import RejectedBanner from "./RejectedBanner";
 import { producerCompleteness } from "@/lib/producer-completeness";
 // MEH-1267: canonical public domain (MEH-1242 PR4) — mehamakor.online is the
 // staging alias, never public-facing. SITE_URL is the mehamakor.co.il origin.
 import { SITE_URL, env } from "@/lib/env";
+import { shareOrCopy } from "@/lib/share-link";
+import { rescueBagsEnabled } from "@/lib/rescue";
 import Button from "@/components/ui/Button";
 
 function VanityLinkCard({ slug }) {
@@ -38,9 +37,14 @@ function VanityLinkCard({ slug }) {
     });
   };
 
-  const waText = encodeURIComponent(
-    t("wa_text_template", { url })
-  );
+  // MEH-2827 PR 8: «שתפו» opens the phone's own share sheet — Instagram
+  // stories matter most to food businesses and are reachable only there. The
+  // existing message rides as text, the link only as `url`. No sheet (most
+  // desktops) → the same copy as the button beside it.
+  const tShare = useTranslations("share");
+  // MEH-2884: the same helper the insights followers card uses.
+  const share = () =>
+    shareOrCopy({ url, text: t("wa_text_template", { url: "" }).trim(), copy });
 
   return (
     <div className="bg-surface border border-border rounded-lg p-5 mb-6">
@@ -55,53 +59,16 @@ function VanityLinkCard({ slug }) {
         >
           {copied ? t("copied") : t("copy_cta")}
         </button>
-        <a
-          href={`https://wa.me/?text=${waText}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="btn-whatsapp-outline flex-1 text-sm text-center rounded-sm px-3 py-1.5"
+        <button
+          type="button"
+          onClick={share}
+          data-testid="vanity-share"
+          className="flex-1 text-sm text-center rounded-sm px-3 py-1.5 bg-primary text-background hover:bg-primary-dark transition"
         >
-          {t("share_cta")}
-        </a>
+          {tShare("trigger")}
+        </button>
       </div>
     </div>
-  );
-}
-
-/**
- * MEH-1428 "ערכת שיתוף" — the owner's own share kit. One section, two
- * ready-to-post 1080×1920 cards: her story card (StoryCardCanvas in `owner`
- * mode — download + caption, no Cloudinary upload) and a review card
- * (ReviewCardCanvas, chunk B).
- *
- * Data source is `profile` (GET /producers/me → ProducerOwnerOut), NOT
- * `data.producer` (GET /producers/me/dashboard), which returns only
- * id/name/status/plan/availability — no `images`, `categories` or `slug`
- * (producer_me.py:1125-1148). The card needs all three.
- *
- * Gated on approved: the story card announces a live listing ("בית עסק חדש
- * במהמקור") and the review endpoint has nothing to serve a business with no
- * public page yet. Also off for an organizer (ADR-036) — reviews.py:247
- * filters `Producer.kind == "producer"`, so an organizer's review list is
- * always empty, and this card's copy is business-shaped.
- */
-function ShareKitSection({ profile }) {
-  const t = useTranslations("story.canvas.owner");
-
-  return (
-    <section
-      data-testid="share-kit-section"
-      aria-label={t("section_title")}
-      className="bg-surface border border-border rounded-lg p-5 mb-6"
-    >
-      <h2 className="font-headline-md text-lg font-bold text-text mb-1">
-        {t("section_title")}
-      </h2>
-      <p className="text-sm text-fg-muted">{t("section_subtitle")}</p>
-
-      <StoryCardCanvas producer={profile} mode="owner" />
-      <ReviewCardCanvas producer={profile} />
-    </section>
   );
 }
 
@@ -384,6 +351,11 @@ export default function ProducerDashboardPage() {
   }
 
   const { producer } = data;
+  // MEH-2880: the slug comes from `profile` (GET /producers/me). The dashboard
+  // payload (GET /producers/me/dashboard, producer_me.py) has no `slug`, so
+  // reading `producer.slug` kept «לצפייה בעמוד שלך», «הלינק שלי» and the QR
+  // card hidden for every owner. DO NOT read the slug from `data.producer`.
+  const slug = profile?.slug || null;
 
   // MEH-964 chunk 1A — decoupled state signals the Overview is built around.
   // These two signals are independent on purpose:
@@ -460,18 +432,24 @@ export default function ProducerDashboardPage() {
       {/* MEH-964 1D: one-tap view-public. LocaleLink keeps the active locale
           (MEH-956) on /[slug]; target=_blank so the owner previews the live
           page without losing the dashboard. */}
-      {producer.slug && (
+      {/* MEH-2880 review: approved only. A slug is kept after a business is
+          set inactive / rejected / back to pending, and both public routes
+          404 anything not approved — a live link here would open a 404. (The
+          layout's «צפייה בדף» eye → /producer/{id} still works for the owner.) */}
+      {slug && isApproved && (
         <LocaleLink
           // MEH-2460: an organizer's public page is /organizers/{slug}
           // (MEH-2461); /{slug} is the business route and 404s it.
-          href={isOrganizer ? `/organizers/${producer.slug}` : `/${producer.slug}`}
+          href={isOrganizer ? `/organizers/${slug}` : `/${slug}`}
           target="_blank"
           rel="noopener noreferrer"
           data-testid="view-public-link"
           className="inline-flex items-center gap-1.5 text-sm text-primary hover:underline mb-8"
         >
           <Eye size={16} aria-hidden="true" />
-          {t("states.view_public")}
+          {/* MEH-2882 (8): one name for the public page everywhere — the tab
+              bar's «צפייה בדף» (approved by Sapir 10/11). */}
+          {t("nav.view_page")}
         </LocaleLink>
       )}
 
@@ -489,7 +467,10 @@ export default function ProducerDashboardPage() {
           keyed on status === "pending" and therefore cannot co-render.
           On success the local status flips to "pending" with no reload, so
           the existing review banner takes over immediately. */}
-      {producer.status === "draft" && (
+      {/* MEH-2883: a business in draft gets ONE checklist — the completeness
+          card below with these actions at its foot. The standalone banner
+          stays only for an organizer, whose checklist it is (ADR-036). */}
+      {producer.status === "draft" && isOrganizer && (
         <DraftSubmitBanner
           producer={profile}
           onSubmitted={() =>
@@ -582,7 +563,29 @@ export default function ProducerDashboardPage() {
           approved+complete state, so the card renders exactly once). */}
       {/* MEH-2460: an organizer's checklist is the draft banner (photo,
           description, event, phone) — this card counts products / location. */}
-      {completenessFirst && profile && !isOrganizer && <ProfileCompletenessCard producer={profile} />}
+      {completenessFirst && profile && !isOrganizer && (
+        <ProfileCompletenessCard
+          producer={profile}
+          footer={
+            producer.status === "draft" ? (
+              <DraftSubmitBanner
+                variant="actions"
+                producer={profile}
+                onSubmitted={() =>
+                  setData((prev) =>
+                    prev
+                      ? { ...prev, producer: { ...prev.producer, status: "pending" } }
+                      : prev,
+                  )
+                }
+                onPhoneVerified={() =>
+                  setProfile((prev) => (prev ? { ...prev, phone_verified: true } : prev))
+                }
+              />
+            ) : null
+          }
+        />
+      )}
       {/* MEH-1261 F2: profile fetch failed → say so where the completeness
           card would render (completenessFirst is true when profile is null). */}
       {completenessFirst && !profile && profileError && (
@@ -623,43 +626,10 @@ export default function ProducerDashboardPage() {
         );
       })()}
 
-      {/* MEH-53: Vanity URL card. MEH-964 1D share-gate: the shareable link
-          surfaces ONLY when the profile is complete AND approved — sharing an
-          unpublished/incomplete page sends visitors to a dead listing. When
-          locked, a warm why-locked hint takes its place (not silent hiding). */}
-      {/* MEH-2460: the vanity link is the business route /{slug} — not for an
-          organizer (its public link above points to /organizers/{slug}). */}
-      {isOrganizer ? null : producer.slug && isComplete && isApproved ? (
-        <VanityLinkCard slug={producer.slug} />
-      ) : producer.slug ? (
-        <div
-          data-testid="share-locked-hint"
-          className="bg-surface border border-border rounded-lg p-5 mb-6 flex items-center gap-3"
-        >
-          <LockSimple size={18} className="text-fg-muted shrink-0" aria-hidden="true" />
-          <p className="text-sm text-fg-muted">{t("states.share_locked")}</p>
-        </div>
-      ) : null}
-
-      {/* MEH-2785: the printable QR of the business's own page. Same share
-          gate as VanityLinkCard above — a code taped to a till must not point
-          at an unpublished or incomplete listing, and an organizer's public
-          page is /organizers/{slug}, not a business page. The code itself
-          targets /producer/{id}, never the slug: a printed card is permanent
-          and a slug can be changed by an admin. */}
-      {/* The gate is the component's own (BusinessQrCard.jsx) so it can be
-          unit-tested; the condition is the same one VanityLinkCard uses. */}
-      <BusinessQrCard
-        producer={producer}
-        isComplete={isComplete}
-        isApproved={isApproved}
-        isOrganizer={isOrganizer}
-      />
-
-      {/* MEH-1428: "ערכת שיתוף" — sits with the other share surface (the vanity
-          link above), approved-only, business-only. `profile` is the data
-          source; see the ShareKitSection header for why not `data.producer`. */}
-      {isApproved && profile && !isOrganizer && <ShareKitSection profile={profile} />}
+      {/* MEH-2882 PR 1 (placement audit 2026-11): the QR card and «ערכת
+          שיתוף» are one-time / occasional jobs, so they live in «כלים» →
+          «שיתוף» (tools/page.js#share), not on the daily home. Home keeps the
+          one short «הלינק שלי» card above. */}
 
       {/* MEH-291 Phase 3 — unified availability card. Replaces the old
           "זמין היום" hero + "סטטוס זמינות" pill row. 4-value durable
@@ -766,6 +736,49 @@ export default function ProducerDashboardPage() {
       </div>
       )}
 
+      {/* MEH-2884 (placement audit item 7): rescue bags are a DAILY job when
+          the pilot is on, so home gets a short entry right after the
+          availability switch. The tool itself stays in «כלים»; same strings
+          and flag as its tile there (tools/page.js). Approved business
+          only: it is a daily entry for a live business; a pending one still
+          finds the tile in «כלים», with its «locked until approved» line.
+          Never an organizer. */}
+      {rescueBagsEnabled() && isApproved && !isOrganizer && (
+        <LocaleLink
+          href="/producer/dashboard/rescue"
+          data-testid="home-rescue-card"
+          className="flex items-start gap-3 bg-surface border border-border rounded-lg p-5 mb-6 hover:border-primary transition"
+        >
+          <ShoppingBag size={22} className="text-primary shrink-0 mt-0.5" aria-hidden="true" />
+          <span>
+            <span className="block font-semibold text-text">{t("quick_links.rescue.title")}</span>
+            <span className="block text-sm text-fg-muted">{t("quick_links.rescue.sub")}</span>
+          </span>
+        </LocaleLink>
+      )}
+
+      {/* MEH-2883 (placement audit 2026-11): «הלינק שלי» comes AFTER the
+          availability switch — the switch is the daily action of a live
+          business (MEH-1134's intent), sharing is now and then. */}
+      {/* MEH-53: Vanity URL card. MEH-964 1D share-gate: the shareable link
+          surfaces ONLY when the profile is complete AND approved — sharing an
+          unpublished/incomplete page sends visitors to a dead listing. When
+          locked, a warm why-locked hint takes its place (not silent hiding). */}
+      {/* MEH-2460: the vanity link is the business route /{slug} — not for an
+          organizer (its public link above points to /organizers/{slug}). */}
+      {isOrganizer ? null : slug && isComplete && isApproved ? (
+        <VanityLinkCard slug={slug} />
+      ) : slug ? (
+        <div
+          data-testid="share-locked-hint"
+          className="bg-surface border border-border rounded-lg p-5 mb-6 flex items-center gap-3"
+        >
+          <LockSimple size={18} className="text-fg-muted shrink-0" aria-hidden="true" />
+          <p className="text-sm text-fg-muted">{t("states.share_locked")}</p>
+        </div>
+      ) : null}
+
+
       {/* MEH-288: profile-completeness card — surfaces the existing
           producerCompleteness() heuristic to the owner, above the analytics
           stats. Guarded on `profile` (the full /producers/me record carries
@@ -799,8 +812,12 @@ export default function ProducerDashboardPage() {
           <p className="text-sm text-fg-muted mb-8">{t("loading_analytics")}</p>
         )
       ) : hasActivity ? (
-        <OverviewStatsHero analytics={analytics} />
+        <OverviewStatsHero analytics={analytics} isOrganizer={isOrganizer} />
       ) : (
+        // MEH-2884 (placement audit item 5): ONE empty state for the numbers
+        // — the activity pulse's own empty card is gone — and it carries the
+        // action its copy asks for («שתפו את העמוד שלכם»): a «שתפו» button,
+        // only once there is a public page to share (approved + slug).
         // MEH-1345: this zero-state and ActivityPulse's rendered the SAME
         // title-less copy — two identical anonymous cards on a fresh
         // dashboard. Each now carries its own visible title + purpose-
@@ -814,13 +831,17 @@ export default function ProducerDashboardPage() {
             <Sparkle size={20} weight="fill" className="text-primary shrink-0" aria-hidden="true" />
             <p className="text-sm text-fg-muted">{t("states.zero_activity")}</p>
           </div>
+          {/* Same gate as «הלינק שלי» (slug + complete + approved): with the
+              profile incomplete that slot shows «share locked», and a «שתפו»
+              here would contradict it (MEH-2884 review). */}
+          {slug && isComplete && isApproved && !isOrganizer && <ZeroStateShareButton slug={slug} />}
         </div>
       )}
 
-      {/* MEH-964 1C: anonymous activity pulse (§5 final spec) — renders only
-          once analytics resolved (no separate loading line; the strip above
-          already narrates the in-flight state). */}
-      {analytics && <ActivityPulse analytics={analytics} />}
+      {/* MEH-2884 (audit item 5): the separate «פעילות אחרונה» card is gone —
+          it showed the same 7-day views/WhatsApp numbers as the strip above,
+          with its own empty state. Its one action (the WhatsApp nudge) now
+          lives inside the strip (OverviewStatsHero). */}
 
       {/* MEH-964 1A: quick-links grid relocated to the tools tab
           (dashboard/tools); the bio / custom-questions / contact-channels
@@ -847,99 +868,66 @@ export default function ProducerDashboardPage() {
 // here was removed in MEH-2430 (no such feature exists).
 // ============================================================
 
-// ============================================================
-// MEH-964 1C: anonymous activity pulse (§5 FINAL SPEC, design round-4).
-// Aggregate counts from /producers/me/analytics ONLY — no names, no message
-// text, no per-row city, no per-row CTA/handled state (the conversation lives
-// off-platform in WhatsApp; a named inbox has no data source).
-// Rulings (Sapir, 03/07):
-//   - Reviews row DROPPED — the payload has only lifetime total_reviews (no
-//     windowed count), so a "new review" row would be a false recency claim
-//     (§5 honesty clause) and a lifetime row duplicates the rating KPI
-//     (FLAG-1). Returns with MEH-966 (per-event feed).
-//   - Rows = 2 event types in fixed locked order (whatsapp -> view), each
-//     gated on its own last_7d > 0. NO per-row relative times (never
-//     rendered) — the payload has no per-event timestamps. Uniform 7-day frame.
-//   - Hero binds to whatsapp_clicks.last_7d, NOT .total — the "new" claim
-//     must be truthful. last_7d == 0 -> no hero; both metrics 0 -> zero-state.
-// Card sizes to rows.length (0/1/2 collapse — no fixed-count padding). ONE
-// section-level CTA -> wa.me (gated with the hero on whatsapp last_7d > 0:
-// a reply CTA with zero inquiries would be the same false claim).
-// ============================================================
-
-function ActivityPulse({ analytics }) {
-  const t = useTranslations("dashboard.producer.pulse");
-  const waCount = analytics.whatsapp_clicks?.last_7d ?? 0;
-  const viewCount = analytics.profile_views?.last_7d ?? 0;
-
-  // Fixed locked order: whatsapp -> view. Each row is an anonymous event-TYPE
-  // presence signal, not a count — counts live in the KPI strip (FLAG-1).
-  const rows = [
-    { key: "whatsapp", count: waCount, Icon: WhatsappLogo },
-    { key: "view", count: viewCount, Icon: Eye },
-  ].filter((row) => row.count > 0);
-
+// MEH-2884: the «שתפו» button of the numbers' empty state. Same share path as
+// «הלינק שלי» (lib/share-link.js): share sheet, else copy.
+function ZeroStateShareButton({ slug }) {
+  const tShare = useTranslations("share");
+  const tVanity = useTranslations("dashboard.producer.vanity_link");
+  const tFollowers = useTranslations("sweep_tail.followers");
+  const url = `${SITE_URL}/p/${slug}`;
+  // A failed copy says so (no clipboard API, or a rejected write) — the tap
+  // must never do nothing (MEH-2884 review).
+  const copy = () => {
+    if (!navigator.clipboard?.writeText) {
+      showToast.error(tFollowers("share_error"));
+      return;
+    }
+    navigator.clipboard
+      .writeText(url)
+      .then(() => showToast.success(tVanity("copied")))
+      .catch(() => showToast.error(tFollowers("share_error")));
+  };
   return (
-    <section
-      data-testid="activity-pulse"
-      aria-label={t("section_aria")}
-      className="bg-surface border border-border rounded-lg p-6"
+    <button
+      type="button"
+      data-testid="overview-zero-share"
+      onClick={() => shareOrCopy({ url, text: tVanity("wa_text_template", { url: "" }).trim(), copy })}
+      className="mt-4 text-sm rounded-sm px-4 py-1.5 bg-primary text-background hover:bg-primary-dark transition"
     >
-      {rows.length === 0 ? (
-        // MEH-1345: visible title so the empty pulse card is identifiable
-        // (was an anonymous line identical to the stats zero-state above).
-        <div data-testid="activity-pulse-empty">
-          <p className="font-semibold text-text mb-1">{t("title")}</p>
-          <p className="text-sm text-fg-muted">{t("zero_state")}</p>
-        </div>
-      ) : (
-        <div className="space-y-4">
-          {/* MEH-2429: the populated card had no heading — with views only it
-              was a lone "צפייה בפרופיל" row under the KPI strip that read as
-              an unfinished card (staging, 27/10). Same visible title the empty
-              state already carries (MEH-1345); the row rulings are unchanged. */}
-          <p data-testid="activity-pulse-title" className="font-semibold text-text">{t("title")}</p>
-          {waCount > 0 && (
-            <p
-              data-testid="activity-pulse-hero"
-              className="font-headline-md text-lg font-bold text-text"
-            >
-              {t("hero", { count: waCount })}
-            </p>
-          )}
-          <ul className="space-y-2">
-            {rows.map(({ key, Icon }) => (
-              <li
-                key={key}
-                data-testid={`activity-pulse-row-${key}`}
-                className="flex items-center gap-3 text-sm text-text"
-              >
-                <Icon size={18} className="text-primary shrink-0" aria-hidden="true" />
-                {t(`rows.${key}`)}
-              </li>
-            ))}
-          </ul>
-          <p className="text-xs text-fg-muted">{t("window_7d")}</p>
-          {waCount > 0 && (
-            <a
-              href="https://wa.me/"
-              target="_blank"
-              rel="noopener noreferrer"
-              data-testid="activity-pulse-cta"
-              className="btn-whatsapp inline-flex items-center justify-center gap-2 min-h-touch px-6 rounded-full text-sm font-medium"
-            >
-              <WhatsappLogo size={18} weight="fill" aria-hidden="true" />
-              {t("cta")}
-            </a>
-          )}
-        </div>
-      )}
-    </section>
+      {tShare("trigger")}
+    </button>
   );
 }
 
-function OverviewStatsHero({ analytics }) {
+// MEH-964 1C → MEH-2884: the WhatsApp nudge that used to head the separate
+// activity-pulse card, folded into the strip. Rulings kept (Sapir, 03/07):
+// bound to whatsapp_clicks.last_7d (never .total — the "new" claim must be
+// truthful), and the wa.me CTA shows only with it. The pulse's presence rows
+// (a «צפייה בפרופיל» line, a «קליק על כפתור הוואטסאפ» line) are dropped:
+// the strip's numbers already say it (FLAG-1).
+function WeekWhatsappNudge({ count }) {
+  const t = useTranslations("dashboard.producer.pulse");
+  if (count <= 0) return null;
+  return (
+    <div data-testid="week-whatsapp-nudge" className="bg-surface border border-border rounded-lg p-4 space-y-3">
+      <p className="font-semibold text-text">{t("hero", { count })}</p>
+      <a
+        href="https://wa.me/"
+        target="_blank"
+        rel="noopener noreferrer"
+        data-testid="week-whatsapp-cta"
+        className="btn-whatsapp inline-flex items-center justify-center gap-2 min-h-touch px-6 rounded-full text-sm font-medium"
+      >
+        <WhatsappLogo size={18} weight="fill" aria-hidden="true" />
+        {t("cta")}
+      </a>
+    </div>
+  );
+}
+
+function OverviewStatsHero({ analytics, isOrganizer = false }) {
   const t = useTranslations("dashboard.producer.analytics");
+  const tWeek = useTranslations("dashboard.producer.week");
   const {
     profile_views,
     whatsapp_clicks,
@@ -961,6 +949,7 @@ function OverviewStatsHero({ analytics }) {
     <div className="space-y-4 mb-10">
       {/* 2x2 KPI strip — identical mobile + desktop, uniform window label,
           no deltas/arrows (data reality; see header). */}
+      <WeekWhatsappNudge count={whatsapp_clicks?.last_7d ?? 0} />
       <div data-testid="overview-kpi-strip" className="grid grid-cols-2 gap-3">
         {kpis.map((kpi) => (
           <div key={kpi.key} className="bg-surface border border-border rounded-lg p-4 text-center">
@@ -978,6 +967,18 @@ function OverviewStatsHero({ analytics }) {
           - The "בעלת עסק השבוע" eligibility badge promised a feature that
             does not exist (no such pick anywhere in the code or docs), and its
             title ("צרו קשר") contradicted its tooltip ("יופיע כאן הודעה"). */}
+      {/* MEH-2882 (5): the week card leads to the full numbers. Copy approved
+          word for word by Sapir 10/11 («לכל הנתונים ←»). Not for an organizer:
+          she has no insights tab (DashboardLayoutClient, ADR-036). */}
+      {!isOrganizer && (
+        <LocaleLink
+          href="/producer/dashboard/insights"
+          data-testid="week-all-insights"
+          className="inline-flex items-center min-h-touch text-sm font-medium text-primary hover:underline"
+        >
+          {tWeek("all_insights")}
+        </LocaleLink>
+      )}
     </div>
   );
 }

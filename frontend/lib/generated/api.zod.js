@@ -2554,6 +2554,7 @@ export const GetStatsAdminStatsGetResponse = /*#__PURE__*/ zod.unknown()
  */
 export const listUsersAdminUsersGetResponseFavoritesCountDefault = 0;
 export const listUsersAdminUsersGetResponseIsBlockedDefault = false;
+export const listUsersAdminUsersGetResponseIsSuperAdminDefault = false;
 
 export const ListUsersAdminUsersGetResponseItem = /*#__PURE__*/ zod.object({
   "city": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -2562,6 +2563,7 @@ export const ListUsersAdminUsersGetResponseItem = /*#__PURE__*/ zod.object({
   "favorites_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), listUsersAdminUsersGetResponseFavoritesCountDefault),
   "id": /*#__PURE__*/ zod.uuid(),
   "is_blocked": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), listUsersAdminUsersGetResponseIsBlockedDefault),
+  "is_super_admin": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), listUsersAdminUsersGetResponseIsSuperAdminDefault),
   "name": /*#__PURE__*/ zod.string(),
   "phone": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "producer_id": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.uuid(),/*#__PURE__*/ zod.null()])),
@@ -2603,8 +2605,9 @@ export const UpdateUserRoleAdminUsersUserIdRolePutResponse = /*#__PURE__*/ zod.u
 /**
  * Return undelivered outbound WhatsApp rows from the last 7 days.
  *
- * Filter: status IN ('failed', 'window_expired') AND created_at within
- * the last `UNDELIVERED_WINDOW_DAYS`. Ordered newest-first so the freshest
+ * Filter: `undelivered_predicate` — status IN ('failed', 'window_expired'),
+ * or `accepted` for more than a day with no delivery receipt (MEH-2122
+ * Chunk E), AND created_at within the last `UNDELIVERED_WINDOW_DAYS`. Ordered newest-first so the freshest
  * failures show up at the top of the admin table.
  *
  * No pagination — the per-day failure volume is small (single-digit

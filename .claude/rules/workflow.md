@@ -194,6 +194,7 @@ never waited for. (MEH-1844's "the CI reviewer works" — 13/08 — is history.)
 21. **Never merge without a verified green CI signal.** All jobs failing in <2 s
     with no logs = budget exhaustion, neither pass nor fail — check billing,
     wait. Never merge on a green you cannot explain or a red you cannot read.
+    The only exception is rule 39.
     - **Triggers:** a push whose tip SHA already exists on `origin` fires
       nothing; push a NEW SHA (real commit or staging merge, never empty).
     - **Cancelled ≠ failed:** newer run for the head SHA in progress → wait;
@@ -471,6 +472,27 @@ concurrent loops. Tiers + `mehamakor-dod` self-check: ADR-025.
     When a parallel actor produced a forbidden state, act unasked **only** in
     the direction that adds a constraint (disarm auto-merge: yes; arm, clear a
     marker, merge: no) — and report.
+
+    ### 32b — when a delete is denied, leave the file and say so
+
+    A denied `rm` is a decision about the file, not about the command. Reaching
+    for `mv` (to `/tmp`, to a scratch directory, to a `.bak` name) produces the
+    outcome the deny refused, by a route the deny does not cover — the file
+    stops being where it was, which is the only thing the denial was
+    protecting. The same goes for `git clean`, `git rm`, truncating the file to
+    nothing, or rewriting it to a stub.
+
+    **What to do instead:** leave the file exactly as it is, finish the rest of
+    the task, and report the file by path and why you wanted it gone. If it is
+    untracked, it stays untracked — stage by explicit path (`git add <path>`),
+    never `git add -A`, so an untracked file cannot ride along into a commit by
+    accident.
+
+    This is rule 32 applied to one's own workspace: a deny is a constraint, and
+    routing around it removes one. It is also the general case — any denied
+    action is reported, not re-attempted through a different verb.
+
+    _Source: Sapir, 11/11/2026, standing instruction._
 33. **A DoD checkbox is a claim of fact — check it only for a box you performed
     yourself and can cite evidence for (MEH-1755).** Otherwise leave `[ ]` with
     a reason in prose; same for N/A.
@@ -513,6 +535,18 @@ concurrent loops. Tiers + `mehamakor-dod` self-check: ADR-025.
     merges, or new copy not in an approved table still stops CC (rules 22, 30;
     ADR-016 amendment). This adds to rule 23 (375/1440 in `qa-artifacts/`) and
     replaces none of it.
+39. **A red E2E gate blocks a merge to staging unless all three hold, and the
+    PR body says so, one line each (Sapir 11/11, every PR from then on).**
+    (a) **0 failed**: quote each shard's `executed=… unexpected=0 …` line.
+    (b) **Every flaky test is in a spec this PR does not touch, and has a
+    card**: name the card. (c) **The flaky tests' names and lines are read and
+    quoted, not inferred**: the `✘` / `✓ (retry #1)` lines and the error block,
+    from the job log or the report. A count, a summary comment, or "not in the
+    flaky list" is not (c). If the log can't be read, run the E2E once more and
+    quote that run. If any of the three is missing, don't merge.
+    `--fail-on-flaky-tests` stays on. This rule decides when a red caused by
+    someone else's flake may be merged past; it never loosens the gate. A flake
+    with no card gets one before the merge. Precedent: #4316.
 
 ---
 
@@ -531,3 +565,31 @@ use states its tier in the PR body:
 
 If the issue states no tier and the PR touches a business-facing tool →
 **STOP and ask.** No registry copy without word-by-word approval in the issue.
+
+---
+
+## Dashboard placement (/producer/dashboard) — MEH-2885
+
+Every tool lives where its frequency says: daily → the dashboard home, weekly →
+a tab, one-time → «כלים» or «עריכה» (audit:
+`docs/audits/2026-11-dashboard-placement.md`). Two parts:
+
+- **Enforced:** `frontend/__tests__/DashboardPlacementGuard.test.js` fails when
+  a page under `app/[locale]/producer/dashboard/**` has no place in
+  `frontend/lib/business-features.js` (a tool's `dashboard: { home, href }`, or
+  the explicit frame / sub-page / without-entry lists), when a tool's page has
+  no link pointing at it, when it is more than 2 taps from the home, or when
+  the tab its `dashboard.home` names does not itself link to it. Taps come
+  from a static graph: a tab = 1; a link written in a page file or in a file
+  that page imports directly = +1 — whatever state renders it. Comments, the
+  tools tab's `also:` highlight list and the organizer's own tabs are not
+  links. A new page → its place goes in the registry in the same PR: a tool's
+  landing page gets `dashboard: { home, href }`; a form / print view inside a
+  tool goes in `DASHBOARD_SUBPAGES`; a tool page with no registry entry yet
+  (one needs approved copy, «Launch tier» א׳) goes in
+  `DASHBOARD_PAGES_WITHOUT_ENTRY` with the reason.
+- **Reviewed:** a card for any PR that touches `/producer/dashboard` carries the
+  «מיקום בלוח הבקרה» block (template 06): tool · frequency · where · entry
+  (href) · taps from home at 390 · inbound links · empty state. The fresh
+  reviewer (rule 5a) checks the block against what was built, and the PR body
+  says where each changed surface landed.

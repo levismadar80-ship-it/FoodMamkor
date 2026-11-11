@@ -149,7 +149,7 @@ vi.mock("@/lib/api", () => ({
             producer: {
               id: 1,
               name: "עסק לדוגמה",
-              slug: "esek-ledugma",
+              // MEH-2880: real /me/dashboard shape — no slug (it is on /producers/me).
               status: producerStatus,
               availability_state: "accepting_orders",
             },

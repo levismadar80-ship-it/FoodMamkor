@@ -60,6 +60,25 @@ GitHub keeps only **one pending** job per group. With 3+ PRs waiting, an older p
 4. Use `page.route(...)` to block external navigations (WhatsApp, OAuth, etc.)
 5. If the test needs a logged-in user, use Playwright `storageState` fixture (v2 path)
 
+### Golden path — the `golden` project (MEH-2897, anchor plan §C.2)
+
+`frontend/e2e/golden/` walks seven seeded personas on **staging**, one spec per persona, in order (`01-g1` … `07-a1`). The persona table is `frontend/e2e/golden/personas.ts`; the accounts are created by `seed_demo_business.py --golden` (see [DEPLOYMENT.md](./DEPLOYMENT.md), "Golden-path personas").
+
+- **Not in the default suite.** The project is defined only when the command line says `--project=golden` (`frontend/e2e/golden-selection.ts`), and every other project ignores `e2e/golden/`. A bare `npx playwright test` (what CI runs) lists the same tests as before. Guard: `frontend/__tests__/GoldenProjectSelection.test.js`.
+- **Logins are serial**, one worker, each through `withRateLimitRetry` (`e2e/login-retry.ts`, MEH-2895): `/auth/login` is 5/minute per IP. A golden-only run skips global-setup's demo-role logins. Never run it while an E2E job is running on staging.
+- **Read-mostly and self-cleaning.** What a spec creates (a product, an event, a group buy, a rescue bag and its reservation, a favourite, a review) it deletes or cancels in `finally`. Group buys and rescue bags have no delete route, so they end `cancelled`, under a golden business only.
+- **Rescue:** `04-g4-rescue` skips, and says why, when the pilot flag is off or `זכרון יעקב` is not in `RESCUE_BAGS_CITIES` on the target.
+- **API paths** go through a client named `api`, so `scripts/check_api_contract.py` checks them against the backend routes.
+
+Run (from `frontend/`, after Sapir has seeded staging):
+
+```bash
+TEST_URL=https://staging.mehamakor.online \
+DEMO_OWNER_PASSWORD=… DEMO_CONSUMER_PASSWORD=… DEMO_ADMIN_PASSWORD=… \
+VERCEL_AUTOMATION_BYPASS_SECRET=… \
+npx playwright test --project=golden
+```
+
 ### data-testid inventory (E2E-relevant)
 
 | testid | component | notes |
@@ -320,7 +339,7 @@ test('no "יצרן" text anywhere visible', async ({ page }) => {
 ```
 bash scripts/link-check.sh              # build + start + crawl + stop
 bash scripts/link-check.sh --skip-build # אם כבר יש build
-node scripts/link-check.mjs --self-test # הקלסיפייר של robots בלבד
+node scripts/link-check.mjs --self-test # robots + תקציב העמודים, בלי רשת
 ```
 
 זוחל מ-`/` על לינקים פנימיים בלבד, מכבד את ה-`Disallow` של
@@ -359,6 +378,36 @@ _שורה קודמת כאן טענה ש"נתיבים רב-מקטעיים כן נ
 החי, בתוך `post-deploy-checks.yml` (ראו הסעיף הבא). ל-staging הוא שולח את
 `VERCEL_AUTOMATION_BYPASS_SECRET` מה-env אם קיים.
 
+**תקציב עמודים (MEH-2864).** כל עמוד שנסרק הוא רינדור בשרת של מי שמארח את
+האתר. הסריקה המלאה אחרי כל push ל-staging היא החשודה העיקרית בהשעיית חשבון
+Vercel ב-09/11, ולכן:
+
+| יעד | מצב | עמודים |
+|---|---|---|
+| פרודקשן (`IS_PRODUCTION=true` או `mehamakor.co.il`), `next start` מקומי | full | 2000 |
+| staging (`IS_PRODUCTION=false` או `staging.mehamakor.online`), וכל host אחר | sample | 40, ברוחב מ-`/`, עמוד אחד לכל pathname |
+| `--max-pages=N` | flag | N |
+
+סריקה מלאה דורשת סימן חיובי. אם הסימן חסר, מקבלים פחות כיסוי, לא עוד השעיה.
+כל ריצה מדפיסה `mode`, את התקציב, את מספר העמודים שנטענו בפועל ואת מספר
+בקשות ה-HTTP. ב-sample, עצירה בתקציב מודפסת כ-`SAMPLE` ולא כ-`TRUNCATED`.
+ה-guard `scripts/checks/link-check-budget-guard.sh` מריץ את ה-self-test
+ב-Repo guards. ה-self-test בודק את פונקציית התקציב, את ה-hosts שב-`post-deploy-checks.yml`,
+וגם סורק שרת מקומי של 91 עמודים פעמיים, כ-staging וכ-full.
+
+**איפה רצה סריקת הקישורים (MEH-2864, «ייעול הבדיקות»).** הסריקה רצה
+ב-E2E, מול ה-`next start` המקומי של ה-job
+(`frontend/e2e/flows/manual/link-crawl.spec.ts`, פעם אחת לריצה, בפרויקט
+`desktop`). היא לא שולחת אף בקשה ל-Vercel. הסריקה מוגבלת ל-400 עמודים, עם השהיה של 600ms בין עמודים, כי השרת המקומי מרנדר מול ה-backend המשותף של staging. היא רצה בכל push ל-staging, וב-PR עם התווית `run-e2e`. E2E איננו gate חובה, ולכן קישור שבור **יכול** להיתפס לפני המיזוג, אבל לא בהכרח.
+מול האתר החי, אחרי deploy, רץ רק `node scripts/link-check.mjs <URL> --smoke`:
+עד 10 כתובות (בקרת 404, בית, רשימה, מפה, health, דף עסק אחד שנמצא דרך ה-API;
+כש-API מחזיר `[]`, דף העסק הוא SKIP; תשובה בכל צורה אחרת בלי slug היא FAIL). סריקה מלאה של האתר החי רצה פעם
+בשבוע, ב-production בלבד. push שלא שינה שום דבר תחת `frontend/`
+(בדיקות לא נחשבות), ב-`backend/` או בבדיקות עצמן מאז ה-push האחרון שנבדק, מדלג על כל הבדיקות מול האתר החי
+(`scripts/frontend-touched.sh`, שבמקרה של ספק עונה «השתנה»). כל בדיקה מדפיסה
+בסוף `requests to Vercel: N`. השינוי ב-workflow ממתין לספיר:
+[docs/ci/post-deploy-trim.patch.md](./ci/post-deploy-trim.patch.md).
+
 ---
 
 ## בדיקות אחרי עלייה (MEH-2749)
@@ -368,7 +417,7 @@ _שורה קודמת כאן טענה ש"נתיבים רב-מקטעיים כן נ
 ```
 python scripts/checks/wait_for_deploy.py --base-url <URL> --sha <commit>  # מחכה ל-build id חדש
 python scripts/checks/smoke_production.py                                  # main בלבד
-node   scripts/link-check.mjs <URL>                                        # קישורים שבורים
+node   scripts/link-check.mjs <URL> --smoke                                # עד 10 כתובות (MEH-2864)
 python scripts/checks/live_security_headers.py --base-url <URL>            # CSP, HSTS ועוד
 npx @lhci/cli@0.15.1 collect --config=scripts/checks/lighthouserc.cjs      # תקציב ביצועים (פרודקשן בלבד)
 npx @lhci/cli@0.15.1 assert  --config=scripts/checks/lighthouserc.cjs

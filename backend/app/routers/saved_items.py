@@ -43,7 +43,7 @@ from app.rate_limit import limiter
 from app.routers.events import _serialize as serialize_event
 from app.routers.experiences import _publicly_visible_query, _serialize_list
 from app.schemas.schemas import SavedItemRefOut, SavedItemsOut, SavedItemType
-from app.services.producer_listing import is_business
+from app.services.producer_listing import is_business, not_test_producer
 from app.services.registrations import registered_counts
 
 router = APIRouter(prefix="/users/me/saved", tags=["saved"])
@@ -67,7 +67,7 @@ def _visible_events(db: Session):
         db.query(Event)
         .options(joinedload(Event.producer))
         .join(Producer, Event.producer_id == Producer.id)
-        .filter(Producer.status == "approved")
+        .filter(Producer.status == "approved", not_test_producer())  # MEH-2952
     )
 
 

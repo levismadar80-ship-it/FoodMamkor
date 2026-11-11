@@ -38,6 +38,8 @@
 import { request, type FullConfig } from "@playwright/test";
 import fs from "node:fs";
 import path from "node:path";
+import { loginFailureMessage, withRateLimitRetry } from "./login-retry";
+import { goldenOnly } from "./golden-selection";
 
 type Role = {
   name: string;
@@ -85,6 +87,17 @@ const ROLES: Role[] = [
 export const AUTH_DIR = path.join(__dirname, ".auth");
 
 export default async function globalSetup(config: FullConfig): Promise<void> {
+  // MEH-2897: a `--project=golden` run logs in its own seven personas
+  // (e2e/golden/session.ts) and reads none of the demo-role files. Provisioning
+  // them anyway would spend 3–4 of the 5/minute per-IP login permits before the
+  // first persona (anchor plan §E2). Any other selection is unchanged.
+  if (goldenOnly(process.argv)) {
+    console.warn(
+      "[global-setup] golden-only run — skipping the demo-role fixtures; " +
+        "the golden specs log in their own personas.",
+    );
+    return;
+  }
   const baseURL =
     config.projects[0]?.use?.baseURL ||
     process.env.PLAYWRIGHT_BASE_URL ||
@@ -161,11 +174,22 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
       // — never logged, never committed). Omitted entirely on a local target.
       extraHTTPHeaders: bypassSecret ? { "x-vercel-protection-bypass": bypassSecret } : {},
     });
-    const res = await ctx.post("/api/auth/login", { data: { email, password } });
+    // MEH-2895: a 429 (the 5/minute per-IP limit, spent by another suite in the
+    // same minute) is waited out and retried; every other status returns on the
+    // first attempt and is judged below exactly as before.
+    const { response: res, attempts } = await withRateLimitRetry(
+      () => ctx.post("/api/auth/login", { data: { email, password } }),
+      {
+        onRetry: ({ attempt, waitMs }) =>
+          console.warn(
+            `[global-setup] login for ${role.name} got HTTP 429 (attempt ${attempt}) — ` +
+              `waiting ${Math.round(waitMs / 1000)}s for the per-IP limit window.`,
+          ),
+      },
+    );
     if (!res.ok()) {
       throw new Error(
-        `[global-setup] login failed for ${role.name} (${email}) at ${baseURL}: ` +
-          `HTTP ${res.status()}. Did the staging --sync-users run succeed?`,
+        loginFailureMessage(role.name, String(email), baseURL, res.status(), attempts),
       );
     }
     const { access_token: accessToken } = await res.json();
