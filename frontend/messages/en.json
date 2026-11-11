@@ -5133,6 +5133,8 @@
       "field_end_time_label": "End time (optional)",
       "error_end_time_after_start": "The end time must be after the start time",
       "field_time_hint": "Optional — if blank, only the date is shown",
+      "saved_location_legend": "Event location",
+      "saved_location_other": "A different address",
       "field_location_label": "Specific location",
       "field_location_placeholder": "Exact address or directions",
       "field_city_label": "City",
