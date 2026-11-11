@@ -451,9 +451,22 @@ _PRODUCER_UPDATE_LOCK_NAMESPACE = 2007
 # the inline message next to the remove button, and
 # tests/test_meh2911_last_photo_guard.py asserts the two are identical so
 # the pair cannot drift (workflow.md smell #1).
+LAST_PHOTO_REMOVAL_CODE = "last_photo_required"
 LAST_PHOTO_REMOVAL_MESSAGE = (
     "אי אפשר להסיר את התמונה האחרונה. הוסיפו תמונה אחרת, ואז הסירו את זו."
 )
+
+# MEH-2911: the statuses the guard covers. `inactive` is here because a
+# reviewer measured the bypass it leaves open otherwise: an admin toggles
+# approved -> inactive, the owner empties the gallery through this route,
+# and the admin toggles back — and `toggle_producer_status` (admin.py)
+# re-approves WITHOUT running `_assert_approvable`, so the business is
+# live again with no photo. Sapir's ruling named "approved"; this widens
+# it by one status to close that chain at the owner's end, which costs an
+# inactive business nothing (it is not public, and it can still REPLACE
+# its photo). The toggle's own missing gate is the root cause and is
+# filed as MEH-2945 — this does not fix it.
+LAST_PHOTO_GUARDED_STATUSES = frozenset({"approved", "inactive"})
 
 
 def _assert_keeps_a_photo(producer, payload: dict, old_images: list) -> None:
@@ -486,12 +499,27 @@ def _assert_keeps_a_photo(producer, payload: dict, old_images: list) -> None:
     constraint to fit a change (workflow rule 32).
     """
     if (
-        producer.status == "approved"
+        producer.status in LAST_PHOTO_GUARDED_STATUSES
         and "images" in payload
         and not payload["images"]
         and old_images
     ):
-        raise HTTPException(status_code=422, detail=LAST_PHOTO_REMOVAL_MESSAGE)
+        # MEH-1943 shape, deliberately, and not a bare string: the client
+        # has to recognise this refusal to render it next to the remove
+        # button rather than at the card foot, and comparing a HEBREW
+        # sentence in JS is both fragile and broken on /en — there the
+        # client's own copy is English, so the comparison can never match
+        # and an English-locale owner would be shown the raw Hebrew.
+        # `detailToMessage` (frontend/lib/errors.js) already renders
+        # `message` unchanged, so the copy is unaffected.
+        raise HTTPException(
+            status_code=422,
+            detail={
+                "code": LAST_PHOTO_REMOVAL_CODE,
+                "message": LAST_PHOTO_REMOVAL_MESSAGE,
+                "params": {},
+            },
+        )
 
 
 def _lock_producer_updates(db, producer_id) -> None:

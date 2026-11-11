@@ -10,9 +10,14 @@
  *
  * ONE click, in the LAST test, on purpose: two clicks in one dashboard-card
  * vitest file hang the run (MEH-2876, HANDOFF). The non-click assertions come
- * first, and the status matrix (draft / pending / rejected / inactive may
- * still empty the gallery) lives in the pytest file, which can exercise every
- * status without that constraint.
+ * first. The second click the ruling needs — that an UNGUARDED status still
+ * removes its last photo — therefore lives in its own file,
+ * EditTabLastPhotoUnguarded.test.jsx; without it, dropping the status
+ * condition from the card leaves this whole suite green (measured).
+ *
+ * The status set itself (approved + inactive guarded; draft / pending /
+ * rejected not) is pinned in the pytest file, which reads the card's own
+ * array and compares it with the backend's.
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
@@ -60,19 +65,19 @@ describe("MEH-2911 — last gallery photo", () => {
     expect(screen.queryByTestId("images-last-photo-note")).toBeNull();
   });
 
-  it("puts the note inside the thumbnail's own cell, not at the card foot", () => {
+  it("keeps the thumbnail grid a direct child of the card, so a sibling note reads under it", () => {
     // Placement is the half of the ruling a text assertion cannot carry:
-    // "next to the remove button, not as a top-of-page error". Asserted
-    // structurally — the note must share an ancestor with the remove
-    // button, and that ancestor must not be the whole card.
+    // "next to the remove button, not as a top-of-page error". The note is
+    // not in the DOM yet, so this asserts the SHAPE the renderer targets —
+    // the remove button sits in a per-thumbnail cell inside a grid, and
+    // that grid is a direct child of the card, so the element placed
+    // immediately after it reads directly under the thumbnail.
     const { container } = renderCard({ images: ONE, status: "approved" });
-    const removeButton = screen.getByLabelText(I.remove_aria);
-    const cell = removeButton.parentElement;
-    // The note is not in the DOM yet, so assert the SHAPE the renderer
-    // targets: the button sits in a per-thumbnail cell that also holds the
-    // image, i.e. there is somewhere beside it for the note to go.
-    expect(cell).not.toBe(container.firstChild);
+    const cell = screen.getByLabelText(I.remove_aria).parentElement;
+    const grid = cell.parentElement;
     expect(cell.querySelector("img")).not.toBeNull();
+    expect(grid).not.toBe(container.firstChild);
+    expect(grid.parentElement).toBe(container.firstChild);
   });
 
   it("refuses the removal and shows the note beside that button", () => {
@@ -83,14 +88,17 @@ describe("MEH-2911 — last gallery photo", () => {
 
     const note = screen.getByTestId("images-last-photo-note");
     expect(note).toHaveTextContent(I.last_photo);
-    // Beside the button: the note is the grid item immediately after the
-    // thumbnail cell that holds it, so it reads directly under that
-    // thumbnail rather than at the foot of the card. Asserted as
-    // adjacency in the same grid, not as a shared parent — the note spans
-    // the row (see the 375 capture in qa-artifacts/MEH-2911).
-    const cell = screen.getByLabelText(I.remove_aria).parentElement;
-    expect(note.parentElement).toBe(cell.parentElement);
-    expect(cell.nextElementSibling).toBe(note);
+    // Beside the button: the note is the element immediately after the grid
+    // that holds the thumbnail, so it reads directly under it rather than at
+    // the foot of the card. It is NOT a grid child — the save-path refusal
+    // arrives with the list already empty and no grid rendered, which is the
+    // case the earlier nested version dropped (MEH-2911 review).
+    const grid = screen.getByLabelText(I.remove_aria).parentElement.parentElement;
+    expect(note.previousElementSibling).toBe(grid);
+    // And the refusal produced exactly ONE live region: no card-foot error
+    // alongside it. A second `role="alert"` here is the placement Sapir
+    // ruled against sneaking back in beside the inline note.
+    expect(container.querySelectorAll('[role="alert"]')).toHaveLength(1);
     // The photo is still there — this is a refusal, not a warning shown
     // after the fact.
     expect(container.querySelectorAll("img")).toHaveLength(1);
