@@ -6,7 +6,7 @@ Purpose:  Four bounded, parametrized, read-only Postgres queries the site chat
           SQL — it only picks a tool and fills typed parameters.
 Touches:  DB tables producers, categories, producer_categories,
           producer_locations, events — SELECT only, under the `mcp_reader`
-          role (migration a29c7a4a41e7) inside a READ ONLY transaction with
+          role (migrations a29c7a4a41e7 + c05dbc247ca1) inside a READ ONLY transaction with
           statement_timeout = 5s.
 Does NOT: classify intent (chat_intent_router.py), format the answer or
           rate-limit (routers/chat.py), own the role DDL (the Alembic
@@ -63,7 +63,8 @@ READER_COLUMNS: dict[str, tuple[str, ...]] = {
     ),
 }
 
-#: One GRANT per table, byte-identical to the migration's GRANTS tuple.
+#: One GRANT per table. Column for column, the union of the two migrations'
+#: grants (a29c7a4a41e7 GRANTS + c05dbc247ca1 GRANT); the test compares sets.
 READER_GRANTS = tuple(
     f"GRANT SELECT ({', '.join(cols)}) ON {table} TO {READER_ROLE}"
     for table, cols in READER_COLUMNS.items()
@@ -84,7 +85,7 @@ TOOL_NAMES = (
     "list_upcoming_events",
 )
 
-#: DDL mirror of migration a29c7a4a41e7, for the pytest fixture only (the
+#: DDL mirror of migrations a29c7a4a41e7 + c05dbc247ca1, for the pytest fixture only (the
 #: test schema comes from create_all, which creates no roles and no grants).
 #: Idempotent AND race-safe: the role is cluster-wide, and CI's `-n auto`
 #: workers (one database each, one cluster) can create it at the same
