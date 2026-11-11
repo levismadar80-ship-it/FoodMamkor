@@ -1174,6 +1174,13 @@ test.describe("Visual parity — MEH-991", () => {
     });
   });
 
+  // MEH-2927 (11/11): this baseline was regenerated after the BottomNav was
+  // gated off /register*. The PREVIOUS one (393x1807) had the nav pill sitting
+  // directly on top of the «הצטרפו» submit button — a frozen picture of the
+  // bug B3c reported, which is the MEH-1552 shape testing.md warns about.
+  // The replacement (393x1747, -60px: the no-pill clearance is 12px where the
+  // pill's was 72px) was opened and reviewed by eye before merge, not taken on
+  // the bot's word: the pill is absent and the submit button is unobstructed.
   test("register", async ({ page }) => {
     await preparePage(page);
     await page.goto("/register");
