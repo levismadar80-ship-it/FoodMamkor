@@ -86,9 +86,10 @@ def _provision_worker_database(base_url_str: str, worker: str) -> str:
     engine = _maintenance_engine(url)
     try:
         with engine.connect() as conn:
-            # WITH (FORCE) requires PG13+; CI pins postgres:15.
+            # WITH (FORCE) requires PG13+; CI pins postgres:18, the major
+            # version production runs (MEH-2914).
             # rtl-ok — "pr-c" below is a workflow filename, not a CSS class.
-            # (.github/workflows/pr-checks.yml:296)
+            # (.github/workflows/pr-checks.yml, job pytest-shard)
             conn.execute(text(f'DROP DATABASE IF EXISTS "{worker_db}" WITH (FORCE)'))
             conn.execute(text(f'CREATE DATABASE "{worker_db}"'))
     finally:
