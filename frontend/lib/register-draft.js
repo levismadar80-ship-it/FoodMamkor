@@ -12,10 +12,90 @@
  * Related:  app/[locale]/register/producer/RegisterProducerClient.jsx
  * History:  MEH-1769 (hasDraftContent, originally inline in the component);
  *           MEH-1977 (envelope + 7-day expiry, extracted here so the rules are
- *           testable without rendering a 1,700-line wizard).
+ *           testable without rendering a 1,700-line wizard);
+ *           MEH-2915 (the draft stops carrying the person — see
+ *           DRAFT_OMITTED_FIELDS).
  */
 
 export const DRAFT_KEY = "producer_registration_draft";
+
+/**
+ * MEH-2915: fields the draft never carries.
+ *
+ * A draft exists so a seller who wanders off mid-wizard can pick it back up,
+ * and it is scoped to the person who wrote it. The business name, city,
+ * categories and story are what make resuming worth offering; the fields that
+ * identify a person — her email, her own name, her phone, an address — are not
+ * needed to resume anything, so the draft does not hold them.
+ *
+ * `password` was already stripped (MEH-1769) and keeps its place here so there
+ * is ONE list rather than a special case beside a list.
+ *
+ * `address` / `lat` / `lng` / `address_city` are a second group: MEH-2640 moved
+ * the address question out of registration entirely, so they are vestigial keys
+ * of EMPTY_FORM that only ever hold a value in a draft written before that
+ * shipped. They cannot be re-entered here in any case.
+ *
+ * Stripping on read keeps them out of the FORM; it does not by itself change
+ * what is on disk. `parseDraft` therefore reports `stripped` so the caller can
+ * rewrite the key — see the mount effect in RegisterProducerClient.jsx, which
+ * re-packs at the draft's ORIGINAL `savedAt` so the rewrite cannot restart
+ * MEH-1977's 7-day clock.
+ *
+ * `name` is the OWNER's full name («שם מלא», messages/he.json:200), not the
+ * business name — that is `producer_name`, which stays.
+ */
+export const DRAFT_OMITTED_FIELDS = Object.freeze([
+  "password",
+  "email",
+  "name",
+  "phone",
+  "address",
+  "lat",
+  "lng",
+  "address_city",
+]);
+
+/**
+ * MEH-2915: form fields that are never the seller's input, so their value
+ * cannot be evidence that there is a fill worth resuming.
+ *
+ * `kind` is the one that mattered: EMPTY_FORM ships it as `"producer"`
+ * (MEH-2460), a non-empty string, so `hasDraftContent` returned true for an
+ * entirely untouched form and the resume banner offered back a draft holding
+ * nothing.
+ *
+ * `city_known` is deliberately NOT here, though it is just as derived (it is
+ * CitySearch's verdict ON `city`, never typed). Listing it would narrow what
+ * counts as content — a draft holding `city_known: true` with an empty `city`
+ * would stop earning a banner — and narrowing the caught set needs a reason
+ * stronger than symmetry. `kind` has one: it is non-empty in EVERY draft ever
+ * written, so it made the guard unconditional. `city_known` is false by
+ * default and only moves when the seller has typed a town.
+ */
+export const NON_CONTENT_FIELDS = Object.freeze(["password", "kind"]);
+
+/**
+ * Drop every omitted field from a form-shaped object.
+ *
+ * @returns {{form: object, stripped: boolean}} `stripped` is true when the
+ *   input actually carried one, which is what tells a caller the stored bytes
+ *   are out of date and worth rewriting.
+ */
+function stripOmitted(form) {
+  if (!form || typeof form !== "object" || Array.isArray(form)) {
+    return { form, stripped: false };
+  }
+  const out = { ...form };
+  let stripped = false;
+  for (const field of DRAFT_OMITTED_FIELDS) {
+    if (field in out) {
+      delete out[field];
+      stripped = true;
+    }
+  }
+  return { form: out, stripped };
+}
 
 /**
  * MEH-1977: the stored value is an ENVELOPE, not the form object itself.
@@ -49,11 +129,15 @@ export const DRAFT_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
  *
  * `password` is stripped before the write (`packDraft`) so it can never appear
  * here; the guard is defensive, not load-bearing.
+ *
+ * MEH-2915: the skip list widened from `password` alone to NON_CONTENT_FIELDS,
+ * because "check every persisted value" is only the right rule while every
+ * persisted value is something the seller typed. `kind` is not — see there.
  */
 export function hasDraftContent(form) {
   if (!form || typeof form !== "object" || Array.isArray(form)) return false;
   return Object.entries(form).some(([field, value]) => {
-    if (field === "password") return false;
+    if (NON_CONTENT_FIELDS.includes(field)) return false;
     if (typeof value === "string") return value.trim() !== "";
     if (Array.isArray(value)) return value.length > 0;
     return Boolean(value);
@@ -61,12 +145,17 @@ export function hasDraftContent(form) {
 }
 
 /**
- * Build the value to store. `password` never leaves this function — that is
- * the one rule in here with a security consequence rather than a UX one.
+ * Build the value to store. DRAFT_OMITTED_FIELDS never leave this function.
+ * That is the one rule in here about WHO a stored draft belongs to; the rest
+ * are about when it is still worth offering back.
  */
 export function packDraft(form, step, now) {
-  const { password, ...safe } = form || {};
-  return JSON.stringify({ v: DRAFT_VERSION, savedAt: now, step, form: safe });
+  return JSON.stringify({
+    v: DRAFT_VERSION,
+    savedAt: now,
+    step,
+    form: stripOmitted(form || {}).form,
+  });
 }
 
 /**
@@ -107,7 +196,11 @@ export function parseDraft(raw, now) {
   // 7 days by up to 7 more; the alternative cost is eating real work.
   if (parsed.v === undefined) {
     if (!isFormShaped(parsed)) return null;
-    return { form: parsed, step: null, restamp: true };
+    // A pre-envelope draft is rewritten by the caller in any case (restamp),
+    // so `stripped` would be redundant here — it is reported all the same so
+    // the return shape does not depend on which branch produced it.
+    const { form, stripped } = stripOmitted(parsed);
+    return { form, step: null, savedAt: null, restamp: true, stripped };
   }
 
   if (parsed.v !== DRAFT_VERSION) return null;
@@ -118,10 +211,20 @@ export function parseDraft(raw, now) {
   if (Math.abs(now - parsed.savedAt) > DRAFT_MAX_AGE_MS) return null;
   if (!isFormShaped(parsed.form)) return null;
 
+  // MEH-2915: strip on the way OUT as well as on the way in. Drafts written
+  // before this shipped are already on disk WITH those fields, so a change
+  // that only stops writing them would hold from the first keystroke after
+  // the deploy onwards and leave every existing draft untouched.
+  const { form, stripped } = stripOmitted(parsed.form);
   return {
-    form: parsed.form,
+    form,
     step: typeof parsed.step === "number" ? parsed.step : null,
+    // Handed back so a caller rewriting a stripped draft can re-pack at the
+    // ORIGINAL stamp. Rewriting at `Date.now()` would restart the 7-day
+    // expiry — the same defect the setAndSave no-op guard exists to prevent.
+    savedAt: parsed.savedAt,
     restamp: false,
+    stripped,
   };
 }
 

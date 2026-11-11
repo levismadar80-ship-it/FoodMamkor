@@ -979,7 +979,12 @@ describe("RegisterProducerClient — cross-step validation (MEH-1807)", () => {
     await renderWizard();
     await fillAccountToDetails();
     await fillDetailsToStory();
-    seedForeignDraft({ producer_name: "", phone: "", city: "חיפה" });
+    // MEH-2915: the second blanked field is `city`, not `phone`. The draft no
+    // longer carries a phone at all — packDraft omits it and parseDraft strips
+    // it on the way back — so a draft can no longer blank one. `city` is the
+    // other cross-step DETAILS field, so the subject of this test (two
+    // missing fields → the summary list, landing on the first) is unchanged.
+    seedForeignDraft({ producer_name: "", city: "" });
     fireEvent.click(screen.getByTestId("register-draft-continue"));
     selectReferral();
     screen.getAllByRole("checkbox").forEach((cb) => fireEvent.click(cb));
@@ -989,8 +994,8 @@ describe("RegisterProducerClient — cross-step validation (MEH-1807)", () => {
     const notice = screen.getByTestId("register-submit-gate-notice");
     expect(notice).toHaveTextContent(`${K}.validation.cross_step_summary`);
     expect(notice).toHaveTextContent(`${K}.validation.producer_name_required`);
-    expect(notice).toHaveTextContent(`${K}.validation.phone_required`);
-    // wizard order decides the landing field: producer_name precedes phone
+    expect(notice).toHaveTextContent(`${K}.validation.city_required`);
+    // wizard order decides the landing field: producer_name precedes city
     expect(document.activeElement).toBe(screen.getByTestId("register-details-name"));
   });
 
@@ -1131,6 +1136,145 @@ describe("RegisterProducerClient — logged-in producer/admin gate (MEH-1489)", 
 // not that a particular line moved — ADR-032 §3.6.
 const DRAFT_KEY = "producer_registration_draft";
 
+/**
+ * MEH-2915 — `setAndSave` writes the draft from inside the form updater, so an
+ * updater that returns `prev` unchanged used to write anyway. The write is not
+ * harmless: the envelope re-stamps `savedAt`, which restarts MEH-1977's 7-day
+ * expiry for a change that never happened.
+ *
+ * `handleCityKnownChange` is the live path — a late /cities response that
+ * confirms the verdict the field already had. The stub's blur re-asserts the
+ * SAME verdict; its double-click flips it, which is the control.
+ *
+ * The clock is advanced on every `Date.now()` so that a write would be visible:
+ * without it two writes in the same millisecond produce identical JSON and the
+ * assertion passes whether or not the guard exists.
+ */
+describe("MEH-2915 · a no-op update writes no draft", () => {
+  const seedCity = async () => {
+    await renderWizard();
+    await fillAccountToDetails();
+    fireEvent.change(screen.getByTestId("city"), { target: { value: "תל אביב" } });
+    const stored = localStorage.getItem(DRAFT_KEY);
+    expect(stored, "precondition: the keystroke itself wrote a draft").not.toBeNull();
+    return stored;
+  };
+
+  it("re-asserting the verdict the field already had leaves the draft untouched", async () => {
+    const clock = { t: 1_760_000_000_000 };
+    const nowSpy = vi.spyOn(Date, "now").mockImplementation(() => (clock.t += 1000));
+    try {
+      const before = await seedCity();
+      fireEvent.blur(screen.getByTestId("city")); // onKnownChange(true) — already true
+      expect(localStorage.getItem(DRAFT_KEY)).toBe(before);
+    } finally {
+      nowSpy.mockRestore();
+    }
+  });
+
+  it("control — a verdict that actually flips still writes", async () => {
+    const clock = { t: 1_760_000_000_000 };
+    const nowSpy = vi.spyOn(Date, "now").mockImplementation(() => (clock.t += 1000));
+    try {
+      const before = await seedCity();
+      fireEvent.doubleClick(screen.getByTestId("city")); // onKnownChange(false)
+      const after = localStorage.getItem(DRAFT_KEY);
+      expect(after).not.toBe(before);
+      expect(JSON.parse(after).form.city_known).toBe(false);
+    } finally {
+      nowSpy.mockRestore();
+    }
+  });
+});
+
+/**
+ * MEH-2915, found by adversarial review — two consequences of taking identity
+ * off the draft that the first pass left open.
+ *
+ * 1. Stripping on read keeps the fields out of the FORM. It does not by itself
+ *    change what is on disk: the mount effect only rewrote the key on the
+ *    pre-envelope restamp branch, so a v2 draft kept its bytes until the next
+ *    keystroke, a dismiss, or the 7-day expiry.
+ * 2. The draft no longer carries a phone and nothing prefills one, so a resume
+ *    onto CATEGORY or STORY completes a frame and then bounces at submit, back
+ *    to DETAILS, onto a field the seller never saw go empty.
+ */
+describe("MEH-2915 · an existing draft is rewritten, and the resume stops where it can finish", () => {
+  // A minute old, not a fixed epoch: MEH-1977 expires a draft at 7 days
+  // against the REAL clock, so a hard-coded stamp would make these cells pass
+  // only until that date — the trap .claude/rules/testing.md names for
+  // clock-dependent seeds. A minute is still far enough from `Date.now()` for
+  // an unwanted re-stamp to be visible.
+  const seedV2 = (form, step) => {
+    const savedAt = Date.now() - 60_000;
+    localStorage.setItem("token", "tok-123");
+    authState.user = { role: "user" };
+    localStorage.setItem(DRAFT_KEY, JSON.stringify({ v: 2, savedAt, step, form }));
+    return savedAt;
+  };
+
+  it("rewrites a stored draft that still carries identity, at its original savedAt", async () => {
+    {
+      const savedAt = seedV2(
+        {
+          producer_name: "הבית של דנה",
+          city: "תל אביב",
+          city_known: true,
+          email: "dana@example.com",
+          name: "דנה לוי",
+          phone: "0501234567",
+          address: "הרצל 1",
+        },
+        2,
+      );
+      await renderWizard();
+      await screen.findByTestId("register-draft-banner");
+
+      const raw = localStorage.getItem(DRAFT_KEY);
+      for (const gone of ["dana@example.com", "דנה לוי", "0501234567", "הרצל 1"]) {
+        expect(raw, `${gone} must be off the device, not just out of the form`).not.toContain(
+          gone,
+        );
+      }
+      expect(raw, "control: the business half stays").toContain("הבית של דנה");
+      // The rewrite must not restart MEH-1977's clock: the seed is a minute
+      // old, so a re-stamp at Date.now() would move this by ~60_000.
+      expect(JSON.parse(raw).savedAt).toBe(savedAt);
+    }
+  });
+
+  it("leaves a draft that carries no identity completely untouched", async () => {
+    // Control: without this, the case above passes for a mount effect that
+    // rewrites every draft it reads — which would restart the expiry clock on
+    // drafts that never needed touching.
+    seedV2({ producer_name: "הבית של דנה", city: "תל אביב", city_known: true }, 2);
+    const before = localStorage.getItem(DRAFT_KEY);
+    await renderWizard();
+    await screen.findByTestId("register-draft-banner");
+    expect(localStorage.getItem(DRAFT_KEY)).toBe(before);
+  });
+
+  it("a resume stored at STORY lands on DETAILS, where the missing phone lives", async () => {
+    seedV2(
+      { producer_name: "הבית של דנה", city: "תל אביב", city_known: true, category_ids: [1] },
+      4, // STORY
+    );
+    await renderWizard();
+    fireEvent.click(await screen.findByTestId("register-draft-continue"));
+    expect(await screen.findByTestId("register-frame-details")).toBeInTheDocument();
+    expect(screen.queryByTestId("register-frame-story")).not.toBeInTheDocument();
+
+    // Control: STORY is reachable — the landing above is the cap, not a wizard
+    // that cannot move. Fill the one thing the draft could not carry.
+    fireEvent.change(screen.getByTestId("register-details-phone"), {
+      target: { value: "0501234567" },
+    });
+    fireEvent.click(screen.getByTestId("register-fulfilment-onsite"));
+    fireEvent.click(screen.getByTestId("register-details-next"));
+    expect(await screen.findByTestId("register-frame-category")).toBeInTheDocument();
+  });
+});
+
 async function fillWizardAndSubmit() {
   await renderWizard();
   await fillAccountToDetails();
@@ -1218,14 +1362,28 @@ describe("RegisterProducerClient — resumed drafts land where they can finish (
     expect(ph("producer_name").value).toBe("העסק שלי");
   });
 
-  it("signed in: lands on the stored frame, where the account fields are not submitted at all", async () => {
+  // MEH-2915 amended this cell. Its subject — with a token the ACCOUNT gate is
+  // SKIPPED, because the password problem that strands a signed-out resume
+  // does not apply — is unchanged and still asserted. What changed is how far
+  // past ACCOUNT a resume may land: the draft no longer carries a phone and
+  // nothing prefills one, so STORY is a frame she could fill completely and
+  // then bounce out of at submit (CROSS_STEP_REQUIRED), back to DETAILS, onto
+  // a required field she never saw go empty. This describe block is named
+  // "land where they can finish"; with no phone, that frame is DETAILS.
+  it("signed in: skips ACCOUNT and lands on the furthest frame it can finish from", async () => {
     localStorage.setItem("token", "tok-123");
     authState.user = { role: "user" };
-    seedDraftAtStep(4);
+    seedDraftAtStep(4); // STORY
     await renderWizard();
     fireEvent.click(await screen.findByTestId("register-draft-continue"));
 
-    expect(await screen.findByTestId("register-frame-story")).toBeTruthy();
+    // The token's effect — the thing this cell has always been about.
+    expect(screen.queryByTestId("register-frame-account")).toBeNull();
+    expect(await screen.findByTestId("register-frame-details")).toBeTruthy();
+    expect(screen.queryByTestId("register-frame-story")).toBeNull();
+
+    // …and the restore was still worth something: the business name is there.
+    expect(ph("producer_name").value).toBe("העסק שלי");
   });
 
   it("never lands on CONFIRM — that frame is only reachable from a 200", async () => {
@@ -1415,14 +1573,14 @@ describe("MEH-2241 chunk B — a typed town CitySearch could not match is as mis
   });
 
   // Draft round-trip (CI reviewer on #3461): `packDraft` spreads every form
-  // field except `password` (lib/register-draft.js), so the verdict survives a
-  // reload. Asserted end-to-end — a restored draft is NOT re-challenged when
-  // the town was picked, and IS challenged when it was not — rather than by
-  // reading the stored JSON, which would pass identically if restoreDraft
-  // dropped the key on the way back in.
-  // packDraft spreads every field except `password`, so `city_known` rides
-  // the draft. Two cases, one per outcome, so a red in one cannot hide the
-  // other (CI reviewer on this PR).
+  // field except DRAFT_OMITTED_FIELDS (lib/register-draft.js), so the verdict
+  // survives a reload. Asserted end-to-end — a restored draft is NOT
+  // re-challenged when the town was picked, and IS challenged when it was not
+  // — rather than by reading the stored JSON, which would pass identically if
+  // restoreDraft dropped the key on the way back in.
+  // `city_known` is not an omitted field, so it rides the draft; MEH-2915 took
+  // the phone off it, which is why the helper types one. Two cases, one per
+  // outcome, so a red in one cannot hide the other (CI reviewer on this PR).
   async function restoreDraftWithCity(known) {
     localStorage.setItem("token", "tok-123");
     authState.user = { role: "user" };
@@ -1434,7 +1592,6 @@ describe("MEH-2241 chunk B — a typed town CitySearch could not match is as mis
         step: 2, // DETAILS
         form: {
           producer_name: "העסק שלי",
-          phone: "0501234567",
           city: known ? "תל אביב" : FREE_TEXT_TOWN,
           city_known: known,
         },
@@ -1443,6 +1600,13 @@ describe("MEH-2241 chunk B — a typed town CitySearch could not match is as mis
     await renderWizard();
     fireEvent.click(await screen.findByTestId("register-draft-continue"));
     await screen.findByTestId("register-frame-details");
+    // MEH-2915: the phone is no longer part of the draft (packDraft omits it,
+    // parseDraft strips it), so a restored draft arrives without one and the
+    // required gate would block the advance for a reason that is not this
+    // cell's subject. Typed in here, where it is setup rather than assertion.
+    fireEvent.change(screen.getByTestId("register-details-phone"), {
+      target: { value: "0501234567" },
+    });
   }
 
   it("draft round-trip — a restored list-picked town passes the gate", async () => {

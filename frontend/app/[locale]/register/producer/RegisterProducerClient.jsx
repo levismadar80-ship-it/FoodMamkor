@@ -421,7 +421,9 @@ function RegisterProducerPageBody({ routeKind }) {
   // MEH-2640: addressConfirmed / addressConfirmLabel / addressCityMismatch
   // left with the address block. `form.address` and lat/lng stay in the form
   // shape (and in the payload, where the schema makes them optional) so the
-  // upgrade path and any saved draft keep their keys.
+  // upgrade path keeps its keys.
+  // MEH-2915: a saved draft no longer does — address/lat/lng/address_city are
+  // in DRAFT_OMITTED_FIELDS, so they live in form state for the session only.
 
   // MEH-1807: the GOV.UK-style summary next to "הצטרפו" is DERIVED from
   // fieldErrors rather than stored, so fixing a field removes its summary row
@@ -519,6 +521,21 @@ function RegisterProducerPageBody({ routeKind }) {
           // this beats deleting it.
           if (draft.restamp) {
             localStorage.setItem(DRAFT_KEY, packDraft(draft.form, null, Date.now()));
+          } else if (draft.stripped) {
+            // MEH-2915: the draft on disk still carries fields the form no
+            // longer accepts. parseDraft keeps them out of `form`, which is
+            // what the seller sees; this rewrite is what takes them off the
+            // device, without waiting for her next keystroke, a dismiss, or
+            // the 7-day expiry.
+            //
+            // Re-packed at the draft's ORIGINAL savedAt, never Date.now():
+            // stamping it now would restart MEH-1977's expiry for a draft
+            // nobody touched — the same defect the setAndSave no-op guard
+            // below exists to prevent.
+            localStorage.setItem(
+              DRAFT_KEY,
+              packDraft(draft.form, draft.step, draft.savedAt),
+            );
           }
           // MEH-1769: hasDraftContent replaces the 3-field truthiness test. An
           // empty-storage visit never reaches here at all (getItem returns
@@ -573,11 +590,19 @@ function RegisterProducerPageBody({ routeKind }) {
           let hasToken = false;
           try { hasToken = Boolean(localStorage.getItem("token")); } catch {}
           const resumeAt = safeResumeStep(draft.step, hasToken);
+          // MEH-2915: the draft no longer carries a phone and nothing
+          // prefills one, so a resume onto CATEGORY or STORY would hand her a
+          // frame she can complete and then bounce at submit — back to
+          // DETAILS, onto a required field she never saw go empty
+          // (CROSS_STEP_REQUIRED, the gate at the «הצטרפו» handler). Landing
+          // on the frame that owns the missing field is the honest stop.
+          const cappedResume =
+            resumeAt && !validateIsraeliPhone(form.phone) ? STEP.DETAILS : resumeAt;
           // MEH-2460 (review #3711): an organizer never stands on CATEGORY —
           // neither as a resume target nor as the frame she was on when she
           // pressed «continue».
           const skipCategory = (s) => (routeIsOrganizer && s === STEP.CATEGORY ? STEP.STORY : s);
-          if (resumeAt) setStep(skipCategory(resumeAt));
+          if (cappedResume) setStep(skipCategory(cappedResume));
           else if (routeIsOrganizer) setStep(skipCategory);
         } else {
           localStorage.removeItem(DRAFT_KEY);
@@ -612,6 +637,12 @@ function RegisterProducerPageBody({ routeKind }) {
   const setAndSave = (updater) => {
     setForm((prev) => {
       const next = updater(prev);
+      // MEH-2915: an updater that returns `prev` is a no-op — React bails out
+      // of the render, and writing here would still re-stamp the envelope's
+      // `savedAt`, restarting the 7-day expiry (MEH-1977) for a change that
+      // never happened. `handleCityKnownChange` takes that branch every time a
+      // late /cities response confirms the verdict it already had.
+      if (next === prev) return prev;
       saveDraft(next, step);
       return next;
     });

@@ -86,8 +86,13 @@ describe("MEH-1977 · the envelope earns its complexity", () => {
   it("keeps metadata out of the object that gets spread into form state", () => {
     // restoreDraft does `setForm({...prev, ...draft.form})`, so anything in
     // here rides into component state and out in the submit body.
+    // MEH-2915 removed `email` and `name` from the expected set — they are
+    // omitted fields now (DRAFT_OMITTED_FIELDS). The subject is unchanged: an
+    // EXACT key set is already what keeps `v` / `savedAt` / `step` out, so no
+    // separate "not.toContain" loop is added here — it could not fail without
+    // this line failing first (.claude/rules/testing.md).
     expect(Object.keys(parseDraft(packDraft(FORM, 2, T0), T0).form).sort()).toEqual(
-      ["category_ids", "email", "name", "producer_name"],
+      ["category_ids", "producer_name"],
     );
   });
 });
