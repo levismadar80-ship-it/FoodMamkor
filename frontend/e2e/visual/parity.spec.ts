@@ -687,6 +687,22 @@ test.describe("Visual parity — MEH-991", () => {
     });
     await page.goto("/");
     const section = page.locator('[data-testid="home-whats-on"]');
+    // The strip asks its four sources for NOTHING until it nears the viewport
+    // (IntersectionObserver, the MEH-2233 LCP budget), so at load the rows do
+    // not exist yet and cannot be waited for. Bring the strip's own element
+    // into view FIRST, then assert the count. Before the fetch the component
+    // renders only the sentinel; after it, only the section — so the scroll
+    // target is whichever of the two is currently mounted.
+    //
+    // This spec asserted the count BEFORE the scroll until its first real
+    // execution (VRT dispatch 43104326037, 11/11): `toHaveCount` sat for 20s
+    // on `43 × locator resolved to 0 elements` and the baseline was never
+    // written. It went unnoticed because the shot was renamed in this PR, so
+    // no baseline existed and neither the VRT nor the E2E job had ever run it.
+    await page
+      .locator('[data-testid="home-whats-on-sentinel"], [data-testid="home-whats-on"]')
+      .first()
+      .scrollIntoViewIfNeeded();
     await expect(page.locator('[data-testid="whats-on-row"]')).toHaveCount(3, { timeout: 20_000 });
     await section.scrollIntoViewIfNeeded();
     await settle(page);
