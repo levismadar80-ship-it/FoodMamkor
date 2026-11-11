@@ -5075,6 +5075,9 @@
       "week": {
         "all_insights": "All your numbers →"
       }
+    },
+    "page_preview": {
+      "banner": "This is a preview. The page goes live once we approve the business."
     }
   },
   "sweep_tail": {
