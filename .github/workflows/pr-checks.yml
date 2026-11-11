@@ -480,7 +480,7 @@ jobs:
           # rescue_typical_items (rescue-bags pilot) — 44 -> 48.
           # MEH-2763: registrations (on-site sign-ups for events and
           # experiences) — 48 -> 49.
-          EXPECTED_TABLES=49
+          EXPECTED_TABLES=50
 
           TABLE_COUNT=$(psql -h localhost -U postgres -d mehamakor_test -tAc \
             "SELECT COUNT(*) FROM information_schema.tables
