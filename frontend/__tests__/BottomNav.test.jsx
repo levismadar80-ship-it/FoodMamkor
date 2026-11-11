@@ -107,12 +107,29 @@ describe("BottomNav", () => {
     },
   );
 
+  // MEH-2927 (pilot B3c): the registration flow is a form with one primary
+  // action at the end of it, and the pill is fixed chrome over that action.
+  // Measured at the iPhone VISUAL viewport, not the device height: at 375x667
+  // only 1px of the 48px «מתחילים» button was visible and unobstructed, and
+  // at 390x664 only 16px. Sapir's call (11/11) is to take the nav off the
+  // whole flow rather than lift the button over it.
+  it.each([
+    "/register",
+    "/register/producer",
+    "/register/organizer",
+  ])("renders null on the registration flow (%s)", (path) => {
+    pathnameRef.current = path;
+    const { container } = render(<BottomNav />);
+    expect(container).toBeEmptyDOMElement();
+  });
+
   // Controls: consumer routes keep the nav, so a gate that hides it
   // everywhere cannot pass.
   // `/producer/dashboardx/foo` only shares the prefix: it is neither the
   // dashboard nor a producer leaf, so a bare startsWith("/producer/dashboard")
-  // would hide the nav there by mistake.
-  it.each(["/", "/map", "/favorites", "/producer/dashboardx/foo"])("still renders on %s", (path) => {
+  // would hide the nav there by mistake. `/registerx/foo` is the same trap for
+  // the MEH-2927 gate above.
+  it.each(["/", "/map", "/favorites", "/producer/dashboardx/foo", "/registerx/foo"])("still renders on %s", (path) => {
     pathnameRef.current = path;
     render(<BottomNav />);
     expect(screen.getAllByRole("link")).toHaveLength(3);
@@ -178,7 +195,18 @@ describe("bottom clearance on routes without a pill (MEH-2490)", () => {
     document.documentElement.style.removeProperty("--bottom-nav-clearance");
   });
 
-  it.each(["/producer/dashboard", "/producer/dashboard/group-buys", "/admin", "/admin/reviews"])(
+  it.each([
+    "/producer/dashboard",
+    "/producer/dashboard/group-buys",
+    "/admin",
+    "/admin/reviews",
+    // MEH-2927: the registration flow joins the no-pill set, so it must also
+    // publish the no-pill clearance. A gate that hides the pill without
+    // publishing leaves every consumer of --bottom-nav-clearance reserving
+    // 72px for a bar that is not there.
+    "/register",
+    "/register/producer",
+  ])(
     "%s publishes the safe area + gutter, not the pill fallback",
     (path) => {
       pathnameRef.current = path;

@@ -13,8 +13,10 @@
 > (§2b: v1.5.0 adds revision `e4c9a2f71b58`). Rolling back *to* v1.5.0 after a
 > later revision is §2c.
 >
-> ⚠️ **This runbook has not been drilled yet** (§A.4 waits for the MEH-1517
-> secret). Until it has, every step below is a plan, not a proven path.
+> ⚠️ **Only one path here has been drilled:** rollback mode (§2d), on staging,
+> 11/11/2026 (record in §2e). The manual procedures (§2b, §2c), the schema
+> downgrade (§3) and the data restore (§4) have not (§A.4 waits for the
+> MEH-1517 secret). Until they are, those steps are a plan, not a proven path.
 
 ## 0 · Decide what is broken
 
@@ -86,7 +88,7 @@ Sapir chose (ב) on 10/11: MEH-2903, `backend/scripts/migrate_on_boot.py`. Until
 
 **Rollback mode needs `migrate_on_boot.py` in the image you roll back *to*.** It is the older image that has to tolerate a newer database. Having the lineage table in the database is not enough.
 
-- **The first release you can roll back to without 2b/2c** is the first release whose `Dockerfile` runs `python -u scripts/migrate_on_boot.py` (MEH-2903 chunk 2: on staging since 11/11/2026; it ships with v1.5.1, and only after the rollback drill on staging passes). Call it **R**.
+- **The first release you can roll back to without 2b/2c** is the first release whose `Dockerfile` runs `python -u scripts/migrate_on_boot.py` (MEH-2903 chunk 2: on staging since 11/11/2026; the rollback drill passed on staging the same day, §2e). **R is v1.5.1, the first rollback-safe anchor.** Call it **R**.
   - It is **not** v1.5.0.
   - It is **not** a release that has `19ac967d78fb` but still boots with plain `alembic upgrade head`.
 - **Rolling back from a later release to R is automatic when both hold:**
@@ -98,7 +100,43 @@ Sapir chose (ב) on 10/11: MEH-2903, `backend/scripts/migrate_on_boot.py`. Until
 - **Two edges the check does not cover.** Neither can happen while revisions are never deleted and the history stays linear (the alembic head guard).
   - A row in `alembic_lineage` means "applied at some point". A downgrade does not remove it. So after a downgrade below R's head and a *different* revision applied on top, R would still take rollback mode on a stale row.
   - The check reads `alembic_lineage` only, not `alembic_version`. With several database heads, one of them R's own, R still exits 3 if the lineage row is missing.
-- **Rolling back to anything older than R** (v1.5.0 included) is always 2b or 2c.
+- **Rolling back to anything older than R** (v1.5.0 included) is always 2b or 2c. **Returning to v1.5.0 stays the manual §2c procedure.**
+
+### 2e · Drill record: rollback mode on staging (11/11/2026)
+
+Acceptance test of MEH-2903 chunk 2, run on staging only.
+
+| Step | Deployment | Image | Database |
+|---|---|---|---|
+| Newer image boots | `bddccdd8` | `117defbf9` (#4325), head `b8cb5480552f` | `19ac967d78fb` → `b8cb5480552f` |
+| Older image redeployed | `c9a2386e` | build of `f20c22f2` (#4324), head `19ac967d78fb` | `b8cb5480552f` (unchanged) |
+| Roll forward | `4ba2bc9c` | build of `52db54727` (#4327), head `b8cb5480552f` | `b8cb5480552f` |
+
+The newer image's boot, which recorded the chain the older image needs:
+```
+INFO migrate_on_boot: database at 19ac967d78fb; running `alembic upgrade head` (image head b8cb5480552f)
+INFO  [migrate_on_boot] recorded 104 applied revisions in alembic_lineage
+```
+
+The older image on the newer database (19:41:59 UTC):
+```
+ERROR migrate_on_boot: ROLLBACK MODE: the database is at b8cb5480552f, a revision this image does not know (this image's head is 19ac967d78fb). Skipping `alembic upgrade head` and starting anyway: expand-only revisions (ADR-007) keep this code safe on the newer schema. If this is not a deliberate rollback, deploy the newer image (docs/release/ROLLBACK.md).
+INFO:     Uvicorn running on http://0.0.0.0:8080
+```
+
+`/api/health` during the rollback (old code, newer schema):
+```
+{"git_sha": "f20c22f2debadf0612a4fdaa655d8547fa73fe3c", "git_branch": "staging", "alembic_head": "b8cb5480552f", "booted_at": "2026-11-11T19:42:04.131662+00:00"}
+```
+
+`/api/health` after rolling forward:
+```
+{"git_sha": "52db54727b50bd3bc8da58f3fd24ed3d85a33f6f", "git_branch": "staging", "alembic_head": "b8cb5480552f", "booted_at": "2026-11-11T19:43:52.115557+00:00"}
+```
+
+E2E on staging `52db547`, run 43088988697, 19:39–19:49 UTC, which spans the rollback window. From the merged report: `executed=1553 (expected=1553 unexpected=0 flaky=0 skipped=119)`. Both blocking shards: `success`.
+
+What this proves: an image with `migrate_on_boot.py` boots in rollback mode on a database one expand-only revision ahead of it, and serves. What it does not prove: a downgrade (§2b, §2c, §3), a data restore (§4), or rollback mode on production.
 
 ## 3 · Schema (Alembic): only if a revision itself is the problem
 

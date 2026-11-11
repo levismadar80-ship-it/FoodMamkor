@@ -1666,6 +1666,63 @@ describe("MEH-2241 chunk B — a typed town CitySearch could not match is as mis
 // seen. The committed frame qa-artifacts/MEH-2927/02-step2-on-entry-390-AFTER.webp
 // is that view AFTER the fix; the before frame was not committed, so the before
 // state is cited as the probe's numbers rather than as a file.
+/**
+ * MEH-2927 (pilot B3d) — ticking «יש לי רישיון ייצור» must not move «הבא».
+ *
+ * The hint below the checkbox used to mount on the tick, which pushed the
+ * button row down 36px in document space at the exact moment the thumb was on
+ * it. Reserved instead: the element is always rendered and hidden with
+ * `visibility`, so its real height — however many lines it wraps to — is held
+ * either way.
+ *
+ * 🔴 HONEST LIMIT, stated rather than glossed: jsdom computes no layout, so
+ * this file asserts the CLASS CONTRACT (always mounted, `invisible` only when
+ * unchecked). That discriminates on this change — the old code rendered
+ * nothing at all when unchecked — but it is NOT evidence about rendered
+ * pixels. The pixel measurement is in e2e/qa-meh2927-register-chrome.mjs,
+ * where a stylesheet exists, and its numbers are in the PR.
+ */
+describe("MEH-2927 · the licence hint reserves its space (B3d)", () => {
+  const hint = () => screen.queryByTestId("register-license-pending-hint");
+
+  async function reachLicenceCategory() {
+    // Same override as the MEH-530 block above (:774): the default
+    // /categories fixture is «ביצים», which needs no licence, so the block
+    // under test would never render. Id 1 is what the CategorySelector stub
+    // selects.
+    api.get.mockResolvedValue({ data: [{ id: 1, name: "חלב וגבינות" }] });
+    await renderWizard();
+    await fillAccountToDetails();
+    fireEvent.change(ph("phone"), { target: { value: "0501234567" } });
+    fireEvent.change(screen.getByTestId("city"), { target: { value: "תל אביב" } });
+    fireEvent.change(ph("producer_name"), { target: { value: "משק בדיקה" } });
+    fireEvent.click(screen.getByTestId("register-fulfilment-onsite"));
+    fireEvent.click(nextBtn());
+    await screen.findByTestId("register-frame-category");
+    fireEvent.click(await screen.findByTestId("pick-category"));
+  }
+
+  it("the hint is in the DOM before the box is ticked, holding its height", async () => {
+    await reachLicenceCategory();
+    const optin = screen.queryByTestId("register-license-pending-optin");
+    if (!optin) return expect.unreachable("the licence opt-in did not render");
+
+    expect(hint(), "mounted while unchecked — that is what reserves the space").toBeTruthy();
+    expect(hint().className).toContain("invisible");
+  });
+
+  it("…and becomes visible when it is ticked, without being re-mounted", async () => {
+    await reachLicenceCategory();
+    const optin = screen.queryByTestId("register-license-pending-optin");
+    if (!optin) return expect.unreachable("the licence opt-in did not render");
+
+    const before = hint();
+    fireEvent.click(optin);
+    expect(hint().className).not.toContain("invisible");
+    expect(hint(), "the same node, not a new one").toBe(before);
+  });
+});
+
 describe("RegisterProducerClient — a step change starts at the top (MEH-2927)", () => {
   // Uses the module-level `scrollToSpy` (see its note at the top of the file)
   // rather than a second vi.spyOn over it — stacking a spy on a spy is the one

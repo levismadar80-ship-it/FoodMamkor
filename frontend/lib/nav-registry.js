@@ -158,22 +158,30 @@ export const NAV_ITEMS = Object.freeze([
     },
   },
   {
-    id: "experiences",
+    id: "whatsOn",
     kind: "link",
-    href: "/experiences",
+    href: "/events",
     surfaces: {
-      header: { labelKey: "nav.experiences", audience: "all" },
+      header: { labelKey: "nav.whats_on", audience: "all" },
     },
     /**
-     * Data-gated on top of its audience: `useExperiencesNavGate()`
-     * (Header.jsx:178) hides it below EXPERIENCES_NAV_THRESHOLD upcoming
-     * public experiences. Absent, never disabled.
+     * Data-gated on top of its audience, and on a WIDER predicate than the
+     * item it replaced: the link now names all four date-bound types, so it
+     * appears when ANY of them has supply, not only experiences. Absent,
+     * never disabled — the same shape as before.
+     *
+     * MEH-2859: this entry was `experiences` (`/experiences`,
+     * `nav.experiences`, gate `experiences-supply`) until the hub grew from
+     * two tabs to four. The destination moved to the hub itself, `/events`,
+     * because that is where all four are now reachable from.
      */
-    dataGate: "experiences-supply",
+    dataGate: "listing-supply",
     only: "desktop",
     note:
-      "Desktop only. use-experiences-nav-gate.js says the BottomNav is out of " +
-      "scope because its four slots are full (MEH-1918).",
+      "Desktop only. The BottomNav is out of scope because its four slots are " +
+      "full — the reason use-experiences-nav-gate.js gave for the link this " +
+      "replaced (MEH-1918), unchanged by MEH-2859. The Footer still links " +
+      "/experiences separately and is untouched.",
   },
   {
     id: "search",
