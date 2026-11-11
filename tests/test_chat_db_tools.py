@@ -7,6 +7,7 @@ create_all (no migration run), so the fixture applies the DDL mirror
 `chat_db_tools.READER_ROLE_SQL` — the same grants as revision a29c7a4a41e7.
 """
 
+import ast
 import re
 import time
 from datetime import timedelta
@@ -343,19 +344,96 @@ def test_mcp_reader_cannot_read_producer_pii(db, column):
         conn.execute(text(f"SELECT {column} FROM producers"))
 
 
+GRANT_MIGRATION = (
+    Path(__file__).resolve().parents[1]
+    / "backend/alembic/versions/20261111_1800_c05dbc247ca1_meh2952_mcp_reader_is_test.py"
+)
+_GRANT_RE = re.compile(r"GRANT SELECT \(([^)]*)\) ON (\w+) TO mcp_reader")
+
+
+def _module_constant(src: str, name: str):
+    """The literal value of a module-level `NAME = ...` in a revision file."""
+    for node in ast.parse(src).body:
+        if isinstance(node, ast.Assign) and any(
+            isinstance(t, ast.Name) and t.id == name for t in node.targets
+        ):
+            return ast.literal_eval(node.value)
+    raise AssertionError(f"{name} not found")
+
+
+def _columns_by_table(grants) -> dict[str, set[str]]:
+    out: dict[str, set[str]] = {}
+    for grant in grants:
+        m = _GRANT_RE.fullmatch(grant)
+        assert m, f"not a column-level SELECT grant: {grant!r}"
+        out.setdefault(m.group(2), set()).update(
+            c.strip() for c in m.group(1).split(",")
+        )
+    return out
+
+
 def test_grant_mirror_matches_migration():
-    # READER_ROLE_SQL is what the tests run; the migration is what production
-    # runs. Every grant must appear verbatim in both, in both directions.
+    # READER_ROLE_SQL is what the tests run; the migrations are what
+    # production runs. MEH-2952: production's grants are the UNION of
+    # a29c7a4a41e7 (the role, six tables) and c05dbc247ca1 (producers.is_test),
+    # and that union must equal READER_COLUMNS column for column.
     src = MIGRATION.read_text(encoding="utf-8")
-    block = re.search(r"GRANTS = \((.*?)\n\)", src, re.DOTALL).group(1)
-    migration_grants = tuple(
-        "".join(re.findall(r'"([^"]*)"', entry))
-        for entry in re.split(r",\n", block.strip())
-        if entry.strip()
-    )
-    assert migration_grants == chat_db_tools.READER_GRANTS
-    # ...and upgrade() must actually execute that tuple, not a table-level
-    # GRANT that would bypass it.
+    grant_src = GRANT_MIGRATION.read_text(encoding="utf-8")
+    union = _columns_by_table(_module_constant(src, "GRANTS"))
+    for table, cols in _columns_by_table(
+        [_module_constant(grant_src, "GRANT")]
+    ).items():
+        union.setdefault(table, set()).update(cols)
+    expected = {t: set(c) for t, c in chat_db_tools.READER_COLUMNS.items()}
+    assert union == expected
+    # ...and each upgrade() executes its grants, never a table-level GRANT
+    # that would bypass the column list.
     upgrade_body = src.split("def upgrade()", 1)[1].split("def downgrade()", 1)[0]
     assert "for grant in GRANTS" in upgrade_body
     assert "GRANT SELECT ON" not in upgrade_body
+    grant_upgrade = grant_src.split("def upgrade()", 1)[1].split("def downgrade()", 1)[
+        0
+    ]
+    assert "op.execute(GRANT)" in grant_upgrade
+    assert "GRANT SELECT ON" not in grant_upgrade
+    # the revision grants is_test and nothing else
+    assert _columns_by_table([_module_constant(grant_src, "GRANT")]) == {
+        "producers": {"is_test"}
+    }
+
+
+def test_test_business_absent_from_all_four_tools(db):
+    """MEH-2952: a seeded test business (is_test) is hidden from every chat
+    tool, with an ordinary business as the control on the same path."""
+    cat = _category(db, "דבש", "honey")
+    control = make_producer(db, name="דבש הבקרה", city="חיפה")
+    hidden = make_producer(db, name="דבש הניסוי", city="חיפה")
+    hidden.is_test = True
+    db.commit()
+    for p in (control, hidden):
+        _attach(db, p, cat)
+        db.add(
+            Event(
+                producer_id=p.id,
+                title=f"שוק של {p.name}",
+                event_date=israel_today() + timedelta(days=1),
+                category="שוק",
+                city="חיפה",
+                is_active=True,
+            )
+        )
+    db.commit()
+
+    assert chat_db_tools.count_producers_in_city("חיפה")["count"] == 1
+    names = [
+        r["name"] for r in chat_db_tools.list_producers_by_category("honey")["results"]
+    ]
+    assert names == ["דבש הבקרה"]
+    assert chat_db_tools.get_site_stats() == {
+        "approved_producers": 1,
+        "cities": 1,
+        "categories_in_use": 1,
+        "upcoming_events": 1,
+    }
+    events = chat_db_tools.list_upcoming_events()["results"]
+    assert [e["producer"] for e in events] == ["דבש הבקרה"]

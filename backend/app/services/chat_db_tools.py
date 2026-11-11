@@ -46,7 +46,8 @@ READER_ROLE = "mcp_reader"
 #: a tool query means adding it here AND in the migration (the drift test in
 #: tests/test_chat_db_tools.py compares the two).
 READER_COLUMNS: dict[str, tuple[str, ...]] = {
-    "producers": ("id", "name", "city", "slug", "status", "kind"),
+    # MEH-2952: is_test is granted by c05dbc247ca1, on top of a29c7a4a41e7.
+    "producers": ("id", "name", "city", "slug", "status", "kind", "is_test"),
     "categories": ("id", "name", "slug"),
     "producer_categories": ("producer_id", "category_id"),
     "producer_locations": ("producer_id", "kind", "city"),
@@ -160,7 +161,11 @@ def _clean(value: str | None) -> str | None:
 # business. Mirrors producer_listing.is_business() — the events tool below
 # deliberately does NOT use it (organizer events are the point of the kind).
 # REUSES: backend/app/services/producer_listing.py:114
-_IS_BUSINESS = "p.status = 'approved' AND p.kind = 'producer'"
+# MEH-2952: and not a seeded test row (`p.is_test`), as is_business() does.
+_IS_BUSINESS = "p.status = 'approved' AND p.kind = 'producer' AND p.is_test IS FALSE"
+# Events are listed for organizers too, so they skip _IS_BUSINESS, but a test
+# row's events stay out (MEH-2952; events.py does the same).
+_EVENT_OWNER_PUBLIC = "p.status = 'approved' AND p.is_test IS FALSE"
 
 # A producer "is in" a city when its own city matches OR any of its
 # location rows (branch / pickup / market_stand) is in that city — so a
@@ -270,10 +275,10 @@ def get_site_stats() -> dict[str, Any]:
         ).scalar_one()
         events = conn.execute(
             text(
-                """
+                f"""
                 SELECT COUNT(*) FROM events e
                 JOIN producers p ON p.id = e.producer_id
-                WHERE e.is_active IS TRUE AND p.status = 'approved'
+                WHERE e.is_active IS TRUE AND {_EVENT_OWNER_PUBLIC}
                   AND e.event_date >= :today
                 """
             ),
@@ -307,7 +312,7 @@ def list_upcoming_events(
                        e.category, p.name AS producer_name
                 FROM events e
                 JOIN producers p ON p.id = e.producer_id
-                WHERE e.is_active IS TRUE AND p.status = 'approved'
+                WHERE e.is_active IS TRUE AND {_EVENT_OWNER_PUBLIC}
                   AND e.event_date >= :today {city_clause}
                 ORDER BY e.event_date, e.event_time NULLS LAST
                 LIMIT :limit
