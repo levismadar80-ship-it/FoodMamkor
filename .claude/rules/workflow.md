@@ -547,6 +547,19 @@ concurrent loops. Tiers + `mehamakor-dod` self-check: ADR-025.
     `--fail-on-flaky-tests` stays on. This rule decides when a red caused by
     someone else's flake may be merged past; it never loosens the gate. A flake
     with no card gets one before the merge. Precedent: #4316.
+40. **A PR that touches `frontend/` or `backend/app` carries the `run-e2e`
+    label before it merges, and the PR body quotes the E2E result (Sapir
+    11/11).** Quote it — each shard's `N passed` / `N failed` / `N flaky`, or
+    the `✘` lines — never "E2E gate: success". **A gate that aggregated a
+    SKIPPED run is not evidence**: `Playwright E2E` does not run on a feature
+    PR without that label (MEH-2779), and `E2E gate` reports `success` either
+    way. Three PRs merged on 11/11 with every gate green and no E2E suite run
+    on any of them; one of them broke staging. Read the per-JOB conclusions,
+    not the run's: a run shows `cancelled` when a non-blocking shadow job is
+    cancelled after the blocking shards have already passed.
+    Rule 39 says when a RED may be merged past; this one says there has to be
+    a run at all. Until the trigger moves into the workflow itself, this is a
+    rule that depends on someone remembering it.
 
 ---
 
