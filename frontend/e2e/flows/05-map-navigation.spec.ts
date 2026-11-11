@@ -1,4 +1,14 @@
 import { test, expect } from "./_cloudinary-stub";
+import type { Page } from "@playwright/test";
+
+// MEH-2408: wait for the page's final state, not its first one. The hidden
+// streamed copy is outside the accessibility tree, so the role query finds
+// the visible h1 only. Then the DOM must settle on exactly one h1: a second
+// h1 that stays fails here.
+async function expectOneVisibleH1(page: Page) {
+  await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+  await expect(page.locator("h1")).toHaveCount(1);
+}
 
 // Cold Vercel preview: Leaflet is ssr:false so the dynamic chunk fetch + React
 // mount can take 30-45s. These overrides apply only to this spec file.
@@ -160,8 +170,43 @@ test.describe("Map", () => {
 
     // Control — the same page without the referrer renders NO back link (0-state).
     await page.goto("/ruach-hasadeh");
-    await expect(page.locator("h1")).toBeVisible();
+    await expectOneVisibleH1(page);
     await expect(page.getByTestId("back-to-map")).toHaveCount(0);
+  });
+
+  // MEH-2408: the page is streamed. React leaves the server copy in a hidden
+  // `S:n` div until its reveal script (`$RV`) runs, while a context update can
+  // client-render the same page first. For up to ~300ms the DOM holds two
+  // `h1`s, one of them hidden, and a strict `locator("h1")` throws. This test
+  // holds `$RV` back 1.5s so that window opens on every run. It checks the
+  // assertion the specs use (expectOneVisibleH1) AND that the page still ends
+  // with exactly one h1. Measured 11/11 on staging: the old one-line assertion
+  // failed 3/3 with this delay ("strict mode violation", 2 h1), passed 3/3
+  // without it.
+  test("MEH-2408: a slow streamed reveal still ends with one visible h1", async ({ page }) => {
+    test.setTimeout(90_000);
+    await page.addInitScript(() => {
+      let real: ((...a: unknown[]) => void) | undefined;
+      const w = window as unknown as { __rvCalls: number };
+      w.__rvCalls = 0;
+      Object.defineProperty(window, "$RV", {
+        configurable: true,
+        get: () => real,
+        set(fn: (...a: unknown[]) => void) {
+          real = function (this: unknown, ...a: unknown[]) {
+            w.__rvCalls += 1;
+            setTimeout(() => fn.apply(this, a), 1500);
+          };
+        },
+      });
+    });
+    await page.goto("/ruach-hasadeh");
+    await expectOneVisibleH1(page);
+    // The instrument, not the subject: if React stops calling `$RV` (renamed
+    // in an upgrade), the delay above never applied and this test proved
+    // nothing. Fail loudly instead of passing on an unopened window.
+    const rvCalls = await page.evaluate(() => (window as unknown as { __rvCalls: number }).__rvCalls);
+    expect(rvCalls, "React's $RV reveal was never called: the delay did not apply").toBeGreaterThan(0);
   });
   // ── MEH-2170 — the five diet toggles are gated on /map from the mount
   // catalog (option ב׳). Data-independent: the expected set is derived from
