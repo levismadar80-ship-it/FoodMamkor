@@ -459,10 +459,12 @@ function RegisterProducerPageBody({ routeKind }) {
   // thing she just earned. (It is why MEH-2136's hierarchy fix read as a no-op
   // in the desktop before/after captures: the screen was correct and unseen.)
   //
-  // One effect on STEP.CONFIRM, not a call inside each branch. CONFIRM renders
-  // two different screens — the upgrade path and the inbox-check path — and a
-  // third added later cannot forget this, the same DRY argument the effect
-  // above makes for the funnel event.
+  // One effect on `step`, not a call inside each branch. It began as a
+  // CONFIRM-only effect for the reason below — CONFIRM renders two different
+  // screens, the upgrade path and the inbox-check path, and a third added
+  // later cannot forget this — and MEH-2927 widened it to every step change on
+  // the same DRY argument: a frame added to the wizard later gets this for
+  // free rather than having to remember it.
   //
   // `behavior: "instant"` is deliberate and is NOT the convention 20 lines
   // below, which omits `behavior` to defer to the stylesheet. That call moves
@@ -477,7 +479,10 @@ function RegisterProducerPageBody({ routeKind }) {
   // DETAILS kept `scrollY` at 460 and left the step heading at y=-330, so the
   // seller landed mid-form on a frame whose top she had never seen — four
   // fields and the step's own question were above her.
-  // (qa-artifacts/MEH-2927/02-step2-on-entry-390.png.)
+  // (Those numbers are the probe's output, quoted in the PR; the committed
+  // frame qa-artifacts/MEH-2927/02-step2-on-entry-390-AFTER.webp is the same
+  // view AFTER the fix. The before frame was not committed, so it is not
+  // cited as though it were.)
   //
   // The ONE exception is a cross-step validation bounce. MEH-1807 sets
   // `pendingFocusIdRef` synchronously in `requestFocus`, BEFORE the `setStep`
@@ -490,12 +495,15 @@ function RegisterProducerPageBody({ routeKind }) {
   // and a fight with the browser's own scroll restoration on a back-navigation
   // at worst. A draft that resumes onto a later frame still scrolls, because
   // that `setStep` lands after this ref is already set.
-  const stepScrollArmedRef = useRef(false);
+  // Compares the previous step rather than arming a flag on first run: in
+  // StrictMode (dev) the effect body runs twice on mount, so a "have I run
+  // before" flag is set by the first invocation and the second one scrolls a
+  // page nobody navigated. A previous-value comparison is false on both.
+  const prevStepRef = useRef(step);
   useEffect(() => {
-    if (!stepScrollArmedRef.current) {
-      stepScrollArmedRef.current = true;
-      return;
-    }
+    const previous = prevStepRef.current;
+    prevStepRef.current = step;
+    if (previous === step) return;
     if (pendingFocusIdRef.current) return;
     window.scrollTo({ top: 0, behavior: "instant" });
   }, [step]);

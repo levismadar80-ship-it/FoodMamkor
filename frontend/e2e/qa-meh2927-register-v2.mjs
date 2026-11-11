@@ -217,7 +217,8 @@ async function measureInstallPrompt(label, { synthetic, userAgent }) {
 
   const prompt = page.locator('[role="dialog"][aria-modal="false"]').first();
   const visible = (await prompt.count()) > 0 && (await prompt.isVisible().catch(() => false));
-  await page.screenshot({ path: `${OUT}/b3b-${label}.png` });
+  // No capture here: the loop below shoots the same frame at `top`, so this one
+  // was a byte-identical third copy of every arm (measured by md5).
   let detail = "the prompt never appeared";
   let overlaps = false;
   if (visible) {
