@@ -338,7 +338,14 @@ export default function HomeWhatsOn() {
       </span>
       <h2 className="font-headline-display text-headline-display text-text mb-6">{t("heading")}</h2>
 
-      <ul className="border-t border-border">
+      {/* The SECTION keeps max-w-7xl so its eyebrow and heading line up with
+          «קטגוריות» and the businesses grid, but the row list is capped at a
+          readable measure: at 1440 a full-width row left the time ~1100px from
+          its own title. That is the same stranding MEH-2497 recorded for these
+          rows ("a 1280px-wide row doesn't strand the price at the far end") and
+          it is not worth re-learning. Block-level + max-width, so in RTL the
+          list still starts at the heading's edge. */}
+      <ul className="border-t border-border max-w-3xl">
         {entries.map((entry) => (
           <WhatsOnRow key={entry.key} entry={entry} labels={labels} />
         ))}
