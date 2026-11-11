@@ -34,7 +34,7 @@ import AccountSheet from "@/components/AccountSheet";
  * RED; restoring turns it GREEN.
  *
  * WHAT IS DELIBERATELY NOT ASSERTED:
- *   - ORDER. The Header renders home/map/experiences/about while the BottomNav
+ *   - ORDER. The Header renders home/map/whatsOn/about while the BottomNav
  *     renders home/map/about — the sequences genuinely differ, so no single
  *     declaration order can describe both. Comparisons are sorted multisets.
  *     Order stays shell-local, which is exactly the chunk 0 finding.
@@ -49,7 +49,12 @@ import AccountSheet from "@/components/AccountSheet";
 
 const pathnameRef = { current: "/about" };
 const userRef = { current: null };
+// MEH-2859: the Header's gated item is «מה קורה» → /events, and its gate is
+// now ANY of the four date-bound types having supply, not experiences alone.
+// One ref per hook so a test can say WHICH type cleared it.
 const experiencesGateRef = { current: false };
+const eventsGateRef = { current: false };
+const hubGateRefs = { groupBuys: false, rescue: false };
 
 vi.mock("@/i18n/navigation", () => ({
   // MEH-2578: the chrome now takes Link from here, not next/link.
@@ -138,6 +143,14 @@ vi.mock("@/lib/use-experiences-nav-gate", () => ({
   useExperiencesNavGate: () => experiencesGateRef.current,
 }));
 
+vi.mock("@/lib/use-events-nav-gate", () => ({
+  useEventsNavGate: () => eventsGateRef.current,
+}));
+
+vi.mock("@/lib/use-hub-nav-gate", () => ({
+  useHubNavGate: (hub) => hubGateRefs[hub] ?? false,
+}));
+
 const STATES = {
   guest: { user: null, signedIn: false, role: null },
   consumer: {
@@ -218,6 +231,9 @@ beforeEach(() => {
   pathnameRef.current = "/about";
   userRef.current = null;
   experiencesGateRef.current = false;
+  eventsGateRef.current = false;
+  hubGateRefs.groupBuys = false;
+  hubGateRefs.rescue = false;
 });
 
 // ──────────────────────────── the control ────────────────────────────
@@ -309,20 +325,34 @@ describe("MEH-1703 — Header link row matches the registry", () => {
     });
   }
 
-  it("header surface picks up the experiences link when supply clears the gate", () => {
-    experiencesGateRef.current = true;
+  // MEH-2859: FOUR hooks can clear this one gate, and each is asserted on its
+  // own. A single "gates on" case would pass while three of the four were
+  // wired to nothing — which is the shape of gate this item replaced.
+  for (const [name, turnOn] of [
+    ["events", () => { eventsGateRef.current = true; }],
+    ["experiences", () => { experiencesGateRef.current = true; }],
+    ["group buys", () => { hubGateRefs.groupBuys = true; }],
+    ["surprise baskets", () => { hubGateRefs.rescue = true; }],
+  ]) {
+    it(`header surface picks up «מה קורה» when ${name} alone clears the gate`, () => {
+      turnOn();
+      userRef.current = null;
+      const { container } = render(<Header />);
+      const rendered = sortLinks(renderedLinks(container));
+
+      expect(rendered).toEqual(
+        sortLinks(expectedLinks("header", STATES.guest, { "listing-supply": true })),
+      );
+      // Belt and braces: the gate really did add a link, so the case above is
+      // not passing because both sides are missing it.
+      expect(rendered.map((l) => l.href)).toContain("/events");
+    });
+  }
+
+  it("with all four types empty the hub link is absent, not disabled", () => {
     userRef.current = null;
     const { container } = render(<Header />);
-    const rendered = sortLinks(renderedLinks(container));
-
-    expect(rendered).toEqual(
-      sortLinks(
-        expectedLinks("header", STATES.guest, { "experiences-supply": true }),
-      ),
-    );
-    // Belt and braces: the gate really did add a link, so the case above is
-    // not passing because both sides are missing it.
-    expect(rendered.map((l) => l.href)).toContain("/experiences");
+    expect(renderedLinks(container).map((l) => l.href)).not.toContain("/events");
   });
 
   it("suppresses the login link on /login, per suppressOnRoute", () => {
