@@ -18,6 +18,7 @@ import { withReferralParams } from "@/lib/utils";
 import { whatsappUpdatesHref } from "@/components/WhatsAppUpdatesPill";
 import { markWhatsAppClickedLocal, pingWhatsAppBeacon, trackContactClick } from "@/lib/contact-tracking";
 import { showToast } from "@/lib/toast";
+import { usePreviewMode } from "@/lib/preview-mode"; // MEH-2916
 
 // MEH-1221: silent-mailto fallback window. mailto: fails silently on desktops
 // with no mail handler (no error, no navigation). The email circle is a bare
@@ -232,7 +233,19 @@ export default function ContactCard({ producer, isVacation }) {
 
   // Shared by both affordances (circle + single row) so the tracking and the
   // desktop phone-reveal behave identically whichever one is rendered.
+  // MEH-2916: in the owner's preview every contact channel stays VISIBLE —
+  // she is looking at how her page reads — but none of them acts. No href, so
+  // no WhatsApp app switch and no dialler; out of the tab order; announced as
+  // disabled. Sapir's ruling, 11/11.
+  const isPreview = usePreviewMode();
+  const linkTarget = (value) =>
+    isPreview ? { "aria-disabled": "true", tabIndex: -1 } : { href: value };
+
   const onChannelClick = (e, { key }) => {
+    if (isPreview) {
+      e.preventDefault(); // MEH-2916
+      return;
+    }
     // MEH-1334: on desktop a phone tap reveals the number inline (no dialer)
     // — swallow the tel: navigation and show the pill.
     // MEH-2775: a SOLE phone already shows its number, so there is nothing to
@@ -325,7 +338,7 @@ export default function ContactCard({ producer, isVacation }) {
                 return (
                   <a
                     key={key}
-                    href={href(producer)}
+                    {...linkTarget(href(producer))}
                     {...linkAttrs(key)}
                     role="listitem"
                     data-testid="contact-single-row"
@@ -360,7 +373,7 @@ export default function ContactCard({ producer, isVacation }) {
               return (
                 <a
                   key={key}
-                  href={href(producer)}
+                  {...linkTarget(href(producer))}
                   {...linkAttrs(key)}
                   role="listitem"
                   // MEH-1583: stable locator for the VRT reveal shot — the
@@ -391,7 +404,7 @@ export default function ContactCard({ producer, isVacation }) {
                 tel: link so a desktop softphone / click-to-call can act on it. */}
             {revealed && (
               <a
-                href={`tel:${producer.phone.trim()}`}
+                {...linkTarget(`tel:${producer.phone.trim()}`)}
                 data-testid="revealed-phone"
                 role="listitem"
                 className={`${ROW_ANATOMY} ${single ? "" : "col-span-4"} text-primary-dark focus-visible:ring-2 focus-visible:ring-primary/40`}

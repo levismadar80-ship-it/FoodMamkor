@@ -10,6 +10,7 @@ import KashrutBadgeStrip from "@/components/KashrutBadgeStrip";
 import OfferBadge from "@/components/OfferBadge";
 import ProducerUpdatesButton from "@/components/ProducerUpdatesButton";
 import ShareButton from "@/components/ShareButton";
+import { usePreviewMode } from "@/lib/preview-mode"; // MEH-2916
 import { useAuth } from "@/lib/auth-context";
 import {
   ensureFavoritesLoaded,
@@ -99,6 +100,7 @@ export default function ProducerHeader({
   onUpdatesChanged,
   updatesSignal,
 }) {
+  const isPreview = usePreviewMode(); // MEH-2916
   const t = useTranslations();
   const locale = useLocale();
 
@@ -463,20 +465,28 @@ export default function ProducerHeader({
         className="hidden lg:flex items-center gap-5 mt-2 lg:absolute lg:top-0 lg:end-0 lg:mt-0"
         data-testid="producer-actions-row"
       >
-        <FavoriteButton
-          producerId={producer.id}
-          producerName={producer.name}
-          variant="quiet"
-          onFavorited={onOpenAlerts}
-        />
-        <ShareButton
-          variant="quiet"
-          url={shareUrl}
-          title={producer.name}
-          description={producer.description}
-          city={producer.city}
-          category={primaryCategory?.name}
-        />
+        {/* MEH-2916: neither belongs in the owner's preview. A link she
+            shared from here would 404 for whoever opened it — the business is
+            not public yet — and favouriting her own unapproved page files her
+            under someone else's feature. Sapir's ruling, 11/11. */}
+        {!isPreview && (
+          <>
+            <FavoriteButton
+              producerId={producer.id}
+              producerName={producer.name}
+              variant="quiet"
+              onFavorited={onOpenAlerts}
+            />
+            <ShareButton
+              variant="quiet"
+              url={shareUrl}
+              title={producer.name}
+              description={producer.description}
+              city={producer.city}
+              category={primaryCategory?.name}
+            />
+          </>
+        )}
         {/* MEH-2526 permanent updates toggle; MEH-2562 moved it into this row
             (desktop) and onto the hero circles (mobile, ImageGallery) — as a
             lone pill under the header it read as an orphan. */}

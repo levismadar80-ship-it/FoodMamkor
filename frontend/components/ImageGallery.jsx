@@ -7,6 +7,7 @@ import { CaretLeft, Images, SealCheck } from "@phosphor-icons/react";
 import { Link as LocaleLink } from "@/i18n/navigation";
 import ImageWithFallback from "./ImageWithFallback";
 import FavoriteButton from "./FavoriteButton";
+import { usePreviewMode } from "@/lib/preview-mode"; // MEH-2916
 import ShareButton from "./ShareButton";
 import Lightbox from "./Lightbox";
 import Popover from "./ui/Popover";
@@ -28,6 +29,7 @@ import { getVerifiedPopoverBody } from "./BadgeRow";
 // verified are all scalars). Absent → getVerifiedPopoverBody falls back to the
 // generic dateless sentence, which is still true, just less specific.
 export default function ImageGallery({ images = [], producerId = null, producerName = "", verified = false, verificationDocType = null, verifiedAt = null, shareUrl = "", onFavorited, updatesButton = null }) {
+  const isPreview = usePreviewMode(); // MEH-2916
   const t = useTranslations("gallery");
   // MEH-1168 P2: the verified "מאומת" seal anchors to the name. For imageless
   // producers the name lives here in the Tinted Masthead (ProducerHeader omits
@@ -225,13 +227,23 @@ export default function ImageGallery({ images = [], producerId = null, producerN
             MEH-2671: top-end corner, order heart → share → bell. */}
         {producerId && (
           <div className="absolute top-3 end-3 z-10 lg:hidden flex items-center gap-2">
-            <FavoriteButton
-              producerId={producerId}
-              producerName={producerName}
-              variant="gallery"
-              onFavorited={onFavorited}
-            />
-            <ShareButton variant="overlay" url={shareUrl} title={producerName} />
+            {/* MEH-2916: the phone's hero heart and share are the mobile twins
+                of the desktop row in ProducerHeader, and come out for the same
+                reason in the owner's preview — a shared link 404s for the
+                recipient while the business is unapproved. `updatesButton`
+                stays: it is the owner's own notification toggle, not a
+                visitor action. */}
+            {!isPreview && (
+              <>
+                <FavoriteButton
+                  producerId={producerId}
+                  producerName={producerName}
+                  variant="gallery"
+                  onFavorited={onFavorited}
+                />
+                <ShareButton variant="overlay" url={shareUrl} title={producerName} />
+              </>
+            )}
             {updatesButton}
           </div>
         )}
