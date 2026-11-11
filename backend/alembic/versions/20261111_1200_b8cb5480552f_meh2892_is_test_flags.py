@@ -16,7 +16,7 @@ default is a catalog change, no table rewrite), so no backfill script.
 Expand-only per ADR-007; EXPECTED_TABLES unchanged (columns, not tables).
 
 Readers (one authority, smell #1): services/producer_listing.py
-exclude_test_producers() for every public list, search, map, sitemap and
+is_business(include_test=False) for every public list, search, map, sitemap and
 count; services/indexnow.py; the email / WhatsApp send layer. Writers:
 backend/scripts/seed_demo_business.py (refuses production) and an
 admin-only toggle. Never accepted from a self-service form.
