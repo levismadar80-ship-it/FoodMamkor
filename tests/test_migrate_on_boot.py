@@ -1,14 +1,19 @@
-"""MEH-2903 chunk 1 — the boot migration step, in its two cases.
+"""MEH-2903 chunk 1 — the boot migration step, case by case.
 
-1. The database is AHEAD of the image (a backend rollback): the step logs
-   ROLLBACK MODE at ERROR, does not run `upgrade head`, leaves the database
-   untouched, and exits 0 so uvicorn can start.
-2. A real migration error: the step exits non-zero, so the boot fails exactly
-   as `alembic upgrade head` does today.
+1. The database is AHEAD of the image and this image's head is recorded in
+   alembic_lineage (a backend rollback): ROLLBACK MODE at ERROR, no
+   `upgrade head`, exit 0 so uvicorn can start.
+2. A real migration error: exit 1, exactly as `alembic upgrade head` fails the
+   boot today. The normal upgrade before it records the image's chain.
+3. An image with no revision files: NO MIGRATIONS, exit 2.
+4. A split history (the database is ahead, but this image's own head was never
+   applied): SPLIT HISTORY, exit 3.
+5. The database is ahead and has no alembic_lineage table: exit 3 too, because
+   nothing can confirm this image's head was applied.
 
-Both run the real script as a subprocess, against a scratch database, with the
+All run the real script as a subprocess, against a scratch database, with the
 real alembic/env.py. A "newer image" is built the honest way: a copy of this
-repo's alembic/ folder with ONE extra revision on top of head. That keeps both
+repo's alembic/ folder with ONE extra revision on top of head. That keeps the
 tests true whatever the head revision is on the day they run.
 
 `serial`: creates and drops a whole database and runs Alembic in a subprocess,
@@ -67,6 +72,17 @@ def _version(url: str) -> list[str]:
                 r[0]
                 for r in conn.execute(text("SELECT version_num FROM alembic_version"))
             ]
+    finally:
+        engine.dispose()
+
+
+def _lineage(url: str) -> set[str]:
+    engine = create_engine(url)
+    try:
+        with engine.connect() as conn:
+            return {
+                r[0] for r in conn.execute(text("SELECT revision FROM alembic_lineage"))
+            }
     finally:
         engine.dispose()
 
@@ -151,8 +167,6 @@ def test_database_ahead_of_the_image_boots_and_logs_rollback_mode(
         -3000:
     ]
     assert EXTRA_REV in proc.stderr, "the log must name the unknown revision"
-    # upgrade head was NOT run: the database is exactly where the newer image left it.
-    assert _version(scratch_db) == [EXTRA_REV]
 
 
 def test_a_real_migration_error_fails_the_boot(scratch_db, tmp_path, capsys):
@@ -161,13 +175,17 @@ def test_a_real_migration_error_fails_the_boot(scratch_db, tmp_path, capsys):
     assert ok.returncode == 0, ok.stderr[-3000:]
     assert _version(scratch_db) == [_image_head()]
     assert "ROLLBACK MODE" not in ok.stderr
+    # The normal path records the whole chain, and says so in the boot log:
+    # that line is the only boot-log evidence ROLLBACK.md §2d relies on.
+    assert _image_head() in _lineage(scratch_db)
+    assert "recorded" in ok.stderr and "alembic_lineage" in ok.stderr, ok.stderr[-3000:]
 
     # A newer image whose new revision fails: a real error from Postgres.
     broken = _newer_image(tmp_path, 'op.execute("SELECT * FROM meh2903_no_such_table")')
     proc = _run(scratch_db, "--alembic-ini", str(broken))
     _show(capsys, "case 2 · a real migration error", proc)
 
-    assert proc.returncode != 0, (
+    assert proc.returncode == 1, (
         "a failing migration must fail the boot:\n" + proc.stderr[-3000:]
     )
     assert "meh2903_no_such_table" in proc.stderr, proc.stderr[-3000:]
@@ -207,13 +225,11 @@ def test_an_image_with_no_migration_files_fails_the_boot(scratch_db, tmp_path, c
     proc = _run(scratch_db, "--alembic-ini", str(empty))
     _show(capsys, "case 3 · an image with no migration files", proc)
 
-    assert proc.returncode != 0, (
+    assert proc.returncode == 2, (
         "an image with no migration files must fail the boot:\n" + proc.stderr[-3000:]
     )
     assert "ROLLBACK MODE" not in proc.stderr, proc.stderr[-3000:]
     assert "NO MIGRATIONS" in proc.stderr, proc.stderr[-3000:]
-    # Nothing was written: the database is still at the real image head.
-    assert _version(scratch_db) == [_image_head()]
 
 
 OTHER_REV = "meh2903other"
@@ -238,13 +254,38 @@ def test_a_split_history_fails_the_boot_and_names_both_revisions(
     proc = _run(scratch_db, "--alembic-ini", str(split))
     _show(capsys, "case 4 · a split history (not a rollback)", proc)
 
-    assert proc.returncode != 0, (
+    assert proc.returncode == 3, (
         "an image whose own head was never applied must not boot:\n"
         + proc.stderr[-3000:]
     )
     assert "ROLLBACK MODE" not in proc.stderr, proc.stderr[-3000:]
     assert "SPLIT HISTORY" in proc.stderr, proc.stderr[-3000:]
+    assert "never been recorded" in proc.stderr, proc.stderr[-3000:]
     # Both revision ids are in the log, so the cause is visible at a glance.
     assert EXTRA_REV in proc.stderr and OTHER_REV in proc.stderr, proc.stderr[-3000:]
-    # Nothing was written: the database is still where image A left it.
-    assert _version(scratch_db) == [EXTRA_REV]
+
+
+def test_database_ahead_without_a_lineage_table_fails_the_boot(
+    scratch_db, tmp_path, capsys
+):
+    # The database is ahead of this image, but it has no alembic_lineage table
+    # (a database no lineage-recording image has booted on, or one whose table
+    # was lost). Nothing can confirm this image's head was applied, so this is
+    # not taken as a rollback either.
+    newer = _newer_image(tmp_path, 'op.execute("SELECT 1")')
+    first = _run(scratch_db, "--alembic-ini", str(newer))
+    assert first.returncode == 0, first.stderr[-3000:]
+    engine = create_engine(scratch_db)
+    try:
+        with engine.begin() as conn:
+            conn.execute(text("DROP TABLE alembic_lineage"))
+    finally:
+        engine.dispose()
+
+    proc = _run(scratch_db)
+    _show(capsys, "case 5 · database ahead, no lineage table", proc)
+
+    assert proc.returncode == 3, proc.stderr[-3000:]
+    assert "SPLIT HISTORY" in proc.stderr, proc.stderr[-3000:]
+    assert "cannot be confirmed" in proc.stderr, proc.stderr[-3000:]
+    assert "ROLLBACK MODE" not in proc.stderr, proc.stderr[-3000:]

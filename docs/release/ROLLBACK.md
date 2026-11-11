@@ -11,7 +11,7 @@
 > **Current anchor: v1.5.0** (main `7e2b07b33`, 11/11/2026). Its ids are in
 > `docs/release/anchors/v1.5.0.md`. Rolling back *from* v1.5.0 goes to v1.4.0
 > (§2b: v1.5.0 adds revision `e4c9a2f71b58`). Rolling back *to* v1.5.0 after a
-> later revision is §2c (see the MEH-2903 branch until it lands).
+> later revision is §2c.
 >
 > ⚠️ **This runbook has not been drilled yet** (§A.4 waits for the MEH-1517
 > secret). Until it has, every step below is a plan, not a proven path.
@@ -92,6 +92,9 @@ Sapir chose (ב) on 10/11: MEH-2903, `backend/scripts/migrate_on_boot.py`. Until
   - **R's head is recorded in `alembic_lineage`.** That happens on the first successful boot of R, or of any later `migrate_on_boot.py` image, on that database.
   - **Every revision after R's head is expand-only (ADR-007).** Rollback mode starts R's code on the newer schema and undoes nothing.
 - **If R's head is not recorded,** R's boot exits 3 (`SPLIT HISTORY`, naming both revisions) and the current deployment stays live. Use 2b.
+- **Two edges the check does not cover.** Neither can happen while revisions are never deleted and the history stays linear (the alembic head guard).
+  - A row in `alembic_lineage` means "applied at some point". A downgrade does not remove it. So after a downgrade below R's head and a *different* revision applied on top, R would still take rollback mode on a stale row.
+  - The check reads `alembic_lineage` only, not `alembic_version`. With several database heads, one of them R's own, R still exits 3 if the lineage row is missing.
 - **Rolling back to anything older than R** (v1.5.0 included) is always 2b or 2c.
 
 ## 3 · Schema (Alembic): only if a revision itself is the problem

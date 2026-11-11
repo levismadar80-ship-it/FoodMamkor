@@ -11,15 +11,23 @@ does not happen (docs/release/ROLLBACK.md §2b).
 
 What this does, in order:
 
-  1. Read the database's current Alembic head(s).
-  2. If any of them is a revision this image does not know → the database is
-     ahead of the code (a rollback). Log it loudly at ERROR and DO NOT run
-     `upgrade head`. Exit 0 so uvicorn starts. Expand-only revisions (ADR-007)
-     are what make the older code safe on the newer schema; this script does
-     not change that rule, it relies on it.
-  3. Otherwise run `alembic upgrade head` exactly as before. ANY error —
+  1. If this image has no revision files at all → NO MIGRATIONS, exit 2. A
+     wrong script_location or a broken build would otherwise make every
+     database head look "unknown", i.e. like a rollback.
+  2. Read the database's current Alembic head(s).
+  3. If any of them is a revision this image does not know → the database is
+     ahead of the code. That is a rollback only if THIS image's own head is
+     recorded in `alembic_lineage` (the database once ran it):
+       - recorded → ROLLBACK MODE: log loudly at ERROR, do NOT run
+         `upgrade head`, exit 0 so uvicorn starts. Expand-only revisions
+         (ADR-007) are what make the older code safe on the newer schema;
+         this script relies on that rule, it does not change it.
+       - not recorded, or no `alembic_lineage` table → SPLIT HISTORY, exit 3.
+         This image carries a revision the database never ran.
+  4. Otherwise run `alembic upgrade head` exactly as before. ANY error —
      connection, a failing migration, a graph problem — propagates, the process
-     exits non-zero and the boot fails, as it does today.
+     exits 1 and the boot fails, as it does today. After a successful upgrade,
+     every revision of this image's chain is recorded in `alembic_lineage`.
 
 Usage (from backend/, the container's /app):
 
@@ -190,6 +198,12 @@ def main(argv: list[str] | None = None) -> int:
         image_head,
     )
     command.upgrade(cfg, "head")
+    # alembic/env.py runs logging.config.fileConfig(alembic.ini), which disables
+    # every logger that already exists (this one included) and sets the root to
+    # WARN. Without this the line below never reaches the boot log, and it is the
+    # only evidence that this image's head was recorded (ROLLBACK.md §2d).
+    log.disabled = False
+    log.setLevel(logging.INFO)
     n = record_lineage(settings.database_url, script)
     log.info("recorded %d applied revisions in %s", n, LINEAGE_TABLE)
     return 0
