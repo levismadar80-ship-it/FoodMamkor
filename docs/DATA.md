@@ -1423,7 +1423,14 @@ POST /contact                    public — { name, email, message, topic? } →
                                  CONTACT_TOPIC_LABELS in schemas.py:2074.
 GET  /cities                     public — canonical cities table (data.gov.il seed,
                                  MEH-1343) ∪ live producer/delivery cities; static
-                                 list only as unseeded-env fallback (MEH-1349)
+                                 list only as unseeded-env fallback (MEH-1349).
+                                 MEH-2919: the QUERY is folded through
+                                 CITY_ALIASES too, by prefix, so an everyday
+                                 name reaches the official locality
+                                 («גבעת עדה» → «בנימינה-גבעת עדה»); the alias
+                                 pattern tolerates the data.gov hyphen spacing,
+                                 and an alias-derived hit is ranked after every
+                                 direct prefix match
 ```
 
 ### Community business suggestions (`app/routers/business_suggestions.py` — MEH-2633)

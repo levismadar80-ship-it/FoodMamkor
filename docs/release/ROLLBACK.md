@@ -8,6 +8,11 @@
 > downgrade drops what the revision added, and a restore loses everything
 > written after the backup.
 >
+> **Current anchor: v1.5.0** (main `7e2b07b33`, 11/11/2026). Its ids are in
+> `docs/release/anchors/v1.5.0.md`. Rolling back *from* v1.5.0 goes to v1.4.0
+> (§2b: v1.5.0 adds revision `e4c9a2f71b58`). Rolling back *to* v1.5.0 after a
+> later revision is §2c (see the MEH-2903 branch until it lands).
+>
 > ⚠️ **This runbook has not been drilled yet** (§A.4 waits for the MEH-1517
 > secret). Until it has, every step below is a plan, not a proven path.
 
