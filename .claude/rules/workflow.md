@@ -471,6 +471,27 @@ concurrent loops. Tiers + `mehamakor-dod` self-check: ADR-025.
     When a parallel actor produced a forbidden state, act unasked **only** in
     the direction that adds a constraint (disarm auto-merge: yes; arm, clear a
     marker, merge: no) — and report.
+
+    ### 32b — when a delete is denied, leave the file and say so
+
+    A denied `rm` is a decision about the file, not about the command. Reaching
+    for `mv` (to `/tmp`, to a scratch directory, to a `.bak` name) produces the
+    outcome the deny refused, by a route the deny does not cover — the file
+    stops being where it was, which is the only thing the denial was
+    protecting. The same goes for `git clean`, `git rm`, truncating the file to
+    nothing, or rewriting it to a stub.
+
+    **What to do instead:** leave the file exactly as it is, finish the rest of
+    the task, and report the file by path and why you wanted it gone. If it is
+    untracked, it stays untracked — stage by explicit path (`git add <path>`),
+    never `git add -A`, so an untracked file cannot ride along into a commit by
+    accident.
+
+    This is rule 32 applied to one's own workspace: a deny is a constraint, and
+    routing around it removes one. It is also the general case — any denied
+    action is reported, not re-attempted through a different verb.
+
+    _Source: Sapir, 11/11/2026, standing instruction._
 33. **A DoD checkbox is a claim of fact — check it only for a box you performed
     yourself and can cite evidence for (MEH-1755).** Otherwise leave `[ ]` with
     a reason in prose; same for N/A.
