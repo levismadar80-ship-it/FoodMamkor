@@ -157,6 +157,11 @@ export const DASHBOARD_SUBPAGES = {
   "/producer/dashboard/experiences/[id]/edit": "/producer/dashboard/experiences",
   "/producer/dashboard/recipes/[id]/edit": "/producer/dashboard/recipes",
   "/producer/dashboard/rescue/counter-card": "/producer/dashboard/rescue",
+  // MEH-2916: a view of an existing surface (her own business page), not a new
+  // tool — so a sub-page entry rather than a registry tool with its own copy.
+  // Reached in 1 tap from anywhere in the dashboard: the «צפייה בדף» link in
+  // the tab row points here while the business is unapproved.
+  "/producer/dashboard/preview": "/producer/dashboard",
 };
 
 /**
