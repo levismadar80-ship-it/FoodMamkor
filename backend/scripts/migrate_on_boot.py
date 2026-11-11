@@ -1,7 +1,7 @@
 """Apply Alembic migrations on boot, except when the database is AHEAD of this image.
 
 MEH-2903 (backend rollback, option ב — Sapir 10/11). Replaces the bare
-`alembic upgrade head` in the Dockerfile CMD (chunk 2; not wired yet).
+`alembic upgrade head` in the Dockerfile CMD (chunk 2, wired 11/11).
 
 Why: the image boots with `alembic upgrade head`. An OLDER image (a rollback)
 has no file for a revision a newer release already applied, so `upgrade head`
