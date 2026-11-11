@@ -14,10 +14,13 @@
  * and adds the on-disk scrub, which no spec covers.
  *
  * Run from frontend/:  node e2e/qa-meh2915-draft-identity.mjs
+ *   QA_BASE_URL / PLAYWRIGHT_CHROMIUM_PATH override the target and the browser.
+ *   Those two names on purpose: they are the harness knobs check_env_drift.sh
+ *   already classes as runner config rather than app config (MEH-1516).
  */
 import { chromium } from "playwright";
 
-const BASE = process.env.BASE || "http://127.0.0.1:3100";
+const BASE = process.env.QA_BASE_URL || "http://127.0.0.1:3100";
 const DRAFT_KEY = "producer_registration_draft";
 
 let failures = 0;
@@ -27,7 +30,7 @@ const check = (name, ok, detail) => {
 };
 
 const browser = await chromium.launch({
-  executablePath: process.env.PW_CHROMIUM || "/opt/pw-browsers/chromium",
+  executablePath: process.env.PLAYWRIGHT_CHROMIUM_PATH || "/opt/pw-browsers/chromium",
   args: ["--no-sandbox"],
 });
 
