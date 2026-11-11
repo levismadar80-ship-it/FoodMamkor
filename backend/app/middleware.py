@@ -12,6 +12,7 @@ from slowapi.middleware import SlowAPIMiddleware
 from starlette.types import ASGIApp, Receive, Scope, Send
 
 from app.config import settings
+from app.db_bulkhead import DbBulkheadMiddleware
 from app.rate_limit import limiter, resolve_client_ip
 from app.services.analytics import record_request
 
@@ -302,6 +303,13 @@ def install_middlewares(app: FastAPI) -> None:
     # Trade-off accepted: SlowAPI's 429 short-circuits outside this layer and
     # is therefore never compressed — those bodies are a few dozen bytes.
     app.add_middleware(GZipMiddleware, minimum_size=1024)
+
+    # MEH-2955: cap requests in flight at min(DB pool, threadpool tokens) so a
+    # burst cannot deadlock the process (db_bulkhead.py docstring). Directly
+    # outside GZip (which must stay innermost) and INSIDE CORS, CorrelationId
+    # and the security headers, so a 503 still carries all of them.
+    # Pinned by tests/test_meh2955_db_bulkhead.py.
+    app.add_middleware(DbBulkheadMiddleware)
 
     app.add_middleware(SlowAPIMiddleware)
     # SentryRequestScope must be added AFTER SlowAPI but BEFORE
