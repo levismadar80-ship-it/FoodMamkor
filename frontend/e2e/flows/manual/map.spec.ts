@@ -1779,7 +1779,13 @@ test.describe("manual › /map categories + city live in the URL (MEH-2049 PR 2)
         .poll(() => catalog.seen.some((u) => u.searchParams.getAll("category").includes(String(CAT_MEAT.id)) && u.searchParams.get("near_city") === cityName), { timeout: 15_000 })
         .toBe(true);
       await expect(shellOf(page, info).getByTestId("map-card"), `${step}: only the meat producers`).toHaveCount(MEAT.length, FIRST_PAINT);
-      await expect(cityInput, `${step}: the city is back in the field`).toHaveValue(cityName);
+      // MEH-2951: /map streams. Until React's reveal script runs, the server
+      // copy of the page (field still empty) sits in a hidden `S:n` div next
+      // to the client-rendered one, so a strict id locator can see two. Read
+      // the visible field, then wait for the DOM to settle on exactly one: a
+      // second field that stays still fails.
+      await expect(cityInput.filter({ visible: true }), `${step}: the city is back in the field`).toHaveValue(cityName);
+      await expect(cityInput, `${step}: one city field once the page settles`).toHaveCount(1);
       const url = new URL(page.url());
       expect(url.searchParams.getAll("category_group"), `${step}: URL keeps the category`).toEqual(["meat"]);
       expect(url.searchParams.get("city"), `${step}: URL keeps the city`).toBe(cityName);
