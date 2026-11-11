@@ -2218,6 +2218,18 @@ test.describe("manual › above-the-fold mini-map + trust band (MEH-604 · MEH-6
     // run 33943227079's before it. `mountEffectRan` is this file's own
     // post-hydration signal (see its doc comment).
     await mountEffectRan(seen);
+    // The witness for the gate above: a hydration error raised from here on
+    // means an injection below landed in a region React had not hydrated yet.
+    // React 19 reports it through reportError (an uncaught error) and the
+    // console; both are collected and asserted empty at the end.
+    const hydrationErrors: string[] = [];
+    const isHydrationError = (text: string) => /#418\b|Hydration failed/.test(text);
+    page.on("pageerror", (e) => {
+      if (isHydrationError(e.message)) hydrationErrors.push(`pageerror: ${e.message.slice(0, 160)}`);
+    });
+    page.on("console", (m) => {
+      if (m.type() === "error" && isHydrationError(m.text())) hydrationErrors.push(`console: ${m.text().slice(0, 160)}`);
+    });
 
     const insert = (tag: string, testid?: string) =>
       page.evaluate(
@@ -2253,12 +2265,14 @@ test.describe("manual › above-the-fold mini-map + trust band (MEH-604 · MEH-6
     // CI (run 33943227079) reporting «a real element between the two must be
     // reported by name» with an empty result — a message that blames the
     // reader for what may be a fixture that did not survive to sample time.
-    // The two are different defects and must not share a failure. React can
-    // still replace the hero's subtree after `home-minimap` first appears, and
-    // an injected sibling goes with it; nothing above guarantees hydration is
-    // finished. So assert the injected node is attached AND still sits between
-    // the two sections before reading anything into what the reader returns.
-    // If this line is what goes red, the reader is not the suspect.
+    // The two are different defects and must not share a failure. Injecting
+    // is now gated on `mountEffectRan` above, so React should no longer replace
+    // the hero's subtree (and an injected sibling with it) after this point —
+    // but "should" is the gate's claim, not a fact this line can take on trust.
+    // So assert the injected node is attached AND still sits between the two
+    // sections before reading anything into what the reader returns, and
+    // (below) that no hydration error fired. If this line is what goes red,
+    // the reader is not the suspect.
     await expect(
       page.locator('[data-testid="interloper"]'),
       "fixture precondition: the injected block must survive to sample time — if THIS fails the reader is not implicated",
@@ -2278,6 +2292,10 @@ test.describe("manual › above-the-fold mini-map + trust band (MEH-604 · MEH-6
       "div[interloper]",
     );
     await remove('[data-testid="interloper"]');
+    expect(
+      hydrationErrors,
+      "no React hydration error (#418) after the mountEffectRan gate — one here means the gate let an injection into an unhydrated region",
+    ).toEqual([]);
   });
 
   // MT:604:3 — three tile preconnect links, all crossOrigin="anonymous".
