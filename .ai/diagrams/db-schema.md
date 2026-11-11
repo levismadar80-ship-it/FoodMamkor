@@ -526,6 +526,11 @@ erDiagram
         timestamp created_at
         timestamp updated_at
     }
+
+    alembic_lineage {
+        string revision PK "MEH-2903 — every revision a booted image applied"
+        timestamp recorded_at "NOT NULL, default now()"
+    }
 ```
 
 > **MEH-1338 — `alert_log` frequency cap:** append-only ledger backing the
