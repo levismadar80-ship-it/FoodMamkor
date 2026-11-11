@@ -243,6 +243,13 @@ export function CategoriesCard({ profile, onSave, reportDirty = () => {} }) {
 // backend/app/routers/upload.py (free plan, len(images) >= 3); keep in sync.
 const FREE_IMAGE_CAP = 3;
 
+// MEH-2911: statuses whose gallery may not be emptied. Mirrors
+// `LAST_PHOTO_GUARDED_STATUSES` in backend/app/routers/producer_me.py, and
+// tests/test_meh2911_last_photo_guard.py reads this declaration out of this
+// file to red on drift — so keep the members a one-line list of double-quoted
+// string literals, whatever container holds them.
+const LAST_PHOTO_GUARDED_STATUSES = new Set(["approved", "inactive"]);
+
 // Exported for isolation tests (EditTabImagesCard.test.jsx) — see CategoriesCard.
 export function ImagesCard({ profile, onSave, reportDirty = () => {} }) {
   const t = useTranslations("dashboard.producer.images");
@@ -253,6 +260,31 @@ export function ImagesCard({ profile, onSave, reportDirty = () => {} }) {
   const [saved, setSaved] = useState(false);
   const [errorMsg, setErrorMsg] = useState(null);
   const [dragOver, setDragOver] = useState(false);
+  // MEH-2911: whether the last-photo removal was refused. A boolean, not
+  // an index: the note renders once, immediately after the thumbnail grid,
+  // so it can only ever belong to the single remaining thumbnail — an index
+  // would be dead data implying a per-cell placement the render does not do.
+  // (An earlier revision stored the index and said so in a comment that a
+  // reviewer read as a promise the code did not keep.)
+  const [lastPhotoBlocked, setLastPhotoBlocked] = useState(false);
+
+  // MEH-2911: a business that is live — or one click away from live — has a
+  // public page that would go photoless, so it may not drop to zero photos.
+  // A draft, pending or rejected business may still empty its gallery: the
+  // submit gate and the approve gate are where that is caught for those.
+  //
+  // `inactive` is in the set because `toggle_producer_status` (admin.py)
+  // moves a row back to `approved` without re-running the approval gates, so
+  // pause → empty → un-pause would otherwise publish a photoless business.
+  // Measured by MEH-2911's reviewer; the toggle's missing gate is MEH-2945.
+  //
+  // MUST match `LAST_PHOTO_GUARDED_STATUSES` in producer_me.py — two owners
+  // for one fact, which is the smell workflow.md names, and neither can be
+  // deleted (the pre-check has to run before any request; the backend has to
+  // answer a client that skipped it). So it is enforced instead:
+  // tests/test_meh2911_last_photo_guard.py reads this array out of this file
+  // and reds if the two drift.
+  const isGalleryLocked = LAST_PHOTO_GUARDED_STATUSES.has(profile?.status);
 
   // MEH-1352: cap applies to the free plan only (mirrors the upload.py 403
   // guard). atCap disables the picker; the backend 403 stays as safety net.
@@ -286,6 +318,8 @@ export function ImagesCard({ profile, onSave, reportDirty = () => {} }) {
         uploaded.push(r.data.url);
       }
       const next = [...images, ...uploaded];
+      // MEH-2911: the note told her to add a photo first; she has.
+      setLastPhotoBlocked(false);
       setImages(next);
       // MEH-1236: kill the upload≠save trap. Uploading a photo used to feel like
       // saving, but images[] only persisted on an explicit Save click — so the
@@ -333,8 +367,19 @@ export function ImagesCard({ profile, onSave, reportDirty = () => {} }) {
   // URL (backend drift / bad prior save), a value-filter would drop every
   // copy at once. Index-based removal deletes exactly the clicked thumbnail.
   const removeImage = (index) => {
+    // MEH-2911: refuse here as well as in the backend, so the owner is told
+    // at the moment she clicks instead of after a save round-trip. The
+    // backend 422 (producer_me.py::LAST_PHOTO_REMOVAL_MESSAGE) stays the
+    // authority — a client that ignores this still cannot empty the gallery.
+    if (isGalleryLocked && images.length === 1) {
+      setSaved(false);
+      setErrorMsg(null);
+      setLastPhotoBlocked(true);
+      return;
+    }
     setSaved(false);
     setErrorMsg(null);
+    setLastPhotoBlocked(false);
     setImages((prev) => prev.filter((_, i) => i !== index));
   };
 
@@ -348,7 +393,24 @@ export function ImagesCard({ profile, onSave, reportDirty = () => {} }) {
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
     } catch (err) {
-      setErrorMsg(detailToMessage(err?.response?.data?.detail) || t("save_error"));
+      const raw = err?.response?.data?.detail;
+      // MEH-2911: reachable when the business was approved in another tab
+      // after this card loaded, so the client pre-check above did not know
+      // to fire. Same message, same place — not the card-level error, which
+      // is what Sapir ruled against.
+      //
+      // Matched on the CODE. Two earlier bugs here, both found by review:
+      // the condition read `images.length === 1`, which is unsatisfiable
+      // (the backend only refuses an EMPTY list, and this sends the same
+      // `images` it then inspects — so the branch was dead and the refusal
+      // fell through to the card-foot error); and it compared a Hebrew
+      // sentence, which never matches on /en and would have shown an
+      // English-locale owner the raw Hebrew.
+      if (raw?.code === "last_photo_required") {
+        setLastPhotoBlocked(true);
+      } else {
+        setErrorMsg(detailToMessage(raw) || t("save_error"));
+      }
     } finally {
       setSaving(false);
     }
@@ -458,6 +520,33 @@ export function ImagesCard({ profile, onSave, reportDirty = () => {} }) {
             </div>
           ))}
         </div>
+      )}
+
+      {/* MEH-2911: directly under the thumbnail whose remove was refused —
+          not at the foot of the card next to `errorMsg` (Sapir's ruling).
+          With one photo left the grid above is a single cell, so a sibling
+          immediately after it reads as that cell's own message.
+
+          OUTSIDE the `images.length > 0` gate on purpose. The save-path
+          refusal (business approved in another tab after this card loaded)
+          arrives with the local list already EMPTY, so a note nested in the
+          grid would have rendered nowhere and the refusal would have fallen
+          through to the card-foot error — the placement the ruling forbids.
+          A reviewer found that; the earlier revision had it nested.
+
+          Not `col-span-full`: no longer a grid child. At 375 this wraps to
+          two lines, one at 1440 — read off the captures in qa-artifacts.
+
+          No positional classes: it sits in flow, so it mirrors with the
+          document and needs no logical property (rtl.md). */}
+      {lastPhotoBlocked && (
+        <p
+          className="mt-2 text-xs leading-snug text-error"
+          role="alert"
+          data-testid="images-last-photo-note"
+        >
+          {t("last_photo")}
+        </p>
       )}
 
       {errorMsg && (
