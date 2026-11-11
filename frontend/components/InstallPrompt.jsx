@@ -4,6 +4,10 @@ import { useEffect, useRef, useState } from "react";
 import { X, DeviceMobile } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import { usePathname } from "@/i18n/navigation";
+// MEH-2927 (pilot B3b): the same predicate BottomNav gates on, imported from
+// one place so the two cannot drift — a reviewer found them as byte-identical
+// copies with nothing to catch a change to one of them.
+import { isRegisterRoute } from "@/lib/register-route";
 
 const VISIT_KEY = "pwa_visits";
 const DISMISS_KEY = "pwa_dismiss_until";
@@ -29,18 +33,17 @@ function lsSet(key, value) {
   try { localStorage.setItem(key, value); } catch { /* private mode — ignore */ }
 }
 
-// MEH-2927 (pilot B3b): the registration flow, same exclusion as the BottomNav
-// (Sapir, 11/11). Mirrors BottomNav.jsx's predicate exactly, including the
-// exact-equality-plus-trailing-slash shape that keeps a future "/registerx"
-// out of it.
-const isRegisterRoute = (p) => p === "/register" || (p || "").startsWith("/register/");
-
 export default function InstallPrompt() {
   const t = useTranslations("modals.install_prompt");
   const pathname = usePathname();
   const [show, setShow] = useState(false);
   const [ios, setIos] = useState(false);
   const promptRef = useRef(null);
+  // MEH-2927: the effect below runs once per page load, so it closes over the
+  // pathname of the route it mounted on. A ref refreshed every render is how
+  // the 30s callback asks where she is NOW rather than where she was 30s ago.
+  const pathnameRef = useRef(pathname);
+  pathnameRef.current = pathname;
 
   useEffect(() => {
     if (isStandalone()) return; // already installed — never show
@@ -56,9 +59,25 @@ export default function InstallPrompt() {
     const iosDevice = isIOS();
     setIos(iosDevice);
 
+    // MEH-2927 (pilot B3b): the render gate below keeps the card off the
+    // registration flow, but on its own it only HIDES — the timer still fired
+    // and flipped `show`, so the first navigation out of /register popped the
+    // card instantly with no fresh 30s delay. Checking at reveal time instead
+    // means a seller who spent those 30s registering is not nagged the moment
+    // she leaves; the next page load gets its own timer.
+    //
+    // Deliberately a reveal-time check and not an effect dependency: adding
+    // `pathname` to the deps would re-run this on every client navigation,
+    // re-arming the 30s timer each time and counting a fresh visit — a much
+    // larger behaviour change than the one being fixed.
+    const reveal = () => {
+      if (isRegisterRoute(pathnameRef.current)) return;
+      setShow(true);
+    };
+
     if (iosDevice) {
       // iOS Safari has no beforeinstallprompt — show manual instructions instead
-      const tid = setTimeout(() => setShow(true), DELAY_MS);
+      const tid = setTimeout(reveal, DELAY_MS);
       return () => clearTimeout(tid);
     }
 
@@ -67,7 +86,7 @@ export default function InstallPrompt() {
     const onPrompt = (e) => {
       e.preventDefault();
       promptRef.current = e;
-      tid = setTimeout(() => setShow(true), DELAY_MS);
+      tid = setTimeout(reveal, DELAY_MS);
     };
     window.addEventListener("beforeinstallprompt", onPrompt, { once: true });
     return () => {
@@ -99,8 +118,18 @@ export default function InstallPrompt() {
   // `position: fixed` and ~126px tall at the iPhone visual viewport, and a
   // sweep of the DETAILS step's whole scroll range found it over a form
   // control at 16 (scroll position x control) sample points, worst 48px,
-  // «הבא» among them. Gated AFTER the hooks so rules-of-hooks holds, and
-  // after `show` so the timer logic above is untouched.
+  // «הבא» among them. Gated AFTER the hooks, so hook order cannot change
+  // between renders.
+  //
+  // This is the second half of the gate; `reveal` above is the first. Kept as
+  // well as, not instead of: it covers a card already revealed before a
+  // client navigation INTO the flow.
+  //
+  // Two effect-level side effects are deliberately NOT gated, and both are
+  // once-per-page-load rather than per-route: the visit counter still counts
+  // the visit, and `beforeinstallprompt` is still preventDefault()ed, which
+  // consumes Chrome's own install affordance for that load. Suppressing
+  // either would need the effect to re-run per route — see the note there.
   if (isRegisterRoute(pathname)) return null;
   if (!show) return null;
 

@@ -14,6 +14,7 @@ import { Link, usePathname } from "@/i18n/navigation";
 // Navigation still works; it fetches on tap. Guarded by ChromePrefetchGuard.test.js.
 // MEH-1202: gate BottomNav OFF the producer detail page (shared route helper).
 import { isProducerDetail } from "@/lib/producer-route";
+import { isRegisterRoute } from "@/lib/register-route"; // MEH-2927
 import { useCallback, useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { Compass, MapTrifold, Flower, User } from "@phosphor-icons/react";
@@ -30,10 +31,10 @@ const NO_PILL_CLEARANCE = "calc(env(safe-area-inset-bottom, 0px) + 12px)";
 const isOwnerDashboardRoute = (p) =>
   p === "/producer/dashboard" || (p || "").startsWith("/producer/dashboard/");
 // MEH-2927 (pilot B3c): the registration flow. Same shape as the two above —
-// a surface whose own primary action sits where this pill floats. The exact
-// equality plus a trailing slash is load-bearing: a bare startsWith would also
-// swallow a future "/registerx" route.
-const isRegisterRoute = (p) => p === "/register" || (p || "").startsWith("/register/");
+// a surface whose own primary action sits where this pill floats. Imported
+// rather than redeclared: InstallPrompt gates on the same fact, and two
+// copies of one predicate is the Smell #1 shape (workflow.md). Same reason
+// `isProducerDetail` is imported above.
 
 /**
  * Mobile bottom nav — MEH-789 (Phase 6 "Cream Signature" port).

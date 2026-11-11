@@ -94,6 +94,22 @@ for (const [w, h] of [[390, 664], [375, 667]]) {
     if (!inCookie) usable += 1;
   }
   await page.screenshot({ path: `${OUT}/b3c-after-${w}x${h}.png` });
+
+  // Control. Without it `navCount === 0` is a null that is also the
+  // reassuring output: a typo in the selector, a render crash or a desktop
+  // viewport all produce 0 and PASS. The home page at the same size must
+  // still have exactly one.
+  const { ctx: ctrlCtx, page: ctrlPage } = await newPage({ width: w, height: h });
+  await ctrlPage.goto(`${BASE}/`, { waitUntil: "domcontentloaded" });
+  await ctrlPage.locator('[data-testid="bottom-nav"]').waitFor({ timeout: 20000 });
+  const controlCount = await ctrlPage.locator('[data-testid="bottom-nav"]').count();
+  await ctrlCtx.close();
+  check(
+    `B3c control @ ${w}x${h} — the home page still has the nav`,
+    controlCount === 1,
+    `bottom-nav elements on /: ${controlCount} (0 here would mean the probe, not the gate, is what measured nothing)`,
+  );
+
   check(
     `B3c @ ${w}x${h} — the BottomNav is gone from the registration flow`,
     navCount === 0,

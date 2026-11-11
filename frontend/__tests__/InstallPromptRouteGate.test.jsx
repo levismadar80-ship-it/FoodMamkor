@@ -76,6 +76,24 @@ describe("MEH-2927 · the install prompt is gated off /register", () => {
     expect(prompt()).not.toBeNull();
   });
 
+  // MEH-2927, from the adversarial review: the render gate alone only HIDES.
+  // The timer still flipped `show`, so the first client navigation out of the
+  // flow popped the card instantly, with no fresh 30s delay.
+  it("the timer does not arm the card while she is in the flow — leaving does not pop it", () => {
+    pathnameRef.current = "/register/producer";
+    const { rerender } = render(<InstallPrompt />);
+    act(() => {
+      vi.advanceTimersByTime(31000);
+    });
+    expect(prompt(), "nothing while she is registering").toBeNull();
+
+    // She finishes and navigates away. The 30s already elapsed; without the
+    // reveal-time check `show` would be true and the card would appear at once.
+    pathnameRef.current = "/";
+    rerender(<InstallPrompt />);
+    expect(prompt(), "and nothing the instant she leaves either").toBeNull();
+  });
+
   it("control — on a consumer route it is the timer that reveals it, not the render", () => {
     pathnameRef.current = "/";
     render(<InstallPrompt />);
