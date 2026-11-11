@@ -444,6 +444,56 @@ def _maybe_fire_review_ready(background_tasks, db, producer, was_approvable) -> 
 _PRODUCER_UPDATE_LOCK_NAMESPACE = 2007
 
 
+# MEH-2911: Sapir-approved copy, verbatim (10/11). The owner reads this
+# string, so rule 22 makes it hers — do not reword it, and do not
+# paraphrase it in a test. `frontend/messages/he.json`
+# (`dashboard.producer.images.last_photo`) carries the same sentence for
+# the inline message next to the remove button, and
+# tests/test_meh2911_last_photo_guard.py asserts the two are identical so
+# the pair cannot drift (workflow.md smell #1).
+LAST_PHOTO_REMOVAL_MESSAGE = (
+    "אי אפשר להסיר את התמונה האחרונה. הוסיפו תמונה אחרת, ואז הסירו את זו."
+)
+
+
+def _assert_keeps_a_photo(producer, payload: dict, old_images: list) -> None:
+    """An APPROVED business may not remove its last gallery photo.
+
+    MEH-2911, Sapir's ruling (10/11) on the hole MEH-2907's reviewer
+    measured: an already-approved business could PUT `{"images": []}`, get
+    200, and stay live with an empty gallery.
+    `ProducerUpdate._validate_images` checks URL shape only, never
+    non-emptiness, and the approve-time gate (MEH-799,
+    `admin.py::_assert_approvable`) deliberately "lives at the moment of
+    approval" — so nothing re-checked afterwards. This is the owner-route
+    half of the same invariant.
+
+    DO NOT change `status` here. Option (ג), demoting the business back to
+    `pending`, was rejected explicitly: refuse the removal, keep the row.
+
+    Only `approved`, deliberately. A draft or pending business may still
+    empty its gallery — the submit gate and the approve gate are where
+    that is caught for those, and widening this would change behaviour the
+    ruling did not cover.
+
+    `old_images` is load-bearing, not defensive: a legacy approved row
+    whose gallery is ALREADY empty has no last photo to remove, and
+    without that clause such an owner could not save any field at all.
+
+    Extracted rather than inlined because the condition pushed
+    `update_my_producer` past ruff's C901 ceiling (11 > 10), which is an
+    error in this repo — a per-file ignore would have been removing a
+    constraint to fit a change (workflow rule 32).
+    """
+    if (
+        producer.status == "approved"
+        and "images" in payload
+        and not payload["images"]
+        and old_images
+    ):
+        raise HTTPException(status_code=422, detail=LAST_PHOTO_REMOVAL_MESSAGE)
+
+
 def _lock_producer_updates(db, producer_id) -> None:
     """Serialize concurrent owner PUTs on one producer, until this commit.
 
@@ -812,6 +862,10 @@ def update_my_producer(
         and "city" in payload
         and _apply_organizer_city(producer, payload["city"])
     )
+
+    # MEH-2911: raised BEFORE the setattr loop, so the whole PUT is refused
+    # rather than half-applied. See the helper for the ruling it enforces.
+    _assert_keeps_a_photo(producer, payload, old_images)
 
     for field, value in payload.items():
         if field in _PRODUCER_WRITABLE_FIELDS:

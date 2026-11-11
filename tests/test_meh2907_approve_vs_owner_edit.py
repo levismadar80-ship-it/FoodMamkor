@@ -63,10 +63,17 @@ the reason for the shape above. A fresh reviewer measured all three:
     `db.refresh(producer)` at the top of `_assert_approvable` still
     reported XFAIL, never XPASS. The marker would have rotted silently
     and swallowed every unrelated breakage with it.
-  * The terminal state it asserted — approved with an empty gallery — is
-    reachable with NO RACE, so it never discriminated. Test 4 below
-    demonstrates that sequentially. The race-specific fact is narrower:
-    the gate was asked, and answered from a row that had already changed.
+  * The terminal state it asserted — approved with an empty gallery — was
+    reachable with NO RACE, so it never discriminated. The race-specific
+    fact is narrower: the gate was asked, and answered from a row that had
+    already changed.
+
+    MEH-2911 has since closed the sequential path (refuse the removal,
+    keep the gallery, no demotion), so test 4 below now records that
+    ruling. The xfail above is deliberately NOT rewritten to lean on the
+    terminal state as a result: if the MEH-2911 guard were ever removed,
+    the two would collapse back into one and the xfail would again be
+    satisfiable without any race.
 """
 
 from __future__ import annotations
@@ -361,34 +368,43 @@ def test_owner_put_committed_after_approval_does_not_revert_it(
     assert after.description == _NEW_DESCRIPTION, "the owner's edit was lost instead"
 
 
-def test_an_approved_business_can_empty_its_gallery_with_no_race(client, db, monkeypatch):
+def test_an_approved_business_cannot_empty_its_gallery_sequentially_either(
+    client, db, monkeypatch
+):
     """The sequential companion, and why the xfail above is phrased as it is.
 
-    Measured: an already-approved business PUTs `{"images": []}`, gets
-    200, and ends `approved` with an empty gallery — no concurrency
-    involved. So "published with no photo" does NOT discriminate the
-    race, which is why the xfail above asserts the gate's own view
-    instead of the terminal state.
+    When this file was written, an already-approved business could PUT
+    `{"images": []}`, get 200, and end `approved` with an empty gallery —
+    no concurrency involved. That is why the xfail above asserts the
+    gate's own view rather than the terminal state: "published with no
+    photo" did not discriminate the race, because it was reachable
+    without one.
 
-    This is not obviously a defect: `admin.py` states the MEH-799 gate
-    "lives at the moment of approval", and the gallery has a real owner
-    editor. It is recorded on MEH-2911 for Sapir to rule on, and asserted
-    here so the current behaviour is pinned either way — if it is ever
-    gated, this test reds and names the decision.
+    **MEH-2911 then shipped and closed that path** (Sapir's ruling, 10/11:
+    refuse the removal, keep the gallery, do not demote the business). The
+    guard is in `producer_me.py::update_my_producer` and its own suite is
+    `tests/test_meh2911_last_photo_guard.py`.
+
+    This test now records the ruling, and it keeps earning its place for
+    the same reason it was written: the xfail above still must not lean on
+    the terminal state. If the guard were removed, this test reds — and
+    the xfail would quietly start being satisfiable by the sequential path
+    again, which is the failure mode the two tests exist to keep apart.
     """
     _mute_side_effects(monkeypatch)
     producer, owner = make_submit_ready_producer(db, status="approved")
     db.commit()
     producer_id = producer.id
-    assert producer.images, "setup: the business starts with a photo"
+    before = list(producer.images)
+    assert before, "setup: the business starts with a photo"
 
     resp = client.put("/producers/me", json={"images": []}, headers=auth_header(owner))
 
-    assert resp.status_code == 200, resp.text
+    assert resp.status_code == 422, resp.text
     db.expire_all()
     after = db.get(Producer, producer_id)
-    assert after.status == "approved"
-    assert after.images == [], (
-        "an approved business can no longer empty its gallery — if that is "
-        "deliberate, MEH-2911 shipped and this test records the change"
+    assert after.images == before, "the gallery must be left exactly as it was"
+    assert after.status == "approved", (
+        "the business was demoted — MEH-2911's ruling was to refuse the "
+        "removal, not to send the business back to the review queue"
     )

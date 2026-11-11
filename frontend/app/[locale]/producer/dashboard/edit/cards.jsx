@@ -253,6 +253,17 @@ export function ImagesCard({ profile, onSave, reportDirty = () => {} }) {
   const [saved, setSaved] = useState(false);
   const [errorMsg, setErrorMsg] = useState(null);
   const [dragOver, setDragOver] = useState(false);
+  // MEH-2911: index of the thumbnail whose remove was refused because it is
+  // the last photo of an APPROVED business. Held per index rather than as a
+  // boolean so the message renders beside the button that was clicked —
+  // Sapir asked for it there, not as a card- or page-level error.
+  const [lastPhotoBlockedAt, setLastPhotoBlockedAt] = useState(null);
+
+  // MEH-2911: only an approved business is live on the site, so only it has a
+  // public page that would go photoless. A draft or pending business may still
+  // empty its gallery — the submit gate and the approve gate are where that is
+  // caught for those (see the backend guard in producer_me.py).
+  const isApproved = profile?.status === "approved";
 
   // MEH-1352: cap applies to the free plan only (mirrors the upload.py 403
   // guard). atCap disables the picker; the backend 403 stays as safety net.
@@ -286,6 +297,8 @@ export function ImagesCard({ profile, onSave, reportDirty = () => {} }) {
         uploaded.push(r.data.url);
       }
       const next = [...images, ...uploaded];
+      // MEH-2911: the note told her to add a photo first; she has.
+      setLastPhotoBlockedAt(null);
       setImages(next);
       // MEH-1236: kill the upload≠save trap. Uploading a photo used to feel like
       // saving, but images[] only persisted on an explicit Save click — so the
@@ -333,8 +346,19 @@ export function ImagesCard({ profile, onSave, reportDirty = () => {} }) {
   // URL (backend drift / bad prior save), a value-filter would drop every
   // copy at once. Index-based removal deletes exactly the clicked thumbnail.
   const removeImage = (index) => {
+    // MEH-2911: refuse here as well as in the backend, so the owner is told
+    // at the moment she clicks instead of after a save round-trip. The
+    // backend 422 (producer_me.py::LAST_PHOTO_REMOVAL_MESSAGE) stays the
+    // authority — a client that ignores this still cannot empty the gallery.
+    if (isApproved && images.length === 1) {
+      setSaved(false);
+      setErrorMsg(null);
+      setLastPhotoBlockedAt(index);
+      return;
+    }
     setSaved(false);
     setErrorMsg(null);
+    setLastPhotoBlockedAt(null);
     setImages((prev) => prev.filter((_, i) => i !== index));
   };
 
@@ -348,7 +372,16 @@ export function ImagesCard({ profile, onSave, reportDirty = () => {} }) {
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
     } catch (err) {
-      setErrorMsg(detailToMessage(err?.response?.data?.detail) || t("save_error"));
+      const detail = detailToMessage(err?.response?.data?.detail);
+      // MEH-2911: reachable when the business was approved in another tab
+      // after this card loaded, so the client pre-check above did not know
+      // to fire. Same message, same place — not the card-level error, which
+      // is what Sapir ruled against.
+      if (detail === t("last_photo") && images.length === 1) {
+        setLastPhotoBlockedAt(0);
+      } else {
+        setErrorMsg(detail || t("save_error"));
+      }
     } finally {
       setSaving(false);
     }
@@ -457,6 +490,29 @@ export function ImagesCard({ profile, onSave, reportDirty = () => {} }) {
               </button>
             </div>
           ))}
+          {/* MEH-2911: beside the remove button it belongs to — the next
+              grid item after that thumbnail, so it reads directly under
+              it, not at the foot of the card (Sapir's ruling).
+
+              `col-span-full` rather than living INSIDE the cell: the note
+              only ever appears when exactly one photo is left, so the row
+              is otherwise empty, and a cell is one column wide — ~100px at
+              375, where this sentence wrapped to four lines of 11px text.
+              Reading the 375 capture is what caught that; spanning the row
+              brings it to two lines there and one at 1440, with the note
+              still immediately below the thumbnail it refuses to remove.
+
+              No positional classes: it sits in flow, so it mirrors with
+              the document and needs no logical property (rtl.md). */}
+          {lastPhotoBlockedAt !== null && (
+            <p
+              className="col-span-full -mt-1 text-xs leading-snug text-error"
+              role="alert"
+              data-testid="images-last-photo-note"
+            >
+              {t("last_photo")}
+            </p>
+          )}
         </div>
       )}
 
