@@ -14,10 +14,12 @@
  * History:  MEH-1405 (extraction); MEH-1404 (AddressSearch + lat/lng, moved here);
  *           MEH-1809 (client-side required/range validation, inline per field
  *           via ui/Input + focus to the first invalid one — the top banner now
- *           carries server/network errors only).
+ *           carries server/network errors only);
+ *           MEH-2932 (pick one of the business's SAVED locations instead of
+ *           retyping it — see the saved-locations block below).
  */
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
 import { X } from "@phosphor-icons/react";
@@ -163,6 +165,61 @@ export default function EventForm({ mode = "create", initial = null, onSuccess, 
   // MEH-1981: notice-at-collection (copy approved verbatim 02/09, rule 22).
   const tNotice = useTranslations("privacy.collection_notice");
   const tPrivacyLink = useTranslations("auth.register.consumer.terms");
+
+  // MEH-2932: the business's own selling points, so an event at one of them is
+  // a choice rather than a retype. Read-only here — the rows are owned by the
+  // dashboard's LocationsEditor, and this form never writes them.
+  //
+  // Deliberately fail-OPEN and silent: the picker is an addition to a form that
+  // worked without it, so a failed read (or a business with none saved) leaves
+  // exactly the fields that were always there. An error banner here would be
+  // about a convenience the seller never asked for.
+  const [savedLocations, setSavedLocations] = useState([]);
+  // "" = nothing chosen (the seller chooses; the form does not choose for her),
+  // a row id = that saved point, "other" = she is typing an address herself.
+  const [locationChoice, setLocationChoice] = useState("");
+
+  useEffect(() => {
+    let cancelled = false;
+    api
+      .get("/producers/me/locations")
+      .then((r) => {
+        if (!cancelled) setSavedLocations(Array.isArray(r.data) ? r.data : []);
+      })
+      .catch(() => {
+        if (!cancelled) setSavedLocations([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // label · address · city, skipping whatever the row does not carry. Built
+  // from the row rather than from a copy string, so a business that named her
+  // point «הדוכן בשוק» sees that name and not a generic "location 2".
+  const describeLocation = (loc) =>
+    [loc.label, loc.address, loc.city].filter((part) => part && part.trim()).join(" · ");
+
+  const chooseSavedLocation = (loc) => {
+    setLocationChoice(loc.id);
+    setForm((f) => ({
+      ...f,
+      location: loc.address || loc.label || f.location,
+      city: loc.city || f.city,
+      // Cleared, not kept: a point with no pin must not inherit the previous
+      // point's coordinates and put the event somewhere it is not.
+      lat: loc.lat ?? null,
+      lng: loc.lng ?? null,
+    }));
+    setFieldErrors((errs) => (errs.city ? { ...errs, city: undefined } : errs));
+  };
+
+  // Typing over a filled address means it is no longer that saved point. Moving
+  // the radio keeps the control honest; leaving it checked would claim an
+  // address the fields no longer hold.
+  const markAddressEdited = () => {
+    setLocationChoice((choice) => (choice && choice !== "other" ? "other" : choice));
+  };
   const [form, setForm] = useState(() => seed(initial));
   const [error, setError] = useState("");
   const [fieldErrors, setFieldErrors] = useState({});
@@ -300,6 +357,53 @@ export default function EventForm({ mode = "create", initial = null, onSuccess, 
           />
         </div>
 
+        {/* MEH-2932: only when there is something to choose. A business with no
+            saved points sees the form exactly as it was — no empty picker, no
+            «כתובת אחרת» with nothing to be other than (CLAUDE.md, 5-state rule:
+            the 0-item cell is its own state, not a degenerate list). */}
+        {savedLocations.length > 0 && (
+          <fieldset className="space-y-2" data-testid="event-saved-locations">
+            <legend className="block text-sm font-medium text-text mb-1 text-start">
+              {t("saved_location_legend")}
+            </legend>
+            {savedLocations.map((loc) => (
+              <label
+                key={loc.id}
+                htmlFor={`saved-location-${loc.id}`}
+                className="flex items-center gap-3 min-h-touch cursor-pointer"
+              >
+                <input
+                  type="radio"
+                  id={`saved-location-${loc.id}`}
+                  name="saved-location"
+                  data-testid={`event-saved-location-${loc.id}`}
+                  checked={locationChoice === loc.id}
+                  onChange={() => chooseSavedLocation(loc)}
+                  className="w-5 h-5 accent-primary shrink-0"
+                />
+                <span className="text-sm text-text">{describeLocation(loc)}</span>
+              </label>
+            ))}
+            <label
+              htmlFor="saved-location-other"
+              className="flex items-center gap-3 min-h-touch cursor-pointer"
+            >
+              <input
+                type="radio"
+                id="saved-location-other"
+                name="saved-location"
+                data-testid="event-saved-location-other"
+                checked={locationChoice === "other"}
+                // Chosen, not cleared: she may already have typed something,
+                // and "I'll write my own" is no reason to throw it away.
+                onChange={() => setLocationChoice("other")}
+                className="w-5 h-5 accent-primary shrink-0"
+              />
+              <span className="text-sm text-text">{t("saved_location_other")}</span>
+            </label>
+          </fieldset>
+        )}
+
         <div>
           <label htmlFor="location" className="block text-sm font-medium text-text mb-1">
             {t("field_location_label")}
@@ -311,15 +415,19 @@ export default function EventForm({ mode = "create", initial = null, onSuccess, 
           <AddressSearch
             id="location"
             value={form.location}
-            onChange={(val) => setForm((f) => ({ ...f, location: val }))}
-            onSelect={(picked) =>
+            onChange={(val) => {
+              markAddressEdited(); // MEH-2932
+              setForm((f) => ({ ...f, location: val }));
+            }}
+            onSelect={(picked) => {
+              markAddressEdited(); // MEH-2932
               setForm((f) => ({
                 ...f,
                 location: picked.street || picked.displayName || f.location,
                 lat: picked.lat ?? null,
                 lng: picked.lng ?? null,
-              }))
-            }
+              }));
+            }}
             placeholder={t("field_location_simple_placeholder")}
           />
         </div>
@@ -337,6 +445,7 @@ export default function EventForm({ mode = "create", initial = null, onSuccess, 
             label={t("field_city_label")}
             value={form.city}
             onChange={(val) => {
+              markAddressEdited(); // MEH-2932
               setForm((f) => ({ ...f, city: val }));
               // MEH-2013: CitySearch reports a value, not an event, so it does
               // not go through `update()` — clear its error the same way.
