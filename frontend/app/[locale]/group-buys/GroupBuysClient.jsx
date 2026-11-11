@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Link } from "@/i18n/navigation";
 import { ShoppingCart, Clock, MapPin, Truck } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
+import ListingHubTabs from "@/components/ListingHubTabs";
 import api from "@/lib/api";
 import Image from "next/image";
 import { optimizeCloudinary, IMAGE_RATIOS } from "@/lib/cloudinary";
@@ -198,6 +199,11 @@ export default function GroupBuysClient() {
           </p>
         </div>
       </section>
+
+      {/* MEH-2859: the shared hub row, so a reader who lands here can reach
+          the other three date-bound lists. This page keeps its own hero and
+          H1 (Sapir 11/11) — the row sits under them, not instead of them. */}
+      <ListingHubTabs active="groupBuys" />
 
       <div className="max-w-5xl mx-auto px-4 py-6 md:py-10">
         {/* Filters */}
