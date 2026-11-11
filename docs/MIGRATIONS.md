@@ -3,7 +3,7 @@
 > **Baseline:** `ef8fb1858f5b` — 34 טבלאות (ללא `alembic_version`). מוטמע על staging ו-production.
 > **Alembic הוא הסמכות היחידה לשינויי סכמה.** ⚠️ **`Base.metadata.create_all` עדיין על נתיב ה-boot** — `backend/app/startup.py:150`, בתוך `_run_db_init_sync`. השורה הזו אמרה קודם שהוא «הוסר מ-boot path ב-MEH-267», וזה **לא נכון**: MEH-267 הסיר את `_migrate_columns()`, ‏ADR-003 §Consequences שימר את `create_all` במפורש כרשת ביטחון ל-dev/CI, ו-MEH-352 (27/04, *אחרי* MEH-267) דווקא **הוסיף** אותו — ‏DB ריק ⇒ `seed()` קרס. תוקן 01/09 מול הקוד. שאלת ההסרה שייכת ל-MEH-2219 — אל תסירי אותו מכאן.
 >
-> **למה זה לא סותר את «סמכות יחידה» בפרודקשן:** ה-`Dockerfile` מריץ `scripts/migrate_on_boot.py && exec uvicorn`. הסקריפט מריץ `alembic upgrade head`, חוץ ממצב rollback שבו ה-DB כבר מקדים את ה-image (MEH-2903). כך כל הטבלאות קיימות לפני שה-lifespan רץ ו-`create_all` הוא no-op. הוא **אינו** מוסיף עמודות לטבלה קיימת — רק טבלאות חסרות — ולכן אינו יכול להסביר דריפט ברמת עמודה. ‏`alembic check` ב-CI (job ה-pytest ב-`pr-checks.yml`) חוסם טבלה שקיימת במודלים ואין לה revision.
+> **למה זה לא סותר את «סמכות יחידה» בפרודקשן:** ה-`Dockerfile` מריץ את המיגרציות לפני uvicorn: ב-staging דרך `scripts/migrate_on_boot.py`, שמריץ `alembic upgrade head` חוץ ממצב rollback שבו ה-DB כבר מקדים את ה-image (MEH-2903); ב-production עדיין `alembic upgrade head` ישירות, עד v1.5.1. בסביבות האלה `create_all` בכלל לא נקרא (`startup.py`, ‏MEH-2219), ובפיתוח מקומי הוא מוסיף רק טבלאות חסרות. הוא **אינו** מוסיף עמודות לטבלה קיימת — רק טבלאות חסרות — ולכן אינו יכול להסביר דריפט ברמת עמודה. ‏`alembic check` ב-CI (job ה-pytest ב-`pr-checks.yml`) חוסם טבלה שקיימת במודלים ואין לה revision.
 > **גיבוי ושחזור:** מיגרציות מתקנות סכמה; גיבויים מתקנים data. ל-runbook של גיבוי/שחזור Postgres ראו [docs/BACKUPS.md](./BACKUPS.md).
 
 ---
@@ -167,10 +167,9 @@ DATABASE_URL=postgresql://... .venv/bin/alembic downgrade ef8fb1858f5b
 DATABASE_URL=postgresql://... .venv/bin/alembic current
 ```
 
-**Rollback ב-Railway (production / staging):**
-1. Deploy גרסה קודמת של הקוד (Railway → Deployments → Rollback).
-2. גרסת הקוד הישנה מריצה `alembic upgrade head` שמוביל לגרסה שהיא מכירה — אבל **לא מוריד עמודות שנוספו לאחר מכן**.
-3. לירידה מפורשת בסכמה: הרצי `alembic downgrade -1` ידנית דרך Railway Shell לפני ה-rollback.
+**Rollback ב-Railway (production / staging):** הנוהל המלא ב-[`docs/release/ROLLBACK.md`](./release/ROLLBACK.md) §2.
+- image ישן שמריץ `alembic upgrade head` ישירות **לא עולה** על DB שמקדים אותו (*Can't locate revision*), ו-Railway משאיר את הגרסה הנוכחית חיה. לכן קודם downgrade, ורק אז rollback (§2b/§2c).
+- image עם `scripts/migrate_on_boot.py` (MEH-2903) עולה במצב rollback אם ה-head שלו רשום ב-`alembic_lineage` (§2d).
 
 ---
 

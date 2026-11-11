@@ -37,7 +37,8 @@ def _cmd() -> str:
 def test_boot_runs_the_migration_step_before_uvicorn():
     cmd = _cmd()
     step = "python -u scripts/migrate_on_boot.py"
-    assert step in cmd, cmd
+    # First command, so nothing in front of it (`true || …`) can skip it.
+    assert cmd.startswith(step + " &&"), cmd
     server = "exec python -u -m uvicorn app.main:app"
     assert server in cmd, cmd
     # `&&` between them: any non-zero exit of the step stops the boot.
@@ -46,7 +47,8 @@ def test_boot_runs_the_migration_step_before_uvicorn():
 
 
 def test_boot_no_longer_runs_a_bare_upgrade_head():
-    assert not re.search(r"alembic\s+upgrade", _cmd()), _cmd()
+    # Any `alembic … upgrade`, options in between included (`-c alembic.ini`).
+    assert not re.search(r"\balembic\b.*\bupgrade\b", _cmd()), _cmd()
 
 
 def test_boot_keeps_the_runtime_port():

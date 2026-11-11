@@ -91,6 +91,7 @@ Sapir chose (ב) on 10/11: MEH-2903, `backend/scripts/migrate_on_boot.py`. Until
 - **Rolling back from a later release to R is automatic when both hold:**
   - **R's head is recorded in `alembic_lineage`.** That happens on the first successful boot of R, or of any later `migrate_on_boot.py` image, on that database.
   - **Every revision after R's head is expand-only (ADR-007).** Rollback mode starts R's code on the newer schema and undoes nothing.
+- **`ROLLBACK MODE` in the log does not by itself mean someone rolled back.** During a normal deploy, the old deployment's container can restart after the new image has already upgraded the database (`restartPolicyType ON_FAILURE`). It then starts in rollback mode on the code it was already serving. With expand-only revisions that is harmless. Before reading the line as a rollback, check which deployment logged it.
 - **If R's head is not recorded,** R's boot exits 3 (`SPLIT HISTORY`, naming both revisions) and the current deployment stays live. Use 2b.
 - **Two edges the check does not cover.** Neither can happen while revisions are never deleted and the history stays linear (the alembic head guard).
   - A row in `alembic_lineage` means "applied at some point". A downgrade does not remove it. So after a downgrade below R's head and a *different* revision applied on top, R would still take rollback mode on a stale row.
