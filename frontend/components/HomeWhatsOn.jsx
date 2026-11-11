@@ -28,6 +28,17 @@ import { z } from "zod";
 
 import { Link } from "@/i18n/navigation";
 import api from "@/lib/api";
+// Review #3726 / MEH-2859: a group buy's `deadline` is a NAIVE datetime —
+// `GroupBuy.deadline = Column(DateTime)` (models.py:2352) with no UTC validator
+// on GroupBuyOut, so the JSON carries no `Z` and `new Date()` reads it as the
+// VISITOR's local time. lib/seo.js:31 states the rule and :821 already applies
+// it to this very field; rescue closed the same hole at the schema instead
+// (schemas/rescue.py:44 `UtcDatetimeOut`, whose comment names the bug).
+import { parseNaiveUtc } from "@/lib/dates";
+// The DST-aware Israel-wall-clock → instant converter, already used to build
+// calendar files. An event's `event_time` is a wall clock in Israel, so this is
+// what makes its sort key a real instant rather than one offset by 2-3h.
+import { israelLocalToUtcStamp } from "@/lib/event-ics";
 import { formatEventDate } from "@/lib/format-date";
 import { israelNowParts } from "@/lib/orderWindow";
 
@@ -61,10 +72,8 @@ const MINUTES_PER_HOUR = 60;
  * quoting it, for the reason rtl.md gives about z-index tokens in prose: a
  * comment that contains the pattern becomes a phantom finding of its own.)
  */
-function israelTime(iso) {
-  if (!iso) return null;
-  const at = new Date(iso);
-  if (Number.isNaN(at.getTime())) return null;
+function israelTime(at) {
+  if (!at) return null;
   const { minutes } = israelNowParts(at);
   const hours = String(Math.floor(minutes / MINUTES_PER_HOUR)).padStart(2, "0");
   return `${hours}:${String(minutes % MINUTES_PER_HOUR).padStart(2, "0")}`;
@@ -85,29 +94,42 @@ function hhmm(value) {
  * rather than hidden behind a constant so that the guard sees this line at all;
  * the one-liner below is what it reads as the reason.
  */
-function ddmm(iso, locale) {
+function ddmm(at, locale) {
   // guard-ok: a timeZone option on the shared formatter — see the note above.
-  return formatEventDate(iso, locale, { day: "2-digit", month: "2-digit", timeZone: "Asia/Jerusalem" });
+  // `at` is already a real instant, so toISOString() hands format-date.js a
+  // zone-bearing string and its own `new Date()` cannot re-introduce the
+  // local-time reading this whole module exists to avoid.
+  return formatEventDate(at.toISOString(), locale, {
+    day: "2-digit",
+    month: "2-digit",
+    timeZone: "Asia/Jerusalem",
+  });
 }
 
+const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
+const ICS_STAMP = /^(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})Z$/;
+
 /**
- * Sort key, in UTC on purpose.
+ * An Israel wall clock (`event_date` + `event_time`) → the instant it names.
  *
- * A date-plus-wall-clock row ("2026-08-15" + "18:30:00") is read as UTC rather
- * than as the runner's local zone: a local parse would make the ORDER of the
- * strip depend on the machine rendering it, which is the clock-dependency
- * .claude/rules/testing.md rules out. The cost is that an event's wall clock
- * is treated as UTC while a deadline and a pickup window are true instants, so
- * two rows of DIFFERENT types within ~3h of each other can swap places. That
- * bound is accepted: the strip answers "what is coming up", not "which of
- * these two is 90 minutes sooner".
+ * Every row in this strip is reduced to a real instant before it is sorted or
+ * formatted, so neither the order nor the rendered date depends on the zone of
+ * the machine doing the rendering. An earlier version of this file keyed the
+ * wall clock AS IF it were UTC and documented a "~3h" error as an accepted
+ * cost; that is not a cost worth taking when the DST-aware converter is one
+ * import away.
+ *
+ * A date with no time is left at UTC midnight. Read back in Asia/Jerusalem
+ * that is 02:00/03:00 the SAME day, so the rendered date is right and the row
+ * sorts at the start of its own day, which is what a day-only row means.
  */
-function sortKey(dateOrInstant, time) {
-  const raw = typeof dateOrInstant === "string" ? dateOrInstant : "";
-  if (!raw) return Number.POSITIVE_INFINITY;
-  const iso = raw.includes("T") ? raw : `${raw}T${time || "00:00:00"}Z`;
-  const at = new Date(iso).getTime();
-  return Number.isNaN(at) ? Number.POSITIVE_INFINITY : at;
+function israelWallClockInstant(dateIso, time) {
+  if (typeof dateIso !== "string" || !ISO_DATE.test(dateIso)) return null;
+  if (!time) return parseNaiveUtc(dateIso);
+  const parts = ICS_STAMP.exec(israelLocalToUtcStamp(dateIso, time));
+  if (!parts) return null;
+  const at = new Date(`${parts[1]}-${parts[2]}-${parts[3]}T${parts[4]}:${parts[5]}:${parts[6]}Z`);
+  return Number.isNaN(at.getTime()) ? null : at;
 }
 
 // Rule 19: validate before consuming. One schema per source, naming only the
@@ -131,8 +153,17 @@ const BasketSchema = z.object({
 
 /**
  * The four types, in no particular order — `interleaveWhatsOn` decides what
- * reaches the screen. `limit` is sent only where the endpoint takes one; the
- * other three are already narrowed server-side (upcoming / open / today).
+ * reaches the screen.
+ *
+ * Only `/events/upcoming` takes a `limit`. The other three are narrowed
+ * server-side by RECENCY (upcoming / open / today) but not by VOLUME: each
+ * returns every matching row in full to render at most one line here. Capping
+ * them needs a `limit` parameter on those endpoints, which is a backend change
+ * and outside this card — stated so the next reader does not mistake "already
+ * narrowed" for "already small".
+ *
+ * `at` is a real instant on every row, never a raw API string: see
+ * `israelWallClockInstant` and `parseNaiveUtc` above for why that matters.
  */
 const SOURCES = Object.freeze([
   {
@@ -146,9 +177,8 @@ const SOURCES = Object.freeze([
       type: "event",
       title: row.title,
       href: `/events/${row.id}`,
-      date: row.event_date,
+      at: israelWallClockInstant(row.event_date, row.event_time),
       time: hhmm(row.event_time),
-      sortAt: sortKey(row.event_date, row.event_time),
     }),
   },
   {
@@ -161,9 +191,8 @@ const SOURCES = Object.freeze([
       type: "experience",
       title: row.title,
       href: `/experiences/${row.id}`,
-      date: row.event_date,
+      at: israelWallClockInstant(row.event_date, row.event_time),
       time: hhmm(row.event_time),
-      sortAt: sortKey(row.event_date, row.event_time),
     }),
   },
   {
@@ -176,10 +205,12 @@ const SOURCES = Object.freeze([
       type: "groupBuy",
       title: row.title,
       href: `/group-buys/${row.id}`,
-      date: row.deadline,
+      // parseNaiveUtc, NOT new Date(): the deadline carries no zone, so a bare
+      // parse renders a visitor in Israel the WRONG DAY for any cut-off
+      // between midnight and 03:00. See the import note at the top.
+      at: parseNaiveUtc(row.deadline),
       // «עד DD.MM» — never a time, and never a countdown (MEH-2859 AC).
       time: null,
-      sortAt: sortKey(row.deadline),
     }),
   },
   {
@@ -189,15 +220,20 @@ const SOURCES = Object.freeze([
     schema: BasketSchema,
     // The pilot has no per-bag page, so every basket row goes to the /rescue
     // list. Its name is the business's — a bag has no title of its own.
-    toEntry: (row) => ({
-      key: `rescue-${row.id}`,
-      type: "rescue",
-      title: row.producer.name,
-      href: "/rescue",
-      date: row.date,
-      time: israelTime(row.pickup_start),
-      sortAt: sortKey(row.pickup_start || row.date),
-    }),
+    toEntry: (row) => {
+      // pickup_start DOES carry a zone (schemas/rescue.py:256 UtcDatetimeOut),
+      // but it goes through the same parser as the deadline so no row in this
+      // file depends on which of the two shapes an endpoint happens to send.
+      const at = parseNaiveUtc(row.pickup_start) ?? parseNaiveUtc(row.date);
+      return {
+        key: `rescue-${row.id}`,
+        type: "rescue",
+        title: row.producer.name,
+        href: "/rescue",
+        at,
+        time: israelTime(row.pickup_start ? at : null),
+      };
+    },
   },
 ]);
 
@@ -217,10 +253,10 @@ function interleaveWhatsOn(buckets, max = WHATS_ON_MAX_ROWS) {
   const ranked = [];
   for (const bucket of buckets) {
     [...bucket]
-      .sort((a, b) => a.sortAt - b.sortAt)
+      .sort((a, b) => a.at - b.at)
       .forEach((entry, depth) => ranked.push({ entry, depth }));
   }
-  ranked.sort((a, b) => a.depth - b.depth || a.entry.sortAt - b.entry.sortAt);
+  ranked.sort((a, b) => a.depth - b.depth || a.entry.at - b.entry.at);
   return ranked.slice(0, max).map((ranking) => ranking.entry);
 }
 
@@ -233,7 +269,12 @@ async function loadSource(source) {
     return rows.data
       .map((row) => {
         const parsed = source.schema.safeParse(row);
-        return parsed.success ? source.toEntry(parsed.data) : null;
+        if (!parsed.success) return null;
+        const entry = source.toEntry(parsed.data);
+        // A row whose date could not be turned into an instant has nothing to
+        // sort by and nothing to show in the «when» column, so it is dropped
+        // rather than rendered with a hole or sorted to the end by accident.
+        return entry.at ? entry : null;
       })
       .filter(Boolean);
   } catch {
@@ -324,8 +365,8 @@ export default function HomeWhatsOn() {
     type: (type) => t(TYPE_LABEL_KEY[type]),
     when: (entry) =>
       entry.type === "groupBuy"
-        ? t("until", { date: ddmm(entry.date, locale) })
-        : entry.time || ddmm(entry.date, locale),
+        ? t("until", { date: ddmm(entry.at, locale) })
+        : entry.time || ddmm(entry.at, locale),
   };
 
   return (
