@@ -472,8 +472,31 @@ function RegisterProducerPageBody({ routeKind }) {
   // it is precisely what prefers-reduced-motion exists to suppress. "instant"
   // says that unconditionally instead of inheriting whatever `scroll-behavior`
   // happens to be on <html>. Precedent for the literal: ChipScrollRow.jsx:158.
+  // MEH-2927 (pilot B3a): EVERY step change starts at the top of the new step,
+  // not only CONFIRM. Measured at 390x844 before this: advancing ACCOUNT →
+  // DETAILS kept `scrollY` at 460 and left the step heading at y=-330, so the
+  // seller landed mid-form on a frame whose top she had never seen — four
+  // fields and the step's own question were above her.
+  // (qa-artifacts/MEH-2927/02-step2-on-entry-390.png.)
+  //
+  // The ONE exception is a cross-step validation bounce. MEH-1807 sets
+  // `pendingFocusIdRef` synchronously in `requestFocus`, BEFORE the `setStep`
+  // that sends her back, then focuses the offending field and scrolls it to
+  // `block: "center"`. Jumping to the top first would move the page out from
+  // under that and land her above the error she was sent to fix. The ref is
+  // still populated here because this effect is declared ABOVE the focus
+  // effect, so it runs first in the same commit — do not reorder them.
+  // Mount is not a step CHANGE, and scrolling there would be a no-op at best
+  // and a fight with the browser's own scroll restoration on a back-navigation
+  // at worst. A draft that resumes onto a later frame still scrolls, because
+  // that `setStep` lands after this ref is already set.
+  const stepScrollArmedRef = useRef(false);
   useEffect(() => {
-    if (step !== STEP.CONFIRM) return;
+    if (!stepScrollArmedRef.current) {
+      stepScrollArmedRef.current = true;
+      return;
+    }
+    if (pendingFocusIdRef.current) return;
     window.scrollTo({ top: 0, behavior: "instant" });
   }, [step]);
 
