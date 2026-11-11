@@ -626,7 +626,11 @@ rescue_reviews         (id uuid PK, order_id uuid FK→rescue_orders CASCADE UNI
 rescue_typical_items   (id uuid PK, producer_id uuid FK→producers CASCADE UNIQUE,
                         items jsonb NOT NULL, allergens text[] nullable,
                         created_at, updated_at)            -- MEH-2644, MEH-2752
+alembic_lineage        (revision varchar(64) PK, recorded_at timestamptz
+                        NOT NULL default now())                       -- MEH-2903
 ```
+
+> **MEH-2903 — `alembic_lineage` (11/11/2026):** boot bookkeeping, not app data. `alembic_version` stores only the current head, so an older image booting on a newer database (a backend rollback) cannot tell its own head is an ancestor of the database's revision. `backend/scripts/migrate_on_boot.py` (the only writer) records the image's whole revision chain here after every successful `upgrade head`; an image whose database is ahead of it takes rollback mode only if its own head is listed here, and otherwise fails the boot naming both revisions. Nothing in `app/` reads or writes it. Migration `19ac967d78fb`; **`EXPECTED_TABLES` 49 → 50**.
 
 > **MEH-2528 — `retired_slugs` (28/10/2026):** tombstones for public business URLs. A business delete is a hard delete, so its UNIQUE `producers.slug` used to be free at once and the next business with the same name inherited every `/p/<slug>` link. Now admin delete, owner account delete and an admin slug change/clear write a row (`services/retired_slugs.py`, the only writer), and `_ensure_unique_slug` (`routers/admin.py`) treats a retired slug as taken (`-2`…). A business may take back a slug it retired itself (the row is then removed). Drafts are not retired — never public. `producer_id` = owner of a renamed slug (for a future redirect), NULL for a deleted business. Migration `c3d8e2f1a9b4`; **`EXPECTED_TABLES` 41 → 42**. A deleted business's URL answers **410** and renders the «בית העסק הזה כבר לא במהמקור» page (MEH-2534). Not yet: a 301 from a renamed slug.
 

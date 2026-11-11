@@ -3133,3 +3133,24 @@ class RescueTypicalItems(Base):
     updated_at = Column(DateTime, default=utc_now, onupdate=utc_now, nullable=False)
 
     producer = relationship("Producer")
+
+
+class AlembicLineage(Base):
+    """MEH-2903 — every Alembic revision a booted image has applied here.
+
+    `alembic_version` holds only the current head, so an OLDER image booting on
+    a newer database (a rollback) cannot tell whether its own head is an
+    ancestor of the database's revision. `scripts/migrate_on_boot.py` records
+    the image's whole chain after each successful `upgrade head`, and an older
+    image takes rollback mode only if its head is listed here.
+
+    Boot bookkeeping, not app data: nothing in `app/` reads or writes it.
+    History:  MEH-2903 (creation)
+    """
+
+    __tablename__ = "alembic_lineage"
+
+    revision = Column(String(64), primary_key=True)
+    recorded_at = Column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
