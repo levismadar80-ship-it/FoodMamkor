@@ -17,10 +17,41 @@
  *           frontend/app/sitemap.js (the URL set robots must not contradict),
  *           MEH-1955 (robots/sitemap gap-check — the sibling half).
  * History:  MEH-1963 (creation) · MEH-2749 (Vercel bypass header from env, so
- *           the post-deploy workflow can crawl staging).
+ *           the post-deploy workflow can crawl staging) · MEH-2864 (page
+ *           budget: a staging target gets a 40-page sample, not a full crawl).
  *
- * Usage:  node scripts/link-check.mjs [baseURL] [--json]
+ * Usage:  node scripts/link-check.mjs [baseURL] [--json] [--max-pages=N]
+ *         node scripts/link-check.mjs [baseURL] --smoke   (≤10 fixed URLs, no crawl)
+ *         --delay-ms=N   pause N ms between crawled pages (the E2E crawl uses it)
+ *         node scripts/link-check.mjs --self-test
  *         default baseURL http://localhost:3000 (run `next start` first)
+ *
+ * PAGE BUDGET (MEH-2864)
+ *   Every crawled page is a server render on whatever hosts the target. The
+ *   post-deploy workflow ran this crawl (up to 2000 pages) on EVERY push to
+ *   staging; at ~30 self-merges a day that is the main suspect for the Vercel
+ *   Hobby team crossing its Fluid Active CPU limit and being suspended
+ *   (09/11, production down with it). So the budget depends on the target:
+ *     production / localhost → FULL, 2000 pages (production after a release;
+ *                              a local `next start`, which costs nothing)
+ *     anything else          → SAMPLE, 40 pages, breadth-first from /, one
+ *                              page per pathname (query-string variants of a
+ *                              route are not re-rendered)
+ *   FULL needs a positive signal: IS_PRODUCTION=true, or a production / local
+ *   host. IS_PRODUCTION=false, the staging host and any host we don't know all
+ *   sample, so a missed signal costs coverage, never CPU. --max-pages=N
+ *   overrides both. The run prints its mode, budget, pages fetched and HTTP
+ *   requests made, so the cost of a run is on its own log. --self-test crawls a
+ *   local 91-page fixture server in both modes, so the crawl loop itself — not
+ *   only the budget function — is under test.
+ *
+ * SMOKE + VERCEL COUNT (MEH-2864, «ייעול הבדיקות»)
+ *   --smoke fetches at most 10 fixed URLs (404 control, home, list, map, health,
+ *   one business page found through the API) and does not crawl — the
+ *   post-deploy check against Vercel. The full crawl moved to a local
+ *   `next start` (frontend/e2e/flows/manual/link-crawl.spec.ts), which costs
+ *   Vercel nothing. Every run ends with "requests to Vercel: N" (0 for a local
+ *   host).
  *
  * EXIT CODES
  *   0 — no broken internal links
@@ -37,6 +68,9 @@
  */
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
+import { createServer } from "node:http";
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
 
 const args = process.argv.slice(2);
 const asJson = args.includes("--json");
@@ -46,6 +80,83 @@ const ROOT = fileURLToPath(new URL("..", import.meta.url));
 // further down would be in its temporal dead zone by the time the self-test
 // block runs.
 const robotsText = readFileSync(`${ROOT}frontend/public/robots.txt`, "utf8");
+
+// ------------------------------------------------------------- page budget
+
+const FULL_PAGES = 2000;
+const STAGING_SAMPLE_PAGES = 40;
+// The host post-deploy-checks.yml crawls on a staging push. --self-test reads
+// that workflow and fails if its staging host is not in this set, so renaming
+// the host there cannot silently put staging back on the full crawl.
+const STAGING_HOSTS = new Set(["staging.mehamakor.online"]);
+// Hosts allowed the full crawl without IS_PRODUCTION=true. Everything else
+// samples: a missed signal must cost coverage, never another suspension.
+const FULL_CRAWL_HOSTS = new Set(["mehamakor.co.il", "www.mehamakor.co.il", "localhost", "127.0.0.1", "[::1]", "::1"]);
+const MAX_PAGES_FLAG = /^--max-pages=(\d+)$/;
+
+/**
+ * Decide how many pages this run may crawl. Pure: everything it reads is a
+ * parameter, so --self-test drives it with fixtures and with the real workflow.
+ * Returns { max, mode, reason } or { error }.
+ */
+function resolvePageBudget({ base, env, argv }) {
+  const flag = argv.find((a) => a.startsWith("--max-pages"));
+  if (flag) {
+    const m = flag.match(MAX_PAGES_FLAG);
+    const n = m ? Number(m[1]) : NaN;
+    if (!m || n < 1) {
+      return { error: `--max-pages needs a positive integer, written --max-pages=40 (got "${flag}")` };
+    }
+    return { max: n, mode: "flag", reason: `--max-pages=${n}` };
+  }
+  let host = "";
+  try {
+    host = new URL(base).hostname;
+  } catch {
+    host = "";
+  }
+  const sample = (why) => ({ max: STAGING_SAMPLE_PAGES, mode: "sample", reason: `${why} (MEH-2864)` });
+  if (env.IS_PRODUCTION === "false") return sample("IS_PRODUCTION=false");
+  if (STAGING_HOSTS.has(host)) return sample(`staging host ${host}`);
+  if (env.IS_PRODUCTION === "true") return { max: FULL_PAGES, mode: "full", reason: "IS_PRODUCTION=true" };
+  if (FULL_CRAWL_HOSTS.has(host)) return { max: FULL_PAGES, mode: "full", reason: `production/local host ${host}` };
+  return sample(`unknown host ${host || "(unparseable)"}`);
+}
+
+// --------------------------------------------------- Vercel cost + smoke (MEH-2864)
+
+// Hosts served by this machine (a local `next start`), never by Vercel. Every
+// other host — production, staging, a *.vercel.app preview — is billed to the
+// Vercel team per request, so the run's last line says how many it sent there.
+const LOCAL_HOSTS = new Set(["localhost", "127.0.0.1", "[::1]", "::1"]);
+function vercelRequestCount(base, requestCount) {
+  let host = "";
+  try {
+    host = new URL(base).hostname;
+  } catch {
+    return requestCount; // unknown → assume billed, never under-report
+  }
+  return LOCAL_HOSTS.has(host) ? 0 : requestCount;
+}
+
+// --smoke: the post-deploy check against the live site. No crawl — a fixed
+// list of the pages a visitor lands on, plus the 404 control. The card's cap
+// is 10 URLs per run; the business page is discovered (one API call) because
+// no slug is guaranteed to exist on every environment.
+const SMOKE_MAX_URLS = 10;
+const SMOKE_PAGES = [
+  ["home", "/"],
+  ["list", "/producers"],
+  ["map", "/map"],
+  ["health", "/api/health/liveness"],
+];
+const SMOKE_DISCOVERY = "/api/producers?limit=1";
+/** The URLs one smoke run fetches, in order. `slug` null = no business found. */
+function smokeTargets(slug) {
+  const out = [["404 control", "/mm-link-check-probe/does-not-exist"], ["business discovery", SMOKE_DISCOVERY], ...SMOKE_PAGES];
+  if (slug) out.push(["business page", `/${encodeURIComponent(slug)}`]);
+  return out;
+}
 
 // Declared here rather than beside the extractors: --self-test exercises the
 // extractors, and a `const` regex declared below that block is in its temporal
@@ -138,6 +249,133 @@ function matchesRobotsPath(pathname, rulePath) {
 
 // ------------------------------------------------------------------ self-test
 
+function workflowHostCases() {
+  const yml = readFileSync(`${ROOT}.github/workflows/post-deploy-checks.yml`, "utf8");
+  const line = yml.split("\n").find((l) => /^\s*BASE_URL:/.test(l)) || "";
+  const hosts = [...line.matchAll(/https:\/\/([a-z0-9.-]+)/gi)].map((m) => m[1]);
+  const cases = [
+    { name: `REAL post-deploy-checks.yml: BASE_URL names 2 hosts (found ${hosts.length})`, got: () => hosts.length, want: 2 },
+  ];
+  for (const host of hosts) {
+    const prod = host === "mehamakor.co.il";
+    cases.push({
+      name: `REAL post-deploy-checks.yml: ${host} → ${prod ? "full" : "sample"}`,
+      got: () => resolvePageBudget({ base: `https://${host}`, env: {}, argv: [] }).mode,
+      want: prod ? "full" : "sample",
+    });
+  }
+  return cases;
+}
+
+/**
+ * End-to-end budget check (MEH-2864 review): the cases above test the pure
+ * resolver, which stays green even if the crawl loop ignored its answer. This
+ * crawls a real local server — 1 root, 30 query variants of /q, a 60-page chain
+ * under /p/ and five unparseable hrefs — once as a staging run and once as a
+ * full run, through a child process with the real CLI, and returns the two
+ * JSON reports.
+ */
+async function crawlFixtureBothModes() {
+  const CHAIN = 60;
+  const page = (links) => `<!doctype html><html><body>${links.map((h) => `<a href="${h}">x</a>`).join("")}</body></html>`;
+  const server = createServer((req, res) => {
+    const u = new URL(req.url, "http://fixture");
+    let body = null;
+    if (u.pathname === "/") {
+      const variants = Array.from({ length: 30 }, (_, i) => `/q?v=${i + 1}`);
+      body = page([...variants, "/p/1", "http://", "http://", "http://", "http://", "http://"]);
+    } else if (u.pathname === "/q") {
+      body = page([]);
+    } else {
+      const m = u.pathname.match(/^\/p\/(\d+)$/);
+      const n = m ? Number(m[1]) : 0;
+      if (n >= 1 && n <= CHAIN) body = page(n < CHAIN ? [`/p/${n + 1}`] : []);
+    }
+    res.writeHead(body === null ? 404 : 200, { "content-type": "text/html" });
+    res.end(body ?? "not found");
+  });
+  await new Promise((r) => server.listen(0, "127.0.0.1", r));
+  const base = `http://127.0.0.1:${server.address().port}`;
+  const run = promisify(execFile);
+  const self = fileURLToPath(import.meta.url);
+  const envWith = (extra) => {
+    const env = { ...process.env, ...extra };
+    if (!("IS_PRODUCTION" in extra)) delete env.IS_PRODUCTION;
+    return env;
+  };
+  try {
+    const go = async (extra) => {
+      const { stdout } = await run(process.execPath, [self, base, "--json"], { env: envWith(extra) }).catch((e) => e);
+      return JSON.parse(stdout);
+    };
+    return { sample: await go({ IS_PRODUCTION: "false" }), full: await go({}) };
+  } finally {
+    server.close();
+  }
+}
+
+/**
+ * MEH-2864 (fresh review on #4253): --smoke end to end, through the real CLI,
+ * against local fixture servers — not only smokeTargets(). One server per
+ * scenario; `other` is a second origin that records whether the bypass secret
+ * ever reached it.
+ */
+async function smokeFixtureRuns() {
+  const html = "<!doctype html><html><body>ok</body></html>";
+  const seenByOther = [];
+  const other = createServer((req, res) => {
+    seenByOther.push(req.headers["x-vercel-protection-bypass"] || "");
+    res.writeHead(200, { "content-type": "application/json" });
+    res.end("[]");
+  });
+  await new Promise((r) => other.listen(0, "127.0.0.1", r));
+  const otherBase = `http://127.0.0.1:${other.address().port}`;
+  const run = promisify(execFile);
+  const self = fileURLToPath(import.meta.url);
+  const scenario = async (api, { everything200 = false } = {}) => {
+    const server = createServer((req, res) => {
+      const u = new URL(req.url, "http://fixture");
+      if (u.pathname === "/api/producers") {
+        if (api === "redirect") {
+          res.writeHead(302, { location: `${otherBase}/api/producers?limit=1` });
+          return res.end();
+        }
+        res.writeHead(200, { "content-type": "application/json" });
+        return res.end(JSON.stringify(api));
+      }
+      const known = ["/", "/producers", "/map", "/api/health/liveness", "/the-farm"];
+      const ok = everything200 || known.includes(u.pathname);
+      res.writeHead(ok ? 200 : 404, { "content-type": "text/html" });
+      res.end(ok ? html : "not found");
+    });
+    await new Promise((r) => server.listen(0, "127.0.0.1", r));
+    const base = `http://127.0.0.1:${server.address().port}`;
+    try {
+      const env = { ...process.env, VERCEL_AUTOMATION_BYPASS_SECRET: "SELFTEST-SECRET" };
+      const r = await run(process.execPath, [self, base, "--smoke"], { env }).then(
+        (x) => ({ code: 0, out: x.stdout }),
+        (e) => ({ code: e.code ?? 1, out: e.stdout || "" })
+      );
+      return r;
+    } finally {
+      server.close();
+    }
+  };
+  try {
+    return {
+      found: await scenario([{ slug: "the-farm" }]),
+      empty: await scenario([]),
+      object: await scenario({ producers: [{ slug: "the-farm" }] }),
+      noSlug: await scenario([{ slug: null }]),
+      redirect: await scenario("redirect"),
+      no404: await scenario([], { everything200: true }),
+      seenByOther,
+    };
+  } finally {
+    other.close();
+  }
+}
+
 /**
  * --self-test: prove the robots resolver discriminates BEFORE any crawl output
  * is trusted (MEH-1619 — a guard never observed failing is a green light of
@@ -210,6 +448,60 @@ if (args.includes("--self-test")) {
       got: () => isAllowed("/data/export.json.bak", parseRobots("User-agent: *\nDisallow: /*.json$\n")),
       want: true,
     },
+    // MEH-2864 — page budget. Each case fails on the pre-budget crawler, which
+    // had one fixed 2000-page cap for every target.
+    {
+      name: "budget: staging push (IS_PRODUCTION=false) samples 40",
+      got: () => resolvePageBudget({ base: "https://example.test", env: { IS_PRODUCTION: "false" }, argv: [] }).max,
+      want: 40,
+    },
+    {
+      name: "budget: staging host samples 40 without the env var",
+      got: () => resolvePageBudget({ base: "https://staging.mehamakor.online", env: {}, argv: [] }).mode,
+      want: "sample",
+    },
+    {
+      name: "budget: production stays a full crawl",
+      got: () => resolvePageBudget({ base: "https://mehamakor.co.il", env: { IS_PRODUCTION: "true" }, argv: [] }).max,
+      want: 2000,
+    },
+    {
+      name: "budget: local next start stays a full crawl",
+      got: () => resolvePageBudget({ base: "http://localhost:3000", env: {}, argv: [] }).mode,
+      want: "full",
+    },
+    {
+      name: "budget: --max-pages=5 overrides a staging target",
+      got: () => resolvePageBudget({ base: "https://staging.mehamakor.online", env: { IS_PRODUCTION: "false" }, argv: ["--max-pages=5"] }).max,
+      want: 5,
+    },
+    {
+      name: "budget: an unknown host samples (FULL needs a positive signal)",
+      got: () => resolvePageBudget({ base: "https://food-mamkor-abc123.vercel.app", env: {}, argv: [] }).mode,
+      want: "sample",
+    },
+    {
+      name: "budget: --max-pagesX=3 is an error, not --max-pages=3",
+      got: () => Boolean(resolvePageBudget({ base: "http://localhost:3000", env: {}, argv: ["--max-pagesX=3"] }).error),
+      want: true,
+    },
+    {
+      name: "budget: --max-pages without a number is an error, not a silent default",
+      got: () => Boolean(resolvePageBudget({ base: "http://localhost:3000", env: {}, argv: ["--max-pages"] }).error),
+      want: true,
+    },
+    // Anchored to the committed workflow, not to a host typed here: every
+    // non-production host post-deploy-checks.yml can crawl must sample, and
+    // the production host must not.
+    ...workflowHostCases(),
+    // MEH-2864: the per-run Vercel count, and the smoke cap.
+    { name: "vercel count: localhost sends 0 to Vercel", got: () => vercelRequestCount("http://localhost:3000", 57), want: 0 },
+    { name: "vercel count: staging host is billed", got: () => vercelRequestCount("https://staging.mehamakor.online", 57), want: 57 },
+    { name: "vercel count: a preview host is billed", got: () => vercelRequestCount("https://food-mamkor-abc.vercel.app", 3), want: 3 },
+    { name: "vercel count: unparseable base is counted, not zeroed", got: () => vercelRequestCount("not a url", 4), want: 4 },
+    { name: `smoke: a run with a business fetches <= ${SMOKE_MAX_URLS} URLs`, got: () => smokeTargets("x").length <= SMOKE_MAX_URLS, want: true },
+    { name: "smoke: home, list, map, health and a business page are all in it", got: () => ["/", "/producers", "/map", "/api/health/liveness", "/x"].every((p) => smokeTargets("x").some(([, q]) => q === p)), want: true },
+    { name: "smoke: no business found → no business page fetched", got: () => smokeTargets(null).some(([k]) => k === "business page"), want: false },
   ];
   let bad = 0;
   for (const c of cases) {
@@ -223,6 +515,59 @@ if (args.includes("--self-test")) {
   const parsedOk = real.length > 0;
   console.log(`${parsedOk ? "PASS" : "FAIL"}  self-test: real robots.txt parsed ${real.length} rule(s) for User-agent: *`);
   if (!parsedOk) bad += 1;
+
+  // End to end: the crawl loop must obey the budget, not only the resolver.
+  let e2e = null;
+  try {
+    e2e = await crawlFixtureBothModes();
+  } catch (err) {
+    console.log(`FAIL  self-test: e2e: fixture crawl did not run (${err.message})`);
+    bad += 1;
+  }
+  if (e2e) {
+    const qPages = (r) => (r.pages || []).filter((p) => p.startsWith("/q")).length;
+    const e2eCases = [
+      { name: "e2e: staging run reports mode sample", got: e2e.sample.mode, want: "sample" },
+      { name: "e2e: staging run fetches exactly the 40-page budget of a 91-page site", got: e2e.sample.crawled, want: 40 },
+      { name: "e2e: staging run fetches one page per pathname (/q once, not 30 times)", got: qPages(e2e.sample), want: 1 },
+      { name: "e2e: unparseable hrefs are not counted as pages", got: e2e.sample.crawled === (e2e.sample.pages || []).length, want: true },
+      // The control: the same site under the full budget crawls past 40, so a
+      // sample run stopping at 40 is the budget, not the site running out.
+      { name: "e2e: full run on the same site fetches all 91 pages", got: e2e.full.crawled, want: 91 },
+    ];
+    for (const c of e2eCases) {
+      const ok = c.got === c.want;
+      console.log(`${ok ? "PASS" : "FAIL"}  self-test: ${c.name}${ok ? "" : ` (got ${c.got}, want ${c.want})`}`);
+      if (!ok) bad += 1;
+    }
+  }
+  // MEH-2864: --smoke through the real CLI (fresh review: the three
+  // smokeTargets() cases never reached the code that decides OK/SKIP/FAIL).
+  let sm = null;
+  try {
+    sm = await smokeFixtureRuns();
+  } catch (err) {
+    console.log(`FAIL  self-test: smoke-e2e: fixture smoke did not run (${err.message})`);
+    bad += 1;
+  }
+  if (sm) {
+    const has = (r, re) => re.test(r.out);
+    const smCases = [
+      { name: "smoke-e2e: a listed business → its page fetched, exit 0", got: sm.found.code === 0 && has(sm.found, /OK {4}business page/), want: true },
+      { name: "smoke-e2e: an empty catalogue ([]) → business page SKIP, exit 0", got: sm.empty.code === 0 && has(sm.empty, /SKIP {2}business page/), want: true },
+      { name: "smoke-e2e: an object instead of an array → FAIL, exit 1", got: sm.object.code === 1 && has(sm.object, /FAIL {2}business discovery.*not an array/), want: true },
+      { name: "smoke-e2e: a row without a slug → FAIL, exit 1", got: sm.noSlug.code === 1 && has(sm.noSlug, /FAIL {2}business discovery.*no slug/), want: true },
+      { name: "smoke-e2e: a cross-origin redirect never carries the bypass secret", got: sm.seenByOther.length > 0 && sm.seenByOther.every((h) => h === ""), want: true },
+      { name: "smoke-e2e: the redirect hop is counted (7 requests)", got: has(sm.redirect, /HTTP requests: +7 /), want: true },
+      // Control: a target that answers 200 for everything must fail the 404 leg.
+      { name: "smoke-e2e: a target with no 404 → FAIL, exit 1", got: sm.no404.code === 1 && has(sm.no404, /FAIL {2}404 control/), want: true },
+    ];
+    for (const c of smCases) {
+      const ok = c.got === c.want;
+      console.log(`${ok ? "PASS" : "FAIL"}  self-test: ${c.name}${ok ? "" : ` (got ${c.got}, want ${c.want})`}`);
+      if (!ok) bad += 1;
+    }
+  }
   process.exit(bad === 0 ? 0 : 1);
 }
 
@@ -255,7 +600,20 @@ function extractAnchors(html) {
 // Do NOT add `x-vercel-set-bypass-cookie`: it turns redirects into cookie
 // redirects, which this tool would then report as chains (measured 28/10).
 const BYPASS = (process.env.VERCEL_AUTOMATION_BYPASS_SECRET || "").trim();
+// Resolved before BASE is parsed: `--max-pages 5 <url>` would otherwise make
+// "5" the base URL and die in `new URL` with a stack trace instead of a message.
+const budget = resolvePageBudget({ base: BASE, env: process.env, argv: args });
+if (budget.error) {
+  console.error(`link-check: ${budget.error}`);
+  process.exit(1);
+}
 const BASE_ORIGIN = new URL(BASE).origin;
+const delayFlag = args.find((a) => a.startsWith("--delay-ms"));
+const DELAY_MS = delayFlag ? Number((delayFlag.match(/^--delay-ms=(\d+)$/) || [])[1]) : 0;
+if (delayFlag && !(DELAY_MS >= 0 && /^--delay-ms=\d+$/.test(delayFlag))) {
+  console.error(`link-check: --delay-ms needs a whole number, written --delay-ms=600 (got "${delayFlag}")`);
+  process.exit(1);
+}
 function requestHeaders(url) {
   const sameOrigin = new URL(url).origin === BASE_ORIGIN;
   return {
@@ -264,12 +622,14 @@ function requestHeaders(url) {
   };
 }
 
+let requests = 0; // every fetch, redirect hops and preflight included (MEH-2864)
 async function head(url) {
   const chain = [];
   let current = url;
   for (let hop = 0; hop < 6; hop += 1) {
     let res;
     try {
+      requests += 1;
       res = await fetch(current, { redirect: "manual", headers: requestHeaders(current) });
     } catch (err) {
       return { status: 0, error: err.message, chain, final: current };
@@ -282,7 +642,10 @@ async function head(url) {
       continue;
     }
     const type = res.headers.get("content-type") || "";
-    const body = type.includes("text/html") ? await res.text() : "";
+    // HTML for the crawl; JSON for --smoke's business discovery (MEH-2864),
+    // which goes through this same hop-by-hop loop so the bypass header never
+    // follows a redirect to another origin and every hop is counted.
+    const body = type.includes("text/html") || type.includes("json") ? await res.text() : "";
     return { status: res.status, chain, final: current, body };
   }
   return { status: -1, error: "redirect loop (>6 hops)", chain, final: current };
@@ -349,6 +712,57 @@ const probes = {
   // path: the point is to exercise the route's OWN not-found rendering.
   entity: "/producer/999999999",
 };
+// MEH-2864: --smoke — the post-deploy check against the live site. A handful
+// of fixed URLs, no crawl. Exits here; nothing below runs.
+if (args.includes("--smoke")) {
+  const results = [];
+  let slug = null;
+  let noBusiness = false;
+  for (const [name, path] of smokeTargets(null)) {
+    if (path === SMOKE_DISCOVERY) {
+      // Only an empty array is "no business yet" (production before launch):
+      // SKIP. Anything else that carries no slug — a non-array, an object
+      // envelope, a row without a slug, non-JSON — is a FAIL, so an API
+      // change cannot turn this check into a permanent silent SKIP.
+      const r = await head(`${BASE}${path}`);
+      let data;
+      let shape = "";
+      try {
+        data = JSON.parse(r.body || "");
+      } catch {
+        shape = "not JSON";
+      }
+      if (!shape && !Array.isArray(data)) shape = "not an array";
+      if (!shape && data.length > 0 && !(typeof data[0]?.slug === "string" && data[0].slug)) shape = "first row has no slug";
+      if (!shape && data.length > 0) slug = data[0].slug;
+      const ok = r.status === 200 && !shape;
+      results.push({ name, path, status: r.status, ok, error: r.error || (r.status === 200 ? shape : "") || undefined });
+      if (ok && data.length === 0) noBusiness = true;
+      continue;
+    }
+    const r = await head(`${BASE}${path}`);
+    const want = name === "404 control" ? 404 : 200;
+    results.push({ name, path, status: r.status, ok: r.status === want, error: r.error });
+  }
+  if (slug) {
+    const [[name, path]] = smokeTargets(slug).filter(([k]) => k === "business page");
+    const r = await head(`${BASE}${path}`);
+    results.push({ name, path, status: r.status, ok: r.status === 200, error: r.error });
+  } else if (noBusiness) {
+    results.push({ name: "business page", path: "(none listed)", status: "-", ok: true, skip: true });
+  }
+  const failed = results.filter((r) => !r.ok);
+  if (asJson) console.log("note: --json is ignored with --smoke");
+  console.log(`link-check --smoke · base=${BASE}`);
+  for (const r of results) {
+    console.log(`  ${r.skip ? "SKIP" : r.ok ? "OK  " : "FAIL"}  ${r.name.padEnd(19)} ${r.path}  → ${r.status}${r.error ? ` (${r.error})` : ""}`);
+  }
+  console.log(`URLs checked:       ${results.filter((r) => !r.skip).length} (cap ${SMOKE_MAX_URLS})`);
+  console.log(`HTTP requests:      ${requests} (redirect hops included)`);
+  console.log(`requests to Vercel: ${vercelRequestCount(BASE, requests)}`);
+  process.exit(failed.length ? 1 : 0);
+}
+
 const preflight = {};
 for (const [kind, path] of Object.entries(probes)) {
   const r = await head(`${BASE}${path}`);
@@ -384,15 +798,27 @@ const noteRef = (target, from) => {
 // category ids are a fixed set), but a crawler with no ceiling turns a future
 // pagination bug into a hang with no message. Truncation is REPORTED, never
 // silent — an unannounced cap reads as "covered everything".
-const MAX_PAGES = 2000;
+const MAX_PAGES = budget.max;
+// Pages actually fetched — the budget and the "crawled" line count these, not
+// `seen`, which also holds unparseable hrefs (MEH-2864 review: 60 bad hrefs on
+// one page read as 62 "pages" and spent the whole sample on one request).
+const fetchedPages = [];
+// Sample mode re-renders a route once, not once per query string (the home
+// page links /producers?category=<id> per category card).
+const queuedPathnames = new Set(["/"]);
 let truncated = 0;
 while (queue.length) {
-  if (seen.size >= MAX_PAGES) {
+  if (fetchedPages.length >= MAX_PAGES) {
     truncated = queue.length;
     break;
   }
   const path = queue.shift();
+  // --delay-ms=N (MEH-2864): pace the crawl. The E2E crawl renders against
+  // the shared staging backend, whose per-IP limits (120/min on /producers
+  // and by-slug) a full-speed crawl would hit — reds for the wrong reason.
+  if (DELAY_MS && fetchedPages.length > 0) await new Promise((r) => setTimeout(r, DELAY_MS));
   const result = await head(`${BASE}${path}`);
+  fetchedPages.push(path);
   seen.set(path, result);
   if (!result.body) continue;
 
@@ -427,8 +853,10 @@ while (queue.length) {
       skippedByRobots.add(url.pathname);
       continue;
     }
+    if (budget.mode === "sample" && queuedPathnames.has(url.pathname)) continue;
     if (!queued.has(next)) {
       queued.add(next);
+      queuedPathnames.add(url.pathname);
       queue.push(next);
     }
   }
@@ -475,7 +903,13 @@ if (asJson) {
         slugBlind,
         entityBlind,
         truncated,
-        crawled: seen.size,
+        mode: budget.mode,
+        budget: MAX_PAGES,
+        budgetReason: budget.reason,
+        crawled: fetchedPages.length,
+        pages: fetchedPages,
+        requests,
+        vercelRequests: vercelRequestCount(BASE, requests),
         broken: broken.map(([u, r]) => ({ url: u, status: r.status, error: r.error, from: [...(referrers.get(u) || [])] })),
         redirects: redirects.map(([u, r]) => ({ url: u, hops: r.chain })),
         deadAnchors,
@@ -488,6 +922,7 @@ if (asJson) {
   );
 } else {
   console.log(`link-check · base=${BASE}`);
+  console.log(`mode:               ${budget.mode} · budget ${MAX_PAGES} pages · ${budget.reason}`);
   console.log(
     `preflight:          unmatched 404 ✓ · single-segment ${preflight.single} · ` +
       `dynamic-entity ${preflight.entity}`
@@ -514,8 +949,15 @@ if (asJson) {
     );
   }
   if (slugBlind || entityBlind) console.log("");
-  console.log(`crawled:            ${seen.size} internal URLs`);
-  if (truncated) {
+  console.log(`crawled:            ${fetchedPages.length} pages fetched`);
+  console.log(`HTTP requests:      ${requests} (preflight and redirect hops included)`);
+  console.log(`requests to Vercel: ${vercelRequestCount(BASE, requests)}`);
+  if (truncated && budget.mode === "sample") {
+    console.log(
+      `SAMPLE:             stopped at the ${MAX_PAGES}-page staging budget with ${truncated} URLs ` +
+        `still queued — by design (MEH-2864). A full crawl runs on production and locally.`
+    );
+  } else if (truncated) {
     console.log(
       `TRUNCATED:          hit the ${MAX_PAGES}-page cap with ${truncated} URLs still queued — ` +
         `results below are PARTIAL.`

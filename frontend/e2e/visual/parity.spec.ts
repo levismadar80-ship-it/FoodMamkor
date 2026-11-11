@@ -106,6 +106,16 @@ const EXPERIENCES_COUNT_RE = /\/api\/experiences\/count(?:\?[^#]*)?$/;
 // through the vrt-regen labels on the tip that already carried #3654's
 // collapsed mobile footer; each PNG was opened and diffed before merge.
 const EVENTS_UPCOMING_RE = /\/api\/events\/upcoming(?:\?[^#]*)?$/;
+// MEH-2858: the Footer's «קבוצות רכישה» / «סלי הפתעה» links
+// (lib/use-hub-nav-gate.js) read `GET /group-buys` and `GET /rescue/offers` —
+// live staging supply, so the «גלו» list (in every frame) would grow the day
+// a group buy opens or a bag is posted. Pinned EMPTY like events: the links
+// are absent, which is what the current baselines hold (staging 09/11: both
+// 200 `[]`). Anchored at `$`/`?` so `/group-buys/<id>` is not caught;
+// `?producer_id=` IS (producer page activities) — its fixture producer has
+// none either.
+const GROUP_BUYS_RE = /\/api\/group-buys(?:\?[^#]*)?$/;
+const RESCUE_OFFERS_RE = /\/api\/rescue\/offers(?:\?[^#]*)?$/;
 // MEH-2804: the home trust band reads GET /stats — LIVE staging counts
 // («31 בתי עסק», «18 קטגוריות» on 07/11), so every home frame moved whenever the
 // data did, and a regen baked today's numbers into the baseline. Pinned for
@@ -282,6 +292,11 @@ async function preparePage(page: Page): Promise<void> {
   await page.route(EVENTS_UPCOMING_RE, async (route) => {
     await route.fulfill({ status: 200, contentType: "application/json", body: "[]" });
   });
+  for (const re of [GROUP_BUYS_RE, RESCUE_OFFERS_RE]) {
+    await page.route(re, async (route) => {
+      await route.fulfill({ status: 200, contentType: "application/json", body: "[]" });
+    });
+  }
   await page.route(STATS_RE, async (route) => {
     await route.fulfill({ status: 200, contentType: "application/json", body: PINNED_STATS });
   });

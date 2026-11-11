@@ -17,10 +17,28 @@ import { optimizeCloudinary } from "@/lib/cloudinary";
 // the 4032 original (never upscales). f_auto,q_auto via the helper.
 // REUSES: components/ProducerCard.jsx (optimizeCloudinary aspectRatio + g_auto)
 const HERO_MAX_WIDTH = 1920;
-const HERO_IMAGE = optimizeCloudinary(
-  "https://res.cloudinary.com/dfzpscjks/image/upload/home/hero-produce.jpg",
-  { aspectRatio: "16:9", width: HERO_MAX_WIDTH }
-);
+const HERO_SRC = "https://res.cloudinary.com/dfzpscjks/image/upload/home/hero-produce.jpg";
+const HERO_IMAGE = optimizeCloudinary(HERO_SRC, { aspectRatio: "16:9", width: HERO_MAX_WIDTH });
+// MEH-2850 (Sapir 08/11: shrink the home page, nothing visible may change):
+// on /he below 640px the photo is shown ≤704 CSS px wide (cover of a 16:9
+// image in a layer ≤396px tall: the band ≤360px plus the -5% inset each side —
+// measured on production at 320–639px) and the Ken Burns drift scales it to
+// ≤1.06 → ≤746 CSS px. Enlarged text (130%) grows the layer to ~461px, so 1x/2x
+// fall a few percent short on paper; measured with the real photo against
+// w_1920 it stays indistinguishable (PSNR 44dB at 2x, 41dB at 1x). Every phone still gets at least that many device pixels: 1x → w_828
+// (needs ≤746), 2x → w_1600 (≤1492), 3x → w_1920 (as before — a 3x phone
+// already received the cap). Lighthouse's mobile profile (DPR 1.75) gets
+// w_1600 instead of w_1920. /en is NOT included: its band is taller (443–472px,
+// longer copy) so its photo is shown up to ~978 CSS px and w_828/w_1600 would
+// be short of it — /en keeps w_1920 everywhere. 640px and up: unchanged.
+// -webkit-image-set, not image-set: inside a custom property an unsupported
+// value does not fall back, it computes to none (no photo at all), and the
+// prefixed form is the one every Chrome/Safari and Firefox 90+ accept.
+// Each width is explicit at its call (MEH-2010: every c_fill site is capped).
+const HERO_PHONE_1X = optimizeCloudinary(HERO_SRC, { aspectRatio: "16:9", width: 828 });
+const HERO_PHONE_2X = optimizeCloudinary(HERO_SRC, { aspectRatio: "16:9", width: 1600 });
+export const HERO_IMAGE_SET_PHONE = `-webkit-image-set(url("${HERO_PHONE_1X}") 1x, url("${HERO_PHONE_2X}") 2x, url("${HERO_IMAGE}") 3x)`;
+export { HERO_IMAGE };
 
 // MEH-643: ease-quart curve mirrored for Framer (JS) — same as the .ease-quart
 // CSS utility (MEH-136, globals.css). Reduced-motion honored globally via
@@ -189,11 +207,17 @@ export function HomeHero({
           component — MEH-1567.) */}
       <div className="absolute inset-0 z-0 overflow-hidden" aria-hidden="true">
         <div
-          className="kenburns-right absolute"
+          // MEH-2850: both images are CSS variables and the classes pick one —
+          // an inline background-image would outrank any class, so the phone
+          // set could never apply. ≥640px: the same w_1920 url as before.
+          // The phone class is gated on <html lang="he"> (layout.js sets it per
+          // locale), so /en never matches it and keeps --hero-bg.
+          className="kenburns-right absolute [background-image:var(--hero-bg)] max-[639px]:[html[lang=he]_&]:[background-image:var(--hero-phone)]"
           data-testid="hero-image-layer"
           style={{
             inset: "-5%",
-            backgroundImage: `url(${HERO_IMAGE})`,
+            "--hero-bg": `url(${HERO_IMAGE})`,
+            "--hero-phone": HERO_IMAGE_SET_PHONE,
             backgroundSize: "cover",
             backgroundPosition: "center",
             backgroundRepeat: "no-repeat",

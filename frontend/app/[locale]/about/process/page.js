@@ -1,7 +1,7 @@
 import { getTranslations } from "next-intl/server";
 import AboutProcessClient from "./AboutProcessClient";
 import { BRAND_NAME } from "@/lib/constants";
-import { buildAlternates, urlForLocalePath, OG_LOCALE } from "@/lib/i18n-seo";
+import { buildAlternates, buildEntityTitle, urlForLocalePath, OG_LOCALE } from "@/lib/i18n-seo";
 
 // MEH-534: S11 "תהליך הקבלה" Direction D — standalone editorial process page.
 // Server wrapper mirrors the about/page.js shape (MEH-739 / login MEH-658
@@ -12,12 +12,11 @@ export async function generateMetadata({ params }) {
   const t = await getTranslations({ locale, namespace: "process.meta" });
 
   return {
-    // title.absolute prevents the layout's `%s | ${BRAND_NAME}` template from
-    // appending — process.meta.title already carries the brand suffix.
-    title: { absolute: t("title") },
+    // MEH-2853: plain title — the layout template `%s | <brand>` adds the brand.
+    title: t("title"),
     description: t("description"),
     openGraph: {
-      title: t("og_title"),
+      title: buildEntityTitle(t("og_title"), locale),
       description: t("og_description"),
       type: "article",
       url: urlForLocalePath("/about/process", locale),

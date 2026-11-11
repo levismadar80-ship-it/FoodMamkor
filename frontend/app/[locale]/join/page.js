@@ -7,7 +7,7 @@ import EditorialPhoto from "@/components/EditorialPhoto";
 import JoinFeatures from "@/components/join/JoinFeatures";
 import JoinStickyBar from "@/components/join/JoinStickyBar";
 import { BRAND_NAME } from "@/lib/constants";
-import { buildAlternates, OG_LOCALE } from "@/lib/i18n-seo";
+import { buildAlternates, buildEntityTitle, OG_LOCALE } from "@/lib/i18n-seo";
 
 /**
  * /join — producer recruitment landing (MEH-995; rebuilt to the approved
@@ -42,10 +42,11 @@ export async function generateMetadata({ params }) {
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: "seo.join" });
   return {
-    title: { absolute: t("title") },
+    // MEH-2853: plain title — the layout template `%s | <brand>` adds the brand.
+    title: t("title"),
     description: t("description"),
     openGraph: {
-      title: t("og_title"),
+      title: buildEntityTitle(t("og_title"), locale),
       description: t("og_description"),
       type: "website",
       siteName: BRAND_NAME,

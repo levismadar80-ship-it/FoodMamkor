@@ -14,7 +14,7 @@
 import { Link } from "@/i18n/navigation";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { BRAND_NAME } from "@/lib/constants";
-import { buildAlternates, OG_LOCALE } from "@/lib/i18n-seo";
+import { buildAlternates, buildEntityTitle, OG_LOCALE } from "@/lib/i18n-seo";
 
 // MEH-476 PR 3b2: per-page hreflang via buildAlternates; og:locale per locale.
 export async function generateMetadata({ params }) {
@@ -22,11 +22,11 @@ export async function generateMetadata({ params }) {
   const t = await getTranslations("guides.index");
   const title = t("meta_title");
   return {
-    // title.absolute prevents layout's `%s | ${BRAND_NAME}` template appending.
-    title: { absolute: title },
+    // MEH-2853: plain title — the layout template `%s | <brand>` adds the brand.
+    title,
     description: t("meta_description"),
     openGraph: {
-      title,
+      title: buildEntityTitle(title, locale),
       description: t("og_description"),
       type: "website",
       siteName: BRAND_NAME,

@@ -58,6 +58,28 @@ describe("RecipeDetail hero", () => {
     renderRecipe();
     expect(screen.getByTestId("recipe-hero-missing")).toBeTruthy();
   });
+  // MEH-2844 (Sapir 08/11): the strip carries the recipe card's seed (same
+  // Seed, same props, the recipe's own colour) instead of the old Leaf, in
+  // the start-top corner, opposite the share/save pair. Height unchanged.
+  it("the no-photo strip carries the recipe's seed, not the Leaf", async () => {
+    const { seedColorFor } = await import("@/lib/brand-seeds");
+    renderRecipe();
+    const strip = screen.getByTestId("recipe-hero-missing");
+    const svgs = strip.querySelectorAll("svg");
+    expect(svgs).toHaveLength(1); // the seed and nothing else (the Leaf was an svg too)
+    const seed = svgs[0];
+    expect(seed.getAttribute("data-seed-color")).toBe(seedColorFor("r1").fill);
+    expect(seed.getAttribute("width")).toBe("70");
+    expect(seed.querySelector("g").getAttribute("transform")).toMatch(/^rotate\(-36 /);
+    const cls = seed.getAttribute("class").split(/\s+/);
+    expect(cls).toEqual(expect.arrayContaining(["-start-[30px]", "rtl:-scale-x-100"]));
+    expect(cls.filter((c) => /(^|:)-?end-/.test(c))).toEqual([]);
+    expect(strip.className).toMatch(/\bh-24\b/);
+    expect(strip.className).toMatch(/\bmd:h-28\b/);
+    expect(strip.className).toMatch(/\boverflow-hidden\b/);
+    // the actions it must stay clear of are at the END corner
+    expect(screen.getByTestId("recipe-hero-actions").className).toMatch(/\bend-3\b/);
+  });
   it("falls back to the strip when the photo fails to load", () => {
     renderRecipe({ image_url: "https://res.cloudinary.com/broken.jpg" });
     fireEvent.error(screen.getByAltText("ברוסקטה"));

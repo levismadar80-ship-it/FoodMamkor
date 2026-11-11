@@ -27,7 +27,7 @@ const anyCta = () => document.querySelector('[data-testid^="registration-"]');
 beforeEach(() => vi.clearAllMocks());
 
 describe("RegistrationCta — by method", () => {
-  it("whatsapp + mobile → «הרשמה ב-WhatsApp» to that number", () => {
+  it("whatsapp + mobile → «הרשמה בוואטסאפ» to that number", () => {
     cta({ method: "whatsapp", phone: "050-1234567" });
     const a = screen.getByTestId("registration-whatsapp");
     expect(a.textContent).toBe(C.whatsapp);

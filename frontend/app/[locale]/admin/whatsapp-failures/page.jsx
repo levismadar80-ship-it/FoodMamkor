@@ -5,7 +5,8 @@
  *
  * Reads GET /admin/whatsapp/failed and lists rows where Meta confirmed
  * the message did NOT reach the recipient (status: 'failed' or
- * 'window_expired') in the last 7 days. List-only — no resend / retry
+ * 'window_expired'), or that Meta accepted over a day ago with no delivery
+ * receipt since ('accepted' — stuck, MEH-2122 Chunk E), in the last 7 days. List-only — no resend / retry
  * actions in this chunk (intentional; see admin_whatsapp.py docstring).
  *
  * Mirrors the table+empty-state shape of /admin/category-requests with
@@ -47,6 +48,14 @@ export default function AdminWhatsappFailuresPage() {
         <h1 className="text-2xl font-bold">{t("whatsapp_failures.title")}</h1>
         <p className="text-muted text-sm mt-1">{t("whatsapp_failures.subtitle")}</p>
       </div>
+
+      {/* MEH-2122 Chunk E: a line above the table, only when stuck rows exist.
+          Copy approved word for word by Sapir 10/11. */}
+      {rows.some((r) => r.status === "accepted") && (
+        <p data-testid="whatsapp-stuck-hint" className="text-sm text-fg-muted">
+          {t("whatsapp_failures.stuck_hint")}
+        </p>
+      )}
 
       {rows.length === 0 ? (
         <div className="bg-surface border border-border rounded-md p-8 text-center text-fg-muted">

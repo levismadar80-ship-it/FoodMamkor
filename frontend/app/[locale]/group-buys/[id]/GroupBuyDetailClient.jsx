@@ -5,6 +5,8 @@ import { useEffect, useRef, useState } from "react";
 import * as Sentry from "@sentry/nextjs";
 import { useRouter } from "next/navigation";
 import { Link } from "@/i18n/navigation";
+import Breadcrumb from "@/components/Breadcrumb";
+import HistoryBackLink from "@/components/HistoryBackLink";
 import { MagnifyingGlass, MapPin, Clock, ShoppingCart, Truck, ShareNetwork, Check } from "@phosphor-icons/react";
 import Image from "next/image";
 import OwnerRow from "@/components/OwnerRow";
@@ -48,6 +50,10 @@ export default function GroupBuyDetailClient({ id }) {
   const tForm = useTranslations("group_buys.dashboard.form");
   const tShare = useTranslations("share");
   const tSharePage = useTranslations("share_page");
+  // MEH-2857: breadcrumb labels — the events page's «בית» crumb and the
+  // group-buys list's own heading, so no new copy.
+  const tEvents = useTranslations("events.detail");
+  const tList = useTranslations("group_buys.list");
   const locale = useLocale();
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
@@ -441,9 +447,19 @@ export default function GroupBuyDetailClient({ id }) {
           ONCE: on a phone, source order puts it right after the title; from lg
           the grid moves it to column 2 across both rows. */}
       <div className="max-w-6xl mx-auto px-4 py-6 md:py-8">
-        <Link href="/group-buys" className="text-sm text-primary hover:underline mb-4 inline-block">
-          {t("back_to_list_arrow")}
-        </Link>
+        {/* MEH-2857 (Sapir 09/11): «→ חזרה» returns to wherever the visitor
+            came from (e.g. the business page) — the old fixed «→ חזרה לקבוצות
+            הרכישה» led to a list she had never seen. The breadcrumb says where
+            this page lives on the site; both use existing copy. */}
+        <HistoryBackLink />
+        <Breadcrumb
+          items={[
+            { href: "/", label: tEvents("breadcrumb_home") },
+            { href: "/group-buys", label: tList("hero_title") },
+            { label: gb.title },
+          ]}
+          className="mb-4"
+        />
 
         {funded && (
           <div className="mb-5 rounded-md bg-primary text-white px-5 py-4 text-center" data-testid="group-buy-funded">

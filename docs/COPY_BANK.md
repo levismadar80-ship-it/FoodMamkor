@@ -465,6 +465,7 @@
 
 | Date | MEH | Changed | Before | After | Why |
 |---|---|---|---|---|---|
+| 2026-11-08 | MEH-2853 | Every search-result title (`seo.*.title` / `og_title` / `title_fallback` + the page-title keys `*.meta_title`, `process.meta.*`, `recipes.detail.meta_title_*`), he+en — see Section 18 | `{page} — מהמקור` / `{page} \| מהמקור` / `{page} · מהמקור` / no brand, typed into each string | `{page}` only; the layout template `%s \| מהמקור` adds the brand (en `%s \| Mehamakor`) | One pattern in Google, from one place. Suffix removed only — no words added or changed. Approved by Sapir 08/11. |
 | 2026-11-08 | MEH-2841 | /join copy wave — `join.trust_hint`, `join.meta_line`, `join.subhead`, `join.closing.line` (he+en) + new `join.faq.{q,a}_price` and `join.faq.{q,a}_updates`; FAQ order 4 → 6 items | `חינם להצטרף` · `חינם · כ-5 דקות · …` · the two-«הסיפור שלכם» subhead · `עמוד אחד עם כל הפרטים…` | `חינם, בלי עמלות` · `חינם · בלי עמלות · …` · the shorter subhead · `קישור אחד עם כל מה שצריך לדעת עליכם…` | Businesses answer enquiries and do not register; «בלי עמלות» was buried in an FAQ answer and the price question had no answer at all. Commission is a known fear (ynet 03/2019: group-buy organisers take 10%–15%). «זה עוד מקום שצריך לעדכן» is a recurring objection in Topaz's calls. Sapir approved every string word-for-word 08/11. Full table in Section 9. |
 | 2026-11-08 | MEH-2842 | Home hero subtitle — `home.hero.subtitle` (he only) | `ישר מהמקור הביתה. בתי עסק שכבר בדקנו בשבילך.` | `ישר מהמקור אליכם. בתי עסק שכבר בדקנו בשבילכם.` | `הביתה` came from the MEH-2661 neutral-address sweep (04/11) and reads oddly; Sapir approved this wording verbatim 08/11. Neutral plural per ADR-014. `en.json` untouched — `Straight from the source. Businesses we've already vetted for you.` is already neutral. **Side effect on MEH-1692:** that row below closed the hero/trust-band duplication from the band side only and recorded the hero as unchanged. The retired lead `בתי עסק שכבר בדקנו בשבילך` was a byte-exact substring of the old subtitle; with `בשבילכם` it no longer is, so it now renders **zero** times page-wide — which is what MEH-1692's own acceptance criterion asked for and could not reach while the hero was locked. `HomeTrustBandCountGate.test.jsx` updated from `toBe(1)` to `toBe(0)` accordingly. |
 | 2026-10-25 | MEH-2313 | Canonical brand sentence — `CANONICAL_SENTENCE` (`lib/constants.js`) + `public/llms.txt` line 3 + `about.consumer.hero.subheading` (he+en); `seo.login.og_description` (he) | `אוכל מבתי עסק קטנים שבדקנו אישית — קרוב אלייך, בלי לחפש שעות.` / `Food from small businesses we've personally checked — …`; `…ולתמוך בעסקים קטנים מהסביבה שלך.` | `אוכל מבתי עסק מקומיים שבחרנו אישית — קרוב אלייך, בלי לחפש שעות.` / `Food from local businesses we've personally chosen — …`; `…ולתמוך בעסקים מהסביבה שלך.` | Not every business on the site is small. «בדקנו» read as a promise that the food was checked, which collides with the «מאומת» badge (a licence check only); «נבחר» matches «כל בית עסק נבחר אישית» (MEH-1692). Approved verbatim by Sapir 25/10. `about.consumer.story.p4` and `about.consumer.benefits.local.body` keep «קטנים» on purpose: they say some businesses are small, not all. |
@@ -943,7 +944,7 @@ English twins land in `en.json` in the same PR (parity guard, MEH-978/840).
 | **Email** | `שתפו במייל` · Subject: `מכירים את מהמקור?` |
 | **Prefilled message (WA + email body)** | `הכירו את מהמקור — בתי עסק מקומיים לאוכל, כולם עברו היכרות אישית. שווה הצצה: {url}` — `{url}` = site root (`SITE_URL`). _MEH-1170: dropped "מגזין" (forbidden in UI surfaces) + "נבדקו אישית" over-claim → "עברו היכרות אישית" (ADR-022 / MEH-758 locked language)._ |
 | **Footer link** | `ספרו עלינו` (`share_page.footer_link`) |
-| **seo.share.title** | `ספרו עלינו — מהמקור` |
+| **seo.share.title** | `ספרו עלינו` (MEH-2853: the brand comes from the layout template — was `ספרו עלינו — מהמקור`) |
 | **seo.share.description** | `עזרו לעוד אנשים לגלות בתי עסק מקומיים שנבדקו אישית — שתפו את מהמקור.` |
 | **Status** | ✅ MEH-1160 |
 
@@ -1206,3 +1207,62 @@ Brand rule: BRAND.md §7. Mechanical replacement in every he.json string and eve
 | 16 | demo seed title (staging only) | `רכישה קבוצתית: שק קמח כוסמין מלא` | `קבוצת רכישה: שק קמח כוסמין מלא` | ✅ PR 9 |
 | 17 | `producer.detail.sections.group_buys.show_all` (new) | — | `הצגת כל קבוצות הרכישה` | ✅ PR 7 |
 
+## Section 18 — SEO: page titles (MEH-2853)
+
+> **Rule (approved by Sapir 08/11):** every search-result title is «{שם הדף} | מהמקור» (en «{page} | Mehamakor»). The brand is added by ONE template — `title.template` in `frontend/app/[locale]/layout.js` (`%s | מהמקור`, en `%s | Mehamakor`). Title strings never carry the brand, never twice, never after «—» / «-» / «·». Guarded by `frontend/__tests__/title-pattern.test.js`.
+
+| Case | How the title is built |
+|---|---|
+| **Home** | Its own full title, `seo.site.title` — `מהמקור — בתי עסק מקומיים בתחום המזון, כולם במקום אחד`. Not run through the template: it is the layout's `title.default`. |
+| **Every other page** | Returns its plain title (`seo.<page>.title`, `<ns>.meta_title`, `process.meta.title`…); the template adds « \| מהמקור». No `title.absolute` — except the brand-only title («מהמקור» alone) of a missing / gone business or organizer, which has no page part to put in the template. |
+| **Entity pages** (business, event, experience, group buy, organizer, recipe) | The entity name (recipe: `{recipeTitle} \| {producerName}`); the template adds the brand. Fallbacks (`seo.event/experience/group_buy.title_fallback`) have no brand either. |
+| **og:title / twitter:title** | Next.js does not apply the layout template to these. A page that sets its own `openGraph` adds « \| <brand>» with `buildEntityTitle(title, locale)` (`lib/i18n-seo.js`); the `og_title` strings carry no brand. The layout's `openGraph` / `twitter` carry **no title**, so a page without its own gets og:title from its own templated `<title>` and twitter:title from og:title. The home card is unchanged: `seo.site.title` = `og_title` = `twitter_title`. |
+| **Left as they were — for Sapir** | `seo.about.title` / `og_title` («החזון שלנו — על מהמקור» / «About Mehamakor — our vision and values»): the brand is inside the words, not a suffix, so /about keeps `title.absolute` until reworded. og titles whose words already name the brand («צרו קשר עם מהמקור», «כניסה למהמקור», «הרשמה למהמקור», «שחזור/איפוס סיסמה במהמקור», «אימות כתובת אימייל במהמקור», «המועדפים שלי במהמקור») keep no « \| מהמקור» ending, so the brand is not said twice. |
+| **Over 65 characters** | `/events` — he 68, en 83. Reported, not reworded. |
+
+### MEH-2847 — «בישול» → «בישול ואפייה» (approved by Sapir verbatim 08/11)
+The experience category whose data key is «בישול» is labelled «בישול ואפייה», the term the business directories use («קורסים וסדנאות בישול ואפייה»), instead of adding a ninth, overlapping category. The data key «בישול» is unchanged, so no migration.
+| # | Key | Before | After | Status |
+|---|---|---|---|---|
+| 1 | `events.experience_categories.cooking` (the chip on /experiences) + `experiences.categories.cooking` (the experience create/edit form select, and the experience page) | `בישול` (en `Cooking`) | `בישול ואפייה` (en `Cooking & baking`) | ✅ MEH-2847 PR |
+
+### MEH-1508 — milk/egg allergy sentence on the vegan badges (approved by Sapir verbatim 09/11)
+Self-declared "vegan" is a dietary claim, not an allergen-safety claim (UK guidance), so the two vegan badges tell an allergic visitor to check with the business — the same shape as the gluten line (`producer.detail.header.gluten_facility.shared`). The vegetarian badges do not get it: vegetarian food includes milk and eggs. Labels unchanged (MEH-2677: «טבעוני» / «צמחוני»); the filter chip's ⓘ (`subtext`, its aria-label) unchanged.
+| # | Key | Before | After | Status |
+|---|---|---|---|---|
+| 1 | `badges.vegan.tooltip` | `לעסק יש מוצרים טבעוניים מסומנים בקטלוג.` | `לעסק יש מוצרים טבעוניים מסומנים בקטלוג. אם יש אלרגיה לחלב או לביצים, כדאי לוודא ישירות מול בית העסק.` | ✅ MEH-1508 PR |
+| 2 | `badges.vegan_all.tooltip` | `לפי הצהרת בית העסק` | `לפי הצהרת בית העסק. אם יש אלרגיה לחלב או לביצים, כדאי לוודא ישירות מול בית העסק.` | ✅ MEH-1508 PR |
+| 1 en | `badges.vegan.tooltip` | `The business has products marked vegan in its catalog.` | `The business has products marked vegan in its catalog. If you have a milk or egg allergy, please check directly with the business.` | ✅ MEH-1508 PR |
+| 2 en | `badges.vegan_all.tooltip` | `As declared by the business` | `As declared by the business. If you have a milk or egg allergy, please check directly with the business.` | ✅ MEH-1508 PR |
+
+### MEH-2858 — footer «גלו»: group buys and rescue bags (exact words in the card, existing product names — Sapir 09/11)
+Each link shows only while its hub has at least one public item (`lib/use-hub-nav-gate.js`), after «חוויות», last in the group («אודות» moved to «עלינו» in PR 2).
+| # | Key | Before | After | Status |
+|---|---|---|---|---|
+| 1 | `nav.footer.group_buys` (new) | — | `קבוצות רכישה` (en `Group buys`) | ✅ MEH-2858 PR |
+| 2 | `nav.footer.rescue` (new) | — | `סלי הפתעה` (en `Surprise bags`) | ✅ MEH-2858 PR |
+| 3 | `nav.footer.group_about_heading` (new, scope add 09/11) | — | `עלינו` (en `About us`) — third footer group: אודות · למה מקומי? · ספרו עלינו | ✅ MEH-2858 PR 2 |
+| 4 | `nav.footer.nav_discover` (removed) | `גלו עסקים` (en `Discover businesses`) → `/` | — (the brand-column logo links home) | ✅ MEH-2858 PR 2 |
+
+### MEH-2837 PR 2 — «וואטסאפ» in Hebrew everywhere (approved by Sapir verbatim 08/11)
+Rule: BRAND.md §7. he.json only; en.json, keys and code unchanged. Left in Latin on purpose (product / legal names): `privacy.sections.third_parties.items.meta` (legal text, unchanged in full — «Meta (WhatsApp Cloud API) — שליחת הודעות WhatsApp תפעוליות…») and `guides.customer_messages.body.b51` («WhatsApp Business»).
+| # | Key | Before | After | Status |
+|---|---|---|---|---|
+| 1 | `auth.register.producer.fields.phone_label` | `טלפון WhatsApp` | `טלפון וואטסאפ` | ✅ MEH-2837 PR 2 |
+| 2 | `auth.register.producer.fields.phone_hint` | `נשלח לכם הודעת WhatsApp לאישור ולהשלמת הפרופיל` | `נשלח לכם הודעת וואטסאפ לאישור ולהשלמת הפרופיל` | ✅ MEH-2837 PR 2 |
+| 3 | `auth.register.producer.submit_next_hint` | `…נחזור אליכם ב־WhatsApp.` | `…נחזור אליכם בוואטסאפ.` | ✅ MEH-2837 PR 2 |
+| 4 | `auth.register.producer.success.whatsapp_warning` | `לא קיבלתם הודעת WhatsApp? …` | `לא קיבלתם הודעת וואטסאפ? … (rest unchanged)` | ✅ MEH-2837 PR 2 |
+| 5 | `admin.producers.form.sections.availability_tooltip` | `…ולחצן WhatsApp מוסתר…` | `…ולחצן וואטסאפ מוסתר…` | ✅ MEH-2837 PR 2 |
+| 6 | `admin.producers.form.fields.primary_contact_whatsapp` | `WhatsApp` | `וואטסאפ` | ✅ MEH-2837 PR 2 |
+| 7 | `admin.outreach.actions.whatsapp` | `WhatsApp` | `וואטסאפ` | ✅ MEH-2837 PR 2 |
+| 8 | `admin.outreach.modal_wa.title` | `הודעת WhatsApp אל {name}` | `הודעת וואטסאפ אל {name}` | ✅ MEH-2837 PR 2 |
+| 9 | `admin.outreach.modal_wa.open` | `פתח ב-WhatsApp` | `פתח בוואטסאפ` | ✅ MEH-2837 PR 2 |
+| 10 | `admin.help.topics.outreach.steps[3]` | `«WhatsApp» מכין הודעה…` | `«וואטסאפ» מכין הודעה…` | ✅ MEH-2837 PR 2 |
+| 11 | `experiences.detail.whatsapp_cta` | `שליחת הודעה ב-WhatsApp` | `שליחת הודעה בוואטסאפ` | ✅ MEH-2837 PR 2 |
+| 12 | `experiences.detail.waitlist_cta` | `לרשימת ההמתנה ב-WhatsApp` | `לרשימת ההמתנה בוואטסאפ` | ✅ MEH-2837 PR 2 |
+| 13 | `reviews.wa_gate_message` | `לחצו על כפתור WhatsApp כדי ליצור קשר — ואז תוכלו לכתוב ביקורת` | `לחצו על כפתור וואטסאפ כדי ליצור קשר — ואז תוכלו לכתוב ביקורת` | ✅ MEH-2837 PR 2 |
+| 14 | `reviews.login_prompt` | `<login>התחברו</login> וצרו קשר ב-WhatsApp כדי לכתוב ביקורת` | `<login>התחברו</login> וצרו קשר בוואטסאפ כדי לכתוב ביקורת` | ✅ MEH-2837 PR 2 |
+| 15 | `sweep_tail.alert_prefs.row_whatsapp_opt_in` | `שלחו ב-WhatsApp` | `שלחו בוואטסאפ` | ✅ MEH-2837 PR 2 |
+| 16 | `registration.form.whatsapp` | `WhatsApp` | `וואטסאפ` | ✅ MEH-2837 PR 2 |
+| 17 | `registration.form.whatsapp_needs_mobile` | `כדי לבחור WhatsApp צריך מספר נייד בפרטי העסק` | `כדי לבחור וואטסאפ צריך מספר נייד בפרטי העסק` | ✅ MEH-2837 PR 2 |
+| 18 | `registration.cta.whatsapp` | `הרשמה ב-WhatsApp` | `הרשמה בוואטסאפ` | ✅ MEH-2837 PR 2 |

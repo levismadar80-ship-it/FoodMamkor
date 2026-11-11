@@ -99,22 +99,44 @@ describe("ImageGallery empty state — Tinted Masthead (MEH-815)", () => {
     expect(bloom.getAttribute("width")).toBe("280");
     expect(bloom.getAttribute("aria-hidden")).toBe("true");
     const cls = bloom.getAttribute("class");
-    // half past the END edge at each size → cropped
-    expect(cls).toMatch(/(^|\s)w-\[200px\] h-\[200px\] -bottom-10 -end-\[100px\]/);
+    // past the END edge at each size → cropped (MEH-2844 moved it below lg)
+    expect(cls).toMatch(/(^|\s)w-\[200px\] h-\[200px\] /);
     expect(cls).toMatch(/md:w-\[280px\] md:h-\[280px\]/);
-    expect(cls).toMatch(/md:-end-\[140px\]/);
+    expect(cls).toMatch(/lg:-end-\[140px\]/);
     expect(cls).not.toMatch(/rotate|scale-x/); // never rotated or mirrored
     expect(bloom.querySelectorAll("[data-seed]")).toHaveLength(5);
     // the card crops it
     expect(screen.getByTestId("gallery-empty-state").className).toMatch(/overflow-hidden/);
   });
 
+  // MEH-2844 (Sapir 08/11): below lg the bell/share/heart circles sit in the
+  // top-end corner (the lg:hidden cluster) and the green seed ran under the
+  // bell. Below lg the bloom sits lower and further in: ≥12px from every
+  // circle, ≥3 seeds visible (measured on staging — see ImageGallery.jsx).
+  // From lg the circles leave the masthead and the board's centred bloom
+  // returns. Old classes (-bottom-10 -end-[100px], md:top-1/2) fail here.
+  it("below lg the bloom sits low and in, clear of the corner circles; centred only from lg", () => {
+    render(<ImageGallery images={[]} producerName="חוות הדבש" />);
+    const cls = document
+      .querySelector('[data-testid="gallery-tint-layer"] svg[data-seed-mark="light"]')
+      .getAttribute("class")
+      .split(/\s+/);
+    expect(cls).toEqual(expect.arrayContaining(["-bottom-[90px]", "-end-[70px]"]));
+    expect(cls).toEqual(expect.arrayContaining(["md:-bottom-[135px]", "md:-end-[95px]"]));
+    expect(cls).toEqual(
+      expect.arrayContaining(["lg:bottom-auto", "lg:top-1/2", "lg:-translate-y-1/2", "lg:-end-[140px]"])
+    );
+    // no breakpoint below lg centres it again (the overlap at 768)
+    expect(cls.filter((c) => /^(md:)?top-1\/2$|^(md:)?-translate-y-1\/2$/.test(c))).toEqual([]);
+  });
+
   it("the name block stops short of the bloom, so the h1 never sits on a seed", () => {
     render(<ImageGallery images={[]} producerName="מאפיית רוח השדה של משפחת כהן בזכרון יעקב" />);
     const block = screen.getByTestId("masthead-name-block");
-    // 100px of bloom + 12px gap on a phone; 140 + 12 from md
-    expect(block.className).toMatch(/(^|\s)max-w-\[calc\(100%-7rem\)\]/);
-    expect(block.className).toMatch(/md:max-w-\[calc\(100%-9\.5rem\)\]/);
+    // visible bloom + 12px gap: 130px on a phone, 185px at md, 140px from lg
+    expect(block.className).toMatch(/(^|\s)max-w-\[calc\(100%-9rem\)\]/);
+    expect(block.className).toMatch(/md:max-w-\[calc\(100%-12\.5rem\)\]/);
+    expect(block.className).toMatch(/lg:max-w-\[calc\(100%-9\.5rem\)\]/);
     const h1 = screen.getByRole("heading", { level: 1 });
     expect(block).toContainElement(h1);
     // a long unbreakable word wraps inside the cap instead of overflowing it

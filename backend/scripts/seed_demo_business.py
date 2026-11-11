@@ -23,13 +23,16 @@ Related:  backend/seed_data.py (base seed patterns) · MEH-999 (producer
           swapped for the best real profile after first-10).
 History:  MEH-1074 Wave 3 (creation); MEH-1241 (--sync-users QA passwords);
           MEH-1432 (multi-location + delivery-only demo); MEH-1528 (QA admin
-          account + dietary-scope demo producers for auth-free QA).
+          account + dietary-scope demo producers for auth-free QA); MEH-2897
+          (--golden: the seven golden-path personas, see GOLDEN_BUSINESSES).
 
 Run (Sapir, Git Bash, after approving the demo identity below):
     railway run python backend/scripts/seed_demo_business.py
+    railway run python backend/scripts/seed_demo_business.py --golden  # personas only
 Local:
     python backend/scripts/seed_demo_business.py            # skip-if-exists
     python backend/scripts/seed_demo_business.py --refresh  # recreate
+    python backend/scripts/seed_demo_business.py --golden   # golden personas only
 """
 
 import argparse
@@ -247,6 +250,10 @@ DEMO_RECIPE = {
 # Hosted by the demo owner, whose business is approved, because the public
 # feed walks host → user → producer.status (MEH-1749).
 # GUARD — STAGING ONLY, same as every other row in this file.
+# MEH-2847: every `category` here is a key of EXPERIENCE_CATEGORIES
+# (schemas.py / lib/event-categories.js). The bread rows said «אפייה», which is
+# in neither, so no chip on /experiences could find them; baking is «בישול»
+# (labelled «בישול ואפייה»).
 DEMO_EXPERIENCES = [
     {
         "title": "סדנת מחמצת לתחילת הדרך",
@@ -271,7 +278,7 @@ DEMO_EXPERIENCES = [
         "days_ahead": 19,
         "event_time": "18:30",
         "duration_minutes": 150,
-        "category": "אפייה",
+        "category": "בישול",
         "max_participants": 12,
         "price_per_person": 180,
     },
@@ -284,7 +291,7 @@ DEMO_EXPERIENCES = [
         "days_ahead": 26,
         "event_time": "09:00",
         "duration_minutes": 120,
-        "category": "אפייה",
+        "category": "בישול",
         "max_participants": 10,
         "price_per_person": 160,
     },
@@ -1530,7 +1537,7 @@ def _seed_moderation_experiences(db) -> None:
                 title=ex["title"],
                 description=ex["description"],
                 image_url=DEMO_EVENT["image_url"],
-                category="אפייה",
+                category="בישול",
                 event_date=date.today() + timedelta(days=ex["days_ahead"]),
                 event_time=datetime.strptime("17:00", "%H:%M").time(),
                 duration_minutes=90,
@@ -1976,6 +1983,463 @@ def _sync_users(db) -> None:
     )
 
 
+# ============================================================================
+# MEH-2897 — GOLDEN-PATH PERSONAS (anchor plan §C.1, docs/release/anchor-plan.md).
+#
+# Seven logins the Playwright project `golden` walks on staging, one per actor
+# shape, each with its OWN account so persona state never mixes with the
+# `demo-*` E2E fixtures above. Seeded ONLY by `--golden`: the default run (and
+# therefore the CI seed step, `seed_demo_business --refresh`) never creates
+# them, so no existing spec or seed-coverage count moves.
+#
+# NO NEW SECRET. The passwords are the three existing QA secrets:
+#   businesses and the organizer -> DEMO_OWNER_PASSWORD
+#   the customer                 -> DEMO_CONSUMER_PASSWORD
+#   the admin                    -> DEMO_ADMIN_PASSWORD
+# All three are REQUIRED; a random password would leave the golden run unable
+# to log in, which is the MEH-1241 gap `_sync_users` already refuses.
+#
+# The emails and the password env names are mirrored in
+# frontend/e2e/golden/personas.ts. tests/test_golden_personas_seed.py fails
+# when the two lists differ, so there is one table with a guard, not two.
+#
+# C2 (customer signing in with Google) is NOT here: automation cannot sign in
+# with Google, so it stays a manual line (anchor plan §C.4).
+#
+# Deviation from the card, on purpose (MEH-2897): G3 is an organizer, and an
+# organizer CANNOT open a group buy — `POST /group-buys` answers 403 for
+# kind != 'producer' (routers/group_buys.py, MEH-2459 / ADR-036). Seeding a
+# group buy under an organizer row would put the organizer on /group-buys as a
+# seller, the exact state that 403 prevents. So G3 carries markets (events) and
+# the golden run asserts the 403; the group-buy lifecycle is walked by G1, the
+# business that sells products.
+#
+# STAGING ONLY. `main()` calls `_assert_not_production()` before any mode, and
+# every business carries GOLDEN_ADMIN_NOTE (contains "DEMO", so
+# check_no_demo_data.py flags it if it ever reaches production); every email
+# is @example.com, which that script flags too.
+# ============================================================================
+GOLDEN_ADMIN_NOTE = (
+    "DEMO GOLDEN PATH — MEH-2897 persona for the Playwright `golden` project. "
+    "STAGING ONLY: never promote this row to production."
+)
+GOLDEN_OWNER_PASSWORD_ENV = "DEMO_OWNER_PASSWORD"
+GOLDEN_CONSUMER_PASSWORD_ENV = "DEMO_CONSUMER_PASSWORD"
+GOLDEN_ADMIN_PASSWORD_ENV = "DEMO_ADMIN_PASSWORD"
+
+# One row per business persona. `extras` names the content seeded on CREATE
+# only (never on a re-run, which is what keeps the seed idempotent).
+GOLDEN_BUSINESSES = [
+    {
+        "key": "g1",
+        "email": "golden-products@example.com",
+        "owner_name": "בעלת עסק גולדן — מוצרים",
+        "slug": "golden-products",
+        "name": "דמו גולדן — מוצרים בלבד",
+        "kind": "producer",
+        "city": "חיפה",
+        "lat": 32.7940,
+        "lng": 34.9896,
+        "phone": "050-0000101",
+        "extras": "products",
+    },
+    {
+        "key": "g2",
+        "email": "golden-events@example.com",
+        "owner_name": "בעלת עסק גולדן — אירועים",
+        "slug": "golden-events",
+        "name": "דמו גולדן — אירועים וחוויות",
+        "kind": "producer",
+        "city": "בנימינה-גבעת עדה",
+        "lat": 32.5170,
+        "lng": 34.9480,
+        "phone": "050-0000102",
+        "extras": "events",
+    },
+    {
+        "key": "g3",
+        "email": "golden-organizer@example.com",
+        "owner_name": "מארגנת גולדן",
+        "slug": "golden-organizer",
+        "name": "דמו גולדן — מארגנת שווקים",
+        "kind": "organizer",
+        "city": "תל אביב-יפו",
+        # An organizer has no place to walk into (MEH-2669): no coordinates,
+        # so `create_primary_branch_location` adds no row, as for real ones.
+        "lat": None,
+        "lng": None,
+        "phone": "050-0000103",
+        "extras": "markets",
+    },
+    {
+        "key": "g4",
+        "email": "golden-rescue@example.com",
+        "owner_name": "בעלת עסק גולדן — סלי הצלה",
+        "slug": "golden-rescue",
+        "name": "דמו גולדן — סלי הצלה",
+        "kind": "producer",
+        # The town of the flagship demo's rescue bag (MEH-2794), i.e. the town
+        # staging's RESCUE_BAGS_CITIES already has to name for /rescue to show
+        # that bag. The golden spec reports, rather than assumes, if it does not.
+        "city": "זכרון יעקב",
+        "lat": 32.5745,
+        "lng": 34.9530,
+        "phone": "050-0000104",
+        # The bag itself is published BY THE RUN (POST /rescue/offers) and
+        # cancelled by it: a seeded bag expires with its pickup window.
+        "extras": None,
+    },
+    {
+        "key": "g5",
+        "email": "golden-locations@example.com",
+        "owner_name": "בעלת עסק גולדן — מיקומים",
+        "slug": "golden-locations",
+        "name": "דמו גולדן — כמה מיקומים וכשרות",
+        "kind": "producer",
+        "city": "חדרה",
+        "lat": 32.4340,
+        "lng": 34.9196,
+        "phone": "050-0000105",
+        "extras": "locations_kashrut",
+    },
+]
+GOLDEN_CUSTOMER = {
+    "key": "c1",
+    "email": "golden-customer@example.com",
+    "name": "לקוחת גולדן (בדיקות)",
+}
+GOLDEN_ADMIN = {
+    "key": "a1",
+    "email": "golden-admin@example.com",
+    "name": "מנהלת גולדן (בדיקות)",
+}
+
+GOLDEN_PRODUCTS = [
+    {"name": "ריבת תות גולדן", "price_min": 32, "price_max": 38},
+    {"name": "דבש פרחי בר גולדן", "price_min": 45},
+]
+GOLDEN_EVENT = {
+    "title": "דמו גולדן — ערב טעימות",
+    "days_ahead": 15,
+    "event_time": "18:00",
+    "category": "אחר",
+}
+GOLDEN_EXPERIENCE = {
+    "title": "דמו גולדן — סדנת בוקר",
+    "description": "סדנת דמו לבדיקות האוטומטיות של מהמקור. לא סדנה אמיתית.",
+    "days_ahead": 20,
+    "event_time": "10:00",
+    "duration_minutes": 90,
+    "category": "בישול",
+    "max_participants": 8,
+    "price_per_person": 100,
+}
+GOLDEN_MARKETS = [
+    {"title": "דמו גולדן — שוק יצרנים בנמל", "days_ahead": 6, "city": "תל אביב-יפו"},
+    {"title": "דמו גולדן — שוק יצרנים בחיפה", "days_ahead": 13, "city": "חיפה"},
+]
+# G5: two pickup points beside the primary branch, so "several locations" is
+# three rows and the map has more than one pin for one business.
+GOLDEN_PICKUPS = [
+    {"label": "דמו גולדן — איסוף צפון", "lat": 32.4421, "lng": 34.9230},
+    {"label": "דמו גולדן — איסוף דרום", "lat": 32.4262, "lng": 34.9151},
+]
+GOLDEN_DESCRIPTION = "בית עסק לדוגמה לבדיקות האוטומטיות של מהמקור (staging בלבד)."
+
+
+def golden_persona_emails() -> list[str]:
+    """Every golden login, businesses first, in the order the run walks them."""
+    return [b["email"] for b in GOLDEN_BUSINESSES] + [
+        GOLDEN_CUSTOMER["email"],
+        GOLDEN_ADMIN["email"],
+    ]
+
+
+def _golden_passwords() -> dict[str, str]:
+    """The three existing QA secrets, all required. Exits BEFORE any write."""
+    names = (
+        GOLDEN_OWNER_PASSWORD_ENV,
+        GOLDEN_CONSUMER_PASSWORD_ENV,
+        GOLDEN_ADMIN_PASSWORD_ENV,
+    )
+    values = {name: os.getenv(name) or "" for name in names}
+    missing = [name for name, value in values.items() if not value]
+    if missing:
+        sys.exit(
+            "REFUSING to seed golden personas: missing env var(s) "
+            f"{', '.join(missing)}. A random password would leave the golden "
+            "run unable to log in."
+        )
+    return values
+
+
+def _golden_user(db, *, email: str, name: str, role: str, password: str):
+    """Get-or-create one login and (re)set its password. Returns (user, created)."""
+    user = db.query(User).filter(User.email == email).first()
+    created = user is None
+    if created:
+        user = User(email=email, name=name, role=role)
+        db.add(user)
+    user.role = role
+    user.password_hash = hash_password(password)
+    # Login gates on this (auth.py rejects unverified users at token issue).
+    user.email_verified = True
+    return user, created
+
+
+def _golden_products(db, producer) -> None:
+    for spec in GOLDEN_PRODUCTS:
+        db.add(Product(producer_id=producer.id, **spec))
+
+
+def _golden_events(db, producer, owner) -> None:
+    db.add(
+        Event(
+            producer_id=producer.id,
+            title=GOLDEN_EVENT["title"],
+            description=GOLDEN_DESCRIPTION,
+            event_date=israel_today() + timedelta(days=GOLDEN_EVENT["days_ahead"]),
+            event_time=datetime.strptime(GOLDEN_EVENT["event_time"], "%H:%M").time(),
+            city=producer.city,
+            lat=producer.lat,
+            lng=producer.lng,
+            category=GOLDEN_EVENT["category"],
+            price=0,
+            is_active=True,
+        )
+    )
+    # Approved + APPROVED + future + active: every condition GET /experiences
+    # filters on (MEH-1918), so the host dashboard and the public page both
+    # have the row. An Experience hangs off a User, not a Producer.
+    ex = GOLDEN_EXPERIENCE
+    db.add(
+        Experience(
+            host_user_id=owner.id,
+            title=ex["title"],
+            description=ex["description"],
+            image_url=DIETARY_DEMO_IMAGE,
+            category=ex["category"],
+            event_date=israel_today() + timedelta(days=ex["days_ahead"]),
+            event_time=datetime.strptime(ex["event_time"], "%H:%M").time(),
+            duration_minutes=ex["duration_minutes"],
+            location_type="public",
+            city=producer.city,
+            max_participants=ex["max_participants"],
+            price_per_person=ex["price_per_person"],
+            status="approved",
+            moderation_status="APPROVED",
+            is_active=True,
+        )
+    )
+
+
+def _golden_markets(db, producer) -> None:
+    for market in GOLDEN_MARKETS:
+        db.add(
+            Event(
+                producer_id=producer.id,
+                title=market["title"],
+                description=GOLDEN_DESCRIPTION,
+                event_date=israel_today() + timedelta(days=market["days_ahead"]),
+                city=market["city"],
+                category="שוק",
+                is_active=True,
+            )
+        )
+
+
+def _golden_locations_kashrut(db, producer) -> None:
+    for pickup in GOLDEN_PICKUPS:
+        db.add(
+            ProducerLocation(
+                producer_id=producer.id,
+                kind="pickup",
+                label=pickup["label"],
+                city=producer.city,
+                lat=pickup["lat"],
+                lng=pickup["lng"],
+                is_primary=False,
+                location_precision="exact",
+            )
+        )
+    _seed_kashrut_request(db, producer)
+
+
+def _golden_extras(db, producer, owner, extras: str | None) -> None:
+    if extras == "products":
+        _golden_products(db, producer)
+    elif extras == "events":
+        _golden_events(db, producer, owner)
+    elif extras == "markets":
+        _golden_markets(db, producer)
+    elif extras == "locations_kashrut":
+        _golden_locations_kashrut(db, producer)
+
+
+def _golden_dated_rows() -> list[tuple[str, str, str, int]]:
+    """(kind, owner slug, title, days_ahead) for every dated golden row."""
+    rows = [
+        ("event", "golden-events", GOLDEN_EVENT["title"], GOLDEN_EVENT["days_ahead"])
+    ]
+    rows += [
+        ("event", "golden-organizer", m["title"], m["days_ahead"])
+        for m in GOLDEN_MARKETS
+    ]
+    rows.append(
+        (
+            "experience",
+            "golden-events",
+            GOLDEN_EXPERIENCE["title"],
+            GOLDEN_EXPERIENCE["days_ahead"],
+        )
+    )
+    return rows
+
+
+def _golden_refresh_dates(db) -> int:
+    """Move every golden event, market and experience back to today + days_ahead.
+
+    The extras are written on CREATE only, so without this their dates stand
+    still: the first market is in the past six days after seeding, and the
+    organizer page (organizers.py filters `event_date >= israel_today()`) loses
+    it, so 03-g3 goes red. Every `--golden` run re-dates them, matched by title
+    under the golden owner. Returns the number of rows re-dated.
+    """
+    moved = 0
+    today = israel_today()
+    for kind, slug, title, days in _golden_dated_rows():
+        producer = db.query(Producer).filter(Producer.slug == slug).first()
+        if producer is None:
+            continue
+        if kind == "event":
+            query = db.query(Event).filter(
+                Event.producer_id == producer.id, Event.title == title
+            )
+        else:
+            email = next(b["email"] for b in GOLDEN_BUSINESSES if b["slug"] == slug)
+            owner = db.query(User).filter(User.email == email).first()
+            if owner is None:
+                continue
+            query = db.query(Experience).filter(
+                Experience.host_user_id == owner.id, Experience.title == title
+            )
+        for row in query.all():
+            row.event_date = today + timedelta(days=days)
+            moved += 1
+    return moved
+
+
+def _golden_new_business(db, spec: dict, category):
+    """Create one golden business with its primary location. Not committed."""
+    # Imported here, not at the top: the rest of this script never needs it,
+    # and the import pulls the producer query layer into every other mode.
+    from app.services.producer_queries import create_primary_branch_location
+
+    now = utc_now()
+    is_kashrut = spec["extras"] == "locations_kashrut"
+    producer = Producer(
+        name=spec["name"],
+        contact_name=spec["owner_name"],
+        slug=spec["slug"],
+        kind=spec["kind"],
+        description=GOLDEN_DESCRIPTION,
+        short_description=GOLDEN_DESCRIPTION,
+        city=spec["city"],
+        lat=spec["lat"],
+        lng=spec["lng"],
+        phone=spec["phone"],
+        primary_contact_method="whatsapp",
+        status="approved",
+        admin_notes=GOLDEN_ADMIN_NOTE,
+        images=[DIETARY_DEMO_IMAGE],
+        has_physical_location=True,
+        offers_delivery=False,
+        availability_state="accepting_orders",
+        kashrut_badges=["badatz"] if is_kashrut else [],
+        kashrut_verified_at=now if is_kashrut else None,
+        kashrut_expires_at=now + timedelta(days=300) if is_kashrut else None,
+    )
+    db.add(producer)
+    db.flush()
+    # An organizer sells nothing and is hidden from every business surface,
+    # so it gets no business category (seed_organizer_demo.py, the same).
+    if spec["kind"] == "producer":
+        db.add(ProducerCategory(producer_id=producer.id, category_id=category.id))
+    create_primary_branch_location(db, producer)
+    db.flush()
+    return producer
+
+
+def _golden_business(db, spec: dict, category, password: str) -> bool:
+    """Ensure one business persona exists. Returns True when anything was created.
+
+    Idempotent per slug AND per email: a second run creates nothing, it only
+    resets the login's password from the env (the `--sync-users` contract).
+    Content (`extras`) is added only together with a NEW business row.
+    """
+    producer = db.query(Producer).filter(Producer.slug == spec["slug"]).first()
+    new_business = producer is None
+    if new_business:
+        producer = _golden_new_business(db, spec, category)
+    owner, new_user = _golden_user(
+        db,
+        email=spec["email"],
+        name=spec["owner_name"],
+        role="producer",
+        password=password,
+    )
+    owner.producer_id = producer.id
+    db.flush()
+    if new_business:
+        _golden_extras(db, producer, owner, spec["extras"])
+    return new_business or new_user
+
+
+def seed_golden_personas(db) -> dict[str, list[str]]:
+    """MEH-2897: ensure the seven golden-path logins exist. Returns
+    ``{"created": [emails], "existing": [emails]}``.
+
+    Refuses (sys.exit) before any write when a password env var is missing or
+    the bakery category is absent. Commits once, at the end.
+    """
+    passwords = _golden_passwords()
+    category = db.query(Category).filter(Category.name == DEMO_CATEGORY_NAME).first()
+    if not category:
+        sys.exit(
+            f"Category '{DEMO_CATEGORY_NAME}' not found — run backend/seed_data.py first."
+        )
+
+    result: dict[str, list[str]] = {"created": [], "existing": []}
+    for spec in GOLDEN_BUSINESSES:
+        created = _golden_business(
+            db, spec, category, passwords[GOLDEN_OWNER_PASSWORD_ENV]
+        )
+        result["created" if created else "existing"].append(spec["email"])
+    for spec, role, env in (
+        (GOLDEN_CUSTOMER, "consumer", GOLDEN_CONSUMER_PASSWORD_ENV),
+        (GOLDEN_ADMIN, "admin", GOLDEN_ADMIN_PASSWORD_ENV),
+    ):
+        _, created = _golden_user(
+            db,
+            email=spec["email"],
+            name=spec["name"],
+            role=role,
+            password=passwords[env],
+        )
+        result["created" if created else "existing"].append(spec["email"])
+    db.flush()
+    redated = _golden_refresh_dates(db)
+    db.commit()
+    # Emails only — never a password.
+    print(
+        f"Golden personas: created {len(result['created'])}, "
+        f"re-dated {redated} events/experiences, "
+        f"password reset on {len(result['existing'])} existing "
+        f"({', '.join(golden_persona_emails())})."
+    )
+    return result
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
@@ -2000,13 +2464,26 @@ def main() -> None:
             "reviewers untouched. Mutually exclusive with --refresh."
         ),
     )
+    parser.add_argument(
+        "--golden",
+        action="store_true",
+        help=(
+            "MEH-2897: ensure ONLY the seven golden-path personas "
+            "(golden-*@example.com) exist, with passwords from "
+            "DEMO_OWNER_PASSWORD / DEMO_CONSUMER_PASSWORD / DEMO_ADMIN_PASSWORD. "
+            "Idempotent. Does not touch the demo business. Mutually exclusive "
+            "with --refresh and --sync-users."
+        ),
+    )
     args = parser.parse_args()
-    if args.sync_users and args.refresh:
-        sys.exit("--sync-users and --refresh are mutually exclusive.")
+    if sum((args.sync_users, args.refresh, args.golden)) > 1:
+        sys.exit("--sync-users, --refresh and --golden are mutually exclusive.")
     _assert_not_production()
     db = SessionLocal()
     try:
-        if args.sync_users:
+        if args.golden:
+            seed_golden_personas(db)
+        elif args.sync_users:
             _sync_users(db)
         else:
             seed_demo_business(db, refresh=args.refresh)

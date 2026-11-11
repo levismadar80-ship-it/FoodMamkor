@@ -65,7 +65,9 @@ function FavoriteCardWrapper({ fav, open, onToggle, onClose }) {
     // grows the grid row or stretches the sibling card.
     <div className="relative h-full flex flex-col">
       <div className="flex-1">
-        <ProducerCard producer={fav.producer} />
+        {/* MEH-2844: the bell below takes the card's top-start corner and the
+            heart the top-end one, so the no-photo plate drops its seed. */}
+        <ProducerCard producer={fav.producer} startCornerControl />
       </div>
       <button
         ref={bellRef}

@@ -115,7 +115,8 @@ export async function generateMetadata(props) {
   const base = buildProducerMetadata(producer, locale);
   return {
     ...base,
-    title: { absolute: buildEntityTitle(producer.name, locale) },
+    // MEH-2853: plain title — the layout template `%s | <brand>` adds the brand.
+    title: producer.name,
     openGraph: {
       ...base.openGraph,
       locale: OG_LOCALE[locale],

@@ -12,7 +12,8 @@ export async function generateMetadata({ params }) {
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: "registration.cancel" });
   return {
-    title: { absolute: t("page_title") },
+    // MEH-2853: plain title — the layout template `%s | <brand>` adds the brand.
+    title: t("page_title"),
     robots: { index: false, follow: false },
     referrer: "no-referrer",
   };

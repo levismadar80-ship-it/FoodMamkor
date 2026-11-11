@@ -103,21 +103,32 @@ export default function ImageGallery({ images = [], producerId = null, producerN
         {/* MEH-2833 (seed layer, board 1): the masthead is sand
             (background-alt) and carries the logo as a supergraphic at the END
             side, half of it past the edge and cropped by the card's
-            overflow-hidden. Phone: 200px, sitting low (40px below the bottom
-            edge) so the share/heart cluster at the top-end corner stays on
-            sand and the name keeps ~200px, as on the board. md+: 280px,
-            vertically centred (the 150px-tall masthead also crops it top and
-            bottom). Never rotated or mirrored; the visible half shows green,
-            terracotta and half the gold seed in RTL — as on the board — and
-            sand, sage and half the gold in LTR. Replaces the 6% green tint and
-            the מ·ה corner monogram. */}
+            overflow-hidden. Phone 200px, md+ 280px; the position below lg is
+            MEH-2844's (next comment) — from lg it is vertically centred, as on
+            the board (green, terracotta and half the gold visible in RTL).
+            Never rotated or mirrored. Replaces the 6% green tint and the מ·ה
+            corner monogram. */}
         <div
           className="relative bg-background-alt px-6 pb-6 pt-16 md:pt-20 flex items-end min-h-[120px] md:min-h-[150px]"
           data-testid="gallery-tint-layer"
         >
+          {/* MEH-2844 (Sapir 08/11): below lg the bell/share/heart circles
+              sit in the top-end corner over the bloom (the lg:hidden cluster
+              below), and the green seed ran under the bell (0px at 375/390;
+              share and bell both 0px at 768). Below lg the bloom now sits
+              lower AND further in, so the nearest seed keeps ≥12px from every
+              circle while ≥3 seeds stay visible (the supergraphic rule,
+              DESIGN.md «Seed layer»). Measured on the seed shapes, staging
+              data: phone (−90/−70, 130px visible) bell 20 / share 20, seeds
+              green 100% · sage 65% · terracotta 43%; md (−135/−95, 185px
+              visible) bell 18 / share 16 / heart 23, green 100% · sage 68% ·
+              terracotta 22%. Lowering alone (−90/−100) cleared the bell but
+              left 1½ seeds — rejected. lg+ has no circles on the masthead
+              (they move to ProducerHeader's actions row), so the bloom stays
+              vertically centred there, as on the board. */}
           <SeedMark
             size={SUPERGRAPHIC_PX}
-            className="absolute w-[200px] h-[200px] -bottom-10 -end-[100px] md:w-[280px] md:h-[280px] md:bottom-auto md:top-1/2 md:-translate-y-1/2 md:-end-[140px] pointer-events-none select-none"
+            className="absolute w-[200px] h-[200px] -bottom-[90px] -end-[70px] md:w-[280px] md:h-[280px] md:-bottom-[135px] md:-end-[95px] lg:bottom-auto lg:top-1/2 lg:-translate-y-1/2 lg:-end-[140px] pointer-events-none select-none"
           />
           {/* MEH-815: h1 rendered unconditionally — ProducerHeader always omits
               its own name h1 when imageless, so the masthead must always supply
@@ -126,12 +137,13 @@ export default function ImageGallery({ images = [], producerId = null, producerN
               MEH-1168 P2: the verified seal sits inline after the name (anchored
               to it, not floating in the header badge row). Masthead is otherwise
               unchanged (MEH-815 LOCK). */}
-          {/* MEH-2833: the name block stops short of the bloom (100px visible
-              on a phone, 140px from md, + a 12px gap), so the h1 never sits on
-              a seed at any width. */}
+          {/* MEH-2833: the name block stops short of the bloom + a 12px gap,
+              so the h1 never sits on a seed at any width. MEH-2844: the bloom
+              shows more of itself below lg — 130px on a phone (→ 9rem), 185px
+              at md (→ 12.5rem); 140px from lg as before (→ 9.5rem). */}
           <div
             data-testid="masthead-name-block"
-            className="relative flex items-center flex-wrap gap-x-3 gap-y-2 max-w-[calc(100%-7rem)] md:max-w-[calc(100%-9.5rem)]"
+            className="relative flex items-center flex-wrap gap-x-3 gap-y-2 max-w-[calc(100%-9rem)] md:max-w-[calc(100%-12.5rem)] lg:max-w-[calc(100%-9.5rem)]"
           >
             {/* MEH-2833: a long single word wraps inside the capped block
                 instead of running into the bloom. */}

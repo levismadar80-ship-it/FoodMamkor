@@ -17,7 +17,8 @@ import { buildBusinessQrUrl, QR_RENDER_OPTIONS, qrFileName } from "@/lib/qr";
  * Does NOT: count scans, offer a PDF, or put a logo in the code. Does NOT
  *           render the print card — that is its own route.
  * Related:  lib/qr.js (URL + render options, single owner);
- *           app/[locale]/producer/dashboard/page.js (where it is rendered);
+ *           app/[locale]/producer/dashboard/tools/page.js#share (where it is
+ *           rendered since MEH-2882 PR 1; it was on the dashboard home);
  *           app/[locale]/producer/dashboard/qr-card/page.js (the print card).
  * History:  MEH-2785 (creation)
  *

@@ -110,7 +110,7 @@ describe("group-buy page", () => {
   it("renders the join card once — one quantity field, one «שתפו», no WhatsApp link, no -% pill", async () => {
     api.get.mockResolvedValue({ data: GB });
     const { container } = render(<GroupBuyDetailClient id="gb-1" />);
-    await screen.findByText("שק קמח כוסמין");
+    await screen.findByRole("heading", { level: 1, name: "שק קמח כוסמין" }); // MEH-2857: the title is also the last breadcrumb crumb
     expect(screen.getAllByRole("spinbutton")).toHaveLength(1);
     // MEH-2827 PR 7: the generic share replaces the WhatsApp-only link, and
     // the saving lives in the price tiles, not in a pill on the photo.
@@ -122,14 +122,14 @@ describe("group-buy page", () => {
   it("open → «איך זה עובד» with the group's minimum; funded → no box", async () => {
     api.get.mockResolvedValue({ data: GB });
     const { unmount } = render(<GroupBuyDetailClient id="gb-1" />);
-    await screen.findByText("שק קמח כוסמין");
+    await screen.findByRole("heading", { level: 1, name: "שק קמח כוסמין" }); // MEH-2857: the title is also the last breadcrumb crumb
     const how = screen.getByTestId("group-buy-how");
     expect(how.querySelectorAll("li")).toHaveLength(3);
     expect(how.textContent).toContain(`group_buys.detail.how_unlock ${GB.min_participants}`);
     unmount();
     api.get.mockResolvedValue({ data: { ...GB, status: "funded" } });
     render(<GroupBuyDetailClient id="gb-1" />);
-    await screen.findByText("שק קמח כוסמין");
+    await screen.findByRole("heading", { level: 1, name: "שק קמח כוסמין" }); // MEH-2857: the title is also the last breadcrumb crumb
     expect(screen.queryByTestId("group-buy-how")).toBeNull();
   });
 
@@ -148,7 +148,7 @@ describe("group-buy page", () => {
   it("no business photo → the cart tile", async () => {
     api.get.mockResolvedValue({ data: { ...GB, producer_image_url: null } });
     render(<GroupBuyDetailClient id="gb-1" />);
-    await screen.findByText("שק קמח כוסמין");
+    await screen.findByRole("heading", { level: 1, name: "שק קמח כוסמין" }); // MEH-2857: the title is also the last breadcrumb crumb
     expect(screen.getByTestId("group-buy-image-missing")).toBeTruthy();
   });
 });

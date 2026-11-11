@@ -49,7 +49,7 @@ vi.mock("next-intl", () => {
     "nav.lang_switch_to_en": "Switch to English",
     "nav.add_business": "הוסיפו את העסק שלך",
     "nav.favorites": "מועדפים",
-    "account.menu.profile": "הפרופיל שלי",
+    "account.menu.view_page": "צפייה בדף",
     "account.menu.settings": "הגדרות",
     "account.menu.dashboard": "לוח הבקרה שלי",
     "account.menu.admin": "ממשק אדמין",

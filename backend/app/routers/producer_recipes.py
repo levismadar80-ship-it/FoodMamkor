@@ -28,6 +28,7 @@ from app.schemas.schemas import (
     ProducerRecipeOut,
     ProducerRecipeUpdate,
 )
+from app.services import indexnow  # MEH-2852
 from app.services.auth_notifications import notify_admin_new_recipe
 from app.services.producer_recipe_moderation import validate_producer_recipe
 
@@ -223,6 +224,18 @@ def get_my_recipe(
     return _serialize(recipe)
 
 
+def _public_urls(db: Session, recipe: ProducerRecipe) -> list[str]:
+    """MEH-2852: the recipe's page URLs while ``get_public_recipe`` below
+    serves it (published + approved, under a live business with a slug);
+    otherwise none — a draft or a pending edit is never announced."""
+    if not (recipe.published and recipe.moderation_status == "approved"):
+        return []
+    producer = db.query(Producer).filter(Producer.id == recipe.producer_id).first()
+    if not indexnow.is_public_business(producer):
+        return []
+    return indexnow.recipe_urls(producer, recipe.id)
+
+
 # Content fields that, when changed, force a re-moderation cycle. Pure
 # metadata (image_url, prep/cook/servings, product_ids) does NOT trigger
 # re-moderation — Claude only reads textual content anyway.
@@ -261,6 +274,8 @@ def update_my_recipe(  # noqa: PLR0913 — all 6 args are FastAPI-injected (slow
     # needs_revision → pending resubmit), not on every edit of an
     # already-pending card.
     prev_status = recipe.moderation_status
+    # MEH-2852: read BEFORE the edit — a content edit unpublishes the recipe.
+    urls_before = _public_urls(db, recipe)
     content_changed = False
 
     for field, value in payload.items():
@@ -316,12 +331,17 @@ def update_my_recipe(  # noqa: PLR0913 — all 6 args are FastAPI-injected (slow
         .filter(ProducerRecipe.id == recipe.id)
         .first()
     )
+    # MEH-2852: queued after the admin email — background tasks run in
+    # order, so the ping's 5s timeout never holds the email. The page
+    # changed (metadata edit) or went away (content edit → unpublished).
+    indexnow.schedule(background_tasks, urls_before + _public_urls(db, recipe))
     return _serialize(recipe)
 
 
 @router.delete("/producers/me/recipes/{recipe_id}")
 def delete_my_recipe(
     recipe_id: UUID,
+    background_tasks: BackgroundTasks,
     user: User = Depends(require_producer),
     db: Session = Depends(get_db),
 ):
@@ -330,8 +350,10 @@ def delete_my_recipe(
     recipe = db.query(ProducerRecipe).filter(ProducerRecipe.id == recipe_id).first()
     if not recipe or recipe.producer_id != user.producer_id:
         raise HTTPException(status_code=404, detail="Recipe not found")
+    removed_urls = _public_urls(db, recipe)  # MEH-2852: before the row goes
     db.delete(recipe)
     db.commit()
+    indexnow.schedule(background_tasks, removed_urls)
     return {"detail": "Recipe deleted"}
 
 

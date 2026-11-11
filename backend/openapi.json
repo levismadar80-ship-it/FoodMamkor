@@ -242,6 +242,11 @@
             "title": "Notify New Event",
             "type": "boolean"
           },
+          "notify_new_group_buy": {
+            "default": true,
+            "title": "Notify New Group Buy",
+            "type": "boolean"
+          },
           "notify_new_product": {
             "default": true,
             "title": "Notify New Product",
@@ -291,6 +296,10 @@
             "title": "Notify New Event",
             "type": "boolean"
           },
+          "notify_new_group_buy": {
+            "title": "Notify New Group Buy",
+            "type": "boolean"
+          },
           "notify_new_product": {
             "title": "Notify New Product",
             "type": "boolean"
@@ -310,6 +319,7 @@
           "notify_new_event",
           "notify_delivery_area",
           "notify_new_recipe",
+          "notify_new_group_buy",
           "whatsapp_opt_in",
           "has_push"
         ],
@@ -14554,6 +14564,11 @@
             "title": "Is Blocked",
             "type": "boolean"
           },
+          "is_super_admin": {
+            "default": false,
+            "title": "Is Super Admin",
+            "type": "boolean"
+          },
           "name": {
             "title": "Name",
             "type": "string"
@@ -15632,6 +15647,22 @@
             "schema": {
               "title": "Status",
               "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "expected_status",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Expected Status"
             }
           }
         ],
@@ -18878,7 +18909,7 @@
     },
     "/admin/whatsapp/failed": {
       "get": {
-        "description": "Return undelivered outbound WhatsApp rows from the last 7 days.\n\nFilter: status IN ('failed', 'window_expired') AND created_at within\nthe last `UNDELIVERED_WINDOW_DAYS`. Ordered newest-first so the freshest\nfailures show up at the top of the admin table.\n\nNo pagination — the per-day failure volume is small (single-digit\ntypical, two-digit during incidents) and the 7-day window bounds the\nworst case. If the row count ever materially exceeds the page, add\npagination here; until then, simpler is better.",
+        "description": "Return undelivered outbound WhatsApp rows from the last 7 days.\n\nFilter: `undelivered_predicate` — status IN ('failed', 'window_expired'),\nor `accepted` for more than a day with no delivery receipt (MEH-2122\nChunk E), AND created_at within the last `UNDELIVERED_WINDOW_DAYS`. Ordered newest-first so the freshest\nfailures show up at the top of the admin table.\n\nNo pagination — the per-day failure volume is small (single-digit\ntypical, two-digit during incidents) and the 7-day window bounds the\nworst case. If the row count ever materially exceeds the page, add\npagination here; until then, simpler is better.",
         "operationId": "list_failed_outbound_admin_whatsapp_failed_get",
         "responses": {
           "200": {
@@ -19832,7 +19863,10 @@
             "schema": {
               "anyOf": [
                 {
-                  "type": "string"
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
                 },
                 {
                   "type": "null"
@@ -20316,7 +20350,10 @@
             "schema": {
               "anyOf": [
                 {
-                  "type": "string"
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
                 },
                 {
                   "type": "null"

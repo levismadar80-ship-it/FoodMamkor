@@ -201,3 +201,77 @@ The first is preferable: it needs nobody to remember, and it fails loudly.
 - **Did not fix the stale counts in `.claude/rules/skills.md`** (75/72/3 → 76/72/4).
   Same reason: re-derive them in the change that lands the lock, so the file and
   the anchor agree at one point in time.
+
+---
+
+## ✅ 09/11/2026 — re-audit, migration and lock (MEH-1055, under the 27/10 delegation)
+
+**Authority:** the card's 27/10 header: Sapir delegated every decision («תכריע על כל הדברים… שום דבר לא עליי, אתה עושה הכל», 25/10), and the lock write moved to CC. This section is the evidence that header asks the PR to carry.
+
+### Re-audit: read end to end, at the content being locked
+
+Method: `.claude/rules/skills.md` § "When auditing skills manually" — every file read whole, checked for the six red-flag classes. The clone is not shallow (`git rev-parse --is-shallow-repository` → `false`).
+
+| skill | files | what it does | red-flag classes | verdict |
+|---|---|---|---|---|
+| `mehamakor-dod` | `SKILL.md`, `check.sh` (173 lines) | Runs the repo's own toolchain: `npm run build`, `node scripts/vitest-guard.mjs`, `pytest tests/test_api.py`, `pg_isready`, `.claude/scripts/rtl-scan.sh`, `grep`. Writes only `/tmp/dod-*.log`, and only when explicitly run. | Shell to local tools only. No network, no `os.environ` / `process.env`, no credentials, no injection phrases. | **clean** |
+| `grill-me` | `SKILL.md` (7 lines) | One line chaining to `/grilling` | none | **clean** |
+| `grilling` | `SKILL.md` (12 lines) | Four prose paragraphs: an interview method | none | **clean** |
+| `backlog-groom` | `SKILL.md` + `references/{verdicts,verification,lessons}.md` | Prose method, plus quoted read-only `git` commands for the operator | none (the quoted commands are documentation, not invoked) | **clean** |
+
+**The two flags from 12/08 are resolved:**
+- `mehamakor-dod` was "four commits past its audit". All four were read in their current form: MEH-1513/1515 (RTL delegation), MEH-1951 (vitest-guard) and #2755 (`pg_isready`).
+- `grilling`'s audit date was older than its content. It has now been audited against the content itself (single commit c3d7ce88e, 2026-07-23).
+
+### Hashes: written by the script, matching the 12/08 anchors
+
+`backfill-skill-hashes.sh` computed and wrote the four hashes. The lock gained four entries with `source` / `sourceType` and an empty `computedHash`; the script filled the hashes. **All four equal the anchors computed independently on 12/08 (table above),** so the content has not changed since that audit, and the move to `.agents/skills/` did not change it either.
+
+### CI stages, run locally
+
+| stage | must | got |
+|---|---|---|
+| `audit-skills.sh --self-test` | exit 1 | **1** |
+| `audit-skills.sh` | exit 0 | **0** (0 critical, 15 single-class warnings, as before) |
+| `backfill-skill-hashes.sh --dry-run` | exit 0 | **0**: "All 76 hashes match" |
+
+**The lock now protects them.** I added one byte to `grilling/SKILL.md` and ran `audit-skills.sh`. It answered `[HASH-DRIFT] grilling — content drifted from skills-lock.json`, exit 1. Before this change, the same edit had no anchor to drift from.
+
+### Layout and allowlist
+
+- All four skills moved to `.agents/skills/<name>/` (`git mv`, so the history follows). Each `.claude/skills/<name>` is now a symlink (`120000`) to `../../.agents/skills/<name>`, the same form as the other 72.
+- Every reference in the repo uses `.claude/skills/<name>/…`, and those paths still resolve. `check.sh` stays executable through the symlink.
+- Allowlist changes:
+  - `last_audit_date` is now 2026-11-09 for all four, and each note records the re-audit.
+  - `mehamakor-dod` and `backlog-groom` changed `source` from `internal` to `local`. That is the house value (`resolve-conflicts`), and the lock's `sourceType: "local"` matches it. The card named `mehamakor-dod`; `backlog-groom` is the same case, added after the card was written.
+  - `grill-me` and `grilling` keep `mattpocock/skills` / `github`.
+
+### The process gap, closed in the same PR
+
+**How did a skill reach `approved` without a lock entry? Nothing checked for it.** This is the card's thesis, and `backlog-groom` reproduced it a month later. Three blind spots:
+- Pass 1 scans only `.agents/skills/`, so a real directory under `.claude/skills/` is never pattern-scanned.
+- Pass 2 accepts any valid verdict string.
+- Pass 4 iterates the lock, so an unlocked skill has no hash that could drift.
+
+`audit-skills.sh` gains **Pass 2b** (`pass2b_check`, also callable as `--pass2b-only ROOT [TODAY]`), and the new **`scripts/checks/skills-layout-guard.sh`** runs it in **Repo guards**, which feeds the required CI gate. The skills-audit workflow itself is not aggregated by any required gate, so a red there never blocked a merge (fresh review).
+
+| tag | fires when |
+|---|---|
+| `[UNLOCKED]` | any verdict but `blocked` (or a live `approved_local_unlocked`) with no `skills-lock.json` entry — `review_needed` included, since Layer 5 locks at the first commit |
+| `[UNLOCKED-NO-DATE]` / `[UNLOCKED-FUTURE]` / `[UNLOCKED-EXPIRED]` | `approved_local_unlocked` without a strict `YYYY-MM-DD` date (empty, null and relative dates like `tomorrow` all fail), dated in the future, or past 30 days. `skills.md` describes this clock; nothing enforced it until now. |
+| `[NOT-CANONICAL]` | `.claude/skills/<name>` is a real directory, **or a symlink pointing anywhere but `../../.agents/skills/<name>`** (the harness would load content the lock does not hash) |
+
+**The guard's self-test** runs the same function on 11 fixture trees, one per case, each with a known answer: clean, real dir, retargeted link, approved unlocked, review_needed unlocked, live clock, expired, empty date, null date, `tomorrow`, 2099. If any answer is wrong, the guard fails before it looks at the repo. Because it runs on every PR, the 30-day clock fires on the next PR of any kind; no schedule is needed.
+
+**Shown failing:**
+
+| run | result |
+|---|---|
+| Pass 2b against `origin/staging`'s tree (the four real, unlocked dirs) | 4 `[UNLOCKED]` + 4 `[NOT-CANONICAL]`, exit 1 |
+| the old audit, same tree | 0 critical |
+| guard with the symlink-target check removed | `retarget` case red |
+| guard with the date-format check removed | `clock-empty`, `clock-null`, `clock-relative` red |
+| guard with the lock required only for `approved` (this PR's first version) | `review-unlocked` red |
+| this branch | 11/11 self-test, real repo clean |
+
+*Correction to the sentence above "written by the script":* the backfill wrote the four **hashes**. The four lock entries' `source` / `sourceType` fields were added by hand first (with an empty hash), because `backfill-skill-hashes.sh` only updates entries that already exist.

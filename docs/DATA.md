@@ -133,6 +133,8 @@
 >
 > **MEH-2100 (2026-08-16):** draft → submit-for-review state machine. `producers.submitted_for_review_at` (`TIMESTAMP WITH TIME ZONE`, **nullable**, migration `e2a7c9d41b06`) records the instant the owner pressed "שליחה לבדיקה" and the row moved `draft` → `pending` — the point from which the 3-business-day review SLA is counted, replacing `created_at` in that role. **No `server_default`, NO backfill** (ADR-007 Expand-only): NULL is honest and permanent for two populations — a producer still in `draft`, and any row seeded before this revision (staging fixtures; production had no businesses, Sapir 16/08). Readers needing a submission instant use `submitted_for_review_at or created_at`, which is what makes the absent backfill correct rather than merely deferred. No new index — nothing filters or sorts on it. The paired `status` value `"draft"` needs no migration at all: `Producer.status` is a free `String(20)` with no enum and no DB CHECK, so a new value is data, not schema. **Not exposed on any schema** — public (`ProducerListOut`), owner (`ProducerOwnerOut`) and admin (`ProducerAdminOut`) serializers all omit it, deliberately: the dashboard banner and the admin queue both key on `status`, so nothing renders a submission instant and adding a field no surface reads would be dead API. Its only writer is `POST /producers/me/submit-for-review` (MEH-2100 PR2); it has **no reader yet**, and the `submitted_for_review_at or created_at` contract above is the rule for the first one that appears. Exposing it (e.g. a "submitted N days ago" column in the admin queue) is a deliberate follow-up, not an oversight.
 >
+> **MEH-2869 (2026-11-10, supersedes the two-term fallback above for the admin queue):** the admin queue (`_attach_aging` badge and the oldest-first sort, `admin.py`) reads **`resubmitted_at or submitted_for_review_at or created_at`**. A resubmission after a rejection writes only `resubmitted_at`, and `submitted_for_review_at` keeps the first submission, so without it a business that resubmitted today topped the queue with weeks of "waiting". Drafts still age from `created_at`.
+>
 > **MEH-589 (2026-05-15):** `producer_recipes` + `producer_recipe_products`
 > added (chunk 1/4 = MEH-588 schema + chunk 2/4 = MEH-589 endpoints +
 > moderation). Producer-owned recipes go through Claude Haiku pre-check
@@ -683,9 +685,11 @@ via `slowapi` — see `backend/app/rate_limit.py` and
 > The owner gets exactly `open → cancelled` (before or after the deadline),
 > `funded → fulfilled` and `funded → cancelled` (`OWNER_TRANSITIONS`); any other
 > pair → 409, so cancelled and fulfilled are final for her. The route is
-> owner-only: an admin (not a producer) gets 403 here and keeps the full
-> override on `PATCH /admin/group-buys/{id}/status`, which is unchanged — one
-> checked path per caller, not two to the same state. The check and the write run under a row lock
+> owner-only: an admin (not a producer) gets 403 here and uses
+> `PATCH /admin/group-buys/{id}/status`, which since MEH-2866 has no override:
+> the same table (`ADMIN_TRANSITIONS = OWNER_TRANSITIONS`), the same row lock,
+> an optional `expected_status` (409 on mismatch), and the same cancel email to
+> every participant except the admin herself. A status outside the four → 400. The check and the write run under a row lock
 > (`with_for_update`, like `/commit`). 30/minute. No schema change.
 >
 > **MEH-2489 — `expected_status` (optional).** Same body plus
@@ -1062,7 +1066,7 @@ POST   /home-products/rate/{token}        public — submit rating
 ### Events (producer farm events — `app/routers/events.py`)
 
 ```
-GET    /events                    public — filter: city, category, from_date, to_date; approved producers only (MEH-1161; owner sees own via ?producer_id=, admin sees all); organizer-owned events included; EventOut.owner_kind + owner_slug (MEH-2459) + owner_image_url = owner's first photo or null, the list-row fallback (MEH-2546)
+GET    /events                    public — filter: city, category, from_date, to_date; category repeats (?category=A&category=B → OR, AND with the other filters; each value checked against VALID_CATEGORIES, an unknown one matches nothing — MEH-2847); approved producers only (MEH-1161; owner sees own via ?producer_id=, admin sees all); organizer-owned events included; EventOut.owner_kind + owner_slug (MEH-2459) + owner_image_url = owner's first photo or null, the list-row fallback (MEH-2546)
 GET    /events/upcoming            public — limit=N next events; approved producers only (MEH-1161)
 GET    /events/mine                producer — owner's own events, ALL states incl. inactive (MEH-1405; dashboard manage list). Declared before /events/{id} so "mine" isn't a UUID path.
 GET    /events/{event_id}          public — pending producer's event → 404 for strangers (MEH-1161; owner/admin bypass)
@@ -1127,7 +1131,7 @@ its admin-override, so an admin still deletes (→ 200).
 
 ```
 POST   /experiences/validate           public  — 30/hour, real-time Claude Haiku hint
-GET    /experiences                    public  — filter: category, city. Only approved+upcoming+is_active (MEH-1419).
+GET    /experiences                    public  — filter: category, city. category repeats (?category=A&category=B → OR, AND with city; each value checked against EXPERIENCE_CATEGORIES, an unknown one matches nothing — MEH-2847). Only approved+upcoming+is_active (MEH-1419).
 GET    /experiences/count              public  — {"count": N} for the SAME set GET /experiences returns (MEH-1918). Both go through _public_listing_query, so the number can never disagree with the list. Declared BEFORE /{experience_id} or the catch-all eats it. Used to data-gate the "חוויות" nav link at >= 3.
 GET    /experiences/mine               auth    — owner's submissions, any status (incl. is_active=False)
 GET    /experiences/{id}               mixed   — approved=public; non-approved=owner+admin
@@ -1304,8 +1308,14 @@ POST   /webhook/whatsapp     public — Meta inbound events, HMAC-SHA256 signatu
 
 ```
 GET    /admin/whatsapp/failed     admin — undelivered outbound (status IN failed,
-                                  window_expired) from the last 7 days, ordered
-                                  created_at desc; list-only, no resend/retry
+                                  window_expired, OR accepted more than a day
+                                  ago with no delivery receipt — "stuck",
+                                  MEH-2122 Chunk E) from the last 7 days,
+                                  ordered created_at desc; list-only, no
+                                  resend/retry. The admin-home count
+                                  undelivered_whatsapp_7d uses the same
+                                  predicate (services/whatsapp.py
+                                  undelivered_predicate).
 ```
 
 ### Admin — experiences (`app/routers/admin_experiences.py`)
@@ -1585,6 +1595,32 @@ break the underlying flow.
 Email is sent via `app/services/email.py` → Resend HTTP API (HTTPS/443).
 Railway blocks SMTP ports (25/465/587); `smtplib` was removed in full.
 
+### IndexNow — search-engine pings (MEH-2852)
+
+`app/services/indexnow.py` POSTs changed public URLs (he + `/en`, the shapes
+`frontend/app/sitemap.js` emits) to `https://api.indexnow.org/indexnow`, as a
+BackgroundTask after the commit. **Production only** (`RAILWAY_ENVIRONMENT ==
+"production"`); anywhere else it logs and returns. Timeout 5 s, never raises
+(log + Sentry breadcrumb), ≤ 10,000 URLs per call, deduped. Key: the
+`INDEXNOW_KEY` constant, served at `frontend/public/<key>.txt` (public by
+design). No env var, no retry, no Google.
+
+| Endpoint | Pings when |
+|---|---|
+| `POST /admin/producers` | created approved (not `as_draft`) |
+| `PUT /admin/producers/{id}` | business is approved — old + new URL on a slug change |
+| `POST /admin/producers/{id}/approve` | always (the page appeared) |
+| `POST /admin/producers/{id}/toggle-status` | always (hidden / back on the site) |
+| `POST /admin/producers/{id}/reject` | the business was approved |
+| `DELETE /admin/producers/{id}` | the business was approved |
+| `PUT /producers/me` | the business is approved |
+| `POST /events` · `PUT /events/{id}` · `DELETE /events/{id}` | the business is approved |
+| `POST /admin/experiences/{id}/approve` | the host's business is approved |
+| `POST /admin/experiences/{id}/reject` · `/request-changes` | the experience was approved |
+| `POST /group-buys` · `PATCH /group-buys/{id}/status` · `PATCH /admin/group-buys/{id}/status` | the business is approved |
+| `POST /admin/recipes/{id}/approve` | the business is approved and has a slug |
+| `POST /admin/recipes/{id}/reject` · `/request-changes` | the recipe was published |
+
 ---
 
 ## Env vars
@@ -1592,6 +1628,7 @@ Railway blocks SMTP ports (25/465/587); `smtplib` was removed in full.
 Critical:
 - `DATABASE_URL` — Railway Postgres reference
 - `JWT_SECRET_KEY` or `SECRET_KEY` — **required in production**, ephemeral in dev
+- `SUPER_ADMIN_EMAIL` — the owner account no admin can demote or delete (`admin_extra.is_super_admin`; `GET /admin/users` returns `is_super_admin` per row). **Required in production**: the backend refuses to boot without a valid address (MEH-2890). Elsewhere unset = nobody protected (logged). Case-insensitive.
 - `ANTHROPIC_API_KEY` — moderation + chat widget (fail-open if missing)
 - `ENV` — `development|staging|production`
 - `CORS_ORIGINS` — comma-separated, production MUST set explicitly

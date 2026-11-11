@@ -38,6 +38,9 @@ import OwnerRow from "@/components/OwnerRow";
 import PrimaryContactButton from "@/components/PrimaryContactButton";
 import SaveButton from "@/components/SaveButton"; // MEH-2558
 import ShareButton from "@/components/ShareButton";
+import Seed from "@/components/brand/Seed"; // MEH-2844
+import HistoryBackLink from "@/components/HistoryBackLink"; // MEH-2857
+import { seedColorFor } from "@/lib/brand-seeds";
 import { splitRecipeLines } from "@/lib/recipe-lines"; // MEH-2540
 import { formatPriceRange } from "@/lib/utils";
 
@@ -108,8 +111,12 @@ export default function RecipeDetail({ recipe, producer, relatedProducts }) {
 
   return (
     <article className="max-w-6xl mx-auto pb-10">
-      {/* Hero. No photo → a low green strip with the Leaf, never a tall
-          empty box. */}
+      {/* Hero. No photo → a low strip, never a tall empty box. MEH-2844:
+          the strip carries the recipe card's seed (MEH-2833 board 8 —
+          RecipeCard.jsx: same Seed, same props, the recipe's own colour)
+          instead of the old Leaf, on the same sand (background-alt) as the
+          card plate. It is cropped in the START-top corner, opposite the
+          share/save pair (top-3 end-3), so it never sits under a control. */}
       <div className="relative md:px-4 md:pt-6">
         {/* MEH-2558: share + save, the business page's hero pair
             (ImageGallery) — same corner, same circles. MEH-2671: that corner
@@ -143,15 +150,24 @@ export default function RecipeDetail({ recipe, producer, relatedProducts }) {
           </div>
         ) : (
           <div
-            className="h-24 md:h-28 bg-green-50 md:rounded-lg flex items-center justify-center"
+            className="relative h-24 md:h-28 bg-background-alt md:rounded-lg overflow-hidden"
             data-testid="recipe-hero-missing"
           >
-            <Leaf size={40} weight="light" className="text-primary/70" aria-hidden="true" />
+            <Seed
+              color={seedColorFor(recipe.id).fill}
+              size={70}
+              rotate={-36}
+              highlight
+              className="absolute -top-[46px] -start-[30px] pointer-events-none rtl:-scale-x-100"
+            />
           </div>
         )}
       </div>
 
       <div className="px-4">
+        {/* MEH-2857: «→ חזרה» to the page the visitor came from, when there is
+            one inside the site; the business › recipes trail stays as is. */}
+        <HistoryBackLink className="mt-2" />
         <nav className="text-sm text-fg-muted mt-4" aria-label={t("breadcrumb_aria")}>
           <Link href={`/${producer.slug}`} className={`hover:underline ${LINK_FOCUS}`}>
             {producer.name}

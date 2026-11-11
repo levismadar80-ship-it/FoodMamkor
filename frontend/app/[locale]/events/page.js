@@ -2,8 +2,16 @@ import { Suspense } from "react";
 import { getTranslations } from "next-intl/server";
 import EventsClient from "./EventsClient";
 import { BRAND_NAME } from "@/lib/constants";
-import { buildAlternates, urlForLocalePath, OG_LOCALE } from "@/lib/i18n-seo";
+import { buildAlternates, buildEntityTitle, urlForLocalePath, OG_LOCALE } from "@/lib/i18n-seo";
 import { getHubCount, hubRobots } from "@/lib/listing-supply";
+
+// MEH-2878: stays per-request on purpose. Its client body reads
+// useSearchParams() inside <Suspense>; on a cached (static) route Next renders
+// that subtree only in the browser, so the cached HTML would lose the page's
+// H1 and body (measured: production has the H1 in its HTML, a cached build
+// did not). Per-request keeps today's server-rendered HTML. Remove this only
+// together with moving the H1 out of the Suspense subtree.
+export const dynamic = "force-dynamic";
 
 // MEH-739: per-locale hreflang + self canonical via buildAlternates (was a
 // hand-built single-canonical entry with no hreflang languages map).
@@ -16,13 +24,11 @@ export async function generateMetadata({ params }) {
   const robots = hubRobots(await getHubCount("events"));
   return {
     ...(robots ? { robots } : {}),
-    // title.absolute — key carries the brand suffix per locale (mirrors
-    // seo.about / seo.map), so the layout `%s | brand` template doesn't
-    // append a second (Hebrew) brand on /en.
-    title: { absolute: t("title") },
+    // MEH-2853: plain title — the layout template `%s | <brand>` adds the brand.
+    title: t("title"),
     description: t("description"),
     openGraph: {
-      title: t("og_title"),
+      title: buildEntityTitle(t("og_title"), locale),
       description: t("og_description"),
       type: "website",
       // MEH-740: per-page og:url = self (mirrors #916 terms/privacy).
@@ -36,7 +42,7 @@ export async function generateMetadata({ params }) {
     // layout's generic site card).
     twitter: {
       card: "summary_large_image",
-      title: t("og_title"),
+      title: buildEntityTitle(t("og_title"), locale),
       description: t("og_description"),
       images: ["/og-image.png"],
     },
