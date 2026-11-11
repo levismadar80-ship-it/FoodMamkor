@@ -6,7 +6,7 @@ import LocationBanner from "@/components/LocationBanner";
 import HolidayBanner from "@/components/HolidayBanner";
 import FridayDeliveryStrip from "@/components/FridayDeliveryStrip";
 import BackToTop from "@/components/BackToTop";
-import { UpcomingEventsPreview } from "@/app/[locale]/home/UpcomingEventsPreview";
+import HomeWhatsOn from "@/components/HomeWhatsOn";
 import {
   HomeFeaturedProducer,
   HomeRecentlyViewed,
@@ -310,9 +310,13 @@ export default function HomeClient({
           /about/process the real four steps, so both lived twice. */}
 
       {/* =========================
-          UPCOMING EVENTS PREVIEW (Task 6)
+          WHAT'S ON AT THE BUSINESSES (MEH-2859) — one strip over all four
+          date-bound types (events, experiences, group buys, surprise baskets),
+          in the slot the events-only preview held. Self-hides when none of the
+          four has anything, and asks nothing of any of them until the strip
+          nears the viewport.
           ========================= */}
-      <UpcomingEventsPreview />
+      <HomeWhatsOn />
 
       {/* MEH-912: recently-viewed demoted from between the category grid and the
           producer grid to a "resume browsing" band just above the closing CTA,
