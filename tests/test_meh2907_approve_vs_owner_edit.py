@@ -8,18 +8,23 @@ Touches:  producers + producer_locations + products rows via the standard
           read the COMMITTED row from outside the request. Every outbound
           side effect of both handlers is patched (Resend, WhatsApp,
           IndexNow, Cloudinary) — see `_mute_side_effects`.
-Does NOT: cover the other two gates in `_assert_approvable` — the
-          category-licence gate and `phone_verified`. Both read from the
-          same object this file shows to be stale, so the same window
-          plausibly applies; it is NOT measured here and MEH-2908 says so.
-          Also does not cover the admin PUT or the import path.
+Does NOT: cover the admin PUT or the import path. It DOES now cover all
+          three gates in `_assert_approvable` — photo, category-licence
+          and `phone_verified` — which an earlier revision deferred as
+          "plausibly affected, not measured". Measured since: one
+          `db.refresh(producer)` repairs all three, and a narrowed
+          `attribute_names=["images"]` re-opens two of them while the
+          photo test stays green. That is why tests 3 and 4 exist.
 Related:  backend/app/routers/admin.py::_assert_approvable (the gate),
           ::_persist_approval (already runs the gates twice on its retry
           path, which MEH-2908 names as the precedent for a cheap fix);
           backend/app/routers/producer_me.py::_lock_producer_updates
           (the MEH-2007 decision that leaves this pair unserialised);
           tests/test_review_ready_ping_concurrency.py (the barrier shape).
-History:  MEH-2907 (creation); MEH-2908 (the gate finding, xfail below).
+History:  MEH-2907 (creation); MEH-2908 (the gate finding, carried here
+          as an xfail until the `db.refresh` fix landed — test 2 is now
+          that fix's regression guard, and tests 3 and 4 pin the other
+          two gates it also repairs).
 
 Area 5 of MEH-2899. The action-map report scores this row 14 — «race:
 בעל העסק עורך בזמן שאדמין מאשר. אין טסט שמפעיל את שניהם» — the highest
@@ -68,12 +73,16 @@ the reason for the shape above. A fresh reviewer measured all three:
     fact is narrower: the gate was asked, and answered from a row that had
     already changed.
 
-    MEH-2911 has since closed the sequential path (refuse the removal,
-    keep the gallery, no demotion), so test 4 below now records that
-    ruling. The xfail above is deliberately NOT rewritten to lean on the
-    terminal state as a result: if the MEH-2911 guard were ever removed,
-    the two would collapse back into one and the xfail would again be
-    satisfiable without any race.
+    BOTH halves have since been closed, by different changes, and test 2
+    is deliberately NOT rewritten to lean on the terminal state as a
+    result. MEH-2908 closed the race (`db.refresh` at the top of
+    `_assert_approvable`), so test 2 is a plain regression guard rather
+    than an xfail, and tests 3 and 4 pin the other two gates it repairs.
+    MEH-2911 closed the sequential path (refuse the removal, keep the
+    gallery, no demotion), so the last test records that ruling instead
+    of the old behaviour. If either guard were removed, a terminal-state
+    assertion would leave the other looking covered — which is the
+    collapse these tests exist to keep apart.
 """
 
 from __future__ import annotations
@@ -87,7 +96,8 @@ import app.cloudinary_utils as cloudinary_utils
 import app.routers.admin as admin_mod
 import app.routers.producer_me as pm
 from app.database import SessionLocal
-from app.models.models import Producer
+from app.constants import LICENSE_REQUIRED_CATEGORIES
+from app.models.models import Category, Producer, ProducerCategory
 
 from conftest import auth_header, make_submit_ready_producer, make_user
 
@@ -149,14 +159,21 @@ def _committed_images(producer_id) -> list:
         outside.close()
 
 
-def _run_the_race(client, db, monkeypatch) -> dict:
-    """Admin reaches the gate; owner empties the gallery; gate then runs.
+def _run_the_race(client, db, monkeypatch, *, prepare=None, mutate=None) -> dict:
+    """Admin reaches the gate; something changes the row; gate then runs.
 
-    Returns what each side saw, so the two tests below can assert
-    different facts about one run without re-deriving the mechanism.
+    `prepare(db, producer)` runs before the approval starts, for a setup
+    the default producer does not have (a licence-required category).
+    `mutate(producer_id)` runs INSIDE the window and must COMMIT from its
+    own session; the default is the owner clearing her gallery through
+    the real PUT. Parameterised so the licence and phone gates are
+    measured by the same mechanism rather than a second copy of it.
     """
     _mute_side_effects(monkeypatch)
     producer, owner, admin = _pending_ready(db)
+    if prepare is not None:
+        prepare(db, producer)
+        db.commit()
     producer_id = producer.id
 
     admin_inside = threading.Event()
@@ -193,9 +210,13 @@ def _run_the_race(client, db, monkeypatch) -> dict:
     t.start()
     assert admin_inside.wait(_BARRIER_TIMEOUT), "approve never reached its gates"
 
-    results["put"] = TestClient(client.app).put(
-        "/producers/me", json={"images": []}, headers=auth_header(owner)
-    ).status_code
+    if mutate is None:
+        results["put"] = TestClient(client.app).put(
+            "/producers/me", json={"images": []}, headers=auth_header(owner)
+        ).status_code
+    else:
+        mutate(producer_id)
+        results["put"] = 200
     owner_done.set()
 
     t.join(timeout=30)
@@ -243,37 +264,136 @@ def test_the_race_really_happens(client, db, monkeypatch):
 
 
 @pytest.mark.serial
-@pytest.mark.xfail(
-    strict=True,
-    reason=(
-        "MEH-2908: _assert_approvable judges producer.images from the admin "
-        "session's identity map, loaded before the owner's commit, so the "
-        "gate's verdict can rest on a photo that is already gone."
-    ),
-)
 def test_the_gate_judges_the_row_as_it_stands(client, db, monkeypatch):
     """ONE assertion, and that is the point.
 
-    `strict=True` is only useful if the test can actually XPASS once the
-    bug is fixed. Any other assertion above this one — a status code, a
-    control — turns the fixed world into a failure at that line, which
-    strict xfail absorbs as expected and the marker never fires. The
-    mechanism is therefore asserted in `test_the_race_really_happens`,
-    and this test asserts the invariant alone.
+    THIS IS THE REGRESSION GUARD FOR MEH-2908. It carried
+    `xfail(strict=True)` until the fix landed — `db.refresh(producer)` at
+    the top of `_assert_approvable` (`admin.py`). Remove that line and
+    this test goes red, which is the whole reason it is phrased as the
+    gate's own view rather than as the terminal state.
 
-    Measured against a simulated fix (a one-line `db.refresh(producer)`
-    at the top of `_assert_approvable`): the view the gate read becomes
-    `[]`, this assertion passes, and the xfail fires. That check is not
-    ceremony — the first attempt at this test captured the view BEFORE
-    calling the gate, which is blind to a re-read inside it, and the
-    xfail still would not have fired with the bug fixed.
+    One assertion, deliberately, and that stays load-bearing now the
+    marker is gone. While it was an xfail, any assertion above the
+    invariant — a status code, a control — turned the fixed world into a
+    failure at that line, which strict xfail absorbs as expected, so the
+    marker could never fire. (Measured: it reported XFAIL, not XPASS,
+    against a simulated fix.) The mechanism therefore lives in
+    `test_the_race_really_happens`, and this test must stay answerable
+    only by what the gate read.
+
+    The marker did fire when the real fix landed — `[XPASS(strict)]` —
+    which is how the card closed instead of the marker rotting.
     """
     run = _run_the_race(client, db, monkeypatch)
+
+    # The two controls that `xfail(strict=True)` used to stand in for.
+    # Measured by a reviewer: with the owner's PUT forced to 401 — or on a
+    # slow runner where the 5s barrier expires — BOTH sides of the
+    # assertion below equal the original photo and it passes without any
+    # race having happened. While the marker was there that vacuous pass
+    # became XPASS(strict) and failed loudly; removing it took the alarm
+    # away, so the controls move in. They were previously left out because
+    # strict xfail absorbed every assertion above the invariant; that
+    # mechanism is gone, so they are free.
+    assert run["seen"]["waited"] is True, (
+        "the gate's wait timed out, so the two requests serialised and the "
+        "assertion below is about a run in which nothing raced"
+    )
+    assert run["seen"]["committed_view"] == [], (
+        "the gallery was not cleared inside the window "
+        f"({run['seen']['committed_view']}), so the gate had nothing stale "
+        "to judge and the assertion below passes either way"
+    )
 
     assert run["seen"]["gate_view"] == run["seen"]["committed_view"], (
         "the approval gate judged content that was already replaced: it read "
         f"{run['seen']['gate_view']} while the committed row held "
         f"{run['seen']['committed_view']}"
+    )
+
+
+def _commit_from_outside(producer_id, **columns):
+    """Change the committed row from a session of its own, inside the window.
+
+    The gallery case uses the owner's real PUT; the licence number and
+    `phone_verified` have no owner route that can reach them mid-approval,
+    so these two write directly. The point under test is the GATE's view
+    of a row that changed, not how it changed.
+    """
+    outside = SessionLocal()
+    try:
+        row = outside.get(Producer, producer_id)
+        for key, value in columns.items():
+            setattr(row, key, value)
+        outside.commit()
+    finally:
+        outside.close()
+
+
+@pytest.mark.serial
+def test_the_licence_gate_judges_the_row_as_it_stands(client, db, monkeypatch):
+    """The second of the three gates, and it was not pinned before.
+
+    MEH-2908's fix is `db.refresh(producer)`, which reloads the whole row
+    — so it repairs all three gates in `_assert_approvable`, not just the
+    photo one. Only the photo gate had a test, and a reviewer measured
+    what that costs: `db.refresh(producer, attribute_names=["images"])`
+    is the obvious save-a-round-trip edit, and under it a business with a
+    licence-required category is approved with its licence number
+    cleared inside the window while the whole suite stays green.
+
+    So this pins the licence gate (MEH-971) by the same mechanism.
+    """
+    def prepare(db_, producer):
+        producer.producer_license_number = "12-34567"
+        for link in db_.query(ProducerCategory).filter(
+            ProducerCategory.producer_id == producer.id
+        ):
+            db_.get(Category, link.category_id).name = LICENSE_REQUIRED_CATEGORIES[0]
+
+    run = _run_the_race(
+        client,
+        db,
+        monkeypatch,
+        prepare=prepare,
+        mutate=lambda pid: _commit_from_outside(pid, producer_license_number=None),
+    )
+
+    assert run["seen"]["waited"] is True, "the gate's wait timed out"
+    assert run["results"].get("approve") == 422, (
+        "the licence gate passed on a licence number that was already "
+        f"cleared: approve answered {run['results'].get('approve')}"
+    )
+    assert run["final_status"] == "pending", (
+        f"the business went live as {run['final_status']!r} with no licence "
+        "number, in a category that requires one"
+    )
+
+
+@pytest.mark.serial
+def test_the_phone_gate_judges_the_row_as_it_stands(client, db, monkeypatch):
+    """The third gate (MEH-2121), pinned for the same reason as the second.
+
+    An unverified WhatsApp number means the only CTA on the published
+    page may go nowhere — which is the argument MEH-2121 makes for having
+    the gate at all.
+    """
+    run = _run_the_race(
+        client,
+        db,
+        monkeypatch,
+        mutate=lambda pid: _commit_from_outside(pid, phone_verified=False),
+    )
+
+    assert run["seen"]["waited"] is True, "the gate's wait timed out"
+    assert run["results"].get("approve") == 422, (
+        "the phone gate passed on a verification that was already revoked: "
+        f"approve answered {run['results'].get('approve')}"
+    )
+    assert run["final_status"] == "pending", (
+        f"the business went live as {run['final_status']!r} with an "
+        "unverified WhatsApp number"
     )
 
 
