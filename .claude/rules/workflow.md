@@ -534,6 +534,18 @@ concurrent loops. Tiers + `mehamakor-dod` self-check: ADR-025.
     merges, or new copy not in an approved table still stops CC (rules 22, 30;
     ADR-016 amendment). This adds to rule 23 (375/1440 in `qa-artifacts/`) and
     replaces none of it.
+39. **A red E2E gate blocks a merge to staging unless all three hold, and the
+    PR body says so, one line each (Sapir 11/11, every PR from then on).**
+    (a) **0 failed**: quote each shard's `executed=… unexpected=0 …` line.
+    (b) **Every flaky test is in a spec this PR does not touch, and has a
+    card**: name the card. (c) **The flaky tests' names and lines are read and
+    quoted, not inferred**: the `✘` / `✓ (retry #1)` lines and the error block,
+    from the job log or the report. A count, a summary comment, or "not in the
+    flaky list" is not (c). If the log can't be read, run the E2E once more and
+    quote that run. If any of the three is missing, don't merge.
+    `--fail-on-flaky-tests` stays on. This rule decides when a red caused by
+    someone else's flake may be merged past; it never loosens the gate. A flake
+    with no card gets one before the merge. Precedent: #4316.
 
 ---
 
