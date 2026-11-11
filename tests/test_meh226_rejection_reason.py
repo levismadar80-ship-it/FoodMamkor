@@ -167,7 +167,7 @@ def test_email_body_carries_the_same_string_that_was_persisted(client, db, monke
     # MEH-2210 chunk C: the rejection mail gained an HTML twin (same shape the
     # approval mail took in MEH-2151), so the capture accepts the keyword the
     # handler now passes. The assertion below is still about the TEXT body.
-    def _capture(to_email, subject, body, html=None):
+    def _capture(to_email, subject, body, html=None, test_cause=False):
         sent["to"] = to_email
         sent["body"] = body
 

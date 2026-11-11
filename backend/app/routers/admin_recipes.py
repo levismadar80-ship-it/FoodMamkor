@@ -41,6 +41,12 @@ from app.services.content_notifications import (
 router = APIRouter(prefix="/admin/recipes", tags=["admin-recipes"])
 
 
+def _producer_is_test(db: Session, producer_id) -> bool:
+    """MEH-2952: the business is a seeded test row — its mail is dropped."""
+    producer = db.query(Producer).filter(Producer.id == producer_id).first()
+    return bool(producer and producer.is_test)
+
+
 def _owner_email(db: Session, producer_id) -> str | None:
     """MEH-2602: the account that owns the business — the same lookup the
     producer-approval mail uses (admin.py, `User.producer_id`)."""
@@ -185,7 +191,11 @@ def approve_recipe(
             else f"/producer/{recipe.producer_id}"
         )
         background_tasks.add_task(
-            notify_recipe_approved, owner_email, recipe.title, path
+            notify_recipe_approved,
+            owner_email,
+            recipe.title,
+            path,
+            test_cause=bool(producer and producer.is_test),  # MEH-2952
         )
     # MEH-2852: queued last — background tasks run in order, so a slow ping
     # (5s timeout) never holds the owner's email or the alerts.
@@ -224,7 +234,11 @@ def request_recipe_changes(
     owner_email = _owner_email(db, recipe.producer_id)
     if owner_email:
         background_tasks.add_task(
-            notify_recipe_changes_requested, owner_email, recipe.title, action.feedback
+            notify_recipe_changes_requested,
+            owner_email,
+            recipe.title,
+            action.feedback,
+            test_cause=_producer_is_test(db, recipe.producer_id),  # MEH-2952
         )
     if was_published:  # MEH-2852: unpublished — queued after the email
         _ping_recipe(background_tasks, db, recipe)
@@ -259,7 +273,11 @@ def reject_recipe(
     owner_email = _owner_email(db, recipe.producer_id)
     if owner_email:
         background_tasks.add_task(
-            notify_recipe_rejected, owner_email, recipe.title, action.feedback
+            notify_recipe_rejected,
+            owner_email,
+            recipe.title,
+            action.feedback,
+            test_cause=_producer_is_test(db, recipe.producer_id),  # MEH-2952
         )
     if was_published:  # MEH-2852: unpublished — queued after the email
         _ping_recipe(background_tasks, db, recipe)

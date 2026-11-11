@@ -380,7 +380,7 @@ class TestAuth:
         make_user(db, email="dup_pw@test.com", name="Dana")
         captured = {}
 
-        def fake_dup(to, name, provider):
+        def fake_dup(to, name, provider, test_cause=False):
             captured["to"] = to
             captured["name"] = name
             captured["provider"] = provider
@@ -427,7 +427,7 @@ class TestAuth:
         captured = {}
         monkeypatch.setattr(
             "app.routers.auth._send_duplicate_attempt_email",
-            lambda to, name, provider, flow="consumer": captured.update(
+            lambda to, name, provider, flow="consumer", test_cause=False: captured.update(
                 to=to, name=name, provider=provider, flow=flow
             ),
         )
@@ -798,7 +798,7 @@ class TestAuth:
         captured = {}
         monkeypatch.setattr(
             "app.routers.auth._send_duplicate_attempt_email",
-            lambda to, name, provider, flow="consumer": captured.update(
+            lambda to, name, provider, flow="consumer", test_cause=False: captured.update(
                 to=to, name=name, provider=provider, flow=flow
             ),
         )
@@ -835,7 +835,7 @@ class TestAuth:
         captured = {}
         monkeypatch.setattr(
             "app.routers.auth._send_duplicate_attempt_email",
-            lambda to, name, provider, flow="consumer": captured.update(
+            lambda to, name, provider, flow="consumer", test_cause=False: captured.update(
                 to=to, name=name, provider=provider, flow=flow
             ),
         )
@@ -1173,7 +1173,7 @@ class TestRegistrationCoverageGaps:
         captured = {}
         monkeypatch.setattr(
             "app.routers.auth._send_duplicate_attempt_email",
-            lambda to, name, provider, flow="consumer": captured.update(
+            lambda to, name, provider, flow="consumer", test_cause=False: captured.update(
                 to=to, name=name, provider=provider, flow=flow
             ),
         )
@@ -1208,7 +1208,7 @@ class TestRegistrationCoverageGaps:
         captured = {}
         monkeypatch.setattr(
             "app.routers.auth._send_duplicate_attempt_email",
-            lambda to, name, provider, flow="consumer": captured.update(
+            lambda to, name, provider, flow="consumer", test_cause=False: captured.update(
                 to=to, name=name, provider=provider, flow=flow
             ),
         )
@@ -1417,7 +1417,7 @@ class TestRegistrationCoverageGaps:
         )
         assert resp.status_code == 200
         welcome.assert_called_once_with(
-            "welcome_c@example.com", "צרכנית", "consumer"
+            "welcome_c@example.com", "צרכנית", "consumer", test_cause=False
         )
 
     def test_register_producer_dispatches_producer_welcome(
@@ -1439,7 +1439,7 @@ class TestRegistrationCoverageGaps:
         )
         assert resp.status_code == 200
         welcome.assert_called_once_with(
-            "welcome_p@example.com", "יצרנית", "producer"
+            "welcome_p@example.com", "יצרנית", "producer", test_cause=False
         )
 
     def test_register_collision_dispatches_no_welcome(
@@ -2222,7 +2222,7 @@ class TestMeh1236RequestReview:
         called = {}
         import app.services.auth_notifications as an
 
-        def _fake(name, city):
+        def _fake(name, city, test_cause=False):
             called["args"] = (name, city)
 
         monkeypatch.setattr(an, "notify_admin_producer_resubmit", _fake)
@@ -4129,7 +4129,7 @@ class TestAuthEmailHtmlEscape:
     def test_email_escapes_html_in_name(self, monkeypatch):
         captured = {}
 
-        def fake_send(email, subject, body, html=None):
+        def fake_send(email, subject, body, html=None, test_cause=False):
             captured["body"] = body
             captured["html"] = html
 

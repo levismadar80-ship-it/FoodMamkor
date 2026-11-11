@@ -394,7 +394,17 @@ def fire_alerts(
                 # text message only delivers inside the 24h service window, which
                 # a favoriting customer almost never has open → Meta 131047
                 # window_expired and the alert vanishes silently.
-                _send_whatsapp_alert(alert.user.phone, producer_name, content)
+                _send_whatsapp_alert(
+                    alert.user.phone,
+                    producer_name,
+                    content,
+                    # MEH-2952: is_business() already drops a test business;
+                    # a test recipient account is dropped at the send layer.
+                    test_cause=bool(
+                        alert.user.is_test
+                        or (alert.producer is not None and alert.producer.is_test)
+                    ),
+                )
                 _record_alert_send(
                     db, alert.user_id, producer_id, _CHANNEL_WHATSAPP, alert_type
                 )
@@ -424,7 +434,9 @@ def _sanitize_wa_param(text: str) -> str:
     return re.sub(r"\s+", " ", _LEADING_EMOJI.sub("", text)).strip()
 
 
-def _send_whatsapp_alert(to: str, producer_name: str, content: AlertContent) -> None:
+def _send_whatsapp_alert(
+    to: str, producer_name: str, content: AlertContent, test_cause: bool = False
+) -> None:
     # MEH-1329: business-initiated, so send the approved utility template
     # favorite_alert_he_v1 (not a free-form text message). {{1}} = business name,
     # {{2}} = the sanitized headline; content.body carries a newline and is
@@ -456,4 +468,5 @@ def _send_whatsapp_alert(to: str, producer_name: str, content: AlertContent) -> 
             update_line=update_line,
             url_path=content.url,
         ),
+        test_cause=test_cause,
     )

@@ -25,6 +25,7 @@ from app.services import indexnow  # MEH-2852
 from app.services.registrations import registered_counts
 from app.schemas.schemas import ExperienceDetailOut, ExperienceModerationAction
 from app.services.experience_notifications import (
+    host_test_cause,
     notify_host_approved,
     notify_host_changes_requested,
     notify_host_rejected,
@@ -93,7 +94,12 @@ def approve_experience(
     _ping_if_public(background_tasks, ex)  # MEH-2852: the page appeared
 
     if ex.host and ex.host.email:
-        notify_host_approved(ex.host.email, ex.title, str(ex.id))
+        notify_host_approved(
+            ex.host.email,
+            ex.title,
+            str(ex.id),
+            test_cause=host_test_cause(ex.host),  # MEH-2952
+        )
 
     return _serialize_detail(ex)
 
@@ -134,7 +140,11 @@ def request_changes(
 
     if ex.host and ex.host.email:
         notify_host_changes_requested(
-            ex.host.email, ex.title, str(ex.id), action.feedback
+            ex.host.email,
+            ex.title,
+            str(ex.id),
+            action.feedback,
+            test_cause=host_test_cause(ex.host),  # MEH-2952
         )
 
     return _serialize_detail(ex)
@@ -169,6 +179,11 @@ def reject_experience(
         _ping_if_public(background_tasks, ex)
 
     if ex.host and ex.host.email:
-        notify_host_rejected(ex.host.email, ex.title, action.feedback or "")
+        notify_host_rejected(
+            ex.host.email,
+            ex.title,
+            action.feedback or "",
+            test_cause=host_test_cause(ex.host),  # MEH-2952
+        )
 
     return _serialize_detail(ex)

@@ -244,7 +244,9 @@ def notify_cities(db: Session, producer_id: UUID, cities: list[str]) -> None:
     for entry in entries:
         subject, body = _email_copy(producer.name, entry.city, producer.id, entry.id)
         try:
-            send_email(entry.email, subject, body)
+            # MEH-2952: is_business() above already drops a test row; the
+            # flag is the send layer's own guard for the same rule.
+            send_email(entry.email, subject, body, test_cause=bool(producer.is_test))
         except Exception as exc:  # noqa: BLE001 — defence only; see docstring
             logger.warning(
                 "delivery_waitlist: send failed for entry %s: %s", entry.id, exc
@@ -277,7 +279,11 @@ def _host_confirm_copy(producer_name: str, city: str, entry_id: UUID):
 
 
 def send_host_confirmation(
-    entry_id: UUID, email: str, city: str, producer_name: str
+    entry_id: UUID,
+    email: str,
+    city: str,
+    producer_name: str,
+    test_cause: bool = False,
 ) -> None:
     """MEH-2673: mail the «אשמח לארח» confirmation link to the address that
     ticked the box. Until the link is clicked `wants_to_host` stays False, so
@@ -285,7 +291,9 @@ def send_host_confirmation(
     BackgroundTask and reads nothing from the DB — the caller passes what the
     copy needs. Fail-open like every mail (send_email never raises)."""
     subject, body = _host_confirm_copy(producer_name, city, entry_id)
-    send_email(email, subject, body)
+    # MEH-2952: `test_cause` — the business or the signed-in visitor is a
+    # seeded test row.
+    send_email(email, subject, body, test_cause=test_cause)
 
 
 HostConfirmVerdict = Literal["send", "already_sent", "limit_reached"]

@@ -42,7 +42,7 @@ def test_fires_once_on_first_image(client, db):
             headers=auth_header(user),
         )
     assert r.status_code == 200
-    ping.assert_called_once_with("משק הפינג", producer.city)
+    ping.assert_called_once_with("משק הפינג", producer.city, test_cause=False)
 
 
 def test_no_fire_when_already_approvable(client, db):

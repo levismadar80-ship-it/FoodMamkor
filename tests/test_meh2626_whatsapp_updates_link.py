@@ -154,7 +154,9 @@ def test_approved_business_changing_the_link_pings_admin_once(client, db):
             "/producers/me", json={"whatsapp_group": CHANNEL_LINK}, headers=auth_header(user)
         )
     assert resp.status_code == 200, resp.text
-    ping.assert_called_once_with("משק העדכונים", ["whatsapp_group"])
+    ping.assert_called_once_with(
+        "משק העדכונים", ["whatsapp_group"], test_cause=False
+    )
 
 
 def test_approved_business_resaving_the_same_link_does_not_ping(client, db):

@@ -148,7 +148,7 @@ def test_request_changes_sends_email_to_producer(client, db, monkeypatch):
     monkeypatch.setattr(
         admin_module,
         "_send_notification_email",
-        lambda to, subject, body: calls.append((to, subject, body)),
+        lambda to, subject, body, test_cause=False: calls.append((to, subject, body)),
     )
     producer = make_producer(db, status="pending")
     # link a user to the producer so the email branch runs
