@@ -30,10 +30,24 @@ are absent from the raw body. The liveness assertion is the control; it
 is what makes the absence mean something.
 
 SHOWN FAILING (MEH-1619). Five breaks in `admin_extra.py`, each reverted
-after measuring. Every test here is red under at least one:
+after measuring. Every test here is red under at least one.
+
+Every "N ran" below was measured against the 14-parametrisation revision
+of this file, i.e. BEFORE the reviewer's F1 fix widened the missing-piece
+test from 2 settings to all 5. Don't read 14 as the current count and
+don't trust this sentence either — derive it:
+`pytest tests/test_meh2899_admin_service_test.py --collect-only -q`.
 
   S1  `Depends(require_admin)` -> `Depends(get_current_user)`
-      -> both authorization tests (3 parametrisations)
+      -> test_a_signed_in_non_admin_is_refused (2) and
+         test_an_unknown_service_is_refused_for_a_non_admin_too (1).
+         NOT test_anonymous_is_refused, which stays green: swapping in
+         `get_current_user` still 401s a caller with no token at all.
+         That one reds when the dependency is removed outright (measured
+         by this PR's reviewer: 14 ran, 5 failed). The count "3" was
+         right by coincidence in an earlier revision of this docstring
+         while the attribution was wrong — which is the artifact-asserts-
+         coverage trap in the one row most likely to be trusted.
   S2  the whatsapp branch also returns `"token": cfg.whatsapp_access_token`
       -> the leak test AND the shape test
   S3  `ok = True`
@@ -200,18 +214,26 @@ def test_ok_is_true_when_configured_and_false_when_not(
     assert unconfigured["configured"] is False, unconfigured
 
 
-@pytest.mark.parametrize(
-    "missing",
-    ["whatsapp_access_token", "cloudinary_api_secret"],
-)
+@pytest.mark.parametrize("missing", sorted(_SENTINELS))
 def test_one_missing_piece_is_enough_to_report_not_configured(
     client, db, monkeypatch, missing
 ):
     """Each service needs ALL of its settings, not any of them.
 
-    Without this, a route that checked only the first value of each pair
-    would report a half-configured integration as ready — and the admin
-    screen exists precisely to answer "is this wired up".
+    Without this, a route that checked only one value per service would
+    report a half-configured integration as ready — and the admin screen
+    exists precisely to answer "is this wired up".
+
+    Parametrised over EVERY sentinel, derived from `_SENTINELS` rather
+    than listed, so a setting added to the route's check cannot be added
+    to the fixture and left untested. An earlier revision named two
+    settings by hand — the LAST of each service — and this PR's reviewer
+    measured what that missed: with the route reduced to
+    `ok = bool(cfg.whatsapp_access_token)` and
+    `ok = bool(cfg.cloudinary_api_secret)`, all 14 tests ran and 0
+    failed. Two of Cloudinary's three settings were untested in either
+    direction, so a Cloudinary wired up with only `API_SECRET` answered
+    "ready" and uploads failed at runtime.
     """
     _configure(monkeypatch)
     monkeypatch.setattr(cfg, missing, "", raising=False)
@@ -223,6 +245,18 @@ def test_one_missing_piece_is_enough_to_report_not_configured(
 
     assert payload["ok"] is False, (
         f"{service} reported ready with {missing} unset: {payload}"
+    )
+    # Both keys, because they are separate claims in the response even
+    # though the route derives them from one value today. Measured by the
+    # reviewer: with `"configured": bool(cfg.whatsapp_phone_number_id)`
+    # and `ok` left whole, 14 ran and 0 failed — the shape test freezes
+    # `configured` as a KEY but not its value, and the all-set/all-clear
+    # test cannot separate the two. The admin screen reads only `ok`
+    # today (`frontend/app/[locale]/admin/settings/page.js`), so this is
+    # a response-contract gap rather than a user-visible one; freezing
+    # the contract is what this file is for.
+    assert payload["configured"] is False, (
+        f"{service} claims configured with {missing} unset: {payload}"
     )
 
 
@@ -246,17 +280,33 @@ def test_an_unknown_service_is_refused_without_echoing_the_input(
     resp = client.post(_PATH.format(probe), headers=auth_header(_admin(db)))
 
     assert resp.status_code == 400, resp.text
+    # This is the line S5 reds. FastAPI serialises an HTTPException as
+    # exactly {"detail": <detail>}, so any world where this equality holds
+    # has a body that cannot contain `probe`.
     assert resp.json()["detail"] == "שירות לא מוכר", resp.text
+    # Which makes the line below entailed TODAY but not dead: it covers a
+    # move off HTTPException to a body with an extra key. Measured by this
+    # PR's reviewer with `JSONResponse(..., {"detail": "שירות לא מוכר",
+    # "requested": service})` — 14 ran, 1 failed, and the failure was here.
     assert probe not in resp.text, (
         f"the refusal echoes the caller's service name: {resp.text}"
     )
 
 
 def test_an_unknown_service_is_refused_for_a_non_admin_too(client, db):
-    """Authorization is decided before the service name is looked at.
+    """The unknown-service path is admin-gated too.
 
-    A 400 here instead of a 403 would mean the route tells an
-    unauthenticated-for-this caller which service names are real.
+    A 400 here instead of a 403 would mean the route tells a caller who
+    may not use it which service names are real.
+
+    It does NOT prove an ordering, which is what this docstring claimed
+    until this PR's reviewer took it apart: "authorization before the
+    path param is read" is a property of FastAPI resolving dependencies
+    before the handler body, not of anything this route decides. Measured,
+    this test reds and greens in lockstep with
+    test_a_signed_in_non_admin_is_refused[consumer] under every break, so
+    it adds no discriminating power — it is kept as a statement about the
+    surface, not as evidence about order.
     """
     user = make_user(db, role="consumer")
     db.commit()
