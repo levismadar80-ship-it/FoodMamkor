@@ -560,6 +560,24 @@ concurrent loops. Tiers + `mehamakor-dod` self-check: ADR-025.
     Rule 39 says when a RED may be merged past; this one says there has to be
     a run at all. Until the trigger moves into the workflow itself, this is a
     rule that depends on someone remembering it.
+41. **Nothing merges to staging while staging is red — any session, any PR
+    (Sapir 11/11).** The only PR that may merge into a red staging is the one
+    that fixes the red, and its body says so.
+    **Deciding whether staging is red is the hard half, and the obvious test
+    is wrong.** "The latest staging run passed" is not it: a run that SKIPPED
+    Playwright reports `E2E gate: success`, so the newest green can mean
+    nothing ran. Read back through the staging runs to the last one whose
+    `Playwright E2E` jobs actually EXECUTED, and use that conclusion. A gap of
+    skips does not clear an earlier failure — it leaves the question open, and
+    an open question is not a green.
+    Measured on 11/11: `ca44069af` failed at 14:58 (Playwright ran); the next
+    runs at 17:27 (`f20c22f2d`) and 17:43 (`117defbf9`) both reported
+    `E2E gate: success` with every Playwright job `skipped`; `a7c545ada` at
+    16:58 could not be read (the jobs API 502'd repeatedly) and is recorded as
+    unverified rather than assumed. Nothing re-ran the suite until the fix at
+    ~19:40. A merge landed at 17:43 against that unread state. So the window
+    was not "red until someone noticed" — it was **unknown for five hours**,
+    which is the same thing for this purpose and harder to see.
 
 ---
 
