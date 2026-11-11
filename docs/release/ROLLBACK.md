@@ -35,7 +35,7 @@
 
 ## 2 · Backend (Railway): depends on whether the release added a revision
 
-**Why it depends.** The image boots with `alembic upgrade head && exec uvicorn …` (`Dockerfile:61`). An older image does not contain the newer revision file. If the database is still at the newer revision, `alembic upgrade head` stops with *Can't locate revision*, uvicorn never starts, the `/health/readiness` healthcheck fails, and Railway keeps the **current** deployment live. **The rollback silently does not happen.**
+**Why it depends.** v1.5.0, and every image before MEH-2903 chunk 2, boots with `alembic upgrade head && exec uvicorn …`. An older image does not contain the newer revision file. If the database is still at the newer revision, `alembic upgrade head` stops with *Can't locate revision*, uvicorn never starts, the `/health/readiness` healthcheck fails, and Railway keeps the **current** deployment live. **The rollback silently does not happen.**
 
 ### 2a · The release added no revision
 
@@ -85,12 +85,13 @@ Sapir chose (ב) on 10/11: MEH-2903, `backend/scripts/migrate_on_boot.py`. Until
 
 **Rollback mode needs `migrate_on_boot.py` in the image you roll back *to*.** It is the older image that has to tolerate a newer database. Having the lineage table in the database is not enough.
 
-- **The first release you can roll back to without 2b/2c** is the first release whose `Dockerfile` runs `python -u scripts/migrate_on_boot.py` (MEH-2903 chunk 2, not merged, waiting for Sapir's go after v1.5.0). Call it **R**.
+- **The first release you can roll back to without 2b/2c** is the first release whose `Dockerfile` runs `python -u scripts/migrate_on_boot.py` (MEH-2903 chunk 2: on staging since 11/11/2026; it ships with v1.5.1, and only after the rollback drill on staging passes). Call it **R**.
   - It is **not** v1.5.0.
   - It is **not** a release that has `19ac967d78fb` but still boots with plain `alembic upgrade head`.
 - **Rolling back from a later release to R is automatic when both hold:**
   - **R's head is recorded in `alembic_lineage`.** That happens on the first successful boot of R, or of any later `migrate_on_boot.py` image, on that database.
   - **Every revision after R's head is expand-only (ADR-007).** Rollback mode starts R's code on the newer schema and undoes nothing.
+- **`ROLLBACK MODE` in the log does not by itself mean someone rolled back.** During a normal deploy, the old deployment's container can restart after the new image has already upgraded the database (`restartPolicyType ON_FAILURE`). It then starts in rollback mode on the code it was already serving. With expand-only revisions that is harmless. Before reading the line as a rollback, check which deployment logged it.
 - **If R's head is not recorded,** R's boot exits 3 (`SPLIT HISTORY`, naming both revisions) and the current deployment stays live. Use 2b.
 - **Two edges the check does not cover.** Neither can happen while revisions are never deleted and the history stays linear (the alembic head guard).
   - A row in `alembic_lineage` means "applied at some point". A downgrade does not remove it. So after a downgrade below R's head and a *different* revision applied on top, R would still take rollback mode on a stale row.
