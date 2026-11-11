@@ -11,7 +11,7 @@
 import { chromium } from "playwright";
 import { mkdirSync } from "node:fs";
 
-const BASE = process.env.BASE || "http://127.0.0.1:3100";
+const BASE = process.env.QA_BASE_URL || "http://127.0.0.1:3100";
 const OUT = process.argv[2] || "qa-artifacts/MEH-2927";
 mkdirSync(OUT, { recursive: true });
 
@@ -59,7 +59,7 @@ async function newPage(browser, { visits = 0 } = {}) {
 // sandbox's pre-installed one, so point at that binary rather than downloading
 // a second copy. --no-sandbox because this runs as root in the container.
 const browser = await chromium.launch({
-  executablePath: process.env.PW_CHROMIUM || "/opt/pw-browsers/chromium",
+  executablePath: process.env.PLAYWRIGHT_CHROMIUM_PATH || "/opt/pw-browsers/chromium",
   args: ["--no-sandbox", "--ssl-version-max=tls1.2"],
 });
 
