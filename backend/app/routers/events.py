@@ -33,6 +33,7 @@ from app.schemas.schemas import (
     event_end_time_problem,
 )
 from app.services import indexnow  # MEH-2852
+from app.services.producer_listing import not_test_producer  # MEH-2952
 from app.services.registrations import method_problem, registered_counts
 from app.utils.clock import israel_today, utc_now
 
@@ -152,7 +153,8 @@ def list_events(
     )
     if not (is_admin or is_owner_view):
         q = q.join(Producer, Event.producer_id == Producer.id).filter(
-            Producer.status == "approved"
+            Producer.status == "approved",
+            not_test_producer(),  # MEH-2952: a test row's events stay out
         )
     if filters.producer_id:
         q = q.filter(Event.producer_id == filters.producer_id)
@@ -199,6 +201,7 @@ def upcoming_events(
             Event.is_active.is_(True),
             Event.event_date >= israel_today(),
             Producer.status == "approved",
+            not_test_producer(),  # MEH-2952
         )
         .order_by(Event.event_date.asc(), Event.event_time.asc())
         .limit(limit)

@@ -78,8 +78,13 @@ def group_buy_urls(group_buy_id) -> list[str]:
 def is_public_owner(producer) -> bool:
     """The owner's own page, and its events, are public once it is approved —
     a business at /{slug}, an organizer at /organizers/{slug} (MEH-2459:
-    organizer events are listed on purpose)."""
-    return producer is not None and producer.status == "approved"
+    organizer events are listed on purpose). MEH-2952: never a seeded test
+    row — its URLs are not public, so they are never announced."""
+    return (
+        producer is not None
+        and producer.status == "approved"
+        and not producer.is_test
+    )
 
 
 def is_public_business(producer) -> bool:

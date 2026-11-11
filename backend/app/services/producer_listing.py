@@ -92,7 +92,19 @@ def catalog_default_availability_condition():
     return Producer.availability_state != ON_VACATION
 
 
-def is_business():
+def not_test_producer():
+    """MEH-2952: the row is not a seeded test business (``is_test`` false).
+
+    A building block of ``is_business()`` below, exported only for the few
+    public readers that deliberately do not use ``is_business()`` because an
+    organizer must stay visible there (the events feed, the organizer pages,
+    the rescue list, saved events). Anything that lists BUSINESSES uses
+    ``is_business()``; it already carries this clause.
+    """
+    return Producer.is_test.is_(False)
+
+
+def is_business(*, include_test: bool = False):
     """The ONE rule for "this row is a live business" (MEH-2459, ADR-036).
 
     ``status == 'approved' AND kind == 'producer'``. Every surface that lists,
@@ -115,8 +127,31 @@ def is_business():
     NULL-safety: ``producers.kind`` is ``nullable=False`` with
     ``server_default 'producer'`` (models.py, migration f1a2b3c4d5e6), so the
     equality cannot silently drop a row the way it would on a nullable column.
+
+    MEH-2952: and NOT a seeded test business (``Producer.is_test``), so a test
+    row is absent from every one of the surfaces above at once.
+    ``include_test=True`` keeps test rows, and only the files allowlisted in
+    ``tests/test_meh2952_is_test_guards.py`` may pass it (by-slug, the
+    business's own dashboard, admin screens; none yet in chunk 1).
     """
-    return and_(Producer.status == "approved", Producer.kind == "producer")
+    live = and_(Producer.status == "approved", Producer.kind == "producer")
+    if include_test:
+        return live
+    return and_(live, not_test_producer())
+
+
+def is_business_row(producer, *, include_test: bool = False) -> bool:
+    """``is_business()`` for a row already loaded in Python (MEH-2952).
+
+    Same three conditions, same ``include_test`` allowlist. For the gates
+    that check an object instead of filtering a query.
+    """
+    return (
+        producer is not None
+        and producer.status == "approved"
+        and producer.kind == "producer"
+        and (include_test or not producer.is_test)
+    )
 
 
 # (key in filters dict, attribute on Producer model) — covers the simple

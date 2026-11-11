@@ -65,6 +65,7 @@ from app.services.producer_listing import (
     build_producers_query,
     catalog_default_availability_condition,
     is_business,
+    is_business_row,
 )
 from app.services.producer_queries import (
     attach_badge_fields,
@@ -492,7 +493,9 @@ def get_producer(
     # MEH-2459 — an organizer is never a public business either: same
     # owner/admin carve-out, same 404 for everyone else (its public face is
     # /organizers/{slug}, chunk 3).
-    if producer.status != "approved" or producer.kind != "producer":
+    # MEH-2952: and a seeded test row (is_test) — same carve-out; its page
+    # reopens with noindex in chunk 3.
+    if not is_business_row(producer):
         is_admin = getattr(viewer, "role", None) == "admin"
         is_owner = viewer is not None and viewer.producer_id == producer.id
         if not (is_admin or is_owner):
@@ -572,9 +575,10 @@ def record_producer_view(
     # extracted (services/analytics.py).
     # MEH-2459: `or kind != "producer"` mirrors the GET's gate above — an
     # organizer is 404 to strangers there, so it is 404 here too.
-    if (
-        producer.status != "approved" or producer.kind != "producer"
-    ) and not is_internal_viewer(current_user, producer_id):
+    # MEH-2952: the same is_business_row as the GET, test rows included.
+    if not is_business_row(producer) and not is_internal_viewer(
+        current_user, producer_id
+    ):
         raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
 
     record_analytics_event(
