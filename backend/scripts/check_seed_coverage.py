@@ -318,6 +318,7 @@ EXEMPT_TABLES = {
     # empty in a real environment; that is an operational gap, not a code-drift
     # one, so it is out of this gate's reach (see the scope limit above).
     "cities": "owned by seed_cities.py, not the demo seed — see MEH-1349",
+    "alembic_lineage": "MEH-2903 boot bookkeeping — written only by scripts/migrate_on_boot.py after an upgrade, never by the app or a seed; no user-facing surface",
 }
 
 
