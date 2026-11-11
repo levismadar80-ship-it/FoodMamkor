@@ -140,6 +140,17 @@ def is_business(*, include_test: bool = False):
     return and_(live, not_test_producer())
 
 
+def is_live_owner_row(producer) -> bool:
+    """A loaded owner row whose content is public: approved and not a seeded
+    test row (MEH-2952), whatever its ``kind`` (an organizer's events are
+    public on purpose, ADR-036). The rule behind the event detail and sign-up
+    gates and IndexNow's owner check.
+    """
+    return (
+        producer is not None and producer.status == "approved" and not producer.is_test
+    )
+
+
 def is_business_row(producer, *, include_test: bool = False) -> bool:
     """``is_business()`` for a row already loaded in Python (MEH-2952).
 

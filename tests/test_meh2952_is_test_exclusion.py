@@ -24,7 +24,8 @@ from datetime import timedelta
 import pytest
 
 from app.models import Experience, Favorite, FavoriteAlert, ProducerRecipe
-from app.models.models import Event, GroupBuy, ProducerLocation, RescueOffer
+from app.config import settings
+from app.models.models import Event, GroupBuy, Product, ProducerLocation, RescueOffer
 from app.routers import rescue as rescue_module
 from app.routers.alerts import fire_alerts
 from app.data.cities import canonical_city
@@ -166,6 +167,34 @@ class TestCounts:
         assert resp.status_code == 200
         assert resp.json()["id"] == str(control.id)
 
+    def test_cities_autocomplete(self, client, db):
+        _business(
+            db, name=CONTROL_NAME, slug=CONTROL_SLUG, is_test=False
+        ).city = "כפר בקרה"
+        _business(db, name=TEST_NAME, slug=TEST_SLUG, is_test=True).city = "כפר ניסוי"
+        db.commit()
+        cities = client.get("/cities", params={"q": "כפר"}).json()
+        assert "כפר בקרה" in cities
+        assert "כפר ניסוי" not in cities
+
+    def test_search_products_and_cities(self, client, db, pair):
+        control, hidden = pair
+        control.city = "כפר בקרה"
+        hidden.city = "כפר ניסוי"
+        db.add(Product(producer_id=control.id, name="גבינת בקרה", description=""))
+        db.add(Product(producer_id=hidden.id, name="גבינת ניסוי", description=""))
+        db.commit()
+        products = {
+            p["name"]
+            for p in client.get("/search", params={"q": "גבינת"}).json()["products"]
+        }
+        assert "גבינת בקרה" in products
+        assert "גבינת ניסוי" not in products
+        found = client.get("/search", params={"q": "כפר"}).json()["cities"]
+        flat = {c if isinstance(c, str) else c.get("name") for c in found}
+        assert "כפר בקרה" in flat
+        assert "כפר ניסוי" not in flat
+
     def test_admin_business_counts(self, client, db, pair):
         admin = make_user(db, role="admin", email="meh2952-admin@example.com")
         h = auth_header(admin)
@@ -191,12 +220,16 @@ class TestThePage:
         assert client.get(f"/producers/{hidden.id}").status_code == 404
         owner = _owner(db, hidden, "meh2952-owner@example.com")
         assert (
-            client.get(f"/producers/{hidden.id}", headers=auth_header(owner)).status_code
+            client.get(
+                f"/producers/{hidden.id}", headers=auth_header(owner)
+            ).status_code
             == 200
         )
         admin = make_user(db, role="admin", email="meh2952-admin2@example.com")
         assert (
-            client.get(f"/producers/{hidden.id}", headers=auth_header(admin)).status_code
+            client.get(
+                f"/producers/{hidden.id}", headers=auth_header(admin)
+            ).status_code
             == 200
         )
 
@@ -229,6 +262,37 @@ class TestOwnedLists:
         assert "שוק הבקרה" in upcoming
         assert "שוק הניסוי" not in upcoming
 
+    def test_event_detail_404_to_strangers(self, client, db, pair):
+        control, hidden = pair
+        ok = _event(db, control, "שוק הבקרה")
+        bad = _event(db, hidden, "שוק הניסוי")
+        assert client.get(f"/events/{ok.id}").status_code == 200
+        assert client.get(f"/events/{bad.id}").status_code == 404
+        owner = _owner(db, hidden, "meh2952-evd-owner@example.com")
+        assert (
+            client.get(f"/events/{bad.id}", headers=auth_header(owner)).status_code
+            == 200
+        )
+
+    def test_event_signup_refused(self, client, db, pair):
+        control, hidden = pair
+        body = {"name": "דנה כהן", "phone": "052-7654321", "email": "dana@example.com"}
+        ids = {}
+        for producer in pair:
+            ev = _event(db, producer, f"שוק של {producer.slug}")
+            ev.registration_method = "site_form"
+            ev.max_participants = 10
+            db.commit()
+            ids[producer.is_test] = ev.id
+        assert (
+            client.post(f"/events/{ids[False]}/registrations", json=body).status_code
+            == 201
+        )
+        assert (
+            client.post(f"/events/{ids[True]}/registrations", json=body).status_code
+            == 404
+        )
+
     def test_owner_still_sees_her_own_events(self, client, db, pair):
         _, hidden = pair
         _event(db, hidden, "שוק הניסוי")
@@ -242,11 +306,17 @@ class TestOwnedLists:
 
     def test_organizer_pages(self, client, db):
         _business(
-            db, name="מארגן הבקרה", slug="meh2952-org-control", is_test=False,
+            db,
+            name="מארגן הבקרה",
+            slug="meh2952-org-control",
+            is_test=False,
             kind="organizer",
         )
         _business(
-            db, name="מארגן הניסוי", slug="meh2952-org-test", is_test=True,
+            db,
+            name="מארגן הניסוי",
+            slug="meh2952-org-test",
+            is_test=True,
             kind="organizer",
         )
         slugs = {o["slug"] for o in client.get("/organizers").json()}
@@ -337,9 +407,14 @@ class TestOwnedLists:
         user = make_user(db, email="meh2952-saver@example.com")
         h = auth_header(user)
         ok = _event(db, control, "שוק הבקרה")
-        assert client.post(f"/users/me/saved/event/{ok.id}", headers=h).status_code in (200, 201)
+        assert client.post(f"/users/me/saved/event/{ok.id}", headers=h).status_code in (
+            200,
+            201,
+        )
         bad = _event(db, hidden, "שוק הניסוי")
-        assert client.post(f"/users/me/saved/event/{bad.id}", headers=h).status_code == 404
+        assert (
+            client.post(f"/users/me/saved/event/{bad.id}", headers=h).status_code == 404
+        )
 
     def test_recipes_by_slug(self, client, db, pair):
         for producer in pair:
@@ -403,9 +478,42 @@ class TestFavoritesAndAlerts:
         control, hidden = pair
         user = make_user(db, email="meh2952-fan@example.com")
         h = auth_header(user)
-        assert client.post(f"/users/me/favorites/{control.id}", headers=h).status_code == 201
-        assert client.post(f"/users/me/favorites/{hidden.id}", headers=h).status_code == 404
+        assert (
+            client.post(f"/users/me/favorites/{control.id}", headers=h).status_code
+            == 201
+        )
+        assert (
+            client.post(f"/users/me/favorites/{hidden.id}", headers=h).status_code
+            == 404
+        )
         assert db.query(Favorite).filter(Favorite.producer_id == hidden.id).count() == 0
+
+    def test_favorites_list_skips_a_test_row(self, client, db, pair):
+        user = make_user(db, email="meh2952-favlist@example.com")
+        for p in pair:
+            db.add(Favorite(user_id=user.id, producer_id=p.id))
+        db.commit()
+        listed = {
+            f["producer"]["name"]
+            for f in client.get("/users/me/favorites", headers=auth_header(user)).json()
+        }
+        assert listed == {CONTROL_NAME}
+
+    def test_delivery_waitlist_refused(self, client, db, pair):
+        control, hidden = pair
+        body = {"email": "dana@example.com", "city": "חיפה"}
+        assert (
+            client.post(
+                f"/producers/{control.id}/delivery-waitlist", json=body
+            ).status_code
+            == 201
+        )
+        assert (
+            client.post(
+                f"/producers/{hidden.id}/delivery-waitlist", json=body
+            ).status_code
+            == 404
+        )
 
     def test_fire_alerts_silent_for_a_test_row(self, db, pair, monkeypatch):
         control, hidden = pair
@@ -416,7 +524,10 @@ class TestFavoritesAndAlerts:
         )
         monkeypatch.setattr("app.routers.alerts.send_template", lambda to, tmpl: True)
         user = make_user(db, email="meh2952-alert@example.com")
-        sub = {"endpoint": "https://push.example/abc", "keys": {"p256dh": "x", "auth": "y"}}
+        sub = {
+            "endpoint": "https://push.example/abc",
+            "keys": {"p256dh": "x", "auth": "y"},
+        }
         for p in pair:
             db.add(
                 FavoriteAlert(
@@ -427,19 +538,71 @@ class TestFavoritesAndAlerts:
                 )
             )
         db.commit()
-        fire_alerts(db, control.id, "new_product", AlertContent(title="t", body="b", url="/ok"))
+        fire_alerts(
+            db, control.id, "new_product", AlertContent(title="t", body="b", url="/ok")
+        )
         assert calls == ["/ok"]  # control
-        fire_alerts(db, hidden.id, "new_product", AlertContent(title="t", body="b", url="/no"))
+        fire_alerts(
+            db, hidden.id, "new_product", AlertContent(title="t", body="b", url="/no")
+        )
         assert calls == ["/ok"]
 
 
 # ── 6 · IndexNow ───────────────────────────────────────────────────────────
 
 
+@pytest.fixture
+def pings(monkeypatch):
+    """Every IndexNow POST, with production switched on (same seam as
+    tests/test_indexnow.py)."""
+    calls = []
+
+    class _Resp:
+        status_code = 200
+
+    def fake_post(url, *, json=None, timeout=None, **kwargs):
+        calls.append(json)
+        return _Resp()
+
+    monkeypatch.setattr(indexnow.httpx, "post", fake_post)
+    monkeypatch.setattr(settings, "railway_environment", "production")
+    return calls
+
+
+def _pinged(calls) -> list[str]:
+    return [u for call in calls for u in call["urlList"]]
+
+
 class TestIndexNow:
-    def test_never_announced(self, db, pair):
+    def test_owner_predicates(self, db, pair):
         control, hidden = pair
         assert indexnow.is_public_owner(control) is True
         assert indexnow.is_public_business(control) is True
         assert indexnow.is_public_owner(hidden) is False
         assert indexnow.is_public_business(hidden) is False
+        assert indexnow.producer_urls(hidden) == []
+        assert indexnow.recipe_urls(hidden, "r1") == []
+
+    def test_admin_toggle_pings_the_control_never_the_test_row(
+        self, client, db, pair, pings
+    ):
+        """admin.py's toggle / approve / reject ping without asking
+        is_public_owner; the URL builder itself must say no."""
+        control, hidden = pair
+        admin = make_user(db, role="admin", email="meh2952-ping@example.com")
+        h = auth_header(admin)
+        assert (
+            client.post(
+                f"/admin/producers/{control.id}/toggle-status", headers=h
+            ).status_code
+            == 200
+        )
+        assert any(CONTROL_SLUG in u for u in _pinged(pings))  # control
+        before = len(pings)
+        assert (
+            client.post(
+                f"/admin/producers/{hidden.id}/toggle-status", headers=h
+            ).status_code
+            == 200
+        )
+        assert not any(TEST_SLUG in u for u in _pinged(pings[before:]))

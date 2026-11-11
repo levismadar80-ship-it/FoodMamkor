@@ -44,20 +44,41 @@ INCLUDE_TEST_ALLOWED: frozenset[str] = frozenset()
 _PREDICATES = {"is_business", "is_business_row"}
 
 
+def _predicate_names(tree: ast.AST) -> set[str]:
+    """The predicate names plus any local alias (`import is_business as x`)."""
+    names = set(_PREDICATES)
+    for node in ast.walk(tree):
+        if isinstance(node, ast.ImportFrom):
+            for alias in node.names:
+                if alias.name in _PREDICATES and alias.asname:
+                    names.add(alias.asname)
+    return names
+
+
+def _callee(node: ast.AST) -> str | None:
+    if isinstance(node, ast.Name):
+        return node.id
+    return getattr(node, "attr", None)
+
+
 def include_test_calls(source: str) -> list[int]:
     """Line numbers of calls that may keep test rows.
 
-    A call to is_business / is_business_row (bare or attribute) counts when
-    it passes `include_test=` with anything other than the literal False, or
-    passes `**kwargs` (which could carry it).
+    A call to is_business / is_business_row (bare, attribute, or an import
+    alias) counts when it passes `include_test=` with anything other than the
+    literal False, or passes `**kwargs` (which could carry it). So does
+    `partial(<predicate>, include_test=...)`.
     """
+    tree = ast.parse(source)
+    preds = _predicate_names(tree)
     hits: list[int] = []
-    for node in ast.walk(ast.parse(source)):
+    for node in ast.walk(tree):
         if not isinstance(node, ast.Call):
             continue
-        func = node.func
-        name = func.id if isinstance(func, ast.Name) else getattr(func, "attr", None)
-        if name not in _PREDICATES:
+        name = _callee(node.func)
+        if name == "partial" and node.args and _callee(node.args[0]) in preds:
+            pass  # a partial binds the predicate's keywords: check them below
+        elif name not in preds:
             continue
         for kw in node.keywords:
             if kw.arg is None:  # **kwargs
@@ -69,10 +90,13 @@ def include_test_calls(source: str) -> list[int]:
     return hits
 
 
+_SKIP_DIRS = {"__pycache__", ".venv", "node_modules", ".next", "worktrees"}
+
+
 def _py_files(*roots: Path):
     for root in roots:
         for path in sorted(root.rglob("*.py")):
-            if "__pycache__" in path.parts or ".venv" in path.parts:
+            if _SKIP_DIRS.intersection(path.parts):
                 continue
             yield path
 
@@ -90,6 +114,10 @@ class TestIncludeTestAllowlist:
         assert include_test_calls("is_business_row(p, include_test=True)") == [1]
         assert include_test_calls("is_business(**opts)") == [1]
         assert include_test_calls("other(include_test=True)") == []
+        aliased = "from app.services.producer_listing import is_business as live\nlive(include_test=True)"
+        assert include_test_calls(aliased) == [2]
+        assert include_test_calls("partial(is_business, include_test=True)") == [1]
+        assert include_test_calls("partial(is_business)") == []
         # anchored to a real file: producer_listing defines the predicate and
         # uses `include_test` only as a parameter, never as a True call.
         real = (BACKEND / "app/services/producer_listing.py").read_text("utf-8")
@@ -121,6 +149,82 @@ class TestIncludeTestAllowlist:
         )
 
 
+# ── guard 1b · hand-written "approved" checks are an inventory ──────────────
+
+#: Every file that checks a producer's `status == "approved"` by hand instead
+#: of through is_business() / is_business_row() / is_live_owner_row(), with
+#: how many such checks it holds and why a test row is safe there. A NEW
+#: hand-written check (or a new file) goes red: use the rule, or add the
+#: site here with its reason. Counted 11/11/2026.
+INLINE_APPROVED_CHECKS: dict[str, tuple[int, str]] = {
+    "backend/app/services/producer_listing.py": (3, "the rule itself"),
+    "backend/app/routers/events.py": (
+        2,
+        "feed + upcoming; both add not_test_producer()",
+    ),
+    "backend/app/routers/organizers.py": (1, "adds not_test_producer()"),
+    "backend/app/routers/saved_items.py": (1, "saved events; adds not_test_producer()"),
+    "backend/app/routers/rescue.py": (
+        2,
+        "public list adds not_test_producer(); :361 is the owner's publish gate",
+    ),
+    "backend/app/routers/admin.py": (3, "admin screens and state transitions"),
+    "backend/app/routers/admin_kashrut.py": (2, "admin screens"),
+    "backend/app/routers/producer_me.py": (2, "the owner's own dashboard"),
+    "backend/app/routers/group_buys.py": (1, "the owner opening a group buy"),
+    "backend/app/routers/producers.py": (
+        1,
+        "kashrut certs: a resource of the page itself, reopened in chunk 3",
+    ),
+    "backend/app/routers/reviews.py": (
+        1,
+        "POST review: a resource of the page itself, chunk 3",
+    ),
+    "backend/app/services/onboarding_followup.py": (
+        1,
+        "owner emails: the send layer, chunk 2",
+    ),
+}
+
+_INLINE_APPROVED = re.compile(
+    r"\b(?:Producer|producer|p|owner_producer|biz|business)\.status\s*(?:==|!=)\s*[\"']approved[\"']"
+)
+
+
+def inline_approved_checks(source: str) -> int:
+    """Hand-written producer-approved checks, comments excluded."""
+    return sum(
+        1
+        for line in source.splitlines()
+        if not line.lstrip().startswith("#") and _INLINE_APPROVED.search(line)
+    )
+
+
+class TestInlineApprovedChecks:
+    def test_classifier_self_test(self):
+        assert inline_approved_checks('q.filter(Producer.status == "approved")') == 1
+        assert inline_approved_checks("if producer.status != 'approved':") == 1
+        assert inline_approved_checks('# producer.status == "approved"') == 0
+        assert inline_approved_checks('ex.status == "approved"') == 0
+        real = (BACKEND / "app/routers/organizers.py").read_text("utf-8")
+        assert inline_approved_checks(real) == 1
+
+    def test_inventory_matches_the_code(self):
+        found = {}
+        for path in _py_files(BACKEND / "app"):
+            n = inline_approved_checks(path.read_text("utf-8"))
+            if n:
+                found[_rel(path)] = n
+        expected = {k: v[0] for k, v in INLINE_APPROVED_CHECKS.items()}
+        assert found == expected, (
+            "A hand-written producer `status == 'approved'` check appeared or "
+            "moved. A public reader must go through is_business() / "
+            "not_test_producer() / is_live_owner_row() so a seeded test row "
+            "stays hidden (MEH-2952); a non-public one is added to "
+            f"INLINE_APPROVED_CHECKS with its reason. found={found}"
+        )
+
+
 # ── guard 2 · no writer before chunk 4 ─────────────────────────────────────
 
 #: Repo-relative paths allowed to write is_test. Chunk 4 adds the seed script
@@ -139,16 +243,21 @@ def is_test_writes(source: str, *, declares_column: bool = False) -> list[int]:
     """Line numbers that write `is_test` in Python source."""
     hits: list[int] = []
     for node in ast.walk(ast.parse(source)):
+        if isinstance(node, ast.ClassDef) and not declares_column:
+            # a class-level `is_test = Column(...)` declares a column
+            for stmt in node.body:
+                if isinstance(stmt, (ast.Assign, ast.AnnAssign)):
+                    targets = (
+                        stmt.targets if isinstance(stmt, ast.Assign) else [stmt.target]
+                    )
+                    if any(
+                        isinstance(t, ast.Name) and t.id == "is_test" for t in targets
+                    ):
+                        hits.append(stmt.lineno)
         if isinstance(node, (ast.Assign, ast.AugAssign, ast.AnnAssign)):
             targets = node.targets if isinstance(node, ast.Assign) else [node.target]
             for t in targets:
                 if isinstance(t, ast.Attribute) and t.attr == "is_test":
-                    hits.append(node.lineno)
-                if (
-                    isinstance(t, ast.Name)
-                    and t.id == "is_test"
-                    and not declares_column
-                ):
                     hits.append(node.lineno)
         elif isinstance(node, ast.Call):
             for kw in node.keywords:
@@ -165,7 +274,9 @@ def is_test_writes(source: str, *, declares_column: bool = False) -> list[int]:
                 hits.append(node.lineno)
         elif isinstance(node, ast.Dict):
             for key in node.keys:
-                if isinstance(key, ast.Constant) and key.value == "is_test":
+                if (isinstance(key, ast.Constant) and key.value == "is_test") or (
+                    isinstance(key, ast.Attribute) and key.attr == "is_test"
+                ):
                     hits.append(node.lineno)
         elif isinstance(node, ast.Constant) and isinstance(node.value, str):
             if _SQL_WRITE.search(node.value):
@@ -174,7 +285,13 @@ def is_test_writes(source: str, *, declares_column: bool = False) -> list[int]:
 
 
 _FRONTEND_EXT = {".js", ".jsx", ".ts", ".tsx", ".mjs", ".cjs", ".json"}
-_FRONTEND_SKIP = {"node_modules", ".next", "coverage", "playwright-report", "test-results"}
+_FRONTEND_SKIP = {
+    "node_modules",
+    ".next",
+    "coverage",
+    "playwright-report",
+    "test-results",
+}
 
 
 #: A key or an assignment: `is_test: true`, `is_test = x`, `{"is_test": …}`,
@@ -198,6 +315,10 @@ class TestNoWriterBeforeChunk4:
         assert is_test_writes("setattr(p, 'is_test', True)") == [1]
         assert is_test_writes("text('UPDATE producers SET is_test = true')") == [1]
         assert is_test_writes("x = 1\np.is_test |= flag") == [2]
+        assert is_test_writes("q.update({Producer.is_test: True})") == [1]
+        assert is_test_writes("update(P).values({P.__table__.c.is_test: True})") == [1]
+        # a read into a local is not a write
+        assert is_test_writes("is_test = producer.is_test") == []
         # reads are not writes
         assert is_test_writes("q.filter(Producer.is_test.is_(False))") == []
         assert is_test_writes("if producer.is_test: pass") == []
@@ -225,7 +346,15 @@ class TestNoWriterBeforeChunk4:
         assert is_test_writes(listing) == []
 
     def test_no_python_writer_outside_tests(self):
-        roots = [BACKEND / "app", BACKEND / "scripts", BACKEND / "alembic", REPO / "scripts"]
+        roots = [
+            BACKEND / "app",
+            BACKEND / "scripts",
+            BACKEND / "alembic",
+            REPO / "scripts",
+            REPO / ".github",  # the post-release smoke lives in .github/scripts
+            REPO / ".claude",
+            REPO / "frontend",  # e2e helpers written in Python
+        ]
         offenders = {}
         scanned = 0
         for path in _py_files(*[r for r in roots if r.exists()]):
@@ -243,6 +372,26 @@ class TestNoWriterBeforeChunk4:
             "is_test is written outside tests before chunk 4 (MEH-2952: writers "
             f"are the seed script and the admin toggle, chunk 4). {offenders}"
         )
+
+    def test_no_sql_or_shell_writer(self):
+        """Seeds also come as .sql / .sh (backend/scripts/*.sql exists)."""
+        offenders = {}
+        scanned = 0
+        for root in (BACKEND, REPO / "scripts", REPO / ".github"):
+            for path in sorted(root.rglob("*")):
+                if path.suffix not in {".sql", ".sh"} or ".venv" in path.parts:
+                    continue
+                scanned += 1
+                text = path.read_text("utf-8", errors="ignore")
+                lines = [
+                    i
+                    for i, chunk in enumerate(text.split(";"), 1)
+                    if _SQL_WRITE.search(chunk)
+                ]
+                if lines:
+                    offenders[_rel(path)] = lines
+        assert scanned > 5, scanned
+        assert offenders == {}, offenders
 
     def test_no_frontend_writer(self):
         root = REPO / "frontend"
@@ -269,8 +418,13 @@ class TestNoWriterBeforeChunk4:
 # ── guard 3 · never in a response ──────────────────────────────────────────
 
 
+_ALIAS_KWS = {"alias", "serialization_alias", "validation_alias"}
+
+
 def schema_fields_named_is_test(source: str) -> list[int]:
-    """Annotated class attributes named is_test inside a class body."""
+    """Ways a model could serialize a key named is_test: an annotated field,
+    a method (`@computed_field def is_test`), or a Field/alias keyword whose
+    value is "is_test"."""
     hits = []
     for node in ast.walk(ast.parse(source)):
         if isinstance(node, ast.ClassDef):
@@ -279,15 +433,36 @@ def schema_fields_named_is_test(source: str) -> list[int]:
                     isinstance(stmt, ast.AnnAssign)
                     and isinstance(stmt.target, ast.Name)
                     and stmt.target.id == "is_test"
+                ) or (
+                    isinstance(stmt, (ast.FunctionDef, ast.AsyncFunctionDef))
+                    and stmt.name == "is_test"
                 ):
                     hits.append(stmt.lineno)
-    return hits
+        elif isinstance(node, ast.Call):
+            for kw in node.keywords:
+                if (
+                    kw.arg in _ALIAS_KWS
+                    and isinstance(kw.value, ast.Constant)
+                    and kw.value.value == "is_test"
+                ):
+                    hits.append(node.lineno)
+    return sorted(set(hits))
 
 
 class TestNeverInAResponse:
     def test_classifier_self_test(self):
-        assert schema_fields_named_is_test("class A(BaseModel):\n    is_test: bool") == [2]
-        assert schema_fields_named_is_test("class A(BaseModel):\n    noindex: bool") == []
+        assert schema_fields_named_is_test(
+            "class A(BaseModel):\n    is_test: bool"
+        ) == [2]
+        assert (
+            schema_fields_named_is_test("class A(BaseModel):\n    noindex: bool") == []
+        )
+        computed = "class A(BaseModel):\n    @computed_field\n    def is_test(self) -> bool:\n        return True"
+        assert schema_fields_named_is_test(computed) == [3]
+        aliased = (
+            "class A(BaseModel):\n    x: bool = Field(serialization_alias='is_test')"
+        )
+        assert schema_fields_named_is_test(aliased) == [2]
         real = (BACKEND / "app/schemas/schemas.py").read_text("utf-8")
         assert "class ProducerDetailOut(" in real
         assert schema_fields_named_is_test(real) == []
@@ -302,7 +477,13 @@ class TestNeverInAResponse:
 
     @pytest.mark.parametrize(
         "schema",
-        ["ProducerListOut", "ProducerDetailOut", "ProducerAdminOut", "ProducerOwnerOut", "UserOut"],
+        [
+            "ProducerListOut",
+            "ProducerDetailOut",
+            "ProducerAdminOut",
+            "ProducerOwnerOut",
+            "UserOut",
+        ],
     )
     def test_serialized_models_carry_no_is_test(self, schema):
         """Behaviour, not text: the model's own field set (incl. inherited)."""

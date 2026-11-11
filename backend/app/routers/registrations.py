@@ -34,6 +34,7 @@ from app.config import settings
 from app.database import get_db
 from app.models import Event, Experience, Producer, Registration, User
 from app.rate_limit import limiter
+from app.services.producer_listing import is_live_owner_row  # MEH-2952
 from app.routers.experiences import _publicly_visible_query
 from app.schemas.schemas import (
     RegistrationCancelInfoOut,
@@ -67,7 +68,8 @@ def _event_for_signup(db: Session, event_id: UUID) -> Event:
     if event is None:
         raise HTTPException(status_code=404, detail="Event not found")
     producer = db.get(Producer, event.producer_id)
-    if producer is None or producer.status != "approved":
+    # MEH-2952: a seeded test row's event takes no real sign-ups either.
+    if not is_live_owner_row(producer):
         raise HTTPException(status_code=404, detail="Event not found")
     if not event.is_active or event.event_date < israel_today():
         raise HTTPException(status_code=409, detail=_CLOSED)

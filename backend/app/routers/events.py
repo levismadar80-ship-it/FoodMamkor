@@ -33,7 +33,10 @@ from app.schemas.schemas import (
     event_end_time_problem,
 )
 from app.services import indexnow  # MEH-2852
-from app.services.producer_listing import not_test_producer  # MEH-2952
+from app.services.producer_listing import (  # MEH-2952
+    is_live_owner_row,
+    not_test_producer,
+)
 from app.services.registrations import method_problem, registered_counts
 from app.utils.clock import israel_today, utc_now
 
@@ -249,8 +252,8 @@ def get_event(
     # Strangers get 404 (not 403) so the UUID can't be used to enumerate queue
     # state — REUSES: backend/app/routers/producers.py:210-217 (MEH-254) and
     # the MEH-1001 cross-owner convention. Owner + admin still see it.
-    producer_status = event.producer.status if event.producer else None
-    if producer_status != "approved":
+    # MEH-2952: a seeded test row's event is 404 the same way.
+    if not is_live_owner_row(event.producer):
         is_admin = getattr(viewer, "role", None) == "admin"
         is_owner = viewer is not None and viewer.producer_id == event.producer_id
         if not (is_admin or is_owner):
