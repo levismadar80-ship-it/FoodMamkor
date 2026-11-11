@@ -701,11 +701,31 @@ test.describe("Visual parity — MEH-991", () => {
     // 11/11): `toHaveCount` sat out its full 20s on
     // `43 × locator resolved to 0 elements` and the test went red on both
     // projects with `Expected: 3 Received: 0`. It was never green once.
-    await page
-      .locator('[data-testid="home-whats-on-sentinel"], [data-testid="home-whats-on"]')
-      .first()
-      .scrollIntoViewIfNeeded();
-    await expect(page.locator('[data-testid="whats-on-row"]')).toHaveCount(3, { timeout: 20_000 });
+    //
+    // The scroll re-resolves on every attempt and the count is what has to
+    // become true. `Locator.scrollIntoViewIfNeeded` resolves a handle ONCE and
+    // acts on it — it does not re-resolve the way `click` does — so a sentinel
+    // swapped for the section between resolve and act throws `Element is not
+    // attached to the DOM` outright (measured under MEH-2961 review: 51 of 60
+    // iterations inside a 0–29ms window). That swap cannot land there today
+    // while the strip sits below the preload band, but nothing in this spec
+    // pins the page length that keeps it there — the producers grid above is
+    // server-rendered, so `preparePage` cannot reach it. `toPass` removes the
+    // handle identity, making a detach a retry rather than a failure, and it
+    // drops the ordering dependency on the lazy MiniMap directly above
+    // (HomeClient.jsx:289), which this same scroll also mounts and which then
+    // grows the page ABOVE the strip.
+    //
+    // The inner bounds are deliberately short: a genuine failure then reports
+    // `Expected: 3 Received: 0` — the line that diagnosed this bug — instead
+    // of burning the action timeout and dying on the 45s test timeout.
+    await expect(async () => {
+      await page
+        .locator('[data-testid="home-whats-on-sentinel"], [data-testid="home-whats-on"]')
+        .first()
+        .scrollIntoViewIfNeeded({ timeout: 5_000 });
+      await expect(page.locator('[data-testid="whats-on-row"]')).toHaveCount(3, { timeout: 2_000 });
+    }).toPass({ timeout: 20_000 });
     await section.scrollIntoViewIfNeeded();
     await settle(page);
     // An element shot still paints whatever is fixed/sticky over it (header,
