@@ -95,6 +95,18 @@ async function stubManage(page: Page, events: Row[], experiences: Row[], writes:
   // into /login (seen on the edit-experience test, 08/11).
   await page.route("**/producers/me", (r) =>
     json(r, 200, { id: 7, name: "מאפיית שקד", slug: "shaked", status: "approved", phone: "0501234567" }));
+  // MEH-2932: EventForm reads the business's saved selling points on mount, to
+  // offer them instead of making her retype an address. The pattern above is
+  // exact — `**/producers/me` does NOT match `/producers/me/locations` — so
+  // without this the call reaches the real backend with the fake token and
+  // takes the 401 → failed refresh → session-expired path the comment above
+  // describes, and the edit form renders for nobody.
+  //
+  // An empty list is the right stub here: it is the 0-saved-locations state,
+  // in which the form looks exactly as these cases were written against. A
+  // non-empty list would add a radio group above «מיקום ספציפי» and change
+  // what this file is asserting.
+  await page.route("**/producers/me/locations", (r) => json(r, 200, []));
   // The address providers — never reached from a test.
   await page.route("https://nominatim.openstreetmap.org/**", (r) => json(r, 200, []));
   await page.route("https://places.googleapis.com/**", (r) => json(r, 200, {}));
