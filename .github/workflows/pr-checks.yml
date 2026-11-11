@@ -249,6 +249,7 @@ jobs:
               # --self-test) and by the static audit, both gated on this filter.
               # Without this line a PR touching only the tool skips both.
               - 'scripts/check_api_contract.py'
+              - 'Dockerfile'
             workflows:
               - '.github/workflows/**'
             # MEH-1585: mirrors dependency-audit.yml's backend manifests exactly.
@@ -480,6 +481,8 @@ jobs:
           # rescue_typical_items (rescue-bags pilot) — 44 -> 48.
           # MEH-2763: registrations (on-site sign-ups for events and
           # experiences) — 48 -> 49.
+          # MEH-2903: alembic_lineage (the revisions each boot applied, written
+          # only by scripts/migrate_on_boot.py) — 49 -> 50.
           EXPECTED_TABLES=50
 
           TABLE_COUNT=$(psql -h localhost -U postgres -d mehamakor_test -tAc \
