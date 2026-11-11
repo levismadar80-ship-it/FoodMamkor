@@ -15,9 +15,9 @@ vi.mock("next-intl", () => ({
   useTranslations: (ns) => (k) => (ns ? `${ns}.${k}` : k),
 }));
 
-const push = vi.fn();
+// Every tab is an anchor now, so a destination is asserted as an href rather
+// than as a router call — the mechanism is not the contract, the destination is.
 vi.mock("@/i18n/navigation", () => ({
-  useRouter: () => ({ push }),
   Link: ({ children, href, ...rest }) => (
     <a href={typeof href === "string" ? href : "#"} {...rest}>
       {children}
@@ -33,9 +33,11 @@ import ListingHubTabs, { HUB_TABS } from "@/components/ListingHubTabs";
 const labels = () => screen.getAllByRole("tab").map((el) => el.textContent);
 const values = () => screen.getAllByRole("tab").map((el) => el.getAttribute("data-tab-value"));
 
+const hrefOf = (value) =>
+  screen.getByTestId("listing-hub-tabs").querySelector(`[data-tab-value="${value}"]`).getAttribute("href");
+
 beforeEach(() => {
   cleanup();
-  push.mockClear();
   gates.groupBuys = false;
   gates.rescue = false;
 });
@@ -84,7 +86,7 @@ describe("ListingHubTabs — which tabs exist", () => {
 });
 
 describe("ListingHubTabs — what a tab does", () => {
-  it("exactly one tab stop, on the selected tab, whatever the supply", () => {
+  it("exactly one tab stop, on the selected tab, when everything is in supply", () => {
     gates.groupBuys = true;
     gates.rescue = true;
     render(<ListingHubTabs active="groupBuys" />);
@@ -93,52 +95,119 @@ describe("ListingHubTabs — what a tab does", () => {
     expect(screen.getAllByRole("tab").filter((el) => el.getAttribute("aria-selected") === "true")).toHaveLength(1);
   });
 
-  it("a gated tab navigates to its own route", () => {
+  /**
+   * The page you are STANDING ON always has its tab, selected, even when its
+   * own supply gate is false. Three ways that happens, none of them exotic:
+   *   - every cold load of /group-buys and /rescue, because the gate starts
+   *     false and only flips when its fetch lands (use-hub-nav-gate.js:84);
+   *   - supply legitimately empty — the route still renders for a reader who
+   *     arrived from a bookmark, a search result or the sitemap;
+   *   - any error or malformed body, since the gate fails closed.
+   *
+   * Without the exemption the row shows two tabs claiming neither, and a
+   * `role="tablist"` with no `tabIndex=0` child cannot be reached by Tab at
+   * all — the exact failure hooks/useTabsKeyboard.js warns about.
+   *
+   * The earlier version of the test above was named "whatever the supply" and
+   * set the gate to true before rendering, so it only ever ran the one state
+   * where the answer was already right.
+   */
+  for (const active of ["groupBuys", "rescue"]) {
+    it(`/${active}: its own tab is present and selected even with its gate false`, () => {
+      expect(gates[active], "control: this is the gate-off case").toBe(false);
+      render(<ListingHubTabs active={active} />);
+      const tabs = screen.getAllByRole("tab");
+      expect(tabs.map((el) => el.getAttribute("data-tab-value"))).toContain(active);
+      expect(
+        tabs.filter((el) => el.getAttribute("aria-selected") === "true").map((el) => el.getAttribute("data-tab-value")),
+        "exactly one tab claims the page being shown",
+      ).toEqual([active]);
+      expect(
+        tabs.filter((el) => el.getAttribute("tabindex") === "0"),
+        "a tablist with no tab stop is unreachable by keyboard",
+      ).toHaveLength(1);
+    });
+  }
+
+  it("the exemption is for the ACTIVE tab only — the other gated one stays hidden", () => {
+    render(<ListingHubTabs active="groupBuys" />);
+    expect(screen.getAllByRole("tab").map((el) => el.getAttribute("data-tab-value"))).toEqual([
+      "events",
+      "experiences",
+      "groupBuys",
+    ]);
+  });
+
+  it("every tab is a real link to its own route — middle-click, ⌘-click, crawlable", () => {
     gates.groupBuys = true;
     gates.rescue = true;
     render(<ListingHubTabs active="events" />);
-    fireEvent.click(screen.getByText("events.list.tab_group_buys"));
-    expect(push).toHaveBeenCalledWith("/group-buys");
-    fireEvent.click(screen.getByText("events.list.tab_rescue"));
-    expect(push).toHaveBeenCalledWith("/rescue");
+    expect(hrefOf("events")).toBe("/events");
+    expect(hrefOf("experiences")).toBe("/experiences");
+    expect(hrefOf("groupBuys")).toBe("/group-buys");
+    expect(hrefOf("rescue")).toBe("/rescue");
+    // The AC says the two new tabs LINK to their routes; a button would have
+    // no href at all, which is what this would have caught.
+    expect(screen.getAllByRole("tab").every((el) => el.tagName === "A")).toBe(true);
   });
 
-  it("the owning page's own two tabs switch locally, without a navigation", () => {
+  it("the owning page's own two tabs switch in place, without following the link", () => {
     const onSelect = vi.fn();
     render(<ListingHubTabs active="events" onSelect={onSelect} />);
-    fireEvent.click(screen.getByText("events.list.tab_experiences_short"));
+    const tab = screen.getByText("events.list.tab_experiences_short");
+    const handled = fireEvent.click(tab);
     expect(onSelect).toHaveBeenCalledWith("experiences");
-    expect(push, "a local switch must not also push a route").not.toHaveBeenCalled();
+    // fireEvent returns false once preventDefault ran — the page switches
+    // state first (MEH-2245's same-tick switch) and routes itself.
+    expect(handled, "a local switch must not also follow the href").toBe(false);
+    // It still carries the href, so it is a link for everything except a
+    // plain left-click.
+    expect(tab.getAttribute("href")).toBe("/experiences");
   });
 
-  it("onSelect does NOT swallow a gated tab — that one still navigates", () => {
+  it("onSelect does NOT swallow a gated tab — that one follows its link", () => {
     gates.groupBuys = true;
     const onSelect = vi.fn();
     render(<ListingHubTabs active="events" onSelect={onSelect} />);
-    fireEvent.click(screen.getByText("events.list.tab_group_buys"));
-    expect(push).toHaveBeenCalledWith("/group-buys");
+    const handled = fireEvent.click(screen.getByText("events.list.tab_group_buys"));
     expect(onSelect).not.toHaveBeenCalled();
+    expect(handled, "nothing intercepted it, so the anchor navigates").toBe(true);
   });
 
   it("clicking the tab already showing does nothing at all", () => {
     const onSelect = vi.fn();
     render(<ListingHubTabs active="events" onSelect={onSelect} />);
-    fireEvent.click(screen.getByText("events.list.tab_events"));
-    expect(push).not.toHaveBeenCalled();
+    const handled = fireEvent.click(screen.getByText("events.list.tab_events"));
     expect(onSelect).not.toHaveBeenCalled();
+    expect(handled, "no reload of the page you are already on").toBe(false);
   });
 
-  it("ArrowRight from the first tab wraps to the LAST one (RTL contract)", () => {
+  it("arrows MOVE focus across the row without navigating away from it", () => {
     gates.groupBuys = true;
     gates.rescue = true;
-    render(<ListingHubTabs active="events" />);
+    const onSelect = vi.fn();
+    render(<ListingHubTabs active="events" onSelect={onSelect} />);
     const tabs = screen.getAllByRole("tab");
     tabs[0].focus();
-    fireEvent.keyDown(tabs[0], { key: "ArrowRight" });
     // ArrowRight = previous in Hebrew reading order (hooks/useTabsKeyboard.js),
-    // so from the first tab it wraps to «סלי הפתעה» and navigates there.
+    // so from the first tab it wraps to «סלי הפתעה».
+    fireEvent.keyDown(tabs[0], { key: "ArrowRight" });
     expect(document.activeElement).toBe(tabs[3]);
-    expect(push).toHaveBeenCalledWith("/rescue");
+    // ...and that is ALL it does. A route-changing tab does not activate on
+    // focus, or a keyboard user could not read the row without being taken
+    // off the page. Enter on the focused anchor is what navigates.
+    expect(onSelect).not.toHaveBeenCalled();
+    expect(tabs[3].getAttribute("aria-selected")).toBe("false");
+  });
+
+  it("but the page's OWN two tabs still activate on focus (the MEH-2199 contract)", () => {
+    const onSelect = vi.fn();
+    render(<ListingHubTabs active="events" onSelect={onSelect} />);
+    const tabs = screen.getAllByRole("tab");
+    tabs[0].focus();
+    fireEvent.keyDown(tabs[0], { key: "ArrowLeft" });
+    expect(document.activeElement).toBe(tabs[1]);
+    expect(onSelect, "switching in place is cheap, so focus selects").toHaveBeenCalledWith("experiences");
   });
 });
 
@@ -153,18 +222,19 @@ describe("ListingHubTabs — the trailing action is ONE element", () => {
     ).toBeNull();
   });
 
-  it("no action, no empty wrapper", () => {
-    render(<ListingHubTabs active="events" />);
-    expect(screen.queryByText("הוסיפו אירוע")).toBeNull();
+  it("no action prop, no wrapper element for it", () => {
+    const { container } = render(<ListingHubTabs active="events" />);
+    const row = container.querySelector('[role="tablist"]').parentElement;
+    // The tablist is the row's only child when nothing was passed — an empty
+    // wrapper would still occupy a flex slot and shift the border.
+    expect(row.children).toHaveLength(1);
   });
 
-  it("the action is not duplicated per breakpoint (frontend.md § one control, one element)", () => {
-    const src = fs.readFileSync(path.resolve(__dirname, "../components/ListingHubTabs.jsx"), "utf8");
-    // The MEH-2776 failure mode: `hidden md:block` beside `md:hidden`, which
-    // drifts because a fix lands in one copy. This row wraps instead.
-    expect(src).not.toMatch(/md:hidden/);
-    expect(src, "control: the file really does lay the row out with wrapping").toMatch(/flex-wrap/);
-  });
+  // The MEH-2776 "one control, one element" claim is asserted behaviourally by
+  // "renders the action once" above — a `hidden md:block` + `md:hidden` pair
+  // would put TWO matching nodes in the DOM. The source-text regexes that used
+  // to sit here asserted that the prescribed change was applied rather than
+  // what it does, which ADR-032 §2.6 rules out.
 });
 
 describe("ListingHubTabs — every tab the registry declares has a real route", () => {
@@ -178,7 +248,11 @@ describe("ListingHubTabs — every tab the registry declares has a real route", 
     expect(new Set(HUB_TABS.map((tab) => tab.value)).size).toBe(4);
   });
 
-  it("the three other routes mount the row with their own tab selected", () => {
+  // A WIRING check, named as one: it reads source text, so it proves the call
+  // sites exist and nothing more. What they RENDER is evidenced in a real
+  // browser instead — qa-artifacts/MEH-2859/tabs-{375,1440}-{events,experiences,
+  // group-buys,rescue}.webp, each measured with its own tab reported selected.
+  it("wiring: the three other routes mount the row with their own tab", () => {
     const read = (f) => fs.readFileSync(path.resolve(__dirname, "..", f), "utf8");
     expect(read("app/[locale]/group-buys/GroupBuysClient.jsx")).toMatch(/<ListingHubTabs active="groupBuys"/);
     expect(read("app/[locale]/rescue/page.jsx")).toMatch(/<ListingHubTabs active="rescue"/);

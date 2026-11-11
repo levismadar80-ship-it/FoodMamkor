@@ -20,7 +20,7 @@
  *           row inline for two tabs).
  */
 
-import { useRouter } from "@/i18n/navigation";
+import { Link } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
 
 import useTabsKeyboard from "@/hooks/useTabsKeyboard";
@@ -56,25 +56,37 @@ export const HUB_TABS = Object.freeze([
  */
 export default function ListingHubTabs({ active, onSelect = null, action = null }) {
   const t = useTranslations("events.list");
-  const router = useRouter();
   // Each gate owns one endpoint and fails closed, so an unreachable backend
   // hides the tab rather than offering an empty shelf.
   const gates = { groupBuys: useHubNavGate("groupBuys"), rescue: useHubNavGate("rescue") };
 
-  const tabs = HUB_TABS.filter((tab) => !tab.gate || gates[tab.gate]);
+  // `|| tab.value === active` is load-bearing: the page being SHOWN always has
+  // its own tab, whatever its supply says. A gate starts false and only flips
+  // once its fetch lands, supply can legitimately be empty while the route
+  // still renders for someone who arrived by link, and any error fails closed
+  // — so without this the row would render on /group-buys and /rescue with
+  // NOTHING selected and no tab stop at all, which takes the whole tablist out
+  // of the keyboard order (the failure hooks/useTabsKeyboard.js warns about).
+  const tabs = HUB_TABS.filter((tab) => !tab.gate || gates[tab.gate] || tab.value === active);
 
-  const go = (value) => {
-    if (value === active) return;
+  const isLocal = (tab) => Boolean(onSelect) && tab.local;
+
+  /**
+   * Arrow / Home / End move focus across the row; `useTabsKeyboard` then calls
+   * this with the tab it landed on (automatic activation).
+   *
+   * Only a tab that switches IN PLACE activates on focus — that is the
+   * MEH-2199 contract for the events/experiences pair and it is unchanged. A
+   * tab that changes route does NOT: its hook's own docstring says a tablist
+   * whose panel is expensive to build should not reuse automatic activation
+   * without revisiting it, and a route change is as expensive as it gets. So
+   * arrowing across the row no longer walks the reader off the page; those
+   * tabs wait for Enter, which the anchor handles natively.
+   */
+  const onKeyDown = useTabsKeyboard((value) => {
     const tab = HUB_TABS.find((candidate) => candidate.value === value);
-    if (!tab) return;
-    if (onSelect && tab.local) {
-      onSelect(value);
-      return;
-    }
-    router.push(tab.href);
-  };
-
-  const onKeyDown = useTabsKeyboard(go);
+    if (tab && isLocal(tab)) onSelect(value);
+  });
 
   return (
     <div className="max-w-5xl mx-auto px-4 pt-4" data-testid="listing-hub-tabs">
@@ -90,20 +102,42 @@ export default function ListingHubTabs({ active, onSelect = null, action = null 
       <div className="flex flex-wrap items-end gap-x-4 gap-y-2 md:border-b md:border-border">
         <div
           role="tablist"
-          className="flex items-end gap-4 w-full border-b border-border md:w-auto md:border-0"
+          // gap-3 below md, measured not guessed: at 375 the four EN labels
+          // («Events · Experiences · Group buys · Surprise bags») are 299px
+          // wide, and with gap-4's 48px of gutter the row needed 347px of the
+          // 343px available — a 4px overflow that Hebrew (284px) never shows.
+          // gap-3 brings EN to 335px and leaves he at 272px. From md the
+          // original gutter returns.
+          className="flex items-end gap-3 md:gap-4 w-full border-b border-border md:w-auto md:border-0"
           onKeyDown={onKeyDown}
         >
           {tabs.map((tab) => {
             const selected = tab.value === active;
             return (
-              <button
+              // A real anchor, not a button: every tab IS a destination, so it
+              // middle-clicks, ⌘-clicks and copies like a link, and the hub
+              // links to all four routes for a crawler. `role="tab"` on an
+              // anchor is valid ARIA. The two tabs that belong to the calling
+              // page still switch in place — the click is intercepted and the
+              // page moves its own state first (MEH-2245's same-tick switch),
+              // then routes.
+              <Link
                 key={tab.value}
+                href={tab.href}
                 role="tab"
-                type="button"
                 data-tab-value={tab.value}
                 aria-selected={selected}
                 tabIndex={selected ? 0 : -1}
-                onClick={() => go(tab.value)}
+                onClick={(event) => {
+                  if (selected) {
+                    event.preventDefault();
+                    return;
+                  }
+                  if (isLocal(tab)) {
+                    event.preventDefault();
+                    onSelect(tab.value);
+                  }
+                }}
                 className={`pb-3 pt-2 min-h-touch inline-flex items-center whitespace-nowrap text-sm md:text-base font-semibold border-b-2 -mb-px transition ${
                   selected
                     ? "border-primary text-primary"
@@ -111,7 +145,7 @@ export default function ListingHubTabs({ active, onSelect = null, action = null 
                 }`}
               >
                 {t(tab.labelKey)}
-              </button>
+              </Link>
             );
           })}
         </div>
