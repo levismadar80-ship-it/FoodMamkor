@@ -811,6 +811,16 @@ def create_order(
         )
 
     offer = _offer_for_update(db, body.offer_id)
+    # MEH-2952: a seeded test row's bag is not listed, so it is not reservable
+    # by id either; same 404 as a missing bag. (Cancel shares
+    # _offer_for_update and stays open, so the check lives here.)
+    location = offer.location
+    if (
+        location is not None
+        and location.producer is not None
+        and location.producer.is_test
+    ):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="הסל לא נמצא")
     if offer.status != "active":
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT, detail="הסל אינו פעיל"

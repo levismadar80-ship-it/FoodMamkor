@@ -186,26 +186,74 @@ INLINE_APPROVED_CHECKS: dict[str, tuple[int, str]] = {
     ),
 }
 
-_INLINE_APPROVED = re.compile(
-    r"\b(?:Producer|producer|p|owner_producer|biz|business)\.status\s*(?:==|!=)\s*[\"']approved[\"']"
-)
+#: Names a producer row goes by at these sites. A check on another name
+#: (`owner.status`, raw SQL, `filter_by(status=...)`) is NOT counted — this
+#: inventory covers the ORM `<producer>.status ==/!= "approved"` form only,
+#: and says so (raw SQL lives in chat_db_tools, out of scope until its GRANT).
+_PRODUCER_NAMES = {"Producer", "producer", "p", "owner_producer", "biz", "business"}
+
+
+def _is_producer_status(node: ast.AST) -> bool:
+    return (
+        isinstance(node, ast.Attribute)
+        and node.attr == "status"
+        and isinstance(node.value, ast.Name)
+        and node.value.id in _PRODUCER_NAMES
+    )
+
+
+def _is_approved(node: ast.AST) -> bool:
+    return isinstance(node, ast.Constant) and node.value == "approved"
 
 
 def inline_approved_checks(source: str) -> int:
-    """Hand-written producer-approved checks, comments excluded."""
-    return sum(
-        1
-        for line in source.splitlines()
-        if not line.lstrip().startswith("#") and _INLINE_APPROVED.search(line)
-    )
+    """Hand-written producer-approved checks: `x.status ==/!= "approved"` in
+    either order (multi-line included), or `x.status.in_([... "approved" ...])`.
+    Parsed, so comments and docstrings never count."""
+    n = 0
+    for node in ast.walk(ast.parse(source)):
+        if isinstance(node, ast.Compare) and len(node.ops) == 1:
+            left, right = node.left, node.comparators[0]
+            if isinstance(node.ops[0], (ast.Eq, ast.NotEq)) and (
+                (_is_producer_status(left) and _is_approved(right))
+                or (_is_producer_status(right) and _is_approved(left))
+            ):
+                n += 1
+        elif (
+            isinstance(node, ast.Call)
+            and isinstance(node.func, ast.Attribute)
+            and node.func.attr == "in_"
+            and _is_producer_status(node.func.value)
+            and node.args
+            and isinstance(node.args[0], (ast.List, ast.Tuple, ast.Set))
+            and any(_is_approved(e) for e in node.args[0].elts)
+        ):
+            n += 1
+    return n
 
 
 class TestInlineApprovedChecks:
     def test_classifier_self_test(self):
         assert inline_approved_checks('q.filter(Producer.status == "approved")') == 1
-        assert inline_approved_checks("if producer.status != 'approved':") == 1
+        assert (
+            inline_approved_checks("if producer.status != 'approved':\n    pass") == 1
+        )
         assert inline_approved_checks('# producer.status == "approved"') == 0
+        assert (
+            inline_approved_checks('"""`producer.status == "approved"` in prose"""')
+            == 0
+        )
         assert inline_approved_checks('ex.status == "approved"') == 0
+        assert inline_approved_checks('x = "approved" == producer.status') == 1
+        assert (
+            inline_approved_checks(
+                'q.filter(\n    Producer.status\n    == "approved"\n)'
+            )
+            == 1
+        )
+        assert (
+            inline_approved_checks('Producer.status.in_(["approved", "pending"])') == 1
+        )
         real = (BACKEND / "app/routers/organizers.py").read_text("utf-8")
         assert inline_approved_checks(real) == 1
 
@@ -234,9 +282,20 @@ WRITERS_ALLOWED: frozenset[str] = frozenset()
 #: Where the column is DECLARED, which is not a write.
 _DECLARATIONS = {"backend/app/models/models.py"}
 
+#: `is_test` as an assignment target in a SET clause (before any WHERE), or
+#: as a column of an INSERT. A read (`WHERE NOT is_test`, a SELECT) is not.
 _SQL_WRITE = re.compile(
-    r"\b(?:SET|INSERT\s+INTO|UPDATE)\b[^;]*\bis_test\b", re.IGNORECASE | re.DOTALL
+    r"\bSET\b(?:(?!\bWHERE\b)[^;])*?\bis_test\s*=(?!=)"
+    r"|\bINSERT\s+INTO\s+[\w.\"]+\s*\([^)]*\bis_test\b",
+    re.IGNORECASE | re.DOTALL,
 )
+
+
+def sql_write_lines(text: str) -> list[int]:
+    """Real line numbers of SQL that writes is_test."""
+    return sorted(
+        {text.count("\n", 0, m.start()) + 1 for m in _SQL_WRITE.finditer(text)}
+    )
 
 
 def is_test_writes(source: str, *, declares_column: bool = False) -> list[int]:
@@ -256,8 +315,19 @@ def is_test_writes(source: str, *, declares_column: bool = False) -> list[int]:
                         hits.append(stmt.lineno)
         if isinstance(node, (ast.Assign, ast.AugAssign, ast.AnnAssign)):
             targets = node.targets if isinstance(node, ast.Assign) else [node.target]
-            for t in targets:
-                if isinstance(t, ast.Attribute) and t.attr == "is_test":
+            flat: list[ast.AST] = []
+            while targets:
+                t = targets.pop()
+                if isinstance(t, (ast.Tuple, ast.List)):
+                    targets.extend(t.elts)
+                else:
+                    flat.append(t)
+            for t in flat:
+                if (isinstance(t, ast.Attribute) and t.attr == "is_test") or (
+                    isinstance(t, ast.Subscript)
+                    and isinstance(t.slice, ast.Constant)
+                    and t.slice.value == "is_test"
+                ):
                     hits.append(node.lineno)
         elif isinstance(node, ast.Call):
             for kw in node.keywords:
@@ -279,7 +349,7 @@ def is_test_writes(source: str, *, declares_column: bool = False) -> list[int]:
                 ):
                     hits.append(node.lineno)
         elif isinstance(node, ast.Constant) and isinstance(node.value, str):
-            if _SQL_WRITE.search(node.value):
+            if sql_write_lines(node.value):
                 hits.append(node.lineno)
     return sorted(set(hits))
 
@@ -323,6 +393,23 @@ class TestNoWriterBeforeChunk4:
         assert is_test_writes("q.filter(Producer.is_test.is_(False))") == []
         assert is_test_writes("if producer.is_test: pass") == []
         assert is_test_writes("text('SELECT 1 WHERE p.is_test IS FALSE')") == []
+        assert (
+            is_test_writes(
+                "text(\"UPDATE producers SET status='inactive' WHERE NOT is_test\")"
+            )
+            == []
+        )
+        assert is_test_writes(
+            "text('INSERT INTO producers (name, is_test) VALUES (1, true)')"
+        ) == [1]
+        assert is_test_writes('"""We never update is_test here."""') == []
+        assert (
+            sql_write_lines("set -euo pipefail\npsql -c 'SELECT 1 WHERE is_test';\nx")
+            == []
+        )
+        assert sql_write_lines("a;\n\nUPDATE producers\n  SET is_test = true;") == [4]
+        assert is_test_writes("p.name, p.is_test = 'x', True") == [1]
+        assert is_test_writes("data['is_test'] = True") == [1]
         # the class-level column declaration is allowed only where declared
         decl = "class P:\n    is_test = Column(Boolean)"
         assert is_test_writes(decl, declares_column=True) == []
@@ -382,12 +469,7 @@ class TestNoWriterBeforeChunk4:
                 if path.suffix not in {".sql", ".sh"} or ".venv" in path.parts:
                     continue
                 scanned += 1
-                text = path.read_text("utf-8", errors="ignore")
-                lines = [
-                    i
-                    for i, chunk in enumerate(text.split(";"), 1)
-                    if _SQL_WRITE.search(chunk)
-                ]
+                lines = sql_write_lines(path.read_text("utf-8", errors="ignore"))
                 if lines:
                     offenders[_rel(path)] = lines
         assert scanned > 5, scanned

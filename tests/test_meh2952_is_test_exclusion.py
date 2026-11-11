@@ -468,6 +468,18 @@ class TestOwnedLists:
         listed = {o["id"] for o in resp.json()}
         assert ids[False] in listed
         assert ids[True] not in listed
+        # …and not reservable by id either (same 404 as a missing bag)
+        buyer = make_user(db, email="meh2952-buyer@example.com")
+        h = auth_header(buyer)
+        body = {"qty": 1}
+        ok = client.post(
+            "/rescue/orders", json={**body, "offer_id": ids[False]}, headers=h
+        )
+        assert ok.status_code == 201, ok.text
+        bad = client.post(
+            "/rescue/orders", json={**body, "offer_id": ids[True]}, headers=h
+        )
+        assert bad.status_code == 404, bad.text
 
 
 # ── favorites and follower fan-out ─────────────────────────────────────────
