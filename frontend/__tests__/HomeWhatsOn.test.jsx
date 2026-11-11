@@ -265,7 +265,7 @@ describe("HomeWhatsOn — what one row says", () => {
     ]);
   });
 
-  it("an event shows its start time; an experience and a group buy show a date", async () => {
+  it("an event and an experience WITH a time show it; a group buy shows «עד» + a date", async () => {
     const { default: HomeWhatsOn } = await import("@/components/HomeWhatsOn");
     await renderNear(HomeWhatsOn);
     await waitFor(() => expect(screen.getAllByTestId("whats-on-row")).toHaveLength(3));
@@ -277,12 +277,104 @@ describe("HomeWhatsOn — what one row says", () => {
     expect(when("groupBuy")).toBe("עד 10.08");
   });
 
+  // Review #3726 / the MEH-2859 reviewer: `GroupBuy.deadline` is a NAIVE
+  // datetime — models.py:2352 `Column(DateTime)` with no UTC validator on
+  // GroupBuyOut — so the API sends "2026-08-10T22:30:00" with NO `Z`, and a
+  // bare `new Date()` reads it in the VISITOR's zone.
+  //
+  // The runner's TZ is pinned to Asia/Jerusalem for these two, deliberately:
+  // CI runs in UTC, where local == UTC and the bug is INVISIBLE. A test that
+  // only ever sees a `Z`-suffixed deadline (as every other case in this file
+  // does) is green under both the broken and the fixed code — exactly the
+  // "green with two possible causes" testing.md rules out.
+  describe("a naive deadline is read as UTC, not as the visitor's clock", () => {
+    /**
+     * `GroupBuy.deadline` is a NAIVE datetime — models.py:2352
+     * `Column(DateTime)` with no UTC validator on GroupBuyOut — so the API
+     * sends "2026-08-10T22:30:00" with NO `Z`, and a bare `new Date()` reads it
+     * in the VISITOR's zone. For an Israeli reader that renders a cut-off
+     * between midnight and 03:00 as the PREVIOUS day.
+     *
+     * WHY THERE IS NO RENDERED-OUTPUT TEST FOR THE WRONG DAY, stated instead of
+     * quietly shipping a green that proves nothing. CI runs in UTC, where
+     * local == UTC and the broken parse and the correct one AGREE — so a
+     * component-level assertion is green under both and discriminates nothing
+     * (.claude/rules/testing.md: "a green that has two possible causes").
+     * Pinning the zone does not help either: `process.env.TZ` is not honoured
+     * inside vitest's worker — measured, the control below came back UTC.
+     *
+     * Out-of-band measurement, plain node, same Intl path the component uses,
+     * deadline "2026-08-10T22:30:00" whose true Israel date is 11.08:
+     *     TZ=Asia/Jerusalem -> 10.08   (wrong day — what shipped first)
+     *     TZ=UTC            -> 11.08
+     *     TZ=America/LA     -> 11.08
+     *
+     * So the two guards below are what CI can actually falsify: the parse is
+     * pinned at its call site, and the two wire shapes are pinned to agree.
+     */
+    it("the deadline goes through parseNaiveUtc, not a bare new Date()", () => {
+      const src = fs.readFileSync(path.resolve(__dirname, "../components/HomeWhatsOn.jsx"), "utf8");
+      expect(src).toMatch(/import \{ parseNaiveUtc \} from "@\/lib\/dates"/);
+      expect(src, "the group buy's deadline is parsed as naive UTC").toMatch(
+        /at: parseNaiveUtc\(row\.deadline\)/,
+      );
+      // Control: the thing this would have to become to regress.
+      expect(src, "no API date string is handed to a bare new Date()").not.toMatch(/new Date\(row\./);
+    });
+
+    it("the naive form and the same instant written with Z render identically", async () => {
+      const renderOne = async (deadline) => {
+        resetApi();
+        observers = [];
+        responses.current = { [GROUP_BUYS]: [{ id: 12, title: "שמן זית", deadline }] };
+        const { default: HomeWhatsOn } = await import("@/components/HomeWhatsOn");
+        const view = await renderNear(HomeWhatsOn);
+        await waitFor(() => expect(screen.getAllByTestId("whats-on-row")).toHaveLength(1));
+        const text = screen.getByTestId("whats-on-when").textContent;
+        view.unmount();
+        return text;
+      };
+      const naive = await renderOne("2026-08-10T22:30:00");
+      const zulu = await renderOne("2026-08-10T22:30:00Z");
+      expect(naive, "the wire shape must not change which day is shown").toBe(zulu);
+      expect(naive).toBe("עד 11.08");
+    });
+  });
+
   it("an event with no time falls back to its date", async () => {
     responses.current = { [EVENTS]: [{ id: 7, title: "יום פתוח", event_date: "2026-08-15", event_time: null }] };
     const { default: HomeWhatsOn } = await import("@/components/HomeWhatsOn");
     await renderNear(HomeWhatsOn);
     await waitFor(() => expect(screen.getAllByTestId("whats-on-row")).toHaveLength(1));
     expect(screen.getByTestId("whats-on-when").textContent).toBe("15.08");
+  });
+
+  it("an EXPERIENCE with no time falls back to its date too", async () => {
+    // The date fallback was covered for events only; an experience reaches it
+    // through the same branch but by a different source record, and nothing
+    // asserted that until the MEH-2859 reviewer pointed at the gap.
+    responses.current = {
+      [EXPERIENCES]: [{ id: 8, title: "קטיף זיתים", event_date: "2026-08-22", event_time: null }],
+    };
+    const { default: HomeWhatsOn } = await import("@/components/HomeWhatsOn");
+    await renderNear(HomeWhatsOn);
+    await waitFor(() => expect(screen.getAllByTestId("whats-on-row")).toHaveLength(1));
+    expect(screen.getByTestId("whats-on-row").getAttribute("data-type")).toBe("experience");
+    expect(screen.getByTestId("whats-on-when").textContent).toBe("22.08");
+  });
+
+  it("a row whose date is unusable is dropped, not rendered with a hole", async () => {
+    responses.current = {
+      [EVENTS]: [
+        { id: 9, title: "תאריך שבור", event_date: "not-a-date", event_time: "10:00:00" },
+        { id: 10, title: "תאריך תקין", event_date: "2026-08-15", event_time: "10:00:00" },
+      ],
+    };
+    const { default: HomeWhatsOn } = await import("@/components/HomeWhatsOn");
+    await renderNear(HomeWhatsOn);
+    await waitFor(() => expect(screen.getAllByTestId("whats-on-row")).toHaveLength(1));
+    expect(screen.getByText("תאריך תקין")).toBeInTheDocument();
+    expect(screen.queryByText("תאריך שבור")).toBeNull();
   });
 
   it("a basket shows its pickup time in Israel's zone, not the visitor's", async () => {
@@ -338,6 +430,10 @@ describe("HomeWhatsOn — it is what the home page renders, in the old strip's p
     const src = fs.readFileSync(path.resolve(__dirname, "../app/[locale]/home/HomeClient.jsx"), "utf8");
     expect(src).toMatch(/<HomeWhatsOn \/>/);
     expect(src, "the events-only preview left with MEH-2859").not.toMatch(/UpcomingEventsPreview/);
+    // The control, without which this assertion cannot fail: a renamed grid
+    // makes indexOf return -1 and then ANY position of the strip passes —
+    // including above the grid, the one thing the AC pins.
+    expect(src.indexOf("<HomeProducersGrid"), "control: the businesses grid is still named this").toBeGreaterThanOrEqual(0);
     expect(src.indexOf("<HomeWhatsOn />")).toBeGreaterThan(src.indexOf("<HomeProducersGrid"));
   });
 
