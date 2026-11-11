@@ -29,6 +29,11 @@ const isAdminRoute = (p) => p === "/admin" || (p || "").startsWith("/admin/");
 const NO_PILL_CLEARANCE = "calc(env(safe-area-inset-bottom, 0px) + 12px)";
 const isOwnerDashboardRoute = (p) =>
   p === "/producer/dashboard" || (p || "").startsWith("/producer/dashboard/");
+// MEH-2927 (pilot B3c): the registration flow. Same shape as the two above —
+// a surface whose own primary action sits where this pill floats. The exact
+// equality plus a trailing slash is load-bearing: a bare startsWith would also
+// swallow a future "/registerx" route.
+const isRegisterRoute = (p) => p === "/register" || (p || "").startsWith("/register/");
 
 /**
  * Mobile bottom nav — MEH-789 (Phase 6 "Cream Signature" port).
@@ -286,7 +291,8 @@ export default function BottomNav() {
   // safe-area value set toasts flush on the screen edge (review on #3783).
   // The producer-detail gate is NOT in this set: its StickyContactBar is a
   // bottom layer, and the fallback is what keeps content clear of it.
-  const noBottomChrome = isAdminRoute(pathname) || isOwnerDashboardRoute(pathname);
+  const noBottomChrome =
+    isAdminRoute(pathname) || isOwnerDashboardRoute(pathname) || isRegisterRoute(pathname);
   // iOS drift pin: the clearance is the SHELL's own height (pill + safe-area + 16px
   // gutter), not `innerHeight - pill.top`. The two are equal while the pill sits
   // where CSS puts it — but iOS 26 Safari can leave every fixed-bottom layer
@@ -394,6 +400,13 @@ export default function BottomNav() {
   // list at 375 (27/10 audit). This reverses MEH-1202's "dashboard subtree
   // keeps the nav"; the header logo leads back to the site, where the nav returns.
   if (isOwnerDashboardRoute(pathname)) return null;
+  // MEH-2927 (pilot B3c): the registration flow. Measured at the iPhone VISUAL
+  // viewport rather than the device height — at 375x667 one pixel of the 48px
+  // «מתחילים» button was visible and unobstructed, at 390x664 sixteen. The
+  // pill contributes 6px of that at one size and none at the others; the
+  // cookie banner and the fold do the rest, which is why the answer is to take
+  // the pill off the flow rather than lift one button over it (Sapir, 11/11).
+  if (isRegisterRoute(pathname)) return null;
 
   return (
     <>

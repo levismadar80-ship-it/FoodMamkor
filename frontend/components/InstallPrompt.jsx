@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { X, DeviceMobile } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
+import { usePathname } from "@/i18n/navigation";
 
 const VISIT_KEY = "pwa_visits";
 const DISMISS_KEY = "pwa_dismiss_until";
@@ -28,8 +29,15 @@ function lsSet(key, value) {
   try { localStorage.setItem(key, value); } catch { /* private mode — ignore */ }
 }
 
+// MEH-2927 (pilot B3b): the registration flow, same exclusion as the BottomNav
+// (Sapir, 11/11). Mirrors BottomNav.jsx's predicate exactly, including the
+// exact-equality-plus-trailing-slash shape that keeps a future "/registerx"
+// out of it.
+const isRegisterRoute = (p) => p === "/register" || (p || "").startsWith("/register/");
+
 export default function InstallPrompt() {
   const t = useTranslations("modals.install_prompt");
+  const pathname = usePathname();
   const [show, setShow] = useState(false);
   const [ios, setIos] = useState(false);
   const promptRef = useRef(null);
@@ -87,6 +95,13 @@ export default function InstallPrompt() {
     lsSet(DISMISS_KEY, String(Date.now() + DISMISS_MS));
   };
 
+  // MEH-2927 (pilot B3b): never over the registration flow. The prompt is
+  // `position: fixed` and ~126px tall at the iPhone visual viewport, and a
+  // sweep of the DETAILS step's whole scroll range found it over a form
+  // control at 16 (scroll position x control) sample points, worst 48px,
+  // «הבא» among them. Gated AFTER the hooks so rules-of-hooks holds, and
+  // after `show` so the timer logic above is untouched.
+  if (isRegisterRoute(pathname)) return null;
   if (!show) return null;
 
   return (
