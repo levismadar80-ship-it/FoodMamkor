@@ -249,6 +249,31 @@ def _assert_approvable(
     is audited too. A silent override on the one path this function exists to
     protect would be the same defect wearing a smaller diff.
     """
+    # MEH-2908: judge the row as it stands NOW, not as it stood when the
+    # handler loaded it.
+    #
+    # Without this line the gates below read `producer` from the admin
+    # session's identity map, populated by the load at the top of
+    # `approve_producer`. An owner who changes the profile inside that window
+    # — measured with the gallery, where it publishes a business with no
+    # photo and sends her the «ברוכים הבאים למהמקור» mail in the same call —
+    # has the gate pass on content that is already gone. MEH-2907's
+    # `test_the_gate_judges_the_row_as_it_stands` is the measurement, and it
+    # fails if this line is removed.
+    #
+    # A refresh and not a lock: `_lock_producer_updates`' advisory key is
+    # deliberately scoped so it does NOT block admin approve (MEH-2007), and
+    # this does not change that. It narrows the window to the gap between
+    # this SELECT and the commit instead of closing it — the same shape
+    # `_persist_approval` already relies on by re-running these gates after
+    # its rollback (MEH-2017). A true close needs the locking decision
+    # reopened, which is not what this fixes.
+    #
+    # Safe on both call sites: nothing has been assigned to `producer` by
+    # either caller at this point — the handler has only read `status`, and
+    # the retry path re-queries the row — so no pending change is discarded.
+    db.refresh(producer)
+
     # MEH-799: approval gate — a business never goes public without at least
     # one photo. Validation only (no schema change); registration/publish
     # flows untouched — the gate lives at the moment of approval.
