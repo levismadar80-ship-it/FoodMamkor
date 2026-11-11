@@ -5,7 +5,7 @@ import dynamic from "next/dynamic";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Link } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
-import { CheckCircle, EnvelopeSimple, Leaf, WhatsappLogo, X } from "@phosphor-icons/react";
+import { CheckCircle, EnvelopeSimple, Leaf, ShareNetwork, X } from "@phosphor-icons/react";
 import api from "@/lib/api";
 import { trackEvent } from "@/lib/analytics";
 import { detailToMessage } from "@/lib/errors";
@@ -45,6 +45,7 @@ import {
 import { FARMER_DECLARATION_CATEGORIES } from "@/lib/farmer-declaration";
 import BrandLoader from "@/components/BrandLoader";
 import Button from "@/components/ui/Button";
+import { showToast } from "@/lib/toast";
 
 // MEH-847 (S7 Chunk B): wizard step enum — single source for the 3→5 re-index.
 const STEP = { ACCOUNT: 1, DETAILS: 2, CATEGORY: 3, STORY: 4, CONFIRM: 5 };
@@ -260,6 +261,30 @@ function RegisterProducerPageBody({ routeKind }) {
   const routeIsOrganizer = routeKind === "organizer";
   const routePath = routeIsOrganizer ? "/register/organizer" : "/register/producer";
   const t = useTranslations();
+  // MEH-2827 PR 8: «הזמינו בתי עסק» opens the phone's own share sheet. The
+  // approved message keeps its words; its link travels as `url` (iOS then
+  // shares a link card), the rest as text. No sheet → copy the link.
+  const shareRegisterInvite = async () => {
+    const msg = t("auth.register.producer.success.share_msg");
+    const url = (msg.match(/https?:\/\/\S+/) || [])[0];
+    const text = url ? msg.replace(url, "").trim() : msg;
+    if (typeof navigator !== "undefined" && navigator.share) {
+      try {
+        await navigator.share(url ? { text, url } : { text });
+        return;
+      } catch (err) {
+        // Cancelled is her answer; any other failure falls through to the
+        // copy below (review of #4178).
+        if (err?.name === "AbortError") return;
+      }
+    }
+    try {
+      await navigator.clipboard.writeText(url || msg);
+      showToast.success(t("share.copied_toast"));
+    } catch {
+      // no clipboard either
+    }
+  };
   const router = useRouter();
   const params = useSearchParams();
   const prefillToken = params.get("prefill");
@@ -396,7 +421,9 @@ function RegisterProducerPageBody({ routeKind }) {
   // MEH-2640: addressConfirmed / addressConfirmLabel / addressCityMismatch
   // left with the address block. `form.address` and lat/lng stay in the form
   // shape (and in the payload, where the schema makes them optional) so the
-  // upgrade path and any saved draft keep their keys.
+  // upgrade path keeps its keys.
+  // MEH-2915: a saved draft no longer does — address/lat/lng/address_city are
+  // in DRAFT_OMITTED_FIELDS, so they live in form state for the session only.
 
   // MEH-1807: the GOV.UK-style summary next to "הצטרפו" is DERIVED from
   // fieldErrors rather than stored, so fixing a field removes its summary row
@@ -434,10 +461,12 @@ function RegisterProducerPageBody({ routeKind }) {
   // thing she just earned. (It is why MEH-2136's hierarchy fix read as a no-op
   // in the desktop before/after captures: the screen was correct and unseen.)
   //
-  // One effect on STEP.CONFIRM, not a call inside each branch. CONFIRM renders
-  // two different screens — the upgrade path and the inbox-check path — and a
-  // third added later cannot forget this, the same DRY argument the effect
-  // above makes for the funnel event.
+  // One effect on `step`, not a call inside each branch. It began as a
+  // CONFIRM-only effect for the reason below — CONFIRM renders two different
+  // screens, the upgrade path and the inbox-check path, and a third added
+  // later cannot forget this — and MEH-2927 widened it to every step change on
+  // the same DRY argument: a frame added to the wizard later gets this for
+  // free rather than having to remember it.
   //
   // `behavior: "instant"` is deliberate and is NOT the convention 20 lines
   // below, which omits `behavior` to defer to the stylesheet. That call moves
@@ -447,8 +476,37 @@ function RegisterProducerPageBody({ routeKind }) {
   // it is precisely what prefers-reduced-motion exists to suppress. "instant"
   // says that unconditionally instead of inheriting whatever `scroll-behavior`
   // happens to be on <html>. Precedent for the literal: ChipScrollRow.jsx:158.
+  // MEH-2927 (pilot B3a): EVERY step change starts at the top of the new step,
+  // not only CONFIRM. Measured at 390x844 before this: advancing ACCOUNT →
+  // DETAILS kept `scrollY` at 460 and left the step heading at y=-330, so the
+  // seller landed mid-form on a frame whose top she had never seen — four
+  // fields and the step's own question were above her.
+  // (Those numbers are the probe's output, quoted in the PR; the committed
+  // frame qa-artifacts/MEH-2927/02-step2-on-entry-390-AFTER.webp is the same
+  // view AFTER the fix. The before frame was not committed, so it is not
+  // cited as though it were.)
+  //
+  // The ONE exception is a cross-step validation bounce. MEH-1807 sets
+  // `pendingFocusIdRef` synchronously in `requestFocus`, BEFORE the `setStep`
+  // that sends her back, then focuses the offending field and scrolls it to
+  // `block: "center"`. Jumping to the top first would move the page out from
+  // under that and land her above the error she was sent to fix. The ref is
+  // still populated here because this effect is declared ABOVE the focus
+  // effect, so it runs first in the same commit — do not reorder them.
+  // Mount is not a step CHANGE, and scrolling there would be a no-op at best
+  // and a fight with the browser's own scroll restoration on a back-navigation
+  // at worst. A draft that resumes onto a later frame still scrolls, because
+  // that `setStep` lands after this ref is already set.
+  // Compares the previous step rather than arming a flag on first run: in
+  // StrictMode (dev) the effect body runs twice on mount, so a "have I run
+  // before" flag is set by the first invocation and the second one scrolls a
+  // page nobody navigated. A previous-value comparison is false on both.
+  const prevStepRef = useRef(step);
   useEffect(() => {
-    if (step !== STEP.CONFIRM) return;
+    const previous = prevStepRef.current;
+    prevStepRef.current = step;
+    if (previous === step) return;
+    if (pendingFocusIdRef.current) return;
     window.scrollTo({ top: 0, behavior: "instant" });
   }, [step]);
 
@@ -494,6 +552,21 @@ function RegisterProducerPageBody({ routeKind }) {
           // this beats deleting it.
           if (draft.restamp) {
             localStorage.setItem(DRAFT_KEY, packDraft(draft.form, null, Date.now()));
+          } else if (draft.stripped) {
+            // MEH-2915: the draft on disk still carries fields the form no
+            // longer accepts. parseDraft keeps them out of `form`, which is
+            // what the seller sees; this rewrite is what takes them off the
+            // device, without waiting for her next keystroke, a dismiss, or
+            // the 7-day expiry.
+            //
+            // Re-packed at the draft's ORIGINAL savedAt, never Date.now():
+            // stamping it now would restart MEH-1977's expiry for a draft
+            // nobody touched — the same defect the setAndSave no-op guard
+            // below exists to prevent.
+            localStorage.setItem(
+              DRAFT_KEY,
+              packDraft(draft.form, draft.step, draft.savedAt),
+            );
           }
           // MEH-1769: hasDraftContent replaces the 3-field truthiness test. An
           // empty-storage visit never reaches here at all (getItem returns
@@ -548,11 +621,19 @@ function RegisterProducerPageBody({ routeKind }) {
           let hasToken = false;
           try { hasToken = Boolean(localStorage.getItem("token")); } catch {}
           const resumeAt = safeResumeStep(draft.step, hasToken);
+          // MEH-2915: the draft no longer carries a phone and nothing
+          // prefills one, so a resume onto CATEGORY or STORY would hand her a
+          // frame she can complete and then bounce at submit — back to
+          // DETAILS, onto a required field she never saw go empty
+          // (CROSS_STEP_REQUIRED, the gate at the «הצטרפו» handler). Landing
+          // on the frame that owns the missing field is the honest stop.
+          const cappedResume =
+            resumeAt && !validateIsraeliPhone(form.phone) ? STEP.DETAILS : resumeAt;
           // MEH-2460 (review #3711): an organizer never stands on CATEGORY —
           // neither as a resume target nor as the frame she was on when she
           // pressed «continue».
           const skipCategory = (s) => (routeIsOrganizer && s === STEP.CATEGORY ? STEP.STORY : s);
-          if (resumeAt) setStep(skipCategory(resumeAt));
+          if (cappedResume) setStep(skipCategory(cappedResume));
           else if (routeIsOrganizer) setStep(skipCategory);
         } else {
           localStorage.removeItem(DRAFT_KEY);
@@ -587,6 +668,12 @@ function RegisterProducerPageBody({ routeKind }) {
   const setAndSave = (updater) => {
     setForm((prev) => {
       const next = updater(prev);
+      // MEH-2915: an updater that returns `prev` is a no-op — React bails out
+      // of the render, and writing here would still re-stamp the envelope's
+      // `savedAt`, restarting the 7-day expiry (MEH-1977) for a change that
+      // never happened. `handleCityKnownChange` takes that branch every time a
+      // late /cities response confirms the verdict it already had.
+      if (next === prev) return prev;
       saveDraft(next, step);
       return next;
     });
@@ -1467,11 +1554,21 @@ function RegisterProducerPageBody({ routeKind }) {
                     {t("auth.register.producer.fields.license_pending_optin_label")}
                   </span>
                 </label>
-                {licensePending && (
-                  <p className="text-xs text-fg-muted mt-1 text-start">
-                    {t("auth.register.producer.fields.license_pending_optin_hint")}
-                  </p>
-                )}
+                {/* MEH-2927 (pilot B3d): rendered unconditionally and hidden
+                    with `visibility`, not mounted on the tick. Measured at
+                    390x664: mounting it moved «הבא» down 36px in document
+                    space at the exact moment of the tap, which is a
+                    tap-target hazard right where the thumb already is.
+                    `invisible` reserves the element's REAL height — including
+                    however many lines it wraps to at this width, which a
+                    fixed min-height would have to guess — and keeps it out of
+                    the accessibility tree, which `opacity-0` would not. */}
+                <p
+                  className={`text-xs text-fg-muted mt-1 text-start${licensePending ? "" : " invisible"}`}
+                  data-testid="register-license-pending-hint"
+                >
+                  {t("auth.register.producer.fields.license_pending_optin_hint")}
+                </p>
               </div>
             ) : licenseOptionalExpanded ? (
               <div className="relative">
@@ -1957,15 +2054,17 @@ function RegisterProducerPageBody({ routeKind }) {
               >
                 {t("auth.register.producer.success.cta")}
               </button>
-              <a
-                href={`https://wa.me/?text=${encodeURIComponent(t("auth.register.producer.success.share_msg"))}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="btn-whatsapp-outline w-full inline-flex items-center justify-center gap-2 px-6 py-3 rounded-md font-medium text-sm"
+              {/* MEH-2827 PR 8: the phone's own share sheet, not WhatsApp only.
+                  The message's link goes as `url`, the rest as text. */}
+              <button
+                type="button"
+                onClick={shareRegisterInvite}
+                data-testid="register-success-share"
+                className="w-full inline-flex items-center justify-center gap-2 px-6 py-3 rounded-md font-medium text-sm border border-border bg-background text-text hover:border-primary transition"
               >
-                <WhatsappLogo size={20} weight="fill" aria-hidden="true" />
+                <ShareNetwork size={20} aria-hidden="true" />
                 {t("auth.register.producer.success.share_cta")}
-              </a>
+              </button>
             </div>
             {/* MEH-132: S7 06A founder sign-off */}
             <p className="font-headline-md text-text text-center mb-2">{t("auth.register.producer.success.signature")}</p>

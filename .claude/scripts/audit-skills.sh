@@ -9,6 +9,8 @@
 # Usage:
 #   bash .claude/scripts/audit-skills.sh             # audit real tree
 #   bash .claude/scripts/audit-skills.sh --self-test # scan bad-skill fixture
+#   bash .claude/scripts/audit-skills.sh --pass2b-only [ROOT] [TODAY_EPOCH]
+#                                                    # lock/layout check only (MEH-1055)
 #
 # Exit codes:
 #   0 — clean (no critical findings, all skills allowlisted with valid verdict)
@@ -47,6 +49,68 @@ fi
 if ! command -v grep >/dev/null 2>&1; then
   echo "[ERROR] grep not available." >&2
   exit 2
+fi
+
+# ---- Pass 2b: the verdict must match the lock and the layout (MEH-1055) ----
+# Four skills sat `approved` for months with no skills-lock.json entry, as
+# real directories under .claude/skills/. Nothing else could see it: the
+# verdict was a valid string, Pass 1 scans only .agents/skills/ (so a real dir
+# under .claude/skills/ is never pattern-scanned), and Pass 4 iterates the lock
+# (so an unlocked skill has no hash to drift from).
+#
+# pass2b_check ROOT TODAY_EPOCH — prints one `[TAG] skill — why` line per
+# finding, nothing when clean. A function with its root and clock as
+# arguments so scripts/checks/skills-layout-guard.sh can run it against
+# fixture trees (its self-test) and against the real repo in Repo guards.
+#   [UNLOCKED]          any verdict but `blocked` / a live approved_local_unlocked
+#                       with no skills-lock.json entry (Layer 5 locks at the
+#                       first commit, review_needed included)
+#   [UNLOCKED-NO-DATE]  approved_local_unlocked without a strict YYYY-MM-DD date
+#   [UNLOCKED-FUTURE]   ... dated in the future (the clock would never run out)
+#   [UNLOCKED-EXPIRED]  ... more than 30 days after last_audit_date
+#   [NOT-CANONICAL]     .claude/skills/<name> is not a symlink to exactly
+#                       ../../.agents/skills/<name> (a real dir, or a link to
+#                       content the lock does not hash)
+pass2b_check() {
+  local root="$1" today="$2" allowlist="$1/.claude/skills-allowlist.json" lock="$1/skills-lock.json"
+  local names skill verdict in_lock audit_date audit_epoch mount target
+  names=$( ( ls -1 "$root/.agents/skills" 2>/dev/null; ls -1 "$root/.claude/skills" 2>/dev/null ) | sort -u )
+  while IFS= read -r skill; do
+    [ -z "$skill" ] && continue
+    verdict=$(jq -r --arg s "$skill" '.skills[$s].audit_verdict // "MISSING"' "$allowlist")
+    in_lock=$(jq -r --arg s "$skill" '.skills | has($s)' "$lock" 2>/dev/null || echo "false")
+    if [ "$verdict" = "approved_local_unlocked" ]; then
+      audit_date=$(jq -r --arg s "$skill" '.skills[$s].last_audit_date // ""' "$allowlist")
+      if ! printf '%s' "$audit_date" | grep -Eq '^[0-9]{4}-[0-9]{2}-[0-9]{2}$' \
+         || ! audit_epoch=$(date -u -d "$audit_date" +%s 2>/dev/null); then
+        printf '[UNLOCKED-NO-DATE] %s — approved_local_unlocked needs last_audit_date as YYYY-MM-DD to start its 30-day clock (got "%s")\n' "$skill" "$audit_date"
+      elif [ "$audit_epoch" -gt "$today" ]; then
+        printf '[UNLOCKED-FUTURE] %s — last_audit_date %s is in the future; the 30-day clock would never run out\n' "$skill" "$audit_date"
+      elif [ $(( (today - audit_epoch) / 86400 )) -gt 30 ]; then
+        printf '[UNLOCKED-EXPIRED] %s — approved_local_unlocked since %s, past its 30 days: lock it (approved) or block it\n' "$skill" "$audit_date"
+      fi
+    elif [ "$verdict" != "blocked" ] && [ "$verdict" != "MISSING" ] && [ "$in_lock" != "true" ]; then
+      printf '[UNLOCKED] %s — audit_verdict=%s but no skills-lock.json entry: no hash anchors its content. Lock it (backfill-skill-hashes.sh) or mark it approved_local_unlocked (30-day clock).\n' "$skill" "$verdict"
+    fi
+    mount="$root/.claude/skills/$skill"
+    if [ -e "$mount" ] || [ -L "$mount" ]; then
+      target=$(readlink "$mount" 2>/dev/null || true)
+      if [ ! -L "$mount" ]; then
+        printf '[NOT-CANONICAL] %s — .claude/skills/%s is a real directory: Pass 1 never scans it and Pass 4 never hashes it. Move it to .agents/skills/ and symlink (skills.md Layer 5).\n' "$skill" "$skill"
+      elif [ "$target" != "../../.agents/skills/$skill" ]; then
+        printf '[NOT-CANONICAL] %s — .claude/skills/%s points to "%s", not ../../.agents/skills/%s: the harness would load content the lock does not hash.\n' "$skill" "$skill" "$target" "$skill"
+      fi
+    fi
+  done <<< "$names"
+}
+
+if [ "${1:-}" = "--pass2b-only" ]; then
+  # Used by scripts/checks/skills-layout-guard.sh. ROOT and the clock are
+  # arguments so fixtures can be checked without touching the real tree.
+  out=$(pass2b_check "${2:-$ROOT}" "${3:-$(date -u +%s)}")
+  [ -n "$out" ] && printf '%s\n' "$out"
+  [ -z "$out" ]
+  exit $?
 fi
 
 # ---- Choose target directory ----
@@ -136,6 +200,13 @@ if [ "$SELF_TEST" -eq 0 ]; then
         ;;
     esac
   done <<< "$skill_names"
+
+  # ---- Pass 2b: lock + layout (MEH-1055) — see pass2b_check() above ----
+  p2b_out=$(pass2b_check "$ROOT" "$(date -u +%s)")
+  if [ -n "$p2b_out" ]; then
+    CRITICAL=$((CRITICAL + $(printf '%s\n' "$p2b_out" | grep -c '^\[')))
+    printf '\n%s\n' "$p2b_out" >> "$REPORT_TMP"
+  fi
 fi
 
 # ---- Pass 5: subprocess-bypass coverage (MEH-422; skipped for self-test) ----

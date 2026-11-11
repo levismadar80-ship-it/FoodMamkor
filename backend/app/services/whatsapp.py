@@ -44,9 +44,11 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
+from datetime import datetime, timedelta
 from typing import Any
 
 import httpx
+from sqlalchemy import and_, or_
 
 from app.config import settings
 from app.services.whatsapp_templates import WhatsAppTemplate
@@ -70,6 +72,33 @@ OUTCOME_WINDOW_EXPIRED = "window_expired"
 # and one window instead of one router importing the other's privates.
 UNDELIVERED_STATUSES: tuple[str, ...] = (OUTCOME_FAILED, OUTCOME_WINDOW_EXPIRED)
 UNDELIVERED_WINDOW_DAYS = 7
+
+# MEH-2122 Chunk E (state-machine audit §7.1): an `accepted` row becomes final
+# only when Meta's delivery webhook arrives. If the webhook never comes
+# (misconfigured, HMAC, outage) the row stays `accepted` forever, and an admin
+# screen that shows only failed/window_expired cannot tell "no failures" from
+# "the whole receipts pipeline is dead". So an `accepted` row older than this
+# is STUCK and is listed with the undelivered ones. No schema change, no new
+# status value: it is a predicate over the existing two columns.
+STUCK_ACCEPTED_AFTER = timedelta(days=1)
+
+
+def undelivered_predicate(model, now: datetime):
+    """The one SQL filter for "did not reach the recipient", last 7 days:
+    failed / window_expired, OR accepted for longer than STUCK_ACCEPTED_AFTER.
+    Shared by the admin list (routers/admin_whatsapp.py) and the admin-home
+    count (routers/admin_extra.py) so the two can never disagree."""
+    return and_(
+        model.created_at >= now - timedelta(days=UNDELIVERED_WINDOW_DAYS),
+        or_(
+            model.status.in_(UNDELIVERED_STATUSES),
+            and_(
+                model.status == OUTCOME_ACCEPTED,
+                model.created_at < now - STUCK_ACCEPTED_AFTER,
+            ),
+        ),
+    )
+
 
 # MEH-214: Meta error codes meaning the 24h customer-service window has
 # closed, so a free-form message can't be delivered (a template is required).

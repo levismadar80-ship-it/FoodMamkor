@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import { renderHook, act } from "@testing-library/react";
 import { useMapFilters } from "@/app/[locale]/map/state/useMapFilters";
 
@@ -32,6 +32,11 @@ function setup() {
 }
 
 describe("useMapFilters — city vs non-city filters (MEH-2639)", () => {
+  // MEH-2049: the city is mirrored into the URL and hydrated from it on mount,
+  // and jsdom keeps one URL per file — reset it so a city set by one case does
+  // not arrive pre-filled in the next.
+  beforeEach(() => window.history.replaceState(null, "", "/map"));
+
   it("a city alone is an active filter but NOT a non-city one", () => {
     const { result } = setup();
     act(() => result.current.setCityFilter("בנימינה"));

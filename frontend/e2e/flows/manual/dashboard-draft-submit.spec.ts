@@ -10,14 +10,26 @@ import type { Route } from "@playwright/test";
  *           and its `#phone-verify` deep link, the split contact ✓ / WhatsApp
  *           missing cell, the 83% divisor, and the OTP flow completing IN the
  *           banner — card gone, item gone, CTA enabled, no reload.
+ *
+ *           MEH-2883 (#4270): for a BUSINESS the draft banner is now only its
+ *           actions — DraftSubmitBanner variant="actions"
+ *           (`draft-submit-actions`: phone check + CTA + hint, no title, no
+ *           `draft-missing-list`) at the foot of the completeness card, so the
+ *           missing items are the card's rows. "The banner" below means those
+ *           actions; "an item is missing" means its row reads «עדיין חסר».
  * Touches:  no backend. Same seams as flows/34-draft-submit-review: GET
  *           /auth/me, /favorites, /producers/me{,/dashboard,/analytics} and the
  *           three POSTs (submit-for-review, verify-phone, verify-phone/confirm)
  *           are route-fulfilled; the token is seeded via addInitScript. Runs on
  *           the default CI E2E target (localhost, no storageState).
- * Does NOT: re-assert what flows/34 already pins (A: five missing + OTP card
- *           mounted; B: POST once + review banner takes over; C: the 422 list;
- *           D: pending gets no draft banner) — those rows are pointed at 34.
+ * Does NOT: re-assert what flows/34 already pins (A: every required row
+ *           missing + OTP card mounted; B: POST once + review banner takes
+ *           over; C: the 422 wins, and C-org the organizer's 422 list; D:
+ *           pending gets no draft surface; A-<code>: each gate rule alone keeps
+ *           the CTA disabled) — those rows are pointed at 34. The row counts
+ *           below come from the completeness card, which never reads
+ *           lib/submission-gate.js: they pin what the owner is shown, not the
+ *           gate's rules — A-<code> in 34 is where a dropped rule goes red.
  *           Does not touch the registration screen (chunk for /register), the
  *           admin queue (chunk 12), or the RTL/touch-target rows (not converted
  *           in any chunk). Does not reach the "confirm open, profile reloads
@@ -29,7 +41,8 @@ import type { Route } from "@playwright/test";
  * Related:  components/producer/DraftSubmitBanner.jsx, components/PhoneVerifyCard.jsx,
  *           components/ProfileCompletenessCard.jsx, lib/submission-gate.js,
  *           lib/producer-completeness.js, app/[locale]/producer/dashboard/page.js.
- * History:  MEH-1249 chunk 11j (creation).
+ * History:  MEH-1249 chunk 11j (creation). MEH-2883 chunk 2 (re-pointed at
+ *           the one-checklist structure of #4270).
  *
  * ON MOCKING INSIDE flows/ — the three conditions in frontend/e2e/CLAUDE.md
  * (MEH-1968), stated rather than assumed:
@@ -122,11 +135,15 @@ async function openOverview(page: Page) {
     .toBeVisible({ timeout: 15_000 });
 }
 
-const banner = (page: Page) => page.getByTestId("draft-submit-banner");
+const checklist = (page: Page) => page.getByTestId("profile-completeness-card");
+/** A business's draft actions, at the foot of the one checklist (MEH-2883). */
+const banner = (page: Page) => checklist(page).getByTestId("draft-submit-actions");
+/** The pre-MEH-2883 list. A business never gets it; asserted absent, never read. */
 const missingList = (page: Page) => page.getByTestId("draft-missing-list");
 const cta = (page: Page) => page.getByTestId("draft-submit-cta");
-const checklist = (page: Page) => page.getByTestId("profile-completeness-card");
 const checklistRows = (page: Page) => checklist(page).getByRole("list", { name: "התקדמות השלמת הפרופיל" }).getByRole("listitem");
+/** Rows whose screen-reader status reads «עדיין חסר» (checklist_todo). */
+const missingRows = (page: Page) => checklistRows(page).filter({ hasText: "עדיין חסר" });
 
 const STEP_LABELS = ["תמונה ראשית", "קטגוריות ומיקום", "מוצר ראשון בקטלוג", "פרטי קשר", "אימות וואטסאפ", "שעות פתיחה"];
 
@@ -134,25 +151,35 @@ const STEP_LABELS = ["תמונה ראשית", "קטגוריות ומיקום", "
 
 test.describe("draft banner — matrix cells and the cancel path", () => {
   // MT:MEH-2100 matrix (1 missing × closed) — the CTA is disabled and ONE row names the item.
-  test("one missing item — the CTA is disabled and the list names exactly that item", async ({ page }) => {
+  test("one missing item — the CTA is disabled and the checklist names exactly that item", async ({ page }) => {
     await stubOverview(page, PHONE_UNVERIFIED);
     await openOverview(page);
     await expect(banner(page)).toHaveAttribute("data-state-ready", "false");
     await expect(cta(page)).toBeDisabled();
-    const rows = missingList(page).getByRole("listitem");
+    // The one checklist names it: exactly ONE row reads missing, and it is the
+    // WhatsApp row (row 5, chip-anchored so the label is not the only witness).
+    await expect(checklistRows(page)).toHaveCount(6);
+    const rows = missingRows(page);
     await expect(rows).toHaveCount(1);
-    await expect(rows).toContainText("אימות מספר הוואטסאפ");
-    await expect(page.getByTestId("draft-missing-phone_verified")).toBeVisible();
+    await expect(rows).toContainText("אימות וואטסאפ");
+    await expect(rows.getByTestId("completeness-chip-phone_verified")).toHaveText("חובה");
+    await expect(missingList(page)).toHaveCount(0);
   });
 
-  // MT:MEH-2100 matrix (many × closed) — flows/34 A pins the five codes; the per-row «חובה» chip is asserted here.
-  test("five missing items — every row carries its own «חובה» chip", async ({ page }) => {
+  // MT:MEH-2100 matrix (many × closed) — flows/34 A pins the rows; the per-row «חובה» chip is asserted here.
+  test("five missing required items — every row carries its own «חובה» chip", async ({ page }) => {
     await stubOverview(page, NOTHING_DONE);
     await openOverview(page);
+    await expect(banner(page)).toHaveAttribute("data-state-ready", "false");
     await expect(cta(page)).toBeDisabled();
-    await expect(missingList(page).getByRole("listitem")).toHaveCount(5);
-    // Exactly five chips, one per row — a chip rendered once for the list would read 1 here.
-    await expect(missingList(page).getByText("חובה", { exact: true })).toHaveCount(5);
+    // Six rows missing (the five required + the «מומלץ» hours step, which has
+    // no location to read here)…
+    await expect(missingRows(page)).toHaveCount(6);
+    // …and exactly five «חובה» chips among them, one per row — a chip rendered
+    // once for the list would read 1 here.
+    await expect(missingRows(page).getByText("חובה", { exact: true })).toHaveCount(5);
+    await expect(missingRows(page).getByText("מומלץ", { exact: true })).toHaveCount(1);
+    await expect(missingList(page)).toHaveCount(0);
   });
 
   // MT:MEH-2100:2 — «לא» returns to a LIVE CTA, not a stuck disabled one. Live copy reads «עוד לא».
@@ -223,7 +250,11 @@ test.describe("completeness checklist — six rows", () => {
     await openOverview(page);
     await expect(checklistRows(page).nth(3)).toContainText("הושלם");
     await expect(checklistRows(page).nth(4)).toContainText("עדיין חסר");
-    await expect(page.getByTestId("draft-missing-phone_verified")).toBeVisible();
+    // …and the submit still blocks on it, on the same screen: the actions read
+    // not-ready and the OTP card that clears it is mounted.
+    await expect(banner(page)).toHaveAttribute("data-state-ready", "false");
+    await expect(cta(page)).toBeDisabled();
+    await expect(checklist(page).getByTestId("draft-phone-verify")).toBeVisible();
   });
 
   // MT:MEH-2100:7 — six is the divisor: one missing = 83%, not 80%.
@@ -257,10 +288,13 @@ test.describe("WhatsApp verification from the draft", () => {
     expect(posts[1].body).toEqual({ code: "123456" });
 
     await expect(card).toHaveCount(0);
-    await expect(missingList(page)).toHaveCount(0);
     await expect(banner(page)).toHaveAttribute("data-state-ready", "true");
     await expect(cta(page)).toBeEnabled();
-    // The checklist saw the same flip: 6/6 collapses to the single confirmation line.
+    // The checklist saw the same flip: 6/6 collapses to the single confirmation
+    // line — no row is left reading missing (the item is gone) — and the
+    // actions stay at its foot.
     await expect(checklist(page)).toContainText("הפרופיל מלא");
+    await expect(checklistRows(page)).toHaveCount(0);
+    await expect(missingList(page)).toHaveCount(0);
   });
 });

@@ -17,7 +17,7 @@ in this file — Chunk B already covers the reconcile side.
 
 from __future__ import annotations
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from app.models.models import OutboundMessage
 from conftest import auth_header, make_user
@@ -213,3 +213,62 @@ def test_ordered_newest_first(client, db):
     assert resp.status_code == 200
     body = resp.json()
     assert [r["kind"] for r in body] == ["kind.newest", "kind.middle", "kind.older"]
+
+
+# ---- MEH-2122 Chunk E — stuck `accepted` rows ------------------------------
+#
+# An `accepted` row becomes final only when Meta's delivery webhook arrives.
+# If it never does, the row is stuck: listed here after a day, with the label
+# «אין אישור מסירה». The clock is frozen so the day boundary is exact.
+
+_FROZEN_NOW = datetime(2026, 11, 10, 9, 0, tzinfo=timezone.utc)
+
+
+def _freeze(monkeypatch):
+    from app.routers import admin_extra, admin_whatsapp
+
+    monkeypatch.setattr(admin_whatsapp, "utc_now", lambda: _FROZEN_NOW)
+    monkeypatch.setattr(admin_extra, "utc_now", lambda: _FROZEN_NOW)
+
+
+def test_accepted_for_two_days_is_listed_as_stuck(client, db, monkeypatch):
+    _freeze(monkeypatch)
+    admin = make_user(db, role="admin")
+    _seed(db, status="accepted", meta_message_id="wamid.e_stuck", kind="e_stuck", created_at=_FROZEN_NOW - timedelta(days=2))
+    _seed(db, status="accepted", meta_message_id="wamid.e_fresh", kind="e_fresh", created_at=_FROZEN_NOW - timedelta(hours=1))
+    _seed(db, status="delivered", meta_message_id="wamid.e_deliv", kind="e_deliv", created_at=_FROZEN_NOW - timedelta(days=2))
+
+    body = client.get(_ENDPOINT, headers=auth_header(admin)).json()
+    assert [r["kind"] for r in body] == ["e_stuck"]
+    assert body[0]["status"] == "accepted"
+
+
+def test_the_day_boundary_is_exact(client, db, monkeypatch):
+    _freeze(monkeypatch)
+    admin = make_user(db, role="admin")
+    _seed(db, status="accepted", meta_message_id="wamid.e_just_over", kind="e_just_over", created_at=_FROZEN_NOW - timedelta(days=1, minutes=1))
+    _seed(db, status="accepted", meta_message_id="wamid.e_just_under", kind="e_just_under", created_at=_FROZEN_NOW - timedelta(hours=23, minutes=59))
+    # Exactly one day: not yet stuck (the predicate is a strict `<`).
+    _seed(db, status="accepted", meta_message_id="wamid.e_exactly", kind="e_exactly", created_at=_FROZEN_NOW - timedelta(days=1))
+    ids = [r["kind"] for r in client.get(_ENDPOINT, headers=auth_header(admin)).json()]
+    assert ids == ["e_just_over"]
+
+
+def test_stuck_older_than_the_window_is_not_listed(client, db, monkeypatch):
+    _freeze(monkeypatch)
+    admin = make_user(db, role="admin")
+    _seed(db, status="accepted", meta_message_id="wamid.e_old", kind="e_old", created_at=_FROZEN_NOW - timedelta(days=8))
+    assert client.get(_ENDPOINT, headers=auth_header(admin)).json() == []
+
+
+def test_admin_home_count_matches_the_list(client, db, monkeypatch):
+    """One predicate for both: the admin-home number is the list's length."""
+    _freeze(monkeypatch)
+    admin = make_user(db, role="admin")
+    _seed(db, status="failed", meta_message_id="wamid.e_c_fail", kind="e_c_fail", created_at=_FROZEN_NOW - timedelta(hours=3))
+    _seed(db, status="accepted", meta_message_id="wamid.e_c_stuck", kind="e_c_stuck", created_at=_FROZEN_NOW - timedelta(days=3))
+    _seed(db, status="accepted", meta_message_id="wamid.e_c_fresh", kind="e_c_fresh", created_at=_FROZEN_NOW - timedelta(hours=3))
+    listed = client.get(_ENDPOINT, headers=auth_header(admin)).json()
+    stats = client.get("/admin/dashboard", headers=auth_header(admin)).json()["stats"]
+    assert len(listed) == 2
+    assert stats["undelivered_whatsapp_7d"] == 2

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { CATEGORY_LEGEND, CATEGORY_STYLES } from "@/lib/category-registry";
 import {
@@ -14,7 +14,8 @@ import {
 // useState below for the three-way drift that made a hand-written copy a bad
 // idea, and for why `categoryKeys` stays out of it.
 import { defaultsForKeys, homeParamFor } from "@/lib/filter-taxonomy";
-import { chipsFromQuery } from "@/lib/filter-url";
+import { chipsFromQuery, mapFiltersFromQuery, writeMapFilters } from "@/lib/filter-url";
+import { cityParams } from "@/lib/map-city-params";
 import { haversineKm } from "@/lib/distance";
 import { weightedRating } from "@/lib/rating-gate";
 import { producerInBounds, producerPoints } from "@/lib/producerPoints";
@@ -117,7 +118,21 @@ export function useMapFilters({
   // rather than render and vanish (see map-chips.js).
   snapshotPending = false,
 }) {
-  const [cityFilter, setCityFilter] = useState("");
+  const [cityFilter, setCityText] = useState("");
+  // MEH-2049: the city the URL carries — the COMMITTED one, not the field's
+  // live text. A keystroke is not a filter: «תל» on the way to «תל אביב-יפו»
+  // must not become a link, nor a reload that applies a half-typed city.
+  // Committed = CitySearch says the value is a known city (its onChange's
+  // second argument, `{ known }`), or code set it (URL hydration, the city
+  // picker, a reset — callers that pass no second argument), or the visitor
+  // submitted the search (handleCityFilter, which also fetches with it).
+  const [urlCity, setUrlCity] = useState("");
+  // Same signature as the state setter it replaces (MapClient passes it to
+  // CitySearch's onChange and calls it with one argument). Plain values only.
+  const setCityFilter = useCallback((value, meta) => {
+    setCityText(value);
+    if (meta === undefined || meta?.known === true) setUrlCity(value);
+  }, []);
   const [committedBounds, setCommittedBounds] = useState(null);
   const [activeProducerId, setActiveProducerId] = useState(null);
   const [hoveredProducerId, setHoveredProducerId] = useState(null);
@@ -160,6 +175,9 @@ export function useMapFilters({
     ...defaultsForKeys(TOGGLE_CHIPS.map((c) => c.key)),
   }));
   const urlHydrated = useRef(false);
+  // MEH-2049: the catalog-arrival effect's two flags (see that effect).
+  const skipCatalogOnce = useRef(false);
+  const catalogApplied = useRef(false);
 
   // MEH-2598: mirror the attribute chips into the URL so a refresh, the back
   // button, a shared link and the «הצגה ברשימה»-style hops all keep them. The
@@ -171,16 +189,25 @@ export function useMapFilters({
   // (lib/filter-url) arrives switched on. Done after mount rather than in the
   // initial state so the server render and hydration agree and /map stays a
   // static route; useProducersFeed reads the same URL for its first fetch.
+  //
+  // MEH-2049: + the category selection and the committed city (urlCity), through
+  // the same lib/filter-url reader/writer pair (one owner for the param names).
+  // Bounds and camera stay out of the URL. Invalid values are dropped by the
+  // reader, and the run after hydration rewrites the URL without them.
   useEffect(() => {
     if (typeof window === "undefined") return;
     if (!urlHydrated.current) {
       urlHydrated.current = true;
-      const found = chipsFromQuery(
-        new URLSearchParams(window.location.search),
-        TOGGLE_CHIPS.map((c) => c.key),
-      );
-      if (Object.keys(found).length > 0) {
-        setChipState((prev) => ({ ...prev, ...found }));
+      const query = new URLSearchParams(window.location.search);
+      const found = chipsFromQuery(query, TOGGLE_CHIPS.map((c) => c.key));
+      const { categoryKeys, city } = mapFiltersFromQuery(query);
+      if (categoryKeys.length > 0) found.categoryKeys = categoryKeys;
+      if (city) setCityFilter(city);
+      if (Object.keys(found).length > 0) setChipState((prev) => ({ ...prev, ...found }));
+      if (Object.keys(found).length > 0 || city) {
+        // The catalog effect below runs in this same commit, before these
+        // updates land — it must wait for the next one to see them.
+        skipCatalogOnce.current = true;
         return;
       }
     }
@@ -192,24 +219,57 @@ export function useMapFilters({
       url.searchParams.delete(homeParamFor(c.key));
     }
     for (const c of TOGGLE_CHIPS) if (chipState[c.key]) url.searchParams.set(c.key, "1");
+    writeMapFilters(url.searchParams, { categoryKeys: chipState.categoryKeys, city: urlCity });
     const next = `${url.pathname}${url.search}${url.hash}`;
     const current = `${window.location.pathname}${window.location.search}${window.location.hash}`;
-    if (next !== current) window.history.replaceState(window.history.state, "", next);
-  }, [chipState]);
+    if (next === current) return;
+    // MEH-2049: Safari throws (SecurityError) once a page passes its
+    // replaceState rate limit. The URL is a convenience; the filter must not
+    // crash over it — the next change writes the URL again.
+    try {
+      window.history.replaceState(window.history.state, "", next);
+    } catch {
+      // ignored on purpose, see above
+    }
+  }, [chipState, urlCity]);
+
+  // MEH-2049: when the catalog (/categories) first arrives, a category selection
+  // can finally become ids — a URL category, or a chip tapped before then
+  // (that tap's own fetch had no ids to send). So, once:
+  //  1. drop keys with no row in THIS catalog. Such a chip is not on screen
+  //     (visibleCategoryChips hides it), so a URL that selected it would leave
+  //     a filter with no way to switch it off; it adds no id to a fetch anyway.
+  //  2. if a selection remains, load with buildParams of the CURRENT state —
+  //     toggles, city and any tap made in between included. The feed's
+  //     latest-wins guard drops the older mount loads behind it.
+  // The load goes through `loadProducers` like every other handler here.
+  useEffect(() => {
+    if (skipCatalogOnce.current) {
+      skipCatalogOnce.current = false;
+      return;
+    }
+    if (catalogApplied.current || !Array.isArray(categories) || categories.length === 0) return;
+    catalogApplied.current = true;
+    const inCatalog = (k) =>
+      resolveCategoryId(CATEGORY_CHIPS.find((c) => c.key === k), categories) != null;
+    const keys = chipState.categoryKeys.filter(inCatalog);
+    if (keys.length !== chipState.categoryKeys.length) {
+      setChipState((prev) => ({ ...prev, categoryKeys: prev.categoryKeys.filter(inCatalog) }));
+    }
+    if (keys.length === 0) return;
+    // A pending debounced sheet fetch was built without ids; this one covers it.
+    cancelPendingSheetFetch();
+    loadProducers(buildParams({ ...chipState, categoryKeys: keys }));
+  }, [categories, chipState, cityFilter]);
 
   // MEH-14: build the backend params from the current chip state +
   // optional city. `overrides` lets callers swap in the not-yet-committed
   // chip toggle without waiting for React state.
   const buildParams = (overrideState = chipState, extras = {}, city = cityFilter) => {
     const params = chipStateToParams(overrideState, categories);
-    // MEH-2602: «סננו לפי עיר» asks "what is there for this city" — located
-    // in it OR delivering to it, located first (near_city). With the משלוח
-    // chip on the question is "who delivers here", so it keeps delivery_city.
-    if (city) {
-      if (overrideState.has_delivery) params.delivery_city = city;
-      else params.near_city = city;
-    }
-    return { ...params, ...extras };
+    // MEH-2602: near_city, or delivery_city with the משלוח chip on — see
+    // lib/map-city-params (moved there by MEH-2049, unchanged).
+    return { ...params, ...cityParams(city, overrideState.has_delivery), ...extras };
   };
 
   // MEH-1075: the sheet's debounced refetch (below) must never outlive a
@@ -358,6 +418,8 @@ export function useMapFilters({
 
   const handleCityFilter = () => {
     cancelPendingSheetFetch();
+    // MEH-2049: a submitted search is a committed city (see urlCity).
+    setUrlCity(cityFilter);
     loadProducers(buildParams());
     // When the user changes city, clear any committed bounds filter so
     // the grid shows ALL matches for the new city — not a stale viewport

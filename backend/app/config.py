@@ -172,6 +172,16 @@ class Settings(BaseSettings):
     rescue_bags_enabled: bool = False
     rescue_bags_cities: str = ""
 
+    # MEH-2890 (Sapir 10/11): the one account no admin can demote or delete.
+    # It used to be a hard-coded address in admin_extra.py AND in the admin
+    # users page — the owner's private mailbox, in a repo that is public.
+    # Set SUPER_ADMIN_EMAIL in Railway (staging and production). FAIL CLOSED:
+    # production refuses to boot without a valid value (_load_settings), the
+    # same as JWT_SECRET_KEY — a running production must never have an
+    # unprotected owner account. Elsewhere unset means "nobody is protected"
+    # (dev, tests, a staging that forgot it), and that is logged.
+    super_admin_email: str = ""
+
     class Config:
         env_file = ".env"
         # Read JWT_SECRET_KEY env var into .secret_key (the more canonical name).
@@ -225,7 +235,52 @@ def _load_settings() -> Settings:
             "JWT_SECRET_KEY in the environment."
         )
 
+    # MEH-2890: EXACT match, not case-insensitive. Registration stores the
+    # local part as typed and email uniqueness is case-sensitive, so a
+    # case-insensitive match would let anyone register «Owner@…» and inherit
+    # the owner's protection (fresh reviewer on #4280). Only whitespace and
+    # surrounding quotes (a common paste mistake in a dashboard) are stripped.
+    s.super_admin_email = s.super_admin_email.strip().strip("\"'").strip()
+    # Production is ENV=production OR Railway's own RAILWAY_ENVIRONMENT, which
+    # Railway sets itself and cannot be forgotten.
+    _is_production = (
+        s.env.strip().lower() == "production"
+        or s.railway_environment.strip().lower() == "production"
+    )
+    if not _looks_like_email(s.super_admin_email):
+        if _is_production:
+            # FAIL CLOSED (Sapir 10/11). Railway keeps the previous deployment
+            # serving when a new one fails its healthcheck, so this blocks the
+            # bad deploy rather than taking the site down.
+            raise RuntimeError(
+                "SECURITY: SUPER_ADMIN_EMAIL must be set to the protected "
+                "owner's email address in production (MEH-2890)."
+            )
+        logger.warning(
+            "SUPER_ADMIN_EMAIL not set (or not an email address) — no account "
+            "is protected from demotion or deletion in this environment."
+        )
+        s.super_admin_email = ""
+
     return s
+
+
+def _looks_like_email(value: str) -> bool:
+    """A real address by the same validator the API uses for every email field
+    (pydantic EmailStr / email-validator, no DNS lookup). Rejects `mailto:x@y`,
+    `a@b..c`, spaces, a missing TLD."""
+    from pydantic import EmailStr, TypeAdapter, ValidationError
+
+    # The try sits under `if value:` on purpose: scripts/check_env_drift.sh
+    # reads every 4-space-indented `name:` line in this file as a settings
+    # field, so a bare 4-space `try:` reported a phantom env var `TRY`.
+    if value:
+        try:
+            TypeAdapter(EmailStr).validate_python(value)
+        except ValidationError:
+            return False
+        return True
+    return False
 
 
 settings = _load_settings()

@@ -22,6 +22,7 @@ from app.auth import require_admin
 from app.utils.clock import business_days_waiting, israel_now, israel_today
 from app.utils.pii import mask_phone
 from app.config import settings
+from app.services.email_branding import email_logo_html
 from app.services.auth_notifications import (
     notify_producer_approved,
     notify_producer_changes_requested,
@@ -248,6 +249,31 @@ def _assert_approvable(
     is audited too. A silent override on the one path this function exists to
     protect would be the same defect wearing a smaller diff.
     """
+    # MEH-2908: judge the row as it stands NOW, not as it stood when the
+    # handler loaded it.
+    #
+    # Without this line the gates below read `producer` from the admin
+    # session's identity map, populated by the load at the top of
+    # `approve_producer`. An owner who changes the profile inside that window
+    # — measured with the gallery, where it publishes a business with no
+    # photo and sends her the «ברוכים הבאים למהמקור» mail in the same call —
+    # has the gate pass on content that is already gone. MEH-2907's
+    # `test_the_gate_judges_the_row_as_it_stands` is the measurement, and it
+    # fails if this line is removed.
+    #
+    # A refresh and not a lock: `_lock_producer_updates`' advisory key is
+    # deliberately scoped so it does NOT block admin approve (MEH-2007), and
+    # this does not change that. It narrows the window to the gap between
+    # this SELECT and the commit instead of closing it — the same shape
+    # `_persist_approval` already relies on by re-running these gates after
+    # its rollback (MEH-2017). A true close needs the locking decision
+    # reopened, which is not what this fixes.
+    #
+    # Safe on both call sites: nothing has been assigned to `producer` by
+    # either caller at this point — the handler has only read `status`, and
+    # the retry path re-queries the row — so no pending change is discarded.
+    db.refresh(producer)
+
     # MEH-799: approval gate — a business never goes public without at least
     # one photo. Validation only (no schema change); registration/publish
     # flows untouched — the gate lives at the moment of approval.
@@ -445,6 +471,10 @@ def _attach_aging(producer) -> None:
     A draft measures from `created_at` because it has no submission to measure
     from. Everything else uses the same COALESCE the queue ordering uses, so
     the badge and the sort can never disagree about which row is oldest.
+    `resubmitted_at` comes first (MEH-2869): a resubmission after a rejection
+    writes only that stamp, and `submitted_for_review_at` keeps the FIRST
+    submission — measuring from it put a business that resubmitted today at the
+    top of the queue with weeks of "waiting".
 
     Called by BOTH admin list routes. `ProducerAdminOut` declares the field, so
     a route that returned rows without calling this would serialise a silent
@@ -453,7 +483,11 @@ def _attach_aging(producer) -> None:
     producer.business_days_waiting = business_days_waiting(
         producer.created_at
         if producer.status == "draft"
-        else (producer.submitted_for_review_at or producer.created_at)
+        else (
+            producer.resubmitted_at
+            or producer.submitted_for_review_at
+            or producer.created_at
+        )
     )
 
 
@@ -557,9 +591,12 @@ def list_producers(
     if queue_view:
         # COALESCE, not submitted_for_review_at alone: rows seeded before
         # MEH-2100 (and every draft) have a NULL stamp, and a bare column sort
-        # would bunch them all at one end regardless of real age.
+        # would bunch them all at one end regardless of real age. The latest
+        # resubmission comes first (MEH-2869), the same order as _attach_aging.
         order_key = func.coalesce(
-            Producer.submitted_for_review_at, Producer.created_at
+            Producer.resubmitted_at,
+            Producer.submitted_for_review_at,
+            Producer.created_at,
         ).asc()
     else:
         order_key = Producer.created_at.desc()
@@ -1216,14 +1253,14 @@ def approve_producer(  # noqa: PLR0913 — all 6 args are FastAPI-injected (path
     #
     # Handler-only, and that is sufficient rather than an oversight: the retry
     # path re-reads the row. The four literal `status="draft"` writes are all
-    # at creation (auth.py:578, auth.py:785, producer_queries.py:537, and
-    # admin.py:609 — admin_create_producer's `as_draft`, MEH-2322). One more
-    # route CAN move an existing producer back to draft: an admin PUT carrying
-    # {"status": "draft"} (admin_update_producer applies the payload as-is —
-    # found in the MEH-2322 re-review). For the retry to read a draft row, an
-    # admin would have to send that PUT between this check and the retry, i.e.
-    # race her own approval. Accepted; restricting `status` on the admin PUT is
-    # tracked separately.
+    # at creation (auth.py:571, auth.py:781, services/producer_queries.py:662,
+    # and admin.py:669 — admin_create_producer's `as_draft`, MEH-2322; lines as
+    # of 10/11/2026). No route
+    # moves an existing producer back to draft: the admin PUT that once could
+    # (found in the MEH-2322 re-review) refuses any `status` in its payload
+    # with a 422 since MEH-2502 (admin_update_producer, `if "status" in
+    # payload`). So the retry cannot read a draft row unless a creation path
+    # is added. MEH-2870: this comment used to call that hole open and accepted.
     if producer.status == "draft":
         raise HTTPException(
             status_code=409,
@@ -2037,6 +2074,8 @@ def _producer_approved_html(name: str, slug: str | None) -> str:
         else ""
     )
 
+    # MEH-2834: the shared brand header; email_logo_html() escapes its URL itself.
+    logo = email_logo_html()
     return (
         "<!DOCTYPE html>\n"
         '<html dir="rtl" lang="he">\n'
@@ -2051,6 +2090,7 @@ def _producer_approved_html(name: str, slug: str | None) -> str:
         'style="background:#ffffff;border-radius:12px;text-align:right;'
         'direction:rtl;max-width:560px;margin:0 auto;"><tr>\n'
         '<td style="text-align:right;direction:rtl;">\n'
+        f"{logo}\n"
         '<p style="color:#3a3a3a;font-size:15px;line-height:1.8;'
         'margin:0 0 16px;direction:rtl;">היי,</p>\n'
         '<p style="color:#1C1A17;font-size:17px;line-height:1.8;'
@@ -2164,6 +2204,8 @@ def _producer_rejected_html(
         if reason
         else ""
     )
+    # MEH-2834: the shared brand header; email_logo_html() escapes its URL itself.
+    logo = email_logo_html()
     return (
         "<!DOCTYPE html>\n"
         '<html dir="rtl" lang="he">\n'
@@ -2178,6 +2220,7 @@ def _producer_rejected_html(
         'style="background:#ffffff;border-radius:12px;text-align:right;'
         'direction:rtl;max-width:560px;margin:0 auto;"><tr>\n'
         '<td style="text-align:right;direction:rtl;">\n'
+        f"{logo}\n"
         '<p style="color:#3a3a3a;font-size:15px;line-height:1.8;'
         f'margin:0 0 16px;direction:rtl;">שלום {safe_name},</p>\n'
         '<p style="color:#1C1A17;font-size:17px;line-height:1.8;'

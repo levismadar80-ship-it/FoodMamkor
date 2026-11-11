@@ -838,6 +838,23 @@ class TestAdminExperienceFlows:
         )
         assert [e["title"] for e in resp.json()] == ["P"]
 
+    def test_approve_does_not_reactivate_a_host_cancelled_experience(self, client, db):
+        """MEH-2840 (Sapir 09/11): the host's cancel is the host's decision.
+        Approving a pending row the host had toggled off publishes the status
+        and leaves it off; the host's own «הפעלה מחדש» brings it back."""
+        host = make_user(db, email="host2840@t.com")
+        admin = make_user(db, role="admin", email="adm2840@t.com")
+        ex = _make_experience(db, host, status="pending", is_active=False)
+
+        resp = client.post(
+            f"/admin/experiences/{ex.id}/approve", headers=auth_header(admin)
+        )
+        assert resp.status_code == 200, resp.text
+        assert resp.json()["is_active"] is False
+        db.refresh(ex)
+        assert ex.status == "approved"
+        assert ex.is_active is False
+
     def test_approve_transitions_status(self, client, db):
         host = make_user(db, email="host@t.com")
         admin = make_user(db, role="admin")

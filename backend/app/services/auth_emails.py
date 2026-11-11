@@ -12,6 +12,7 @@ from html import escape as html_escape
 
 from app.config import settings
 from app.services.email import send_email
+from app.services.email_branding import email_logo_html
 
 logger = logging.getLogger(__name__)
 
@@ -39,6 +40,7 @@ def send_reset_email(email: str, name: str, reset_link: str) -> None:
         <table width="100%" cellpadding="40" cellspacing="0" style="background:#ffffff;border-radius:12px;text-align:right;direction:rtl;max-width:560px;margin:0 auto;">
           <tr>
             <td style="text-align:right;direction:rtl;">
+              {email_logo_html()}
               <h1 style="font-size:20px;color:#1C1A17;margin:0 0 12px;">שלום {name_html},</h1>
               <p style="color:#3a3a3a;font-size:15px;line-height:1.7;margin:0 0 24px;">קיבלנו בקשה לאיפוס הסיסמה שלך במהמקור.<br>לאיפוס הסיסמה יש ללחוץ על הכפתור (תוקף: שעה אחת):</p>
               <div style="text-align:center;margin:0 0 28px;">
@@ -94,6 +96,7 @@ def send_verify_email(email: str, name: str, token: str) -> bool:
         <table width="100%" cellpadding="40" cellspacing="0" style="background:#ffffff;border-radius:12px;text-align:right;direction:rtl;max-width:560px;margin:0 auto;">
           <tr>
             <td style="text-align:right;direction:rtl;">
+              {email_logo_html()}
               <h1 style="font-size:20px;color:#1C1A17;margin:0 0 12px;">שלום {name_html},</h1>
               <p style="color:#3a3a3a;font-size:15px;line-height:1.7;margin:0 0 24px;">לאימות כתובת האימייל שלך יש ללחוץ על הכפתור:</p>
               <div style="text-align:center;margin:0 0 28px;">
@@ -171,6 +174,7 @@ def send_welcome_email(email: str, name: str, role: str = "consumer") -> bool:
         <table width="100%" cellpadding="40" cellspacing="0" style="background:#ffffff;border-radius:12px;text-align:right;direction:rtl;max-width:560px;margin:0 auto;">
           <tr>
             <td style="text-align:right;direction:rtl;">
+              {email_logo_html()}
               <h1 style="font-size:20px;color:#1C1A17;margin:0 0 12px;">שלום {first_name_html},</h1>
               <p style="color:#1C1A17;font-size:16px;font-weight:bold;line-height:1.7;margin:0 0 16px;">ברוכים הבאים למהמקור! 🌿</p>
               <p style="color:#3a3a3a;font-size:15px;line-height:1.7;margin:0 0 20px;">מהמקור מרכז בתי עסק מקומיים לאוכל אמיתי — כל אחד נבחר ואושר אישית.</p>
@@ -209,6 +213,7 @@ def send_welcome_email(email: str, name: str, role: str = "consumer") -> bool:
         <table width="100%" cellpadding="40" cellspacing="0" style="background:#ffffff;border-radius:12px;text-align:right;direction:rtl;max-width:560px;margin:0 auto;">
           <tr>
             <td style="text-align:right;direction:rtl;">
+              {email_logo_html()}
               <h1 style="font-size:20px;color:#1C1A17;margin:0 0 12px;">שלום {first_name_html},</h1>
               <p style="color:#1C1A17;font-size:16px;font-weight:bold;line-height:1.7;margin:0 0 16px;">ברוכים הבאים למהמקור! 🌿</p>
               <p style="color:#3a3a3a;font-size:15px;line-height:1.7;margin:0 0 16px;">העסק שלך ממתין כרגע לאישור אדמין — אנחנו בודקים כל עסק חדש כדי לוודא שהוא מתאים לקריטריונים שלנו (ייצור מקומי, חומרי גלם מזוהים, ללא מעובד).</p>

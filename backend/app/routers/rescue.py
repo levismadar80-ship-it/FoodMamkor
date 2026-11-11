@@ -96,6 +96,7 @@ from app.services.rescue_emails import (
     send_cancel_email,
     send_reservation_email,
 )
+from app.services.producer_listing import not_test_producer  # MEH-2952
 from app.utils.clock import israel_today, utc_now
 
 logger = logging.getLogger(__name__)
@@ -252,11 +253,19 @@ def _offer_for_update(db: Session, offer_id: UUID) -> RescueOffer:
     `0 <= qty_left <= qty_total` CHECK then turns the loser into a failed
     transaction instead of negative stock — the lock is what makes it a clean
     409 instead.
+
+    populate_existing() (MEH-2865 review): the offer is usually already in the
+    session — `_order_or_404` loaded `order.offer` before the lock — and
+    without it the query takes the lock but hands back that cached object, so
+    `qty_left` is the value from BEFORE the lock. cancel_order then put bags
+    back on top of a stale count. Same trap as auth.py's "DO NOT drop
+    populate_existing()".
     """
     offer = (
         db.query(RescueOffer)
         .filter(RescueOffer.id == offer_id)
         .with_for_update()
+        .populate_existing()
         .first()
     )
     if not offer:
@@ -462,6 +471,7 @@ def list_offers(
             # only fail. Same naive-UTC comparison as the reserve guard.
             RescueOffer.pickup_end > utc_now() + RESERVE_CLOSES_BEFORE_END,
             Producer.status == "approved",
+            not_test_producer(),  # MEH-2952
         )
     )
     # Only pilot towns are listed, whatever is asked for. Without this an
@@ -801,6 +811,16 @@ def create_order(
         )
 
     offer = _offer_for_update(db, body.offer_id)
+    # MEH-2952: a seeded test row's bag is not listed, so it is not reservable
+    # by id either; same 404 as a missing bag. (Cancel shares
+    # _offer_for_update and stays open, so the check lives here.)
+    location = offer.location
+    if (
+        location is not None
+        and location.producer is not None
+        and location.producer.is_test
+    ):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="הסל לא נמצא")
     if offer.status != "active":
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT, detail="הסל אינו פעיל"
@@ -865,6 +885,21 @@ def create_order(
     }
 
 
+def _refuse_unless_reserved_for_handover(order: RescueOrder) -> None:
+    """409 unless the order is still `reserved`; a repeat tap names the time."""
+    if order.status == "handed":
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"הסל כבר נמסר ב-{order.handed_at:%H:%M}"
+            if order.handed_at
+            else "הסל כבר נמסר",
+        )
+    if order.status != "reserved":
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, detail="ההזמנה אינה פעילה"
+        )
+
+
 @router.post(
     "/orders/{order_id}/handed",
     response_model=RescueOrderOut,
@@ -885,18 +920,16 @@ def mark_handed(
     """
     order = _order_or_404(db, order_id)
     _require_offer_owner(current_user, order.offer)
+    _refuse_unless_reserved_for_handover(order)
 
-    if order.status == "handed":
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail=f"הסל כבר נמסר ב-{order.handed_at:%H:%M}"
-            if order.handed_at
-            else "הסל כבר נמסר",
-        )
-    if order.status != "reserved":
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT, detail="ההזמנה אינה פעילה"
-        )
+    # Lock the offer, then the order — the order cancel_order takes them in —
+    # and read the status AGAIN under the lock (MEH-2865). The check above ran
+    # on a row read before any lock: a buyer's cancel in the same instant also
+    # saw `reserved`, put the bag back on the list, and this one then handed
+    # it over — one bag both handed and for sale again.
+    _offer_for_update(db, order.offer_id)
+    db.refresh(order, with_for_update=True)
+    _refuse_unless_reserved_for_handover(order)
 
     order.status = "handed"
     order.handed_at = utc_now()
@@ -936,12 +969,25 @@ def mark_no_show(
             status_code=status.HTTP_409_CONFLICT, detail="ההזמנה אינה פעילה"
         )
 
+    # Same locks, same order, same re-read as cancel_order (MEH-2865): a cancel
+    # landing between the read above and this write would otherwise leave a
+    # cancelled order AND a no-show on the buyer.
+    _offer_for_update(db, order.offer_id)
+    db.refresh(order, with_for_update=True)
+    if order.status != "reserved":
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, detail="ההזמנה אינה פעילה"
+        )
+
     order.status = "no_show"
-    buyer = db.query(User).filter(User.id == order.user_id).first()
-    if buyer:
-        # Display/metrics counter. The 422 gate reads the windowed count from
-        # the orders, not this — see _active_no_shows.
-        buyer.rescue_no_show_count = (buyer.rescue_no_show_count or 0) + 1
+    # Display/metrics counter. The 422 gate reads the windowed count from the
+    # orders, not this — see _active_no_shows. One SQL increment, not a Python
+    # read-modify-write: two no-shows for one buyer at once each read the same
+    # value and one count was lost (MEH-2865).
+    db.query(User).filter(User.id == order.user_id).update(
+        {User.rescue_no_show_count: func.coalesce(User.rescue_no_show_count, 0) + 1},
+        synchronize_session=False,
+    )
     db.commit()
     db.refresh(order)
     return order

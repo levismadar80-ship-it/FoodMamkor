@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations, useLocale } from "next-intl";
 import { Link } from "@/i18n/navigation";
@@ -203,6 +203,84 @@ function CardHeart({ producer, onCountChange }) {
  *   heart at end, the caller's at start — and the controls win: the no-photo
  *   plate shows no seed at all.
  */
+// MEH-2856: measure before paint in the browser; plain effect on the server
+// (useLayoutEffect warns there). REUSES: components/ui/Tooltip.jsx:36.
+const useIsomorphicLayoutEffect = typeof window === "undefined" ? useEffect : useLayoutEffect;
+
+// MEH-991 (CARD-09) v4 LOCK: never more than 2 visible badges on a card.
+const BADGE_STRIP_MAX = 2;
+// «+N» keeps a 44px hit area inside its 24px chip with -m-2.5, so the hit area
+// reaches 10px past the chip's end. That reach is invisible: it may overhang
+// the group without the chip — or any pill — being cut, so the overflow check
+// forgives exactly that much while «+N» shows (caught on the preview: «משק
+// ברק» lost a 2nd pill that fits, as staging shows).
+const PLUS_N_REACH_PX = 10;
+
+/**
+ * MEH-2856: how many badges fit on the card's ONE badge line.
+ *
+ * `lineRef` is the no-wrap group holding the badge pills and «+N». Starts at
+ * today's count (min(2, earned)) — that is also the SSR / no ResizeObserver
+ * answer — and, before paint, drops one badge at a time while the group
+ * overflows (scrollWidth past its own capped width). «+N» is inside the group,
+ * so its width is in the measurement: when a badge moves into «+N» the chip
+ * appears and the check runs again. Never below 1 — a single badge that is
+ * still too wide breaks inside itself (MEH-2849) instead. When the card's
+ * width changes (rotation, grid change, text zoom reflow) the count resets to
+ * the cap and settles again.
+ */
+function useBadgesThatFit(lineRef, earned) {
+  const cap = Math.min(BADGE_STRIP_MAX, earned);
+  const [fit, setFit] = useState({ cap, shown: cap });
+  // A different badge set (new producer prop) starts over from the cap —
+  // reset during render, so the layout effect below measures the new set
+  // before paint instead of a stale count flashing first.
+  if (fit.cap !== cap) setFit({ cap, shown: cap });
+  const { shown } = fit;
+  useIsomorphicLayoutEffect(() => {
+    const el = lineRef.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const reach = el.querySelector('[data-testid="badge-overflow"]') ? PLUS_N_REACH_PX : 0;
+    if (shown > 1 && el.scrollWidth > el.clientWidth + 1 + reach) {
+      // Idempotent step (from the count this render measured, not "one less
+      // than whatever is queued"): StrictMode runs this effect twice against
+      // the same DOM, and a relative step took 2 → 1 → 0 pills.
+      setFit((f) => (f.shown === shown ? { ...f, shown: shown - 1 } : f));
+    }
+  });
+  useEffect(() => {
+    // The photo box the strip is pinned to (line → strip → photo box).
+    const line = lineRef.current;
+    const host = line?.parentElement?.parentElement;
+    if (!host || typeof ResizeObserver === "undefined") return undefined;
+    // Start over from the cap when the room changes (card width) or the text
+    // size does (browser text size, Android font scale — the root rem). The
+    // first pill is observed only as the trigger for a text-size change: the
+    // card's width does not move when only the font grows, and nothing else
+    // re-renders the card. The reset itself keys on the root font size, never
+    // on the pill's width — a lone pill shrinks to the card when the count
+    // drops, and resetting on that would loop 2 → 1 → 2 (MEH-2856, the 200%
+    // text E2E caught the stale fit).
+    const rootPx = () => parseFloat(getComputedStyle(document.documentElement).fontSize) || 0;
+    let lastWidth = null;
+    let lastRootPx = rootPx();
+    const ro = new ResizeObserver(() => {
+      const width = host.clientWidth;
+      const fontPx = rootPx();
+      if ((lastWidth !== null && width !== lastWidth) || fontPx !== lastRootPx) {
+        setFit((f) => ({ ...f, shown: f.cap }));
+      }
+      lastWidth = width;
+      lastRootPx = fontPx;
+    });
+    ro.observe(host);
+    const pill = line.querySelector("[data-badge]");
+    if (pill) ro.observe(pill);
+    return () => ro.disconnect();
+  }, [lineRef]);
+  return Math.min(shown, cap);
+}
+
 export default function ProducerCard({ producer, active, onClick, referrer, highlightQuery = null, startCornerControl = false }) {
   const t = useTranslations();
   const cardFee = resolveDeliveryFee(producer.delivery_fee, producer.delivery_areas);
@@ -227,6 +305,11 @@ export default function ProducerCard({ producer, active, onClick, referrer, high
   const STRIP_ONE_LINE_MAX = 32; // px — one pill row is ~25px
   const PLATE_CLEARANCE = 24; // px — strip's bottom-3 offset + breathing room
   const [stripLift, setStripLift] = useState(0);
+  // MEH-2856: the badge pills + «+N» sit in this one-line group.
+  const badgeLineRef = useRef(null);
+  const earnedBadges = badgeCount(producer);
+  const shownBadges = useBadgesThatFit(badgeLineRef, earnedBadges);
+  const hiddenBadges = earnedBadges - shownBadges;
   useEffect(() => {
     const el = badgeStripRef.current;
     if (!el || typeof ResizeObserver === "undefined") return undefined;
@@ -460,12 +543,27 @@ export default function ProducerCard({ producer, active, onClick, referrer, high
             with the old 4px gap it covered «חדש» down to 41.5×19.3 (axe
             target-size, CI mobile /producers). At 10px it touches the row
             above and covers nothing. Single-row strips are unchanged. */}
+        {/* MEH-2856 (Sapir 09/11): the badges sit on ONE line. The pills and
+            «+N» are a no-wrap group (data-badge-line) capped at the strip's
+            width: the photo minus the 12px start inset and an 8px end inset
+            (the pre-2856 strip had none, and a 12px one dropped pills that
+            fit on staging);
+            useBadgesThatFit() shows as many of the first 2 badges as fit and
+            moves the rest into «+N». Two long pills used to stack (ערוגות נועם
+            at 390). TrustBadge and the delivery-only pill below stay OUTSIDE
+            the group: as before, they drop to the next line when there is no
+            room, instead of being clipped by the card's overflow-hidden. */}
         <div
           ref={badgeStripRef}
-          className="absolute bottom-3 start-3 flex flex-wrap items-center gap-x-1 gap-y-2.5"
+          className="absolute bottom-3 start-3 flex flex-wrap items-center gap-x-1 gap-y-2.5 max-w-[calc(100%-1.25rem)]"
         >
-          <BadgeRow producer={producer} limit={2} surface="card" avoidRef={badgeStripRef} />
-          {badgeCount(producer) > 2 && (
+          <div
+            ref={badgeLineRef}
+            data-badge-line
+            className="flex flex-nowrap items-center gap-x-1 min-w-0 max-w-full"
+          >
+          <BadgeRow producer={producer} limit={shownBadges} surface="card" avoidRef={badgeStripRef} nowrap />
+          {hiddenBadges > 0 && (
             // MEH-991 (CARD-09): v4 LOCK — third badge collapses to +N.
             // MEH-1547: the +N counter becomes a Popover trigger listing the
             // HIDDEN badges (labels only) — it was the one dead element in an
@@ -501,14 +599,14 @@ export default function ProducerCard({ producer, active, onClick, referrer, high
                 <button
                   type="button"
                   aria-label={t("producer.card.badges.overflow_aria", {
-                    count: badgeCount(producer) - 2,
+                    count: hiddenBadges,
                   })}
                   data-testid="badge-overflow"
                   dir="ltr"
-                  className="group inline-flex items-center justify-center min-h-touch min-w-touch -m-2.5 focus:outline-none"
+                  className="group inline-flex shrink-0 items-center justify-center min-h-touch min-w-touch -m-2.5 focus:outline-none"
                 >
                   <span className="inline-flex items-center rounded-full bg-surface-card/95 border border-border text-fg-muted px-1.5 py-0.5 text-2xs font-medium group-focus-visible:ring-2 group-focus-visible:ring-primary/40">
-                    +{badgeCount(producer) - 2}
+                    +{hiddenBadges}
                   </span>
                 </button>
               }
@@ -561,7 +659,7 @@ export default function ProducerCard({ producer, active, onClick, referrer, high
                   behaviour are all unaffected. */}
               <span className="flex flex-col gap-2" role="list">
                 {allBadges(producer)
-                  .slice(2)
+                  .slice(shownBadges)
                   .map(withBadgeCopy)
                   .map((b) => {
                     const icon = badgeIcon(b.key);
@@ -583,6 +681,7 @@ export default function ProducerCard({ producer, active, onClick, referrer, high
               </span>
             </Popover>
           )}
+          </div>
           {/* MEH-1120 (MEH-1074 Task B): gate raised 3 → 4. Verification tiers
               (2 phone / 3 business) are owned by the BadgeRow seal above
               (verification_tier / ADR-022) — TrustBadge now only carries the

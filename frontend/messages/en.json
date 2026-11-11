@@ -32,6 +32,8 @@
     "footer": {
       "events": "Events",
       "experiences": "Experiences",
+      "group_buys": "Group buys",
+      "rescue": "Surprise bags",
       "about": "About",
       "process": "Our process",
       "faq_businesses": "FAQ for Businesses",
@@ -53,8 +55,8 @@
       "nav_aria": "Footer navigation",
       "nav_heading": "Navigation",
       "group_discover_heading": "Discover",
+      "group_about_heading": "About us",
       "group_business_heading": "For businesses",
-      "nav_discover": "Discover businesses",
       "producers": "All businesses",
       "why_local": "Why local?",
       "newsletter_heading": "Good food is meant to be shared",
@@ -423,12 +425,12 @@
   },
   "account": {
     "menu": {
-      "profile": "My Profile",
       "settings": "Settings",
       "dashboard": "My Dashboard",
       "admin": "Admin Panel",
       "aria": "Menu — {name}",
-      "logout": "Sign Out"
+      "logout": "Sign Out",
+      "view_page": "View page"
     },
     "sheet": {
       "connected": "Signed in",
@@ -541,10 +543,17 @@
       "body_l2": "Every business here is hand-picked. A full page, photos, a story — yours.",
       "body_l3": "We'd love to meet."
     },
-    "events": {
-      "heading": "Upcoming events",
-      "all_events": "All events →",
-      "free": "Free entry"
+    "whats_on": {
+      "eyebrow": "Close to home",
+      "heading": "What's on at the businesses",
+      "all": "Everything that's on",
+      "until": "Until {date}",
+      "type": {
+        "event": "Event",
+        "experience": "Experience",
+        "group_buy": "Group buy",
+        "rescue": "Surprise basket"
+      }
     }
   },
   "common": {
@@ -1638,6 +1647,7 @@
         "waiting_badge": "Waiting {days} business days",
         "waiting_tooltip_submitted": "Submitted for review: {when}",
         "waiting_tooltip_created": "Created: {when}",
+        "waiting_tooltip_resubmitted": "Resubmitted for review: {when}",
         "resubmission_badge": "Resubmission #{n}"
       },
       "toggle": {
@@ -2334,8 +2344,10 @@
       },
       "status": {
         "failed": "Failed",
-        "window_expired": "24-hour window closed"
-      }
+        "window_expired": "24-hour window closed",
+        "accepted": "No delivery confirmation"
+      },
+      "stuck_hint": "Messages Meta accepted more than a day ago that still have no delivery confirmation. If there are many, delivery confirmations may not be reaching us."
     },
     "group_buys": {
       "title": "Group buys",
@@ -2554,7 +2566,7 @@
         "group_buys": {
           "q": "How do I change a group buy's status?",
           "steps": [
-            "The screen is not in the menu, only via the link here. There you set the status: open, funded, fulfilled or cancelled."
+            "You can cancel an open group or one that reached its goal, and mark a group that reached its goal as fulfilled. A cancelled or fulfilled group stays that way."
           ]
         }
       }
@@ -4352,8 +4364,7 @@
         "zero_activity_title": "Views and clicks",
         "zero_activity": "No views or clicks yet — share your page to get started",
         "share_locked": "You'll be able to share soon — let's finish approval and details first",
-        "availability_disabled": "You'll be able to update availability once the business is approved and published",
-        "view_public": "View your page"
+        "availability_disabled": "You'll be able to update availability once the business is approved and published"
       },
       "changes_requested": {
         "title": "One detail left to complete",
@@ -4679,6 +4690,7 @@
         },
         "uploading": "Uploading image…",
         "remove_aria": "Remove image",
+        "last_photo": "You can't remove the last photo. Add another photo first, then remove this one.",
         "save_cta": "Save images",
         "saving": "Saving…",
         "saved": "Saved",
@@ -5055,6 +5067,9 @@
       "coverage_cta": {
         "label": "Let people outside my delivery area contact me",
         "helper": "When on, your page shows a button for people in areas you don't reach yet"
+      },
+      "week": {
+        "all_insights": "All your numbers →"
       }
     }
   },
@@ -5125,6 +5140,8 @@
       "field_end_time_label": "End time (optional)",
       "error_end_time_after_start": "The end time must be after the start time",
       "field_time_hint": "Optional — if blank, only the date is shown",
+      "saved_location_legend": "Event location",
+      "saved_location_other": "A different address",
       "field_location_label": "Specific location",
       "field_location_placeholder": "Exact address or directions",
       "field_city_label": "City",
@@ -6457,6 +6474,9 @@
       },
       "completeness": {
         "label": "A list showing what is still missing on your page"
+      },
+      "experiences": {
+        "label": "Experiences and visits at your place, with sign-up on the site"
       }
     },
     "total_line": "{count} tools, all of them free. Tap a card to see all its tools.",

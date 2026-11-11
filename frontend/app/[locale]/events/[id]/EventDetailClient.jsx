@@ -25,6 +25,7 @@ import { formatPrice } from "@/lib/utils";
 import { cssUrl } from "@/lib/css-url";
 import { optimizeCloudinary, IMAGE_RATIOS } from "@/lib/cloudinary";
 import Breadcrumb from "@/components/Breadcrumb";
+import HistoryBackLink from "@/components/HistoryBackLink";
 import ShareButton from "@/components/ShareButton";
 import SaveButton from "@/components/SaveButton";
 import OwnerRow from "@/components/OwnerRow";
@@ -220,6 +221,9 @@ export default function EventDetailClient() {
 
       <div className="max-w-[1100px] mx-auto px-4 pt-11 lg:pt-8 lg:grid lg:grid-cols-[1fr_360px] lg:grid-rows-[auto_1fr] lg:gap-x-12 lg:items-start">
         <div className="lg:col-start-1">
+          {/* MEH-2857: «→ חזרה» to the page the visitor came from, when there
+              is one inside the site; the breadcrumb below stays as is. */}
+          <HistoryBackLink />
           <Breadcrumb
             items={[
               { href: "/", label: t("breadcrumb_home") },

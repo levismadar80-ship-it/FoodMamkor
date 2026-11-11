@@ -2203,9 +2203,33 @@ test.describe("manual › above-the-fold mini-map + trust band (MEH-604 · MEH-6
   }) => {
     await consent(page);
     await stubTiles(page);
-    await mockApi(page);
+    const seen = await mockApi(page);
     await gotoHome(page);
     await expect(scope(page).getByTestId("home-minimap")).toHaveCount(1, FIRST_PAINT);
+    // HYDRATED before anything is injected. `home-minimap` and the grid are in
+    // the SERVER html, so the gate above can return while that region is still
+    // dehydrated — and a node injected there is one React's hydration did not
+    // render: React error #418, the region is client-rendered from scratch,
+    // and the injected node goes with the discarded DOM (~0.5-0.7 s after injection). Measured on a local
+    // production build of staging @ 89bc3b411 under 4x CPU throttling, 32 runs
+    // each: injecting at the old gate drew #418 in 9 runs, one of them red at
+    // the precondition below; gated here, 0 of 32. That is the shape of CI run
+    // 42845330925's red (attached at the check, reader then saw ""), and of
+    // run 33943227079's before it. `mountEffectRan` is this file's own
+    // post-hydration signal (see its doc comment).
+    await mountEffectRan(seen);
+    // The witness for the gate above: a hydration error raised from here on
+    // means an injection below landed in a region React had not hydrated yet.
+    // React 19 reports it through reportError (an uncaught error) and the
+    // console; both are collected and asserted empty at the end.
+    const hydrationErrors: string[] = [];
+    const isHydrationError = (text: string) => /#418\b|Hydration failed/.test(text);
+    page.on("pageerror", (e) => {
+      if (isHydrationError(e.message)) hydrationErrors.push(`pageerror: ${e.message.slice(0, 160)}`);
+    });
+    page.on("console", (m) => {
+      if (m.type() === "error" && isHydrationError(m.text())) hydrationErrors.push(`console: ${m.text().slice(0, 160)}`);
+    });
 
     const insert = (tag: string, testid?: string) =>
       page.evaluate(
@@ -2241,22 +2265,37 @@ test.describe("manual › above-the-fold mini-map + trust band (MEH-604 · MEH-6
     // CI (run 33943227079) reporting «a real element between the two must be
     // reported by name» with an empty result — a message that blames the
     // reader for what may be a fixture that did not survive to sample time.
-    // The two are different defects and must not share a failure. React can
-    // still replace the hero's subtree after `home-minimap` first appears, and
-    // an injected sibling goes with it; nothing above guarantees hydration is
-    // finished. So assert the injected node is attached AND still sits between
-    // the two sections before reading anything into what the reader returns.
-    // If this line is what goes red, the reader is not the suspect.
+    // The two are different defects and must not share a failure. Injecting
+    // is now gated on `mountEffectRan` above, so React should no longer replace
+    // the hero's subtree (and an injected sibling with it) after this point —
+    // but "should" is the gate's claim, not a fact this line can take on trust.
+    // So assert the injected node is attached AND still sits between the two
+    // sections before reading anything into what the reader returns, and
+    // (below) that no hydration error fired. If this line is what goes red,
+    // the reader is not the suspect.
     await expect(
       page.locator('[data-testid="interloper"]'),
       "fixture precondition: the injected block must survive to sample time — if THIS fails the reader is not implicated",
     ).toHaveCount(1);
+    // …and it must still sit right after the grid, read by a check that is NOT
+    // the reader (one sibling hop, no skip-list). The comment above always
+    // claimed this half; until now only the attachment half was asserted.
+    expect(
+      await page.evaluate(
+        () => document.getElementById("producers-grid")?.nextElementSibling?.getAttribute("data-testid") ?? null,
+      ),
+      "fixture precondition: the injected block must still be the grid's next sibling — if THIS fails the reader is not implicated",
+    ).toBe("interloper");
 
     const caught = await strangersBetweenGridAndMap(page);
     expect(caught.join(" | "), "a real element between the two must be reported by name").toContain(
       "div[interloper]",
     );
     await remove('[data-testid="interloper"]');
+    expect(
+      hydrationErrors,
+      "no React hydration error (#418) after the mountEffectRan gate — one here means the gate let an injection into an unhydrated region",
+    ).toEqual([]);
   });
 
   // MT:604:3 — three tile preconnect links, all crossOrigin="anonymous".

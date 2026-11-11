@@ -39,6 +39,7 @@ import PrimaryContactButton from "@/components/PrimaryContactButton";
 import SaveButton from "@/components/SaveButton"; // MEH-2558
 import ShareButton from "@/components/ShareButton";
 import Seed from "@/components/brand/Seed"; // MEH-2844
+import HistoryBackLink from "@/components/HistoryBackLink"; // MEH-2857
 import { seedColorFor } from "@/lib/brand-seeds";
 import { splitRecipeLines } from "@/lib/recipe-lines"; // MEH-2540
 import { formatPriceRange } from "@/lib/utils";
@@ -164,6 +165,9 @@ export default function RecipeDetail({ recipe, producer, relatedProducts }) {
       </div>
 
       <div className="px-4">
+        {/* MEH-2857: «→ חזרה» to the page the visitor came from, when there is
+            one inside the site; the business › recipes trail stays as is. */}
+        <HistoryBackLink className="mt-2" />
         <nav className="text-sm text-fg-muted mt-4" aria-label={t("breadcrumb_aria")}>
           <Link href={`/${producer.slug}`} className={`hover:underline ${LINK_FOCUS}`}>
             {producer.name}
