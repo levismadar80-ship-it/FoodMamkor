@@ -188,7 +188,8 @@ jobs:
             *) echo "$REFUSE"; exit 1 ;;
           esac
 
-      # pg_dump must not be older than the server (18); the runner ships 16.
+      # pg_dump must not be older than the server (18). Installed explicitly
+      # rather than taken from the runner image, so an image change can't move it.
       - name: PostgreSQL 18 client
         run: |
           sudo install -d /usr/share/postgresql-common/pgdg
