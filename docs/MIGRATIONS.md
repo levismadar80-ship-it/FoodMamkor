@@ -179,7 +179,7 @@ DATABASE_URL=postgresql://... .venv/bin/alembic current
 כל PR מריץ את השלבים הבאים (`.github/workflows/pr-checks.yml`):
 
 ```
-Postgres 15 service (fresh DB)
+Postgres 18 service (fresh DB; the major version production runs, MEH-2914)
   → alembic upgrade head          ← broken-chain gate (revision / down_revision)
   → psql verify: table count (excl. alembic_version) = EXPECTED_TABLES
   → alembic check                ← MEH-492 — sole model↔migration drift gate
