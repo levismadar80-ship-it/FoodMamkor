@@ -4683,6 +4683,7 @@
         },
         "uploading": "Uploading image…",
         "remove_aria": "Remove image",
+        "last_photo": "You can't remove the last photo. Add another photo first, then remove this one.",
         "save_cta": "Save images",
         "saving": "Saving…",
         "saved": "Saved",
