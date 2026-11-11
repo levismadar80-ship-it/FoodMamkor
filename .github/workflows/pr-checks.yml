@@ -249,6 +249,7 @@ jobs:
               # --self-test) and by the static audit, both gated on this filter.
               # Without this line a PR touching only the tool skips both.
               - 'scripts/check_api_contract.py'
+              - 'Dockerfile'
             workflows:
               - '.github/workflows/**'
             # MEH-1585: mirrors dependency-audit.yml's backend manifests exactly.
