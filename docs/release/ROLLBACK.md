@@ -11,7 +11,7 @@
 > **Current anchor: v1.5.0** (main `7e2b07b33`, 11/11/2026). Its ids are in
 > `docs/release/anchors/v1.5.0.md`. Rolling back *from* v1.5.0 goes to v1.4.0
 > (§2b: v1.5.0 adds revision `e4c9a2f71b58`). Rolling back *to* v1.5.0 after a
-> later revision is §2c (see the MEH-2903 branch until it lands).
+> later revision is §2c.
 >
 > ⚠️ **This runbook has not been drilled yet** (§A.4 waits for the MEH-1517
 > secret). Until it has, every step below is a plan, not a proven path.
@@ -35,7 +35,7 @@
 
 ## 2 · Backend (Railway): depends on whether the release added a revision
 
-**Why it depends.** The image boots with `alembic upgrade head && exec uvicorn …` (`Dockerfile:61`). An older image does not contain the newer revision file. If the database is still at the newer revision, `alembic upgrade head` stops with *Can't locate revision*, uvicorn never starts, the `/health/readiness` healthcheck fails, and Railway keeps the **current** deployment live. **The rollback silently does not happen.**
+**Why it depends.** v1.5.0, and every image before MEH-2903 chunk 2, boots with `alembic upgrade head && exec uvicorn …`. An older image does not contain the newer revision file. If the database is still at the newer revision, `alembic upgrade head` stops with *Can't locate revision*, uvicorn never starts, the `/health/readiness` healthcheck fails, and Railway keeps the **current** deployment live. **The rollback silently does not happen.**
 
 ### 2a · The release added no revision
 
@@ -61,6 +61,42 @@ The schema has to go back **before** the old image can boot. That means data los
 - (א) keep 2b as is;
 - (ב) let boot tolerate a database that is ahead of the image (skip `upgrade head` when the current revision is a known descendant);
 - (ג) roll back by deploying the old code **with** the newer revision files.
+
+Sapir chose (ב) on 10/11: MEH-2903, `backend/scripts/migrate_on_boot.py`. Until its Dockerfile wiring ships (chunk 2, after v1.5.0, on Sapir's go), 2b is the only procedure.
+
+### 2c · Back to v1.5.0 after `19ac967d78fb` (or any later revision) was applied
+
+**Why 2a alone fails here.** v1.5.0's image has **no** `migrate_on_boot.py`. It boots with plain `alembic upgrade head` (`Dockerfile:61`) and knows head `e4c9a2f71b58`. It has no file for `19ac967d78fb` (`alembic_lineage`, MEH-2903) or for anything after it. On a database at one of those revisions it stops at *Can't locate revision*, and Railway keeps the current deployment. The newer image's `migrate_on_boot.py` does not help, because the image that boots after a rollback is the **old** one.
+
+**Procedure: 2b with `<recorded head>` = `e4c9a2f71b58`.**
+
+1. Take the manual dump (`docs/BACKUPS.md` §2).
+2. Dry run on a scratch restore: `alembic downgrade e4c9a2f71b58`. Run it with the **current (newer)** image's files: only that image has the files of the revisions being undone. If it fails, **stop**.
+3. Production: `railway ssh` into the **running, newer** container, then `cd /app && alembic downgrade e4c9a2f71b58 && alembic current`. It must print `e4c9a2f71b58`.
+4. **Immediately** roll back to the recorded v1.5.0 deployment (2a). A restart of the newer container before that re-applies the revisions. With or without `migrate_on_boot.py`, its boot runs `upgrade head` on a database that is behind it.
+5. Verify as in 2a, plus: `version.alembic_head` = `e4c9a2f71b58` on the rolled-back container.
+
+**What is lost:**
+
+- `19ac967d78fb`: its downgrade drops `alembic_lineage`. That is boot bookkeeping only, not user data. The next boot of a `migrate_on_boot.py` image writes it again.
+- Each later revision: whatever its own `downgrade()` drops, including the data written into it since. Read every one in the dry run (step 2) before step 3.
+
+### 2d · The first rollback-safe release
+
+**Rollback mode needs `migrate_on_boot.py` in the image you roll back *to*.** It is the older image that has to tolerate a newer database. Having the lineage table in the database is not enough.
+
+- **The first release you can roll back to without 2b/2c** is the first release whose `Dockerfile` runs `python -u scripts/migrate_on_boot.py` (MEH-2903 chunk 2: on staging since 11/11/2026; it ships with v1.5.1, and only after the rollback drill on staging passes). Call it **R**.
+  - It is **not** v1.5.0.
+  - It is **not** a release that has `19ac967d78fb` but still boots with plain `alembic upgrade head`.
+- **Rolling back from a later release to R is automatic when both hold:**
+  - **R's head is recorded in `alembic_lineage`.** That happens on the first successful boot of R, or of any later `migrate_on_boot.py` image, on that database.
+  - **Every revision after R's head is expand-only (ADR-007).** Rollback mode starts R's code on the newer schema and undoes nothing.
+- **`ROLLBACK MODE` in the log does not by itself mean someone rolled back.** During a normal deploy, the old deployment's container can restart after the new image has already upgraded the database (`restartPolicyType ON_FAILURE`). It then starts in rollback mode on the code it was already serving. With expand-only revisions that is harmless. Before reading the line as a rollback, check which deployment logged it.
+- **If R's head is not recorded,** R's boot exits 3 (`SPLIT HISTORY`, naming both revisions) and the current deployment stays live. Use 2b.
+- **Two edges the check does not cover.** Neither can happen while revisions are never deleted and the history stays linear (the alembic head guard).
+  - A row in `alembic_lineage` means "applied at some point". A downgrade does not remove it. So after a downgrade below R's head and a *different* revision applied on top, R would still take rollback mode on a stale row.
+  - The check reads `alembic_lineage` only, not `alembic_version`. With several database heads, one of them R's own, R still exits 3 if the lineage row is missing.
+- **Rolling back to anything older than R** (v1.5.0 included) is always 2b or 2c.
 
 ## 3 · Schema (Alembic): only if a revision itself is the problem
 

@@ -1446,15 +1446,25 @@ describe("RegisterProducerClient — CONFIRM scrolls to the top (MEH-2138 chunk 
     expect(arg.behavior, "an animated approach to an unseen screen is the thing prefers-reduced-motion suppresses").not.toBe("smooth");
   }
 
-  it("does NOT scroll while the seller is still filling the form", async () => {
-    // CONTROL, and it runs first on purpose. Every assertion below is "scrollTo
-    // was called"; if some unrelated mount already called it, all of them pass
-    // against a component with no CONFIRM effect at all. This pins the count at
-    // zero right up to the submit, so the later calls can only come from CONFIRM.
+  // MEH-2927 CHANGED THIS CONTROL'S MECHANISM, NOT ITS PURPOSE — read before
+  // editing. It used to assert `scrollTo` was never called before the submit,
+  // so that the two "scrolled to the top" assertions below could only be
+  // satisfied by the CONFIRM effect. MEH-2927 makes every step change scroll to
+  // the top (pilot B3a), so a global count of zero is no longer available as
+  // the device.
+  //
+  // The purpose survives intact and is now enforced per transition: each test
+  // below clears the spy immediately before the submit, so a call counted after
+  // it can still only have come from CONFIRM. That is strictly stronger than
+  // the old global zero — it isolates the CONFIRM transition instead of relying
+  // on the rest of the wizard being silent. A component with no CONFIRM effect
+  // still goes red, which is the property MEH-2138 built this for.
+  it("asks for the top once per frame change, and no more", async () => {
     await renderWizard();
-    await fillAccountToDetails();
-    await fillDetailsToStory();
-    expect(scrollToSpy).not.toHaveBeenCalled();
+    await fillAccountToDetails(); // ACCOUNT → DETAILS
+    expect(scrollToSpy).toHaveBeenCalledTimes(1);
+    await fillDetailsToStory(); // DETAILS → CATEGORY → STORY
+    expect(scrollToSpy).toHaveBeenCalledTimes(3);
   });
 
   it("inbox-check branch (no access_token) scrolls to the top", async () => {
@@ -1462,6 +1472,7 @@ describe("RegisterProducerClient — CONFIRM scrolls to the top (MEH-2138 chunk 
     await renderWizard();
     await fillAccountToDetails();
     await fillDetailsToStory();
+    scrollToSpy.mockClear(); // MEH-2927: isolate the CONFIRM transition
     await fillStoryAndSubmit();
 
     expect(await screen.findByTestId("register-frame-confirm")).toBeInTheDocument();
@@ -1477,6 +1488,7 @@ describe("RegisterProducerClient — CONFIRM scrolls to the top (MEH-2138 chunk 
     await renderWizard();
     await screen.findByText(`${K}.steps.business.title`);
     await fillDetailsToStory();
+    scrollToSpy.mockClear(); // MEH-2927: isolate the CONFIRM transition
     await fillStoryAndSubmit();
 
     expect(await screen.findByTestId("register-success-pending")).toBeInTheDocument();
@@ -1644,5 +1656,77 @@ describe("MEH-2241 chunk B — a typed town CitySearch could not match is as mis
     const [, body] = api.post.mock.calls[0];
     expect(body).not.toHaveProperty("city_known");
     expect(body.city).toBe("תל אביב");
+  });
+});
+
+// MEH-2927 (C13 / pilot B3a): a step change has to start at the top of the new
+// step. Measured at 390x844 on a local `next start` before the fix: advancing
+// from ACCOUNT to DETAILS kept scrollY=460 and left the step heading at
+// y=-330 — the seller lands in the middle of a form whose top she has never
+// seen. The committed frame qa-artifacts/MEH-2927/02-step2-on-entry-390-AFTER.webp
+// is that view AFTER the fix; the before frame was not committed, so the before
+// state is cited as the probe's numbers rather than as a file.
+describe("RegisterProducerClient — a step change starts at the top (MEH-2927)", () => {
+  // Uses the module-level `scrollToSpy` (see its note at the top of the file)
+  // rather than a second vi.spyOn over it — stacking a spy on a spy is the one
+  // thing that note asks callers not to do.
+  it("scrolls to the top when the wizard advances a frame", async () => {
+    await renderWizard();
+    scrollToSpy.mockClear();
+
+    await fillAccountToDetails();
+
+    expect(scrollToSpy).toHaveBeenCalledWith(expect.objectContaining({ top: 0 }));
+  });
+
+  it("scrolls to the top when the wizard goes BACK a frame", async () => {
+    await renderWizard();
+    await fillAccountToDetails();
+    scrollToSpy.mockClear();
+
+    fireEvent.click(screen.getByTestId("register-details-back"));
+    await screen.findByTestId("register-frame-account");
+
+    expect(scrollToSpy).toHaveBeenCalledWith(expect.objectContaining({ top: 0 }));
+  });
+
+  // The one case that must NOT scroll: a cross-step validation bounce owns the
+  // viewport, because MEH-1807 focuses the offending field and scrolls it to
+  // `block: "center"`. Jumping to the top first would move the page out from
+  // under that, and the seller would land above the error she was sent to fix.
+  //
+  // This cell used to drive the DETAILS gate with an empty business name. That
+  // is a SAME-step refusal — runRequiredGate → requestFocus → return, and
+  // `setStep` never runs — so the step effect never fired and the case was
+  // green with the guard deleted. It proved nothing about the guard it was
+  // named after (MEH-1619: the construction must discriminate). The real
+  // cross-step bounce is the STORY submit, which calls
+  // `setStep(offenders[0].step)` — a genuine step change that must still not
+  // scroll. Rebuilt on the existing blanked-field harness, and shown red with
+  // `if (pendingFocusIdRef.current) return;` removed.
+  it("leaves the viewport to MEH-1807 when a cross-step bounce focuses a field", async () => {
+    // non-empty city → hasDraftContent() raises the banner at mount
+    localStorage.setItem(DRAFT_KEY, JSON.stringify({ city: "חיפה" }));
+    await renderWizard();
+    await fillAccountToDetails();
+    await fillDetailsToStory();
+    expect(screen.getByTestId("register-frame-story")).toBeInTheDocument();
+
+    // another tab blanks the business name; «continue» merges it back in
+    localStorage.setItem(DRAFT_KEY, JSON.stringify({ producer_name: "", city: "חיפה" }));
+    fireEvent.click(screen.getByTestId("register-draft-continue"));
+    selectReferral();
+    screen.getAllByRole("checkbox").forEach((cb) => fireEvent.click(cb));
+    scrollToSpy.mockClear();
+
+    fireEvent.click(screen.getByText(`${K}.actions.submit`));
+
+    // The bounce really happened — a step CHANGE, not a same-step refusal.
+    // Without this assertion the one below would pass on a form that never
+    // moved at all, which is exactly how the previous version failed.
+    expect(await screen.findByTestId("register-frame-details")).toBeInTheDocument();
+    expect(document.activeElement).toBe(screen.getByTestId("register-details-name"));
+    // …and the step effect left the viewport to MEH-1807.
+    expect(scrollToSpy).not.toHaveBeenCalled();
   });
 });
