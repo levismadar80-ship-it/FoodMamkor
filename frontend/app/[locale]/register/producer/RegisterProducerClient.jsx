@@ -1554,11 +1554,21 @@ function RegisterProducerPageBody({ routeKind }) {
                     {t("auth.register.producer.fields.license_pending_optin_label")}
                   </span>
                 </label>
-                {licensePending && (
-                  <p className="text-xs text-fg-muted mt-1 text-start">
-                    {t("auth.register.producer.fields.license_pending_optin_hint")}
-                  </p>
-                )}
+                {/* MEH-2927 (pilot B3d): rendered unconditionally and hidden
+                    with `visibility`, not mounted on the tick. Measured at
+                    390x664: mounting it moved «הבא» down 36px in document
+                    space at the exact moment of the tap, which is a
+                    tap-target hazard right where the thumb already is.
+                    `invisible` reserves the element's REAL height — including
+                    however many lines it wraps to at this width, which a
+                    fixed min-height would have to guess — and keeps it out of
+                    the accessibility tree, which `opacity-0` would not. */}
+                <p
+                  className={`text-xs text-fg-muted mt-1 text-start${licensePending ? "" : " invisible"}`}
+                  data-testid="register-license-pending-hint"
+                >
+                  {t("auth.register.producer.fields.license_pending_optin_hint")}
+                </p>
               </div>
             ) : licenseOptionalExpanded ? (
               <div className="relative">

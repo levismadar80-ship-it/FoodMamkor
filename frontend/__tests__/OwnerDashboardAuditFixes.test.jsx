@@ -19,9 +19,22 @@ import api from "@/lib/api";
 vi.mock("@/lib/api", () => ({
   default: { get: vi.fn(), put: vi.fn(), post: vi.fn(), delete: vi.fn() },
 }));
-const stableUser = { id: 1, role: "producer", producer_id: "p-1" };
+// MEH-2916: `producer_status` decides where «צפייה בדף» points, so the fixture
+// has to say which business this is. Approved keeps every cell in this file
+// aimed at the live public page, which is what they were written against; the
+// unapproved case is a cell of its own below.
+const stableUser = {
+  id: 1,
+  role: "producer",
+  producer_id: "p-1",
+  producer_status: "approved",
+};
+// Mutable holder so one cell can vary the business's status without changing
+// what every other cell in this file sees. Same shape as the `pathnameRef` in
+// __tests__/BottomNav.test.jsx; the closure reads it at call time.
+const userRef = { current: stableUser };
 vi.mock("@/lib/auth-context", () => ({
-  useAuth: () => ({ user: stableUser, loading: false }),
+  useAuth: () => ({ user: userRef.current, loading: false }),
 }));
 const stableRouter = { push: vi.fn(), replace: vi.fn() };
 vi.mock("next/navigation", () => ({
@@ -105,6 +118,24 @@ describe("dashboard tab bar at phone width (MEH-2429 §10)", () => {
     const view = screen.getByTestId("dashboard-view-page");
     expect(view).toHaveAttribute("aria-label", nav.view_page);
     expect(view).toHaveAttribute("href", "/producer/p-1");
+  });
+
+  // MEH-2916 (pilot A4): the same link, for a business that is not approved
+  // yet. /producer/{id} is a real 404 for its own SSR fetch — the owner's own
+  // page told her «בית העסק הזה לא נמצא» — so while she waits it points at
+  // the dashboard preview, which fetches with her token on the client.
+  it("«צפייה בדף» points at the preview while the business is unapproved", () => {
+    userRef.current = { ...stableUser, producer_status: "pending" };
+    renderIntl(
+      <DashboardLayout>
+        <div />
+      </DashboardLayout>,
+    );
+    const view = screen.getByTestId("dashboard-view-page");
+    expect(view).toHaveAttribute("href", "/producer/dashboard/preview");
+    // The name is unchanged: she is still going to look at her page.
+    expect(view).toHaveAttribute("aria-label", nav.view_page);
+    userRef.current = stableUser; // leave the file as this cell found it
   });
 });
 

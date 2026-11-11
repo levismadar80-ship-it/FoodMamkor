@@ -64,7 +64,8 @@
       "newsletter_placeholder": "Your email, please",
       "newsletter_submit": "Join",
       "newsletter_success": "Welcome to Mehamakor See you in your inbox"
-    }
+    },
+    "whats_on": "What's on"
   },
   "auth": {
     "verify": {
@@ -543,10 +544,17 @@
       "body_l2": "Every business here is hand-picked. A full page, photos, a story — yours.",
       "body_l3": "We'd love to meet."
     },
-    "events": {
-      "heading": "Upcoming events",
-      "all_events": "All events →",
-      "free": "Free entry"
+    "whats_on": {
+      "eyebrow": "Close to home",
+      "heading": "What's on at the businesses",
+      "all": "Everything that's on",
+      "until": "Until {date}",
+      "type": {
+        "event": "Event",
+        "experience": "Experience",
+        "group_buy": "Group buy",
+        "rescue": "Surprise basket"
+      }
     }
   },
   "common": {
@@ -2586,7 +2594,7 @@
   },
   "events": {
     "list": {
-      "title": "Food events near you",
+      "title": "What's on near you",
       "subtitle": "What's on this month — weekend after weekend, straight from the source",
       "subtitle_experiences": "Learn, taste, and discover — food experiences at local businesses",
       "eyebrow_events": "EVENTS · Close to home",
@@ -2615,7 +2623,10 @@
       "no_results_title": "No results found",
       "no_results_cta": "Clear filters",
       "free": "Free entry",
-      "organizer_line": "Organizer: {name}"
+      "organizer_line": "Organizer: {name}",
+      "tab_experiences_short": "Experiences",
+      "tab_group_buys": "Group buys",
+      "tab_rescue": "Surprise bags"
     },
     "categories": {
       "all": "All",
@@ -5064,6 +5075,9 @@
       "week": {
         "all_insights": "All your numbers →"
       }
+    },
+    "page_preview": {
+      "banner": "This is a preview. The page goes live once we approve the business."
     }
   },
   "sweep_tail": {
