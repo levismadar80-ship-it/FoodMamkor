@@ -17,7 +17,10 @@ import { test, expect, type Page } from "./_cloudinary-stub";
  *                 `detail.params.missing`.
  *             D — a `pending` business gets the review banner and no draft
  *                 surface: the two are keyed on the same field and can never
- *                 co-render.
+ *                 co-render. D-org pins the same for an organizer, the only
+ *                 profile the standalone banner mounts for.
+ *             A-<code> — each of the gate's four profile rules alone (image,
+ *                 product, category, location) keeps the CTA disabled.
  *
  *           MEH-2883 (#4270) moved a BUSINESS onto one checklist: the
  *           completeness card (`profile-completeness-card`) names the missing
@@ -243,8 +246,12 @@ test.describe("MEH-2100 — draft → submit for review", () => {
     await expect(draftBanner(page)).toHaveCount(0);
     await expect(page.getByTestId("draft-missing-list")).toHaveCount(0);
 
-    // Exactly six rows reading «עדיין חסר», not "at least one" — a count is
-    // falsifiable by a rule silently dropping out; a presence check is not.
+    // Exactly six rows reading «עדיין חסר», not "at least one". These rows are
+    // the completeness card's (ProfileCompletenessCard buildSteps), which never
+    // reads lib/submission-gate.js — so this count pins what the owner is
+    // SHOWN as missing, and a step dropping out of the card reds it. It cannot
+    // see a gate rule dropping out; "one gate rule missing at a time" below
+    // does, from the actions' readiness.
     // Every required row is among them, each still carrying its «חובה» chip.
     await expect(card(page).getByRole("listitem")).toHaveCount(6);
     await expect(missingRows(page)).toHaveCount(6);
@@ -261,6 +268,33 @@ test.describe("MEH-2100 — draft → submit for review", () => {
     // It now lives inside the one card, beside the action it unblocks.
     await expect(card(page).getByTestId("draft-phone-verify")).toBeVisible();
   });
+
+  // One gate rule missing at a time. Before MEH-2883 the business's
+  // `draft-missing-list` was rendered from submissionMissingItems(), so A's
+  // exact count went red when any one of the gate's rules dropped out. The
+  // card's rows (A, above) never read the gate, so that coverage now lives
+  // here: COMPLETE with exactly ONE gate field put back to its INCOMPLETE value
+  // must leave the actions not-ready and the CTA disabled. The field per code
+  // is the one lib/submission-gate.js checks — images, products, categories,
+  // and (physical business) locations via producerPoints(). phone_verified is
+  // the fifth rule; manual/dashboard-draft-submit's one-missing test covers it.
+  const GATE_FIELD = {
+    image: "images",
+    product: "products",
+    category: "categories",
+    location: "locations",
+  } as const;
+  for (const [code, field] of Object.entries(GATE_FIELD)) {
+    test(`A-${code} — only «${code}» missing still blocks the submit`, async ({ page }) => {
+      const profileRef = { current: { ...COMPLETE, [field]: INCOMPLETE[field] } };
+      const statusRef = { current: "draft" };
+      await stubDashboard(page, profileRef, statusRef);
+      await openOverview(page);
+
+      await expect(draftActions(page)).toHaveAttribute("data-state-ready", "false");
+      await expect(page.getByTestId("draft-submit-cta")).toBeDisabled();
+    });
+  }
 
   test("B — completing the requirements sends it once, and the review banner takes over", async ({
     page,
@@ -420,6 +454,21 @@ test.describe("MEH-2100 — draft → submit for review", () => {
     // asserting only that one would be green for every status.
     await expect(card(page)).toBeVisible();
     await expect(page.getByTestId("draft-submit-actions")).toHaveCount(0);
+    await expect(draftBanner(page)).toHaveCount(0);
+  });
+
+  test("D-org — a pending organizer gets the review banner and no draft banner", async ({ page }) => {
+    // D's banner absence is about a business, which never gets
+    // `draft-submit-banner` in any status, so it cannot see the banner's mount
+    // condition. The banner's only reader is an organizer; this is the case
+    // where `status === "draft"` (dashboard/page.js) is the thing that keeps it
+    // off a pending profile.
+    const profileRef = { current: ORGANIZER_COMPLETE };
+    const statusRef = { current: "pending" };
+    await stubDashboard(page, profileRef, statusRef);
+    await openOverview(page);
+
+    await expect(reviewBanner(page)).toBeVisible();
     await expect(draftBanner(page)).toHaveCount(0);
   });
 });

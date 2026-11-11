@@ -544,10 +544,17 @@
       "body_l2": "Every business here is hand-picked. A full page, photos, a story — yours.",
       "body_l3": "We'd love to meet."
     },
-    "events": {
-      "heading": "Upcoming events",
-      "all_events": "All events →",
-      "free": "Free entry"
+    "whats_on": {
+      "eyebrow": "Close to home",
+      "heading": "What's on at the businesses",
+      "all": "Everything that's on",
+      "until": "Until {date}",
+      "type": {
+        "event": "Event",
+        "experience": "Experience",
+        "group_buy": "Group buy",
+        "rescue": "Surprise basket"
+      }
     }
   },
   "common": {

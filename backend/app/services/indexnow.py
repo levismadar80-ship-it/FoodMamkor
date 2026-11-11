@@ -23,6 +23,7 @@ from fastapi import BackgroundTasks
 
 from app.config import settings
 from app.services.onboarding_followup import SITE_DOMAIN
+from app.services.producer_listing import is_live_owner_row  # MEH-2952
 
 logger = logging.getLogger(__name__)
 
@@ -48,7 +49,12 @@ def localized(path: str) -> list[str]:
 
 def producer_urls(producer) -> list[str]:
     """A business is `/{slug}` (or `/producer/{id}` without one); an organizer
-    is `/organizers/{slug}` and has no page without a slug (MEH-2461)."""
+    is `/organizers/{slug}` and has no page without a slug (MEH-2461).
+    MEH-2952: a seeded test row has no public URL at all, whichever path asks
+    (admin toggle, approve and reject ping without checking is_public_owner).
+    """
+    if producer.is_test:
+        return []
     if producer.kind == "organizer":
         return localized(f"/organizers/{producer.slug}") if producer.slug else []
     if producer.slug:
@@ -57,8 +63,9 @@ def producer_urls(producer) -> list[str]:
 
 
 def recipe_urls(producer, recipe_id) -> list[str]:
-    """sitemap.js lists recipes of slugged producers only."""
-    if producer is None or not producer.slug:
+    """sitemap.js lists recipes of slugged producers only (never a test row's,
+    MEH-2952)."""
+    if producer is None or not producer.slug or producer.is_test:
         return []
     return localized(f"/{producer.slug}/recipes/{recipe_id}")
 
@@ -78,8 +85,9 @@ def group_buy_urls(group_buy_id) -> list[str]:
 def is_public_owner(producer) -> bool:
     """The owner's own page, and its events, are public once it is approved —
     a business at /{slug}, an organizer at /organizers/{slug} (MEH-2459:
-    organizer events are listed on purpose)."""
-    return producer is not None and producer.status == "approved"
+    organizer events are listed on purpose). MEH-2952: never a seeded test
+    row — its URLs are not public, so they are never announced."""
+    return is_live_owner_row(producer)
 
 
 def is_public_business(producer) -> bool:

@@ -21,6 +21,7 @@ from app.database import get_db
 from app.models import Event, Producer
 from app.rate_limit import limiter
 from app.routers.events import _serialize as serialize_event
+from app.services.producer_listing import not_test_producer  # MEH-2952
 from app.services.registrations import registered_counts
 from app.schemas.schemas import OrganizerPublicOut, OrganizerSlugOut
 from app.utils.clock import israel_today
@@ -34,9 +35,12 @@ _PUBLIC_CACHE = "public, s-maxage=30, stale-while-revalidate=30"
 
 def _public_organizer_query(db: Session):
     """The one rule for "this organizer is public": approved AND
-    kind='organizer'. The mirror image of is_business()."""
+    kind='organizer'. The mirror image of is_business(), test rows excluded
+    the same way (MEH-2952)."""
     return db.query(Producer).filter(
-        Producer.status == "approved", Producer.kind == "organizer"
+        Producer.status == "approved",
+        Producer.kind == "organizer",
+        not_test_producer(),
     )
 
 

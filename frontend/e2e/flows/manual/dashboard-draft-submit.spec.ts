@@ -25,7 +25,11 @@ import type { Route } from "@playwright/test";
  * Does NOT: re-assert what flows/34 already pins (A: every required row
  *           missing + OTP card mounted; B: POST once + review banner takes
  *           over; C: the 422 wins, and C-org the organizer's 422 list; D:
- *           pending gets no draft surface) — those rows are pointed at 34.
+ *           pending gets no draft surface; A-<code>: each gate rule alone keeps
+ *           the CTA disabled) — those rows are pointed at 34. The row counts
+ *           below come from the completeness card, which never reads
+ *           lib/submission-gate.js: they pin what the owner is shown, not the
+ *           gate's rules — A-<code> in 34 is where a dropped rule goes red.
  *           Does not touch the registration screen (chunk for /register), the
  *           admin queue (chunk 12), or the RTL/touch-target rows (not converted
  *           in any chunk). Does not reach the "confirm open, profile reloads
