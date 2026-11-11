@@ -178,23 +178,29 @@ test.describe("Map", () => {
   // `S:n` div until its reveal script (`$RV`) runs, while a context update can
   // client-render the same page first. For up to ~300ms the DOM holds two
   // `h1`s, one of them hidden, and a strict `locator("h1")` throws. This test
-  // holds `$RV` back 1.5s so that window opens on every run. It checks the
-  // assertion the specs use (expectOneVisibleH1) AND that the page still ends
-  // with exactly one h1. Measured 11/11 on staging: the old one-line assertion
-  // failed 3/3 with this delay ("strict mode violation", 2 h1), passed 3/3
-  // without it.
+  // holds `$RV` back 1.5s so the hidden copy stays in the DOM that long. It
+  // checks the assertion the specs use (expectOneVisibleH1) AND that the page
+  // still ends with exactly one h1. Measured 11/11 on staging: the old
+  // one-line assertion failed 3/3 with this delay ("strict mode violation",
+  // 2 h1), passed 3/3 without it.
   test("MEH-2408: a slow streamed reveal still ends with one visible h1", async ({ page }) => {
     test.setTimeout(90_000);
     await page.addInitScript(() => {
       let real: ((...a: unknown[]) => void) | undefined;
-      const w = window as unknown as { __rvCalls: number };
-      w.__rvCalls = 0;
+      const w = window as unknown as { __rvHeldH1: boolean };
+      w.__rvHeldH1 = false;
       Object.defineProperty(window, "$RV", {
         configurable: true,
         get: () => real,
         set(fn: (...a: unknown[]) => void) {
           real = function (this: unknown, ...a: unknown[]) {
-            w.__rvCalls += 1;
+            // `$RC` calls `$RV($RB)`; `$RB` holds [placeholder, hidden copy]
+            // pairs. Record whether a delayed batch held the PAGE (an h1),
+            // not just a metadata boundary, which also streams.
+            const batch = Array.from((a[0] as Element[] | undefined) ?? []);
+            if (batch.some((n, i) => i % 2 === 1 && !!n?.querySelector?.("h1"))) {
+              w.__rvHeldH1 = true;
+            }
             setTimeout(() => fn.apply(this, a), 1500);
           };
         },
@@ -202,11 +208,11 @@ test.describe("Map", () => {
     });
     await page.goto("/ruach-hasadeh");
     await expectOneVisibleH1(page);
-    // The instrument, not the subject: if React stops calling `$RV` (renamed
-    // in an upgrade), the delay above never applied and this test proved
-    // nothing. Fail loudly instead of passing on an unopened window.
-    const rvCalls = await page.evaluate(() => (window as unknown as { __rvCalls: number }).__rvCalls);
-    expect(rvCalls, "React's $RV reveal was never called: the delay did not apply").toBeGreaterThan(0);
+    // The instrument, not the subject: if the page's h1 never went through a
+    // delayed `$RV` (React renamed it, or the page stopped streaming), this
+    // test proved nothing. Fail loudly instead of passing on a closed window.
+    const held = await page.evaluate(() => (window as unknown as { __rvHeldH1: boolean }).__rvHeldH1);
+    expect(held, "the page's h1 was never in a delayed $RV batch: the window did not open").toBe(true);
   });
   // ── MEH-2170 — the five diet toggles are gated on /map from the mount
   // catalog (option ב׳). Data-independent: the expected set is derived from
