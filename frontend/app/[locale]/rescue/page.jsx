@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 
+import ListingHubTabs from "@/components/ListingHubTabs";
 import RescueList from "@/components/rescue/RescueList";
 import { rescueBagsEnabled } from "@/lib/rescue";
 
@@ -25,6 +26,13 @@ export default async function RescuePage() {
     <main className="max-w-3xl mx-auto px-4 py-6" data-testid="rescue-page">
       <h1 className="font-headline-md text-2xl font-black text-text">{t("page.title")}</h1>
       <p className="font-body-sm text-sm text-fg-muted mt-1">{t("page.lead")}</p>
+      {/* MEH-2859: the shared hub row. A client component mounted from this
+          server page — it owns its own supply gates and keyboard layer, so
+          nothing here has to become a client component for it. This page
+          keeps its own H1 and lead (Sapir 11/11). */}
+      <div className="-mx-4 mt-4">
+        <ListingHubTabs active="rescue" />
+      </div>
       <div className="mt-6">
         <RescueList />
       </div>
