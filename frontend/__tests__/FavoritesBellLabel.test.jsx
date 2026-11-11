@@ -41,7 +41,11 @@ vi.mock("@/lib/favorites-cache", () => ({
   subscribeFavorites: () => () => {},
 }));
 vi.mock("@/components/ProducerCard", () => ({
-  default: ({ producer }) => <div data-testid="card">{producer.name}</div>,
+  default: ({ producer, startCornerControl }) => (
+    <div data-testid="card" data-start-corner-control={String(Boolean(startCornerControl))}>
+      {producer.name}
+    </div>
+  ),
 }));
 vi.mock("@/components/AlertPrefsPanel", () => ({
   default: () => <div data-testid="alert-panel" />,
@@ -166,3 +170,14 @@ describe("MEH-2849 · the bell sits opposite the card heart", () => {
   });
 });
 
+// MEH-2844 (Sapir 08/11): with the bell at top-start and the heart at top-end,
+// both corners hold a control — /favorites tells the card so, and the card
+// drops its no-photo seed (ProducerCard.test.jsx covers the card side).
+describe("MEH-2844 · /favorites cards hold both top corners", () => {
+  it("every card on /favorites is told its start corner is taken", async () => {
+    await renderWith(3);
+    const cards = screen.getAllByTestId("card");
+    expect(cards).toHaveLength(3);
+    for (const c of cards) expect(c.getAttribute("data-start-corner-control")).toBe("true");
+  });
+});

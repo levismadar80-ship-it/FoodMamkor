@@ -16,6 +16,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.auth import require_admin
+from app.config import settings
 from app.constants import LICENSE_REQUIRED_CATEGORIES
 from app.database import get_db
 from app.services.producer_listing import is_business  # MEH-2459
@@ -56,14 +57,24 @@ from app.services.analytics import israel_day_of, server_health, unique_views_co
 from app.services.category_slug import resolve_unique_slug
 from app.services.user_deletion import delete_user_and_data  # MEH-2585
 from app.services.vacation_state import read_vacation_state
-from app.services.whatsapp import UNDELIVERED_STATUSES, UNDELIVERED_WINDOW_DAYS
+from app.services.whatsapp import undelivered_predicate
 from app.utils.clock import ISRAEL_TZ, israel_today, utc_now
 from app.utils.sql import LIKE_ESCAPE, escape_like
 
 router = APIRouter(prefix="/admin", tags=["admin-extra"])
 logger = logging.getLogger(__name__)
 
-SUPER_ADMIN_EMAIL = "levismadar80@gmail.com"
+
+def is_super_admin(target: User) -> bool:
+    """MEH-2890: the protected owner account, from SUPER_ADMIN_EMAIL (config).
+    EXACT match on the stored address, as the old constant was: emails are
+    unique case-sensitively, so a case-insensitive match would hand the
+    protection to anyone who registers a case variant. Never true when the
+    setting is empty — and production cannot run with it empty
+    (config._load_settings refuses to boot)."""
+    protected = settings.super_admin_email
+    return bool(protected) and (target.email or "").strip() == protected
+
 
 # MEH-1571: shared Hebrew copy for the two update_category guards. Named
 # constants rather than inline strings at the raise site — REUSES:
@@ -157,6 +168,9 @@ def list_users(
                 phone=u.phone,
                 role=u.role,
                 is_blocked=bool(u.is_blocked),
+                # MEH-2890: the page hides role/delete actions on this row; it
+                # no longer carries the address itself.
+                is_super_admin=is_super_admin(u),
                 producer_id=u.producer_id,
                 favorites_count=fav_counts.get(u.id, 0),
                 created_at=u.created_at or utc_now(),
@@ -187,7 +201,7 @@ def update_user_role(
             status_code=422,
             detail="לא ניתן להפוך משתמשת ל'בעלת עסק' ידנית — הרשמת עסק מתבצעת דרך טופס ההרשמה בלבד.",
         )
-    if target.email == SUPER_ADMIN_EMAIL:
+    if is_super_admin(target):
         raise HTTPException(
             status_code=403, detail="לא ניתן לשנות הרשאות של האדמין הראשי"
         )
@@ -233,7 +247,7 @@ def admin_delete_user(
         raise HTTPException(status_code=404, detail="משתמש לא נמצא")
     if target.id == user.id:
         raise HTTPException(status_code=400, detail="אי אפשר למחוק את עצמך מכאן")
-    if target.email == SUPER_ADMIN_EMAIL:
+    if is_super_admin(target):
         raise HTTPException(status_code=403, detail="לא ניתן למחוק את האדמין הראשי")
     if target.role == "admin":
         raise HTTPException(
@@ -886,10 +900,7 @@ def get_dashboard(
     )
     undelivered_whatsapp_7d = (
         db.query(func.count(OutboundMessage.id))
-        .filter(OutboundMessage.status.in_(UNDELIVERED_STATUSES))
-        .filter(
-            OutboundMessage.created_at >= now - timedelta(days=UNDELIVERED_WINDOW_DAYS)
-        )
+        .filter(undelivered_predicate(OutboundMessage, now))  # MEH-2122 Chunk E
         .scalar()
         or 0
     )

@@ -5,6 +5,13 @@
 // locale-prefixed (/he) and left the home tab permanently unhighlighted.
 // MEH-2578: Link from here too — next/link dropped the /en prefix.
 import { Link, usePathname } from "@/i18n/navigation";
+// MEH-2850: every Link element in the site chrome carries prefetch={false}. The
+// chrome is on screen on EVERY page, and since #4260 its targets (/, /about,
+// /privacy, /login, /register) are static, so Next prefetches them IN FULL —
+// their page JS plus the shared [locale] layout payload (~56 KB gz, mostly the
+// messages the page already has). Measured 10/11: +121 KB JS on /map and
+// +137 KB on /events after load, gone when only those prefetches are blocked.
+// Navigation still works; it fetches on tap. Guarded by ChromePrefetchGuard.test.js.
 // MEH-1202: gate BottomNav OFF the producer detail page (shared route helper).
 import { isProducerDetail } from "@/lib/producer-route";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -462,7 +469,7 @@ export default function BottomNav() {
                 }}
                 className="relative flex-1 flex"
               >
-                <Link
+                <Link prefetch={false}
                   href={tab.href}
                   className={tabCls(active)}
                   aria-current={active ? "page" : undefined}

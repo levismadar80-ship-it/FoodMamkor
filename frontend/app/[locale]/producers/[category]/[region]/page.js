@@ -21,7 +21,7 @@ import ProducerCard from "@/components/ProducerCard";
 import Breadcrumb from "@/components/Breadcrumb";
 import { API_URL } from "@/lib/env";
 import { serverFetch } from "@/lib/server-fetch"; // MEH-977: timeout + transient-retry
-import { buildAlternates, urlForLocalePath, OG_LOCALE } from "@/lib/i18n-seo";
+import { buildAlternates, buildEntityTitle, urlForLocalePath, OG_LOCALE } from "@/lib/i18n-seo";
 import { BRAND_NAME } from "@/lib/constants";
 import {
   REGION_KEYS,
@@ -162,6 +162,8 @@ export async function generateMetadata({ params }) {
   const regionIn = t(`regions.${regionKey}`);
   const path = regionPagePath(categorySlug, regionKey);
   const title = t("meta_title", { category: category.name, region_in: regionIn });
+  // og/twitter get no template from Next.js, so they carry the brand themselves.
+  const socialTitle = buildEntityTitle(title, locale);
   const description = t("meta_description", {
     count: total,
     category: category.name,
@@ -169,10 +171,11 @@ export async function generateMetadata({ params }) {
   });
 
   return {
-    title: { absolute: title },
+    // MEH-2853: plain title — the layout template `%s | <brand>` adds the brand.
+    title,
     description,
     openGraph: {
-      title,
+      title: socialTitle,
       description,
       type: "website",
       url: urlForLocalePath(path, locale),
@@ -180,7 +183,7 @@ export async function generateMetadata({ params }) {
       locale: OG_LOCALE[locale],
       images: ["/og-image.png"],
     },
-    twitter: { card: "summary_large_image", title, description, images: ["/og-image.png"] },
+    twitter: { card: "summary_large_image", title: socialTitle, description, images: ["/og-image.png"] },
     alternates: buildAlternates(path, locale),
   };
 }

@@ -42,6 +42,7 @@ const prefs = (whatsapp) => ({
   notify_new_product: true,
   notify_delivery_area: true,
   notify_new_recipe: true,
+  notify_new_group_buy: true,
   whatsapp_opt_in: whatsapp,
   has_push: false,
 });

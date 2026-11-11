@@ -11,7 +11,8 @@ export async function generateMetadata({ params }) {
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: "seo.register_producer" });
   return {
-    title: { absolute: t("title") },
+    // MEH-2853: plain title — the layout template `%s | <brand>` adds the brand.
+    title: t("title"),
     robots: { index: false, follow: false },
   };
 }

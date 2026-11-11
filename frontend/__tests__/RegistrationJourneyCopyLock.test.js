@@ -124,7 +124,8 @@ describe("registration copy matches the submission gate and the contact model (M
     // this guard stops applying instead of going stale.
     expect(CONTACT_METHODS.length).toBeGreaterThan(1);
     for (const path of ["join.subhead", "seo.join.description"]) {
-      expect(read(he, path)).not.toMatch(/פנייה ישירה ב-?WhatsApp/);
+      // MEH-2837: «וואטסאפ» is now the house spelling — catch both.
+      expect(read(he, path)).not.toMatch(/פנייה ישירה ב(?:-?WhatsApp|וואטסאפ)/);
       expect(read(he, path)).toContain("בערוץ שתבחרו");
       expect(read(en, path)).not.toMatch(/direct WhatsApp contact|direct contact on WhatsApp/i);
       expect(read(en, path)).toMatch(/channel you choose/i);

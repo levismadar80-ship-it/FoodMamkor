@@ -115,7 +115,8 @@ unset DRILL_URL
 קורא את `EXPECTED_TABLES` מ-`pr-checks.yml` בזמן ריצה) ואימות ב'
 (`--expect-nonempty producers,users,producer_reviews`) — ומוסיף השוואת ספירת שורות
 לכל טבלה שה-models מגדירים (נגזר מ-`models.py`, לא מוקלד). `--self-test` מוכיח
-שהוא מאדים על טבלה שנמחקה מהעותק ועל שורות שאבדו, וירוק על עותק נאמן.
+שהוא מאדים על טבלה שנמחקה מהעותק ועל שורות שאבדו, וירוק על עותק נאמן — גם כשכותבים
+למקור באמצע הריצה (ספירת המקור נלקחת מה-snapshot של ה-dump, MEH-2912).
 
 ```bash
 bash scripts/ci/backup-restore-verify.sh --source "$DATABASE_URL" --target "$DRILL_URL" \
@@ -127,9 +128,22 @@ bash scripts/ci/backup-restore-verify.sh --source "$DATABASE_URL" --target "$DRI
 (cron שבועי + `workflow_dispatch`, job `mechanics`). הצעדים הידניים למעלה
 נשארים ה-fallback למקרה שהאוטומציה לא זמינה. שימי לב: ה-job ב-CI מוכיח את
 **מכניקת** ה-drill על DB מזורע (הרצת `--self-test` שלו כבקרה קודם); הוא אינו
-מוכיח שהגיבוי **האמיתי** של staging משוחזר — לזה דרוש job שני, `staging-drill`,
-הקורא דרך ה-secret `STAGING_DATABASE_URL_READONLY` (מאושר על MEH-1517 ב-14/08,
-טרם נוצר) — ה-workflow כותב במפורש שאותו job עדיין חסר.
+מוכיח שהגיבוי **האמיתי** של staging משוחזר. לזה יש job שני, `staging-drill`.
+
+**`staging-drill` (MEH-1517).**
+- **החיבור:** קורא את ה-DB **האמיתי** של staging דרך ה-secret `STAGING_DATABASE_URL_READONLY`.
+  - ה-role הוא `ci_backup_ro`, ‏SELECT בלבד. ספיר יצרה אותו ב-10/11/2026.
+  - שתי בדיקות ה-read-only עברו.
+  - ה-job מוודא שה-secret מצביע על ה-proxy של staging, ונכשל אם לא. ‏production לא נקרא אף פעם.
+- **סדר הצעדים:**
+  1. בדיקה שה-role הוא read-only: `CREATE TABLE` חייב להיחסם. אם הוא לא נחסם, ה-job נכשל ואומר איך למחוק את ה-role.
+  2. שחזור ל-PostgreSQL 18 ריק. ‏staging רץ על 18, ו-`pg_dump` לא יכול להיות ישן ממנו.
+  3. אותו סקריפט ואותם אימותים כמו ב-`mechanics`.
+- **ה-dump** מכיל נתונים אמיתיים, ולכן הוא לא עולה כ-artifact.
+- **ספירת המקור באה מאותו snapshot של ה-dump (MEH-2912):**
+  - session אחד על המקור: `BEGIN ISOLATION LEVEL REPEATABLE READ, READ ONLY` → `pg_export_snapshot()` → `COUNT(*)` לכל טבלה → `pg_dump --snapshot=<id>` → `COMMIT`. הספירה באה **לפני** ה-dump, כך שנעילות ה-AccessShare שלה מוחזקות עד ה-`COMMIT`, לאורך כל ה-dump: ‏`TRUNCATE` או שכתוב טבלה במקור (שאינם MVCC-safe) לא יכולים להיכנס בין ה-dump לספירה. אין צורך בהרשאה מעבר ל-SELECT; ה-self-test מריץ את זה כ-role שהוא SELECT בלבד.
+  - כתיבה ל-staging באמצע הריצה (למשל ריצת E2E) לא נכנסת לא ל-dump ולא לספירה. לכן «row count differs» הוא תמיד אובדן אמיתי. אין סף «הפרש קטן מותר», ואין «מריצים שוב».
+  - עד MEH-2912 הספירה נלקחה חיה **אחרי** השחזור. הריצה האמיתית הראשונה נכשלה כך על `producer_page_views` (‏180347 במקור, 180344 בעותק).
 
 ---
 

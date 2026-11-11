@@ -272,7 +272,15 @@ to be re-discovered.
 
 ---
 
-## ✅ RESOLVED 2026-08-13 (MEH-1844) — CI reviewer confirmed working; temporary section removed
+## The reviewer is a fresh subagent — the CI reviewer is off (Sapir 08/11, until MEH-569)
+
+_08/11 (MEH-2845): the `claude[bot]` CI review was red on every PR without
+printing why (every run `is_error:true, num_turns:1, total_cost_usd:0`, ~0.2s —
+the MEH-1844 signature), so Sapir disabled the workflow from the Actions page
+until the MEH-569 audit, and rules 5a/30 now name a fresh reviewer subagent.
+Until 08/11 this heading read «✅ RESOLVED 2026-08-13 (MEH-1844) — CI reviewer
+confirmed working; temporary section removed»; the 13/08 record follows
+unchanged._
 
 The three-action DoD ((a) credential, (b) SHA pin, (c) delete this section) is
 complete. (a) and (b) landed 2026-08-05/08 per the history this section used

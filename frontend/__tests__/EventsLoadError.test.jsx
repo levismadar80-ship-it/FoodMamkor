@@ -27,7 +27,12 @@ let responder = () => Promise.resolve({ data: [] });
 const getMock = vi.fn((endpoint, config) => responder(endpoint, config));
 
 vi.mock("next/navigation", () => ({
-  useSearchParams: () => ({ get: (k) => (k in params ? params[k] : null) }),
+  // MEH-2847: EventsClient reads the category axis with getAll (multi-select);
+  // a param may be a string or an array of strings.
+  useSearchParams: () => ({
+    get: (k) => (k in params ? [].concat(params[k])[0] : null),
+    getAll: (k) => (k in params ? [].concat(params[k]) : []),
+  }),
 }));
 vi.mock("@/i18n/navigation", () => ({
   useRouter: () => ({ push: vi.fn(), replace: vi.fn(), prefetch: vi.fn() }),

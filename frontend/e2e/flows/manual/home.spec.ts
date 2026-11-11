@@ -2203,9 +2203,21 @@ test.describe("manual › above-the-fold mini-map + trust band (MEH-604 · MEH-6
   }) => {
     await consent(page);
     await stubTiles(page);
-    await mockApi(page);
+    const seen = await mockApi(page);
     await gotoHome(page);
     await expect(scope(page).getByTestId("home-minimap")).toHaveCount(1, FIRST_PAINT);
+    // HYDRATED before anything is injected. `home-minimap` and the grid are in
+    // the SERVER html, so the gate above can return while that region is still
+    // dehydrated — and a node injected there is one React's hydration did not
+    // render: React error #418, the region is client-rendered from scratch,
+    // and the injected node goes with the discarded DOM (~0.5-0.7 s after injection). Measured on a local
+    // production build of staging @ 89bc3b411 under 4x CPU throttling, 32 runs
+    // each: injecting at the old gate drew #418 in 9 runs, one of them red at
+    // the precondition below; gated here, 0 of 32. That is the shape of CI run
+    // 42845330925's red (attached at the check, reader then saw ""), and of
+    // run 33943227079's before it. `mountEffectRan` is this file's own
+    // post-hydration signal (see its doc comment).
+    await mountEffectRan(seen);
 
     const insert = (tag: string, testid?: string) =>
       page.evaluate(
@@ -2251,6 +2263,15 @@ test.describe("manual › above-the-fold mini-map + trust band (MEH-604 · MEH-6
       page.locator('[data-testid="interloper"]'),
       "fixture precondition: the injected block must survive to sample time — if THIS fails the reader is not implicated",
     ).toHaveCount(1);
+    // …and it must still sit right after the grid, read by a check that is NOT
+    // the reader (one sibling hop, no skip-list). The comment above always
+    // claimed this half; until now only the attachment half was asserted.
+    expect(
+      await page.evaluate(
+        () => document.getElementById("producers-grid")?.nextElementSibling?.getAttribute("data-testid") ?? null,
+      ),
+      "fixture precondition: the injected block must still be the grid's next sibling — if THIS fails the reader is not implicated",
+    ).toBe("interloper");
 
     const caught = await strangersBetweenGridAndMap(page);
     expect(caught.join(" | "), "a real element between the two must be reported by name").toContain(

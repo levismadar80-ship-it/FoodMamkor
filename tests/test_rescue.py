@@ -415,6 +415,123 @@ class TestHandOver:
         assert late.status_code == 200
         assert late.json()["status"] == "no_show"
 
+    # ── MEH-2865: handed / no_show lock like cancel_order ──────────────────
+
+    def _ended(self, db, order):
+        """Move the pickup window into the past so no_show is allowed."""
+        now = utc_now()
+        offer = db.query(RescueOffer).filter(RescueOffer.id == order["offer_id"]).first()
+        offer.pickup_start = now - timedelta(hours=3)
+        offer.pickup_end = now - timedelta(hours=1)
+        db.commit()
+
+    def _statements(self, fn):
+        seen: list[str] = []
+
+        def _capture(conn, cursor, statement, params, context, executemany):
+            seen.append(statement)
+
+        event.listen(engine, "before_cursor_execute", _capture)
+        try:
+            response = fn()
+        finally:
+            event.remove(engine, "before_cursor_execute", _capture)
+        return response, seen
+
+    @pytest.mark.parametrize("action", ["handed", "no_show"])
+    def test_handover_actions_lock_the_offer_then_the_order(
+        self, client, db, shop, rescue_on, action
+    ):
+        """The same two locks, in the same order, as cancel_order — observed on
+        the statements the handler issues (the house pattern above)."""
+        _, _, order = self._reserved(client, db, shop, email=f"lock-{action}@example.com")
+        if action == "no_show":
+            self._ended(db, order)
+        r, seen = self._statements(
+            lambda: client.post(
+                f"/rescue/orders/{order['id']}/{action}", headers=auth_header(shop["owner"])
+            )
+        )
+        assert r.status_code == 200, r.text
+        assert any("rescue_orders" in s for s in seen), "the listener saw nothing"
+        locks = [s for s in seen if "FOR UPDATE" in s.upper()]
+        offer_lock = next((i for i, s in enumerate(locks) if "FROM rescue_offers" in s), None)
+        order_lock = next((i for i, s in enumerate(locks) if "FROM rescue_orders" in s), None)
+        assert offer_lock is not None, f"{action}: no FOR UPDATE on rescue_offers"
+        assert order_lock is not None, f"{action}: no FOR UPDATE on rescue_orders"
+        assert offer_lock < order_lock, f"{action}: order locked before offer — cancel_order takes them offer-first"
+
+    @pytest.mark.parametrize("action", ["handed", "no_show"])
+    def test_a_cancel_that_lands_first_makes_the_handover_a_409(
+        self, client, db, shop, rescue_on, monkeypatch, action
+    ):
+        """The buyer's cancel commits between the handler's unlocked read and
+        its lock. The handler must re-read under the lock and refuse — not hand
+        over (or count a no-show on) a cancelled order."""
+        _, buyer, order = self._reserved(client, db, shop, email=f"race-{action}@example.com")
+        if action == "no_show":
+            self._ended(db, order)
+        real = rescue_module._offer_for_update
+
+        def cancel_wins_then_lock(session, offer_id):
+            session.query(RescueOrder).filter(RescueOrder.id == order["id"]).update(
+                {RescueOrder.status: "cancelled"}, synchronize_session=False
+            )
+            return real(session, offer_id)
+
+        monkeypatch.setattr(rescue_module, "_offer_for_update", cancel_wins_then_lock)
+        r = client.post(
+            f"/rescue/orders/{order['id']}/{action}", headers=auth_header(shop["owner"])
+        )
+        assert r.status_code == 409, f"{action} went through on a cancelled order: {r.text}"
+        # The simulated cancel ran inside the handler's own transaction, so the
+        # 409's rollback undoes it too and the row reads `reserved` again —
+        # an artifact of simulating the race in one session. What matters is
+        # that the handover did not happen.
+        row = db.query(RescueOrder).filter(RescueOrder.id == order["id"]).first()
+        db.refresh(row)
+        assert row.status not in ("handed", "no_show"), row.status
+        assert row.handed_at is None
+        db.refresh(buyer)
+        assert (buyer.rescue_no_show_count or 0) == 0
+
+    def test_the_locked_offer_is_read_fresh_not_from_the_session(
+        self, client, db, shop, rescue_on
+    ):
+        """_offer_for_update must return the row as it is under the lock. The
+        handlers have usually loaded the offer already (order.offer); a cached
+        object would carry a qty_left from before the lock — and cancel_order
+        would put bags back on top of a stale count (MEH-2865 review)."""
+        from sqlalchemy import text
+
+        offer = _seed_offer(db, shop["location"], qty_total=5)
+        db.commit()
+        cached = db.query(RescueOffer).filter(RescueOffer.id == offer.id).first()
+        assert cached.qty_left == 5
+        # Another transaction's reservation, as seen from here: the row changed
+        # behind the session's back.
+        db.execute(text("UPDATE rescue_offers SET qty_left = 1 WHERE id = :i"), {"i": offer.id})
+        locked = rescue_module._offer_for_update(db, offer.id)
+        assert locked.qty_left == 1, "the lock returned the cached qty_left, not the row's"
+        db.rollback()
+
+    def test_the_no_show_counter_is_one_sql_increment(self, client, db, shop, rescue_on):
+        """Not a Python read-modify-write, which loses a count when two
+        no-shows for one buyer land together."""
+        _, buyer, order = self._reserved(client, db, shop, email="count@example.com")
+        self._ended(db, order)
+        r, seen = self._statements(
+            lambda: client.post(
+                f"/rescue/orders/{order['id']}/no_show", headers=auth_header(shop["owner"])
+            )
+        )
+        assert r.status_code == 200, r.text
+        updates = [s for s in seen if s.lstrip().upper().startswith("UPDATE USERS")]
+        assert updates, "no UPDATE on users was issued"
+        assert any("coalesce(users.rescue_no_show_count" in s.lower() for s in updates), updates
+        db.refresh(buyer)
+        assert buyer.rescue_no_show_count == 1
+
 
 class TestBuyerCancel:
     def test_free_cancel_before_the_cutoff_gives_the_bag_back(

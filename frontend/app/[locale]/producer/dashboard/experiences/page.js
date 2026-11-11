@@ -213,11 +213,14 @@ export default function ManageExperiencesPage() {
       ) : (
         <ul className="space-y-3">
           {items.map((ex) => {
-            // MEH-1419: cancelled = an approved experience the host toggled off.
+            // MEH-1419: cancelled = the host toggled it off.
             // MEH-2430: an approved experience whose date has passed read
             // «מאושרת» with a «ביטול» button (staging 27/10, three from 09/2026).
+            // MEH-2840: in EVERY status, not only approved — a host who cancelled
+            // and then edited (→ pending) saw «ממתינה» and no sign it was off,
+            // and an admin approval does not switch it back on.
             const past = ex.status === "approved" && ex.event_date < today;
-            const cancelled = !past && ex.status === "approved" && !ex.is_active;
+            const cancelled = !past && !ex.is_active;
             const siteForm = ex.registration_method === "site_form";
             return (
             <li

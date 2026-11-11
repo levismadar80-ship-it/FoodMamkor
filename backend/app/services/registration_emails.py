@@ -24,6 +24,7 @@ from dataclasses import dataclass
 from html import escape as html_escape
 
 from app.services.email import send_email
+from app.services.email_branding import email_logo_html
 
 
 def _one_line(value: str) -> str:
@@ -41,7 +42,7 @@ def _shell(heading: str, rows_html: str, button_html: str = "") -> str:
 <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background:#F5F0E8;padding:24px 12px;direction:rtl;font-family:Arial,Helvetica,sans-serif;">
   <tr><td align="center">
     <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="max-width:520px;margin:0 auto;">
-      <tr><td style="text-align:right;padding:0 4px 14px;font-size:18px;font-weight:bold;color:#2e6853;">מהמקור</td></tr>
+      <tr><td style="text-align:right;padding:0 4px 14px;">{email_logo_html()}</td></tr>
       <tr><td style="background:#ffffff;border-radius:14px;border:1px solid #e5dfd3;overflow:hidden;">
         <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
           <tr><td style="background:#2e6853;color:#ffffff;padding:18px 22px;text-align:right;font-size:19px;font-weight:bold;line-height:1.4;">{heading}</td></tr>

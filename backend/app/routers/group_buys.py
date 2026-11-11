@@ -1,5 +1,6 @@
 """MEH-52: Group buy endpoints — commit counter + price unlock."""
 
+from decimal import Decimal
 from uuid import UUID
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, Request
@@ -28,6 +29,7 @@ from app.services.group_buy_notifications import (
     send_cancelled_notifications,
     send_funded_notifications,
 )
+from app.services import indexnow  # MEH-2852
 from app.services.producer_listing import is_business
 from app.utils.clock import utc_now
 
@@ -347,6 +349,7 @@ def cancel_commit(
 @router.post("", status_code=201)
 def create_group_buy(
     data: GroupBuyCreate,
+    background_tasks: BackgroundTasks,
     current_user: User = Depends(require_verified_producer),
     db: Session = Depends(get_db),
 ):
@@ -395,20 +398,91 @@ def create_group_buy(
     db.add(gb)
     db.commit()
     db.refresh(gb)
+
+    # MEH-2828: tell the people who saved this business (and kept the new
+    # toggle on) that it opened a group buy. Fired here only — on create, with
+    # the row committed and open — never on edit, funded or cancel. Same
+    # fan-out, channels and 24h cap as the other four alert types.
+    from app.routers.alerts import AlertContent, fire_alerts
+
+    background_tasks.add_task(
+        fire_alerts,
+        db,
+        producer.id,
+        "new_group_buy",
+        AlertContent(
+            title=f"🛒 קבוצת רכישה חדשה: {gb.title}",
+            body=(
+                f"{producer.name} — {format_price(gb.price_per_unit_group)} "
+                f"במקום {format_price(gb.price_per_unit_regular)}"
+            ),
+            url=f"/group-buys/{gb.id}",
+        ),
+    )
+    # MEH-2852: a new public page — only from a live business (is_business).
+    if indexnow.is_public_business(producer):
+        indexnow.schedule(background_tasks, indexnow.group_buy_urls(gb.id))
     return {"id": str(gb.id), "detail": "קבוצת הרכישה נוצרה בהצלחה"}
 
 
+def format_price(amount: Decimal | float | int) -> str:
+    """A price as the site writes it (frontend/lib/utils.js formatPrice):
+    thousands separators, at most 2 decimals with trailing zeros dropped, and
+    the shekel sign right after the number — «45₪», «1,250₪», «12.5₪»."""
+    text = f"{Decimal(str(amount)).quantize(Decimal('0.01')):,.2f}"
+    return f"{text.rstrip('0').rstrip('.')}₪"
+
+
 # MEH-2436: what the business may do to its own group buy. Anything not listed
-# is a 409 — cancelled and fulfilled are final for the owner; only an admin
-# moves a group buy out of them, through PATCH /admin/group-buys/{id}/status.
+# is a 409 — cancelled and fulfilled are final. Since MEH-2866 they are final
+# for an admin too: PATCH /admin/group-buys/{id}/status uses this same table.
 # "open → cancelled" covers both "cancel" before the deadline and "close" after
 # it: the row looks the same either way. Nothing closes an open group buy past
 # its deadline automatically.
-OWNER_TRANSITIONS = {
-    ("open", "cancelled"),
-    ("funded", "fulfilled"),
-    ("funded", "cancelled"),
-}
+OWNER_TRANSITIONS = frozenset(
+    {
+        ("open", "cancelled"),
+        ("funded", "fulfilled"),
+        ("funded", "cancelled"),
+    }
+)
+# MEH-2866 (Sapir 10/11, state-machine audit B): an admin moves a group buy by
+# exactly the same table. The admin route used to accept any of the four
+# statuses with no lock and no email, so a cancelled group could be reopened
+# after its participants were told it was cancelled. One table, two names.
+ADMIN_TRANSITIONS = OWNER_TRANSITIONS
+_REFUSED_TRANSITION = "אי אפשר לשנות את קבוצת הרכישה למצב הזה"
+
+
+def _refuse_unless_allowed(
+    gb: GroupBuy, new_status: str, expected_status: str | None, table
+) -> None:
+    """Under the row lock: the state the caller saw, then the transition table.
+
+    Same 409 and wording for both (MEH-2489): either way the screen reloads
+    and shows the state the server holds.
+    """
+    if expected_status is not None and gb.status != expected_status:
+        raise HTTPException(status_code=409, detail=_REFUSED_TRANSITION)
+    if (gb.status, new_status) not in table:
+        raise HTTPException(status_code=409, detail=_REFUSED_TRANSITION)
+
+
+def _cancel_recipients(db: Session, gb: GroupBuy, actor_id) -> list[str]:
+    """Every participant's email, resolved while the session is open.
+
+    The actor is left out: she cancelled it, so she is not told that the
+    business cancelled it (an owner who joined her own group; an admin who
+    joined one).
+    """
+    return [
+        email
+        for (email,) in db.query(User.email)
+        .join(GroupBuyCommit, GroupBuyCommit.user_id == User.id)
+        .filter(GroupBuyCommit.group_buy_id == gb.id)
+        .filter(User.id != actor_id)
+        .all()
+    ]
 
 
 @router.patch("/{group_buy_id}/status", response_model=GroupBuyStatusOut)
@@ -445,40 +519,27 @@ def update_group_buy_status(  # noqa: PLR0913 — all 6 args are FastAPI-injecte
     # state the server holds. The concrete case: she opened «ביטול» on an open
     # group, a last participant joined meanwhile, and without this the cancel
     # went through on a funded group whose double confirm she never saw.
-    if data.expected_status is not None and gb.status != data.expected_status:
-        raise HTTPException(
-            status_code=409, detail="אי אפשר לשנות את קבוצת הרכישה למצב הזה"
-        )
-    if (gb.status, data.status) not in OWNER_TRANSITIONS:
-        raise HTTPException(
-            status_code=409, detail="אי אפשר לשנות את קבוצת הרכישה למצב הזה"
-        )
+    _refuse_unless_allowed(gb, data.status, data.expected_status, OWNER_TRANSITIONS)
 
     # MEH-2435 chunk 4: tell every participant the group was cancelled.
     # Recipients are resolved here, while the session is open; the background
     # task gets plain strings (as in _maybe_notify_funded). Sent once by
     # construction: cancelled is final in OWNER_TRANSITIONS and this check ran
     # under the row lock, so a repeat cancel is a 409 above and never gets here.
-    # An admin's cancel (admin route) sends nothing — the wording names the
-    # business as the one who cancelled.
+    # An admin's cancel (admin route) sends the same email since MEH-2866.
     participant_emails: list[str] = []
     if data.status == "cancelled":
-        participant_emails = [
-            email
-            for (email,) in db.query(User.email)
-            .join(GroupBuyCommit, GroupBuyCommit.user_id == User.id)
-            .filter(GroupBuyCommit.group_buy_id == gb.id)
-            # Nothing stops the owner joining her own group; she cancelled it,
-            # so she is not told that the business cancelled it.
-            .filter(User.id != current_user.id)
-            .all()
-        ]
+        participant_emails = _cancel_recipients(db, gb, current_user.id)
 
     title = gb.title
     producer_name = gb.producer.name if gb.producer else ""
+    is_public = indexnow.is_public_business(gb.producer)  # MEH-2852
 
     gb.status = data.status
     db.commit()
+    # MEH-2852: cancelled / fulfilled — the public page changed.
+    if is_public:
+        indexnow.schedule(background_tasks, indexnow.group_buy_urls(group_buy_id))
 
     if participant_emails:
         background_tasks.add_task(
@@ -505,20 +566,47 @@ def admin_list_group_buys(
 
 
 @admin_router.patch("/{group_buy_id}/status")
-def admin_update_status(
+def admin_update_status(  # noqa: PLR0913 — FastAPI-injected args (path, 2 queries, BackgroundTasks, auth, db)
     group_buy_id: UUID,
     status: str,
-    _admin: User = Depends(require_admin),
+    background_tasks: BackgroundTasks,
+    expected_status: str | None = Query(None),
+    admin: User = Depends(require_admin),
     db: Session = Depends(get_db),
 ):
+    # MEH-2866: the owner route's rules, from the admin's side — the same
+    # transition table, the row lock, expected_status, and the same cancel
+    # email to every participant. `status` stays a query param (the admin
+    # page sends it that way); expected_status is optional for the same reason.
     allowed = {"open", "funded", "cancelled", "fulfilled"}
     if status not in allowed:
         raise HTTPException(
             status_code=400, detail=f"סטטוס לא תקין. אפשרויות: {allowed}"
         )
-    gb = db.query(GroupBuy).filter(GroupBuy.id == group_buy_id).first()
+    gb = (
+        db.query(GroupBuy).filter(GroupBuy.id == group_buy_id).with_for_update().first()
+    )
     if not gb:
         raise HTTPException(status_code=404, detail="קבוצת הרכישה לא נמצאה")
+    _refuse_unless_allowed(gb, status, expected_status, ADMIN_TRANSITIONS)
+
+    participant_emails: list[str] = []
+    if status == "cancelled":
+        participant_emails = _cancel_recipients(db, gb, admin.id)
+    title = gb.title
+    producer_name = gb.producer.name if gb.producer else ""
+    is_public = indexnow.is_public_business(gb.producer)  # MEH-2852
+
     gb.status = status
     db.commit()
+    if is_public:
+        indexnow.schedule(background_tasks, indexnow.group_buy_urls(gb.id))
+    if participant_emails:
+        background_tasks.add_task(
+            send_cancelled_notifications,
+            participant_emails,
+            title,
+            producer_name,
+            str(group_buy_id),
+        )
     return {"detail": "סטטוס עודכן", "status": gb.status}

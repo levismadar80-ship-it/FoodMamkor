@@ -186,7 +186,7 @@ describe("MEH-1935 data gate — generateMetadata", () => {
     const m = await meta("vegan");
     expect(m.alternates.canonical).toContain("/producers/diet/vegan");
     // The mocked translator echoes keys: the title must carry the chip's key.
-    expect(m.title.absolute).toContain("filter_axes.vegan.label");
+    expect(m.title).toContain("filter_axes.vegan.label"); // MEH-2853: plain title, the layout template adds the brand
   });
 
   it("404s one business below the threshold", async () => {

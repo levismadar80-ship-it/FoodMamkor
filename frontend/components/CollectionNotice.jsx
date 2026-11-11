@@ -24,6 +24,9 @@
  */
 
 import { Link } from "@/i18n/navigation";
+// MEH-2850: Link elements here carry prefetch={false} — this renders inside
+// the site chrome on every page it appears on, and its targets are static, so
+// a viewport prefetch would fetch them IN FULL. See Header.jsx.
 
 // MEH-1981 a11y: `underline` at rest, NOT `hover:underline`. axe's
 // link-in-text-block rule passes if EITHER the link contrasts 3:1 against the
@@ -78,7 +81,7 @@ export default function CollectionNotice({ message, linkLabel, testId, className
       className={`text-xs ${ink.text} leading-relaxed text-start mt-2 ${className}`}
     >
       {message}{" "}
-      <Link
+      <Link prefetch={false}
         href="/privacy"
         target="_blank"
         className={ink.link}

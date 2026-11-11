@@ -888,8 +888,10 @@ class TestAdminDashboardAnalytics:
                 )
             )
         # Undelivered WhatsApp: one failed inside the 7-day window, one failed
-        # outside it, one accepted — only the first counts.
-        for status, age_days in (("failed", 1), ("failed", 9), ("accepted", 1)):
+        # outside it, one accepted a few hours ago — only the first counts.
+        # (MEH-2122 Chunk E: an `accepted` row older than a day IS counted, as
+        # stuck — so the healthy accepted row here is fresh, not a day old.)
+        for status, age_days in (("failed", 1), ("failed", 9), ("accepted", 0.1)):
             msg = OutboundMessage(to_phone="+972501234567", kind="test", status=status)
             msg.created_at = utc_now() - timedelta(days=age_days)
             db.add(msg)

@@ -360,6 +360,26 @@
       "source": "local",
       "sourceType": "local",
       "computedHash": "6ee65347d695f0ea8b7c73dc028ddde13009fece2dbe7ffe09f8bec31408b010"
+    },
+    "backlog-groom": {
+      "source": "local",
+      "sourceType": "local",
+      "computedHash": "cd2299d289c210e9f208a6a1234b6f4e6055cb51ec7cbd129f51500555721b10"
+    },
+    "grill-me": {
+      "source": "mattpocock/skills",
+      "sourceType": "github",
+      "computedHash": "2fe9f18df4f8153f3f2e7d9523a0969002d2010a2a5fefbaffc1dfed006e5ff8"
+    },
+    "grilling": {
+      "source": "mattpocock/skills",
+      "sourceType": "github",
+      "computedHash": "d8e24653e7af00129e7e6a62a733c23d6ec990e6c5dadc0770e0bba7953d48f4"
+    },
+    "mehamakor-dod": {
+      "source": "local",
+      "sourceType": "local",
+      "computedHash": "6ac1cc219e406aea2cb38b2c794c6fcf9d347b17bd8eab081c898b9b772f8081"
     }
   }
 }
