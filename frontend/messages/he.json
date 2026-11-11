@@ -5128,6 +5128,8 @@
       "field_end_time_label": "שעת סיום (לא חובה)",
       "error_end_time_after_start": "שעת הסיום צריכה להיות אחרי שעת ההתחלה",
       "field_time_hint": "אופציונלי — אם לא הוזן, יוצג רק תאריך",
+      "saved_location_legend": "מיקום האירוע",
+      "saved_location_other": "כתובת אחרת",
       "field_location_label": "מיקום ספציפי",
       "field_location_placeholder": "כתובת מדויקת או הוראות הגעה",
       "field_city_label": "עיר",
