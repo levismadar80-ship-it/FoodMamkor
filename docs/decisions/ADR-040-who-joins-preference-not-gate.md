@@ -9,9 +9,9 @@
 
 Mehamakor's DNA is "magazine, not marketplace" (BRAND.md §1): the reader comes for story, craft and origin. A business that only resells other people's products carries less of that than one that makes or grows what it sells. The question of whether the second kind may register at all had never been decided in writing.
 
-It came up during the simulated pilot round (MEH-2913) — a desk check over 31 real leads plus six walked-through registrations. The leads did not sort cleanly into "makes it" and "resells it": a bakery that also stocks a neighbour's jam, a farm shop with a shelf of someone else's cheese, a delicatessen with one house-made item.
+It came up during the simulated pilot round (MEH-2913) — a desk check over 31 real leads plus six walked-through registrations. The leads did not sort cleanly into "makes it" and "resells it": a farm shop that also sells another winery's wine, a farm whose market stalls carry other producers' cheeses, a farm with a café and deli, a cheese retailer, a restaurant.
 
-Sapir ruled twice on 11/11/2026, and the second ruling is this ADR. The first (Drive 07b v1.3) was **"only those who make or grow it themselves"**. She corrected it the same day: the site is pre-launch with no businesses on it, so a rule that excludes on day one cannot be calibrated against anything real. v1.3 is marked ARCHIVED in Drive.
+Sapir ruled twice on 11/11/2026, and the second ruling is this ADR. The first (Drive 07b v1.3) was **"only those who make or grow it themselves"**. She corrected it the same day: the site is pre-launch and has no businesses on it yet, so she prefers not to exclude. v1.3 is marked ARCHIVED in Drive.
 
 The decision is therefore made in the knowledge that it is easy to widen a rule later and hard to narrow one — hence the review point below rather than an open-ended commitment.
 
@@ -45,14 +45,14 @@ Three levels:
 - The admin pre-approval checklist gains one informational item. It is a row in `admin_checklist_items`, added through `/admin/settings` rather than by a deploy — the items moved to the database in MEH-1399 and are edited at runtime.
 - Outreach (MEH-409) works levels 1 and 2 first. Level 3 is not a target of the first outreach round.
 - Nothing is said to applicants. No line in registration tells anyone who the site is "for", because the rule is a tool for the approver, not a message to the applicant.
-- A level-3 business that is approved is a normal business afterwards: no marker, no reduced surface, no separate treatment anywhere in the product.
+- A level-3 business that is approved carries no marker and no reduced surface in the product. Editorial priority (outreach order, the editor's pick) remains a human choice and favours levels 1 and 2.
 
 ## Alternatives considered
 
-**Only level 1 may register** (Drive 07b v1.3, Sapir's own first position, same day). Rejected by her on reflection: with no businesses on the site yet, there is nothing to calibrate the exclusion against, and it would have turned away the mixed cases the pilot round actually found — the bakery with a neighbour's jam on the shelf.
+**Only level 1 may register** (Drive 07b v1.3, Sapir's own first position, same day). Rejected by her on reflection: the site is pre-launch and has no businesses yet, so she prefers not to exclude — and it would have turned away the mixed cases the desk check found.
 
 **A tier field on the business, set at registration.** Rejected: it asks the applicant to classify themselves on a distinction that exists for the approver, invites a wrong answer on a question nobody is checking, and would need a migration, a UI and a maintenance story for a rule that may change at the review point.
 
 **Say it in the registration flow.** Rejected with the first version of the card: a line about who the site is "for" reads as a rejection to the mixed cases this decision exists to admit, and the rule is an internal one.
 
-**Decide it later, at the review point.** Rejected: approvals are happening now, and an unwritten preference applied at one desk is the kind of rule that drifts without anyone noticing it drifted.
+**Decide it later, at the review point.** Rejected: approvals start with the first real pilot businesses, and the rule should exist before the first one. An unwritten preference applied at one desk is also the kind of rule that drifts without anyone noticing it drifted.
