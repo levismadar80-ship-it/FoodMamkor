@@ -1,9 +1,11 @@
 # MEH-2903 — `EXPECTED_TABLES` 49 → 50 (the `alembic_lineage` table)
 
-> **Not applied.** `.github/workflows/**` is Sapir's. She applies this one line
-> in the same PR as the `alembic_lineage` revision (`19ac967d78fb`), once she has
-> OK'd that revision. Until then the PR's table-count gate is red by design:
-> the revision adds a 50th table, and the gate still expects 49.
+> **Authorised by Sapir 11/11, one line only, in the same PR as the
+> `alembic_lineage` revision (`19ac967d78fb`, approved the same day).** CC applies
+> it through the GitHub API when the PR lands, after v1.5.0, on the then-current
+> `pr-checks.yml`, so no stale full-file copy rides on this branch. Until then the
+> PR's table-count gate is red by design: the revision adds a 50th table and the
+> gate still expects 49.
 
 ## Why
 
@@ -17,12 +19,11 @@ value at run time (`--expect-table-count auto`), so it needs no change.
 ```diff
 --- a/.github/workflows/pr-checks.yml
 +++ b/.github/workflows/pr-checks.yml
-@@ -480,7 +480,8 @@
+@@ -480,7 +480,7 @@
            # rescue_typical_items (rescue-bags pilot) — 44 -> 48.
            # MEH-2763: registrations (on-site sign-ups for events and
            # experiences) — 48 -> 49.
 -          EXPECTED_TABLES=49
-+          # MEH-2903: alembic_lineage (boot bookkeeping) — 49 -> 50.
 +          EXPECTED_TABLES=50
  
            TABLE_COUNT=$(psql -h localhost -U postgres -d mehamakor_test -tAc \
