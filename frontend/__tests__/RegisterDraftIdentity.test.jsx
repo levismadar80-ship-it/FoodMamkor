@@ -72,12 +72,26 @@ const FILLED = {
   description: "אופה מחמצת כבר עשור",
   category_ids: [3],
   fulfilment: "onsite",
+  // Non-empty on purpose: an omission assertion against "" passes whether the
+  // key is dropped or merely empty.
+  producer_license_number: "1234567",
 };
 
 describe("MEH-2915 · the draft stops carrying the person", () => {
-  it("drops the four identity fields on write", () => {
+  it("drops the identity fields, and the licence number, on write", () => {
     const stored = parseDraft(packDraft(FILLED, 2, T0), T0).form;
-    for (const field of ["email", "name", "phone", "address", "lat", "lng", "address_city"]) {
+    for (const field of [
+      "email",
+      "name",
+      "phone",
+      "address",
+      "lat",
+      "lng",
+      "address_city",
+      // Not an identity field: a business attribute Sapir took off the draft
+      // on 11/11 because resuming a fill does not need it.
+      "producer_license_number",
+    ]) {
       expect(stored[field], `${field} must not reach localStorage`).toBeUndefined();
     }
     expect(stored.password, "password, as before MEH-2915").toBeUndefined();
@@ -94,6 +108,7 @@ describe("MEH-2915 · the draft stops carrying the person", () => {
       "0501234567",
       "הרצל 1, זכרון יעקב",
       "changeme-placeholder",
+      "1234567",
     ]) {
       expect(raw, `${value} must not appear in the stored string`).not.toContain(value);
     }
@@ -170,7 +185,6 @@ describe("MEH-2915 · the draft stops carrying the person", () => {
     "category_ids",
     "fulfilment",
     // Business attributes collected by the wizard, not personal identifiers.
-    "producer_license_number",
     "referral_source",
     "referral_source_other",
     // Set by the route, never typed — see NON_CONTENT_FIELDS.

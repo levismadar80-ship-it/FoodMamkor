@@ -44,6 +44,12 @@ export const DRAFT_KEY = "producer_registration_draft";
  *
  * `name` is the OWNER's full name («שם מלא», messages/he.json:200), not the
  * business name — that is `producer_name`, which stays.
+ *
+ * `producer_license_number` is a third group of one (Sapir, 11/11). It is a
+ * business attribute rather than a personal identifier, so it does not belong
+ * to the first group — but it is a Ministry-of-Health production licence
+ * number, it is not needed to resume a fill, and it was never in the set that
+ * was approved as worth keeping (business name, city, categories, story).
  */
 export const DRAFT_OMITTED_FIELDS = Object.freeze([
   "password",
@@ -54,6 +60,7 @@ export const DRAFT_OMITTED_FIELDS = Object.freeze([
   "lat",
   "lng",
   "address_city",
+  "producer_license_number",
 ]);
 
 /**
