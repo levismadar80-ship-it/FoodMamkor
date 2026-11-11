@@ -27,7 +27,7 @@ from app.auth import (
     require_verified_producer,
 )
 from app.database import get_db
-from app.services.producer_listing import is_business  # MEH-2459
+from app.services.producer_listing import is_business, is_business_row  # MEH-2459
 from app.models import Experience, Producer, User
 from app.rate_limit import limiter
 from app.schemas.schemas import (
@@ -81,11 +81,7 @@ def _serialize_host(host: User | None) -> dict | None:
         return None
     out = {"id": host.id, "name": host.name}
     producer = host.producer
-    if (
-        producer is not None
-        and producer.status == "approved"
-        and producer.kind == "producer"
-    ):
+    if is_business_row(producer):  # MEH-2952: test rows too
         out.update(
             producer_id=producer.id,
             producer_slug=producer.slug,

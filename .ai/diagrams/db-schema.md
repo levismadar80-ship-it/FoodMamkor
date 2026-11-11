@@ -42,6 +42,7 @@ erDiagram
         string google_id UK
         string apple_id UK
         boolean is_blocked
+        boolean is_test "MEH-2952 — NOT NULL default false; seeded test identity; never in a response"
         timestamp created_at
         timestamp last_active_at "indexed, feeds DAU chart"
         timestamp terms_accepted_at "nullable, tz-aware — MEH-1995 ToS consent; NULL = no record held, never 'refused'"
@@ -62,6 +63,7 @@ erDiagram
         float lng
         string status "pending|approved|rejected"
         string kind "MEH-2459 — producer|organizer; NOT NULL default producer; CHECK producer_kind_values (ADR-036)"
+        boolean is_test "MEH-2952 — NOT NULL default false; hidden by is_business(); never in a response"
         float avg_rating "cached aggregate"
         int reviews_count "cached aggregate"
         boolean is_available_today "legacy — unread, unwritten, in no response (MEH-2272); MEH-2273 drops it"
