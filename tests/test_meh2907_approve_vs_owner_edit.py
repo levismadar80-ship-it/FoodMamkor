@@ -67,6 +67,12 @@ the reason for the shape above. A fresh reviewer measured all three:
     reachable with NO RACE, so it never discriminated. Test 4 below
     demonstrates that sequentially. The race-specific fact is narrower:
     the gate was asked, and answered from a row that had already changed.
+
+    MEH-2908 has since closed that race (`db.refresh` at the top of
+    `_assert_approvable`), so test 2 is now a plain regression guard
+    rather than an xfail. It is deliberately NOT rewritten to lean on the
+    terminal state: that would make it answerable by a sequential path
+    too, and removing the fix would then leave it looking covered.
 """
 
 from __future__ import annotations
@@ -236,30 +242,26 @@ def test_the_race_really_happens(client, db, monkeypatch):
 
 
 @pytest.mark.serial
-@pytest.mark.xfail(
-    strict=True,
-    reason=(
-        "MEH-2908: _assert_approvable judges producer.images from the admin "
-        "session's identity map, loaded before the owner's commit, so the "
-        "gate's verdict can rest on a photo that is already gone."
-    ),
-)
 def test_the_gate_judges_the_row_as_it_stands(client, db, monkeypatch):
     """ONE assertion, and that is the point.
 
-    `strict=True` is only useful if the test can actually XPASS once the
-    bug is fixed. Any other assertion above this one — a status code, a
-    control — turns the fixed world into a failure at that line, which
-    strict xfail absorbs as expected and the marker never fires. The
-    mechanism is therefore asserted in `test_the_race_really_happens`,
-    and this test asserts the invariant alone.
+    THIS IS THE REGRESSION GUARD FOR MEH-2908. It carried
+    `xfail(strict=True)` until the fix landed — `db.refresh(producer)` at
+    the top of `_assert_approvable` (`admin.py`). Remove that line and
+    this test goes red, which is the whole reason it is phrased as the
+    gate's own view rather than as the terminal state.
 
-    Measured against a simulated fix (a one-line `db.refresh(producer)`
-    at the top of `_assert_approvable`): the view the gate read becomes
-    `[]`, this assertion passes, and the xfail fires. That check is not
-    ceremony — the first attempt at this test captured the view BEFORE
-    calling the gate, which is blind to a re-read inside it, and the
-    xfail still would not have fired with the bug fixed.
+    One assertion, deliberately, and that stays load-bearing now the
+    marker is gone. While it was an xfail, any assertion above the
+    invariant — a status code, a control — turned the fixed world into a
+    failure at that line, which strict xfail absorbs as expected, so the
+    marker could never fire. (Measured: it reported XFAIL, not XPASS,
+    against a simulated fix.) The mechanism therefore lives in
+    `test_the_race_really_happens`, and this test must stay answerable
+    only by what the gate read.
+
+    The marker did fire when the real fix landed — `[XPASS(strict)]` —
+    which is how the card closed instead of the marker rotting.
     """
     run = _run_the_race(client, db, monkeypatch)
 
