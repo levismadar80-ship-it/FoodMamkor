@@ -72,6 +72,12 @@ vi.mock("@/components/CalendarView", () => ({ default: () => null }));
 vi.mock("@/components/CitySearch", () => ({ default: () => <input data-testid="city-input" /> }));
 // The chip row exposes one button so a test can change the category filter
 // (which re-runs load) while a previous request is still pending — cell (d).
+// MEH-2859: the hub row grew to four tabs, two of them gated on their own
+// supply fetch. Pinned OFF here so this file keeps testing exactly the
+// events/experiences pair it was written for, and so the gates' requests
+// do not land in this file's api.get expectations. The four-tab row has
+// its own file: __tests__/ListingHubTabs.test.jsx.
+vi.mock("@/lib/use-hub-nav-gate", () => ({ useHubNavGate: () => false }));
 vi.mock("@/components/ChipScrollRow", () => ({
   default: ({ onChipClick }) => (
     <button type="button" data-testid="chip-harvest" onClick={() => onChipClick("harvest")} />

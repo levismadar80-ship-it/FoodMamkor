@@ -73,6 +73,12 @@ vi.mock("@/components/CitySearch", () => ({
   ),
 }));
 // ChipScrollRow stand-in: one button per chip, exposing key + active state.
+// MEH-2859: the hub row grew to four tabs, two of them gated on their own
+// supply fetch. Pinned OFF here so this file keeps testing exactly the
+// events/experiences pair it was written for, and so the gates' requests
+// do not land in this file's api.get expectations. The four-tab row has
+// its own file: __tests__/ListingHubTabs.test.jsx.
+vi.mock("@/lib/use-hub-nav-gate", () => ({ useHubNavGate: () => false }));
 vi.mock("@/components/ChipScrollRow", () => ({
   // MEH-2847: EventsClient passes the selection as an `activeKeys` Set (the
   // real ChipScrollRow's multi-select prop); «הכל» is active while it is empty.
@@ -92,7 +98,7 @@ vi.mock("@/components/ChipScrollRow", () => ({
   ),
 }));
 
-const EXPERIENCES_TAB = "events.list.tab_experiences";
+const EXPERIENCES_TAB = "events.list.tab_experiences_short";
 
 // Category wire values sourced from the SoT so the test survives key renames.
 // MEH-1657: was "workshop" — removed from the events vocab when סדנה/סיור moved

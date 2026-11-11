@@ -73,7 +73,16 @@ const browser = await chromium.launch({
   const cta = await box(page, '[data-testid="register-preflight-start"]');
   const nav = await box(page, '[data-testid="bottom-nav"]');
   if (!nav) {
-    record("B3c BottomNav covers «מתחילים»", false, "no [data-testid=bottom-nav] rendered on /register/producer at 390px");
+    // MEH-2927: since the B3c fix this is the CORRECT state, not a failure to
+    // measure. This probe is the BEFORE artifact and is kept for the record;
+    // left reporting `false` it would read as a red against the fix it
+    // documents. The after-probe is e2e/qa-meh2927-register-chrome.mjs.
+    record(
+      "B3c BottomNav covers «מתחילים»",
+      false,
+      "no [data-testid=bottom-nav] on /register/producer — EXPECTED since the B3c gate; " +
+        "this probe predates it and only documents the before state",
+    );
   } else if (!cta) {
     record("B3c BottomNav covers «מתחילים»", false, "the preflight CTA was not visible — could not compare");
   } else {
