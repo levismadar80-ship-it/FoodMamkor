@@ -10,10 +10,12 @@ import { test, expect, type Page, type Locator } from "./_cloudinary-stub";
  *           chip+price rows on three lines. jsdom has no layout, so only a real
  *           browser can see this; the class half is __tests__/EventEntryRow.test.jsx.
  *
- *           At 1280px on `/`, per visual row of a 3-up grid:
- *             1. «אירועים קרובים» (EventEntryRow compact): equal card height
- *                (±1px) AND the chip+price rows share one bottom y (±1px);
- *             2. the seasonal ProducerCard grid: equal card height (±1px).
+ *           At 1280px on `/`, per visual row of a 3-up grid: the seasonal
+ *           ProducerCard grid has equal card height (±1px).
+ *
+ *           MEH-2859 removed the «אירועים קרובים» case — see the note in the
+ *           describe below. The home page no longer renders a 3-up grid of
+ *           EventEntryRow compact cards, so that case had no subject left.
  *
  * Skips:    a grid with fewer than 2 cards has nothing to compare, so the test
  *           SKIPS with the reason — never passes. The skip is decided by the
@@ -68,40 +70,15 @@ function spread(values: number[]): number {
 test.describe("Home card grids — every card fills its grid cell (MEH-2802)", () => {
   test.use({ viewport: DESKTOP });
 
-  test("«אירועים קרובים»: equal card heights and one chip+price line", async ({ page }) => {
-    const n = await apiCount(page, "/api/events/upcoming?limit=3");
-    test.skip(n < MIN_CARDS, `only ${n} upcoming event(s) on this backend — need ≥${MIN_CARDS} to compare`);
-
-    await page.goto("/");
-    const cards = page.locator('[data-testid="event-row-compact"]');
-    // Exact count is safe: UpcomingEventsPreview.jsx:22 asks this same endpoint
-    // with the same limit and renders every row it gets.
-    await expect(cards).toHaveCount(n, { timeout: 15_000 });
-    await cards.first().scrollIntoViewIfNeeded();
-
-    // Measure the LINK — the visible card that carries the tick and the bottom
-    // border — never the wrapper: the wrapper IS the grid item, so the grid
-    // stretches it whether or not the card inside fills it. Measured: on the
-    // pre-fix code the wrappers came out equal while the links did not.
-    const cardBoxes = await boxes(page.locator('[data-testid="event-row-compact"] > a'));
-    const footerBoxes = await boxes(page.locator('[data-testid="event-row-footer"]'));
-    expect(footerBoxes).toHaveLength(cardBoxes.length);
-
-    const rows = rowsOf(cardBoxes).filter((r) => r.length >= MIN_CARDS);
-    expect(rows.length, "the 3-up grid put ≥2 cards in one row at 1280px").toBeGreaterThan(0);
-    for (const row of rows) {
-      expect(spread(row.map((b) => b.height)), `card heights ${row.map((b) => b.height)}`).toBeLessThanOrEqual(
-        TOLERANCE_PX,
-      );
-      // The footer belonging to each card: horizontally inside it.
-      const bottoms = row.map((card) => {
-        const f = footerBoxes.find((fb) => fb.x >= card.x - TOLERANCE_PX && fb.x + fb.width <= card.x + card.width + TOLERANCE_PX);
-        expect(f, "each card has its chip+price row").toBeTruthy();
-        return f!.y + f!.height;
-      });
-      expect(spread(bottoms), `chip+price bottoms ${bottoms}`).toBeLessThanOrEqual(TOLERANCE_PX);
-    }
-  });
+  // MEH-2859: the «אירועים קרובים» case that led this describe is gone with its
+  // subject. The home page's events-only preview (the one caller that passed
+  // EventEntryRow `compact`, and so the only place a 3-up grid of those cards
+  // ever rendered) was replaced by the HomeWhatsOn text strip, which is a
+  // single-column row list with no grid cell to fill. The class half of the
+  // MEH-2802 guard is untouched in __tests__/EventEntryRow.test.jsx, and the
+  // seasonal ProducerCard case below still guards the pattern in a real
+  // browser. `compact` itself is now caller-less — removing it is a separate
+  // card, not this one's business.
 
   test("seasonal ProducerCard grid: equal card heights", async ({ page }) => {
     const n = await apiCount(page, "/api/producers?in_season=true");
