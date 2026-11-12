@@ -17,11 +17,14 @@ import { isProducerDetail } from "@/lib/producer-route";
 import { isRegisterRoute } from "@/lib/register-route"; // MEH-2927
 import { useCallback, useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
-import { Compass, MapTrifold, Flower, User } from "@phosphor-icons/react";
+import { Compass, MapTrifold, Flower, CalendarBlank, User } from "@phosphor-icons/react";
 import { useAuth } from "@/lib/auth-context";
 import { useTranslations } from "next-intl";
 import AccountSheet from "@/components/AccountSheet";
 import { itemsForSurface } from "@/lib/nav-registry";
+import { useEventsNavGate } from "@/lib/use-events-nav-gate";
+import { useExperiencesNavGate } from "@/lib/use-experiences-nav-gate";
+import { useHubNavGate } from "@/lib/use-hub-nav-gate";
 
 // MEH-2359 / MEH-2431: subtrees with their own nav, where the pill never
 // renders. Shared by the render gates and the clearance publish (MEH-2490).
@@ -40,7 +43,8 @@ const isOwnerDashboardRoute = (p) =>
  * Mobile bottom nav — MEH-789 (Phase 6 "Cream Signature" port).
  *
  * Replaces the MEH-20 full-width bottom bar with the signature floating cream
- * pill: 4 DESTINATIONS (גלו · מפה · אודות · חשבון), zero actions. MEH-843:
+ * pill: 4 DESTINATIONS (גלו · מפה · אודות · חשבון), zero actions. MEH-2965:
+ * the third is «אירועים» → /events while any date-bound listing exists. MEH-843:
  * the per-tab solid-green highlight became a green-tint indicator across the 3
  * route tabs + Phosphor fill-on-active + 10.5px DM Sans labels. MEH-852: the
  * indicator is now a SINGLE nav-level capsule that measures the active tab's
@@ -69,14 +73,25 @@ const TOP_THRESHOLD = 60; // scrollY under this → always expanded
 
 // MEH-1703 chunk 3: the pill's destination sequence. Order lives HERE and not
 // in the registry because it genuinely differs per shell — the Header renders
-// home/map/experiences/about, this pill renders home/map/about, and no single
+// home/map/whatsOn/about, this pill renders home/map/(whatsOn|about), and no single
 // declaration order describes both (the chunk-0 finding; see the SHAPE NOTE in
 // lib/nav-registry.js). The registry supplies identity — which items exist,
 // their hrefs and their i18n keys — and this array supplies sequence.
-const BOTTOM_NAV_ORDER = ["home", "map", "about"];
+//
+// MEH-2965 (Sapir 12/11): the third slot is ONE slot with two tenants. While
+// any of the four date-bound types has supply it is «אירועים» → the hub;
+// otherwise it is «אודות», as before. Both ids are listed and the registry's
+// `dataGate` / `yieldsTo` pair (resolved in the component) decides which one
+// renders, so the pill never grows a fifth tab and never offers an empty hub.
+const BOTTOM_NAV_ORDER = ["home", "map", "whatsOn", "about"];
 // Icons stay shell-local for the same reason: the pill's 22px Phosphor set is
 // a rendering decision, not an identity one, and the Header uses none of them.
-const BOTTOM_NAV_ICONS = { home: Compass, map: MapTrifold, about: Flower };
+const BOTTOM_NAV_ICONS = { home: Compass, map: MapTrifold, whatsOn: CalendarBlank, about: Flower };
+// MEH-2965: the hub is four routes under one tab row (ListingHubTabs), so its
+// pill tab is current on all four. Segment boundary, not a bare prefix —
+// `/eventsx` is not the hub (the MEH-1971 slug lesson in Header.jsx).
+const HUB_ROUTES = ["/events", "/experiences", "/group-buys", "/rescue"];
+const onRoute = (pathname, route) => pathname === route || pathname.startsWith(`${route}/`);
 
 export default function BottomNav() {
   const pathname = usePathname();
@@ -178,8 +193,25 @@ export default function BottomNav() {
   const hasAvatar = !!user?.avatar_url;
   const initial = user ? (user.name || "?").trim().charAt(0).toUpperCase() : null;
 
-  const isActive = (href) =>
-    href === "/" ? (pathname || "/") === "/" : (pathname || "").startsWith(href);
+  // MEH-2965: the same four reads the Header makes for its «מה קורה» link
+  // (Header.jsx, MEH-2859). Each hook owns one endpoint, shares one request
+  // with every other consumer on the page, caches the answer per session and
+  // fails closed — so while loading, or with the backend unreachable, the slot
+  // stays «אודות» rather than offering an empty hub. They start false and
+  // flip in an effect, so on a hard load the slot paints «אודות» first and
+  // swaps once the answer is read; that is the price of failing closed.
+  const showEvents = useEventsNavGate();
+  const showExperiences = useExperiencesNavGate();
+  const showGroupBuys = useHubNavGate("groupBuys");
+  const showRescue = useHubNavGate("rescue");
+  const hasListings = showEvents || showExperiences || showGroupBuys || showRescue;
+
+  const isActive = (href) => {
+    const path = pathname || "/";
+    if (href === "/") return path === "/";
+    if (href === "/events") return HUB_ROUTES.some((route) => onRoute(path, route));
+    return path.startsWith(href);
+  };
 
   // 3 destination links + the account tab (rendered separately — it toggles
   // the sheet instead of navigating). Identity from the registry, sequence
@@ -191,6 +223,14 @@ export default function BottomNav() {
   // invisible in Hebrew and wrong on /en (nav-registry.js:107-109).
   const destinations = BOTTOM_NAV_ORDER.map((id) => byId.get(id))
     .filter(Boolean)
+    // The data gate stays here, as in the Header: the registry records THAT an
+    // item is gated on supply (`dataGate`) or gives its slot up to one that is
+    // (`yieldsTo`), not what the current supply is.
+    .filter(({ item, surface }) => {
+      if (item.dataGate === "listing-supply") return hasListings;
+      if (surface.yieldsTo === "listing-supply") return !hasListings;
+      return true;
+    })
     .map((entry) => ({
       id: entry.item.id,
       href: entry.item.href,

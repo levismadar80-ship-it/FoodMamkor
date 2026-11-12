@@ -6,8 +6,9 @@
  *           It appears only once the surface has real supply, so a reader who
  *           follows it never lands on a near-empty shelf.
  * Does NOT: render anything, and does NOT decide WHERE the link goes — Header
- *           and Footer each own their own markup. It also never gates the
- *           BottomNav, whose slots are full (out of scope by ticket).
+ *           and Footer each own their own markup. (It used to say it never
+ *           gates the BottomNav; since MEH-2965 it is one of the four reads
+ *           behind the pill's «אירועים» tab.)
  * Related:  backend/app/routers/experiences.py (`GET /experiences/count`, the
  *           one predicate this reads), components/Header.jsx +
  *           components/Footer.jsx (the two consumers).
@@ -64,6 +65,38 @@ function writeCache(count) {
   }
 }
 
+// MEH-2965: one request per page load, however many consumers mount — the
+// "one network request per session" the header above promises was only true
+// AFTER the first response landed. Header, Footer and BottomNav mount in the
+// same commit and each missed the cache. Shared while in flight, dropped when
+// settled. Resolves to the count, or null when there is none to give.
+let inFlight = null;
+/** Test seam: forget a request still in flight (a suite's never-settling stub
+ *  would otherwise answer every later case in the same module instance). */
+export function resetExperiencesNavGateRequest() {
+  inFlight = null;
+}
+function loadCount() {
+  if (!inFlight) {
+    inFlight = api
+      .get("/experiences/count")
+      .then((res) => {
+        const parsed = CountSchema.safeParse(res?.data);
+        if (!parsed.success) return null; // stays hidden
+        writeCache(parsed.data.count);
+        return parsed.data.count;
+      })
+      // Deliberately silent: a hidden nav link is not a user-facing error,
+      // and a toast here would surface an infrastructure hiccup as though
+      // the reader had done something wrong.
+      .catch(() => null)
+      .finally(() => {
+        inFlight = null;
+      });
+  }
+  return inFlight;
+}
+
 /**
  * @returns {boolean} whether the nav should show the experiences link.
  *
@@ -89,19 +122,9 @@ export function useExperiencesNavGate() {
       };
     }
 
-    api
-      .get("/experiences/count")
-      .then((res) => {
-        const parsed = CountSchema.safeParse(res?.data);
-        if (!parsed.success) return; // stays hidden
-        writeCache(parsed.data.count);
-        if (alive) setVisible(parsed.data.count >= EXPERIENCES_NAV_THRESHOLD);
-      })
-      .catch(() => {
-        // Deliberately silent: a hidden nav link is not a user-facing error,
-        // and a toast here would surface an infrastructure hiccup as though
-        // the reader had done something wrong.
-      });
+    loadCount().then((count) => {
+      if (alive && count !== null) setVisible(count >= EXPERIENCES_NAV_THRESHOLD);
+    });
 
     return () => {
       alive = false;

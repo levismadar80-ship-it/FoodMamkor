@@ -43,10 +43,17 @@ vi.mock("next/link", () => ({
     </a>
   ),
 }));
+// MEH-2965: BottomNav reads the listing-supply gates; closed here, so the pill
+// keeps «אודות» and this suite stays about its own subject.
+vi.mock("@/lib/use-events-nav-gate", () => ({ useEventsNavGate: () => false }));
+vi.mock("@/lib/use-experiences-nav-gate", () => ({ useExperiencesNavGate: () => false }));
+vi.mock("@/lib/use-hub-nav-gate", () => ({ useHubNavGate: () => false }));
+
 vi.mock("@phosphor-icons/react", () => ({
   Compass: (props) => <span {...props} />,
   MapTrifold: (props) => <span {...props} />,
   Flower: (props) => <span {...props} />,
+  CalendarBlank: (props) => <span {...props} />,
   User: (props) => <span {...props} />,
 }));
 vi.mock("@/components/AccountSheet", () => ({ default: () => null }));
