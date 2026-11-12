@@ -7,8 +7,7 @@
  * Does NOT: fetch anything, pick the icon or the date strings (the page owns
  *           those), or render share / calendar (they live in the details card).
  * Related:  app/[locale]/events/[id]/EventDetailClient.jsx ·
- *           app/[locale]/experiences/[id]/ExperienceDetailClient.jsx ·
- *           lib/entity-registry.js (which pages must use it).
+ *           app/[locale]/experiences/[id]/ExperienceDetailClient.jsx.
  * History:  MEH-2548 (event cover) · MEH-2549 (experience copy of it) ·
  *           MEH-2559 (save heart corner) · MEH-2992 (one shared component —
  *           the two pages carried byte-identical copies).

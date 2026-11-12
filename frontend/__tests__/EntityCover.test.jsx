@@ -34,6 +34,15 @@ describe("EntityCover", () => {
     expect(screen.queryByTestId("event-cover-actions")).toBeNull();
   });
 
+  it("each tone colours both its band and its tile (a swapped TONES row reds here)", () => {
+    for (const [tone, cls] of [["primary", /\bbg-primary\b/], ["accent", /\bbg-accent\b/]]) {
+      const { unmount } = render(<EntityCover alt="x" tone={tone} Icon={Icon} dateTile={tile} testIdPrefix={tone} />);
+      expect(screen.getByTestId(`${tone}-cover-band`).className).toMatch(cls);
+      expect(screen.getByTestId(`${tone}-date-tile`).firstChild.className).toMatch(cls);
+      unmount();
+    }
+  });
+
   it("date tile renders its three parts; absent → no tile", () => {
     const { rerender } = render(<EntityCover alt="x" Icon={Icon} dateTile={tile} testIdPrefix="event" />);
     const t = screen.getByTestId("event-date-tile");
