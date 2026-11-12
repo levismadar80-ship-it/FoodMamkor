@@ -35,14 +35,6 @@ export function eventWhen(date, today = israelToday()) {
   return null;
 }
 
-/** Waze / Google Maps links built from a text address, for an event or
- *  experience with no map point (MiniMap builds them from coords only). */
-export function addressNavLinks(...parts) {
-  const q = parts.map((p) => (p || "").trim()).filter(Boolean).join(", ");
-  if (!q) return null;
-  const e = encodeURIComponent(q);
-  return {
-    waze: `https://waze.com/ul?q=${e}&navigate=yes`,
-    google: `https://www.google.com/maps/search/?api=1&query=${e}`,
-  };
-}
+// MEH-2994: moved to lib/nav-links.js (one builder for every nav link);
+// re-exported so existing importers keep working.
+export { addressNavLinks } from "@/lib/nav-links";
