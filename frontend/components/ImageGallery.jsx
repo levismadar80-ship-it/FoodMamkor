@@ -232,13 +232,14 @@ export default function ImageGallery({ images = [], producerId = null, producerN
                 reason in the owner's preview — a shared link 404s for the
                 recipient while the business is unapproved.
 
-                `updatesButton` STAYS, and that is a question for Sapir rather
-                than a settled call. It is not the owner's own toggle:
-                ProducerUpdatesButton writes through lib/favorites-cache and
-                opens LoginPromptModal, so it is a visitor subscribe — the
-                same class as the heart beside it. The 11/11 ruling named
-                share and favourite, so it is left alone here rather than
-                hidden on my own authority. Flagged in the PR. */}
+                MEH-2964: `updatesButton` goes too (Sapir, 12/11). It is not
+                the owner's own toggle: ProducerUpdatesButton writes through
+                lib/favorites-cache and opens LoginPromptModal, so it is a
+                visitor subscribe — the same class as the heart beside it.
+
+                ONE gate for all three, not a gate each: this file shipped a
+                bug because two near-identical sites drifted apart, and two
+                adjacent conditions leave a seam a fourth child can land in. */}
             {!isPreview && (
               <>
                 <FavoriteButton
@@ -248,9 +249,9 @@ export default function ImageGallery({ images = [], producerId = null, producerN
                   onFavorited={onFavorited}
                 />
                 <ShareButton variant="overlay" url={shareUrl} title={producerName} />
+                {updatesButton}
               </>
             )}
-            {updatesButton}
           </div>
         )}
       </div>
@@ -413,14 +414,23 @@ export default function ImageGallery({ images = [], producerId = null, producerN
         construction rather than by copied class strings. */}
     {producerId && (
       <div className="absolute top-3 end-3 z-20 lg:hidden flex items-center gap-2">
-        <FavoriteButton
-          producerId={producerId}
-          producerName={producerName}
-          variant="gallery"
-          onFavorited={onFavorited}
-        />
-        <ShareButton variant="overlay" url={shareUrl} title={producerName} />
-        {updatesButton}
+        {/* MEH-2964: the IMAGED arm's copy of the hero actions. The imageless
+            arm above was gated when the preview shipped (MEH-2916) and this
+            one was not — that card's probe fixture had `images: []`, so only
+            that arm was ever exercised and a business WITH photos still saw a
+            heart and a share in her own preview. One gate, as above. */}
+        {!isPreview && (
+          <>
+            <FavoriteButton
+              producerId={producerId}
+              producerName={producerName}
+              variant="gallery"
+              onFavorited={onFavorited}
+            />
+            <ShareButton variant="overlay" url={shareUrl} title={producerName} />
+            {updatesButton}
+          </>
+        )}
       </div>
     )}
     </div>
