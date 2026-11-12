@@ -10,6 +10,7 @@ import ProducerForm from "@/components/admin/ProducerForm";
 import DraftProductsPanel from "@/components/admin/DraftProductsPanel";
 import AdminLoadError from "@/components/admin/AdminLoadError";
 import ClaimLinkPanel from "@/components/admin/ClaimLinkPanel";
+import OwnerInvitePanel from "@/components/admin/OwnerInvitePanel";
 import { SkeletonForm } from "@/components/Skeleton";
 
 export default function EditProducerPage() {
@@ -93,6 +94,20 @@ export default function EditProducerPage() {
           carries no owner id, so a draft she has already claimed still shows
           the panel — the server answers that one with 409, shown verbatim. */}
       {producer.status === "draft" && <ClaimLinkPanel producerId={id} />}
+      {/* MEH-2974: the mirror image of the panel above — a business the admin
+          built and APPROVED herself, handed to its owner with a one-time
+          password link. The two preconditions are disjoint by construction
+          (draft vs approved), so exactly one panel can ever render.
+          `onChanged` re-fetches: the panel's pending / connected line comes
+          from this page's producer, and only the just-minted link is local
+          to the panel. */}
+      {producer.status === "approved" && (
+        <OwnerInvitePanel
+          producerId={id}
+          producer={producer}
+          onChanged={() => setReloadKey((k) => k + 1)}
+        />
+      )}
       <ProducerForm initial={producer} producerId={id} />
     </div>
   );

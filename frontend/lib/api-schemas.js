@@ -218,6 +218,35 @@ export const ProducerClaimLinkSchema = z.object({
   expires_at: z.string().refine((value) => !Number.isNaN(Date.parse(value))),
 });
 
+// MEH-2974 — owner invite (backend producer_owner_invite.py).
+//
+// GET /auth/owner-invite/{token} → OwnerInvitePublicOut. The page renders the
+// business name as its heading and the email as a read-only field, so an empty
+// name or a missing email is a malformed response rather than an invite to
+// accept — which is why both carry `min(1)` and neither is optional.
+// `requires_farmer_declaration` decides whether a legally binding checkbox is
+// shown, so it is required too: defaulting a missing one to `false` would
+// silently drop a declaration the server expects.
+export const OwnerInvitePublicSchema = z.object({
+  producer_name: z.string().min(1),
+  email: z.string().min(1),
+  requires_farmer_declaration: z.boolean(),
+});
+
+// POST /admin/producers/{id}/owner-invite (and /resend) → OwnerInviteCreatedOut.
+// This is the ONE response that carries the raw token, inside `invite_url`.
+// The admin copies that URL and sends it by WhatsApp, so a malformed one must
+// surface as an error rather than be pasted: same reasoning as
+// ProducerClaimLinkSchema above.
+export const OwnerInviteCreatedSchema = z.object({
+  invite_url: z.string().url(),
+  email: z.string().min(1),
+  name: z.string(),
+  // Formatted with Intl during render, where an unparseable value throws.
+  sent_at: z.string().refine((value) => !Number.isNaN(Date.parse(value))),
+  expires_at: z.string().refine((value) => !Number.isNaN(Date.parse(value))),
+});
+
 // MEH-2326: POST /admin/producers/{id}/products → ProductOut. The admin panel
 // appends the row to its list, so a payload with no id or name must route to
 // the panel's error state instead of rendering a row it cannot delete.

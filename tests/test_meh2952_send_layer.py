@@ -962,6 +962,15 @@ PINNED: dict[tuple[str, str, str], tuple[int, str, str]] = {
         NONE,
         "opt-out confirmation to whoever wrote STOP",
     ),
+    # MEH-2974: the owner invite. The acceptance queues the EXISTING
+    # business-approved mail (same two builders admin.approve_producer uses) to
+    # the new owner, so its flag is the same `p_test` that path carries —
+    # producer.is_test or user.is_test, captured before the session closes.
+    ("routers/producer_owner_invite.py", "accept_owner_invite", "add_task(send_email)"): (
+        1,
+        OWN,
+        "p_test — producer.is_test or user.is_test, captured pre-commit",
+    ),
     # --- auth_emails: a user's own auth action ---
     ("services/auth_emails.py", "send_reset_email", "send_email"): (
         1,
@@ -987,6 +996,14 @@ PINNED: dict[tuple[str, str, str], tuple[int, str, str]] = {
         1,
         AUTH,
         "wrapper param ← user.is_test captured before delete",
+    ),
+    # MEH-2974: the invite itself. There is no `users` row yet — the whole
+    # point of the flow — so the only is_test signal available is the
+    # BUSINESS's, which is what the caller passes.
+    ("services/auth_emails.py", "send_owner_invite_email", "send_email"): (
+        1,
+        BUS,
+        "wrapper param ← producer.is_test (no account exists until acceptance)",
     ),
     # --- auth_notifications ---
     ("services/auth_notifications.py", "notify_producer_registered", "send_template"): (

@@ -738,6 +738,10 @@
       "not_found": "Business not found | {brand}",
       "country": "Israel",
       "offer_catalog_name": "Products"
+    },
+    "owner_invite": {
+      "title": "Set a password for your business page",
+      "description": "Your page on Mehamakor is ready"
     }
   },
   "producer": {
@@ -1821,6 +1825,35 @@
         "title": "Products in this draft",
         "intro": "Until the owner takes the page over, you can add and delete products here. She sets the diet labels herself after the claim.",
         "empty": "No products in this draft yet."
+      },
+      "owner_invite": {
+        "title": "Owner",
+        "empty": "This business has no connected owner yet.",
+        "invite": "Invite owner",
+        "invite_again": "Invite a different address",
+        "fields": {
+          "name": "Full name",
+          "email": "Email",
+          "note": "Consent record",
+          "note_placeholder": "For example: WhatsApp approval, 12/11"
+        },
+        "consent": "I received explicit written approval from the business owner to publish the page",
+        "send": "Send invite",
+        "sending": "Sending…",
+        "cancel_form": "Cancel",
+        "pending": "Invite sent to {email} · valid until {date}",
+        "connected": "Connected: {name} · {email} · since {date}",
+        "url_label": "The link",
+        "copy": "Copy link",
+        "copied": "Copied",
+        "copy_failed": "Copying failed. You can select the link and copy it manually.",
+        "send_whatsapp": "Send on WhatsApp",
+        "whatsapp_text": "Hi {name}, the page for {business} on Mehamakor is ready. All that is left is setting a password here: {link} (the link is valid for 7 days)",
+        "expires": "Valid until {date}",
+        "link_shown_once": "The link is shown once only. If it is lost, send the invite again.",
+        "resend": "Send again",
+        "cancel_invite": "Cancel invite",
+        "error": "We could not send the invite"
       }
     },
     "users": {
@@ -6488,5 +6521,20 @@
     },
     "total_line": "{count} tools, all of them free. Tap a card to see all its tools.",
     "note_line": "Most of the tools do not need switching on. You fill in the details, and they work by themselves."
+  },
+  "owner_invite": {
+    "loading": "Loading the invite…",
+    "title": "The page for {business} is ready",
+    "subtitle": "All that is left is setting a password so you can manage the page.",
+    "email_label": "Email address (your username)",
+    "password_label": "New password",
+    "password_placeholder": "New password",
+    "submit": "Go to the dashboard",
+    "submitting": "Signing in…",
+    "submit_error": "We could not complete the sign-up",
+    "invalid": {
+      "body": "This link is no longer valid. Reply to the invite email and we will send a new one.",
+      "contact": "Contact us"
+    }
   }
 }
