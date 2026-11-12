@@ -4,6 +4,18 @@
 > Standing procedures live in [`docs/runbooks/`](./docs/runbooks/) — e.g. the [uptime alert runbook](./docs/runbooks/UPTIME.md).
 > Decision capture is proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-11-12 — רצועת הבית בכרטיסי תמונה, ו«אירועים» בסרגל התחתון של הנייד
+
+**שורה אחת:** #4334 ו-#4340 מוזגו ל-staging. שניהם עם E2E מלא ירוק על ה-PR.
+
+**מה צריך לדעת לפני עבודה:**
+- **הסרגל התחתון בנייד:** מקום אחד, שני דיירים. `whatsOn` (עם `dataGate: "listing-supply"`) מקבל את המקום כשיש היצע, ו-`about` (עם `yieldsTo: "listing-supply"`) מפנה אותו. `NavCrossShellGuard.test.jsx` נכשל על `yieldsTo` בלי פריט `dataGate` באותו משטח.
+- **שערי ההיצע (`use-events-nav-gate`, `use-experiences-nav-gate`, `use-hub-nav-gate`):** בקשה אחת משותפת לכל endpoint. בטסטים קוראים ל-`reset…NavGateRequest` ב-`beforeEach`, אחרת בקשה שלא נסגרה נשארת בין טסטים.
+- **תמונות הבסיס של הנייד ב-`parity.spec.ts` מציגות «אודות»** בסרגל, והמוצר (עם `/api/experiences/count` מקובע ל-999) מציג «אירועים». ההבדל בתוך סף ה-2%, ולכן ה-VRT ירוק והרצת חידוש מלאה לא שמרה כלום. חידוש עתידי של אחת מהן יראה את השינוי הזה.
+- **פתוח אצל ספיר:** האם הכפתור «אירועים» ייפתח על הטאב הראשון שיש בו תוכן כשאין אירועים. והצעה לסריקה של קישורים שמסומנים בקו רק במעבר עכבר.
+
+---
+
 ## 2026-11-10 — אחה״צ: המחרוזות המאושרות, ‏prefetch, ‏SUPER_ADMIN_EMAIL, ‏PR גרסה v1.5.0
 
 **‏שורה אחת:** ‏#4279 ו-#4281 מוזגו. ‏#4280 (`SUPER_ADMIN_EMAIL`) ממתין ל-3 שורות של ספיר ב-`backend/.env.example`. ‏PR הגרסה **#4282** פתוח, ולא ממוזג בלי «go merge».
