@@ -1,14 +1,11 @@
 # MEH-2972 — E2E stability: nightly run, flaky = warning on staging, WebKit nightly only
 
-> **Not applied.** `.github/workflows/**` is denied to CC's filesystem tools and
-> the sandbox proxy refuses the Contents API (`.claude/rules/security.md`).
-> Claude in Chrome pastes the diff below through the GitHub web editor (prompt in
-> Sapir's tasks folder). CC then checks the committed file byte-for-byte against
-> this diff. Sapir chose this change on 12/11 («שלב 1 + 2 ביחד»), so it is her
-> decision, not CC loosening a gate (rule 32).
->
-> As of 12/11/2026 the diff applies cleanly to staging `320e50d`
-> (`git apply --check` → OK). Re-check before pasting if `e2e.yml` changed since.
+> ✅ **Applied 12/11/2026** — commit `ba20e59` on this PR's branch (pasted
+> through the GitHub web editor by Claude in Chrome; CC cannot write
+> `.github/**`). CC checked it byte-for-byte: the committed `e2e.yml` has the
+> same sha256 (`fadbb25c…`) as the staged full copy, which was then deleted.
+> Sapir chose this change on 12/11 («שלב 1 + 2 ביחד»), so it is her decision,
+> not CC loosening a gate (rule 32). The diff below is the record.
 
 ## Why
 
@@ -42,10 +39,6 @@ stretches on staging were runs that skipped Playwright, so nobody knew.
 - `E2E gate` still reports `success` for a skipped run (rule 40/41 cover it by
   hand; the nightly run narrows the gap).
 - The durable fix for nav-gate 429s from one CI IP is MEH-2947.
-
-## The full file
-
-`docs/ci/e2e-stability.e2e.yml` is the whole new `e2e.yml` (the diff below applied to staging `320e50d`), so the browser can copy it in one go. Delete it after the workflow change lands.
 
 ## The diff
 
