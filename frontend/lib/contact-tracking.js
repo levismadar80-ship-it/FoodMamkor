@@ -204,8 +204,9 @@ export function trackProducerView(producerId, referrer) {
  * contact-click ping. Before this only the business page counted its clicks,
  * so an organizer's or a host's insights read 0 whatever people did.
  *
- * Does NOT unlock the review form (markWhatsAppClickedLocal) — that pairing
- * belongs to the business page's primary CTA only (MEH-1426).
+ * Review unlock: a WhatsApp tap here does not set the WhatsApp flag; any
+ * other channel does, through trackContactClick (MEH-2999) — the server's
+ * first-review gate accepts that contact click (reviews.py, MEH-2204).
  */
 export function trackChannelClick(producerId, channel) {
   if (!producerId) return;
