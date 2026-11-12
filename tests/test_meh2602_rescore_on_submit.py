@@ -11,7 +11,7 @@ def test_submit_for_review_rescores_the_producer(client, db, monkeypatch):
     calls: list = []
     monkeypatch.setattr("app.routers.producer_me.score_producer", calls.append)
     monkeypatch.setattr(
-        "app.routers.producer_me.send_submission_confirmation", lambda *a: None
+        "app.routers.producer_me.send_submission_confirmation", lambda *a, **k: None
     )
     producer, user = make_submit_ready_producer(db)
 

@@ -67,6 +67,7 @@ def cancel_live_group_buys(
                 producer.name,
                 str(gb.id),
                 delisted=True,
+                test_cause=bool(producer.is_test),  # MEH-2952
             )
     return len(live)
 

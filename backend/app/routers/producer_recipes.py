@@ -38,6 +38,16 @@ router = APIRouter(tags=["producer-recipes"])
 # ---------- Serialization ----------
 
 
+def _recipe_test_cause(db: Session, user: User) -> bool:
+    """MEH-2952: the submitting business or account is a seeded test row, so
+    the admin ping it causes is dropped and logged."""
+    if getattr(user, "is_test", False):
+        return True
+    return bool(
+        db.query(Producer.is_test).filter(Producer.id == user.producer_id).scalar()
+    )
+
+
 def _serialize(recipe: ProducerRecipe) -> dict:
     """Pure dict shape — Pydantic ProducerRecipeOut consumes this.
     `product_ids` is filled from the loaded M2M; callers must eager-load
@@ -169,7 +179,12 @@ def create_my_recipe(
     producer_name = (
         db.query(Producer.name).filter(Producer.id == user.producer_id).scalar() or ""
     )
-    background_tasks.add_task(notify_admin_new_recipe, producer_name, recipe.title)
+    background_tasks.add_task(
+        notify_admin_new_recipe,
+        producer_name,
+        recipe.title,
+        test_cause=_recipe_test_cause(db, user),  # MEH-2952
+    )
 
     recipe = (
         db.query(ProducerRecipe)
@@ -323,7 +338,12 @@ def update_my_recipe(  # noqa: PLR0913 — all 6 args are FastAPI-injected (slow
             db.query(Producer.name).filter(Producer.id == user.producer_id).scalar()
             or ""
         )
-        background_tasks.add_task(notify_admin_new_recipe, producer_name, recipe.title)
+        background_tasks.add_task(
+            notify_admin_new_recipe,
+            producer_name,
+            recipe.title,
+            test_cause=_recipe_test_cause(db, user),  # MEH-2952
+        )
 
     recipe = (
         db.query(ProducerRecipe)
