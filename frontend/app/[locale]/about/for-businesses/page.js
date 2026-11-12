@@ -92,7 +92,8 @@ const CATEGORIES = [
   },
   {
     key: "difference",
-    items: [{ key: "difference" }],
+    // MEH-3000: appended after Q10 (not inserted), so Q1..Q10 keep their order.
+    items: [{ key: "difference" }, { key: "organizers" }],
   },
 ];
 
