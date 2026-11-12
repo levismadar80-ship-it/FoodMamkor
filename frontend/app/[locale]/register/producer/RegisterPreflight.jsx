@@ -80,6 +80,21 @@ export default function RegisterPreflight({ showAccountLine, onStart }) {
         {t("cta")}
       </Button>
 
+      {/* MEH-2983: /join is the main door; this is the way back to it for
+          someone who landed here directly. A quiet, descriptive text link
+          (names what is there, not «עוד מידע») and AFTER the button, so it
+          never moves «מתחילים» above the fold (#4341). */}
+      <p className="text-center text-sm">
+        <Link
+          href="/join"
+          data-testid="register-preflight-join-link"
+          className="inline-flex items-center gap-1 text-primary underline underline-offset-4 hover:text-primary-dark rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+        >
+          {t("join_link")}
+          <ArrowLeft size={14} aria-hidden="true" />
+        </Link>
+      </p>
+
       {/* MEH-2917: the organizer door (Sapir 11/11: back on the preflight,
           where MEH-2640 said it moved). A link, never the removed checkbox —
           the ROUTE decides the kind (MEH-2773). Group-buy organizers are told

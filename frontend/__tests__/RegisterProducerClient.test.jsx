@@ -444,6 +444,18 @@ describe("RegisterProducerClient — pre-flight entry screen (MEH-994)", () => {
     expect(screen.queryByTestId("register-preflight-account-item")).not.toBeInTheDocument();
   });
 
+  // MEH-2983: someone who lands here without context gets a quiet way to the
+  // /join page, placed AFTER «מתחילים» so it never moves the button (#4341).
+  it("links to /join below «מתחילים»", async () => {
+    render(<RegisterProducerClient />);
+    const start = await screen.findByTestId("register-preflight-start");
+    const link = screen.getByTestId("register-preflight-join-link");
+    expect(link.getAttribute("href")).toBe("/join");
+    expect(link).toHaveTextContent(`${K}.preflight.join_link`);
+    // after the button in document order
+    expect(start.compareDocumentPosition(link) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
   // MEH-2917: the organizer door lives on the preflight (Sapir 11/11), and
   // the group-buy note sits there too — before step 1.
   it("links organizers to their own sign-up and tells group-buy organizers before step 1", async () => {
