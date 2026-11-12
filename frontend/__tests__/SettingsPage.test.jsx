@@ -248,7 +248,7 @@ describe("SettingsPage", () => {
     render(<SettingsPage />);
     expect(mockPush).toHaveBeenCalledTimes(1);
     expect(mockPush).toHaveBeenCalledWith(
-      "/login?redirect=%2Fen%2Fsettings%3Ftab%3Dsecurity",
+      "/en/login?redirect=%2Fen%2Fsettings%3Ftab%3Dsecurity",
     );
     window.history.pushState({}, "", "/");
   });

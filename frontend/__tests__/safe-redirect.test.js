@@ -36,7 +36,17 @@ describe("safeInternalRedirect (MEH-810)", () => {
 describe("loginHrefBackHere (MEH-2982)", () => {
   it("carries the current path AND query, encoded", () => {
     window.history.pushState({}, "", "/en/events/5?from=map");
-    expect(loginHrefBackHere()).toBe("/login?redirect=%2Fen%2Fevents%2F5%3Ffrom%3Dmap");
+    expect(loginHrefBackHere()).toBe("/en/login?redirect=%2Fen%2Fevents%2F5%3Ffrom%3Dmap");
+    window.history.pushState({}, "", "/");
+  });
+
+  it("a Hebrew page (no prefix) gets the Hebrew login, and /english is not /en", () => {
+    window.history.pushState({}, "", "/favorites");
+    expect(loginHrefBackHere()).toBe("/login?redirect=%2Ffavorites");
+    window.history.pushState({}, "", "/english-breakfast");
+    expect(loginHrefBackHere()).toBe("/login?redirect=%2Fenglish-breakfast");
+    window.history.pushState({}, "", "/en");
+    expect(loginHrefBackHere()).toBe("/en/login?redirect=%2Fen");
     window.history.pushState({}, "", "/");
   });
 

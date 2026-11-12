@@ -115,7 +115,7 @@ describe("MEH-2982 · /favorites signed out", () => {
     const router = useRouter();
     await waitFor(() => expect(router.push).toHaveBeenCalledTimes(1));
     expect(router.push).toHaveBeenCalledWith(
-      "/login?redirect=%2Fen%2Ffavorites%3Ftab%3Devents",
+      "/en/login?redirect=%2Fen%2Ffavorites%3Ftab%3Devents",
     );
     expect(api.get).not.toHaveBeenCalledWith("/users/me/favorites");
   });

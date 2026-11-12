@@ -33,11 +33,15 @@ export function safeInternalRedirect(raw, fallback = "/") {
  * REUSES: components/LoginPromptModal.jsx:103 — same `?redirect=` shape,
  * clamped on the login side by safeInternalRedirect above.
  *
- * @returns {string} "/login?redirect=<current path + query>", or "/login"
- *          when there is no window (server render).
+ * @returns {string} "[/en]/login?redirect=<current path + query>", or
+ *          "/login" when there is no window (server render).
  */
 export function loginHrefBackHere() {
   if (typeof window === "undefined") return "/login";
-  const here = `${window.location.pathname}${window.location.search}`;
-  return `/login?redirect=${encodeURIComponent(here)}`;
+  const { pathname, search } = window.location;
+  // Callers push with next/navigation's router, which adds no locale prefix,
+  // so an /en reader would otherwise land on the Hebrew login page (the
+  // MEH-1157 family). Hebrew is the as-needed default and carries no prefix.
+  const prefix = /^\/en(?=\/|$)/.test(pathname) ? "/en" : "";
+  return `${prefix}/login?redirect=${encodeURIComponent(pathname + search)}`;
 }
