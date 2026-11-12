@@ -75,10 +75,8 @@ export const ENTITIES = [
     key: "experience",
     routes: ["app/[locale]/experiences/[id]"],
     files: ["app/[locale]/experiences/[id]"],
-    uses: ["back", "share", "save", "owner", "cover"],
-    missing: {
-      contact: "builds the host WhatsApp link itself, ignores the preferred channel, clicks not counted — MEH-2991",
-    },
+    uses: ["back", "share", "save", "owner", "cover", "contact"],
+    missing: {},
     na: {},
   },
   {
@@ -87,7 +85,7 @@ export const ENTITIES = [
     files: ["app/[locale]/group-buys/[id]"],
     uses: ["back", "owner"],
     missing: {
-      share: "own native-share button (MEH-2827) — one share behaviour for all pages is Sapir's decision (MEH-2990)",
+      share: "own share button (MEH-2827); it runs the shared sequence in lib/share-link.js (MEH-2996) but is not the ShareButton component",
       save: "no save heart — MEH-2993 scan",
     },
     na: {
