@@ -597,13 +597,18 @@ describe("MEH-1703 — recorded asymmetries hold as described", () => {
    * exist so that if a later chunk closes one of these gaps, the registry and
    * this file must be updated together rather than drifting apart.
    */
-  it("favorites/settings are ungated in the sheet but auth-gated in the dropdown", () => {
+  // MEH-2982 closed this asymmetry (Sapir, 12/11): the sheet now gates both
+  // rows like the dropdown. A guest sheet with either href is a regression.
+  it("favorites/settings are auth-gated in the sheet AND in the dropdown", () => {
     const { container } = render(
       <AccountSheet open onClose={() => {}} user={null} logout={() => {}} />,
     );
     const guestSheetHrefs = renderedLinks(container).map((l) => l.href);
-    expect(guestSheetHrefs).toContain("/favorites");
-    expect(guestSheetHrefs).toContain("/settings");
+    expect(guestSheetHrefs).not.toContain("/favorites");
+    expect(guestSheetHrefs).not.toContain("/settings");
+    // Control: the guest sheet did render its links (login is one of them),
+    // so the two absences above are not an empty render.
+    expect(guestSheetHrefs).toContain("/login");
 
     cleanup();
     userRef.current = null;
