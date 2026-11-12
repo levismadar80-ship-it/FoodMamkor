@@ -12,6 +12,7 @@ import DeliveryChecker from "@/components/DeliveryChecker";
 import { isDeliveryCheckerUsable } from "@/lib/delivery-coverage";
 import WhatsAppUpdatesPill, { whatsappUpdatesHref } from "@/components/WhatsAppUpdatesPill";
 import HoursText from "@/components/HoursText";
+import { coordsNavLinks } from "@/lib/nav-links";
 
 // MEH-2592 C: every row list in the block (areas and pickup) sits in one soft
 // card instead of between hairlines, and rows carry their own side padding.
@@ -251,13 +252,11 @@ function CompactCities({ areas, t }) {
 // phone as tel: (MEH-2477) · an outbound Waze nav link built from lat/lng (mirrors MiniMap.jsx:90; no
 // second in-page map — NN/g scroll-trap). Street address stays off (MEH-829).
 function PickupRow({ loc, t, tMap }) {
-  const hasCoords =
-    loc.lat != null && loc.lng != null && !isNaN(Number(loc.lat)) && !isNaN(Number(loc.lng));
-  const wazeUrl = hasCoords ? `https://waze.com/ul?ll=${loc.lat},${loc.lng}&navigate=yes` : null;
-  // MEH-2592 C: Google Maps beside Waze, same destination URL as MiniMap.jsx.
-  const gmapsUrl = hasCoords
-    ? `https://www.google.com/maps/dir/?api=1&destination=${loc.lat},${loc.lng}`
-    : null;
+  // MEH-2592 C: Google Maps beside Waze. MEH-2994: both from lib/nav-links.js,
+  // the builder MiniMap uses — null when the point is missing.
+  const nav = coordsNavLinks(loc.lat, loc.lng);
+  const wazeUrl = nav?.waze ?? null;
+  const gmapsUrl = nav?.google ?? null;
   const heading = loc.label || loc.city;
   const phone = (loc.phone || "").trim();
   const telHref = phone ? `tel:${phone.replace(/[^\d+]/g, "")}` : null;
