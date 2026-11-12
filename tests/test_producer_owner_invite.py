@@ -8,13 +8,20 @@ There is no `users` row until she accepts.
 WHAT THIS FILE IS FOR, and why it is shaped this way
 ----------------------------------------------------
 The feature is RED tier (auth + schema + a bearer token that grants full
-control of a LIVE page), so the eight `TestExploits` cases below are the point
+control of a LIVE page), so the `TestExploits` cases below are the point
 of the file, not an appendix to it. Each one was run RED against staging's code
 before the implementation existed and GREEN after — both runs are quoted in the
 PR body (ADR-032 §2.6: they assert BEHAVIOUR — a status code, a row count, a
 column value — never that a prescribed change was applied).
 
-Three things worth knowing before reading any assertion:
+Four things worth knowing before reading any assertion:
+
+* **Accepting takes an address AND a 6-digit code mailed to it** (the card's v3
+  revision). The code's only store is a hash too, it dies after ten minutes or
+  five wrong guesses, and a failed accept writes nothing but the attempts
+  counter. `arm_code` below reads the plaintext out of the mail the real
+  endpoint queues, because that is the only place it exists — a test that wrote
+  the hash itself would be asserting against its own arithmetic.
 
 * **The token's only store is a hash.** `producers.owner_invite_token_hash` is
   the sha256 hex of a `secrets.token_urlsafe(32)`. `TestExploits::test_raw_token_
@@ -41,12 +48,14 @@ import ast
 import hashlib
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+from unittest import mock
 
 import pytest
 from sqlalchemy import DateTime, String, Text
 
 from conftest import auth_header, israel_days_ago, make_producer, make_user
 from app.models import Producer, User
+from app.routers import producer_owner_invite as poi
 
 VERSIONS = Path(__file__).resolve().parents[1] / "backend" / "alembic" / "versions"
 REVISION = "a7f3c2e94d18"
@@ -62,8 +71,9 @@ INVITE_EMAIL = "owner-invite-target@example.com"
 GOOD_PASSWORD = "example-pw-meh2974"
 CONSENT_NOTE = "אישור בוואטסאפ, 12/11"
 
-# The eight columns the feature owns. Named once, because three tests below
-# assert over the whole set and a list per test is how one gets forgotten.
+# The eleven columns the feature owns (eight, plus the three the v3 email
+# code added). Named once, because several tests below assert over the whole
+# set and a list per test is how one gets forgotten.
 INVITE_COLUMNS = (
     "owner_invite_email",
     "owner_invite_name",
@@ -73,6 +83,9 @@ INVITE_COLUMNS = (
     "owner_invite_accepted_at",
     "owner_invite_consent_note",
     "owner_invite_created_by",
+    "owner_invite_code_hash",
+    "owner_invite_code_expires_at",
+    "owner_invite_code_attempts",
 )
 
 
@@ -90,6 +103,11 @@ def _lookup_url(token):
 
 
 _ACCEPT_URL = "/auth/owner-invite/accept"
+_CODE_URL = "/auth/owner-invite/email-code"
+# Any six digits. Used where the request must be schema-valid but is expected
+# to die BEFORE the code is checked (a dead token, a missing consent), so the
+# status proves which guard fired. Regression rule 6.
+DUMMY_CODE = "123456"
 
 
 def valid_invite_payload(**over) -> dict:
@@ -103,13 +121,42 @@ def valid_invite_payload(**over) -> dict:
     } | over
 
 
-def valid_accept_payload(token, **over) -> dict:
+def valid_accept_payload(token, code=DUMMY_CODE, email=INVITE_EMAIL, **over) -> dict:
     return {
         "token": token,
+        "email": email,
+        "code": code,
         "password": GOOD_PASSWORD,
         "terms_accepted": True,
         "declaration_accepted": True,
     } | over
+
+
+def arm_code(client, token, email=INVITE_EMAIL) -> str:
+    """Ask for a code through the real endpoint and read the plaintext out of
+    the mail it queued.
+
+    That mail is the ONLY place the code exists — the row holds a sha256 — so
+    this is the only way a test can know it without writing the hash itself,
+    which would assert the test's arithmetic rather than the endpoint's.
+    """
+    seen = []
+    with mock.patch.object(
+        poi, "send_owner_invite_code_email", side_effect=lambda *a, **k: seen.append(a)
+    ):
+        r = client.post(_CODE_URL, json={"token": token, "email": email})
+    assert r.status_code == 200, r.text
+    assert len(seen) == 1, f"the endpoint queued {len(seen)} code emails, wanted 1"
+    return seen[0][2]
+
+
+def accept_invite(client, token, email=INVITE_EMAIL, **over):
+    """The whole v3 acceptance in one call: ask for a code, then accept with
+    it. Returns the acceptance response."""
+    code = arm_code(client, token, email)
+    return client.post(
+        _ACCEPT_URL, json=valid_accept_payload(token, code, email, **over)
+    )
 
 
 def approved(db, **kw):
@@ -294,13 +341,28 @@ class TestAdminCreate:
         r, _ = invite(client, db, p, email="  OWNER-INVITE-TARGET@example.com  ")
         assert r.status_code == 409, r.text
 
-    @pytest.mark.parametrize("status", ["draft", "pending", "rejected", "inactive"])
-    def test_409_when_the_business_is_not_approved(self, client, db, status):
+    @pytest.mark.parametrize("status", ["draft", "pending", "rejected"])
+    def test_409_when_the_business_is_neither_approved_nor_hidden(
+        self, client, db, status
+    ):
         p = make_producer(db, status=status)
         clean = _snapshot(db, p)
         r, _ = invite(client, db, p)
         assert r.status_code == 409, r.text
         assert _snapshot(db, p) == clean
+
+    def test_a_hidden_business_is_invitable_and_accepting_publishes_it(
+        self, client, db
+    ):
+        """(v3) The card's own flow: the admin builds the page HIDDEN, hands it
+        over, and the owner's acceptance is what puts it in front of anyone.
+        `inactive` was a 409 until v3 — this is the test that says it is not."""
+        p = make_producer(db, status="inactive")
+        r, token = invite(client, db, p)
+        assert r.status_code == 200, r.text
+        assert client.get(_lookup_url(token)).json()["will_publish"] is True
+        assert accept_invite(client, token).status_code == 200
+        assert _row(db, p).status == "approved"
 
     def test_404_for_an_unknown_business(self, client, db):
         admin = make_user(db, role="admin")
@@ -351,7 +413,7 @@ class TestAdminResend:
         p = approved(db)
         _, token = invite(client, db, p, admin=admin)
         assert (
-            client.post(_ACCEPT_URL, json=valid_accept_payload(token)).status_code
+            accept_invite(client, token).status_code
             == 200
         )
         r = client.post(_admin_url(p.id, "/resend"), headers=auth_header(admin))
@@ -426,7 +488,7 @@ class TestAdminCancel:
         admin = make_user(db, role="admin")
         p = approved(db)
         _, token = invite(client, db, p, admin=admin)
-        client.post(_ACCEPT_URL, json=valid_accept_payload(token))
+        accept_invite(client, token)
         r = client.delete(_admin_url(p.id), headers=auth_header(admin))
         assert r.status_code == 409, r.text
         assert _row(db, p).owner_invite_accepted_at is not None
@@ -447,6 +509,19 @@ class TestPublicLookup:
             "producer_name": "מחלבת העמק",
             "email": INVITE_EMAIL,
             "requires_farmer_declaration": False,
+            # Already approved, so accepting changes who controls the page,
+            # not whether anyone can see it. The button copy follows this.
+            "will_publish": False,
+            # The same five public fields the claim page carries, built from
+            # the invite rather than from /producers/* so a HIDDEN business
+            # does not become reachable before its owner accepts.
+            "preview": {
+                "name": "מחלבת העמק",
+                "city": p.city,
+                "short_description": p.short_description,
+                "image": (p.images or [None])[0],
+                "category_names": [],
+            },
         }
 
     def test_requires_farmer_declaration_for_an_agricultural_category(self, client, db):
@@ -482,7 +557,7 @@ class TestAccept:
         p = approved(db)
         _, token = invite(client, db, p)
         before = datetime.now(timezone.utc)
-        r = client.post(_ACCEPT_URL, json=valid_accept_payload(token))
+        r = accept_invite(client, token)
         after = datetime.now(timezone.utc)
         assert r.status_code == 200, r.text
         assert r.json()["access_token"]
@@ -509,7 +584,7 @@ class TestAccept:
     def test_she_can_log_in_with_the_password_she_chose(self, client, db):
         p = approved(db)
         _, token = invite(client, db, p)
-        client.post(_ACCEPT_URL, json=valid_accept_payload(token))
+        accept_invite(client, token)
         r = client.post(
             "/auth/login", json={"email": INVITE_EMAIL, "password": GOOD_PASSWORD}
         )
@@ -519,7 +594,7 @@ class TestAccept:
         p = approved(db)
         _, token = invite(client, db, p)
         assert (
-            client.post(_ACCEPT_URL, json=valid_accept_payload(token)).status_code
+            accept_invite(client, token).status_code
             == 200
         )
         user = db.query(User).filter(User.email == INVITE_EMAIL).one()
@@ -539,7 +614,7 @@ class TestAccept:
     def test_sets_the_refresh_and_fingerprint_cookies_like_login(self, client, db):
         p = approved(db)
         _, token = invite(client, db, p)
-        r = client.post(_ACCEPT_URL, json=valid_accept_payload(token))
+        r = accept_invite(client, token)
         names = {c.split("=")[0] for c in r.headers.get_list("set-cookie")}
         assert "refresh_token" in names
         assert "__Secure-Fgp" in names
@@ -547,8 +622,16 @@ class TestAccept:
     def test_422_on_a_password_that_fails_the_policy(self, client, db):
         p = approved(db)
         _, token = invite(client, db, p)
+        # Armed BEFORE the snapshot: asking for a code is a legitimate write
+        # (the hash, its expiry, a zeroed counter), so a snapshot taken before
+        # it would red on the arm rather than on anything the refused accept
+        # did. What must not move is everything else — and the counter, which
+        # a correct code does not touch.
+        code = arm_code(client, token)
         clean = _snapshot(db, p)
-        r = client.post(_ACCEPT_URL, json=valid_accept_payload(token, password="short"))
+        r = client.post(
+            _ACCEPT_URL, json=valid_accept_payload(token, code, password="short")
+        )
         assert r.status_code == 422, r.text
         assert _snapshot(db, p) == clean
         assert db.query(User).filter(User.email == INVITE_EMAIL).count() == 0
@@ -565,8 +648,9 @@ class TestAccept:
         p = approved(db)
         _, token = invite(client, db, p)
         own(db, p, email="someone-already@example.com")
+        code = arm_code(client, token)
         clean = _snapshot(db, p)
-        r = client.post(_ACCEPT_URL, json=valid_accept_payload(token))
+        r = client.post(_ACCEPT_URL, json=valid_accept_payload(token, code))
         assert r.status_code == 409, r.text
         assert _snapshot(db, p) == clean
         assert db.query(User).filter(User.email == INVITE_EMAIL).count() == 0
@@ -574,9 +658,16 @@ class TestAccept:
     def test_409_when_the_email_was_taken_between_invite_and_accept(self, client, db):
         p = approved(db)
         _, token = invite(client, db, p)
+        # Arming first, then taking the address — which is the real sequence
+        # anyway: she asked for a code, and someone registered meanwhile.
+        # Arming AFTER would record the address but mint NO code (it is
+        # already taken — the uniform-ack branch), so the accept would die at
+        # the code gate with a 422 instead of reaching the 409 this test is
+        # about.
+        code = arm_code(client, token)
         make_user(db, email=INVITE_EMAIL)
         clean = _snapshot(db, p)
-        r = client.post(_ACCEPT_URL, json=valid_accept_payload(token))
+        r = client.post(_ACCEPT_URL, json=valid_accept_payload(token, code))
         assert r.status_code == 409, r.text
         assert _snapshot(db, p) == clean
         assert db.query(User).filter(User.email == INVITE_EMAIL).count() == 1
@@ -683,7 +774,7 @@ class TestInviteEmail:
 
         _to, subject, body = captured["args"]
         html = captured["kwargs"]["html"]
-        assert subject == "הדף של <script>מחלבה במהמקור מוכן, נשאר רק לקבוע סיסמה"
+        assert subject == "הדף של <script>מחלבה במהמקור מוכן, נשאר רק לאשר"
         assert body.startswith("היי דנה,")
         assert "הקישור תקף ל-7 ימים" in body
         assert "https://example.com/owner-invite/abc" in body
@@ -728,10 +819,11 @@ class TestExploits:
         in a WhatsApp group — could mint a second owner account."""
         p = approved(db)
         _, token = invite(client, db, p)
-        assert (
-            client.post(_ACCEPT_URL, json=valid_accept_payload(token)).status_code
-            == 200
-        )
+        assert accept_invite(client, token).status_code == 200
+        # A raw post with a throwaway code, on purpose: the token is already
+        # dead, so this must die at the token check BEFORE the code gate. Arming
+        # a fresh code here would 404 inside the helper and prove nothing about
+        # the second accept.
         second = client.post(_ACCEPT_URL, json=valid_accept_payload(token))
         assert second.status_code == 404, second.text
         assert db.query(User).filter(User.producer_id == p.id).count() == 1
@@ -839,14 +931,19 @@ class TestExploits:
             finally:
                 session.close()
 
+        # ONE code, armed before the barrier and shared by both threads. Two
+        # arms would be the wrong race: the second mint replaces the first
+        # hash, so one thread would fail on its code and the conditional
+        # UPDATE this test exists to exercise would never be contended.
+        code = arm_code(client, token)
+        body = valid_accept_payload(token, code)
+
         def accept(tag):
             # One TestClient per thread — httpx.Client is not documented as
             # thread-safe, and a test built to detect non-determinism is the
             # last place to lean on an implementation detail.
             results[tag] = (
-                TestClient(client.app)
-                .post(_ACCEPT_URL, json=valid_accept_payload(token))
-                .status_code
+                TestClient(client.app).post(_ACCEPT_URL, json=body).status_code
             )
 
         client.app.dependency_overrides[get_db] = barriered_get_db
@@ -908,7 +1005,7 @@ class TestExploits:
 
         module._email_taken = blind_once
         try:
-            r = client.post(_ACCEPT_URL, json=valid_accept_payload(token))
+            r = accept_invite(client, token)
         finally:
             module._email_taken = real
 
@@ -944,6 +1041,8 @@ class TestExploits:
             db.commit()
 
         assert client.get(_lookup_url(token)).status_code == 404
+        # Raw post: a dead link cannot be armed with a code either, and the
+        # 404 has to come from the token check rather than from the helper.
         r = client.post(_ACCEPT_URL, json=valid_accept_payload(token))
         assert r.status_code == 404, r.text
         assert db.query(User).filter(User.email == INVITE_EMAIL).count() == 0
@@ -961,20 +1060,30 @@ class TestExploits:
         an account whose `terms_accepted_at` is stamped anyway."""
         p = approved(db)
         _, token = invite(client, db, p, **{})
+        code = arm_code(client, token)
         clean = _snapshot(db, p)
-        r = client.post(_ACCEPT_URL, json=valid_accept_payload(token, **over))
+        r = client.post(_ACCEPT_URL, json=valid_accept_payload(token, code, **over))
         assert r.status_code == 422, r.text
         assert _snapshot(db, p) == clean
         assert db.query(User).filter(User.email == INVITE_EMAIL).count() == 0
         # And the link is still live — a refused consent must not burn it.
         assert client.get(_lookup_url(token)).status_code == 200
 
-    @pytest.mark.parametrize("status", ["inactive", "rejected", "pending", "draft"])
-    def test_a_business_that_leaves_approved_kills_its_link(self, client, db, status):
-        """The invite hands over a LIVE page. The moment the page stops being
-        live — suspended, rejected, pushed back to the queue — the link must
-        stop working, or an owner could accept her way onto a business an admin
-        has just taken down.
+    @pytest.mark.parametrize("status", ["rejected", "pending", "draft"])
+    def test_a_business_that_leaves_the_invitable_states_kills_its_link(
+        self, client, db, status
+    ):
+        """The invite hands over a page an admin has finished and stands
+        behind. The moment it stops being one — rejected, pushed back to the
+        queue, returned to a draft — the link must stop working, or an owner
+        could accept her way onto a business an admin has just taken down.
+
+        `inactive` is NOT in this list since v3 and must not be added back: a
+        hidden page is the normal starting state of this whole flow, and
+        accepting is what publishes it. The case above
+        (`test_a_hidden_business_is_invitable_and_accepting_publishes_it`) is
+        the other half of this parametrize, written out because its expected
+        answer is the opposite one.
 
         Both halves: the lookup AND the accept, because they evaluate the
         condition separately (the accept's WHERE is the one that counts — the
@@ -1003,7 +1112,7 @@ class TestExploits:
         p = approved(db)
         _, token = invite(client, db, p, admin=admin)
         assert (
-            client.post(_ACCEPT_URL, json=valid_accept_payload(token)).status_code
+            accept_invite(client, token).status_code
             == 200
         )
         owner = db.query(User).filter(User.email == INVITE_EMAIL).one()
@@ -1066,7 +1175,7 @@ class TestExploits:
         p = approved(db)
         _, token = invite(client, db, p)
         client.get(_lookup_url(token))
-        client.post(_ACCEPT_URL, json=valid_accept_payload(token))
+        accept_invite(client, token)
 
         row = _row(db, p)
         textish = [
@@ -1204,6 +1313,345 @@ class TestExploits:
         )
 
 
+# ---------------------------------------------------------------------------
+# v3 — the email code (the card's revision of 12/11)
+# ---------------------------------------------------------------------------
+
+
+class TestEmailCode:
+    """She types an address on the page and proves it with a 6-digit code.
+
+    This is the gate that makes an invite safe to hand over through WhatsApp
+    with no address on it at all: whoever holds the link still cannot create an
+    account on an address she does not read mail for.
+    """
+
+    def test_a_code_is_sent_and_only_its_hash_is_stored(self, client, db):
+        p = approved(db)
+        _, token = invite(client, db, p)
+        code = arm_code(client, token)
+        assert len(code) == 6 and code.isdigit(), code
+        row = _row(db, p)
+        assert row.owner_invite_code_hash == _sha(code)
+        assert row.owner_invite_code_attempts == 0
+        assert row.owner_invite_code_expires_at > datetime.now(timezone.utc)
+        # Ten minutes, not seven days: the link's own TTL is for a person who
+        # opens her mail tomorrow, this one is for a person reading it now.
+        assert row.owner_invite_code_expires_at < datetime.now(
+            timezone.utc
+        ) + timedelta(minutes=11)
+        # The plaintext is in no column of the row — asserted over every
+        # text-ish column rather than the three we expect, so a future column
+        # that starts carrying it reds. Same filter as the token guard above,
+        # and the same emptiness check, because a filter that matched nothing
+        # would make this loop vacuous.
+        textish = [
+            c.name for c in Producer.__table__.c if isinstance(c.type, (String, Text))
+        ]
+        assert textish, "the column filter matched nothing — this guard is void"
+        for name in textish:
+            value = getattr(row, name, None)
+            if isinstance(value, str):
+                assert code not in value, f"the code reached producers.{name}"
+
+    def test_the_answer_is_byte_identical_for_a_free_and_a_taken_address(
+        self, client, db
+    ):
+        """An account-existence oracle is the thing this endpoint would be if
+        it answered differently — and it takes an arbitrary address from
+        anyone holding the link, so that oracle would be free to query."""
+        p1 = approved(db)
+        _, t1 = invite(client, db, p1)
+        free = client.post(_CODE_URL, json={"token": t1, "email": "nobody@example.com"})
+
+        p2 = approved(db)
+        _, t2 = invite(client, db, p2, email="other@example.com")
+        make_user(db, email="taken@example.com")
+        taken = client.post(_CODE_URL, json={"token": t2, "email": "taken@example.com"})
+
+        assert free.status_code == taken.status_code == 200
+        assert free.content == taken.content
+
+    def test_a_taken_address_mints_no_code_at_all(self, client, db):
+        """The invisible half of the uniform answer: nothing is mailed and
+        nothing is stored, so the acceptance it would lead to dies at the 409
+        it was always going to die at."""
+        p = approved(db)
+        _, token = invite(client, db, p)
+        arm_code(client, token)  # a real code first, so "cleared" means cleared
+        make_user(db, email="taken@example.com")
+        sent = []
+        with mock.patch.object(
+            poi, "send_owner_invite_code_email", side_effect=lambda *a, **k: sent.append(a)
+        ):
+            r = client.post(_CODE_URL, json={"token": token, "email": "taken@example.com"})
+        assert r.status_code == 200, r.text
+        assert sent == []
+        row = _row(db, p)
+        assert row.owner_invite_code_hash is None
+        assert row.owner_invite_code_expires_at is None
+        # The address IS recorded — the page shows it back, and an acceptance
+        # has to match what was recorded.
+        assert row.owner_invite_email == "taken@example.com"
+
+    def test_a_second_send_replaces_the_first_code(self, client, db):
+        p = approved(db)
+        _, token = invite(client, db, p)
+        first = arm_code(client, token)
+        second = arm_code(client, token)
+        assert first != second
+        assert _row(db, p).owner_invite_code_hash == _sha(second)
+        # And the old one is dead, not merely superseded.
+        r = client.post(_ACCEPT_URL, json=valid_accept_payload(token, first))
+        assert r.status_code == 422, r.text
+
+    def test_a_dead_link_is_404_and_stores_nothing(self, client, db):
+        p = approved(db)
+        admin = make_user(db, role="admin")
+        _, token = invite(client, db, p, admin=admin)
+        client.delete(_admin_url(p.id), headers=auth_header(admin))
+        clean = _snapshot(db, p)
+        r = client.post(_CODE_URL, json={"token": token, "email": INVITE_EMAIL})
+        assert r.status_code == 404, r.text
+        assert r.json()["detail"] == client.get(_lookup_url(token)).json()["detail"]
+        assert _snapshot(db, p) == clean
+
+    def test_the_code_is_in_no_log_line_of_ours(self, client, db, capfd):
+        """Same posture as the token: our own structlog output may name the
+        producer and nothing else. Read through `capfd` rather than `caplog`
+        because structlog writes to the stream, not through the stdlib
+        handler."""
+        p = approved(db)
+        _, token = invite(client, db, p)
+        capfd.readouterr()
+        code = arm_code(client, token)
+        out, err = capfd.readouterr()
+        assert "owner_invite.code_sent" in out + err, (
+            "the log line we are asserting about did not appear — this guard "
+            "would pass for an endpoint that logs nothing at all"
+        )
+        assert code not in out + err
+
+
+class TestAcceptCodeGate:
+    """Every one of these asserts the same second thing: a failed accept
+    writes NOTHING but the attempts counter. The card's «בלי קוד תקף: אפס
+    כתיבות מלבד המונה»."""
+
+    def test_no_code_at_all_is_422_and_writes_nothing(self, client, db):
+        p = approved(db)
+        _, token = invite(client, db, p)
+        clean = _snapshot(db, p)
+        r = client.post(_ACCEPT_URL, json=valid_accept_payload(token))
+        assert r.status_code == 422, r.text
+        assert _snapshot(db, p) == clean
+        assert db.query(User).filter(User.email == INVITE_EMAIL).count() == 0
+        # Still live: a missing code must not burn the link.
+        assert client.get(_lookup_url(token)).status_code == 200
+
+    def test_a_wrong_code_is_422_and_bumps_only_the_counter(self, client, db):
+        p = approved(db)
+        _, token = invite(client, db, p)
+        code = arm_code(client, token)
+        before = _snapshot(db, p)
+        wrong = "000000" if code != "000000" else "111111"
+        r = client.post(_ACCEPT_URL, json=valid_accept_payload(token, wrong))
+        assert r.status_code == 422, r.text
+        after = _snapshot(db, p)
+        assert after["owner_invite_code_attempts"] == 1
+        # Everything else, column by column — including the token, which must
+        # survive so she can try again.
+        assert {k: v for k, v in after.items() if k != "owner_invite_code_attempts"} == {
+            k: v for k, v in before.items() if k != "owner_invite_code_attempts"
+        }
+        assert db.query(User).filter(User.email == INVITE_EMAIL).count() == 0
+
+    def test_a_right_code_on_the_wrong_address_is_422_and_counts(self, client, db):
+        """A code issued to one address may not be spent on another. The
+        comparison is against the ROW, not against the body — if it were
+        against the body, this would pass with any address."""
+        p = approved(db)
+        _, token = invite(client, db, p)
+        code = arm_code(client, token)
+        r = client.post(
+            _ACCEPT_URL,
+            json=valid_accept_payload(token, code, email="someone-else@example.com"),
+        )
+        assert r.status_code == 422, r.text
+        assert _row(db, p).owner_invite_code_attempts == 1
+        assert db.query(User).count() == 1  # the admin who invited, and nobody else
+
+    def test_five_wrong_guesses_kill_the_code_even_for_the_right_one(
+        self, client, db
+    ):
+        """A six-digit secret is 10^6 wide; without a cap, a link holder walks
+        it. The cap is on the CODE, not on the link — a new code revives the
+        flow, which is the next test."""
+        p = approved(db)
+        _, token = invite(client, db, p)
+        code = arm_code(client, token)
+        wrong = "000000" if code != "000000" else "111111"
+        for i in range(poi.OWNER_INVITE_CODE_MAX_ATTEMPTS):
+            r = client.post(_ACCEPT_URL, json=valid_accept_payload(token, wrong))
+            assert r.status_code == 422, (i, r.text)
+        assert _row(db, p).owner_invite_code_attempts == (
+            poi.OWNER_INVITE_CODE_MAX_ATTEMPTS
+        )
+        # The RIGHT code, now dead. This is the assertion that discriminates:
+        # without the cap it answers 200.
+        r = client.post(_ACCEPT_URL, json=valid_accept_payload(token, code))
+        assert r.status_code == 422, r.text
+        assert db.query(User).filter(User.email == INVITE_EMAIL).count() == 0
+        # And the counter did not keep climbing past the cap — the gate
+        # answers
+        # before it writes.
+        assert _row(db, p).owner_invite_code_attempts == (
+            poi.OWNER_INVITE_CODE_MAX_ATTEMPTS
+        )
+
+    def test_a_fresh_code_revives_a_walked_out_invite(self, client, db):
+        p = approved(db)
+        _, token = invite(client, db, p)
+        arm_code(client, token)
+        for _ in range(poi.OWNER_INVITE_CODE_MAX_ATTEMPTS):
+            client.post(_ACCEPT_URL, json=valid_accept_payload(token, "000000"))
+        assert accept_invite(client, token).status_code == 200
+
+    def test_an_expired_code_is_422(self, client, db):
+        p = approved(db)
+        _, token = invite(client, db, p)
+        code = arm_code(client, token)
+        row = db.get(Producer, p.id)
+        row.owner_invite_code_expires_at = datetime.now(timezone.utc) - timedelta(
+            seconds=1
+        )
+        db.commit()
+        r = client.post(_ACCEPT_URL, json=valid_accept_payload(token, code))
+        assert r.status_code == 422, r.text
+        assert db.query(User).filter(User.email == INVITE_EMAIL).count() == 0
+
+    def test_a_successful_accept_clears_the_code_columns(self, client, db):
+        """The code is spent with the token. A code left behind would outlive
+        the invite it belonged to."""
+        p = approved(db)
+        _, token = invite(client, db, p)
+        assert accept_invite(client, token).status_code == 200
+        row = _row(db, p)
+        assert row.owner_invite_code_hash is None
+        assert row.owner_invite_code_expires_at is None
+        assert row.owner_invite_code_attempts is None
+
+    def test_a_resend_and_a_cancel_each_clear_the_code(self, client, db):
+        for action in ("resend", "cancel"):
+            db.query(User).delete()
+            db.commit()
+            p = approved(db)
+            admin = make_user(db, role="admin")
+            _, token = invite(client, db, p, admin=admin, email=f"{action}@example.com")
+            arm_code(client, token, f"{action}@example.com")
+            assert _row(db, p).owner_invite_code_hash is not None
+            if action == "resend":
+                client.post(_admin_url(p.id, "/resend"), headers=auth_header(admin))
+            else:
+                client.delete(_admin_url(p.id), headers=auth_header(admin))
+            assert _row(db, p).owner_invite_code_hash is None, action
+
+
+class TestInviteWithoutAnAddress:
+    """v3: the admin may hand the link over herself — WhatsApp, a phone call —
+    and never type an address. The address then comes from the owner, on the
+    page, and is proved with a code."""
+
+    def test_create_without_an_email_sends_nothing_and_still_returns_a_link(
+        self, client, db
+    ):
+        p = approved(db)
+        sent = []
+        with mock.patch.object(
+            poi, "send_owner_invite_email", side_effect=lambda *a, **k: sent.append(a)
+        ):
+            r, token = invite(client, db, p, email=None)
+        assert r.status_code == 200, r.text
+        assert token
+        assert sent == [], "an invite with no address must not mail anyone"
+        assert r.json()["email"] is None
+        assert _row(db, p).owner_invite_email is None
+
+    def test_the_page_renders_an_empty_editable_address(self, client, db):
+        p = approved(db)
+        _, token = invite(client, db, p, email=None)
+        body = client.get(_lookup_url(token)).json()
+        # `None`, not "" and not absent: the page branches on it to decide
+        # between an empty field and a pre-filled one.
+        assert body["email"] is None
+
+    def test_she_types_her_own_address_and_accepts_on_it(self, client, db):
+        p = approved(db)
+        _, token = invite(client, db, p, email=None)
+        hers = "she-typed-this@example.com"
+        assert accept_invite(client, token, email=hers).status_code == 200
+        user = db.query(User).filter(User.email == hers).one()
+        assert user.producer_id == p.id
+        assert _row(db, p).owner_invite_email == hers
+
+
+class TestAcceptPublishes:
+    def test_a_hidden_page_goes_live_and_is_announced(self, client, db, monkeypatch):
+        """The page becoming visible is the owner's own act, and the search
+        engines hear about it at that moment — not before, or a rolled-back
+        transaction would have announced a page still hidden."""
+        pinged = []
+        monkeypatch.setattr(
+            poi.indexnow, "notify", lambda urls: pinged.append(list(urls))
+        )
+        p = make_producer(db, status="inactive")
+        # The slug is what the announced URL is built from, so it is set
+        # explicitly rather than left to the factory — the assertion below
+        # names it.
+        db.get(Producer, p.id).slug = "hidden-dairy"
+        db.commit()
+        _, token = invite(client, db, p)
+        assert accept_invite(client, token).status_code == 200
+        assert _row(db, p).status == "approved"
+        assert pinged, "a published page was not announced"
+        assert any("hidden-dairy" in u for u in pinged[0])
+
+    def test_an_already_approved_page_is_not_announced(self, client, db, monkeypatch):
+        """Nothing about its URL changed. Announcing it would claim a change
+        that did not happen — and this is the assertion that fails if the
+        publish branch is made unconditional."""
+        pinged = []
+        monkeypatch.setattr(
+            poi.indexnow, "notify", lambda urls: pinged.append(list(urls))
+        )
+        p = approved(db)
+        _, token = invite(client, db, p)
+        assert accept_invite(client, token).status_code == 200
+        assert pinged == []
+
+    def test_the_admin_is_told_either_way_and_which_one_it_was(
+        self, client, db, monkeypatch
+    ):
+        """The admin started this loop and nothing else closes it for her."""
+        calls = []
+        monkeypatch.setattr(
+            poi,
+            "notify_admin_owner_invite_accepted",
+            lambda *a, **k: calls.append((a, k)),
+        )
+        hidden = make_producer(db, status="inactive")
+        _, t1 = invite(client, db, hidden)
+        assert accept_invite(client, t1).status_code == 200
+
+        live = approved(db)
+        _, t2 = invite(client, db, live, email="second@example.com")
+        assert accept_invite(client, t2, email="second@example.com").status_code == 200
+
+        assert len(calls) == 2, calls
+        # The third positional argument is `published` — the one thing that
+        # differs between the two outcomes.
+        assert [c[0][2] for c in calls] == [True, False]
+
 class TestTokenNeverReachesSentry:
     """The token travels in the path (the card's shape), so the one thing we
     DO control is what we hand to a third-party processor.
@@ -1322,7 +1770,7 @@ class TestNoEnumeration:
         # 5. already accepted
         p4 = approved(db)
         _, t4 = invite(client, db, p4, admin=admin, email="four@example.com")
-        client.post(_ACCEPT_URL, json=valid_accept_payload(t4))
+        accept_invite(client, t4, email="four@example.com")
         bodies.add(client.get(_lookup_url(t4)).content)
 
         assert len(bodies) == 1, f"{len(bodies)} distinct 404 bodies: {bodies}"
@@ -1379,7 +1827,7 @@ class TestExposure:
         admin = make_user(db, role="admin")
         p = approved(db)
         _, token = invite(client, db, p, admin=admin)
-        client.post(_ACCEPT_URL, json=valid_accept_payload(token))
+        accept_invite(client, token)
         body = client.get(f"/admin/producers/{p.id}", headers=auth_header(admin)).json()
         assert body["owner"] == {"name": "דנה כהן", "email": INVITE_EMAIL}
         assert body["owner_invite_accepted_at"]
@@ -1390,6 +1838,36 @@ class TestExposure:
         body = client.get(f"/producers/{p.id}").json()
         for name in INVITE_COLUMNS:
             assert name not in body, name
+
+    def test_a_hidden_business_is_on_no_public_endpoint_until_she_accepts(
+        self, client, db
+    ):
+        """(v3, exploit case m) The page an admin built is hidden until its
+        owner approves it, and «hidden» has to mean hidden everywhere — not
+        just absent from the listing she happens to look at.
+
+        Asserted BEFORE and AFTER the acceptance, in one test, because only
+        the pair discriminates: a page that is missing from both would satisfy
+        the before-assertion while being broken, and one present in both would
+        satisfy the after-assertion while leaking.
+        """
+        p = make_producer(db, status="inactive")
+        _, token = invite(client, db, p)
+
+        detail = client.get(f"/producers/{p.id}")
+        assert detail.status_code == 404, detail.text
+        listing = client.get("/producers").json()
+        rows = listing["items"] if isinstance(listing, dict) else listing
+        assert all(r["id"] != str(p.id) for r in rows), "a hidden business was listed"
+
+        assert accept_invite(client, token).status_code == 200
+
+        assert client.get(f"/producers/{p.id}").status_code == 200
+        listing = client.get("/producers").json()
+        rows = listing["items"] if isinstance(listing, dict) else listing
+        assert any(r["id"] == str(p.id) for r in rows), (
+            "the page did not appear after the acceptance that published it"
+        )
 
     def test_the_hash_is_absent_from_the_committed_openapi_artifact(self):
         """Structural, not a substring scan.
@@ -1590,14 +2068,18 @@ class TestRevisionShape:
         )  # MEH-2952 follow-up, the head when this was written
         _revision_file(down)  # exists, exactly once
 
-    def test_upgrade_adds_exactly_the_eight_columns_plus_index_and_fk(self):
+    def test_upgrade_adds_exactly_the_eleven_columns_plus_index_and_fk(self):
+        # Derived from INVITE_COLUMNS, never written out as a number: the
+        # count and the names then cannot disagree, and adding a column to the
+        # feature without adding it to the revision reds here.
+        n = len(INVITE_COLUMNS)
         calls = _op_calls(_revision_file(REVISION), "upgrade")
-        assert [c.func.attr for c in calls] == ["add_column"] * 8 + [
+        assert [c.func.attr for c in calls] == ["add_column"] * n + [
             "create_index",
             "create_foreign_key",
         ]
         added = []
-        for call in calls[:8]:
+        for call in calls[:n]:
             table, column = call.args
             assert ast.literal_eval(table) == "producers"
             added.append(ast.literal_eval(column.args[0]))
@@ -1606,12 +2088,12 @@ class TestRevisionShape:
             assert "server_default" not in kw
         assert added == list(INVITE_COLUMNS)
 
-    def test_downgrade_drops_exactly_those_eight_plus_index_and_fk(self):
+    def test_downgrade_drops_exactly_those_eleven_plus_index_and_fk(self):
         calls = _op_calls(_revision_file(REVISION), "downgrade")
         assert [c.func.attr for c in calls] == [
             "drop_constraint",
             "drop_index",
-        ] + ["drop_column"] * 8
+        ] + ["drop_column"] * len(INVITE_COLUMNS)
         dropped = [ast.literal_eval(c.args[1]) for c in calls[2:]]
         assert sorted(dropped) == sorted(INVITE_COLUMNS)
         for call in calls[2:]:

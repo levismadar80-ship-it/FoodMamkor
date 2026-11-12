@@ -1245,7 +1245,13 @@ class OwnerInviteCreate(BaseModel):
     payload, not about which business it names, so it leaks nothing.
     """
 
-    email: EmailStr
+    # OPTIONAL since v3 of the card, and that is a product fact rather than a
+    # convenience: most businesses reach us on Instagram or WhatsApp and we
+    # have no address for them, so the admin mints a link with none and the
+    # owner types her own on the acceptance page — where it is proven with a
+    # one-time code before any account exists. When the admin DOES have an
+    # address, the invite mail goes out as before.
+    email: EmailStr | None = None
     # Same reasoning as `UserRegister.name`: this is a PERSON's name, so bleach
     # only and no >=3-letter floor (two-letter Hebrew given names are real).
     name: SanitizedPersonNameField
@@ -1258,8 +1264,14 @@ class OwnerInviteCreate(BaseModel):
         """Lower + trim BEFORE EmailStr, so the uniqueness checks in the
         handler and the row we store agree with `users.email` — which is
         itself stored as typed, and compared with `func.lower` on both sides.
+
+        An empty or whitespace-only string becomes None rather than a 422: the
+        admin form sends `""` for an untouched optional field, and "left blank"
+        is the normal case here, not an error.
         """
-        return v.strip().lower() if isinstance(v, str) else v
+        if not isinstance(v, str):
+            return v
+        return v.strip().lower() or None
 
     @field_validator("consent_confirmed")
     @classmethod
@@ -1290,7 +1302,11 @@ class OwnerInviteCreatedOut(BaseModel):
     """
 
     invite_url: str
-    email: EmailStr
+    # v3: optional, because an invite may be created with no address at all —
+    # the admin copies the link into WhatsApp and the owner types her own
+    # address on the page. `None` here is "nothing was sent anywhere", which is
+    # what the panel renders instead of a «נשלח אל» line.
+    email: EmailStr | None = None
     name: str
     sent_at: datetime
     expires_at: datetime
@@ -1306,22 +1322,54 @@ class OwnerInvitePublicOut(BaseModel):
     """
 
     producer_name: str
-    email: EmailStr
+    # NULL when the admin minted the link without one (v3). The page then shows
+    # an empty, editable field instead of a read-only address.
+    email: EmailStr | None = None
     # Whether the acceptance page must render the grower line beside the
     # licensing declaration (constants.FARMER_DECLARATION_CATEGORIES). Computed
     # server-side rather than shipped as `category_names` for the page to
     # classify, because this page's whole job is collecting a declaration and
     # the condition for it should not be re-derived by the client.
     requires_farmer_declaration: bool
+    # v3: True when the business is still hidden, i.e. accepting PUBLISHES it.
+    # The page says so on the button («אישור והעלאת הדף» vs «אישור וכניסה
+    # ללוח הבקרה»), because those are different promises.
+    will_publish: bool = False
+    # v3: what the page will look like, so she approves something she has
+    # seen. Same five public fields as `ProducerClaimPreviewOut` — every one of
+    # them is already on the business's own page — and deliberately NOT the
+    # public endpoint itself: a hidden business must not become reachable
+    # through `/producers/*` before she accepts. Holding the link is the only
+    # way to see it.
+    preview: ProducerClaimPreviewOut | None = None
 
 
 class OwnerInviteAccept(BaseModel):
     # URL-safe base64 of 32 random bytes is ~43 chars; the ceiling stops a
     # megabyte body from reaching the hash function.
     token: str = Field(min_length=1, max_length=512)
+    # v3: the address she typed, and the code that proves it. Both required —
+    # there is no path to an account without a verified address, including the
+    # case where the admin pre-filled one (she still confirms it with a code,
+    # because a pre-filled address is also just a string someone typed).
+    email: EmailStr
+    code: str = Field(min_length=1, max_length=12)
     # Same 12-char schema floor as every other password entry point; the full
     # policy (deny-list, HIBP) runs in the handler, which can await.
     password: PasswordField
+
+    @field_validator("email", mode="before")
+    @classmethod
+    def _normalise_email(cls, v):
+        return v.strip().lower() if isinstance(v, str) else v
+
+    @field_validator("code", mode="before")
+    @classmethod
+    def _strip_code(cls, v):
+        """People paste the code with spaces around it, and some mail clients
+        insert a non-breaking space. Strip both before the comparison, which is
+        on a hash and therefore unforgiving."""
+        return v.replace("\u00a0", "").strip() if isinstance(v, str) else v
     # NOT optional-with-default, unlike `ProducerRegister.terms_accepted`.
     # There the default exists for backwards compatibility with callers that
     # predate the field; here there is no such caller, and both consents are
@@ -1341,6 +1389,23 @@ class OwnerInviteAccept(BaseModel):
         if v is not True:
             raise ValueError("יש לאשר את הצהרת הרישוי כדי להמשיך")
         return v
+
+
+class OwnerInviteEmailCodeRequest(BaseModel):
+    """v3: «send a code to this address».
+
+    The response is a fixed 200 whatever happens — address free, address
+    already registered, send failed — so this shape carries nothing a caller
+    could use to tell those apart.
+    """
+
+    token: str = Field(min_length=1, max_length=512)
+    email: EmailStr
+
+    @field_validator("email", mode="before")
+    @classmethod
+    def _normalise_email(cls, v):
+        return v.strip().lower() if isinstance(v, str) else v
 
 
 class ProducerOwnerSummary(BaseModel):

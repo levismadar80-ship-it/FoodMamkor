@@ -663,3 +663,72 @@ def notify_admin_new_producer(
             message,
             test_cause=test_cause,
         )
+
+
+def notify_admin_owner_invite_accepted(
+    producer_name: str,
+    owner_email: str,
+    published: bool,
+    test_cause: bool = False,
+) -> None:
+    """Ping admin (WhatsApp + email) that an owner accepted the invite an
+    admin sent her — she set a password, signed the terms and the licensing
+    declaration, and the page is now hers.
+
+    MEH-2974. This is the end of a loop the ADMIN started: she built the page
+    and handed it over, and nothing else tells her it landed. `published`
+    distinguishes the two outcomes, because only one of them changed what the
+    public can see: a hidden business went live at that moment, an already
+    approved one only gained an owner.
+
+    REUSES: notify_admin_producer_resubmit above 1:1 — same free-text
+    `send_text` to settings.admin_whatsapp_to plus email to
+    settings.admin_email, no Meta template, per-channel try blocks so a
+    WhatsApp raise cannot skip the email. Fire-and-forget: runs as a
+    BackgroundTask and swallows-and-logs any failure (MEH-977 — observable,
+    never breaks the 200 she already got).
+    """
+    if test_cause:  # MEH-2952: before preflight / the send — no error log
+        return _skip_test_cause("notify_admin_owner_invite_accepted", None)
+    # Both values are free text that reached us from outside: the name an
+    # admin typed, and an address the OWNER typed into the acceptance form.
+    # Flatten both so neither can inject an extra line into the admin message.
+    # REUSES the MEH-1051 sanitizer (one flattener per file, MEH-271).
+    safe_name = _sanitize_wa_param(producer_name)
+    safe_email = _sanitize_wa_param(owner_email)
+    headline = (
+        f"✅ {safe_name} אישרה את הדף — והדף עלה לאוויר"
+        if published
+        else f"✅ {safe_name} אישרה את הדף וקיבלה גישה"
+    )
+    subject = f"מהמקור - {safe_name} אישרה את ההזמנה"
+    message = (
+        f"{headline}\n"
+        f"בעלת העסק: {safe_email}\n"
+        f"לצפייה: {settings.frontend_url}/admin/producers"
+    )
+    try:
+        if settings.admin_whatsapp_to:
+            if send_text(settings.admin_whatsapp_to, message, test_cause=test_cause):
+                logger.info("[WHATSAPP] Owner-invite-accepted notification sent")
+            else:
+                # send_text returned False without raising — keep the MEH-977
+                # observability contract: log WITH business context.
+                logger.warning(
+                    "[WHATSAPP] Owner-invite-accepted notification NOT delivered "
+                    f"for '{safe_name}'"
+                )
+        else:
+            logger.debug(f"[WHATSAPP] Would send: {message}")
+    except Exception as e:  # noqa: BLE001 — fire-and-forget, log with context
+        logger.error(
+            f"[NOTIFY] Owner-invite-accepted WhatsApp FAILED for '{safe_name}': {e}"
+        )
+
+    try:
+        if settings.admin_email:
+            send_email(settings.admin_email, subject, message, test_cause=test_cause)
+    except Exception as e:  # noqa: BLE001 — fire-and-forget, log with context
+        logger.error(
+            f"[NOTIFY] Owner-invite-accepted email FAILED for '{safe_name}': {e}"
+        )

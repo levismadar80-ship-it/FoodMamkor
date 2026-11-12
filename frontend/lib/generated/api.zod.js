@@ -2165,7 +2165,7 @@ export const CancelOwnerInviteAdminProducersProducerIdOwnerInviteDeleteResponse 
  * @summary Create Owner Invite
  */
 export const CreateOwnerInviteAdminProducersProducerIdOwnerInvitePostResponse = /*#__PURE__*/ zod.object({
-  "email": /*#__PURE__*/ zod.email(),
+  "email": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.email(),/*#__PURE__*/ zod.null()])),
   "expires_at": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
   "invite_url": /*#__PURE__*/ zod.string(),
   "name": /*#__PURE__*/ zod.string(),
@@ -2182,7 +2182,7 @@ export const CreateOwnerInviteAdminProducersProducerIdOwnerInvitePostResponse = 
  * @summary Resend Owner Invite
  */
 export const ResendOwnerInviteAdminProducersProducerIdOwnerInviteResendPostResponse = /*#__PURE__*/ zod.object({
-  "email": /*#__PURE__*/ zod.email(),
+  "email": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.email(),/*#__PURE__*/ zod.null()])),
   "expires_at": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
   "invite_url": /*#__PURE__*/ zod.string(),
   "name": /*#__PURE__*/ zod.string(),
@@ -2882,12 +2882,15 @@ export const GetMeAuthMeGetResponse = /*#__PURE__*/ zod.object({
  *      read — the same classification register_producer gives its own
  *      body-shape guards.
  *   2. The password policy, also 422, also before any write.
- *   3. The email-taken and has-owner checks, 409, BEFORE the claim — so the
+ *   3. The EMAIL CODE (v3), 422. She proves the address before anything
+ *      else is spent on it, and a wrong guess costs one of five attempts —
+ *      the counter is the only write a failed accept makes.
+ *   4. The email-taken and has-owner checks, 409, BEFORE the claim — so the
  *      common race answers without having touched anything.
- *   4. The claim: ONE conditional UPDATE (MEH-1820), never SELECT-then-set.
- *   5. The INSERT, then a single commit.
+ *   5. The claim: ONE conditional UPDATE (MEH-1820), never SELECT-then-set.
+ *   6. The INSERT, the publish if the business was hidden, then one commit.
  *
- * Steps 3 and 5 still race each other, and the backstop is NARROWER than it
+ * Steps 4 and 6 still race each other, and the backstop is NARROWER than it
  * looks: the unique index on `users.email` is case-SENSITIVE, while
  * `_email_taken` compares lowercased. So it catches an exact-case collision —
  * rolling the whole transaction back, claim included, which is what keeps the
@@ -2911,15 +2914,47 @@ export const AcceptOwnerInviteAuthOwnerInviteAcceptPostResponse = /*#__PURE__*/ 
 
 
 /**
+ * Send a verification code to the address she typed.
+ *
+ * THE RESPONSE IS THE SAME WHATEVER HAPPENS — same status, same bytes —
+ * for an address that is free, one that already belongs to an account, and
+ * one whose send fails. The reason is specific: this endpoint takes an
+ * arbitrary address from anyone holding the link, so a different answer for
+ * "already registered" would turn it into an account-existence oracle for
+ * any address an attacker cares to try.
+ *
+ * What DOES differ is invisible from here: a registered address is not
+ * mailed and no code is stored, so the acceptance it would lead to fails at
+ * the 409 it was always going to fail at.
+ *
+ * An invalid link still 404s — that is a fact about the LINK, which the
+ * caller already holds, not about any address.
+ * @summary Send Owner Invite Email Code
+ */
+export const SendOwnerInviteEmailCodeAuthOwnerInviteEmailCodePostResponse = /*#__PURE__*/ zod.unknown()
+
+
+/**
  * What the acceptance page renders before she has typed anything.
  *
  * `request` is required by slowapi, which reads it by introspection.
  * @summary Get Owner Invite
  */
+export const getOwnerInviteAuthOwnerInviteTokenGetResponsePreviewOneCategoryNamesDefault = [];
+export const getOwnerInviteAuthOwnerInviteTokenGetResponseWillPublishDefault = false;
+
 export const GetOwnerInviteAuthOwnerInviteTokenGetResponse = /*#__PURE__*/ zod.object({
-  "email": /*#__PURE__*/ zod.email(),
+  "email": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.email(),/*#__PURE__*/ zod.null()])),
+  "preview": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.object({
+  "category_names": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()), getOwnerInviteAuthOwnerInviteTokenGetResponsePreviewOneCategoryNamesDefault),
+  "city": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "image": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "name": /*#__PURE__*/ zod.string(),
+  "short_description": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
+}),/*#__PURE__*/ zod.null()])),
   "producer_name": /*#__PURE__*/ zod.string(),
-  "requires_farmer_declaration": /*#__PURE__*/ zod.boolean()
+  "requires_farmer_declaration": /*#__PURE__*/ zod.boolean(),
+  "will_publish": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), getOwnerInviteAuthOwnerInviteTokenGetResponseWillPublishDefault)
 }).check(/*#__PURE__*/ zod.describe('What the acceptance page may know before anyone has authenticated.\n\nDeliberately three fields. The business NAME is already public on its own\npage, and the EMAIL is the address the link was sent to — so a holder of\nthe link learns nothing about the business they did not already have. No\nphone, no address, no license, no ids, and no token echo.'))
 
 

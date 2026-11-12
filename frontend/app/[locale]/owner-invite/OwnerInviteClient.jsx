@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Image from "next/image";
 import { LinkBreak, WarningCircle } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import { Link, useRouter } from "@/i18n/navigation";
@@ -9,6 +10,7 @@ import { useAuth } from "@/lib/auth-context";
 import { detailToMessage } from "@/lib/errors";
 import { firstFailureMessage } from "@/lib/passwordMessages";
 import { OwnerInvitePublicSchema } from "@/lib/api-schemas";
+import { optimizeCloudinary, IMAGE_RATIOS } from "@/lib/cloudinary";
 import {
   clearOwnerInviteToken,
   readOwnerInviteToken,
@@ -21,22 +23,35 @@ import Button from "@/components/ui/Button";
 
 /**
  * Module:   OwnerInviteClient
- * Purpose:  What a business owner opens from the invite email (MEH-2974): the
- *           page we built for her is already live, and one step is left —
- *           choose a password, accept the terms and sign the licensing
- *           declaration. She then lands in her dashboard, signed in.
- * Touches:  GET /auth/owner-invite/{token} · POST /auth/owner-invite/accept
+ * Purpose:  What a business owner opens from the invite link (MEH-2974): she
+ *           SEES the page we built for her, proves an address with a 6-digit
+ *           code, chooses a password, accepts the terms and signs the
+ *           licensing declaration. If the page was still hidden, her approval
+ *           is what puts it in front of anyone. She then lands in her
+ *           dashboard, signed in.
+ * Touches:  GET /auth/owner-invite/{token} · POST /auth/owner-invite/email-code
+ *           · POST /auth/owner-invite/accept
  *           (backend/app/routers/producer_owner_invite.py). sessionStorage via
  *           lib/claim-token.js.
  * Does NOT: ask her to sign in first (there is no account until she accepts —
  *           that is the whole difference from /claim), offer Google sign-in
- *           (v1; the account is created with the password she sets), or
- *           publish anything — the business is already approved.
+ *           (v1; the account is created with the password she sets), or let
+ *           her EDIT the page from here — the preview is read-only and the
+ *           note under it points at the dashboard.
  * Related:  app/[locale]/claim/ClaimClient.jsx (the DRAFT sibling) ·
  *           app/[locale]/register/producer/RegisterProducerClient.jsx (the
  *           declaration copy, reused by KEY so there is no second wording) ·
  *           components/admin/OwnerInvitePanel.jsx (where the link is minted).
- * History:  MEH-2974.
+ * History:  MEH-2974 (v2: a read-only address, no preview, no code —
+ *           superseded by the card's v3 revision of 12/11).
+ *
+ * Why the address is editable and then PROVED, rather than simply trusted:
+ * most businesses reach us on Instagram or WhatsApp and we hold no address
+ * for them, so the link travels with none on it. A typed address that is
+ * never checked is two bugs waiting — a typo locks her out of the account she
+ * just created, and a stranger's address chosen on purpose hands the page to
+ * someone else. The code is what turns a typed string into a proven one, and
+ * `email_verified=true` on the new account rests on it.
  *
  * Token flow, copied from /claim (MEH-2324) because the reasoning carries
  * over and the token here is strictly more powerful: /owner-invite/<token>
@@ -76,6 +91,16 @@ export default function OwnerInviteClient({ tokenFromPath = null }) {
   const [invite, setInvite] = useState(null);
   const [attempt, setAttempt] = useState(0);
 
+  // v3. `email` is seeded from the invite when it carries one and is hers to
+  // change until a code has been sent; `codeSentTo` is the address the live
+  // code belongs to, so changing the address after a send retracts the code
+  // rather than letting her submit one address with another's code (the server
+  // refuses that too — this is the UI half, so she is not told «הקוד לא תואם»
+  // for something she can see is wrong).
+  const [email, setEmail] = useState("");
+  const [code, setCode] = useState("");
+  const [codeSentTo, setCodeSentTo] = useState(null);
+  const [sendingCode, setSendingCode] = useState(false);
   const [password, setPassword] = useState("");
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [declarationConfirmed, setDeclarationConfirmed] = useState(false);
@@ -115,6 +140,10 @@ export default function OwnerInviteClient({ tokenFromPath = null }) {
         const parsed = OwnerInvitePublicSchema.safeParse(response.data);
         if (parsed.success) {
           setInvite(parsed.data);
+          // `?? ""` and not `|| ""`: both land on an empty field here, but
+          // the nullish form says what the API means — null is "no address was
+          // ever entered", which is a different fact from an empty string.
+          setEmail(parsed.data.email ?? "");
           setView(VIEW.READY);
         } else {
           setView(VIEW.LOAD_ERROR);
@@ -138,10 +167,49 @@ export default function OwnerInviteClient({ tokenFromPath = null }) {
   }, [token, attempt]);
 
   const farmerRequired = Boolean(invite?.requires_farmer_declaration);
+  const trimmedEmail = email.trim();
+  // Two different promises, so two different strings: a hidden page goes live
+  // when she presses the button, an already-live one does not. Both strings
+  // are approved copy (<hebrew_copy> v3).
+  const submitLabel = t(invite?.will_publish ? "submit_publish" : "submit");
+  const codeIsLive = Boolean(codeSentTo) && codeSentTo === trimmedEmail.toLowerCase();
+
+  const sendCode = async () => {
+    setSubmitError(null);
+    setValidation(null);
+    if (!trimmedEmail) return setValidation(t("email_required"));
+    setSendingCode(true);
+    try {
+      await api.post("/auth/owner-invite/email-code", {
+        token,
+        email: trimmedEmail,
+      });
+      // The server's answer is deliberately the same for an address that is
+      // free, one that already has an account, and one whose send failed — it
+      // takes an arbitrary address from whoever holds the link, so a different
+      // answer would be an account-existence oracle. So this branch cannot and
+      // must not tell her which happened; it says a code is on its way and
+      // where to look if it is not.
+      setCodeSentTo(trimmedEmail.toLowerCase());
+      setCode("");
+    } catch (error) {
+      if (error?.response?.status === 404) {
+        clearOwnerInviteToken();
+        setView(VIEW.INVALID);
+        return;
+      }
+      setSubmitError(detailToMessage(error?.response?.data?.detail) || tErr("generic"));
+    } finally {
+      setSendingCode(false);
+    }
+  };
 
   const submit = async (e) => {
     e.preventDefault();
     setSubmitError(null);
+    if (!trimmedEmail) return setValidation(t("email_required"));
+    if (!codeIsLive) return setValidation(t("code_required"));
+    if (!code.trim()) return setValidation(t("code_required"));
     if (!agreedToTerms) return setValidation(tReg("validation.terms_required"));
     if (!declarationConfirmed) return setValidation(tReg("validation.declaration_required"));
     if (farmerRequired && !farmerConfirmed) return setValidation(tReg("validation.farmer_required"));
@@ -150,6 +218,8 @@ export default function OwnerInviteClient({ tokenFromPath = null }) {
     try {
       await api.post("/auth/owner-invite/accept", {
         token,
+        email: trimmedEmail,
+        code: code.trim(),
         password,
         // Same fold as registration and /claim: the grower line is part of the
         // ONE licensing declaration the server stamps (MEH-759 Chunk C).
@@ -235,6 +305,13 @@ export default function OwnerInviteClient({ tokenFromPath = null }) {
         {t("subtitle")}
       </p>
 
+      {invite.preview && <Preview preview={invite.preview} />}
+      {invite.preview && (
+        <p className="text-sm text-fg-muted mb-6" data-testid="owner-invite-preview-note">
+          {t("preview_note")}
+        </p>
+      )}
+
       <form onSubmit={submit} noValidate data-testid="owner-invite-form" className="space-y-4">
         <div>
           <label className="block text-sm text-fg-muted mb-1" htmlFor="owner-invite-email">
@@ -243,10 +320,64 @@ export default function OwnerInviteClient({ tokenFromPath = null }) {
           <input
             id="owner-invite-email"
             data-testid="owner-invite-email"
-            readOnly
+            type="email"
+            autoComplete="email"
             dir="ltr"
-            value={invite.email}
-            className="w-full min-h-touch border border-border rounded-sm ps-4 py-3 bg-background text-fg-muted"
+            value={email}
+            onChange={(e) => {
+              setEmail(e.target.value);
+              // Editing the address after a send retracts the code: the one
+              // she holds belongs to the address she just left.
+              setCodeSentTo(null);
+            }}
+            className="w-full min-h-touch border border-border rounded-sm ps-4 py-3 bg-surface text-text"
+          />
+        </div>
+
+        {/* The code step. Rendered as its own block rather than folded into
+            the address field, because it is a separate round trip she has to
+            wait for — and because the confirmation sentence has to sit where
+            she is looking when it arrives. */}
+        <div>
+          <Button
+            type="button"
+            variant="secondary"
+            size="md"
+            onClick={sendCode}
+            disabled={sendingCode || !trimmedEmail}
+            data-testid="owner-invite-send-code"
+            className="w-full"
+          >
+            {sendingCode ? t("sending_code") : t("send_code")}
+          </Button>
+          {codeSentTo && (
+            <p
+              className="text-sm text-fg-muted mt-2"
+              role="status"
+              data-testid="owner-invite-code-sent"
+            >
+              {t("code_sent")}
+            </p>
+          )}
+        </div>
+
+        <div>
+          <label className="block text-sm text-fg-muted mb-1" htmlFor="owner-invite-code">
+            {t("code_label")}
+          </label>
+          <input
+            id="owner-invite-code"
+            data-testid="owner-invite-code"
+            // `inputMode` + `autoComplete` so a phone offers the digit pad and
+            // the OS one-time-code suggestion, the same affordances the phone
+            // OTP field in the dashboard relies on.
+            inputMode="numeric"
+            autoComplete="one-time-code"
+            maxLength={6}
+            dir="ltr"
+            value={code}
+            onChange={(e) => setCode(e.target.value)}
+            className="w-full min-h-touch border border-border rounded-sm ps-4 py-3 bg-surface text-text tracking-[0.3em]"
           />
         </div>
 
@@ -307,16 +438,64 @@ export default function OwnerInviteClient({ tokenFromPath = null }) {
         <Button
           type="submit"
           data-testid="owner-invite-submit"
-          disabled={submitting || !password}
+          disabled={submitting || !password || !code.trim() || !codeIsLive}
           variant="primary"
           size="lg"
           className="w-full"
         >
-          {submitting ? t("submitting") : t("submit")}
+          {submitting ? t("submitting") : submitLabel}
         </Button>
       </form>
     </Shell>
   );
+}
+
+/**
+ * The preview, so she approves something she has SEEN.
+ *
+ * A near-twin of `ClaimClient`\'s `Preview` and deliberately not shared: that
+ * one carries a kicker («הכנו לכם עמוד במהמקור») because the claim page has no
+ * heading of its own, while this page already says what the business is in its
+ * `h1`. Extracting one component would mean a prop that exists to be absent
+ * here. The parts worth sharing — the Cloudinary host guard and the ratio —
+ * come from `lib/cloudinary.js`, which both use.
+ */
+function Preview({ preview }) {
+  // next/image throws on a host next.config does not allow, so an image from
+  // anywhere else is left out rather than breaking the page.
+  const src = isCloudinaryUrl(preview.image)
+    ? optimizeCloudinary(preview.image, { aspectRatio: IMAGE_RATIOS.banner, width: 640 })
+    : null;
+  return (
+    <div className="mb-4" data-testid="owner-invite-preview">
+      {src && (
+        <div className="relative w-full aspect-video overflow-hidden rounded-md bg-background mb-4">
+          <Image
+            src={src}
+            alt={preview.name}
+            fill
+            sizes="(max-width: 640px) 100vw, 560px"
+            className="object-cover"
+          />
+        </div>
+      )}
+      <p className="font-headline-lg text-xl font-black text-text" data-testid="owner-invite-preview-name">
+        {preview.name}
+      </p>
+      {preview.city && <p className="text-fg-muted mt-1">{preview.city}</p>}
+      {preview.short_description && (
+        <p className="text-text mt-3">{preview.short_description}</p>
+      )}
+    </div>
+  );
+}
+
+function isCloudinaryUrl(value) {
+  try {
+    return new URL(value).hostname === "res.cloudinary.com";
+  } catch {
+    return false;
+  }
 }
 
 function Shell({ children, testid }) {

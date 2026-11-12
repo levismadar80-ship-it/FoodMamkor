@@ -9,10 +9,11 @@ import Button from "@/components/ui/Button";
 
 /**
  * Module:   OwnerInvitePanel
- * Purpose:  The admin side of the owner invite (MEH-2974). On an APPROVED
- *           business's edit page: record the written consent, send the owner a
- *           one-time link, and from then on show whether it is still pending
- *           or has been accepted.
+ * Purpose:  The admin side of the owner invite (MEH-2974). On an approved or
+ *           HIDDEN business's edit page: record the written consent, mint a
+ *           one-time link (mailed only if an address was typed, copied by hand
+ *           otherwise), and from then on show whether it is still pending or
+ *           has been accepted.
  * Touches:  POST /admin/producers/{id}/owner-invite · POST …/resend ·
  *           DELETE …  (backend/app/routers/producer_owner_invite.py).
  * Does NOT: show the link again later. The server stores only a hash, so there
@@ -23,7 +24,8 @@ import Button from "@/components/ui/Button";
  *           precondition, different token; see the backend module docstring) ·
  *           app/[locale]/owner-invite/OwnerInviteClient.jsx (what the owner
  *           opens).
- * History:  MEH-2974.
+ * History:  MEH-2974 (v3 of the card made the address optional, added the
+ *           «העתקת הודעה» button for Instagram and the two status lines).
  *
  * THREE STATES, and the matrix behind them (CLAUDE.md § conditional-UI):
  *
@@ -48,6 +50,20 @@ import Button from "@/components/ui/Button";
  * showing a stale «העתקת קישור» button after a reload would copy nothing, and
  * showing it after a cancel would copy a dead link.
  */
+/** How long a «הועתק» confirmation stays up. */
+const COPIED_MS = 2000;
+
+/**
+ * The two statuses an owner may be invited to, mirroring the backend's
+ * `_INVITABLE_STATUSES` (producer_owner_invite.py). Exported because the edit
+ * page gates the panel on it: one list, so a page that offers the panel and a
+ * server that accepts the request cannot disagree. `inactive` is the hidden
+ * page whose publication IS the owner's approval (card v3, decision 11).
+ */
+export const OWNER_INVITABLE_STATUSES = ["approved", "inactive"];
+const HIDDEN_STATUS = "inactive";
+const LIVE_STATUS = "approved";
+
 export default function OwnerInvitePanel({ producerId, producer, onChanged }) {
   const t = useTranslations("admin.producers.owner_invite");
   const locale = useLocale();
@@ -62,9 +78,17 @@ export default function OwnerInvitePanel({ producerId, producer, onChanged }) {
   const [busy, setBusy] = useState(false);
   const [copied, setCopied] = useState(false);
   const [copyFailed, setCopyFailed] = useState(false);
+  const [messageCopied, setMessageCopied] = useState(false);
   const copiedTimer = useRef(null);
+  const messageTimer = useRef(null);
 
-  useEffect(() => () => clearTimeout(copiedTimer.current), []);
+  useEffect(
+    () => () => {
+      clearTimeout(copiedTimer.current);
+      clearTimeout(messageTimer.current);
+    },
+    [],
+  );
 
   const owner = producer?.owner || null;
   const acceptedAt = producer?.owner_invite_accepted_at || null;
@@ -112,6 +136,7 @@ export default function OwnerInvitePanel({ producerId, producer, onChanged }) {
     setMinted(null);
     setCopied(false);
     setCopyFailed(false);
+    setMessageCopied(false);
     try {
       const result = await call();
       if (result !== undefined) setMinted(result);
@@ -150,7 +175,10 @@ export default function OwnerInvitePanel({ producerId, producer, onChanged }) {
       adopt(
         parseMinted(
           await api.post(`/admin/producers/${producerId}/owner-invite`, {
-            email: form.email.trim(),
+            // v3: `null`, not "". An empty string is a value the server would
+            // have to reject as a malformed address; null is the absence the
+            // schema allows, and it is what stops a mail being sent.
+            email: form.email.trim() || null,
             name: form.name.trim(),
             consent_confirmed: form.consent,
             consent_note: form.note.trim(),
@@ -188,7 +216,7 @@ export default function OwnerInvitePanel({ producerId, producer, onChanged }) {
         setCopyFailed(false);
         setCopied(true);
         clearTimeout(copiedTimer.current);
-        copiedTimer.current = setTimeout(() => setCopied(false), 2000);
+        copiedTimer.current = setTimeout(() => setCopied(false), COPIED_MS);
       })
       .catch(() => setCopyFailed(true));
   };
@@ -208,18 +236,40 @@ export default function OwnerInvitePanel({ producerId, producer, onChanged }) {
   // is one more copy of a link the admin is about to paste into WhatsApp
   // anyway, on her own machine — and the token dies in 7 days, on the first
   // use, or on a resend.
+  const messageText = minted
+    ? t("whatsapp_text", {
+        name: firstName(minted.name),
+        business: producer?.name || "",
+        link: minted.invite_url,
+      })
+    : "";
   const whatsappHref = minted
-    ? `https://wa.me/?text=${encodeURIComponent(
-        t("whatsapp_text", {
-          name: firstName(minted.name),
-          business: producer?.name || "",
-          link: minted.invite_url,
-        }),
-      )}`
+    ? `https://wa.me/?text=${encodeURIComponent(messageText)}`
     : null;
 
-  const canSubmit =
-    form.email.trim() && form.name.trim() && form.note.trim() && form.consent && !busy;
+  // v3: the same message, on the clipboard. Most of these businesses are
+  // reached on Instagram, which has no share URL to hand a prefilled message
+  // to — so the only thing that works there is paste. ONE source for the
+  // sentence (`messageText`), so the two buttons cannot drift apart.
+  const copyMessage = () => {
+    if (!minted) return;
+    const write = navigator.clipboard?.writeText
+      ? navigator.clipboard.writeText(messageText)
+      : Promise.reject(new Error("clipboard unavailable"));
+    write
+      .then(() => {
+        setCopyFailed(false);
+        setMessageCopied(true);
+        clearTimeout(messageTimer.current);
+        messageTimer.current = setTimeout(() => setMessageCopied(false), COPIED_MS);
+      })
+      .catch(() => setCopyFailed(true));
+  };
+
+  // v3: the address is NOT required. The name, the consent record and the
+  // checkbox still are — they are the audit trail, and decision 4 of the card
+  // is that there is no invite without one.
+  const canSubmit = form.name.trim() && form.note.trim() && form.consent && !busy;
 
   return (
     <section
@@ -240,10 +290,15 @@ export default function OwnerInvitePanel({ producerId, producer, onChanged }) {
 
       {!owner && pending && (
         <p className="text-sm text-text mb-4" data-testid="owner-invite-pending">
-          {t("pending", {
-            email: invite.email || "",
-            date: fmtDate(invite.expires_at),
-          })}
+          {/* Two strings, because an invite with no address was not SENT
+              anywhere — «נשלח אל» with an empty value would be a lie about
+              what happened. */}
+          {invite.email
+            ? t("pending_with_email", {
+                email: invite.email,
+                date: fmtDate(invite.expires_at),
+              })
+            : t("pending", { date: fmtDate(invite.expires_at) })}
         </p>
       )}
 
@@ -270,6 +325,15 @@ export default function OwnerInvitePanel({ producerId, producer, onChanged }) {
             />
             <Button type="button" data-testid="owner-invite-copy" onClick={copy} variant="primary" size="sm">
               {copied ? t("copied") : t("copy")}
+            </Button>
+            <Button
+              type="button"
+              data-testid="owner-invite-copy-message"
+              onClick={copyMessage}
+              variant="secondary"
+              size="sm"
+            >
+              {messageCopied ? t("message_copied") : t("copy_message")}
             </Button>
             <a
               href={whatsappHref}
@@ -301,6 +365,22 @@ export default function OwnerInvitePanel({ producerId, producer, onChanged }) {
 
       {!owner && open && (
         <form onSubmit={create} noValidate className="space-y-3" data-testid="owner-invite-form">
+          {/* Which of the two is shown is the difference between «the owner's
+              approval publishes this» and «it is already out there» — the one
+              thing about this invite the admin cannot see from the form, and
+              the one she may want to change before minting a link. Rendered
+              here rather than next to the button so she reads it while filling
+              the form in, not after. */}
+          {producer?.status === HIDDEN_STATUS && (
+            <p className="text-sm text-text" data-testid="owner-invite-status-hidden">
+              {t("status_hidden")}
+            </p>
+          )}
+          {producer?.status === LIVE_STATUS && (
+            <p className="text-sm text-warning-700" data-testid="owner-invite-status-live">
+              {t("status_live")}
+            </p>
+          )}
           <Field
             id="owner-invite-name"
             label={t("fields.name")}

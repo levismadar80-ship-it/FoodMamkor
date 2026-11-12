@@ -90,13 +90,20 @@ from app.routers.admin import _producer_approved_body, _producer_approved_html
 from app.routers.auth import _set_fingerprint_cookie, _set_refresh_cookie
 from app.schemas.schemas import (
     OwnerInviteAccept,
+    OwnerInviteEmailCodeRequest,
     OwnerInviteCreate,
     OwnerInviteCreatedOut,
     OwnerInvitePublicOut,
+    ProducerClaimPreviewOut,
     Token,
 )
+from app.services import indexnow  # MEH-2852
 from app.services.email import send_email
-from app.services.auth_emails import send_owner_invite_email
+from app.services.auth_notifications import notify_admin_owner_invite_accepted
+from app.services.auth_emails import (
+    send_owner_invite_code_email,
+    send_owner_invite_email,
+)
 from app.services.password_policy import validate_password
 
 logger = structlog.get_logger(__name__)
@@ -108,9 +115,28 @@ logger = structlog.get_logger(__name__)
 # affordable.
 INVITE_TTL_DAYS = 7
 
-# The business must already be live. An invite is a HANDOVER, not an approval
+# Which businesses may be handed over. An invite is a HANDOVER, not an approval
 # path — a draft's owner goes through `producer_claim.py` instead.
-_INVITABLE_STATUS = "approved"
+#
+# v3 added `inactive` (hidden), and it is the more interesting of the two: the
+# admin builds the page, HIDES it, and it goes live at the moment its owner
+# approves it. That matches what the businesses were actually promised —
+# «נכנסים, בודקים, מאשרים והדף עולה» — and it is the same shape Google
+# Business Profile and DoorDash use (a profile the platform prepared is not
+# shown until its owner confirms).
+_INVITABLE_STATUSES = frozenset({"approved", "inactive"})
+# The status an acceptance PUBLISHES from. One value, not a set: `approved`
+# accepts and stays as it is, and nothing else is invitable.
+_HIDDEN_STATUS = "inactive"
+_LIVE_STATUS = "approved"
+
+# v3: the email code. Ten minutes is long enough to switch to a mail app and
+# back and short enough that a code read over someone's shoulder is stale by
+# the time it is useful; five attempts makes a 6-digit secret unwalkable while
+# still forgiving a typo or two. `secrets.randbelow` over `random` because this
+# is a credential.
+OWNER_INVITE_CODE_TTL_MINUTES = 10
+OWNER_INVITE_CODE_MAX_ATTEMPTS = 5
 
 # ONE message for every way a link can be unusable: never minted, mistyped,
 # expired, already accepted, replaced by a resend, cancelled. Telling them apart
@@ -122,8 +148,10 @@ _INVITABLE_STATUS = "approved"
 _LINK_INVALID = "הקישור כבר לא בתוקף. אפשר להשיב למייל ההזמנה ונשלח קישור חדש."
 
 _ALREADY_OWNED = "לעסק הזה כבר יש בעלים."
+_BAD_CODE = "הקוד לא תואם. אפשר לנסות שוב או לבקש קוד חדש."
+_NO_CODE = "צריך לבקש קוד אימות ולהזין אותו."
 _EMAIL_TAKEN = "האימייל הזה כבר רשום במהמקור, ואי אפשר להזמין אותו."
-_NOT_APPROVED = "אפשר להזמין בעלים רק לעסק מאושר."
+_NOT_APPROVED = "אפשר להזמין בעלים רק לעסק מאושר או מוסתר."
 _NO_INVITE = "אין הזמנה פתוחה לעסק הזה."
 _ALREADY_ACCEPTED = "ההזמנה כבר התקבלה."
 _NOT_FOUND = "בית העסק לא נמצא"
@@ -174,6 +202,29 @@ def _requires_farmer_declaration(producer: Producer) -> bool:
     )
 
 
+def _preview(producer: Producer) -> ProducerClaimPreviewOut:
+    """What the page will look like, so she approves something she has seen.
+
+    The same five public fields `ProducerClaimPreviewOut` carries for the claim
+    page, and every one of them is already on the business's own page — so a
+    holder of the link learns nothing they could not read there, once the page
+    is live.
+
+    Deliberately built HERE rather than by pointing the page at `/producers/*`:
+    a HIDDEN business must not become reachable through a public endpoint
+    before its owner accepts, and holding the invite link is the only way to
+    see it. `producer_listing` filters on `status == "approved"`, so the public
+    route would answer 404 for exactly the case v3 is about.
+    """
+    return ProducerClaimPreviewOut(
+        name=producer.name,
+        city=producer.city,
+        short_description=producer.short_description,
+        image=(producer.images or [None])[0],
+        category_names=[c.name for c in producer.categories],
+    )
+
+
 def _load_invitable(
     db: Session, producer_id: UUID, *, require_approved: bool = True
 ) -> Producer:
@@ -199,7 +250,7 @@ def _load_invitable(
     )
     if not producer:
         raise HTTPException(status_code=404, detail=_NOT_FOUND)
-    if require_approved and producer.status != _INVITABLE_STATUS:
+    if require_approved and producer.status not in _INVITABLE_STATUSES:
         raise HTTPException(status_code=409, detail=_NOT_APPROVED)
     if _has_owner(db, producer.id):
         raise HTTPException(status_code=409, detail=_ALREADY_OWNED)
@@ -225,7 +276,24 @@ def _mint(producer: Producer, admin_id: UUID) -> tuple[str, datetime]:
     producer.owner_invite_sent_at = now
     producer.owner_invite_expires_at = now + timedelta(days=INVITE_TTL_DAYS)
     producer.owner_invite_created_by = admin_id
+    # A new link means a new verification round. Leaving a live code behind
+    # would let one sent to the PREVIOUS link's holder be used against this
+    # one, which is the whole thing minting a fresh token is meant to stop.
+    _clear_code(producer)
     return token, producer.owner_invite_expires_at
+
+
+def _clear_code(producer: Producer) -> None:
+    """Drop the email code and its counter. Always all three together.
+
+    Called on every event that ends the current verification round: a new
+    code, a resend, a cancel, an acceptance. Clearing the hash alone would
+    leave `owner_invite_code_attempts` to carry into the next code and expire
+    it early.
+    """
+    producer.owner_invite_code_hash = None
+    producer.owner_invite_code_expires_at = None
+    producer.owner_invite_code_attempts = None
 
 
 def _first_name(full_name: str | None) -> str:
@@ -268,7 +336,10 @@ def create_owner_invite(  # noqa: PLR0913 — six FastAPI-injected parameters, n
     admin corrects a typo in the address without a separate revoke step.
     """
     producer = _load_invitable(db, producer_id)
-    if _email_taken(db, body.email):
+    # Only when she gave one: v3 lets the admin mint a link with no address at
+    # all, and the owner then types her own on the page, where it is proven
+    # with a code. An absent address cannot collide with anything.
+    if body.email and _email_taken(db, body.email):
         raise HTTPException(status_code=409, detail=_EMAIL_TAKEN)
 
     producer.owner_invite_email = body.email
@@ -293,14 +364,18 @@ def create_owner_invite(  # noqa: PLR0913 — six FastAPI-injected parameters, n
         admin_id=str(user.id),
         expires_at=expires_at.isoformat(),
     )
-    background_tasks.add_task(
-        send_owner_invite_email,
-        email,
-        _first_name(name),
-        business,
-        _invite_url(token),
-        test_cause=test_cause,
-    )
+    # No address, no mail — and that is the normal case now, not a failure.
+    # The admin copies the link and sends it on Instagram or WhatsApp; the
+    # response carries it for exactly that.
+    if email:
+        background_tasks.add_task(
+            send_owner_invite_email,
+            email,
+            _first_name(name),
+            business,
+            _invite_url(token),
+            test_cause=test_cause,
+        )
     return OwnerInviteCreatedOut(
         invite_url=_invite_url(token),
         email=email,
@@ -326,12 +401,15 @@ def resend_owner_invite(
     fresh `consent_note` for it.
     """
     producer = _load_invitable(db, producer_id)
-    if not producer.owner_invite_email:
+    # What makes an invite exist is its TOKEN, not an address — since v3 an
+    # invite may legitimately have none. Keying this on the email would make
+    # «resend» 404 for exactly the link the admin is most likely to re-copy.
+    if not producer.owner_invite_token_hash:
         raise HTTPException(status_code=404, detail=_NO_INVITE)
-    # Re-checked, not assumed from the create: the address may have been
+    # Re-checked, not assumed from the create: an address may have been
     # registered in the days since, and resending then would mint a link whose
     # acceptance is guaranteed to 409.
-    if _email_taken(db, producer.owner_invite_email):
+    if producer.owner_invite_email and _email_taken(db, producer.owner_invite_email):
         raise HTTPException(status_code=409, detail=_EMAIL_TAKEN)
 
     token, expires_at = _mint(producer, user.id)
@@ -350,14 +428,15 @@ def resend_owner_invite(
         admin_id=str(user.id),
         expires_at=expires_at.isoformat(),
     )
-    background_tasks.add_task(
-        send_owner_invite_email,
-        email,
-        _first_name(name),
-        business,
-        _invite_url(token),
-        test_cause=test_cause,
-    )
+    if email:
+        background_tasks.add_task(
+            send_owner_invite_email,
+            email,
+            _first_name(name),
+            business,
+            _invite_url(token),
+            test_cause=test_cause,
+        )
     return OwnerInviteCreatedOut(
         invite_url=_invite_url(token),
         email=email,
@@ -395,6 +474,9 @@ def cancel_owner_invite(
     producer.owner_invite_sent_at = None
     producer.owner_invite_email = None
     producer.owner_invite_name = None
+    # Including any live verification code: a cancelled invite that left one
+    # behind would hand the next invite a code its holder never asked for.
+    _clear_code(producer)
     db.commit()
     logger.info(
         "owner_invite.cancelled",
@@ -430,10 +512,138 @@ def _live_invite(db: Session, token: str) -> Producer | None:
             Producer.owner_invite_token_hash == _hash_token(token),
             Producer.owner_invite_accepted_at.is_(None),
             Producer.owner_invite_expires_at > datetime.now(timezone.utc),
-            Producer.status == _INVITABLE_STATUS,
+            Producer.status.in_(_INVITABLE_STATUSES),
         )
         .first()
     )
+
+
+def _mint_code(producer: Producer) -> str:
+    """A fresh 6-digit code. Only its sha256 reaches the row.
+
+    `secrets.randbelow`, not `random`: this is a credential, and `random` is
+    seeded predictably. Zero-padded so every code is six characters — a code
+    rendered as "42" would be a different, shorter secret, and the page shows
+    it in a fixed-width field.
+
+    Stricter than the repo's existing OTP, which stores the code in plaintext
+    (`PhoneOtpToken.code`, models.py). The reason to differ here is the blast
+    radius: that code verifies a phone on a business its owner already holds;
+    this one is the last gate before an account is created on a live page.
+    """
+    code = f"{secrets.randbelow(1_000_000):06d}"
+    producer.owner_invite_code_hash = _hash_token(code)
+    producer.owner_invite_code_expires_at = datetime.now(timezone.utc) + timedelta(
+        minutes=OWNER_INVITE_CODE_TTL_MINUTES
+    )
+    producer.owner_invite_code_attempts = 0
+    return code
+
+
+@public_router.post("/email-code")
+# 5/hour per token AND per IP. The per-token cap is the one that matters: it
+# bounds how much mail one link can cause to be sent to addresses chosen by
+# whoever holds it, which is the abuse this endpoint invites.
+@limiter.limit("5/hour")
+def send_owner_invite_email_code(
+    request: Request,
+    body: OwnerInviteEmailCodeRequest,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
+):
+    """Send a verification code to the address she typed.
+
+    THE RESPONSE IS THE SAME WHATEVER HAPPENS — same status, same bytes —
+    for an address that is free, one that already belongs to an account, and
+    one whose send fails. The reason is specific: this endpoint takes an
+    arbitrary address from anyone holding the link, so a different answer for
+    "already registered" would turn it into an account-existence oracle for
+    any address an attacker cares to try.
+
+    What DOES differ is invisible from here: a registered address is not
+    mailed and no code is stored, so the acceptance it would lead to fails at
+    the 409 it was always going to fail at.
+
+    An invalid link still 404s — that is a fact about the LINK, which the
+    caller already holds, not about any address.
+    """
+    producer = _live_invite(db, body.token)
+    if producer is None:
+        raise HTTPException(status_code=404, detail=_LINK_INVALID)
+
+    ack = {"detail": "אם הכתובת תקינה, הקוד בדרך"}
+    # The address is recorded either way: the page shows it back, and an
+    # acceptance must match what was recorded. Recording it for a taken
+    # address costs nothing — no code exists, so no acceptance can pass.
+    producer.owner_invite_email = body.email
+    if _email_taken(db, body.email):
+        _clear_code(producer)
+        db.commit()
+        logger.info(
+            "owner_invite.code_skipped_taken_email", producer_id=str(producer.id)
+        )
+        return ack
+
+    code = _mint_code(producer)
+    # Read before the commit expires the instance — the same note every other
+    # writer in this module carries.
+    business, test_cause = producer.name, bool(producer.is_test)
+    p_id = producer.id
+    db.commit()
+
+    # producer_id only. Never the code, never the address.
+    logger.info("owner_invite.code_sent", producer_id=str(p_id))
+    background_tasks.add_task(
+        send_owner_invite_code_email,
+        body.email,
+        business,
+        code,
+        test_cause=test_cause,
+    )
+    return ack
+
+
+def _verify_email_code(
+    db: Session, producer: Producer, email: str, code: str, now: datetime
+) -> None:
+    """v3: the address is proven, not asserted. Raises 422 or returns.
+
+    The body's address must be the one the code was issued to. Comparing it to
+    the ROW rather than trusting the body is what stops a code obtained for one
+    address being spent on another: `request_owner_invite_code` writes
+    `owner_invite_email` and mints the code in the SAME transaction, so the two
+    can never belong to different addresses.
+
+    The attempts counter is the only write a failed accept makes — the card's
+    «בלי קוד תקף: אפס כתיבות מלבד המונה». Nothing here touches the token, the
+    status, or `users`.
+    """
+    stored_hash = producer.owner_invite_code_hash
+    expires = producer.owner_invite_code_expires_at
+    attempts = producer.owner_invite_code_attempts or 0
+    if (
+        not stored_hash
+        or expires is None
+        or expires <= now
+        or attempts >= OWNER_INVITE_CODE_MAX_ATTEMPTS
+    ):
+        # No code, expired, or walked to the cap — all one answer on purpose.
+        # Distinguishing them tells a guesser which of the three states it is
+        # in, and she needs the same next step in every case: ask for a code.
+        raise HTTPException(status_code=422, detail=_NO_CODE)
+
+    # Counted as an attempt either way, deliberately: trying addresses against
+    # a live code is the same guessing this counter exists to bound.
+    #
+    # `compare_digest`, not `==`: both sides are hex digests of the same
+    # length, so a byte-by-byte comparison is a timing oracle on a six-digit
+    # secret — small enough for that to matter.
+    if email != (producer.owner_invite_email or "").strip().lower() or (
+        not secrets.compare_digest(_hash_token(code), stored_hash)
+    ):
+        producer.owner_invite_code_attempts = attempts + 1
+        db.commit()
+        raise HTTPException(status_code=422, detail=_BAD_CODE)
 
 
 @public_router.post("/accept", response_model=Token)
@@ -459,12 +669,15 @@ async def accept_owner_invite(
          read — the same classification register_producer gives its own
          body-shape guards.
       2. The password policy, also 422, also before any write.
-      3. The email-taken and has-owner checks, 409, BEFORE the claim — so the
+      3. The EMAIL CODE (v3), 422. She proves the address before anything
+         else is spent on it, and a wrong guess costs one of five attempts —
+         the counter is the only write a failed accept makes.
+      4. The email-taken and has-owner checks, 409, BEFORE the claim — so the
          common race answers without having touched anything.
-      4. The claim: ONE conditional UPDATE (MEH-1820), never SELECT-then-set.
-      5. The INSERT, then a single commit.
+      5. The claim: ONE conditional UPDATE (MEH-1820), never SELECT-then-set.
+      6. The INSERT, the publish if the business was hidden, then one commit.
 
-    Steps 3 and 5 still race each other, and the backstop is NARROWER than it
+    Steps 4 and 6 still race each other, and the backstop is NARROWER than it
     looks: the unique index on `users.email` is case-SENSITIVE, while
     `_email_taken` compares lowercased. So it catches an exact-case collision —
     rolling the whole transaction back, claim included, which is what keeps the
@@ -484,13 +697,11 @@ async def accept_owner_invite(
     if producer is None:
         raise HTTPException(status_code=404, detail=_LINK_INVALID)
 
-    invited_email = producer.owner_invite_email
     invited_name = producer.owner_invite_name
-    if not invited_email:
-        # A row with a live token but no address cannot happen through any
-        # route here (create writes both, cancel clears both). If it ever does,
-        # it is not a link anyone may accept.
-        raise HTTPException(status_code=404, detail=_LINK_INVALID)
+
+    now = datetime.now(timezone.utc)
+    _verify_email_code(db, producer, body.email, body.code, now)
+    invited_email = body.email
 
     # MEH-306 / MEH-457: the full policy (deny-list + HIBP) is async and bcrypt
     # blocks, so both are awaited off the event loop exactly as reset_password
@@ -545,7 +756,7 @@ async def accept_owner_invite(
             Producer.owner_invite_token_hash == _hash_token(body.token),
             Producer.owner_invite_accepted_at.is_(None),
             Producer.owner_invite_expires_at > now,
-            Producer.status == _INVITABLE_STATUS,
+            Producer.status.in_(_INVITABLE_STATUSES),
         )
         .update(
             {
@@ -558,6 +769,19 @@ async def accept_owner_invite(
                 # both NULL) — this is the moment it becomes signed.
                 Producer.declared_at: now,
                 Producer.declaration_version: DECLARATION_VERSION,
+                # v3: the page goes live in the SAME statement that claims the
+                # token. Set unconditionally rather than only when the row
+                # read `inactive`: both invitable statuses END at `approved`,
+                # so writing the end state needs no read to be still true —
+                # which is the whole point of doing it here and not after a
+                # second SELECT.
+                Producer.status: _LIVE_STATUS,
+                # The code is spent with the token. Nothing may be accepted
+                # twice, and a code left behind would outlive the invite it
+                # belonged to.
+                Producer.owner_invite_code_hash: None,
+                Producer.owner_invite_code_expires_at: None,
+                Producer.owner_invite_code_attempts: None,
             },
             synchronize_session=False,
         )
@@ -595,6 +819,15 @@ async def accept_owner_invite(
     # `admin_id`.
     p_id, p_name, p_slug = producer.id, producer.name, producer.slug
     p_is_test = bool(producer.is_test)
+    # Whether this acceptance PUBLISHED the page, read before the UPDATE's
+    # end state can be refreshed into the session. Only a real transition
+    # announces: an already-approved business's URL did not change, and
+    # pinging it would claim a change that did not happen.
+    published = producer.status == _HIDDEN_STATUS
+    # Computed here for the same reason the three lines above are: after the
+    # commit this row is expired, and `producer_urls` reads slug, kind and
+    # is_test. It returns [] by itself for a test row (MEH-2952).
+    p_urls = indexnow.producer_urls(producer)
 
     db.add(user)
     try:
@@ -608,7 +841,27 @@ async def accept_owner_invite(
 
     db.refresh(user)
     p_test = bool(p_is_test or user.is_test)
-    logger.info("owner_invite.accepted", producer_id=str(p_id), user_id=str(user.id))
+    logger.info(
+        "owner_invite.accepted",
+        producer_id=str(p_id),
+        user_id=str(user.id),
+        published=published,
+    )
+
+    # MEH-2852: the page became public in this request, so the search engines
+    # are told. After the commit, never before — a ping for a transaction that
+    # then rolled back announces a page that is still hidden.
+    if published:
+        indexnow.schedule(background_tasks, p_urls)
+
+    # The admin started this loop and nothing else closes it for her.
+    background_tasks.add_task(
+        notify_admin_owner_invite_accepted,
+        p_name,
+        user.email,
+        published,
+        test_cause=p_test,
+    )
 
     # The business is already approved, so the one email that is TRUE for her
     # is the one every other approved business's owner got — the same builders
@@ -650,10 +903,16 @@ def get_owner_invite(request: Request, token: str, db: Session = Depends(get_db)
     `request` is required by slowapi, which reads it by introspection.
     """
     producer = _live_invite(db, token)
-    if producer is None or not producer.owner_invite_email:
+    # No email check any more: since v3 a live invite may legitimately carry
+    # none, and `email=None` is what tells the page to render an empty,
+    # editable field instead of a read-only address.
+    if producer is None:
         raise HTTPException(status_code=404, detail=_LINK_INVALID)
     return OwnerInvitePublicOut(
         producer_name=producer.name,
         email=producer.owner_invite_email,
         requires_farmer_declaration=_requires_farmer_declaration(producer),
+        # Accepting PUBLISHES a hidden business, and the page's button says so.
+        will_publish=producer.status == _HIDDEN_STATUS,
+        preview=_preview(producer),
     )

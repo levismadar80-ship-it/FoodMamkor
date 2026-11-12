@@ -4,8 +4,14 @@ Revision ID: a7f3c2e94d18
 Revises: c05dbc247ca1
 Create Date: 2026-11-12 20:00:00.000000+00:00
 
-MEH-2974 (הזמנת בעלים לעסק שהועלה ע״י אדמין): eight nullable columns on
+MEH-2974 (הזמנת בעלים לעסק שהועלה ע״י אדמין): eleven nullable columns on
 `producers` holding ONE outstanding owner invite per business.
+
+(Eight when first written; the card's v3 revision added the three
+`owner_invite_code_*` columns. They join THIS revision rather than chaining a
+second one because it has not shipped — nothing has run `upgrade head` against
+it outside a scratch database, so there is no deployed schema to expand FROM.
+A follow-up revision would have been the right answer the moment it merges.)
 
   - `owner_invite_email`        VARCHAR(200) — where the invite was sent
   - `owner_invite_name`         VARCHAR(200) — the addressee, for «היי {name}»
@@ -18,6 +24,12 @@ MEH-2974 (הזמנת בעלים לעסק שהועלה ע״י אדמין): eight 
                                 written consent («אישור בוואטסאפ, 12/11»)
   - `owner_invite_created_by`   UUID FK users.id ON DELETE SET NULL — which
                                 admin minted it
+  - `owner_invite_code_hash`    VARCHAR(64)  — sha256 HEX of the 6-digit email
+                                verification code. NEVER the code itself.
+  - `owner_invite_code_expires_at` TIMESTAMPTZ — 10 minutes from the send
+  - `owner_invite_code_attempts`   INTEGER  — wrong guesses against the current
+                                code; the code dies at the cap, so a 6-digit
+                                secret cannot be walked
 
 WHY COLUMNS AND NOT A TABLE
 ---------------------------
@@ -31,6 +43,8 @@ are columns, not a table.
 The shape also says something true about the domain: a business has at most ONE
 outstanding invite. Re-inviting REPLACES the row's token (which is how an
 outstanding link is revoked), and there is deliberately no invite history in v1.
+The same holds for the email code: one live code per business, replaced by the
+next send and cleared by a resend, a cancel or an acceptance.
 
 WHY THE HASH AND NOT THE TOKEN
 ------------------------------
@@ -135,6 +149,20 @@ def upgrade() -> None:
             "owner_invite_created_by", postgresql.UUID(as_uuid=True), nullable=True
         ),
     )
+    op.add_column(
+        "producers",
+        sa.Column("owner_invite_code_hash", sa.String(length=64), nullable=True),
+    )
+    op.add_column(
+        "producers",
+        sa.Column(
+            "owner_invite_code_expires_at", sa.DateTime(timezone=True), nullable=True
+        ),
+    )
+    op.add_column(
+        "producers",
+        sa.Column("owner_invite_code_attempts", sa.Integer(), nullable=True),
+    )
     op.create_index(_INDEX, "producers", ["owner_invite_token_hash"], unique=False)
     op.create_foreign_key(
         _FK,
@@ -149,6 +177,9 @@ def upgrade() -> None:
 def downgrade() -> None:
     op.drop_constraint(_FK, "producers", type_="foreignkey")
     op.drop_index(_INDEX, table_name="producers")
+    op.drop_column("producers", "owner_invite_code_attempts")
+    op.drop_column("producers", "owner_invite_code_expires_at")
+    op.drop_column("producers", "owner_invite_code_hash")
     op.drop_column("producers", "owner_invite_created_by")
     op.drop_column("producers", "owner_invite_consent_note")
     op.drop_column("producers", "owner_invite_accepted_at")

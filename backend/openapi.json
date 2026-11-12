@@ -4866,9 +4866,20 @@
       },
       "OwnerInviteAccept": {
         "properties": {
+          "code": {
+            "maxLength": 12,
+            "minLength": 1,
+            "title": "Code",
+            "type": "string"
+          },
           "declaration_accepted": {
             "title": "Declaration Accepted",
             "type": "boolean"
+          },
+          "email": {
+            "format": "email",
+            "title": "Email",
+            "type": "string"
           },
           "password": {
             "description": "Password — additional checks via password_policy service",
@@ -4890,6 +4901,8 @@
         },
         "required": [
           "token",
+          "email",
+          "code",
           "password",
           "terms_accepted",
           "declaration_accepted"
@@ -4911,9 +4924,16 @@
             "type": "string"
           },
           "email": {
-            "format": "email",
-            "title": "Email",
-            "type": "string"
+            "anyOf": [
+              {
+                "format": "email",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Email"
           },
           "name": {
             "title": "Name",
@@ -4921,7 +4941,6 @@
           }
         },
         "required": [
-          "email",
           "name",
           "consent_confirmed",
           "consent_note"
@@ -4933,9 +4952,16 @@
         "description": "The ONE response that carries the raw token, as part of `invite_url`.\n\nReturned by create and by resend, and nowhere else: there is no GET that\nre-reads it, because the database holds only the sha256. If the admin\nloses the link she resends, which mints a new token and kills this one.",
         "properties": {
           "email": {
-            "format": "email",
-            "title": "Email",
-            "type": "string"
+            "anyOf": [
+              {
+                "format": "email",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Email"
           },
           "expires_at": {
             "format": "date-time",
@@ -4958,7 +4984,6 @@
         },
         "required": [
           "invite_url",
-          "email",
           "name",
           "sent_at",
           "expires_at"
@@ -4966,13 +4991,52 @@
         "title": "OwnerInviteCreatedOut",
         "type": "object"
       },
-      "OwnerInvitePublicOut": {
-        "description": "What the acceptance page may know before anyone has authenticated.\n\nDeliberately three fields. The business NAME is already public on its own\npage, and the EMAIL is the address the link was sent to — so a holder of\nthe link learns nothing about the business they did not already have. No\nphone, no address, no license, no ids, and no token echo.",
+      "OwnerInviteEmailCodeRequest": {
+        "description": "v3: «send a code to this address».\n\nThe response is a fixed 200 whatever happens — address free, address\nalready registered, send failed — so this shape carries nothing a caller\ncould use to tell those apart.",
         "properties": {
           "email": {
             "format": "email",
             "title": "Email",
             "type": "string"
+          },
+          "token": {
+            "maxLength": 512,
+            "minLength": 1,
+            "title": "Token",
+            "type": "string"
+          }
+        },
+        "required": [
+          "token",
+          "email"
+        ],
+        "title": "OwnerInviteEmailCodeRequest",
+        "type": "object"
+      },
+      "OwnerInvitePublicOut": {
+        "description": "What the acceptance page may know before anyone has authenticated.\n\nDeliberately three fields. The business NAME is already public on its own\npage, and the EMAIL is the address the link was sent to — so a holder of\nthe link learns nothing about the business they did not already have. No\nphone, no address, no license, no ids, and no token echo.",
+        "properties": {
+          "email": {
+            "anyOf": [
+              {
+                "format": "email",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Email"
+          },
+          "preview": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ProducerClaimPreviewOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "producer_name": {
             "title": "Producer Name",
@@ -4981,11 +5045,15 @@
           "requires_farmer_declaration": {
             "title": "Requires Farmer Declaration",
             "type": "boolean"
+          },
+          "will_publish": {
+            "default": false,
+            "title": "Will Publish",
+            "type": "boolean"
           }
         },
         "required": [
           "producer_name",
-          "email",
           "requires_farmer_declaration"
         ],
         "title": "OwnerInvitePublicOut",
@@ -19629,7 +19697,7 @@
     },
     "/auth/owner-invite/accept": {
       "post": {
-        "description": "Set a password, sign both consents, and walk into the dashboard.\n\nORDER MATTERS, and each step is placed where it is for a reason:\n\n  1. The two consent booleans are schema-level 422s (OwnerInviteAccept).\n     They are statements about the BODY and say nothing about which\n     business the token names, so they leak nothing and they run before any\n     read — the same classification register_producer gives its own\n     body-shape guards.\n  2. The password policy, also 422, also before any write.\n  3. The email-taken and has-owner checks, 409, BEFORE the claim — so the\n     common race answers without having touched anything.\n  4. The claim: ONE conditional UPDATE (MEH-1820), never SELECT-then-set.\n  5. The INSERT, then a single commit.\n\nSteps 3 and 5 still race each other, and the backstop is NARROWER than it\nlooks: the unique index on `users.email` is case-SENSITIVE, while\n`_email_taken` compares lowercased. So it catches an exact-case collision —\nrolling the whole transaction back, claim included, which is what keeps the\n409 free of writes and the link usable — and does NOT catch one that\ndiffers only in case. That gap is `users.email` having no case-insensitive\nindex, which is repo-wide (`auth.py` looks accounts up with a raw `==`\neverywhere) and belongs to its own card; it is recorded here rather than\nhalf-fixed in one endpoint. Its blast radius is bounded: the racer's\naccount does not own the business, only the invitee's does.\n\nThe window itself is as small as it can be made — bcrypt moved above the\ncheck, so the only thing left between them is the UPDATE.",
+        "description": "Set a password, sign both consents, and walk into the dashboard.\n\nORDER MATTERS, and each step is placed where it is for a reason:\n\n  1. The two consent booleans are schema-level 422s (OwnerInviteAccept).\n     They are statements about the BODY and say nothing about which\n     business the token names, so they leak nothing and they run before any\n     read — the same classification register_producer gives its own\n     body-shape guards.\n  2. The password policy, also 422, also before any write.\n  3. The EMAIL CODE (v3), 422. She proves the address before anything\n     else is spent on it, and a wrong guess costs one of five attempts —\n     the counter is the only write a failed accept makes.\n  4. The email-taken and has-owner checks, 409, BEFORE the claim — so the\n     common race answers without having touched anything.\n  5. The claim: ONE conditional UPDATE (MEH-1820), never SELECT-then-set.\n  6. The INSERT, the publish if the business was hidden, then one commit.\n\nSteps 4 and 6 still race each other, and the backstop is NARROWER than it\nlooks: the unique index on `users.email` is case-SENSITIVE, while\n`_email_taken` compares lowercased. So it catches an exact-case collision —\nrolling the whole transaction back, claim included, which is what keeps the\n409 free of writes and the link usable — and does NOT catch one that\ndiffers only in case. That gap is `users.email` having no case-insensitive\nindex, which is repo-wide (`auth.py` looks accounts up with a raw `==`\neverywhere) and belongs to its own card; it is recorded here rather than\nhalf-fixed in one endpoint. Its blast radius is bounded: the racer's\naccount does not own the business, only the invitee's does.\n\nThe window itself is as small as it can be made — bcrypt moved above the\ncheck, so the only thing left between them is the UPDATE.",
         "operationId": "accept_owner_invite_auth_owner_invite_accept_post",
         "requestBody": {
           "content": {
@@ -19664,6 +19732,46 @@
           }
         },
         "summary": "Accept Owner Invite",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/auth/owner-invite/email-code": {
+      "post": {
+        "description": "Send a verification code to the address she typed.\n\nTHE RESPONSE IS THE SAME WHATEVER HAPPENS — same status, same bytes —\nfor an address that is free, one that already belongs to an account, and\none whose send fails. The reason is specific: this endpoint takes an\narbitrary address from anyone holding the link, so a different answer for\n\"already registered\" would turn it into an account-existence oracle for\nany address an attacker cares to try.\n\nWhat DOES differ is invisible from here: a registered address is not\nmailed and no code is stored, so the acceptance it would lead to fails at\nthe 409 it was always going to fail at.\n\nAn invalid link still 404s — that is a fact about the LINK, which the\ncaller already holds, not about any address.",
+        "operationId": "send_owner_invite_email_code_auth_owner_invite_email_code_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OwnerInviteEmailCodeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Send Owner Invite Email Code",
         "tags": [
           "auth"
         ]

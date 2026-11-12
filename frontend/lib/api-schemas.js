@@ -229,8 +229,18 @@ export const ProducerClaimLinkSchema = z.object({
 // silently drop a declaration the server expects.
 export const OwnerInvitePublicSchema = z.object({
   producer_name: z.string().min(1),
-  email: z.string().min(1),
+  // v3: nullable. An invite may carry no address at all — the admin sends the
+  // link by WhatsApp and the owner types her own on the page — so `null` here
+  // is what makes the field render empty rather than pre-filled.
+  email: z.string().nullable().optional(),
   requires_farmer_declaration: z.boolean(),
+  // v3: true while the business is still hidden, i.e. accepting PUBLISHES it.
+  // The submit button's copy branches on this, so a missing value must not
+  // silently read as false — the backend always sends it.
+  will_publish: z.boolean(),
+  // v3: the same five public fields the claim page previews, reused by SCHEMA
+  // so the two pages cannot drift apart on what a preview is.
+  preview: ProducerClaimPreviewSchema.nullable().optional(),
 });
 
 // POST /admin/producers/{id}/owner-invite (and /resend) → OwnerInviteCreatedOut.
@@ -240,7 +250,10 @@ export const OwnerInvitePublicSchema = z.object({
 // ProducerClaimLinkSchema above.
 export const OwnerInviteCreatedSchema = z.object({
   invite_url: z.string().url(),
-  email: z.string().min(1),
+  // v3: nullable for the same reason as the public shape above — an invite
+  // created with no address returns none, and the panel renders no «נשלח אל»
+  // line for it.
+  email: z.string().nullable().optional(),
   name: z.string(),
   // Formatted with Intl during render, where an unparseable value throws.
   sent_at: z.string().refine((value) => !Number.isNaN(Date.parse(value))),

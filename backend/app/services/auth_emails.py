@@ -398,7 +398,7 @@ def send_owner_invite_email(
 ) -> None:
     """The invite Sapir sends after building a business's page herself.
 
-    Copy is LOCKED (MEH-2974 <hebrew_copy>, approved 12/11 under the layer-3
+    Copy is LOCKED (MEH-2974 <hebrew_copy> v3, approved 12/11 under the layer-3
     voice of docs/BRAND.md §לשון פנייה: fully neutral, addressed by name, no
     slash forms). It is reproduced verbatim in both parts — do not "improve" a
     word here without a new approval.
@@ -416,15 +416,15 @@ def send_owner_invite_email(
     """
     greeting = f"היי {first_name}," if (first_name or "").strip() else "היי,"
     privacy_url = f"{settings.frontend_url}{_PRIVACY_PATH}"
-    subject = f"הדף של {business} במהמקור מוכן, נשאר רק לקבוע סיסמה"
+    subject = f"הדף של {business} במהמקור מוכן, נשאר רק לאשר"
     body = (
         f"{greeting}\n\n"
-        f"כמו שסיכמנו, העליתי את הדף של {business} למהמקור.\n\n"
-        f"נשאר צעד אחד כדי לנהל את הדף ישירות: לקבוע סיסמה ולאשר את התקנון "
-        f"ואת הצהרת הרישוי.\n\n"
-        f"[קביעת סיסמה]\n"
+        f"כמו שסיכמנו, הכנתי את הדף של {business} במהמקור.\n\n"
+        f"נשאר צעד אחד: לבדוק את הדף, לקבוע סיסמה ולאשר את התקנון ואת הצהרת "
+        f"הרישוי. אחרי האישור הדף באוויר, ואפשר לנהל אותו ישירות.\n\n"
+        f"[בדיקה ואישור הדף]\n"
         f"{link}\n\n"
-        f"הקישור תקף ל-7 ימים ונועד לשימוש אישי. שם המשתמש הוא כתובת המייל הזו.\n\n"
+        f"הקישור תקף ל-7 ימים ונועד לשימוש אישי.\n\n"
         f"המייל הגיע בטעות, או שהדף כבר לא רלוונטי? אפשר להשיב למייל הזה והדף יוסר.\n\n"
         f"איך אנחנו שומרים על המידע: {privacy_url}\n\n"
         f"ספיר שנפ\n"
@@ -451,16 +451,16 @@ def send_owner_invite_email(
             <td style="text-align:right;direction:rtl;">
               {email_logo_html()}
               <h1 style="font-size:20px;color:#1C1A17;margin:0 0 12px;">{greeting_html}</h1>
-              <p style="color:#3a3a3a;font-size:15px;line-height:1.7;margin:0 0 12px;">כמו שסיכמנו, העליתי את הדף של {business_html} למהמקור.</p>
-              <p style="color:#3a3a3a;font-size:15px;line-height:1.7;margin:0 0 24px;">נשאר צעד אחד כדי לנהל את הדף ישירות: לקבוע סיסמה ולאשר את התקנון ואת הצהרת הרישוי.</p>
+              <p style="color:#3a3a3a;font-size:15px;line-height:1.7;margin:0 0 12px;">כמו שסיכמנו, הכנתי את הדף של {business_html} במהמקור.</p>
+              <p style="color:#3a3a3a;font-size:15px;line-height:1.7;margin:0 0 24px;">נשאר צעד אחד: לבדוק את הדף, לקבוע סיסמה ולאשר את התקנון ואת הצהרת הרישוי. אחרי האישור הדף באוויר, ואפשר לנהל אותו ישירות.</p>
               <div style="text-align:center;margin:0 0 28px;">
                 <a href="{link}"
                    style="display:inline-block;background:#2e6853;color:#ffffff;text-decoration:none;
                           font-size:15px;font-weight:bold;padding:14px 36px;border-radius:10px;">
-                  קביעת סיסמה
+                  בדיקה ואישור הדף
                 </a>
               </div>
-              <p style="color:#666;font-size:13px;line-height:1.6;margin:0 0 12px;">הקישור תקף ל-7 ימים ונועד לשימוש אישי. שם המשתמש הוא כתובת המייל הזו.</p>
+              <p style="color:#666;font-size:13px;line-height:1.6;margin:0 0 12px;">הקישור תקף ל-7 ימים ונועד לשימוש אישי.</p>
               <p style="color:#666;font-size:13px;line-height:1.6;margin:0 0 24px;">המייל הגיע בטעות, או שהדף כבר לא רלוונטי? אפשר להשיב למייל הזה והדף יוסר.</p>
               <p style="color:#666;font-size:13px;line-height:1.6;margin:0 0 24px;">איך אנחנו שומרים על המידע: <a href="{privacy_url}" style="color:#2e6853;">{privacy_url}</a></p>
               <hr style="border:none;border-top:1px solid #eee;margin:0 0 16px;">
@@ -469,6 +469,64 @@ def send_owner_invite_email(
                 <a href="{link}" style="color:#2e6853;">{link}</a>
               </p>
               <p style="color:#3a3a3a;font-size:14px;line-height:1.6;margin:0;">ספיר שנפ<br>מייסדת | מהמקור</p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>"""
+    send_email(email, subject, body, html=html_body, test_cause=test_cause)
+
+
+def send_owner_invite_code_email(
+    email: str,
+    business: str,
+    code: str,
+    test_cause: bool = False,
+) -> None:
+    """The 6-digit code that proves the address typed on the acceptance page.
+
+    v3 of the card made the invite link work with NO email on it — most
+    businesses reach us on Instagram or WhatsApp — so the owner types her
+    address on the page, and this is what turns a typed string into a proven
+    one before any account exists.
+
+    Deliberately short and unsigned: no name, no link, no privacy paragraph,
+    no «ספיר שנפ» signature. It can be sent to an address nobody has verified
+    yet, including one entered by mistake, so it says as little as possible
+    about who is inviting whom. Copy is LOCKED (<hebrew_copy> v3).
+
+    The code is passed in, never generated here — `producer_owner_invite.py`
+    mints it, keeps only its sha256, and this function is the one place the
+    raw value is allowed to exist besides that response path.
+    """
+    business_html = html_escape(business)
+    code_html = html_escape(code)
+    subject = f"קוד האימות לדף של {business} במהמקור"
+    body = (
+        f"קוד האימות: {code}\n\n"
+        f"הקוד תקף ל-10 דקות ומשמש לאישור הדף של {business} במהמקור.\n\n"
+        f"המייל הגיע בטעות? אפשר להתעלם ממנו.\n\n"
+        f"מהמקור"
+    )
+    html_body = f"""\
+<!DOCTYPE html>
+<html dir="rtl" lang="he">
+<head><meta charset="UTF-8"></head>
+<body style="margin:0;padding:0;background:#F5F0E8;font-family:Arial,Helvetica,sans-serif;direction:rtl;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#F5F0E8;padding:32px 0;">
+    <tr>
+      <td align="center">
+        <table width="100%" cellpadding="40" cellspacing="0" style="background:#ffffff;border-radius:12px;text-align:right;direction:rtl;max-width:560px;margin:0 auto;">
+          <tr>
+            <td style="text-align:right;direction:rtl;">
+              {email_logo_html()}
+              <p style="color:#3a3a3a;font-size:15px;line-height:1.7;margin:0 0 12px;">קוד האימות:</p>
+              <p style="font-size:30px;font-weight:bold;letter-spacing:6px;color:#1C1A17;margin:0 0 24px;" dir="ltr">{code_html}</p>
+              <p style="color:#666;font-size:13px;line-height:1.6;margin:0 0 12px;">הקוד תקף ל-10 דקות ומשמש לאישור הדף של {business_html} במהמקור.</p>
+              <p style="color:#666;font-size:13px;line-height:1.6;margin:0;">המייל הגיע בטעות? אפשר להתעלם ממנו.</p>
             </td>
           </tr>
         </table>

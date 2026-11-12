@@ -3,9 +3,37 @@
  *
  * THE FLOW UNDER TEST, in Sapir's words: she builds a business's page herself
  * through /admin, after written approval from its owner, and then hands it
- * over. The owner opens one link, chooses a password, ticks the terms and the
- * licensing declaration, and lands in the dashboard of a page that is already
- * live. She never sees the registration form.
+ * over — often on Instagram or WhatsApp, with no email address on the link at
+ * all. The owner opens it, SEES the page, types her own address and proves it
+ * with a code, chooses a password, ticks the terms and the licensing
+ * declaration, and lands in the dashboard of a page that her approval has
+ * just published. She never sees the registration form.
+ *
+ * ─── WHERE THIS SPEC STOPS, and why ────────────────────────────────────────
+ *
+ * The browser journey here ends at the verification code, because **the code
+ * exists only in an email this process cannot read**. It is minted inside the
+ * request, stored as a sha256, and handed to a background task; no endpoint
+ * returns it, by design — exposing one would hand every link holder a way to
+ * skip the gate. So a browser cannot complete an acceptance, and the two
+ * dishonest ways to make it look as if it could are both rejected:
+ *
+ *   * stubbing `POST …/email-code` and `POST …/accept` would leave a test that
+ *     asserts nothing about the backend while reading like a full journey —
+ *     a mock in a `flows/` spec, which is exactly the MEH-417 regression
+ *     e2e/CLAUDE.md protects, and it meets none of the three MEH-1968
+ *     conditions (no shared resource is burned);
+ *   * adding a test-only way to read the code would put a bypass of the
+ *     feature's last gate into production for the convenience of a test.
+ *
+ * What the browser DOES own is tested here for real, against the real backend:
+ * the preview renders, the address is editable, the submit stays refused until
+ * a code is live, the send-code round trip answers, and a WRONG code is
+ * refused with the server's own message. The transaction on the far side —
+ * the account, the consents, the publish, `/auth/me`, logging in with the
+ * password she chose — is covered end to end by
+ * `tests/test_producer_owner_invite.py` (105 tests), which can read the code
+ * out of the mail the endpoint queues because it runs inside the process.
  *
  * ─── SCOPE, and why it is shaped this way ──────────────────────────────────
  *
@@ -105,7 +133,10 @@ async function stubPasswordCheck(page: Page): Promise<void> {
   );
 }
 
-async function createBusiness(slot: string): Promise<{ id: string; name: string }> {
+async function createBusiness(
+  slot: string,
+  status: "approved" | "inactive" = "approved",
+): Promise<{ id: string; name: string }> {
   const name = `מחלבת הבדיקה ${slot} ${RUN_TAG}`;
   const r = await admin.post("/api/admin/producers", {
     data: {
@@ -120,12 +151,29 @@ async function createBusiness(slot: string): Promise<{ id: string; name: string 
   expect(r.status(), `admin create -> ${r.status()} ${await r.text()}`).toBeLessThan(300);
   const id = ((await r.json()) as { id: string }).id;
   created.producers.push(id);
+  if (status !== "approved") {
+    // `POST /admin/producers` always creates an approved business, so hidden
+    // is reached the way the admin reaches it: the status toggle. Doing it
+    // here rather than asserting on the default is what makes the «הדף יעלה
+    // לאוויר באישור» half of the flow reachable at all.
+    const hid = await admin.post(`/api/admin/producers/${id}/toggle-status`);
+    expect(hid.status(), `hide -> ${hid.status()} ${await hid.text()}`).toBe(200);
+    // Assert the LANDING state, not that a request succeeded: `toggle-status`
+    // flips, so calling it on a row that was not approved would quietly hand
+    // this spec the opposite status to the one it asked for.
+    expect((await hid.json()).status, "toggle did not land on the asked status").toBe(
+      status,
+    );
+  }
   return { id, name };
 }
 
-async function createInvite(producerId: string, email: string): Promise<string> {
+async function createInvite(producerId: string, email: string | null): Promise<string> {
   const r = await admin.post(`/api/admin/producers/${producerId}/owner-invite`, {
     data: {
+      // `null` is the v3 case this spec cares about: the link is minted with no
+      // address and nothing is mailed, which is how most of these invites are
+      // actually handed over.
       email,
       name: "דנה הבדיקה",
       consent_confirmed: true,
@@ -133,7 +181,7 @@ async function createInvite(producerId: string, email: string): Promise<string> 
     },
   });
   expect(r.status(), `owner-invite -> ${r.status()} ${await r.text()}`).toBe(200);
-  created.emails.push(email);
+  if (email) created.emails.push(email);
   const { invite_url } = (await r.json()) as { invite_url: string };
   // The backend builds this against ITS `frontend_url`, which on a seeded
   // staging target is not the origin Playwright drives. Only the token is
@@ -184,14 +232,60 @@ test.describe("owner invite — the admin panel", () => {
     await expect(page.getByTestId("owner-invite-open")).toBeVisible();
     // The link box belongs to the render that follows a mint, and to no other.
     await expect(page.getByTestId("owner-invite-result")).toHaveCount(0);
+    // 0 invites × OPEN: the form, and the warning that this page is ALREADY
+    // live — the state the admin is told to fix before minting a link.
+    await page.getByTestId("owner-invite-open").click();
+    await expect(page.getByTestId("owner-invite-form")).toBeVisible();
+    await expect(page.getByTestId("owner-invite-status-live")).toBeVisible();
+    await expect(page.getByTestId("owner-invite-status-hidden")).toHaveCount(0);
+  });
+
+  test("on a hidden business it says the approval will publish the page", async ({
+    page,
+  }) => {
+    const business = await createBusiness("panel-hidden", "inactive");
+    await page.goto(`/he/admin/producers/${business.id}/edit`);
+    await expect(page.getByTestId("owner-invite-panel")).toBeVisible({ timeout: 15_000 });
+    await page.getByTestId("owner-invite-open").click();
+    // The other arm of the same matrix cell, and the one that proves the panel
+    // renders at all on a hidden business — it was gated on `approved` until
+    // the card's v3 revision, which would have made this flow unreachable.
+    await expect(page.getByTestId("owner-invite-status-hidden")).toBeVisible();
+    await expect(page.getByTestId("owner-invite-status-live")).toHaveCount(0);
+  });
+
+  test("mints a link with no address, and offers the message to copy", async ({
+    page,
+  }) => {
+    const business = await createBusiness("panel-mint", "inactive");
+    await page.goto(`/he/admin/producers/${business.id}/edit`);
+    await expect(page.getByTestId("owner-invite-panel")).toBeVisible({ timeout: 15_000 });
+    await page.getByTestId("owner-invite-open").click();
+    // The address field is left EMPTY on purpose: the submit must enable
+    // without it since v3, which is the assertion this test exists for.
+    await page.getByTestId("owner-invite-name").fill("דנה הבדיקה");
+    await page.getByTestId("owner-invite-note").fill(`e2e ${RUN_TAG}`);
+    await page.getByTestId("owner-invite-consent").check();
+    await expect(page.getByTestId("owner-invite-submit")).toBeEnabled();
+    await page.getByTestId("owner-invite-submit").click();
+
+    // The link is shown exactly once, in the render that follows the mint.
+    const url = page.getByTestId("owner-invite-url");
+    await expect(url).toBeVisible({ timeout: 15_000 });
+    await expect(url).not.toHaveValue("");
+    await expect(page.getByTestId("owner-invite-copy-message")).toBeVisible();
+    // Nothing was mailed, so the pending line must not claim it was.
+    await expect(page.getByTestId("owner-invite-pending")).not.toContainText("@");
   });
 });
 
 test.describe("owner invite", () => {
-  test("the owner sets a password and lands in the dashboard", async ({ page }) => {
-    const business = await createBusiness("accept");
+  test("the owner sees the page, types an address and is asked for a code", async ({
+    page,
+  }) => {
+    const business = await createBusiness("accept", "inactive");
     const email = freshEmail("accept");
-    const token = await createInvite(business.id, email);
+    const token = await createInvite(business.id, null);
     await stubPasswordCheck(page);
 
     await page.goto(`/he/owner-invite/${token}`);
@@ -203,19 +297,60 @@ test.describe("owner invite", () => {
 
     await expect(page.getByTestId("owner-invite-ready")).toBeVisible();
     await expect(page.getByTestId("owner-invite-title")).toContainText(business.name);
-    await expect(page.getByTestId("owner-invite-email")).toHaveValue(email);
+    // v3: she approves something she has SEEN.
+    await expect(page.getByTestId("owner-invite-preview")).toBeVisible();
+    await expect(page.getByTestId("owner-invite-preview-name")).toContainText(
+      business.name,
+    );
+    // Minted with no address, so the field is empty and hers to fill.
+    await expect(page.getByTestId("owner-invite-email")).toHaveValue("");
 
+    // Refused until a code is live — asserted BEFORE anything is typed, and
+    // again after the password alone, so the button's disabled state is shown
+    // to depend on the code rather than on the form being empty.
+    await expect(page.getByTestId("owner-invite-submit")).toBeDisabled();
     await page.getByTestId("owner-invite-password").fill(OWNER_PASSWORD);
     await page.getByTestId("owner-invite-terms").check();
     await page.getByTestId("owner-invite-declaration").check();
-    await page.getByTestId("owner-invite-submit").click();
+    await expect(page.getByTestId("owner-invite-submit")).toBeDisabled();
 
-    await page.waitForURL(/\/producer\/dashboard/, { timeout: 30_000 });
+    // The real round trip. Its answer is deliberately the same whatever
+    // happened on the far side, so the only thing to assert is that the page
+    // moved on to the code.
+    await page.getByTestId("owner-invite-email").fill(email);
+    await page.getByTestId("owner-invite-send-code").click();
+    await expect(page.getByTestId("owner-invite-code-sent")).toBeVisible({
+      timeout: 15_000,
+    });
+
+    // A WRONG code is refused by the SERVER, and its message is rendered
+    // verbatim. The right one is unreachable from a browser — see the header.
+    await page.getByTestId("owner-invite-code").fill("000000");
+    await expect(page.getByTestId("owner-invite-submit")).toBeEnabled();
+    await page.getByTestId("owner-invite-submit").click();
+    await expect(page.getByTestId("owner-invite-error")).toBeVisible({ timeout: 15_000 });
+    // Still on the form, and the page is still hidden: a refused code creates
+    // nothing and publishes nothing.
+    await expect(page.getByTestId("owner-invite-form")).toBeVisible();
+    const after = await admin.get(`/api/admin/producers/${business.id}`);
+    expect((await after.json()).status).toBe("inactive");
+  });
+
+  test("a hidden business is not on the site before its owner approves", async ({
+    page,
+  }) => {
+    const business = await createBusiness("hidden-public", "inactive");
+    await createInvite(business.id, null);
+    // The public page of a hidden business, opened as a stranger. This is the
+    // card's «עסק inactive לא חוזר מאף endpoint ציבורי לפני הקבלה» at the
+    // surface a person would actually reach it from.
+    const response = await page.goto(`/he/producer/${business.id}`);
+    expect(response?.status()).toBe(404);
   });
 
   test("reopening the same link shows the not-valid state", async ({ page }) => {
     const business = await createBusiness("dead-link");
-    const token = await createInvite(business.id, freshEmail("dead-link"));
+    const token = await createInvite(business.id, null);
     await stubPasswordCheck(page);
     await page.goto(`/he/owner-invite/${token}`);
     await expect(page.getByTestId("owner-invite-ready")).toBeVisible({ timeout: 15_000 });

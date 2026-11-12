@@ -610,6 +610,30 @@ class Producer(Base):
         ),
         nullable=True,
     )
+    # MEH-2974 v3: the invite link no longer has to carry an email. Most
+    # businesses reach us on Instagram or WhatsApp and we have no address for
+    # them, so the admin may mint a link with none and the owner types her own
+    # on the acceptance page.
+    #
+    # That makes the link a pure bearer credential, and an address typed into
+    # it is unproven — a typo would lock her out of her own page, and a
+    # deliberate entry could park someone else's address on a live business.
+    # So the typed address is verified with a one-time CODE before any account
+    # exists (closed decision 14): `email_verified=True` then rests on the code,
+    # not on the invite mail having been delivered.
+    #
+    # Only the sha256 of the code is stored, which is stricter than the repo's
+    # existing OTP (`PhoneOtpToken.code` is plaintext, models.py:2518) and the
+    # same reasoning as the invite token two blocks up.
+    #
+    # `owner_invite_code_attempts` is the per-code counter. NULL and 0 both
+    # mean "no wrong guesses yet"; it is reset with every new code, and the
+    # code dies at OWNER_INVITE_CODE_MAX_ATTEMPTS so a 6-digit secret cannot be
+    # walked. All three are cleared together — by a resend, a cancel, or an
+    # acceptance.
+    owner_invite_code_hash = Column(String(64), nullable=True)
+    owner_invite_code_expires_at = Column(DateTime(timezone=True), nullable=True)
+    owner_invite_code_attempts = Column(Integer, nullable=True)
     # MEH-1011: producer "request-changes" trail — the non-terminal twin of
     # rejection_reason. When the admin sends a completion request (missing
     # photo / license), status STAYS "pending"; `requested_changes` holds the
