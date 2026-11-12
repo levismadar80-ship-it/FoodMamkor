@@ -187,6 +187,10 @@ async function stubAdmin(page: Page, opts: StubOpts = {}): Promise<Stub> {
   await page.route("**/experiences/count", (r) => json(r, { count: 0 }));
   // MEH-2369: the footer's «אירועים» link is gated on this public feed (use-events-nav-gate).
   await page.route((u) => /\/api\/events\/upcoming\/?$/.test(u.pathname), (r) => json(r, []));
+  // MEH-2858 / MEH-2859: the footer's «קבוצות רכישה» / «סלי הפתעה» links and the header's «מה קורה»
+  // link are gated on these two public feeds (lib/use-hub-nav-gate.js). Empty, so the links stay hidden.
+  await page.route((u) => /\/api\/group-buys\/?$/.test(u.pathname), (r) => json(r, []));
+  await page.route((u) => /\/api\/rescue\/offers\/?$/.test(u.pathname), (r) => json(r, []));
   await page.route("**/categories", (r) => json(r, [{ id: 2, name: "פירות וירקות", slug: "veg" }]));
   await page.route("**/admin/dashboard", (r) => {
     dashboardCalls += 1;

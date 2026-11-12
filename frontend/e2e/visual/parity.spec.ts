@@ -492,9 +492,18 @@ async function settle(page: Page): Promise<void> {
   // header copy as the only instance on that route. Both gated links come from
   // the same hook, and no ungated /experiences anchor exists on any parity
   // route (grep: Footer.jsx:89 and lib/nav-registry.js:163, both gated).
+  //
+  // MEH-2963: since MEH-2859 (#4311) the HEADER's gated link is «מה קורה» →
+  // /events, no longer «חוויות» → /experiences; only the Footer still links
+  // /experiences. /map has no footer, so the old selector found nothing there
+  // and this gate failed on a correct page. The header link is the same
+  // outcome of the same stub: preparePage() pins the other three supply feeds
+  // (events, group buys, rescue) EMPTY, so `header a[href$="/events"]` exists
+  // only when the experiences count resolved to visible. Scoped to `header`
+  // because a hub route's own tab row also links /events, ungated.
   await expect(
-    page.locator('a[href$="/experiences"]').first(),
-    "[experiences-gate] the «חוויות» nav link never entered the DOM — the " +
+    page.locator('a[href$="/experiences"], header a[href$="/events"]').first(),
+    "[experiences-gate] the gated nav link never entered the DOM — the " +
       "/api/experiences/count stub in preparePage() did not reach " +
       "use-experiences-nav-gate, so this frame would be shot 32px short.",
   ).toBeAttached({ timeout: 10_000 });
