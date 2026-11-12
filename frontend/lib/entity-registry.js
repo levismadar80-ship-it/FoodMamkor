@@ -41,7 +41,7 @@ export const ENTITIES = [
     files: ["app/[locale]/producer/[id]"],
     uses: ["share", "save", "contact"],
     missing: {
-      back: "no «→ חזרה» link on the business page (event/workshop/recipe have it, MEH-2857) — MEH-2993 scan",
+      back: "no back link on the business page (event/workshop/recipe have it, MEH-2857) — MEH-2993 scan",
     },
     na: {
       owner: "the business is the owner",
