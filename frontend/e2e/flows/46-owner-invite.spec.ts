@@ -68,7 +68,11 @@ function skipUnlessProvisioned(): void {
 
 /** Unique per run, so two runs in flight cannot collide on a slug or an email. */
 const RUN_TAG = `e2e-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`;
-const OWNER_PASSWORD = "Qv8Lm3Rt6Wz1";
+// Spelled with "example" on purpose — see the same note in
+// tests/test_producer_owner_invite.py. Long enough for the 12-character
+// floor; this reaches the REAL password policy (HIBP included), so it also
+// has to be a string nobody has ever actually used.
+const OWNER_PASSWORD = "example-pw-meh2974";
 
 let admin: APIRequestContext;
 

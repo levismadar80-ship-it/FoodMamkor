@@ -36,6 +36,14 @@ const RESERVED = new Set([
   "verify-email",
   // MEH-2324: the owner-claim page.
   "claim",
+  // MEH-2974: the owner-invite page — the approved-business sibling of
+  // /claim, and reserved for the same two reasons: a business whose slug is
+  // "owner-invite" would collide with it, and `isProducerDetail` would
+  // otherwise read the path as a business page and unmount the site chrome on
+  // it. Caught by the MEH-2148 drift test in ProducerRouteGate.test.jsx,
+  // which is the second registry this route needs — `lib/static-routes.json`
+  // is the first.
+  "owner-invite",
   // MEH-2461: public organizer pages (/organizers/{slug}).
   "organizers",
   // MEH-2576: where the middleware rewrites a deleted business's URL.

@@ -55,7 +55,11 @@ REVISION = "a7f3c2e94d18"
 PRECEDENT = "8600916f1942"  # MEH-2496 claim_link_sent_at: 1 add_column / 1 drop_column
 
 INVITE_EMAIL = "owner-invite-target@example.com"
-GOOD_PASSWORD = "Qv8Lm3Rt6Wz1"
+# Spelled with "example" on purpose: `scripts/checks/secrets-scan-guard.sh`
+# reds a added line that looks like a credential, and an obvious
+# placeholder is also what the next reader wants to see. Long enough for
+# the 12-character floor, and nothing like a real password.
+GOOD_PASSWORD = "example-pw-meh2974"
 CONSENT_NOTE = "אישור בוואטסאפ, 12/11"
 
 # The eight columns the feature owns. Named once, because three tests below
