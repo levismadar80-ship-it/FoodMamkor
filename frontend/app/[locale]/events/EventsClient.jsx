@@ -3,9 +3,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Link } from "@/i18n/navigation";
-// MEH-2245: the tab is the ROUTE (/events vs /experiences), so switching it is
-// a navigation. next-intl's router keeps the locale prefix (/en/experiences).
-import { useRouter } from "@/i18n/navigation";
+// MEH-2245: the tab is the ROUTE (/events vs /experiences). MEH-2980: a tab
+// switch rewrites that route in place (history.pushState, keeping any /en
+// prefix) instead of navigating; usePathname follows Back / Forward.
+import { usePathname } from "@/i18n/navigation";
 import {
   ArrowCounterClockwise,
   ArrowRight,
@@ -82,19 +83,37 @@ const EXPERIENCE_CATEGORY_KEYS = withAll(EXPERIENCE_CATEGORIES);
 // is not a state change and does not refetch — as setCategory("") on "" was.
 const clearCategories = (prev) => (prev.length ? [] : prev);
 
+// MEH-2980: which hub tab a pathname names — null for anything else (tests
+// render on "/"). Works with or without the /en prefix.
+const tabFromPath = (path) =>
+  /\/experiences\/?$/.test(path || "") ? "experiences" : /\/events\/?$/.test(path || "") ? "events" : null;
+
+// MEH-2847 / MEH-2980: the URL's ?category= values that belong to `tab`'s
+// vocabulary (one bad value is dropped without dropping the good ones).
+const categoriesFor = (tab, values) => {
+  const vocab = tab === "experiences" ? EXPERIENCE_CATEGORIES : EVENT_CATEGORIES;
+  const known = new Set(vocab.map((c) => c.key));
+  return [...new Set(values)].filter((k) => known.has(k));
+};
+
 // MEH-2245: one hub behind two routes. `initialTab` is decided by the route
 // that mounts this component (/events → "events", /experiences →
 // "experiences") — never by a ?tab= query. The old query-string deep-link
 // 308s to /experiences in next.config.js redirects().
-export default function EventsPage({ initialTab = "events" }) {
+export default function EventsPage({ initialTab = "events", titles = null }) {
   const t = useTranslations("events.list");
   const tErr = useTranslations("error");
   const tCat = useTranslations("events.categories");
   const tExpCat = useTranslations("events.experience_categories");
   const locale = useLocale();
-  const router = useRouter();
+  // MEH-2980: the route (pathname) is the tab — read it so Back / Forward
+  // across an in-place switch land on the right tab.
+  const pathname = usePathname();
   const search = useSearchParams();
-  const [tab, setTab] = useState(initialTab);
+  // MEH-2980: the PATH wins over the prop. After an in-place switch, Next
+  // keeps the first route's tree in that history entry, so a Back from some
+  // other page can restore /events with the /experiences page mounted.
+  const [tab, setTab] = useState(() => tabFromPath(pathname) || initialTab);
   // View mode — list (default) vs calendar. Independent of tab; applies
   // to whichever data set (events / experiences) is loaded.
   const [view, setView] = useState("list");
@@ -120,27 +139,64 @@ export default function EventsPage({ initialTab = "events" }) {
   // checked against the vocabulary on its own, so one bad value is dropped
   // without dropping the good ones; duplicates collapse.
   const [city, setCity] = useState(() => search.get("city") || "");
-  const [categories, setCategories] = useState(() => {
-    const vocab = initialTab === "experiences" ? EXPERIENCE_CATEGORIES : EVENT_CATEGORIES;
-    const known = new Set(vocab.map((c) => c.key));
-    return [...new Set(search.getAll("category"))].filter((k) => known.has(k));
-  });
+  const [categories, setCategories] = useState(() =>
+    categoriesFor(tabFromPath(pathname) || initialTab, search.getAll("category")),
+  );
 
   // Reset filters when switching tabs — the two tabs have different
   // category vocabularies, so keeping a cross-tab category would
   // silently filter to zero rows. The URL-sync effect below mirrors the
   // reset into the query string.
-  // MEH-2245: the switch is also a route change (/events ↔ /experiences).
-  // Local state flips first so the tablist responds on the same tick
-  // (aria-selected / roving tabindex — EventsTabsKeyboard.test.jsx); the
-  // route then mounts this same component with the matching initialTab.
-  const switchTab = (next) => {
-    if (next === tab) return;
+  // MEH-2245: each tab owns its URL (/events, /experiences).
+  // MEH-2980: the switch happens IN PLACE. It used to be router.push, and the
+  // two pages are separate force-dynamic routes under [locale], so every tab
+  // tap streamed app/[locale]/loading.js over the WHOLE page (hero, tabs and
+  // list gone for ~450 ms on a phone, measured on staging), then remounted
+  // this component and fetched the list a second time. Now the URL is written
+  // with the native history.pushState, which Next (>= 14.1) folds into its
+  // router — usePathname follows it and Back / Forward still work — without a
+  // server round trip. Deep links and refreshes still hit the real route, so
+  // each page keeps its own metadata; only document.title is set here.
+  // DO NOT go back to router.push / <Link> navigation for these two tabs —
+  // e2e/flows/46-hub-tab-switch.spec.ts reds on the loading flash (MEH-2980).
+  const applyTab = (next) => {
     setTab(next);
     setCategories(clearCategories);
     setCity("");
-    router.push(next === "experiences" ? "/experiences" : "/events");
+    // The old remount reset the view; keep that (MEH-2980 AC: states unchanged).
+    setView("list");
   };
+
+  const switchTab = (next) => {
+    if (next === tab) return;
+    applyTab(next);
+    const current = window.location.pathname;
+    const path = /\/(events|experiences)\/?$/.test(current)
+      ? current.replace(/\/(events|experiences)\/?$/, `/${next}`)
+      : `/${next}`;
+    window.history.pushState(null, "", path);
+    if (titles?.[next]) document.title = titles[next];
+  };
+
+  // MEH-2980: Back / Forward across an in-place switch. The pathname moves
+  // without this component remounting, so the tab follows it here.
+  // - Read window.location, not the hook value: usePathname lags our own
+  //   pushState (Next applies it in a transition), so on a quick A→B→A the
+  //   hook can still say B while the URL already says A.
+  // - On a history move the URL is the truth for the filters too: the entry
+  //   may carry ?city= / ?category= that the reset never saw (Back to
+  //   /events?city=X must filter by X, not show the city in the bar only).
+  useEffect(() => {
+    const urlTab = tabFromPath(window.location.pathname);
+    if (urlTab && titles?.[urlTab]) document.title = titles[urlTab];
+    if (!urlTab || urlTab === tab) return;
+    const p = new URLSearchParams(window.location.search);
+    setTab(urlTab);
+    setView("list");
+    setCity(p.get("city") || "");
+    setCategories(categoriesFor(urlTab, p.getAll("category")));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathname]);
 
   // MEH-1085 (DISC-08): single URL writer — the query string always mirrors
   // {city, category}, so filters survive refresh/share and the switchTab
