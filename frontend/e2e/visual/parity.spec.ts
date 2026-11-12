@@ -646,26 +646,38 @@ test.describe("Visual parity — MEH-991", () => {
   // scopes the on-runner regen with --grep home (vrt-update.yml), which must
   // reach it.
   //
-  // THREE types, one row each, and that is the subject: the strip's whole job
-  // is the mixed list with a type label per row, so a one-type fixture would
-  // shoot three identical «אירוע» labels and pin none of it. Baskets stay on
-  // preparePage's empty pin — the pilot is a build-time flag, so a basket row
-  // is not reproducible from a route fixture alone.
+  // THREE types, and that is the subject (MEH-2962): an event and an
+  // experience share the first row, each under its category label and a
+  // calendar tile, and the group buy gets its own row with its heading, its
+  // explanation and both prices. None carries a photo, so the frame pins the
+  // name plate rather than a third-party image. Baskets stay on preparePage's
+  // empty pin — the pilot is a build-time flag, so a basket row is not
+  // reproducible from a route fixture alone.
   //
   // It replaces the MEH-2802 "home upcoming events" shot, whose subject (the
   // lg 3-up EventEntryRow compact grid) no longer renders on the home page.
   test("home whats on", async ({ page }) => {
     await preparePage(page);
     // All registered AFTER preparePage, so each wins over the empty pin there.
-    // Dates sit after VRT_FIXED_TIME (2026-07-15) and are ordered group buy →
-    // event → experience, so the row order in the baseline is deterministic
-    // and not a function of which fixture happens to parse first.
+    // Dates sit after VRT_FIXED_TIME (2026-07-15). The rows come in a fixed
+    // order by kind and the event precedes the experience by date, so the
+    // baseline is not a function of which fixture happens to parse first.
     await page.route(EVENTS_UPCOMING_RE, async (route) => {
       await route.fulfill({
         status: 200,
         contentType: "application/json",
         body: JSON.stringify([
-          { id: 9201, title: "יום פתוח במשק: טעימות גבינות וסיור ברפת", event_date: "2026-07-21", event_time: "10:00:00" },
+          {
+            id: 9201,
+            title: "יום פתוח במשק: טעימות גבינות וסיור ברפת",
+            event_date: "2026-07-21",
+            event_time: "10:00:00",
+            category: "טעימות",
+            city: "בנימינה",
+            producer_id: 9301,
+            producer_name: "משק ברק",
+            price: 0,
+          },
         ]),
       });
     });
@@ -674,7 +686,16 @@ test.describe("Visual parity — MEH-991", () => {
         status: 200,
         contentType: "application/json",
         body: JSON.stringify([
-          { id: 9202, title: "סדנת אפייה של לחם מחמצת", event_date: "2026-07-26", event_time: "09:30:00" },
+          {
+            id: 9202,
+            title: "סדנת אפייה של לחם מחמצת",
+            event_date: "2026-07-26",
+            event_time: "09:30:00",
+            category: "סדנה",
+            city: "זכרון יעקב",
+            price_per_person: 180,
+            host: { producer_name: "מאפיית רוח השדה" },
+          },
         ]),
       });
     });
@@ -682,7 +703,18 @@ test.describe("Visual parity — MEH-991", () => {
       await route.fulfill({
         status: 200,
         contentType: "application/json",
-        body: JSON.stringify([{ id: 9203, title: "שמן זית כתית מהבציר", deadline: "2026-07-18T12:00:00Z" }]),
+        body: JSON.stringify([
+          {
+            id: 9203,
+            title: "שמן זית כתית מהבציר",
+            deadline: "2026-07-18T12:00:00Z",
+            producer_id: 9302,
+            producer_name: "בית הבד של נועה",
+            city: "פרדס חנה",
+            price_per_unit_group: 38,
+            price_per_unit_regular: 48,
+          },
+        ]),
       });
     });
     await page.goto("/");

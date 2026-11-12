@@ -26,6 +26,19 @@ vi.mock("next-intl", () => ({
       "home.whats_on.type.experience": "חוויה",
       "home.whats_on.type.group_buy": "קבוצת רכישה",
       "home.whats_on.type.rescue": "סל הפתעה",
+      // MEH-2962: the cards and the row headings reuse strings that already
+      // exist under their own features.
+      "events.detail.when_today": "היום",
+      "events.detail.when_tomorrow": "מחר",
+      "events.list.free": "כניסה חופשית",
+      "events.categories.market": "שוק",
+      "events.experience_categories.workshop": "סדנה",
+      "group_buys.list.hero_title": "קבוצות רכישה",
+      "group_buys.list.hero_subtitle": "קנו ביחד וחסכו — מוצרים מקומיים במחיר קבוצתי",
+      "rescue.home.title": "מה נשאר היום",
+      "rescue.home.lead": "סלים של מה שלא נמכר היום, במחיר מוזל. איסוף עצמי.",
+      "rescue.home.all": "לכל הסלים",
+      "producer.detail.sections.group_buys.show_all": "הצגת כל קבוצות הרכישה",
     };
     if (key === "home.whats_on.until") return `עד ${vars.date}`;
     return flat[key] ?? key;
@@ -39,6 +52,15 @@ vi.mock("@/i18n/navigation", () => ({
       {children}
     </a>
   ),
+}));
+
+// MEH-2962: a card says «היום» / «מחר» for a date that close, so the strip now
+// READS the Israel clock. Frozen here (testing.md, MEH-2290) at 01.08.2026:
+// every fixture below is on or after it, and only the two cases that mean to
+// be "today" / "tomorrow" sit on 01.08 / 02.08.
+vi.mock("@/lib/israel-date", async (original) => ({
+  ...(await original()),
+  israelToday: () => "2026-08-01",
 }));
 
 // One response per endpoint, so a test says what each of the four answered.
@@ -73,10 +95,10 @@ const EXPERIENCES = "/experiences";
 const GROUP_BUYS = "/group-buys";
 const RESCUE = "/rescue/offers";
 
-// Fixed dates, never derived from the clock, and nothing here is COMPARED with
-// the clock either — the display rule is per type (a basket shows its pickup
-// time, a group buy its closing date), so there is no "is it today?" read to
-// go wrong at 21:30 UTC (.claude/rules/testing.md, MEH-2290).
+// Fixed dates, never derived from the clock. Since MEH-2962 a card DOES ask
+// "is it today?" — against the frozen `israelToday` above, never the runner's
+// clock, so there is still nothing to go wrong at 21:30 UTC
+// (.claude/rules/testing.md, MEH-2290).
 const event = (id, date, time = "18:30:00") => ({ id, title: `אירוע ${id}`, event_date: date, event_time: time });
 const experience = (id, date) => ({ id, title: `חוויה ${id}`, event_date: date, event_time: "10:00:00" });
 const groupBuy = (id, deadline) => ({ id, title: `רכישה ${id}`, deadline });
@@ -178,10 +200,16 @@ describe("HomeWhatsOn — nothing to show means no section at all", () => {
   });
 });
 
-describe("HomeWhatsOn — row order: one per type before a type repeats", () => {
-  it("three types in date order, and the second event never beats a first-of-type", async () => {
-    // Events hold the two soonest dates. A plain date sort would show both of
-    // them; the round-robin must spend row 2 and row 3 on the other types.
+describe("HomeWhatsOn — three rows, each only when it has something (MEH-2962)", () => {
+  const groups = () => screen.getAllByTestId("whats-on-group").map((g) => g.getAttribute("data-group"));
+  const typesIn = (id) =>
+    [...screen.getByTestId("home-whats-on").querySelectorAll(`[data-group="${id}"] [data-testid="whats-on-row"]`)].map(
+      (r) => r.getAttribute("data-type"),
+    );
+
+  it("events and experiences share the first row, one per type before a type repeats", async () => {
+    // Events hold the two soonest dates. A plain date sort would put both of
+    // them first; the round-robin spends the second card on the experience.
     responses.current = {
       [EVENTS]: [event(1, "2026-08-01"), event(2, "2026-08-02")],
       [EXPERIENCES]: [experience(3, "2026-08-20")],
@@ -189,27 +217,88 @@ describe("HomeWhatsOn — row order: one per type before a type repeats", () => 
     };
     const { default: HomeWhatsOn } = await import("@/components/HomeWhatsOn");
     await renderNear(HomeWhatsOn);
-    await waitFor(() => expect(screen.getAllByTestId("whats-on-row")).toHaveLength(3));
-    const rows = screen.getAllByTestId("whats-on-row");
-    expect(rows.map((r) => r.getAttribute("data-type"))).toEqual(["event", "groupBuy", "experience"]);
-    expect(screen.queryByText("אירוע 2"), "the second event waits for a second pass").toBeNull();
+    await waitFor(() => expect(screen.getAllByTestId("whats-on-row")).toHaveLength(4));
+    expect(groups()).toEqual(["go", "groupBuy"]);
+    expect(typesIn("go")).toEqual(["event", "experience", "event"]);
+    expect(typesIn("groupBuy")).toEqual(["groupBuy"]);
   });
 
-  it("caps at three rows even with four types in supply", async () => {
+  it("all four types in supply: three rows, in a fixed order whatever the dates", async () => {
+    // The basket is the soonest and the event the latest — row order is by
+    // KIND, not by date, so a reader finds each thing in the same place.
     responses.current = {
       [EVENTS]: [event(1, "2026-08-04")],
       [EXPERIENCES]: [experience(2, "2026-08-03")],
       [GROUP_BUYS]: [groupBuy(3, "2026-08-02T12:00:00Z")],
       [RESCUE]: [basket(4, "2026-08-01", "2026-08-01T15:00:00Z")],
     };
-    const { default: HomeWhatsOn, WHATS_ON_MAX_ROWS } = await import("@/components/HomeWhatsOn");
+    const { default: HomeWhatsOn } = await import("@/components/HomeWhatsOn");
     await renderNear(HomeWhatsOn);
-    await waitFor(() => expect(screen.getAllByTestId("whats-on-row")).toHaveLength(WHATS_ON_MAX_ROWS));
-    expect(screen.getAllByTestId("whats-on-row").map((r) => r.getAttribute("data-type"))).toEqual([
-      "rescue",
-      "groupBuy",
-      "experience",
-    ]);
+    await waitFor(() => expect(screen.getAllByTestId("whats-on-row")).toHaveLength(4));
+    expect(groups()).toEqual(["go", "groupBuy", "rescue"]);
+    expect(typesIn("go")).toEqual(["experience", "event"]);
+  });
+
+  it("a row with nothing in it is absent — heading, explanation and link included", async () => {
+    responses.current = { [GROUP_BUYS]: [groupBuy(3, "2026-08-02T12:00:00Z")] };
+    const { default: HomeWhatsOn } = await import("@/components/HomeWhatsOn");
+    await renderNear(HomeWhatsOn);
+    await waitFor(() => expect(screen.getAllByTestId("whats-on-row")).toHaveLength(1));
+    expect(groups()).toEqual(["groupBuy"]);
+    // Control: the row that IS there says its heading, so the absences below
+    // are not a page that rendered no headings at all.
+    expect(screen.getByRole("heading", { name: "קבוצות רכישה" })).toBeTruthy();
+    expect(screen.queryByRole("heading", { name: "מה קורה אצל בתי העסק" })).toBeNull();
+    expect(screen.queryByRole("heading", { name: "מה נשאר היום" })).toBeNull();
+    expect(screen.queryByText("סלים של מה שלא נמכר היום, במחיר מוזל. איסוף עצמי.")).toBeNull();
+    expect(screen.queryByRole("link", { name: "לכל מה שקורה" })).toBeNull();
+    expect(screen.queryByRole("link", { name: "לכל הסלים" })).toBeNull();
+  });
+
+  it("each row says its own heading, and the two unfamiliar ones explain themselves", async () => {
+    responses.current = {
+      [EVENTS]: [event(1, "2026-08-04")],
+      [GROUP_BUYS]: [groupBuy(3, "2026-08-02T12:00:00Z")],
+      [RESCUE]: [basket(4, "2026-08-01", "2026-08-01T15:00:00Z")],
+    };
+    const { default: HomeWhatsOn } = await import("@/components/HomeWhatsOn");
+    await renderNear(HomeWhatsOn);
+    await waitFor(() => expect(screen.getAllByTestId("whats-on-row")).toHaveLength(3));
+    const group = (id) => screen.getByTestId("home-whats-on").querySelector(`[data-group="${id}"]`);
+    // The rows are siblings: every heading is an h2, whichever renders first.
+    expect(group("go").querySelector("h2").textContent).toBe("מה קורה אצל בתי העסק");
+    expect(group("go").querySelector("p"), "events need no explanation").toBeNull();
+    expect(group("groupBuy").querySelector("h2").textContent).toBe("קבוצות רכישה");
+    expect(group("groupBuy").querySelector("p").textContent).toBe("קנו ביחד וחסכו — מוצרים מקומיים במחיר קבוצתי");
+    expect(group("rescue").querySelector("h2").textContent).toBe("מה נשאר היום");
+    expect(screen.getByTestId("home-whats-on").querySelector("h3"), "no row is nested under another").toBeNull();
+    expect(group("rescue").querySelector("p").textContent).toBe("סלים של מה שלא נמכר היום, במחיר מוזל. איסוף עצמי.");
+    // MEH-2962: the two unfamiliar rows carry a glyph, hidden from assistive
+    // tech (the heading's name stays exactly the text above); the first row,
+    // whose cards carry their own category glyphs, has none.
+    const glyph = (id) => group(id).querySelector('[data-testid="whats-on-group-icon"]');
+    expect(glyph("go"), "the events row has no heading glyph").toBeNull();
+    expect(glyph("groupBuy").getAttribute("aria-hidden")).toBe("true");
+    expect(glyph("rescue").getAttribute("aria-hidden")).toBe("true");
+    expect(group("groupBuy").querySelector("h2").contains(glyph("groupBuy"))).toBe(true);
+    // Three links, three names, three destinations.
+    const link = (name) => screen.getByRole("link", { name }).getAttribute("href");
+    expect(link("לכל מה שקורה")).toBe("/events");
+    expect(link("הצגת כל קבוצות הרכישה")).toBe("/group-buys");
+    expect(link("לכל הסלים")).toBe("/rescue");
+  });
+
+  it("a row holds at most WHATS_ON_MAX_CARDS cards", async () => {
+    const many = Array.from({ length: 9 }, (_, i) =>
+      groupBuy(i + 1, `2026-08-${String(10 + i).padStart(2, "0")}T12:00:00Z`),
+    );
+    responses.current = { [GROUP_BUYS]: many };
+    const { default: HomeWhatsOn, WHATS_ON_MAX_CARDS } = await import("@/components/HomeWhatsOn");
+    expect(many.length, "control: the fixture holds more than the cap").toBeGreaterThan(WHATS_ON_MAX_CARDS);
+    await renderNear(HomeWhatsOn);
+    await waitFor(() => expect(screen.getAllByTestId("whats-on-row")).toHaveLength(WHATS_ON_MAX_CARDS));
+    // Soonest first: the first card is the one closing on the 10th.
+    expect(screen.getAllByTestId("whats-on-row")[0].textContent).toContain("רכישה 1");
   });
 
   it("one type with everything: it repeats, in its own date order", async () => {
@@ -242,39 +331,187 @@ describe("HomeWhatsOn — what one row says", () => {
     };
   });
 
-  it("type label, title, when, and a link to the item's own page", async () => {
+  it("label, title, when, and a link to the item's own page", async () => {
     const { default: HomeWhatsOn } = await import("@/components/HomeWhatsOn");
     const { container } = await renderNear(HomeWhatsOn);
     await waitFor(() => expect(screen.getAllByTestId("whats-on-row")).toHaveLength(3));
-    expect(screen.getByText("אירוע")).toBeInTheDocument();
-    expect(screen.getByText("קבוצת רכישה")).toBeInTheDocument();
-    expect(screen.getByText("חוויה")).toBeInTheDocument();
+    // No category on these fixtures ⇒ the label falls back to the type. A group
+    // buy carries no label of its own: its row's heading already says it.
+    expect(screen.getAllByTestId("whats-on-label").map((l) => l.textContent)).toEqual(["אירוע", "חוויה"]);
     expect(screen.getByText("אירוע 1")).toBeInTheDocument();
     // Every link is next-intl's, so /en keeps its prefix (MEH-2497).
     const hrefs = [...container.querySelectorAll("a")].map((a) => [
       a.getAttribute("href"),
       a.hasAttribute("data-intl-link"),
     ]);
-    // Date order across the three types: the group buy closes 10.08, the event
-    // is 15.08, the experience 20.08 — and «לכל מה שקורה» sits after the rows.
+    // Row by row: the event (15.08) before the experience (20.08), their link,
+    // then the group buy and its link.
     expect(hrefs).toEqual([
-      ["/group-buys/3", true],
       ["/events/1", true],
       ["/experiences/2", true],
       ["/events", true],
+      ["/group-buys/3", true],
+      ["/group-buys", true],
     ]);
   });
 
-  it("an event and an experience WITH a time show it; a group buy shows «עד» + a date", async () => {
+  it("an event and an experience show weekday + time; a group buy shows «עד» + a date", async () => {
     const { default: HomeWhatsOn } = await import("@/components/HomeWhatsOn");
     await renderNear(HomeWhatsOn);
     await waitFor(() => expect(screen.getAllByTestId("whats-on-row")).toHaveLength(3));
     const when = (type) =>
       screen.getByTestId("home-whats-on").querySelector(`[data-type="${type}"] [data-testid="whats-on-when"]`)
         .textContent;
-    expect(when("event")).toBe("18:30");
-    expect(when("experience")).toBe("10:00");
+    // 15.08.2026 is a Saturday, 20.08.2026 a Thursday. The day of the month is
+    // on the card's date tile, so the line does not repeat it.
+    expect(when("event")).toBe("יום שבת · 18:30");
+    expect(when("experience")).toBe("יום חמישי · 10:00");
     expect(when("groupBuy")).toBe("עד 10.08");
+    const tile = (type) =>
+      screen.getByTestId("home-whats-on").querySelector(`[data-type="${type}"] [data-testid="whats-on-date-tile"]`);
+    expect(tile("event").textContent).toMatch(/15$/);
+    expect(tile("groupBuy"), "a closing date is not an occasion — no tile").toBeNull();
+  });
+
+  it("«היום» and «מחר» replace the weekday when the date is that close", async () => {
+    // Against the frozen israelToday (01.08.2026), not the runner's clock.
+    responses.current = {
+      [EVENTS]: [
+        event(1, "2026-08-01", "18:30:00"),
+        event(2, "2026-08-02", "09:00:00"),
+        event(3, "2026-08-03", "09:00:00"),
+      ],
+    };
+    const { default: HomeWhatsOn } = await import("@/components/HomeWhatsOn");
+    await renderNear(HomeWhatsOn);
+    await waitFor(() => expect(screen.getAllByTestId("whats-on-row")).toHaveLength(3));
+    expect(screen.getAllByTestId("whats-on-when").map((w) => w.textContent)).toEqual([
+      "היום · 18:30",
+      "מחר · 09:00",
+      "יום שני · 09:00",
+    ]);
+  });
+
+  it("the label is the category a visitor knows; «אחר» falls back to the type", async () => {
+    responses.current = {
+      [EVENTS]: [
+        { ...event(1, "2026-08-05"), category: "שוק" },
+        { ...event(2, "2026-08-06"), category: "אחר" },
+      ],
+      [EXPERIENCES]: [{ ...experience(3, "2026-08-07"), category: "סדנה" }],
+    };
+    const { default: HomeWhatsOn } = await import("@/components/HomeWhatsOn");
+    await renderNear(HomeWhatsOn);
+    await waitFor(() => expect(screen.getAllByTestId("whats-on-row")).toHaveLength(3));
+    const label = (title) =>
+      screen.getByText(title).closest('[data-testid="whats-on-row"]').querySelector('[data-testid="whats-on-label"]')
+        .textContent;
+    expect(label("אירוע 1")).toBe("שוק");
+    expect(label("אירוע 2")).toBe("אירוע");
+    expect(label("חוויה 3")).toBe("סדנה");
+  });
+
+  it("price: a number when there is one, «כניסה חופשית» for a free event, nothing for a priceless group buy", async () => {
+    responses.current = {
+      [EVENTS]: [
+        { ...event(1, "2026-08-05"), price: 90 },
+        { ...event(2, "2026-08-06"), price: 0 },
+      ],
+      [EXPERIENCES]: [{ ...experience(3, "2026-08-07"), price_per_person: "180.00" }],
+      [GROUP_BUYS]: [
+        {
+          ...groupBuy(4, "2026-08-10T12:00:00Z"),
+          price_per_unit_group: "38.00",
+          price_per_unit_regular: "48.00",
+        },
+        groupBuy(5, "2026-08-11T12:00:00Z"),
+      ],
+    };
+    const { default: HomeWhatsOn } = await import("@/components/HomeWhatsOn");
+    await renderNear(HomeWhatsOn);
+    await waitFor(() => expect(screen.getAllByTestId("whats-on-row")).toHaveLength(5));
+    const price = (title) =>
+      screen.getByText(title).closest('[data-testid="whats-on-row"]').querySelector('[data-testid="whats-on-price"]');
+    expect(price("אירוע 1").textContent).toBe("90₪");
+    expect(price("אירוע 2").textContent).toBe("כניסה חופשית");
+    expect(price("חוויה 3").textContent).toBe("180₪");
+    // The group price, with the regular one struck through before it.
+    expect(price("רכישה 4").textContent).toBe("48₪38₪");
+    expect(price("רכישה 4").querySelector(".line-through").textContent).toBe("48₪");
+    expect(price("רכישה 5"), "no price on record ⇒ no price shown, and never «free»").toBeNull();
+  });
+
+  it("agorot are kept, and a regular price that is not higher is not struck (MEH-2962 review)", async () => {
+    responses.current = {
+      [GROUP_BUYS]: [
+        { ...groupBuy(1, "2026-08-10T12:00:00Z"), price_per_unit_group: "37.50", price_per_unit_regular: "38.40" },
+        { ...groupBuy(2, "2026-08-11T12:00:00Z"), price_per_unit_group: "40.00", price_per_unit_regular: "40.00" },
+      ],
+      [RESCUE]: [{ ...basket(3, "2026-08-01", "2026-08-01T15:00:00Z"), price_agorot: 2550 }],
+    };
+    const { default: HomeWhatsOn } = await import("@/components/HomeWhatsOn");
+    await renderNear(HomeWhatsOn);
+    await waitFor(() => expect(screen.getAllByTestId("whats-on-row")).toHaveLength(3));
+    const price = (type, at) =>
+      screen.getAllByTestId("whats-on-row").filter((row) => row.dataset.type === type)[at].querySelector('[data-testid="whats-on-price"]');
+    // 37.50 is not «38₪», and 38.40 beside it is not a second «38₪».
+    expect(price("groupBuy", 0).textContent).toBe("38.4₪37.5₪");
+    expect(price("groupBuy", 1).textContent).toBe("40₪");
+    expect(price("groupBuy", 1).querySelector(".line-through")).toBeNull();
+    expect(price("rescue", 0).textContent).toBe("25.5₪");
+  });
+
+  it("a basket with no photo shows the business once: the seed alone on the plate", async () => {
+    responses.current = { [RESCUE]: [basket(4, "2026-08-01", "2026-08-01T15:00:00Z")] };
+    const { default: HomeWhatsOn } = await import("@/components/HomeWhatsOn");
+    await renderNear(HomeWhatsOn);
+    await waitFor(() => expect(screen.getAllByTestId("whats-on-row")).toHaveLength(1));
+    const plate = screen.getByTestId("whats-on-plate");
+    expect(plate.textContent).toBe("");
+    expect(plate.querySelector("svg")).toBeTruthy();
+    expect(screen.getAllByText("מחלבה")).toHaveLength(1);
+  });
+
+  it("a dated card says its date in words a screen reader gets, not only on the tile", async () => {
+    responses.current = { [EVENTS]: [event(1, "2026-08-04")] };
+    const { default: HomeWhatsOn } = await import("@/components/HomeWhatsOn");
+    await renderNear(HomeWhatsOn);
+    await waitFor(() => expect(screen.getAllByTestId("whats-on-row")).toHaveLength(1));
+    const spoken = screen.getByTestId("whats-on-date-spoken");
+    expect(spoken.textContent).toBe("04.08");
+    expect(spoken.closest('[aria-hidden="true"]'), "said, so not inside the hidden picture").toBeNull();
+    // The tile that shows the same day is inside the hidden picture.
+    expect(screen.getByTestId("whats-on-date-tile").closest('[aria-hidden="true"]')).not.toBeNull();
+  });
+
+  it("a picture when there is one; otherwise the business's name on the plate, never an empty frame", async () => {
+    responses.current = {
+      [EVENTS]: [
+        {
+          ...event(1, "2026-08-05"),
+          image_url: "https://res.cloudinary.com/x/image/upload/a.jpg",
+        },
+        {
+          ...event(2, "2026-08-06"),
+          owner_image_url: "https://res.cloudinary.com/x/image/upload/b.jpg",
+        },
+        { ...event(3, "2026-08-07"), producer_name: "משק ברק" },
+        event(4, "2026-08-08"),
+      ],
+    };
+    const { default: HomeWhatsOn } = await import("@/components/HomeWhatsOn");
+    await renderNear(HomeWhatsOn);
+    await waitFor(() => expect(screen.getAllByTestId("whats-on-row")).toHaveLength(4));
+    const card = (title) => screen.getByText(title).closest('[data-testid="whats-on-row"]');
+    const image = (title) => card(title).querySelector('[data-testid="whats-on-image"]');
+    const plate = (title) => card(title).querySelector('[data-testid="whats-on-plate"]');
+    expect(image("אירוע 1").style.backgroundImage).toContain("a.jpg");
+    expect(image("אירוע 2").style.backgroundImage, "the owner's photo stands in").toContain("b.jpg");
+    expect(image("אירוע 3")).toBeNull();
+    expect(plate("אירוע 3").textContent).toBe("משק ברק");
+    // No picture and no business to name: the seed alone, not the title twice.
+    expect(plate("אירוע 4").textContent).toBe("");
+    expect(plate("אירוע 4").querySelector("svg")).toBeTruthy();
   });
 
   // Review #3726 / the MEH-2859 reviewer: `GroupBuy.deadline` is a NAIVE
@@ -341,15 +578,17 @@ describe("HomeWhatsOn — what one row says", () => {
     });
   });
 
-  it("an event with no time falls back to its date", async () => {
+  it("an event with no time shows its day alone", async () => {
     responses.current = { [EVENTS]: [{ id: 7, title: "יום פתוח", event_date: "2026-08-15", event_time: null }] };
     const { default: HomeWhatsOn } = await import("@/components/HomeWhatsOn");
     await renderNear(HomeWhatsOn);
     await waitFor(() => expect(screen.getAllByTestId("whats-on-row")).toHaveLength(1));
-    expect(screen.getByTestId("whats-on-when").textContent).toBe("15.08");
+    // No time ⇒ the weekday alone; the date itself is on the tile.
+    expect(screen.getByTestId("whats-on-when").textContent).toBe("יום שבת");
+    expect(screen.getByTestId("whats-on-date-tile").textContent).toMatch(/15$/);
   });
 
-  it("an EXPERIENCE with no time falls back to its date too", async () => {
+  it("an EXPERIENCE with no time shows its day alone too", async () => {
     // The date fallback was covered for events only; an experience reaches it
     // through the same branch but by a different source record, and nothing
     // asserted that until the MEH-2859 reviewer pointed at the gap.
@@ -360,7 +599,8 @@ describe("HomeWhatsOn — what one row says", () => {
     await renderNear(HomeWhatsOn);
     await waitFor(() => expect(screen.getAllByTestId("whats-on-row")).toHaveLength(1));
     expect(screen.getByTestId("whats-on-row").getAttribute("data-type")).toBe("experience");
-    expect(screen.getByTestId("whats-on-when").textContent).toBe("22.08");
+    expect(screen.getByTestId("whats-on-when").textContent).toBe("יום שבת");
+    expect(screen.getByTestId("whats-on-date-tile").textContent).toMatch(/22$/);
   });
 
   it("a row whose date is unusable is dropped, not rendered with a hole", async () => {
@@ -383,8 +623,24 @@ describe("HomeWhatsOn — what one row says", () => {
     await renderNear(HomeWhatsOn);
     await waitFor(() => expect(screen.getAllByTestId("whats-on-row")).toHaveLength(1));
     // 15:00Z + IDT(+3). A visitor-zone read would print 15:00 on a UTC runner.
-    expect(screen.getByTestId("whats-on-when").textContent).toBe("18:00");
+    // «היום»: the basket is dated the frozen israelToday.
+    expect(screen.getByTestId("whats-on-when").textContent).toBe("היום · 18:00");
     expect(screen.getByTestId("whats-on-row").getAttribute("data-type")).toBe("rescue");
+  });
+
+  it("a basket with a pickup window shows both ends of it, in Israel's zone", async () => {
+    responses.current = {
+      [RESCUE]: [
+        {
+          ...basket(5, "2026-08-03", "2026-08-03T15:00:00Z"),
+          pickup_end: "2026-08-03T16:30:00Z",
+        },
+      ],
+    };
+    const { default: HomeWhatsOn } = await import("@/components/HomeWhatsOn");
+    await renderNear(HomeWhatsOn);
+    await waitFor(() => expect(screen.getAllByTestId("whats-on-row")).toHaveLength(1));
+    expect(screen.getByTestId("whats-on-when").textContent).toBe("03.08 · 18:00–19:30");
   });
 
   it("a basket links to /rescue — the pilot has no per-bag page", async () => {
@@ -392,7 +648,7 @@ describe("HomeWhatsOn — what one row says", () => {
     const { default: HomeWhatsOn } = await import("@/components/HomeWhatsOn");
     const { container } = await renderNear(HomeWhatsOn);
     await waitFor(() => expect(screen.getAllByTestId("whats-on-row")).toHaveLength(1));
-    expect([...container.querySelectorAll("a")].map((a) => a.getAttribute("href"))).toEqual(["/rescue", "/events"]);
+    expect([...container.querySelectorAll("a")].map((a) => a.getAttribute("href"))).toEqual(["/rescue", "/rescue"]);
   });
 
   it("no countdown and no urgency copy anywhere in the strip", async () => {
