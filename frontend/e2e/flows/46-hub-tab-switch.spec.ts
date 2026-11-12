@@ -1,4 +1,5 @@
 import { test, expect } from "./_cloudinary-stub";
+import type { Page } from "@playwright/test";
 
 // MEH-2980: «אירועים» ↔ «חוויות» is one screen with two URLs. The switch used
 // to router.push between two force-dynamic routes, so app/[locale]/loading.js
@@ -41,13 +42,23 @@ async function readSamples(page) {
   return page.evaluate(() => (window as unknown as { __hubSamples: Array<{ loader: boolean; hub: boolean }> }).__hubSamples);
 }
 
+// A streamed page briefly holds TWO hub rows: React parks the resolved segment
+// in a hidden node before it swaps it in (seen on CI, run 43283502922: strict
+// mode found 2 elements, one "hidden"). Wait for the swap to finish so every
+// locator and the marker below address the one live row.
+async function openHub(page: Page, path: string) {
+  await page.goto(path);
+  const hub = page.locator(HUB);
+  await expect(hub).toHaveCount(1, { timeout: 15_000 });
+  await expect(hub).toBeVisible();
+  return hub;
+}
+
 for (const locale of ["he", "en"] as const) {
   const prefix = locale === "en" ? "/en" : "";
 
   test(`${locale}: events ↔ experiences switches in place — no loader, no remount, one fetch`, async ({ page }) => {
-    await page.goto(`${prefix}/experiences`);
-    const hub = page.locator(HUB);
-    await expect(hub).toBeVisible({ timeout: 15_000 });
+    const hub = await openHub(page, `${prefix}/experiences`);
     await expect(hub.locator('[data-tab-value="experiences"]')).toHaveAttribute("aria-selected", "true");
     // Let the first list load settle before counting.
     await expect(page.locator('[aria-busy="true"]')).toHaveCount(0, { timeout: 15_000 });
@@ -96,9 +107,7 @@ for (const locale of ["he", "en"] as const) {
 
   test(`${locale}: Back restores the filters the URL carries`, async ({ page }) => {
     const city = "חיפה";
-    await page.goto(`${prefix}/events?city=${encodeURIComponent(city)}`);
-    const hub = page.locator(HUB);
-    await expect(hub).toBeVisible({ timeout: 15_000 });
+    const hub = await openHub(page, `${prefix}/events?city=${encodeURIComponent(city)}`);
     await expect(page.locator("#events-city")).toHaveValue(city);
 
     await hub.locator('[data-tab-value="experiences"]').click();
@@ -119,9 +128,7 @@ for (const locale of ["he", "en"] as const) {
     // router navigation, then Back. Next restores that history entry with the
     // tree it was pushed with (the /experiences page), so the tab must come
     // from the path, not from the mounted route's initialTab.
-    await page.goto(`${prefix}/experiences`);
-    const hub = page.locator(HUB);
-    await expect(hub).toBeVisible({ timeout: 15_000 });
+    const hub = await openHub(page, `${prefix}/experiences`);
     await hub.locator('[data-tab-value="events"]').click();
     await expect(page).toHaveURL(new RegExp(`${prefix}/events$`));
 
