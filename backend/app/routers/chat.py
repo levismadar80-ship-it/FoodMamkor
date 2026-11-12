@@ -260,6 +260,37 @@ def _live_data_context(
     return f"{LIVE_DATA_PREAMBLE}\n{_fence_live_data(payload)}"
 
 
+# ---------- site-wide daily cap (MEH-3010) ----------
+
+# MEH-3010: the route limits below are per IP, so many IPs together are not
+# capped at all. This is one shared counter for the whole site. 2000 answers
+# is far above today's traffic and bounds a bad day to a few dollars. Over it
+# the widget gets the existing "offline" reply and the model is not called.
+GLOBAL_DAILY_LIMIT = "2000/day"
+GLOBAL_KEY = "site"
+
+
+def _global_chat_allowed() -> bool:
+    """One hit on the site-wide counter. Fail-OPEN when the cap cannot be
+    evaluated: the per-IP limits still hold, and a broken counter must not
+    take the whole chat down (unlike the DB-tool cap, where denying only
+    drops live data)."""
+    try:
+        from limits import parse as parse_limit
+
+        return bool(
+            limiter._limiter.hit(
+                parse_limit(GLOBAL_DAILY_LIMIT), "chat_site", GLOBAL_KEY
+            )
+        )
+    except Exception as e:  # noqa: BLE001 — cap is best-effort, logged
+        logger.warning("chat global cap unavailable: %s", e)
+        return True
+
+
+OFFLINE_REPLY = "העוזרת לא זמינה כרגע 🌿 נסו שוב בעוד כמה רגעים, או פנו אלינו דרך טופס יצירת הקשר באודות."
+
+
 # ---------- endpoint ----------
 
 
@@ -271,9 +302,11 @@ def chat(request: Request, body: ChatRequest) -> ChatResponse:
     client = _get_client()
     if client is None:
         # Fail-open friendly message — UI keeps working.
-        return ChatResponse(
-            reply="העוזרת לא זמינה כרגע 🌿 נסו שוב בעוד כמה רגעים, או פנו אלינו דרך טופס יצירת הקשר באודות.",
-        )
+        return ChatResponse(reply=OFFLINE_REPLY)
+    if not _global_chat_allowed():
+        # MEH-3010: site-wide daily cap reached — same reply, no model call.
+        logger.warning("chat global daily cap reached (%s)", GLOBAL_DAILY_LIMIT)
+        return ChatResponse(reply=OFFLINE_REPLY)
 
     # Trim to the last MAX_HISTORY_TURNS turns. A "turn" here = one
     # message regardless of role (the API just wants alternation, and
