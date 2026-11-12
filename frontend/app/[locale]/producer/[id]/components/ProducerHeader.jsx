@@ -489,14 +489,19 @@ export default function ProducerHeader({
         )}
         {/* MEH-2526 permanent updates toggle; MEH-2562 moved it into this row
             (desktop) and onto the hero circles (mobile, ImageGallery) — as a
-            lone pill under the header it read as an orphan. */}
-        <ProducerUpdatesButton
-          variant="quiet"
-          producerId={producer.id}
-          onOpenAlerts={onOpenAlerts}
-          onChanged={onUpdatesChanged}
-          refreshSignal={updatesSignal ?? alertsOpen}
-        />
+            lone pill under the header it read as an orphan.
+            MEH-2964: out of the owner's preview with the heart and the share,
+            for the same reason — it is a visitor subscribe, not her own
+            toggle (Sapir, 12/11). */}
+        {!isPreview && (
+          <ProducerUpdatesButton
+            variant="quiet"
+            producerId={producer.id}
+            onOpenAlerts={onOpenAlerts}
+            onChanged={onUpdatesChanged}
+            refreshSignal={updatesSignal ?? alertsOpen}
+          />
+        )}
       </div>
 
       {/* MEH-1609 built this mount; MEH-1693 keeps it and changes only what
