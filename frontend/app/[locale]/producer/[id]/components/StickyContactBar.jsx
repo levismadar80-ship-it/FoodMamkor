@@ -7,6 +7,7 @@ import { withReferralParams } from "@/lib/utils";
 import { pingWhatsAppBeacon, markWhatsAppClickedLocal } from "@/lib/contact-tracking";
 import { INERT_PRESENT } from "@/lib/inert-attr";
 import { getCtaVariant } from "@/components/ContactCtaVariants";
+import { usePreviewMode } from "@/lib/preview-mode"; // MEH-2916
 
 // MEH-1411: the sticky CTA mirrors the inline button's per-method icon.
 // MEH-2813: icon AND colour now come from the same map the inline button reads
@@ -35,6 +36,7 @@ export default function StickyContactBar({
   isVacation,
   isBarVisible,
 }) {
+  const isPreview = usePreviewMode(); // MEH-2916
   const t = useTranslations();
   const variant = getCtaVariant(getPrimaryMethod(producer));
   const CtaIcon = variant.Icon;
@@ -116,9 +118,16 @@ export default function StickyContactBar({
         {/* Primary CTA */}
         {href && (
           <a
-            href={href}
+            // MEH-2916: in the owner's preview the CTA stays VISIBLE — she is
+            // looking at how her page reads, and a missing button would
+            // misrepresent it — but it does not act. No href (so no WhatsApp
+            // app switch, no tel: dialler), out of the tab order, and
+            // announced as disabled. The onClick below also returns early, so
+            // the attribution beacon never fires for her own look at her own
+            // page. Sapir's ruling, 11/11.
+            {...(isPreview ? { "aria-disabled": "true", tabIndex: -1 } : { href })}
             data-testid="sticky-primary-cta"
-            {...(isPrimaryExternal(producer)
+            {...(!isPreview && isPrimaryExternal(producer)
               ? { target: "_blank", rel: isWebsite ? "noopener" : "noopener noreferrer" }
               : {})}
             // MEH-1426: TODO resolved — the sticky bar now matches the ContactCard
@@ -126,7 +135,11 @@ export default function StickyContactBar({
             // unlocks the review form (markWhatsAppClickedLocal, localStorage
             // wa_clicked_<id>). Invariant: every WhatsApp click = attribution +
             // unlock; a non-WhatsApp primary fires neither.
-            onClick={() => {
+            onClick={(e) => {
+              if (isPreview) {
+                e.preventDefault(); // MEH-2916
+                return;
+              }
               if (getPrimaryMethod(producer) === "whatsapp") {
                 pingWhatsAppBeacon(producer.id);
                 markWhatsAppClickedLocal(producer.id);

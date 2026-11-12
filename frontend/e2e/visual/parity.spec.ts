@@ -98,7 +98,8 @@ const CATEGORIES_RE = /\/api\/categories(?:\?[^#]*)?$/;
 // 05/09 regen had captured the link PRESENT. Neither state was deterministic.
 const EXPERIENCES_COUNT_RE = /\/api\/experiences\/count(?:\?[^#]*)?$/;
 // MEH-2369: the Footer's «אירועים» link (lib/use-events-nav-gate.js) and the
-// home UpcomingEventsPreview both read `GET /events/upcoming`. Same race as the
+// home strip (MEH-2859: HomeWhatsOn, which replaced the events-only
+// UpcomingEventsPreview) both read `GET /events/upcoming`. Same race as the
 // experiences gate above; pinned to EMPTY so the link and the preview are
 // absent on every frame. Measured 2026-10-27: `GET
 // https://mehamakor.co.il/api/events/upcoming` → 200 `[]` (no event is live).
@@ -116,6 +117,13 @@ const EVENTS_UPCOMING_RE = /\/api\/events\/upcoming(?:\?[^#]*)?$/;
 // none either.
 const GROUP_BUYS_RE = /\/api\/group-buys(?:\?[^#]*)?$/;
 const RESCUE_OFFERS_RE = /\/api\/rescue\/offers(?:\?[^#]*)?$/;
+// MEH-2859: the home strip reads the experiences LIST, not the count the nav
+// gate reads — EXPERIENCES_COUNT_RE above does not match it, so until this pin
+// existed the home frame would have grown a row the day staging got one
+// upcoming experience. Same race as events / group buys / baskets, same empty
+// pin. Anchored at `$`/`?` so `/experiences/count` and `/experiences/<id>`
+// (both matched elsewhere) are left alone.
+const EXPERIENCES_LIST_RE = /\/api\/experiences(?:\?[^#]*)?$/;
 // MEH-2804: the home trust band reads GET /stats — LIVE staging counts
 // («31 בתי עסק», «18 קטגוריות» on 07/11), so every home frame moved whenever the
 // data did, and a regen baked today's numbers into the baseline. Pinned for
@@ -125,23 +133,12 @@ const RESCUE_OFFERS_RE = /\/api\/rescue\/offers(?:\?[^#]*)?$/;
 const STATS_RE = /\/api\/stats(?:\?[^#]*)?$/;
 const PINNED_STATS = JSON.stringify({ producers_count: 31, categories_count: 18 });
 
-// MEH-2802: the home «אירועים קרובים» preview, which the pin above keeps out of
-// every other frame. Three rows chosen to stress the equal-height card: a long
-// two-line title + description (paid), a short title with no description
-// (free), and a row with no photo at all (category tile, paid). Dates sit after
-// VRT_FIXED_TIME. Shot ONLY by the "home upcoming events" test below.
-const EVENTS_UPCOMING_3_FIXTURE = fs.readFileSync(
-  path.join(__dirname, "fixtures", "events-upcoming-3.json"),
-  "utf-8"
-);
-// The fixture's two photos are Cloudinary URLs, and Cloudinary 401s on the
-// runner. Fulfil them with one fixed 1x1 PNG (a flat sage) so the band/thumbnail
-// is a deterministic filled area rather than whatever the CDN answered.
-const CLOUDINARY_IMAGE_RE = /res\.cloudinary\.com\/.*\/vrt\//;
-const FLAT_PNG = Buffer.from(
-  "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGOYs6IOAAOmAcOWG3PHAAAAAElFTkSuQmCC",
-  "base64"
-);
+// MEH-2859: the MEH-2802 three-event fixture, its Cloudinary pin and its 1x1
+// PNG left with the "home upcoming events" shot. The strip that replaced the
+// preview renders text rows with no imagery at all, so there is no photo to
+// make deterministic and nothing reads e2e/visual/fixtures/events-upcoming-3.json
+// any more — it was deleted with them rather than left looking like live
+// coverage of a section the home page no longer has.
 
 /**
  * MEH-991 Chunk 3 — visual parity baselines (VRT).
@@ -292,7 +289,7 @@ async function preparePage(page: Page): Promise<void> {
   await page.route(EVENTS_UPCOMING_RE, async (route) => {
     await route.fulfill({ status: 200, contentType: "application/json", body: "[]" });
   });
-  for (const re of [GROUP_BUYS_RE, RESCUE_OFFERS_RE]) {
+  for (const re of [GROUP_BUYS_RE, RESCUE_OFFERS_RE, EXPERIENCES_LIST_RE]) {
     await page.route(re, async (route) => {
       await route.fulfill({ status: 200, contentType: "application/json", body: "[]" });
     });
@@ -495,9 +492,18 @@ async function settle(page: Page): Promise<void> {
   // header copy as the only instance on that route. Both gated links come from
   // the same hook, and no ungated /experiences anchor exists on any parity
   // route (grep: Footer.jsx:89 and lib/nav-registry.js:163, both gated).
+  //
+  // MEH-2963: since MEH-2859 (#4311) the HEADER's gated link is «מה קורה» →
+  // /events, no longer «חוויות» → /experiences; only the Footer still links
+  // /experiences. /map has no footer, so the old selector found nothing there
+  // and this gate failed on a correct page. The header link is the same
+  // outcome of the same stub: preparePage() pins the other three supply feeds
+  // (events, group buys, rescue) EMPTY, so `header a[href$="/events"]` exists
+  // only when the experiences count resolved to visible. Scoped to `header`
+  // because a hub route's own tab row also links /events, ungated.
   await expect(
-    page.locator('a[href$="/experiences"]').first(),
-    "[experiences-gate] the «חוויות» nav link never entered the DOM — the " +
+    page.locator('a[href$="/experiences"], header a[href$="/events"]').first(),
+    "[experiences-gate] the gated nav link never entered the DOM — the " +
       "/api/experiences/count stub in preparePage() did not reach " +
       "use-experiences-nav-gate, so this frame would be shot 32px short.",
   ).toBeAttached({ timeout: 10_000 });
@@ -643,25 +649,92 @@ test.describe("Visual parity — MEH-991", () => {
     await expect(band).toHaveScreenshot("home-trust-band.png", SHOT);
   });
 
-  // MEH-2802 — the «אירועים קרובים» preview as an ELEMENT shot, desktop + mobile.
-  // A separate test so the full-page "home" frame above keeps its events pin and
-  // its baseline. Name contains "home" on purpose: `vrt-regen:home` scopes the
-  // on-runner regen with --grep home (vrt-update.yml), which must reach it.
-  // Desktop = the lg 3-up grid (equal heights, one chip+price line); mobile =
-  // the phone list. The geometric assertion lives in
-  // e2e/flows/45-card-grid-equal-height.spec.ts; this pins the pixels.
-  test("home upcoming events", async ({ page }) => {
+  // MEH-2859 — the «מה קורה אצל בתי העסק» strip as an ELEMENT shot, desktop +
+  // mobile. A separate test so the full-page "home" frame above keeps its empty
+  // pins and its baseline. Name contains "home" on purpose: `vrt-regen:home`
+  // scopes the on-runner regen with --grep home (vrt-update.yml), which must
+  // reach it.
+  //
+  // THREE types, one row each, and that is the subject: the strip's whole job
+  // is the mixed list with a type label per row, so a one-type fixture would
+  // shoot three identical «אירוע» labels and pin none of it. Baskets stay on
+  // preparePage's empty pin — the pilot is a build-time flag, so a basket row
+  // is not reproducible from a route fixture alone.
+  //
+  // It replaces the MEH-2802 "home upcoming events" shot, whose subject (the
+  // lg 3-up EventEntryRow compact grid) no longer renders on the home page.
+  test("home whats on", async ({ page }) => {
     await preparePage(page);
-    // Registered AFTER preparePage, so it wins over the empty pin there.
+    // All registered AFTER preparePage, so each wins over the empty pin there.
+    // Dates sit after VRT_FIXED_TIME (2026-07-15) and are ordered group buy →
+    // event → experience, so the row order in the baseline is deterministic
+    // and not a function of which fixture happens to parse first.
     await page.route(EVENTS_UPCOMING_RE, async (route) => {
-      await route.fulfill({ status: 200, contentType: "application/json", body: EVENTS_UPCOMING_3_FIXTURE });
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify([
+          { id: 9201, title: "יום פתוח במשק: טעימות גבינות וסיור ברפת", event_date: "2026-07-21", event_time: "10:00:00" },
+        ]),
+      });
     });
-    await page.route(CLOUDINARY_IMAGE_RE, async (route) => {
-      await route.fulfill({ status: 200, contentType: "image/png", body: FLAT_PNG });
+    await page.route(EXPERIENCES_LIST_RE, async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify([
+          { id: 9202, title: "סדנת אפייה של לחם מחמצת", event_date: "2026-07-26", event_time: "09:30:00" },
+        ]),
+      });
+    });
+    await page.route(GROUP_BUYS_RE, async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify([{ id: 9203, title: "שמן זית כתית מהבציר", deadline: "2026-07-18T12:00:00Z" }]),
+      });
     });
     await page.goto("/");
-    const section = page.locator('section:has([data-testid="event-row-compact"])');
-    await expect(page.locator('[data-testid="event-row-compact"]')).toHaveCount(3, { timeout: 20_000 });
+    const section = page.locator('[data-testid="home-whats-on"]');
+    // MEH-2961: scroll FIRST, assert the count SECOND. The strip asks its four
+    // sources for nothing until it nears the viewport (IntersectionObserver —
+    // the MEH-2233 LCP budget), and it sits below the producers grid, so on
+    // load the DOM holds only the sentinel and zero rows. Waiting on the count
+    // before scrolling therefore waits for a fetch that the wait itself is
+    // preventing. Bring the strip's own element into view first: the sentinel
+    // is what exists before the fetch, the section is what replaces it after,
+    // so the pair matches either state and `.first()` keeps strict mode happy.
+    //
+    // This spec asserted the count before the scroll from the day it was
+    // written until its first real execution (vrt-update dispatch 43104326037,
+    // 11/11): `toHaveCount` sat out its full 20s on
+    // `43 × locator resolved to 0 elements` and the test went red on both
+    // projects with `Expected: 3 Received: 0`. It was never green once.
+    //
+    // The scroll re-resolves on every attempt and the count is what has to
+    // become true. `Locator.scrollIntoViewIfNeeded` resolves a handle ONCE and
+    // acts on it — it does not re-resolve the way `click` does — so a sentinel
+    // swapped for the section between resolve and act throws `Element is not
+    // attached to the DOM` outright (measured under MEH-2961 review: 51 of 60
+    // iterations inside a 0–29ms window). That swap cannot land there today
+    // while the strip sits below the preload band, but nothing in this spec
+    // pins the page length that keeps it there — the producers grid above is
+    // server-rendered, so `preparePage` cannot reach it. `toPass` removes the
+    // handle identity, making a detach a retry rather than a failure, and it
+    // drops the ordering dependency on the lazy MiniMap directly above
+    // (HomeClient.jsx:289), which this same scroll also mounts and which then
+    // grows the page ABOVE the strip.
+    //
+    // The inner bounds are deliberately short: a genuine failure then reports
+    // `Expected: 3 Received: 0` — the line that diagnosed this bug — instead
+    // of burning the action timeout and dying on the 45s test timeout.
+    await expect(async () => {
+      await page
+        .locator('[data-testid="home-whats-on-sentinel"], [data-testid="home-whats-on"]')
+        .first()
+        .scrollIntoViewIfNeeded({ timeout: 5_000 });
+      await expect(page.locator('[data-testid="whats-on-row"]')).toHaveCount(3, { timeout: 2_000 });
+    }).toPass({ timeout: 20_000 });
     await section.scrollIntoViewIfNeeded();
     await settle(page);
     // An element shot still paints whatever is fixed/sticky over it (header,
@@ -687,7 +760,7 @@ test.describe("Visual parity — MEH-991", () => {
       }).observe(document.body, { childList: true, subtree: true });
     });
     await page.addStyleTag({ content: "[data-vrt-hide]{opacity:0 !important}" });
-    await expect(section).toHaveScreenshot("home-upcoming-events.png", SHOT);
+    await expect(section).toHaveScreenshot("home-whats-on.png", SHOT);
   });
 
   // MEH-1440 (2026-07-22): the /map chrome changed when the toggle-chip
@@ -1174,6 +1247,13 @@ test.describe("Visual parity — MEH-991", () => {
     });
   });
 
+  // MEH-2927 (11/11): this baseline was regenerated after the BottomNav was
+  // gated off /register*. The PREVIOUS one (393x1807) had the nav pill sitting
+  // directly on top of the «הצטרפו» submit button — a frozen picture of the
+  // bug B3c reported, which is the MEH-1552 shape testing.md warns about.
+  // The replacement (393x1747, -60px: the no-pill clearance is 12px where the
+  // pill's was 72px) was opened and reviewed by eye before merge, not taken on
+  // the bot's word: the pill is absent and the submit button is unobstructed.
   test("register", async ({ page }) => {
     await preparePage(page);
     await page.goto("/register");

@@ -16,6 +16,7 @@ import {
 } from "./favorites-cache";
 import { resetSavedCache } from "./saved-cache"; // MEH-2558
 import { useLaunchCohortTag } from "./launch-cohort";
+import { DRAFT_KEY } from "./register-draft"; // MEH-2915
 import {
   USER_CITY_CHANGED_EVENT,
   readUserCity,
@@ -181,6 +182,10 @@ export function AuthProvider({ children }) {
     await api.delete("/auth/me");
     localStorage.removeItem("token");
     localStorage.removeItem("user");
+    // MEH-2915: same reasoning as logout below, and more plainly so — an
+    // account that has just been deleted must not leave an unfinished
+    // registration draft behind on the device.
+    try { localStorage.removeItem(DRAFT_KEY); } catch {}
     resetFavoritesCache();
     resetSavedCache();
     setUser(null);
@@ -190,6 +195,17 @@ export function AuthProvider({ children }) {
   const logout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
+    // MEH-2915: an unfinished registration draft belongs to the session that
+    // was signing out, not to whoever uses the device next — the resume
+    // banner would otherwise offer one person's fill back to another.
+    //
+    // DELIBERATELY NOT on the expiry paths, which end in the same signed-out
+    // state: `_expireSession` (lib/api.js) and the 401/403 arm of the
+    // bootstrap `/auth/me` above. Those fire while the same person is still
+    // sitting in front of the wizard — a token that lapsed mid-fill would eat
+    // her work, which is the opposite of what the draft is for. Signing out is
+    // a deliberate "I am done here"; an expiry is not.
+    try { localStorage.removeItem(DRAFT_KEY); } catch {}
     resetFavoritesCache();
     resetSavedCache();
     setUser(null);

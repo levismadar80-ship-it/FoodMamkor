@@ -64,7 +64,8 @@
       "newsletter_placeholder": "האימייל שלך, בבקשה",
       "newsletter_submit": "להירשם",
       "newsletter_success": "ברוכים הבאים למהמקור נפגשות בתיבה"
-    }
+    },
+    "whats_on": "מה קורה"
   },
   "auth": {
     "verify": {
@@ -543,10 +544,17 @@
       "body_l2": "תקבלו עמוד משלכם: תמונות, סיפור, וקו ישיר ללקוחות.",
       "body_l3": "חינם, בלי עמלות. נשמח להכיר."
     },
-    "events": {
-      "heading": "אירועים קרובים",
-      "all_events": "לכל האירועים ←",
-      "free": "כניסה חופשית"
+    "whats_on": {
+      "eyebrow": "קרוב לבית",
+      "heading": "מה קורה אצל בתי העסק",
+      "all": "לכל מה שקורה",
+      "until": "עד {date}",
+      "type": {
+        "event": "אירוע",
+        "experience": "חוויה",
+        "group_buy": "קבוצת רכישה",
+        "rescue": "סל הפתעה"
+      }
     }
   },
   "common": {
@@ -2586,7 +2594,7 @@
   },
   "events": {
     "list": {
-      "title": "אירועי אוכל קרוב לבית",
+      "title": "מה קורה קרוב לבית",
       "subtitle": "מה קורה החודש — סוף שבוע אחרי סוף שבוע, ישר מהמקור",
       "subtitle_experiences": "ללמוד, לטעום ולגלות — חוויות אוכל אצל בתי עסק מקומיים",
       "eyebrow_events": "קרוב לבית",
@@ -2615,7 +2623,10 @@
       "no_results_title": "לא נמצאו תוצאות",
       "no_results_cta": "נקו סינון",
       "free": "כניסה חופשית",
-      "organizer_line": "מארגן: {name}"
+      "organizer_line": "מארגן: {name}",
+      "tab_experiences_short": "חוויות",
+      "tab_group_buys": "קבוצות רכישה",
+      "tab_rescue": "סלי הפתעה"
     },
     "categories": {
       "all": "הכל",
@@ -4679,6 +4690,7 @@
         },
         "uploading": "מעלה תמונה…",
         "remove_aria": "הסרת התמונה",
+        "last_photo": "אי אפשר להסיר את התמונה האחרונה. הוסיפו תמונה אחרת, ואז הסירו את זו.",
         "save_cta": "שמירת תמונות",
         "saving": "בשמירה…",
         "saved": "נשמר",
@@ -5059,6 +5071,9 @@
       "week": {
         "all_insights": "לכל הנתונים ←"
       }
+    },
+    "page_preview": {
+      "banner": "זו תצוגה מקדימה. הדף יעלה לאתר אחרי שנאשר את העסק."
     }
   },
   "sweep_tail": {
@@ -5128,6 +5143,8 @@
       "field_end_time_label": "שעת סיום (לא חובה)",
       "error_end_time_after_start": "שעת הסיום צריכה להיות אחרי שעת ההתחלה",
       "field_time_hint": "אופציונלי — אם לא הוזן, יוצג רק תאריך",
+      "saved_location_legend": "מיקום האירוע",
+      "saved_location_other": "כתובת אחרת",
       "field_location_label": "מיקום ספציפי",
       "field_location_placeholder": "כתובת מדויקת או הוראות הגעה",
       "field_city_label": "עיר",

@@ -241,9 +241,20 @@ export default function ProducerDashboardLayout({ children }) {
           {/* MEH-2460: hidden for an organizer — /producer/{id} is a business
               page. Its public page is /organizers/{slug} (MEH-2461), reached
               from the overview's view-public link once a slug exists. */}
+          {/* MEH-2916 (pilot A4): while the business is unapproved, /producer/{id}
+              is a real 404 for this link's own SSR fetch — which sends the
+              owner to «בית העסק הזה לא נמצא» on her own page. The 404 stays
+              (Sapir, 11/11); the link goes to the dashboard preview instead,
+              which fetches with her token on the client. `producer_status`
+              already rides /auth/me (schemas.py, MEH-206), so this costs no
+              extra request. */}
           {user.producer_id && !isOrganizer && (
             <Link
-              href={`/producer/${user.producer_id}`}
+              href={
+                user.producer_status === "approved"
+                  ? `/producer/${user.producer_id}`
+                  : "/producer/dashboard/preview"
+              }
               aria-label={t("view_page")}
               data-testid="dashboard-view-page"
               // MEH-2429: icon-only below sm (min 44px target, name via

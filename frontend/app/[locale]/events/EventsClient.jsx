@@ -32,6 +32,7 @@ import { EVENT_CATEGORIES, EXPERIENCE_CATEGORIES, withAll } from "@/lib/event-ca
 // mapping would drift, and a drifted arrow direction is invisible in review —
 // it reads as a plausible line either way.
 import useTabsKeyboard from "@/hooks/useTabsKeyboard";
+import ListingHubTabs from "@/components/ListingHubTabs";
 import Button from "@/components/ui/Button";
 
 // MEH-134: S10 "The Almanac" visual port. Events API + filter logic +
@@ -222,7 +223,8 @@ export default function EventsPage({ initialTab = "events" }) {
 
   // MEH-2199: one handler per tablist. The hook reads each row's own tabs out
   // of the DOM, so the two rows on this page cannot interfere with each other.
-  const onMainTabsKeyDown = useTabsKeyboard(switchTab);
+  // MEH-2859: the main tablist's handler moved into ListingHubTabs with the
+  // row itself; only the list/calendar view toggle is still this page's own.
   const onViewTabsKeyDown = useTabsKeyboard(setView);
 
   // Group rows into consecutive month buckets (same logic as before —
@@ -312,54 +314,26 @@ export default function EventsPage({ initialTab = "events" }) {
         </div>
       </section>
 
-      {/* Tabs — producer events vs community experiences + per-tab add */}
-      <div className="max-w-5xl mx-auto px-4 pt-4">
-        {/* MEH-916: the add-event Link is NOT a tab — a tablist may only own
-            role="tab" children (axe aria-required-children). The flex row +
-            border-b move to this outer div; the inner div is the tablist,
-            wrapping only the two tabs. The Link stays a sibling in the same
-            flex row (ms-auto), so the layout is unchanged. */}
-        <div className="flex items-end gap-4 border-b border-border">
-          <div
-            role="tablist"
-            className="flex items-end gap-4"
-            onKeyDown={onMainTabsKeyDown}
-          >
-          <button
-            role="tab"
-            data-tab-value="events"
-            aria-selected={!isExp}
-            tabIndex={isExp ? -1 : 0}
-            onClick={() => switchTab("events")}
-            className={`pb-3 pt-2 min-h-touch inline-flex items-center text-sm md:text-base font-semibold border-b-2 -mb-px transition ${
-              !isExp ? "border-primary text-primary" : "border-transparent text-fg-muted hover:text-primary"
-            }`}
-          >
-            {t("tab_events")}
-          </button>
-          <button
-            role="tab"
-            data-tab-value="experiences"
-            aria-selected={isExp}
-            tabIndex={isExp ? 0 : -1}
-            onClick={() => switchTab("experiences")}
-            className={`pb-3 pt-2 min-h-touch inline-flex items-center text-sm md:text-base font-semibold border-b-2 -mb-px transition ${
-              isExp ? "border-primary text-primary" : "border-transparent text-fg-muted hover:text-primary"
-            }`}
-          >
-            {t("tab_experiences")}
-          </button>
-          </div>
+      {/* MEH-2859: the row is now the shared four-tab hub row (events ·
+          experiences · group buys · surprise baskets) in
+          components/ListingHubTabs.jsx, so /group-buys and /rescue render the
+          same one instead of a second copy. `onSelect` keeps this page's
+          same-tick local switch for its own two tabs (MEH-2245); the other two
+          are plain route changes. The add link moves in as `action`. */}
+      <ListingHubTabs
+        active={isExp ? "experiences" : "events"}
+        onSelect={switchTab}
+        action={
           <Link
             href={isExp ? "/producer/dashboard/experiences/new" : "/producer/dashboard/events/new"}
-            className="ms-auto min-w-0 self-center min-h-touch inline-flex items-center text-sm font-medium text-primary hover:underline"
+            className="min-w-0 min-h-touch inline-flex items-center text-sm font-medium text-primary hover:underline"
           >
             {isExp ? t("submit_experience") : t("add_event")}
             {/* MEH-990: raw → dingbat → Phosphor ArrowRight; rtl:rotate-180 = reading-forward in he (MEH-938 pattern) */}
             <ArrowRight size={16} weight="bold" aria-hidden="true" className="ms-1 rtl:rotate-180" />
           </Link>
-        </div>
-      </div>
+        }
+      />
 
       {/* Toolbar + category chips — the tab's filter controls. MEH-1865: on an
           empty dataset there is nothing to filter and nothing to re-view, so

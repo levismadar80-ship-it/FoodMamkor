@@ -95,9 +95,10 @@ import type { Locator, Route } from "@playwright/test";
 
 const uuid = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`;
 const ADMIN = { id: uuid(1), email: "admin@example.com", name: "מנהלת", role: "admin" };
-const SUPER_ADMIN_EMAIL = "levismadar80@gmail.com"; // admin/users/page.js:13
+// MEH-2890: the page reads `is_super_admin` from GET /admin/users; no address.
+const OWNER_EMAIL = "owner@example.com";
 
-type User = { id: string; email: string; name: string; city: string | null; phone: string | null; role: string; is_blocked: boolean; producer_id: string | null; favorites_count: number; created_at: string };
+type User = { id: string; email: string; name: string; city: string | null; phone: string | null; role: string; is_blocked: boolean; is_super_admin?: boolean; producer_id: string | null; favorites_count: number; created_at: string };
 const user = (n: number, over: Partial<User> = {}): User => ({
   id: uuid(100 + n),
   email: `user${n}@example.com`,
@@ -115,7 +116,7 @@ const user = (n: number, over: Partial<User> = {}): User => ({
 const SIXTY: User[] = [
   { ...user(1), id: ADMIN.id, email: ADMIN.email, name: ADMIN.name, role: "admin" },
   user(2, { name: "רונית אדמין", role: "admin" }),
-  user(3, { name: "סמדר", email: SUPER_ADMIN_EMAIL, role: "admin" }),
+  user(3, { name: "סמדר", email: OWNER_EMAIL, role: "admin", is_super_admin: true }),
   ...Array.from({ length: 57 }, (_, i) => user(i + 4)),
 ];
 
@@ -208,6 +209,10 @@ async function stubAdmin(page: Page, opts: StubOpts = {}): Promise<Stub> {
   await page.route("**/experiences/count", (r) => json(r, { count: 0 }));
   // MEH-2369: the footer's «אירועים» link is gated on this public feed (use-events-nav-gate).
   await page.route((u) => /\/api\/events\/upcoming\/?$/.test(u.pathname), (r) => json(r, []));
+  // MEH-2858 / MEH-2859: the footer's «קבוצות רכישה» / «סלי הפתעה» links and the header's «מה קורה»
+  // link are gated on these two public feeds (lib/use-hub-nav-gate.js). Empty, so the links stay hidden.
+  await page.route((u) => /\/api\/group-buys\/?$/.test(u.pathname), (r) => json(r, []));
+  await page.route((u) => /\/api\/rescue\/offers\/?$/.test(u.pathname), (r) => json(r, []));
   await page.route("**/categories", (r) => json(r, categories.map(({ producer_count: _c, ...c }) => ({ ...c, producer_count: null }))));
   await page.route("**/admin/dashboard", (r) =>
     json(r, {
@@ -561,7 +566,7 @@ test.describe("/admin/users — the role kebab", () => {
     await stubAdmin(page);
     await openUsers(page);
     const row = userRow(page, "סמדר");
-    await expect(row.getByText(SUPER_ADMIN_EMAIL)).toBeVisible();
+    await expect(row.getByText(OWNER_EMAIL)).toBeVisible();
     await expect(kebab(row)).toHaveCount(0);
     await expect(row.getByText("מוגן")).toBeVisible();
     await expect(row.getByTitle("לא ניתן להסיר הרשאות מהאדמין הראשי")).toBeVisible();

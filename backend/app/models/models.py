@@ -167,6 +167,16 @@ class Producer(Base):
     kind = Column(
         String(20), nullable=False, default="producer", server_default="producer"
     )
+    # MEH-2952 (MEH-2892 §C.3): a seeded test business that may run on
+    # production for the post-release smoke. Hidden from every public surface
+    # by `producer_listing.is_business()` (the one rule; `include_test=True`
+    # only where a guard test allows it). Expand-only, NOT NULL + server
+    # default false (revision b8cb5480552f). Writers: the seed script and an
+    # admin toggle only (chunk 4) — never a self-service form, never a public
+    # response (tests/test_meh2952_is_test_guards.py).
+    is_test = Column(
+        Boolean, nullable=False, default=False, server_default=text("false")
+    )
     # MEH-2100: the instant the owner pressed "שליחה לבדיקה" and this row
     # moved draft -> pending. That instant, NOT created_at, is when the
     # 3-business-day review SLA starts once the submit gate ships.
@@ -762,6 +772,13 @@ class User(Base):
     google_id = Column(String(200), unique=True, nullable=True)
     apple_id = Column(String(200), unique=True, nullable=True)
     is_blocked = Column(Boolean, default=False)
+    # MEH-2952 (MEH-2892 §C.3): a test identity for the post-release smoke.
+    # Same rules as Producer.is_test: NOT NULL + server default false
+    # (revision b8cb5480552f), written only by the seed script and an admin
+    # toggle (chunk 4), never exposed in a public response.
+    is_test = Column(
+        Boolean, nullable=False, default=False, server_default=text("false")
+    )
     created_at = Column(DateTime, default=utc_now)
     # Analytics (feature/producer-analytics): updated on every authenticated
     # request via a tiny middleware in main.py. Used to compute daily-active-user
@@ -3133,3 +3150,24 @@ class RescueTypicalItems(Base):
     updated_at = Column(DateTime, default=utc_now, onupdate=utc_now, nullable=False)
 
     producer = relationship("Producer")
+
+
+class AlembicLineage(Base):
+    """MEH-2903 — every Alembic revision a booted image has applied here.
+
+    `alembic_version` holds only the current head, so an OLDER image booting on
+    a newer database (a rollback) cannot tell whether its own head is an
+    ancestor of the database's revision. `scripts/migrate_on_boot.py` records
+    the image's whole chain after each successful `upgrade head`, and an older
+    image takes rollback mode only if its head is listed here.
+
+    Boot bookkeeping, not app data: nothing in `app/` reads or writes it.
+    History:  MEH-2903 (creation)
+    """
+
+    __tablename__ = "alembic_lineage"
+
+    revision = Column(String(64), primary_key=True)
+    recorded_at = Column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )

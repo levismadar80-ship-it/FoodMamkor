@@ -17,7 +17,9 @@ import { useAuth } from "@/lib/auth-context";
 import { useTranslations, useLocale } from "next-intl";
 import { MagnifyingGlass, SealCheck } from "@phosphor-icons/react";
 import { BRAND_NAME } from "@/lib/constants";
+import { useEventsNavGate } from "@/lib/use-events-nav-gate";
 import { useExperiencesNavGate } from "@/lib/use-experiences-nav-gate";
+import { useHubNavGate } from "@/lib/use-hub-nav-gate";
 import { itemsForSurface } from "@/lib/nav-registry";
 import LanguageToggle from "@/components/LanguageToggle";
 
@@ -36,7 +38,7 @@ import LanguageToggle from "@/components/LanguageToggle";
  * __tests__/NavRegistryParity.test.jsx compares the rendered link set against
  * the registry for every auth state.
  */
-const HEADER_NAV_ORDER = ["home", "map", "experiences", "about"];
+const HEADER_NAV_ORDER = ["home", "map", "whatsOn", "about"];
 const HEADER_MENU_ORDER = [
   "producerDashboard",
   "producerPublicPage",
@@ -221,15 +223,24 @@ export default function Header() {
   // still comes from the registry's `header` surface and `nav.discover` stays
   // the BottomNav's, which is exactly why the registry keeps a separate record
   // per surface instead of one canonical labelKey.
+  // MEH-2859: «מה קורה» replaced «חוויות» and points at the hub, so its gate
+  // widened with it — the link appears when ANY of the four date-bound types
+  // has supply, not only experiences. Each hook owns one endpoint and fails
+  // closed, so an unreachable backend hides the link rather than offering an
+  // empty hub. The four reads are cached per session by the hooks themselves.
+  const showEvents = useEventsNavGate();
   const showExperiences = useExperiencesNavGate();
+  const showGroupBuys = useHubNavGate("groupBuys");
+  const showRescue = useHubNavGate("rescue");
+  const showWhatsOn = showEvents || showExperiences || showGroupBuys || showRescue;
   const NAV_ITEMS = orderedForSurface(
     "header",
     { signedIn: !!user, role: user?.role ?? null },
     HEADER_NAV_ORDER,
   )
-    // The data gate stays here: the registry records THAT experiences is gated
-    // on supply, not what the current supply is.
-    .filter(({ item }) => item.dataGate !== "experiences-supply" || showExperiences)
+    // The data gate stays here: the registry records THAT the item is gated on
+    // supply, not what the current supply is.
+    .filter(({ item }) => item.dataGate !== "listing-supply" || showWhatsOn)
     .map(({ item, surface }) => ({ href: item.href, label: t(surface.labelKey) }));
 
   const isHomepage = pathname === "/";

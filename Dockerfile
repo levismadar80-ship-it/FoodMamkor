@@ -58,4 +58,11 @@ ENV PYTHONUNBUFFERED=1
 #   - DO NOT also set `startCommand` in railway.json — Railway runs
 #     that without a shell and ${PORT:-8000} would be passed literally,
 #     causing "Invalid value for '--port'". Let the Dockerfile CMD win.
-CMD ["sh", "-c", "alembic upgrade head && exec python -u -m uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
+#   - MEH-2903: migrations run through scripts/migrate_on_boot.py, which
+#     runs `alembic upgrade head` and records the chain in alembic_lineage,
+#     unless the database is AHEAD of this image and this image's head is
+#     recorded there (a rollback): then it logs ROLLBACK MODE and skips the
+#     upgrade. Every non-zero exit (1 failed migration, 2 no migrations,
+#     3 split history) stops the boot through `&&`, as `upgrade head` did.
+#     docs/release/ROLLBACK.md §2d. tests/test_dockerfile_boot_cmd.py pins it.
+CMD ["sh", "-c", "python -u scripts/migrate_on_boot.py && exec python -u -m uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
