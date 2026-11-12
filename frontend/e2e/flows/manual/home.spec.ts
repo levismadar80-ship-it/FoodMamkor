@@ -880,6 +880,11 @@ test.describe("manual › hero — produce photo + Ken Burns (MEH-788)", () => {
   //   asserted is the structural claim underneath it — all three sit inside the
   //   hero band and none is clipped out of the first viewport.
   test("the headline, subtitle and chips row sit inside the hero band and in the viewport", async ({ page }) => {
+    // MEH-2979: the subtitle swaps to home.hero.friday_subtitle Thu 18:00 →
+    // Fri 14:00 Israel (lib/friday-mode.js), so an unfrozen clock reds this
+    // every week in that window. Pin a weekday noon, as parity.spec.ts does
+    // (MEH-1531). Real users' Friday behaviour is untouched.
+    await page.clock.setFixedTime(new Date("2026-07-15T09:00:00Z")); // Wed 12:00 IDT
     await consent(page);
     await stubTiles(page);
     await gotoHome(page);
