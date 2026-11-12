@@ -107,6 +107,8 @@ jobs:
                 - 'backend/scripts/seed_*.py'
                 - 'backend/seed_data.py'
                 - 'backend/uv.lock'
+                - 'backend/pyproject.toml'
+                - 'backend/alembic.ini'
                 - 'scripts/e2e/**'
 
   e2e:
@@ -189,7 +191,7 @@ jobs:
         ports:
           - 5432:5432
         options: >-
-          --health-cmd pg_isready
+          --health-cmd "pg_isready -U postgres -d mehamakor_e2e"
           --health-interval 5s
           --health-timeout 5s
           --health-retries 10
@@ -246,6 +248,31 @@ jobs:
         working-directory: frontend
         if: steps.playwright-cache.outputs.cache-hit != 'true'
 
+      # Joined BEFORE the build: `next build` prerenders the home page and the
+      # sitemap against NEXT_PUBLIC_API_URL, so a backend still seeding would
+      # bake empty data into them (reviewer finding, PR #4346). Setup (~40 s)
+      # normally finishes during npm ci, so this costs ~0 s. Fails at once if
+      # the setup script already exited non-zero (its status file).
+      - name: Wait for local backend (PR runs)
+        if: github.event_name == 'pull_request'
+        run: |
+          for i in $(seq 1 120); do
+            if curl -sf -o /dev/null http://127.0.0.1:8080/health; then
+              echo "local backend ready (waited ${i}s before the build)"
+              tail -5 /tmp/backend-setup.log
+              exit 0
+            fi
+            if [ -s /tmp/backend-setup.status ] && [ "$(cat /tmp/backend-setup.status)" != "0" ]; then
+              echo "::error::local backend setup failed (exit $(cat /tmp/backend-setup.status))"
+              break
+            fi
+            sleep 1
+          done
+          echo "::error::local backend not ready — setup log:"
+          cat /tmp/backend-setup.log
+          tail -50 /tmp/backend.log || true
+          exit 1
+
       - name: Build frontend
         run: npm run build
         working-directory: frontend
@@ -253,7 +280,8 @@ jobs:
           # Silence telemetry noise in CI logs (mirrors PR-Checks).
           NEXT_TELEMETRY_DISABLED: "1"
           # Same backend the Vercel previews proxied to (Railway staging,
-          # docs/DEPLOYMENT.md → env table). NEXT_PUBLIC_* is inlined at
+          # docs/DEPLOYMENT.md → env table) — on PR runs the local backend
+          # instead (MEH-2973, E2E_API_URL). NEXT_PUBLIC_* is inlined at
           # build time; rewrites() reads it again at server boot.
           NEXT_PUBLIC_API_URL: ${{ env.E2E_API_URL }}
           # MEH-1778: without this the GSI script is never appended
@@ -291,22 +319,6 @@ jobs:
           done
           echo "::error::next start did not serve 200 within ~90s."
           tail -50 /tmp/next-start.log
-          exit 1
-
-      - name: Wait for local backend (PR runs)
-        if: github.event_name == 'pull_request'
-        run: |
-          for i in $(seq 1 120); do
-            if curl -sf -o /dev/null http://127.0.0.1:8080/health; then
-              echo "local backend ready (waited ${i}s after the build)"
-              cat /tmp/backend-setup.log | tail -5
-              exit 0
-            fi
-            sleep 1
-          done
-          echo "::error::local backend not ready — setup log:"
-          cat /tmp/backend-setup.log
-          tail -50 /tmp/backend.log || true
           exit 1
 
       # MEH-1712 — CAPTURE ONLY. Dials Railway FROM THE RUNNER, which is the one
@@ -473,6 +485,18 @@ jobs:
           fi
           echo "=== end /tmp/next-start.log ==="
 
+      # MEH-2973 — same rule for the local backend (PR runs): its logs must be
+      # readable from the job log, not only from the artifact.
+      - name: Print local backend logs (PR runs, capture-only)
+        if: always() && github.event_name == 'pull_request'
+        continue-on-error: true
+        run: |
+          for f in /tmp/backend-setup.log /tmp/backend.log; do
+            echo "=== $f — last 200 lines ==="
+            if [ -s "$f" ]; then tail -200 "$f"; else echo "(EMPTY OR MISSING) $(ls -l "$f" 2>&1)"; fi
+            echo "=== end $f ==="
+          done
+
       # MEH-1712 — the server's own stdout. `next start` has written to
       # /tmp/next-start.log since MEH-1044 (step "Start Next.js server"), but
       # nothing ever uploaded it, so every serverFetch failure it recorded was
@@ -492,6 +516,8 @@ jobs:
           path: |
             /tmp/next-start.log
             /tmp/backend-probe.log
+            /tmp/backend-setup.log
+            /tmp/backend.log
           retention-days: 7
           if-no-files-found: warn
 
