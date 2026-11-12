@@ -40,4 +40,25 @@ describe("FridayDeliveryStrip skeleton", () => {
     const { container } = render(<FridayDeliveryStrip />);
     await waitFor(() => expect(container.innerHTML).toBe(""));
   });
+
+  it("holds the banner slot while loading, releases it when empty", async () => {
+    const d = deferred();
+    getSpy.mockReturnValue(d.promise);
+    const onVis = vi.fn();
+    render(<FridayDeliveryStrip onVisibilityChange={onVis} />);
+    expect(onVis).toHaveBeenLastCalledWith(true);
+    await act(async () => d.resolve({ data: [] }));
+    await waitFor(() => expect(onVis).toHaveBeenLastCalledWith(false));
+  });
+
+  it("keeps the old strip on a city change instead of flashing the skeleton", async () => {
+    getSpy.mockResolvedValueOnce({ data: [{ id: 1, name: "Farm", slug: "farm" }] });
+    const { rerender } = render(<FridayDeliveryStrip city="חיפה" />);
+    await screen.findByTestId("friday-delivery-strip");
+    getSpy.mockReturnValueOnce(deferred().promise);
+    rerender(<FridayDeliveryStrip city="חדרה" />);
+    await waitFor(() => expect(getSpy).toHaveBeenCalledTimes(2));
+    expect(screen.queryByTestId("friday-delivery-strip-skeleton")).toBeNull();
+    expect(screen.getByTestId("friday-delivery-strip")).toBeTruthy();
+  });
 });

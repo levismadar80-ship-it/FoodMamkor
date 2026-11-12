@@ -49,7 +49,8 @@ function ProducerMiniCard({ producer }) {
       </div>
       <div className="px-2 py-1.5">
         <p className="text-xs font-semibold text-text truncate">{producer.name}</p>
-        {producer.city && <p className="text-2xs text-fg-muted truncate">{producer.city}</p>}
+        {/* MEH-3001: always one line, so every card matches the skeleton's height */}
+        <p className="text-2xs text-fg-muted truncate">{producer.city || "\u00a0"}</p>
       </div>
     </Link>
   );
@@ -106,7 +107,8 @@ export default function FridayDeliveryStrip({ city, onVisibilityChange }) {
     // DELIVERY_DAYS is sun→sat, so index 5 is שישי (the backend vocabulary).
     const params = { delivery_day: DELIVERY_DAYS[5], page_size: 12 };
     if (city) params.delivery_city = city;
-    setLoaded(false);
+    // No setLoaded(false) here: on a city change the old strip stays up until
+    // the new list arrives, instead of flashing back to the skeleton.
     api
       .get("/producers", { params })
       .then((r) => setProducers((r.data || []).slice(0, 12)))
@@ -117,9 +119,12 @@ export default function FridayDeliveryStrip({ city, onVisibilityChange }) {
   // MEH-879: report show-state up to the homepage banner single-slot so
   // lower-precedence banners (Holiday, Location) can yield to this strip.
   const visible = producers.length > 0;
+  // MEH-3001: the skeleton holds the slot too, so a Holiday/Location banner
+  // does not render beside it and then yield when the list arrives.
+  const holdsSlot = !loaded || visible;
   useEffect(() => {
-    onVisibilityChange?.(visible);
-  }, [visible, onVisibilityChange]);
+    onVisibilityChange?.(holdsSlot);
+  }, [holdsSlot, onVisibilityChange]);
 
   if (!loaded) return <FridayStripSkeleton />;
   if (!visible) return null;
