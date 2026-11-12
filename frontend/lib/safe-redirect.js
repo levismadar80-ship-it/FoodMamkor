@@ -25,3 +25,19 @@ export function safeInternalRedirect(raw, fallback = "/") {
   if (typeof raw !== "string" || raw === "") return fallback;
   return INTERNAL_PATH.test(raw) ? raw : fallback;
 }
+
+/**
+ * MEH-2982: the login URL that brings a signed-out reader back to the page she
+ * is on. A guest redirected to a bare "/login" lands on "/" after signing in
+ * and loses the page that sent her there.
+ * REUSES: components/LoginPromptModal.jsx:103 — same `?redirect=` shape,
+ * clamped on the login side by safeInternalRedirect above.
+ *
+ * @returns {string} "/login?redirect=<current path + query>", or "/login"
+ *          when there is no window (server render).
+ */
+export function loginHrefBackHere() {
+  if (typeof window === "undefined") return "/login";
+  const here = `${window.location.pathname}${window.location.search}`;
+  return `/login?redirect=${encodeURIComponent(here)}`;
+}
