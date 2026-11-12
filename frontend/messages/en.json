@@ -247,7 +247,10 @@
           "after_title": "What happens next",
           "after_body": "Every business gets a personal intro — once you complete your profile and send it for review, our team checks the details, gets in touch if needed, and your business goes live within up to 3 business days.",
           "after_link": "How the acceptance process works",
-          "cta": "Start"
+          "join_link": "What a page looks like, what you get, and FAQ",
+          "cta": "Start",
+          "organizer_link": "Organizing a market or event? You have your own sign-up",
+          "group_buy_note": "Organizing a neighbourhood group buy? On the site only businesses open group buys, and you can join a business's group buy from its page."
         },
         "loading": "Loading...",
         "loading_form": "Loading registration form...",
@@ -721,6 +724,9 @@
     "register_producer": {
       "title": "Register your business",
       "description": "Join Mehamakor — register your local food business. Every business is hand-picked."
+    },
+    "register_organizer": {
+      "title": "Sign up as a market or event organizer"
     },
     "claim": {
       "title": "Take your business page",
@@ -3779,6 +3785,10 @@
       "difference": {
         "q": "How is this different from Instagram or delivery apps — and who's behind it?",
         "a": "There, you're one more line in a feed or a results list. Here, every business gets a page of its own with the story, the photos and the people behind it — like an article about you, not like an ad. No commissions, no algorithm deciding who sees you. And behind the site is me, Sapir — I read every email personally and reply. And if you'd like to come off the site, we remove the business with no questions asked."
+      },
+      "organizers": {
+        "q": "Organizing a market, an event or a group buy?",
+        "a": "Market and event organizers have their own sign-up. On the site only businesses open group buys, and you can join a business's group from its page."
       }
     },
     "showcase": {

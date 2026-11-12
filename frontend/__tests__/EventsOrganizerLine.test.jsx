@@ -225,6 +225,9 @@ describe("MEH-2468 — event cover image on the /events row", () => {
       { id: 6, title: "y", event_date: "2026-11-06", city: "עכו", category: "בישול", price_per_person: 0,
         is_recurring: false, recurring_schedule: "כל יום ראשון", host: { name: "דנה" } },
     ];
+    // MEH-2980: the URL names the tab (the path wins over initialTab), so the
+    // experiences route is rendered on its own path.
+    window.history.replaceState(null, "", "/experiences");
     render(<EventsClient initialTab="experiences" />);
     await waitFor(() => expect(screen.queryByRole("status")).toBeNull());
     expect(screen.getByText("נועה · חיפה · כל יום שישי")).toBeInTheDocument();

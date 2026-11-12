@@ -105,6 +105,16 @@ function initChipsFromParams(searchParams) {
   return result;
 }
 
+function initDaysFromParams(searchParams) {
+  if (!searchParams.get("city")) return [];
+  const raw = searchParams.getAll("delivery_days");
+  const legacy = searchParams.get("delivery_day");
+  const values = raw.length ? raw : legacy ? [legacy] : [];
+  return values
+    .filter((d, i, a) => DELIVERY_DAYS.includes(d) && a.indexOf(d) === i)
+    .slice(0, DELIVERY_DAYS.length);
+}
+
 export default function ProducersClient({
   initialItems,
   initialTotal,
@@ -150,15 +160,7 @@ export default function ProducersClient({
   // keeps working verbatim. Unknown and duplicate members are dropped rather
   // than 422'd (the MEH-1645 asymmetry: untrusted at the API, recoverable typo
   // in the browser), and the whole set still requires a city.
-  const [dayFilters, setDayFilters] = useState(() => {
-    if (!searchParams.get("city")) return [];
-    const raw = searchParams.getAll("delivery_days");
-    const legacy = searchParams.get("delivery_day");
-    const values = raw.length ? raw : legacy ? [legacy] : [];
-    return values
-      .filter((d, i, a) => DELIVERY_DAYS.includes(d) && a.indexOf(d) === i)
-      .slice(0, DELIVERY_DAYS.length);
-  });
+  const [dayFilters, setDayFilters] = useState(() => initDaysFromParams(searchParams));
   const dayFilterRef = useRef(dayFilters);
   useEffect(() => { dayFilterRef.current = dayFilters; }, [dayFilters]);
   const [filteredItems, setFilteredItems] = useState(null);
@@ -236,8 +238,15 @@ export default function ProducersClient({
 
   // ?focus=1 → focus the input on mount. The header search button lands here
   // with it (MEH-819).
+  // MEH-2987: the header search pushes /producers?focus=1 even when she is
+  // already here, which wipes q / category / chips from the URL while the page
+  // keeps showing them (a refresh or a shared link then loses the search).
+  // Once focused, write the live filter state back over that URL.
+  const restoreUrlRef = useRef(null);
   useEffect(() => {
-    if (shouldFocus) searchInputRef.current?.focus();
+    if (!shouldFocus) return;
+    searchInputRef.current?.focus();
+    restoreUrlRef.current?.();
   }, [shouldFocus]);
 
   // Keep the box in sync when q is cleared elsewhere (🔍 chip ×, clear all).
@@ -308,6 +317,10 @@ export default function ProducersClient({
     [],
   );
 
+  // MEH-2987: read by the ?focus=1 effect above (declared before syncUrl).
+  restoreUrlRef.current = () => syncUrl(chips, cityFilter, searchQ, categoryFilter);
+
+  const filterReqRef = useRef(0);
   const fetchFiltered = useCallback((chipState, city, q, category) => {
     const params = buildChipParams(chipState);
     if (city) params.delivery_city = city;
@@ -318,7 +331,9 @@ export default function ProducersClient({
     // MEH-1465: pass the whole array — api serializes it as repeated ?category=.
     if (category?.length) params.category = category;
     if (Object.keys(params).length === 0) {
+      filterReqRef.current += 1; // drop any fetch still in flight
       setFilteredItems(null);
+      setLoading(false);
       return;
     }
     // MEH-1483: sort added AFTER the no-filters check so a bare sort never
@@ -326,17 +341,60 @@ export default function ProducersClient({
     // to the unfiltered (infinite-scroll) list, whose sort the effect drives.
     // MEH-2294: distance carries lat+lng (and nothing when there is no fix).
     Object.assign(params, sortRequestParams(sortOrderRef.current, locRef.current));
+    // MEH-2987: last request wins. Back/Forward (and fast chip taps) can put two
+    // fetches in flight; without this an older response landing last would
+    // overwrite the list the URL and chips now describe.
+    const reqId = ++filterReqRef.current;
+    const isLatest = () => reqId === filterReqRef.current;
     setLoading(true);
     api
       .get("/producers", { params: { ...params, limit: FILTER_LIMIT, offset: 0 } })
       .then((r) => {
+        if (!isLatest()) return;
         const items = Array.isArray(r.data) ? r.data : [];
         setFilteredItems(items);
         trackEvent("producers_filter_results", { count: items.length });
       })
-      .catch(() => setFilteredItems([]))
-      .finally(() => setLoading(false));
+      .catch(() => { if (isLatest()) setFilteredItems([]); })
+      .finally(() => { if (isLatest()) setLoading(false); });
   }, []);
+
+  // MEH-2987: Back / Forward re-reads the filters from the URL. Every filter
+  // state above is hydrated from the URL ONCE, and a category selection is a
+  // pushState (MEH-1084: "Back cancels the category") — but nothing listened,
+  // so Back changed the address and left the filtered list on screen
+  // (measured on staging 12/11: Back → URL `/producers`, «בשר ודגים» still
+  // pressed, 4 cards of 24). Sort is left out on purpose: it is its own axis
+  // with its own refetch effect; an older entry can carry an older sort, so
+  // onPop rewrites the entry with the live sort instead of restoring it.
+  useEffect(() => {
+    const onPop = () => {
+      // Leaving /producers by Back also fires this before unmount — the
+      // destination's ?category= is not ours to read.
+      if (!/\/producers\/?$/.test(window.location.pathname)) return;
+      const sp = new URLSearchParams(window.location.search);
+      const nextChips = initChipsFromParams(sp);
+      const nextCity = sp.get("city") || null;
+      const nextDays = initDaysFromParams(sp);
+      const nextQ = sp.get("q") || "";
+      const nextCategory = sp.getAll("category");
+      setChips(nextChips);
+      setCityFilter(nextCity);
+      dayFilterRef.current = nextDays;
+      setDayFilters(nextDays);
+      setSearchQ(nextQ);
+      setSearchInput(nextQ);
+      setCategoryFilter(nextCategory);
+      // fetchFiltered clears to the unfiltered list itself when nothing is set.
+      fetchFiltered(nextChips, nextCity, nextQ, nextCategory);
+      // Sort is not restored from the entry (it has its own refetch effect),
+      // so rewrite this entry with the sort the view is actually in — the URL
+      // must never claim a sort the list is not showing.
+      syncUrl(nextChips, nextCity, nextQ, nextCategory);
+    };
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, [fetchFiltered]);
 
   const loadNextPage = useCallback(() => {
     if (loadingMore || !hasMore) return;
@@ -707,6 +765,31 @@ export default function ProducersClient({
     setFilteredItems(null);
     syncUrl(CHIPS_DEFAULT, null, "", []);
     trackEvent("producers_clear_all");
+  };
+
+  // MEH-2987: the empty state's category chips. They were `<Link href=
+  // "/producers?category=X">` — a navigation to the SAME route, and this
+  // component reads q / category from the URL only once (the useState
+  // initialisers above), so the URL changed and the page did not: the search
+  // stayed, the list stayed empty. Same outcome the link meant (a fresh view
+  // of that one category, everything else cleared), done through state.
+  // DO NOT turn these back into same-route Links — MEH-2987.
+  const pickEscapeCategory = (id) => {
+    const next = [String(id)];
+    setChips(CHIPS_DEFAULT);
+    setCityFilter(null);
+    dayFilterRef.current = [];
+    setDayFilters([]);
+    setSearchQ("");
+    setCategoryFilter(next);
+    // A new view, like any category selection (MEH-1084) → push, so Back
+    // returns to the search she typed.
+    syncUrl(CHIPS_DEFAULT, null, "", next, "push");
+    fetchFiltered(CHIPS_DEFAULT, null, "", next);
+    trackEvent("producers_empty_category_pick", { category: next });
+    // The chips sit at the bottom of the empty state; the results start at the
+    // top of the page, with the picked category lit in the row above them.
+    if (typeof window !== "undefined") window.scrollTo({ top: 0 });
   };
 
   const cityChip = cityFilter ? { ...cityChipDef, label: cityFilter } : cityChipDef;
@@ -1137,7 +1220,12 @@ export default function ProducersClient({
       {loading ? (
         <SkeletonProducerGrid count={8} />
       ) : showFilterEmpty ? (
-        <FilterEmptyState onClear={clearAll} searchQ={searchQ} categories={categories} />
+        <FilterEmptyState
+          onClear={clearAll}
+          onPickCategory={pickEscapeCategory}
+          searchQ={searchQ}
+          categories={categories}
+        />
       ) : showPageOverflow ? (
         <PageOverflowState />
       ) : showCatalogEmpty ? (
@@ -1196,7 +1284,7 @@ export default function ProducersClient({
   );
 }
 
-export function FilterEmptyState({ onClear, searchQ, categories = [] }) {
+export function FilterEmptyState({ onClear, onPickCategory, searchQ, categories = [] }) {
   const t = useTranslations("producers");
   // MEH-2827 PR 4: a search that found nothing is the moment someone knows a
   // business we don't — the footer link was the only way to /recommend.
@@ -1227,16 +1315,18 @@ export function FilterEmptyState({ onClear, searchQ, categories = [] }) {
       <p className="text-fg-muted text-sm mb-6">
         {searchQ ? t("empty.search_hint") : t("empty.filters_hint")}
       </p>
-      {searchQ && escapeChips.length > 0 && (
+      {searchQ && onPickCategory && escapeChips.length > 0 && (
         <div className="flex flex-wrap justify-center gap-2 mb-6">
           {escapeChips.map((c) => (
-            <Link
+            <button
               key={c.id}
-              href={`/producers?category=${encodeURIComponent(String(c.id))}`}
+              type="button"
+              onClick={() => onPickCategory(c.id)}
+              data-testid="producers-empty-category"
               className="bg-surface border border-border text-text rounded-full px-4 py-1.5 text-sm hover:border-primary hover:text-primary transition"
             >
               {c.name}
-            </Link>
+            </button>
           ))}
         </div>
       )}
@@ -1288,7 +1378,7 @@ function CatalogEmptyState() {
       <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
         {!isAdmin && (
           <Link
-            href="/register/producer"
+            href="/join"
             className="bg-primary text-white px-6 py-3 rounded-md font-medium hover:bg-primary-dark transition"
           >
             {t("add_cta")}

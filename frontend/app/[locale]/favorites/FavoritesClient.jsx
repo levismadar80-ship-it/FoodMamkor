@@ -6,6 +6,7 @@ import { Bell, Heart, HeartStraight } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import { useAuth } from "@/lib/auth-context";
 import api from "@/lib/api";
+import { loginHrefBackHere } from "@/lib/safe-redirect";
 import { FavoriteWithProducerSchema } from "@/lib/api-schemas";
 import {
   ensureFavoritesLoaded,
@@ -190,7 +191,8 @@ export default function FavoritesClient() {
 
   useEffect(() => {
     if (!authLoading && !user) {
-      router.push("/login");
+      // MEH-2982: come back to /favorites after signing in, not to "/".
+      router.push(loginHrefBackHere());
       return;
     }
     if (user) {

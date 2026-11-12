@@ -419,6 +419,33 @@ describe("HomeWhatsOn — what one row says", () => {
     expect(label("חוויה 3")).toBe("סדנה");
   });
 
+  it("MEH-2997: the city joins the gold label («שוק · חיפה»); the muted line keeps the organizer alone", async () => {
+    responses.current = {
+      [EVENTS]: [
+        { ...event(1, "2026-08-05"), category: "שוק", producer_name: "מארגנת", city: "חיפה" },
+        // A labelled card with no city: the label alone, no dangling « · ».
+        { ...event(2, "2026-08-06"), producer_name: "מארגנת" },
+      ],
+      // No label on a group buy: its city stays on the muted line, as before.
+      [GROUP_BUYS]: [{ ...groupBuy(3, "2026-08-10T12:00:00Z"), producer_name: "חווה", city: "עכו" }],
+    };
+    const { default: HomeWhatsOn } = await import("@/components/HomeWhatsOn");
+    await renderNear(HomeWhatsOn);
+    await waitFor(() => expect(screen.getAllByTestId("whats-on-row")).toHaveLength(3));
+    const row = (title) => screen.getByText(title).closest('[data-testid="whats-on-row"]');
+    const muted = (title) => row(title).querySelector(".text-fg-muted.line-clamp-1")?.textContent;
+
+    expect(row("אירוע 1").querySelector('[data-testid="whats-on-label"]').textContent).toBe("שוק · חיפה");
+    expect(muted("אירוע 1")).toBe("מארגנת");
+
+    expect(row("אירוע 2").querySelector('[data-testid="whats-on-label"]').textContent).toBe("אירוע");
+    expect(row("אירוע 2").querySelector('[data-testid="whats-on-city"]')).toBeNull();
+    expect(muted("אירוע 2")).toBe("מארגנת");
+
+    expect(row("רכישה 3").querySelector('[data-testid="whats-on-label"]')).toBeNull();
+    expect(muted("רכישה 3")).toBe("חווה · עכו");
+  });
+
   it("price: a number when there is one, «כניסה חופשית» for a free event, nothing for a priceless group buy", async () => {
     responses.current = {
       [EVENTS]: [

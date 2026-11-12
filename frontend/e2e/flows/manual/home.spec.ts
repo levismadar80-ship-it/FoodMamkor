@@ -2172,6 +2172,11 @@ test.describe("manual › above-the-fold mini-map + trust band (MEH-604 · MEH-6
     const read = async (viewport: { width: number; height: number }) => {
       const ctx = await browser.newContext({ viewport, locale: "he-IL", timezoneId: "Asia/Jerusalem", reducedMotion: "reduce" });
       const page = await ctx.newPage();
+      // MEH-2986: this test opens its own contexts, so the describe's
+      // beforeEach clock (MEH-2979) never reaches them. Pin the same weekday
+      // noon here, or Thu 18:00 → Fri 14:00 Israel the friday-delivery-strip
+      // can be read on one viewport and not yet on the other.
+      await page.clock.setFixedTime(new Date("2026-07-15T09:00:00Z")); // Wed 12:00 IDT
       try {
         await consent(page);
         await stubTiles(page);
@@ -2198,6 +2203,11 @@ test.describe("manual › above-the-fold mini-map + trust band (MEH-604 · MEH-6
     // Control: the reader saw real sections, including the map this ticket moved.
     expect(phone.dom, "control: the reader found the mini-map on the phone").toContain("home-minimap");
     expect(desk.dom.length, "control: more than a couple of sections were read").toBeGreaterThan(3);
+    // MEH-2986 control: the pinned weekday clock reached both contexts. Without
+    // the pin, this reds Thu 18:00 → Fri 14:00 Israel, when the strip mounts.
+    expect([...phone.dom, ...desk.dom], "clock pin reached both contexts: no Friday strip").not.toContain(
+      "friday-delivery-strip"
+    );
     expect(phone.painted, "375: painted order = DOM order (no CSS reorder)").toEqual(phone.dom);
     expect(desk.painted, "1440: painted order = DOM order (no CSS reorder)").toEqual(desk.dom);
     expect(phone.dom, "the same sections, in the same order, on phone and desktop").toEqual(desk.dom);
@@ -2481,7 +2491,8 @@ test.describe("manual › static home blocks (overnight design batch)", () => {
     await expect(cta.getByRole("heading", { level: 2, name: CTA.heading })).toBeVisible();
     for (const line of [CTA.body_l1, CTA.body_l2, CTA.body_l3]) await expect(cta).toContainText(line);
     // MEH-2824: the band's one button is «מצטרפים», like /join (home.cta.button retired).
-    await expect(cta.getByRole("link", { name: he.join.cta })).toHaveAttribute("href", /\/register\/producer$/);
+    // MEH-2983: the home band leads to /join, the main door for businesses.
+    await expect(cta.getByRole("link", { name: he.join.cta })).toHaveAttribute("href", /\/join$/);
   });
 
   // MT:ODB:5 — the footer's copyright line: no leaf emoji. (The tagline's own

@@ -242,6 +242,17 @@ describe("SettingsPage", () => {
     userRef.current = consumer;
   });
 
+  it("MEH-2982: a guest is sent to /login with a redirect back to /settings", () => {
+    userRef.current = null;
+    window.history.pushState({}, "", "/en/settings?tab=security");
+    render(<SettingsPage />);
+    expect(mockPush).toHaveBeenCalledTimes(1);
+    expect(mockPush).toHaveBeenCalledWith(
+      "/en/login?redirect=%2Fen%2Fsettings%3Ftab%3Dsecurity",
+    );
+    window.history.pushState({}, "", "/");
+  });
+
   // MEH-1355: the business tab was removed — producers and consumers now see
   // the same two tabs (profile, security). The status/support surface moved to
   // /producer/dashboard (ProducerStatusBanners.test.jsx).
