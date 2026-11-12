@@ -231,16 +231,6 @@ function shareUrlFor(origin: string, p: Producer): string {
   return `${origin}${p.slug ? `/${p.slug}` : `/producer/${p.id}`}`;
 }
 
-/**
- * ShareButton.jsx `waText` — the message the DESKTOP path (no native share)
- * hands to wa.me. Stated as a derivation from he.json + the component's join
- * rule, so a copy edit moves both sides together and a rule change reds this.
- */
-function waTextFor(origin: string, p: Producer): string {
-  const title = SHARE_HE.wa_message_with_meta.replace("{title}", p.name);
-  return `${title}\n👉 ${shareUrlFor(origin, p)}`;
-}
-
 async function openProducer(page: Page, id: string): Promise<Locator> {
   await page.goto(`/producer/${id}`);
   const root = scope(page).getByTestId("producer-detail-root");
@@ -999,16 +989,16 @@ test.describe("manual › /producer/[id] — main-column content", () => {
 
 // ════════════════════════════════════════════════════════════════════════════
 test.describe("manual › /producer/[id] — share", () => {
-  // MT:OG:share-text:1 + MT:TASK14:whatsapp:2 + MT:TASK14:whatsapp:3 —
-  //   the desktop (no native share) path and the message it carries.
-  //   Drift, reported: the row says "clipboard contains the multi-line message"
-  //   and a «הקישור הועתק ✓» toast. MEH-1290 replaced both — with no native
-  //   share the button opens wa.me with the business line + the URL
-  //   (ShareButton.jsx:33-36, :51-52). Asserted as it behaves today.
-  test("desktop share with no native sheet opens wa.me carrying the business name and its share URL", async ({
+  // MT:OG:share-text:1 — the desktop (no native share) path.
+  //   MEH-1290 opened wa.me here because the copy it replaced was silent.
+  //   MEH-2996 (Sapir's choice, 12/11): one behaviour on every page — no
+  //   share sheet → the link is copied and a toast says so. Nothing opens.
+  test("desktop share with no native sheet copies the business's share URL and says so", async ({
     page,
+    context,
   }, info) => {
     test.skip(!isDesktop(info), "the quiet share control is the desktop mount (project identity)");
+    await context.grantPermissions(["clipboard-read", "clipboard-write"]);
     const list = await catalog(page);
     const target = pick(
       list,
@@ -1032,24 +1022,19 @@ test.describe("manual › /producer/[id] — share", () => {
     const root = await openProducer(page, target.id);
     const share = shareControls(root.getByTestId("producer-actions-row"));
     await expect(share).toHaveCount(1, FIRST_PAINT);
+    // A sentinel first: the clipboard must CHANGE on the tap, so a page that
+    // copies nothing cannot pass on a value left there by an earlier step.
+    await page.evaluate(() => navigator.clipboard.writeText("sentinel-before-share"));
     await share.click();
 
-    const opened = () =>
-      page.evaluate(() => (window as unknown as { __opened: string[] }).__opened);
-    await expect.poll(async () => (await opened()).length, { timeout: 10_000 }).toBe(1);
-    const [href] = await opened();
-    expect(href.startsWith("https://wa.me/?text="), `expected a wa.me link, got ${href}`).toBe(true);
-
     const origin = new URL(page.url()).origin;
-    const text = decodeURIComponent(href.slice("https://wa.me/?text=".length));
-    expect(text, "the wa.me message is the business line plus its share URL").toBe(
-      waTextFor(origin, target),
-    );
-    // The two halves the rows name, asserted on their own so a failure says
-    // which one moved.
-    expect(text, "the message must carry the business name").toContain(target.name);
-    expect(text, "the message must carry the business's share URL").toContain(
-      shareUrlFor(origin, target),
-    );
+    await expect
+      .poll(() => page.evaluate(() => navigator.clipboard.readText().catch(() => "<clipboard read failed>")), {
+        timeout: 10_000,
+      })
+      .toBe(shareUrlFor(origin, target));
+    await expect(page.getByText(SHARE_HE.copied_toast, { exact: true })).toBeVisible();
+    const opened = await page.evaluate(() => (window as unknown as { __opened: string[] }).__opened);
+    expect(opened, "the no-sheet path must not open WhatsApp or any window").toEqual([]);
   });
 });
