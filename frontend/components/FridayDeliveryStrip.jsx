@@ -49,9 +49,40 @@ function ProducerMiniCard({ producer }) {
       </div>
       <div className="px-2 py-1.5">
         <p className="text-xs font-semibold text-text truncate">{producer.name}</p>
-        {producer.city && <p className="text-2xs text-fg-muted truncate">{producer.city}</p>}
+        {/* MEH-3001: always one line, so every card matches the skeleton's height */}
+        <p className="text-2xs text-fg-muted truncate">{producer.city || "\u00a0"}</p>
       </div>
     </Link>
+  );
+}
+
+// Same outer box as the real strip (py-4, title row, w-36 cards of h-24 +
+// two text lines), so swapping it for the loaded strip moves nothing.
+const SKELETON_CARDS = 6;
+function FridayStripSkeleton() {
+  return (
+    <section
+      className="bg-background border-b border-border py-4 px-4"
+      aria-hidden="true"
+      data-testid="friday-delivery-strip-skeleton"
+    >
+      <div className="max-w-6xl mx-auto">
+        <div className="flex items-center gap-2 mb-3">
+          <div className="h-6 w-48 rounded bg-border/60 animate-pulse" />
+        </div>
+        <div className="flex gap-3 overflow-hidden pb-2">
+          {Array.from({ length: SKELETON_CARDS }, (_, i) => (
+            <div key={i} className="flex-shrink-0 w-36 rounded-md overflow-hidden border border-border bg-surface">
+              <div className="h-24 bg-green-50 animate-pulse" />
+              <div className="px-2 py-1.5 space-y-1">
+                <div className="h-4 w-24 rounded bg-border/60" />
+                <div className="h-3 w-16 rounded bg-border/40" />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
   );
 }
 
@@ -59,6 +90,10 @@ export default function FridayDeliveryStrip({ city, onVisibilityChange }) {
   // Same namespace note as ProducerMiniCard above.
   const t = useTranslations("group_buys.friday_delivery");
   const [producers, setProducers] = useState([]);
+  // MEH-3001: the strip used to appear only after its fetch returned, pushing
+  // the page ~220px down on Thursday evening / Friday morning. Until the fetch
+  // settles, a same-shaped skeleton holds the space (Sapir's pick, 12/11).
+  const [loaded, setLoaded] = useState(false);
   // MEH-1391: desktop scroll arrows via the shared hook. The previous
   // local scrollRef was attached but never read — the hook's ref
   // replaces it (same element, now actually consumed).
@@ -72,19 +107,26 @@ export default function FridayDeliveryStrip({ city, onVisibilityChange }) {
     // DELIVERY_DAYS is sun→sat, so index 5 is שישי (the backend vocabulary).
     const params = { delivery_day: DELIVERY_DAYS[5], page_size: 12 };
     if (city) params.delivery_city = city;
+    // No setLoaded(false) here: on a city change the old strip stays up until
+    // the new list arrives, instead of flashing back to the skeleton.
     api
       .get("/producers", { params })
       .then((r) => setProducers((r.data || []).slice(0, 12)))
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => setLoaded(true));
   }, [city]);
 
   // MEH-879: report show-state up to the homepage banner single-slot so
   // lower-precedence banners (Holiday, Location) can yield to this strip.
   const visible = producers.length > 0;
+  // MEH-3001: the skeleton holds the slot too, so a Holiday/Location banner
+  // does not render beside it and then yield when the list arrives.
+  const holdsSlot = !loaded || visible;
   useEffect(() => {
-    onVisibilityChange?.(visible);
-  }, [visible, onVisibilityChange]);
+    onVisibilityChange?.(holdsSlot);
+  }, [holdsSlot, onVisibilityChange]);
 
+  if (!loaded) return <FridayStripSkeleton />;
   if (!visible) return null;
 
   return (
@@ -93,7 +135,8 @@ export default function FridayDeliveryStrip({ city, onVisibilityChange }) {
       aria-label={t("title")}
       // MEH-991: VRT hides this weekday-dependent strip via injected CSS (e2e/visual/parity.css)
       data-testid="friday-delivery-strip"
-      dir="rtl"
+      // DO NOT pin dir here — the strip follows <html dir> so /en reads LTR
+      // (useScrollAffordance resolves the nearest [dir] for its arrows).
     >
       <div className="max-w-6xl mx-auto">
         <div className="flex items-center gap-2 mb-3">

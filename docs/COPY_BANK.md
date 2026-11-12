@@ -30,7 +30,7 @@
 ### Subtitle — Friday variant
 | Field | Value |
 |---|---|
-| **Current** | `שישי הגיע 🛒 מה הולך על שולחן השבת שלך?` |
+| **Current** | `שישי בפתח. מה הולך על שולחן השבת שלך?` (MEH-3001: shown from Thursday 18:00, so it no longer says Friday has arrived) |
 | **i18n key** | `home.hero.friday_subtitle` |
 | **Status** | ✅ |
 | **Why** | Context-aware copy shown on Fridays. Connects to the Shabbat shopping ritual. |
