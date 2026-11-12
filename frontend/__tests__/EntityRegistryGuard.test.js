@@ -11,10 +11,9 @@
  *   4. a part in `missing` IS imported (stale gap — move it to `uses`), so the
  *      missing list can only shrink.
  *
- * Imports are read from the files' source text (`from "<module>"`), the same
- * static reading DashboardPlacementGuard does. A comment that quotes an
- * import line would count — accepted, the risk is a false green on a page
- * that writes `from "@/components/X"` in prose.
+ * Imports are read from the files' source text with comments stripped, the
+ * same static reading DashboardPlacementGuard does: `from "<module>"` /
+ * `from '<module>'` and `import("<module>")` (next/dynamic) all count.
  */
 import { describe, it, expect } from "vitest";
 import fs from "node:fs";
@@ -40,9 +39,20 @@ function entitySources(entity) {
   return entity.files.flatMap((rel) => walk(path.join(ROOT, rel))).map((f) => fs.readFileSync(f, "utf8"));
 }
 
+// REUSES: __tests__/DashboardPlacementGuard.test.js:48 — comment stripping
+// (copied, not imported: importing a test file would re-run its suites here).
+function stripComments(source) {
+  return source
+    .replace(/\/\*[\s\S]*?\*\//g, "")
+    .replace(/(^|[^:"'`\\])\/\/.*$/gm, "$1");
+}
+
 /** Exported for the self-test: does this source import one of the modules? */
 export function importsAny(source, modules) {
-  return modules.some((m) => source.includes(`from "${m}"`));
+  const code = stripComments(source);
+  return modules.some((m) =>
+    [`from "${m}"`, `from '${m}'`, `import("${m}")`, `import('${m}')`].some((form) => code.includes(form)),
+  );
 }
 
 /** Route dirs (relative to frontend/) whose own segment is dynamic and that hold a page. */
@@ -72,6 +82,8 @@ describe("EntityRegistryGuard self-test (the instrument, before the claims)", ()
   it("does not find an import that is absent, nor a prefix of another module", () => {
     expect(importsAny('import X from "@/components/ShareButtonX";', ["@/components/ShareButton"])).toBe(false);
     expect(importsAny("const a = 1;", ["@/components/ShareButton"])).toBe(false);
+    expect(importsAny('// import X from "@/components/ShareButton";', ["@/components/ShareButton"])).toBe(false);
+    expect(importsAny("const X = dynamic(() => import('@/components/ShareButton'));", ["@/components/ShareButton"])).toBe(true);
   });
   it("the route scan sees the known entity routes (control: a dead scan would list none)", () => {
     const routes = dynamicPublicRoutes();
@@ -100,6 +112,11 @@ describe("EntityRegistryGuard", () => {
 
       it("lists every part exactly once across uses / missing / na", () => {
         expect([...listed].sort()).toEqual(Object.keys(PARTS).sort());
+      });
+
+      it("an entity with routes declares the files to read (else every check is vacuous)", () => {
+        if (entity.routes.length > 0) expect(entity.files.length).toBeGreaterThan(0);
+        else expect(entity.uses.concat(Object.keys(entity.missing))).toEqual([]);
       });
 
       it("every missing / na part carries a reason", () => {
