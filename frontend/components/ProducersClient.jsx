@@ -320,6 +320,7 @@ export default function ProducersClient({
   // MEH-2987: read by the ?focus=1 effect above (declared before syncUrl).
   restoreUrlRef.current = () => syncUrl(chips, cityFilter, searchQ, categoryFilter);
 
+  const filterReqRef = useRef(0);
   const fetchFiltered = useCallback((chipState, city, q, category) => {
     const params = buildChipParams(chipState);
     if (city) params.delivery_city = city;
@@ -330,7 +331,9 @@ export default function ProducersClient({
     // MEH-1465: pass the whole array — api serializes it as repeated ?category=.
     if (category?.length) params.category = category;
     if (Object.keys(params).length === 0) {
+      filterReqRef.current += 1; // drop any fetch still in flight
       setFilteredItems(null);
+      setLoading(false);
       return;
     }
     // MEH-1483: sort added AFTER the no-filters check so a bare sort never
@@ -338,16 +341,22 @@ export default function ProducersClient({
     // to the unfiltered (infinite-scroll) list, whose sort the effect drives.
     // MEH-2294: distance carries lat+lng (and nothing when there is no fix).
     Object.assign(params, sortRequestParams(sortOrderRef.current, locRef.current));
+    // MEH-2987: last request wins. Back/Forward (and fast chip taps) can put two
+    // fetches in flight; without this an older response landing last would
+    // overwrite the list the URL and chips now describe.
+    const reqId = ++filterReqRef.current;
+    const isLatest = () => reqId === filterReqRef.current;
     setLoading(true);
     api
       .get("/producers", { params: { ...params, limit: FILTER_LIMIT, offset: 0 } })
       .then((r) => {
+        if (!isLatest()) return;
         const items = Array.isArray(r.data) ? r.data : [];
         setFilteredItems(items);
         trackEvent("producers_filter_results", { count: items.length });
       })
-      .catch(() => setFilteredItems([]))
-      .finally(() => setLoading(false));
+      .catch(() => { if (isLatest()) setFilteredItems([]); })
+      .finally(() => { if (isLatest()) setLoading(false); });
   }, []);
 
   // MEH-2987: Back / Forward re-reads the filters from the URL. Every filter
@@ -356,10 +365,13 @@ export default function ProducersClient({
   // so Back changed the address and left the filtered list on screen
   // (measured on staging 12/11: Back → URL `/producers`, «בשר ודגים» still
   // pressed, 4 cards of 24). Sort is left out on purpose: it is its own axis
-  // with its own refetch effect, and handleSortChange writes it with replace,
-  // so no history entry ever differs from its neighbour by sort alone.
+  // with its own refetch effect; an older entry can carry an older sort, so
+  // onPop rewrites the entry with the live sort instead of restoring it.
   useEffect(() => {
     const onPop = () => {
+      // Leaving /producers by Back also fires this before unmount — the
+      // destination's ?category= is not ours to read.
+      if (!/\/producers\/?$/.test(window.location.pathname)) return;
       const sp = new URLSearchParams(window.location.search);
       const nextChips = initChipsFromParams(sp);
       const nextCity = sp.get("city") || null;
@@ -371,11 +383,14 @@ export default function ProducersClient({
       dayFilterRef.current = nextDays;
       setDayFilters(nextDays);
       setSearchQ(nextQ);
+      setSearchInput(nextQ);
       setCategoryFilter(nextCategory);
-      const anyActive =
-        Object.values(nextChips).some(Boolean) || !!nextCity || !!nextQ || nextCategory.length > 0;
-      if (anyActive) fetchFiltered(nextChips, nextCity, nextQ, nextCategory);
-      else setFilteredItems(null);
+      // fetchFiltered clears to the unfiltered list itself when nothing is set.
+      fetchFiltered(nextChips, nextCity, nextQ, nextCategory);
+      // Sort is not restored from the entry (it has its own refetch effect),
+      // so rewrite this entry with the sort the view is actually in — the URL
+      // must never claim a sort the list is not showing.
+      syncUrl(nextChips, nextCity, nextQ, nextCategory);
     };
     window.addEventListener("popstate", onPop);
     return () => window.removeEventListener("popstate", onPop);

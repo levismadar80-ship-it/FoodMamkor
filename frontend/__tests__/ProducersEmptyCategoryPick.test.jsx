@@ -21,7 +21,7 @@ vi.mock("next/navigation", () => ({
   useSearchParams: () => ({
     get: (k) => (k in params ? params[k] : null),
     // MEH-1465: categoryFilter inits via getAll (repeated ?category=).
-    getAll: (k) => (k in params ? [params[k]] : []),
+    getAll: (k) => (k in params ? [].concat(params[k]) : []),
   }),
 }));
 vi.mock("next-intl", () => ({ useTranslations: (s) => (k) => (s ? `${s}.${k}` : k) }));
@@ -278,5 +278,86 @@ describe("MEH-2987 — Back re-reads the filters from the URL", () => {
 
     expect(producerCalls().length).toBe(before);
     expect(screen.queryByTestId("producers-filter-empty")).not.toBeInTheDocument();
+  });
+});
+
+describe("MEH-2987 — review follow-ups: other filters, races", () => {
+  it("picking a category also drops the city and delivery days, not only the search", async () => {
+    stubApi(CATS);
+    params = { q: "משק הכרמל", city: "חיפה", delivery_days: ["ראשון", "שני"] };
+    window.history.replaceState(null, "", "/producers?q=x&city=x");
+    render(<ProducersClient {...PROPS} />);
+    await flush();
+    // The mount fetch carried them — so the assertion below can fail.
+    const first = producerCalls()[0];
+    expect(first.delivery_city).toBe("חיפה");
+    expect(first.delivery_days).toEqual(["ראשון", "שני"]);
+
+    fireEvent.click(screen.getAllByTestId("producers-empty-category")[0]);
+    await flush();
+    const last = producerCalls().at(-1);
+    expect(last.delivery_city).toBeUndefined();
+    expect(last.delivery_days).toBeUndefined();
+    expect(last.category).toEqual(["2"]);
+    expect(window.location.search).toBe("?category=2");
+  });
+
+  it("popstate restores city + delivery days from the entry and fetches with them", async () => {
+    stubApi(CATS);
+    render(<ProducersClient {...PROPS} />);
+    await flush();
+    await act(async () => {
+      window.history.replaceState(null, "", "/producers?city=%D7%97%D7%99%D7%A4%D7%94&delivery_days=%D7%A8%D7%90%D7%A9%D7%95%D7%9F&q=a");
+      window.dispatchEvent(new PopStateEvent("popstate"));
+    });
+    await flush();
+    const last = producerCalls().at(-1);
+    expect(last.delivery_city).toBe("חיפה");
+    expect(last.delivery_days).toEqual(["ראשון"]);
+    expect(last.q).toBe("a");
+  });
+
+  it("two fast popstates: the older response landing last does not overwrite the newer view", async () => {
+    // First response is held; the second resolves at once with one row.
+    let releaseFirst;
+    let n = 0;
+    api.get.mockImplementation((url, cfg) => {
+      if (url === "/categories") return Promise.resolve({ data: CATS, headers: {} });
+      if (url !== "/producers" || !cfg?.params?.q) return Promise.resolve({ data: [], headers: { "x-total-count": "0" } });
+      n += 1;
+      if (n === 1) return new Promise((res) => { releaseFirst = () => res({ data: [], headers: {} }); });
+      return Promise.resolve({ data: [{ id: "p1", name: "x" }], headers: {} });
+    });
+    params = {};
+    window.history.replaceState(null, "", "/producers");
+    render(<ProducersClient {...PROPS} />);
+    await flush();
+    await act(async () => {
+      window.history.replaceState(null, "", "/producers?q=old");
+      window.dispatchEvent(new PopStateEvent("popstate"));
+      window.history.replaceState(null, "", "/producers?q=new");
+      window.dispatchEvent(new PopStateEvent("popstate"));
+    });
+    await flush();
+    expect(screen.getAllByTestId("card")).toHaveLength(1);
+    await act(async () => { releaseFirst(); });
+    await flush();
+    // Stale empty response for «old» must not replace «new»'s row.
+    expect(screen.getAllByTestId("card")).toHaveLength(1);
+    expect(screen.queryByTestId("producers-filter-empty")).not.toBeInTheDocument();
+  });
+
+  it("popstate to another route (Back out of /producers) is ignored", async () => {
+    stubApi(CATS);
+    render(<ProducersClient {...PROPS} />);
+    await flush();
+    const before = producerCalls().length;
+    await act(async () => {
+      window.history.replaceState(null, "", "/map?category=3");
+      window.dispatchEvent(new PopStateEvent("popstate"));
+    });
+    await flush();
+    expect(producerCalls().length).toBe(before);
+    expect(window.location.pathname).toBe("/map");
   });
 });
