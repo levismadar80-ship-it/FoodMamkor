@@ -120,11 +120,13 @@ describe("MEH-2476 — experience details", () => {
       // MEH-2768: the CTA follows «איך נרשמים?».
       registration_method: "whatsapp",
     });
-    const link = screen.getByTestId("experience-host-link");
+    // MEH-2989: the host card at the end of the page is gone — the byline
+    // under the title is the one link to her business.
+    expect(screen.queryByTestId("experience-host")).not.toBeInTheDocument();
+    const link = screen.getByTestId("experience-byline");
     expect(link.getAttribute("href")).toBe("/chavat-noa");
-    // Avatar initial «ח», the label, the business name; plus a chevron.
     expect(link.textContent).toBe(`ח${t.host_label} חוות נועה`);
-    expect(link.querySelector("svg")).not.toBeNull();
+    expect(document.querySelectorAll('a[href="/chavat-noa"]').length).toBe(1);
     expect(screen.getByTestId("registration-whatsapp").getAttribute("href")).toMatch(
       /^https:\/\/wa\.me\/972521234567\?text=/,
     );
@@ -132,12 +134,9 @@ describe("MEH-2476 — experience details", () => {
 
   it("host without a business link keeps the plain name", async () => {
     await renderWith({});
-    expect(screen.queryByTestId("experience-host-link")).not.toBeInTheDocument();
-    const row = screen.getByTestId("experience-host");
-    expect(row.textContent).toBe(`נ${t.host_label} נועה`);
-    // No link → no chevron promising one.
-    expect(row.querySelector("a")).toBeNull();
-    expect(row.querySelector("svg")).toBeNull();
+    const by = screen.getByTestId("experience-byline");
+    expect(by.tagName).toBe("P");
+    expect(by.textContent).toBe(`${t.host_label} נועה`);
   });
 
   // MEH-2653: an older row stores the English key — the chip must read Hebrew.
