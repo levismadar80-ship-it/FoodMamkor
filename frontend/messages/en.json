@@ -723,6 +723,9 @@
       "title": "Register your business",
       "description": "Join Mehamakor — register your local food business. Every business is hand-picked."
     },
+    "register_organizer": {
+      "title": "Sign up as a market or event organizer"
+    },
     "claim": {
       "title": "Take your business page",
       "description": "We prepared a page for you on Mehamakor"

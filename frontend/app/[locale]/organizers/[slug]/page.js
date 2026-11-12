@@ -30,6 +30,7 @@ import { getWhatsAppHref, normalizePhone } from "@/lib/utils";
 import { instagramUrl } from "@/lib/social-links";
 import { OrganizerPageSchema } from "@/lib/schemas";
 import { getPrimaryMethod } from "@/lib/contact-method";
+import OrganizerPrimaryContact from "./OrganizerPrimaryContact";
 import OwnerCard from "@/app/[locale]/producer/[id]/components/OwnerCard";
 
 const ROUTE = "/[locale]/organizers/[slug]";
@@ -143,28 +144,29 @@ function contactChannels(organizer) {
 const LINK_BASE =
   "inline-flex items-center min-h-touch px-4 rounded-full border text-sm transition focus-ring";
 
-function ContactLinks({ organizer, t }) {
+// MEH-2988: the preferred channel is drawn like the business page's primary
+// button (icon + `contact_cta.<method>` label); the others stay quiet pills.
+function ContactLinks({ organizer, t, tCta }) {
   const links = contactChannels(organizer);
   if (links.length === 0) return null;
   return (
-    <ul className="flex flex-wrap gap-2" data-testid="organizer-contact">
+    <ul className="flex flex-wrap items-center gap-2" data-testid="organizer-contact">
       {links.map((l) => (
         <li key={l.key}>
-          <a
-            href={l.href}
-            {...(l.key === "phone" || l.key === "email"
-              ? {}
-              : { target: "_blank", rel: "noopener noreferrer" })}
-            data-testid={`organizer-contact-${l.key}`}
-            data-primary={l.primary ? "true" : undefined}
-            className={
-              l.primary
-                ? `${LINK_BASE} border-primary bg-primary text-white font-medium hover:bg-primary-dark`
-                : `${LINK_BASE} border-border text-primary hover:bg-primary/5`
-            }
-          >
-            {t(l.key)}
-          </a>
+          {l.primary ? (
+            <OrganizerPrimaryContact channel={l} label={tCta(l.key)} />
+          ) : (
+            <a
+              href={l.href}
+              {...(l.key === "phone" || l.key === "email"
+                ? {}
+                : { target: "_blank", rel: "noopener noreferrer" })}
+              data-testid={`organizer-contact-${l.key}`}
+              className={`${LINK_BASE} border-border text-primary hover:bg-primary/5`}
+            >
+              {t(l.key)}
+            </a>
+          )}
         </li>
       ))}
     </ul>
@@ -178,6 +180,7 @@ export default async function OrganizerPage(props) {
   if (!organizer) notFound();
   const t = await getTranslations({ locale, namespace: "organizers.page" });
   const tList = await getTranslations({ locale, namespace: "events.list" });
+  const tCta = await getTranslations({ locale, namespace: "contact_cta" });
   const events = organizer.upcoming_events || [];
   const image = organizer.images?.[0];
   const initial = Array.from((organizer.name || "").trim())[0] ?? "";
@@ -235,7 +238,7 @@ export default async function OrganizerPage(props) {
               {organizer.description}
             </p>
           )}
-          <ContactLinks organizer={organizer} t={t} />
+          <ContactLinks organizer={organizer} t={t} tCta={tCta} />
         </div>
       </header>
 
