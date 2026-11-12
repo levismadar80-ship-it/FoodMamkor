@@ -19,6 +19,7 @@ import { MagnifyingGlass, SealCheck } from "@phosphor-icons/react";
 import { BRAND_NAME } from "@/lib/constants";
 import { useEventsNavGate } from "@/lib/use-events-nav-gate";
 import { useExperiencesNavGate } from "@/lib/use-experiences-nav-gate";
+import { hubLandingHref } from "@/lib/hub-landing";
 import { useHubNavGate } from "@/lib/use-hub-nav-gate";
 import { itemsForSurface } from "@/lib/nav-registry";
 import LanguageToggle from "@/components/LanguageToggle";
@@ -241,7 +242,20 @@ export default function Header() {
     // The data gate stays here: the registry records THAT the item is gated on
     // supply, not what the current supply is.
     .filter(({ item }) => item.dataGate !== "listing-supply" || showWhatsOn)
-    .map(({ item, surface }) => ({ href: item.href, label: t(surface.labelKey) }));
+    .map(({ item, surface }) => ({
+      // MEH-2975: the hub link lands on the first tab that has something in
+      // it, not on an empty «אירועים» when the supply is elsewhere.
+      href:
+        item.dataGate === "listing-supply"
+          ? hubLandingHref({
+              events: showEvents,
+              experiences: showExperiences,
+              groupBuys: showGroupBuys,
+              rescue: showRescue,
+            })
+          : item.href,
+      label: t(surface.labelKey),
+    }));
 
   const isHomepage = pathname === "/";
   // MEH-732: hide the guest login link on /login (locale-stripped pathname).
