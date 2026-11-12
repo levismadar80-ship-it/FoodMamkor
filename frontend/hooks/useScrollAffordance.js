@@ -61,7 +61,7 @@ const EDGE_EPSILON_PX = 16;
 // Direction of the scroller's context. Attribute-based rather than
 // getComputedStyle: deterministic in jsdom AND it matches how this app
 // switches direction (<html dir> in app/[locale]/layout.js:191 + local
-// dir attrs on ChipScrollRow / FridayDeliveryStrip). Fallback "rtl" —
+// dir attrs on ChipScrollRow). Fallback "rtl" —
 // the app is RTL-first and every real page carries an <html dir>.
 function isRtlContext(el) {
   return (el.closest("[dir]")?.getAttribute("dir") || "rtl") !== "ltr";

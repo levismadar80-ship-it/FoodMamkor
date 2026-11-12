@@ -109,7 +109,7 @@ const CARD_CLASS = "bg-background border border-primary/20 rounded-md px-5 py-4"
 const FAQ_KEYS = ["cost", "price", "google", "updates", "revenue", "customers"];
 // MEH-2799 (Sapir, 07/11): the site's FAQ pattern — a <details> accordion
 // (/about/for-businesses/page.js:183) — with EVERY question closed on load.
-// That page opens its cost question (:66); Sapir chose all-closed for /join.
+// That page used to open its cost question; since MEH-3003 both are all-closed.
 const FAQ_OPEN = new Set();
 
 export default async function JoinPage({ params }) {
