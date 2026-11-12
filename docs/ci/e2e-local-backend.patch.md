@@ -1,11 +1,12 @@
 # MEH-2973 — E2E on pull requests runs against a temporary backend inside the run
 
-> ⏳ **Not applied yet.** CC cannot write `.github/**`. Claude in Chrome pastes
-> the full staged copy `docs/ci/e2e-local-backend.e2e.yml` over
-> `.github/workflows/e2e.yml` on this PR's branch through the GitHub web editor;
-> CC then checks the sha256 matches and deletes the staged copy. Sapir chose
-> this on 12/11 («שרת זמני בתוך כל ריצה», then «מאשרת לעשות את זה» for the
-> parallel setup + uv cache), so it is her decision, not CC loosening a gate.
+> ✅ **Applied 12/11/2026** — commit `b94614e` on this PR's branch (pasted
+> through the GitHub web editor by Claude in Chrome; CC cannot write
+> `.github/**`). CC checked it byte-for-byte: the committed `e2e.yml` has the
+> same sha256 (`778e5627…`) as the staged full copy, which was then deleted.
+> Sapir chose this on 12/11 («שרת זמני בתוך כל ריצה», then «מאשרת לעשות את
+> זה» for the parallel setup + uv cache), so it is her decision, not CC
+> loosening a gate (rule 32). The diff below is the record.
 
 ## Why
 
