@@ -4,8 +4,12 @@
  * Module:   HomeWhatsOn
  * Purpose:  MEH-2859 — one home strip for everything date-bound at the
  *           businesses: events, experiences, group buys and surprise baskets.
- *           Soonest first, one row per type before any type repeats, so a busy
- *           events calendar cannot take all three rows.
+ *           MEH-2962: three rows of picture cards instead of three text rows —
+ *           events + experiences together (soonest first, one per type before
+ *           a type repeats, so a busy events calendar cannot take the row),
+ *           then group buys, then surprise baskets, the last two each under
+ *           its own heading and one-line explanation. A row with nothing in it
+ *           is not rendered.
  * Touches:  GET /events/upcoming, GET /experiences, GET /group-buys and
  *           GET /rescue/offers — all four public and unauthenticated, all four
  *           asked ONLY once the strip nears the viewport, so the home page's
@@ -19,15 +23,25 @@
  *           consumer), app/[locale]/home/HomeCategoryGrid.jsx:61-67 (the
  *           eyebrow + gold-rule pattern this repeats).
  * History:  MEH-2859 (creation — replaces app/[locale]/home/
- *           UpcomingEventsPreview.jsx, which showed events alone).
+ *           UpcomingEventsPreview.jsx, which showed events alone) ·
+ *           MEH-2962 (cards with pictures, three rows; Sapir 12/11).
  */
 
 import { useEffect, useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { z } from "zod";
 
+import { ArrowLeft, CalendarBlank, ShoppingBag, UsersThree } from "@phosphor-icons/react";
+
+import Seed from "@/components/brand/Seed";
+// The category glyphs of the date-rail rows (/events, the business page), so a
+// card here and a row there read as one family.
+import { CATEGORY_ICON, PRICE_BASE } from "@/components/EventEntryRow";
 import { Link } from "@/i18n/navigation";
 import api from "@/lib/api";
+import { seedColorFor } from "@/lib/brand-seeds";
+import { IMAGE_RATIOS, optimizeCloudinary } from "@/lib/cloudinary";
+import { cssUrl } from "@/lib/css-url";
 // Review #3726 / MEH-2859: a group buy's `deadline` is a NAIVE datetime —
 // `GroupBuy.deadline = Column(DateTime)` (models.py:2352) with no UTC validator
 // on GroupBuyOut, so the JSON carries no `Z` and `new Date()` reads it as the
@@ -38,13 +52,19 @@ import { parseNaiveUtc } from "@/lib/dates";
 // The DST-aware Israel-wall-clock → instant converter, already used to build
 // calendar files. An event's `event_time` is a wall clock in Israel, so this is
 // what makes its sort key a real instant rather than one offset by 2-3h.
+import { EVENT_CATEGORIES, findExperienceCategory } from "@/lib/event-categories";
 import { israelLocalToUtcStamp } from "@/lib/event-ics";
+import { eventWhen } from "@/lib/event-when";
 import { formatEventDate } from "@/lib/format-date";
 import { israelNowParts } from "@/lib/orderWindow";
+import { formatPrice } from "@/lib/utils";
 
 /** One phone screen of warning, as HomepageMiniMapLazy uses for the map. */
 export const WHATS_ON_PRELOAD_MARGIN = "600px 0px";
-export const WHATS_ON_MAX_ROWS = 3;
+// MEH-2962: cards per row. A phone scrolls sideways through all of them; from
+// lg the row is a 3-up grid and shows the first three.
+export const WHATS_ON_MAX_CARDS = 6;
+const AGOROT_PER_SHEKEL = 100;
 
 // REUSES: lib/rescue.js:39 rescueBagsEnabled() — read inline, exactly as
 // lib/use-hub-nav-gate.js:29-32 does and for the same reason: importing
@@ -137,19 +157,58 @@ function israelWallClockInstant(dateIso, time) {
 // does not fail here, while a payload missing a title or a date drops that ROW
 // (the parse fails for it alone) instead of rendering a row with holes in it.
 const Id = z.union([z.string(), z.number()]);
+// MEH-2962: everything a card adds (picture, business, town, category, price)
+// is `.nullish()` — a row is dropped for a missing title or date, never for a
+// missing picture.
+const Price = z.union([z.number(), z.string()]).nullish();
+const Text = z.string().nullish();
 const DatedSchema = z.object({
   id: Id,
   title: z.string().min(1),
   event_date: z.string(),
   event_time: z.string().nullish(),
+  category: Text,
+  city: Text,
+  image_url: Text,
+  // events
+  producer_id: Id.nullish(),
+  producer_name: Text,
+  owner_image_url: Text,
+  price: Price,
+  // experiences
+  price_per_person: Price,
+  host: z.object({ producer_name: Text, name: Text }).nullish(),
 });
-const GroupBuySchema = z.object({ id: Id, title: z.string().min(1), deadline: z.string() });
+const GroupBuySchema = z.object({
+  id: Id,
+  title: z.string().min(1),
+  deadline: z.string(),
+  producer_id: Id.nullish(),
+  producer_name: Text,
+  producer_image_url: Text,
+  city: Text,
+  price_per_unit_group: Price,
+  price_per_unit_regular: Price,
+});
 const BasketSchema = z.object({
   id: Id,
   date: z.string(),
   pickup_start: z.string().nullish(),
-  producer: z.object({ name: z.string().min(1) }),
+  pickup_end: z.string().nullish(),
+  price_agorot: z.number().nullish(),
+  producer: z.object({
+    id: Id.nullish(),
+    name: z.string().min(1),
+    city: Text,
+    image_url: Text,
+  }),
 });
+
+/** A price that is a positive number, else null (free / unknown). */
+function positive(value) {
+  const n = Number(value);
+  return Number.isFinite(n) && n > 0 ? n : null;
+}
 
 /**
  * The four types, in no particular order — `interleaveWhatsOn` decides what
@@ -157,7 +216,7 @@ const BasketSchema = z.object({
  *
  * Only `/events/upcoming` takes a `limit`. The other three are narrowed
  * server-side by RECENCY (upcoming / open / today) but not by VOLUME: each
- * returns every matching row in full to render at most one line here. Capping
+ * returns every matching row in full to render at most WHATS_ON_MAX_CARDS here. Capping
  * them needs a `limit` parameter on those endpoints, which is a backend change
  * and outside this card — stated so the next reader does not mistake "already
  * narrowed" for "already small".
@@ -169,7 +228,7 @@ const SOURCES = Object.freeze([
   {
     type: "event",
     endpoint: "/events/upcoming",
-    params: { limit: WHATS_ON_MAX_ROWS },
+    params: { limit: WHATS_ON_MAX_CARDS },
     enabled: () => true,
     schema: DatedSchema,
     toEntry: (row) => ({
@@ -179,6 +238,15 @@ const SOURCES = Object.freeze([
       href: `/events/${row.id}`,
       at: israelWallClockInstant(row.event_date, row.event_time),
       time: hhmm(row.event_time),
+      day: row.event_date,
+      category: row.category || null,
+      // The event's own photo, else its owner's first photo (MEH-2546).
+      image: row.image_url || row.owner_image_url || null,
+      who: row.producer_name || null,
+      plate: row.producer_name || null,
+      city: row.city || null,
+      seedId: row.producer_id ?? row.id,
+      price: positive(row.price),
     }),
   },
   {
@@ -193,6 +261,14 @@ const SOURCES = Object.freeze([
       href: `/experiences/${row.id}`,
       at: israelWallClockInstant(row.event_date, row.event_time),
       time: hhmm(row.event_time),
+      day: row.event_date,
+      category: row.category || null,
+      image: row.image_url || null,
+      who: row.host?.producer_name || row.host?.name || null,
+      plate: row.host?.producer_name || row.host?.name || null,
+      city: row.city || null,
+      seedId: row.id,
+      price: positive(row.price_per_person),
     }),
   },
   {
@@ -211,6 +287,13 @@ const SOURCES = Object.freeze([
       at: parseNaiveUtc(row.deadline),
       // «עד DD.MM» — never a time, and never a countdown (MEH-2859 AC).
       time: null,
+      image: row.producer_image_url || null,
+      who: row.producer_name || null,
+      plate: row.producer_name || null,
+      city: row.city || null,
+      seedId: row.producer_id ?? row.id,
+      price: positive(row.price_per_unit_group),
+      priceWas: positive(row.price_per_unit_regular),
     }),
   },
   {
@@ -232,6 +315,17 @@ const SOURCES = Object.freeze([
         href: "/rescue",
         at,
         time: israelTime(row.pickup_start ? at : null),
+        timeEnd: israelTime(parseNaiveUtc(row.pickup_end)),
+        day: row.date,
+        image: row.producer.image_url || null,
+        // The card's title IS the business, so the line under it is the town
+        // — and a basket with no photo gets the seed alone, not the business
+        // name on the plate and again as the title right under it.
+        who: null,
+        plate: null,
+        city: row.producer.city || null,
+        seedId: row.producer.id ?? row.id,
+        price: positive(row.price_agorot) ? row.price_agorot / AGOROT_PER_SHEKEL : null,
       };
     },
   },
@@ -249,7 +343,7 @@ const SOURCES = Object.freeze([
  * (__tests__/HomeWhatsOn.test.jsx, the "row order" block), so exporting it
  * would widen the surface for nobody — which is what the Knip ratchet flagged.
  */
-function interleaveWhatsOn(buckets, max = WHATS_ON_MAX_ROWS) {
+function interleaveWhatsOn(buckets, max = WHATS_ON_MAX_CARDS) {
   const ranked = [];
   for (const bucket of buckets) {
     [...bucket]
@@ -292,30 +386,208 @@ const TYPE_LABEL_KEY = Object.freeze({
   rescue: "type.rescue",
 });
 
-function WhatsOnRow({ entry, labels }) {
+/**
+ * The picture, or — with none — the business's name on the warm plate with one
+ * seed in its own colour (DESIGN.md «No photo», MEH-2833: the same plate
+ * replaces every missing event image). The seed sits in the END-top corner
+ * because the date tile takes the start-top one (MEH-2844: a seed never sits
+ * under or against a control).
+ */
+function CardPicture({ entry, children }) {
   return (
-    <li data-testid="whats-on-row" data-type={entry.type} className="border-b border-border last:border-b-0">
-      <Link href={entry.href} className="flex items-baseline gap-3 py-3 transition hover:bg-surface-card">
-        <span className="shrink-0 font-medium text-2xs text-accent">{labels.type(entry.type)}</span>
-        <span className="min-w-0 flex-1 font-body-sm text-sm text-text line-clamp-1">{entry.title}</span>
-        <span
-          data-testid="whats-on-when"
-          dir="ltr"
-          className="shrink-0 font-headline-display font-bold text-sm text-fg-muted numeric"
-        >
-          {labels.when(entry)}
-        </span>
+    <div className="relative aspect-[16/10] overflow-hidden bg-background-alt" aria-hidden="true">
+      {entry.image ? (
+        <div
+          data-testid="whats-on-image"
+          className="absolute inset-0 bg-cover bg-center transition-transform duration-300 group-hover:scale-[1.02]"
+          style={{
+            backgroundImage: cssUrl(
+              optimizeCloudinary(entry.image, {
+                aspectRatio: IMAGE_RATIOS.strip,
+                width: 640,
+              }),
+            ),
+          }}
+        />
+      ) : (
+        // The plate names the BUSINESS; an entry with no business to name
+        // gets the seed alone (DESIGN.md: «image-only slots get the seed
+        // alone») rather than its own title a second time.
+        <div data-testid="whats-on-plate" className="absolute inset-0 flex flex-col justify-end p-3">
+          <Seed
+            color={seedColorFor(entry.seedId).fill}
+            size={70}
+            rotate={-36}
+            highlight
+            className="absolute -top-[46px] -end-[30px] pointer-events-none ltr:-scale-x-100"
+          />
+          <span className="relative font-headline-lg font-black text-2xl leading-[1.05] text-text line-clamp-2 [word-break:keep-all] [overflow-wrap:anywhere]">
+            {entry.plate}
+          </span>
+        </div>
+      )}
+      {children}
+    </div>
+  );
+}
+
+/** Month over day, as on the event page's own tile (EventDetailClient). */
+function DateTile({ at, locale }) {
+  // guard-ok: a timeZone option on the shared formatter — see `ddmm` above.
+  const part = (options) =>
+    formatEventDate(at.toISOString(), locale, {
+      ...options,
+      timeZone: "Asia/Jerusalem",
+    });
+  return (
+    <div
+      data-testid="whats-on-date-tile"
+      className="absolute top-2 start-2 w-12 overflow-hidden rounded-sm border border-border bg-surface-card text-center"
+    >
+      <span className="block bg-primary py-0.5 text-2xs font-bold text-white">{part({ month: "short" })}</span>
+      <span className="block font-headline-display text-xl font-black leading-tight text-text numeric">
+        {part({ day: "numeric" })}
+      </span>
+    </div>
+  );
+}
+
+function WhatsOnCard({ entry, labels }) {
+  const dated = entry.type === "event" || entry.type === "experience";
+  const label = dated ? labels.category(entry) : null;
+  const Icon = dated ? (CATEGORY_ICON[entry.category] ?? CalendarBlank) : null;
+  const meta = [entry.who, entry.city].filter(Boolean).join(" · ");
+  const price = labels.price(entry);
+  return (
+    <li
+      data-testid="whats-on-row"
+      data-type={entry.type}
+      className="w-[74%] shrink-0 snap-start sm:w-80 lg:w-auto lg:[&:nth-child(n+4)]:hidden"
+    >
+      <Link
+        href={entry.href}
+        className="group relative flex h-full flex-col overflow-hidden rounded-lg border border-border bg-surface-card transition hover:border-primary"
+      >
+        <CardPicture entry={entry}>{dated ? <DateTile at={entry.at} locale={labels.locale} /> : null}</CardPicture>
+        <div className="flex flex-1 flex-col p-3">
+          <span className="flex flex-1 flex-col pb-2">
+            {label && (
+              <span
+                data-testid="whats-on-label"
+                className="inline-flex items-center gap-1 text-xs font-semibold text-accent"
+              >
+                <Icon size={12} weight="bold" aria-hidden="true" />
+                {label}
+              </span>
+            )}
+            <span className="mt-0.5 font-headline-md text-lg font-bold leading-snug text-text line-clamp-2 group-hover:text-primary">
+              {entry.title}
+            </span>
+            {meta && <span className="mt-0.5 text-sm text-fg-muted line-clamp-1">{meta}</span>}
+          </span>
+          <span className="flex items-baseline justify-between gap-2 border-t border-border pt-2">
+            {/* The calendar tile is decoration to assistive tech (the picture
+                is aria-hidden), so the date itself is said here. sr-only is
+                position:absolute — the card link is `relative` so that a card
+                scrolled off-screen does not widen the page with it. */}
+            {dated ? (
+              <span data-testid="whats-on-date-spoken" className="sr-only">
+                {labels.date(entry)}
+              </span>
+            ) : null}
+            <span data-testid="whats-on-when" className="text-sm font-medium text-primary">
+              {labels.when(entry)}
+            </span>
+            {/* No price on record: the footer keeps the height a price gives
+                it, so the divider sits level across a row of cards. */}
+            {!price && (
+              <span className={`${PRICE_BASE} invisible`} aria-hidden="true">
+                &nbsp;
+              </span>
+            )}
+            {price && (
+              <span data-testid="whats-on-price" className="flex items-baseline gap-1.5">
+                {entry.priceWas && entry.priceWas > entry.price ? (
+                  <span dir="ltr" className="text-xs text-fg-muted line-through numeric">
+                    {formatPrice(entry.priceWas)}
+                  </span>
+                ) : null}
+                <span dir={entry.price ? "ltr" : undefined} className={`${PRICE_BASE} text-text`}>
+                  {price}
+                </span>
+              </span>
+            )}
+          </span>
+        </div>
       </Link>
     </li>
   );
 }
 
+/**
+ * One row: heading, an optional one-line explanation, the cards, the link.
+ * Every row's heading is an h2: the rows are siblings, and which of them
+ * renders first depends on supply.
+ */
+function WhatsOnGroup({ group, first, labels }) {
+  return (
+    <div data-testid="whats-on-group" data-group={group.id} className={first ? "" : "mt-10"}>
+      {/* One size for all three: at 375 the display size broke the first
+          heading over two lines and made the rows under it read as its
+          children rather than its siblings. */}
+      <h2 className="font-headline-lg text-headline-lg font-black text-text">
+        {/* The two rows a visitor may not know by name carry the glyph their
+            tool already has in the dashboard (tools/page.js:179, :193). */}
+        {group.Icon && (
+          <group.Icon
+            data-testid="whats-on-group-icon"
+            size="0.9em"
+            className="me-2 inline-block align-[-0.12em] text-primary"
+            aria-hidden="true"
+          />
+        )}
+        {group.heading}
+      </h2>
+      {group.lead && <p className="mt-1 text-sm text-fg-muted">{group.lead}</p>}
+      {/* A phone scrolls the row sideways (the «קטגוריות» strip's own classes,
+          HomeCategoryGrid.jsx:77); from lg it is a 3-up grid whose cards keep a
+          third of the width — one card does not stretch across the page. */}
+      <ul className="mt-4 flex gap-3 overflow-x-auto pb-2 scrollbar-hide snap-x snap-proximity -mx-4 px-4 scroll-px-4 lg:mx-0 lg:grid lg:grid-cols-3 lg:gap-4 lg:overflow-visible lg:px-0 lg:pb-0">
+        {group.entries.map((entry) => (
+          <WhatsOnCard key={entry.key} entry={entry} labels={labels} />
+        ))}
+      </ul>
+      <div className="mt-1">
+        {/* DESIGN.md «Text links look tappable without hover» (MEH-2831): a
+            phone has no hover, so the underline and the arrow are permanent.
+            Same treatment as the home grid's own text link
+            (HomeProducersGrid.jsx:633), and a 44px tap height. */}
+        <Link
+          href={group.allHref}
+          className="inline-flex items-center gap-1 min-h-touch text-sm font-semibold text-primary underline underline-offset-4 hover:text-primary-dark rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+        >
+          {group.all}
+          <ArrowLeft size={15} className="ltr:rotate-180" aria-hidden="true" />
+        </Link>
+      </div>
+    </div>
+  );
+}
+
+const EMPTY_ROWS = Object.freeze({ go: [], groupBuy: [], rescue: [] });
+
 export default function HomeWhatsOn() {
   const t = useTranslations("home.whats_on");
+  // MEH-2962: every string a card or a row heading shows already exists under
+  // its own feature — nothing here is new copy.
+  const tEvents = useTranslations("events");
+  const tGroupBuys = useTranslations("group_buys.list");
+  const tRescue = useTranslations("rescue.home");
+  const tProducerGroupBuys = useTranslations("producer.detail.sections.group_buys");
   const locale = useLocale();
   const sentinelRef = useRef(null);
   const [near, setNear] = useState(false);
-  const [entries, setEntries] = useState([]);
+  const [rows, setRows] = useState(EMPTY_ROWS);
 
   useEffect(() => {
     if (near) return undefined;
@@ -347,26 +619,124 @@ export default function HomeWhatsOn() {
     let alive = true;
     const sources = SOURCES.filter((source) => source.enabled());
     Promise.all(sources.map(loadSource)).then((buckets) => {
-      if (alive) setEntries(interleaveWhatsOn(buckets));
+      if (!alive) return;
+      const of = (type) => buckets[sources.findIndex((source) => source.type === type)] ?? [];
+      const soonest = (bucket) => [...bucket].sort((a, b) => a.at - b.at).slice(0, WHATS_ON_MAX_CARDS);
+      setRows({
+        // Events and experiences share a row: both are "be there on a date".
+        go: interleaveWhatsOn([of("event"), of("experience")]),
+        groupBuy: soonest(of("groupBuy")),
+        rescue: soonest(of("rescue")),
+      });
     });
     return () => {
       alive = false;
     };
   }, [near]);
 
+  // One row per kind of thing, in this order; a row with no entries is dropped
+  // here, so its heading and its explanation go with it.
+  const groups = [
+    {
+      id: "go",
+      heading: t("heading"),
+      lead: null,
+      all: t("all"),
+      allHref: "/events",
+      entries: rows.go,
+    },
+    {
+      id: "groupBuy",
+      Icon: UsersThree,
+      heading: tGroupBuys("hero_title"),
+      lead: tGroupBuys("hero_subtitle"),
+      // Not «לכל מה שקורה» a second time: two links with one name and two
+      // destinations is what a screen-reader's link list cannot tell apart.
+      all: tProducerGroupBuys("show_all"),
+      allHref: "/group-buys",
+      entries: rows.groupBuy,
+    },
+    {
+      id: "rescue",
+      Icon: ShoppingBag,
+      heading: tRescue("title"),
+      lead: tRescue("lead"),
+      all: tRescue("all"),
+      allHref: "/rescue",
+      entries: rows.rescue,
+    },
+  ].filter((group) => group.entries.length > 0);
+
   // Nothing across all four types ⇒ no section at all, not an empty heading.
   // This is also the pre-fetch state, which is why the sentinel is a sibling
   // of the section rather than something inside it.
-  if (!entries.length) {
+  if (!groups.length) {
     return <div ref={sentinelRef} data-testid="home-whats-on-sentinel" aria-hidden="true" />;
   }
 
+  // «היום» / «מחר» for a date that close, else the weekday (events and
+  // experiences) or DD.MM (a basket) — read in Israel's zone either way.
+  const dayWord = (entry, fallback) => {
+    const when = eventWhen(entry.day);
+    if (when === "today") return tEvents("detail.when_today");
+    if (when === "tomorrow") return tEvents("detail.when_tomorrow");
+    return fallback();
+  };
+  // guard-ok: a timeZone option on the shared formatter — see `ddmm` above.
+  const weekday = (entry) =>
+    formatEventDate(entry.at.toISOString(), locale, {
+      weekday: "long",
+      timeZone: "Asia/Jerusalem",
+    });
+  const withTime = (day, time) => (
+    <>
+      {day}
+      {time ? (
+        <>
+          {" · "}
+          <span dir="ltr" className="numeric">
+            {time}
+          </span>
+        </>
+      ) : null}
+    </>
+  );
+
   const labels = {
-    type: (type) => t(TYPE_LABEL_KEY[type]),
-    when: (entry) =>
-      entry.type === "groupBuy"
-        ? t("until", { date: ddmm(entry.at, locale) })
-        : entry.time || ddmm(entry.at, locale),
+    locale,
+    // The category a visitor knows («סדנה», «שוק») rather than our own split
+    // into event / experience; «אחר» and anything unmapped fall back to it.
+    category: (entry) => {
+      if (entry.type === "experience") {
+        const found = findExperienceCategory(entry.category);
+        return found && found.labelKey !== "other"
+          ? tEvents(`experience_categories.${found.labelKey}`)
+          : t(TYPE_LABEL_KEY.experience);
+      }
+      const found = EVENT_CATEGORIES.find((c) => c.key === entry.category);
+      return found && found.labelKey !== "other" ? tEvents(`categories.${found.labelKey}`) : t(TYPE_LABEL_KEY.event);
+    },
+    date: (entry) => ddmm(entry.at, locale),
+    when: (entry) => {
+      if (entry.type === "groupBuy") return t("until", { date: ddmm(entry.at, locale) });
+      if (entry.type === "rescue") {
+        const window = entry.time && entry.timeEnd ? `${entry.time}–${entry.timeEnd}` : entry.time;
+        return withTime(
+          dayWord(entry, () => ddmm(entry.at, locale)),
+          window,
+        );
+      }
+      return withTime(
+        dayWord(entry, () => weekday(entry)),
+        entry.time,
+      );
+    },
+    // Free is stated only where "free" is a real offer — an event or an
+    // experience. A group buy or a basket with no price shows none.
+    price: (entry) => {
+      if (entry.price) return formatPrice(entry.price);
+      return entry.type === "event" || entry.type === "experience" ? tEvents("list.free") : null;
+    },
   };
 
   return (
@@ -377,26 +747,9 @@ export default function HomeWhatsOn() {
         {t("eyebrow")}
         <span className="inline-block w-8 h-px bg-accent" aria-hidden="true" />
       </span>
-      <h2 className="font-headline-display text-headline-display text-text mb-6">{t("heading")}</h2>
-
-      {/* The SECTION keeps max-w-7xl so its eyebrow and heading line up with
-          «קטגוריות» and the businesses grid, but the row list is capped at a
-          readable measure: at 1440 a full-width row left the time ~1100px from
-          its own title. That is the same stranding MEH-2497 recorded for these
-          rows ("a 1280px-wide row doesn't strand the price at the far end") and
-          it is not worth re-learning. Block-level + max-width, so in RTL the
-          list still starts at the heading's edge. */}
-      <ul className="border-t border-border max-w-3xl">
-        {entries.map((entry) => (
-          <WhatsOnRow key={entry.key} entry={entry} labels={labels} />
-        ))}
-      </ul>
-
-      <div className="mt-4">
-        <Link href="/events" className="text-primary hover:underline text-sm">
-          {t("all")}
-        </Link>
-      </div>
+      {groups.map((group, index) => (
+        <WhatsOnGroup key={group.id} group={group} first={index === 0} labels={labels} />
+      ))}
     </section>
   );
 }
