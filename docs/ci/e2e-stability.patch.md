@@ -43,6 +43,10 @@ stretches on staging were runs that skipped Playwright, so nobody knew.
   hand; the nightly run narrows the gap).
 - The durable fix for nav-gate 429s from one CI IP is MEH-2947.
 
+## The full file
+
+`docs/ci/e2e-stability.e2e.yml` is the whole new `e2e.yml` (the diff below applied to staging `320e50d`), so the browser can copy it in one go. Delete it after the workflow change lands.
+
 ## The diff
 
 ```diff
