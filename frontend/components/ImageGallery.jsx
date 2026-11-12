@@ -232,10 +232,14 @@ export default function ImageGallery({ images = [], producerId = null, producerN
                 reason in the owner's preview — a shared link 404s for the
                 recipient while the business is unapproved.
 
-                `updatesButton` goes too (Sapir, 12/11). It is not the owner's
-                own toggle: ProducerUpdatesButton writes through
+                MEH-2964: `updatesButton` goes too (Sapir, 12/11). It is not
+                the owner's own toggle: ProducerUpdatesButton writes through
                 lib/favorites-cache and opens LoginPromptModal, so it is a
-                visitor subscribe — the same class as the heart beside it. */}
+                visitor subscribe — the same class as the heart beside it.
+
+                ONE gate for all three, not a gate each: this file shipped a
+                bug because two near-identical sites drifted apart, and two
+                adjacent conditions leave a seam a fourth child can land in. */}
             {!isPreview && (
               <>
                 <FavoriteButton
@@ -245,9 +249,9 @@ export default function ImageGallery({ images = [], producerId = null, producerN
                   onFavorited={onFavorited}
                 />
                 <ShareButton variant="overlay" url={shareUrl} title={producerName} />
+                {updatesButton}
               </>
             )}
-            {!isPreview && updatesButton}
           </div>
         )}
       </div>
@@ -410,11 +414,11 @@ export default function ImageGallery({ images = [], producerId = null, producerN
         construction rather than by copied class strings. */}
     {producerId && (
       <div className="absolute top-3 end-3 z-20 lg:hidden flex items-center gap-2">
-        {/* MEH-2916: the IMAGED arm's copy of the hero actions. The imageless
-            arm above was gated when the preview shipped and this one was not —
-            the preview fixture had `images: []`, so only that arm was ever
-            exercised and a business WITH photos still saw a heart and a share
-            in her own preview. Same three gates as there. */}
+        {/* MEH-2964: the IMAGED arm's copy of the hero actions. The imageless
+            arm above was gated when the preview shipped (MEH-2916) and this
+            one was not — that card's probe fixture had `images: []`, so only
+            that arm was ever exercised and a business WITH photos still saw a
+            heart and a share in her own preview. One gate, as above. */}
         {!isPreview && (
           <>
             <FavoriteButton
@@ -424,9 +428,9 @@ export default function ImageGallery({ images = [], producerId = null, producerN
               onFavorited={onFavorited}
             />
             <ShareButton variant="overlay" url={shareUrl} title={producerName} />
+            {updatesButton}
           </>
         )}
-        {!isPreview && updatesButton}
       </div>
     )}
     </div>

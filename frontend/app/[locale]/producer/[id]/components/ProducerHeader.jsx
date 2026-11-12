@@ -490,7 +490,7 @@ export default function ProducerHeader({
         {/* MEH-2526 permanent updates toggle; MEH-2562 moved it into this row
             (desktop) and onto the hero circles (mobile, ImageGallery) — as a
             lone pill under the header it read as an orphan.
-            MEH-2916: out of the owner's preview with the heart and the share,
+            MEH-2964: out of the owner's preview with the heart and the share,
             for the same reason — it is a visitor subscribe, not her own
             toggle (Sapir, 12/11). */}
         {!isPreview && (

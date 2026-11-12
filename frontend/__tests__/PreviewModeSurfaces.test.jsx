@@ -31,11 +31,15 @@ vi.mock("@/lib/favorites-cache", () => ({
 }));
 
 const IMAGES = ["https://res.cloudinary.com/demo/image/upload/v1/a.jpg"];
-// aria-pressed is deliberate: the real ProducerUpdatesButton carries it, so a
-// stub without it would make the `favourites()` exclusion clause below a no-op
-// that passes whatever the filter does. This stub is the case that clause is
-// for — an earlier probe counted the real bell as a favourite and reported two
-// favourites on a page that had none.
+// aria-pressed is deliberate: the real ProducerUpdatesButton carries it too
+// (`ProducerUpdatesButton.jsx:231`, `aria-pressed={on}`), so a stub without it
+// would make the `favourites()` exclusion clause below a no-op. This stub is
+// the case that clause is for — an earlier probe counted the real bell as a
+// favourite and reported two favourites on a page that had none.
+// `updates-bell` is the STUB's testid and the house convention here
+// (ImageGalleryUpdatesSlot.test.jsx:21 uses the same); production's is
+// `producer-updates-button`. Both are excluded below so the clause keeps
+// working if this ever renders the real component.
 const BELL = (
   <button data-testid="updates-bell" aria-pressed="false">
     bell
@@ -63,7 +67,9 @@ const favourites = () =>
   screen
     .queryAllByRole("button")
     .filter(
-      (b) => b.hasAttribute("aria-pressed") && b.getAttribute("data-testid") !== "updates-bell",
+      (b) =>
+        b.hasAttribute("aria-pressed") &&
+        !["updates-bell", "producer-updates-button"].includes(b.getAttribute("data-testid")),
     ).length;
 // `share-overlay`, not `share-outline`: the latter is the event-page variant
 // and is absent from both gallery arms, so it counted 0 everywhere — including
@@ -86,8 +92,14 @@ describe.each([
     // Without this the case above passes against a gallery that renders no
     // actions at all, on either arm.
     render(gallery(images));
-    expect(favourites(), "favourite").toBeGreaterThan(0);
-    expect(shares(), "share").toBeGreaterThan(0);
+    // Exact counts, not `toBeGreaterThan(0)`. With `> 0` the bell exclusion in
+    // `favourites()` is VACUOUS — measured: deleting the clause leaves this
+    // file 4/4 green either way, because the control reads 1 with it and 2
+    // without, and both are "> 0". An exact 1 is falsifiable by the very
+    // thing the clause exists to prevent (the bell counted as a heart), and
+    // by a duplicated control, which `> 0` can never see.
+    expect(favourites(), "favourite").toBe(1);
+    expect(shares(), "share").toBe(1);
     expect(bells(), "updates bell").toBe(1);
   });
 });

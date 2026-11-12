@@ -83,7 +83,7 @@ export default function ShareButton({
         // Mirrors FavoriteButton's gallery circle so the hero corner control
         // swap (heart → share, MEH-1334 decision 6) is visually seamless.
         className="bg-surface/95 hover:bg-surface rounded-full w-11 h-11 flex items-center justify-center shadow-md hover:scale-105 transition focus-visible:ring-2 focus-visible:ring-primary/40"
-        // MEH-2916: a locator, as the `outline` variant below already has. The
+        // MEH-2964: a locator, as the `outline` variant below already has. The
         // preview-gating test needs to count this button, and every other
         // attribute it carries is a translated string — matching on one would
         // have passed for the wrong reason under a key-echo mock.
