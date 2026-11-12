@@ -174,8 +174,10 @@ def _requires_farmer_declaration(producer: Producer) -> bool:
     )
 
 
-def _load_invitable(db: Session, producer_id: UUID) -> Producer:
-    """The three refusals every admin endpoint here shares, in one place.
+def _load_invitable(
+    db: Session, producer_id: UUID, *, require_approved: bool = True
+) -> Producer:
+    """The refusals the admin endpoints here share, in one place.
 
     FOR UPDATE, for the same reason `producer_claim.create_claim_link` takes it:
     these routes WRITE, and an acceptance committing between the owner check
@@ -183,13 +185,21 @@ def _load_invitable(db: Session, producer_id: UUID) -> Producer:
     that has just been used. Lock order is producers-only here — this module
     never locks `users`, so it cannot form a cycle with the claim route (which
     takes users then producers).
+
+    `require_approved=False` is for CANCEL only, and it is not a loosening.
+    The status gate exists so an invite is never SENT for a page that is not
+    live; applying it to cancel too meant that suspending a business locked its
+    outstanding invite in place — the admin could not revoke the link, and
+    re-approving the business silently revived it. Withdrawing a credential is
+    the one action that must never be gated on the state of the thing it
+    protects. Found in review, not in production.
     """
     producer = (
         db.query(Producer).filter(Producer.id == producer_id).with_for_update().first()
     )
     if not producer:
         raise HTTPException(status_code=404, detail=_NOT_FOUND)
-    if producer.status != _INVITABLE_STATUS:
+    if require_approved and producer.status != _INVITABLE_STATUS:
         raise HTTPException(status_code=409, detail=_NOT_APPROVED)
     if _has_owner(db, producer.id):
         raise HTTPException(status_code=409, detail=_ALREADY_OWNED)
@@ -373,8 +383,10 @@ def cancel_owner_invite(
     `owner_invite_created_by` and the consent note are kept: they are the audit
     record of an invite that WAS sent, and deleting that is the one thing a
     cancel must not do.
+
+    Deliberately NOT gated on `status == "approved"` — see `_load_invitable`.
     """
-    producer = _load_invitable(db, producer_id)
+    producer = _load_invitable(db, producer_id, require_approved=False)
     if not producer.owner_invite_token_hash:
         raise HTTPException(status_code=404, detail=_NO_INVITE)
 
@@ -549,6 +561,16 @@ async def accept_owner_invite(
         terms_accepted_at=now,
         terms_version=TERMS_VERSION,
     )
+    # Read every value the background task and the log line need BEFORE the
+    # commit. `db.commit()` expires every instance in the session, so a read
+    # afterwards re-SELECTs — which costs a query, and raises
+    # ObjectDeletedError (a 500, after the account has already been created) if
+    # the row went away in between. Same note `create_owner_invite` carries,
+    # and the same one `producer_claim.create_claim_link` carries for its
+    # `admin_id`.
+    p_id, p_name, p_slug = producer.id, producer.name, producer.slug
+    p_is_test = bool(producer.is_test)
+
     db.add(user)
     try:
         db.commit()
@@ -556,13 +578,11 @@ async def accept_owner_invite(
         # The narrow race step 3 cannot close: `users.email` is unique, and the
         # rollback undoes the claim too, so the link survives for a retry.
         db.rollback()
-        logger.info("owner_invite.email_race", producer_id=str(producer.id))
+        logger.info("owner_invite.email_race", producer_id=str(p_id))
         raise HTTPException(status_code=409, detail=_EMAIL_TAKEN) from None
 
     db.refresh(user)
-    # Captured before the session closes — background tasks run after it.
-    p_id, p_name, p_slug = producer.id, producer.name, producer.slug
-    p_test = bool(producer.is_test or user.is_test)
+    p_test = bool(p_is_test or user.is_test)
     logger.info("owner_invite.accepted", producer_id=str(p_id), user_id=str(user.id))
 
     # The business is already approved, so the one email that is TRUE for her

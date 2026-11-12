@@ -6,13 +6,18 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
 import {
   clearClaimToken,
+  clearOwnerInviteToken,
   readClaimToken,
+  readOwnerInviteToken,
   redactClaimPath,
   scrubClaimTokens,
   stashClaimToken,
+  stashOwnerInviteToken,
 } from "@/lib/claim-token";
 
 const TOKEN = "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJwLTEifQ.s1g-_x";
+// MEH-2974: `secrets.token_urlsafe(32)` — 43 url-safe characters, no dot.
+const INVITE_TOKEN = "hxSJLZj4NkycbjBgrIM9nn2lsMmYGRO8vlYIdErxoU8";
 
 afterEach(() => {
   vi.restoreAllMocks();
@@ -146,5 +151,79 @@ describe("storage", () => {
       throw new Error("QuotaExceededError");
     });
     expect(stashClaimToken(TOKEN)).toBe(false);
+  });
+});
+
+/**
+ * MEH-2974 — the owner-invite link is a bearer credential in its path too, and
+ * a stronger one: it hands over a LIVE business page. Same redaction, same
+ * storage contract, separate key.
+ */
+describe("owner-invite redaction", () => {
+  it.each([
+    [
+      `https://mehamakor.co.il/owner-invite/${INVITE_TOKEN}`,
+      "https://mehamakor.co.il/owner-invite/[token]",
+    ],
+    [`/he/owner-invite/${INVITE_TOKEN}?utm=x#top`, "/he/owner-invite/[token]?utm=x#top"],
+    [
+      `navigated from /owner-invite/${INVITE_TOKEN} to /owner-invite`,
+      "navigated from /owner-invite/[token] to /owner-invite",
+    ],
+    [
+      `/login?redirect=%2Fowner-invite%2F${INVITE_TOKEN}`,
+      "/login?redirect=%2Fowner-invite%2F[token]",
+    ],
+    [
+      `/login?redirect=%2Fhe%2Fowner-invite%2f${INVITE_TOKEN}&x=1`,
+      "/login?redirect=%2Fhe%2Fowner-invite%2F[token]&x=1",
+    ],
+  ])("%s", (input, expected) => {
+    expect(redactClaimPath(input)).toBe(expected);
+  });
+
+  it("leaves the route's own build artifacts alone", () => {
+    // The 40-character floor is what keeps stack frames pointing at their
+    // source. A redactor that swallowed these would make every Sentry frame
+    // from this route unattributable — which is the cost the floor buys.
+    for (const frame of [
+      "/_next/static/chunks/app/[locale]/owner-invite/[token]/page-8f21c0.js",
+      "/owner-invite/OwnerInviteClient.jsx",
+      "/owner-invite/page.js",
+    ]) {
+      expect(redactClaimPath(frame)).toBe(frame);
+    }
+  });
+
+  it("scrubs a nested telemetry payload", () => {
+    const event = {
+      request: { url: `/he/owner-invite/${INVITE_TOKEN}` },
+      breadcrumbs: [{ data: { to: `/owner-invite/${INVITE_TOKEN}` } }],
+    };
+    scrubClaimTokens(event);
+    expect(event.request.url).toBe("/he/owner-invite/[token]");
+    expect(event.breadcrumbs[0].data.to).toBe("/owner-invite/[token]");
+    expect(JSON.stringify(event)).not.toContain(INVITE_TOKEN);
+  });
+});
+
+describe("owner-invite storage", () => {
+  it("round-trips and clears", () => {
+    expect(stashOwnerInviteToken(INVITE_TOKEN)).toBe(true);
+    expect(readOwnerInviteToken()).toBe(INVITE_TOKEN);
+    clearOwnerInviteToken();
+    expect(readOwnerInviteToken()).toBeNull();
+  });
+
+  it("keeps its own key, so the two flows cannot overwrite each other", () => {
+    // Both can legitimately be open in one tab — an admin testing an invite
+    // while holding a claim link — and one clobbering the other would send the
+    // wrong credential to the wrong endpoint.
+    stashClaimToken(TOKEN);
+    stashOwnerInviteToken(INVITE_TOKEN);
+    expect(readClaimToken()).toBe(TOKEN);
+    expect(readOwnerInviteToken()).toBe(INVITE_TOKEN);
+    clearOwnerInviteToken();
+    expect(readClaimToken()).toBe(TOKEN);
   });
 });

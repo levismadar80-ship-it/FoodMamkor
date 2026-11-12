@@ -18,7 +18,7 @@ Three things worth knowing before reading any assertion:
 
 * **The token's only store is a hash.** `producers.owner_invite_token_hash` is
   the sha256 hex of a `secrets.token_urlsafe(32)`. `TestExploits::test_raw_token_
-  is_nowhere_in_the_database_or_the_logs` is the guard that keeps it that way,
+  is_nowhere_in_the_database_or_our_own_logs` is the guard that keeps it that way,
   and it reads every text-ish column of the row rather than the one we expect,
   so a future column that starts carrying the token reds it.
 
@@ -45,7 +45,7 @@ from pathlib import Path
 import pytest
 from sqlalchemy import DateTime, String, Text
 
-from conftest import auth_header, make_producer, make_user
+from conftest import auth_header, israel_days_ago, make_producer, make_user
 from app.models import Producer, User
 
 VERSIONS = Path(__file__).resolve().parents[1] / "backend" / "alembic" / "versions"
@@ -129,7 +129,9 @@ def invite(client, db, producer, admin=None, **over):
     """Create an invite and return (response, raw_token_or_None)."""
     admin = admin or make_user(db, role="admin")
     r = client.post(
-        _admin_url(producer.id), json=valid_invite_payload(**over), headers=auth_header(admin)
+        _admin_url(producer.id),
+        json=valid_invite_payload(**over),
+        headers=auth_header(admin),
     )
     return r, _token_of(r)
 
@@ -199,10 +201,7 @@ class TestModelColumns:
         # SQLAlchemy's drop_all raise CircularDependencyError — which breaks
         # conftest._bootstrap_schema and therefore the WHOLE suite, not this
         # feature. Measured during MEH-2974; see the model comment.
-        fk = next(
-            f
-            for f in Producer.__table__.c.owner_invite_created_by.foreign_keys
-        )
+        fk = next(f for f in Producer.__table__.c.owner_invite_created_by.foreign_keys)
         assert fk.target_fullname == "users.id"
         assert fk.ondelete == "SET NULL"
         assert fk.constraint.name == "fk_producers_owner_invite_created_by_users"
@@ -351,7 +350,10 @@ class TestAdminResend:
         admin = make_user(db, role="admin")
         p = approved(db)
         _, token = invite(client, db, p, admin=admin)
-        assert client.post(_ACCEPT_URL, json=valid_accept_payload(token)).status_code == 200
+        assert (
+            client.post(_ACCEPT_URL, json=valid_accept_payload(token)).status_code
+            == 200
+        )
         r = client.post(_admin_url(p.id, "/resend"), headers=auth_header(admin))
         assert r.status_code == 409, r.text
 
@@ -370,10 +372,55 @@ class TestAdminCancel:
         assert row.owner_invite_email is None
         assert client.get(_lookup_url(token)).status_code == 404
 
+    def test_cancel_keeps_the_audit_trail(self, client, db):
+        """Cancel clears the invitee's PII and the token. It must NOT clear the
+        record that an invite was ever sent — `owner_invite_created_by` and the
+        consent note are the only evidence that a human approved it, and an
+        audit trail a cancel can erase is not an audit trail."""
+        admin = make_user(db, role="admin")
+        p = approved(db)
+        invite(client, db, p, admin=admin)
+        assert (
+            client.delete(_admin_url(p.id), headers=auth_header(admin)).status_code
+            == 200
+        )
+        row = _row(db, p)
+        assert row.owner_invite_consent_note == CONSENT_NOTE
+        assert row.owner_invite_created_by == admin.id
+
+    @pytest.mark.parametrize("status", ["inactive", "rejected", "pending"])
+    def test_an_invite_can_be_revoked_after_the_business_leaves_approved(
+        self, client, db, status
+    ):
+        """Withdrawing a credential must never be gated on the state of the
+        thing it protects.
+
+        The first version shared ONE loader with create and resend, so
+        suspending a business also locked its outstanding invite in place: the
+        admin got a 409 and could not revoke the link, and re-approving the
+        business brought the same link back to life. Found in review.
+        """
+        admin = make_user(db, role="admin")
+        p = approved(db)
+        _, token = invite(client, db, p, admin=admin)
+        db.get(Producer, p.id).status = status
+        db.commit()
+
+        r = client.delete(_admin_url(p.id), headers=auth_header(admin))
+        assert r.status_code == 200, r.text
+        assert _row(db, p).owner_invite_token_hash is None
+        # And re-approving does not revive it — the hash is gone, not hidden.
+        db.get(Producer, p.id).status = "approved"
+        db.commit()
+        assert client.get(_lookup_url(token)).status_code == 404
+
     def test_404_cancelling_when_there_is_nothing_to_cancel(self, client, db):
         admin = make_user(db, role="admin")
         p = approved(db)
-        assert client.delete(_admin_url(p.id), headers=auth_header(admin)).status_code == 404
+        assert (
+            client.delete(_admin_url(p.id), headers=auth_header(admin)).status_code
+            == 404
+        )
 
     def test_409_cancelling_an_accepted_invite(self, client, db):
         admin = make_user(db, role="admin")
@@ -412,7 +459,9 @@ class TestPublicLookup:
         db.add(ProducerCategory(producer_id=p.id, category_id=cat.id))
         db.commit()
         _, token = invite(client, db, p)
-        assert client.get(_lookup_url(token)).json()["requires_farmer_declaration"] is True
+        assert (
+            client.get(_lookup_url(token)).json()["requires_farmer_declaration"] is True
+        )
 
     def test_the_response_carries_no_token_and_no_hash(self, client, db):
         p = approved(db)
@@ -461,13 +510,18 @@ class TestAccept:
         p = approved(db)
         _, token = invite(client, db, p)
         client.post(_ACCEPT_URL, json=valid_accept_payload(token))
-        r = client.post("/auth/login", json={"email": INVITE_EMAIL, "password": GOOD_PASSWORD})
+        r = client.post(
+            "/auth/login", json={"email": INVITE_EMAIL, "password": GOOD_PASSWORD}
+        )
         assert r.status_code == 200, r.text
 
     def test_auth_me_reports_an_approved_business(self, client, db):
         p = approved(db)
         _, token = invite(client, db, p)
-        assert client.post(_ACCEPT_URL, json=valid_accept_payload(token)).status_code == 200
+        assert (
+            client.post(_ACCEPT_URL, json=valid_accept_payload(token)).status_code
+            == 200
+        )
         user = db.query(User).filter(User.email == INVITE_EMAIL).one()
         # `auth_header` and NOT the access token the accept returned, on
         # purpose. That token carries the MEH-327 `userFingerprint` claim, and
@@ -511,6 +565,140 @@ class TestAccept:
 
 
 # ---------------------------------------------------------------------------
+# the email — what is dispatched, and what is in it
+# ---------------------------------------------------------------------------
+
+
+class TestInviteEmail:
+    """`send_email` is fail-open with no RESEND_API_KEY (services/email.py), so
+    EVERY test above passes whether or not an email was ever queued. These are
+    the ones that would notice.
+
+    What they cannot cover is the wire: tests/CLAUDE.md records that router-level
+    mocks hide Resend-side bugs (encoding, MIME — MEH-325), and that a live
+    "Show original" inspection is mandatory before closing an email ticket. That
+    is stated in the PR body as deferred, not claimed here.
+    """
+
+    def _capture(self, monkeypatch):
+        sent: list = []
+        import app.routers.producer_owner_invite as module
+
+        monkeypatch.setattr(
+            module,
+            "send_owner_invite_email",
+            lambda *a, **k: sent.append((a, k)),
+        )
+        return sent
+
+    def test_create_queues_the_email_with_the_link_it_returned(
+        self, client, db, monkeypatch
+    ):
+        sent = self._capture(monkeypatch)
+        p = approved(db, name="מחלבת העמק")
+        r, token = invite(client, db, p)
+        assert r.status_code == 200, r.text
+        assert len(sent) == 1, sent
+        (email, first_name, business, link), kwargs = sent[0]
+        assert email == INVITE_EMAIL
+        assert first_name == "דנה"  # first word only, as the backend's _first_name
+        assert business == "מחלבת העמק"
+        # The link the owner receives IS the link the admin was shown. Two
+        # builders for one URL is how they drift.
+        assert link == r.json()["invite_url"]
+        assert link.endswith(f"/owner-invite/{token}")
+        assert kwargs["test_cause"] is False
+
+    def test_resend_queues_it_again_with_the_new_link(self, client, db, monkeypatch):
+        sent = self._capture(monkeypatch)
+        admin = make_user(db, role="admin")
+        p = approved(db)
+        invite(client, db, p, admin=admin)
+        r = client.post(_admin_url(p.id, "/resend"), headers=auth_header(admin))
+        assert r.status_code == 200, r.text
+        assert len(sent) == 2, sent
+        assert sent[1][0][3] == r.json()["invite_url"]
+        assert sent[0][0][3] != sent[1][0][3], "the resend reused the dead link"
+
+    def test_a_test_business_passes_test_cause_so_nothing_is_sent(
+        self, client, db, monkeypatch
+    ):
+        """MEH-2952: a seeded test row must not email a real address. The flag
+        is the BUSINESS's — there is no account yet to read one from."""
+        sent = self._capture(monkeypatch)
+        p = approved(db)
+        db.get(Producer, p.id).is_test = True
+        db.commit()
+        invite(client, db, p)
+        assert sent[0][1]["test_cause"] is True
+
+    def test_a_refused_invite_queues_nothing(self, client, db, monkeypatch):
+        sent = self._capture(monkeypatch)
+        p = make_producer(db, status="draft")
+        assert invite(client, db, p)[0].status_code == 409
+        assert sent == []
+        # The control: this capture DOES fire for an invite that succeeds, so
+        # the empty list above is a refusal and not a dead patch point.
+        invite(client, db, approved(db))
+        assert len(sent) == 1
+
+    def test_the_body_carries_the_locked_copy_and_escapes_the_name(self):
+        """The copy is approved verbatim (card <hebrew_copy>), and the HTML part
+        interpolates an admin-entered business name into raw markup."""
+        from app.services.auth_emails import send_owner_invite_email
+
+        captured: dict = {}
+
+        import app.services.auth_emails as emails
+
+        real = emails.send_email
+        emails.send_email = lambda *a, **k: captured.update(args=a, kwargs=k)
+        try:
+            send_owner_invite_email(
+                INVITE_EMAIL,
+                "דנה",
+                "<script>מחלבה",
+                "https://example.com/owner-invite/abc",
+            )
+        finally:
+            emails.send_email = real
+
+        _to, subject, body = captured["args"]
+        html = captured["kwargs"]["html"]
+        assert subject == "הדף של <script>מחלבה במהמקור מוכן, נשאר רק לקבוע סיסמה"
+        assert body.startswith("היי דנה,")
+        assert "הקישור תקף ל-7 ימים" in body
+        assert "https://example.com/owner-invite/abc" in body
+        assert "/privacy" in body
+        assert "ספיר שנפ" in body
+        # The plain-text part keeps the raw value (text renders no markup); the
+        # HTML part must not.
+        assert "<script>מחלבה" in body
+        assert "<script>מחלבה" not in html
+        assert "&lt;script&gt;מחלבה" in html
+        assert "https://example.com/owner-invite/abc" in html
+
+    def test_the_greeting_degrades_without_a_first_name(self):
+        """An admin can record a business contact with no personal name. «היי ,»
+        is the failure this avoids — the same fallback shape
+        `onboarding_followup._greeting` uses."""
+        from app.services.auth_emails import send_owner_invite_email
+
+        import app.services.auth_emails as emails
+
+        captured: dict = {}
+        real = emails.send_email
+        emails.send_email = lambda *a, **k: captured.update(args=a)
+        try:
+            send_owner_invite_email(
+                INVITE_EMAIL, "   ", "מחלבה", "https://example.com/x"
+            )
+        finally:
+            emails.send_email = real
+        assert captured["args"][2].startswith("היי,\n")
+
+
+# ---------------------------------------------------------------------------
 # the eight exploit-proving cases (ADR-032 §2.6)
 # ---------------------------------------------------------------------------
 
@@ -522,44 +710,203 @@ class TestExploits:
         in a WhatsApp group — could mint a second owner account."""
         p = approved(db)
         _, token = invite(client, db, p)
-        assert client.post(_ACCEPT_URL, json=valid_accept_payload(token)).status_code == 200
+        assert (
+            client.post(_ACCEPT_URL, json=valid_accept_payload(token)).status_code
+            == 200
+        )
         second = client.post(_ACCEPT_URL, json=valid_accept_payload(token))
         assert second.status_code == 404, second.text
         assert db.query(User).filter(User.producer_id == p.id).count() == 1
 
     def test_two_accepts_in_flight_produce_exactly_one_user(self, client, db):
         """(b) The claim must be a CONDITIONAL UPDATE, not SELECT-then-set
-        (MEH-1820). Under READ COMMITTED two overlapping accepts would both
-        see `accepted_at IS NULL` and both insert.
+        (MEH-1820). Under READ COMMITTED two overlapping accepts would both see
+        `owner_invite_accepted_at IS NULL` and both go on to insert.
 
-        The race is injected rather than hoped for: the barrier fires inside
-        the request session's `commit`, which is the one call between the claim
-        and the point the row becomes visible to a rival."""
+        THE RACE IS FORCED, not hoped for, and the first version of this test
+        did not force it — it had a start-barrier only, so a fast thread could
+        finish before the slow one began and the loser would take the SAME 404
+        the sequential reuse test already covers. That version passed against a
+        SELECT-then-set implementation.
+
+        The harness is `tests/test_otp_confirm_concurrency.py`'s (MEH-2162),
+        which exists for exactly this shape. A `get_db` override scoped to this
+        one test instruments the session so the two requests MEET at the claim:
+
+            A  issues the claim UPDATE — the row lock is now HELD — signals
+               `a_at_claim`; later, at commit, WAITS for `b_at_claim`
+            main  ASSERTS A armed, then starts B
+            B  reaches its own claim UPDATE, signals `b_at_claim` FIRST (its
+               call is about to block on A's row lock, so a signal after it
+               would never be sent), then issues it and blocks
+            A  wakes immediately, commits, releases
+            B  re-evaluates the WHERE against the committed row → 0 rows → 404
+
+        Roles are decided by who claims FIRST, never by which session was built
+        first: the request that claims second issues its own first `commit`
+        during dependency resolution, well before the other request's claim, so
+        keying on "this session's first commit" would arm on the wrong event.
+        """
+        import itertools
         import threading
+
+        from fastapi.testclient import TestClient
+
+        from app.database import SessionLocal, get_db
+
+        _ARM = 60.0
+        _CLAIM = 60.0
+        _JOIN = 60.0
 
         p = approved(db)
         _, token = invite(client, db, p)
 
-        results: list[int] = []
-        barrier = threading.Barrier(2, timeout=20)
+        a_at_claim = threading.Event()
+        b_at_claim = threading.Event()
+        results: dict[str, int] = {}
+        claim_seq = itertools.count()
+        seq_lock = threading.Lock()
+        claim_fired = {"n": 0}
 
-        def accept():
-            try:
-                barrier.wait()
-            except threading.BrokenBarrierError:
-                pass
-            results.append(
-                client.post(_ACCEPT_URL, json=valid_accept_payload(token)).status_code
+        def _is_invite_claim(stmt) -> bool:
+            """True for the conditional UPDATE that claims the invite.
+
+            Matched on the TABLE, not on a substring of the compiled SQL, so
+            editing the WHERE clause cannot silently stop it matching — which
+            would put the test straight back to being unsynchronised. The
+            control after the join asserts it actually fired.
+            """
+            table = getattr(stmt, "table", None)
+            return getattr(table, "name", None) == Producer.__tablename__ and (
+                stmt.__class__.__name__ == "Update"
             )
 
-        threads = [threading.Thread(target=accept) for _ in range(2)]
-        for t in threads:
-            t.start()
-        for t in threads:
-            t.join(timeout=60)
+        def barriered_get_db():
+            session = SessionLocal()
+            real_commit = session.commit
+            real_execute = session.execute
+            role = {"is_claimer": False}
+            armed = {"commit": True}
 
-        assert sorted(results) == [200, 404], results
+            def barriered_commit(*a, **kw):
+                # Only the winner blocks, and only once: a second commit inside
+                # the window would re-enter the barrier and hang the run, which
+                # is the least informative outcome a concurrency test has.
+                if role["is_claimer"] and armed["commit"]:
+                    armed["commit"] = False
+                    b_at_claim.wait(_CLAIM)
+                return real_commit(*a, **kw)
+
+            def barriered_execute(stmt, *a, **kw):
+                if not _is_invite_claim(stmt):
+                    return real_execute(stmt, *a, **kw)
+                with seq_lock:
+                    first = next(claim_seq) == 0
+                    claim_fired["n"] += 1
+                if first:
+                    role["is_claimer"] = True
+                    result = real_execute(stmt, *a, **kw)
+                    # Signal AFTER: only now is the row lock actually held,
+                    # which is the state main is waiting to observe.
+                    a_at_claim.set()
+                    return result
+                # Signal BEFORE: this call blocks on the winner's row lock.
+                b_at_claim.set()
+                return real_execute(stmt, *a, **kw)
+
+            session.commit = barriered_commit
+            session.execute = barriered_execute
+            try:
+                yield session
+            finally:
+                session.close()
+
+        def accept(tag):
+            # One TestClient per thread — httpx.Client is not documented as
+            # thread-safe, and a test built to detect non-determinism is the
+            # last place to lean on an implementation detail.
+            results[tag] = (
+                TestClient(client.app)
+                .post(_ACCEPT_URL, json=valid_accept_payload(token))
+                .status_code
+            )
+
+        client.app.dependency_overrides[get_db] = barriered_get_db
+        try:
+            ta = threading.Thread(target=accept, args=("a",))
+            tb = threading.Thread(target=accept, args=("b",))
+            ta.start()
+            # ASSERT the arm rather than discarding it: an unsynchronised run
+            # produces the same values a correct one does, so a silent failure
+            # to arm would make this test report a pass for the wrong reason.
+            assert a_at_claim.wait(_ARM), (
+                "thread A never reached its claim — the two requests were not "
+                "synchronised, so this run proves nothing about the race"
+            )
+            tb.start()
+            ta.join(timeout=_JOIN)
+            tb.join(timeout=_JOIN)
+        finally:
+            client.app.dependency_overrides.pop(get_db, None)
+
+        assert not ta.is_alive() and not tb.is_alive(), "a thread never finished"
+        # The control for the instrument: if the matcher stopped matching, B
+        # would never signal and the run above would look like a slow pass.
+        assert claim_fired["n"] == 2, (
+            f"the claim matcher fired {claim_fired['n']} times, expected 2 — "
+            "the two requests did not both reach the conditional UPDATE, so "
+            "the assertions below are about something else"
+        )
+        assert sorted(results.values()) == [200, 404], results
         assert db.query(User).filter(User.producer_id == p.id).count() == 1
+
+    def test_the_email_race_after_the_precheck_rolls_the_claim_back(self, client, db):
+        """The ONE window the pre-check cannot close, and the only thing that
+        closes it is the unique index on `users.email` plus a rollback that
+        takes the CLAIM with it.
+
+        Forced rather than waited for: `_email_taken` is patched to answer
+        False once — exactly as it would if the address were registered a
+        microsecond after it looked — so the handler walks past the 409, claims
+        the token, and only then hits the IntegrityError.
+
+        What must hold afterwards is not just the status code: the claim has to
+        be UNDONE, or the invitee is left holding a link the server has already
+        marked used and no account to show for it. Deleting the `db.rollback()`
+        in that except branch turns the last three assertions red.
+        """
+        p = approved(db)
+        _, token = invite(client, db, p)
+        make_user(db, email=INVITE_EMAIL)  # the racer, registered "in between"
+
+        import app.routers.producer_owner_invite as module
+
+        calls = {"n": 0}
+        real = module._email_taken
+
+        def blind_once(db_, email):
+            calls["n"] += 1
+            return False if calls["n"] == 1 else real(db_, email)
+
+        module._email_taken = blind_once
+        try:
+            r = client.post(_ACCEPT_URL, json=valid_accept_payload(token))
+        finally:
+            module._email_taken = real
+
+        # The control: the patch has to have been consulted, or this test is
+        # the plain pre-check 409 under a different name.
+        assert calls["n"] >= 1, "the handler never asked whether the email was taken"
+        assert r.status_code == 409, r.text
+        row = _row(db, p)
+        assert row.owner_invite_token_hash == _sha(token), (
+            "the claim was not rolled back"
+        )
+        assert row.owner_invite_accepted_at is None
+        assert row.declared_at is None
+        assert db.query(User).filter(User.email == INVITE_EMAIL).count() == 1
+        # And the link is still usable — that is the point of rolling back.
+        assert client.get(_lookup_url(token)).status_code == 200
 
     @pytest.mark.parametrize("kill", ["resend", "cancel", "expire"])
     def test_a_replaced_cancelled_or_expired_token_is_404(self, client, db, kill):
@@ -588,7 +935,9 @@ class TestExploits:
         [{"terms_accepted": False}, {"declaration_accepted": False}],
         ids=["no_terms", "no_declaration"],
     )
-    def test_accept_without_the_consents_is_422_and_writes_nothing(self, client, db, over):
+    def test_accept_without_the_consents_is_422_and_writes_nothing(
+        self, client, db, over
+    ):
         """(d) The consents are HERS. An admin built the page; nobody at
         Mehamakor may sign for her, and a client that omits a box must not get
         an account whose `terms_accepted_at` is stamped anyway."""
@@ -602,6 +951,56 @@ class TestExploits:
         # And the link is still live — a refused consent must not burn it.
         assert client.get(_lookup_url(token)).status_code == 200
 
+    @pytest.mark.parametrize("status", ["inactive", "rejected", "pending", "draft"])
+    def test_a_business_that_leaves_approved_kills_its_link(self, client, db, status):
+        """The invite hands over a LIVE page. The moment the page stops being
+        live — suspended, rejected, pushed back to the queue — the link must
+        stop working, or an owner could accept her way onto a business an admin
+        has just taken down.
+
+        Both halves: the lookup AND the accept, because they evaluate the
+        condition separately (the accept's WHERE is the one that counts — the
+        lookup's read is already stale by the time it returns)."""
+        p = approved(db)
+        _, token = invite(client, db, p)
+        db.get(Producer, p.id).status = status
+        db.commit()
+        clean = _snapshot(db, p)
+
+        assert client.get(_lookup_url(token)).status_code == 404
+        r = client.post(_ACCEPT_URL, json=valid_accept_payload(token))
+        assert r.status_code == 404, r.text
+        assert _snapshot(db, p) == clean
+        assert db.query(User).filter(User.email == INVITE_EMAIL).count() == 0
+
+    def test_an_accepted_invite_blocks_a_new_one_even_with_no_account_left(
+        self, client, db
+    ):
+        """`_load_invitable` refuses on `owner_invite_accepted_at` as well as on
+        `_has_owner`, and the second check is not redundant with the first:
+        they read different columns, and an admin who deleted the owner's
+        account leaves a row that still reads as handed over. Without this
+        branch she could mint a second invite on it."""
+        admin = make_user(db, role="admin")
+        p = approved(db)
+        _, token = invite(client, db, p, admin=admin)
+        assert (
+            client.post(_ACCEPT_URL, json=valid_accept_payload(token)).status_code
+            == 200
+        )
+        owner = db.query(User).filter(User.email == INVITE_EMAIL).one()
+        db.delete(owner)
+        db.commit()
+        # No account points at it any more, so `_has_owner` is False — the
+        # accepted stamp is the only thing left refusing.
+        assert not db.query(User.id).filter(User.producer_id == p.id).first()
+        r = client.post(
+            _admin_url(p.id),
+            json=valid_invite_payload(email="someone-else@example.com"),
+            headers=auth_header(admin),
+        )
+        assert r.status_code == 409, r.text
+
     def test_non_admins_are_403_on_all_three_admin_endpoints(self, client, db):
         """(e) Vertical privilege. The three admin endpoints mint a credential
         that takes over a live business, so a producer or consumer reaching any
@@ -610,11 +1009,20 @@ class TestExploits:
         clean = _snapshot(db, p)
         for actor in (make_user(db), make_user(db, role="producer")):
             h = auth_header(actor)
-            assert client.post(_admin_url(p.id), json=valid_invite_payload(), headers=h).status_code == 403
-            assert client.post(_admin_url(p.id, "/resend"), headers=h).status_code == 403
+            assert (
+                client.post(
+                    _admin_url(p.id), json=valid_invite_payload(), headers=h
+                ).status_code
+                == 403
+            )
+            assert (
+                client.post(_admin_url(p.id, "/resend"), headers=h).status_code == 403
+            )
             assert client.delete(_admin_url(p.id), headers=h).status_code == 403
         # Anonymous too — no header at all.
-        assert client.post(_admin_url(p.id), json=valid_invite_payload()).status_code in (401, 403)
+        assert client.post(
+            _admin_url(p.id), json=valid_invite_payload()
+        ).status_code in (401, 403)
         assert _snapshot(db, p) == clean
 
     def test_raw_token_is_nowhere_in_the_database_or_our_own_logs(
@@ -730,7 +1138,9 @@ class TestExploits:
             "owner_invite_name": "forged",
         }
         r = client.put(
-            f"/admin/producers/{p.id}", json={"name": p.name} | forged, headers=auth_header(admin)
+            f"/admin/producers/{p.id}",
+            json={"name": p.name} | forged,
+            headers=auth_header(admin),
         )
         assert r.status_code in (200, 422), r.text
         assert _snapshot(db, p) == clean
@@ -759,6 +1169,21 @@ class TestExploits:
         assert r.status_code == 200, r.text
         assert db.query(User).filter(User.email == INVITE_EMAIL).count() == 0
         assert sent == [], "a reset email was dispatched for an address with no account"
+
+        # THE CONTROL, and it is the whole value of the assertion above: a
+        # patch point that no longer fires would make `sent == []` true for a
+        # user who DOES exist, i.e. true for every input. So prove the capture
+        # works, with a real account, in the same patched window.
+        real_user = make_user(db, email="has-an-account@example.com")
+        auth_router._send_reset_email = lambda *a, **k: sent.append(a)
+        try:
+            client.post("/auth/forgot-password", json={"email": real_user.email})
+        finally:
+            auth_router._send_reset_email = original
+        assert len(sent) == 1, (
+            "the patch point did not fire for an account that exists — the "
+            "assertion above was vacuous"
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -927,9 +1352,9 @@ class TestNeighbours:
         r = client.delete(f"/admin/producers/{pid}", headers=auth_header(admin))
         assert r.status_code == 200, r.text
         db.expire_all()
-        assert (
-            db.query(Producer.id).filter(Producer.id == pid).first() is None
-        ), "the business survived the delete"
+        assert db.query(Producer.id).filter(Producer.id == pid).first() is None, (
+            "the business survived the delete"
+        )
 
     def test_deleting_the_admin_who_invited_leaves_the_business(self, db):
         """`ON DELETE SET NULL`, asserted at the DB rather than assumed from
@@ -963,9 +1388,14 @@ class TestOnboardingFollowupClock:
         return counts, sent
 
     def test_an_invite_accepted_today_is_due_for_nothing(self, db, monkeypatch):
+        # `israel_days_ago`, never `now() - timedelta(days=N)`: the code counts
+        # days in Asia/Jerusalem, and N x 24 h is N Israel days only while the
+        # UTC offset is the same at both ends (testing.md, MEH-2290/MEH-2380).
+        # The 11-day case below sits exactly on a step boundary, which is the
+        # one that flips the week after a DST switch.
         p = approved(db)
         row = db.get(Producer, p.id)
-        row.created_at = datetime.now(timezone.utc) - timedelta(days=40)
+        row.created_at = israel_days_ago(40)
         row.owner_invite_accepted_at = datetime.now(timezone.utc)
         u = make_user(db, role="producer", email="late@example.com")
         u.producer_id = p.id
@@ -980,7 +1410,7 @@ class TestOnboardingFollowupClock:
         otherwise the test above is passing because the whole sequence broke."""
         p = approved(db)
         row = db.get(Producer, p.id)
-        row.created_at = datetime.now(timezone.utc) - timedelta(days=40)
+        row.created_at = israel_days_ago(40)
         assert row.owner_invite_accepted_at is None
         u = make_user(db, role="producer", email="selfreg@example.com")
         u.producer_id = p.id
@@ -994,8 +1424,8 @@ class TestOnboardingFollowupClock:
     ):
         p = approved(db)
         row = db.get(Producer, p.id)
-        row.created_at = datetime.now(timezone.utc) - timedelta(days=200)
-        row.owner_invite_accepted_at = datetime.now(timezone.utc) - timedelta(days=11)
+        row.created_at = israel_days_ago(200)
+        row.owner_invite_accepted_at = israel_days_ago(11)
         u = make_user(db, role="producer", email="eleven@example.com")
         u.producer_id = p.id
         db.commit()
@@ -1056,7 +1486,9 @@ class TestRevisionShape:
 
     def test_chains_onto_an_existing_revision(self):
         down = _module_str(_revision_file(REVISION), "down_revision")
-        assert down == "c05dbc247ca1"  # MEH-2952 follow-up, the head when this was written
+        assert (
+            down == "c05dbc247ca1"
+        )  # MEH-2952 follow-up, the head when this was written
         _revision_file(down)  # exists, exactly once
 
     def test_upgrade_adds_exactly_the_eight_columns_plus_index_and_fk(self):
