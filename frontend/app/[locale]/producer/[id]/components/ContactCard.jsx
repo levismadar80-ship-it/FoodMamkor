@@ -16,7 +16,7 @@ import { getPrimaryMethod } from "@/lib/contact-method";
 import { instagramHandle, instagramUrl } from "@/lib/social-links";
 import { withReferralParams } from "@/lib/utils";
 import { whatsappUpdatesHref } from "@/components/WhatsAppUpdatesPill";
-import { markWhatsAppClickedLocal, pingWhatsAppBeacon, trackContactClick } from "@/lib/contact-tracking";
+import { trackContactClick } from "@/lib/contact-tracking";
 import { showToast } from "@/lib/toast";
 import { usePreviewMode } from "@/lib/preview-mode"; // MEH-2916
 
@@ -282,21 +282,8 @@ export default function ContactCard({ producer, isVacation }) {
 
         {/* The one primary CTA — color/label driven by primary_contact_method
             (WhatsApp green only on WhatsApp). */}
-        <PrimaryContactButton
-          producer={producer}
-          onClick={() => {
-            // MEH-1426: attribution + unlock fire together, and ONLY on a
-            // WhatsApp primary CTA. Previously markWhatsAppClickedLocal ran
-            // unconditionally, so a phone/email/website primary still unlocked
-            // the review form — a click that never created an attributed WA row,
-            // so the reviews gate (reviews.py guard 3) would 403 anyway.
-            // Invariant: every WhatsApp click = attribution + unlock; non-WA = neither.
-            if (primaryMethod === "whatsapp") {
-              pingWhatsAppBeacon(producer.id);
-              markWhatsAppClickedLocal(producer.id);
-            }
-          }}
-        />
+        {/* MEH-2999: the button records its own click (any channel). */}
+        <PrimaryContactButton producer={producer} />
 
         {/* MEH-1652: the closed-window context line that used to sit here is
             GONE, not reworded. It said the message "תמתין לבית העסק" — a claim

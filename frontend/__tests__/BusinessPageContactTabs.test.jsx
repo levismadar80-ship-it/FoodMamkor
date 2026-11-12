@@ -16,6 +16,14 @@ const mark = vi.fn();
 vi.mock("@/lib/contact-tracking", () => ({
   pingWhatsAppBeacon: (...a) => ping(...a),
   markWhatsAppClickedLocal: (...a) => mark(...a),
+  // MEH-2999: the sticky bar calls the one primary-CTA handler; WhatsApp still
+  // means the WhatsApp beacon + unlock.
+  trackPrimaryCtaClick: (id, m) => {
+    if (m === "whatsapp") {
+      ping(id);
+      mark(id);
+    }
+  },
 }));
 
 import {

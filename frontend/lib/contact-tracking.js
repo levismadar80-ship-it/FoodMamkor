@@ -51,6 +51,9 @@
 
 export function trackContactClick(producerId, method) {
   if (!producerId) return;
+  // MEH-2999: any contact channel opens the first-review gate server-side
+  // (reviews.py, MEH-2204), so it unlocks the review form here too.
+  markContactedLocal(producerId, method);
   const token = typeof localStorage !== "undefined" ? localStorage.getItem("token") : null;
   const headers = { "Content-Type": "application/json" };
   if (token) headers["Authorization"] = `Bearer ${token}`;
@@ -125,6 +128,51 @@ export function markWhatsAppClickedLocal(producerId) {
   } catch {
     // private mode / quota — review-form unlock is best-effort
   }
+}
+
+// MEH-2999: the browser half of the first-review gate. The server accepts a
+// review after a click on ANY contact channel (reviews.py, MEH-2204), but the
+// form used to unlock on the WhatsApp flag alone, so a customer who phoned or
+// emailed never saw it. `contacted_<id>` holds the channel, so the form-open
+// repair in ReviewsSection can re-send THAT click with the user's token.
+// DO NOT unlock the form from anything the server's gate does not accept.
+export function markContactedLocal(producerId, method) {
+  if (!producerId || !method) return;
+  try {
+    localStorage.setItem(`contacted_${producerId}`, method);
+  } catch {
+    // private mode / quota — review-form unlock is best-effort
+  }
+}
+
+/**
+ * How this browser contacted the business: "whatsapp", another channel key,
+ * or null. WhatsApp wins when both are set (its re-ping is the older path).
+ */
+export function contactedMethodLocal(producerId) {
+  if (!producerId) return null;
+  try {
+    if (localStorage.getItem(`wa_clicked_${producerId}`) === "1") return "whatsapp";
+    return localStorage.getItem(`contacted_${producerId}`) || null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * MEH-2999: one handler for every primary-CTA site (contact card, sticky bar,
+ * product sheet). WhatsApp keeps its own endpoint + flag (MEH-1426); every
+ * other channel is a contact click — before this, a non-WhatsApp primary CTA
+ * recorded nothing at all, so its customers could never pass the review gate.
+ */
+export function trackPrimaryCtaClick(producerId, method) {
+  if (!producerId || !method) return;
+  if (method === "whatsapp") {
+    pingWhatsAppBeacon(producerId);
+    markWhatsAppClickedLocal(producerId);
+    return;
+  }
+  trackContactClick(producerId, method);
 }
 
 export function trackProducerView(producerId, referrer) {
