@@ -33,7 +33,8 @@ const CLOUDINARY = "https://res.cloudinary.com/demo/image/upload/v1/hero.jpg";
 // site; asserted here so a silent change to any of them fails loudly.
 const EXPECTED = {
   producerCard: 828,
-  recipeCard: 750,
+  // MEH-3006: the recipe is now an 80px row thumbnail × DPR 2 (was a 750 card).
+  recipeCard: 160,
   mapMarker: 72,
 };
 
@@ -197,7 +198,8 @@ describe("MEH-2010 — the c_fill call sites deliver an explicitly-sized image",
 
     expect(src).toContain("c_fill");
     expect(src).toContain(`w_${EXPECTED.recipeCard}`);
-    expect(src).toContain("ar_4:3");
+    // MEH-3006: square row thumbnail, like the product rows (was 4:3 card).
+    expect(src).toContain("ar_1:1");
     expect(src).toContain("g_auto");
     expect(src).not.toContain("c_limit");
   });

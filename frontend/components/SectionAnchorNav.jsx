@@ -70,7 +70,12 @@ export default function SectionAnchorNav({ items, ariaLabel, className = "" }) {
   }, [idsKey]);
 
   // Active section: the first section (in page order) inside a band near the
-  // top of the viewport. When none is in the band, the last answer stands.
+  // top of the viewport (25%–35% of its height).
+  // MEH-3006: when none is in the band, the reader is either between two
+  // tabbed sections or in a section that has no tab (recipes, events). The
+  // last answer used to stand, so scrolling UP from reviews into the recipes
+  // left «ביקורות» underlined over the recipes. Now: if the last tabbed
+  // section above the band has fully ended above it too, no tab is current.
   useEffect(() => {
     if (typeof IntersectionObserver === "undefined") return undefined;
     const targets = ids.map((id) => document.getElementById(id)).filter(Boolean);
@@ -80,9 +85,13 @@ export default function SectionAnchorNav({ items, ariaLabel, className = "" }) {
       (entries) => {
         for (const entry of entries) inBand.set(entry.target.id, entry.isIntersecting);
         const first = ids.find((id) => inBand.get(id));
-        if (first) setActiveId(first);
+        if (first) {
+          setActiveId(first);
+          return;
+        }
+        if (inUntabbedGap(targets)) setActiveId(NO_ACTIVE);
       },
-      { rootMargin: "-25% 0px -65% 0px", threshold: 0 },
+      { rootMargin: `-${BAND_TOP * 100}% 0px -65% 0px`, threshold: 0 },
     );
     targets.forEach((el) => io.observe(el));
     return () => io.disconnect();
@@ -90,7 +99,8 @@ export default function SectionAnchorNav({ items, ariaLabel, className = "" }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [idsKey]);
 
-  const effectiveActive = ids.includes(activeId) ? activeId : ids[0];
+  const effectiveActive =
+    activeId === NO_ACTIVE ? null : ids.includes(activeId) ? activeId : ids[0];
 
   // Keep the active pill inside the (horizontally scrolling) row. scrollBy on
   // the row only — never scrollIntoView, which would also move the page and
@@ -169,6 +179,26 @@ export default function SectionAnchorNav({ items, ariaLabel, className = "" }) {
       </div>
     </nav>
   );
+}
+
+// MEH-3006: the active band's top edge, as a fraction of the viewport height
+// (the IntersectionObserver rootMargin above is built from it).
+const BAND_TOP = 0.25;
+// activeId value for "the reader is in a part of the page that has no tab".
+const NO_ACTIVE = "__none__";
+
+/**
+ * True when the last tabbed section that starts above the active band also
+ * ENDS above it, i.e. the reader has scrolled past it into content no tab
+ * names. False at the top of the page (no section above the band yet).
+ * @param {HTMLElement[]} targets  the tabbed sections, in page order
+ */
+function inUntabbedGap(targets) {
+  if (typeof window === "undefined") return false;
+  const bandTop = window.innerHeight * BAND_TOP;
+  const above = targets.filter((el) => el.getBoundingClientRect().top < bandTop);
+  if (above.length === 0) return false;
+  return above[above.length - 1].getBoundingClientRect().bottom < bandTop;
 }
 
 function prefersReducedMotion() {
