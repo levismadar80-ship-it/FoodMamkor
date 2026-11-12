@@ -196,14 +196,20 @@ test.describe("locations editor — list, add, primary", () => {
     await stubEdit(page, { locations: [loc({ id: 1, is_primary: true, label: "החנות" }), loc({ id: 2, kind: "pickup", city: "עכו", label: "הדוכן" })], writes });
     await openLocations(page);
     await setPrimaryBtns(page).click();
+    // MEH-2323: wait for the AFTER state first. «one badge, one button» is
+    // also the BEFORE state (row 1 primary, row 2 offers the button), so those
+    // two counts passed the instant the click was sent, and the PUT was read
+    // before it left the browser — `Received: undefined` on PR runs 43207117175
+    // and 43201709769. The badge on the clicked row is the first thing that
+    // can only be true after the save.
+    const rows = editor(page).getByRole("listitem");
+    await expect(rows.filter({ hasText: "הדוכן" }).getByText("ראשי", { exact: true })).toBeVisible();
+    await expect(rows.filter({ hasText: "החנות" }).getByText("ראשי", { exact: true })).toHaveCount(0);
     await expect(primaryBadges(page)).toHaveCount(1);
     await expect(setPrimaryBtns(page)).toHaveCount(1);
     // The badge now sits on the row that was clicked, and the PUT said so.
     const put = writes.find((w) => w.method === "PUT" && w.url.endsWith("/locations/2"));
     expect(put?.body).toEqual({ is_primary: true });
-    const rows = editor(page).getByRole("listitem");
-    await expect(rows.filter({ hasText: "הדוכן" }).getByText("ראשי", { exact: true })).toBeVisible();
-    await expect(rows.filter({ hasText: "החנות" }).getByText("ראשי", { exact: true })).toHaveCount(0);
   });
 });
 
