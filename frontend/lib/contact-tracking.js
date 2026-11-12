@@ -152,7 +152,7 @@ function announceContacted(producerId) {
 // The unlock is a hint, not a promise: the server can still drop the click
 // (owner / admin viewer, bot UA, rate limit), and then the POST /reviews 403
 // is the real answer — same as it has always been for WhatsApp.
-export function markContactedLocal(producerId, method) {
+function markContactedLocal(producerId, method) {
   if (!producerId || !method) return;
   try {
     localStorage.setItem(`contacted_${producerId}`, method);
