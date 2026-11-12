@@ -249,7 +249,7 @@ function CompactCities({ areas, t }) {
 
 // MEH-1512 (MEH-1509 chunk 2): one pickup / market_stand location row from the
 // producer's locations[] — label (falls back to city) · city · opening_hours ·
-// phone as tel: (MEH-2477) · an outbound Waze nav link built from lat/lng (mirrors MiniMap.jsx:90; no
+// phone as tel: (MEH-2477) · an outbound Waze nav link built from lat/lng (lib/nav-links.js coordsNavLinks; no
 // second in-page map — NN/g scroll-trap). Street address stays off (MEH-829).
 function PickupRow({ loc, t, tMap }) {
   // MEH-2592 C: Google Maps beside Waze. MEH-2994: both from lib/nav-links.js,
