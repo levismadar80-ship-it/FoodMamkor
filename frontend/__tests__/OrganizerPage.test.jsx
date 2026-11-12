@@ -279,6 +279,20 @@ describe("MEH-2461 organizer page", () => {
     expect(screen.queryByTestId("organizer-contact-whatsapp")).not.toBeInTheDocument();
   });
 
+  it("MEH-2988: the preferred channel is the business page's button — icon + contact_cta label", async () => {
+    respond(200, ORG);
+    await renderPage();
+    const wa = screen.getByTestId("organizer-contact-whatsapp");
+    expect(wa.getAttribute("data-primary")).toBe("true");
+    expect(wa.textContent).toBe("contact_cta.whatsapp");
+    expect(wa.querySelector("svg")).not.toBeNull();
+    expect(wa.className).toContain("btn-whatsapp");
+    // a secondary channel keeps its short pill label and no icon
+    const ig = screen.getByTestId("organizer-contact-instagram");
+    expect(ig.textContent).toBe("organizers.page.instagram");
+    expect(ig.querySelector("svg")).toBeNull();
+  });
+
   it("MEH-2475: the founding year shows as a quiet «since» line only when set", async () => {
     respond(200, { ...ORG, established_year: 2015 });
     await renderPage();
