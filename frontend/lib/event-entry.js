@@ -43,6 +43,9 @@ export function toEventEntry(row, tab, t) {
     // MEH-2546: the owner's first photo — the row's fallback when the event
     // has none (Meetup shows the group cover the same way). Events only.
     ownerImage: isExp ? null : row.owner_image_url || null,
-    ownerInitial: isExp ? "" : Array.from((row.producer_name || "").trim())[0] ?? "",
+    // MEH-3009: experiences carry the host's initial too, so every row with a
+    // picture is marked the same way.
+    ownerInitial:
+      Array.from(((isExp ? row.host?.producer_name || row.host?.name : row.producer_name) || "").trim())[0] ?? "",
   };
 }
