@@ -41,6 +41,10 @@ export const EVENT_CATEGORIES = Object.freeze([
   { key: "אחר", labelKey: "other" },
 ]);
 
+// MEH-2989: the catch-all key — the event and experience pages show no chip
+// for it. Read off the list, not re-typed (HebrewLiteralRatchet).
+export const OTHER_CATEGORY = EVENT_CATEGORIES.find((c) => c.labelKey === "other").key;
+
 // Narrower set for community experiences — different vocabulary than the
 // producer-farm events above.
 export const EXPERIENCE_CATEGORIES = Object.freeze([
