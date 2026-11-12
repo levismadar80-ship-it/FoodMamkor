@@ -5,7 +5,12 @@ import { CaretDown, EyeSlash, Star } from "@phosphor-icons/react";
 import { useTranslations, useLocale } from "next-intl";
 import api from "@/lib/api";
 import { detailToMessage } from "@/lib/errors";
-import { contactedMethodLocal, pingWhatsAppBeacon, trackContactClick } from "@/lib/contact-tracking";
+import {
+  CONTACTED_EVENT,
+  contactedMethodLocal,
+  pingWhatsAppBeacon,
+  trackContactClick,
+} from "@/lib/contact-tracking";
 import ReviewInviteCard from "@/components/ReviewInviteCard";
 import { captureReviewInvite } from "@/lib/review-invite";
 import { useAuth } from "@/lib/auth-context";
@@ -345,6 +350,18 @@ export default function ReviewsSection({
     // lib/safe-redirect.js on the login side).
     const back = `${window.location.pathname}${window.location.search}#reviews`;
     setLoginHref(`/login?redirect=${encodeURIComponent(back)}`);
+  }, [producerId]);
+
+  // MEH-2999: a contact made on this page (a tel: / mailto: tap keeps the
+  // page) unlocks the form at once, not after a reload.
+  useEffect(() => {
+    const onContacted = (e) => {
+      if (e.detail?.producerId === producerId && contactedMethodLocal(producerId)) {
+        setHasClickedWa(true);
+      }
+    };
+    window.addEventListener(CONTACTED_EVENT, onContacted);
+    return () => window.removeEventListener(CONTACTED_EVENT, onContacted);
   }, [producerId]);
 
   const fetchPage = (p) => {

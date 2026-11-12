@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, waitFor, within } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor, within, act } from "@testing-library/react";
 import ReviewsSection from "@/components/ReviewsSection";
 // MEH-1426: mocked so the form-open re-ping is observable without a real beacon.
 import { pingWhatsAppBeacon, trackContactClick } from "@/lib/contact-tracking";
@@ -56,6 +56,7 @@ vi.mock("@/lib/contact-tracking", () => ({
   pingWhatsAppBeacon: vi.fn(),
   markWhatsAppClickedLocal: vi.fn(),
   trackContactClick: vi.fn(),
+  CONTACTED_EVENT: "mehamakor:contacted",
   // MEH-2999: the real lookup — both flags live in jsdom's localStorage.
   contactedMethodLocal: (id) =>
     localStorage.getItem(`wa_clicked_${id}`) === "1"
@@ -321,6 +322,27 @@ describe("ReviewsSection — WA re-ping on form open (MEH-1426)", () => {
     expect(trackContactClick).toHaveBeenCalledTimes(1);
     expect(trackContactClick).toHaveBeenCalledWith(PID, "phone");
     expect(pingWhatsAppBeacon).not.toHaveBeenCalled();
+    expect(screen.queryByTestId("reviews-write-hint")).toBeNull();
+  });
+
+  // MEH-2999 review: a tel: / mailto: tap keeps the page, so the card must
+  // flip without a reload.
+  it("signed in, contact made on THIS page → the card flips to the form at once", async () => {
+    authState.user = { id: "u-9", producer_id: null };
+    mockReviews([]);
+    render(<ReviewsSection producerId={PID} />);
+    expect(await screen.findByTestId("reviews-write-hint")).toBeInTheDocument();
+    localStorage.setItem(`contacted_${PID}`, "phone");
+    act(() => {
+      window.dispatchEvent(
+        new CustomEvent("mehamakor:contacted", { detail: { producerId: "other-id" } }),
+      );
+    });
+    expect(screen.getByTestId("reviews-write-hint")).toBeInTheDocument();
+    act(() => {
+      window.dispatchEvent(new CustomEvent("mehamakor:contacted", { detail: { producerId: PID } }));
+    });
+    expect(await screen.findByText("write_cta")).toBeInTheDocument();
     expect(screen.queryByTestId("reviews-write-hint")).toBeNull();
   });
 

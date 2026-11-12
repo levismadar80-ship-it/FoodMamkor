@@ -128,6 +128,19 @@ export function markWhatsAppClickedLocal(producerId) {
   } catch {
     // private mode / quota — review-form unlock is best-effort
   }
+  announceContacted(producerId);
+}
+
+// MEH-2999: tell an already-mounted ReviewsSection on THIS page. A tel: /
+// mailto: tap does not leave the page, so the unlock must not wait for a
+// reload (localStorage `storage` events only reach OTHER tabs).
+export const CONTACTED_EVENT = "mehamakor:contacted";
+function announceContacted(producerId) {
+  try {
+    window.dispatchEvent(new CustomEvent(CONTACTED_EVENT, { detail: { producerId } }));
+  } catch {
+    // no window (SSR) — nothing is mounted to tell
+  }
 }
 
 // MEH-2999: the browser half of the first-review gate. The server accepts a
@@ -135,7 +148,10 @@ export function markWhatsAppClickedLocal(producerId) {
 // form used to unlock on the WhatsApp flag alone, so a customer who phoned or
 // emailed never saw it. `contacted_<id>` holds the channel, so the form-open
 // repair in ReviewsSection can re-send THAT click with the user's token.
-// DO NOT unlock the form from anything the server's gate does not accept.
+// DO NOT unlock the form from a channel the server's gate does not accept.
+// The unlock is a hint, not a promise: the server can still drop the click
+// (owner / admin viewer, bot UA, rate limit), and then the POST /reviews 403
+// is the real answer — same as it has always been for WhatsApp.
 export function markContactedLocal(producerId, method) {
   if (!producerId || !method) return;
   try {
@@ -143,6 +159,7 @@ export function markContactedLocal(producerId, method) {
   } catch {
     // private mode / quota — review-form unlock is best-effort
   }
+  announceContacted(producerId);
 }
 
 /**

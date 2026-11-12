@@ -38,7 +38,7 @@ export default function ReportButton({ producerId, quiet = false }) {
 
   return (
     <>
-      {quiet && <span aria-hidden="true">·</span>}
+      {quiet && <span aria-hidden="true" className="me-2">·</span>}
       <button
         type="button"
         onClick={() => setShowModal(true)}

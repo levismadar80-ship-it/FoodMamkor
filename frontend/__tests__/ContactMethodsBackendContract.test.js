@@ -5,6 +5,7 @@ import path from "node:path";
 
 import { CONTACT_METHODS } from "@/lib/contact-method";
 import {
+  CONTACTED_EVENT,
   contactedMethodLocal,
   trackContactClick,
   trackPrimaryCtaClick,
@@ -93,6 +94,15 @@ describe("trackPrimaryCtaClick — every primary channel is recorded and unlocks
   it("a secondary contact-card circle (trackContactClick) unlocks too", () => {
     trackContactClick(PID, "phone");
     expect(contactedMethodLocal(PID)).toBe("phone");
+  });
+
+  it("every primary click announces the contact to this page (no reload needed)", () => {
+    const seen = [];
+    const on = (e) => seen.push(e.detail.producerId);
+    window.addEventListener(CONTACTED_EVENT, on);
+    for (const { key } of CONTACT_METHODS) trackPrimaryCtaClick(PID, key);
+    window.removeEventListener(CONTACTED_EVENT, on);
+    expect(seen).toEqual(CONTACT_METHODS.map(() => PID));
   });
 
   it("no contact → nothing unlocked", () => {

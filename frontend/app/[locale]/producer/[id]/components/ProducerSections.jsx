@@ -774,17 +774,16 @@ export default function ProducerSections({
               edit has stamped producer.updated_at (nullable, no backfill), so
               untouched producers show nothing. Month-year granularity. */}
           {producer.updated_at && (
-            <>
-              <span>
-                {t("producer.detail.last_updated", {
-                  date: formatEventDate(producer.updated_at, locale, {
-                    month: "long",
-                    year: "numeric",
-                  }),
-                })}
-              </span>
-              <span aria-hidden="true">·</span>
-            </>
+            <span className="whitespace-nowrap">
+              {t("producer.detail.last_updated", {
+                date: formatEventDate(producer.updated_at, locale, {
+                  month: "long",
+                  year: "numeric",
+                }),
+              })}
+              {/* the dot rides with its item, so a wrap never strands it */}
+              <span aria-hidden="true" className="ms-2">·</span>
+            </span>
           )}
           {/* MEH-1460: quiet "טעות בפרטים? עדכנו אותנו" correction link (opens
               the MEH-1443 email-only modal). */}
