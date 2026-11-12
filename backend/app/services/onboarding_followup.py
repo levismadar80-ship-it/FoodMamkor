@@ -350,7 +350,13 @@ def send_due_followups(db: Session) -> dict[int, int]:
                 parts = (user.name or "").strip().split()
                 first_name = parts[0] if parts else ""
                 subject, body = _build_email(step, p, first_name)
-                send_email(user.email, subject, body)
+                # MEH-2952: a test business / test owner → dropped and logged.
+                send_email(
+                    user.email,
+                    subject,
+                    body,
+                    test_cause=bool(p.is_test or user.is_test),
+                )
                 setattr(p, column_attr, datetime.now(timezone.utc))
                 db.commit()
                 counts[step] += 1

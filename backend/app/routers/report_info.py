@@ -115,5 +115,12 @@ def report_producer_info(
 </body>
 </html>"""
 
-    send_email(recipient, subject, text_body, html=html_body)
+    # MEH-2952: a report about a seeded test business is not mailed.
+    send_email(
+        recipient,
+        subject,
+        text_body,
+        html=html_body,
+        test_cause=bool(producer.is_test),
+    )
     return Response(status_code=204)

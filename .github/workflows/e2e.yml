@@ -50,6 +50,13 @@ on:
   # produced no run that would execute it — the data waited on an unrelated
   # future `frontend/**` push.
   workflow_dispatch:
+  # MEH-2972 — one full run every night on staging, whatever was merged. A
+  # staging push runs the suite only when frontend/** changed, so a backend-only
+  # or docs-only day left "is staging green?" unanswered (rule 41, 11/11: five
+  # hours of unknown). 01:30 UTC = 03:30/04:30 Israel, outside working hours.
+  # Like workflow_dispatch it bypasses the paths filter (see the e2e job's if:).
+  schedule:
+    - cron: "30 1 * * *"
 
 permissions:
   contents: read
@@ -142,7 +149,8 @@ jobs:
     # workflow_dispatch are unchanged.
     if: |
       (needs.filter.outputs.frontend == 'true' ||
-       github.event_name == 'workflow_dispatch') &&
+       github.event_name == 'workflow_dispatch' ||
+       github.event_name == 'schedule') &&
       github.actor != 'dependabot[bot]' &&
       (github.event_name != 'pull_request' ||
        (contains(github.event.pull_request.labels.*.name, 'run-e2e') &&
@@ -264,7 +272,16 @@ jobs:
         # preserved (config); the flag detects flake without disabling retries.
         # MEH-2895: `--shard` splits the suite and, by itself, switches on the
         # blob reporter (playwright.config.ts) so e2e-report can merge both halves.
-        run: npx playwright test --fail-on-flaky-tests --shard=${{ matrix.shard }}/2
+        #
+        # MEH-2972 (Sapir 12/11, decision card «שלב 1 + 2»): the strict flag
+        # stays on PULL REQUESTS only. On a staging push or the nightly run a
+        # test that passed on retry is reported, not blocking: e2e-report
+        # prints a ::warning:: naming the count, and testing.md makes a card
+        # for it the same day. Measured 10–12/11: every staging run whose
+        # Playwright jobs executed was red (5/5), each on 1–2 of ~1,550 tests,
+        # and rule 41 then froze every PR. A test that FAILS both attempts is
+        # still red everywhere.
+        run: npx playwright test ${{ github.event_name == 'pull_request' && '--fail-on-flaky-tests' || '' }} --shard=${{ matrix.shard }}/2
         working-directory: frontend
         env:
           PLAYWRIGHT_BASE_URL: http://localhost:3000
@@ -490,6 +507,11 @@ jobs:
             echo "::error::Incomplete run:$PARTIAL"
             exit 1
           fi
+          # MEH-2972: off pull requests a retry-pass no longer reds the run
+          # (see the e2e job's run step), so say it out loud instead.
+          if [ "$STATS_FLAKY" -gt 0 ]; then
+            echo "::warning::$STATS_FLAKY flaky test(s) passed only on retry — each needs a Linear card today (testing.md, MEH-2972). Names: the 'N flaky' block in each shard's log."
+          fi
 
       # MEH-1074 (W0.1) — QA report as a PR comment: one upserted comment per
       # PR (marker-matched, edited in place — no comment spam on re-push).
@@ -673,7 +695,11 @@ jobs:
   e2e-webkit:
     name: Playwright E2E (WebKit — shadow, non-blocking)
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    # MEH-2972: was 20 and every run 10–12/11 hit it and was cancelled with no
+    # report — 20 runner-minutes for zero information each time. The full
+    # suite on one runner needs ~30 (the Chromium suite needed two shards to
+    # fit in 30, MEH-2895), so it now runs nightly only, with room to finish.
+    timeout-minutes: 60
     needs: filter
     concurrency:
       group: e2e-staging-backend-webkit
@@ -693,7 +719,7 @@ jobs:
     # event for any other label does not start it. Push to staging and
     # workflow_dispatch are unchanged.
     if: |
-      (needs.filter.outputs.frontend == 'true' ||
+      (github.event_name == 'schedule' ||
        github.event_name == 'workflow_dispatch') &&
       github.actor != 'dependabot[bot]' &&
       (github.event_name != 'pull_request' ||

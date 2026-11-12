@@ -35,7 +35,7 @@ import AccountSheet from "@/components/AccountSheet";
  *
  * WHAT IS DELIBERATELY NOT ASSERTED:
  *   - ORDER. The Header renders home/map/whatsOn/about while the BottomNav
- *     renders home/map/about — the sequences genuinely differ, so no single
+ *     renders home/map/(whatsOn|about) — the sequences genuinely differ, so no single
  *     declaration order can describe both. Comparisons are sorted multisets.
  *     Order stays shell-local, which is exactly the chunk 0 finding.
  *   - The brand logo. Header.jsx:366 links "/" from an <img> anchor; it is a
@@ -117,6 +117,7 @@ vi.mock("@phosphor-icons/react", () => {
     Compass: stub("Compass"),
     MapTrifold: stub("MapTrifold"),
     Flower: stub("Flower"),
+    CalendarBlank: stub("CalendarBlank"),
     User: stub("User"),
     // AccountSheet
     Heart: stub("Heart"),
@@ -189,6 +190,9 @@ function expectedLinks(surfaceName, state, gates = {}) {
   return itemsForSurface(surfaceName, state)
     .filter(({ item }) => item.kind === "link")
     .filter(({ item }) => !item.dataGate || gates[item.dataGate])
+    // MEH-2965: a surface that shares its slot gives it up while the gate it
+    // names is open (the pill's «אודות» ↔ «אירועים»).
+    .filter(({ surface }) => !surface.yieldsTo || !gates[surface.yieldsTo])
     .filter(({ surface }) => {
       const suppress = surface.suppressOnRoute;
       if (!suppress) return true; // no route gate on this surface → keep
@@ -461,6 +465,30 @@ describe("MEH-1703 — BottomNav matches the registry", () => {
       expect(sortLinks(renderedLinks(container))).toEqual(
         sortLinks(expectedLinks("bottomNav", state)),
       );
+    });
+  }
+
+  // MEH-2965: the pill's third slot. Each of the four hooks is asserted on its
+  // own, as for the Header above — and the swap is checked from both sides:
+  // the hub link arrives AND «אודות» leaves.
+  for (const [name, turnOn] of [
+    ["events", () => { eventsGateRef.current = true; }],
+    ["experiences", () => { experiencesGateRef.current = true; }],
+    ["group buys", () => { hubGateRefs.groupBuys = true; }],
+    ["surprise baskets", () => { hubGateRefs.rescue = true; }],
+  ]) {
+    it(`bottomNav surface swaps «אודות» for the hub when ${name} alone clears the gate`, () => {
+      turnOn();
+      userRef.current = null;
+      const { container } = render(<BottomNav />);
+      const rendered = sortLinks(renderedLinks(container));
+
+      expect(rendered).toEqual(
+        sortLinks(expectedLinks("bottomNav", STATES.guest, { "listing-supply": true })),
+      );
+      const hrefs = rendered.map((l) => l.href);
+      expect(hrefs).toContain("/events");
+      expect(hrefs).not.toContain("/about");
     });
   }
 

@@ -35,7 +35,9 @@ test.describe("G5 — several locations and kashrut", () => {
     const context = await g5.newContext(browser);
     try {
       const page = await context.newPage();
-      await page.goto("/producer/dashboard/edit?group=location");
+      // The cards load collapsed (MEH-1116); the #locations hash is the deep link
+      // that selects the group and opens the card (MEH-1408).
+      await page.goto("/producer/dashboard/edit#locations");
       await expect(page.getByTestId("locations-editor")).toBeVisible();
       await expect(page.getByTestId("location-row")).toHaveCount(rows.length);
     } finally {
