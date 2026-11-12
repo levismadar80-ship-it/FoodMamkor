@@ -46,6 +46,7 @@ import { FARMER_DECLARATION_CATEGORIES } from "@/lib/farmer-declaration";
 import BrandLoader from "@/components/BrandLoader";
 import Button from "@/components/ui/Button";
 import { showToast } from "@/lib/toast";
+import { shareOrCopyText } from "@/lib/share-link";
 
 // MEH-847 (S7 Chunk B): wizard step enum — single source for the 3→5 re-index.
 const STEP = { ACCOUNT: 1, DETAILS: 2, CATEGORY: 3, STORY: 4, CONFIRM: 5 };
@@ -268,22 +269,9 @@ function RegisterProducerPageBody({ routeKind }) {
     const msg = t("auth.register.producer.success.share_msg");
     const url = (msg.match(/https?:\/\/\S+/) || [])[0];
     const text = url ? msg.replace(url, "").trim() : msg;
-    if (typeof navigator !== "undefined" && navigator.share) {
-      try {
-        await navigator.share(url ? { text, url } : { text });
-        return;
-      } catch (err) {
-        // Cancelled is her answer; any other failure falls through to the
-        // copy below (review of #4178).
-        if (err?.name === "AbortError") return;
-      }
-    }
-    try {
-      await navigator.clipboard.writeText(url || msg);
-      showToast.success(t("share.copied_toast"));
-    } catch {
-      // no clipboard either
-    }
+    // MEH-2996: the site's one share sequence (lib/share-link.js).
+    const outcome = await shareOrCopyText({ data: url ? { text, url } : { text }, copyText: url || msg });
+    if (outcome === "copied") showToast.success(t("share.copied_toast"));
   };
   const router = useRouter();
   const params = useSearchParams();

@@ -10,6 +10,7 @@ import { detailToMessage, errorMessage } from "@/lib/errors";
 import { israelTime, leftoverGroupUrl, shekels } from "@/lib/rescue";
 import Button from "@/components/ui/Button";
 import { showToast } from "@/lib/toast";
+import { shareOrCopyText } from "@/lib/share-link";
 
 /**
  * Module:   RescueTab
@@ -294,22 +295,9 @@ export default function RescueTab() {
     city: exactLocation?.city || "",
   });
   async function shareLeftover() {
-    if (typeof navigator !== "undefined" && navigator.share) {
-      try {
-        await navigator.share({ text: leftoverText });
-        return;
-      } catch (err) {
-        // Cancelled is her answer; any other failure falls through to the
-        // copy below, so the tap still does something (review of #4178).
-        if (err?.name === "AbortError") return;
-      }
-    }
-    try {
-      await navigator.clipboard.writeText(leftoverText);
-      showToast.success(tCopied("copied"));
-    } catch {
-      // no clipboard either
-    }
+    // MEH-2996: the site's one share sequence (lib/share-link.js).
+    const outcome = await shareOrCopyText({ data: { text: leftoverText }, copyText: leftoverText });
+    if (outcome === "copied") showToast.success(tCopied("copied"));
   }
 
   // `total` bags spread over today's offers in order, each capped at its own

@@ -170,9 +170,10 @@ function SignupForm({ kind, itemId, onDone }) {
  * @param {string|null} url      registration_url (external_url only)
  * @param {boolean} isFull       no spots left
  * @param {string} [waitlistHref] WhatsApp waitlist link when full (workshops)
+ * @param {Function} [onWaitlistClick] counts the tap for the host (MEH-2991)
  * @param {string} [waitlistLabel]
  */
-export default function RegistrationCta({ kind, itemId, title, method, phone, url, isFull, waitlistHref, waitlistLabel }) {
+export default function RegistrationCta({ kind, itemId, title, method, phone, url, isFull, waitlistHref, waitlistLabel, onWaitlistClick }) {
   const t = useTranslations("registration.cta");
   const tSignup = useTranslations("registration.signup");
   const [open, setOpen] = useState(false);
@@ -183,7 +184,7 @@ export default function RegistrationCta({ kind, itemId, title, method, phone, ur
   if (isFull) {
     if (waitlistHref) {
       return (
-        <a href={waitlistHref} target="_blank" rel="noopener noreferrer" className={BTN} data-testid="registration-waitlist">
+        <a href={waitlistHref} onClick={onWaitlistClick} target="_blank" rel="noopener noreferrer" className={BTN} data-testid="registration-waitlist">
           {waitlistLabel}
         </a>
       );

@@ -5,6 +5,7 @@ import { ShareNetwork, LinkSimple, EnvelopeSimple, Check } from "@phosphor-icons
 import { showToast } from "@/lib/toast";
 import { SITE_URL } from "@/lib/env";
 import { BRAND_NAME } from "@/lib/constants";
+import { tryNativeShare } from "@/lib/share-link";
 
 /**
  * Module:   ShareSiteActions
@@ -94,15 +95,9 @@ export default function ShareSiteActions({
   // share it as plain text with a generic compass icon instead of a link
   // card with the preview image. The message stays for copy/email.
   const share = async () => {
-    if (typeof navigator !== "undefined" && navigator.share) {
-      try {
-        await navigator.share({ title, url });
-      } catch {
-        // cancelled or refused — nothing else to do
-      }
-      return;
-    }
-    await copyLink();
+    // MEH-2996: lib/share-link.js owns the sequence. A sheet that refuses
+    // (not a cancel) now falls through to the copy, as on every other page.
+    if ((await tryNativeShare({ title, url })) === "unavailable") await copyLink();
   };
 
   // MEH-1220: the email action is a real <a href=mailto>, so a present handler
