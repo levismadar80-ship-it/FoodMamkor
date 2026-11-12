@@ -236,8 +236,8 @@ export default function BottomNav() {
     })
     .map((entry) => ({
       id: entry.item.id,
-      // MEH-2975: the hub tab lands on the first tab that has something in
-      // it, not on an empty «אירועים» when the supply is elsewhere.
+      // MEH-2975: the hub tab lands on the first hub route whose supply gate
+      // is open, not on an empty «אירועים» when the supply is elsewhere.
       href:
         entry.item.dataGate === "listing-supply"
           ? hubLandingHref({

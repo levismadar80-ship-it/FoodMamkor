@@ -170,8 +170,8 @@ export const NAV_ITEMS = Object.freeze([
     surfaces: {
       header: { labelKey: "nav.whats_on", audience: "all" },
       // MEH-2965: «אירועים», not «מה קורה» — as a lone tab label the latter
-      // reads as a greeting (Sapir 12/11). An existing string, and exact for
-      // the page the tab opens; the other three types are in its tab row.
+      // reads as a greeting (Sapir 12/11). An existing string; it names the
+      // hub's first tab, and the other three types are in the same tab row.
       bottomNav: { labelKey: "nav.events", audience: "all" },
     },
     /**
@@ -184,6 +184,11 @@ export const NAV_ITEMS = Object.freeze([
      * `nav.experiences`, gate `experiences-supply`) until the hub grew from
      * two tabs to four. The destination moved to the hub itself, `/events`,
      * because that is where all four are now reachable from.
+     *
+     * MEH-2975: `href` here is the hub's DEFAULT. Both shells render the link
+     * to the first hub route that has supply (lib/hub-landing.js), so a
+     * visitor does not open an empty «אירועים» tab when the supply is in
+     * another type.
      */
     dataGate: "listing-supply",
     note:

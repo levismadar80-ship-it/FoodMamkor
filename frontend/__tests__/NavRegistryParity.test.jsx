@@ -362,6 +362,33 @@ describe("MEH-1703 — Header link row matches the registry", () => {
     });
   }
 
+  // MEH-2975: the hub is four routes under one tab row, so «מה קורה» is the
+  // current link on all of them — wherever its own href points. Before, with
+  // the href fixed at /events, a visitor on /group-buys saw no current link.
+  for (const path of ["/events", "/events/12", "/experiences", "/group-buys", "/rescue"]) {
+    it(`a hub link that lands on /group-buys is current on ${path}`, () => {
+      hubGateRefs.groupBuys = true;
+      userRef.current = null;
+      pathnameRef.current = path;
+      const { container } = render(<Header />);
+      const current = [...container.querySelectorAll('a[aria-current="page"]')].map((a) =>
+        a.getAttribute("href"),
+      );
+      expect(current).toEqual(["/group-buys"]);
+    });
+  }
+
+  it("the hub link is not current off the hub", () => {
+    hubGateRefs.groupBuys = true;
+    userRef.current = null;
+    pathnameRef.current = "/about";
+    const { container } = render(<Header />);
+    const current = [...container.querySelectorAll('a[aria-current="page"]')].map((a) =>
+      a.getAttribute("href"),
+    );
+    expect(current).toEqual(["/about"]);
+  });
+
   it("with all four types empty the hub link is absent, not disabled", () => {
     userRef.current = null;
     const { container } = render(<Header />);

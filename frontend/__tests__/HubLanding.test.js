@@ -4,7 +4,7 @@
 import { describe, expect, it } from "vitest";
 
 import { HUB_TABS } from "@/components/ListingHubTabs";
-import { HUB_LANDING_ORDER, hubLandingHref } from "@/lib/hub-landing";
+import { HUB_LANDING_ORDER, hubLandingHref, isHubHref, isHubPath } from "@/lib/hub-landing";
 
 describe("hubLandingHref", () => {
   it.each([
@@ -34,5 +34,19 @@ describe("hubLandingHref", () => {
   it("follows the tab row: same routes, same order", () => {
     expect(HUB_LANDING_ORDER.map((entry) => entry.href)).toEqual(HUB_TABS.map((tab) => tab.href));
     expect(HUB_LANDING_ORDER.map((entry) => entry.gate)).toEqual(HUB_TABS.map((tab) => tab.value));
+  });
+
+  it.each(["/events", "/events/12", "/experiences", "/group-buys/7", "/rescue"])("%s is a hub path", (path) => {
+    expect(isHubPath(path)).toBe(true);
+  });
+
+  // A shared prefix is not the hub: these are business slugs or other pages.
+  it.each(["/eventsx", "/rescued", "/about", "/", "", null, undefined])("%j is not a hub path", (path) => {
+    expect(isHubPath(path)).toBe(false);
+  });
+
+  it("knows a hub href from any other", () => {
+    expect(["/events", "/experiences", "/group-buys", "/rescue"].map(isHubHref)).toEqual([true, true, true, true]);
+    expect(["/", "/about", "/map", "/events/12"].map(isHubHref)).toEqual([false, false, false, false]);
   });
 });

@@ -11,9 +11,9 @@
  * Related:  components/ListingHubTabs.jsx (HUB_TABS — the same order).
  */
 
-// Tab order, first to last. Kept beside the function rather than imported from
-// ListingHubTabs so the nav shells do not pull a client component for a list
-// of four strings; `__tests__/HubLanding.test.js` pins the two to each other.
+// Tab order, first to last. A second copy of ListingHubTabs' HUB_TABS order,
+// kept here so this module stays a pure function with no component import;
+// `__tests__/HubLanding.test.js` pins the two to each other.
 export const HUB_LANDING_ORDER = Object.freeze([
   { gate: "events", href: "/events" },
   { gate: "experiences", href: "/experiences" },
@@ -32,4 +32,22 @@ export const HUB_LANDING_ORDER = Object.freeze([
 export function hubLandingHref(supply) {
   const first = HUB_LANDING_ORDER.find(({ gate }) => Boolean(supply?.[gate]));
   return first ? first.href : "/events";
+}
+
+/**
+ * True on any of the four hub routes and their sub-routes. Segment boundary,
+ * not a bare prefix: `/eventsx` is a business slug, not the hub (the MEH-1971
+ * lesson in Header.jsx).
+ *
+ * @param {string|null|undefined} pathname locale-stripped pathname
+ * @returns {boolean}
+ */
+export function isHubPath(pathname) {
+  if (!pathname) return false;
+  return HUB_LANDING_ORDER.some(({ href }) => pathname === href || pathname.startsWith(`${href}/`));
+}
+
+/** True when `href` is one of the four hub routes (a hub link's own target). */
+export function isHubHref(href) {
+  return HUB_LANDING_ORDER.some((entry) => entry.href === href);
 }
