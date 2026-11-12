@@ -1227,6 +1227,136 @@ class ProducerClaimOut(BaseModel):
     status: str
 
 
+# ---------------------------------------------------------------------------
+# MEH-2974: owner invite for a business an admin built end to end.
+# Routers: routers/producer_owner_invite.py (admin + public).
+# ---------------------------------------------------------------------------
+
+
+class OwnerInviteCreate(BaseModel):
+    """What the admin sends to invite a business's owner.
+
+    `consent_confirmed` and `consent_note` are not form decoration: closed
+    decision 4 of the card is that no invite exists without a recorded written
+    consent, and these two columns plus `owner_invite_created_by` ARE the audit
+    trail. Both are enforced here rather than in the handler so the refusal is
+    a 422 on the body — the same classification as `terms_accepted` on
+    `UserRegister` above, and for the same reason: it is a statement about the
+    payload, not about which business it names, so it leaks nothing.
+    """
+
+    email: EmailStr
+    # Same reasoning as `UserRegister.name`: this is a PERSON's name, so bleach
+    # only and no >=3-letter floor (two-letter Hebrew given names are real).
+    name: SanitizedPersonNameField
+    consent_confirmed: bool
+    consent_note: str = Field(min_length=1, max_length=500)
+
+    @field_validator("email", mode="before")
+    @classmethod
+    def _normalise_email(cls, v):
+        """Lower + trim BEFORE EmailStr, so the uniqueness checks in the
+        handler and the row we store agree with `users.email` — which is
+        itself stored as typed, and compared with `func.lower` on both sides.
+        """
+        return v.strip().lower() if isinstance(v, str) else v
+
+    @field_validator("consent_confirmed")
+    @classmethod
+    def _consent_required(cls, v: bool) -> bool:
+        if v is not True:
+            raise ValueError(
+                "חובה לאשר שהתקבל אישור מפורש בכתב מבעלי העסק לפני שליחת הזמנה"
+            )
+        return v
+
+    @field_validator("consent_note")
+    @classmethod
+    def _note_not_blank(cls, v: str) -> str:
+        # `min_length=1` above rejects "" but NOT "   ", and a whitespace note
+        # is exactly as useless as an empty one for an audit trail.
+        stripped = (v or "").strip()
+        if not stripped:
+            raise ValueError("חובה לתעד איך התקבלה ההסכמה")
+        return stripped
+
+
+class OwnerInviteCreatedOut(BaseModel):
+    """The ONE response that carries the raw token, as part of `invite_url`.
+
+    Returned by create and by resend, and nowhere else: there is no GET that
+    re-reads it, because the database holds only the sha256. If the admin
+    loses the link she resends, which mints a new token and kills this one.
+    """
+
+    invite_url: str
+    email: EmailStr
+    name: str
+    sent_at: datetime
+    expires_at: datetime
+
+
+class OwnerInvitePublicOut(BaseModel):
+    """What the acceptance page may know before anyone has authenticated.
+
+    Deliberately three fields. The business NAME is already public on its own
+    page, and the EMAIL is the address the link was sent to — so a holder of
+    the link learns nothing about the business they did not already have. No
+    phone, no address, no license, no ids, and no token echo.
+    """
+
+    producer_name: str
+    email: EmailStr
+    # Whether the acceptance page must render the grower line beside the
+    # licensing declaration (constants.FARMER_DECLARATION_CATEGORIES). Computed
+    # server-side rather than shipped as `category_names` for the page to
+    # classify, because this page's whole job is collecting a declaration and
+    # the condition for it should not be re-derived by the client.
+    requires_farmer_declaration: bool
+
+
+class OwnerInviteAccept(BaseModel):
+    # URL-safe base64 of 32 random bytes is ~43 chars; the ceiling stops a
+    # megabyte body from reaching the hash function.
+    token: str = Field(min_length=1, max_length=512)
+    # Same 12-char schema floor as every other password entry point; the full
+    # policy (deny-list, HIBP) runs in the handler, which can await.
+    password: PasswordField
+    # NOT optional-with-default, unlike `ProducerRegister.terms_accepted`.
+    # There the default exists for backwards compatibility with callers that
+    # predate the field; here there is no such caller, and both consents are
+    # the entire point of the step — so an omitted box is a 422, never a
+    # silently unrecorded consent.
+    terms_accepted: bool
+    declaration_accepted: bool
+
+    @field_validator("terms_accepted")
+    @classmethod
+    def _terms_accepted_required(cls, v: bool) -> bool:
+        return _terms_must_be_accepted(v)
+
+    @field_validator("declaration_accepted")
+    @classmethod
+    def _declaration_accepted_required(cls, v: bool) -> bool:
+        if v is not True:
+            raise ValueError("יש לאשר את הצהרת הרישוי כדי להמשיך")
+        return v
+
+
+class ProducerOwnerSummary(BaseModel):
+    """The account behind a business, for the admin's «בעלים» panel only.
+
+    Two fields, and the shape is the limit: the admin needs to see WHO she
+    handed the page to, never the account itself. Hydrated beside `has_owner`
+    (routers/admin.py `_attach_has_owner`) in the same single query, so it
+    costs no extra round-trip and cannot reintroduce the per-row SELECT
+    MEH-2541 removed from `GET /admin/producers`.
+    """
+
+    name: str
+    email: EmailStr
+
+
 # MEH-328: generic ack returned by POST /auth/register on ALL branches
 # (new email, existing password user, existing OAuth user). Body bytes
 # must be identical across branches to prevent email enumeration; the
@@ -3037,6 +3167,36 @@ class ProducerAdminOut(ProducerDetailOut):
     # NULL = none minted since the column existed; the drafts list renders
     # nothing for it rather than an empty date.
     claim_link_sent_at: datetime | None = None
+    # MEH-2974: the owner invite, admin-only. Six readable fields and the
+    # linked account — enough for the «בעלים» panel's three states (no owner /
+    # invite pending / connected) without a second request.
+    #
+    # Note what is NOT here, by name, and that both absences are asserted in
+    # tests/test_producer_owner_invite.py::TestExposure:
+    #   * `owner_invite_token_hash` — the credential's only store. It is on NO
+    #     schema at all, so it cannot reach a response by inheritance, by a
+    #     `model_dump()` somewhere, or by appearing in openapi.json.
+    #   * `owner_invite_created_by` — a raw users id. Which admin minted the
+    #     invite is audit data the row and the logs carry; the panel renders
+    #     nothing from it, so exposing it would be an id for its own sake.
+    #
+    # `owner_invite_consent_note` IS here: the admin needs to read back what
+    # she recorded, both to check it and because the panel shows it. It is her
+    # own note about a business, in the same internal-operations class as
+    # `admin_notes` and `recommended_note` — admin-only, never on the public or
+    # owner shapes.
+    owner_invite_email: EmailStr | None = None
+    owner_invite_name: str | None = None
+    owner_invite_sent_at: datetime | None = None
+    owner_invite_expires_at: datetime | None = None
+    owner_invite_accepted_at: datetime | None = None
+    owner_invite_consent_note: str | None = None
+    # Derived, never stored — hydrated per response beside `has_owner` by
+    # routers/admin.py `_attach_has_owner`, in that one batched query. None
+    # means "this route did not hydrate it", exactly as for `has_owner`: a
+    # route that forgets fails CLOSED (the panel shows no owner line) rather
+    # than reporting a handed-over business as ownerless.
+    owner: ProducerOwnerSummary | None = None
     # MEH-1287 chunk B — the editorial seasonal mark, admin-only and READ-BACK
     # (ADR-006 R2: `ProducerAdminUpdate` writes it, so something has to return
     # it, or the admin form reopens empty and the next save silently clears a

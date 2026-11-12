@@ -4864,6 +4864,133 @@
         "title": "OutreachPrefillResponse",
         "type": "object"
       },
+      "OwnerInviteAccept": {
+        "properties": {
+          "declaration_accepted": {
+            "title": "Declaration Accepted",
+            "type": "boolean"
+          },
+          "password": {
+            "description": "Password — additional checks via password_policy service",
+            "maxLength": 200,
+            "minLength": 12,
+            "title": "Password",
+            "type": "string"
+          },
+          "terms_accepted": {
+            "title": "Terms Accepted",
+            "type": "boolean"
+          },
+          "token": {
+            "maxLength": 512,
+            "minLength": 1,
+            "title": "Token",
+            "type": "string"
+          }
+        },
+        "required": [
+          "token",
+          "password",
+          "terms_accepted",
+          "declaration_accepted"
+        ],
+        "title": "OwnerInviteAccept",
+        "type": "object"
+      },
+      "OwnerInviteCreate": {
+        "description": "What the admin sends to invite a business's owner.\n\n`consent_confirmed` and `consent_note` are not form decoration: closed\ndecision 4 of the card is that no invite exists without a recorded written\nconsent, and these two columns plus `owner_invite_created_by` ARE the audit\ntrail. Both are enforced here rather than in the handler so the refusal is\na 422 on the body — the same classification as `terms_accepted` on\n`UserRegister` above, and for the same reason: it is a statement about the\npayload, not about which business it names, so it leaks nothing.",
+        "properties": {
+          "consent_confirmed": {
+            "title": "Consent Confirmed",
+            "type": "boolean"
+          },
+          "consent_note": {
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Consent Note",
+            "type": "string"
+          },
+          "email": {
+            "format": "email",
+            "title": "Email",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "email",
+          "name",
+          "consent_confirmed",
+          "consent_note"
+        ],
+        "title": "OwnerInviteCreate",
+        "type": "object"
+      },
+      "OwnerInviteCreatedOut": {
+        "description": "The ONE response that carries the raw token, as part of `invite_url`.\n\nReturned by create and by resend, and nowhere else: there is no GET that\nre-reads it, because the database holds only the sha256. If the admin\nloses the link she resends, which mints a new token and kills this one.",
+        "properties": {
+          "email": {
+            "format": "email",
+            "title": "Email",
+            "type": "string"
+          },
+          "expires_at": {
+            "format": "date-time",
+            "title": "Expires At",
+            "type": "string"
+          },
+          "invite_url": {
+            "title": "Invite Url",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "sent_at": {
+            "format": "date-time",
+            "title": "Sent At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "invite_url",
+          "email",
+          "name",
+          "sent_at",
+          "expires_at"
+        ],
+        "title": "OwnerInviteCreatedOut",
+        "type": "object"
+      },
+      "OwnerInvitePublicOut": {
+        "description": "What the acceptance page may know before anyone has authenticated.\n\nDeliberately three fields. The business NAME is already public on its own\npage, and the EMAIL is the address the link was sent to — so a holder of\nthe link learns nothing about the business they did not already have. No\nphone, no address, no license, no ids, and no token echo.",
+        "properties": {
+          "email": {
+            "format": "email",
+            "title": "Email",
+            "type": "string"
+          },
+          "producer_name": {
+            "title": "Producer Name",
+            "type": "string"
+          },
+          "requires_farmer_declaration": {
+            "title": "Requires Farmer Declaration",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "producer_name",
+          "email",
+          "requires_farmer_declaration"
+        ],
+        "title": "OwnerInvitePublicOut",
+        "type": "object"
+      },
       "PasswordChange": {
         "properties": {
           "current_password": {
@@ -5764,6 +5891,16 @@
             "title": "Organic Certified",
             "type": "boolean"
           },
+          "owner": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ProducerOwnerSummary"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "owner_bio": {
             "anyOf": [
               {
@@ -5774,6 +5911,76 @@
               }
             ],
             "title": "Owner Bio"
+          },
+          "owner_invite_accepted_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Owner Invite Accepted At"
+          },
+          "owner_invite_consent_note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Owner Invite Consent Note"
+          },
+          "owner_invite_email": {
+            "anyOf": [
+              {
+                "format": "email",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Owner Invite Email"
+          },
+          "owner_invite_expires_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Owner Invite Expires At"
+          },
+          "owner_invite_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Owner Invite Name"
+          },
+          "owner_invite_sent_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Owner Invite Sent At"
           },
           "owner_photo_url": {
             "anyOf": [
@@ -10143,6 +10350,26 @@
           "name"
         ],
         "title": "ProducerOwnerOut",
+        "type": "object"
+      },
+      "ProducerOwnerSummary": {
+        "description": "The account behind a business, for the admin's «בעלים» panel only.\n\nTwo fields, and the shape is the limit: the admin needs to see WHO she\nhanded the page to, never the account itself. Hydrated beside `has_owner`\n(routers/admin.py `_attach_has_owner`) in the same single query, so it\ncosts no extra round-trip and cannot reintroduce the per-row SELECT\nMEH-2541 removed from `GET /admin/producers`.",
+        "properties": {
+          "email": {
+            "format": "email",
+            "title": "Email",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "email"
+        ],
+        "title": "ProducerOwnerSummary",
         "type": "object"
       },
       "ProducerRandomOut": {
@@ -17198,6 +17425,159 @@
         ]
       }
     },
+    "/admin/producers/{producer_id}/owner-invite": {
+      "delete": {
+        "description": "Withdraw an invite that has not been accepted.\n\nClears the PII too, not only the token. The address and the name belong to\nsomeone who is not a user of the site and now never will be through this\nlink, so the row should stop holding them (MEH-2208's תיקון 13 class).\n`owner_invite_created_by` and the consent note are kept: they are the audit\nrecord of an invite that WAS sent, and deleting that is the one thing a\ncancel must not do.",
+        "operationId": "cancel_owner_invite_admin_producers__producer_id__owner_invite_delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "producer_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Producer Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Cancel Owner Invite",
+        "tags": [
+          "admin"
+        ]
+      },
+      "post": {
+        "description": "Invite (or re-invite) the owner of an approved business.\n\nA second call REPLACES the first invite, token and all — that is how an\nadmin corrects a typo in the address without a separate revoke step.",
+        "operationId": "create_owner_invite_admin_producers__producer_id__owner_invite_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "producer_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Producer Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OwnerInviteCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OwnerInviteCreatedOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Create Owner Invite",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/admin/producers/{producer_id}/owner-invite/resend": {
+      "post": {
+        "description": "Mint a new token for the invite already on the row and send it again.\n\nTakes no body on purpose: resending to a DIFFERENT address is a different\nact with a different consent, and it goes through create — which records a\nfresh `consent_note` for it.",
+        "operationId": "resend_owner_invite_admin_producers__producer_id__owner_invite_resend_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "producer_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Producer Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OwnerInviteCreatedOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Resend Owner Invite",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
     "/admin/producers/{producer_id}/products": {
       "post": {
         "operationId": "admin_create_draft_product_admin_producers__producer_id__products_post",
@@ -19242,6 +19622,91 @@
           }
         ],
         "summary": "Get Me",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/auth/owner-invite/accept": {
+      "post": {
+        "description": "Set a password, sign both consents, and walk into the dashboard.\n\nORDER MATTERS, and each step is placed where it is for a reason:\n\n  1. The two consent booleans are schema-level 422s (OwnerInviteAccept).\n     They are statements about the BODY and say nothing about which\n     business the token names, so they leak nothing and they run before any\n     read — the same classification register_producer gives its own\n     body-shape guards.\n  2. The password policy, also 422, also before any write.\n  3. The email-taken check, 409, BEFORE the claim — so the common race\n     answers without having touched anything.\n  4. The claim: ONE conditional UPDATE (MEH-1820), never SELECT-then-set.\n  5. The INSERT, then a single commit.\n\nSteps 3 and 5 still race each other — an account can be created for this\naddress in the microseconds between them — and that is caught by the unique\nindex on `users.email`, whose IntegrityError rolls the WHOLE transaction\nback, claim included. So the 409 leaves zero writes either way, and the\ninvite link stays live for a second attempt.",
+        "operationId": "accept_owner_invite_auth_owner_invite_accept_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OwnerInviteAccept"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Token"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Accept Owner Invite",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/auth/owner-invite/{token}": {
+      "get": {
+        "description": "What the acceptance page renders before she has typed anything.\n\n`request` is required by slowapi, which reads it by introspection.",
+        "operationId": "get_owner_invite_auth_owner_invite__token__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "token",
+            "required": true,
+            "schema": {
+              "title": "Token",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OwnerInvitePublicOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Owner Invite",
         "tags": [
           "auth"
         ]

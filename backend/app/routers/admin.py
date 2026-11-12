@@ -445,20 +445,41 @@ def _attach_has_owner(db: Session, producers) -> None:
     this fails closed (no chip, no action) rather than lying, and
     tests/test_meh2495_admin_draft_owner.py lists those routes so a new one
     has to be added there — and hydrated — on purpose.
+
+    MEH-2974 added `owner` (name + email) to the same hydration, deliberately
+    HERE and not as a `relationship` on the model. A lazy relationship would be
+    read once per row by Pydantic's `from_attributes`, which is precisely the
+    per-row SELECT that MEH-2541 removed from `GET /admin/producers`
+    (tests/test_meh2541_admin_producers_query_count.py asserts the count for
+    one producer equals the count for four, and would red). Selecting three
+    columns instead of one keeps this at exactly one query, so both guards
+    stay green and `has_owner`'s own semantics are untouched.
+
+    When a row somehow has more than one owning account — possible precisely
+    because there is no unique index — `owner` reports the FIRST by id. One
+    deterministic answer beats a nondeterministic one; `has_owner` already
+    collapsed that case to a bool, and MEH-2494's residual-risk note is where
+    the duplicate itself belongs.
     """
     ids = [p.id for p in producers]
-    owned = (
-        {
-            pid
-            for (pid,) in db.query(User.producer_id)
-            .filter(User.producer_id.in_(ids))
-            .distinct()
-        }
+    # No DISTINCT: `users.id` is in the select list precisely so the ORDER BY
+    # that makes the multi-owner tie-break deterministic is legal (Postgres
+    # rejects `SELECT DISTINCT … ORDER BY <col not selected>`), and with the
+    # primary key selected every row is already distinct. Still ONE query.
+    rows = (
+        db.query(User.producer_id, User.id, User.name, User.email)
+        .filter(User.producer_id.in_(ids))
+        .order_by(User.producer_id, User.id)
+        .all()
         if ids
-        else set()
+        else []
     )
+    owners: dict = {}
+    for pid, _uid, name, email in rows:
+        owners.setdefault(pid, {"name": name, "email": email})
     for p in producers:
-        p.has_owner = p.id in owned
+        p.has_owner = p.id in owners
+        p.owner = owners.get(p.id)
 
 
 def _attach_aging(producer) -> None:

@@ -922,7 +922,15 @@ class User(Base):
     # history the chunk-5 metrics read. NULL = never cleared.
     rescue_block_cleared_at = Column(DateTime, nullable=True)
 
-    producer = relationship("Producer")
+    # MEH-2974: `foreign_keys` is REQUIRED here, and the requirement arrived
+    # with `producers.owner_invite_created_by`. There are now two foreign-key
+    # paths between `users` and `producers` — this column, and that one — so
+    # SQLAlchemy cannot infer which one joins this relationship and raises
+    # AmbiguousForeignKeysError while MAPPING, i.e. on the first ORM query of
+    # the process, for every caller, not only the invite's own. Same
+    # disambiguation, same reason, as `Product.producer` (:1202, MEH-2137).
+    # DO NOT remove it.
+    producer = relationship("Producer", foreign_keys="User.producer_id")
     favorites = relationship(
         "Favorite", back_populates="user", cascade="all, delete-orphan"
     )
