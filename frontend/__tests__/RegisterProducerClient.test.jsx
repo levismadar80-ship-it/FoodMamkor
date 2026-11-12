@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor, within } from "@testing-library/react";
 import RegisterProducerClient from "@/app/[locale]/register/producer/RegisterProducerClient";
 import api from "@/lib/api";
 
@@ -467,8 +467,8 @@ describe("RegisterProducerClient — pre-flight entry screen (MEH-994)", () => {
     expect(screen.getByTestId("register-preflight-group-buy-note").textContent).toBe(
       `${K}.preflight.group_buy_note`,
     );
-    // a link, not the checkbox MEH-2640 removed
-    expect(screen.queryByRole("checkbox", { name: /organizer/ })).toBeNull();
+    // a link, not the checkbox MEH-2640 removed: the preflight holds no checkbox at all
+    expect(within(screen.getByTestId("register-preflight")).queryAllByRole("checkbox")).toHaveLength(0);
   });
 });
 
