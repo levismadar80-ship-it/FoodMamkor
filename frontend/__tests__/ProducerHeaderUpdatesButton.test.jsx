@@ -24,7 +24,7 @@ vi.mock("@/lib/api", () => ({
 vi.mock("@/components/BadgeRow", () => ({ default: () => <div /> }));
 vi.mock("@/components/KashrutBadgeStrip", () => ({ default: () => <div /> }));
 vi.mock("@/components/FavoriteButton", () => ({ default: () => <button data-testid="fav" /> }));
-vi.mock("@/components/ShareButton", () => ({ default: () => <button /> }));
+vi.mock("@/components/ShareButton", () => ({ default: () => <button data-testid="share" /> }));
 const panel = vi.hoisted(() => ({ mounts: 0 }));
 vi.mock("@/components/AlertPrefsPanel", async () => {
   const { useEffect } = await import("react");
@@ -66,6 +66,7 @@ vi.mock("@/lib/favorites-cache", () => ({
   subscribeFavorites: () => () => {},
 }));
 
+import { PreviewModeProvider } from "@/lib/preview-mode";
 import ProducerHeader from "@/app/[locale]/producer/[id]/components/ProducerHeader";
 
 const producer = {
@@ -139,5 +140,29 @@ describe("MEH-2526 · an open panel never shows prefs older than the button's wr
 
     await waitFor(() => expect(panel.mounts).toBe(2));
     expect(screen.getAllByTestId("alert-prefs-panel")).toHaveLength(1);
+  });
+});
+
+describe("MEH-2916 · the owner's preview hides the visitor actions in this row", () => {
+  // The third gated site. The first two are ImageGallery's two arms
+  // (PreviewModeSurfaces.test.jsx) — one of which shipped ungated precisely
+  // because only the other had a test, so this one gets a case of its own
+  // rather than being taken on trust from the shared hook.
+  it("hides favourite, share and the updates bell", () => {
+    render(
+      <PreviewModeProvider>
+        <ProducerHeader producer={producer} primaryCategory={null} hasImages />
+      </PreviewModeProvider>,
+    );
+    expect(screen.queryAllByTestId("producer-updates-button")).toHaveLength(0);
+    expect(screen.queryAllByTestId("fav")).toHaveLength(0);
+    expect(screen.queryAllByTestId("share")).toHaveLength(0);
+  });
+
+  it("control — all three render on the public page", () => {
+    render(<ProducerHeader producer={producer} primaryCategory={null} hasImages />);
+    expect(screen.queryAllByTestId("producer-updates-button")).toHaveLength(1);
+    expect(screen.queryAllByTestId("fav").length).toBeGreaterThan(0);
+    expect(screen.queryAllByTestId("share").length).toBeGreaterThan(0);
   });
 });
