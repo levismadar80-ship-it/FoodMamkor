@@ -32,10 +32,7 @@ import EventEntryRow, { CATEGORY_ICON, PRICE_BASE } from "@/components/EventEntr
 import { toEventEntry } from "@/lib/event-entry";
 import { eventWhen, addressNavLinks } from "@/lib/event-when";
 import { AddressNavLinks } from "@/components/NavAppGlyphs";
-import { EVENT_CATEGORIES } from "@/lib/event-categories";
-
-// MEH-2989: the catch-all category gets no chip on the page.
-const OTHER_CATEGORY = "אחר";
+import { EVENT_CATEGORIES, OTHER_CATEGORY } from "@/lib/event-categories";
 import { downloadIcs } from "@/lib/event-ics";
 import Button from "@/components/ui/Button";
 import RegistrationCta from "@/components/RegistrationCta";
@@ -249,7 +246,7 @@ export default function EventDetailClient() {
             {event.title}
           </h1>
           {/* MEH-2548: who runs it, right under the title (Eventbrite / Luma
-              byline) — the full owner card stays at the bottom. */}
+              byline) — since MEH-2989 the only owner link on the page. */}
           {event.producer_name && (
             ownerHref ? (
               <Link

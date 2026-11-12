@@ -34,6 +34,9 @@
 // from THIS set only (6 -> 4); EXPERIENCE_CATEGORIES below still carries both,
 // deliberately — those words describe experiences, which is the whole point.
 // Mirrors backend/app/routers/events.py VALID_CATEGORIES (4 values, same keys).
+// MEH-2989: the catch-all key — the event and experience pages show no chip for it.
+export const OTHER_CATEGORY = "אחר";
+
 export const EVENT_CATEGORIES = Object.freeze([
   { key: "שוק", labelKey: "market" },
   { key: "קטיף", labelKey: "harvest" },

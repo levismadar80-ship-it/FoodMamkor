@@ -36,7 +36,7 @@ import { eventWhen, addressNavLinks } from "@/lib/event-when";
 import { AddressNavLinks } from "@/components/NavAppGlyphs";
 import { SkeletonDetail } from "@/components/Skeleton";
 import { splitBringList } from "@/lib/bring-list";
-import { findExperienceCategory } from "@/lib/event-categories";
+import { findExperienceCategory, OTHER_CATEGORY } from "@/lib/event-categories";
 import RegistrationCta from "@/components/RegistrationCta";
 
 // MEH-1404: reuse the producer-detail static map + Waze/Gmaps block on
@@ -269,7 +269,7 @@ export default function ExperienceDetailClient() {
           )}
 
           {/* MEH-2989: «אחר» tells the visitor nothing — no chip for it. */}
-          {cat && cat.key !== "אחר" && (
+          {cat && cat.key !== OTHER_CATEGORY && (
             // MEH-2675: the chip opens the experiences list filtered to its
             // type (?category= is the list's deep link, EventsClient.jsx).
             // Always the Hebrew wire key — an older row may store "food_tour".
