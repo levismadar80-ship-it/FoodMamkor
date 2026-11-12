@@ -42,7 +42,10 @@ from app.schemas.schemas import (
 )
 from app.services import indexnow  # MEH-2852
 from app.services.experience_moderation import validate_experience
-from app.services.experience_notifications import notify_admin_new_submission
+from app.services.experience_notifications import (
+    host_test_cause,
+    notify_admin_new_submission,
+)
 from app.services.registrations import method_problem, registered_counts
 from app.utils.clock import israel_today
 
@@ -477,6 +480,7 @@ def submit_experience(
         host_name=user.name,
         city=ex.city,
         moderation_status=verdict["status"],
+        test_cause=host_test_cause(ex.host),  # MEH-2952
     )
 
     return _serialize_detail(ex)

@@ -630,7 +630,10 @@ def _queue_business_cancel_emails(
     )
     for email in emails:
         background_tasks.add_task(
-            send_business_cancel_email, email, producer.name or ""
+            send_business_cancel_email,
+            email,
+            producer.name or "",
+            test_cause=bool(producer.is_test),  # MEH-2952
         )
 
 
@@ -772,6 +775,8 @@ def _queue_reservation_email(
                 else None
             ),
         ),
+        # MEH-2952: a test business or a test buyer → dropped and logged.
+        test_cause=bool(producer.is_test or user.is_test),
     )
 
 
@@ -787,7 +792,12 @@ def _queue_cancel_email(
     producer = location.producer if location else None
     if not user.email or producer is None:
         return
-    background_tasks.add_task(send_cancel_email, user.email, producer.name or "")
+    background_tasks.add_task(
+        send_cancel_email,
+        user.email,
+        producer.name or "",
+        test_cause=bool(producer.is_test or user.is_test),  # MEH-2952
+    )
 
 
 @router.post(

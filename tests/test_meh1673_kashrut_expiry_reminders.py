@@ -47,7 +47,7 @@ def _spy(monkeypatch, *, results=None):
     """Replace send_template with a recorder. `results` maps phone → bool/Exception."""
     calls = []
 
-    def fake_send_template(to, template):
+    def fake_send_template(to, template, test_cause=False):
         calls.append((to, template))
         outcome = (results or {}).get(to, True)
         if isinstance(outcome, Exception):
