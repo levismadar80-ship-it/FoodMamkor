@@ -197,7 +197,13 @@ test.describe("my events", () => {
     await r.getByRole("button", { name: "הפעלה" }).click();
     await expect(r.getByText("פעיל", { exact: true })).toBeVisible();
     await expect(r.getByRole("button", { name: "ביטול" })).toBeVisible();
-    expect(writes.map((w) => [w.method, w.body])).toEqual([["PUT", { is_active: false }], ["PUT", { is_active: true }]]);
+    // MEH-2323: the page flips the tag OPTIMISTICALLY (events/page.js:55-59),
+    // before the PUT is sent, so the tag above can be visible while the second
+    // PUT is still in flight. Poll the recorded writes instead of reading them
+    // once (mobile flake on PR run 43207117175).
+    await expect
+      .poll(() => writes.map((w) => [w.method, w.body]))
+      .toEqual([["PUT", { is_active: false }], ["PUT", { is_active: true }]]);
   });
 
   // MT:MEH-1405:4 — delete asks first; dismiss keeps the row and sends nothing; accept removes it.
