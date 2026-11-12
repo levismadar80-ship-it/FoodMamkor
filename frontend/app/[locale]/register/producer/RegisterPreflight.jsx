@@ -24,8 +24,13 @@ import Button from "@/components/ui/Button";
 export default function RegisterPreflight({ showAccountLine, onStart }) {
   const t = useTranslations("auth.register.producer.preflight");
 
+  // MEH-2970: space-y-4, not -5. Measured at 375×667: the approved copy cuts
+  // 40px, which clears 390×664 and leaves «מתחילים» 7px below the fold here —
+  // text tightened further wraps to the same line count, so copy alone cannot
+  // close it. The 4 gaps give the remaining 16px. The button does not move
+  // (Sapir, 12/11).
   return (
-    <div className="space-y-5" data-testid="register-preflight">
+    <div className="space-y-4" data-testid="register-preflight">
       <h2 className="font-headline-md text-lg font-black text-text">{t("title")}</h2>
 
       {/* Prep checklist — MEH-880 E1 reassurance-card token pattern
@@ -44,8 +49,14 @@ export default function RegisterPreflight({ showAccountLine, onStart }) {
         </ul>
       </div>
 
-      {/* MEH-994b: duration = "10 דקות" everywhere (Sapir decision) — must match
-          the page subtitle and the /about/for-businesses FAQ. */}
+      {/* MEH-994b: duration must match the page subtitle and the
+          /about/for-businesses FAQ.
+          MEH-2970: this comment used to say «10 דקות» and cite a Sapir
+          decision for it. Measured 12/11 — all four user-facing surfaces say
+          «כ־5 דקות» (he.json: the page subtitle :232, this key :246,
+          duration_hint :269, og_description :671). The strings agreed with
+          each other; the comment was the outlier. Sapir's ruling: keep the
+          strings, fix the comment. */}
       <p className="text-fg-muted text-sm flex items-center gap-2">
         <Clock size={16} className="shrink-0" aria-hidden="true" />
         {t("duration")}
