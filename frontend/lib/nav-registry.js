@@ -154,7 +154,13 @@ export const NAV_ITEMS = Object.freeze([
     href: "/about",
     surfaces: {
       header: { labelKey: "nav.about", audience: "all" },
-      bottomNav: { labelKey: "nav.about", audience: "all" },
+      // MEH-2965: on the pill «אודות» shares its slot with the hub entry
+      // below and gives it up while that gate is open. The Header shows both.
+      // `yieldsTo: <gate>` on a surface = "absent from this surface while
+      // <gate> is open"; the shell resolves it, as it does `dataGate`, and
+      // the cross-shell guard requires a `dataGate` item on the same surface
+      // to take the slot. With supply, /about is reached from the Footer.
+      bottomNav: { labelKey: "nav.about", audience: "all", yieldsTo: "listing-supply" },
     },
   },
   {
@@ -163,6 +169,10 @@ export const NAV_ITEMS = Object.freeze([
     href: "/events",
     surfaces: {
       header: { labelKey: "nav.whats_on", audience: "all" },
+      // MEH-2965: «אירועים», not «מה קורה» — as a lone tab label the latter
+      // reads as a greeting (Sapir 12/11). An existing string, and exact for
+      // the page the tab opens; the other three types are in its tab row.
+      bottomNav: { labelKey: "nav.events", audience: "all" },
     },
     /**
      * Data-gated on top of its audience, and on a WIDER predicate than the
@@ -176,11 +186,10 @@ export const NAV_ITEMS = Object.freeze([
      * because that is where all four are now reachable from.
      */
     dataGate: "listing-supply",
-    only: "desktop",
     note:
-      "Desktop only. The BottomNav is out of scope because its four slots are " +
-      "full — the reason use-experiences-nav-gate.js gave for the link this " +
-      "replaced (MEH-1918), unchanged by MEH-2859. The Footer still links " +
+      "Both platforms since MEH-2965. On the pill it takes the third slot from " +
+      "the about item (which declares `yieldsTo` on its bottomNav surface) while the " +
+      "gate is open, so the pill stays at four tabs. The Footer still links " +
       "/experiences separately and is untouched.",
   },
   {

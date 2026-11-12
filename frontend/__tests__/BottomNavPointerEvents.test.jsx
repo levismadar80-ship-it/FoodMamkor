@@ -39,10 +39,17 @@ vi.mock("framer-motion", () => ({
   motion: { div: ({ initial, animate, transition, ...props }) => <div {...props} /> },
 }));
 
+// MEH-2965: BottomNav reads the listing-supply gates; closed here, so the pill
+// keeps «אודות» and this suite stays about its own subject.
+vi.mock("@/lib/use-events-nav-gate", () => ({ useEventsNavGate: () => false }));
+vi.mock("@/lib/use-experiences-nav-gate", () => ({ useExperiencesNavGate: () => false }));
+vi.mock("@/lib/use-hub-nav-gate", () => ({ useHubNavGate: () => false }));
+
 vi.mock("@phosphor-icons/react", () => ({
   Compass: (props) => <span data-testid="icon-compass" {...props} />,
   MapTrifold: (props) => <span data-testid="icon-map" {...props} />,
   Flower: (props) => <span data-testid="icon-flower" {...props} />,
+  CalendarBlank: (props) => <span data-testid="icon-calendar" {...props} />,
   User: (props) => <span data-testid="icon-user" {...props} />,
 }));
 
