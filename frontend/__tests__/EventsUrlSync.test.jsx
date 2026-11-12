@@ -247,6 +247,7 @@ describe("/events ↔ /experiences route-as-tab (MEH-2245 · MEH-2980)", () => {
   });
 
   it("clicking the already-active tab does not navigate", () => {
+    setUrl("/experiences");
     render(<EventsClient initialTab="experiences" />);
 
     fireEvent.click(screen.getByRole("tab", { name: EXPERIENCES_TAB }));

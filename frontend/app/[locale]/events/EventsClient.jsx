@@ -83,6 +83,19 @@ const EXPERIENCE_CATEGORY_KEYS = withAll(EXPERIENCE_CATEGORIES);
 // is not a state change and does not refetch — as setCategory("") on "" was.
 const clearCategories = (prev) => (prev.length ? [] : prev);
 
+// MEH-2980: which hub tab a pathname names — null for anything else (tests
+// render on "/"). Works with or without the /en prefix.
+const tabFromPath = (path) =>
+  /\/experiences\/?$/.test(path || "") ? "experiences" : /\/events\/?$/.test(path || "") ? "events" : null;
+
+// MEH-2847 / MEH-2980: the URL's ?category= values that belong to `tab`'s
+// vocabulary (one bad value is dropped without dropping the good ones).
+const categoriesFor = (tab, values) => {
+  const vocab = tab === "experiences" ? EXPERIENCE_CATEGORIES : EVENT_CATEGORIES;
+  const known = new Set(vocab.map((c) => c.key));
+  return [...new Set(values)].filter((k) => known.has(k));
+};
+
 // MEH-2245: one hub behind two routes. `initialTab` is decided by the route
 // that mounts this component (/events → "events", /experiences →
 // "experiences") — never by a ?tab= query. The old query-string deep-link
@@ -97,7 +110,10 @@ export default function EventsPage({ initialTab = "events", titles = null }) {
   // across an in-place switch land on the right tab.
   const pathname = usePathname();
   const search = useSearchParams();
-  const [tab, setTab] = useState(initialTab);
+  // MEH-2980: the PATH wins over the prop. After an in-place switch, Next
+  // keeps the first route's tree in that history entry, so a Back from some
+  // other page can restore /events with the /experiences page mounted.
+  const [tab, setTab] = useState(() => tabFromPath(pathname) || initialTab);
   // View mode — list (default) vs calendar. Independent of tab; applies
   // to whichever data set (events / experiences) is loaded.
   const [view, setView] = useState("list");
@@ -123,11 +139,9 @@ export default function EventsPage({ initialTab = "events", titles = null }) {
   // checked against the vocabulary on its own, so one bad value is dropped
   // without dropping the good ones; duplicates collapse.
   const [city, setCity] = useState(() => search.get("city") || "");
-  const [categories, setCategories] = useState(() => {
-    const vocab = initialTab === "experiences" ? EXPERIENCE_CATEGORIES : EVENT_CATEGORIES;
-    const known = new Set(vocab.map((c) => c.key));
-    return [...new Set(search.getAll("category"))].filter((k) => known.has(k));
-  });
+  const [categories, setCategories] = useState(() =>
+    categoriesFor(tabFromPath(pathname) || initialTab, search.getAll("category")),
+  );
 
   // Reset filters when switching tabs — the two tabs have different
   // category vocabularies, so keeping a cross-tab category would
@@ -149,7 +163,8 @@ export default function EventsPage({ initialTab = "events", titles = null }) {
     setTab(next);
     setCategories(clearCategories);
     setCity("");
-    if (titles?.[next]) document.title = titles[next];
+    // The old remount reset the view; keep that (MEH-2980 AC: states unchanged).
+    setView("list");
   };
 
   const switchTab = (next) => {
@@ -160,20 +175,28 @@ export default function EventsPage({ initialTab = "events", titles = null }) {
       ? current.replace(/\/(events|experiences)\/?$/, `/${next}`)
       : `/${next}`;
     window.history.pushState(null, "", path);
+    if (titles?.[next]) document.title = titles[next];
   };
 
   // MEH-2980: Back / Forward across an in-place switch. The pathname moves
-  // without this component remounting, so the tab follows it here. Only the
-  // two hub paths move the tab; anything else (tests render on "/") leaves it.
-  const routeTab = /\/experiences\/?$/.test(pathname || "")
-    ? "experiences"
-    : /\/events\/?$/.test(pathname || "")
-      ? "events"
-      : null;
+  // without this component remounting, so the tab follows it here.
+  // - Read window.location, not the hook value: usePathname lags our own
+  //   pushState (Next applies it in a transition), so on a quick A→B→A the
+  //   hook can still say B while the URL already says A.
+  // - On a history move the URL is the truth for the filters too: the entry
+  //   may carry ?city= / ?category= that the reset never saw (Back to
+  //   /events?city=X must filter by X, not show the city in the bar only).
   useEffect(() => {
-    if (routeTab && routeTab !== tab) applyTab(routeTab);
+    const urlTab = tabFromPath(window.location.pathname);
+    if (urlTab && titles?.[urlTab]) document.title = titles[urlTab];
+    if (!urlTab || urlTab === tab) return;
+    const p = new URLSearchParams(window.location.search);
+    setTab(urlTab);
+    setView("list");
+    setCity(p.get("city") || "");
+    setCategories(categoriesFor(urlTab, p.getAll("category")));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [routeTab]);
+  }, [pathname]);
 
   // MEH-1085 (DISC-08): single URL writer — the query string always mirrors
   // {city, category}, so filters survive refresh/share and the switchTab

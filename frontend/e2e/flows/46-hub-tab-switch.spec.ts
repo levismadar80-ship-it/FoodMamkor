@@ -75,6 +75,8 @@ for (const locale of ["he", "en"] as const) {
     await expect(page.locator(`${HUB}[data-meh2980="kept"]`), "hub remounted on switch").toHaveCount(1);
     await expect.poll(() => listCalls.length).toBe(1);
     expect(listCalls[0]).toMatch(/\/events\/?$/);
+    const eventsTitle = await page.title();
+    expect(eventsTitle).not.toBe("");
 
     // Back returns to the experiences tab, still in place.
     await startSampler(page);
@@ -84,5 +86,52 @@ for (const locale of ["he", "en"] as const) {
     await expect(hub.locator('[data-tab-value="experiences"]')).toHaveAttribute("aria-selected", "true");
     expect(back.filter((s) => s.loader), "route loader painted on Back").toEqual([]);
     await expect(page.locator(`${HUB}[data-meh2980="kept"]`), "hub remounted on Back").toHaveCount(1);
+    // One more list request for the Back — read after the 90-frame window, so
+    // a late duplicate would already be in the array.
+    expect(listCalls.length, "list fetched more than once on Back").toBe(2);
+    expect(listCalls[1]).toMatch(/\/experiences\/?$/);
+    // The title follows the tab both ways.
+    await expect.poll(() => page.title()).not.toBe(eventsTitle);
+  });
+
+  test(`${locale}: Back restores the filters the URL carries`, async ({ page }) => {
+    const city = "חיפה";
+    await page.goto(`${prefix}/events?city=${encodeURIComponent(city)}`);
+    const hub = page.locator(HUB);
+    await expect(hub).toBeVisible({ timeout: 15_000 });
+    await expect(page.locator("#events-city")).toHaveValue(city);
+
+    await hub.locator('[data-tab-value="experiences"]').click();
+    await expect(page).toHaveURL(new RegExp(`${prefix}/experiences$`));
+    // (No input check here: a tab with no rows and no filter hides its filter
+    // bar, so the address bar is the witness that the reset happened.)
+    expect(new URL(page.url()).search).toBe("");
+
+    await page.goBack();
+    await expect(page).toHaveURL(new RegExp(`${prefix}/events\\?city=`));
+    await expect(hub.locator('[data-tab-value="events"]')).toHaveAttribute("aria-selected", "true");
+    // The address bar and the list agree: the city filter is back in state.
+    await expect(page.locator("#events-city")).toHaveValue(city);
+  });
+
+  test(`${locale}: leaving the hub and coming Back lands on the tab the URL names`, async ({ page }) => {
+    // Start on /experiences, switch in place to /events, leave through a real
+    // router navigation, then Back. Next restores that history entry with the
+    // tree it was pushed with (the /experiences page), so the tab must come
+    // from the path, not from the mounted route's initialTab.
+    await page.goto(`${prefix}/experiences`);
+    const hub = page.locator(HUB);
+    await expect(hub).toBeVisible({ timeout: 15_000 });
+    await hub.locator('[data-tab-value="events"]').click();
+    await expect(page).toHaveURL(new RegExp(`${prefix}/events$`));
+
+    await page.locator(`a[href="${prefix || "/"}"]`).first().click();
+    await expect(page).not.toHaveURL(/\/events$/);
+
+    await page.goBack();
+    await expect(page).toHaveURL(new RegExp(`${prefix}/events$`));
+    await expect(page.locator(HUB).locator('[data-tab-value="events"]')).toHaveAttribute("aria-selected", "true", {
+      timeout: 15_000,
+    });
   });
 }
