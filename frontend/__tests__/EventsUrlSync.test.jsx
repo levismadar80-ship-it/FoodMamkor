@@ -182,9 +182,12 @@ describe("/events city + category URL sync (MEH-1131 / DISC-08)", () => {
 
     fireEvent.click(screen.getByRole("tab", { name: EXPERIENCES_TAB }));
 
+    // MEH-2980: the switch pushes the bare route (/experiences) in place, so
+    // the query is gone from the address bar the moment it lands; the writer
+    // then has nothing to change. Read the URL itself, not one of its writers.
     await waitFor(() => {
-      const p = lastReplaceParams(replaceSpy);
-      expect(p, "replaceState should have fired on tab switch").not.toBeNull();
+      expect(window.location.pathname).toBe("/experiences");
+      const p = new URLSearchParams(window.location.search);
       // MEH-2245: the tab is the route now, so the writer never mirrors it.
       expect(p.get("tab")).toBeNull();
       expect(p.get("city")).toBeNull();
@@ -193,33 +196,54 @@ describe("/events city + category URL sync (MEH-1131 / DISC-08)", () => {
   });
 });
 
-// MEH-2245: route-as-tab. The experiences tab is the /experiences route, so a
-// tab click is a navigation through next-intl's router (locale-aware), and the
-// URL writer must never emit ?tab= — the redirect in next.config.js only exists
-// for OLD links, nothing in the app may mint a new one.
-describe("/events ↔ /experiences route-as-tab (MEH-2245)", () => {
+// MEH-2245: route-as-tab. The experiences tab is the /experiences route, and
+// the URL writer must never emit ?tab= — the redirect in next.config.js only
+// exists for OLD links, nothing in the app may mint a new one.
+// MEH-2980: the switch writes the route IN PLACE with history.pushState — a
+// router.push here streamed the [locale] loading boundary over the whole page
+// and remounted the hub (the flash in Sapir's 12/11 screen recording). So a
+// tab click must push the URL natively and must NOT call the Next router.
+describe("/events ↔ /experiences route-as-tab (MEH-2245 · MEH-2980)", () => {
+  let pushStateSpy;
   beforeEach(() => {
     pushMock.mockClear();
+    pushStateSpy = vi.spyOn(window.history, "pushState");
+  });
+  afterEach(() => {
+    pushStateSpy.mockRestore();
   });
 
-  it("clicking the experiences tab pushes /experiences and marks it selected", async () => {
+  it("clicking the experiences tab writes /experiences in place and marks it selected", async () => {
+    setUrl("/events");
     render(<EventsClient initialTab="events" />);
 
     fireEvent.click(screen.getByRole("tab", { name: EXPERIENCES_TAB }));
 
-    expect(pushMock).toHaveBeenCalledTimes(1);
-    expect(pushMock).toHaveBeenCalledWith("/experiences");
+    expect(pushMock).not.toHaveBeenCalled();
+    expect(pushStateSpy).toHaveBeenCalledTimes(1);
+    expect(pushStateSpy.mock.calls[0][2]).toBe("/experiences");
     await waitFor(() => {
       expect(screen.getByRole("tab", { name: EXPERIENCES_TAB })).toHaveAttribute("aria-selected", "true");
     });
   });
 
-  it("clicking the events tab from /experiences pushes /events", () => {
+  it("clicking the events tab from /en/experiences writes /en/events (locale prefix kept)", () => {
+    setUrl("/en/experiences");
     render(<EventsClient initialTab="experiences" />);
 
     fireEvent.click(screen.getByRole("tab", { name: "events.list.tab_events" }));
 
-    expect(pushMock).toHaveBeenCalledWith("/events");
+    expect(pushMock).not.toHaveBeenCalled();
+    expect(pushStateSpy.mock.calls[0][2]).toBe("/en/events");
+  });
+
+  it("a tab switch sets the page title from the server-built titles", () => {
+    setUrl("/events");
+    render(<EventsClient initialTab="events" titles={{ events: "E | b", experiences: "X | b" }} />);
+
+    fireEvent.click(screen.getByRole("tab", { name: EXPERIENCES_TAB }));
+
+    expect(document.title).toBe("X | b");
   });
 
   it("clicking the already-active tab does not navigate", () => {
@@ -228,6 +252,7 @@ describe("/events ↔ /experiences route-as-tab (MEH-2245)", () => {
     fireEvent.click(screen.getByRole("tab", { name: EXPERIENCES_TAB }));
 
     expect(pushMock).not.toHaveBeenCalled();
+    expect(pushStateSpy).not.toHaveBeenCalled();
   });
 
   it("the URL writer never contains tab= — on either route, through a switch and a filter", async () => {
@@ -240,10 +265,10 @@ describe("/events ↔ /experiences route-as-tab (MEH-2245)", () => {
     await waitFor(() => expect(lastReplaceParams(replaceSpy)?.get("city")).toBe(CITY));
     // Then switch tabs (the reset also writes).
     fireEvent.click(screen.getByRole("tab", { name: "events.list.tab_events" }));
-    await waitFor(() => expect(lastReplaceParams(replaceSpy)?.get("city")).toBeNull());
+    await waitFor(() => expect(new URLSearchParams(window.location.search).get("city")).toBeNull());
 
-    // Derived, not stated: every URL replaceState wrote in this test.
-    const written = replaceSpy.mock.calls.map((c) => String(c[2]));
+    // Derived, not stated: every URL replaceState / pushState wrote in this test.
+    const written = [...replaceSpy.mock.calls, ...pushStateSpy.mock.calls].map((c) => String(c[2]));
     expect(written.length).toBeGreaterThan(0);
     expect(written.filter((u) => u.includes("tab="))).toEqual([]);
   });
