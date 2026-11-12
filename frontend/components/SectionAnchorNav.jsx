@@ -196,9 +196,14 @@ const NO_ACTIVE = "__none__";
 function inUntabbedGap(targets) {
   if (typeof window === "undefined") return false;
   const bandTop = window.innerHeight * BAND_TOP;
-  const above = targets.filter((el) => el.getBoundingClientRect().top < bandTop);
+  // A section that is not laid out (display:none, an empty wrapper) measures
+  // 0/0 and would read as "ended above the band" — skip it.
+  const rects = targets
+    .map((el) => el.getBoundingClientRect())
+    .filter((r) => r.bottom - r.top > 0);
+  const above = rects.filter((r) => r.top < bandTop);
   if (above.length === 0) return false;
-  return above[above.length - 1].getBoundingClientRect().bottom < bandTop;
+  return above[above.length - 1].bottom < bandTop;
 }
 
 function prefersReducedMotion() {

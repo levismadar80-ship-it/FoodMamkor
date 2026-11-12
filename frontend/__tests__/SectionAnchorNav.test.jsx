@@ -313,26 +313,39 @@ describe("SectionAnchorNav — active section (aria-current)", () => {
     expect(pill("s-b")).not.toHaveAttribute("aria-current");
   });
 
-  it("at the top of the page (no section above the band yet) the first tab stays current", () => {
+  it("a tabbed section still running through the band keeps its tab when nothing is reported in the band", () => {
     mountWithSections();
     const a = document.getElementById("s-a");
-    placeSections({ a: { top: 400, bottom: 900 }, b: { top: 1000, bottom: 1600 } });
+    const b = document.getElementById("s-b");
     act(() => {
-      ioCallback([{ target: a, isIntersecting: false }]);
+      ioCallback([{ target: b, isIntersecting: true }]);
     });
-    expect(pill("s-a")).toHaveAttribute("aria-current", "true");
+    // Nothing in the band per the observer, but A started above the band and
+    // ends below it: not a gap, so the last answer (B) stands.
+    placeSections({ a: { top: -500, bottom: 600 }, b: { top: 900, bottom: 1600 } });
+    act(() => {
+      ioCallback([
+        { target: a, isIntersecting: false },
+        { target: b, isIntersecting: false },
+      ]);
+    });
+    expect(pill("s-b")).toHaveAttribute("aria-current", "true");
   });
 
-  it("a tabbed section still running through the band keeps its tab when the observer reports nothing new", () => {
+  it("a zero-height (not laid out) section is not read as 'ended above the band'", () => {
     mountWithSections();
     const a = document.getElementById("s-a");
+    const b = document.getElementById("s-b");
     act(() => {
       ioCallback([{ target: a, isIntersecting: true }]);
     });
-    // A started above the band and ends below it: not a gap.
-    placeSections({ a: { top: -500, bottom: 600 }, b: { top: 900, bottom: 1600 } });
+    // A runs through the band; B is an empty wrapper measuring 0/0.
+    placeSections({ a: { top: -500, bottom: 600 }, b: { top: 0, bottom: 0 } });
     act(() => {
-      ioCallback([{ target: document.getElementById("s-b"), isIntersecting: false }]);
+      ioCallback([
+        { target: a, isIntersecting: false },
+        { target: b, isIntersecting: false },
+      ]);
     });
     expect(pill("s-a")).toHaveAttribute("aria-current", "true");
   });
