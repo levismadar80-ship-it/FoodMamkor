@@ -30,6 +30,7 @@ import { OrganizerPageSchema } from "@/lib/schemas";
 import { contactHref, getPrimaryMethod } from "@/lib/contact-method";
 import OrganizerPrimaryContact from "./OrganizerPrimaryContact";
 import OrganizerContactLink from "./OrganizerContactLink";
+import HistoryBackLink from "@/components/HistoryBackLink";
 import OwnerCard from "@/app/[locale]/producer/[id]/components/OwnerCard";
 
 const ROUTE = "/[locale]/organizers/[slug]";
@@ -201,6 +202,10 @@ export default async function OrganizerPage(props) {
           )}
         </div>
         <div className="px-4 pt-14 space-y-4 md:px-14">
+          {/* MEH-3005: «→ חזרה» to the page the visitor came from, where the
+              event and workshop pages put it — under the cover, above the
+              name. Renders nothing on a direct arrival, so no reserved row. */}
+          <HistoryBackLink className="-mb-2" />
           <h1 className="font-headline-lg text-3xl md:text-4xl font-bold text-text">{organizer.name}</h1>
           {(organizer.city || organizer.established_year) && (
             <p className="text-sm text-fg-muted">
