@@ -51,3 +51,57 @@ def test_router_sends_group_buys_and_rescue_to_freeform():
     text = chat.chat_intent_router._classifier_prompt([])
     assert "group buys (קבוצות רכישה)" in text
     assert "rescue bags (סלי הפתעה)" in text
+
+
+def _drive_chat(monkeypatch, live):
+    import inspect
+    from types import SimpleNamespace
+
+    from starlette.requests import Request
+
+    from app.schemas.schemas import ChatRequest
+
+    calls = []
+
+    class _Client:
+        class messages:  # mirrors the SDK attribute name
+            @staticmethod
+            def create(**kwargs):
+                calls.append(kwargs)
+                return SimpleNamespace(
+                    content=[SimpleNamespace(type="text", text="שלום")]
+                )
+
+    monkeypatch.setattr(chat, "_get_client", lambda: _Client())
+    monkeypatch.setattr(chat, "_live_data_context", lambda *a, **k: live)
+    request = Request(
+        {
+            "type": "http",
+            "method": "POST",
+            "path": "/chat",
+            "headers": [],
+            "client": ("203.0.113.40", 40000),
+            "query_string": b"",
+        }
+    )
+    body = ChatRequest(messages=[{"role": "user", "content": "מה זה סל הפתעה?"}])
+    inspect.unwrap(chat.chat)(request, body)
+    return calls[0]["system"]
+
+
+def test_endpoint_sends_rescue_paragraph_when_pilot_on(monkeypatch):
+    _pilot(monkeypatch, True, "חיפה")
+    system = _drive_chat(monkeypatch, None)
+    assert "**מה זה סל הפתעה?**" in system
+
+
+def test_endpoint_keeps_rescue_paragraph_on_the_live_data_path(monkeypatch):
+    _pilot(monkeypatch, True, "חיפה")
+    system = _drive_chat(monkeypatch, "LIVE-BLOCK")
+    assert "**מה זה סל הפתעה?**" in system
+    assert system.endswith("LIVE-BLOCK")
+
+
+def test_endpoint_has_no_rescue_paragraph_when_pilot_off(monkeypatch):
+    _pilot(monkeypatch, False, "חיפה")
+    assert _drive_chat(monkeypatch, None) == chat.SYSTEM_PROMPT
