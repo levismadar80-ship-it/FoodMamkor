@@ -578,6 +578,24 @@ concurrent loops. Tiers + `mehamakor-dod` self-check: ADR-025.
     ~19:40. A merge landed at 17:43 against that unread state. So the window
     was not "red until someone noticed" — it was **unknown for five hours**,
     which is the same thing for this purpose and harder to see.
+42. **A probe or scratch test is never written inside a test glob (Sapir
+    12/11).** Not `frontend/__tests__/**`, not `frontend/e2e/**`, not
+    `tests/**`. One-off probes, DOM dumps and throwaway harnesses go in a
+    scratch directory outside every glob the runners scan; if one must run
+    under vitest, invoke it by explicit path from there and do not save it in
+    the tree.
+    **The deny is not the problem — the location is.** Two probes written under
+    `frontend/__tests__/` on 12/11 could not be removed (`rm` denied, twice,
+    including after explicit authorization), so `npx vitest run` reports a
+    permanent `1 failed` and the Stop hook blocks on "Vitest component tests
+    failed" for a failure that is not about the code. Both were untracked and
+    never reached CI, so the cost was local noise and a misleading hook — but
+    outside the glob the same deny would have cost nothing at all.
+    Rule 32b is unchanged and still governs what to do once a delete IS denied:
+    report the file, leave it exactly where it is, and never substitute `mv`,
+    `git clean` or a rewrite-to-stub. This rule is about not creating that
+    situation. Stage by explicit path, never `git add -A`, so an untracked
+    probe cannot ride along into a commit.
 
 ---
 
