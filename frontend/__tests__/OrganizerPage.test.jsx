@@ -4,7 +4,7 @@
  * business slug page (MEH-1754): only a 404 becomes notFound(); any other
  * failure throws (5xx, never a de-indexing soft 404).
  */
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 
 const fetchMock = vi.fn();
@@ -324,6 +324,10 @@ describe("MEH-2461 organizer page", () => {
   describe("MEH-3005 back link", () => {
     const setCanGoBack = (value) =>
       Object.defineProperty(window, "navigation", { value: { canGoBack: value }, configurable: true });
+    // jsdom has no Navigation API: drop the stub so no later test inherits it.
+    afterEach(() => {
+      delete window.navigation;
+    });
 
     it("arrival from inside the site → the back link sits above the name", async () => {
       setCanGoBack(true);
@@ -333,6 +337,15 @@ describe("MEH-2461 organizer page", () => {
       const h1 = screen.getByRole("heading", { level: 1 });
       expect(back.compareDocumentPosition(h1) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
       expect(screen.getByTestId("organizer-cover-band").compareDocumentPosition(back) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    });
+
+    it("with a cover photo → the back link still sits between the cover and the name", async () => {
+      setCanGoBack(true);
+      respond(200, { ...ORG, images: ["https://res.cloudinary.com/x/image/upload/org.jpg"] });
+      await renderPage();
+      const back = screen.getByTestId("history-back");
+      expect(screen.getByTestId("organizer-cover").compareDocumentPosition(back) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+      expect(back.compareDocumentPosition(screen.getByRole("heading", { level: 1 })) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     });
 
     it("direct arrival (WhatsApp, Google) → no back link", async () => {
