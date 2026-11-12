@@ -20,7 +20,9 @@ import {
 import { useTranslations, useLocale } from "next-intl";
 import { formatEventDate } from "@/lib/format-date";
 // MEH-1140: canonical shekel format ("35₪") — one owner in lib/utils.
-import { formatPrice, getWhatsAppHref, normalizePhone } from "@/lib/utils";
+import { formatPrice } from "@/lib/utils";
+import { contactHref } from "@/lib/contact-method";
+import { trackChannelClick } from "@/lib/contact-tracking";
 import { formatDuration } from "@/lib/experience-format";
 import api from "@/lib/api";
 import Breadcrumb from "@/components/Breadcrumb";
@@ -28,9 +30,8 @@ import HistoryBackLink from "@/components/HistoryBackLink";
 import DateTile from "@/components/DateTile";
 import ShareButton from "@/components/ShareButton";
 import SaveButton from "@/components/SaveButton";
+import EntityCover from "@/components/EntityCover";
 import { CATEGORY_ICON } from "@/components/EventEntryRow";
-import { cssUrl } from "@/lib/css-url";
-import { optimizeCloudinary, IMAGE_RATIOS } from "@/lib/cloudinary";
 import { downloadIcs } from "@/lib/event-ics";
 import { eventWhen, addressNavLinks } from "@/lib/event-when";
 import { AddressNavLinks } from "@/components/NavAppGlyphs";
@@ -147,12 +148,11 @@ export default function ExperienceDetailClient() {
       : `/producer/${hostBiz.producer_id}`
     : null;
   const hostName = hostBiz?.producer_name || ex.host?.name;
-  // normalizePhone accepts Israeli MOBILE numbers only — "" for a landline,
-  // which WhatsApp cannot reach.
-  const hostPhone = normalizePhone(hostBiz?.producer_phone);
   const waitText = t("waitlist_message", { title: ex.title });
-  // MEH-2768: no recipient-less fallback any more — callers check hostPhone.
-  const waLink = (text) => getWhatsAppHref(hostPhone, text);
+  // MEH-2991: the host's WhatsApp link comes from the one contact table
+  // (lib/contact-method.js) — null for no number or a landline, which
+  // WhatsApp cannot reach. MEH-2768: no recipient-less fallback.
+  const waitlistHref = hostBiz ? contactHref("whatsapp", { phone: hostBiz.producer_phone }, waitText) : null;
 
   // MEH-2549: the event page's structure (MEH-2548) in the experience's
   // gold — cover + date tile, host byline, one details card with share +
@@ -204,31 +204,16 @@ export default function ExperienceDetailClient() {
 
   return (
     <div className="pb-12" data-testid="experience-detail">
-      <div className="relative max-w-[1100px] mx-auto lg:px-4 lg:pt-6">
-        {/* MEH-2559: the save heart on the cover's corner — the corner the recipe
-            and business pages use. Not in the share/calendar row: a third
-            button there wraps «הוספה ליומן» onto two lines below 375px. */}
-        <div className="absolute top-3 end-3 lg:top-9 lg:end-7 z-10" data-testid="experience-cover-actions">
-          <SaveButton itemType="experience" itemId={ex.id} />
-        </div>
-        {ex.image_url ? (
-          <div
-            data-testid="experience-cover"
-            className="h-[210px] md:h-[300px] lg:h-[380px] bg-cover bg-center lg:rounded-xl bg-border"
-            style={{ backgroundImage: cssUrl(optimizeCloudinary(ex.image_url, { aspectRatio: IMAGE_RATIOS.banner, width: 1280 })) }}
-            role="img"
-            aria-label={ex.title}
-          />
-        ) : (
-          <div
-            data-testid="experience-cover-band"
-            aria-hidden="true"
-            className="h-[150px] lg:h-[200px] bg-accent lg:rounded-xl grid place-items-center"
-          >
-            <CatIcon size={54} weight="duotone" className="text-white/85" />
-          </div>
-        )}
-      </div>
+      {/* MEH-2992: one shared masthead (was a byte-identical copy per page).
+          MEH-2989: no date tile on the cover — the date row carries it. */}
+      <EntityCover
+        imageUrl={ex.image_url}
+        alt={ex.title}
+        tone="accent"
+        Icon={CatIcon}
+        actions={<SaveButton itemType="experience" itemId={ex.id} />}
+        testIdPrefix="experience"
+      />
 
       <div className="max-w-[1100px] mx-auto px-4 pt-5 lg:pt-8 lg:grid lg:grid-cols-[1fr_360px] lg:grid-rows-[auto_1fr] lg:gap-x-12 lg:items-start">
         <div className="lg:col-start-1">
@@ -407,7 +392,8 @@ export default function ExperienceDetailClient() {
                     phone={hostBiz?.producer_phone}
                     url={ex.registration_url}
                     isFull={isFull}
-                    waitlistHref={hostPhone ? waLink(waitText) : null}
+                    waitlistHref={waitlistHref}
+                    onWaitlistClick={() => trackChannelClick(hostBiz?.producer_id, "whatsapp")}
                     waitlistLabel={t("waitlist_cta")}
                   />
                 )}
