@@ -905,7 +905,7 @@ class TestReserveEmail:
         sent = []
         monkeypatch.setattr(
             "app.services.rescue_emails.send_email",
-            lambda to, subject, body, html=None, reply_to=None: sent.append(
+            lambda to, subject, body, html=None, reply_to=None, test_cause=False: sent.append(
                 {"to": to, "subject": subject, "body": body, "html": html}
             ),
         )
@@ -1041,7 +1041,7 @@ class TestBuyerCancelHardening:
         sent = []
         monkeypatch.setattr(
             "app.services.rescue_emails.send_email",
-            lambda to, subject, body, html=None, reply_to=None: sent.append(
+            lambda to, subject, body, html=None, reply_to=None, test_cause=False: sent.append(
                 {"to": to, "subject": subject, "body": body, "html": html}
             ),
         )

@@ -57,8 +57,19 @@ def submit_category_request(
         if verified_producer_id
         else None
     )
+    # MEH-2952: caused by the caller's business (or account) — a test row
+    # sends nothing. Anonymous submissions are neither, so False.
+    test_cause = bool(user is not None and getattr(user, "is_test", False)) or bool(
+        verified_producer_id
+        and db.query(Producer.is_test)
+        .filter(Producer.id == verified_producer_id)
+        .scalar()
+    )
     background_tasks.add_task(
-        notify_admin_new_category_request, row.requested_name, producer_name
+        notify_admin_new_category_request,
+        row.requested_name,
+        producer_name,
+        test_cause=test_cause,
     )
     return row
 

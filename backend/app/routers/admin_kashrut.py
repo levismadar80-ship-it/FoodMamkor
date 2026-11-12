@@ -133,6 +133,7 @@ def approve_kashrut_request(  # noqa: PLR0913 — all 6 args are FastAPI-injecte
             .astimezone(ISRAEL_TZ)
             .strftime("%d/%m/%Y"),
             path,
+            test_cause=bool(producer.is_test),  # MEH-2952
         )
     return {"detail": "badge אושר"}
 
@@ -165,7 +166,11 @@ def reject_kashrut_request(
     producer = db.query(Producer).filter(Producer.id == req.producer_id).first()
     if owner and owner.email and producer:
         background_tasks.add_task(
-            notify_kashrut_rejected, owner.email, producer.name, body.notes
+            notify_kashrut_rejected,
+            owner.email,
+            producer.name,
+            body.notes,
+            test_cause=bool(producer.is_test),  # MEH-2952
         )
     return {"detail": "בקשה נדחתה"}
 
@@ -289,6 +294,10 @@ def kashrut_expiry_reminders(
             Producer.status == "approved",
             Producer.phone.isnot(None),
             Producer.phone != "",
+            # MEH-2952: a seeded test business gets no reminder and is not a
+            # row in the report — a dropped send would otherwise read as
+            # "template may not be approved" and inflate failed_count.
+            Producer.is_test.is_(False),
         )
         .order_by(Producer.kashrut_expires_at.asc())
         .all()
@@ -322,6 +331,7 @@ def kashrut_expiry_reminders(
                     producer_name=producer.name,
                     expires_at=producer.kashrut_expires_at.strftime("%d/%m/%Y"),
                 ),
+                test_cause=bool(producer.is_test),  # MEH-2952
             )
         except Exception as exc:  # noqa: BLE001 — one bad send must not stop the batch
             capture_background_exception(exc, task="kashrut_expiry_reminders")
