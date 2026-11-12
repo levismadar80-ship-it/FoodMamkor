@@ -108,7 +108,13 @@ export default function ListingHubTabs({ active, onSelect = null, action = null 
           // 343px available — a 4px overflow that Hebrew (284px) never shows.
           // gap-3 brings EN to 335px and leaves he at 272px. From md the
           // original gutter returns.
-          className="flex items-end gap-3 md:gap-4 w-full border-b border-border md:w-auto md:border-0"
+          //
+          // flex-wrap (MEH-2963): at 375 with 200% text (WCAG 1.4.4) three
+          // Hebrew tabs need 383px of the 311px available — measured — and a
+          // row that cannot wrap widened the whole page by 40px, pushing
+          // every control on /group-buys off-screen. At 100% the row still
+          // fits on one line in both locales, so nothing moves there.
+          className="flex flex-wrap items-end gap-x-3 gap-y-1 md:gap-x-4 w-full border-b border-border md:w-auto md:border-0"
           onKeyDown={onKeyDown}
         >
           {tabs.map((tab) => {
