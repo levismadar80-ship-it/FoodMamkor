@@ -64,7 +64,9 @@ const CATEGORIES = [
   {
     key: "money_value",
     items: [
-      { key: "cost", open: true },
+      // MEH-3003 (Sapir, 12/11): every question starts closed — this one
+      // used to open on load. Same as /join (MEH-2799).
+      { key: "cost" },
       { key: "revenue_model" },
     ],
   },
@@ -187,7 +189,6 @@ export default async function FaqForBusinessesPage({ params }) {
                 {cat.items.map((item) => (
                   <li key={item.key}>
                     <details
-                      open={item.open || undefined}
                       className="group rounded-lg border border-border bg-surface transition-colors"
                     >
                       <summary className="cursor-pointer list-none flex items-start justify-between gap-4 px-5 py-4 font-headline-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 rounded-lg text-text text-lg font-semibold">
