@@ -34,15 +34,16 @@
 // from THIS set only (6 -> 4); EXPERIENCE_CATEGORIES below still carries both,
 // deliberately — those words describe experiences, which is the whole point.
 // Mirrors backend/app/routers/events.py VALID_CATEGORIES (4 values, same keys).
-// MEH-2989: the catch-all key — the event and experience pages show no chip for it.
-export const OTHER_CATEGORY = "אחר";
-
 export const EVENT_CATEGORIES = Object.freeze([
   { key: "שוק", labelKey: "market" },
   { key: "קטיף", labelKey: "harvest" },
   { key: "טעימות", labelKey: "tasting" },
   { key: "אחר", labelKey: "other" },
 ]);
+
+// MEH-2989: the catch-all key — the event and experience pages show no chip
+// for it. Read off the list, not re-typed (HebrewLiteralRatchet).
+export const OTHER_CATEGORY = EVENT_CATEGORIES.find((c) => c.labelKey === "other").key;
 
 // Narrower set for community experiences — different vocabulary than the
 // producer-farm events above.
