@@ -63,7 +63,7 @@ describe("RecipeCard", () => {
     expect(screen.queryByText(/מנות/)).toBeNull();
   });
 
-  it("no image → a sand tile with one seed in the recipe's colour, no <img> (MEH-2833 → MEH-3006)", async () => {
+  it("no image → the name plate (recipe title) on sand + one seed in the recipe's colour (MEH-2833)", async () => {
     const { seedColorFor } = await import("@/lib/brand-seeds");
     render(
       <RecipeCard slug="my-shop" recipe={{ ...BASE, image_url: null }} />
@@ -72,20 +72,21 @@ describe("RecipeCard", () => {
     const tile = screen.getByTestId("recipe-image-missing");
     expect(tile.getAttribute("aria-hidden")).toBe("true");
     expect(tile.className).toMatch(/\bbg-background-alt\b/);
+    expect(screen.getByTestId("recipe-name-plate").textContent).toBe(BASE.title);
     const seed = tile.querySelector("svg[data-seed-color]");
     expect(seed.getAttribute("data-seed-color")).toBe(seedColorFor(BASE.id).fill);
-    // the title is beside the tile, so it appears exactly once
-    expect(screen.getAllByText(BASE.title)).toHaveLength(1);
   });
 
-  // MEH-3006: a compact row (80px thumbnail), the same size for one recipe or
-  // many — no longer an image-first card that fills a phone screen.
-  it("is a compact row: an 80px thumbnail, not a full-width image", () => {
+  // MEH-3006 (option B): a medium card that sits in a sideways strip on
+  // phones — capped width, never the full-width square that filled a screen.
+  it("is a capped-width strip card on phones, not a full-width square", () => {
     render(<RecipeCard slug="my-shop" recipe={BASE} />);
-    const img = screen.getByRole("img");
-    expect(img.getAttribute("sizes")).toBe("80px");
-    expect(screen.getByTestId("recipe-row").className).toMatch(/\bflex\b/);
+    const card = screen.getByTestId("recipe-card");
+    expect(card.className).toMatch(/(^|\s)w-\[62%\](\s|$)/);
+    expect(card.className).toMatch(/(^|\s)max-w-\[240px\](\s|$)/);
+    expect(card.className).toMatch(/\bsnap-start\b/);
     expect(document.querySelector(".aspect-square")).toBeNull();
+    expect(screen.getByRole("img").getAttribute("sizes")).toBe("(max-width: 767px) min(62vw, 240px), 246px");
   });
 
   it("does not repeat the «מתכון» eyebrow under the section heading", () => {

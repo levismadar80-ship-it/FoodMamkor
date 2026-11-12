@@ -581,13 +581,13 @@ export default function ProducerSections({
           <h2 className="font-headline-md text-2xl font-bold text-text mb-4">
             {t("producer.detail.sections.recipes.cta")}
           </h2>
-          {/* MEH-3006: compact rows, the same list as the products above —
-              one column on phones, two from md up, hairline-separated. Same
-              size for one recipe or many (replaces MEH-2836's full-width
-              single card, which filled a whole phone screen). */}
+          {/* MEH-3006 (option B): phones — one sideways-scrolling strip of
+              medium cards, bleeding to the screen edge (-me-4 pe-4 cancels the
+              page gutter) so the next card peeks; same height for one recipe
+              or many. md+ — the same cards in a 3-column grid. */}
           <div
             data-testid="producer-recipes-grid"
-            className="grid grid-cols-1 md:grid-cols-2 md:gap-x-6 border-t border-border"
+            className="flex gap-3 overflow-x-auto scrollbar-hide snap-x snap-mandatory -me-4 pe-4 md:grid md:grid-cols-3 md:gap-4 md:overflow-visible md:me-0 md:pe-0"
           >
             {recipes.map((r) => (
               <RecipeCard key={r.id} slug={producer.slug} recipe={r} />

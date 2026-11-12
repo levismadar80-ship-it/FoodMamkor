@@ -4,18 +4,15 @@
  * RecipeCard — one recipe on the business page (MEH-591), linking to
  * /[slug]/recipes/[recipe_id].
  *
- * MEH-3006: a compact ROW, the same shape as the product rows above it
- * (ProducerSections products list, MEH-1168 P1): an 80px square thumbnail at
- * the inline-start, title + time/servings beside it, ~96px tall, hairline
- * separated. It replaces the image-first card (aspect-square on phones), which
- * made a single recipe fill a whole phone screen and grew a long 2-column wall
- * as recipes were added. A row is the same size for 1 recipe or 10, and the
- * section heading «המתכונים שלנו» already says what each row is, so the «מתכון»
- * eyebrow is no longer shown.
+ * MEH-3006 (option B, Sapir's pick): a medium card in a sideways-scrolling
+ * strip on phones — 4:3 photo, title, time/servings — with the next card
+ * peeking past the edge so the strip reads as scrollable. The strip's height
+ * is the same for 1 recipe or 10 (the old card was a full-width square that
+ * filled a phone screen). From md up the same cards sit in a 3-column grid.
+ * Card width/snap classes live on the card; the strip is ProducerSections'.
  *
- * No photo (or a photo that fails to load, MEH-1976): the sand tile with one
- * seed in the recipe's own colour (MEH-2833's no-photo language, scaled to the
- * thumbnail; the name plate is dropped because the title sits right beside it).
+ * No photo (or a photo that fails to load, MEH-1976): the MEH-2833 name plate
+ * — the title in Frank Ruhl 900 on sand + one seed in the recipe's colour.
  * Times: only a value > 0 is shown. Icons: Phosphor only (ADR-013).
  * RTL-safe: logical utilities only.
  */
@@ -33,10 +30,11 @@ export default function RecipeCard({ slug, recipe }) {
   const t = useTranslations("recipes.card");
   const totalMin =
     (recipe.prep_time_min || 0) + (recipe.cook_time_min || 0) || null;
-  // 80px box × DPR 2 = 160, the same request the product rows make.
+  // Widest box: 240px (phone card cap) / ~246px (3-col cell at the
+  // max-w-6xl cap) → × DPR 2 ≈ 500.
   const imgSrc = optimizeCloudinary(recipe.image_url, {
-    aspectRatio: IMAGE_RATIOS.square,
-    width: 160,
+    aspectRatio: IMAGE_RATIOS.card,
+    width: 500,
   });
   // MEH-1976: a url that resolves but fails to load falls through to the
   // no-photo tile. The state holds the src that failed, so a new `imgSrc`
@@ -47,56 +45,61 @@ export default function RecipeCard({ slug, recipe }) {
   return (
     <Link
       href={`/${slug}/recipes/${recipe.id}`}
-      data-testid="recipe-row"
-      className="group w-full flex items-center gap-3 py-2 min-h-[96px] border-b border-border transition-colors hover:bg-primary/[0.03] focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent/40"
+      data-testid="recipe-card"
+      className="group block shrink-0 w-[62%] max-w-[240px] snap-start md:w-auto md:max-w-none rounded-md focus-visible:ring-2 focus-visible:ring-primary/40"
     >
-      <div className="relative w-20 h-20 flex-shrink-0 rounded-md overflow-hidden bg-background">
+      <div className="relative w-full aspect-[4/3] rounded-md overflow-hidden bg-background">
         {imgSrc && !imgError ? (
           <Image
             src={imgSrc}
             alt={recipe.title}
             fill
-            sizes="80px"
-            className="object-cover"
+            sizes="(max-width: 767px) min(62vw, 240px), 246px"
+            className="object-cover transition-transform duration-300 ease-quart group-hover:scale-[1.02]"
             onError={() => setFailedSrc(imgSrc)}
           />
         ) : (
+          // MEH-2833 name plate; it repeats the <h3> below, so aria-hidden.
           <div
-            className="absolute inset-0 bg-background-alt"
+            className="absolute inset-0 flex flex-col justify-end bg-background-alt p-3 pt-10"
             data-testid="recipe-image-missing"
             aria-hidden="true"
           >
             <Seed
               color={seedColorFor(recipe.id).fill}
-              size={40}
+              size={56}
               rotate={-36}
               highlight
-              className="absolute -top-[14px] -end-[10px] pointer-events-none ltr:-scale-x-100"
+              className="absolute -top-[36px] -end-[24px] pointer-events-none ltr:-scale-x-100"
             />
+            <span
+              className="relative font-headline-lg font-black text-xl leading-[1.05] text-text line-clamp-3 [word-break:keep-all] [overflow-wrap:anywhere]"
+              data-testid="recipe-name-plate"
+            >
+              {recipe.title}
+            </span>
           </div>
         )}
       </div>
-      <div className="min-w-0 flex-1 flex flex-col gap-1">
-        <h3 className="font-headline-md font-bold text-lg text-text leading-snug line-clamp-2 group-hover:text-primary transition-colors">
-          {recipe.title}
-        </h3>
-        {(totalMin || recipe.servings) && (
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-sm text-fg-muted">
-            {totalMin && (
-              <span className="inline-flex items-center gap-1.5">
-                <Clock size={16} weight="regular" aria-hidden="true" />
-                {totalMin} {t("minutes_suffix")}
-              </span>
-            )}
-            {recipe.servings && (
-              <span className="inline-flex items-center gap-1.5">
-                <Users size={16} weight="regular" aria-hidden="true" />
-                {recipe.servings} {t("servings_suffix")}
-              </span>
-            )}
-          </div>
-        )}
-      </div>
+      <h3 className="mt-2 font-headline-md font-bold text-lg text-text leading-snug line-clamp-2 group-hover:text-primary transition-colors">
+        {recipe.title}
+      </h3>
+      {(totalMin || recipe.servings) && (
+        <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-sm text-fg-muted">
+          {totalMin && (
+            <span className="inline-flex items-center gap-1.5">
+              <Clock size={16} weight="regular" aria-hidden="true" />
+              {totalMin} {t("minutes_suffix")}
+            </span>
+          )}
+          {recipe.servings && (
+            <span className="inline-flex items-center gap-1.5">
+              <Users size={16} weight="regular" aria-hidden="true" />
+              {recipe.servings} {t("servings_suffix")}
+            </span>
+          )}
+        </div>
+      )}
     </Link>
   );
 }
