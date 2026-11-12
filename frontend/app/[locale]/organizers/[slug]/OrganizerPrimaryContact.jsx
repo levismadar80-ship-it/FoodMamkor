@@ -1,6 +1,8 @@
 "use client";
 
 import { getCtaVariant } from "@/components/ContactCtaVariants";
+import { isExternalMethod } from "@/lib/contact-method";
+import { withReferralParams } from "@/lib/utils";
 
 /**
  * MEH-2988: the organizer page's preferred contact channel, drawn exactly like
@@ -16,11 +18,18 @@ import { getCtaVariant } from "@/components/ContactCtaVariants";
 export default function OrganizerPrimaryContact({ channel, label }) {
   const variant = getCtaVariant(channel.key);
   const Icon = variant.Icon;
-  const external = channel.key !== "phone" && channel.key !== "email";
+  // Same tab / referral rules as the business button (PrimaryContactButton):
+  // WhatsApp, phone and email open in place; a website keeps the referrer and
+  // carries the referral UTM (MEH-1525) so the organizer's analytics credits us.
+  const external = isExternalMethod(channel.key);
+  const isWebsite = channel.key === "website";
+  const href = isWebsite ? withReferralParams(channel.href) : channel.href;
   return (
     <a
-      href={channel.href}
-      {...(external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
+      href={href}
+      {...(external
+        ? { target: "_blank", rel: isWebsite ? "noopener" : "noopener noreferrer" }
+        : {})}
       data-testid={`organizer-contact-${channel.key}`}
       data-primary="true"
       className={`inline-flex items-center justify-center gap-2 min-h-touch px-5 rounded-xl font-semibold transition focus-visible:ring-2 ${variant.className}`}
