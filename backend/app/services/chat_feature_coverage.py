@@ -32,23 +32,25 @@ COVERED: dict[str, str] = {
     "group_buys": "**מה זה קבוצת רכישה?**",
     # Only while the pilot is on (routers/chat.py _rescue_knowledge).
     "rescue_bags": "**מה זה סל הפתעה?**",
+    # MEH-3012: copy approved word for word by Sapir 12/11 («מאשרת הכל»).
+    "experiences": "**איפה מוצאים סדנאות וסיורים?**",
+    "recipes": "**איפה יש מתכונים?**",
+    "offer": "**יש הטבות?**",
+    "delivery_areas": "**יש משלוחים?**",
+    "delivery_checker": "«יש משלוח לעיר שלך?»",
+    "waitlist": "אפשר להצטרף לרשימת המתנה ולקבל מייל",
+    "save_share": "**איך שומרים בית עסק ומקבלים עדכונים?**",
+    "follower_updates": "שם אפשר גם לבחור לקבל עדכונים",
+    "reviews_contacted": "**מי יכול לכתוב ביקורת?**",
+    "verified_badge": "«מאומת» אומר שמישהי מהצוות בדקה",
+    "kashrut_verified": "«כשרות מאומתת» אומר",
+    "reservist_diet_tags": "«עסק של מילואימניקים»",
+    "hours": "**מתי בית עסק פתוח?**",
+    "vacation_mode": "כשבית עסק בחופשה",
 }
 
 PENDING_COPY: dict[str, str] = {
-    "experiences": "visitors ask how to sign up for a workshop or visit",
-    "recipes": "visitors ask where the recipes are",
-    "offer": "visitors ask about discounts / perks",
-    "delivery_areas": "visitors ask whether a business delivers",
-    "delivery_checker": "visitors ask how to check delivery to their town",
-    "waitlist": "visitors ask what happens when there is no delivery yet",
-    "save_share": "visitors ask how to save a business",
-    "follower_updates": "visitors ask how to get updates from a business",
-    "reviews_contacted": "visitors ask who may write a review",
-    "verified_badge": "visitors ask what «מאומת» means",
-    "kashrut_verified": "visitors ask about kashrut",
-    "reservist_diet_tags": "visitors ask about the reservist / diet tags",
-    "hours": "visitors ask about opening and ordering hours",
-    "vacation_mode": "visitors ask why a business shows as on vacation",
+    # Empty since 12/11: every visitor-facing tool has approved chat copy.
 }
 
 _DASHBOARD = "business dashboard detail; the chat sends businesses to the dashboard"

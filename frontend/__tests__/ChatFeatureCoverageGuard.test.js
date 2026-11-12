@@ -39,7 +39,7 @@ describe("chat feature coverage (MEH-3012)", () => {
     const keys = coverageKeys(source);
     // Anchored to entries that exist in each map, so an empty parse is red.
     expect(keys).toContain("group_buys"); // COVERED
-    expect(keys).toContain("experiences"); // PENDING_COPY
+    expect(keys).toContain("experiences"); // COVERED since the 12/11 copy
     expect(keys).toContain("completeness"); // NOT_FOR_CHAT
     const synthetic = [
       'COVERED: dict[str, str] = {\n    "a": "x",\n}',
