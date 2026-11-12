@@ -22,12 +22,11 @@ import { formatEventDate } from "@/lib/format-date";
 import { formatTimeRange } from "@/lib/time-range";
 // MEH-1140: canonical shekel format ("35₪") — one owner in lib/utils.
 import { formatPrice } from "@/lib/utils";
-import { cssUrl } from "@/lib/css-url";
-import { optimizeCloudinary, IMAGE_RATIOS } from "@/lib/cloudinary";
 import Breadcrumb from "@/components/Breadcrumb";
 import HistoryBackLink from "@/components/HistoryBackLink";
 import ShareButton from "@/components/ShareButton";
 import SaveButton from "@/components/SaveButton";
+import EntityCover from "@/components/EntityCover";
 import OwnerRow from "@/components/OwnerRow";
 import EventEntryRow, { CATEGORY_ICON, PRICE_BASE } from "@/components/EventEntryRow";
 import { toEventEntry } from "@/lib/event-entry";
@@ -184,40 +183,16 @@ export default function EventDetailClient() {
           category icon (never an empty frame). The date tile overlaps its
           edge on mobile (Luma's calendar-page tile); on desktop it heads the
           side card instead. */}
-      <div className="relative max-w-[1100px] mx-auto lg:px-4 lg:pt-6">
-        {/* MEH-2559: the save heart on the cover's corner — the corner the recipe
-            and business pages use. Not in the share/calendar row: a third
-            button there wraps «הוספה ליומן» onto two lines below 375px. */}
-        <div className="absolute top-3 end-3 lg:top-9 lg:end-7 z-10" data-testid="event-cover-actions">
-          <SaveButton itemType="event" itemId={event.id} />
-        </div>
-        {event.image_url ? (
-          <div
-            data-testid="event-cover"
-            className="h-[210px] md:h-[300px] lg:h-[380px] bg-cover bg-center lg:rounded-xl bg-border"
-            style={{ backgroundImage: cssUrl(optimizeCloudinary(event.image_url, { aspectRatio: IMAGE_RATIOS.banner, width: 1280 })) }}
-            role="img"
-            aria-label={event.title}
-          />
-        ) : (
-          <div
-            data-testid="event-cover-band"
-            aria-hidden="true"
-            className="h-[150px] lg:h-[200px] bg-primary lg:rounded-xl grid place-items-center"
-          >
-            <CatIcon size={54} weight="duotone" className="text-white/85" />
-          </div>
-        )}
-        <div
-          aria-hidden="true"
-          data-testid="event-date-tile"
-          className="lg:hidden absolute start-4 -bottom-7 w-16 rounded-md bg-surface shadow-lg text-center overflow-hidden"
-        >
-          <span className="block bg-primary text-white text-2xs font-bold py-0.5">{month}</span>
-          <span className="block font-headline-display font-black text-3xl leading-tight pt-1 numeric">{day}</span>
-          <span className="block text-2xs text-fg-muted pb-1.5">{weekday}</span>
-        </div>
-      </div>
+      {/* MEH-2992: one shared masthead (was a byte-identical copy per page). */}
+      <EntityCover
+        imageUrl={event.image_url}
+        alt={event.title}
+        tone="primary"
+        Icon={CatIcon}
+        actions={<SaveButton itemType="event" itemId={event.id} />}
+        dateTile={{ month, day, weekday }}
+        testIdPrefix="event"
+      />
 
       <div className="max-w-[1100px] mx-auto px-4 pt-11 lg:pt-8 lg:grid lg:grid-cols-[1fr_360px] lg:grid-rows-[auto_1fr] lg:gap-x-12 lg:items-start">
         <div className="lg:col-start-1">
