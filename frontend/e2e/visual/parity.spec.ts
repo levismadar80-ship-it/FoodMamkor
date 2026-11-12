@@ -501,6 +501,11 @@ async function settle(page: Page): Promise<void> {
   // (events, group buys, rescue) EMPTY, so `header a[href$="/events"]` exists
   // only when the experiences count resolved to visible. Scoped to `header`
   // because a hub route's own tab row also links /events, ungated.
+  //
+  // MEH-2975: the header link now lands on the first hub route with supply,
+  // and with this stub that is /experiences — so today the FIRST half of the
+  // selector matches in the header too. The /events half stays for a stub
+  // that pins events to non-empty.
   await expect(
     page.locator('a[href$="/experiences"], header a[href$="/events"]').first(),
     "[experiences-gate] the gated nav link never entered the DOM — the " +

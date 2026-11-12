@@ -24,6 +24,7 @@ import AccountSheet from "@/components/AccountSheet";
 import { itemsForSurface } from "@/lib/nav-registry";
 import { useEventsNavGate } from "@/lib/use-events-nav-gate";
 import { useExperiencesNavGate } from "@/lib/use-experiences-nav-gate";
+import { hubLandingHref } from "@/lib/hub-landing";
 import { useHubNavGate } from "@/lib/use-hub-nav-gate";
 
 // MEH-2359 / MEH-2431: subtrees with their own nav, where the pill never
@@ -209,7 +210,9 @@ export default function BottomNav() {
   const isActive = (href) => {
     const path = pathname || "/";
     if (href === "/") return path === "/";
-    if (href === "/events") return HUB_ROUTES.some((route) => onRoute(path, route));
+    // MEH-2975: the hub tab's href is whichever hub route has supply, so the
+    // test is "is this a hub href", not "is this /events".
+    if (HUB_ROUTES.includes(href)) return HUB_ROUTES.some((route) => onRoute(path, route));
     return path.startsWith(href);
   };
 
@@ -233,7 +236,17 @@ export default function BottomNav() {
     })
     .map((entry) => ({
       id: entry.item.id,
-      href: entry.item.href,
+      // MEH-2975: the hub tab lands on the first hub route whose supply gate
+      // is open, not on an empty «אירועים» when the supply is elsewhere.
+      href:
+        entry.item.dataGate === "listing-supply"
+          ? hubLandingHref({
+              events: showEvents,
+              experiences: showExperiences,
+              groupBuys: showGroupBuys,
+              rescue: showRescue,
+            })
+          : entry.item.href,
       Icon: BOTTOM_NAV_ICONS[entry.item.id],
       label: t(entry.surface.labelKey),
     }));
