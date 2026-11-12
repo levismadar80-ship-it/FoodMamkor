@@ -101,8 +101,8 @@ def _capture_emails(monkeypatch) -> list:
     sent = []
     monkeypatch.setattr(
         "app.services.rescue_emails.send_email",
-        lambda to, subject, body, html=None, reply_to=None: sent.append(
-            {"to": to, "subject": subject}
+        lambda to, subject, body, html=None, reply_to=None, test_cause=False: (
+            sent.append({"to": to, "subject": subject})
         ),
     )
     return sent

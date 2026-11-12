@@ -521,7 +521,13 @@ def send_pending_nudges(db: Session) -> dict[str, int]:
             subject, body = _build_email(
                 first_name, items, mark, organizer=p.kind == "organizer"
             )
-            send_email(user.email, subject, body)
+            # MEH-2952: a test business / test owner → dropped and logged.
+            send_email(
+                user.email,
+                subject,
+                body,
+                test_cause=bool(p.is_test or user.is_test),
+            )
             p.email_pending_nudge_sent_at = datetime.now(timezone.utc)
             db.commit()
             counts["sent"] += 1

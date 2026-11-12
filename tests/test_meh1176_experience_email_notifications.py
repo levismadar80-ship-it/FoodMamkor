@@ -85,7 +85,7 @@ class TestHostModerationNotifications:
         import app.routers.admin_experiences as router_mod
 
         monkeypatch.setattr(
-            router_mod, "notify_host_approved", lambda *a: calls.append(a)
+            router_mod, "notify_host_approved", lambda *a, test_cause=False: calls.append(a)
         )
         r = client.post(
             f"/admin/experiences/{ex.id}/approve", headers=auth_header(admin)
@@ -99,7 +99,7 @@ class TestHostModerationNotifications:
         import app.routers.admin_experiences as router_mod
 
         monkeypatch.setattr(
-            router_mod, "notify_host_changes_requested", lambda *a: calls.append(a)
+            router_mod, "notify_host_changes_requested", lambda *a, test_cause=False: calls.append(a)
         )
         r = client.post(
             f"/admin/experiences/{ex.id}/request-changes",
@@ -115,7 +115,7 @@ class TestHostModerationNotifications:
         import app.routers.admin_experiences as router_mod
 
         monkeypatch.setattr(
-            router_mod, "notify_host_rejected", lambda *a: calls.append(a)
+            router_mod, "notify_host_rejected", lambda *a, test_cause=False: calls.append(a)
         )
         r = client.post(
             f"/admin/experiences/{ex.id}/reject",

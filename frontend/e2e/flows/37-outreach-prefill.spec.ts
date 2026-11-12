@@ -53,7 +53,7 @@
 import fs from "node:fs";
 import path from "node:path";
 
-import type { APIRequestContext, Browser, BrowserContext, Page } from "@playwright/test";
+import type { APIRequestContext, Browser, BrowserContext, Page, Route } from "@playwright/test";
 
 import { authedContext } from "../auth-fixture";
 import { expect, test } from "./_cloudinary-stub";
@@ -253,6 +253,21 @@ async function stubExperiencesCount(page: Page): Promise<void> {
   await page.route("**/experiences/count", (route) =>
     route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ count: 0 }) }),
   );
+  // MEH-2963: the same story for the other three supply gates. Since MEH-2859
+  // the Header reads all four on every page load (use-events-nav-gate +
+  // use-hub-nav-gate), so the suite's one IP now saturates
+  // `GET /events/upcoming` (120/minute, events.py) the way it used to
+  // saturate the count. Measured on run 43208691023 (desktop): this file's
+  // admin-list test red twice on
+  // `429 … /api/events/upcoming?limit=1` and nothing else. No assertion here
+  // reads any of the three. Pathname predicates, so `/group-buys/<id>` and
+  // `/events/<id>` still reach the backend. The durable fix is MEH-2947
+  // (supply counts read on the server); this only takes this spec out of it.
+  const empty = (route: Route) =>
+    route.fulfill({ status: 200, contentType: "application/json", body: "[]" });
+  await page.route((u) => /\/api\/events\/upcoming\/?$/.test(u.pathname), empty);
+  await page.route((u) => /\/api\/group-buys\/?$/.test(u.pathname), empty);
+  await page.route((u) => /\/api\/rescue\/offers\/?$/.test(u.pathname), empty);
 }
 
 async function openPrefillAsGuest(

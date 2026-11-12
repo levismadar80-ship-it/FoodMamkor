@@ -184,7 +184,7 @@ def test_sent_on_successful_submit(client, db, monkeypatch):
     calls: list[tuple] = []
     monkeypatch.setattr(
         "app.routers.producer_me.send_submission_confirmation",
-        lambda to, name, when: calls.append((to, name, when)),
+        lambda to, name, when, test_cause=False: calls.append((to, name, when)),
     )
     producer, user = make_submit_ready_producer(db)
     resp = client.post("/producers/me/submit-for-review", headers=auth_header(user))

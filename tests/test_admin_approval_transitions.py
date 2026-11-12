@@ -284,7 +284,7 @@ def test_approval_email_subject_is_the_welcome_headline(client, db, monkeypatch)
         # a ticket that never mentions it. Deliberately not captured: this test
         # asserts the SUBJECT (MEH-2113), and the HTML part's own contract lives
         # in tests/test_meh2151_approval_email_cta.py.
-        lambda to, subject, body, html=None: sent.append((to, subject, body)),
+        lambda to, subject, body, html=None, test_cause=False: sent.append((to, subject, body)),
     )
     monkeypatch.setattr(admin_module, "notify_producer_approved", lambda *a, **k: None)
 

@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, it, expect } from "vitest";
-import { SITE_DESCRIPTION } from "@/lib/constants";
+import { SITE_DESCRIPTION, CANONICAL_SENTENCE } from "@/lib/constants";
 import he from "../messages/he.json";
 
 /**
@@ -30,11 +30,21 @@ describe("ADR-011 tagline", () => {
 
   it.each([
     ["nav.footer.brand_tagline", he.nav.footer.brand_tagline],
-    ["seo.home.description", he.seo.home.description],
-    ["seo.site.description", he.seo.site.description],
     ["seo.site.og_description", he.seo.site.og_description],
     ["seo.site.twitter_description", he.seo.site.twitter_description],
   ])("he.json %s is the locked line", (_key, value) => {
     expect(value).toBe(locked);
+  });
+
+  // MEH-2968 / ADR-041: the meta description tells search engines and AI
+  // assistants what the site IS, so it carries the canonical sentence. The
+  // tagline's clause 1 speaks to business owners and was read by ChatGPT as
+  // the site's self-description (12/11/2026).
+  it.each([
+    ["seo.home.description", he.seo.home.description],
+    ["seo.site.description", he.seo.site.description],
+  ])("he.json %s is the canonical sentence, not the tagline (ADR-041)", (_key, value) => {
+    expect(value).toBe(CANONICAL_SENTENCE);
+    expect(value).not.toBe(locked);
   });
 });

@@ -91,7 +91,7 @@ def _quiet_side_effects(monkeypatch):
     calls = []
     monkeypatch.setattr(
         "app.routers.producer_claim.notify_producer_registered",
-        lambda name, phone: calls.append(("whatsapp", name, phone)),
+        lambda name, phone, test_cause=False: calls.append(("whatsapp", name, phone)),
     )
     monkeypatch.setattr(
         "app.routers.producer_claim.score_producer",
@@ -99,7 +99,9 @@ def _quiet_side_effects(monkeypatch):
     )
     monkeypatch.setattr(
         "app.routers.producer_claim.send_welcome_email",
-        lambda email, name, role: calls.append(("email", email, role)),
+        lambda email, name, role, test_cause=False: calls.append(
+            ("email", email, role)
+        ),
     )
     return calls
 

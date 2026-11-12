@@ -179,7 +179,9 @@ class TestCreateFiresNotification:
             "/producers/me/recipes", json=_payload(), headers=auth_header(owner)
         )
         assert resp.status_code == 201
-        notify.assert_called_once_with(producer.name, _payload()["title"])
+        notify.assert_called_once_with(
+            producer.name, _payload()["title"], test_cause=False
+        )
 
     def test_rejected_recipe_does_not_notify(self, client, db, monkeypatch):
         _mock_moderation(monkeypatch, status="REJECTED")
@@ -258,7 +260,9 @@ class TestResubmitFiresNotification:
         )
         assert resp.status_code == 200
         assert resp.json()["moderation_status"] == "pending"
-        notify.assert_called_once_with(producer.name, _payload()["title"])
+        notify.assert_called_once_with(
+            producer.name, _payload()["title"], test_cause=False
+        )
 
     def test_metadata_only_edit_does_not_notify(self, client, db, monkeypatch):
         _, owner = _producer_user(db)

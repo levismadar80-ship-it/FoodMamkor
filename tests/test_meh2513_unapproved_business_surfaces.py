@@ -88,7 +88,7 @@ def test_fire_alerts_silent_for_unapproved(db, monkeypatch, status):
         "app.services.push.send_push_notification",
         lambda sub, **kw: calls.append(kw["url"]),
     )
-    monkeypatch.setattr("app.routers.alerts.send_template", lambda to, tmpl: True)
+    monkeypatch.setattr("app.routers.alerts.send_template", lambda to, tmpl, **kw: True)
     business = make_producer(db, name="עסק מאושר")
     hidden = make_producer(db, name="עסק מוסתר", status=status)
     user = make_user(db)
