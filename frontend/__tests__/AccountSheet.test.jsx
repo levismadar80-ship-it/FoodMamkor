@@ -86,6 +86,16 @@ describe("AccountSheet", () => {
     ).toHaveAttribute("href", "/settings");
   });
 
+  it("MEH-2982: a guest sees login, the business CTA and language — no favorites, no settings", () => {
+    render(<AccountSheet {...baseProps()} user={null} />);
+    const hrefs = screen
+      .getAllByRole("link")
+      .map((a) => a.getAttribute("href"));
+    expect(hrefs).toEqual(["/login", "/register/producer"]);
+    expect(screen.queryByText("nav.favorites")).not.toBeInTheDocument();
+    expect(screen.queryByText("account.menu.settings")).not.toBeInTheDocument();
+  });
+
   it("MEH-1228: producer sees the dashboard row first (→ /producer/dashboard)", () => {
     render(
       <AccountSheet {...baseProps()} user={{ name: "מיה", role: "producer" }} />,

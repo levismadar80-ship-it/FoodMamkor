@@ -1,6 +1,6 @@
 // MEH-810: open-redirect guard for the post-login ?redirect= param.
 import { describe, it, expect } from "vitest";
-import { safeInternalRedirect } from "@/lib/safe-redirect";
+import { safeInternalRedirect, loginHrefBackHere } from "@/lib/safe-redirect";
 
 describe("safeInternalRedirect (MEH-810)", () => {
   it("passes through internal same-origin paths", () => {
@@ -30,5 +30,30 @@ describe("safeInternalRedirect (MEH-810)", () => {
     expect(safeInternalRedirect(undefined)).toBe("/");
     expect(safeInternalRedirect("https://evil.com", "/login")).toBe("/login");
     expect(safeInternalRedirect("/ok", "/login")).toBe("/ok");
+  });
+});
+
+describe("loginHrefBackHere (MEH-2982)", () => {
+  it("carries the current path AND query, encoded", () => {
+    window.history.pushState({}, "", "/en/events/5?from=map");
+    expect(loginHrefBackHere()).toBe("/en/login?redirect=%2Fen%2Fevents%2F5%3Ffrom%3Dmap");
+    window.history.pushState({}, "", "/");
+  });
+
+  it("a Hebrew page (no prefix) gets the Hebrew login, and /english is not /en", () => {
+    window.history.pushState({}, "", "/favorites");
+    expect(loginHrefBackHere()).toBe("/login?redirect=%2Ffavorites");
+    window.history.pushState({}, "", "/english-breakfast");
+    expect(loginHrefBackHere()).toBe("/login?redirect=%2Fenglish-breakfast");
+    window.history.pushState({}, "", "/en");
+    expect(loginHrefBackHere()).toBe("/en/login?redirect=%2Fen");
+    window.history.pushState({}, "", "/");
+  });
+
+  it("round-trips through the clamp the login page applies", () => {
+    window.history.pushState({}, "", "/he/favorites");
+    const raw = new URL(loginHrefBackHere(), "https://x.test").searchParams.get("redirect");
+    expect(safeInternalRedirect(raw)).toBe("/he/favorites");
+    window.history.pushState({}, "", "/");
   });
 });
