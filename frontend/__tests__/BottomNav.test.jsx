@@ -31,6 +31,7 @@ vi.mock("next-intl", () => ({
       "nav.discover": "גלו",
       "nav.map": "מפה",
       "nav.about": "אודות",
+      "nav.events": "אירועים",
       "nav.account": "חשבון",
       "nav.mobile_label": "ניווט מובייל",
       "account.menu.aria": "תפריט חשבון",
@@ -51,8 +52,19 @@ vi.mock("@phosphor-icons/react", () => ({
   Compass: (props) => <span data-testid="icon-compass" {...props} />,
   MapTrifold: (props) => <span data-testid="icon-map" {...props} />,
   Flower: (props) => <span data-testid="icon-flower" {...props} />,
+  CalendarBlank: (props) => <span data-testid="icon-calendar" {...props} />,
   User: (props) => <span data-testid="icon-user" {...props} />,
 }));
+
+// MEH-2965: the third slot is «אירועים» → /events while ANY of the four
+// date-bound types has supply, and «אודות» otherwise. One ref per hook so a
+// case can say WHICH type cleared the gate.
+const gates = { events: false, experiences: false, groupBuys: false, rescue: false };
+vi.mock("@/lib/use-events-nav-gate", () => ({ useEventsNavGate: () => gates.events }));
+vi.mock("@/lib/use-experiences-nav-gate", () => ({
+  useExperiencesNavGate: () => gates.experiences,
+}));
+vi.mock("@/lib/use-hub-nav-gate", () => ({ useHubNavGate: (hub) => gates[hub] ?? false }));
 
 // The account tab toggles AccountSheet — stub it so this suite stays scoped to
 // BottomNav's own structure (the sheet has its own focus/close tests).
@@ -64,6 +76,7 @@ describe("BottomNav", () => {
   beforeEach(() => {
     pathnameRef.current = "/";
     userRef.current = null;
+    for (const key of Object.keys(gates)) gates[key] = false;
   });
 
   // MEH-789: 3 destination links (discover/map/about) + an account *button*
@@ -80,11 +93,75 @@ describe("BottomNav", () => {
     expect(hrefs).toEqual(["/", "/map", "/about"]);
   });
 
-  it("does NOT render an events or favorites link", () => {
+  // MEH-2965 (Sapir 12/11) reverses the events half of this case: with no
+  // supply the pill still carries no /events link, and it never carries
+  // /favorites.
+  it("with nothing to show: no events link, and never a favorites link", () => {
     render(<BottomNav />);
     const hrefs = screen.getAllByRole("link").map((a) => a.getAttribute("href"));
     expect(hrefs).not.toContain("/events");
     expect(hrefs).not.toContain("/favorites");
+  });
+
+  // MEH-2965: each of the four hooks clears the gate on its own. A single
+  // "all on" case would pass with three of them wired to nothing.
+  it.each(["events", "experiences", "groupBuys", "rescue"])(
+    "%s alone puts «אירועים» → /events in the third slot, in place of «אודות»",
+    (hub) => {
+      gates[hub] = true;
+      render(<BottomNav />);
+      const links = screen.getAllByRole("link");
+      expect(links.map((a) => a.textContent)).toEqual(["גלו", "מפה", "אירועים"]);
+      expect(links.map((a) => a.getAttribute("href"))).toEqual(["/", "/map", "/events"]);
+      expect(screen.getByTestId("icon-calendar")).toBeInTheDocument();
+      expect(screen.queryByTestId("icon-flower")).toBeNull();
+    },
+  );
+
+  // The gates start closed and open in an effect, so on a real page the slot
+  // swaps AFTER mount. Same pathname, same slot index, different tenant.
+  it("swaps the slot when a gate opens after mount, and moves the current tab with it", () => {
+    pathnameRef.current = "/about";
+    const { rerender } = render(<BottomNav />);
+    const current = () =>
+      screen.getAllByRole("link").filter((a) => a.getAttribute("aria-current") === "page")
+        .map((a) => a.getAttribute("href"));
+    expect(current()).toEqual(["/about"]);
+
+    gates.groupBuys = true;
+    rerender(<BottomNav />);
+    expect(screen.getAllByRole("link").map((a) => a.textContent)).toEqual(["גלו", "מפה", "אירועים"]);
+    // «אודות» left the pill, so on /about nothing is current any more.
+    expect(current()).toEqual([]);
+
+    gates.groupBuys = false;
+    rerender(<BottomNav />);
+    expect(screen.getAllByRole("link").map((a) => a.textContent)).toEqual(["גלו", "מפה", "אודות"]);
+    expect(current()).toEqual(["/about"]);
+  });
+
+  // The hub is four routes under one tab row, so the tab is current on all of
+  // them — not only on the one its href names.
+  it.each(["/events", "/events/12", "/experiences", "/group-buys", "/group-buys/7", "/rescue"])(
+    "«אירועים» is the current tab on %s",
+    (path) => {
+      gates.events = true;
+      pathnameRef.current = path;
+      render(<BottomNav />);
+      const current = screen.getAllByRole("link").filter((a) => a.getAttribute("aria-current") === "page");
+      expect(current.map((a) => a.getAttribute("href"))).toEqual(["/events"]);
+    },
+  );
+
+  // Control for the case above: off the hub the tab is not current. (A path
+  // that merely shares a prefix, like /eventsx, is a business slug and renders
+  // no pill at all, so it cannot be the control here.)
+  it.each(["/favorites", "/about"])("no tab is current on %s", (path) => {
+    gates.events = true;
+    pathnameRef.current = path;
+    render(<BottomNav />);
+    const current = screen.getAllByRole("link").filter((a) => a.getAttribute("aria-current") === "page");
+    expect(current).toEqual([]);
   });
 
   // MEH-1202: on the public producer detail page the StickyContactBar is the

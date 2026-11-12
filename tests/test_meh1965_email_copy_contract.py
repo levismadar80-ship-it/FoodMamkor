@@ -250,7 +250,7 @@ def rendered(monkeypatch):
     for label, module, call in _CORPUS:
         captured = {}
 
-        def _capture(to, subject, body, html=None, _c=captured):
+        def _capture(to, subject, body, html=None, test_cause=False, _c=captured):
             _c["subject"], _c["text"], _c["html"] = subject, body, html
 
         monkeypatch.setattr(module, "send_email", _capture)

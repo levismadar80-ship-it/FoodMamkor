@@ -56,7 +56,7 @@ class _Recorder:
     def __init__(self):
         self.calls: list[tuple[str, str]] = []
 
-    def __call__(self, phone: str, code: str) -> bool:
+    def __call__(self, phone: str, code: str, test_cause: bool = False) -> bool:
         self.calls.append((phone, code))
         return True
 

@@ -727,6 +727,10 @@ def join_delivery_waitlist(
     )
     if producer is None:
         raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
+    # MEH-2952: a test business or a signed-in test account → no mail.
+    test_cause = bool(
+        producer.is_test or (current_user is not None and current_user.is_test)
+    )
     existing = delivery_waitlist.find_entry(
         db, producer.id, city=data.city, email=data.email
     )
@@ -752,7 +756,9 @@ def join_delivery_waitlist(
                     db.commit()
                     host_confirm = "sent"
                     background_tasks.add_task(
-                        delivery_waitlist.send_host_confirmation, *mail_args
+                        delivery_waitlist.send_host_confirmation,
+                        *mail_args,
+                        test_cause=test_cause,
                     )
                 else:
                     db.rollback()  # releases the advisory lock, nothing to write
@@ -788,7 +794,11 @@ def join_delivery_waitlist(
         # wants_to_host=False until the address itself clicks the link —
         # otherwise anyone could hand a stranger's email to a business.
         host_confirm = "sent"
-        background_tasks.add_task(delivery_waitlist.send_host_confirmation, *mail_args)
+        background_tasks.add_task(
+            delivery_waitlist.send_host_confirmation,
+            *mail_args,
+            test_cause=test_cause,
+        )
     return DeliveryWaitlistOut(status="added", host_confirm=host_confirm)
 
 
@@ -823,7 +833,9 @@ def confirm_delivery_waitlist_host(
             db.commit()
             resent = True
             background_tasks.add_task(
-                delivery_waitlist.send_host_confirmation, *mail_args
+                delivery_waitlist.send_host_confirmation,
+                *mail_args,
+                test_cause=bool(entry.producer and entry.producer.is_test),
             )
         else:
             db.rollback()  # releases the advisory lock, nothing to write

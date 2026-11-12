@@ -337,6 +337,13 @@ PRIMARY_MUST_BE_BRANCH_DETAIL = {
 }
 
 
+def _test_cause(producer, actor=None) -> bool:
+    """MEH-2952: the business, or the account acting on it, is a test row."""
+    return bool(
+        producer.is_test or (actor is not None and getattr(actor, "is_test", False))
+    )
+
+
 def _snapshot_sensitive(producer) -> dict:
     """Read the sensitive fields BEFORE the setattr loop mutates them.
 
@@ -347,7 +354,9 @@ def _snapshot_sensitive(producer) -> dict:
     return {field: getattr(producer, field, None) for field in SENSITIVE_FIELDS}
 
 
-def _maybe_fire_sensitive_edit(background_tasks, producer, before: dict) -> None:
+def _maybe_fire_sensitive_edit(
+    background_tasks, producer, before: dict, actor=None
+) -> None:
     """MEH-2073: one ping per PUT, listing every sensitive field that actually
     changed, and only for a producer that is ALREADY approved.
 
@@ -368,10 +377,13 @@ def _maybe_fire_sensitive_edit(background_tasks, producer, before: dict) -> None
             for field in SENSITIVE_FIELDS
             if before.get(field) != getattr(producer, field, None)
         ),
+        actor=actor,
     )
 
 
-def _fire_sensitive_edit(background_tasks, producer, changed: list[str]) -> None:
+def _fire_sensitive_edit(
+    background_tasks, producer, changed: list[str], actor=None
+) -> None:
     """MEH-2073 chunk 2: the gate + dispatch shared by BOTH call sites — the
     owner PUT (chunk 1, above) and the locations CRUD (chunk 2, below).
 
@@ -384,10 +396,19 @@ def _fire_sensitive_edit(background_tasks, producer, changed: list[str]) -> None
     """
     if producer.status != "approved" or not changed:
         return
-    background_tasks.add_task(_sensitive_edit_task, producer.name, changed)
+    background_tasks.add_task(
+        _sensitive_edit_task,
+        producer.name,
+        changed,
+        # MEH-2952: the business, or the owner account that made the edit
+        # (`actor`, when the caller has it), is a test row.
+        test_cause=_test_cause(producer, actor),
+    )
 
 
-def _sensitive_edit_task(producer_name: str, changed: list[str]) -> None:
+def _sensitive_edit_task(
+    producer_name: str, changed: list[str], test_cause: bool = False
+) -> None:
     """The fail-open boundary for the MEH-2073 ping.
 
     `notify_admin_producer_sensitive_edit` guards WhatsApp and email in
@@ -407,7 +428,9 @@ def _sensitive_edit_task(producer_name: str, changed: list[str]) -> None:
     notification-only scope. Reported rather than widened.
     """
     try:
-        notify_admin_producer_sensitive_edit(producer_name, changed)
+        notify_admin_producer_sensitive_edit(
+            producer_name, changed, test_cause=test_cause
+        )
     except Exception:  # noqa: BLE001 — fire-and-forget; the 200 is already out
         log.exception(
             "[NOTIFY] sensitive-edit ping failed for '%s' (fields=%s)",
@@ -416,14 +439,19 @@ def _sensitive_edit_task(producer_name: str, changed: list[str]) -> None:
         )
 
 
-def _maybe_fire_review_ready(background_tasks, db, producer, was_approvable) -> None:
+def _maybe_fire_review_ready(
+    background_tasks, db, producer, was_approvable, actor=None
+) -> None:
     """MEH-1351: review-ready ping on the false→true approvability transition
     of a pending producer (first image / license completed). Fire-and-forget
     BackgroundTask mirroring the resubmit ping's contract; the transition
     check (not a sent-flag) is the idempotency guard — no schema change."""
     if not was_approvable and _pending_and_approvable(db, producer):
         background_tasks.add_task(
-            notify_admin_producer_review_ready, producer.name, producer.city
+            notify_admin_producer_review_ready,
+            producer.name,
+            producer.city,
+            test_cause=_test_cause(producer, actor),  # MEH-2952
         )
 
 
@@ -965,15 +993,15 @@ def update_my_producer(
             delivery_waitlist.notify_cities, db, producer.id, new_cities
         )
 
-    _maybe_fire_review_ready(background_tasks, db, producer, was_approvable)
+    _maybe_fire_review_ready(background_tasks, db, producer, was_approvable, actor=user)
     # MEH-2073: notification only — runs after the commit above, adds a
     # BackgroundTask, and touches neither the response nor any column.
-    _maybe_fire_sensitive_edit(background_tasks, producer, sensitive_before)
+    _maybe_fire_sensitive_edit(background_tasks, producer, sensitive_before, actor=user)
     # MEH-2475 (review #3728): an approved organizer moving her city is the same
     # admin-visible event as a business moving its primary location (the
     # locations CRUD pings "city" through the same gate).
     if organizer_city_changed:
-        _fire_sensitive_edit(background_tasks, producer, ["city"])
+        _fire_sensitive_edit(background_tasks, producer, ["city"], actor=user)
     # MEH-2852: the public profile changed — tell IndexNow (production only).
     indexnow.schedule_public_producer(background_tasks, producer)
 
@@ -1495,7 +1523,7 @@ def producer_analytics(
 # ---------------------------------------------------------------------------
 
 
-def _send_whatsapp_otp(phone: str, code: str) -> bool:
+def _send_whatsapp_otp(phone: str, code: str, test_cause: bool = False) -> bool:
     """Send a 6-digit OTP via WhatsApp Cloud API (MEH-508, MEH-754).
 
     Fail-open: returns False if WHATSAPP_* config is missing or the Meta
@@ -1507,8 +1535,12 @@ def _send_whatsapp_otp(phone: str, code: str) -> bool:
     producer who never messaged the business number never received the
     code. Templates are delivered unconditionally. send_template owns
     config / HTTP fail-open internally.
+
+    MEH-2952: `test_cause` — a test business (or test owner) gets no
+    WhatsApp. Independent of MEH-2231's OTP_TEST_* numbers, which are
+    untouched: those decide the CODE, this decides whether anything is sent.
     """
-    return send_template(phone, OtpCodeV1(code=code))
+    return send_template(phone, OtpCodeV1(code=code), test_cause=test_cause)
 
 
 _LOCAL_DB_HOSTS = frozenset({"localhost", "127.0.0.1", "::1"})
@@ -1611,7 +1643,11 @@ def send_phone_otp(
     db.commit()
 
     if test_code is None:
-        _send_whatsapp_otp(producer.phone, code)
+        _send_whatsapp_otp(
+            producer.phone,
+            code,
+            test_cause=bool(producer.is_test or user.is_test),  # MEH-2952
+        )
     else:
         # MEH-2231: a fixed code is a bypass event. WARNING so it is filterable
         # in Railway logs and an audit can tell a test run from a real one
@@ -1935,6 +1971,7 @@ def request_producer_review(
         new_count = producer.resubmission_count + 1
         producer_name = producer.name
         producer_city = producer.city
+        producer_is_test = _test_cause(producer, user)  # MEH-2952
         producer.status = "pending"
         producer.resubmission_count = new_count
         producer.resubmitted_at = datetime.now(timezone.utc)
@@ -1944,6 +1981,7 @@ def request_producer_review(
             producer_name,
             producer_city,
             resubmission_count=new_count,
+            test_cause=producer_is_test,
         )
         return {
             "detail": "נשלח לבדיקה חוזרת",
@@ -1952,7 +1990,10 @@ def request_producer_review(
         }
 
     background_tasks.add_task(
-        notify_admin_producer_resubmit, producer.name, producer.city
+        notify_admin_producer_resubmit,
+        producer.name,
+        producer.city,
+        test_cause=_test_cause(producer, user),  # MEH-2952
     )
     return {"detail": "נשלח לבדיקה חוזרת"}
 
@@ -2042,6 +2083,9 @@ def submit_for_review(
     # which works but reads as a different pattern from its siblings.
     owner_email = user.email
     submitted_at = producer.submitted_for_review_at
+    # MEH-2952: a test business / test owner → the admin ping and the owner's
+    # confirmation are both dropped and logged.
+    p_test = bool(producer.is_test or user.is_test)
     db.commit()
 
     # notify_admin_new_producer lives in services/auth_notifications.py. It
@@ -2056,7 +2100,9 @@ def submit_for_review(
     # a Resend/Meta outage must never turn the owner's successful submission
     # into an error, and post-commit placement mirrors _maybe_fire_review_ready
     # so the admin is never pinged about a transition that failed to persist.
-    background_tasks.add_task(notify_admin_new_producer, p_name, p_city)
+    background_tasks.add_task(
+        notify_admin_new_producer, p_name, p_city, test_cause=p_test
+    )
     # MEH-2602: re-score now. The only score was taken at registration, before
     # the owner filled contact_email / description, so the admin reviewing the
     # finished profile read «אין מייל» about a profile that had one (staging
@@ -2072,7 +2118,11 @@ def submit_for_review(
     # rejected re-submit and never on MEH-1236's request-review ping (a
     # different endpoint entirely, untouched).
     background_tasks.add_task(
-        send_submission_confirmation, owner_email, p_name, submitted_at
+        send_submission_confirmation,
+        owner_email,
+        p_name,
+        submitted_at,
+        test_cause=p_test,
     )
     return {"detail": "הפרופיל נשלח לבדיקה"}
 

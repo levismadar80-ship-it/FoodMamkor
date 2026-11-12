@@ -228,6 +228,8 @@ def _maybe_notify_funded(
         gb.producer.name if gb.producer else "",
         str(gb.id),
         str(gb.producer_id),
+        # MEH-2952: a test business's group buy mails nobody.
+        test_cause=bool(gb.producer and gb.producer.is_test),
     )
 
 
@@ -533,6 +535,7 @@ def update_group_buy_status(  # noqa: PLR0913 — all 6 args are FastAPI-injecte
 
     title = gb.title
     producer_name = gb.producer.name if gb.producer else ""
+    producer_is_test = bool(gb.producer and gb.producer.is_test)  # MEH-2952
     is_public = indexnow.is_public_business(gb.producer)  # MEH-2852
 
     gb.status = data.status
@@ -548,6 +551,7 @@ def update_group_buy_status(  # noqa: PLR0913 — all 6 args are FastAPI-injecte
             title,
             producer_name,
             str(group_buy_id),
+            test_cause=producer_is_test,
         )
     return {"detail": "סטטוס עודכן", "status": gb.status}
 
@@ -595,6 +599,7 @@ def admin_update_status(  # noqa: PLR0913 — FastAPI-injected args (path, 2 que
         participant_emails = _cancel_recipients(db, gb, admin.id)
     title = gb.title
     producer_name = gb.producer.name if gb.producer else ""
+    producer_is_test = bool(gb.producer and gb.producer.is_test)  # MEH-2952
     is_public = indexnow.is_public_business(gb.producer)  # MEH-2852
 
     gb.status = status
@@ -608,5 +613,6 @@ def admin_update_status(  # noqa: PLR0913 — FastAPI-injected args (path, 2 que
             title,
             producer_name,
             str(group_buy_id),
+            test_cause=producer_is_test,
         )
     return {"detail": "סטטוס עודכן", "status": gb.status}

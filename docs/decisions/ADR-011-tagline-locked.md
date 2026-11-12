@@ -1,6 +1,6 @@
 # ADR-011: Tagline locked — 14-word canonical version
 
-**Status:** Accepted
+**Status:** Accepted (surface list amended by [ADR-041](./ADR-041-home-meta-description-canonical-sentence.md): the Hebrew meta description carries the canonical sentence; wording unchanged)
 **Date:** 2026-05-23
 **Deciders:** Sapir Levi
 **Source:** `Drive/03-Brand-Hub/02-מדריך-מותג.md` v1.1 (2026-05-16); Doc-Consolidation-Plan §B.8; MEH-686 Session 2

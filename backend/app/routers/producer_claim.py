@@ -255,12 +255,18 @@ def claim_producer(
 
     # Capture before the session closes — background tasks run after it.
     p_id, p_name, p_phone = producer.id, producer.name, producer.phone
+    # MEH-2952: a test business or a test account claiming it → no sends.
+    p_test = bool(producer.is_test or user.is_test)
     logger.info("producer_claim.claimed", producer_id=str(p_id), user_id=str(user.id))
     # Same three side effects as a self-registered draft (register_producer
     # upgrade_path). The admin ping stays where it already is: at submit.
-    background_tasks.add_task(notify_producer_registered, p_name, p_phone)
+    background_tasks.add_task(
+        notify_producer_registered, p_name, p_phone, test_cause=p_test
+    )
     background_tasks.add_task(score_producer, p_id)
-    background_tasks.add_task(send_welcome_email, user.email, user.name, "producer")
+    background_tasks.add_task(
+        send_welcome_email, user.email, user.name, "producer", test_cause=p_test
+    )
     return ProducerClaimOut(producer_id=p_id, status=producer.status)
 
 

@@ -5,6 +5,11 @@ All four functions wrap app.services.email.send_email with a complete
 RTL Hebrew text body + matching HTML body. No security logic, no DB
 writes — pure body construction + send. Lifted verbatim from
 backend/app/routers/auth.py during the MEH-440 refactor.
+
+MEH-2952: each sender takes `test_cause` — True when the account the email is
+about (`users.is_test`, or for a producer welcome its business's
+`producers.is_test`) is a seeded test row — and passes it to send_email,
+which then sends nothing.
 """
 
 import logging
@@ -17,7 +22,9 @@ from app.services.email_branding import email_logo_html
 logger = logging.getLogger(__name__)
 
 
-def send_reset_email(email: str, name: str, reset_link: str) -> None:
+def send_reset_email(
+    email: str, name: str, reset_link: str, test_cause: bool = False
+) -> None:
     # MEH-440-followup: escape name in HTML body. Plain-text body keeps
     # raw name (text rendering doesn't interpret markup).
     name_html = html_escape(name or "")
@@ -64,10 +71,18 @@ def send_reset_email(email: str, name: str, reset_link: str) -> None:
   </table>
 </body>
 </html>"""
-    send_email(email, "מהמקור - איפוס סיסמה", body, html=html_body)
+    send_email(
+        email,
+        "מהמקור - איפוס סיסמה",
+        body,
+        html=html_body,
+        test_cause=test_cause,
+    )
 
 
-def send_verify_email(email: str, name: str, token: str) -> bool:
+def send_verify_email(
+    email: str, name: str, token: str, test_cause: bool = False
+) -> bool:
     """Send email-verification link via Resend. Returns True when attempted with valid config."""
     if not settings.resend_api_key:
         logger.error(
@@ -121,11 +136,19 @@ def send_verify_email(email: str, name: str, token: str) -> bool:
   </table>
 </body>
 </html>"""
-    send_email(email, "מהמקור - אימות האימייל שלך", body, html=html_body)
+    send_email(
+        email,
+        "מהמקור - אימות האימייל שלך",
+        body,
+        html=html_body,
+        test_cause=test_cause,
+    )
     return True
 
 
-def send_welcome_email(email: str, name: str, role: str = "consumer") -> bool:
+def send_welcome_email(
+    email: str, name: str, role: str = "consumer", test_cause: bool = False
+) -> bool:
     if not settings.resend_api_key:
         logger.error(
             "[EMAIL] welcome email SKIPPED for '%s' — missing: RESEND_API_KEY", email
@@ -239,7 +262,13 @@ def send_welcome_email(email: str, name: str, role: str = "consumer") -> bool:
         body, html_body = producer_body, producer_html
     else:
         body, html_body = consumer_body, consumer_html
-    send_email(email, "ברוכים הבאים למהמקור 🌿", body, html=html_body)
+    send_email(
+        email,
+        "ברוכים הבאים למהמקור 🌿",
+        body,
+        html=html_body,
+        test_cause=test_cause,
+    )
     return True
 
 
@@ -250,7 +279,11 @@ _PRODUCER_REGISTER_PATH = "/register/producer"
 
 
 def send_duplicate_attempt_email(
-    email: str, name: str, provider: str, flow: str = "consumer"
+    email: str,
+    name: str,
+    provider: str,
+    flow: str = "consumer",
+    test_cause: bool = False,
 ) -> None:
     """MEH-328: notify an existing account that someone tried to register
     with their email. Triggered from the anti-enumeration branch in
@@ -299,7 +332,12 @@ def send_duplicate_attempt_email(
             f"בברכה,\n"
             f"צוות מהמקור"
         )
-        send_email(email, "ניסיון רישום עסק במהמקור — יש לך כבר חשבון", body)
+        send_email(
+            email,
+            "ניסיון רישום עסק במהמקור — יש לך כבר חשבון",
+            body,
+            test_cause=test_cause,
+        )
         return
     subject = "ניסיון רישום במהמקור — יש לך כבר חשבון"
     if provider == "password":
@@ -323,10 +361,10 @@ def send_duplicate_attempt_email(
             f"בברכה,\n"
             f"צוות מהמקור"
         )
-    send_email(email, subject, body)
+    send_email(email, subject, body, test_cause=test_cause)
 
 
-def send_deletion_email(email: str, name: str) -> None:
+def send_deletion_email(email: str, name: str, test_cause: bool = False) -> None:
     body = (
         f"שלום {name},\n\n"
         f"החשבון שלך במהמקור נמחק בהצלחה.\n"
@@ -337,4 +375,4 @@ def send_deletion_email(email: str, name: str) -> None:
         f"אם לא ביקשת למחוק את החשבון, צרו איתנו קשר מיידית.\n\n"
         f"בברכה,\nצוות מהמקור"
     )
-    send_email(email, "מהמקור - החשבון שלך נמחק", body)
+    send_email(email, "מהמקור - החשבון שלך נמחק", body, test_cause=test_cause)

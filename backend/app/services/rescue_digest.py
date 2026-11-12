@@ -28,6 +28,7 @@ import logging
 from dataclasses import dataclass
 from datetime import timedelta
 
+from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
 from app.models import (
@@ -224,7 +225,14 @@ def _digest_one(db: Session, offer: RescueOffer, now, city_in_pilot) -> str:
         window=build_window_param(offer),
         codes=build_codes_param(target.reserved),
     )
-    if not send_template(target.phone, template):
+    # MEH-2952: test businesses never reach here (excluded from the candidate
+    # set above); the flag still covers a test OWNER account, and the send
+    # layer is the backstop for both.
+    if not send_template(
+        target.phone,
+        template,
+        test_cause=bool(target.producer.is_test or target.owner.is_test),
+    ):
         # Unstamped: a Meta rejection or an unconfigured client is a "not sent",
         # and the next tick retries inside the window.
         logger.warning(
@@ -332,6 +340,19 @@ def send_rescue_digests(db: Session) -> dict[str, int]:
             RescueOffer.codes_sent_at.is_(None),
             RescueOffer.pickup_start <= now_naive,
             RescueOffer.pickup_end > now_naive,
+            # MEH-2952: a seeded test business's bags are not digested at all —
+            # nobody should receive its codes, and a dropped send would count
+            # as "failed" and be retried every tick. Excluded here, so no
+            # counter moves for it. An offer with no location row stays in the
+            # set (it is still counted as skipped_no_location below).
+            or_(
+                RescueOffer.producer_location_id.is_(None),
+                ~RescueOffer.producer_location_id.in_(
+                    db.query(ProducerLocation.id)
+                    .join(Producer, Producer.id == ProducerLocation.producer_id)
+                    .filter(Producer.is_test.is_(True))
+                ),
+            ),
         )
         .all()
     )

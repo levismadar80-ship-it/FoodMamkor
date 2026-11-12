@@ -144,6 +144,10 @@ export default async function sitemap() {
     { path: "/about/why-local", priority: 0.5, changeFrequency: "monthly" },
     // MEH-2701: badges explainer («מה אומרים התגים»).
     { path: "/about/badges", priority: 0.4, changeFrequency: "monthly" },
+    // MEH-2967: the business landing page (MEH-995). It was never listed, so
+    // crawlers were offered only /register/producer, whose server HTML is a
+    // loading placeholder.
+    { path: "/join", priority: 0.7, changeFrequency: "monthly" },
     { path: "/register/producer", priority: 0.7, changeFrequency: "monthly" },
     // MEH-803: /register, /login, /contact intentionally NOT listed (/search
     // itself is gone — it 308s to /producers since MEH-819) —

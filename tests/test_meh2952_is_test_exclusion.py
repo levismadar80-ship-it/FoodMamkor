@@ -534,7 +534,9 @@ class TestFavoritesAndAlerts:
             "app.services.push.send_push_notification",
             lambda sub, **kw: calls.append(kw["url"]),
         )
-        monkeypatch.setattr("app.routers.alerts.send_template", lambda to, tmpl: True)
+        monkeypatch.setattr(
+            "app.routers.alerts.send_template", lambda to, tmpl, **kw: True
+        )
         user = make_user(db, email="meh2952-alert@example.com")
         sub = {
             "endpoint": "https://push.example/abc",

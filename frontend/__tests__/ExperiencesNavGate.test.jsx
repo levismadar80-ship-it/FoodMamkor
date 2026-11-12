@@ -56,6 +56,7 @@ import Footer from "@/components/Footer";
 import {
   EXPERIENCES_NAV_THRESHOLD,
   useExperiencesNavGate,
+  resetExperiencesNavGateRequest,
 } from "@/lib/use-experiences-nav-gate";
 
 const ok = (count) => Promise.resolve({ data: { count } });
@@ -71,6 +72,7 @@ const gate = () => screen.getByTestId("gate").textContent;
 const experiencesLink = () => document.querySelector('a[href="/experiences"]');
 
 beforeEach(() => {
+  resetExperiencesNavGateRequest();
   get.mockReset();
   sessionStorage.clear();
 });
