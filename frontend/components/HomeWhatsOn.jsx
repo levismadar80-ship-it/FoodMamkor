@@ -541,7 +541,8 @@ function WhatsOnGroup({ group, first, labels }) {
         {group.Icon && (
           <group.Icon
             data-testid="whats-on-group-icon"
-            className="me-2 inline-block align-[-0.12em] text-[0.9em] text-primary"
+            size="0.9em"
+            className="me-2 inline-block align-[-0.12em] text-primary"
             aria-hidden="true"
           />
         )}
