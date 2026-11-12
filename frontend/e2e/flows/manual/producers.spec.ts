@@ -509,6 +509,48 @@ test.describe("manual › /producers hierarchy (MEH-1186)", () => {
     await expect(scope(page).getByTestId("producers-filter-empty")).toHaveCount(0);
   });
 
+  // MEH-2987: a search that found nothing offers category chips. They were
+  //   same-route Links, and the page reads q/category from the URL once — so a
+  //   tap changed the URL and nothing else (staging 12/11, «משק הכרמל»). The
+  //   real router is the subject here; jsdom cannot see that integration.
+  test("search with no match → tapping an empty-state category drops the search and shows that category", async ({
+    page,
+  }) => {
+    const { seen } = await mockCatalog(page, (u) => (u.searchParams.get("q") ? [] : PRODUCERS));
+    await gotoProducers(page, `/producers?q=${encodeURIComponent("משק הכרמל")}`);
+    const empty = scope(page).getByTestId("producers-filter-empty");
+    await expect(empty).toBeVisible(FIRST_PAINT);
+    const chips = empty.getByTestId("producers-empty-category");
+    await expect(chips).toHaveCount(CATEGORIES.length);
+
+    await chips.filter({ hasText: CAT_DAIRY.name }).click();
+    await expect.poll(() => query(page).toString()).toBe(`category=${CAT_DAIRY.id}`);
+    await expect(scope(page).getByTestId("producers-filter-empty")).toHaveCount(0);
+    await expect(scope(page).getByTestId("producers-grid")).toBeVisible();
+    await expect(scope(page).getByTestId("producers-search-form").getByRole("searchbox")).toHaveValue("");
+    const last = seen.at(-1)!;
+    expect(last.searchParams.get("q")).toBeNull();
+    expect(last.searchParams.getAll("category")).toEqual([String(CAT_DAIRY.id)]);
+
+    // Back returns to the search she typed — URL AND view (MEH-1084 promise;
+    // before MEH-2987 nothing listened to popstate and the view stayed put).
+    await page.goBack();
+    await expect.poll(() => query(page).get("q")).toBe("משק הכרמל");
+    await expect(scope(page).getByTestId("producers-filter-empty")).toBeVisible();
+    await expect(scope(page).getByTestId("producers-search-form").getByRole("searchbox")).toHaveValue("משק הכרמל");
+  });
+
+  // MEH-2987: the header search pushes /producers?focus=1 even on /producers;
+  //   that wiped the live search from the URL while the page still showed it.
+  test("header search on /producers focuses the box and keeps the active search in the URL", async ({ page }) => {
+    await mockCatalog(page);
+    await gotoProducers(page, `/producers?q=${encodeURIComponent("גבינה")}`);
+    await page.locator("header").getByRole("button", { name: he.nav.search_label }).filter({ visible: true }).first().click();
+    await expect(scope(page).getByTestId("producers-search-form").getByRole("searchbox")).toBeFocused();
+    await expect.poll(() => query(page).get("q")).toBe("גבינה");
+    expect(query(page).has("focus")).toBe(false);
+  });
+
   // MEH-2428: a filtered city shows ONCE — on its own lit chip. The control
   //   line used to repeat it as «× 📍 עיר», and that tag cleared the city
   //   without the delivery day (MEH-1825: the day cannot outlive its city).
