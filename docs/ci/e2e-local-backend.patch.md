@@ -46,6 +46,39 @@ public `GOOGLE_CLIENT_ID`, re-run green), plus the known MEH-2323 flake
 `24-producer-locations` (mobile). CI is the real measurement; the first PR run
 is checked for setup time, VRT with local data, and two runs in parallel.
 
+## Follow-up after the independent review (12/11)
+
+First CI run (`43242909636`, head `4798527`): 1,563 executed, 0 failed,
+1 flaky in an untouched spec (`43-minimap-buttons-over-tiles:125`, recorded in
+MEH-2323). "Wait for local backend" took 0 s.
+
+Fixed in `scripts/e2e/start-local-backend.sh` (CC):
+- The localhost guard parses the URL. The old glob passed
+  `…@localhost:5432/db?host=prod.example.com` and `…@prod:5432/x?a=@localhost:1`;
+  both are refused now (checked by running the script on them).
+- `ENV=development` (the backend reads `ENV`, not `ENVIRONMENT`).
+- Writes its exit code to `/tmp/backend-setup.status`; stops at once if
+  uvicorn dies during boot.
+
+Fixed in the workflow (staged as `docs/ci/e2e-local-backend-followup.e2e.yml`,
+committed by Claude in Chrome):
+- "Wait for local backend" moves to **before** "Build frontend": `next build`
+  prerenders `/` and the sitemap against the API, so a backend still seeding
+  would bake in empty data. It also fails at once on a non-zero status file.
+- Backend setup + server logs are printed in the job log and uploaded with the
+  diagnostics.
+- Postgres health check uses `-U postgres` (stops the
+  `role "root" does not exist` log spam; it was noise, not a failure).
+- The `backend` filter also covers `backend/pyproject.toml`, `backend/alembic.ini`.
+
+Known, accepted:
+- The Postgres service starts on every event, so a Docker Hub outage would now
+  also fail staging and nightly runs at "Initialize containers". Rare; left as is.
+- A PR from a fork gets no `DEMO_*` secrets, so its E2E fails at backend setup
+  instead of skipping the signed-in specs. Every PR here comes from this repo.
+- PR runs test seeded data and staging runs test live staging data. A frame
+  that is green on a PR and red on staging can be data drift, not a flake.
+
 ## Not in this patch
 
 - `seed_cities.py` (needs data.gov.il) is not run; no spec was seen to need it.
