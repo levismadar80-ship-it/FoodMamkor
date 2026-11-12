@@ -79,8 +79,11 @@ describe("one owner (guard)", () => {
       return /\.(js|jsx)$/.test(e.name) ? [p] : [];
     });
   const files = ["app", "components", "lib"].flatMap((d) => walk(path.join(ROOT, d)));
-  // A call, not a mention: `navigator.share(` or `navigator.share)` / `&& navigator.share`.
-  const CALLS = /navigator\.share\s*[()&?]/;
+  // Any code use of the API, in every spelling (`navigator.share(`,
+  // `navigator?.share`, `"share" in navigator`, `canShare`, destructuring) —
+  // read with comments stripped, so prose that names the API does not count.
+  const strip = (src) => src.replace(/\/\*[\s\S]*?\*\//g, "").replace(/(^|[^:"'`\\])\/\/.*$/gm, "$1");
+  const CALLS = { test: (src) => /navigator\??\.(share|canShare)\b|["']share["']\s+in\s+navigator|\{\s*share\b[^}]*\}\s*=\s*navigator/.test(strip(src)) };
 
   it("control: the scan sees the owner's own calls", () => {
     expect(CALLS.test(fs.readFileSync(path.join(ROOT, "lib", "share-link.js"), "utf8"))).toBe(true);

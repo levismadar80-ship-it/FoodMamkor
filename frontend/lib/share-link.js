@@ -55,8 +55,14 @@ export async function shareOrCopy({ url, text, copy }) {
  * @returns {Promise<"shared"|"cancelled"|"copied"|"failed">}
  */
 export async function shareOrCopyText({ data, copyText }) {
-  const outcome = await tryNativeShare(data);
-  if (outcome !== "unavailable") return outcome;
+  // With a sheet, wait for its answer; with none, go straight to the copy —
+  // no await before the clipboard write, so it stays inside the user gesture
+  // (Safari is strict about that).
+  const hasSheet = typeof navigator !== "undefined" && Boolean(navigator.share);
+  if (hasSheet) {
+    const outcome = await tryNativeShare(data);
+    if (outcome !== "unavailable") return outcome;
+  }
   try {
     await navigator.clipboard.writeText(copyText);
     return "copied";
