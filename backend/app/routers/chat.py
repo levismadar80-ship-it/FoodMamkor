@@ -121,6 +121,8 @@ SYSTEM_PROMPT = """את העוזרת הווירטואלית של מהמקור �
 - **איך מדווחים על בעיה?** — בכל עמוד של עסק או מוצר יש כפתור "דווח על עסק". אפשר גם לפנות אלינו ישירות דרך טופס יצירת הקשר שבדף "אודות" — הצוות שלנו יטפל בפנייה בהקדם.
 - **אני מוכר/ת בשווקים או בדוכנים — איך מוסיפים את זה?** — בלוח הבקרה, במסך «מיקומים», לוחצים «הוסיפו מיקום» ובוחרים סוג «דוכן שוק». כותבים את העיר, את הכתובת של השוק, ובשעות — מתי אתם שם (למשל «כל שלישי 11:00–18:00»). הדוכן יופיע על המפה במקום השוק. שוק חד-פעמי או אירוע מוסיפים במסך «האירועים שלי», והוא יופיע בעמוד האירועים של האתר.
 - **איפה רואים שווקים ואירועים?** — בעמוד «אירועים» שבתפריט. שם מופיעים שווקים, ימים פתוחים וסדנאות של בתי העסק, לפי תאריך, עם המיקום של כל אירוע.
+- **מה זה קבוצת רכישה?** — קבוצת רכישה היא הזמנה משותפת מבית עסק: כשמספיק אנשים מצטרפים עד המועד האחרון, כולם מקבלים מחיר קבוצתי נמוך יותר. ההצטרפות בלי לשלם כלום דרך האתר. כשהקבוצה מגיעה למינימום, בית העסק יוצר קשר לתיאום ההזמנה, והתשלום עובר ישירות ביניכם. לא הגיעו ליעד עד המועד? אין שום התחייבות.
+- **איפה מוצאים קבוצות רכישה ואיך מצטרפים?** — בעמוד «קבוצות רכישה» (יש אליו קישור בתחתית האתר ובעמוד «אירועים»), וגם בעמוד של כל בית עסק שפתח קבוצה. כדי להצטרף צריך להתחבר לאתר. רק בתי עסק פותחים קבוצות רכישה, מלוח הבקרה, אחרי שהעסק אושר.
 
 **שימי לב**
 - אם נשאלת על משהו שלא כתוב כאן (תקלה טכנית, החזר כספי, בעיה עם בית עסק) — הפני אותם לטופס יצירת הקשר שבדף "אודות" או דרך הלינק בתחתית האתר.
@@ -188,6 +190,39 @@ def _get_client():
     except Exception as e:  # pragma: no cover — defensive
         logger.warning("anthropic client init failed for chat: %s", e)
         return None
+
+
+# ---------- rescue bags knowledge (MEH-3004) ----------
+
+# MEH-3004: the rescue-bags pilot is OFF in production by default, so its
+# paragraph joins the prompt only while the pilot is on AND open in at least
+# one town — the chat must not describe a feature the visitor cannot reach.
+# DO NOT move this into SYSTEM_PROMPT unconditionally — a prod visitor would
+# be sent to a /rescue page that answers 404 (MEH-2644).
+RESCUE_KNOWLEDGE_TEMPLATE = """**סלי הפתעה**
+- **מה זה סל הפתעה?** — סל של מה שנשאר היום בבית עסק באזור, במחיר מוזל. לא יודעים מראש בדיוק מה יהיה בתוכו. משריינים באתר (עד שני סלים), מגיעים לאסוף בשעות האיסוף שכתובות בסל, אומרים בקופה את הקוד בן ארבע הספרות, ומשלמים שם. כדי לשריין צריך להתחבר לאתר, ואפשר לבטל שריון בחינם.
+- **איפה מוצאים סלי הפתעה?** — בעמוד «סלי הפתעה» ובדף הבית. כרגע הם פועלים רק ב: {cities}.
+- **בית עסק שרוצה לפרסם סלים** — עושה את זה מלוח הבקרה, במסך «סלי הפתעה», אחרי שהעסק אושר."""
+
+
+def _rescue_knowledge() -> str | None:
+    """The rescue paragraph for the current pilot state, or None when the
+    visitor could not use the feature (pilot off, or on in no town)."""
+    # REUSES: backend/app/routers/rescue.py:130 — the same switches the
+    # /rescue routes read, so the chat and the routes cannot disagree.
+    from app.routers.rescue import rescue_bags_enabled, rescue_cities
+
+    if not rescue_bags_enabled():
+        return None
+    cities = rescue_cities()
+    if not cities:
+        return None
+    return RESCUE_KNOWLEDGE_TEMPLATE.format(cities=", ".join(cities))
+
+
+def _base_system_prompt() -> str:
+    rescue = _rescue_knowledge()
+    return f"{SYSTEM_PROMPT}\n\n{rescue}" if rescue else SYSTEM_PROMPT
 
 
 # ---------- live data (MEH-586) ----------
@@ -294,14 +329,15 @@ def chat(request: Request, body: ChatRequest) -> ChatResponse:
 
     # MEH-586: hybrid — a db_query turn gets the live JSON appended to the
     # fixed knowledge; everything else is the unchanged freeform flow.
-    system_prompt = SYSTEM_PROMPT
+    base_prompt = _base_system_prompt()  # MEH-3004
+    system_prompt = base_prompt
     try:
         live = _live_data_context(client, request, api_messages)
     except Exception as e:  # noqa: BLE001 — the hybrid hop never 500s the widget
         logger.warning("chat live-data hop failed: %s", e)
         live = None
     if live:
-        system_prompt = f"{SYSTEM_PROMPT}\n\n{live}"
+        system_prompt = f"{base_prompt}\n\n{live}"
 
     try:
         response = client.messages.create(
