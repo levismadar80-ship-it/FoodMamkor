@@ -103,6 +103,33 @@ Only CI-run specs matter. `parity.spec.ts` is converted;
 
 ---
 
+## E2E flake prevention — four shapes that kept staging red (MEH-2972)
+
+With ~1,550 tests, a tiny per-test flake rate makes most full runs red. Review
+every new E2E assertion for these four shapes:
+
+- **No wall-clock budget on a CI runner.** "X within N ms" fails on a loaded
+  runner with no product change. Count frames (`requestAnimationFrame` ticks)
+  or assert ordering. `manual/join.spec.ts` swipe test is the worked case.
+- **Read a recorded-writes array only after a state that only the save can
+  produce,** or with `expect.poll`. A UI assertion that is also true BEFORE the
+  action passes instantly; an optimistic UI shows the result before the request
+  is sent. Both read the array too early (`dashboard-locations` «קבעו כראשי»,
+  `dashboard-manage-events` cancel/reactivate).
+- **A stubbed spec goes stale when the product adds a new `/api` read.** When a
+  PR adds a fetch to a page, grep the specs that stub that page and stub it too.
+- **The whole CI suite comes from one IP.** Per-IP limits (120/min on events
+  and group-buys) answer 429 to nav-gate reads; MEH-2947 is the durable fix.
+  Don't add a per-page-load read without checking its limit.
+
+**A flaky warning on staging gets a Linear card the same day.** From the
+MEH-2972 workflow change on, a test that passes only on retry no longer fails a
+staging or nightly run; `e2e-report` prints a `::warning::` with the count
+instead. That trade only holds if every warning becomes a card — name the test
+and the line, and link the run.
+
+---
+
 ## A green that has two possible causes is not a signal
 
 **Check the instrument before the claim.** Before a claim rests on a tool's
