@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import { getTranslations } from "next-intl/server";
 import EventsClient from "./EventsClient";
+import { hubTabTitles } from "./hub-tab-titles";
 import { BRAND_NAME } from "@/lib/constants";
 import { buildAlternates, buildEntityTitle, urlForLocalePath, OG_LOCALE } from "@/lib/i18n-seo";
 import { getHubCount, hubRobots } from "@/lib/listing-supply";
@@ -60,6 +61,8 @@ export default async function EventsPage({ params }) {
   // string in HE, proper EN parity. Server component → getTranslations.
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: "events.list" });
+  // MEH-2980: both tab titles, so an in-place tab switch can retitle the page.
+  const titles = await hubTabTitles(locale);
   return (
     // MEH-2754: min-h-screen keeps the footer below the fold while this
     // fallback shows, so swapping in the page shifts nothing in view.
@@ -70,7 +73,7 @@ export default async function EventsPage({ params }) {
         </div>
       }
     >
-      <EventsClient initialTab="events" />
+      <EventsClient initialTab="events" titles={titles} />
     </Suspense>
   );
 }

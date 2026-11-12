@@ -247,6 +247,7 @@
           "after_title": "What happens next",
           "after_body": "Every business gets a personal intro — once you complete your profile and send it for review, our team checks the details, gets in touch if needed, and your business goes live within up to 3 business days.",
           "after_link": "How the acceptance process works",
+          "join_link": "What a page looks like, what you get, and FAQ",
           "cta": "Start"
         },
         "loading": "Loading...",
@@ -721,6 +722,9 @@
     "register_producer": {
       "title": "Register your business",
       "description": "Join Mehamakor — register your local food business. Every business is hand-picked."
+    },
+    "register_organizer": {
+      "title": "Sign up as a market or event organizer"
     },
     "claim": {
       "title": "Take your business page",
