@@ -84,6 +84,7 @@ jobs:
       runs-on: ubuntu-latest
       outputs:
         frontend: ${{ steps.filter.outputs.frontend }}
+        backend: ${{ steps.filter.outputs.backend }}
       steps:
         - uses: actions/checkout@v7
           with:
@@ -97,6 +98,16 @@ jobs:
                 - 'public/**'
                 - 'package.json'
                 - 'package-lock.json'
+              # MEH-2973: a PR run now tests its OWN backend (below), so a
+              # backend change is something the suite can catch. Push runs
+              # still test Railway staging and ignore this output.
+              backend:
+                - 'backend/app/**'
+                - 'backend/alembic/**'
+                - 'backend/scripts/seed_*.py'
+                - 'backend/seed_data.py'
+                - 'backend/uv.lock'
+                - 'scripts/e2e/**'
 
   e2e:
     # NOTE (MEH-1044): job name kept verbatim although the target is now
@@ -121,8 +132,12 @@ jobs:
     # MEH-2895: one queue PER SHARD, so the two halves of one run go in
     # parallel. The shared-backend protection stays: at most one run's shard N
     # at a time, so at most two suites hit Railway staging together.
+    # MEH-2973: a PR run brings its own backend + database (steps below), so
+    # it shares nothing and needs no queue — its group is unique per run. Only
+    # push / schedule / dispatch runs still hit Railway staging and keep the
+    # one-at-a-time queue per shard.
     concurrency:
-      group: e2e-staging-backend-${{ matrix.shard }}
+      group: ${{ github.event_name == 'pull_request' && format('e2e-pr-{0}-{1}', github.run_id, matrix.shard) || format('e2e-staging-backend-{0}', matrix.shard) }}
       cancel-in-progress: false
       queue: max
 
@@ -149,6 +164,7 @@ jobs:
     # workflow_dispatch are unchanged.
     if: |
       (needs.filter.outputs.frontend == 'true' ||
+       (github.event_name == 'pull_request' && needs.filter.outputs.backend == 'true') ||
        github.event_name == 'workflow_dispatch' ||
        github.event_name == 'schedule') &&
       github.actor != 'dependabot[bot]' &&
@@ -156,8 +172,56 @@ jobs:
        (contains(github.event.pull_request.labels.*.name, 'run-e2e') &&
         (github.event.action != 'labeled' || github.event.label.name == 'run-e2e')))
 
+    # MEH-2973: PR runs test against a throwaway backend on localhost:8080,
+    # seeded from the same scripts as staging; every other event keeps Railway
+    # staging. One expression, used by every step that names the backend.
+    env:
+      E2E_API_URL: ${{ github.event_name == 'pull_request' && 'http://localhost:8080' || 'https://foodmamkor-staging.up.railway.app' }}
+
+    # Started on every event (a few seconds), used only by PR runs.
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: mehamakor_e2e
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
     steps:
       - uses: actions/checkout@v7
+
+      - name: Set up uv (PR runs — local backend)
+        if: github.event_name == 'pull_request'
+        uses: astral-sh/setup-uv@v7
+        with:
+          version: "latest"
+          enable-cache: true
+          cache-dependency-glob: "backend/uv.lock"
+
+      - name: Install backend dependencies (PR runs)
+        if: github.event_name == 'pull_request'
+        run: uv sync --frozen
+        working-directory: backend
+
+      # Runs in the BACKGROUND, in parallel with npm ci + the Next build
+      # (~2–3 min); migrate + seed take ~40 s, so the backend is normally
+      # ready before the build is. "Wait for local backend" below joins it.
+      - name: Start local backend (PR runs, background)
+        if: github.event_name == 'pull_request'
+        run: nohup scripts/e2e/start-local-backend.sh > /tmp/backend-setup.log 2>&1 &
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/mehamakor_e2e
+          BACKEND_LOG: /tmp/backend.log
+          DEMO_OWNER_PASSWORD: ${{ secrets.DEMO_OWNER_PASSWORD }}
+          DEMO_CONSUMER_PASSWORD: ${{ secrets.DEMO_CONSUMER_PASSWORD }}
+          DEMO_ADMIN_PASSWORD: ${{ secrets.DEMO_ADMIN_PASSWORD }}
 
       - name: Set up Node.js 20
         uses: actions/setup-node@v7
@@ -191,7 +255,7 @@ jobs:
           # Same backend the Vercel previews proxied to (Railway staging,
           # docs/DEPLOYMENT.md → env table). NEXT_PUBLIC_* is inlined at
           # build time; rewrites() reads it again at server boot.
-          NEXT_PUBLIC_API_URL: https://foodmamkor-staging.up.railway.app
+          NEXT_PUBLIC_API_URL: ${{ env.E2E_API_URL }}
           # MEH-1778: without this the GSI script is never appended
           # (use-google-sign-in.js:26 returns early on an absent client id), so
           # every "no GSI console warning" assertion in
@@ -212,7 +276,7 @@ jobs:
           nohup npm run start > /tmp/next-start.log 2>&1 &
         working-directory: frontend
         env:
-          NEXT_PUBLIC_API_URL: https://foodmamkor-staging.up.railway.app
+          NEXT_PUBLIC_API_URL: ${{ env.E2E_API_URL }}
 
       - name: Wait for localhost readiness
         run: |
@@ -227,6 +291,22 @@ jobs:
           done
           echo "::error::next start did not serve 200 within ~90s."
           tail -50 /tmp/next-start.log
+          exit 1
+
+      - name: Wait for local backend (PR runs)
+        if: github.event_name == 'pull_request'
+        run: |
+          for i in $(seq 1 120); do
+            if curl -sf -o /dev/null http://127.0.0.1:8080/health; then
+              echo "local backend ready (waited ${i}s after the build)"
+              cat /tmp/backend-setup.log | tail -5
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "::error::local backend not ready — setup log:"
+          cat /tmp/backend-setup.log
+          tail -50 /tmp/backend.log || true
           exit 1
 
       # MEH-1712 — CAPTURE ONLY. Dials Railway FROM THE RUNNER, which is the one
@@ -252,7 +332,7 @@ jobs:
         if: always()
         continue-on-error: true
         env:
-          NEXT_PUBLIC_API_URL: https://foodmamkor-staging.up.railway.app
+          NEXT_PUBLIC_API_URL: ${{ env.E2E_API_URL }}
         run: |
           probe() {
             printf '%-12s ' "$1"
@@ -708,8 +788,9 @@ jobs:
     # Never fails the workflow. See property 1 above.
     continue-on-error: true
 
-    # Identical trigger condition to the `e2e` job — same frontend paths-filter,
-    # same workflow_dispatch escape (MEH-1712), same dependabot exclusion.
+    # MEH-2972: nightly + manual only (no PR, no push), so the paths filter and
+    # the `run-e2e` clauses below never decide anything — left in place so the
+    # condition can be widened again without re-deriving it.
     #
     # MEH-2779 — on a PR the suite runs only once the PR carries the `run-e2e`
     # label. It used to run on every push of every PR, and the job-level
