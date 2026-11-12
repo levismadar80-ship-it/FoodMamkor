@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "@/i18n/navigation";
 import { ShoppingCart, Clock, MapPin, Truck } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
@@ -142,12 +142,16 @@ function GroupBuyCard({ gb }) {
 export default function GroupBuysClient() {
   const t = useTranslations("group_buys.list");
   const tHub = useTranslations("events.list");
+  // home.whats_on.eyebrow: «קרוב לבית» / "Close to home" — the tab-neutral
+  // eyebrow (events.list.eyebrow_events reads "EVENTS" in en).
+  const tWhatsOn = useTranslations("home.whats_on");
   const tErr = useTranslations();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [city, setCity] = useState("");
   const [statusFilter, setStatusFilter] = useState("open");
+  const statusKeys = useMemo(() => ({ [statusFilter]: true }), [statusFilter]);
 
   useEffect(() => {
     load();
@@ -180,7 +184,7 @@ export default function GroupBuysClient() {
           11/11); the eyebrow is the hub's existing one. */}
       <HubShell
         active="groupBuys"
-        eyebrow={tHub("eyebrow_events")}
+        eyebrow={tWhatsOn("eyebrow")}
         title={t("hero_title")}
         subtitle={t("hero_subtitle")}
       />
@@ -208,7 +212,7 @@ export default function GroupBuysClient() {
               { key: "funded", label: t("status_funded") },
               { key: "fulfilled", label: t("status_fulfilled") },
             ]}
-            activeKeys={{ [statusFilter]: true }}
+            activeKeys={statusKeys}
             onChipClick={(key) => setStatusFilter(key)}
           />
         </div>

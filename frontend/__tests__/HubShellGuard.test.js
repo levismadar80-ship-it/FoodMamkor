@@ -43,7 +43,9 @@ function resolveImport(fromFile, spec) {
   return null;
 }
 
-/** The route's page file plus the app/ files it imports directly. */
+/** The route's page file plus the repo files it imports directly (app/,
+ *  components/, lib/ — every local module, so a child component that brings
+ *  its own <h1> is seen too). HubShell itself is the one allowed h1 owner. */
 function routeFiles(href) {
   const dir = path.join(LOCALE_APP, ...href.split("/").filter(Boolean));
   const page = ["page.jsx", "page.js"].map((f) => path.join(dir, f)).find((f) => fs.existsSync(f));
@@ -52,7 +54,7 @@ function routeFiles(href) {
   const specs = [...fs.readFileSync(page, "utf8").matchAll(/from\s+["']([^"']+)["']/g)].map((m) => m[1]);
   for (const spec of specs) {
     const file = resolveImport(page, spec);
-    if (file && file.startsWith(path.join(ROOT, "app")) && !files.includes(file)) files.push(file);
+    if (file && !file.endsWith(path.join("components", "HubShell.jsx")) && !files.includes(file)) files.push(file);
   }
   return files;
 }
@@ -62,7 +64,8 @@ function rendersShell(files) {
 }
 
 function ownH1(files) {
-  return files.filter((f) => /<h1[\s>]/.test(code(fs.readFileSync(f, "utf8"))));
+  // `<h1`, `as="h1"`, createElement("h1") — every way a file can emit one.
+  return files.filter((f) => /<h1[\s>]|as=["'{]+h1["'}]|createElement\(\s*["']h1["']/.test(code(fs.readFileSync(f, "utf8"))));
 }
 
 function walk(dir, out = []) {
@@ -94,8 +97,10 @@ describe("HubShellGuard (MEH-3013)", () => {
   });
 
   it("only HubShell mounts the tab row", () => {
-    const importers = [...walk(path.join(ROOT, "app")), ...walk(path.join(ROOT, "components"))]
-      .filter((f) => /from\s+["']@\/components\/ListingHubTabs["']/.test(fs.readFileSync(f, "utf8")))
+    // Any import path that ends in ListingHubTabs (alias, relative, dynamic).
+    const importers = ["app", "components", "lib", "hooks"]
+      .flatMap((d) => walk(path.join(ROOT, d)))
+      .filter((f) => /(from\s+|import\(\s*)["'][^"']*\/ListingHubTabs(\.jsx?)?["']/.test(code(fs.readFileSync(f, "utf8"))))
       .map((f) => path.relative(ROOT, f));
     expect(importers).toEqual([path.join("components", "HubShell.jsx")]);
   });

@@ -26,7 +26,7 @@ import { optimizeCloudinary } from "@/lib/cloudinary";
 // to a wide 16:9 band; w_1920 never upscales the 2400px original.
 // REUSES: app/[locale]/events/EventsClient.jsx (MEH-788 hero, moved here)
 const HERO_MAX_WIDTH = 1920;
-export const HUB_HERO_IMAGE = optimizeCloudinary(
+const HUB_HERO_IMAGE = optimizeCloudinary(
   "https://res.cloudinary.com/dfzpscjks/image/upload/v1782159035/events/hero-market.jpg",
   { aspectRatio: "16:9", width: HERO_MAX_WIDTH }
 );

@@ -25,20 +25,22 @@ export default async function RescuePage() {
 
   // MEH-3013: the hub's shared head (photo hero + tab row) — the same frame
   // as /events, /experiences and /group-buys. Copy is the page's own H1 and
-  // lead (Sapir 11/11) plus the hub's existing eyebrow; no new strings.
-  const tEvents = await getTranslations("events.list");
+  // lead (Sapir 11/11) plus the hub strip's existing eyebrow (home.whats_on.eyebrow — «קרוב לבית» /
+  // "Close to home"; events.list.eyebrow_events says "EVENTS" in en); no new strings.
+  const tHome = await getTranslations("home.whats_on");
 
   return (
-    <main data-testid="rescue-page">
+    // A div, not <main>: the layout already owns the main landmark.
+    <div data-testid="rescue-page">
       <HubShell
         active="rescue"
-        eyebrow={tEvents("eyebrow_events")}
+        eyebrow={tHome("eyebrow")}
         title={t("page.title")}
         subtitle={t("page.lead")}
       />
       <div className={`${HUB_CONTENT_CLASS} pt-4 pb-16`}>
         <RescueList />
       </div>
-    </main>
+    </div>
   );
 }
