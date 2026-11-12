@@ -2150,6 +2150,8 @@ export const GrantVerifiedAdminProducersProducerIdGrantVerifiedPostResponse = /*
  * `owner_invite_created_by` and the consent note are kept: they are the audit
  * record of an invite that WAS sent, and deleting that is the one thing a
  * cancel must not do.
+ *
+ * Deliberately NOT gated on `status == "approved"` — see `_load_invitable`.
  * @summary Cancel Owner Invite
  */
 export const CancelOwnerInviteAdminProducersProducerIdOwnerInviteDeleteResponse = /*#__PURE__*/ zod.unknown()
@@ -2880,16 +2882,24 @@ export const GetMeAuthMeGetResponse = /*#__PURE__*/ zod.object({
  *      read — the same classification register_producer gives its own
  *      body-shape guards.
  *   2. The password policy, also 422, also before any write.
- *   3. The email-taken check, 409, BEFORE the claim — so the common race
- *      answers without having touched anything.
+ *   3. The email-taken and has-owner checks, 409, BEFORE the claim — so the
+ *      common race answers without having touched anything.
  *   4. The claim: ONE conditional UPDATE (MEH-1820), never SELECT-then-set.
  *   5. The INSERT, then a single commit.
  *
- * Steps 3 and 5 still race each other — an account can be created for this
- * address in the microseconds between them — and that is caught by the unique
- * index on `users.email`, whose IntegrityError rolls the WHOLE transaction
- * back, claim included. So the 409 leaves zero writes either way, and the
- * invite link stays live for a second attempt.
+ * Steps 3 and 5 still race each other, and the backstop is NARROWER than it
+ * looks: the unique index on `users.email` is case-SENSITIVE, while
+ * `_email_taken` compares lowercased. So it catches an exact-case collision —
+ * rolling the whole transaction back, claim included, which is what keeps the
+ * 409 free of writes and the link usable — and does NOT catch one that
+ * differs only in case. That gap is `users.email` having no case-insensitive
+ * index, which is repo-wide (`auth.py` looks accounts up with a raw `==`
+ * everywhere) and belongs to its own card; it is recorded here rather than
+ * half-fixed in one endpoint. Its blast radius is bounded: the racer's
+ * account does not own the business, only the invitee's does.
+ *
+ * The window itself is as small as it can be made — bcrypt moved above the
+ * check, so the only thing left between them is the UPDATE.
  * @summary Accept Owner Invite
  */
 export const acceptOwnerInviteAuthOwnerInviteAcceptPostResponseTokenTypeDefault = `bearer`;

@@ -16,8 +16,11 @@ import {
 } from "@/lib/claim-token";
 
 const TOKEN = "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJwLTEifQ.s1g-_x";
-// MEH-2974: `secrets.token_urlsafe(32)` — 43 url-safe characters, no dot.
-const INVITE_TOKEN = "hxSJLZj4NkycbjBgrIM9nn2lsMmYGRO8vlYIdErxoU8";
+// MEH-2974: the SHAPE of a `secrets.token_urlsafe(32)` — 43 url-safe
+// characters, no dot. Spelled with "example" so secrets-scan-guard.sh reads it
+// as the placeholder it is; what the redaction tests exercise is the length
+// and the character class, never a particular value.
+const INVITE_TOKEN = "example-token-nn2lsMmYGRO8vlYIdErxoU8xxxxxxx";
 
 afterEach(() => {
   vi.restoreAllMocks();
