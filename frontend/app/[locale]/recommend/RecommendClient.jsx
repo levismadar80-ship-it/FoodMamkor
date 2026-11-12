@@ -176,7 +176,7 @@ export default function RecommendClient() {
           <p className="mt-3 mb-8 flex flex-wrap items-baseline gap-x-2 text-base text-start" data-testid="recommend-owner-line">
             <span className="text-fg-muted">{tHome("heading")}</span>
             <BusinessCtaLink
-              href="/register/producer"
+              href="/join"
               data-testid="recommend-owner-link"
               className="inline-flex items-center gap-1 min-h-touch font-semibold text-primary underline underline-offset-4 hover:text-primary-dark rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
             >
