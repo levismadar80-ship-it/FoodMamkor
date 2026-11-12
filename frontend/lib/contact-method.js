@@ -151,9 +151,13 @@ export function isWhatsAppPrimary(producer) {
 }
 
 /** True when the primary CTA will open in a new tab (not wa.me/tel/mailto). */
-export function isPrimaryExternal(producer) {
+// MEH-2988: by method, so the organizer page's primary button (which has a
+// resolved channel, not a producer) shares this one answer.
+export function isExternalMethod(method) {
   // MEH-296: instagram/facebook/external_order also open in a new tab.
-  return ["website", "instagram", "facebook", "external_order"].includes(
-    getPrimaryMethod(producer)
-  );
+  return ["website", "instagram", "facebook", "external_order"].includes(method);
+}
+
+export function isPrimaryExternal(producer) {
+  return isExternalMethod(getPrimaryMethod(producer));
 }

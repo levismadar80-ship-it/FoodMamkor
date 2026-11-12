@@ -276,7 +276,40 @@ describe("MEH-2461 organizer page", () => {
     const call = screen.getByTestId("organizer-contact-phone");
     expect(call.getAttribute("href")).toBe("tel:0521234567");
     expect(call.getAttribute("data-primary")).toBe("true");
+    // MEH-2988: drawn as the business button — label, and no new tab for a call
+    expect(call.textContent).toBe("contact_cta.phone");
+    expect(call.getAttribute("target")).toBeNull();
     expect(screen.queryByTestId("organizer-contact-whatsapp")).not.toBeInTheDocument();
+  });
+
+  it("MEH-2988: the preferred channel is the business page's button — icon + contact_cta label", async () => {
+    respond(200, ORG);
+    await renderPage();
+    const wa = screen.getByTestId("organizer-contact-whatsapp");
+    expect(wa.getAttribute("data-primary")).toBe("true");
+    expect(wa.textContent).toBe("contact_cta.whatsapp");
+    expect(wa.querySelector("svg")).not.toBeNull();
+    expect(wa.className).toContain("btn-whatsapp");
+    // a secondary channel keeps its short pill label and no icon
+    const ig = screen.getByTestId("organizer-contact-instagram");
+    expect(ig.textContent).toBe("organizers.page.instagram");
+    expect(ig.querySelector("svg")).toBeNull();
+  });
+
+  it("MEH-2988: a website primary keeps the business button's referral rules", async () => {
+    respond(200, { ...ORG, primary_contact_method: "website", website: "gelem.co.il" });
+    await renderPage();
+    const site = screen.getByTestId("organizer-contact-website");
+    expect(site.getAttribute("data-primary")).toBe("true");
+    expect(site.getAttribute("href")).toMatch(/^https:\/\/gelem\.co\.il\/?\?.*utm_source=/);
+    expect(site.getAttribute("target")).toBe("_blank");
+    expect(site.getAttribute("rel")).toBe("noopener");
+  });
+
+  it("MEH-2988: a WhatsApp primary opens in place, as on the business page", async () => {
+    respond(200, ORG);
+    await renderPage();
+    expect(screen.getByTestId("organizer-contact-whatsapp").getAttribute("target")).toBeNull();
   });
 
   it("MEH-2475: the founding year shows as a quiet «since» line only when set", async () => {
