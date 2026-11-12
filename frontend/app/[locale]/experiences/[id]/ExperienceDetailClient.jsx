@@ -21,7 +21,9 @@ import {
 import { useTranslations, useLocale } from "next-intl";
 import { formatEventDate } from "@/lib/format-date";
 // MEH-1140: canonical shekel format ("35₪") — one owner in lib/utils.
-import { formatPrice, getWhatsAppHref, normalizePhone } from "@/lib/utils";
+import { formatPrice } from "@/lib/utils";
+import { contactHref } from "@/lib/contact-method";
+import { trackChannelClick } from "@/lib/contact-tracking";
 import { formatDuration } from "@/lib/experience-format";
 import api from "@/lib/api";
 import Breadcrumb from "@/components/Breadcrumb";
@@ -148,12 +150,11 @@ export default function ExperienceDetailClient() {
       : `/producer/${hostBiz.producer_id}`
     : null;
   const hostName = hostBiz?.producer_name || ex.host?.name;
-  // normalizePhone accepts Israeli MOBILE numbers only — "" for a landline,
-  // which WhatsApp cannot reach.
-  const hostPhone = normalizePhone(hostBiz?.producer_phone);
   const waitText = t("waitlist_message", { title: ex.title });
-  // MEH-2768: no recipient-less fallback any more — callers check hostPhone.
-  const waLink = (text) => getWhatsAppHref(hostPhone, text);
+  // MEH-2991: the host's WhatsApp link comes from the one contact table
+  // (lib/contact-method.js) — null for no number or a landline, which
+  // WhatsApp cannot reach. MEH-2768: no recipient-less fallback.
+  const waitlistHref = hostBiz ? contactHref("whatsapp", { phone: hostBiz.producer_phone }, waitText) : null;
 
   // MEH-2549: the event page's structure (MEH-2548) in the experience's
   // gold — cover + date tile, host byline, one details card with share +
@@ -419,7 +420,8 @@ export default function ExperienceDetailClient() {
                     phone={hostBiz?.producer_phone}
                     url={ex.registration_url}
                     isFull={isFull}
-                    waitlistHref={hostPhone ? waLink(waitText) : null}
+                    waitlistHref={waitlistHref}
+                    onWaitlistClick={() => trackChannelClick(hostBiz?.producer_id, "whatsapp")}
                     waitlistLabel={t("waitlist_cta")}
                   />
                 )}

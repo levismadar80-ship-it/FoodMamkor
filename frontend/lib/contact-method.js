@@ -29,11 +29,29 @@ function declaredMethod(producer) {
   return CONTACT_METHODS.some((c) => c.key === m) ? m : "whatsapp";
 }
 
+/** Coerce a bare / protocol-less URL field into a safe https href; "" → null.
+ *  (A stored value without a scheme must never become an in-site relative path.) */
+export function httpUrl(raw) {
+  const v = (raw || "").trim();
+  if (!v) return null;
+  return v.startsWith("http") ? v : `https://${v}`;
+}
+
 /**
- * The href for one method, or null when the producer lacks the field that
- * method needs. Pure; the method is given, not read from the producer.
+ * MEH-2991: the ONE table of contact hrefs, for every entity that carries the
+ * business contact fields (a business, an organizer — both Producer rows).
+ * The href for one channel, or null when the entity lacks the field that
+ * channel needs. Pure; the channel is given, not read from the entity.
+ * Before this the business page (ContactCard), the organizer page and this
+ * file each held their own copy of these rules.
+ *
+ * `whatsapp_group` (the «עדכונים» link) is a channel but never a PRIMARY
+ * method — it is not in CONTACT_METHODS.
+ *
+ * DO NOT build `tel:` / `mailto:` / wa.me hrefs in a page — call this
+ * (guarded by __tests__/ContactChannelsOneOwner.test.js).
  */
-function hrefFor(method, producer, waMessage = "") {
+export function contactHref(method, producer, waMessage = "") {
   switch (method) {
     case "whatsapp": {
       const digits = normalizePhone(producer.phone);
@@ -44,14 +62,11 @@ function hrefFor(method, producer, waMessage = "") {
       return getWhatsAppHref(digits, waMessage);
     }
     case "phone": {
-      if (!producer.phone) return null;
-      return `tel:${producer.phone}`;
+      const phone = (producer.phone || "").trim();
+      return phone ? `tel:${phone}` : null;
     }
-    case "website": {
-      const raw = (producer.website || "").trim();
-      if (!raw) return null;
-      return raw.startsWith("http") ? raw : `https://${raw}`;
-    }
+    case "website":
+      return httpUrl(producer.website);
     case "email": {
       const email = (producer.contact_email || "").trim();
       if (!email) return null;
@@ -62,20 +77,17 @@ function hrefFor(method, producer, waMessage = "") {
       // lib/social-links.js so this surface, ContactCard and the outreach
       // table cannot drift apart. Returns null when there is no handle.
       return instagramUrl(producer.instagram);
-    case "facebook": {
-      const raw = (producer.facebook || "").trim();
-      if (!raw) return null;
-      return raw.startsWith("http") ? raw : `https://${raw}`;
-    }
-    case "external_order": {
-      const raw = (producer.external_order_form || "").trim();
-      if (!raw) return null;
-      return raw.startsWith("http") ? raw : `https://${raw}`;
-    }
+    case "facebook":
+      return httpUrl(producer.facebook);
+    case "external_order":
+      return httpUrl(producer.external_order_form);
+    case "whatsapp_group":
+      return httpUrl(producer.whatsapp_group);
     default:
       return null;
   }
 }
+const hrefFor = contactHref;
 
 /**
  * MEH-2836: the ONE resolver for "which channel does the contact button use".
