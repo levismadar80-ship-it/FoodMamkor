@@ -1291,6 +1291,9 @@ def approve_producer(  # noqa: PLR0913 — all 6 args are FastAPI-injected (path
     p_id = producer.id
 
     producer_user = db.query(User).filter(User.producer_id == producer.id).first()
+    # MEH-2952: approving a test business (or one owned by a test account)
+    # sends nothing — owner email, owner WhatsApp and the admin ping alike.
+    p_test = bool(producer.is_test or (producer_user and producer_user.is_test))
     if producer_user:
         _send_notification_email(
             producer_user.email,
@@ -1307,12 +1310,13 @@ def approve_producer(  # noqa: PLR0913 — all 6 args are FastAPI-injected (path
             # builders drop their view-page block whole.
             _producer_approved_body(p_name, p_slug),
             html=_producer_approved_html(p_name, p_slug),
+            test_cause=p_test,
         )
 
     # MEH-509 PR1: fire producer_approved_v1 WhatsApp template to the
     # producer. Fail-open at the service layer — any failure here must
     # NOT block the 200 response (approval already committed above).
-    notify_producer_approved(p_name, p_phone, p_slug, p_id)
+    notify_producer_approved(p_name, p_phone, p_slug, p_id, test_cause=p_test)
     # MEH-2852: the business page just appeared.
     indexnow.schedule(background_tasks, indexnow.producer_urls(producer))
 
@@ -1321,6 +1325,7 @@ def approve_producer(  # noqa: PLR0913 — all 6 args are FastAPI-injected (path
         _send_whatsapp(
             settings.admin_whatsapp_to,
             f'✅ העסק "{p_name}" אושר במהמקור.',
+            test_cause=p_test,
         )
 
     return {"detail": "Producer approved"}
@@ -1515,6 +1520,8 @@ def reject_producer(
     # back a decision the admin already made.
     reason_text = _rejection_reason_suffix(composed_reason)
     producer_user = db.query(User).filter(User.producer_id == producer.id).first()
+    # MEH-2952: a test business / test owner → nothing sent.
+    p_test = bool(producer.is_test or (producer_user and producer_user.is_test))
     if producer_user:
         # MEH-2210: both parts carry the dashboard link — the resubmit CTA
         # lives there. Same link the changes-requested mail builds.
@@ -1526,6 +1533,7 @@ def reject_producer(
             html=_producer_rejected_html(
                 producer.name, composed_reason, dashboard_link
             ),
+            test_cause=p_test,
         )
 
     # Notify admin via WhatsApp
@@ -1533,6 +1541,7 @@ def reject_producer(
         _send_whatsapp(
             settings.admin_whatsapp_to,
             f'❌ העסק "{producer.name}" נדחה.{reason_text}',
+            test_cause=p_test,
         )
 
     return {
@@ -1595,23 +1604,29 @@ def request_producer_changes(
     dashboard_link = f"{settings.frontend_url}/producer/dashboard"
 
     producer_user = db.query(User).filter(User.producer_id == producer.id).first()
+    # MEH-2952: a test business / test owner → nothing sent.
+    p_test = bool(producer.is_test or (producer_user and producer_user.is_test))
     if producer_user:
         _send_notification_email(
             producer_user.email,
             f'מהמקור — נשאר פרט אחד לפני האישור של "{p_name}"',
             _producer_changes_requested_body(p_name, feedback, dashboard_link),
+            test_cause=p_test,
         )
 
     # MEH-1051: WhatsApp mirror of the email above (producer_changes_requested_v1,
     # Meta-approved). Post-commit + fail-open — a Meta outage or missing phone
     # must never affect the 200; the function handles skip/raise internally.
-    notify_producer_changes_requested(p_name, producer.phone, feedback)
+    notify_producer_changes_requested(
+        p_name, producer.phone, feedback, test_cause=p_test
+    )
 
     # Notify admin via WhatsApp
     if settings.admin_whatsapp_to:
         _send_whatsapp(
             settings.admin_whatsapp_to,
             f"📝 נשלחה בקשת השלמה ל-{p_name}",
+            test_cause=p_test,
         )
 
     return {
@@ -2258,7 +2273,11 @@ def _producer_changes_requested_body(
 
 
 def _send_notification_email(
-    to_email: str, subject: str, body: str, html: str | None = None
+    to_email: str,
+    subject: str,
+    body: str,
+    html: str | None = None,
+    test_cause: bool = False,
 ):
     """MEH-2151: `html` is OPTIONAL and defaults to None.
 
@@ -2269,14 +2288,17 @@ def _send_notification_email(
     payload it produced before this parameter existed. Same shape, and same
     reasoning, as `reply_to` two parameters down in `send_email` (MEH-2112).
     """
-    send_email(to_email, subject, body, html=html)
+    # MEH-2952: `test_cause` — the business the mail is about is a test row.
+    send_email(to_email, subject, body, html=html, test_cause=test_cause)
 
 
-def _send_whatsapp(to: str, body: str):
+def _send_whatsapp(to: str, body: str, test_cause: bool = False):
     """Send WhatsApp admin notification via Meta Cloud API.
 
     MEH-508: send_text is fail-open (False on missing config or HTTP error,
     no exception raised), so the previous try/except + configured-check
     collapse to a single call. Service-level logger emits the warning.
+
+    MEH-2952: `test_cause` — the business the ping is about is a test row.
     """
-    send_text(to, body)
+    send_text(to, body, test_cause=test_cause)

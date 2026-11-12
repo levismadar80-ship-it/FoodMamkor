@@ -66,9 +66,43 @@ function writeCache(key, any) {
   }
 }
 
+// MEH-2965: one request per hub per page load, however many consumers mount
+// (Header, Footer, BottomNav and ListingHubTabs can all ask in one commit).
+// Shared while in flight, dropped when settled; the session cache owns the
+// rest. Resolves to the answer, or null when there is none to give.
+const inFlight = new Map();
+/** Test seam: forget a request still in flight (a suite's never-settling stub
+ *  would otherwise answer every later case in the same module instance). */
+export function resetHubNavGateRequests() {
+  inFlight.clear();
+}
+function loadAny(gate) {
+  if (!inFlight.has(gate.cacheKey)) {
+    inFlight.set(
+      gate.cacheKey,
+      api
+        .get(gate.endpoint)
+        .then((res) => {
+          const parsed = ListSchema.safeParse(res?.data);
+          if (!parsed.success) return null; // stays hidden
+          const any = parsed.data.length > 0;
+          writeCache(gate.cacheKey, any);
+          return any;
+        })
+        // Deliberately silent — a hidden nav link is not a user-facing error.
+        .catch(() => null)
+        .finally(() => {
+          inFlight.delete(gate.cacheKey);
+        }),
+    );
+  }
+  return inFlight.get(gate.cacheKey);
+}
+
 /**
  * @param {"groupBuys" | "rescue"} hub
- * @returns {boolean} whether the footer should show that hub's link.
+ * @returns {boolean} whether the nav should show that hub's link (Footer, the
+ * hub tab row, and the Header's and BottomNav's hub link).
  * FAIL-CLOSED like the events/experiences gates: starts false (no hydration
  * flash), stays false on any error, 404 or malformed body, and ignores a
  * response that arrives after unmount. A pilot that is off asks nothing.
@@ -89,18 +123,9 @@ export function useHubNavGate(hub) {
       };
     }
 
-    api
-      .get(gate.endpoint)
-      .then((res) => {
-        const parsed = ListSchema.safeParse(res?.data);
-        if (!parsed.success) return; // stays hidden
-        const any = parsed.data.length > 0;
-        writeCache(gate.cacheKey, any);
-        if (alive) setVisible(any);
-      })
-      .catch(() => {
-        // Deliberately silent — a hidden footer link is not a user-facing error.
-      });
+    loadAny(gate).then((any) => {
+      if (alive && any !== null) setVisible(any);
+    });
 
     return () => {
       alive = false;

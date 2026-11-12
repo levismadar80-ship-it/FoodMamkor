@@ -40,7 +40,7 @@ def sent(monkeypatch):
     """Record every verify-email send instead of sending it."""
     calls: list[tuple[str, str, str]] = []
 
-    def _record(email, name, token):
+    def _record(email, name, token, test_cause=False):
         calls.append((email, name, token))
         return True
 

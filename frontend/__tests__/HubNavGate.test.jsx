@@ -11,7 +11,7 @@ import { render, screen, waitFor } from "@testing-library/react";
 const get = vi.fn();
 vi.mock("@/lib/api", () => ({ default: { get: (...a) => get(...a), post: vi.fn() } }));
 
-import { useHubNavGate } from "@/lib/use-hub-nav-gate";
+import { useHubNavGate, resetHubNavGateRequests } from "@/lib/use-hub-nav-gate";
 
 function Probe({ hub }) {
   const visible = useHubNavGate(hub);
@@ -21,6 +21,7 @@ const gate = () => screen.getByTestId("gate").textContent;
 const list = (n) => Promise.resolve({ data: Array.from({ length: n }, (_, i) => ({ id: `x${i}` })) });
 
 beforeEach(() => {
+  resetHubNavGateRequests();
   get.mockReset();
   sessionStorage.clear();
   vi.stubEnv("NEXT_PUBLIC_RESCUE_BAGS_ENABLED", "true");

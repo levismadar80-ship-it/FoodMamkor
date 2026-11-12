@@ -37,6 +37,15 @@ describe("sitemap noindex exclusion (MEH-803)", () => {
     expect(urls).toContain(`${BASE}/terms`);
     expect(urls).toContain(BASE); // home ("")
   });
+
+  // MEH-2967: /join is the business landing page with real content (MEH-995).
+  // It was never listed, so crawlers were offered only /register/producer,
+  // whose server HTML is a loading placeholder.
+  it("lists /join in both locales", async () => {
+    const urls = (await sitemap()).map((e) => e.url);
+    expect(urls).toContain(`${BASE}/join`);
+    expect(urls).toContain(`${BASE}/en/join`);
+  });
 });
 
 describe("MEH-2461 — organizer pages in the sitemap", () => {

@@ -239,7 +239,9 @@ class TestJourney1RecipePipeline:
         )
         assert resp.status_code == 201
         # TestClient runs BackgroundTasks synchronously after the response.
-        notify_mock.assert_called_once_with(producer.name, payload["title"])
+        notify_mock.assert_called_once_with(
+            producer.name, payload["title"], test_cause=False
+        )
 
 
 # ============================================================
