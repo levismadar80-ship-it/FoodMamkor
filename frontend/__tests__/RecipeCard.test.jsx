@@ -86,7 +86,7 @@ describe("RecipeCard", () => {
     expect(card.className).toMatch(/(^|\s)max-w-\[240px\](\s|$)/);
     expect(card.className).toMatch(/\bsnap-start\b/);
     expect(document.querySelector(".aspect-square")).toBeNull();
-    expect(screen.getByRole("img").getAttribute("sizes")).toBe("(max-width: 767px) min(62vw, 240px), 246px");
+    expect(screen.getByRole("img").getAttribute("sizes")).toBe("(max-width: 767px) min(62vw, 240px), (max-width: 1023px) calc(33.33vw - 21.33px), 246px");
   });
 
   it("does not repeat the «מתכון» eyebrow under the section heading", () => {

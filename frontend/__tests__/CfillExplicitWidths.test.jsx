@@ -33,8 +33,8 @@ const CLOUDINARY = "https://res.cloudinary.com/demo/image/upload/v1/hero.jpg";
 // site; asserted here so a silent change to any of them fails loudly.
 const EXPECTED = {
   producerCard: 828,
-  // MEH-3006: strip card, widest box ~246px × DPR 2 (was a 750 full-width card).
-  recipeCard: 500,
+  // MEH-3006: strip/grid card, widest box ~320px (md, W=1023) × DPR 2.
+  recipeCard: 640,
   mapMarker: 72,
 };
 

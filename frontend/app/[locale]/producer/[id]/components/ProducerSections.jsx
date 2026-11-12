@@ -587,7 +587,7 @@ export default function ProducerSections({
               or many. md+ — the same cards in a 3-column grid. */}
           <div
             data-testid="producer-recipes-grid"
-            className="flex gap-3 overflow-x-auto scrollbar-hide snap-x snap-mandatory -me-4 pe-4 md:grid md:grid-cols-3 md:gap-4 md:overflow-visible md:me-0 md:pe-0"
+            className="flex gap-3 overflow-x-auto scrollbar-hide snap-x snap-proximity -me-4 pe-4 md:grid md:grid-cols-3 md:gap-4 md:overflow-visible md:me-0 md:pe-0"
           >
             {recipes.map((r) => (
               <RecipeCard key={r.id} slug={producer.slug} recipe={r} />

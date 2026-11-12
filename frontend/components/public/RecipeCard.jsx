@@ -30,11 +30,11 @@ export default function RecipeCard({ slug, recipe }) {
   const t = useTranslations("recipes.card");
   const totalMin =
     (recipe.prep_time_min || 0) + (recipe.cook_time_min || 0) || null;
-  // Widest box: 240px (phone card cap) / ~246px (3-col cell at the
-  // max-w-6xl cap) → × DPR 2 ≈ 500.
+  // Boxes: phone card ≤ 240px; md..lg-1 3-col cell (W - 64)/3, peaking at
+  // ~320px at W = 1023; lg+ ~246px at the max-w-6xl cap. 320 × DPR 2 = 640.
   const imgSrc = optimizeCloudinary(recipe.image_url, {
     aspectRatio: IMAGE_RATIOS.card,
-    width: 500,
+    width: 640,
   });
   // MEH-1976: a url that resolves but fails to load falls through to the
   // no-photo tile. The state holds the src that failed, so a new `imgSrc`
@@ -46,7 +46,7 @@ export default function RecipeCard({ slug, recipe }) {
     <Link
       href={`/${slug}/recipes/${recipe.id}`}
       data-testid="recipe-card"
-      className="group block shrink-0 w-[62%] max-w-[240px] snap-start md:w-auto md:max-w-none rounded-md focus-visible:ring-2 focus-visible:ring-primary/40"
+      className="group block shrink-0 w-[62%] max-w-[240px] snap-start md:w-auto md:max-w-none rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/60"
     >
       <div className="relative w-full aspect-[4/3] rounded-md overflow-hidden bg-background">
         {imgSrc && !imgError ? (
@@ -54,7 +54,7 @@ export default function RecipeCard({ slug, recipe }) {
             src={imgSrc}
             alt={recipe.title}
             fill
-            sizes="(max-width: 767px) min(62vw, 240px), 246px"
+            sizes="(max-width: 767px) min(62vw, 240px), (max-width: 1023px) calc(33.33vw - 21.33px), 246px"
             className="object-cover transition-transform duration-300 ease-quart group-hover:scale-[1.02]"
             onError={() => setFailedSrc(imgSrc)}
           />
