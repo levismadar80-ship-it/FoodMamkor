@@ -880,6 +880,11 @@ test.describe("manual › hero — produce photo + Ken Burns (MEH-788)", () => {
   //   asserted is the structural claim underneath it — all three sit inside the
   //   hero band and none is clipped out of the first viewport.
   test("the headline, subtitle and chips row sit inside the hero band and in the viewport", async ({ page }) => {
+    // MEH-2979: the subtitle swaps to home.hero.friday_subtitle Thu 18:00 →
+    // Fri 14:00 Israel (lib/friday-mode.js), so an unfrozen clock reds this
+    // every week in that window. Pin a weekday noon, as parity.spec.ts does
+    // (MEH-1531). Real users' Friday behaviour is untouched.
+    await page.clock.setFixedTime(new Date("2026-07-15T09:00:00Z")); // Wed 12:00 IDT
     await consent(page);
     await stubTiles(page);
     await gotoHome(page);
@@ -2109,6 +2114,17 @@ function strangersBetweenGridAndMap(page: Page): Promise<string[]> {
 
 // ════════════════════════════════════════════════════════════════════════════
 test.describe("manual › above-the-fold mini-map + trust band (MEH-604 · MEH-607)", () => {
+  // MEH-2979: Thu 18:00 → Fri 14:00 Israel the friday-delivery-strip mounts
+  // between the hero and the trust band (lib/friday-mode.js). It shifted the
+  // trust band by 219px against the 60px budget (:2383) and appeared on one
+  // project but not the other in the section-order check (:2192) — both seen
+  // in this window on 12/11. These tests are about layout, not the strip, so
+  // pin a weekday noon; the strip's own tests force it with
+  // friday_mode_override, which wins over the clock.
+  test.beforeEach(async ({ page }) => {
+    await page.clock.setFixedTime(new Date("2026-07-15T09:00:00Z")); // Wed 12:00 IDT
+  });
+
   // MT:604:1 — REVISED by MEH-2747 (Sapir 6/11, option א׳): the map comes
   //   right AFTER the businesses grid on phone and desktop alike. MEH-604's
   //   "second block, right under the hero" is retired. Asserted as DOM order
