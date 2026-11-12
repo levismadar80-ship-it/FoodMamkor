@@ -79,3 +79,12 @@ def test_expired_group_buy_gets_a_fresh_one_and_is_kept(db, seed_mod, demo):
 def test_no_demo_producer_is_a_no_op(db, seed_mod):
     assert seed_mod.seed_open_group_buy(db) is False
     assert db.query(GroupBuy).count() == 0
+
+
+def test_refresh_then_plain_run_does_not_double_up(db, seed_mod, demo):
+    # --refresh recreates the business (and its group buy); the follow-up call
+    # in main() must see that one as live and add nothing.
+    seed_mod.seed_demo_business(db, refresh=True)
+    producer = db.query(Producer).filter(Producer.slug == seed_mod.DEMO_SLUG).one()
+    assert seed_mod.seed_open_group_buy(db) is False
+    assert _open_live(db, producer.id) == 1
