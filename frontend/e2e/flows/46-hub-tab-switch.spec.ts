@@ -27,7 +27,10 @@ async function startSampler(page) {
     const tick = () => {
       w.__hubSamples.push({
         loader: !!document.querySelector('[data-testid="route-loading"]'),
-        hub: !!document.querySelector('[data-testid="listing-hub-tabs"]'),
+        // A hidden copy (see liveHub) must not count as "the row is on screen".
+        hub: [...document.querySelectorAll('[data-testid="listing-hub-tabs"]')].some((el) =>
+          (el as HTMLElement).checkVisibility()
+        ),
       });
       n += 1;
       if (n < frames) requestAnimationFrame(tick);
@@ -42,15 +45,17 @@ async function readSamples(page) {
   return page.evaluate(() => (window as unknown as { __hubSamples: Array<{ loader: boolean; hub: boolean }> }).__hubSamples);
 }
 
-// A streamed page briefly holds TWO hub rows: React parks the resolved segment
-// in a hidden node before it swaps it in (seen on CI, run 43283502922: strict
-// mode found 2 elements, one "hidden"). Wait for the swap to finish so every
-// locator and the marker below address the one live row.
+// The DOM can hold a second, HIDDEN hub row next to the live one (CI runs
+// 43283502922 and 43286869935: strict mode found 2 elements, one "hidden",
+// and the hidden one could appear after the count had already read 1). The
+// user only ever sees one, so every locator and the marker address the
+// visible row; nothing here asserts how many hidden copies exist.
+const liveHub = (page: Page) => page.locator(HUB).filter({ visible: true });
+
 async function openHub(page: Page, path: string) {
   await page.goto(path);
-  const hub = page.locator(HUB);
+  const hub = liveHub(page);
   await expect(hub).toHaveCount(1, { timeout: 15_000 });
-  await expect(hub).toBeVisible();
   return hub;
 }
 
@@ -65,7 +70,8 @@ for (const locale of ["he", "en"] as const) {
 
     // Marker on the live node: survives only if the hub is NOT remounted.
     await page.evaluate((sel) => {
-      (document.querySelector(sel) as HTMLElement).dataset.meh2980 = "kept";
+      const live = [...document.querySelectorAll(sel)].find((el) => (el as HTMLElement).checkVisibility());
+      (live as HTMLElement).dataset.meh2980 = "kept";
     }, HUB);
 
     const listCalls: string[] = [];
@@ -83,7 +89,7 @@ for (const locale of ["he", "en"] as const) {
     expect(samples.length).toBe(FRAMES);
     expect(samples.filter((s) => s.loader), "route loader painted during the switch").toEqual([]);
     expect(samples.filter((s) => !s.hub), "tab row vanished during the switch").toEqual([]);
-    await expect(page.locator(`${HUB}[data-meh2980="kept"]`), "hub remounted on switch").toHaveCount(1);
+    await expect(page.locator(`${HUB}[data-meh2980="kept"]`).filter({ visible: true }), "hub remounted on switch").toHaveCount(1);
     await expect.poll(() => listCalls.length).toBe(1);
     expect(listCalls[0]).toMatch(/\/events\/?$/);
     const eventsTitle = await page.title();
@@ -96,7 +102,7 @@ for (const locale of ["he", "en"] as const) {
     await expect(page).toHaveURL(new RegExp(`${prefix}/experiences$`));
     await expect(hub.locator('[data-tab-value="experiences"]')).toHaveAttribute("aria-selected", "true");
     expect(back.filter((s) => s.loader), "route loader painted on Back").toEqual([]);
-    await expect(page.locator(`${HUB}[data-meh2980="kept"]`), "hub remounted on Back").toHaveCount(1);
+    await expect(page.locator(`${HUB}[data-meh2980="kept"]`).filter({ visible: true }), "hub remounted on Back").toHaveCount(1);
     // One more list request for the Back — read after the 90-frame window, so
     // a late duplicate would already be in the array.
     expect(listCalls.length, "list fetched more than once on Back").toBe(2);
@@ -137,7 +143,7 @@ for (const locale of ["he", "en"] as const) {
 
     await page.goBack();
     await expect(page).toHaveURL(new RegExp(`${prefix}/events$`));
-    await expect(page.locator(HUB).locator('[data-tab-value="events"]')).toHaveAttribute("aria-selected", "true", {
+    await expect(liveHub(page).locator('[data-tab-value="events"]')).toHaveAttribute("aria-selected", "true", {
       timeout: 15_000,
     });
   });
