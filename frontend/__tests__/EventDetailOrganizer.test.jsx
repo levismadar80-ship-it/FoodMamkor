@@ -72,38 +72,36 @@ beforeEach(() => {
 afterEach(() => vi.useRealTimers());
 
 describe("MEH-2461 — event page owner line by kind", () => {
-  it("organizer with slug: «מארגן:» links to the organizer page, no business contact button", async () => {
+  // MEH-2989: the owner card at the end of the page is gone — the byline
+  // under the title carries the owner's link alone.
+  it("organizer with slug: the byline links to the organizer page, no bottom card", async () => {
     await renderEvent({ producer_name: "שוק גלם", owner_kind: "organizer", owner_slug: "gelem" });
-    const line = screen.getByTestId("event-organizer-line");
-    // The avatar initial «ש» is aria-hidden; the link's accessible text is the line.
-    const link = line.querySelector("a");
+    const link = screen.getByTestId("event-byline");
     expect(link.getAttribute("href")).toBe("/organizers/gelem");
     expect(link.textContent).toBe("שevents.detail.organizer_line שוק גלם");
-    // Affordance: the row carries a forward chevron, so it reads as tappable.
-    expect(link.querySelector('[data-testid="owner-chevron"]')).not.toBeNull();
+    expect(screen.queryByTestId("event-organizer-line")).not.toBeInTheDocument();
     expect(screen.queryByText("events.detail.contact_producer")).not.toBeInTheDocument();
     expect(document.querySelector('a[href="/producer/p-1"]')).toBeNull();
   });
 
-  it("organizer without a slug: the line renders as text, never a dead link", async () => {
+  it("organizer without a slug: the byline renders as text, never a dead link", async () => {
     await renderEvent({ producer_name: "שוק גלם", owner_kind: "organizer", owner_slug: null });
-    const line = screen.getByTestId("event-organizer-line");
-    expect(line.textContent).toBe("שevents.detail.organizer_line שוק גלם");
-    expect(line.querySelector("a")).toBeNull();
-    // No link → no chevron promising one.
-    expect(screen.queryByTestId("owner-chevron")).toBeNull();
+    const by = screen.getByTestId("event-byline");
+    expect(by.tagName).toBe("P");
+    expect(document.querySelector('a[href^="/organizers/"]')).toBeNull();
   });
 
   // MEH-2768: the «יצירת קשר עם בית העסק» button gave way to the
   // «איך נרשמים?» CTA — the on-site form by default.
-  it("business: «מאורגן על ידי» + /producer link + the sign-up CTA", async () => {
+  it("business: the byline links to /producer, the sign-up CTA shows, no bottom card", async () => {
     await renderEvent({ producer_name: "חוות הניסוי", owner_kind: "producer", owner_slug: "farm" });
-    expect(screen.queryByTestId("event-organizer-line")).not.toBeInTheDocument();
     expect(screen.getByTestId("registration-open")).toBeInTheDocument();
-    const row = screen.getByTestId("event-business-line").querySelector("a");
-    expect(row.getAttribute("href")).toBe("/producer/p-1");
-    expect(row.textContent).toContain("events.detail.organized_by חוות הניסוי");
-    expect(row.querySelector('[data-testid="owner-chevron"]')).not.toBeNull();
+    const by = screen.getByTestId("event-byline");
+    expect(by.getAttribute("href")).toBe("/producer/p-1");
+    expect(by.textContent).toContain("events.detail.organized_by חוות הניסוי");
+    expect(screen.queryByTestId("event-business-line")).not.toBeInTheDocument();
+    // Exactly one link to the business on the page — the byline.
+    expect(document.querySelectorAll('a[href="/producer/p-1"]').length).toBe(1);
   });
 });
 

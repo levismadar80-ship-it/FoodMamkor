@@ -8,7 +8,6 @@ import dynamic from "next/dynamic";
 import { Link } from "@/i18n/navigation";
 import {
   ArrowsClockwise,
-  Calendar,
   CalendarBlank,
   CalendarPlus,
   CaretLeft,
@@ -26,7 +25,7 @@ import { formatDuration } from "@/lib/experience-format";
 import api from "@/lib/api";
 import Breadcrumb from "@/components/Breadcrumb";
 import HistoryBackLink from "@/components/HistoryBackLink";
-import OwnerRow from "@/components/OwnerRow";
+import DateTile from "@/components/DateTile";
 import ShareButton from "@/components/ShareButton";
 import SaveButton from "@/components/SaveButton";
 import { CATEGORY_ICON } from "@/components/EventEntryRow";
@@ -173,8 +172,8 @@ export default function ExperienceDetailClient() {
   // gated (MEH-1417) and must not leak through a link either.
   const nav = !hasCoords && ex.location_type === "public" ? addressNavLinks(ex.address, ex.city) : null;
   const day = formatEventDate(ex.event_date, locale, { day: "numeric" });
-  const month = formatEventDate(ex.event_date, locale, { month: "long" });
-  const weekday = formatEventDate(ex.event_date, locale, { weekday: "long" });
+  // MEH-2989: the tile is 44px wide — an English month name needs the short form.
+  const month = formatEventDate(ex.event_date, locale, { month: locale === "he" ? "long" : "short" });
   // A full experience swaps the sign-up CTA for a WhatsApp waitlist message.
   const isFull = ex.max_participants != null && ex.spots_left === 0;
   const fewLeft = !isFull && ex.max_participants != null && ex.spots_left != null && ex.spots_left <= FEW_SPOTS;
@@ -229,20 +228,13 @@ export default function ExperienceDetailClient() {
             <CatIcon size={54} weight="duotone" className="text-white/85" />
           </div>
         )}
-        <div
-          aria-hidden="true"
-          className="lg:hidden absolute start-4 -bottom-7 w-16 rounded-md bg-surface shadow-lg text-center overflow-hidden"
-        >
-          <span className="block bg-accent text-white text-2xs font-bold py-0.5">{month}</span>
-          <span className="block font-headline-display font-black text-3xl leading-tight pt-1 numeric">{day}</span>
-          <span className="block text-2xs text-fg-muted pb-1.5">{weekday}</span>
-        </div>
       </div>
 
-      <div className="max-w-[1100px] mx-auto px-4 pt-11 lg:pt-8 lg:grid lg:grid-cols-[1fr_360px] lg:grid-rows-[auto_1fr] lg:gap-x-12 lg:items-start">
+      <div className="max-w-[1100px] mx-auto px-4 pt-5 lg:pt-8 lg:grid lg:grid-cols-[1fr_360px] lg:grid-rows-[auto_1fr] lg:gap-x-12 lg:items-start">
         <div className="lg:col-start-1">
           {/* MEH-2857: «→ חזרה» to the page the visitor came from, when there
-              is one inside the site; the breadcrumb below stays as is. */}
+              is one inside the site. MEH-2989: the breadcrumb below is desktop
+              only — on a phone it repeated «חזרה» and the bottom tab. */}
           <HistoryBackLink />
           <Breadcrumb
             items={[
@@ -250,7 +242,7 @@ export default function ExperienceDetailClient() {
               { href: "/experiences", label: t("breadcrumb_experiences") },
               { label: ex.title },
             ]}
-            className="mb-3"
+            className="hidden lg:block mb-3"
           />
 
           {justSubmitted && ex.status === "pending" && (
@@ -276,7 +268,8 @@ export default function ExperienceDetailClient() {
             </div>
           )}
 
-          {cat && (
+          {/* MEH-2989: «אחר» tells the visitor nothing — no chip for it. */}
+          {cat && cat.key !== "אחר" && (
             // MEH-2675: the chip opens the experiences list filtered to its
             // type (?category= is the list's deep link, EventsClient.jsx).
             // Always the Hebrew wire key — an older row may store "food_tour".
@@ -318,13 +311,6 @@ export default function ExperienceDetailClient() {
 
         <aside className="mt-6 lg:mt-0 lg:col-start-2 lg:row-start-1 lg:row-span-2 lg:sticky lg:top-24">
           <div className="bg-surface border border-border rounded-lg overflow-hidden lg:shadow-md" data-testid="experience-info">
-            <div aria-hidden="true" className="hidden lg:block text-center border-b border-border">
-              <span className="block bg-accent text-white text-sm font-bold py-1.5">
-                {formatEventDate(ex.event_date, locale, { month: "long", year: "numeric" })}
-              </span>
-              <span className="block font-headline-display font-black text-5xl leading-tight pt-2 numeric">{day}</span>
-              <span className="block text-sm text-fg-muted pb-3">{weekday}</span>
-            </div>
             {/* MEH-2476: a recurring experience leads with its schedule, so the
                 date below reads as a start, not as the only occasion. */}
             {ex.is_recurring && (
@@ -338,7 +324,9 @@ export default function ExperienceDetailClient() {
               </div>
             )}
             <div className={`${infoRow} ${ex.is_recurring ? "border-t border-border" : ""}`}>
-              <span className={infoIcon}><Calendar size={18} aria-hidden="true" /></span>
+              {/* MEH-2989: the date tile is this row's icon (Luma) — the
+                  date used to repeat on the cover and in a desktop header. */}
+              <DateTile month={month} day={day} bandClass="bg-accent" testId="experience-date-tile" />
               <p className="flex-1 min-w-0 font-semibold text-text" data-testid="experience-date">
                 {ex.is_recurring
                   ? t("starts_from", { date: formatDate(ex.event_date, locale) })
@@ -451,10 +439,6 @@ export default function ExperienceDetailClient() {
         </aside>
 
         <div className="lg:col-start-1 mt-8 space-y-6">
-          {/* MEH-1404 / MEH-1417: the map only when the backend sends coords —
-              it nulls them for a home experience, so no residential pin leaks. */}
-          {hasCoords && <MiniMap lat={ex.lat} lng={ex.lng} name={ex.title} />}
-
           {/* «מה להביא» as a short checklist above the description, the way
               experience sites list it: the host's free text, one item per line
               (or per comma when she wrote one line). White like the
@@ -481,20 +465,13 @@ export default function ExperienceDetailClient() {
             </div>
           )}
 
-          {/* MEH-2539: the host as a tappable card (OwnerRow), same as the
-              event page's organizer row (MEH-2538). Without a business the
-              row renders with no link and no chevron. */}
-          {ex.host?.name && (
-            <div data-testid="experience-host">
-              <OwnerRow href={hostHref} name={hostName} testId="experience-host-link">
-                {t("host_label")} <span className="font-semibold">{hostName}</span>
-              </OwnerRow>
-            </div>
-          )}
+          {/* MEH-2989: «about» and «מה להביא» before the map (Luma / Eventbrite). */}
+          {/* MEH-1404 / MEH-1417: the map only when the backend sends coords —
+              it nulls them for a home experience, so no residential pin leaks. */}
+          {hasCoords && <MiniMap lat={ex.lat} lng={ex.lng} name={ex.title} />}
 
-          <Link href="/experiences" className="inline-flex items-center min-h-touch text-primary font-medium hover:underline">
-            {t("all_experiences")}
-          </Link>
+          {/* MEH-2989: no host card and no «כל החוויות» link at the end — both
+              repeated the byline under the title and the bottom tab. */}
         </div>
       </div>
     </div>
