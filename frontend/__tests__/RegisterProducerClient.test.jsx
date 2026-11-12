@@ -443,6 +443,21 @@ describe("RegisterProducerClient — pre-flight entry screen (MEH-994)", () => {
     expect(await screen.findByTestId("register-preflight")).toBeInTheDocument();
     expect(screen.queryByTestId("register-preflight-account-item")).not.toBeInTheDocument();
   });
+
+  // MEH-2917: the organizer door lives on the preflight (Sapir 11/11), and
+  // the group-buy note sits there too — before step 1.
+  it("links organizers to their own sign-up and tells group-buy organizers before step 1", async () => {
+    render(<RegisterProducerClient />);
+    await screen.findByTestId("register-preflight");
+    const link = screen.getByTestId("register-preflight-organizer-link");
+    expect(link.getAttribute("href")).toBe("/register/organizer");
+    expect(link.textContent).toBe(`${K}.preflight.organizer_link`);
+    expect(screen.getByTestId("register-preflight-group-buy-note").textContent).toBe(
+      `${K}.preflight.group_buy_note`,
+    );
+    // a link, not the checkbox MEH-2640 removed
+    expect(screen.queryByRole("checkbox", { name: /organizer/ })).toBeNull();
+  });
 });
 
 // MEH-1176 F10 — the MEH-328 didUpgrade CONFIRM split had zero coverage,

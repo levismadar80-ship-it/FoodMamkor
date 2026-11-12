@@ -79,6 +79,26 @@ export default function RegisterPreflight({ showAccountLine, onStart }) {
       >
         {t("cta")}
       </Button>
+
+      {/* MEH-2917: the organizer door (Sapir 11/11: back on the preflight,
+          where MEH-2640 said it moved). A link, never the removed checkbox —
+          the ROUTE decides the kind (MEH-2773). Group-buy organizers are told
+          here, before step 1, that the site has no sign-up for them: only a
+          verified business opens a group buy (group_buys.py
+          require_verified_producer). */}
+      <div className="space-y-1 text-center text-sm" data-testid="register-preflight-organizer">
+        <Link
+          href="/register/organizer"
+          data-testid="register-preflight-organizer-link"
+          className="inline-flex items-center gap-1 text-primary underline underline-offset-4 hover:text-primary-dark rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+        >
+          {t("organizer_link")}
+          <ArrowLeft size={14} aria-hidden="true" />
+        </Link>
+        <p className="text-fg-muted" data-testid="register-preflight-group-buy-note">
+          {t("group_buy_note")}
+        </p>
+      </div>
     </div>
   );
 }

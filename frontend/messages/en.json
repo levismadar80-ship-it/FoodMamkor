@@ -247,7 +247,9 @@
           "after_title": "What happens next",
           "after_body": "Every business gets a personal intro — once you complete your profile and send it for review, our team checks the details, gets in touch if needed, and your business goes live within up to 3 business days.",
           "after_link": "How the acceptance process works",
-          "cta": "Start"
+          "cta": "Start",
+          "organizer_link": "Organizing a market or event? You have your own sign-up",
+          "group_buy_note": "Organizing a neighbourhood group buy? On the site only businesses open group buys, and you can join a business's group buy from its page."
         },
         "loading": "Loading...",
         "loading_form": "Loading registration form...",
