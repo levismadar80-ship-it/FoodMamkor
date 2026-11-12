@@ -60,8 +60,8 @@ Fixed in `scripts/e2e/start-local-backend.sh` (CC):
 - Writes its exit code to `/tmp/backend-setup.status`; stops at once if
   uvicorn dies during boot.
 
-Fixed in the workflow (staged as `docs/ci/e2e-local-backend-followup.e2e.yml`,
-committed by Claude in Chrome):
+Fixed in the workflow (commit `70dd8a7` by Claude in Chrome; sha256
+`0e018ba2…` matched the staged copy, which was then deleted):
 - "Wait for local backend" moves to **before** "Build frontend": `next build`
   prerenders `/` and the sitemap against the API, so a backend still seeding
   would bake in empty data. It also fails at once on a non-zero status file.
