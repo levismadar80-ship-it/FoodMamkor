@@ -122,13 +122,13 @@ describe("/recommend carries «ספרו עלינו»", () => {
     expect(screen.getByTestId("recommend-share")).toBeInTheDocument();
   });
 
-  it("owner line: a guest sees «יש לכם עסק? בואו אלינו» + «מצטרפים» to /register/producer", () => {
+  it("owner line: a guest sees «יש לכם עסק? בואו אלינו» + «מצטרפים» to /join (MEH-2983)", () => {
     render(<RecommendClient />);
     const line = screen.getByTestId("recommend-owner-line");
     expect(line).toHaveTextContent("יש לכם עסק? בואו אלינו");
     const link = screen.getByTestId("recommend-owner-link");
     expect(link).toHaveTextContent("מצטרפים");
-    expect(link.getAttribute("href")).toBe("/register/producer");
+    expect(link.getAttribute("href")).toBe("/join");
   });
 
   it("owner line: a producer is sent to the dashboard, an admin sees no link", () => {

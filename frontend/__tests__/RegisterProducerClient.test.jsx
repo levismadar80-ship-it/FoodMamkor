@@ -443,6 +443,18 @@ describe("RegisterProducerClient — pre-flight entry screen (MEH-994)", () => {
     expect(await screen.findByTestId("register-preflight")).toBeInTheDocument();
     expect(screen.queryByTestId("register-preflight-account-item")).not.toBeInTheDocument();
   });
+
+  // MEH-2983: someone who lands here without context gets a quiet way to the
+  // /join page, placed AFTER «מתחילים» so it never moves the button (#4341).
+  it("links to /join below «מתחילים»", async () => {
+    render(<RegisterProducerClient />);
+    const start = await screen.findByTestId("register-preflight-start");
+    const link = screen.getByTestId("register-preflight-join-link");
+    expect(link.getAttribute("href")).toBe("/join");
+    expect(link).toHaveTextContent(`${K}.preflight.join_link`);
+    // after the button in document order
+    expect(start.compareDocumentPosition(link) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
 });
 
 // MEH-1176 F10 — the MEH-328 didUpgrade CONFIRM split had zero coverage,
