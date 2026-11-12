@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useSearchParams } from "next/navigation";
 import { Link } from "@/i18n/navigation";
 // MEH-2245: the tab is the ROUTE (/events vs /experiences). MEH-2980: a tab
 // switch rewrites that route in place (history.pushState, keeping any /en
@@ -109,7 +108,6 @@ export default function EventsPage({ initialTab = "events", titles = null }) {
   // MEH-2980: the route (pathname) is the tab — read it so Back / Forward
   // across an in-place switch land on the right tab.
   const pathname = usePathname();
-  const search = useSearchParams();
   // MEH-2980: the PATH wins over the prop. After an in-place switch, Next
   // keeps the first route's tree in that history entry, so a Back from some
   // other page can restore /events with the /experiences page mounted.
@@ -138,10 +136,23 @@ export default function EventsPage({ initialTab = "events", titles = null }) {
   // (?category=X) hydrates the same way (getAll → ["X"]). Each value is
   // checked against the vocabulary on its own, so one bad value is dropped
   // without dropping the good ones; duplicates collapse.
-  const [city, setCity] = useState(() => search.get("city") || "");
-  const [categories, setCategories] = useState(() =>
-    categoriesFor(tabFromPath(pathname) || initialTab, search.getAll("category")),
-  );
+  // MEH-2984: read from window.location in a mount effect, NOT useSearchParams.
+  // useSearchParams forced a <Suspense> in both pages and, to keep the H1 in
+  // the server HTML, `force-dynamic` (MEH-2878) — and a force-dynamic route
+  // cannot be prefetched, so arriving from /group-buys or /rescue streamed the
+  // whole-page loader. Without it both pages are ISR like /group-buys.
+  // `urlReady` holds the first fetch (and the URL writer) until the filters
+  // are read, so a deep link still costs exactly one request.
+  const [city, setCity] = useState("");
+  const [categories, setCategories] = useState([]);
+  const [urlReady, setUrlReady] = useState(false);
+  useEffect(() => {
+    const p = new URLSearchParams(window.location.search);
+    setCity(p.get("city") || "");
+    setCategories(categoriesFor(tabFromPath(window.location.pathname) || tab, p.getAll("category")));
+    setUrlReady(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Reset filters when switching tabs — the two tabs have different
   // category vocabularies, so keeping a cross-tab category would
@@ -202,12 +213,14 @@ export default function EventsPage({ initialTab = "events", titles = null }) {
   // {city, category}, so filters survive refresh/share and the switchTab
   // reset clears them from the URL too — a cross-tab category is never
   // resurrected. Shallow history.replaceState, NOT router.replace: a Next
-  // navigation from this mount-time effect re-suspends the useSearchParams
-  // boundary (page.js Suspense) and resets client state — the E2E calendar
-  // toggle caught exactly that. replaceState keeps it a pure URL mirror
-  // (and preserves the locale-prefixed pathname on /en).
+  // navigation from here would remount the page and reset client state — the
+  // E2E calendar toggle caught exactly that. replaceState keeps it a pure URL
+  // mirror (and preserves the locale-prefixed pathname on /en).
   // MEH-2245: `tab` is no longer written — the route carries it.
+  // MEH-2984: not before the mount effect has read the URL — the first commit
+  // still holds empty filters and would wipe a deep link's query.
   useEffect(() => {
+    if (!urlReady) return;
     const p = new URLSearchParams();
     if (city) p.set("city", city);
     // MEH-2847: one ?category= per selected key — the /producers format.
@@ -217,12 +230,13 @@ export default function EventsPage({ initialTab = "events", titles = null }) {
     if (qs === current) return;
     const path = window.location.pathname;
     window.history.replaceState(null, "", qs ? `${path}?${qs}` : path);
-  }, [city, categories]);
+  }, [urlReady, city, categories]);
 
   useEffect(() => {
+    if (!urlReady) return; // MEH-2984: one request, with the URL's filters
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tab, city, categories]);
+  }, [urlReady, tab, city, categories]);
 
   const load = async () => {
     const ticket = ++loadTicket.current;
