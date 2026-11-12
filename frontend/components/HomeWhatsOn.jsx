@@ -456,7 +456,13 @@ function WhatsOnCard({ entry, labels }) {
   const dated = entry.type === "event" || entry.type === "experience";
   const label = dated ? labels.category(entry) : null;
   const Icon = dated ? (CATEGORY_ICON[entry.category] ?? CalendarBlank) : null;
-  const meta = [entry.who, entry.city].filter(Boolean).join(" · ");
+  // MEH-2997 (Sapir 12/11, option ב׳): a card with a label names its city in
+  // that gold line, «שוק · חיפה» — the place line ProducerCard leads with
+  // (ProducerCard.jsx:713, MEH-2440). The muted line keeps the organizer
+  // alone, so a long organizer name no longer truncates the city away. A card
+  // with no label (group buy, basket) keeps the city on the muted line.
+  const placeInLabel = Boolean(label && entry.city);
+  const meta = [entry.who, placeInLabel ? null : entry.city].filter(Boolean).join(" · ");
   const price = labels.price(entry);
   return (
     <li
@@ -478,6 +484,12 @@ function WhatsOnCard({ entry, labels }) {
               >
                 <Icon size={12} weight="bold" aria-hidden="true" />
                 {label}
+                {placeInLabel && (
+                  <>
+                    {" · "}
+                    <span data-testid="whats-on-city">{entry.city}</span>
+                  </>
+                )}
               </span>
             )}
             <span className="mt-0.5 font-headline-md text-lg font-bold leading-snug text-text line-clamp-2 group-hover:text-primary">

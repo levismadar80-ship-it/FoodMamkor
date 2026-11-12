@@ -27,6 +27,7 @@ import api from "@/lib/api";
 import { GroupBuyProducerDeliverySchema } from "@/lib/api-schemas";
 import { SkeletonDetail } from "@/components/Skeleton";
 import Button from "@/components/ui/Button";
+import { shareOrCopyText } from "@/lib/share-link";
 
 // MEH-975: schema bounds for GroupBuyCommitRequest.quantity
 // (backend/app/schemas/schemas.py:1602 — int, ge=1, le=100). Clamp the
@@ -283,24 +284,12 @@ export default function GroupBuyDetailClient({ id }) {
     .join("\n");
   const handleShare = async () => {
     const url = `${window.location.origin}${window.location.pathname}`;
-    if (typeof navigator !== "undefined" && navigator.share) {
-      try {
-        await navigator.share({ title: gb.title, text: shareText, url });
-        return;
-      } catch (err) {
-        // Cancelled = the reader's answer. Any other failure (e.g.
-        // NotAllowedError) falls through to copying the link.
-        if (err?.name === "AbortError") return;
-      }
-    }
-    try {
-      await navigator.clipboard.writeText(url);
-      showToast.success(tShare("copied_toast"), { icon: <Check size={18} /> });
-    } catch {
-      // No sheet and no clipboard: say so (existing copy) instead of a
-      // button that silently does nothing.
-      showToast.error(tSharePage("copy_failed_toast"));
-    }
+    // MEH-2996: the site's one share sequence (lib/share-link.js).
+    const outcome = await shareOrCopyText({ data: { title: gb.title, text: shareText, url }, copyText: url });
+    if (outcome === "copied") showToast.success(tShare("copied_toast"), { icon: <Check size={18} /> });
+    // No sheet and no clipboard: say so (existing copy) instead of a button
+    // that silently does nothing.
+    else if (outcome === "failed") showToast.error(tSharePage("copy_failed_toast"));
   };
   const progressLabel = t("progress_label", { commits: gb.commits_count, min: gb.min_participants });
   const remaining = Math.max(0, gb.min_participants - gb.commits_count);

@@ -11,6 +11,7 @@ import { styleForProducer } from "@/lib/category-registry";
 import { categoryGlyphSvg } from "@/lib/marker-glyph";
 import { useFocusReturn } from "@/lib/use-focus-return";
 import { WazeGlyph, GoogleMapsGlyph } from "@/components/NavAppGlyphs";
+import { coordsNavLinks } from "@/lib/nav-links";
 
 // Fix Leaflet's broken default icon paths in Next.js/webpack builds.
 // MEH-1834: served from /public/leaflet instead of a third-party CDN — three
@@ -517,8 +518,8 @@ export default function MiniMap({
   const primaryPoint = points.find((point) => point.is_primary === true) ?? null;
   const centerPoint = hasCoords ? { lat: Number(lat), lng: Number(lng) } : primaryPoint;
   if (!centerPoint) return null;
-  const wazeUrl = `https://waze.com/ul?ll=${centerPoint.lat},${centerPoint.lng}&navigate=yes`;
-  const gmapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${centerPoint.lat},${centerPoint.lng}`;
+  // MEH-2994: one builder for nav links (lib/nav-links.js).
+  const { waze: wazeUrl, google: gmapsUrl } = coordsNavLinks(centerPoint.lat, centerPoint.lng) ?? {};
 
   const surfaceProps = {
     center: centerPoint,
