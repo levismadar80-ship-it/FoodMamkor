@@ -25,6 +25,7 @@ import PasswordInput from "@/components/PasswordInput";
 import { firstFailureMessage } from "@/lib/passwordMessages";
 import { validateIsraeliPhone } from "@/lib/validators";
 import Button from "@/components/ui/Button";
+import { loginHrefBackHere } from "@/lib/safe-redirect";
 
 function SettingsLoadingFallback() {
   const tCommon = useTranslations("settings.common");
@@ -87,7 +88,8 @@ function SettingsPageBody() {
   const [tab, setTab] = useState(initialTab);
 
   useEffect(() => {
-    if (!authLoading && !user) router.push("/login");
+    // MEH-2982: come back to /settings after signing in, not to "/".
+    if (!authLoading && !user) router.push(loginHrefBackHere());
   }, [authLoading, user, router]);
 
   const selectTab = useCallback(

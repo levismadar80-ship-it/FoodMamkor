@@ -36,11 +36,11 @@
  *      "Explore" vs "Discover", so picking one key would change what /en
  *      renders on one of the two surfaces. Header.jsx:171-173 records the
  *      split as deliberate (MEH-732, ADR-014).
- *   2. `favorites` and `settings` are auth-gated in the desktop dropdown
- *      (they live inside UserMenu, which only mounts for a logged-in user —
- *      Header.jsx:424) but UNGATED in the mobile sheet, where a guest sees
- *      both rows (AccountSheet.jsx:149-160). One shared `audience` would have
- *      to change one of the two surfaces.
+ *   2. `favorites` and `settings` were auth-gated in the desktop dropdown
+ *      (they live inside UserMenu, which only mounts for a logged-in user)
+ *      but UNGATED in the mobile sheet. MEH-2982 gated the sheet too, so both
+ *      surfaces now say "auth"; `audience` stays per-surface because other
+ *      items still differ.
  *
  * So `labelKey` and `audience` are per-surface. `href` is the shared field,
  * and it is the one this registry exists to make un-deletable in silence.
@@ -269,13 +269,13 @@ export const NAV_ITEMS = Object.freeze([
     href: "/favorites",
     surfaces: {
       headerMenu: { labelKey: "nav.favorites", audience: "auth" },
-      accountSheet: { labelKey: "nav.favorites", audience: "all" },
+      accountSheet: { labelKey: "nav.favorites", audience: "auth" },
     },
     note:
-      "Audience differs by surface, as shipped: the desktop row lives inside " +
-      "UserMenu (signed-in only, Header.jsx:424/583), while the sheet renders " +
-      "it unconditionally (AccountSheet.jsx:149-154), so a signed-out mobile " +
-      "reader sees it. Recorded, not changed.",
+      "Signed-in only on both surfaces. MEH-2982 (Sapir, 12/11) closed the " +
+      "asymmetry MEH-1703 recorded: the sheet showed this row to guests, and " +
+      "a guest tap only bounced her to /login with no explanation. A guest " +
+      "still reaches saving through the heart, which opens LoginPromptModal.",
   },
   {
     id: "settings",
@@ -283,9 +283,9 @@ export const NAV_ITEMS = Object.freeze([
     href: "/settings",
     surfaces: {
       headerMenu: { labelKey: "account.menu.settings", audience: "auth" },
-      accountSheet: { labelKey: "account.menu.settings", audience: "all" },
+      accountSheet: { labelKey: "account.menu.settings", audience: "auth" },
     },
-    note: "Same surface-dependent audience as `favorites` above.",
+    note: "Signed-in only on both surfaces, like `favorites` above (MEH-2982).",
   },
   {
     id: "producerDashboard",
