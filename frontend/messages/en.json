@@ -3747,6 +3747,10 @@
       "difference": {
         "q": "How is this different from Instagram or delivery apps — and who's behind it?",
         "a": "There, you're one more line in a feed or a results list. Here, every business gets a page of its own with the story, the photos and the people behind it — like an article about you, not like an ad. No commissions, no algorithm deciding who sees you. And behind the site is me, Sapir — I read every email personally and reply. And if you'd like to come off the site, we remove the business with no questions asked."
+      },
+      "organizers": {
+        "q": "Organizing a market, an event or a group buy?",
+        "a": "Market and event organizers have their own sign-up. On the site only businesses open group buys, and you can join a business's group from its page."
       }
     },
     "showcase": {
