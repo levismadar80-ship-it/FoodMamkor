@@ -29,9 +29,8 @@ import HistoryBackLink from "@/components/HistoryBackLink";
 import OwnerRow from "@/components/OwnerRow";
 import ShareButton from "@/components/ShareButton";
 import SaveButton from "@/components/SaveButton";
+import EntityCover from "@/components/EntityCover";
 import { CATEGORY_ICON } from "@/components/EventEntryRow";
-import { cssUrl } from "@/lib/css-url";
-import { optimizeCloudinary, IMAGE_RATIOS } from "@/lib/cloudinary";
 import { downloadIcs } from "@/lib/event-ics";
 import { eventWhen, addressNavLinks } from "@/lib/event-when";
 import { AddressNavLinks } from "@/components/NavAppGlyphs";
@@ -205,39 +204,16 @@ export default function ExperienceDetailClient() {
 
   return (
     <div className="pb-12" data-testid="experience-detail">
-      <div className="relative max-w-[1100px] mx-auto lg:px-4 lg:pt-6">
-        {/* MEH-2559: the save heart on the cover's corner — the corner the recipe
-            and business pages use. Not in the share/calendar row: a third
-            button there wraps «הוספה ליומן» onto two lines below 375px. */}
-        <div className="absolute top-3 end-3 lg:top-9 lg:end-7 z-10" data-testid="experience-cover-actions">
-          <SaveButton itemType="experience" itemId={ex.id} />
-        </div>
-        {ex.image_url ? (
-          <div
-            data-testid="experience-cover"
-            className="h-[210px] md:h-[300px] lg:h-[380px] bg-cover bg-center lg:rounded-xl bg-border"
-            style={{ backgroundImage: cssUrl(optimizeCloudinary(ex.image_url, { aspectRatio: IMAGE_RATIOS.banner, width: 1280 })) }}
-            role="img"
-            aria-label={ex.title}
-          />
-        ) : (
-          <div
-            data-testid="experience-cover-band"
-            aria-hidden="true"
-            className="h-[150px] lg:h-[200px] bg-accent lg:rounded-xl grid place-items-center"
-          >
-            <CatIcon size={54} weight="duotone" className="text-white/85" />
-          </div>
-        )}
-        <div
-          aria-hidden="true"
-          className="lg:hidden absolute start-4 -bottom-7 w-16 rounded-md bg-surface shadow-lg text-center overflow-hidden"
-        >
-          <span className="block bg-accent text-white text-2xs font-bold py-0.5">{month}</span>
-          <span className="block font-headline-display font-black text-3xl leading-tight pt-1 numeric">{day}</span>
-          <span className="block text-2xs text-fg-muted pb-1.5">{weekday}</span>
-        </div>
-      </div>
+      {/* MEH-2992: one shared masthead (was a byte-identical copy per page). */}
+      <EntityCover
+        imageUrl={ex.image_url}
+        alt={ex.title}
+        tone="accent"
+        Icon={CatIcon}
+        actions={<SaveButton itemType="experience" itemId={ex.id} />}
+        dateTile={{ month, day, weekday }}
+        testIdPrefix="experience"
+      />
 
       <div className="max-w-[1100px] mx-auto px-4 pt-11 lg:pt-8 lg:grid lg:grid-cols-[1fr_360px] lg:grid-rows-[auto_1fr] lg:gap-x-12 lg:items-start">
         <div className="lg:col-start-1">
