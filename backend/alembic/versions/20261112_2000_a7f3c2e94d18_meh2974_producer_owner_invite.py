@@ -86,7 +86,7 @@ products <-> producers cycle; this follows it. Measured: with a bare
 `conftest._bootstrap_schema` with CircularDependencyError, not just this
 feature's tests. The name here and the name in the model must stay equal.
 
-DOWNGRADE drops the index, the FK and the eight columns. The VALUES are not
+DOWNGRADE drops the index, the FK and all eleven columns. The VALUES are not
 restorable — same posture as `c4e81b7a2f96` (MEH-1889) and `d4e7a92c81b5`
 (MEH-766). Dropping them invalidates every outstanding invite link, which is
 the correct outcome for a rollback: the tokens' only store is gone.

@@ -1112,9 +1112,39 @@ def toggle_producer_status(
         )
     was_approved = producer.status == "approved"
     producer.status = "inactive" if was_approved else "approved"
-    # MEH-2498: suspending takes the business off the site, so its live group
-    # buys go with it — cancelled in the same commit, participants mailed.
     if was_approved:
+        # MEH-2974: suspending a live page REVOKES any outstanding owner
+        # invite on it.
+        #
+        # Without this, `inactive` means two different things that the row
+        # cannot tell apart — "hidden while the admin finishes building it"
+        # and "taken down for cause" — and owner-invite acceptance publishes
+        # the first. So an owner sitting on a week-old link could accept after
+        # a suspension and put the page back on the site herself: an
+        # unauthenticated endpoint reversing a moderation decision, with the
+        # group buys this same function just cancelled left cancelled. Found
+        # by the fresh reviewer on PR #4356.
+        #
+        # Killing the token rather than teaching the accept to distinguish the
+        # two, because the row carries no bit to distinguish them with, and
+        # because this is the direction that ADDS a constraint (workflow rule
+        # 32): the admin's own panel already tells her to hide the page BEFORE
+        # creating the link («שימי לב, הדף כבר באוויר…»), so the sanctioned
+        # order is unaffected and only the out-of-order case loses its link —
+        # one click to re-mint.
+        #
+        # An ACCEPTED invite is left alone: `owner_invite_accepted_at` is the
+        # record that it happened, and the business has a real owner now.
+        if producer.owner_invite_token_hash and not producer.owner_invite_accepted_at:
+            producer.owner_invite_token_hash = None
+            producer.owner_invite_code_hash = None
+            producer.owner_invite_code_expires_at = None
+            producer.owner_invite_code_attempts = None
+        # MEH-2498: suspending takes the business off the site, so its live
+        # group buys go with it — cancelled in the same commit, participants
+        # mailed. Folded into the block above rather than left as a second
+        # `if was_approved:` immediately after it: two consecutive identical
+        # conditions read as though one of them guards something else.
         cancel_live_group_buys(db, producer, background_tasks)
     db.commit()
     # MEH-2852: hidden or back on the site — either way the page changed.

@@ -5,7 +5,7 @@ Purpose:  Owner invite — an admin builds a business's page end to end, after
           on which the owner sets a password and signs the terms and the
           licensing declaration herself. She never fills in the registration
           form.
-Touches:  producers (the eight `owner_invite_*` columns; `declared_at` /
+Touches:  producers (the eleven `owner_invite_*` columns; `declared_at` /
           `declaration_version` stamped at acceptance), users (ONE row, INSERTed
           at acceptance and never before). Background: the existing
           business-approved email, to the new owner.
@@ -37,9 +37,21 @@ the three differences are each load-bearing:
     widening it ("DO NOT widen to approved / imported listings without a
     decision — a claim there would hand a stranger holding a leaked link
     control of a page that is already live"). THIS flow's precondition is
-    `status == "approved"`: handing over a LIVE page is the entire point, which
-    is why its token is single-use, 7 days, revocable, and bound to one
-    recorded email — none of which the claim token is.
+    `status == "approved"` or `"inactive"`: handing over a page the admin has
+    finished is the entire point, which is why its token is single-use, 7
+    days, and revocable — none of which the claim token is.
+
+    What it is NOT, said here because the sentence this replaced claimed it
+    was: **bound to one recorded address**. In v3 it is a bearer link. Whoever
+    holds it names the address and proves it with a code, which means the
+    account is created for whoever holds the LINK, not for whoever the admin
+    typed. That is the card's own decision (v3 §13/§14 — most of these
+    businesses reach us on Instagram, where we have no address to bind to) and
+    its mitigations are listed there: single-use, 7 days, a code to a mailbox
+    the holder must actually read, and an admin notification naming the
+    address at the moment the account is created. A comment that promised
+    binding was worse than the risk, because it is what a later session would
+    cite while deciding the code step is optional.
   * It requires the owner to ALREADY HAVE an account and sign in. Here there is
     no account until she accepts; the link is what creates one.
   * Its token is a stateless signed JWT, so it cannot be revoked. This one is a
@@ -406,11 +418,23 @@ def resend_owner_invite(
     # «resend» 404 for exactly the link the admin is most likely to re-copy.
     if not producer.owner_invite_token_hash:
         raise HTTPException(status_code=404, detail=_NO_INVITE)
-    # Re-checked, not assumed from the create: an address may have been
-    # registered in the days since, and resending then would mint a link whose
-    # acceptance is guaranteed to 409.
+    # NOT a 409 any more, and the reason is a v3 consequence the first version
+    # missed: since the code endpoint, `owner_invite_email` may have been
+    # written by WHOEVER HOLDS THE LINK, not by the admin. Refusing to resend
+    # on a taken address therefore handed a link holder a way to strand the
+    # admin's «שליחה מחדש» button for good — post one registered address and
+    # every later resend is a 409 the admin cannot clear from this panel.
+    #
+    # What happens instead is what v3 already supports: the address is dropped
+    # and the new link carries none. The invite stays usable, the owner types
+    # her address on the page, and the acceptance meets the same 409 it always
+    # would have. A constraint is added (the poisoned address stops being
+    # anyone's), not removed. Found by the fresh reviewer on this PR.
     if producer.owner_invite_email and _email_taken(db, producer.owner_invite_email):
-        raise HTTPException(status_code=409, detail=_EMAIL_TAKEN)
+        logger.info(
+            "owner_invite.resend_dropped_taken_email", producer_id=str(producer.id)
+        )
+        producer.owner_invite_email = None
 
     token, expires_at = _mint(producer, user.id)
     sent_at = producer.owner_invite_sent_at
@@ -541,9 +565,16 @@ def _mint_code(producer: Producer) -> str:
 
 
 @public_router.post("/email-code")
-# 5/hour per token AND per IP. The per-token cap is the one that matters: it
-# bounds how much mail one link can cause to be sent to addresses chosen by
-# whoever holds it, which is the abuse this endpoint invites.
+# 5/hour, **per IP and only per IP** — `rate_limit.limiter` is keyed on
+# `get_real_client_ip` and this route does not override `key_func`.
+#
+# Said plainly because the first version of this comment claimed a per-token
+# cap that does not exist (fresh-reviewer finding on this PR), and a wrong
+# comment about a limit is worse than none: it is the sentence someone cites
+# when deciding the abuse is already bounded. It is not. One link can cause
+# more than five mails to addresses of the holder's choosing by rotating
+# source IPs. A real per-token cap needs a counter on the row — the column is
+# not in this card's schema, so it is a follow-up, named in the PR body.
 @limiter.limit("5/hour")
 def send_owner_invite_email_code(
     request: Request,
@@ -573,18 +604,33 @@ def send_owner_invite_email_code(
 
     ack = {"detail": "אם הכתובת תקינה, הקוד בדרך"}
     # The address is recorded either way: the page shows it back, and an
-    # acceptance must match what was recorded. Recording it for a taken
-    # address costs nothing — no code exists, so no acceptance can pass.
+    # acceptance must match what was recorded.
     producer.owner_invite_email = body.email
+
+    # A CODE IS MINTED EITHER WAY, and for a taken address it is simply never
+    # sent. That looks like waste and is the opposite — it is what keeps the
+    # uniform answer uniform PAST THIS ENDPOINT.
+    #
+    # The first version cleared the code for a taken address, which made this
+    # response identical and the NEXT one different: `/accept` answers
+    # `_BAD_CODE` when a code exists and the guess is wrong, and `_NO_CODE`
+    # when none exists at all. So anyone holding one link could ask about any
+    # address here, then read the answer off `/accept` — exactly the
+    # account-existence oracle this endpoint's shape exists to deny, moved one
+    # request to the right. Found by the fresh reviewer on this PR.
+    #
+    # With a code stored, a taken address and a free one both answer
+    # `_BAD_CODE` to a wrong guess and `_NO_CODE` once the attempts run out.
+    # The stored hash is unusable by anyone: it is never mailed, and a
+    # correct-by-chance guess still meets the 409 at the email check.
+    code = _mint_code(producer)
     if _email_taken(db, body.email):
-        _clear_code(producer)
         db.commit()
         logger.info(
             "owner_invite.code_skipped_taken_email", producer_id=str(producer.id)
         )
         return ack
 
-    code = _mint_code(producer)
     # Read before the commit expires the instance — the same note every other
     # writer in this module carries.
     business, test_cause = producer.name, bool(producer.is_test)
@@ -606,13 +652,17 @@ def send_owner_invite_email_code(
 def _verify_email_code(
     db: Session, producer: Producer, email: str, code: str, now: datetime
 ) -> None:
-    """v3: the address is proven, not asserted. Raises 422 or returns.
+    """v3: the address is proven to be READABLE, not proven to be hers.
 
-    The body's address must be the one the code was issued to. Comparing it to
-    the ROW rather than trusting the body is what stops a code obtained for one
-    address being spent on another: `request_owner_invite_code` writes
-    `owner_invite_email` and mints the code in the SAME transaction, so the two
-    can never belong to different addresses.
+    What this does establish: whoever is accepting controls the mailbox she
+    named, because the code only exists there. What it does NOT establish, and
+    an earlier version of this docstring implied it did: that she is the
+    person the admin recorded at create time. The link is a bearer credential
+    and the address on the row is whatever its holder last asked a code for
+    (card v3 §13/§14). Comparing the body against the ROW is still the right
+    comparison — it is what stops a code obtained for one address being spent
+    on another within one session — but it binds the code to the address, not
+    the invite to a person.
 
     The attempts counter is the only write a failed accept makes — the card's
     «בלי קוד תקף: אפס כתיבות מלבד המונה». Nothing here touches the token, the
@@ -641,7 +691,23 @@ def _verify_email_code(
     if email != (producer.owner_invite_email or "").strip().lower() or (
         not secrets.compare_digest(_hash_token(code), stored_hash)
     ):
-        producer.owner_invite_code_attempts = attempts + 1
+        # `attempts + 1` COMPUTED IN THE DATABASE, not in Python. The read
+        # above is not under a lock, so N parallel guesses would all read the
+        # same value and all write the same value+1 — the counter would
+        # advance once per round instead of once per guess, and the cap would
+        # be defeatable by parallelism rather than by waiting. Same reasoning
+        # as the claim's conditional UPDATE, for the same reason: the row, not
+        # this process, is where the arithmetic has to happen. Found by the
+        # fresh reviewer on this PR.
+        db.query(Producer).filter(Producer.id == producer.id).update(
+            {
+                Producer.owner_invite_code_attempts: func.coalesce(
+                    Producer.owner_invite_code_attempts, 0
+                )
+                + 1
+            },
+            synchronize_session=False,
+        )
         db.commit()
         raise HTTPException(status_code=422, detail=_BAD_CODE)
 
@@ -800,9 +866,13 @@ async def accept_owner_invite(
         role="producer",
         producer_id=producer.id,
         is_producer=True,
-        # She proved control of this address by opening a link only it
-        # received — which is exactly what the verification email asks for, so
-        # asking again would be theatre.
+        # v3: this rests on THE CODE, and on nothing else. It used to rest on
+        # «she opened a link only this address received», which stopped being
+        # true the moment an invite could travel on WhatsApp with no address
+        # on it at all. The sentence is replaced rather than softened,
+        # because the old one reads as an independent reason to trust the
+        # address — i.e. as a reason the code step could be dropped as
+        # friction. It cannot: remove the gate above and this flag is a lie.
         email_verified=True,
         # MEH-1995 / MEH-2080: the ToS consent, a DIFFERENT record from the
         # licensing declaration stamped on the producer row above. Two

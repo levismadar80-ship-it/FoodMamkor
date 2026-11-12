@@ -216,7 +216,7 @@ def _snapshot(db, producer) -> dict:
 
 
 class TestModelColumns:
-    def test_all_eight_exist_nullable_without_server_default(self):
+    def test_all_eleven_exist_nullable_without_server_default(self):
         cols = Producer.__table__.c
         for name in INVITE_COLUMNS:
             assert name in cols, name
@@ -1372,13 +1372,12 @@ class TestEmailCode:
         assert free.status_code == taken.status_code == 200
         assert free.content == taken.content
 
-    def test_a_taken_address_mints_no_code_at_all(self, client, db):
-        """The invisible half of the uniform answer: nothing is mailed and
-        nothing is stored, so the acceptance it would lead to dies at the 409
-        it was always going to die at."""
+    def test_a_taken_address_is_never_mailed(self, client, db):
+        """The invisible half of the uniform answer: nothing is mailed, so the
+        acceptance it would lead to dies at the 409 it was always going to die
+        at. A code IS stored — see the next test for why."""
         p = approved(db)
         _, token = invite(client, db, p)
-        arm_code(client, token)  # a real code first, so "cleared" means cleared
         make_user(db, email="taken@example.com")
         sent = []
         with mock.patch.object(
@@ -1387,12 +1386,46 @@ class TestEmailCode:
             r = client.post(_CODE_URL, json={"token": token, "email": "taken@example.com"})
         assert r.status_code == 200, r.text
         assert sent == []
-        row = _row(db, p)
-        assert row.owner_invite_code_hash is None
-        assert row.owner_invite_code_expires_at is None
         # The address IS recorded — the page shows it back, and an acceptance
         # has to match what was recorded.
-        assert row.owner_invite_email == "taken@example.com"
+        assert _row(db, p).owner_invite_email == "taken@example.com"
+
+    def test_accept_cannot_tell_a_taken_address_from_a_free_one_either(
+        self, client, db
+    ):
+        """THE ORACLE THIS CLOSES, which lived one request to the right of the
+        uniform ack and was invisible to the test above.
+
+        `/email-code` answers identically for both. `/accept` did not: with no
+        code stored it said «צריך לבקש קוד» and with one stored it said «הקוד
+        לא תואם» — so anyone holding one link could ask about any address
+        here, then read the answer off the next request. The fix is that a
+        taken address gets a code minted and simply never mailed.
+
+        This test is the pair, which is the only level the property exists at:
+        the two endpoints are compared TOGETHER, byte for byte.
+        """
+        free, taken = "free@example.com", "taken@example.com"
+        make_user(db, email=taken)
+
+        answers = []
+        for address in (free, taken):
+            p = approved(db)
+            _, token = invite(client, db, p, email=f"inv-{address}")
+            ack = client.post(_CODE_URL, json={"token": token, "email": address})
+            acc = client.post(
+                _ACCEPT_URL, json=valid_accept_payload(token, DUMMY_CODE, address)
+            )
+            answers.append((ack.status_code, ack.content, acc.status_code, acc.content))
+
+        assert answers[0] == answers[1], (
+            "the free address and the registered one are distinguishable across "
+            f"the pair: {answers}"
+        )
+        # And the assertion discriminates only if the pair SAYS something —
+        # a 404 on both (a dead link) would satisfy equality while testing
+        # nothing.
+        assert answers[0][0] == 200 and answers[0][2] == 422, answers[0]
 
     def test_a_second_send_replaces_the_first_code(self, client, db):
         p = approved(db)
@@ -1541,6 +1574,48 @@ class TestAcceptCodeGate:
         assert row.owner_invite_code_expires_at is None
         assert row.owner_invite_code_attempts is None
 
+    def test_the_counter_is_computed_in_the_database(self, client, db):
+        """`attempts + 1` has to be the ROW's arithmetic, not this process's.
+
+        A read-modify-write in Python lets N parallel guesses all read the
+        same value and all write value+1 — the counter then advances once per
+        ROUND instead of once per guess, and the five-attempt cap becomes
+        something a client beats with concurrency rather than patience.
+
+        Asserted structurally rather than by racing threads: the race is real
+        but probabilistic, and what makes it impossible is that the increment
+        is an UPDATE expression. So this reads the statement the handler
+        issues — a test that passes for a `producer.x = attempts + 1` version
+        would not be evidence for the change.
+        """
+        import ast
+        import inspect
+
+        src = inspect.getsource(poi._verify_email_code)
+        tree = ast.parse(src.lstrip())
+        assigns = [
+            n
+            for n in ast.walk(tree)
+            if isinstance(n, ast.Attribute)
+            and n.attr == "owner_invite_code_attempts"
+            and isinstance(n.ctx, ast.Store)
+        ]
+        assert not assigns, (
+            "the attempts counter is assigned in Python — it must be an UPDATE "
+            "expression, or parallel guesses collapse into one"
+        )
+        assert "func.coalesce" in src, (
+            "no SQL expression found for the increment — this guard is void"
+        )
+
+        # And the behaviour the structure is for, still asserted end to end.
+        p = approved(db)
+        _, token = invite(client, db, p)
+        arm_code(client, token)
+        for expected in (1, 2, 3):
+            client.post(_ACCEPT_URL, json=valid_accept_payload(token, "000000"))
+            assert _row(db, p).owner_invite_code_attempts == expected
+
     def test_a_resend_and_a_cancel_each_clear_the_code(self, client, db):
         for action in ("resend", "cancel"):
             db.query(User).delete()
@@ -1555,6 +1630,114 @@ class TestAcceptCodeGate:
             else:
                 client.delete(_admin_url(p.id), headers=auth_header(admin))
             assert _row(db, p).owner_invite_code_hash is None, action
+
+
+class TestSuspensionRevokesTheInvite:
+    """Suspending a live page revokes any outstanding invite on it.
+
+    Without this, `inactive` means two things the row cannot tell apart —
+    «hidden while being built» and «taken down» — and acceptance publishes the
+    first. An owner sitting on a week-old link could then put a suspended page
+    back on the site herself.
+    """
+
+    def _suspend(self, client, db, producer, admin):
+        r = client.post(
+            f"/admin/producers/{producer.id}/toggle-status", headers=auth_header(admin)
+        )
+        assert r.status_code == 200, r.text
+        assert r.json()["status"] == "inactive", r.text
+
+    def test_hiding_an_approved_business_kills_its_outstanding_link(
+        self, client, db
+    ):
+        p = approved(db)
+        admin = make_user(db, role="admin")
+        _, token = invite(client, db, p, admin=admin)
+        arm_code(client, token)
+        assert client.get(_lookup_url(token)).status_code == 200
+
+        self._suspend(client, db, p, admin)
+
+        assert client.get(_lookup_url(token)).status_code == 404
+        r = client.post(_ACCEPT_URL, json=valid_accept_payload(token))
+        assert r.status_code == 404, r.text
+        assert _row(db, p).status == "inactive", "a suspended page came back"
+        assert db.query(User).filter(User.email == INVITE_EMAIL).count() == 0
+        row = _row(db, p)
+        assert row.owner_invite_code_hash is None
+
+    def test_the_record_that_an_invite_happened_survives(self, client, db):
+        """The token dies; the audit does not. `created_by`, the consent note
+        and the address are what say an invite WAS sent, and a suspension is
+        not a reason to forget it."""
+        p = approved(db)
+        admin = make_user(db, role="admin")
+        invite(client, db, p, admin=admin)
+        self._suspend(client, db, p, admin)
+        row = _row(db, p)
+        assert row.owner_invite_consent_note == CONSENT_NOTE
+        assert row.owner_invite_created_by == admin.id
+        assert row.owner_invite_sent_at is not None
+
+    def test_an_accepted_invite_is_left_alone(self, client, db):
+        """`owner_invite_accepted_at` is the record that it already happened,
+        and the business has a real owner now. Clearing anything there would
+        rewrite history, and there is no live token to revoke anyway."""
+        p = approved(db)
+        admin = make_user(db, role="admin")
+        _, token = invite(client, db, p, admin=admin)
+        assert accept_invite(client, token).status_code == 200
+        accepted_at = _row(db, p).owner_invite_accepted_at
+
+        self._suspend(client, db, p, admin)
+        assert _row(db, p).owner_invite_accepted_at == accepted_at
+
+    def test_hiding_a_business_with_no_invite_is_untouched(self, client, db):
+        """The control: the toggle's own behaviour must not depend on this."""
+        p = approved(db)
+        admin = make_user(db, role="admin")
+        clean = _snapshot(db, p)
+        self._suspend(client, db, p, admin)
+        after = _snapshot(db, p)
+        assert {k: v for k, v in after.items() if k != "status"} == {
+            k: v for k, v in clean.items() if k != "status"
+        }
+
+
+class TestResendSurvivesAPoisonedAddress:
+    """A link holder may write any address onto the row through the code
+    endpoint. Refusing to resend on a taken one handed her a way to strand the
+    admin's «שליחה מחדש» button for good."""
+
+    def test_a_resend_drops_a_taken_address_instead_of_refusing(self, client, db):
+        p = approved(db)
+        admin = make_user(db, role="admin")
+        _, token = invite(client, db, p, admin=admin)
+        # The poisoning, through the real public endpoint — no shortcut.
+        make_user(db, email="someone@example.com")
+        client.post(_CODE_URL, json={"token": token, "email": "someone@example.com"})
+        assert _row(db, p).owner_invite_email == "someone@example.com"
+
+        r = client.post(_admin_url(p.id, "/resend"), headers=auth_header(admin))
+        assert r.status_code == 200, r.text
+        # The new link is live and carries no address — which is a valid v3
+        # invite, and is what the owner then types her own address into.
+        new_token = _token_of(r)
+        assert client.get(_lookup_url(new_token)).json()["email"] is None
+        assert _row(db, p).owner_invite_email is None
+        assert r.json()["email"] is None
+
+    def test_a_resend_keeps_an_address_that_is_still_free(self, client, db):
+        """The discriminating half: dropping it unconditionally would also be
+        green against the test above."""
+        p = approved(db)
+        admin = make_user(db, role="admin")
+        invite(client, db, p, admin=admin)
+        r = client.post(_admin_url(p.id, "/resend"), headers=auth_header(admin))
+        assert r.status_code == 200, r.text
+        assert r.json()["email"] == INVITE_EMAIL
+        assert _row(db, p).owner_invite_email == INVITE_EMAIL
 
 
 class TestInviteWithoutAnAddress:
@@ -1706,6 +1889,41 @@ class TestTokenNeverReachesSentry:
             "/health",
         ):
             assert redact_url_tokens(frame) == frame
+
+    def test_before_send_scrubs_the_url_the_sdk_fills_in_itself(self):
+        """The half `middleware.py` cannot reach.
+
+        We redact the two fields we SET — the `route` tag and the
+        `request_info` context. `FastApiIntegration` separately populates
+        `event["request"]["url"]` from the raw ASGI scope, which no code of
+        ours touches, so a path-carried token could still leave beside the
+        redacted copy. Raised as UNVERIFIED by the fresh reviewer on this PR
+        (the claim is about SDK internals); closed here without having to
+        settle it, because the scrub costs one pass whether or not the field
+        is ever populated.
+        """
+        from app.sentry import _scrub_event_urls
+
+        token = "T" * 45
+        event = {
+            "request": {"url": f"https://mehamakor.co.il/auth/owner-invite/{token}"},
+            "transaction": f"/auth/owner-invite/{token}",
+        }
+        _scrub_event_urls(event)
+        assert token not in event["request"]["url"], event["request"]["url"]
+        assert token not in event["transaction"], event["transaction"]
+        # It redacts, it does not blank: an event with no URL is a worse
+        # report than one with a redacted URL.
+        assert "/auth/owner-invite/" in event["request"]["url"]
+
+    def test_the_scrubber_never_breaks_reporting(self):
+        """`before_send` fails open (sentry.py TRAP 1), and a scrubber that
+        raises is worse than the leak it prevents. Every shape an event can
+        arrive in, including the ones that are not dicts at all."""
+        from app.sentry import _scrub_event_urls
+
+        for event in ({}, {"request": None}, {"request": {"url": 7}}, {"transaction": []}):
+            _scrub_event_urls(event)  # must not raise
 
     def test_the_middleware_binds_the_redacted_form(self, client, db):
         """The unit above proves the function; this proves it is WIRED. A

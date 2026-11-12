@@ -359,8 +359,12 @@ test.describe("owner invite", () => {
     const cancelled = await admin.delete(`/api/admin/producers/${business.id}/owner-invite`);
     expect(cancelled.status(), await cancelled.text()).toBe(200);
 
-    // A fresh context, because the first one has the token in sessionStorage
-    // and we want the LINK's verdict, not the stash's.
+    // `clearCookies()` does NOT clear sessionStorage, so this does not do
+    // what an earlier version of this comment said. It does not need to: the
+    // stashed token IS the token under test, and it is now dead, so reading
+    // it back gives the same 404 the URL would. Said plainly rather than
+    // deleted, because the next reader will otherwise re-derive the same
+    // wrong mechanism from the same line.
     await page.context().clearCookies();
     await page.goto(`/he/owner-invite/${token}`);
     await expect(page.getByTestId("owner-invite-invalid")).toBeVisible({ timeout: 15_000 });

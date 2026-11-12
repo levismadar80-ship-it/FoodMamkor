@@ -467,7 +467,16 @@ function Preview({ preview }) {
     ? optimizeCloudinary(preview.image, { aspectRatio: IMAGE_RATIOS.banner, width: 640 })
     : null;
   return (
-    <div className="mb-4" data-testid="owner-invite-preview">
+    // FRAMED, and the frame is the point. The 390 capture showed the preview
+    // as loose text directly under the `h1`, where the business name reads as
+    // the heading repeating itself rather than as «this is what the page will
+    // look like» — the subtitle says so in words, and nothing on screen
+    // agreed. A card is the cheapest thing that makes the block legible as a
+    // rendering of something else.
+    <div
+      className="mb-4 rounded-md border border-border bg-background p-4"
+      data-testid="owner-invite-preview"
+    >
       {src && (
         <div className="relative w-full aspect-video overflow-hidden rounded-md bg-background mb-4">
           <Image
