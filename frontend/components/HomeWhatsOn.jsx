@@ -31,7 +31,7 @@ import { useEffect, useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { z } from "zod";
 
-import { CalendarBlank, ShoppingBag, UsersThree } from "@phosphor-icons/react";
+import { ArrowLeft, CalendarBlank, ShoppingBag, UsersThree } from "@phosphor-icons/react";
 
 import Seed from "@/components/brand/Seed";
 // The category glyphs of the date-rail rows (/events, the business page), so a
@@ -556,9 +556,17 @@ function WhatsOnGroup({ group, first, labels }) {
           <WhatsOnCard key={entry.key} entry={entry} labels={labels} />
         ))}
       </ul>
-      <div className="mt-3">
-        <Link href={group.allHref} className="text-primary hover:underline text-sm">
+      <div className="mt-1">
+        {/* DESIGN.md «Text links look tappable without hover» (MEH-2831): a
+            phone has no hover, so the underline and the arrow are permanent.
+            Same treatment as the home grid's own text link
+            (HomeProducersGrid.jsx:633), and a 44px tap height. */}
+        <Link
+          href={group.allHref}
+          className="inline-flex items-center gap-1 min-h-touch text-sm font-semibold text-primary underline underline-offset-4 hover:text-primary-dark rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+        >
           {group.all}
+          <ArrowLeft size={15} className="ltr:rotate-180" aria-hidden="true" />
         </Link>
       </div>
     </div>

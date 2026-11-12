@@ -286,6 +286,14 @@ describe("HomeWhatsOn — three rows, each only when it has something (MEH-2962)
     expect(link("לכל מה שקורה")).toBe("/events");
     expect(link("הצגת כל קבוצות הרכישה")).toBe("/group-buys");
     expect(link("לכל הסלים")).toBe("/rescue");
+    // DESIGN.md (MEH-2831): each one looks tappable with no hover — a
+    // permanent underline (not `hover:underline`) and an arrow.
+    for (const name of ["לכל מה שקורה", "הצגת כל קבוצות הרכישה", "לכל הסלים"]) {
+      const classes = screen.getByRole("link", { name }).className.split(/\s+/);
+      expect(classes, name).toContain("underline");
+      expect(classes, name).not.toContain("hover:underline");
+      expect(screen.getByRole("link", { name }).querySelector('svg[aria-hidden="true"]'), name).toBeTruthy();
+    }
   });
 
   it("a row holds at most WHATS_ON_MAX_CARDS cards", async () => {
