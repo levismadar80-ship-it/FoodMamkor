@@ -14,6 +14,7 @@ import { optimizeCloudinary, IMAGE_RATIOS } from "@/lib/cloudinary";
 import { useTranslations, useLocale } from "next-intl";
 import { formatEventDate } from "@/lib/format-date";
 import { useAuth } from "@/lib/auth-context";
+import { loginHrefBackHere } from "@/lib/safe-redirect";
 import { detailToMessage } from "@/lib/errors";
 import { showToast } from "@/lib/toast";
 // MEH-1140: canonical shekel format ("35₪") — one owner in lib/utils.
@@ -138,7 +139,8 @@ export default function GroupBuyDetailClient({ id }) {
   const handleCommit = async (e) => {
     e.preventDefault();
     if (!user) {
-      router.push("/login");
+      // MEH-2982: come back to this group buy after signing in, not to "/".
+      router.push(loginHrefBackHere());
       return;
     }
     setError("");

@@ -1,4 +1,5 @@
 import { test, expect } from "./_cloudinary-stub";
+import type { Page } from "@playwright/test";
 
 // MEH-2980: «אירועים» ↔ «חוויות» is one screen with two URLs. The switch used
 // to router.push between two force-dynamic routes, so app/[locale]/loading.js
@@ -26,7 +27,10 @@ async function startSampler(page) {
     const tick = () => {
       w.__hubSamples.push({
         loader: !!document.querySelector('[data-testid="route-loading"]'),
-        hub: !!document.querySelector('[data-testid="listing-hub-tabs"]'),
+        // A hidden copy (see liveHub) must not count as "the row is on screen".
+        hub: [...document.querySelectorAll('[data-testid="listing-hub-tabs"]')].some((el) =>
+          (el as HTMLElement).checkVisibility()
+        ),
       });
       n += 1;
       if (n < frames) requestAnimationFrame(tick);
@@ -41,20 +45,33 @@ async function readSamples(page) {
   return page.evaluate(() => (window as unknown as { __hubSamples: Array<{ loader: boolean; hub: boolean }> }).__hubSamples);
 }
 
+// The DOM can hold a second, HIDDEN hub row next to the live one (CI runs
+// 43283502922 and 43286869935: strict mode found 2 elements, one "hidden",
+// and the hidden one could appear after the count had already read 1). The
+// user only ever sees one, so every locator and the marker address the
+// visible row; nothing here asserts how many hidden copies exist.
+const liveHub = (page: Page) => page.locator(HUB).filter({ visible: true });
+
+async function openHub(page: Page, path: string) {
+  await page.goto(path);
+  const hub = liveHub(page);
+  await expect(hub).toHaveCount(1, { timeout: 15_000 });
+  return hub;
+}
+
 for (const locale of ["he", "en"] as const) {
   const prefix = locale === "en" ? "/en" : "";
 
   test(`${locale}: events ↔ experiences switches in place — no loader, no remount, one fetch`, async ({ page }) => {
-    await page.goto(`${prefix}/experiences`);
-    const hub = page.locator(HUB);
-    await expect(hub).toBeVisible({ timeout: 15_000 });
+    const hub = await openHub(page, `${prefix}/experiences`);
     await expect(hub.locator('[data-tab-value="experiences"]')).toHaveAttribute("aria-selected", "true");
     // Let the first list load settle before counting.
     await expect(page.locator('[aria-busy="true"]')).toHaveCount(0, { timeout: 15_000 });
 
     // Marker on the live node: survives only if the hub is NOT remounted.
     await page.evaluate((sel) => {
-      (document.querySelector(sel) as HTMLElement).dataset.meh2980 = "kept";
+      const live = [...document.querySelectorAll(sel)].find((el) => (el as HTMLElement).checkVisibility());
+      (live as HTMLElement).dataset.meh2980 = "kept";
     }, HUB);
 
     const listCalls: string[] = [];
@@ -72,7 +89,7 @@ for (const locale of ["he", "en"] as const) {
     expect(samples.length).toBe(FRAMES);
     expect(samples.filter((s) => s.loader), "route loader painted during the switch").toEqual([]);
     expect(samples.filter((s) => !s.hub), "tab row vanished during the switch").toEqual([]);
-    await expect(page.locator(`${HUB}[data-meh2980="kept"]`), "hub remounted on switch").toHaveCount(1);
+    await expect(page.locator(`${HUB}[data-meh2980="kept"]`).filter({ visible: true }), "hub remounted on switch").toHaveCount(1);
     await expect.poll(() => listCalls.length).toBe(1);
     expect(listCalls[0]).toMatch(/\/events\/?$/);
     const eventsTitle = await page.title();
@@ -85,7 +102,7 @@ for (const locale of ["he", "en"] as const) {
     await expect(page).toHaveURL(new RegExp(`${prefix}/experiences$`));
     await expect(hub.locator('[data-tab-value="experiences"]')).toHaveAttribute("aria-selected", "true");
     expect(back.filter((s) => s.loader), "route loader painted on Back").toEqual([]);
-    await expect(page.locator(`${HUB}[data-meh2980="kept"]`), "hub remounted on Back").toHaveCount(1);
+    await expect(page.locator(`${HUB}[data-meh2980="kept"]`).filter({ visible: true }), "hub remounted on Back").toHaveCount(1);
     // One more list request for the Back — read after the 90-frame window, so
     // a late duplicate would already be in the array.
     expect(listCalls.length, "list fetched more than once on Back").toBe(2);
@@ -96,9 +113,7 @@ for (const locale of ["he", "en"] as const) {
 
   test(`${locale}: Back restores the filters the URL carries`, async ({ page }) => {
     const city = "חיפה";
-    await page.goto(`${prefix}/events?city=${encodeURIComponent(city)}`);
-    const hub = page.locator(HUB);
-    await expect(hub).toBeVisible({ timeout: 15_000 });
+    const hub = await openHub(page, `${prefix}/events?city=${encodeURIComponent(city)}`);
     await expect(page.locator("#events-city")).toHaveValue(city);
 
     await hub.locator('[data-tab-value="experiences"]').click();
@@ -119,9 +134,7 @@ for (const locale of ["he", "en"] as const) {
     // router navigation, then Back. Next restores that history entry with the
     // tree it was pushed with (the /experiences page), so the tab must come
     // from the path, not from the mounted route's initialTab.
-    await page.goto(`${prefix}/experiences`);
-    const hub = page.locator(HUB);
-    await expect(hub).toBeVisible({ timeout: 15_000 });
+    const hub = await openHub(page, `${prefix}/experiences`);
     await hub.locator('[data-tab-value="events"]').click();
     await expect(page).toHaveURL(new RegExp(`${prefix}/events$`));
 
@@ -130,7 +143,7 @@ for (const locale of ["he", "en"] as const) {
 
     await page.goBack();
     await expect(page).toHaveURL(new RegExp(`${prefix}/events$`));
-    await expect(page.locator(HUB).locator('[data-tab-value="events"]')).toHaveAttribute("aria-selected", "true", {
+    await expect(liveHub(page).locator('[data-tab-value="events"]')).toHaveAttribute("aria-selected", "true", {
       timeout: 15_000,
     });
   });
@@ -143,15 +156,16 @@ for (const locale of ["he", "en"] as const) {
 for (const locale of ["he", "en"] as const) {
   const prefix = locale === "en" ? "/en" : "";
   test(`${locale}: /group-buys → «אירועים» tab arrives without the whole-page loader`, async ({ page }) => {
-    await page.goto(`${prefix}/group-buys`);
-    const hub = page.locator(HUB);
-    await expect(hub).toBeVisible({ timeout: 15_000 });
-    // Let Link's viewport prefetch of the events route land first.
+    const hub = await openHub(page, `${prefix}/group-buys`);
+    // Let Link's viewport prefetch of the events ROUTE land first: a resource
+    // whose URL names /events (any RSC form), never the /api list call.
     await page.waitForLoadState("load");
     await expect
       .poll(() =>
         page.evaluate(() =>
-          performance.getEntriesByType("resource").some((e) => /\/events(\?|$)|_rsc/.test(e.name)),
+          performance
+            .getEntriesByType("resource")
+            .some((e) => /\/events(?![\w-])/.test(e.name) && !/\/api\//.test(e.name)),
         ),
       )
       .toBe(true);

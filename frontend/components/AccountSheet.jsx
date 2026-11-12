@@ -186,10 +186,9 @@ export default function AccountSheet({ open, onClose, user, logout }) {
               </Link>
             </li>
           )}
-          {/* Ungated on purpose — a signed-out mobile reader sees both rows,
-              while the desktop dropdown auth-gates them. The asymmetry is
-              recorded on the records themselves (nav-registry.js:213-227) and
-              is NOT changed here; MEH-1703 is a refactor. */}
+          {/* MEH-2982: signed-in only, like the desktop dropdown. A guest
+              tap used to bounce to /login with no explanation; the registry
+              now gives both rows audience "auth" (nav-registry.js). */}
           {row("favorites") && (
             <li className={liCls}>
               <Link href={row("favorites").item.href} onClick={onClose} className={rowCls}>
