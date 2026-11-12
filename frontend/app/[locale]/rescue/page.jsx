@@ -1,7 +1,8 @@
 import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 
-import ListingHubTabs from "@/components/ListingHubTabs";
+import HubShell from "@/components/HubShell";
+import { HUB_CONTENT_CLASS } from "@/lib/hub-layout";
 import RescueList from "@/components/rescue/RescueList";
 import { rescueBagsEnabled } from "@/lib/rescue";
 
@@ -11,7 +12,7 @@ import { rescueBagsEnabled } from "@/lib/rescue";
  * Does NOT: exist while the pilot is off. notFound() rather than an empty
  *           page, matching the backend, which 404s every /rescue route behind
  *           the same switch — one answer from both layers.
- * History:  MEH-2648 (creation)
+ * History:  MEH-2648 (creation) · MEH-3013 (shared HubShell head)
  */
 export async function generateMetadata() {
   const t = await getTranslations("rescue");
@@ -22,18 +23,20 @@ export default async function RescuePage() {
   if (!rescueBagsEnabled()) notFound();
   const t = await getTranslations("rescue");
 
+  // MEH-3013: the hub's shared head (photo hero + tab row) — the same frame
+  // as /events, /experiences and /group-buys. Copy is the page's own H1 and
+  // lead (Sapir 11/11) plus the hub's existing eyebrow; no new strings.
+  const tEvents = await getTranslations("events.list");
+
   return (
-    <main className="max-w-3xl mx-auto px-4 py-6" data-testid="rescue-page">
-      <h1 className="font-headline-md text-2xl font-black text-text">{t("page.title")}</h1>
-      <p className="font-body-sm text-sm text-fg-muted mt-1">{t("page.lead")}</p>
-      {/* MEH-2859: the shared hub row. A client component mounted from this
-          server page — it owns its own supply gates and keyboard layer, so
-          nothing here has to become a client component for it. This page
-          keeps its own H1 and lead (Sapir 11/11). */}
-      <div className="-mx-4 mt-4">
-        <ListingHubTabs active="rescue" />
-      </div>
-      <div className="mt-6">
+    <main data-testid="rescue-page">
+      <HubShell
+        active="rescue"
+        eyebrow={tEvents("eyebrow_events")}
+        title={t("page.title")}
+        subtitle={t("page.lead")}
+      />
+      <div className={`${HUB_CONTENT_CLASS} pt-4 pb-16`}>
         <RescueList />
       </div>
     </main>
