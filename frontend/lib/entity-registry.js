@@ -40,10 +40,9 @@ export const ENTITIES = [
     routes: ["app/[locale]/producer/[id]", "app/[locale]/[slug]"],
     files: ["app/[locale]/producer/[id]"],
     uses: ["share", "save", "contact"],
-    missing: {
-      back: "no back link on the business page (event/workshop/recipe have it, MEH-2857) — MEH-2993 scan",
-    },
+    missing: {},
     na: {
+      back: "removed on purpose (MEH-1146 chunk B): the breadcrumb and the back-to-map link cover it — decided again in MEH-3005",
       owner: "the business is the owner",
       cover: "own header with the photo gallery (ProducerHeader)",
     },
@@ -52,13 +51,12 @@ export const ENTITIES = [
     key: "organizer",
     routes: ["app/[locale]/organizers/[slug]"],
     files: ["app/[locale]/organizers/[slug]"],
-    uses: ["contact"],
+    uses: ["back", "contact"],
     missing: {
-      back: "no back link — MEH-2993 scan",
-      share: "no share button — MEH-2993 scan",
-      cover: "own masthead copy; moves to EntityCover after MEH-2988 (MEH-2992)",
+      share: "no share button; needs one approved aria string for an organizer (MEH-3005 note)",
     },
     na: {
+      cover: "a profile masthead by design (photo + round initial, MEH-2547), not a copy of the item cover",
       owner: "the organizer is the owner",
       save: "saved items have no organizer type (backend SavedItem)",
     },

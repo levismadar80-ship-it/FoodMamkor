@@ -5432,9 +5432,22 @@ class AlertContent(BaseModel):
 # reference resolves in module order. Router-local concerns (CHAT_MODEL,
 # MAX_HISTORY_TURNS, MAX_OUTPUT_TOKENS, SYSTEM_PROMPT, _strip_markdown,
 # _get_client) stay in chat.py — handler-side, not schema fields.
+# MEH-3010: what a visitor may type, matching the widget's maxLength
+# (frontend/components/ChatWidget.jsx:467). A bot posting straight to /chat
+# skips the widget, so the server holds the same line. Assistant turns echo
+# our own replies back and keep the wider 2000.
+CHAT_USER_MESSAGE_MAX = 500
+
+
 class ChatMessage(BaseModel):
     role: Literal["user", "assistant"]
     content: str = Field(min_length=1, max_length=2000)
+
+    @model_validator(mode="after")
+    def _cap_user_message(self) -> "ChatMessage":
+        if self.role == "user" and len(self.content) > CHAT_USER_MESSAGE_MAX:
+            raise ValueError(f"user message over {CHAT_USER_MESSAGE_MAX} chars")
+        return self
 
 
 class ChatRequest(BaseModel):
