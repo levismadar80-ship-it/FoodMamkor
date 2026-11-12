@@ -2481,7 +2481,8 @@ test.describe("manual › static home blocks (overnight design batch)", () => {
     await expect(cta.getByRole("heading", { level: 2, name: CTA.heading })).toBeVisible();
     for (const line of [CTA.body_l1, CTA.body_l2, CTA.body_l3]) await expect(cta).toContainText(line);
     // MEH-2824: the band's one button is «מצטרפים», like /join (home.cta.button retired).
-    await expect(cta.getByRole("link", { name: he.join.cta })).toHaveAttribute("href", /\/register\/producer$/);
+    // MEH-2983: the home band leads to /join, the main door for businesses.
+    await expect(cta.getByRole("link", { name: he.join.cta })).toHaveAttribute("href", /\/join$/);
   });
 
   // MT:ODB:5 — the footer's copyright line: no leaf emoji. (The tagline's own

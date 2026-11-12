@@ -324,7 +324,7 @@ export function HomeCTA() {
       data-testid="home-cta"
       title={t("home.cta.heading")}
       body={[t("home.cta.body_l1"), t("home.cta.body_l2"), t("home.cta.body_l3")]}
-      ctaHref="/register/producer"
+      ctaHref="/join"
       ctaLabel={t("join.cta")}
     />
   );
