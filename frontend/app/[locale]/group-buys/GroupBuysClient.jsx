@@ -13,6 +13,7 @@ import { formatPrice } from "@/lib/utils";
 import { groupBuyProgressPct, groupBuyDiscountPct } from "@/lib/group-buy-progress"; // MEH-2540, MEH-2544
 import CitySearch from "@/components/CitySearch";
 import Button from "@/components/ui/Button";
+import EmptyState from "@/components/ui/EmptyState";
 
 // MEH-797: Sapir-mapped Cloudinary asset (staging/pick-pexels-35113948, 3732×4089)
 // replaces the Unsplash hero bg. w_1600 c_limit matches the old delivery width;
@@ -265,14 +266,10 @@ export default function GroupBuysClient() {
             </Button>
           </div>
         ) : items.length === 0 ? (
-          <div className="text-center py-20 text-fg-muted">
-            {/* MEH-862: Phosphor placeholder replaces the empty-state emoji
-                (LOCK v2), mirrors the /experiences empty-state icon treatment. */}
-            <div className="mb-4 flex justify-center">
-              <ShoppingCart size={56} className="text-primary" aria-hidden="true" />
-            </div>
-            <p className="text-lg font-medium">{t("empty_title")}</p>
-            <p className="text-sm mt-1">{t("empty_subtitle")}</p>
+          // MEH-2994: the shared empty state (was a hand-built copy of it,
+          // MEH-862) — same icon and the same two strings.
+          <div data-testid="group-buys-empty">
+            <EmptyState icon={ShoppingCart} title={t("empty_title")} description={t("empty_subtitle")} />
           </div>
         ) : (
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">

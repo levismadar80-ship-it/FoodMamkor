@@ -196,3 +196,19 @@ export function trackProducerView(producerId, referrer) {
     // visitor and must not reach Sentry as an error.
   }
 }
+
+/**
+ * MEH-2991: count a tap on a contact channel of ANY entity page that shows a
+ * business's / organizer's contact details (the organizer page, a workshop's
+ * host). WhatsApp → the WhatsApp click beacon; every other channel → the
+ * contact-click ping. Before this only the business page counted its clicks,
+ * so an organizer's or a host's insights read 0 whatever people did.
+ *
+ * Does NOT unlock the review form (markWhatsAppClickedLocal) — that pairing
+ * belongs to the business page's primary CTA only (MEH-1426).
+ */
+export function trackChannelClick(producerId, channel) {
+  if (!producerId) return;
+  if (channel === "whatsapp") pingWhatsAppBeacon(producerId);
+  else trackContactClick(producerId, channel);
+}

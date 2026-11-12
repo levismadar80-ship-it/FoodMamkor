@@ -3,6 +3,7 @@
 import { getCtaVariant } from "@/components/ContactCtaVariants";
 import { isExternalMethod } from "@/lib/contact-method";
 import { withReferralParams } from "@/lib/utils";
+import { trackChannelClick } from "@/lib/contact-tracking";
 
 /**
  * MEH-2988: the organizer page's preferred contact channel, drawn exactly like
@@ -15,7 +16,7 @@ import { withReferralParams } from "@/lib/utils";
  * the page itself stays a server component.
  */
 // REUSES: frontend/components/PrimaryContactButton.jsx — variant icon + class.
-export default function OrganizerPrimaryContact({ channel, label }) {
+export default function OrganizerPrimaryContact({ channel, label, producerId }) {
   const variant = getCtaVariant(channel.key);
   const Icon = variant.Icon;
   // Same tab / referral rules as the business button (PrimaryContactButton):
@@ -27,6 +28,8 @@ export default function OrganizerPrimaryContact({ channel, label }) {
   return (
     <a
       href={href}
+      // MEH-2991: the tap is counted, as on the business page.
+      onClick={() => trackChannelClick(producerId, channel.key)}
       {...(external
         ? { target: "_blank", rel: isWebsite ? "noopener" : "noopener noreferrer" }
         : {})}

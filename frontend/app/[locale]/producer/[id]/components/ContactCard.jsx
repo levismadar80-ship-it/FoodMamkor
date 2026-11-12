@@ -12,8 +12,8 @@ import {
 
 import PrimaryContactButton from "@/components/PrimaryContactButton";
 import WhatsAppQuestionChips from "@/components/WhatsAppQuestionChips";
-import { getPrimaryMethod } from "@/lib/contact-method";
-import { instagramHandle, instagramUrl } from "@/lib/social-links";
+import { contactHref, getPrimaryMethod } from "@/lib/contact-method";
+import { instagramHandle } from "@/lib/social-links";
 import { withReferralParams } from "@/lib/utils";
 import { whatsappUpdatesHref } from "@/components/WhatsAppUpdatesPill";
 import { trackContactClick } from "@/lib/contact-tracking";
@@ -98,9 +98,9 @@ function armMailtoFallback(email, t) {
  *           MEH-2626 (whatsapp_group circle → tracked «עדכונים» bell).
  */
 
-// Secondary contact channels rendered as the quiet icon row. Each entry
-// resolves its own href from the producer with the trim/prefix guards the
-// prior ContactSidebar tiles carried. The channel equal to the primary
+// Secondary contact channels rendered as the quiet icon row. Each entry's
+// href comes from the one table in lib/contact-method.js (contactHref,
+// MEH-2991) — the organizer page reads the same table. The channel equal to the primary
 // method is filtered out so it never duplicates the big CTA.
 //
 // MEH-2775: `display` is what the SOLE-channel info row shows instead of the
@@ -112,13 +112,13 @@ const CHANNELS = [
   {
     key: "phone",
     Icon: Phone,
-    href: (p) => (p.phone?.trim() ? `tel:${p.phone.trim()}` : null),
+    href: (p) => contactHref("phone", p),
     display: (p) => p.phone?.trim() || null,
   },
   {
     key: "instagram",
     Icon: InstagramLogo,
-    href: (p) => instagramUrl(p.instagram),
+    href: (p) => contactHref("instagram", p),
     display: (p) => {
       const handle = instagramHandle(p.instagram);
       // A legacy row stored as a full URL is not a handle — keep the label
@@ -131,17 +131,17 @@ const CHANNELS = [
   {
     key: "website",
     Icon: Globe,
-    href: (p) => withReferralParams(httpUrl(p.website)),
+    href: (p) => withReferralParams(contactHref("website", p)),
     display: (p) => websiteHost(p.website),
   },
   {
     key: "email",
     Icon: EnvelopeSimple,
-    href: (p) => (p.contact_email?.trim() ? `mailto:${p.contact_email.trim()}` : null),
+    href: (p) => contactHref("email", p),
     display: (p) => p.contact_email?.trim() || null,
   },
-  { key: "facebook", Icon: FacebookLogo, href: (p) => httpUrl(p.facebook) },
-  { key: "external_order", Icon: Receipt, href: (p) => httpUrl(p.external_order_form) },
+  { key: "facebook", Icon: FacebookLogo, href: (p) => contactHref("facebook", p) },
+  { key: "external_order", Icon: Receipt, href: (p) => contactHref("external_order", p) },
   // MEH-2626: the WhatsApp updates link (group or channel) — the «עדכונים»
   // bell. REPLACES the untracked WhatsappLogo circle that sat here: a neutral
   // Bell so it never reads as a second «שליחת הודעה» (MEH-1466 / MEH-1049),
@@ -155,13 +155,6 @@ const CHANNELS = [
     ariaKey: "producer.detail.whatsapp_updates.full",
   },
 ];
-
-/** Coerce a bare/whitespace/protocol-less URL field into a safe https href. */
-function httpUrl(raw) {
-  const v = (raw || "").trim();
-  if (!v) return null;
-  return v.startsWith("http") ? v : `https://${v}`;
-}
 
 /** MEH-2775: "https://www.x.co.il/shop/" → "x.co.il" — the host people know. */
 function websiteHost(raw) {
@@ -391,7 +384,7 @@ export default function ContactCard({ producer, isVacation }) {
                 tel: link so a desktop softphone / click-to-call can act on it. */}
             {revealed && (
               <a
-                {...linkTarget(`tel:${producer.phone.trim()}`)}
+                {...linkTarget(contactHref("phone", producer))}
                 data-testid="revealed-phone"
                 role="listitem"
                 className={`${ROW_ANATOMY} ${single ? "" : "col-span-4"} text-primary-dark focus-visible:ring-2 focus-visible:ring-primary/40`}
