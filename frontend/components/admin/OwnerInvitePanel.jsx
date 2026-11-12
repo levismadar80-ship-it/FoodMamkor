@@ -195,6 +195,19 @@ export default function OwnerInvitePanel({ producerId, producer, onChanged }) {
 
   // Built in JS, not in messages: it interpolates a URL and a name into one
   // line, and `wa.me` needs the whole thing percent-encoded.
+  //
+  // THE DELTA FROM ClaimLinkPanel, stated because it is deliberate and a
+  // reviewer should not have to guess. That panel mints a comparable
+  // credential and offers COPY ONLY. This one also offers WhatsApp, which
+  // puts the invite link in the admin's browser history and in
+  // web.whatsapp.com's address bar.
+  //
+  // The reason is that sending it on WhatsApp IS the flow here (MEH-2974
+  // <hebrew_copy> specifies the button and its message), where the claim link
+  // is pasted wherever the admin already has a thread. The marginal exposure
+  // is one more copy of a link the admin is about to paste into WhatsApp
+  // anyway, on her own machine — and the token dies in 7 days, on the first
+  // use, or on a resend.
   const whatsappHref = minted
     ? `https://wa.me/?text=${encodeURIComponent(
         t("whatsapp_text", {

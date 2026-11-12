@@ -459,16 +459,24 @@ async def accept_owner_invite(
          read — the same classification register_producer gives its own
          body-shape guards.
       2. The password policy, also 422, also before any write.
-      3. The email-taken check, 409, BEFORE the claim — so the common race
-         answers without having touched anything.
+      3. The email-taken and has-owner checks, 409, BEFORE the claim — so the
+         common race answers without having touched anything.
       4. The claim: ONE conditional UPDATE (MEH-1820), never SELECT-then-set.
       5. The INSERT, then a single commit.
 
-    Steps 3 and 5 still race each other — an account can be created for this
-    address in the microseconds between them — and that is caught by the unique
-    index on `users.email`, whose IntegrityError rolls the WHOLE transaction
-    back, claim included. So the 409 leaves zero writes either way, and the
-    invite link stays live for a second attempt.
+    Steps 3 and 5 still race each other, and the backstop is NARROWER than it
+    looks: the unique index on `users.email` is case-SENSITIVE, while
+    `_email_taken` compares lowercased. So it catches an exact-case collision —
+    rolling the whole transaction back, claim included, which is what keeps the
+    409 free of writes and the link usable — and does NOT catch one that
+    differs only in case. That gap is `users.email` having no case-insensitive
+    index, which is repo-wide (`auth.py` looks accounts up with a raw `==`
+    everywhere) and belongs to its own card; it is recorded here rather than
+    half-fixed in one endpoint. Its blast radius is bounded: the racer's
+    account does not own the business, only the invitee's does.
+
+    The window itself is as small as it can be made — bcrypt moved above the
+    check, so the only thing left between them is the UPDATE.
     """
     # Read before the claim so the failure modes above cost nothing, and so a
     # dead token's 404 is reached by the same path whatever the body contained.
@@ -491,10 +499,27 @@ async def accept_owner_invite(
     if not result.ok:
         raise HTTPException(status_code=422, detail={"failures": result.failures})
 
+    # bcrypt BEFORE the uniqueness check, not after. It costs 200-400 ms, and
+    # anything between the check and the INSERT is window — the first version
+    # had the whole hash sitting in it. `register_producer` computes its hash
+    # before its own existence lookup too (auth.py), for the neighbouring
+    # reason that the two branches must take the same time.
+    pwd_hash = await asyncio.to_thread(hash_password, body.password)
+
     if _email_taken(db, invited_email):
         raise HTTPException(status_code=409, detail=_EMAIL_TAKEN)
 
-    pwd_hash = await asyncio.to_thread(hash_password, body.password)
+    # The invite is for a business with no owner, and `_load_invitable` refuses
+    # one that has an owner at create / resend / cancel time. This is the same
+    # check at ACCEPT time, which is what `producer_claim._claimable` does and
+    # what this endpoint was missing. It is not exploitable today — no route
+    # attaches an owner to an APPROVED row — but `users.producer_id` has no
+    # unique index (producer_claim.py records that), so the invariant has no
+    # backstop in the database. The day an ownership-transfer or merge tool
+    # exists, this is the line that stops it minting a second owner.
+    if _has_owner(db, producer.id):
+        raise HTTPException(status_code=409, detail=_ALREADY_OWNED)
+
     now = datetime.now(timezone.utc)
 
     # MEH-1820: the claim is a CONDITIONAL UPDATE and the affected-row count IS

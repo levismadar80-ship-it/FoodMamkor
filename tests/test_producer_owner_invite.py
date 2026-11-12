@@ -553,6 +553,24 @@ class TestAccept:
         assert _snapshot(db, p) == clean
         assert db.query(User).filter(User.email == INVITE_EMAIL).count() == 0
 
+    def test_409_when_the_business_gained_an_owner_between_invite_and_accept(
+        self, client, db
+    ):
+        """`_load_invitable` makes this check at create / resend / cancel time;
+        `accept` makes it too. Not exploitable today — nothing attaches an
+        owner to an APPROVED row — but `users.producer_id` carries no unique
+        index, so the invariant has no backstop in the database and this is
+        the line that would stop a future transfer tool minting a second
+        owner. Removing it turns this red."""
+        p = approved(db)
+        _, token = invite(client, db, p)
+        own(db, p, email="someone-already@example.com")
+        clean = _snapshot(db, p)
+        r = client.post(_ACCEPT_URL, json=valid_accept_payload(token))
+        assert r.status_code == 409, r.text
+        assert _snapshot(db, p) == clean
+        assert db.query(User).filter(User.email == INVITE_EMAIL).count() == 0
+
     def test_409_when_the_email_was_taken_between_invite_and_accept(self, client, db):
         p = approved(db)
         _, token = invite(client, db, p)
@@ -1184,6 +1202,84 @@ class TestExploits:
             "the patch point did not fire for an account that exists — the "
             "assertion above was vacuous"
         )
+
+
+class TestTokenNeverReachesSentry:
+    """The token travels in the path (the card's shape), so the one thing we
+    DO control is what we hand to a third-party processor.
+
+    `middleware.py` binds the raw URL into Sentry's `route` tag and
+    `request_info.url`, and `sentry.py::before_send` does no URL redaction —
+    so before MEH-2974 any captured exception or sampled trace on one of the
+    three token-bearing routes shipped a live credential. `producer_claim.py`
+    is the written decision this restores server-side: it moved its preview to
+    a POST specifically to keep the token out of "Railway access logs and the
+    Sentry request context".
+    """
+
+    def test_the_owner_invite_path_is_redacted(self):
+        from app.utils.pii import redact_url_tokens
+
+        token = "hxSJLZj4NkycbjBgrIM9nn2lsMmYGRO8vlYIdErxoU8"  # token_urlsafe(32)
+        for raw, expected in (
+            (f"/auth/owner-invite/{token}", "/auth/owner-invite/[token]"),
+            (f"/he/owner-invite/{token}", "/he/owner-invite/[token]"),
+            (
+                f"https://mehamakor.co.il/auth/owner-invite/{token}?x=1",
+                "https://mehamakor.co.il/auth/owner-invite/[token]?x=1",
+            ),
+        ):
+            assert redact_url_tokens(raw) == expected
+
+    def test_the_two_sibling_shapes_are_covered_too(self):
+        """One redactor, three shapes — a per-feature scrubber is how the next
+        token-in-a-path ships unredacted."""
+        from app.utils.pii import redact_url_tokens
+
+        jwt = "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJwLTEifQ.s1g-_x"
+        reg = "Kq2mN8pR4tV6xZ1aB3cD5eF7gH9jL0nP2qS4uW6yA8b"
+        assert redact_url_tokens(f"/claim/{jwt}") == "/claim/[token]"
+        assert redact_url_tokens(f"/registrations/{reg}") == "/registrations/[token]"
+        assert redact_url_tokens(f"/registration/{reg}") == "/registration/[token]"
+
+    def test_it_leaves_the_routes_own_build_artifacts_alone(self):
+        """The 40-character floor is what keeps a stack frame pointing at its
+        source. A redactor that swallowed these would make every Sentry frame
+        from the route unattributable — the cost the floor buys."""
+        from app.utils.pii import redact_url_tokens
+
+        for frame in (
+            "/_next/static/chunks/app/[locale]/owner-invite/[token]/page-8f21c0.js",
+            "/owner-invite/OwnerInviteClient.jsx",
+            "/claim/ClaimClient.jsx",
+            "/health",
+        ):
+            assert redact_url_tokens(frame) == frame
+
+    def test_the_middleware_binds_the_redacted_form(self, client, db):
+        """The unit above proves the function; this proves it is WIRED. A
+        redactor nothing calls is the shape this whole class exists to stop."""
+        import app.middleware as mw
+
+        p = approved(db)
+        _, token = invite(client, db, p)
+        bound: list = []
+        real = mw.redact_url_tokens
+        mw.redact_url_tokens = lambda v: bound.append(v) or real(v)
+        try:
+            client.get(_lookup_url(token))
+        finally:
+            mw.redact_url_tokens = real
+
+        assert bound, "middleware never called the redactor — it is not wired"
+        for value in bound:
+            if isinstance(value, str) and "owner-invite" in value:
+                assert token not in real(value), (
+                    f"the redactor was called but left the token in: {value}"
+                )
+                break
+        else:
+            raise AssertionError("no owner-invite URL reached the redactor")
 
 
 # ---------------------------------------------------------------------------
