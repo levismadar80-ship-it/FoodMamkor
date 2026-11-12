@@ -1288,7 +1288,7 @@ function CatalogEmptyState() {
       <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
         {!isAdmin && (
           <Link
-            href="/register/producer"
+            href="/join"
             className="bg-primary text-white px-6 py-3 rounded-md font-medium hover:bg-primary-dark transition"
           >
             {t("add_cta")}

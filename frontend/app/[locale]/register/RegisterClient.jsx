@@ -482,7 +482,7 @@ function RegisterPageBody() {
         </p>
         <p className="text-center text-sm text-fg-muted mt-2">
           {t("auth.register.consumer.cta_producer")}{" "}
-          <Link href="/register/producer" className="text-primary underline">
+          <Link href="/join" className="text-primary underline">
             {t("auth.register.consumer.cta_producer_link")}
           </Link>
         </p>
