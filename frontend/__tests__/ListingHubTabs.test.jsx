@@ -252,12 +252,16 @@ describe("ListingHubTabs — every tab the registry declares has a real route", 
   // sites exist and nothing more. What they RENDER is evidenced in a real
   // browser instead — qa-artifacts/MEH-2859/tabs-{375,1440}-{events,experiences,
   // group-buys,rescue}.webp, each measured with its own tab reported selected.
+  // MEH-3013: the routes now mount the row THROUGH components/HubShell.jsx
+  // (hero + row, one owner); HubShellGuard.test.js asserts nobody else
+  // imports ListingHubTabs. This keeps the per-route `active` wiring.
   it("wiring: the three other routes mount the row with their own tab", () => {
     const read = (f) => fs.readFileSync(path.resolve(__dirname, "..", f), "utf8");
-    expect(read("app/[locale]/group-buys/GroupBuysClient.jsx")).toMatch(/<ListingHubTabs active="groupBuys"/);
-    expect(read("app/[locale]/rescue/page.jsx")).toMatch(/<ListingHubTabs active="rescue"/);
+    expect(read("components/HubShell.jsx")).toMatch(/<ListingHubTabs active=\{active\}/);
+    expect(read("app/[locale]/group-buys/GroupBuysClient.jsx")).toMatch(/<HubShell\s+active="groupBuys"/);
+    expect(read("app/[locale]/rescue/page.jsx")).toMatch(/<HubShell\s+active="rescue"/);
     const events = read("app/[locale]/events/EventsClient.jsx");
-    expect(events).toMatch(/<ListingHubTabs/);
+    expect(events).toMatch(/<HubShell/);
     expect(events, "the events hub picks its tab from the route it was mounted on").toMatch(
       /active=\{isExp \? "experiences" : "events"\}/,
     );

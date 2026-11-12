@@ -65,17 +65,24 @@ export const ENTITIES = [
     key: "event",
     routes: ["app/[locale]/events/[id]"],
     files: ["app/[locale]/events/[id]"],
-    uses: ["back", "share", "save", "owner", "cover"],
+    uses: ["back", "share", "save", "cover"],
     missing: {},
-    na: { contact: "contact goes through the organizer/business OwnerRow" },
+    na: {
+      // MEH-2989 (#4361): the bottom OwnerRow card repeated the byline, so it was removed on purpose.
+      owner: "the byline under the title (event-byline) is the only owner link — MEH-2989",
+      contact: "contact goes through the organizer/business page the byline links to",
+    },
   },
   {
     key: "experience",
     routes: ["app/[locale]/experiences/[id]"],
     files: ["app/[locale]/experiences/[id]"],
-    uses: ["back", "share", "save", "owner", "cover", "contact"],
+    uses: ["back", "share", "save", "cover", "contact"],
     missing: {},
-    na: {},
+    na: {
+      // MEH-2989 (#4361): same decision as the event page.
+      owner: "the byline under the title (experience-byline) is the only owner link — MEH-2989",
+    },
   },
   {
     key: "group_buy",

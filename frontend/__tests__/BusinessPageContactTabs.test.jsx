@@ -7,7 +7,7 @@ import { render, screen, fireEvent } from "@testing-library/react";
  * MEH-2836 — a business page always offers a working contact button when the
  * business has any contact detail; with none, there is no sticky bar at all
  * (not a bar with only a rating). The section tab bar fades on the side that
- * has hidden tabs. One recipe fills its row on a phone.
+ * has hidden tabs. (The one-recipe full row was replaced by MEH-3006's strip.)
  */
 
 vi.mock("next-intl", () => ({ useTranslations: () => (key) => key }));
@@ -109,8 +109,18 @@ describe("section tab bar + single recipe (source)", () => {
     expect(s).toMatch(/"--chip-fade-end": `\$\{isRtl \? endPx : startPx\}px`/);
     expect(s).toMatch(/useScrollAffordance\(\)/);
   });
-  it("exactly one recipe → full row on a phone, half from md; 2+ unchanged", () => {
+  // MEH-3006 supersedes MEH-2836's one-recipe full row (it filled a phone
+  // screen): phones get one sideways strip (same height for 1 or many,
+  // bleeding to the edge so the next card peeks), md+ a 3-column grid. No
+  // branch on the recipe count.
+  it("recipes: one sideways strip on phones, 3-col grid from md, no count branch", () => {
     const s = src("app/[locale]/producer/[id]/components/ProducerSections.jsx");
-    expect(s).toContain('recipes.length === 1 ? "grid grid-cols-1 md:grid-cols-2 gap-4" : "grid grid-cols-2 md:grid-cols-3 gap-4"');
+    const grid = s.match(/data-testid="producer-recipes-grid"\s+className="([^"]+)"/);
+    expect(grid).not.toBeNull();
+    const cls = grid[1].split(/\s+/);
+    for (const c of ["flex", "overflow-x-auto", "snap-x", "-me-4", "pe-4", "md:grid", "md:grid-cols-3", "md:overflow-visible"]) {
+      expect(cls).toContain(c);
+    }
+    expect(s).not.toMatch(/recipes\.length === 1/);
   });
 });
