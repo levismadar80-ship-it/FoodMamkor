@@ -515,8 +515,10 @@ one-time, idempotent seed (`ON CONFLICT DO NOTHING` — safe to re-run):
 - **From a local checkout** (repo root, `DATABASE_URL` set):
   `cd backend && python scripts/seed_cities.py`.
 - **From the Railway Console** (`cwd=/app`, which already *is* `backend/` —
-  `Dockerfile:40`): `python scripts/seed_cities.py` — **no** `cd backend`, there
-  is no `/app/backend/`.
+  `Dockerfile:40`): `/app/.venv/bin/python scripts/seed_cities.py` — **no**
+  `cd backend`, there is no `/app/backend/`. A bare `python` there is the
+  system interpreter and fails with `No module named 'sqlalchemy'`
+  (measured 12/11/2026, MEH-2995); the packages live in `/app/.venv`.
 
 Run it once on **staging** and once on **production**. Until an env is
 seeded, `GET /cities` falls back to the ~100-entry static list
@@ -988,8 +990,9 @@ panel) is QA'd automatically instead of manually. Three moving parts:
    the `railway` CLI does not exist inside the container:
 
    ```bash
-   # Railway → service → Console (already at /app)
-   python scripts/seed_demo_business.py --sync-users
+   # Railway → service → Console (already at /app). The packages live in
+   # /app/.venv; a bare `python` fails with No module named 'sqlalchemy'.
+   /app/.venv/bin/python scripts/seed_demo_business.py --sync-users
    ```
 
    **B. Local machine with the Railway CLI, from the repo root:**
@@ -1015,7 +1018,7 @@ panel) is QA'd automatically instead of manually. Three moving parts:
 
    ```bash
    # A. Railway Console (staging backend service, cwd=/app)
-   python scripts/seed_demo_business.py --golden
+   /app/.venv/bin/python scripts/seed_demo_business.py --golden
    # B. Local machine with the Railway CLI linked to staging, from the repo root
    railway run python backend/scripts/seed_demo_business.py --golden
    ```
