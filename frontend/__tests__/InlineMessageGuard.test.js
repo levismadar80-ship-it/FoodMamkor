@@ -35,6 +35,7 @@ const ALLOWED = {
   "components/ReviewCardCanvas.jsx": 1,
   "components/UnverifiedEmailNotice.jsx": 1,
   "components/admin/AdminLoadError.jsx": 1,
+  "components/dashboard/RescueTab.jsx": 1,
   "components/producer/RequestReviewCard.jsx": 1,
 };
 
@@ -55,13 +56,21 @@ const files = ["app", "components"].flatMap((d) => walk(path.join(ROOT, d))).map
   src: fs.readFileSync(p, "utf8"),
 }));
 
-// role="alert" as an attribute inside a JSX opening tag (not prose in a comment)
-const countAlerts = (src) => (src.match(/<[a-zA-Z][^<>]*\srole="alert"/g) || []).length;
+// role="alert" as an attribute inside a JSX opening tag (not prose in a comment):
+// "alert", 'alert', {"alert"} or an expression that can yield "alert".
+const ALERT_ATTR = /<[a-zA-Z][^<>]*\srole=(?:"alert"|'alert'|\{[^{}]*["'`]alert["'`][^{}]*\})/g;
+const countAlerts = (src) => (src.match(ALERT_ATTR) || []).length;
 
 describe("InlineMessageGuard (MEH-3072)", () => {
   it("self-test: counts an attribute, not a comment", () => {
     expect(countAlerts('<p className="text-sm text-error" role="alert">x</p>')).toBe(1);
+    expect(countAlerts("<p role='alert'>x</p>")).toBe(1);
+    expect(countAlerts('<p role={"alert"}>x</p>')).toBe(1);
+    expect(countAlerts('<p role={err ? "alert" : "status"}>x</p>')).toBe(1);
+    expect(countAlerts('<p role="status">x</p>')).toBe(0);
     expect(countAlerts('{/* MEH-1165: role="alert" so it is announced */}')).toBe(0);
+    // anchored to a real file: the tone-driven notice in RescueTab
+    expect(countAlerts(files.find((f) => f.rel === "components/dashboard/RescueTab.jsx").src)).toBe(1);
     expect(countAlerts(files.find((f) => f.rel === OWNER).src)).toBe(0);
   });
 

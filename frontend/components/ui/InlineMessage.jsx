@@ -48,7 +48,8 @@ export default function InlineMessage({
   const role = tone === "error" ? "alert" : "status";
   const box = variant === "box" ? BOX[tone] : "";
   return (
-    <Tag role={role} className={`${SIZE[size]} ${COLOR[tone]} ${box} ${className}`.replace(/\s+/g, " ").trim()} {...rest}>
+    // rest first: role follows tone and cannot be overridden by a caller
+    <Tag {...rest} role={role} className={`${SIZE[size]} ${COLOR[tone]} ${box} ${className}`.replace(/\s+/g, " ").trim()}>
       {children}
     </Tag>
   );
