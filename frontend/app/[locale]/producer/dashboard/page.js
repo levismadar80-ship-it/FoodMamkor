@@ -507,8 +507,9 @@ export default function ProducerDashboardPage() {
           {/* MEH-3073: where she stands, not only that she waits. An ordered
               process, so an <ol>; the first step is the current one for the
               whole life of this banner (approval removes the banner). Strings
-              are the three stage names of the signup flow — one home. */}
-          <ol className="mt-3 flex flex-col gap-2 text-yellow-800" data-testid="status-pending-steps">
+              are the three stage names of the signup flow — one home.
+              role="list": Safari drops list semantics once list-style is none. */}
+          <ol role="list" className="mt-3 flex flex-col gap-2 text-yellow-800" data-testid="status-pending-steps">
             {["next_step1", "next_step2", "next_step3"].map((key, i) => (
               <li
                 key={key}
