@@ -37,7 +37,7 @@ const STAR_SIZE = 28;
 const DRAFT_KEY = (producerId) => `review_draft_stars_${producerId}`;
 
 /** Remember the star a reader tapped before they were allowed to write. */
-export function saveDraftStars(producerId, value) {
+function saveDraftStars(producerId, value) {
   try {
     sessionStorage.setItem(DRAFT_KEY(producerId), String(value));
   } catch {}
