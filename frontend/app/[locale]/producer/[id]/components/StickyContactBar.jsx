@@ -1,5 +1,4 @@
 import { useTranslations } from "next-intl";
-import { Star } from "@phosphor-icons/react";
 
 import { getPrimaryContactHref, getPrimaryContactLabel, getPrimaryMethod, isPrimaryExternal } from "@/lib/contact-method";
 import { withReferralParams } from "@/lib/utils";
@@ -66,7 +65,17 @@ export default function StickyContactBar({
       // mounts this bar there is nothing below it to clear, and the offset was
       // rendering as a strip of dead page showing under the CTA. Measured at
       // 375px before the change: bar bottom 748, viewport 812, 64px of gap.
-      className="vv-pin lg:hidden fixed bottom-0 inset-x-0 z-[598] bg-surface border-t border-border"
+      //
+      // MEH-3027: the full-width white strip is gone; the CTA is now a floating
+      // pill with the BottomNav shell's geometry (14px side gutters, safe-area +
+      // 16px bottom gutter, rounded-full, h-14). The strip put a 6px-radius
+      // rectangle ~15pt from the screen bottom on iPhone — inside the display's
+      // rounded corner — because env(safe-area-inset-bottom) is 0 without
+      // viewport-fit=cover (layout.js, MEH-2427), so the corner clipped it
+      // (Sapir, 13/11). A pill's ends follow the screen corner instead.
+      // pointer-events-none on the shell + auto on the pill: the transparent
+      // gutter band passes taps through to the page (MEH-1253's BottomNav fix).
+      className="vv-pin lg:hidden fixed bottom-0 inset-x-0 z-[598] flex px-[14px] pointer-events-none"
       data-testid="sticky-contact-bar"
       style={{
         // MEH-2148: with the bar flush, its own height is the whole distance it
@@ -79,8 +88,8 @@ export default function StickyContactBar({
         // MEH-2148: this was always here and was always inert -- the bar sat
         // above the home indicator, so there was nothing to inset for. Flush to
         // the edge it starts doing its job: it keeps the CTA off the indicator.
-        paddingBottom: "env(safe-area-inset-bottom, 0px)",
-        boxShadow: "0 -4px 12px rgba(0,0,0,0.06)",
+        // MEH-3027: + 16px, the BottomNav gutter — the inset alone is 0 here.
+        paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 16px)",
         opacity: isVacation ? 0.85 : 1,
       }}
       // MEH-1333: when parked off-screen the bar must be non-focusable, not just
@@ -97,22 +106,9 @@ export default function StickyContactBar({
       // (ChatWidget watches [data-chat-hide]); hidden bar → attribute gone.
       data-chat-hide={isBarVisible ? "" : undefined}
     >
-      <div className="flex items-center gap-3 px-4 py-3">
-        {/* Social proof — hidden if < 3 reviews. MEH-76 chunk 1: the vacation
-            notice that used to replace it was the page's THIRD vacation
-            surface — removed (single banner lives in ProducerHeader). The
-            CTA label below still carries the honest expectation line. */}
-        {producer.reviews_count >= 3 ? (
-          <div className="shrink-0 text-2xs text-fg-muted leading-tight">
-            {/* MEH-76: gold hex -> accent token, emoji star -> Phosphor,
-                rating digits bidi-isolated (.numeric, MEH-763 convention). */}
-            <div className="font-bold text-accent inline-flex items-center gap-0.5">
-              <Star size={11} weight="fill" aria-hidden="true" />
-              <span className="numeric">{Number(producer.avg_rating).toFixed(1)}</span>
-            </div>
-            <div>{t("producer.detail.header.review_count", { count: producer.reviews_count })}</div>
-          </div>
-        ) : null}
+      {/* MEH-3027: the ≥3-review rating that sat beside the CTA is dropped
+          from the floating pill (Sapir, 13/11) — it already shows in the page
+          header, and a floating control carries the one action only. */}
         {/* Primary CTA */}
         {href && (
           <a
@@ -141,13 +137,12 @@ export default function StickyContactBar({
             // MEH-76 chunk 1: the vacation pale-green CTA fork was an ADR-019
             // violation (state-color fill + raw hex). The CTA keeps its normal
             // method-driven color — the whole bar is already dimmed via opacity.
-            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-md font-medium text-sm transition focus-visible:ring-2 ${variant.className}`}
+            className={`pointer-events-auto w-full h-14 flex items-center justify-center gap-2 rounded-full font-medium text-sm shadow-[0_8px_30px_rgba(46,104,83,0.22)] transition focus-visible:ring-2 ${variant.className}`}
           >
             <CtaIcon size={20} />
             {isVacation ? t("producer.detail.sticky_bar.vacation_msg") : getPrimaryContactLabel(producer, t)}
           </a>
         )}
-      </div>
     </div>
   );
 }
