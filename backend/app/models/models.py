@@ -453,6 +453,11 @@ class Producer(Base):
     # close>open, order + non-overlap, ≤3 → 422). Expand-only per ADR-007.
     # Paired migration for the COLUMN: f4a1e9c3b7d2 (MEH-1543).
     order_window = Column(JSONB, nullable=True)
+    # MEH-3035: how the business takes payment — {"methods": [...], "timing":
+    # str|None, "note": str|None}, or NULL (said nothing → the page renders
+    # nothing). Validated in schemas._payment_info_validator. Expand-only per
+    # ADR-007. Paired migration: e3a5c1d7f904.
+    payment_info = Column(JSONB, nullable=True)
     # MEH-1889 chunk A: per-DATE overrides above the weekly axes, shape
     # {"2026-09-22": {"ranges": [{"open": "09:00", "close": "13:00"}],
     #                 "note": "ערב ראש השנה"}} — keys ISO YYYY-MM-DD,
