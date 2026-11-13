@@ -269,7 +269,7 @@ class TestVerifyLinkSignsIn:
 
     def _replant(self, db):
         user = db.query(User).filter(User.email == self.PAYLOAD["email"]).first()
-        user.email_verify_token = "replanted-token-for-second-pass"
+        user.email_verify_token = "example-token-changeme"
         user.email_verify_expires = utc_now() + timedelta(hours=24)
         db.commit()
         return user.email_verify_token
