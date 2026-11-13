@@ -55,8 +55,17 @@ def _count_selects():
 
 
 def _owner_lookups(statements):
+    # MEH-2974: matched on the WHERE, not on `DISTINCT`. The hydrate used to
+    # be `SELECT DISTINCT users.producer_id`; it now also selects id/name/email
+    # so it can carry `owner` (ProducerAdminOut) in the same single query, and
+    # with the primary key in the select list DISTINCT became both illegal
+    # beside the ORDER BY and pointless. `users.producer_id IN` is what makes
+    # this statement the owner lookup and not, say, the per-request auth read
+    # of one users row — and it does not move when the projection does.
     return [
-        s for s in statements if "DISTINCT users.producer_id" in s and "FROM users" in s
+        s
+        for s in statements
+        if "FROM users" in s and "users.producer_id IN" in s
     ]
 
 

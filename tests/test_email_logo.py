@@ -231,5 +231,11 @@ def test_no_html_email_in_the_backend_without_the_logo():
             f"{path.relative_to(BACKEND_APP)}: {docs} HTML document(s), {calls} logo call(s)"
         )
     # Control: the scan must have found the files it exists for, or it proves nothing.
-    assert checked.get("services/auth_emails.py") == (4, 4), checked
-    assert sum(d for d, _ in checked.values()) == 12, checked
+    # MEH-2974 moved both numbers by exactly one: `send_owner_invite_email` is a
+    # fifth HTML document in auth_emails.py, and it carries `email_logo_html()`
+    # like the other four. The pin is the control — it is what makes "every HTML
+    # email has the logo" a measurement rather than a scan that found nothing.
+    # v3 of the same card added a sixth: `send_owner_invite_code_email`, the
+    # 6-digit code mail, which carries the logo too.
+    assert checked.get("services/auth_emails.py") == (6, 6), checked
+    assert sum(d for d, _ in checked.values()) == 14, checked

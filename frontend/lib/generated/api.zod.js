@@ -993,7 +993,17 @@ export const ListProducersAdminProducersGetResponseItem = /*#__PURE__*/ zod.obje
   "opening_hours": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "order_window": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.record(/*#__PURE__*/ zod.string(), /*#__PURE__*/ zod.unknown()),/*#__PURE__*/ zod.null()])),
   "organic_certified": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), listProducersAdminProducersGetResponseOrganicCertifiedDefault),
+  "owner": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.object({
+  "email": /*#__PURE__*/ zod.email(),
+  "name": /*#__PURE__*/ zod.string()
+}).check(/*#__PURE__*/ zod.describe('The account behind a business, for the admin\'s «בעלים» panel only.\n\nTwo fields, and the shape is the limit: the admin needs to see WHO she\nhanded the page to, never the account itself. Hydrated beside `has_owner`\n(routers\/admin.py `_attach_has_owner`) in the same single query, so it\ncosts no extra round-trip and cannot reintroduce the per-row SELECT\nMEH-2541 removed from `GET \/admin\/producers`.')),/*#__PURE__*/ zod.null()])),
   "owner_bio": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "owner_invite_accepted_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()])),
+  "owner_invite_consent_note": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "owner_invite_email": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.email(),/*#__PURE__*/ zod.null()])),
+  "owner_invite_expires_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()])),
+  "owner_invite_name": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "owner_invite_sent_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()])),
   "owner_photo_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "phone": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "phone_verified": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), listProducersAdminProducersGetResponsePhoneVerifiedDefault),
@@ -1225,7 +1235,17 @@ export const AdminCreateProducerAdminProducersPostResponse = /*#__PURE__*/ zod.o
   "opening_hours": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "order_window": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.record(/*#__PURE__*/ zod.string(), /*#__PURE__*/ zod.unknown()),/*#__PURE__*/ zod.null()])),
   "organic_certified": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminCreateProducerAdminProducersPostResponseOrganicCertifiedDefault),
+  "owner": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.object({
+  "email": /*#__PURE__*/ zod.email(),
+  "name": /*#__PURE__*/ zod.string()
+}).check(/*#__PURE__*/ zod.describe('The account behind a business, for the admin\'s «בעלים» panel only.\n\nTwo fields, and the shape is the limit: the admin needs to see WHO she\nhanded the page to, never the account itself. Hydrated beside `has_owner`\n(routers\/admin.py `_attach_has_owner`) in the same single query, so it\ncosts no extra round-trip and cannot reintroduce the per-row SELECT\nMEH-2541 removed from `GET \/admin\/producers`.')),/*#__PURE__*/ zod.null()])),
   "owner_bio": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "owner_invite_accepted_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()])),
+  "owner_invite_consent_note": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "owner_invite_email": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.email(),/*#__PURE__*/ zod.null()])),
+  "owner_invite_expires_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()])),
+  "owner_invite_name": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "owner_invite_sent_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()])),
   "owner_photo_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "phone": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "phone_verified": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminCreateProducerAdminProducersPostResponsePhoneVerifiedDefault),
@@ -1454,7 +1474,17 @@ export const PendingProducersAdminProducersPendingGetResponseItem = /*#__PURE__*
   "opening_hours": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "order_window": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.record(/*#__PURE__*/ zod.string(), /*#__PURE__*/ zod.unknown()),/*#__PURE__*/ zod.null()])),
   "organic_certified": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), pendingProducersAdminProducersPendingGetResponseOrganicCertifiedDefault),
+  "owner": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.object({
+  "email": /*#__PURE__*/ zod.email(),
+  "name": /*#__PURE__*/ zod.string()
+}).check(/*#__PURE__*/ zod.describe('The account behind a business, for the admin\'s «בעלים» panel only.\n\nTwo fields, and the shape is the limit: the admin needs to see WHO she\nhanded the page to, never the account itself. Hydrated beside `has_owner`\n(routers\/admin.py `_attach_has_owner`) in the same single query, so it\ncosts no extra round-trip and cannot reintroduce the per-row SELECT\nMEH-2541 removed from `GET \/admin\/producers`.')),/*#__PURE__*/ zod.null()])),
   "owner_bio": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "owner_invite_accepted_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()])),
+  "owner_invite_consent_note": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "owner_invite_email": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.email(),/*#__PURE__*/ zod.null()])),
+  "owner_invite_expires_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()])),
+  "owner_invite_name": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "owner_invite_sent_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()])),
   "owner_photo_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "phone": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "phone_verified": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), pendingProducersAdminProducersPendingGetResponsePhoneVerifiedDefault),
@@ -1746,7 +1776,17 @@ export const AdminGetProducerAdminProducersProducerIdGetResponse = /*#__PURE__*/
   "opening_hours": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "order_window": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.record(/*#__PURE__*/ zod.string(), /*#__PURE__*/ zod.unknown()),/*#__PURE__*/ zod.null()])),
   "organic_certified": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminGetProducerAdminProducersProducerIdGetResponseOrganicCertifiedDefault),
+  "owner": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.object({
+  "email": /*#__PURE__*/ zod.email(),
+  "name": /*#__PURE__*/ zod.string()
+}).check(/*#__PURE__*/ zod.describe('The account behind a business, for the admin\'s «בעלים» panel only.\n\nTwo fields, and the shape is the limit: the admin needs to see WHO she\nhanded the page to, never the account itself. Hydrated beside `has_owner`\n(routers\/admin.py `_attach_has_owner`) in the same single query, so it\ncosts no extra round-trip and cannot reintroduce the per-row SELECT\nMEH-2541 removed from `GET \/admin\/producers`.')),/*#__PURE__*/ zod.null()])),
   "owner_bio": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "owner_invite_accepted_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()])),
+  "owner_invite_consent_note": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "owner_invite_email": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.email(),/*#__PURE__*/ zod.null()])),
+  "owner_invite_expires_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()])),
+  "owner_invite_name": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "owner_invite_sent_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()])),
   "owner_photo_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "phone": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "phone_verified": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminGetProducerAdminProducersProducerIdGetResponsePhoneVerifiedDefault),
@@ -1975,7 +2015,17 @@ export const AdminUpdateProducerAdminProducersProducerIdPutResponse = /*#__PURE_
   "opening_hours": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "order_window": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.record(/*#__PURE__*/ zod.string(), /*#__PURE__*/ zod.unknown()),/*#__PURE__*/ zod.null()])),
   "organic_certified": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminUpdateProducerAdminProducersProducerIdPutResponseOrganicCertifiedDefault),
+  "owner": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.object({
+  "email": /*#__PURE__*/ zod.email(),
+  "name": /*#__PURE__*/ zod.string()
+}).check(/*#__PURE__*/ zod.describe('The account behind a business, for the admin\'s «בעלים» panel only.\n\nTwo fields, and the shape is the limit: the admin needs to see WHO she\nhanded the page to, never the account itself. Hydrated beside `has_owner`\n(routers\/admin.py `_attach_has_owner`) in the same single query, so it\ncosts no extra round-trip and cannot reintroduce the per-row SELECT\nMEH-2541 removed from `GET \/admin\/producers`.')),/*#__PURE__*/ zod.null()])),
   "owner_bio": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "owner_invite_accepted_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()])),
+  "owner_invite_consent_note": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "owner_invite_email": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.email(),/*#__PURE__*/ zod.null()])),
+  "owner_invite_expires_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()])),
+  "owner_invite_name": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "owner_invite_sent_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()])),
   "owner_photo_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "phone": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "phone_verified": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminUpdateProducerAdminProducersProducerIdPutResponsePhoneVerifiedDefault),
@@ -2089,6 +2139,55 @@ export const PutGooglePlaceIdAdminProducersProducerIdGooglePlaceIdPutResponse = 
  * @summary Grant Verified
  */
 export const GrantVerifiedAdminProducersProducerIdGrantVerifiedPostResponse = /*#__PURE__*/ zod.unknown()
+
+
+/**
+ * Withdraw an invite that has not been accepted.
+ *
+ * Clears the PII too, not only the token. The address and the name belong to
+ * someone who is not a user of the site and now never will be through this
+ * link, so the row should stop holding them (MEH-2208's תיקון 13 class).
+ * `owner_invite_created_by` and the consent note are kept: they are the audit
+ * record of an invite that WAS sent, and deleting that is the one thing a
+ * cancel must not do.
+ *
+ * Deliberately NOT gated on `status == "approved"` — see `_load_invitable`.
+ * @summary Cancel Owner Invite
+ */
+export const CancelOwnerInviteAdminProducersProducerIdOwnerInviteDeleteResponse = /*#__PURE__*/ zod.unknown()
+
+
+/**
+ * Invite (or re-invite) the owner of an approved business.
+ *
+ * A second call REPLACES the first invite, token and all — that is how an
+ * admin corrects a typo in the address without a separate revoke step.
+ * @summary Create Owner Invite
+ */
+export const CreateOwnerInviteAdminProducersProducerIdOwnerInvitePostResponse = /*#__PURE__*/ zod.object({
+  "email": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.email(),/*#__PURE__*/ zod.null()])),
+  "expires_at": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "invite_url": /*#__PURE__*/ zod.string(),
+  "name": /*#__PURE__*/ zod.string(),
+  "sent_at": /*#__PURE__*/ zod.iso.datetime({"offset":true})
+}).check(/*#__PURE__*/ zod.describe('The ONE response that carries the raw token, as part of `invite_url`.\n\nReturned by create and by resend, and nowhere else: there is no GET that\nre-reads it, because the database holds only the sha256. If the admin\nloses the link she resends, which mints a new token and kills this one.'))
+
+
+/**
+ * Mint a new token for the invite already on the row and send it again.
+ *
+ * Takes no body on purpose: resending to a DIFFERENT address is a different
+ * act with a different consent, and it goes through create — which records a
+ * fresh `consent_note` for it.
+ * @summary Resend Owner Invite
+ */
+export const ResendOwnerInviteAdminProducersProducerIdOwnerInviteResendPostResponse = /*#__PURE__*/ zod.object({
+  "email": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.email(),/*#__PURE__*/ zod.null()])),
+  "expires_at": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "invite_url": /*#__PURE__*/ zod.string(),
+  "name": /*#__PURE__*/ zod.string(),
+  "sent_at": /*#__PURE__*/ zod.iso.datetime({"offset":true})
+}).check(/*#__PURE__*/ zod.describe('The ONE response that carries the raw token, as part of `invite_url`.\n\nReturned by create and by resend, and nowhere else: there is no GET that\nre-reads it, because the database holds only the sha256. If the admin\nloses the link she resends, which mints a new token and kills this one.'))
 
 
 /**
@@ -2770,6 +2869,93 @@ export const GetMeAuthMeGetResponse = /*#__PURE__*/ zod.object({
   "producer_status": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "role": /*#__PURE__*/ zod.string()
 })
+
+
+/**
+ * Set a password, sign both consents, and walk into the dashboard.
+ *
+ * ORDER MATTERS, and each step is placed where it is for a reason:
+ *
+ *   1. The two consent booleans are schema-level 422s (OwnerInviteAccept).
+ *      They are statements about the BODY and say nothing about which
+ *      business the token names, so they leak nothing and they run before any
+ *      read — the same classification register_producer gives its own
+ *      body-shape guards.
+ *   2. The password policy, also 422, also before any write.
+ *   3. The EMAIL CODE (v3), 422. She proves the address before anything
+ *      else is spent on it, and a wrong guess costs one of five attempts —
+ *      the counter is the only write a failed accept makes.
+ *   4. The email-taken and has-owner checks, 409, BEFORE the claim — so the
+ *      common race answers without having touched anything.
+ *   5. The claim: ONE conditional UPDATE (MEH-1820), never SELECT-then-set.
+ *   6. The INSERT, the publish if the business was hidden, then one commit.
+ *
+ * Steps 4 and 6 still race each other, and the backstop is NARROWER than it
+ * looks: the unique index on `users.email` is case-SENSITIVE, while
+ * `_email_taken` compares lowercased. So it catches an exact-case collision —
+ * rolling the whole transaction back, claim included, which is what keeps the
+ * 409 free of writes and the link usable — and does NOT catch one that
+ * differs only in case. That gap is `users.email` having no case-insensitive
+ * index, which is repo-wide (`auth.py` looks accounts up with a raw `==`
+ * everywhere) and belongs to its own card; it is recorded here rather than
+ * half-fixed in one endpoint. Its blast radius is bounded: the racer's
+ * account does not own the business, only the invitee's does.
+ *
+ * The window itself is as small as it can be made — bcrypt moved above the
+ * check, so the only thing left between them is the UPDATE.
+ * @summary Accept Owner Invite
+ */
+export const acceptOwnerInviteAuthOwnerInviteAcceptPostResponseTokenTypeDefault = `bearer`;
+
+export const AcceptOwnerInviteAuthOwnerInviteAcceptPostResponse = /*#__PURE__*/ zod.object({
+  "access_token": /*#__PURE__*/ zod.string(),
+  "token_type": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), acceptOwnerInviteAuthOwnerInviteAcceptPostResponseTokenTypeDefault)
+})
+
+
+/**
+ * Send a verification code to the address she typed.
+ *
+ * THE RESPONSE IS THE SAME WHATEVER HAPPENS — same status, same bytes —
+ * for an address that is free, one that already belongs to an account, and
+ * one whose send fails. The reason is specific: this endpoint takes an
+ * arbitrary address from anyone holding the link, so a different answer for
+ * "already registered" would turn it into an account-existence oracle for
+ * any address an attacker cares to try.
+ *
+ * What DOES differ is invisible from here: a registered address is not
+ * mailed and no code is stored, so the acceptance it would lead to fails at
+ * the 409 it was always going to fail at.
+ *
+ * An invalid link still 404s — that is a fact about the LINK, which the
+ * caller already holds, not about any address.
+ * @summary Send Owner Invite Email Code
+ */
+export const SendOwnerInviteEmailCodeAuthOwnerInviteEmailCodePostResponse = /*#__PURE__*/ zod.unknown()
+
+
+/**
+ * What the acceptance page renders before she has typed anything.
+ *
+ * `request` is required by slowapi, which reads it by introspection.
+ * @summary Get Owner Invite
+ */
+export const getOwnerInviteAuthOwnerInviteTokenGetResponsePreviewOneCategoryNamesDefault = [];
+export const getOwnerInviteAuthOwnerInviteTokenGetResponseWillPublishDefault = false;
+
+export const GetOwnerInviteAuthOwnerInviteTokenGetResponse = /*#__PURE__*/ zod.object({
+  "email": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.email(),/*#__PURE__*/ zod.null()])),
+  "preview": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.object({
+  "category_names": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()), getOwnerInviteAuthOwnerInviteTokenGetResponsePreviewOneCategoryNamesDefault),
+  "city": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "image": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "name": /*#__PURE__*/ zod.string(),
+  "short_description": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
+}),/*#__PURE__*/ zod.null()])),
+  "producer_name": /*#__PURE__*/ zod.string(),
+  "requires_farmer_declaration": /*#__PURE__*/ zod.boolean(),
+  "will_publish": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), getOwnerInviteAuthOwnerInviteTokenGetResponseWillPublishDefault)
+}).check(/*#__PURE__*/ zod.describe('What the acceptance page may know before anyone has authenticated.\n\nDeliberately three fields. The business NAME is already public on its own\npage, and the EMAIL is the address the link was sent to — so a holder of\nthe link learns nothing about the business they did not already have. No\nphone, no address, no license, no ids, and no token echo.'))
 
 
 /**
