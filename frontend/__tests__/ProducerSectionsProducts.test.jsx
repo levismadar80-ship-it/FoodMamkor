@@ -852,6 +852,51 @@ describe("MEH-3021 — long product lists collapse", () => {
     expect(imgs).toEqual([true, true, true, false, false]);
   });
 
+  it("0 products: no rows and no toggle", () => {
+    render(<ProducerSections {...baseProps} producer={producerWith([])} />);
+    expect(rows()).toHaveLength(0);
+    expect(screen.queryByTestId("products-toggle")).not.toBeInTheDocument();
+  });
+
+  it("9 products (the first count past the threshold): toggle appears", () => {
+    render(<ProducerSections {...baseProps} producer={producerWith(make(9))} />);
+    expect(rows()).toHaveLength(8);
+    expect(screen.getByTestId("products-toggle")).toBeInTheDocument();
+  });
+
+  it("photo-first order keeps API order inside each group, and a row opens ITS product", () => {
+    const products = make(5, { photoEvery: 2 }); // photos on 0, 2, 4
+    render(<ProducerSections {...baseProps} producer={producerWith(products)} />);
+    const names = rows().map((r) => r.textContent);
+    const expected = ["מוצר 0", "מוצר 2", "מוצר 4", "מוצר 1", "מוצר 3"];
+    expected.forEach((n, i) => expect(names[i]).toContain(n));
+    // Row 4 is API item 1 — the sheet must open on it, not on API item 3.
+    fireEvent.click(rows()[3]);
+    expect(screen.getByTestId("product-sheet")).toHaveAttribute("aria-label", "מוצר 1");
+  });
+
+  it("with a featured product: it stays out of the count, and a deep link still lands on the right row", () => {
+    const products = make(10);
+    const producer = { ...producerWith(products), top_product_id: products[0].id, top_product_name: products[0].name };
+    window.history.replaceState({}, "", `/?product=${products[9].id}`);
+    try {
+      render(<ProducerSections {...baseProps} producer={producer} />);
+      expect(screen.getByTestId("product-sheet")).toHaveAttribute("aria-label", "מוצר 9");
+      // 9 grid products (featured excluded) → list opened by the deep link.
+      expect(rows()).toHaveLength(products.length - 1);
+    } finally {
+      window.history.replaceState({}, "", "/");
+    }
+  });
+
+  it("with a featured product and exactly 9 products, the grid has 8 and there is no toggle", () => {
+    const products = make(9);
+    const producer = { ...producerWith(products), top_product_id: products[0].id, top_product_name: products[0].name };
+    render(<ProducerSections {...baseProps} producer={producer} />);
+    expect(rows()).toHaveLength(8);
+    expect(screen.queryByTestId("products-toggle")).not.toBeInTheDocument();
+  });
+
   it("the sheet pages into the collapsed rows", () => {
     render(<ProducerSections {...baseProps} producer={producerWith(make(10))} />);
     fireEvent.click(rows()[5]);
