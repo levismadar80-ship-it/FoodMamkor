@@ -1361,13 +1361,21 @@ test.describe("manual › map z-index token system + UI bugfixes", () => {
   // MT:z:b2 — desktop: hovering a marker yields exactly ONE tooltip source — the
   //   native `title` (MapComponent.jsx `title: markerLabel`); no Leaflet tooltip
   //   is bound (MEH-30 #8), so no duplicate.
+  //   MEH-3066: each primary pin now carries a permanent name label, which is a
+  //   Leaflet tooltip (`.mehamakor-pin-label`) shown only from zoom 13. It is
+  //   not a hover tooltip, so the hover check excludes it, and at this
+  //   default zoom every label must still be hidden — no second name on hover.
   test("desktop: a hovered marker has one tooltip source (native title), no Leaflet tooltip, and highlights its card", async ({ page }, info) => {
     desktopOnly(info, "hover is a pointer affordance; the mobile path is tap → sheet");
     const { shell } = await gotoWithCatalog(page, info);
     const marker = markerOf(shell, P_TLV);
     await expect(marker).toHaveAttribute("title", P_TLV.name);
     await marker.hover();
-    await expect(shell.locator(".leaflet-tooltip")).toHaveCount(0);
+    await expect(shell.locator(".leaflet-tooltip:not(.mehamakor-pin-label)")).toHaveCount(0);
+    const labels = shell.locator(".leaflet-tooltip.mehamakor-pin-label");
+    const shownLabels = await labels.evaluateAll((els) =>
+      els.filter((e) => getComputedStyle(e).visibility !== "hidden").length);
+    expect(shownLabels, "below zoom 13 no pin label may show on hover").toBe(0);
     await expect(cardOf(shell, P_TLV).locator("xpath=..")).toHaveClass(/ring-2/);
   });
 
