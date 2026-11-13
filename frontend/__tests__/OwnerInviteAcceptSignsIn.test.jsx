@@ -106,3 +106,58 @@ describe("owner invite — a successful accept signs the owner in", () => {
     expect(tokenSeenByRefresh).toBe("new-owner-token");
   });
 });
+
+// MEH-3025 — she presses «שליחת קוד אימות», switches to her mail app, and the
+// phone reloads the page when she comes back. The code in her inbox is still
+// valid on the server; the page has to remember it asked for one, or the
+// submit button stays disabled with nothing saying why.
+describe("owner invite — a reload after the code was sent keeps the code usable", () => {
+  const ADDRESS = "Hers@Example.com";
+
+  async function sendCodeThenReload() {
+    window.sessionStorage.setItem("mehamakor.ownerInviteToken", TOKEN);
+    // The link carries no address (the usual case: we reached her on WhatsApp).
+    api.get.mockResolvedValue({ data: { ...INVITE, email: null } });
+    const first = wrap(<OwnerInviteClient />);
+    fireEvent.change(await screen.findByTestId("owner-invite-email"), { target: { value: ADDRESS } });
+    fireEvent.click(screen.getByTestId("owner-invite-send-code"));
+    await screen.findByTestId("owner-invite-code-sent");
+    first.unmount();
+    wrap(<OwnerInviteClient />);
+    await screen.findByTestId("owner-invite-form");
+  }
+
+  it("restores her address and enables submit once the code is typed", async () => {
+    await sendCodeThenReload();
+    expect(screen.getByTestId("owner-invite-email").value).toBe(ADDRESS);
+    expect(screen.getByTestId("owner-invite-code-sent")).toBeTruthy();
+    fireEvent.change(screen.getByTestId("owner-invite-code"), { target: { value: "123456" } });
+    fireEvent.change(screen.getByTestId("pw"), { target: { value: "Abcdefgh1234!" } });
+    expect(screen.getByTestId("owner-invite-submit").disabled).toBe(false);
+    // One send only: the reload must not ask the server for a second code.
+    const sends = api.post.mock.calls.filter(([url]) => url === "/auth/owner-invite/email-code");
+    expect(sends).toHaveLength(1);
+  });
+
+  it("still retracts the code when she changes the address after the reload", async () => {
+    await sendCodeThenReload();
+    fireEvent.change(screen.getByTestId("owner-invite-email"), { target: { value: "other@example.com" } });
+    fireEvent.change(screen.getByTestId("owner-invite-code"), { target: { value: "123456" } });
+    fireEvent.change(screen.getByTestId("pw"), { target: { value: "Abcdefgh1234!" } });
+    expect(screen.getByTestId("owner-invite-submit").disabled).toBe(true);
+  });
+
+  it("forgets the sent code for a different invite link", async () => {
+    await sendCodeThenReload();
+    window.sessionStorage.setItem("mehamakor.ownerInviteToken", "u".repeat(43));
+    document.body.innerHTML = "";
+    wrap(<OwnerInviteClient />);
+    await screen.findByTestId("owner-invite-form");
+    expect(screen.queryByTestId("owner-invite-code-sent")).toBeNull();
+  });
+
+  it("leaves nothing behind once she is signed in", async () => {
+    await fillAndSubmit();
+    expect(window.sessionStorage.getItem("mehamakor.ownerInviteCodeSent")).toBeNull();
+  });
+});

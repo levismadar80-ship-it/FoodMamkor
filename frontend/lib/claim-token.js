@@ -114,8 +114,40 @@ export function readOwnerInviteToken() {
 export function clearOwnerInviteToken() {
   try {
     window.sessionStorage.removeItem(OWNER_INVITE_STORAGE_KEY);
+    // The sent-code note belongs to the link; it goes when the link does.
+    window.sessionStorage.removeItem(OWNER_INVITE_CODE_SENT_KEY);
   } catch {
     // Storage unavailable: nothing was stored.
+  }
+}
+
+// MEH-3025 — the address a verification code was sent to, so a reload of the
+// invite page (she switches to her mail app and the phone evicts the tab) does
+// not strand the code already in her inbox. It holds no secret: the address is
+// hers, and `link` is only the tail of the token, enough to tell one invite
+// from another. The server still decides whether the code is right.
+// DO NOT store the code itself here — it is the proof, and it stays in her inbox.
+const OWNER_INVITE_CODE_SENT_KEY = "mehamakor.ownerInviteCodeSent";
+const LINK_TAIL = 8;
+
+export function stashOwnerInviteCodeSent(token, email) {
+  try {
+    window.sessionStorage.setItem(
+      OWNER_INVITE_CODE_SENT_KEY,
+      JSON.stringify({ link: String(token).slice(-LINK_TAIL), email }),
+    );
+  } catch {
+    // Storage unavailable: a reload will ask her to send a code again.
+  }
+}
+
+export function readOwnerInviteCodeSent(token) {
+  try {
+    const stored = JSON.parse(window.sessionStorage.getItem(OWNER_INVITE_CODE_SENT_KEY));
+    if (!stored || typeof stored.email !== "string" || !stored.email) return null;
+    return stored.link === String(token).slice(-LINK_TAIL) ? stored.email : null;
+  } catch {
+    return null;
   }
 }
 
