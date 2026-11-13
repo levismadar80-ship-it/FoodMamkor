@@ -3537,6 +3537,19 @@
       "share_to_friend": "Share with friends"
     },
     "question_chips": {
+      "payment_q": "How do I pay?",
+      "payment_methods": {
+        "bit": "Bit",
+        "paybox": "PayBox",
+        "bank_transfer": "Bank transfer",
+        "cash": "Cash",
+        "credit_card": "Credit card"
+      },
+      "payment_timing": {
+        "advance": "Pay in advance, with the order",
+        "on_pickup": "Pay on pickup or delivery",
+        "deposit": "Deposit in advance, the rest on delivery"
+      },
       "delivery_to_my_area": "Delivery to my area?",
       "city_placeholder": "[city]",
       "ask_us": "Ask us",
@@ -4893,6 +4906,33 @@
         "save_success": "Special hours saved",
         "summary_empty": "Not set",
         "summary_set": "{count, plural, one {1 date} other {# dates}}"
+      },
+      "payment_info": {
+        "heading": "How do customers pay you?",
+        "where": "Shown on your business page, in the FAQs next to the WhatsApp button",
+        "select_all": "Select all",
+        "methods": {
+          "bit": "Bit",
+          "paybox": "PayBox",
+          "bank_transfer": "Bank transfer",
+          "cash": "Cash",
+          "credit_card": "Credit card"
+        },
+        "timing_heading": "When do they pay?",
+        "timings": {
+          "advance": "In advance",
+          "on_pickup": "On pickup or delivery",
+          "deposit": "Deposit"
+        },
+        "note_label": "Anything else? (optional)",
+        "note_placeholder": "Custom cakes: 30% deposit with the order",
+        "note_help": "Up to 80 characters",
+        "save_cta": "Save",
+        "saving": "Saving…",
+        "save_success": "Saved",
+        "save_error": "Save failed. Please try again.",
+        "revert_cta": "Discard changes",
+        "summary_empty": "Not set"
       },
       "custom_questions": {
         "heading": "Questions that appear on your page",

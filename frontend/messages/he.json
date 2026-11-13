@@ -3533,6 +3533,19 @@
       "share_to_friend": "שיתוף עם חברים"
     },
     "question_chips": {
+      "payment_q": "איך משלמים?",
+      "payment_methods": {
+        "bit": "ביט",
+        "paybox": "פייבוקס",
+        "bank_transfer": "העברה בנקאית",
+        "cash": "מזומן",
+        "credit_card": "אשראי"
+      },
+      "payment_timing": {
+        "advance": "משלמים מראש, עם ההזמנה",
+        "on_pickup": "משלמים באיסוף או במסירה",
+        "deposit": "מקדמה מראש, השאר במסירה"
+      },
       "delivery_to_my_area": "אפשר משלוח לאזור שלי?",
       "city_placeholder": "[עיר]",
       "ask_us": "שאלו אותנו",
@@ -4889,6 +4902,33 @@
         "save_success": "השעות המיוחדות נשמרו",
         "summary_empty": "לא הוגדר",
         "summary_set": "{count, plural, one {תאריך אחד} two {שני תאריכים} other {# תאריכים}}"
+      },
+      "payment_info": {
+        "heading": "איך משלמים לך?",
+        "where": "מופיע בדף העסק, בשאלות הנפוצות שליד כפתור הוואטסאפ",
+        "select_all": "בחירת הכל",
+        "methods": {
+          "bit": "ביט",
+          "paybox": "פייבוקס",
+          "bank_transfer": "העברה בנקאית",
+          "cash": "מזומן",
+          "credit_card": "אשראי"
+        },
+        "timing_heading": "מתי משלמים?",
+        "timings": {
+          "advance": "מראש",
+          "on_pickup": "באיסוף או במסירה",
+          "deposit": "מקדמה"
+        },
+        "note_label": "משהו נוסף? (לא חובה)",
+        "note_placeholder": "לעוגות מעוצבות: מקדמה של 30% בהזמנה",
+        "note_help": "עד 80 תווים",
+        "save_cta": "שמירה",
+        "saving": "בשמירה…",
+        "save_success": "נשמר",
+        "save_error": "השמירה נכשלה. נסו שוב.",
+        "revert_cta": "ביטול שינויים",
+        "summary_empty": "לא הוגדר"
       },
       "custom_questions": {
         "heading": "שאלות שמופיעות בדף שלך",

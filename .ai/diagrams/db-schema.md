@@ -74,6 +74,7 @@ erDiagram
         text recommended_note "nullable — MEH-1494 chunk A; the editor's reason. ADMIN-ONLY, never on a public serializer (guard test asserts absence by name)"
         date in_season_until "nullable — MEH-1287 chunk A, revision f5b8d2c7a3e9; date-bounded editorial curation for the seasonal homepage module (in season UNTIL, Israel day). NULL = not curated. Admin-only, not on ProducerUpdate"
         json special_hours "nullable JSONB — MEH-1889 chunk A, migration c4e81b7a2f96; per-DATE overrides keyed YYYY-MM-DD, ranges:[] = closed. ORDER-AXIS ONLY: overrides order_window (itself absent from this diagram — pre-existing drift since MEH-1543), never the free-text opening_hours; note is display-only"
+        json payment_info "nullable JSONB — MEH-3035, migration e3a5c1d7f904; {methods ⊆ bit/paybox/bank_transfer/cash/credit_card, timing ∈ advance/on_pickup/deposit, note ≤80}; all-empty stored as NULL; owner-writable via PUT /producers/me"
         string plan "free|premium"
         boolean grass_fed
         boolean reservist_owned "NOT NULL default false — owner-declared «עסק של מילואימניקים», badge only (migration f1c7a2b9d4e6)"

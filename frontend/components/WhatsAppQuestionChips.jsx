@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
-import { CaretDown, ChatCircle } from "@phosphor-icons/react";
+import { CaretDown, ChatCircle, Wallet } from "@phosphor-icons/react";
 import { normalizePhone, getWhatsAppHref, formatPrice } from "@/lib/utils";
 import { buildDeliveryAnswer, buildOrderingAnswer } from "@/lib/quickAnswers";
 import { ownerQuestionLabels } from "@/lib/resolvedQuestions";
@@ -14,6 +14,7 @@ import {
 } from "@/lib/contact-method";
 import { markWhatsAppClickedLocal, pingWhatsAppBeacon } from "@/lib/contact-tracking";
 import { useUserCity } from "@/lib/use-user-city";
+import { PAYMENT_METHODS, PAYMENT_TIMINGS } from "@/lib/payment-info";
 
 /**
  * Quick Answers under the primary CTA in the producer contact card.
@@ -121,6 +122,41 @@ function Disclosure({ question, children }) {
         </div>
       )}
     </li>
+  );
+}
+
+// MEH-3035 chunk 3: «איך משלמים?» — what the business entered in its
+// dashboard («איך משלמים לך?»), as text under ONE Wallet line icon (design
+// option א, Sapir 13/11: per-method icons live only in the dashboard picker).
+// Returns null when nothing usable is set, so the caller can skip the chip.
+function paymentAnswer(info) {
+  const methods = PAYMENT_METHODS.filter((m) => (info?.methods || []).includes(m));
+  const timing = PAYMENT_TIMINGS.includes(info?.timing) ? info.timing : null;
+  const note = (info?.note || "").trim();
+  if (methods.length === 0 && !timing && !note) return null;
+  return { methods, timing, note };
+}
+
+function PaymentContent({ answer, t }) {
+  return (
+    <div className="flex items-start gap-2" data-testid="payment-answer">
+      <Wallet size={18} weight="regular" aria-hidden="true" className="mt-0.5 flex-shrink-0 text-primary" />
+      <div className="space-y-0.5">
+        {answer.methods.length > 0 && (
+          <p data-testid="payment-methods">
+            {answer.methods.map((m) => t(`payment_methods.${m}`)).join(" · ")}
+          </p>
+        )}
+        {answer.timing && (
+          <p data-testid="payment-timing" className="text-fg-muted">
+            {t(`payment_timing.${answer.timing}`)}
+          </p>
+        )}
+        {answer.note && (
+          <p data-testid="payment-note" className="text-fg-muted">{answer.note}</p>
+        )}
+      </div>
+    </div>
   );
 }
 
@@ -333,6 +369,18 @@ export default function WhatsAppQuestionChips({ producer }) {
   } else if (!ordering && waEnabled) {
     items.push(
       <WaItem key="ordering" href={waHref(orderingQ)} question={orderingQ} onTrack={trackWhatsAppOpen} />,
+    );
+  }
+
+  // MEH-3035: «איך משלמים?» — answer-first, from her dashboard. No WhatsApp
+  // fallback when unset: the question simply does not appear (the escalation
+  // row still covers it), so a business that said nothing is not shown asking.
+  const payment = paymentAnswer(producer?.payment_info);
+  if (payment) {
+    items.push(
+      <Disclosure key="payment" question={t("payment_q")}>
+        <PaymentContent answer={payment} t={t} />
+      </Disclosure>,
     );
   }
 
