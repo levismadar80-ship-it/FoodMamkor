@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 /**
@@ -83,6 +84,13 @@ function SelectAllSwitch({ on, label, onToggle }) {
   );
 }
 
+/**
+ * @param {{
+ *   profile: any,
+ *   onSave: any,
+ *   reportDirty?: (key: string, dirty: boolean) => void,
+ * }} props
+ */
 export default function PaymentInfoEditor({ profile, onSave, reportDirty = () => {} }) {
   const t = useTranslations("dashboard.producer.payment_info");
   const seed = profile?.payment_info ?? null;

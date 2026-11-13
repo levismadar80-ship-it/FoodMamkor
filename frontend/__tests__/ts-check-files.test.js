@@ -61,7 +61,9 @@ describe("// @ts-check files type-check", () => {
   it("control: the known-error fixture is reported", () => {
     const errs = diagnose([path.join(__dirname, "fixtures/ts-check/known-error.js")]);
     expect(errs.length).toBeGreaterThan(0);
-  });
+    // Building a TS program takes longer than vitest's 5 s default on a loaded
+    // CI runner (timed out on 13/11, job 132093632531).
+  }, 60_000);
 
   it("every opted-in file has 0 type errors", () => {
     const files = optedIn();
