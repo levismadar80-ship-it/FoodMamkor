@@ -40,6 +40,7 @@ import { splitBringList } from "@/lib/bring-list";
 import { findExperienceCategory, OTHER_CATEGORY } from "@/lib/event-categories";
 import RegistrationCta from "@/components/RegistrationCta";
 import SectionHeading from "@/components/ui/SectionHeading";
+import { avatarInitial } from "@/components/ui/Avatar";
 
 // MEH-1404: reuse the producer-detail static map + Waze/Gmaps block on
 // experiences with coords. ssr:false — leaflet touches window at module eval.
@@ -282,7 +283,7 @@ export default function ExperienceDetailClient() {
                 className="inline-flex items-center gap-2 min-h-touch text-base text-text hover:text-primary rounded transition focus-ring"
               >
                 <span aria-hidden="true" className="w-7 h-7 rounded-full bg-surface-card text-accent text-sm font-bold grid place-items-center">
-                  {Array.from(hostName.trim())[0] ?? ""}
+                  {avatarInitial(hostName, "")}
                 </span>
                 <span>{t("host_label")} {hostName}</span>
                 <CaretLeft size={14} className="text-primary ltr:rotate-180" aria-hidden="true" />
