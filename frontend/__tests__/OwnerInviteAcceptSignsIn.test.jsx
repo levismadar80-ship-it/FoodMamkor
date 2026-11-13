@@ -156,8 +156,57 @@ describe("owner invite — a reload after the code was sent keeps the code usabl
     expect(screen.queryByTestId("owner-invite-code-sent")).toBeNull();
   });
 
+  const NOTE_KEY = "mehamakor.ownerInviteCodeSent";
+
   it("leaves nothing behind once she is signed in", async () => {
-    await fillAndSubmit();
-    expect(window.sessionStorage.getItem("mehamakor.ownerInviteCodeSent")).toBeNull();
+    window.sessionStorage.setItem("mehamakor.ownerInviteToken", TOKEN);
+    wrap(<OwnerInviteClient />);
+    fireEvent.click(await screen.findByTestId("owner-invite-send-code"));
+    // The note exists while the code is pending — otherwise the assertion
+    // after the accept would pass on a page that never wrote one.
+    await waitFor(() => expect(window.sessionStorage.getItem(NOTE_KEY)).not.toBeNull());
+    // The code itself is never written anywhere.
+    expect(window.sessionStorage.getItem(NOTE_KEY)).not.toContain("123456");
+    fireEvent.change(await screen.findByTestId("owner-invite-code"), { target: { value: "123456" } });
+    fireEvent.change(screen.getByTestId("pw"), { target: { value: "Abcdefgh1234!" } });
+    fireEvent.click(screen.getByTestId("owner-invite-terms"));
+    fireEvent.click(screen.getByTestId("owner-invite-declaration"));
+    fireEvent.submit(screen.getByTestId("owner-invite-form"));
+    await waitFor(() => expect(push).toHaveBeenCalledWith("/producer/dashboard"));
+    expect(window.sessionStorage.getItem(NOTE_KEY)).toBeNull();
+    expect(JSON.stringify(window.sessionStorage)).not.toContain("123456");
+  });
+
+  it("drops the note when the link turns out to be dead", async () => {
+    await sendCodeThenReload();
+    expect(window.sessionStorage.getItem(NOTE_KEY)).not.toBeNull();
+    api.get.mockRejectedValue({ response: { status: 404 } });
+    document.body.innerHTML = "";
+    wrap(<OwnerInviteClient />);
+    await waitFor(() => expect(window.sessionStorage.getItem("mehamakor.ownerInviteToken")).toBeNull());
+    expect(window.sessionStorage.getItem(NOTE_KEY)).toBeNull();
+  });
+
+  it("forgets a code the server has already retired (10 minutes)", async () => {
+    await sendCodeThenReload();
+    const note = JSON.parse(window.sessionStorage.getItem(NOTE_KEY));
+    window.sessionStorage.setItem(NOTE_KEY, JSON.stringify({ ...note, sentAt: Date.now() - 10 * 60 * 1000 }));
+    document.body.innerHTML = "";
+    wrap(<OwnerInviteClient />);
+    await screen.findByTestId("owner-invite-form");
+    expect(screen.queryByTestId("owner-invite-code-sent")).toBeNull();
+  });
+
+  it("restores the address she typed over the one the link carried", async () => {
+    window.sessionStorage.setItem("mehamakor.ownerInviteToken", TOKEN);
+    // INVITE carries owner@example.com; she sends the code somewhere else.
+    const first = wrap(<OwnerInviteClient />);
+    fireEvent.change(await screen.findByTestId("owner-invite-email"), { target: { value: ADDRESS } });
+    fireEvent.click(screen.getByTestId("owner-invite-send-code"));
+    await screen.findByTestId("owner-invite-code-sent");
+    first.unmount();
+    wrap(<OwnerInviteClient />);
+    await screen.findByTestId("owner-invite-form");
+    expect(screen.getByTestId("owner-invite-email").value).toBe(ADDRESS);
   });
 });

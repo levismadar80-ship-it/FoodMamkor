@@ -129,12 +129,16 @@ export function clearOwnerInviteToken() {
 // DO NOT store the code itself here — it is the proof, and it stays in her inbox.
 const OWNER_INVITE_CODE_SENT_KEY = "mehamakor.ownerInviteCodeSent";
 const LINK_TAIL = 8;
+// The server's code lives 10 minutes (producer_owner_invite.py). The note is
+// dropped a little earlier, so a reload never offers a code field for a code
+// the server has already retired — she is asked to send a fresh one instead.
+const CODE_NOTE_MAX_AGE_MS = 9 * 60 * 1000;
 
 export function stashOwnerInviteCodeSent(token, email) {
   try {
     window.sessionStorage.setItem(
       OWNER_INVITE_CODE_SENT_KEY,
-      JSON.stringify({ link: String(token).slice(-LINK_TAIL), email }),
+      JSON.stringify({ link: String(token).slice(-LINK_TAIL), email, sentAt: Date.now() }),
     );
   } catch {
     // Storage unavailable: a reload will ask her to send a code again.
@@ -145,6 +149,9 @@ export function readOwnerInviteCodeSent(token) {
   try {
     const stored = JSON.parse(window.sessionStorage.getItem(OWNER_INVITE_CODE_SENT_KEY));
     if (!stored || typeof stored.email !== "string" || !stored.email) return null;
+    const age = Date.now() - stored.sentAt;
+    // `!(age >= 0 && …)` so a missing or garbled timestamp reads as expired.
+    if (!(age >= 0 && age < CODE_NOTE_MAX_AGE_MS)) return null;
     return stored.link === String(token).slice(-LINK_TAIL) ? stored.email : null;
   } catch {
     return null;
