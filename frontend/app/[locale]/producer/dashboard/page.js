@@ -509,7 +509,7 @@ export default function ProducerDashboardPage() {
               whole life of this banner (approval removes the banner). Strings
               are the three stage names of the signup flow — one home.
               role="list": Safari drops list semantics once list-style is none. */}
-          <ol role="list" className="mt-3 flex flex-col gap-2 text-yellow-800" data-testid="status-pending-steps">
+          <ol role="list" className="mt-3 flex flex-col gap-2 text-text" data-testid="status-pending-steps">
             {["next_step1", "next_step2", "next_step3"].map((key, i) => (
               <li
                 key={key}
@@ -519,7 +519,7 @@ export default function ProducerDashboardPage() {
               >
                 <span
                   aria-hidden="true"
-                  className={`h-3 w-3 shrink-0 rounded-full border-2 border-yellow-700 ${i === 0 ? "bg-yellow-700" : "bg-transparent"}`}
+                  className={`h-3 w-3 shrink-0 rounded-full border-2 border-current ${i === 0 ? "bg-current" : "bg-transparent"}`}
                 />
                 {tSignup(key)}
               </li>
