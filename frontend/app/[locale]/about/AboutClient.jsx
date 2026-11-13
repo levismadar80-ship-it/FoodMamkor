@@ -542,7 +542,7 @@ export default function AboutPage() {
       <FadeInSection as="section" {...REVEAL_PRESET} className="bg-background-alt py-9 md:py-14 scroll-mt-24">
         <div className="max-w-3xl mx-auto px-4 md:px-12">
           <Chapter label={tAbout("chapter.4.label")} />
-          <div className="border-2 border-accent/30 rounded-3xl p-8 md:p-14">
+          <div className="border-2 border-accent/30 rounded-lg p-8 md:p-14">
             <SectionHeading className="leading-tight">
               {t("values.heading")}
             </SectionHeading>
@@ -585,7 +585,7 @@ export default function AboutPage() {
           <Chapter label={tBadges("h1")} as="h2" />
           <div className="grid gap-3">
             {SHOW_VERIFICATION && (
-              <article id="verification" className="scroll-mt-24 rounded-xl border border-border bg-surface-card p-5">
+              <article id="verification" className="scroll-mt-24 rounded-lg border border-border bg-surface-card p-5">
                 <div className="flex flex-wrap items-center justify-between gap-2.5 mb-2.5">
                   <h3 className="font-headline-md font-bold text-text text-xl leading-tight">{t("verification.heading")}</h3>
                   <VerifiedChip label={tTier("verified_label")} />
@@ -604,7 +604,7 @@ export default function AboutPage() {
                 </LocaleLink>
               </article>
             )}
-            <article id="editors-pick" className="scroll-mt-24 rounded-xl border border-border bg-surface-card p-5">
+            <article id="editors-pick" className="scroll-mt-24 rounded-lg border border-border bg-surface-card p-5">
               <div className="flex flex-wrap items-center justify-between gap-2.5 mb-2.5">
                 <h3 className="font-headline-md font-bold text-text text-xl leading-tight">{t("editors_pick.heading")}</h3>
                 <span
@@ -625,7 +625,7 @@ export default function AboutPage() {
                 ))}
               </ul>
             </article>
-            <article id="community-leader" className="scroll-mt-24 rounded-xl border border-border bg-surface-card p-5">
+            <article id="community-leader" className="scroll-mt-24 rounded-lg border border-border bg-surface-card p-5">
               <div className="flex flex-wrap items-center justify-between gap-2.5 mb-2.5">
                 <h3 className="font-headline-md font-bold text-text text-xl leading-tight">{t("community_leader.heading")}</h3>
                 {/* The TrustBadge tier-4 face without its tooltip wrapper: that

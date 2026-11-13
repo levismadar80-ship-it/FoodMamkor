@@ -147,7 +147,7 @@ export default async function WhyLocalPage({ params }) {
           {/* MEH-2827: the three short lines read as a list in one card, not
               three one-line paragraphs. Same keys, same words. */}
           <section>
-            <div data-testid="why-local-changes" className="rounded-xl bg-background-alt p-5 mt-10 sm:mt-12">
+            <div data-testid="why-local-changes" className="rounded-lg bg-background-alt p-5 mt-10 sm:mt-12">
               <SectionHeading size="content" className="mb-3 text-primary">
                 {t("changes_h")}
               </SectionHeading>

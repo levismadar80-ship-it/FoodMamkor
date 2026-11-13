@@ -447,6 +447,14 @@ in-between for smaller cards and chips; modals use `rounded.xl` (20px). **No
 actions, full rounding is reserved for genuinely circular elements (avatars,
 icon buttons).
 
+**One radius per surface kind (MEH-3091, 13/11/2026).** A content card or
+panel (bordered, or a tinted `bg-background-alt` box) is `rounded-lg`; a small
+row or chip is `rounded-md`; a field is `rounded-sm`; a dialog, a sheet and
+large media are `rounded-xl`, and a bottom sheet rounds its top only
+(`rounded-t-xl`). ProducerCard and the listing cards stay square (Assembly v2,
+`ui/Card.jsx`). `rounded-2xl` / `rounded-3xl` are not on the token scale and are
+banned. `CardRadiusGuard.test.js` enforces both halves.
+
 **No off-scale radius (MEH-1687 phase 5, 06/11/2026).** Radius is a scale step,
 never `rounded-[Npx]`. The 140 off-scale sites (107 of them 10px) were placed by
 the rule above: buttons and primary/outline link-actions → `rounded-full`;

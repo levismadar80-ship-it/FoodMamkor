@@ -128,7 +128,7 @@ function GroupBuyRow({ gb }) {
     <Link
       href={`/group-buys/${gb.id}`}
       data-testid="producer-group-buy-row"
-      className="flex rounded-2xl border border-border bg-surface-card p-4 hover:border-primary transition focus-ring"
+      className="flex rounded-lg border border-border bg-surface-card p-4 hover:border-primary transition focus-ring"
     >
       <div className="min-w-0 flex-1">
         <div className="flex items-start justify-between gap-3">

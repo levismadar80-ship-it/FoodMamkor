@@ -159,7 +159,7 @@ export default function ChecklistSettings() {
 
   if (loadError) {
     return (
-      <div className="bg-surface border border-border rounded-xl p-4">
+      <div className="bg-surface border border-border rounded-lg p-4">
         <h2 className="font-semibold mb-2">רשימת בדיקה לפני אישור</h2>
         <p className="text-sm text-muted mb-3">טעינת הרשימה נכשלה.</p>
         <button
@@ -175,7 +175,7 @@ export default function ChecklistSettings() {
 
   if (!items) {
     return (
-      <div className="bg-surface border border-border rounded-xl p-4 text-sm text-muted">
+      <div className="bg-surface border border-border rounded-lg p-4 text-sm text-muted">
         טוענת…
       </div>
     );
@@ -184,7 +184,7 @@ export default function ChecklistSettings() {
   const canSave = items.every((item) => labelIsValid(item.label));
 
   return (
-    <div className="bg-surface border border-border rounded-xl p-4">
+    <div className="bg-surface border border-border rounded-lg p-4">
       <h2 className="font-semibold">רשימת בדיקה לפני אישור</h2>
       <p className="text-xs text-muted mt-1 mb-4">
         הסעיפים שמופיעים לפנייך כשאת בודקת בית עסק. שינוי כאן משתקף מיד, בלי

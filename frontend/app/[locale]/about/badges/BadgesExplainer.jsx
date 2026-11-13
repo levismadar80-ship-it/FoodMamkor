@@ -27,7 +27,7 @@ const GROUP_LINKS = {
   "self-declared": "/contact?topic=correction",
 };
 
-const ITEM_CLASS = "grid gap-1.5 rounded-xl border border-border bg-surface-card p-4";
+const ITEM_CLASS = "grid gap-1.5 rounded-lg border border-border bg-surface-card p-4";
 const ITEM_TEXT_CLASS = "text-base leading-[1.7] text-text/85";
 
 // MEH-2827: «מובילת קהילה» is a TrustBadge (reviews-driven), not a

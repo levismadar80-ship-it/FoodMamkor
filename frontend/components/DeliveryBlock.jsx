@@ -18,7 +18,7 @@ import SectionHeading from "@/components/ui/SectionHeading";
 // MEH-2592 C: every row list in the block (areas and pickup) sits in one soft
 // card instead of between hairlines, and rows carry their own side padding.
 const LIST_CARD =
-  "divide-y divide-border rounded-2xl border border-border bg-surface-card overflow-hidden";
+  "divide-y divide-border rounded-lg border border-border bg-surface-card overflow-hidden";
 // MEH-2592 C: the 44px logo circles (Waze, Google Maps) on each pickup stop.
 const NAV_CIRCLE =
   "inline-flex items-center justify-center w-11 h-11 rounded-full border border-border bg-surface transition hover:bg-green-50 focus-visible:ring-2 focus-visible:ring-primary/40";

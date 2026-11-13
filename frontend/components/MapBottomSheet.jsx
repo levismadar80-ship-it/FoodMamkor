@@ -247,7 +247,7 @@ export default function MapBottomSheet({
     <div
       ref={sheetRef}
       data-testid="map-bottom-sheet"
-      className="fixed inset-x-0 bottom-0 z-[600] bg-background rounded-t-3xl border-t border-border flex flex-col"
+      className="fixed inset-x-0 bottom-0 z-[600] bg-background rounded-t-xl border-t border-border flex flex-col"
       style={{
         height: sheetHeight(heightVh),
         transition: transient != null ? "none" : "height 0.3s cubic-bezier(0.32,0.72,0,1)",

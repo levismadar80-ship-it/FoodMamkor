@@ -300,11 +300,11 @@ export default function GroupBuyDetailClient({ id }) {
   const showRemaining = !expired && open && remaining > 0;
 
   const joinCard = (
-    <div className="rounded-2xl border border-border bg-surface-card p-5 md:p-6" data-testid="group-buy-join-card">
+    <div className="rounded-lg border border-border bg-surface-card p-5 md:p-6" data-testid="group-buy-join-card">
       {/* MEH-2827 PR 7 (FinalGroupBuyFlow): two price tiles — the group price
           framed in primary, the regular price beside it, struck through. */}
       <div className="grid grid-cols-2 gap-2">
-        <div className="rounded-xl border-2 border-primary bg-background px-3 py-2.5" data-testid="group-buy-price-group">
+        <div className="rounded-lg border-2 border-primary bg-background px-3 py-2.5" data-testid="group-buy-price-group">
           <p className="text-xs font-semibold text-primary">{tForm("price_group_label")}</p>
           <p className="mt-0.5 flex items-baseline gap-1">
             <span dir="ltr" className="font-headline-md text-4xl font-black text-primary leading-none">
@@ -313,7 +313,7 @@ export default function GroupBuyDetailClient({ id }) {
             {gb.unit && <span className="text-xs text-fg-muted">{t("unit_suffix", { unit: gb.unit })}</span>}
           </p>
         </div>
-        <div className="rounded-xl border border-border px-3 py-2.5" data-testid="group-buy-price-regular">
+        <div className="rounded-lg border border-border px-3 py-2.5" data-testid="group-buy-price-regular">
           <p className="text-xs font-medium text-fg-muted">{tForm("price_regular_label")}</p>
           <p className="mt-0.5">
             <span dir="ltr" className="text-2xl text-fg-muted line-through leading-none">
@@ -324,7 +324,7 @@ export default function GroupBuyDetailClient({ id }) {
       </div>
       {discount > 0 && <p className="mt-2 text-sm font-semibold text-gold-deep">{t("discount_hint", { discount })}</p>}
 
-      <div className="mt-4 rounded-xl bg-background-alt px-3 py-3" data-testid="group-buy-progress">
+      <div className="mt-4 rounded-lg bg-background-alt px-3 py-3" data-testid="group-buy-progress">
         {stacked ? (
           <>
             <div className="text-end mb-2">
@@ -510,7 +510,7 @@ export default function GroupBuyDetailClient({ id }) {
             {/* MEH-2544: how a group buy works, while it can still be joined —
                 copy approved by Sapir 29/10. */}
             {open && (
-              <section className="mt-6 rounded-xl bg-background-alt p-4" data-testid="group-buy-how">
+              <section className="mt-6 rounded-lg bg-background-alt p-4" data-testid="group-buy-how">
                 <SectionHeading size="content" className="mb-3">{t("how_title")}</SectionHeading>
                 <ol className="space-y-2">
                   {[t("how_join"), t("how_unlock", { min: gb.min_participants }), t("how_no_commit")].map((line, i) => (

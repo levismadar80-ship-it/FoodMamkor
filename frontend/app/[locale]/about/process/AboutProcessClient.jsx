@@ -196,7 +196,7 @@ export default function AboutProcessClient() {
             ))}
           </ol>
           {/* badge aside — the optional מאומת step is explicitly separate from step 4 */}
-          <div data-testid="process-badge-aside" className="mt-8 grid grid-cols-[auto_1fr] gap-3 items-start rounded-xl border border-dashed border-accent/50 bg-accent/5 p-4">
+          <div data-testid="process-badge-aside" className="mt-8 grid grid-cols-[auto_1fr] gap-3 items-start rounded-lg border border-dashed border-accent/50 bg-accent/5 p-4">
             <SealCheck size={20} className="text-accent mt-0.5 shrink-0" aria-hidden />
             <div>
               <div className="font-body-md font-semibold text-sm text-text mb-1">
@@ -240,7 +240,7 @@ export default function AboutProcessClient() {
       <section data-testid="process-badge" className="bg-background py-12 md:py-20 scroll-mt-24">
         <div className="max-w-5xl mx-auto px-4 md:px-12">
           <Marker>{t("badge.marker")}</Marker>
-          <div className="rounded-3xl border border-border bg-surface/40 p-8 md:p-12 grid grid-cols-1 md:grid-cols-[1.05fr_0.95fr] gap-10 md:gap-12 md:items-center">
+          <div className="rounded-lg border border-border bg-surface/40 p-8 md:p-12 grid grid-cols-1 md:grid-cols-[1.05fr_0.95fr] gap-10 md:gap-12 md:items-center">
             <div>
               <p className="font-headline-md font-bold text-text text-[clamp(23px,5vw,28px)] leading-snug max-w-[24ch] tracking-tight">
                 {t.rich("badge.oneliner", {
@@ -379,7 +379,7 @@ export default function AboutProcessClient() {
           </div>
 
           {/* personal-process caveat */}
-          <div className="mt-9 grid grid-cols-[auto_1fr] gap-3 items-start rounded-2xl border border-primary/20 bg-primary/5 p-5">
+          <div className="mt-9 grid grid-cols-[auto_1fr] gap-3 items-start rounded-lg border border-primary/20 bg-primary/5 p-5">
             <HandHeart size={20} className="text-primary mt-0.5 shrink-0" aria-hidden />
             <p className="font-body-md text-sm leading-relaxed text-text max-w-[62ch]">
               {t("matrix.caveat")}
