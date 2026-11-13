@@ -65,6 +65,13 @@ describe("FilterChipsBar — one chip row on the phone (MEH-3062)", () => {
     expect(screen.getAllByRole("button", { name: /בשר ודגים/ })).toHaveLength(1);
   });
 
+  it("phone (singleRow): the service chips are their own named group, not part of the category list", () => {
+    render(<FilterChipsBar {...baseProps} singleRow />);
+    const group = screen.getByRole("group", { name: "map.chip_scroll.attribute_aria" });
+    expect(group).toContainElement(screen.getByTestId("map-service-chip-has_delivery"));
+    expect(group).not.toContainElement(meatChip());
+  });
+
   it("phone (singleRow): a category chip still calls its handler", () => {
     const onCategoryChipClick = vi.fn();
     render(<FilterChipsBar {...baseProps} singleRow onCategoryChipClick={onCategoryChipClick} />);
@@ -98,6 +105,33 @@ describe("FilterChipsBar — a lit service chip is brought into view on the phon
     const chip = screen.getByTestId("map-service-chip-has_delivery");
     const calls = Element.prototype.scrollIntoView.mock.contexts;
     expect(calls).toContain(chip);
+  });
+
+  it("phone: a re-render with the same lit set does not move the rail; a newly lit chip does", () => {
+    const { rerender } = render(<FilterChipsBar {...props({ categoryKeys: [], has_delivery: true }, true)} />);
+    Element.prototype.scrollIntoView.mockClear();
+    // New chipState object, same lit set (e.g. a category toggle) → no scroll.
+    rerender(<FilterChipsBar {...props({ categoryKeys: ["meat"], has_delivery: true }, true)} />);
+    const delivery = screen.getByTestId("map-service-chip-has_delivery");
+    expect(Element.prototype.scrollIntoView.mock.contexts).not.toContain(delivery);
+    // איסוף lit on top → only that chip is brought into view.
+    rerender(<FilterChipsBar {...props({ categoryKeys: ["meat"], has_delivery: true, pickup_points: true }, true)} />);
+    const pickup = screen.getByTestId("map-service-chip-pickup_points");
+    expect(Element.prototype.scrollIntoView.mock.contexts).toContain(pickup);
+    expect(Element.prototype.scrollIntoView.mock.contexts).not.toContain(delivery);
+  });
+
+  it("משלוח on, phone: the row's mount pin to the start does not undo that scroll", () => {
+    render(<FilterChipsBar {...props({ categoryKeys: [], has_delivery: true }, true)} />);
+    const toolbar = screen.getByRole("toolbar");
+    expect(Element.prototype.scrollTo.mock.contexts).not.toContain(toolbar);
+  });
+
+  it("phone: no service chip in the gated list → no hairline", () => {
+    const { container } = render(
+      <FilterChipsBar {...props({ categoryKeys: [] }, true)} visibleToggleChips={[{ key: "verified" }]} />,
+    );
+    expect(container.querySelector("span.w-px")).toBeNull();
   });
 
   it("nothing lit, phone: no service chip is scrolled into view", () => {

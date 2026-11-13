@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Faders } from "@phosphor-icons/react";
 
@@ -7,6 +7,8 @@ import { resolveCategoryGlyph } from "@/lib/category-registry";
 import FilterSheet from "@/components/FilterSheet";
 import DeliveryContextBanner from "./DeliveryContextBanner";
 import ServiceChipRow from "./ServiceChipRow";
+import PromotedServiceChips from "@/components/PromotedServiceChips";
+import { SERVICE_CHIP_KEYS } from "@/lib/map-chips";
 import { useChipCopy } from "@/lib/use-chip-copy";
 
 /**
@@ -90,7 +92,7 @@ export default function FilterChipsBar({
   // the origin row, which owns the spacing — so `inRow` drops the margin.
   // MEH-3062: one builder for both placements (own row on desktop, tail of the
   // service rail on the phone) so the two cannot drift (frontend.md MEH-2776).
-  const categoryRow = (className) => (
+  const categoryRow = (className, trailing = null) => (
     <ChipScrollRow
       variant="category"
       chips={categoryChipsWithIcons}
@@ -99,6 +101,8 @@ export default function FilterChipsBar({
       activeKeys={new Set(chipState.categoryKeys)}
       onChipClick={onCategoryChipClick}
       className={className}
+      trailing={trailing}
+      trailingActive={!!trailing && !!litServiceKey}
     />
   );
   const tagStrip = (inRow) =>
@@ -141,84 +145,134 @@ export default function FilterChipsBar({
       </div>
     );
 
+  // MEH-3062: one «סינון» trigger + its sheet, placed by either layout below.
+  const filtersControl = (
+    <>
+            <button
+              type="button"
+              onClick={() => setSheetOpen((v) => !v)}
+              data-testid="map-filters-button"
+              aria-expanded={sheetOpen}
+              aria-controls="filter-sheet-panel"
+              // REUSES: frontend/components/ChipScrollRow.jsx:118-122 — chip
+              // visuals, inactive variant (the button itself is not a filter).
+              // MEH-2514: `max-[374px]:px-3` + the sr-only word below — at 320 the
+              // row's three buttons are 320px wide in a 296px row and this one
+              // sat 12px off the left edge (ServiceChipRow.jsx has the rest).
+              // `max-[359px]:min-h-[42px]`: with the word hidden and no count the
+              // button holds only the 16px glyph and shrank to 38px beside 42px
+              // chips (py-2.5 + the 20px text line + border) — measured.
+              className="inline-flex items-center gap-1.5 whitespace-nowrap px-4 max-[374px]:px-3 max-[359px]:min-h-[42px] py-2.5 rounded-md text-sm font-medium border transition bg-surface text-text border-border hover:border-primary hover:text-primary"
+            >
+              <Faders size={16} aria-hidden="true" />
+              {/* MEH-2514: under 360px the word is for screen readers only — the
+                  Faders glyph + the count carry it visually, and the button's
+                  accessible name stays «סינון» at every width. */}
+              <span className="max-[359px]:sr-only">{t("filters.button")}</span>
+              {/* MEH-1368: inline "· N" count, replacing the old corner badge.
+                  MEH-2500: N counts only what is NOT already on the bar — the
+                  sheet-only toggles, i.e. exactly the tag strip below. With both
+                  service chips lit it used to read «סינון · 2», which looked like
+                  two hidden filters (Sapir 28/10). `.numeric` = tabular/LTR digit
+                  in the RTL button, matching the corner badge's prior treatment. */}
+              {activeFilterTags.length > 0 && (
+                <span className="numeric">
+                  <span className="max-[359px]:sr-only">{" · "}</span>
+                  {activeFilterTags.length}
+                </span>
+              )}
+            </button>
+            <FilterSheet
+              open={sheetOpen}
+              onClose={closeSheet}
+              chipState={chipState}
+              chips={visibleToggleChips}
+              onToggleChip={onSheetToggleChip}
+              resultCount={resultCount}
+              onClearAll={clearSheetFilters}
+              // MEH-2598: the trigger now sits at the inline-START, as on home
+              // and /producers, so the anchored panel opens from that edge.
+              align="start"
+            />
+    </>
+  );
+  // MEH-3062: on the phone the service chips sit past the categories, often
+  // off screen. A chip that is NEWLY lit (sheet, tag strip, URL) scrolls into
+  // view so the change is visible; a re-render with the same lit set never
+  // moves the rail (the previous set lives in a ref, not in the deps).
+  const rowRef = useRef(null);
+  const litServiceKey = SERVICE_CHIP_KEYS.filter((k) => !!chipState[k]).join(",");
+  // "" at mount: a chip already lit from the URL counts as newly lit once.
+  const prevLitRef = useRef("");
+  useEffect(() => {
+    const prev = new Set(prevLitRef.current ? prevLitRef.current.split(",") : []);
+    prevLitRef.current = litServiceKey;
+    if (!singleRow || !litServiceKey) return;
+    const fresh = litServiceKey.split(",").find((k) => !prev.has(k));
+    if (!fresh) return;
+    const el = rowRef.current?.querySelector(`[data-testid="map-service-chip-${fresh}"]`);
+    el?.scrollIntoView?.({ behavior: "smooth", block: "nearest", inline: "nearest" });
+  }, [litServiceKey, singleRow]);
+  // MEH-3062: the service chips at the END of the phone row's scroller, after a
+  // hairline that separates the two kinds of filter. No hairline when the gated
+  // list carries no service chip.
+  const hasServiceChips = (visibleToggleChips ?? []).some((c) => SERVICE_CHIP_KEYS.includes(c.key));
+  const serviceTrail = hasServiceChips ? (
+    <>
+      <span aria-hidden="true" className="shrink-0 self-stretch my-1.5 w-px bg-border" />
+      {/* Named as its own group inside the category toolbar, so a screen
+          reader does not announce משלוח / איסוף as categories (existing copy,
+          the attribute rows' name). */}
+      <div role="group" aria-label={t("map.chip_scroll.attribute_aria")} className="flex shrink-0 gap-2">
+        <PromotedServiceChips
+          chips={visibleToggleChips}
+          chipState={chipState}
+          onToggle={onToggleChipClick}
+          testIdPrefix="map-service-chip"
+        />
+      </div>
+    </>
+  ) : null;
+
   return (
     <div dir="rtl" className="min-w-0">
       {/* MEH-1368: consolidated to ONE row — the scrollable category chips
           (flex-1) share the line with the "סינון" button (pinned inline-end).
           The old second row (inline quick-chip toggles [מאומתים] [משלוח]) is
           gone; every attribute filter now lives only in FilterSheet. */}
-      {!singleRow && (
-        <div className="flex items-center gap-2 min-w-0">{categoryRow("flex-1")}</div>
-      )}
-      {/* MEH-2046 row 2: the two promoted service chips. The "סינון" trigger
-          moves down onto this line with them — it is passed as children rather
-          than rebuilt inside ServiceChipRow so the `relative` anchor below stays
-          the element FilterSheet's md+ panel positions against. */}
-      <ServiceChipRow
-        chipState={chipState}
-        onToggleChip={onToggleChipClick}
-        chips={visibleToggleChips}
-        first={singleRow}
-        // MEH-3062: shrink-0 — inside the rail the category row takes its full
-        // width and the RAIL scrolls; a second scroller inside it would not.
-        categories={singleRow ? categoryRow("shrink-0") : null}
-      >
-        {/* Anchor wrapper — FilterSheet's lg+ panel positions off this
-            wrapper (sticky is positioned, so it anchors like `relative`).
-            MEH-2598: it LEADS the row now (inline-start, the RIGHT in RTL), as
-            on home and /producers, and stays put while the rail scrolls under
-            it below lg. -start-3/-ms-3/ps-3 paint the gutter beside it so chips
-            pass under it; z-10 so no later chip paints over it; lg+ is plain
-            `relative` again so the anchored panel leaves no stacking context. */}
-        <div className="sticky z-10 -start-3 -ms-3 ps-3 shrink-0 bg-background lg:relative lg:z-auto lg:start-auto lg:ms-0 lg:ps-0">
-          <button
-            type="button"
-            onClick={() => setSheetOpen((v) => !v)}
-            data-testid="map-filters-button"
-            aria-expanded={sheetOpen}
-            aria-controls="filter-sheet-panel"
-            // REUSES: frontend/components/ChipScrollRow.jsx:118-122 — chip
-            // visuals, inactive variant (the button itself is not a filter).
-            // MEH-2514: `max-[374px]:px-3` + the sr-only word below — at 320 the
-            // row's three buttons are 320px wide in a 296px row and this one
-            // sat 12px off the left edge (ServiceChipRow.jsx has the rest).
-            // `max-[359px]:min-h-[42px]`: with the word hidden and no count the
-            // button holds only the 16px glyph and shrank to 38px beside 42px
-            // chips (py-2.5 + the 20px text line + border) — measured.
-            className="inline-flex items-center gap-1.5 whitespace-nowrap px-4 max-[374px]:px-3 max-[359px]:min-h-[42px] py-2.5 rounded-md text-sm font-medium border transition bg-surface text-text border-border hover:border-primary hover:text-primary"
-          >
-            <Faders size={16} aria-hidden="true" />
-            {/* MEH-2514: under 360px the word is for screen readers only — the
-                Faders glyph + the count carry it visually, and the button's
-                accessible name stays «סינון» at every width. */}
-            <span className="max-[359px]:sr-only">{t("filters.button")}</span>
-            {/* MEH-1368: inline "· N" count, replacing the old corner badge.
-                MEH-2500: N counts only what is NOT already on the bar — the
-                sheet-only toggles, i.e. exactly the tag strip below. With both
-                service chips lit it used to read «סינון · 2», which looked like
-                two hidden filters (Sapir 28/10). `.numeric` = tabular/LTR digit
-                in the RTL button, matching the corner badge's prior treatment. */}
-            {activeFilterTags.length > 0 && (
-              <span className="numeric">
-                <span className="max-[359px]:sr-only">{" · "}</span>
-                {activeFilterTags.length}
-              </span>
-            )}
-          </button>
-          <FilterSheet
-            open={sheetOpen}
-            onClose={closeSheet}
-            chipState={chipState}
-            chips={visibleToggleChips}
-            onToggleChip={onSheetToggleChip}
-            resultCount={resultCount}
-            onClearAll={clearSheetFilters}
-            // MEH-2598: the trigger now sits at the inline-START, as on home
-            // and /producers, so the anchored panel opens from that edge.
-            align="start"
-          />
+      {singleRow ? (
+        // MEH-3062 (phone): ONE row — «סינון», then the category toolbar, whose
+        // scroller also carries the service chips after the categories (Sapir
+        // 13/11, option ב). «סינון» sits OUTSIDE the scroller, so nothing slides
+        // under it, and the row keeps ChipScrollRow's fades, arrows, wheel and
+        // roving focus. map-service-row names this row so the service-chip
+        // specs keep one anchor on both shells.
+        <div ref={rowRef} data-testid="map-service-row" className="flex items-center gap-2 min-w-0">
+          <div className="relative shrink-0">{filtersControl}</div>
+          {categoryRow("flex-1", serviceTrail)}
         </div>
-      </ServiceChipRow>
+      ) : (
+        <>
+          {/* MEH-1368: the scrollable category chips on a row of their own. */}
+          <div className="flex items-center gap-2 min-w-0">{categoryRow("flex-1")}</div>
+          {/* MEH-2046 row 2: the two promoted service chips. The "סינון" trigger
+              moves down onto this line with them — it is passed as children rather
+              than rebuilt inside ServiceChipRow so the `relative` anchor below stays
+              the element FilterSheet's md+ panel positions against. */}
+          <ServiceChipRow chipState={chipState} onToggleChip={onToggleChipClick} chips={visibleToggleChips}>
+            {/* Anchor wrapper — FilterSheet's lg+ panel positions off this
+                wrapper (sticky is positioned, so it anchors like `relative`).
+                MEH-2598: it LEADS the row now (inline-start, the RIGHT in RTL), as
+                on home and /producers, and stays put while the rail scrolls under
+                it below lg. -start-3/-ms-3/ps-3 paint the gutter beside it so chips
+                pass under it; z-10 so no later chip paints over it; lg+ is plain
+                `relative` again so the anchored panel leaves no stacking context. */}
+            <div className="sticky z-10 -start-3 -ms-3 ps-3 shrink-0 bg-background lg:relative lg:z-auto lg:start-auto lg:ms-0 lg:ps-0">
+              {filtersControl}
+            </div>
+          </ServiceChipRow>
+        </>
+      )}
       {/* MEH-2425: the MEH-2046 decision-8 line ("בתי עסק בתיאום אישי לא
           מוצגים בסינון הזה") was removed — on a phone it read as an unexplained
           sentence (Sapir 27/10: "המשתמש לא יבין למה התכוונתי"). A literal
