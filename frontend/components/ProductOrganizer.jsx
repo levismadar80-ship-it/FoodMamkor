@@ -56,14 +56,28 @@ export default function ProductOrganizer({ products, onProductsChange }) {
   /** @type {[Product[], (p: Product[]) => void]} */
   const [order, setOrder] = useState(/** @type {Product[]} */ ([]));
   const orderRef = useRef(/** @type {Product[]} */ ([]));
+  // The last order the server accepted: what a failed save rolls back to.
+  const confirmedRef = useRef(/** @type {Product[]} */ ([]));
+  // One order PUT in flight at a time; clicks made meanwhile collapse into
+  // the latest order, sent when the current one returns. Without this, fast
+  // arrow clicks race and an older order can be the one that lands.
+  const inFlightRef = useRef(false);
+  const pendingRef = useRef(/** @type {Product[] | null} */ (null));
+  const productsRef = useRef(products);
+  productsRef.current = products;
 
+  // Rebuilt when the organizer opens AND whenever the set of products changes
+  // underneath it (a product added or deleted in the list above), so a save
+  // never sends — or writes back — a stale set.
+  const idKey = products.map((p) => p.id).sort().join(",");
   useEffect(() => {
     if (!open) return;
     const ordered = orderProducts(products);
     setOrder(ordered);
     orderRef.current = ordered;
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- snapshot when opened
-  }, [open]);
+    confirmedRef.current = ordered;
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- snapshot per open / product set
+  }, [open, idKey]);
 
   // Fetched on open, not on mount: the dashboard loads this card for every
   // owner, and most will never open it.
@@ -80,26 +94,41 @@ export default function ProductOrganizer({ products, onProductsChange }) {
     showToast.error(detailToMessage(/** @type {any} */ (err)?.response?.data?.detail) || t("save_failed"));
 
   /** @param {Product[]} next */
-  const saveOrder = async (next) => {
-    try {
-      await api.put("/producers/me/product-order", { product_ids: next.map((p) => p.id) });
-      const withPos = next.map((p, i) => ({ ...p, position: i }));
-      onProductsChange(withPos);
-      showToast.success(t("saved"));
-    } catch (err) {
-      fail(err);
-    }
-  };
-
-  /** @param {Product[]} next */
   const reorderLocal = (next) => {
     setOrder(next);
     orderRef.current = next;
   };
 
+  /** @param {Product[]} next */
+  const saveOrder = async (next) => {
+    if (inFlightRef.current) {
+      pendingRef.current = next;
+      return;
+    }
+    inFlightRef.current = true;
+    try {
+      await api.put("/producers/me/product-order", { product_ids: next.map((p) => p.id) });
+      confirmedRef.current = next;
+      const pos = new Map(next.map((p, i) => [p.id, i]));
+      // Merge positions into the CURRENT list, never replace it with this
+      // snapshot: rows added or deleted meanwhile must survive.
+      onProductsChange(productsRef.current.map((p) => (pos.has(p.id) ? { ...p, position: pos.get(p.id) } : p)));
+      inFlightRef.current = false;
+      const queued = pendingRef.current;
+      pendingRef.current = null;
+      if (queued) saveOrder(queued);
+      else showToast.success(t("saved"));
+    } catch (err) {
+      inFlightRef.current = false;
+      pendingRef.current = null;
+      reorderLocal(confirmedRef.current);
+      fail(err);
+    }
+  };
+
   /** @param {number} from @param {number} to */
   const moveProduct = (from, to) => {
-    const next = move(order, from, to);
+    const next = move(orderRef.current, from, to);
     reorderLocal(next);
     saveOrder(next);
   };
@@ -123,8 +152,9 @@ export default function ProductOrganizer({ products, onProductsChange }) {
         group_id: groupId || null,
       });
       const patch = (/** @type {Product} */ p) => (p.id === productId ? { ...p, group_id: r.data.group_id } : p);
-      setOrder(order.map(patch));
-      onProductsChange(products.map(patch));
+      reorderLocal(orderRef.current.map(patch));
+      confirmedRef.current = confirmedRef.current.map(patch);
+      onProductsChange(productsRef.current.map(patch));
       showToast.success(t("saved"));
     } catch (err) {
       fail(err);
@@ -136,8 +166,9 @@ export default function ProductOrganizer({ products, onProductsChange }) {
     const saved = await saveGroups(groups.filter((g) => g.id !== id));
     if (!saved) return;
     const clear = (/** @type {Product} */ p) => (p.group_id === id ? { ...p, group_id: null } : p);
-    setOrder(order.map(clear));
-    onProductsChange(products.map(clear));
+    reorderLocal(orderRef.current.map(clear));
+    confirmedRef.current = confirmedRef.current.map(clear);
+    onProductsChange(productsRef.current.map(clear));
     showToast.success(t("group_deleted"));
   };
 
@@ -150,8 +181,9 @@ export default function ProductOrganizer({ products, onProductsChange }) {
           type="button"
           data-testid="product-organizer-open"
           aria-expanded="false"
+          aria-controls="product-organizer-panel"
           onClick={() => setOpen(true)}
-          className="text-sm text-primary font-medium underline decoration-[1.5px] underline-offset-[5px] decoration-primary/35 hover:decoration-current"
+          className="inline-flex items-center min-h-touch text-sm text-primary font-medium underline decoration-[1.5px] underline-offset-[5px] decoration-primary/35 hover:decoration-current"
         >
           {t("open_cta")}
         </button>
@@ -161,7 +193,11 @@ export default function ProductOrganizer({ products, onProductsChange }) {
   }
 
   return (
-    <div className="mb-4 border border-border rounded-md p-4 space-y-6 bg-surface-card" data-testid="product-organizer">
+    <div
+      id="product-organizer-panel"
+      className="mb-4 border border-border rounded-md p-4 space-y-6 bg-surface-card"
+      data-testid="product-organizer"
+    >
       <GroupsEditor groups={groups} onSave={saveGroups} onDelete={deleteGroup} t={t} />
 
       <section aria-labelledby="product-order-heading">
@@ -197,8 +233,10 @@ export default function ProductOrganizer({ products, onProductsChange }) {
       <button
         type="button"
         data-testid="product-organizer-done"
+        aria-expanded="true"
+        aria-controls="product-organizer-panel"
         onClick={() => setOpen(false)}
-        className="inline-flex items-center text-sm text-primary border border-primary/30 rounded-sm px-3 py-1.5 hover:bg-primary/5 transition"
+        className="inline-flex items-center min-h-touch text-sm text-primary border border-primary/30 rounded-sm px-4 hover:bg-primary/5 transition"
       >
         {t("done_cta")}
       </button>
@@ -247,7 +285,7 @@ function OrderRow({ product, index, last, groups, onDrop, onMove, onAssign, t })
               data-testid="product-group-select"
               value={product.group_id || ""}
               onChange={(e) => onAssign(product.id, e.target.value)}
-              className="mt-1 w-full max-w-[12rem] text-sm border border-border rounded-sm px-2 py-1.5 bg-surface-card"
+              className="mt-1 w-full max-w-[12rem] min-h-touch text-sm border border-border rounded-sm px-2 bg-surface-card"
             >
               <option value="">{t("product_group_none")}</option>
               {groups.map((g) => (
@@ -293,6 +331,8 @@ function OrderRow({ product, index, last, groups, onDrop, onMove, onAssign, t })
  */
 function GroupsEditor({ groups, onSave, onDelete, t }) {
   const [draft, setDraft] = useState("");
+  // Bumped when a rename is refused, so the inputs remount with the stored name.
+  const [rev, setRev] = useState(0);
   /** @param {import("react").FormEvent} e */
   const add = async (e) => {
     e.preventDefault();
@@ -302,11 +342,12 @@ function GroupsEditor({ groups, onSave, onDelete, t }) {
     if (saved) setDraft("");
   };
   /** @param {string} id @param {string} name */
-  const rename = (id, name) => {
+  const rename = async (id, name) => {
     const clean = name.trim();
     const current = groups.find((g) => g.id === id);
-    if (!clean || !current || current.name === clean) return;
-    onSave(groups.map((g) => (g.id === id ? { ...g, name: clean } : g)));
+    if (!current || current.name === clean) return;
+    const saved = clean ? await onSave(groups.map((g) => (g.id === id ? { ...g, name: clean } : g))) : null;
+    if (!saved) setRev((r) => r + 1);
   };
   /** @param {number} from @param {number} to */
   const reorder = (from, to) => onSave(move(groups, from, to));
@@ -326,11 +367,13 @@ function GroupsEditor({ groups, onSave, onDelete, t }) {
           {groups.map((g, i) => (
             <li key={g.id} className="flex items-center gap-2 py-2" data-testid="product-group-row">
               <input
+                key={`${g.name}:${rev}`}
+                data-testid="product-group-name"
                 defaultValue={g.name}
                 maxLength={40}
                 aria-label={t("group_rename_aria", { name: g.name })}
                 onBlur={(e) => rename(g.id, e.target.value)}
-                className="flex-1 min-w-0 text-sm border border-border rounded-sm px-2 py-1.5 bg-surface-card"
+                className="flex-1 min-w-0 min-h-touch text-sm border border-border rounded-sm px-2 bg-surface-card"
               />
               <button
                 type="button"
@@ -375,14 +418,14 @@ function GroupsEditor({ groups, onSave, onDelete, t }) {
             maxLength={40}
             placeholder={t("group_add_placeholder")}
             onChange={(e) => setDraft(e.target.value)}
-            className="w-full text-sm border border-border rounded-sm px-2 py-1.5 bg-surface-card"
+            className="w-full min-h-touch text-sm border border-border rounded-sm px-2 bg-surface-card"
           />
         </span>
         <button
           type="submit"
           data-testid="product-group-add"
           disabled={!draft.trim()}
-          className="shrink-0 text-sm text-primary border border-primary/30 rounded-sm px-3 py-1.5 hover:bg-primary/5 transition disabled:opacity-40"
+          className="shrink-0 min-h-touch text-sm text-primary border border-primary/30 rounded-sm px-4 hover:bg-primary/5 transition disabled:opacity-40"
         >
           {t("group_add_cta")}
         </button>

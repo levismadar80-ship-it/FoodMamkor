@@ -257,8 +257,10 @@ export default function ProducerSections({
     : producer.products || [];
   const gridAll = orderProducts(gridUnsorted, productGroups);
   // MEH-3055: chips only when 2+ groups actually hold products (Etsy shows its
-  // sections as filters; one group is no choice at all).
-  const filterGroups = chipGroups(producer.products || [], productGroups);
+  // sections as filters; one group is no choice at all). Counted over the GRID
+  // (signature product excluded): a group whose only product is the signature
+  // card would be a chip that empties the list.
+  const filterGroups = chipGroups(gridUnsorted, productGroups);
   const showGroupChips = filterGroups.length >= 2;
   const liveGroupIds = new Set(productGroups.map((g) => g.id));
   const gridProducts =
@@ -316,13 +318,20 @@ export default function ProducerSections({
   // window.location — not useSearchParams, which would force a Suspense
   // boundary onto a server-rendered page for a one-shot read. An id that
   // matches nothing opens nothing (the page just loads normally).
-  const productIds = sheetProducts.map((p) => p.id).join(",");
+  // MEH-3055: keyed on the UNFILTERED list (signature + every grid row), so
+  // tapping a group chip — which changes the visible list but never removes
+  // `?product=` from the URL — does not re-open the sheet. The deep link also
+  // clears any chip, so its product is always in the list it opens into.
+  const productIds = (signatureProduct ? [signatureProduct, ...gridAll] : gridAll)
+    .map((p) => p.id)
+    .join(",");
   useEffect(() => {
     if (typeof window === "undefined") return;
     const wanted = new URLSearchParams(window.location.search).get("product");
     if (!wanted) return;
     const i = productIds.split(",").indexOf(wanted);
     if (i < 0) return;
+    setActiveGroup(null);
     // MEH-3021: a deep link to a product that sits in the collapsed part of
     // the list opens the list too, so closing the sheet lands next to it.
     const gridPos = signatureProduct ? i - 1 : i;
@@ -486,7 +495,7 @@ export default function ProducerSections({
           {showGroupChips && (
             <ProductGroupChips
               groups={filterGroups}
-              withUngrouped={hasUngrouped(producer.products || [], productGroups)}
+              withUngrouped={hasUngrouped(gridUnsorted, productGroups)}
               active={activeGroup}
               onChange={(id) => {
                 setActiveGroup(id);
@@ -609,7 +618,10 @@ export default function ProducerSections({
             >
               {showAllProducts
                 ? t("producer.detail.sections.products.show_less")
-                : t("producer.detail.sections.products.show_all", { count: sheetTotal })}
+                : t("producer.detail.sections.products.show_all", {
+                    // MEH-3055: with a chip on, «all N» means all N in that group.
+                    count: !showGroupChips || activeGroup == null ? sheetTotal : gridProducts.length,
+                  })}
             </button>
           )}
 

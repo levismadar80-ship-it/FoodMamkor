@@ -11,6 +11,7 @@ Related:  app/routers/product_organize.py · app/limits.py MAX_PRODUCT_GROUPS
 History:  MEH-3055 (creation)
 """
 
+import html
 from uuid import UUID
 
 from pydantic import BaseModel, Field, field_validator
@@ -34,7 +35,10 @@ class ProductGroupIn(BaseModel):
     @field_validator("name")
     @classmethod
     def _clean_name(cls, v: str) -> str:
-        cleaned = sanitize_text(v, max_length=200)
+        # Tags stripped, then entities turned back into characters: bleach
+        # escapes «&» to «&amp;», which React would print literally (it escapes
+        # on render itself) and which would count 5 towards the 40 limit.
+        cleaned = html.unescape(sanitize_text(v, max_length=200) or "").strip()
         if not cleaned:
             raise ValueError("שם הקבוצה לא יכול להיות ריק")
         if len(cleaned) > MAX_GROUP_NAME:
@@ -55,9 +59,12 @@ class ProductGroupsIn(BaseModel):
     @field_validator("groups")
     @classmethod
     def _unique_names(cls, v: list[ProductGroupIn]) -> list[ProductGroupIn]:
-        names = [g.name.strip() for g in v]
+        names = [g.name.strip().casefold() for g in v]
         if len(set(names)) != len(names):
             raise ValueError("יש שתי קבוצות באותו שם")
+        ids = [g.id for g in v if g.id is not None]
+        if len(set(ids)) != len(ids):
+            raise ValueError("אותה קבוצה מופיעה פעמיים ברשימה")
         return v
 
 

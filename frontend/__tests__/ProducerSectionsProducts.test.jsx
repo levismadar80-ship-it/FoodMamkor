@@ -9,6 +9,8 @@ import { render, screen, fireEvent } from "@testing-library/react";
 vi.mock("next-intl", () => ({
   useTranslations: () => (key, vars) => {
     if (key === "producer.card.aria.image_missing") return `${vars?.name ?? ""} — תמונה חסרה`;
+    // MEH-3055: the «show all N» count is asserted, so it is rendered.
+    if (key === "producer.detail.sections.products.show_all") return `${key}:${vars?.count}`;
     return key;
   },
   useFormatter: () => ({ dateTime: () => "" }),
@@ -825,7 +827,7 @@ describe("MEH-3021 — long product lists collapse", () => {
     expect(desktopOnly()).toHaveLength(8 - 6);
     const toggle = screen.getByTestId("products-toggle");
     expect(toggle).toHaveAttribute("aria-expanded", "false");
-    expect(toggle.textContent).toBe("producer.detail.sections.products.show_all");
+    expect(toggle.textContent).toBe("producer.detail.sections.products.show_all:12");
   });
 
   it("9+ open: every row, toggle becomes «show less», and closing scrolls to the section", () => {
@@ -966,6 +968,53 @@ describe("MEH-3055 — owner order and group chips", () => {
 
     fireEvent.click(chips()[0]);
     expect(rows()).toHaveLength(products.length);
+  });
+
+  it("a group whose only product is the featured card is not a chip (it would empty the list)", () => {
+    const products = [prod(0, { group_id: "g1" }), prod(1, { group_id: "g2" }), prod(2, { group_id: "g2" })];
+    const producer = { ...producerWith(products), product_groups: groups, top_product_id: products[0].id, top_product_name: products[0].name };
+    render(<ProducerSections {...baseProps} producer={producer} />);
+    // Grid holds only g2 → one group → no chips at all.
+    expect(screen.queryByTestId("product-group-chips")).not.toBeInTheDocument();
+  });
+
+  it("featured card is the only ungrouped product: no «more» chip", () => {
+    const products = [prod(0), prod(1, { group_id: "g1" }), prod(2, { group_id: "g2" })];
+    const producer = { ...producerWith(products), product_groups: groups, top_product_id: products[0].id, top_product_name: products[0].name };
+    render(<ProducerSections {...baseProps} producer={producer} />);
+    expect(chips().map((c) => c.textContent)).toEqual(["groups_all", "לחמים", "עוגות"]);
+  });
+
+  it("deep link: tapping a chip after closing the sheet does not re-open it; the link clears a chip", () => {
+    const products = [prod(0, { group_id: "g1" }), prod(1, { group_id: "g2" }), prod(2, { group_id: "g1" })];
+    window.history.replaceState({}, "", `/?product=${products[2].id}`);
+    try {
+      render(<ProducerSections {...baseProps} producer={{ ...producerWith(products), product_groups: groups }} />);
+      expect(screen.getByTestId("product-sheet")).toHaveAttribute("aria-label", "פריט 2");
+      fireEvent.keyDown(window, { key: "Escape" });
+      expect(screen.queryByTestId("product-sheet")).not.toBeInTheDocument();
+      fireEvent.click(chips()[1]); // לחמים — holds the linked product
+      expect(screen.queryByTestId("product-sheet")).not.toBeInTheDocument();
+      fireEvent.click(chips()[0]);
+      expect(screen.queryByTestId("product-sheet")).not.toBeInTheDocument();
+    } finally {
+      window.history.replaceState({}, "", "/");
+    }
+  });
+
+  it("with a chip on, «show all N» counts that group only", () => {
+    const products = [
+      ...Array.from({ length: 10 }, (_, i) => prod(i, { group_id: "g1" })),
+      prod(10, { group_id: "g2" }),
+      prod(11, { group_id: "g2" }),
+    ];
+    // The featured card (in g2) is outside the grid: it must not inflate a group's N.
+    const producer = { ...producerWith(products), product_groups: groups, top_product_id: products[11].id, top_product_name: products[11].name };
+    render(<ProducerSections {...baseProps} producer={producer} />);
+    const toggle = () => screen.getByTestId("products-toggle").textContent;
+    expect(toggle()).toBe("producer.detail.sections.products.show_all:12"); // «all»: the business's 12
+    fireEvent.click(chips()[1]);
+    expect(toggle()).toBe("producer.detail.sections.products.show_all:10");
   });
 
   it("no «more» chip when every product is in a group", () => {

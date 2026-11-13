@@ -99,6 +99,35 @@ def test_group_name_rules(client, db):
     assert two_letters.status_code == 200
 
 
+def test_group_name_keeps_ampersand_and_strips_tags(client, db):
+    user, _ = _owner(db)
+    r = client.put(
+        "/producers/me/product-groups",
+        json={"groups": [{"name": "לחם & חמאה"}, {"name": "<b>עוגות</b>"}]},
+        headers=auth_header(user),
+    )
+    assert r.status_code == 200, r.text
+    assert [g["name"] for g in r.json()] == ["לחם & חמאה", "עוגות"]
+
+
+def test_duplicate_names_ignore_case(client, db):
+    user, _ = _owner(db)
+    r = client.put("/producers/me/product-groups", json={"groups": [{"name": "Bread"}, {"name": "bread"}]}, headers=auth_header(user))
+    assert r.status_code == 422
+
+
+def test_the_same_group_id_twice_is_refused(client, db):
+    user, _ = _owner(db)
+    h = auth_header(user)
+    gid = client.put("/producers/me/product-groups", json={"groups": [{"name": "א־ב"}]}, headers=h).json()[0]["id"]
+    r = client.put(
+        "/producers/me/product-groups",
+        json={"groups": [{"id": gid, "name": "לחמים"}, {"id": gid, "name": "עוגות"}]},
+        headers=h,
+    )
+    assert r.status_code == 422 and "פעמיים" in r.text
+
+
 def test_a_group_id_from_another_business_is_refused(client, db):
     me, _ = _owner(db)
     other, _ = _owner(db)
