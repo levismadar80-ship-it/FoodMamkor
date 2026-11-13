@@ -7,6 +7,8 @@
  *           every such icon has the same size, colour and spacing. Kinds in
  *           use: delivery fee → Truck, order cutoff / hours → Clock, city →
  *           MapPin, self-pickup → Package.
+ *           No `icon` → the same row with no icon (a line whose kind already
+ *           has its icon nearby, e.g. the one-day form of the day labels).
  * Does NOT: style the text beyond the shared row (`className` carries the text
  *           size, colour, weight and margin of the line); appear inside a
  *           <SectionHeading> — a section heading is text only.
@@ -22,11 +24,17 @@
  */
 export const FACT_ICON_SIZE = 14;
 
+// The icon sits in a box one line tall, so on a line that wraps it stays
+// beside the FIRST line instead of drifting to the middle of the block.
 export default function FactLine({ icon: Icon, as: Tag = "p", className = "", children, ...rest }) {
   return (
-    <Tag className={`flex items-center gap-1.5${className ? ` ${className}` : ""}`} {...rest}>
-      <Icon size={FACT_ICON_SIZE} className="shrink-0 text-fg-muted" aria-hidden="true" data-fact-icon="" />
-      {children}
+    <Tag className={`flex items-start gap-1.5${className ? ` ${className}` : ""}`} {...rest}>
+      {Icon && (
+        <span className="flex h-[1lh] shrink-0 items-center">
+          <Icon size={FACT_ICON_SIZE} className="text-fg-muted" aria-hidden="true" data-fact-icon="" />
+        </span>
+      )}
+      <span className="min-w-0">{children}</span>
     </Tag>
   );
 }

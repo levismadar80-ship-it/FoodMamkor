@@ -19,11 +19,22 @@ describe("FactLine", () => {
     expect(line.textContent).toBe("קצרין");
     const icons = line.querySelectorAll("svg");
     expect(icons).toHaveLength(1);
-    expect(line.firstElementChild).toBe(icons[0]);
+    // Icon first, in a one-line-tall box, so a wrapped line keeps it beside
+    // line one (items-start + h-[1lh], not items-center).
+    expect(line.firstElementChild.contains(icons[0])).toBe(true);
+    expect(line.firstElementChild.className).toContain("h-[1lh]");
+    expect(line.className).toContain("items-start");
+    expect(line.className).not.toContain("items-center");
     expect(icons[0].getAttribute("width")).toBe(String(FACT_ICON_SIZE));
     expect(icons[0].getAttribute("aria-hidden")).toBe("true");
     expect(icons[0].getAttribute("class")).toContain("text-fg-muted");
     expect(line.className).toContain("font-bold");
+  });
+
+  it("no icon → the same row with no icon, instead of throwing", () => {
+    render(<FactLine icon={null} data-testid="bare">יוצאים בימי שישי</FactLine>);
+    expect(screen.getByTestId("bare").querySelector("svg")).toBeNull();
+    expect(screen.getByTestId("bare").textContent).toBe("יוצאים בימי שישי");
   });
 
   it("can render as another element", () => {

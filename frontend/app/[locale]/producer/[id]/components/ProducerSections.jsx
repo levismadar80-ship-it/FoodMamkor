@@ -723,7 +723,7 @@ export default function ProducerSections({
           </div>
           {/* Address line — city-only fallback, never empty (revision-1 #5). */}
           {producer.city && (
-            <FactLine icon={MapPin} className="text-sm text-muted mb-3">
+            <FactLine icon={MapPin} className="text-sm text-fg-muted mb-3">
               {producer.city}
             </FactLine>
           )}

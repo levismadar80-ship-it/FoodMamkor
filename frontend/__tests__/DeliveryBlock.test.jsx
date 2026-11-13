@@ -447,6 +447,9 @@ describe("DeliveryBlock (MEH-1146 chunk B)", () => {
     );
     expect(screen.getByText("יוצאים בימי שישי")).toBeInTheDocument();
     expect(screen.queryByText(/מקבלים הזמנות עד/)).not.toBeInTheDocument();
+    // MEH-3028: the bare dispatch-day line is the one-day form of the day
+    // labels — no icon (a clock is for the order cutoff only).
+    expect(screen.getByTestId("delivery-order-cutoff").querySelector("svg")).toBeNull();
   });
 
   it("MEH-1646 ambiguity guard: 2+ open window days → NO cutoff claim (dispatch_days kept)", () => {
@@ -521,6 +524,16 @@ describe("DeliveryBlock (MEH-1146 chunk B)", () => {
     );
     expect(feeLine()).toHaveTextContent("משלוח: 35₪");
     expect(feeLine()).toHaveTextContent("מעל 250₪ — חינם");
+  });
+
+  it("MEH-3028 nationwide + a stated fee → one truck, on the fee line only", () => {
+    const { container } = render(
+      <DeliveryBlock nationwide areas={[]} pickup={false} producer={withCost(35, 250)} />,
+    );
+    expect(screen.getByText("משלוחים לכל הארץ")).toBeInTheDocument();
+    // Before MEH-3028 this screen drew three trucks (heading, fee line, chip).
+    expect(container.querySelectorAll("svg")).toHaveLength(1);
+    expect(feeLine().querySelectorAll("[data-fact-icon]")).toHaveLength(1);
   });
 
   it("MEH-1577 (2/6) fee only → no threshold clause", () => {

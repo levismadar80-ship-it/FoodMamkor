@@ -349,7 +349,7 @@ function PickupRows({ locations, t, tMap }) {
           every row (MEH-1646 (b) still holds: every pickup shape says it). */}
       <FactLine icon={Package} className="text-base font-bold text-text mb-2" data-testid="pickup-heading">
         {t("pickup")}
-        <span className="rounded-full bg-green-50 px-2 py-0.5 text-xs font-bold text-primary">
+        <span className="ms-1.5 rounded-full bg-green-50 px-2 py-0.5 text-xs font-bold text-primary">
           {t("free")}
         </span>
       </FactLine>
@@ -630,7 +630,6 @@ export default function DeliveryBlock({
       {nationwide ? (
         <>
           <span className="inline-flex items-center gap-1.5 bg-green-50 text-text border border-border rounded-xl text-sm px-3 py-1.5 font-medium mb-4">
-            <Truck size={14} className="text-current ms-1" aria-hidden="true" />
             {hasExclusions
               ? t("nationwide_except", { cities: excluded.join(", ") })
               : t("nationwide")}
@@ -661,7 +660,10 @@ export default function DeliveryBlock({
           {grouped.mode === "hoist" && (
             <>
               <FactLine
-                icon={Clock}
+                // MEH-3028: a clock only for the order cutoff; the bare
+                // «יוצאים בימי X» is the one-day form of the day labels,
+                // which carry no icon.
+                icon={cutoff ? Clock : null}
                 className="text-sm text-fg-muted mb-2"
                 data-testid="delivery-order-cutoff"
               >
@@ -739,7 +741,7 @@ export default function DeliveryBlock({
             {t("pickup")}
             {/* MEH-1646 (b): the generic fallback line carries the same tag
                 as the location rows — no producer shape misses it. */}
-            <span className="rounded-full bg-green-50 px-2 py-0.5 text-xs font-bold text-primary">
+            <span className="ms-1.5 rounded-full bg-green-50 px-2 py-0.5 text-xs font-bold text-primary">
               {t("free")}
             </span>
           </FactLine>

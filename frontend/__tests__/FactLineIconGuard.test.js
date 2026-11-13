@@ -14,7 +14,7 @@
  *  1. Site-wide: no Phosphor icon (or raw <svg>) inside a <SectionHeading>.
  *  2. Business-page files: a Phosphor icon rendered RAW (not via FactLine's
  *     `icon` prop) is allowed only as listed in RAW_ALLOWED, with its reason —
- *     buttons, links, answer states, the nationwide chip, the legal note. The
+ *     buttons, links, answer states, the legal note. The
  *     counts are exact, so a new raw icon AND a stale entry both go red.
  *
  * Blind spot, on purpose: an icon reached through a variable (`const Icon =
@@ -96,7 +96,6 @@ function walk(dir, out = []) {
 // Everything else on these files that wants an icon goes through <FactLine>.
 const RAW_ALLOWED = {
   "components/DeliveryBlock.jsx": {
-    Truck: 1, // the «משלוח לכל הארץ» chip — a badge, not a fact line
     CaretDown: 3, // the three show-more / show-less toggle buttons
     CaretUp: 3, // (delivery areas, compact cities, pickup stands)
     Phone: 1, // tap-to-call link on a pickup stand
