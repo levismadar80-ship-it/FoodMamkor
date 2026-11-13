@@ -631,6 +631,7 @@ export default function ProducerSections({
             reviewCount={producer.reviews_count ?? 0}
             isOwner={isOwner}
             onTotalChange={onReviewsTotalChange}
+            producerName={producer.name}
           />
         )}
       </div>

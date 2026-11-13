@@ -281,8 +281,6 @@ frontend/components/ReviewCardCanvas.jsx:hex:#eaf3de
 frontend/components/ReviewCardCanvas.jsx:hex:#f5f0e8
 frontend/components/ReviewCardCanvas.jsx:hex:#ffffff
 frontend/components/ReviewsSection.jsx:hex:#896714
-frontend/components/ReviewsSection.jsx:hex:#896714
-frontend/components/ReviewsSection.jsx:hex:#e5dfd3
 frontend/components/ReviewsSection.jsx:hex:#e5dfd3
 frontend/components/StarRating.jsx:text-yellow-500
 frontend/components/StoryCardCanvas.jsx:arb:#1f4a3a

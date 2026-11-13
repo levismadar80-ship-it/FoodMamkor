@@ -65,6 +65,8 @@ vi.mock("@/lib/contact-tracking", () => ({
 }));
 vi.mock("@phosphor-icons/react", () => ({
   Star: (props) => <span data-testid="icon-star" {...props} />,
+  User: (props) => <span data-testid="icon-user" {...props} />,
+  ShieldCheck: (props) => <span data-testid="icon-shield" {...props} />,
   Leaf: (props) => <span data-testid="icon-leaf" {...props} />,
   EyeSlash: (props) => <span data-testid="icon-eyeslash" {...props} />,
   CaretDown: (props) => <span {...props} />,
@@ -76,6 +78,7 @@ vi.mock("@phosphor-icons/react", () => ({
 beforeEach(() => {
   authState.user = null;
   authState.loading = false;
+  sessionStorage.removeItem("review_draft_stars_p-1");
   apiMock.get.mockReset();
   apiMock.put.mockReset();
   global.IntersectionObserver = class {
@@ -205,7 +208,7 @@ describe("ReviewsSection — zero reviews, reader view: no empty state, only the
     mockReviews([]);
     render(<ReviewsSection producerId="p-1" isOwner={false} />);
     const hint = await screen.findByTestId("reviews-write-hint");
-    expect(within(hint).getByTestId("reviews-login-link")).toBeInTheDocument();
+    expect(within(hint).getByTestId("reviews-star-1")).toBeInTheDocument();
     expect(screen.queryByTestId("icon-leaf")).toBeNull();
     expect(screen.queryByText(/empty_message/)).toBeNull();
   });
@@ -219,7 +222,7 @@ describe("ReviewsSection — zero reviews, reader view: no empty state, only the
     await waitFor(() => expect(apiMock.get).toHaveBeenCalled());
     await new Promise((r) => setTimeout(r, 0));
     expect(screen.queryByTestId("reviews-write-hint")).toBeNull();
-    expect(screen.queryByTestId("reviews-login-link")).toBeNull();
+    expect(screen.queryByTestId("reviews-star-1")).toBeNull();
   });
 
   it("empty + owner: the coaching state still renders (owner-only), with no reader hint", async () => {
@@ -290,13 +293,12 @@ describe("ReviewsSection — WA re-ping on form open (MEH-1426)", () => {
     localStorage.setItem(`wa_clicked_${PID}`, "1");
     mockReviews([]);
     render(<ReviewsSection producerId={PID} />);
-    const btn = await screen.findByText("write_cta");
-    fireEvent.click(btn);
+    fireEvent.click(await screen.findByTestId("reviews-star-5"));
     expect(pingWhatsAppBeacon).toHaveBeenCalledTimes(1);
     expect(pingWhatsAppBeacon).toHaveBeenCalledWith(PID);
     // Close and reopen — the re-ping must not fire a second time (once per mount).
     fireEvent.click(await screen.findByText("ביטול"));
-    fireEvent.click(await screen.findByText("write_cta"));
+    fireEvent.click(await screen.findByTestId("reviews-star-5"));
     expect(pingWhatsAppBeacon).toHaveBeenCalledTimes(1);
   });
 
@@ -305,7 +307,7 @@ describe("ReviewsSection — WA re-ping on form open (MEH-1426)", () => {
     mockReviews([]);
     render(<ReviewsSection producerId={PID} />);
     await waitFor(() => expect(apiMock.get).toHaveBeenCalled());
-    expect(screen.queryByText("write_cta")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("reviews-write-row")).not.toBeInTheDocument();
     expect(pingWhatsAppBeacon).not.toHaveBeenCalled();
   });
 
@@ -318,7 +320,7 @@ describe("ReviewsSection — WA re-ping on form open (MEH-1426)", () => {
     localStorage.setItem(`contacted_${PID}`, "phone");
     mockReviews([]);
     render(<ReviewsSection producerId={PID} />);
-    fireEvent.click(await screen.findByText("write_cta"));
+    fireEvent.click(await screen.findByTestId("reviews-star-5"));
     expect(trackContactClick).toHaveBeenCalledTimes(1);
     expect(trackContactClick).toHaveBeenCalledWith(PID, "phone");
     expect(pingWhatsAppBeacon).not.toHaveBeenCalled();
@@ -342,7 +344,7 @@ describe("ReviewsSection — WA re-ping on form open (MEH-1426)", () => {
     act(() => {
       window.dispatchEvent(new CustomEvent("mehamakor:contacted", { detail: { producerId: PID } }));
     });
-    expect(await screen.findByText("write_cta")).toBeInTheDocument();
+    expect(await screen.findByTestId("reviews-write-row")).toBeInTheDocument();
     expect(screen.queryByTestId("reviews-write-hint")).toBeNull();
   });
 
@@ -364,7 +366,7 @@ describe("ReviewsSection — review-invite token (MEH-1428 chunk 2)", () => {
   const PID = "prod-1428";
 
   const submitReview = async () => {
-    fireEvent.click(await screen.findByText("write_cta"));
+    fireEvent.click(await screen.findByTestId("reviews-star-5"));
     fireEvent.click(screen.getAllByLabelText("star_aria")[4]);
     fireEvent.change(screen.getByLabelText("body_label"), {
       target: { value: "מוצרים טעימים מאוד, ממליצה" },
@@ -413,7 +415,7 @@ describe("ReviewsSection — review-invite token (MEH-1428 chunk 2)", () => {
     mockReviews([]);
     render(<ReviewsSection producerId={PID} />);
     await waitFor(() => expect(apiMock.get).toHaveBeenCalled());
-    expect(screen.queryByText("write_cta")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("reviews-write-row")).not.toBeInTheDocument();
   });
 
   it("WhatsApp-click path unchanged: no token in storage → no review_token key in the body", async () => {
@@ -430,7 +432,7 @@ describe("ReviewsSection — review-invite token (MEH-1428 chunk 2)", () => {
     mockReviews([]);
     render(<ReviewsSection producerId={PID} isOwner />);
     await waitFor(() => expect(apiMock.get).toHaveBeenCalled());
-    expect(screen.queryByText("write_cta")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("reviews-write-row")).not.toBeInTheDocument();
   });
 
   it("guest with the link: the login prompt returns to this page's reviews, token in the URL", async () => {
@@ -440,7 +442,7 @@ describe("ReviewsSection — review-invite token (MEH-1428 chunk 2)", () => {
     // The guest prompt is a t.rich() chunk; render the link so its href is observable.
     render(<ReviewsSection producerId={PID} />);
     await waitFor(() => expect(sessionStorage.getItem(`review_invite_${PID}`)).toBe("tok-abc"));
-    const link = await screen.findByTestId("reviews-login-link");
+    const link = await screen.findByTestId("reviews-star-1");
     expect(link.getAttribute("href")).toBe(
       `/login?redirect=${encodeURIComponent("/p/meshek?rt=tok-abc#reviews")}`,
     );
@@ -470,7 +472,7 @@ describe("ReviewsSection — review-invite token (MEH-1428 chunk 2)", () => {
     render(<ReviewsSection producerId={PID} />);
     await waitFor(() => expect(apiMock.get).toHaveBeenCalled());
     expect(sessionStorage.getItem(`review_invite_${PID}`)).toBeNull();
-    expect(screen.queryByText("write_cta")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("reviews-write-row")).not.toBeInTheDocument();
   });
 });
 
@@ -514,21 +516,106 @@ describe("ReviewsSection — reviews look (MEH-2592)", () => {
     expect(reply.className).not.toContain("bg-green-50");
   });
 
-  // MEH-2999: the quiet grey line became a card with five empty stars.
-  it("guest: the invite card sits UNDER the reviews; its stars are the sign-in link", async () => {
+  // MEH-2999 → 13/11/2026 (option ד): the invite is Google's row — no box,
+  // five separate star links, the business named in the question.
+  it("guest: the invite row sits UNDER the reviews; each star is a sign-in link", async () => {
     authState.user = null;
     mockReviews([noReply]);
-    render(<ReviewsSection producerId="p-1" />);
+    render(<ReviewsSection producerId="p-1" producerName="משק ברק" />);
     const body = await screen.findByText("טעים");
     const hint = screen.getByTestId("reviews-write-hint");
-    const link = screen.getByTestId("reviews-login-link");
-    expect(hint).toContainElement(link);
-    expect(within(link).getAllByTestId("icon-star")).toHaveLength(5);
-    expect(link.getAttribute("aria-label")).toBe("invite_title");
+    const group = within(hint).getByTestId("reviews-invite-stars");
+    expect(group.getAttribute("aria-label")).toBe("invite_title");
+    for (let n = 1; n <= 5; n += 1) {
+      const star = within(group).getByTestId(`reviews-star-${n}`);
+      expect(star.tagName).toBe("A");
+      expect(star.getAttribute("href")).toMatch(/^\/login/);
+    }
+    expect(within(group).getAllByTestId("icon-star")).toHaveLength(5);
     expect(hint).toHaveTextContent("invite_title");
     expect(hint).toHaveTextContent("invite_hint");
     expect(following(body, hint)).toBe(true);
-    expect(hint.className).toContain("border");
+    // No white box: a hairline on top, no card surface.
+    expect(hint.className).toContain("border-t");
+    expect(hint.className).not.toContain("bg-surface-card");
+    expect(hint.className).not.toContain("rounded");
+  });
+
+  it("guest: the tapped star is kept, and the form opens with it once the reader may write", async () => {
+    authState.user = null;
+    mockReviews([]);
+    const { unmount } = render(<ReviewsSection producerId="p-1" />);
+    fireEvent.click(await screen.findByTestId("reviews-star-4"));
+    expect(sessionStorage.getItem("review_draft_stars_p-1")).toBe("4");
+    unmount();
+    // Back from sign-in, already contacted: the form is open with 4 stars.
+    authState.user = { id: "u-9", producer_id: null };
+    localStorage.setItem("contacted_p-1", "phone");
+    try {
+      render(<ReviewsSection producerId="p-1" />);
+      await screen.findByText("form_heading");
+      const picked = screen.getAllByTestId("icon-star").filter((el) => el.getAttribute("weight") === "fill");
+      expect(picked).toHaveLength(4);
+      expect(sessionStorage.getItem("review_draft_stars_p-1")).toBeNull();
+      expect(screen.queryByTestId("reviews-write-row")).toBeNull();
+    } finally {
+      localStorage.removeItem("contacted_p-1");
+    }
+  });
+
+  it("may write: the same row; a star opens the form, no box, with that star chosen", async () => {
+    authState.user = { id: "u-9", producer_id: null };
+    localStorage.setItem("contacted_p-1", "phone");
+    try {
+      mockReviews([noReply]);
+      render(<ReviewsSection producerId="p-1" />);
+      const row = await screen.findByTestId("reviews-write-row");
+      expect(row.className).toContain("border-t");
+      expect(screen.queryByText("write_cta")).toBeNull();
+      fireEvent.click(within(row).getByTestId("reviews-star-3"));
+      const form = await screen.findByTestId("reviews-form");
+      expect(form.className).not.toMatch(/bg-surface|rounded/);
+      const pressed = within(form).getAllByRole("button", { pressed: true });
+      expect(pressed).toHaveLength(1);
+      expect(pressed[0].dataset.testid).toBe("reviews-star-3");
+    } finally {
+      localStorage.removeItem("contacted_p-1");
+    }
+  });
+
+  it("owner: a kept star never opens the form", async () => {
+    sessionStorage.setItem("review_draft_stars_p-1", "5");
+    authState.user = { id: "u-o", producer_id: "p-1" };
+    localStorage.setItem("contacted_p-1", "phone");
+    try {
+      mockReviews([]);
+      render(<ReviewsSection producerId="p-1" isOwner />);
+      await waitFor(() => expect(apiMock.get).toHaveBeenCalled());
+      expect(screen.queryByText("form_heading")).toBeNull();
+      // The owner path returns before the kept star is consumed.
+      expect(sessionStorage.getItem("review_draft_stars_p-1")).toBe("5");
+    } finally {
+      localStorage.removeItem("contacted_p-1");
+    }
+  });
+
+  it("storage blocked: tapping a star does not throw and the row still renders", async () => {
+    authState.user = null;
+    mockReviews([]);
+    const blocked = () => {
+      throw new DOMException("blocked", "SecurityError");
+    };
+    const getSpy = vi.spyOn(Storage.prototype, "getItem").mockImplementation(blocked);
+    const setSpy = vi.spyOn(Storage.prototype, "setItem").mockImplementation(blocked);
+    try {
+      render(<ReviewsSection producerId="p-1" />);
+      const star = await screen.findByTestId("reviews-star-2");
+      expect(() => fireEvent.click(star)).not.toThrow();
+      expect(screen.getByTestId("reviews-invite-stars").getAttribute("dir")).toBe("ltr");
+    } finally {
+      getSpy.mockRestore();
+      setSpy.mockRestore();
+    }
   });
 
   it("logged-in, not gated, reviews exist: the contact card sits UNDER the reviews; stars go to the contact card", async () => {
@@ -544,8 +631,9 @@ describe("ReviewsSection — reviews look (MEH-2592)", () => {
       const hint = screen.getByTestId("reviews-write-hint");
       expect(hint.dataset.mode).toBe("contact");
       expect(following(body, hint)).toBe(true);
-      expect(screen.queryByTestId("reviews-login-link")).toBeNull();
-      fireEvent.click(within(hint).getByTestId("reviews-contact-link"));
+      expect(within(hint).getByTestId("reviews-star-1").tagName).toBe("BUTTON");
+      fireEvent.click(within(hint).getByTestId("reviews-star-3"));
+      expect(sessionStorage.getItem("review_draft_stars_p-1")).toBe("3");
       expect(card.scrollIntoView).toHaveBeenCalledTimes(1);
     } finally {
       card.remove();
@@ -631,7 +719,7 @@ describe("ReviewsSection — live total reported upward (MEH-2705)", () => {
     render(<ReviewsSection producerId="p-1" reviewCount={3} onTotalChange={onTotalChange} />);
     await screen.findByText("תודה רבה על המילים החמות!");
     expect(onTotalChange).toHaveBeenLastCalledWith(3);
-    fireEvent.click(screen.getByText("write_cta"));
+    fireEvent.click(screen.getByTestId("reviews-star-5"));
     fireEvent.click(screen.getAllByRole("button", { name: "star_aria" })[4]);
     fireEvent.change(screen.getByRole("textbox"), { target: { value: "מעולה מאוד מאוד" } });
     fireEvent.submit(screen.getByRole("textbox").closest("form"));
