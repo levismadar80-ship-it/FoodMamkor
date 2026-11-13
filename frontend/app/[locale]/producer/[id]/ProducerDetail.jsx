@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { Link } from "@/i18n/navigation";
 import { MAP_REFERRER } from "@/lib/map-view-state";
 
 import Breadcrumb from "@/components/Breadcrumb";
@@ -166,7 +165,7 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
         />
         {fromMap && (
           <p className="mb-2 lg:mb-0 lg:mt-2">
-            {/* MEH-3060: the site BackLink. /map restores the camera the
+            {/* MEH-3085: the site BackLink. /map restores the camera the
                 visitor left on its own (lib/map-view-state.js). */}
             <BackLink href="/map" data-testid="back-to-map" label={t("producer.detail.back_to_map")} />
           </p>
