@@ -72,7 +72,8 @@ export default function StickyContactBar({
       //
       // MEH-3027: the full-width white strip is gone; the CTA is now a floating
       // pill with the BottomNav shell's geometry (14px side gutters, safe-area +
-      // 16px bottom gutter, rounded-full, h-14). The strip put a 6px-radius
+      // 16px bottom gutter, rounded-full, h-12 = the nav pill's compact height;
+      // 56px read too heavy, Sapir 13/11). The strip put a 6px-radius
       // rectangle ~15pt from the screen bottom on iPhone — inside the display's
       // rounded corner — because env(safe-area-inset-bottom) is 0 without
       // viewport-fit=cover (layout.js, MEH-2427), so the corner clipped it
@@ -144,7 +145,7 @@ export default function StickyContactBar({
           // MEH-76 chunk 1: the vacation pale-green CTA fork was an ADR-019
           // violation (state-color fill + raw hex). The CTA keeps its normal
           // method-driven color — the whole bar is already dimmed via opacity.
-          className={`pointer-events-auto w-full h-14 flex items-center justify-center gap-2 rounded-full font-medium text-sm transition ${isBarVisible ? PILL_SHADOW : ""} focus-visible:ring-2 ${variant.className}`}
+          className={`pointer-events-auto w-full h-12 flex items-center justify-center gap-2 rounded-full font-medium text-sm transition ${isBarVisible ? PILL_SHADOW : ""} focus-visible:ring-2 ${variant.className}`}
         >
           <CtaIcon size={20} />
           {isVacation ? t("producer.detail.sticky_bar.vacation_msg") : getPrimaryContactLabel(producer, t)}

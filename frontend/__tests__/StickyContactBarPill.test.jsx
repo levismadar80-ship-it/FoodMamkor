@@ -41,6 +41,8 @@ describe("StickyContactBar — floating pill (MEH-3027)", () => {
     const cta = screen.getByTestId("sticky-primary-cta");
     expect(cta.className).toMatch(/\brounded-full\b/);
     expect(cta.className).not.toMatch(/\brounded-md\b/);
+    // 48px = the BottomNav pill's compact height; 56 read too heavy (Sapir, 13/11).
+    expect(cta.className).toMatch(/\bh-12\b/);
   });
 
   it("keeps a 16px bottom gutter on top of the safe-area inset (the inset is 0 on iOS here)", () => {
