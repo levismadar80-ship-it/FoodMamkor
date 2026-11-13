@@ -1,7 +1,7 @@
 import RescueSection from "@/components/rescue/RescueSection";
 import { useCallback, useEffect, useState } from "react";
 import Image from "next/image";
-import { CaretLeft, Info, MapPin } from "@phosphor-icons/react";
+import { CaretLeft, Clock, Info, MapPin } from "@phosphor-icons/react";
 import Seed from "@/components/brand/Seed";
 import { seedColorFor } from "@/lib/brand-seeds";
 import dynamic from "next/dynamic";
@@ -41,6 +41,7 @@ import ReviewsSection from "@/components/ReviewsSection";
 // from) the native reviews block, only for producers an admin mapped.
 import GoogleRatingLine from "@/components/GoogleRatingLine";
 import SectionHeading from "@/components/ui/SectionHeading";
+import FactLine from "@/components/ui/FactLine";
 
 // MEH-1853: `loading:` placeholder REVERTED 06/08 — it measurably made CLS
 // WORSE, and the measurement is on the ticket. Reserving a 356px box that
@@ -722,18 +723,19 @@ export default function ProducerSections({
           </div>
           {/* Address line — city-only fallback, never empty (revision-1 #5). */}
           {producer.city && (
-            <p className="flex items-center gap-1.5 text-sm text-muted mb-3">
-              <MapPin size={14} aria-hidden="true" />
+            <FactLine icon={MapPin} className="text-sm text-muted mb-3">
               {producer.city}
-            </p>
+            </FactLine>
           )}
           {/* MEH-2438 follow-up: a place to visit with no hours would otherwise
               show only the map and the Waze/Google buttons — an invitation to
               turn up unannounced at a home producer. */}
+          {/* MEH-3028: a fact line like the city above it, so it leads with
+              its kind's icon (clock) — the city had a pin and this had none. */}
           {!storeHours && (
-            <p data-testid="location-no-hours" className="text-sm text-fg-muted mb-3">
+            <FactLine icon={Clock} data-testid="location-no-hours" className="text-sm text-fg-muted mb-3">
               {t("producer.detail.sections.location_no_hours")}
-            </p>
+            </FactLine>
           )}
           {/* MEH-1611 chunk 2: the map now shows every point this business has
               — its branch plus each pickup / market stand — not just the primary

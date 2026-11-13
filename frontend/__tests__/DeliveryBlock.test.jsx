@@ -67,12 +67,15 @@ vi.mock("@/lib/utils", async (importOriginal) => ({
 
 vi.mock("@phosphor-icons/react", () => {
   // Forwards data-testid so a test can find a specific icon (MEH-2592).
-  const Stub = (props) => <span data-testid={props["data-testid"]} />;
+  // MEH-3028: an <svg> carrying data-fact-icon, so "no icon here" assertions
+  // and the FactLine checks below can tell an icon from none.
+  const Stub = (props) => <svg data-testid={props["data-testid"]} data-fact-icon={props["data-fact-icon"]} />;
   // MEH-1675 added ChatCircle to the icons this tree reaches: DeliveryChecker
   // renders CoverageRequestCta on a negative verdict. The stub list is
   // exhaustive, so a missing name throws rather than rendering nothing.
   return {
     Truck: Stub,
+    Clock: Stub, // MEH-3028: order-cutoff + no-hours fact lines
     Package: Stub,
     WhatsappLogo: Stub,
     CaretDown: Stub,
@@ -132,9 +135,11 @@ describe("DeliveryBlock (MEH-1146 chunk B)", () => {
     expect(screen.getByText("ימי שלישי")).toBeInTheDocument();
     expect(screen.getByText("חיפה")).toBeInTheDocument();
     expect(screen.getByText("עכו")).toBeInTheDocument();
-    // MEH-2592: the truck beside each day heading came back — one per group.
-    expect(screen.getAllByTestId("area-group-icon")).toHaveLength(2);
-    expect(screen.getAllByTestId("delivery-heading-icon")).toHaveLength(1);
+    // MEH-3028 (supersedes MEH-2592's truck per day): headings are text only —
+    // no icon on the section heading or on either day label.
+    expect(screen.getByRole("heading", { level: 2 }).querySelector("svg")).toBeNull();
+    expect(screen.getByText("ימי שישי").querySelector("svg")).toBeNull();
+    expect(screen.getByText("ימי שלישי").querySelector("svg")).toBeNull();
   });
 
   it("shows the self-pickup line only when pickup_points is set", () => {
@@ -481,8 +486,9 @@ describe("DeliveryBlock (MEH-1146 chunk B)", () => {
       />,
     );
     expect(screen.getAllByText("חינם")).toHaveLength(1); // once, for two rows
-    // MEH-2592: the box icon beside «איסוף עצמי» came back, once per heading.
-    expect(screen.getAllByTestId("pickup-heading-icon")).toHaveLength(1);
+    // MEH-2592 box icon beside «איסוף עצמי», once — via FactLine (MEH-3028).
+    expect(screen.getAllByTestId("pickup-heading")).toHaveLength(1);
+    expect(screen.getByTestId("pickup-heading").querySelectorAll("[data-fact-icon]")).toHaveLength(1);
     // MEH-2592 C: each stop with coordinates gets Waze AND Google Maps.
     expect(screen.getAllByTestId("pickup-nav-waze")).toHaveLength(2);
     const google = screen.getAllByTestId("pickup-nav-google");
@@ -493,7 +499,7 @@ describe("DeliveryBlock (MEH-1146 chunk B)", () => {
     );
     expect(screen.getByText("איסוף עצמי")).toBeInTheDocument();
     expect(screen.getAllByText("חינם")).toHaveLength(1); // fallback line
-    expect(screen.getAllByTestId("pickup-heading-icon")).toHaveLength(1);
+    expect(screen.getAllByTestId("pickup-heading")).toHaveLength(1);
   });
 
   // ---------- MEH-1577: structured delivery cost ----------
