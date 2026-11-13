@@ -792,3 +792,84 @@ describe("MEH-2654 — ?product=<id> opens that product's sheet on arrival", () 
     expect(screen.queryByTestId("product-sheet")).toBeNull();
   });
 });
+
+// MEH-3021: a long product list collapses to 6 rows (phone) / 8 (md+), with
+// «הצגת כל N המוצרים». Counts are derived from the fixture, never stated.
+describe("MEH-3021 — long product lists collapse", () => {
+  const make = (n, { photoEvery = 0 } = {}) =>
+    Array.from({ length: n }, (_, i) => ({
+      id: 100 + i,
+      name: `מוצר ${i}`,
+      image_url: photoEvery && i % photoEvery === 0 ? `https://res.cloudinary.com/x/p${i}.jpg` : null,
+    }));
+  const rows = () => screen.queryAllByTestId("product-row");
+  const desktopOnly = () => rows().filter((r) => r.className.includes("hidden md:flex"));
+
+  it("1 product: one row, no toggle", () => {
+    render(<ProducerSections {...baseProps} producer={producerWith(make(1))} />);
+    expect(rows()).toHaveLength(1);
+    expect(screen.queryByTestId("products-toggle")).not.toBeInTheDocument();
+  });
+
+  it("8 products: every row shows on both sizes, no toggle", () => {
+    render(<ProducerSections {...baseProps} producer={producerWith(make(8))} />);
+    expect(rows()).toHaveLength(8);
+    expect(desktopOnly()).toHaveLength(0);
+    expect(screen.queryByTestId("products-toggle")).not.toBeInTheDocument();
+  });
+
+  it("9+ closed: 8 rows rendered, rows 7–8 desktop-only, toggle names the total", () => {
+    const products = make(12);
+    render(<ProducerSections {...baseProps} producer={producerWith(products)} />);
+    expect(rows()).toHaveLength(8);
+    expect(desktopOnly()).toHaveLength(8 - 6);
+    const toggle = screen.getByTestId("products-toggle");
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+    expect(toggle.textContent).toBe("producer.detail.sections.products.show_all");
+  });
+
+  it("9+ open: every row, toggle becomes «show less», and closing scrolls to the section", () => {
+    const products = make(12);
+    const section = { scrollIntoView: vi.fn() };
+    const refs = { current: {} };
+    render(<ProducerSections {...baseProps} sectionRefs={refs} producer={producerWith(products)} />);
+    fireEvent.click(screen.getByTestId("products-toggle"));
+    expect(rows()).toHaveLength(products.length);
+    expect(desktopOnly()).toHaveLength(0);
+    const toggle = screen.getByTestId("products-toggle");
+    expect(toggle).toHaveAttribute("aria-expanded", "true");
+    expect(toggle.textContent).toBe("producer.detail.sections.products.show_less");
+    refs.current.products.scrollIntoView = section.scrollIntoView;
+    fireEvent.click(toggle);
+    expect(rows()).toHaveLength(8);
+    expect(section.scrollIntoView).toHaveBeenCalledTimes(1);
+  });
+
+  it("products with a photo come first, each group keeps its order", () => {
+    const products = make(5, { photoEvery: 2 }); // photos on 0, 2, 4
+    render(<ProducerSections {...baseProps} producer={producerWith(products)} />);
+    const imgs = rows().map((r) => !!r.querySelector("[data-testid='product-image']"));
+    expect(imgs).toEqual([true, true, true, false, false]);
+  });
+
+  it("the sheet pages into the collapsed rows", () => {
+    render(<ProducerSections {...baseProps} producer={producerWith(make(10))} />);
+    fireEvent.click(rows()[5]);
+    // Paging forward past the visible rows still reaches the 10th product.
+    const counter = () => screen.getByTestId("product-sheet").getAttribute("aria-label");
+    for (let i = 0; i < 4; i++) fireEvent.keyDown(window, { key: "ArrowLeft" });
+    expect(counter()).toBe("מוצר 9");
+  });
+
+  it("a deep link to a collapsed product opens the list and the sheet", () => {
+    const products = make(10);
+    window.history.replaceState({}, "", `/?product=${products[9].id}`);
+    try {
+      render(<ProducerSections {...baseProps} producer={producerWith(products)} />);
+      expect(screen.getByTestId("product-sheet")).toHaveAttribute("aria-label", "מוצר 9");
+      expect(rows()).toHaveLength(products.length);
+    } finally {
+      window.history.replaceState({}, "", "/");
+    }
+  });
+});
