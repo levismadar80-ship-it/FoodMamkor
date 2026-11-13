@@ -1547,6 +1547,16 @@ def reject_producer(
     was_live = producer.status == "approved"
     if was_live:
         cancel_live_group_buys(db, producer, background_tasks)
+    # MEH-2974: a rejection revokes an outstanding owner invite, for the same
+    # reason a suspension does — a page rejected for cause and re-approved
+    # within the link's week must not come back with the old link still live.
+    # An accepted invite is left alone: the business has a real owner. Same
+    # fields the suspension clears; the record that an invite was sent stays.
+    if producer.owner_invite_token_hash and not producer.owner_invite_accepted_at:
+        producer.owner_invite_token_hash = None
+        producer.owner_invite_code_hash = None
+        producer.owner_invite_code_expires_at = None
+        producer.owner_invite_code_attempts = None
     producer.status = "rejected"
     # MEH-226: the reason is persisted in the SAME commit as the status flip —
     # before this it lived only in the email body, so a rejected owner saw

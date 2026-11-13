@@ -682,6 +682,55 @@ def _verify_email_code(
         # in, and she needs the same next step in every case: ask for a code.
         raise HTTPException(status_code=422, detail=_NO_CODE)
 
+    # The attempt is SPENT IN THE DATABASE BEFORE the comparison, by one
+    # conditional UPDATE. The checks above read an unlocked row, so N parallel
+    # requests would all see `attempts < MAX` and all get a comparison — the
+    # cap would bound rounds, not guesses. Here the row decides: the UPDATE
+    # only matches while the counter is under the cap and the code is live,
+    # so at most MAX requests ever reach `compare_digest`, however many arrive
+    # together. A correct guess spends an attempt too; the accept that follows
+    # clears the code and the counter with it. Found by the fresh reviewer on
+    # this PR (round 2).
+    spent = (
+        db.query(Producer)
+        .filter(
+            Producer.id == producer.id,
+            Producer.owner_invite_code_hash.isnot(None),
+            Producer.owner_invite_code_expires_at > now,
+            func.coalesce(Producer.owner_invite_code_attempts, 0)
+            < OWNER_INVITE_CODE_MAX_ATTEMPTS,
+        )
+        .update(
+            {
+                Producer.owner_invite_code_attempts: func.coalesce(
+                    Producer.owner_invite_code_attempts, 0
+                )
+                + 1
+            },
+            synchronize_session=False,
+        )
+    )
+    if spent == 0:
+        producer_id = producer.id
+        db.rollback()
+        # Two reasons the row refused: the code ran out, or a concurrent
+        # accept finished while this request waited on its row lock — and
+        # then the link itself is spent. The second keeps the answer a used
+        # link always gets (404), not "ask for a code" on a link that can no
+        # longer take one.
+        still_live = (
+            db.query(Producer.id)
+            .filter(
+                Producer.id == producer_id,
+                Producer.owner_invite_token_hash.isnot(None),
+                Producer.owner_invite_accepted_at.is_(None),
+            )
+            .first()
+        )
+        if still_live is None:
+            raise HTTPException(status_code=404, detail=_LINK_INVALID)
+        raise HTTPException(status_code=422, detail=_NO_CODE)
+
     # Counted as an attempt either way, deliberately: trying addresses against
     # a live code is the same guessing this counter exists to bound.
     #
@@ -691,23 +740,7 @@ def _verify_email_code(
     if email != (producer.owner_invite_email or "").strip().lower() or (
         not secrets.compare_digest(_hash_token(code), stored_hash)
     ):
-        # `attempts + 1` COMPUTED IN THE DATABASE, not in Python. The read
-        # above is not under a lock, so N parallel guesses would all read the
-        # same value and all write the same value+1 — the counter would
-        # advance once per round instead of once per guess, and the cap would
-        # be defeatable by parallelism rather than by waiting. Same reasoning
-        # as the claim's conditional UPDATE, for the same reason: the row, not
-        # this process, is where the arithmetic has to happen. Found by the
-        # fresh reviewer on this PR.
-        db.query(Producer).filter(Producer.id == producer.id).update(
-            {
-                Producer.owner_invite_code_attempts: func.coalesce(
-                    Producer.owner_invite_code_attempts, 0
-                )
-                + 1
-            },
-            synchronize_session=False,
-        )
+        # The spent attempt is the only write a failed accept makes.
         db.commit()
         raise HTTPException(status_code=422, detail=_BAD_CODE)
 

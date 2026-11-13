@@ -216,7 +216,7 @@ export default function OwnerInviteClient({ tokenFromPath = null }) {
     setValidation(null);
     setSubmitting(true);
     try {
-      await api.post("/auth/owner-invite/accept", {
+      const res = await api.post("/auth/owner-invite/accept", {
         token,
         email: trimmedEmail,
         code: code.trim(),
@@ -230,6 +230,12 @@ export default function OwnerInviteClient({ tokenFromPath = null }) {
       // her as an owner, and any intermediate view would flash in between.
       setView(VIEW.LOADING);
       clearOwnerInviteToken();
+      // The accept answers with her access token. Without storing it she is
+      // not signed in: refreshUser returns early on an empty token and the
+      // dashboard guard sends her to /login — or, in a browser where another
+      // account is signed in, opens the dashboard as that account. Same line
+      // as RegisterProducerClient's upgrade path.
+      localStorage.setItem("token", res.data.access_token);
       await refreshUser();
       router.push("/producer/dashboard");
     } catch (error) {

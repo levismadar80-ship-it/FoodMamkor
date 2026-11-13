@@ -907,9 +907,18 @@ class TestExploits:
                     b_at_claim.wait(_CLAIM)
                 return real_commit(*a, **kw)
 
+            seen = {"first": False}
+
             def barriered_execute(stmt, *a, **kw):
-                if not _is_invite_claim(stmt):
+                # Only this request's FIRST producers UPDATE is the meeting
+                # point. Since the code-attempt cap moved into the database,
+                # an accept issues two: the attempt spend, then the claim. The
+                # first is the one that takes the row lock, so it is where the
+                # two requests have to meet; counting both would arm B's
+                # signal on A's second statement.
+                if not _is_invite_claim(stmt) or seen["first"]:
                     return real_execute(stmt, *a, **kw)
+                seen["first"] = True
                 with seq_lock:
                     first = next(claim_seq) == 0
                     claim_fired["n"] += 1
@@ -1616,6 +1625,43 @@ class TestAcceptCodeGate:
             client.post(_ACCEPT_URL, json=valid_accept_payload(token, "000000"))
             assert _row(db, p).owner_invite_code_attempts == expected
 
+    def test_the_cap_is_decided_by_the_row_not_by_a_stale_read(self, client, db):
+        """The cap must hold against a request that READ the row before the
+        counter reached it.
+
+        N parallel guesses all load the row with `attempts < MAX`. If the gate
+        is only that in-memory read, every one of them gets a comparison and
+        the cap bounds rounds, not guesses. So the attempt is spent by a
+        conditional UPDATE that matches only while the row itself is under the
+        cap.
+
+        Staged deterministically instead of raced: the object is loaded, the
+        counter is walked to the cap behind its back (the write another request
+        would have made), and the verifier is then handed the stale object with
+        the RIGHT code. A gate that trusts the object lets it through.
+        """
+        from fastapi import HTTPException
+
+        p = approved(db)
+        _, token = invite(client, db, p)
+        code = arm_code(client, token)
+        stale = db.get(Producer, p.id)
+        db.refresh(stale)
+        assert (stale.owner_invite_code_attempts or 0) == 0
+        db.query(Producer).filter(Producer.id == p.id).update(
+            {Producer.owner_invite_code_attempts: poi.OWNER_INVITE_CODE_MAX_ATTEMPTS},
+            synchronize_session=False,
+        )
+        db.flush()
+        # The control: the object really is stale, or this proves nothing.
+        assert (stale.owner_invite_code_attempts or 0) == 0
+
+        with pytest.raises(HTTPException) as exc:
+            poi._verify_email_code(
+                db, stale, INVITE_EMAIL, code, datetime.now(timezone.utc)
+            )
+        assert exc.value.status_code == 422
+
     def test_a_resend_and_a_cancel_each_clear_the_code(self, client, db):
         for action in ("resend", "cancel"):
             db.query(User).delete()
@@ -1691,6 +1737,48 @@ class TestSuspensionRevokesTheInvite:
         accepted_at = _row(db, p).owner_invite_accepted_at
 
         self._suspend(client, db, p, admin)
+        assert _row(db, p).owner_invite_accepted_at == accepted_at
+
+    def test_rejecting_revokes_the_link_even_after_a_re_approval(self, client, db):
+        """`rejected` is not invitable, so the link is dead WHILE rejected
+        whatever the row holds. What matters is the way back: a page rejected
+        for cause and approved again within the link's week must not come back
+        with the old link alive. So the assertion is made after re-approval —
+        made while rejected it would pass with no revocation at all."""
+        p = approved(db)
+        admin = make_user(db, role="admin")
+        _, token = invite(client, db, p, admin=admin)
+        arm_code(client, token)
+
+        r = client.post(
+            f"/admin/producers/{p.id}/reject",
+            json={"preset_key": "other", "reason": "בדיקת ביטול הזמנה"},
+            headers=auth_header(admin),
+        )
+        assert r.status_code == 200, r.text
+        row = db.get(Producer, p.id)
+        db.refresh(row)
+        assert row.status == "rejected"
+        row.status = "approved"
+        db.commit()
+
+        assert client.get(_lookup_url(token)).status_code == 404
+        r = client.post(_ACCEPT_URL, json=valid_accept_payload(token))
+        assert r.status_code == 404, r.text
+        assert db.query(User).filter(User.email == INVITE_EMAIL).count() == 0
+
+    def test_rejecting_keeps_an_accepted_invite(self, client, db):
+        p = approved(db)
+        admin = make_user(db, role="admin")
+        _, token = invite(client, db, p, admin=admin)
+        assert accept_invite(client, token).status_code == 200
+        accepted_at = _row(db, p).owner_invite_accepted_at
+        r = client.post(
+            f"/admin/producers/{p.id}/reject",
+            json={"preset_key": "other", "reason": "בדיקת ביטול הזמנה"},
+            headers=auth_header(admin),
+        )
+        assert r.status_code == 200, r.text
         assert _row(db, p).owner_invite_accepted_at == accepted_at
 
     def test_hiding_a_business_with_no_invite_is_untouched(self, client, db):
@@ -2357,3 +2445,12 @@ class TestFarmerCategoriesAreOneFact:
         mirror = re.findall(r'"([^"]+)"', match.group(1))
         assert mirror, "the frontend list parsed as empty — this guard is void"
         assert list(FARMER_DECLARATION_CATEGORIES) == mirror
+
+
+def test_owner_invite_is_a_reserved_slug():
+    """`/owner-invite/<token>` is a route. A business whose slug is
+    `owner-invite` would shadow it on the unprefixed locale — the frontend
+    list already refuses it; this is the backend half."""
+    from app.slug_utils import is_reserved
+
+    assert is_reserved("owner-invite")
