@@ -11,7 +11,7 @@ import {
   pingWhatsAppBeacon,
   trackContactClick,
 } from "@/lib/contact-tracking";
-import ReviewInviteCard from "@/components/ReviewInviteCard";
+import ReviewInviteCard, { takeDraftStars } from "@/components/ReviewInviteCard";
 import { captureReviewInvite } from "@/lib/review-invite";
 import { useAuth } from "@/lib/auth-context";
 import { showToast } from "@/lib/toast";
@@ -116,33 +116,6 @@ function StarRow({ value, size = 16, ariaLabel }) {
   );
 }
 
-function StarPicker({ value, onChange, ariaLabelFn }) {
-  const [hover, setHover] = useState(0);
-  return (
-    <div className="flex gap-2" dir="ltr">
-      {[1, 2, 3, 4, 5].map((n) => {
-        const filled = n <= (hover || value);
-        return (
-          <button
-            key={n}
-            type="button"
-            className="transition hover:scale-110"
-            onMouseEnter={() => setHover(n)}
-            onMouseLeave={() => setHover(0)}
-            onClick={() => onChange(n)}
-            aria-label={ariaLabelFn(n)}
-          >
-            <Star
-              size={32}
-              weight={filled ? "fill" : "regular"}
-              color={filled ? "#896714" : "#e5dfd3"}
-            />
-          </button>
-        );
-      })}
-    </div>
-  );
-}
 
 /**
  * MEH-1039: business-owner reply to a single customer review.
@@ -278,6 +251,7 @@ export default function ReviewsSection({
   reviewCount = 0,
   isOwner = false,
   onTotalChange,
+  producerName = "",
 }) {
   const t = useTranslations("reviews");
   // MEH-848: shared generic error copy (collapsed from reviews.error_generic).
@@ -352,6 +326,18 @@ export default function ReviewsSection({
     const back = `${window.location.pathname}${window.location.search}#reviews`;
     setLoginHref(`/login?redirect=${encodeURIComponent(back)}`);
   }, [producerId]);
+
+  // 13/11/2026: a star tapped on the invite row before the reader could write
+  // is kept (ReviewInviteCard) — once they can, open the form with it chosen,
+  // as Google does. Fires after sign-in (#reviews return) or a contact tap.
+  useEffect(() => {
+    if (!user || user.producer_id === producerId || showForm) return;
+    if (!hasClickedWa && !inviteToken) return;
+    const kept = takeDraftStars(producerId);
+    if (!kept) return;
+    setStars((s) => s || kept);
+    openReviewForm();
+  }, [user, hasClickedWa, inviteToken, producerId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // MEH-2999: a contact made on this page (a tel: / mailto: tap keeps the
   // page) unlocks the form at once, not after a reload.
@@ -502,73 +488,6 @@ export default function ReviewsSection({
         </div>
       )}
 
-      {/* Write review CTA / form */}
-      {user ? (
-        // Producer owners cannot review their own business (backend guard mirrors this)
-        user.producer_id === producerId ? null :
-        hasClickedWa || inviteToken ? (
-          !showForm ? (
-            <button
-              onClick={openReviewForm}
-              className="mb-6 min-h-touch border border-text text-text px-5 py-2 rounded-full text-sm font-medium hover:bg-green-50 transition"
-            >
-              {t("write_cta")}
-            </button>
-          ) : (
-            <form
-              onSubmit={handleSubmit}
-              className="bg-surface rounded-lg p-5 border border-border mb-8 space-y-4"
-            >
-              <h3 className="font-headline-md text-lg font-bold text-text">{t("form_heading")}</h3>
-              <div>
-                <label className="block text-sm text-text mb-2">{t("rating_label")}</label>
-                <StarPicker
-                  value={stars}
-                  onChange={setStars}
-                  ariaLabelFn={(n) => t("star_aria", { value: n })}
-                />
-              </div>
-              <div>
-                <label htmlFor="review-body" className="block text-sm text-text mb-1">
-                  {t("body_label")}
-                </label>
-                <textarea
-                  id="review-body"
-                  value={body}
-                  onChange={(e) => setBody(e.target.value)}
-                  rows={3}
-                  maxLength={500}
-                  className="w-full border border-border rounded-sm px-3 py-2 bg-surface resize-none focus-visible:ring-2 focus-visible:ring-primary/40 outline-none"
-                  placeholder={t("body_placeholder")}
-                />
-                <p className="text-xs text-fg-muted mt-1">{body.length}/500</p>
-              </div>
-              {error && (
-                <p className="text-sm text-error" role="alert">
-                  {error}
-                </p>
-              )}
-              <div className="flex items-center gap-4">
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  className="min-h-touch bg-primary-dark text-white px-6 py-2 rounded-sm hover:opacity-90 transition disabled:opacity-60 text-sm font-medium"
-                >
-                  {submitting ? t("submit_saving") : t("submit")}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowForm(false)}
-                  className="min-h-touch inline-flex items-center text-sm text-fg-muted hover:text-text transition"
-                >
-                  {t("cancel")}
-                </button>
-              </div>
-            </form>
-          )
-        ) : null
-      ) : null}
-
       {/* Reviews list */}
       {loading ? (
         <SkeletonList count={2} label={t("loading")} />
@@ -681,10 +600,84 @@ export default function ReviewsSection({
           /auth/me answers, or a signed-in reader sees the guest card for a
           second before it swaps (30/10). */}
       {authLoading ? null : !user ? (
-        <ReviewInviteCard mode="login" loginHref={loginHref} />
-      ) : user.producer_id !== producerId && !hasClickedWa && !inviteToken ? (
-        <ReviewInviteCard mode="contact" />
-      ) : null}
+        <ReviewInviteCard
+          mode="login"
+          loginHref={loginHref}
+          producerId={producerId}
+          producerName={producerName}
+        />
+      ) : user.producer_id === producerId ? null : !hasClickedWa && !inviteToken ? (
+        <ReviewInviteCard mode="contact" producerId={producerId} producerName={producerName} />
+      ) : showForm ? (
+          // 13/11/2026 (Sapir, option ד): no white box — the form opens IN
+          // the Google row, the row's own stars are the rating picker.
+          <form
+            onSubmit={handleSubmit}
+            className="mt-8 border-t border-border pt-5 space-y-4"
+            data-testid="reviews-form"
+          >
+            <h3 className="sr-only">{t("form_heading")}</h3>
+            <ReviewInviteCard
+              mode="write"
+              bare
+              value={stars}
+              onPick={setStars}
+              testId="reviews-form-row"
+              producerId={producerId}
+              producerName={producerName}
+            />
+            <div>
+              <label htmlFor="review-body" className="block text-sm text-text mb-1">
+                {t("body_label")}
+              </label>
+              <textarea
+                id="review-body"
+                value={body}
+                onChange={(e) => setBody(e.target.value)}
+                rows={4}
+                maxLength={500}
+                className="w-full border border-border rounded-xl px-3 py-2.5 bg-surface-card resize-none focus-visible:ring-2 focus-visible:ring-primary/40 outline-none"
+                placeholder={t("body_placeholder")}
+              />
+              <p className="text-xs text-fg-muted mt-1">{body.length}/500</p>
+            </div>
+            {error && (
+              <p className="text-sm text-error" role="alert">
+                {error}
+              </p>
+            )}
+            <div className="flex items-center gap-4">
+              <button
+                type="submit"
+                disabled={submitting}
+                className="min-h-touch bg-primary-dark text-white px-6 py-2 rounded-full hover:opacity-90 transition disabled:opacity-60 text-sm font-medium"
+              >
+                {submitting ? t("submit_saving") : t("submit")}
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowForm(false)}
+                className="min-h-touch inline-flex items-center text-sm text-fg-muted hover:text-text transition"
+              >
+                {t("cancel")}
+              </button>
+            </div>
+          </form>
+        ) : (
+        // Allowed to write, form closed: the same row; a star opens the form
+        // with that rating (replaces the «כתבו ביקורת» pill above the list).
+        <ReviewInviteCard
+          mode="write"
+          value={stars}
+          onPick={(n) => {
+            setStars(n);
+            openReviewForm();
+          }}
+          testId="reviews-write-row"
+          producerId={producerId}
+          producerName={producerName}
+        />
+      )}
     </section>
   );
 }
