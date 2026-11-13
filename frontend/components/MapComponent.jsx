@@ -901,9 +901,8 @@ export default function MapComponent({
       };
 
       // MEH-1412: render each usable location. Secondary points
-      // (pickup/market_stand) are suppressed when the layer toggle is off, so a
-      // producer whose only points are hidden pickups stays off-map while the
-      // layer is hidden (hiddenWhenSecondaryOff() is how the UI says so).
+      // (pickup/market_stand) are suppressed when showSecondaryLayer is false.
+      // /map no longer has a toggle for it (Sapir 13/11), so it stays true there.
       // MEH-1670: the rules live in producerPoints(), so the /map viewport
       // filter derives points the same way instead of reading Producer.lat/lng
       // on its own (which dropped a delivery-only business from the list while
