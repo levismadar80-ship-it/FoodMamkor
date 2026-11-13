@@ -26,6 +26,7 @@ import RescueHomeModule from "@/components/rescue/RescueHomeModule";
 // and its Leaflet-free skeleton live in HomepageMiniMapLazy, which starts the
 // import only when the visitor scrolls near the map.
 import HomepageMiniMapLazy from "@/components/HomepageMiniMapLazy";
+import { SkeletonBlock } from "@/components/Skeleton";
 
 // MEH-1688: the standalone "newest businesses" section is GONE, and with it
 // MEH-809's NEW_SECTION_MIN_PRODUCERS depth gate. MEH-809 hid the section on a
@@ -176,7 +177,7 @@ export default function HomeClient({
         </p>
         {!statsLoaded && (
           <p className={TRUST_COUNT_LINE} data-testid="trust-count-skeleton">
-            <span className="inline-block w-40 h-5 align-middle rounded-lg bg-text/10 animate-pulse" />
+            <SkeletonBlock  className="inline-block w-40 h-5 align-middle rounded-lg" />
           </p>
         )}
         {statsLoaded && showTrustCount && (

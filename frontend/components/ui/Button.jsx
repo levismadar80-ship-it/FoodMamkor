@@ -1,6 +1,6 @@
 "use client";
 
-import { CircleNotch } from "@phosphor-icons/react";
+import ButtonSpinner from "@/components/ButtonSpinner";
 
 /**
  * Button — pill action primitive (MEH-602).
@@ -83,7 +83,7 @@ export default function Button({
       {...rest}
     >
       {loading ? (
-        <CircleNotch size={18} weight="bold" className="animate-spin" aria-hidden="true" />
+        <ButtonSpinner size={18} />
       ) : (
         leadingIcon && (
           <span className="inline-flex shrink-0" aria-hidden="true">

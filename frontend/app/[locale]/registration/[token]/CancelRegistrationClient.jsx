@@ -13,6 +13,7 @@ import { useTranslations, useLocale } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import api from "@/lib/api";
 import { formatEventDate } from "@/lib/format-date";
+import { SkeletonBlock } from "@/components/Skeleton";
 
 const BTN =
   "flex items-center justify-center min-h-[48px] w-full bg-primary text-white px-6 rounded-full font-semibold hover:bg-primary-dark transition focus-ring disabled:opacity-60";
@@ -57,7 +58,7 @@ export default function CancelRegistrationClient({ token }) {
   return (
     // The layout already renders <main id="main-content"> (layout.js) — one landmark.
     <section className="max-w-md mx-auto px-4 py-12" data-testid="registration-cancel">
-      {state === "loading" && <div className="h-6 w-48 rounded bg-border/60 animate-pulse" aria-busy="true" />}
+      {state === "loading" && <SkeletonBlock as="div"  className="h-6 w-48 rounded" aria-busy="true" />}
       {(state === "missing" || state === "error") && (
         <p role="alert" className="text-text" data-testid="registration-cancel-missing">
           {state === "missing" ? t("not_found") : t("generic")}

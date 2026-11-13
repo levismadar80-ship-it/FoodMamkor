@@ -52,6 +52,7 @@ import EmptyState from "@/components/ui/EmptyState";
 import CitySearch from "@/components/CitySearch";
 import AddressSearch from "@/components/AddressSearch";
 import Button from "@/components/ui/Button";
+import { SkeletonBlock } from "@/components/Skeleton";
 
 // Leaflet touches `window` at import time, so the confirmation map is loaded
 // client-side only. REUSES: RegisterProducerClient.jsx:24 — same dynamic import
@@ -338,7 +339,7 @@ export default function LocationsEditor() {
   }
 
   if (locations === null) {
-    return <div className="h-16 animate-pulse rounded-lg bg-surface-card" />;
+    return <SkeletonBlock as="div"  className="h-16 rounded-lg" />;
   }
 
   return (

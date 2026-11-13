@@ -15,6 +15,7 @@ import CitySearch from "@/components/CitySearch";
 import ChipScrollRow from "@/components/ChipScrollRow";
 import Button from "@/components/ui/Button";
 import EmptyState from "@/components/ui/EmptyState";
+import { SkeletonBlock } from "@/components/Skeleton";
 
 // MEH-3013: the hero photo is the hub's shared one (components/HubShell.jsx);
 // this page's own MEH-797 photo retired so a tab switch never swaps images.
@@ -228,7 +229,7 @@ export default function GroupBuysClient() {
         {loading ? (
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="h-64 rounded-lg bg-border animate-pulse" />
+              <SkeletonBlock as="div" key={i}  className="h-64 rounded-lg" />
             ))}
           </div>
         ) : error ? (
