@@ -50,6 +50,17 @@ describe("AccountSheet", () => {
     );
   });
 
+  it("MEH-3026: on a business page the login row returns the guest to that page", async () => {
+    window.history.pushState({}, "", "/en/ruach-hasadeh");
+    render(<AccountSheet {...baseProps()} user={null} />);
+    // The locale prefix is dropped: the sheet's Link adds it back.
+    expect(await screen.findByRole("link", { name: /nav\.login/ })).toHaveAttribute(
+      "href",
+      "/login?redirect=%2Fruach-hasadeh",
+    );
+    window.history.pushState({}, "", "/");
+  });
+
   it("logged-in state: logout button dispatches logout() then onClose()", () => {
     const logout = vi.fn();
     const onClose = vi.fn();

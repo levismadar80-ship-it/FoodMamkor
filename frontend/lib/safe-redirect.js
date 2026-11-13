@@ -45,3 +45,29 @@ export function loginHrefBackHere() {
   const prefix = /^\/en(?=\/|$)/.test(pathname) ? "/en" : "";
   return `${prefix}/login?redirect=${encodeURIComponent(pathname + search)}`;
 }
+
+// Pages a guest has no reason to be returned to after signing in: the auth
+// screens themselves and the home page (which is the default anyway).
+const NO_RETURN = /^\/(?:$|\?|(?:login|register|verify-email|reset-password|forgot-password)(?:[/?]|$))/;
+
+/**
+ * MEH-3026 (F2): the href for a «כניסה» LINK. `path` is the page the guest is
+ * on WITHOUT a locale prefix (path + query), because the caller renders it
+ * through the locale-aware Link, which adds the prefix itself — the opposite
+ * of loginHrefBackHere above, which feeds a router that adds none.
+ *
+ * @param {string|null|undefined} path  e.g. "/ruach-hasadeh" or "/map?city=x"
+ * @returns {string} "/login?redirect=<path>", or a bare "/login" from the home
+ *          page and the auth screens.
+ */
+export function loginLinkFor(path) {
+  if (typeof path !== "string" || !INTERNAL_PATH.test(path) || NO_RETURN.test(path)) return "/login";
+  return `/login?redirect=${encodeURIComponent(path)}`;
+}
+
+/** The current page without its locale prefix, for loginLinkFor. Client only. */
+export function currentPathWithoutLocale() {
+  if (typeof window === "undefined") return "/";
+  const { pathname, search } = window.location;
+  return (pathname.replace(/^\/(?:he|en)(?=\/|$)/, "") || "/") + search;
+}

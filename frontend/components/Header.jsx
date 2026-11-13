@@ -4,6 +4,7 @@ import Image from "next/image";
 // MEH-2578: Link and useRouter from here too — next/link and next/navigation's
 // router dropped the /en prefix (the search button pushed /en readers to the
 // Hebrew /producers).
+import { loginLinkFor } from "@/lib/safe-redirect";
 import { Link, usePathname, useRouter } from "@/i18n/navigation";
 // MEH-2850: every Link element in the site chrome carries prefetch={false}. The
 // chrome is on screen on EVERY page, and since #4260 its targets (/, /about,
@@ -257,7 +258,10 @@ export default function Header() {
               groupBuys: showGroupBuys,
               rescue: showRescue,
             })
-          : item.href,
+          : item.id === "login"
+            ? // MEH-3026 (F2): signing in from a page returns her to it.
+              loginLinkFor(pathname)
+            : item.href,
       label: t(surface.labelKey),
     }));
 

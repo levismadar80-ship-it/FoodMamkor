@@ -1093,7 +1093,8 @@ function RegisterProducerPageBody({ routeKind }) {
           </div>
         )}
 
-        {prefillToken && prefillApplied && (
+        {/* MEH-3026 (F10): the notice is about the form; once it is sent there is no form. */}
+        {prefillToken && prefillApplied && !submitted && (
           <div className="bg-green-50 text-primary border border-primary/30 rounded-md p-3 mb-4 text-sm inline-flex items-center gap-2">
             <Leaf size={16} aria-hidden="true" className="shrink-0" />
             {t("auth.register.producer.prefill_notice")}
