@@ -416,6 +416,45 @@ body:has([data-meets-footer]) footer[data-site-footer] {
   left: 0; /* rtl-ok: positioning origin, see the measured table above */
 }
 
+/* MEH-3066 — the business name beside its pin (lib/map-pin-labels.js).
+   Invisible until the map container carries `mehamakor-labels-on` (zoom ≥ 13);
+   a label that collides is `visibility: hidden` so it still has a box for the
+   next placement pass. `visibility` / colours only — Leaflet
+   writes `opacity` and `transform` inline on tooltips, never these
+   (frontend.md MEH-1619; probed in the PR). Qualified with .leaflet-tooltip:
+   leaflet.css loads after this file and its equal-specificity
+   `.leaflet-tooltip` rule won colour, background and padding (measured:
+   computed color #222, opaque white). */
+.leaflet-tooltip.mehamakor-pin-label {
+  /* visibility, not display: Leaflet places a "left" tooltip from its
+     offsetWidth, which is 0 under display:none — every label then opened
+     over its own pin (measured: label 506–599 vs its pin 510–546). */
+  visibility: hidden;
+  max-width: 9.5rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 1px 6px;
+  border: 0;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.94);
+  color: #1f2a25;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.5;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.18);
+  pointer-events: none;
+}
+.leaflet-tooltip.mehamakor-pin-label::before {
+  display: none; /* no arrow — a name tag, not a callout */
+}
+.mehamakor-labels-on .leaflet-tooltip.mehamakor-pin-label {
+  visibility: visible;
+}
+.mehamakor-labels-on .leaflet-tooltip.mehamakor-pin-label.mehamakor-pin-label-hidden {
+  visibility: hidden;
+}
+
 /* MEH-30 follow-up: hide the CookieBanner while the /map bottom sheet
    is open. MapClient adds `body.sheet-open` when `selectedProducer` is
    set; without this the cookie banner peeks below the sheet's bottom
