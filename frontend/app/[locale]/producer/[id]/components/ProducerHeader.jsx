@@ -290,7 +290,10 @@ export default function ProducerHeader({
   // (MEH-1694 turns the city into a link — never put this inside it). Same
   // label as the cards: nearest location row, formatDistance, no «ממך»
   // (MEH-1307). REUSES: components/ProducerCard.jsx:354-363.
-  const points = userLoc ? producerPoints(producer) : [];
+  // A delivery-only business (has_physical_location false) has no place to
+  // be «850 מ'» from — the page hides its location section for the same
+  // reason (ProducerSections parseHasLocation), so no distance either.
+  const points = userLoc && producer.has_physical_location !== false ? producerPoints(producer) : [];
   const distanceLabel =
     points.length > 0
       ? formatDistance(

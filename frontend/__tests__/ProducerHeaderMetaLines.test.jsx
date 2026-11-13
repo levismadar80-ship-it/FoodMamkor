@@ -333,8 +333,33 @@ describe("ProducerHeader distance fact (MEH-3033)", () => {
   afterEach(() => localStorage.removeItem(LOC_KEY));
 
   it("no cached location: no distance, nothing asks for one", () => {
-    render(<ProducerHeader producer={withLocs} primaryCategory={category} hasImages />);
+    const getCurrentPosition = vi.fn();
+    const watchPosition = vi.fn();
+    const prev = navigator.geolocation;
+    Object.defineProperty(navigator, "geolocation", { value: { getCurrentPosition, watchPosition }, configurable: true });
+    try {
+      render(<ProducerHeader producer={withLocs} primaryCategory={category} hasImages />);
+      expect(screen.queryByTestId("producer-header-distance")).toBeNull();
+      expect(getCurrentPosition).not.toHaveBeenCalled();
+      expect(watchPosition).not.toHaveBeenCalled();
+    } finally {
+      Object.defineProperty(navigator, "geolocation", { value: prev, configurable: true });
+    }
+  });
+
+  it("delivery-only (has_physical_location false) with a pickup row: no distance", () => {
+    localStorage.setItem(LOC_KEY, JSON.stringify({ lat: 32.8040, lng: 34.9890 }));
+    const pickup = { id: 3, kind: "pickup", is_primary: false, lat: 32.8100, lng: 34.9950 };
+    render(<ProducerHeader producer={{ ...baseProducer, has_physical_location: false, locations: [pickup] }} primaryCategory={category} hasImages />);
     expect(screen.queryByTestId("producer-header-distance")).toBeNull();
+  });
+
+  it("server render with a cached location: no distance in the HTML (it appears after mount)", async () => {
+    localStorage.setItem(LOC_KEY, JSON.stringify({ lat: 32.8040, lng: 34.9890 }));
+    const { renderToString } = await import("react-dom/server");
+    const html = renderToString(<ProducerHeader producer={withLocs} primaryCategory={category} hasImages />);
+    expect(html).not.toContain("producer-header-distance");
+    expect(html).toContain("יקנעם עילית");
   });
 
   it("cached location: the distance follows the city, to the NEAREST row, with no «ממך»", () => {
