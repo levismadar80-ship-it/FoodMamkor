@@ -30,13 +30,13 @@ const ELEMENTS = new Set(["button", "Link", "a"]);
 
 /** "filled" | "outlined" | null — the action recipes DESIGN.md binds to a pill. */
 export function actionRecipe(cls) {
-  const t = ` ${cls.replace(/\s+/g, " ")} `;
-  const greenBg = /\s(?:[a-z-]+:)*bg-(?:primary|action-primary)(?:\s)/.test(t);
-  const white = /\stext-(?:white|background)\s/.test(t);
-  if (greenBg && white) return "filled";
-  const greenBorder = /\s(?:[a-z-]+:)*border-(?:primary|action-primary)\s/.test(t);
-  const greenText = /\stext-(?:primary|action-primary)\s/.test(t);
-  if (greenBorder && greenText && !greenBg) return "outlined";
+  // Unprefixed tokens only: `hover:bg-primary` is a hover state, not the
+  // element's look. A fill may be dark or ≥ 50% opaque; `bg-primary/10` is a tint.
+  const tokens = cls.split(/\s+/);
+  const has = (re) => tokens.some((tok) => re.test(tok));
+  const greenBg = has(/^bg-(?:primary|primary-dark|action-primary)(?:\/[5-9]\d)?$/);
+  if (greenBg && has(/^text-(?:white|background)$/)) return "filled";
+  if (!greenBg && has(/^border-(?:primary|primary-dark|action-primary)$/) && has(/^text-(?:primary|primary-dark|action-primary)$/)) return "outlined";
   return null;
 }
 
@@ -83,11 +83,12 @@ const ALLOWED = {
   "app/[locale]/producer/dashboard/events/page.js": 1,
   "app/[locale]/producer/dashboard/experiences/page.js": 1,
   "app/[locale]/producer/dashboard/page.js": 2,
-  "app/[locale]/register/RegisterClient.jsx": 1,
-  "app/[locale]/register/producer/RegisterProducerClient.jsx": 1,
+  "app/[locale]/register/RegisterClient.jsx": 2,
+  "app/[locale]/register/producer/RegisterProducerClient.jsx": 3,
   "components/FilterSheet.jsx": 1,
   "components/LoginPromptModal.jsx": 1,
   "components/ProducersClient.jsx": 3,
+  "components/ReviewsSection.jsx": 1,
   "components/admin/ClaimLinkPanel.jsx": 1,
   "components/admin/OwnerInvitePanel.jsx": 1,
   "components/dashboard/RescueTab.jsx": 3,
@@ -108,6 +109,11 @@ describe("MEH-3058 — actions are pills on every element", () => {
     expect(actionRecipe("border border-primary text-primary rounded-sm")).toBe("outlined");
     expect(actionRecipe("bg-primary/10 text-primary")).toBe(null);
     expect(actionRecipe("border border-border text-text hover:border-primary")).toBe(null);
+    expect(actionRecipe("bg-primary-dark text-white rounded-sm")).toBe("filled");
+    expect(actionRecipe("bg-primary/90 text-white")).toBe("filled");
+    // variant-prefixed tokens describe a state, not the element's look
+    expect(actionRecipe("bg-surface text-text hover:bg-primary hover:text-white")).toBe(null);
+    expect(actionRecipe("border border-border text-primary hover:border-primary")).toBe(null);
   });
 
   it("self-test: the element kinds and both recipes", () => {
