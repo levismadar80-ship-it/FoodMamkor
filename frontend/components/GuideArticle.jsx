@@ -20,6 +20,7 @@ import { ArrowRight } from "@phosphor-icons/react/ssr";
 import { getTranslations } from "next-intl/server";
 import { BRAND_NAME } from "@/lib/constants";
 import SeedMark from "@/components/brand/SeedMark";
+import SectionHeading from "@/components/ui/SectionHeading";
 
 // MEH-821: brand colors via canonical ADR-019 token classes (text-primary,
 // text-primary-dark, text-text, text-accent, bg-background, border-border) —
@@ -54,12 +55,12 @@ function renderBlock(block, i) {
   switch (block.type) {
     case "h2":
       return (
-        <h2
+        <SectionHeading
           key={key}
-          className="font-headline-md mt-10 mb-3 sm:mt-12 text-primary text-2xl font-bold"
+          size="content" className="mt-10 mb-3 sm:mt-12 text-primary"
         >
           {block.text}
-        </h2>
+        </SectionHeading>
       );
     case "h3":
       return (

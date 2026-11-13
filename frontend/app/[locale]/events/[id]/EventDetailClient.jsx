@@ -35,6 +35,7 @@ import { EVENT_CATEGORIES, OTHER_CATEGORY } from "@/lib/event-categories";
 import { downloadIcs } from "@/lib/event-ics";
 import Button from "@/components/ui/Button";
 import RegistrationCta from "@/components/RegistrationCta";
+import SectionHeading from "@/components/ui/SectionHeading";
 
 // MEH-1404: reuse the producer-detail static map + Waze/Gmaps block on events
 // that carry coords. ssr:false — leaflet touches window at module eval.
@@ -365,9 +366,9 @@ export default function EventDetailClient() {
               from this group»). Absent when there are none. */}
           {moreList.length > 0 && event.producer_name && (
             <section aria-labelledby="event-more-heading" data-testid="event-more">
-              <h2 id="event-more-heading" className="text-xl font-bold text-text mb-3">
+              <SectionHeading id="event-more-heading" size="content" className="mb-3">
                 {t("more_from", { name: event.producer_name })}
-              </h2>
+              </SectionHeading>
               <ul className="border-t border-border">
                 {moreList.map((ev) => (
                   <li key={ev.id}>

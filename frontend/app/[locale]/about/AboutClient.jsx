@@ -28,6 +28,7 @@ import { optimizeCloudinary } from "@/lib/cloudinary";
 // MEH-788: gentle scroll-reveal on the content sections (hero excluded — LCP).
 import FadeInSection, { REVEAL_PRESET } from "@/components/FadeInSection";
 import { COLOR_CLASSES, VerifiedChip } from "@/components/BadgeRow";
+import SectionHeading from "@/components/ui/SectionHeading";
 
 // MEH-1130: the editorial image layer. Raw asset URLs — every transform is
 // applied by optimizeCloudinary at the call site, never baked into the string
@@ -281,12 +282,12 @@ export default function AboutPage() {
                 heading below can be asserted to share these exact classes —
                 the two chapter headings must read as one rank, and a class
                 string is the only thing that guarantees it. */}
-            <h2
+            <SectionHeading
               data-testid="about-story-h2"
-              className="font-headline-lg font-bold text-text text-[clamp(23px,4vw,30px)] leading-tight !mb-6"
+              className="leading-tight !mb-6"
             >
               {t("story.greeting")}
-            </h2>
+            </SectionHeading>
             <p className="text-fg-muted">{t("story.p1")}</p>
             <p>{t("story.p2")}</p>
             <p>{t("story.p3")}</p>
@@ -408,9 +409,9 @@ export default function AboutPage() {
       <FadeInSection as="section" data-testid="about-comparison" {...REVEAL_PRESET} className="bg-background py-9 md:py-14 scroll-mt-24">
         <div className="max-w-3xl mx-auto px-4 md:px-12">
           <Chapter label={tAbout("chapter.2.label")} />
-          <h2 className="font-headline-lg font-bold text-text text-[clamp(23px,4vw,30px)] leading-tight !mb-6">
+          <SectionHeading className="leading-tight !mb-6">
             {t("parallax.quote")}
-          </h2>
+          </SectionHeading>
           {/* 05/11 (Sapir, option A): a two-column table replaced the gold-dot
               spine. The spine read as a timeline (step 1 → 2 → 3) while the
               content is an unordered comparison, and the «בסופר —» prefix on
@@ -542,9 +543,9 @@ export default function AboutPage() {
         <div className="max-w-3xl mx-auto px-4 md:px-12">
           <Chapter label={tAbout("chapter.4.label")} />
           <div className="border-2 border-accent/30 rounded-3xl p-8 md:p-14">
-            <h2 className="font-headline-lg font-bold text-text text-[clamp(23px,4vw,30px)] leading-tight">
+            <SectionHeading className="leading-tight">
               {t("values.heading")}
-            </h2>
+            </SectionHeading>
             <p className="font-body-md text-fg-muted text-lg leading-relaxed mt-4 max-w-[54ch]">
               {t("values.intro")}
             </p>
@@ -656,9 +657,9 @@ export default function AboutPage() {
         <FadeInSection as="section" {...REVEAL_PRESET} className="bg-background py-9 md:py-14 scroll-mt-24">
           <div className="max-w-3xl mx-auto px-4 md:px-12 text-center">
             <div className="border-y border-border py-12 md:py-14">
-              <h2 className="font-headline-lg font-bold text-text text-[clamp(23px,4vw,30px)] leading-tight max-w-[18ch] mx-auto">
+              <SectionHeading className="leading-tight max-w-[18ch] mx-auto">
                 {t("testimonials.heading")}
-              </h2>
+              </SectionHeading>
               <p className="font-body-md text-fg-muted text-base md:text-lg mt-4 max-w-[42ch] mx-auto">
                 {t("testimonials.subtitle")}
               </p>
@@ -731,9 +732,9 @@ export default function AboutPage() {
           land on. scroll-mt-24 offsets the sticky header. */}
       <FadeInSection id="contact" data-chat-hide="" as="section" {...REVEAL_PRESET} className="bg-background py-9 md:py-14 scroll-mt-24">
         <div className="max-w-2xl mx-auto px-4 md:px-12">
-          <h2 className="font-headline-lg font-bold text-text text-[clamp(23px,4vw,30px)] leading-tight">
+          <SectionHeading className="leading-tight">
             {t("contact.heading")}
-          </h2>
+          </SectionHeading>
           <p className="font-body-md text-fg-muted text-lg mt-3 max-w-[48ch] leading-relaxed">
             {t("contact.subtitle")}
           </p>

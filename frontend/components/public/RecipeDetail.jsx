@@ -43,6 +43,7 @@ import HistoryBackLink from "@/components/HistoryBackLink"; // MEH-2857
 import { seedColorFor } from "@/lib/brand-seeds";
 import { splitRecipeLines } from "@/lib/recipe-lines"; // MEH-2540
 import { formatPriceRange } from "@/lib/utils";
+import SectionHeading from "@/components/ui/SectionHeading";
 
 const LINK_FOCUS =
   "rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40";
@@ -211,9 +212,9 @@ export default function RecipeDetail({ recipe, producer, relatedProducts }) {
         <div className="mt-8 grid gap-10 lg:grid-cols-[340px_1fr] lg:items-start">
           {ingredients.length > 0 && (
             <section className="lg:sticky lg:top-24 bg-surface-card border border-border rounded-lg p-5">
-              <h2 className="font-headline-md text-2xl font-bold text-text mb-3">
+              <SectionHeading size="content" className="mb-3">
                 {t("ingredients_heading")}
-              </h2>
+              </SectionHeading>
               <ul className="divide-y divide-border">
                 {ingredients.map((line, i) => {
                   const on = checked.has(i);
@@ -247,9 +248,9 @@ export default function RecipeDetail({ recipe, producer, relatedProducts }) {
           <div className="min-w-0">
             {steps.length > 0 && (
               <section>
-                <h2 className="font-headline-md text-2xl font-bold text-text mb-4">
+                <SectionHeading size="content" className="mb-4">
                   {t("instructions_heading")}
-                </h2>
+                </SectionHeading>
                 <ol className="space-y-6">
                   {steps.map((step, i) => (
                     <li key={i} className="flex gap-4">
@@ -271,9 +272,9 @@ export default function RecipeDetail({ recipe, producer, relatedProducts }) {
             {/* Related products — silent when empty per spec. */}
             {relatedProducts && relatedProducts.length > 0 && (
               <section className="mt-10">
-                <h2 className="font-headline-md text-2xl font-bold text-text mb-3">
+                <SectionHeading size="content" className="mb-3">
                   {t("related_products_heading")}
-                </h2>
+                </SectionHeading>
                 <ul className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {/* PR #3972 (Sapir 31/10: «קישור לרכישת המוצרים»): each row
                       opens that product's sheet on the business page, where the
@@ -331,9 +332,9 @@ export default function RecipeDetail({ recipe, producer, relatedProducts }) {
                 PrimaryContactButton self-collapses to null for a contactless
                 producer, so the profile link renders alone. */}
             <section className="mt-10 rounded-lg bg-green-50 p-5 md:p-6">
-              <h2 className="font-headline-md text-xl md:text-2xl font-bold text-text mb-4">
+              <SectionHeading size="content" className="mb-4">
                 {t("producer_cta_heading", { name: producer.name })}
-              </h2>
+              </SectionHeading>
               <div className="flex flex-col items-start gap-2 w-full sm:max-w-xs">
                 <div className="w-full">
                   <PrimaryContactButton producer={producer} />

@@ -32,6 +32,7 @@ import {
 import { useCatalogSnapshot } from "@/lib/use-catalog-snapshot";
 import { LOAD_MORE_CAP } from "@/lib/use-home-page";
 import Button from "@/components/ui/Button";
+import SectionHeading from "@/components/ui/SectionHeading";
 
 // 🔒 The axes the home row PROMOTES onto the surface; every other axis stays
 // one tap away inside the FilterSheet. CHANGING THIS LIST IS A SAPIR DECISION,
@@ -244,12 +245,12 @@ export function HomeProducersGrid({
           and chips already show. Google / Yelp / Airbnb run no coach-mark tour
           on a listing page. */}
       <div className="flex items-center justify-between mb-8">
-        <h2 className="font-headline-lg text-headline-lg text-text">
+        <SectionHeading>
           {/* MEH-1174: default vs "בתי עסק · {name}" when a category is active. */}
           {activeCategory
             ? t("home.producers.heading_category", { name: activeCategory.name })
             : t("home.producers.heading")}
-        </h2>
+        </SectionHeading>
         {/* MEH-2598: the active chips ride along (lib/filter-url), so the map
             opens on the same search the grid is showing. */}
         <Link href={`/map${chipsToQuery(chips)}`} data-testid="home-map-link" className="text-primary hover:underline flex items-center gap-1 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40">

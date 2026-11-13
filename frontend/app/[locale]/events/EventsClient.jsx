@@ -33,6 +33,7 @@ import { EVENT_CATEGORIES, EXPERIENCE_CATEGORIES, withAll } from "@/lib/event-ca
 import useTabsKeyboard from "@/hooks/useTabsKeyboard";
 import HubShell from "@/components/HubShell";
 import Button from "@/components/ui/Button";
+import SectionHeading from "@/components/ui/SectionHeading";
 
 // MEH-134: S10 "The Almanac" visual port. Events API + filter logic +
 // date formatting (lib/format-date.js) untouched — layout layer only.
@@ -437,9 +438,9 @@ export default function EventsPage({ initialTab = "events", titles = null }) {
                 <div className="flex items-baseline gap-2.5 pt-6 pb-1.5">
                   {/* MEH-858 F4: month divider is the h2 rung (was a span) so
                       the outline is h1 → h2 → h3 with no skipped level. */}
-                  <h2 className="font-headline-md text-2xl font-bold text-text leading-none">
+                  <SectionHeading size="content" className="leading-none">
                     {group.monthLabel}
-                  </h2>
+                  </SectionHeading>
                   <span dir="ltr" className="font-english italic text-base font-medium text-accent numeric">
                     {group.yearLabel}
                   </span>
@@ -476,9 +477,9 @@ function EmptyState({ tab, t }) {
       </div>
       {/* MEH-858 F4: empty-state title is h2 (was h4) — only heading under the
           page h1 when the feed is empty, so h1 → h2 with no skip. */}
-      <h2 className="font-headline-md text-2xl font-bold text-text mt-5 max-w-[22ch] leading-snug">
+      <SectionHeading size="content" className="mt-5 max-w-[22ch] leading-snug">
         {isExp ? t("empty_experiences_title") : t("empty_events_title")}
-      </h2>
+      </SectionHeading>
       <p className="text-sm text-fg-muted mt-2.5 max-w-[30ch] leading-relaxed">
         {isExp ? t("empty_experiences_body") : t("empty_events_body")}
       </p>
@@ -513,9 +514,9 @@ function EmptyState({ tab, t }) {
 function LoadError({ tErr, onRetry }) {
   return (
     <div data-testid="events-load-error" role="alert" className="flex flex-col items-center text-center px-6 py-16">
-      <h2 className="font-headline-md text-2xl font-bold text-text max-w-[22ch] leading-snug">
+      <SectionHeading size="content" className="max-w-[22ch] leading-snug">
         {tErr("generic")}
-      </h2>
+      </SectionHeading>
       <Button
         type="button"
         onClick={onRetry}
@@ -536,9 +537,9 @@ function LoadError({ tErr, onRetry }) {
 function NoResults({ t, onReset }) {
   return (
     <div data-testid="events-no-results" className="flex flex-col items-center text-center px-6 py-16">
-      <h2 className="font-headline-md text-2xl font-bold text-text max-w-[22ch] leading-snug">
+      <SectionHeading size="content" className="max-w-[22ch] leading-snug">
         {t("no_results_title")}
-      </h2>
+      </SectionHeading>
       <Button
         type="button"
         onClick={onReset}
