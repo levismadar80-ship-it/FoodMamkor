@@ -44,3 +44,35 @@ describe("MEH-3059: /producers has its own loading boundary", () => {
     expect(screen.queryByTestId("route-loading")).toBeNull();
   });
 });
+
+// Fresh reviewer on #4423: a loading.js covers every segment below it, so the
+// index skeleton (H1 «כל בתי העסק», 7xl grid) would also flash on the diet and
+// category/region pages, which have their own title and frame. Every nested
+// segment directly under producers/ must carry its own loading.js, and it must
+// not be the index skeleton.
+const PRODUCERS_DIR = path.dirname(FILE);
+const nestedSegments = fs
+  .readdirSync(PRODUCERS_DIR, { withFileTypes: true })
+  .filter((d) => d.isDirectory())
+  .map((d) => d.name);
+
+describe("MEH-3059: nested /producers/** segments keep the site-wide loader", () => {
+  it("finds the nested segments it guards (diet, [category])", () => {
+    expect(nestedSegments).toEqual(expect.arrayContaining(["diet", "[category]"]));
+  });
+
+  for (const seg of nestedSegments) {
+    it(`producers/${seg}/loading.js exists and is not the «כל בתי העסק» skeleton`, async () => {
+      const file = path.join(PRODUCERS_DIR, seg, "loading.js");
+      expect(fs.existsSync(file), `${seg} would inherit the index skeleton and flash its H1`).toBe(true);
+      const { default: SegmentLoading } = await import(/* @vite-ignore */ file);
+      render(
+        <NextIntlClientProvider locale="he" messages={rootClientMessages(he)}>
+          <SegmentLoading />
+        </NextIntlClientProvider>,
+      );
+      expect(screen.queryByTestId("producers-loading")).toBeNull();
+      expect(screen.queryByText(he.producers.title.all)).toBeNull();
+    });
+  }
+});

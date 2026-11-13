@@ -12,7 +12,8 @@
  * Does NOT: fetch anything or read the URL. The H1 is the default title only
  *           (a ?q= search arrives with its own title once the page lands).
  * Related:  app/[locale]/loading.js (the site-wide fallback this one replaces
- *           for /producers/**), components/ProducersClient.jsx (the layout
+ *           for the /producers index only — diet/ and [category]/ keep it via
+ *           their own loading.js), components/ProducersClient.jsx (the layout
  *           this mirrors — breadcrumb mb-4, H1 row mb-6, search row mb-3),
  *           app/[locale]/producers/page.jsx (the wrapper width).
  * History:  MEH-3059 (creation).
@@ -39,6 +40,8 @@ export default function ProducersLoading() {
       />
       <div className="flex items-center justify-between gap-3 mb-6">
         <h1 className="font-headline-lg text-3xl font-bold text-text">{t("title.all")}</h1>
+        {/* «הצגה במפה» sits here on the real page (ProducersClient.jsx) — hold its place. */}
+        <div className="skeleton-box rounded-sm h-5 w-20 shrink-0" aria-hidden="true" />
       </div>
       <div className="skeleton-box rounded-full min-h-touch mb-3" aria-hidden="true" />
       <div className="flex gap-2 mb-6 overflow-hidden" aria-hidden="true">
