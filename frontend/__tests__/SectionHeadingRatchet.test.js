@@ -14,6 +14,10 @@
  * have none. A count that drops must be lowered here in the same PR (the
  * "stale" test), so the list only shrinks. Admin and the business dashboard
  * are out of scope (their own surfaces).
+ *
+ * Blind spot, on purpose: an h2 whose className is an expression (cn(...), a
+ * variable, a conditional inside ${}) contributes only its static text; there
+ * is none of those on a public page today (13/11).
  */
 import { describe, it, expect } from "vitest";
 import fs from "node:fs";
@@ -56,7 +60,6 @@ const ALLOWED = {
   "components/producer/RequestReviewCard.jsx": 1, // card title
   "components/producer/ShareKitSection.jsx": 1, // card title
   "components/public/ProductSheet.jsx": 1, // sheet title
-  "components/rescue/RescueSection.jsx": 1, // /rescue card title
 };
 
 function walk(dir, out = []) {
