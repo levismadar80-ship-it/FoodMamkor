@@ -353,25 +353,63 @@ test.describe("manual › /producer/[id] — header and breadcrumb", () => {
   });
 
   // MT:MEH-1146B:2 — פירורי לחם בלבד: אין כפתור "→ חזרה"; רק נתיב פירורים.
-  test("breadcrumb block holds the breadcrumb nav and no back button", async ({ page }) => {
+  // MEH-3019 (Sapir 13/11): the breadcrumb is desktop only; a phone gets the
+  // shared «→ חזרה» instead, and only when a page of the site is behind this
+  // one. Desktop is unchanged. Cells: arrival (direct / from inside the site)
+  // × project (desktop / mobile); the map arrival is the unit test's
+  // (__tests__/ProducerDetailBackLink.test.jsx).
+  test("direct arrival: the breadcrumb on desktop only, and no back button on either screen", async ({
+    page,
+  }, testInfo) => {
     const list = await catalog(page);
     const target = list[0];
     const root = await openProducer(page, target.id);
     const block = root.getByTestId("producer-breadcrumb-block");
     await expect(block).toHaveCount(1, FIRST_PAINT);
 
-    // Exactly one nav, and it is the breadcrumb: first crumb is home.
+    // Exactly one nav, and it is the breadcrumb: first crumb is home. It is in
+    // the DOM on both projects; only the desktop shows it.
     await expect(block.locator("nav")).toHaveCount(1);
     const crumbHome = block.locator("nav a").first();
     await expect(crumbHome).toHaveText(DETAIL_HE.breadcrumb_home);
     await expect(crumbHome).toHaveAttribute("href", /^\/(?:[?#]|$)/);
+    if (isDesktop(testInfo)) await expect(block.locator("nav")).toBeVisible();
+    else await expect(block.locator("nav")).toBeHidden();
 
-    // The removed "→ חזרה" control was a button. The block carries none — and
-    // the ?from=map return link (`back-to-map`) is a LINK, so this stays true
-    // on the map-referred variant too.
+    // A visitor who landed here from outside (WhatsApp, Google) has nowhere
+    // inside the site to go back to: no button on either screen. The ?from=map
+    // return link (`back-to-map`) does not render without the param (MEH-1414).
     await expect(block.locator("button")).toHaveCount(0);
-    // Landing without ?from=map: no map return link either (MEH-1414).
     await expect(block.getByTestId("back-to-map")).toHaveCount(0);
+  });
+
+  test("arrival from inside the site: «→ חזרה» on the phone (and it goes back), nothing new on desktop", async ({
+    page,
+  }, testInfo) => {
+    const list = await catalog(page);
+    const target = list[0];
+    // A page of the site first, so one is behind the business page.
+    await page.goto("/producers");
+    const root = await openProducer(page, target.id);
+    const block = root.getByTestId("producer-breadcrumb-block");
+    await expect(block).toHaveCount(1, FIRST_PAINT);
+    const back = block.getByTestId("history-back");
+
+    if (isDesktop(testInfo)) {
+      // Desktop unchanged: the breadcrumb shows and the back button does not.
+      await expect(block.locator("nav")).toBeVisible();
+      // Mounted (a page of the site IS behind) but hidden by lg:hidden — the
+      // count makes this cell prove the hiding, not just an absence.
+      await expect(back).toHaveCount(1);
+      await expect(back).toBeHidden();
+      return;
+    }
+    await expect(block.locator("nav")).toBeHidden();
+    await expect(back).toBeVisible();
+    await expect(back).toHaveText(DETAIL_HE.back_label);
+    await expect(back).toHaveAccessibleName(DETAIL_HE.aria.back);
+    await back.click();
+    await expect(page).toHaveURL(/\/producers(?:[?#]|$)/);
   });
 
   // MT:MEH-815:2 — שם פעם אחת בלבד: h1 ב-masthead; לא חוזר ב-ProducerHeader.
