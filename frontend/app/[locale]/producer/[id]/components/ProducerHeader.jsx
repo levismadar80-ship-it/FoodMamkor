@@ -19,6 +19,9 @@ import {
 } from "@/lib/favorites-cache";
 import { allBadges, isKashrutCurrent } from "@/lib/badges";
 import { getOrderWindowStatus } from "@/lib/orderWindow";
+import { useUserLocation } from "@/lib/user-location";
+import { formatDistance, haversineKm } from "@/lib/distance";
+import { producerPoints } from "@/lib/producerPoints";
 import ReviewExcerpt from "./ReviewExcerpt";
 import { categoryListingHref, getVacationReturnDate } from "../lib/producer-format";
 import { resolveCategoryGlyph, styleForProducer } from "@/lib/category-registry";
@@ -103,6 +106,8 @@ export default function ProducerHeader({
   const isPreview = usePreviewMode(); // MEH-2916
   const t = useTranslations();
   const locale = useLocale();
+  // MEH-3033: cached visitor location only — this page never asks for one.
+  const userLoc = useUserLocation();
 
   // MEH-1609 built the page's only AlertPrefsPanel mount here, reached by an
   // alerts_reentry bell in the actions row. MEH-1693 keeps the MOUNT (its
@@ -281,6 +286,25 @@ export default function ProducerHeader({
     );
   }
   if (producer.city) facts.push(<span key="city">{producer.city}</span>);
+  // MEH-3033 (Sapir chose א, 13/11): distance as its OWN fact after the city
+  // (MEH-1694 turns the city into a link — never put this inside it). Same
+  // label as the cards: nearest location row, formatDistance, no «ממך»
+  // (MEH-1307). REUSES: components/ProducerCard.jsx:354-363.
+  const points = userLoc ? producerPoints(producer) : [];
+  const distanceLabel =
+    points.length > 0
+      ? formatDistance(
+          Math.min(...points.map((pt) => haversineKm(userLoc.lat, userLoc.lng, pt.lat, pt.lng))),
+          { unit: locale === "he" ? "he" : "latin" },
+        )
+      : null;
+  if (distanceLabel) {
+    facts.push(
+      <span key="distance" dir={locale === "he" ? "rtl" : "ltr"} data-testid="producer-header-distance">
+        {distanceLabel}
+      </span>,
+    );
+  }
   // MEH-1541: quiet "מאז {שנה}" heritage fact — a veteran-business trust
   // signal in the magazine voice, NOT a badge (no icon / gold / border; the
   // single-green rule stays with the status tag). Year numerals dir="ltr".
