@@ -460,6 +460,13 @@ primary, destructive or outlined action is `components/ui/Button.jsx`
 hand-styled `<button>`; layout classes (`w-full`, `flex-1`, margins) go in
 `className`. `ButtonPrimitiveGuard.test.js` ratchets the hand-styled remainder.
 
+**Every action is a pill, on every element (MEH-3058, 13/11/2026).** A `<Link>` or
+`<a>` that looks like an action (green fill + white text, or green outline + green
+text) is `rounded-full` too (`<Button>` has no `href` yet). Secondary actions
+next to a primary one (copy link, email) are outlined pills, not cards.
+`ActionShapeGuard.test.js` reds a new off-shape action on `<button>`, `<Link>`
+or `<a>` and ratchets the existing ones (shrink only).
+
 _As-of 03/11: the front-matter `button-primary` binding still reads
 `{rounded.sm}`, because the token scale has no `full` step. Adding one changes
 `frontend/tailwind.tokens.json` (the design-token drift gate re-exports it), so
