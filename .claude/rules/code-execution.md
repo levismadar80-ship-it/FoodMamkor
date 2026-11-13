@@ -149,3 +149,23 @@ grep -rE "# (MEH-[0-9]+|DO NOT|REUSES):" backend/ frontend/
 Forward-only — existing files retrofit only when otherwise edited. No
 hook enforcement here; if drift becomes a problem, open a follow-up for
 `.claude/hooks/check-sentinel-format.sh`.
+
+---
+
+## §17 — New files are type-checked (13/11/2026)
+
+Types are the fastest feedback an agent gets. No TypeScript conversion — only
+new files opt in; legacy files are frozen in
+`scripts/checks/typed-new-modules-baseline.txt` (remove lines, never add).
+
+- **New `backend/app/**/*.py`** → add it to `[tool.mypy].files` in
+  `backend/pyproject.toml` in the same PR. The `Backend mypy (ratchet)` job
+  then holds it to `--strict` (`backend/scripts/mypy_baseline.py` reads that
+  list).
+- **New frontend `.js`/`.jsx`** under `app/`, `components/`, `lib/` → first
+  line `// @ts-check`. `frontend/__tests__/ts-check-files.test.js` type-checks
+  every opted-in file (gentle mode: no implicit-any demand). Add JSDoc
+  (`/** @param {{ producer: object, limit?: number }} props */`) where it flags
+  a missing optional prop.
+- `scripts/checks/typed-new-modules.sh` fails a new file that skips either.
+  Escape: `guard-ok: <reason>` in its first 3 lines.
