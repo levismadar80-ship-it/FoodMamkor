@@ -43,6 +43,7 @@ import {
 } from "@/lib/business-features";
 import { rescueBagsEnabled } from "@/lib/rescue";
 import FeatureTip from "./FeatureTip";
+import SectionHeading from "@/components/ui/SectionHeading";
 
 /**
  * Module:   JoinFeatures
@@ -508,9 +509,9 @@ export default function JoinFeatures() {
     <section data-testid="join-features" className="bg-background-alt py-14 sm:py-20">
       <div className="mx-auto max-w-5xl px-4 sm:px-6">
         <p className="mb-2 text-center text-sm font-medium text-fg-muted">{tj("eyebrow")}</p>
-        <h2 className="mb-3 text-center font-headline-lg text-[clamp(26px,3.5vw,38px)] font-bold text-text">
+        <SectionHeading className="mb-3 text-center">
           {tj("heading")}
-        </h2>
+        </SectionHeading>
         <p data-testid="join-features-count" className="mb-10 text-center text-text/85">
           {t("total_line", { count })}
         </p>

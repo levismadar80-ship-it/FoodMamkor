@@ -41,6 +41,7 @@ vi.mock("@/lib/contact-tracking", () => ({
   markWhatsAppClickedLocal: vi.fn(),
   pingWhatsAppBeacon: vi.fn(),
   trackContactClick: vi.fn(),
+  trackPrimaryCtaClick: vi.fn(),
 }));
 
 // Phosphor icons → inert spans (aria-label lives on the anchor, not the icon).
@@ -67,7 +68,7 @@ vi.mock("@phosphor-icons/react", () => {
 
 import ContactCard from "@/app/[locale]/producer/[id]/components/ContactCard";
 // MEH-1426: the mocked helpers, imported to assert the primary-CTA gating.
-import { markWhatsAppClickedLocal, pingWhatsAppBeacon } from "@/lib/contact-tracking";
+import { trackPrimaryCtaClick } from "@/lib/contact-tracking";
 
 const base = {
   id: 7,
@@ -179,21 +180,14 @@ describe("ContactCard (MEH-1146 chunk A · MEH-1334 chunk 1)", () => {
   // AND unlocks; a non-WhatsApp primary does neither (previously it unlocked
   // unconditionally, letting a phone/website primary open the review form on a
   // click that never created an attributed WA row).
-  it("WhatsApp primary CTA fires attribution + unlock", () => {
-    markWhatsAppClickedLocal.mockClear();
-    pingWhatsAppBeacon.mockClear();
-    render1(); // base = whatsapp primary
+  // MEH-2999: the primary button records its own click, every channel
+  // (PrimaryContactButton → trackPrimaryCtaClick). The old "non-WhatsApp fires
+  // NEITHER" case encoded the bug: a website/phone customer could never review.
+  it.each(["whatsapp", "website"])("%s primary CTA records the click on that channel", (method) => {
+    trackPrimaryCtaClick.mockClear();
+    render1({ primary_contact_method: method });
     fireEvent.click(screen.getByTestId("primary-contact-button"));
-    expect(pingWhatsAppBeacon).toHaveBeenCalledWith(base.id);
-    expect(markWhatsAppClickedLocal).toHaveBeenCalledWith(base.id);
-  });
-
-  it("non-WhatsApp primary CTA fires NEITHER attribution nor unlock", () => {
-    markWhatsAppClickedLocal.mockClear();
-    pingWhatsAppBeacon.mockClear();
-    render1({ primary_contact_method: "website" });
-    fireEvent.click(screen.getByTestId("primary-contact-button"));
-    expect(pingWhatsAppBeacon).not.toHaveBeenCalled();
-    expect(markWhatsAppClickedLocal).not.toHaveBeenCalled();
+    expect(trackPrimaryCtaClick).toHaveBeenCalledTimes(1);
+    expect(trackPrimaryCtaClick).toHaveBeenCalledWith(base.id, method);
   });
 });

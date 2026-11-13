@@ -5726,7 +5726,7 @@ export const GetProducerProducersProducerIdGetResponse = /*#__PURE__*/ zod.objec
 /**
  * Log a contact-method click for the producer dashboard.
  *
- * Accepts method ∈ {phone, instagram, website, email}. Auth optional —
+ * Accepts method ∈ _VALID_CONTACT_METHODS. Auth optional —
  * JWT when present attributes the click to a registered user. IP is
  * SHA-256 hashed (reuses hash_ip from services/analytics). Rate-limited
  * 10/minute per IP consistent with whatsapp-click.

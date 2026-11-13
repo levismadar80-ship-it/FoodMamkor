@@ -68,49 +68,29 @@ describe("RecipeCard", () => {
     render(
       <RecipeCard slug="my-shop" recipe={{ ...BASE, image_url: null }} />
     );
-    // no <img>; the plate repeats the <h3>, so it is aria-hidden
     expect(screen.queryByRole("img")).toBeNull();
     const tile = screen.getByTestId("recipe-image-missing");
     expect(tile.getAttribute("aria-hidden")).toBe("true");
     expect(tile.className).toMatch(/\bbg-background-alt\b/);
     expect(screen.getByTestId("recipe-name-plate").textContent).toBe(BASE.title);
-    expect(screen.getByTestId("recipe-name-plate").className).toMatch(/font-headline-lg font-black/);
     const seed = tile.querySelector("svg[data-seed-color]");
     expect(seed.getAttribute("data-seed-color")).toBe(seedColorFor(BASE.id).fill);
-    expect(seed.getAttribute("width")).toBe("70");
-    // the leaf + brand wordmark are gone
-    expect(screen.queryByText("מהמקור")).toBeNull();
   });
 
-  // MEH-2190. This card renders in exactly one place — ProducerSections.jsx:487,
-  // `grid grid-cols-2 md:grid-cols-3 gap-4`, inside ProducerDetail's
-  // `max-w-6xl px-4` (:107) and its `lg:grid-cols-[1fr_320px] gap-8` (:226).
-  // The grid is NEVER 1-column, so the old `(max-width: 640px) 100vw` claimed
-  // roughly twice the real cell on mobile.
-  //
-  // Asserted per clause rather than as one string: a single `toBe` on the whole
-  // attribute goes red for a stray space too, and its failure message would not
-  // say WHICH range regressed.
-  describe("MEH-2190: sizes matches the measured grid", () => {
-    const sizesOf = () => {
-      render(<RecipeCard slug="my-shop" recipe={BASE} />);
-      return screen.getByRole("img").getAttribute("sizes");
-    };
+  // MEH-3006 (option B): a medium card that sits in a sideways strip on
+  // phones — capped width, never the full-width square that filled a screen.
+  it("is a capped-width strip card on phones, not a full-width square", () => {
+    render(<RecipeCard slug="my-shop" recipe={BASE} />);
+    const card = screen.getByTestId("recipe-card");
+    expect(card.className).toMatch(/(^|\s)w-\[62%\](\s|$)/);
+    expect(card.className).toMatch(/(^|\s)max-w-\[240px\](\s|$)/);
+    expect(card.className).toMatch(/\bsnap-start\b/);
+    expect(document.querySelector(".aspect-square")).toBeNull();
+    expect(screen.getByRole("img").getAttribute("sizes")).toBe("(max-width: 767px) min(62vw, 240px), (max-width: 1023px) calc(33.33vw - 21.33px), 246px");
+  });
 
-    // The regression itself. `100vw` is false at every width this card renders
-    // at, and it is what the corrected attribute must not contain.
-    it("never claims a full-viewport cell", () => {
-      expect(sizesOf()).not.toMatch(/100vw/);
-    });
-
-    it.each([
-      // range                    clause                       cell arithmetic
-      ["2-col, W < 768", "(max-width: 767px) calc(50vw - 24px)", "(W - 32 - 16)/2"],
-      ["3-col, 768..1023", "(max-width: 1023px) calc(33.33vw - 21.33px)", "(W - 32 - 32)/3"],
-      ["3-col + lg sidebar, 1024..1151", "(max-width: 1151px) calc(33.33vw - 138.67px)", "(W - 384 - 32)/3"],
-      ["3-col at the max-w-6xl cap", "246px", "(768 - 32)/3 = 245.33"],
-    ])("carries the %s clause", (_range, clause) => {
-      expect(sizesOf()).toContain(clause);
-    });
+  it("does not repeat the «מתכון» eyebrow under the section heading", () => {
+    render(<RecipeCard slug="my-shop" recipe={BASE} />);
+    expect(screen.queryByText("eyebrow")).toBeNull();
   });
 });

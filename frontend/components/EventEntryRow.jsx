@@ -114,8 +114,11 @@ export default function EventEntryRow({ entry, freeLabel, compact = false }) {
     ? { backgroundImage: cssUrl(optimizeCloudinary(picture, { aspectRatio: "1:1", width: 224 })) }
     : undefined;
   const tileTone = isExp ? "bg-surface-card text-accent" : "bg-green-50 text-primary";
+  // MEH-3009: the owner's initial now marks EVERY picture row — the event's
+  // own photo too, not only the owner-photo fallback — so the list reads
+  // uniform (Luma's host mark). A category tile has no photo to mark.
   const pictureFace = picture ? (
-    entry.image || !entry.ownerInitial ? null : (
+    !entry.ownerInitial ? null : (
       <span
         data-testid="event-row-owner-initial"
         className="absolute bottom-1 end-1 w-5 h-5 rounded-full bg-surface text-primary text-2xs font-bold grid place-items-center shadow-sm"

@@ -35,6 +35,7 @@ vi.mock("@phosphor-icons/react", () => {
     Clock: Icon, Storefront: Icon, CaretLeft: Icon, MapPin: Icon, WhatsappLogo: Icon, X: Icon,
     Phone: Icon, Globe: Icon, EnvelopeSimple: Icon, InstagramLogo: Icon, FacebookLogo: Icon,
     Receipt: Icon, CalendarCheck: Icon, CaretDown: Icon, CaretUp: Icon,
+    Info: Icon, // MEH-2999: fine-print icon
   };
 });
 vi.mock("@/components/DeliveryBlock", () => ({ default: () => <div data-testid="delivery" /> }));

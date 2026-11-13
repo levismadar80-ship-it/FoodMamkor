@@ -4,12 +4,14 @@
  * business slug page (MEH-1754): only a 404 becomes notFound(); any other
  * failure throws (5xx, never a de-indexing soft 404).
  */
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 
 const fetchMock = vi.fn();
 vi.mock("@/lib/server-fetch", () => ({ serverFetch: (...a) => fetchMock(...a) }));
-vi.mock("@/lib/env", () => ({ API_URL: "https://api.test" }));
+vi.mock("@/lib/env", () => ({ API_URL: "https://api.test", SITE_URL: "https://site.test" }));
 const notFoundMock = vi.fn(() => {
   throw new Error("NEXT_NOT_FOUND");
 });
@@ -276,12 +278,146 @@ describe("MEH-2461 organizer page", () => {
     const call = screen.getByTestId("organizer-contact-phone");
     expect(call.getAttribute("href")).toBe("tel:0521234567");
     expect(call.getAttribute("data-primary")).toBe("true");
+    // MEH-2988: drawn as the business button — label, and no new tab for a call
+    expect(call.textContent).toBe("contact_cta.phone");
+    expect(call.getAttribute("target")).toBeNull();
     expect(screen.queryByTestId("organizer-contact-whatsapp")).not.toBeInTheDocument();
+  });
+
+  it("MEH-2988: the preferred channel is the business page's button — icon + contact_cta label", async () => {
+    respond(200, ORG);
+    await renderPage();
+    const wa = screen.getByTestId("organizer-contact-whatsapp");
+    expect(wa.getAttribute("data-primary")).toBe("true");
+    expect(wa.textContent).toBe("contact_cta.whatsapp");
+    expect(wa.querySelector("svg")).not.toBeNull();
+    expect(wa.className).toContain("btn-whatsapp");
+    // a secondary channel keeps its short pill label and no icon
+    const ig = screen.getByTestId("organizer-contact-instagram");
+    expect(ig.textContent).toBe("organizers.page.instagram");
+    expect(ig.querySelector("svg")).toBeNull();
+  });
+
+  it("MEH-2988: a website primary keeps the business button's referral rules", async () => {
+    respond(200, { ...ORG, primary_contact_method: "website", website: "gelem.co.il" });
+    await renderPage();
+    const site = screen.getByTestId("organizer-contact-website");
+    expect(site.getAttribute("data-primary")).toBe("true");
+    expect(site.getAttribute("href")).toMatch(/^https:\/\/gelem\.co\.il\/?\?.*utm_source=/);
+    expect(site.getAttribute("target")).toBe("_blank");
+    expect(site.getAttribute("rel")).toBe("noopener");
+  });
+
+  it("MEH-2988: a WhatsApp primary opens in place, as on the business page", async () => {
+    respond(200, ORG);
+    await renderPage();
+    expect(screen.getByTestId("organizer-contact-whatsapp").getAttribute("target")).toBeNull();
   });
 
   it("MEH-2475: the founding year shows as a quiet «since» line only when set", async () => {
     respond(200, { ...ORG, established_year: 2015 });
     await renderPage();
     expect(screen.getByTestId("organizer-since").textContent).toContain("2015");
+  });
+
+  // MEH-3005: «חזרה» as on the event / workshop pages (HistoryBackLink). The
+  // page has no breadcrumb, so this is its only way back. Both cells of the
+  // link's one condition: a page of ours behind this one, or not.
+  describe("MEH-3005 back link", () => {
+    const setCanGoBack = (value) =>
+      Object.defineProperty(window, "navigation", { value: { canGoBack: value }, configurable: true });
+    // jsdom has no Navigation API: drop the stub so no later test inherits it.
+    afterEach(() => {
+      delete window.navigation;
+    });
+
+    it("arrival from inside the site → the back link sits above the name", async () => {
+      setCanGoBack(true);
+      respond(200, ORG);
+      await renderPage();
+      const back = screen.getByTestId("history-back");
+      const h1 = screen.getByRole("heading", { level: 1 });
+      expect(back.compareDocumentPosition(h1) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+      expect(screen.getByTestId("organizer-cover-band").compareDocumentPosition(back) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    });
+
+    it("with a cover photo → the back link still sits between the cover and the name", async () => {
+      setCanGoBack(true);
+      respond(200, { ...ORG, images: ["https://res.cloudinary.com/x/image/upload/org.jpg"] });
+      await renderPage();
+      const back = screen.getByTestId("history-back");
+      expect(screen.getByTestId("organizer-cover").compareDocumentPosition(back) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+      expect(back.compareDocumentPosition(screen.getByRole("heading", { level: 1 })) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    });
+
+    it("direct arrival (WhatsApp, Google) → no back link", async () => {
+      setCanGoBack(false);
+      respond(200, ORG);
+      await renderPage();
+      expect(screen.queryByTestId("history-back")).toBeNull();
+      // control: the page did render
+      expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("שוק גלם");
+    });
+  });
+
+  // MEH-3018: the organizer page had no share button. It now carries the
+  // shared overlay circle on the cover, named for an organizer — not the
+  // ShareButton default «שתפו לינק לעסק», which would tell a screen reader
+  // this is a business.
+  describe("MEH-3018 share button", () => {
+    it("no cover photo → the share circle sits on the green band, named for an organizer", async () => {
+      respond(200, ORG);
+      await renderPage();
+      const share = screen.getByTestId("share-overlay");
+      expect(share.getAttribute("aria-label")).toBe("share.modal_title_organizer");
+      expect(screen.getByTestId("organizer-cover-band").parentElement.contains(share)).toBe(true);
+      // the corner: inline-END (top-left in RTL), as on the recipe page — jsdom
+      // has no layout, so the classes are the cheapest thing that can red.
+      expect(share.parentElement.className).toMatch(/(^| )end-3( |$)/);
+      expect(share.parentElement.className).toMatch(/(^| )top-3( |$)/);
+    });
+
+    it("with a cover photo → the same circle, inside the cover block", async () => {
+      respond(200, { ...ORG, images: ["https://res.cloudinary.com/x/image/upload/org.jpg"] });
+      await renderPage();
+      const share = screen.getByTestId("share-overlay");
+      expect(share.getAttribute("aria-label")).toBe("share.modal_title_organizer");
+      expect(screen.getByTestId("organizer-cover").parentElement.contains(share)).toBe(true);
+    });
+
+    it("a tap shares the page's own canonical address", async () => {
+      const share = vi.fn().mockResolvedValue(undefined);
+      Object.defineProperty(navigator, "share", { value: share, configurable: true });
+      try {
+        respond(200, ORG);
+        await renderPage();
+        fireEvent.click(screen.getByTestId("share-overlay"));
+        await waitFor(() => expect(share).toHaveBeenCalledTimes(1));
+        expect(share.mock.calls[0][0].url).toBe("https://site.test/organizers/gelem");
+      } finally {
+        delete navigator.share;
+      }
+    });
+
+    it("on /en the shared address carries the /en prefix", async () => {
+      const share = vi.fn().mockResolvedValue(undefined);
+      Object.defineProperty(navigator, "share", { value: share, configurable: true });
+      try {
+        respond(200, ORG);
+        render(await OrganizerPage({ params: Promise.resolve({ slug: "gelem", locale: "en" }) }));
+        fireEvent.click(screen.getByTestId("share-overlay"));
+        await waitFor(() => expect(share).toHaveBeenCalledTimes(1));
+        expect(share.mock.calls[0][0].url).toBe("https://site.test/en/organizers/gelem");
+      } finally {
+        delete navigator.share;
+      }
+    });
+
+    it("the label is the string Sapir approved, in both languages", () => {
+      const he = JSON.parse(readFileSync(join(__dirname, "../messages/he.json"), "utf8"));
+      const en = JSON.parse(readFileSync(join(__dirname, "../messages/en.json"), "utf8"));
+      expect(he.share.modal_title_organizer).toBe("שתפו את דף המארגן");
+      expect(en.share.modal_title_organizer).toBe("Share this organizer page");
+    });
   });
 });

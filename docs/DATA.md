@@ -1034,7 +1034,8 @@ POST   /delivery-waitlist/unsubscribe             public    — MEH-2618 { token
                                                               400 on a token that does not verify.
 POST   /producers/{id}/contact-click              public    — 10/min, body {method} ∈ phone | instagram | website |
                                                               email | whatsapp_group (MEH-2626: the WhatsApp updates
-                                                              link — contact-card bell + delivery-checker pill); else
+                                                              link — contact-card bell + delivery-checker pill) |
+                                                              facebook | external_order (MEH-2999); else
                                                               422. 204 + a producer_contact_clicks row (owner/admin
                                                               clicks not logged). A row with user_id satisfies the
                                                               first-review gate (reviews.py, MEH-2204).

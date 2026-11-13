@@ -20,6 +20,7 @@ import {
   shekels,
 } from "@/lib/rescue";
 import Button from "@/components/ui/Button";
+import SectionHeading from "@/components/ui/SectionHeading";
 
 /**
  * Module:   RescueSection
@@ -231,7 +232,7 @@ export default function RescueSection({ producer }) {
       data-testid="rescue-section"
       className="mt-12 scroll-mt-[calc(var(--chrome-top,82px)_+_var(--section-nav-h,68px))] md:scroll-mt-24"
     >
-      <h2 className="font-headline-md text-lg font-black text-text">{t("section.title")}</h2>
+      <SectionHeading size="content">{t("section.title")}</SectionHeading>
 
       {cancelled && (
         <p

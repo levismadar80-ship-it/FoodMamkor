@@ -490,8 +490,14 @@ describe("MEH-1703 chunk 4 — items declared on both platforms render on both",
     const bottom = render(<BottomNav />);
     const mobileHrefs = hrefsIn(bottom.container);
 
-    expect(desktopHrefs).toContain(hub.href);
-    expect(mobileHrefs).toContain(hub.href);
+    // MEH-2975: this suite opens the experiences gate only, so the hub link
+    // lands on /experiences — the first hub route with supply — on both
+    // platforms, and on /events (the registry's default href) on neither.
+    expect(hub.href).toBe("/events");
+    expect(desktopHrefs).toContain("/experiences");
+    expect(mobileHrefs).toContain("/experiences");
+    expect(desktopHrefs).not.toContain(hub.href);
+    expect(mobileHrefs).not.toContain(hub.href);
     expect(mobileHrefs).not.toContain("/about");
   });
 });

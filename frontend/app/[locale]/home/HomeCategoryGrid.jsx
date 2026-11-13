@@ -10,6 +10,7 @@ import FadeInSection from "@/components/FadeInSection";
 // total lookup. The local `Leaf` import that used to supply the fallback here
 // is gone — same component, one owner.
 import { resolveCategoryGlyph } from "@/lib/category-registry";
+import SectionHeading from "@/components/ui/SectionHeading";
 
 // MEH-643: ease-quart curve [0.25,1,0.5,1] mirrored for Framer (= .ease-quart, MEH-136).
 const EASE_QUART = [0.25, 1, 0.5, 1];
@@ -62,9 +63,9 @@ export function HomeCategoryGrid({ categoryCards }) {
           {t("home.categories.eyebrow")}
           <span className="inline-block w-8 h-px bg-accent" aria-hidden="true" />
         </span>
-        <h2 className="font-headline-display text-headline-display text-text">
+        <SectionHeading>
           {t("home.categories.heading")}
-        </h2>
+        </SectionHeading>
       </FadeInSection>
 
       {/* MEH-2412: phone = flex row that bleeds to the screen edges and

@@ -58,6 +58,7 @@ import { eventWhen } from "@/lib/event-when";
 import { formatEventDate } from "@/lib/format-date";
 import { israelNowParts } from "@/lib/orderWindow";
 import { formatPrice } from "@/lib/utils";
+import SectionHeading from "@/components/ui/SectionHeading";
 
 /** One phone screen of warning, as HomepageMiniMapLazy uses for the map. */
 export const WHATS_ON_PRELOAD_MARGIN = "600px 0px";
@@ -456,7 +457,13 @@ function WhatsOnCard({ entry, labels }) {
   const dated = entry.type === "event" || entry.type === "experience";
   const label = dated ? labels.category(entry) : null;
   const Icon = dated ? (CATEGORY_ICON[entry.category] ?? CalendarBlank) : null;
-  const meta = [entry.who, entry.city].filter(Boolean).join(" · ");
+  // MEH-2997 (Sapir 12/11, option ב׳): a card with a label names its city in
+  // that gold line, «שוק · חיפה» — the place line ProducerCard leads with
+  // (ProducerCard.jsx:713, MEH-2440). The muted line keeps the organizer
+  // alone, so a long organizer name no longer truncates the city away. A card
+  // with no label (group buy, basket) keeps the city on the muted line.
+  const placeInLabel = Boolean(label && entry.city);
+  const meta = [entry.who, placeInLabel ? null : entry.city].filter(Boolean).join(" · ");
   const price = labels.price(entry);
   return (
     <li
@@ -478,6 +485,12 @@ function WhatsOnCard({ entry, labels }) {
               >
                 <Icon size={12} weight="bold" aria-hidden="true" />
                 {label}
+                {placeInLabel && (
+                  <>
+                    {" · "}
+                    <span data-testid="whats-on-city">{entry.city}</span>
+                  </>
+                )}
               </span>
             )}
             <span className="mt-0.5 font-headline-md text-lg font-bold leading-snug text-text line-clamp-2 group-hover:text-primary">
@@ -535,7 +548,7 @@ function WhatsOnGroup({ group, first, labels }) {
       {/* One size for all three: at 375 the display size broke the first
           heading over two lines and made the rows under it read as its
           children rather than its siblings. */}
-      <h2 className="font-headline-lg text-headline-lg font-black text-text">
+      <SectionHeading>
         {/* The two rows a visitor may not know by name carry the glyph their
             tool already has in the dashboard (tools/page.js:179, :193). */}
         {group.Icon && (
@@ -547,7 +560,7 @@ function WhatsOnGroup({ group, first, labels }) {
           />
         )}
         {group.heading}
-      </h2>
+      </SectionHeading>
       {group.lead && <p className="mt-1 text-sm text-fg-muted">{group.lead}</p>}
       {/* A phone scrolls the row sideways (the «קטגוריות» strip's own classes,
           HomeCategoryGrid.jsx:77); from lg it is a 3-up grid whose cards keep a

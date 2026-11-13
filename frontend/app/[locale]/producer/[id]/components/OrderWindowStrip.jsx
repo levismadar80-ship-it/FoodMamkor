@@ -88,6 +88,7 @@ import {
   israelNowParts,
   normalizeDayEntries,
 } from "@/lib/orderWindow";
+import SectionHeading from "@/components/ui/SectionHeading";
 
 const NOON_UTC = 12;
 
@@ -456,7 +457,7 @@ export function ProducerHoursSection({ producer }) {
 
   return (
     <section className="mt-12" data-testid="producer-hours">
-      <h2 className="font-headline-md text-2xl font-bold text-text mb-3">{t("heading")}</h2>
+      <SectionHeading size="content" className="mb-3">{t("heading")}</SectionHeading>
       <div className="space-y-3">
         {hasOrders && (
           <OrderWindowScheduleBlock

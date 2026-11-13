@@ -36,6 +36,7 @@ import "leaflet/dist/leaflet.css";
 import api from "@/lib/api";
 import { styleForProducer } from "@/lib/category-registry";
 import { primaryPoint } from "@/lib/producerPoints";
+import SectionHeading from "@/components/ui/SectionHeading";
 
 // MEH-538: Tel Aviv (population center) initial frame. MEH-856: this is now
 // only the PRE-FIT initial/fallback — FitToBusinesses fitBounds()es to the real
@@ -236,9 +237,9 @@ export default function HomepageMiniMap() {
     >
       <div className="max-w-6xl mx-auto">
         <header className="mb-3 text-center">
-          <h2 className="text-xl md:text-2xl font-semibold text-text">
+          <SectionHeading>
             {t("dot_caption")}
-          </h2>
+          </SectionHeading>
           {/* MEH-2635: the «גלו בתי עסק לפי מיקום» subtitle is gone — it said
               the same thing as the heading above it in different words. */}
         </header>

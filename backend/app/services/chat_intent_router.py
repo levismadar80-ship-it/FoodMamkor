@@ -88,6 +88,7 @@ def _classifier_prompt(categories: list[dict[str, str]]) -> str:
         "category exist (optionally in a city), site statistics, or upcoming "
         "markets/events (optionally in a city). route=freeform for everything "
         "else: how the site works, registration, approval, contact, pricing, "
+        "group buys (קבוצות רכישה), surprise / rescue bags (סלי הפתעה), "
         "greetings, or anything unrelated.\n"
         "Tools: count_producers_in_city(city) · "
         "list_producers_by_category(category_slug, city?) · get_site_stats() · "
