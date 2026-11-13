@@ -16,6 +16,15 @@ from pydantic import (
 )
 
 from app.allergens import normalize_allergens
+from app.limits import (
+    DELIVERY_CITIES_DETAIL,
+    GALLERY_IMAGES_DETAIL,
+    MAX_ADMIN_LIST,
+    MAX_DELIVERY_CITIES,
+    MAX_GALLERY_IMAGES,
+    MAX_SMALL_LIST,
+    cap_list,
+)
 from app.schemas.password import PasswordField
 from app.services.sanitization import sanitize_text
 from app.utils.clock import israel_today
@@ -877,7 +886,9 @@ class ProducerRegister(BaseModel):
     # MEH-1153: server-side parity with the client's ≥1-category gate.
     # validate_default=True runs _require_categories_validator on the absent
     # case (default []) too, so both "missing" and "[]" 422.
-    category_ids: list[int] = Field(default_factory=list, validate_default=True)
+    category_ids: list[int] = Field(
+        default_factory=list, validate_default=True, max_length=MAX_SMALL_LIST
+    )
     # MEH-530: optional at Pydantic level. Router calls
     # ensure_license_for_categories which 422s if license is missing for
     # a category in LICENSE_REQUIRED_CATEGORIES. max_length=20 mirrors the
@@ -944,7 +955,9 @@ class ProducerRegister(BaseModel):
     referral_source_other: str | None = Field(default=None, max_length=120)
     # MEH-293/MEH-479: dietary flags moved to per-product tagging via /settings.
     # Delivery areas
-    delivery_areas: list["DeliveryAreaCreate"] = []
+    delivery_areas: list["DeliveryAreaCreate"] = Field(
+        default_factory=list, max_length=MAX_DELIVERY_CITIES
+    )
     # MEH-1838 chunk A: delivery-shape fields — registration previously
     # captured NO axis at all (has_physical_location/offers_delivery both
     # silently defaulted at the DB layer), so every new business landed
@@ -958,7 +971,9 @@ class ProducerRegister(BaseModel):
     has_physical_location: bool = True
     offers_delivery: bool = False
     delivery_nationwide: bool = False
-    delivery_cities: list[str] = []
+    delivery_cities: list[str] = Field(
+        default_factory=list, max_length=MAX_DELIVERY_CITIES
+    )
 
     # MEH-1623 shipped producer_name's bleach→floor pair as two inline
     # @field_validators here; MEH-1626 chunk 1 moved that exact logic into
@@ -1148,6 +1163,12 @@ class ProducerRegister(BaseModel):
                 '"לכל הארץ" מסומן, אבל "משלוחים" לא. סמנו "משלוחים", או בטלו את "לכל הארץ".'
             )
         return self
+
+    @field_validator("delivery_areas", "delivery_cities", mode="before")
+    @classmethod
+    def _cap_delivery_meh3022(cls, v):
+        # MEH-3022: Hebrew sentence before pydantic's English max_length one.
+        return cap_list(v, MAX_DELIVERY_CITIES, DELIVERY_CITIES_DETAIL)
 
 
 class GoogleAuthRequest(BaseModel):
@@ -1826,10 +1847,14 @@ class ProducerCreate(BaseModel):
     facebook: str | None = None
     external_order_form: str | None = None
     # MEH-1153: same ≥1-category server-side parity as ProducerRegister.
-    category_ids: list[int] = Field(default_factory=list, validate_default=True)
+    category_ids: list[int] = Field(
+        default_factory=list, validate_default=True, max_length=MAX_SMALL_LIST
+    )
     # MEH-530: see ProducerRegister for the validation rationale.
     producer_license_number: str | None = Field(default=None, max_length=20)
-    delivery_areas: list[DeliveryAreaCreate] = []
+    delivery_areas: list[DeliveryAreaCreate] = Field(
+        default_factory=list, max_length=MAX_DELIVERY_CITIES
+    )
 
     # MEH-296 3d: http(s) scheme guard on the URL fields (reuse Chunk-2 helper).
     @field_validator("website", "facebook", "external_order_form")
@@ -1854,6 +1879,12 @@ class ProducerCreate(BaseModel):
     def _require_categories(cls, v):
         # MEH-1297: enforce the ≤3 cap alongside the MEH-1153 ≥1 requirement.
         return _cap_categories_validator(_require_categories_validator(v))
+
+    @field_validator("delivery_areas", mode="before")
+    @classmethod
+    def _cap_delivery_meh3022(cls, v):
+        # MEH-3022: Hebrew sentence before pydantic's English max_length one.
+        return cap_list(v, MAX_DELIVERY_CITIES, DELIVERY_CITIES_DETAIL)
 
 
 class ProducerAdminCreate(BaseModel):
@@ -1901,18 +1932,24 @@ class ProducerAdminCreate(BaseModel):
     # grant-verified (verified_at) only; column stays at default False (drops ch6).
     # MEH-18
     is_recommended: bool = False
-    images: list[str] = []
-    category_ids: list[int] = []
-    delivery_area_cities: list[str] = []  # simple comma-split list
+    images: list[str] = Field(default_factory=list, max_length=MAX_GALLERY_IMAGES)
+    category_ids: list[int] = Field(default_factory=list, max_length=MAX_SMALL_LIST)
+    delivery_area_cities: list[str] = Field(
+        default_factory=list, max_length=MAX_DELIVERY_CITIES
+    )  # simple comma-split list
     # MEH-213 — location mode
     has_physical_location: bool = True
     offers_delivery: bool = False
     delivery_nationwide: bool = False
-    delivery_cities: list[str] = []
+    delivery_cities: list[str] = Field(
+        default_factory=list, max_length=MAX_DELIVERY_CITIES
+    )
     # MEH-1255: nationwide exclusion list ("לכל הארץ חוץ מ:") — only legal
     # with delivery_nationwide=true (validator below + DB CHECK
     # delivery_excluded_requires_nationwide).
-    delivery_excluded_cities: list[str] = []
+    delivery_excluded_cities: list[str] = Field(
+        default_factory=list, max_length=MAX_DELIVERY_CITIES
+    )
 
     # MEH-1297: cap categories at 3 (admin create).
     @field_validator("category_ids")
@@ -1999,12 +2036,30 @@ class ProducerAdminCreate(BaseModel):
             )
         return self
 
+    # MEH-291 → MEH-2758 → MEH-2782: the availability enum is pause-only, like
+    # Google / Etsy / Wolt / Uber Eats — hours (the order window) plus one pause
+    # switch. `available_today` / `full_this_week` were removed: MEH-2758 stopped
+    # every write, and alembic f2b8d4c61a07 moved the rows still holding them to
+    # accepting_orders, so the read and write sets are the same two values again.
 
-# MEH-291 → MEH-2758 → MEH-2782: the availability enum is pause-only, like
-# Google / Etsy / Wolt / Uber Eats — hours (the order window) plus one pause
-# switch. `available_today` / `full_this_week` were removed: MEH-2758 stopped
-# every write, and alembic f2b8d4c61a07 moved the rows still holding them to
-# accepting_orders, so the read and write sets are the same two values again.
+    @field_validator("images", mode="before")
+    @classmethod
+    def _cap_images_meh3022(cls, v):
+        # MEH-3022: Hebrew sentence before pydantic's English max_length one.
+        return cap_list(v, MAX_GALLERY_IMAGES, GALLERY_IMAGES_DETAIL)
+
+    @field_validator(
+        "delivery_area_cities",
+        "delivery_cities",
+        "delivery_excluded_cities",
+        mode="before",
+    )
+    @classmethod
+    def _cap_delivery_meh3022(cls, v):
+        # MEH-3022: Hebrew sentence before pydantic's English max_length one.
+        return cap_list(v, MAX_DELIVERY_CITIES, DELIVERY_CITIES_DETAIL)
+
+
 AVAILABILITY_STATES = (
     "accepting_orders",  # default — «פתוח להזמנות»
     "on_vacation",  # «בהפסקה» (requires vacation_until)
@@ -2149,16 +2204,18 @@ class ProducerUpdate(BaseModel):
     # on the admin PUT they still reached those columns through the bulk
     # setattr. A stale client sending either key has it ignored (no
     # extra="forbid" on this model), not a 422.
-    images: list[str] | None = None
+    images: list[str] | None = Field(None, max_length=MAX_GALLERY_IMAGES)
     status: str | None = None
-    category_ids: list[int] | None = None
-    delivery_area_cities: list[str] | None = (
-        None  # admin form: simple list of city names
-    )
+    category_ids: list[int] | None = Field(None, max_length=MAX_SMALL_LIST)
+    delivery_area_cities: list[str] | None = Field(
+        None, max_length=MAX_DELIVERY_CITIES
+    )  # admin form: simple list of city names
     # MEH-1644: structured rows from the dashboard DeliveryCard — carries the
     # whitelist-validated delivery_day per city (DeliveryAreaCreate). Takes
     # precedence over delivery_area_cities in producer_me when both are sent.
-    delivery_areas: list[DeliveryAreaCreate] | None = None
+    delivery_areas: list[DeliveryAreaCreate] | None = Field(
+        None, max_length=MAX_DELIVERY_CITIES
+    )
     # MEH-1823 chunk 2: the owner's single offer, written through the same PUT
     # as delivery_areas. Three-valued on purpose, and the distinction is
     # load-bearing because `exclude_unset` cannot tell the last two apart on
@@ -2173,14 +2230,16 @@ class ProducerUpdate(BaseModel):
     has_physical_location: bool | None = None
     offers_delivery: bool | None = None
     delivery_nationwide: bool | None = None
-    delivery_cities: list[str] | None = None
+    delivery_cities: list[str] | None = Field(None, max_length=MAX_DELIVERY_CITIES)
     # MEH-1255: nationwide exclusion list. Schema validator catches the
     # explicit nationwide=false + excluded case; the routers guard the
     # EFFECTIVE state on partial updates (excluded sent while the stored
     # delivery_nationwide is false) so the DB CHECK never 500s.
-    delivery_excluded_cities: list[str] | None = None
+    delivery_excluded_cities: list[str] | None = Field(
+        None, max_length=MAX_DELIVERY_CITIES
+    )
     # MEH-210 Phase 2 — custom WhatsApp question chips
-    custom_questions: list[str] | None = None
+    custom_questions: list[str] | None = Field(None, max_length=MAX_SMALL_LIST)
     # MEH-291 — the 4-value availability enum; since MEH-2272 the only
     # availability field this schema accepts.
     availability_state: str | None = None
@@ -2485,6 +2544,24 @@ class ProducerUpdate(BaseModel):
         if v > MAX_DELIVERY_MONEY:
             raise ValueError("סף למשלוח חינם גבוה מדי")
         return v
+
+    @field_validator("images", mode="before")
+    @classmethod
+    def _cap_images_meh3022(cls, v):
+        # MEH-3022: Hebrew sentence before pydantic's English max_length one.
+        return cap_list(v, MAX_GALLERY_IMAGES, GALLERY_IMAGES_DETAIL)
+
+    @field_validator(
+        "delivery_area_cities",
+        "delivery_areas",
+        "delivery_cities",
+        "delivery_excluded_cities",
+        mode="before",
+    )
+    @classmethod
+    def _cap_delivery_meh3022(cls, v):
+        # MEH-3022: Hebrew sentence before pydantic's English max_length one.
+        return cap_list(v, MAX_DELIVERY_CITIES, DELIVERY_CITIES_DETAIL)
 
 
 class ProducerAdminUpdate(ProducerUpdate):
@@ -3257,7 +3334,7 @@ class AdminChecklistItemsIn(BaseModel):
     is assigned from the index server-side rather than sent by the client, so
     two items can never claim the same slot."""
 
-    items: list[AdminChecklistItemIn]
+    items: list[AdminChecklistItemIn] = Field(..., max_length=MAX_ADMIN_LIST)
 
 
 class ProducerReviewCheckOut(BaseModel):
@@ -3283,7 +3360,7 @@ class ProducerReviewChecksIn(BaseModel):
     assumption that breaks when two admin tabs are open on the same producer.
     """
 
-    item_ids: list[UUID] = []
+    item_ids: list[UUID] = Field(default_factory=list, max_length=MAX_ADMIN_LIST)
 
 
 class LicenseExpiryReminderRow(BaseModel):

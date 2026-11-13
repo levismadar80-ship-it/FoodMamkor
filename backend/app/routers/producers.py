@@ -886,7 +886,9 @@ def unsubscribe_delivery_waitlist(
 
 
 @router.post("/producers", response_model=ProducerDetailOut, status_code=201)
+@limiter.limit("10/hour")  # MEH-3022
 def create_producer(
+    request: Request,  # required by slowapi (MEH-3022)
     data: ProducerCreate,
     user: User = Depends(require_verified_email),
     db: Session = Depends(get_db),

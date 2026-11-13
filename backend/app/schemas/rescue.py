@@ -25,6 +25,7 @@ from uuid import UUID
 from pydantic import AfterValidator, BaseModel, Field, field_validator, model_validator
 
 from app.allergens import normalize_allergens
+from app.limits import MAX_TAG_LIST
 from app.models.models import (
     RESCUE_MAX_QTY_PER_OFFER,
     RESCUE_MAX_QTY_PER_ORDER,
@@ -157,8 +158,8 @@ class RescueReviewCreate(BaseModel):
     optional — chunk 4's screen submits one star row and nothing else."""
 
     rating: int = Field(ge=1, le=5)
-    contents_tags: list[str] | None = None
-    highlight_tags: list[str] | None = None
+    contents_tags: list[str] | None = Field(None, max_length=MAX_TAG_LIST)
+    highlight_tags: list[str] | None = Field(None, max_length=MAX_TAG_LIST)
     photo_url: str | None = Field(default=None, max_length=500)
     comment: str | None = None
 
@@ -167,8 +168,8 @@ class RescueReviewOut(BaseModel):
     id: UUID
     order_id: UUID
     rating: int
-    contents_tags: list[str] | None = None
-    highlight_tags: list[str] | None = None
+    contents_tags: list[str] | None = Field(None, max_length=MAX_TAG_LIST)
+    highlight_tags: list[str] | None = Field(None, max_length=MAX_TAG_LIST)
     photo_url: str | None = None
     comment: str | None = None
     created_at: UtcDatetimeOut
@@ -184,7 +185,7 @@ class RescueTypicalItemsIn(BaseModel):
     # MEH-2752: the allergens this business declares for its bag. `None` and
     # `[]` both mean "nothing filled" and are stored as NULL — see the
     # validator and backend/app/allergens.py for why [] must never persist.
-    allergens: list[str] | None = None
+    allergens: list[str] | None = Field(None, max_length=MAX_TAG_LIST)
 
     @field_validator("allergens")
     @classmethod
@@ -207,7 +208,7 @@ class RescueTypicalItemsOut(BaseModel):
     items: list[str]
     # None means the business declared nothing. The UI must say that in words
     # rather than render an empty list, which would read as "no allergens".
-    allergens: list[str] | None = None
+    allergens: list[str] | None = Field(None, max_length=MAX_TAG_LIST)
     updated_at: UtcDatetimeOut
 
     model_config = {"from_attributes": True}
@@ -261,7 +262,7 @@ class RescueOfferPublicOut(BaseModel):
     # MEH-2752: None = the business declared nothing. Deliberately nullable
     # rather than defaulting to [], so the card can tell "not declared" from
     # "declared none" — the second is a food-safety claim and nobody made it.
-    allergens: list[str] | None = None
+    allergens: list[str] | None = Field(None, max_length=MAX_TAG_LIST)
     distance_km: float | None = None
 
 

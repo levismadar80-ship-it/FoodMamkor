@@ -669,6 +669,16 @@ All endpoints served from `backend/app/main.py`. Auth via JWT in the
 via `slowapi` — see `backend/app/rate_limit.py` and
 [SECURITY.md](./SECURITY.md) §2.
 
+> **MEH-3022 — per-business caps.** Creates answer **409** with a Hebrew
+> `detail` once a business holds the maximum: products 100, recipes 50,
+> locations 20, upcoming events 30, upcoming/recurring experiences 30, open or
+> funded group buys 30. `PUT /producers/me` refuses more than 20 `images` or
+> 300 delivery cities/areas with a Hebrew 422. All numbers live in
+> `backend/app/limits.py`. The same ticket added rate limits to 17 write
+> routes that had none (`POST /producers`, events, experiences PUT/DELETE,
+> group buys + commit, favorites, alert prefs, review reply/delete, and the
+> product/recipe/location DELETEs).
+
 > **MEH-1164 F5 (Chunk 2A) — verified-email gate on content creates.** The
 > producer create endpoints `POST /events`, `POST /producers/me/recipes`, and
 > `POST /group-buys` depend on `require_verified_producer` (`app/auth.py`) =

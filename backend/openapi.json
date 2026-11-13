@@ -100,6 +100,7 @@
             "items": {
               "$ref": "#/components/schemas/AdminChecklistItemIn"
             },
+            "maxItems": 200,
             "title": "Items",
             "type": "array"
           }
@@ -4906,10 +4907,10 @@
             "type": "boolean"
           },
           "category_ids": {
-            "default": [],
             "items": {
               "type": "integer"
             },
+            "maxItems": 20,
             "title": "Category Ids",
             "type": "array"
           },
@@ -4948,26 +4949,26 @@
             "title": "Contact Name"
           },
           "delivery_area_cities": {
-            "default": [],
             "items": {
               "type": "string"
             },
+            "maxItems": 300,
             "title": "Delivery Area Cities",
             "type": "array"
           },
           "delivery_cities": {
-            "default": [],
             "items": {
               "type": "string"
             },
+            "maxItems": 300,
             "title": "Delivery Cities",
             "type": "array"
           },
           "delivery_excluded_cities": {
-            "default": [],
             "items": {
               "type": "string"
             },
+            "maxItems": 300,
             "title": "Delivery Excluded Cities",
             "type": "array"
           },
@@ -5025,10 +5026,10 @@
             "type": "boolean"
           },
           "images": {
-            "default": [],
             "items": {
               "type": "string"
             },
+            "maxItems": 20,
             "title": "Images",
             "type": "array"
           },
@@ -6233,6 +6234,7 @@
                 "items": {
                   "type": "integer"
                 },
+                "maxItems": 20,
                 "type": "array"
               },
               {
@@ -6292,6 +6294,7 @@
                 "items": {
                   "type": "string"
                 },
+                "maxItems": 20,
                 "type": "array"
               },
               {
@@ -6306,6 +6309,7 @@
                 "items": {
                   "type": "string"
                 },
+                "maxItems": 300,
                 "type": "array"
               },
               {
@@ -6320,6 +6324,7 @@
                 "items": {
                   "$ref": "#/components/schemas/DeliveryAreaCreate"
                 },
+                "maxItems": 300,
                 "type": "array"
               },
               {
@@ -6334,6 +6339,7 @@
                 "items": {
                   "type": "string"
                 },
+                "maxItems": 300,
                 "type": "array"
               },
               {
@@ -6348,6 +6354,7 @@
                 "items": {
                   "type": "string"
                 },
+                "maxItems": 300,
                 "type": "array"
               },
               {
@@ -6494,6 +6501,7 @@
                 "items": {
                   "type": "string"
                 },
+                "maxItems": 20,
                 "type": "array"
               },
               {
@@ -7035,6 +7043,7 @@
             "items": {
               "type": "integer"
             },
+            "maxItems": 20,
             "title": "Category Ids",
             "type": "array"
           },
@@ -7050,10 +7059,10 @@
             "title": "City"
           },
           "delivery_areas": {
-            "default": [],
             "items": {
               "$ref": "#/components/schemas/DeliveryAreaCreate"
             },
+            "maxItems": 300,
             "title": "Delivery Areas",
             "type": "array"
           },
@@ -10557,6 +10566,7 @@
             "items": {
               "type": "integer"
             },
+            "maxItems": 20,
             "title": "Category Ids",
             "type": "array"
           },
@@ -10584,18 +10594,18 @@
             "type": "boolean"
           },
           "delivery_areas": {
-            "default": [],
             "items": {
               "$ref": "#/components/schemas/DeliveryAreaCreate"
             },
+            "maxItems": 300,
             "title": "Delivery Areas",
             "type": "array"
           },
           "delivery_cities": {
-            "default": [],
             "items": {
               "type": "string"
             },
+            "maxItems": 300,
             "title": "Delivery Cities",
             "type": "array"
           },
@@ -10872,11 +10882,11 @@
         "description": "The ticked item ids for a producer, as the whole set.\n\nSet semantics, not a diff: what arrives IS the state afterwards, so an id\nthat was ticked and is now absent gets its row deleted. A diff API would\nneed the client to know what it previously sent, which is exactly the\nassumption that breaks when two admin tabs are open on the same producer.",
         "properties": {
           "item_ids": {
-            "default": [],
             "items": {
               "format": "uuid",
               "type": "string"
             },
+            "maxItems": 200,
             "title": "Item Ids",
             "type": "array"
           }
@@ -10958,6 +10968,7 @@
                 "items": {
                   "type": "integer"
                 },
+                "maxItems": 20,
                 "type": "array"
               },
               {
@@ -11017,6 +11028,7 @@
                 "items": {
                   "type": "string"
                 },
+                "maxItems": 20,
                 "type": "array"
               },
               {
@@ -11031,6 +11043,7 @@
                 "items": {
                   "type": "string"
                 },
+                "maxItems": 300,
                 "type": "array"
               },
               {
@@ -11045,6 +11058,7 @@
                 "items": {
                   "$ref": "#/components/schemas/DeliveryAreaCreate"
                 },
+                "maxItems": 300,
                 "type": "array"
               },
               {
@@ -11059,6 +11073,7 @@
                 "items": {
                   "type": "string"
                 },
+                "maxItems": 300,
                 "type": "array"
               },
               {
@@ -11073,6 +11088,7 @@
                 "items": {
                   "type": "string"
                 },
+                "maxItems": 300,
                 "type": "array"
               },
               {
@@ -11219,6 +11235,7 @@
                 "items": {
                   "type": "string"
                 },
+                "maxItems": 20,
                 "type": "array"
               },
               {
@@ -12818,6 +12835,7 @@
                 "items": {
                   "type": "string"
                 },
+                "maxItems": 50,
                 "type": "array"
               },
               {
@@ -13359,6 +13377,7 @@
                 "items": {
                   "type": "string"
                 },
+                "maxItems": 50,
                 "type": "array"
               },
               {
@@ -13373,6 +13392,7 @@
                 "items": {
                   "type": "string"
                 },
+                "maxItems": 50,
                 "type": "array"
               },
               {
@@ -13425,6 +13445,7 @@
                 "items": {
                   "type": "string"
                 },
+                "maxItems": 50,
                 "type": "array"
               },
               {
@@ -13444,6 +13465,7 @@
                 "items": {
                   "type": "string"
                 },
+                "maxItems": 50,
                 "type": "array"
               },
               {
@@ -13496,6 +13518,7 @@
                 "items": {
                   "type": "string"
                 },
+                "maxItems": 50,
                 "type": "array"
               },
               {
@@ -13524,6 +13547,7 @@
                 "items": {
                   "type": "string"
                 },
+                "maxItems": 50,
                 "type": "array"
               },
               {
