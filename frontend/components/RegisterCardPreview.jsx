@@ -3,6 +3,7 @@
 import { useTranslations } from "next-intl";
 import { CaretDown } from "@phosphor-icons/react";
 import ProducerCard from "@/components/ProducerCard";
+import { INERT_PRESENT } from "@/lib/inert-attr";
 
 /**
  * RegisterCardPreview — MEH-3074.
@@ -50,9 +51,8 @@ export default function RegisterCardPreview({ form, categories }) {
           className="shrink-0 transition-transform motion-reduce:transition-none group-open:rotate-180"
         />
       </summary>
-      {/* React 18 has no boolean `inert` prop — the empty string is the attribute.
-          max-w: a card on the site sits in a grid column, never full form width. */}
-      <div className="mx-auto max-w-[320px] px-4 pb-4" inert="" data-testid="register-card-preview-body">
+      {/* max-w: a card on the site sits in a grid column, never full form width. */}
+      <div className="mx-auto max-w-[320px] px-4 pb-4" inert={INERT_PRESENT} data-testid="register-card-preview-body">
         <ProducerCard producer={previewProducer(form, categories)} />
       </div>
     </details>
