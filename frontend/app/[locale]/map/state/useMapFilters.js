@@ -107,9 +107,9 @@ export function useMapFilters({
   userCity,
   setUserCity,
   setShowCityPicker,
-  // MEH-1670: the pickup/market_stand layer toggle, owned by MapClient. The
-  // viewport filter needs it so the list drops a business at the same moment
-  // the map does — a producer whose only points are hidden pickups is off both.
+  // MEH-1670: must match the marker layer's showSecondaryLayer so list and map
+  // agree. /map no longer has a toggle (Sapir 13/11), so MapClient passes
+  // nothing and both sides use the default true.
   showSecondaryLayer = true,
   // MEH-2170: the one-time mount catalog from useProducersFeed. null = not
   // loaded yet, and then no toggle is hidden.
