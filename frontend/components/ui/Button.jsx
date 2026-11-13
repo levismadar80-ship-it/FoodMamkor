@@ -58,8 +58,9 @@ export default function Button({
   type = "button",
   loading = false,
   disabled = false,
-  leadingIcon,
-  trailingIcon,
+  // Optional slots: a default marks them optional for // @ts-check callers.
+  leadingIcon = null,
+  trailingIcon = null,
   className = "",
   children,
   ...rest
