@@ -165,7 +165,7 @@
    vanished on a green button. */
 .focus-ring:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 2px #fff, 0 0 0 4px rgb(46, 104, 83);
+  box-shadow: 0 0 0 2px theme("colors.surface"), 0 0 0 4px theme("colors.primary");
 }
 
 /* Ghost button: transparent bg, border/text from the `text` token on cream
