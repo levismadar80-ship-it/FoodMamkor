@@ -31,6 +31,7 @@ import { contactHref, getPrimaryMethod } from "@/lib/contact-method";
 import OrganizerPrimaryContact from "./OrganizerPrimaryContact";
 import OrganizerContactLink from "./OrganizerContactLink";
 import HistoryBackLink from "@/components/HistoryBackLink";
+import ShareButton from "@/components/ShareButton";
 import OwnerCard from "@/app/[locale]/producer/[id]/components/OwnerCard";
 
 const ROUTE = "/[locale]/organizers/[slug]";
@@ -168,6 +169,9 @@ export default async function OrganizerPage(props) {
   const events = organizer.upcoming_events || [];
   const image = organizer.images?.[0];
   const initial = Array.from((organizer.name || "").trim())[0] ?? "";
+  // MEH-3018: the canonical URL, built on the server, so the share button
+  // carries the same value in the HTML and after hydration.
+  const pageUrl = buildAlternates(`/organizers/${slug}`, locale).canonical;
 
   return (
     <main className="max-w-3xl mx-auto pb-10 space-y-8" data-testid="organizer-page">
@@ -191,6 +195,19 @@ export default async function OrganizerPage(props) {
               className="w-full h-[96px] md:h-[140px] md:rounded-xl bg-green-50"
             />
           )}
+          {/* MEH-3018: share, where the recipe and business pages put it — the
+              white circle in the cover's inline-END corner (top-left in RTL,
+              MEH-2671), on the green band too, so it never depends on a photo. */}
+          <div className="absolute top-3 end-3 md:top-9 md:end-7 z-10">
+            <ShareButton
+              variant="overlay"
+              subject="organizer"
+              url={pageUrl}
+              title={organizer.name}
+              description={organizer.short_description || organizer.description}
+              city={organizer.city}
+            />
+          </div>
           {initial && (
             <span
               aria-hidden="true"
