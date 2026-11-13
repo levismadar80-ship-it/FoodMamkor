@@ -19,15 +19,20 @@
  * Related:  app/[locale]/experiences/[id]/ExperienceDetailClient.jsx,
  *           app/[locale]/events/[id]/EventDetailClient.jsx
  * History:  MEH-2768 (creation). Copy approved by Sapir 6/11 (items 5–9).
+ *           MEH-3043 (13/11): the open form can be closed again (× in the
+ *           card on desktop, a full-screen sheet with × on a phone) and a
+ *           sticky phone bar keeps the action in reach — RegistrationOverlays.
  */
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
+import { X } from "@phosphor-icons/react";
 import api from "@/lib/api";
 import { getWhatsAppHref, normalizePhone } from "@/lib/utils";
 import Input from "@/components/ui/Input";
 import CollectionNotice from "@/components/CollectionNotice";
 import ShareSiteActions from "@/components/ShareSiteActions";
+import { RegistrationSheet, StickyRegistrationBar, isDesktop, useInView } from "@/components/RegistrationOverlays";
 
 const BTN =
   "flex items-center justify-center min-h-[48px] w-full bg-primary text-white px-6 rounded-full font-semibold hover:bg-primary-dark transition focus-ring disabled:opacity-60";
@@ -162,6 +167,49 @@ function SignupForm({ kind, itemId, onDone }) {
 }
 
 /**
+ * Which action the CTA offers — one answer for the inline block AND the
+ * sticky phone bar (MEH-3043), so the two can never disagree. `null` = no
+ * channel reaches anyone, so nothing renders anywhere.
+ */
+function resolveAction({ method, phone, url, isFull, waitlistHref, title, t }) {
+  const mobile = normalizePhone(phone);
+  const anyPhone = phone && String(phone).replace(/\D/g, "").length >= 9 ? phone : null;
+  if (isFull) return waitlistHref ? { kind: "waitlist", href: waitlistHref } : { kind: "full" };
+  if (method === "external_url") return url ? { kind: "external", href: url } : null;
+  if (method === "whatsapp" || method === "phone") {
+    if (method === "whatsapp" && mobile) {
+      return { kind: "whatsapp", href: getWhatsAppHref(mobile, t("whatsapp_message", { title })) };
+    }
+    // No mobile for WhatsApp → a call still reaches the business.
+    return anyPhone ? { kind: "phone", href: telHref(anyPhone) } : null;
+  }
+  // site_form (the default for anything unknown — the server only accepts
+  // the four methods, and the on-site form is the one that needs no channel).
+  const questionHref = mobile
+    ? getWhatsAppHref(mobile, t("question_message", { title }))
+    : anyPhone
+      ? telHref(anyPhone)
+      : null;
+  return { kind: "form", questionHref, questionExternal: Boolean(mobile) };
+}
+
+/** The action as a link — every kind except the on-site form and «full». */
+function ActionLink({ action, label, testId, onClick }) {
+  const external = action.kind !== "phone";
+  return (
+    <a
+      href={action.href}
+      onClick={onClick}
+      {...(external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
+      className={BTN}
+      data-testid={testId}
+    >
+      {label}
+    </a>
+  );
+}
+
+/**
  * @param {"events"|"experiences"} kind
  * @param {string} itemId
  * @param {string} title
@@ -172,115 +220,183 @@ function SignupForm({ kind, itemId, onDone }) {
  * @param {string} [waitlistHref] WhatsApp waitlist link when full (workshops)
  * @param {Function} [onWaitlistClick] counts the tap for the host (MEH-2991)
  * @param {string} [waitlistLabel]
+ * @param {string} [barNote]     the date line beside the button on the phone bar
+ *
+ * MEH-3043 (Sapir 13/11, option ב): the form opened and could never close.
+ * Now: on a phone the sign-up button also rides a sticky bar while the inline
+ * one is off screen, and the form opens in a full-screen sheet with ×
+ * (Eventbrite's mobile checkout). On a desktop the form opens in place in the
+ * side card, under a heading with ×.
  */
-export default function RegistrationCta({ kind, itemId, title, method, phone, url, isFull, waitlistHref, waitlistLabel, onWaitlistClick }) {
+export default function RegistrationCta(props) {
+  const { kind, itemId, title, isFull, waitlistLabel, onWaitlistClick, barNote } = props;
   const t = useTranslations("registration.cta");
   const tSignup = useTranslations("registration.signup");
-  const [open, setOpen] = useState(false);
+  const tCommon = useTranslations("common.aria");
+  // null = closed · "inline" = in the card (desktop) · "sheet" = full screen (phone)
+  const [open, setOpen] = useState(null);
   const [done, setDone] = useState(false);
-  const mobile = normalizePhone(phone);
-  const anyPhone = phone && String(phone).replace(/\D/g, "").length >= 9 ? phone : null;
+  const openBtnRef = useRef(null);
+  const inlineRef = useRef(null);
+  const action = resolveAction({ ...props, t });
+  const inlineVisible = useInView(inlineRef, Boolean(action));
+  const signupLabel = kind === "events" ? t("signup_event") : t("signup_experience");
 
-  if (isFull) {
-    if (waitlistHref) {
-      return (
-        <a href={waitlistHref} onClick={onWaitlistClick} target="_blank" rel="noopener noreferrer" className={BTN} data-testid="registration-waitlist">
-          {waitlistLabel}
-        </a>
-      );
-    }
+  const openForm = () => setOpen(isDesktop() ? "inline" : "sheet");
+  const closeForm = useCallback(() => {
+    setOpen(null);
+    // Focus goes back to the button that opened it (WAI-ARIA dialog pattern),
+    // without scrolling: a sheet opened from the sticky bar must close onto
+    // the same reading position. After a sign-up the button is gone and focus
+    // goes to the confirmation that replaced it.
+    requestAnimationFrame(() => {
+      const target = openBtnRef.current ?? document.querySelector('[data-testid="registration-success"]');
+      target?.focus({ preventScroll: true });
+    });
+  }, []);
+
+  if (!action) return null;
+
+  const label = {
+    waitlist: waitlistLabel,
+    external: t("external"),
+    whatsapp: t("whatsapp"),
+    phone: t("phone"),
+    form: signupLabel,
+  }[action.kind];
+  const formAction = action.kind === "form";
+  const showBar = action.kind !== "full" && !done && !open && inlineVisible === false;
+
+  const form = <SignupForm kind={kind} itemId={itemId} onDone={() => setDone(true)} />;
+  const question = formAction && action.questionHref && (
+    <a
+      href={action.questionHref}
+      {...(action.questionExternal ? { target: "_blank", rel: "noopener noreferrer" } : {})}
+      className="block text-center text-sm text-primary underline underline-offset-2 min-h-touch leading-[44px]"
+      data-testid="registration-question"
+    >
+      {t("question")}
+    </a>
+  );
+
+  return (
+    <>
+      <div ref={inlineRef}>
+        <InlineBlock
+          action={action}
+          label={label}
+          done={done}
+          open={open}
+          kind={kind}
+          title={title}
+          form={form}
+          question={question}
+          signupLabel={signupLabel}
+          closeLabel={tCommon("close")}
+          onOpen={openForm}
+          onClose={closeForm}
+          openBtnRef={openBtnRef}
+          onWaitlistClick={onWaitlistClick}
+          fullText={t("full")}
+          successText={tSignup("success")}
+        />
+      </div>
+      {showBar && (
+        <StickyRegistrationBar note={barNote}>
+          {formAction ? (
+            <button type="button" className={BTN} onClick={() => setOpen("sheet")} data-testid="registration-bar-action">
+              {label}
+            </button>
+          ) : (
+            <ActionLink action={action} label={label} testId="registration-bar-action" onClick={action.kind === "waitlist" ? onWaitlistClick : undefined} />
+          )}
+        </StickyRegistrationBar>
+      )}
+      {open === "sheet" && (
+        <RegistrationSheet title={`${signupLabel} · ${title}`} closeLabel={tCommon("close")} onClose={closeForm}>
+          {done ? (
+            <DoneBlock kind={kind} title={title} successText={tSignup("success")} />
+          ) : (
+            <>
+              <div id="registration-form-panel">{form}</div>
+              {question}
+            </>
+          )}
+        </RegistrationSheet>
+      )}
+    </>
+  );
+}
+
+function InlineBlock({ action, label, done, open, kind, title, form, question, signupLabel, closeLabel, onOpen, onClose, openBtnRef, onWaitlistClick, fullText, successText }) {
+  if (action.kind === "full") {
     return (
       <p className="text-center font-semibold text-text" data-testid="registration-full">
-        {t("full")}
+        {fullText}
       </p>
     );
   }
-
-  if (method === "external_url") {
-    if (!url) return null;
-    return (
-      <a href={url} target="_blank" rel="noopener noreferrer" className={BTN} data-testid="registration-external">
-        {t("external")}
-      </a>
-    );
+  if (action.kind !== "form") {
+    const testId = { waitlist: "registration-waitlist", external: "registration-external", whatsapp: "registration-whatsapp", phone: "registration-phone" }[action.kind];
+    return <ActionLink action={action} label={label} testId={testId} onClick={action.kind === "waitlist" ? onWaitlistClick : undefined} />;
   }
 
-  if (method === "whatsapp" || method === "phone") {
-    if (method === "whatsapp" && mobile) {
-      return (
-        <a
-          href={getWhatsAppHref(mobile, t("whatsapp_message", { title }))}
-          target="_blank"
-          rel="noopener noreferrer"
-          className={BTN}
-          data-testid="registration-whatsapp"
-        >
-          {t("whatsapp")}
-        </a>
-      );
-    }
-    // No mobile for WhatsApp → a call still reaches the business.
-    if (!anyPhone) return null;
-    return (
-      <a href={telHref(anyPhone)} className={BTN} data-testid="registration-phone">
-        {t("phone")}
-      </a>
-    );
-  }
-
-  // site_form (the default for anything unknown — the server only accepts
-  // the four methods, and the on-site form is the one that needs no channel).
-  const questionHref = mobile
-    ? getWhatsAppHref(mobile, t("question_message", { title }))
-    : anyPhone
-      ? telHref(anyPhone)
-      : null;
-
-  if (done) {
-    // MEH-2827 PR 5: just signed up is when a friend gets invited — one «שתפו»
-    // that shares THIS event page (title + its own URL, no site message).
-    // Events only; experiences keep the plain confirmation.
-    const eventUrl = kind === "events" && typeof window !== "undefined"
-      ? `${window.location.origin}${window.location.pathname}`
-      : "";
-    return (
-      <div className="space-y-3">
-        <p role="status" className="text-sm bg-green-50 border border-primary/30 text-text rounded-md p-3" data-testid="registration-success">
-          {tSignup("success")}
-        </p>
-        {eventUrl && (
-          <ShareSiteActions layout="compact" url={eventUrl} title={title} message="" />
-        )}
-      </div>
-    );
-  }
+  // While the phone sheet is open it carries the confirmation itself; the
+  // card shows it once the sheet closes (one copy on screen at a time).
+  if (done && open !== "sheet") return <DoneBlock kind={kind} title={title} successText={successText} />;
 
   return (
     <div className="space-y-3" data-testid="registration-site-form">
-      {!open && (
+      {open === "inline" ? (
+        <div id="registration-form-panel">
+          {/* MEH-3043: the heading names what is open, × closes it. RTL: the
+              × mirrors to the inline END and the heading reserves its width
+              (rtl.md, MEH-2038). */}
+          <div className="relative mb-1">
+            <h3 className="font-semibold text-text pe-12 min-h-touch flex items-center">{signupLabel}</h3>
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label={closeLabel}
+              className="absolute top-0 end-0 w-11 h-11 flex items-center justify-center rounded-full text-fg-muted hover:bg-background focus-ring"
+              data-testid="registration-close"
+            >
+              <X size={20} aria-hidden="true" />
+            </button>
+          </div>
+          {form}
+        </div>
+      ) : (
         <button
+          ref={openBtnRef}
           type="button"
           className={BTN}
-          onClick={() => setOpen(true)}
+          onClick={onOpen}
           data-testid="registration-open"
         >
-          {kind === "events" ? t("signup_event") : t("signup_experience")}
+          {signupLabel}
         </button>
       )}
-      {open && (
-        <div id="registration-form-panel">
-          <SignupForm kind={kind} itemId={itemId} onDone={() => setDone(true)} />
-        </div>
-      )}
-      {questionHref && (
-        <a
-          href={questionHref}
-          {...(mobile ? { target: "_blank", rel: "noopener noreferrer" } : {})}
-          className="block text-center text-sm text-primary underline underline-offset-2 min-h-touch leading-[44px]"
-          data-testid="registration-question"
-        >
-          {t("question")}
-        </a>
+      {/* While the phone sheet is open it carries the question link. */}
+      {open !== "sheet" && question}
+    </div>
+  );
+}
+
+function DoneBlock({ kind, title, successText }) {
+  // MEH-2827 PR 5: just signed up is when a friend gets invited — one «שתפו»
+  // that shares THIS event page (title + its own URL, no site message).
+  // Events only; experiences keep the plain confirmation.
+  const eventUrl = kind === "events" && typeof window !== "undefined"
+    ? `${window.location.origin}${window.location.pathname}`
+    : "";
+  return (
+    <div className="space-y-3">
+      <p role="status" tabIndex={-1} className="text-sm bg-green-50 border border-primary/30 text-text rounded-md p-3 focus:outline-none" data-testid="registration-success">
+        {successText}
+      </p>
+      {eventUrl && (
+        <ShareSiteActions layout="compact" url={eventUrl} title={title} message="" />
       )}
     </div>
   );
