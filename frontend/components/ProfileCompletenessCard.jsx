@@ -10,9 +10,9 @@ import { producerCompleteness, COMPLETENESS_FIELDS } from "@/lib/producer-comple
  *
  * Module:   ProfileCompletenessCard
  * Purpose:  Surface a clear onboarding path to the business owner at the top
- *           of /producer/dashboard as a 5-step checklist (photo →
- *           categories+location → first product → primary contact → opening
- *           hours) so a brand-new producer sees concrete next steps instead of
+ *           of /producer/dashboard as a 7-step checklist (photo →
+ *           categories+location → first product → primary contact → WhatsApp
+ *           verification → opening hours → owner photo, MEH-3032) so a brand-new producer sees concrete next steps instead of
  *           three 0/0/0 analytics cards. Read-only consumer of the shared
  *           completeness heuristic.
  * Does NOT: own the completeness logic — that lives in
@@ -299,9 +299,10 @@ export default function ProfileCompletenessCard({ producer, footer = null }) {
     );
   }
 
-  // Percent lands on 0/20/40/60/80 for the 5-step model (MEH-1895 — it was
-  // 0/25/50/75 at four). >70 is now reached only at 80% (4 of 5), which still
-  // reads as "almost there"; below that is the neutral progress headline. Calm
+  // Seven steps since MEH-3032: percent lands on 0/14/29/43/57/71/86. >70 is
+  // reached at 5 of 7 (71%) and 6 of 7 (86%), which read as "almost there";
+  // below that is the neutral progress headline (at six steps 4 of 6 = 67%
+  // was neutral — two missing now reads "almost there", deliberately). Calm
   // idiom (MEH-1092): gold ring, never red, for every incomplete state.
   const headline =
     percent > 70
