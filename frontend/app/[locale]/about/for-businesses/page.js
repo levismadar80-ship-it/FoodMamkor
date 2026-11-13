@@ -260,8 +260,8 @@ export default async function FaqForBusinessesPage({ params }) {
               ].map(([key, Icon]) => (
                 <li key={key} className="flex items-start gap-3">
                   <Icon
-                    size={22}
-                    weight="duotone"
+                    size={24}
+                    weight="regular"
                     className="mt-0.5 shrink-0 text-primary"
                     aria-hidden="true"
                   />

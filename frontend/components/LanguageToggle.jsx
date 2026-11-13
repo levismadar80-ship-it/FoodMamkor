@@ -93,7 +93,7 @@ export default function LanguageToggle({ variant = "default", className = "", ch
       data-current-locale={locale}
       className={`${shellCls} ${className}`.trim()}
     >
-      <Globe size={bare ? 19 : 20} weight="regular" aria-hidden="true" />
+      <Globe size={20} weight="regular" aria-hidden="true" />
       {children}
     </button>
   );

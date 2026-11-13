@@ -58,7 +58,7 @@ const tileLabel = (label) => label.replace(/:\s*$/, "");
 function FactTile({ icon: Icon, label, value }) {
   return (
     <div className="flex flex-col items-center gap-1 px-2 py-3 text-center">
-      <Icon size={22} className="text-primary" aria-hidden="true" />
+      <Icon size={24} className="text-primary" aria-hidden="true" />
       <span className="text-sm text-fg-muted">{label}</span>
       <span className="text-base font-bold text-text">{value}</span>
     </div>

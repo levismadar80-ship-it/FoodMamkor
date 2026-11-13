@@ -544,7 +544,7 @@ export default function BottomNav() {
                   {/* MEH-852: the active tint is the shared nav-level indicator
                       above — no per-tab capsule here anymore. */}
                   <Icon
-                    size={22}
+                    size={24}
                     weight={active ? "fill" : "regular"}
                     aria-hidden="true"
                     className="relative z-10"

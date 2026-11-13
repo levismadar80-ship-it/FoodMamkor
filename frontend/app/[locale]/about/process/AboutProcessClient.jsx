@@ -183,7 +183,7 @@ export default function AboutProcessClient() {
                 </span>
                 <div>
                   <div className="flex items-center gap-2.5 mb-2">
-                    <Icon size={19} className="text-primary shrink-0" aria-hidden />
+                    <Icon size={20} className="text-primary shrink-0" aria-hidden />
                     <h3 className="font-headline-md font-bold text-xl leading-tight text-text">
                       {t(`steps.s${i + 1}_title`)}
                     </h3>

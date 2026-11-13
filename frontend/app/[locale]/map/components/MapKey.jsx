@@ -46,7 +46,8 @@ function SampleVerified() {
       {/* rtl-ok: mirrors the marker's physical bottom-right badge */}
       {/* eslint-disable-next-line no-restricted-syntax -- rtl-ok: the map badge is physically bottom-right in every locale */}
       <span className="absolute -bottom-1 -right-1 w-3.5 h-3.5 rounded-full bg-primary border border-white flex items-center justify-center">
-        <Check size={12} weight="bold" className="text-white" />
+        {/* icon-ok: an 8px tick inside the 14px legend copy of the marker's verified badge — a scale step would fill it */}
+        <Check size={8} weight="bold" className="text-white" />
       </span>
     </span>
   );

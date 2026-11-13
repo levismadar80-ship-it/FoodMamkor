@@ -163,7 +163,7 @@ export default function MapProducerCard({ producer, active, onClick }) {
         ) : (
           // MEH-1243 (🔒 placeholder): category glyph at 70% of the pin color.
           <div className="w-full h-full flex items-center justify-center" aria-hidden="true">
-            <CategoryIcon size={32} weight="light" style={{ color: categoryColor, opacity: 0.7 }} />
+            <CategoryIcon size={32} weight="regular" style={{ color: categoryColor, opacity: 0.7 }} />
           </div>
         )}
       </div>

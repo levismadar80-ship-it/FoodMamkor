@@ -68,7 +68,7 @@ export default function EmptyState({
           <Icon size={disc.icon} className="text-primary" />
         </div>
       ) : Icon ? (
-        <Icon size={56} className="text-primary mx-auto mb-4" aria-hidden="true" />
+        <Icon size={64} className="text-primary mx-auto mb-4" aria-hidden="true" />
       ) : emoji ? (
         <p className="text-5xl mb-4" aria-hidden="true">
           {emoji}

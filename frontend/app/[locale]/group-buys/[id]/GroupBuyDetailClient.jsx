@@ -563,7 +563,7 @@ export default function GroupBuyDetailClient({ id }) {
                         // layout is the same: icon column, then label over note.
                         <div key={kind} className="relative ps-[34px] min-w-0" data-testid={`group-buy-${kind}-note`}>
                           <dt className="text-sm font-bold text-text">
-                            <Icon size={22} className="text-primary absolute start-0 top-0.5" aria-hidden="true" />
+                            <Icon size={24} className="text-primary absolute start-0 top-0.5" aria-hidden="true" />
                             {t(`${kind}_label`)}
                           </dt>
                           <dd className="text-base text-text whitespace-pre-line">{note}</dd>

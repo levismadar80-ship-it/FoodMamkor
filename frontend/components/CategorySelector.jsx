@@ -278,7 +278,7 @@ export default function CategorySelector({ categories, selectedIds, onChange, on
                     {/* MEH-2163: same two renderings as before — the mapped
                         glyph at 46px, the fallback at 46px `weight="light"`.
                         Only the identity of the fallback moved (registry). */}
-                    {isFallback ? <Glyph size={46} weight="light" /> : <Glyph size={46} />}
+                    {isFallback ? <Glyph size={48} weight="regular" /> : <Glyph size={48} />}
                   </span>
                   <span className="min-w-0">
                     <span className="block font-headline-display font-bold text-xl leading-tight text-text">

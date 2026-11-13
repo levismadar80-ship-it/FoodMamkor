@@ -17,7 +17,6 @@ export const ICON_SIZES = new Set([12, 14, 16, 18, 20, 24, 32, 40, 48, 64]);
 export const ICON_WEIGHTS = new Set(["regular", "bold", "fill"]);
 
 export function offScaleIcons(src, seen = { icons: 0 }) {
-  if (!src.includes("@phosphor-icons/react")) return [];
   const ast = parse(src, { sourceType: "module", plugins: ["jsx"] });
   const icons = new Set();
   for (const n of ast.program.body) {
@@ -26,21 +25,31 @@ export function offScaleIcons(src, seen = { icons: 0 }) {
     }
   }
   const hits = [];
+  const lines = src.split("\n");
+  // escape hatch: `icon-ok: <reason>` on the icon's line or the line above
+  const excused = (line) => /icon-ok:/.test(`${lines[line - 2] ?? ""}\n${lines[line - 1] ?? ""}`);
   traverse(ast, {
     JSXOpeningElement(p) {
       const nm = p.node.name;
-      if (nm.type !== "JSXIdentifier" || !icons.has(nm.name)) return;
+      // Phosphor imports, plus the house aliases for an icon passed in as a
+      // prop or read from a registry (<Icon>, <Glyph>, <CategoryIcon>).
+      if (nm.type !== "JSXIdentifier" || !(icons.has(nm.name) || /^(Icon|Glyph)$|[a-z]Icon$/.test(nm.name))) return;
       seen.icons++;
+      if (excused(p.node.loc.start.line)) return;
       for (const a of p.node.attributes) {
         if (a.type !== "JSXAttribute" || !a.value) continue;
         const v = a.value.type === "JSXExpressionContainer" ? a.value.expression : a.value;
         const line = p.node.loc.start.line;
-        if (a.name.name === "size") {
-          const n = v.type === "NumericLiteral" ? v.value : v.type === "StringLiteral" && /^\d+$/.test(v.value) ? +v.value : null;
-          if (n !== null && !ICON_SIZES.has(n)) hits.push(`${nm.name} size=${n}@${line}`);
-        }
-        if (a.name.name === "weight" && v.type === "StringLiteral" && !ICON_WEIGHTS.has(v.value)) {
-          hits.push(`${nm.name} weight=${v.value}@${line}`);
+        // a ternary's two literal branches count too (`size={bare ? 19 : 20}`)
+        const vals = v.type === "ConditionalExpression" ? [v.consequent, v.alternate] : [v];
+        for (const b of vals) {
+          if (a.name.name === "size") {
+            const n = b.type === "NumericLiteral" ? b.value : b.type === "StringLiteral" && /^\d+$/.test(b.value) ? +b.value : null;
+            if (n !== null && !ICON_SIZES.has(n)) hits.push(`${nm.name} size=${n}@${line}`);
+          }
+          if (a.name.name === "weight" && b.type === "StringLiteral" && !ICON_WEIGHTS.has(b.value)) {
+            hits.push(`${nm.name} weight=${b.value}@${line}`);
+          }
         }
       }
     },
@@ -66,10 +75,15 @@ describe("MEH-3089 — icon size scale and weights", () => {
     expect(offScaleIcons(imp + 'const a = <X size={24} weight="bold" />;')).toEqual([]);
     expect(offScaleIcons(imp + "const a = <X size={s} />;")).toEqual([]);
     expect(offScaleIcons(imp + "const a = <Spinner size={22} />;")).toEqual([]);
+    // reviewer finding (13/11): aliases and ternaries — the pre-fix BottomNav.jsx:547
+    // tab <Icon size={22}> and LanguageToggle.jsx:96 <Globe size={bare ? 19 : 20}>
+    expect(offScaleIcons("const a = <Icon size={22} />;")).toEqual(["Icon size=22@1"]);
+    expect(offScaleIcons(imp.replace("X, Basket", "Globe") + "const a = <Globe size={bare ? 19 : 20} />;")).toEqual(["Globe size=19@2"]);
+    expect(offScaleIcons("// icon-ok: legend tick\nconst a = <Icon size={8} />;")).toEqual([]);
   });
 
   it("every icon in app/ and components/ is on the scale", () => {
-    const files = ["app", "components"].flatMap((d) => walk(path.join(ROOT, d)));
+    const files = ["app", "components", "lib", "hooks"].flatMap((d) => walk(path.join(ROOT, d)));
     const seen = { icons: 0 };
     const offenders = [];
     for (const f of files) {

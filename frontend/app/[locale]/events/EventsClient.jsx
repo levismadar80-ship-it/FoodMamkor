@@ -473,7 +473,7 @@ function EmptyState({ tab, t }) {
   return (
     <div data-testid="events-empty-dataset" className="flex flex-col items-center text-center px-6 py-16">
       <div className="grid place-items-center w-[76px] h-[76px] rounded-full bg-accent/10 border border-accent/25 text-accent">
-        <Icon size={36} />
+        <Icon size={32} />
       </div>
       {/* MEH-858 F4: empty-state title is h2 (was h4) — only heading under the
           page h1 when the feed is empty, so h1 → h2 with no skip. */}
