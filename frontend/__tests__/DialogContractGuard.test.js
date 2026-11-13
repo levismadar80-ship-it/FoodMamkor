@@ -24,7 +24,7 @@ export function dialogIssues(src) {
   if (!src.includes("aria-modal")) return [];
   const ast = parse(src, { sourceType: "module", plugins: ["jsx"] });
   const trap = /useDialogFocus\(|key\s*[!=]==\s*"Tab"|"Tab"\s*[!=]==/.test(src);
-  const esc = /"Escape"/.test(src);
+  const esc = /"Escape"|useDialogEscape\(/.test(src);
   const hits = [];
   traverse(ast, {
     JSXOpeningElement(p) {
@@ -59,6 +59,12 @@ describe("MEH-3093 — modal dialog contract", () => {
     expect(dialogIssues('useDialogFocus(r, o); if (e.key === "Escape") x();\nconst a = <div role="dialog" aria-modal="true" />;')).toEqual(["name@2"]);
     expect(dialogIssues('useDialogFocus(r, o); if (e.key === "Escape") x();\nconst a = <div aria-modal="true" aria-label="x" />;')).toEqual([]);
     expect(dialogIssues('const a = <div role="dialog" aria-modal="false" aria-label="x" />;')).toEqual([]);
+    // the real file, read from disk: ReportButton.jsx keeps the contract
+    const real = fs.readFileSync(path.join(ROOT, "components/ReportButton.jsx"), "utf8");
+    expect(dialogIssues(real)).toEqual([]);
+    // ...and stripped of its hooks it reds exactly on the two missing halves
+    const stripped = real.replace(/useDialogFocus\([^)]*\);/g, "").replace(/useDialogEscape\([^;]*\);/g, "");
+    expect(dialogIssues(stripped).map((h) => h.split("@")[0])).toEqual(["focus", "escape"]);
   });
 
   it("every modal dialog in app/ and components/ keeps the contract", () => {

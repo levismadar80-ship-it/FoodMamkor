@@ -1,12 +1,11 @@
 "use client";
 
 import { useRef, useState } from "react";
-import useDialogFocus from "@/hooks/useDialogFocus";
+import useDialogFocus, { useDialogEscape } from "@/hooks/useDialogFocus";
 import { useTranslations } from "next-intl";
 import { useAuth } from "@/lib/auth-context";
 import api from "@/lib/api";
 import { detailToMessage } from "@/lib/errors";
-import { useFocusReturn } from "@/lib/use-focus-return";
 import Button from "@/components/ui/Button";
 
 // MEH-2999: `quiet` = the business page's fine-print row — same small grey
@@ -17,12 +16,12 @@ export default function ReportButton({ producerId, quiet = false }) {
   const { user } = useAuth();
   const [showModal, setShowModal] = useState(false);
   const reportDialogRef = useRef(null);
-  useDialogFocus(reportDialogRef, showModal);
+  useDialogFocus(reportDialogRef, showModal && !!user);
+  useDialogEscape(showModal, () => setShowModal(false));
   const [reason, setReason] = useState("");
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState("");
 
-  useFocusReturn(showModal);
 
   if (!user) return null;
 
@@ -56,7 +55,7 @@ export default function ReportButton({ producerId, quiet = false }) {
 
       {showModal && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-[9000] p-4">
-          <div ref={reportDialogRef} onKeyDown={(e) => { if (e.key === "Escape") setShowModal(false); }}
+          <div ref={reportDialogRef}
             role="dialog"
             aria-modal="true"
             aria-labelledby="report-dialog-title"
