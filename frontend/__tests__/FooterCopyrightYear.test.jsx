@@ -53,6 +53,8 @@ import DashboardFooter from "@/components/DashboardFooter";
 // where the old code and the Israel year disagree, which is what makes the
 // case discriminate.
 const NEW_YEAR_NIGHT_ISRAEL = new Date("2026-12-31T22:30:00Z");
+const RUNNER_IS_ISRAEL =
+  Intl.DateTimeFormat().resolvedOptions().timeZone === "Asia/Jerusalem";
 
 // Footer + DashboardFooter both print «© <year> footer.copyright».
 function copyrightYears() {
@@ -72,6 +74,14 @@ describe("© year follows the Israel calendar (MEH-2998)", () => {
     vi.useRealTimers();
   });
 
+  // The old code read the RUNNER's zone. CI runs in UTC, where this instant is
+  // still 2026, so there the cases below fail on the old code (shown in the PR).
+  // On a machine set to Israel time no instant can tell the two apart; this
+  // precondition is skipped there and the cases below are only a sanity check.
+  it.skipIf(RUNNER_IS_ISRAEL)("precondition — the runner's own calendar still says 2026 at this instant", () => {
+    expect(NEW_YEAR_NIGHT_ISRAEL.getFullYear()).toBe(2026);
+  });
+
   it("consumer Footer shows 2027 at 00:30 on 1 Jan in Israel (22:30 UTC on 31 Dec)", () => {
     render(<Footer />);
     expect(copyrightYears()).toEqual(["2027"]);
@@ -83,6 +93,7 @@ describe("© year follows the Israel calendar (MEH-2998)", () => {
     expect(copyrightYears()).toEqual(["2027"]);
   });
 
+  // Sanity only — the old code passes this one too.
   it("an ordinary mid-year day still shows that year", () => {
     vi.setSystemTime(new Date("2027-06-15T09:00:00Z"));
     render(<Footer />);

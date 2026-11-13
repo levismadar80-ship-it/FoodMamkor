@@ -8,9 +8,11 @@
  *
  * This guard reads the REAL clock on purpose (the one exception to the
  * frozen-clock rule in .claude/rules/testing.md): its whole job is to go red
- * on a calendar date. From 90 days before the table's last day it fails with
- * the instruction below, which leaves ~3½ months to roll the table before the
- * 5788 Rosh Hashana banner would be due (it opens 7 days before the eve).
+ * on a calendar date. From 89 days before the table's last day (14/03/2027)
+ * it fails with the instruction below — a scheduled red for EVERY PR and
+ * staging run, on purpose, so the roll (MEH-3017, due 01/03/2027) cannot be
+ * forgotten. That still leaves ~6 months before the 5788 Rosh Hashana banner
+ * would be due (it opens 7 days before the eve, 01/10/2027).
  *
  * To fix a red here: add the next year's dates to lib/holidays.js AND pin them
  * in __tests__/holidays.test.js (MEH-2263 convention: start = erev, end = last
@@ -39,9 +41,10 @@ const LAST_END = Object.values(HOLIDAYS)
 describe("holiday table has runway (MEH-2998)", () => {
   // Control: proves the measurement can go red AND green, against the real
   // table, so a green below is not the output of a dead check.
-  it("control — 89 days before the last entry is red, 91 is green", () => {
+  it("control — 89 days before the last entry is red, 90 and 91 are green", () => {
     const at = (daysBefore) => new Date(dayMs(LAST_END) - daysBefore * DAY_MS + 12 * 3600000);
     expect(runwayDays(at(89))).toBeLessThan(MIN_RUNWAY_DAYS);
+    expect(runwayDays(at(90))).toBeGreaterThanOrEqual(MIN_RUNWAY_DAYS);
     expect(runwayDays(at(91))).toBeGreaterThanOrEqual(MIN_RUNWAY_DAYS);
   });
 
