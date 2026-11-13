@@ -74,6 +74,7 @@ import type { APIRequestContext, Page, Route } from "@playwright/test";
 
 import { authedContext } from "../auth-fixture";
 import { expect, test } from "./_cloudinary-stub";
+import he from "../../messages/he.json";
 
 const AUTH_DIR = path.join(__dirname, "..", ".auth");
 const ADMIN_STATE = path.join(AUTH_DIR, "admin.json");
@@ -344,8 +345,21 @@ test.describe("owner invite", () => {
     // The public page of a hidden business, opened as a stranger. This is the
     // card's «עסק inactive לא חוזר מאף endpoint ציבורי לפני הקבלה» at the
     // surface a person would actually reach it from.
-    const response = await page.goto(`/he/producer/${business.id}`);
-    expect(response?.status()).toBe(404);
+    //
+    // Not the document status: /producer/<uuid> answers 200 with the not-found
+    // page for ANY missing business (measured on production 13/11, browser and
+    // Googlebot user agents alike), so a status check here never passed and
+    // said nothing about «hidden». What a stranger can actually tell apart is
+    // asserted instead: the public API refuses the id, and the page shows the
+    // not-found copy and none of the business.
+    const api = await page.request.get(`/api/producers/${business.id}`);
+    expect(api.status(), "the public API must not return a hidden business").toBe(404);
+    await page.goto(`/he/producer/${business.id}`);
+    await expect(page.locator("#main-content h1")).toHaveText(
+      he.errors.producer_not_found.heading,
+      { timeout: 15_000 },
+    );
+    await expect(page.getByText(business.name)).toHaveCount(0);
   });
 
   test("reopening the same link shows the not-valid state", async ({ page }) => {
