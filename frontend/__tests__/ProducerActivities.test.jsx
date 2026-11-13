@@ -84,6 +84,16 @@ describe("ProducerActivities", () => {
     expect(screen.getAllByTestId("event-row-image")[0]).toHaveAttribute("data-kind", "category");
   });
 
+  // MEH-3009: the owner initial marks rows in mixed lists; here every row is
+  // this business's own, so no row repeats its letter.
+  it("rows with their own photo carry no owner initial on the business page", async () => {
+    answer({ "/experiences": [{ ...EX, image_url: "https://x/ex.jpg", host: { producer_name: "מכוורת השדה" } }] });
+    render(<ProducerActivities producerId="p-1" events={[{ ...EV, image_url: "https://x/ev.jpg" }]} />);
+    await screen.findByText("סדנת גבינות");
+    expect(screen.getAllByTestId("event-row-image").map((el) => el.getAttribute("data-kind"))).toEqual(["event", "event"]);
+    expect(screen.queryByTestId("event-row-owner-initial")).toBeNull();
+  });
+
   it("many: shows 3, then the existing show-all button reveals the rest", async () => {
     const many = [1, 2, 3, 4].map((n) => ({ ...EV, id: `ev${n}`, title: `אירוע ${n}`, event_date: `2099-02-0${n}` }));
     answer({});

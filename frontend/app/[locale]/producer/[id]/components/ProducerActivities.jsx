@@ -205,7 +205,9 @@ export default function ProducerActivities({ producerId, events = [], sectionRef
     const list = [
       ...events.map((ev) => toEventEntry(ev, "events", noT)),
       ...experiences.map((ex) => toEventEntry(ex, "experiences", noT)),
-    ].map((e) => ({ ...e, who: null, ownerImage: null }));
+      // MEH-3009: no owner initial either — every row here is this business's
+      // own, so its letter on each photo would only repeat the page title.
+    ].map((e) => ({ ...e, who: null, ownerImage: null, ownerInitial: "" }));
     return list.sort(byDateTime);
   }, [events, experiences]);
 
