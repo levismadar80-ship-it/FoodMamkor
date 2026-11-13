@@ -23,6 +23,7 @@ const ARIA_LABEL_KEY = {
   event: "modal_title_event",
   experience: "modal_title_experience", // MEH-2549
   recipe: "modal_title_recipe", // MEH-2558
+  organizer: "modal_title_organizer", // MEH-3018
 };
 
 export default function ShareButton({

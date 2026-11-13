@@ -51,10 +51,8 @@ export const ENTITIES = [
     key: "organizer",
     routes: ["app/[locale]/organizers/[slug]"],
     files: ["app/[locale]/organizers/[slug]"],
-    uses: ["back", "contact"],
-    missing: {
-      share: "no share button; needs one approved aria string for an organizer (MEH-3005 note)",
-    },
+    uses: ["back", "contact", "share"],
+    missing: {},
     na: {
       cover: "a profile masthead by design (photo + round initial, MEH-2547), not a copy of the item cover",
       owner: "the organizer is the owner",
