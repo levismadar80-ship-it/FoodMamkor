@@ -96,6 +96,7 @@ from pathlib import Path
 BACKEND_DIR = Path(__file__).resolve().parent.parent
 BASELINE_PATH = BACKEND_DIR / "mypy-baseline.txt"
 
+
 # The exact argv the workflow passes. Kept here as ONE definition so the baseline
 # can never be frozen against a different scope than the gate runs.
 # History: until 13/11/2026 this passed `app/auth.py` explicitly, which OVERRODE
@@ -110,7 +111,9 @@ def _typed_files() -> list[str]:
     import tomllib
     from pathlib import Path
 
-    cfg = tomllib.loads((Path(__file__).resolve().parent.parent / "pyproject.toml").read_text())
+    cfg = tomllib.loads(
+        (Path(__file__).resolve().parent.parent / "pyproject.toml").read_text()
+    )
     return list(cfg["tool"]["mypy"]["files"])
 
 
