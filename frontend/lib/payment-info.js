@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Module:   payment-info
  * Purpose:  The closed lists behind producers.payment_info and the one
