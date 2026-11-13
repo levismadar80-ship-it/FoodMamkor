@@ -11,7 +11,7 @@ import {
   pingWhatsAppBeacon,
   trackContactClick,
 } from "@/lib/contact-tracking";
-import ReviewInviteCard from "@/components/ReviewInviteCard";
+import ReviewInviteCard, { takeDraftStars } from "@/components/ReviewInviteCard";
 import { captureReviewInvite } from "@/lib/review-invite";
 import { useAuth } from "@/lib/auth-context";
 import { showToast } from "@/lib/toast";
@@ -278,6 +278,7 @@ export default function ReviewsSection({
   reviewCount = 0,
   isOwner = false,
   onTotalChange,
+  producerName = "",
 }) {
   const t = useTranslations("reviews");
   // MEH-848: shared generic error copy (collapsed from reviews.error_generic).
@@ -352,6 +353,18 @@ export default function ReviewsSection({
     const back = `${window.location.pathname}${window.location.search}#reviews`;
     setLoginHref(`/login?redirect=${encodeURIComponent(back)}`);
   }, [producerId]);
+
+  // 13/11/2026: a star tapped on the invite row before the reader could write
+  // is kept (ReviewInviteCard) — once they can, open the form with it chosen,
+  // as Google does. Fires after sign-in (#reviews return) or a contact tap.
+  useEffect(() => {
+    if (!user || user.producer_id === producerId || showForm) return;
+    if (!hasClickedWa && !inviteToken) return;
+    const kept = takeDraftStars(producerId);
+    if (!kept) return;
+    setStars((s) => s || kept);
+    openReviewForm();
+  }, [user, hasClickedWa, inviteToken, producerId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // MEH-2999: a contact made on this page (a tel: / mailto: tap keeps the
   // page) unlocks the form at once, not after a reload.
@@ -681,9 +694,14 @@ export default function ReviewsSection({
           /auth/me answers, or a signed-in reader sees the guest card for a
           second before it swaps (30/10). */}
       {authLoading ? null : !user ? (
-        <ReviewInviteCard mode="login" loginHref={loginHref} />
+        <ReviewInviteCard
+          mode="login"
+          loginHref={loginHref}
+          producerId={producerId}
+          producerName={producerName}
+        />
       ) : user.producer_id !== producerId && !hasClickedWa && !inviteToken ? (
-        <ReviewInviteCard mode="contact" />
+        <ReviewInviteCard mode="contact" producerId={producerId} producerName={producerName} />
       ) : null}
     </section>
   );
