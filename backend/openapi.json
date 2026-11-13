@@ -20130,7 +20130,7 @@
     },
     "/auth/verify-email": {
       "get": {
-        "description": "Consume email verification token. Clears token on success.\n\nMEH-320: 404 (not_found) / 410 (expired) split + structured logging,\nsame pattern MEH-304 applied to /auth/reset-password. Diagnostics\nonly — does not change happy-path behavior. The actual root cause\nof the staging 400 will be identified from the [VERIFY-EMAIL]\nlog entries this surfaces.",
+        "description": "Consume the one-time token (MEH-320: 404 unknown / 410 expired).\nMEH-3087: after the token is consumed, verify_email_session may sign in.",
         "operationId": "verify_email_auth_verify_email_get",
         "parameters": [
           {

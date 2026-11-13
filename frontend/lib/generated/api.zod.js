@@ -3038,13 +3038,8 @@ export const ResetPasswordAuthResetPasswordPostResponse = /*#__PURE__*/ zod.unkn
 
 
 /**
- * Consume email verification token. Clears token on success.
- *
- * MEH-320: 404 (not_found) / 410 (expired) split + structured logging,
- * same pattern MEH-304 applied to /auth/reset-password. Diagnostics
- * only — does not change happy-path behavior. The actual root cause
- * of the staging 400 will be identified from the [VERIFY-EMAIL]
- * log entries this surfaces.
+ * Consume the one-time token (MEH-320: 404 unknown / 410 expired).
+ * MEH-3087: after the token is consumed, verify_email_session may sign in.
  * @summary Verify Email
  */
 export const VerifyEmailAuthVerifyEmailGetResponse = /*#__PURE__*/ zod.unknown()
