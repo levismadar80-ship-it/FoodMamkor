@@ -678,7 +678,24 @@ describe("HomeWhatsOn — what one row says", () => {
     expect(screen.getByTestId("whats-on-when").textContent).toBe("03.08 · 18:00–19:30");
   });
 
-  it("a basket links to /rescue — the pilot has no per-bag page", async () => {
+  it("a basket links to its business page, at the surprise-bag section", async () => {
+    responses.current = {
+      [RESCUE]: [
+        {
+          ...basket(5, "2026-08-01", "2026-08-01T15:00:00Z"),
+          producer: { id: "11111111-1111-4111-8111-111111111111", slug: "ruach-hasadeh", name: "מאפייה" },
+        },
+      ],
+    };
+    const { default: HomeWhatsOn } = await import("@/components/HomeWhatsOn");
+    const { container } = await renderNear(HomeWhatsOn);
+    await waitFor(() => expect(screen.getAllByTestId("whats-on-row")).toHaveLength(1));
+    const hrefs = [...container.querySelectorAll("a")].map((a) => a.getAttribute("href"));
+    // The card goes to the bag; the «all» link still goes to the list.
+    expect(hrefs).toEqual(["/ruach-hasadeh#section-rescue", "/rescue"]);
+  });
+
+  it("a basket whose business has no slug or id falls back to /rescue", async () => {
     responses.current = { [RESCUE]: [basket(5, "2026-08-01", "2026-08-01T15:00:00Z")] };
     const { default: HomeWhatsOn } = await import("@/components/HomeWhatsOn");
     const { container } = await renderNear(HomeWhatsOn);

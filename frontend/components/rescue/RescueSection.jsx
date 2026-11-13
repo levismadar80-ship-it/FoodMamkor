@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Basket, Clock, MapPin, Bread } from "@phosphor-icons/react";
 
@@ -20,6 +20,7 @@ import {
   shekels,
 } from "@/lib/rescue";
 import Button from "@/components/ui/Button";
+import { RESCUE_SECTION_ID } from "@/lib/producer-path";
 import SectionHeading from "@/components/ui/SectionHeading";
 
 /**
@@ -60,6 +61,20 @@ export default function RescueSection({ producer }) {
   const [cancelled, setCancelled] = useState(false);
   // MEH-2738: the business cancelled today's bag, and hers with it.
   const [businessCancelled, setBusinessCancelled] = useState(false);
+  const landedOnHash = useRef(false);
+
+  // A bag row / home bag card links here as `/{slug}#section-rescue`. This
+  // section mounts only after its own offer fetch, i.e. after both the
+  // browser's native hash scroll and ProducerDetail's MEH-1306 re-apply have
+  // run against a DOM without it. Scroll once when the bag appears.
+  useEffect(() => {
+    if (!offer || landedOnHash.current) return;
+    landedOnHash.current = true;
+    if (window.location.hash !== `#${RESCUE_SECTION_ID}`) return;
+    requestAnimationFrame(() => {
+      document.getElementById(RESCUE_SECTION_ID)?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  }, [offer]);
 
   useEffect(() => {
     let alive = true;
@@ -228,7 +243,7 @@ export default function RescueSection({ producer }) {
 
   return (
     <section
-      id="section-rescue"
+      id={RESCUE_SECTION_ID}
       data-testid="rescue-section"
       className="mt-12 scroll-mt-[calc(var(--chrome-top,82px)_+_var(--section-nav-h,68px))] md:scroll-mt-24"
     >
