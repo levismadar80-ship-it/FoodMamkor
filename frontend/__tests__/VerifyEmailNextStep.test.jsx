@@ -107,4 +107,47 @@ describe("verify-email next step (MEH-2492)", () => {
     await new Promise((r) => setTimeout(r, PAST_REDIRECT_MS));
     expect(assign).not.toHaveBeenCalled();
   });
+
+  // MEH-3087 — the link signs its holder in. With the old page each case
+  // below ends on «כניסה להמשך» with nothing stored and no navigation.
+  describe("link that returns a session (MEH-3087)", () => {
+    const withSession = (me) =>
+      apiGet.mockImplementation((url) =>
+        url === "/auth/verify-email"
+          ? Promise.resolve({ data: { detail: "ok", access_token: "acc-1", token_type: "bearer" } })
+          : me
+      );
+
+    beforeEach(() => {
+      localStorage.clear();
+      authRef.current = { user: null, loading: false };
+    });
+
+    it("business owner, logged out: token stored, lands in the dashboard, no login CTA", async () => {
+      withSession(Promise.resolve({ data: { id: "u1", producer_id: "p1" } }));
+      render(<VerifyEmailClient />);
+
+      await waitFor(() => expect(assign).toHaveBeenCalledWith("/producer/dashboard"));
+      expect(localStorage.getItem("token")).toBe("acc-1");
+      expect(screen.getByTestId("verify-email-continue")).toHaveAttribute("href", "/producer/dashboard");
+      expect(screen.queryByTestId("verify-email-login")).toBeNull();
+    });
+
+    it("consumer, logged out: lands on the home page", async () => {
+      withSession(Promise.resolve({ data: { id: "u2", producer_id: null } }));
+      render(<VerifyEmailClient />);
+
+      await waitFor(() => expect(assign).toHaveBeenCalledWith("/"));
+      expect(localStorage.getItem("token")).toBe("acc-1");
+    });
+
+    it("profile read fails: the token is dropped and the login CTA shows", async () => {
+      withSession(Promise.reject(new Error("401")));
+      render(<VerifyEmailClient />);
+
+      await screen.findByTestId("verify-email-login");
+      expect(localStorage.getItem("token")).toBeNull();
+      expect(assign).not.toHaveBeenCalled();
+    });
+  });
 });

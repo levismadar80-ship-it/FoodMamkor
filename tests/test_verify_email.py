@@ -92,3 +92,65 @@ class TestRegisterFiresVerifyEmail:
         sent_email, sent_name, sent_token = mock_send.call_args.args
         assert sent_email == "dave@test.com"
         assert sent_token == user.email_verify_token
+
+
+class TestVerifyLinkSignsIn:
+    """MEH-3087 — the email link proves mailbox ownership, so it signs in."""
+
+    def _plant(self, db, user):
+        user.email_verify_token = "meh3087-token-abcdefgh"
+        user.email_verify_expires = utc_now() + timedelta(hours=24)
+        user.email_verified = False
+        db.commit()
+        return user.email_verify_token
+
+    def test_valid_link_returns_a_working_session(self, client, db):
+        user = make_user(db, email="erin@test.com", email_verified=False)
+        token = self._plant(db, user)
+        resp = client.get("/auth/verify-email", params={"token": token})
+        assert resp.status_code == 200
+        body = resp.json()
+        assert body["token_type"] == "bearer"
+        set_cookie = resp.headers.get("set-cookie", "")
+        assert "refresh_token=" in set_cookie
+        assert "__Secure-Fgp=" in set_cookie
+        # Behaviour, not shape: the token opens an authenticated route as her.
+        fgp = resp.cookies.get("__Secure-Fgp")
+        me = client.get(
+            "/auth/me",
+            headers={"Authorization": f"Bearer {body['access_token']}"},
+            cookies={"__Secure-Fgp": fgp},
+        )
+        assert me.status_code == 200
+        assert me.json()["email"] == "erin@test.com"
+        assert me.json()["email_verified"] is True
+
+    def test_blocked_user_is_verified_but_not_signed_in(self, client, db):
+        user = make_user(db, email="frank@test.com", email_verified=False)
+        user.is_blocked = True
+        token = self._plant(db, user)
+        resp = client.get("/auth/verify-email", params={"token": token})
+        assert resp.status_code == 200
+        assert "access_token" not in resp.json()
+        assert "set-cookie" not in resp.headers
+        db.refresh(user)
+        assert user.email_verified is True
+
+    def test_failed_links_issue_no_session(self, client, db):
+        user = make_user(db, email="gina@test.com", email_verified=False)
+        token = self._plant(db, user)
+        user.email_verify_expires = utc_now() - timedelta(seconds=1)
+        db.commit()
+        for tok in (token, "no-such-token"):
+            resp = client.get("/auth/verify-email", params={"token": tok})
+            assert resp.status_code in (404, 410)
+            assert "access_token" not in resp.json()
+            assert "set-cookie" not in resp.headers
+
+    def test_used_link_cannot_sign_in_again(self, client, db):
+        user = make_user(db, email="hana@test.com", email_verified=False)
+        token = self._plant(db, user)
+        assert client.get("/auth/verify-email", params={"token": token}).status_code == 200
+        again = client.get("/auth/verify-email", params={"token": token})
+        assert again.status_code == 404
+        assert "access_token" not in again.json()

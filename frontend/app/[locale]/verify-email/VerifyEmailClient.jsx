@@ -9,16 +9,34 @@ import { useAuth } from "@/lib/auth-context";
 import { detailToMessage } from "@/lib/errors";
 import StatusPage from "@/components/StatusPage";
 
-// MEH-2492: registration never logs the owner in (MEH-328 anti-enumeration,
-// docs/SECURITY.md "verify via email link and then log in"), and the link is
-// often opened in another browser or the mail app. So a logged-out visitor is
-// the common case here: tell them to log in, never auto-send them home.
+// MEH-2492: registration never logs the owner in (MEH-328 anti-enumeration),
+// and the link is often opened in another browser or the mail app.
+// MEH-3087: so the link itself signs its holder in — the API answers with a
+// session, and this page keeps it and moves on. The «כניסה להמשך» state stays
+// for the cases with no session (a blocked account, or /auth/me failing).
 const REDIRECT_DELAY_MS = 1500;
 const LOGIN_PATH = "/login";
 
 // Where a verified, already-logged-in user goes next.
 function landingAfterVerify(user) {
   return user?.producer_id ? "/producer/dashboard" : "/";
+}
+
+// MEH-3087: keep the session the link returned and say where to go. A full
+// page load follows, so AuthProvider starts from the stored token. If the
+// profile read fails the token is dropped — never a half-signed-in page.
+async function signInFromLink(accessToken) {
+  if (!accessToken) return null;
+  try {
+    localStorage.setItem("token", accessToken);
+    const me = await api.get("/auth/me");
+    return landingAfterVerify(me.data);
+  } catch {
+    try {
+      localStorage.removeItem("token");
+    } catch {}
+    return null;
+  }
 }
 
 function useRedirectWhenLoggedIn(verifyState) {
@@ -41,6 +59,7 @@ function VerifyEmailContent() {
   const token = searchParams.get("token");
   const [verifyState, setVerifyState] = useState("loading"); // loading | success | error
   const [errorMsg, setErrorMsg] = useState("");
+  const [linkLanding, setLinkLanding] = useState(null); // MEH-3087
   const { user, loading: authLoading } = useRedirectWhenLoggedIn(verifyState);
 
   useEffect(() => {
@@ -51,7 +70,12 @@ function VerifyEmailContent() {
     }
     api
       .get("/auth/verify-email", { params: { token } })
-      .then(() => setVerifyState("success"))
+      .then(async (res) => {
+        const landing = await signInFromLink(res?.data?.access_token);
+        setLinkLanding(landing);
+        setVerifyState("success");
+        if (landing) window.location.assign(landing);
+      })
       .catch((err) => {
         setVerifyState("error");
         setErrorMsg(
@@ -74,7 +98,7 @@ function VerifyEmailContent() {
   }
 
   if (verifyState === "success") {
-    return <VerifySuccess t={t} user={user} authLoading={authLoading} />;
+    return <VerifySuccess t={t} user={user} authLoading={authLoading} linkLanding={linkLanding} />;
   }
 
   return (
@@ -90,9 +114,12 @@ function VerifyEmailContent() {
 // MEH-2492: three cases. Auth still resolving → title only (no CTA yet, so a
 // logged-in user never sees «כניסה להמשך» flash). Logged in → "redirecting" +
 // a CTA to the same landing. Logged out → the next step, and no auto-redirect.
-function VerifySuccess({ t, user, authLoading }) {
-  const loggedIn = !authLoading && Boolean(user);
-  const loggedOut = !authLoading && !user;
+// MEH-3087: a session from the link counts as logged in, with its own landing
+// — the auth context has not caught up yet, the page load that follows does.
+function VerifySuccess({ t, user, authLoading, linkLanding }) {
+  const loggedIn = Boolean(linkLanding) || (!authLoading && Boolean(user));
+  const loggedOut = !loggedIn && !authLoading && !user;
+  const landing = linkLanding || landingAfterVerify(user);
   return (
     <StatusPage
       testid="verify-email-success"
@@ -107,7 +134,7 @@ function VerifySuccess({ t, user, authLoading }) {
       }
       primary={
         loggedIn
-          ? { href: landingAfterVerify(user), label: t("auth.verifyEmail.success_cta"), testid: "verify-email-continue" }
+          ? { href: landing, label: t("auth.verifyEmail.success_cta"), testid: "verify-email-continue" }
           : loggedOut
             ? { href: LOGIN_PATH, label: t("auth.verifyEmail.success_login_cta"), testid: "verify-email-login" }
             : null

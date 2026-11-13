@@ -40,6 +40,7 @@ from app.services.auth_notifications import (
     notify_producer_registered,
 )
 from app.services.user_deletion import delete_user_and_data  # MEH-2585
+from app.services.verify_session import verify_email_session  # MEH-3087
 from app.services.producer_risk import score_producer
 from app.services.oauth_verifiers import (
     # Aliases preserve the legacy underscore-prefixed module attribute
@@ -1495,15 +1496,11 @@ async def reset_password(
 
 @router.get("/verify-email")
 @limiter.limit("10/minute")
-def verify_email(request: Request, token: str, db: Session = Depends(get_db)):
-    """Consume email verification token. Clears token on success.
-
-    MEH-320: 404 (not_found) / 410 (expired) split + structured logging,
-    same pattern MEH-304 applied to /auth/reset-password. Diagnostics
-    only — does not change happy-path behavior. The actual root cause
-    of the staging 400 will be identified from the [VERIFY-EMAIL]
-    log entries this surfaces.
-    """
+def verify_email(
+    request: Request, response: Response, token: str, db: Session = Depends(get_db)
+):
+    """Consume the one-time token (MEH-320: 404 unknown / 410 expired).
+    MEH-3087: it also signs its holder in — only after the token is consumed."""
     user = db.query(User).filter(User.email_verify_token == token).first()
     if not user:
         logger.warning("[VERIFY-EMAIL] token_not_found token_prefix=%s", token[:8])
@@ -1522,7 +1519,9 @@ def verify_email(request: Request, token: str, db: Session = Depends(get_db)):
     user.email_verify_expires = None
     db.commit()
     logger.info("[VERIFY-EMAIL] verified user_id=%s", user.id)
-    return {"detail": "האימייל אומת בהצלחה"}
+    return verify_email_session(
+        response, user, _set_refresh_cookie, _set_fingerprint_cookie
+    )
 
 
 @router.post("/resend-verify")
