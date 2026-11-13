@@ -11,8 +11,8 @@
  *     producerPath() instead.
  *
  * Shape-limited, on purpose: it catches the one-line template that shipped.
- * It does NOT see `"/producer/" + slug`, a template split across lines, or a
- * slug held in another variable first. The helper is the real fix; this only
+ * It also sees `"/producer/" + p.slug`. It does NOT see a template split
+ * across lines, or a slug held in another variable first. The helper is the real fix; this only
  * stops the exact regression.
  */
 import fs from "node:fs";
@@ -25,6 +25,9 @@ const SCAN_DIRS = ["app", "components", "lib"];
 const UUID = "48a62a03-58c4-463b-82f4-cdba3b4701c9";
 
 // `/producer/${ <expr containing "slug"> }` — the dead-link shape.
+// `"/producer/" + <expr containing "slug">` — the same link by concatenation.
+const SLUG_CONCAT = /["'`]\/producer\/["'`]\s*\+\s*[\w.?]*\bslug\b/;
+const isBadLink = (line) => SLUG_UNDER_PRODUCER.test(line) || SLUG_CONCAT.test(line);
 export const SLUG_UNDER_PRODUCER = /\/producer\/\$\{[^}]*\bslug\b[^}]*\}/;
 
 function walk(dir, out = []) {
@@ -62,8 +65,10 @@ describe("no hand-written /producer/${…slug…} link", () => {
   it("the pattern catches the shape that shipped (self-test)", () => {
     expect(SLUG_UNDER_PRODUCER.test("href={`/producer/${producer.slug || producer.id}`}")).toBe(true);
     expect(SLUG_UNDER_PRODUCER.test("`/producer/${p.slug}`")).toBe(true);
-    // The correct fallback shape must stay legal.
-    expect(SLUG_UNDER_PRODUCER.test("p.slug ? `/${p.slug}` : `/producer/${p.id}`")).toBe(false);
+    expect(isBadLink('href={"/producer/" + producer.slug}')).toBe(true);
+    // The correct fallback shapes must stay legal.
+    expect(isBadLink("p.slug ? `/${p.slug}` : `/producer/${p.id}`")).toBe(false);
+    expect(isBadLink('"/producer/" + p.id')).toBe(false);
   });
 
   it("scans a real corpus (control: the files exist and include ProducerCard)", () => {
@@ -81,7 +86,7 @@ describe("no hand-written /producer/${…slug…} link", () => {
           .map((line, i) => ({ line, n: i + 1 }))
           // Prose that quotes the bad shape (this file's own subject) is not a link.
           .filter(({ line }) => !/^\s*(\*|\/\/|\/\*|\{\/\*)/.test(line))
-          .filter(({ line }) => SLUG_UNDER_PRODUCER.test(line))
+          .filter(({ line }) => isBadLink(line))
           .map(({ n }) => `${path.relative(ROOT, file)}:${n}`)
       );
     expect(offenders).toEqual([]);
