@@ -214,7 +214,15 @@ describe("Header", () => {
       render(<Header />);
       const login = screen.getAllByRole("link", { name: "כניסה" });
       expect(login.length).toBeGreaterThan(0);
-      expect(login[0].getAttribute("href")).toBe("/login");
+      // MEH-3026 (F2): signing in from /about returns her to /about.
+      expect(login[0].getAttribute("href")).toBe("/login?redirect=%2Fabout");
+    });
+
+    it("the login link stays a bare /login on the home page (MEH-3026)", () => {
+      pathnameRef.current = "/";
+      render(<Header />);
+      expect(screen.getAllByRole("link", { name: "כניסה" })[0].getAttribute("href")).toBe("/login");
+      pathnameRef.current = "/about";
     });
 
     it("hides the login link on /login itself (MEH-732)", () => {

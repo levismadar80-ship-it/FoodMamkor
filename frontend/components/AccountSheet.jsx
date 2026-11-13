@@ -3,11 +3,12 @@
 // MEH-2578: locale-aware Link — next/link dropped the /en prefix, and with
 // localeDetection off an /en reader landed on the Hebrew page.
 import { Link } from "@/i18n/navigation";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Heart, Gear, Storefront, SignIn, SignOut, User, ArrowUpLeft, Gauge, Lock } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import LanguageToggle from "@/components/LanguageToggle";
 import { itemsForSurface } from "@/lib/nav-registry";
+import { loginLinkBackHere } from "@/lib/safe-redirect";
 
 /**
  * Module:   AccountSheet
@@ -64,6 +65,14 @@ export default function AccountSheet({ open, onClose, user, logout }) {
     }).map((entry) => [entry.item.id, entry]),
   );
   const row = (id) => byId.get(id);
+
+  // MEH-3026 (F2): «כניסה» brings the guest back to the page she opened the
+  // sheet on. Read when the sheet opens, not at render: the address is a
+  // browser fact and the first render must match the server's bare /login.
+  const [loginHref, setLoginHref] = useState("/login");
+  useEffect(() => {
+    if (open) setLoginHref(loginLinkBackHere());
+  }, [open]);
 
   // Modal a11y: Escape closes, Tab is trapped inside the panel, and focus
   // returns to the trigger (the account tab) on close.
@@ -156,7 +165,7 @@ export default function AccountSheet({ open, onClose, user, logout }) {
         <ul className="list-none m-0 pt-1">
           {row("login") && (
             <li className={liCls}>
-              <Link href={row("login").item.href} onClick={onClose} className={rowCls}>
+              <Link href={loginHref} onClick={onClose} className={rowCls}>
                 <SignIn size={19} weight="regular" className={iconCls} aria-hidden="true" />
                 {t(row("login").surface.labelKey)}
               </Link>
