@@ -19,6 +19,8 @@ import { fetchOffers } from "@/lib/rescue";
  */
 export default function RescueList({ initialCity = "", limit = null, heading = null }) {
   const t = useTranslations("rescue");
+  // MEH-3013: the city field reads exactly as it does on the other hub tabs.
+  const tHub = useTranslations("events.list");
   const [city, setCity] = useState(initialCity || "");
   const [offers, setOffers] = useState(null); // null = not loaded yet
   const [failed, setFailed] = useState(false);
@@ -63,9 +65,10 @@ export default function RescueList({ initialCity = "", limit = null, heading = n
         value={city}
         onChange={setCity}
         onSubmit={() => load(city)}
-        label={t("list.city_label")}
-        placeholder={t("list.city_placeholder")}
+        label={tHub("filter_city_label")}
+        placeholder={tHub("filter_city_placeholder")}
         id="rescue-city"
+        className="md:max-w-xs"
       />
 
       {offers === null && (

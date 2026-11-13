@@ -25,3 +25,23 @@ export function safeInternalRedirect(raw, fallback = "/") {
   if (typeof raw !== "string" || raw === "") return fallback;
   return INTERNAL_PATH.test(raw) ? raw : fallback;
 }
+
+/**
+ * MEH-2982: the login URL that brings a signed-out reader back to the page she
+ * is on. A guest redirected to a bare "/login" lands on "/" after signing in
+ * and loses the page that sent her there.
+ * REUSES: components/LoginPromptModal.jsx:103 — same `?redirect=` shape,
+ * clamped on the login side by safeInternalRedirect above.
+ *
+ * @returns {string} "[/en]/login?redirect=<current path + query>", or
+ *          "/login" when there is no window (server render).
+ */
+export function loginHrefBackHere() {
+  if (typeof window === "undefined") return "/login";
+  const { pathname, search } = window.location;
+  // Callers push with next/navigation's router, which adds no locale prefix,
+  // so an /en reader would otherwise land on the Hebrew login page (the
+  // MEH-1157 family). Hebrew is the as-needed default and carries no prefix.
+  const prefix = /^\/en(?=\/|$)/.test(pathname) ? "/en" : "";
+  return `${prefix}/login?redirect=${encodeURIComponent(pathname + search)}`;
+}

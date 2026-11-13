@@ -231,16 +231,6 @@ function shareUrlFor(origin: string, p: Producer): string {
   return `${origin}${p.slug ? `/${p.slug}` : `/producer/${p.id}`}`;
 }
 
-/**
- * ShareButton.jsx `waText` — the message the DESKTOP path (no native share)
- * hands to wa.me. Stated as a derivation from he.json + the component's join
- * rule, so a copy edit moves both sides together and a rule change reds this.
- */
-function waTextFor(origin: string, p: Producer): string {
-  const title = SHARE_HE.wa_message_with_meta.replace("{title}", p.name);
-  return `${title}\n👉 ${shareUrlFor(origin, p)}`;
-}
-
 async function openProducer(page: Page, id: string): Promise<Locator> {
   await page.goto(`/producer/${id}`);
   const root = scope(page).getByTestId("producer-detail-root");
@@ -363,25 +353,63 @@ test.describe("manual › /producer/[id] — header and breadcrumb", () => {
   });
 
   // MT:MEH-1146B:2 — פירורי לחם בלבד: אין כפתור "→ חזרה"; רק נתיב פירורים.
-  test("breadcrumb block holds the breadcrumb nav and no back button", async ({ page }) => {
+  // MEH-3019 (Sapir 13/11): the breadcrumb is desktop only; a phone gets the
+  // shared «→ חזרה» instead, and only when a page of the site is behind this
+  // one. Desktop is unchanged. Cells: arrival (direct / from inside the site)
+  // × project (desktop / mobile); the map arrival is the unit test's
+  // (__tests__/ProducerDetailBackLink.test.jsx).
+  test("direct arrival: the breadcrumb on desktop only, and no back button on either screen", async ({
+    page,
+  }, testInfo) => {
     const list = await catalog(page);
     const target = list[0];
     const root = await openProducer(page, target.id);
     const block = root.getByTestId("producer-breadcrumb-block");
     await expect(block).toHaveCount(1, FIRST_PAINT);
 
-    // Exactly one nav, and it is the breadcrumb: first crumb is home.
+    // Exactly one nav, and it is the breadcrumb: first crumb is home. It is in
+    // the DOM on both projects; only the desktop shows it.
     await expect(block.locator("nav")).toHaveCount(1);
     const crumbHome = block.locator("nav a").first();
     await expect(crumbHome).toHaveText(DETAIL_HE.breadcrumb_home);
     await expect(crumbHome).toHaveAttribute("href", /^\/(?:[?#]|$)/);
+    if (isDesktop(testInfo)) await expect(block.locator("nav")).toBeVisible();
+    else await expect(block.locator("nav")).toBeHidden();
 
-    // The removed "→ חזרה" control was a button. The block carries none — and
-    // the ?from=map return link (`back-to-map`) is a LINK, so this stays true
-    // on the map-referred variant too.
+    // A visitor who landed here from outside (WhatsApp, Google) has nowhere
+    // inside the site to go back to: no button on either screen. The ?from=map
+    // return link (`back-to-map`) does not render without the param (MEH-1414).
     await expect(block.locator("button")).toHaveCount(0);
-    // Landing without ?from=map: no map return link either (MEH-1414).
     await expect(block.getByTestId("back-to-map")).toHaveCount(0);
+  });
+
+  test("arrival from inside the site: «→ חזרה» on the phone (and it goes back), nothing new on desktop", async ({
+    page,
+  }, testInfo) => {
+    const list = await catalog(page);
+    const target = list[0];
+    // A page of the site first, so one is behind the business page.
+    await page.goto("/producers");
+    const root = await openProducer(page, target.id);
+    const block = root.getByTestId("producer-breadcrumb-block");
+    await expect(block).toHaveCount(1, FIRST_PAINT);
+    const back = block.getByTestId("history-back");
+
+    if (isDesktop(testInfo)) {
+      // Desktop unchanged: the breadcrumb shows and the back button does not.
+      await expect(block.locator("nav")).toBeVisible();
+      // Mounted (a page of the site IS behind) but hidden by lg:hidden — the
+      // count makes this cell prove the hiding, not just an absence.
+      await expect(back).toHaveCount(1);
+      await expect(back).toBeHidden();
+      return;
+    }
+    await expect(block.locator("nav")).toBeHidden();
+    await expect(back).toBeVisible();
+    await expect(back).toHaveText(DETAIL_HE.back_label);
+    await expect(back).toHaveAccessibleName(DETAIL_HE.aria.back);
+    await back.click();
+    await expect(page).toHaveURL(/\/producers(?:[?#]|$)/);
   });
 
   // MT:MEH-815:2 — שם פעם אחת בלבד: h1 ב-masthead; לא חוזר ב-ProducerHeader.
@@ -999,16 +1027,16 @@ test.describe("manual › /producer/[id] — main-column content", () => {
 
 // ════════════════════════════════════════════════════════════════════════════
 test.describe("manual › /producer/[id] — share", () => {
-  // MT:OG:share-text:1 + MT:TASK14:whatsapp:2 + MT:TASK14:whatsapp:3 —
-  //   the desktop (no native share) path and the message it carries.
-  //   Drift, reported: the row says "clipboard contains the multi-line message"
-  //   and a «הקישור הועתק ✓» toast. MEH-1290 replaced both — with no native
-  //   share the button opens wa.me with the business line + the URL
-  //   (ShareButton.jsx:33-36, :51-52). Asserted as it behaves today.
-  test("desktop share with no native sheet opens wa.me carrying the business name and its share URL", async ({
+  // MT:OG:share-text:1 — the desktop (no native share) path.
+  //   MEH-1290 opened wa.me here because the copy it replaced was silent.
+  //   MEH-2996 (Sapir's choice, 12/11): one behaviour on every page — no
+  //   share sheet → the link is copied and a toast says so. Nothing opens.
+  test("desktop share with no native sheet copies the business's share URL and says so", async ({
     page,
+    context,
   }, info) => {
     test.skip(!isDesktop(info), "the quiet share control is the desktop mount (project identity)");
+    await context.grantPermissions(["clipboard-read", "clipboard-write"]);
     const list = await catalog(page);
     const target = pick(
       list,
@@ -1032,24 +1060,19 @@ test.describe("manual › /producer/[id] — share", () => {
     const root = await openProducer(page, target.id);
     const share = shareControls(root.getByTestId("producer-actions-row"));
     await expect(share).toHaveCount(1, FIRST_PAINT);
+    // A sentinel first: the clipboard must CHANGE on the tap, so a page that
+    // copies nothing cannot pass on a value left there by an earlier step.
+    await page.evaluate(() => navigator.clipboard.writeText("sentinel-before-share"));
     await share.click();
 
-    const opened = () =>
-      page.evaluate(() => (window as unknown as { __opened: string[] }).__opened);
-    await expect.poll(async () => (await opened()).length, { timeout: 10_000 }).toBe(1);
-    const [href] = await opened();
-    expect(href.startsWith("https://wa.me/?text="), `expected a wa.me link, got ${href}`).toBe(true);
-
     const origin = new URL(page.url()).origin;
-    const text = decodeURIComponent(href.slice("https://wa.me/?text=".length));
-    expect(text, "the wa.me message is the business line plus its share URL").toBe(
-      waTextFor(origin, target),
-    );
-    // The two halves the rows name, asserted on their own so a failure says
-    // which one moved.
-    expect(text, "the message must carry the business name").toContain(target.name);
-    expect(text, "the message must carry the business's share URL").toContain(
-      shareUrlFor(origin, target),
-    );
+    await expect
+      .poll(() => page.evaluate(() => navigator.clipboard.readText().catch(() => "<clipboard read failed>")), {
+        timeout: 10_000,
+      })
+      .toBe(shareUrlFor(origin, target));
+    await expect(page.getByText(SHARE_HE.copied_toast, { exact: true })).toBeVisible();
+    const opened = await page.evaluate(() => (window as unknown as { __opened: string[] }).__opened);
+    expect(opened, "the no-sheet path must not open WhatsApp or any window").toEqual([]);
   });
 });

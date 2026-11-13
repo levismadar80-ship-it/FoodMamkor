@@ -9,6 +9,7 @@ import { SEED_FILLS, SEED_PATH } from "@/lib/brand-seeds";
 import { formatPrice } from "@/lib/utils";
 import { groupBuyDiscountPct } from "@/lib/group-buy-progress";
 import EventEntryRow, { toEventEntry } from "@/components/EventEntryRow";
+import SectionHeading from "@/components/ui/SectionHeading";
 
 // MEH-2602: the business page lists its open group buys and upcoming
 // experiences, fetched client-side by producer_id; a failed fetch or an empty
@@ -205,7 +206,9 @@ export default function ProducerActivities({ producerId, events = [], sectionRef
     const list = [
       ...events.map((ev) => toEventEntry(ev, "events", noT)),
       ...experiences.map((ex) => toEventEntry(ex, "experiences", noT)),
-    ].map((e) => ({ ...e, who: null, ownerImage: null }));
+      // MEH-3009: no owner initial either — every row here is this business's
+      // own, so its letter on each photo would only repeat the page title.
+    ].map((e) => ({ ...e, who: null, ownerImage: null, ownerInitial: "" }));
     return list.sort(byDateTime);
   }, [events, experiences]);
 
@@ -221,7 +224,7 @@ export default function ProducerActivities({ producerId, events = [], sectionRef
             if (sectionRefs) sectionRefs.current.events = el;
           }}
         >
-          <h2 className="font-headline-md text-2xl font-bold text-text mb-4">{t("events.heading")}</h2>
+          <SectionHeading size="content" className="mb-4">{t("events.heading")}</SectionHeading>
           <div className="border-t border-border">
             {shown.map((entry) => (
               <EventEntryRow key={`${entry.accent}-${entry.id}`} entry={entry} freeLabel={t("events.free")} />
@@ -241,9 +244,9 @@ export default function ProducerActivities({ producerId, events = [], sectionRef
 
       {groupBuys.length > 0 && (
         <section className="mt-12" id="group-buys" data-testid="producer-group-buys">
-          <h2 className="font-headline-md text-2xl font-bold text-text mb-4">
+          <SectionHeading size="content" className="mb-4">
             {t("group_buys.heading")}
-          </h2>
+          </SectionHeading>
           <div className="grid gap-3 sm:grid-cols-2">
             {(showAllGroupBuys ? groupBuys : groupBuys.slice(0, GROUP_BUYS_PREVIEW)).map((gb) => (
               <GroupBuyRow key={gb.id} gb={gb} />

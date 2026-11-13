@@ -35,6 +35,7 @@ vi.mock("@/lib/cloudinary", async (importOriginal) => ({
 }));
 
 vi.mock("@phosphor-icons/react", () => ({
+  Info: () => <span />, // MEH-2999: fine-print icon
   Leaf: (props) => <span data-testid="leaf-icon" data-weight={props.weight} className={props.className} />,
   // MEH-1901: the grid row + signature card gained a forward chevron (CaretLeft,
   // LEFT in RTL) and the sheet's own icons load through this same mock.

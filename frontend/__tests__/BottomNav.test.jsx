@@ -105,14 +105,21 @@ describe("BottomNav", () => {
 
   // MEH-2965: each of the four hooks clears the gate on its own. A single
   // "all on" case would pass with three of them wired to nothing.
-  it.each(["events", "experiences", "groupBuys", "rescue"])(
-    "%s alone puts «אירועים» → /events in the third slot, in place of «אודות»",
-    (hub) => {
+  // MEH-2975: the tab lands on the type that has the supply, so a visitor
+  // never opens an empty «אירועים» tab while the baskets are one tap away.
+  it.each([
+    ["events", "/events"],
+    ["experiences", "/experiences"],
+    ["groupBuys", "/group-buys"],
+    ["rescue", "/rescue"],
+  ])(
+    "%s alone puts «אירועים» → %s in the third slot, in place of «אודות»",
+    (hub, href) => {
       gates[hub] = true;
       render(<BottomNav />);
       const links = screen.getAllByRole("link");
       expect(links.map((a) => a.textContent)).toEqual(["גלו", "מפה", "אירועים"]);
-      expect(links.map((a) => a.getAttribute("href"))).toEqual(["/", "/map", "/events"]);
+      expect(links.map((a) => a.getAttribute("href"))).toEqual(["/", "/map", href]);
       expect(screen.getByTestId("icon-calendar")).toBeInTheDocument();
       expect(screen.queryByTestId("icon-flower")).toBeNull();
     },
@@ -139,6 +146,32 @@ describe("BottomNav", () => {
     expect(screen.getAllByRole("link").map((a) => a.textContent)).toEqual(["גלו", "מפה", "אודות"]);
     expect(current()).toEqual(["/about"]);
   });
+
+  // MEH-2975: tab order decides when several types have supply — the first
+  // one wins, whatever else is open.
+  it.each([
+    [["events", "rescue"], "/events"],
+    [["experiences", "groupBuys", "rescue"], "/experiences"],
+    [["groupBuys", "rescue"], "/group-buys"],
+  ])("with %j open the tab lands on %s", (open, href) => {
+    for (const hub of open) gates[hub] = true;
+    render(<BottomNav />);
+    expect(screen.getAllByRole("link").map((a) => a.getAttribute("href"))).toEqual(["/", "/map", href]);
+  });
+
+  // MEH-2975: wherever the tab lands, it is still the current tab on every
+  // hub route — a visitor on /events with only baskets listed must not see
+  // the capsule leave the tab she just pressed.
+  it.each(["/events", "/experiences", "/group-buys", "/rescue/3"])(
+    "a tab that lands on /rescue is still current on %s",
+    (path) => {
+      gates.rescue = true;
+      pathnameRef.current = path;
+      render(<BottomNav />);
+      const current = screen.getAllByRole("link").filter((a) => a.getAttribute("aria-current") === "page");
+      expect(current.map((a) => a.getAttribute("href"))).toEqual(["/rescue"]);
+    },
+  );
 
   // The hub is four routes under one tab row, so the tab is current on all of
   // them — not only on the one its href names.

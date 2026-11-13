@@ -650,8 +650,21 @@ def record_whatsapp_click(
 # (contact-card bell + delivery-checker pill). It is a contact click, not a
 # WhatsApp CTA click — those stay on /whatsapp-click — so it lands here, and
 # the first-review gate (reviews.py, MEH-2204) reads it with no change there.
+# MEH-2999: facebook + external_order are primary-CTA channels too (MEH-296)
+# and secondary circles on the contact card; they were 422'd here, so those
+# clicks were lost and never opened the first-review gate. Every non-WhatsApp
+# key in frontend/lib/contact-method.js CONTACT_METHODS must be in this set —
+# frontend/__tests__/ContactMethodsBackendContract.test.js reds otherwise.
 _VALID_CONTACT_METHODS = frozenset(
-    {"phone", "instagram", "website", "email", "whatsapp_group"}
+    {
+        "phone",
+        "instagram",
+        "website",
+        "email",
+        "whatsapp_group",
+        "facebook",
+        "external_order",
+    }
 )
 
 
@@ -668,7 +681,7 @@ def record_contact_click(
 ):
     """Log a contact-method click for the producer dashboard.
 
-    Accepts method ∈ {phone, instagram, website, email}. Auth optional —
+    Accepts method ∈ _VALID_CONTACT_METHODS. Auth optional —
     JWT when present attributes the click to a registered user. IP is
     SHA-256 hashed (reuses hash_ip from services/analytics). Rate-limited
     10/minute per IP consistent with whatsapp-click.

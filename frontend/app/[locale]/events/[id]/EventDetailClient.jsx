@@ -8,7 +8,6 @@ import dynamic from "next/dynamic";
 // localePrefix: as-needed — MEH-2403 review).
 import { Link } from "@/i18n/navigation";
 import {
-  Calendar,
   CalendarBlank,
   CalendarPlus,
   CaretLeft,
@@ -22,21 +21,21 @@ import { formatEventDate } from "@/lib/format-date";
 import { formatTimeRange } from "@/lib/time-range";
 // MEH-1140: canonical shekel format ("35₪") — one owner in lib/utils.
 import { formatPrice } from "@/lib/utils";
-import { cssUrl } from "@/lib/css-url";
-import { optimizeCloudinary, IMAGE_RATIOS } from "@/lib/cloudinary";
 import Breadcrumb from "@/components/Breadcrumb";
 import HistoryBackLink from "@/components/HistoryBackLink";
 import ShareButton from "@/components/ShareButton";
 import SaveButton from "@/components/SaveButton";
-import OwnerRow from "@/components/OwnerRow";
+import DateTile from "@/components/DateTile";
+import EntityCover from "@/components/EntityCover";
 import EventEntryRow, { CATEGORY_ICON, PRICE_BASE } from "@/components/EventEntryRow";
 import { toEventEntry } from "@/lib/event-entry";
 import { eventWhen, addressNavLinks } from "@/lib/event-when";
 import { AddressNavLinks } from "@/components/NavAppGlyphs";
-import { EVENT_CATEGORIES } from "@/lib/event-categories";
+import { EVENT_CATEGORIES, OTHER_CATEGORY } from "@/lib/event-categories";
 import { downloadIcs } from "@/lib/event-ics";
 import Button from "@/components/ui/Button";
 import RegistrationCta from "@/components/RegistrationCta";
+import SectionHeading from "@/components/ui/SectionHeading";
 
 // MEH-1404: reuse the producer-detail static map + Waze/Gmaps block on events
 // that carry coords. ssr:false — leaflet touches window at module eval.
@@ -155,8 +154,8 @@ export default function EventDetailClient() {
   const moreList = (isPast ? others.slice(1) : others).slice(0, 3);
 
   const day = formatEventDate(event.event_date, locale, { day: "numeric" });
-  const month = formatEventDate(event.event_date, locale, { month: "long" });
-  const weekday = formatEventDate(event.event_date, locale, { weekday: "long" });
+  // MEH-2989: the tile is 44px wide — an English month name needs the short form.
+  const month = formatEventDate(event.event_date, locale, { month: locale === "he" ? "long" : "short" });
 
   // MEH-2768: the CTA follows the owner's «איך נרשמים?» choice. The old
   // «יצירת קשר עם בית העסק» fallback is gone — every event has a method now
@@ -181,48 +180,24 @@ export default function EventDetailClient() {
   return (
     <div className="pb-12" data-testid="event-detail">
       {/* MEH-2548: cover — the event's photo, else a green band carrying the
-          category icon (never an empty frame). The date tile overlaps its
-          edge on mobile (Luma's calendar-page tile); on desktop it heads the
-          side card instead. */}
-      <div className="relative max-w-[1100px] mx-auto lg:px-4 lg:pt-6">
-        {/* MEH-2559: the save heart on the cover's corner — the corner the recipe
-            and business pages use. Not in the share/calendar row: a third
-            button there wraps «הוספה ליומן» onto two lines below 375px. */}
-        <div className="absolute top-3 end-3 lg:top-9 lg:end-7 z-10" data-testid="event-cover-actions">
-          <SaveButton itemType="event" itemId={event.id} />
-        </div>
-        {event.image_url ? (
-          <div
-            data-testid="event-cover"
-            className="h-[210px] md:h-[300px] lg:h-[380px] bg-cover bg-center lg:rounded-xl bg-border"
-            style={{ backgroundImage: cssUrl(optimizeCloudinary(event.image_url, { aspectRatio: IMAGE_RATIOS.banner, width: 1280 })) }}
-            role="img"
-            aria-label={event.title}
-          />
-        ) : (
-          <div
-            data-testid="event-cover-band"
-            aria-hidden="true"
-            className="h-[150px] lg:h-[200px] bg-primary lg:rounded-xl grid place-items-center"
-          >
-            <CatIcon size={54} weight="duotone" className="text-white/85" />
-          </div>
-        )}
-        <div
-          aria-hidden="true"
-          data-testid="event-date-tile"
-          className="lg:hidden absolute start-4 -bottom-7 w-16 rounded-md bg-surface shadow-lg text-center overflow-hidden"
-        >
-          <span className="block bg-primary text-white text-2xs font-bold py-0.5">{month}</span>
-          <span className="block font-headline-display font-black text-3xl leading-tight pt-1 numeric">{day}</span>
-          <span className="block text-2xs text-fg-muted pb-1.5">{weekday}</span>
-        </div>
-      </div>
+          category icon (never an empty frame). MEH-2989: the date tile
+          lives in the details card's date row, not on the cover. */}
+      {/* MEH-2992: one shared masthead (was a byte-identical copy per page).
+          MEH-2989: no date tile on the cover — the date row carries it. */}
+      <EntityCover
+        imageUrl={event.image_url}
+        alt={event.title}
+        tone="primary"
+        Icon={CatIcon}
+        actions={<SaveButton itemType="event" itemId={event.id} />}
+        testIdPrefix="event"
+      />
 
-      <div className="max-w-[1100px] mx-auto px-4 pt-11 lg:pt-8 lg:grid lg:grid-cols-[1fr_360px] lg:grid-rows-[auto_1fr] lg:gap-x-12 lg:items-start">
+      <div className="max-w-[1100px] mx-auto px-4 pt-5 lg:pt-8 lg:grid lg:grid-cols-[1fr_360px] lg:grid-rows-[auto_1fr] lg:gap-x-12 lg:items-start">
         <div className="lg:col-start-1">
           {/* MEH-2857: «→ חזרה» to the page the visitor came from, when there
-              is one inside the site; the breadcrumb below stays as is. */}
+              is one inside the site. MEH-2989: the breadcrumb below is desktop
+              only — on a phone it repeated «חזרה» and the «אירועים» tab. */}
           <HistoryBackLink />
           <Breadcrumb
             items={[
@@ -230,12 +205,13 @@ export default function EventDetailClient() {
               { href: "/events", label: t("breadcrumb_events") },
               { label: event.title },
             ]}
-            className="mb-3"
+            className="hidden lg:block mb-3"
           />
           {/* MEH-2675: a known category opens the events list filtered to it
               (?category= deep link, EventsClient.jsx); a legacy value outside
               EVENT_CATEGORIES would filter to nothing, so it stays plain. */}
-          {event.category && (EVENT_CATEGORIES.some((c) => c.key === event.category) ? (
+          {/* MEH-2989: «אחר» tells the visitor nothing — no chip for it. */}
+          {event.category && event.category !== OTHER_CATEGORY && (EVENT_CATEGORIES.some((c) => c.key === event.category) ? (
             <Link
               href={`/events?category=${encodeURIComponent(event.category)}`}
               data-testid="event-category"
@@ -254,7 +230,7 @@ export default function EventDetailClient() {
             {event.title}
           </h1>
           {/* MEH-2548: who runs it, right under the title (Eventbrite / Luma
-              byline) — the full owner card stays at the bottom. */}
+              byline) — since MEH-2989 the only owner link on the page. */}
           {event.producer_name && (
             ownerHref ? (
               <Link
@@ -294,15 +270,10 @@ export default function EventDetailClient() {
             desktop (Airbnb / Eventbrite). */}
         <aside className="mt-6 lg:mt-0 lg:col-start-2 lg:row-start-1 lg:row-span-2 lg:sticky lg:top-24 space-y-4">
           <div className="bg-surface border border-border rounded-lg overflow-hidden lg:shadow-md" data-testid="event-info">
-            <div aria-hidden="true" className="hidden lg:block text-center border-b border-border">
-              <span className="block bg-primary text-white text-sm font-bold py-1.5">
-                {formatEventDate(event.event_date, locale, { month: "long", year: "numeric" })}
-              </span>
-              <span className="block font-headline-display font-black text-5xl leading-tight pt-2 numeric">{day}</span>
-              <span className="block text-sm text-fg-muted pb-3">{weekday}</span>
-            </div>
             <div className={infoRow}>
-              <span className={infoIcon}><Calendar size={18} aria-hidden="true" /></span>
+              {/* MEH-2989: the date tile is this row's icon (Luma) — the
+                  date used to repeat on the cover and in a desktop header. */}
+              <DateTile month={month} day={day} testId="event-date-tile" />
               <p className="flex-1 min-w-0 font-semibold text-text">
                 {/* MEH-2837: the date and the time range each stay whole, so a
                     wrap can only happen at «·» (the year used to drop to the
@@ -381,22 +352,23 @@ export default function EventDetailClient() {
         </aside>
 
         <div className="lg:col-start-1 mt-8 lg:mt-8 space-y-8">
-          {/* MEH-1404: map + navigation buttons when the event has coordinates. */}
-          {hasCoords && <MiniMap lat={event.lat} lng={event.lng} name={event.title} />}
-
+          {/* MEH-2989: «about» before the map, as on Luma / Eventbrite / Meetup. */}
           {event.description && (
-            <div className="bg-surface border border-border rounded-lg p-6 leading-relaxed whitespace-pre-line text-text/90">
+            <div data-testid="event-description" className="bg-surface border border-border rounded-lg p-6 leading-relaxed whitespace-pre-line text-text/90">
               {event.description}
             </div>
           )}
+
+          {/* MEH-1404: map + navigation buttons when the event has coordinates. */}
+          {hasCoords && <MiniMap lat={event.lat} lng={event.lng} name={event.title} />}
 
           {/* MEH-2548: the owner's other upcoming events (Meetup «more events
               from this group»). Absent when there are none. */}
           {moreList.length > 0 && event.producer_name && (
             <section aria-labelledby="event-more-heading" data-testid="event-more">
-              <h2 id="event-more-heading" className="text-xl font-bold text-text mb-3">
+              <SectionHeading id="event-more-heading" size="content" className="mb-3">
                 {t("more_from", { name: event.producer_name })}
-              </h2>
+              </SectionHeading>
               <ul className="border-t border-border">
                 {moreList.map((ev) => (
                   <li key={ev.id}>
@@ -407,27 +379,8 @@ export default function EventDetailClient() {
             </section>
           )}
 
-          {/* MEH-2461: the owner card — an organizer's event links to
-              /organizers/{slug} (its business page 404s since MEH-2459).
-              Full-width card with initial avatar + forward chevron. */}
-          {event.producer_name && isOrganizerEvent && (
-            <div data-testid="event-organizer-line">
-              <OwnerRow href={ownerHref || undefined} name={event.producer_name}>
-                {t("organizer_line", { name: event.producer_name })}
-              </OwnerRow>
-            </div>
-          )}
-          {event.producer_name && !isOrganizerEvent && (
-            <div data-testid="event-business-line">
-              <OwnerRow href={ownerHref} name={event.producer_name}>
-                {t("organized_by")} <span className="font-semibold">{event.producer_name}</span>
-              </OwnerRow>
-            </div>
-          )}
-
-          <Link href="/events" className="inline-flex items-center min-h-touch text-primary font-medium hover:underline">
-            {t("all_events")}
-          </Link>
+          {/* MEH-2989: no owner card and no «כל האירועים» link at the end —
+              both repeated the byline under the title and the «אירועים» tab. */}
         </div>
       </div>
     </div>

@@ -14,6 +14,7 @@ import { optimizeCloudinary, IMAGE_RATIOS } from "@/lib/cloudinary";
 import { useTranslations, useLocale } from "next-intl";
 import { formatEventDate } from "@/lib/format-date";
 import { useAuth } from "@/lib/auth-context";
+import { loginHrefBackHere } from "@/lib/safe-redirect";
 import { detailToMessage } from "@/lib/errors";
 import { showToast } from "@/lib/toast";
 // MEH-1140: canonical shekel format ("35₪") — one owner in lib/utils.
@@ -26,6 +27,8 @@ import api from "@/lib/api";
 import { GroupBuyProducerDeliverySchema } from "@/lib/api-schemas";
 import { SkeletonDetail } from "@/components/Skeleton";
 import Button from "@/components/ui/Button";
+import { shareOrCopyText } from "@/lib/share-link";
+import SectionHeading from "@/components/ui/SectionHeading";
 
 // MEH-975: schema bounds for GroupBuyCommitRequest.quantity
 // (backend/app/schemas/schemas.py:1602 — int, ge=1, le=100). Clamp the
@@ -138,7 +141,8 @@ export default function GroupBuyDetailClient({ id }) {
   const handleCommit = async (e) => {
     e.preventDefault();
     if (!user) {
-      router.push("/login");
+      // MEH-2982: come back to this group buy after signing in, not to "/".
+      router.push(loginHrefBackHere());
       return;
     }
     setError("");
@@ -281,24 +285,12 @@ export default function GroupBuyDetailClient({ id }) {
     .join("\n");
   const handleShare = async () => {
     const url = `${window.location.origin}${window.location.pathname}`;
-    if (typeof navigator !== "undefined" && navigator.share) {
-      try {
-        await navigator.share({ title: gb.title, text: shareText, url });
-        return;
-      } catch (err) {
-        // Cancelled = the reader's answer. Any other failure (e.g.
-        // NotAllowedError) falls through to copying the link.
-        if (err?.name === "AbortError") return;
-      }
-    }
-    try {
-      await navigator.clipboard.writeText(url);
-      showToast.success(tShare("copied_toast"), { icon: <Check size={18} /> });
-    } catch {
-      // No sheet and no clipboard: say so (existing copy) instead of a
-      // button that silently does nothing.
-      showToast.error(tSharePage("copy_failed_toast"));
-    }
+    // MEH-2996: the site's one share sequence (lib/share-link.js).
+    const outcome = await shareOrCopyText({ data: { title: gb.title, text: shareText, url }, copyText: url });
+    if (outcome === "copied") showToast.success(tShare("copied_toast"), { icon: <Check size={18} /> });
+    // No sheet and no clipboard: say so (existing copy) instead of a button
+    // that silently does nothing.
+    else if (outcome === "failed") showToast.error(tSharePage("copy_failed_toast"));
   };
   const progressLabel = t("progress_label", { commits: gb.commits_count, min: gb.min_participants });
   const remaining = Math.max(0, gb.min_participants - gb.commits_count);
@@ -392,11 +384,8 @@ export default function GroupBuyDetailClient({ id }) {
             >
               {submitting ? t("submitting") : user ? t("submit_join") : t("submit_login")}
             </Button>
-            {!user && (
-              <p className="text-center text-xs text-fg-muted">
-                {t("login_required")}
-              </p>
-            )}
+            {/* MEH-2999: the «יש להתחבר כדי להצטרף…» line under the button is
+                gone — the button already says «כניסה להצטרפות». */}
           </form>
         )}
 
@@ -522,7 +511,7 @@ export default function GroupBuyDetailClient({ id }) {
                 copy approved by Sapir 29/10. */}
             {open && (
               <section className="mt-6 rounded-xl bg-background-alt p-4" data-testid="group-buy-how">
-                <h2 className="font-headline-md text-lg font-bold text-text mb-3">{t("how_title")}</h2>
+                <SectionHeading size="content" className="mb-3">{t("how_title")}</SectionHeading>
                 <ol className="space-y-2">
                   {[t("how_join"), t("how_unlock", { min: gb.min_participants }), t("how_no_commit")].map((line, i) => (
                     <li key={i} className="flex gap-3 text-base text-text">
@@ -558,7 +547,7 @@ export default function GroupBuyDetailClient({ id }) {
               // nothing instead of leaving an empty 2rem gap (review #3900).
               <section data-testid="group-buy-fulfillment">
                 {hasFulfillment && (
-                  <h2 className="mt-8 font-headline-md text-lg font-bold text-text mb-3">{t("fulfillment_title")}</h2>
+                  <SectionHeading size="content" className="mt-8 mb-3">{t("fulfillment_title")}</SectionHeading>
                 )}
                 {hasSplitNotes ? (
                   <dl className="flex flex-col gap-4">

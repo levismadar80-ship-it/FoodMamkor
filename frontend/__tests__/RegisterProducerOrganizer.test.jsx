@@ -291,11 +291,16 @@ describe("MEH-2460 / MEH-2640 — registering as a markets / events organizer", 
   // What survives is the part that still decides behaviour — which door was
   // used, and what that does to the steps and to the POST body.
 
-  it("MEH-2773: the business preflight no longer shows an organizer door", async () => {
+  // MEH-2917 (Sapir 11/11) puts the organizer door back on the business
+  // preflight, but as a LINK to /register/organizer: the route decides the
+  // kind (MEH-2773). What this guards is that the business page never again
+  // switches the wizard in place — no old in-page entry control.
+  it("MEH-2773 / MEH-2917: the business preflight's organizer door is a link to the organizer route, not an in-page switch", async () => {
     render(<RegisterProducerClient />);
-    // Gate on the preflight itself, so a missing door means removed, not unrendered.
     expect(await screen.findByTestId("register-preflight-start")).toBeInTheDocument();
-    expect(screen.queryByTestId("register-preflight-organizer")).toBeNull();
+    const door = screen.getByTestId("register-preflight-organizer-link");
+    expect(door.tagName).toBe("A");
+    expect(door.getAttribute("href")).toBe("/register/organizer");
     expect(screen.queryByText(`${K}.preflight.organizer_entry`)).toBeNull();
   });
 

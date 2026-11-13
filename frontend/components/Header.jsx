@@ -19,6 +19,7 @@ import { MagnifyingGlass, SealCheck } from "@phosphor-icons/react";
 import { BRAND_NAME } from "@/lib/constants";
 import { useEventsNavGate } from "@/lib/use-events-nav-gate";
 import { useExperiencesNavGate } from "@/lib/use-experiences-nav-gate";
+import { hubLandingHref, isHubHref, isHubPath } from "@/lib/hub-landing";
 import { useHubNavGate } from "@/lib/use-hub-nav-gate";
 import { itemsForSurface } from "@/lib/nav-registry";
 import LanguageToggle from "@/components/LanguageToggle";
@@ -241,7 +242,24 @@ export default function Header() {
     // The data gate stays here: the registry records THAT the item is gated on
     // supply, not what the current supply is.
     .filter(({ item }) => item.dataGate !== "listing-supply" || showWhatsOn)
-    .map(({ item, surface }) => ({ href: item.href, label: t(surface.labelKey) }));
+    .map(({ item, surface }) => ({
+      // Stable across a href change: the hub link's href can move after mount
+      // as the four gates answer, and a key that moved with it would remount
+      // the link and drop keyboard focus.
+      id: item.id,
+      // MEH-2975: the hub link lands on the first tab that has something in
+      // it, not on an empty «אירועים» when the supply is elsewhere.
+      href:
+        item.dataGate === "listing-supply"
+          ? hubLandingHref({
+              events: showEvents,
+              experiences: showExperiences,
+              groupBuys: showGroupBuys,
+              rescue: showRescue,
+            })
+          : item.href,
+      label: t(surface.labelKey),
+    }));
 
   const isHomepage = pathname === "/";
   // MEH-732: hide the guest login link on /login (locale-stripped pathname).
@@ -268,6 +286,10 @@ export default function Header() {
   const isActive = (href) => {
     if (!pathname) return false;
     if (href === "/") return pathname === "/";
+    // MEH-2975: the hub link's href is whichever hub route has supply, and the
+    // hub is four routes under one tab row — so it is current on all four, as
+    // on the pill (BottomNav.jsx), not only on the one its href names.
+    if (isHubHref(href)) return isHubPath(pathname);
     return pathname === href || pathname.startsWith(`${href}/`);
   };
 
@@ -456,7 +478,7 @@ export default function Header() {
             <div className="hidden md:flex items-center gap-9">
               {NAV_ITEMS.map((item) => (
                 <NavLink
-                  key={item.href}
+                  key={item.id}
                   href={item.href}
                   label={item.label}
                   active={isActive(item.href)}

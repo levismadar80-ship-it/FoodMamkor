@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "@/i18n/navigation";
 import { ShoppingCart, Clock, MapPin, Truck } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
-import ListingHubTabs from "@/components/ListingHubTabs";
+import HubShell from "@/components/HubShell";
 import api from "@/lib/api";
 import Image from "next/image";
 import { optimizeCloudinary, IMAGE_RATIOS } from "@/lib/cloudinary";
@@ -12,16 +12,12 @@ import { optimizeCloudinary, IMAGE_RATIOS } from "@/lib/cloudinary";
 import { formatPrice } from "@/lib/utils";
 import { groupBuyProgressPct, groupBuyDiscountPct } from "@/lib/group-buy-progress"; // MEH-2540, MEH-2544
 import CitySearch from "@/components/CitySearch";
+import ChipScrollRow from "@/components/ChipScrollRow";
 import Button from "@/components/ui/Button";
+import EmptyState from "@/components/ui/EmptyState";
 
-// MEH-797: Sapir-mapped Cloudinary asset (staging/pick-pexels-35113948, 3732×4089)
-// replaces the Unsplash hero bg. w_1600 c_limit matches the old delivery width;
-// f_auto,q_auto via the helper. CSS cover crops the band; scrim below keeps AA.
-// REUSES: app/[locale]/home/HomeHero.jsx (optimizeCloudinary width cap, #1055)
-const HERO_BG = optimizeCloudinary(
-  "https://res.cloudinary.com/dfzpscjks/image/upload/staging/pick-pexels-35113948.jpg",
-  { width: 1600 }
-);
+// MEH-3013: the hero photo is the hub's shared one (components/HubShell.jsx);
+// this page's own MEH-797 photo retired so a tab switch never swaps images.
 
 // MEH-2544: image-led card (Groupon), the discount as a badge, progress
 // framed as how many more are needed (Pinduoduo / Kickstarter), the deadline
@@ -145,12 +141,17 @@ function GroupBuyCard({ gb }) {
 
 export default function GroupBuysClient() {
   const t = useTranslations("group_buys.list");
+  const tHub = useTranslations("events.list");
+  // home.whats_on.eyebrow: «קרוב לבית» / "Close to home" — the tab-neutral
+  // eyebrow (events.list.eyebrow_events reads "EVENTS" in en).
+  const tWhatsOn = useTranslations("home.whats_on");
   const tErr = useTranslations();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [city, setCity] = useState("");
   const [statusFilter, setStatusFilter] = useState("open");
+  const statusKeys = useMemo(() => ({ [statusFilter]: true }), [statusFilter]);
 
   useEffect(() => {
     load();
@@ -177,66 +178,43 @@ export default function GroupBuysClient() {
 
   return (
     <div>
-      {/* Hero */}
-      <section className="relative text-white py-8 md:py-10 overflow-hidden">
-        <div
-          className="kenburns-right absolute"
-          style={{
-            inset: "-5%",
-            backgroundImage: `url(${HERO_BG})`,
-            backgroundSize: "cover",
-            backgroundPosition: "center",
-          }}
-        />
-        {/* MEH-863 F-scrim: gradient via the primary-dark token (was raw rgba). */}
-        <div className="absolute inset-0 bg-gradient-to-b from-primary-dark/[0.82] to-primary-dark/[0.92]" />
-        <div className="relative max-w-5xl mx-auto px-4 text-center">
-          <h1 className="font-headline-display text-3xl md:text-4xl font-bold mb-2">
-            {t("hero_title")}
-          </h1>
-          <p className="text-green-50 text-base md:text-lg">
-            {t("hero_subtitle")}
-          </p>
+      {/* MEH-3013: the hub's shared head — the same photo hero, type and
+          tab-row position as /events, /experiences and /rescue (it was a
+          short centred hero here). Own H1/subtitle (Sapir
+          11/11); the eyebrow is the hub's existing one. */}
+      <HubShell
+        active="groupBuys"
+        eyebrow={tWhatsOn("eyebrow")}
+        title={t("hero_title")}
+        subtitle={t("hero_subtitle")}
+      />
+
+      <div className="max-w-5xl mx-auto px-4 pt-4 pb-16">
+        {/* Filters — MEH-3013: the same toolbar shape as the other hub tabs
+            (EventsClient): city field (same width and wording), then the chip
+            row in the shared ChipScrollRow style. Status stays single-select:
+            the click handler sets one key. */}
+        <div className="flex items-center gap-2 md:gap-3">
+          <CitySearch
+            id="group-buys-city"
+            label={tHub("filter_city_label")}
+            value={city}
+            onChange={(v) => setCity(v)}
+            placeholder={tHub("filter_city_placeholder")}
+            className="flex-1 md:max-w-xs"
+          />
         </div>
-      </section>
-
-      {/* MEH-2859: the shared hub row, so a reader who lands here can reach
-          the other three date-bound lists. This page keeps its own hero and
-          H1 (Sapir 11/11) — the row sits under them, not instead of them. */}
-      <ListingHubTabs active="groupBuys" />
-
-      <div className="max-w-5xl mx-auto px-4 py-6 md:py-10">
-        {/* Filters */}
-        <div className="flex flex-wrap gap-3 mb-3 items-end">
-          <div className="w-56 max-w-full">
-            <CitySearch
-              id="group-buys-city"
-              label={t("filter_city_label")}
-              value={city}
-              onChange={(v) => setCity(v)}
-              placeholder={t("filter_city_placeholder")}
-            />
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {[
+        <div className="pt-3 mb-3">
+          <ChipScrollRow
+            variant="toggle"
+            chips={[
               { key: "open", label: t("status_open") },
               { key: "funded", label: t("status_funded") },
               { key: "fulfilled", label: t("status_fulfilled") },
-            ].map((s) => (
-              <button
-                key={s.key}
-                onClick={() => setStatusFilter(s.key)}
-                aria-pressed={statusFilter === s.key}
-                className={`min-h-touch inline-flex items-center justify-center px-4 py-2 rounded-full text-sm font-medium transition border ${
-                  statusFilter === s.key
-                    ? "bg-primary text-white border-primary"
-                    : "bg-surface text-fg-muted border-border hover:border-primary"
-                }`}
-              >
-                {s.label}
-              </button>
-            ))}
-          </div>
+            ]}
+            activeKeys={statusKeys}
+            onChipClick={(key) => setStatusFilter(key)}
+          />
         </div>
 
         {/* MEH-2620: one line under the chips says what the selected tab
@@ -265,14 +243,10 @@ export default function GroupBuysClient() {
             </Button>
           </div>
         ) : items.length === 0 ? (
-          <div className="text-center py-20 text-fg-muted">
-            {/* MEH-862: Phosphor placeholder replaces the empty-state emoji
-                (LOCK v2), mirrors the /experiences empty-state icon treatment. */}
-            <div className="mb-4 flex justify-center">
-              <ShoppingCart size={56} className="text-primary" aria-hidden="true" />
-            </div>
-            <p className="text-lg font-medium">{t("empty_title")}</p>
-            <p className="text-sm mt-1">{t("empty_subtitle")}</p>
+          // MEH-2994: the shared empty state (was a hand-built copy of it,
+          // MEH-862) — same icon and the same two strings.
+          <div data-testid="group-buys-empty">
+            <EmptyState icon={ShoppingCart} title={t("empty_title")} description={t("empty_subtitle")} />
           </div>
         ) : (
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
