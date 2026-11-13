@@ -138,3 +138,21 @@ describe("PaymentInfoEditor (MEH-3035)", () => {
     expect(tile("bit").getAttribute("aria-pressed")).toBe("true");
   });
 });
+
+describe("PaymentInfoEditor — a refetch with an equal value keeps edits (MEH-3035 review)", () => {
+  it("re-rendering with a NEW but equal payment_info object does not reset an unsaved pick", () => {
+    const stored = { methods: ["bit"], timing: null, note: null };
+    const { rerender } = render(<PaymentInfoEditor profile={{ payment_info: stored }} onSave={vi.fn()} />);
+    fireEvent.click(screen.getByTestId("payment-method-cash"));
+    expect(screen.getByTestId("payment-method-cash").getAttribute("aria-pressed")).toBe("true");
+    rerender(<PaymentInfoEditor profile={{ payment_info: { ...stored, methods: ["bit"] } }} onSave={vi.fn()} />);
+    expect(screen.getByTestId("payment-method-cash").getAttribute("aria-pressed")).toBe("true");
+  });
+
+  it("a genuinely new stored value does re-seed the editor", () => {
+    const { rerender } = render(<PaymentInfoEditor profile={{ payment_info: { methods: ["bit"] } }} onSave={vi.fn()} />);
+    rerender(<PaymentInfoEditor profile={{ payment_info: { methods: ["cash"] } }} onSave={vi.fn()} />);
+    expect(screen.getByTestId("payment-method-cash").getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByTestId("payment-method-bit").getAttribute("aria-pressed")).toBe("false");
+  });
+});

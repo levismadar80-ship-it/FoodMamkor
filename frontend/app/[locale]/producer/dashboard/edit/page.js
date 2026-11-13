@@ -95,7 +95,7 @@ import OrderWindowEditor from "./OrderWindowEditor";
 import SpecialHoursEditor from "./SpecialHoursEditor";
 // MEH-3035 chunk 2: «איך משלמים לך?» (producers.payment_info).
 import PaymentInfoEditor from "./PaymentInfoEditor";
-import { PAYMENT_METHODS } from "@/lib/payment-info";
+import { paymentAnswer } from "@/lib/payment-info";
 import { upcomingSpecialCount } from "@/lib/special-hours";
 import { isDefaultDescription } from "@/lib/producer-completeness";
 // MEH-2155: same resolution the public page runs, so the card can show the
@@ -637,6 +637,7 @@ function EditPageInner() {
       // MEH-2602: the visitor's area, never the business's own city.
       deliveryQuestion: tChips("delivery_to_my_area"),
       orderingQuestion: tChips("ordering_q"),
+      paymentQuestion: tChips("payment_q"),
       escalationQuestion: tChips("escalation"),
     });
     return { usesCustom, customCount, liveCount: items.length };
@@ -1268,13 +1269,15 @@ function EditPageInner() {
         <EditAccordionCard
           anchorId="payment-info"
           title={t("payment_info.heading")}
-          summary={
-            (profile.payment_info?.methods || []).length > 0
-              ? PAYMENT_METHODS.filter((m) => profile.payment_info.methods.includes(m))
-                  .map((m) => t(`payment_info.methods.${m}`))
-                  .join(" · ")
-              : t("payment_info.summary_empty")
-          }
+          summary={(() => {
+            // Same "is it set" rule as the page chip (paymentAnswer): a timing
+            // or a note alone still shows the question, so the card says so.
+            const pa = paymentAnswer(profile.payment_info);
+            if (!pa) return t("payment_info.summary_empty");
+            const parts = pa.methods.map((m) => t(`payment_info.methods.${m}`));
+            if (pa.timing) parts.push(t(`payment_info.timings.${pa.timing}`));
+            return parts.length > 0 ? parts.join(" · ") : pa.note;
+          })()}
           open={openKey === "paymentInfo"}
           onToggle={() => toggleKey("paymentInfo")}
         >
@@ -1427,6 +1430,7 @@ function CustomQuestionsCard({
     // MEH-2602: the visitor's area, never the business's own city.
     deliveryQuestion: tChips("delivery_to_my_area"),
     orderingQuestion: tChips("ordering_q"),
+    paymentQuestion: tChips("payment_q"),
     escalationQuestion: tChips("escalation"),
   });
 

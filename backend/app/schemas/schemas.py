@@ -135,8 +135,10 @@ _LETTER_RE = re.compile(r"[א-תa-zA-Z]")
 def _payment_methods(raw) -> list[str]:
     if raw is None:
         return []
-    if not isinstance(raw, list) or len(raw) > 2 * len(PAYMENT_METHODS):
+    if not isinstance(raw, list):
         raise ValueError("אמצעי התשלום חייבים להיות רשימה")
+    if len(raw) > 2 * len(PAYMENT_METHODS):
+        raise ValueError("יותר מדי אמצעי תשלום")
     unknown = [m for m in raw if m not in PAYMENT_METHODS]
     if unknown:
         raise ValueError(f"אמצעי תשלום לא מוכר: {unknown[0]}")
@@ -175,7 +177,7 @@ def _payment_info_validator(v):
         raise ValueError(f"שדה לא מוכר בפרטי התשלום: {sorted(extra)[0]}")
     timing = v.get("timing")
     if timing is not None and timing not in PAYMENT_TIMINGS:
-        raise ValueError(f"מתי משלמים חייב להיות אחד מ: {', '.join(PAYMENT_TIMINGS)}")
+        raise ValueError("מתי משלמים: יש לבחור אחת מהאפשרויות")
     out = {"methods": _payment_methods(v.get("methods")), "timing": timing, "note": _payment_note(v.get("note"))}
     if not out["methods"] and out["timing"] is None and out["note"] is None:
         return None

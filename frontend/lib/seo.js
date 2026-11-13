@@ -58,6 +58,16 @@ function producerSeoT(locale) {
 const countryLabel = (locale) => producerSeoT(locale)("country");
 const brandFor = (locale) => BRAND_FOR[locale] ?? BRAND_NAME;
 
+// MEH-3035: English names for schema.org paymentAccepted (a language-neutral
+// structured field). Keys = lib/payment-info.js PAYMENT_METHODS.
+const PAYMENT_ACCEPTED_NAME = {
+  bit: "Bit",
+  paybox: "PayBox",
+  bank_transfer: "Bank Transfer",
+  cash: "Cash",
+  credit_card: "Credit Card",
+};
+
 /**
  * MEH-1069: single owner of JSON-LD serialization for every
  * `<script type="application/ld+json">` injection site (7 sites, all routed
@@ -81,16 +91,6 @@ const brandFor = (locale) => BRAND_FOR[locale] ?? BRAND_NAME;
  * @param {unknown} obj the JSON-LD object (or @graph wrapper) to serialize
  * @returns {string} HTML-safe JSON string for dangerouslySetInnerHTML
  */
-// MEH-3035: English names for schema.org paymentAccepted (a language-neutral
-// structured field). Keys = lib/payment-info.js PAYMENT_METHODS.
-const PAYMENT_ACCEPTED_NAME = {
-  bit: "Bit",
-  paybox: "PayBox",
-  bank_transfer: "Bank Transfer",
-  cash: "Cash",
-  credit_card: "Credit Card",
-};
-
 export function serializeJsonLd(obj) {
   return JSON.stringify(obj)
     .replace(/</g, "\\u003c")

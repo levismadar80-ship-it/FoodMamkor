@@ -104,11 +104,12 @@ export default function PaymentInfoEditor({ profile, onSave, reportDirty = () =>
   const [saved, setSaved] = useState(false);
   const [errorMsg, setErrorMsg] = useState(null);
 
-  // Re-seed only when the stored value changes (another card's save), so an
-  // unrelated re-render cannot clobber in-progress edits.
+  // Re-seed only when the stored VALUE changes (another card's save), keyed on
+  // the serialized payload — a refetch that hands back an equal object must
+  // not clobber in-progress edits.
   useEffect(() => {
-    setState(paymentStateFrom(seed));
-  }, [seed]);
+    setState(paymentStateFrom(JSON.parse(seedPayload)));
+  }, [seedPayload]);
 
   const current = serializePaymentInfo(state);
   const dirty = JSON.stringify(current) !== seedPayload;

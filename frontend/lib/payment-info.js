@@ -31,3 +31,15 @@ export function serializePaymentInfo({ methods, timing, note }) {
   if (out.methods.length === 0 && !out.timing && !out.note) return null;
   return out;
 }
+
+// MEH-3035: the public «איך משלמים?» answer from a stored payment_info, or
+// null when nothing usable is set. ONE owner for both the page chip
+// (WhatsAppQuestionChips) and the dashboard preview (resolvedQuestions), so
+// the two can't disagree about when the question shows.
+export function paymentAnswer(info) {
+  const methods = PAYMENT_METHODS.filter((m) => (info?.methods || []).includes(m));
+  const timing = PAYMENT_TIMINGS.includes(info?.timing) ? info.timing : null;
+  const note = (info?.note || "").trim();
+  if (methods.length === 0 && !timing && !note) return null;
+  return { methods, timing, note };
+}
