@@ -1,7 +1,8 @@
 "use client";
 
 import { Link as LocaleLink } from "@/i18n/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
+import useDialogFocus from "@/hooks/useDialogFocus";
 import { EnvelopeSimple, Eye, LockSimple, ShoppingBag, Sparkle, Warning, WhatsappLogo, X } from "@phosphor-icons/react";
 // MEH-956: locale-aware Link for the load-error CTA — preserves the active
 // locale on /contact (bare next/link drops it for `en` under as-needed).
@@ -118,8 +119,12 @@ function SectionFetchError({ message, retryLabel, onRetry, testid }) {
 // banners below — wa.me + mailto, same two-channel layout as the original.
 function StatusSupportModal({ onClose }) {
   const t = useTranslations("dashboard.producer.status.support");
+  const dialogRef = useRef(null);
+  useDialogFocus(dialogRef, true);
   return (
     <div
+      ref={dialogRef}
+      onKeyDown={(e) => { if (e.key === "Escape") onClose(); }}
       className="fixed inset-0 z-[9000] flex items-end sm:items-center justify-center bg-black/40 px-4"
       role="dialog"
       aria-modal="true"

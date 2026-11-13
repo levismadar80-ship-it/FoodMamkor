@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
+import useDialogFocus from "@/hooks/useDialogFocus";
 import { useTranslations } from "next-intl";
 import api from "@/lib/api";
 import { showToast } from "@/lib/toast";
@@ -50,6 +51,8 @@ function CategoriesEditor() {
   // MEH-1023 Chunk B: replaces the native browser confirm with a modal dialog showing
   // the category name. { id, name } while a delete is pending; null otherwise.
   const [confirmDelete, setConfirmDelete] = useState(null);
+  const deleteDialogRef = useRef(null);
+  useDialogFocus(deleteDialogRef, !!confirmDelete);
   // MEH-1176 F4: the ad-hoc `deleting` state became the hook's per-key busy
   // flag — same UI contract (disabled buttons, Escape gate, dialog stays
   // open on failure), plus a genuine synchronous double-fire lock.
@@ -153,7 +156,7 @@ function CategoriesEditor() {
       {/* Confirmation modal — mirrors users/page.js confirm dialog pattern (MEH-1023 Chunk B) */}
       {confirmDelete && (
         <div className="fixed inset-0 z-[9000] flex items-center justify-center bg-black/40">
-          <div
+          <div ref={deleteDialogRef}
             role="dialog"
             aria-modal="true"
             aria-labelledby="category-delete-title"
@@ -173,7 +176,7 @@ function CategoriesEditor() {
               >
                 {deleting ? t("content.categories.deleting") : t("content.categories.delete")}
               </Button>
-              <button
+              <button data-autofocus
                 disabled={deleting}
                 onClick={() => setConfirmDelete(null)}
                 className="px-4 py-2 rounded-full text-sm border border-border text-muted hover:bg-gray-50 transition disabled:opacity-50"

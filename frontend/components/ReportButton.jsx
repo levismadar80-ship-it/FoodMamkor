@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import useDialogFocus from "@/hooks/useDialogFocus";
 import { useTranslations } from "next-intl";
 import { useAuth } from "@/lib/auth-context";
 import api from "@/lib/api";
@@ -15,6 +16,8 @@ export default function ReportButton({ producerId, quiet = false }) {
   const t = useTranslations("report");
   const { user } = useAuth();
   const [showModal, setShowModal] = useState(false);
+  const reportDialogRef = useRef(null);
+  useDialogFocus(reportDialogRef, showModal);
   const [reason, setReason] = useState("");
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState("");
@@ -53,7 +56,7 @@ export default function ReportButton({ producerId, quiet = false }) {
 
       {showModal && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-[9000] p-4">
-          <div
+          <div ref={reportDialogRef} onKeyDown={(e) => { if (e.key === "Escape") setShowModal(false); }}
             role="dialog"
             aria-modal="true"
             aria-labelledby="report-dialog-title"

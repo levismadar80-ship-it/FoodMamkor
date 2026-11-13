@@ -26,6 +26,7 @@
  */
 
 import { useEffect, useRef } from "react";
+import useDialogFocus from "@/hooks/useDialogFocus";
 import { useTranslations } from "next-intl";
 import Button from "@/components/ui/Button";
 
@@ -151,7 +152,15 @@ function DecisionForm({ presets, presetsError, value, setValue, freeText, setFre
   // without choosing FOR her — focus, never a preselection, so the submit
   // button's disabled-until-chosen contract still holds.
   useEffect(() => {
-    if (focusGroup === CHANGES && !presetsError) firstChangesRadio.current?.focus();
+    // MEH-3093: mark, don't focus — the dialog's useDialogFocus (parent effect,
+    // runs after this one) moves focus to [data-autofocus] and still records
+    // the row button as the element to return to.
+    // When the presets arrive after the dialog opened, focus is already
+    // inside it, so move it here directly.
+    const el = firstChangesRadio.current;
+    if (focusGroup !== CHANGES || presetsError || !el) return;
+    el.setAttribute("data-autofocus", "");
+    if (el.closest('[aria-modal="true"]')?.contains(document.activeElement)) el.focus();
   }, [focusGroup, presetsError, presets]);
 
   // A failed presets fetch keeps the modal unusable rather than falling back
@@ -244,6 +253,8 @@ export default function ProducerDecisionModal({
   onClose, onSubmit, submitting,
 }) {
   const t = useTranslations("admin");
+  const dialogRef = useRef(null);
+  useDialogFocus(dialogRef, !!producer);
 
   // Escape closes — but never mid-send, mirroring DeleteConfirmDialog's
   // "Escape-unless-deleting" contract (page.js:48). A dismissal during the
@@ -267,7 +278,7 @@ export default function ProducerDecisionModal({
 
   return (
     <div className="fixed inset-0 bg-black/40 z-[9000] flex items-center justify-center p-4">
-      <div
+      <div ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby="producer-decision-title"

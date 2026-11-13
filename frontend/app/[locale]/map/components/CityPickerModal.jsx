@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
+import useDialogFocus from "@/hooks/useDialogFocus";
 import { useTranslations } from "next-intl";
 import { X } from "@phosphor-icons/react";
 
 import CitySearch from "@/components/CitySearch";
-import { useFocusReturn } from "@/lib/use-focus-return";
 
 /**
  * MEH-58 Phase 3: city picker overlay shown when the user toggles
@@ -37,7 +37,9 @@ export default function CityPickerModal({ open, onClose, onSelectCity }) {
   const t = useTranslations();
 
   // MEH-230: restore focus to the trigger on close + WCAG 2.1 §2.1.2 ESC-to-close.
-  useFocusReturn(open);
+  // MEH-3093: useDialogFocus (trap + return) replaces the return-only hook.
+  const dialogRef = useRef(null);
+  useDialogFocus(dialogRef, open);
   useEffect(() => {
     if (!open) return;
     const handleKey = (e) => { if (e.key === "Escape") onClose(); };
@@ -47,7 +49,7 @@ export default function CityPickerModal({ open, onClose, onSelectCity }) {
 
   if (!open) return null;
   return (
-    <div role="dialog" aria-modal="true" aria-labelledby="city-picker-title" className="fixed inset-0 z-[9000] flex items-center justify-center bg-black/40 px-4" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+    <div ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby="city-picker-title" className="fixed inset-0 z-[9000] flex items-center justify-center bg-black/40 px-4" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
       <div className="bg-surface-floating rounded-lg border border-border w-full max-w-sm p-5 relative">
         <button type="button" onClick={onClose} className="absolute top-2 end-2 w-11 h-11 rounded-full hover:bg-green-50 flex items-center justify-center text-fg-muted" aria-label={t("common.aria.close")}>
           <X size={20} weight="bold" />

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import useDialogFocus from "@/hooks/useDialogFocus";
 import { useTranslations, useLocale } from "next-intl";
 import { formatEventDate } from "@/lib/format-date";
 import { Eye, EyeSlash, Star, Trash } from "@phosphor-icons/react";
@@ -109,6 +110,8 @@ export default function AdminReviewsPage() {
   // MEH-1040: full review row while a delete awaits confirmation; null otherwise.
   // Replaces the native browser confirm — the last admin surface with that pattern.
   const [confirmDelete, setConfirmDelete] = useState(null);
+  const deleteDialogRef = useRef(null);
+  useDialogFocus(deleteDialogRef, !!confirmDelete);
   // MEH-2096: setReviews([]) on failure rendered the same "no reviews" row as a
   // genuinely empty moderation queue.
   const [loadError, setLoadError] = useState(false);
@@ -427,7 +430,7 @@ export default function AdminReviewsPage() {
       {/* Confirmation modal — mirrors content/page.js category-delete dialog (MEH-1023 Ch.B) */}
       {confirmDelete && (
         <div className="fixed inset-0 z-[9000] flex items-center justify-center bg-black/40">
-          <div
+          <div ref={deleteDialogRef}
             role="dialog"
             aria-modal="true"
             aria-labelledby="review-delete-title"
@@ -447,7 +450,7 @@ export default function AdminReviewsPage() {
               >
                 {deleting ? t("reviews.deleting") : t("reviews.delete")}
               </Button>
-              <button
+              <button data-autofocus
                 disabled={deleting}
                 onClick={() => setConfirmDelete(null)}
                 className="px-4 py-2 rounded-full text-sm border border-border text-muted hover:bg-gray-50 transition disabled:opacity-50"

@@ -1,6 +1,7 @@
 "use client";
 
-import { Suspense, useEffect } from "react";
+import { Suspense, useEffect, useRef } from "react";
+import useDialogFocus from "@/hooks/useDialogFocus";
 import { useTranslations } from "next-intl";
 import AdminProducersToolbar from "./AdminProducersToolbar";
 import AdminProducersTable from "./AdminProducersTable";
@@ -41,6 +42,8 @@ function PageHeader({ count }) {
 // markup + Escape-unless-deleting contract; `deleting` here comes from the
 // hook's isBusy(`delete:${id}`) instead of a local flag.
 function DeleteConfirmDialog({ confirmDelete, deleting, onConfirm, onCancel }) {
+  const dialogRef = useRef(null);
+  useDialogFocus(dialogRef, !!confirmDelete);
   const t = useTranslations("admin");
 
   useEffect(() => {
@@ -55,7 +58,7 @@ function DeleteConfirmDialog({ confirmDelete, deleting, onConfirm, onCancel }) {
   if (!confirmDelete) return null;
   return (
     <div className="fixed inset-0 z-[9000] flex items-center justify-center bg-black/40">
-      <div
+      <div ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby="producer-delete-title"
@@ -72,7 +75,7 @@ function DeleteConfirmDialog({ confirmDelete, deleting, onConfirm, onCancel }) {
           >
             {deleting ? t("producers.table.deleting") : t("common.delete")}
           </Button>
-          <button
+          <button data-autofocus
             disabled={deleting}
             onClick={onCancel}
             className="px-4 py-2 rounded-full text-sm border border-border text-muted hover:bg-gray-50 transition disabled:opacity-50"
@@ -90,6 +93,8 @@ function DeleteConfirmDialog({ confirmDelete, deleting, onConfirm, onCancel }) {
 // (MEH-1023/MEH-1027 dialog contract); affirmative button is primary (not
 // destructive) since this confirms an approval. Escape cancels.
 function ApproveConfirmDialog({ approveConfirm, onConfirm, onCancel }) {
+  const dialogRef = useRef(null);
+  useDialogFocus(dialogRef, !!approveConfirm);
   useEffect(() => {
     if (!approveConfirm) return undefined;
     const onKey = (e) => {
@@ -102,7 +107,7 @@ function ApproveConfirmDialog({ approveConfirm, onConfirm, onCancel }) {
   if (!approveConfirm) return null;
   return (
     <div className="fixed inset-0 z-[9000] flex items-center justify-center bg-black/40">
-      <div
+      <div ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby="approve-confirm-title"
@@ -118,7 +123,7 @@ function ApproveConfirmDialog({ approveConfirm, onConfirm, onCancel }) {
           >
             {ADMIN_REVIEW_APPROVE_CONFIRM.confirmLabel}
           </Button>
-          <button
+          <button data-autofocus
             onClick={onCancel}
             className="px-4 py-2 rounded-full text-sm border border-border text-muted hover:bg-gray-50 transition"
           >

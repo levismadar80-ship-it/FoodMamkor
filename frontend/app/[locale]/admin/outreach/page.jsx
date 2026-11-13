@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
+import useDialogFocus from "@/hooks/useDialogFocus";
 import { Phone } from "@phosphor-icons/react";
 import { useLocale, useTranslations } from "next-intl";
 import api from "@/lib/api";
@@ -525,6 +526,8 @@ function StatusChip({ id, label, count, active, onClick }) {
 }
 
 function AddLeadModal({ onClose, onCreated }) {
+  const dialogRef = useRef(null);
+  useDialogFocus(dialogRef, true);
   const t = useTranslations("admin");
   const [form, setForm] = useState({
     name: "",
@@ -568,14 +571,15 @@ function AddLeadModal({ onClose, onCreated }) {
       className="fixed inset-0 bg-black/40 z-[9500] flex items-center justify-center p-4"
       onClick={onClose}
     >
-      <form
+      <form ref={dialogRef} onKeyDown={(e) => { if (e.key === "Escape") onClose(); }}
         role="dialog"
         aria-modal="true"
+        aria-labelledby="outreach-add-title"
         onClick={(e) => e.stopPropagation()}
         onSubmit={handleSubmit}
         className="bg-surface rounded-lg p-6 max-w-md w-full space-y-3"
       >
-        <h2 className="font-headline-md text-xl font-bold">{t("outreach.modal_add.title")}</h2>
+        <h2 id="outreach-add-title" className="font-headline-md text-xl font-bold">{t("outreach.modal_add.title")}</h2>
         {/* MEH-1128 Wave C: label-less ui/Input — placeholder-only parity
             with the old inputs (no labels invented; notes textarea stays). */}
         <Input
@@ -644,19 +648,22 @@ function AddLeadModal({ onClose, onCreated }) {
 }
 
 function ScriptModal({ onClose }) {
+  const dialogRef = useRef(null);
+  useDialogFocus(dialogRef, true);
   const t = useTranslations("admin");
   return (
     <div
       className="fixed inset-0 bg-black/40 z-[9500] flex items-center justify-center p-4"
       onClick={onClose}
     >
-      <div
+      <div ref={dialogRef} onKeyDown={(e) => { if (e.key === "Escape") onClose(); }}
         role="dialog"
         aria-modal="true"
+        aria-labelledby="outreach-script-title"
         onClick={(e) => e.stopPropagation()}
         className="bg-surface rounded-lg p-6 max-w-lg w-full"
       >
-        <h2 className="font-headline-md text-xl font-bold mb-3 inline-flex items-center gap-2">
+        <h2 id="outreach-script-title" className="font-headline-md text-xl font-bold mb-3 inline-flex items-center gap-2">
           <Phone size={20} className="text-primary" aria-hidden="true" />
           {t("outreach.modal_script.title")}
         </h2>
@@ -676,6 +683,8 @@ function ScriptModal({ onClose }) {
 }
 
 function WhatsAppModal({ lead, onClose, onPrefillMinted }) {
+  const dialogRef = useRef(null);
+  useDialogFocus(dialogRef, true);
   const t = useTranslations("admin");
   const [tokenBusy, setTokenBusy] = useState(false);
 
@@ -723,13 +732,14 @@ function WhatsAppModal({ lead, onClose, onPrefillMinted }) {
       className="fixed inset-0 bg-black/40 z-[9500] flex items-center justify-center p-4"
       onClick={onClose}
     >
-      <div
+      <div ref={dialogRef} onKeyDown={(e) => { if (e.key === "Escape") onClose(); }}
         role="dialog"
         aria-modal="true"
+        aria-labelledby="outreach-whatsapp-title"
         onClick={(e) => e.stopPropagation()}
         className="bg-surface rounded-lg p-6 max-w-lg w-full space-y-4"
       >
-        <h2 className="font-headline-md text-xl font-bold">
+        <h2 id="outreach-whatsapp-title" className="font-headline-md text-xl font-bold">
           {t("outreach.modal_wa.title", { name: lead.name })}
         </h2>
         {tokenBusy && (

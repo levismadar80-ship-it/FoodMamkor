@@ -840,6 +840,15 @@ utility layer, **not** a parallel `:root` token authority (MEH-686 removed
 
 No component is restyled in MEH-136; consumption is MEH-639 / MEH-602.
 
+## Dialogs (MEH-3093)
+
+Every modal (`aria-modal="true"`) keeps one contract: an accessible name
+(`aria-label` / `aria-labelledby`), focus moves in, Tab stays inside and focus
+returns to what opened it (`hooks/useDialogFocus.js`; mark the safe button
+`data-autofocus`), and Escape closes it (each dialog owns its Escape rule, e.g.
+not mid-request). `DialogContractGuard.test.js` enforces it. One shared
+`Dialog` component for the look (overlay, radius, close button) is post-launch.
+
 ## Interactive sizing minimums
 
 Interactive elements — anything a user reads to act on or taps — carry two

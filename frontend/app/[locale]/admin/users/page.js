@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
+import useDialogFocus from "@/hooks/useDialogFocus";
 import { Heart, Lock } from "@phosphor-icons/react";
 import { useTranslations, useLocale } from "next-intl";
 import { formatEventDate } from "@/lib/format-date";
@@ -29,6 +30,8 @@ export default function AdminUsersPage() {
   const [expanded, setExpanded] = useState(null);
   const [favorites, setFavorites] = useState({});
   const [confirm, setConfirm] = useState(null); // { userId, userName, userEmail?, action: "promote"|"demote"|"delete" }
+  const confirmDialogRef = useRef(null);
+  useDialogFocus(confirmDialogRef, !!confirm);
   // MEH-1046: client-side pagination — slice the already-fetched array. The
   // search/role filters are SERVER-side (load() query params), so `users` is
   // already the filtered result set. Page resets on filter change only, not
@@ -370,7 +373,7 @@ export default function AdminUsersPage() {
       {confirm && (
         <div className="fixed inset-0 z-[9000] flex items-center justify-center bg-black/40">
           {/* MEH-1023: text-start aligns the Hebrew dialog copy to the start edge in RTL */}
-          <div
+          <div ref={confirmDialogRef}
             role="dialog"
             aria-modal="true"
             aria-labelledby="role-confirm-title"
@@ -406,7 +409,7 @@ export default function AdminUsersPage() {
               {/* Deliberately NOT guarded by isBusy: an explicit cancel stays
                   available while the PUT is open. The guard belongs on the
                   ambiguous dismissal (Escape), not on the deliberate one. */}
-              <button
+              <button data-autofocus
                 onClick={() => setConfirm(null)}
                 className="px-4 py-2 rounded-full text-sm border border-border text-muted hover:bg-gray-50 transition"
               >

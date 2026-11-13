@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
+import useDialogFocus from "@/hooks/useDialogFocus";
 import { useTranslations, useLocale } from "next-intl";
 import { formatEventDate } from "@/lib/format-date";
 import api from "@/lib/api";
@@ -16,6 +17,8 @@ export default function AdminReportsPage() {
   // MEH-1266: dialog state replaces the in-memory "ignore" and the native
   // window.prompt. dismissTarget = a producer group.
   const [dismissTarget, setDismissTarget] = useState(null);
+  const dismissDialogRef = useRef(null);
+  useDialogFocus(dismissDialogRef, !!dismissTarget);
   // MEH-2096: setReports([]) on failure rendered "no reports" — a moderation
   // queue that looks handled when it is simply unreadable.
   const [loadError, setLoadError] = useState(false);
@@ -141,7 +144,7 @@ export default function AdminReportsPage() {
       {/* MEH-1266: dismiss-all confirm dialog (content/page.js precedent) */}
       {dismissTarget && (
         <div className="fixed inset-0 z-[9000] flex items-center justify-center bg-black/40">
-          <div
+          <div ref={dismissDialogRef}
             role="dialog"
             aria-modal="true"
             aria-labelledby="dismiss-title"
@@ -160,7 +163,7 @@ export default function AdminReportsPage() {
                   ? t("reports.actions.dismissing")
                   : t("reports.actions.ignore")}
               </Button>
-              <button
+              <button data-autofocus
                 disabled={isBusy(`dismiss:${dismissTarget.producer_id}`)}
                 onClick={() => setDismissTarget(null)}
                 className="px-4 py-2 rounded-full text-sm border border-border text-muted hover:bg-gray-50 transition disabled:opacity-50"
