@@ -829,6 +829,11 @@ def update_my_producer(
         # `note` display-only, and dates older than today-30 rejected (Sapir's
         # ruling ג). Explicit null clears it, same as order_window.
         "special_hours",
+        # MEH-3035 chunk 2: how the business takes payment. Chunk 1 shipped the
+        # column + _payment_info_validator; the write path opens here in the
+        # SAME PR as its editor (PaymentInfoEditor.jsx) and guidance-audit row,
+        # per the standing rule above. Explicit null clears it.
+        "payment_info",
         # MEH-2143 (MEH-1938 batch B4): `kosher` was REMOVED from this set.
         # Same disposition and standing rule as the blocks above — the column
         # stays, `admin.py:552` / `producer_import.py:323` (sheet column M) /

@@ -6062,6 +6062,18 @@
             ],
             "title": "Owner Photo Url"
           },
+          "payment_info": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Payment Info"
+          },
           "phone": {
             "anyOf": [
               {
@@ -6953,6 +6965,18 @@
               }
             ],
             "title": "Owner Photo Url"
+          },
+          "payment_info": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Payment Info"
           },
           "phone": {
             "anyOf": [
@@ -7922,6 +7946,18 @@
               }
             ],
             "title": "Owner Photo Url"
+          },
+          "payment_info": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Payment Info"
           },
           "phone": {
             "anyOf": [
@@ -10109,6 +10145,18 @@
             ],
             "title": "Owner Photo Url"
           },
+          "payment_info": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Payment Info"
+          },
           "phone": {
             "anyOf": [
               {
@@ -11695,6 +11743,18 @@
               }
             ],
             "title": "Owner Photo Url"
+          },
+          "payment_info": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Payment Info"
           },
           "phone": {
             "anyOf": [
@@ -14046,6 +14106,14 @@
           "pages": {
             "title": "Pages",
             "type": "integer"
+          },
+          "rating_counts": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "default": {},
+            "title": "Rating Counts",
+            "type": "object"
           },
           "reviews": {
             "items": {
