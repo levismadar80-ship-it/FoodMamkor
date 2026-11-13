@@ -648,7 +648,7 @@ export function HomeProducersGrid({
               {visibleCount >= LOAD_MORE_CAP ? (
                 <Link
                   href="/producers"
-                  className={`transition ${SHOW_MORE_BLOCK_CLASSES}`}
+                  className={SHOW_MORE_BLOCK_CLASSES}
                 >
                   {t("home.producers.all_businesses")}
                 </Link>

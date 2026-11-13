@@ -30,12 +30,12 @@ import { CaretDown, CaretUp } from "@phosphor-icons/react";
 // Exported so a slot that swaps the button for a link (home grid at its cap)
 // keeps the identical block look.
 export const SHOW_MORE_BLOCK_CLASSES =
-  "flex w-full sm:w-auto sm:min-w-[280px] sm:mx-auto min-h-touch items-center justify-center gap-1.5 rounded-full border border-primary px-7 text-base font-semibold text-primary hover:bg-primary/5 active:bg-primary/10 disabled:opacity-50";
+  "flex w-full sm:w-fit sm:min-w-[280px] sm:mx-auto min-h-touch items-center justify-center gap-1.5 rounded-full border border-primary px-7 text-base font-semibold text-primary hover:bg-primary/5 active:bg-primary/10 disabled:opacity-50 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40";
 
 const SIZE_CLASSES = {
   block: SHOW_MORE_BLOCK_CLASSES,
   inline:
-    "inline-flex min-h-touch items-center gap-1 text-sm font-semibold text-primary hover:text-primary-dark disabled:opacity-50",
+    "inline-flex min-h-touch items-center gap-1 text-sm font-semibold text-primary hover:text-primary-dark disabled:opacity-50 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
 };
 
 /**
@@ -63,7 +63,6 @@ export default function ShowMore(props) {
       data-testid={props["data-testid"]}
       data-show-more={size}
       className={[
-        "transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
         SIZE_CLASSES[size] || SIZE_CLASSES.block,
         className,
       ].join(" ")}

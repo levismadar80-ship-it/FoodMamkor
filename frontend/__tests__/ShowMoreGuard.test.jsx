@@ -9,6 +9,10 @@
  * call t("…show_more…" | "…show_all…" | "…show_less…" | "…load_more…"): that
  * is a hand-rolled expander. A <Link> to "all X" is navigation, not this, and
  * is out of scope.
+ *
+ * Blind spots (by design, MEH-3052 review): keys outside EXPANDER_KEY
+ * (see_all, view_more…), hard-coded Hebrew, a key held in a variable, and
+ * everything under /admin/ (row disclosures, not lists).
  */
 import { describe, it, expect } from "vitest";
 import { render, screen } from "@testing-library/react";
@@ -65,14 +69,23 @@ export function handRolledExpanders(src) {
   const hits = [];
   traverse(ast, {
     JSXElement(p) {
-      if (p.node.openingElement.name.name !== "button") return;
+      // Raw <button> and the <Button> primitive both count (MEH-3052 review).
+      if (!["button", "Button"].includes(p.node.openingElement.name.name)) return;
       p.traverse({
         CallExpression(c) {
           const callee = c.node.callee;
+          const isT = (callee.type === "Identifier" && /^t[A-Z]?\w*$/.test(callee.name))
+            || (callee.type === "MemberExpression" && callee.object.type === "Identifier"
+              && /^t[A-Z]?\w*$/.test(callee.object.name));
+          if (!isT) return;
+          // t("k") and t(cond ? "a" : "b") alike.
           const arg = c.node.arguments[0];
-          if (callee.type === "Identifier" && /^t[A-Z]?\w*$/.test(callee.name)
-              && arg?.type === "StringLiteral" && EXPANDER_KEY.test(arg.value)) {
-            hits.push(`${arg.value}@${p.node.loc.start.line}`);
+          const keys = arg?.type === "StringLiteral" ? [arg.value]
+            : arg?.type === "ConditionalExpression"
+              ? [arg.consequent, arg.alternate].filter((n) => n.type === "StringLiteral").map((n) => n.value)
+              : [];
+          for (const k of keys) {
+            if (EXPANDER_KEY.test(k)) hits.push(`${k}@${p.node.loc.start.line}`);
           }
         },
       });
@@ -87,6 +100,8 @@ describe("MEH-3052 guard — no hand-rolled show-more <button>", () => {
     const nu = `const X = () => <ShowMore onClick={f} label={t("group_buys.show_all_count", { count: 3 })} />;`;
     expect(handRolledExpanders(old)).toEqual(["group_buys.show_all@1"]);
     expect(handRolledExpanders(nu)).toEqual([]);
+    const prim = `const X = () => <Button onClick={f}>{t(open ? "show_less" : "show_more")}</Button>;`;
+    expect(handRolledExpanders(prim)).toEqual(["show_less@1", "show_more@1"]);
   });
 
   it("app/ + components/ carry no raw expander <button>", () => {
