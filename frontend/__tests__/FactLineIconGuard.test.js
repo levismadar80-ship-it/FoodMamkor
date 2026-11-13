@@ -144,17 +144,23 @@ describe("MEH-3028 — the matchers work on known answers (control)", () => {
 
 describe("MEH-3028 — no icon in any section heading (site-wide)", () => {
   const files = [...walk(path.join(ROOT, "app")), ...walk(path.join(ROOT, "components"))];
+  // Only files that render a <SectionHeading> are parsed: a full Babel pass
+  // over every file took >5 s on a loaded CI runner (timed out on #4398).
+  const sources = files
+    .map((f) => [f, fs.readFileSync(f, "utf8")])
+    .filter(([, src]) => src.includes("<SectionHeading"));
 
   it("scans a real corpus", () => {
-    // Control against a silent empty walk: the site has well over 100 such files.
+    // Controls against a silent empty walk or a pre-filter that matches
+    // nothing: the site has well over 100 files, and 30+ render the heading
+    // (13/11; the MEH-3020 sweep moved every section heading onto it).
     expect(files.length).toBeGreaterThan(100);
+    expect(sources.length).toBeGreaterThan(30);
   });
 
   it("every <SectionHeading> is text only", () => {
-    const offenders = files.flatMap((f) =>
-      iconsInSectionHeadings(fs.readFileSync(f, "utf8")).map(
-        (h) => `${path.relative(ROOT, f)} ${h}`,
-      ),
+    const offenders = sources.flatMap(([f, src]) =>
+      iconsInSectionHeadings(src).map((h) => `${path.relative(ROOT, f)} ${h}`),
     );
     expect(
       offenders,
