@@ -1318,6 +1318,18 @@ async function fillWizardAndSubmit() {
   await waitFor(() => expect(api.post).toHaveBeenCalledTimes(1));
 }
 
+describe("non-upgrade confirm screen — the way in that exists (MEH-2920)", () => {
+  it("links to login-then-dashboard as the primary action; home is secondary", async () => {
+    api.post.mockResolvedValue({ data: {} }); // anti-enum ack, no token
+    await fillWizardAndSubmit();
+    const cta = await screen.findByTestId("register-confirm-dashboard-cta");
+    expect(cta.tagName).toBe("A");
+    expect(cta.getAttribute("href")).toBe("/login?redirect=%2Fproducer%2Fdashboard");
+    expect(cta.textContent).toBe(`${K}.success.cta`);
+    expect(screen.getByTestId("register-confirm-home").textContent).toBe(`${K}.success.back_home`);
+  });
+});
+
 describe("RegisterProducerClient — draft survives the anti-enum ack (MEH-1815)", () => {
   it("keeps the draft after a non-upgrade ack, because that 200 may be a collision", async () => {
     api.post.mockResolvedValue({ data: {} }); // no access_token
@@ -1817,16 +1829,3 @@ describe("RegisterProducerClient — a step change starts at the top (MEH-2927)"
     expect(scrollToSpy).not.toHaveBeenCalled();
   });
 });
-
-describe("non-upgrade confirm screen — the way in that exists (MEH-2920)", () => {
-  it("links to login-then-dashboard as the primary action; home is secondary", async () => {
-    api.post.mockResolvedValue({ data: {} }); // anti-enum ack, no token
-    await fillWizardAndSubmit();
-    const cta = await screen.findByTestId("register-confirm-dashboard-cta");
-    expect(cta.tagName).toBe("A");
-    expect(cta.getAttribute("href")).toBe("/login?redirect=%2Fproducer%2Fdashboard");
-    expect(cta.textContent).toBe(`${K}.success.cta`);
-    expect(screen.getByTestId("register-confirm-home").textContent).toBe(`${K}.success.back_home`);
-  });
-});
-
