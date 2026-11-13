@@ -1077,7 +1077,8 @@ describe("ProducerCard — signup preview shape (MEH-3074)", () => {
         producer_name: "הבית של רותי",
         city: "זכרון יעקב",
         short_description: "לחם מחמצת מקמח מקומי",
-        category_ids: [2],
+        // picked in this order — catalogue order is the reverse
+        category_ids: [2, 1],
         has_physical_location: true,
         offers_delivery: false,
       },
@@ -1088,6 +1089,9 @@ describe("ProducerCard — signup preview shape (MEH-3074)", () => {
     expect(container.textContent).toContain("זכרון יעקב");
     expect(container.textContent).toContain("לחם מחמצת מקמח מקומי");
     expect(container.querySelector("img")).toBeNull();
+    // The card shows categories[0]: it must be the first one PICKED.
+    expect(producer.categories.map((cat) => cat.id)).toEqual([2, 1]);
+    expect(container.textContent).toContain("מאפים");
+    expect(container.textContent).not.toContain("ירקות");
   });
 });
-

@@ -1837,6 +1837,11 @@ describe("STORY step — card preview (MEH-3074)", () => {
     expect(details.tagName).toBe("DETAILS");
     expect(details.hasAttribute("open")).toBe(false);
     expect(details.querySelector("summary").textContent).toBe(`${K}.card_preview.summary`);
+    // Closed: the card is not mounted at all, so none of its effects run.
+    expect(screen.queryByTestId("preview-card")).toBeNull();
+
+    details.open = true;
+    fireEvent(details, new Event("toggle"));
     expect(screen.getByTestId("register-card-preview-body").hasAttribute("inert")).toBe(true);
 
     const producer = JSON.parse(screen.getByTestId("preview-card").dataset.producer);
