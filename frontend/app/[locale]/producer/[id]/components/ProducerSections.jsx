@@ -32,6 +32,8 @@ import RecipeCard from "@/components/public/RecipeCard";
 // MEH-1901: the full product detail (long description, per-product diet flags)
 // as an overlay — no route, no marketplace.
 import ProductSheet, { productDietKeys } from "@/components/public/ProductSheet";
+import ProductGroupChips, { UNGROUPED } from "@/components/public/ProductGroupChips";
+import { chipGroups, hasUngrouped, orderProducts } from "@/lib/product-order";
 import ReportButton from "@/components/ReportButton";
 // MEH-1460: the "טעות בפרטים?" correction link relocated here from
 // ContactCard — its modal/email logic (v1, MEH-1443) is unchanged.
@@ -185,6 +187,8 @@ export default function ProducerSections({
   const [openIndex, setOpenIndex] = useState(null);
   // MEH-3021: whether a long product list is expanded past its first rows.
   const [showAllProducts, setShowAllProducts] = useState(false);
+  // MEH-3055: the visitor's group filter — null = «הכל».
+  const [activeGroup, setActiveGroup] = useState(null);
   // MEH-591: producer recipes (chunk 4/4). Fetched client-side via the
   // public read endpoint added in chunk 2 — backend already filters to
   // published+approved, so an empty array means "no recipes to show"
@@ -244,16 +248,25 @@ export default function ProducerSections({
   const signatureImg = signatureProduct?.image_url
     ? optimizeCloudinary(signatureProduct.image_url, { aspectRatio: "1:1", width: 320 })
     : null;
-  // MEH-3021: products with a photo first, then the rest — each group keeps
-  // the API order (a stable partition, not a sort), so the first screen of a
-  // long list shows pictures. The signature product stays out of the grid.
+  // MEH-3021 / MEH-3055: the order is lib/product-order.js — the owner's
+  // order when she set one, else photos first; grouped products laid out
+  // group by group. The signature product stays out of the grid.
+  const productGroups = producer.product_groups || [];
   const gridUnsorted = signatureProduct
     ? (producer.products || []).filter((p) => p.id !== signatureProduct.id)
     : producer.products || [];
-  const gridProducts = [
-    ...gridUnsorted.filter((p) => p.image_url),
-    ...gridUnsorted.filter((p) => !p.image_url),
-  ];
+  const gridAll = orderProducts(gridUnsorted, productGroups);
+  // MEH-3055: chips only when 2+ groups actually hold products (Etsy shows its
+  // sections as filters; one group is no choice at all).
+  const filterGroups = chipGroups(producer.products || [], productGroups);
+  const showGroupChips = filterGroups.length >= 2;
+  const liveGroupIds = new Set(productGroups.map((g) => g.id));
+  const gridProducts =
+    !showGroupChips || activeGroup == null
+      ? gridAll
+      : activeGroup === UNGROUPED
+        ? gridAll.filter((p) => p.group_id == null || !liveGroupIds.has(p.group_id))
+        : gridAll.filter((p) => p.group_id === activeGroup);
   // MEH-3021: a long list collapses to 6 rows on the phone, 8 from md (two
   // columns × 4). Up to 8 rows there is no button and everything shows, on
   // both — one threshold, so a list never collapses on one screen size only.
@@ -470,6 +483,17 @@ export default function ProducerSections({
               asymmetric card grid). Prices via formatPriceRange (MEH-1140) with
               dir="ltr" bidi isolation (regression baseline:
               qa-artifacts/MEH-1168-p1/price-cell-zoom.webp). */}
+          {showGroupChips && (
+            <ProductGroupChips
+              groups={filterGroups}
+              withUngrouped={hasUngrouped(producer.products || [], productGroups)}
+              active={activeGroup}
+              onChange={(id) => {
+                setActiveGroup(id);
+                setShowAllProducts(false);
+              }}
+            />
+          )}
           {gridProducts.length > 0 && (
             <div className="grid grid-cols-1 md:grid-cols-2 md:gap-x-6 border-t border-border">
               {(productsCollapsed ? gridProducts.slice(0, PRODUCTS_PREVIEW_DESKTOP) : gridProducts).map((product, idx) => {

@@ -116,3 +116,42 @@ test.describe("MEH-3021 — long product list collapses", () => {
     await expect(page.getByTestId("products-toggle")).toHaveAttribute("aria-expanded", "true");
   });
 });
+
+/**
+ * MEH-3055 — the owner's groups become filter chips. Same interception as
+ * above (MEH-1968, conditions in the header): the real payload plus two
+ * groups and products sorted into them.
+ */
+test.describe("MEH-3055 — product group chips", () => {
+  test("2 groups with products: chips filter the list, «all» restores", async ({ page }) => {
+    watchPageErrors(page);
+    const exact = new RegExp(`/api/producers/${producer.id}(\\?.*)?$`);
+    await page.route(exact, async (route: Route) => {
+      const real = await route.fetch();
+      const body = await real.json();
+      body.product_groups = [
+        { id: "e2e-g1", name: "קבוצת בדיקה א" },
+        { id: "e2e-g2", name: "קבוצת בדיקה ב" },
+      ];
+      body.top_product_id = null;
+      body.top_product_name = null;
+      body.products = syntheticProducts()
+        .slice(0, 4)
+        .map((p, i) => ({ ...p, group_id: i < 3 ? "e2e-g1" : "e2e-g2" }));
+      await route.fulfill({ response: real, json: body });
+    });
+    await page.goto(`/producer/${producer.id}`);
+
+    const chips = page.getByTestId("product-group-chip");
+    await expect(chips).toHaveCount(3, { timeout: 20_000 }); // all + 2 groups, no «more»
+    await expect(chips.first()).toHaveAttribute("aria-pressed", "true");
+    await expect(page.getByTestId("product-row")).toHaveCount(4);
+
+    await chips.nth(2).click();
+    await expect(chips.nth(2)).toHaveAttribute("aria-pressed", "true");
+    await expect(page.getByTestId("product-row")).toHaveCount(1);
+
+    await chips.first().click();
+    await expect(page.getByTestId("product-row")).toHaveCount(4);
+  });
+});

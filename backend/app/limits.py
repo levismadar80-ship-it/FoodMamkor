@@ -33,6 +33,9 @@ MAX_LOCATIONS = 20
 MAX_UPCOMING_EVENTS = 30
 MAX_UPCOMING_EXPERIENCES = 30
 MAX_OPEN_GROUP_BUYS = 30
+# MEH-3055: product groups live in producers.product_groups (JSONB), so this
+# is a request-list cap, not a table cap.
+MAX_PRODUCT_GROUPS = 20
 
 # --- Request-list caps ---------------------------------------------------------
 
@@ -59,6 +62,7 @@ _CAP_DETAIL = {
 }
 
 GALLERY_IMAGES_DETAIL = f"אפשר להוסיף עד {MAX_GALLERY_IMAGES} תמונות. כדי להוסיף תמונה חדשה, צריך קודם למחוק אחת קיימת."
+PRODUCT_GROUPS_DETAIL = f"אפשר ליצור עד {MAX_PRODUCT_GROUPS} קבוצות מוצרים. כדי להוסיף קבוצה חדשה, צריך קודם למחוק אחת קיימת."
 DELIVERY_CITIES_DETAIL = f"אפשר להוסיף עד {MAX_DELIVERY_CITIES} ערי משלוח. כדי להוסיף עיר חדשה, צריך קודם להסיר אחת קיימת."
 
 
