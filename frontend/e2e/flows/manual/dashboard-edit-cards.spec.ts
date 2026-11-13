@@ -71,7 +71,7 @@ import { test, expect, type Page, type Route } from "../_cloudinary-stub";
 const IMG = "https://res.cloudinary.com/demo/image/upload/p.jpg";
 const PRIMARY_LOC = { id: 1, kind: "branch", is_primary: true, lat: 32.08, lng: 34.78, opening_hours: "א-ה 09:00-17:00" };
 
-/** 6/6 checklist steps done. `status` is set per test. */
+/** 7/7 checklist steps done (MEH-3032 added the owner photo). `status` is set per test. */
 const FULL = {
   id: 7,
   name: "מאפיית שקד",
@@ -89,6 +89,7 @@ const FULL = {
   short_description: "מאפייה שכונתית",
   description: "מאפייה שכונתית קטנה בלב חיפה",
   locations: [PRIMARY_LOC],
+  owner_photo_url: "https://res.cloudinary.com/demo/image/upload/owner.jpg",
 };
 
 type Overrides = Partial<typeof FULL> & Record<string, unknown>;
@@ -388,7 +389,7 @@ test.describe("overview — completeness card", () => {
   }
 
   // MT:MEH-1106:1 (at the measured 6, not 4) · MT:MEH-288:4 (drift D5: inside the component)
-  test("6/6 collapses to the single green row", async ({ page }) => {
+  test("7/7 collapses to the single green row", async ({ page }) => {
     await openOverview(page, FULL);
     await expect(cardRoot(page)).toHaveAttribute("role", "status");
     await expect(cardRoot(page)).toContainText("הפרופיל מלא");
@@ -396,25 +397,25 @@ test.describe("overview — completeness card", () => {
     await expect(checklist(page)).toHaveCount(0);
   });
 
-  // MT:MEH-288:3 · MT:MEH-1106:2 (83%, not the doc's 75%)
+  // MT:MEH-288:3 · MT:MEH-1106:2 (86% since MEH-3032; was 83%, not the doc's 75%)
   // The doc's "רק N פרטים עד שהפרופיל מלא" sub-line is `yellow_high_sub`, and the
   // card never reads it: `checklist_sub` renders unconditionally under either
   // yellow headline (ProfileCompletenessCard.jsx:311). Four `completeness.*`
   // keys — red_headline, red_sub, yellow_low_sub, yellow_high_sub — have zero
   // references in the component (grep, 05/09).
-  test("one step missing → 83%, «כמעט שם», exactly one todo", async ({ page }) => {
+  test("one step missing → 86%, «כמעט שם», exactly one todo", async ({ page }) => {
     await openOverview(page, profile({ images: [] }));
-    await expect(ring(page)).toHaveAttribute("aria-valuenow", "83");
-    await expect(cardRoot(page)).toContainText("כמעט שם — 83% מוכן");
+    await expect(ring(page)).toHaveAttribute("aria-valuenow", "86");
+    await expect(cardRoot(page)).toContainText("כמעט שם — 86% מוכן");
     await expect(cardRoot(page)).toContainText("עוד כמה צעדים והפרופיל שלכם מוכן לקבל פניות");
-    await expect(checklist(page).getByRole("listitem")).toHaveCount(6);
+    await expect(checklist(page).getByRole("listitem")).toHaveCount(7);
   });
 
-  // MT:MEH-288:2 · MT:MEH-1106:3 (50% is reachable with 6 steps: 3 done)
-  test("three steps missing → 50% with the neutral headline", async ({ page }) => {
+  // MT:MEH-288:2 · MT:MEH-1106:3 (with 7 steps since MEH-3032: 4 done = 57%)
+  test("three steps missing → 57% with the neutral headline", async ({ page }) => {
     await openOverview(page, profile({ images: [], products: [], phone_verified: false }));
-    await expect(ring(page)).toHaveAttribute("aria-valuenow", "50");
-    await expect(cardRoot(page)).toContainText("הפרופיל שלך 50% מוכן");
+    await expect(ring(page)).toHaveAttribute("aria-valuenow", "57");
+    await expect(cardRoot(page)).toContainText("הפרופיל שלך 57% מוכן");
     await expect(cardRoot(page)).not.toContainText("כמעט שם");
   });
 
@@ -429,8 +430,8 @@ test.describe("overview — completeness card", () => {
   // MT:MEH-288:6 — a11y: progressbar value + CTA name.
   test("the ring is a progressbar with the percentage, and the CTA has its own name", async ({ page }) => {
     await openOverview(page, profile({ images: [] }));
-    await expect(ring(page)).toHaveAttribute("aria-valuenow", "83");
-    await expect(ring(page)).toHaveAttribute("aria-label", "השלמת פרופיל: 83%");
+    await expect(ring(page)).toHaveAttribute("aria-valuenow", "86");
+    await expect(ring(page)).toHaveAttribute("aria-label", "השלמת פרופיל: 86%");
     await expect(cardRoot(page).getByRole("link", { name: "השלימו את הפרופיל שלך" })).toBeVisible();
   });
 
@@ -438,7 +439,7 @@ test.describe("overview — completeness card", () => {
   test("products: zero is a todo, one is done", async ({ page }) => {
     await openOverview(page, profile({ products: [] }));
     await expect(cardRoot(page).getByTestId("completeness-chip-products")).toBeVisible();
-    await expect(ring(page)).toHaveAttribute("aria-valuenow", "83");
+    await expect(ring(page)).toHaveAttribute("aria-valuenow", "86");
 
     await page.unrouteAll({ behavior: "ignoreErrors" });
     await openOverview(page, profile({ products: [{ id: 1, name: "חלה" }] }));
@@ -449,16 +450,16 @@ test.describe("overview — completeness card", () => {
   test("each checklist step deep-links to the editor that owns it", async ({ page }) => {
     await openOverview(page, profile({ images: [], products: [], phone_verified: false, locations: [], city: null, phone: null, whatsapp: null, primary_contact_method: null }));
     const items = checklist(page).getByRole("listitem");
-    await expect(items).toHaveCount(6);
+    await expect(items).toHaveCount(7);
     const hrefs = await items.locator("a").evaluateAll((as) => as.map((a) => new URL((a as HTMLAnchorElement).href).hash));
-    expect(hrefs.sort()).toEqual(["#locations", "#locations", "#phone-verify", "#profile-contact", "#profile-images", "#profile-products"].sort());
+    expect(hrefs.sort()).toEqual(["#locations", "#locations", "#phone-verify", "#profile-contact", "#profile-images", "#profile-products", "#owner-story"].sort());
   });
 
   // MT:MEH-1106:6 — delivery-only satisfies the location step without coordinates.
   test("a delivery-only business completes the location step through its delivery areas", async ({ page }) => {
     await openOverview(page, profile({ has_physical_location: false, offers_delivery: true, delivery_nationwide: true, locations: [] }));
-    // Only `hours` can be missing now (it reads the primary location), so 5/6.
-    await expect(ring(page)).toHaveAttribute("aria-valuenow", "83");
+    // Only `hours` can be missing now (it reads the primary location), so 6/7.
+    await expect(ring(page)).toHaveAttribute("aria-valuenow", "86");
     const locationRow = checklist(page).getByRole("listitem").filter({ has: page.getByTestId("completeness-chip-location") });
     await expect(locationRow).toHaveCount(1);
     await expect(locationRow.locator("a")).toHaveAttribute("href", /#locations$/);
