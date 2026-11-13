@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useTranslations, useLocale } from "next-intl";
 import { ArrowSquareOut } from "@phosphor-icons/react";
 import { formatEventDate } from "@/lib/format-date";
+import { israelToday } from "@/lib/israel-date";
 import api from "@/lib/api";
 import { detailToMessage } from "@/lib/errors";
 import { showToast } from "@/lib/toast";
@@ -26,8 +27,7 @@ function formatDate(iso, locale) {
 // MEH-2518: the server accepts tomorrow … today+400 (Israel calendar,
 // KASHRUT_EXPIRY_MAX_DAYS); the picker offers the same window.
 function israelDateOffset(days) {
-  const d = new Date(Date.now() + days * 86400000);
-  return new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Jerusalem" }).format(d);
+  return israelToday(new Date(Date.now() + days * 86400000));
 }
 
 export default function AdminKashrutPage() {

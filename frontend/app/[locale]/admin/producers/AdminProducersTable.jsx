@@ -17,6 +17,7 @@ import { getProducerStatusLabel, getProducerStatusColor } from "@/lib/producer-s
 import { optimizeCloudinary } from "@/lib/cloudinary";
 import { BADGE_CONFIG, isKashrutCurrent } from "@/lib/badges";
 import { useBadgeCopy } from "@/lib/use-badge-copy";
+import { formatDate } from "@/lib/format-date";
 
 // Phosphor icon size used in trait tags + the action row.
 const ICON_SIZE_SM = 16;
@@ -60,7 +61,7 @@ export function AwaitingCompletionBadge({ producer }) {
   const t = useTranslations("admin");
   if (!producer.requested_changes) return null;
   const date = producer.changes_requested_at
-    ? new Date(producer.changes_requested_at).toLocaleDateString("he-IL")
+    ? formatDate(producer.changes_requested_at, "he")
     : null;
   return (
     <span

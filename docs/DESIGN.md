@@ -929,6 +929,16 @@ hover-only underline (or none):
 Colour alone (`text-primary`) is **not** a cue: on a page whose headings are
 already green it does not read as "tap me".
 
+## Dates (MEH-3070, 13/11/2026)
+
+A date on screen is printed by `formatDate(value, locale, style)` or
+`formatEventDate` from `lib/format-date.js` — Israel time, the page locale, and
+an empty string (never «Invalid Date») for a bad value. Styles: `numeric`
+(05.11.2026: tables, dashboards, expiry lines), `dayMonth` (5 בנובמבר), `long`
+(יום חמישי, 5 בנובמבר). «Today» comes from `lib/israel-date.js`.
+`DateFormatGuard.test.js` reds `toLocaleDateString` / `toLocaleTimeString` /
+`new Intl.DateTimeFormat` in a page or component.
+
 ## Required-field marking (MEH-2015)
 
 **The rule: an asterisk is an enforced gate, always.** A field showing `*`

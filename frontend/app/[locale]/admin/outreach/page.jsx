@@ -12,6 +12,7 @@ import Input from "@/components/ui/Input";
 import AdminLoadError from "@/components/admin/AdminLoadError";
 import Pagination from "@/components/Pagination";
 import Button from "@/components/ui/Button";
+import { formatDate } from "@/lib/format-date";
 
 /**
  * /admin/outreach — manual lead pipeline (MEH-22).
@@ -461,7 +462,7 @@ function isSuggestion(lead) {
  */
 function ThankSuggesterCell({ lead, locale, t, onThank }) {
   const thankedDate = lead.suggester_thanked_at
-    ? new Date(lead.suggester_thanked_at).toLocaleDateString(locale)
+    ? formatDate(lead.suggester_thanked_at, locale)
     : null;
   const reason = thankBlockedReason(lead);
 

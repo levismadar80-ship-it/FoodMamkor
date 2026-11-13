@@ -89,8 +89,8 @@ import {
   normalizeDayEntries,
 } from "@/lib/orderWindow";
 import SectionHeading from "@/components/ui/SectionHeading";
+import { formatDate } from "@/lib/format-date";
 
-const NOON_UTC = 12;
 
 /**
  * "21 בספטמבר" for an ISO date, in the page locale. Built from a UTC-noon
@@ -99,15 +99,7 @@ const NOON_UTC = 12;
  * midnight, which is still "yesterday" for the first hours of an Israel day).
  */
 function formatSpecialDate(isoDate, locale) {
-  const [y, m, d] = isoDate.split("-").map(Number);
-  // DISPLAY formatter for a stored ISO date — israelToday()/israelNowParts()
-  // still own "now"; this only prints a calendar day in the page locale.
-  // guard-ok: display formatting of a stored date, not a clock read
-  return new Intl.DateTimeFormat(locale, {
-    day: "numeric",
-    month: "long",
-    timeZone: "Asia/Jerusalem", // guard-ok: display formatting of a stored date, not a clock read
-  }).format(new Date(Date.UTC(y, m - 1, d, NOON_UTC)));
+  return formatDate(isoDate, locale, "dayMonth");
 }
 
 // MEH-1875: index-aligned with lib/orderWindow.js ORDER_DAY_KEYS, so index 0 is

@@ -6,6 +6,7 @@ import api from "@/lib/api";
 import { detailToMessage } from "@/lib/errors";
 import { ProducerClaimLinkSchema } from "@/lib/api-schemas";
 import Button from "@/components/ui/Button";
+import { formatDate } from "@/lib/format-date";
 
 /**
  * Module:   ClaimLinkPanel
@@ -74,13 +75,7 @@ export default function ClaimLinkPanel({ producerId }) {
   };
 
   const expires = link
-    ? new Intl.DateTimeFormat(locale === "he" ? "he-IL" : locale, {
-        // guard-ok: display formatting of a server-issued expiry, not a "today" decision (MEH-2383)
-        timeZone: "Asia/Jerusalem",
-        day: "2-digit",
-        month: "2-digit",
-        year: "numeric",
-      }).format(new Date(link.expires_at))
+    ? formatDate(link.expires_at, locale)
     : null;
 
   return (

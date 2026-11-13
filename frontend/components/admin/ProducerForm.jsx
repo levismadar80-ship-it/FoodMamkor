@@ -25,6 +25,7 @@ import {
   requiresProducerLicense,
 } from "@/lib/license-required-categories";
 import Button from "@/components/ui/Button";
+import { formatDate } from "@/lib/format-date";
 
 // MEH-1297: a producer may hold at most 3 categories; the first-selected is the
 // primary (drives categories[0] on the card/map pin). Mirrors the backend cap
@@ -911,9 +912,7 @@ export default function ProducerForm({ initial = null, producerId = null }) {
             {form.is_recommended && (
               <p className="text-xs text-fg-muted mt-1">
                 {initial?.recommended_at
-                  ? `${t("producers.form.fields.recommended_at")} ${new Date(
-                      initial.recommended_at
-                    ).toLocaleDateString("he-IL")}`
+                  ? `${t("producers.form.fields.recommended_at")} ${formatDate(initial.recommended_at, "he")}`
                   : t("producers.form.fields.recommended_at_never")}
               </p>
             )}

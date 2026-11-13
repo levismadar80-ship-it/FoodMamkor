@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { Link as LocaleLink } from "@/i18n/navigation";
 
 import api from "@/lib/api";
+import { israelToday } from "@/lib/israel-date";
 import { ALLERGEN_CODES, toggleAllergen } from "@/lib/allergens";
 import { detailToMessage, errorMessage } from "@/lib/errors";
 import { israelTime, leftoverGroupUrl, shekels } from "@/lib/rescue";
@@ -23,11 +24,6 @@ import { shareOrCopyText } from "@/lib/share-link";
  * History:  MEH-2649 (creation, chunk 5 of the rescue-bags pilot MEH-2643)
  */
 const MAX_QTY = 20;
-
-// The calendar date in Israel, YYYY-MM-DD. `toISOString()` is UTC, which is
-// still yesterday between midnight and 02:00/03:00 Israel time, and the server
-// refuses a bag dated in the past (MEH-2678).
-const ISRAEL_DATE = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Jerusalem" });
 
 const ORDER_RANK = { reserved: 0, handed: 1, no_show: 2, cancelled: 3 };
 // Minutes before pickup_start that free cancellation ends, and the message key.
@@ -234,7 +230,7 @@ export default function RescueTab() {
     try {
       await api.post("/rescue/offers", {
         producer_location_id: location.id,
-        date: ISRAEL_DATE.format(day),
+        date: israelToday(day), // Israel calendar day, not UTC (MEH-2678)
         qty_total: Number(form.qty_total),
         price_agorot: Number(form.price) * 100,
         pickup_start: iso(form.from),

@@ -41,3 +41,40 @@ export function formatEventDate(iso, locale, options = DEFAULT_OPTIONS) {
     return iso;
   }
 }
+
+// MEH-3060: every displayed date goes through formatDate — one Israel-time
+// reading, one Invalid-Date guard, one locale mapping. Styles:
+//   numeric  → 05.11.2026      (admin tables, dashboards, expiry lines)
+//   dayMonth → 5 בנובמבר        (vacation return, special opening days)
+//   long     → יום חמישי, 5 בנובמבר (event signature)
+const STYLES = {
+  numeric: { day: "2-digit", month: "2-digit", year: "numeric" },
+  dayMonth: { day: "numeric", month: "long" },
+  long: DEFAULT_OPTIONS,
+};
+const DATE_ONLY = /^\d{4}-\d{2}-\d{2}$/;
+const NOON_UTC = 12;
+
+/**
+ * @param {string|number|Date|null|undefined} value ISO instant, `YYYY-MM-DD`, epoch ms or Date.
+ * @param {string} locale next-intl locale ("he" | "en") or a BCP-47 tag.
+ * @param {"numeric"|"dayMonth"|"long"} [style]
+ * @returns {string} "" for an empty or unparseable value.
+ */
+export function formatDate(value, locale, style = "numeric") {
+  if (value === null || value === undefined || value === "") return "";
+  let d;
+  if (typeof value === "string" && DATE_ONLY.test(value)) {
+    // A stored calendar day: pin it to noon UTC so no timezone moves it.
+    const [y, m, day] = value.split("-").map(Number);
+    d = new Date(Date.UTC(y, m - 1, day, NOON_UTC));
+  } else {
+    d = value instanceof Date ? value : new Date(value);
+  }
+  if (Number.isNaN(d.getTime())) return "";
+  // guard-ok: display formatting of a stored date or server instant, not a clock read
+  return new Intl.DateTimeFormat(LOCALE_TAG[locale] ?? locale ?? "he-IL", {
+    ...(STYLES[style] ?? STYLES.numeric),
+    timeZone: "Asia/Jerusalem", // guard-ok: display formatting, not a clock read
+  }).format(d);
+}
