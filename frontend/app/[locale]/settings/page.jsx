@@ -312,7 +312,6 @@ export function ProfileTab() {
     }
   };
 
-
   return (
     // MEH-2565: card from md up only. On a phone the profile form uses the full
     // width; the security tab keeps its cards (three separate sections).

@@ -138,8 +138,9 @@ export default function AccountSheet({ open, onClose, user, logout }) {
         <div className="flex items-center gap-3 pb-4 border-b border-white/10">
           <span className="w-10 h-10 rounded-full overflow-hidden inline-flex items-center justify-center bg-white/10 border border-white/30 text-background">
             {isIn ? (
-              // MEH-3069: the shared circle; the ring around it is this sheet's own.
-              <Avatar src={user.avatar_url} name={user.name} size={40} tone="none" />
+              // MEH-3069: the shared circle; the ring around it is this sheet's own
+              // (40px box with a 1px border → a 38px circle inside).
+              <Avatar src={user.avatar_url} name={user.name} size={38} tone="none" />
             ) : (
               <User size={20} weight="regular" aria-hidden="true" />
             )}

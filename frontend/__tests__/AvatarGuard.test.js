@@ -30,13 +30,24 @@ const files = ["app", "components"].flatMap((d) => walk(path.join(ROOT, d))).map
   src: fs.readFileSync(p, "utf8"),
 }));
 
-// a first letter taken by hand: .charAt(0) or Array.from(x)[0]
-const HAND_INITIAL = /\.charAt\(0\)|Array\.from\([^()]*\)\[0\]/;
+// a first letter taken by hand: .charAt(0), Array.from(x)[0] (one level of
+// nested parens, e.g. Array.from(name.trim())[0]) or [...x][0]
+const HAND_INITIAL = /\.charAt\(0\)|Array\.from\((?:[^()]|\([^()]*\))*\)\[0\]|\[\.\.\.[\w.?]+\]\[0\]/;
 
 describe("AvatarGuard (MEH-3069)", () => {
   it("control: corpus is real and the owner holds the pattern", () => {
     expect(files.length).toBeGreaterThan(200);
     expect(HAND_INITIAL.test(files.find((f) => f.rel === OWNER).src)).toBe(true);
+  });
+
+  it("the pattern catches the hand-written shapes (self-test)", () => {
+    for (const src of [
+      '(user.name || "?").trim().charAt(0).toUpperCase()', // the old Header line
+      "Array.from(name)[0]", // the old OwnerCard line
+      "Array.from(name.trim())[0]",
+      "[...name][0]",
+    ]) expect(HAND_INITIAL.test(src)).toBe(true);
+    expect(HAND_INITIAL.test("avatarInitial(name)")).toBe(false);
   });
 
   it("no hand-taken first letter outside ui/Avatar.jsx", () => {
@@ -46,7 +57,7 @@ describe("AvatarGuard (MEH-3069)", () => {
 
   it("every file that renders user.avatar_url uses <Avatar>", () => {
     const offenders = files
-      .filter((f) => f.rel !== OWNER && /user\??\.avatar_url/.test(f.src))
+      .filter((f) => f.rel !== OWNER && /\.avatar_url\b/.test(f.src))
       .filter((f) => !/<Avatar\b/.test(f.src))
       .map((f) => f.rel);
     expect(offenders).toEqual([]);
