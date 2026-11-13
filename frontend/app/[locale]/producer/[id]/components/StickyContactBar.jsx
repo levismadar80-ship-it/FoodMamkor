@@ -28,6 +28,10 @@ import { usePreviewMode } from "@/lib/preview-mode"; // MEH-2916
  * Beacon dedup applied to this onClick. Same handler as the ContactCard
  * CTA since MEH-2999 (trackPrimaryCtaClick, any channel).
  */
+// MEH-3027: the BottomNav pill's lift shadow (BottomNav.jsx nav className),
+// darker alpha because this pill is solid, not glass. rgba — no shadow token.
+const PILL_SHADOW = "shadow-[0_8px_30px_rgba(46,104,83,0.22)]";
+
 export default function StickyContactBar({
   producer,
   isVacation,
@@ -52,8 +56,8 @@ export default function StickyContactBar({
   if (!href) return null;
   return (
     <div
-      // MEH-76 chunk 3: border hex literal -> border-border token class; the
-      // soft lift shadow stays inline (no shadow token exists; rgba, not hex).
+      // MEH-76 chunk 3 (border token + inline lift shadow) is superseded by
+      // MEH-3027 below: no strip, so no border; the shadow is on the pill.
       // MEH-1146 chunk A: md:hidden -> lg:hidden so the bar covers the whole
       // single-column range (mobile + tablet) that mounts the inline
       // ContactCard; the desktop sidebar card takes over at lg+.
@@ -109,40 +113,43 @@ export default function StickyContactBar({
       {/* MEH-3027: the ≥3-review rating that sat beside the CTA is dropped
           from the floating pill (Sapir, 13/11) — it already shows in the page
           header, and a floating control carries the one action only. */}
-        {/* Primary CTA */}
-        {href && (
-          <a
-            // MEH-2916: in the owner's preview the CTA stays VISIBLE — she is
-            // looking at how her page reads, and a missing button would
-            // misrepresent it — but it does not act. No href (so no WhatsApp
-            // app switch, no tel: dialler), out of the tab order, and
-            // announced as disabled. The onClick below also returns early, so
-            // the attribution beacon never fires for her own look at her own
-            // page. Sapir's ruling, 11/11.
-            {...(isPreview ? { "aria-disabled": "true", tabIndex: -1 } : { href })}
-            data-testid="sticky-primary-cta"
-            {...(!isPreview && isPrimaryExternal(producer)
-              ? { target: "_blank", rel: isWebsite ? "noopener" : "noopener noreferrer" }
-              : {})}
-            // MEH-1426 → MEH-2999: matches the ContactCard CTA. Every primary
-            // click (any channel) is recorded and unlocks the review form.
-            onClick={(e) => {
-              if (isPreview) {
-                e.preventDefault(); // MEH-2916
-                return;
-              }
-              // MEH-2999: any primary channel — same handler as ContactCard.
-              trackPrimaryCtaClick(producer.id, getPrimaryMethod(producer));
-            }}
-            // MEH-76 chunk 1: the vacation pale-green CTA fork was an ADR-019
-            // violation (state-color fill + raw hex). The CTA keeps its normal
-            // method-driven color — the whole bar is already dimmed via opacity.
-            className={`pointer-events-auto w-full h-14 flex items-center justify-center gap-2 rounded-full font-medium text-sm shadow-[0_8px_30px_rgba(46,104,83,0.22)] transition focus-visible:ring-2 ${variant.className}`}
-          >
-            <CtaIcon size={20} />
-            {isVacation ? t("producer.detail.sticky_bar.vacation_msg") : getPrimaryContactLabel(producer, t)}
-          </a>
-        )}
+      {/* Primary CTA */}
+      {href && (
+        <a
+          // MEH-2916: in the owner's preview the CTA stays VISIBLE — she is
+          // looking at how her page reads, and a missing button would
+          // misrepresent it — but it does not act. No href (so no WhatsApp
+          // app switch, no tel: dialler), out of the tab order, and
+          // announced as disabled. The onClick below also returns early, so
+          // the attribution beacon never fires for her own look at her own
+          // page. Sapir's ruling, 11/11.
+          {...(isPreview ? { "aria-disabled": "true", tabIndex: -1 } : { href })}
+          data-testid="sticky-primary-cta"
+          {...(!isPreview && isPrimaryExternal(producer)
+            ? { target: "_blank", rel: isWebsite ? "noopener" : "noopener noreferrer" }
+            : {})}
+          // MEH-1426 → MEH-2999: matches the ContactCard CTA. Every primary
+          // click (any channel) is recorded and unlocks the review form.
+          onClick={(e) => {
+            if (isPreview) {
+              e.preventDefault(); // MEH-2916
+              return;
+            }
+            // MEH-2999: any primary channel — same handler as ContactCard.
+            trackPrimaryCtaClick(producer.id, getPrimaryMethod(producer));
+          }}
+          // MEH-3027: the lift shadow only while shown. Parked at translateY(100%)
+          // the pill's top sits on the viewport edge and a 30px blur would leave
+          // a green haze along the bottom of a page with the bar "hidden".
+          // MEH-76 chunk 1: the vacation pale-green CTA fork was an ADR-019
+          // violation (state-color fill + raw hex). The CTA keeps its normal
+          // method-driven color — the whole bar is already dimmed via opacity.
+          className={`pointer-events-auto w-full h-14 flex items-center justify-center gap-2 rounded-full font-medium text-sm transition ${isBarVisible ? PILL_SHADOW : ""} focus-visible:ring-2 ${variant.className}`}
+        >
+          <CtaIcon size={20} />
+          {isVacation ? t("producer.detail.sticky_bar.vacation_msg") : getPrimaryContactLabel(producer, t)}
+        </a>
+      )}
     </div>
   );
 }

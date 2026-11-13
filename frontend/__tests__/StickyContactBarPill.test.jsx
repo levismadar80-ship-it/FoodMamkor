@@ -67,3 +67,17 @@ describe("StickyContactBar — floating pill (MEH-3027)", () => {
     expect(bar.textContent).not.toContain("review_count");
   });
 });
+
+describe("StickyContactBar — pill states (MEH-3027 review)", () => {
+  it("drops the lift shadow while parked, so no haze shows at the viewport edge", () => {
+    const { rerender } = render(<StickyContactBar producer={producer} isVacation={false} isBarVisible={false} />);
+    expect(screen.getByTestId("sticky-primary-cta").className).not.toMatch(/shadow-\[/);
+    rerender(<StickyContactBar producer={producer} isVacation={false} isBarVisible />);
+    expect(screen.getByTestId("sticky-primary-cta").className).toMatch(/shadow-\[/);
+  });
+
+  it("keeps the vacation dim on the shell", () => {
+    render(<StickyContactBar producer={producer} isVacation isBarVisible />);
+    expect(screen.getByTestId("sticky-contact-bar").style.opacity).toBe("0.85");
+  });
+});
