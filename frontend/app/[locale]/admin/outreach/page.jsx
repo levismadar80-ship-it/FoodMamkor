@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState, useRef } from "react";
-import useDialogFocus from "@/hooks/useDialogFocus";
+import useDialogFocus, { useDialogEscape } from "@/hooks/useDialogFocus";
 import { Phone } from "@phosphor-icons/react";
 import { useLocale, useTranslations } from "next-intl";
 import api from "@/lib/api";
@@ -539,6 +539,7 @@ function AddLeadModal({ onClose, onCreated }) {
     notes: "",
   });
   const [saving, setSaving] = useState(false);
+  useDialogEscape(!saving, onClose);
   const [error, setError] = useState("");
 
   const set = (field) => (e) => setForm({ ...form, [field]: e.target.value });
@@ -571,7 +572,7 @@ function AddLeadModal({ onClose, onCreated }) {
       className="fixed inset-0 bg-black/40 z-[9500] flex items-center justify-center p-4"
       onClick={onClose}
     >
-      <form ref={dialogRef} onKeyDown={(e) => { if (e.key === "Escape") onClose(); }}
+      <form ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby="outreach-add-title"
@@ -650,13 +651,14 @@ function AddLeadModal({ onClose, onCreated }) {
 function ScriptModal({ onClose }) {
   const dialogRef = useRef(null);
   useDialogFocus(dialogRef, true);
+  useDialogEscape(true, onClose);
   const t = useTranslations("admin");
   return (
     <div
       className="fixed inset-0 bg-black/40 z-[9500] flex items-center justify-center p-4"
       onClick={onClose}
     >
-      <div ref={dialogRef} onKeyDown={(e) => { if (e.key === "Escape") onClose(); }}
+      <div ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby="outreach-script-title"
@@ -685,6 +687,7 @@ function ScriptModal({ onClose }) {
 function WhatsAppModal({ lead, onClose, onPrefillMinted }) {
   const dialogRef = useRef(null);
   useDialogFocus(dialogRef, true);
+  useDialogEscape(true, onClose);
   const t = useTranslations("admin");
   const [tokenBusy, setTokenBusy] = useState(false);
 
@@ -732,7 +735,7 @@ function WhatsAppModal({ lead, onClose, onPrefillMinted }) {
       className="fixed inset-0 bg-black/40 z-[9500] flex items-center justify-center p-4"
       onClick={onClose}
     >
-      <div ref={dialogRef} onKeyDown={(e) => { if (e.key === "Escape") onClose(); }}
+      <div ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby="outreach-whatsapp-title"
