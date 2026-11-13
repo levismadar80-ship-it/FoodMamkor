@@ -13,7 +13,9 @@ import { OwnerInvitePublicSchema } from "@/lib/api-schemas";
 import { optimizeCloudinary, IMAGE_RATIOS } from "@/lib/cloudinary";
 import {
   clearOwnerInviteToken,
+  readOwnerInviteCodeSent,
   readOwnerInviteToken,
+  stashOwnerInviteCodeSent,
   stashOwnerInviteToken,
 } from "@/lib/claim-token";
 import PasswordInput from "@/components/PasswordInput";
@@ -144,6 +146,14 @@ export default function OwnerInviteClient({ tokenFromPath = null }) {
           // the nullish form says what the API means — null is "no address was
           // ever entered", which is a different fact from an empty string.
           setEmail(parsed.data.email ?? "");
+          // MEH-3025: a code was already sent from this link before a reload.
+          // Put her address back and treat that code as live, so she can type
+          // it instead of being left with a disabled button and no reason.
+          const sentTo = readOwnerInviteCodeSent(token);
+          if (sentTo) {
+            setEmail(sentTo);
+            setCodeSentTo(sentTo.trim().toLowerCase());
+          }
           setView(VIEW.READY);
         } else {
           setView(VIEW.LOAD_ERROR);
@@ -191,6 +201,7 @@ export default function OwnerInviteClient({ tokenFromPath = null }) {
       // must not tell her which happened; it says a code is on its way and
       // where to look if it is not.
       setCodeSentTo(trimmedEmail.toLowerCase());
+      stashOwnerInviteCodeSent(token, trimmedEmail);
       setCode("");
     } catch (error) {
       if (error?.response?.status === 404) {

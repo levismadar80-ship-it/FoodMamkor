@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { loginLinkFor } from "@/lib/safe-redirect";
 import { render, screen, fireEvent, cleanup } from "@testing-library/react";
 
 import {
@@ -207,7 +208,12 @@ function expectedLinks(surfaceName, state, gates = {}) {
       href:
         item.dataGate === "listing-supply" && gates.hubHref
           ? gates.hubHref
-          : item.href.replace(":producerId", state.producerId ?? ""),
+          : item.id === "login" && surfaceName === "header"
+            ? // MEH-3026 (F2): the header's «כניסה» returns her to the page
+              // she is on, so the expected href is derived the same way the
+              // registry's href is for every other row — from one owner.
+              loginLinkFor(pathnameRef.current)
+            : item.href.replace(":producerId", state.producerId ?? ""),
       label: surface.labelKey,
     }));
 }

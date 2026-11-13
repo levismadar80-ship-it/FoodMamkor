@@ -1,6 +1,6 @@
 // MEH-810: open-redirect guard for the post-login ?redirect= param.
 import { describe, it, expect } from "vitest";
-import { safeInternalRedirect, loginHrefBackHere } from "@/lib/safe-redirect";
+import { safeInternalRedirect, loginHrefBackHere, loginLinkFor } from "@/lib/safe-redirect";
 
 describe("safeInternalRedirect (MEH-810)", () => {
   it("passes through internal same-origin paths", () => {
@@ -55,5 +55,33 @@ describe("loginHrefBackHere (MEH-2982)", () => {
     const raw = new URL(loginHrefBackHere(), "https://x.test").searchParams.get("redirect");
     expect(safeInternalRedirect(raw)).toBe("/he/favorites");
     window.history.pushState({}, "", "/");
+  });
+});
+
+// MEH-3026 (F2): the «כניסה» link in the account sheet and the header was a
+// bare /login, so a guest who signed in from a business page landed on the
+// home page and lost her place.
+describe("loginLinkFor — the login LINK that returns a guest to her page", () => {
+  it("carries the page she is on", () => {
+    expect(loginLinkFor("/ruach-hasadeh")).toBe("/login?redirect=%2Fruach-hasadeh");
+    expect(loginLinkFor("/map?city=x")).toBe("/login?redirect=%2Fmap%3Fcity%3Dx");
+  });
+
+  it("stays a bare /login where there is nowhere to return to", () => {
+    for (const path of ["/", "", null, undefined, "/login", "/login?redirect=%2Fa", "/register", "/register/producer", "/verify-email", "/reset-password", "/registration/abc", "/owner-invite", "/claim", "/claim/x.y.z"]) {
+      expect(loginLinkFor(path)).toBe("/login");
+    }
+  });
+
+  it("an English reader comes back to the English page", () => {
+    expect(loginLinkFor("/ruach-hasadeh", "/en")).toBe("/login?redirect=%2Fen%2Fruach-hasadeh");
+    expect(loginLinkFor("/", "/en")).toBe("/login");
+    // A slug that merely starts like an auth screen is an ordinary page.
+    expect(loginLinkFor("/register-cafe")).toBe("/login?redirect=%2Fregister-cafe");
+  });
+
+  it("round-trips through the clamp the login page applies", () => {
+    const raw = new URL(loginLinkFor("/producers?q=1"), "https://x.test").searchParams.get("redirect");
+    expect(safeInternalRedirect(raw)).toBe("/producers?q=1");
   });
 });

@@ -22,10 +22,11 @@ import re
 from datetime import timedelta
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy import or_
 from sqlalchemy.orm import Session, joinedload
 
+from app.rate_limit import limiter
 from app.auth import get_current_user
 from app.data.cities import city_key
 from app.database import get_db
@@ -89,7 +90,9 @@ def get_alert_prefs(
 
 
 @router.put("/{producer_id}/alerts", response_model=AlertPrefsOut)
+@limiter.limit("60/minute")  # MEH-3022
 def upsert_alert_prefs(
+    request: Request,  # required by slowapi (MEH-3022)
     producer_id: UUID,
     data: AlertPrefsIn,
     user: User = Depends(get_current_user),

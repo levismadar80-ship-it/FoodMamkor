@@ -16,6 +16,7 @@ from uuid import UUID
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, Request
 from sqlalchemy.orm import Session, joinedload, object_session
 
+from app.limits import enforce_cap
 from app.auth import (
     get_current_user,
     get_current_user_optional,
@@ -262,7 +263,9 @@ def get_event(
 
 
 @router.post("/events", response_model=EventOut, status_code=201)
+@limiter.limit("30/hour")  # MEH-3022
 def create_event(
+    request: Request,  # required by slowapi (MEH-3022)
     data: EventCreate,
     background_tasks: BackgroundTasks,
     user: User = Depends(require_verified_producer),
@@ -280,6 +283,17 @@ def create_event(
         )
     if not user.producer_id:
         raise HTTPException(status_code=403, detail="Producer account required")
+    # MEH-3022: cap on UPCOMING events — past ones are history and never count.
+    enforce_cap(
+        db.query(Event)
+        .filter(
+            Event.producer_id == user.producer_id,
+            Event.event_date >= israel_today(),
+            Event.is_active.is_(True),
+        )
+        .count(),
+        "events",
+    )
     # MEH-2763: the method's prerequisite (mobile / phone / URL).
     problem = method_problem(
         data.registration_method,
@@ -341,8 +355,34 @@ def create_event(
     return _serialize(event)
 
 
+def _cap_event_returning_to_upcoming(db: Session, event: Event, changes: dict) -> None:
+    """MEH-3022: a PUT that brings an event back into the upcoming set
+    (reactivate, or move a past date to today or later) takes a slot, so it
+    meets the same cap as POST. Otherwise cancel-create-reactivate repeats
+    past the cap. An edit to an event that is already counted is free."""
+    today = israel_today()
+    was_counted = bool(event.is_active) and event.event_date >= today
+    will_count = (
+        bool(changes.get("is_active", event.is_active))
+        and (changes.get("event_date") or event.event_date) >= today
+    )
+    if will_count and not was_counted:
+        enforce_cap(
+            db.query(Event)
+            .filter(
+                Event.producer_id == event.producer_id,
+                Event.event_date >= today,
+                Event.is_active.is_(True),
+            )
+            .count(),
+            "events",
+        )
+
+
 @router.put("/events/{event_id}", response_model=EventOut)
-def update_event(
+@limiter.limit("60/hour")  # MEH-3022
+def update_event(  # noqa: PLR0913 — all args are FastAPI-injected; MEH-3022 added the slowapi request
+    request: Request,  # required by slowapi (MEH-3022)
     event_id: UUID,
     data: EventUpdate,
     background_tasks: BackgroundTasks,
@@ -391,6 +431,7 @@ def update_event(
         )
         if method_issue:
             raise HTTPException(status_code=422, detail=method_issue)
+    _cap_event_returning_to_upcoming(db, event, changes)  # MEH-3022
     for field, value in changes.items():
         if field == "category" and value not in VALID_CATEGORIES:
             raise HTTPException(status_code=400, detail="קטגוריה לא תקינה")
@@ -411,7 +452,9 @@ def update_event(
 
 
 @router.delete("/events/{event_id}")
+@limiter.limit("60/hour")  # MEH-3022
 def delete_event(
+    request: Request,  # required by slowapi (MEH-3022)
     event_id: UUID,
     background_tasks: BackgroundTasks,
     user: User = Depends(get_current_user),
