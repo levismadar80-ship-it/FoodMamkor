@@ -314,6 +314,24 @@ the locked sentence at every count, plus «N בתי עסק שהצטרפו עד �
 the numeral in the line's own face, semibold, `text-primary`; a three-column
 fact row was tried and rejected (07/11). See [ADR-039](./decisions/ADR-039-display-numerals.md).
 
+**Section headings are `<SectionHeading>`, by role (MEH-3020, 13/11/2026).**
+`components/ui/SectionHeading.jsx` owns the size of a section's h2; the call
+site picks a role, never a size:
+- `size="page"` (default) — a row on a front / landing page: home, `/about`,
+  `/about/process`, `/join`. `headline-lg`, Frank Ruhl 900, 32px.
+- `size="content"` — a section inside a content page: business page, event,
+  experience, group buy, recipe, favourites, legal pages. Frank Ruhl 700, 24px.
+
+Its `className` takes layout (margin, alignment, width, leading) and an optional
+colour, never a size, weight or family. Card, sheet, dialog, empty-state and
+form-step titles are not section headings and keep their own classes. Until
+13/11 each section chose its own size (home 24 / 32 / 48 and a 20px sans
+caption, «גלו לפי קטגוריה» at the h1 display size; elsewhere 18 / 20 / 24 and
+four clamp() ranges). Guards: `HomeSectionHeadingGuard.test.js` (no raw h2 on
+home) and `SectionHeadingRatchet.test.js` (a public file may not gain a
+hand-sized h2; the allowance list only shrinks). Bands (the green «היכרות»
+band, the closing CTA band) keep their own h2.
+
 **Headings never strand one word on the last line** — `h1, h2, h3` carry
 `text-wrap: balance` in `globals.css` (MEH-2488). **Hebrew is never
 letter-spaced** (no `tracking-*` on Hebrew; MEH-2488 removed the last two:

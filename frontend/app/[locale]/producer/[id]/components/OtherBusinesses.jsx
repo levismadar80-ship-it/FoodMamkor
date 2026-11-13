@@ -4,6 +4,7 @@ import { useTranslations } from "next-intl";
 
 import FadeInSection, { REVEAL_PRESET } from "@/components/FadeInSection";
 import ProducerCard from "@/components/ProducerCard";
+import SectionHeading from "@/components/ui/SectionHeading";
 
 // MEH-1146 chunk C: the discovery loop ("עוד בתי עסק באזור") renders only when
 // at least this many same-city businesses (excluding the current one) come
@@ -38,7 +39,7 @@ export default function OtherBusinesses({ producer, similarProducers = [], nearb
     >
       {showSimilar && (
         <FadeInSection as="section" {...REVEAL_PRESET}>
-          <h2 className="font-headline-md text-2xl font-bold text-text mb-1">{t("producer.detail.sections.similar.heading")}</h2>
+          <SectionHeading size="content" className="mb-1">{t("producer.detail.sections.similar.heading")}</SectionHeading>
           {producer.categories?.[0]?.name && (
             <p className="text-sm text-fg-muted mb-4">
               {t("producer.detail.sections.similar.in_area", { category: producer.categories[0].name })}
@@ -56,9 +57,9 @@ export default function OtherBusinesses({ producer, similarProducers = [], nearb
 
       {showNearby && (
         <FadeInSection as="section" {...REVEAL_PRESET} className={showSimilar ? "mt-10" : undefined}>
-          <h2 className="font-headline-md text-2xl font-bold text-text mb-4">
+          <SectionHeading size="content" className="mb-4">
             {t("producer.detail.sections.nearby.heading")}
-          </h2>
+          </SectionHeading>
           <div className="flex gap-4 overflow-x-auto pb-2 md:grid md:grid-cols-3 md:overflow-visible">
             {nearbyProducers.slice(0, 6).map((p) => (
               <div key={p.id} className="flex-shrink-0 w-72 md:w-auto">

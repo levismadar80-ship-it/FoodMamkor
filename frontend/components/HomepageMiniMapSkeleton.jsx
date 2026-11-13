@@ -22,6 +22,7 @@
 import { ArrowRight, MapTrifold } from "@phosphor-icons/react";
 import { Link } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
+import SectionHeading from "@/components/ui/SectionHeading";
 
 // MEH-2850 C: `sectionRef` lets HomepageMiniMapLazy watch this very box with
 // an IntersectionObserver — no wrapper element, so the DOM order the home
@@ -37,9 +38,9 @@ export default function HomepageMiniMapSkeleton({ sectionRef = null } = {}) {
     >
       <div className="max-w-6xl mx-auto">
         <header className="mb-3 text-center">
-          <h2 className="text-xl md:text-2xl font-semibold text-text">
+          <SectionHeading>
             {t("dot_caption")}
-          </h2>
+          </SectionHeading>
           {/* MEH-2635: subtitle removed here too. The skeleton must keep the
               same box as the loaded map — dropping the line from one and not
               the other is itself a layout shift. */}
