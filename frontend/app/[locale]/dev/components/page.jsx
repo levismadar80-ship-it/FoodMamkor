@@ -3,6 +3,7 @@
 import { notFound } from "next/navigation";
 import { MagnifyingGlass, Heart, ArrowRight, Leaf } from "@phosphor-icons/react";
 import { Button, Input, Card, Badge, Heading, Link } from "@/components/ui";
+import ShowMore from "@/components/ui/ShowMore";
 
 /**
  * /dev/components — Storybook-style gallery for the MEH-602 atomic layer.
@@ -89,6 +90,21 @@ export default function DevComponentsPage() {
               <Button variant="primary" loading>
                 שמירה
               </Button>
+            </div>
+          </Swatch>
+        </div>
+      </Section>
+
+      {/* MEH-3052: the one "show more" control — block ends a list, inline sits in a box. */}
+      <Section title="ShowMore">
+        <div className="flex flex-col gap-6">
+          <Swatch label='size: block'>
+            <ShowMore onClick={() => {}} label="הצגת עוד ביקורות" />
+          </Swatch>
+          <Swatch label="size: inline (closed / open)">
+            <div className="flex flex-wrap items-center gap-6">
+              <ShowMore size="inline" expanded={false} onClick={() => {}} label="הצגת עוד 6 ערים" />
+              <ShowMore size="inline" expanded onClick={() => {}} label="הצגת פחות" />
             </div>
           </Swatch>
         </div>
