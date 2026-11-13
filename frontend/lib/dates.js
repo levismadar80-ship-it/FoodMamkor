@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * The backend stores timestamps as naive UTC and serialises them WITHOUT a zone
  * ("2027-03-31T20:59:59.999999"). `new Date()` reads such a string as the

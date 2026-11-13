@@ -28,6 +28,7 @@ import en from "../messages/en.json";
 import { parseHours, resolveStoreHours } from "./hours";
 import { primaryPoint } from "./producerPoints.js";
 import { instagramUrl } from "./social-links";
+import { PAYMENT_METHODS } from "./payment-info";
 // Review #3726: deadlines are naive UTC — parse as UTC, never as local time.
 import { parseNaiveUtc } from "./dates";
 export { SITE_URL };
@@ -56,6 +57,16 @@ function producerSeoT(locale) {
 }
 const countryLabel = (locale) => producerSeoT(locale)("country");
 const brandFor = (locale) => BRAND_FOR[locale] ?? BRAND_NAME;
+
+// MEH-3035: English names for schema.org paymentAccepted (a language-neutral
+// structured field). Keys = lib/payment-info.js PAYMENT_METHODS.
+const PAYMENT_ACCEPTED_NAME = {
+  bit: "Bit",
+  paybox: "PayBox",
+  bank_transfer: "Bank Transfer",
+  cash: "Cash",
+  credit_card: "Credit Card",
+};
 
 /**
  * MEH-1069: single owner of JSON-LD serialization for every
@@ -408,6 +419,10 @@ export function buildJsonLd(producer, locale = "he") {
 
   if (producer.images?.length > 0) business.image = producer.images;
   if (producer.price_range) business.priceRange = producer.price_range;
+  // MEH-3035: schema.org `paymentAccepted` (Text). Methods only — the timing
+  // and the owner's note are page copy, not a structured fact.
+  const paid = PAYMENT_METHODS.filter((m) => (producer.payment_info?.methods || []).includes(m));
+  if (paid.length) business.paymentAccepted = paid.map((m) => PAYMENT_ACCEPTED_NAME[m]).join(", ");
 
   if (producer.avg_rating != null && producer.reviews_count > 0) {
     business.aggregateRating = {

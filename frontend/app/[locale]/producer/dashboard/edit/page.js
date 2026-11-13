@@ -93,6 +93,9 @@ import ReservistOwnedCard from "./ReservistOwnedCard";
 import OrderWindowEditor from "./OrderWindowEditor";
 // MEH-2264: per-date overrides above the weekly window (own file, same reason).
 import SpecialHoursEditor from "./SpecialHoursEditor";
+// MEH-3035 chunk 2: «איך משלמים לך?» (producers.payment_info).
+import PaymentInfoEditor from "./PaymentInfoEditor";
+import { paymentAnswer } from "@/lib/payment-info";
 import { upcomingSpecialCount } from "@/lib/special-hours";
 import { isDefaultDescription } from "@/lib/producer-completeness";
 // MEH-2155: same resolution the public page runs, so the card can show the
@@ -634,6 +637,7 @@ function EditPageInner() {
       // MEH-2602: the visitor's area, never the business's own city.
       deliveryQuestion: tChips("delivery_to_my_area"),
       orderingQuestion: tChips("ordering_q"),
+      paymentQuestion: tChips("payment_q"),
       escalationQuestion: tChips("escalation"),
     });
     return { usesCustom, customCount, liveCount: items.length };
@@ -680,6 +684,7 @@ function EditPageInner() {
     orderWindow: t("order_window.heading"),
     specialHours: t("special_hours.heading"),
     questions: t("custom_questions.heading"),
+    paymentInfo: t("payment_info.heading"),
     // MEH-2475 (review #3728): the organizer's city card reports dirty state;
     // without a name the banner would flag unsaved work without saying where.
     organizerCity: t("organizer_city.heading"),
@@ -688,7 +693,7 @@ function EditPageInner() {
   };
   // Stable order (matches the accordion render order below), filtered to dirty.
   const DIRTY_ORDER = [
-    "images", "categories", "license", "bio", "products", "contact", "pricing", "tags", "delivery", "orderWindow", "specialHours", "questions", "organizerCity",
+    "images", "categories", "license", "bio", "products", "contact", "pricing", "tags", "delivery", "orderWindow", "specialHours", "questions", "paymentInfo", "organizerCity",
   ];
   const dirtyKeys = DIRTY_ORDER.filter((k) => dirtyMap[k]);
 
@@ -1253,6 +1258,36 @@ function EditPageInner() {
             primaryMethod={liveContactMethod}
           />
         </EditAccordionCard>
+
+        {/* MEH-3035 chunk 2 — how customers pay. Opt-in, like the order window:
+            NOT a GROUP_MEMBERS entry, so the hub's "{done}/{total}" for this
+            group does not change for every existing business. The public answer
+            is the «איך משלמים?» chip beside the questions above (chunk 3), which
+            is why the card sits directly under them. Businesses only: an
+            organizer's page has no contact card for the answer to sit in. */}
+        {!isOrganizer && (
+        <EditAccordionCard
+          anchorId="payment-info"
+          title={t("payment_info.heading")}
+          summary={(() => {
+            // Same "is it set" rule as the page chip (paymentAnswer): a timing
+            // or a note alone still shows the question, so the card says so.
+            const pa = paymentAnswer(profile.payment_info);
+            if (!pa) return t("payment_info.summary_empty");
+            const parts = pa.methods.map((m) => t(`payment_info.methods.${m}`));
+            if (pa.timing) parts.push(t(`payment_info.timings.${pa.timing}`));
+            return parts.length > 0 ? parts.join(" · ") : pa.note;
+          })()}
+          open={openKey === "paymentInfo"}
+          onToggle={() => toggleKey("paymentInfo")}
+        >
+          <PaymentInfoEditor
+            profile={profile}
+            onSave={(patch) => setProfile((p) => (p ? { ...p, ...patch } : p))}
+            reportDirty={reportDirty}
+          />
+        </EditAccordionCard>
+        )}
       </div>
 
       {/* ===== GROUP: trust — one unified "אישורים ותעודות" card composing the
@@ -1395,6 +1430,7 @@ function CustomQuestionsCard({
     // MEH-2602: the visitor's area, never the business's own city.
     deliveryQuestion: tChips("delivery_to_my_area"),
     orderingQuestion: tChips("ordering_q"),
+    paymentQuestion: tChips("payment_q"),
     escalationQuestion: tChips("escalation"),
   });
 

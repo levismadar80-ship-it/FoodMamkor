@@ -120,6 +120,74 @@ def _validate_order_day(day: str, hours) -> list[dict[str, str]]:
     return day_ranges
 
 
+# MEH-3035: how a business takes payment. Fixed lists (Google / Booking
+# pattern — one wording for every business, translatable, filterable later)
+# plus one optional free line. Order here IS the display order.
+# DO NOT reorder or rename a value without a JSONB data migration — stored rows
+# carry these strings.
+PAYMENT_METHODS = ("bit", "paybox", "bank_transfer", "cash", "credit_card")
+PAYMENT_TIMINGS = ("advance", "on_pickup", "deposit")
+PAYMENT_NOTE_MAX = 80
+_PAYMENT_INFO_KEYS = frozenset({"methods", "timing", "note"})
+_LETTER_RE = re.compile(r"[א-תa-zA-Z]")
+
+
+def _payment_methods(raw) -> list[str]:
+    if raw is None:
+        return []
+    if not isinstance(raw, list):
+        raise ValueError("אמצעי התשלום חייבים להיות רשימה")
+    if len(raw) > 2 * len(PAYMENT_METHODS):
+        raise ValueError("יותר מדי אמצעי תשלום")
+    unknown = [m for m in raw if m not in PAYMENT_METHODS]
+    if unknown:
+        raise ValueError(f"אמצעי תשלום לא מוכר: {unknown[0]}")
+    return [m for m in PAYMENT_METHODS if m in raw]
+
+
+def _payment_note(raw) -> str | None:
+    if raw is None:
+        return None
+    if not isinstance(raw, str):
+        raise ValueError("ההערה על התשלום חייבת להיות טקסט")
+    note = raw.strip()
+    if not note:
+        return None
+    if len(note) > PAYMENT_NOTE_MAX:
+        raise ValueError(f"ההערה על התשלום ארוכה מדי (עד {PAYMENT_NOTE_MAX} תווים)")
+    # MEH-555: free text shown to readers needs at least 3 letters.
+    if len(_LETTER_RE.findall(note)) < 3:
+        raise ValueError("ההערה על התשלום צריכה לכלול לפחות 3 אותיות")
+    return note
+
+
+def _payment_info_validator(v):
+    """Validate producers.payment_info on write (MEH-3035).
+
+    Returns the normalised dict, or None when nothing was said (no methods,
+    no timing, no note) so the public page renders nothing. Unknown keys,
+    unknown methods/timings, a note over 80 chars or under 3 letters → 422.
+    """
+    if v is None:
+        return None
+    if not isinstance(v, dict):
+        raise ValueError("פרטי התשלום חייבים להיות אובייקט")
+    extra = set(v) - _PAYMENT_INFO_KEYS
+    if extra:
+        raise ValueError(f"שדה לא מוכר בפרטי התשלום: {sorted(extra)[0]}")
+    timing = v.get("timing")
+    if timing is not None and timing not in PAYMENT_TIMINGS:
+        raise ValueError("מתי משלמים: יש לבחור אחת מהאפשרויות")
+    out = {
+        "methods": _payment_methods(v.get("methods")),
+        "timing": timing,
+        "note": _payment_note(v.get("note")),
+    }
+    if not out["methods"] and out["timing"] is None and out["note"] is None:
+        return None
+    return out
+
+
 def _order_window_validator(v):
     """Validate producers.order_window on write (MEH-1543, MEH-1869).
 
@@ -2451,6 +2519,10 @@ class ProducerUpdate(BaseModel):
     # MEH-1889 chunk A: per-date overrides above order_window. Validated by
     # _special_hours_validator; explicit null clears it, same as order_window.
     special_hours: dict | None = None
+    # MEH-3035: how the business takes payment. Validated below
+    # (_payment_info_validator). Owner-writable via producer_me.py
+    # (_PRODUCER_WRITABLE_FIELDS, MEH-3035 chunk 2, with PaymentInfoEditor).
+    payment_info: dict | None = None
     # MEH-1577: structured delivery cost (whole shekels, producer-level).
     # Validated below — both reject negatives, free_delivery_above additionally
     # rejects 0. delivery_fee=0 is ACCEPTED and meaningful ("משלוח חינם"), which
@@ -2573,6 +2645,11 @@ class ProducerUpdate(BaseModel):
     @classmethod
     def _validate_special_hours(cls, v):
         return _special_hours_validator(v)
+
+    @field_validator("payment_info")
+    @classmethod
+    def _validate_payment_info(cls, v):
+        return _payment_info_validator(v)
 
     # MEH-2153: delegates to the shared guard so the count/length/trim rules
     # that MEH-210 Phase 2 wrote inline live in one place, and picks up the
@@ -3182,6 +3259,10 @@ class ProducerDetailOut(ProducerListOut):
     # written via producer_me PUT. Inherited onto ProducerOwnerOut so the
     # dashboard editor (MEH-1544) can reload the saved value.
     order_window: dict | None = None
+    # MEH-3035: how the business takes payment ({methods, timing, note}) or
+    # None. Detail only (the business page's «איך משלמים?» chip and JSON-LD
+    # paymentAccepted); inherited onto ProducerOwnerOut for the editor.
+    payment_info: dict | None = None
     # MEH-210 Phase 2 — custom WhatsApp question chips
     custom_questions: list[str] | None = None
     # MEH-1490: admin-mapped Google Maps Place ID. Exposed on read so the admin
@@ -5294,6 +5375,9 @@ class ReviewsPage(BaseModel):
     total: int
     page: int
     pages: int
+    # MEH-1337: visible reviews per star, "1".."5", over the whole business
+    # (every page), for the distribution bars. Always all five keys.
+    rating_counts: dict[str, int] = {}
 
     model_config = {"from_attributes": True}
 

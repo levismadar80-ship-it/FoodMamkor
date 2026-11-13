@@ -84,6 +84,8 @@ export const ANCHOR_TO_KEY = {
   "reservist-owned": "ownerStory",
   // MEH-2475: an organizer's city (she has no locations editor).
   "organizer-city": "organizerCity",
+  // MEH-3035: «איך משלמים לך?» — in all three maps from birth (MEH-2262).
+  "payment-info": "paymentInfo",
 };
 
 // Canonical section id per open-state key — hash aliases above scroll to the
@@ -121,6 +123,7 @@ export const KEY_TO_ANCHOR = {
   offer: "offer",
   tags: "tags",
   organizerCity: "organizer-city",
+  paymentInfo: "payment-info",
 };
 
 // Card key → its group. Drives anchor→group deep-link resolution and the hub
@@ -171,6 +174,8 @@ export const KEY_TO_GROUP = {
   // shares with a business besides «profile»). Not a GROUP_MEMBERS entry —
   // her city was set at registration, so it is never an open step.
   organizerCity: "contact",
+  // MEH-3035: opt-in, so not a GROUP_MEMBERS entry (orderWindow's reason).
+  paymentInfo: "contact",
 };
 
 // The accordion open-state key a card key maps to. The trust group renders ONE

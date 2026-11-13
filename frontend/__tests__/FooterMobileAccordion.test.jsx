@@ -112,7 +112,8 @@ describe("Footer link groups collapse on mobile (MEH-2397)", () => {
     ).map((a) => a.getAttribute("href"));
     expect(navLinks.sort()).toEqual(
       // MEH-2858: «גלו עסקים» → / left the footer (the logo links home).
-      ["/about", "/about/for-businesses", "/about/why-local", "/about/process", "/join", "/map", "/producers", "/recommend#share"].sort(),
+      // /recommend joined «גלו» from the utility row (Sapir 13/11).
+      ["/about", "/about/for-businesses", "/about/why-local", "/about/process", "/join", "/map", "/producers", "/recommend", "/recommend#share"].sort(),
     );
   });
 });

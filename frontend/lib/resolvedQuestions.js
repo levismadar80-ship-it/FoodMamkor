@@ -51,6 +51,7 @@
  */
 import { normalizePhone } from "@/lib/utils";
 import { buildDeliveryAnswer, buildOrderingAnswer } from "@/lib/quickAnswers";
+import { paymentAnswer } from "@/lib/payment-info";
 import {
   getPrimaryContactHref,
   getPrimaryMethod,
@@ -152,6 +153,18 @@ export function resolveProducerQuestions(producer, labels) {
       answered: false,
       channel: "whatsapp",
       source: "ordering",
+    });
+  }
+
+  // MEH-3035: «איך משלמים?» — answered from her payment_info, after Q2 and
+  // before her custom questions, exactly where the page puts it.
+  if (paymentAnswer(producer?.payment_info)) {
+    items.push({
+      id: "payment",
+      label: labels.paymentQuestion,
+      answered: true,
+      channel: null,
+      source: "payment",
     });
   }
 
