@@ -58,6 +58,7 @@ import { eventWhen } from "@/lib/event-when";
 import { formatEventDate } from "@/lib/format-date";
 import { israelNowParts } from "@/lib/orderWindow";
 import { formatPrice } from "@/lib/utils";
+import SectionHeading from "@/components/ui/SectionHeading";
 
 /** One phone screen of warning, as HomepageMiniMapLazy uses for the map. */
 export const WHATS_ON_PRELOAD_MARGIN = "600px 0px";
@@ -547,7 +548,7 @@ function WhatsOnGroup({ group, first, labels }) {
       {/* One size for all three: at 375 the display size broke the first
           heading over two lines and made the rows under it read as its
           children rather than its siblings. */}
-      <h2 className="font-headline-lg text-headline-lg font-black text-text">
+      <SectionHeading>
         {/* The two rows a visitor may not know by name carry the glyph their
             tool already has in the dashboard (tools/page.js:179, :193). */}
         {group.Icon && (
@@ -559,7 +560,7 @@ function WhatsOnGroup({ group, first, labels }) {
           />
         )}
         {group.heading}
-      </h2>
+      </SectionHeading>
       {group.lead && <p className="mt-1 text-sm text-fg-muted">{group.lead}</p>}
       {/* A phone scrolls the row sideways (the «קטגוריות» strip's own classes,
           HomeCategoryGrid.jsx:77); from lg it is a 3-up grid whose cards keep a

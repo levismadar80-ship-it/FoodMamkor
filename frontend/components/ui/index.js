@@ -12,6 +12,8 @@ export { default as Input } from "./Input";
 export { default as Card } from "./Card";
 export { default as Badge } from "./Badge";
 export { default as Heading } from "./Heading";
+// MEH-3020: the one size for a page row's h2.
+export { default as SectionHeading } from "./SectionHeading";
 export { default as Link } from "./Link";
 // MEH-999: one owner for dashboard "back to X" links (target + arrow + copy).
 export { default as BackLink } from "./BackLink";

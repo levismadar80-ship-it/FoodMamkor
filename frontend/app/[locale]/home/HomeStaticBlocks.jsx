@@ -9,6 +9,7 @@ import FadeInSection from "@/components/FadeInSection";
 import ClosingCtaBand from "@/components/ClosingCtaBand";
 import { optimizeCloudinary, IMAGE_RATIOS } from "@/lib/cloudinary";
 import useScrollAffordance, { ScrollArrows } from "@/hooks/useScrollAffordance";
+import SectionHeading from "@/components/ui/SectionHeading";
 
 /**
  * RECENTLY VIEWED (task 13) — horizontal scroll strip of producers
@@ -124,9 +125,9 @@ function HomeProducerStrip({
         suppressHydrationWarning={prepaint || undefined}
       >
         <div className="flex items-baseline justify-between gap-4 mb-4">
-          <h2 className="font-headline-md text-headline-md text-text">
+          <SectionHeading>
             {heading}
-          </h2>
+          </SectionHeading>
           {action}
         </div>
         {/* MEH-1391: relative wrapper hosts the absolute arrow pair. */}
