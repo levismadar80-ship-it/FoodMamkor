@@ -139,6 +139,11 @@ class TestVerifyLinkSignsIn:
         assert resp.headers["cache-control"] == "no-store"
         cookies = resp.headers.get_list("set-cookie")
         assert any(c.startswith("refresh_token=") for c in cookies)
+        # The marker is spent: the reply deletes it.
+        assert any(
+            c.startswith(f"{SIGNUP_MARKER}=") and "max-age=0" in c.lower()
+            for c in cookies
+        )
         fgp = resp.cookies.get("__Secure-Fgp")
         # Behaviour, not shape: the token opens an authenticated route as her.
         client.cookies.clear()
@@ -222,17 +227,49 @@ class TestVerifyLinkSignsIn:
         low = cookies[0].lower()
         assert "httponly" in low and "secure" in low and "path=/api/auth" in low
 
-    def test_a_cross_site_form_cannot_plant_the_marker(self, client):
-        """A plain HTML form can only send text/plain, form-urlencoded or
-        multipart. If register parsed such a body, another site could make a
-        visitor's browser register an email of its choosing and so plant a
-        valid marker there. It must be refused before any cookie is set."""
+    def test_a_cross_site_request_cannot_plant_the_marker(self, client):
+        """Without a CORS preflight another site can only send text/plain,
+        form-urlencoded, multipart, or no Content-Type at all. If register
+        parsed such a body, that site could make a visitor's browser register
+        an email of its choosing and so plant a valid marker there. Each must
+        be refused before any cookie is set."""
         import json
 
-        resp = client.post(
-            "/auth/register",
-            content=json.dumps(self.PAYLOAD),
-            headers={"content-type": "text/plain"},
+        body = json.dumps(self.PAYLOAD)
+        for content_type in ("text/plain", "application/x-www-form-urlencoded", None):
+            headers = {"content-type": content_type} if content_type else {}
+            resp = client.post("/auth/register", content=body, headers=headers)
+            assert resp.status_code == 422, content_type
+            assert resp.headers.get_list("set-cookie") == [], content_type
+
+    def test_a_junk_marker_is_no_match_not_a_500(self, client, db):
+        _, token, user = self._register(client, db)
+        client.cookies.clear()
+        resp = client.get(
+            "/auth/verify-email",
+            params={"token": token},
+            headers={"cookie": f"{SIGNUP_MARKER}=\u05e9\u05dc\u05d5\u05dd".encode()},
         )
-        assert resp.status_code == 422
-        assert resp.headers.get_list("set-cookie") == []
+        assert resp.status_code == 200
+        assert "access_token" not in resp.json()
+        db.refresh(user)
+        assert user.email_verified is True
+
+    def test_the_taken_email_marker_is_random_and_never_signs_in(self, client, db):
+        """The marker on the email-already-registered branch must not be a
+        constant (that would be the tell), and must not open the account."""
+        _, token, _ = self._register(client, db)
+        first, _, _ = self._register(client, db)  # same email again: collision
+        second, _, _ = self._register(client, db)
+        assert first and second and first != second
+        for marker in (first, second):
+            resp = self._verify(client, token, {SIGNUP_MARKER: marker})
+            assert "access_token" not in resp.json()
+            token = self._replant(db)
+
+    def _replant(self, db):
+        user = db.query(User).filter(User.email == self.PAYLOAD["email"]).first()
+        user.email_verify_token = "replanted-token-for-second-pass"
+        user.email_verify_expires = utc_now() + timedelta(hours=24)
+        db.commit()
+        return user.email_verify_token

@@ -61,7 +61,11 @@ def set_signup_marker(response: Response, verify_token: str | None) -> None:
 
 def _same_browser(request: Request, verify_token: str) -> bool:
     marker = request.cookies.get(SIGNUP_MARKER) or ""
-    return hmac.compare_digest(marker, _marker_value(verify_token))
+    # Bytes, not str: compare_digest raises on a non-ASCII str, and by now
+    # the token is consumed — a junk cookie must read as "no match", not 500.
+    return hmac.compare_digest(
+        marker.encode("utf-8", "ignore"), _marker_value(verify_token).encode()
+    )
 
 
 def verify_email_session(
