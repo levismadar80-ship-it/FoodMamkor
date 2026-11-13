@@ -591,7 +591,7 @@ export default function DeliveryBlock({
     <section className="mt-12">
       {/* MEH-2592: part C dropped this truck; Sapir asked for it back (30/10). */}
       <SectionHeading size="content" className="mb-4 flex items-center gap-2">
-        <Truck size={22} className="text-primary" aria-hidden="true" data-testid="delivery-heading-icon" />
+        <Truck size={24} className="text-primary" aria-hidden="true" data-testid="delivery-heading-icon" />
         {t("heading")}
       </SectionHeading>
 

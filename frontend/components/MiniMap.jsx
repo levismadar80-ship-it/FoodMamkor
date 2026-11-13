@@ -564,7 +564,7 @@ export default function MiniMap({
           aria-label={t("expand_aria")}
           className={`${MAP_BUTTON_POSITION} ${MAP_BUTTON_STYLE}`}
         >
-          <ArrowsOut size={22} weight="bold" aria-hidden="true" />
+          <ArrowsOut size={24} weight="bold" aria-hidden="true" />
         </button>
       </div>
 
@@ -599,7 +599,7 @@ export default function MiniMap({
             aria-label={t("close_aria")}
             className={`${MAP_BUTTON_POSITION} ${MAP_BUTTON_STYLE}`}
           >
-            <X size={22} weight="bold" aria-hidden="true" />
+            <X size={24} weight="bold" aria-hidden="true" />
           </button>
         </div>
       )}

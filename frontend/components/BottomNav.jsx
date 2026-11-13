@@ -590,7 +590,7 @@ export default function BottomNav() {
                 </span>
               ) : (
                 <User
-                  size={22}
+                  size={24}
                   weight={sheetOpen ? "fill" : "regular"}
                   aria-hidden="true"
                   className="relative z-10"

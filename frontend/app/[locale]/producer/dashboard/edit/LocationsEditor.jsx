@@ -431,7 +431,7 @@ export default function LocationsEditor() {
           className="inline-flex items-center gap-1.5 rounded-full border border-primary/40 px-3 py-1.5 text-sm font-medium text-primary hover:bg-primary/5"
           data-testid="locations-add"
         >
-          <Plus size={15} weight="bold" />
+          <Plus size={16} weight="bold" />
           {t("add_cta")}
         </button>
       ) : null}
@@ -460,7 +460,7 @@ function LocationRow({ loc, kindLabel, deleting, onEdit, onDelete, onSetPrimary 
             </span>
             {loc.is_primary ? (
               <span className="inline-flex items-center gap-0.5 rounded-full bg-primary/10 px-1.5 py-0.5 text-xs text-primary">
-                <Star size={11} weight="fill" />
+                <Star size={12} weight="fill" />
                 {t("primary_badge")}
               </span>
             ) : null}

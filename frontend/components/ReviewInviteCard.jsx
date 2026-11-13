@@ -135,7 +135,7 @@ export default function ReviewInviteCard(p) {
           className="flex h-12 w-12 flex-none items-center justify-center rounded-full bg-background-alt text-fg-muted"
           aria-hidden="true"
         >
-          <User size={26} />
+          <User size={24} />
         </span>
         <div className="min-w-0">
           <p className="font-body-md text-base font-bold text-text">{title}</p>

@@ -25,7 +25,7 @@ export default function GlobalError({ error, reset }) {
           <Image src="/logo.png" alt={BRAND_NAME} width={120} height={40} className="mx-auto" />
         </Link>
         <WarningCircle
-          size={72}
+          size={64}
           color="#2e6853"
           className="mx-auto mb-5"
           aria-hidden="true"

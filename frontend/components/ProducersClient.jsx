@@ -1164,7 +1164,7 @@ export default function ProducersClient({
               className="inline-flex items-center gap-1 bg-surface text-primary border border-primary rounded-full px-3 py-1 text-xs font-medium whitespace-nowrap shrink-0"
             >
               <span aria-hidden="true" className="text-2xs font-bold">×</span>
-              <MagnifyingGlass size={13} weight="bold" aria-hidden="true" />{searchQ}
+              <MagnifyingGlass size={14} weight="bold" aria-hidden="true" />{searchQ}
             </button>
           )}
           {hasActiveChips && (
@@ -1304,8 +1304,8 @@ export function FilterEmptyState({ onClear, onPickCategory, searchQ, categories 
         aria-hidden="true"
       >
         {searchQ
-          ? <MagnifyingGlass size={28} weight="bold" className="text-primary" aria-hidden="true" />
-          : <Plant size={28} weight="fill" className="text-primary" aria-hidden="true" />}
+          ? <MagnifyingGlass size={24} weight="bold" className="text-primary" aria-hidden="true" />
+          : <Plant size={24} weight="fill" className="text-primary" aria-hidden="true" />}
       </div>
       <h2 className="font-headline-md text-xl font-bold text-text mb-2">
         {searchQ
@@ -1346,7 +1346,7 @@ export function FilterEmptyState({ onClear, onPickCategory, searchQ, categories 
             className="inline-flex items-center gap-1 min-h-touch text-sm font-semibold text-primary underline underline-offset-4 hover:text-primary-dark rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
           >
             {tNav("recommend")}
-            <ArrowLeft size={15} className="ltr:rotate-180" aria-hidden="true" />
+            <ArrowLeft size={16} className="ltr:rotate-180" aria-hidden="true" />
           </Link>
         </div>
       )}
@@ -1367,7 +1367,7 @@ function CatalogEmptyState() {
         className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-50 mb-4"
         aria-hidden="true"
       >
-        <Leaf size={28} weight="fill" className="text-primary" aria-hidden="true" />
+        <Leaf size={24} weight="fill" className="text-primary" aria-hidden="true" />
       </div>
       <h2 className="font-headline-md text-xl font-bold text-text mb-2">
         {t("title")}

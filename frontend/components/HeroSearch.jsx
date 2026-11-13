@@ -417,7 +417,7 @@ export default function HeroSearch({
         aria-label={t("submit_aria")}
         data-testid="hero-search-submit"
       >
-        <MagnifyingGlass size={22} weight="bold" aria-hidden="true" />
+        <MagnifyingGlass size={24} weight="bold" aria-hidden="true" />
       </button>
 
       {/* ---- Autocomplete dropdown (≥2 chars) ---- */}

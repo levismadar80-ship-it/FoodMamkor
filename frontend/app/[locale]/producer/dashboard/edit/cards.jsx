@@ -669,7 +669,7 @@ function AssistForm({ t, assist }) {
         disabled={!canGenerate || loading}
         className="w-full bg-primary text-white py-2 rounded-full text-sm font-medium disabled:opacity-50 hover:bg-primary-dark transition flex items-center justify-center gap-2"
       >
-        <Sparkle size={15} weight="fill" aria-hidden="true" />
+        <Sparkle size={16} weight="fill" aria-hidden="true" />
         {loading ? t("generating") : t("generate_cta")}
       </button>
       {!canGenerate && (
@@ -677,7 +677,7 @@ function AssistForm({ t, assist }) {
       )}
       {error && (
         <p className="text-xs text-error flex items-start gap-1.5" role="alert">
-          <Warning size={15} weight="fill" aria-hidden="true" className="shrink-0 mt-px" />
+          <Warning size={16} weight="fill" aria-hidden="true" className="shrink-0 mt-px" />
           {error}
         </p>
       )}
@@ -859,7 +859,7 @@ export function DescriptionCard({ profile, onSave, reportDirty = () => {} }) {
           onClick={() => setAssistOpen(true)}
           className="inline-flex items-center gap-2 text-primary font-medium text-sm self-start hover:text-primary-dark transition"
         >
-          <Sparkle size={15} weight="fill" aria-hidden="true" />
+          <Sparkle size={16} weight="fill" aria-hidden="true" />
           {t("assist_cta")}
         </button>
       )}
@@ -899,7 +899,7 @@ export function DescriptionCard({ profile, onSave, reportDirty = () => {} }) {
 
       {error && !assistOpen && (
         <p className="text-xs text-error flex items-start gap-1.5" role="alert">
-          <Warning size={15} weight="fill" aria-hidden="true" className="shrink-0 mt-px" />
+          <Warning size={16} weight="fill" aria-hidden="true" className="shrink-0 mt-px" />
           {error}
         </p>
       )}
@@ -1117,7 +1117,7 @@ export function OwnerStoryCard({ profile, onSave, reportDirty = () => {} }) {
 
       {error && (
         <p className="text-xs text-error flex items-start gap-1.5" role="alert">
-          <Warning size={15} weight="fill" aria-hidden="true" className="shrink-0 mt-px" />
+          <Warning size={16} weight="fill" aria-hidden="true" className="shrink-0 mt-px" />
           {error}
         </p>
       )}
@@ -1628,7 +1628,7 @@ export function KashrutCard({ profile, reportDirty = () => {} }) {
 
         {error && (
           <p className="text-xs text-error flex items-start gap-1.5" role="alert">
-            <Warning size={15} weight="fill" aria-hidden="true" className="shrink-0 mt-px" />
+            <Warning size={16} weight="fill" aria-hidden="true" className="shrink-0 mt-px" />
             {error}
           </p>
         )}

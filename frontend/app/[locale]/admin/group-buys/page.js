@@ -116,7 +116,7 @@ export default function AdminGroupBuysPage() {
         <SkeletonList count={4} label={t("common.loading_f")} />
       ) : items.length === 0 ? (
         <div className="text-center py-16 text-fg-muted">
-          <ShoppingCart size={36} className="text-fg-muted mx-auto mb-3" aria-hidden="true" />
+          <ShoppingCart size={32} className="text-fg-muted mx-auto mb-3" aria-hidden="true" />
           <p>{t("group_buys.empty")}</p>
         </div>
       ) : (

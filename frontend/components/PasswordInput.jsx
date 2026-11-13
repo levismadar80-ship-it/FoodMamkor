@@ -185,9 +185,9 @@ export default function PasswordInput({
             }`}
           >
             {tooShort ? (
-              <Circle size={13} aria-hidden="true" />
+              <Circle size={14} aria-hidden="true" />
             ) : (
-              <Check size={13} weight="bold" aria-hidden="true" />
+              <Check size={14} weight="bold" aria-hidden="true" />
             )}
             {tooShort
               ? failureMessage("too_short", tValidation)
@@ -203,11 +203,11 @@ export default function PasswordInput({
             }`}
           >
             {breachOk ? (
-              <Check size={13} weight="bold" aria-hidden="true" />
+              <Check size={14} weight="bold" aria-hidden="true" />
             ) : breachPending ? (
-              <CircleNotch size={13} className="animate-spin" aria-hidden="true" />
+              <CircleNotch size={14} className="animate-spin" aria-hidden="true" />
             ) : (
-              <Circle size={13} aria-hidden="true" />
+              <Circle size={14} aria-hidden="true" />
             )}
             {breachPending
               ? tForm("checking")
@@ -217,7 +217,7 @@ export default function PasswordInput({
           </li>
           {showCurrentPasswordReuse && (
             <li className="text-xs flex items-center gap-1.5 text-fg-muted">
-              <Circle size={13} aria-hidden="true" />
+              <Circle size={14} aria-hidden="true" />
               {tForm("different_from_current")}
             </li>
           )}

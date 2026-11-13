@@ -384,7 +384,7 @@ export default function ChatWidget({ hideOnMobile = false } = {}) {
         }
         aria-expanded={open}
       >
-        {open ? <X size={22} weight="bold" /> : <ChatCircleDots size={22} />}
+        {open ? <X size={24} weight="bold" /> : <ChatCircleDots size={24} />}
         {showPillText && !open && <span className="font-body-md text-sm">{t("launcher_pill")}</span>}
       </button>
 

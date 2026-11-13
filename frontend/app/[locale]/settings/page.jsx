@@ -338,7 +338,7 @@ export function ProfileTab() {
           {/* MEH-222: camera overlay — always visible on mobile (opacity-30) so the tap target is discoverable; desktop hides it until hover.
               MEH-2418: the md+ hide is gated to hover-capable pointers — with hoverOnlyWhenSupported a touch tablet never fires group-hover, so a bare md:opacity-0 left the overlay invisible there. */}
           <div className="absolute inset-0 rounded-full bg-black/40 flex items-center justify-center opacity-30 md:[@media(hover:hover)_and_(pointer:fine)]:opacity-0 md:group-hover:opacity-100 transition-opacity">
-            <Camera size={24} weight="light" className="text-white" aria-hidden="true" />
+            <Camera size={24} weight="regular" className="text-white" aria-hidden="true" />
           </div>
           {uploading && (
             <div className="absolute inset-0 rounded-full bg-black/50 flex items-center justify-center">
@@ -430,7 +430,7 @@ export function ProfileTab() {
 
         {message && (
           <p className="text-sm text-primary inline-flex items-center gap-1" role="status">
-            <CheckCircle size={15} weight="fill" aria-hidden="true" />
+            <CheckCircle size={16} weight="fill" aria-hidden="true" />
             {message}
           </p>
         )}
@@ -639,7 +639,7 @@ function PasswordChangeCard({ isOAuth }) {
 
         {message && (
           <p className="text-sm text-primary inline-flex items-center gap-1" role="status">
-            <CheckCircle size={15} weight="fill" aria-hidden="true" />
+            <CheckCircle size={16} weight="fill" aria-hidden="true" />
             {message}
           </p>
         )}

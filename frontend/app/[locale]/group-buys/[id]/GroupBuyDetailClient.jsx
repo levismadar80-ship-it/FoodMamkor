@@ -482,7 +482,7 @@ export default function GroupBuyDetailClient({ id }) {
                 />
               ) : (
                 <div className="absolute inset-0 grid place-items-center" data-testid="group-buy-image-missing">
-                  <ShoppingCart size={56} weight="light" className="text-primary/70" aria-hidden="true" />
+                  <ShoppingCart size={64} weight="regular" className="text-primary/70" aria-hidden="true" />
                 </div>
               )}
               {/* MEH-2827 PR 7: no -% pill on the photo — the price tiles say it. */}
@@ -573,7 +573,7 @@ export default function GroupBuyDetailClient({ id }) {
                 ) : (
                   gb.fulfillment_note && (
                     <p className="flex gap-3 text-base text-text whitespace-pre-line" data-testid="group-buy-fulfillment-note">
-                      <MapPin size={22} className="text-primary shrink-0 mt-0.5" aria-hidden="true" />
+                      <MapPin size={24} className="text-primary shrink-0 mt-0.5" aria-hidden="true" />
                       <span>{gb.fulfillment_note}</span>
                     </p>
                   )

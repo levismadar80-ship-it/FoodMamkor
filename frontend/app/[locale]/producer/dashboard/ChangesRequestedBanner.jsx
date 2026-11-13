@@ -123,7 +123,7 @@ export default function ChangesRequestedBanner({ profile }) {
 
           {status === "error" && errorMsg && (
             <p className="mt-2 flex items-center gap-1.5 text-xs text-error" role="alert">
-              <Warning size={15} weight="fill" aria-hidden="true" className="shrink-0" />
+              <Warning size={16} weight="fill" aria-hidden="true" className="shrink-0" />
               {errorMsg}
             </p>
           )}

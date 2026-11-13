@@ -155,7 +155,7 @@ function TypeEmpty({ text }) {
   return (
     <div className="text-center py-16" data-testid="favorites-type-empty">
       <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-50 mb-4">
-        <HeartStraight size={28} weight="regular" className="text-primary" aria-hidden="true" />
+        <HeartStraight size={24} weight="regular" className="text-primary" aria-hidden="true" />
       </div>
       <p className="text-fg-muted">{text}</p>
     </div>
@@ -367,7 +367,7 @@ export default function FavoritesClient() {
           <p className="text-xs text-fg-muted mb-4" dir="rtl">
             {t.rich("list_alerts_hint", {
               icon: () => (
-                <Bell size={13} aria-hidden="true" className="inline align-text-bottom" />
+                <Bell size={14} aria-hidden="true" className="inline align-text-bottom" />
               ),
             })}
           </p>
@@ -486,7 +486,7 @@ export default function FavoritesClient() {
         className="mb-4"
       />
       <h1 className="font-headline-lg text-3xl font-bold mb-8 text-text inline-flex items-center gap-2">
-        <Heart size={28} weight="fill" className="text-primary" aria-hidden="true" />
+        <Heart size={24} weight="fill" className="text-primary" aria-hidden="true" />
         {t("title")}
       </h1>
 

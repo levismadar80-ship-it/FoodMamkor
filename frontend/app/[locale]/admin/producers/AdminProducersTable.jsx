@@ -468,7 +468,7 @@ function PendingPhotoThumb({ url, index, producerName, t }) {
           title={t("producers.table.photo_preview.broken")}
           className="flex h-full w-full items-center justify-center bg-danger-50 text-danger-600"
         >
-          <Warning size={22} weight="fill" aria-hidden="true" />
+          <Warning size={24} weight="fill" aria-hidden="true" />
         </span>
       ) : (
         // raw img: the URL is producer-submitted and may be ANY host (the

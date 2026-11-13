@@ -99,7 +99,7 @@ export default function ShareButton({
         title={t("copy_link")}
         aria-label={labelInName(t("quiet_label"), ariaLabel)}
       >
-        <ShareNetwork size={17} className="text-primary-dark" aria-hidden="true" />
+        <ShareNetwork size={18} className="text-primary-dark" aria-hidden="true" />
         {t("quiet_label")}
       </button>
     );

@@ -163,7 +163,7 @@ export default function MapPane({
       {!mapMoved && visibleProducers.length === 0 && allProducers.length > 0 && (
         // eslint-disable-next-line no-restricted-syntax -- rtl-ok: horizontal centering idiom
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[1000] bg-surface-floating rounded-lg border border-border p-6 text-center max-w-[280px]" role="status">
-          <Leaf size={44} className="text-primary mx-auto mb-3" aria-hidden="true" />
+          <Leaf size={48} className="text-primary mx-auto mb-3" aria-hidden="true" />
           {/* MEH-2425: this overlay fires when the loaded set is non-empty but
               nothing survives the client-side filters — i.e. mostly BECAUSE of
               a filter. "אין עסקים באזור זה עדיין" + "הוסיפו עסק" read as an

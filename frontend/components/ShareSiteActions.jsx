@@ -149,11 +149,11 @@ export default function ShareSiteActions({
       {shareButton}
       <div className="mt-3 grid grid-cols-2 gap-2.5">
         <button type="button" onClick={copyLink} className={CARD_CLASSES} data-testid="share-copy">
-          <LinkSimple size={22} aria-hidden="true" className="text-primary" />
+          <LinkSimple size={24} aria-hidden="true" className="text-primary" />
           {t("copy")}
         </button>
         <a href={mailHref} onClick={handleEmailClick} className={CARD_CLASSES} data-testid="share-email">
-          <EnvelopeSimple size={22} aria-hidden="true" className="text-primary" />
+          <EnvelopeSimple size={24} aria-hidden="true" className="text-primary" />
           {t("email")}
         </a>
       </div>

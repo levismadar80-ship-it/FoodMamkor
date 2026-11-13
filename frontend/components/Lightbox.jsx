@@ -160,7 +160,7 @@ export default function Lightbox({ images = [], startIndex = 0, onClose }) {
           aria-label={t("close_aria")}
           className={`absolute top-4 end-4 z-10 w-11 h-11 ${OVERLAY_CONTROL_CLS}`}
         >
-          <X size={22} weight="bold" aria-hidden="true" />
+          <X size={24} weight="bold" aria-hidden="true" />
         </button>
 
         {/* Main image */}

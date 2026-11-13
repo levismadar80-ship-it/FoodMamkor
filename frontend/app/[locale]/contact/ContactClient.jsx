@@ -98,7 +98,7 @@ export default function ContactClient() {
           {status === "success" ? (
             <div className="text-center py-8">
               <div className="mb-4 flex justify-center">
-                <CheckCircle size={56} weight="fill" className="text-primary" aria-hidden="true" />
+                <CheckCircle size={64} weight="fill" className="text-primary" aria-hidden="true" />
               </div>
               <SectionHeading size="content" className="mb-2">
                 {t("success_title")}

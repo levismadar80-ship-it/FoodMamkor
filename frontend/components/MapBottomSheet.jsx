@@ -298,7 +298,7 @@ export default function MapBottomSheet({
               className="-my-2.5 shrink-0 inline-flex items-center gap-1 min-h-touch text-sm font-semibold text-primary underline underline-offset-4 hover:text-primary-dark rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
             >
               {tNav("recommend")}
-              <ArrowLeft size={15} className="ltr:rotate-180" aria-hidden="true" />
+              <ArrowLeft size={16} className="ltr:rotate-180" aria-hidden="true" />
             </Link>
           </div>
         ) : count === 0 && filtered && onResetFilters ? (

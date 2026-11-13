@@ -128,7 +128,7 @@ export default function ProducerRecipesPage() {
                 <p className="text-2xs text-fg-muted mb-1">{t("sample_label")}</p>
                 <div className="border border-border rounded-md p-3 bg-surface-card flex items-center gap-3">
                   <div className="w-14 h-14 rounded-sm bg-green-50 flex items-center justify-center shrink-0">
-                    <Bread size={22} className="text-fg-muted" aria-hidden="true" />
+                    <Bread size={24} className="text-fg-muted" aria-hidden="true" />
                   </div>
                   <div className="min-w-0">
                     <p className="text-sm font-medium text-text">{t("sample_title")}</p>

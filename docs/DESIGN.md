@@ -840,6 +840,20 @@ utility layer, **not** a parallel `:root` token authority (MEH-686 removed
 
 No component is restyled in MEH-136; consumption is MEH-639 / MEH-602.
 
+## Icons (MEH-3089)
+
+Phosphor only (`@phosphor-icons/react`). One scale and three weights, so two
+icons doing the same job look the same anywhere on the site.
+
+- **Size:** 12 · 14 · 16 · 18 · 20 · 24 in the UI (16 inline with body text,
+  18–20 inside buttons, 24 for a stand-alone icon button); 32 · 40 · 48 · 64
+  for display icons (empty states, page heads). Nothing in between.
+- **Weight:** `regular` by default, `bold` for small icons that must hold up
+  at 12–14 px, `fill` for a selected or active state (a saved heart, the
+  current tab). No `duotone`, `light` or `thin`.
+- Enforced by `frontend/__tests__/IconScaleGuard.test.js` on literal `size`
+  and `weight` props.
+
 ## Interactive sizing minimums
 
 Interactive elements — anything a user reads to act on or taps — carry two

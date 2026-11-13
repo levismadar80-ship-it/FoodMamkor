@@ -325,7 +325,7 @@ export default function Header() {
           <p
             className="flex items-center justify-center gap-1.5 pb-2.5 text-xs font-medium text-fg-muted"
           >
-            <SealCheck size={15} weight="fill" className="text-accent" aria-hidden="true" />
+            <SealCheck size={16} weight="fill" className="text-accent" aria-hidden="true" />
             {t("nav.trust_strip")}
           </p>
         </div>
@@ -502,7 +502,7 @@ export default function Header() {
               aria-label={t("nav.search_label")}
               className="hidden md:flex items-center justify-center w-11 h-11 rounded-full transition-colors duration-fast ease-quart focus-ring text-fg-muted hover:bg-primary/5"
             >
-              <MagnifyingGlass size={22} weight="regular" aria-hidden="true" />
+              <MagnifyingGlass size={24} weight="regular" aria-hidden="true" />
             </button>
             {/* MEH-1698: desktop language toggle restored. MEH-896 (b7919b39,
                 21/06) removed it "until the EN i18n wave (MEH-472)"; MEH-472
@@ -563,7 +563,7 @@ export default function Header() {
               aria-label={t("nav.search_label")}
               className="md:hidden flex items-center justify-center w-11 h-11 rounded-full focus-ring text-fg-muted"
             >
-              <MagnifyingGlass size={22} weight="regular" aria-hidden="true" />
+              <MagnifyingGlass size={24} weight="regular" aria-hidden="true" />
             </button>
           </div>
         </nav>

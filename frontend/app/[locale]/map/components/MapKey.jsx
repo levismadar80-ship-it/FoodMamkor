@@ -46,7 +46,7 @@ function SampleVerified() {
       {/* rtl-ok: mirrors the marker's physical bottom-right badge */}
       {/* eslint-disable-next-line no-restricted-syntax -- rtl-ok: the map badge is physically bottom-right in every locale */}
       <span className="absolute -bottom-1 -right-1 w-3.5 h-3.5 rounded-full bg-primary border border-white flex items-center justify-center">
-        <Check size={8} weight="bold" className="text-white" />
+        <Check size={12} weight="bold" className="text-white" />
       </span>
     </span>
   );
@@ -67,7 +67,7 @@ function SamplePickup() {
   return (
     <span className="shrink-0 w-7 h-7 flex items-center justify-center" aria-hidden="true">
       <span className="w-5 h-5 rounded-full bg-surface border-2 border-primary flex items-center justify-center">
-        <Leaf size={10} className="text-primary" />
+        <Leaf size={12} className="text-primary" />
       </span>
     </span>
   );

@@ -147,7 +147,7 @@ export default function DevComponentsPage() {
               href="/dev/components"
               media={
                 <div className="relative w-full aspect-[4/3] bg-background flex items-center justify-center">
-                  <Leaf size={36} weight="light" className="text-primary/70" aria-hidden="true" />
+                  <Leaf size={32} weight="regular" className="text-primary/70" aria-hidden="true" />
                 </div>
               }
               overlay={

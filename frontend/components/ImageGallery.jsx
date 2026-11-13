@@ -214,7 +214,7 @@ export default function ImageGallery({ images = [], producerId = null, producerN
                 >
                   {tBadge("verified_popover_link")}
                   {/* Forward chevron points LEFT in RTL (MEH-1334 revision-1 #11) */}
-                  <CaretLeft size={13} aria-hidden="true" />
+                  <CaretLeft size={14} aria-hidden="true" />
                 </LocaleLink>
               </Popover>
             )}

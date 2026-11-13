@@ -135,7 +135,7 @@ function StatusSupportModal({ onClose }) {
           rel="noopener noreferrer"
           className="flex items-center gap-3 rounded-lg border border-border px-4 py-3 hover:bg-green-50 transition"
         >
-          <WhatsappLogo size={22} weight="fill" className="text-[#25D366] shrink-0" />
+          <WhatsappLogo size={24} weight="fill" className="text-[#25D366] shrink-0" />
           <div>
             <p className="text-sm font-medium">{t("whatsapp_label")}</p>
             <p className="text-xs text-fg-muted">{t("whatsapp_hours")}</p>
@@ -145,7 +145,7 @@ function StatusSupportModal({ onClose }) {
           href="mailto:contact@mehamakor.co.il"
           className="flex items-center gap-3 rounded-lg border border-border px-4 py-3 hover:bg-green-50 transition"
         >
-          <EnvelopeSimple size={22} className="text-primary shrink-0" />
+          <EnvelopeSimple size={24} className="text-primary shrink-0" />
           <div>
             <p className="text-sm font-medium">{t("email_label")}</p>
             <p className="text-xs text-fg-muted">contact@mehamakor.co.il</p>
@@ -749,7 +749,7 @@ export default function ProducerDashboardPage() {
           data-testid="home-rescue-card"
           className="flex items-start gap-3 bg-surface border border-border rounded-lg p-5 mb-6 hover:border-primary transition"
         >
-          <ShoppingBag size={22} className="text-primary shrink-0 mt-0.5" aria-hidden="true" />
+          <ShoppingBag size={24} className="text-primary shrink-0 mt-0.5" aria-hidden="true" />
           <span>
             <span className="block font-semibold text-text">{t("quick_links.rescue.title")}</span>
             <span className="block text-sm text-fg-muted">{t("quick_links.rescue.sub")}</span>

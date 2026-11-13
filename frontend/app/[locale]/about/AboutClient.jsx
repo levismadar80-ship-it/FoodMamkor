@@ -143,7 +143,7 @@ function ExitLink({ href, testId, children, spacing = "mt-8" }) {
       className={`${spacing} inline-flex items-center gap-1 font-body-md font-semibold text-primary underline underline-offset-4 hover:text-primary-dark rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40`}
     >
       {children}
-      <ArrowLeft size={15} aria-hidden="true" />
+      <ArrowLeft size={16} aria-hidden="true" />
     </LocaleLink>
   );
 }
@@ -194,7 +194,7 @@ export default function AboutPage() {
             className="mt-6 inline-flex items-center gap-2 min-h-[48px] px-6 py-3 bg-primary text-white rounded-sm font-body-md font-semibold text-base hover:bg-primary-dark transition-colors focus-ring"
           >
             {t("hero.cta_map")}
-            <ArrowLeft size={19} aria-hidden="true" />
+            <ArrowLeft size={20} aria-hidden="true" />
           </Link>
           {/* MEH-2192: dateline. Small muted line, start-aligned like the rest
               of the hero — an E-E-A-T freshness signal a reader can check. */}
@@ -379,7 +379,7 @@ export default function AboutPage() {
               className="inline-flex items-center gap-1 font-body-md font-semibold text-primary underline underline-offset-4 hover:text-primary-dark rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
             >
               <span id="about-biz-cta">{tAbout("biz_strip")}</span>
-              <ArrowLeft size={15} aria-hidden="true" />
+              <ArrowLeft size={16} aria-hidden="true" />
             </LocaleLink>
           </div>
         </div>
@@ -600,7 +600,7 @@ export default function AboutPage() {
                   className="mt-3 inline-flex min-h-touch items-center gap-1 font-body-md font-semibold text-primary underline underline-offset-4 hover:text-primary-dark rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
                 >
                   {tProcess("crosslink_from_about")}
-                  <ArrowLeft size={15} aria-hidden="true" />
+                  <ArrowLeft size={16} aria-hidden="true" />
                 </LocaleLink>
               </article>
             )}
@@ -647,7 +647,7 @@ export default function AboutPage() {
             className="mt-5 inline-flex min-h-touch items-center gap-1 font-body-md font-semibold text-primary underline underline-offset-4 hover:text-primary-dark rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
           >
             {t("badges_link.label")}
-            <ArrowLeft size={15} aria-hidden="true" />
+            <ArrowLeft size={16} aria-hidden="true" />
           </LocaleLink>
         </div>
       </FadeInSection>

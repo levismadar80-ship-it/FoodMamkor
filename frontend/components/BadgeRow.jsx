@@ -310,7 +310,7 @@ function VerifiedTierBadge({ producer, surface, t, avoidRef = null }) {
           >
             {t("verified_popover_link")}
             {/* Forward chevron points LEFT in RTL (MEH-1334 revision-1 #11) */}
-            <CaretLeft size={13} aria-hidden="true" />
+            <CaretLeft size={14} aria-hidden="true" />
           </LocaleLink>
         </Popover>
       </span>
@@ -368,7 +368,7 @@ function Badge({ badge, surface = "hero", avoidRef = null }) {
     >
       <span>{badge.tooltip}</span>
       {/* Forward chevron points LEFT in RTL (mirrors the verified popover). */}
-      <CaretLeft size={13} className="mt-0.5 shrink-0" aria-hidden="true" />
+      <CaretLeft size={14} className="mt-0.5 shrink-0" aria-hidden="true" />
     </LocaleLink>
   ) : (
     badge.tooltip

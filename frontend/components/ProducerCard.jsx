@@ -186,7 +186,7 @@ function CardHeart({ producer, onCountChange }) {
     >
       {/* Green ink, never red (MEH-636): outline default, green fill when saved. */}
       <HeartStraight
-        size={22}
+        size={24}
         weight={filled ? "fill" : "regular"}
         className="text-primary"
         aria-hidden="true"
@@ -743,7 +743,7 @@ export default function ProducerCard({ producer, active, onClick, referrer, high
               data-testid="card-rating"
             >
               {/* MEH-1243 (🔒 §7): unify to Google format ★ X.X (N) across surfaces. */}
-              <Star size={13} weight="fill" className="text-accent inline align-[-1px]" aria-hidden="true" /> {Number(producer.avg_rating).toFixed(1)} ({producer.reviews_count})
+              <Star size={14} weight="fill" className="text-accent inline align-[-1px]" aria-hidden="true" /> {Number(producer.avg_rating).toFixed(1)} ({producer.reviews_count})
             </span>
           )}
         </div>

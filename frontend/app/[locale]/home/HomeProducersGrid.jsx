@@ -598,7 +598,7 @@ export function HomeProducersGrid({
           {producers.length === 0 && daysActive.length === 0 && !(regionFallback?.producers?.length > 0) && (
             <div className="text-center py-16" data-testid="empty-generic">
               <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-green-50 mb-4" aria-hidden="true">
-                <Leaf size={36} className="text-primary" />
+                <Leaf size={32} className="text-primary" />
               </div>
               {/* MEH-1085 (DISC-07): cause-aware branch — a category-filtered
                   zero-result names the category as the cause and clears it in
@@ -634,7 +634,7 @@ export function HomeProducersGrid({
                   className="inline-flex items-center gap-1 min-h-touch text-sm font-semibold text-primary underline underline-offset-4 hover:text-primary-dark rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
                 >
                   {t("nav.footer.recommend")}
-                  <ArrowLeft size={15} className="ltr:rotate-180" aria-hidden="true" />
+                  <ArrowLeft size={16} className="ltr:rotate-180" aria-hidden="true" />
                 </Link>
               </div>
             </div>
@@ -672,7 +672,7 @@ export function HomeProducersGrid({
                 className="inline-flex items-center gap-1 min-h-touch text-sm font-semibold text-primary underline underline-offset-4 hover:text-primary-dark rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
               >
                 {t("nav.footer.recommend")}
-                <ArrowLeft size={15} className="ltr:rotate-180" aria-hidden="true" />
+                <ArrowLeft size={16} className="ltr:rotate-180" aria-hidden="true" />
               </Link>
             </p>
           )}

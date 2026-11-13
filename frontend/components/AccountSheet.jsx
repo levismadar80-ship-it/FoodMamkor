@@ -166,7 +166,7 @@ export default function AccountSheet({ open, onClose, user, logout }) {
           {row("login") && (
             <li className={liCls}>
               <Link href={loginHref} onClick={onClose} className={rowCls}>
-                <SignIn size={19} weight="regular" className={iconCls} aria-hidden="true" />
+                <SignIn size={20} weight="regular" className={iconCls} aria-hidden="true" />
                 {t(row("login").surface.labelKey)}
               </Link>
             </li>
@@ -179,7 +179,7 @@ export default function AccountSheet({ open, onClose, user, logout }) {
           {row("admin") && (
             <li className={liCls}>
               <Link href={row("admin").item.href} onClick={onClose} className={rowCls}>
-                <Lock size={19} weight="regular" className={iconCls} aria-hidden="true" />
+                <Lock size={20} weight="regular" className={iconCls} aria-hidden="true" />
                 {t(row("admin").surface.labelKey)}
               </Link>
             </li>
@@ -190,7 +190,7 @@ export default function AccountSheet({ open, onClose, user, logout }) {
           {row("producerDashboard") && (
             <li className={liCls}>
               <Link href={row("producerDashboard").item.href} onClick={onClose} className={rowCls}>
-                <Gauge size={19} weight="regular" className={iconCls} aria-hidden="true" />
+                <Gauge size={20} weight="regular" className={iconCls} aria-hidden="true" />
                 {t(row("producerDashboard").surface.labelKey)}
               </Link>
             </li>
@@ -201,7 +201,7 @@ export default function AccountSheet({ open, onClose, user, logout }) {
           {row("favorites") && (
             <li className={liCls}>
               <Link href={row("favorites").item.href} onClick={onClose} className={rowCls}>
-                <Heart size={19} weight="regular" className={iconCls} aria-hidden="true" />
+                <Heart size={20} weight="regular" className={iconCls} aria-hidden="true" />
                 {t(row("favorites").surface.labelKey)}
               </Link>
             </li>
@@ -209,7 +209,7 @@ export default function AccountSheet({ open, onClose, user, logout }) {
           {row("settings") && (
             <li className={liCls}>
               <Link href={row("settings").item.href} onClick={onClose} className={rowCls}>
-                <Gear size={19} weight="regular" className={iconCls} aria-hidden="true" />
+                <Gear size={20} weight="regular" className={iconCls} aria-hidden="true" />
                 {t(row("settings").surface.labelKey)}
               </Link>
             </li>
@@ -219,7 +219,7 @@ export default function AccountSheet({ open, onClose, user, logout }) {
               {/* Quiet "for businesses" entry — gold icon + outbound arrow. MEH-669-gated. */}
               <Link href={row("registerProducer").item.href} onClick={onClose} className={rowCls}>
                 {/* MEH-730: gold-on-dark token replaces the amber-200 stopgap. */}
-                <Storefront size={19} weight="regular" className="text-gold-on-dark" aria-hidden="true" />
+                <Storefront size={20} weight="regular" className="text-gold-on-dark" aria-hidden="true" />
                 {t(row("registerProducer").surface.labelKey)}
                 {/* MEH-868: raw "↗" dingbat → Phosphor ArrowUpLeft (RTL-correct
                     onward diagonal; ms-auto pins it to the row end).
@@ -271,7 +271,7 @@ export default function AccountSheet({ open, onClose, user, logout }) {
                 }}
                 className={rowCls + " text-background/65 text-sm"}
               >
-                <SignOut size={19} weight="regular" className={iconCls} aria-hidden="true" />
+                <SignOut size={20} weight="regular" className={iconCls} aria-hidden="true" />
                 {/* MEH-908: gerund "התנתקות" (ADR-014) via the shared
                     account.menu.logout key — neutral, aligns with the
                     noun-based sheet items, and fixes desktop UserMenu in one
