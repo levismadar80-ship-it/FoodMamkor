@@ -216,12 +216,12 @@ describe("RegistrationCta — the on-site form", () => {
 });
 
 /**
- * MEH-3040 — the form could be opened and never closed again (Sapir's
+ * MEH-3043 — the form could be opened and never closed again (Sapir's
  * screenshot, 13/11). Option ב: × in the card on a desktop width, a
  * full-screen sheet with × on a phone, and a sticky phone bar while the
  * inline action is off screen.
  */
-describe("MEH-3040 — open and close", () => {
+describe("MEH-3043 — open and close", () => {
   // The window width the sheet decision reads (matchMedia "(min-width: 1024px)").
   const realMm = window.matchMedia;
   const width = (desktop) => {
@@ -303,7 +303,7 @@ describe("MEH-3040 — open and close", () => {
   });
 });
 
-describe("MEH-3040 — sticky phone bar", () => {
+describe("MEH-3043 — sticky phone bar", () => {
   let fire;
   beforeEach(() => {
     window.IntersectionObserver = class {

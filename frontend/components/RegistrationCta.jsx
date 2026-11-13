@@ -19,7 +19,7 @@
  * Related:  app/[locale]/experiences/[id]/ExperienceDetailClient.jsx,
  *           app/[locale]/events/[id]/EventDetailClient.jsx
  * History:  MEH-2768 (creation). Copy approved by Sapir 6/11 (items 5–9).
- *           MEH-3040 (13/11): the open form can be closed again (× in the
+ *           MEH-3043 (13/11): the open form can be closed again (× in the
  *           card on desktop, a full-screen sheet with × on a phone) and a
  *           sticky phone bar keeps the action in reach — RegistrationOverlays.
  */
@@ -168,7 +168,7 @@ function SignupForm({ kind, itemId, onDone }) {
 
 /**
  * Which action the CTA offers — one answer for the inline block AND the
- * sticky phone bar (MEH-3040), so the two can never disagree. `null` = no
+ * sticky phone bar (MEH-3043), so the two can never disagree. `null` = no
  * channel reaches anyone, so nothing renders anywhere.
  */
 function resolveAction({ method, phone, url, isFull, waitlistHref, title, t }) {
@@ -222,7 +222,7 @@ function ActionLink({ action, label, testId, onClick }) {
  * @param {string} [waitlistLabel]
  * @param {string} [barNote]     the date line beside the button on the phone bar
  *
- * MEH-3040 (Sapir 13/11, option ב): the form opened and could never close.
+ * MEH-3043 (Sapir 13/11, option ב): the form opened and could never close.
  * Now: on a phone the sign-up button also rides a sticky bar while the inline
  * one is off screen, and the form opens in a full-screen sheet with ×
  * (Eventbrite's mobile checkout). On a desktop the form opens in place in the
@@ -349,7 +349,7 @@ function InlineBlock({ action, label, done, open, kind, title, form, question, s
     <div className="space-y-3" data-testid="registration-site-form">
       {open === "inline" ? (
         <div id="registration-form-panel">
-          {/* MEH-3040: the heading names what is open, × closes it. RTL: the
+          {/* MEH-3043: the heading names what is open, × closes it. RTL: the
               × mirrors to the inline END and the heading reserves its width
               (rtl.md, MEH-2038). */}
           <div className="relative mb-1">

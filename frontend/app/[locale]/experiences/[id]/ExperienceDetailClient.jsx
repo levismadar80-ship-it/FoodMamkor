@@ -45,7 +45,7 @@ import SectionHeading from "@/components/ui/SectionHeading";
 // experiences with coords. ssr:false — leaflet touches window at module eval.
 const MiniMap = dynamic(() => import("@/components/MiniMap"), { ssr: false });
 
-// MEH-3040: short, for the sticky phone bar beside the sign-up button.
+// MEH-3043: short, for the sticky phone bar beside the sign-up button.
 const BAR_DATE_OPTIONS = { weekday: "short", day: "numeric", month: "numeric" };
 
 function formatDate(iso, locale) {

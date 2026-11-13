@@ -2,7 +2,7 @@
 
 /**
  * Module:   RegistrationOverlays
- * Purpose:  The two phone surfaces of the event / workshop sign-up (MEH-3040,
+ * Purpose:  The two phone surfaces of the event / workshop sign-up (MEH-3043,
  *           Sapir 13/11 option ב): a sticky bar that keeps the sign-up action
  *           in reach while the inline one is off screen, and a full-screen
  *           sheet with × that holds the form (Eventbrite's mobile checkout:
@@ -14,7 +14,7 @@
  *           producer page's sticky bar — same show-when-inline-is-gone rule),
  *           components/public/ProductSheet.jsx (scroll-lock + Escape + Tab
  *           trap + focus return — the modal contract copied here).
- * History:  MEH-3040 (creation).
+ * History:  MEH-3043 (creation).
  */
 
 import { useEffect, useRef, useState } from "react";
@@ -31,7 +31,7 @@ const BAR_ROOM = "76px";
 const FOCUSABLE = 'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
 
 /** true on a desktop width. Unknown (no matchMedia, e.g. jsdom) → desktop,
- * so the form opens in place — the behaviour before MEH-3040. */
+ * so the form opens in place — the behaviour before MEH-3043. */
 export function isDesktop() {
   if (typeof window === "undefined" || typeof window.matchMedia !== "function") return true;
   return window.matchMedia(DESKTOP_QUERY).matches;
