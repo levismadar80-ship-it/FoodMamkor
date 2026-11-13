@@ -43,12 +43,9 @@ const MiniMap = dynamic(() => import("@/components/MiniMap"), { ssr: false });
 
 // MEH-3043: short, for the sticky phone bar beside the sign-up button.
 const BAR_DATE_OPTIONS = { weekday: "short", day: "numeric", month: "numeric" };
-const DETAIL_DATE_OPTIONS = {
-  weekday: "long",
-  day: "numeric",
-  month: "long",
-  year: "numeric",
-};
+// MEH-3057: the tile beside it already says month + day, so the row's text
+// is the weekday only («יום שישי · 17:00») — the full date read twice.
+const DETAIL_DATE_OPTIONS = { weekday: "long" };
 
 // MEH-476 PR 3b2: extracted from app/[locale]/events/[id]/page.js so the
 // route can export generateMetadata (Client Components cannot). page.js
