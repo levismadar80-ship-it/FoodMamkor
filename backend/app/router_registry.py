@@ -30,6 +30,7 @@ from app.routers import (
     producer_name_requests,
     producer_owner_invite,
     producer_recipes,
+    product_organize,
     rescue,
     producers,
     registrations,
@@ -58,6 +59,7 @@ def register_routers(app: FastAPI) -> None:
     app.include_router(cities.router)
     app.include_router(producer_name_check.router)  # MEH-3086
     app.include_router(producer_me.router)
+    app.include_router(product_organize.router)  # MEH-3055
     # MEH-2322: owner-claim link (admin claim-link, public preview, claim).
     app.include_router(producer_claim.router)
     # MEH-2974: two routers, one module — the admin half carries

@@ -151,6 +151,7 @@
     "plan",
     "price_range",
     "primary_contact_method",
+    "product_groups",
     "products",
     "products_count",
     "report_count",
@@ -215,9 +216,14 @@
       "phone",
       "precision"
     ],
+    "ProducerDetailOut.product_groups": [
+      "id",
+      "name"
+    ],
     "ProducerDetailOut.products": [
       "allergens",
       "description",
+      "group_id",
       "id",
       "image_url",
       "ingredients",
@@ -228,6 +234,7 @@
       "is_vegan",
       "is_vegetarian",
       "name",
+      "position",
       "price_max",
       "price_min",
       "price_range"
