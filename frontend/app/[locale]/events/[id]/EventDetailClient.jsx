@@ -41,6 +41,8 @@ import SectionHeading from "@/components/ui/SectionHeading";
 // that carry coords. ssr:false — leaflet touches window at module eval.
 const MiniMap = dynamic(() => import("@/components/MiniMap"), { ssr: false });
 
+// MEH-3040: short, for the sticky phone bar beside the sign-up button.
+const BAR_DATE_OPTIONS = { weekday: "short", day: "numeric", month: "numeric" };
 const DETAIL_DATE_OPTIONS = {
   weekday: "long",
   day: "numeric",
@@ -161,6 +163,11 @@ export default function EventDetailClient() {
   // «יצירת קשר עם בית העסק» fallback is gone — every event has a method now
   // (site_form by default), and the on-site form carries «או שאלה למארחת».
   const isFull = event.max_participants != null && event.spots_left === 0;
+  // MEH-3040: the date beside the sign-up button on the sticky phone bar.
+  const barNote = [
+    formatEventDate(event.event_date, locale, BAR_DATE_OPTIONS),
+    formatTimeRange(event.event_time) || null,
+  ].filter(Boolean).join(" · ");
   const cta =
     isPast || event.is_active === false ? null : (
       <RegistrationCta
@@ -171,6 +178,7 @@ export default function EventDetailClient() {
         phone={event.producer_phone}
         url={event.registration_url}
         isFull={isFull}
+        barNote={barNote}
       />
     );
 

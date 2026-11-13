@@ -45,6 +45,9 @@ import SectionHeading from "@/components/ui/SectionHeading";
 // experiences with coords. ssr:false — leaflet touches window at module eval.
 const MiniMap = dynamic(() => import("@/components/MiniMap"), { ssr: false });
 
+// MEH-3040: short, for the sticky phone bar beside the sign-up button.
+const BAR_DATE_OPTIONS = { weekday: "short", day: "numeric", month: "numeric" };
+
 function formatDate(iso, locale) {
   if (!iso) return "";
   return formatEventDate(iso, locale, { weekday: "long", day: "numeric", month: "long", year: "numeric" });
@@ -396,6 +399,10 @@ export default function ExperienceDetailClient() {
                     waitlistHref={waitlistHref}
                     onWaitlistClick={() => trackChannelClick(hostBiz?.producer_id, "whatsapp")}
                     waitlistLabel={t("waitlist_cta")}
+                    barNote={[
+                      formatEventDate(ex.event_date, locale, BAR_DATE_OPTIONS),
+                      ex.event_time ? formatTime(ex.event_time) : null,
+                    ].filter(Boolean).join(" · ")}
                   />
                 )}
                 {/* MEH-2549: share + add-to-calendar, as on the event page. */}
