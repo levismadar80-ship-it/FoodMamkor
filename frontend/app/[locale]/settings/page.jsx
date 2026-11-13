@@ -562,14 +562,14 @@ function PasswordChangeCard({ isOAuth }) {
               onChange={(e) => setCurrent(e.target.value)}
               required
               // eslint-disable-next-line no-restricted-syntax -- rtl-ok: eye toggle inside dir="ltr" input
-              className="w-full border border-border rounded-md pr-11 pl-3 py-2 outline-none focus-visible:ring-2 focus-visible:ring-primary/40 transition"
+              className="w-full border border-border rounded-md pr-11 pl-3 py-2 outline-none focus-visible:ring-2 focus-visible:ring-primary transition"
               dir="ltr"
             />
             <button
               type="button"
               onClick={() => setShowCurrent((v) => !v)}
               // eslint-disable-next-line no-restricted-syntax -- rtl-ok
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-fg-muted hover:text-text transition rounded-full p-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-fg-muted hover:text-text transition rounded-full p-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
               aria-label={showCurrent ? t("eye_hide_current") : t("eye_show_current")}
               aria-pressed={showCurrent}
             >
@@ -618,14 +618,14 @@ function PasswordChangeCard({ isOAuth }) {
               required
               aria-invalid={mismatch || undefined}
               // rtl-ok
-              className={`w-full border rounded-md pr-11 pl-3 py-2 outline-none focus-visible:ring-2 focus-visible:ring-primary/40 transition ${mismatch ? "border-danger-400" : "border-border"}`}
+              className={`w-full border rounded-md pr-11 pl-3 py-2 outline-none focus-visible:ring-2 focus-visible:ring-primary transition ${mismatch ? "border-danger-400" : "border-border"}`}
               dir="ltr"
             />
             <button
               type="button"
               onClick={() => setShowConfirm((v) => !v)}
               // eslint-disable-next-line no-restricted-syntax -- rtl-ok
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-fg-muted hover:text-text transition rounded-full p-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-fg-muted hover:text-text transition rounded-full p-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
               aria-label={showConfirm ? t("eye_hide_confirm") : t("eye_show_confirm")}
               aria-pressed={showConfirm}
             >

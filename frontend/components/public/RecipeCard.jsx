@@ -46,7 +46,7 @@ export default function RecipeCard({ slug, recipe }) {
     <Link
       href={`/${slug}/recipes/${recipe.id}`}
       data-testid="recipe-card"
-      className="group block shrink-0 w-[62%] max-w-[240px] snap-start md:w-auto md:max-w-none rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/40"
+      className="group block shrink-0 w-[62%] max-w-[240px] snap-start md:w-auto md:max-w-none rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary"
     >
       <div className="relative w-full aspect-[4/3] rounded-md overflow-hidden bg-background">
         {imgSrc && !imgError ? (

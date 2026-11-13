@@ -120,7 +120,7 @@ export default function LoginPromptModal({
           type="button"
           onClick={onClose}
           aria-label={t("close_aria")}
-          className="absolute top-3 end-3 w-11 h-11 flex items-center justify-center text-fg-muted hover:text-text transition rounded-lg focus-visible:ring-2 focus-visible:ring-primary/40"
+          className="absolute top-3 end-3 w-11 h-11 flex items-center justify-center text-fg-muted hover:text-text transition rounded-lg focus-visible:ring-2 focus-visible:ring-primary"
         >
           <X size={20} weight="bold" aria-hidden="true" />
         </button>
@@ -144,14 +144,14 @@ export default function LoginPromptModal({
         <a
           ref={primaryRef}
           href={loginHref}
-          className="block w-full bg-primary text-white py-3 rounded-md hover:bg-primary-dark transition font-medium focus-visible:ring-2 focus-visible:ring-primary/40"
+          className="block w-full bg-primary text-white py-3 rounded-md hover:bg-primary-dark transition font-medium focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
         >
           {t("login_cta")}
         </a>
         <button
           type="button"
           onClick={onClose}
-          className="block w-full mt-2 text-sm text-fg-muted hover:text-text transition py-2 rounded-lg focus-visible:ring-2 focus-visible:ring-primary/40"
+          className="block w-full mt-2 text-sm text-fg-muted hover:text-text transition py-2 rounded-lg focus-visible:ring-2 focus-visible:ring-primary"
         >
           {t("dismiss_cta")}
         </button>

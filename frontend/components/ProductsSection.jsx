@@ -1216,7 +1216,7 @@ function UploadZone({ imageUrl, uploading, onUpload, onRemove, tForm }) {
             display:none removes it and the wrapping label is not natively
             focusable (WCAG 2.1.1). Ring on focus-within is the keyboard
             affordance; this label has no border, so the ring alone carries it. */}
-        <label className="cursor-pointer text-sm text-primary underline decoration-[1.5px] underline-offset-[5px] decoration-primary/35 hover:decoration-current rounded focus-within:ring-2 focus-within:ring-primary/40">
+        <label className="cursor-pointer text-sm text-primary underline decoration-[1.5px] underline-offset-[5px] decoration-primary/35 hover:decoration-current rounded focus-within:ring-2 focus-within:ring-primary">
           {uploading ? tForm("image_uploading") : tForm("image_replace")}
           <input
             type="file"
@@ -1235,7 +1235,7 @@ function UploadZone({ imageUrl, uploading, onUpload, onRemove, tForm }) {
   // MEH-2033: sr-only + focus-within — same keyboard-reachability fix as
   // EventForm (MEH-2031) / ExperienceForm (MEH-2012), word for word.
   return (
-    <label className="flex flex-col items-center justify-center gap-1 text-center text-sm text-fg-muted border border-dashed border-border rounded-sm px-4 py-6 cursor-pointer hover:bg-green-50 transition focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/40">
+    <label className="flex flex-col items-center justify-center gap-1 text-center text-sm text-fg-muted border border-dashed border-border rounded-sm px-4 py-6 cursor-pointer hover:bg-green-50 transition focus-within:border-primary focus-within:ring-2 focus-within:ring-primary">
       <Package size={20} className="text-fg-muted" aria-hidden="true" />
       <span>{uploading ? tForm("image_uploading") : tForm("image_upload_cta")}</span>
       <input

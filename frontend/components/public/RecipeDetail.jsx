@@ -46,7 +46,7 @@ import { formatPriceRange } from "@/lib/utils";
 import SectionHeading from "@/components/ui/SectionHeading";
 
 const LINK_FOCUS =
-  "rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40";
+  "rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary";
 
 // Tailwind needs the literal class names — never build `grid-cols-${n}`.
 const FACT_COLS = { 1: "grid-cols-1", 2: "grid-cols-2", 3: "grid-cols-3" };

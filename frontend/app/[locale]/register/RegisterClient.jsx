@@ -458,7 +458,7 @@ function RegisterPageBody() {
             type="submit"
             data-testid="register-submit"
             disabled={loading}
-            className="w-full min-h-touch flex items-center justify-center bg-primary text-white py-3 rounded-md font-bold hover:bg-primary-dark transition disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-primary/40"
+            className="w-full min-h-touch flex items-center justify-center bg-primary text-white py-3 rounded-md font-bold hover:bg-primary-dark transition disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
           >
             {loading ? (
               <span className="inline-flex items-center gap-2">

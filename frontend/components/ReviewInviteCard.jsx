@@ -63,7 +63,7 @@ function scrollToContactCard() {
 }
 
 const STAR_TAP =
-  "inline-flex min-h-touch min-w-touch items-center justify-center rounded-lg transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40";
+  "inline-flex min-h-touch min-w-touch items-center justify-center rounded-lg transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary";
 
 function InviteStar({ value, lit, mode, loginHref, producerId, ariaLabel, onHover, onPick, pressed }) {
   const icon = (

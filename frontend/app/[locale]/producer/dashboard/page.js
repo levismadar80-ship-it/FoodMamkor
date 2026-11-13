@@ -666,7 +666,7 @@ export default function ProducerDashboardPage() {
         >
           <span
             aria-hidden="true"
-            className={`relative block w-10 h-6 shrink-0 rounded-full transition-colors group-focus-visible:ring-2 group-focus-visible:ring-primary/40 ${
+            className={`relative block w-10 h-6 shrink-0 rounded-full transition-colors group-focus-visible:ring-2 group-focus-visible:ring-primary ${
               pauseOn && isApproved ? "bg-primary" : "bg-border"
             }`}
           >
@@ -703,7 +703,7 @@ export default function ProducerDashboardPage() {
                 // offered a value the server would then reject.
                 min={israelToday()}
                 onChange={(e) => { setVacationUntil(e.target.value); setVacationDateError(""); }}
-                className="border border-border rounded-sm px-3 py-1.5 text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                className="border border-border rounded-sm px-3 py-1.5 text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                 dir="ltr"
                 aria-invalid={vacationDateError ? "true" : undefined}
                 aria-describedby={vacationDateError ? "vacation-until-error" : undefined}

@@ -55,7 +55,7 @@ function MethodTile({ method, on, label, onToggle }) {
       aria-pressed={on}
       onClick={onToggle}
       data-testid={`payment-method-${method}`}
-      className={`relative flex flex-col items-center justify-center gap-1.5 min-h-[72px] rounded-lg px-2 py-3 text-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${
+      className={`relative flex flex-col items-center justify-center gap-1.5 min-h-[72px] rounded-lg px-2 py-3 text-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
         on ? "bg-green-50 text-primary font-medium ring-2 ring-primary" : "bg-background-alt text-text hover:bg-green-50"
       }`}
     >
@@ -83,7 +83,7 @@ function SelectAllSwitch({ on, label, onToggle }) {
       >
         <span
           aria-hidden="true"
-          className={`relative block w-10 h-6 rounded-full transition-colors group-focus-visible:ring-2 group-focus-visible:ring-primary/40 ${on ? "bg-primary" : "bg-border"}`}
+          className={`relative block w-10 h-6 rounded-full transition-colors group-focus-visible:ring-2 group-focus-visible:ring-primary ${on ? "bg-primary" : "bg-border"}`}
         >
           <span
             className={`absolute top-1 w-4 h-4 rounded-full bg-surface shadow-sm transition-all ${on ? "end-1" : "start-1"}`}
@@ -190,7 +190,7 @@ export default function PaymentInfoEditor({ profile, onSave, reportDirty = () =>
                 aria-pressed={on}
                 onClick={() => toggleTiming(k)}
                 data-testid={`payment-timing-${k}`}
-                className={`min-h-touch rounded-full px-4 text-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${
+                className={`min-h-touch rounded-full px-4 text-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
                   on ? "bg-primary text-white font-medium" : "bg-background-alt text-text hover:bg-green-50"
                 }`}
               >

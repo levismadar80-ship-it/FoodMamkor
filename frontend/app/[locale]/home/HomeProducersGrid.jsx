@@ -253,7 +253,7 @@ export function HomeProducersGrid({
         </SectionHeading>
         {/* MEH-2598: the active chips ride along (lib/filter-url), so the map
             opens on the same search the grid is showing. */}
-        <Link href={`/map${chipsToQuery(chips)}`} data-testid="home-map-link" className="text-primary hover:underline flex items-center gap-1 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40">
+        <Link href={`/map${chipsToQuery(chips)}`} data-testid="home-map-link" className="text-primary hover:underline flex items-center gap-1 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
           <MapPin size={14} className="text-current" />
           {t("home.producers.map_link")}
         </Link>
@@ -428,7 +428,7 @@ export function HomeProducersGrid({
               // span that the bare aria-label suppresses, so with an attribute
               // tag also active the two buttons were indistinguishable by name.
               aria-label={`${t("home.producers.clear_filter")} ${activeCategory.name}`}
-              className="inline-flex items-center gap-1 bg-green-50 text-primary ps-3 pe-2 py-1 rounded-full text-sm hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+              className="inline-flex items-center gap-1 bg-green-50 text-primary ps-3 pe-2 py-1 rounded-full text-sm hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
             >
               <span>{activeCategory.name}</span>
               <X size={12} weight="bold" aria-hidden="true" />
@@ -631,7 +631,7 @@ export function HomeProducersGrid({
                 <Link
                   href={filters.delivery_city ? `/recommend?city=${encodeURIComponent(filters.delivery_city)}` : "/recommend"}
                   data-testid="recommend-link-home-empty"
-                  className="inline-flex items-center gap-1 min-h-touch text-sm font-semibold text-primary underline underline-offset-4 hover:text-primary-dark rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                  className="inline-flex items-center gap-1 min-h-touch text-sm font-semibold text-primary underline underline-offset-4 hover:text-primary-dark rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                 >
                   {t("nav.footer.recommend")}
                   <ArrowLeft size={15} className="ltr:rotate-180" aria-hidden="true" />
@@ -669,7 +669,7 @@ export function HomeProducersGrid({
               <Link
                 href="/recommend"
                 data-testid="recommend-link-home"
-                className="inline-flex items-center gap-1 min-h-touch text-sm font-semibold text-primary underline underline-offset-4 hover:text-primary-dark rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                className="inline-flex items-center gap-1 min-h-touch text-sm font-semibold text-primary underline underline-offset-4 hover:text-primary-dark rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
               >
                 {t("nav.footer.recommend")}
                 <ArrowLeft size={15} className="ltr:rotate-180" aria-hidden="true" />

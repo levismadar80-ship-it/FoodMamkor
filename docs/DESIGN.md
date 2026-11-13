@@ -412,16 +412,22 @@ lift on hover** (that is a SaaS pattern, off-brand). Cards are white surfaces on
 cream with a `border #E5DFD3` hairline; that tonal contrast is the entire
 elevation language.
 
-**Three shadows, for things that float (MEH-3060, 13/11/2026).** `shadow-sm` =
+**Three shadows, for things that float (MEH-3067, 13/11/2026).** `shadow-sm` =
 a resting float (sticky bar, toggle knob); `shadow-lg` = menus, popovers,
 floating buttons; `shadow-xl` = modals and sheets. Nothing else — no bare
 `shadow`, no `shadow-md`/`2xl`, no arbitrary `shadow-[…]` (the cookie banner's
-upward shadow is the one exemption). Cards stay flat.
+upward shadow is the one design exemption). Cards stay flat.
 
-**One disabled look, one focus look (MEH-3060).** Disabled = `disabled:opacity-50`.
-Keyboard focus = a 2px ring on `focus-visible` (never plain `focus:`), coloured
-`primary/40` on cream/white, `gold-on-dark` on the green bands, `white/70` on
-photos, `black/40` on the Apple button, `danger-400/40` on a destructive action.
+**One disabled look, one focus look (MEH-3067).** Disabled = `opacity-50` on
+every disabled variant (`disabled:`, `aria-disabled:`, `group-disabled:`).
+Keyboard focus = a 2px ring on `focus-visible` (or `focus-within` on an input
+wrapper; never plain `focus:`), **solid** `primary` on cream/white — the old 40%
+ring measured ~1.8:1 on cream, under WCAG 1.4.11's 3:1 — with
+`ring-offset-2` when the element itself is green; `gold-on-dark` on the green
+bands, `white/70` on photos, `black/40` on the Apple button, `danger-400/40` on
+a destructive action. `.focus-ring` is the same look as a class. Files other
+open PRs own on 13/11 (ProductSheet, ProducerSections, HistoryBackLink) are
+exempt until those land.
 `StateTokensGuard.test.js` reds anything else.
 
 ### State management — opacity-on-cream + fg-muted (ADR-019)

@@ -187,7 +187,7 @@ export default function ImageGallery({ images = [], producerId = null, producerN
                         solid surface-card fill it measures 5.19:1. Same idiom as the
                         icon-only chip branch in BadgeRow.jsx (bg-surface-card +
                         border-accent/40 + text-accent). */}
-                    <span className="inline-flex items-center gap-1 rounded-full border border-accent/40 bg-surface-card text-accent text-sm px-2.5 py-0.5 font-medium group-focus-visible:ring-2 group-focus-visible:ring-primary/40 transition">
+                    <span className="inline-flex items-center gap-1 rounded-full border border-accent/40 bg-surface-card text-accent text-sm px-2.5 py-0.5 font-medium group-focus-visible:ring-2 group-focus-visible:ring-primary transition">
                       <SealCheck size={16} aria-hidden="true" />
                       {tBadge("verified_label")}
                     </span>
@@ -287,7 +287,7 @@ export default function ImageGallery({ images = [], producerId = null, producerN
           type="button"
           onClick={(e) => openLightbox(0, e.currentTarget)}
           aria-label={t("open_aria", { current: 1 })}
-          className={`relative overflow-hidden bg-gray-100 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/40 ${
+          className={`relative overflow-hidden bg-gray-100 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary ${
             images.length >= 3 ? "row-span-2" : ""
           }`}
           data-testid="gallery-grid-hero"
@@ -321,7 +321,7 @@ export default function ImageGallery({ images = [], producerId = null, producerN
                   ? t("view_all", { n: images.length })
                   : t("open_aria", { current: idx + 1 })
               }
-              className="relative overflow-hidden bg-gray-100 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/40"
+              className="relative overflow-hidden bg-gray-100 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary"
               data-testid={isPillCell ? "gallery-grid-pill-cell" : "gallery-grid-cell"}
             >
               <ImageWithFallback
@@ -359,7 +359,7 @@ export default function ImageGallery({ images = [], producerId = null, producerN
         type="button"
         onClick={(e) => openLightbox(current, e.currentTarget)}
         aria-label={t("open_aria", { current: current + 1 })}
-        className="absolute inset-0 w-full h-full focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/40"
+        className="absolute inset-0 w-full h-full focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary"
       >
         <ImageWithFallback
           src={images[current]}

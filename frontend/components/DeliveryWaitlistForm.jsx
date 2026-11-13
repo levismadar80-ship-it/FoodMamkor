@@ -134,7 +134,7 @@ export default function DeliveryWaitlistForm({ producer = null, city = "", descr
           onClick={() => setPhase("open")}
           data-testid="delivery-waitlist-cta"
           aria-describedby={describedBy}
-          className="inline-flex items-center gap-1.5 min-h-touch rounded-full border border-primary/20 bg-surface px-3 text-sm font-medium text-primary transition hover:bg-green-50 focus-visible:ring-2 focus-visible:ring-primary/40"
+          className="inline-flex items-center gap-1.5 min-h-touch rounded-full border border-primary/20 bg-surface px-3 text-sm font-medium text-primary transition hover:bg-green-50 focus-visible:ring-2 focus-visible:ring-primary"
         >
           <BellRinging
             size={16}
@@ -175,7 +175,7 @@ export default function DeliveryWaitlistForm({ producer = null, city = "", descr
           data-testid="delivery-waitlist-email"
           /* MEH-976 pattern: plaintext bidi so a Hebrew placeholder reads RTL
              and the typed Latin address LTR, without flipping the field. */
-          className="flex-1 min-h-touch rounded-full border border-primary/15 bg-surface px-4 text-sm [unicode-bidi:plaintext] focus:border-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+          className="flex-1 min-h-touch rounded-full border border-primary/15 bg-surface px-4 text-sm [unicode-bidi:plaintext] focus:border-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
         />
         <Button
           type="submit"

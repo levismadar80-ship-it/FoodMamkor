@@ -58,7 +58,7 @@ const SHARE_TONE = {
 };
 
 const CARD_CLASSES =
-  "flex flex-col items-center justify-center gap-1.5 rounded-xl border border-border bg-surface-card px-2 py-3 min-h-[72px] text-xs font-medium text-text text-center leading-tight hover:border-primary transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40";
+  "flex flex-col items-center justify-center gap-1.5 rounded-xl border border-border bg-surface-card px-2 py-3 min-h-[72px] text-xs font-medium text-text text-center leading-tight hover:border-primary transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary";
 
 /**
  * @param {object} props
@@ -131,7 +131,7 @@ export default function ShareSiteActions({
       type="button"
       onClick={share}
       data-testid="share-native"
-      className={`flex w-full items-center justify-center gap-2 rounded-lg ${SHARE_TONE[tone] ?? SHARE_TONE.light} ${layout === "full" ? "min-h-[52px] text-base" : "min-h-touch text-sm"} px-4 font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40`}
+      className={`flex w-full items-center justify-center gap-2 rounded-lg ${SHARE_TONE[tone] ?? SHARE_TONE.light} ${layout === "full" ? "min-h-[52px] text-base" : "min-h-touch text-sm"} px-4 font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary`}
     >
       <ShareNetwork size={18} aria-hidden="true" />
       {tShare("trigger")}

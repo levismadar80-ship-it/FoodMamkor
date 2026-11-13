@@ -177,7 +177,7 @@ export default function AlertPrefsPanel({ producerId, producerName, onClose }) {
         role="switch"
         aria-checked={prefs[key]}
         onClick={() => toggle(key)}
-        className={`relative w-10 h-6 rounded-full transition-colors focus-visible:ring-2 focus-visible:ring-primary/40 ${
+        className={`relative w-10 h-6 rounded-full transition-colors focus-visible:ring-2 focus-visible:ring-primary ${
           prefs[key] ? "bg-primary" : "bg-border"
         }`}
       >
@@ -261,7 +261,7 @@ export default function AlertPrefsPanel({ producerId, producerName, onClose }) {
                 placeholder={t("phone_placeholder")}
                 dir="ltr"
                 aria-label={t("phone_required_prompt")}
-                className="w-full border border-border rounded-sm px-3 py-2 text-sm text-start outline-none focus:border-primary focus-visible:ring-2 focus-visible:ring-primary/40 transition"
+                className="w-full border border-border rounded-sm px-3 py-2 text-sm text-start outline-none focus:border-primary focus-visible:ring-2 focus-visible:ring-primary transition"
               />
               {/* MEH-1359: the save button is disabled until the phone is valid — say
                   why, so the greyed-out state isn't an unexplained dead end. */}

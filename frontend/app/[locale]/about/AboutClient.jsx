@@ -140,7 +140,7 @@ function ExitLink({ href, testId, children, spacing = "mt-8" }) {
     <LocaleLink
       href={href}
       data-testid={testId}
-      className={`${spacing} inline-flex items-center gap-1 font-body-md font-semibold text-primary underline underline-offset-4 hover:text-primary-dark rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40`}
+      className={`${spacing} inline-flex items-center gap-1 font-body-md font-semibold text-primary underline underline-offset-4 hover:text-primary-dark rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary`}
     >
       {children}
       <ArrowLeft size={15} aria-hidden="true" />
@@ -376,7 +376,7 @@ export default function AboutPage() {
               href="/about/for-businesses"
               data-testid="about-biz-strip"
               aria-labelledby="about-biz-lead about-biz-cta"
-              className="inline-flex items-center gap-1 font-body-md font-semibold text-primary underline underline-offset-4 hover:text-primary-dark rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+              className="inline-flex items-center gap-1 font-body-md font-semibold text-primary underline underline-offset-4 hover:text-primary-dark rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
             >
               <span id="about-biz-cta">{tAbout("biz_strip")}</span>
               <ArrowLeft size={15} aria-hidden="true" />
@@ -597,7 +597,7 @@ export default function AboutPage() {
                 <LocaleLink
                   href="/about/process"
                   data-testid="verification-process-link"
-                  className="mt-3 inline-flex min-h-touch items-center gap-1 font-body-md font-semibold text-primary underline underline-offset-4 hover:text-primary-dark rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                  className="mt-3 inline-flex min-h-touch items-center gap-1 font-body-md font-semibold text-primary underline underline-offset-4 hover:text-primary-dark rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                 >
                   {tProcess("crosslink_from_about")}
                   <ArrowLeft size={15} aria-hidden="true" />
@@ -644,7 +644,7 @@ export default function AboutPage() {
           <LocaleLink
             href="/about/badges"
             data-testid="about-badges-link"
-            className="mt-5 inline-flex min-h-touch items-center gap-1 font-body-md font-semibold text-primary underline underline-offset-4 hover:text-primary-dark rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+            className="mt-5 inline-flex min-h-touch items-center gap-1 font-body-md font-semibold text-primary underline underline-offset-4 hover:text-primary-dark rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
           >
             {t("badges_link.label")}
             <ArrowLeft size={15} aria-hidden="true" />
@@ -743,7 +743,7 @@ export default function AboutPage() {
               Mirrors the testimonials-CTA link treatment. */}
           <Link
             href="/messages"
-            className="inline-flex items-center gap-2 mt-4 text-primary font-semibold hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 rounded"
+            className="inline-flex items-center gap-2 mt-4 text-primary font-semibold hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded"
           >
             {t("messages_link")}
             <ArrowLeft size={18} aria-hidden="true" />
@@ -758,7 +758,7 @@ export default function AboutPage() {
             <Link
               href="/contact"
               data-testid="about-contact-link"
-              className="inline-flex items-center gap-2 min-h-[48px] px-6 py-3 bg-primary text-background rounded-full font-body-md font-semibold hover:bg-primary-dark transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2"
+              className="inline-flex items-center gap-2 min-h-[48px] px-6 py-3 bg-primary text-background rounded-full font-body-md font-semibold hover:bg-primary-dark transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
             >
               {tNav("contact")}
               <ArrowLeft size={18} aria-hidden="true" />

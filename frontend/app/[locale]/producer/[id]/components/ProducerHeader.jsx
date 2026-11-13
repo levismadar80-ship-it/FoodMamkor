@@ -251,7 +251,7 @@ export default function ProducerHeader({
         // pull-quote — is ALSO an `a[href="#reviews"]` inside this header, so
         // an href selector resolves to two elements; the id keeps them apart.
         data-testid="trust-strip-rating"
-        className="inline-flex items-center gap-1.5 rounded text-text hover:text-primary focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/40 transition-colors"
+        className="inline-flex items-center gap-1.5 rounded text-text hover:text-primary focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary transition-colors"
       >
         <Star size={18} weight="fill" className="text-accent" aria-hidden="true" />
         <span className="numeric font-headline-md text-lg font-bold" dir="ltr">

@@ -681,7 +681,7 @@ export default function ProducerForm({ initial = null, producerId = null }) {
                   type="button"
                   onClick={handleGooglePlaceSearch}
                   disabled={placeSearching}
-                  className="rounded-lg border border-border px-3 py-1.5 text-sm text-text hover:bg-background-alt disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                  className="rounded-lg border border-border px-3 py-1.5 text-sm text-text hover:bg-background-alt disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                 >
                   {placeSearching
                     ? t("producers.form.fields.google_place_searching")
@@ -709,7 +709,7 @@ export default function ProducerForm({ initial = null, producerId = null }) {
                           <button
                             type="button"
                             onClick={() => pickPlaceCandidate(c.place_id)}
-                            className="w-full rounded-lg border border-border p-2.5 text-start text-sm hover:bg-background-alt focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                            className="w-full rounded-lg border border-border p-2.5 text-start text-sm hover:bg-background-alt focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                           >
                             <span className="block font-medium text-text">
                               {c.display_name}

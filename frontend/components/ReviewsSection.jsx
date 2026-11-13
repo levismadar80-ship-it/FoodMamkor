@@ -215,7 +215,7 @@ function ReviewReply({ review, isOwner, onSaved }) {
           rows={2}
           maxLength={1000}
           placeholder={t("reply_placeholder")}
-          className="w-full border border-border rounded-sm px-3 py-2 bg-surface resize-none focus-visible:ring-2 focus-visible:ring-primary/40 outline-none text-sm"
+          className="w-full border border-border rounded-sm px-3 py-2 bg-surface resize-none focus-visible:ring-2 focus-visible:ring-primary outline-none text-sm"
         />
         {error && (
           <p className="text-sm text-error mt-1" role="alert">{error}</p>
@@ -703,7 +703,7 @@ export default function ReviewsSection({
                 onChange={(e) => setBody(e.target.value)}
                 rows={4}
                 maxLength={500}
-                className="w-full border border-border rounded-xl px-3 py-2.5 bg-surface-card resize-none focus-visible:ring-2 focus-visible:ring-primary/40 outline-none"
+                className="w-full border border-border rounded-xl px-3 py-2.5 bg-surface-card resize-none focus-visible:ring-2 focus-visible:ring-primary outline-none"
                 placeholder={t("body_placeholder")}
               />
               <p className="text-xs text-fg-muted mt-1">{body.length}/500</p>

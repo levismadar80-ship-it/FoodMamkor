@@ -93,7 +93,7 @@ export default function ReservistOwnedCard({ profile, onSave }) {
         >
           <span
             aria-hidden="true"
-            className={`relative block w-10 h-6 rounded-full transition-colors group-focus-visible:ring-2 group-focus-visible:ring-primary/40 ${checked ? "bg-primary" : "bg-border"}`}
+            className={`relative block w-10 h-6 rounded-full transition-colors group-focus-visible:ring-2 group-focus-visible:ring-primary ${checked ? "bg-primary" : "bg-border"}`}
           >
             <span
               className={`absolute top-1 w-4 h-4 rounded-full bg-surface shadow-sm transition-all ${

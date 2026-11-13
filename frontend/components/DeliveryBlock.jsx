@@ -21,7 +21,7 @@ const LIST_CARD =
   "divide-y divide-border rounded-2xl border border-border bg-surface-card overflow-hidden";
 // MEH-2592 C: the 44px logo circles (Waze, Google Maps) on each pickup stop.
 const NAV_CIRCLE =
-  "inline-flex items-center justify-center w-11 h-11 rounded-full border border-border bg-surface transition hover:bg-green-50 focus-visible:ring-2 focus-visible:ring-primary/40";
+  "inline-flex items-center justify-center w-11 h-11 rounded-full border border-border bg-surface transition hover:bg-green-50 focus-visible:ring-2 focus-visible:ring-primary";
 
 // Index-aligned with lib/orderWindow.js ORDER_DAY_KEYS — resolves a cutoff
 // dayIndex to the opening_hours.weekdays.* label ("יום רביעי" / "Wednesday").
@@ -281,7 +281,7 @@ function PickupRow({ loc, t, tMap }) {
           <a
             href={telHref}
             dir="ltr"
-            className="inline-flex items-center gap-1 min-h-touch text-sm font-medium text-primary hover:underline focus-visible:ring-2 focus-visible:ring-primary/40 rounded"
+            className="inline-flex items-center gap-1 min-h-touch text-sm font-medium text-primary hover:underline focus-visible:ring-2 focus-visible:ring-primary rounded"
           >
             <Phone size={14} aria-hidden="true" />
             {phone}

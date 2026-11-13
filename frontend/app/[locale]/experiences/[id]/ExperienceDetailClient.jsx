@@ -201,7 +201,7 @@ export default function ExperienceDetailClient() {
   const infoRow = "flex items-center gap-3 px-4 py-3";
   const infoIcon = "shrink-0 w-9 h-9 rounded-md bg-surface-card text-accent grid place-items-center";
   const actionBtn =
-    "flex-1 inline-flex items-center justify-center gap-2 min-h-[46px] px-3 rounded-full border border-primary text-primary text-sm font-semibold hover:bg-green-50 transition focus-visible:ring-2 focus-visible:ring-primary/40";
+    "flex-1 inline-flex items-center justify-center gap-2 min-h-[46px] px-3 rounded-full border border-primary text-primary text-sm font-semibold hover:bg-green-50 transition focus-visible:ring-2 focus-visible:ring-primary";
 
   return (
     <div className="pb-12" data-testid="experience-detail">

@@ -29,7 +29,7 @@ import {
  */
 
 const OUTLINE =
-  "bg-surface text-text border border-primary hover:bg-green-50 focus-visible:ring-primary/40";
+  "bg-surface text-text border border-primary hover:bg-green-50 focus-visible:ring-primary";
 
 // Instagram glyph, multicolour. Drawn to the glyph's own geometry (rounded
 // square, lens, flash dot) and NOT recoloured or reshaped beyond the official
@@ -99,12 +99,12 @@ const CTA_VARIANTS = {
   whatsapp: { Icon: phosphor(WhatsappLogo), className: "btn-whatsapp" },
   phone: {
     Icon: phosphor(Phone),
-    className: "bg-primary text-white hover:bg-primary-dark focus-visible:ring-primary/40",
+    className: "bg-primary text-white hover:bg-primary-dark focus-visible:ring-primary focus-visible:ring-offset-2",
   },
   website: { Icon: phosphor(Globe), className: OUTLINE },
   email: {
     Icon: phosphor(EnvelopeSimple),
-    className: "bg-primary-dark text-white hover:bg-primary focus-visible:ring-primary/40",
+    className: "bg-primary-dark text-white hover:bg-primary focus-visible:ring-primary focus-visible:ring-offset-2",
   },
   instagram: { Icon: InstagramGlyph, className: OUTLINE },
   facebook: { Icon: FacebookGlyph, className: OUTLINE },

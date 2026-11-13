@@ -458,7 +458,7 @@ function PendingPhotoThumb({ url, index, producerName, t }) {
       target="_blank"
       rel="noopener noreferrer"
       title={alt}
-      className="relative block shrink-0 rounded-sm overflow-hidden border border-border bg-background focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+      className="relative block shrink-0 rounded-sm overflow-hidden border border-border bg-background focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
       style={{ width: PENDING_THUMB_PX, height: PENDING_THUMB_PX }}
     >
       {broken ? (

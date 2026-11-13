@@ -962,7 +962,7 @@ export default function ProducersClient({
         <Link
           href={`/map${chipsToQuery(chips)}`}
           data-testid="producers-map-link"
-          className="shrink-0 text-primary hover:underline flex items-center gap-1 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+          className="shrink-0 text-primary hover:underline flex items-center gap-1 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
         >
           <MapPin size={14} className="text-current" aria-hidden="true" />
           {t("title.map_link")}
@@ -979,7 +979,7 @@ export default function ProducersClient({
         <label htmlFor="producers-search-input" className="sr-only">
           {t("search_input.label")}
         </label>
-        <div className="flex-1 min-w-0 flex items-center gap-2 border border-border rounded-full px-4 min-h-touch bg-surface focus-within:ring-2 focus-within:ring-primary/40">
+        <div className="flex-1 min-w-0 flex items-center gap-2 border border-border rounded-full px-4 min-h-touch bg-surface focus-within:ring-2 focus-within:ring-primary">
           <MagnifyingGlass size={18} weight="regular" aria-hidden="true" className="text-fg-muted" />
           <input
             id="producers-search-input"
@@ -1196,7 +1196,7 @@ export default function ProducersClient({
               aria-busy={geoSortPending || undefined}
               aria-label={t("sort.aria_label")}
               data-testid="producers-sort"
-              className="appearance-none bg-transparent border-0 font-medium text-primary min-h-touch ps-1 pe-6 cursor-pointer rounded-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-1 disabled:opacity-50"
+              className="appearance-none bg-transparent border-0 font-medium text-primary min-h-touch ps-1 pe-6 cursor-pointer rounded-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1 disabled:opacity-50"
             >
               <option value="newest">{t("sort.newest")}</option>
               {ratingSortEnabled && <option value="rating">{t("sort.top_rated")}</option>}
@@ -1343,7 +1343,7 @@ export function FilterEmptyState({ onClear, onPickCategory, searchQ, categories 
           <Link
             href={`/recommend?name=${encodeURIComponent(searchQ)}`}
             data-testid="recommend-link-search"
-            className="inline-flex items-center gap-1 min-h-touch text-sm font-semibold text-primary underline underline-offset-4 hover:text-primary-dark rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+            className="inline-flex items-center gap-1 min-h-touch text-sm font-semibold text-primary underline underline-offset-4 hover:text-primary-dark rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
           >
             {tNav("recommend")}
             <ArrowLeft size={15} className="ltr:rotate-180" aria-hidden="true" />

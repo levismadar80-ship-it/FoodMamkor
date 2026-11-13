@@ -207,7 +207,7 @@ export default function CategorySelector({ categories, selectedIds, onChange, on
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder={t("search_placeholder")}
-          className="w-full border border-border rounded-sm ps-[46px] pe-3 py-2 text-base bg-surface-card text-text focus:outline-none focus:border-primary focus-visible:ring-2 focus-visible:ring-primary/40 transition"
+          className="w-full border border-border rounded-sm ps-[46px] pe-3 py-2 text-base bg-surface-card text-text focus:outline-none focus:border-primary focus-visible:ring-2 focus-visible:ring-primary transition"
           dir="rtl"
         />
       </div>

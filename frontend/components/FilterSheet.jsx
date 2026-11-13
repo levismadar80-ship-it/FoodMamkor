@@ -250,7 +250,7 @@ export default function FilterSheet({
         // longer label overflow VISIBLY (one pill wider than its
         // column) instead of silently growing every pill's height,
         // which is the failure this constraint exists to catch.
-        className={`flex items-center justify-center gap-1.5 min-h-touch lg:min-h-[36px] rounded-full border px-2.5 py-2 lg:py-1 text-sm lg:text-sm font-medium whitespace-nowrap transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${extraClass} ${
+        className={`flex items-center justify-center gap-1.5 min-h-touch lg:min-h-[36px] rounded-full border px-2.5 py-2 lg:py-1 text-sm lg:text-sm font-medium whitespace-nowrap transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${extraClass} ${
           active
             ? "bg-primary text-white border-primary"
             : "bg-surface text-text border-border hover:border-primary"
@@ -417,7 +417,7 @@ export default function FilterSheet({
                                 >
                                   <span
                                     aria-hidden="true"
-                                    className="inline-flex items-center justify-center w-5 h-5 rounded-full border border-fg-muted/40 text-2xs leading-none transition group-hover:bg-fg-muted/10 group-focus-visible:ring-2 group-focus-visible:ring-primary/40"
+                                    className="inline-flex items-center justify-center w-5 h-5 rounded-full border border-fg-muted/40 text-2xs leading-none transition group-hover:bg-fg-muted/10 group-focus-visible:ring-2 group-focus-visible:ring-primary"
                                   >
                                     i
                                   </span>
@@ -506,7 +506,7 @@ export default function FilterSheet({
                             >
                               <span
                                 aria-hidden="true"
-                                className="inline-flex items-center justify-center w-5 h-5 rounded-full border border-fg-muted/40 text-2xs leading-none transition group-hover:bg-fg-muted/10 group-focus-visible:ring-2 group-focus-visible:ring-primary/40"
+                                className="inline-flex items-center justify-center w-5 h-5 rounded-full border border-fg-muted/40 text-2xs leading-none transition group-hover:bg-fg-muted/10 group-focus-visible:ring-2 group-focus-visible:ring-primary"
                               >
                                 i
                               </span>
@@ -528,7 +528,7 @@ export default function FilterSheet({
                       // rewritten around a different query.
                       data-testid={`chip-${chip.key}`}
                       onClick={() => onToggleChip(chip.key)}
-                      className="flex flex-1 items-center justify-between gap-3 min-h-touch lg:min-h-[36px] py-1.5 lg:py-1 text-start rounded-md hover:bg-background-alt focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 transition-colors"
+                      className="flex flex-1 items-center justify-between gap-3 min-h-touch lg:min-h-[36px] py-1.5 lg:py-1 text-start rounded-md hover:bg-background-alt focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary transition-colors"
                     >
                       <span className="flex items-center gap-2 text-sm lg:text-sm font-medium text-text">
                         {icon && <span aria-hidden="true">{icon}</span>}
