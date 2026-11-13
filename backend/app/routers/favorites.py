@@ -1,9 +1,10 @@
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, joinedload
 
+from app.rate_limit import limiter
 from app.auth import get_current_user
 from app.database import get_db
 from app.models import Favorite, Producer, User
@@ -65,7 +66,9 @@ def get_favorites(
 
 
 @router.post("/{producer_id}", status_code=201)
+@limiter.limit("60/minute")  # MEH-3022
 def add_favorite(
+    request: Request,  # required by slowapi (MEH-3022)
     producer_id: UUID,
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
@@ -97,7 +100,9 @@ def add_favorite(
 
 
 @router.delete("/{producer_id}")
+@limiter.limit("60/minute")  # MEH-3022
 def remove_favorite(
+    request: Request,  # required by slowapi (MEH-3022)
     producer_id: UUID,
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
