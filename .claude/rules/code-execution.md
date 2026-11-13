@@ -157,7 +157,8 @@ hook enforcement here; if drift becomes a problem, open a follow-up for
 An agent reads a big file in slices and misses what is outside the slice.
 
 - **New source file ≤ 1,500 lines** — `scripts/checks/file-size-ratchet.sh`
-  fails above that (tests, alembic, seed scripts and `lib/generated/` excluded).
+  fails above that (scans `backend/app`, `frontend/{app,components,lib}`; tests and
+  `lib/generated/` excluded).
 - **A file in `scripts/checks/file-size-baseline.txt` does not grow.** When a
   task touches one, put the new or changed part in its own module and import it
   (a router helper → `backend/app/services/`, a dashboard card → its own file).
