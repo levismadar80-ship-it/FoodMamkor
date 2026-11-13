@@ -314,6 +314,16 @@ the locked sentence at every count, plus «N בתי עסק שהצטרפו עד �
 the numeral in the line's own face, semibold, `text-primary`; a three-column
 fact row was tried and rejected (07/11). See [ADR-039](./decisions/ADR-039-display-numerals.md).
 
+**A page row's heading is `<SectionHeading>` (MEH-3020, 13/11/2026).**
+`components/ui/SectionHeading.jsx` is the one size for a sibling row's h2:
+`headline-lg` (Frank Ruhl 900, 32px). Every home row goes through it; its
+`className` takes layout only (margin, alignment), never a size, weight or
+family. Until 13/11 each home row chose its own size (24 / 32 / 48 / a 20px sans
+caption) and «גלו לפי קטגוריה» carried the h1 display size.
+`HomeSectionHeadingGuard.test.js` fails on a raw `<h2>` in a home file or a size
+class on `<SectionHeading>`. A full-bleed band (the green «היכרות» band) is not
+a row and keeps its own h2.
+
 **Headings never strand one word on the last line** — `h1, h2, h3` carry
 `text-wrap: balance` in `globals.css` (MEH-2488). **Hebrew is never
 letter-spaced** (no `tracking-*` on Hebrew; MEH-2488 removed the last two:
