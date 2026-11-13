@@ -249,6 +249,17 @@ function buildSteps(producer, missingLabels) {
       required: false,
       href: `${EDIT_HUB}#locations`,
     },
+    // MEH-3032: the owner's own photo — the face on the public OwnerCard
+    // (Airbnb «meet your host», Etsy «meet the owner»). Recommended, and
+    // card-only like products (MEH-1106 B1): it never enters the shared
+    // heuristic, so the admin list, the QR-card gate and the dashboard's
+    // isComplete are unaffected. Same trim as OwnerCard.jsx:42 reads it with.
+    {
+      key: "owner_photo",
+      done: !!producer.owner_photo_url?.trim(),
+      required: false,
+      href: `${EDIT_HUB}#owner-story`,
+    },
   ];
 }
 
