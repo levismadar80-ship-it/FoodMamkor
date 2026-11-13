@@ -23,6 +23,8 @@ vi.mock("next/image", () => ({
 // CategoryRequestModal / EventForm suites use — the link's behaviour is
 // CollectionNotice.test.jsx's job; this file is about the nav groups.
 vi.mock("@/i18n/navigation", () => ({
+  // MEH-3059: Footer prefetches «כל בתי העסק» on intent via router.prefetch.
+  useRouter: () => ({ prefetch: () => {} }),
   Link: ({ href, children, ...rest }) => (
     <a href={typeof href === "string" ? href : "#"} {...rest}>
       {children}

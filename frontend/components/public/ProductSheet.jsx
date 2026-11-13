@@ -308,7 +308,7 @@ export default function ProductSheet({
 
   const img = product.image_url
     ? optimizeCloudinary(product.image_url, {
-        aspectRatio: IMAGE_RATIOS.square,
+        aspectRatio: IMAGE_RATIOS.card, // MEH-3021: 4:3, so a photo never fills the screen
         width: 640,
       })
     : null;
@@ -454,7 +454,7 @@ export default function ProductSheet({
               ~60% of the panel. It collapses to a short band instead. */}
           <div
             className={`relative w-full overflow-hidden rounded-t-2xl bg-background ${
-              hasPhoto ? "aspect-square" : "h-28"
+              hasPhoto ? "aspect-[4/3]" : "h-28"
             }`}
             onTouchStart={canPage ? onTouchStart : undefined}
             onTouchEnd={canPage ? onTouchEnd : undefined}
