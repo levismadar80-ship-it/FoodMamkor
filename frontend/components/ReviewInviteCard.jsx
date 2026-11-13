@@ -18,6 +18,9 @@ import { Link } from "@/i18n/navigation";
  *           server half in reviews.py, MEH-2204) and consumes the kept star
  *           (takeDraftStars). Never shown to the owner.
  * Modes:
+ *   "write"   — may write (contacted, or holds an invite link). The same row;
+ *               a star opens the form with that rating, and inside the open
+ *               form (bare) the stars ARE the rating picker.
  *   "login"   — guest. Each star is a link to sign in; the login page
  *               returns to this page's #reviews (ReviewsSection builds it).
  *   "contact" — signed in, has not contacted the business yet. Each star
@@ -62,7 +65,7 @@ function scrollToContactCard() {
 const STAR_TAP =
   "inline-flex min-h-touch min-w-touch items-center justify-center rounded-lg transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40";
 
-function InviteStar({ value, lit, mode, loginHref, producerId, ariaLabel, onHover }) {
+function InviteStar({ value, lit, mode, loginHref, producerId, ariaLabel, onHover, onPick, pressed }) {
   const icon = (
     <Star
       size={STAR_SIZE}
@@ -88,6 +91,13 @@ function InviteStar({ value, lit, mode, loginHref, producerId, ariaLabel, onHove
       </Link>
     );
   }
+  if (mode === "write") {
+    return (
+      <button type="button" aria-pressed={pressed} onClick={() => onPick(value)} {...common}>
+        {icon}
+      </button>
+    );
+  }
   return (
     <button
       type="button"
@@ -102,14 +112,22 @@ function InviteStar({ value, lit, mode, loginHref, producerId, ariaLabel, onHove
   );
 }
 
-export default function ReviewInviteCard({ mode, loginHref, producerId, producerName }) {
+/**
+ * @param {object} p
+ * @param {"login"|"contact"|"write"} p.mode  write = may write: a star calls
+ *   onPick (opens the form / sets the rating); value = the chosen rating.
+ * @param {boolean} [p.bare]  inside the form, which draws the hairline itself.
+ */
+export default function ReviewInviteCard(p) {
+  const { mode, loginHref, producerId, producerName, value = 0, onPick, bare, testId } = p;
   const t = useTranslations("reviews");
   const [hovered, setHovered] = useState(0);
   const title = t("invite_title", { name: producerName || "" });
+  const shown = hovered || (mode === "write" ? value : 0);
   return (
     <div
-      className="mt-8 border-t border-border pt-5"
-      data-testid="reviews-write-hint"
+      className={bare ? "" : "mt-8 border-t border-border pt-5"}
+      data-testid={testId || "reviews-write-hint"}
       data-mode={mode}
     >
       <div className="flex items-center gap-3.5">
@@ -136,7 +154,9 @@ export default function ReviewInviteCard({ mode, loginHref, producerId, producer
               <InviteStar
                 key={i}
                 value={i + 1}
-                lit={i < hovered}
+                lit={i < shown}
+                pressed={mode === "write" ? value === i + 1 : undefined}
+                onPick={onPick}
                 mode={mode}
                 loginHref={loginHref}
                 producerId={producerId}
@@ -148,10 +168,12 @@ export default function ReviewInviteCard({ mode, loginHref, producerId, producer
           </div>
         </div>
       </div>
-      <p className="mt-2 flex items-center gap-1.5 text-sm text-fg-muted">
-        <ShieldCheck size={16} className="flex-none text-primary" aria-hidden="true" />
-        {t("invite_hint")}
-      </p>
+      {mode !== "write" && (
+        <p className="mt-2 flex items-center gap-1.5 text-sm text-fg-muted">
+          <ShieldCheck size={16} className="flex-none text-primary" aria-hidden="true" />
+          {t("invite_hint")}
+        </p>
+      )}
     </div>
   );
 }

@@ -293,13 +293,12 @@ describe("ReviewsSection — WA re-ping on form open (MEH-1426)", () => {
     localStorage.setItem(`wa_clicked_${PID}`, "1");
     mockReviews([]);
     render(<ReviewsSection producerId={PID} />);
-    const btn = await screen.findByText("write_cta");
-    fireEvent.click(btn);
+    fireEvent.click(await screen.findByTestId("reviews-star-5"));
     expect(pingWhatsAppBeacon).toHaveBeenCalledTimes(1);
     expect(pingWhatsAppBeacon).toHaveBeenCalledWith(PID);
     // Close and reopen — the re-ping must not fire a second time (once per mount).
     fireEvent.click(await screen.findByText("ביטול"));
-    fireEvent.click(await screen.findByText("write_cta"));
+    fireEvent.click(await screen.findByTestId("reviews-star-5"));
     expect(pingWhatsAppBeacon).toHaveBeenCalledTimes(1);
   });
 
@@ -308,7 +307,7 @@ describe("ReviewsSection — WA re-ping on form open (MEH-1426)", () => {
     mockReviews([]);
     render(<ReviewsSection producerId={PID} />);
     await waitFor(() => expect(apiMock.get).toHaveBeenCalled());
-    expect(screen.queryByText("write_cta")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("reviews-write-row")).not.toBeInTheDocument();
     expect(pingWhatsAppBeacon).not.toHaveBeenCalled();
   });
 
@@ -321,7 +320,7 @@ describe("ReviewsSection — WA re-ping on form open (MEH-1426)", () => {
     localStorage.setItem(`contacted_${PID}`, "phone");
     mockReviews([]);
     render(<ReviewsSection producerId={PID} />);
-    fireEvent.click(await screen.findByText("write_cta"));
+    fireEvent.click(await screen.findByTestId("reviews-star-5"));
     expect(trackContactClick).toHaveBeenCalledTimes(1);
     expect(trackContactClick).toHaveBeenCalledWith(PID, "phone");
     expect(pingWhatsAppBeacon).not.toHaveBeenCalled();
@@ -345,7 +344,7 @@ describe("ReviewsSection — WA re-ping on form open (MEH-1426)", () => {
     act(() => {
       window.dispatchEvent(new CustomEvent("mehamakor:contacted", { detail: { producerId: PID } }));
     });
-    expect(await screen.findByText("write_cta")).toBeInTheDocument();
+    expect(await screen.findByTestId("reviews-write-row")).toBeInTheDocument();
     expect(screen.queryByTestId("reviews-write-hint")).toBeNull();
   });
 
@@ -367,7 +366,7 @@ describe("ReviewsSection — review-invite token (MEH-1428 chunk 2)", () => {
   const PID = "prod-1428";
 
   const submitReview = async () => {
-    fireEvent.click(await screen.findByText("write_cta"));
+    fireEvent.click(await screen.findByTestId("reviews-star-5"));
     fireEvent.click(screen.getAllByLabelText("star_aria")[4]);
     fireEvent.change(screen.getByLabelText("body_label"), {
       target: { value: "מוצרים טעימים מאוד, ממליצה" },
@@ -416,7 +415,7 @@ describe("ReviewsSection — review-invite token (MEH-1428 chunk 2)", () => {
     mockReviews([]);
     render(<ReviewsSection producerId={PID} />);
     await waitFor(() => expect(apiMock.get).toHaveBeenCalled());
-    expect(screen.queryByText("write_cta")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("reviews-write-row")).not.toBeInTheDocument();
   });
 
   it("WhatsApp-click path unchanged: no token in storage → no review_token key in the body", async () => {
@@ -433,7 +432,7 @@ describe("ReviewsSection — review-invite token (MEH-1428 chunk 2)", () => {
     mockReviews([]);
     render(<ReviewsSection producerId={PID} isOwner />);
     await waitFor(() => expect(apiMock.get).toHaveBeenCalled());
-    expect(screen.queryByText("write_cta")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("reviews-write-row")).not.toBeInTheDocument();
   });
 
   it("guest with the link: the login prompt returns to this page's reviews, token in the URL", async () => {
@@ -473,7 +472,7 @@ describe("ReviewsSection — review-invite token (MEH-1428 chunk 2)", () => {
     render(<ReviewsSection producerId={PID} />);
     await waitFor(() => expect(apiMock.get).toHaveBeenCalled());
     expect(sessionStorage.getItem(`review_invite_${PID}`)).toBeNull();
-    expect(screen.queryByText("write_cta")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("reviews-write-row")).not.toBeInTheDocument();
   });
 });
 
@@ -558,7 +557,27 @@ describe("ReviewsSection — reviews look (MEH-2592)", () => {
       const picked = screen.getAllByTestId("icon-star").filter((el) => el.getAttribute("weight") === "fill");
       expect(picked).toHaveLength(4);
       expect(sessionStorage.getItem("review_draft_stars_p-1")).toBeNull();
+      expect(screen.queryByTestId("reviews-write-row")).toBeNull();
+    } finally {
+      localStorage.removeItem("contacted_p-1");
+    }
+  });
+
+  it("may write: the same row; a star opens the form, no box, with that star chosen", async () => {
+    authState.user = { id: "u-9", producer_id: null };
+    localStorage.setItem("contacted_p-1", "phone");
+    try {
+      mockReviews([noReply]);
+      render(<ReviewsSection producerId="p-1" />);
+      const row = await screen.findByTestId("reviews-write-row");
+      expect(row.className).toContain("border-t");
       expect(screen.queryByText("write_cta")).toBeNull();
+      fireEvent.click(within(row).getByTestId("reviews-star-3"));
+      const form = await screen.findByTestId("reviews-form");
+      expect(form.className).not.toMatch(/bg-surface|rounded/);
+      const pressed = within(form).getAllByRole("button", { pressed: true });
+      expect(pressed).toHaveLength(1);
+      expect(pressed[0].dataset.testid).toBe("reviews-star-3");
     } finally {
       localStorage.removeItem("contacted_p-1");
     }
@@ -700,7 +719,7 @@ describe("ReviewsSection — live total reported upward (MEH-2705)", () => {
     render(<ReviewsSection producerId="p-1" reviewCount={3} onTotalChange={onTotalChange} />);
     await screen.findByText("תודה רבה על המילים החמות!");
     expect(onTotalChange).toHaveBeenLastCalledWith(3);
-    fireEvent.click(screen.getByText("write_cta"));
+    fireEvent.click(screen.getByTestId("reviews-star-5"));
     fireEvent.click(screen.getAllByRole("button", { name: "star_aria" })[4]);
     fireEvent.change(screen.getByRole("textbox"), { target: { value: "מעולה מאוד מאוד" } });
     fireEvent.submit(screen.getByRole("textbox").closest("form"));
