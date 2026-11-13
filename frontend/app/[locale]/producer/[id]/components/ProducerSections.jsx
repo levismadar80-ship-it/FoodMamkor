@@ -40,6 +40,7 @@ import ReviewsSection from "@/components/ReviewsSection";
 // MEH-1490: quiet live-fetch Google-rating line — renders below (and detached
 // from) the native reviews block, only for producers an admin mapped.
 import GoogleRatingLine from "@/components/GoogleRatingLine";
+import SectionHeading from "@/components/ui/SectionHeading";
 
 // MEH-1853: `loading:` placeholder REVERTED 06/08 — it measurably made CLS
 // WORSE, and the measurement is on the ticket. Reserving a 356px box that
@@ -321,7 +322,7 @@ export default function ProducerSections({
         // + scroll-mt clearing the sticky header/tab bar (the #reviews idiom).
         <FadeInSection as="section" {...REVEAL_PRESET} id="section-bio" className="mt-8 scroll-mt-[calc(var(--chrome-top,82px)_+_var(--section-nav-h,68px))] md:scroll-mt-24" ref={(el) => { sectionRefs.current.about = el; }}>
           <div className="flex items-center gap-2 mb-3">
-            <h2 className="font-headline-md text-2xl font-bold text-text">{t("producer.detail.sections.about")}</h2>
+            <SectionHeading size="content">{t("producer.detail.sections.about")}</SectionHeading>
             <OwnerSectionEditLink producerId={producer.id} anchor="bio" sectionKey="bio" />
           </div>
           <p className="text-text/85 leading-relaxed whitespace-pre-line">
@@ -359,7 +360,7 @@ export default function ProducerSections({
         <section id="section-products" className="mt-12 scroll-mt-[calc(var(--chrome-top,82px)_+_var(--section-nav-h,68px))] md:scroll-mt-24" ref={(el) => { sectionRefs.current.products = el; }}>
           {/* MEH-1306: owner pencil beside the heading → #products card. */}
           <div className="flex items-center gap-2 mb-4">
-            <h2 className="font-headline-md text-2xl font-bold text-text">{t("producer.detail.sections.products.heading")}</h2>
+            <SectionHeading size="content">{t("producer.detail.sections.products.heading")}</SectionHeading>
             <OwnerSectionEditLink producerId={producer.id} anchor="products" sectionKey="products" />
           </div>
 
@@ -578,9 +579,9 @@ export default function ProducerSections({
           RecipeDetail.jsx ("חזרה לדף בית העסק > מתכונים"). */}
       {producer.slug && recipes.length > 0 && (
         <section className="mt-12" id="recipes">
-          <h2 className="font-headline-md text-2xl font-bold text-text mb-4">
+          <SectionHeading size="content" className="mb-4">
             {t("producer.detail.sections.recipes.cta")}
-          </h2>
+          </SectionHeading>
           {/* MEH-3006 (option B): phones — one sideways-scrolling strip of
               medium cards, bleeding to the screen edge (-me-4 pe-4 cancels the
               page gutter) so the next card peeks; same height for one recipe
@@ -714,9 +715,9 @@ export default function ProducerSections({
           className="mt-12 scroll-mt-[calc(var(--chrome-top,82px)_+_var(--section-nav-h,68px))] md:scroll-mt-24"
         >
           <div className="flex items-center gap-2 mb-3">
-            <h2 className="font-headline-md text-2xl font-bold text-text">
+            <SectionHeading size="content">
               {t("producer.detail.sections.location")}
-            </h2>
+            </SectionHeading>
             <OwnerSectionEditLink producerId={producer.id} anchor="location" sectionKey="location" />
           </div>
           {/* Address line — city-only fallback, never empty (revision-1 #5). */}

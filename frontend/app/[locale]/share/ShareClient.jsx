@@ -2,6 +2,7 @@
 
 import { useTranslations } from "next-intl";
 import ShareSiteActions from "@/components/ShareSiteActions";
+import SectionHeading from "@/components/ui/SectionHeading";
 
 /**
  * Module:   ShareClient
@@ -25,9 +26,9 @@ export default function ShareClient() {
       data-testid="recommend-share"
       className="mt-12 border-t border-border pt-8 scroll-mt-24"
     >
-      <h2 id="share-heading" className="font-headline-md font-bold text-primary-dark text-2xl">
+      <SectionHeading id="share-heading" size="content" className="text-primary-dark">
         {t("h1")}
-      </h2>
+      </SectionHeading>
       <p className="mt-2 text-base leading-relaxed text-fg-muted">{t("intro")}</p>
       <ShareSiteActions layout="full" className="mt-5" />
     </section>

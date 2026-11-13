@@ -19,6 +19,7 @@ import { formatEventDate } from "@/lib/format-date";
 import EmptyState from "@/components/ui/EmptyState";
 import { SkeletonList } from "@/components/Skeleton";
 import { seedColorFor } from "@/lib/brand-seeds";
+import SectionHeading from "@/components/ui/SectionHeading";
 
 // MEH-2833 (seed layer, board 4): a reviewer's initial sits on a soft tint of
 // "their" seed — the seed colour mixed ~24% into the cream page, with an inset
@@ -473,10 +474,10 @@ export default function ReviewsSection({
           own — «ביקורות» over nothing but the write hint. At zero the section
           is the one quiet line; the count parenthesis was already gated. */}
       {total > 0 && (
-        <h2 className="font-headline-md text-2xl font-bold text-text mb-6">
+        <SectionHeading size="content" className="mb-6">
           {t("section_heading")}
           <span className="text-base font-normal text-fg-muted ms-2">({total})</span>
-        </h2>
+        </SectionHeading>
       )}
 
       {/* Rating summary block — only when ≥3 reviews */}

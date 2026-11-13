@@ -2,6 +2,7 @@ import { useTranslations } from "next-intl";
 
 import ImageWithFallback from "@/components/ImageWithFallback";
 import { IMAGE_RATIOS } from "@/lib/cloudinary";
+import SectionHeading from "@/components/ui/SectionHeading";
 
 /**
  * Module:   OwnerCard
@@ -90,7 +91,7 @@ export default function OwnerCard({ producer, heading, nested = false }) {
 
   return (
     <section className="mt-12" data-testid="owner-card">
-      <h2 className="font-headline-md text-2xl font-bold text-text mb-4">{heading || t("heading")}</h2>
+      <SectionHeading size="content" className="mb-4">{heading || t("heading")}</SectionHeading>
       <div className="bg-surface border border-border rounded-lg p-5 flex flex-col gap-3">
         {/* Avatar at the inline-start on ALL viewports (mockup lock). */}
         {/* MEH-2471: the avatar/name row only when it has something in it —

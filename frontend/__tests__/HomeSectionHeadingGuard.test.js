@@ -7,8 +7,9 @@
  * the h1 display size) and a 20px sans caption (the mini map). Nothing shared
  * owned the size, so nothing noticed. This guard fails when:
  *   1. a home file renders a raw <h2> that is not in BAND_EXCEPTIONS, or
- *   2. a <SectionHeading> is handed a size / weight / family class, which
- *      would bring the per-file drift back through the className prop.
+ *   2. a <SectionHeading> is handed a size / weight / family / tracking
+ *      class, a non-literal className, `as=` or `size=` — any of which would
+ *      bring the per-file drift back (leading-* and a colour are allowed).
  *
  * The file list is DERIVED: everything under app/[locale]/home, every
  * components/Home*, and every component HomeClient.jsx imports directly
@@ -36,7 +37,7 @@ const BAND_EXCEPTIONS = [
   { file: "components/LocationModal.jsx", inner: 't("title")' },
 ];
 
-const SIZE_TOKEN = /^(?:[a-z0-9-]+:)*!?(?:leading-\S+|tracking-\S+|font-(?:sans|serif|mono)|text-(?:2xs|xs|sm|base|lg|xl|[2-9]xl|headline-[a-z]+|body-[a-z]+|label-[a-z]+|\[[^\]]+\])|font-(?:headline-[a-z]+|body-[a-z]+|thin|light|normal|medium|semibold|bold|extrabold|black))$/;
+const SIZE_TOKEN = /^(?:[a-z0-9-]+:)*!?(?:tracking-\S+|font-(?:sans|serif|mono)|text-(?:2xs|xs|sm|base|lg|xl|[2-9]xl|headline-[a-z]+|body-[a-z]+|label-[a-z]+|\[[^\]]+\])|font-(?:headline-[a-z]+|body-[a-z]+|thin|light|normal|medium|semibold|bold|extrabold|black))$/;
 
 export function homeFiles() {
   const out = new Set();
@@ -94,6 +95,7 @@ export function findOffenders(src) {
       }
       if (name === "SectionHeading") {
         if (attr("as")) sizedSection.push(`${line}: as= (a row heading is the h2)`);
+        if (attr("size")) sizedSection.push(`${line}: size= (a home row is the page role)`);
         const cls = staticClass(attr("className"));
         if (cls === null) { sizedSection.push(`${line}: non-literal className`); return; }
         const bad = cls.split(/\s+/).filter((t) => SIZE_TOKEN.test(t));
@@ -129,11 +131,12 @@ describe("MEH-3020 classifier self-test", () => {
   it("flags a size class smuggled into SectionHeading", () => {
     const smuggled = `export default () => <SectionHeading className="md:text-5xl mb-4">x</SectionHeading>;`;
     expect(findOffenders(smuggled).sizedSection).toEqual(["1: md:text-5xl"]);
-    for (const t of ["max-md:text-sm", "!text-xs", "md:hover:text-lg", "leading-none", "font-sans"]) {
+    for (const t of ["max-md:text-sm", "!text-xs", "md:hover:text-lg", "tracking-wide", "font-sans"]) {
       expect(findOffenders(`export default () => <SectionHeading className="${t}">x</SectionHeading>;`).sizedSection.length, t).toBe(1);
     }
     expect(findOffenders(`export default () => <SectionHeading className={c ? "a" : "b"}>x</SectionHeading>;`).sizedSection).toEqual(["1: non-literal className"]);
     expect(findOffenders(`export default () => <SectionHeading as="h3">x</SectionHeading>;`).sizedSection.length).toBe(1);
+    expect(findOffenders(`export default () => <SectionHeading size="content">x</SectionHeading>;`).sizedSection.length).toBe(1);
   });
   it("passes layout-only classes", () => {
     const ok = `export default () => <SectionHeading id="a" className="mb-4">x</SectionHeading>;`;

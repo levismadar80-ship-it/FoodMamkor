@@ -28,6 +28,7 @@ import { GroupBuyProducerDeliverySchema } from "@/lib/api-schemas";
 import { SkeletonDetail } from "@/components/Skeleton";
 import Button from "@/components/ui/Button";
 import { shareOrCopyText } from "@/lib/share-link";
+import SectionHeading from "@/components/ui/SectionHeading";
 
 // MEH-975: schema bounds for GroupBuyCommitRequest.quantity
 // (backend/app/schemas/schemas.py:1602 — int, ge=1, le=100). Clamp the
@@ -510,7 +511,7 @@ export default function GroupBuyDetailClient({ id }) {
                 copy approved by Sapir 29/10. */}
             {open && (
               <section className="mt-6 rounded-xl bg-background-alt p-4" data-testid="group-buy-how">
-                <h2 className="font-headline-md text-lg font-bold text-text mb-3">{t("how_title")}</h2>
+                <SectionHeading size="content" className="mb-3">{t("how_title")}</SectionHeading>
                 <ol className="space-y-2">
                   {[t("how_join"), t("how_unlock", { min: gb.min_participants }), t("how_no_commit")].map((line, i) => (
                     <li key={i} className="flex gap-3 text-base text-text">
@@ -546,7 +547,7 @@ export default function GroupBuyDetailClient({ id }) {
               // nothing instead of leaving an empty 2rem gap (review #3900).
               <section data-testid="group-buy-fulfillment">
                 {hasFulfillment && (
-                  <h2 className="mt-8 font-headline-md text-lg font-bold text-text mb-3">{t("fulfillment_title")}</h2>
+                  <SectionHeading size="content" className="mt-8 mb-3">{t("fulfillment_title")}</SectionHeading>
                 )}
                 {hasSplitNotes ? (
                   <dl className="flex flex-col gap-4">

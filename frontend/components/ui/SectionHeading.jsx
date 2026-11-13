@@ -1,30 +1,49 @@
 /**
- * SectionHeading — the one heading for a row/section of a page (MEH-3020).
+ * SectionHeading — the one heading for a section of a page (MEH-3020).
  *
  * Module:   SectionHeading
- * Purpose:  Every sibling row on the home page carries the same h2 size, so no
- *           row reads as more important than the others because of its file.
- *           One step: `headline-lg` (Frank Ruhl 900, 32px — tailwind.tokens.json),
- *           the size the main rows («בתי עסק מקומיים», «מה קורה») already used.
- * Does NOT: set margins or alignment — pass `className` for layout only.
- * Why:      until 13/11 each home row picked its own size (24 / 32 / 48 and a
- *           20px sans caption). MEH-1073 (#1562) snapped each hand-written
- *           clamp() to its nearest token one file at a time, so the categories
- *           row inherited the h1 display size (48px). Nothing shared owned the
- *           size, so nothing could notice. `HomeSectionHeadingGuard.test.js`
- *           now fails on a hand-sized h2 in the home files.
- * Related:  Heading.jsx (generic scale), DESIGN.md «Headlines».
+ * Purpose:  A section's h2 takes its size from a named ROLE, never from
+ *           classes written at the call site. Two roles (DESIGN.md «Section
+ *           headings»):
+ *             size="page"    (default) a row on a front / landing page — home,
+ *                            /about, /about/process, /join. headline-lg,
+ *                            Frank Ruhl 900, 32px.
+ *             size="content" a section inside a content page — business page,
+ *                            event, recipe, legal pages. Frank Ruhl 700, 24px.
+ *           Card, sheet, dialog and form-step titles are not section headings
+ *           and stay out of this component.
+ * Does NOT: take a size, weight or family class — `className` is for layout
+ *           (margin, alignment, width, leading) and an optional text colour,
+ *           which replaces the default ink.
+ * Why:      until 13/11 each section chose its own size: on home 24 / 32 / 48
+ *           and a 20px sans caption, «גלו לפי קטגוריה» at the h1 display size;
+ *           across the site 18 / 20 / 24 and four different clamp() ranges.
+ *           MEH-1073 (#1562) snapped each hand-written clamp() to its nearest
+ *           token one file at a time, so nothing shared owned the size.
+ *           Guards: HomeSectionHeadingGuard.test.js (home, no raw h2) and
+ *           SectionHeadingRatchet.test.js (site, the count only shrinks).
+ * Related:  Heading.jsx (generic scale), tailwind.tokens.json (headline-lg).
  *
  * @example
  * <SectionHeading id="x-heading">עכשיו בעונה</SectionHeading>
+ * <SectionHeading size="content" className="mb-4">שעות פתיחה</SectionHeading>
  */
-export const SECTION_HEADING_CLASSES = "font-headline-lg text-headline-lg font-black text-text";
+const SECTION_HEADING_ROLES = {
+  page: "font-headline-lg text-headline-lg font-black",
+  content: "font-headline-md text-2xl font-bold",
+};
+export const SECTION_HEADING_CLASSES = `${SECTION_HEADING_ROLES.page} text-text`;
 
-export default function SectionHeading({ as: Tag = "h2", className = "", children, ...rest }) {
+// A text-* class that is a colour, not a size step.
+const COLOR = /(^|\s)text-(?!(?:2xs|xs|sm|base|lg|xl|[2-9]xl|headline-|body-|label-|center|start|end|left|right|balance|pretty|wrap|nowrap|ellipsis|clip|\[))[a-z]/;
+
+export default function SectionHeading({ as: Tag = "h2", size = "page", className = "", children, ...rest }) {
+  const role = SECTION_HEADING_ROLES[size] || SECTION_HEADING_ROLES.page;
+  const ink = COLOR.test(className) ? "" : " text-text";
   return (
     <Tag
-      data-section-heading=""
-      className={className ? `${SECTION_HEADING_CLASSES} ${className}` : SECTION_HEADING_CLASSES}
+      data-section-heading={size}
+      className={`${role}${ink}${className ? ` ${className}` : ""}`}
       {...rest}
     >
       {children}

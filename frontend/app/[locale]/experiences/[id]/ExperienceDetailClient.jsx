@@ -39,6 +39,7 @@ import { SkeletonDetail } from "@/components/Skeleton";
 import { splitBringList } from "@/lib/bring-list";
 import { findExperienceCategory, OTHER_CATEGORY } from "@/lib/event-categories";
 import RegistrationCta from "@/components/RegistrationCta";
+import SectionHeading from "@/components/ui/SectionHeading";
 
 // MEH-1404: reuse the producer-detail static map + Waze/Gmaps block on
 // experiences with coords. ssr:false — leaflet touches window at module eval.
@@ -431,9 +432,9 @@ export default function ExperienceDetailClient() {
               description — the old green box read as a warning. */}
           {bringItems.length > 0 && (
             <div className="bg-surface border border-border rounded-lg p-6" data-testid="experience-bring">
-              <h2 className="font-headline-md text-lg font-bold text-text mb-3">
+              <SectionHeading size="content" className="mb-3">
                 {t("requirements_title")}
-              </h2>
+              </SectionHeading>
               <ul className="space-y-2">
                 {bringItems.map((item, i) => (
                   <li key={`${i}-${item}`} className="flex items-start gap-2 text-text/90">

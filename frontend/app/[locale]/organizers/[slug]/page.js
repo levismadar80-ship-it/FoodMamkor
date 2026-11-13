@@ -33,6 +33,7 @@ import OrganizerContactLink from "./OrganizerContactLink";
 import HistoryBackLink from "@/components/HistoryBackLink";
 import ShareButton from "@/components/ShareButton";
 import OwnerCard from "@/app/[locale]/producer/[id]/components/OwnerCard";
+import SectionHeading from "@/components/ui/SectionHeading";
 
 const ROUTE = "/[locale]/organizers/[slug]";
 
@@ -249,9 +250,9 @@ export default async function OrganizerPage(props) {
 
       <div className="px-4 md:px-14 space-y-8">
         <section aria-labelledby="organizer-events-heading" className="space-y-3">
-          <h2 id="organizer-events-heading" className="text-xl font-bold text-text">
+          <SectionHeading id="organizer-events-heading" size="content">
             {t("events_heading")}
-          </h2>
+          </SectionHeading>
           {events.length === 0 ? (
             <p className="text-fg-muted" data-testid="organizer-events-empty">
               {t("empty")}

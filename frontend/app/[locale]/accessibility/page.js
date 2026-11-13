@@ -3,6 +3,7 @@ import { Envelope, Phone } from "@phosphor-icons/react/ssr";
 import { buildAlternates, buildEntityTitle, urlForLocalePath, OG_LOCALE } from "@/lib/i18n-seo";
 import { BRAND_NAME } from "@/lib/constants";
 import { CONTACT_EMAIL } from "@/lib/env.client";
+import SectionHeading from "@/components/ui/SectionHeading";
 
 // MEH-475 PR-C4b/chunk-2: accessibility statement i18n. Same pattern as
 // PR #736 (getTranslations in generateMetadata + namespace-scoped t())
@@ -158,9 +159,9 @@ export default async function AccessibilityPage({ params }) {
               id={section.id}
               className="bg-surface rounded-lg p-7 border border-border shadow-[0_2px_12px_rgba(46,104,83,0.04)]"
             >
-              <h2 className="font-headline-md text-2xl font-bold text-text mb-3">
+              <SectionHeading size="content" className="mb-3">
                 {t(`sections.${section.id}.title`)}
-              </h2>
+              </SectionHeading>
               <div className="text-text/85 leading-relaxed">
                 {section.renderBody(t)}
               </div>

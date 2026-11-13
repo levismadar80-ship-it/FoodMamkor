@@ -17,6 +17,7 @@ import { buildAlternates, buildEntityTitle, OG_LOCALE } from "@/lib/i18n-seo";
 // MEH-1113: unify inbound routing — the bottom line points business owners at
 // the contact form + email instead of an Instagram DM (untracked, no record).
 import { CONTACT_EMAIL } from "@/lib/env.client";
+import SectionHeading from "@/components/ui/SectionHeading";
 
 // MEH-475 PR-C4b/chunk-4: for-businesses FAQ i18n. First production
 // pattern for JSON-LD that consumes translation keys via a t() pass.
@@ -222,12 +223,12 @@ export default async function FaqForBusinessesPage({ params }) {
           className="mt-14 sm:mt-16"
         >
           <div className="flex items-center gap-3 mb-4">
-            <h2
+            <SectionHeading
               id="showcase-heading"
-              className="font-headline-md text-primary text-xl font-bold"
+              size="content" className="text-primary"
             >
               {t("showcase.heading")}
-            </h2>
+            </SectionHeading>
             <span className="shrink-0 rounded-full border border-accent/50 bg-accent/10 px-3 py-0.5 text-xs font-semibold text-primary-dark">
               {t("showcase.label")}
             </span>

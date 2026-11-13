@@ -11,6 +11,7 @@ import { detailToMessage } from "@/lib/errors";
 import { CONTACT_EMAIL } from "@/lib/env.client";
 import Button from "@/components/ui/Button";
 import { CONTACT_TOPICS, DEFAULT_CONTACT_TOPIC, contactTopicFrom } from "@/lib/contact-topics";
+import SectionHeading from "@/components/ui/SectionHeading";
 
 // MEH-653: CONTACT_EMAIL now read from NEXT_PUBLIC_CONTACT_EMAIL (lib/env.client)
 // with a "contact@mehamakor.co.il" fallback. Must still match the backend
@@ -99,9 +100,9 @@ export default function ContactClient() {
               <div className="mb-4 flex justify-center">
                 <CheckCircle size={56} weight="fill" className="text-primary" aria-hidden="true" />
               </div>
-              <h2 className="font-headline-md text-2xl font-bold text-text mb-2">
+              <SectionHeading size="content" className="mb-2">
                 {t("success_title")}
-              </h2>
+              </SectionHeading>
               <p className="text-fg-muted inline-flex items-center gap-1.5">
                 {t("success_message")}
                 <Leaf size={14} className="text-primary" aria-hidden="true" />

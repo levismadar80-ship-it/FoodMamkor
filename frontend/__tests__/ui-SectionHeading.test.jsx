@@ -15,3 +15,16 @@ describe("SectionHeading (MEH-3020)", () => {
     expect(h.className).toBe(`${SECTION_HEADING_CLASSES} mb-4`);
   });
 });
+
+describe("SectionHeading roles (MEH-3020)", () => {
+  it("content role is the 24px / 700 step", () => {
+    render(<SectionHeading size="content" id="c">x</SectionHeading>);
+    expect(document.getElementById("c").className).toBe("font-headline-md text-2xl font-bold text-text");
+  });
+  it("a colour class replaces the default ink; a size-looking class does not", () => {
+    render(<SectionHeading size="content" id="m" className="text-fg-muted mb-4">x</SectionHeading>);
+    expect(document.getElementById("m").className).toBe("font-headline-md text-2xl font-bold text-fg-muted mb-4");
+    render(<SectionHeading id="k" className="text-center">x</SectionHeading>);
+    expect(document.getElementById("k").className).toContain("text-text");
+  });
+});
