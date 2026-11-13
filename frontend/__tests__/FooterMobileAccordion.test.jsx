@@ -12,6 +12,8 @@ vi.mock("next/link", () => ({
 }));
 vi.mock("next/image", () => ({ default: (props) => <img alt={props.alt ?? ""} {...props} /> }));
 vi.mock("@/i18n/navigation", () => ({
+  // MEH-3059: Footer prefetches «כל בתי העסק» on intent via router.prefetch.
+  useRouter: () => ({ prefetch: () => {} }),
   Link: ({ href, children, ...rest }) => (
     <a href={typeof href === "string" ? href : "#"} {...rest}>{children}</a>
   ),
