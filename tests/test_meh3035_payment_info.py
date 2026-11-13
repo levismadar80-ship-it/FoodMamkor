@@ -89,3 +89,43 @@ def test_public_detail_null_when_unset(client, db):
     p = make_producer(db)
     r = client.get(f"/producers/{p.id}")
     assert r.json()["payment_info"] is None
+
+
+# ── Chunk 2: the owner write path (opens with the dashboard editor) ──────────
+from conftest import auth_header, make_user  # noqa: E402
+
+
+def _owner(db):
+    producer = make_producer(db, name="עסק התשלומים")
+    user = make_user(db, role="producer")
+    user.producer_id = producer.id
+    db.commit()
+    return user, producer
+
+
+def test_owner_put_writes_payment_info(client, db):
+    user, producer = _owner(db)
+    body = {"methods": ["cash", "bit"], "timing": "advance", "note": None}
+    r = client.put("/producers/me", json={"payment_info": body}, headers=auth_header(user))
+    assert r.status_code == 200, r.text
+    db.refresh(producer)
+    assert producer.payment_info == {"methods": ["bit", "cash"], "timing": "advance", "note": None}
+    assert client.get(f"/producers/{producer.id}").json()["payment_info"]["methods"] == ["bit", "cash"]
+
+
+def test_owner_put_null_clears_payment_info(client, db):
+    user, producer = _owner(db)
+    producer.payment_info = {"methods": ["bit"], "timing": None, "note": None}
+    db.commit()
+    r = client.put("/producers/me", json={"payment_info": None}, headers=auth_header(user))
+    assert r.status_code == 200, r.text
+    db.refresh(producer)
+    assert producer.payment_info is None
+
+
+def test_owner_put_rejects_unknown_method(client, db):
+    user, producer = _owner(db)
+    r = client.put("/producers/me", json={"payment_info": {"methods": ["paypal"]}}, headers=auth_header(user))
+    assert r.status_code == 422, r.text
+    db.refresh(producer)
+    assert producer.payment_info is None

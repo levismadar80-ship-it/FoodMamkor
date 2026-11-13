@@ -2514,8 +2514,8 @@ class ProducerUpdate(BaseModel):
     # _special_hours_validator; explicit null clears it, same as order_window.
     special_hours: dict | None = None
     # MEH-3035: how the business takes payment. Validated below
-    # (_payment_info_validator). The owner write path opens in chunk 2, with
-    # the dashboard editor (producer_me.py _PRODUCER_WRITABLE_FIELDS rule).
+    # (_payment_info_validator). Owner-writable via producer_me.py
+    # (_PRODUCER_WRITABLE_FIELDS, MEH-3035 chunk 2, with PaymentInfoEditor).
     payment_info: dict | None = None
     # MEH-1577: structured delivery cost (whole shekels, producer-level).
     # Validated below — both reject negatives, free_delivery_above additionally
