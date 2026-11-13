@@ -2082,7 +2082,7 @@ function RegisterProducerPageBody({ routeKind }) {
               <Link
                 href={`/login?redirect=${encodeURIComponent("/producer/dashboard")}`}
                 data-testid="register-confirm-dashboard-cta"
-                className="w-full sm:max-w-xs bg-primary-dark text-white px-6 py-3 rounded-md hover:bg-primary transition font-medium text-sm"
+                className="w-full sm:max-w-xs bg-primary-dark text-white px-6 py-3 rounded-md hover:bg-primary transition font-medium text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2"
               >
                 {t("auth.register.producer.success.cta")}
               </Link>
