@@ -108,7 +108,7 @@ export function HomeCategoryGrid({ categoryCards }) {
                 // MEH-991 (HOME-15) hover: 1px gold underline + photo zooms scale-1.05
                 // (photo path only, motion-safe); glyph never scales. MEH-3061: no border.
                 "font-headline-md font-bold text-text leading-tight group-hover:underline decoration-accent decoration-1 underline-offset-4",
-                "text-base lg:text-sm",
+                "text-base lg:text-sm [overflow-wrap:anywhere]",
               ].join(" ")}>
                 {card.name}
               </h3>
@@ -147,9 +147,9 @@ export function HomeCategoryGrid({ categoryCards }) {
                   green (MEH-683 unified set); Phosphor Leaf if name is unmapped. */}
               <div className={["grid place-items-center bg-background text-primary", aspectClassName].join(" ")} data-testid="home-category-image-frame">
                 {glyphIsFallback ? (
-                  <LineArt weight="thin" className="w-16 h-16 lg:w-12 lg:h-12" aria-hidden="true" />
+                  <LineArt weight="thin" className="w-16 h-16 lg:w-12 lg:h-12 max-w-[50%] max-h-[50%]" aria-hidden="true" />
                 ) : (
-                  <LineArt className="w-16 h-16 lg:w-12 lg:h-12" />
+                  <LineArt className="w-16 h-16 lg:w-12 lg:h-12 max-w-[50%] max-h-[50%]" />
                 )}
               </div>
 
