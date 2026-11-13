@@ -303,7 +303,7 @@ export default function RecipeForm({ mode = "create", initial, onSaved, onCancel
             </button>
           </div>
         ) : (
-          <label className="inline-flex items-center text-sm border border-dashed border-border rounded-sm px-4 py-3 cursor-pointer hover:bg-green-50 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/30">
+          <label className="inline-flex items-center text-sm border border-dashed border-border rounded-sm px-4 py-3 cursor-pointer hover:bg-green-50 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/40">
             {/* MEH-2033: sr-only + focus-within — keyboard reachability, the
                 MEH-2031 pattern. */}
             <input

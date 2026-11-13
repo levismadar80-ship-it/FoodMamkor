@@ -434,7 +434,7 @@ export default function RescueTab() {
                       title={windowClosed ? undefined : t("no_show_too_early")}
                       onClick={() => act(o, "no_show")}
                       data-testid="rescue-order-noshow"
-                      className="whitespace-nowrap border border-border px-3 py-1 rounded-md font-body-sm text-sm disabled:opacity-40"
+                      className="whitespace-nowrap border border-border px-3 py-1 rounded-md font-body-sm text-sm disabled:opacity-50"
                     >
                       {t("no_show")}
                     </button>
@@ -725,7 +725,7 @@ export default function RescueTab() {
                 onClick={() => markDonated(0)}
                 disabled={donating}
                 data-testid="rescue-leftover-undo"
-                className="underline text-primary font-medium disabled:opacity-60"
+                className="underline text-primary font-medium disabled:opacity-50"
               >
                 {t("leftover_undo")}
               </button>

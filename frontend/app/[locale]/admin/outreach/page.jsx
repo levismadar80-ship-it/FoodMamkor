@@ -487,7 +487,7 @@ function ThankSuggesterCell({ lead, locale, t, onThank }) {
         disabled
         aria-describedby={tipId}
         data-testid={`thank-suggester-${lead.id}`}
-        className="text-xs px-2 py-1 rounded-lg border border-border text-primary disabled:opacity-40 disabled:cursor-not-allowed"
+        className="text-xs px-2 py-1 rounded-lg border border-border text-primary disabled:opacity-50 disabled:cursor-not-allowed"
       >
         {t("outreach.thank_suggester")}
       </button>

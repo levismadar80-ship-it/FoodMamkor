@@ -320,7 +320,7 @@ export default function Footer() {
                 type="submit"
                 disabled={status === "loading"}
                 aria-label={t("nav.footer.newsletter_submit")}
-                className="absolute end-0 top-1/2 -translate-y-1/2 flex h-11 w-11 items-center justify-center text-white/60 hover:text-white transition disabled:opacity-40"
+                className="absolute end-0 top-1/2 -translate-y-1/2 flex h-11 w-11 items-center justify-center text-white/60 hover:text-white transition disabled:opacity-50"
               >
                 {status === "loading" ? (
                   <ButtonSpinner />

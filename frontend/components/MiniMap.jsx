@@ -63,7 +63,7 @@ const MAP_BUTTON_POSITION = "absolute top-3 right-3"; // rtl-ok: map control lay
 // `isolate`, the overlay is `fixed … z-[1150]` — so a LOCAL value is sufficient
 // and cannot reach the page scale again.
 const MAP_BUTTON_STYLE =
-  "z-10 flex h-11 w-11 items-center justify-center rounded-full border border-border bg-surface text-primary shadow-md transition hover:bg-green-50 focus-visible:ring-2 focus-visible:ring-primary/40";
+  "z-10 flex h-11 w-11 items-center justify-center rounded-full border border-border bg-surface text-primary shadow-lg transition hover:bg-green-50 focus-visible:ring-2 focus-visible:ring-primary/40";
 
 // pickup / market_stand are the business's satellite points; a branch (and any
 // unknown kind) is the business itself. Same split as the /map fan-out

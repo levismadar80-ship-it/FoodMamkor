@@ -207,7 +207,7 @@ export default function ChecklistSettings() {
                   onClick={() => move(index, -1)}
                   disabled={index === 0}
                   aria-label={`העלי את «${item.label || "סעיף חדש"}»`}
-                  className="text-muted hover:text-primary disabled:opacity-30"
+                  className="text-muted hover:text-primary disabled:opacity-50"
                 >
                   <ArrowUp size={ICON} weight="bold" aria-hidden="true" />
                 </button>
@@ -216,7 +216,7 @@ export default function ChecklistSettings() {
                   onClick={() => move(index, 1)}
                   disabled={index === items.length - 1}
                   aria-label={`הורידי את «${item.label || "סעיף חדש"}»`}
-                  className="text-muted hover:text-primary disabled:opacity-30"
+                  className="text-muted hover:text-primary disabled:opacity-50"
                 >
                   <ArrowDown size={ICON} weight="bold" aria-hidden="true" />
                 </button>

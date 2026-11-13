@@ -226,7 +226,7 @@ function ReviewReply({ review, isOwner, onSaved }) {
             type="button"
             onClick={save}
             disabled={saving || draft.trim().length < 2}
-            className="min-h-touch bg-primary-dark text-white px-5 py-1.5 rounded-sm hover:opacity-90 transition disabled:opacity-60 text-sm font-medium"
+            className="min-h-touch bg-primary-dark text-white px-5 py-1.5 rounded-sm hover:opacity-90 transition disabled:opacity-50 text-sm font-medium"
           >
             {saving ? t("submit_saving") : t("reply_save")}
           </button>
@@ -717,7 +717,7 @@ export default function ReviewsSection({
               <button
                 type="submit"
                 disabled={submitting}
-                className="min-h-touch bg-primary-dark text-white px-6 py-2 rounded-full hover:opacity-90 transition disabled:opacity-60 text-sm font-medium"
+                className="min-h-touch bg-primary-dark text-white px-6 py-2 rounded-full hover:opacity-90 transition disabled:opacity-50 text-sm font-medium"
               >
                 {submitting ? t("submit_saving") : t("submit")}
               </button>

@@ -981,7 +981,7 @@ export default function MapPage() {
                   disabled={geoSortPending}
                   aria-label={t("map.client.sort.aria_label")}
                   aria-busy={geoSortPending || undefined}
-                  className="appearance-none bg-transparent border-0 text-sm font-medium text-primary min-h-touch ps-1 pe-6 cursor-pointer rounded-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1 disabled:opacity-60"
+                  className="appearance-none bg-transparent border-0 text-sm font-medium text-primary min-h-touch ps-1 pe-6 cursor-pointer rounded-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-1 disabled:opacity-50"
                 >
                   {/* MEH-2014: never `disabled`. Choosing it without a known
                       location ASKS for one (handleSortChange) instead of

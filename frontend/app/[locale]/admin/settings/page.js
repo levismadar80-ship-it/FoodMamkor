@@ -182,7 +182,7 @@ export default function AdminSettingsPage() {
             onClick={() => update("holiday_override_enabled", settings.holiday_override_enabled === "true" ? "false" : "true")}
             className={`relative inline-flex h-6 w-11 rounded-full transition-colors ${settings.holiday_override_enabled === "true" ? "bg-primary" : "bg-gray-200"}`}
           >
-            <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-surface shadow transition-transform ${settings.holiday_override_enabled === "true" ? "translate-x-5" : "translate-x-0.5"}`} />
+            <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-surface shadow-sm transition-transform ${settings.holiday_override_enabled === "true" ? "translate-x-5" : "translate-x-0.5"}`} />
           </button>
         </div>
         <Field label={t("settings.fields.holiday_key_label")}>
@@ -232,7 +232,7 @@ export default function AdminSettingsPage() {
             }}
             className={`relative inline-flex h-6 w-11 rounded-full transition-colors ${settings.friday_mode_override === "true" ? "bg-primary" : "bg-gray-200"}`}
           >
-            <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-surface shadow transition-transform ${settings.friday_mode_override === "true" ? "translate-x-5" : "translate-x-0.5"}`} />
+            <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-surface shadow-sm transition-transform ${settings.friday_mode_override === "true" ? "translate-x-5" : "translate-x-0.5"}`} />
           </button>
         </div>
       </div>
@@ -261,7 +261,7 @@ export default function AdminSettingsPage() {
             }}
             className={`relative inline-flex h-6 w-11 rounded-full transition-colors ${vacation.active ? "bg-primary" : "bg-gray-200"}`}
           >
-            <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-surface shadow transition-transform ${vacation.active ? "translate-x-5" : "translate-x-0.5"}`} />
+            <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-surface shadow-sm transition-transform ${vacation.active ? "translate-x-5" : "translate-x-0.5"}`} />
           </button>
         </div>
         {vacation.active && (

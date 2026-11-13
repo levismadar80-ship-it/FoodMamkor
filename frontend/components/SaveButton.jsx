@@ -39,7 +39,7 @@ import LoginPromptModal from "./LoginPromptModal";
 const VARIANT = {
   overlay: {
     button:
-      "bg-surface/95 hover:bg-surface rounded-full w-11 h-11 flex items-center justify-center shadow-md hover:scale-105",
+      "bg-surface/95 hover:bg-surface rounded-full w-11 h-11 flex items-center justify-center shadow-lg hover:scale-105",
     size: 22,
   },
   row: {
@@ -157,7 +157,7 @@ export default function SaveButton({ itemType, itemId, variant = "overlay" }) {
         aria-pressed={saved}
         data-testid={`save-${itemType}`}
         data-variant={variant}
-        className={`${look.button} transition disabled:opacity-60 focus-visible:ring-2 focus-visible:ring-primary/40`}
+        className={`${look.button} transition disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-primary/40`}
       >
         {look.face ? <span className={look.face}>{heart}</span> : heart}
       </button>

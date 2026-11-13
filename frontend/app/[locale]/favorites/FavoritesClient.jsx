@@ -469,7 +469,7 @@ export default function FavoritesClient() {
           type="button"
           onClick={handleSavedRetry}
           data-testid="favorites-saved-retry"
-          className="mt-4 text-sm text-primary font-medium underline decoration-[1.5px] underline-offset-[5px] decoration-primary/35 hover:decoration-current rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+          className="mt-4 text-sm text-primary font-medium underline decoration-[1.5px] underline-offset-[5px] decoration-primary/35 hover:decoration-current rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2"
         >
           {tError("retry")}
         </button>
@@ -501,7 +501,7 @@ export default function FavoritesClient() {
             type="button"
             onClick={handleRetry}
             data-testid="favorites-retry"
-            className="mt-4 text-sm text-primary font-medium underline decoration-[1.5px] underline-offset-[5px] decoration-primary/35 hover:decoration-current rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+            className="mt-4 text-sm text-primary font-medium underline decoration-[1.5px] underline-offset-[5px] decoration-primary/35 hover:decoration-current rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2"
           >
             {tError("retry")}
           </button>

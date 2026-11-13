@@ -296,7 +296,7 @@ export function DeliveryDayRow({ cityActive, daysActive, onSelectDay, onClearDay
             onClick={handleClearClick}
             aria-label={t("home.producers.day_chip_clear_aria")}
             data-testid="delivery-day-clear"
-            className={`inline-flex items-center ps-1 pe-2 ${chipPadY} rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60`}
+            className={`inline-flex items-center ps-1 pe-2 ${chipPadY} rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70`}
           >
             <X size={12} weight="bold" aria-hidden="true" />
           </button>

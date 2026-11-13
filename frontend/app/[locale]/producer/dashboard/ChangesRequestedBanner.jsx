@@ -115,7 +115,7 @@ export default function ChangesRequestedBanner({ profile }) {
               onClick={resubmit}
               disabled={status === "sending"}
               data-testid="resubmit-button"
-              className="inline-block border border-accent/40 text-accent px-4 py-2 rounded-full text-xs font-medium hover:bg-accent/10 transition disabled:opacity-60"
+              className="inline-block border border-accent/40 text-accent px-4 py-2 rounded-full text-xs font-medium hover:bg-accent/10 transition disabled:opacity-50"
             >
               {status === "sending" ? t("resubmit_sending") : t("resubmit_cta")}
             </button>

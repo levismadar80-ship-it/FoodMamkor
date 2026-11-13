@@ -296,7 +296,7 @@ export default function ExperienceDetailClient() {
         </div>
 
         <aside className="mt-6 lg:mt-0 lg:col-start-2 lg:row-start-1 lg:row-span-2 lg:sticky lg:top-24">
-          <div className="bg-surface border border-border rounded-lg overflow-hidden lg:shadow-md" data-testid="experience-info">
+          <div className="bg-surface border border-border rounded-lg overflow-hidden lg:shadow-lg" data-testid="experience-info">
             {/* MEH-2476: a recurring experience leads with its schedule, so the
                 date below reads as a start, not as the only occasion. */}
             {ex.is_recurring && (

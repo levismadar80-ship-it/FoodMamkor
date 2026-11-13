@@ -175,7 +175,7 @@ export default function DeliveryWaitlistForm({ producer = null, city = "", descr
           data-testid="delivery-waitlist-email"
           /* MEH-976 pattern: plaintext bidi so a Hebrew placeholder reads RTL
              and the typed Latin address LTR, without flipping the field. */
-          className="flex-1 min-h-touch rounded-full border border-primary/15 bg-surface px-4 text-sm [unicode-bidi:plaintext] focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30"
+          className="flex-1 min-h-touch rounded-full border border-primary/15 bg-surface px-4 text-sm [unicode-bidi:plaintext] focus:border-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
         />
         <Button
           type="submit"

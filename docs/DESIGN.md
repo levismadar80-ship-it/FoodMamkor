@@ -412,6 +412,18 @@ lift on hover** (that is a SaaS pattern, off-brand). Cards are white surfaces on
 cream with a `border #E5DFD3` hairline; that tonal contrast is the entire
 elevation language.
 
+**Three shadows, for things that float (MEH-3060, 13/11/2026).** `shadow-sm` =
+a resting float (sticky bar, toggle knob); `shadow-lg` = menus, popovers,
+floating buttons; `shadow-xl` = modals and sheets. Nothing else — no bare
+`shadow`, no `shadow-md`/`2xl`, no arbitrary `shadow-[…]` (the cookie banner's
+upward shadow is the one exemption). Cards stay flat.
+
+**One disabled look, one focus look (MEH-3060).** Disabled = `disabled:opacity-50`.
+Keyboard focus = a 2px ring on `focus-visible` (never plain `focus:`), coloured
+`primary/40` on cream/white, `gold-on-dark` on the green bands, `white/70` on
+photos, `black/40` on the Apple button, `danger-400/40` on a destructive action.
+`StateTokensGuard.test.js` reds anything else.
+
 ### State management — opacity-on-cream + fg-muted (ADR-019)
 
 This is the load-bearing rule for all component states, and it is why the

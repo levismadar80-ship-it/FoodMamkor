@@ -119,7 +119,7 @@ export default function GooglePlaceLink({ producerId, placeId, onLinked }) {
             type="button"
             onClick={() => search()}
             disabled={searching}
-            className="rounded-lg border border-border px-3 py-1.5 text-text hover:bg-background-alt disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            className="rounded-lg border border-border px-3 py-1.5 text-text hover:bg-background-alt disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
           >
             {searching ? "מחפשת…" : "חפשי בגוגל"}
           </button>
@@ -146,12 +146,12 @@ export default function GooglePlaceLink({ producerId, placeId, onLinked }) {
                 onChange={(e) => setManual(e.target.value)}
                 placeholder="השם בגוגל או place_id"
                 dir="auto"
-                className="min-w-0 flex-1 rounded-lg border border-border px-2.5 py-1.5 text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                className="min-w-0 flex-1 rounded-lg border border-border px-2.5 py-1.5 text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
               />
               <button
                 type="submit"
                 disabled={searching || saving || !manual.trim()}
-                className="rounded-lg border border-border px-3 py-1.5 text-text hover:bg-background-alt disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                className="rounded-lg border border-border px-3 py-1.5 text-text hover:bg-background-alt disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
               >
                 חיפוש
               </button>
@@ -166,7 +166,7 @@ export default function GooglePlaceLink({ producerId, placeId, onLinked }) {
                     type="button"
                     onClick={() => pick(c.place_id)}
                     disabled={saving}
-                    className="w-full rounded-lg border border-border p-2.5 text-start hover:bg-background-alt disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                    className="w-full rounded-lg border border-border p-2.5 text-start hover:bg-background-alt disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
                   >
                     <span className="block font-medium text-text">{c.display_name}</span>
                     {c.formatted_address && (

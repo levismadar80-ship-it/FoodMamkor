@@ -86,7 +86,7 @@ function SelectAllSwitch({ on, label, onToggle }) {
           className={`relative block w-10 h-6 rounded-full transition-colors group-focus-visible:ring-2 group-focus-visible:ring-primary/40 ${on ? "bg-primary" : "bg-border"}`}
         >
           <span
-            className={`absolute top-1 w-4 h-4 rounded-full bg-surface shadow transition-all ${on ? "end-1" : "start-1"}`}
+            className={`absolute top-1 w-4 h-4 rounded-full bg-surface shadow-sm transition-all ${on ? "end-1" : "start-1"}`}
           />
         </span>
       </button>
@@ -242,7 +242,7 @@ export default function PaymentInfoEditor({ profile, onSave, reportDirty = () =>
             onClick={revert}
             disabled={saving}
             data-testid="payment-info-revert"
-            className="border border-border text-fg-muted px-4 py-2 rounded-full text-sm font-medium hover:border-primary hover:text-text transition disabled:opacity-60"
+            className="border border-border text-fg-muted px-4 py-2 rounded-full text-sm font-medium hover:border-primary hover:text-text transition disabled:opacity-50"
           >
             {t("revert_cta")}
           </button>

@@ -434,10 +434,10 @@ export default function Header() {
             // the pill toward the ~58px reach target. Padding is NOT animated
             // (stays out of the transition allowlist — MEH-732 guardrail).
             !isHomepage
-              ? "bg-background border-border shadow-[0_8px_30px_rgba(46,104,83,0.12)] py-1.5"
+              ? "bg-background border-border shadow-lg py-1.5"
               : transparent
-                ? "bg-background supports-[backdrop-filter]:bg-background/85 supports-[backdrop-filter]:backdrop-blur-md border-border shadow-[0_8px_30px_rgba(46,104,83,0.12)] py-1.5"
-                : "bg-background supports-[backdrop-filter]:bg-background/60 supports-[backdrop-filter]:backdrop-blur-md border-border shadow-[0_8px_30px_rgba(46,104,83,0.12)] py-1.5",
+                ? "bg-background supports-[backdrop-filter]:bg-background/85 supports-[backdrop-filter]:backdrop-blur-md border-border shadow-lg py-1.5"
+                : "bg-background supports-[backdrop-filter]:bg-background/60 supports-[backdrop-filter]:backdrop-blur-md border-border shadow-lg py-1.5",
             // MEH-1072: WIDTH is now FIXED geometry (gap-8, end-cap px-6 since MEH-1103) at every
             // scroll position — supersedes MEH-899 width switching per Sapir
             // 09/07 + NAV-01. The rest-wide→compact snap (gap-14/px-11 →
@@ -822,7 +822,7 @@ function UserMenu({ user, logout, open, setOpen, menuRef }) {
           role="menu"
           ref={menuListRef}
           onKeyDown={onMenuKeyDown}
-          className="absolute top-11 bg-surface-card border border-border rounded-md shadow-[0_4px_16px_rgba(0,0,0,0.08)] py-1 z-[1001]"
+          className="absolute top-11 bg-surface-card border border-border rounded-md shadow-lg py-1 z-[1001]"
           style={{ minWidth: 160, insetInlineStart: 0 }}
         >
           {items.map((item, i) => (

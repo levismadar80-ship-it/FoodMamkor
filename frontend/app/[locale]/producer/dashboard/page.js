@@ -671,7 +671,7 @@ export default function ProducerDashboardPage() {
             }`}
           >
             <span
-              className={`absolute top-1 w-4 h-4 rounded-full bg-surface shadow transition-all ${
+              className={`absolute top-1 w-4 h-4 rounded-full bg-surface shadow-sm transition-all ${
                 pauseOn && isApproved ? "end-1" : "start-1"
               }`}
             />
@@ -703,7 +703,7 @@ export default function ProducerDashboardPage() {
                 // offered a value the server would then reject.
                 min={israelToday()}
                 onChange={(e) => { setVacationUntil(e.target.value); setVacationDateError(""); }}
-                className="border border-border rounded-sm px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
+                className="border border-border rounded-sm px-3 py-1.5 text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
                 dir="ltr"
                 aria-invalid={vacationDateError ? "true" : undefined}
                 aria-describedby={vacationDateError ? "vacation-until-error" : undefined}

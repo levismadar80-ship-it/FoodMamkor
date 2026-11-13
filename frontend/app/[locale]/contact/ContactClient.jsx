@@ -66,7 +66,7 @@ export default function ContactClient() {
     <section className="min-h-screen">
       <div className="max-w-2xl mx-auto px-4 py-16">
         {/* MEH-2565: card from md up only — on a phone the form uses the full width. */}
-        <div className="md:bg-surface md:rounded-lg md:p-8 md:border md:border-border md:shadow-[0_2px_12px_rgba(46,104,83,0.04)]">
+        <div className="md:bg-surface md:rounded-lg md:p-8 md:border md:border-border md:shadow-sm">
           {/* MEH-2827 (FinalContact): the standard page title, start-aligned. */}
           <h1 className="font-headline-lg mb-3 text-primary-dark text-[clamp(28px,6vw,44px)] leading-[1.15] font-black text-start">
             {t("title")}

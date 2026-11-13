@@ -104,7 +104,7 @@ const CTA_VARIANTS = {
   website: { Icon: phosphor(Globe), className: OUTLINE },
   email: {
     Icon: phosphor(EnvelopeSimple),
-    className: "bg-primary-dark text-white hover:bg-primary focus-visible:ring-primary-dark/40",
+    className: "bg-primary-dark text-white hover:bg-primary focus-visible:ring-primary/40",
   },
   instagram: { Icon: InstagramGlyph, className: OUTLINE },
   facebook: { Icon: FacebookGlyph, className: OUTLINE },

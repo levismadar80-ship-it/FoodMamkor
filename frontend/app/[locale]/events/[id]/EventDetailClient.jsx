@@ -269,7 +269,7 @@ export default function EventDetailClient() {
         {/* Details card: below the title on mobile, a sticky side card on
             desktop (Airbnb / Eventbrite). */}
         <aside className="mt-6 lg:mt-0 lg:col-start-2 lg:row-start-1 lg:row-span-2 lg:sticky lg:top-24 space-y-4">
-          <div className="bg-surface border border-border rounded-lg overflow-hidden lg:shadow-md" data-testid="event-info">
+          <div className="bg-surface border border-border rounded-lg overflow-hidden lg:shadow-lg" data-testid="event-info">
             <div className={infoRow}>
               {/* MEH-2989: the date tile is this row's icon (Luma) — the
                   date used to repeat on the cover and in a desktop header. */}

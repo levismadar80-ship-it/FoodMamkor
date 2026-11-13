@@ -15,7 +15,7 @@ import api from "@/lib/api";
 import { formatEventDate } from "@/lib/format-date";
 
 const BTN =
-  "flex items-center justify-center min-h-[48px] w-full bg-primary text-white px-6 rounded-full font-semibold hover:bg-primary-dark transition focus-ring disabled:opacity-60";
+  "flex items-center justify-center min-h-[48px] w-full bg-primary text-white px-6 rounded-full font-semibold hover:bg-primary-dark transition focus-ring disabled:opacity-50";
 
 export default function CancelRegistrationClient({ token }) {
   const t = useTranslations("registration.cancel");
