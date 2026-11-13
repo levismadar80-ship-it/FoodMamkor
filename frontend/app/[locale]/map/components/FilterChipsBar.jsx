@@ -47,6 +47,12 @@ export default function FilterChipsBar({
   // of it, instead of opening a row of its own. It is not a filter: it stays
   // outside the strip (its testid, its live region, «נקו הכל»).
   originTag = null,
+  // MEH-3062: the phone shell passes true — the category chips join the
+  // «סינון» / service rail as ONE scrolling row instead of a row of their own
+  // (Google Maps / Airbnb keep one chip row over the map). The rail still
+  // LEADS with «סינון» + the service chips, so its start matches home and
+  // /producers (MEH-2598). The desktop panel (lg+) keeps the two rows.
+  singleRow = false,
 }) {
   const t = useTranslations();
   const withChipCopy = useChipCopy(); // MEH-2748: tag words from messages
@@ -82,6 +88,19 @@ export default function FilterChipsBar({
   const showDeliveryContextBanner = !!chipState.has_delivery && !!cityFilter;
   // MEH-2506: the strip renders either alone (mt-2 under the chips) or inside
   // the origin row, which owns the spacing — so `inRow` drops the margin.
+  // MEH-3062: one builder for both placements (own row on desktop, tail of the
+  // service rail on the phone) so the two cannot drift (frontend.md MEH-2776).
+  const categoryRow = (className) => (
+    <ChipScrollRow
+      variant="category"
+      chips={categoryChipsWithIcons}
+      // MEH-1465: multi-select — pass the selected keys as a Set (ChipScrollRow
+      // renders a Direction A ring per selected chip; "כל" ghosts when ≥1 active).
+      activeKeys={new Set(chipState.categoryKeys)}
+      onChipClick={onCategoryChipClick}
+      className={className}
+    />
+  );
   const tagStrip = (inRow) =>
     activeFilterTags.length > 0 && (
       <div
@@ -128,22 +147,22 @@ export default function FilterChipsBar({
           (flex-1) share the line with the "סינון" button (pinned inline-end).
           The old second row (inline quick-chip toggles [מאומתים] [משלוח]) is
           gone; every attribute filter now lives only in FilterSheet. */}
-      <div className="flex items-center gap-2 min-w-0">
-        <ChipScrollRow
-          variant="category"
-          chips={categoryChipsWithIcons}
-          // MEH-1465: multi-select — pass the selected keys as a Set (ChipScrollRow
-          // renders a Direction A ring per selected chip; "כל" ghosts when ≥1 active).
-          activeKeys={new Set(chipState.categoryKeys)}
-          onChipClick={onCategoryChipClick}
-          className="flex-1"
-        />
-      </div>
+      {!singleRow && (
+        <div className="flex items-center gap-2 min-w-0">{categoryRow("flex-1")}</div>
+      )}
       {/* MEH-2046 row 2: the two promoted service chips. The "סינון" trigger
           moves down onto this line with them — it is passed as children rather
           than rebuilt inside ServiceChipRow so the `relative` anchor below stays
           the element FilterSheet's md+ panel positions against. */}
-      <ServiceChipRow chipState={chipState} onToggleChip={onToggleChipClick} chips={visibleToggleChips}>
+      <ServiceChipRow
+        chipState={chipState}
+        onToggleChip={onToggleChipClick}
+        chips={visibleToggleChips}
+        first={singleRow}
+        // MEH-3062: shrink-0 — inside the rail the category row takes its full
+        // width and the RAIL scrolls; a second scroller inside it would not.
+        trailing={singleRow ? categoryRow("shrink-0") : null}
+      >
         {/* Anchor wrapper — FilterSheet's lg+ panel positions off this
             wrapper (sticky is positioned, so it anchors like `relative`).
             MEH-2598: it LEADS the row now (inline-start, the RIGHT in RTL), as

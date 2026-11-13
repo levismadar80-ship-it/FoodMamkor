@@ -40,7 +40,9 @@ import { keepFocusedChipClear } from "@/lib/keepFocusedChipClear";
 // the caller's already-gated list (FilterChipsBar's visibleToggleChips), so a
 // caller that forgets it renders no chip rather than an ungated on_site.
 
-export default function ServiceChipRow({ chipState, onToggleChip, chips = [], children }) {
+// MEH-3062: `trailing` = the category chips on the phone shell (one rail, not
+// two rows); `first` drops the top margin when this rail is the only row.
+export default function ServiceChipRow({ chipState, onToggleChip, chips = [], children, trailing = null, first = false }) {
   return (
     // MEH-2598 (Sapir 29/10, «אחיד»): the row now matches home and /producers
     // (MEH-2537 / MEH-2569) — «סינון» LEADS (children, sticky below lg), then
@@ -55,7 +57,7 @@ export default function ServiceChipRow({ chipState, onToggleChip, chips = [], ch
     <div
       dir="rtl"
       data-testid="map-service-row"
-      className="-mx-3 mt-1 flex items-center gap-2 min-w-0 overflow-x-auto overscroll-x-none px-3 py-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden lg:mx-0 lg:px-0 lg:overflow-visible lg:flex-wrap"
+      className={`-mx-3 ${first ? "" : "mt-1 "}flex items-center gap-2 min-w-0 overflow-x-auto overscroll-x-none px-3 py-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden lg:mx-0 lg:px-0 lg:overflow-visible lg:flex-wrap`}
       onFocus={keepFocusedChipClear}
     >
       {/* The "סינון" trigger and its FilterSheet anchor are passed in rather
@@ -71,6 +73,14 @@ export default function ServiceChipRow({ chipState, onToggleChip, chips = [], ch
         onToggle={onToggleChip}
         testIdPrefix="map-service-chip"
       />
+      {trailing && (
+        <>
+          {/* MEH-3062: a hairline between the service chips and the
+              categories — two kinds of filter in one rail. Decorative. */}
+          <span aria-hidden="true" className="shrink-0 self-stretch my-1.5 w-px bg-border" />
+          {trailing}
+        </>
+      )}
     </div>
   );
 }
