@@ -9,7 +9,10 @@
  * Reads input / textarea / select (not checkbox, radio, hidden, file, range,
  * color, submit) with a `border` class, across every string piece of its
  * className (literal, template, cn(...) args). Fields without a border (chat
- * composer, inline search) are out of scope.
+ * composer, inline search) are out of scope. A wrapper that owns the field's
+ * border (`focus-within:` + border, CitySearch's shape) counts as the field.
+ * Blind spot, stated: a className passed as a bare variable has no string to
+ * read and is skipped.
  */
 import fs from "node:fs";
 import path from "node:path";
@@ -31,7 +34,8 @@ export function fieldIssues(src, seen = { fields: 0 }) {
   traverse(ast, {
     JSXOpeningElement(p) {
       const n = p.node.name.name;
-      if (!["input", "textarea", "select"].includes(n)) return;
+      const isWrapper = n === "div" && /focus-within:/.test(src.slice(p.node.start, p.node.end));
+      if (!["input", "textarea", "select"].includes(n) && !isWrapper) return;
       const attrs = p.node.attributes.filter((a) => a.type === "JSXAttribute");
       const ty = attrs.find((a) => a.name.name === "type");
       if (n === "input" && ty?.value?.type === "StringLiteral" && SKIP_TYPES.has(ty.value.value)) return;
@@ -51,7 +55,7 @@ export function fieldIssues(src, seen = { fields: 0 }) {
       const line = p.node.loc.start.line;
       if (!FIELD_RADIUS.test(all)) hits.push(`${n} radius@${line}`);
       else if (OTHER_RADIUS.test(all.replace(/(^|\s)rounded-(sm|full|none)(?=\s|$)/g, " "))) hits.push(`${n} radius@${line}`);
-      if (!FOCUS.test(all)) hits.push(`${n} focus@${line}`);
+      if (!isWrapper && !FOCUS.test(all)) hits.push(`${n} focus@${line}`);
     },
   });
   return hits;
@@ -75,6 +79,9 @@ describe("MEH-3092 — form field look", () => {
     expect(fieldIssues('const a = <select className="border rounded-sm px-2 focus-ring" />;')).toEqual([]);
     expect(fieldIssues('const a = <input type="checkbox" className="border rounded" />;')).toEqual([]);
     expect(fieldIssues('const a = <input className="flex-1 bg-transparent outline-none" />;')).toEqual([]);
+    // reviewer finding (13/11): the pre-fix CitySearch.jsx:276 wrapper carried the border
+    expect(fieldIssues('const a = <div className="flex border rounded-md focus-within:border-primary"><input className="flex-1" /></div>;'))
+      .toEqual(["div radius@1"]);
   });
 
   it("every bordered field in app/ and components/ is rounded-sm with a focus ring", () => {

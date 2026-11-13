@@ -203,7 +203,7 @@ export default function CitiesAutocomplete({
 
       {/* Selected chips + input */}
       <div
-        className="min-h-[42px] flex flex-wrap gap-1.5 items-center border border-border rounded-md px-3 py-2 bg-surface focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/30 cursor-text"
+        className="min-h-[42px] flex flex-wrap gap-1.5 items-center border border-border rounded-sm px-3 py-2 bg-surface focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/30 cursor-text"
         onClick={() => inputRef.current?.focus()}
       >
         {value.map((city) => (
