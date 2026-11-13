@@ -333,7 +333,7 @@ Registration order of the app. Actor from the dependency tree: `require_admin` �
 | `top_product` | page | live | — | n/a | `frontend/__tests__/ProducerHoursSection.test.jsx:52` | n/a | covered |
 | `hours` | page | live | — | n/a | `frontend/__tests__/LocationHoursField.test.jsx:15` | n/a | covered |
 | `vacation_mode` | page | live | — | n/a | `frontend/__tests__/ProducerHeaderAlertsReentry.test.jsx:100` | n/a | covered |
-| `map_precision` | page | live | — | n/a | `frontend/__tests__/PickupLayerControl.test.jsx:28` | n/a | covered |
+| `map_precision` | page | live | — | n/a | `frontend/__tests__/producerPoints.test.js:2` | n/a | covered |
 | `multi_locations` | page | live | — | n/a | `frontend/__tests__/LocationFormDisclosure.test.jsx:25` | n/a | covered |
 | `draft_claim` | page | live | — | `tests/test_meh2496_claim_link_sent_at.py:65` (5/5 routes in file) | `frontend/__tests__/AdminClaimLink.test.jsx:18` | n/a | covered |
 | `ai_writer` | page | live | — | `tests/test_api.py:2138` (imports module) | n/a | n/a | covered |
