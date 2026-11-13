@@ -564,6 +564,41 @@ describe("ReviewsSection — reviews look (MEH-2592)", () => {
     }
   });
 
+  it("owner: a kept star never opens the form", async () => {
+    sessionStorage.setItem("review_draft_stars_p-1", "5");
+    authState.user = { id: "u-o", producer_id: "p-1" };
+    localStorage.setItem("contacted_p-1", "phone");
+    try {
+      mockReviews([]);
+      render(<ReviewsSection producerId="p-1" isOwner />);
+      await waitFor(() => expect(apiMock.get).toHaveBeenCalled());
+      expect(screen.queryByText("form_heading")).toBeNull();
+      // The owner path returns before the kept star is consumed.
+      expect(sessionStorage.getItem("review_draft_stars_p-1")).toBe("5");
+    } finally {
+      localStorage.removeItem("contacted_p-1");
+    }
+  });
+
+  it("storage blocked: tapping a star does not throw and the row still renders", async () => {
+    authState.user = null;
+    mockReviews([]);
+    const blocked = () => {
+      throw new DOMException("blocked", "SecurityError");
+    };
+    const getSpy = vi.spyOn(Storage.prototype, "getItem").mockImplementation(blocked);
+    const setSpy = vi.spyOn(Storage.prototype, "setItem").mockImplementation(blocked);
+    try {
+      render(<ReviewsSection producerId="p-1" />);
+      const star = await screen.findByTestId("reviews-star-2");
+      expect(() => fireEvent.click(star)).not.toThrow();
+      expect(screen.getByTestId("reviews-invite-stars").getAttribute("dir")).toBe("ltr");
+    } finally {
+      getSpy.mockRestore();
+      setSpy.mockRestore();
+    }
+  });
+
   it("logged-in, not gated, reviews exist: the contact card sits UNDER the reviews; stars go to the contact card", async () => {
     authState.user = { id: "u-9", producer_id: null };
     mockReviews([noReply]);

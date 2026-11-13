@@ -60,7 +60,7 @@ function scrollToContactCard() {
 }
 
 const STAR_TAP =
-  "inline-flex min-h-touch min-w-[40px] items-center justify-center rounded-lg transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40";
+  "inline-flex min-h-touch min-w-touch items-center justify-center rounded-lg transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40";
 
 function InviteStar({ value, lit, mode, loginHref, producerId, ariaLabel, onHover }) {
   const icon = (
@@ -75,8 +75,11 @@ function InviteStar({ value, lit, mode, loginHref, producerId, ariaLabel, onHove
     "data-testid": `reviews-star-${value}`,
     "aria-label": ariaLabel,
     className: STAR_TAP,
-    onMouseEnter: () => onHover(value),
-    onFocus: () => onHover(value),
+    // A real mouse only: on touch a tap fires an emulated enter with no
+    // leave, which left the stars lit after the tap (MEH-2418, same idea).
+    onPointerEnter: (e) => {
+      if (e.pointerType === "mouse") onHover(value);
+    },
   };
   if (mode === "login") {
     return (
@@ -118,14 +121,16 @@ export default function ReviewInviteCard({ mode, loginHref, producerId, producer
         </span>
         <div className="min-w-0">
           <p className="font-body-md text-base font-bold text-text">{title}</p>
+          {/* -ms-2 on the outer box (page direction) lines the first star's
+              edge up with the title: 44px tap − 28px icon = 8px each side. */}
+          <div className="-ms-2 mt-0.5">
           <div
-            className="-me-1.5 mt-0.5 inline-flex"
+            className="inline-flex"
             dir="ltr"
             role="group"
             aria-label={title}
             data-testid="reviews-invite-stars"
-            onMouseLeave={() => setHovered(0)}
-            onBlur={() => setHovered(0)}
+            onPointerLeave={() => setHovered(0)}
           >
             {Array.from({ length: STAR_COUNT }, (_, i) => (
               <InviteStar
@@ -139,6 +144,7 @@ export default function ReviewInviteCard({ mode, loginHref, producerId, producer
                 onHover={setHovered}
               />
             ))}
+          </div>
           </div>
         </div>
       </div>
