@@ -39,6 +39,7 @@ import Seed from "@/components/brand/Seed";
 import { CATEGORY_ICON, PRICE_BASE } from "@/components/EventEntryRow";
 import { Link } from "@/i18n/navigation";
 import api from "@/lib/api";
+import { rescueBagPath } from "@/lib/producer-path";
 import { seedColorFor } from "@/lib/brand-seeds";
 import { IMAGE_RATIOS, optimizeCloudinary } from "@/lib/cloudinary";
 import { cssUrl } from "@/lib/css-url";
@@ -199,6 +200,9 @@ const BasketSchema = z.object({
   price_agorot: z.number().nullish(),
   producer: z.object({
     id: Id.nullish(),
+    // The card links to the business page by it — without it in the schema
+    // z.object strips it and every card falls back to /producer/{id}.
+    slug: Text,
     name: z.string().min(1),
     city: Text,
     image_url: Text,
@@ -302,8 +306,10 @@ const SOURCES = Object.freeze([
     endpoint: "/rescue/offers",
     enabled: rescueOn,
     schema: BasketSchema,
-    // The pilot has no per-bag page, so every basket row goes to the /rescue
-    // list. Its name is the business's — a bag has no title of its own.
+    // A bag has no page of its own: it is reserved on its business's page, in
+    // the surprise-bag section — so the card goes there, not to the /rescue
+    // list (which only lists it again). Its name is the business's — a bag
+    // has no title of its own.
     toEntry: (row) => {
       // pickup_start DOES carry a zone (schemas/rescue.py:256 UtcDatetimeOut),
       // but it goes through the same parser as the deadline so no row in this
@@ -313,7 +319,7 @@ const SOURCES = Object.freeze([
         key: `rescue-${row.id}`,
         type: "rescue",
         title: row.producer.name,
-        href: "/rescue",
+        href: rescueBagPath(row.producer) || "/rescue",
         at,
         time: israelTime(row.pickup_start ? at : null),
         timeEnd: israelTime(parseNaiveUtc(row.pickup_end)),
