@@ -133,10 +133,6 @@ export default function Footer() {
       : []),
     ...(showGroupBuys ? [{ href: "/group-buys", label: t("nav.footer.group_buys") }] : []),
     ...(showRescue ? [{ href: "/rescue", label: t("nav.footer.rescue") }] : []),
-    // «המליצו על בית עסק» moved here from the bottom utility row (Sapir
-    // 13/11): it is a reader action, and that row holds only legal links and
-    // contact. Last in «גלו», after the data-gated links.
-    { href: "/recommend", label: t("nav.footer.recommend") },
   ];
   const aboutLinks = [
     { href: "/about", label: t("nav.footer.about") },
@@ -145,6 +141,10 @@ export default function Footer() {
     // MEH-1160: reader-facing share page — the site-level viral loop.
     // MEH-2827 PR 5: /share became the «ספרו עלינו» section of /recommend
     // (/share 308s there too); the label is unchanged.
+    // «המליצו על בית עסק» sits in «עלינו» next to «ספרו עלינו» (Sapir 13/11):
+    // both are a reader helping the site, both land on /recommend. It was in
+    // the utility row (MEH-2633), then briefly in «גלו» (MEH-3042).
+    { href: "/recommend", label: t("nav.footer.recommend") },
     { href: "/recommend#share", label: t("share_page.footer_link") },
   ];
   const businessLinks = [

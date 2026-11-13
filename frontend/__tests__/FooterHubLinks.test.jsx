@@ -77,7 +77,7 @@ describe("Footer «גלו»: group buys + rescue bags, data-gated (MEH-2858)", (
     Object.assign(gates, { events: true, experiences: true, groupBuys: true, rescue: true });
     render(<Footer />);
     // MEH-2858 (scope add): «אודות» and the rest moved to «עלינו».
-    expect(discoverHrefs()).toEqual(["/producers", "/map", "/events", "/experiences", "/group-buys", "/rescue", "/recommend"]);
+    expect(discoverHrefs()).toEqual(["/producers", "/map", "/events", "/experiences", "/group-buys", "/rescue"]);
   });
 
   it("the link labels are the two new keys", () => {
