@@ -13,7 +13,7 @@ import { TOGGLE_CHIPS, chipStateToParams } from "@/lib/map-chips";
 import { chipsFromQuery } from "@/lib/filter-url";
 import { readMapSelection, writeMapSelection } from "@/lib/map-view-state";
 import { geocodeCity } from "@/lib/places";
-import { producerPoints } from "@/lib/producerPoints";
+import { mapPinPoints, producerPoints } from "@/lib/producerPoints";
 import { isRatingSortEnabled, mapRatingGateSource } from "@/lib/rating-gate";
 import { showToast } from "@/lib/toast";
 import { useUserCity } from "@/lib/use-user-city";
@@ -564,8 +564,10 @@ export default function MapPage() {
         // Producer.lat/lng directly — was Producer.lat/lng-only, whose 07/08
         // citation (MapClient.jsx:348-350) had already drifted to this site
         // by the time this chunk landed; re-verified live via grep.
+        // MEH-3054: the pins the map DRAWS (one per business unless the
+        // «איסוף עצמי» chip is on), so "nothing near you" matches the screen.
         const hasNearby = feed.allProducers.some((p) =>
-          producerPoints(p).some(
+          mapPinPoints(p, { expanded: filters.showAllPickupPoints }).some(
             (pt) => haversineKm(lat, lng, pt.lat, pt.lng) <= NEAR_ME_RADIUS_KM
           )
         );
@@ -580,7 +582,7 @@ export default function MapPage() {
         }
       }
     );
-  }, [sync.mapApiRef, feed.allProducers]);
+  }, [sync.mapApiRef, feed.allProducers, filters.showAllPickupPoints]);
 
   // MEH-970: the 800ms first-visit auto-open of LocationModal was removed
   // here — /map now renders immediately on the MEH-932 producer-band default
@@ -830,6 +832,7 @@ export default function MapPage() {
       registerApi={sync.registerMapApi}
       mapRef={sync.mapRef}
       focusedProducerId={focusedProducerId}
+      showAllPickupPoints={filters.showAllPickupPoints}
       mapMoved={filters.mapMoved}
       onSearchThisArea={sync.handleSearchThisArea}
       visibleProducers={filters.visibleProducers}

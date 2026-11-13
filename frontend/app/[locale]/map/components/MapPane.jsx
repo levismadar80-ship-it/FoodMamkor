@@ -83,8 +83,10 @@ export default function MapPane({
   registerApi,
   mapRef,
   // Sapir 13/11: the pickup-layer toggle (MEH-1412) and its reminder (MEH-2046)
-  // are gone. Pickup points are always drawn; MapComponent defaults
-  // showSecondaryLayer to true.
+  // are gone (MEH-3045). MEH-3054: one pin per business; a business's pickup
+  // points show when it is selected, and every business's while the
+  // «איסוף עצמי» chip is on (this flag, from useMapFilters).
+  showAllPickupPoints = false,
   // MEH-1611: id of the selected business (focus-on-select demote). Pure
   // pass-through — MapClient owns the state, MapComponent renders the effect.
   focusedProducerId,
@@ -122,6 +124,7 @@ export default function MapPane({
         registerApi={registerApi}
         mapRef={mapRef}
         focusedProducerId={focusedProducerId}
+        showAllPickupPoints={showAllPickupPoints}
       />
 
 

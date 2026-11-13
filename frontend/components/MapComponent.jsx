@@ -15,7 +15,7 @@ import { setUserLocation } from "@/lib/user-location";
 import { CoordSchema } from "@/lib/schemas";
 import { styleForProducer } from "@/lib/category-registry";
 import { categoryGlyphSvg } from "@/lib/marker-glyph";
-import { producerPoints } from "@/lib/producerPoints";
+import { mapPinPoints, producerPoints } from "@/lib/producerPoints";
 import { readMapViewState, writeMapViewState } from "@/lib/map-view-state";
 
 /**
@@ -390,9 +390,12 @@ export default function MapComponent({
   // one wins because the hidden container produces degenerate bounds (detected
   // in MapClient before use).
   mapRef: parentMapRef = null,
-  // MEH-1412 (MEH-1388 chunk 3): show/hide the pickup + market_stand secondary
-  // marker layer. Default true (all points visible); MapClient owns the toggle.
-  showSecondaryLayer = true,
+  // MEH-3054 (option ה׳, Sapir 13/11): one pin per business (mapPinPoints).
+  // true → every business's pickup / market_stand points are drawn too; /map
+  // passes the «איסוף עצמי» chip. The SELECTED business's points are drawn
+  // either way (showSelectedExtras below). Replaces MEH-1412's
+  // showSecondaryLayer, whose toggle left on 13/11 (MEH-3045).
+  showAllPickupPoints = false,
   // MEH-1611: id of the business the user has selected, or null. Drives the
   // focus-on-select demote (see markerWrapClass above).
   //
@@ -453,6 +456,41 @@ export default function MapComponent({
     });
   };
 
+  // MEH-3054 (option ה׳): the selected business's points that mapPinPoints()
+  // left out of the default one-pin view — its pickup / market_stand rows.
+  // Added to the cluster layer when it is selected, removed when it is not, so
+  // ten businesses with five pickup points each draw ten pins until one is
+  // chosen. Incremental on purpose: the marker effect is not re-run on a
+  // selection, so the clicked pin keeps its element (and keyboard focus).
+  // Nothing to add while showAllPickupPoints already draws every point.
+  const selectedExtrasRef = useRef([]);
+  const showSelectedExtras = (id) => {
+    const group = clusterGroupRef.current;
+    const old = selectedExtrasRef.current;
+    if (old.length > 0) {
+      group?.removeLayers(old.map((e) => e.marker));
+      for (const e of old) {
+        const entry = markersRef.current.get(e.producerId);
+        if (entry) entry.markers = entry.markers.filter((m) => m.marker !== e.marker);
+      }
+      selectedExtrasRef.current = [];
+    }
+    if (!id || !group || showAllPickupPoints) return;
+    const entry = markersRef.current.get(id);
+    if (!entry) return;
+    const drawn = new Set(entry.markers.map((m) => m.location));
+    const extras = [];
+    for (const { location } of producerPoints(entry.producer)) {
+      if (drawn.has(location)) continue;
+      const marker = buildMarker(entry.producer, location);
+      if (marker) extras.push({ marker, location, producerId: id });
+    }
+    if (extras.length === 0) return;
+    group.addLayers(extras.map((e) => e.marker));
+    entry.markers.push(...extras.map(({ marker, location }) => ({ marker, location })));
+    selectedExtrasRef.current = extras;
+  };
+
   // MEH-1611: the ONLY writer of the focus state. Both entry points (the
   // `focusedProducerId` prop effect and the imperative focusProducer API) route
   // through here, so the container class and the icons can never disagree about
@@ -464,6 +502,9 @@ export default function MapComponent({
     if (activeIdRef.current === id) return;
     const prev = activeIdRef.current;
     activeIdRef.current = id;
+    // MEH-3054: draw the newly selected business's other points (and take the
+    // previous one's away) BEFORE the icon refresh, so they get the focus flag.
+    showSelectedExtras(id);
     if (prev) refreshMarkerIcon(prev);
     if (id) refreshMarkerIcon(id);
     // MEH-1663: demote the surroundings ONLY when the selected business actually
@@ -479,6 +520,75 @@ export default function MapComponent({
     // not pretend to have a point on the map.
     const hasPins = id !== null && (markersRef.current.get(id)?.markers?.length ?? 0) > 0;
     containerRef.current?.classList.toggle(MAP_FOCUSED_CLASS, hasPins);
+  };
+
+  // Build one marker for a single location row of producer `p`, or null when
+  // the row has no usable coordinates. MEH-3054: lifted out of the marker
+  // effect so the selected business's extra points (showSelectedExtras) are
+  // built exactly like every other pin.
+  const buildMarker = (p, loc) => {
+    const markerLabel = p.name || t("marker_singular");
+    // docs/archive/MAP_IMPROVEMENTS.md #10 — defensive null checks: skip a
+    // location without usable coordinates (never render a NaN marker).
+    const lat = loc?.lat;
+    const lng = loc?.lng;
+    if (
+      typeof lat !== "number" ||
+      typeof lng !== "number" ||
+      isNaN(lat) ||
+      isNaN(lng)
+    )
+      return null;
+
+    const marker = L.marker([lat, lng], {
+      icon: createLocationIcon(p, loc, {
+        // MEH-1611: was hardcoded `false`. A refetch that rebuilds every
+        // marker ("חפשי באזור זה", a layer toggle, a filter change) happens
+        // while a business can still be selected — hardcoding false dropped
+        // the selected business's own focus flag, so the CSS demote then
+        // faded it along with everything else.
+        active: activeIdRef.current === p.id,
+        hovered: hoveredIdRef.current === p.id,
+      }),
+      // MEH-30 #8: no Leaflet tooltip/popup — marker click opens the bottom
+      // sheet in MapClient (onProducerClickRef). ALL of a producer's markers
+      // open the SAME producer card. Hover syncs card highlight, not a tooltip.
+      //
+      // MEH-1619: `alt: markerLabel` used to sit here and did nothing. Leaflet
+      // applies alt ONLY to an <img> icon (leaflet-src.js:7907-7909); these are
+      // divIcons, so it rendered a DIV with no alt attribute (measured). The
+      // accessible name comes from `title` (applied to any element, :7903) plus
+      // the role="button" + aria-label set in the `add` handler below (MEH-765).
+      title: markerLabel,
+      // Effective, not decorative — measured tabindex="0" on the rendered pin.
+      keyboard: true,
+    });
+    // MEH-1412: tag the marker with its business id so the cluster badge can
+    // dedupe by producer (unique-business count, not marker count).
+    marker.producerId = p.id;
+    // MEH-1568: the producer itself, so a single-business cluster can render
+    // that business's category marker (colour + glyph) rather than a "1".
+    marker.producer = p;
+
+    // MEH-765: keyboard a11y — the divIcon has no native `alt`, so set
+    // role + accessible name on each marker's element via the `add` event
+    // (fires each time it renders out of a cluster). Idempotent.
+    marker.on("add", () => {
+      const el = marker.getElement();
+      if (el) {
+        el.setAttribute("role", "button");
+        el.setAttribute("aria-label", markerLabel);
+      }
+    });
+
+    // MEH-1412: pass the clicked LOCATION alongside the producer so the
+    // selected-card can show the point's label (business name + label).
+    // ALL of a producer's markers still open the SAME producer card.
+    marker.on("click", () => onProducerClickRef.current?.(p, loc));
+    marker.on("mouseover", () => onProducerHoverRef.current?.(p.id));
+    marker.on("mouseout", () => onProducerHoverRef.current?.(null));
+
+    return marker;
   };
 
   // Expose imperative API via a callback prop
@@ -802,6 +912,7 @@ export default function MapComponent({
     // Clear existing markers from the cluster layer
     clusterGroupRef.current.clearLayers();
     markersRef.current = new Map();
+    selectedExtrasRef.current = []; // cleared with the layers above (MEH-3054)
 
     // Defensive: guard against null/empty producers (#10)
     if (!Array.isArray(producers) || producers.length === 0) return;
@@ -829,86 +940,26 @@ export default function MapComponent({
       // is GONE, on both sides (producerPoints() here, the backend COALESCE
       // there) — a business with no usable location row has no marker.
 
-      const markerLabel = p.name || t("marker_singular");
       const entryMarkers = [];
-
-      // Build + register one marker for a single location row. Returns true if a
-      // marker was added (usable coords), false otherwise.
       const addMarker = (loc) => {
-        // docs/archive/MAP_IMPROVEMENTS.md #10 — defensive null checks: skip a
-        // location without usable coordinates (never render a NaN marker).
-        const lat = loc?.lat;
-        const lng = loc?.lng;
-        if (
-          typeof lat !== "number" ||
-          typeof lng !== "number" ||
-          isNaN(lat) ||
-          isNaN(lng)
-        )
-          return false;
-
-        const marker = L.marker([lat, lng], {
-          icon: createLocationIcon(p, loc, {
-            // MEH-1611: was hardcoded `false`. A refetch that rebuilds every
-            // marker ("חפשי באזור זה", a layer toggle, a filter change) happens
-            // while a business can still be selected — hardcoding false dropped
-            // the selected business's own focus flag, so the CSS demote then
-            // faded it along with everything else.
-            active: activeIdRef.current === p.id,
-            hovered: hoveredIdRef.current === p.id,
-          }),
-          // MEH-30 #8: no Leaflet tooltip/popup — marker click opens the bottom
-          // sheet in MapClient (onProducerClickRef). ALL of a producer's markers
-          // open the SAME producer card. Hover syncs card highlight, not a tooltip.
-          //
-          // MEH-1619: `alt: markerLabel` used to sit here and did nothing. Leaflet
-          // applies alt ONLY to an <img> icon (leaflet-src.js:7907-7909); these are
-          // divIcons, so it rendered a DIV with no alt attribute (measured). The
-          // accessible name comes from `title` (applied to any element, :7903) plus
-          // the role="button" + aria-label set in the `add` handler below (MEH-765).
-          title: markerLabel,
-          // Effective, not decorative — measured tabindex="0" on the rendered pin.
-          keyboard: true,
-        });
-        // MEH-1412: tag the marker with its business id so the cluster badge can
-        // dedupe by producer (unique-business count, not marker count).
-        marker.producerId = p.id;
-        // MEH-1568: the producer itself, so a single-business cluster can render
-        // that business's category marker (colour + glyph) rather than a "1".
-        marker.producer = p;
-
-        // MEH-765: keyboard a11y — the divIcon has no native `alt`, so set
-        // role + accessible name on each marker's element via the `add` event
-        // (fires each time it renders out of a cluster). Idempotent.
-        marker.on("add", () => {
-          const el = marker.getElement();
-          if (el) {
-            el.setAttribute("role", "button");
-            el.setAttribute("aria-label", markerLabel);
-          }
-        });
-
-        // MEH-1412: pass the clicked LOCATION alongside the producer so the
-        // selected-card can show the point's label (business name + label).
-        // ALL of a producer's markers still open the SAME producer card.
-        marker.on("click", () => onProducerClickRef.current?.(p, loc));
-        marker.on("mouseover", () => onProducerHoverRef.current?.(p.id));
-        marker.on("mouseout", () => onProducerHoverRef.current?.(null));
-
+        const marker = buildMarker(p, loc);
+        if (!marker) return false;
         bulkMarkers.push(marker); // MEH-1424: batched into one addLayers below
         entryMarkers.push({ marker, location: loc });
         return true;
       };
 
-      // MEH-1412: render each usable location. Secondary points
-      // (pickup/market_stand) are suppressed when showSecondaryLayer is false.
-      // /map no longer has a toggle for it (Sapir 13/11), so it stays true there.
+      // MEH-1412: render each usable location. MEH-3054: only the business's
+      // pins (mapPinPoints — its branches, or its first point when it has
+      // none); every pickup / market_stand point while showAllPickupPoints is
+      // on. The selected business's other points are added by
+      // showSelectedExtras, after this loop.
       // MEH-1670: the rules live in producerPoints(), so the /map viewport
       // filter derives points the same way instead of reading Producer.lat/lng
       // on its own (which dropped a delivery-only business from the list while
       // its pickup pin was on screen). MEH-1938 chunk 5a removed the module's
       // synthesised fallback row; this loop renders exactly what it returns.
-      producerPoints(p, { includeSecondary: showSecondaryLayer }).forEach(({ location }) =>
+      mapPinPoints(p, { expanded: showAllPickupPoints }).forEach(({ location }) =>
         addMarker(location),
       );
 
@@ -920,13 +971,17 @@ export default function MapComponent({
     // visible cluster (see the comment on bulkMarkers above).
     clusterGroupRef.current.addLayers(bulkMarkers);
 
+    // MEH-3054: a rebuild while a business is selected (a refetch, the chip)
+    // re-adds its extra points; applyFocus would not, as the id is unchanged.
+    showSelectedExtras(activeIdRef.current);
+
     // MEH-58 QA: removed auto-fitBounds that overrode the initial center
     // (MEH-932: now [32.4, 34.95] zoom 8, the fixed producer-band view). The
     // fitBounds was centering on wherever the producers clustered (often
     // northern Israel when test data was sparse), making the map look
     // off-center on load.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [producers, showSecondaryLayer]);
+  }, [producers, showAllPickupPoints]);
 
   // MEH-1611: mirror the selected business onto the map.
   //
