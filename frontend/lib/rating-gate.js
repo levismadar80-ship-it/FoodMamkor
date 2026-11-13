@@ -95,3 +95,25 @@ export function weightedRating(producer) {
 export function mapRatingGateSource(catalogSnapshot, allProducers) {
   return Array.isArray(catalogSnapshot) ? catalogSnapshot : allProducers;
 }
+
+/**
+ * MEH-3071 — the card-side half: a listing card (ProducerCard, the /map
+ * selection card) shows «★ X.X (N)» only from this many reviews (MEH-1243).
+ */
+export const CARD_RATING_MIN_REVIEWS = 3;
+
+/**
+ * True when a listing card should show the business's rating.
+ * @param {{ reviews_count?: unknown, avg_rating?: unknown } | null | undefined} producer
+ */
+export function hasCardRating(producer) {
+  const count = Number(producer?.reviews_count);
+  const avg = Number(producer?.avg_rating);
+  return (
+    Number.isFinite(count) &&
+    count >= CARD_RATING_MIN_REVIEWS &&
+    producer?.avg_rating != null &&
+    Number.isFinite(avg) &&
+    avg > 0
+  );
+}
