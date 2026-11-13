@@ -39,6 +39,8 @@ vi.mock("@phosphor-icons/react", () => ({
   // the whole file at import with 'No "X" export is defined' — the same trap
   // the MEH-2131 note above records.
   CalendarBlank: (p) => <span {...p} />,
+  // MEH-3068: the load-more spinner is ButtonSpinner (CircleNotch).
+  CircleNotch: (p) => <span {...p} />,
   CaretUp: (p) => <span {...p} />,
   X: (p) => <span {...p} />,
   Faders: (p) => <span {...p} />,  // MEH-1862 — the "סינון" trigger icon

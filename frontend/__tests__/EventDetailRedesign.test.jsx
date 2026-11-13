@@ -42,7 +42,6 @@ vi.mock("@phosphor-icons/react", () => {
 vi.mock("@/components/ShareButton", () => ({ default: () => <span data-testid="share-button" /> }));
 vi.mock("@/lib/api", () => ({ default: { get: vi.fn() } }));
 vi.mock("@/lib/cloudinary", () => ({ optimizeCloudinary: (u) => u, IMAGE_RATIOS: {} }));
-vi.mock("@/lib/format-date", () => ({ formatEventDate: () => "DATE" }));
 vi.mock("@/components/Breadcrumb", () => ({
   default: ({ className }) => <nav data-testid="breadcrumb" className={className} />,
 }));
@@ -264,6 +263,24 @@ describe("MEH-2989 — no repeated information", () => {
     expect(screen.getByTestId("event-info").contains(tile)).toBe(true);
     expect(screen.getByTestId("event-cover-band").parentElement.contains(tile)).toBe(false);
     expect(screen.getAllByTestId("event-date-tile")).toHaveLength(1);
+  });
+
+  // MEH-3057: the tile already says «נובמבר 20» — the row's text is the
+  // weekday + time, never the day / month / year again.
+  it("the date row's text is the weekday and time, not the date again", async () => {
+    await renderEvent({ event_time: "17:00:00" });
+    const row = screen.getByTestId("event-date-tile").parentElement;
+    const text = row.querySelector("p").textContent;
+    expect(text).toBe("יום שישי · 17:00");
+    expect(text).not.toMatch(/20|נובמבר|2026/);
+  });
+
+  it.each([
+    ["no time → the weekday alone", {}, "יום שישי"],
+    ["an end time → the range", { event_time: "09:30:00", end_time: "15:00:00" }, "יום שישי · 09:30–15:00"],
+  ])("date row: %s", async (_, extra, expected) => {
+    await renderEvent(extra);
+    expect(screen.getByTestId("event-date-tile").parentElement.querySelector("p").textContent).toBe(expected);
   });
 
   it("the breadcrumb is desktop only — «חזרה» covers the phone", async () => {

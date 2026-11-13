@@ -37,6 +37,7 @@ import api from "@/lib/api";
 import { styleForProducer } from "@/lib/category-registry";
 import { primaryPoint } from "@/lib/producerPoints";
 import SectionHeading from "@/components/ui/SectionHeading";
+import { SkeletonBlock } from "@/components/Skeleton";
 
 // MEH-538: Tel Aviv (population center) initial frame. MEH-856: this is now
 // only the PRE-FIT initial/fallback — FitToBusinesses fitBounds()es to the real
@@ -134,10 +135,10 @@ function FitToBusinesses({ points }) {
 function PreviewSkeleton() {
   const t = useTranslations("map.homepage_mini");
   return (
-    <div className="w-full h-full rounded-md bg-green-50 animate-pulse flex flex-col items-center justify-center gap-3">
+    <SkeletonBlock as="div" tone="brand" className="w-full h-full rounded-md flex flex-col items-center justify-center gap-3">
       <MapTrifold size={48} className="text-primary/30" />
       <p className="text-fg-muted text-sm">{t("loading")}</p>
-    </div>
+    </SkeletonBlock>
   );
 }
 

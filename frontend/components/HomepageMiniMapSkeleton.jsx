@@ -23,6 +23,7 @@ import { ArrowRight, MapTrifold } from "@phosphor-icons/react";
 import { Link } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
 import SectionHeading from "@/components/ui/SectionHeading";
+import { SkeletonBlock } from "@/components/Skeleton";
 
 // MEH-2850 C: `sectionRef` lets HomepageMiniMapLazy watch this very box with
 // an IntersectionObserver — no wrapper element, so the DOM order the home
@@ -46,10 +47,10 @@ export default function HomepageMiniMapSkeleton({ sectionRef = null } = {}) {
               the other is itself a layout shift. */}
         </header>
         <div className="rounded-md overflow-hidden border border-border h-[320px] md:h-[420px] relative">
-          <div className="w-full h-full rounded-md bg-green-50 animate-pulse flex flex-col items-center justify-center gap-3">
+          <SkeletonBlock as="div" tone="brand" className="w-full h-full rounded-md flex flex-col items-center justify-center gap-3">
             <MapTrifold size={48} className="text-primary/30" />
             <p className="text-fg-muted text-sm">{t("loading")}</p>
-          </div>
+          </SkeletonBlock>
         </div>
         {/* MEH-2850 C: the same «open full map» row as HomepageMiniMap.jsx —
             without it the section grew ~32px when the map arrived, and since
