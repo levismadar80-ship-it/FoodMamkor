@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { CaretDown, EyeSlash, Star } from "@phosphor-icons/react";
+import { EyeSlash, Star } from "@phosphor-icons/react";
 import { useTranslations, useLocale } from "next-intl";
 import api from "@/lib/api";
 import { detailToMessage } from "@/lib/errors";
@@ -20,6 +20,7 @@ import EmptyState from "@/components/ui/EmptyState";
 import { SkeletonList } from "@/components/Skeleton";
 import { seedColorFor } from "@/lib/brand-seeds";
 import SectionHeading from "@/components/ui/SectionHeading";
+import ShowMore from "@/components/ui/ShowMore";
 
 // MEH-2833 (seed layer, board 4): a reviewer's initial sits on a soft tint of
 // "their" seed — the seed colour mixed ~24% into the cream page, with an inset
@@ -578,16 +579,9 @@ export default function ReviewsSection({
             // center idiom (no physical props). Replaces the MEH-877 carousel.
             // "הצג עוד" only — no "show less" (MEH-1387 anti-pattern).
             // MEH-2592: a full-width button, like Airbnb's «הצגת כל הביקורות».
+            // MEH-3052: the shared ShowMore (block) — one look site-wide.
             <div className="mt-4">
-              <button
-                type="button"
-                onClick={handleShowMore}
-                disabled={loading}
-                className="w-full min-h-touch inline-flex items-center justify-center gap-1 rounded-xl border border-border bg-surface-card text-sm font-semibold text-text hover:bg-green-50 transition disabled:opacity-50"
-              >
-                {t("show_more")}
-                <CaretDown size={16} aria-hidden="true" />
-              </button>
+              <ShowMore onClick={handleShowMore} disabled={loading} label={t("show_more")} />
             </div>
           )}
         </>

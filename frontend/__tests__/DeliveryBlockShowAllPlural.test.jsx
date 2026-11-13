@@ -88,42 +88,42 @@ const areas = (n) =>
 
 describe("MEH-1908 — pluralised show-more copy, real ICU (he)", () => {
   it("cities: count===1 takes the singular branch, not «הצג עוד 1 ערים»", () => {
-    expect(toggleNames("he", { areas: cities(16) })).toEqual(["הצג עיר נוספת"]);
+    expect(toggleNames("he", { areas: cities(16) })).toEqual(["הצגת עיר נוספת"]);
   });
 
   it("cities: count===2 takes the `two` branch, not «הצג עוד 2 ערים»", () => {
-    expect(toggleNames("he", { areas: cities(17) })).toEqual(["הצג שתי ערים נוספות"]);
+    expect(toggleNames("he", { areas: cities(17) })).toEqual(["הצגת שתי ערים נוספות"]);
   });
 
   it("cities: count>2 names cities in the plural", () => {
-    expect(toggleNames("he", { areas: cities(18) })).toEqual(["הצג עוד 3 ערים"]);
+    expect(toggleNames("he", { areas: cities(18) })).toEqual(["הצגת עוד 3 ערים"]);
   });
 
   it("pickup: says «נקודת איסוף», never «עיר» — the count===1 branch", () => {
     expect(toggleNames("he", { areas: [], pickup: true, producer: { ...producer, locations: pickups(4) } }))
-      .toEqual(["הצג נקודת איסוף נוספת"]);
+      .toEqual(["הצגת נקודת איסוף נוספת"]);
   });
 
   it("pickup: count===2 takes the `two` branch, still «נקודות איסוף»", () => {
     expect(toggleNames("he", { areas: [], pickup: true, producer: { ...producer, locations: pickups(5) } }))
-      .toEqual(["הצג שתי נקודות איסוף נוספות"]);
+      .toEqual(["הצגת שתי נקודות איסוף נוספות"]);
   });
 
   it("pickup: says «נקודות איסוף», never «ערים» — the plural branch", () => {
     expect(toggleNames("he", { areas: [], pickup: true, producer: { ...producer, locations: pickups(10) } }))
-      .toEqual(["הצג עוד 7 נקודות איסוף"]);
+      .toEqual(["הצגת עוד 7 נקודות איסוף"]);
   });
 
   it("areas: count===1 takes the singular branch", () => {
-    expect(toggleNames("he", { areas: areas(7) })).toEqual(["הצג אזור משלוח נוסף"]);
+    expect(toggleNames("he", { areas: areas(7) })).toEqual(["הצגת אזור משלוח נוסף"]);
   });
 
   it("areas: count===2 takes the `two` branch, not «הצג עוד 2 אזורי משלוח»", () => {
-    expect(toggleNames("he", { areas: areas(8) })).toEqual(["הצג שני אזורי משלוח נוספים"]);
+    expect(toggleNames("he", { areas: areas(8) })).toEqual(["הצגת שני אזורי משלוח נוספים"]);
   });
 
   it("areas: count>2 names delivery areas in the plural", () => {
-    expect(toggleNames("he", { areas: areas(9) })).toEqual(["הצג עוד 3 אזורי משלוח"]);
+    expect(toggleNames("he", { areas: areas(9) })).toEqual(["הצגת עוד 3 אזורי משלוח"]);
   });
 });
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Truck, Package, CaretDown, CaretUp, Phone } from "@phosphor-icons/react";
+import { Truck, Package, Phone } from "@phosphor-icons/react";
 import { WazeGlyph, GoogleMapsGlyph } from "@/components/NavAppGlyphs";
 import { useTranslations } from "next-intl";
 import { formatPrice } from "@/lib/utils";
@@ -14,6 +14,7 @@ import WhatsAppUpdatesPill, { whatsappUpdatesHref } from "@/components/WhatsAppU
 import HoursText from "@/components/HoursText";
 import { coordsNavLinks } from "@/lib/nav-links";
 import SectionHeading from "@/components/ui/SectionHeading";
+import ShowMore from "@/components/ui/ShowMore";
 
 // MEH-2592 C: every row list in the block (areas and pickup) sits in one soft
 // card instead of between hairlines, and rows carry their own side padding.
@@ -136,19 +137,13 @@ const AREA_PREVIEW_LIMIT = 6;
 // consumer now owns a pluralised key naming its own entity.
 function AreaToggle({ expanded, onToggle, hiddenCount, t }) {
   return (
-    <button
-      type="button"
+    // MEH-3052: the shared ShowMore (inline); min-h-touch replaces mt-2.
+    <ShowMore
+      size="inline"
       onClick={onToggle}
-      aria-expanded={expanded}
-      className="mt-2 inline-flex items-center gap-1 text-sm font-medium text-primary"
-    >
-      {expanded ? t("show_less") : t("show_all_areas", { count: hiddenCount })}
-      {expanded ? (
-        <CaretUp size={16} aria-hidden="true" />
-      ) : (
-        <CaretDown size={16} aria-hidden="true" />
-      )}
-    </button>
+      expanded={expanded}
+      label={expanded ? t("show_less") : t("show_all_areas", { count: hiddenCount })}
+    />
   );
 }
 
@@ -230,19 +225,12 @@ function CompactCities({ areas, t }) {
         ))}
       </ul>
       {overLimit && (
-        <button
-          type="button"
+        <ShowMore
+          size="inline"
           onClick={() => setExpanded((v) => !v)}
-          aria-expanded={expanded}
-          className="mt-2 inline-flex items-center gap-1 text-sm font-medium text-primary"
-        >
-          {expanded ? t("show_less") : t("show_all_cities", { count: hiddenCount })}
-          {expanded ? (
-            <CaretUp size={16} aria-hidden="true" />
-          ) : (
-            <CaretDown size={16} aria-hidden="true" />
-          )}
-        </button>
+          expanded={expanded}
+          label={expanded ? t("show_less") : t("show_all_cities", { count: hiddenCount })}
+        />
       )}
     </div>
   );
@@ -362,19 +350,12 @@ function PickupRows({ locations, t, tMap }) {
         ))}
       </ul>
       {overLimit && (
-        <button
-          type="button"
+        <ShowMore
+          size="inline"
           onClick={() => setExpanded((v) => !v)}
-          aria-expanded={expanded}
-          className="mt-2 inline-flex items-center gap-1 text-sm font-medium text-primary"
-        >
-          {expanded ? t("show_less") : t("show_all_pickup", { count: hiddenCount })}
-          {expanded ? (
-            <CaretUp size={16} aria-hidden="true" />
-          ) : (
-            <CaretDown size={16} aria-hidden="true" />
-          )}
-        </button>
+          expanded={expanded}
+          label={expanded ? t("show_less") : t("show_all_pickup", { count: hiddenCount })}
+        />
       )}
     </div>
   );

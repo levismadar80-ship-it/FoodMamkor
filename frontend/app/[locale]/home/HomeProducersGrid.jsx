@@ -33,6 +33,7 @@ import { useCatalogSnapshot } from "@/lib/use-catalog-snapshot";
 import { LOAD_MORE_CAP } from "@/lib/use-home-page";
 import Button from "@/components/ui/Button";
 import SectionHeading from "@/components/ui/SectionHeading";
+import ShowMore, { SHOW_MORE_BLOCK_CLASSES } from "@/components/ui/ShowMore";
 
 // 🔒 The axes the home row PROMOTES onto the surface; every other axis stays
 // one tap away inside the FilterSheet. CHANGING THIS LIST IS A SAPIR DECISION,
@@ -640,24 +641,20 @@ export function HomeProducersGrid({
             </div>
           )}
           {hasMore && (
-            <div className="text-center mt-8">
+            <div className="mt-8">
               {/* MEH-1387: one expansion max — at the cap (reached by clicking
                   or restored from sessionStorage) the button becomes a link to
                   the full /producers listing, same outline-pill style. */}
               {visibleCount >= LOAD_MORE_CAP ? (
                 <Link
                   href="/producers"
-                  className="inline-block bg-surface text-primary border-2 border-primary px-8 py-3 rounded-sm hover:bg-green-50 transition font-medium"
+                  className={`transition ${SHOW_MORE_BLOCK_CLASSES}`}
                 >
                   {t("home.producers.all_businesses")}
                 </Link>
               ) : (
-                <button
-                  onClick={onLoadMore}
-                  className="bg-surface text-primary border-2 border-primary px-8 py-3 rounded-sm hover:bg-green-50 transition font-medium"
-                >
-                  {t("home.producers.load_more")}
-                </button>
+                // MEH-3052: the shared ShowMore (block).
+                <ShowMore onClick={onLoadMore} label={t("home.producers.load_more")} />
               )}
             </div>
           )}

@@ -513,7 +513,7 @@
       "empty_subtext_category": "Try another category, or clear the filter to see all businesses",
       "clear_category_cta": "Clear the filter",
       "explore_map": "Explore on map",
-      "load_more": "More businesses",
+      "load_more": "Show more businesses",
       "all_businesses": "All businesses →",
       "geo_chip": "Businesses near you",
       "city_chip": "Businesses in {city}",
@@ -819,7 +819,7 @@
         "events": {
           "heading": "Upcoming events",
           "free": "Free entry",
-          "show_all_count": "Show all events"
+          "show_all_count": "Show all {count} events"
         },
         "products": {
           "heading": "Products",
@@ -850,7 +850,8 @@
         },
         "group_buys": {
           "heading": "Open group buys",
-          "show_all": "Show all group buys"
+          "show_all": "Show all group buys",
+          "show_all_count": "Show all {count} group buys"
         }
       },
       "header": {
@@ -3221,8 +3222,8 @@
       "group_home": "Home & care",
       "no_results_prefix": "Can't find your category?",
       "no_results_cta": "Tell us →",
-      "show_more": "→ More categories ({count})",
-      "show_less": "↑ Fewer categories"
+      "show_more": "{count, plural, one {Show 1 more category} other {Show {count} more categories}}",
+      "show_less": "Show less"
     }
   },
   "producers": {
