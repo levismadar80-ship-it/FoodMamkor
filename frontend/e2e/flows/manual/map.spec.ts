@@ -1166,7 +1166,10 @@ test.describe("manual › filter chips two-row layout — scroll + geo fallback"
     const row = shell.getByRole("toolbar", { name: he.map.chip_scroll.category_aria });
     const overflow = await row.evaluate((el) => el.scrollWidth - el.clientWidth);
     expect(overflow, "control: the row must overflow for the spacer to matter").toBeGreaterThan(8);
+    // MEH-3062: on the phone the rail ends with the service chips, so the
+    // last button is «איסוף עצמי» — the chip the end spacer must now clear.
     const last = row.getByRole("button").last();
+    await expect(last).toHaveAttribute("data-testid", "map-service-chip-pickup_points");
     await row.evaluate((el) => el.scrollTo({ left: -el.scrollWidth, behavior: "auto" }));
     await expect.poll(async () => inside(await box(last), await box(row))).toBe(true);
   });
@@ -1179,7 +1182,7 @@ test.describe("manual › filter chips two-row layout — scroll + geo fallback"
     mobileOnly(info, "the category row overflows at 393px; on desktop it fits");
     const { shell } = await gotoWithCatalog(page, info);
     const row = shell.getByRole("toolbar", { name: he.map.chip_scroll.category_aria });
-    const last = row.getByRole("button").last();
+    const last = row.locator("button[data-roving-chip]").last();
     expect(inside(await box(last), await box(row)), "control: the edge chip starts partly out of view").toBe(false);
     await last.dispatchEvent("click");
     await expect(last).toHaveAttribute("aria-pressed", "true");
@@ -1536,7 +1539,7 @@ test.describe("manual › /map list heading + subhead (MEH-826 Gap 3)", () => {
 test.describe("manual › /map service row fits narrow phones (MEH-2514)", () => {
   for (const width of [320, 340, 360, 374]) {
     for (const withCount of [false, true]) {
-      test(`${width}px${withCount ? " with «סינון · 2»" : ""}: all three buttons sit inside the row and the screen`, async ({ page }, info) => {
+      test(`${width}px${withCount ? " with «סינון · 2»" : ""}: «סינון» on screen, each service chip reachable on the rail, no page side-scroll`, async ({ page }, info) => {
         mobileOnly(info, "the service row's narrow-phone geometry");
         await page.setViewportSize({ width, height: 700 });
         const { shell } = await gotoWithCatalog(page, info);
@@ -1561,11 +1564,28 @@ test.describe("manual › /map service row fits narrow phones (MEH-2514)", () =>
         // 38px next to 42px chips before the min-h.
         const chipH = (await box(serviceChip(shell, "has_delivery"))).height;
         expect(Math.abs((await box(filtersButton(shell))).height - chipH), "«סינון» height vs the service chips").toBeLessThanOrEqual(0.5);
-        for (const btn of [serviceChip(shell, "has_delivery"), serviceChip(shell, "pickup_points"), filtersButton(shell)]) {
-          const b = await box(btn);
-          expect(b.x, `${await btn.textContent()} left edge ${b.x} vs row ${row.x}`).toBeGreaterThanOrEqual(Math.max(0, row.x) - 0.5);
-          expect(b.x + b.width, `${await btn.textContent()} right edge`).toBeLessThanOrEqual(Math.min(width, row.x + row.width) + 0.5);
+        // MEH-3062: the phone row is ONE sideways rail now — «סינון», the
+        // categories, then the service chips. «סינון» sits outside the
+        // scroller, so it is fully on screen as loaded; each service chip is
+        // reachable by scrolling the rail and then sits fully on screen; and
+        // the PAGE never scrolls sideways (the rail's overflow stays inside it).
+        const fb = await box(filtersButton(shell));
+        expect(fb.x, `«סינון» left edge ${fb.x}`).toBeGreaterThanOrEqual(Math.max(0, row.x) - 0.5);
+        expect(fb.x + fb.width, "«סינון» right edge").toBeLessThanOrEqual(Math.min(width, row.x + row.width) + 0.5);
+        for (const btn of [serviceChip(shell, "has_delivery"), serviceChip(shell, "pickup_points")]) {
+          await btn.scrollIntoViewIfNeeded();
+          // Inside the row's box (and so the screen), and clear of «סינון» —
+          // a chip sliding under it (the round-1 sticky overlap) goes red here.
+          await expect.poll(async () => {
+            const b = await box(btn);
+            const f = await box(filtersButton(shell));
+            const inRow = b.x >= Math.max(0, row.x) - 0.5 && b.x + b.width <= Math.min(width, row.x + row.width) + 0.5;
+            const clearOfFilters = b.x + b.width <= f.x + 0.5 || b.x >= f.x + f.width - 0.5;
+            return inRow && clearOfFilters;
+          }, `${await btn.textContent()} fully inside the row and clear of «סינון» once the rail is scrolled to it`).toBe(true);
         }
+        const pageOverflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+        expect(pageOverflow, "the page itself never scrolls sideways").toBeLessThanOrEqual(0);
       });
     }
   }
