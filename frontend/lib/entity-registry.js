@@ -39,10 +39,10 @@ export const ENTITIES = [
     key: "business",
     routes: ["app/[locale]/producer/[id]", "app/[locale]/[slug]"],
     files: ["app/[locale]/producer/[id]"],
-    uses: ["share", "save", "contact"],
+    // MEH-3019: «→ חזרה» on a phone, where the breadcrumb no longer shows.
+    uses: ["back", "share", "save", "contact"],
     missing: {},
     na: {
-      back: "removed on purpose (MEH-1146 chunk B): the breadcrumb and the back-to-map link cover it — decided again in MEH-3005",
       owner: "the business is the owner",
       cover: "own header with the photo gallery (ProducerHeader)",
     },
