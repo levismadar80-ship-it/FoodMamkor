@@ -2,7 +2,8 @@
 
 Rules 5, 5a, 20 and the pre-merge pipeline. Incidents and measurements live
 verbatim in [docs/rules-history/testing.md](../../docs/rules-history/testing.md)
-— same headings; read it before re-opening a rule.
+(to 26/10) and [2026-11-13/testing.md](../../docs/rules-history/2026-11-13/testing.md)
+(to 13/11) — same headings; read them before re-opening a rule.
 
 ---
 
