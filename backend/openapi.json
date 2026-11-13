@@ -14107,6 +14107,14 @@
             "title": "Pages",
             "type": "integer"
           },
+          "rating_counts": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "default": {},
+            "title": "Rating Counts",
+            "type": "object"
+          },
           "reviews": {
             "items": {
               "$ref": "#/components/schemas/ReviewOut"

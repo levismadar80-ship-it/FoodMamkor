@@ -6003,9 +6003,12 @@ export const ReportProducerProducersProducerIdReportPostResponse = /*#__PURE__*/
  * Paginated visible reviews for a producer (10 per page, newest first).
  * @summary List Reviews Nested
  */
+export const listReviewsNestedProducersProducerIdReviewsGetResponseRatingCountsDefault = {};
+
 export const ListReviewsNestedProducersProducerIdReviewsGetResponse = /*#__PURE__*/ zod.object({
   "page": /*#__PURE__*/ zod.int(),
   "pages": /*#__PURE__*/ zod.int(),
+  "rating_counts": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.record(/*#__PURE__*/ zod.string(), /*#__PURE__*/ zod.int()), listReviewsNestedProducersProducerIdReviewsGetResponseRatingCountsDefault),
   "reviews": /*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
   "body": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "created_at": /*#__PURE__*/ zod.string(),
