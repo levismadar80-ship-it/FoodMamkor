@@ -167,6 +167,9 @@ def test_nothing_reads_or_writes_it_in_chunk_a():
         "backend/app/services/analytics_rollup.py",
         "backend/app/routers/producer_me.py",
         "backend/app/startup.py",
+        # MEH-3022: names the table in OWNED_TABLE_EXEMPT (why it needs no
+        # per-business cap). A registry entry — neither reads nor writes rows.
+        "backend/app/limits.py",
     }, files
 
 

@@ -554,7 +554,9 @@ def create_review_nested(  # noqa: PLR0913 — all 6 args are FastAPI-injected (
 
 
 @router.delete("/reviews/{review_id}")
+@limiter.limit("30/hour")  # MEH-3022
 def delete_review(
+    request: Request,  # required by slowapi (MEH-3022)
     review_id: UUID,
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
@@ -615,7 +617,9 @@ def _queue_new_review_mail(  # noqa: PLR0913 — +reviewer, the MEH-2952 cause
 
 
 @router.put("/reviews/{review_id}/reply", response_model=ReviewOut)
-def set_review_reply(
+@limiter.limit("30/hour")  # MEH-3022
+def set_review_reply(  # noqa: PLR0913 — all args are FastAPI-injected; MEH-3022 added the slowapi request
+    request: Request,  # required by slowapi (MEH-3022)
     review_id: UUID,
     data: ReviewReplyUpdate,
     background_tasks: BackgroundTasks,
