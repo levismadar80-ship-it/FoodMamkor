@@ -47,10 +47,12 @@ export function formatEventDate(iso, locale, options = DEFAULT_OPTIONS) {
 //   numeric  → 05.11.2026      (admin tables, dashboards, expiry lines)
 //   dayMonth → 5 בנובמבר        (vacation return, special opening days)
 //   long     → יום חמישי, 5 בנובמבר (event signature)
+//   dateTime → 05.11.2026, 10:07 (admin "waiting since" tooltips)
 const STYLES = {
   numeric: { day: "2-digit", month: "2-digit", year: "numeric" },
   dayMonth: { day: "numeric", month: "long" },
   long: DEFAULT_OPTIONS,
+  dateTime: { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit", hourCycle: "h23" },
 };
 const DATE_ONLY = /^\d{4}-\d{2}-\d{2}$/;
 const NOON_UTC = 12;
@@ -58,7 +60,7 @@ const NOON_UTC = 12;
 /**
  * @param {string|number|Date|null|undefined} value ISO instant, `YYYY-MM-DD`, epoch ms or Date.
  * @param {string} locale next-intl locale ("he" | "en") or a BCP-47 tag.
- * @param {"numeric"|"dayMonth"|"long"} [style]
+ * @param {"numeric"|"dayMonth"|"long"|"dateTime"} [style]
  * @returns {string} "" for an empty or unparseable value.
  */
 export function formatDate(value, locale, style = "numeric") {

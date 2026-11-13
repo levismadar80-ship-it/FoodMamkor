@@ -25,11 +25,21 @@ const BANNED_METHODS = new Set(["toLocaleDateString", "toLocaleTimeString"]);
 export function handFormattedDates(src) {
   const ast = parse(src, { sourceType: "module", plugins: ["jsx"] });
   const hits = [];
+  const onCall = (p) => {
+    const c = p.node.callee;
+    if (!/MemberExpression$/.test(c.type) || !c.property) return;
+    const name = c.property.name;
+    if (BANNED_METHODS.has(name)) hits.push(`${name}@${p.node.loc.start.line}`);
+    // toLocaleString is also a number formatter; flag it only on a stored
+    // date — `new Date(value)`. `new Date()` with no args is a clock read.
+    const o = c.object;
+    if (name === "toLocaleString" && o.type === "NewExpression" && o.callee.name === "Date" && o.arguments.length) {
+      hits.push(`toLocaleString@${p.node.loc.start.line}`);
+    }
+  };
   traverse(ast, {
-    CallExpression(p) {
-      const c = p.node.callee;
-      if (c.type === "MemberExpression" && BANNED_METHODS.has(c.property.name)) hits.push(`${c.property.name}@${p.node.loc.start.line}`);
-    },
+    CallExpression: onCall,
+    OptionalCallExpression: onCall,
     NewExpression(p) {
       const c = p.node.callee;
       if (c.type === "MemberExpression" && c.object.name === "Intl" && c.property.name === "DateTimeFormat") hits.push(`Intl.DateTimeFormat@${p.node.loc.start.line}`);
@@ -56,6 +66,7 @@ describe("MEH-3060 — dates print through lib/format-date", () => {
     expect(formatDate("2026-11-05", "en", "dayMonth")).toBe("November 5");
     expect(formatDate("not a date", "he")).toBe("");
     expect(formatDate(null, "he")).toBe("");
+    expect(formatDate("2026-11-05T08:07:00Z", "he", "dateTime")).toBe("05.11.2026, 10:07");
   });
 
   it("self-test: the three hand-rolled shapes red, comments don't", () => {
@@ -63,6 +74,11 @@ describe("MEH-3060 — dates print through lib/format-date", () => {
     expect(handFormattedDates('const d = new Date(x).toLocaleDateString("he-IL");')).toEqual(["toLocaleDateString@1"]);
     expect(handFormattedDates('const f = new Intl.DateTimeFormat("he-IL", {});')).toEqual(["Intl.DateTimeFormat@1"]);
     expect(handFormattedDates("const t = d.toLocaleTimeString();")).toEqual(["toLocaleTimeString@1"]);
+    // reviewer finding (13/11): AdminProducersTable.jsx:145 shape, and optional calls
+    expect(handFormattedDates('const w = new Date(stamp).toLocaleString("he-IL");')).toEqual(["toLocaleString@1"]);
+    expect(handFormattedDates("const w = d?.toLocaleDateString();")).toEqual(["toLocaleDateString@1"]);
+    expect(handFormattedDates('const n = price.toLocaleString("he-IL");')).toEqual([]);
+    expect(handFormattedDates('const a = new Date().toLocaleString("en-US", { weekday: "short" });')).toEqual([]);
     expect(handFormattedDates('// toLocaleDateString("he-IL") is banned\nconst a = 1;')).toEqual([]);
   });
 

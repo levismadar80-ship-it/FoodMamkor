@@ -142,7 +142,7 @@ export function WaitingBadge({ producer }) {
     submitted: p.submitted_for_review_at,
     created: p.created_at,
   }[source];
-  const when = stamp ? new Date(stamp).toLocaleString("he-IL") : null;
+  const when = stamp ? formatDate(stamp, "he", "dateTime") : null;
   const title = when ? t(`producers.table.waiting_tooltip_${source}`, { when }) : undefined;
 
   return (

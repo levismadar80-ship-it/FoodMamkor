@@ -19,7 +19,7 @@ import { CODE_TO_KEY } from "@/components/KashrutBadgeStrip";
 import { SkeletonTable } from "@/components/Skeleton";
 import Button from "@/components/ui/Button";
 
-function formatDate(iso, locale) {
+function shortDate(iso, locale) {
   if (!iso) return "—";
   return formatEventDate(iso, locale, { day: "2-digit", month: "2-digit", year: "numeric" });
 }
@@ -201,7 +201,7 @@ export default function AdminKashrutPage() {
                       <span className="font-medium">{row.name}</span>
                       <span className="text-fg-muted text-xs flex items-center gap-3">
                         <span dir="ltr">{row.phone_masked}</span>
-                        <span>{formatDate(row.expires_at, locale)}</span>
+                        <span>{shortDate(row.expires_at, locale)}</span>
                         {row.sent === true && (
                           <span className="text-primary">{t("kashrut.reminders.row_sent")}</span>
                         )}
@@ -287,7 +287,7 @@ export default function AdminKashrutPage() {
                       <span className="text-fg-muted text-xs">{t("kashrut.no_cert")}</span>
                     )}
                   </td>
-                  <td className="px-4 py-3 text-fg-muted" data-label={t("kashrut.columns.date")}>{formatDate(row.created_at, locale)}</td>
+                  <td className="px-4 py-3 text-fg-muted" data-label={t("kashrut.columns.date")}>{shortDate(row.created_at, locale)}</td>
                   <td className="px-4 py-3 text-fg-muted text-xs" data-label={t("kashrut.columns.notes")}>{row.notes || "—"}</td>
                   {statusFilter === "pending" && (
                     <td className="px-4 py-3" data-cell="actions">

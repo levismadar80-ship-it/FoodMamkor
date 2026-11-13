@@ -45,7 +45,7 @@ import SectionHeading from "@/components/ui/SectionHeading";
 // experiences with coords. ssr:false — leaflet touches window at module eval.
 const MiniMap = dynamic(() => import("@/components/MiniMap"), { ssr: false });
 
-function formatDate(iso, locale) {
+function longDate(iso, locale) {
   if (!iso) return "";
   return formatEventDate(iso, locale, { weekday: "long", day: "numeric", month: "long", year: "numeric" });
 }
@@ -315,8 +315,8 @@ export default function ExperienceDetailClient() {
               <DateTile month={month} day={day} bandClass="bg-accent" testId="experience-date-tile" />
               <p className="flex-1 min-w-0 font-semibold text-text" data-testid="experience-date">
                 {ex.is_recurring
-                  ? t("starts_from", { date: formatDate(ex.event_date, locale) })
-                  : formatDate(ex.event_date, locale)}
+                  ? t("starts_from", { date: longDate(ex.event_date, locale) })
+                  : longDate(ex.event_date, locale)}
                 {ex.event_time && ` · ${formatTime(ex.event_time)}`}
               </p>
               {when && when !== "past" && (
