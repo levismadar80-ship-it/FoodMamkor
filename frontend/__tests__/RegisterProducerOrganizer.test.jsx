@@ -21,6 +21,9 @@ import api from "@/lib/api";
 // notice landed on the STORY frame. `.rich` renders the key path AND invokes
 // every tag callback, so key-based assertions below are byte-identical while
 // the real <Link>/<a> nodes still mount.
+// MEH-3074: the STORY-step preview mounts the real ProducerCard, which this
+// file's mocks do not feed; its wiring is covered in RegisterProducerClient.test.jsx.
+vi.mock("@/components/RegisterCardPreview", () => ({ default: () => null }));
 vi.mock("next-intl", () => ({
   useTranslations: (scope) => {
     const t = (key, values) => {

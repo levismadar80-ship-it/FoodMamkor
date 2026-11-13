@@ -15,6 +15,7 @@ import CategorySelector from "@/components/CategorySelector";
 import CitySearch from "@/components/CitySearch";
 import PasswordStrength from "@/components/PasswordStrength";
 import ProducerOAuthButtons from "@/components/ProducerOAuthButtons";
+import RegisterCardPreview from "@/components/RegisterCardPreview";
 import Input from "@/components/ui/Input";
 import RegisterPreflight from "./RegisterPreflight";
 // MEH-1808: Leaflet touches `window` at import time, so the confirmation map is
@@ -1681,6 +1682,16 @@ function RegisterProducerPageBody({ routeKind }) {
               <p className="font-medium text-text mb-1 text-start">{t("auth.register.producer.story_card.title")}</p>
               <p className="text-fg-muted text-start leading-relaxed">{t("auth.register.producer.story_card.body")}</p>
             </div>
+
+            {/* MEH-3074: the real card, opened on demand so the submit button
+                stays where it was on a phone. Organizers have no card — they
+                are not in the business list. */}
+            {!isOrganizer && (
+              <RegisterCardPreview
+                form={{ ...form, ...fulfilmentBooleans(form.fulfilment) }}
+                categories={categories}
+              />
+            )}
 
             {/* MEH-914: photo-to-publish disclosure (copy only). Gate: admin.py:442. */}
             <p data-testid="photo-disclosure-story" className="text-xs text-fg-muted text-start leading-relaxed">{t("auth.register.producer.photo_disclosure")}</p>

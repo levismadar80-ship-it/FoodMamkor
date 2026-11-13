@@ -1066,3 +1066,28 @@ describe("ProducerCard — no Friday pill (MEH-2759)", () => {
     expect(container.textContent).not.toMatch(/מגיעה היום|badges\.available_today/);
   });
 });
+
+// MEH-3074: the signup wizard previews the card before a business exists — no
+// id, no photo, no rating. The real card must render that shape.
+describe("ProducerCard — signup preview shape (MEH-3074)", () => {
+  it("renders name, city and the one-line dek from previewProducer()", async () => {
+    const { previewProducer } = await import("@/components/RegisterCardPreview");
+    const producer = previewProducer(
+      {
+        producer_name: "הבית של רותי",
+        city: "זכרון יעקב",
+        short_description: "לחם מחמצת מקמח מקומי",
+        category_ids: [2],
+        has_physical_location: true,
+        offers_delivery: false,
+      },
+      [{ id: 1, name: "ירקות" }, { id: 2, name: "מאפים" }],
+    );
+    const { container } = render(<ProducerCard producer={producer} />);
+    expect(container.textContent).toContain("הבית של רותי");
+    expect(container.textContent).toContain("זכרון יעקב");
+    expect(container.textContent).toContain("לחם מחמצת מקמח מקומי");
+    expect(container.querySelector("img")).toBeNull();
+  });
+});
+
