@@ -385,8 +385,39 @@ describe("the row", () => {
   it("links to the business page, where the only reserve button lives", async () => {
     render(<RescueList />);
     const row = await screen.findByTestId("rescue-bag-row");
-    expect(row.getAttribute("href")).toBe("/producer/hatzala");
+    // /{slug}, never /producer/{slug}: that route takes a UUID only and shows
+    // «בית העסק הזה לא נמצא» for a slug. Anchored at the bag section.
+    expect(row.getAttribute("href")).toBe("/hatzala#section-rescue");
     expect(screen.queryByTestId("rescue-reserve")).toBeNull();
+  });
+});
+
+describe("the business-page section — landing from a bag link", () => {
+  // A bag row links `/{slug}#section-rescue`, but the section mounts only after
+  // its own fetch, so the browser's hash scroll has nothing to hit. The
+  // section scrolls itself into view once — and only for that hash.
+  let scrolled;
+  beforeEach(() => {
+    scrolled = vi.fn();
+    Element.prototype.scrollIntoView = scrolled;
+    vi.spyOn(window, "requestAnimationFrame").mockImplementation((cb) => { cb(0); return 0; });
+  });
+  afterEach(() => {
+    window.history.replaceState(null, "", "/");
+  });
+
+  it("scrolls to the bag when the URL carries #section-rescue", async () => {
+    window.history.replaceState(null, "", "/hatzala#section-rescue");
+    render(<RescueSection producer={PRODUCER} />);
+    await screen.findByTestId("rescue-reserve");
+    expect(scrolled).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not scroll on an ordinary visit", async () => {
+    window.history.replaceState(null, "", "/hatzala");
+    render(<RescueSection producer={PRODUCER} />);
+    await screen.findByTestId("rescue-reserve");
+    expect(scrolled).not.toHaveBeenCalled();
   });
 });
 

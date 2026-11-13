@@ -42,8 +42,18 @@ const usableCoords = (l: Loc) =>
   !Number.isNaN(l.lat) &&
   !Number.isNaN(l.lng);
 
+// The subject is the multi-location business with the MOST usable pins, not the
+// first one in listing order. Listing order is ranking, and it moves: on 13/11
+// a 3-pin demo business outranked the 10-pin seeded one on staging, the specs
+// below followed it, and the mobile reveal loop ended inside a neighbouring
+// cluster with no secondary pin in view (staging runs 43427042667 and
+// 43427151597, failed on retry too). Most pins is a property of the seed, so
+// the choice no longer depends on who ranks first that day.
 const multiLoc = (producers: Producer[]) =>
-  producers.find((p) => (p.locations || []).filter(usableCoords).length >= 2);
+  producers
+    .map((p) => ({ p, n: (p.locations || []).filter(usableCoords).length }))
+    .filter(({ n }) => n >= 2)
+    .sort((a, b) => b.n - a.n)[0]?.p;
 
 // MEH-1451: recenter the map onto the seeded multi-location producer via the
 // app's OWN near-me flow — mock geolocation at one of its pins, then click the

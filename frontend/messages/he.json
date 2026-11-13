@@ -4607,7 +4607,8 @@
           "products": "מוצר ראשון בקטלוג",
           "contact": "פרטי קשר",
           "phone_verified": "אימות וואטסאפ",
-          "hours": "שעות פתיחה"
+          "hours": "שעות פתיחה",
+          "owner_photo": "תמונה שלך"
         },
         "fields": {
           "city": "עיר",

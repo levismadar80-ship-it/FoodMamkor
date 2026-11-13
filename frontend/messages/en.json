@@ -4611,7 +4611,8 @@
           "products": "First product in your catalog",
           "contact": "Contact details",
           "phone_verified": "WhatsApp verification",
-          "hours": "Opening hours"
+          "hours": "Opening hours",
+          "owner_photo": "Your photo"
         },
         "fields": {
           "city": "City",
