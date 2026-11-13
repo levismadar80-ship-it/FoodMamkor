@@ -4,7 +4,7 @@ import { useState, useCallback, useEffect, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import { Link } from "@/i18n/navigation";
 import { MagnifyingGlass, Plant, Leaf, CaretDown, Faders, MapPin, ArrowLeft } from "@phosphor-icons/react";
-import { chipsToQuery } from "@/lib/filter-url";
+import { producersToMapQuery } from "@/lib/filter-url";
 import { useTranslations } from "next-intl";
 import Breadcrumb from "@/components/Breadcrumb";
 import ProducerCard from "@/components/ProducerCard";
@@ -946,8 +946,9 @@ export default function ProducersClient({
       />
       {/* MEH-2598: «הצגה במפה» as on home — the list and the map are two views
           of one search, so the active attribute chips ride along
-          (lib/filter-url). Search text and category stay behind: /map has no
-          free-text search and keys categories differently. */}
+          (lib/filter-url). MEH-3075: the category groups and the city ride too
+          (producersToMapQuery); search text stays behind — /map has no
+          free-text search. */}
       <div className="flex items-center justify-between gap-3 mb-6">
         <h1 className="font-headline-lg text-3xl font-bold text-text">
           {searchQ ? (
@@ -960,7 +961,7 @@ export default function ProducersClient({
           )}
         </h1>
         <Link
-          href={`/map${chipsToQuery(chips)}`}
+          href={`/map${producersToMapQuery({ chips, categoryKeys: activeCategoryKeys, city: cityFilter || "" })}`}
           data-testid="producers-map-link"
           className="shrink-0 text-primary hover:underline flex items-center gap-1 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
         >
@@ -1006,17 +1007,8 @@ export default function ProducersClient({
           Self-hides while /categories hasn't resolved (or failed).
           MEH-1186: micro-label above the row names the behavior (category
           selection) vs the toggle row below (attribute filtering). */}
-      {categories.length > 0 && (
-        <div className="mb-3" data-testid="producers-category-row">
-          <p className="text-xs text-fg-muted mb-1" data-testid="producers-category-label">{t("filters.category_label")}</p>
-          <ChipScrollRow
-            variant="category"
-            chips={categoryChips}
-            activeKeys={activeCategoryKeys}
-            onChipClick={handleCategorySelect}
-          />
-        </div>
-      )}
+      {/* MEH-3075: the category block now renders INSIDE the filter row below
+          (categoryBlock), so the phone gets one row. */}
 
       {/* MEH-1862: the attribute chips moved into the FilterSheet behind a
           "סינון" button — the IA /map has run since MEH-1368
@@ -1046,8 +1038,18 @@ export default function ProducersClient({
           lg:flex-wrap so the MEH-2598 service chips wrap instead of pushing
           the row past the viewport at 200% text (WCAG 1.4.4, 44-text-scale;
           same as /map ServiceChipRow). */}
+      {/* MEH-3075 (Sapir 13/11): below lg the filter row and its day panel stay
+          under the header while the list scrolls (Baymard: keep filters
+          reachable mid-list; Wolt / Etsy do the same). --chrome-top is the
+          header's live height (Header.jsx, MEH-1202). Bare z-30: above the
+          cards' own layers, below the header (1050), BottomNav (1000) and the
+          sheet (1200, portalled). lg+ is plain flow, as before. */}
       <div
-        className="-mx-4 -mt-1 mb-3 flex items-center gap-2 min-w-0 overflow-x-auto overscroll-x-none px-4 py-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden lg:-mx-1 lg:px-1 lg:overflow-visible lg:flex-wrap"
+        className="-mx-4 px-4 mb-3 bg-background max-lg:sticky max-lg:top-[var(--chrome-top,82px)] max-lg:z-30 max-lg:pt-1 lg:mx-0 lg:px-0"
+        data-testid="producers-filter-bar"
+      >
+      <div
+        className="-mx-4 -mt-1 flex items-center gap-2 min-w-0 overflow-x-auto overscroll-x-none px-4 py-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden lg:-mx-1 lg:px-1 lg:overflow-visible lg:flex-wrap"
         data-testid="producers-filter-row"
         onFocus={keepFocusedChipClear}
       >
@@ -1086,6 +1088,29 @@ export default function ProducersClient({
             align="start"
           />
         </div>
+        {/* MEH-3075 (Sapir 13/11): below lg the categories ride the SAME rail as
+            «סינון» and the service chips — one row, «סינון», categories, then
+            משלוח/איסוף/city/day, the order /map's phone row uses (MEH-3062).
+            shrink-0 lets the outer rail do the scrolling. lg+ keeps two lines:
+            order-first + basis-full put the block on its own line above the
+            filters, as before. The micro-label stays for screen readers below lg. */}
+        {categories.length > 0 && (
+          <div className="shrink-0 lg:order-first lg:basis-full lg:min-w-0 lg:mb-1" data-testid="producers-category-row">
+            <p className="text-xs text-fg-muted mb-1 max-lg:sr-only" data-testid="producers-category-label">{t("filters.category_label")}</p>
+            <ChipScrollRow
+              variant="category"
+              chips={categoryChips}
+              activeKeys={activeCategoryKeys}
+              onChipClick={handleCategorySelect}
+              className="max-lg:-mb-1"
+            />
+          </div>
+        )}
+        {/* MEH-3075: the hairline /map's phone row draws between the categories
+            and the service chips (MEH-3062). Phone only — lg+ has two lines. */}
+        {categories.length > 0 && (
+          <span aria-hidden="true" className="shrink-0 self-stretch my-1.5 w-px bg-border lg:hidden" />
+        )}
         {/* MEH-2598 (Sapir 29/10, «אחיד»): the same promoted service trio as
             home and /map, between «סינון» and the city chip. `visibleChipDefs`
             is the gated list, so on_site appears only once the catalog
@@ -1117,7 +1142,8 @@ export default function ProducersClient({
           panelHost={dayPanelHost}
         />
       </div>
-      <div ref={setDayPanelHost} className="mb-3 empty:hidden" data-testid="producers-day-panel-host" />
+      <div ref={setDayPanelHost} className="mt-3 empty:hidden" data-testid="producers-day-panel-host" />
+      </div>
 
       {/* Results counter + active filters — MEH-1186: one control line.
           The removable chips (toggle ×, search ×) and
