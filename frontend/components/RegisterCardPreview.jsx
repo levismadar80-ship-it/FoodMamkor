@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 import { useTranslations } from "next-intl";
@@ -19,6 +20,12 @@ import { INERT_PRESENT } from "@/lib/inert-attr";
  *           pattern (app/[locale]/join/page.js). Always exactly one card.
  * Related:  app/[locale]/register/producer/RegisterProducerClient.jsx (mount).
  */
+
+/**
+ * The producer object the card needs, built from the wizard's form.
+ * @param {Record<string, any>} form
+ * @param {Array<{ id: number, name: string }>} categories
+ */
 export function previewProducer(form, categories) {
   const picked = (categories || []).filter((c) => (form.category_ids || []).includes(c.id));
   return {
@@ -36,6 +43,7 @@ export function previewProducer(form, categories) {
   };
 }
 
+/** @param {{ form: Record<string, any>, categories: Array<{ id: number, name: string }> }} props */
 export default function RegisterCardPreview({ form, categories }) {
   const t = useTranslations("auth.register.producer");
   return (
@@ -52,8 +60,13 @@ export default function RegisterCardPreview({ form, categories }) {
         />
       </summary>
       {/* max-w: a card on the site sits in a grid column, never full form width. */}
-      <div className="mx-auto max-w-[320px] px-4 pb-4" inert={INERT_PRESENT} data-testid="register-card-preview-body">
-        <ProducerCard producer={previewProducer(form, categories)} />
+      <div className="mx-auto max-w-[320px] px-4 pb-4" inert={/** @type {any} */ (INERT_PRESENT)} data-testid="register-card-preview-body">
+        <ProducerCard
+          producer={previewProducer(form, categories)}
+          active={false}
+          onClick={undefined}
+          referrer={undefined}
+        />
       </div>
     </details>
   );
