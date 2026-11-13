@@ -392,6 +392,35 @@ describe("the row", () => {
   });
 });
 
+describe("the business-page section — landing from a bag link", () => {
+  // A bag row links `/{slug}#section-rescue`, but the section mounts only after
+  // its own fetch, so the browser's hash scroll has nothing to hit. The
+  // section scrolls itself into view once — and only for that hash.
+  let scrolled;
+  beforeEach(() => {
+    scrolled = vi.fn();
+    Element.prototype.scrollIntoView = scrolled;
+    vi.spyOn(window, "requestAnimationFrame").mockImplementation((cb) => { cb(0); return 0; });
+  });
+  afterEach(() => {
+    window.history.replaceState(null, "", "/");
+  });
+
+  it("scrolls to the bag when the URL carries #section-rescue", async () => {
+    window.history.replaceState(null, "", "/hatzala#section-rescue");
+    render(<RescueSection producer={PRODUCER} />);
+    await screen.findByTestId("rescue-reserve");
+    expect(scrolled).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not scroll on an ordinary visit", async () => {
+    window.history.replaceState(null, "", "/hatzala");
+    render(<RescueSection producer={PRODUCER} />);
+    await screen.findByTestId("rescue-reserve");
+    expect(scrolled).not.toHaveBeenCalled();
+  });
+});
+
 describe("the business-page section — reserve and confirm", () => {
   it("shows the price big, and says on the CTA that payment is AT THE COUNTER", async () => {
     render(<RescueSection producer={PRODUCER} />);

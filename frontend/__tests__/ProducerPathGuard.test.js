@@ -9,6 +9,11 @@
  *  2. A source scan: no file under app/ components/ lib/ hand-writes a
  *     `/producer/${…}` template whose expression mentions `slug`. Build it with
  *     producerPath() instead.
+ *
+ * Shape-limited, on purpose: it catches the one-line template that shipped.
+ * It does NOT see `"/producer/" + slug`, a template split across lines, or a
+ * slug held in another variable first. The helper is the real fix; this only
+ * stops the exact regression.
  */
 import fs from "node:fs";
 import path from "node:path";
@@ -48,7 +53,8 @@ describe("producerPath", () => {
   });
   it("the anchor is the id RescueSection actually renders", () => {
     const src = fs.readFileSync(path.join(ROOT, "components/rescue/RescueSection.jsx"), "utf8");
-    expect(src).toContain(`id="${RESCUE_SECTION_ID}"`);
+    expect(src).toContain("id={RESCUE_SECTION_ID}");
+    expect(RESCUE_SECTION_ID).toBe("section-rescue");
   });
 });
 
