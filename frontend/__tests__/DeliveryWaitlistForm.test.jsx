@@ -346,8 +346,8 @@ describe("DeliveryWaitlistForm host checkbox (MEH-2674)", () => {
   });
 });
 
-// MEH-3041 — the open form could not be closed (Sapir 13/11).
-describe("MEH-3041 — × closes the open form", () => {
+// MEH-3044 — the open form could not be closed (Sapir 13/11).
+describe("MEH-3044 — × closes the open form", () => {
   it("open → × → back to the chip, focused, nothing sent", async () => {
     authState.value = null;
     render(<DeliveryWaitlistForm producer={PRODUCER} city="נתניה" />);
@@ -362,7 +362,7 @@ describe("MEH-3041 — × closes the open form", () => {
   });
 });
 
-it("MEH-3041: × is disabled while the address is being sent", async () => {
+it("MEH-3044: × is disabled while the address is being sent", async () => {
   authState.value = null;
   let resolve;
   post.mockImplementationOnce(() => new Promise((r) => { resolve = r; }));
