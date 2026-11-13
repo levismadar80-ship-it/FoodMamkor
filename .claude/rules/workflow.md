@@ -1,8 +1,9 @@
 # Full workflow rules
 
 Rules only. Each rule's sources, incidents and measurements live verbatim in
-[docs/rules-history/workflow.md](../../docs/rules-history/workflow.md) — same
-headings and numbers; read it before re-opening a rule.
+[docs/rules-history/workflow.md](../../docs/rules-history/workflow.md) (to
+26/10) and [docs/rules-history/2026-11-13/workflow.md](../../docs/rules-history/2026-11-13/workflow.md)
+(to 13/11) — same headings and numbers; read them before re-opening a rule.
 `scripts/checks/rules-inventory-guard.sh` fails if a rule goes missing here.
 
 ---
@@ -104,12 +105,9 @@ archived).
 
 ## The reviewer is a fresh subagent — the CI reviewer is off (Sapir 08/11, until MEH-569)
 
-The `claude[bot]` CI review (`claude-review.yml`, workflow «Claude PR Review»,
-job «Adversarial review (calibration)») was red
-on every PR for a reason it never printed (MEH-2845), so Sapir disabled it from
-the Actions page until the MEH-569 audit. Its job goes to a **fresh reviewer
-subagent** (rule 5a): a missing `claude[bot]` comment blocks nothing and is
-never waited for. (MEH-1844's "the CI reviewer works" — 13/08 — is history.)
+The `claude[bot]` CI review (`claude-review.yml`) is disabled until the
+MEH-569 audit. Its job goes to a **fresh reviewer subagent** (rule 5a); a
+missing `claude[bot]` comment blocks nothing and is never waited for.
 
 ---
 
@@ -439,12 +437,10 @@ concurrent loops. Tiers + `mehamakor-dod` self-check: ADR-025.
     self-clear it.** Sapir clears it, even after merge is authorized and even on
     CC's own marker, even when it looks stale. Never edit metadata or push a
     no-op to get past a gate; only fix a real cause CC owns. "Auto-merge
-    unarmed" is not a substitute for the marker. Narrowly: the ADR-032 §2.5
-    "RED stops until the adversarial reviewer runs" is satisfied by the
-    **fresh reviewer subagent's** pass (rule 5a) with its findings fixed or
-    answered — not by waiting for a `claude[bot]` comment, which is off since
-    08/11 (Sapir, until MEH-569). That is the only thing the pass satisfies: a
-    `do-not-merge` label or any other marker is still Sapir's to clear.
+    unarmed" is not a substitute for the marker. Narrowly: ADR-032 §2.5 ("RED
+    stops until the adversarial reviewer runs") is satisfied by the fresh
+    reviewer subagent's pass (rule 5a) with findings fixed or answered — and
+    by nothing else; any label or marker is still Sapir's to clear.
 
     ### 30b — the marker is a LABEL, not a sentence (MEH-1523)
 
@@ -475,24 +471,11 @@ concurrent loops. Tiers + `mehamakor-dod` self-check: ADR-025.
 
     ### 32b — when a delete is denied, leave the file and say so
 
-    A denied `rm` is a decision about the file, not about the command. Reaching
-    for `mv` (to `/tmp`, to a scratch directory, to a `.bak` name) produces the
-    outcome the deny refused, by a route the deny does not cover — the file
-    stops being where it was, which is the only thing the denial was
-    protecting. The same goes for `git clean`, `git rm`, truncating the file to
-    nothing, or rewriting it to a stub.
-
-    **What to do instead:** leave the file exactly as it is, finish the rest of
-    the task, and report the file by path and why you wanted it gone. If it is
-    untracked, it stays untracked — stage by explicit path (`git add <path>`),
-    never `git add -A`, so an untracked file cannot ride along into a commit by
-    accident.
-
-    This is rule 32 applied to one's own workspace: a deny is a constraint, and
-    routing around it removes one. It is also the general case — any denied
-    action is reported, not re-attempted through a different verb.
-
-    _Source: Sapir, 11/11/2026, standing instruction._
+    A denied `rm` is a decision about the file: never `mv` it, `git clean`,
+    `git rm`, truncate or stub it. Leave it, finish the task, report its path
+    and why. Untracked stays untracked: stage by explicit path, never
+    `git add -A`. Any denied action is
+    reported, not re-attempted through another verb (Sapir 11/11).
 33. **A DoD checkbox is a claim of fact — check it only for a box you performed
     yourself and can cite evidence for (MEH-1755).** Otherwise leave `[ ]` with
     a reason in prose; same for N/A.
@@ -544,22 +527,17 @@ concurrent loops. Tiers + `mehamakor-dod` self-check: ADR-025.
     from the job log or the report. A count, a summary comment, or "not in the
     flaky list" is not (c). If the log can't be read, run the E2E once more and
     quote that run. If any of the three is missing, don't merge.
-    `--fail-on-flaky-tests` stays on. This rule decides when a red caused by
-    someone else's flake may be merged past; it never loosens the gate. A flake
-    with no card gets one before the merge. Precedent: #4316.
+    `--fail-on-flaky-tests` stays on; this never loosens the gate. A flake
+    with no card gets one before the merge (#4316).
 40. **A PR that touches `frontend/` or `backend/app` carries the `run-e2e`
     label before it merges, and the PR body quotes the E2E result (Sapir
     11/11).** Quote it — each shard's `N passed` / `N failed` / `N flaky`, or
     the `✘` lines — never "E2E gate: success". **A gate that aggregated a
     SKIPPED run is not evidence**: `Playwright E2E` does not run on a feature
     PR without that label (MEH-2779), and `E2E gate` reports `success` either
-    way. Three PRs merged on 11/11 with every gate green and no E2E suite run
-    on any of them; one of them broke staging. Read the per-JOB conclusions,
-    not the run's: a run shows `cancelled` when a non-blocking shadow job is
-    cancelled after the blocking shards have already passed.
-    Rule 39 says when a RED may be merged past; this one says there has to be
-    a run at all. Until the trigger moves into the workflow itself, this is a
-    rule that depends on someone remembering it.
+    way. Read per-JOB conclusions, not the run's (a cancelled shadow job makes
+    the run read `cancelled`). Rule 39 = when a red may be passed; this = there
+    must be a run at all.
 41. **Nothing merges to staging while staging is red — any session, any PR
     (Sapir 11/11).** The only PR that may merge into a red staging is the one
     that fixes the red, and its body says so.
@@ -570,32 +548,15 @@ concurrent loops. Tiers + `mehamakor-dod` self-check: ADR-025.
     `Playwright E2E` jobs actually EXECUTED, and use that conclusion. A gap of
     skips does not clear an earlier failure — it leaves the question open, and
     an open question is not a green.
-    Measured on 11/11: `ca44069af` failed at 14:58 (Playwright ran); the next
-    runs at 17:27 (`f20c22f2d`) and 17:43 (`117defbf9`) both reported
-    `E2E gate: success` with every Playwright job `skipped`; `a7c545ada` at
-    16:58 could not be read (the jobs API 502'd repeatedly) and is recorded as
-    unverified rather than assumed. Nothing re-ran the suite until the fix at
-    ~19:40. A merge landed at 17:43 against that unread state. So the window
-    was not "red until someone noticed" — it was **unknown for five hours**,
-    which is the same thing for this purpose and harder to see.
+    A run whose jobs can't be read is unverified, never assumed green.
 42. **A probe or scratch test is never written inside a test glob (Sapir
     12/11).** Not `frontend/__tests__/**`, not `frontend/e2e/**`, not
     `tests/**`. One-off probes, DOM dumps and throwaway harnesses go in a
     scratch directory outside every glob the runners scan; if one must run
     under vitest, invoke it by explicit path from there and do not save it in
     the tree.
-    **The deny is not the problem — the location is.** Two probes written under
-    `frontend/__tests__/` on 12/11 could not be removed (`rm` denied, twice,
-    including after explicit authorization), so `npx vitest run` reports a
-    permanent `1 failed` and the Stop hook blocks on "Vitest component tests
-    failed" for a failure that is not about the code. Both were untracked and
-    never reached CI, so the cost was local noise and a misleading hook — but
-    outside the glob the same deny would have cost nothing at all.
-    Rule 32b is unchanged and still governs what to do once a delete IS denied:
-    report the file, leave it exactly where it is, and never substitute `mv`,
-    `git clean` or a rewrite-to-stub. This rule is about not creating that
-    situation. Stage by explicit path, never `git add -A`, so an untracked
-    probe cannot ride along into a commit.
+    Reason: a probe under a glob that can't be deleted (rule 32b) leaves a
+    permanent local `1 failed` and a blocking Stop hook (12/11).
 
 ---
 
