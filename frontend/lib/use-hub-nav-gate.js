@@ -21,7 +21,7 @@
  * two copies of cache-plus-fetch would be two owners of one shape.
  */
 
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useState } from "react";
 import { z } from "zod";
 
 import api from "@/lib/api";
@@ -44,6 +44,10 @@ const HUB_NAV_GATES = Object.freeze({
 
 // Rule 19: validate before consuming. Only the length matters here.
 const ListSchema = z.array(z.unknown());
+
+// REUSES: lib/use-favorite-producers.js:15 — layout effect in the browser,
+// plain effect on the server (where React 18 warns about layout effects).
+const useIsomorphicLayoutEffect = typeof window === "undefined" ? useEffect : useLayoutEffect;
 
 function readCache(key, ttlMs) {
   try {
@@ -110,7 +114,13 @@ function loadAny(gate) {
 export function useHubNavGate(hub) {
   const [visible, setVisible] = useState(false);
 
-  useEffect(() => {
+  // MEH-3049: a LAYOUT effect, so a cached answer lands before the browser
+  // paints. Every hub tab is its own route, so ListingHubTabs mounts fresh on
+  // each switch; with a passive effect the first frame drew the row without
+  // «סלי הפתעה» / «קבוצות רכישה» and the next one added it — the row jumped
+  // on every tab change (measured on staging 13/11, CLS 0.049). The initial
+  // state stays false, so the server HTML and hydration still agree.
+  useIsomorphicLayoutEffect(() => {
     const gate = HUB_NAV_GATES[hub];
     if (!gate || !gate.enabled()) return undefined;
     let alive = true;

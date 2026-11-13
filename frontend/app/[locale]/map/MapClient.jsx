@@ -13,7 +13,7 @@ import { TOGGLE_CHIPS, chipStateToParams } from "@/lib/map-chips";
 import { chipsFromQuery } from "@/lib/filter-url";
 import { readMapSelection, writeMapSelection } from "@/lib/map-view-state";
 import { geocodeCity } from "@/lib/places";
-import { producerPoints, hiddenWhenSecondaryOff } from "@/lib/producerPoints";
+import { producerPoints } from "@/lib/producerPoints";
 import { isRatingSortEnabled, mapRatingGateSource } from "@/lib/rating-gate";
 import { showToast } from "@/lib/toast";
 import { useUserCity } from "@/lib/use-user-city";
@@ -97,9 +97,6 @@ export default function MapPage() {
   const [showCityPicker, setShowCityPicker] = useState(false);
   const [locationModalOpen, setLocationModalOpen] = useState(false);
   const [gpsLoading, setGpsLoading] = useState(false);
-  // MEH-1412 (MEH-1388 chunk 3): pickup/market_stand marker layer visibility.
-  // Default on — all points show; the MapPane toggle flips it.
-  const [showSecondaryLayer, setShowSecondaryLayer] = useState(true);
   // Sort state for the desktop dropdown — consumed by sortedProducers below
   // (until this batch the select wrote state nothing read). `null` = "auto":
   // nearest when the visitor has a GPS fix, newest otherwise. GPS comes from
@@ -343,9 +340,6 @@ export default function MapPage() {
     userCity: userCityCtx.city,
     setUserCity: userCityCtx.setCity,
     setShowCityPicker,
-    // MEH-1670: the viewport filter derives points the same way the marker layer
-    // does, so it needs the same layer-toggle state.
-    showSecondaryLayer,
   });
   const sync = useMapSync({
     chipState: filters.chipState,
@@ -825,15 +819,6 @@ export default function MapPage() {
     };
   }, [selectedProducer, selectedLocation, mapRef, mapApiRef]);
 
-  // MEH-2046: is the layer toggle currently costing the user businesses? Read
-  // off the SAME list the pane draws (`filteredByCategory`), so the notice can
-  // never claim something the visible map contradicts. Short-circuits while the
-  // layer is on, which is the default and the common case.
-  const secondaryHidden = useMemo(
-    () => !showSecondaryLayer && filters.filteredByCategory.some(hiddenWhenSecondaryOff),
-    [showSecondaryLayer, filters.filteredByCategory],
-  );
-
   const mapPane = (
     <MapPane
       producers={filters.filteredByCategory}
@@ -844,9 +829,6 @@ export default function MapPage() {
       onMapCanvasClick={sync.handleMapCanvasClick}
       registerApi={sync.registerMapApi}
       mapRef={sync.mapRef}
-      showSecondaryLayer={showSecondaryLayer}
-      onToggleSecondaryLayer={() => setShowSecondaryLayer((v) => !v)}
-      secondaryHidden={secondaryHidden}
       focusedProducerId={focusedProducerId}
       mapMoved={filters.mapMoved}
       onSearchThisArea={sync.handleSearchThisArea}

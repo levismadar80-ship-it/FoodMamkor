@@ -2,14 +2,15 @@
 
 import { useEffect, useId, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
-import { Check, Leaf, Question, Stack, X } from "@phosphor-icons/react";
+import { Check, Leaf, Question, X } from "@phosphor-icons/react";
 
 /**
  * MapKey — "מה רואים במפה?" (MEH-2424).
  *
- * The map draws seven kinds of marks (photo pin, glyph pin, verified badge,
- * cluster count, hollow pickup pin, approximate halo, the pickup-layer
- * control) and on a phone explained none of them; the desktop legend lists
+ * The map draws six kinds of marks (photo pin, glyph pin, verified badge,
+ * cluster count, hollow pickup pin, approximate halo; a seventh row, the
+ * pickup-layer control, left with that control on 13/11) and on a phone
+ * explained none of them; the desktop legend lists
  * categories only. Big maps keep marks few and explain them on tap; when a
  * map does carry several encodings it offers one small "what's on the map"
  * panel. This is that panel, reachable on every viewport.
@@ -17,16 +18,13 @@ import { Check, Leaf, Question, Stack, X } from "@phosphor-icons/react";
  * Each row's sample is drawn with the SAME tokens the map uses
  * (MapComponent.jsx createCategoryMarker / createSecondaryMarker /
  * iconCreateFunction), so the key cannot teach a mark the map doesn't draw.
- * The pickup-layer row reuses that control's own accessible name: MEH-2046
- * keeps the control icon-only (a label made it read as a filter), and this
- * row is where it gets its words.
  *
- * Positioning belongs to the caller (MapPane renders one per shell, like the
- * layer toggle): `buttonClassName` / `buttonStyle` place the ? control,
+ * Positioning belongs to the caller (MapPane renders one per shell): `buttonClassName` / `buttonStyle` place the ? control,
  * `panelClassName` places the panel inside the pane.
  */
 
-// Same token set as MapPane's MAP_CONTROL_CLASS + MAP_CONTROL_OFF.
+// Same token set as NearMePill.jsx (MapPane's shared constant left with the
+// pickup-layer toggle, 13/11).
 const CONTROL_CLASS =
   "w-11 h-11 rounded-full shadow-md items-center justify-center transition-colors z-[1000] focus-visible:ring-2 focus-visible:ring-primary/40";
 const CONTROL_OFF = "bg-surface-floating text-primary border border-border hover:bg-green-50";
@@ -85,17 +83,6 @@ function SampleApproximate() {
   );
 }
 
-function SampleLayer() {
-  return (
-    <span
-      className="shrink-0 w-7 h-7 rounded-full bg-surface-floating border border-border text-primary flex items-center justify-center"
-      aria-hidden="true"
-    >
-      <Stack size={14} />
-    </span>
-  );
-}
-
 export default function MapKey({ buttonClassName = "", buttonStyle, panelClassName = "", testIdSuffix = "" }) {
   const t = useTranslations();
   const [open, setOpen] = useState(false);
@@ -124,7 +111,6 @@ export default function MapKey({ buttonClassName = "", buttonStyle, panelClassNa
     [SampleCluster, t("map.pane.key.cluster")],
     [SamplePickup, t("map.pane.key.pickup")],
     [SampleApproximate, t("map.pane.key.approximate")],
-    [SampleLayer, t("map.pane.pickup_layer.aria")],
   ];
 
   return (
