@@ -115,3 +115,18 @@ describe("MEH-1814 — locked post-submit success copy", () => {
     }
   });
 });
+
+// MEH-2920 (Sapir delegated the wording, 13/11): the old line said the email
+// link comes first. Login never required it, so the screen described a barrier
+// that does not exist.
+describe("MEH-2920 — the inbox screen says login works now", () => {
+  it("Hebrew and English match the approved strings", () => {
+    expect(S_HE.inbox_next).toBe(
+      "אפשר להיכנס כבר עכשיו עם האימייל והסיסמה ולהמשיך להשלים את העמוד. הקישור במייל מאמת את כתובת האימייל.",
+    );
+    expect(S_EN.inbox_next).toBe(
+      "You can log in right now with your email and password and continue completing your page. The link in the email verifies your email address.",
+    );
+  });
+});
+
