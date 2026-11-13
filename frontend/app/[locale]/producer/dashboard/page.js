@@ -171,6 +171,7 @@ function StatusSupportModal({ onClose }) {
 
 export default function ProducerDashboardPage() {
   const t = useTranslations("dashboard.producer");
+  const tSignup = useTranslations("auth.register.producer.success");
   const tHoliday = useTranslations("holidays");
   const { user, loading: authLoading } = useAuth();
   const [data, setData] = useState(null);
@@ -503,6 +504,26 @@ export default function ProducerDashboardPage() {
           <p className="text-yellow-700">
             {t("status.pending.body")}
           </p>
+          {/* MEH-3073: where she stands, not only that she waits. An ordered
+              process, so an <ol>; the first step is the current one for the
+              whole life of this banner (approval removes the banner). Strings
+              are the three stage names of the signup flow — one home. */}
+          <ol className="mt-3 flex flex-col gap-2 text-yellow-800" data-testid="status-pending-steps">
+            {["next_step1", "next_step2", "next_step3"].map((key, i) => (
+              <li
+                key={key}
+                data-testid="status-pending-step"
+                aria-current={i === 0 ? "step" : undefined}
+                className={`flex items-center gap-2 ${i === 0 ? "font-semibold" : ""}`}
+              >
+                <span
+                  aria-hidden="true"
+                  className={`h-3 w-3 shrink-0 rounded-full border-2 border-yellow-700 ${i === 0 ? "bg-yellow-700" : "bg-transparent"}`}
+                />
+                {tSignup(key)}
+              </li>
+            ))}
+          </ol>
         </div>
       )}
 
