@@ -50,7 +50,7 @@ done < <(py_files)
 while IFS= read -r f; do
   [ -n "$f" ] || continue; njs=$((njs + 1))
   grep -qxF "$f" "$BASELINE" && continue
-  sed -n '1,5p' "$f" | grep -q '// @ts-check' && continue
+  sed -n '1,5p' "$f" | grep -qx '[[:space:]]*// @ts-check[[:space:]]*' && continue
   sed -n '1,3p' "$f" | grep -q 'guard-ok:' && continue
   echo "$f:1: new frontend file has no \`// @ts-check\` — add it as the first line of the file"
   fail=1

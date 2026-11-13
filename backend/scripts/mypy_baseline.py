@@ -98,10 +98,8 @@ BASELINE_PATH = BACKEND_DIR / "mypy-baseline.txt"
 
 # The exact argv the workflow passes. Kept here as ONE definition so the baseline
 # can never be frozen against a different scope than the gate runs.
-# NOTE (MEH-1868 finding, not fixed here): the explicit path OVERRIDES the
-# `files = [...]` list in [tool.mypy], so the five files listed there are not all
-# checked — only auth.py and whatever it imports. Widening that scope changes the
-# baseline and belongs in its own ticket.
+# History: until 13/11/2026 this passed `app/auth.py` explicitly, which OVERRODE
+# the `files = [...]` list (MEH-1868 finding). It now passes that list itself.
 def _typed_files() -> list[str]:
     """The files mypy checks = [tool.mypy].files in pyproject.toml.
 

@@ -45,6 +45,7 @@ function diagnose(files) {
     // imports, without demanding a JSDoc type on every parameter.
     noImplicitAny: false,
     strictNullChecks: false,
+    useUnknownInCatchVariables: false,
   });
   const wanted = new Set(files.map((f) => path.resolve(f)));
   return ts
@@ -64,7 +65,11 @@ describe("// @ts-check files type-check", () => {
 
   it("every opted-in file has 0 type errors", () => {
     const files = optedIn();
-    if (files.length === 0) return; // nothing opted in yet — the control above still ran
+    // Anchor: these real files opted in on 13/11, so optedIn() must find them.
+    // If the marker scan breaks, this goes red instead of checking nothing.
+    for (const anchor of ["lib/dates.js", "lib/css-url.js", "lib/label-in-name.js"]) {
+      expect(files.map((f) => path.relative(ROOT, f))).toContain(anchor);
+    }
     expect(diagnose(files)).toEqual([]);
   }, 120_000);
 });

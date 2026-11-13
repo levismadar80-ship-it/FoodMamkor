@@ -512,10 +512,8 @@ frontend/lib/contact-method.js
 frontend/lib/contact-topics.js
 frontend/lib/contact-tracking.js
 frontend/lib/cookie-consent.js
-frontend/lib/css-url.js
 frontend/lib/dashboard-edit-anchors.js
 frontend/lib/dashboard-status-classes.js
-frontend/lib/dates.js
 frontend/lib/delivery-coverage.js
 frontend/lib/delivery-days.js
 frontend/lib/delivery-errors.js
@@ -559,13 +557,11 @@ frontend/lib/i18n-seo.js
 frontend/lib/inert-attr.js
 frontend/lib/israel-date.js
 frontend/lib/keepFocusedChipClear.js
-frontend/lib/label-in-name.js
 frontend/lib/language-context.js
 frontend/lib/launch-cohort.js
 frontend/lib/license-required-categories.js
 frontend/lib/listing-supply.js
 frontend/lib/map-chips.js
-frontend/lib/map-city-params.js
 frontend/lib/map-view-state.js
 frontend/lib/marker-glyph.js
 frontend/lib/nav-links.js
