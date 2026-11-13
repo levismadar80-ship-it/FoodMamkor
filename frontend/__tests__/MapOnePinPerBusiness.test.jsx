@@ -15,7 +15,10 @@ vi.mock("next-intl", () => ({
   useTranslations: () => (k) => k,
 }));
 
-const live = vi.hoisted(() => ({ layers: new Set() }));
+// `layers` = everything on the map (cluster group + the selected business's own
+// layer); `clusterCalls` = cluster-group traffic after mount, which selection
+// must never cause (it unspiderfies and can re-cluster the clicked pin).
+const live = vi.hoisted(() => ({ layers: new Set(), clusterCalls: 0 }));
 
 vi.mock("leaflet", () => {
   const makeStub = () => {
@@ -53,12 +56,14 @@ vi.mock("leaflet", () => {
     const g = makeStub();
     Object.defineProperty(g, "addLayers", {
       value: (layers) => {
+        live.clusterCalls += 1;
         layers.forEach((l) => live.layers.add(l));
         return g;
       },
     });
     Object.defineProperty(g, "removeLayers", {
       value: (layers) => {
+        live.clusterCalls += 1;
         layers.forEach((l) => live.layers.delete(l));
         return g;
       },
@@ -71,8 +76,26 @@ vi.mock("leaflet", () => {
     });
     return g;
   };
+  const plainLayer = () => {
+    const own = new Set();
+    const lg = {
+      addTo: () => lg,
+      addLayer: (m) => {
+        own.add(m);
+        live.layers.add(m);
+        return lg;
+      },
+      clearLayers: () => {
+        own.forEach((m) => live.layers.delete(m));
+        own.clear();
+        return lg;
+      },
+    };
+    return lg;
+  };
   return {
     default: {
+      layerGroup: plainLayer,
       map: () => makeStub(),
       tileLayer: () => makeStub(),
       markerClusterGroup: group,
@@ -108,7 +131,10 @@ const ALL = [MANY, ONE, ZERO, PICKUP_ONLY];
 
 const pinsOf = (id) => [...live.layers].filter((m) => m.producerId === id).map((m) => m.latlng[0]).sort();
 
-beforeEach(() => live.layers.clear());
+beforeEach(() => {
+  live.layers.clear();
+  live.clusterCalls = 0;
+});
 
 describe("MEH-3054 — chip off, nothing selected", () => {
   it("draws one pin per business: the branch, or the first point of a pickup-only business", () => {
@@ -128,6 +154,15 @@ describe("MEH-3054 — chip off, a business selected", () => {
     expect(pinsOf("many")).toEqual([32.0, 32.1, 32.2, 32.3]);
     expect(pinsOf("one")).toEqual([31.0]);
     expect(pinsOf("pickup-only")).toEqual([29.0]);
+  });
+
+  it("selecting and deselecting never touches the cluster group", () => {
+    const { rerender } = render(<MapComponent producers={ALL} focusedProducerId={null} />);
+    const afterMount = live.clusterCalls;
+    rerender(<MapComponent producers={ALL} focusedProducerId="many" />);
+    rerender(<MapComponent producers={ALL} focusedProducerId="one" />);
+    rerender(<MapComponent producers={ALL} focusedProducerId={null} />);
+    expect(live.clusterCalls).toBe(afterMount);
   });
 
   it("one: adds its single pickup point", () => {

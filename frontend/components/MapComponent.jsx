@@ -458,24 +458,33 @@ export default function MapComponent({
 
   // MEH-3054 (option ה׳): the selected business's points that mapPinPoints()
   // left out of the default one-pin view — its pickup / market_stand rows.
-  // Added to the cluster layer when it is selected, removed when it is not, so
-  // ten businesses with five pickup points each draw ten pins until one is
-  // chosen. Incremental on purpose: the marker effect is not re-run on a
-  // selection, so the clicked pin keeps its element (and keyboard focus).
-  // Nothing to add while showAllPickupPoints already draws every point.
+  // Drawn when it is selected, taken away when it is not, so ten businesses
+  // with five pickup points each draw ten pins until one is chosen.
+  //
+  // DO NOT add these to the cluster group (fresh review, MEH-3054): its
+  // addLayers/removeLayers unspiderfy an open spider (markercluster-src.js
+  // :227, :372) and can merge the pin just clicked with a nearby new point
+  // into a cluster badge, removing the element under the finger. They go on
+  // their own plain layer on the map instead, so selection still never
+  // touches the cluster group (MEH-1611).
+  // Nothing to add while showAllPickupPoints already draws every point; read
+  // through a ref because focusProducer's API closure is from the mount render.
   const selectedExtrasRef = useRef([]);
+  const extrasLayerRef = useRef(null);
+  const showAllPickupPointsRef = useRef(showAllPickupPoints);
+  showAllPickupPointsRef.current = showAllPickupPoints;
   const showSelectedExtras = (id) => {
-    const group = clusterGroupRef.current;
     const old = selectedExtrasRef.current;
     if (old.length > 0) {
-      group?.removeLayers(old.map((e) => e.marker));
+      extrasLayerRef.current?.clearLayers();
       for (const e of old) {
         const entry = markersRef.current.get(e.producerId);
         if (entry) entry.markers = entry.markers.filter((m) => m.marker !== e.marker);
       }
       selectedExtrasRef.current = [];
     }
-    if (!id || !group || showAllPickupPoints) return;
+    const map = mapInstanceRef.current;
+    if (!id || !map || showAllPickupPointsRef.current) return;
     const entry = markersRef.current.get(id);
     if (!entry) return;
     const drawn = new Set(entry.markers.map((m) => m.location));
@@ -486,7 +495,8 @@ export default function MapComponent({
       if (marker) extras.push({ marker, location, producerId: id });
     }
     if (extras.length === 0) return;
-    group.addLayers(extras.map((e) => e.marker));
+    if (!extrasLayerRef.current) extrasLayerRef.current = L.layerGroup().addTo(map);
+    for (const { marker } of extras) extrasLayerRef.current.addLayer(marker);
     entry.markers.push(...extras.map(({ marker, location }) => ({ marker, location })));
     selectedExtrasRef.current = extras;
   };
@@ -899,6 +909,7 @@ export default function MapComponent({
         mapInstanceRef.current.remove();
         mapInstanceRef.current = null;
         clusterGroupRef.current = null;
+        extrasLayerRef.current = null; // removed with the map (MEH-3054)
         myLocationMarkerRef.current = null;
         hasFitBoundsRef.current = false;
       }
@@ -912,7 +923,9 @@ export default function MapComponent({
     // Clear existing markers from the cluster layer
     clusterGroupRef.current.clearLayers();
     markersRef.current = new Map();
-    selectedExtrasRef.current = []; // cleared with the layers above (MEH-3054)
+    // MEH-3054: the selected business's extra points are rebuilt below too.
+    extrasLayerRef.current?.clearLayers();
+    selectedExtrasRef.current = [];
 
     // Defensive: guard against null/empty producers (#10)
     if (!Array.isArray(producers) || producers.length === 0) return;
@@ -991,8 +1004,8 @@ export default function MapComponent({
   //   1. the container class, which the CSS uses to demote everyone else;
   //   2. an icon refresh for the outgoing + incoming business only (≤ its own
   //      point count) so their focus flag / active ring flip.
-  // Nothing is added to or removed from the cluster group — marker count before
-  // a selection and after it is identical by construction.
+  // Nothing is added to or removed from the cluster group. MEH-3054: the
+  // selected business's pickup points go on their own layer (showSelectedExtras).
   useEffect(() => {
     applyFocus(focusedProducerId);
     // applyFocus is redefined every render; depending on it would re-run
