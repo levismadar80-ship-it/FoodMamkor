@@ -9,6 +9,7 @@ import {
 } from "@/lib/contact-method";
 import { withReferralParams } from "@/lib/utils";
 import { getCtaVariant } from "@/components/ContactCtaVariants";
+import { trackPrimaryCtaClick } from "@/lib/contact-tracking";
 
 /**
  * Primary CTA button on ProducerDetail — color + icon + Hebrew label
@@ -46,7 +47,13 @@ export default function PrimaryContactButton({ producer, onClick }) {
   return (
     <a
       href={href}
-      onClick={onClick}
+      // MEH-2999: the button records its own click, every channel, so no
+      // mount site can forget it again (the recipe page recorded nothing,
+      // and a non-WhatsApp primary never unlocked the review form).
+      onClick={(e) => {
+        trackPrimaryCtaClick(producer?.id, method);
+        onClick?.(e);
+      }}
       {...(external
         ? { target: "_blank", rel: isWebsite ? "noopener" : "noopener noreferrer" }
         : {})}

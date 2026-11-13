@@ -13,6 +13,7 @@ import { isDeliveryCheckerUsable } from "@/lib/delivery-coverage";
 import WhatsAppUpdatesPill, { whatsappUpdatesHref } from "@/components/WhatsAppUpdatesPill";
 import HoursText from "@/components/HoursText";
 import { coordsNavLinks } from "@/lib/nav-links";
+import SectionHeading from "@/components/ui/SectionHeading";
 
 // MEH-2592 C: every row list in the block (areas and pickup) sits in one soft
 // card instead of between hairlines, and rows carry their own side padding.
@@ -589,10 +590,10 @@ export default function DeliveryBlock({
   return (
     <section className="mt-12">
       {/* MEH-2592: part C dropped this truck; Sapir asked for it back (30/10). */}
-      <h2 className="font-headline-md text-2xl font-bold text-text mb-4 flex items-center gap-2">
+      <SectionHeading size="content" className="mb-4 flex items-center gap-2">
         <Truck size={22} className="text-primary" aria-hidden="true" data-testid="delivery-heading-icon" />
         {t("heading")}
-      </h2>
+      </SectionHeading>
 
       {/* MEH-1536: "מגיעים אלייך?" checker — ADDITIVE, at the top of the block.
           Self-gates (offers_delivery, and hides when the answer is trivially

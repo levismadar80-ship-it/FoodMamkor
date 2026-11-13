@@ -8,7 +8,10 @@ import { detailToMessage } from "@/lib/errors";
 import { useFocusReturn } from "@/lib/use-focus-return";
 import Button from "@/components/ui/Button";
 
-export default function ReportButton({ producerId }) {
+// MEH-2999: `quiet` = the business page's fine-print row — same small grey
+// underlined link as its neighbours, led by a « · » separator. The red trigger
+// stood out as the loudest thing in the page's fine print.
+export default function ReportButton({ producerId, quiet = false }) {
   const t = useTranslations("report");
   const { user } = useAuth();
   const [showModal, setShowModal] = useState(false);
@@ -35,9 +38,15 @@ export default function ReportButton({ producerId }) {
 
   return (
     <>
+      {quiet && <span aria-hidden="true" className="me-2">·</span>}
       <button
+        type="button"
         onClick={() => setShowModal(true)}
-        className="text-sm text-error hover:text-danger-700 transition flex items-center gap-1"
+        className={
+          quiet
+            ? "text-xs text-fg-muted underline hover:text-text transition"
+            : "text-sm text-error hover:text-danger-700 transition flex items-center gap-1"
+        }
       >
         {t("trigger")}
       </button>

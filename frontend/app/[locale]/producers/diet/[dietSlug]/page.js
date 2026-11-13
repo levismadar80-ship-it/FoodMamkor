@@ -30,6 +30,7 @@ import {
   getDietPage,
   isDietPageBacked,
 } from "@/lib/diet-pages";
+import SectionHeading from "@/components/ui/SectionHeading";
 
 // How many businesses the SSR'd grid renders. The ItemList JSON-LD mirrors
 // exactly this set, so a crawler sees the same businesses in the markup and in
@@ -318,7 +319,7 @@ export default async function DietLandingPage({ params }) {
       <p className="mt-6 text-sm text-fg-muted">{t("honesty")}</p>
 
       <section className="mt-12 max-w-3xl">
-        <h2 className="text-xl font-bold text-fg">{t("faq_heading")}</h2>
+        <SectionHeading size="content" className="text-fg">{t("faq_heading")}</SectionHeading>
         <dl className="mt-4 space-y-6">
           {/*
             Keyed by index, not by question text: the copy contract only

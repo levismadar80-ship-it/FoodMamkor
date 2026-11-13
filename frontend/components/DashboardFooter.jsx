@@ -8,6 +8,9 @@ import { Link } from "@/i18n/navigation";
 // a viewport prefetch would fetch them IN FULL. See Header.jsx.
 import Image from "next/image";
 import { useTranslations } from "next-intl";
+// MEH-2998: the © year is the Israel calendar year, so the server (UTC) and
+// every browser agree on it on New Year's night — see lib/established-year.
+import { currentIsraelYear } from "@/lib/established-year";
 
 /**
  * DashboardFooter (MEH-1954) — slim footer for the producer dashboard.
@@ -38,7 +41,7 @@ export default function DashboardFooter() {
             height={20}
             aria-hidden="true"
           />
-          © {new Date().getFullYear()} {t("footer.copyright")}
+          © {currentIsraelYear()} {t("footer.copyright")}
         </p>
         <ul className="flex flex-wrap items-center justify-center gap-4">
           {[

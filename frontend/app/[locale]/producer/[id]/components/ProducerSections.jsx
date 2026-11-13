@@ -1,7 +1,7 @@
 import RescueSection from "@/components/rescue/RescueSection";
 import { useCallback, useEffect, useState } from "react";
 import Image from "next/image";
-import { CaretLeft, MapPin } from "@phosphor-icons/react";
+import { CaretLeft, Info, MapPin } from "@phosphor-icons/react";
 import Seed from "@/components/brand/Seed";
 import { seedColorFor } from "@/lib/brand-seeds";
 import dynamic from "next/dynamic";
@@ -40,6 +40,7 @@ import ReviewsSection from "@/components/ReviewsSection";
 // MEH-1490: quiet live-fetch Google-rating line — renders below (and detached
 // from) the native reviews block, only for producers an admin mapped.
 import GoogleRatingLine from "@/components/GoogleRatingLine";
+import SectionHeading from "@/components/ui/SectionHeading";
 
 // MEH-1853: `loading:` placeholder REVERTED 06/08 — it measurably made CLS
 // WORSE, and the measurement is on the ticket. Reserving a 356px box that
@@ -321,7 +322,7 @@ export default function ProducerSections({
         // + scroll-mt clearing the sticky header/tab bar (the #reviews idiom).
         <FadeInSection as="section" {...REVEAL_PRESET} id="section-bio" className="mt-8 scroll-mt-[calc(var(--chrome-top,82px)_+_var(--section-nav-h,68px))] md:scroll-mt-24" ref={(el) => { sectionRefs.current.about = el; }}>
           <div className="flex items-center gap-2 mb-3">
-            <h2 className="font-headline-md text-2xl font-bold text-text">{t("producer.detail.sections.about")}</h2>
+            <SectionHeading size="content">{t("producer.detail.sections.about")}</SectionHeading>
             <OwnerSectionEditLink producerId={producer.id} anchor="bio" sectionKey="bio" />
           </div>
           <p className="text-text/85 leading-relaxed whitespace-pre-line">
@@ -359,7 +360,7 @@ export default function ProducerSections({
         <section id="section-products" className="mt-12 scroll-mt-[calc(var(--chrome-top,82px)_+_var(--section-nav-h,68px))] md:scroll-mt-24" ref={(el) => { sectionRefs.current.products = el; }}>
           {/* MEH-1306: owner pencil beside the heading → #products card. */}
           <div className="flex items-center gap-2 mb-4">
-            <h2 className="font-headline-md text-2xl font-bold text-text">{t("producer.detail.sections.products.heading")}</h2>
+            <SectionHeading size="content">{t("producer.detail.sections.products.heading")}</SectionHeading>
             <OwnerSectionEditLink producerId={producer.id} anchor="products" sectionKey="products" />
           </div>
 
@@ -578,9 +579,9 @@ export default function ProducerSections({
           RecipeDetail.jsx ("חזרה לדף בית העסק > מתכונים"). */}
       {producer.slug && recipes.length > 0 && (
         <section className="mt-12" id="recipes">
-          <h2 className="font-headline-md text-2xl font-bold text-text mb-4">
+          <SectionHeading size="content" className="mb-4">
             {t("producer.detail.sections.recipes.cta")}
-          </h2>
+          </SectionHeading>
           {/* MEH-3006 (option B): phones — one sideways-scrolling strip of
               medium cards, bleeding to the screen edge (-me-4 pe-4 cancels the
               page gutter) so the next card peeks; same height for one recipe
@@ -714,9 +715,9 @@ export default function ProducerSections({
           className="mt-12 scroll-mt-[calc(var(--chrome-top,82px)_+_var(--section-nav-h,68px))] md:scroll-mt-24"
         >
           <div className="flex items-center gap-2 mb-3">
-            <h2 className="font-headline-md text-2xl font-bold text-text">
+            <SectionHeading size="content">
               {t("producer.detail.sections.location")}
-            </h2>
+            </SectionHeading>
             <OwnerSectionEditLink producerId={producer.id} anchor="location" sectionKey="location" />
           </div>
           {/* Address line — city-only fallback, never empty (revision-1 #5). */}
@@ -752,43 +753,53 @@ export default function ProducerSections({
 
       {/* MEH-2592: the page-end fine print — everything about THIS business
           ends here, before the other-businesses band (rendered by
-          ProducerDetail, full width, below both columns). Plain small grey
-          text, no box: the disclaimer is legal copy and stays word for word
-          (MEH-1548), only its container changed. Order inside: disclaimer →
-          report → correction link → last-updated. */}
-      <div className="mt-12" data-testid="producer-fine-print">
+          ProducerDetail, full width, below both columns). The disclaimer is
+          legal copy and stays word for word (MEH-1548), only its container
+          changed. MEH-2999 (Sapir chose option A, 12/11): a hairline above,
+          an info icon beside the disclaimer, and the three meta items on ONE
+          quiet row — last-updated · correction link · report (signed-in only)
+          — instead of three stacked lines with a red report link. Order:
+          disclaimer → that row. */}
+      <div className="mt-12 border-t border-border pt-5" data-testid="producer-fine-print">
         {/* Directory-only disclaimer — required by Israeli consumer
             protection law. The seller bears legal responsibility for
             products and licensing; the platform is just a directory. */}
-        <DirectoryDisclaimer />
-        <div className="mt-4">
-          <ReportButton producerId={producer.id} />
-          {/* MEH-1460: quiet "טעות בפרטים? עדכנו אותנו" correction link,
-              directly below ReportButton (opens the MEH-1443 email-only modal).
-              Relocated here from ContactCard — same quiet-link styling. */}
+        <div className="flex items-start gap-2">
+          <Info size={16} className="mt-0.5 shrink-0 text-fg-muted" aria-hidden="true" />
+          <DirectoryDisclaimer />
+        </div>
+        <div
+          className="mt-4 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-fg-muted"
+          data-testid="producer-fine-print-meta"
+        >
+          {/* MEH-1291: last-updated freshness signal. Renders ONLY when a real
+              edit has stamped producer.updated_at (nullable, no backfill), so
+              untouched producers show nothing. Month-year granularity. */}
+          {producer.updated_at && (
+            <span className="whitespace-nowrap">
+              {t("producer.detail.last_updated", {
+                date: formatEventDate(producer.updated_at, locale, {
+                  month: "long",
+                  year: "numeric",
+                }),
+              })}
+              {/* the dot rides with its item, so a wrap never strands it */}
+              <span aria-hidden="true" className="ms-2">·</span>
+            </span>
+          )}
+          {/* MEH-1460: quiet "טעות בפרטים? עדכנו אותנו" correction link (opens
+              the MEH-1443 email-only modal). */}
           <button
             type="button"
             onClick={() => setReportOpen(true)}
-            className="mt-3 block text-xs text-fg-muted underline hover:text-text transition"
+            className="underline hover:text-text transition"
           >
             {t("producer.detail.contact_card.report_info_link")}
           </button>
+          {/* Signed-in only (ReportButton returns null for a guest), so it
+              carries its own leading separator. */}
+          <ReportButton producerId={producer.id} quiet />
         </div>
-        {/* MEH-1291: last-updated freshness signal. Renders ONLY when a real
-            edit has stamped producer.updated_at (nullable, no backfill — Chunk A
-            migration a3f1c9d2e4b7), so untouched producers show nothing. Modest
-            month-year granularity via the shared format-date util (he→he-IL,
-            en→en-US). Page-end meta footnote — no section reorder. */}
-        {producer.updated_at && (
-          <p className="mt-4 text-xs text-fg-muted">
-            {t("producer.detail.last_updated", {
-              date: formatEventDate(producer.updated_at, locale, {
-                month: "long",
-                year: "numeric",
-              }),
-            })}
-          </p>
-        )}
       </div>
 
       <ReportInfoModal

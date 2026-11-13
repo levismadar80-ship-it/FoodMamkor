@@ -24,6 +24,7 @@ import RecipeCard from "@/components/public/RecipeCard";
 import SaveButton from "@/components/SaveButton";
 import { EMPTY_SAVED, loadSavedItems, splitByTime } from "./savedItems";
 import Button from "@/components/ui/Button";
+import SectionHeading from "@/components/ui/SectionHeading";
 
 // MEH-2560: the chips, in order. "all" mixes every type in sections headed by
 // the same labels; the others show one type.
@@ -400,9 +401,9 @@ export default function FavoritesClient() {
               (MEH-685 precedent: the favorites toast picked the same icon). */}
           <HeartStraight size={40} weight="regular" className="text-primary" aria-hidden="true" />
         </div>
-        <h2 className="font-headline-md text-2xl font-bold text-text mb-2">
+        <SectionHeading size="content" className="mb-2">
           {t("empty_title")}
-        </h2>
+        </SectionHeading>
         {/* MEH-1628: exactly ONE helper paragraph. The isFirstVisit tip block
             that used to sit below said the same thing as empty_subtitle —
             two helper paragraphs on one screen. Deleted, key removed. */}
@@ -446,9 +447,9 @@ export default function FavoritesClient() {
     if (items.length === 0) return null;
     return (
       <section aria-labelledby="favorites-h-past" data-testid="favorites-section-past">
-        <h2 id="favorites-h-past" className="font-headline-md text-xl font-bold text-fg-muted mb-4">
+        <SectionHeading id="favorites-h-past" size="content" className="text-fg-muted mb-4">
           {t("past_heading")}
-        </h2>
+        </SectionHeading>
         <div className="border-t border-border opacity-80">
           {items.map(({ kind, row }) => (
             <EventEntryRow key={`${kind}:${row.id}`} entry={toEventEntry(row, kind, tList)} freeLabel={tList("free")} />
@@ -512,9 +513,9 @@ export default function FavoritesClient() {
           <div className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-green-50 mb-6">
             <HeartStraight size={40} weight="regular" className="text-primary" aria-hidden="true" />
           </div>
-          <h2 className="font-headline-md text-2xl font-bold text-text mb-2">
+          <SectionHeading size="content" className="mb-2">
             {t("empty_all_title")}
-          </h2>
+          </SectionHeading>
           <p className="text-fg-muted mb-6 max-w-md mx-auto">{t("empty_all_subtitle")}</p>
           <div>
             <Button
@@ -560,9 +561,9 @@ export default function FavoritesClient() {
                 .filter(([, body]) => body)
                 .map(([key, body]) => (
                   <section key={key} aria-labelledby={`favorites-h-${key}`} data-testid={`favorites-section-${key}`}>
-                    <h2 id={`favorites-h-${key}`} className="font-headline-md text-xl font-bold text-text mb-4">
+                    <SectionHeading id={`favorites-h-${key}`} size="content" className="mb-4">
                       {t(`filter_${key}`)}
-                    </h2>
+                    </SectionHeading>
                     {body}
                   </section>
                 ))}

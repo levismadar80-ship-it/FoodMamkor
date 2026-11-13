@@ -34,6 +34,7 @@ import { useTranslations } from "next-intl";
 import ClosingCtaBand from "@/components/ClosingCtaBand";
 import Seed from "@/components/brand/Seed";
 import { SEEDS_LIGHT } from "@/lib/brand-seeds";
+import SectionHeading from "@/components/ui/SectionHeading";
 
 // MEH-2833: the four steps' seeds — logo order without sand.
 const STEP_SEEDS = SEEDS_LIGHT.filter((seed) => seed.name !== "sand");
@@ -213,9 +214,9 @@ export default function AboutProcessClient() {
       <section data-testid="process-everyone" className="bg-background-alt py-12 md:py-20 scroll-mt-24">
         <div className="max-w-5xl mx-auto px-4 md:px-12">
           <Marker>{t("everyone.marker")}</Marker>
-          <h2 className="font-headline-lg font-bold text-text text-[clamp(26px,5.4vw,32px)] leading-tight tracking-tight">
+          <SectionHeading className="leading-tight">
             {t("everyone.h2")}
-          </h2>
+          </SectionHeading>
           <p className="mt-3.5 font-body-md text-lg leading-relaxed text-text/90 max-w-[52ch]">
             {t("everyone.intro")}
           </p>
@@ -283,9 +284,9 @@ export default function AboutProcessClient() {
       <section data-testid="process-matrix" className="bg-background-alt py-12 md:py-20 scroll-mt-24">
         <div className="max-w-5xl mx-auto px-4 md:px-12">
           <Marker>{t("matrix.marker")}</Marker>
-          <h2 className="font-headline-lg font-bold text-text text-[clamp(26px,5.4vw,32px)] leading-tight tracking-tight">
+          <SectionHeading className="leading-tight">
             {t("matrix.h2")}
-          </h2>
+          </SectionHeading>
           <p className="mt-3.5 font-body-md text-lg leading-relaxed text-text/90 max-w-[54ch]">
             {t("matrix.intro")}
           </p>
