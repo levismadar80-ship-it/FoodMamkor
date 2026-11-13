@@ -93,8 +93,9 @@ describe("CATEGORY_CHIPS + TOGGLE_CHIPS", () => {
   // button sat on the map canvas looking like a filter. The invariant worth
   // pinning is therefore no longer "pickup is absent" but "the two are DISTINCT
   // things" — the filter is a TOGGLE_CHIPS member, the layer toggle is not and
-  // must never become one (it is MapClient's `showSecondaryLayer`, which changes
-  // what is DRAWN, not which businesses match).
+  // must never become one (it was MapClient's `showSecondaryLayer`, which changed
+  // what is DRAWN, not which businesses match; the toggle itself was removed
+  // 13/11, so «איסוף עצמי» on /map now means only this filter).
   it("MEH-2046: pickup_points is a service-group producer filter", () => {
     const pickup = TOGGLE_CHIPS.find((c) => c.key === "pickup_points");
     expect(pickup).toMatchObject({ label: "איסוף עצמי", group: "service" });
@@ -312,24 +313,5 @@ describe("boundsToCenterRadius", () => {
       west: 34,
     });
     expect(result.radius_km).toBe(0);
-  });
-});
-
-// MEH-1461: the /map pickup-layer toggle uses consumer language "איסוף עצמי",
-// never the data-model jargon "נקודות איסוף" / "נק' איסוף".
-describe("MEH-1461 — /map pickup-layer consumer copy", () => {
-  it('he: pickup_layer label is "איסוף עצמי", not the jargon "נקודות איסוף"', async () => {
-    const he = (await import("@/messages/he.json")).default;
-    const pl = he.map.pane.pickup_layer;
-    expect(pl.label).toBe("איסוף עצמי");
-    expect(pl.label).not.toContain("נקודות איסוף");
-    expect(pl.aria).not.toContain("נקודות איסוף");
-  });
-
-  it("en: pickup_layer label is the consumer term, not \"Pickup points\"", async () => {
-    const en = (await import("@/messages/en.json")).default;
-    const pl = en.map.pane.pickup_layer;
-    expect(pl.label).toBe("Self-pickup");
-    expect(pl.label).not.toContain("Pickup points");
   });
 });

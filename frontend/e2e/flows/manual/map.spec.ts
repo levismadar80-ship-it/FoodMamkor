@@ -76,7 +76,7 @@ import { ISRAEL_CITIES } from "../../../data/cities.js";
  *
  * Locators: `getByTestId` first (docs/E2E-LOCATORS.md). Existing ids used:
  *           `map-card`, `map-distance-pill`, `map-rating`, `sort-origin-label`,
- *           `pickup-layer-toggle-desktop/-mobile`, `chip-<key>`,
+ *           `chip-<key>`,
  *           `filter-sheet-apply-footer`. Added under this chunk (attribute-only):
  *           MapClient.jsx `map-list-count` · `map-list-subhead` ·
  *           `map-sort-select` · `map-desktop-shell` · `map-mobile-shell` ·
@@ -670,24 +670,19 @@ async function grantGps(context: BrowserContext, fix: { latitude: number; longit
 
 // ════════════════════════════════════════════════════════════════════════════
 test.describe("manual › /map multi-location epic (MEH-1388)", () => {
-  // MT:MEH-1388:5 — the pickup-points layer toggle hides / shows the SECONDARY
-  //   pins (pickup / market_stand); the primary pins stay. Rows 1-4 are COVERED
+  // MT:MEH-1388:5 — the SECONDARY pins (pickup / market_stand) always draw next
+  //   to the primary pins. The layer toggle that could hide them was removed
+  //   (Sapir 13/11): a new user could not tell what it did, and turning it off
+  //   made pickup-only businesses vanish. Rows 1-4 are COVERED
   //   by 24-producer-locations.spec.ts (:264 same card from every pin, :159
   //   unique-business cluster badge, :319 nearest location, :344 delivery-only
   //   + pickup visible) and are not repeated here.
-  test("the layer toggle hides only the secondary pins, and shows them again", async ({ page }, info) => {
+  test("the secondary pins draw with the primary pins, and there is no toggle to hide them", async ({ page }, info) => {
     await fitFixtureSpread(page, info);
     const { shell } = await gotoWithCatalog(page, info);
     await expect(primaryMarkers(shell)).toHaveCount(PRODUCERS.length, FIRST_PAINT);
     await expect(secondaryMarkers(shell)).toHaveCount(1);
-    const toggle = shell.getByTestId(isDesktop(info) ? "pickup-layer-toggle-desktop" : "pickup-layer-toggle-mobile");
-    await expect(toggle).toHaveAttribute("aria-pressed", "true");
-    await toggle.click();
-    await expect(toggle).toHaveAttribute("aria-pressed", "false");
-    await expect(secondaryMarkers(shell)).toHaveCount(0);
-    await expect(primaryMarkers(shell)).toHaveCount(PRODUCERS.length);
-    await toggle.click();
-    await expect(secondaryMarkers(shell)).toHaveCount(1);
+    await expect(page.locator('[data-testid^="pickup-layer-"]')).toHaveCount(0);
   });
 });
 
@@ -1668,14 +1663,12 @@ const SHELL_ONLY: Record<string, { shell: "desktop" | "phone"; why: string }> = 
   // desktop
   "map-gps-button": { shell: "desktop", why: "desktop GPS circle; the phone uses map-near-me-pill (MEH-970)" },
   "map-key-toggle-desktop": { shell: "desktop", why: "per-shell twin of map-key-toggle-mobile (MapPane.jsx)" },
-  "pickup-layer-toggle-desktop": { shell: "desktop", why: "per-shell twin of pickup-layer-toggle-mobile (MapPane.jsx)" },
   "map-legend": { shell: "desktop", why: "desktop legend panel (MapPane.jsx hidden lg:block, MEH-979)" },
   "map-legend-toggle": { shell: "desktop", why: "lives inside map-legend" },
   "map-list-count": { shell: "desktop", why: "desktop list count; the phone shows sheet-count in the bottom sheet" },
   "map-sort-select": { shell: "desktop", why: "the phone has no sort control and never did (MEH-1864)" },
   // mobile
   "map-key-toggle-mobile": { shell: "phone", why: "per-shell twin of map-key-toggle-desktop" },
-  "pickup-layer-toggle-mobile": { shell: "phone", why: "per-shell twin of pickup-layer-toggle-desktop" },
   "map-near-me-pill": { shell: "phone", why: "phone GPS control; desktop uses map-gps-button" },
   "map-mobile-bar": { shell: "phone", why: "the phone's top bar container" },
   "map-bottom-sheet": { shell: "phone", why: "the phone's card list container" },
