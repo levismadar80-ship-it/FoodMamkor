@@ -2,7 +2,7 @@
 
 // MEH-2578: locale-aware Link — next/link dropped the /en prefix, and with
 // localeDetection off an /en reader landed on the Hebrew page.
-import { Link } from "@/i18n/navigation";
+import { Link, useRouter } from "@/i18n/navigation";
 // MEH-2850: every Link element here carries prefetch={false} — the footer is
 // chrome on every page and links a dozen static pages; on a short page (or
 // once scrolled into view) each would be prefetched IN FULL. See Header.jsx.
@@ -61,6 +61,12 @@ import { currentIsraelYear } from "@/lib/established-year";
  */
 export default function Footer() {
   const t = useTranslations();
+  const router = useRouter();
+  // MEH-3059: prefetch on intent for a link whose target renders per request.
+  const intentPrefetch = (href) => {
+    const go = () => router.prefetch(href);
+    return { onPointerEnter: go, onTouchStart: go, onFocus: go };
+  };
   // MEH-2554: «כניסה לחשבון» is a guest link — a signed-in reader saw it too.
   const { user } = useAuth();
   // MEH-721: producer-CTA panel moved out of global footer — see file-header History block.
@@ -121,7 +127,11 @@ export default function Footer() {
   const discoverLinks = [
     // MEH-1060 (SEO-09): link to the /producers index — the crawlable catalog
     // walk was previously reachable only via sitemap/pagination, not the footer.
-    { href: "/producers", label: t("nav.footer.producers") },
+    // MEH-3059: /producers renders per request (?page=N), so with prefetch off
+    // the tap painted the site-wide brand loader. Prefetching on intent (hover,
+    // touch, focus) fetches only down to producers/loading.js — the page-shaped
+    // skeleton — and only for someone about to tap. prefetch={false} stays.
+    { href: "/producers", label: t("nav.footer.producers"), intentPrefetch: true },
     { href: "/map", label: t("nav.map") },
     ...(showEvents ? [{ href: "/events", label: t("nav.footer.events") }] : []),
     // MEH-1918: data-gated — the experiences link joins "גלו" only once
@@ -275,6 +285,7 @@ export default function Footer() {
                             — interactive text carries no inline font sizing. */}
                         <Link prefetch={false}
                           href={link.href}
+                          {...(link.intentPrefetch ? intentPrefetch(link.href) : {})}
                           className="text-sm text-green-100 hover:text-white transition"
                         >
                           {link.label}
