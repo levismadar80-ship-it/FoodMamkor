@@ -2073,12 +2073,27 @@ function RegisterProducerPageBody({ routeKind }) {
               {t("auth.register.producer.success.inbox_next")}
             </p>
             <p className="text-xs text-fg-muted mb-6 text-center leading-relaxed">{t("auth.register.producer.success.tier_trust")}</p>
-            <button
-              onClick={() => router.push("/")}
-              className="border-2 border-primary-dark text-primary-dark bg-transparent px-6 py-3 rounded-md hover:bg-primary-dark hover:text-white transition font-medium text-sm"
-            >
-              {t("auth.register.producer.success.back_home")}
-            </button>
+            {/* MEH-2920: login does not wait for the email link (auth.py login
+                never reads email_verified), so the screen offers the way that
+                exists. This path holds no token (MEH-328 ack), hence a link to
+                /login that returns to the dashboard — never router.push to a
+                page that would bounce. Home drops to the secondary action. */}
+            <div className="flex flex-col items-center gap-3">
+              <Link
+                href={`/login?redirect=${encodeURIComponent("/producer/dashboard")}`}
+                data-testid="register-confirm-dashboard-cta"
+                className="w-full sm:max-w-xs bg-primary-dark text-white px-6 py-3 rounded-md hover:bg-primary transition font-medium text-sm"
+              >
+                {t("auth.register.producer.success.cta")}
+              </Link>
+              <button
+                onClick={() => router.push("/")}
+                data-testid="register-confirm-home"
+                className="text-primary-dark underline-offset-4 hover:underline px-6 py-2 rounded-md font-medium text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+              >
+                {t("auth.register.producer.success.back_home")}
+              </button>
+            </div>
           </div>
         )}
       </div>

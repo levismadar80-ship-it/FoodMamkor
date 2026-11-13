@@ -500,7 +500,10 @@ describe("RegisterProducerClient — didUpgrade CONFIRM split (MEH-328 chunk D)"
     expect(screen.getByText(`${K}.success.inbox_title`)).toBeInTheDocument();
     // The upgrade success UI must NOT leak into the anonymous path.
     expect(screen.queryByText(`${K}.success.title`)).not.toBeInTheDocument();
-    expect(screen.queryByText(`${K}.success.cta`)).not.toBeInTheDocument();
+    // MEH-2920: this screen now carries its own «ללוח הבקרה» LINK (to /login),
+    // so the label is no longer the tell. The upgrade screen's token-backed
+    // BUTTON is — it must still be absent here.
+    expect(screen.queryByTestId("register-success-dashboard-cta")).not.toBeInTheDocument();
     // No token was returned, so none may be stored and auth isn't refreshed.
     expect(localStorage.getItem("token")).toBeNull();
     expect(refreshUser).not.toHaveBeenCalled();
@@ -1814,3 +1817,16 @@ describe("RegisterProducerClient — a step change starts at the top (MEH-2927)"
     expect(scrollToSpy).not.toHaveBeenCalled();
   });
 });
+
+describe("non-upgrade confirm screen — the way in that exists (MEH-2920)", () => {
+  it("links to login-then-dashboard as the primary action; home is secondary", async () => {
+    api.post.mockResolvedValue({ data: {} }); // anti-enum ack, no token
+    await fillWizardAndSubmit();
+    const cta = await screen.findByTestId("register-confirm-dashboard-cta");
+    expect(cta.tagName).toBe("A");
+    expect(cta.getAttribute("href")).toBe("/login?redirect=%2Fproducer%2Fdashboard");
+    expect(cta.textContent).toBe(`${K}.success.cta`);
+    expect(screen.getByTestId("register-confirm-home").textContent).toBe(`${K}.success.back_home`);
+  });
+});
+

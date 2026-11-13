@@ -421,7 +421,7 @@
           "inbox_title": "Check your inbox",
           "inbox_body": "If the email is available, a verification message has been sent. Please check your inbox.",
           "inbox_hint": "Didn't get it? Check spam or try again in a minute.",
-          "inbox_next": "After you click the link in the email, log in with your email and password and continue completing your page.",
+          "inbox_next": "You can log in right now with your email and password and continue completing your page. The link in the email verifies your email address.",
           "back_home": "Back to home"
         }
       }
