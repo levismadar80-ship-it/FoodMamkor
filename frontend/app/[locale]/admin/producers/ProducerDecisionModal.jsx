@@ -209,7 +209,7 @@ function DecisionForm({ presets, presetsError, value, setValue, freeText, setFre
         onChange={(e) => setFreeText(e.target.value)}
         rows={4}
         aria-required={isOther}
-        className="w-full border border-border rounded-md px-3 py-2 text-sm bg-surface"
+        className="w-full border border-border rounded-sm px-3 py-2 text-sm bg-surface focus-ring"
         placeholder={t("producers.decision.free_text_placeholder")}
       />
 

@@ -104,7 +104,7 @@ export default function ClaimLinkPanel({ producerId }) {
               dir="ltr"
               value={link.url}
               onFocus={(e) => e.target.select()}
-              className="flex-1 min-w-0 border border-border rounded-md px-3 py-2 text-sm bg-background"
+              className="flex-1 min-w-0 border border-border rounded-sm px-3 py-2 text-sm bg-background focus-ring"
             />
             <Button
               type="button"

@@ -254,12 +254,12 @@ export default function AdminReviewsPage() {
           placeholder={t("reviews.search_placeholder")}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="flex-1 border border-border rounded-md px-3 py-2"
+          className="flex-1 border border-border rounded-sm px-3 py-2 focus-ring"
         />
         <select
           value={starFilter}
           onChange={(e) => setStarFilter(e.target.value)}
-          className="border border-border rounded-md px-3 py-2 bg-surface"
+          className="border border-border rounded-sm px-3 py-2 bg-surface focus-ring"
           aria-label={t("reviews.filter_aria")}
         >
           <option value="all">{t("reviews.all_ratings")}</option>

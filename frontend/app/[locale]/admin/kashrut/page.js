@@ -235,7 +235,7 @@ export default function AdminKashrutPage() {
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
           aria-label={t("producers.table.columns.status")}
-          className="border rounded-sm px-3 py-2 text-sm"
+          className="border rounded-sm px-3 py-2 text-sm focus-ring"
         >
           <option value="pending">{t("kashrut.status.pending")}</option>
           <option value="approved">{t("kashrut.status.approved")}</option>
@@ -343,7 +343,7 @@ export default function AdminKashrutPage() {
               max={israelDateOffset(400)}
               value={approveDate}
               onChange={(e) => setApproveDate(e.target.value)}
-              className="w-full border rounded-sm p-3 text-sm"
+              className="w-full border rounded-sm p-3 text-sm focus-ring"
             />
             <p className="text-xs text-fg-muted mt-2">{t("kashrut.approve_modal.hint")}</p>
             <div className="flex gap-3 mt-4">
@@ -375,7 +375,7 @@ export default function AdminKashrutPage() {
               value={revokeNotes}
               onChange={(e) => setRevokeNotes(e.target.value)}
               placeholder={t("kashrut.revoke_modal.placeholder")}
-              className="w-full border rounded-sm p-3 text-sm resize-none h-24"
+              className="w-full border rounded-sm p-3 text-sm resize-none h-24 focus-ring"
             />
             <div className="flex gap-3 mt-4">
               <button
@@ -405,7 +405,7 @@ export default function AdminKashrutPage() {
               value={rejectNotes}
               onChange={(e) => setRejectNotes(e.target.value)}
               placeholder={t("kashrut.reject_modal.placeholder")}
-              className="w-full border rounded-sm p-3 text-sm resize-none h-24"
+              className="w-full border rounded-sm p-3 text-sm resize-none h-24 focus-ring"
             />
             <div className="flex gap-3 mt-4">
               <button

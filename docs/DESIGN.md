@@ -447,6 +447,13 @@ in-between for smaller cards and chips; modals use `rounded.xl` (20px). **No
 actions, full rounding is reserved for genuinely circular elements (avatars,
 icon buttons).
 
+**Fields look the same everywhere (MEH-3092, 13/11/2026).** Every bordered
+`input` / `textarea` / `select` — the shared `ui/Input.jsx` included — is
+`rounded-sm` and carries `focus-ring` (or an explicit focus-visible ring), so no
+browser draws its own outline. `FieldLookGuard.test.js` enforces it. Moving the
+hand-written fields onto `ui/Input.jsx` (one label / error / describedby owner)
+is post-launch.
+
 **No off-scale radius (MEH-1687 phase 5, 06/11/2026).** Radius is a scale step,
 never `rounded-[Npx]`. The 140 off-scale sites (107 of them 10px) were placed by
 the rule above: buttons and primary/outline link-actions → `rounded-full`;

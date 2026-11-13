@@ -374,7 +374,7 @@ export default function RescueTab() {
             placeholder={t("code_placeholder")}
             aria-label={t("code_label")}
             data-testid="rescue-code-input"
-            className="flex-1 border border-border rounded-md px-3 py-2 text-center tracking-[0.3em]"
+            className="flex-1 border border-border rounded-sm px-3 py-2 text-center tracking-[0.3em] focus-ring"
           />
           <Button
             type="button"
@@ -551,7 +551,7 @@ export default function RescueTab() {
                 value={form.qty_total}
                 onChange={(e) => setForm({ ...form, qty_total: e.target.value })}
                 data-testid="rescue-publish-qty"
-                className="w-full border border-border rounded-md px-2 py-1 mt-1"
+                className="w-full border border-border rounded-sm px-2 py-1 mt-1 focus-ring"
               />
             </label>
             <label className="font-body-sm text-sm">
@@ -562,7 +562,7 @@ export default function RescueTab() {
                 value={form.price}
                 onChange={(e) => setForm({ ...form, price: e.target.value })}
                 data-testid="rescue-publish-price"
-                className="w-full border border-border rounded-md px-2 py-1 mt-1"
+                className="w-full border border-border rounded-sm px-2 py-1 mt-1 focus-ring"
               />
             </label>
             <label className="font-body-sm text-sm min-w-0">
@@ -575,7 +575,7 @@ export default function RescueTab() {
                 value={form.from}
                 onChange={(e) => setForm({ ...form, from: e.target.value })}
                 data-testid="rescue-publish-from"
-                className="block w-full min-w-0 border border-border rounded-md px-2 py-1 mt-1"
+                className="block w-full min-w-0 border border-border rounded-sm px-2 py-1 mt-1 focus-ring"
               />
             </label>
             <label className="font-body-sm text-sm min-w-0">
@@ -586,7 +586,7 @@ export default function RescueTab() {
                 value={form.to}
                 onChange={(e) => setForm({ ...form, to: e.target.value })}
                 data-testid="rescue-publish-to"
-                className="block w-full min-w-0 border border-border rounded-md px-2 py-1 mt-1"
+                className="block w-full min-w-0 border border-border rounded-sm px-2 py-1 mt-1 focus-ring"
               />
             </label>
             <label className="font-body-sm text-sm col-span-2">
@@ -595,7 +595,7 @@ export default function RescueTab() {
                 value={form.cancelMin}
                 onChange={(e) => setForm({ ...form, cancelMin: Number(e.target.value) })}
                 data-testid="rescue-publish-cancel"
-                className="w-full border border-border rounded-md px-2 py-1 mt-1 bg-surface-card text-text"
+                className="w-full border border-border rounded-sm px-2 py-1 mt-1 bg-surface-card text-text focus-ring"
               >
                 {CANCEL_CUTOFFS.map(([minutes, key]) => (
                   <option key={minutes} value={minutes}>
@@ -633,7 +633,7 @@ export default function RescueTab() {
           onChange={(e) => setItems(e.target.value)}
           aria-label={t("items_title")}
           data-testid="rescue-items-input"
-          className="w-full border border-border rounded-md px-3 py-2"
+          className="w-full border border-border rounded-sm px-3 py-2 focus-ring"
         />
 
         {/* MEH-2752: what this business declares about ITS bag. Before this,
@@ -741,7 +741,7 @@ export default function RescueTab() {
                   value={chosenQty}
                   onChange={(e) => setDonateQty(Number(e.target.value))}
                   data-testid="rescue-leftover-qty"
-                  className="border border-border rounded-md px-2 py-1 bg-surface text-text"
+                  className="border border-border rounded-sm px-2 py-1 bg-surface text-text focus-ring"
                 >
                   {Array.from({ length: leftoverTotal }, (_, i) => i + 1).map((n) => (
                     <option key={n} value={n}>

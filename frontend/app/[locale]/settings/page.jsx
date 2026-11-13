@@ -392,7 +392,7 @@ export function ProfileTab() {
             value={user.email || ""}
             readOnly
             disabled
-            className="w-full border border-border rounded-md px-3 py-2 bg-background-alt text-fg-muted cursor-not-allowed"
+            className="w-full border border-border rounded-sm px-3 py-2 bg-background-alt text-fg-muted cursor-not-allowed focus-ring"
             dir="ltr"
           />
           <p className="text-xs text-fg-muted mt-1 text-right">
@@ -562,7 +562,7 @@ function PasswordChangeCard({ isOAuth }) {
               onChange={(e) => setCurrent(e.target.value)}
               required
               // eslint-disable-next-line no-restricted-syntax -- rtl-ok: eye toggle inside dir="ltr" input
-              className="w-full border border-border rounded-md pr-11 pl-3 py-2 outline-none focus-visible:ring-2 focus-visible:ring-primary/40 transition"
+              className="w-full border border-border rounded-sm pr-11 pl-3 py-2 outline-none focus-visible:ring-2 focus-visible:ring-primary/40 transition"
               dir="ltr"
             />
             <button
@@ -618,7 +618,7 @@ function PasswordChangeCard({ isOAuth }) {
               required
               aria-invalid={mismatch || undefined}
               // rtl-ok
-              className={`w-full border rounded-md pr-11 pl-3 py-2 outline-none focus-visible:ring-2 focus-visible:ring-primary/40 transition ${mismatch ? "border-danger-400" : "border-border"}`}
+              className={`w-full border rounded-sm pr-11 pl-3 py-2 outline-none focus-visible:ring-2 focus-visible:ring-primary/40 transition ${mismatch ? "border-danger-400" : "border-border"}`}
               dir="ltr"
             />
             <button
@@ -805,7 +805,7 @@ function DangerZoneCard() {
             value={emailInput}
             onChange={(e) => setEmailInput(e.target.value)}
             placeholder={user.email || ""}
-            className="w-full border border-danger-300 rounded-md px-3 py-2 outline-none focus-visible:ring-2 focus-visible:ring-danger-300 transition"
+            className="w-full border border-danger-300 rounded-sm px-3 py-2 outline-none focus-visible:ring-2 focus-visible:ring-danger-300 transition"
             dir="ltr"
             autoComplete="off"
           />

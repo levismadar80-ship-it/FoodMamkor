@@ -321,7 +321,7 @@ export default function OwnerInvitePanel({ producerId, producer, onChanged }) {
               dir="ltr"
               value={minted.invite_url}
               onFocus={(e) => e.target.select()}
-              className="flex-1 min-w-0 border border-border rounded-md px-3 py-2 text-sm bg-background"
+              className="flex-1 min-w-0 border border-border rounded-sm px-3 py-2 text-sm bg-background focus-ring"
             />
             <Button type="button" data-testid="owner-invite-copy" onClick={copy} variant="primary" size="sm">
               {copied ? t("copied") : t("copy")}
@@ -482,7 +482,7 @@ function Field({ id, label, value, onChange, type = "text", dir, placeholder }) 
         placeholder={placeholder}
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full min-h-touch border border-border rounded-md px-3 py-2 text-sm bg-background"
+        className="w-full min-h-touch border border-border rounded-sm px-3 py-2 text-sm bg-background focus-ring"
       />
     </div>
   );

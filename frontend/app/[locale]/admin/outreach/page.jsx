@@ -217,7 +217,7 @@ export default function AdminOutreachPage() {
           placeholder={t("outreach.filters.city_placeholder")}
           value={cityFilter}
           onChange={(e) => setCityFilter(e.target.value)}
-          className="flex-1 border border-border rounded-md px-3 py-2"
+          className="flex-1 border border-border rounded-sm px-3 py-2 focus-ring"
         />
         <Button
           type="button"
@@ -332,7 +332,7 @@ export default function AdminOutreachPage() {
                       <select
                         value={lead.status}
                         onChange={(e) => handleStatusChange(lead.id, e.target.value)}
-                        className="text-xs border border-border rounded-lg px-2 py-1 bg-surface"
+                        className="text-xs border border-border rounded-sm px-2 py-1 bg-surface focus-ring"
                         aria-label={t("outreach.columns.status")}
                         data-testid={`status-select-${lead.id}`}
                       >
@@ -619,7 +619,7 @@ function AddLeadModal({ onClose, onCreated }) {
           value={form.notes}
           onChange={set("notes")}
           rows={2}
-          className="w-full border border-border rounded-md px-3 py-2"
+          className="w-full border border-border rounded-sm px-3 py-2 focus-ring"
         />
         {error && <p className="text-sm text-danger-600" role="alert">{error}</p>}
         <div className="flex gap-2">

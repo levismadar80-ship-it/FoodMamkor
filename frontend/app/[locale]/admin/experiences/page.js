@@ -210,7 +210,7 @@ export default function AdminExperiencesPage() {
               value={feedback}
               onChange={(e) => setFeedback(e.target.value)}
               rows={5}
-              className="w-full border border-border rounded-md px-3 py-2 text-sm bg-surface"
+              className="w-full border border-border rounded-sm px-3 py-2 text-sm bg-surface focus-ring"
               placeholder={
                 modalAction === "changes"
                   ? t("experiences.modal.changes_placeholder")

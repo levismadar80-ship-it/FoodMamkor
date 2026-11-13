@@ -1186,7 +1186,7 @@ function RegisterProducerPageBody({ routeKind }) {
                 value={form.password}
                 onChange={set("password")}
                 required
-                className="w-full border rounded-md px-3 py-2 min-h-touch"
+                className="w-full border rounded-sm px-3 py-2 min-h-touch focus-ring"
                 dir="ltr"
                 minLength={12}
                 autoComplete="new-password"
@@ -1278,7 +1278,7 @@ function RegisterProducerPageBody({ routeKind }) {
                 required
                 aria-invalid={phoneErrorMessage ? "true" : undefined}
                 aria-describedby={phoneErrorMessage ? "register-phone-error" : undefined}
-                className={`w-full border rounded-md px-3 py-2 min-h-touch ${
+                className={`w-full border rounded-sm px-3 py-2 min-h-touch focus-ring ${
                   phoneErrorMessage ? "border-danger-400" : ""
                 }`}
                 dir="ltr"
@@ -1510,7 +1510,7 @@ function RegisterProducerPageBody({ routeKind }) {
                   maxLength={20}
                   inputMode="numeric"
                   // text-right kept: dir="ltr" numeric license — physical right = start side in the RTL form; logical text-start would follow the field's own ltr direction instead
-                  className="w-full border rounded-md ps-3 pe-3 py-2 min-h-touch text-right"
+                  className="w-full border rounded-sm ps-3 pe-3 py-2 min-h-touch text-right focus-ring"
                   dir="ltr"
                 />
                 {licenseWarning && (
@@ -1592,7 +1592,7 @@ function RegisterProducerPageBody({ routeKind }) {
                   maxLength={20}
                   inputMode="numeric"
                   // text-right kept: dir="ltr" numeric license — physical right = start side in the RTL form; logical text-start would follow the field's own ltr direction instead
-                  className="w-full border rounded-md ps-3 pe-3 py-2 min-h-touch text-right"
+                  className="w-full border rounded-sm ps-3 pe-3 py-2 min-h-touch text-right focus-ring"
                   dir="ltr"
                 />
                 {licenseWarning && (
@@ -1709,7 +1709,7 @@ function RegisterProducerPageBody({ routeKind }) {
                 disabled={descriptionDisabled}
                 placeholder={descriptionPlaceholder}
                 rows={6}
-                className="w-full border rounded-md ps-3 pe-3 py-2 text-start min-h-[9rem] md:min-h-[12rem] disabled:bg-green-50 disabled:text-fg-muted disabled:cursor-not-allowed"
+                className="w-full border rounded-sm ps-3 pe-3 py-2 text-start min-h-[9rem] md:min-h-[12rem] disabled:bg-green-50 disabled:text-fg-muted disabled:cursor-not-allowed focus-ring"
                 dir="rtl"
               />
               {!descriptionDisabled ? (
@@ -1794,7 +1794,7 @@ function RegisterProducerPageBody({ routeKind }) {
                       value === "other" ? prev.referral_source_other : "",
                   }));
                 }}
-                className="w-full border rounded-md px-3 py-2 min-h-touch bg-surface text-start"
+                className="w-full border rounded-sm px-3 py-2 min-h-touch bg-surface text-start focus-ring"
               >
                 <option value="" disabled>
                   {t("auth.register.producer.fields.referral_source.placeholder")}
@@ -1824,7 +1824,7 @@ function RegisterProducerPageBody({ routeKind }) {
                   aria-label={t(
                     "auth.register.producer.fields.referral_source.other_placeholder",
                   )}
-                  className="w-full border rounded-md px-3 py-2 min-h-touch mt-2 text-start"
+                  className="w-full border rounded-sm px-3 py-2 min-h-touch mt-2 text-start focus-ring"
                 />
               )}
             </div>

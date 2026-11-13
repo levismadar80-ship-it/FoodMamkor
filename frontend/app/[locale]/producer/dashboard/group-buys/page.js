@@ -153,7 +153,7 @@ function NewGroupBuyForm({ producerCity, onCreated }) {
             onChange={set("description")}
             placeholder={t("description_placeholder")}
             rows={2}
-            className="w-full border border-border rounded-sm px-3 py-2 text-start resize-none"
+            className="w-full border border-border rounded-sm px-3 py-2 text-start resize-none focus-ring"
             dir="rtl"
           />
         </div>
@@ -291,7 +291,7 @@ function NewGroupBuyForm({ producerCity, onCreated }) {
                     invalid ? "gb-fulfillment-helper gb-fulfillment-error" : "gb-fulfillment-helper"
                   }
                   rows={2}
-                  className={`w-full border rounded-sm px-3 py-2 text-start resize-none ${
+                  className={`w-full border rounded-sm px-3 py-2 text-start resize-none focus-ring ${
                     invalid ? "border-error" : "border-border"
                   }`}
                   dir="rtl"

@@ -222,7 +222,7 @@ export default function PaymentInfoEditor({ profile, onSave, reportDirty = () =>
           placeholder={t("note_placeholder")}
           aria-describedby="payment-note-help"
           data-testid="payment-note"
-          className="w-full text-sm border border-border rounded-sm px-3 py-2 bg-surface"
+          className="w-full text-sm border border-border rounded-sm px-3 py-2 bg-surface focus-ring"
         />
         <p id="payment-note-help" className="mt-1 text-xs text-fg-muted">{t("note_help")}</p>
       </div>

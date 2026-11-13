@@ -347,7 +347,7 @@ export default function OwnerInviteClient({ tokenFromPath = null }) {
               // she holds belongs to the address she just left.
               setCodeSentTo(null);
             }}
-            className="w-full min-h-touch border border-border rounded-sm ps-4 py-3 bg-surface text-text"
+            className="w-full min-h-touch border border-border rounded-sm ps-4 py-3 bg-surface text-text focus-ring"
           />
         </div>
 
@@ -394,7 +394,7 @@ export default function OwnerInviteClient({ tokenFromPath = null }) {
             dir="ltr"
             value={code}
             onChange={(e) => setCode(e.target.value)}
-            className="w-full min-h-touch border border-border rounded-sm ps-4 py-3 bg-surface text-text tracking-[0.3em]"
+            className="w-full min-h-touch border border-border rounded-sm ps-4 py-3 bg-surface text-text tracking-[0.3em] focus-ring"
           />
         </div>
 

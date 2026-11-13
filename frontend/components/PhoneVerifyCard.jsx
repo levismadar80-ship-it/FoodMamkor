@@ -162,7 +162,7 @@ export default function PhoneVerifyCard({ onVerified }) {
               value={code}
               onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, OTP_LENGTH))}
               placeholder={t("code_placeholder")}
-              className="w-40 text-center tracking-[0.3em] border border-border rounded-sm px-3 py-2 text-sm focus:border-primary outline-none"
+              className="w-40 text-center tracking-[0.3em] border border-border rounded-sm px-3 py-2 text-sm focus:border-primary outline-none focus-ring"
             />
             <Button
               type="button"

@@ -189,7 +189,7 @@ export default function AdminSettingsPage() {
           <select
             value={settings.holiday_override_key || ""}
             onChange={(event) => update("holiday_override_key", event.target.value)}
-            className="w-full border border-border rounded-md px-3 py-2 bg-surface"
+            className="w-full border border-border rounded-sm px-3 py-2 bg-surface focus-ring"
           >
             <option value="">{t("settings.fields.holiday_none")}</option>
             <option value="pesach">{t("settings.fields.holiday_pesach")}</option>

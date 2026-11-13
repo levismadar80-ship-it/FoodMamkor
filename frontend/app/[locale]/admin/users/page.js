@@ -145,13 +145,13 @@ export default function AdminUsersPage() {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && searchUsers()}
-          className="flex-1 border border-border rounded-md px-3 py-2"
+          className="flex-1 border border-border rounded-sm px-3 py-2 focus-ring"
         />
         <select
           value={role}
           onChange={(e) => setRole(e.target.value)}
           aria-label={t("users.columns.role")}
-          className="border border-border rounded-md px-3 py-2 bg-surface"
+          className="border border-border rounded-sm px-3 py-2 bg-surface focus-ring"
         >
           <option value="all">{t("users.role_filter.all")}</option>
           <option value="consumer">{t("users.role_filter.consumer")}</option>
@@ -330,7 +330,7 @@ export default function AdminUsersPage() {
             <select
               value={pageSize}
               onChange={(e) => changePageSize(Number(e.target.value))}
-              className="border border-border rounded-md px-2 py-1 bg-surface"
+              className="border border-border rounded-sm px-2 py-1 bg-surface focus-ring"
             >
               <option value={25}>25</option>
               <option value={50}>50</option>

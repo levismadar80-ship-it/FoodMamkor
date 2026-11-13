@@ -761,7 +761,7 @@ function LocationForm({
           <select
             value={form.kind}
             onChange={set("kind")}
-            className="w-full rounded-sm border border-border bg-surface px-3 py-2 text-sm"
+            className="w-full rounded-sm border border-border bg-surface px-3 py-2 text-sm focus-ring"
             data-testid="location-kind"
           >
             {KINDS.map((k) => (
@@ -931,7 +931,7 @@ function LocationForm({
                 setPrecisionTouched(true);
                 set("location_precision")(e);
               }}
-              className="w-full rounded-sm border border-border bg-surface px-3 py-2 text-sm"
+              className="w-full rounded-sm border border-border bg-surface px-3 py-2 text-sm focus-ring"
               data-testid="location-precision"
             >
               <option value="exact">{tForm("precision_exact")}</option>
@@ -1136,7 +1136,7 @@ const TextInput = forwardRef(function TextInput(
       onChange={onChange}
       placeholder={placeholder}
       data-testid={testid}
-      className="w-full rounded-sm border border-border bg-surface px-3 py-2 text-sm"
+      className="w-full rounded-sm border border-border bg-surface px-3 py-2 text-sm focus-ring"
     />
   );
 });

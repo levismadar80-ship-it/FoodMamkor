@@ -88,7 +88,7 @@ export default function AdminHelpPage() {
           value={query}
           onChange={(e) => onSearch(e.target.value)}
           placeholder={t("help.search_placeholder")}
-          className="w-full bg-surface border border-border rounded-md ps-10 pe-3 py-2.5 text-base"
+          className="w-full bg-surface border border-border rounded-sm ps-10 pe-3 py-2.5 text-base focus-ring"
         />
       </label>
 

@@ -51,7 +51,7 @@ export default function Pagination({
           <select
             value={perPage}
             onChange={(e) => onPerPageChange(Number(e.target.value))}
-            className="border border-border rounded-sm px-2 py-1 bg-surface text-text"
+            className="border border-border rounded-sm px-2 py-1 bg-surface text-text focus-ring"
             aria-label={t("per_page_aria")}
           >
             {perPageOptions.map((opt) => (
