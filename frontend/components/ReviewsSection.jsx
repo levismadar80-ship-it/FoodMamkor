@@ -116,6 +116,43 @@ function StarRow({ value, size = 16, ariaLabel }) {
   );
 }
 
+// MEH-1337: Google-style distribution — one row per star, 5★ first. Shown
+// only from DISTRIBUTION_MIN visible reviews (fewer has nothing to distribute).
+// Counts are the server's `rating_counts` over EVERY visible review, never
+// the page of 10 on screen. Quiet bars in the star gold, no rating colours
+// (MEH-1334). No new copy: each row's name reuses star_aria + summary_count.
+const DISTRIBUTION_MIN = 5;
+const STAR_GOLD = "#896714";
+
+function RatingDistribution({ counts, total, t }) {
+  return (
+    <ul className="flex-1 min-w-0 max-w-xs space-y-1" data-testid="rating-distribution">
+      {[5, 4, 3, 2, 1].map((n) => {
+        const c = Number(counts[String(n)]) || 0;
+        const pct = total > 0 ? Math.round((c / total) * 100) : 0;
+        return (
+          <li
+            key={n}
+            data-star={n}
+            className="flex items-center gap-2 text-xs text-fg-muted"
+            aria-label={`${t("star_aria", { value: n })} · ${t("summary_count", { count: c })}`}
+          >
+            <span className="w-2 text-center tabular-nums" aria-hidden="true">{n}</span>
+            <span className="relative h-1.5 flex-1 overflow-hidden rounded-full bg-border" aria-hidden="true">
+              <span
+                className="absolute inset-y-0 start-0 rounded-full"
+                data-testid={`rating-bar-fill-${n}`}
+                style={{ width: `${pct}%`, backgroundColor: STAR_GOLD }}
+              />
+            </span>
+            <span className="w-5 text-end tabular-nums" aria-hidden="true" data-testid="rating-bar-count">{c}</span>
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
 function StarPicker({ value, onChange, ariaLabelFn }) {
   const [hover, setHover] = useState(0);
   return (
@@ -287,6 +324,8 @@ export default function ReviewsSection({
   const [reviews, setReviews] = useState([]);
   const [total, setTotal] = useState(reviewCount);
   const [pages, setPages] = useState(1);
+  // MEH-1337: per-star counts from the server; null until it answers.
+  const [ratingCounts, setRatingCounts] = useState(null);
   const [page, setPage] = useState(1);
   // Reviews render 3-at-a-time; "הצג עוד" reveals +3 and appends the next
   // server page when the local buffer runs out (replaces the old carousel).
@@ -382,6 +421,8 @@ export default function ReviewsSection({
         });
         setTotal(r.data?.total ?? 0);
         setPages(r.data?.pages ?? 1);
+        const rc = r.data?.rating_counts;
+        if (rc && typeof rc === "object") setRatingCounts(rc);
         setPage(p);
       })
       .catch(() => {})
@@ -465,6 +506,7 @@ export default function ReviewsSection({
   };
 
   const showSummary = total > 0 && avgRating > 0;
+  const showDistribution = showSummary && total >= DISTRIBUTION_MIN && ratingCounts !== null;
   const anonymousFallback = t("anonymous_fallback");
 
   return (
@@ -486,19 +528,31 @@ export default function ReviewsSection({
           pushed to one side: StarRow is a dir="ltr" flex row, so in a centred
           block it hugged the left edge while the number sat in the middle. */}
       {showSummary && (
-        <div className="flex items-center gap-2.5 mb-6" data-testid="reviews-summary">
-          <p
-            className="font-headline-md text-2xl font-bold leading-none text-text"
-            dir="ltr"
-          >
-            {Number(avgRating).toFixed(1)}
-          </p>
-          <StarRow
-            value={Number(avgRating)}
-            size={18}
-            ariaLabel={t("star_aria", { value: Number(avgRating).toFixed(1) })}
-          />
-          <p className="text-fg-muted text-sm">{t("summary_count", { count: total })}</p>
+        <div
+          className={showDistribution ? "flex items-center gap-6 mb-6" : "flex items-center gap-2.5 mb-6"}
+          data-testid="reviews-summary"
+        >
+          {/* MEH-1337: with the bars, the number · stars · count stack into one
+              column at the start, bars beside it (Google). Without, one line. */}
+          <div className={showDistribution ? "flex shrink-0 flex-col items-start gap-1" : "contents"}>
+            <p
+              className={
+                showDistribution
+                  ? "font-headline-md text-4xl font-bold leading-none text-text"
+                  : "font-headline-md text-2xl font-bold leading-none text-text"
+              }
+              dir="ltr"
+            >
+              {Number(avgRating).toFixed(1)}
+            </p>
+            <StarRow
+              value={Number(avgRating)}
+              size={showDistribution ? 14 : 18}
+              ariaLabel={t("star_aria", { value: Number(avgRating).toFixed(1) })}
+            />
+            <p className="text-fg-muted text-sm">{t("summary_count", { count: total })}</p>
+          </div>
+          {showDistribution && <RatingDistribution counts={ratingCounts} total={total} t={t} />}
         </div>
       )}
 

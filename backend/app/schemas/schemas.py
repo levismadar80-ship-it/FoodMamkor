@@ -5294,6 +5294,9 @@ class ReviewsPage(BaseModel):
     total: int
     page: int
     pages: int
+    # MEH-1337: visible reviews per star, "1".."5", over the whole business
+    # (every page), for the distribution bars. Always all five keys.
+    rating_counts: dict[str, int] = {}
 
     model_config = {"from_attributes": True}
 

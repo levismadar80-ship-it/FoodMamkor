@@ -259,11 +259,19 @@ def list_reviews_nested(
         .limit(PAGE_SIZE)
         .all()
     )
+    # MEH-1337: per-star counts over every visible review, not this page.
+    # Same visibility filter as `base` (and as _recompute_producer_rating).
+    by_star = dict(
+        base.with_entities(ProducerReview.stars, func.count(ProducerReview.id))
+        .group_by(ProducerReview.stars)
+        .all()
+    )
     return ReviewsPage(
         reviews=[_serialize(r) for r in rows],
         total=total,
         page=page,
         pages=max(1, math.ceil(total / PAGE_SIZE)),
+        rating_counts={str(n): int(by_star.get(n, 0)) for n in range(1, 6)},
     )
 
 

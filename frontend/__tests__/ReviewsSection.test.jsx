@@ -696,3 +696,71 @@ describe("ReviewsSection — the initial on a seed tint (MEH-2833 board 4)", () 
     expect(names.size).toBeGreaterThan(1);
   });
 });
+
+// MEH-1337 — Google-style distribution: the summary (number · stars · count)
+// beside five bars, from 5 visible reviews. Counts come from the server
+// (`rating_counts`, every page), never from the 10 reviews on screen.
+describe("ReviewsSection — rating distribution (MEH-1337)", () => {
+  const counts = (o) => ({ 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, ...o });
+  const asStr = (o) => Object.fromEntries(Object.entries(counts(o)).map(([k, v]) => [String(k), v]));
+  function mockPage(total, rating_counts) {
+    apiMock.get.mockResolvedValue({ data: { reviews: [], total, page: 1, pages: 1, rating_counts } });
+  }
+
+  it("4 reviews → the one-line summary alone, no bars", async () => {
+    mockPage(4, asStr({ 5: 3, 4: 1 }));
+    render(<ReviewsSection producerId="p-1" avgRating={4.8} reviewCount={4} />);
+    await screen.findByTestId("reviews-summary");
+    await waitFor(() => expect(apiMock.get).toHaveBeenCalled());
+    expect(screen.queryByTestId("rating-distribution")).not.toBeInTheDocument();
+  });
+
+  it("5 reviews → five bars, 5★ first, each with its count; the summary stays", async () => {
+    mockPage(5, asStr({ 5: 3, 4: 1, 2: 1 }));
+    render(<ReviewsSection producerId="p-1" avgRating={4.2} reviewCount={5} />);
+    const dist = await screen.findByTestId("rating-distribution");
+    const rows = within(dist).getAllByRole("listitem");
+    expect(rows.map((r) => r.getAttribute("data-star"))).toEqual(["5", "4", "3", "2", "1"]);
+    expect(rows.map((r) => within(r).getByTestId("rating-bar-count").textContent)).toEqual(["3", "1", "0", "1", "0"]);
+    // the summary is still the same block, beside the bars
+    const summary = screen.getByTestId("reviews-summary");
+    expect(summary).toContainElement(dist);
+    expect(summary).toContainElement(screen.getByText("4.2"));
+  });
+
+  it("bar width is that star's share of all visible reviews; a star with none is an empty bar", async () => {
+    mockPage(5, asStr({ 5: 3, 4: 1, 2: 1 }));
+    render(<ReviewsSection producerId="p-1" avgRating={4.2} reviewCount={5} />);
+    const dist = await screen.findByTestId("rating-distribution");
+    const fill = (n) => within(dist).getByTestId(`rating-bar-fill-${n}`).style.width;
+    expect(fill(5)).toBe("60%");
+    expect(fill(4)).toBe("20%");
+    expect(fill(3)).toBe("0%");
+  });
+
+  it("counts cover every page: 12 reviews with only 10 on screen still read 12 in the bars", async () => {
+    apiMock.get.mockResolvedValue({
+      data: { reviews: [withReply, noReply], total: 12, page: 1, pages: 2, rating_counts: asStr({ 5: 7, 4: 3, 2: 2 }) },
+    });
+    render(<ReviewsSection producerId="p-1" avgRating={4.3} reviewCount={12} />);
+    const dist = await screen.findByTestId("rating-distribution");
+    const nums = within(dist).getAllByTestId("rating-bar-count").map((n) => Number(n.textContent));
+    expect(nums.reduce((a, b) => a + b, 0)).toBe(12);
+  });
+
+  it("an older API without rating_counts → the one-line summary, no bars", async () => {
+    mockPage(12, undefined);
+    render(<ReviewsSection producerId="p-1" avgRating={4.3} reviewCount={12} />);
+    await screen.findByTestId("reviews-summary");
+    await waitFor(() => expect(apiMock.get).toHaveBeenCalled());
+    expect(screen.queryByTestId("rating-distribution")).not.toBeInTheDocument();
+  });
+
+  it("each bar row has an accessible name built from existing copy (stars · count)", async () => {
+    mockPage(5, asStr({ 5: 5 }));
+    render(<ReviewsSection producerId="p-1" avgRating={5} reviewCount={5} />);
+    const dist = await screen.findByTestId("rating-distribution");
+    const first = within(dist).getAllByRole("listitem")[0];
+    expect(first.getAttribute("aria-label")).toBe("star_aria · summary_count");
+  });
+});
