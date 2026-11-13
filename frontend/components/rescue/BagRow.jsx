@@ -1,6 +1,7 @@
 "use client";
 
 import { Link } from "@/i18n/navigation";
+import { rescueBagPath } from "@/lib/producer-path";
 import { useTranslations } from "next-intl";
 import { Basket } from "@phosphor-icons/react";
 
@@ -63,7 +64,7 @@ export default function BagRow({ offer, headingTag = "h3" }) {
 
   return (
     <Link
-      href={`/producer/${producer.slug || producer.id}`}
+      href={rescueBagPath(producer)}
       data-testid="rescue-bag-row"
       className="relative grid grid-cols-[64px_minmax(0,1fr)_auto] md:grid-cols-[88px_minmax(0,1fr)_auto] border-b border-border transition hover:bg-surface-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
     >
