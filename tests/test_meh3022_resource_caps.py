@@ -72,7 +72,12 @@ def unlimited_write_routes() -> list[str]:
     limited = _limited_keys()
     out = []
     for r in _write_routes():
-        if any(r.path.startswith(p) for p in limits.RATE_LIMIT_EXEMPT_PREFIXES):
+        # The /admin/ prefix exempts a route only when it really is admin-gated:
+        # a non-admin route mounted under /admin/ must not slip through.
+        if (
+            any(r.path.startswith(p) for p in limits.RATE_LIMIT_EXEMPT_PREFIXES)
+            and "require_admin" in r.deps
+        ):
             continue
         if f"{r.module}.{r.func}" not in limited:
             out.append(f"{','.join(sorted(r.methods))} {r.path}")
@@ -85,6 +90,12 @@ def test_guard1_control_enumerates_and_recognises_a_limited_route():
     limited = _limited_keys()
     login = [r for r in routes if r.path == "/auth/login"]
     assert login and f"{login[0].module}.{login[0].func}" in limited
+    # The admin exemption is read off the dependency tree, so the tree must
+    # actually name require_admin on a known admin route.
+    admin = [r for r in routes if r.path.startswith("/admin/")]
+    assert admin and all("require_admin" in r.deps for r in admin[:5]), (
+        "admin routes don't expose require_admin in deps — exemption check is void"
+    )
 
 
 def test_guard1_every_non_admin_write_route_is_rate_limited():
@@ -194,7 +205,9 @@ def test_guard3_every_owned_table_is_capped_or_exempt():
         "Tables owned by a business with no cap in app/limits.py "
         f"(add a cap, or an OWNED_TABLE_EXEMPT reason): {sorted(owned - covered)}"
     )
-    assert sorted(covered - owned) == [], f"Stale registry entries: {sorted(covered - owned)}"
+    assert sorted(covered - owned) == [], (
+        f"Stale registry entries: {sorted(covered - owned)}"
+    )
     for table, kind in limits.OWNED_TABLE_CAPS.items():
         assert kind in limits.CAPS, (table, kind)
     for table, reason in limits.OWNED_TABLE_EXEMPT.items():
@@ -229,7 +242,9 @@ def test_product_cap_refuses_the_next_product_in_hebrew(client, db):
     payload = {"name": "לחם מחמצת", "price_min": 30}
     ok = client.post("/producers/me/products", json=payload, headers=auth_header(user))
     assert ok.status_code == 201, ok.text  # the 100th is still allowed
-    over = client.post("/producers/me/products", json=payload, headers=auth_header(user))
+    over = client.post(
+        "/producers/me/products", json=payload, headers=auth_header(user)
+    )
     assert over.status_code == 409
     assert over.json()["detail"].startswith("אפשר להוסיף עד 100 מוצרים")
 
@@ -288,9 +303,138 @@ def test_favorites_add_is_rate_limited(client, db):
     user = make_user(db, email=f"f{uuid.uuid4().hex[:8]}@example.com")
     absent = "00000000-0000-4000-8000-000000000000"
     codes = [
-        client.post(f"/users/me/favorites/{absent}", headers=auth_header(user)).status_code
+        client.post(
+            f"/users/me/favorites/{absent}", headers=auth_header(user)
+        ).status_code
         for _ in range(61)
     ]
     assert 429 not in codes[:60], codes[:60]
     assert codes[60] == 429
 
+
+def test_event_reactivation_cannot_bypass_the_cap(client, db):
+    """Cancel-create-reactivate must not grow the upcoming set past the cap
+    (fresh-review finding 1): a PUT that brings an event back meets the cap."""
+    user, producer = _owner(db)
+    today = israel_today()
+    cancelled = Event(
+        producer_id=producer.id,
+        title="שוק שבוטל",
+        event_date=today + timedelta(days=3),
+        category="שוק",
+        is_active=False,
+    )
+    db.add(cancelled)
+    for i in range(limits.MAX_UPCOMING_EVENTS):
+        db.add(
+            Event(
+                producer_id=producer.id,
+                title=f"פעיל {i}",
+                event_date=today + timedelta(days=i + 2),
+                category="שוק",
+                is_active=True,
+            )
+        )
+    db.commit()
+    r = client.put(
+        f"/events/{cancelled.id}", json={"is_active": True}, headers=auth_header(user)
+    )
+    assert r.status_code == 409, r.text
+    assert "אירועים עתידיים" in r.json()["detail"]
+    # The mirror: an edit that leaves an already-counted event counted is not a
+    # new slot, so it passes even at the cap.
+    active = (
+        db.query(Event)
+        .filter(Event.producer_id == producer.id, Event.is_active.is_(True))
+        .first()
+    )
+    ok = client.put(
+        f"/events/{active.id}", json={"title": "שוק מעודכן"}, headers=auth_header(user)
+    )
+    assert ok.status_code == 200, ok.text
+
+
+def test_location_cap_refuses_the_next_location_in_hebrew(client, db):
+    from app.models.models import ProducerLocation
+
+    user, producer = _owner(db)
+    have = (
+        db.query(ProducerLocation)
+        .filter(ProducerLocation.producer_id == producer.id)
+        .count()
+    )
+    for i in range(limits.MAX_LOCATIONS - have):
+        db.add(
+            ProducerLocation(
+                producer_id=producer.id,
+                kind="market_stand",
+                city="חיפה",
+                label=f"דוכן {i}",
+            )
+        )
+    db.commit()
+    payload = {"kind": "market_stand", "city": "חיפה", "label": "דוכן חדש"}
+    r = client.post("/producers/me/locations", json=payload, headers=auth_header(user))
+    assert r.status_code == 409, r.text
+    assert r.json()["detail"].startswith(
+        f"אפשר להוסיף עד {limits.MAX_LOCATIONS} כתובות"
+    )
+
+
+def test_group_buy_cap_counts_open_and_funded_only(client, db):
+    from app.models.models import GroupBuy
+    from app.utils.clock import utc_now
+
+    user, producer = _owner(db)
+
+    def seed(status):
+        db.add(
+            GroupBuy(
+                producer_id=producer.id,
+                title="רכש קמח מלא",
+                product_name="קמח מלא",
+                unit="שק",
+                price_per_unit_regular=120,
+                price_per_unit_group=90,
+                min_participants=3,
+                deadline=utc_now() + timedelta(days=7),
+                city="חיפה",
+                status=status,
+            )
+        )
+
+    for i in range(limits.MAX_OPEN_GROUP_BUYS):
+        seed("open" if i % 2 else "funded")
+    for status in ("cancelled", "fulfilled"):
+        seed(status)  # closed ones never count
+    db.commit()
+    payload = {
+        "title": "רכש שמן זית",
+        "product_name": "שמן זית כתית",
+        "unit": "ליטר",
+        "price_per_unit_regular": 80,
+        "price_per_unit_group": 60,
+        "min_participants": 3,
+        "deadline": (utc_now() + timedelta(days=10)).isoformat(),
+        "city": "חיפה",
+        "fulfillment_note": "איסוף מהמשק ביום שישי",
+    }
+    over = client.post("/group-buys", json=payload, headers=auth_header(user))
+    assert over.status_code == 409, over.text
+    assert "קבוצות רכישה פתוחות" in over.json()["detail"]
+
+    gb = db.query(GroupBuy).filter(GroupBuy.status == "open").first()
+    gb.status = "cancelled"
+    db.commit()
+    ok = client.post("/group-buys", json=payload, headers=auth_header(user))
+    assert ok.status_code == 201, ok.text
+
+
+def test_delivery_cities_over_cap_is_refused_in_hebrew(client, db):
+    user, _ = _owner(db)
+    cities = [f"עיר {i}" for i in range(limits.MAX_DELIVERY_CITIES + 1)]
+    r = client.put(
+        "/producers/me", json={"delivery_cities": cities}, headers=auth_header(user)
+    )
+    assert r.status_code == 422
+    assert limits.DELIVERY_CITIES_DETAIL in r.text

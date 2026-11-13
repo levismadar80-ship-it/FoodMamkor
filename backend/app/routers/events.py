@@ -355,6 +355,30 @@ def create_event(
     return _serialize(event)
 
 
+def _cap_event_returning_to_upcoming(db: Session, event: Event, changes: dict) -> None:
+    """MEH-3022: a PUT that brings an event back into the upcoming set
+    (reactivate, or move a past date to today or later) takes a slot, so it
+    meets the same cap as POST. Otherwise cancel-create-reactivate repeats
+    past the cap. An edit to an event that is already counted is free."""
+    today = israel_today()
+    was_counted = bool(event.is_active) and event.event_date >= today
+    will_count = (
+        bool(changes.get("is_active", event.is_active))
+        and (changes.get("event_date") or event.event_date) >= today
+    )
+    if will_count and not was_counted:
+        enforce_cap(
+            db.query(Event)
+            .filter(
+                Event.producer_id == event.producer_id,
+                Event.event_date >= today,
+                Event.is_active.is_(True),
+            )
+            .count(),
+            "events",
+        )
+
+
 @router.put("/events/{event_id}", response_model=EventOut)
 @limiter.limit("60/hour")  # MEH-3022
 def update_event(  # noqa: PLR0913 — all args are FastAPI-injected; MEH-3022 added the slowapi request
@@ -407,6 +431,7 @@ def update_event(  # noqa: PLR0913 — all args are FastAPI-injected; MEH-3022 a
         )
         if method_issue:
             raise HTTPException(status_code=422, detail=method_issue)
+    _cap_event_returning_to_upcoming(db, event, changes)  # MEH-3022
     for field, value in changes.items():
         if field == "category" and value not in VALID_CATEGORIES:
             raise HTTPException(status_code=400, detail="קטגוריה לא תקינה")

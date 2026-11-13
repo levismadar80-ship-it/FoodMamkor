@@ -2036,12 +2036,6 @@ class ProducerAdminCreate(BaseModel):
             )
         return self
 
-    # MEH-291 → MEH-2758 → MEH-2782: the availability enum is pause-only, like
-    # Google / Etsy / Wolt / Uber Eats — hours (the order window) plus one pause
-    # switch. `available_today` / `full_this_week` were removed: MEH-2758 stopped
-    # every write, and alembic f2b8d4c61a07 moved the rows still holding them to
-    # accepting_orders, so the read and write sets are the same two values again.
-
     @field_validator("images", mode="before")
     @classmethod
     def _cap_images_meh3022(cls, v):
@@ -2060,6 +2054,11 @@ class ProducerAdminCreate(BaseModel):
         return cap_list(v, MAX_DELIVERY_CITIES, DELIVERY_CITIES_DETAIL)
 
 
+# MEH-291 → MEH-2758 → MEH-2782: the availability enum is pause-only, like
+# Google / Etsy / Wolt / Uber Eats — hours (the order window) plus one pause
+# switch. `available_today` / `full_this_week` were removed: MEH-2758 stopped
+# every write, and alembic f2b8d4c61a07 moved the rows still holding them to
+# accepting_orders, so the read and write sets are the same two values again.
 AVAILABILITY_STATES = (
     "accepting_orders",  # default — «פתוח להזמנות»
     "on_vacation",  # «בהפסקה» (requires vacation_until)

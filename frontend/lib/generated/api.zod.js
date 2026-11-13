@@ -5410,12 +5410,8 @@ export const ListMyOrdersProducersMeRescueOrdersGetResponse = /*#__PURE__*/ zod.
  * never has to distinguish "no row" from "empty", only the first.
  * @summary Get Typical Items
  */
-export const getTypicalItemsProducersMeRescueTypicalItemsGetResponseAllergensOneMax = 50;
-
-
-
 export const GetTypicalItemsProducersMeRescueTypicalItemsGetResponse = /*#__PURE__*/ zod.object({
-  "allergens": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()).check(/*#__PURE__*/ zod.maxLength(getTypicalItemsProducersMeRescueTypicalItemsGetResponseAllergensOneMax)),/*#__PURE__*/ zod.null()])),
+  "allergens": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
   "items": /*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),
   "producer_id": /*#__PURE__*/ zod.uuid(),
   "updated_at": /*#__PURE__*/ zod.iso.datetime({"offset":true})
@@ -5427,12 +5423,8 @@ export const GetTypicalItemsProducersMeRescueTypicalItemsGetResponse = /*#__PURE
  * so this writes the existing row rather than racing a second insert.
  * @summary Set Typical Items
  */
-export const setTypicalItemsProducersMeRescueTypicalItemsPutResponseAllergensOneMax = 50;
-
-
-
 export const SetTypicalItemsProducersMeRescueTypicalItemsPutResponse = /*#__PURE__*/ zod.object({
-  "allergens": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()).check(/*#__PURE__*/ zod.maxLength(setTypicalItemsProducersMeRescueTypicalItemsPutResponseAllergensOneMax)),/*#__PURE__*/ zod.null()])),
+  "allergens": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
   "items": /*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),
   "producer_id": /*#__PURE__*/ zod.uuid(),
   "updated_at": /*#__PURE__*/ zod.iso.datetime({"offset":true})
@@ -5998,12 +5990,8 @@ export const ReportProducerInfoReportsProducerInfoPostResponse = /*#__PURE__*/ z
  * is "what you can still get tonight", and chunk 4 has no empty-stock state.
  * @summary List Offers
  */
-export const listOffersRescueOffersGetResponseAllergensOneMax = 50;
-
-
-
 export const ListOffersRescueOffersGetResponseItem = /*#__PURE__*/ zod.object({
-  "allergens": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()).check(/*#__PURE__*/ zod.maxLength(listOffersRescueOffersGetResponseAllergensOneMax)),/*#__PURE__*/ zod.null()])),
+  "allergens": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
   "cancel_until": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
   "date": /*#__PURE__*/ zod.iso.date(),
   "distance_km": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.number(),/*#__PURE__*/ zod.null()])),
@@ -6240,17 +6228,11 @@ export const MarkNoShowRescueOrdersOrderIdNoShowPostResponse = /*#__PURE__*/ zod
  * The buyer reviews a bag they actually collected. Once.
  * @summary Create Review
  */
-export const createReviewRescueOrdersOrderIdReviewPostResponseContentsTagsOneMax = 50;
-
-export const createReviewRescueOrdersOrderIdReviewPostResponseHighlightTagsOneMax = 50;
-
-
-
 export const CreateReviewRescueOrdersOrderIdReviewPostResponse = /*#__PURE__*/ zod.object({
   "comment": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
-  "contents_tags": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()).check(/*#__PURE__*/ zod.maxLength(createReviewRescueOrdersOrderIdReviewPostResponseContentsTagsOneMax)),/*#__PURE__*/ zod.null()])),
+  "contents_tags": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
   "created_at": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
-  "highlight_tags": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()).check(/*#__PURE__*/ zod.maxLength(createReviewRescueOrdersOrderIdReviewPostResponseHighlightTagsOneMax)),/*#__PURE__*/ zod.null()])),
+  "highlight_tags": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
   "id": /*#__PURE__*/ zod.uuid(),
   "order_id": /*#__PURE__*/ zod.uuid(),
   "photo_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),

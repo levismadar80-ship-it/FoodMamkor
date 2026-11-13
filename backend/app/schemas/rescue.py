@@ -168,8 +168,8 @@ class RescueReviewOut(BaseModel):
     id: UUID
     order_id: UUID
     rating: int
-    contents_tags: list[str] | None = Field(None, max_length=MAX_TAG_LIST)
-    highlight_tags: list[str] | None = Field(None, max_length=MAX_TAG_LIST)
+    contents_tags: list[str] | None = None
+    highlight_tags: list[str] | None = None
     photo_url: str | None = None
     comment: str | None = None
     created_at: UtcDatetimeOut
@@ -208,7 +208,7 @@ class RescueTypicalItemsOut(BaseModel):
     items: list[str]
     # None means the business declared nothing. The UI must say that in words
     # rather than render an empty list, which would read as "no allergens".
-    allergens: list[str] | None = Field(None, max_length=MAX_TAG_LIST)
+    allergens: list[str] | None = None
     updated_at: UtcDatetimeOut
 
     model_config = {"from_attributes": True}
@@ -262,7 +262,7 @@ class RescueOfferPublicOut(BaseModel):
     # MEH-2752: None = the business declared nothing. Deliberately nullable
     # rather than defaulting to [], so the card can tell "not declared" from
     # "declared none" — the second is a food-safety claim and nobody made it.
-    allergens: list[str] | None = Field(None, max_length=MAX_TAG_LIST)
+    allergens: list[str] | None = None
     distance_km: float | None = None
 
 
