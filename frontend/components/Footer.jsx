@@ -133,6 +133,10 @@ export default function Footer() {
       : []),
     ...(showGroupBuys ? [{ href: "/group-buys", label: t("nav.footer.group_buys") }] : []),
     ...(showRescue ? [{ href: "/rescue", label: t("nav.footer.rescue") }] : []),
+    // «המליצו על בית עסק» moved here from the bottom utility row (Sapir
+    // 13/11): it is a reader action, and that row holds only legal links and
+    // contact. Last in «גלו», after the data-gated links.
+    { href: "/recommend", label: t("nav.footer.recommend") },
   ];
   const aboutLinks = [
     { href: "/about", label: t("nav.footer.about") },
@@ -395,10 +399,6 @@ export default function Footer() {
               // contact is a top-3 expected footer utility link. MEH-2832: the
               // target is /contact, the site's one contact form (was /about#contact).
               { href: "/contact", label: t("nav.footer.contact") },
-              // MEH-2633: next to "צרו קשר", per the card. Sixth utility link —
-              // the row already wraps and centres at 375 (MEH-2417 above), so
-              // this does not re-open the edge-to-edge overflow that fixed.
-              { href: "/recommend", label: t("nav.footer.recommend") },
             ].map((link) => (
               <li key={link.href}>
                 {/* MEH-1103: 11px → 13px (DESIGN.md interactive floor is 14px
