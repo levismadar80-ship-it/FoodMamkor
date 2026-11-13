@@ -76,7 +76,7 @@ describe("Footer utility row — login link is guest-only (MEH-2554)", () => {
     render(<Footer />);
     const hrefs = utilityHrefs();
     expect(hrefs).not.toContain("/login");
-    // /recommend left this row for the «גלו» column (Sapir 13/11); /contact
+    // /recommend left this row for the «עלינו» column (Sapir 13/11); /contact
     // is the one contact form since MEH-2832. Kept as an exact
     // toEqual rather than relaxed to toContain: this assertion's job is to
     // notice a changed utility row, and a subset check would stop doing it.
