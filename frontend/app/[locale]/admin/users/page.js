@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
-import useDialogFocus from "@/hooks/useDialogFocus";
+import { useEffect, useState } from "react";
+import Dialog from "@/components/ui/Dialog";
 import { Heart, Lock } from "@phosphor-icons/react";
 import { useTranslations, useLocale } from "next-intl";
 import { formatEventDate } from "@/lib/format-date";
@@ -30,8 +30,6 @@ export default function AdminUsersPage() {
   const [expanded, setExpanded] = useState(null);
   const [favorites, setFavorites] = useState({});
   const [confirm, setConfirm] = useState(null); // { userId, userName, userEmail?, action: "promote"|"demote"|"delete" }
-  const confirmDialogRef = useRef(null);
-  useDialogFocus(confirmDialogRef, !!confirm);
   // MEH-1046: client-side pagination — slice the already-fetched array. The
   // search/role filters are SERVER-side (load() query params), so `users` is
   // already the filtered result set. Page resets on filter change only, not
@@ -39,19 +37,6 @@ export default function AdminUsersPage() {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
 
-  // MEH-2268 — Escape closes the role-confirm dialog, guarded while the role
-  // change is in flight. Same shape as admin/reviews/page.jsx's delete dialog,
-  // which is the mirror this one was always described as: the guard is what
-  // stops a mid-flight PATCH from losing the dialog that explains what it is
-  // doing, so it is not decoration on the listener.
-  useEffect(() => {
-    if (!confirm) return undefined;
-    const onKey = (e) => {
-      if (e.key === "Escape" && !isBusy(confirmKey(confirm))) setConfirm(null);
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [confirm, isBusy]);
 
   useEffect(() => {
     setPage(1); // role filter changed (or first mount — already 1)
@@ -371,14 +356,15 @@ export default function AdminUsersPage() {
           announced nothing here and the 12e spec had to reach this modal
           through its Hebrew copy while reaching the other two by role. */}
       {confirm && (
-        <div className="fixed inset-0 z-[9000] flex items-center justify-center bg-black/40">
-          {/* MEH-1023: text-start aligns the Hebrew dialog copy to the start edge in RTL */}
-          <div ref={confirmDialogRef}
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="role-confirm-title"
-            className="bg-surface rounded-lg shadow-xl p-6 max-w-sm w-full mx-4 text-start space-y-4"
-          >
+        // MEH-3096: the shared Dialog owns overlay, focus trap and Escape;
+        // Escape / overlay click stay guarded while the change is in flight.
+        <Dialog
+          labelledBy="role-confirm-title"
+          size="sm"
+          dismissible={!isBusy(confirmKey(confirm))}
+          onClose={() => setConfirm(null)}
+          className="space-y-4"
+        >
             <p id="role-confirm-title" className="font-medium text-base">
               {confirm.action === "delete"
                 ? t("users.confirm.delete", { name: confirm.userName, email: confirm.userEmail })
@@ -416,8 +402,7 @@ export default function AdminUsersPage() {
                 {t("common.cancel")}
               </button>
             </div>
-          </div>
-        </div>
+        </Dialog>
       )}
     </div>
   );

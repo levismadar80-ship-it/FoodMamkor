@@ -1,7 +1,7 @@
 "use client";
 
+import Dialog from "@/components/ui/Dialog";
 import { useEffect, useRef, useState } from "react";
-import useDialogFocus from "@/hooks/useDialogFocus";
 import { useTranslations, useLocale } from "next-intl";
 import { formatEventDate } from "@/lib/format-date";
 import { Eye, EyeSlash, Star, Trash } from "@phosphor-icons/react";
@@ -110,8 +110,6 @@ export default function AdminReviewsPage() {
   // MEH-1040: full review row while a delete awaits confirmation; null otherwise.
   // Replaces the native browser confirm — the last admin surface with that pattern.
   const [confirmDelete, setConfirmDelete] = useState(null);
-  const deleteDialogRef = useRef(null);
-  useDialogFocus(deleteDialogRef, !!confirmDelete);
   // MEH-2096: setReviews([]) on failure rendered the same "no reviews" row as a
   // genuinely empty moderation queue.
   const [loadError, setLoadError] = useState(false);
@@ -152,17 +150,6 @@ export default function AdminReviewsPage() {
       setDeletingId(null);
     }
   };
-
-  // Escape closes the dialog (unless a delete is mid-flight) — mirrors the
-  // MEH-1023 Ch.B dismissal contract.
-  useEffect(() => {
-    if (!confirmDelete) return undefined;
-    const onKey = (e) => {
-      if (e.key === "Escape" && !deleting) setConfirmDelete(null);
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [confirmDelete, deleting]);
 
   // MEH-2360: the row only flips after the server confirms, so a failed
   // request leaves the admin looking at the real state. A 404 means the review
@@ -429,13 +416,13 @@ export default function AdminReviewsPage() {
 
       {/* Confirmation modal — mirrors content/page.js category-delete dialog (MEH-1023 Ch.B) */}
       {confirmDelete && (
-        <div className="fixed inset-0 z-[9000] flex items-center justify-center bg-black/40">
-          <div ref={deleteDialogRef}
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="review-delete-title"
-            className="bg-surface rounded-lg shadow-xl p-6 max-w-sm w-full mx-4 text-start space-y-4"
-          >
+        <Dialog
+          labelledBy="review-delete-title"
+          size="sm"
+          dismissible={!deleting}
+          onClose={() => setConfirmDelete(null)}
+          className="space-y-4"
+        >
             <p id="review-delete-title" className="font-medium text-base">
               {t("reviews.confirm_delete", {
                 user: confirmDelete.user_name || t("reviews.default_user"),
@@ -458,8 +445,7 @@ export default function AdminReviewsPage() {
                 {t("common.cancel")}
               </button>
             </div>
-          </div>
-        </div>
+        </Dialog>
       )}
     </div>
   );

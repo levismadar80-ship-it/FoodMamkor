@@ -1,8 +1,8 @@
 // @ts-check
 "use client";
 
-import { useEffect, useRef } from "react";
-import useDialogFocus from "@/hooks/useDialogFocus";
+import { useRef } from "react";
+import useDialogFocus, { useDialogEscape } from "@/hooks/useDialogFocus";
 
 /**
  * Dialog — the one centred modal of the site (MEH-3096).
@@ -53,16 +53,7 @@ export default function Dialog({
 }) {
   const ref = useRef(null);
   useDialogFocus(ref, open);
-  // Escape on the window, not the panel: it must work even before focus lands
-  // inside (a dialog with no focusable child keeps focus on the opener).
-  useEffect(() => {
-    if (!open || !dismissible) return undefined;
-    const onKey = (e) => {
-      if (e.key === "Escape") onClose();
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [open, dismissible, onClose]);
+  useDialogEscape(open && dismissible, onClose);
   if (!open) return null;
 
   const dismiss = () => {
