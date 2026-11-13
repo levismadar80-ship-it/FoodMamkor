@@ -1408,11 +1408,6 @@
         "categories": "Categories"
       },
       "show_all": "Show all",
-      "pickup_layer": {
-        "label": "Self-pickup",
-        "aria": "Show or hide self-pickup and market stands on the map",
-        "hidden_notice": "The pickup-points layer is off — some businesses are hidden"
-      },
       "key": {
         "title": "What's on the map?",
         "photo": "A business. Tap for details",

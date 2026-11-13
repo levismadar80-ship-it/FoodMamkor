@@ -60,8 +60,8 @@ export function producerPoints(producer, { includeSecondary = true } = {}) {
 
   // Rule 1: a row is a point only with both coordinates usable.
   // Rule 2: the toggle filters what we RETURN. A business whose only usable
-  // rows are hidden pickups yields [] — it stays off the map while the layer
-  // is hidden, and hiddenWhenSecondaryOff() is how the UI says so.
+  // rows are hidden pickups yields []. /map no longer offers a layer toggle
+  // (Sapir 13/11), so callers there always pass the default `true`.
   return locations
     .filter((loc) => isUsableCoord(loc?.lat) && isUsableCoord(loc?.lng))
     .filter((loc) => includeSecondary || !isSecondary(loc?.kind))
@@ -108,25 +108,6 @@ export function producerPoints(producer, { includeSecondary = true } = {}) {
  */
 export function primaryPoint(producer) {
   return producerPoints(producer).find((pt) => pt.location?.is_primary === true) ?? null;
-}
-
-/**
- * MEH-2046: does this producer disappear from the map when the secondary
- * (pickup / market_stand) layer is switched off?
- *
- * True exactly when it has points today and none of them survives rule 2 —
- * i.e. every usable row it owns is a pickup or a market stand. Such a business
- * vanishes outright rather than reappearing at some other coordinate (there is
- * no fallback to fall to — MEH-1938 chunk 5a), and that is deliberate, so the
- * honest fix is to TELL the user the layer is hiding businesses rather than to
- * change the rule.
- *
- * Composes `producerPoints` twice and reads its results; it does not
- * reimplement or alter either rule. MEH-1670 semantics unchanged.
- */
-export function hiddenWhenSecondaryOff(producer) {
-  if (producerPoints(producer).length === 0) return false;
-  return producerPoints(producer, { includeSecondary: false }).length === 0;
 }
 
 /**
