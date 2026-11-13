@@ -445,20 +445,41 @@ def _attach_has_owner(db: Session, producers) -> None:
     this fails closed (no chip, no action) rather than lying, and
     tests/test_meh2495_admin_draft_owner.py lists those routes so a new one
     has to be added there — and hydrated — on purpose.
+
+    MEH-2974 added `owner` (name + email) to the same hydration, deliberately
+    HERE and not as a `relationship` on the model. A lazy relationship would be
+    read once per row by Pydantic's `from_attributes`, which is precisely the
+    per-row SELECT that MEH-2541 removed from `GET /admin/producers`
+    (tests/test_meh2541_admin_producers_query_count.py asserts the count for
+    one producer equals the count for four, and would red). Selecting three
+    columns instead of one keeps this at exactly one query, so both guards
+    stay green and `has_owner`'s own semantics are untouched.
+
+    When a row somehow has more than one owning account — possible precisely
+    because there is no unique index — `owner` reports the FIRST by id. One
+    deterministic answer beats a nondeterministic one; `has_owner` already
+    collapsed that case to a bool, and MEH-2494's residual-risk note is where
+    the duplicate itself belongs.
     """
     ids = [p.id for p in producers]
-    owned = (
-        {
-            pid
-            for (pid,) in db.query(User.producer_id)
-            .filter(User.producer_id.in_(ids))
-            .distinct()
-        }
+    # No DISTINCT: `users.id` is in the select list precisely so the ORDER BY
+    # that makes the multi-owner tie-break deterministic is legal (Postgres
+    # rejects `SELECT DISTINCT … ORDER BY <col not selected>`), and with the
+    # primary key selected every row is already distinct. Still ONE query.
+    rows = (
+        db.query(User.producer_id, User.id, User.name, User.email)
+        .filter(User.producer_id.in_(ids))
+        .order_by(User.producer_id, User.id)
+        .all()
         if ids
-        else set()
+        else []
     )
+    owners: dict = {}
+    for pid, _uid, name, email in rows:
+        owners.setdefault(pid, {"name": name, "email": email})
     for p in producers:
-        p.has_owner = p.id in owned
+        p.has_owner = p.id in owners
+        p.owner = owners.get(p.id)
 
 
 def _attach_aging(producer) -> None:
@@ -1091,9 +1112,39 @@ def toggle_producer_status(
         )
     was_approved = producer.status == "approved"
     producer.status = "inactive" if was_approved else "approved"
-    # MEH-2498: suspending takes the business off the site, so its live group
-    # buys go with it — cancelled in the same commit, participants mailed.
     if was_approved:
+        # MEH-2974: suspending a live page REVOKES any outstanding owner
+        # invite on it.
+        #
+        # Without this, `inactive` means two different things that the row
+        # cannot tell apart — "hidden while the admin finishes building it"
+        # and "taken down for cause" — and owner-invite acceptance publishes
+        # the first. So an owner sitting on a week-old link could accept after
+        # a suspension and put the page back on the site herself: an
+        # unauthenticated endpoint reversing a moderation decision, with the
+        # group buys this same function just cancelled left cancelled. Found
+        # by the fresh reviewer on PR #4356.
+        #
+        # Killing the token rather than teaching the accept to distinguish the
+        # two, because the row carries no bit to distinguish them with, and
+        # because this is the direction that ADDS a constraint (workflow rule
+        # 32): the admin's own panel already tells her to hide the page BEFORE
+        # creating the link («שימי לב, הדף כבר באוויר…»), so the sanctioned
+        # order is unaffected and only the out-of-order case loses its link —
+        # one click to re-mint.
+        #
+        # An ACCEPTED invite is left alone: `owner_invite_accepted_at` is the
+        # record that it happened, and the business has a real owner now.
+        if producer.owner_invite_token_hash and not producer.owner_invite_accepted_at:
+            producer.owner_invite_token_hash = None
+            producer.owner_invite_code_hash = None
+            producer.owner_invite_code_expires_at = None
+            producer.owner_invite_code_attempts = None
+        # MEH-2498: suspending takes the business off the site, so its live
+        # group buys go with it — cancelled in the same commit, participants
+        # mailed. Folded into the block above rather than left as a second
+        # `if was_approved:` immediately after it: two consecutive identical
+        # conditions read as though one of them guards something else.
         cancel_live_group_buys(db, producer, background_tasks)
     db.commit()
     # MEH-2852: hidden or back on the site — either way the page changed.
@@ -1496,6 +1547,16 @@ def reject_producer(
     was_live = producer.status == "approved"
     if was_live:
         cancel_live_group_buys(db, producer, background_tasks)
+    # MEH-2974: a rejection revokes an outstanding owner invite, for the same
+    # reason a suspension does — a page rejected for cause and re-approved
+    # within the link's week must not come back with the old link still live.
+    # An accepted invite is left alone: the business has a real owner. Same
+    # fields the suspension clears; the record that an invite was sent stays.
+    if producer.owner_invite_token_hash and not producer.owner_invite_accepted_at:
+        producer.owner_invite_token_hash = None
+        producer.owner_invite_code_hash = None
+        producer.owner_invite_code_expires_at = None
+        producer.owner_invite_code_attempts = None
     producer.status = "rejected"
     # MEH-226: the reason is persisted in the SAME commit as the status flip —
     # before this it lived only in the email body, so a rejected owner saw

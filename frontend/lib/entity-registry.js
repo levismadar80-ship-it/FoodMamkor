@@ -128,6 +128,10 @@ export const ENTITIES = [
 export const NON_ENTITY_ROUTES = {
   "app/[locale]/claim/[token]": "one-time claim link",
   "app/[locale]/registration/[token]": "one-time registration-management link",
+  // MEH-2974. Same shape as the claim link above: a credential in the path,
+  // not an entity id. The segment is swapped out of the address on first
+  // load, so the route never settles on a URL anyone could share or index.
+  "app/[locale]/owner-invite/[token]": "one-time owner-invite link",
   "app/[locale]/p/[slug]": "redirect stub to /[slug] (MEH-2099)",
   "app/[locale]/producers/[category]/[region]": "listing page, not one entity",
   "app/[locale]/producers/diet/[dietSlug]": "listing page, not one entity",

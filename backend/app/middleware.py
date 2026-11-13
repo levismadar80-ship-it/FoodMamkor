@@ -15,6 +15,7 @@ from app.config import settings
 from app.db_bulkhead import DbBulkheadMiddleware
 from app.rate_limit import limiter, resolve_client_ip
 from app.services.analytics import record_request
+from app.utils.pii import redact_url_tokens  # MEH-2974
 
 # MEH-483: Sentry SDK is not yet wired in backend (frontend-only today,
 # tracked in MEH-376/379). Shim no-ops cleanly until the follow-up
@@ -181,13 +182,25 @@ class SentryRequestScopeMiddleware:
                 with _sentry_sdk.configure_scope() as sentry_scope:
                     if rid:
                         sentry_scope.set_tag("request_id", rid)
-                    sentry_scope.set_tag("route", request.url.path)
+                    # MEH-2974: REDACTED, both of them. Three routes carry a
+                    # bearer token in the path — /claim/<jwt>,
+                    # /owner-invite/<token>, /registration(s)/<token> — and
+                    # Sentry is a third-party processor. `before_send`
+                    # (sentry.py) drops and burst-limits but performs no URL
+                    # redaction, so until now any captured exception or sampled
+                    # trace on one of those routes shipped a live credential.
+                    # `producer_claim.py:76-81` is the written decision this
+                    # restores server-side; the client half has been in
+                    # frontend/lib/claim-token.js since MEH-2324.
+                    # Railway's own access log is NOT covered — it is not ours
+                    # to scrub, and it stays a recorded residual risk.
+                    sentry_scope.set_tag("route", redact_url_tokens(request.url.path))
                     sentry_scope.set_tag("method", request.method)
                     # MEH-493 — request_info structured context.
                     sentry_scope.set_context(
                         "request_info",
                         {
-                            "url": str(request.url),
+                            "url": redact_url_tokens(str(request.url)),
                             "method": request.method,
                             "client": request.client.host
                             if request.client is not None

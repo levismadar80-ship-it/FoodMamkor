@@ -218,6 +218,48 @@ export const ProducerClaimLinkSchema = z.object({
   expires_at: z.string().refine((value) => !Number.isNaN(Date.parse(value))),
 });
 
+// MEH-2974 — owner invite (backend producer_owner_invite.py).
+//
+// GET /auth/owner-invite/{token} → OwnerInvitePublicOut. The page renders the
+// business name as its heading and the email as a read-only field, so an empty
+// name or a missing email is a malformed response rather than an invite to
+// accept — which is why both carry `min(1)` and neither is optional.
+// `requires_farmer_declaration` decides whether a legally binding checkbox is
+// shown, so it is required too: defaulting a missing one to `false` would
+// silently drop a declaration the server expects.
+export const OwnerInvitePublicSchema = z.object({
+  producer_name: z.string().min(1),
+  // v3: nullable. An invite may carry no address at all — the admin sends the
+  // link by WhatsApp and the owner types her own on the page — so `null` here
+  // is what makes the field render empty rather than pre-filled.
+  email: z.string().nullable().optional(),
+  requires_farmer_declaration: z.boolean(),
+  // v3: true while the business is still hidden, i.e. accepting PUBLISHES it.
+  // The submit button's copy branches on this, so a missing value must not
+  // silently read as false — the backend always sends it.
+  will_publish: z.boolean(),
+  // v3: the same five public fields the claim page previews, reused by SCHEMA
+  // so the two pages cannot drift apart on what a preview is.
+  preview: ProducerClaimPreviewSchema.nullable().optional(),
+});
+
+// POST /admin/producers/{id}/owner-invite (and /resend) → OwnerInviteCreatedOut.
+// This is the ONE response that carries the raw token, inside `invite_url`.
+// The admin copies that URL and sends it by WhatsApp, so a malformed one must
+// surface as an error rather than be pasted: same reasoning as
+// ProducerClaimLinkSchema above.
+export const OwnerInviteCreatedSchema = z.object({
+  invite_url: z.string().url(),
+  // v3: nullable for the same reason as the public shape above — an invite
+  // created with no address returns none, and the panel renders no «נשלח אל»
+  // line for it.
+  email: z.string().nullable().optional(),
+  name: z.string(),
+  // Formatted with Intl during render, where an unparseable value throws.
+  sent_at: z.string().refine((value) => !Number.isNaN(Date.parse(value))),
+  expires_at: z.string().refine((value) => !Number.isNaN(Date.parse(value))),
+});
+
 // MEH-2326: POST /admin/producers/{id}/products → ProductOut. The admin panel
 // appends the row to its list, so a payload with no id or name must route to
 // the panel's error state instead of rendering a row it cannot delete.

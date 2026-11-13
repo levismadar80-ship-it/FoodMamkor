@@ -93,6 +93,31 @@ DECLARATION_VERSION: str = "2026-06-v2"
 #      mandatory on both email registration paths (422 when absent).
 TERMS_VERSION: str = "2026-09-v2"
 
+# MEH-759 Chunk C (ADR-022 gate 2): the agricultural categories that add the
+# conditional GROWER line to the licensing declaration («תוצרת שגידלתי בחלקתי
+# בלבד»). Hebrew NAMES for the same reason as LICENSE_REQUIRED_CATEGORIES
+# above — ids are seed-ordering-dependent — and must match
+# backend/seed_data.py.
+#
+# MEH-2974 is what gave this list a BACKEND reader: the owner-invite lookup
+# has to tell the acceptance page whether to render the grower box, and that
+# page has no category list of its own to reason from. Until then the only
+# copy lived in frontend/lib/farmer-declaration.js, which registration and the
+# owner-claim page both import.
+#
+# Two owners for one fact is the smell workflow.md names, so the two are held
+# equal mechanically rather than by this comment:
+# tests/test_producer_owner_invite.py::TestFarmerCategoriesAreOneFact re-derives
+# the frontend list from its own file and asserts equality — the same shape as
+# test_meh2496's TTL guard. This module is the SoT; the JS file is the mirror,
+# which is exactly the arrangement this file's docstring already describes for
+# LICENSE_REQUIRED_CATEGORIES.
+#
+# DO NOT add a category here without the same regulatory thought the license
+#        list demands — the grower line is a binding declaration about who
+#        grew the produce, and MEH-2923 owns its server-side ENFORCEMENT.
+FARMER_DECLARATION_CATEGORIES: tuple[str, ...] = ("ירקות", "פירות")
+
 # MEH-1471: allowed keys for producers.referral_source ("מאיפה שמעת עלינו?" —
 # self-reported attribution captured at the final registration step). English
 # keys are stored in the DB; the Hebrew labels are rendered from i18n
