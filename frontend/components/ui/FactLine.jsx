@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * FactLine — one line stating one fact, led by the icon for that KIND of fact
  * (MEH-3028).
@@ -26,6 +27,9 @@ export const FACT_ICON_SIZE = 14;
 
 // The icon sits in a box one line tall, so on a line that wraps it stays
 // beside the FIRST line instead of drifting to the middle of the block.
+/**
+ * @param {{ icon?: any, as?: any, className?: string, children?: import("react").ReactNode, [key: string]: any }} props
+ */
 export default function FactLine({ icon: Icon, as: Tag = "p", className = "", children, ...rest }) {
   return (
     <Tag className={`flex items-start gap-1.5${className ? ` ${className}` : ""}`} {...rest}>
