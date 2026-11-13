@@ -1053,6 +1053,32 @@ export default function ProducersClient({
         data-testid="producers-filter-row"
         onFocus={keepFocusedChipClear}
       >
+        {/* MEH-3075 (Sapir 13/11): below lg the categories ride the SAME rail as
+            «סינון» and the service chips — one row, «סינון», categories, then
+            משלוח/איסוף/city/day, the order /map's phone row uses (MEH-3062).
+            shrink-0 lets the outer rail do the scrolling. lg+ keeps two lines:
+            basis-full puts the block on its own line above the
+            filters, as before. The block comes FIRST in the DOM so the lg+ tab
+            order is unchanged (categories, then «סינון»); below lg the trigger's
+            wrapper takes max-lg:order-first to lead visually. The micro-label
+            stays for screen readers below lg. */}
+        {categories.length > 0 && (
+          <div className="shrink-0 lg:basis-full lg:min-w-0 lg:mb-1" data-testid="producers-category-row">
+            <p className="text-xs text-fg-muted mb-1 max-lg:sr-only" data-testid="producers-category-label">{t("filters.category_label")}</p>
+            <ChipScrollRow
+              variant="category"
+              chips={categoryChips}
+              activeKeys={activeCategoryKeys}
+              onChipClick={handleCategorySelect}
+              className="max-lg:-mb-1"
+            />
+          </div>
+        )}
+        {/* MEH-3075: the hairline /map's phone row draws between the categories
+            and the service chips (MEH-3062). Phone only — lg+ has two lines. */}
+        {categories.length > 0 && (
+          <span aria-hidden="true" className="shrink-0 self-stretch my-1.5 w-px bg-border lg:hidden" />
+        )}
         {/* Anchor wrapper — the sheet's lg+ panel positions off it (sticky is
             positioned, so it anchors like `relative`); -start-4/-ms-4/ps-4
             paint the gutter beside it so chips pass under it, as on home.
@@ -1060,7 +1086,7 @@ export default function ProducersClient({
             `relative`: a later positioned sibling would paint OVER the sticky
             trigger while the rail scrolls. lg:z-auto keeps the lg+ anchored sheet
             panel out of a z-10 stacking context, as it was before. */}
-        <div className="sticky z-10 -start-4 -ms-4 ps-4 shrink-0 bg-background lg:relative lg:z-auto lg:start-auto lg:ms-0 lg:ps-0">
+        <div className="sticky z-10 -start-4 -ms-4 ps-4 shrink-0 bg-background max-lg:order-first lg:relative lg:z-auto lg:start-auto lg:ms-0 lg:ps-0">
           <button
             type="button"
             onClick={() => setSheetOpen((v) => !v)}
@@ -1088,29 +1114,6 @@ export default function ProducersClient({
             align="start"
           />
         </div>
-        {/* MEH-3075 (Sapir 13/11): below lg the categories ride the SAME rail as
-            «סינון» and the service chips — one row, «סינון», categories, then
-            משלוח/איסוף/city/day, the order /map's phone row uses (MEH-3062).
-            shrink-0 lets the outer rail do the scrolling. lg+ keeps two lines:
-            order-first + basis-full put the block on its own line above the
-            filters, as before. The micro-label stays for screen readers below lg. */}
-        {categories.length > 0 && (
-          <div className="shrink-0 lg:order-first lg:basis-full lg:min-w-0 lg:mb-1" data-testid="producers-category-row">
-            <p className="text-xs text-fg-muted mb-1 max-lg:sr-only" data-testid="producers-category-label">{t("filters.category_label")}</p>
-            <ChipScrollRow
-              variant="category"
-              chips={categoryChips}
-              activeKeys={activeCategoryKeys}
-              onChipClick={handleCategorySelect}
-              className="max-lg:-mb-1"
-            />
-          </div>
-        )}
-        {/* MEH-3075: the hairline /map's phone row draws between the categories
-            and the service chips (MEH-3062). Phone only — lg+ has two lines. */}
-        {categories.length > 0 && (
-          <span aria-hidden="true" className="shrink-0 self-stretch my-1.5 w-px bg-border lg:hidden" />
-        )}
         {/* MEH-2598 (Sapir 29/10, «אחיד»): the same promoted service trio as
             home and /map, between «סינון» and the city chip. `visibleChipDefs`
             is the gated list, so on_site appears only once the catalog
@@ -1142,7 +1145,9 @@ export default function ProducersClient({
           panelHost={dayPanelHost}
         />
       </div>
-      <div ref={setDayPanelHost} className="mt-3 empty:hidden" data-testid="producers-day-panel-host" />
+      {/* MEH-3075: inside the sticky bar below lg, so a panel taller than the
+          screen would be unreachable — cap it and let it scroll. */}
+      <div ref={setDayPanelHost} className="mt-3 empty:hidden max-lg:max-h-[60vh] max-lg:overflow-y-auto" data-testid="producers-day-panel-host" />
       </div>
 
       {/* Results counter + active filters — MEH-1186: one control line.

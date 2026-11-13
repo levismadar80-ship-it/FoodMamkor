@@ -343,8 +343,10 @@ describe("MEH-2569 — one filter row on /producers", () => {
 
   it("the trigger's wrapper is sticky below lg, so it stays put while the rail scrolls", () => {
     render(<ProducersClient {...props(items(3))} />);
-    const lead = screen.getByTestId("producers-filter-row").firstElementChild;
-    expect(lead.contains(TRIGGER())).toBe(true);
+    // MEH-3075: the category block now precedes it in the DOM (lg+ tab order);
+    // the wrapper is the rail child that holds the trigger.
+    const lead = [...screen.getByTestId("producers-filter-row").children].find((c) => c.contains(TRIGGER()));
+    expect(lead).toBeTruthy();
     expect(lead.className.split(/\s+/)).toContain("sticky");
     // The city chip's ChipScrollRow root is `relative`; without a z-index the
     // later positioned sibling paints over the sticky trigger as it scrolls.
@@ -418,19 +420,23 @@ describe("MEH-3075 — one sticky filter row on the phone, and a map link that k
     );
   };
 
-  it("puts the category chips INSIDE the filter rail, after «סינון» and before the service chips", async () => {
+  it("puts the category chips INSIDE the filter rail: first in the DOM (lg+ tab order), «סינון» leads visually below lg", async () => {
     await serveCategories();
     render(<ProducersClient {...props(withDairy(3))} />);
     const cats = await screen.findByTestId("producers-category-row");
     const rail = screen.getByTestId("producers-filter-row");
     expect(rail.contains(cats)).toBe(true);
     const follows = (a, b) => !!(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING);
-    expect(follows(TRIGGER(), cats)).toBe(true);
-    expect(follows(cats, screen.getByTestId("producers-promoted-chip-has_delivery"))).toBe(true);
+    // DOM: categories, then «סינון», then the service chips — the lg+ order.
+    expect(follows(cats, TRIGGER())).toBe(true);
+    expect(follows(TRIGGER(), screen.getByTestId("producers-promoted-chip-has_delivery"))).toBe(true);
+    // Below lg the trigger's wrapper is pulled to the front of the rail.
+    const lead = [...rail.children].find((c) => c.contains(TRIGGER()));
+    expect(lead.className.split(/\s+/)).toContain("max-lg:order-first");
     // The rail scrolls, not the category block: shrink-0 below lg.
     expect(cats.className.split(/\s+/)).toContain("shrink-0");
     // lg+ keeps the categories on their own line above the filters.
-    expect(cats.className.split(/\s+/)).toEqual(expect.arrayContaining(["lg:order-first", "lg:basis-full"]));
+    expect(cats.className.split(/\s+/)).toContain("lg:basis-full");
     // The micro-label stays for screen readers only below lg.
     expect(screen.getByTestId("producers-category-label").className.split(/\s+/)).toContain("max-lg:sr-only");
   });
