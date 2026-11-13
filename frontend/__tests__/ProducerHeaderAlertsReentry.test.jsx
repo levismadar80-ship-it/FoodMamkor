@@ -57,6 +57,7 @@ vi.mock("@phosphor-icons/react", async (importOriginal) => ({
   Heart: () => <span />,
   Star: () => <span />,
   Truck: () => <span />,
+  Clock: () => <span />, // MEH-3028
   StarOfDavid: () => <span />,
   Bell: undefined,
 }));
