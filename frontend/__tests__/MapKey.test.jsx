@@ -1,7 +1,7 @@
 /**
  * MEH-2424 — "מה רואים במפה?": the map's marker key, on every viewport.
  *
- * The map draws seven kinds of marks and, on a phone, explained none of them
+ * The map draws six kinds of marks (seven until the pickup-layer toggle left, 13/11) and, on a phone, explained none of them
  * (the desktop legend lists categories only). The key is a ? control in the
  * map's own control column that opens a panel with one row per mark, each row
  * drawn with the same visual the map uses. Rendered with the REAL he.json so
@@ -48,7 +48,6 @@ describe("map key (MEH-2424)", () => {
       K.cluster,
       K.pickup,
       K.approximate,
-      he.map.pane.pickup_layer.aria,
     ]);
   });
 

@@ -4,7 +4,7 @@ import { test, expect, type Page } from "../_cloudinary-stub";
 /**
  * Spec:  manual/map-banner-controls (MEH-2517)
  *
- * The mobile map's control column (marker key, pickup layer) rides the bottom
+ * The mobile map's control column (the marker key) rides the bottom
  * sheet's top edge. While the cookie banner shows, MapClient lifts the pane's
  * bottom off the viewport's by the banner's footprint (MEH-945). Before this
  * card the ride was measured from the pane's bottom anyway, so the strip was
@@ -16,8 +16,9 @@ import { test, expect, type Page } from "../_cloudinary-stub";
  * are pinned:
  *   banner up   - zoom buttons are hit-testable and the column clears them,
  *                 stays inside the map canvas, and stays above the banner.
- *   banner gone - the ride is unchanged: the layer toggle sits 68px above the
- *                 sheet's edge and the key 12px above the layer toggle.
+ *   banner gone - the ride is unchanged: the key sits 68px above the sheet's
+ *                 edge (it took the pickup-layer toggle's slot when that toggle
+ *                 was removed, 13/11).
  */
 
 const VIEWPORTS = [
@@ -52,9 +53,8 @@ async function openMap(page: Page, consented: boolean) {
   const zoomIn = shell.locator(".leaflet-control-zoom-in");
   const zoomOut = shell.locator(".leaflet-control-zoom-out");
   const key = shell.getByTestId("map-key-toggle-mobile");
-  const layer = shell.getByTestId("pickup-layer-toggle-mobile");
   const canvas = shell.locator(".leaflet-container");
-  for (const l of [zoomIn, zoomOut, key, layer]) await expect(l).toBeVisible({ timeout: 45_000 });
+  for (const l of [zoomIn, zoomOut, key]) await expect(l).toBeVisible({ timeout: 45_000 });
   if (consented) await expect(page.getByTestId("cookie-banner")).toHaveCount(0);
   else await expect(page.getByTestId("cookie-banner")).toBeVisible();
   // The column animates `bottom` (--map-sheet-anim, 300ms): settle on a stable
@@ -62,13 +62,13 @@ async function openMap(page: Page, consented: boolean) {
   let last = "";
   await expect
     .poll(async () => {
-      const now = JSON.stringify([await box(key), await box(layer)]);
+      const now = JSON.stringify(await box(key));
       const same = now === last;
       last = now;
       return same;
     }, { intervals: [150, 150, 250, 400] })
     .toBe(true);
-  return { zoomIn, zoomOut, key, layer, canvas };
+  return { zoomIn, zoomOut, key, canvas };
 }
 
 /**
@@ -96,13 +96,13 @@ test.describe("manual › /map control column with the cookie banner up (MEH-251
   for (const vp of VIEWPORTS) {
     test(`${vp.width}x${vp.height} banner up: the column clears the zoom buttons and stays on the canvas`, async ({ page }) => {
       await page.setViewportSize(vp);
-      const { zoomIn, zoomOut, key, layer, canvas } = await openMap(page, false);
+      const { zoomIn, zoomOut, key, canvas } = await openMap(page, false);
       expect(await hitTestable(zoomIn), "zoom-in is covered").toBe(true);
       expect(await hitTestable(zoomOut), "zoom-out is covered").toBe(true);
       const zoomBar = await box(zoomIn.locator(".."));
       const c = await box(canvas);
       const banner = await box(page.getByTestId("cookie-banner"));
-      for (const [name, l] of [["key", key], ["layer", layer]] as const) {
+      for (const [name, l] of [["key", key]] as const) {
         const b = await box(l);
         expect(overlaps(b, zoomBar), `${name} toggle overlaps the zoom bar`).toBe(false);
         expect(b.y, `${name} toggle climbed above the map canvas`).toBeGreaterThanOrEqual(c.y);
@@ -113,12 +113,10 @@ test.describe("manual › /map control column with the cookie banner up (MEH-251
 
     test(`${vp.width}x${vp.height} banner gone: the column still rides the sheet edge`, async ({ page }) => {
       await page.setViewportSize(vp);
-      const { key, layer } = await openMap(page, true);
+      const { key } = await openMap(page, true);
       const sheet = await box(page.getByTestId("map-bottom-sheet"));
-      const l = await box(layer);
       const k = await box(key);
-      expect(Math.abs(sheet.y - (l.y + l.height) - 68), "layer toggle is not 68px above the sheet edge").toBeLessThanOrEqual(1);
-      expect(Math.abs(l.y - (k.y + k.height) - 12), "key is not 12px above the layer toggle").toBeLessThanOrEqual(1);
+      expect(Math.abs(sheet.y - (k.y + k.height) - 68), "key is not 68px above the sheet edge").toBeLessThanOrEqual(1);
     });
   }
 });
