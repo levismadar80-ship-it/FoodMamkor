@@ -48,6 +48,7 @@ import { useCatalogSnapshot } from "@/lib/use-catalog-snapshot";
 import EnSearchNotice from "@/components/EnSearchNotice";
 import { CategoriesResponseSchema } from "@/lib/api-schemas";
 import Button from "@/components/ui/Button";
+import ButtonSpinner from "@/components/ButtonSpinner";
 
 const FILTER_LIMIT = 100;
 const PAGE_SIZE = 24; // matches PER_PAGE in page.jsx
@@ -1284,11 +1285,9 @@ export default function ProducersClient({
               <div ref={sentinelRef} className="h-px" aria-hidden="true" />
               {loadingMore && (
                 <div className="flex justify-center py-8">
-                  <div
-                    className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin"
-                    role="status"
-                    aria-label={t("discovery.loading_more_aria")}
-                  />
+                  <span role="status" aria-label={t("discovery.loading_more_aria")} className="text-primary">
+                    <ButtonSpinner size={32} />
+                  </span>
                 </div>
               )}
               {!hasMore && appendItems.length > 0 && (

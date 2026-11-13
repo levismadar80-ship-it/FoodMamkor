@@ -13,6 +13,7 @@ import { showToast } from "@/lib/toast";
 import { useAuth } from "@/lib/auth-context";
 import { validateIsraeliPhone } from "@/lib/validators";
 import Button from "@/components/ui/Button";
+import { SkeletonBlock } from "@/components/Skeleton";
 
 const DEFAULT_PREFS = {
   notify_new_event: true,
@@ -163,7 +164,7 @@ export default function AlertPrefsPanel({ producerId, producerName, onClose }) {
 
   if (loading) {
     return (
-      <div className="p-4 text-sm text-fg-muted text-center animate-pulse">{t("loading")}</div>
+      <SkeletonBlock as="div" tone="none" className="p-4 text-sm text-fg-muted text-center">{t("loading")}</SkeletonBlock>
     );
   }
 
