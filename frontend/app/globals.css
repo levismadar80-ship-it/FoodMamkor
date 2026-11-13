@@ -424,7 +424,7 @@ body:has([data-meets-footer]) footer[data-site-footer] {
    (frontend.md MEH-1619; probed in the PR). Qualified with .leaflet-tooltip:
    leaflet.css loads after this file and its equal-specificity
    `.leaflet-tooltip` rule won colour, background and padding (measured:
-   computed color #222, opaque white). */
+   computed colour was Leaflet's dark grey on opaque white). */
 .leaflet-tooltip.mehamakor-pin-label {
   /* visibility, not display: Leaflet places a "left" tooltip from its
      offsetWidth, which is 0 under display:none — every label then opened
@@ -438,7 +438,7 @@ body:has([data-meets-footer]) footer[data-site-footer] {
   border: 0;
   border-radius: 6px;
   background: rgba(255, 255, 255, 0.94);
-  color: #1f2a25;
+  color: theme("colors.text"); /* token, raw-color-tokens.sh */
   font-size: 12px;
   font-weight: 700;
   line-height: 1.5;
