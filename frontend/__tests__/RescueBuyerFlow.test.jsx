@@ -385,7 +385,9 @@ describe("the row", () => {
   it("links to the business page, where the only reserve button lives", async () => {
     render(<RescueList />);
     const row = await screen.findByTestId("rescue-bag-row");
-    expect(row.getAttribute("href")).toBe("/producer/hatzala");
+    // /{slug}, never /producer/{slug}: that route takes a UUID only and shows
+    // «בית העסק הזה לא נמצא» for a slug. Anchored at the bag section.
+    expect(row.getAttribute("href")).toBe("/hatzala#section-rescue");
     expect(screen.queryByTestId("rescue-reserve")).toBeNull();
   });
 });
