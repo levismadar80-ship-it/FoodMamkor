@@ -944,7 +944,7 @@ function RegisterProducerPageBody({ routeKind }) {
           {/* CTA reuses the account-menu dashboard label (single owner, no new key). */}
           <button
             onClick={() => router.push("/producer/dashboard")}
-            className="border-2 border-primary-dark text-primary-dark bg-transparent px-6 py-3 rounded-md hover:bg-primary-dark hover:text-white transition font-medium text-sm"
+            className="border-2 border-primary-dark text-primary-dark bg-transparent px-6 py-3 rounded-full hover:bg-primary-dark hover:text-white transition font-medium text-sm"
           >
             {t("account.menu.dashboard")}
           </button>
@@ -2039,7 +2039,7 @@ function RegisterProducerPageBody({ routeKind }) {
               <button
                 data-testid="register-success-dashboard-cta"
                 onClick={() => router.push("/producer/dashboard")}
-                className="w-full bg-primary-dark text-white px-6 py-3 rounded-md hover:bg-primary transition font-medium text-sm"
+                className="w-full bg-primary-dark text-white px-6 py-3 rounded-full hover:bg-primary transition font-medium text-sm"
               >
                 {t("auth.register.producer.success.cta")}
               </button>
@@ -2075,7 +2075,7 @@ function RegisterProducerPageBody({ routeKind }) {
             <p className="text-xs text-fg-muted mb-6 text-center leading-relaxed">{t("auth.register.producer.success.tier_trust")}</p>
             <button
               onClick={() => router.push("/")}
-              className="border-2 border-primary-dark text-primary-dark bg-transparent px-6 py-3 rounded-md hover:bg-primary-dark hover:text-white transition font-medium text-sm"
+              className="border-2 border-primary-dark text-primary-dark bg-transparent px-6 py-3 rounded-full hover:bg-primary-dark hover:text-white transition font-medium text-sm"
             >
               {t("auth.register.producer.success.back_home")}
             </button>

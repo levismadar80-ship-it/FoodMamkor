@@ -172,7 +172,7 @@ export default function MapPane({
           {filtered && onResetFilters ? (
             <>
               <h3 className="font-headline-md text-lg font-bold text-text mb-4" data-testid="map-pane-filtered-empty">{t("map.bottom_sheet.count_filtered_zero")}</h3>
-              <button type="button" onClick={onResetFilters} className="inline-block bg-primary text-white px-4 py-2 rounded-sm text-sm hover:bg-primary-dark transition">{t("map.bottom_sheet.reset_filters")}</button>
+              <button type="button" onClick={onResetFilters} className="inline-block bg-primary text-white px-4 py-2 rounded-full text-sm hover:bg-primary-dark transition">{t("map.bottom_sheet.reset_filters")}</button>
             </>
           ) : (
             // MEH-2639: the body and the «הוסיפו עסק» link are gone. This

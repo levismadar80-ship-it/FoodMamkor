@@ -144,7 +144,7 @@ export default function LoginPromptModal({
         <a
           ref={primaryRef}
           href={loginHref}
-          className="block w-full bg-primary text-white py-3 rounded-md hover:bg-primary-dark transition font-medium focus-visible:ring-2 focus-visible:ring-primary/40"
+          className="block w-full bg-primary text-white py-3 rounded-full hover:bg-primary-dark transition font-medium focus-visible:ring-2 focus-visible:ring-primary/40"
         >
           {t("login_cta")}
         </a>

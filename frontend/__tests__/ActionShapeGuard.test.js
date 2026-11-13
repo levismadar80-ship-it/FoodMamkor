@@ -11,8 +11,7 @@
  * green text) — must also carry `rounded-full`. The shared <Button> and
  * <ShowMore> already do; they are components, not these elements.
  *
- * ALLOWED is a ratchet (13/11): it only shrinks. A new off-shape action fails;
- * fixing one fails until its count is lowered.
+ * ALLOWED was a ratchet (13/11) and is now empty: every action is a pill.
  *
  * Blind spots: className built in a variable or helper (cn(...), a const
  * string such as SHARE_TONE), the dynamic ${…} part of a template literal, a
@@ -52,7 +51,7 @@ function staticClass(attr) {
   return null;
 }
 
-export function offShapeActions(src) {
+export function offShapeActions(src, seen = { actions: 0 }) {
   const ast = parse(src, { sourceType: "module", plugins: ["jsx"] });
   const hits = [];
   traverse(ast, {
@@ -62,6 +61,7 @@ export function offShapeActions(src) {
       const attr = p.node.attributes.find((a) => a.type === "JSXAttribute" && a.name.name === "className");
       const cls = staticClass(attr);
       if (!cls || !actionRecipe(cls)) return;
+      seen.actions++;
       if (!/(?:^|\s)rounded-full(?:\s|$)/.test(cls)) hits.push(`${n}@${p.node.loc.start.line}`);
     },
   });
@@ -69,30 +69,9 @@ export function offShapeActions(src) {
 }
 
 // file → off-shape actions still allowed (ratchet, 13/11/2026). Shrink only.
-const ALLOWED = {
-  "app/[locale]/about/AboutClient.jsx": 1,
-  "app/[locale]/admin/content/page.js": 1,
-  "app/[locale]/admin/outreach/page.jsx": 1,
-  "app/[locale]/admin/producers/AdminProducersToolbar.jsx": 1,
-  "app/[locale]/admin/settings/page.js": 1,
-  "app/[locale]/claim/ClaimClient.jsx": 2,
-  "app/[locale]/events/EventsClient.jsx": 1,
-  "app/[locale]/home/HomeProducersGrid.jsx": 3,
-  "app/[locale]/map/components/MapPane.jsx": 1,
-  "app/[locale]/producer/dashboard/events/new/page.js": 1,
-  "app/[locale]/producer/dashboard/events/page.js": 1,
-  "app/[locale]/producer/dashboard/experiences/page.js": 1,
-  "app/[locale]/producer/dashboard/page.js": 2,
-  "app/[locale]/register/RegisterClient.jsx": 2,
-  "app/[locale]/register/producer/RegisterProducerClient.jsx": 3,
-  "components/FilterSheet.jsx": 1,
-  "components/LoginPromptModal.jsx": 1,
-  "components/ProducersClient.jsx": 3,
-  "components/ReviewsSection.jsx": 1,
-  "components/admin/ClaimLinkPanel.jsx": 1,
-  "components/admin/OwnerInvitePanel.jsx": 1,
-  "components/dashboard/RescueTab.jsx": 3,
-};
+// Was a ratchet of 33 offenders in 22 files (13/11); all fixed the same night
+// (Sapir: «תתקן הכל עכשיו לפני הגרסה»). Keep it empty.
+const ALLOWED = {};
 
 function walk(dir, out = []) {
   for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
@@ -131,16 +110,16 @@ describe("MEH-3058 — actions are pills on every element", () => {
     const files = ["app", "components"].flatMap((d) => walk(path.join(ROOT, d)));
     expect(files.length, "corpus control").toBeGreaterThan(200);
     const offenders = [];
-    let actions = 0;
+    const seen = { actions: 0 };
     for (const f of files) {
       const rel = path.relative(ROOT, f).split(path.sep).join("/");
-      const hits = offShapeActions(fs.readFileSync(f, "utf8"));
-      actions += hits.length;
+      const hits = offShapeActions(fs.readFileSync(f, "utf8"), seen);
       const allowed = ALLOWED[rel] || 0;
       if (hits.length > allowed) offenders.push(`${rel}: ${hits.length} off-shape actions (allowed ${allowed}) — ${hits.join(", ")}`);
       if (hits.length < allowed) offenders.push(`${rel}: ratchet is stale — lower ALLOWED to ${hits.length}`);
     }
     expect(offenders).toEqual([]);
-    expect(actions, "corpus control: the ratchet still has entries to burn down").toBeGreaterThan(0);
+    // control: the walker really sees action-styled elements (all pills now)
+    expect(seen.actions, "corpus control").toBeGreaterThan(20);
   }, 60_000);
 });

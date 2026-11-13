@@ -348,7 +348,7 @@ export default function AdminOutreachPage() {
                         <button
                           type="button"
                           onClick={() => handleMintToken(lead.id)}
-                          className="text-xs px-2 py-1 rounded-lg bg-primary text-white hover:bg-primary-dark"
+                          className="text-xs px-2 py-1 rounded-full bg-primary text-white hover:bg-primary-dark"
                           title={t("outreach.actions.prefill_title")}
                         >
                           {t("outreach.actions.prefill")}

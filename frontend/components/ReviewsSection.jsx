@@ -226,7 +226,7 @@ function ReviewReply({ review, isOwner, onSaved }) {
             type="button"
             onClick={save}
             disabled={saving || draft.trim().length < 2}
-            className="min-h-touch bg-primary-dark text-white px-5 py-1.5 rounded-sm hover:opacity-90 transition disabled:opacity-60 text-sm font-medium"
+            className="min-h-touch bg-primary-dark text-white px-5 py-1.5 rounded-full hover:opacity-90 transition disabled:opacity-60 text-sm font-medium"
           >
             {saving ? t("submit_saving") : t("reply_save")}
           </button>

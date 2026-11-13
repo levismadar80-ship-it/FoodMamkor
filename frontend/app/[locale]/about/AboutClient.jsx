@@ -191,7 +191,7 @@ export default function AboutPage() {
           <Link
             href="/map"
             data-testid="about-hero-cta"
-            className="mt-6 inline-flex items-center gap-2 min-h-[48px] px-6 py-3 bg-primary text-white rounded-sm font-body-md font-semibold text-base hover:bg-primary-dark transition-colors focus-ring"
+            className="mt-6 inline-flex items-center gap-2 min-h-[48px] px-6 py-3 bg-primary text-white rounded-full font-body-md font-semibold text-base hover:bg-primary-dark transition-colors focus-ring"
           >
             {t("hero.cta_map")}
             <ArrowLeft size={19} aria-hidden="true" />

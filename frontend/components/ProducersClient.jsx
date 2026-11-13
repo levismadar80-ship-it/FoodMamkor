@@ -1379,7 +1379,7 @@ function CatalogEmptyState() {
         {!isAdmin && (
           <Link
             href="/join"
-            className="bg-primary text-white px-6 py-3 rounded-md font-medium hover:bg-primary-dark transition"
+            className="bg-primary text-white px-6 py-3 rounded-full font-medium hover:bg-primary-dark transition"
           >
             {t("add_cta")}
           </Link>
@@ -1392,7 +1392,7 @@ function CatalogEmptyState() {
             same-page jump rather than a cross-page hop. */}
         <Link
           href="#newsletter"
-          className="border border-primary text-primary px-6 py-3 rounded-md font-medium hover:bg-green-50 transition"
+          className="border border-primary text-primary px-6 py-3 rounded-full font-medium hover:bg-green-50 transition"
         >
           {t("notify_cta")}
         </Link>
@@ -1408,7 +1408,7 @@ function PageOverflowState() {
       <p className="text-fg-muted mb-4">{t("message")}</p>
       <Link
         href="/producers"
-        className="inline-flex items-center bg-primary text-white px-5 py-2 rounded-md hover:bg-primary-dark transition"
+        className="inline-flex items-center bg-primary text-white px-5 py-2 rounded-full hover:bg-primary-dark transition"
       >
         {t("back_cta")}
       </Link>

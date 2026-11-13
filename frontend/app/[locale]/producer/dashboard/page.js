@@ -63,7 +63,7 @@ function VanityLinkCard({ slug }) {
           type="button"
           onClick={share}
           data-testid="vanity-share"
-          className="flex-1 text-sm text-center rounded-sm px-3 py-1.5 bg-primary text-background hover:bg-primary-dark transition"
+          className="flex-1 text-sm text-center rounded-full px-3 py-1.5 bg-primary text-background hover:bg-primary-dark transition"
         >
           {tShare("trigger")}
         </button>
@@ -892,7 +892,7 @@ function ZeroStateShareButton({ slug }) {
       type="button"
       data-testid="overview-zero-share"
       onClick={() => shareOrCopy({ url, text: tVanity("wa_text_template", { url: "" }).trim(), copy })}
-      className="mt-4 text-sm rounded-sm px-4 py-1.5 bg-primary text-background hover:bg-primary-dark transition"
+      className="mt-4 text-sm rounded-full px-4 py-1.5 bg-primary text-background hover:bg-primary-dark transition"
     >
       {tShare("trigger")}
     </button>

@@ -586,7 +586,7 @@ export default function FilterSheet({
           <button
             type="button"
             onClick={onClose}
-            className="flex-1 min-h-touch lg:min-h-[36px] rounded-md bg-primary text-white text-sm lg:text-sm font-medium px-4 py-2.5 lg:py-1.5 hover:opacity-90 transition"
+            className="flex-1 min-h-touch lg:min-h-[36px] rounded-full bg-primary text-white text-sm lg:text-sm font-medium px-4 py-2.5 lg:py-1.5 hover:opacity-90 transition"
           >
             {/* MEH-2169: the count is the sheet's only feedback that a toggle did
                 anything — filters apply LIVE, so nothing else on this surface

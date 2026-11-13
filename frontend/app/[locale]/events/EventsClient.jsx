@@ -487,7 +487,7 @@ function EmptyState({ tab, t }) {
         {isExp && (
           <Link
             href="/producer/dashboard/experiences/new"
-            className="w-full max-w-[260px] inline-flex items-center justify-center gap-2 bg-primary text-white text-sm font-semibold px-5 py-3 rounded-sm"
+            className="w-full max-w-[260px] inline-flex items-center justify-center gap-2 bg-primary text-white text-sm font-semibold px-5 py-3 rounded-full"
           >
             <Plus size={18} weight="bold" />
             {t("empty_experiences_cta")}
