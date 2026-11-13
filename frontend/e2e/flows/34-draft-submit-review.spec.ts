@@ -116,6 +116,8 @@ const COMPLETE = {
   categories: [{ id: 2, name: "לחמים ואפייה" }],
   locations: [{ id: 1, kind: "branch", is_primary: true, lat: 32.08, lng: 34.78 }],
   phone_verified: true,
+  // MEH-3032: the owner's photo is a «מומלץ» step; set so hours stays the one open row.
+  owner_photo_url: "https://res.cloudinary.com/demo/image/upload/owner.jpg",
 };
 
 /** An organizer (ADR-036) with its four requirements satisfied. */
@@ -246,15 +248,15 @@ test.describe("MEH-2100 — draft → submit for review", () => {
     await expect(draftBanner(page)).toHaveCount(0);
     await expect(page.getByTestId("draft-missing-list")).toHaveCount(0);
 
-    // Exactly six rows reading «עדיין חסר», not "at least one". These rows are
+    // Exactly seven rows reading «עדיין חסר» (MEH-3032 added the owner photo), not "at least one". These rows are
     // the completeness card's (ProfileCompletenessCard buildSteps), which never
     // reads lib/submission-gate.js — so this count pins what the owner is
     // SHOWN as missing, and a step dropping out of the card reds it. It cannot
     // see a gate rule dropping out; "one gate rule missing at a time" below
     // does, from the actions' readiness.
     // Every required row is among them, each still carrying its «חובה» chip.
-    await expect(card(page).getByRole("listitem")).toHaveCount(6);
-    await expect(missingRows(page)).toHaveCount(6);
+    await expect(card(page).getByRole("listitem")).toHaveCount(7);
+    await expect(missingRows(page)).toHaveCount(7);
     for (const key of REQUIRED_ROWS) {
       await expect(cardRow(page, key)).toContainText("עדיין חסר");
       await expect(page.getByTestId(`completeness-chip-${key}`)).toHaveText("חובה");
