@@ -166,6 +166,9 @@ An agent reads a big file in slices and misses what is outside the slice.
   never raise it.
 - Don't split a big file you aren't otherwise changing — no refactor-only PRs
   before launch.
+
+---
+
 ## §17 — New files are type-checked (13/11/2026)
 
 Types are the fastest feedback an agent gets. No TypeScript conversion — only

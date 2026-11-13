@@ -580,6 +580,7 @@ frontend/lib/preview-mode.js
 frontend/lib/producer-completeness.js
 frontend/lib/producer-description-placeholders.js
 frontend/lib/producer-filters.js
+frontend/lib/producer-path.js
 frontend/lib/producer-route.js
 frontend/lib/producer-status.js
 frontend/lib/producerPoints.js
