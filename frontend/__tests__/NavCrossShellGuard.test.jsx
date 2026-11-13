@@ -443,8 +443,12 @@ describe("MEH-1703 chunk 4 — items declared on both platforms render on both",
 
       expect(desktopHrefs.length, "desktop harvested nothing").toBeGreaterThan(0);
       expect(mobileHrefs.length, "mobile harvested nothing").toBeGreaterThan(0);
-      expect(desktopHrefs, `${item.id} missing from desktop`).toContain(item.href);
-      expect(mobileHrefs, `${item.id} missing from mobile`).toContain(item.href);
+      // MEH-3026 (F2): «כניסה» carries ?redirect=<the page she is on>, so the
+      // question "does the item reach this shell" is asked of the PATH. The
+      // query is pinned separately (Header.test / AccountSheet.test).
+      const paths = (hrefs) => hrefs.map((href) => href.split("?")[0]);
+      expect(paths(desktopHrefs), `${item.id} missing from desktop`).toContain(item.href);
+      expect(paths(mobileHrefs), `${item.id} missing from mobile`).toContain(item.href);
     });
   }
 
