@@ -95,16 +95,16 @@ export default function EventDetailClient() {
       // MEH-1957: same fix as the list skeleton — aria-label needs a role to be
       // permitted; without it axe reports aria-prohibited-attr (serious).
       <div role="status" aria-busy="true" aria-label={t("loading")}>
-        <SkeletonBlock as="div"  className="h-[360px]" />
+        <SkeletonBlock as="div" className="h-[360px]" />
         <div className="max-w-3xl mx-auto px-4 py-12">
-          <SkeletonBlock  className="block w-24 h-6 rounded-full mb-3" />
-          <SkeletonBlock  className="block w-3/4 h-10 rounded mb-4" />
+          <SkeletonBlock className="block w-24 h-6 rounded-full mb-3" />
+          <SkeletonBlock className="block w-3/4 h-10 rounded mb-4" />
           <div className="flex flex-wrap gap-4 mb-6">
-            <SkeletonBlock  className="w-40 h-4 rounded" />
-            <SkeletonBlock  className="w-28 h-4 rounded" />
-            <SkeletonBlock  className="w-20 h-4 rounded" />
+            <SkeletonBlock className="w-40 h-4 rounded" />
+            <SkeletonBlock className="w-28 h-4 rounded" />
+            <SkeletonBlock className="w-20 h-4 rounded" />
           </div>
-          <SkeletonBlock  className="block w-full h-32 rounded-lg" />
+          <SkeletonBlock className="block w-full h-32 rounded-lg" />
         </div>
       </div>
     );

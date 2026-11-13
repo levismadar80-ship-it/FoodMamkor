@@ -229,7 +229,7 @@ export default function GroupBuysClient() {
         {loading ? (
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {[1, 2, 3].map((i) => (
-              <SkeletonBlock as="div" key={i}  className="h-64 rounded-lg" />
+              <SkeletonBlock as="div" key={i} className="h-64 rounded-lg" />
             ))}
           </div>
         ) : error ? (

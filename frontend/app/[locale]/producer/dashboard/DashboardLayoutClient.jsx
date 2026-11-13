@@ -107,16 +107,16 @@ function DashboardChromeSkeleton({ label }) {
         <div className="max-w-5xl mx-auto px-2 sm:px-4 flex gap-1">
           {TABS.map((tab) => (
             <div key={tab.key} className="flex-1 sm:flex-none flex justify-center px-1 sm:px-4 py-3">
-              <SkeletonBlock as="div"  className="h-5 w-12 sm:w-20 rounded-sm" />
+              <SkeletonBlock as="div" className="h-5 w-12 sm:w-20 rounded-sm" />
             </div>
           ))}
         </div>
       </div>
       <div className="max-w-5xl mx-auto px-4 py-12 space-y-4">
-        <SkeletonBlock as="div"  className="h-8 w-48 rounded-md" />
+        <SkeletonBlock as="div" className="h-8 w-48 rounded-md" />
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {[0, 1, 2, 3, 4].map((i) => (
-            <SkeletonBlock as="div" key={i}  className="h-32 rounded-lg" />
+            <SkeletonBlock as="div" key={i} className="h-32 rounded-lg" />
           ))}
         </div>
       </div>

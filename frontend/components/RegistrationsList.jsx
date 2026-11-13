@@ -61,7 +61,7 @@ export default function RegistrationsList({ kind, itemId, count = 0 }) {
             {t("load_error")}
           </p>
         ) : rows === null ? (
-          <SkeletonBlock as="div"  className="h-5 w-40 rounded" aria-busy="true" />
+          <SkeletonBlock as="div" className="h-5 w-40 rounded" aria-busy="true" />
         ) : rows.length === 0 ? (
           <p className="text-fg-muted" data-testid="registrations-empty">
             {t("empty")}

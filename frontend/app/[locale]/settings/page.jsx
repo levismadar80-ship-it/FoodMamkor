@@ -55,12 +55,12 @@ function SettingsSkeleton({ label }) {
     >
       <span className="sr-only">{label}</span>
       {/* h1: text-3xl line ≈ h-9, mb-6 — same slot as the real heading */}
-      <SkeletonBlock as="div"  className="h-9 w-48 rounded-md mb-6" />
+      <SkeletonBlock as="div" className="h-9 w-48 rounded-md mb-6" />
       {/* tab bar: p-1 pill + py-2 buttons ≈ 46px, mb-8 */}
-      <SkeletonBlock as="div"  className="h-[46px] w-full max-w-xs rounded-full mb-8" />
+      <SkeletonBlock as="div" className="h-[46px] w-full max-w-xs rounded-full mb-8" />
       <div className="space-y-4">
-        <SkeletonBlock as="div"  className="h-28 rounded-lg" />
-        <SkeletonBlock as="div"  className="h-28 rounded-lg" />
+        <SkeletonBlock as="div" className="h-28 rounded-lg" />
+        <SkeletonBlock as="div" className="h-28 rounded-lg" />
       </div>
     </div>
   );

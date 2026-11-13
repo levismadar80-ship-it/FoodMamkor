@@ -58,7 +58,7 @@ export default function CancelRegistrationClient({ token }) {
   return (
     // The layout already renders <main id="main-content"> (layout.js) — one landmark.
     <section className="max-w-md mx-auto px-4 py-12" data-testid="registration-cancel">
-      {state === "loading" && <SkeletonBlock as="div"  className="h-6 w-48 rounded" aria-busy="true" />}
+      {state === "loading" && <SkeletonBlock as="div" className="h-6 w-48 rounded" aria-busy="true" />}
       {(state === "missing" || state === "error") && (
         <p role="alert" className="text-text" data-testid="registration-cancel-missing">
           {state === "missing" ? t("not_found") : t("generic")}

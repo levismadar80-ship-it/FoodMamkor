@@ -69,12 +69,12 @@ function FridayStripSkeleton() {
     >
       <div className="max-w-6xl mx-auto">
         <div className="flex items-center gap-2 mb-3">
-          <SkeletonBlock as="div"  className="h-6 w-48 rounded" />
+          <SkeletonBlock as="div" className="h-6 w-48 rounded" />
         </div>
         <div className="flex gap-3 overflow-hidden pb-2">
           {Array.from({ length: SKELETON_CARDS }, (_, i) => (
             <div key={i} className="flex-shrink-0 w-36 rounded-md overflow-hidden border border-border bg-surface">
-              <SkeletonBlock as="div" tone="brand"  className="h-24" />
+              <SkeletonBlock as="div" tone="brand" className="h-24" />
               <div className="px-2 py-1.5 space-y-1">
                 <div className="h-4 w-24 rounded bg-border/60" />
                 <div className="h-3 w-16 rounded bg-border/40" />

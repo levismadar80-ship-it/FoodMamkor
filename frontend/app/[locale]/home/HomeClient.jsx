@@ -177,7 +177,7 @@ export default function HomeClient({
         </p>
         {!statsLoaded && (
           <p className={TRUST_COUNT_LINE} data-testid="trust-count-skeleton">
-            <SkeletonBlock  className="inline-block w-40 h-5 align-middle rounded-lg" />
+            <SkeletonBlock className="inline-block w-40 h-5 align-middle rounded-lg" />
           </p>
         )}
         {statsLoaded && showTrustCount && (

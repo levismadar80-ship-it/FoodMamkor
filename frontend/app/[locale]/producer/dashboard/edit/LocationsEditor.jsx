@@ -339,7 +339,7 @@ export default function LocationsEditor() {
   }
 
   if (locations === null) {
-    return <SkeletonBlock as="div"  className="h-16 rounded-lg" />;
+    return <SkeletonBlock as="div" className="h-16 rounded-lg" />;
   }
 
   return (
