@@ -15,6 +15,7 @@ from app.routers import (
     category_requests,
     chat,
     cities,
+    producer_name_check,
     events,
     experiences,
     favorites,
@@ -55,6 +56,7 @@ def register_routers(app: FastAPI) -> None:
     """
     app.include_router(auth.router)
     app.include_router(cities.router)
+    app.include_router(producer_name_check.router)  # MEH-3086
     app.include_router(producer_me.router)
     # MEH-2322: owner-claim link (admin claim-link, public preview, claim).
     app.include_router(producer_claim.router)
