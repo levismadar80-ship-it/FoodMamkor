@@ -353,6 +353,9 @@
             }
           }
         },
+        "card_preview": {
+          "summary": "How your card will look on the site"
+        },
         "story_card": {
           "title": "Your story becomes your business page",
           "body": "What you write here becomes your business page on Mehamakor — the place where customers meet you before they meet what you sell. Not a product description. A story."
