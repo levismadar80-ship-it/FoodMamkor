@@ -13,16 +13,24 @@
 #
 # DO NOT hand-edit. Regenerate:  python scripts/mypy_baseline.py --update-baseline
 #
-# Frozen 2026-09-05 from mypy 2.3.1 over `mypy app/auth.py --strict` (that file AND its import tree — mypy follows
+# Frozen 2026-11-13 from mypy 2.4.1 over `mypy app/auth.py app/services/whatsapp.py app/services/whatsapp_templates.py app/services/auth_notifications.py app/services/auto_reply_watchdog.py --strict` (that file AND its import tree — mypy follows
 # imports, so any module auth.py reaches transitively also appears here):
-# 21 errors, 4 files, 9 keys. Every number on this
+# 113 errors, 10 files, 17 keys. Every number on this
 # line is computed from the rows below, so it cannot drift from them.
 app/auth.py	assignment	1
-app/auth.py	import-untyped	1
-app/auth.py	no-any-return	2
 app/auth.py	type-arg	5
-app/database.py	no-untyped-def	2
+app/database.py	no-untyped-def	1
 app/database.py	type-arg	2
 app/models/models.py	no-untyped-def	1
 app/models/models.py	var-annotated	6
+app/sentry.py	arg-type	69
+app/sentry.py	no-untyped-def	1
+app/sentry.py	type-arg	7
+app/services/auth_notifications.py	no-any-return	10
+app/services/auth_notifications.py	no-untyped-def	2
 app/services/category_slug.py	no-untyped-def	1
+app/services/email.py	type-arg	1
+app/services/resend_client.py	misc	1
+app/services/resend_client.py	no-untyped-def	1
+app/services/vacation_state.py	call-overload	2
+app/services/whatsapp.py	no-untyped-def	2

@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Module:   map-city-params
  * Purpose:  /map's city → GET /producers param, in one place.

@@ -96,13 +96,28 @@ from pathlib import Path
 BACKEND_DIR = Path(__file__).resolve().parent.parent
 BASELINE_PATH = BACKEND_DIR / "mypy-baseline.txt"
 
+
 # The exact argv the workflow passes. Kept here as ONE definition so the baseline
 # can never be frozen against a different scope than the gate runs.
-# NOTE (MEH-1868 finding, not fixed here): the explicit path OVERRIDES the
-# `files = [...]` list in [tool.mypy], so the five files listed there are not all
-# checked — only auth.py and whatever it imports. Widening that scope changes the
-# baseline and belongs in its own ticket.
-MYPY_ARGV = ["app/auth.py", "--strict"]
+# History: until 13/11/2026 this passed `app/auth.py` explicitly, which OVERRODE
+# the `files = [...]` list (MEH-1868 finding). It now passes that list itself.
+def _typed_files() -> list[str]:
+    """The files mypy checks = [tool.mypy].files in pyproject.toml.
+
+    One list, one owner: new modules are added there (scripts/checks/
+    typed-new-modules.sh fails a new backend/app module that is not), and
+    this ratchet then holds them to --strict. Added 13/11/2026.
+    """
+    import tomllib
+    from pathlib import Path
+
+    cfg = tomllib.loads(
+        (Path(__file__).resolve().parent.parent / "pyproject.toml").read_text()
+    )
+    return list(cfg["tool"]["mypy"]["files"])
+
+
+MYPY_ARGV = [*_typed_files(), "--strict"]
 
 # The invariant half of the header: prose that is true regardless of what the
 # numbers are. Anything that DESCRIBES a particular measurement belongs in
