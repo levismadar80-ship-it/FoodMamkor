@@ -507,6 +507,10 @@ export default function ReviewsSection({
   const showSummary = total > 0 && avgRating > 0;
   const showDistribution = showSummary && total >= DISTRIBUTION_MIN && ratingCounts !== null;
   const anonymousFallback = t("anonymous_fallback");
+  // MEH-3053: at zero reviews (no heading, no summary, no list) the invite row
+  // is the first thing in the section. Its hairline + mt-8 then framed an
+  // empty 80px band under the products list; the section's mt-12 is the gap.
+  const inviteFirst = !loading && total === 0 && reviews.length === 0;
 
   return (
     <section ref={sectionRef} className="mt-12">
@@ -669,18 +673,19 @@ export default function ReviewsSection({
       {authLoading ? null : !user ? (
         <ReviewInviteCard
           mode="login"
+          first={inviteFirst}
           loginHref={loginHref}
           producerId={producerId}
           producerName={producerName}
         />
       ) : user.producer_id === producerId ? null : !hasClickedWa && !inviteToken ? (
-        <ReviewInviteCard mode="contact" producerId={producerId} producerName={producerName} />
+        <ReviewInviteCard mode="contact" first={inviteFirst} producerId={producerId} producerName={producerName} />
       ) : showForm ? (
           // 13/11/2026 (Sapir, option ד): no white box — the form opens IN
           // the Google row, the row's own stars are the rating picker.
           <form
             onSubmit={handleSubmit}
-            className="mt-8 border-t border-border pt-5 space-y-4"
+            className={inviteFirst ? "space-y-4" : "mt-8 border-t border-border pt-5 space-y-4"}
             data-testid="reviews-form"
           >
             <h3 className="sr-only">{t("form_heading")}</h3>
@@ -735,6 +740,7 @@ export default function ReviewsSection({
         // with that rating (replaces the «כתבו ביקורת» pill above the list).
         <ReviewInviteCard
           mode="write"
+          first={inviteFirst}
           value={stars}
           onPick={(n) => {
             setStars(n);
