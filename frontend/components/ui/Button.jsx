@@ -52,6 +52,22 @@ const SIZE_CLASSES = {
   lg: "min-h-[48px] px-6 text-base gap-2",
 };
 
+/**
+ * Props typed so a `// @ts-check` caller may leave the icons out (they are
+ * optional at runtime; without this JSDoc the inferred type requires them).
+ * @param {{
+ *   variant?: string,
+ *   size?: string,
+ *   type?: "button" | "submit" | "reset",
+ *   loading?: boolean,
+ *   disabled?: boolean,
+ *   leadingIcon?: any,
+ *   trailingIcon?: any,
+ *   className?: string,
+ *   children?: any,
+ *   [rest: string]: any,
+ * }} props
+ */
 export default function Button({
   variant = "primary",
   size = "md",
