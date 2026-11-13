@@ -671,6 +671,12 @@ reads as a rendering bug (the ghost-strip class). Rules:
 - **Bottom:** `StickyContactBar` and `BottomNav` must not co-stack. On
   `/producer/[id]` mobile the contact bar is the sole bottom layer and
   `BottomNav` is gated off by route (`isProducerDetail`, `lib/producer-route.js`).
+  Since MEH-3027 the contact bar takes the pill's shape in its place: a
+  floating `rounded-full` CTA with the BottomNav shell's gutters (14px sides,
+  safe-area + 16px bottom), no full-width strip and no rating beside it — a
+  small-radius rectangle flush to the bottom was clipped by iPhone's rounded
+  screen corners, because `env(safe-area-inset-bottom)` is 0 without
+  `viewport-fit=cover`.
   `BottomNav` is also off on `/admin/*` and `/producer/dashboard/*` (MEH-2431):
   both have their own tab nav, and the pill covered list rows at 375. On mobile
   the way back to the account sheet there is the header logo, then the nav.
