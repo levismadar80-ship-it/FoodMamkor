@@ -371,6 +371,10 @@ describe("MEH-2461 organizer page", () => {
       const share = screen.getByTestId("share-overlay");
       expect(share.getAttribute("aria-label")).toBe("share.modal_title_organizer");
       expect(screen.getByTestId("organizer-cover-band").parentElement.contains(share)).toBe(true);
+      // the corner: inline-END (top-left in RTL), as on the recipe page — jsdom
+      // has no layout, so the classes are the cheapest thing that can red.
+      expect(share.parentElement.className).toMatch(/(^| )end-3( |$)/);
+      expect(share.parentElement.className).toMatch(/(^| )top-3( |$)/);
     });
 
     it("with a cover photo → the same circle, inside the cover block", async () => {
@@ -390,6 +394,20 @@ describe("MEH-2461 organizer page", () => {
         fireEvent.click(screen.getByTestId("share-overlay"));
         await waitFor(() => expect(share).toHaveBeenCalledTimes(1));
         expect(share.mock.calls[0][0].url).toBe("https://site.test/organizers/gelem");
+      } finally {
+        delete navigator.share;
+      }
+    });
+
+    it("on /en the shared address carries the /en prefix", async () => {
+      const share = vi.fn().mockResolvedValue(undefined);
+      Object.defineProperty(navigator, "share", { value: share, configurable: true });
+      try {
+        respond(200, ORG);
+        render(await OrganizerPage({ params: Promise.resolve({ slug: "gelem", locale: "en" }) }));
+        fireEvent.click(screen.getByTestId("share-overlay"));
+        await waitFor(() => expect(share).toHaveBeenCalledTimes(1));
+        expect(share.mock.calls[0][0].url).toBe("https://site.test/en/organizers/gelem");
       } finally {
         delete navigator.share;
       }
