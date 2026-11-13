@@ -105,8 +105,8 @@ export function HomeCategoryGrid({ categoryCards }) {
           const caption = (
             <>
               <h3 className={[
-                // MEH-991 (HOME-15): v8 hover lock — border→green + 1px gold underline
-                // + photo zooms scale-1.05 (photo path only, motion-safe); glyph never scales.
+                // MEH-991 (HOME-15) hover: 1px gold underline + photo zooms scale-1.05
+                // (photo path only, motion-safe); glyph never scales. MEH-3061: no border.
                 "font-headline-md font-bold text-text leading-tight group-hover:underline decoration-accent decoration-1 underline-offset-4",
                 "text-base lg:text-sm",
               ].join(" ")}>
@@ -129,7 +129,7 @@ export function HomeCategoryGrid({ categoryCards }) {
                   src={card.image}
                   alt={card.name}
                   fill
-                  sizes="(min-width: 1024px) 128px, (min-width: 768px) 20vw, 144px"
+                  sizes="(min-width: 1024px) 112px, (min-width: 768px) 20vw, 144px"
                   className="object-cover transition-transform duration-base ease-quart motion-safe:group-hover:scale-105"
                   priority={idx < 2}
                 />
