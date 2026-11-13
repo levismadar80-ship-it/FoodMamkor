@@ -49,9 +49,9 @@ export default function FilterChipsBar({
   originTag = null,
   // MEH-3062: the phone shell passes true — the category chips join the
   // «סינון» / service rail as ONE scrolling row instead of a row of their own
-  // (Google Maps / Airbnb keep one chip row over the map). The rail still
-  // LEADS with «סינון» + the service chips, so its start matches home and
-  // /producers (MEH-2598). The desktop panel (lg+) keeps the two rows.
+  // (Google Maps / Airbnb keep one chip row over the map). Order: «סינון»,
+  // categories, service chips (Sapir 13/11, option ב). Desktop (lg+) keeps
+  // the two rows.
   singleRow = false,
 }) {
   const t = useTranslations();
@@ -161,7 +161,7 @@ export default function FilterChipsBar({
         first={singleRow}
         // MEH-3062: shrink-0 — inside the rail the category row takes its full
         // width and the RAIL scrolls; a second scroller inside it would not.
-        trailing={singleRow ? categoryRow("shrink-0") : null}
+        categories={singleRow ? categoryRow("shrink-0") : null}
       >
         {/* Anchor wrapper — FilterSheet's lg+ panel positions off this
             wrapper (sticky is positioned, so it anchors like `relative`).

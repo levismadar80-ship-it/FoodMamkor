@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect, useRef } from "react";
+
 import PromotedServiceChips from "@/components/PromotedServiceChips";
 import { keepFocusedChipClear } from "@/lib/keepFocusedChipClear";
 
@@ -40,9 +42,22 @@ import { keepFocusedChipClear } from "@/lib/keepFocusedChipClear";
 // the caller's already-gated list (FilterChipsBar's visibleToggleChips), so a
 // caller that forgets it renders no chip rather than an ungated on_site.
 
-// MEH-3062: `trailing` = the category chips on the phone shell (one rail, not
-// two rows); `first` drops the top margin when this rail is the only row.
-export default function ServiceChipRow({ chipState, onToggleChip, chips = [], children, trailing = null, first = false }) {
+// MEH-3062: `categories` = the category chips on the phone shell (one rail,
+// not two rows) — they ride right after «סינון», before the service chips
+// (Sapir 13/11 option ב: on the map people look for a kind of food first);
+// `first` drops the top margin when this rail is the only row.
+export default function ServiceChipRow({ chipState, onToggleChip, chips = [], children, categories = null, first = false }) {
+  const railRef = useRef(null);
+  // MEH-3062: with the categories in front, a lit service chip sits past the
+  // screen edge — and the active-filter tags skip service chips (MEH-2425),
+  // so nothing else would show that משלוח is on. Bring the first lit one into
+  // view whenever the set of lit service chips changes (e.g. a shared link).
+  const litKeys = chips.filter((c) => chipState?.[c.key]).map((c) => c.key).join(",");
+  useEffect(() => {
+    if (!categories || !litKeys) return;
+    const el = railRef.current?.querySelector('[data-testid^="map-service-chip-"][aria-pressed="true"]');
+    el?.scrollIntoView?.({ block: "nearest", inline: "nearest" });
+  }, [litKeys, categories]);
   return (
     // MEH-2598 (Sapir 29/10, «אחיד»): the row now matches home and /producers
     // (MEH-2537 / MEH-2569) — «סינון» LEADS (children, sticky below lg), then
@@ -56,6 +71,7 @@ export default function ServiceChipRow({ chipState, onToggleChip, chips = [], ch
     // 25/75 split narrows the panel below the row's width.
     <div
       dir="rtl"
+      ref={railRef}
       data-testid="map-service-row"
       className={`-mx-3 ${first ? "" : "mt-1 "}flex items-center gap-2 min-w-0 overflow-x-auto overscroll-x-none px-3 py-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden lg:mx-0 lg:px-0 lg:overflow-visible lg:flex-wrap`}
       onFocus={keepFocusedChipClear}
@@ -65,6 +81,14 @@ export default function ServiceChipRow({ chipState, onToggleChip, chips = [], ch
           wrapper, so moving that wrapper into this component would have
           relocated the panel too. */}
       {children}
+      {categories && (
+        <>
+          {categories}
+          {/* MEH-3062: a hairline between the categories and the service
+              chips — two kinds of filter in one rail. Decorative. */}
+          <span aria-hidden="true" className="shrink-0 self-stretch my-1.5 w-px bg-border" />
+        </>
+      )}
       {/* `chips` is the GATED list (visibleMapToggleChips), so on_site only
           appears once the catalog carries it — same gate as the sheet. */}
       <PromotedServiceChips
@@ -73,14 +97,6 @@ export default function ServiceChipRow({ chipState, onToggleChip, chips = [], ch
         onToggle={onToggleChip}
         testIdPrefix="map-service-chip"
       />
-      {trailing && (
-        <>
-          {/* MEH-3062: a hairline between the service chips and the
-              categories — two kinds of filter in one rail. Decorative. */}
-          <span aria-hidden="true" className="shrink-0 self-stretch my-1.5 w-px bg-border" />
-          {trailing}
-        </>
-      )}
     </div>
   );
 }

@@ -1,8 +1,8 @@
 /**
  * MEH-3062: on the phone shell the category chips join the «סינון» / service
  * rail — one chip row over the map instead of two. The desktop panel keeps
- * them on a row of their own. The rail still LEADS with «סינון» and the
- * service chips, so its start matches home and /producers (MEH-2598).
+ * them on a row of their own. Order: «סינון», categories, service chips
+ * (Sapir 13/11, option ב — on the map people look for a kind of food first).
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, within, fireEvent } from "@testing-library/react";
@@ -46,7 +46,7 @@ describe("FilterChipsBar — one chip row on the phone (MEH-3062)", () => {
     expect(rail.className).toContain("mt-1");
   });
 
-  it("phone (singleRow): ONE rail — «סינון» first, service chips, then the categories", () => {
+  it("phone (singleRow): ONE rail — «סינון» first, then the categories, then the service chips", () => {
     render(<FilterChipsBar {...baseProps} singleRow />);
     const rail = screen.getByTestId("map-service-row");
     expect(rail).toContainElement(meatChip());
@@ -54,8 +54,8 @@ describe("FilterChipsBar — one chip row on the phone (MEH-3062)", () => {
     // Order inside the rail, in DOM (= reading) order.
     const order = [
       screen.getByTestId("map-filters-button"),
-      within(rail).getByTestId("map-service-chip-has_delivery"),
       meatChip(),
+      within(rail).getByTestId("map-service-chip-has_delivery"),
     ];
     for (let i = 1; i < order.length; i += 1) {
       // DOCUMENT_POSITION_FOLLOWING = 4: order[i] comes after order[i - 1].
@@ -70,5 +70,45 @@ describe("FilterChipsBar — one chip row on the phone (MEH-3062)", () => {
     render(<FilterChipsBar {...baseProps} singleRow onCategoryChipClick={onCategoryChipClick} />);
     fireEvent.click(meatChip());
     expect(onCategoryChipClick).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("FilterChipsBar — a lit service chip is brought into view on the phone (MEH-3062)", () => {
+  beforeEach(() => {
+    Element.prototype.scrollTo = vi.fn();
+    Element.prototype.scrollIntoView = vi.fn();
+  });
+  const props = (chipState, singleRow) => ({
+    visibleCategoryChips: [{ key: "all", label: "כל" }],
+    chipState,
+    visibleToggleChips: [{ key: "has_delivery" }, { key: "pickup_points" }],
+    onCategoryChipClick: () => {},
+    onToggleChipClick: () => {},
+    onSheetToggleChip: () => {},
+    clearSheetFilters: () => {},
+    resultCount: 0,
+    activeFilterTags: [],
+    resetAllFilters: () => {},
+    cityFilter: "",
+    singleRow,
+  });
+
+  it("משלוח on, phone: its chip is scrolled into view", () => {
+    render(<FilterChipsBar {...props({ categoryKeys: [], has_delivery: true }, true)} />);
+    const chip = screen.getByTestId("map-service-chip-has_delivery");
+    const calls = Element.prototype.scrollIntoView.mock.contexts;
+    expect(calls).toContain(chip);
+  });
+
+  it("nothing lit, phone: no service chip is scrolled into view", () => {
+    render(<FilterChipsBar {...props({ categoryKeys: [] }, true)} />);
+    const chip = screen.getByTestId("map-service-chip-has_delivery");
+    expect(Element.prototype.scrollIntoView.mock.contexts).not.toContain(chip);
+  });
+
+  it("משלוח on, desktop: unchanged — no scroll (the chips are already in view)", () => {
+    render(<FilterChipsBar {...props({ categoryKeys: [], has_delivery: true }, false)} />);
+    const chip = screen.getByTestId("map-service-chip-has_delivery");
+    expect(Element.prototype.scrollIntoView.mock.contexts).not.toContain(chip);
   });
 });
