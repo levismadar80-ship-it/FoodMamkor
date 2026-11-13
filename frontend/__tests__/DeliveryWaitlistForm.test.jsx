@@ -49,6 +49,7 @@ vi.mock("@phosphor-icons/react", () => {
     XCircle: Stub,
     ChatCircle: Stub,
     BellRinging: Stub,
+    X: Stub,
   };
 });
 
@@ -342,5 +343,21 @@ describe("DeliveryWaitlistForm host checkbox (MEH-2674)", () => {
     fireEvent.click(second.getByTestId("delivery-waitlist-submit"));
     await waitFor(() => expect(second.getByTestId("delivery-waitlist-done")).toBeTruthy());
     expect(second.queryByTestId("delivery-waitlist-host-status")).toBeNull();
+  });
+});
+
+// MEH-3041 — the open form could not be closed (Sapir 13/11).
+describe("MEH-3041 — × closes the open form", () => {
+  it("open → × → back to the chip, focused, nothing sent", async () => {
+    authState.value = null;
+    render(<DeliveryWaitlistForm producer={PRODUCER} city="נתניה" />);
+    fireEvent.click(screen.getByTestId("delivery-waitlist-cta"));
+    expect(screen.getByTestId("delivery-waitlist").getAttribute("data-phase")).toBe("open");
+    const close = screen.getByTestId("delivery-waitlist-close");
+    expect(close.getAttribute("aria-label")).toBeTruthy();
+    fireEvent.click(close);
+    expect(screen.getByTestId("delivery-waitlist").getAttribute("data-phase")).toBe("idle");
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByTestId("delivery-waitlist-cta")));
+    expect(post).not.toHaveBeenCalled();
   });
 });
