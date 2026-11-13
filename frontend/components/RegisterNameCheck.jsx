@@ -27,24 +27,28 @@ const MIN_NAME_LEN = 3;
 
 /**
  * The live businesses that carry `name`. Empty while typing, on a short name,
- * and on any failure.
+ * and on any failure. The answer is kept WITH the name it was asked for, so a
+ * hint for an older name is never shown beside a newer one.
  * @param {string} name
  * @returns {NameMatch[]}
  */
 function useNameMatches(name) {
-  const [matches, setMatches] = useState(/** @type {NameMatch[]} */ ([]));
+  const [answer, setAnswer] = useState(
+    /** @type {{ key: string, matches: NameMatch[] }} */ ({ key: "", matches: [] })
+  );
   const clean = (name || "").trim();
 
   useEffect(() => {
-    setMatches([]);
     if (clean.length < MIN_NAME_LEN) return undefined;
     let cancelled = false;
     const timer = setTimeout(() => {
-      api
-        .get("/producer-name-check", { params: { name: clean } })
+      // Promise.resolve().then: a throw or a non-promise from api.get lands
+      // in the catch below instead of escaping from the timer.
+      Promise.resolve()
+        .then(() => api.get("/producer-name-check", { params: { name: clean } }))
         .then((res) => {
-          const parsed = NameCheckResponseSchema.safeParse(res.data);
-          if (!cancelled && parsed.success) setMatches(parsed.data.matches);
+          const parsed = NameCheckResponseSchema.safeParse(res?.data);
+          if (!cancelled && parsed.success) setAnswer({ key: clean, matches: parsed.data.matches });
         })
         .catch(() => {});
     }, DEBOUNCE_MS);
@@ -54,7 +58,7 @@ function useNameMatches(name) {
     };
   }, [clean]);
 
-  return matches;
+  return answer.key === clean ? answer.matches : [];
 }
 
 /** @param {{ name: string }} props */

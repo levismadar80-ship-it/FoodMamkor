@@ -48,6 +48,36 @@ def test_a_page_that_is_not_live_is_never_revealed(client, db):
     assert _names(client.get(URL, params={"name": "דבש הגליל"})) == []
 
 
+def test_an_organizer_and_a_test_business_are_never_revealed(client, db):
+    """`is_business()` is three clauses; status is only one of them."""
+    organizer = make_producer(db, name="שוק האיכרים")
+    organizer.kind = "organizer"
+    seeded = make_producer(db, name="שוק האיכרים")
+    seeded.is_test = True
+    db.commit()
+    assert _names(client.get(URL, params={"name": "שוק האיכרים"})) == []
+    # Control: the same name on a plain live business IS found.
+    make_producer(db, name="שוק האיכרים")
+    assert _names(client.get(URL, params={"name": "שוק האיכרים"})) == ["שוק האיכרים"]
+
+
+def test_a_stored_name_with_pasted_invisible_characters_still_matches(client, db):
+    stored = "לחם\u00a0הבית\u200f"  # NBSP + right-to-left mark, as pasted
+    make_producer(db, name=stored)
+    assert _names(client.get(URL, params={"name": "לחם הבית"})) == [stored]
+    assert _names(client.get(URL, params={"name": "\u200eלחם\u2009הבית"})) == [stored]
+
+
+def test_a_nul_byte_is_an_empty_answer_not_a_500(client):
+    assert _names(client.get(URL, params={"name": "abc\x00def"})) == []
+
+
+def test_the_route_is_rate_limited(client):
+    codes = [client.get(URL, params={"name": "שם כלשהו"}).status_code for _ in range(31)]
+    assert codes[:30] == [200] * 30
+    assert codes[30] == 429
+
+
 def test_only_the_exact_name_matches_not_a_prefix_or_a_part(client, db):
     make_producer(db, name="המאפייה של דנה")
     for typed in ("המאפייה", "המאפייה של", "של דנה", "המאפייה של דנה ובניה"):

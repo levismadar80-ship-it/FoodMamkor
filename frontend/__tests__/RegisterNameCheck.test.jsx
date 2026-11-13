@@ -98,4 +98,20 @@ describe("RegisterNameCheck (MEH-3086)", () => {
     rerender(<RegisterNameCheck name="המאפייה של דנה ב" />);
     expect(screen.queryByTestId("register-name-check")).toBeNull();
   });
+
+  it("api.get returning no promise (a bare mock) does not throw out of the timer", async () => {
+    apiGet.mockReturnValue(undefined);
+    render(<RegisterNameCheck name="המאפייה של דנה" />);
+    await settle();
+    expect(apiGet).toHaveBeenCalledTimes(1);
+    expect(screen.queryByTestId("register-name-check")).toBeNull();
+  });
+
+  it("going back to a name already answered shows nothing until it is asked again", async () => {
+    apiGet.mockResolvedValue({ data: { matches: [match()] } });
+    const { rerender } = render(<RegisterNameCheck name="המאפייה של דנה" />);
+    await settle();
+    rerender(<RegisterNameCheck name="אחר לגמרי" />);
+    expect(screen.queryByTestId("register-name-check")).toBeNull();
+  });
 });

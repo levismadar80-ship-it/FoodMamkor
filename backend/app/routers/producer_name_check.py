@@ -33,6 +33,17 @@ MIN_NAME_LEN = 3
 MAX_MATCHES = 3
 # Quote marks people type differently for the same name: «ג׳חנון» / «ג'חנון».
 _QUOTES = "\"'`״׳“”‘’"
+# Invisible characters a pasted name carries: bidi marks and zero-width.
+_INVISIBLE = "\u200e\u200f\u200b\u200c\u200d\ufeff\u202a\u202b\u202c\u202d\u202e"
+# Spaces Postgres' `\s` does not match but Python's str.split() does.
+_ODD_SPACES = "\u00a0\u0085\u2007\u2009\u202f\u3000"
+# translate(): each _ODD_SPACES char -> a plain space; the rest -> dropped.
+_FROM = _ODD_SPACES + _QUOTES + _INVISIBLE
+_TO = " " * len(_ODD_SPACES)
+_PY_TABLE = {
+    **{ord(ch): " " for ch in _ODD_SPACES},
+    **{ord(ch): None for ch in _QUOTES + _INVISIBLE},
+}
 
 
 class NameMatch(BaseModel):
@@ -47,15 +58,18 @@ class NameCheckOut(BaseModel):
 
 
 def name_key(value: str) -> str:
-    """Lower-case, no quote marks, single spaces. Mirrors `_name_key_sql`."""
-    stripped = value.translate({ord(ch): None for ch in _QUOTES})
-    return " ".join(stripped.split()).lower()
+    """Lower-case, no quote marks or invisible characters, single spaces.
+
+    `_name_key_sql` computes the same key in Postgres; the two are held
+    together by tests/test_meh3086_name_check.py (stored-vs-typed pairs).
+    """
+    return " ".join(value.translate(_PY_TABLE).split()).lower()
 
 
 def _name_key_sql() -> ColumnElement[str]:
     """The same key, computed by Postgres on the stored name."""
-    no_quotes = func.translate(Producer.name, _QUOTES, "")
-    return func.lower(func.btrim(func.regexp_replace(no_quotes, r"\s+", " ", "g")))
+    cleaned = func.translate(Producer.name, _FROM, _TO)
+    return func.lower(func.btrim(func.regexp_replace(cleaned, r"\s+", " ", "g")))
 
 
 @router.get("/producer-name-check", response_model=NameCheckOut)
@@ -72,12 +86,13 @@ def producer_name_check(
     typing letters, which is what GET /producers is rate-shaped for.
     """
     key = name_key(name)
-    if len(key) < MIN_NAME_LEN:
+    # A NUL byte cannot be sent to Postgres at all (the driver raises).
+    if len(key) < MIN_NAME_LEN or "\x00" in key:
         return NameCheckOut(matches=[])
     rows = (
         db.query(Producer.id, Producer.slug, Producer.name, Producer.city)
         .filter(is_business(), _name_key_sql() == key)
-        .order_by(Producer.name)
+        .order_by(Producer.name, Producer.id)
         .limit(MAX_MATCHES)
         .all()
     )
