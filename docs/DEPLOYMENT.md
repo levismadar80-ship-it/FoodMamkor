@@ -891,6 +891,11 @@ on each job.
   network failure), the step fails with the CLI's own error message and
   the job fails. Fix the underlying issue (rotate the token, fix the
   service name variable, wait out the outage) and re-run the workflow.
+  **Exception (MEH-3002):** when Railway still answers "currently
+  building / deploying / cannot be redeployed" after every retry, the job
+  ends with a `::notice::` and stays green. Railway's own GitHub
+  auto-deploy is building that same push, so a failure there was a race
+  with that build, not an outage. Any other CLI error still fails the job.
 - **Branch gating.** Each job has an `if: github.ref == 'refs/heads/<branch>'`
   guard. A push to `main` runs only the production job; a push to
   `staging` runs only the staging job. The other job is skipped — no
