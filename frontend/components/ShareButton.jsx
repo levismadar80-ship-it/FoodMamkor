@@ -1,10 +1,12 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { ShareNetwork } from "@phosphor-icons/react";
+import { ShareNetwork, Check } from "@phosphor-icons/react";
 import { BRAND_NAME } from "@/lib/constants";
 import { labelInName } from "@/lib/label-in-name";
 import Button from "@/components/ui/Button";
+import { shareOrCopyText } from "@/lib/share-link";
+import { showToast } from "@/lib/toast";
 
 /**
  * Variants (MEH-1334):
@@ -33,47 +35,37 @@ export default function ShareButton({
   subject = "business",
 }) {
   const t = useTranslations("share");
+  const tPage = useTranslations("share_page");
   const ariaLabel = t(ARIA_LABEL_KEY[subject] ?? ARIA_LABEL_KEY.business);
   // Variants that SHOW text name the button with that text first (WCAG 2.5.3
   // Label in Name — axe 4.14 `label-content-name-mismatch`); the icon-only
   // overlay keeps the plain subject label.
   const resolvedTitle = title || t("wa_message_business_fallback");
   const metaSep = t("wa_meta_separator");
+  // MEH-2996: the link travels ONLY as `url` — inside `text` too, iOS can
+  // share plain text instead of a link card (MEH-2827 PR 6).
   const shareText = [
     t("wa_message_with_meta", { title: resolvedTitle }),
     description ? `${description.slice(0, 80)}...` : "",
     city || category
       ? `${city || ""}${city && category ? metaSep : ""}${category || ""}`
       : "",
-    `👉 ${url}`,
   ]
     .filter(Boolean)
     .join("\n");
 
-  // MEH-1290: WhatsApp is the product's viral loop, so when the native share
-  // sheet is unavailable (desktop / older browsers) fall back to wa.me with a
-  // concise pre-filled message — business-name line + link — instead of a
-  // silent clipboard copy. navigator.share stays the primary path on mobile.
-  const waText = [t("wa_message_with_meta", { title: resolvedTitle }), `👉 ${url}`]
-    .filter(Boolean)
-    .join("\n");
-  const waHref = `https://wa.me/?text=${encodeURIComponent(waText)}`;
-
+  // MEH-2996: the site's one share sequence (lib/share-link.js) — the
+  // phone's share sheet; no sheet (most desktops) → copy the link and say so.
+  // Replaces the MEH-1290 wa.me fallback: sharing is the generic sheet, never
+  // a WhatsApp-only link (Sapir 08/11, ShareSiteActions.jsx; 12/11 decision).
   const handleShare = async () => {
     if (!url) return;
-    // Native share first (mobile) — its sheet already surfaces WhatsApp among
-    // the OS share targets. Return whether it resolves or is cancelled, so a
-    // cancelled sheet never force-opens WhatsApp.
-    if (typeof navigator !== "undefined" && navigator.share) {
-      try {
-        await navigator.share({ title: title || BRAND_NAME, text: shareText, url });
-      } catch {
-        // user cancelled or share failed — do not fall through
-      }
-      return;
-    }
-    // No native share (desktop / older browsers) → wa.me fallback.
-    window.open(waHref, "_blank", "noopener,noreferrer");
+    const outcome = await shareOrCopyText({
+      data: { title: title || BRAND_NAME, text: shareText, url },
+      copyText: url,
+    });
+    if (outcome === "copied") showToast.success(t("copied_toast"), { icon: <Check size={18} /> });
+    else if (outcome === "failed") showToast.error(tPage("copy_failed_toast"));
   };
 
   if (variant === "overlay") {

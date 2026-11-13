@@ -248,7 +248,9 @@
           "after_body": "Every business gets a personal intro — once you complete your profile and send it for review, our team checks the details, gets in touch if needed, and your business goes live within up to 3 business days.",
           "after_link": "How the acceptance process works",
           "join_link": "What a page looks like, what you get, and FAQ",
-          "cta": "Start"
+          "cta": "Start",
+          "organizer_link": "Organizing a market or event? You have your own sign-up",
+          "group_buy_note": "Organizing a neighbourhood group buy? On the site only businesses open group buys, and you can join a business's group buy from its page."
         },
         "loading": "Loading...",
         "loading_form": "Loading registration form...",
@@ -461,7 +463,7 @@
     "hero": {
       "title": "Real Food, Straight From the Source",
       "subtitle": "Straight from the source. Businesses we've already vetted for you.",
-      "friday_subtitle": "Friday is here What's on the Shabbat table?",
+      "friday_subtitle": "Shabbat is almost here. What's on your table?",
       "main_label": "Home — discover local businesses",
       "search_area_label": "Search businesses",
       "near_me": "Near me",
@@ -1159,7 +1161,6 @@
       "submitting": "Joining...",
       "submit_join": "I want to join!",
       "submit_login": "Sign in to join",
-      "login_required": "You must sign in to join a group buy",
       "committed_confirm": "You joined this group buy",
       "committed_units": " ({count} units)",
       "cancelling": "Cancelling...",
@@ -1308,9 +1309,9 @@
       }
     },
     "friday_delivery": {
-      "today": "today",
-      "title": "Businesses delivering today",
-      "title_alt": "Businesses delivering today"
+      "today": "Friday",
+      "title": "Businesses delivering on Friday",
+      "title_alt": "Businesses delivering on Friday"
     },
     "holiday_banner": {
       "approaching": "{name} is approaching",
@@ -2229,9 +2230,9 @@
         "holiday_hint": "Enable manually to test the banner on the dashboard and homepage before the holiday.",
         "holiday_active": "Holiday window active",
         "friday_mode": "Friday market mode",
-        "friday_tooltip": "Enable Friday mornings. Prioritises businesses selling at markets. Disables automatically after Shabbat.",
+        "friday_tooltip": "Turns on automatically from Thursday 18:00 to Friday 14:00. Prioritises businesses selling at markets.",
         "friday_tooltip_label": "Friday market mode info",
-        "friday_hint": "Enable manually to test Friday market mode (producers strip, hero heading, badge) outside the regular window (Wed 18:00 — Fri 14:00). This override applies in the current browser only.",
+        "friday_hint": "Enable manually to test Friday market mode (producers strip, hero heading, badge) outside the regular window (Thu 18:00 — Fri 14:00). This override applies in the current browser only.",
         "friday_active": "Friday market mode — override",
         "vacation": "Vacation mode",
         "vacation_tooltip": "Enable when you can't reply. Mehamakor's WhatsApp will send an automatic vacation reply instead of the regular after-hours message, until the date you set.",
@@ -3271,12 +3272,12 @@
     "error_invalid_stars": "Pick a rating between 1 and 5 stars",
     "error_body_too_short": "Reviews need at least 10 characters",
     "saved_toast": "Your review was saved",
-    "wa_gate_message": "Tap the WhatsApp button to get in touch — then you can write a review",
-    "login_prompt": "<login>Sign in</login> and reach out on WhatsApp to write a review",
+    "invite_title": "Bought from them? Tell us how it went",
+    "invite_hint": "You can write one after contacting the business through Mehamakor",
     "loading": "Loading reviews...",
     "owner_only_eyebrow": "Only visible to you",
     "owner_empty_title": "First reviews come from happy customers",
-    "owner_empty_description": "Customers who reached out to you on WhatsApp can leave a verified review. Share the link to your profile — it's the fastest way to a first review.",
+    "owner_empty_description": "Customers who contacted you through your page can leave a verified review. Share the link to your profile — it's the fastest way to a first review.",
     "owner_empty_cta": "Share your profile",
     "pagination": {
       "prev_aria": "Previous page",
@@ -3745,6 +3746,10 @@
       "difference": {
         "q": "How is this different from Instagram or delivery apps — and who's behind it?",
         "a": "There, you're one more line in a feed or a results list. Here, every business gets a page of its own with the story, the photos and the people behind it — like an article about you, not like an ad. No commissions, no algorithm deciding who sees you. And behind the site is me, Sapir — I read every email personally and reply. And if you'd like to come off the site, we remove the business with no questions asked."
+      },
+      "organizers": {
+        "q": "Organizing a market, an event or a group buy?",
+        "a": "Market and event organizers have their own sign-up. On the site only businesses open group buys, and you can join a business's group from its page."
       }
     },
     "showcase": {

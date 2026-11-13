@@ -145,6 +145,25 @@ describe("/events city + category URL sync (MEH-1131 / DISC-08)", () => {
     expect(chipRow().querySelector(`[data-key="${EVENT_CAT}"]`).dataset.active).toBe("true");
   });
 
+  // MEH-2984: the query is read in a mount effect (no useSearchParams), so the
+  // first commit holds empty filters. The list must still be fetched ONCE,
+  // already filtered — never an unfiltered request first.
+  it("a deep link fetches the list exactly once, already filtered", async () => {
+    const { default: api } = await import("@/lib/api");
+    api.get.mockClear();
+    params = {}; // the hook is gone — only the real URL may seed state
+    setUrl(`/events?city=${CITY}&category=${EVENT_CAT}`);
+    render(<EventsClient />);
+
+    await waitFor(() => expect(api.get).toHaveBeenCalled());
+    await new Promise((r) => setTimeout(r, 50));
+    const listCalls = api.get.mock.calls.filter(([url]) => url === "/events");
+    expect(listCalls).toHaveLength(1);
+    expect(listCalls[0][1].params).toEqual({ city: CITY, category: [EVENT_CAT] });
+    // and the writer left the deep link in the address bar
+    expect(new URLSearchParams(window.location.search).get("city")).toBe(CITY);
+  });
+
   it("rejects a category outside the initial tab's vocabulary (cross-tab guard)", () => {
     // An experiences-only category must NOT seed on the events tab.
     params = { city: CITY, category: CROSS_TAB_CAT };

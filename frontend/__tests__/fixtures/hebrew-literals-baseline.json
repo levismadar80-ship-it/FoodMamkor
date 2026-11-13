@@ -8,7 +8,6 @@
   "app/[locale]/map/components/CityPickerModal.jsx": 4,
   "app/[locale]/map/state/useMapSync.js": 1,
   "app/[locale]/map/state/useProducersFeed.js": 1,
-  "app/[locale]/organizers/[slug]/page.js": 1,
   "app/[locale]/producers/page.jsx": 2,
   "app/global-error.js": 4,
   "components/AccountSheet.jsx": 1,

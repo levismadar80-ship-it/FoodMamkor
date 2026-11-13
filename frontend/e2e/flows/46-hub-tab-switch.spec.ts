@@ -148,3 +148,42 @@ for (const locale of ["he", "en"] as const) {
     });
   });
 }
+
+// MEH-2984: arriving from a hub tab that is its OWN route (/group-buys,
+// /rescue). Those are real navigations, but /events is now ISR and Link
+// prefetches it, so the page swaps without the route-level loader. The old
+// force-dynamic /events streamed app/[locale]/loading.js over everything.
+for (const locale of ["he", "en"] as const) {
+  const prefix = locale === "en" ? "/en" : "";
+  test(`${locale}: /group-buys → «אירועים» tab arrives without the whole-page loader`, async ({ page }) => {
+    const hub = await openHub(page, `${prefix}/group-buys`);
+    // Let Link's viewport prefetch of the events ROUTE land first: a resource
+    // whose URL names /events (any RSC form), never the /api list call.
+    await page.waitForLoadState("load");
+    await expect
+      .poll(() =>
+        page.evaluate(() =>
+          performance
+            .getEntriesByType("resource")
+            // Same-origin only (MEH-3013): the hub hero photo is a Cloudinary
+            // URL ending «…/events/hero-market.jpg», which matched this probe
+            // before any prefetch had landed and let the click race it.
+            .some(
+              (e) =>
+                e.name.startsWith(location.origin) &&
+                /\/events(?![\w-])/.test(new URL(e.name).pathname) &&
+                !/\/api\//.test(e.name),
+            ),
+        ),
+      )
+      .toBe(true);
+
+    await startSampler(page);
+    await hub.locator('[data-tab-value="events"]').click();
+    const samples = await readSamples(page);
+
+    await expect(page).toHaveURL(new RegExp(`${prefix}/events$`));
+    expect(samples.filter((s) => s.loader), "route loader painted on the way in").toEqual([]);
+    await expect(page.locator("h1")).toBeVisible();
+  });
+}

@@ -26,11 +26,11 @@ import { BRAND_NAME } from "@/lib/constants";
 import { optimizeCloudinary } from "@/lib/cloudinary";
 import { toEventEntry } from "@/lib/event-entry";
 import EventEntryRow from "@/components/EventEntryRow";
-import { getWhatsAppHref, normalizePhone } from "@/lib/utils";
-import { instagramUrl } from "@/lib/social-links";
 import { OrganizerPageSchema } from "@/lib/schemas";
-import { getPrimaryMethod } from "@/lib/contact-method";
+import { contactHref, getPrimaryMethod } from "@/lib/contact-method";
 import OrganizerPrimaryContact from "./OrganizerPrimaryContact";
+import OrganizerContactLink from "./OrganizerContactLink";
+import HistoryBackLink from "@/components/HistoryBackLink";
 import OwnerCard from "@/app/[locale]/producer/[id]/components/OwnerCard";
 
 const ROUTE = "/[locale]/organizers/[slug]";
@@ -63,15 +63,6 @@ async function getOrganizer(slug) {
     });
   }
   return data;
-}
-
-// REUSES: app/[locale]/producer/[id]/components/ContactCard.jsx:124 — httpUrl.
-// A stored website / facebook value without a scheme becomes an https link
-// (and never an in-site relative path).
-function httpUrl(raw) {
-  const v = (raw || "").trim();
-  if (!v) return null;
-  return v.startsWith("http") ? v : `https://${v}`;
 }
 
 export async function generateMetadata(props) {
@@ -107,36 +98,31 @@ export async function generateMetadata(props) {
 }
 
 // MEH-2475: every channel the organizer can fill (dashboard «קשר» group), in
-// one list. Each builder returns null when its field is empty, so 0 / 1 / many
-// filled channels render 0 / 1 / many links with no placeholder.
-// The WhatsApp prefill is the business page's (lib/contact-method.js
-// getPrimaryContactHref, MEH-1559) so the organizer sees where a message came
-// from; the other hrefs follow the same per-channel rules.
-const waPrefill = (o) => `היי! הגעתי דרך מהמקור — ${o.name || ""}`;
-const CHANNELS = [
-  {
-    key: "whatsapp",
-    href: (o) => (normalizePhone(o.phone) ? getWhatsAppHref(normalizePhone(o.phone), waPrefill(o)) : null),
-  },
-  { key: "phone", href: (o) => (o.phone?.trim() ? `tel:${o.phone.trim()}` : null) },
-  { key: "email", href: (o) => (o.contact_email?.trim() ? `mailto:${o.contact_email.trim()}` : null) },
-  { key: "instagram", href: (o) => instagramUrl(o.instagram) },
-  { key: "website", href: (o) => httpUrl(o.website) },
-  { key: "facebook", href: (o) => httpUrl(o.facebook) },
-  { key: "whatsapp_group", href: (o) => httpUrl(o.whatsapp_group) },
-  { key: "external_order", href: (o) => httpUrl(o.external_order_form) },
+// one list. An empty field gives a null href, so 0 / 1 / many filled channels
+// render 0 / 1 / many links with no placeholder.
+// MEH-2991: the hrefs come from the one table the business page reads
+// (lib/contact-method.js contactHref) — this page used to carry its own copy.
+const CHANNEL_KEYS = [
+  "whatsapp",
+  "phone",
+  "email",
+  "instagram",
+  "website",
+  "facebook",
+  "whatsapp_group",
+  "external_order",
 ];
 
 /** The channels to show, preferred first. One number backs both WhatsApp and
  *  a call: the call link appears only when phone is the preferred channel,
  *  and then the WhatsApp link built from that number does not (MEH-2475 —
  *  the page used to offer WhatsApp whatever the organizer chose). */
-function contactChannels(organizer) {
+function contactChannels(organizer, waMessage) {
   const primary = getPrimaryMethod(organizer);
-  const shown = CHANNELS.filter((c) =>
-    c.key === "phone" ? primary === "phone" : c.key === "whatsapp" ? primary !== "phone" : true,
+  const shown = CHANNEL_KEYS.filter((key) =>
+    key === "phone" ? primary === "phone" : key === "whatsapp" ? primary !== "phone" : true,
   )
-    .map((c) => ({ key: c.key, href: c.href(organizer), primary: c.key === primary }))
+    .map((key) => ({ key, href: contactHref(key, organizer, waMessage), primary: key === primary }))
     .filter((c) => c.href);
   return [...shown.filter((c) => c.primary), ...shown.filter((c) => !c.primary)];
 }
@@ -147,25 +133,23 @@ const LINK_BASE =
 // MEH-2988: the preferred channel is drawn like the business page's primary
 // button (icon + `contact_cta.<method>` label); the others stay quiet pills.
 function ContactLinks({ organizer, t, tCta }) {
-  const links = contactChannels(organizer);
+  // The WhatsApp prefill is the business page's `contact_cta.wa_greeting`
+  // (MEH-2753) — it was a hard-coded Hebrew copy of it here, on /en too.
+  const links = contactChannels(organizer, tCta("wa_greeting", { name: organizer.name || "" }));
   if (links.length === 0) return null;
   return (
     <ul className="flex flex-wrap items-center gap-2" data-testid="organizer-contact">
       {links.map((l) => (
         <li key={l.key}>
           {l.primary ? (
-            <OrganizerPrimaryContact channel={l} label={tCta(l.key)} />
+            <OrganizerPrimaryContact channel={l} label={tCta(l.key)} producerId={organizer.id} />
           ) : (
-            <a
-              href={l.href}
-              {...(l.key === "phone" || l.key === "email"
-                ? {}
-                : { target: "_blank", rel: "noopener noreferrer" })}
-              data-testid={`organizer-contact-${l.key}`}
+            <OrganizerContactLink
+              channel={l}
+              label={t(l.key)}
+              producerId={organizer.id}
               className={`${LINK_BASE} border-border text-primary hover:bg-primary/5`}
-            >
-              {t(l.key)}
-            </a>
+            />
           )}
         </li>
       ))}
@@ -218,6 +202,10 @@ export default async function OrganizerPage(props) {
           )}
         </div>
         <div className="px-4 pt-14 space-y-4 md:px-14">
+          {/* MEH-3005: «→ חזרה» to the page the visitor came from, where the
+              event and workshop pages put it — under the cover, above the
+              name. Renders nothing on a direct arrival, so no reserved row. */}
+          <HistoryBackLink className="-mb-2" />
           <h1 className="font-headline-lg text-3xl md:text-4xl font-bold text-text">{organizer.name}</h1>
           {(organizer.city || organizer.established_year) && (
             <p className="text-sm text-fg-muted">

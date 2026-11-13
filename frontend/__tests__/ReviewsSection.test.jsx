@@ -1,8 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, waitFor, within } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor, within, act } from "@testing-library/react";
 import ReviewsSection from "@/components/ReviewsSection";
 // MEH-1426: mocked so the form-open re-ping is observable without a real beacon.
-import { pingWhatsAppBeacon } from "@/lib/contact-tracking";
+import { pingWhatsAppBeacon, trackContactClick } from "@/lib/contact-tracking";
 
 // MEH-1039: business-owner reply UI. These tests cover CHUNK C (display +
 // owner affordance). The PUT endpoint lands in CHUNK B (reviews.py, blocked
@@ -55,6 +55,13 @@ vi.mock("@/components/ui/EmptyState", () => ({ default: () => <div data-testid="
 vi.mock("@/lib/contact-tracking", () => ({
   pingWhatsAppBeacon: vi.fn(),
   markWhatsAppClickedLocal: vi.fn(),
+  trackContactClick: vi.fn(),
+  CONTACTED_EVENT: "mehamakor:contacted",
+  // MEH-2999: the real lookup — both flags live in jsdom's localStorage.
+  contactedMethodLocal: (id) =>
+    localStorage.getItem(`wa_clicked_${id}`) === "1"
+      ? "whatsapp"
+      : localStorage.getItem(`contacted_${id}`) || null,
 }));
 vi.mock("@phosphor-icons/react", () => ({
   Star: (props) => <span data-testid="icon-star" {...props} />,
@@ -182,12 +189,13 @@ describe("ReviewsSection — zero reviews, reader view: no empty state, only the
   // state (Leaf + «עדיין אין ביקורות כאן.» + empty_gate_hint) is retired —
   // Sapir's call, the Google / Airbnb pattern. Unmapped keys fall through the
   // next-intl mock as raw key strings, so assertions target key names.
-  it("empty + logged-in non-gated viewer: no leaf, no empty message, the WhatsApp-gate line alone", async () => {
+  it("empty + logged-in non-gated viewer: no leaf, no empty message, the contact invite card alone", async () => {
     authState.user = { id: "u-9", producer_id: null };
     mockReviews([]);
     render(<ReviewsSection producerId="p-1" isOwner={false} />);
     const hint = await screen.findByTestId("reviews-write-hint");
-    expect(hint).toHaveTextContent("wa_gate_message");
+    expect(hint.dataset.mode).toBe("contact");
+    expect(hint).toHaveTextContent("invite_hint");
     expect(screen.queryByTestId("icon-leaf")).toBeNull();
     expect(screen.queryByText(/empty_message/)).toBeNull();
     expect(screen.queryByText(/empty_gate_hint/)).toBeNull();
@@ -222,7 +230,7 @@ describe("ReviewsSection — zero reviews, reader view: no empty state, only the
     expect(screen.queryByTestId("reviews-write-hint")).toBeNull();
   });
 
-  it("reviews exist + logged-in non-gated viewer: the WhatsApp-gate line, as before", async () => {
+  it("reviews exist + logged-in non-gated viewer: the contact invite card", async () => {
     authState.user = { id: "u-9", producer_id: null };
     mockReviews([
       {
@@ -231,7 +239,7 @@ describe("ReviewsSection — zero reviews, reader view: no empty state, only the
       },
     ]);
     render(<ReviewsSection producerId="p-1" isOwner={false} />);
-    expect(await screen.findByText("wa_gate_message")).toBeInTheDocument();
+    expect((await screen.findByTestId("reviews-write-hint")).dataset.mode).toBe("contact");
   });
 
   it("a name opening with an emoji keeps the whole glyph in the initial circle (no split surrogate)", async () => {
@@ -299,6 +307,43 @@ describe("ReviewsSection — WA re-ping on form open (MEH-1426)", () => {
     await waitFor(() => expect(apiMock.get).toHaveBeenCalled());
     expect(screen.queryByText("write_cta")).not.toBeInTheDocument();
     expect(pingWhatsAppBeacon).not.toHaveBeenCalled();
+  });
+
+  // MEH-2999: a phone / email / website contact unlocks the form too, and the
+  // form-open repair re-sends THAT channel, never a WhatsApp click that did
+  // not happen.
+  it("logged-in + contacted by phone → the form unlocks; opening it re-sends the phone click once", async () => {
+    trackContactClick.mockClear();
+    authState.user = { id: "u-9", producer_id: null };
+    localStorage.setItem(`contacted_${PID}`, "phone");
+    mockReviews([]);
+    render(<ReviewsSection producerId={PID} />);
+    fireEvent.click(await screen.findByText("write_cta"));
+    expect(trackContactClick).toHaveBeenCalledTimes(1);
+    expect(trackContactClick).toHaveBeenCalledWith(PID, "phone");
+    expect(pingWhatsAppBeacon).not.toHaveBeenCalled();
+    expect(screen.queryByTestId("reviews-write-hint")).toBeNull();
+  });
+
+  // MEH-2999 review: a tel: / mailto: tap keeps the page, so the card must
+  // flip without a reload.
+  it("signed in, contact made on THIS page → the card flips to the form at once", async () => {
+    authState.user = { id: "u-9", producer_id: null };
+    mockReviews([]);
+    render(<ReviewsSection producerId={PID} />);
+    expect(await screen.findByTestId("reviews-write-hint")).toBeInTheDocument();
+    localStorage.setItem(`contacted_${PID}`, "phone");
+    act(() => {
+      window.dispatchEvent(
+        new CustomEvent("mehamakor:contacted", { detail: { producerId: "other-id" } }),
+      );
+    });
+    expect(screen.getByTestId("reviews-write-hint")).toBeInTheDocument();
+    act(() => {
+      window.dispatchEvent(new CustomEvent("mehamakor:contacted", { detail: { producerId: PID } }));
+    });
+    expect(await screen.findByText("write_cta")).toBeInTheDocument();
+    expect(screen.queryByTestId("reviews-write-hint")).toBeNull();
   });
 
   it("guest (not logged in) → no ping even if the local flag is set", async () => {
@@ -469,25 +514,42 @@ describe("ReviewsSection — reviews look (MEH-2592)", () => {
     expect(reply.className).not.toContain("bg-green-50");
   });
 
-  it("guest: the login line sits UNDER the reviews, as plain text", async () => {
+  // MEH-2999: the quiet grey line became a card with five empty stars.
+  it("guest: the invite card sits UNDER the reviews; its stars are the sign-in link", async () => {
     authState.user = null;
     mockReviews([noReply]);
     render(<ReviewsSection producerId="p-1" />);
     const body = await screen.findByText("טעים");
     const hint = screen.getByTestId("reviews-write-hint");
-    expect(hint).toContainElement(screen.getByTestId("reviews-login-link"));
+    const link = screen.getByTestId("reviews-login-link");
+    expect(hint).toContainElement(link);
+    expect(within(link).getAllByTestId("icon-star")).toHaveLength(5);
+    expect(link.getAttribute("aria-label")).toBe("invite_title");
+    expect(hint).toHaveTextContent("invite_title");
+    expect(hint).toHaveTextContent("invite_hint");
     expect(following(body, hint)).toBe(true);
-    expect(hint.className).not.toContain("border");
+    expect(hint.className).toContain("border");
   });
 
-  it("logged-in, not gated, reviews exist: the WhatsApp-gate line sits UNDER the reviews", async () => {
+  it("logged-in, not gated, reviews exist: the contact card sits UNDER the reviews; stars go to the contact card", async () => {
     authState.user = { id: "u-9", producer_id: null };
     mockReviews([noReply]);
-    render(<ReviewsSection producerId="p-1" />);
-    const body = await screen.findByText("טעים");
-    const hint = screen.getByTestId("reviews-write-hint");
-    expect(hint).toHaveTextContent("wa_gate_message");
-    expect(following(body, hint)).toBe(true);
+    const card = document.createElement("div");
+    card.setAttribute("data-testid", "contact-card");
+    card.scrollIntoView = vi.fn();
+    document.body.appendChild(card);
+    try {
+      render(<ReviewsSection producerId="p-1" />);
+      const body = await screen.findByText("טעים");
+      const hint = screen.getByTestId("reviews-write-hint");
+      expect(hint.dataset.mode).toBe("contact");
+      expect(following(body, hint)).toBe(true);
+      expect(screen.queryByTestId("reviews-login-link")).toBeNull();
+      fireEvent.click(within(hint).getByTestId("reviews-contact-link"));
+      expect(card.scrollIntoView).toHaveBeenCalledTimes(1);
+    } finally {
+      card.remove();
+    }
   });
 
   it("owner: no write hint at all", async () => {
