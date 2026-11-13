@@ -35,6 +35,13 @@ Full threat model, header list, CORS config, and 3-step audit protocol:
   `_check_fingerprint`._
 - **Rate limiting via slowapi.** See `backend/app/rate_limit.py`.
   Per-route limits are set in the router file, not inline.
+- **Nothing grows without bound (MEH-3022).** Every non-admin write route
+  carries `@limiter.limit`; every list in a request body carries
+  `max_length`; every table with a FK to `producers.id` has a per-business
+  cap in `backend/app/limits.py` (`enforce_cap`, 409 + Hebrew) or an
+  `OWNED_TABLE_EXEMPT` reason. A rate limit is not a cap — 60/hour is 1,440
+  a day. `tests/test_meh3022_resource_caps.py` walks the whole app and fails
+  on a new route, list or table that has neither.
 - **IDOR ownership checks with admin override.** Every resource mutation
   (PUT/DELETE/PATCH) must check `resource.owner_id == current_user.id`
   OR `current_user.role == "admin"`. No exceptions.

@@ -342,8 +342,13 @@ export default function ProductsSection({
       setForm({ name: "", description: "", image_url: "", price_min: "", price_max: "", is_gluten_free: false, is_vegan: false, is_vegetarian: false, is_lactose_free: false, is_no_added_sugar: false, ingredients: "", allergens: [] });
       setAdding(false);
       showToast.success(t("toast_added")); // MEH-1446
-    } catch {
-      setError(tErr("save_failed"));
+    } catch (err) {
+      // MEH-3022: the per-business cap answers 409 with the approved Hebrew
+      // sentence — show it instead of the generic "save failed".
+      setError(
+        (err?.response?.status === 409 && detailToMessage(err.response.data?.detail)) ||
+          tErr("save_failed"),
+      );
     } finally {
       setSaving(false);
     }
