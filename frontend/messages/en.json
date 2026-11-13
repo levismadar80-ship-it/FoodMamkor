@@ -585,9 +585,6 @@
     },
     "skeleton": {
       "loading_businesses": "Loading fresh businesses"
-    },
-    "star_rating": {
-      "count_aria": "{count, plural, one {1 rating} other {({count} ratings)}}"
     }
   },
   "category": {

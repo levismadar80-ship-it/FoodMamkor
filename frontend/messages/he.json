@@ -585,9 +585,6 @@
     },
     "skeleton": {
       "loading_businesses": "טעינת עסקים טריים"
-    },
-    "star_rating": {
-      "count_aria": "{count, plural, one {דירוג אחד} two {{count} דירוגים} other {({count} דירוגים)}}"
     }
   },
   "category": {
