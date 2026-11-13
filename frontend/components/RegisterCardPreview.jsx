@@ -50,8 +50,9 @@ export default function RegisterCardPreview({ form, categories }) {
           className="shrink-0 transition-transform motion-reduce:transition-none group-open:rotate-180"
         />
       </summary>
-      {/* React 18 has no boolean `inert` prop — the empty string is the attribute. */}
-      <div className="px-4 pb-4" inert="" data-testid="register-card-preview-body">
+      {/* React 18 has no boolean `inert` prop — the empty string is the attribute.
+          max-w: a card on the site sits in a grid column, never full form width. */}
+      <div className="mx-auto max-w-[320px] px-4 pb-4" inert="" data-testid="register-card-preview-body">
         <ProducerCard producer={previewProducer(form, categories)} />
       </div>
     </details>
