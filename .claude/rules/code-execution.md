@@ -152,6 +152,20 @@ hook enforcement here; if drift becomes a problem, open a follow-up for
 
 ---
 
+## §16 — File size: read-whole is the target (13/11/2026)
+
+An agent reads a big file in slices and misses what is outside the slice.
+
+- **New source file ≤ 1,500 lines** — `scripts/checks/file-size-ratchet.sh`
+  fails above that (scans `backend/app`, `frontend/{app,components,lib}`; tests and
+  `lib/generated/` excluded).
+- **A file in `scripts/checks/file-size-baseline.txt` does not grow.** When a
+  task touches one, put the new or changed part in its own module and import it
+  (a router helper → `backend/app/services/`, a dashboard card → its own file).
+  Growth prints a warning now; lower the baseline number when the file shrinks,
+  never raise it.
+- Don't split a big file you aren't otherwise changing — no refactor-only PRs
+  before launch.
 ## §17 — New files are type-checked (13/11/2026)
 
 Types are the fastest feedback an agent gets. No TypeScript conversion — only
