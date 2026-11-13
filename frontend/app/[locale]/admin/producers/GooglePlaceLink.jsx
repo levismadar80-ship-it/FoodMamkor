@@ -27,6 +27,7 @@
 
 import { useState } from "react";
 import api from "@/lib/api";
+import InlineMessage from "@/components/ui/InlineMessage";
 
 // Mirrors routers/google_rating.py MIN_REVIEWS and ProducerForm.jsx.
 const GOOGLE_MIN_REVIEWS = 20;
@@ -130,9 +131,9 @@ export default function GooglePlaceLink({ producerId, placeId, onLinked }) {
             </p>
           )}
           {searchState === "error" && (
-            <p className="mt-2 text-error" role="alert">
+            <InlineMessage size="inherit" className="mt-2">
               החיפוש נכשל, נסי שוב
-            </p>
+            </InlineMessage>
           )}
 
           {searchState && (
@@ -188,9 +189,9 @@ export default function GooglePlaceLink({ producerId, placeId, onLinked }) {
 
       {saving && <p className="mt-2 text-muted">שומרת…</p>}
       {saveError && (
-        <p className="mt-2 text-error" role="alert">
+        <InlineMessage size="inherit" className="mt-2">
           השמירה נכשלה, נסי שוב
-        </p>
+        </InlineMessage>
       )}
     </div>
   );

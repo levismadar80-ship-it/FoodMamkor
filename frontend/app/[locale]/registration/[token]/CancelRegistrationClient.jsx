@@ -13,6 +13,7 @@ import { useTranslations, useLocale } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import api from "@/lib/api";
 import { formatEventDate } from "@/lib/format-date";
+import InlineMessage from "@/components/ui/InlineMessage";
 
 const BTN =
   "flex items-center justify-center min-h-[48px] w-full bg-primary text-white px-6 rounded-full font-semibold hover:bg-primary-dark transition focus-ring disabled:opacity-60";
@@ -76,9 +77,9 @@ export default function CancelRegistrationClient({ token }) {
           ) : (
             <>
               {failed && (
-                <p role="alert" className="text-sm text-danger-700">
+                <InlineMessage>
                   {t("generic")}
-                </p>
+                </InlineMessage>
               )}
               <button
                 type="button"

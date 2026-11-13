@@ -30,6 +30,7 @@ import {
   MAX_ORDER_RANGES_PER_DAY,
 } from "@/lib/order-window";
 import Button from "@/components/ui/Button";
+import InlineMessage from "@/components/ui/InlineMessage";
 
 export default function OrderWindowEditor({
   profile,
@@ -249,9 +250,9 @@ export default function OrderWindowEditor({
               )}
 
               {issueReason && (
-                <span className="w-full text-xs text-danger-600" role="alert">
+                <InlineMessage as="span" size="xs" className="w-full">
                   {t(issueReason)}
-                </span>
+                </InlineMessage>
               )}
             </div>
           );
@@ -259,10 +260,10 @@ export default function OrderWindowEditor({
       </div>
 
       {errorMsg && (
-        <p className="mt-4 flex items-center gap-1.5 text-xs text-danger-600" role="alert">
+        <InlineMessage size="xs" className="mt-4 flex items-center gap-1.5">
           <Warning size={16} weight="fill" aria-hidden="true" className="shrink-0" />
           {errorMsg}
-        </p>
+        </InlineMessage>
       )}
 
       <div className="mt-4 flex flex-wrap items-center gap-3">

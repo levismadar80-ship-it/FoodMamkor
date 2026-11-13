@@ -20,6 +20,7 @@ import EmptyState from "@/components/ui/EmptyState";
 import { SkeletonList } from "@/components/Skeleton";
 import { seedColorFor } from "@/lib/brand-seeds";
 import SectionHeading from "@/components/ui/SectionHeading";
+import InlineMessage from "@/components/ui/InlineMessage";
 
 // MEH-2833 (seed layer, board 4): a reviewer's initial sits on a soft tint of
 // "their" seed — the seed colour mixed ~24% into the cream page, with an inset
@@ -218,7 +219,7 @@ function ReviewReply({ review, isOwner, onSaved }) {
           className="w-full border border-border rounded-sm px-3 py-2 bg-surface resize-none focus-visible:ring-2 focus-visible:ring-primary/40 outline-none text-sm"
         />
         {error && (
-          <p className="text-sm text-error mt-1" role="alert">{error}</p>
+          <InlineMessage className="mt-1">{error}</InlineMessage>
         )}
         <div className="flex items-center gap-4 mt-2">
           {/* MEH-1103: action buttons carry min-h-touch (WCAG 2.5.5). */}
@@ -709,9 +710,9 @@ export default function ReviewsSection({
               <p className="text-xs text-fg-muted mt-1">{body.length}/500</p>
             </div>
             {error && (
-              <p className="text-sm text-error" role="alert">
+              <InlineMessage>
                 {error}
-              </p>
+              </InlineMessage>
             )}
             <div className="flex items-center gap-4">
               <button

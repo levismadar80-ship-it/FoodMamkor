@@ -12,6 +12,7 @@ import { firstFailureMessage } from "@/lib/passwordMessages";
 import { PASSWORD_MIN_LENGTH } from "@/lib/validators";
 import BrandLoader from "@/components/BrandLoader";
 import Button from "@/components/ui/Button";
+import InlineMessage from "@/components/ui/InlineMessage";
 
 export default function ResetPasswordClient() {
   const t = useTranslations();
@@ -180,7 +181,7 @@ function ResetPasswordForm() {
         </div>
 
         {error && (
-          <div className="text-danger-600 text-sm text-center" role="alert">
+          <InlineMessage as="div" className="text-center">
             <p>{error}</p>
             {isLinkError && (
               <Link
@@ -190,7 +191,7 @@ function ResetPasswordForm() {
                 {t("auth.passwordRecovery.reset.request_new_link")}
               </Link>
             )}
-          </div>
+          </InlineMessage>
         )}
 
         <Button

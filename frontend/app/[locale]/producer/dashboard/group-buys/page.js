@@ -27,6 +27,7 @@ import useDialogFocus from "@/hooks/useDialogFocus";
 import { GroupBuyStatusResultSchema, OwnerGroupBuySchema } from "@/lib/api-schemas";
 import { SkeletonList } from "@/components/Skeleton";
 import Button from "@/components/ui/Button";
+import InlineMessage from "@/components/ui/InlineMessage";
 
 const STATUS_CLS = {
   open: STATUS_CLASSES.info,
@@ -312,7 +313,7 @@ function NewGroupBuyForm({ producerCity, onCreated }) {
 
       {/* MEH-1165: role="alert" so the submit error is announced to AT. */}
       {unverified && <UnverifiedEmailNotice />}
-      {error && <p className="text-danger-500 text-sm" role="alert">{error}</p>}
+      {error && <InlineMessage>{error}</InlineMessage>}
       <Button
         type="submit"
         disabled={submitting || priceInvalid}
@@ -380,7 +381,7 @@ function GroupBuyActionDialog({ pending, busy, stale, error, onConfirm, onClose 
             {t("cancel_funded_note", { count: gb.commits_count })}
           </p>
         )}
-        {error && <p role="alert" className="text-sm text-danger-600">{error}</p>}
+        {error && <InlineMessage>{error}</InlineMessage>}
         <div className="flex gap-3 justify-start pt-1">
           <button
             type="button"

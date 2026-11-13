@@ -32,6 +32,7 @@ import { useTranslations } from "next-intl";
 import { Plus, Warning, X } from "@phosphor-icons/react";
 
 import { DAY_KEYS, parseHours } from "@/lib/hours";
+import InlineMessage from "@/components/ui/InlineMessage";
 import {
   canAddRange,
   dayIssues,
@@ -210,9 +211,9 @@ export default function LocationHoursField({
               )}
 
               {issueReason && (
-                <span className="w-full text-xs text-error" role="alert" data-testid={`location-hours-error-${i}`}>
+                <InlineMessage as="span" size="xs" className="w-full" data-testid={`location-hours-error-${i}`}>
                   {t(issueReason)}
-                </span>
+                </InlineMessage>
               )}
             </div>
           );

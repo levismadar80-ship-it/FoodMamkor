@@ -28,6 +28,7 @@ import { getWhatsAppHref, normalizePhone } from "@/lib/utils";
 import Input from "@/components/ui/Input";
 import CollectionNotice from "@/components/CollectionNotice";
 import ShareSiteActions from "@/components/ShareSiteActions";
+import InlineMessage from "@/components/ui/InlineMessage";
 
 const BTN =
   "flex items-center justify-center min-h-[48px] w-full bg-primary text-white px-6 rounded-full font-semibold hover:bg-primary-dark transition focus-ring disabled:opacity-60";
@@ -110,9 +111,9 @@ function SignupForm({ kind, itemId, onDone }) {
   return (
     <form onSubmit={submit} noValidate className="space-y-3" data-testid="registration-form">
       {banner && (
-        <p role="alert" className="text-sm bg-danger-50 border border-danger-200 text-danger-700 rounded-md p-3">
+        <InlineMessage variant="box" className="rounded-md p-3">
           {banner}
-        </p>
+        </InlineMessage>
       )}
       <Input id="signup-name" label={t("name")} required autoComplete="name" value={form.name} onChange={set("name")} error={errors.name} />
       <Input
