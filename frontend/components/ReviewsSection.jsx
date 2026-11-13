@@ -122,7 +122,17 @@ function StarRow({ value, size = 16, ariaLabel }) {
 // the page of 10 on screen. Quiet bars in the star gold, no rating colours
 // (MEH-1334). No new copy: each row's name reuses star_aria + summary_count.
 const DISTRIBUTION_MIN = 5;
-const STAR_GOLD = "#896714";
+
+export function shiftRatingCounts(counts, fromStars, toStars) {
+  const next = { ...counts };
+  const bump = (n, d) => {
+    const k = String(n);
+    next[k] = Math.max(0, (Number(next[k]) || 0) + d);
+  };
+  if (fromStars >= 1 && fromStars <= 5) bump(fromStars, -1);
+  if (toStars >= 1 && toStars <= 5) bump(toStars, 1);
+  return next;
+}
 
 function RatingDistribution({ counts, total, t }) {
   return (
@@ -140,9 +150,9 @@ function RatingDistribution({ counts, total, t }) {
             <span className="w-2 text-center tabular-nums" aria-hidden="true">{n}</span>
             <span className="relative h-1.5 flex-1 overflow-hidden rounded-full bg-border" aria-hidden="true">
               <span
-                className="absolute inset-y-0 start-0 rounded-full"
+                className="absolute inset-y-0 start-0 rounded-full bg-accent"
                 data-testid={`rating-bar-fill-${n}`}
-                style={{ width: `${pct}%`, backgroundColor: STAR_GOLD }}
+                style={{ width: `${pct}%` }}
               />
             </span>
             <span className="w-5 text-end tabular-nums" aria-hidden="true" data-testid="rating-bar-count">{c}</span>
@@ -478,8 +488,12 @@ export default function ReviewsSection({
       // WhatsApp-click path posts exactly the body it always did.
       const payload = inviteToken ? { stars, body, review_token: inviteToken } : { stars, body };
       const r = await api.post(`/producers/${producerId}/reviews`, payload);
+      const previous = reviews.find((x) => x.user_id === r.data.user_id);
       setReviews((prev) => [r.data, ...prev.filter((x) => x.user_id !== r.data.user_id)]);
-      setTotal((tt) => tt + (reviews.some((x) => x.user_id === r.data.user_id) ? 0 : 1));
+      setTotal((tt) => tt + (previous ? 0 : 1));
+      // MEH-1337: keep the bars in step with the total — move the owner's own
+      // star (edit) or add it (new review), so the five counts still sum to it.
+      setRatingCounts((rc) => (rc ? shiftRatingCounts(rc, previous?.stars, r.data.stars) : rc));
       setShowForm(false);
       showToast.success(t("saved_toast"), { icon: <Star size={18} weight="fill" /> });
     } catch (err) {

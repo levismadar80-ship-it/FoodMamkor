@@ -756,6 +756,35 @@ describe("ReviewsSection — rating distribution (MEH-1337)", () => {
     expect(screen.queryByTestId("rating-distribution")).not.toBeInTheDocument();
   });
 
+  it("a new 5th review moves the bars with the total: five counts still sum to 5", async () => {
+    authState.user = { id: "u-new", producer_id: null };
+    try { localStorage.setItem("wa_clicked_p-1", "1"); } catch {}
+    apiMock.get.mockResolvedValue({
+      data: { reviews: [withReply, noReply], total: 4, page: 1, pages: 1, rating_counts: asStr({ 5: 2, 4: 2 }) },
+    });
+    apiMock.post.mockResolvedValue({
+      data: { id: "rev-new", user_id: "u-new", user_name: "חדש", stars: 3, body: "טוב מאוד מאוד", created_at: "2026-07-03T10:00:00", reply: null },
+    });
+    render(<ReviewsSection producerId="p-1" avgRating={4.4} reviewCount={4} />);
+    await screen.findByText("תודה רבה על המילים החמות!");
+    expect(screen.queryByTestId("rating-distribution")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByText("write_cta"));
+    fireEvent.click(screen.getAllByRole("button", { name: "star_aria" })[2]);
+    fireEvent.change(screen.getByRole("textbox"), { target: { value: "טוב מאוד מאוד" } });
+    fireEvent.submit(screen.getByRole("textbox").closest("form"));
+    const dist = await screen.findByTestId("rating-distribution");
+    const nums = within(dist).getAllByTestId("rating-bar-count").map((n) => Number(n.textContent));
+    expect(nums).toEqual([2, 2, 1, 0, 0]);
+    authState.user = null;
+    try { localStorage.removeItem("wa_clicked_p-1"); } catch {}
+  });
+
+  it("shiftRatingCounts: an edit moves one count, a new review adds one", async () => {
+    const { shiftRatingCounts } = await import("@/components/ReviewsSection");
+    expect(shiftRatingCounts(asStr({ 5: 2, 4: 1 }), 5, 3)).toEqual(asStr({ 5: 1, 4: 1, 3: 1 }));
+    expect(shiftRatingCounts(asStr({ 5: 2 }), undefined, 4)).toEqual(asStr({ 5: 2, 4: 1 }));
+  });
+
   it("each bar row has an accessible name built from existing copy (stars · count)", async () => {
     mockPage(5, asStr({ 5: 5 }));
     render(<ReviewsSection producerId="p-1" avgRating={5} reviewCount={5} />);
