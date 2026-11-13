@@ -361,3 +361,15 @@ describe("MEH-3041 — × closes the open form", () => {
     expect(post).not.toHaveBeenCalled();
   });
 });
+
+it("MEH-3041: × is disabled while the address is being sent", async () => {
+  authState.value = null;
+  let resolve;
+  post.mockImplementationOnce(() => new Promise((r) => { resolve = r; }));
+  render(<DeliveryWaitlistForm producer={PRODUCER} city="נתניה" />);
+  fireEvent.click(screen.getByTestId("delivery-waitlist-cta"));
+  fireEvent.change(screen.getByTestId("delivery-waitlist-email"), { target: { value: "a@example.com" } });
+  fireEvent.submit(screen.getByTestId("delivery-waitlist"));
+  await waitFor(() => expect(screen.getByTestId("delivery-waitlist-close").disabled).toBe(true));
+  resolve({ status: 201, data: { status: "added" } });
+});
