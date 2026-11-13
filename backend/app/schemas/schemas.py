@@ -178,7 +178,11 @@ def _payment_info_validator(v):
     timing = v.get("timing")
     if timing is not None and timing not in PAYMENT_TIMINGS:
         raise ValueError("מתי משלמים: יש לבחור אחת מהאפשרויות")
-    out = {"methods": _payment_methods(v.get("methods")), "timing": timing, "note": _payment_note(v.get("note"))}
+    out = {
+        "methods": _payment_methods(v.get("methods")),
+        "timing": timing,
+        "note": _payment_note(v.get("note")),
+    }
     if not out["methods"] and out["timing"] is None and out["note"] is None:
         return None
     return out
