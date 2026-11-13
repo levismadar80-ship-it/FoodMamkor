@@ -28,8 +28,9 @@ vi.mock("next/navigation", () => ({
 }));
 
 const apiGet = vi.fn();
+const apiPost = vi.fn();
 vi.mock("@/lib/api", () => ({
-  default: { get: (...a) => apiGet(...a) },
+  default: { get: (...a) => apiGet(...a), post: (...a) => apiPost(...a) },
 }));
 
 vi.mock("@phosphor-icons/react", () => ({
@@ -51,6 +52,7 @@ let realLocation;
 
 beforeEach(() => {
   apiGet.mockReset().mockResolvedValue({ data: { ok: true } });
+  apiPost.mockReset().mockResolvedValue({});
   assign.mockReset();
   realLocation = window.location;
   Object.defineProperty(window, "location", { configurable: true, value: { assign } });
@@ -141,12 +143,13 @@ describe("verify-email next step (MEH-2492)", () => {
       expect(localStorage.getItem("token")).toBe("acc-1");
     });
 
-    it("profile read fails: the token is dropped and the login CTA shows", async () => {
+    it("profile read fails: token dropped, cookies cleared, login CTA shows", async () => {
       withSession(Promise.reject(new Error("401")));
       render(<VerifyEmailClient />);
 
       await screen.findByTestId("verify-email-login");
       expect(localStorage.getItem("token")).toBeNull();
+      expect(apiPost).toHaveBeenCalledWith("/auth/logout");
       expect(assign).not.toHaveBeenCalled();
     });
   });

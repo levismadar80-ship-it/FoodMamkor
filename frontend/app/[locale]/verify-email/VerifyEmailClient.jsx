@@ -11,9 +11,9 @@ import StatusPage from "@/components/StatusPage";
 
 // MEH-2492: registration never logs the owner in (MEH-328 anti-enumeration),
 // and the link is often opened in another browser or the mail app.
-// MEH-3087: so the link itself signs its holder in — the API answers with a
-// session, and this page keeps it and moves on. The «כניסה להמשך» state stays
-// for the cases with no session (a blocked account, or /auth/me failing).
+// MEH-3087: when the link is opened in the browser that registered, the API
+// answers with a session, and this page keeps it and moves on. Every other
+// browser gets no session and sees «כניסה להמשך», as before.
 const REDIRECT_DELAY_MS = 1500;
 const LOGIN_PATH = "/login";
 
@@ -24,7 +24,8 @@ function landingAfterVerify(user) {
 
 // MEH-3087: keep the session the link returned and say where to go. A full
 // page load follows, so AuthProvider starts from the stored token. If the
-// profile read fails the token is dropped — never a half-signed-in page.
+// profile read fails, the token is dropped and the cookies are cleared — the
+// API only issues a session to a browser that had none, so nothing is lost.
 async function signInFromLink(accessToken) {
   if (!accessToken) return null;
   try {
@@ -35,6 +36,7 @@ async function signInFromLink(accessToken) {
     try {
       localStorage.removeItem("token");
     } catch {}
+    await api.post("/auth/logout").catch(() => {});
     return null;
   }
 }
