@@ -8,6 +8,7 @@ from sqlalchemy import func, text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, joinedload
 
+from app.limits import enforce_cap
 from app.auth import create_review_invite_token, require_producer
 from app.config import settings
 from app.constants import MAX_PRODUCER_RESUBMISSIONS
@@ -2172,6 +2173,11 @@ def create_my_product(
     user: User = Depends(require_producer),
     db: Session = Depends(get_db),
 ):
+    # MEH-3022: per-business cap (app/limits.py).
+    enforce_cap(
+        db.query(Product).filter(Product.producer_id == user.producer_id).count(),
+        "products",
+    )
     product = Product(producer_id=user.producer_id, **data.model_dump())
     db.add(product)
     db.commit()
@@ -2227,7 +2233,9 @@ def update_my_product(
 
 
 @router.delete("/products/{product_id}", status_code=204)
+@limiter.limit("60/hour")  # MEH-3022
 def delete_my_product(
+    request: Request,  # required by slowapi (MEH-3022)
     product_id: UUID,
     user: User = Depends(require_producer),
     db: Session = Depends(get_db),
@@ -2610,6 +2618,7 @@ def create_my_location(
         .filter(ProducerLocation.producer_id == user.producer_id)
         .count()
     )
+    enforce_cap(existing_count, "locations")  # MEH-3022
     loc = ProducerLocation(producer_id=user.producer_id, **data.model_dump())
     _fill_centroid_when_unpinned(db, loc)
 
@@ -2724,7 +2733,9 @@ def update_my_location(  # noqa: PLR0913 — all 6 args are FastAPI-injected (sl
 
 
 @router.delete("/locations/{location_id}", status_code=204)
+@limiter.limit("60/hour")  # MEH-3022
 def delete_my_location(
+    request: Request,  # required by slowapi (MEH-3022)
     location_id: UUID,
     background_tasks: BackgroundTasks,
     user: User = Depends(require_producer),
