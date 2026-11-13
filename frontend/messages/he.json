@@ -830,6 +830,8 @@
         "products": {
           "heading": "מוצרים",
           "signature_label": "המוצר המוביל",
+          "show_all": "הצגת כל {count} המוצרים",
+          "show_less": "הצגת פחות",
           "diet": {
             "gluten_free": "ללא גלוטן",
             "vegan": "טבעוני",

@@ -830,6 +830,8 @@
         "products": {
           "heading": "Products",
           "signature_label": "Signature product",
+          "show_all": "Show all {count} products",
+          "show_less": "Show less",
           "diet": {
             "gluten_free": "Gluten-free",
             "vegan": "Vegan",
