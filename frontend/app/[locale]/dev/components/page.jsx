@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { MagnifyingGlass, Heart, ArrowRight, Leaf } from "@phosphor-icons/react";
 import { Button, Input, Card, Badge, Heading, Link } from "@/components/ui";
 import ShowMore from "@/components/ui/ShowMore";
+import { useTranslations } from "next-intl";
 
 /**
  * /dev/components — Storybook-style gallery for the MEH-602 atomic layer.
@@ -46,6 +47,7 @@ function Swatch({ label, children }) {
 }
 
 export default function DevComponentsPage() {
+  const t = useTranslations();
   if (process.env.NODE_ENV === "production") notFound();
 
   return (
@@ -99,12 +101,12 @@ export default function DevComponentsPage() {
       <Section title="ShowMore">
         <div className="flex flex-col gap-6">
           <Swatch label='size: block'>
-            <ShowMore onClick={() => {}} label="הצגת עוד ביקורות" />
+            <ShowMore onClick={() => {}} label={t("reviews.show_more")} />
           </Swatch>
           <Swatch label="size: inline (closed / open)">
             <div className="flex flex-wrap items-center gap-6">
-              <ShowMore size="inline" expanded={false} onClick={() => {}} label="הצגת עוד 6 ערים" />
-              <ShowMore size="inline" expanded onClick={() => {}} label="הצגת פחות" />
+              <ShowMore size="inline" expanded={false} onClick={() => {}} label={t("group_buys.delivery.show_all_cities", { count: 6 })} />
+              <ShowMore size="inline" expanded onClick={() => {}} label={t("group_buys.delivery.show_less")} />
             </div>
           </Swatch>
         </div>
