@@ -23604,7 +23604,7 @@
     },
     "/producers/{producer_id}/contact-click": {
       "post": {
-        "description": "Log a contact-method click for the producer dashboard.\n\nAccepts method ∈ {phone, instagram, website, email}. Auth optional —\nJWT when present attributes the click to a registered user. IP is\nSHA-256 hashed (reuses hash_ip from services/analytics). Rate-limited\n10/minute per IP consistent with whatsapp-click.",
+        "description": "Log a contact-method click for the producer dashboard.\n\nAccepts method ∈ _VALID_CONTACT_METHODS. Auth optional —\nJWT when present attributes the click to a registered user. IP is\nSHA-256 hashed (reuses hash_ip from services/analytics). Rate-limited\n10/minute per IP consistent with whatsapp-click.",
         "operationId": "record_contact_click_producers__producer_id__contact_click_post",
         "parameters": [
           {

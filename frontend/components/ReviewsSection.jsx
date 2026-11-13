@@ -3,10 +3,15 @@
 import { useEffect, useRef, useState } from "react";
 import { CaretDown, EyeSlash, Star } from "@phosphor-icons/react";
 import { useTranslations, useLocale } from "next-intl";
-import { Link } from "@/i18n/navigation";
 import api from "@/lib/api";
 import { detailToMessage } from "@/lib/errors";
-import { pingWhatsAppBeacon } from "@/lib/contact-tracking";
+import {
+  CONTACTED_EVENT,
+  contactedMethodLocal,
+  pingWhatsAppBeacon,
+  trackContactClick,
+} from "@/lib/contact-tracking";
+import ReviewInviteCard from "@/components/ReviewInviteCard";
 import { captureReviewInvite } from "@/lib/review-invite";
 import { useAuth } from "@/lib/auth-context";
 import { showToast } from "@/lib/toast";
@@ -257,9 +262,11 @@ function ReviewReply({ review, isOwner, onSaved }) {
  *   avgRating     — producer.avg_rating from server (0 if no reviews)
  *   reviewCount   — producer.reviews_count from server
  *
- * Gate: user must have clicked the producer's WhatsApp CTA (localStorage
- * `wa_clicked_{producerId}` === "1"). Backend enforces the same rule via
- * producer_whatsapp_clicks.user_id.
+ * Gate: the user contacted the business from the page, through ANY channel
+ * (MEH-2999: localStorage `wa_clicked_{id}` or `contacted_{id}`, read via
+ * contactedMethodLocal). Backend enforces the same rule via
+ * producer_whatsapp_clicks.user_id OR producer_contact_clicks.user_id
+ * (reviews.py, MEH-2204).
  * MEH-1428 chunk 2: OR hold the owner's "request a review" token (`?rt=`,
  * kept per producer by lib/review-invite.js) — forwarded as `review_token`
  * and verified server-side (reviews.py `_invited_by_token`).
@@ -318,7 +325,10 @@ export default function ReviewsSection({
   // (an extra click row is acceptable, server-side).
   const openReviewForm = () => {
     if (user && hasClickedWa && !rePingedRef.current) {
-      pingWhatsAppBeacon(producerId);
+      // MEH-2999: re-send the click on the channel that was used.
+      const method = contactedMethodLocal(producerId);
+      if (method === "whatsapp") pingWhatsAppBeacon(producerId);
+      else if (method) trackContactClick(producerId, method);
       rePingedRef.current = true;
     }
     setShowForm(true);
@@ -330,9 +340,8 @@ export default function ReviewsSection({
 
   useEffect(() => {
     try {
-      if (localStorage.getItem(`wa_clicked_${producerId}`) === "1") {
-        setHasClickedWa(true);
-      }
+      // MEH-2999: any contact channel, not only WhatsApp.
+      if (contactedMethodLocal(producerId)) setHasClickedWa(true);
     } catch {}
     setInviteToken(captureReviewInvite(producerId, window.location.search));
     // MEH-1428 chunk 2: come back to THIS page's reviews after login — a
@@ -341,6 +350,18 @@ export default function ReviewsSection({
     // lib/safe-redirect.js on the login side).
     const back = `${window.location.pathname}${window.location.search}#reviews`;
     setLoginHref(`/login?redirect=${encodeURIComponent(back)}`);
+  }, [producerId]);
+
+  // MEH-2999: a contact made on this page (a tel: / mailto: tap keeps the
+  // page) unlocks the form at once, not after a reload.
+  useEffect(() => {
+    const onContacted = (e) => {
+      if (e.detail?.producerId === producerId && contactedMethodLocal(producerId)) {
+        setHasClickedWa(true);
+      }
+    };
+    window.addEventListener(CONTACTED_EVENT, onContacted);
+    return () => window.removeEventListener(CONTACTED_EVENT, onContacted);
   }, [producerId]);
 
   const fetchPage = (p) => {
@@ -652,25 +673,16 @@ export default function ReviewsSection({
         </>
       )}
 
-      {/* MEH-2592: who may write a review, as one quiet line UNDER the reviews
-          rather than a box above them. Same gates as before: the login line
-          for a visitor; the WhatsApp-gate line (MEH-1139) for a logged-in,
-          non-owner, not-yet-gated reader — at zero reviews too, since the
-          reader empty state is gone (it used to carry its own hint). */}
-      {/* Nothing until /auth/me answers — a signed-in reader otherwise saw
-          the login line for a second before it swapped (30/10). */}
+      {/* MEH-2999: who may write a review, as a card UNDER the reviews (was a
+          quiet grey line, MEH-2592). Same gates: «login» for a visitor; «contact»
+          for a logged-in, non-owner reader who has not contacted the business
+          and holds no invite link — at zero reviews too. Nothing until
+          /auth/me answers, or a signed-in reader sees the guest card for a
+          second before it swaps (30/10). */}
       {authLoading ? null : !user ? (
-        <p className="mt-4 text-sm text-fg-muted" data-testid="reviews-write-hint">
-          {t.rich("login_prompt", {
-            login: (chunks) => (
-              <Link href={loginHref} data-testid="reviews-login-link" className="text-primary underline">{chunks}</Link>
-            ),
-          })}
-        </p>
+        <ReviewInviteCard mode="login" loginHref={loginHref} />
       ) : user.producer_id !== producerId && !hasClickedWa && !inviteToken ? (
-        <p className="mt-4 text-sm text-fg-muted" data-testid="reviews-write-hint">
-          {t("wa_gate_message")}
-        </p>
+        <ReviewInviteCard mode="contact" />
       ) : null}
     </section>
   );
