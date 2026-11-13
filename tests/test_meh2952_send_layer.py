@@ -1005,7 +1005,25 @@ PINNED: dict[tuple[str, str, str], tuple[int, str, str]] = {
         BUS,
         "wrapper param ← producer.is_test (no account exists until acceptance)",
     ),
+    # MEH-2974 v3: the 6-digit code that proves the address typed on the
+    # acceptance page. Same position as the invite itself — no account yet.
+    ("services/auth_emails.py", "send_owner_invite_code_email", "send_email"): (
+        1,
+        BUS,
+        "wrapper param ← producer.is_test (no account exists until acceptance)",
+    ),
     # --- auth_notifications ---
+    # MEH-2974 v3: tells the admin an invite was accepted.
+    (
+        "services/auth_notifications.py",
+        "notify_admin_owner_invite_accepted",
+        "send_text",
+    ): (1, BUS, "wrapper param ← producer.is_test"),
+    (
+        "services/auth_notifications.py",
+        "notify_admin_owner_invite_accepted",
+        "send_email",
+    ): (1, BUS, "same"),
     ("services/auth_notifications.py", "notify_producer_registered", "send_template"): (
         1,
         OWN,

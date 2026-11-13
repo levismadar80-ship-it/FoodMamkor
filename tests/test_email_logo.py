@@ -235,5 +235,7 @@ def test_no_html_email_in_the_backend_without_the_logo():
     # fifth HTML document in auth_emails.py, and it carries `email_logo_html()`
     # like the other four. The pin is the control — it is what makes "every HTML
     # email has the logo" a measurement rather than a scan that found nothing.
-    assert checked.get("services/auth_emails.py") == (5, 5), checked
-    assert sum(d for d, _ in checked.values()) == 13, checked
+    # v3 of the same card added a sixth: `send_owner_invite_code_email`, the
+    # 6-digit code mail, which carries the logo too.
+    assert checked.get("services/auth_emails.py") == (6, 6), checked
+    assert sum(d for d, _ in checked.values()) == 14, checked

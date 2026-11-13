@@ -1370,6 +1370,7 @@ class OwnerInviteAccept(BaseModel):
         insert a non-breaking space. Strip both before the comparison, which is
         on a hash and therefore unforgiving."""
         return v.replace("\u00a0", "").strip() if isinstance(v, str) else v
+
     # NOT optional-with-default, unlike `ProducerRegister.terms_accepted`.
     # There the default exists for backwards compatibility with callers that
     # predate the field; here there is no such caller, and both consents are
