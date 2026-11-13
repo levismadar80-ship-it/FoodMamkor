@@ -90,7 +90,7 @@ export const BUSINESS_FEATURES = [
   { id: "primary_cta", group: "contact", status: "live", tile: { icon: "ChatCircleText" }, codeRef: ["frontend/app/[locale]/producer/[id]/components/ContactCard.jsx", "frontend/app/[locale]/producer/[id]/components/StickyContactBar.jsx"] },
   { id: "wa_prefill", group: "contact", status: "live", tile: { icon: "PaperPlaneTilt" }, codeRef: ["frontend/app/[locale]/producer/[id]/components/ContactCard.jsx"] },
   { id: "product_wa", group: "contact", status: "live", codeRef: ["frontend/components/public/ProductSheet.jsx"] },
-  { id: "faq_answers", group: "contact", status: "live", tip: true, codeRef: ["frontend/app/[locale]/producer/dashboard/edit/page.js", "frontend/app/[locale]/producer/[id]/components/ProducerSections.jsx"] },
+  { id: "faq_answers", group: "contact", status: "live", tip: true, codeRef: ["frontend/app/[locale]/producer/dashboard/edit/page.js", "frontend/app/[locale]/producer/[id]/components/ProducerSections.jsx", "frontend/app/[locale]/producer/dashboard/edit/PaymentInfoEditor.jsx"] },
   { id: "delivery_areas", group: "contact", status: "live", codeRef: ["frontend/app/[locale]/producer/dashboard/edit/LocationsEditor.jsx", "frontend/lib/delivery-coverage.js"] },
   { id: "delivery_checker", group: "contact", status: "live", tile: { icon: "Truck" }, codeRef: ["frontend/components/DeliveryChecker.jsx"] },
   { id: "wa_group", group: "contact", status: "live", codeRef: ["frontend/app/[locale]/producer/[id]/components/ContactCard.jsx"] },
