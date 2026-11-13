@@ -1049,7 +1049,7 @@
       "related_products_heading": "המוצרים שלנו במתכון",
       "producer_cta_heading": "כל הפריטים מהמתכון — אצל {name}",
       "producer_cta_link": "לעמוד המלא של {name}",
-      "back_to_producer": "→ חזרה לדף בית העסק",
+      "back_to_producer": "חזרה לדף בית העסק",
       "meta_title_not_found": "מתכון לא נמצא",
       "meta_title_template": "{recipeTitle} | {producerName}"
     },
@@ -1107,7 +1107,7 @@
       "toast_delete_error": "שגיאה במחיקה"
     },
     "edit": {
-      "back": "→ חזרה למתכונים",
+      "back": "חזרה למתכונים",
       "heading": "עריכת מתכון",
       "loading": "בטעינה...",
       "not_found": "המתכון לא נמצא"
@@ -1493,9 +1493,9 @@
       "reject": "דחה",
       "search": "חפש",
       "submit": "אישור",
-      "back": "→ חזרה לפאנל הניהול",
-      "back_to_dashboard": "→ לוח אדמין",
-      "back_home": "→ חזרה לאתר",
+      "back": "חזרה לפאנל הניהול",
+      "back_to_dashboard": "לוח אדמין",
+      "back_home": "חזרה לאתר",
       "error_loading": "שגיאה בטעינת המידע",
       "error_generic": "שגיאה",
       "no_data": "אין נתונים עדיין",

@@ -29,6 +29,7 @@ import EmptyState from "@/components/ui/EmptyState";
 import { AdminDashboardProvider, useAdminDashboard } from "./dashboard-data";
 import { QUEUES, queueCount, visibleQueues } from "./queues";
 import BrandLoader from "@/components/BrandLoader";
+import BackLink from "@/components/ui/BackLink";
 
 /**
  * Admin layout (docs/archive/ALL_PAGES_DESIGN.md עמוד 6).
@@ -281,9 +282,7 @@ function AdminShell({ children }) {
           })}
         </nav>
         <div className="px-5 py-4 border-t border-white/10 text-xs text-green-50/50">
-          <Link href="/" className="hover:text-white transition">
-            {t("common.back_home")}
-          </Link>
+          <BackLink href="/" tone="onDark" label={t("common.back_home")} />
         </div>
       </aside>
 

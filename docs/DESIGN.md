@@ -917,6 +917,15 @@ hover-only underline (or none):
 Colour alone (`text-primary`) is **not** a cue: on a page whose headings are
 already green it does not read as "tap me".
 
+## Back links (MEH-3085, 13/11/2026)
+
+A link back to a parent page is `components/ui/BackLink` — it draws the arrow
+(pointing back in both directions), the colour, the focus ring; `tone="onDark"`
+on the admin sidebar. Never type «→» into a back label: screen readers read it
+aloud and it cannot flip per locale. `BackLinkGuard.test.js` reds a `<Link>`/`<a>`
+whose text is a `back*` key, and a back label with a typed arrow. A link dressed
+as a button that goes home is an action (ActionShapeGuard), not a back link.
+
 ## Required-field marking (MEH-2015)
 
 **The rule: an asterisk is an enforced gate, always.** A field showing `*`

@@ -4,7 +4,6 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react
 import { useParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
-import { CaretLeft } from "@phosphor-icons/react";
 import { MAP_REFERRER } from "@/lib/map-view-state";
 
 import Breadcrumb from "@/components/Breadcrumb";
@@ -29,6 +28,7 @@ import { useStickyBar } from "./hooks/useStickyBar";
 import { buildShareUrl, categoryListingHref, getRenderableImages } from "./lib/producer-format";
 import { getSectionNavItems } from "./lib/section-nav";
 import { isOnVacation } from "@/lib/availability";
+import BackLink from "@/components/ui/BackLink";
 
 // Layout effect on the client, plain effect on the server (no layout there).
 const useIsomorphicLayoutEffect = typeof window === "undefined" ? useEffect : useLayoutEffect;
@@ -166,18 +166,9 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
         />
         {fromMap && (
           <p className="mb-2 lg:mb-0 lg:mt-2">
-            {/* Points "back": CaretLeft in LTR, rtl:rotate-180 → right in he.
-                Same convention as MapProducerCard's chevron (CaretRight +
-                rtl:rotate-180 = forward). /map restores the camera the visitor
-                left on its own (lib/map-view-state.js). */}
-            <Link
-              href="/map"
-              data-testid="back-to-map"
-              className="inline-flex items-center gap-1 text-sm text-primary hover:underline focus-ring"
-            >
-              <CaretLeft size={16} className="rtl:rotate-180" aria-hidden="true" />
-              {t("producer.detail.back_to_map")}
-            </Link>
+            {/* MEH-3060: the site BackLink. /map restores the camera the
+                visitor left on its own (lib/map-view-state.js). */}
+            <BackLink href="/map" data-testid="back-to-map" label={t("producer.detail.back_to_map")} />
           </p>
         )}
       </div>

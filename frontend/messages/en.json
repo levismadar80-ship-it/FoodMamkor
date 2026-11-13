@@ -1049,7 +1049,7 @@
       "related_products_heading": "Our products in this recipe",
       "producer_cta_heading": "Everything in this recipe — from {name}",
       "producer_cta_link": "Visit {name}'s page",
-      "back_to_producer": "← Back to business page",
+      "back_to_producer": "Back to business page",
       "meta_title_not_found": "Recipe not found",
       "meta_title_template": "{recipeTitle} | {producerName}"
     },
@@ -1107,7 +1107,7 @@
       "toast_delete_error": "Delete failed"
     },
     "edit": {
-      "back": "← Back to recipes",
+      "back": "Back to recipes",
       "heading": "Edit recipe",
       "loading": "Loading...",
       "not_found": "Recipe not found"
@@ -1493,9 +1493,9 @@
       "reject": "Reject",
       "search": "Search",
       "submit": "Confirm",
-      "back": "← Back to admin panel",
-      "back_to_dashboard": "← Admin dashboard",
-      "back_home": "← Back to site",
+      "back": "Back to admin panel",
+      "back_to_dashboard": "Admin dashboard",
+      "back_home": "Back to site",
       "error_loading": "Error loading data",
       "error_generic": "Error",
       "no_data": "No data yet",

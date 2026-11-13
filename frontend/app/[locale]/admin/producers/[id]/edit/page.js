@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { Link } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
 import { useAuth } from "@/lib/auth-context";
 import api from "@/lib/api";
@@ -15,6 +14,7 @@ import OwnerInvitePanel, {
 } from "@/components/admin/OwnerInvitePanel";
 
 import { SkeletonForm } from "@/components/Skeleton";
+import BackLink from "@/components/ui/BackLink";
 
 export default function EditProducerPage() {
   const { user, loading } = useAuth();
@@ -83,9 +83,7 @@ export default function EditProducerPage() {
   return (
     <div className="max-w-5xl mx-auto px-4 py-8">
       <div className="mb-6">
-        <Link href="/admin?tab=producers" className="text-sm text-muted hover:text-primary">
-          {t("common.back")}
-        </Link>
+        <BackLink href="/admin?tab=producers" label={t("common.back")} />
         <h1 className="text-2xl font-bold mt-2">{t("producers.edit.title", { name: producer.name })}</h1>
       </div>
       {/* MEH-2326: the catalogue the owner receives with the claim link. Only a

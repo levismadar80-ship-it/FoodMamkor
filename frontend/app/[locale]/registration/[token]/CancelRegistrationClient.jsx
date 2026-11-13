@@ -10,9 +10,9 @@
 
 import { useEffect, useState } from "react";
 import { useTranslations, useLocale } from "next-intl";
-import { Link } from "@/i18n/navigation";
 import api from "@/lib/api";
 import { formatEventDate } from "@/lib/format-date";
+import BackLink from "@/components/ui/BackLink";
 
 const BTN =
   "flex items-center justify-center min-h-[48px] w-full bg-primary text-white px-6 rounded-full font-semibold hover:bg-primary-dark transition focus-ring disabled:opacity-60";
@@ -91,9 +91,7 @@ export default function CancelRegistrationClient({ token }) {
               </button>
             </>
           )}
-          <Link href={itemHref} className="inline-block text-sm text-primary underline underline-offset-2">
-            {info.kind === "event" ? t("back_event") : t("back_experience")}
-          </Link>
+          <BackLink href={itemHref} label={info.kind === "event" ? t("back_event") : t("back_experience")} />
         </div>
       )}
     </section>

@@ -4,9 +4,9 @@ import SeedBurst from "@/components/brand/SeedBurst";
 import { useEffect, useRef, useState } from "react";
 import * as Sentry from "@sentry/nextjs";
 import { useRouter } from "next/navigation";
-import { Link } from "@/i18n/navigation";
 import Breadcrumb from "@/components/Breadcrumb";
 import HistoryBackLink from "@/components/HistoryBackLink";
+import BackLink from "@/components/ui/BackLink";
 import { MagnifyingGlass, MapPin, Clock, ShoppingCart, Truck, ShareNetwork, Check } from "@phosphor-icons/react";
 import Image from "next/image";
 import OwnerRow from "@/components/OwnerRow";
@@ -254,9 +254,7 @@ export default function GroupBuyDetailClient({ id }) {
       <div className="max-w-2xl mx-auto px-4 py-20 text-center">
         <MagnifyingGlass size={40} className="text-fg-muted mx-auto mb-4" aria-hidden="true" />
         <p className="text-lg font-medium text-text">{t("not_found_title")}</p>
-        <Link href="/group-buys" className="text-primary underline decoration-[1.5px] underline-offset-[5px] decoration-primary/35 hover:decoration-current mt-4 inline-block">
-          {t("back_to_list")}
-        </Link>
+        <BackLink href="/group-buys" label={t("back_to_list")} className="mt-4" />
       </div>
     );
   }
