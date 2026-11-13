@@ -420,12 +420,12 @@ test.describe("manual › /producers hierarchy (MEH-1186)", () => {
     await expect(scope(page).getByTestId("producers-filters-button")).toContainText(P_HE.filters.filter_label);
     // Width parity: the form and the category row share the container's inline
     // extent — a narrower search box is exactly what MEH-1186 row 5 forbids.
-    // MEH-3075: below lg the categories ride the one scrolling filter rail (their
-    // block is as wide as its chips), so the chip line to match is the sticky
-    // filter bar's content box — it bleeds to the glass by its own px-4.
+    // MEH-3075: the categories now share the filter rail with «סינון» (the
+    // block is only as wide as its chips), so the chip line to match is the
+    // filter bar's content box — below lg it bleeds to the glass by its own px-4.
     const form = await box(scope(page).getByTestId("producers-search-form"));
     const desktop = (page.viewportSize()?.width ?? 0) >= 1024;
-    const row = await box(scope(page).getByTestId(desktop ? "producers-category-row" : "producers-filter-bar"));
+    const row = await box(scope(page).getByTestId("producers-filter-bar"));
     const rowWidth = desktop ? row.width : row.width - 32;
     expect(Math.abs(form.width - rowWidth), "search form width vs chip line width").toBeLessThanOrEqual(2);
 
