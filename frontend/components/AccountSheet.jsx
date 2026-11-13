@@ -8,7 +8,7 @@ import { Heart, Gear, Storefront, SignIn, SignOut, User, ArrowUpLeft, Gauge, Loc
 import { useTranslations } from "next-intl";
 import LanguageToggle from "@/components/LanguageToggle";
 import { itemsForSurface } from "@/lib/nav-registry";
-import { currentPathWithoutLocale, loginLinkFor } from "@/lib/safe-redirect";
+import { loginLinkBackHere } from "@/lib/safe-redirect";
 
 /**
  * Module:   AccountSheet
@@ -71,7 +71,7 @@ export default function AccountSheet({ open, onClose, user, logout }) {
   // browser fact and the first render must match the server's bare /login.
   const [loginHref, setLoginHref] = useState("/login");
   useEffect(() => {
-    if (open) setLoginHref(loginLinkFor(currentPathWithoutLocale()));
+    if (open) setLoginHref(loginLinkBackHere());
   }, [open]);
 
   // Modal a11y: Escape closes, Tab is trapped inside the panel, and focus

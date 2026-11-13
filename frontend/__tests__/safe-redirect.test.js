@@ -68,9 +68,16 @@ describe("loginLinkFor — the login LINK that returns a guest to her page", () 
   });
 
   it("stays a bare /login where there is nowhere to return to", () => {
-    for (const path of ["/", "", null, undefined, "/login", "/login?redirect=%2Fa", "/register", "/register/producer", "/verify-email", "/reset-password"]) {
+    for (const path of ["/", "", null, undefined, "/login", "/login?redirect=%2Fa", "/register", "/register/producer", "/verify-email", "/reset-password", "/registration/abc", "/owner-invite", "/claim", "/claim/x.y.z"]) {
       expect(loginLinkFor(path)).toBe("/login");
     }
+  });
+
+  it("an English reader comes back to the English page", () => {
+    expect(loginLinkFor("/ruach-hasadeh", "/en")).toBe("/login?redirect=%2Fen%2Fruach-hasadeh");
+    expect(loginLinkFor("/", "/en")).toBe("/login");
+    // A slug that merely starts like an auth screen is an ordinary page.
+    expect(loginLinkFor("/register-cafe")).toBe("/login?redirect=%2Fregister-cafe");
   });
 
   it("round-trips through the clamp the login page applies", () => {

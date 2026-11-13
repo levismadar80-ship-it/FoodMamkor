@@ -258,10 +258,7 @@ export default function Header() {
               groupBuys: showGroupBuys,
               rescue: showRescue,
             })
-          : item.id === "login"
-            ? // MEH-3026 (F2): signing in from a page returns her to it.
-              loginLinkFor(pathname)
-            : item.href,
+          : item.href,
       label: t(surface.labelKey),
     }));
 
@@ -541,7 +538,13 @@ export default function Header() {
               // but are not painted: a signed-in visitor otherwise saw
               // «התחברות · הרשמה» for a second and then the avatar (30/10).
               <span className={`contents ${authLoading ? "[&>*]:invisible" : ""}`}>
-                {!isLoginPage && <LoginAccount label={t("nav.login")} />}
+                {!isLoginPage && (
+                  <LoginAccount
+                    label={t("nav.login")}
+                    // MEH-3026 (F2): signing in from a page returns her to it.
+                    href={loginLinkFor(pathname, locale === "en" ? "/en" : "")}
+                  />
+                )}
                 {!isRegisterPage && (
                   <RegisterAccount label={t("nav.register")} />
                 )}
@@ -608,10 +611,10 @@ function NavLink({ href, label, active, onClick }) {
  * in every state, so the surface-aware on-dark branch + over-hero shadow were
  * dropped. Quiet text link (no fill, no border); hover = ink shift only.
  */
-function LoginAccount({ label }) {
+function LoginAccount({ label, href = "/login" }) {
   return (
     <Link prefetch={false}
-      href="/login"
+      href={href}
       // MEH-215 journey C: locator for the header-discovery assertion. The
       // `hidden md:inline-flex` above is the whole point — this link exists on
       // desktop and NOT on mobile, and the spec asserts both halves rather

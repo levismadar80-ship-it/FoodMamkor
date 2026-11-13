@@ -53,10 +53,11 @@ describe("AccountSheet", () => {
   it("MEH-3026: on a business page the login row returns the guest to that page", async () => {
     window.history.pushState({}, "", "/en/ruach-hasadeh");
     render(<AccountSheet {...baseProps()} user={null} />);
-    // The locale prefix is dropped: the sheet's Link adds it back.
+    // The link path has no locale (the sheet's Link adds it); the redirect
+    // value keeps /en, because the login page pushes it as-is.
     expect(await screen.findByRole("link", { name: /nav\.login/ })).toHaveAttribute(
       "href",
-      "/login?redirect=%2Fruach-hasadeh",
+      "/login?redirect=%2Fen%2Fruach-hasadeh",
     );
     window.history.pushState({}, "", "/");
   });
