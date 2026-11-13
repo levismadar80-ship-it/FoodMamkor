@@ -4,6 +4,7 @@ import Image from "next/image";
 // MEH-2578: Link and useRouter from here too — next/link and next/navigation's
 // router dropped the /en prefix (the search button pushed /en readers to the
 // Hebrew /producers).
+import { loginLinkFor } from "@/lib/safe-redirect";
 import { Link, usePathname, useRouter } from "@/i18n/navigation";
 // MEH-2850: every Link element in the site chrome carries prefetch={false}. The
 // chrome is on screen on EVERY page, and since #4260 its targets (/, /about,
@@ -537,7 +538,13 @@ export default function Header() {
               // but are not painted: a signed-in visitor otherwise saw
               // «התחברות · הרשמה» for a second and then the avatar (30/10).
               <span className={`contents ${authLoading ? "[&>*]:invisible" : ""}`}>
-                {!isLoginPage && <LoginAccount label={t("nav.login")} />}
+                {!isLoginPage && (
+                  <LoginAccount
+                    label={t("nav.login")}
+                    // MEH-3026 (F2): signing in from a page returns her to it.
+                    href={loginLinkFor(pathname, locale === "en" ? "/en" : "")}
+                  />
+                )}
                 {!isRegisterPage && (
                   <RegisterAccount label={t("nav.register")} />
                 )}
@@ -604,10 +611,10 @@ function NavLink({ href, label, active, onClick }) {
  * in every state, so the surface-aware on-dark branch + over-hero shadow were
  * dropped. Quiet text link (no fill, no border); hover = ink shift only.
  */
-function LoginAccount({ label }) {
+function LoginAccount({ label, href = "/login" }) {
   return (
     <Link prefetch={false}
-      href="/login"
+      href={href}
       // MEH-215 journey C: locator for the header-discovery assertion. The
       // `hidden md:inline-flex` above is the whole point — this link exists on
       // desktop and NOT on mobile, and the spec asserts both halves rather
