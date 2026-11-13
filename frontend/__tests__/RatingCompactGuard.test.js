@@ -84,5 +84,7 @@ describe("RatingCompactGuard (MEH-3071)", () => {
     expect(hasCardRating({ reviews_count: 5, avg_rating: 0 })).toBe(false);
     expect(hasCardRating({ reviews_count: 5, avg_rating: null })).toBe(false);
     expect(hasCardRating(null)).toBe(false);
+    // a numeric string count is read as its number (both cards agree now)
+    expect(hasCardRating({ reviews_count: "5", avg_rating: 4 })).toBe(true);
   });
 });
