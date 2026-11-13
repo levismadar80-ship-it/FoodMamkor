@@ -25,6 +25,9 @@ import { X } from "@phosphor-icons/react";
 // card (EventDetailClient / ExperienceDetailClient `lg:grid`).
 const DESKTOP_QUERY = "(min-width: 1024px)";
 
+// Room at the page end while the bar is up (bar ≈ 68px + breathing space).
+const BAR_ROOM = "76px";
+
 const FOCUSABLE = 'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
 
 /** true on a desktop width. Unknown (no matchMedia, e.g. jsdom) → desktop,
@@ -42,9 +45,12 @@ const COVERED_BOTTOM = "0px 0px -96px 0px";
 
 /** Whether `ref` is on screen (above the pill band): undefined until measured
  * (and forever where there is no IntersectionObserver), then true / false. */
-export function useInView(ref) {
+export function useInView(ref, active = true) {
   const [inView, setInView] = useState(undefined);
+  // `active`: the caller renders the observed node only when it has something
+  // to show, so the observer (re)attaches when that turns true.
   useEffect(() => {
+    if (!active) return undefined;
     const el = ref.current;
     if (!el || typeof IntersectionObserver === "undefined") return undefined;
     const io = new IntersectionObserver(([entry]) => setInView(entry.isIntersecting), {
@@ -53,7 +59,7 @@ export function useInView(ref) {
     });
     io.observe(el);
     return () => io.disconnect();
-  }, [ref]);
+  }, [ref, active]);
   return inView;
 }
 
@@ -70,9 +76,10 @@ export function StickyRegistrationBar({ note, children }) {
   useEffect(() => {
     if (isDesktop()) return undefined;
     const prev = document.body.style.paddingBottom;
-    document.body.style.paddingBottom = "76px";
+    document.body.style.paddingBottom = BAR_ROOM;
     return () => {
-      document.body.style.paddingBottom = prev;
+      // Only undo our own write — never put back a value someone else replaced.
+      if (document.body.style.paddingBottom === BAR_ROOM) document.body.style.paddingBottom = prev;
     };
   }, []);
   return (
@@ -111,7 +118,12 @@ export function RegistrationSheet({ title, closeLabel, onClose, children }) {
       if (!items.length) return;
       const first = items[0];
       const last = items[items.length - 1];
-      if (e.shiftKey && document.activeElement === first) {
+      // Focus can fall out to <body> when the focused control unmounts (the
+      // submit button, once the confirmation replaces the form) — pull it back.
+      if (!dialogRef.current.contains(document.activeElement)) {
+        e.preventDefault();
+        (e.shiftKey ? last : first).focus();
+      } else if (e.shiftKey && document.activeElement === first) {
         e.preventDefault();
         last.focus();
       } else if (!e.shiftKey && document.activeElement === last) {

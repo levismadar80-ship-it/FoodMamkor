@@ -238,15 +238,21 @@ export default function RegistrationCta(props) {
   const [done, setDone] = useState(false);
   const openBtnRef = useRef(null);
   const inlineRef = useRef(null);
-  const inlineVisible = useInView(inlineRef);
   const action = resolveAction({ ...props, t });
+  const inlineVisible = useInView(inlineRef, Boolean(action));
   const signupLabel = kind === "events" ? t("signup_event") : t("signup_experience");
 
   const openForm = () => setOpen(isDesktop() ? "inline" : "sheet");
   const closeForm = useCallback(() => {
     setOpen(null);
-    // Focus goes back to the button that opened it (WAI-ARIA dialog pattern).
-    requestAnimationFrame(() => openBtnRef.current?.focus());
+    // Focus goes back to the button that opened it (WAI-ARIA dialog pattern),
+    // without scrolling: a sheet opened from the sticky bar must close onto
+    // the same reading position. After a sign-up the button is gone and focus
+    // goes to the confirmation that replaced it.
+    requestAnimationFrame(() => {
+      const target = openBtnRef.current ?? document.querySelector('[data-testid="registration-success"]');
+      target?.focus({ preventScroll: true });
+    });
   }, []);
 
   if (!action) return null;
@@ -371,7 +377,8 @@ function InlineBlock({ action, label, done, open, kind, title, form, question, s
           {signupLabel}
         </button>
       )}
-      {question}
+      {/* While the phone sheet is open it carries the question link. */}
+      {open !== "sheet" && question}
     </div>
   );
 }
@@ -385,7 +392,7 @@ function DoneBlock({ kind, title, successText }) {
     : "";
   return (
     <div className="space-y-3">
-      <p role="status" className="text-sm bg-green-50 border border-primary/30 text-text rounded-md p-3" data-testid="registration-success">
+      <p role="status" tabIndex={-1} className="text-sm bg-green-50 border border-primary/30 text-text rounded-md p-3 focus:outline-none" data-testid="registration-success">
         {successText}
       </p>
       {eventUrl && (

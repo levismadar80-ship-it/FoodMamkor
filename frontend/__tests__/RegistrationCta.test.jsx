@@ -265,6 +265,25 @@ describe("MEH-3040 — open and close", () => {
     expect(screen.getByTestId("registration-sheet")).toBeInTheDocument();
     fireEvent.keyDown(document, { key: "Escape" });
     expect(screen.queryByTestId("registration-sheet")).toBeNull();
+    expect(document.body.style.overflow).toBe("");
+  });
+
+  it("phone: Tab stays inside the sheet, both ways, and pulls a lost focus back in", () => {
+    phoneWidth();
+    cta({ method: "site_form", phone: "050-1234567" });
+    fireEvent.click(screen.getByTestId("registration-open"));
+    const sheet = screen.getByTestId("registration-sheet");
+    const close = screen.getByTestId("registration-sheet-close");
+    const last = screen.getByTestId("registration-question");
+    last.focus();
+    fireEvent.keyDown(document, { key: "Tab" });
+    expect(document.activeElement).toBe(close);
+    fireEvent.keyDown(document, { key: "Tab", shiftKey: true });
+    expect(document.activeElement).toBe(last);
+    document.body.focus();
+    document.activeElement.blur();
+    fireEvent.keyDown(document, { key: "Tab" });
+    expect(sheet.contains(document.activeElement)).toBe(true);
   });
 
   it("phone: a sign-up inside the sheet confirms there, and the card keeps it after closing", async () => {
