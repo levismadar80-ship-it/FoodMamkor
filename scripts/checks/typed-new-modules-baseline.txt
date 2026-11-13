@@ -270,6 +270,7 @@ frontend/app/[locale]/producer/dashboard/edit/LocationHoursField.jsx
 frontend/app/[locale]/producer/dashboard/edit/LocationsEditor.jsx
 frontend/app/[locale]/producer/dashboard/edit/OrderWindowEditor.jsx
 frontend/app/[locale]/producer/dashboard/edit/OrganizerCityCard.jsx
+frontend/app/[locale]/producer/dashboard/edit/PaymentInfoEditor.jsx
 frontend/app/[locale]/producer/dashboard/edit/ReservistOwnedCard.jsx
 frontend/app/[locale]/producer/dashboard/edit/SpecialHoursEditor.jsx
 frontend/app/[locale]/producer/dashboard/edit/TagsCard.jsx
