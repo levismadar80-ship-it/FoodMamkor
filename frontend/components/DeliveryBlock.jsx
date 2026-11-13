@@ -635,7 +635,7 @@ export default function DeliveryBlock({
 
       {nationwide ? (
         <>
-          <span className="inline-flex items-center gap-1.5 bg-green-50 text-text border border-border rounded-xl text-sm px-3 py-1.5 font-medium mb-4">
+          <span className="inline-flex items-center gap-1.5 bg-green-50 text-text border border-border rounded-md text-sm px-3 py-1.5 font-medium mb-4">
             <Truck size={14} className="text-current ms-1" aria-hidden="true" />
             {hasExclusions
               ? t("nationwide_except", { cities: excluded.join(", ") })

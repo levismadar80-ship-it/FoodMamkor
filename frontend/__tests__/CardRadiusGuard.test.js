@@ -26,8 +26,9 @@ const EXEMPT = new Set([
 ]);
 
 const OFF_SCALE = /(?:^|\s)(?:[a-z0-9-]+:)*rounded(?:-[tbse]{1,2})?-(?:2xl|3xl)(?=\s|$)/;
-const PANEL_SURFACE = /(?:^|\s)(?:border|border-2|bg-surface-card|bg-surface|bg-background-alt)(?=\s|$)/;
-const PADDED = /(?:^|\s)p-\d/;
+// a bordered box, or a tinted one (surface tokens, green-50, any /5–/10 wash)
+const PANEL_SURFACE = /(?:^|\s)(?:border|border-2|bg-surface-card|bg-surface|bg-background-alt|bg-green-50|bg-(?:primary|accent|green-[0-9]+|gold[a-z-]*)\/(?:5|10))(?=\s|$)/;
+const PADDED = /(?:^|\s)(?:p|px|py)-\d/;
 const OVERLAY = /(?:^|\s)(?:fixed|absolute)(?=\s|$)/;
 const XL = /(?:^|\s)rounded-xl(?=\s|$)/;
 
@@ -66,6 +67,10 @@ describe("MEH-3091 — card and panel radius", () => {
     expect(radiusIssues('const a = "relative overflow-hidden md:rounded-xl";')).toEqual([]);
     expect(radiusIssues('const a = "rounded-lg border border-border bg-surface-card p-5";')).toEqual([]);
     expect(radiusIssues("// rounded-2xl in a comment\nconst a = 1;")).toEqual([]);
+    // reviewer finding (13/11): px/py-only and tinted panels — the pre-fix
+    // GroupBuyDetailClient.jsx:316 price box and a bg-primary/5 aside
+    expect(radiusIssues('const a = "rounded-xl border border-border px-3 py-2.5";')).toEqual(["panel-xl@1"]);
+    expect(radiusIssues('const a = "rounded-xl bg-primary/5 p-5";')).toEqual(["panel-xl@1"]);
   });
 
   it("every card and panel is on the radius rule", () => {
