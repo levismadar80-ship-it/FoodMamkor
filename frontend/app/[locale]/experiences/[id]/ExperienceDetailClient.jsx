@@ -314,9 +314,12 @@ export default function ExperienceDetailClient() {
                   date used to repeat on the cover and in a desktop header. */}
               <DateTile month={month} day={day} bandClass="bg-accent" testId="experience-date-tile" />
               <p className="flex-1 min-w-0 font-semibold text-text" data-testid="experience-date">
+                {/* MEH-3057: the tile already says month + day — a one-off
+                    row shows the weekday only; «starts from» keeps the full
+                    date, which is its content. */}
                 {ex.is_recurring
                   ? t("starts_from", { date: formatDate(ex.event_date, locale) })
-                  : formatDate(ex.event_date, locale)}
+                  : formatEventDate(ex.event_date, locale, { weekday: "long" })}
                 {ex.event_time && ` · ${formatTime(ex.event_time)}`}
               </p>
               {when && when !== "past" && (
