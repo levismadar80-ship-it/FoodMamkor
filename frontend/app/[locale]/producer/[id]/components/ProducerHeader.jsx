@@ -1,7 +1,7 @@
 import { Fragment, useEffect, useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
-import { Star, StarOfDavid } from "@phosphor-icons/react";
+import { MapPin, Star, StarOfDavid } from "@phosphor-icons/react";
 
 import AlertPrefsPanel from "@/components/AlertPrefsPanel";
 import BadgeRow from "@/components/BadgeRow";
@@ -21,8 +21,9 @@ import { allBadges, isKashrutCurrent } from "@/lib/badges";
 import { getOrderWindowStatus } from "@/lib/orderWindow";
 import { useUserLocation } from "@/lib/user-location";
 import { formatDistance, haversineKm } from "@/lib/distance";
-import { producerPoints } from "@/lib/producerPoints";
+import { primaryPoint, producerPoints } from "@/lib/producerPoints";
 import ReviewExcerpt from "./ReviewExcerpt";
+import { parseHasLocation } from "./ProducerSections";
 import { categoryListingHref, getVacationReturnDate } from "../lib/producer-format";
 import { resolveCategoryGlyph, styleForProducer } from "@/lib/category-registry";
 // MEH-1546: the meta-line status is the page's ONLY order-status element, so
@@ -285,7 +286,32 @@ export default function ProducerHeader({
       </Link>,
     );
   }
-  if (producer.city) facts.push(<span key="city">{producer.city}</span>);
+  // MEH-1694 (Sapir's option ב, 13/11): the city is the way in to directions,
+  // as on Google's place card — it links to «הגעה ומיקום», where the Waze /
+  // Google buttons live (MiniMap). Only when that section renders (the same
+  // gate ProducerSections + section-nav read), else it would point at nothing.
+  // Same quiet underline as the category beside it (MEH-2831). No new copy:
+  // the accessible name is the city + the section's existing title.
+  if (producer.city) {
+    facts.push(
+      parseHasLocation(producer, primaryPoint(producer)) ? (
+        <a
+          key="city"
+          href="#section-location"
+          data-testid="producer-header-city-link"
+          aria-label={`${producer.city} · ${t("producer.detail.sections.location")}`}
+          className="group inline-flex min-h-[24px] items-center gap-1 text-text hover:text-primary focus-visible:text-primary transition"
+        >
+          <MapPin size={14} aria-hidden="true" className="shrink-0" />
+          <span className="underline decoration-text/35 decoration-[1.5px] underline-offset-[5px] group-hover:decoration-primary group-focus-visible:decoration-primary">
+            {producer.city}
+          </span>
+        </a>
+      ) : (
+        <span key="city">{producer.city}</span>
+      ),
+    );
+  }
   // MEH-3033 (Sapir chose א, 13/11): distance as its OWN fact after the city
   // (MEH-1694 turns the city into a link — never put this inside it). Same
   // label as the cards: nearest location row, formatDistance, no «ממך»
