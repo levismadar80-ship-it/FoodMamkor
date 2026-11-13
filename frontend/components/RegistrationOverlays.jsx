@@ -149,7 +149,7 @@ export function RegistrationSheet({ title, closeLabel, onClose, children }) {
     >
       <div className="relative border-b border-border px-4 py-2 shrink-0" style={{ paddingTop: "max(env(safe-area-inset-top, 0px), 8px)" }}>
         {/* × at the inline END + the heading reserves its width (rtl.md, MEH-2038). */}
-        <h2 id="registration-sheet-title" className="font-semibold text-text pe-12 min-h-[44px] flex items-center">
+        <h2 id="registration-sheet-title" className="font-semibold text-text pe-12 min-h-touch flex items-center">
           {title}
         </h2>
         <button

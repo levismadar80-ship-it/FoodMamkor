@@ -353,7 +353,7 @@ function InlineBlock({ action, label, done, open, kind, title, form, question, s
               × mirrors to the inline END and the heading reserves its width
               (rtl.md, MEH-2038). */}
           <div className="relative mb-1">
-            <h3 className="font-semibold text-text pe-12 min-h-[44px] flex items-center">{signupLabel}</h3>
+            <h3 className="font-semibold text-text pe-12 min-h-touch flex items-center">{signupLabel}</h3>
             <button
               type="button"
               onClick={onClose}
