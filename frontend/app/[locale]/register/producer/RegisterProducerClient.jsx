@@ -17,6 +17,7 @@ import PasswordStrength from "@/components/PasswordStrength";
 import ProducerOAuthButtons from "@/components/ProducerOAuthButtons";
 import RegisterCardPreview from "@/components/RegisterCardPreview";
 import Input from "@/components/ui/Input";
+import RegisterNameCheck from "@/components/RegisterNameCheck";
 import RegisterPreflight from "./RegisterPreflight";
 // MEH-1808: Leaflet touches `window` at import time, so the confirmation map is
 // client-only — same mount idiom as every other consumer
@@ -1262,6 +1263,7 @@ function RegisterProducerPageBody({ routeKind }) {
               required
               dir="rtl"
             />
+            <RegisterNameCheck name={form.producer_name} />
 
             <div>
               <label htmlFor="producer-phone" className="block text-sm font-medium text-text mb-1 text-start">
