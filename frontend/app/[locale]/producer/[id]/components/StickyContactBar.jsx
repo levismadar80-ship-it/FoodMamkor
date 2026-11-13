@@ -4,7 +4,7 @@ import { Star } from "@phosphor-icons/react";
 import { getPrimaryContactHref, getPrimaryContactLabel, getPrimaryMethod, isPrimaryExternal } from "@/lib/contact-method";
 import { withReferralParams } from "@/lib/utils";
 
-import { pingWhatsAppBeacon, markWhatsAppClickedLocal } from "@/lib/contact-tracking";
+import { trackPrimaryCtaClick } from "@/lib/contact-tracking";
 import { INERT_PRESENT } from "@/lib/inert-attr";
 import { getCtaVariant } from "@/components/ContactCtaVariants";
 import { usePreviewMode } from "@/lib/preview-mode"; // MEH-2916
@@ -26,10 +26,8 @@ import { usePreviewMode } from "@/lib/preview-mode"; // MEH-2916
  * exit) and z-index (598, below CookieBanner@599 and BottomNav@1000)
  * are preserved exactly.
  *
- * Beacon dedup applied to this onClick. UNLIKE the ContactCard CTA
- * (mounted inline on mobile + in the desktop sidebar), this site fires
- * pingWhatsAppBeacon WITHOUT calling markWhatsAppClickedLocal — see
- * TODO below.
+ * Beacon dedup applied to this onClick. Same handler as the ContactCard
+ * CTA since MEH-2999 (trackPrimaryCtaClick, any channel).
  */
 export default function StickyContactBar({
   producer,
@@ -130,20 +128,15 @@ export default function StickyContactBar({
             {...(!isPreview && isPrimaryExternal(producer)
               ? { target: "_blank", rel: isWebsite ? "noopener" : "noopener noreferrer" }
               : {})}
-            // MEH-1426: TODO resolved — the sticky bar now matches the ContactCard
-            // CTA. A WhatsApp primary click both attributes (pingWhatsAppBeacon) and
-            // unlocks the review form (markWhatsAppClickedLocal, localStorage
-            // wa_clicked_<id>). Invariant: every WhatsApp click = attribution +
-            // unlock; a non-WhatsApp primary fires neither.
+            // MEH-1426 → MEH-2999: matches the ContactCard CTA. Every primary
+            // click (any channel) is recorded and unlocks the review form.
             onClick={(e) => {
               if (isPreview) {
                 e.preventDefault(); // MEH-2916
                 return;
               }
-              if (getPrimaryMethod(producer) === "whatsapp") {
-                pingWhatsAppBeacon(producer.id);
-                markWhatsAppClickedLocal(producer.id);
-              }
+              // MEH-2999: any primary channel — same handler as ContactCard.
+              trackPrimaryCtaClick(producer.id, getPrimaryMethod(producer));
             }}
             // MEH-76 chunk 1: the vacation pale-green CTA fork was an ADR-019
             // violation (state-color fill + raw hex). The CTA keeps its normal

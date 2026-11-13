@@ -383,11 +383,8 @@ export default function GroupBuyDetailClient({ id }) {
             >
               {submitting ? t("submitting") : user ? t("submit_join") : t("submit_login")}
             </Button>
-            {!user && (
-              <p className="text-center text-xs text-fg-muted">
-                {t("login_required")}
-              </p>
-            )}
+            {/* MEH-2999: the «יש להתחבר כדי להצטרף…» line under the button is
+                gone — the button already says «כניסה להצטרפות». */}
           </form>
         )}
 

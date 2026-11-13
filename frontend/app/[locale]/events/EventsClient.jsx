@@ -17,7 +17,6 @@ import {
 } from "@phosphor-icons/react";
 import { useTranslations, useLocale } from "next-intl";
 import api from "@/lib/api";
-import { optimizeCloudinary } from "@/lib/cloudinary";
 import { formatEventDate } from "@/lib/format-date";
 import CitySearch from "@/components/CitySearch";
 import ChipScrollRow from "@/components/ChipScrollRow";
@@ -32,7 +31,7 @@ import { EVENT_CATEGORIES, EXPERIENCE_CATEGORIES, withAll } from "@/lib/event-ca
 // mapping would drift, and a drifted arrow direction is invisible in review —
 // it reads as a plausible line either way.
 import useTabsKeyboard from "@/hooks/useTabsKeyboard";
-import ListingHubTabs from "@/components/ListingHubTabs";
+import HubShell from "@/components/HubShell";
 import Button from "@/components/ui/Button";
 
 // MEH-134: S10 "The Almanac" visual port. Events API + filter logic +
@@ -44,33 +43,7 @@ import Button from "@/components/ui/Button";
 // MEH-2248 deleted the component itself). MEH-2771: the calendar view
 // lists its month through the same EventEntryRow (renderItem).
 
-// MEH-788: events hero — license-clean Pexels market-produce photo (3:4
-// 2400×3200, Pexels Free). Smart-cropped to a wide 16:9 band via g_auto
-// (Cloudinary saliency) then CSS cover fills the height-capped band — same
-// discipline as the home hero (a downward-angle source under plain center-cover
-// would slice the produce). w_1920 downscales the 2400px original (never
-// upscales). f_auto,q_auto via the helper — no hardcoded transform string.
-// REUSES: app/[locale]/home/HomeHero.jsx:18 (optimizeCloudinary ar + width)
-const HERO_MAX_WIDTH = 1920;
-const HERO_IMAGE = optimizeCloudinary(
-  "https://res.cloudinary.com/dfzpscjks/image/upload/v1782159035/events/hero-market.jpg",
-  { aspectRatio: "16:9", width: HERO_MAX_WIDTH }
-);
-
-// MEH-788: green hero scrim — the green-900 (#143228 ≡ rgb(20 50 40)) analogue
-// of HomeHero's warm `--scrim-ink` (globals.css). Inline (not a globals.css
-// utility) to keep the wire inside EventsClient.jsx per the MEH-788 scope, and
-// green (not warm ink) to carry the page's existing primary-dark hero identity.
-// Bottom-anchored band: H1 sits in the lower third (α ≥ .72), subtitle lower
-// still (α ≥ .88), so white text holds ≥ 4.5:1 over ANY g_auto crop. Worst case
-// = a blown-white highlight under the H1 top line at α ≈ .72 → ≈ 5.7:1 ≥ 4.5.
-const HERO_SCRIM =
-  "linear-gradient(to top," +
-  "rgb(20 50 40 / 0.92) 0%," +
-  "rgb(20 50 40 / 0.88) 50%," +
-  "rgb(20 50 40 / 0.72) 72%," +
-  "rgb(20 50 40 / 0.30) 88%," +
-  "rgb(20 50 40 / 0) 100%)";
+// MEH-3013: the MEH-788 hero (photo + scrim) moved to components/HubShell.jsx.
 
 // MEH-869: category sets moved to the shared lib/event-categories.js
 // (were duplicated across 5 call-sites). withAll() prepends the "all" chip.
@@ -344,54 +317,19 @@ export default function EventsPage({ initialTab = "events", titles = null }) {
           (/producers, /group-buys) carries one, and «בית › חוויות» on a
           first-level page only repeats the bottom nav. Detail pages keep theirs. */}
 
-      {/* Header — type-led per tab, now a full-bleed Ken Burns produce hero
-          (MEH-788). Image on all viewports; the green HERO_SCRIM band holds the
-          H1 + subtitle ≥ AA over any g_auto crop. Reuses the home-hero motion
-          (kenburns-right, globals.css) — honours prefers-reduced-motion via the
-          global off-switch (animation:none) + <MotionConfig reducedMotion>. */}
-      <section className="relative isolate w-full overflow-hidden h-[clamp(240px,34svh,300px)] md:h-[clamp(300px,40svh,380px)]">
-        {/* Ken Burns layer — decorative produce photo. inset -5% gives the
-            ≤1.08 zoom drift room. REUSES: app/[locale]/home/HomeHero.jsx:67 */}
-        <div className="absolute inset-0 overflow-hidden" aria-hidden="true">
-          <div
-            className="kenburns-right absolute"
-            style={{
-              inset: "-5%",
-              backgroundImage: `url(${HERO_IMAGE})`,
-              backgroundSize: "cover",
-              backgroundPosition: "center",
-              backgroundRepeat: "no-repeat",
-            }}
-          />
-        </div>
-
-        {/* green scrim band (HERO_SCRIM) — H1 + subtitle stay ≥ AA over the photo */}
-        <div className="absolute inset-0" aria-hidden="true" style={{ backgroundImage: HERO_SCRIM }} />
-
-        {/* Text — bottom-anchored on the scrim; start-aligned (RTL right). */}
-        <div className="absolute inset-x-0 bottom-0 px-4 pb-6 md:px-14 md:pb-10 text-background">
-          <div className="max-w-5xl mx-auto">
-            <p className="text-xs font-semibold text-green-100">
-              {isExp ? t("eyebrow_experiences") : t("eyebrow_events")}
-            </p>
-            <h1 className="font-headline-display font-black text-3xl md:text-6xl leading-tight text-background mt-1.5 md:mt-3">
-              {isExp ? t("h1_experiences") : t("title")}
-            </h1>
-            <p className="text-base md:text-xl text-background/85 mt-2 leading-snug">
-              {isExp ? t("subtitle_experiences") : t("subtitle")}
-            </p>
-          </div>
-        </div>
-      </section>
-
+      {/* MEH-3013: hero + tab row come from the shared HubShell, so all four
+          hub tabs keep one frame (components/HubShell.jsx). */}
       {/* MEH-2859: the row is now the shared four-tab hub row (events ·
           experiences · group buys · surprise baskets) in
           components/ListingHubTabs.jsx, so /group-buys and /rescue render the
           same one instead of a second copy. `onSelect` keeps this page's
           same-tick local switch for its own two tabs (MEH-2245); the other two
           are plain route changes. The add link moves in as `action`. */}
-      <ListingHubTabs
+      <HubShell
         active={isExp ? "experiences" : "events"}
+        eyebrow={isExp ? t("eyebrow_experiences") : t("eyebrow_events")}
+        title={isExp ? t("h1_experiences") : t("title")}
+        subtitle={isExp ? t("subtitle_experiences") : t("subtitle")}
         onSelect={switchTab}
         action={
           <Link

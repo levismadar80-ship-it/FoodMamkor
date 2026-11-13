@@ -295,12 +295,11 @@ def test_post_review_any_contact_method_unlocks(client, db, method):
     raises 422 for anything outside it, so no ContactClick row is written and the
     gate has nothing to find.
 
-    That gap is real and is NOT closed here: ContactCard renders `facebook` and
-    `external_order` tiles that call trackContactClick with those keys, and both
-    are rejected at the beacon — so those two channels still cannot unlock a first
-    review. Fixing it means widening the frozenset, which is outside this change's
-    scope; when someone does, this test widens with it because the list is derived
-    rather than transcribed.
+    MEH-2999 closed the gap this docstring used to describe: `facebook` and
+    `external_order` are now in the set, so their ContactCard tiles and primary
+    CTAs open the gate too. The list stays derived rather than transcribed, and
+    frontend/__tests__/ContactMethodsBackendContract.test.js keeps the set equal
+    to every non-WhatsApp key the frontend can send.
     """
     user = make_user(db)
     producer = make_producer(db)

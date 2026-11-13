@@ -67,6 +67,13 @@ vi.mock("@phosphor-icons/react", () => ({
 vi.mock("@/lib/contact-tracking", () => ({
   pingWhatsAppBeacon: (...a) => pingWhatsAppBeacon(...a),
   markWhatsAppClickedLocal: (...a) => markWhatsAppClickedLocal(...a),
+  // MEH-2999: the primary CTA calls the one handler; WhatsApp = beacon + unlock.
+  trackPrimaryCtaClick: (id, m) => {
+    if (m === "whatsapp") {
+      pingWhatsAppBeacon(id);
+      markWhatsAppClickedLocal(id);
+    }
+  },
 }));
 
 import ProductSheet from "@/components/public/ProductSheet";

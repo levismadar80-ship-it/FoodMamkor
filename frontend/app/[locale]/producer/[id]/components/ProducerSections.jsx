@@ -1,7 +1,7 @@
 import RescueSection from "@/components/rescue/RescueSection";
 import { useCallback, useEffect, useState } from "react";
 import Image from "next/image";
-import { CaretLeft, MapPin } from "@phosphor-icons/react";
+import { CaretLeft, Info, MapPin } from "@phosphor-icons/react";
 import Seed from "@/components/brand/Seed";
 import { seedColorFor } from "@/lib/brand-seeds";
 import dynamic from "next/dynamic";
@@ -581,12 +581,13 @@ export default function ProducerSections({
           <h2 className="font-headline-md text-2xl font-bold text-text mb-4">
             {t("producer.detail.sections.recipes.cta")}
           </h2>
-          {/* MEH-2836: exactly one recipe fills its row on a phone (it sat in
-              half the row beside an empty half) and takes at most half the
-              row from md up. Two or more: the grid as before. */}
+          {/* MEH-3006 (option B): phones — one sideways-scrolling strip of
+              medium cards, bleeding to the screen edge (-me-4 pe-4 cancels the
+              page gutter) so the next card peeks; same height for one recipe
+              or many. md+ — the same cards in a 3-column grid. */}
           <div
             data-testid="producer-recipes-grid"
-            className={recipes.length === 1 ? "grid grid-cols-1 md:grid-cols-2 gap-4" : "grid grid-cols-2 md:grid-cols-3 gap-4"}
+            className="flex gap-3 overflow-x-auto scrollbar-hide snap-x snap-proximity -me-4 pe-4 md:grid md:grid-cols-3 md:gap-4 md:overflow-visible md:me-0 md:pe-0"
           >
             {recipes.map((r) => (
               <RecipeCard key={r.id} slug={producer.slug} recipe={r} />
@@ -751,43 +752,53 @@ export default function ProducerSections({
 
       {/* MEH-2592: the page-end fine print — everything about THIS business
           ends here, before the other-businesses band (rendered by
-          ProducerDetail, full width, below both columns). Plain small grey
-          text, no box: the disclaimer is legal copy and stays word for word
-          (MEH-1548), only its container changed. Order inside: disclaimer →
-          report → correction link → last-updated. */}
-      <div className="mt-12" data-testid="producer-fine-print">
+          ProducerDetail, full width, below both columns). The disclaimer is
+          legal copy and stays word for word (MEH-1548), only its container
+          changed. MEH-2999 (Sapir chose option A, 12/11): a hairline above,
+          an info icon beside the disclaimer, and the three meta items on ONE
+          quiet row — last-updated · correction link · report (signed-in only)
+          — instead of three stacked lines with a red report link. Order:
+          disclaimer → that row. */}
+      <div className="mt-12 border-t border-border pt-5" data-testid="producer-fine-print">
         {/* Directory-only disclaimer — required by Israeli consumer
             protection law. The seller bears legal responsibility for
             products and licensing; the platform is just a directory. */}
-        <DirectoryDisclaimer />
-        <div className="mt-4">
-          <ReportButton producerId={producer.id} />
-          {/* MEH-1460: quiet "טעות בפרטים? עדכנו אותנו" correction link,
-              directly below ReportButton (opens the MEH-1443 email-only modal).
-              Relocated here from ContactCard — same quiet-link styling. */}
+        <div className="flex items-start gap-2">
+          <Info size={16} className="mt-0.5 shrink-0 text-fg-muted" aria-hidden="true" />
+          <DirectoryDisclaimer />
+        </div>
+        <div
+          className="mt-4 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-fg-muted"
+          data-testid="producer-fine-print-meta"
+        >
+          {/* MEH-1291: last-updated freshness signal. Renders ONLY when a real
+              edit has stamped producer.updated_at (nullable, no backfill), so
+              untouched producers show nothing. Month-year granularity. */}
+          {producer.updated_at && (
+            <span className="whitespace-nowrap">
+              {t("producer.detail.last_updated", {
+                date: formatEventDate(producer.updated_at, locale, {
+                  month: "long",
+                  year: "numeric",
+                }),
+              })}
+              {/* the dot rides with its item, so a wrap never strands it */}
+              <span aria-hidden="true" className="ms-2">·</span>
+            </span>
+          )}
+          {/* MEH-1460: quiet "טעות בפרטים? עדכנו אותנו" correction link (opens
+              the MEH-1443 email-only modal). */}
           <button
             type="button"
             onClick={() => setReportOpen(true)}
-            className="mt-3 block text-xs text-fg-muted underline hover:text-text transition"
+            className="underline hover:text-text transition"
           >
             {t("producer.detail.contact_card.report_info_link")}
           </button>
+          {/* Signed-in only (ReportButton returns null for a guest), so it
+              carries its own leading separator. */}
+          <ReportButton producerId={producer.id} quiet />
         </div>
-        {/* MEH-1291: last-updated freshness signal. Renders ONLY when a real
-            edit has stamped producer.updated_at (nullable, no backfill — Chunk A
-            migration a3f1c9d2e4b7), so untouched producers show nothing. Modest
-            month-year granularity via the shared format-date util (he→he-IL,
-            en→en-US). Page-end meta footnote — no section reorder. */}
-        {producer.updated_at && (
-          <p className="mt-4 text-xs text-fg-muted">
-            {t("producer.detail.last_updated", {
-              date: formatEventDate(producer.updated_at, locale, {
-                month: "long",
-                year: "numeric",
-              }),
-            })}
-          </p>
-        )}
       </div>
 
       <ReportInfoModal

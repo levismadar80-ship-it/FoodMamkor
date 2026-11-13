@@ -33,3 +33,27 @@ describe("he.json — reviews are «ביקורות», never «חוות דעת»"
     expect(he.reviews.show_more).toBe("הצג עוד ביקורות");
   });
 });
+
+// MEH-2999 (12/11/2026) — writing a review never required WhatsApp: the
+// server has accepted contact through ANY channel since MEH-2204, yet three
+// review strings kept saying «וואטסאפ» (the guest line, the signed-in gate
+// line, the owner's empty state). The review texts may not name a channel.
+describe("reviews.* — the write-a-review texts name no contact channel (MEH-2999)", () => {
+  const en = JSON.parse(readFileSync(path.join(here, "..", "messages", "en.json"), "utf8"));
+  for (const [lang, msgs, re] of [
+    ["he", he, /וואטסאפ|ווצאפ|whatsapp/i],
+    ["en", en, /whatsapp/i],
+  ]) {
+    it(`${lang}: no string under «reviews» mentions WhatsApp`, () => {
+      const hits = [...walk(msgs.reviews, "reviews")].filter(([, v]) => re.test(v)).map(([k]) => k);
+      expect(hits).toEqual([]);
+    });
+  }
+
+  it("the invite card's two strings exist in both languages", () => {
+    expect(he.reviews.invite_title).toBeTruthy();
+    expect(he.reviews.invite_hint).toBeTruthy();
+    expect(en.reviews.invite_title).toBeTruthy();
+    expect(en.reviews.invite_hint).toBeTruthy();
+  });
+});

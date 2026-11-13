@@ -22,6 +22,9 @@ import { useAuth } from "@/lib/auth-context";
 import ShareSiteActions from "@/components/ShareSiteActions";
 import Seed from "@/components/brand/Seed";
 import { SEEDS_DARK } from "@/lib/brand-seeds";
+// MEH-2998: the © year is the Israel calendar year, so the server (UTC) and
+// every browser agree on it on New Year's night — see lib/established-year.
+import { currentIsraelYear } from "@/lib/established-year";
 
 /**
  * Footer (MEH-37 redesign) — brings the implementation in line with the
@@ -376,7 +379,7 @@ export default function Footer() {
           {/* MEH-788 copy-Δ: P5-v2 bottom-row lock — wordmark only; the leaf
               emoji dropped per the UI-surface emoji LOCK (MEH-657). */}
           <p className="text-green-100" style={{ fontSize: "11px" }}>
-            © {new Date().getFullYear()} {t("footer.copyright")}
+            © {currentIsraelYear()} {t("footer.copyright")}
           </p>
           {/* MEH-2417: wraps (and centres) at 375 instead of running five links
               edge to edge under the floating back-to-top button. */}

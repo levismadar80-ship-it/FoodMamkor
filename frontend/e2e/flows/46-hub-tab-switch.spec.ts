@@ -165,7 +165,15 @@ for (const locale of ["he", "en"] as const) {
         page.evaluate(() =>
           performance
             .getEntriesByType("resource")
-            .some((e) => /\/events(?![\w-])/.test(e.name) && !/\/api\//.test(e.name)),
+            // Same-origin only (MEH-3013): the hub hero photo is a Cloudinary
+            // URL ending «…/events/hero-market.jpg», which matched this probe
+            // before any prefetch had landed and let the click race it.
+            .some(
+              (e) =>
+                e.name.startsWith(location.origin) &&
+                /\/events(?![\w-])/.test(new URL(e.name).pathname) &&
+                !/\/api\//.test(e.name),
+            ),
         ),
       )
       .toBe(true);
