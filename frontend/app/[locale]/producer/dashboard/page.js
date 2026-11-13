@@ -24,6 +24,7 @@ import { SITE_URL, env } from "@/lib/env";
 import { shareOrCopy } from "@/lib/share-link";
 import { rescueBagsEnabled } from "@/lib/rescue";
 import Button from "@/components/ui/Button";
+import { SwitchTrack } from "@/components/ui/Switch";
 
 function VanityLinkCard({ slug }) {
   const t = useTranslations("dashboard.producer.vanity_link");
@@ -664,18 +665,7 @@ export default function ProducerDashboardPage() {
             !isApproved ? "opacity-50 cursor-not-allowed" : ""
           }`}
         >
-          <span
-            aria-hidden="true"
-            className={`relative block w-10 h-6 shrink-0 rounded-full transition-colors group-focus-visible:ring-2 group-focus-visible:ring-primary/40 ${
-              pauseOn && isApproved ? "bg-primary" : "bg-border"
-            }`}
-          >
-            <span
-              className={`absolute top-1 w-4 h-4 rounded-full bg-surface shadow transition-all ${
-                pauseOn && isApproved ? "end-1" : "start-1"
-              }`}
-            />
-          </span>
+          <SwitchTrack on={pauseOn && isApproved} />
           {t("availability.options.on_vacation")}
         </button>
         {/* MEH-964 1D: why-locked hint, associated with the pause switch via
