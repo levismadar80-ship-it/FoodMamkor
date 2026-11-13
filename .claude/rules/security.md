@@ -57,8 +57,10 @@ Full threat model, header list, CORS config, and 3-step audit protocol:
   API can reach the same paths, and that gap is a decision (MEH-1915: the gate
   moves to merge time, CODEOWNERS). **As of 28/10/2026 (MEH-2486)** the sandbox
   proxy refuses Contents-API writes to `.github/workflows/**` and branch
-  creation via `git/refs` (403). So a workflow change = CC prepares and
-  verifies the patch (`git apply --check`), a human or Claude in Chrome commits
+  creation via `git/refs` (403); the GitHub MCP write tools were not
+  re-measured. So a workflow change = CC prepares and
+  verifies the patch (`git apply --check`, YAML incl. any embedded filter
+  block), a human or Claude in Chrome commits
   it, CC verifies the PR diff byte-for-byte (#3740). Never write `.github/**`
   from the shell to get around the deny. Re-measure before relying on this.
 

@@ -473,7 +473,8 @@ concurrent loops. Tiers + `mehamakor-dod` self-check: ADR-025.
 
     A denied `rm` is a decision about the file: never `mv` it, `git clean`,
     `git rm`, truncate or stub it. Leave it, finish the task, report its path
-    and why. Stage by explicit path, never `git add -A`. Any denied action is
+    and why. Untracked stays untracked: stage by explicit path, never
+    `git add -A`. Any denied action is
     reported, not re-attempted through another verb (Sapir 11/11).
 33. **A DoD checkbox is a claim of fact — check it only for a box you performed
     yourself and can cite evidence for (MEH-1755).** Otherwise leave `[ ]` with
@@ -508,11 +509,15 @@ concurrent loops. Tiers + `mehamakor-dod` self-check: ADR-025.
     the PR says so; (3) every reviewer / CI-bot comment newer than the last push
     answered; (4) a fresh reviewer subagent (rule 5a), every finding fixed or
     answered; (5) every Hebrew string diffed against the card's approved table.
-    Then squash-merge, confirm the staging deploy is green, report. "Changes
-    what users see" = any pixel or copy, `/admin` included; unsure → UI.
-    **Still gated:** staging → main (Sapir «go merge», RELEASE_CHECKLIST), an
-    Alembic revision, a `do-not-merge` label, a Sapir-merges card/batch, copy
-    not in an approved table (rules 22, 30). Adds to rule 23.
+    Then squash-merge, confirm the staging deploy is green, and report (card ·
+    PR · what changed · screenshots · next item). "Changes what users see" = any
+    rendered pixel or copy on any surface, `/admin` included; unsure → treat it
+    as UI. **Still gated:** staging → main only on Sapir's «go merge» via
+    [RELEASE_CHECKLIST](../../docs/RELEASE_CHECKLIST.md); an Alembic revision
+    waits for her OK; a `do-not-merge` label, a card or batch that says Sapir
+    merges, or new copy not in an approved table still stops CC (rules 22, 30;
+    ADR-016 amendment). This adds to rule 23 (375/1440 in `qa-artifacts/`) and
+    replaces none of it.
 39. **A red E2E gate blocks a merge to staging unless all three hold, and the
     PR body says so, one line each (Sapir 11/11, every PR from then on).**
     (a) **0 failed**: quote each shard's `executed=… unexpected=0 …` line.
@@ -582,9 +587,19 @@ a tab, one-time → «כלים» or «עריכה» (audit:
 - **Enforced:** `frontend/__tests__/DashboardPlacementGuard.test.js` fails when
   a page under `app/[locale]/producer/dashboard/**` has no place in
   `frontend/lib/business-features.js` (a tool's `dashboard: { home, href }`, or
-  the frame / sub-page / without-entry lists), has no inbound link, is more
-  than 2 taps from home, or its `dashboard.home` tab doesn't link to it. A new
-  page gets its registry place in the same PR (`dashboard: { home, href }`,
-  `DASHBOARD_SUBPAGES`, or `DASHBOARD_PAGES_WITHOUT_ENTRY` + reason).
-- **Reviewed:** a card touching `/producer/dashboard` carries the «מיקום בלוח
-  הבקרה» block (template 06); the fresh reviewer checks it against the build.
+  the explicit frame / sub-page / without-entry lists), when a tool's page has
+  no link pointing at it, when it is more than 2 taps from the home, or when
+  the tab its `dashboard.home` names does not itself link to it. Taps come
+  from a static graph: a tab = 1; a link written in a page file or in a file
+  that page imports directly = +1 — whatever state renders it. Comments, the
+  tools tab's `also:` highlight list and the organizer's own tabs are not
+  links. A new page → its place goes in the registry in the same PR: a tool's
+  landing page gets `dashboard: { home, href }`; a form / print view inside a
+  tool goes in `DASHBOARD_SUBPAGES`; a tool page with no registry entry yet
+  (one needs approved copy, «Launch tier» א׳) goes in
+  `DASHBOARD_PAGES_WITHOUT_ENTRY` with the reason.
+- **Reviewed:** a card for any PR that touches `/producer/dashboard` carries the
+  «מיקום בלוח הבקרה» block (template 06): tool · frequency · where · entry
+  (href) · taps from home at 390 · inbound links · empty state. The fresh
+  reviewer (rule 5a) checks the block against what was built, and the PR body
+  says where each changed surface landed.
