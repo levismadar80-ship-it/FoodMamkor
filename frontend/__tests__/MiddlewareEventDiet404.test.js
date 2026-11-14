@@ -211,8 +211,9 @@ describe.each([
 
 // MEH-2977 control: the set of checked segments is closed. A detail route
 // that is not in it (recipes live under a business slug, not here) is never
-// asked about, so a set that grew too wide would go red.
-it.each(["recipes", "organizers", "producer"])("/%s/<id> is not checked", async (segment) => {
+// asked about, so a set that grew too wide would go red. (/organizers/<slug>
+// joined the set on purpose 14/11 — MiddlewareSoft404Siblings.test.js.)
+it.each(["recipes", "producer"])("/%s/<id> is not checked", async (segment) => {
   backend({ status: 404 });
   expect(wasNotFound(await middleware(requestFor(`/he/${segment}/00000000-0000-0000-0000-000000000000`)))).toBe(false);
 });

@@ -5,6 +5,7 @@ import { isOwnerPreview } from "./lib/owner-preview";
 import { routing } from "./i18n/routing";
 import { isSlugShaped, decodeSlugParam } from "./lib/slug";
 import { DIET_PAGE_MIN, getDietPage, isDietPageBacked } from "./lib/diet-pages";
+import { recipeExists, regionCellExists } from "./lib/middleware-exists"; // MEH-2977 siblings
 import staticRoutes from "./lib/static-routes.json";
 
 /**
@@ -110,7 +111,9 @@ const EXISTENCE_CHECK_TIMEOUT_MS = 3000;
 // MEH-2706 / MEH-2977: detail routes whose missing id gets a real 404 here.
 // The page segment equals the backend path (/events/<id>, /group-buys/<id>,
 // /experiences/<id>). DO NOT add a segment that has a static child route.
-const ENTITY_404_SEGMENTS = new Set(["events", "group-buys", "experiences"]);
+// /organizers/<slug> joined 14/11 (measured 200 on production; backend 404s an
+// unknown slug; app/[locale]/organizers/ holds only [slug]).
+const ENTITY_404_SEGMENTS = new Set(["events", "group-buys", "experiences", "organizers"]);
 // The two of them whose page renders an owner/admin preview (lib/owner-preview.js).
 // /events/<id> has no preview branch, so it keeps its 404 check on ?preview=1.
 const OWNER_PREVIEW_SEGMENTS = new Set(["group-buys", "experiences"]);
@@ -338,6 +341,13 @@ export default async function middleware(request) {
     exists = await entityExists(`${API_URL}/${segs[0]}/${encodeURIComponent(segs[1])}`);
   } else if (segs.length === 3 && segs[0] === "producers" && segs[1] === "diet") {
     exists = await dietPageExists(decodeSlugParam(segs[2]));
+  } else if (segs.length === 3 && segs[0] === "producers" && !isPrefetch(request)) {
+    // MEH-2977 sibling: category × region pages (lib/middleware-exists.js).
+    exists = await regionCellExists(API_URL, decodeSlugParam(segs[1]), decodeSlugParam(segs[2]), report);
+  } else if (segs.length === 3 && segs[1] === "recipes" && !isPrefetch(request) &&
+    !STATIC_ROUTES.has(decodeSlugParam(segs[0]).toLowerCase()) && isSlugShaped(decodeSlugParam(segs[0]))) {
+    // MEH-2977 sibling: /<business-slug>/recipes/<id>.
+    exists = await recipeExists(API_URL, decodeSlugParam(segs[0]), decodeSlugParam(segs[2]), report);
   }
   if (!exists) {
     // Rewrite to a guaranteed-unmatched path → globalNotFound renders a real 404.
