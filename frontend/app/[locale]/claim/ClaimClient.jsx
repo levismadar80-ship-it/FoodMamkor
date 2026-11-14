@@ -16,6 +16,7 @@ import GoogleAuthButton from "@/components/GoogleAuthButton";
 import StatusPage from "@/components/StatusPage";
 import BrandLoader from "@/components/BrandLoader";
 import Button from "@/components/ui/Button";
+import InlineMessage from "@/components/ui/InlineMessage";
 
 /**
  * Module:   ClaimClient
@@ -246,9 +247,9 @@ export default function ClaimClient({ tokenFromPath = null }) {
             </Link>
           </p>
           {authError && (
-            <p className="text-sm text-error" role="alert" data-testid="claim-auth-error">
+            <InlineMessage data-testid="claim-auth-error">
               {authError}
-            </p>
+            </InlineMessage>
           )}
         </div>
       )}
@@ -330,9 +331,9 @@ export default function ClaimClient({ tokenFromPath = null }) {
           )}
 
           {(validation || submitError) && (
-            <p className="text-sm text-error" role="alert" data-testid="claim-error">
+            <InlineMessage data-testid="claim-error">
               {validation || submitError}
-            </p>
+            </InlineMessage>
           )}
 
           <Button

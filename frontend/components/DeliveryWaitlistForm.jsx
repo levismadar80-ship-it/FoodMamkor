@@ -8,6 +8,7 @@ import api from "@/lib/api";
 import { useOptionalAuth } from "@/lib/auth-context";
 import { JoinDeliveryWaitlistProducersProducerIdDeliveryWaitlistPostResponse as WaitlistOut } from "@/lib/generated/api.zod";
 import Button from "@/components/ui/Button";
+import InlineMessage from "@/components/ui/InlineMessage";
 
 /**
  * Module:   DeliveryWaitlistForm
@@ -239,13 +240,9 @@ export default function DeliveryWaitlistForm({ producer = null, city = "", descr
         </label>
       </div>
       {error && (
-        <p
-          className="mt-1 text-sm text-danger-700"
-          role="alert"
-          data-testid="delivery-waitlist-error"
-        >
+        <InlineMessage className="mt-1" data-testid="delivery-waitlist-error">
           {t("error")}
-        </p>
+        </InlineMessage>
       )}
     </form>
   );

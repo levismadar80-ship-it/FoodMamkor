@@ -10,6 +10,7 @@ import CollectionNotice from "@/components/CollectionNotice";
 import { CONTACT_EMAIL } from "@/lib/env.client";
 import Button from "@/components/ui/Button";
 import BackLink from "@/components/ui/BackLink";
+import InlineMessage from "@/components/ui/InlineMessage";
 
 export default function ForgotPasswordClient() {
   const t = useTranslations();
@@ -86,9 +87,9 @@ export default function ForgotPasswordClient() {
             testId="forgot-collection-notice"
           />
           {error && (
-            <p className="text-danger-600 text-sm text-center" role="alert">
+            <InlineMessage className="text-center">
               {error}
-            </p>
+            </InlineMessage>
           )}
           <Button
             type="submit"

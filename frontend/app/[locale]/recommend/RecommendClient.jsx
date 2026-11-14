@@ -43,6 +43,7 @@ import api from "@/lib/api";
 import Button from "@/components/ui/Button";
 import BusinessCtaLink from "@/components/BusinessCtaLink";
 import ShareClient from "@/app/[locale]/share/ShareClient";
+import InlineMessage from "@/components/ui/InlineMessage";
 
 const EMPTY = {
   name: "",
@@ -343,14 +344,14 @@ export default function RecommendClient() {
             </div>
 
             {status === "error" && (
-              <p className="mt-4 text-sm text-error" role="alert" data-testid="recommend-error">
+              <InlineMessage className="mt-4" data-testid="recommend-error">
                 {t("error_generic")}
-              </p>
+              </InlineMessage>
             )}
             {status === "rate_limited" && (
-              <p className="mt-4 text-sm text-error" role="alert" data-testid="recommend-rate-limited">
+              <InlineMessage className="mt-4" data-testid="recommend-rate-limited">
                 {t("error_rate_limited")}
-              </p>
+              </InlineMessage>
             )}
 
             <Button

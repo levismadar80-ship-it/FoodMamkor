@@ -113,6 +113,7 @@ import {
   OPEN_KEY_FOR,
 } from "@/lib/dashboard-edit-anchors";
 import Button from "@/components/ui/Button";
+import InlineMessage from "@/components/ui/InlineMessage";
 
 // MEH-1158: Phosphor glyph per primary contact channel — feeds the contact
 // card's header preview (icon + existing channel_* label, no new i18n).
@@ -1728,10 +1729,10 @@ function ContactChannelsCard({
       </fieldset>
 
       {errorMsg && (
-        <p className="mt-3 flex items-center gap-1.5 text-xs text-danger-600" role="alert">
+        <InlineMessage size="xs" className="mt-3 flex items-center gap-1.5">
           <Warning size={16} weight="fill" aria-hidden="true" className="shrink-0" />
           {errorMsg}
-        </p>
+        </InlineMessage>
       )}
 
       <Button

@@ -13,6 +13,7 @@ import { useTranslations, useLocale } from "next-intl";
 import api from "@/lib/api";
 import { formatEventDate } from "@/lib/format-date";
 import BackLink from "@/components/ui/BackLink";
+import InlineMessage from "@/components/ui/InlineMessage";
 import { SkeletonBlock } from "@/components/Skeleton";
 
 const BTN =
@@ -77,9 +78,9 @@ export default function CancelRegistrationClient({ token }) {
           ) : (
             <>
               {failed && (
-                <p role="alert" className="text-sm text-danger-700">
+                <InlineMessage>
                   {t("generic")}
-                </p>
+                </InlineMessage>
               )}
               <button
                 type="button"

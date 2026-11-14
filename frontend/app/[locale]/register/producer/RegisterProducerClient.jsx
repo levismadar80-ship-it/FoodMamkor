@@ -49,6 +49,7 @@ import BrandLoader from "@/components/BrandLoader";
 import Button from "@/components/ui/Button";
 import { showToast } from "@/lib/toast";
 import { shareOrCopyText } from "@/lib/share-link";
+import InlineMessage from "@/components/ui/InlineMessage";
 
 // MEH-847 (S7 Chunk B): wizard step enum — single source for the 3→5 re-index.
 const STEP = { ACCOUNT: 1, DETAILS: 2, CATEGORY: 3, STORY: 4, CONFIRM: 5 };
@@ -1195,7 +1196,7 @@ function RegisterProducerPageBody({ routeKind }) {
               />
               <PasswordStrength password={form.password} />
             </div>
-            {stepError && <p role="alert" className="text-error text-sm">{stepError}</p>}
+            {stepError && <InlineMessage>{stepError}</InlineMessage>}
             <Button
               data-testid="register-account-next"
               onClick={() => {
@@ -1525,9 +1526,9 @@ function RegisterProducerPageBody({ routeKind }) {
                     from the gray, non-blocking format warning above). role=alert
                     announces it; mirrors the inline phone-error placement. */}
                 {!licensePending && licenseRequiredError && (
-                  <p role="alert" className="text-xs text-error mt-1 text-start">
+                  <InlineMessage size="xs" className="mt-1 text-start">
                     {t("auth.register.producer.validation.license_required")}
-                  </p>
+                  </InlineMessage>
                 )}
                 {/* MEH-971 chunk 1: opt-in to submit without a license number.
                     Checking it relaxes the advance gate + sends license_pending. */}
@@ -1892,7 +1893,7 @@ function RegisterProducerPageBody({ routeKind }) {
             {/* MEH-328 Chunk D: emailExistsSubmitError render block removed.
                 Non-upgrade collisions return identical 200 ack → step 3
                 inbox-check UI. Upgrade-path 409 still surfaces via `error`. */}
-            {error && <p role="alert" className="text-error text-sm">{error}</p>}
+            {error && <InlineMessage>{error}</InlineMessage>}
 
             {/* MEH-2200 (Amendment 13, s.11 disclosure duty): the collection
                 notice must be given AT collection, so it renders inline on the

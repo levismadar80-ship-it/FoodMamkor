@@ -7,6 +7,7 @@ import { detailToMessage } from "@/lib/errors";
 import { ProducerClaimLinkSchema } from "@/lib/api-schemas";
 import Button from "@/components/ui/Button";
 import { formatDate } from "@/lib/format-date";
+import InlineMessage from "@/components/ui/InlineMessage";
 
 /**
  * Module:   ClaimLinkPanel
@@ -114,17 +115,17 @@ export default function ClaimLinkPanel({ producerId }) {
             {t("expires", { date: expires })}
           </p>
           {copyFailed && (
-            <p className="text-sm text-error mt-2" role="alert" data-testid="claim-link-copy-failed">
+            <InlineMessage className="mt-2" data-testid="claim-link-copy-failed">
               {t("copy_failed")}
-            </p>
+            </InlineMessage>
           )}
         </div>
       )}
 
       {error && (
-        <p className="text-sm text-error mb-4" role="alert" data-testid="claim-link-error">
+        <InlineMessage className="mb-4" data-testid="claim-link-error">
           {error}
-        </p>
+        </InlineMessage>
       )}
 
       <button

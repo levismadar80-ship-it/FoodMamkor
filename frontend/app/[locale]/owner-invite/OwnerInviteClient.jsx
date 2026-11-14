@@ -22,6 +22,7 @@ import PasswordInput from "@/components/PasswordInput";
 import StatusPage from "@/components/StatusPage";
 import BrandLoader from "@/components/BrandLoader";
 import Button from "@/components/ui/Button";
+import InlineMessage from "@/components/ui/InlineMessage";
 
 /**
  * Module:   OwnerInviteClient
@@ -447,9 +448,9 @@ export default function OwnerInviteClient({ tokenFromPath = null }) {
         )}
 
         {(validation || submitError) && (
-          <p className="text-sm text-error" role="alert" data-testid="owner-invite-error">
+          <InlineMessage data-testid="owner-invite-error">
             {validation || submitError}
-          </p>
+          </InlineMessage>
         )}
 
         <Button

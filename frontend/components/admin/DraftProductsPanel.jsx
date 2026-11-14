@@ -8,6 +8,7 @@ import { DraftProductSchema } from "@/lib/api-schemas";
 import { formatPriceRange } from "@/lib/utils";
 import Input from "@/components/ui/Input";
 import Button from "@/components/ui/Button";
+import InlineMessage from "@/components/ui/InlineMessage";
 
 /**
  * Module:   DraftProductsPanel
@@ -168,9 +169,9 @@ export default function DraftProductsPanel({ producerId, initialProducts = [] })
       )}
 
       {error && (
-        <p className="text-sm text-error mb-4" role="alert" data-testid="draft-products-error">
+        <InlineMessage className="mb-4" data-testid="draft-products-error">
           {error}
-        </p>
+        </InlineMessage>
       )}
 
       <form onSubmit={add} noValidate data-testid="draft-product-form" className="space-y-3">

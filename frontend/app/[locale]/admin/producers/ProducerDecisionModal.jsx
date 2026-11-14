@@ -29,6 +29,7 @@ import { useEffect, useRef } from "react";
 import Dialog from "@/components/ui/Dialog";
 import { useTranslations } from "next-intl";
 import Button from "@/components/ui/Button";
+import InlineMessage from "@/components/ui/InlineMessage";
 
 // The completion group. EVERY other preset key — `not_eligible` and any key
 // the backend grows later — falls to the terminal group. Fail-closed on
@@ -169,9 +170,9 @@ function DecisionForm({ presets, presetsError, value, setValue, freeText, setFre
   if (presetsError) {
     return (
       <>
-        <p className="text-danger-600 text-sm mb-4" role="alert" data-testid="decision-presets-error">
+        <InlineMessage className="mb-4" data-testid="decision-presets-error">
           {t("producers.reject.presets_error")}
-        </p>
+        </InlineMessage>
         <div className="flex gap-2 justify-end">
           <button type="button" onClick={onClose} className="px-4 py-2 rounded-sm border border-border text-text hover:bg-green-50">
             {t("common.cancel")}

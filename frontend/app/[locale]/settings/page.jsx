@@ -26,6 +26,7 @@ import { firstFailureMessage } from "@/lib/passwordMessages";
 import { validateIsraeliPhone } from "@/lib/validators";
 import Button from "@/components/ui/Button";
 import { loginHrefBackHere } from "@/lib/safe-redirect";
+import InlineMessage from "@/components/ui/InlineMessage";
 import Avatar from "@/components/ui/Avatar";
 import { SkeletonBlock } from "@/components/Skeleton";
 import ButtonSpinner from "@/components/ButtonSpinner";
@@ -424,7 +425,7 @@ export function ProfileTab() {
             {message}
           </p>
         )}
-        {error && <p className="text-sm text-danger-600" role="alert">{error}</p>}
+        {error && <InlineMessage>{error}</InlineMessage>}
 
         <Button
           type="submit"
@@ -623,7 +624,7 @@ function PasswordChangeCard({ isOAuth }) {
             </button>
           </div>
           {mismatch && (
-            <p className="text-xs text-error mt-1 text-right" role="alert">{t("mismatch_error")}</p>
+            <InlineMessage size="xs" className="mt-1 text-right">{t("mismatch_error")}</InlineMessage>
           )}
         </div>
 
@@ -633,7 +634,7 @@ function PasswordChangeCard({ isOAuth }) {
             {message}
           </p>
         )}
-        {error && <p className="text-sm text-danger-600" role="alert">{error}</p>}
+        {error && <InlineMessage>{error}</InlineMessage>}
 
         <Button
           type="submit"
@@ -708,7 +709,7 @@ function LogoutAllDevicesCard() {
               {tCommon("cancel")}
             </button>
           </div>
-          {error && <p className="text-xs text-danger-600" role="alert">{error}</p>}
+          {error && <InlineMessage size="xs">{error}</InlineMessage>}
         </div>
       )}
     </section>
@@ -799,7 +800,7 @@ function DangerZoneCard() {
             dir="ltr"
             autoComplete="off"
           />
-          {error && <p className="text-xs text-danger-600" role="alert">{error}</p>}
+          {error && <InlineMessage size="xs">{error}</InlineMessage>}
           <div className="flex gap-2">
             <Button
               type="submit"

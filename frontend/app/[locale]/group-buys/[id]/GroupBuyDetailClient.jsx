@@ -30,6 +30,7 @@ import Button from "@/components/ui/Button";
 import Dialog from "@/components/ui/Dialog";
 import { shareOrCopyText } from "@/lib/share-link";
 import SectionHeading from "@/components/ui/SectionHeading";
+import InlineMessage from "@/components/ui/InlineMessage";
 
 // MEH-975: schema bounds for GroupBuyCommitRequest.quantity
 // (backend/app/schemas/schemas.py:1602 — int, ge=1, le=100). Clamp the
@@ -305,7 +306,7 @@ export default function GroupBuyDetailClient({ id }) {
               className="text-right"
               dir="ltr"
             />
-            {error && <p className="text-error text-sm" role="alert">{error}</p>}
+            {error && <InlineMessage>{error}</InlineMessage>}
             <Button
               type="submit"
               disabled={submitting}

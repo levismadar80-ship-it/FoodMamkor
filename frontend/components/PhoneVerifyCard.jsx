@@ -7,6 +7,7 @@ import api from "@/lib/api";
 import { detailToMessage } from "@/lib/errors";
 import { showToast } from "@/lib/toast";
 import Button from "@/components/ui/Button";
+import InlineMessage from "@/components/ui/InlineMessage";
 
 /**
  * PhoneVerifyCard — producer-facing WhatsApp OTP flow.
@@ -177,9 +178,9 @@ export default function PhoneVerifyCard({ onVerified }) {
       )}
 
       {error && (
-        <p className="text-error text-xs font-medium mt-3" role="alert">
+        <InlineMessage size="xs" className="font-medium mt-3">
           {error}
-        </p>
+        </InlineMessage>
       )}
     </div>
   );

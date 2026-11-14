@@ -22,6 +22,7 @@ import {
 import Button from "@/components/ui/Button";
 import { RESCUE_SECTION_ID } from "@/lib/producer-path";
 import SectionHeading from "@/components/ui/SectionHeading";
+import InlineMessage from "@/components/ui/InlineMessage";
 
 /**
  * Module:   RescueSection
@@ -234,9 +235,9 @@ export default function RescueSection({ producer }) {
   const cancelUntil = israelTime(offer?.cancel_until);
   const cutoffPassed = offer?.cancel_until ? new Date(offer.cancel_until) <= new Date() : false;
   const errorLine = errorKey && (
-    <p className="font-body-sm text-sm text-error" role="alert" data-testid="rescue-section-error">
+    <InlineMessage className="font-body-sm" data-testid="rescue-section-error">
       {t(errorKey)}
-    </p>
+    </InlineMessage>
   );
   const from = israelTime(offer?.pickup_start);
   const until = israelTime(offer?.pickup_end);

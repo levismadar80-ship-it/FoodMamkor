@@ -7,6 +7,7 @@ import CitySearch from "@/components/CitySearch";
 import { useFocusReturn } from "@/lib/use-focus-return";
 import { setUserLocation } from "@/lib/user-location";
 import Button from "@/components/ui/Button";
+import InlineMessage from "@/components/ui/InlineMessage";
 import ButtonSpinner from "@/components/ButtonSpinner";
 
 // City keys → HE values are the API/canonical names (Hebrew). Display labels
@@ -251,9 +252,9 @@ export default function LocationModal({ open, onClose, onSelectCity }) {
         />
 
         {geoError && (
-          <p role="alert" className="text-sm text-danger-600 -mt-2 mb-4">
+          <InlineMessage className="-mt-2 mb-4">
             {geoError}
-          </p>
+          </InlineMessage>
         )}
 
         {/* MEH-910: 2×2 grid on mobile balances the 4 city chips (was

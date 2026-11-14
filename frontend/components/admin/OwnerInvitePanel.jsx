@@ -7,6 +7,7 @@ import { detailToMessage } from "@/lib/errors";
 import { OwnerInviteCreatedSchema } from "@/lib/api-schemas";
 import Button from "@/components/ui/Button";
 import { formatDate } from "@/lib/format-date";
+import InlineMessage from "@/components/ui/InlineMessage";
 
 /**
  * Module:   OwnerInvitePanel
@@ -342,17 +343,17 @@ export default function OwnerInvitePanel({ producerId, producer, onChanged }) {
           </p>
           <p className="text-xs text-muted mt-1">{t("link_shown_once")}</p>
           {copyFailed && (
-            <p className="text-sm text-error mt-2" role="alert" data-testid="owner-invite-copy-failed">
+            <InlineMessage className="mt-2" data-testid="owner-invite-copy-failed">
               {t("copy_failed")}
-            </p>
+            </InlineMessage>
           )}
         </div>
       )}
 
       {error && (
-        <p className="text-sm text-error mb-4" role="alert" data-testid="owner-invite-error">
+        <InlineMessage className="mb-4" data-testid="owner-invite-error">
           {error}
-        </p>
+        </InlineMessage>
       )}
 
       {!owner && open && (
