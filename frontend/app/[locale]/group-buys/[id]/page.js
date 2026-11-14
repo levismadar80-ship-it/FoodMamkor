@@ -1,3 +1,4 @@
+import { isOwnerPreview } from "@/lib/owner-preview";
 import { notFound } from "next/navigation";
 import * as Sentry from "@sentry/nextjs";
 import { getTranslations } from "next-intl/server";
@@ -84,6 +85,11 @@ export async function generateMetadata(props) {
   // notFound() alone streams 200 + 404 UI, because the shared
   // app/[locale]/loading.js boundary flushes the shell first — bots would
   // keep crawling a soft 404. (MEH-1045 established this on the slug route.)
+  // Owner/admin preview (lib/owner-preview.js): the anonymous fetch cannot
+  // see a pending item, so say nothing indexable and let the browser ask.
+  if (!groupBuy && isOwnerPreview(await props.searchParams)) {
+    return { title: t("title_fallback"), robots: { index: false, follow: false } };
+  }
   if (!groupBuy) notFound();
   const entityName = groupBuy?.title || groupBuy?.name;
 
@@ -143,10 +149,13 @@ export default async function GroupBuyDetailPage(props) {
   // Same request as generateMetadata (revalidate:60 dedupes it), which already
   // 404s a missing group buy; belt-and-braces for the body.
   const groupBuy = await getGroupBuy(params.id);
-  if (!groupBuy) notFound();
+  // Owner/admin preview (lib/owner-preview.js): render the client, which asks
+  // again with the user's token; the backend decides whether she may see it.
+  const preview = !groupBuy && isOwnerPreview(await props.searchParams);
+  if (!groupBuy && !preview) notFound();
   return (
     <>
-      <GroupBuyJsonLd groupBuy={groupBuy} locale={params.locale} />
+      {groupBuy && <GroupBuyJsonLd groupBuy={groupBuy} locale={params.locale} />}
       <GroupBuyDetailClient id={params.id} />
     </>
   );

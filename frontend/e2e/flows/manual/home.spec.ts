@@ -2319,8 +2319,9 @@ test.describe("manual › above-the-fold mini-map + trust band (MEH-604 · MEH-6
     ).toEqual([]);
   });
 
-  // MT:604:3 — three tile preconnect links, all crossOrigin="anonymous".
-  test("the document head preconnects to all three OSM tile hosts", async ({ page }) => {
+  // MT:604:3 — tile preconnect, crossOrigin="anonymous". MEH-3077: one host
+  //   (tile.openstreetmap.org); the a/b/c shards are deprecated by OSM policy.
+  test("the document head preconnects to the single OSM tile host", async ({ page }) => {
     await consent(page);
     await stubTiles(page);
     await gotoHome(page);
@@ -2331,12 +2332,8 @@ test.describe("manual › above-the-fold mini-map + trust band (MEH-604 · MEH-6
     );
     expect(
       tiles.map((t) => t.href).sort(),
-      "a, b and c — no more, no fewer",
-    ).toEqual([
-      "https://a.tile.openstreetmap.org/",
-      "https://b.tile.openstreetmap.org/",
-      "https://c.tile.openstreetmap.org/",
-    ]);
+      "exactly the one tile host — no a/b/c shard",
+    ).toEqual(["https://tile.openstreetmap.org/"]);
     for (const t of tiles) expect(t.cors).toBe("anonymous");
   });
 
