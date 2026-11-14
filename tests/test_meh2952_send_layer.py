@@ -951,7 +951,7 @@ PINNED: dict[tuple[str, str, str], tuple[int, str, str]] = {
         NONE,
         "public contact form",
     ),
-    ("routers/producer_me.py", "_send_whatsapp_otp", "send_template"): (
+    ("routers/producer_me_review.py", "_send_whatsapp_otp", "send_template"): (
         1,
         OWN,
         "wrapper param ← producer.is_test or user.is_test",

@@ -26,6 +26,9 @@ from app.routers import (
     organizers,
     producer_claim,
     producer_me,
+    producer_me_analytics,
+    producer_me_locations,
+    producer_me_review,
     producer_name_check,
     producer_name_requests,
     producer_owner_invite,
@@ -46,6 +49,14 @@ from app.routers import (
 )
 
 
+def _include_producer_me(app: FastAPI) -> None:
+    """One /producers/me prefix, four files by area so each can be read whole."""
+    app.include_router(producer_me.router)
+    app.include_router(producer_me_analytics.router)
+    app.include_router(producer_me_review.router)
+    app.include_router(producer_me_locations.router)
+
+
 def register_routers(app: FastAPI) -> None:
     """Register every router in the same order they appeared in main.py.
 
@@ -58,7 +69,7 @@ def register_routers(app: FastAPI) -> None:
     app.include_router(auth.router)
     app.include_router(cities.router)
     app.include_router(producer_name_check.router)  # MEH-3086
-    app.include_router(producer_me.router)
+    _include_producer_me(app)
     app.include_router(product_organize.router)  # MEH-3055
     # MEH-2322: owner-claim link (admin claim-link, public preview, claim).
     app.include_router(producer_claim.router)

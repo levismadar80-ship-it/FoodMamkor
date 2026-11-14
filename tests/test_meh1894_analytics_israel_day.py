@@ -25,7 +25,7 @@ from datetime import date, datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 
 from app.models.models import ProducerPageView
-from app.routers import admin_extra, producer_me
+from app.routers import admin_extra, producer_me_analytics
 from conftest import auth_header, make_producer, make_user
 
 ISRAEL = ZoneInfo("Asia/Jerusalem")
@@ -68,7 +68,7 @@ class TestProducerViewsByDayIsraelBoundary:
     ):
         """Control: late-evening view stays on its own Israel date."""
         p, user = self._setup(db, "b1@test.com")
-        monkeypatch.setattr(producer_me, "israel_today", lambda: ANCHOR)
+        monkeypatch.setattr(producer_me_analytics, "israel_today", lambda: ANCHOR)
         _seed_view_at(db, p.id, datetime(2026, 7, 14, 23, 30, tzinfo=ISRAEL))
 
         body = client.get("/producers/me/analytics", headers=auth_header(user)).json()
@@ -86,7 +86,7 @@ class TestProducerViewsByDayIsraelBoundary:
         it on 2026-07-15, which is where the viewer actually was.
         """
         p, user = self._setup(db, "b2@test.com")
-        monkeypatch.setattr(producer_me, "israel_today", lambda: ANCHOR)
+        monkeypatch.setattr(producer_me_analytics, "israel_today", lambda: ANCHOR)
         israel_dt = datetime(2026, 7, 15, 0, 30, tzinfo=ISRAEL)
         # Guard the premise: this really is the previous UTC date.
         assert _utc_naive(israel_dt).date() == date(2026, 7, 14)
@@ -108,7 +108,7 @@ class TestProducerViewsByDayIsraelBoundary:
         first three hours — a bucket that exists but under-counts.
         """
         p, user = self._setup(db, "b3@test.com")
-        monkeypatch.setattr(producer_me, "israel_today", lambda: ANCHOR)
+        monkeypatch.setattr(producer_me_analytics, "israel_today", lambda: ANCHOR)
         oldest = ANCHOR - timedelta(days=29)
         _seed_view_at(
             db,
@@ -124,7 +124,7 @@ class TestProducerViewsByDayIsraelBoundary:
     def test_series_still_has_exactly_30_israel_dates(self, client, db, monkeypatch):
         """Response shape is unchanged: 30 entries, keyed to the Israel window."""
         p, user = self._setup(db, "b4@test.com")
-        monkeypatch.setattr(producer_me, "israel_today", lambda: ANCHOR)
+        monkeypatch.setattr(producer_me_analytics, "israel_today", lambda: ANCHOR)
 
         body = client.get("/producers/me/analytics", headers=auth_header(user)).json()
         assert len(body["views_by_day"]) == 30

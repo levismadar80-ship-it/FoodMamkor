@@ -34,9 +34,9 @@ from tests.conftest import auth_header, make_producer, make_user
 
 from app import config
 from app.models.models import PhoneOtpToken, Producer
-from app.routers import producer_me
+from app.routers import producer_me_review as producer_me
 
-LOGGER_NAME = "app.routers.producer_me"
+LOGGER_NAME = "app.routers.producer_me_review"
 LISTED = "0501234599"
 UNLISTED = "0501234598"
 FIXED = "424242"
