@@ -26,6 +26,7 @@ import { useEventsNavGate } from "@/lib/use-events-nav-gate";
 import { useExperiencesNavGate } from "@/lib/use-experiences-nav-gate";
 import { hubLandingHref } from "@/lib/hub-landing";
 import { useHubNavGate } from "@/lib/use-hub-nav-gate";
+import Avatar from "@/components/ui/Avatar";
 
 // MEH-2359 / MEH-2431: subtrees with their own nav, where the pill never
 // renders. Shared by the render gates and the clearance publish (MEH-2490).
@@ -191,8 +192,6 @@ export default function BottomNav() {
   const byId = new Map(
     itemsForSurface("bottomNav", navState).map((entry) => [entry.item.id, entry]),
   );
-  const hasAvatar = !!user?.avatar_url;
-  const initial = user ? (user.name || "?").trim().charAt(0).toUpperCase() : null;
 
   // MEH-2965: the same four reads the Header makes for its «מה קורה» link
   // (Header.jsx, MEH-2859). Each hook owns one endpoint, shares one request
@@ -577,17 +576,8 @@ export default function BottomNav() {
               {user ? (
                 // Avatar: green token circle + white initial (MEH-20 treatment,
                 // old raw-hex green → bg-primary token); image when one is set.
-                <span className="relative z-10 w-6 h-6 rounded-full overflow-hidden inline-flex items-center justify-center bg-primary">
-                  {hasAvatar ? (
-                    // raw img: OAuth provider avatar (auth.py:814 stores Google's
-                    // `picture`); its host is not in next.config.js
-                    // images.remotePatterns, frozen by this ticket.
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={user.avatar_url} alt="" className="w-full h-full object-cover" />
-                  ) : (
-                    <span className="text-white text-xs font-semibold leading-none">{initial}</span>
-                  )}
-                </span>
+                // MEH-3069: the shared circle (ui/Avatar).
+                <Avatar src={user.avatar_url} name={user.name} size={24} className="z-10" />
               ) : (
                 <User
                   size={22}

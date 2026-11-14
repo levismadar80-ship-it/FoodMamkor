@@ -24,6 +24,7 @@ import { hubLandingHref, isHubHref, isHubPath } from "@/lib/hub-landing";
 import { useHubNavGate } from "@/lib/use-hub-nav-gate";
 import { itemsForSurface } from "@/lib/nav-registry";
 import LanguageToggle from "@/components/LanguageToggle";
+import Avatar from "@/components/ui/Avatar";
 
 /**
  * MEH-1703 chunk 2 — ORDER stays here, identity comes from the registry.
@@ -665,8 +666,6 @@ const MENU_ARROW_DELTA = { ArrowDown: 1, ArrowUp: -1 };
 
 function UserMenu({ user, logout, open, setOpen, menuRef }) {
   const t = useTranslations();
-  const initial = (user.name || "?").trim().charAt(0).toUpperCase();
-  const hasAvatar = !!user.avatar_url;
 
   // MEH-1226: align with the "profile = public page, settings = config"
   // pattern (LinkedIn / Airbnb). Producer menu leads with the dashboard,
@@ -805,16 +804,10 @@ function UserMenu({ user, logout, open, setOpen, menuRef }) {
         aria-haspopup="menu"
         aria-expanded={open}
         aria-label={t("account.menu.aria", { name: user.name })}
-        className={`w-[34px] h-[34px] rounded-full overflow-hidden flex items-center justify-center focus-ring ${hasAvatar ? "" : "bg-primary"}`}
+        className="w-[34px] h-[34px] rounded-full flex items-center justify-center focus-ring"
       >
-        {hasAvatar ? (
-          // raw img: OAuth provider avatar — host not in remotePatterns
-          // (frozen this ticket). Same class as BottomNav/AccountSheet.
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={user.avatar_url} alt="" className="w-full h-full object-cover" />
-        ) : (
-          <span className="text-white text-sm font-semibold leading-none">{initial}</span>
-        )}
+        {/* MEH-3069: the shared circle (photo or one initial). */}
+        <Avatar src={user.avatar_url} name={user.name} size={34} />
       </button>
 
       {open && (

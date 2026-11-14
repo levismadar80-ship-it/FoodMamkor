@@ -37,7 +37,7 @@ const ALLOWED = {
   "app/[locale]/admin/recipes/page.js": 2,
   "app/[locale]/admin/settings/page.js": 1,
   "app/[locale]/claim/ClaimClient.jsx": 1,
-  "app/[locale]/home/HomeProducersGrid.jsx": 2,
+  "app/[locale]/home/HomeProducersGrid.jsx": 1,
   "app/[locale]/login/LoginClient.jsx": 1,
   "app/[locale]/map/components/MapPane.jsx": 1,
   "app/[locale]/producer/dashboard/edit/cards.jsx": 1,

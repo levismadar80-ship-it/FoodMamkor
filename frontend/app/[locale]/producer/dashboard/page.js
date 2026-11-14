@@ -24,6 +24,7 @@ import { SITE_URL, env } from "@/lib/env";
 import { shareOrCopy } from "@/lib/share-link";
 import { rescueBagsEnabled } from "@/lib/rescue";
 import Button from "@/components/ui/Button";
+import { SwitchTrack } from "@/components/ui/Switch";
 
 function VanityLinkCard({ slug }) {
   const t = useTranslations("dashboard.producer.vanity_link");
@@ -63,7 +64,7 @@ function VanityLinkCard({ slug }) {
           type="button"
           onClick={share}
           data-testid="vanity-share"
-          className="flex-1 text-sm text-center rounded-sm px-3 py-1.5 bg-primary text-background hover:bg-primary-dark transition"
+          className="flex-1 text-sm text-center rounded-full px-3 py-1.5 bg-primary text-background hover:bg-primary-dark transition"
         >
           {tShare("trigger")}
         </button>
@@ -171,6 +172,7 @@ function StatusSupportModal({ onClose }) {
 
 export default function ProducerDashboardPage() {
   const t = useTranslations("dashboard.producer");
+  const tSignup = useTranslations("auth.register.producer.success");
   const tHoliday = useTranslations("holidays");
   const { user, loading: authLoading } = useAuth();
   const [data, setData] = useState(null);
@@ -503,6 +505,27 @@ export default function ProducerDashboardPage() {
           <p className="text-yellow-700">
             {t("status.pending.body")}
           </p>
+          {/* MEH-3073: where she stands, not only that she waits. An ordered
+              process, so an <ol>; the first step is the current one for the
+              whole life of this banner (approval removes the banner). Strings
+              are the three stage names of the signup flow — one home.
+              role="list": Safari drops list semantics once list-style is none. */}
+          <ol role="list" className="mt-3 flex flex-col gap-2 text-text" data-testid="status-pending-steps">
+            {["next_step1", "next_step2", "next_step3"].map((key, i) => (
+              <li
+                key={key}
+                data-testid="status-pending-step"
+                aria-current={i === 0 ? "step" : undefined}
+                className={`flex items-center gap-2 ${i === 0 ? "font-semibold" : ""}`}
+              >
+                <span
+                  aria-hidden="true"
+                  className={`h-3 w-3 shrink-0 rounded-full border-2 border-current ${i === 0 ? "bg-current" : "bg-transparent"}`}
+                />
+                {tSignup(key)}
+              </li>
+            ))}
+          </ol>
         </div>
       )}
 
@@ -664,18 +687,7 @@ export default function ProducerDashboardPage() {
             !isApproved ? "opacity-50 cursor-not-allowed" : ""
           }`}
         >
-          <span
-            aria-hidden="true"
-            className={`relative block w-10 h-6 shrink-0 rounded-full transition-colors group-focus-visible:ring-2 group-focus-visible:ring-primary ${
-              pauseOn && isApproved ? "bg-primary" : "bg-border"
-            }`}
-          >
-            <span
-              className={`absolute top-1 w-4 h-4 rounded-full bg-surface shadow-sm transition-all ${
-                pauseOn && isApproved ? "end-1" : "start-1"
-              }`}
-            />
-          </span>
+          <SwitchTrack on={pauseOn && isApproved} />
           {t("availability.options.on_vacation")}
         </button>
         {/* MEH-964 1D: why-locked hint, associated with the pause switch via
@@ -892,7 +904,7 @@ function ZeroStateShareButton({ slug }) {
       type="button"
       data-testid="overview-zero-share"
       onClick={() => shareOrCopy({ url, text: tVanity("wa_text_template", { url: "" }).trim(), copy })}
-      className="mt-4 text-sm rounded-sm px-4 py-1.5 bg-primary text-background hover:bg-primary-dark transition"
+      className="mt-4 text-sm rounded-full px-4 py-1.5 bg-primary text-background hover:bg-primary-dark transition"
     >
       {tShare("trigger")}
     </button>

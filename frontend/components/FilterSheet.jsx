@@ -10,6 +10,7 @@ import { BADGE_CONFIG } from "@/lib/badges";
 import { useBadgeCopy } from "@/lib/use-badge-copy";
 import { useChipCopy } from "@/lib/use-chip-copy";
 import Popover from "@/components/ui/Popover";
+import { SwitchTrack } from "@/components/ui/Switch";
 
 /**
  * Module:   FilterSheet
@@ -534,18 +535,7 @@ export default function FilterSheet({
                         {icon && <span aria-hidden="true">{icon}</span>}
                         {chip.label}
                       </span>
-                      <span
-                        aria-hidden="true"
-                        className={`relative shrink-0 w-10 h-6 rounded-full transition-colors ${
-                          active ? "bg-primary" : "bg-border"
-                        }`}
-                      >
-                        <span
-                          className={`absolute top-1 w-4 h-4 rounded-full bg-surface shadow-sm transition-all ${
-                            active ? "end-1" : "start-1"
-                          }`}
-                        />
-                      </span>
+                      <SwitchTrack on={active} focusRing={false} />
                     </button>
                   </div>
                 );
@@ -586,7 +576,7 @@ export default function FilterSheet({
           <button
             type="button"
             onClick={onClose}
-            className="flex-1 min-h-touch lg:min-h-[36px] rounded-md bg-primary text-white text-sm lg:text-sm font-medium px-4 py-2.5 lg:py-1.5 hover:opacity-90 transition"
+            className="flex-1 min-h-touch lg:min-h-[36px] rounded-full bg-primary text-white text-sm lg:text-sm font-medium px-4 py-2.5 lg:py-1.5 hover:opacity-90 transition"
           >
             {/* MEH-2169: the count is the sheet's only feedback that a toggle did
                 anything — filters apply LIVE, so nothing else on this surface

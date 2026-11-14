@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 /**
@@ -35,6 +36,7 @@ import {
   paymentStateFrom,
   serializePaymentInfo,
 } from "@/lib/payment-info";
+import Switch from "@/components/ui/Switch";
 
 // Icons appear only here, in the picker (option א) — the public page uses one
 // Wallet icon for the whole answer. Bit and PayBox share the phone glyph: no
@@ -72,28 +74,23 @@ function SelectAllSwitch({ on, label, onToggle }) {
   return (
     <div className="flex items-center justify-between gap-3">
       <span id="payment-select-all-label" className="text-sm">{label}</span>
-      <button
-        type="button"
-        role="switch"
-        aria-checked={on}
+      <Switch
+        checked={on}
         aria-labelledby="payment-select-all-label"
         onClick={onToggle}
         data-testid="payment-select-all"
-        className="group relative shrink-0 inline-flex items-center justify-center min-h-touch min-w-touch -my-2.5 focus-visible:outline-none"
-      >
-        <span
-          aria-hidden="true"
-          className={`relative block w-10 h-6 rounded-full transition-colors group-focus-visible:ring-2 group-focus-visible:ring-primary ${on ? "bg-primary" : "bg-border"}`}
-        >
-          <span
-            className={`absolute top-1 w-4 h-4 rounded-full bg-surface shadow-sm transition-all ${on ? "end-1" : "start-1"}`}
-          />
-        </span>
-      </button>
+      />
     </div>
   );
 }
 
+/**
+ * @param {{
+ *   profile: any,
+ *   onSave: any,
+ *   reportDirty?: (key: string, dirty: boolean) => void,
+ * }} props
+ */
 export default function PaymentInfoEditor({ profile, onSave, reportDirty = () => {} }) {
   const t = useTranslations("dashboard.producer.payment_info");
   const seed = profile?.payment_info ?? null;

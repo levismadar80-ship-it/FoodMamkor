@@ -7,6 +7,7 @@ import { Check, MagnifyingGlass } from "@phosphor-icons/react";
 // lookup — the local `Leaf` import that used to supply the fallback here is
 // gone, so there is one owner of that decision instead of three.
 import { resolveCategoryGlyph } from "@/lib/category-registry";
+import ShowMore from "@/components/ui/ShowMore";
 
 /**
  * CategorySelector — register step-02 producer category picker (S7 card aesthetic).
@@ -311,14 +312,14 @@ export default function CategorySelector({ categories, selectedIds, onChange, on
           </div>
 
           {!q && restCats.length > 0 && (
-            <button
-              type="button"
+            // MEH-3052: the shared ShowMore (inline) — carries the 44px floor F7 set.
+            <ShowMore
+              size="inline"
               onClick={() => setExpanded((v) => !v)}
-              // F7 (register polish): py-3 lifts the tap target to ≥44px (text-sm 20px + 2×12px) without changing the visible text size.
-              className="mt-2 py-3 text-sm text-primary hover:underline block"
-            >
-              {expanded ? t("show_less") : t("show_more", { count: restCats.length })}
-            </button>
+              expanded={expanded}
+              label={expanded ? t("show_less") : t("show_more", { count: restCats.length })}
+              className="mt-2"
+            />
           )}
         </>
       )}

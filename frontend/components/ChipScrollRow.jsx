@@ -108,6 +108,15 @@ export default function ChipScrollRow({
   activeKeys = {},
   onChipClick,
   className = "",
+  // MEH-3062: extra controls that ride the SAME scroller after the chips (the
+  // /map phone row puts the promoted service chips here). They scroll, fade and
+  // take the arrows / wheel with the row, but they are NOT part of the roving
+  // tab stop below — only this component's own chips rove (data-roving-chip).
+  trailing = null,
+  // MEH-3062: true while a control inside `trailing` is lit. The mount pin to
+  // the inline-start would otherwise undo the caller's scroll to that control
+  // (the pin re-runs one frame later, after the caller's effect).
+  trailingActive = false,
 }) {
   // MEH-2748: registry chips arrive without words; a chip that already has a
   // label (DB category, city, translated "all") passes through untouched.
@@ -176,7 +185,9 @@ export default function ChipScrollRow({
     // The DOM is the single authority for chip ORDER — a parallel array beside
     // the JSX would be a second owner of the same fact and would desync on any
     // reorder, silently (workflow.md Smell #1). Same reasoning as the hook.
-    const buttons = Array.from(e.currentTarget.querySelectorAll("button"));
+    // MEH-3062: only this row's own chips — a `trailing` control is its own
+    // tab stop and must not shift the index into `chips` below.
+    const buttons = Array.from(e.currentTarget.querySelectorAll("button[data-roving-chip]"));
     const from = buttons.indexOf(e.target.closest?.("button"));
     if (from === -1) return;
 
@@ -254,7 +265,7 @@ export default function ChipScrollRow({
       variant === "category"
         ? categorySet.size > 0
         : Object.values(activeKeys).some(Boolean);
-    if (hasActiveFilter || userMovedRowRef.current) return undefined;
+    if (hasActiveFilter || trailingActive || userMovedRowRef.current) return undefined;
     // Re-checks the touch flag: the deferred pin fires one frame later, and a
     // touch can land inside that frame on a slow device.
     const pinStart = () => {
@@ -414,6 +425,7 @@ export default function ChipScrollRow({
                 else chipRefs.current.delete(chip.key);
               }}
               type="button"
+              data-roving-chip=""
               onClick={() => onChipClick(chip.key)}
               aria-pressed={active}
               // MEH-2199 chunk 1: roving tabindex — the row is ONE tab stop.
@@ -454,6 +466,7 @@ export default function ChipScrollRow({
             the last real chip clears the fade instead of sitting 16px under it.
             MEH-1572: conditional — a row whose chips all fit reserves nothing,
             which is the 48px of trailing dead space this ticket removes. */}
+        {trailing}
         {hasOverflow && <div className="shrink-0 w-12" aria-hidden="true" />}
       </div>
     </div>

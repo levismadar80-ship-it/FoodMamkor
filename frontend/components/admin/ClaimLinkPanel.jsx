@@ -137,7 +137,7 @@ export default function ClaimLinkPanel({ producerId }) {
         data-testid="claim-link-create"
         onClick={create}
         disabled={busy}
-        className="min-h-touch bg-surface border border-primary text-primary rounded-md px-6 py-2 text-sm font-medium hover:bg-background transition disabled:opacity-50"
+        className="min-h-touch bg-surface border border-primary text-primary rounded-full px-6 py-2 text-sm font-medium hover:bg-background transition disabled:opacity-50"
       >
         {busy ? t("creating") : t("create")}
       </button>

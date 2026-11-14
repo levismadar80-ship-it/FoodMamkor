@@ -41,11 +41,12 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
-import { Eye, EyeSlash, Check, Circle, CircleNotch } from "@phosphor-icons/react";
+import { Eye, EyeSlash, Check, Circle } from "@phosphor-icons/react";
 
 import api from "@/lib/api";
 import { failureMessage } from "@/lib/passwordMessages";
 import { PASSWORD_MIN_LENGTH } from "@/lib/validators";
+import ButtonSpinner from "@/components/ButtonSpinner";
 
 const HIBP_DEBOUNCE_MS = 500;
 
@@ -205,7 +206,7 @@ export default function PasswordInput({
             {breachOk ? (
               <Check size={13} weight="bold" aria-hidden="true" />
             ) : breachPending ? (
-              <CircleNotch size={13} className="animate-spin" aria-hidden="true" />
+              <ButtonSpinner size={13} />
             ) : (
               <Circle size={13} aria-hidden="true" />
             )}

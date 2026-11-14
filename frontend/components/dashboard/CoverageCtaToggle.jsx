@@ -18,6 +18,7 @@ import { useTranslations } from "next-intl";
 import api from "@/lib/api";
 import { showToast } from "@/lib/toast";
 import { coverageCtaReachable } from "@/lib/delivery-coverage";
+import Switch from "@/components/ui/Switch";
 
 export default function CoverageCtaToggle({ producer, onSaved }) {
   const t = useTranslations("dashboard.producer.coverage_cta");
@@ -60,28 +61,14 @@ export default function CoverageCtaToggle({ producer, onSaved }) {
       {/* The track stays 40×24; the button around it is the 44×44 tap
           target (03/11 ערב, MEH-1687 E: 44 on mobile, no exceptions). The
           negative block margin keeps the row height it had. */}
-      <button
-        type="button"
-        role="switch"
-        aria-checked={on}
+      <Switch
+        checked={on}
         aria-labelledby="coverage-cta-label"
         aria-describedby="coverage-cta-helper"
         disabled={saving}
         onClick={toggle}
         data-testid="coverage-cta-switch"
-        className="group relative shrink-0 inline-flex items-center justify-center min-h-touch min-w-touch -my-2.5 focus-visible:outline-none"
-      >
-        <span
-          aria-hidden="true"
-          className={`relative block w-10 h-6 rounded-full transition-colors group-focus-visible:ring-2 group-focus-visible:ring-primary ${on ? "bg-primary" : "bg-border"}`}
-        >
-          <span
-            className={`absolute top-1 w-4 h-4 rounded-full bg-surface shadow-sm transition-all ${
-              on ? "end-1" : "start-1"
-            }`}
-          />
-        </span>
-      </button>
+      />
     </div>
   );
 }

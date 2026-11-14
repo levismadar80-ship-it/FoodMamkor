@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { BellRinging } from "@phosphor-icons/react";
+import { useEffect, useRef, useState } from "react";
+import { BellRinging, X } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 
 import api from "@/lib/api";
@@ -31,6 +31,7 @@ import Button from "@/components/ui/Button";
  *           frontend/components/CoverageRequestCta.jsx (the WhatsApp sibling).
  * History:  MEH-2618 (creation). Plan: claude.ai/artifact/2W4LNWVVxUDBSu8gMQQWsW.
  *           MEH-2674 (host checkbox; server side MEH-2673, PR #3999).
+ *           MEH-3044 (× closes the open form back to the chip).
  */
 
 // host_confirm values that add a line under «נודיע לך». `confirmed` is
@@ -56,6 +57,16 @@ export default function DeliveryWaitlistForm({ producer = null, city = "", descr
   // or an older backend that does not answer host_confirm).
   const [hostConfirm, setHostConfirm] = useState(null);
   const [error, setError] = useState(false);
+  // MEH-3044: × closes the open form back to the chip; focus returns to it.
+  const tCommon = useTranslations("common.aria");
+  const ctaRef = useRef(null);
+  const [refocus, setRefocus] = useState(false);
+  useEffect(() => {
+    if (refocus && phase === "idle") {
+      ctaRef.current?.focus();
+      setRefocus(false);
+    }
+  }, [refocus, phase]);
 
   if (!producer?.id || !value) return null;
 
@@ -130,6 +141,7 @@ export default function DeliveryWaitlistForm({ producer = null, city = "", descr
     return (
       <p data-testid="delivery-waitlist" data-phase="idle">
         <button
+          ref={ctaRef}
           type="button"
           onClick={() => setPhase("open")}
           data-testid="delivery-waitlist-cta"
@@ -156,12 +168,30 @@ export default function DeliveryWaitlistForm({ producer = null, city = "", descr
       data-testid="delivery-waitlist"
       data-phase={phase}
     >
-      <label
-        htmlFor={inputId}
-        className="block text-sm font-medium text-text mb-1"
-      >
-        {t("email_label")}
-      </label>
+      {/* MEH-3044: the open form had no way back (Sapir 13/11). × at the
+          inline END of the label row (rtl.md, MEH-2038), 44px target. */}
+      <div className="flex items-center justify-between gap-2 mb-1">
+        <label
+          htmlFor={inputId}
+          className="block text-sm font-medium text-text"
+        >
+          {t("email_label")}
+        </label>
+        <button
+          type="button"
+          onClick={() => {
+            setError(false);
+            setPhase("idle");
+            setRefocus(true);
+          }}
+          disabled={phase === "busy"}
+          aria-label={tCommon("close")}
+          data-testid="delivery-waitlist-close"
+          className="shrink-0 -my-2 w-11 h-11 flex items-center justify-center rounded-full text-fg-muted hover:bg-green-50 focus-visible:ring-2 focus-visible:ring-primary"
+        >
+          <X size={18} aria-hidden="true" />
+        </button>
+      </div>
       <div className="flex flex-col gap-2 sm:flex-row">
         <input
           id={inputId}

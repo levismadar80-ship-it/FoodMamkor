@@ -16,6 +16,7 @@ import { useTranslations } from "next-intl";
 import api from "@/lib/api";
 import { highlightMatch } from "@/lib/highlightMatch";
 import { optimizeCloudinary, IMAGE_RATIOS } from "@/lib/cloudinary";
+import { avatarInitial } from "@/components/ui/Avatar";
 
 /**
  * HeroSearch — hero autocomplete for the homepage (MEH-99).
@@ -644,7 +645,7 @@ function ProducerThumb({ name, image }) {
           data-testid="hero-search-thumb-initials"
           className="w-full h-full rounded-full flex items-center justify-center text-sm font-semibold text-primary"
         >
-          {(name || "").trim().charAt(0)}
+          {avatarInitial(name, "")}
         </span>
       )}
     </span>

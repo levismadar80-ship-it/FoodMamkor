@@ -458,6 +458,8 @@ class Producer(Base):
     # nothing). Validated in schemas._payment_info_validator. Expand-only per
     # ADR-007. Paired migration: e3a5c1d7f904.
     payment_info = Column(JSONB, nullable=True)
+    # MEH-3055: ordered [{id, name}] product groups (b7d4e2a9c615).
+    product_groups = Column(JSONB, nullable=True)
     # MEH-1889 chunk A: per-DATE overrides above the weekly axes, shape
     # {"2026-09-22": {"ranges": [{"open": "09:00", "close": "13:00"}],
     #                 "note": "ערב ראש השנה"}} — keys ISO YYYY-MM-DD,
@@ -1232,6 +1234,10 @@ class Product(Base):
     # allergen codes from the closed list in app/allergens.py. NULL = not
     # filled (the sheet shows nothing), never "contains none".
     ingredients = Column(Text, nullable=True)
+    # MEH-3055: owner order (NULL = never ordered) + group id from
+    # producers.product_groups (no FK; cleared by routers/product_organize.py).
+    position = Column(Integer, nullable=True)
+    group_id = Column(String(36), nullable=True)
     allergens: Column[list[str]] = Column(ARRAY(Text), nullable=True)
 
     # MEH-2137: the other half of the same disambiguation — see the comment on
