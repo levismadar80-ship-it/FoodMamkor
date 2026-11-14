@@ -104,6 +104,21 @@ describe("PricingCopyGuard (MEH-3166)", () => {
     }
   });
 
+  // MEH-3197: the he/en comparison above passes when BOTH locales use the same
+  // wrong number, so each promise names the number it must carry.
+  it.each([
+    ["terms.sections.pricing.launch", ["noticeDays"]],
+    ["terms.sections.pricing.dispute", ["disputeDays"]],
+    ["terms.sections.pricing.early", ["earlyMonths", "subBagFee", "subPercent"]],
+    ["terms.sections.pricing.change", ["priceChangeDays"]],
+    ["pricing.page.early_body", ["earlyMonths", "subBagFee", "subPercent"]],
+    ["pricing.page.dispute_body", ["disputeDays"]],
+    ["pricing.page.change_body", ["priceChangeDays"]],
+  ])("%s carries its own number", (key, expected) => {
+    expect(placeholders(MESSAGES.he[key]).sort()).toEqual(expected);
+    expect(placeholders(MESSAGES.en[key]).sort()).toEqual(expected);
+  });
+
   it("the numbers equal docs/PRICING.md", () => {
     const doc = fs.readFileSync(path.resolve(__dirname, "../../docs/PRICING.md"), "utf8");
     const pick = (re, label) => {
