@@ -78,7 +78,7 @@ vi.mock("@/components/LocationModal", () => ({
 }));
 
 vi.mock("@/components/CitySearch", () => ({ default: () => null }));
-vi.mock("@/components/MapBottomSheet", () => ({ default: () => null }));
+vi.mock("@/components/MapBottomSheet", () => ({ default: () => null, PEEK: 14, HALF: 45 }));
 vi.mock("@/app/[locale]/map/components/CityPickerModal", () => ({ default: () => null }));
 // MEH-2506: a marker that renders the origin tag it is handed, so where the
 // mobile tag goes (into the filter bar's strip) is checkable.

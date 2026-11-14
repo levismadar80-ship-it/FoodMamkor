@@ -4,102 +4,102 @@ import { MapPin, X } from "@phosphor-icons/react";
 
 import MapProducerCard from "@/components/MapProducerCard";
 
-// MEH-1298: nearest scrollable ancestor (the sheet's overflow-y-auto content
-// div in MapBottomSheet). Walk up rather than assume a direct parent so a
-// future wrapper around this panel doesn't silently break the compensation.
-function findScrollParent(node) {
-  let el = node?.parentElement;
-  while (el) {
-    const oy = window.getComputedStyle(el).overflowY;
-    if (oy === "auto" || oy === "scroll") return el;
-    el = el.parentElement;
-  }
-  return null;
-}
+// The gap between the card and the sheet's top edge, and what it adds to the
+// edge the map controls ride (card height + this gap, on both sides).
+const GAP_PX = 8;
 
 /**
  * Module:   MobileSheetSelectedCard
- * Purpose:  Pinned preview of the just-tapped map pin at the top of the mobile
- *           bottom sheet — renders the shared compact <MapProducerCard active/>
- *           (Airbnb/Yelp/Zillow pattern: pin → compact preview → tap to profile).
- *           Contact happens on the profile (dynamic CTA + sticky bar), never here.
- * Does NOT: hold a hero image / hardcoded WhatsApp CTA / verified seal — those
- *           expanded affordances were dropped (MEH-1243 follow-up). Card = select,
- *           page = act; the profile owns primary_contact_method routing.
- * Related:  frontend/components/MapProducerCard.jsx (active/nav gesture, central —
- *           consumed as-is); frontend/app/[locale]/map/MapClient.jsx (call site);
- *           frontend/components/MapBottomSheet.jsx (scroll-anchor context).
- * History:  MEH-1243 (extracted expanded pinned card); MEH-1243 follow-up
- *           (Refs MEH-1243 — expanded card → compact MapProducerCard).
+ * Purpose:  The business picked on the phone map, as ONE card floating over the
+ *           map just above the collapsed bottom sheet (Airbnb / Google Maps
+ *           pattern: pin → one preview card → tap to profile). Renders the
+ *           shared compact <MapProducerCard active/>; contact happens on the
+ *           profile, never here.
+ * Does NOT: live inside the sheet. Until MEH-3119 it was pinned above the list
+ *           in the sheet, so the picked business showed twice (pinned + its own
+ *           row). MapClient mounts this only while the sheet is at PEEK; with
+ *           the sheet open the list's own active row is the selection.
+ *           Does not decide its own visibility, and holds no hero image /
+ *           WhatsApp CTA / verified seal (MEH-1243 follow-up).
+ * Related:  frontend/components/MapProducerCard.jsx (central — consumed as-is);
+ *           frontend/app/[locale]/map/MapClient.jsx (call site + `onHeight`);
+ *           frontend/components/MapBottomSheet.jsx (`--map-sheet-own-h`,
+ *           `rideExtraPx`).
+ * History:  MEH-1243 (extracted); MEH-1298 (scroll compensation, gone with the
+ *           move out of the sheet); MEH-1412 (location label); MEH-3119 (floats
+ *           over the map; X in its own row, off the photo).
  */
 export default function MobileSheetSelectedCard({
   selectedProducer,
   selectedLocation,
   onClose,
+  onHeight,
 }) {
   const t = useTranslations();
   const rootRef = useRef(null);
 
-  // MEH-1298: this panel mounts as the FIRST child of the sheet's scroll
-  // container (above {cardList} — MapClient.jsx), so its height pushes the whole
-  // list DOWN. That moved the just-tapped card out from under the finger between
-  // the two taps of the MEH-1243 select→navigate gesture. Add the panel's
-  // rendered height (incl. its mb-3 gap) to the scroll parent's scrollTop in
-  // useLayoutEffect (before paint) so the list stays visually fixed; reverse on
-  // unmount / re-selection so nothing accumulates and the close (X) doesn't jump
-  // the list. offsetHeight is 0 in the hidden desktop shell → no-op there.
-  // Requires the scroll container's browser scroll-anchoring to be OFF
-  // (`[overflow-anchor:none]` on MapBottomSheet's content div) — otherwise
-  // Chromium anchors the shift itself and this comp double-shifts. See
-  // MapBottomSheet.jsx.
+  // MEH-3119: tell the host how much room the card takes above the sheet, so
+  // the controls that ride the sheet edge (near-me, the «?» key, the
+  // attribution) lift clear of it. 0 on unmount.
   useLayoutEffect(() => {
     const el = rootRef.current;
-    if (!el) return;
-    const scroller = findScrollParent(el);
-    if (!scroller) return;
-    const marginBottom = parseFloat(window.getComputedStyle(el).marginBottom) || 0;
-    const shift = el.offsetHeight + marginBottom;
-    if (shift <= 0) return;
-    scroller.scrollTop += shift;
-    return () => { scroller.scrollTop -= shift; };
-  }, [selectedProducer?.id]);
+    if (!el || !onHeight) return undefined;
+    // offsetHeight is 0 in the hidden desktop shell → report nothing there.
+    const report = () => onHeight(el.offsetHeight ? Math.round(el.offsetHeight) + GAP_PX * 2 : 0);
+    report();
+    const ro = typeof ResizeObserver !== "undefined" ? new ResizeObserver(report) : null;
+    ro?.observe(el);
+    return () => {
+      ro?.disconnect();
+      onHeight(0);
+    };
+  }, [onHeight, selectedProducer?.id]);
 
   if (!selectedProducer) return null;
 
-  // The compact card carries its own active Pin-Echo border/tint + chevron and
-  // navigates to the profile on body/chevron tap (it is always `active` here, so
-  // no onClick select handler is needed). We only add a minimal deselect X —
-  // MapProducerCard is a central component and must not be modified, so the X
-  // lives on the wrapper as a sibling of the card, top-START corner (right in
-  // RTL). Pin re-tap does NOT deselect (useMapSync.handleMarkerClick always
-  // selects), so this X is the sheet's only deselect affordance.
-  // MEH-1412 (MEH-1388 chunk 3): the tooltip context = business name (in the
-  // card) + the CLICKED location's label. Rendered on the wrapper (the frozen
-  // MapProducerCard is untouched); only shows when the tapped marker carried a
-  // label (pickup / market_stand / named branch — null for the lat/lng fallback
-  // marker and unlabelled primary rows). Logical props (start/gap) — RTL-safe.
+  // MEH-1412 (MEH-1388 chunk 3): business name (in the card) + the CLICKED
+  // location's label. Only shows when the tapped marker carried a label
+  // (pickup / market_stand / named branch).
   const locationLabel = selectedLocation?.label;
 
+  // The compact card is always `active` here, so a tap on it navigates to the
+  // profile. Pin re-tap does NOT deselect (useMapSync.handleMarkerClick always
+  // selects), so the X is the deselect affordance. MEH-3119: it used to float
+  // over the card's corner and, at 44px, covered the photo; it now ends the row
+  // above the card (inline-END, rtl.md). Hit area 44px; -my-1.5 keeps the row
+  // 32px so the target never reaches into the card under it.
   return (
-    <div ref={rootRef} data-testid="map-selected-card" className="relative mb-3">
-      {locationLabel ? (
-        // ps-9 clears the deselect × (top-start, w-7) so the label never sits
-        // under it in RTL (start = right, where both live).
-        <div className="mb-1.5 flex items-center gap-1 ps-9 pe-1 text-xs text-fg-muted">
-          <MapPin size={14} weight="fill" className="shrink-0 text-primary" />
-          <span className="truncate">{locationLabel}</span>
-        </div>
-      ) : null}
+    <div
+      ref={rootRef}
+      data-testid="map-selected-card"
+      className="lg:hidden fixed inset-x-3 z-[598] mx-auto max-w-md rounded-xl border border-border bg-background p-2 shadow-lg"
+      style={{
+        bottom: `calc(var(--map-sheet-own-h, 14vh) + ${GAP_PX}px)`,
+        transitionProperty: "bottom",
+        transitionDuration: "var(--map-sheet-anim, 0ms)",
+        transitionTimingFunction: "cubic-bezier(0.32,0.72,0,1)",
+      }}
+    >
+      <div className="mb-1.5 flex items-center gap-1 ps-1 text-xs text-fg-muted">
+        {locationLabel ? (
+          <>
+            <MapPin size={14} weight="fill" className="shrink-0 text-primary" />
+            <span data-testid="map-selected-card-location" className="truncate">{locationLabel}</span>
+          </>
+        ) : null}
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label={t("common.aria.close")}
+          data-testid="map-selected-card-close"
+          className="ms-auto -my-1.5 w-11 h-11 shrink-0 rounded-full flex items-center justify-center text-fg-muted hover:text-primary focus-ring"
+        >
+          <span className="w-8 h-8 rounded-full bg-surface border border-border flex items-center justify-center" aria-hidden="true">
+            <X size={16} weight="bold" />
+          </span>
+        </button>
+      </div>
       <MapProducerCard producer={selectedProducer} active />
-      <button
-        type="button"
-        onClick={onClose}
-        aria-label={t("common.aria.close")}
-        data-testid="map-selected-card-close"
-        className="absolute top-1 start-1 z-10 w-11 h-11 rounded-full bg-surface/90 border border-border shadow-sm flex items-center justify-center text-fg-muted focus-ring"
-      >
-        <X size={18} weight="bold" />
-      </button>
     </div>
   );
 }
