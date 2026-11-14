@@ -117,16 +117,32 @@ async function expectButtonOverTiles(page: Page, name: string, zoom?: number): P
   // then a stale tile could sit on top. Wait for the zoom animation to finish.
   await expect(page.locator(".leaflet-zoom-anim")).toHaveCount(0);
   // A visible button reads 0 here; a covered one reads ~1.
-  // MEH-3014: read it with a short poll, not once. On a loaded CI runner the
-  // first read sometimes came back 1 or 0.14 on the first try and 0 on the
-  // retry: the element screenshot is clipped to a box measured a moment
-  // earlier, and the producer page is still laying out (dynamic sections),
-  // so the clip can land on the map beside the button. A real paint-over
-  // (no `isolate`) covers the button for good, so it still reads ~1 on every
-  // poll and fails here — shown failing with `isolation: auto` forced.
+  // MEH-3014: on a loaded CI runner the first read sometimes came back 1 or
+  // 0.14 and the retry read 0. UNVERIFIED cause (not reproduced locally, 30/30
+  // green on the single read): the element screenshot is clipped to a box
+  // measured a moment earlier while the producer page is still laying out
+  // (the MiniMap is a `ssr:false` dynamic import), so the clip lands on the
+  // map beside the button. So: wait until the button's box stops moving, then
+  // read with a short poll. A real paint-over (no `isolate`) covers the button
+  // for good and still fails every read — shown with `isolation: auto` forced.
+  // The poll passes on the first clean read; that is acceptable only because
+  // the real bug is stable, not intermittent.
+  const button = page.getByRole("button", { name });
+  let box = JSON.stringify(await button.boundingBox());
+  await expect
+    .poll(
+      async () => {
+        const now = JSON.stringify(await button.boundingBox());
+        const still = now === box;
+        box = now;
+        return still;
+      },
+      { message: `"${name}" kept moving`, timeout: 10_000, intervals: [150] },
+    )
+    .toBe(true);
   await expect
     .poll(() => tileShareOver(page, name), {
-      message: `"${name}" is painted over by map tiles`,
+      message: `"${name}" is painted over by map tiles (box when settled: ${box})`,
       timeout: 5_000,
       intervals: [250, 500, 1_000],
     })
