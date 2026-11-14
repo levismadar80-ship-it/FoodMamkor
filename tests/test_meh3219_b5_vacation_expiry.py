@@ -60,3 +60,21 @@ def test_return_day_itself_still_hidden(client, db):
     _on_vacation(db, make_producer(db, name="חוזרת היום"), 0)
     names = {p["name"] for p in client.get("/producers").json()}
     assert "חוזרת היום" not in names
+
+
+def test_stats_count_business_whose_vacation_ended(client, db):
+    """The home page's «כמה בתי עסק באתר» number (marketing.py /stats)."""
+    _setup(db)
+    assert client.get("/stats").json()["producers_count"] == 1
+
+
+def test_random_never_picks_an_active_vacation(client, db):
+    """«הפתיעו אותי» draws only from what the catalog shows: with the active
+    vacation hidden, the one business it can land on is the one back from
+    vacation."""
+    _setup(db)
+    back = {client.get("/producers/random").json()["id"] for _ in range(8)}
+    assert len(back) == 1
+    from app.models.models import Producer
+
+    assert db.get(Producer, back.pop()).name == "חזרה אתמול"
