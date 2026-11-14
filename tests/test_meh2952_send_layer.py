@@ -1414,7 +1414,7 @@ def queues_send_by_value_ok(bt, producer):
 
 
 def test_inventory_classifier_anchored_to_a_real_repo_file():
-    """Run against routers/admin.py as it is on disk: the approval site and the
+    """Run against routers/admin_decisions.py as it is on disk: the approval site and the
     admin-ping wrapper must be found, flagged with a non-constant value."""
     rel = "routers/admin_decisions.py"
     src = (APP_DIR / rel).read_text(encoding="utf-8")

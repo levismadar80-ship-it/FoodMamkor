@@ -138,7 +138,7 @@ class ApprovalOverrides(NamedTuple):
 
     MEH-2121. Bundled rather than threaded as two more booleans because
     `_persist_approval` already takes five arguments and `max-args = 5` is
-    enforced on this file (`backend/pyproject.toml:116`; admin.py carries no
+    enforced on this file (`backend/pyproject.toml:116`; this file carries no
     per-file-ignore, unlike producers.py / auth.py). A sixth positional would
     have to be paid for by widening that ignore list, which is the wrong
     direction — so the bundle keeps both signatures at their current width and

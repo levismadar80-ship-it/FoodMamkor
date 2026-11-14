@@ -471,7 +471,7 @@ def test_the_phone_override_is_audited_like_the_license_one(
         db, status="pending", images=[TEST_IMAGE], phone_verified=False
     )
 
-    with caplog.at_level("WARNING", logger="app.routers.admin"):
+    with caplog.at_level("WARNING", logger="app.services.producer_approval"):
         resp = client.post(
             f"/admin/producers/{producer.id}/approve?allow_unverified_phone=true",
             headers=auth_header(admin),
@@ -504,7 +504,7 @@ def test_no_audit_line_when_the_override_is_not_needed(client, db, monkeypatch, 
         db, status="pending", images=[TEST_IMAGE], phone_verified=True
     )
 
-    with caplog.at_level("WARNING", logger="app.routers.admin"):
+    with caplog.at_level("WARNING", logger="app.services.producer_approval"):
         resp = client.post(
             f"/admin/producers/{producer.id}/approve?allow_unverified_phone=true",
             headers=auth_header(_admin(db)),

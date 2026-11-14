@@ -502,14 +502,14 @@ A site `file:line` is mapped to the route whose handler contains it (or reaches 
 
 | § | Transition / write | Site | Routes reached | Verdict | Note |
 |---|---|---|---|---|---|
-| 1 | ∅ → `draft` | auth.py:571, auth.py:781, producer_queries.py:662, admin.py:657 | `POST /auth/register/producer`, `PUT /admin/producers/{producer_id}` | `tests/test_admin_delete_producer.py:46` | — |
+| 1 | ∅ → `draft` | auth.py:571, auth.py:781, producer_queries.py:662, admin.py:390 | `POST /auth/register/producer`, `POST /admin/producers` | `tests/test_admin_delete_producer.py:46` | — |
 | 1 | `draft` → `pending` | producer_me.py:1942 | `POST /producers/me/request-review`, `POST /producers/me/submit-for-review` | `tests/test_api.py:2245` | — |
 | 1 | `rejected` → `pending` | producer_me.py:1856 | `POST /producers/me/kashrut-request` | `tests/test_trust_ladder.py:214` | — |
 | 1 | `pending`/`rejected` → `approved` | admin_decisions.py:146, producer_approval.py:122 | `POST /admin/producers/{producer_id}/approve` | `tests/test_admin_approval_transitions.py:121` | — |
 | 1 | `pending`/`approved` → `rejected` | admin_decisions.py:300 | `POST /admin/producers/{producer_id}/reject` | `tests/test_admin_approval_transitions.py:398` | — |
 | 1 | `approved` ⇄ `inactive` | admin.py:805 | `POST /admin/producers/{producer_id}/toggle-status` | `tests/test_admin_approval_transitions.py:38` | — |
 | 1 | `pending` → `pending` + feedback | — | `POST /admin/producers/{producer_id}/request-changes` | `tests/test_changes_requested_whatsapp.py:59` | — |
-| 1 | any → any via admin PUT | admin.py:916 | `DELETE /admin/producers/{producer_id}` | `tests/test_account_deletion_cascade.py:255` | a DELETE handler for a non-delete transition — audit line may be off |
+| 1 | any → any via admin PUT | admin.py:654 | `PUT /admin/producers/{producer_id}` | `tests/test_admin_approval_transitions.py:530` | — |
 | 2 | ∅ → `open` | group_buys.py:396 | `POST /group-buys` | `tests/test_group_buys_api.py:319` | — |
 | 2 | `open` → `funded` | group_buys.py:295 | `POST /group-buys/{group_buy_id}/commit` | `tests/test_group_buys_api.py:243` | — |
 | 2 | `funded` → `open` | group_buys.py:340 | `DELETE /group-buys/{group_buy_id}/commit` | `tests/test_group_buys_api.py:249` | — |

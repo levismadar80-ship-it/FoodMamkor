@@ -81,14 +81,14 @@ the main path would have refused.
 
 | From → To | Site | Guarded? |
 |---|---|---|
-| ∅ → `draft` | `auth.py:571`, `auth.py:781`, `producer_queries.py:662`, `admin.py:657` | n/a (creation) |
+| ∅ → `draft` | `auth.py:571`, `auth.py:781`, `producer_queries.py:662`, `admin.py:390` | n/a (creation) |
 | `draft` → `pending` | `producer_me.py:1942` (`POST /producers/me/submit-for-review`) | ✅ draft-only 409 + `submission_missing_items` 422 |
 | `rejected` → `pending` | `producer_me.py:1856` (`POST .../request-review`) | ✅ `FOR UPDATE`, cap, gate |
 | `pending`/`rejected` → `approved` | `admin_decisions.py:146` via `_apply_approval_state` (`producer_approval.py:122`) | ✅ draft 409 + photo/licence/phone gates, re-asserted on retry |
 | `pending`/`approved` → `rejected` | `admin_decisions.py:300` | ✅ draft 409, preset validated before mutation |
 | `approved` ⇄ `inactive` | `admin.py:805` | ✅ `_TOGGLEABLE_STATUSES` (MEH-769) |
 | `pending` → `pending` + feedback | `admin.py` `request_producer_changes` | ✅ |
-| any → any via admin PUT | **refused** — `admin.py:916-921` (MEH-2502) | ✅ 422 |
+| any → any via admin PUT | **refused** — `admin.py:654-659` (MEH-2502) | ✅ 422 |
 
 ### Findings
 
@@ -116,7 +116,7 @@ the window edge per `testing.md` § Clock-dependent tests.
 **1.2 — Two code comments record a residual risk that MEH-2502 closed. `post-launch`.**
 Both `admin.py:1222-1226` and `producer_claim.py:87-89` state that an admin `PUT` can
 push a listing back to `draft` because "admin_update_producer applies the payload as-is".
-It cannot: `admin.py:916-921` refuses any payload containing `status` with a 422. The
+It cannot: `admin.py:654-659` refuses any payload containing `status` with a 422. The
 claim-flow comment goes further and calls the resulting claimable-live-listing an
 accepted residual risk — so a future session reading it is told a hole is open *and*
 that someone decided to live with it. Both sentences are now false.

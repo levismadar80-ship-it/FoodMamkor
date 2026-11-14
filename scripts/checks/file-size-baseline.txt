@@ -3,6 +3,5 @@
 3266 backend/app/models/models.py
 2790 backend/app/routers/producer_me.py
 2622 frontend/app/[locale]/producer/dashboard/edit/cards.jsx
-2365 backend/app/routers/admin.py
 2087 frontend/app/[locale]/register/producer/RegisterProducerClient.jsx
 1588 backend/app/routers/auth.py

@@ -83,7 +83,7 @@
 >
 > **`label_snapshot` looks redundant next to the FK and is the opposite.** The FK says WHICH item was ticked; the snapshot says what that item SAID at the moment of ticking. It is written at TICK time, never read back at display time — without it, an admin rewording an item next month would silently rewrite the meaning of every historical attestation, and the trail would describe a check nobody performed. Same reasoning as `producer_name_change_requests.current_name`.
 >
-> **Ticks never gate approval.** The hard gates (photo 422 / licence 422) live in `admin.py::approve_producer` and are untouched; a tick is a record that a human looked, never a permission. **Re-ticking does not restamp** — an item already ticked keeps its FIRST `checked_by`/`checked_at`, or every autosave would rewrite the audit trail to the most recent page load.
+> **Ticks never gate approval.** The hard gates (photo 422 / licence 422) live in `admin_decisions.py::approve_producer` (rules: `services/producer_approval.py`) and are untouched; a tick is a record that a human looked, never a permission. **Re-ticking does not restamp** — an item already ticked keeps its FIRST `checked_by`/`checked_at`, or every autosave would rewrite the audit trail to the most recent page load.
 
 > **MEH-971 chunk 3 (2026-06-28):** `ProducerAdminOut` gains a derived **`license_pending: bool`** — **computed** in `_compute_license_pending` (`@model_validator(mode="after")`), never a stored column / no migration. True iff the producer is in ≥1 `LICENSE_REQUIRED_CATEGORIES` category AND `producer_license_number` is empty/NULL; status-independent (an override-approved producer still shows it). Mirrors the MEH-762 `_compute_verification_tier` predicate over the already-loaded `categories` (no DB round-trip). **Admin-only** — on `ProducerAdminOut` only, NOT public `ProducerListOut`/`ProducerDetailOut`. Surfaced as the "רישיון ממתין" badge on the `/admin/producers` queue so an admin verifies the license before approving (pairs with the chunk-4 `allow_without_license` approval guard).
 
@@ -923,7 +923,7 @@ POST   /auth/owner-invite/accept                   public — 10/15 min. Body {t
                                                      (notify_admin_owner_invite_accepted — WhatsApp + email through the existing family, no new env var), with `published`
                                                      distinguishing the two outcomes.
                                                      Issues the same access token + refresh/fingerprint cookies as /auth/login. Background: the EXISTING
-                                                     business-approved email (admin.py's two builders, by import) — no welcome mail, no WhatsApp template.
+                                                     business-approved email (the two builders in services/admin_producer_emails.py, by import) — no welcome mail, no WhatsApp template.
 ```
 ### Producers (`app/routers/producers.py`, `producer_me.py`)
 
@@ -1260,7 +1260,7 @@ experience / recipe moderation, producer risk and the bio draft). Home products 
 (Opus) because their verdict triggers immediate publication with a
 badge; experiences still require admin approval, so Haiku is enough.
 
-### Admin — core (`app/routers/admin.py`, `admin_extra.py`)
+### Admin — core (`app/routers/admin.py`, `admin_decisions.py`, `admin_extra.py`)
 
 ```
 # Producer moderation
@@ -1679,8 +1679,8 @@ GET/HEAD /health                 public — backwards-compat alias, the path Rai
 
 | Trigger | Channel | Target | File |
 |---|---|---|---|
-| Producer registers | WhatsApp | Admin | `admin.py._send_whatsapp` |
-| Producer approved/rejected | Email + WhatsApp | Producer + admin | `admin.py` |
+| Producer registers | WhatsApp | Admin | `admin_decisions.py._send_whatsapp` |
+| Producer approved/rejected | Email + WhatsApp | Producer + admin | `admin_decisions.py` (copy: `services/admin_producer_emails.py`) |
 | Experience submitted | Email | Admin (FLAGGED subject if Claude flagged) | `experience_notifications.py` |
 | Experience approved | Email | Host | `experience_notifications.py` |
 | Experience changes-requested | Email | Host (feedback verbatim) | `experience_notifications.py` |

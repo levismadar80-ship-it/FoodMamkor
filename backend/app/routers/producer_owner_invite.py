@@ -986,8 +986,8 @@ async def accept_owner_invite(
 
     # The business is already approved, so the one email that is TRUE for her
     # is the one every other approved business's owner got — the same builders
-    # admin.approve_producer uses, byte for byte, reached by import rather than
-    # by a copy (there is no cycle: routers/admin.py imports no router).
+    # admin_decisions.approve_producer uses, byte for byte, reached by import
+    # rather than by a copy (no cycle: services/admin_producer_emails.py imports no router).
     # Deliberately NOT sent: the welcome mail (it tells a new business to go
     # finish its profile — hers is finished and live) and the WhatsApp
     # template (one parameter, no buttons, and nothing here to say).

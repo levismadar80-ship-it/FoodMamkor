@@ -71,7 +71,7 @@ def pending_producers(
             joinedload(Producer.categories),
             joinedload(Producer.products),
             joinedload(Producer.delivery_areas),
-            # MEH-2060: see list_producers above — same derivation, same reason.
+            # MEH-2060: see list_producers in admin.py — same derivation, same reason.
             selectinload(Producer.locations),
         )
         .filter(Producer.status == "pending")
@@ -117,7 +117,7 @@ def approve_producer(  # noqa: PLR0913 — all 6 args are FastAPI-injected (path
     # Handler-only, and that is sufficient rather than an oversight: the retry
     # path re-reads the row. The four literal `status="draft"` writes are all
     # at creation (auth.py:571, auth.py:781, services/producer_queries.py:662,
-    # and admin.py:669 — admin_create_producer's `as_draft`, MEH-2322; lines as
+    # and admin.py — admin_create_producer's `as_draft`, MEH-2322; lines as
     # of 10/11/2026). No route
     # moves an existing producer back to draft: the admin PUT that once could
     # (found in the MEH-2322 re-review) refuses any `status` in its payload
@@ -259,7 +259,7 @@ def reject_producer(
 ) -> dict[str, Any]:
     # MEH-226: validate BEFORE mutating — an unknown preset must not leave the
     # producer rejected with an empty reason. Mirrors request_producer_changes'
-    # handler-side 400 (admin.py:829).
+    # handler-side 400 (same file, below).
     preset_key = body.preset_key
     if preset_key is not None and preset_key not in PRODUCER_REJECTION_PRESETS:
         raise HTTPException(status_code=400, detail="סיבת דחייה לא מוכרת")

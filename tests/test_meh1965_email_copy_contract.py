@@ -129,7 +129,7 @@ _CORPUS = [
 
     # MEH-2027 — the three admin -> producer bodies. They reach the corpus via
     # `admin._send_notification_email`, which calls the `send_email` symbol
-    # imported into `app.routers.admin`, so the same patch-the-caller rule
+    # imported into `app.routers.admin_decisions`, so the same patch-the-caller rule
     # above applies unchanged.
     #
     # The SUBJECT passed here is scaffolding, not the shipped subject line: the

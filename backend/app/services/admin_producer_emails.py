@@ -116,7 +116,7 @@ def _producer_approved_body(name: str, slug: str | None) -> str:
     An unset `whatsapp_community_invite_url` drops the paragraph AND the URL
     line together, with no dangling label and no blank-line artifact. That is
     what lets this merge before the link exists in Railway (Phase C).
-    Falsy-guard pattern mirrors `settings.admin_whatsapp_to` at :971.
+    Falsy-guard pattern mirrors `settings.admin_whatsapp_to` in routers/admin_decisions.py.
 
     MEH-2151 added the two link blocks and the `slug` parameter. Order is
     greeting → approval → view-page → dashboard → community → signature: the
@@ -288,7 +288,7 @@ def _rejected_dashboard_link(dashboard_link: str | None) -> str:
     """MEH-2210: the owner dashboard is where the resubmit CTA lives. Computed
     lazily so the MEH-1965 copy corpus can keep calling the body builders with
     two arguments; the handler passes the explicit value it already builds for
-    the changes-requested mail (`admin.py` request_producer_changes)."""
+    the changes-requested mail (`admin_decisions.py` request_producer_changes)."""
     return dashboard_link or f"{settings.frontend_url}/producer/dashboard"
 
 
@@ -307,8 +307,8 @@ def _single_line(value: str) -> str:
     but the body should render as the copy Sapir approved regardless.
 
     Reported by the reviewer on the MEH-2210 chunk-C PR against this function.
-    The same interpolation exists in `_producer_approved_body` (:1777) and
-    `_producer_changes_requested_body` (:2015); both are OUTSIDE this PR's
+    The same interpolation exists in `_producer_approved_body` and
+    `_producer_changes_requested_body`; both are OUTSIDE this PR's
     diff and are deliberately left alone here rather than widening it — this
     helper is what makes each of them a one-line change.
     """
