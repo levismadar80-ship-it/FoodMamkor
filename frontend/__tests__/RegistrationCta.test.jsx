@@ -11,6 +11,9 @@ import api from "@/lib/api";
 import RegistrationCta from "@/components/RegistrationCta";
 
 vi.mock("@/lib/api", () => ({ default: { post: vi.fn() } }));
+// MEH-3112: the signed-in account the sign-up form prefills from (null = guest).
+let mockAuth = null;
+vi.mock("@/lib/auth-context", () => ({ useOptionalAuth: () => mockAuth }));
 
 const C = he.registration.cta;
 const S = he.registration.signup;
@@ -417,5 +420,27 @@ describe("MEH-3109 — the bar is a floating pill that steps aside at the footer
     expect(document.body.style.paddingBottom).not.toBe("");
     fireFor(inline(), true);
     expect(document.body.style.paddingBottom).toBe("");
+  });
+});
+
+describe("MEH-3112 — a signed-in visitor finds her details in the sign-up form", () => {
+  afterEach(() => { mockAuth = null; });
+
+  it("signed in: name, phone and email are already filled and still editable", () => {
+    mockAuth = { user: { id: 3, name: "נועה כהן", phone: "052-1234567", email: "noa@example.com" } };
+    cta({ method: "site_form", phone: null });
+    fireEvent.click(screen.getByTestId("registration-open"));
+    expect(document.getElementById("signup-name").value).toBe("נועה כהן");
+    expect(document.getElementById("signup-phone").value).toBe("052-1234567");
+    expect(document.getElementById("signup-email").value).toBe("noa@example.com");
+    fireEvent.change(document.getElementById("signup-phone"), { target: { value: "0547654321" } });
+    expect(document.getElementById("signup-phone").value).toBe("0547654321");
+  });
+
+  it("guest: the form opens empty", () => {
+    cta({ method: "site_form", phone: null });
+    fireEvent.click(screen.getByTestId("registration-open"));
+    expect(document.getElementById("signup-name").value).toBe("");
+    expect(document.getElementById("signup-email").value).toBe("");
   });
 });

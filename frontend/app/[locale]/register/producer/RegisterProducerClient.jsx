@@ -50,6 +50,7 @@ import Button from "@/components/ui/Button";
 import { showToast } from "@/lib/toast";
 import { shareOrCopyText } from "@/lib/share-link";
 import InlineMessage from "@/components/ui/InlineMessage";
+import EmailTypoHint from "@/components/EmailTypoHint";
 
 // MEH-847 (S7 Chunk B): wizard step enum — single source for the 3→5 re-index.
 const STEP = { ACCOUNT: 1, DETAILS: 2, CATEGORY: 3, STORY: 4, CONFIRM: 5 };
@@ -1174,6 +1175,7 @@ function RegisterProducerPageBody({ routeKind }) {
               dir="ltr"
               autoComplete="email"
             />
+            <EmailTypoHint fieldId="producer-account-email" value={form.email} onAccept={(email) => set("email")({ target: { value: email } })} />
             {/* MEH-328 Chunk C: emailExistsWarning render block removed
                 with handleEmailBlur. emailExistsSubmitError block below
                 (rendered on 409 from submit) is preserved by Chunk D. */}

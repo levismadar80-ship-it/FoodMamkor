@@ -34,11 +34,16 @@ import CollectionNotice from "@/components/CollectionNotice";
 import ShareSiteActions from "@/components/ShareSiteActions";
 import InlineMessage from "@/components/ui/InlineMessage";
 import { RegistrationSheet, StickyRegistrationBar, isDesktop, useInView } from "@/components/RegistrationOverlays";
+import EmailTypoHint from "@/components/EmailTypoHint";
+import { useAccountPrefill } from "@/lib/use-account-prefill";
 
 const BTN =
   "flex items-center justify-center min-h-[48px] w-full bg-primary text-white px-6 rounded-full font-semibold hover:bg-primary-dark transition focus-ring disabled:opacity-50";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+// form field → account field (MEH-3112).
+const SIGNUP_PREFILL = { name: "name", phone: "phone", email: "email" };
 
 const telHref = (phone) => `tel:${String(phone).replace(/[^\d+]/g, "")}`;
 
@@ -59,6 +64,8 @@ function SignupForm({ kind, itemId, onDone }) {
   // Same namespace EventForm.jsx:165 reads it from — one owner for the label.
   const tPrivacyLink = useTranslations("auth.register.consumer.terms");
   const [form, setForm] = useState({ name: "", phone: "", email: "" });
+  // MEH-3112: a signed-in visitor finds her own details already in place.
+  useAccountPrefill(setForm, SIGNUP_PREFILL);
   const [errors, setErrors] = useState({});
   const [banner, setBanner] = useState("");
   const [sending, setSending] = useState(false);
@@ -144,6 +151,7 @@ function SignupForm({ kind, itemId, onDone }) {
         onChange={set("email")}
         error={errors.email}
       />
+      <EmailTypoHint fieldId="signup-email" value={form.email} onAccept={(email) => set("email")({ target: { value: email } })} />
       {/* MEH-2777: the SAME approved sentence, now through the
           notice-at-collection component (MEH-1981) so it carries the
           /privacy link the other eight collection points already have.
