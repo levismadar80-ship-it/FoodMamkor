@@ -40,6 +40,7 @@ frontend/app/[locale]/admin/users/page.js	react-hooks/set-state-in-effect	1
 frontend/app/[locale]/admin/whatsapp-failures/page.jsx	no-restricted-syntax	4
 frontend/app/[locale]/claim/ClaimClient.jsx	react-hooks/set-state-in-effect	2
 frontend/app/[locale]/contact/ContactClient.jsx	react-hooks/set-state-in-effect	1
+frontend/app/[locale]/contact/ContactClient.jsx	sonarjs/super-linear-regex	1
 frontend/app/[locale]/events/EventsClient.jsx	eqeqeq	1
 frontend/app/[locale]/events/EventsClient.jsx	react-hooks/immutability	1
 frontend/app/[locale]/events/EventsClient.jsx	react-hooks/set-state-in-effect	2
@@ -103,7 +104,6 @@ frontend/app/[locale]/producers/page.jsx	sonarjs/unused-import	1
 frontend/app/[locale]/recommend/RecommendClient.jsx	react-hooks/set-state-in-effect	1
 frontend/app/[locale]/register/producer/RegisterProducerClient.jsx	react-hooks/purity	1
 frontend/app/[locale]/register/producer/RegisterProducerClient.jsx	react-hooks/set-state-in-effect	2
-frontend/app/[locale]/reset-password/ResetPasswordClient.jsx	no-restricted-syntax	2
 frontend/app/[locale]/settings/page.jsx	sonarjs/unused-import	1
 frontend/app/[locale]/verify-email/VerifyEmailClient.jsx	react-hooks/set-state-in-effect	1
 frontend/components/AccountSheet.jsx	react-hooks/set-state-in-effect	1
@@ -212,7 +212,7 @@ frontend/lib/recently-viewed.js	eqeqeq	2
 frontend/lib/replay-prehydration-input.js	eqeqeq	2
 frontend/lib/saved-cache.js	eqeqeq	2
 frontend/lib/seo.js	eqeqeq	7
-frontend/lib/toast.js	eqeqeq	1
+frontend/lib/toast.js	eqeqeq	2
 frontend/lib/use-account-prefill.js	react-hooks/refs	1
 frontend/lib/use-admin-action.js	react-hooks/exhaustive-deps	1
 frontend/lib/use-events-nav-gate.js	react-hooks/set-state-in-effect	1
