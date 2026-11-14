@@ -7,6 +7,7 @@ RESERVED_SLUGS: frozenset[str] = frozenset(
     {
         # App navigation routes
         "about",
+        "monitoring",  # MEH-2976: Sentry tunnel route (frontend next.config.js)
         "map",
         "events",
         "neighbor",
@@ -67,7 +68,7 @@ RESERVED_SLUGS: frozenset[str] = frozenset(
 )
 
 
-def slugify(text) -> str:
+def slugify(text: str) -> str:
     """Generate a URL-safe slug. **The single owner** — `admin.py::_slugify` and
     `producer_import.py::_slugify` are now aliases of this function, not copies.
 
@@ -125,7 +126,7 @@ def slugify(text) -> str:
     return s[:100]
 
 
-def rejected_characters(text) -> list[str]:
+def rejected_characters(text: str) -> list[str]:
     """The characters an explicitly-supplied slug carries that the allowlist bars.
 
     MEH-2020 — the ruling says disallowed scripts are **rejected, not filtered**,
@@ -149,7 +150,7 @@ def rejected_characters(text) -> list[str]:
     return sorted(set(bad))
 
 
-def is_reserved(candidate) -> bool:
+def is_reserved(candidate: str) -> bool:
     """Reserved-slug check under NFKC + casefold, not raw string equality.
 
     MEH-2020, layer (b) of the homograph decision. `RESERVED_SLUGS` was a bare

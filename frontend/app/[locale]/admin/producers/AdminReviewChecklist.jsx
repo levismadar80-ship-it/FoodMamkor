@@ -20,8 +20,8 @@
  * collapsing them would show "no items" during every load.
  */
 
+import { useTranslations } from "next-intl";
 import { CaretDown, CaretRight, ClipboardText } from "@phosphor-icons/react";
-import { ADMIN_REVIEW_CHECKLIST_TITLE } from "@/lib/admin-review-checklist";
 import ReviewEvidence from "./ReviewEvidence";
 import GooglePlaceLink from "./GooglePlaceLink";
 
@@ -41,6 +41,7 @@ export default function AdminReviewChecklist({
   producer,
   onGooglePlaceLinked,
 }) {
+  const t = useTranslations("admin.producers.review.checklist");
   const checked = checkedIds || EMPTY_SET;
   const list = items || [];
   const doneCount = list.filter((item) => checked.has(item.id)).length;
@@ -65,7 +66,7 @@ export default function AdminReviewChecklist({
       >
         <Caret size={CARET_SIZE} weight="bold" aria-hidden="true" />
         <ClipboardText size={HEADER_ICON_SIZE} aria-hidden="true" />
-        <span>{ADMIN_REVIEW_CHECKLIST_TITLE}</span>
+        <span>{t("title")}</span>
         {/* The counter is the CLOSED state's only signal, so it has to be
             honest while loading rather than reading a confident 0/0. */}
         <span className="text-muted tabular-nums">
@@ -75,22 +76,22 @@ export default function AdminReviewChecklist({
               ? `(${doneCount}/${list.length})`
               : `(?/${list.length})`}
         </span>
-        {saving && <span className="text-2xs text-muted">שומרת…</span>}
+        {saving && <span className="text-2xs text-muted">{t("saving")}</span>}
       </button>
 
       {open && (
         <>
-          {loading && <p className="mt-2 text-xs text-muted">טוענת…</p>}
+          {loading && <p className="mt-2 text-xs text-muted">{t("loading")}</p>}
 
           {itemsError && (
             <p className="mt-2 text-xs text-error">
-              טעינת הרשימה נכשלה.{" "}
+              {t("load_error")}{" "}
               <button
                 type="button"
                 onClick={onReloadItems}
                 className="underline"
               >
-                נסי שוב
+                {t("retry")}
               </button>
             </p>
           )}
@@ -100,7 +101,7 @@ export default function AdminReviewChecklist({
               beats rendering nothing, which reads as a broken component. */}
           {!loading && !itemsError && list.length === 0 && (
             <p className="mt-2 text-xs text-muted">
-              אין סעיפים פעילים. אפשר להוסיף בהגדרות.
+              {t("empty")}
             </p>
           )}
 

@@ -63,6 +63,7 @@ than merged, because merging them means giving the draft flow a revocable
 stateful token or giving this one a non-revocable one, and both are worse.
 """
 
+from typing import Any
 import asyncio
 import hashlib
 import secrets
@@ -264,7 +265,7 @@ def _load_invitable(
         raise HTTPException(status_code=404, detail=_NOT_FOUND)
     if require_approved and producer.status not in _INVITABLE_STATUSES:
         raise HTTPException(status_code=409, detail=_NOT_APPROVED)
-    if _has_owner(db, producer.id):
+    if _has_owner(db, producer.id):  # type: ignore[arg-type]
         raise HTTPException(status_code=409, detail=_ALREADY_OWNED)
     if producer.owner_invite_accepted_at is not None:
         # Belt and braces with the check above: an accepted invite normally
@@ -284,15 +285,15 @@ def _mint(producer: Producer, admin_id: UUID) -> tuple[str, datetime]:
     """
     token = secrets.token_urlsafe(32)
     now = datetime.now(timezone.utc)
-    producer.owner_invite_token_hash = _hash_token(token)
-    producer.owner_invite_sent_at = now
-    producer.owner_invite_expires_at = now + timedelta(days=INVITE_TTL_DAYS)
-    producer.owner_invite_created_by = admin_id
+    producer.owner_invite_token_hash = _hash_token(token)  # type: ignore[assignment]
+    producer.owner_invite_sent_at = now  # type: ignore[assignment]
+    producer.owner_invite_expires_at = now + timedelta(days=INVITE_TTL_DAYS)  # type: ignore[assignment]
+    producer.owner_invite_created_by = admin_id  # type: ignore[assignment]
     # A new link means a new verification round. Leaving a live code behind
     # would let one sent to the PREVIOUS link's holder be used against this
     # one, which is the whole thing minting a fresh token is meant to stop.
     _clear_code(producer)
-    return token, producer.owner_invite_expires_at
+    return token, producer.owner_invite_expires_at  # type: ignore[return-value]
 
 
 def _clear_code(producer: Producer) -> None:
@@ -303,9 +304,9 @@ def _clear_code(producer: Producer) -> None:
     leave `owner_invite_code_attempts` to carry into the next code and expire
     it early.
     """
-    producer.owner_invite_code_hash = None
-    producer.owner_invite_code_expires_at = None
-    producer.owner_invite_code_attempts = None
+    producer.owner_invite_code_hash = None  # type: ignore[assignment]
+    producer.owner_invite_code_expires_at = None  # type: ignore[assignment]
+    producer.owner_invite_code_attempts = None  # type: ignore[assignment]
 
 
 def _first_name(full_name: str | None) -> str:
@@ -341,7 +342,7 @@ def create_owner_invite(  # noqa: PLR0913 — six FastAPI-injected parameters, n
     background_tasks: BackgroundTasks,
     user: User = Depends(require_admin),
     db: Session = Depends(get_db),
-):
+) -> OwnerInviteCreatedOut:
     """Invite (or re-invite) the owner of an approved business.
 
     A second call REPLACES the first invite, token and all — that is how an
@@ -354,10 +355,10 @@ def create_owner_invite(  # noqa: PLR0913 — six FastAPI-injected parameters, n
     if body.email and _email_taken(db, body.email):
         raise HTTPException(status_code=409, detail=_EMAIL_TAKEN)
 
-    producer.owner_invite_email = body.email
-    producer.owner_invite_name = body.name
-    producer.owner_invite_consent_note = body.consent_note
-    token, expires_at = _mint(producer, user.id)
+    producer.owner_invite_email = body.email  # type: ignore[assignment]
+    producer.owner_invite_name = body.name  # type: ignore[assignment]
+    producer.owner_invite_consent_note = body.consent_note  # type: ignore[assignment]
+    token, expires_at = _mint(producer, user.id)  # type: ignore[arg-type]
     # Read every value the response and the email need BEFORE the commit: it
     # expires every instance in the session, and an attribute read afterwards
     # costs a re-SELECT (the same note `producer_claim.create_claim_link`
@@ -384,7 +385,7 @@ def create_owner_invite(  # noqa: PLR0913 — six FastAPI-injected parameters, n
             send_owner_invite_email,
             email,
             _first_name(name),
-            business,
+            business,  # type: ignore[arg-type]
             _invite_url(token),
             test_cause=test_cause,
         )
@@ -405,7 +406,7 @@ def resend_owner_invite(
     background_tasks: BackgroundTasks,
     user: User = Depends(require_admin),
     db: Session = Depends(get_db),
-):
+) -> OwnerInviteCreatedOut:
     """Mint a new token for the invite already on the row and send it again.
 
     Takes no body on purpose: resending to a DIFFERENT address is a different
@@ -430,13 +431,13 @@ def resend_owner_invite(
     # her address on the page, and the acceptance meets the same 409 it always
     # would have. A constraint is added (the poisoned address stops being
     # anyone's), not removed. Found by the fresh reviewer on this PR.
-    if producer.owner_invite_email and _email_taken(db, producer.owner_invite_email):
+    if producer.owner_invite_email and _email_taken(db, producer.owner_invite_email):  # type: ignore[arg-type]
         logger.info(
             "owner_invite.resend_dropped_taken_email", producer_id=str(producer.id)
         )
-        producer.owner_invite_email = None
+        producer.owner_invite_email = None  # type: ignore[assignment]
 
-    token, expires_at = _mint(producer, user.id)
+    token, expires_at = _mint(producer, user.id)  # type: ignore[arg-type]
     sent_at = producer.owner_invite_sent_at
     email, name, business = (
         producer.owner_invite_email,
@@ -455,9 +456,9 @@ def resend_owner_invite(
     if email:
         background_tasks.add_task(
             send_owner_invite_email,
-            email,
-            _first_name(name),
-            business,
+            email,  # type: ignore[arg-type]
+            _first_name(name),  # type: ignore[arg-type]
+            business,  # type: ignore[arg-type]
             _invite_url(token),
             test_cause=test_cause,
         )
@@ -470,14 +471,14 @@ def resend_owner_invite(
     )
 
 
-@router.delete("/{producer_id}/owner-invite")
+@router.delete("/{producer_id}/owner-invite", response_model=None)
 @limiter.limit("30/hour")
 def cancel_owner_invite(
     request: Request,
     producer_id: UUID,
     user: User = Depends(require_admin),
     db: Session = Depends(get_db),
-):
+) -> dict[str, Any]:
     """Withdraw an invite that has not been accepted.
 
     Clears the PII too, not only the token. The address and the name belong to
@@ -493,11 +494,11 @@ def cancel_owner_invite(
     if not producer.owner_invite_token_hash:
         raise HTTPException(status_code=404, detail=_NO_INVITE)
 
-    producer.owner_invite_token_hash = None
-    producer.owner_invite_expires_at = None
-    producer.owner_invite_sent_at = None
-    producer.owner_invite_email = None
-    producer.owner_invite_name = None
+    producer.owner_invite_token_hash = None  # type: ignore[assignment]
+    producer.owner_invite_expires_at = None  # type: ignore[assignment]
+    producer.owner_invite_sent_at = None  # type: ignore[assignment]
+    producer.owner_invite_email = None  # type: ignore[assignment]
+    producer.owner_invite_name = None  # type: ignore[assignment]
     # Including any live verification code: a cancelled invite that left one
     # behind would hand the next invite a code its holder never asked for.
     _clear_code(producer)
@@ -556,15 +557,15 @@ def _mint_code(producer: Producer) -> str:
     this one is the last gate before an account is created on a live page.
     """
     code = f"{secrets.randbelow(1_000_000):06d}"
-    producer.owner_invite_code_hash = _hash_token(code)
-    producer.owner_invite_code_expires_at = datetime.now(timezone.utc) + timedelta(
+    producer.owner_invite_code_hash = _hash_token(code)  # type: ignore[assignment]
+    producer.owner_invite_code_expires_at = datetime.now(timezone.utc) + timedelta(  # type: ignore[assignment]
         minutes=OWNER_INVITE_CODE_TTL_MINUTES
     )
-    producer.owner_invite_code_attempts = 0
+    producer.owner_invite_code_attempts = 0  # type: ignore[assignment]
     return code
 
 
-@public_router.post("/email-code")
+@public_router.post("/email-code", response_model=None)
 # 5/hour, **per IP and only per IP** — `rate_limit.limiter` is keyed on
 # `get_real_client_ip` and this route does not override `key_func`.
 #
@@ -581,7 +582,7 @@ def send_owner_invite_email_code(
     body: OwnerInviteEmailCodeRequest,
     background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
-):
+) -> dict[str, Any]:
     """Send a verification code to the address she typed.
 
     THE RESPONSE IS THE SAME WHATEVER HAPPENS — same status, same bytes —
@@ -605,7 +606,7 @@ def send_owner_invite_email_code(
     ack = {"detail": "אם הכתובת תקינה, הקוד בדרך"}
     # The address is recorded either way: the page shows it back, and an
     # acceptance must match what was recorded.
-    producer.owner_invite_email = body.email
+    producer.owner_invite_email = body.email  # type: ignore[assignment]
 
     # A CODE IS MINTED EITHER WAY, and for a taken address it is simply never
     # sent. That looks like waste and is the opposite — it is what keeps the
@@ -642,7 +643,7 @@ def send_owner_invite_email_code(
     background_tasks.add_task(
         send_owner_invite_code_email,
         body.email,
-        business,
+        business,  # type: ignore[arg-type]
         code,
         test_cause=test_cause,
     )
@@ -738,7 +739,7 @@ def _verify_email_code(
     # length, so a byte-by-byte comparison is a timing oracle on a six-digit
     # secret — small enough for that to matter.
     if email != (producer.owner_invite_email or "").strip().lower() or (
-        not secrets.compare_digest(_hash_token(code), stored_hash)
+        not secrets.compare_digest(_hash_token(code), stored_hash)  # type: ignore[call-overload]
     ):
         # The spent attempt is the only write a failed accept makes.
         db.commit()
@@ -757,7 +758,7 @@ async def accept_owner_invite(
     body: OwnerInviteAccept,
     background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
-):
+) -> Token:
     """Set a password, sign both consents, and walk into the dashboard.
 
     ORDER MATTERS, and each step is placed where it is for a reason:
@@ -827,7 +828,7 @@ async def accept_owner_invite(
     # unique index (producer_claim.py records that), so the invariant has no
     # backstop in the database. The day an ownership-transfer or merge tool
     # exists, this is the line that stops it minting a second owner.
-    if _has_owner(db, producer.id):
+    if _has_owner(db, producer.id):  # type: ignore[arg-type]
         raise HTTPException(status_code=409, detail=_ALREADY_OWNED)
 
     now = datetime.now(timezone.utc)
@@ -960,9 +961,9 @@ async def accept_owner_invite(
     # The admin started this loop and nothing else closes it for her.
     background_tasks.add_task(
         notify_admin_owner_invite_accepted,
-        p_name,
-        user.email,
-        published,
+        p_name,  # type: ignore[arg-type]
+        user.email,  # type: ignore[arg-type]
+        published,  # type: ignore[arg-type]
         test_cause=p_test,
     )
 
@@ -975,10 +976,10 @@ async def accept_owner_invite(
     # template (one parameter, no buttons, and nothing here to say).
     background_tasks.add_task(
         send_email,
-        user.email,
+        user.email,  # type: ignore[arg-type]
         "ברוכים הבאים למהמקור",
-        _producer_approved_body(p_name, p_slug),
-        html=_producer_approved_html(p_name, p_slug),
+        _producer_approved_body(p_name, p_slug),  # type: ignore[arg-type]
+        html=_producer_approved_html(p_name, p_slug),  # type: ignore[arg-type]
         test_cause=p_test,
     )
 
@@ -989,7 +990,9 @@ async def accept_owner_invite(
     _set_fingerprint_cookie(response, fp)
     return Token(
         access_token=create_access_token(
-            user.id, user.token_version, fingerprint_hash=hash_fingerprint(fp)
+            user.id,  # type: ignore[arg-type]
+            user.token_version,  # type: ignore[arg-type]
+            fingerprint_hash=hash_fingerprint(fp),
         )
     )
 
@@ -1000,7 +1003,9 @@ async def accept_owner_invite(
 # a long random token. Generous for the real flow (opening the link and
 # refreshing a few times), tight enough to cap automated probing.
 @limiter.limit("30/hour")
-def get_owner_invite(request: Request, token: str, db: Session = Depends(get_db)):
+def get_owner_invite(
+    request: Request, token: str, db: Session = Depends(get_db)
+) -> OwnerInvitePublicOut:
     """What the acceptance page renders before she has typed anything.
 
     `request` is required by slowapi, which reads it by introspection.

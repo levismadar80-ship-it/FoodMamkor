@@ -331,6 +331,8 @@ function LoginPageBody() {
                 // MEH-1617: value moved to auth.login.email_placeholder.
                 placeholder={t("email_placeholder")}
                 aria-invalid={emailInvalid || undefined}
+                // MEH-3191: point the field at its error so a screen reader reads it.
+                aria-describedby={emailInvalid ? "login-email-error" : undefined}
                 className={`w-full min-h-[54px] rounded-sm ps-11 pe-4 py-3.5 bg-surface-card text-text outline-none transition focus-visible:ring-2 focus-visible:ring-primary ${
                   emailInvalid
                     ? "border border-danger-400"
@@ -341,7 +343,7 @@ function LoginPageBody() {
               />
             </div>
             {emailInvalid && (
-              <InlineMessage size="xs" className="text-start">{t("email_invalid")}</InlineMessage>
+              <InlineMessage id="login-email-error" size="xs" className="text-start">{t("email_invalid")}</InlineMessage>
             )}
             {emailValid && (
               <p className="text-xs text-primary text-start">{t("valid")}</p>
@@ -383,6 +385,7 @@ function LoginPageBody() {
                 // able to sign in. Empty-submit is still blocked in handleSubmit
                 // (MEH-2623). Regression of MEH-418.
                 aria-invalid={passwordInvalid || undefined}
+                aria-describedby={passwordInvalid ? "login-password-error" : undefined}
                 className={`w-full min-h-[54px] rounded-sm ps-11 pe-12 py-3.5 bg-surface-card text-text outline-none transition focus-visible:ring-2 focus-visible:ring-primary ${
                   passwordInvalid
                     ? "border border-danger-400"
@@ -407,7 +410,7 @@ function LoginPageBody() {
               </button>
             </div>
             {passwordInvalid && (
-              <InlineMessage size="xs" className="text-start">{t("password_required")}</InlineMessage>
+              <InlineMessage id="login-password-error" size="xs" className="text-start">{t("password_required")}</InlineMessage>
             )}
             {passwordValidLength && (
               <p className="text-xs text-primary text-start" data-testid="login-password-valid">{t("valid")}</p>

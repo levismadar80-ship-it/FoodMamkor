@@ -20,6 +20,8 @@ export async function generateMetadata({ params }) {
       locale: OG_LOCALE[locale],
     },
     alternates: buildAlternates("/messages", locale),
+    // MEH-3177: a signed-in inbox — never indexed.
+    robots: { index: false, follow: false },
   };
 }
 

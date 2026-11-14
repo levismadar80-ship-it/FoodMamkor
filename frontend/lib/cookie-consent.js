@@ -32,6 +32,14 @@ export function hasFullCookieConsent() {
   }
 }
 
+/** Event that re-opens the cookie banner so a visitor can change her answer. */
+export const COOKIE_SETTINGS_EVENT = "cookie-settings-open";
+
+/** MEH-3196: the footer's «הגדרות עוגיות» — withdrawing is as easy as giving. */
+export function openCookieSettings() {
+  window.dispatchEvent(new CustomEvent(COOKIE_SETTINGS_EVENT));
+}
+
 /** Persist the answer ("all" | "essential") and notify listeners. */
 export function setCookieConsent(mode) {
   // A storage that throws still gets the event: the page-level gates fire for

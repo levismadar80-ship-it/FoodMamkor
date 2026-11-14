@@ -6,7 +6,6 @@ import { NextIntlClientProvider, hasLocale } from "next-intl";
 import { MotionConfig } from "framer-motion";
 import { getMessages, getTranslations, setRequestLocale } from "next-intl/server";
 import { AuthProvider } from "@/lib/auth-context";
-import { LanguageProvider } from "@/lib/language-context";
 import Header from "@/components/Header";
 import VerifyBanner from "@/components/VerifyBanner";
 import FooterSlot from "@/components/FooterSlot";
@@ -30,6 +29,7 @@ import {
   OG_LOCALE,
   OG_ALTERNATE_LOCALES,
 } from "@/lib/i18n-seo";
+import { COLOR } from "@/lib/color-tokens";
 
 // MEH-1831 / MEH-2029: the four brand typefaces are self-hosted from .woff2
 // files committed in this repo, and the build makes no network request for
@@ -195,7 +195,7 @@ export async function generateMetadata({ params }) {
 }
 
 export const viewport = {
-  themeColor: "#2e6853",
+  themeColor: COLOR.primary,
 };
 
 export function generateStaticParams() {
@@ -247,14 +247,13 @@ export default async function LocaleLayout({ children, params }) {
           still evaluates to exactly 5rem when the banner is absent, which is
           what the old class said — so this is a superset, not a re-spacing. */}
       <body className="font-body-md bg-background text-text min-h-screen flex flex-col pb-[var(--bottom-inset)]">
-        <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:start-2 focus:z-[10000] focus:bg-primary focus:text-white focus:px-4 focus:py-2 focus:rounded-lg">
+        <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:start-2 focus:z-skip-link focus:bg-primary focus:text-white focus:px-4 focus:py-2 focus:rounded-lg">
           {tSweep("skip_to_main")}
         </a>
         {/* MEH-2233: not the whole catalog — admin/dashboard/server-only
             namespaces stay out of every page's payload (lib/client-messages.js). */}
         <NextIntlClientProvider messages={rootClientMessages(await getMessages())}>
           <AuthProvider>
-            <LanguageProvider>
               <SmoothScrollProvider>
                 {/* MEH-788: global reduced-motion off-switch for ALL
                     framer-motion (FadeInSection scroll-reveals, home hero/grid,
@@ -285,7 +284,6 @@ export default async function LocaleLayout({ children, params }) {
                 <PrehydrationInputReplay />
                 </MotionConfig>
               </SmoothScrollProvider>
-            </LanguageProvider>
           </AuthProvider>
         </NextIntlClientProvider>
         {CLARITY_PROJECT_ID && <ClarityScript projectId={CLARITY_PROJECT_ID} />}

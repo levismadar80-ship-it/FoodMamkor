@@ -81,7 +81,9 @@ export async function generateMetadata(props) {
   ]);
   const path = `/experiences/${id}`;
   const alternates = buildAlternates(path, locale);
-  // MEH-2101: pre-streaming, so this yields a REAL 404 status. A page-level
+  // MEH-2101: meant to yield a REAL 404 status. MEH-3199 measured 14/11 on a
+  // local build, before and after: 200 + noindex for a missing id (see
+  // not-found.js). A page-level
   // notFound() alone streams 200 + 404 UI, because the shared
   // app/[locale]/loading.js boundary flushes the shell first — bots would
   // keep crawling a soft 404. (MEH-1045 established this on the slug route.)
@@ -154,7 +156,8 @@ export default async function ExperienceDetailPage(props) {
           </div>
         }
       >
-        <ExperienceDetailClient />
+        {/* MEH-3199: server data in the first HTML; key resets on a move to another workshop. */}
+        <ExperienceDetailClient key={experience.id ?? params.id} initialExperience={experience} />
       </Suspense>
     </>
   );

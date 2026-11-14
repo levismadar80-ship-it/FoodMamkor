@@ -1,5 +1,10 @@
 import { defineConfig, devices } from "@playwright/test";
 import { defineGoldenProject, GOLDEN_DIR, GOLDEN_PROJECT } from "./e2e/golden-selection";
+import { webkitTlsEnabled, WEBKIT_TLS_URL } from "./e2e/webkit-tls";
+
+// MEH-3153: the WebKit run talks to the app over HTTPS (see e2e/webkit-tls.ts).
+const WEBKIT_TLS = webkitTlsEnabled();
+const webkitBase = WEBKIT_TLS ? { baseURL: WEBKIT_TLS_URL } : {};
 
 // MEH-1044 — CI runs E2E against a local `next start`. PLAYWRIGHT_BASE_URL is
 // the explicit override; TEST_URL is kept for manual runs against
@@ -58,6 +63,19 @@ export default defineConfig({
   // via test.use({ storageState: "e2e/.auth/<role>.json" }). The older
   // SMOKE_ADMIN_* fixture (flows/19,20) is a separate disposable-producer admin.
   globalSetup: "./e2e/global-setup.ts",
+  // MEH-3153: HTTPS proxy in front of `next start`, WebKit run only. Without
+  // it WebKit drops every Secure cookie on http://localhost (e2e/webkit-tls.ts).
+  ...(WEBKIT_TLS
+    ? {
+        webServer: {
+          command: "node e2e/tls-proxy.mjs",
+          url: WEBKIT_TLS_URL,
+          ignoreHTTPSErrors: true,
+          reuseExistingServer: false,
+          timeout: 30_000,
+        },
+      }
+    : {}),
   // MEH-991 Chunk 3: e2e/visual holds the VRT parity specs; baselines are
   // runner-generated via .github/workflows/vrt-update.yml (workflow_dispatch).
   testMatch: ["e2e/flows/**/*.spec.ts", "e2e/visual/**/*.spec.ts"],
@@ -212,6 +230,7 @@ export default defineConfig({
             testIgnore: [/visual\//, GOLDEN_DIR],
             use: {
               browserName: "webkit" as const,
+              ...webkitBase,
               viewport: { width: 390, height: 664 },
               deviceScaleFactor: 3,
               isMobile: true,
@@ -234,6 +253,7 @@ export default defineConfig({
             testIgnore: [/visual\//, GOLDEN_DIR],
             use: {
               browserName: "webkit" as const,
+              ...webkitBase,
               viewport: { width: 393, height: 727 },
               deviceScaleFactor: 2.75,
               isMobile: true,

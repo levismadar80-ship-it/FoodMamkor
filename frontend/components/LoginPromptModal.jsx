@@ -105,7 +105,7 @@ export default function LoginPromptModal({
 
   const overlay = (
     <div
-      className="fixed inset-0 z-[9500] flex items-center justify-center p-4 bg-black/40"
+      className="fixed inset-0 z-modal-interrupt flex items-center justify-center p-4 bg-black/40"
       onClick={onClose}
       role="presentation"
     >

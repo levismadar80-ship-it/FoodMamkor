@@ -347,7 +347,7 @@ export default function CitySearch({
           // 1010 clears panes:400, controls:1000 and the attribution:1001, and
           // stays BELOW the global header (Header.jsx:321, z-[1050]) so the header
           // still wins — matching the ledger in .claude/rules/rtl.md.
-          className="absolute z-[1010] mt-1 w-full bg-surface border border-border rounded-md shadow-lg max-h-72 overflow-auto"
+          className="absolute z-autocomplete mt-1 w-full bg-surface border border-border rounded-md shadow-lg max-h-72 overflow-auto"
         >
           {matches.map((city, idx) => (
             <li

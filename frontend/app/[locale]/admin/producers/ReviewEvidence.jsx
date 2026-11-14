@@ -32,6 +32,7 @@
  */
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import {
   ArrowSquareOut,
   Copy,
@@ -101,6 +102,7 @@ function Section({ icon: Icon, title, children }) {
 }
 
 export default function ReviewEvidence({ producer }) {
+  const t = useTranslations("admin.producers.review.evidence");
   const [copied, setCopied] = useState(false);
 
   if (!producer) return null;
@@ -153,11 +155,11 @@ export default function ReviewEvidence({ producer }) {
       data-testid="review-evidence"
       className="mt-3 border-t border-border pt-3 space-y-3 max-w-[calc(100vw-3rem)] sm:max-w-xl"
     >
-      <p className="text-xs font-semibold text-text">תיק בדיקה</p>
+      <p className="text-xs font-semibold text-text">{t("heading")}</p>
 
-      <Section icon={IdentificationCard} title="רישיון">
+      <Section icon={IdentificationCard} title={t("license")}>
         <ExternalLink href={HEALTH_MINISTRY_FOOD_REGISTRY_URL}>
-          מאגר משרד הבריאות
+          {t("health_registry")}
         </ExternalLink>
         <button
           type="button"
@@ -165,32 +167,32 @@ export default function ReviewEvidence({ producer }) {
           className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
         >
           <Copy size={ICON} weight="bold" aria-hidden="true" />
-          {copied ? "הועתק ✓" : "העתקת שם העסק"}
+          {copied ? t("copied") : t("copy_name")}
         </button>
         <span className="text-xs text-muted">
-          {licenseNumber ? `מספר: ${licenseNumber}` : "אין מספר רישיון"}
+          {licenseNumber ? t("license_number", { number: licenseNumber }) : t("no_license_number")}
         </span>
         {/* MEH-2072 captured this date; the checklist is where it earns its
             keep — the admin sees the licence's expiry while judging it. */}
         {licenseExpiresAt && (
-          <span className="text-xs text-muted">תוקף: {licenseExpiresAt}</span>
+          <span className="text-xs text-muted">{t("license_expiry", { date: licenseExpiresAt })}</span>
         )}
       </Section>
 
-      <Section icon={MagnifyingGlass} title="סימני חיים">
-        {websiteHref && <ExternalLink href={websiteHref}>אתר</ExternalLink>}
+      <Section icon={MagnifyingGlass} title={t("signals")}>
+        {websiteHref && <ExternalLink href={websiteHref}>{t("website")}</ExternalLink>}
         {instagramHref && (
-          <ExternalLink href={instagramHref}>אינסטגרם</ExternalLink>
+          <ExternalLink href={instagramHref}>{t("instagram")}</ExternalLink>
         )}
-        <ExternalLink href={googleQuery}>חיפוש בגוגל</ExternalLink>
+        <ExternalLink href={googleQuery}>{t("google_search")}</ExternalLink>
         {!websiteHref && !instagramHref && (
-          <span className="text-xs text-muted">אין אתר או אינסטגרם</span>
+          <span className="text-xs text-muted">{t("no_links")}</span>
         )}
       </Section>
 
-      <Section icon={ImageIcon} title="תמונות">
+      <Section icon={ImageIcon} title={t("photos")}>
         {thumbs.length === 0 && (
-          <span className="text-xs text-muted">אין תמונות</span>
+          <span className="text-xs text-muted">{t("no_photos")}</span>
         )}
         {thumbs.map((url) => (
           <a
@@ -198,7 +200,7 @@ export default function ReviewEvidence({ producer }) {
             href={`https://lens.google.com/uploadbyurl?url=${encodeURIComponent(url)}`}
             target="_blank"
             rel="noopener noreferrer"
-            title="חיפוש הפוך"
+            title={t("reverse_search")}
             className="inline-block"
           >
             {/* Plain <img>: these are admin-only thumbnails of arbitrary remote
@@ -206,7 +208,7 @@ export default function ReviewEvidence({ producer }) {
                 producer-supplied host into the optimizer's allowlist. */}
             <img
               src={url}
-              alt="חיפוש הפוך לתמונה"
+              alt={t("reverse_search_alt")}
               className="h-10 w-10 rounded object-cover border border-border"
             />
           </a>
@@ -214,13 +216,13 @@ export default function ReviewEvidence({ producer }) {
       </Section>
 
       {badges.length > 0 && (
-        <Section icon={SealCheck} title="כשרות">
+        <Section icon={SealCheck} title={t("kashrut")}>
           {badges.map((code) => (
             <ExternalLink
               key={code}
               href={`/api/producers/${id}/kashrut-cert/${code}`}
             >
-              {`תעודה: ${code}`}
+              {t("certificate", { code })}
             </ExternalLink>
           ))}
         </Section>

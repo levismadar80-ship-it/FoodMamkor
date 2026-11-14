@@ -1,5 +1,6 @@
 // @ts-check
 import { SITE_URL } from "./seo";
+import { COLOR } from "./color-tokens";
 
 /**
  * Module:   qr
@@ -51,7 +52,7 @@ export function buildBusinessQrUrl(producer) {
 export const QR_RENDER_OPTIONS = {
   errorCorrectionLevel: "M",
   margin: 4,
-  color: { dark: "#2e6853", light: "#FFFFFF" },
+  color: { dark: COLOR.primary, light: "#FFFFFF" },
 };
 
 /** The file name a downloaded code gets, per extension. */
