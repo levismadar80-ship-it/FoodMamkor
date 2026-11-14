@@ -19,8 +19,17 @@ from conftest import auth_header, make_user
 SEND = "app.routers.users_me.send_verify_email"
 
 
+# MEH-3104: a real address change also needs the current password; this is
+# make_user's default one (tests/conftest.py).
+PASSWORD = "Zx7Yp9Mq2Lr4"
+
+
 def _patch_email(client, user, email):
-    return client.patch("/users/me", json={"email": email}, headers=auth_header(user))
+    return client.patch(
+        "/users/me",
+        json={"email": email, "current_password": PASSWORD},
+        headers=auth_header(user),
+    )
 
 
 class TestEmailChangeNeedsANewVerification:

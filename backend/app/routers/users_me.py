@@ -40,6 +40,7 @@ from app.rate_limit import limiter
 # boundary, but the alternative is duplicating refresh + fingerprint
 # cookie attributes — the single-source-of-truth wins. Future refactor:
 # move both helpers to app/auth_cookies.py.
+from app.routers.admin_extra import is_super_admin  # MEH-3104
 from app.routers.auth import _set_fingerprint_cookie, _set_refresh_cookie
 from app.schemas.schemas import PasswordChange, ProfileUpdate, UserOut
 from app.services.auth_emails import send_verify_email
@@ -49,7 +50,9 @@ from app.utils.clock import utc_now
 router = APIRouter(prefix="/users/me", tags=["users"])
 
 
-def _change_email(db: Session, user: User, new_email: str) -> bool:
+def _change_email(
+    db: Session, user: User, new_email: str, current_password: str | None
+) -> bool:
     """Move the account to `new_email`. True when the address really changed.
 
     MEH-3095: `email_verified` vouches for the address, not for the account.
@@ -65,6 +68,17 @@ def _change_email(db: Session, user: User, new_email: str) -> bool:
     # address would catch that person's first sign-in.
     if user.google_id or user.apple_id:
         raise HTTPException(status_code=400, detail="EMAIL_CHANGE_UNSUPPORTED")
+    # MEH-3104: the protected owner account is matched by exact email
+    # (admin_extra.is_super_admin); moving it would drop the protection.
+    if is_super_admin(user):
+        raise HTTPException(status_code=400, detail="EMAIL_CHANGE_UNSUPPORTED")
+    # MEH-3104: a session alone is not enough to move the account. Without
+    # this, a stolen session could change the address, ask for a password
+    # reset there and take the account. Same check and copy as change_password.
+    if not current_password or not user.password_hash or not verify_password(
+        current_password, user.password_hash
+    ):
+        raise HTTPException(status_code=403, detail="הסיסמה הנוכחית שגויה")
     existing = db.query(User).filter(User.email == new_email).first()
     if existing and existing.id != user.id:
         raise HTTPException(status_code=409, detail="האימייל כבר בשימוש")
@@ -72,6 +86,9 @@ def _change_email(db: Session, user: User, new_email: str) -> bool:
     user.email_verified = False
     user.email_verify_token = secrets.token_urlsafe(32)
     user.email_verify_expires = utc_now() + timedelta(hours=24)
+    # MEH-3104: a reset link mailed to the old address must not outlive it.
+    user.reset_token = None
+    user.reset_token_expires_at = None
     return True
 
 
@@ -125,7 +142,9 @@ def update_profile(
         user.phone = data.phone
 
     if data.email is not None:
-        email_changed = _change_email(db, user, data.email.lower())
+        email_changed = _change_email(
+            db, user, data.email.lower(), data.current_password
+        )
 
     try:
         db.commit()

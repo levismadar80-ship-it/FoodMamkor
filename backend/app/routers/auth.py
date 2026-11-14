@@ -980,7 +980,10 @@ def google_auth(
             # SECURITY: prevent silent account takeover — if the email is already
             # registered via password (or a different OAuth provider), refuse to
             # link without explicit user action.
-            if not user.google_id:
+            # MEH-3104: compare the provider id itself. `if not user.google_id`
+            # let an account linked to a DIFFERENT Google identity through,
+            # marked verified and signed in.
+            if user.google_id != google_id:
                 raise HTTPException(
                     status_code=409,
                     detail="אימייל זה כבר רשום עם סיסמה. התחברו עם סיסמה במקום.",
@@ -1356,7 +1359,8 @@ def apple_auth(
         if user:
             # SECURITY: same takeover guard as Google — refuse silent link if the
             # account was registered via a different method (password or another OAuth).
-            if not user.apple_id:
+            # MEH-3104: same as Google — the provider id must be THIS one.
+            if user.apple_id != apple_id:
                 raise HTTPException(
                     status_code=409,
                     detail="אימייל זה כבר רשום עם סיסמה. התחברו עם סיסמה במקום.",

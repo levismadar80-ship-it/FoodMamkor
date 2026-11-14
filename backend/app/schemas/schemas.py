@@ -5474,6 +5474,10 @@ class ProfileUpdate(BaseModel):
     # same trap Chunk 1 hit and documented on the type itself.
     name: SanitizedPersonNameField | None = Field(None, min_length=1, max_length=200)
     email: EmailStr | None = None
+    # MEH-3104: required (checked in users_me._change_email) only when `email`
+    # really changes. A plain str like PasswordChange.current_password —
+    # verify_password is the only authority on it.
+    current_password: str | None = Field(None, max_length=256)
     avatar_url: str | None = None
     city: str | None = Field(None, max_length=100)
     # MEH-1190: phone is the only UI path for OAuth users (who never pass
