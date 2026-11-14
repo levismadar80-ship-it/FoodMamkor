@@ -69,3 +69,16 @@ def test_legacy_gallery_over_cap_can_shrink(client, db):
         headers=auth_header(user),
     )
     assert resp.status_code == 200, resp.text
+
+
+def test_paid_plan_gallery_is_not_capped(client, db):
+    """The cap is free-plan only; goes red if the plan check is dropped."""
+    user, producer = _free_owner(db, 3)
+    producer.plan = "premium"
+    db.commit()
+    resp = client.put(
+        "/producers/me",
+        json={"images": [_url(i) for i in range(4)]},
+        headers=auth_header(user),
+    )
+    assert resp.status_code == 200, resp.text
