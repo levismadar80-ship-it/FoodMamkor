@@ -34,6 +34,7 @@ import CollectionNotice from "@/components/CollectionNotice";
 import ShareSiteActions from "@/components/ShareSiteActions";
 import InlineMessage from "@/components/ui/InlineMessage";
 import { RegistrationSheet, StickyRegistrationBar, isDesktop, useInView } from "@/components/RegistrationOverlays";
+import EmailTypoHint from "@/components/EmailTypoHint";
 import { useAccountPrefill } from "@/lib/use-account-prefill";
 
 const BTN =
@@ -150,6 +151,7 @@ function SignupForm({ kind, itemId, onDone }) {
         onChange={set("email")}
         error={errors.email}
       />
+      <EmailTypoHint fieldId="signup-email" value={form.email} onAccept={(email) => set("email")({ target: { value: email } })} />
       {/* MEH-2777: the SAME approved sentence, now through the
           notice-at-collection component (MEH-1981) so it carries the
           /privacy link the other eight collection points already have.

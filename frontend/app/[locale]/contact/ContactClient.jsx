@@ -12,6 +12,7 @@ import { CONTACT_EMAIL } from "@/lib/env.client";
 import Button from "@/components/ui/Button";
 import { CONTACT_TOPICS, DEFAULT_CONTACT_TOPIC, contactTopicFrom } from "@/lib/contact-topics";
 import SectionHeading from "@/components/ui/SectionHeading";
+import EmailTypoHint from "@/components/EmailTypoHint";
 import { useAccountPrefill } from "@/lib/use-account-prefill";
 
 // form field → account field (MEH-3112).
@@ -146,6 +147,7 @@ export default function ContactClient() {
                 required
                 dir="ltr"
               />
+              <EmailTypoHint fieldId="contact-email" value={form.email} onAccept={(email) => set("email")({ target: { value: email } })} />
               {/* MEH-2832: topic select (moved from the /about form, MEH-1113).
                   Sent in the POST body; the backend prepends «נושא: <label>». */}
               <div>
