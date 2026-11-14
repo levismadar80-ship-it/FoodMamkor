@@ -75,7 +75,7 @@ describe("BottomNav pointer-events shield (MEH-1253)", () => {
     expect(wrapper.className).toMatch(/\bpointer-events-none\b/);
     // Guardrail: pointer-events only — the fixed / z tokens are untouched.
     expect(wrapper.className).toMatch(/\bfixed\b/);
-    expect(wrapper.className).toMatch(/z-\[1000\]/);
+    expect(wrapper.className).toMatch(/(^|\s)z-bottom-nav(\s|$)/);
   });
 
   it("re-enables events on the <nav> pill with pointer-events-auto", () => {

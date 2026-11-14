@@ -9,6 +9,7 @@ import JoinStickyBar from "@/components/join/JoinStickyBar";
 import { BRAND_NAME } from "@/lib/constants";
 import { buildAlternates, buildEntityTitle, OG_LOCALE } from "@/lib/i18n-seo";
 import SectionHeading from "@/components/ui/SectionHeading";
+import { PRICING_PATH, pricingCopyValues } from "@/lib/pricing";
 
 /**
  * /join — producer recruitment landing (MEH-995; rebuilt to the approved
@@ -104,8 +105,8 @@ const LINK_CLASS =
   "inline-flex items-center gap-2 text-primary font-semibold hover:underline rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary";
 const CARD_CLASS = "bg-background border border-primary/20 rounded-md px-5 py-4";
 // MEH-2841 (Sapir, 08/11): cost and price lead, because they are the two
-// questions that stop a registration — «בלי עמלות» used to live only in
-// a_cost, far down the page. Then discovery, then the «one more place to
+// questions that stop a registration. (The price promise itself changed
+// with ADR-042 — MEH-3166; a_cost now takes its numbers from lib/pricing.js.) Then discovery, then the «one more place to
 // update» objection that keeps coming back in Topaz's calls.
 const FAQ_KEYS = ["cost", "price", "google", "updates", "revenue", "customers"];
 // MEH-2799 (Sapir, 07/11): the site's FAQ pattern — a <details> accordion
@@ -117,6 +118,8 @@ export default async function JoinPage({ params }) {
   const { locale } = await params;
   setRequestLocale(locale);
   const t = await getTranslations({ locale, namespace: "join" });
+  const tPricing = await getTranslations({ locale, namespace: "pricing" });
+  const pricingValues = pricingCopyValues();
   const sample = t("features.sample_label");
 
   const steps = ["1", "2", "3", "4"].map((n) => ({
@@ -183,7 +186,10 @@ export default async function JoinPage({ params }) {
       </div>
 
       {/* ── Features: full-bleed background-alt band ── */}
-      <JoinFeatures />
+      {/* MEH-3166: the price list links here («לרשימת הכלים המלאה»). */}
+      <div id="tools" className="scroll-mt-24">
+        <JoinFeatures />
+      </div>
 
       <div className="max-w-3xl mx-auto px-4 sm:px-6 pt-14 sm:pt-20">
         {/* ── How it works — 4 numbered spreads, then the signup video ── */}
@@ -233,7 +239,7 @@ export default async function JoinPage({ params }) {
         </section>
 
         {/* ── FAQ — the price answer lives here (Etsy pattern), not in the
-               hero. a_cost dropped «— לעולם» on Sapir's call, 07/11 (ADR-030 §5 rewritten). ── */}
+               hero. Since MEH-3166 a_cost follows ADR-042 and links to /join/pricing. ── */}
         <section className="pb-14 sm:pb-20" data-testid="join-faq">
           <p className="text-sm font-medium text-fg-muted text-center mb-2">{t("faq.eyebrow")}</p>
           <SectionHeading className="text-center mb-8">
@@ -257,7 +263,19 @@ export default async function JoinPage({ params }) {
                     className="mt-1 shrink-0 text-primary transition-transform motion-reduce:transition-none group-open:rotate-180"
                   />
                 </summary>
-                <p className="px-5 pb-5 pt-0 leading-relaxed text-text/85">{t(`faq.a_${key}`)}</p>
+                {/* MEH-3166: the cost answer takes its numbers from lib/pricing.js
+                    and is the one place on /join that links to the price list. */}
+                <p className="px-5 pb-5 pt-0 leading-relaxed text-text/85">
+                  {t(`faq.a_${key}`, pricingValues)}
+                  {key === "cost" && (
+                    <>
+                      {" "}
+                      <Link href={PRICING_PATH} className={LINK_CLASS} data-testid="join-pricing-link">
+                        {tPricing("link_full")}
+                      </Link>
+                    </>
+                  )}
+                </p>
               </details>
             ))}
           </div>

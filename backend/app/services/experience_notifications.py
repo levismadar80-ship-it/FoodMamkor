@@ -10,6 +10,7 @@ sends nothing.
 
 from __future__ import annotations
 
+from typing import Any
 import logging
 
 from app.config import settings
@@ -18,7 +19,7 @@ from app.services.email import send_email
 logger = logging.getLogger(__name__)
 
 
-def host_test_cause(host) -> bool:
+def host_test_cause(host: Any) -> bool:
     """MEH-2952: the host (a User) or the business she owns is a test row."""
     if host is None:
         return False

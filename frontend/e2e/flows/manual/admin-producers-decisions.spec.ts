@@ -431,7 +431,10 @@ test.describe("review checklist", () => {
     await checklistToggle(page).click();
     await expect(photos).toBeChecked();
     // Full reload — the GET answers from what was PUT.
-    await page.reload();
+    // MEH-3153: open*() is itself a full document load (page.goto), so it is
+    // the reload. A page.reload() right before it raced two navigations: on
+    // WebKit the reloaded page's in-flight /auth/me was aborted by the goto,
+    // AdminShell saw no user and pushed /login over the goto.
     await openQueue(page);
     await checklistToggle(page).click();
     await expect(photos).toBeChecked();
@@ -440,7 +443,10 @@ test.describe("review checklist", () => {
     await photos.uncheck();
     await expect.poll(() => writes.filter((w) => w.method === "PUT").length).toBe(2);
     expect(writes[1].body).toEqual({ item_ids: [] });
-    await page.reload();
+    // MEH-3153: open*() is itself a full document load (page.goto), so it is
+    // the reload. A page.reload() right before it raced two navigations: on
+    // WebKit the reloaded page's in-flight /auth/me was aborted by the goto,
+    // AdminShell saw no user and pushed /login over the goto.
     await openQueue(page);
     await checklistToggle(page).click();
     await expect(photos).not.toBeChecked();
@@ -546,7 +552,13 @@ test.describe("review checklist", () => {
 // ── MT:MEH-1399:20-25 — the evidence dossier ──────────────────────────────
 
 test.describe("review checklist — evidence dossier", () => {
-  test.use({ permissions: ["clipboard-read", "clipboard-write"] });
+  // MEH-3153: a clipboard grant exists only in Chromium; on WebKit the option
+  // made newPage throw for every test here, including the three that never
+  // touch the clipboard. The copy test itself skips off Chromium (below).
+  test.use({
+    permissions: async ({ browserName }, use) =>
+      use(browserName === "chromium" ? ["clipboard-read", "clipboard-write"] : []),
+  });
 
   const dossier = (page: Page) => page.getByTestId("review-evidence");
 

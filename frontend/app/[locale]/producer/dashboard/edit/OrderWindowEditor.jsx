@@ -31,6 +31,7 @@ import {
 } from "@/lib/order-window";
 import Button from "@/components/ui/Button";
 import InlineMessage from "@/components/ui/InlineMessage";
+import Input from "@/components/ui/Input";
 
 export default function OrderWindowEditor({
   profile,
@@ -201,20 +202,20 @@ export default function OrderWindowEditor({
                           dir="ltr" keeps the two inputs in reading order on the
                           RTL page. rtl-ok */}
                       <div className="flex items-center gap-2" dir="ltr">
-                        <input
+                        <Input inline size="xs"
                           type="time"
                           value={range.from}
                           onChange={(e) => patchRange(i, rangeIdx, { from: e.target.value })}
                           aria-label={`${tDays(key)} ${t("from_label")} ${rangeIdx + 1}`}
-                          className="numeric text-sm border border-border rounded-sm px-2 py-1 bg-surface focus-ring"
+                          className="numeric"
                         />
                         <span aria-hidden="true" className="text-fg-muted">–</span>
-                        <input
+                        <Input inline size="xs"
                           type="time"
                           value={range.to}
                           onChange={(e) => patchRange(i, rangeIdx, { to: e.target.value })}
                           aria-label={`${tDays(key)} ${t("to_label")} ${rangeIdx + 1}`}
-                          className="numeric text-sm border border-border rounded-sm px-2 py-1 bg-surface focus-ring"
+                          className="numeric"
                         />
                       </div>
                       {day.ranges.length > 1 && (

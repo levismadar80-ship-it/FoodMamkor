@@ -26,6 +26,7 @@
  */
 
 import { useCallback, useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 import { ArrowDown, ArrowUp, Plus } from "@phosphor-icons/react";
 import api from "@/lib/api";
 import Input from "@/components/ui/Input";
@@ -51,7 +52,6 @@ const ICON = 16;
 // label becomes a permanent audit record of an attestation to nothing.
 const LABEL_MIN_LETTERS = 3;
 const LABEL_LETTER_RE = /[א-תa-zA-Z]/g;
-const LABEL_TOO_SHORT = "תווית קצרה מדי — לפחות 3 אותיות";
 
 const labelLetterCount = (label) =>
   ((label || "").trim().match(LABEL_LETTER_RE) || []).length;
@@ -64,6 +64,7 @@ const labelIsValid = (label) => labelLetterCount(label) >= LABEL_MIN_LETTERS;
 const blankItem = () => ({ id: null, label: "", hint: "", active: true });
 
 export default function ChecklistSettings() {
+  const t = useTranslations("admin.settings.checklist");
   const [items, setItems] = useState(null);
   const [loadError, setLoadError] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -149,8 +150,8 @@ export default function ChecklistSettings() {
       // whatever the admin just typed.
       setSaveError(
         err?.response?.status === 404
-          ? "אחד הסעיפים כבר לא קיים — רענני את העמוד"
-          : "השמירה נכשלה",
+          ? t("save_error_gone")
+          : t("save_error"),
       );
     } finally {
       setSaving(false);
@@ -160,14 +161,14 @@ export default function ChecklistSettings() {
   if (loadError) {
     return (
       <div className="bg-surface border border-border rounded-lg p-4">
-        <h2 className="font-semibold mb-2">רשימת בדיקה לפני אישור</h2>
-        <p className="text-sm text-muted mb-3">טעינת הרשימה נכשלה.</p>
+        <h2 className="font-semibold mb-2">{t("title")}</h2>
+        <p className="text-sm text-muted mb-3">{t("load_error")}</p>
         <button
           type="button"
           onClick={load}
           className="text-sm text-primary underline"
         >
-          נסי שוב
+          {t("retry")}
         </button>
       </div>
     );
@@ -176,7 +177,7 @@ export default function ChecklistSettings() {
   if (!items) {
     return (
       <div className="bg-surface border border-border rounded-lg p-4 text-sm text-muted">
-        טוענת…
+        {t("loading")}
       </div>
     );
   }
@@ -185,12 +186,8 @@ export default function ChecklistSettings() {
 
   return (
     <div className="bg-surface border border-border rounded-lg p-4">
-      <h2 className="font-semibold">רשימת בדיקה לפני אישור</h2>
-      <p className="text-xs text-muted mt-1 mb-4">
-        הסעיפים שמופיעים לפנייך כשאת בודקת בית עסק. שינוי כאן משתקף מיד, בלי
-        deploy. סעיף שאינו רלוונטי עוד — הפסיקי את השימוש בו; אי אפשר למחוק
-        סעיף שכבר סומן לעסק כלשהו, כדי שתיעוד הבדיקות לא יאבד את הנושא שלו.
-      </p>
+      <h2 className="font-semibold">{t("title")}</h2>
+      <p className="text-xs text-muted mt-1 mb-4">{t("intro")}</p>
 
       <ul className="space-y-3">
         {items.map((item, index) => (
@@ -206,7 +203,7 @@ export default function ChecklistSettings() {
                   type="button"
                   onClick={() => move(index, -1)}
                   disabled={index === 0}
-                  aria-label={`העלי את «${item.label || "סעיף חדש"}»`}
+                  aria-label={t("move_up", { label: item.label || t("new_item") })}
                   className="text-muted hover:text-primary disabled:opacity-50"
                 >
                   <ArrowUp size={ICON} weight="bold" aria-hidden="true" />
@@ -215,7 +212,7 @@ export default function ChecklistSettings() {
                   type="button"
                   onClick={() => move(index, 1)}
                   disabled={index === items.length - 1}
-                  aria-label={`הורידי את «${item.label || "סעיף חדש"}»`}
+                  aria-label={t("move_down", { label: item.label || t("new_item") })}
                   className="text-muted hover:text-primary disabled:opacity-50"
                 >
                   <ArrowDown size={ICON} weight="bold" aria-hidden="true" />
@@ -224,7 +221,7 @@ export default function ChecklistSettings() {
 
               <div className="flex-1 space-y-2">
                 <Input
-                  label="סעיף"
+                  label={t("item_label")}
                   value={item.label}
                   onChange={(e) => update(index, { label: e.target.value })}
                   maxLength={300}
@@ -233,10 +230,10 @@ export default function ChecklistSettings() {
                   // items and «לכל סעיף חייב להיות טקסט» told her nothing about
                   // WHICH one. Input wires `error` through aria-invalid +
                   // aria-describedby, so this is announced, not merely red.
-                  error={labelIsValid(item.label) ? undefined : LABEL_TOO_SHORT}
+                  error={labelIsValid(item.label) ? undefined : t("label_too_short")}
                 />
                 <Input
-                  label="הסבר (אופציונלי)"
+                  label={t("hint_label")}
                   value={item.hint}
                   onChange={(e) => update(index, { hint: e.target.value })}
                   maxLength={300}
@@ -248,7 +245,7 @@ export default function ChecklistSettings() {
                     onChange={(e) => update(index, { active: e.target.checked })}
                     className="h-4 w-4 accent-primary"
                   />
-                  <span>{item.active ? "בשימוש" : "הופסק השימוש"}</span>
+                  <span>{item.active ? t("active") : t("inactive")}</span>
                 </label>
               </div>
             </div>
@@ -263,7 +260,7 @@ export default function ChecklistSettings() {
           className="inline-flex items-center gap-1 text-sm text-primary hover:underline"
         >
           <Plus size={ICON} weight="bold" aria-hidden="true" />
-          הוספת סעיף
+          {t("add")}
         </button>
 
         <Button
@@ -272,13 +269,13 @@ export default function ChecklistSettings() {
           disabled={saving || !canSave}
           variant="primary" size="sm" className="ms-auto"
         >
-          {saving ? "שומרת…" : "שמירת הרשימה"}
+          {saving ? t("saving") : t("save")}
         </Button>
       </div>
 
       {saveError && <p className="text-xs text-error mt-2">{saveError}</p>}
       {saved && !saveError && (
-        <p className="text-xs text-primary mt-2">נשמר ✓</p>
+        <p className="text-xs text-primary mt-2">{t("saved")}</p>
       )}
     </div>
   );

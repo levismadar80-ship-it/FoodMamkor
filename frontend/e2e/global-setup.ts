@@ -40,6 +40,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { loginFailureMessage, withRateLimitRetry } from "./login-retry";
 import { goldenOnly } from "./golden-selection";
+import { webkitTlsEnabled, WEBKIT_TLS_URL } from "./webkit-tls";
 
 type Role = {
   name: string;
@@ -145,7 +146,11 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
   }
 
   fs.mkdirSync(AUTH_DIR, { recursive: true });
-  const origin = new URL(baseURL).origin;
+  // MEH-3153: the WebKit run browses over the HTTPS proxy, so its token must
+  // sit in THAT origin's localStorage; the login request itself stays on baseURL.
+  // Valid for a WebKit-only invocation (the nightly runs --project=webkit-iphone13);
+  // a Chromium project in the same PW_WEBKIT=1 run would find its token missing.
+  const origin = webkitTlsEnabled() ? WEBKIT_TLS_URL : new URL(baseURL).origin;
 
   for (const role of ROLES) {
     const password = process.env[role.passwordEnv];
