@@ -110,7 +110,7 @@ class Product(Base):
         "Producer", back_populates="products", foreign_keys="Product.producer_id"
     )
     # MEH-588: M2M back-ref so a Product can list the producer's recipes
-    # that promote it. `secondary` points to the link Table defined below.
+    # that promote it. `secondary` points to the link Table defined in models/recipes.py.
     recipes = relationship(
         "ProducerRecipe",
         secondary="producer_recipe_products",

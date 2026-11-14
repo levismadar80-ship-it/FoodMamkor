@@ -1,8 +1,9 @@
 """
 Module:    models/admin_ops
-Purpose:   Rows the admin side runs on: settings, outreach leads,
-           requests awaiting a decision, OTP tokens, inbound and outbound
-           messages, job heartbeats.
+Purpose:   Rows the admin side runs on: outreach leads, phone OTP tokens,
+           requests awaiting a decision (kashrut badge, category, name
+           change), inbound and outbound messages, the admin checklist,
+           producer review checks, the Alembic lineage row.
 Does NOT:  Hold public content.
 Split out of models/models.py (MEH-3269); the code is moved verbatim and
 every name is still importable from app.models.models.

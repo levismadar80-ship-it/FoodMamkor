@@ -163,6 +163,8 @@ def test_nothing_reads_or_writes_it_in_chunk_a():
     # exact thing `unique_views_count`'s docstring warns about for readers.
     assert files == {
         "backend/app/models/models.py",
+        # MEH-3269: the class itself lives here; models.py re-exports it.
+        "backend/app/models/analytics.py",
         "backend/app/models/__init__.py",
         "backend/app/services/analytics_rollup.py",
         "backend/app/routers/producer_me.py",

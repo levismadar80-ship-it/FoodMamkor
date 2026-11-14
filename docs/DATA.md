@@ -6,7 +6,7 @@
 >
 > The codebase is the source of truth — when this file drifts, fix this
 > file. Code lives at:
-> - Models: `backend/app/models/models.py`
+> - Models: `backend/app/models/` — core tables in `models.py`, the rest one file per area (`catalog`, `engagement`, `home_products`, `events`, `analytics`, `admin_ops`, `recipes`, `rescue`); every name is importable from `app.models.models`
 > - Schemas: `backend/app/schemas/schemas.py`
 > - Routers: `backend/app/routers/`
 >

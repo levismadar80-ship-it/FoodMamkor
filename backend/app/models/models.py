@@ -1,3 +1,15 @@
+"""
+Module:    models/models
+Purpose:   The core tables every other model module points at: City,
+           Producer, User, RetiredSlug, AdminSetting, StaticPage, Category,
+           ProducerCategory.
+Does NOT:  Hold the rest. Catalog, engagement, home products, events,
+           analytics, admin ops, recipes and rescue each have their own
+           module in this package (MEH-3269); every name they define is
+           re-exported at the bottom of this file, so
+           `from app.models.models import X` still works for all of them.
+"""
+
 import uuid
 
 from sqlalchemy import (
@@ -313,7 +325,7 @@ class Producer(Base):
     )
     organic_certified = Column(Boolean, default=False)
     # MEH-1508 chunk 1 (schema only): business-level dietary scope — distinguishes
-    # "one tagged product" (product-level flags, below) from "the whole catalog".
+    # "one tagged product" (product-level flags, on Product in models/catalog.py) from "the whole catalog".
     # VARCHAR + app-level validation (no PG enum), like availability_state.
     # NOT NULL with both a Python-side `default` (ORM inserts) AND a DB
     # `server_default` ('unknown') — mirrors the MEH-293 product flags

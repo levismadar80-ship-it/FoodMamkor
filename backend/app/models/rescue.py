@@ -1,7 +1,7 @@
 """
 Module:    models/rescue
-Purpose:   The rescue-bags pilot: bags, orders, digest subscriptions and
-           their logs.
+Purpose:   The rescue-bags pilot: offers, orders, reviews and the typical
+           items a business lists for its bags.
 Does NOT:  Take or record any payment; the buyer pays at the counter.
 Split out of models/models.py (MEH-3269); the code is moved verbatim and
 every name is still importable from app.models.models.
