@@ -19,7 +19,8 @@ from app.models.models import User
 from app.services import account_guards, oauth_verifiers
 from tests.conftest import auth_header, make_user
 
-PASSWORD = "Zx7Yp9Mq2Lr4"  # make_user's default
+# guard-ok: make_user's default test password, not a credential
+PASSWORD = "Zx7Yp9Mq2Lr4"
 URL = "/auth/me/delete"
 
 

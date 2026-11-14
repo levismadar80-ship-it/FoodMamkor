@@ -88,10 +88,10 @@ describe("a password account sends its password (D15)", () => {
     const submit = screen.getByRole("button", { name: `${NS}.submit_cta` });
     typeEmail();
     expect(submit).toBeDisabled();
-    fireEvent.change(document.getElementById("danger-password"), { target: { value: "pw-123456" } });
+    fireEvent.change(document.getElementById("danger-password"), { target: { value: "example-pw-123" } });
     expect(submit).not.toBeDisabled();
     fireEvent.click(submit);
-    await waitFor(() => expect(mockDelete).toHaveBeenCalledWith({ password: "pw-123456" }));
+    await waitFor(() => expect(mockDelete).toHaveBeenCalledWith({ password: "example-pw-123" }));
   });
 
   it("a server refusal shows its message and keeps the form", async () => {
@@ -147,7 +147,7 @@ describe("a business owner is told what goes with the account", () => {
     render(<AccountDeleteCard />);
     openCard();
     typeEmail();
-    fireEvent.change(document.getElementById("danger-password"), { target: { value: "pw-123456" } });
+    fireEvent.change(document.getElementById("danger-password"), { target: { value: "example-pw-123" } });
     expect(await screen.findByText("settings.security.common.error_retry")).toBeTruthy();
     expect(screen.getByRole("button", { name: `${NS}.submit_cta` })).toBeDisabled();
     expect(screen.queryByTestId("delete-owner-warning")).toBeNull();

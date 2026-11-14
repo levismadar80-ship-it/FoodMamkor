@@ -418,11 +418,11 @@ describe("SettingsPage", () => {
     // MEH-3248 (D15): the right email alone no longer arms it — the server
     // also wants the password, so the button waits for one.
     expect(confirmBtn).toBeDisabled();
-    fireEvent.change(document.getElementById("danger-password"), { target: { value: "my-pass-123" } });
+    fireEvent.change(document.getElementById("danger-password"), { target: { value: "example-pass-123" } });
     expect(confirmBtn).not.toBeDisabled();
 
     fireEvent.click(confirmBtn);
-    await waitFor(() => expect(mockDeleteAccount).toHaveBeenCalledWith({ password: "my-pass-123" }));
+    await waitFor(() => expect(mockDeleteAccount).toHaveBeenCalledWith({ password: "example-pass-123" }));
   });
 
   // MEH-1355: the "business" tab was removed — its status/support surface is

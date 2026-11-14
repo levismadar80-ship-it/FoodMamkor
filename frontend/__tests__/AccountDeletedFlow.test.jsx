@@ -54,7 +54,7 @@ function Probe() {
   const { deleteAccount, loading } = useAuth();
   if (loading) return <p>loading</p>;
   return (
-    <button data-testid="del" onClick={() => deleteAccount({ password: "pw-123456" })}>
+    <button data-testid="del" onClick={() => deleteAccount({ password: "example-pw-123" })}>
       del
     </button>
   );
@@ -86,7 +86,7 @@ describe("deleteAccount leaves for the confirmation page", () => {
   it("posts the proof to the new route, drops the token, lands on /account-deleted", async () => {
     setPath("/settings");
     await runDelete();
-    expect(apiPost).toHaveBeenCalledWith("/auth/me/delete", { password: "pw-123456" });
+    expect(apiPost).toHaveBeenCalledWith("/auth/me/delete", { password: "example-pw-123" });
     expect(localStorage.getItem("token")).toBeNull();
     expect(replace).toHaveBeenCalledWith("/account-deleted");
   });

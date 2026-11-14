@@ -72,7 +72,7 @@ def assert_deletable(target: User, *, door: Literal["self", "admin"]) -> None:
 
 # A provider token older than this is not a fresh sign-in (MEH-3248 / D15).
 REAUTH_MAX_AGE_SECONDS = 5 * 60
-WRONG_PASSWORD = "הסיסמה הנוכחית שגויה"  # REUSES: routers/users_me.py _change_email
+WRONG_PASSWORD = "הסיסמה הנוכחית שגויה"  # REUSES: routers/users_me.py _change_email (guard-ok: an error message, not a credential)
 # Approved string 17 (decisions doc 14/11). Also the 403 when the token fails.
 REAUTH_REQUIRED = "כדי לאשר את המחיקה, התחברי שוב עם {provider}."
 
