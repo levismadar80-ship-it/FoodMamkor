@@ -29,6 +29,7 @@ from app.auth import require_verified_producer
 from app.database import get_db
 from app.models.billing import BILLING_STATES, BusinessBilling
 from app.models.models import User
+from app.utils.clock import israel_today
 
 FREE_PLAN: Final = "free"
 # MEH-1352: a business on the free plan keeps at most this many gallery images.
@@ -133,16 +134,28 @@ def require_paid_signup(  # noqa: PLR0913 — keyword-only pairs: now vs before
     *,
     price: Any,
     method: str | None,
+    running: bool = True,
     was_price: Any = None,
     was_method: str | None = None,
+    was_running: bool = False,
 ) -> None:
-    """Ask only when this write MAKES a paid site sign-up: a new one, or an
-    edit that turns a free / WhatsApp item into one. An item that already was
-    a paid site sign-up stays editable (what exists carries on)."""
-    if is_paid_site_signup(price, method) and not is_paid_site_signup(
-        was_price, was_method
-    ):
+    """Ask only when this write OPENS a paid site sign-up: a new item, an edit
+    that turns a free / WhatsApp item into one, or one that brings a cancelled
+    or past paid item back (reactivating it, moving its date forward). An item
+    that is already an open paid site sign-up stays editable, and cancelling
+    is never asked (what exists carries on).
+
+    `running` = active and not in the past, after the write; `was_running` =
+    the same before it. A create passes neither."""
+    opens = is_paid_site_signup(price, method) and running
+    was_open = is_paid_site_signup(was_price, was_method) and was_running
+    if opens and not was_open:
         require_paid_tool(db, producer_id, "paid_signup")
+
+
+def is_running(is_active: Any, event_date: Any) -> bool:
+    """An item takes sign-ups while it is active and its date has not passed."""
+    return bool(is_active) and event_date is not None and event_date >= israel_today()
 
 
 def require_paid_tool(db: Session, producer_id: UUID | None, tool: str) -> None:

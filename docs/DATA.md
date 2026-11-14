@@ -519,7 +519,7 @@ open. Once it is `billing`, a business in `page_only` or `unpaid` gets **403**
 
 | Tool | Routes that ask |
 |---|---|
-| paid sign-up (price > 0 **and** `registration_method = site_form`) | `POST /events`, `PUT /events/{id}`, `POST /experiences`, `PUT /experiences/{id}` — an edit asks only when it MAKES the item a paid site sign-up |
+| paid sign-up (price > 0 **and** `registration_method = site_form`) | `POST /events`, `PUT /events/{id}`, `POST /experiences`, `PUT /experiences/{id}` — an edit asks only when it OPENS one: makes the item a paid site sign-up, reactivates a cancelled one, or moves a past one forward |
 | group buy | `POST /group-buys` |
 | rescue bags | `POST /rescue/offers` (route dependency `capabilities.bags_open`) |
 | product orders (MEH-3216) | none yet — the route that turns ordering on joins the list with that work |

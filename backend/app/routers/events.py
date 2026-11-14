@@ -446,8 +446,13 @@ def update_event(  # noqa: PLR0913 — all args are FastAPI-injected; MEH-3022 a
         event.producer_id,
         price=changes.get("price", event.price),
         method=changes.get("registration_method", event.registration_method),
+        running=capabilities.is_running(
+            changes.get("is_active", event.is_active),
+            changes.get("event_date", event.event_date),
+        ),
         was_price=event.price,
         was_method=event.registration_method,
+        was_running=capabilities.is_running(event.is_active, event.event_date),
     )
     for field, value in changes.items():
         if field == "category" and value not in VALID_CATEGORIES:

@@ -176,7 +176,54 @@ def _make_free_experience_paid(client, db, state):
     )
 
 
+def _reactivate_cancelled_paid_event(client, db, state):
+    owner = _owner(db, email=f"evr-{state}@example.com")
+    ev = _event(db, owner, price=120, is_active=False)
+    _set_state(db, _producer_of(db, owner), state)
+    return client.put(
+        f"/events/{ev.id}", json={"is_active": True}, headers=auth_header(owner)
+    )
+
+
+def _move_past_paid_event_forward(client, db, state):
+    owner = _owner(db, email=f"evd-{state}@example.com")
+    ev = _event(db, owner, price=120, event_date=israel_today() - timedelta(days=3))
+    _set_state(db, _producer_of(db, owner), state)
+    return client.put(
+        f"/events/{ev.id}",
+        json={"event_date": (israel_today() + timedelta(days=5)).isoformat()},
+        headers=auth_header(owner),
+    )
+
+
+def _make_whatsapp_event_a_paid_site_signup(client, db, state):
+    """Price and method change together in one PUT."""
+    owner = _owner(db, email=f"evm-{state}@example.com")
+    ev = _event(db, owner, registration_method="whatsapp")
+    _set_state(db, _producer_of(db, owner), state)
+    return client.put(
+        f"/events/{ev.id}",
+        json={"price": 120, "registration_method": "site_form"},
+        headers=auth_header(owner),
+    )
+
+
+def _reactivate_cancelled_paid_experience(client, db, state):
+    owner = _owner(db, email=f"exr-{state}@example.com")
+    ex = _experience(db, owner, price_per_person=150)
+    ex.is_active = False
+    db.commit()
+    _set_state(db, _producer_of(db, owner), state)
+    return client.put(
+        f"/experiences/{ex.id}", json={"is_active": True}, headers=auth_header(owner)
+    )
+
+
 ROUTE_CALLS = [
+    _reactivate_cancelled_paid_event,
+    _move_past_paid_event_forward,
+    _make_whatsapp_event_a_paid_site_signup,
+    _reactivate_cancelled_paid_experience,
     _post_group_buy,
     _post_paid_event,
     _make_free_event_paid,
@@ -262,6 +309,38 @@ class TestWhatIsNeverClosed:
             headers=auth_header(owner),
         )
         assert by_whatsapp.status_code == 201, by_whatsapp.text
+
+    def test_a_running_paid_event_can_still_be_cancelled(self, client, db, billing_on):
+        owner = _owner(db, email="cancel@example.com")
+        ev = _event(db, owner, price=120)
+        _set_state(db, _producer_of(db, owner), "page_only")
+        r = client.put(
+            f"/events/{ev.id}", json={"is_active": False}, headers=auth_header(owner)
+        )
+        assert r.status_code == 200, r.text
+
+    def test_a_cancelled_paid_event_can_be_edited_while_it_stays_cancelled(
+        self, client, db, billing_on
+    ):
+        owner = _owner(db, email="stays-cancelled@example.com")
+        ev = _event(db, owner, price=120, is_active=False)
+        _set_state(db, _producer_of(db, owner), "unpaid")
+        r = client.put(
+            f"/events/{ev.id}", json={"title": "שם חדש"}, headers=auth_header(owner)
+        )
+        assert r.status_code == 200, r.text
+
+    def test_a_paid_event_with_no_method_in_the_payload_is_a_site_signup(
+        self, client, db, billing_on
+    ):
+        """The create schema defaults the method to the site form, so leaving
+        it out is not a way around the gate."""
+        owner = _owner(db, email="no-method@example.com")
+        _set_state(db, _producer_of(db, owner), "page_only")
+        payload = _event_payload(price=120)
+        assert "registration_method" not in payload
+        r = client.post("/events", json=payload, headers=auth_header(owner))
+        assert r.status_code == 403, r.text
 
     def test_an_existing_paid_event_can_still_be_edited(self, client, db, billing_on):
         """What exists carries on: only a NEW paid booking is closed."""
