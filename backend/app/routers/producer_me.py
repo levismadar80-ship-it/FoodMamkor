@@ -1769,6 +1769,9 @@ def confirm_phone_otp(
             PhoneOtpToken.code == body.code,
             PhoneOtpToken.used.is_(False),
             PhoneOtpToken.expires_at > utc_now(),
+            # Grill B8: a code sent to an earlier number never verifies the
+            # current one (a send racing a PUT can leave such a token unused).
+            PhoneOtpToken.phone == producer.phone,
         )
         .update({PhoneOtpToken.used: True}, synchronize_session=False)
     )

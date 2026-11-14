@@ -59,7 +59,14 @@ function forgetOtpSent() {
   }
 }
 
-export default function PhoneVerifyCard({ onVerified }) {
+/**
+ * @param {{ onVerified?: () => void, variant?: "submit" | "reverify" }} props
+ * `reverify` (grill B8): a live business whose number changed. Its own title,
+ * no "before review" description, and the server's own success sentence
+ * (the submit-flow toast talks about sending for review).
+ */
+export default function PhoneVerifyCard({ onVerified, variant = "submit" }) {
+  const reverify = variant === "reverify";
   const t = useTranslations("dashboard.producer.phone_verify");
   const [codeSent, setCodeSent] = useState(false);
   const [code, setCode] = useState("");
@@ -117,9 +124,9 @@ export default function PhoneVerifyCard({ onVerified }) {
     setConfirming(true);
     setError("");
     try {
-      await api.post("/producers/me/verify-phone/confirm", { code: value });
+      const res = await api.post("/producers/me/verify-phone/confirm", { code: value });
       forgetOtpSent();
-      showToast.success(t("success"));
+      showToast.success(reverify && res?.data?.detail ? res.data.detail : t("success"));
       onVerified?.();
     } catch (err) {
       const sc = err.response?.status;
@@ -154,12 +161,12 @@ export default function PhoneVerifyCard({ onVerified }) {
       : t("send_cta");
 
   return (
-    <div className="mt-3 bg-surface border border-primary/20 rounded-md p-4">
+    <div data-testid={reverify ? "phone-reverify-card" : undefined} className="mt-3 bg-surface border border-primary/20 rounded-md p-4">
       <p className="font-semibold text-text mb-1 inline-flex items-center gap-1.5">
         <ChatCircleText size={18} className="text-primary" aria-hidden="true" />
-        {t("title")}
+        {reverify ? t("reverify_title") : t("title")}
       </p>
-      <p className="text-xs text-fg-muted mb-3">{t("description")}</p>
+      {!reverify && <p className="text-xs text-fg-muted mb-3">{t("description")}</p>}
 
       {/* MEH-1103: send + confirm gain min-h-touch (WCAG 2.5.5). */}
       <button

@@ -78,3 +78,39 @@ def test_code_sent_to_old_number_cannot_verify_new_one(client, db):
     assert resp.status_code == 400
     db.refresh(producer)
     assert producer.phone_verified is False
+
+
+def test_token_for_an_earlier_number_cannot_verify_the_current_one(client, db):
+    """A send racing a PUT can leave an unused token for the old number."""
+    producer, user = _verified_owner(db)
+    producer.phone_verified = False
+    db.add(
+        PhoneOtpToken(
+            producer_id=producer.id,
+            phone="0527654321",
+            code="654321",
+            expires_at=utc_now() + timedelta(minutes=10),
+        )
+    )
+    db.commit()
+    resp = client.post(
+        "/producers/me/verify-phone/confirm",
+        json={"code": "654321"},
+        headers=auth_header(user),
+    )
+    assert resp.status_code == 400
+    db.refresh(producer)
+    assert producer.phone_verified is False
+
+
+def test_admin_changing_the_number_drops_verification(client, db):
+    producer, _ = _verified_owner(db, "approved")
+    admin = make_user(db, role="admin", email="reverify-admin@example.com")
+    resp = client.put(
+        f"/admin/producers/{producer.id}",
+        json={"phone": "0527654321"},
+        headers=auth_header(admin),
+    )
+    assert resp.status_code == 200, resp.text
+    db.refresh(producer)
+    assert producer.phone_verified is False

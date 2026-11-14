@@ -16,6 +16,7 @@ import { getUpcomingHoliday } from "@/lib/holidays";
 import HolidayIcon from "@/components/HolidayIcon";
 import ProfileCompletenessCard from "@/components/ProfileCompletenessCard";
 import OwnerAttentionCard from "@/components/producer/OwnerAttentionCard";
+import PhoneVerifyCard from "@/components/PhoneVerifyCard";
 import DraftSubmitBanner from "@/components/producer/DraftSubmitBanner";
 import ChangesRequestedBanner from "./ChangesRequestedBanner";
 import RejectedBanner from "./RejectedBanner";
@@ -501,6 +502,18 @@ export default function ProducerDashboardPage() {
             )
           }
           onPhoneVerified={() =>
+            setProfile((prev) => (prev ? { ...prev, phone_verified: true } : prev))
+          }
+        />
+      )}
+
+      {/* Grill B8 (Sapir 14/11, «שניהם»): a live business whose WhatsApp
+          number changed is unverified until she enters the new code. The edit
+          page shows the same box under the field; this one is the reminder. */}
+      {producer.status !== "draft" && profile?.phone && profile?.phone_verified === false && (
+        <PhoneVerifyCard
+          variant="reverify"
+          onVerified={() =>
             setProfile((prev) => (prev ? { ...prev, phone_verified: true } : prev))
           }
         />

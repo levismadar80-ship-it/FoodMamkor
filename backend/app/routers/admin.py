@@ -40,6 +40,7 @@ from app.services.availability_validation import (  # MEH-2758
 from app.services.producer_listing import is_business  # MEH-2459
 from app.services import retired_slugs  # MEH-2528
 from app.services import indexnow  # MEH-2852
+from app.services.phone_reverify import reset_verification_if_phone_changed  # grill B8
 
 # MEH-1242: SITE_DOMAIN is the single canonical domain constant. Import it —
 # never re-declare the literal.
@@ -1032,9 +1033,13 @@ def admin_update_producer(
     _apply_recommended_pick(producer, payload)
 
     _guard_availability_change(producer, payload)  # MEH-2758
+    old_phone: str | None = producer.phone  # type: ignore[assignment]  # grill B8
 
     for field, value in payload.items():
         setattr(producer, field, value)
+
+    # Grill B8: an admin-typed number is not one the owner verified (MEH-745).
+    reset_verification_if_phone_changed(db, producer, payload, old_phone)
 
     if category_ids is not None:
         _apply_categories(db, producer, category_ids)
