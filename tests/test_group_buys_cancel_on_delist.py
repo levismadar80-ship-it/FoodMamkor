@@ -152,6 +152,10 @@ class TestSuspendCancelsLiveGroupBuys:
     def test_reactivating_does_not_touch_group_buys(self, client, db, monkeypatch):
         sent = _capture(monkeypatch)
         producer, _ = _business(db, status="inactive")
+        # MEH-2945: un-pausing runs the approval gates, so the row passes them.
+        producer.images = ["https://res.cloudinary.com/demo/image/upload/v1/test.jpg"]
+        producer.phone_verified = True
+        db.commit()
         # Inserted directly: an inactive business cannot open one through the API.
         gb = _group(db, producer, "open")
         admin = make_user(db, role="admin", email="admin4@example.com")
