@@ -4690,10 +4690,11 @@ class BusinessSuggestionCreate(BaseModel):
       users AND from screen readers), so any value at all means a bot. The
       router answers 201 and stores nothing — never a 4xx, which would tell
       the bot what tripped it.
-    - `suggester_email` is optional PII. It is normalised through
-      `_normalize_contact_email` (:342) so a cleared field arrives as None
-      rather than 422-ing, and capped at 254 to match the column. It is NEVER
-      echoed back: see BusinessSuggestionAck.
+    - `suggester_email` is still ACCEPTED but IGNORED by the router since
+      MEH-2642: the stored address is the signed-in, verified account's only.
+      It stays in the schema so an old client does not 422. DO NOT wire it
+      back in — a typed address is unverified (MEH-2642). It is still
+      normalised through `_normalize_contact_email` (:342) and never echoed.
 
     `Field(max_length=…)` sits at field level on `instagram` / `suggester_name`
     / `reason`, whose separate `@field_validator`s may return None. That is

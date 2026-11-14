@@ -12,7 +12,7 @@ vi.mock("@/lib/auth-context", () => ({
   useAuth: () => ({ user: authState.user, loading: false }),
   useOptionalAuth: () => ({ user: authState.user, loading: false }),
 }));
-const MEMBER = { id: 7, email: "member@example.com", role: "user" };
+const MEMBER = { id: 7, email: "member@example.com", role: "user", email_verified: true };
 vi.mock("@/lib/api", () => ({
   default: { post: vi.fn(() => Promise.resolve({ data: { ok: true } })) },
 }));
@@ -168,6 +168,16 @@ describe("RecommendClient", () => {
     expect(screen.queryByTestId("recommend-collection-notice")).toBeNull();
     // Control: the consent line under the button is still there for a guest.
     expect(screen.getAllByText("מדיניות הפרטיות").length).toBe(1);
+  });
+
+  it("a signed-in visitor with an UNVERIFIED email sees no opt-in", () => {
+    // The server ignores an unverified account address (review M1), so
+    // offering the opt-in would promise an email nobody sends.
+    authState.user = { ...MEMBER, email_verified: false };
+    render(<RecommendClient />);
+    expect(screen.getByTestId("recommend-form")).toBeInTheDocument();
+    expect(screen.queryByTestId("recommend-wants-update")).toBeNull();
+    expect(screen.queryByTestId("recommend-collection-notice")).toBeNull();
   });
 
   it("a signed-in visitor sees the opt-in, unchecked", () => {

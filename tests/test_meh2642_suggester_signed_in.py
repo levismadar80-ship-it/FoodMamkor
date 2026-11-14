@@ -76,3 +76,18 @@ def test_anonymous_repeat_cannot_fill_an_empty_community_slot(
     lead = db.query(OutreachLead).one()
     assert lead.suggested_by_email is None
     assert lead.suggester_wants_update is False
+
+
+def test_unverified_account_email_is_not_stored(client, db, monkeypatch):
+    """Review M1: sign-up does not verify the address and login does not
+    require it, so an unverified account's email is as untrusted as a typed
+    one. Someone could register with a stranger's address and opt in."""
+    _silence_notify(monkeypatch)
+    user = make_user(db, email=STRANGER)
+    user.email_verified = False
+    db.commit()
+    r = client.post(ENDPOINT, json=_payload(), headers=auth_header(user))
+    assert r.status_code == 201
+    lead = db.query(OutreachLead).one()
+    assert lead.suggested_by_email is None
+    assert lead.suggester_wants_update is False

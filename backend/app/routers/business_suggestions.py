@@ -124,9 +124,16 @@ def submit_business_suggestion(
     # The opt-in gate keeps adversarial-review finding 3 (purpose limitation:
     # the notice promises the address is used only for this update, and
     # MEH-2638 would keep it 180 days).
+    # The account address counts only once VERIFIED (review M1): sign-up does
+    # not verify it and login does not require it, so an unverified account's
+    # email is as untrusted as a typed one.
     # DO NOT fall back to body.suggester_email — that is the MEH-2642 hole.
     suggester_email = (
-        getattr(user, "email", None) if user is not None and body.wants_update else None
+        getattr(user, "email", None)
+        if user is not None
+        and getattr(user, "email_verified", False)
+        and body.wants_update
+        else None
     )
     # No address → no update can be sent, so none is recorded as owed.
     wants_update = bool(suggester_email)

@@ -1528,10 +1528,11 @@ POST /business-suggestions       public — { name, city, instagram|phone|websit
                                  except where the slot is empty (an admin-typed
                                  lead), which is filled so the person can still be
                                  thanked. `source` is never rewritten.
-                                 MEH-2642: a typed suggester_email is IGNORED.
-                                 The stored address is the signed-in account's,
-                                 and only with wants_update; a guest's lead has
-                                 no address and wants_update=false.
+                                 MEH-2642: a typed suggester_email is accepted
+                                 but IGNORED. The stored address is the signed-in
+                                 account's, only if email_verified and only with
+                                 wants_update; otherwise no address and
+                                 wants_update=false.
 ```
 
 `outreach_leads` gains five columns (revision `d7a511246b14`, no new table):

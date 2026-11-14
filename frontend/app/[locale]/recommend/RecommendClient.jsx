@@ -101,6 +101,10 @@ export default function RecommendClient() {
   // MEH-2642: same context BusinessCtaLink reads in this tree (it is always
   // under AuthProvider). null = signed out.
   const user = useAuth().user ?? null;
+  // The server uses the account address only once it is verified, so the
+  // opt-in is offered only then — otherwise the success panel would promise
+  // an email nobody will send.
+  const canGetUpdate = Boolean(user?.email_verified);
   const [form, setForm] = useState(EMPTY);
   const [status, setStatus] = useState("idle");
   const [contactError, setContactError] = useState(false);
@@ -135,7 +139,7 @@ export default function RecommendClient() {
 
     setStatus("submitting");
     try {
-      const wantsUpdate = Boolean(user) && form.wants_update;
+      const wantsUpdate = canGetUpdate && form.wants_update;
       await api.post("/business-suggestions", { ...form, wants_update: wantsUpdate });
       setThanked(wantsUpdate);
       setStatus("success");
@@ -305,7 +309,7 @@ export default function RecommendClient() {
                 update opt-in is offered only to a signed-in visitor, and the
                 server uses the account's address. A guest still recommends,
                 with no update. */}
-            {user && (
+            {canGetUpdate && (
               <div className="mt-4">
                 <label className="flex items-center gap-2 text-sm text-text">
                   <input
