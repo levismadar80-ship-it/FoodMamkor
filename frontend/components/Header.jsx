@@ -365,7 +365,7 @@ export default function Header() {
         // = isHomepage && scrollY < 60). Past the hero the same bleed-through
         // happened on `/` — hero stats and the CTA button showed under the
         // iOS status bar beside the pill — so the cream band applies there too.
-        className={`sticky top-0 z-[1050] pointer-events-none${transparent ? "" : " bg-background"}`}
+        className={`sticky top-0 z-header pointer-events-none${transparent ? "" : " bg-background"}`}
       >
         {/* Nav-shell — centers the pill. When the strip rendered above already
             provided desktop top-padding, drop the pill's md+ top padding to
@@ -815,7 +815,7 @@ function UserMenu({ user, logout, open, setOpen, menuRef }) {
           role="menu"
           ref={menuListRef}
           onKeyDown={onMenuKeyDown}
-          className="absolute top-11 bg-surface-card border border-border rounded-md shadow-lg py-1 z-[1001]"
+          className="absolute top-11 bg-surface-card border border-border rounded-md shadow-lg py-1 z-user-menu"
           style={{ minWidth: 160, insetInlineStart: 0 }}
         >
           {items.map((item, i) => (

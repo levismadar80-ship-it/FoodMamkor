@@ -51,8 +51,12 @@
 # CONTROLS (README: "a probe whose null output is also its pass is not a probe")
 #   - parsed 0 files → exit 1, "every result below is void". A broken cd or a
 #     wrong include list must not read as "no literals".
-#   - the committed baseline is non-empty, so a scanner whose regex silently
-#     stopped matching reds on STALE lines rather than passing on an empty scan.
+#   - the baseline was non-empty until MEH-3169 moved every literal onto named
+#     tokens and it emptied. An empty baseline can no longer catch a scanner
+#     whose regex silently stopped matching (no stale lines to red on), so
+#     self-test case 7 now carries that job: it takes REAL repo files that use
+#     a token (ui/Dialog.jsx, globals.css, ChatWidget.jsx), puts back the
+#     literal each token replaced, and requires the scanner to find each one.
 #   - --self-test runs 7 fixture cases, one anchored to the real corpus
 #     (MEH-1909), and is run as a preflight on every normal invocation.
 #
@@ -182,7 +186,7 @@ write_baseline() {
 }
 
 self_test() {
-  local tmp pass=0 total=7 real_tw
+  local tmp pass=0 total=7
   tmp="$(mktemp -d)"
   trap 'rm -rf "$tmp"' RETURN
   mkdir -p "$tmp/frontend/components" "$tmp/frontend/app"
@@ -252,9 +256,33 @@ JSX
   if run "$tmp" "$tmp/base.txt" "selftest/void" >/dev/null 2>&1; then
     echo "SELF-TEST FAIL 7: a root with no frontend files passed instead of failing loudly" >&2; return 1
   fi
-  real_tw="$(scan "$ROOT" | grep -c $'\tz-\[' || true)"
-  if [ "$real_tw" -lt 1 ]; then
-    echo "SELF-TEST FAIL 7: the scanner finds no z-[N] in the real repo — it is not parsing the shape this repo uses" >&2; return 1
+  # Real-corpus anchor, all three forms. Since MEH-3169 the real tree holds no
+  # literal at all, so "the scan of the repo finds >= 1" can no longer be the
+  # anchor. Instead: copy real files that carry a token, check the copy scans
+  # clean, then revert each token to the literal it replaced and require the
+  # scanner to see exactly that literal. If a file stops carrying its token,
+  # this reds rather than passing on a copy that proves nothing.
+  local real_dialog="$ROOT/frontend/components/ui/Dialog.jsx"
+  local real_css="$ROOT/frontend/app/globals.css"
+  local real_chat="$ROOT/frontend/components/ChatWidget.jsx"
+  if ! grep -qE '(^|[^a-z-])z-modal([^a-z-]|$)' "$real_dialog" \
+    || ! grep -qF 'z-index: var(--z-cursor);' "$real_css" \
+    || ! grep -qF 'zIndex: "var(--z-chat)"' "$real_chat"; then
+    echo "SELF-TEST FAIL 7: the real-corpus anchor files no longer carry their tokens (z-modal in ui/Dialog.jsx, var(--z-cursor) in globals.css, var(--z-chat) in ChatWidget.jsx) — re-anchor this case" >&2; return 1
+  fi
+  mkdir -p "$tmp/frontend/components/ui" "$tmp/frontend/app"
+  cp "$real_dialog" "$tmp/frontend/components/ui/Dialog.jsx"
+  cp "$real_css" "$tmp/frontend/app/globals.css"
+  cp "$real_chat" "$tmp/frontend/components/ChatWidget.jsx"
+  if [ -n "$(scan "$tmp")" ]; then
+    echo "SELF-TEST FAIL 7: real files that use only tokens produced literal records: $(scan "$tmp")" >&2; return 1
+  fi
+  sed -E -i 's/(^|[^a-z-])z-modal([^a-z-]|$)/\1z-[9000]\2/' "$tmp/frontend/components/ui/Dialog.jsx"
+  sed -i 's/z-index: var(--z-cursor);/z-index: 10001;/' "$tmp/frontend/app/globals.css"
+  sed -i '0,/zIndex: "var(--z-chat)"/s//zIndex: 9999/' "$tmp/frontend/components/ChatWidget.jsx"
+  got="$(scan "$tmp" | awk -F'\t' '{ print $3 }' | LC_ALL=C sort | uniq -c | awk '{ print $1 " " $2 }' | tr '\n' ' ')"
+  if [ "$got" != "1 z-[9000] 1 z-index:10001 1 zIndex:9999 " ]; then
+    echo "SELF-TEST FAIL 7: the scanner does not parse the shapes this repo's real files use — reverted literals gave: '${got}'" >&2; return 1
   fi; pass=$((pass+1))
 
   echo "self-test: ${pass}/${total} (new literal reds · baselined passes · token-derived passes · stale line reds · second occurrence reds · css+style extracted · void control + real-corpus anchor)"

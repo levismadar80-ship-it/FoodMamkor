@@ -523,8 +523,8 @@ export default function ProducerCard({ producer, active, onClick, referrer, high
             icon-only seal; declared shows nothing (no placeholder). */}
         {/* MEH-1547: the z-[2] that used to sit here was REMOVED. `z-index` on
             an absolutely-positioned element creates a stacking context, which
-            trapped the +N Popover's mobile bottom sheet (z-[1210]) at level 2 —
-            BottomNav (z-[1000], BottomNav.jsx:237) painted over it and the
+            trapped the +N Popover's mobile bottom sheet (the popover-sheet token, 1210) at level 2 —
+            BottomNav (the bottom-nav token, 1000, BottomNav.jsx:237) painted over it and the
             disclosed labels were unreadable (caught in self-QA, not by tests).
             The strip is a LATER sibling of the image <Link> in the same
             stacking context, so plain `absolute` already paints it above the

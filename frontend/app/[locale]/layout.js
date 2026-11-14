@@ -246,7 +246,7 @@ export default async function LocaleLayout({ children, params }) {
           still evaluates to exactly 5rem when the banner is absent, which is
           what the old class said — so this is a superset, not a re-spacing. */}
       <body className="font-body-md bg-background text-text min-h-screen flex flex-col pb-[var(--bottom-inset)]">
-        <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:start-2 focus:z-[10000] focus:bg-primary focus:text-white focus:px-4 focus:py-2 focus:rounded-lg">
+        <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:start-2 focus:z-skip-link focus:bg-primary focus:text-white focus:px-4 focus:py-2 focus:rounded-lg">
           {tSweep("skip_to_main")}
         </a>
         {/* MEH-2233: not the whole catalog — admin/dashboard/server-only
