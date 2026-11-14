@@ -180,6 +180,8 @@ class ProductOrder(Base):
         Index("ix_product_orders_producer_status", "producer_id", "status"),
         Index("ix_product_orders_user_id", "user_id"),
         Index("ix_product_orders_customer_phone", "customer_phone"),
+        Index("ix_product_orders_expires_at", "expires_at"),
+        Index("ix_product_orders_producer_slot", "producer_id", "slot_start"),
     )
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -266,6 +268,7 @@ class ProductOrderItem(Base):
             name="product_order_items_price_unit_check",
         ),
         Index("ix_product_order_items_order_id", "order_id"),
+        Index("ix_product_order_items_product_id", "product_id"),
     )
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)

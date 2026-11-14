@@ -187,6 +187,14 @@ def upgrade() -> None:
     op.create_index(
         "ix_product_orders_customer_phone", "product_orders", ["customer_phone"]
     )
+    # The two reads every later stage makes: "which orders ran out of time"
+    # (the expiry sweep) and "this business's orders for a day" (its inbox).
+    op.create_index("ix_product_orders_expires_at", "product_orders", ["expires_at"])
+    op.create_index(
+        "ix_product_orders_producer_slot",
+        "product_orders",
+        ["producer_id", "slot_start"],
+    )
 
     # --- product_order_items --------------------------------------------------
     op.create_table(
@@ -224,6 +232,10 @@ def upgrade() -> None:
     op.create_index(
         "ix_product_order_items_order_id", "product_order_items", ["order_id"]
     )
+    # Deleting a product SET-NULLs its lines; without this that is a full scan.
+    op.create_index(
+        "ix_product_order_items_product_id", "product_order_items", ["product_id"]
+    )
 
     # --- product_order_events -------------------------------------------------
     op.create_table(
@@ -258,8 +270,11 @@ def upgrade() -> None:
 def downgrade() -> None:
     op.drop_index("ix_product_order_events_order_id", table_name="product_order_events")
     op.drop_table("product_order_events")
+    op.drop_index("ix_product_order_items_product_id", table_name="product_order_items")
     op.drop_index("ix_product_order_items_order_id", table_name="product_order_items")
     op.drop_table("product_order_items")
+    op.drop_index("ix_product_orders_producer_slot", table_name="product_orders")
+    op.drop_index("ix_product_orders_expires_at", table_name="product_orders")
     op.drop_index("ix_product_orders_customer_phone", table_name="product_orders")
     op.drop_index("ix_product_orders_user_id", table_name="product_orders")
     op.drop_index("ix_product_orders_producer_status", table_name="product_orders")
