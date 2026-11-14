@@ -332,6 +332,22 @@ home) and `SectionHeadingRatchet.test.js` (a public file may not gain a
 hand-sized h2; the allowance list only shrinks). Bands (the green «היכרות»
 band, the closing CTA band) keep their own h2.
 
+**Section headings are text only; icons lead fact lines (MEH-3028, 13/11/2026).**
+No icon inside a `<SectionHeading>`, anywhere on the site. An icon marks one
+*kind* of fact on the line that states it, and goes through
+`components/ui/FactLine.jsx` (14px, `text-fg-muted`, fixed gap). Business page
+kinds: delivery fee → Truck · order cutoff / hours → Clock · city → MapPin ·
+self-pickup → Package. Repeated labels of the same kind (the gold day labels
+«ימי חמישי», the one-day «יוצאים בימי …» line, the «משלוחים לכל הארץ» chip)
+carry no icon — one truck per section, not one per day. The icon sits in a
+one-line-tall box, so a wrapped line keeps it beside its first line. Sapir
+chose this over «an icon on every heading» (research artifact
+FGymGHjHMLDCstmSEDP2Bm: Google Maps, Airbnb, Wolt, Etsy all keep section titles
+plain and put the icon on the fact row). Buttons, links, answer states, chips
+and card titles keep their own icons. Guard: `FactLineIconGuard.test.js` (no
+icon in any SectionHeading; on the business-page files a raw icon only as
+listed, with its reason).
+
 **Headings never strand one word on the last line** — `h1, h2, h3` carry
 `text-wrap: balance` in `globals.css` (MEH-2488). **Hebrew is never
 letter-spaced** (no `tracking-*` on Hebrew; MEH-2488 removed the last two:

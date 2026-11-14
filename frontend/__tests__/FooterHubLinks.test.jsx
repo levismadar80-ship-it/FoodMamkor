@@ -33,6 +33,8 @@ vi.mock("next/image", () => ({
 // CategoryRequestModal / EventForm suites use — the link's behaviour is
 // CollectionNotice.test.jsx's job; this file is about the nav groups.
 vi.mock("@/i18n/navigation", () => ({
+  // MEH-3059: Footer prefetches «כל בתי העסק» on intent via router.prefetch.
+  useRouter: () => ({ prefetch: () => {} }),
   Link: ({ href, children, ...rest }) => (
     <a href={typeof href === "string" ? href : "#"} {...rest}>
       {children}
@@ -77,7 +79,7 @@ describe("Footer «גלו»: group buys + rescue bags, data-gated (MEH-2858)", (
     Object.assign(gates, { events: true, experiences: true, groupBuys: true, rescue: true });
     render(<Footer />);
     // MEH-2858 (scope add): «אודות» and the rest moved to «עלינו».
-    expect(discoverHrefs()).toEqual(["/producers", "/map", "/events", "/experiences", "/group-buys", "/rescue", "/recommend"]);
+    expect(discoverHrefs()).toEqual(["/producers", "/map", "/events", "/experiences", "/group-buys", "/rescue"]);
   });
 
   it("the link labels are the two new keys", () => {

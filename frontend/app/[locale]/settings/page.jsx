@@ -27,6 +27,8 @@ import { validateIsraeliPhone } from "@/lib/validators";
 import Button from "@/components/ui/Button";
 import { loginHrefBackHere } from "@/lib/safe-redirect";
 import Avatar from "@/components/ui/Avatar";
+import { SkeletonBlock } from "@/components/Skeleton";
+import ButtonSpinner from "@/components/ButtonSpinner";
 
 function SettingsLoadingFallback() {
   const tCommon = useTranslations("settings.common");
@@ -54,12 +56,12 @@ function SettingsSkeleton({ label }) {
     >
       <span className="sr-only">{label}</span>
       {/* h1: text-3xl line ≈ h-9, mb-6 — same slot as the real heading */}
-      <div className="h-9 w-48 bg-border rounded-md animate-pulse mb-6" />
+      <SkeletonBlock as="div" className="h-9 w-48 rounded-md mb-6" />
       {/* tab bar: p-1 pill + py-2 buttons ≈ 46px, mb-8 */}
-      <div className="h-[46px] w-full max-w-xs bg-border rounded-full animate-pulse mb-8" />
+      <SkeletonBlock as="div" className="h-[46px] w-full max-w-xs rounded-full mb-8" />
       <div className="space-y-4">
-        <div className="h-28 bg-border rounded-lg animate-pulse" />
-        <div className="h-28 bg-border rounded-lg animate-pulse" />
+        <SkeletonBlock as="div" className="h-28 rounded-lg" />
+        <SkeletonBlock as="div" className="h-28 rounded-lg" />
       </div>
     </div>
   );
@@ -333,10 +335,7 @@ export function ProfileTab() {
           </div>
           {uploading && (
             <div className="absolute inset-0 rounded-full bg-black/50 flex items-center justify-center">
-              <svg className="animate-spin w-6 h-6 text-white" viewBox="0 0 24 24" fill="none">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
-              </svg>
+              <ButtonSpinner size={24} className="text-white" />
             </div>
           )}
         </label>

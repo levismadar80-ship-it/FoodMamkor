@@ -17,9 +17,8 @@ import { CATEGORY_CHIPS } from "@/lib/map-chips";
  * Each surface passes the keys it renders: an axis the receiver does not offer
  * is dropped on read rather than applied invisibly (an active filter with no
  * chip to switch it off strands the visitor — the MEH-2131 carve-out reason).
- * Categories are NOT carried between surfaces: home/list use category ids,
- * /map uses chip keys, and a category is a separate dimension with its own
- * exit («כל»).
+ * Categories are NOT carried from home. /producers → /map carries the category
+ * GROUP keys and the city since MEH-3075 (producersToMapQuery, at the end).
  *
  * MEH-2049: /map's OWN category selection and city do live in /map's URL (a
  * refresh, Back and a shared link keep them) — the second half of this file.
@@ -132,3 +131,20 @@ export function writeMapFilters(searchParams, { categoryKeys = [], city = "" } =
   if (c) searchParams.set(CITY_PARAM, c);
   return searchParams;
 }
+
+/** MEH-3075 (Sapir 13/11) — the /producers → /map link. Carries what /map can
+ *  show: the attribute chips, the category GROUPS (the six CATEGORY_CHIPS keys
+ *  both surfaces show since MEH-2783; a key /map does not know is dropped by
+ *  writeMapFilters), and the city. /producers' city asks "who delivers here"
+ *  (delivery_city), so it travels WITH has_delivery=1 — the question /map asks
+ *  with its משלוח chip on (lib/map-city-params) — and the visitor sees that
+ *  chip lit instead of a wider "located in it OR delivering" set. Free-text
+ *  search stays behind: /map has no text search to show it in. */
+export function producersToMapQuery({ chips = {}, categoryKeys = [], city = "" } = {}) {
+  const withCity = normalizeCity(city) ? { ...chips, has_delivery: true } : chips;
+  const params = new URLSearchParams(chipsToQuery(withCity).replace(/^\?/, ""));
+  writeMapFilters(params, { categoryKeys: [...categoryKeys], city });
+  const qs = params.toString();
+  return qs ? `?${qs}` : "";
+}
+

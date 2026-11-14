@@ -290,6 +290,12 @@
           "category": "Category",
           "story": "Story"
         },
+        "name_check": {
+          "title": "There is already a page with this name on the site",
+          "match_with_city": "{name}, {city}",
+          "body": "If this is your business, we will connect you to the existing page. If it is a different business, carry on as usual.",
+          "contact_cta": "Write to us"
+        },
         "fields": {
           "name": "e.g. Ruth Levi",
           "name_label": "Full name",
@@ -352,6 +358,9 @@
               "prefer_not_to_say": "Prefer not to say"
             }
           }
+        },
+        "card_preview": {
+          "summary": "How your card will look on the site"
         },
         "story_card": {
           "title": "Your story becomes your business page",
@@ -421,7 +430,7 @@
           "inbox_title": "Check your inbox",
           "inbox_body": "If the email is available, a verification message has been sent. Please check your inbox.",
           "inbox_hint": "Didn't get it? Check spam or try again in a minute.",
-          "inbox_next": "After you click the link in the email, log in with your email and password and continue completing your page.",
+          "inbox_next": "You can log in right now with your email and password and continue completing your page. The link in the email verifies your email address.",
           "back_home": "Back to home"
         }
       }
@@ -585,9 +594,6 @@
     },
     "skeleton": {
       "loading_businesses": "Loading fresh businesses"
-    },
-    "star_rating": {
-      "count_aria": "{count, plural, one {1 rating} other {({count} ratings)}}"
     }
   },
   "category": {
@@ -824,6 +830,11 @@
         "products": {
           "heading": "Products",
           "signature_label": "Signature product",
+          "show_all": "Show all {count} products",
+          "show_less": "Show less",
+          "groups_all": "All",
+          "groups_other": "More products",
+          "groups_aria": "Filter products by group",
           "diet": {
             "gluten_free": "Gluten-free",
             "vegan": "Vegan",
@@ -5416,6 +5427,30 @@
       },
       "top_product_hint": "Star one product to make it your top product — it appears as a highlighted card at the top of the product list on your page.",
       "top_product_empty_hint": "Add a product to choose a top product.",
+      "organize": {
+        "open_cta": "Order and groups",
+        "open_hint": "Set the order your products appear in on your page, and sort them into groups.",
+        "done_cta": "Done",
+        "groups_heading": "Groups",
+        "groups_where": "When at least two groups have products, they appear on your page as filters above the product list.",
+        "groups_empty": "No groups yet.",
+        "group_add_label": "New group",
+        "group_add_placeholder": "e.g. Breads, Cakes, Gift boxes",
+        "group_add_cta": "Add",
+        "group_rename_aria": "Name of group {name}",
+        "group_delete_aria": "Delete group {name}",
+        "group_deleted": "Group deleted. Its products stay on your page.",
+        "order_heading": "Product order",
+        "order_where": "Drag the handle or use the arrows. The order saves right away and is how products appear on your page.",
+        "order_where_grouped": "Drag the handle or use the arrows. The order saves right away. On your page, products are shown by group, and inside each group in this order.",
+        "drag_aria": "Drag {name}",
+        "move_up_aria": "Move {name} up",
+        "move_down_aria": "Move {name} down",
+        "product_group_label": "Group of {name}",
+        "product_group_none": "No group",
+        "saved": "Saved",
+        "save_failed": "Saving failed. Please try again."
+      },
       "duplicate_name_confirm": {
         "title": "A product with this name already exists. Continue?",
         "confirm": "Add product",

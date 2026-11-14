@@ -26,6 +26,8 @@ vi.mock("next-intl", async () => {
   return { useTranslations: make, useLocale: () => "he" };
 });
 vi.mock("@/i18n/navigation", () => ({
+  // MEH-3059: Footer prefetches «כל בתי העסק» on intent via router.prefetch.
+  useRouter: () => ({ prefetch: () => {} }),
   Link: ({ href, children, prefetch, ...p }) => <a href={typeof href === "string" ? href : href?.pathname} {...p}>{children}</a>,
   getPathname: ({ href, locale }) => (locale === "he" ? href : `/${locale}${href}`),
 }));

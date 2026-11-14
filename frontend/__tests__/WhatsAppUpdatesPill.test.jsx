@@ -36,6 +36,7 @@ vi.mock("@phosphor-icons/react", () => {
     Package: Stub,
     Phone: Stub,
     Truck: Stub,
+    Clock: Stub, // MEH-3028: order-cutoff + no-hours fact lines
     WhatsappLogo: Stub,
     XCircle: Stub,
   };
