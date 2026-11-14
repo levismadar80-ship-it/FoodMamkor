@@ -39,7 +39,7 @@ const INITIAL_TINT = 0.24;
 const INITIAL_RING = 0.55;
 
 /** The reviewer's initial on their seed tint; the seed is resolved once. */
-function ReviewInitial({ seedKey, letter }) {
+export function ReviewInitial({ seedKey, letter }) {
   const seed = seedColorFor(seedKey);
   return (
     <span
@@ -60,13 +60,13 @@ function ReviewInitial({ seedKey, letter }) {
 // HOT-018 (MEH-782): numeric short date (e.g. 7.6.2026) — preserves the prior
 // `toLocaleDateString` default while routing through the Invalid-Date-guarded,
 // locale-aware helper so /en no longer renders Hebrew review dates.
-const REVIEW_DATE_OPTIONS = { year: "numeric", month: "numeric", day: "numeric" };
+export const REVIEW_DATE_OPTIONS = { year: "numeric", month: "numeric", day: "numeric" };
 
 // "Sapir L." — first name + last initial (privacy)
 // MEH-2705: the initial is the first LETTER of the last word that has one.
 // The old `parts[last][0]` took whatever came first, so «לקוחת בדיקות (QA)»
 // rendered «לקוחת (.» and «דנה כהן -» rendered «דנה -.».
-function formatName(fullName, fallback) {
+export function formatName(fullName, fallback) {
   if (!fullName) return fallback;
   const parts = fullName.trim().split(/\s+/);
   if (parts.length === 1) return parts[0];
@@ -83,7 +83,7 @@ function formatName(fullName, fallback) {
 // to `fill*100%` on top; the row is dir="ltr" so the clip grows from the star's
 // left edge (logical start inside the LTR container). Integer values (a single
 // review's `stars`) still render as solid full stars — same visual as before.
-function StarRow({ value, size = 16, ariaLabel }) {
+export function StarRow({ value, size = 16, ariaLabel }) {
   const numeric = Number(value) || 0;
   return (
     // MEH-1556: role="img" makes the aria-label legal here. Without a role,
@@ -180,7 +180,7 @@ function RatingDistribution({ counts, total, t }) {
  * Length rules (2-1000 chars, ≥3 letters, MEH-555) are enforced server-side;
  * the client only gates the trivial <2-char case on the Save button.
  */
-function ReviewReply({ review, isOwner, onSaved }) {
+export function ReviewReply({ review, isOwner, onSaved }) {
   const t = useTranslations("reviews");
   const tError = useTranslations("error");
   const locale = useLocale();

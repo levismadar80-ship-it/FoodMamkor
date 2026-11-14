@@ -5175,6 +5175,9 @@
       },
       "week": {
         "all_insights": "All your numbers →"
+      },
+      "reviews_page": {
+        "summary": "{unanswered} without a reply · {total} in total"
       }
     },
     "page_preview": {
