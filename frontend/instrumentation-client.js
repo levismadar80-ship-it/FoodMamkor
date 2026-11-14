@@ -8,6 +8,7 @@
 import * as Sentry from "@sentry/nextjs";
 import { scrubClaimTokens } from "./lib/claim-token";
 import { clientTracesSampleRate } from "./lib/sentry-sampling";
+import { clientSentryEnvironment, isAutomatedBrowser } from "./lib/sentry-environment";
 
 const dsn = process.env.NEXT_PUBLIC_SENTRY_DSN;
 
@@ -21,7 +22,10 @@ const onClaimLink =
 if (dsn) {
   Sentry.init({
     dsn,
-    environment: process.env.NEXT_PUBLIC_SENTRY_ENV || process.env.NODE_ENV,
+    // Where the page runs, not NODE_ENV (which is "production" on staging too).
+    environment:
+      process.env.NEXT_PUBLIC_SENTRY_ENV ||
+      clientSentryEnvironment(typeof window !== "undefined" ? window.location.hostname : ""),
     // MEH-2887: 0.1 on mehamakor.co.il, 0.01 on staging / previews (span quota).
     tracesSampleRate: clientTracesSampleRate(typeof window !== "undefined" ? window.location.hostname : ""),
     replaysOnErrorSampleRate: 1.0,
@@ -37,6 +41,9 @@ if (dsn) {
         ],
     beforeSend(event) {
       if (process.env.NODE_ENV === "development") return null;
+      // Our own E2E runs and QA probes (Playwright) stub API failures on
+      // purpose; their events are noise, not user errors.
+      if (typeof navigator !== "undefined" && isAutomatedBrowser(navigator)) return null;
       // MEH-2324: the owner-claim link is a bearer credential in its path
       // (/claim/<token>). Redact it from the URL, breadcrumbs and context.
       return scrubClaimTokens(event);
