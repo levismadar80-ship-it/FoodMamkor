@@ -411,7 +411,7 @@ export default function StoryCardCanvas({ producer, mode = "admin", onUploaded, 
     }
   };
 
-  const caption = `${t("caption_prefix")}\n${producer.name} מ${producer.city || t("default_country")} — ${
+  const caption = `${t("caption_prefix")}\n${t("caption_from", { name: producer.name, city: producer.city || t("default_country") })} — ${
     producer.categories?.map((c) => c.name).join(", ") || ""
   }\n${producer.short_description || producer.description?.slice(0, 100) || ""}\n👉 ${SITE_HOST}/p/${producer.slug || ""}`;
 

@@ -1879,6 +1879,66 @@
         "resend": "שליחה מחדש",
         "cancel_invite": "ביטול הזמנה",
         "error": "לא הצלחנו לשלוח את ההזמנה"
+      },
+      "status_label": {
+        "draft": "טיוטה",
+        "pending": "ממתינה לאישור האדמין",
+        "approved": "מאושר",
+        "rejected": "נדחה",
+        "inactive": "לא פעילה"
+      },
+      "review": {
+        "checklist": {
+          "title": "רשימת בדיקה לפני אישור",
+          "saving": "שומרת…",
+          "loading": "טוענת…",
+          "load_error": "טעינת הרשימה נכשלה.",
+          "retry": "נסי שוב",
+          "empty": "אין סעיפים פעילים. אפשר להוסיף בהגדרות."
+        },
+        "approve_confirm": {
+          "message": "נשארו {count} סעיפים לא מסומנים ברשימת הבדיקה. לאשר בכל זאת?",
+          "message_unavailable": "רשימת הבדיקה לא נטענה — לא ניתן לוודא שכל הסעיפים נבדקו.",
+          "confirm": "אשרי בכל זאת",
+          "cancel": "חזרה לבדיקה"
+        },
+        "google_place": {
+          "heading": "פרופיל Google",
+          "linked": "מקושר ✓",
+          "replace": "החלפה",
+          "not_linked": "לא מקושר — בלי קישור, הדירוג מגוגל לא יופיע בדף העסק.",
+          "searching": "מחפשת…",
+          "search_google": "חפשי בגוגל",
+          "no_results": "לא נמצאו תוצאות בגוגל",
+          "search_error": "החיפוש נכשל, נסי שוב",
+          "manual_label": "השם בגוגל או place_id",
+          "manual_submit": "חיפוש",
+          "reviews_count": "{count} ביקורות",
+          "too_few_reviews": "פחות מ-20 ביקורות — השורה לא תוצג",
+          "saving": "שומרת…",
+          "save_error": "השמירה נכשלה, נסי שוב"
+        },
+        "evidence": {
+          "heading": "תיק בדיקה",
+          "license": "רישיון",
+          "health_registry": "מאגר משרד הבריאות",
+          "copied": "הועתק ✓",
+          "copy_name": "העתקת שם העסק",
+          "license_number": "מספר: {number}",
+          "no_license_number": "אין מספר רישיון",
+          "license_expiry": "תוקף: {date}",
+          "signals": "סימני חיים",
+          "website": "אתר",
+          "instagram": "אינסטגרם",
+          "google_search": "חיפוש בגוגל",
+          "no_links": "אין אתר או אינסטגרם",
+          "photos": "תמונות",
+          "no_photos": "אין תמונות",
+          "reverse_search": "חיפוש הפוך",
+          "reverse_search_alt": "חיפוש הפוך לתמונה",
+          "kashrut": "כשרות",
+          "certificate": "תעודה: {code}"
+        }
       }
     },
     "users": {
@@ -2325,6 +2385,27 @@
         "submit": "שמרו הגדרות",
         "nothing_to_save_title": "אין שינויים לשמירה",
         "unsaved_count": "{count} שינויים לא שמורים"
+      },
+      "checklist": {
+        "title": "רשימת בדיקה לפני אישור",
+        "load_error": "טעינת הרשימה נכשלה.",
+        "retry": "נסי שוב",
+        "loading": "טוענת…",
+        "intro": "הסעיפים שמופיעים לפנייך כשאת בודקת בית עסק. שינוי כאן משתקף מיד, בלי deploy. סעיף שאינו רלוונטי עוד — הפסיקי את השימוש בו; אי אפשר למחוק סעיף שכבר סומן לעסק כלשהו, כדי שתיעוד הבדיקות לא יאבד את הנושא שלו.",
+        "label_too_short": "תווית קצרה מדי — לפחות 3 אותיות",
+        "save_error_gone": "אחד הסעיפים כבר לא קיים — רענני את העמוד",
+        "save_error": "השמירה נכשלה",
+        "move_up": "העלי את «{label}»",
+        "move_down": "הורידי את «{label}»",
+        "new_item": "סעיף חדש",
+        "item_label": "סעיף",
+        "hint_label": "הסבר (אופציונלי)",
+        "active": "בשימוש",
+        "inactive": "הופסק השימוש",
+        "add": "הוספת סעיף",
+        "saving": "שומרת…",
+        "save": "שמירת הרשימה",
+        "saved": "נשמר ✓"
       }
     },
     "content": {
@@ -3253,7 +3334,8 @@
     "title": {
       "all": "כל בתי העסק",
       "search_results": "תוצאות עבור:",
-      "map_link": "הצגה במפה"
+      "map_link": "הצגה במפה",
+      "page": "{label} — עמוד {page}"
     },
     "search_input": {
       "label": "חיפוש בתי עסק",
@@ -3303,6 +3385,9 @@
       "prev": "→ עמוד קודם",
       "next": "עמוד הבא ←",
       "page_of": "עמוד {page} מתוך {totalPages}"
+    },
+    "index_meta": {
+      "description": "גלו בכל בתי העסק, מגדלים וחוות מקומיות על מהמקור."
     }
   },
   "reviews": {
@@ -3590,7 +3675,8 @@
       "ordering_link_label": "למעבר",
       "escalation": "שאלה אחרת? צרו איתנו קשר",
       "escalation_email_subject": "שאלה דרך מהמקור",
-      "more_questions": "עוד שאלות"
+      "more_questions": "עוד שאלות",
+      "wa_suffix": " (וואטסאפ)"
     }
   },
   "directory": {
@@ -3631,7 +3717,8 @@
         "download_review": "הורדת כרטיס ביקורת",
         "review_headline": "מה הלקוחות מספרות",
         "reviews_empty": "עדיין אין ביקורות לשיתוף. <link>שלחו ללקוחות קישור לבקשת ביקורת</link>"
-      }
+      },
+      "caption_from": "{name} מ{city}"
     }
   },
   "footer": {
