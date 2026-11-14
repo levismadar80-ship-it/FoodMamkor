@@ -988,7 +988,8 @@ export default function MapPage() {
                     style={{ width: "120px", height: "12px" }}
                     aria-hidden="true"
                   />
-                ) : (
+                ) : feed.loadError && filters.visibleProducers.length === 0 ? null : (
+                  // MEH-3198: a failed load is not «אין בתי עסק» — the list below says what happened.
                   <p className="text-xs text-fg-muted" data-testid="map-list-count">
                     {/* MEH-2425: zero under active filters names the filters as
                         the cause, same as the mobile sheet's peek row. */}
@@ -1209,6 +1210,8 @@ export default function MapPage() {
           nearMeEmpty={nearMeEmpty}
           hasOrigin={!!userLoc || filters.cityFilter.trim() !== ""}
           rideExtraPx={showPickCard ? pickCardHeight : 0}
+          loadError={feed.loadError}
+          onRetry={feed.retry}
         >
           {cardList}
         </MapBottomSheet>

@@ -111,8 +111,13 @@ export default function MapBottomSheet({
   hasOrigin = false,
   // MEH-3119: px the picked-business card adds above the sheet's top edge.
   rideExtraPx = 0,
+  // MEH-3198: the list failed to load. The peek row is the only line a phone
+  // shows, so the failure and the retry live on it — not «אין בתי עסק».
+  loadError = false,
+  onRetry,
 }) {
   const t = useTranslations("map.bottom_sheet");
+  const tRoot = useTranslations();
   // MEH-1054: existing key reused for the skeleton's AT label (no new copy).
   const tSkeleton = useTranslations("common.skeleton");
   // MEH-2827 PR 4: a town with no businesses is a town someone could recommend.
@@ -305,6 +310,20 @@ export default function MapBottomSheet({
             style={{ width: "120px", height: "14px" }}
             aria-hidden="true"
           />
+        ) : loadError && count === 0 && onRetry ? (
+          <div className="flex items-center justify-between gap-3 w-full">
+            <p className="text-sm font-medium text-accent" data-testid="sheet-load-error" role="alert">
+              {tRoot("map.errors.load_failed")}
+            </p>
+            <button
+              type="button"
+              onClick={onRetry}
+              data-testid="sheet-retry"
+              className="inline-flex items-center min-h-touch -my-2.5 shrink-0 text-sm font-medium text-primary underline decoration-[1.5px] underline-offset-[5px] decoration-primary/35 hover:decoration-current"
+            >
+              {tRoot("error.retry")}
+            </button>
+          </div>
         ) : zeroCity ? (
           // MEH-2639: a town with no businesses is not an empty result. The
           // list below is the full set, nearest-first from this town's

@@ -75,3 +75,22 @@ describe("MapBottomSheet peek row (MEH-2639)", () => {
     expect(screen.queryByTestId("sheet-near-me-empty")).toBeNull();
   });
 });
+
+describe("MapBottomSheet peek row — failed load (MEH-3198)", () => {
+  it("load failed, nothing shown → the failure and a retry, not «no businesses»", async () => {
+    const onRetry = vi.fn();
+    render(<MapBottomSheet {...base} count={0} loadError onRetry={onRetry} filtered onResetFilters={vi.fn()} />);
+    expect(screen.getByTestId("sheet-load-error")).toHaveTextContent("map.errors.load_failed");
+    expect(screen.queryByTestId("sheet-count")).toBeNull();
+    // Chips are on too: the failure, not the filters, is the cause.
+    expect(screen.queryByTestId("sheet-filtered-zero")).toBeNull();
+    screen.getByTestId("sheet-retry").click();
+    expect(onRetry).toHaveBeenCalledTimes(1);
+  });
+
+  it("load failed but rows are still on screen → the normal count", () => {
+    render(<MapBottomSheet {...base} count={4} loadError onRetry={vi.fn()} />);
+    expect(screen.queryByTestId("sheet-load-error")).toBeNull();
+    expect(screen.getByTestId("sheet-count")).toBeInTheDocument();
+  });
+});
