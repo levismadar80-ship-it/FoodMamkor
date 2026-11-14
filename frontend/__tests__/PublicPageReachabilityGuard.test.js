@@ -28,6 +28,10 @@
  *     render in production today;
  *   - a link in components/ or lib/ counts without proving something renders
  *     that file;
+ *   - noindex evidence is a `robots: { index: false` literal in the page, a
+ *     direct relative import or a layout; a page that is noindex on one
+ *     branch only (not-found metadata) is not told apart — classify it by
+ *     what it is on its normal path;
  *   - a link built only at runtime (no literal path, no registered needle) is
  *     invisible — register the family with a `linkedFrom` needle.
  *
@@ -72,7 +76,8 @@ const ROUTES = {
   "/about/why-local": { kind: "indexed" },
   "/accessibility": { kind: "indexed" },
   "/join": { kind: "indexed" },
-  "/join/pricing": { kind: "indexed" },
+  // Linked through the PRICING_PATH constant (lib/pricing.js), not a literal.
+  "/join/pricing": { kind: "indexed", linkedFrom: ["app/[locale]/about/for-businesses/page.js", "href={PRICING_PATH}"] },
   "/map": { kind: "indexed" },
   "/privacy": { kind: "indexed" },
   "/register/producer": { kind: "indexed" },
@@ -150,32 +155,44 @@ export function routeOf(relPageFile) {
 
 const escapeRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
-/** True when `source` holds the exact path as a literal (a #hash or ?query may follow). */
+/**
+ * True when `source` LINKS to the exact path: `href="/x"`, `href={"/x"}`,
+ * `href: "/x"` (registries), `push("/x")` / `replace("/x")`. A bare string
+ * (`pathname === "/x"`, a canonical) is not a link. A #hash or ?query may follow.
+ */
 export function linksTo(source, route) {
-  const re = new RegExp(`["'\`]${escapeRe(route)}(?=["'\`#?])`);
+  const lead = String.raw`(?:\bhref\s*[=:]\s*\{?\s*|\b(?:push|replace)\(\s*)`;
+  const re = new RegExp(`${lead}["'\`]${escapeRe(route)}(?=["'\`#?])`);
   return re.test(stripComments(source));
 }
 
 /** Longest-match robots.txt verdict for the `User-agent: *` group. */
 export function robotsAllows(robotsTxt, urlPath) {
   const rules = [];
-  let inStar = false;
+  let agents = [];
+  let lastWasAgent = false;
   for (const raw of robotsTxt.split("\n")) {
     const line = raw.replace(/#.*/, "").trim();
     const m = line.match(/^(user-agent|allow|disallow)\s*:\s*(.*)$/i);
     if (!m) continue;
     const key = m[1].toLowerCase();
-    if (key === "user-agent") inStar = m[2].trim() === "*";
-    else if (inStar && m[2]) rules.push({ allow: key === "allow", pattern: m[2].trim() });
+    if (key === "user-agent") {
+      // Consecutive User-agent lines share one group (RFC 9309).
+      agents = lastWasAgent ? [...agents, m[2].trim()] : [m[2].trim()];
+      lastWasAgent = true;
+      continue;
+    }
+    lastWasAgent = false;
+    if (agents.includes("*") && m[2]) rules.push({ allow: key === "allow", pattern: m[2].trim() });
   }
   const target = urlPath || "/";
   let best = null;
   for (const r of rules) {
     const anchored = r.pattern.endsWith("$");
-    const p = anchored ? r.pattern.slice(0, -1) : r.pattern;
-    const hit = anchored ? target === p : target.startsWith(p);
-    if (hit && (!best || p.length > best.len || (p.length === best.len && r.allow))) {
-      best = { len: p.length, allow: r.allow };
+    const body = anchored ? r.pattern.slice(0, -1) : r.pattern;
+    const re = new RegExp(`^${body.split("*").map(escapeRe).join(".*")}${anchored ? "$" : ""}`);
+    if (re.test(target) && (!best || body.length > best.len || (body.length === best.len && r.allow))) {
+      best = { len: body.length, allow: r.allow };
     }
   }
   return best ? best.allow : true;
@@ -220,7 +237,7 @@ export function findProblems(model, { ignoreExceptions = false } = {}) {
       problems.push(`${route}: family but app/sitemap.js does not contain ${entry.sitemap}`);
     }
     if ((k === "indexed" || k === "hub") && !entry.linkedFrom && !exempt(route)) {
-      const from = reachable.filter((f) => f.dir !== page.dir && linksTo(f.source, route));
+      const from = reachable.filter((f) => !`${f.dir}/`.startsWith(`${page.dir}/`) && linksTo(f.source, route));
       if (from.length === 0) problems.push(`${route}: orphan — no reachable file links to it`);
     }
     // A link built from a list or a helper has no literal path to grep, so the
@@ -248,7 +265,11 @@ export function findProblems(model, { ignoreExceptions = false } = {}) {
 
   for (const p of [...model.sitemapStatic, ...model.hubPaths]) {
     if (!(p in pages)) problems.push(`${p || "/"}: in the sitemap but no page exists`);
-    if (!robotsAllows(model.robots, p)) problems.push(`${p}: in the sitemap but robots.txt blocks it`);
+    // The sitemap emits every path twice (he unprefixed, /en), and robots.txt
+    // keeps the /en rules by hand (MEH-2368) — check both.
+    for (const url of [p, `/en${p}`]) {
+      if (!robotsAllows(model.robots, url)) problems.push(`${url}: in the sitemap but robots.txt blocks it`);
+    }
   }
   for (const p of LEGAL_FOOTER) {
     if (!linksTo(model.footerSource, p)) problems.push(`${p}: legal page missing from the footer`);
@@ -280,7 +301,9 @@ function walk(dir, out = []) {
 
 const rel = (abs) => path.relative(ROOT, abs).split(path.sep).join("/");
 const read = (abs) => fs.readFileSync(abs, "utf8");
-const NOINDEX_RE = /index\s*:\s*false/;
+// The robots object itself, not any `index: false` (a helper's option would match that).
+const NOINDEX_RE = /robots\s*:\s*\{\s*index\s*:\s*false/;
+export const hasNoindex = (source) => NOINDEX_RE.test(stripComments(source));
 
 /** Files a page's metadata can come from: itself, its direct relative imports, ancestor layouts. */
 function noindexEvidence(pageAbs) {
@@ -363,8 +386,8 @@ function greenModel() {
       "/x/[id]": page("/x/[id]"),
     },
     files: [
-      { rel: "components/Footer.jsx", dir: "components", source: 'a("/about"); a("/terms"); a("/privacy"); a("/accessibility");' },
-      { rel: "components/XCard.jsx", dir: "components", source: "h(`/x/${row.id}`)" },
+      { rel: "components/Footer.jsx", dir: "components", source: '{ href: "/about" }, { href: "/terms" }, { href: "/privacy" }, { href: "/accessibility" },' },
+      { rel: "components/XCard.jsx", dir: "components", source: "{ href: `/x/${row.id}` }" },
     ],
     routes: {
       "": { kind: "home" },
@@ -380,7 +403,7 @@ function greenModel() {
     hubPaths: [],
     sitemapSource: "localizeEntry(`/x/${x.id}`)",
     robots: "User-agent: *\nAllow: /\nDisallow: /login\n",
-    footerSource: 'a("/about"); a("/terms"); a("/privacy"); a("/accessibility");',
+    footerSource: '{ href: "/about" }, { href: "/terms" }, { href: "/privacy" }, { href: "/accessibility" },',
   };
 }
 
@@ -405,16 +428,16 @@ describe("MEH-3265 reachability guard — controls (each failure shown red)", ()
 
   it("3: an orphan — the only link removed", () => {
     const m = greenModel();
-    const files = m.files.map((f) => (f.rel === "components/Footer.jsx" ? { ...f, source: 'a("/terms"); a("/privacy"); a("/accessibility");' } : f));
+    const files = m.files.map((f) => (f.rel === "components/Footer.jsx" ? { ...f, source: '{ href: "/terms" }, { href: "/privacy" }, { href: "/accessibility" },' } : f));
     expect(findProblems(withFiles(m, files))).toEqual(["/about: orphan — no reachable file links to it"]);
   });
 
   it("3: a link from the page's own directory does not count", () => {
     const m = greenModel();
     const files = [
-      { ...m.files[0], source: 'a("/terms"); a("/privacy"); a("/accessibility");' },
+      { ...m.files[0], source: '{ href: "/terms" }, { href: "/privacy" }, { href: "/accessibility" },' },
       m.files[1],
-      { rel: "app/[locale]/about/AboutClient.jsx", dir: "app/[locale]/about", source: 'a("/about")' },
+      { rel: "app/[locale]/about/AboutClient.jsx", dir: "app/[locale]/about", source: '{ href: "/about" },' },
     ];
     expect(findProblems(withFiles(m, files))).toEqual(["/about: orphan — no reachable file links to it"]);
   });
@@ -422,24 +445,38 @@ describe("MEH-3265 reachability guard — controls (each failure shown red)", ()
   it("3: a link from a noindex page's own files does not count", () => {
     const m = greenModel();
     const files = [
-      { ...m.files[0], source: 'a("/terms"); a("/privacy"); a("/accessibility");' },
+      { ...m.files[0], source: '{ href: "/terms" }, { href: "/privacy" }, { href: "/accessibility" },' },
       m.files[1],
-      { rel: "app/[locale]/login/page.js", dir: "app/[locale]/login", source: 'a("/about")' },
+      { rel: "app/[locale]/login/page.js", dir: "app/[locale]/login", source: '{ href: "/about" },' },
     ];
     expect(findProblems(withFiles(m, files))).toEqual(["/about: orphan — no reachable file links to it"]);
   });
 
   it("3: a prefix is not a link — \"/about\" does not link /about/badges", () => {
-    expect(linksTo('a("/about")', "/about/badges")).toBe(false);
-    expect(linksTo('a("/about/badges")', "/about")).toBe(false);
-    expect(linksTo('a("/recommend#share")', "/recommend")).toBe(true);
-    expect(linksTo('// a("/about")', "/about")).toBe(false);
+    expect(linksTo('{ href: "/about" },', "/about/badges")).toBe(false);
+    expect(linksTo('{ href: "/about/badges" },', "/about")).toBe(false);
+    expect(linksTo('{ href: "/recommend#share" },', "/recommend")).toBe(true);
+    expect(linksTo('// { href: "/about" },', "/about")).toBe(false);
+  });
+
+  it("3: a bare string is not a link — only href / push / replace shapes are", () => {
+    expect(linksTo('if (pathname === "/about") x()', "/about")).toBe(false);
+    expect(linksTo('canonical: "/about"', "/about")).toBe(false);
+    expect(linksTo('<Link href="/about">', "/about")).toBe(true);
+    expect(linksTo('<Link href={"/about"}>', "/about")).toBe(true);
+    expect(linksTo('router.push("/about")', "/about")).toBe(true);
+  });
+
+  it("4: only a robots object counts as noindex evidence", () => {
+    expect(hasNoindex('export const metadata = { robots: { index: false, follow: false } };')).toBe(true);
+    expect(hasNoindex("search({ index: false })")).toBe(false);
+    expect(hasNoindex("// robots: { index: false }")).toBe(false);
   });
 
   it("3: a family linked only from inside itself is an orphan", () => {
     const m = greenModel();
     m.routes["/x/[id]"] = { ...m.routes["/x/[id]"], linkedFrom: ["app/[locale]/x/[id]/page.js", "`/x/${row.id}`"] };
-    const files = [...m.files, { rel: "app/[locale]/x/[id]/page.js", dir: "app/[locale]/x/[id]", source: "h(`/x/${row.id}`)" }];
+    const files = [...m.files, { rel: "app/[locale]/x/[id]/page.js", dir: "app/[locale]/x/[id]", source: "{ href: `/x/${row.id}` }" }];
     expect(findProblems(withFiles(m, files))).toEqual([expect.stringMatching(/^\/x\/\[id\]: orphan/)]);
   });
 
@@ -470,9 +507,22 @@ describe("MEH-3265 reachability guard — controls (each failure shown red)", ()
     expect(robotsAllows(txt, "")).toBe(true);
   });
 
+  it("robots: consecutive User-agent lines share a group; * wildcards match", () => {
+    const txt = "User-agent: GPTBot\nUser-agent: *\nDisallow: /*?sort=\nDisallow: /en/x\n";
+    expect(robotsAllows(txt, "/producers?sort=new")).toBe(false);
+    expect(robotsAllows(txt, "/producers")).toBe(true);
+    expect(robotsAllows(txt, "/en/x")).toBe(false);
+  });
+
+  it("5: the /en twin of a sitemap path is checked against robots.txt too", () => {
+    const m = greenModel();
+    m.robots += "Disallow: /en/about\n";
+    expect(findProblems(m)).toEqual(["/en/about: in the sitemap but robots.txt blocks it"]);
+  });
+
   it("6: a legal page leaves the footer", () => {
     const m = greenModel();
-    m.footerSource = 'a("/terms"); a("/privacy");';
+    m.footerSource = '{ href: "/terms" }, { href: "/privacy" },';
     expect(findProblems(m)).toEqual(["/accessibility: legal page missing from the footer"]);
   });
 

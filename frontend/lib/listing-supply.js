@@ -57,9 +57,9 @@ export function countFromBody(hubKey, body) {
 }
 
 async function fetchCount(hubKey) {
-  const { enabled } = HUBS[hubKey];
-  if (enabled && !enabled()) return null;
   try {
+    const { enabled } = HUBS[hubKey];
+    if (enabled && !enabled()) return null;
     // Short timeout, no retry: this count sits in front of each hub's
     // generateMetadata, so a slow backend must not hold the page's first byte
     // for serverFetch's default 8s x 3 attempts. Unknown is a safe answer.

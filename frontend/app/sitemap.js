@@ -26,7 +26,7 @@ import {
   regionCities,
   regionPagePath,
 } from "@/lib/region-pages";
-// MEH-2369: the three "something happening" hubs are listed only with supply.
+// MEH-2369: the "something happening" hubs (and /rescue, MEH-3265) are listed only with supply.
 import { HUBS, getAllHubCounts, hubBelongsInSitemap } from "@/lib/listing-supply";
 // MEH-2478: one owner of "a group buy can still be joined" (open + before deadline).
 import { isGroupBuyLive } from "@/lib/seo";
