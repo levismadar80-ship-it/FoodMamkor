@@ -77,6 +77,13 @@ const sendBtnAny = () => screen.getAllByRole("button")[0];
 const codeInput = () => screen.getByLabelText(T("code_label"));
 const confirmBtn = () => screen.getByRole("button", { name: T("confirm_cta") });
 
+// MEH-3126: the 6th digit verifies on its own, so "type the code" is the
+// confirm action; await it so the POST settles inside act().
+const typeCode = (value) =>
+  act(async () => {
+    fireEvent.change(codeInput(), { target: { value } });
+  });
+
 const click = (el) =>
   act(async () => {
     fireEvent.click(el);
@@ -131,8 +138,7 @@ describe("PhoneVerifyCard — a sent code survives a reload (MEH-2481)", () => {
 
   it("a successful confirm forgets the record", async () => {
     await sendOk();
-    fireEvent.change(codeInput(), { target: { value: "123456" } });
-    await click(confirmBtn());
+    await typeCode("123456");
     expect(apiMock.post).toHaveBeenLastCalledWith(CONFIRM_URL, { code: "123456" });
     expect(window.sessionStorage.getItem(SENT_AT_KEY)).toBeNull();
   });
@@ -281,7 +287,7 @@ describe("PhoneVerifyCard — code input + confirm (:60-76, :108-127)", () => {
     expect(input).toHaveValue("1234");
     expect(confirmBtn()).toBeDisabled();
 
-    fireEvent.change(input, { target: { value: "1234567" } });
+    await typeCode("1234567"); // MEH-3126: 6 digits also auto-confirm
     expect(input).toHaveValue("123456");
     expect(confirmBtn()).not.toBeDisabled();
 
@@ -292,8 +298,7 @@ describe("PhoneVerifyCard — code input + confirm (:60-76, :108-127)", () => {
   it("confirm success: POSTs {code}, toasts success, calls onVerified", async () => {
     const onVerified = vi.fn();
     await sendOk(onVerified);
-    fireEvent.change(codeInput(), { target: { value: "123456" } });
-    await click(confirmBtn());
+    await typeCode("123456");
 
     expect(apiMock.post).toHaveBeenLastCalledWith(CONFIRM_URL, { code: "123456" });
     expect(toastMock.success).toHaveBeenCalledWith(T("success"));
@@ -303,8 +308,7 @@ describe("PhoneVerifyCard — code input + confirm (:60-76, :108-127)", () => {
 
   it("confirm success without an onVerified prop does not throw", async () => {
     await sendOk(undefined);
-    fireEvent.change(codeInput(), { target: { value: "123456" } });
-    await click(confirmBtn());
+    await typeCode("123456");
     expect(toastMock.success).toHaveBeenCalledTimes(1);
   });
 
@@ -312,8 +316,7 @@ describe("PhoneVerifyCard — code input + confirm (:60-76, :108-127)", () => {
     await sendOk();
     const d = deferred();
     apiMock.post.mockReturnValueOnce(d.promise);
-    fireEvent.change(codeInput(), { target: { value: "123456" } });
-    await click(confirmBtn());
+    await typeCode("123456");
 
     const busy = screen.getByRole("button", { name: T("confirming") });
     expect(busy).toBeDisabled();
@@ -329,8 +332,7 @@ describe("PhoneVerifyCard — code input + confirm (:60-76, :108-127)", () => {
     const onVerified = vi.fn();
     await sendOk(onVerified);
     apiMock.post.mockImplementationOnce(reject(400, "wrong code"));
-    fireEvent.change(codeInput(), { target: { value: "000000" } });
-    await click(confirmBtn());
+    await typeCode("000000");
 
     expect(screen.getByRole("alert")).toHaveTextContent(T("error_invalid"));
     expect(onVerified).not.toHaveBeenCalled();
@@ -341,8 +343,7 @@ describe("PhoneVerifyCard — code input + confirm (:60-76, :108-127)", () => {
   it("confirm 429 → toast (detail or fallback), no inline alert", async () => {
     await sendOk();
     apiMock.post.mockImplementationOnce(reject(429, undefined));
-    fireEvent.change(codeInput(), { target: { value: "000000" } });
-    await click(confirmBtn());
+    await typeCode("000000");
 
     expect(toastMock.error).toHaveBeenCalledWith(T("error_rate_limited"));
     expect(screen.queryByRole("alert")).toBeNull();
@@ -351,8 +352,61 @@ describe("PhoneVerifyCard — code input + confirm (:60-76, :108-127)", () => {
   it("confirm 500 → error_generic alert", async () => {
     await sendOk();
     apiMock.post.mockImplementationOnce(reject(500, "boom"));
-    fireEvent.change(codeInput(), { target: { value: "000000" } });
-    await click(confirmBtn());
+    await typeCode("000000");
     expect(screen.getByRole("alert")).toHaveTextContent(T("error_generic"));
+  });
+});
+
+describe("PhoneVerifyCard — the 6th digit verifies on its own (MEH-3126)", () => {
+  const confirmCalls = () => apiMock.post.mock.calls.filter(([url]) => url === CONFIRM_URL);
+
+  it("5 digits send nothing; the 6th sends exactly one confirm with that code", async () => {
+    const onVerified = vi.fn();
+    await sendOk(onVerified);
+    await typeCode("12345");
+    expect(confirmCalls()).toHaveLength(0);
+    await typeCode("123456");
+    expect(confirmCalls()).toEqual([[CONFIRM_URL, { code: "123456" }]]);
+    expect(onVerified).toHaveBeenCalledTimes(1);
+  });
+
+  it("a pasted «123 456» keeps all six digits and verifies", async () => {
+    await sendOk();
+    await typeCode("123 456");
+    expect(codeInput()).toHaveValue("123456");
+    expect(confirmCalls()).toEqual([[CONFIRM_URL, { code: "123456" }]]);
+  });
+
+  it("the input has no maxLength that would cut a spaced paste", async () => {
+    await sendOk();
+    expect(codeInput()).not.toHaveAttribute("maxlength");
+  });
+
+  it("a wrong code is not re-sent until it changes; a new code is sent; the button still re-sends on purpose", async () => {
+    await sendOk();
+    apiMock.post.mockImplementationOnce(reject(400, "wrong code"));
+    await typeCode("000000");
+    expect(screen.getByRole("alert")).toHaveTextContent(T("error_invalid"));
+    // Same value again (e.g. the field re-fires change) → no second request.
+    await typeCode("00000");
+    await typeCode("000000");
+    expect(confirmCalls()).toHaveLength(1);
+    await typeCode("111111");
+    expect(confirmCalls()).toHaveLength(2);
+    await click(confirmBtn());
+    expect(confirmCalls()).toHaveLength(3);
+  });
+
+  it("while a confirm is in flight, typing does not send a second one", async () => {
+    await sendOk();
+    const d = deferred();
+    apiMock.post.mockReturnValueOnce(d.promise);
+    await typeCode("123456");
+    await typeCode("654321");
+    expect(confirmCalls()).toHaveLength(1);
+    await act(async () => {
+      d.resolve({ data: {} });
+      await d.promise;
+    });
   });
 });
