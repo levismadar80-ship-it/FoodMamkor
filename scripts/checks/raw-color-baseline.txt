@@ -112,8 +112,8 @@ frontend/app/[locale]/map/components/MapKey.jsx:arb:#c9b48a
 frontend/app/[locale]/map/components/MapKey.jsx:arb:#c9b48a
 frontend/app/[locale]/map/components/MapKey.jsx:border-white
 frontend/app/[locale]/map/components/MapKey.jsx:border-white
-frontend/app/[locale]/producer/dashboard/edit/cards.jsx:bg-yellow-50
-frontend/app/[locale]/producer/dashboard/edit/cards.jsx:border-yellow-300
+frontend/app/[locale]/producer/dashboard/edit/cards/BusinessNameCard.jsx:bg-yellow-50
+frontend/app/[locale]/producer/dashboard/edit/cards/BusinessNameCard.jsx:border-yellow-300
 frontend/app/[locale]/producer/dashboard/events/page.js:bg-yellow-50
 frontend/app/[locale]/producer/dashboard/events/page.js:border-yellow-300
 frontend/app/[locale]/producer/dashboard/experiences/page.js:bg-yellow-50

@@ -273,7 +273,6 @@ frontend/app/[locale]/producer/dashboard/edit/OrganizerCityCard.jsx
 frontend/app/[locale]/producer/dashboard/edit/ReservistOwnedCard.jsx
 frontend/app/[locale]/producer/dashboard/edit/SpecialHoursEditor.jsx
 frontend/app/[locale]/producer/dashboard/edit/TagsCard.jsx
-frontend/app/[locale]/producer/dashboard/edit/cards.jsx
 frontend/app/[locale]/producer/dashboard/edit/page.js
 frontend/app/[locale]/producer/dashboard/events/[id]/edit/page.js
 frontend/app/[locale]/producer/dashboard/events/new/page.js
