@@ -98,3 +98,33 @@ def test_funded_group_buys_only(client, db):
     for status in ("funded", "funded", "open", "fulfilled", "cancelled"):
         _group_buy(db, owner.producer_id, status)
     assert _attention(client, owner)["funded_group_buys"] == 2
+
+
+def test_an_organizer_review_is_not_waiting(client, db):
+    # ADR-036: an organizer has no public reviews, so the reviews page would be
+    # empty — the card must not send her there.
+    owner = _owner(db, email="att-org@example.com")
+    owner.producer.kind = "organizer"
+    db.commit()
+    _review(db, owner.producer_id)
+    assert _attention(client, owner)["unreplied_reviews"] == 0
+
+
+def test_equal_signup_counts_order_by_title(client, db):
+    owner = _owner(db, email="att-tie@example.com")
+    _reg(db, event=_event(db, owner, title="ב יום פתוח"))
+    _reg(db, event=_event(db, owner, title="א שוק איכרים"))
+    titles = [i["title"] for i in _attention(client, owner)["new_signups"]]
+    assert titles == ["א שוק איכרים", "ב יום פתוח"]
+
+
+def test_a_failed_count_returns_an_empty_card_not_a_500(client, db, monkeypatch):
+    from app.services import owner_attention as oa
+
+    def boom(*_a, **_k):
+        raise RuntimeError("db hiccup")
+
+    monkeypatch.setattr(oa, "_funded_group_buys", boom)
+    owner = _owner(db, email="att-fail@example.com")
+    _review(db, owner.producer_id)
+    assert _attention(client, owner) == {"unreplied_reviews": 0, "new_signups": [], "funded_group_buys": 0}

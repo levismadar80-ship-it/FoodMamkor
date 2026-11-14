@@ -14,6 +14,7 @@ Related:  backend/app/routers/producer_me.py `dashboard` (the only caller) ·
 History:  MEH-3108 (creation).
 """
 
+import logging
 from datetime import timedelta
 from typing import Any, TypedDict
 from uuid import UUID
@@ -21,9 +22,11 @@ from uuid import UUID
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
-from app.models import Event, Experience, ProducerReview, Registration
+from app.models import Event, Experience, Producer, ProducerReview, Registration
 from app.models.models import GroupBuy
 from app.utils.clock import utc_now
+
+logger = logging.getLogger(__name__)
 
 # A sign-up is "new" for a week — the same window as the home's numbers.
 NEW_SIGNUP_DAYS = 7
@@ -43,13 +46,16 @@ class OwnerAttention(TypedDict):
 
 def _unreplied_reviews(db: Session, producer_id: UUID) -> int:
     # Same visibility as the public list (reviews.py `list_reviews`): a hidden
-    # review is not on the page, so it is not waiting for an answer.
+    # review, or any review of an organizer (ADR-036), is not on the page, so
+    # it is not waiting for an answer.
     n: Any = (
         db.query(func.count(ProducerReview.id))
+        .join(Producer, Producer.id == ProducerReview.producer_id)
         .filter(
             ProducerReview.producer_id == producer_id,
             ProducerReview.is_hidden.is_(False),
             ProducerReview.reply.is_(None),
+            Producer.kind == "producer",
         )
         .scalar()
     )
@@ -80,8 +86,9 @@ def _new_signups(db: Session, producer_id: UUID, host_user_id: Any) -> list[Sign
         items += [
             {"kind": "experience", "title": str(t), "count": int(c)} for t, c in workshops
         ]
-    # Most sign-ups first; the card shows the top one.
-    return sorted(items, key=lambda i: -i["count"])
+    # Most sign-ups first, title as the tie-break so the card's top row is
+    # stable between loads.
+    return sorted(items, key=lambda i: (-i["count"], i["title"]))
 
 
 def _funded_group_buys(db: Session, producer_id: UUID) -> int:
@@ -98,7 +105,19 @@ def _funded_group_buys(db: Session, producer_id: UUID) -> int:
 def owner_attention(db: Session, producer_id: UUID, host_user_id: Any) -> OwnerAttention:
     """Counts for the card. `host_user_id` is the owner's user id — a
     workshop is keyed on its host user, not on the business (models.py
-    Experience)."""
+    Experience).
+
+    Fail-soft: the card is a convenience, so a failed count returns an empty
+    card instead of failing the whole dashboard load."""
+    try:
+        return _counts(db, producer_id, host_user_id)
+    except Exception:  # noqa: BLE001 — logged; the dashboard must still load
+        logger.exception("owner_attention failed for producer %s", producer_id)
+        db.rollback()
+        return {"unreplied_reviews": 0, "new_signups": [], "funded_group_buys": 0}
+
+
+def _counts(db: Session, producer_id: UUID, host_user_id: Any) -> OwnerAttention:
     return {
         "unreplied_reviews": _unreplied_reviews(db, producer_id),
         "new_signups": _new_signups(db, producer_id, host_user_id),

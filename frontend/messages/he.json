@@ -4449,11 +4449,11 @@
       "welcome_subtitle_generic": "ברוכים הבאים לניהול העסק שלכם",
       "attention": {
         "title": "מה מחכה לך",
-        "reviews": "{count, plural, one {ביקורת אחת בלי תגובה} other {# ביקורות בלי תגובה}}",
+        "reviews": "{count, plural, one {ביקורת אחת בלי תגובה} two {# ביקורות בלי תגובה} other {# ביקורות בלי תגובה}}",
         "reviews_cta": "לענות",
-        "signups": "{count, plural, one {הרשמה חדשה ל{title}} other {# הרשמות חדשות ל{title}}}",
+        "signups": "{count, plural, one {הרשמה חדשה ל{title}} two {# הרשמות חדשות ל{title}} other {# הרשמות חדשות ל{title}}}",
         "signups_cta": "לרשימה",
-        "group_buys": "{count, plural, one {קבוצת רכישה הגיעה ליעד} other {# קבוצות רכישה הגיעו ליעד}}",
+        "group_buys": "{count, plural, one {קבוצת רכישה הגיעה ליעד} two {# קבוצות רכישה הגיעו ליעד} other {# קבוצות רכישה הגיעו ליעד}}",
         "group_buys_cta": "לפרטים"
       },
       "status": {
