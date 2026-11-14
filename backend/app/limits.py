@@ -127,7 +127,7 @@ OWNED_TABLE_EXEMPT = {
     "alert_log": "system-written fan-out log, capped per send by MEH-1338",
     "producer_analytics_daily": "one row per business per day, system-written",
     "producer_page_views": "system-written analytics, rate-limited beacon",
-    "producer_contact_clicks": "no code writes this table (zero references outside models.py, MEH-3171)",
+    "producer_contact_clicks": "system-written analytics, rate-limited beacon",
     "producer_whatsapp_clicks": "system-written analytics, rate-limited beacon",
 }
 
