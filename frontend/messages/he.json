@@ -3176,6 +3176,7 @@
     }
   },
   "forms": {
+    "email_typo": "אולי התכוונו ל־<fix>{email}</fix>?",
     "password": {
       "placeholder_default": "סיסמה",
       "aria_label_default": "סיסמה",

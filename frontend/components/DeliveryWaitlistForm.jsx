@@ -9,6 +9,7 @@ import { useOptionalAuth } from "@/lib/auth-context";
 import { JoinDeliveryWaitlistProducersProducerIdDeliveryWaitlistPostResponse as WaitlistOut } from "@/lib/generated/api.zod";
 import Button from "@/components/ui/Button";
 import InlineMessage from "@/components/ui/InlineMessage";
+import EmailTypoHint from "@/components/EmailTypoHint";
 
 /**
  * Module:   DeliveryWaitlistForm
@@ -217,6 +218,7 @@ export default function DeliveryWaitlistForm({ producer = null, city = "", descr
           {busy ? t("sending") : t("submit")}
         </Button>
       </div>
+      <EmailTypoHint fieldId={inputId} value={email} onAccept={setEmail} className="mt-1" />
       {/* MEH-2674: opt-in to host a pickup point in this city. Unticked by
           default; the hint under it says the mail-confirmation step out loud
           so nobody thinks the box alone hands her email to the business. */}

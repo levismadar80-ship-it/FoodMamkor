@@ -44,6 +44,7 @@ import Button from "@/components/ui/Button";
 import BusinessCtaLink from "@/components/BusinessCtaLink";
 import ShareClient from "@/app/[locale]/share/ShareClient";
 import InlineMessage from "@/components/ui/InlineMessage";
+import EmailTypoHint from "@/components/EmailTypoHint";
 
 const EMPTY = {
   name: "",
@@ -299,6 +300,7 @@ export default function RecommendClient() {
                 value={form.suggester_email}
                 onChange={set("suggester_email")}
               />
+              <EmailTypoHint fieldId="recommend-suggester-email" value={form.suggester_email} onAccept={(email) => set("suggester_email")({ target: { value: email } })} />
               {/* Privacy Protection Law Amendment 13 §11: the notice sits AT
                   the point of collection — directly under the field, not only
                   in a policy — and states purpose + who it does not go to.
