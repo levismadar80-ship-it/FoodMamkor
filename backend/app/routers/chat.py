@@ -23,6 +23,7 @@ Design notes:
     rather than crashing the widget.
 """
 
+from typing import Any
 import json
 import logging
 
@@ -34,6 +35,7 @@ from app.rate_limit import limiter
 # MEH-460 Pkg 4: schemas relocated to app.schemas.schemas per ADR-006 R1.
 from app.schemas.schemas import ChatRequest, ChatResponse
 from app.services import chat_db_tools, chat_intent_router
+
 
 logger = logging.getLogger(__name__)
 
@@ -163,10 +165,10 @@ def _strip_markdown(text: str) -> str:
 
 # ---------- Anthropic client (lazy, mirrors home_product_moderation) ----------
 
-_client = None
+_client: Any = None
 
 
-def _get_client():
+def _get_client() -> Any:
     global _client
     if _client is not None:
         return _client
@@ -281,7 +283,7 @@ def _db_query_allowed(request: Request) -> bool:
 
 
 def _live_data_context(
-    client, request: Request, api_messages: list[dict]
+    client: Any, request: Request, api_messages: list[dict[str, Any]]
 ) -> str | None:
     """Route the latest user message; on db_query run the bounded tool and
     return a system-prompt addendum with the JSON result. None on any

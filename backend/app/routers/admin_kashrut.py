@@ -1,6 +1,7 @@
 """MEH-51: Admin endpoints for kashrut badge review + ambassador toggle."""
 
-from datetime import datetime, time, timedelta, timezone
+from typing import Any
+from datetime import date, datetime, time, timedelta, timezone
 from uuid import UUID
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
@@ -45,7 +46,7 @@ def list_kashrut_requests(
     status: str = "pending",
     user: User = Depends(require_admin),
     db: Session = Depends(get_db),
-):
+) -> list[KashrutRequestOut]:
     rows = (
         db.query(KashrutBadgeRequest)
         .options(joinedload(KashrutBadgeRequest.producer))
@@ -61,14 +62,14 @@ def list_kashrut_requests(
     return results
 
 
-def _certificate_expiry(expires_on) -> datetime:
+def _certificate_expiry(expires_on: date) -> datetime:
     """The last moment of the printed expiry day in Israel, as the naive UTC
     the `kashrut_expires_at` column stores (it is compared against utc_now())."""
     end_of_day = datetime.combine(expires_on, time.max, tzinfo=ISRAEL_TZ)
     return end_of_day.astimezone(timezone.utc).replace(tzinfo=None)
 
 
-@router.post("/kashrut/{request_id}/approve")
+@router.post("/kashrut/{request_id}/approve", response_model=None)
 @limiter.limit("60/minute")
 def approve_kashrut_request(  # noqa: PLR0913 — all 6 args are FastAPI-injected (slowapi request, path id, body, BackgroundTasks, auth dep, db dep); MEH-2602 added the owner mail
     request: Request,
@@ -77,7 +78,7 @@ def approve_kashrut_request(  # noqa: PLR0913 — all 6 args are FastAPI-injecte
     background_tasks: BackgroundTasks,
     user: User = Depends(require_admin),
     db: Session = Depends(get_db),
-):
+) -> dict[str, Any]:
     req = (
         db.query(KashrutBadgeRequest)
         .filter(KashrutBadgeRequest.id == request_id)
@@ -96,13 +97,14 @@ def approve_kashrut_request(  # noqa: PLR0913 — all 6 args are FastAPI-injecte
     new_expiry = _certificate_expiry(body.expires_on)
     live = producer.kashrut_expires_at is None or producer.kashrut_expires_at >= now
     other_live_badges = live and any(
-        code != req.badge_code for code in (producer.kashrut_badges or [])
+        code != req.badge_code
+        for code in (producer.kashrut_badges or [])  # type: ignore[union-attr]
     )
 
     badges = list(producer.kashrut_badges or [])
     if req.badge_code not in badges:
         badges.append(req.badge_code)
-        producer.kashrut_badges = badges
+        producer.kashrut_badges = badges  # type: ignore[assignment]
 
     # MEH-2518: the expiry is the date printed on the certificate, never
     # approval + 365 days (which also stacked a year per extra badge). There is
@@ -110,12 +112,12 @@ def approve_kashrut_request(  # noqa: PLR0913 — all 6 args are FastAPI-injecte
     # of the two dates wins — the public «תקף עד» must never outlast a
     # certificate. Approving the business's only badge (a renewal) replaces it.
     if other_live_badges and producer.kashrut_expires_at is not None:
-        producer.kashrut_expires_at = min(producer.kashrut_expires_at, new_expiry)
+        producer.kashrut_expires_at = min(producer.kashrut_expires_at, new_expiry)  # type: ignore[arg-type]
     else:
-        producer.kashrut_expires_at = new_expiry
-    producer.kashrut_verified_at = now
+        producer.kashrut_expires_at = new_expiry  # type: ignore[assignment]
+    producer.kashrut_verified_at = now  # type: ignore[assignment]
 
-    req.status = "approved"
+    req.status = "approved"  # type: ignore[assignment]
     req.reviewed_by = user.id
     db.commit()
 
@@ -125,8 +127,8 @@ def approve_kashrut_request(  # noqa: PLR0913 — all 6 args are FastAPI-injecte
         path = f"/p/{producer.slug}" if producer.slug else f"/producer/{producer.id}"
         background_tasks.add_task(
             notify_kashrut_approved,
-            owner.email,
-            producer.name,
+            owner.email,  # type: ignore[arg-type]
+            producer.name,  # type: ignore[arg-type]
             # The stored expiry (may be an earlier live badge's — MEH-2518),
             # read back as the Israeli calendar day the public page shows.
             producer.kashrut_expires_at.replace(tzinfo=timezone.utc)
@@ -138,14 +140,14 @@ def approve_kashrut_request(  # noqa: PLR0913 — all 6 args are FastAPI-injecte
     return {"detail": "badge אושר"}
 
 
-@router.post("/kashrut/{request_id}/reject")
+@router.post("/kashrut/{request_id}/reject", response_model=None)
 def reject_kashrut_request(
     request_id: UUID,
     body: KashrutRejectIn,
     background_tasks: BackgroundTasks,
     user: User = Depends(require_admin),
     db: Session = Depends(get_db),
-):
+) -> dict[str, Any]:
     req = (
         db.query(KashrutBadgeRequest)
         .filter(KashrutBadgeRequest.id == request_id)
@@ -156,9 +158,9 @@ def reject_kashrut_request(
     if req.status != "pending":
         raise HTTPException(status_code=409, detail="הבקשה כבר טופלה")
 
-    req.status = "rejected"
+    req.status = "rejected"  # type: ignore[assignment]
     req.reviewed_by = user.id
-    req.notes = body.notes
+    req.notes = body.notes  # type: ignore[assignment]
     db.commit()
 
     # MEH-2602: the owner learns why, instead of finding out in the dashboard.
@@ -167,15 +169,15 @@ def reject_kashrut_request(
     if owner and owner.email and producer:
         background_tasks.add_task(
             notify_kashrut_rejected,
-            owner.email,
-            producer.name,
+            owner.email,  # type: ignore[arg-type]
+            producer.name,  # type: ignore[arg-type]
             body.notes,
             test_cause=bool(producer.is_test),  # MEH-2952
         )
     return {"detail": "בקשה נדחתה"}
 
 
-@router.post("/kashrut/{request_id}/revoke")
+@router.post("/kashrut/{request_id}/revoke", response_model=None)
 @limiter.limit("60/minute")
 def revoke_kashrut_badge(
     request: Request,
@@ -183,7 +185,7 @@ def revoke_kashrut_badge(
     body: KashrutRevokeIn,
     user: User = Depends(require_admin),
     db: Session = Depends(get_db),
-):
+) -> dict[str, Any]:
     """MEH-2518: take an approved kashrut badge down (e.g. the certificate was
     withdrawn). Before this the only way was SQL. Revokes every approved
     request for that badge code on the business — a renewal leaves two — and
@@ -212,28 +214,30 @@ def revoke_kashrut_badge(
         )
         .all()
     ):
-        sibling.status = "revoked"
+        sibling.status = "revoked"  # type: ignore[assignment]
         sibling.reviewed_by = user.id
-        sibling.notes = body.notes
+        sibling.notes = body.notes  # type: ignore[assignment]
 
     badges = [
-        code for code in (producer.kashrut_badges or []) if code != req.badge_code
+        code
+        for code in (producer.kashrut_badges or [])  # type: ignore[union-attr]
+        if code != req.badge_code
     ]
-    producer.kashrut_badges = badges
+    producer.kashrut_badges = badges  # type: ignore[assignment]
     if not badges:
-        producer.kashrut_verified_at = None
-        producer.kashrut_expires_at = None
+        producer.kashrut_verified_at = None  # type: ignore[assignment]
+        producer.kashrut_expires_at = None  # type: ignore[assignment]
     db.commit()
     return {"detail": "התג בוטל"}
 
 
-@router.post("/producers/{producer_id}/set-ambassador")
+@router.post("/producers/{producer_id}/set-ambassador", response_model=None)
 def set_ambassador(
     producer_id: UUID,
     body: SetAmbassadorIn,
     user: User = Depends(require_admin),
     db: Session = Depends(get_db),
-):
+) -> dict[str, Any]:
     producer = db.query(Producer).filter(Producer.id == producer_id).first()
     if not producer:
         raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
@@ -243,7 +247,7 @@ def set_ambassador(
         )
     if producer.ambassador == body.ambassador:
         return {"detail": "ללא שינוי", "ambassador": producer.ambassador}
-    producer.ambassador = body.ambassador
+    producer.ambassador = body.ambassador  # type: ignore[assignment]
     db.commit()
     return {"detail": "עודכן", "ambassador": producer.ambassador}
 
@@ -266,7 +270,7 @@ def kashrut_expiry_reminders(
     dry_run: bool = True,
     user: User = Depends(require_admin),
     db: Session = Depends(get_db),
-):
+) -> KashrutExpiryReminderOut:
     """MEH-1673: WhatsApp reminder to businesses whose kashrut cert expires soon.
 
     `dry_run` defaults to **True** — the dangerous direction has to be asked
@@ -316,7 +320,7 @@ def kashrut_expiry_reminders(
         row = KashrutExpiryReminderRow(
             producer_id=producer.id,
             name=producer.name,
-            phone_masked=mask_phone(producer.phone),
+            phone_masked=mask_phone(producer.phone),  # type: ignore[arg-type]
             expires_at=producer.kashrut_expires_at,
         )
         if dry_run:
@@ -325,7 +329,7 @@ def kashrut_expiry_reminders(
 
         try:
             ok = send_template(
-                _normalize_il_phone(producer.phone),
+                _normalize_il_phone(producer.phone),  # type: ignore[arg-type]
                 KashrutExpiryReminderV1(
                     owner_name=producer.contact_name or producer.name,
                     producer_name=producer.name,

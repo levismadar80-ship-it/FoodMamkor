@@ -16,6 +16,8 @@ Related:  frontend/lib/admin-review-checklist.js (the Phase 1 constant this
 History:  MEH-1399 (creation; Phase 2 of MEH-1396).
 """
 
+from sqlalchemy import Table
+from typing import Any, cast
 from uuid import UUID, uuid4
 
 from fastapi import APIRouter, Depends, HTTPException, Request
@@ -65,7 +67,7 @@ def list_checklist_items(
     include_inactive: bool = False,
     user: User = Depends(require_admin),
     db: Session = Depends(get_db),
-):
+) -> list[AdminChecklistItemOut] | list[AdminChecklistItem]:
     """The checklist, ordered.
 
     `include_inactive` defaults to **False** because the review flow — the
@@ -86,7 +88,7 @@ def save_checklist_items(
     data: AdminChecklistItemsIn,
     user: User = Depends(require_admin),
     db: Session = Depends(get_db),
-):
+) -> list[AdminChecklistItemOut] | list[AdminChecklistItem]:
     """Replace the list: add, edit, reorder and retire in one request.
 
     ## Order comes from the array index, not from the client
@@ -122,7 +124,9 @@ def save_checklist_items(
     against items another admin retired should be told, not have its old rows
     quietly resurrected under new ids.
     """
-    existing = {item.id: item for item in db.query(AdminChecklistItem).all()}
+    existing: dict[Any, AdminChecklistItem] = {
+        item.id: item for item in db.query(AdminChecklistItem).all()
+    }
 
     # MEH-2176: `index * _POSITION_STEP` is unique WITHIN one payload, which is
     # not the same as unique in the table. An item omitted from the payload is
@@ -156,13 +160,13 @@ def save_checklist_items(
             )
             db.add(item)
         else:
-            item = existing.get(payload.id)
+            item = existing.get(payload.id)  # type: ignore[assignment]
             if item is None:
                 raise HTTPException(status_code=404, detail="סעיף לא נמצא")
-            item.position = position
-            item.label = payload.label
-            item.hint = payload.hint
-            item.active = payload.active
+            item.position = position  # type: ignore[assignment]
+            item.label = payload.label  # type: ignore[assignment]
+            item.hint = payload.hint  # type: ignore[assignment]
+            item.active = payload.active  # type: ignore[assignment]
         position += _POSITION_STEP
 
     db.commit()
@@ -187,7 +191,7 @@ def get_review_checks(
     producer_id: UUID,
     user: User = Depends(require_admin),
     db: Session = Depends(get_db),
-):
+) -> ProducerReviewChecksOut:
     """The ticks recorded for one producer.
 
     404s on an unknown producer rather than returning an empty list: "this
@@ -240,7 +244,7 @@ def save_review_checks(
     data: ProducerReviewChecksIn,
     user: User = Depends(require_admin),
     db: Session = Depends(get_db),
-):
+) -> ProducerReviewChecksOut:
     """Record the ticked set for a producer. Idempotent.
 
     ## Set semantics, and why not a diff
@@ -316,7 +320,7 @@ def save_review_checks(
     fresh = wanted - current
     if fresh:
         db.execute(
-            pg_insert(ProducerReviewCheck.__table__)
+            pg_insert(cast(Table, ProducerReviewCheck.__table__))
             .values(
                 [
                     {
@@ -326,7 +330,7 @@ def save_review_checks(
                         "producer_id": producer_id,
                         "item_id": item_id,
                         # Snapshot at tick time — see the docstring.
-                        "label_snapshot": found[item_id].label,
+                        "label_snapshot": found[item_id].label,  # type: ignore[index]
                         "checked_by": user.id,
                     }
                     for item_id in fresh
@@ -338,4 +342,7 @@ def save_review_checks(
         )
 
     db.commit()
-    return get_review_checks(request=request, producer_id=producer_id, user=user, db=db)
+    return cast(
+        ProducerReviewChecksOut,
+        get_review_checks(request=request, producer_id=producer_id, user=user, db=db),
+    )
