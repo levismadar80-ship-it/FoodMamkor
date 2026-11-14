@@ -97,7 +97,9 @@ def _experience_for_signup(db: Session, experience_id: UUID) -> Experience:
     # the past between the visibility query and the lock.
     if ex is None:
         raise HTTPException(status_code=404, detail="Experience not found")
-    if not ex.is_active or ex.event_date < israel_today():
+    # MEH-3219 B12: a recurring experience's event_date is its first
+    # occasion, not its last — it stays open after it (experiences.py feed).
+    if not ex.is_active or (ex.event_date < israel_today() and not ex.is_recurring):
         raise HTTPException(status_code=409, detail=_CLOSED)
     if ex.registration_method != "site_form":
         raise HTTPException(status_code=409, detail=_CLOSED)

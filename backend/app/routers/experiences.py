@@ -230,7 +230,10 @@ def _public_listing_query(db: Session) -> OrmQuery[Experience]:
         # MEH-1883: Israel calendar day — same reasoning as events.py. A UTC
         # "today" drops an experience from the public feed at 21:00 the
         # evening before it happens.
-        Experience.event_date >= israel_today(),
+        # MEH-3219 B12: a recurring experience's event_date is its FIRST
+        # occasion, so it stays listed after it — the same rule the host cap
+        # below (create) already applies.
+        (Experience.event_date >= israel_today()) | Experience.is_recurring.is_(True),
         # MEH-1419: a host-cancelled experience drops from the public feed
         # (mirrors events.py:73). It stays visible on GET /experiences/mine.
         Experience.is_active.is_(True),

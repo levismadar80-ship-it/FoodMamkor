@@ -44,7 +44,7 @@ from __future__ import annotations
 from typing import Any, cast
 import logging
 from dataclasses import dataclass
-from datetime import date, datetime, timedelta, timezone
+from datetime import date, datetime, time, timedelta, timezone
 
 from sqlalchemy import CursorResult, delete, select
 from sqlalchemy.orm import Session
@@ -140,10 +140,24 @@ def _purge_registrations(db: Session, today: date) -> int:
         (Registration.experience_id, Experience),
     ):
         old_items = select(model.id).where(model.event_date < boundary)
+        if model is Experience:
+            # MEH-3219 B12: a recurring experience's event_date is its FIRST
+            # occasion and it stays open after it, so its date says nothing
+            # about when a sign-up's occasion was. Those rows age out by their
+            # own created_at instead; without this a sign-up made 30 days
+            # after the first occasion was purged on the next run.
+            old_items = old_items.where(Experience.is_recurring.isnot(True))
+        stale = fk.in_(old_items.scalar_subquery())
+        if model is Experience:
+            recurring = select(Experience.id).where(Experience.is_recurring.is_(True))
+            stale = stale | (
+                fk.in_(recurring.scalar_subquery())
+                & (Registration.created_at < datetime.combine(boundary, time.min))
+            )
         try:
             result = db.execute(
                 delete(Registration)
-                .where(fk.in_(old_items.scalar_subquery()))
+                .where(stale)
                 .execution_options(synchronize_session=False)
             )
             db.commit()
