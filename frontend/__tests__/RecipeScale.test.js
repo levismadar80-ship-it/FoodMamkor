@@ -2,6 +2,10 @@
 import { describe, expect, it } from "vitest";
 import { clampServings, formatAmount, scaleRecipeLine } from "@/lib/recipe-scale";
 
+// The amount is wrapped in a left-to-right isolate when it has a fraction
+// glyph; the cases below compare the visible text.
+const visible = (s) => s.replace(/[\u2066\u2069]/g, "");
+
 describe("scaleRecipeLine", () => {
   it.each([
     ["2 ביצים", 2, "4 ביצים"],
@@ -20,7 +24,7 @@ describe("scaleRecipeLine", () => {
     ["1 בצל", 0.75, "¾ בצל"],
     ["5 תפוחים", 0.28, "1.4 תפוחים"],
   ])("%s × %s → %s", (line, factor, expected) => {
-    expect(scaleRecipeLine(line, factor)).toBe(expected);
+    expect(visible(scaleRecipeLine(line, factor))).toBe(expected);
   });
 
   it.each([
@@ -41,6 +45,12 @@ describe("scaleRecipeLine", () => {
 
   it("factor 1, or a factor that is not a positive number, changes nothing", () => {
     for (const f of [1, 0, -2, NaN, Infinity]) expect(scaleRecipeLine("2 ביצים", f)).toBe("2 ביצים");
+  });
+
+  it("an amount with a fraction glyph is isolated left-to-right; plain digits are not wrapped", () => {
+    expect(scaleRecipeLine("3 עגבניות", 1.5)).toBe("\u20664½\u2069 עגבניות");
+    expect(scaleRecipeLine("2 – 3 שיני שום", 0.5)).toBe("\u20661 – 1½\u2069 שיני שום");
+    expect(scaleRecipeLine("2 ביצים", 2)).toBe("4 ביצים");
   });
 
   it("only the leading amount moves; a number later in the line does not", () => {

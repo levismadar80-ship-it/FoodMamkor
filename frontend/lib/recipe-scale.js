@@ -78,6 +78,18 @@ export function formatAmount(value) {
   return value < TINY ? trimZeros(value) : String(Number(value.toFixed(1)));
 }
 
+// A fraction glyph is a bidi neutral: in a Hebrew line «4½» can be drawn as
+// «½4» (seen at 1440 in the first build of this feature). Wrapping the amount
+// in a left-to-right isolate keeps the digits and the glyph in writing order.
+// Plain digits need nothing and get nothing.
+const LRI = "\u2066";
+const PDI = "\u2069";
+const HAS_GLYPH = new RegExp(GLYPH_CLASS);
+/** @param {string} amount */
+function isolate(amount) {
+  return HAS_GLYPH.test(amount) ? `${LRI}${amount}${PDI}` : amount;
+}
+
 /**
  * Scale the amount a line starts with. Factor 1, a line with no leading
  * amount, or an amount that cannot be read → the line unchanged.
@@ -94,7 +106,8 @@ export function scaleRecipeLine(line, factor) {
   const a = formatAmount(first * factor);
   const b = second === null ? "" : formatAmount(second * factor);
   if (!a || (second !== null && !b)) return line;
-  return `${a}${second === null ? "" : `${m[2]}${b}`}${line.slice(m[0].length)}`;
+  const amount = `${a}${second === null ? "" : `${m[2]}${b}`}`;
+  return `${isolate(amount)}${line.slice(m[0].length)}`;
 }
 
 /** @param {unknown} n */

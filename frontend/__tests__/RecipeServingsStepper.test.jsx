@@ -33,7 +33,9 @@ const base = {
 };
 const mount = (extra = {}) =>
   render(<RecipeDetail recipe={{ ...base, ...extra }} producer={{ slug: "x", name: "x" }} relatedProducts={[]} />);
-const lines = () => screen.getAllByRole("button", { pressed: false }).map((b) => b.textContent);
+const visible = (s) => s.replace(/[\u2066\u2069]/g, ""); // the bidi isolate around a fraction
+const lines = () =>
+  screen.getAllByRole("button", { pressed: false }).map((b) => visible(b.textContent));
 const less = () => screen.getByLabelText("recipes.detail.servings_less");
 const more = () => screen.getByLabelText("recipes.detail.servings_more");
 
@@ -74,7 +76,7 @@ describe("recipe servings stepper", () => {
     mount();
     fireEvent.click(screen.getByText("2 ביצים"));
     fireEvent.click(more());
-    expect(screen.getByRole("button", { pressed: true }).textContent).toBe("2½ ביצים");
+    expect(visible(screen.getByRole("button", { pressed: true }).textContent)).toBe("2½ ביצים");
   });
 
   it("stops at 1 and at 100", () => {
