@@ -966,7 +966,11 @@ PINNED: dict[tuple[str, str, str], tuple[int, str, str]] = {
     # business-approved mail (same two builders admin.approve_producer uses) to
     # the new owner, so its flag is the same `p_test` that path carries —
     # producer.is_test or user.is_test, captured before the session closes.
-    ("routers/producer_owner_invite.py", "accept_owner_invite", "add_task(send_email)"): (
+    (
+        "routers/producer_owner_invite.py",
+        "accept_owner_invite",
+        "add_task(send_email)",
+    ): (
         1,
         OWN,
         "p_test — producer.is_test or user.is_test, captured pre-commit",
@@ -1049,7 +1053,11 @@ PINNED: dict[tuple[str, str, str], tuple[int, str, str]] = {
         BUS,
         "same",
     ),
-    ("services/auth_notifications.py", "notify_admin_producer_resubmit", "send_text"): (
+    (
+        "services/auth_notifications.py",
+        "notify_admin_producer_resubmit",
+        "send_template",
+    ): (
         1,
         BUS,
         "wrapper param ← producer.is_test",
@@ -1062,7 +1070,7 @@ PINNED: dict[tuple[str, str, str], tuple[int, str, str]] = {
     (
         "services/auth_notifications.py",
         "notify_admin_producer_review_ready",
-        "send_text",
+        "send_template",
     ): (1, BUS, "wrapper param ← producer.is_test"),
     (
         "services/auth_notifications.py",
@@ -1099,7 +1107,7 @@ PINNED: dict[tuple[str, str, str], tuple[int, str, str]] = {
         "notify_admin_new_business_suggestion",
         "send_email",
     ): (1, NONE, "same"),
-    ("services/auth_notifications.py", "notify_admin_new_producer", "send_text"): (
+    ("services/auth_notifications.py", "notify_admin_new_producer", "send_template"): (
         1,
         BUS,
         "wrapper param ← producer.is_test or user.is_test",
@@ -1110,6 +1118,15 @@ PINNED: dict[tuple[str, str, str], tuple[int, str, str]] = {
         "same",
     ),
     # --- schedulers / unwired ---
+    (
+        "services/admin_pending_reminder.py",
+        "send_admin_pending_reminder",
+        "send_email",
+    ): (
+        1,
+        NONE,
+        "aggregate admin digest; test rows are filtered out by the query (MEH-3147)",
+    ),
     ("services/auto_reply_watchdog.py", "run_watchdog", "send_template"): (
         1,
         NONE,
