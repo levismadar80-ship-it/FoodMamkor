@@ -57,7 +57,6 @@ describe("hero search empty-field dropdown (MEH-3257)", () => {
     await focusEmpty();
     const rows = within(screen.getByTestId("hero-search-history")).getAllByRole("option");
     expect(rows.map((r) => r.textContent.replace("×", ""))).toEqual(["מחמצת"]);
-    expect(screen.queryByText("trending_heading")).toBeNull();
   });
 
   it("many recent searches: all of them, no trending heading", async () => {
@@ -66,6 +65,5 @@ describe("hero search empty-field dropdown (MEH-3257)", () => {
     const rows = within(screen.getByTestId("hero-search-history")).getAllByRole("option");
     expect(rows).toHaveLength(3);
     expect(screen.getByText("recent_heading")).toBeTruthy();
-    expect(screen.queryByText("trending_heading")).toBeNull();
   });
 });

@@ -5555,8 +5555,7 @@ class BioGenerateIn(BaseModel):
 # MEH-460 Pkg 3: relocated from routers/search.py per ADR-006 R1.
 # Pure relocation — fields preserved verbatim. SearchOut composes the 3
 # Hit classes; all 4 move together so the list[X] references resolve in
-# module order. Router-local concerns (
-# _HEBREW_PREFIXES, _strip_hebrew_prefix, _empty) stay in search.py —
+# module order. Router-local concerns (_HEBREW_PREFIXES, _strip_hebrew_prefix, _empty) stay in search.py —
 # handler-side, not schema fields.
 class ProducerHit(BaseModel):
     id: UUID

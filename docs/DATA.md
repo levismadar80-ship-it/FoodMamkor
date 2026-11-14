@@ -1576,7 +1576,6 @@ GET  /admin/outreach/metrics/summary
 GET  /search            public — q (max 100 chars), limit (1–20, default 8)
                                  returns { producers, products, cities, categories }
                                  rate-limited 60/minute per IP
-                                 rate-limited 30/minute per IP
 ```
 
 **What a producer hit matches on (MEH-2478).** `GET /search` matches a business on
