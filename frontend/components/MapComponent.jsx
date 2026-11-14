@@ -1,3 +1,5 @@
+/// <reference path="../types/browser-globals.d.ts" />
+/// <reference path="../types/leaflet-plugins.d.ts" />
 "use client";
 
 import { useEffect, useRef } from "react";

@@ -154,10 +154,11 @@ function validateEventForm(f, t, tReg) {
 }
 
 /**
- * @param {"create"|"edit"} mode
- * @param {object|null} initial  event (EventOut) to prefill in edit mode
- * @param {(data:object)=>void} onSuccess  called with the created/updated event
- * @param {string} cancelHref  where the cancel link points
+ * @param {object} props
+ * @param {"create"|"edit"} [props.mode]
+ * @param {object|null} [props.initial]  event (EventOut) to prefill in edit mode
+ * @param {(data:object)=>void} props.onSuccess  called with the created/updated event
+ * @param {string} [props.cancelHref]  where the cancel link points
  */
 export default function EventForm({ mode = "create", initial = null, onSuccess, cancelHref = "/producer/dashboard" }) {
   const t = useTranslations("sweep_tail.event_new");
@@ -223,7 +224,7 @@ export default function EventForm({ mode = "create", initial = null, onSuccess, 
   };
   const [form, setForm] = useState(() => seed(initial));
   const [error, setError] = useState("");
-  const [fieldErrors, setFieldErrors] = useState({});
+  const [fieldErrors, setFieldErrors] = useState(/** @type {Record<string, string>} */ ({}));
   const [unverified, setUnverified] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [uploading, setUploading] = useState(false);

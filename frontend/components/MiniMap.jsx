@@ -1,3 +1,5 @@
+// @ts-check
+/// <reference path="../types/leaflet-plugins.d.ts" />
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -395,6 +397,8 @@ function MapSurface({ interactive, onExpand, mapKey, center, points, lat, lng, n
  * MEH-1659: the inline map gains +/− and stops being frozen, and any tap on it
  * opens a fullscreen overlay where every gesture works. All three consumers
  * (producer / events / experiences) get this through the unchanged props API.
+ *
+ * @param {{ lat?: number|string, lng?: number|string, name?: string, locations?: any[], producer?: any, zoom?: number, showNavigation?: boolean, draggableMarker?: boolean, onMarkerDragEnd?: (...args: any[]) => any }} props
  */
 export default function MiniMap({
   lat,

@@ -212,10 +212,11 @@ function validateExperienceForm(f, t, tReg) {
 }
 
 /**
- * @param {"create"|"edit"} mode
- * @param {object|null} initial  experience (ExperienceDetailOut) to prefill
- * @param {(data:object)=>void} onSuccess  called with the created/updated row
- * @param {string} cancelHref
+ * @param {object} props
+ * @param {"create"|"edit"} [props.mode]
+ * @param {object|null} [props.initial]  experience (ExperienceDetailOut) to prefill
+ * @param {(data:object)=>void} props.onSuccess  called with the created/updated row
+ * @param {string} [props.cancelHref]
  */
 export default function ExperienceForm({ mode = "create", initial = null, onSuccess, cancelHref = "/experiences" }) {
   const t = useTranslations("experiences.new");
@@ -229,7 +230,7 @@ export default function ExperienceForm({ mode = "create", initial = null, onSucc
   const [checking, setChecking] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [serverError, setServerError] = useState("");
-  const [fieldErrors, setFieldErrors] = useState({});
+  const [fieldErrors, setFieldErrors] = useState(/** @type {Record<string, string>} */ ({}));
   const [unverified, setUnverified] = useState(false);
   // MEH-2012: an upload is in flight. Gates submit — a form posted mid-upload
   // would save the PREVIOUS image_url while the owner is watching a new one

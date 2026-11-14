@@ -61,6 +61,7 @@ function ContactLine() {
  * @param {boolean} [props.contact]  adds «שאלה לפני? כתבו לנו» → /contact
  * @param {string} [props.ctaTestId]  data-testid on the guest button
  * @param {string} [props.className]  extra classes on the <section> (e.g. scroll-mt-24)
+ * @param {string} [props.id]  lands on the <section> (an in-page anchor target)
  * Any other prop (data-testid, id, data-*) lands on the <section>.
  */
 export default function ClosingCtaBand({

@@ -146,10 +146,10 @@ export default function ProductsSection({
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
-  const [formErrors, setFormErrors] = useState({});
+  const [formErrors, setFormErrors] = useState(/** @type {Record<string, string>} */ ({}));
   const [editingId, setEditingId] = useState(null);
   const [editForm, setEditForm] = useState({});
-  const [editFormErrors, setEditFormErrors] = useState({});
+  const [editFormErrors, setEditFormErrors] = useState(/** @type {Record<string, string>} */ ({}));
   const [savingEdit, setSavingEdit] = useState(false);
   // UIS-026 (MEH-776): in-flight delete guard — blocks rapid-click
   // double-delete of the same product and disables the row's trash button.

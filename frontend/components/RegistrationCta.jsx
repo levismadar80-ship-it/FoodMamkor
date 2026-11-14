@@ -66,7 +66,7 @@ function SignupForm({ kind, itemId, onDone }) {
   const [form, setForm] = useState({ name: "", phone: "", email: "" });
   // MEH-3112: a signed-in visitor finds her own details already in place.
   useAccountPrefill(setForm, SIGNUP_PREFILL);
-  const [errors, setErrors] = useState({});
+  const [errors, setErrors] = useState(/** @type {Record<string, string>} */ ({}));
   const [banner, setBanner] = useState("");
   const [sending, setSending] = useState(false);
 
@@ -219,17 +219,18 @@ function ActionLink({ action, label, testId, onClick }) {
 }
 
 /**
- * @param {"events"|"experiences"} kind
- * @param {string} itemId
- * @param {string} title
- * @param {string} method        registration_method
- * @param {string|null} phone    the business phone (raw)
- * @param {string|null} url      registration_url (external_url only)
- * @param {boolean} isFull       no spots left
- * @param {string} [waitlistHref] WhatsApp waitlist link when full (workshops)
- * @param {Function} [onWaitlistClick] counts the tap for the host (MEH-2991)
- * @param {string} [waitlistLabel]
- * @param {string} [barNote]     the date line beside the button on the phone bar
+ * @param {object} props
+ * @param {"events"|"experiences"} props.kind
+ * @param {string} props.itemId
+ * @param {string} props.title
+ * @param {string} props.method        registration_method
+ * @param {string|null} props.phone    the business phone (raw)
+ * @param {string|null} props.url      registration_url (external_url only)
+ * @param {boolean} props.isFull       no spots left
+ * @param {string} [props.waitlistHref] WhatsApp waitlist link when full (workshops)
+ * @param {Function} [props.onWaitlistClick] counts the tap for the host (MEH-2991)
+ * @param {string} [props.waitlistLabel]
+ * @param {string} [props.barNote]     the date line beside the button on the phone bar
  *
  * MEH-3043 (Sapir 13/11, option ב): the form opened and could never close.
  * Now: on a phone the sign-up button also rides a sticky bar while the inline
