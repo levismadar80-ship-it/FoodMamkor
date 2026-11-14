@@ -39,7 +39,8 @@ export function formatEventDate(iso, locale, options = DEFAULT_OPTIONS) {
     if (Number.isNaN(d.getTime())) return "";
     return d.toLocaleDateString(LOCALE_TAG[locale] ?? "he-IL", options);
   } catch {
-    return iso;
+    // A Date input must still come back as a string, per @returns.
+    return String(iso);
   }
 }
 
