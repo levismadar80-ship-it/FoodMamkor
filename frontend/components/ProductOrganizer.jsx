@@ -24,6 +24,7 @@ import api from "@/lib/api";
 import { detailToMessage } from "@/lib/errors";
 import { showToast } from "@/lib/toast";
 import { orderProducts } from "@/lib/product-order";
+import Input from "@/components/ui/Input";
 
 /** @typedef {{ id: string, name: string, position?: number|null, group_id?: string|null, image_url?: string|null }} Product */
 /** @typedef {{ id: string, name: string }} Group */
@@ -366,14 +367,14 @@ function GroupsEditor({ groups, onSave, onDelete, t }) {
         <ul className="divide-y divide-border border-y border-border mb-3">
           {groups.map((g, i) => (
             <li key={g.id} className="flex items-center gap-2 py-2" data-testid="product-group-row">
-              <input
+              <Input inline size="xs"
                 key={`${g.name}:${rev}`}
                 data-testid="product-group-name"
                 defaultValue={g.name}
                 maxLength={40}
                 aria-label={t("group_rename_aria", { name: g.name })}
                 onBlur={(e) => rename(g.id, e.target.value)}
-                className="flex-1 min-w-0 min-h-touch text-sm border border-border rounded-sm px-2 bg-surface-card focus-ring"
+                className="flex-1 min-w-0 min-h-touch"
               />
               <button
                 type="button"
@@ -411,14 +412,14 @@ function GroupsEditor({ groups, onSave, onDelete, t }) {
           <label htmlFor="new-product-group" className="block text-xs text-fg-muted mb-1">
             {t("group_add_label")}
           </label>
-          <input
+          <Input inline size="xs"
             id="new-product-group"
             data-testid="product-group-new"
             value={draft}
             maxLength={40}
             placeholder={t("group_add_placeholder")}
             onChange={(e) => setDraft(e.target.value)}
-            className="w-full min-h-touch text-sm border border-border rounded-sm px-2 bg-surface-card focus-ring"
+            className="w-full min-h-touch"
           />
         </span>
         <button
