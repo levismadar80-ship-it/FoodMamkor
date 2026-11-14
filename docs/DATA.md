@@ -905,10 +905,12 @@ POST   /auth/owner-invite/email-code               public — 5/hour. v3. Body {
                                                      409 it was always going to die at. An invalid link still 404s — that is a fact about the LINK, which the caller already holds.
 POST   /auth/owner-invite/email-code-existing      signed in + verified email (require_verified_email) — 5/hour. MEH-3256 (grill retro D8). Body {token}.
                                                      Mails a code to the SIGNED-IN account's own address (no address input, so no oracle), records it on owner_invite_email.
-                                                     403 for an admin / super-admin account, 409 for an account that already has a business (producer_id or is_producer).
+                                                     403 for an admin / super-admin account, 409 for an account that already has a business (producer_id or is_producer)
+                                                     or any role other than consumer (allow-list).
 POST   /auth/owner-invite/accept-existing          signed in + verified email — 10/15 min. MEH-3256. Body {token, code, terms_accepted, declaration_accepted}.
-                                                     Same refusals, then the code (422, one attempt), then the user row is locked FOR UPDATE and the refusals are
-                                                     re-read on it, then _has_owner (409), then the SAME conditional UPDATE as /accept (`_claim_invite`, one owner).
+                                                     Same refusals, then the code (422, one attempt), (the attempts UPDATE takes the PRODUCER row lock), then the user
+                                                     row is locked FOR UPDATE — lock order producer, then user — and re-read: the refusals again, plus blocked (403),
+                                                     unverified (403) and a token_version changed since auth (401), then _has_owner (409), then the SAME conditional UPDATE as /accept (`_claim_invite`, one owner).
                                                      The account becomes the owner (role="producer", producer_id, is_producer, terms stamp), token_version += 1 so every
                                                      older (consumer) session dies, and a fresh session is issued like login. No users row is created, no password touched.
 POST   /auth/owner-invite/accept                   public — 10/15 min. Body {token, email, code, password, terms_accepted, declaration_accepted}; both consents required (422),

@@ -209,3 +209,81 @@ def test_dead_link_is_404_before_anything(client, db):
     user = _consumer(db)
     r = client.post(CODE_URL, json={"token": "x" * 43}, headers=auth_header(user))
     assert r.status_code == 404
+
+
+def _change_during_code_check(field_values):
+    """Run the real code check, then change the account row the way a
+    parallel request (admin block, logout-all, another tab) would between
+    `get_current_user` and the row lock."""
+    real = poe._verify_email_code
+
+    def wrapped(db, producer, email, code, now):
+        real(db, producer, email, code, now)
+        from sqlalchemy import update
+
+        db.execute(update(User).where(User.email == email).values(**field_values))
+
+    return mock.patch.object(poe, "_verify_email_code", side_effect=wrapped)
+
+
+def _assert_untouched(db, producer, user):
+    db.expire_all()
+    u = db.get(User, user.id)
+    assert u.producer_id is None and u.role == "consumer"
+    assert _row(db, producer).owner_invite_accepted_at is None
+
+
+def test_blocked_between_auth_and_lock_is_refused(client, db):
+    producer, token = _invited(client, db)
+    user = _consumer(db)
+    code = _arm(client, token, user)[2]
+    with _change_during_code_check({"is_blocked": True}):
+        r = _accept(client, token, user, code)
+    assert r.status_code == 403, r.text
+    _assert_untouched(db, producer, user)
+
+
+def test_session_revoked_between_auth_and_lock_is_refused(client, db):
+    producer, token = _invited(client, db)
+    user = _consumer(db)
+    code = _arm(client, token, user)[2]
+    with _change_during_code_check({"token_version": 7}):
+        r = _accept(client, token, user, code)
+    assert r.status_code == 401, r.text
+    _assert_untouched(db, producer, user)
+
+
+def test_business_attached_between_auth_and_lock_is_refused(client, db):
+    """Discriminates the locked re-read: the pre-lock check saw no business."""
+    producer, token = _invited(client, db)
+    other = approved(db, name="עסק אחר")
+    user = _consumer(db)
+    code = _arm(client, token, user)[2]
+    with _change_during_code_check({"producer_id": other.id}):
+        r = _accept(client, token, user, code)
+    assert r.status_code == 409, r.text
+    assert _row(db, producer).owner_invite_accepted_at is None
+
+
+def test_super_admin_email_is_refused(client, db, monkeypatch):
+    from app.config import settings
+
+    _, token = _invited(client, db)
+    user = _consumer(db, email="boss-3256@example.com")
+    monkeypatch.setattr(settings, "super_admin_email", "boss-3256@example.com")
+    r = client.post(CODE_URL, json={"token": token}, headers=auth_header(user))
+    assert r.status_code == 403, r.text
+
+
+def test_blocked_account_is_refused(client, db):
+    _, token = _invited(client, db)
+    user = _consumer(db, is_blocked=True)
+    r = client.post(CODE_URL, json={"token": token}, headers=auth_header(user))
+    assert r.status_code == 403
+
+
+def test_non_consumer_role_is_not_overwritten(client, db):
+    _, token = _invited(client, db)
+    user = make_user(db, role="producer", email="role-3256@example.com")
+    r = client.post(CODE_URL, json={"token": token}, headers=auth_header(user))
+    assert r.status_code == 409

@@ -21,9 +21,13 @@ History:  MEH-3256 (creation; design by the stronger-model review 14/11:
 ORDER (each refusal is placed where it costs nothing):
   1. a dead link → 404 (a fact about the link the caller holds);
   2. an admin account → 403, an account with a business → 409;
-  3. the email code → 422 (one attempt spent, the only write);
-  4. the user row is locked FOR UPDATE and step 2 is re-read on it, so two
-     tabs accepting two invites on one account cannot both win;
+  3. the email code → 422 (one attempt spent). Its conditional UPDATE takes
+     the PRODUCER row lock first;
+  4. then the user row is locked FOR UPDATE and re-read: step 2 again, plus
+     blocked / unverified / a session revoked since auth (token_version), so
+     two tabs accepting two invites on one account cannot both win and a
+     session revoked mid-request cannot finish. Lock order: producer, then
+     user — a future writer touching both must take them in that order;
   5. `_has_owner` → 409, then the shared conditional UPDATE claims the link;
   6. the user becomes the owner, `token_version` is bumped (every older
      session is now a consumer session and must not survive), and a fresh
@@ -45,6 +49,7 @@ from fastapi import (
 from sqlalchemy.orm import Session
 
 from app.auth import (
+    _EMAIL_UNVERIFIED_DETAIL,
     create_access_token,
     generate_fingerprint,
     hash_fingerprint,
@@ -95,11 +100,29 @@ _HAS_BUSINESS = (
 def _refuse_account(user: User) -> None:
     """An admin never owns a business (the role would be overwritten and the
     admin locked out), and one account holds one business
-    (`users.producer_id` is a single FK)."""
+    (`users.producer_id` is a single FK). Allow-list, not deny-list: only a
+    consumer account is turned into an owner, so a role added later is never
+    silently overwritten."""
     if user.role == "admin" or is_super_admin(user):
         raise HTTPException(status_code=403, detail=_ADMIN_ACCOUNT)
-    if user.producer_id is not None or user.is_producer:
+    if (
+        user.producer_id is not None
+        or user.is_producer
+        or (user.role or "consumer") != "consumer"
+    ):
         raise HTTPException(status_code=409, detail=_HAS_BUSINESS)
+
+
+def _refuse_stale_session(locked: User, seen_version: int) -> None:
+    """Re-run, on the LOCKED row, what `get_current_user` checked before the
+    code check and the lock wait: an account blocked, unverified or signed
+    out everywhere in between must not leave with a fresh owner session."""
+    if locked.is_blocked:
+        raise HTTPException(status_code=403, detail="חשבון חסום")
+    if not locked.email_verified:
+        raise HTTPException(status_code=403, detail=_EMAIL_UNVERIFIED_DETAIL)
+    if (locked.token_version or 0) != seen_version:
+        raise HTTPException(status_code=401, detail="אסימון לא תקין")
 
 
 def _account_email(user: User) -> str:
@@ -159,12 +182,15 @@ def accept_owner_invite_existing(  # noqa: PLR0913 — FastAPI-injected paramete
         raise HTTPException(status_code=404, detail=_LINK_INVALID)
     _refuse_account(user)
 
+    # Captured now: `populate_existing` below refreshes this same object.
+    seen_version = int(user.token_version or 0)
     now = datetime.now(timezone.utc)
     _verify_email_code(db, producer, _account_email(user), body.code, now)
 
-    # Lock the account BEFORE the business (the claim UPDATE below takes the
-    # producer row). Two tabs accepting two different invites on this one
-    # account serialise here, and the second re-reads producer_id below.
+    # The code check above already holds the PRODUCER row (its attempts
+    # UPDATE); the account is locked second. Two tabs accepting two
+    # different invites on this one account serialise here, and the second
+    # re-reads producer_id below.
     locked = (
         db.query(User)
         .filter(User.id == user.id)
@@ -172,6 +198,7 @@ def accept_owner_invite_existing(  # noqa: PLR0913 — FastAPI-injected paramete
         .populate_existing()
         .one()
     )
+    _refuse_stale_session(locked, seen_version)
     _refuse_account(locked)
 
     if _has_owner(db, producer.id):  # type: ignore[arg-type]
