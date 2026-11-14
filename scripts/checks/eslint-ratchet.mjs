@@ -181,17 +181,31 @@ function fail(message) {
   process.exit(1);
 }
 
-/** Lint ONE real file the baseline says has a gated finding; ESLint must report it. */
+const CONTROL_ANCHORS = 5;
+
+/**
+ * Lint a few real files the baseline says have a gated finding; ESLint must
+ * report at least one of them. Several anchors, not one: a PR that CLEANS the
+ * first baseline file must not go red here for an improvement (review, MEH-3160).
+ * A dead ESLint reports none of them, so the control still discriminates.
+ */
 function control(baseline) {
-  const anchor = [...baseline].find(([key]) => existsSync(join(REPO_ROOT, key.split("\t")[0])));
-  if (!anchor) fail("control: no baseline row points at a file that exists; every zero in this run is void.");
-  const [file, rule] = anchor[0].split("\t");
-  const seen = aggregate(runEslint([relative(FRONTEND_DIR, join(REPO_ROOT, file))]));
-  if (!seen.get(`${file}\t${rule}`)) {
-    fail(`control: ESLint reported no '${rule}' in ${file}, which the baseline says has ${anchor[1]}. ` +
-      "Either that file was cleaned (run --update-baseline) or ESLint is not really running; every zero in this run is void.");
+  const anchors = [];
+  for (const [key] of baseline) {
+    const [file, rule] = key.split("\t");
+    if (anchors.some((a) => a.file === file) || !existsSync(join(REPO_ROOT, file))) continue;
+    anchors.push({ file, rule });
+    if (anchors.length === CONTROL_ANCHORS) break;
   }
-  console.log(`eslint-ratchet control OK — ESLint still reports '${rule}' in ${file}.`);
+  if (!anchors.length) fail("control: no baseline row points at a file that exists; every zero in this run is void.");
+  const seen = aggregate(runEslint(anchors.map((a) => relative(FRONTEND_DIR, join(REPO_ROOT, a.file)))));
+  const hit = anchors.find((a) => seen.get(`${a.file}\t${a.rule}`));
+  if (!hit) {
+    fail(`control: ESLint reported none of the ${anchors.length} baseline findings it was pointed at ` +
+      `(first: '${anchors[0].rule}' in ${anchors[0].file}). ESLint is not really running, or all of those files ` +
+      "were cleaned at once (then run --update-baseline); every zero in this run is void.");
+  }
+  console.log(`eslint-ratchet control OK — ESLint still reports '${hit.rule}' in ${hit.file}.`);
 }
 
 function selfTest() {
