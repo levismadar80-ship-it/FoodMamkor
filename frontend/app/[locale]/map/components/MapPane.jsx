@@ -296,7 +296,9 @@ export default function MapPane({
           transitionProperty: "bottom, background-color",
           transitionDuration: "var(--map-sheet-anim, 300ms)",
         }}
-        buttonClassName="lg:hidden flex absolute end-4"
+        // MEH-3119: steps aside with the near-me button on a short screen
+        // while the picked-business card is up (see NearMePill.jsx).
+        buttonClassName="lg:hidden flex absolute end-4 [@media(max-height:600px)]:group-data-[pick=on]/mapshell:hidden"
         panelClassName="lg:hidden top-4 inset-x-4"
       />
     </div>

@@ -56,7 +56,7 @@ vi.mock("@/components/LocationModal", () => ({
 }));
 
 vi.mock("@/components/CitySearch", () => ({ default: () => null }));
-vi.mock("@/components/MapBottomSheet", () => ({ default: () => <div data-testid="map-bottom-sheet" /> }));
+vi.mock("@/components/MapBottomSheet", () => ({ default: () => <div data-testid="map-bottom-sheet" />, PEEK: 14, HALF: 45 }));
 vi.mock("@/app/[locale]/map/components/CityPickerModal", () => ({ default: () => null }));
 // MEH-2506: a marker that renders the origin tag it is handed, so where the
 // mobile tag goes (into the filter bar's strip) is checkable.
@@ -75,7 +75,10 @@ vi.mock("@/app/[locale]/map/components/MapPane", () => ({
     </button>
   ),
 }));
-vi.mock("@/app/[locale]/map/components/MobileSheetSelectedCard", () => ({ default: () => null }));
+// MEH-3119: a marker element, so "is the floating card mounted" is checkable.
+vi.mock("@/app/[locale]/map/components/MobileSheetSelectedCard", () => ({
+  default: () => <div data-testid="map-selected-card" />,
+}));
 vi.mock("@/app/[locale]/map/components/NearMePill", () => ({ default: () => null }));
 
 vi.mock("@/app/[locale]/map/state/useFirstVisitHints", () => ({
@@ -85,7 +88,7 @@ vi.mock("@/app/[locale]/map/state/useFirstVisitHints", () => ({
     setLegendOpen: vi.fn(),
     setSheetSnap: vi.fn(),
     setSplitRatio: vi.fn(),
-    sheetSnap: "peek",
+    sheetSnap: harness.sheetSnap,
     splitRatio: "40fr 60fr",
   }),
 }));
@@ -100,7 +103,7 @@ vi.mock("@/app/[locale]/map/state/useProducersFeed", () => ({
 }));
 vi.mock("@/app/[locale]/map/state/useMapSync", () => ({
   useMapSync: () => ({
-    cardRefs: { current: {} },
+    cardRefs: harness.cardRefs, // the real shape (id → Set of nodes)
     handleBoundsChange: vi.fn(),
     handleCardClick: vi.fn(),
     handleCardMouseEnter: vi.fn(),
@@ -165,6 +168,10 @@ const harness = vi.hoisted(() => ({
   mapApiRef: { current: null },
   selectedProducer: null,
   selectedLocation: null,
+  // Not a real snap by default: the pan tests below measure the SHEET edge, so
+  // the floating card (mounted only at the real PEEK) must stay out of them.
+  sheetSnap: "peek",
+  cardRefs: { current: new Map() },
 }));
 
 function setup({ desktop = false, reduce = false, markerY, sheetTop = 500, mapTop = 0, mapLeft = 0 }) {
@@ -214,6 +221,8 @@ afterEach(() => {
   vi.useRealTimers();
   harness.selectedProducer = null;
   harness.selectedLocation = null;
+  harness.sheetSnap = "peek";
+  harness.cardRefs.current = new Map();
 });
 
 describe("mobile pick pan (MEH-2843)", () => {
@@ -332,5 +341,117 @@ describe("mobile pick pan (MEH-2843)", () => {
     const { api, sheetTop } = setup({ markerY: 600, sheetTop: 500, desktop: true });
     await renderAndSettle(sheetTop);
     expect(api.panBy).not.toHaveBeenCalled();
+  });
+});
+
+// MEH-3119: the picked business shows ONCE on a phone. Sheet collapsed (PEEK) →
+// one card floating over the map; sheet open (HALF) → the list's own active row
+// is the selection and no second card is mounted. Before, the card was pinned
+// inside the sheet at every snap, above a list that also held the business.
+describe("the floating picked-business card (MEH-3119)", () => {
+  const PEEK = 14;
+  const HALF = 45;
+
+  it("a selection with the sheet at PEEK mounts exactly one card, outside the sheet", async () => {
+    const { sheetTop } = setup({ markerY: 100 });
+    harness.sheetSnap = PEEK;
+    const utils = await renderAndSettle(sheetTop);
+    const cards = utils.getAllByTestId("map-selected-card");
+    expect(cards).toHaveLength(1);
+    expect(utils.getByTestId("map-bottom-sheet").contains(cards[0])).toBe(false);
+  });
+
+  it("a selection with the sheet at HALF mounts no card (the list row is the selection)", async () => {
+    const { sheetTop } = setup({ markerY: 100 });
+    harness.sheetSnap = HALF;
+    const utils = await renderAndSettle(sheetTop);
+    expect(utils.queryByTestId("map-selected-card")).toBeNull();
+  });
+
+  it("the phone shell says when the card is up (short screens hide two buttons on it)", async () => {
+    const { sheetTop } = setup({ markerY: 100 });
+    harness.sheetSnap = PEEK;
+    const up = await renderAndSettle(sheetTop);
+    expect(up.getByTestId("map-mobile-shell").dataset.pick).toBe("on");
+    expect(up.getByTestId("map-mobile-shell").className).toMatch(/group\/mapshell/);
+    up.unmount();
+    harness.sheetSnap = HALF;
+    const open = await renderAndSettle(sheetTop);
+    expect(open.getByTestId("map-mobile-shell").dataset.pick).toBeUndefined();
+  });
+
+  it("no selection mounts no card, whatever the snap", async () => {
+    setup({ markerY: 100 });
+    harness.selectedProducer = null;
+    harness.sheetSnap = PEEK;
+    const utils = await renderAndSettle(500);
+    expect(utils.queryByTestId("map-selected-card")).toBeNull();
+  });
+
+  it("the marker is panned clear of the CARD's top edge, not the sheet's", async () => {
+    // Marker at 450: clear of the sheet (top 500) by 50px, but under the card
+    // (top 380). Measured against the sheet it would be left alone.
+    const { api, sheetTop } = setup({ markerY: 450, sheetTop: 500 });
+    harness.sheetSnap = PEEK;
+    const utils = await renderOnly(sheetTop);
+    utils.getByTestId("map-selected-card").getBoundingClientRect = () => ({ top: 380 });
+    await act(async () => { vi.advanceTimersByTime(400); });
+    expect(api.panBy).toHaveBeenCalledTimes(1);
+    expect(api.panBy).toHaveBeenCalledWith([0, 450 - (380 - 24)], { animate: true });
+  });
+});
+
+// MEH-3119: opening the sheet with a business picked brings its list row into
+// view (the floating card that showed it has just left) — and ONLY a snap
+// change does: picking another row while the sheet is open must leave the list
+// still, or the second tap of the MEH-1243 tap-again-to-open gesture misses.
+describe("the picked row when the sheet opens (MEH-3119)", () => {
+  const HALF = 45;
+  const visibleRow = () => {
+    const row = document.createElement("div");
+    document.body.appendChild(row);
+    Object.defineProperty(row, "offsetParent", { get: () => document.body });
+    row.scrollIntoView = vi.fn();
+    return row;
+  };
+
+  it("sheet at HALF with a pick: its visible row is scrolled into view", async () => {
+    const { sheetTop } = setup({ markerY: 100 });
+    const row = visibleRow();
+    harness.cardRefs.current.set("p1", new Set([row]));
+    harness.sheetSnap = HALF;
+    await renderAndSettle(sheetTop);
+    expect(row.scrollIntoView).toHaveBeenCalledTimes(1);
+    expect(row.scrollIntoView).toHaveBeenCalledWith({ block: "nearest" });
+    row.remove();
+  });
+
+  it("sheet at PEEK: nothing is scrolled", async () => {
+    const { sheetTop } = setup({ markerY: 100 });
+    const row = visibleRow();
+    harness.cardRefs.current.set("p1", new Set([row]));
+    harness.sheetSnap = 14;
+    await renderAndSettle(sheetTop);
+    expect(row.scrollIntoView).not.toHaveBeenCalled();
+    row.remove();
+  });
+
+  it("picking another business while the sheet stays open scrolls nothing", async () => {
+    const { sheetTop } = setup({ markerY: 100 });
+    const first = visibleRow();
+    const second = visibleRow();
+    harness.cardRefs.current.set("p1", new Set([first]));
+    harness.cardRefs.current.set("p2", new Set([second]));
+    harness.sheetSnap = HALF;
+    const utils = await renderAndSettle(sheetTop);
+    expect(first.scrollIntoView).toHaveBeenCalledTimes(1);
+    harness.selectedProducer = { ...harness.selectedProducer, id: "p2" };
+    const { default: MapPage } = await import("@/app/[locale]/map/MapClient");
+    utils.rerender(<MapPage />);
+    await act(async () => { vi.advanceTimersByTime(400); });
+    expect(second.scrollIntoView).not.toHaveBeenCalled();
+    expect(first.scrollIntoView).toHaveBeenCalledTimes(1);
+    first.remove();
+    second.remove();
   });
 });
