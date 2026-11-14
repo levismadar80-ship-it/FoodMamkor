@@ -49,6 +49,13 @@ import { useFocusReturn } from "@/lib/use-focus-return";
  *
  * Z-index: z-[9500] — below chat widget (9999) + cookie banner (9998),
  * above everything else (map legend 800, controls 1000).
+ *
+ * @param {object} p
+ * @param {boolean} p.open
+ * @param {() => void} p.onClose
+ * @param {string} [p.title]
+ * @param {string} [p.message]
+ * @param {string} [p.nextPath]
  */
 export default function LoginPromptModal({
   open,
