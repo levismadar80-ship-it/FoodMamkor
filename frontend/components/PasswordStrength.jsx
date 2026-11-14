@@ -3,6 +3,7 @@
 import { useTranslations } from "next-intl";
 import { Check, Circle } from "@phosphor-icons/react";
 import { passwordRules } from "@/lib/validators";
+import { COLOR } from "@/lib/color-tokens";
 
 /**
  * Live password strength indicator + rule checklist.
@@ -52,15 +53,15 @@ export default function PasswordStrength({ password }) {
   if (passed >= total) {
     tierLabel = t("strong");
     tierTextClass = "text-primary";
-    tierBarColor = "#2e6853";
+    tierBarColor = COLOR.primary;
   } else if (passed === 1) {
     tierLabel = t("weak");
     tierTextClass = "text-danger-500";
-    tierBarColor = "#ef4444"; // tailwind red-500
+    tierBarColor = COLOR["danger-500"]; // tailwind red-500
   } else if (passed === 2) {
     tierLabel = t("medium");
     tierTextClass = "text-warning-500";
-    tierBarColor = "#f59e0b"; // tailwind amber-500
+    tierBarColor = COLOR["warning-500"]; // tailwind amber-500
   }
 
   return (

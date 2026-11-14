@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { Check } from "@phosphor-icons/react";
 import useScrollAffordance, { ScrollArrows } from "@/hooks/useScrollAffordance";
 import { useChipCopy } from "@/lib/use-chip-copy";
+import { COLOR } from "@/lib/color-tokens";
 
 // Firefox mouse wheels report deltaMode=DOM_DELTA_LINE (units = lines,
 // ~3/notch) — normalize to px or the wheel-scroll crawls. 16px/line is
@@ -15,7 +16,7 @@ const WHEEL_LINE_PX = 16;
 // carries no iconColor (an admin category with no CATEGORY_STYLES entry). The
 // DEFAULT category green (= primary / DEFAULT_CATEGORY_STYLE.color) — never a
 // new palette colour (MEH-763 lock).
-const DEFAULT_CAT_RING = "#2e6853";
+const DEFAULT_CAT_RING = COLOR.primary;
 
 // MEH-1545/MEH-1572: the row's trailing NON-CONTENT scroll extent while the
 // end spacer is mounted — the w-12 spacer (48px, fade clearance) + its gap-2
