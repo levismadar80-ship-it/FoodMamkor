@@ -70,18 +70,29 @@ describe("RecipeForm — verified-email notice before the form (MEH-3138)", () =
     wrap(<RecipeForm mode="create" emailUnverified={false} />);
     expect(notices()).toHaveLength(0);
   });
-  it("edit mode without the prop: no notice", () => {
-    wrap(<RecipeForm mode="edit" initial={{ id: "r1", title: "מתכון" }} />);
+  it("edit mode, even if a caller passes the flag: no notice (PATCH is not gated)", () => {
+    wrap(<RecipeForm mode="edit" emailUnverified initial={{ id: "r1", title: "מתכון" }} />);
     expect(notices()).toHaveLength(0);
   });
   it("unverified, create 403s: still one mention, now an alert", async () => {
     post.mockImplementation(() => Promise.reject(EMAIL_403));
     wrap(<RecipeForm mode="create" emailUnverified initial={{ title: "עוגת תפוזים", instructions: "לערבב ולאפות בתנור" }} />);
+    const before = screen.getByTestId("unverified-email-notice");
     fireEvent.submit(document.querySelector("form"));
-    await waitFor(() => expect(post).toHaveBeenCalled());
+    await waitFor(() => expect(post).toHaveBeenCalledTimes(1));
     await waitFor(() =>
       expect(screen.getByTestId("unverified-email-notice").getAttribute("role")).toBe("alert"),
     );
+    const first = screen.getByTestId("unverified-email-notice");
+    // Re-mounted (a new node, so screen readers announce it) and focused.
+    expect(first).not.toBe(before);
+    expect(document.activeElement).toBe(first);
+    expect(gateMentions()).toHaveLength(1);
+    // A second 403 answers again with a fresh node.
+    fireEvent.submit(document.querySelector("form"));
+    await waitFor(() => expect(post).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(screen.getByTestId("unverified-email-notice")).not.toBe(first));
+    expect(document.activeElement).toBe(screen.getByTestId("unverified-email-notice"));
     expect(gateMentions()).toHaveLength(1);
   });
 });

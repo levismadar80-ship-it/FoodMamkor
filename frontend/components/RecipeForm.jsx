@@ -74,7 +74,8 @@ export default function RecipeForm({ mode = "create", initial, onSaved, onCancel
   // MEH-1164 B: verified-email 403 → resend CTA notice instead of a dead-end.
   // Create-only concern (the edit PATCH is not verified-gated), but the count is
   // harmless in edit mode since that path never raises it.
-  // MEH-3138: a count, not a flag — each 403 re-mounts the notice as an alert.
+  // MEH-3138: used as the notice's `key`. Submit resets it to 0 and a 403 sets
+  // it to 1, so every 403 re-mounts the notice as a fresh, focused alert.
   const [unverifiedHits, setUnverifiedHits] = useState(0);
 
   // Producer's own products for the multi-select picker.
@@ -179,7 +180,8 @@ export default function RecipeForm({ mode = "create", initial, onSaved, onCancel
       <h2 className="font-headline-md text-lg font-bold text-text">
         {mode === "edit" ? t("heading_edit") : t("heading_create")}
       </h2>
-      {(unverifiedHits > 0 || emailUnverified) && (
+      {/* The up-front notice is create-only: the edit PATCH is not gated. */}
+      {(unverifiedHits > 0 || (emailUnverified && mode === "create")) && (
         <UnverifiedEmailNotice key={unverifiedHits} live={unverifiedHits > 0} focusOnMount={unverifiedHits > 0} />
       )}
 
