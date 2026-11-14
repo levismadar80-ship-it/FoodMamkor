@@ -154,6 +154,8 @@ export default function ClaimClient({ tokenFromPath = null }) {
         // licensing declaration the server stamps (MEH-759 Chunk C).
         declaration_accepted: declarationConfirmed && (!farmerRequired || farmerConfirmed),
         terms_accepted: agreedToTerms,
+        // MEH-3137: and on its own, so the server records it apart.
+        ...(farmerRequired && { farmer_declaration_accepted: farmerConfirmed }),
       });
       // Any 2xx means the draft is already hers. An unexpected body is logged,
       // not shown: calling it a failure would send her into a retry that the

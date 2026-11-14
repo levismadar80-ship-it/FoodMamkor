@@ -4952,6 +4952,11 @@
             "title": "Email",
             "type": "string"
           },
+          "farmer_declaration_accepted": {
+            "default": false,
+            "title": "Farmer Declaration Accepted",
+            "type": "boolean"
+          },
           "password": {
             "description": "Password — additional checks via password_policy service",
             "maxLength": 200,
@@ -6794,6 +6799,11 @@
             ],
             "title": "Facebook"
           },
+          "farmer_declaration_accepted": {
+            "default": false,
+            "title": "Farmer Declaration Accepted",
+            "type": "boolean"
+          },
           "free_delivery_above": {
             "anyOf": [
               {
@@ -7396,6 +7406,11 @@
             "title": "Declaration Accepted",
             "type": "boolean"
           },
+          "farmer_declaration_accepted": {
+            "default": false,
+            "title": "Farmer Declaration Accepted",
+            "type": "boolean"
+          },
           "terms_accepted": {
             "default": false,
             "title": "Terms Accepted",
@@ -7475,6 +7490,11 @@
               }
             ],
             "title": "Facebook"
+          },
+          "farmer_declaration_accepted": {
+            "default": false,
+            "title": "Farmer Declaration Accepted",
+            "type": "boolean"
           },
           "instagram": {
             "anyOf": [
@@ -9965,6 +9985,18 @@
             ],
             "title": "Facebook"
           },
+          "farmer_declared_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Farmer Declared At"
+          },
           "favorites_count": {
             "default": 0,
             "title": "Favorites Count",
@@ -11074,6 +11106,11 @@
             ],
             "title": "Email"
           },
+          "farmer_declaration_accepted": {
+            "default": false,
+            "title": "Farmer Declaration Accepted",
+            "type": "boolean"
+          },
           "has_physical_location": {
             "default": true,
             "title": "Has Physical Location",
@@ -11599,6 +11636,11 @@
               }
             ],
             "title": "Facebook"
+          },
+          "farmer_declaration_accepted": {
+            "default": false,
+            "title": "Farmer Declaration Accepted",
+            "type": "boolean"
           },
           "free_delivery_above": {
             "anyOf": [

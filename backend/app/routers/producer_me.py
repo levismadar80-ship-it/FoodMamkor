@@ -78,6 +78,7 @@ from app.services.delivery_validation import (
     ensure_exclusion_requires_nationwide,
     ensure_nationwide_requires_delivery,
 )
+from app.services.farmer_declaration import apply_farmer_declaration_on_update
 from app.services.license_validation import (
     categories_require_license,
     enforce_license_gate_on_update,
@@ -891,6 +892,11 @@ def update_my_producer(
     offer_payload = payload.pop("active_offer", None)
 
     enforce_license_gate_on_update(db, producer, payload, category_ids)
+    # MEH-3137: moving into ירקות/פירות needs the grower declaration once.
+    # Written onto the row here; a later 422 rolls it back with everything else.
+    apply_farmer_declaration_on_update(
+        db, producer, category_ids, payload.pop("farmer_declaration_accepted", False)
+    )
     # MEH-1255: effective-state guard — excluded cities require nationwide.
     ensure_exclusion_requires_nationwide(producer, payload)
     # MEH-1879: same shape — nationwide delivery requires the delivery flag,

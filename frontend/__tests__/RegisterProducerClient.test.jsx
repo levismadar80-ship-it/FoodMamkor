@@ -367,6 +367,8 @@ describe("RegisterProducerClient — wizard nav + submit body (MEH-866)", () => 
       referral_source_other: "",
     });
     expect(body).toHaveProperty("declaration_accepted", true);
+    // MEH-2923: the grower line travels on its own; no agri category here.
+    expect(body).toHaveProperty("farmer_declaration_accepted", false);
     // Non-upgrade path also carries the account fields.
     expect(body).toMatchObject({ email: "t@example.com", name: "טסט" });
   });

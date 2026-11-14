@@ -990,6 +990,9 @@ def admin_update_producer(
     # still has a checkbox that sends this field (frontend out of scope for this
     # ticket, flagged separately), but the bulk setattr loop must not write it.
     payload.pop("pickup_points", None)
+    # MEH-3137: the grower declaration is the OWNER's to sign; an admin edit
+    # never records it (same rule as declared_at, ADR-022 gate 2).
+    payload.pop("farmer_declaration_accepted", None)
     # MEH-1255: effective-state guard — excluded cities require nationwide.
     ensure_exclusion_requires_nationwide(producer, payload)
     # MEH-1879: same shape — nationwide delivery requires the delivery flag,
