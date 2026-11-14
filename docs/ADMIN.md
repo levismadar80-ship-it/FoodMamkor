@@ -298,7 +298,7 @@ npx playwright test             # E2E
 | Tier | תנאי | תגית UI |
 |------|-------|---------|
 | 1 | כל עסק | (אין תגית) |
-| 2 | phone_verified = true | אפור |
+| 2 | phone_verified = true (שינוי מספר — גם בעריכת אדמין — מאפס את האימות ומוריד ל-1 עד אימות מחדש, MEH-3245) | אפור |
 | 3 | is_verified = true (admin manual) | ירוק ראשי |
 | 4 | reviews_count ≥ 10 AND avg_rating ≥ 4.5 | ענבר |
 

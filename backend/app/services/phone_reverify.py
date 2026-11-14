@@ -9,7 +9,7 @@ Related:  backend/app/routers/producer_me.py (update_my_producer, confirm —
           which only claims a token issued for the CURRENT number),
           backend/app/routers/admin.py (admin_update_producer),
           backend/app/utils/phone.py canonical_il_msisdn.
-History:  Grill B8 (creation) — MEH-745 made the verified number a submit item.
+History:  MEH-3245 (creation, grill B8) — MEH-745 made the verified number a submit item.
 """
 
 from typing import Any
