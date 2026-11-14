@@ -1169,7 +1169,10 @@ def register_producer_oauth(
         if user:
             # Email registered via password or the *other* OAuth provider.
             # Refuse silent link — same rule as /auth/google and /auth/apple.
-            if not getattr(user, sub_field):
+            # MEH-3272: compare the provider id itself (MEH-3104 fixed the
+            # two siblings). `if not getattr(...)` let an account linked to a
+            # DIFFERENT Google/Apple identity through with a full session.
+            if getattr(user, sub_field) != oauth_sub:
                 raise HTTPException(
                     status_code=409,
                     detail="אימייל זה כבר רשום עם סיסמה. התחברו עם סיסמה במקום.",
