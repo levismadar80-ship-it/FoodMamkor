@@ -890,7 +890,7 @@ export default function ProducerDashboardPage() {
           type="button"
           data-testid="dashboard-help-cta"
           onClick={() => setSupportOpen(true)}
-          className="text-sm text-primary font-medium underline decoration-[1.5px] underline-offset-[5px] decoration-primary/35 hover:decoration-current shrink-0"
+          className="min-h-touch inline-flex items-center text-sm text-primary font-medium underline decoration-[1.5px] underline-offset-[5px] decoration-primary/35 hover:decoration-current shrink-0"
         >
           {t("help_row.cta")}
         </button>
