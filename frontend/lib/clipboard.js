@@ -38,6 +38,9 @@ export async function copyText(value) {
 /** @param {string} text */
 function legacyCopy(text) {
   if (typeof document === "undefined" || !document.body) return false;
+  // Give focus back afterwards: select() moves it to the textarea, and a
+  // keyboard user inside a dialog would otherwise land on <body>.
+  const previous = /** @type {HTMLElement | null} */ (document.activeElement);
   const ta = document.createElement("textarea");
   ta.value = text;
   // Off-screen and read-only: no flash and no keyboard on a phone.
@@ -46,12 +49,15 @@ function legacyCopy(text) {
   ta.style.opacity = "0";
   document.body.appendChild(ta);
   ta.select();
+  // iOS ignores a plain select() on a read-only field.
+  ta.setSelectionRange(0, text.length);
   try {
     return document.execCommand("copy") === true;
   } catch {
     return false;
   } finally {
     document.body.removeChild(ta);
+    previous?.focus?.();
   }
 }
 

@@ -8,7 +8,7 @@ import path from "node:path";
 import { copyText, copyOrThrow } from "@/lib/clipboard";
 
 const ROOT = path.resolve(__dirname, "..");
-const SCAN = ["app", "components", "lib"];
+const SCAN = ["app", "components", "lib", "hooks"];
 const OWNER = "lib/clipboard.js";
 // The only exception, and it can only shrink: a ClipboardItem write that must
 // start inside the tap before its text exists (the mint is still running).
@@ -16,11 +16,17 @@ const ALLOWED = { "app/[locale]/admin/producers/AdminDraftClaimActions.jsx": 1 }
 
 // A code use, not prose: the token followed by `.` or `?.`, on a line that is
 // not a comment.
-const USE = /navigator\.clipboard(?:\?\.|\.|\s*[:;)]|\s*$)/g;
+const USE = /navigator\s*(?:\?\.|\.)\s*clipboard\b|\[\s*["']clipboard["']\s*\]|\{[^}]*\bclipboard\b[^}]*\}\s*=\s*(?:window\s*\.\s*)?navigator|execCommand\(\s*["']copy/g;
+// Comments never count: whole-line ones, and a trailing `// …` or `/* … */`.
 const isComment = (line) => /^\s*(\/\/|\*|\/\*|\{\/\*)/.test(line);
+const stripComments = (line) => line.replace(/\/\*.*?\*\//g, "").replace(/(^|[^:])\/\/.*$/, "$1");
 
 function countUses(src) {
-  return src.split("\n").filter((l) => !isComment(l)).reduce((n, l) => n + (l.match(USE) || []).length, 0);
+  return src
+    .split("\n")
+    .filter((l) => !isComment(l))
+    .map(stripComments)
+    .reduce((n, l) => n + (l.match(USE) || []).length, 0);
 }
 
 function walk(dir) {
@@ -38,6 +44,17 @@ describe("ClipboardGuard — counter self-test", () => {
     expect(countUses("const clip = ok ? navigator.clipboard : undefined;")).toBe(1);
     // a chain broken across lines: `navigator.clipboard` ends its line
     expect(countUses("    navigator.clipboard\n      .writeText(url)")).toBe(1);
+    // the ways around a naive pattern (review of MEH-3103)
+    expect(countUses("navigator?.clipboard?.writeText(x)")).toBe(1);
+    expect(countUses("const { clipboard } = navigator;")).toBe(1);
+    expect(countUses("navigator['clipboard'].writeText(x)")).toBe(1);
+    expect(countUses("fn(navigator.clipboard, x)")).toBe(1);
+    // the other half lib/clipboard.js owns: a hand-written textarea fallback
+    expect(countUses('ok = document.execCommand("copy");')).toBe(1);
+    // trailing comments are prose; a URL's // is not a comment
+    expect(countUses("foo(); // navigator.clipboard.writeText")).toBe(0);
+    expect(countUses("bar(); /* navigator.clipboard */ baz();")).toBe(0);
+    expect(countUses('const u = "https://x"; navigator.clipboard.writeText(u);')).toBe(1);
     expect(countUses("// `navigator.clipboard` is absent in an insecure context")).toBe(0);
     expect(countUses("    // MEH-1428: navigator.clipboard.writeText had no catch")).toBe(0);
   });

@@ -62,6 +62,7 @@ function VanityLinkCard({ slug }) {
       <div className="flex gap-2">
         <button
           onClick={copy}
+          data-testid="vanity-copy"
           className="flex-1 text-sm border border-border rounded-sm px-3 py-1.5 hover:border-primary transition"
         >
           {copied ? t("copied") : t("copy_cta")}
