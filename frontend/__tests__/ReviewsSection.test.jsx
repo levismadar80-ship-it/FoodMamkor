@@ -65,6 +65,7 @@ vi.mock("@/lib/contact-tracking", () => ({
 }));
 vi.mock("@phosphor-icons/react", () => ({
   Star: (props) => <span data-testid="icon-star" {...props} />,
+  X: (props) => <span {...props} />,
   User: (props) => <span data-testid="icon-user" {...props} />,
   ShieldCheck: (props) => <span data-testid="icon-shield" {...props} />,
   Leaf: (props) => <span data-testid="icon-leaf" {...props} />,
@@ -439,10 +440,12 @@ describe("ReviewsSection — review-invite token (MEH-1428 chunk 2)", () => {
     authState.user = null;
     window.history.replaceState({}, "", `/p/meshek?rt=tok-abc`);
     mockReviews([]);
-    // The guest prompt is a t.rich() chunk; render the link so its href is observable.
     render(<ReviewsSection producerId={PID} />);
     await waitFor(() => expect(sessionStorage.getItem(`review_invite_${PID}`)).toBe("tok-abc"));
-    const link = await screen.findByTestId("reviews-star-1");
+    // MEH-3130: the star opens the login prompt; its «היכנסו» carries the return.
+    fireEvent.click(await screen.findByTestId("reviews-star-1"));
+    const dialog = await screen.findByRole("dialog");
+    const link = within(dialog).getByRole("link");
     expect(link.getAttribute("href")).toBe(
       `/login?redirect=${encodeURIComponent("/p/meshek?rt=tok-abc#reviews")}`,
     );
@@ -518,7 +521,7 @@ describe("ReviewsSection — reviews look (MEH-2592)", () => {
 
   // MEH-2999 → 13/11/2026 (option ד): the invite is Google's row — no box,
   // five separate star links, the business named in the question.
-  it("guest: the invite row sits UNDER the reviews; each star is a sign-in link", async () => {
+  it("guest: the invite row sits UNDER the reviews; each star is a button (MEH-3130: no bare /login link)", async () => {
     authState.user = null;
     mockReviews([noReply]);
     render(<ReviewsSection producerId="p-1" producerName="משק ברק" />);
@@ -528,8 +531,8 @@ describe("ReviewsSection — reviews look (MEH-2592)", () => {
     expect(group.getAttribute("aria-label")).toBe("invite_title");
     for (let n = 1; n <= 5; n += 1) {
       const star = within(group).getByTestId(`reviews-star-${n}`);
-      expect(star.tagName).toBe("A");
-      expect(star.getAttribute("href")).toMatch(/^\/login/);
+      expect(star.tagName).toBe("BUTTON");
+      expect(star.getAttribute("href")).toBeNull();
     }
     expect(within(group).getAllByTestId("icon-star")).toHaveLength(5);
     expect(hint).toHaveTextContent("invite_title");
@@ -946,5 +949,45 @@ describe("ReviewsSection — no empty band above the invite row at zero reviews 
     const form = await screen.findByTestId("reviews-form");
     expect(form.className).toMatch(RULE);
     expect(form.className).toMatch(GAP);
+  });
+});
+
+// MEH-3130 — a star the reader may not use yet says why, instead of jumping to
+// /login (guest) or scrolling in silence (signed in, no contact yet).
+describe("ReviewsSection — the star says why (MEH-3130)", () => {
+  it("guest: a star opens the reviews login prompt in place; dismiss closes; a second tap reopens", async () => {
+    authState.user = null;
+    mockReviews([]);
+    window.history.replaceState({}, "", "/p/meshek");
+    render(<ReviewsSection producerId="p-1" />);
+    expect(screen.queryByRole("dialog")).toBeNull();
+    fireEvent.click(await screen.findByTestId("reviews-star-3"));
+    const dialog = await screen.findByRole("dialog");
+    // The reviews' own title + message, not the save hearts' default title.
+    expect(dialog).toHaveTextContent("login_prompt_title");
+    expect(dialog).toHaveTextContent("login_prompt_message");
+    expect(within(dialog).getByRole("heading").textContent).toBe("login_prompt_title");
+    expect(sessionStorage.getItem("review_draft_stars_p-1")).toBe("3");
+    expect(window.location.pathname).toBe("/p/meshek");
+    fireEvent.click(within(dialog).getByText("dismiss_cta"));
+    expect(screen.queryByRole("dialog")).toBeNull();
+    fireEvent.click(screen.getByTestId("reviews-star-2"));
+    expect(await screen.findByRole("dialog")).toBeInTheDocument();
+  });
+
+  it("signed in, not contacted: a star tap scrolls AND toasts why, once per burst", async () => {
+    const { showToast } = await import("@/lib/toast");
+    showToast.info.mockClear();
+    authState.user = { id: "u-9", producer_id: null };
+    mockReviews([]);
+    render(<ReviewsSection producerId="p-1" />);
+    fireEvent.click(await screen.findByTestId("reviews-star-2"));
+    expect(showToast.info).toHaveBeenCalledTimes(1);
+    expect(showToast.info).toHaveBeenCalledWith("contact_first_toast");
+    expect(screen.queryByRole("dialog")).toBeNull();
+    // A burst of taps does not stack copies of the same toast.
+    fireEvent.click(screen.getByTestId("reviews-star-3"));
+    fireEvent.click(screen.getByTestId("reviews-star-4"));
+    expect(showToast.info).toHaveBeenCalledTimes(1);
   });
 });
