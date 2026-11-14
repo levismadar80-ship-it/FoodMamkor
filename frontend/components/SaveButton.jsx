@@ -157,7 +157,7 @@ export default function SaveButton({ itemType, itemId, variant = "overlay" }) {
         aria-pressed={saved}
         data-testid={`save-${itemType}`}
         data-variant={variant}
-        className={`${look.button} transition disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-primary/40`}
+        className={`${look.button} transition disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-primary`}
       >
         {look.face ? <span className={look.face}>{heart}</span> : heart}
       </button>

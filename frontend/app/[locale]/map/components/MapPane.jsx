@@ -4,7 +4,6 @@ import dynamic from "next/dynamic";
 
 import { useTranslations } from "next-intl";
 import {
-  CircleNotch,
   Leaf,
   MagnifyingGlass,
   MapTrifold,
@@ -14,6 +13,8 @@ import {
 
 import { CATEGORY_LEGEND } from "@/lib/category-registry";
 import MapKey from "./MapKey";
+import { SkeletonBlock } from "@/components/Skeleton";
+import ButtonSpinner from "@/components/ButtonSpinner";
 
 // NearMePill sits at sheet-edge + 12px and is 44px tall; +12px again clears it.
 const NEAR_ME_STACK_OFFSET_PX = 68;
@@ -39,10 +40,10 @@ const sheetRide = (offsetPx) =>
 function MapLoadingState() {
   const t = useTranslations();
   return (
-    <div className="w-full h-full rounded-md bg-background animate-pulse flex flex-col items-center justify-center gap-3">
+    <SkeletonBlock as="div" tone="page" className="w-full h-full rounded-md flex flex-col items-center justify-center gap-3">
       <MapTrifold size={48} className="text-primary/30" />
       <p className="text-fg-muted text-sm">{t("map.client.loading_map")}</p>
-    </div>
+    </SkeletonBlock>
   );
 }
 
@@ -83,8 +84,10 @@ export default function MapPane({
   registerApi,
   mapRef,
   // Sapir 13/11: the pickup-layer toggle (MEH-1412) and its reminder (MEH-2046)
-  // are gone. Pickup points are always drawn; MapComponent defaults
-  // showSecondaryLayer to true.
+  // are gone (MEH-3045). MEH-3054: one pin per business; a business's pickup
+  // points show when it is selected, and every business's while the
+  // «איסוף עצמי» chip is on (this flag, from useMapFilters).
+  showAllPickupPoints = false,
   // MEH-1611: id of the selected business (focus-on-select demote). Pure
   // pass-through — MapClient owns the state, MapComponent renders the effect.
   focusedProducerId,
@@ -122,6 +125,7 @@ export default function MapPane({
         registerApi={registerApi}
         mapRef={mapRef}
         focusedProducerId={focusedProducerId}
+        showAllPickupPoints={showAllPickupPoints}
       />
 
 
@@ -153,7 +157,7 @@ export default function MapPane({
       {mapMoved && (
         <div className="absolute top-4 inset-x-0 z-[1000] px-4 flex flex-col items-center gap-2 pointer-events-none">
           <div className="pointer-events-auto">
-            <button type="button" data-testid="map-search-this-area" onClick={(e) => { e.stopPropagation(); onSearchThisArea(); }} className="bg-surface-floating border border-border rounded-full px-5 py-2.5 text-sm font-medium hover:bg-green-50 transition flex items-center gap-2 focus-visible:ring-2 focus-visible:ring-primary/40">
+            <button type="button" data-testid="map-search-this-area" onClick={(e) => { e.stopPropagation(); onSearchThisArea(); }} className="bg-surface-floating border border-border rounded-full px-5 py-2.5 text-sm font-medium hover:bg-green-50 transition flex items-center gap-2 focus-visible:ring-2 focus-visible:ring-primary">
                 <MagnifyingGlass size={16} weight="bold" className="text-primary" />
                 {t("map.pane.search_this_area")}
               </button>
@@ -172,7 +176,7 @@ export default function MapPane({
           {filtered && onResetFilters ? (
             <>
               <h3 className="font-headline-md text-lg font-bold text-text mb-4" data-testid="map-pane-filtered-empty">{t("map.bottom_sheet.count_filtered_zero")}</h3>
-              <button type="button" onClick={onResetFilters} className="inline-block bg-primary text-white px-4 py-2 rounded-sm text-sm hover:bg-primary-dark transition">{t("map.bottom_sheet.reset_filters")}</button>
+              <button type="button" onClick={onResetFilters} className="inline-block bg-primary text-white px-4 py-2 rounded-full text-sm hover:bg-primary-dark transition">{t("map.bottom_sheet.reset_filters")}</button>
             </>
           ) : (
             // MEH-2639: the body and the «הוסיפו עסק» link are gone. This
@@ -200,10 +204,10 @@ export default function MapPane({
         data-testid="map-gps-button"
         aria-label={t("map.pane.aria.center_on_me")}
         // eslint-disable-next-line no-restricted-syntax -- rtl-ok: geographic map control; physical right keeps it opposite the physical-left legend in every locale
-        className="hidden lg:flex absolute bottom-24 right-4 w-11 h-11 rounded-full bg-surface-floating border border-border shadow-lg items-center justify-center text-primary hover:bg-green-50 transition-colors z-[1000] focus-visible:ring-2 focus-visible:ring-primary/40 disabled:opacity-50"
+        className="hidden lg:flex absolute bottom-24 right-4 w-11 h-11 rounded-full bg-surface-floating border border-border shadow-lg items-center justify-center text-primary hover:bg-green-50 transition-colors z-[1000] focus-visible:ring-2 focus-visible:ring-primary disabled:opacity-50"
       >
         {gpsLoading
-          ? <CircleNotch size={20} className="animate-spin" aria-hidden="true" />
+          ? <ButtonSpinner size={20} />
           : <NavigationArrow size={20} weight="fill" aria-hidden="true" />
         }
       </button>
@@ -265,7 +269,7 @@ export default function MapPane({
           data-testid="map-legend-toggle"
           aria-label={t("map.pane.aria.categories")}
           aria-expanded={legendOpen}
-          className="w-8 h-8 rounded-full bg-surface-floating border border-border flex items-center justify-center hover:bg-green-50 transition focus-visible:ring-2 focus-visible:ring-primary/40"
+          className="w-8 h-8 rounded-full bg-surface-floating border border-border flex items-center justify-center hover:bg-green-50 transition focus-visible:ring-2 focus-visible:ring-primary"
         >
           <SquaresFour size={16} weight="bold" className="text-text" />
         </button>

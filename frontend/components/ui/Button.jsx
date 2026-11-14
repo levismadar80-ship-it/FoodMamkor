@@ -1,6 +1,6 @@
 "use client";
 
-import { CircleNotch } from "@phosphor-icons/react";
+import ButtonSpinner from "@/components/ButtonSpinner";
 
 /**
  * Button — pill action primitive (MEH-602).
@@ -52,6 +52,22 @@ const SIZE_CLASSES = {
   lg: "min-h-[48px] px-6 text-base gap-2",
 };
 
+/**
+ * Props typed so a `// @ts-check` caller may leave the icons out (they are
+ * optional at runtime; without this JSDoc the inferred type requires them).
+ * @param {{
+ *   variant?: string,
+ *   size?: string,
+ *   type?: "button" | "submit" | "reset",
+ *   loading?: boolean,
+ *   disabled?: boolean,
+ *   leadingIcon?: any,
+ *   trailingIcon?: any,
+ *   className?: string,
+ *   children?: any,
+ *   [rest: string]: any,
+ * }} props
+ */
 export default function Button({
   variant = "primary",
   size = "md",
@@ -83,7 +99,7 @@ export default function Button({
       {...rest}
     >
       {loading ? (
-        <CircleNotch size={18} weight="bold" className="animate-spin" aria-hidden="true" />
+        <ButtonSpinner size={18} />
       ) : (
         leadingIcon && (
           <span className="inline-flex shrink-0" aria-hidden="true">

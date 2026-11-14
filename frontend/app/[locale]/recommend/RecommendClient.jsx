@@ -178,7 +178,7 @@ export default function RecommendClient() {
             <BusinessCtaLink
               href="/join"
               data-testid="recommend-owner-link"
-              className="inline-flex items-center gap-1 min-h-touch font-semibold text-primary underline underline-offset-4 hover:text-primary-dark rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+              className="inline-flex items-center gap-1 min-h-touch font-semibold text-primary underline underline-offset-4 hover:text-primary-dark rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
             >
               {tJoin("cta")}
               <ArrowLeft size={15} className="ltr:rotate-180" aria-hidden="true" />

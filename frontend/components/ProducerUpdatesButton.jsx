@@ -55,7 +55,7 @@ const TYPES = ["notify_new_event", "notify_new_product", "notify_delivery_area",
 // page it now matches its neighbours instead: "gallery" = the hero circle
 // beside share + heart (mobile), "quiet" = the desktop actions row next to
 // «שמירה» / «שיתוף». Same anatomy as FavoriteButton's variants of those names.
-const FOCUS = "transition disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-primary/40";
+const FOCUS = "transition disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-primary";
 const VARIANT_CLASS = {
   pill: (on) =>
     `inline-flex items-center gap-1.5 min-h-touch px-4 rounded-full text-sm font-medium border ${FOCUS} ${

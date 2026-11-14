@@ -40,10 +40,14 @@ import { splitBringList } from "@/lib/bring-list";
 import { findExperienceCategory, OTHER_CATEGORY } from "@/lib/event-categories";
 import RegistrationCta from "@/components/RegistrationCta";
 import SectionHeading from "@/components/ui/SectionHeading";
+import { avatarInitial } from "@/components/ui/Avatar";
 
 // MEH-1404: reuse the producer-detail static map + Waze/Gmaps block on
 // experiences with coords. ssr:false — leaflet touches window at module eval.
 const MiniMap = dynamic(() => import("@/components/MiniMap"), { ssr: false });
+
+// MEH-3043: short, for the sticky phone bar beside the sign-up button.
+const BAR_DATE_OPTIONS = { weekday: "short", day: "numeric", month: "numeric" };
 
 function longDate(iso, locale) {
   if (!iso) return "";
@@ -201,7 +205,7 @@ export default function ExperienceDetailClient() {
   const infoRow = "flex items-center gap-3 px-4 py-3";
   const infoIcon = "shrink-0 w-9 h-9 rounded-md bg-surface-card text-accent grid place-items-center";
   const actionBtn =
-    "flex-1 inline-flex items-center justify-center gap-2 min-h-[46px] px-3 rounded-full border border-primary text-primary text-sm font-semibold hover:bg-green-50 transition focus-visible:ring-2 focus-visible:ring-primary/40";
+    "flex-1 inline-flex items-center justify-center gap-2 min-h-[46px] px-3 rounded-full border border-primary text-primary text-sm font-semibold hover:bg-green-50 transition focus-visible:ring-2 focus-visible:ring-primary";
 
   return (
     <div className="pb-12" data-testid="experience-detail">
@@ -282,7 +286,7 @@ export default function ExperienceDetailClient() {
                 className="inline-flex items-center gap-2 min-h-touch text-base text-text hover:text-primary rounded transition focus-ring"
               >
                 <span aria-hidden="true" className="w-7 h-7 rounded-full bg-surface-card text-accent text-sm font-bold grid place-items-center">
-                  {Array.from(hostName.trim())[0] ?? ""}
+                  {avatarInitial(hostName, "")}
                 </span>
                 <span>{t("host_label")} {hostName}</span>
                 <CaretLeft size={14} className="text-primary ltr:rotate-180" aria-hidden="true" />
@@ -314,9 +318,12 @@ export default function ExperienceDetailClient() {
                   date used to repeat on the cover and in a desktop header. */}
               <DateTile month={month} day={day} bandClass="bg-accent" testId="experience-date-tile" />
               <p className="flex-1 min-w-0 font-semibold text-text" data-testid="experience-date">
+                {/* MEH-3057: the tile already says month + day — a one-off
+                    row shows the weekday only; «starts from» keeps the full
+                    date, which is its content. */}
                 {ex.is_recurring
                   ? t("starts_from", { date: longDate(ex.event_date, locale) })
-                  : longDate(ex.event_date, locale)}
+                  : formatEventDate(ex.event_date, locale, { weekday: "long" })}
                 {ex.event_time && ` · ${formatTime(ex.event_time)}`}
               </p>
               {when && when !== "past" && (
@@ -396,6 +403,10 @@ export default function ExperienceDetailClient() {
                     waitlistHref={waitlistHref}
                     onWaitlistClick={() => trackChannelClick(hostBiz?.producer_id, "whatsapp")}
                     waitlistLabel={t("waitlist_cta")}
+                    barNote={[
+                      formatEventDate(ex.event_date, locale, BAR_DATE_OPTIONS),
+                      ex.event_time ? formatTime(ex.event_time) : null,
+                    ].filter(Boolean).join(" · ")}
                   />
                 )}
                 {/* MEH-2549: share + add-to-calendar, as on the event page. */}

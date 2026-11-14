@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 /**
@@ -35,6 +36,7 @@ import {
   paymentStateFrom,
   serializePaymentInfo,
 } from "@/lib/payment-info";
+import Switch from "@/components/ui/Switch";
 
 // Icons appear only here, in the picker (option א) — the public page uses one
 // Wallet icon for the whole answer. Bit and PayBox share the phone glyph: no
@@ -55,7 +57,7 @@ function MethodTile({ method, on, label, onToggle }) {
       aria-pressed={on}
       onClick={onToggle}
       data-testid={`payment-method-${method}`}
-      className={`relative flex flex-col items-center justify-center gap-1.5 min-h-[72px] rounded-lg px-2 py-3 text-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${
+      className={`relative flex flex-col items-center justify-center gap-1.5 min-h-[72px] rounded-lg px-2 py-3 text-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
         on ? "bg-green-50 text-primary font-medium ring-2 ring-primary" : "bg-background-alt text-text hover:bg-green-50"
       }`}
     >
@@ -72,28 +74,23 @@ function SelectAllSwitch({ on, label, onToggle }) {
   return (
     <div className="flex items-center justify-between gap-3">
       <span id="payment-select-all-label" className="text-sm">{label}</span>
-      <button
-        type="button"
-        role="switch"
-        aria-checked={on}
+      <Switch
+        checked={on}
         aria-labelledby="payment-select-all-label"
         onClick={onToggle}
         data-testid="payment-select-all"
-        className="group relative shrink-0 inline-flex items-center justify-center min-h-touch min-w-touch -my-2.5 focus-visible:outline-none"
-      >
-        <span
-          aria-hidden="true"
-          className={`relative block w-10 h-6 rounded-full transition-colors group-focus-visible:ring-2 group-focus-visible:ring-primary/40 ${on ? "bg-primary" : "bg-border"}`}
-        >
-          <span
-            className={`absolute top-1 w-4 h-4 rounded-full bg-surface shadow-sm transition-all ${on ? "end-1" : "start-1"}`}
-          />
-        </span>
-      </button>
+      />
     </div>
   );
 }
 
+/**
+ * @param {{
+ *   profile: any,
+ *   onSave: any,
+ *   reportDirty?: (key: string, dirty: boolean) => void,
+ * }} props
+ */
 export default function PaymentInfoEditor({ profile, onSave, reportDirty = () => {} }) {
   const t = useTranslations("dashboard.producer.payment_info");
   const seed = profile?.payment_info ?? null;
@@ -190,7 +187,7 @@ export default function PaymentInfoEditor({ profile, onSave, reportDirty = () =>
                 aria-pressed={on}
                 onClick={() => toggleTiming(k)}
                 data-testid={`payment-timing-${k}`}
-                className={`min-h-touch rounded-full px-4 text-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${
+                className={`min-h-touch rounded-full px-4 text-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
                   on ? "bg-primary text-white font-medium" : "bg-background-alt text-text hover:bg-green-50"
                 }`}
               >

@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useTranslations, useLocale } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import Image from "next/image";
-import { HeartStraight, Star, Truck } from "@phosphor-icons/react";
+import { HeartStraight, Truck } from "@phosphor-icons/react";
 import BadgeRow, { resolveBadgeLabel } from "./BadgeRow";
 import TrustBadge from "./TrustBadge";
 import OfferBadge, { freeDeliveryThreshold } from "./OfferBadge";
@@ -42,6 +42,8 @@ import api from "@/lib/api";
 import Seed from "@/components/brand/Seed";
 import { seedColorFor } from "@/lib/brand-seeds";
 import { humanTime } from "@/lib/time-format";
+import RatingCompact from "@/components/ui/RatingCompact";
+import { hasCardRating } from "@/lib/rating-gate";
 
 // MEH-1678: bidi-safe amount interpolation, mirroring the pattern
 // DeliveryBlock.jsx's AreaRow already uses for the identical problem — the
@@ -368,12 +370,8 @@ export default function ProducerCard({ producer, active, onClick, referrer, high
         )
       : null;
 
-  const hasRating =
-    typeof producer.reviews_count === "number" &&
-    producer.reviews_count >= 3 &&
-    producer.avg_rating != null &&
-    Number.isFinite(Number(producer.avg_rating)) &&
-    Number(producer.avg_rating) > 0;
+  // MEH-3071: the ≥3-reviews card rule lives in lib/rating-gate.js.
+  const hasRating = hasCardRating(producer);
 
   const rawDescription =
     (producer.short_description || producer.top_product_name || "").trim();
@@ -455,7 +453,7 @@ export default function ProducerCard({ producer, active, onClick, referrer, high
             outward .focus-ring box-shadow on this edge-flush link (ImageGallery.jsx:100 idiom). */}
         <Link
           href={producerHref}
-          className="block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/40"
+          className="block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary"
         >
           <div className="relative w-full aspect-square lg:aspect-[4/3] overflow-hidden bg-background">
             {imgSrc && !imgError ? (
@@ -605,7 +603,7 @@ export default function ProducerCard({ producer, active, onClick, referrer, high
                   dir="ltr"
                   className="group inline-flex shrink-0 items-center justify-center min-h-touch min-w-touch -m-2.5 focus:outline-none"
                 >
-                  <span className="inline-flex items-center rounded-full bg-surface-card/95 border border-border text-fg-muted px-1.5 py-0.5 text-2xs font-medium group-focus-visible:ring-2 group-focus-visible:ring-primary/40">
+                  <span className="inline-flex items-center rounded-full bg-surface-card/95 border border-border text-fg-muted px-1.5 py-0.5 text-2xs font-medium group-focus-visible:ring-2 group-focus-visible:ring-primary">
                     +{hiddenBadges}
                   </span>
                 </button>
@@ -737,14 +735,13 @@ export default function ProducerCard({ producer, active, onClick, referrer, high
             </h3>
           </Link>
           {hasRating && (
-            <span
-              className="text-sm text-fg-muted shrink-0 whitespace-nowrap justify-self-start sm:justify-self-auto"
-              dir="ltr"
+            // MEH-1243 (🔒 §7) Google format ★ X.X (N) — the shared RatingCompact (MEH-3071).
+            <RatingCompact
+              avg={producer.avg_rating}
+              count={producer.reviews_count}
+              className="shrink-0 justify-self-start sm:justify-self-auto"
               data-testid="card-rating"
-            >
-              {/* MEH-1243 (🔒 §7): unify to Google format ★ X.X (N) across surfaces. */}
-              <Star size={13} weight="fill" className="text-accent inline align-[-1px]" aria-hidden="true" /> {Number(producer.avg_rating).toFixed(1)} ({producer.reviews_count})
-            </span>
+            />
           )}
         </div>
 

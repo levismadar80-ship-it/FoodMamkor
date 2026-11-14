@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { CaretDown, EyeSlash, Star } from "@phosphor-icons/react";
+import { EyeSlash, Star } from "@phosphor-icons/react";
 import { useTranslations, useLocale } from "next-intl";
 import api from "@/lib/api";
 import { detailToMessage } from "@/lib/errors";
@@ -20,6 +20,8 @@ import EmptyState from "@/components/ui/EmptyState";
 import { SkeletonList } from "@/components/Skeleton";
 import { seedColorFor } from "@/lib/brand-seeds";
 import SectionHeading from "@/components/ui/SectionHeading";
+import ShowMore from "@/components/ui/ShowMore";
+import { avatarInitial } from "@/components/ui/Avatar";
 
 // MEH-2833 (seed layer, board 4): a reviewer's initial sits on a soft tint of
 // "their" seed — the seed colour mixed ~24% into the cream page, with an inset
@@ -215,7 +217,7 @@ function ReviewReply({ review, isOwner, onSaved }) {
           rows={2}
           maxLength={1000}
           placeholder={t("reply_placeholder")}
-          className="w-full border border-border rounded-sm px-3 py-2 bg-surface resize-none focus-visible:ring-2 focus-visible:ring-primary/40 outline-none text-sm"
+          className="w-full border border-border rounded-sm px-3 py-2 bg-surface resize-none focus-visible:ring-2 focus-visible:ring-primary outline-none text-sm"
         />
         {error && (
           <p className="text-sm text-error mt-1" role="alert">{error}</p>
@@ -226,7 +228,7 @@ function ReviewReply({ review, isOwner, onSaved }) {
             type="button"
             onClick={save}
             disabled={saving || draft.trim().length < 2}
-            className="min-h-touch bg-primary-dark text-white px-5 py-1.5 rounded-sm hover:opacity-90 transition disabled:opacity-50 text-sm font-medium"
+            className="min-h-touch bg-primary-dark text-white px-5 py-1.5 rounded-full hover:opacity-90 transition disabled:opacity-50 text-sm font-medium"
           >
             {saving ? t("submit_saving") : t("reply_save")}
           </button>
@@ -507,6 +509,10 @@ export default function ReviewsSection({
   const showSummary = total > 0 && avgRating > 0;
   const showDistribution = showSummary && total >= DISTRIBUTION_MIN && ratingCounts !== null;
   const anonymousFallback = t("anonymous_fallback");
+  // MEH-3053: at zero reviews (no heading, no summary, no list) the invite row
+  // is the first thing in the section. Its hairline + mt-8 then framed an
+  // empty 80px band under the products list; the section's mt-12 is the gap.
+  const inviteFirst = !loading && total === 0 && reviews.length === 0;
 
   return (
     <section ref={sectionRef} className="mt-12">
@@ -600,7 +606,7 @@ export default function ReviewsSection({
                 <div className="flex items-start gap-3 mb-3">
                   <ReviewInitial
                     seedKey={review.user_id ?? review.user_name}
-                    letter={Array.from(formatName(review.user_name, anonymousFallback))[0]}
+                    letter={avatarInitial(formatName(review.user_name, anonymousFallback), "")}
                   />
                   <div className="min-w-0">
                     <p className="font-body-md font-semibold text-base text-text leading-snug">
@@ -645,16 +651,9 @@ export default function ReviewsSection({
             // center idiom (no physical props). Replaces the MEH-877 carousel.
             // "הצג עוד" only — no "show less" (MEH-1387 anti-pattern).
             // MEH-2592: a full-width button, like Airbnb's «הצגת כל הביקורות».
+            // MEH-3052: the shared ShowMore (block) — one look site-wide.
             <div className="mt-4">
-              <button
-                type="button"
-                onClick={handleShowMore}
-                disabled={loading}
-                className="w-full min-h-touch inline-flex items-center justify-center gap-1 rounded-xl border border-border bg-surface-card text-sm font-semibold text-text hover:bg-green-50 transition disabled:opacity-50"
-              >
-                {t("show_more")}
-                <CaretDown size={16} aria-hidden="true" />
-              </button>
+              <ShowMore onClick={handleShowMore} disabled={loading} label={t("show_more")} />
             </div>
           )}
         </>
@@ -669,18 +668,19 @@ export default function ReviewsSection({
       {authLoading ? null : !user ? (
         <ReviewInviteCard
           mode="login"
+          first={inviteFirst}
           loginHref={loginHref}
           producerId={producerId}
           producerName={producerName}
         />
       ) : user.producer_id === producerId ? null : !hasClickedWa && !inviteToken ? (
-        <ReviewInviteCard mode="contact" producerId={producerId} producerName={producerName} />
+        <ReviewInviteCard mode="contact" first={inviteFirst} producerId={producerId} producerName={producerName} />
       ) : showForm ? (
           // 13/11/2026 (Sapir, option ד): no white box — the form opens IN
           // the Google row, the row's own stars are the rating picker.
           <form
             onSubmit={handleSubmit}
-            className="mt-8 border-t border-border pt-5 space-y-4"
+            className={inviteFirst ? "space-y-4" : "mt-8 border-t border-border pt-5 space-y-4"}
             data-testid="reviews-form"
           >
             <h3 className="sr-only">{t("form_heading")}</h3>
@@ -703,7 +703,7 @@ export default function ReviewsSection({
                 onChange={(e) => setBody(e.target.value)}
                 rows={4}
                 maxLength={500}
-                className="w-full border border-border rounded-xl px-3 py-2.5 bg-surface-card resize-none focus-visible:ring-2 focus-visible:ring-primary/40 outline-none"
+                className="w-full border border-border rounded-xl px-3 py-2.5 bg-surface-card resize-none focus-visible:ring-2 focus-visible:ring-primary outline-none"
                 placeholder={t("body_placeholder")}
               />
               <p className="text-xs text-fg-muted mt-1">{body.length}/500</p>
@@ -735,6 +735,7 @@ export default function ReviewsSection({
         // with that rating (replaces the «כתבו ביקורת» pill above the list).
         <ReviewInviteCard
           mode="write"
+          first={inviteFirst}
           value={stars}
           onPick={(n) => {
             setStars(n);

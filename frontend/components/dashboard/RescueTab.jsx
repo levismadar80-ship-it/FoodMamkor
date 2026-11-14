@@ -420,7 +420,7 @@ export default function RescueTab() {
                       disabled={busyId === o.id}
                       onClick={() => act(o, "handed")}
                       data-testid="rescue-order-hand"
-                      className="whitespace-nowrap bg-primary text-white px-3 py-1 rounded-md font-body-sm text-sm disabled:opacity-50"
+                      className="whitespace-nowrap bg-primary text-white px-3 py-1 rounded-full font-body-sm text-sm disabled:opacity-50"
                     >
                       {t("hand_over")}
                     </button>
@@ -698,7 +698,7 @@ export default function RescueTab() {
                 type="button"
                 onClick={shareLeftover}
                 data-testid="rescue-leftover-share"
-                className="block w-full text-center bg-primary text-background py-2 rounded-md font-medium"
+                className="block w-full text-center bg-primary text-background py-2 rounded-full font-medium"
               >
                 {tShare("trigger")}
               </button>
@@ -708,7 +708,7 @@ export default function RescueTab() {
               target="_blank"
               rel="noopener noreferrer"
               data-testid="rescue-leftover-link"
-              className="block text-center border border-primary text-primary py-2 rounded-md font-medium"
+              className="block text-center border border-primary text-primary py-2 rounded-full font-medium"
             >
               {t("leftover_link")}
             </a>

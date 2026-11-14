@@ -450,7 +450,7 @@ export default function ChatWidget({ hideOnMobile = false } = {}) {
                   const label = t(`prompts.${id}`);
                   return (
                     <button key={id} type="button" onClick={() => sendMessage(label, id)}
-                      className="text-start text-xs text-primary bg-green-50 hover:bg-green-50/70 border border-border rounded-sm px-3 py-2 transition focus-visible:ring-2 focus-visible:ring-primary/40"
+                      className="text-start text-xs text-primary bg-green-50 hover:bg-green-50/70 border border-border rounded-sm px-3 py-2 transition focus-visible:ring-2 focus-visible:ring-primary"
                     >{label}</button>
                   );
                 })}
@@ -465,13 +465,13 @@ export default function ChatWidget({ hideOnMobile = false } = {}) {
               ref={inputRef} id="chat-input" type="text"
               value={input} onChange={(e) => setInput(e.target.value)}
               placeholder={t("input_placeholder")} maxLength={500} disabled={sending}
-              className="flex-1 min-w-0 bg-transparent outline-none focus-visible:ring-2 focus-visible:ring-primary/40 rounded text-sm text-text placeholder:text-fg-muted disabled:opacity-50"
+              className="flex-1 min-w-0 bg-transparent outline-none focus-visible:ring-2 focus-visible:ring-primary rounded text-sm text-text placeholder:text-fg-muted disabled:opacity-50"
               style={{ caretColor: "#2e6853" }}
               autoComplete="off"
             />
             <button
               type="submit" disabled={sending || !input.trim()}
-              className="bg-primary text-white p-2 rounded-full hover:bg-primary-dark transition disabled:opacity-50 disabled:cursor-not-allowed focus-visible:ring-2 focus-visible:ring-primary/40"
+              className="bg-primary text-white p-2 rounded-full hover:bg-primary-dark transition disabled:opacity-50 disabled:cursor-not-allowed focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
               aria-label={t("send_label")}
             >
               <PaperPlaneTilt size={16} weight="fill" style={{ transform: "scaleX(-1)" }} />

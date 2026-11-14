@@ -38,6 +38,7 @@ import {
 } from "@phosphor-icons/react";
 import { useAuth } from "@/lib/auth-context";
 import EmptyState from "@/components/ui/EmptyState";
+import { SkeletonBlock } from "@/components/Skeleton";
 
 // Tab order is the source of truth for the persistent nav (locked design
 // order: Overview / Edit / Insights / Tools). `exact` marks the index route
@@ -106,16 +107,16 @@ function DashboardChromeSkeleton({ label }) {
         <div className="max-w-5xl mx-auto px-2 sm:px-4 flex gap-1">
           {TABS.map((tab) => (
             <div key={tab.key} className="flex-1 sm:flex-none flex justify-center px-1 sm:px-4 py-3">
-              <div className="h-5 w-12 sm:w-20 bg-border rounded-sm animate-pulse" />
+              <SkeletonBlock as="div" className="h-5 w-12 sm:w-20 rounded-sm" />
             </div>
           ))}
         </div>
       </div>
       <div className="max-w-5xl mx-auto px-4 py-12 space-y-4">
-        <div className="h-8 w-48 bg-border rounded-md animate-pulse" />
+        <SkeletonBlock as="div" className="h-8 w-48 rounded-md" />
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {[0, 1, 2, 3, 4].map((i) => (
-            <div key={i} className="h-32 bg-border rounded-lg animate-pulse" />
+            <SkeletonBlock as="div" key={i} className="h-32 rounded-lg" />
           ))}
         </div>
       </div>

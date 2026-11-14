@@ -454,7 +454,7 @@ export default function ReviewCardCanvas({ producer }) {
                 data-testid="review-card-pick"
                 value={index}
                 onChange={(e) => setIndex(Number(e.target.value))}
-                className="w-full max-w-sm border border-border rounded-sm px-3 py-2 text-sm bg-surface focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                className="w-full max-w-sm border border-border rounded-sm px-3 py-2 text-sm bg-surface focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
               >
                 {reviews.map((rv, i) => (
                   <option key={rv.id} value={i}>

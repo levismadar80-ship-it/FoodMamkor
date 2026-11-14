@@ -147,7 +147,7 @@ export default function ContactClient() {
                   data-testid="contact-topic"
                   value={form.topic}
                   onChange={set("topic")}
-                  className="w-full min-h-touch bg-surface-card border border-border rounded-md px-3 py-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                  className="w-full min-h-touch bg-surface-card border border-border rounded-md px-3 py-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                 >
                   {CONTACT_TOPICS.map((key) => (
                     <option key={key} value={key}>
@@ -169,7 +169,7 @@ export default function ContactClient() {
                   onChange={set("message")}
                   required
                   rows={5}
-                  className="w-full border border-border rounded-md px-3 py-2 resize-none focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                  className="w-full border border-border rounded-md px-3 py-2 resize-none focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                 />
               </div>
 

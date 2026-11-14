@@ -10,6 +10,7 @@ import Input from "@/components/ui/Input";
 import ChecklistSettings from "./ChecklistSettings";
 import { SkeletonForm } from "@/components/Skeleton";
 import Button from "@/components/ui/Button";
+import Switch from "@/components/ui/Switch";
 
 export default function AdminSettingsPage() {
   const t = useTranslations("admin");
@@ -175,15 +176,11 @@ export default function AdminSettingsPage() {
         <p className="text-xs text-muted">{t("settings.sections.holiday_hint")}</p>
         <div className="flex items-center justify-between">
           <span className="text-sm">{t("settings.sections.holiday_active")}</span>
-          <button
-            role="switch"
+          <Switch
             aria-label={t("settings.sections.holiday_active")}
-            aria-checked={settings.holiday_override_enabled === "true"}
+            checked={settings.holiday_override_enabled === "true"}
             onClick={() => update("holiday_override_enabled", settings.holiday_override_enabled === "true" ? "false" : "true")}
-            className={`relative inline-flex h-6 w-11 rounded-full transition-colors ${settings.holiday_override_enabled === "true" ? "bg-primary" : "bg-gray-200"}`}
-          >
-            <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-surface shadow-sm transition-transform ${settings.holiday_override_enabled === "true" ? "translate-x-5" : "translate-x-0.5"}`} />
-          </button>
+          />
         </div>
         <Field label={t("settings.fields.holiday_key_label")}>
           <select
@@ -216,10 +213,9 @@ export default function AdminSettingsPage() {
         </p>
         <div className="flex items-center justify-between">
           <span className="text-sm">{t("settings.sections.friday_active")}</span>
-          <button
-            role="switch"
+          <Switch
             aria-label={t("settings.sections.friday_active")}
-            aria-checked={settings.friday_mode_override === "true"}
+            checked={settings.friday_mode_override === "true"}
             onClick={() => {
               const next = settings.friday_mode_override === "true" ? "false" : "true";
               update("friday_mode_override", next);
@@ -230,10 +226,7 @@ export default function AdminSettingsPage() {
                 localStorage.removeItem("friday_mode_override");
               }
             }}
-            className={`relative inline-flex h-6 w-11 rounded-full transition-colors ${settings.friday_mode_override === "true" ? "bg-primary" : "bg-gray-200"}`}
-          >
-            <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-surface shadow-sm transition-transform ${settings.friday_mode_override === "true" ? "translate-x-5" : "translate-x-0.5"}`} />
-          </button>
+          />
         </div>
       </div>
 
@@ -250,19 +243,15 @@ export default function AdminSettingsPage() {
         <p className="text-xs text-muted">{t("settings.sections.vacation_hint")}</p>
         <div className="flex items-center justify-between">
           <span className="text-sm">{t("settings.sections.vacation_active")}</span>
-          <button
-            role="switch"
+          <Switch
             aria-label={t("settings.sections.vacation_active")}
-            aria-checked={vacation.active}
+            checked={vacation.active}
             onClick={() => {
               setVacationToast(null);
               setVacationError(null);
               setVacation({ ...vacation, active: !vacation.active });
             }}
-            className={`relative inline-flex h-6 w-11 rounded-full transition-colors ${vacation.active ? "bg-primary" : "bg-gray-200"}`}
-          >
-            <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-surface shadow-sm transition-transform ${vacation.active ? "translate-x-5" : "translate-x-0.5"}`} />
-          </button>
+          />
         </div>
         {vacation.active && (
           <Input
@@ -320,7 +309,7 @@ export default function AdminSettingsPage() {
                 )}
                 <button
                   onClick={() => testService(key)}
-                  className="text-xs bg-primary text-white px-3 py-1 rounded-md"
+                  className="text-xs bg-primary text-white px-3 py-1 rounded-full"
                 >
                   {t("settings.tests.test_btn")}
                 </button>

@@ -434,7 +434,6 @@ frontend/components/ShareSiteActions.jsx
 frontend/components/Skeleton.jsx
 frontend/components/SmoothScrollProvider.jsx
 frontend/components/SpeedInsightsRedacted.jsx
-frontend/components/StarRating.jsx
 frontend/components/StatusPage.jsx
 frontend/components/StoryCardCanvas.jsx
 frontend/components/Toaster.jsx

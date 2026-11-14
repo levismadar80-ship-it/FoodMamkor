@@ -53,7 +53,7 @@ export function ActiveFilterChip({ geoActive, cityActive, onClear }) {
         onClick={onClear}
         aria-label={ariaLabel}
         data-testid="location-filter-chip"
-        className="inline-flex items-center gap-1.5 bg-green-50 text-primary ps-3 pe-2 py-1 rounded-full text-sm hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+        className="inline-flex items-center gap-1.5 bg-green-50 text-primary ps-3 pe-2 py-1 rounded-full text-sm hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
       >
         <MapPin size={14} weight="bold" aria-hidden="true" />
         <span>{label}</span>

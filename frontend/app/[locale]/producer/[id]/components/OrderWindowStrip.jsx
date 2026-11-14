@@ -275,7 +275,7 @@ export function OrderWindowScheduleBlock({
               // (qa-meh1917-order-window.mjs P6), which is under the tap target.
               // The floor is explicit rather than tuned via padding so a future
               // font-size change cannot quietly drop it back under.
-              className="flex min-h-touch w-full items-center justify-center gap-1 border-t border-border px-3.5 py-2.5 text-sm text-fg-muted transition hover:text-text focus-visible:ring-2 focus-visible:ring-primary/40"
+              className="flex min-h-touch w-full items-center justify-center gap-1 border-t border-border px-3.5 py-2.5 text-sm text-fg-muted transition hover:text-text focus-visible:ring-2 focus-visible:ring-primary"
             >
               {expanded ? t("hide_week") : t("show_week")}
               <CaretDown

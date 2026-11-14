@@ -349,7 +349,7 @@ export default function AdminOutreachPage() {
                         <button
                           type="button"
                           onClick={() => handleMintToken(lead.id)}
-                          className="text-xs px-2 py-1 rounded-lg bg-primary text-white hover:bg-primary-dark"
+                          className="text-xs px-2 py-1 rounded-full bg-primary text-white hover:bg-primary-dark"
                           title={t("outreach.actions.prefill_title")}
                         >
                           {t("outreach.actions.prefill")}
@@ -511,7 +511,7 @@ function StatusChip({ id, label, count, active, onClick }) {
       onClick={onClick}
       aria-pressed={active}
       data-testid={`outreach-chip-${id}`}
-      className={`inline-flex items-center gap-2 min-h-touch px-4 rounded-full border text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${
+      className={`inline-flex items-center gap-2 min-h-touch px-4 rounded-full border text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
         active
           ? "bg-primary text-white border-primary"
           : "bg-surface text-text border-border hover:border-primary/40"
