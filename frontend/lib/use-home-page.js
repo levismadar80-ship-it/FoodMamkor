@@ -6,7 +6,6 @@ import { useRouter } from "next/navigation";
 import api from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import { useTranslations } from "next-intl";
-import { mapKey } from "@/lib/i18n-key-map";
 import { getRecentlyViewedIds } from "@/lib/recently-viewed";
 import { useUserCity } from "@/lib/use-user-city";
 import { DELIVERY_DAYS } from "@/lib/delivery-days";
@@ -135,11 +134,8 @@ export function useHomePage({ initialProducers = null, initialCategories = null 
   const router = useRouter();
   // MEH-1774: locale-preserving push for the chip deep-link (see import note).
   const localeRouter = useLocaleRouter();
-  // MEH-471 strangler-fig: downstream consumers (HomeHero etc) still pass
-  // old flat keys ("hero_title"). Wave 2 migrates those call sites and
-  // this wrap is removed.
-  const intlT = useTranslations();
-  const t = useCallback((oldKey) => intlT(mapKey(oldKey)), [intlT]);
+  // MEH-3139: the old flat-key remap is gone; callers pass next-intl keys.
+  const t = useTranslations();
   // MEH-2714: set once by the mount effect — read by the scroll restore below.
   const historyReturnRef = useRef(null);
   const [producers, setProducers] = useState(initialProducers ?? []);

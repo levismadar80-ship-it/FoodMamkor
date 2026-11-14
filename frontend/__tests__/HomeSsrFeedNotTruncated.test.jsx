@@ -28,7 +28,6 @@ vi.mock("next/navigation", () => ({ useRouter: () => router }));
 vi.mock("@/i18n/navigation", () => ({ Link: ({ href, children, prefetch, ...p }) => <a href={typeof href === "string" ? href : href?.pathname} {...p}>{children}</a>,  useRouter: () => ({ push: vi.fn(), replace: vi.fn() }) }));
 vi.mock("next-intl", () => ({ useTranslations: () => (k) => k }));
 vi.mock("@/lib/analytics", () => ({ trackEvent: vi.fn() }));
-vi.mock("@/lib/i18n-key-map", () => ({ mapKey: (k) => k }));
 vi.mock("@/lib/auth-context", () => ({ useAuth: () => ({ user: null }) }));
 vi.mock("@/lib/use-user-city", () => ({ useUserCity: () => ({ city: null, setCity: vi.fn() }) }));
 vi.mock("@/lib/recently-viewed", () => ({ getRecentlyViewedIds: () => [] }));

@@ -23,9 +23,6 @@ vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: vi.fn(), replace: vi.fn(), back: vi.fn() }),
 }));
 
-vi.mock("@/lib/language-context", () => ({
-  useLanguage: () => ({ lang: "he" }),
-}));
 
 vi.mock("next-intl", () => ({
   useLocale: () => "he",
