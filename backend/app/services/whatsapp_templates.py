@@ -262,3 +262,33 @@ class RescueCodesDigestV1(WhatsAppTemplate):
     producer_name: str
     window: str
     codes: str
+
+
+class AdminBusinessPendingV1(WhatsAppTemplate):
+    """MEH-3147: tells the ADMIN that a business is waiting for approval.
+
+    Replaces the free-text `send_text` ping in the three admin notifiers
+    (new submission, review-ready, resubmit — services/auth_notifications.py).
+    A free-text message reaches the admin's phone only inside Meta's 24h
+    customer-service window (131047 otherwise), so in practice it almost
+    never arrived; a business-initiated message has to be an approved
+    template.
+
+    UTILITY category, no buttons — two body params in {{n}} order:
+
+        {{1}} producer_name — the business's name
+        {{2}} city          — its city, «לא צוין» when empty
+
+    Body registered with Meta (copy approved by Sapir 14/11/2026):
+        בית עסק מחכה לאישור במהמקור: {{1}}, עיר: {{2}}.
+        לבדיקה ולאישור: https://mehamakor.co.il/admin/producers
+
+    # DO NOT put a newline or a tab in a parameter — Meta rejects the send
+    # (132000). Callers pass `_sanitize_wa_param` output.
+    # DO NOT rename — a name Meta does not know returns 132001 and
+    # `send_template` returns False without raising (the email still goes).
+    """
+
+    name: ClassVar[str] = "admin_business_pending_v1"
+    producer_name: str
+    city: str

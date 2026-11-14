@@ -32,6 +32,7 @@ from app.config import settings
 from app.services.email import send_email
 from app.services.whatsapp import send_template, send_text
 from app.services.whatsapp_templates import (
+    AdminBusinessPendingV1,
     ProducerApprovedV1,
     ProducerChangesRequestedV1,
     ProducerWelcomeV2,
@@ -262,7 +263,7 @@ def notify_admin_new_recipe(
             if send_text(settings.admin_whatsapp_to, message, test_cause=test_cause):
                 logger.info("[WHATSAPP] Recipe-pending notification sent to admin")
             else:
-                # send_text returned False without raising — keep the MEH-977
+                # send_template returned False without raising — keep the MEH-977
                 # observability contract: log WITH recipe context.
                 logger.warning(
                     "[WHATSAPP] Recipe-pending notification NOT delivered for "
@@ -310,9 +311,9 @@ def notify_admin_producer_resubmit(
     request (MEH-1011), the owner had no way to signal she was done, so the
     admin never knew to look again. This closes that loop with a
     notification-only ping (NO schema change, no "resubmitted" DB state).
-    REUSES: notify_admin_new_recipe above 1:1 — same free-text send_text to
-    settings.admin_whatsapp_to + email to settings.admin_email, no Meta
-    template needed. Fire-and-forget: runs as a BackgroundTask and
+    REUSES: notify_admin_new_recipe above for the email to
+    settings.admin_email; the WhatsApp to settings.admin_whatsapp_to is the
+    approved `admin_business_pending_v1` template since MEH-3147. Fire-and-forget: runs as a BackgroundTask and
     swallows-and-logs any failure (MEH-977 — observable, never breaks the
     200 the producer already got).
     """
@@ -321,8 +322,8 @@ def notify_admin_producer_resubmit(
     # Producer-controlled free text — flatten so a crafted name can't inject
     # extra lines (e.g. a fake URL line) into the admin message. REUSES the
     # MEH-1051 sanitizer (one flattener per file, MEH-271).
-    safe_name = _sanitize_wa_param(producer_name)
-    safe_city = _sanitize_wa_param(city) if city else "לא צוין"
+    safe_name = _sanitize_wa_param(producer_name) or "ללא שם"
+    safe_city = (_sanitize_wa_param(city) if city else "") or "לא צוין"
     if resubmission_count is not None:
         headline = f"🔁 שליחה חוזרת #{resubmission_count}: {safe_name}, {safe_city}"
         subject = f"מהמקור - שליחה חוזרת #{resubmission_count}: {safe_name}"
@@ -335,12 +336,17 @@ def notify_admin_producer_resubmit(
     # Per-channel guards (not one shared try) — a WhatsApp raise must not
     # skip the email, matching notify_admin_new_recipe's independence.
     try:
-        # WhatsApp via Meta Cloud API (send_text fail-opens on missing config).
+        # MEH-3147: an approved template, not send_text — free text reaches the
+        # admin only inside Meta's 24h window, so it almost never arrived.
         if settings.admin_whatsapp_to:
-            if send_text(settings.admin_whatsapp_to, message, test_cause=test_cause):
+            if send_template(
+                settings.admin_whatsapp_to,
+                AdminBusinessPendingV1(producer_name=safe_name, city=safe_city),
+                test_cause=test_cause,
+            ):
                 logger.info("[WHATSAPP] Producer-resubmit notification sent to admin")
             else:
-                # send_text returned False without raising — keep the MEH-977
+                # send_template returned False without raising — keep the MEH-977
                 # observability contract: log WITH business context.
                 logger.warning(
                     "[WHATSAPP] Producer-resubmit notification NOT delivered for "
@@ -380,8 +386,8 @@ def notify_admin_producer_review_ready(
     """
     if test_cause:  # MEH-2952: before preflight / the send — no error log
         return _skip_test_cause("notify_admin_producer_review_ready", None)
-    safe_name = _sanitize_wa_param(producer_name)
-    safe_city = _sanitize_wa_param(city) if city else "לא צוין"
+    safe_name = _sanitize_wa_param(producer_name) or "ללא שם"
+    safe_city = (_sanitize_wa_param(city) if city else "") or "לא צוין"
     message = (
         f"העסק {safe_name} מוכן לאישור — יש תמונה וכל הפרטים הדרושים\n"
         f"עיר: {safe_city}\n"
@@ -389,7 +395,12 @@ def notify_admin_producer_review_ready(
     )
     try:
         if settings.admin_whatsapp_to:
-            if send_text(settings.admin_whatsapp_to, message, test_cause=test_cause):
+            # MEH-3147: approved template instead of 24h-window free text.
+            if send_template(
+                settings.admin_whatsapp_to,
+                AdminBusinessPendingV1(producer_name=safe_name, city=safe_city),
+                test_cause=test_cause,
+            ):
                 logger.info(
                     "[WHATSAPP] Producer review-ready notification sent to admin"
                 )
@@ -533,7 +544,7 @@ def notify_admin_new_category_request(
             if send_text(settings.admin_whatsapp_to, message, test_cause=test_cause):
                 logger.info("[WHATSAPP] Category-request notification sent to admin")
             else:
-                # send_text returned False without raising — keep the MEH-977
+                # send_template returned False without raising — keep the MEH-977
                 # observability contract: log WITH request context.
                 logger.warning(
                     "[WHATSAPP] Category-request notification NOT delivered for "
@@ -610,7 +621,7 @@ def notify_admin_new_business_suggestion(
             if send_text(settings.admin_whatsapp_to, message):
                 logger.info("[WHATSAPP] Business-suggestion notification sent to admin")
             else:
-                # send_text returned False without raising — keep the MEH-977
+                # send_template returned False without raising — keep the MEH-977
                 # observability contract: log WITH request context.
                 logger.warning(
                     "[WHATSAPP] Business-suggestion notification NOT delivered "
@@ -648,12 +659,29 @@ def notify_admin_new_producer(
         f"בית עסק חדש: {name} - {city or 'לא צוין'}\n"
         f"לאישור: {settings.frontend_url}/admin"
     )
-    # WhatsApp via Meta Cloud API (send_text fail-opens on missing config).
-    if settings.admin_whatsapp_to:
-        if send_text(settings.admin_whatsapp_to, message, test_cause=test_cause):
-            logger.info("[WHATSAPP] Notification sent to admin")
-    else:
-        logger.debug(f"[WHATSAPP] Would send: {message}")
+    # MEH-3147: WhatsApp via the approved admin template — free text reached
+    # the admin only inside Meta's 24h window. Own try, so a WhatsApp raise
+    # can no longer skip the email below (it shared no guard before).
+    try:
+        if settings.admin_whatsapp_to:
+            template = AdminBusinessPendingV1(
+                # MEH-3147: Meta rejects an EMPTY parameter, so a name or
+                # city that sanitizes to "" falls back to a placeholder.
+                producer_name=_sanitize_wa_param(name) or "ללא שם",
+                city=(_sanitize_wa_param(city) if city else "") or "לא צוין",
+            )
+            if send_template(
+                settings.admin_whatsapp_to, template, test_cause=test_cause
+            ):
+                logger.info("[WHATSAPP] Notification sent to admin")
+            else:
+                logger.warning(
+                    "[WHATSAPP] New-business notification NOT delivered to admin"
+                )
+        else:
+            logger.debug(f"[WHATSAPP] Would send: {message}")
+    except Exception as e:  # noqa: BLE001 — fire-and-forget, log with context
+        logger.error(f"[NOTIFY] Admin new-business WhatsApp FAILED: {e}")
 
     # Email
     if settings.admin_email:
@@ -712,7 +740,7 @@ def notify_admin_owner_invite_accepted(
             if send_text(settings.admin_whatsapp_to, message, test_cause=test_cause):
                 logger.info("[WHATSAPP] Owner-invite-accepted notification sent")
             else:
-                # send_text returned False without raising — keep the MEH-977
+                # send_template returned False without raising — keep the MEH-977
                 # observability contract: log WITH business context.
                 logger.warning(
                     "[WHATSAPP] Owner-invite-accepted notification NOT delivered "
