@@ -145,6 +145,22 @@ test.describe("MEH-2824 · footer reaches the screen edge under the floating nav
     expect.soft(m.pad, "body carries no bottom reserve on /map").toBe(0);
     expect.soft(m.overflow, "nothing to scroll below the map").toBeLessThanOrEqual(1);
   });
+
+  // MEH-3198 follow-up: with the cookie banner up on a phone, the reserve is
+  // the banner alone (not nav + banner), and the near-me pill at the bottom of
+  // the map can still be scrolled clear of the banner and tapped.
+  test("/map with the cookie banner up: reserve = banner, near-me pill reachable", async ({ page }) => {
+    await page.goto("/he/map");
+    await expect(page.locator("[data-map-shell=mobile]")).toBeVisible({ timeout: 15_000 });
+    await expect.poll(() => rootVar(page, "--cookie-banner-h"), { timeout: 10_000 }).not.toMatch(/^(|0px)$/);
+    const m = await page.evaluate(() => ({
+      pad: parseFloat(getComputedStyle(document.body).paddingBottom),
+      banner: parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--cookie-banner-h")),
+    }));
+    expect.soft(Math.abs(m.pad - m.banner), `body reserve ${m.pad} vs banner ${m.banner}`).toBeLessThanOrEqual(1);
+    // trial: actionability only (no click side effects) — fails if the banner covers the pill.
+    await page.getByTestId("map-near-me-pill").click({ trial: true, timeout: 5_000 });
+  });
 });
 
 test.describe("MEH-2824 · desktop unchanged", () => {
@@ -159,18 +175,18 @@ test.describe("MEH-2824 · desktop unchanged", () => {
     expect(m).toEqual({ body: "0px", footer: "0px" });
   });
 
-  // MEH-3198: with the cookie banner up the body reserve was 68px on desktop
-  // /map. The banner is left showing here (no consent stored), so the
-  // reserve is live and a zero is the rule, not an absent banner.
-  test("/map with the cookie banner up: no body reserve, no scroll", async ({ page }) => {
+  // MEH-3198: with the cookie banner up the body reserve on /map is the
+  // banner's height and nothing more — the banner floats over the bottom of
+  // the map, so that much scroll is what lets its last row be reached. The
+  // banner is left showing (no consent stored), so the reserve is live.
+  test("/map with the cookie banner up: the reserve is the banner only", async ({ page }) => {
     await page.goto("/he/map");
     await expect(page.locator("[data-map-shell=desktop]")).toBeVisible({ timeout: 15_000 });
     await expect.poll(() => rootVar(page, "--cookie-banner-h"), { timeout: 10_000 }).not.toMatch(/^(|0px)$/);
     const m = await page.evaluate(() => ({
       pad: parseFloat(getComputedStyle(document.body).paddingBottom),
-      overflow: document.scrollingElement!.scrollHeight - innerHeight,
+      banner: parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--cookie-banner-h")),
     }));
-    expect.soft(m.pad, "body carries no bottom reserve on /map").toBe(0);
-    expect.soft(m.overflow, "nothing to scroll below the map").toBeLessThanOrEqual(1);
+    expect.soft(Math.abs(m.pad - m.banner), `body reserve ${m.pad} vs banner ${m.banner}`).toBeLessThanOrEqual(1);
   });
 });
