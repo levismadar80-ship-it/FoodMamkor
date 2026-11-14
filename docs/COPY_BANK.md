@@ -1277,6 +1277,7 @@ From here on a sentence about fees, a subscription or "free forever" lives in on
 
 - the `pricing.*` namespace (the price-list page `/join/pricing` and the short link labels), or
 - a key listed in `PRICING_COPY_KEYS` in `frontend/lib/pricing.js`.
+- A `pricing.page` sentence that mentions rescue bags has a `<key>_no_rescue` twin, listed in `RESCUE_COPY_KEYS`; the page shows the twin while rescue bags are off (MEH-3219).
 
 Numbers are never written into the copy. They are ICU values (`{monthly}`, `{yearly}`, `{percent}`, `{bagFee}`, `{subPercent}`, `{subBagFee}`, `{breakEven}`, `{breakEvenFees}`, `{threshold}`, `{noticeDays}`, `{asOf}`, `{examplePrice}`, `{exampleFee}`, `{exampleKeep}`, `{trialDays}`) supplied by `frontend/lib/pricing.js`, the same numbers as `docs/PRICING.md`.
 
