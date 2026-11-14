@@ -15,9 +15,6 @@
 #
 # Frozen 2026-11-14 from mypy 2.4.1 over `mypy app/auth.py app/services/whatsapp.py app/services/whatsapp_templates.py app/services/auth_notifications.py app/services/auto_reply_watchdog.py app/services/verify_session.py app/services/owner_attention.py --strict` (that file AND its import tree — mypy follows
 # imports, so any module auth.py reaches transitively also appears here):
-# 13 errors, 2 files, 4 keys. Every number on this
+# 0 errors, 0 files, 0 keys. Every number on this
 # line is computed from the rows below, so it cannot drift from them.
-app/auth.py	assignment	1
-app/auth.py	type-arg	5
-app/models/models.py	no-untyped-def	1
-app/models/models.py	var-annotated	6
+
