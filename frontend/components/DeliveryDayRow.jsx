@@ -231,8 +231,11 @@ export function DeliveryDayRow({ cityActive, daysActive, onSelectDay, onClearDay
   // In a row the chip matches the row's other controls (py-2.5); alone it
   // keeps its compact pill height.
   // MEH-3195: in a chip row the wrapper's 1px border + 42px = the 44px of the
-  // other filter chips (a touch target); the stacked form keeps its own size.
-  const chipPadY = inRow ? "py-2.5 min-h-[42px]" : "py-1";
+  // other filter chips. The border is not clickable, so each button's ::before
+  // reaches 1px over it: the tap target is the full 44px.
+  const chipPadY = inRow
+    ? "py-2.5 min-h-[42px] relative before:absolute before:-inset-y-px before:inset-x-0 before:content-['']"
+    : "py-1";
 
   const handleClearClick = (e) => {
     // The ✕ sits INSIDE the chip's visual pill but is its own <button> (a
@@ -298,7 +301,7 @@ export function DeliveryDayRow({ cityActive, daysActive, onSelectDay, onClearDay
             onClick={handleClearClick}
             aria-label={t("home.producers.day_chip_clear_aria")}
             data-testid="delivery-day-clear"
-            className={`inline-flex items-center ps-1 pe-2 ${chipPadY} rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70`}
+            className={`inline-flex items-center justify-center min-w-11 ps-1 pe-2 ${chipPadY} rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70`}
           >
             <X size={12} weight="bold" aria-hidden="true" />
           </button>

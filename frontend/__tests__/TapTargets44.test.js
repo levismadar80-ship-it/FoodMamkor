@@ -28,21 +28,27 @@ describe("filter chips are at least 44px tall", () => {
     for (const c of chips) expect(c).toContain("min-h-11");
   });
 
-  it("the «יום משלוח» chip in a row is 42px + the wrapper's border", () => {
-    expect(read("components/DeliveryDayRow.jsx")).toMatch(
-      /const chipPadY = inRow \? "py-2\.5 min-h-\[42px\]"/,
-    );
+  it("the «יום משלוח» chip in a row is 42px + a ::before over the wrapper's border", () => {
+    const src = read("components/DeliveryDayRow.jsx");
+    expect(src).toMatch(/inRow\s*\?\s*"py-2\.5 min-h-\[42px\] relative before:absolute before:-inset-y-px/);
+  });
+
+  it("the ✕ that clears the days is at least 44px wide", () => {
+    const src = read("components/DeliveryDayRow.jsx");
+    const at = src.indexOf('data-testid="delivery-day-clear"');
+    const cls = src.slice(at, at + 300).match(/className=\{`([^`]+)`/)[1];
+    expect(cls).toContain("min-w-11");
   });
 });
 
 describe("small controls get a 44px hit area", () => {
-  it("the card heart keeps its 34px circle and adds a 5px invisible ring", () => {
+  it("the card heart keeps its 34px circle and adds a 6px invisible ring (32px padding box + 12 = 44)", () => {
     const src = read("components/ProducerCard.jsx");
     const heart = src.slice(src.indexOf('data-testid="card-heart"'));
     const cls = heart.match(/className="([^"]+)"/)[1];
     expect(cls).toContain("w-[34px] h-[34px]");
     expect(cls).toContain("before:absolute");
-    expect(cls).toContain("before:-inset-[5px]");
+    expect(cls).toContain("before:-inset-[6px]");
   });
 
   it("«טעות בפרטים» is a 44px-tall button that does not move the line", () => {
