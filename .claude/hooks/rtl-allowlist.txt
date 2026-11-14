@@ -7,7 +7,6 @@
 # Entire files whose LTR context justifies physical properties.
 frontend/app/[locale]/map/MapClient.jsx
 frontend/app/[locale]/map/components/MapPane.jsx
-frontend/app/[locale]/map/components/DesktopMiniPopup.jsx
 frontend/app/[locale]/map/components/MobileSheetSelectedCard.jsx
 frontend/components/ImageGallery.jsx
 frontend/components/Lightbox.jsx
