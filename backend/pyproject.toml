@@ -219,6 +219,7 @@ files = [
     "app/services/chat_intent_router.py",
     "app/services/city_centroid.py",
     "app/services/content_notifications.py",
+    "app/services/date_rules.py",
     "app/services/delivery_validation.py",
     "app/services/delivery_waitlist.py",
     "app/services/email.py",
