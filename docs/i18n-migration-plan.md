@@ -4,6 +4,7 @@
 **Branch:** `feature/meh-366-i18n-scoping`
 **Status:** PLAN — awaiting Smadar approval before Step E (sub-ticket creation).
 **Date:** 2026-05-07.
+**Update 2026-11-14:** the migration is finished. The old `language-context.js` shim and `i18n-key-map.js` are deleted; `next-intl` is the only mechanism.
 **Working baseline:** 1,721 hardcoded Hebrew strings across 142 frontend files (corrected — see §0 and §3.1).
 
 ---

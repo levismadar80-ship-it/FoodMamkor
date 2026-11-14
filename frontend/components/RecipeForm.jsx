@@ -56,7 +56,9 @@ function toInt(v) {
   return Number.isFinite(n) ? Math.trunc(n) : null;
 }
 
-export default function RecipeForm({ mode = "create", initial, onSaved, onCancel }) {
+// MEH-3138: emailUnverified (from the page's useAuth) shows the verify notice
+// up front, before the form is filled — same pattern as EventForm (MEH-2918).
+export default function RecipeForm({ mode = "create", initial, onSaved, onCancel, emailUnverified = false }) {
   const t = useTranslations("recipes.form");
   // MEH-848: shared generic error copy (collapsed from recipes.form.errors.generic).
   const tError = useTranslations("error");
@@ -70,9 +72,11 @@ export default function RecipeForm({ mode = "create", initial, onSaved, onCancel
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   // MEH-1164 B: verified-email 403 → resend CTA notice instead of a dead-end.
-  // Create-only concern (the edit PATCH is not verified-gated), but the flag is
-  // harmless in edit mode since that path never sets it.
-  const [unverified, setUnverified] = useState(false);
+  // Create-only concern (the edit PATCH is not verified-gated), but the count is
+  // harmless in edit mode since that path never raises it.
+  // MEH-3138: used as the notice's `key`. Submit resets it to 0 and a 403 sets
+  // it to 1, so every 403 re-mounts the notice as a fresh, focused alert.
+  const [unverifiedHits, setUnverifiedHits] = useState(0);
 
   // Producer's own products for the multi-select picker.
   useEffect(() => {
@@ -125,7 +129,7 @@ export default function RecipeForm({ mode = "create", initial, onSaved, onCancel
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
-    setUnverified(false);
+    setUnverifiedHits(0);
     setSubmitting(true);
     try {
       const payload = {
@@ -151,7 +155,7 @@ export default function RecipeForm({ mode = "create", initial, onSaved, onCancel
     } catch (err) {
       const detail = err.response?.data?.detail;
       if (isUnverifiedEmailError(err)) {
-        setUnverified(true);
+        setUnverifiedHits((h) => h + 1);
       } else if (detail?.error === "recipe_rejected") {
         setError(detail.reason || t("errors.rejected_default"));
       } else if (typeof detail === "string") {
@@ -176,6 +180,10 @@ export default function RecipeForm({ mode = "create", initial, onSaved, onCancel
       <h2 className="font-headline-md text-lg font-bold text-text">
         {mode === "edit" ? t("heading_edit") : t("heading_create")}
       </h2>
+      {/* The up-front notice is create-only: the edit PATCH is not gated. */}
+      {(unverifiedHits > 0 || (emailUnverified && mode === "create")) && (
+        <UnverifiedEmailNotice key={unverifiedHits} live={unverifiedHits > 0} focusOnMount={unverifiedHits > 0} />
+      )}
 
       {/* MEH-2015: the literal span in `label` is GONE — Input's required
           prop renders the marker. Keeping both is exactly the double-asterisk
@@ -354,7 +362,6 @@ export default function RecipeForm({ mode = "create", initial, onSaved, onCancel
         )}
       </div>
 
-      {unverified && <UnverifiedEmailNotice />}
       {error && (
         <InlineMessage>
           {error}

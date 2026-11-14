@@ -10,7 +10,6 @@ vi.mock("@/lib/route-memory", () => ({ consumeHistoryReturn: () => historyReturn
 vi.mock("next/navigation", () => ({ useRouter: () => ({ replace: vi.fn(), push: vi.fn() }), usePathname: () => "/" }));
 vi.mock("@/i18n/navigation", () => ({ useRouter: () => ({ push: vi.fn(), replace: vi.fn() }) }));
 vi.mock("next-intl", () => ({ useTranslations: () => (k) => k, useLocale: () => "he" }));
-vi.mock("@/lib/i18n-key-map", () => ({ mapKey: (k) => k }));
 vi.mock("@/lib/analytics", () => ({ trackEvent: vi.fn() }));
 vi.mock("@/lib/auth-context", () => ({ useAuth: () => ({ user: null }) }));
 vi.mock("@/lib/use-user-city", () => ({ useUserCity: () => ({ city: null, setCity: vi.fn() }) }));
