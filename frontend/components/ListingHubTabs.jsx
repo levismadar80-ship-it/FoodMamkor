@@ -17,13 +17,15 @@
  *           MEH-2858), app/[locale]/events/EventsClient.jsx (the one caller
  *           that passes `onSelect` and an `action`).
  * History:  MEH-2859 (creation — lifted out of EventsClient, which held this
- *           row inline for two tabs).
+ *           row inline for two tabs). MEH-3125 (two groups: the row shows only
+ *           the active tab's group, and is not drawn with a single tab).
  */
 
 import { Link } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
 
 import useTabsKeyboard from "@/hooks/useTabsKeyboard";
+import { HUB_GROUPS, hubGroupOf } from "@/lib/hub-landing";
 import { useHubNavGate } from "@/lib/use-hub-nav-gate";
 
 /**
@@ -36,13 +38,18 @@ import { useHubNavGate } from "@/lib/use-hub-nav-gate";
  * data-gated nav affordance (Header's experiences link, the Footer's links).
  */
 export const HUB_TABS = Object.freeze([
-  { value: "events", href: "/events", labelKey: "tab_events", local: true },
+  // MEH-3125: `group` = the nav entry the tab sits under (lib/hub-landing.js).
+  { value: "events", href: "/events", labelKey: "tab_events", local: true, group: HUB_GROUPS.whatsOn },
   // «חוויות», not «חוויות וסדנאות» — the short form is the TAB ROW's only;
   // the route's own H1 and metadata keep the full name.
-  { value: "experiences", href: "/experiences", labelKey: "tab_experiences_short", local: true },
-  { value: "groupBuys", href: "/group-buys", labelKey: "tab_group_buys", gate: "groupBuys" },
-  { value: "rescue", href: "/rescue", labelKey: "tab_rescue", gate: "rescue" },
+  { value: "experiences", href: "/experiences", labelKey: "tab_experiences_short", local: true, group: HUB_GROUPS.whatsOn },
+  { value: "groupBuys", href: "/group-buys", labelKey: "tab_group_buys", gate: "groupBuys", group: HUB_GROUPS.opportunities },
+  { value: "rescue", href: "/rescue", labelKey: "tab_rescue", gate: "rescue", group: HUB_GROUPS.opportunities },
 ]);
+
+// MEH-3125: a row of one tab names the page twice (the H1 already does) and
+// offers nowhere to go, so with a single tab the row is not drawn at all.
+const MIN_TABS_FOR_ROW = 2;
 
 /**
  * @param {object}   props
@@ -67,7 +74,15 @@ export default function ListingHubTabs({ active, onSelect = null, action = null 
   // — so without this the row would render on /group-buys and /rescue with
   // NOTHING selected and no tab stop at all, which takes the whole tablist out
   // of the keyboard order (the failure hooks/useTabsKeyboard.js warns about).
-  const tabs = HUB_TABS.filter((tab) => !tab.gate || gates[tab.gate] || tab.value === active);
+  //
+  // MEH-3125: only the ACTIVE tab's group — «אירועים · חוויות» under the
+  // «אירועים» nav entry, «קבוצות רכישה · סלי הפתעה» under «הזדמנויות». The
+  // other group is one nav tap away, not a tab in this row.
+  const group = hubGroupOf(active);
+  const tabs = HUB_TABS.filter(
+    (tab) => tab.group === group && (!tab.gate || gates[tab.gate] || tab.value === active),
+  );
+  const showRow = tabs.length >= MIN_TABS_FOR_ROW;
 
   const isLocal = (tab) => Boolean(onSelect) && tab.local;
 
@@ -99,62 +114,66 @@ export default function ListingHubTabs({ active, onSelect = null, action = null 
           it: below md the TABLIST carries the rule, so the active tab's
           `-mb-px` underline still meets a line directly beneath it; from md
           the container carries it, exactly as it did before this change. */}
-      <div className="flex flex-wrap items-end gap-x-4 gap-y-2 md:border-b md:border-border">
-        <div
-          role="tablist"
-          // gap-3 below md, measured not guessed: at 375 the four EN labels
-          // («Events · Experiences · Group buys · Surprise bags») are 299px
-          // wide, and with gap-4's 48px of gutter the row needed 347px of the
-          // 343px available — a 4px overflow that Hebrew (284px) never shows.
-          // gap-3 brings EN to 335px and leaves he at 272px. From md the
-          // original gutter returns.
-          //
-          // flex-wrap (MEH-2963): at 375 with 200% text (WCAG 1.4.4) three
-          // Hebrew tabs need 383px of the 311px available — measured — and a
-          // row that cannot wrap widened the whole page by 40px, pushing
-          // every control on /group-buys off-screen. At 100% the row still
-          // fits on one line in both locales, so nothing moves there.
-          className="flex flex-wrap items-end gap-x-3 gap-y-1 md:gap-x-4 w-full border-b border-border md:w-auto md:border-0"
-          onKeyDown={onKeyDown}
-        >
-          {tabs.map((tab) => {
-            const selected = tab.value === active;
-            return (
-              // A real anchor, not a button: every tab IS a destination, so it
-              // middle-clicks, ⌘-clicks and copies like a link, and the hub
-              // links to all four routes for a crawler. `role="tab"` on an
-              // anchor is valid ARIA. The two tabs that belong to the calling
-              // page still switch in place — the click is intercepted and the
-              // page moves its own state first (MEH-2245's same-tick switch),
-              // then routes.
-              <Link
-                key={tab.value}
-                href={tab.href}
-                role="tab"
-                data-tab-value={tab.value}
-                aria-selected={selected}
-                tabIndex={selected ? 0 : -1}
-                onClick={(event) => {
-                  if (selected) {
-                    event.preventDefault();
-                    return;
-                  }
-                  if (isLocal(tab)) {
-                    event.preventDefault();
-                    onSelect(tab.value);
-                  }
-                }}
-                className={`pb-3 pt-2 min-h-touch inline-flex items-center whitespace-nowrap text-sm md:text-base font-semibold border-b-2 -mb-px transition ${
-                  selected
-                    ? "border-primary text-primary"
-                    : "border-transparent text-fg-muted hover:text-primary"
-                }`}
-              >
-                {t(tab.labelKey)}
-              </Link>
-            );
-          })}
-        </div>
+      <div
+        className={`flex flex-wrap items-end gap-x-4 gap-y-2 ${showRow ? "md:border-b md:border-border" : ""}`}
+      >
+        {showRow ? (
+          <div
+            role="tablist"
+            // gap-3 below md, measured not guessed: at 375 the four EN labels
+            // («Events · Experiences · Group buys · Surprise bags») are 299px
+            // wide, and with gap-4's 48px of gutter the row needed 347px of the
+            // 343px available — a 4px overflow that Hebrew (284px) never shows.
+            // gap-3 brings EN to 335px and leaves he at 272px. From md the
+            // original gutter returns.
+            //
+            // flex-wrap (MEH-2963): at 375 with 200% text (WCAG 1.4.4) three
+            // Hebrew tabs need 383px of the 311px available — measured — and a
+            // row that cannot wrap widened the whole page by 40px, pushing
+            // every control on /group-buys off-screen. At 100% the row still
+            // fits on one line in both locales, so nothing moves there.
+            className="flex flex-wrap items-end gap-x-3 gap-y-1 md:gap-x-4 w-full border-b border-border md:w-auto md:border-0"
+            onKeyDown={onKeyDown}
+          >
+            {tabs.map((tab) => {
+              const selected = tab.value === active;
+              return (
+                // A real anchor, not a button: every tab IS a destination, so it
+                // middle-clicks, ⌘-clicks and copies like a link, and the hub
+                // links to all four routes for a crawler. `role="tab"` on an
+                // anchor is valid ARIA. The two tabs that belong to the calling
+                // page still switch in place — the click is intercepted and the
+                // page moves its own state first (MEH-2245's same-tick switch),
+                // then routes.
+                <Link
+                  key={tab.value}
+                  href={tab.href}
+                  role="tab"
+                  data-tab-value={tab.value}
+                  aria-selected={selected}
+                  tabIndex={selected ? 0 : -1}
+                  onClick={(event) => {
+                    if (selected) {
+                      event.preventDefault();
+                      return;
+                    }
+                    if (isLocal(tab)) {
+                      event.preventDefault();
+                      onSelect(tab.value);
+                    }
+                  }}
+                  className={`pb-3 pt-2 min-h-touch inline-flex items-center whitespace-nowrap text-sm md:text-base font-semibold border-b-2 -mb-px transition ${
+                    selected
+                      ? "border-primary text-primary"
+                      : "border-transparent text-fg-muted hover:text-primary"
+                  }`}
+                >
+                  {t(tab.labelKey)}
+                </Link>
+              );
+            })}
+          </div>
+        ) : null}
         {action ? <div className="ms-auto self-center md:self-end md:pb-2">{action}</div> : null}
       </div>
     </div>

@@ -70,15 +70,25 @@ function writeCache(key, any) {
   }
 }
 
+// MEH-3125: once a hub's link has been shown in this page's lifetime it stays
+// shown until a full reload. Rescue bags sell out within the evening; without
+// this the «הזדמנויות» nav tab (and the tab row's sibling tab) would appear and
+// vanish between two client navigations of the same visit. A reader who taps
+// it after the supply ran out gets the page's empty state (MEH-3117), which
+// says how to hear about the next one. Module state, so a reload clears it.
+const seenThisVisit = new Set();
+
 // MEH-2965: one request per hub per page load, however many consumers mount
 // (Header, Footer, BottomNav and ListingHubTabs can all ask in one commit).
 // Shared while in flight, dropped when settled; the session cache owns the
 // rest. Resolves to the answer, or null when there is none to give.
 const inFlight = new Map();
 /** Test seam: forget a request still in flight (a suite's never-settling stub
- *  would otherwise answer every later case in the same module instance). */
+ *  would otherwise answer every later case in the same module instance), and
+ *  what this page lifetime has already shown (MEH-3125, above). */
 export function resetHubNavGateRequests() {
   inFlight.clear();
+  seenThisVisit.clear();
 }
 function loadAny(gate) {
   if (!inFlight.has(gate.cacheKey)) {
@@ -125,8 +135,14 @@ export function useHubNavGate(hub) {
     if (!gate || !gate.enabled()) return undefined;
     let alive = true;
 
+    if (seenThisVisit.has(gate.cacheKey)) {
+      setVisible(true);
+      return undefined;
+    }
+
     const cached = readCache(gate.cacheKey, gate.ttlMs);
     if (cached !== null) {
+      if (cached) seenThisVisit.add(gate.cacheKey);
       setVisible(cached);
       return () => {
         alive = false;
@@ -134,6 +150,7 @@ export function useHubNavGate(hub) {
     }
 
     loadAny(gate).then((any) => {
+      if (any) seenThisVisit.add(gate.cacheKey);
       if (alive && any !== null) setVisible(any);
     });
 

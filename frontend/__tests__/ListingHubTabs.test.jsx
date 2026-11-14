@@ -1,5 +1,6 @@
 /**
- * MEH-2859 — the shared four-tab hub row.
+ * MEH-2859 — the shared hub tab row. MEH-3125 — split into two groups: the
+ * row shows only the active tab's group, and draws nothing with one tab.
  *
  * What a green here is supposed to mean: the row shows «אירועים» ·
  * «חוויות» · «קבוצות רכישה» · «סלי הפתעה» in that order, the last two appear
@@ -42,46 +43,66 @@ beforeEach(() => {
   gates.rescue = false;
 });
 
-describe("ListingHubTabs — which tabs exist", () => {
-  it("with no supply: the two always-on tabs only", () => {
+describe("ListingHubTabs — which tabs exist (MEH-3125: two groups)", () => {
+  it("events group: «אירועים · חוויות» only, whatever the other group's supply", () => {
+    gates.groupBuys = true;
+    gates.rescue = true;
     render(<ListingHubTabs active="events" />);
     expect(values()).toEqual(["events", "experiences"]);
-    expect(screen.queryByText("events.list.tab_group_buys")).toBeNull();
-    expect(screen.queryByText("events.list.tab_rescue")).toBeNull();
-  });
-
-  it("group buys in supply adds ONLY its tab", () => {
-    gates.groupBuys = true;
-    render(<ListingHubTabs active="events" />);
-    expect(values()).toEqual(["events", "experiences", "groupBuys"]);
-  });
-
-  it("baskets in supply adds ONLY its tab", () => {
-    gates.rescue = true;
-    render(<ListingHubTabs active="events" />);
-    expect(values()).toEqual(["events", "experiences", "rescue"]);
-  });
-
-  it("all four in supply: the AC's order, left to right", () => {
-    gates.groupBuys = true;
-    gates.rescue = true;
-    render(<ListingHubTabs active="events" />);
-    expect(values()).toEqual(["events", "experiences", "groupBuys", "rescue"]);
     expect(labels()).toEqual([
       "events.list.tab_events",
       // «חוויות», the short form — the tab row's only. The route keeps
       // `tab_experiences` / `h1_experiences` for its own heading.
       "events.list.tab_experiences_short",
-      "events.list.tab_group_buys",
-      "events.list.tab_rescue",
     ]);
+    expect(screen.queryByText("events.list.tab_group_buys")).toBeNull();
+    expect(screen.queryByText("events.list.tab_rescue")).toBeNull();
   });
 
+  it("opportunities group, both in supply: «קבוצות רכישה · סלי הפתעה», in that order", () => {
+    gates.groupBuys = true;
+    gates.rescue = true;
+    render(<ListingHubTabs active="groupBuys" />);
+    expect(values()).toEqual(["groupBuys", "rescue"]);
+    expect(labels()).toEqual(["events.list.tab_group_buys", "events.list.tab_rescue"]);
+  });
+
+  // 0 / 1 / many: a group with ONE tab draws no row (the H1 already names the
+  // page), and the action — when one is passed — still renders.
+  for (const [active, other] of [
+    ["groupBuys", "rescue"],
+    ["rescue", "groupBuys"],
+  ]) {
+    it(`/${active} with no ${other} supply: no tab row at all`, () => {
+      expect(gates[other], "control: the sibling's gate is off").toBe(false);
+      render(<ListingHubTabs active={active} action={<a href="/x">פעולה</a>} />);
+      expect(screen.queryByRole("tablist")).toBeNull();
+      expect(screen.queryAllByRole("tab")).toHaveLength(0);
+      expect(screen.getAllByText("פעולה")).toHaveLength(1);
+    });
+
+    it(`/${active} with ${other} supply: both tabs, own one selected`, () => {
+      gates[other] = true;
+      render(<ListingHubTabs active={active} />);
+      expect(values()).toEqual(["groupBuys", "rescue"]);
+      expect(
+        screen
+          .getAllByRole("tab")
+          .filter((el) => el.getAttribute("aria-selected") === "true")
+          .map((el) => el.getAttribute("data-tab-value")),
+      ).toEqual([active]);
+    });
+  }
+
   it("a gated tab is ABSENT, never rendered-and-disabled", () => {
-    render(<ListingHubTabs active="events" />);
-    const disabled = screen.getAllByRole("tab").filter((el) => el.hasAttribute("disabled"));
-    expect(disabled).toHaveLength(0);
-    expect(screen.queryByText("events.list.tab_group_buys")).toBeNull();
+    gates.rescue = true;
+    render(<ListingHubTabs active="groupBuys" />);
+    expect(screen.getAllByRole("tab").filter((el) => el.hasAttribute("disabled"))).toHaveLength(0);
+    cleanup();
+    gates.rescue = false;
+    render(<ListingHubTabs active="groupBuys" />);
+    expect(screen.queryByText("events.list.tab_rescue")).toBeNull();
+    expect(document.querySelector("[disabled]")).toBeNull();
   });
 });
 
@@ -91,29 +112,23 @@ describe("ListingHubTabs — what a tab does", () => {
     gates.rescue = true;
     render(<ListingHubTabs active="groupBuys" />);
     const indexes = screen.getAllByRole("tab").map((el) => el.getAttribute("tabindex"));
-    expect(indexes).toEqual(["-1", "-1", "0", "-1"]);
+    expect(indexes).toEqual(["0", "-1"]);
     expect(screen.getAllByRole("tab").filter((el) => el.getAttribute("aria-selected") === "true")).toHaveLength(1);
   });
 
   /**
    * The page you are STANDING ON always has its tab, selected, even when its
-   * own supply gate is false. Three ways that happens, none of them exotic:
-   *   - every cold load of /group-buys and /rescue, because the gate starts
-   *     false and only flips when its fetch lands (use-hub-nav-gate.js:84);
-   *   - supply legitimately empty — the route still renders for a reader who
-   *     arrived from a bookmark, a search result or the sitemap;
-   *   - any error or malformed body, since the gate fails closed.
-   *
-   * Without the exemption the row shows two tabs claiming neither, and a
-   * `role="tablist"` with no `tabIndex=0` child cannot be reached by Tab at
-   * all — the exact failure hooks/useTabsKeyboard.js warns about.
-   *
-   * The earlier version of the test above was named "whatever the supply" and
-   * set the gate to true before rendering, so it only ever ran the one state
-   * where the answer was already right.
+   * own supply gate is false (cold load: the gate starts false; empty supply
+   * for a reader who arrived by link; any error, since the gate fails closed).
+   * MEH-3125: with the sibling's supply on, the row is drawn and the active
+   * tab must be in it, selected, and the one tab stop.
    */
-  for (const active of ["groupBuys", "rescue"]) {
+  for (const [active, other] of [
+    ["groupBuys", "rescue"],
+    ["rescue", "groupBuys"],
+  ]) {
     it(`/${active}: its own tab is present and selected even with its gate false`, () => {
+      gates[other] = true;
       expect(gates[active], "control: this is the gate-off case").toBe(false);
       render(<ListingHubTabs active={active} />);
       const tabs = screen.getAllByRole("tab");
@@ -129,21 +144,14 @@ describe("ListingHubTabs — what a tab does", () => {
     });
   }
 
-  it("the exemption is for the ACTIVE tab only — the other gated one stays hidden", () => {
-    render(<ListingHubTabs active="groupBuys" />);
-    expect(screen.getAllByRole("tab").map((el) => el.getAttribute("data-tab-value"))).toEqual([
-      "events",
-      "experiences",
-      "groupBuys",
-    ]);
-  });
-
   it("every tab is a real link to its own route — middle-click, ⌘-click, crawlable", () => {
     gates.groupBuys = true;
     gates.rescue = true;
     render(<ListingHubTabs active="events" />);
     expect(hrefOf("events")).toBe("/events");
     expect(hrefOf("experiences")).toBe("/experiences");
+    cleanup();
+    render(<ListingHubTabs active="rescue" />);
     expect(hrefOf("groupBuys")).toBe("/group-buys");
     expect(hrefOf("rescue")).toBe("/rescue");
     // The AC says the two new tabs LINK to their routes; a button would have
@@ -165,11 +173,11 @@ describe("ListingHubTabs — what a tab does", () => {
     expect(tab.getAttribute("href")).toBe("/experiences");
   });
 
-  it("onSelect does NOT swallow a gated tab — that one follows its link", () => {
-    gates.groupBuys = true;
+  it("onSelect does NOT swallow a route tab — that one follows its link", () => {
+    gates.rescue = true;
     const onSelect = vi.fn();
-    render(<ListingHubTabs active="events" onSelect={onSelect} />);
-    const handled = fireEvent.click(screen.getByText("events.list.tab_group_buys"));
+    render(<ListingHubTabs active="groupBuys" onSelect={onSelect} />);
+    const handled = fireEvent.click(screen.getByText("events.list.tab_rescue"));
     expect(onSelect).not.toHaveBeenCalled();
     expect(handled, "nothing intercepted it, so the anchor navigates").toBe(true);
   });
@@ -186,18 +194,18 @@ describe("ListingHubTabs — what a tab does", () => {
     gates.groupBuys = true;
     gates.rescue = true;
     const onSelect = vi.fn();
-    render(<ListingHubTabs active="events" onSelect={onSelect} />);
+    render(<ListingHubTabs active="groupBuys" onSelect={onSelect} />);
     const tabs = screen.getAllByRole("tab");
     tabs[0].focus();
     // ArrowRight = previous in Hebrew reading order (hooks/useTabsKeyboard.js),
     // so from the first tab it wraps to «סלי הפתעה».
     fireEvent.keyDown(tabs[0], { key: "ArrowRight" });
-    expect(document.activeElement).toBe(tabs[3]);
+    expect(document.activeElement).toBe(tabs[1]);
     // ...and that is ALL it does. A route-changing tab does not activate on
     // focus, or a keyboard user could not read the row without being taken
     // off the page. Enter on the focused anchor is what navigates.
     expect(onSelect).not.toHaveBeenCalled();
-    expect(tabs[3].getAttribute("aria-selected")).toBe("false");
+    expect(tabs[1].getAttribute("aria-selected")).toBe("false");
   });
 
   it("but the page's OWN two tabs still activate on focus (the MEH-2199 contract)", () => {

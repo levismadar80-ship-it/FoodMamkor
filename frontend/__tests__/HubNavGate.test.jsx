@@ -94,6 +94,49 @@ describe("cache lifetime per hub (MEH-2858)", () => {
   });
 });
 
+// MEH-3125: the «הזדמנויות» nav tab must not vanish between two navigations
+// of one visit when the evening's bags sell out. Once shown, it stays until a
+// full reload (module state); the reload control proves the stickiness is what
+// keeps it, not a stale cache.
+describe("once shown, stays shown for the visit (MEH-3125)", () => {
+  it("rescue: «yes», then the cache expires and the supply is gone → still shown", async () => {
+    get.mockReturnValue(list(2));
+    const { unmount } = render(<Probe hub="rescue" />);
+    await waitFor(() => expect(gate()).toBe("shown"));
+    unmount();
+    // The 10-minute cache has lapsed and the bags are sold out.
+    sessionStorage.clear();
+    get.mockReturnValue(list(0));
+    render(<Probe hub="rescue" />);
+    await new Promise((r) => setTimeout(r, 20));
+    expect(gate()).toBe("shown");
+  });
+
+  it("control: after a reload (module state gone) the same answer → hidden", async () => {
+    get.mockReturnValue(list(2));
+    const { unmount } = render(<Probe hub="rescue" />);
+    await waitFor(() => expect(gate()).toBe("shown"));
+    unmount();
+    sessionStorage.clear();
+    resetHubNavGateRequests(); // what a full reload does to module state
+    get.mockReturnValue(list(0));
+    render(<Probe hub="rescue" />);
+    await waitFor(() => expect(get).toHaveBeenCalledTimes(2));
+    expect(gate()).toBe("hidden");
+  });
+
+  it("a «no» is NOT sticky — supply that appears later still shows", async () => {
+    get.mockReturnValue(list(0));
+    const { unmount } = render(<Probe hub="groupBuys" />);
+    await waitFor(() => expect(get).toHaveBeenCalledTimes(1));
+    unmount();
+    sessionStorage.clear();
+    get.mockReturnValue(list(1));
+    render(<Probe hub="groupBuys" />);
+    await waitFor(() => expect(gate()).toBe("shown"));
+  });
+});
+
 describe("rescue pilot off in this build (MEH-2858)", () => {
   it("asks nothing and stays hidden", async () => {
     vi.stubEnv("NEXT_PUBLIC_RESCUE_BAGS_ENABLED", "false");
