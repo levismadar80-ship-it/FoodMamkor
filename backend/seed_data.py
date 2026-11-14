@@ -1,5 +1,7 @@
 """Seed the database with initial categories and sample producers."""
 
+from sqlalchemy.orm import Session
+from typing import Any
 import structlog
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 
@@ -58,7 +60,7 @@ CATEGORIES = [
     ("דגים", "🐟"),
 ]
 
-PRODUCERS = [
+PRODUCERS: list[dict[str, Any]] = [
     {
         "name": "חוות הגליל - בשר אורגני",
         "slug": "galil-farm",
@@ -234,7 +236,7 @@ GOLAN_RECIPE = {
 }
 
 
-def _seed_golan_recipe(db):
+def _seed_golan_recipe(db: Session) -> None:
     """MEH-906: insert the golan-cheese demo recipe, approved+published.
 
     Idempotent guard by (producer_id, title) so re-running seed() does not
@@ -283,7 +285,7 @@ def _seed_golan_recipe(db):
 CATEGORY_CONFLICT_KEY = "name"
 
 
-def seed_categories(db):
+def seed_categories(db: Session) -> None:
     """Insert missing categories. Never renames, never deletes — insert-only.
 
     Seeding bootstraps a fresh database; it is NOT a reconciler. Renames and
@@ -349,7 +351,7 @@ def seed_categories(db):
     db.commit()
 
 
-def _seed_demo_producers(db):
+def _seed_demo_producers(db: Session) -> None:
     """Insert the demo/fixture producers in ``PRODUCERS``. NON-PRODUCTION ONLY.
 
     MEH-2092: these five rows are development fixtures, not reference data.
@@ -472,7 +474,7 @@ def _seed_demo_producers(db):
     db.commit()
 
 
-def seed():
+def seed() -> None:
     """Bootstrap a fresh database. Idempotent, insert-only, never a reconciler.
 
     Identity is the STABLE key, never the display value. Every existence check

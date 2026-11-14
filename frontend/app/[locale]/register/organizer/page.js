@@ -1,3 +1,4 @@
+// @ts-check
 import { getTranslations } from "next-intl/server";
 import RouteMessagesProvider from "@/components/i18n/RouteMessagesProvider";
 import { registerProducerMessages } from "@/lib/client-messages";

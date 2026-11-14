@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -81,6 +82,7 @@ function cityKey(name) {
 }
 const STATIC_KEYS = new Set(STATIC_CITIES_SORTED.map(cityKey));
 
+/** @param {{ value?: string, onChange?: (value: string, meta: { known: boolean }) => void, placeholder?: string, label?: import("react").ReactNode, labelVisible?: boolean, id?: string, onSubmit?: (value: string) => void, onKnownChange?: (known: boolean) => void, useBackend?: boolean, className?: string, pill?: boolean, required?: boolean, "aria-describedby"?: string, "aria-invalid"?: boolean }} props */
 export default function CitySearch({
   value,
   onChange,
@@ -346,7 +348,7 @@ export default function CitySearch({
           // 1010 clears panes:400, controls:1000 and the attribution:1001, and
           // stays BELOW the global header (Header.jsx:321, z-[1050]) so the header
           // still wins — matching the ledger in .claude/rules/rtl.md.
-          className="absolute z-[1010] mt-1 w-full bg-surface border border-border rounded-md shadow-lg max-h-72 overflow-auto"
+          className="absolute z-autocomplete mt-1 w-full bg-surface border border-border rounded-md shadow-lg max-h-72 overflow-auto"
         >
           {matches.map((city, idx) => (
             <li

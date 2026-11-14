@@ -3,14 +3,15 @@ Module:   capabilities
 Purpose:  The one place that answers "what may this business do?" — so no
           route reads `producer.plan` or a billing column on its own. While
           `pricing.BILLING_PHASE` is "launch" every paid tool is open to every
-          business (ADR-042); the only limit is the long-standing gallery cap.
+          business (ADR-042).
           Once billing is on, a business whose state is `page_only` or
           `unpaid` cannot open NEW paid bookings; what exists carries on.
 Touches:  reads `business_billing` (one row) when billing is on; writes nothing.
 Does NOT: charge, decide prices (app/pricing.py), or move a business from one
           state to another (the billing stage, MEH-3180). Does NOT close the
           page, WhatsApp sign-up or free sign-up — those are never paid tools.
-Related:  routers/upload.py (the gallery cap) · app/pricing.py ·
+Related:  app/pricing.py · services/gallery_cap.py (the free-plan gallery cap
+          has its own owner since MEH-3220, not here) ·
           frontend dashboard edit cards (still read `plan` until MEH-3182).
 History:  MEH-3181 (creation, 2026-11-14) · MEH-3180 (billing states and the
           paid-tool gate, switched off, 2026-11-14).
@@ -30,30 +31,6 @@ from app.database import get_db
 from app.models.billing import BILLING_STATES, BusinessBilling
 from app.models.models import User
 from app.utils.clock import israel_today
-
-FREE_PLAN: Final = "free"
-# MEH-1352: a business on the free plan keeps at most this many gallery images.
-FREE_GALLERY_IMAGE_LIMIT: Final = 3
-
-
-def gallery_image_limit(producer: Any) -> int | None:
-    """How many gallery images the business may keep; None = no limit."""
-    if producer is None:
-        return None
-    # A NULL plan is not "free": the cap never applied to it, and still does not.
-    return (
-        FREE_GALLERY_IMAGE_LIMIT
-        if getattr(producer, "plan", None) == FREE_PLAN
-        else None
-    )
-
-
-def gallery_is_full(producer: Any) -> bool:
-    limit = gallery_image_limit(producer)
-    if limit is None:
-        return False
-    return len(getattr(producer, "images", None) or []) >= limit
-
 
 # ---------- Billing states and paid tools (MEH-3180) ----------
 
@@ -102,7 +79,7 @@ PAID_TOOL_CLOSED_DETAIL: Final = (
 )
 
 
-def billing_state(db: Session, producer_id: UUID | None) -> str:
+def billing_state(db: Session, producer_id: Any) -> str:
     """The business's billing state. No row is the launch default."""
     if producer_id is None:
         return LAUNCH_STATE
@@ -124,19 +101,19 @@ def paid_tools_open(state: str | None) -> bool:
     return current not in CLOSED_STATES
 
 
-def is_paid_site_signup(price: Any, method: str | None) -> bool:
+def is_paid_site_signup(price: Any, method: Any) -> bool:
     return method == SITE_FORM and (price or 0) > 0
 
 
 def require_paid_signup(  # noqa: PLR0913 — keyword-only pairs: now vs before
     db: Session,
-    producer_id: UUID | None,
+    producer_id: Any,
     *,
     price: Any,
-    method: str | None,
+    method: Any,
     running: bool = True,
     was_price: Any = None,
-    was_method: str | None = None,
+    was_method: Any = None,
     was_running: bool = False,
 ) -> None:
     """Ask only when this write OPENS a paid site sign-up: a new item, an edit
@@ -158,7 +135,7 @@ def is_running(is_active: Any, event_date: Any) -> bool:
     return bool(is_active) and event_date is not None and event_date >= israel_today()
 
 
-def require_paid_tool(db: Session, producer_id: UUID | None, tool: str) -> None:
+def require_paid_tool(db: Session, producer_id: Any, tool: str) -> None:
     """403 with a Hebrew reason when the business may not open a new paid
     booking. Costs no query while billing is off."""
     if tool not in PAID_TOOLS:

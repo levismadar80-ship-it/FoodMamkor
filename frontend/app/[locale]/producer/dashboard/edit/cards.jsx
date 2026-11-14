@@ -49,6 +49,8 @@ import { resolveStoreHours } from "@/lib/hours";
 // descriptions MEH-1354, popular-6 + search, ≤3 cap MEH-1297, primary-first)
 // instead of its own flat checkbox grid. Same selection contract (category_ids).
 import CategorySelector from "@/components/CategorySelector";
+import { requiresFarmerDeclaration } from "@/lib/farmer-declaration";
+import FarmerDeclarationCheckbox from "@/components/FarmerDeclarationCheckbox";
 import CategoryRequestModal from "@/components/CategoryRequestModal";
 import Input from "@/components/ui/Input";
 import CitiesAutocomplete from "@/components/CitiesAutocomplete";
@@ -109,6 +111,7 @@ export function ViewOnPageLink({ producerId, anchor, testId }) {
 // directly — the default page export is unchanged.
 export function CategoriesCard({ profile, onSave, reportDirty = () => {} }) {
   const t = useTranslations("dashboard.producer.categories");
+  const [farmerConfirmed, setFarmerConfirmed] = useState(false);
   const [allCategories, setAllCategories] = useState([]);
   const seedIds = (profile?.categories || []).map((c) => c.id);
   const [selected, setSelected] = useState(seedIds);
@@ -159,6 +162,11 @@ export function CategoriesCard({ profile, onSave, reportDirty = () => {} }) {
     return () => reportDirty("categories", false);
   }, [dirty, reportDirty]);
 
+  // MEH-3137: ask only when she never recorded it (null). Absent = unknown
+  // (an older payload) — the server still guards, so the card does not guess.
+  const farmerAsk = profile?.farmer_declared_at === null &&
+    requiresFarmerDeclaration(allCategories.filter((c) => selected.includes(c.id)).map((c) => c.name));
+
   const toggle = (id) => {
     setSaved(false);
     setErrorMsg(null);
@@ -172,9 +180,16 @@ export function CategoriesCard({ profile, onSave, reportDirty = () => {} }) {
     setSaved(false);
     setErrorMsg(null);
     try {
-      await api.put("/producers/me", { category_ids: selected });
+      await api.put("/producers/me", {
+        category_ids: selected,
+        ...(farmerAsk && { farmer_declaration_accepted: farmerConfirmed }),
+      });
       // Keep the parent profile in sync so a re-render reseeds correctly.
-      onSave({ categories: allCategories.filter((c) => selected.includes(c.id)) });
+      onSave({
+        categories: allCategories.filter((c) => selected.includes(c.id)),
+        // MEH-3137: the server just recorded the grower line, so stop asking.
+        ...(farmerAsk && { farmer_declared_at: new Date().toISOString() }),
+      });
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
     } catch (err) {
@@ -203,6 +218,10 @@ export function CategoriesCard({ profile, onSave, reportDirty = () => {} }) {
           onChange={toggle}
           onRequestCategory={() => setShowCategoryModal(true)}
         />
+      )}
+
+      {farmerAsk && (
+        <FarmerDeclarationCheckbox checked={farmerConfirmed} onChange={setFarmerConfirmed} />
       )}
 
       <CategoryRequestModal
@@ -240,8 +259,8 @@ export function CategoriesCard({ profile, onSave, reportDirty = () => {} }) {
 // ============================================================
 
 // MEH-1352: free-plan image cap surfaced in the UI. Single source for the
-// magic number in JSX — the authoritative enforcement is the 403 in
-// backend/app/routers/upload.py (free plan, len(images) >= 3); keep in sync.
+// magic number in JSX — the authoritative enforcement is the 403 on
+// PUT /producers/me (backend/app/services/gallery_cap.py, MEH-3220); keep in sync.
 const FREE_IMAGE_CAP = 3;
 
 // MEH-2911: statuses whose gallery may not be emptied. Mirrors
@@ -287,8 +306,8 @@ export function ImagesCard({ profile, onSave, reportDirty = () => {} }) {
   // and reds if the two drift.
   const isGalleryLocked = LAST_PHOTO_GUARDED_STATUSES.has(profile?.status);
 
-  // MEH-1352: cap applies to the free plan only (mirrors the upload.py 403
-  // guard). atCap disables the picker; the backend 403 stays as safety net.
+  // MEH-1352: cap applies to the free plan only (mirrors the gallery_cap.py
+  // 403 on save, MEH-3220). atCap disables the picker; the backend 403 stays as safety net.
   const capApplies = (profile?.plan ?? "free") === "free";
   const atCap = capApplies && images.length >= FREE_IMAGE_CAP;
 
@@ -648,12 +667,12 @@ function AssistForm({ t, assist }) {
         {/* MEH-1608: handle-shaped placeholder via i18n — the old hardcoded
             "https://instagram.com/…" told owners to type the exact value
             that broke their public link (ContactCard composes the URL). */}
-        <input
+        <Input inline size="sm"
           type="text"
           value={instagram}
           onChange={(e) => setInstagram(e.target.value.slice(0, 200))}
           placeholder={t("instagram_placeholder")}
-          className="w-full border border-border bg-surface rounded-sm px-3 py-2 text-sm focus-ring"
+          className="w-full"
           dir="ltr"
           maxLength={200}
         />
@@ -695,12 +714,12 @@ function AssistField({ label, value, onChange, placeholder, optional }) {
           </span>
         )}
       </div>
-      <input
+      <Input inline size="sm"
         type="text"
         value={value}
         onChange={(e) => onChange(e.target.value.slice(0, 200))}
         placeholder={placeholder}
-        className="w-full border border-border bg-surface rounded-sm px-3 py-2 text-sm focus-ring"
+        className="w-full"
         dir="auto"
         maxLength={200}
       />
@@ -867,12 +886,12 @@ export function DescriptionCard({ profile, onSave, reportDirty = () => {} }) {
           <label className="text-sm font-medium">{t("tagline_label")}</label>
           <span className="text-2xs text-fg-muted">{t("tagline_where")}</span>
         </div>
-        <input
+        <Input inline size="sm"
           type="text"
           value={tagline}
           onChange={(e) => { setTagline(e.target.value.slice(0, TAGLINE_MAX)); setSaved(false); }}
           placeholder={t("tagline_placeholder")}
-          className="w-full border border-primary/30 bg-primary/5 rounded-sm px-3 py-2 text-sm focus-ring"
+          className="w-full"
           dir="auto"
           maxLength={TAGLINE_MAX}
         />
@@ -1991,7 +2010,7 @@ export function DeliveryCard({ profile, onSave, reportDirty = () => {} }) {
                   {t("fee_label")}
                 </label>
                 <p className="text-xs text-fg-muted mb-1">{t("fee_hint")}</p>
-                <input
+                <Input inline size="sm"
                   id="delivery-fee"
                   type="number"
                   inputMode="numeric"
@@ -2001,7 +2020,7 @@ export function DeliveryCard({ profile, onSave, reportDirty = () => {} }) {
                   value={form.fee}
                   onChange={(e) => set({ fee: e.target.value })}
                   placeholder={t("fee_placeholder")}
-                  className="w-32 border border-border rounded-sm px-3 py-2 text-sm focus-ring"
+                  className="w-32"
                 />
               </div>
               <div>
@@ -2014,7 +2033,7 @@ export function DeliveryCard({ profile, onSave, reportDirty = () => {} }) {
                 <p className="text-xs text-fg-muted mb-1">
                   {t("free_above_hint")}
                 </p>
-                <input
+                <Input inline size="sm"
                   id="free-delivery-above"
                   type="number"
                   inputMode="numeric"
@@ -2024,7 +2043,7 @@ export function DeliveryCard({ profile, onSave, reportDirty = () => {} }) {
                   value={form.freeAbove}
                   onChange={(e) => set({ freeAbove: e.target.value })}
                   placeholder={t("free_above_placeholder")}
-                  className="w-32 border border-border rounded-sm px-3 py-2 text-sm focus-ring"
+                  className="w-32"
                 />
               </div>
             </div>
@@ -2076,7 +2095,7 @@ export function DeliveryCard({ profile, onSave, reportDirty = () => {} }) {
                           className="flex flex-wrap items-center justify-between gap-2 text-sm"
                         >
                           <span className="min-w-0 flex-1 truncate">{c}</span>
-                          <input
+                          <Input inline size="xs"
                             type="number"
                             inputMode="numeric"
                             min="0"
@@ -2089,7 +2108,7 @@ export function DeliveryCard({ profile, onSave, reportDirty = () => {} }) {
                               set({ fees: { ...form.fees, [c]: e.target.value } })
                             }
                             placeholder={t("area_fee_placeholder")}
-                            className="w-20 border border-border rounded-sm px-2 py-1 text-sm bg-surface focus-ring"
+                            className="w-20"
                           />
                           <select
                             value={form.days[c] || ""}
@@ -2349,7 +2368,7 @@ export function OffersCard({ profile, onSave, reportDirty = () => {} }) {
               <span className="block text-sm text-muted mb-0.5">{t("threshold_label")}</span>
               <p className="text-xs text-fg-muted mb-2">{t("threshold_hint")}</p>
               <div className="flex flex-wrap items-center gap-2">
-                <input
+                <Input inline size="sm"
                   type="number"
                   inputMode="numeric"
                   min="1"
@@ -2359,7 +2378,7 @@ export function OffersCard({ profile, onSave, reportDirty = () => {} }) {
                   data-testid="offer-threshold-input"
                   onChange={(e) => set({ threshold: e.target.value })}
                   placeholder={t("threshold_placeholder")}
-                  className="w-24 border border-border rounded-sm px-3 py-2 text-sm focus-ring"
+                  className="w-24"
                 />
                 <select
                   value={form.unit}
@@ -2393,7 +2412,7 @@ export function OffersCard({ profile, onSave, reportDirty = () => {} }) {
               <p className="text-xs text-fg-muted mb-1">
                 {isCustom ? t("custom_hint") : t("headline_hint")}
               </p>
-              <input
+              <Input inline size="sm"
                 id="offer-headline"
                 type="text"
                 maxLength={MAX_OFFER_HEADLINE}
@@ -2404,7 +2423,7 @@ export function OffersCard({ profile, onSave, reportDirty = () => {} }) {
                 data-testid="offer-headline-input"
                 onChange={(e) => set({ headline: e.target.value })}
                 placeholder={t("headline_placeholder")}
-                className="w-full border border-border rounded-sm px-3 py-2 text-sm focus-ring"
+                className="w-full"
               />
               {missingCustomHeadline && (
                 <p className="text-xs text-danger-600 mt-1" data-testid="offer-headline-error">
@@ -2418,13 +2437,12 @@ export function OffersCard({ profile, onSave, reportDirty = () => {} }) {
                 {t("expires_label")}
               </label>
               <p className="text-xs text-fg-muted mb-1">{t("expires_hint")}</p>
-              <input
+              <Input inline size="sm"
                 id="offer-expires"
                 type="date"
                 value={form.expires}
                 data-testid="offer-expires-input"
                 onChange={(e) => set({ expires: e.target.value })}
-                className="border border-border rounded-sm px-3 py-2 text-sm focus-ring"
               />
               {missingExpiry && (
                 <p className="text-xs text-danger-600 mt-1" data-testid="offer-expiry-error">

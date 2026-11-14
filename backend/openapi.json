@@ -775,7 +775,7 @@
         "type": "object"
       },
       "BusinessSuggestionCreate": {
-        "description": "Public body for POST /business-suggestions (MEH-2633).\n\nA visitor suggesting a business that is not on Mehamakor yet. The row it\nproduces is an ordinary OutreachLead with source=\"community\" — nothing is\npublished, and the business still registers itself and passes manual\napproval + the licence check.\n\nField rules worth stating, because each one is a decision:\n\n- `city` is REQUIRED. REUSES `clean_display_city` (:259), so it gets the\n  same bleach + >=1-letter floor as the registration form's city; \"בת ים\"\n  and \"לוד\" clear a 1-letter floor where the >=3 used for names would not.\n- `instagram` / `phone` / `website`: at least ONE is required, enforced by\n  `_require_one_contact` below — without a way to reach the business the\n  suggestion is unactionable, which is the whole point of the queue. The\n  error text is the approved `<hebrew_copy>` string verbatim.\n- `company` is a HONEYPOT. No human sees it (Chunk B hides it from sighted\n  users AND from screen readers), so any value at all means a bot. The\n  router answers 201 and stores nothing — never a 4xx, which would tell\n  the bot what tripped it.\n- `suggester_email` is optional PII. It is normalised through\n  `_normalize_contact_email` (:342) so a cleared field arrives as None\n  rather than 422-ing, and capped at 254 to match the column. It is NEVER\n  echoed back: see BusinessSuggestionAck.\n\n`Field(max_length=…)` sits at field level on `instagram` / `suggester_name`\n/ `reason`, whose separate `@field_validator`s may return None. That is\nsafe, and deliberately NOT the Annotated form: an `AfterValidator` inside\nthe annotation would have the cap applied to the validator's OUTPUT and\nblow up with \"Unable to apply constraint 'max_length' to supplied value\nNone\" (the trap documented at :640-652). `suggester_email` carries no\nfield-level cap for the same reason in reverse — its validator is\nmode=\"before\", so a cap would land after it.",
+        "description": "Public body for POST /business-suggestions (MEH-2633).\n\nA visitor suggesting a business that is not on Mehamakor yet. The row it\nproduces is an ordinary OutreachLead with source=\"community\" — nothing is\npublished, and the business still registers itself and passes manual\napproval + the licence check.\n\nField rules worth stating, because each one is a decision:\n\n- `city` is REQUIRED. REUSES `clean_display_city` (:259), so it gets the\n  same bleach + >=1-letter floor as the registration form's city; \"בת ים\"\n  and \"לוד\" clear a 1-letter floor where the >=3 used for names would not.\n- `instagram` / `phone` / `website`: at least ONE is required, enforced by\n  `_require_one_contact` below — without a way to reach the business the\n  suggestion is unactionable, which is the whole point of the queue. The\n  error text is the approved `<hebrew_copy>` string verbatim.\n- `company` is a HONEYPOT. No human sees it (Chunk B hides it from sighted\n  users AND from screen readers), so any value at all means a bot. The\n  router answers 201 and stores nothing — never a 4xx, which would tell\n  the bot what tripped it.\n- `suggester_email` is still ACCEPTED but IGNORED by the router since\n  MEH-2642: the stored address is the signed-in, verified account's only.\n  It stays in the schema so an old client does not 422. DO NOT wire it\n  back in — a typed address is unverified (MEH-2642). It is still\n  normalised through `_normalize_contact_email` (:342) and never echoed.\n\n`Field(max_length=…)` sits at field level on `instagram` / `suggester_name`\n/ `reason`, whose separate `@field_validator`s may return None. That is\nsafe, and deliberately NOT the Annotated form: an `AfterValidator` inside\nthe annotation would have the cap applied to the validator's OUTPUT and\nblow up with \"Unable to apply constraint 'max_length' to supplied value\nNone\" (the trap documented at :640-652). `suggester_email` carries no\nfield-level cap for the same reason in reverse — its validator is\nmode=\"before\", so a cap would land after it.",
         "properties": {
           "city": {
             "maxLength": 100,
@@ -5215,6 +5215,11 @@
             "title": "Email",
             "type": "string"
           },
+          "farmer_declaration_accepted": {
+            "default": false,
+            "title": "Farmer Declaration Accepted",
+            "type": "boolean"
+          },
           "password": {
             "description": "Password — additional checks via password_policy service",
             "maxLength": 200,
@@ -7057,6 +7062,11 @@
             ],
             "title": "Facebook"
           },
+          "farmer_declaration_accepted": {
+            "default": false,
+            "title": "Farmer Declaration Accepted",
+            "type": "boolean"
+          },
           "free_delivery_above": {
             "anyOf": [
               {
@@ -7564,6 +7574,19 @@
         "title": "ProducerClaimLinkOut",
         "type": "object"
       },
+      "ProducerClaimNewLinkOut": {
+        "properties": {
+          "ok": {
+            "title": "Ok",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "ok"
+        ],
+        "title": "ProducerClaimNewLinkOut",
+        "type": "object"
+      },
       "ProducerClaimOut": {
         "properties": {
           "producer_id": {
@@ -7659,6 +7682,11 @@
             "title": "Declaration Accepted",
             "type": "boolean"
           },
+          "farmer_declaration_accepted": {
+            "default": false,
+            "title": "Farmer Declaration Accepted",
+            "type": "boolean"
+          },
           "terms_accepted": {
             "default": false,
             "title": "Terms Accepted",
@@ -7738,6 +7766,11 @@
               }
             ],
             "title": "Facebook"
+          },
+          "farmer_declaration_accepted": {
+            "default": false,
+            "title": "Farmer Declaration Accepted",
+            "type": "boolean"
           },
           "instagram": {
             "anyOf": [
@@ -10228,6 +10261,18 @@
             ],
             "title": "Facebook"
           },
+          "farmer_declared_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Farmer Declared At"
+          },
           "favorites_count": {
             "default": 0,
             "title": "Favorites Count",
@@ -11337,6 +11382,11 @@
             ],
             "title": "Email"
           },
+          "farmer_declaration_accepted": {
+            "default": false,
+            "title": "Farmer Declaration Accepted",
+            "type": "boolean"
+          },
           "has_physical_location": {
             "default": true,
             "title": "Has Physical Location",
@@ -11862,6 +11912,11 @@
               }
             ],
             "title": "Facebook"
+          },
+          "farmer_declaration_accepted": {
+            "default": false,
+            "title": "Farmer Declaration Accepted",
+            "type": "boolean"
           },
           "free_delivery_above": {
             "anyOf": [
@@ -20613,7 +20668,7 @@
     },
     "/auth/resend-verify": {
       "post": {
-        "description": "Re-send verification email. Rate-limited to 3/hour per IP.",
+        "description": "Re-send verification email. 3/hour per IP, plus 3/hour and 10/day\nper account (MEH-2906, services/resend_verify_cap.py).",
         "operationId": "resend_verify_auth_resend_verify_post",
         "responses": {
           "200": {
@@ -22737,6 +22792,48 @@
           }
         ],
         "summary": "Claim Producer",
+        "tags": [
+          "producer-claim"
+        ]
+      }
+    },
+    "/producer-claim/new-link-request": {
+      "post": {
+        "description": "The owner opened a claim link that no longer works and asks for a new\none. Sapir's decision (14/11): the admin is told and sends the link\nherself — this route never mints a link and never returns one.\n\nDO NOT branch the response on the token. The answer is the same for a\nforged token, an unknown draft, a claimed draft and a real request, so it\ncannot be used to probe which producer ids exist (same reason as\n_LINK_INVALID above).",
+        "operationId": "request_new_claim_link_producer_claim_new_link_request_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProducerClaimPreviewRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProducerClaimNewLinkOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Request New Claim Link",
         "tags": [
           "producer-claim"
         ]
@@ -26690,7 +26787,7 @@
     },
     "/upload/image": {
       "post": {
-        "description": "Upload image to Cloudinary. Validates size and real content type.\nEnforces free plan limit (3 images) for producers.",
+        "description": "Upload image to Cloudinary. Validates size and real content type.\nThe free-plan gallery cap is NOT here (MEH-3220, services/gallery_cap.py).",
         "operationId": "upload_image_upload_image_post",
         "requestBody": {
           "content": {

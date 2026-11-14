@@ -51,7 +51,9 @@ vi.mock("@/lib/contact-tracking", () => ({
   trackContactClick: vi.fn(),
 }));
 
-import WhatsAppQuestionChips, { WA_SUFFIX } from "@/components/WhatsAppQuestionChips";
+import WhatsAppQuestionChips from "@/components/WhatsAppQuestionChips";
+
+const WA_SUFFIX = he.whatsapp.question_chips.wa_suffix;
 import { resolveProducerQuestions } from "@/lib/resolvedQuestions";
 
 const chips = he.whatsapp.question_chips;

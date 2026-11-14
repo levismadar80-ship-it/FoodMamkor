@@ -18,7 +18,6 @@ from app.models.billing import BILLABLE_KINDS, BillableEvent
 from app.pricing import current_price_list
 from app.services import billing_summary
 from app.services.billing_summary import Month
-from app.services.capabilities import gallery_image_limit, gallery_is_full
 from conftest import auth_header, make_producer, make_user
 from uuid import uuid4
 
@@ -467,28 +466,6 @@ class TestMonth:
     def test_parse_refuses_anything_else(self, text):
         with pytest.raises(ValueError):
             Month.parse(text)
-
-
-class _Biz:
-    def __init__(self, plan, images):
-        self.plan, self.images = plan, images
-
-
-class TestGalleryCapability:
-    """The cap as it was in upload.py: free plan, 3 images."""
-
-    def test_free_plan_is_capped_at_three(self):
-        assert gallery_image_limit(_Biz("free", [])) == 3
-        assert gallery_is_full(_Biz("free", ["a", "b"])) is False
-        assert gallery_is_full(_Biz("free", ["a", "b", "c"])) is True
-
-    def test_any_other_plan_and_a_missing_plan_are_not_capped(self):
-        assert gallery_is_full(_Biz("premium", ["a"] * 9)) is False
-        assert gallery_is_full(_Biz(None, ["a"] * 9)) is False
-        assert gallery_is_full(None) is False
-
-    def test_no_images_is_not_full(self):
-        assert gallery_is_full(_Biz("free", None)) is False
 
 
 def test_the_start_billing_rule_in_the_price_doc_equals_the_code():

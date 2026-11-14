@@ -1,3 +1,5 @@
+// @ts-check
+import { isOwnerPreview } from "@/lib/owner-preview";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import * as Sentry from "@sentry/nextjs";
@@ -50,6 +52,7 @@ async function getExperience(id) {
       level: "error",
       extra: { route: ROUTE, id, status: res.status },
     });
+    /** @type {Error & { status?: number, entityId?: string }} */
     const err = new Error(
       `experience lookup failed: ${res.status} ${res.statusText} (id=${id})`
     );
@@ -81,10 +84,17 @@ export async function generateMetadata(props) {
   ]);
   const path = `/experiences/${id}`;
   const alternates = buildAlternates(path, locale);
-  // MEH-2101: pre-streaming, so this yields a REAL 404 status. A page-level
+  // MEH-2101: meant to yield a REAL 404 status. MEH-3199 measured 14/11 on a
+  // local build, before and after: 200 + noindex for a missing id (see
+  // not-found.js). A page-level
   // notFound() alone streams 200 + 404 UI, because the shared
   // app/[locale]/loading.js boundary flushes the shell first — bots would
   // keep crawling a soft 404. (MEH-1045 established this on the slug route.)
+  // Owner/admin preview (lib/owner-preview.js): the anonymous fetch cannot
+  // see a pending item, so say nothing indexable and let the browser ask.
+  if (!experience && isOwnerPreview(await props.searchParams)) {
+    return { title: t("title_fallback"), robots: { index: false, follow: false } };
+  }
   if (!experience) notFound();
   const entityName = experience?.title || experience?.name;
 
@@ -140,11 +150,14 @@ export default async function ExperienceDetailPage(props) {
   // Same request as generateMetadata (revalidate:60 dedupes it), which already
   // 404s a missing experience; belt-and-braces for the body.
   const experience = await getExperience(params.id);
-  if (!experience) notFound();
+  // Owner/admin preview (lib/owner-preview.js): render the client, which asks
+  // again with the user's token; the backend decides whether she may see it.
+  const preview = !experience && isOwnerPreview(await props.searchParams);
+  if (!experience && !preview) notFound();
   const t = await getTranslations({ locale: params.locale, namespace: "experiences.detail" });
   return (
     <>
-      <ExperienceJsonLd experience={experience} locale={params.locale} />
+      {experience && <ExperienceJsonLd experience={experience} locale={params.locale} />}
       {/* MEH-2754: min-h-screen keeps the footer below the fold while the
           fallback shows, so swapping in the page shifts nothing in view. */}
       <Suspense
@@ -154,7 +167,8 @@ export default async function ExperienceDetailPage(props) {
           </div>
         }
       >
-        <ExperienceDetailClient />
+        {/* MEH-3199: server data in the first HTML; key resets on a move to another workshop. */}
+        <ExperienceDetailClient key={experience?.id ?? params.id} initialExperience={experience} />
       </Suspense>
     </>
   );

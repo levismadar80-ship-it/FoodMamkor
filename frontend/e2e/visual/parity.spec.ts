@@ -640,7 +640,13 @@ test.describe("Visual parity — MEH-991", () => {
   test("home trust band", async ({ page }) => {
     await preparePage(page);
     await page.goto("/");
-    const band = page.locator('[data-testid="home-trust-band"]');
+    // MEH-3209: scoped to #main-content. During the page-transition window a
+    // second copy of the page tree exists briefly OUTSIDE the landmark (the
+    // MEH-1792 shape, home.spec.ts:199-207), and a page-wide locator then
+    // resolved to two bands, one aria-busy (run 43628535416). Not `.first()`:
+    // a real permanent double-mount inside the landmark must still fail.
+    const main = page.locator("#main-content");
+    const band = main.locator('[data-testid="home-trust-band"]');
     await expect(band.locator('[data-testid="trust-count"]')).toBeVisible({ timeout: 20_000 });
     await band.scrollIntoViewIfNeeded();
     await settle(page);
@@ -732,7 +738,10 @@ test.describe("Visual parity — MEH-991", () => {
       });
     });
     await page.goto("/");
-    const section = page.locator('[data-testid="home-whats-on"]');
+    // MEH-3209: same #main-content scope as "home trust band" above, so a
+    // transient second page tree cannot double the rows counted below.
+    const main = page.locator("#main-content");
+    const section = main.locator('[data-testid="home-whats-on"]');
     // MEH-2961: scroll FIRST, assert the count SECOND. The strip asks its four
     // sources for nothing until it nears the viewport (IntersectionObserver —
     // the MEH-2233 LCP budget), and it sits below the producers grid, so on
@@ -766,11 +775,11 @@ test.describe("Visual parity — MEH-991", () => {
     // `Expected: 3 Received: 0` — the line that diagnosed this bug — instead
     // of burning the action timeout and dying on the 45s test timeout.
     await expect(async () => {
-      await page
+      await main
         .locator('[data-testid="home-whats-on-sentinel"], [data-testid="home-whats-on"]')
         .first()
         .scrollIntoViewIfNeeded({ timeout: 5_000 });
-      await expect(page.locator('[data-testid="whats-on-row"]')).toHaveCount(3, { timeout: 2_000 });
+      await expect(main.locator('[data-testid="whats-on-row"]')).toHaveCount(3, { timeout: 2_000 });
     }).toPass({ timeout: 20_000 });
     await section.scrollIntoViewIfNeeded();
     await settle(page);

@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 /**
@@ -27,9 +28,10 @@ import InlineMessage from "@/components/ui/InlineMessage";
 import { SkeletonBlock } from "@/components/Skeleton";
 
 /**
- * @param {"events"|"experiences"} kind
- * @param {string} itemId
- * @param {number} count  active sign-ups (registered_count from the list route)
+ * @param {object} props
+ * @param {"events"|"experiences"} props.kind
+ * @param {string} props.itemId
+ * @param {number} [props.count]  active sign-ups (registered_count from the list route)
  */
 export default function RegistrationsList({ kind, itemId, count = 0 }) {
   const t = useTranslations("registration.list");

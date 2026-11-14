@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Module:   format-date
  * Purpose:  Locale-aware date formatting for event / experience surfaces.
@@ -19,11 +20,12 @@ const LOCALE_TAG = { he: "he-IL", en: "en-US" };
 
 // Default = the event-card signature EventsClient renders for both events
 // and experiences (one EntryRow since the route-as-tab merge).
+/** @type {Intl.DateTimeFormatOptions} */
 const DEFAULT_OPTIONS = { weekday: "long", day: "numeric", month: "long" };
 
 /**
  * Format an ISO date string in the active locale.
- * @param {string} iso - ISO date string (or empty/nullish → "").
+ * @param {string | Date} iso - ISO date string or a Date (empty/nullish → "").
  * @param {string} locale - next-intl locale from useLocale() ("he" | "en").
  * @param {Intl.DateTimeFormatOptions} [options] - defaults to weekday/day/month long.
  * @returns {string}
@@ -38,7 +40,8 @@ export function formatEventDate(iso, locale, options = DEFAULT_OPTIONS) {
     if (Number.isNaN(d.getTime())) return "";
     return d.toLocaleDateString(LOCALE_TAG[locale] ?? "he-IL", options);
   } catch {
-    return iso;
+    // A Date input must still come back as a string, per @returns.
+    return String(iso);
   }
 }
 
@@ -48,11 +51,14 @@ export function formatEventDate(iso, locale, options = DEFAULT_OPTIONS) {
 //   dayMonth → 5 בנובמבר        (vacation return, special opening days)
 //   long     → יום חמישי, 5 בנובמבר (event signature)
 //   dateTime → 05.11.2026, 10:07 (admin "waiting since" tooltips)
+//   monthYear → נובמבר 2026      (the «מה חדש» release list, MEH-3200)
+/** @type {Record<string, Intl.DateTimeFormatOptions>} */
 const STYLES = {
   numeric: { day: "2-digit", month: "2-digit", year: "numeric" },
   dayMonth: { day: "numeric", month: "long" },
   long: DEFAULT_OPTIONS,
   dateTime: { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit", hourCycle: "h23" },
+  monthYear: { month: "long", year: "numeric" },
 };
 const DATE_ONLY = /^\d{4}-\d{2}-\d{2}$/;
 const NOON_UTC = 12;
@@ -60,7 +66,7 @@ const NOON_UTC = 12;
 /**
  * @param {string|number|Date|null|undefined} value ISO instant, `YYYY-MM-DD`, epoch ms or Date.
  * @param {string} locale next-intl locale ("he" | "en") or a BCP-47 tag.
- * @param {"numeric"|"dayMonth"|"long"|"dateTime"} [style]
+ * @param {"numeric"|"dayMonth"|"long"|"dateTime"|"monthYear"} [style]
  * @returns {string} "" for an empty or unparseable value.
  */
 export function formatDate(value, locale, style = "numeric") {

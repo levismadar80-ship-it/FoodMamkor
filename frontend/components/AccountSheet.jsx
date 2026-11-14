@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 // MEH-2578: locale-aware Link — next/link dropped the /en prefix, and with
@@ -121,7 +122,7 @@ export default function AccountSheet({ open, onClose, user, logout }) {
         type="button"
         aria-label={t("nav.menu_close")}
         onClick={onClose}
-        className="fixed inset-0 z-[1001] bg-black/40"
+        className="fixed inset-0 z-account-scrim bg-black/40"
       />
       <div
         ref={panelRef}
@@ -132,7 +133,7 @@ export default function AccountSheet({ open, onClose, user, logout }) {
         // MEH-868: clear the floating pill AND the safe-area inset (the pill
         // itself rides above safe-area via calc(env(safe-area-inset-bottom)+16px),
         // so a flat 88px overlapped it on notched devices).
-        className="vv-pin fixed inset-x-4 bottom-[calc(env(safe-area-inset-bottom)+88px)] z-[1002] rounded-xl bg-green-900 border border-white/10 p-[22px] shadow-xl"
+        className="vv-pin fixed inset-x-4 bottom-[calc(env(safe-area-inset-bottom)+88px)] z-account-sheet rounded-xl bg-green-900 border border-white/10 p-[22px] shadow-xl"
       >
         {/* Head — avatar · name · state */}
         <div className="flex items-center gap-3 pb-4 border-b border-white/10">

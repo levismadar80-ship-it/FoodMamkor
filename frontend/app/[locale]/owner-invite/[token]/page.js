@@ -1,3 +1,4 @@
+// @ts-check
 import OwnerInviteClient from "../OwnerInviteClient";
 import { ownerInviteMetadata } from "../owner-invite-metadata";
 

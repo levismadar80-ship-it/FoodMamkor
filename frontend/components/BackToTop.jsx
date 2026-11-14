@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 import { useEffect, useState } from "react";
@@ -107,7 +108,7 @@ export default function BackToTop() {
       onClick={handleClick}
       aria-label={t("back_to_top")}
       data-testid="back-to-top"
-      className="vv-pin fixed end-4 z-[1000] flex items-center justify-center w-12 h-12 rounded-full bg-background text-primary border border-border shadow-lg hover:bg-green-50 transition-colors focus-ring"
+      className="vv-pin fixed end-4 z-back-to-top flex items-center justify-center w-12 h-12 rounded-full bg-background text-primary border border-border shadow-lg hover:bg-green-50 transition-colors focus-ring"
       style={{ bottom: isDesktop ? BOTTOM_DESKTOP : BOTTOM_MOBILE }}
     >
       <ArrowUp size={24} weight="bold" aria-hidden="true" />

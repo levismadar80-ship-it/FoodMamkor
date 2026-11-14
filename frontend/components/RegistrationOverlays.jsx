@@ -117,7 +117,7 @@ export function StickyRegistrationBar({ note, children }) {
   if (footerInView) return null;
   return (
     <div
-      className="vv-pin lg:hidden fixed inset-x-0 bottom-[calc(var(--bottom-nav-clearance,calc(env(safe-area-inset-bottom)+72px))+8px+var(--cookie-banner-h,0px))] z-[598] flex px-[14px] pointer-events-none"
+      className="vv-pin lg:hidden fixed inset-x-0 bottom-[calc(var(--bottom-nav-clearance,calc(env(safe-area-inset-bottom)+72px))+8px+var(--cookie-banner-h,0px))] z-sticky-bar flex px-[14px] pointer-events-none"
       data-testid="registration-bar"
       data-chat-hide=""
     >
@@ -180,7 +180,7 @@ export function RegistrationSheet({ title, closeLabel, onClose, children }) {
       role="dialog"
       aria-modal="true"
       aria-labelledby="registration-sheet-title"
-      className="fixed inset-0 z-[9000] bg-surface flex flex-col"
+      className="fixed inset-0 z-modal bg-surface flex flex-col"
       data-testid="registration-sheet"
     >
       <div className="relative border-b border-border px-4 py-2 shrink-0" style={{ paddingTop: "max(env(safe-area-inset-top, 0px), 8px)" }}>

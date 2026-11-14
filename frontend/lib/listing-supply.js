@@ -1,3 +1,4 @@
+// @ts-check
 import "server-only";
 
 /**
@@ -69,7 +70,9 @@ export function getHubCount(hubKey) {
 export async function getAllHubCounts() {
   const keys = Object.keys(HUBS);
   const counts = await Promise.all(keys.map(fetchCount));
-  return Object.fromEntries(keys.map((k, i) => [k, counts[i]]));
+  return /** @type {{events: number|null, experiences: number|null, groupBuys: number|null}} */ (
+    Object.fromEntries(keys.map((k, i) => [k, counts[i]]))
+  );
 }
 
 /** Sitemap rule: list a hub only when it is known to have at least one item. */

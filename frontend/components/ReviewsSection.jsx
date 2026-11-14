@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 import { useEffect, useRef, useState } from "react";
@@ -23,6 +24,7 @@ import SectionHeading from "@/components/ui/SectionHeading";
 import ShowMore from "@/components/ui/ShowMore";
 import InlineMessage from "@/components/ui/InlineMessage";
 import { avatarInitial } from "@/components/ui/Avatar";
+import { COLOR } from "@/lib/color-tokens";
 
 // MEH-2833 (seed layer, board 4): a reviewer's initial sits on a soft tint of
 // "their" seed — the seed colour mixed ~24% into the cream page, with an inset
@@ -60,6 +62,7 @@ export function ReviewInitial({ seedKey, letter }) {
 // HOT-018 (MEH-782): numeric short date (e.g. 7.6.2026) — preserves the prior
 // `toLocaleDateString` default while routing through the Invalid-Date-guarded,
 // locale-aware helper so /en no longer renders Hebrew review dates.
+/** @type {Intl.DateTimeFormatOptions} */
 export const REVIEW_DATE_OPTIONS = { year: "numeric", month: "numeric", day: "numeric" };
 
 // "Sapir L." — first name + last initial (privacy)
@@ -103,13 +106,13 @@ export function StarRow({ value, size = 16, ariaLabel }) {
             style={{ width: size, height: size }}
             aria-hidden="true"
           >
-            <Star size={size} weight="regular" color="#e5dfd3" />
+            <Star size={size} weight="regular" color={COLOR.border} />
             {fill > 0 && (
               <span
                 className="absolute inset-y-0 start-0 overflow-hidden"
                 style={{ width: `${Math.round(fill * 100)}%` }}
               >
-                <Star size={size} weight="fill" color="#896714" />
+                <Star size={size} weight="fill" color={COLOR.accent} />
               </span>
             )}
           </span>

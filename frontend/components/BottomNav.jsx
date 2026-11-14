@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 // MEH-731: locale-stripping usePathname (returns "/" on /he and /en) so the
@@ -479,7 +480,7 @@ export default function BottomNav() {
           bottom when iOS 26 leaves fixed layers drifted (IosViewportPin.jsx). */}
       <div
         ref={shellRef}
-        className="vv-pin md:hidden fixed bottom-0 inset-x-0 z-[1000] flex justify-center px-[14px] pointer-events-none"
+        className="vv-pin md:hidden fixed bottom-0 inset-x-0 z-bottom-nav flex justify-center px-[14px] pointer-events-none"
         style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 16px)" }}
         // MEH-1014: any focus landing inside the pill forces it back to full
         // size (mirror of the MEH-734 focus guard). onFocusCapture catches it

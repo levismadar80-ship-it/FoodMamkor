@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Module:   group-buy-transitions
  * Purpose:  MEH-2868 — which status a group buy may move to, from each status,

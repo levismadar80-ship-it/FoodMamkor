@@ -3092,7 +3092,8 @@ export const RegisterProducerOauthAuthRegisterProducerOauthPostResponse = /*#__P
 
 
 /**
- * Re-send verification email. Rate-limited to 3/hour per IP.
+ * Re-send verification email. 3/hour per IP, plus 3/hour and 10/day
+ * per account (MEH-2906, services/resend_verify_cap.py).
  * @summary Resend Verify
  */
 export const ResendVerifyAuthResendVerifyPostResponse = /*#__PURE__*/ zod.unknown()
@@ -4096,6 +4097,22 @@ export const ClaimProducerProducerClaimPostResponse = /*#__PURE__*/ zod.object({
 
 
 /**
+ * The owner opened a claim link that no longer works and asks for a new
+ * one. Sapir's decision (14/11): the admin is told and sends the link
+ * herself — this route never mints a link and never returns one.
+ *
+ * DO NOT branch the response on the token. The answer is the same for a
+ * forged token, an unknown draft, a claimed draft and a real request, so it
+ * cannot be used to probe which producer ids exist (same reason as
+ * _LINK_INVALID above).
+ * @summary Request New Claim Link
+ */
+export const RequestNewClaimLinkProducerClaimNewLinkRequestPostResponse = /*#__PURE__*/ zod.object({
+  "ok": /*#__PURE__*/ zod.boolean()
+})
+
+
+/**
  * @summary Preview Claim
  */
 export const previewClaimProducerClaimPreviewPostResponseCategoryNamesDefault = [];
@@ -4871,6 +4888,7 @@ export const GetMyProducerProducersMeGetResponse = /*#__PURE__*/ zod.object({
   "established_year": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "external_order_form": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "facebook": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "farmer_declared_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()])),
   "favorites_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), getMyProducerProducersMeGetResponseFavoritesCountDefault),
   "free_delivery_above": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "gluten_free_facility": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), getMyProducerProducersMeGetResponseGlutenFreeFacilityDefault),
@@ -5093,6 +5111,7 @@ export const UpdateMyProducerProducersMePutResponse = /*#__PURE__*/ zod.object({
   "established_year": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "external_order_form": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "facebook": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "farmer_declared_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()])),
   "favorites_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), updateMyProducerProducersMePutResponseFavoritesCountDefault),
   "free_delivery_above": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "gluten_free_facility": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), updateMyProducerProducersMePutResponseGlutenFreeFacilityDefault),
@@ -6795,7 +6814,7 @@ export const UploadAvatarUploadAvatarPostResponse = /*#__PURE__*/ zod.unknown()
 
 /**
  * Upload image to Cloudinary. Validates size and real content type.
- * Enforces free plan limit (3 images) for producers.
+ * The free-plan gallery cap is NOT here (MEH-3220, services/gallery_cap.py).
  * @summary Upload Image
  */
 export const UploadImageUploadImagePostResponse = /*#__PURE__*/ zod.unknown()

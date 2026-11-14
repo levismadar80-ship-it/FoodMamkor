@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 import { Link, useRouter } from "@/i18n/navigation";
@@ -150,8 +151,10 @@ function NewGroupBuyForm({ producerCity, onCreated, emailUnverified = false }) {
         </div>
 
         <div className="sm:col-span-2">
-          <label className="block text-sm font-medium mb-1">{t("description_label")}</label>
+          {/* MEH-3191: the label was a bare sibling, so the textarea had no name. */}
+          <label htmlFor="group-buy-description" className="block text-sm font-medium mb-1">{t("description_label")}</label>
           <textarea
+            id="group-buy-description"
             value={form.description}
             onChange={set("description")}
             placeholder={t("description_placeholder")}
@@ -269,10 +272,10 @@ function NewGroupBuyForm({ producerCity, onCreated, emailUnverified = false }) {
               {" *"}
             </span>
           </legend>
-          {[
+          {/** @type {Array<[string, import("react").RefObject<HTMLTextAreaElement>]>} */ ([
             ["pickup", pickupRef],
             ["delivery", deliveryRef],
-          ].map(([kind, ref]) => {
+          ]).map(([kind, ref]) => {
             const invalid = noteError?.includes(kind);
             return (
               <div key={kind} className="flex flex-col gap-1.5">
@@ -350,7 +353,9 @@ function GroupBuyActionDialog({ pending, busy, stale, error, onConfirm, onClose 
   // A confirmed cancel/deliver ends in a state with no action row, so the
   // button that opened this is gone by close time; focus goes to its card.
   const cardFallback = () =>
-    document.querySelector(`[data-group-buy-card="${CSS.escape(String(pending.gb.id))}"]`);
+    /** @type {HTMLElement | null} */ (
+      document.querySelector(`[data-group-buy-card="${CSS.escape(String(pending.gb.id))}"]`)
+    );
 
   const { gb, action } = pending;
   const destructive = action !== "deliver";
@@ -695,7 +700,7 @@ export default function ProducerGroupBuysPage() {
                     {t("deadline_prefix", { date: formatEventDate(gb.deadline, locale, { day: "numeric", month: "numeric", year: "numeric" }) })}
                   </span>
                   <Link
-                    href={`/group-buys/${gb.id}`}
+                    href={`/group-buys/${gb.id}?preview=1`}
                     className="text-primary hover:underline"
                   >
                     {t("view_public")}

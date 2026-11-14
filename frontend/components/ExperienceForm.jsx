@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 /**
@@ -165,6 +166,7 @@ function isUrl(value) {
 }
 
 function validateExperienceForm(f, t, tReg) {
+  /** @type {Record<string, string>} */
   const errors = {};
   if (f.title.trim().length < 4) errors.title = t("error_title_short");
   if (f.description.trim().length < 20) errors.description = t("error_description_short");
@@ -212,10 +214,12 @@ function validateExperienceForm(f, t, tReg) {
 }
 
 /**
- * @param {"create"|"edit"} mode
- * @param {object|null} initial  experience (ExperienceDetailOut) to prefill
- * @param {(data:object)=>void} onSuccess  called with the created/updated row
- * @param {string} cancelHref
+ * @param {object} props
+ * @param {"create"|"edit"} [props.mode]
+ * @param {object|null} [props.initial]  experience (ExperienceDetailOut) to prefill
+ * @param {(data:object)=>void} props.onSuccess  called with the created/updated row
+ * @param {string} [props.cancelHref]
+ * @param {boolean} [props.emailUnverified]  MEH-2918: show the verify notice up front
  */
 // MEH-2918: emailUnverified (from the page's useAuth) shows the verify notice
 // up front; a 403 still shows it (and re-mounts it focused) when the prop is stale.
@@ -231,7 +235,7 @@ export default function ExperienceForm({ mode = "create", initial = null, onSucc
   const [checking, setChecking] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [serverError, setServerError] = useState("");
-  const [fieldErrors, setFieldErrors] = useState({});
+  const [fieldErrors, setFieldErrors] = useState(/** @type {Record<string, string>} */ ({}));
   const [unverifiedHits, setUnverifiedHits] = useState(0); // MEH-2918: 403 count, re-mounts the notice
   // MEH-2012: an upload is in flight. Gates submit — a form posted mid-upload
   // would save the PREVIOUS image_url while the owner is watching a new one
@@ -282,8 +286,8 @@ export default function ExperienceForm({ mode = "create", initial = null, onSucc
       const res = await api.post("/upload/image", formData);
       setForm((f) => ({ ...f, image_url: res.data.url }));
     } catch (err) {
-      // The endpoint's own Hebrew detail when it has one (the free-plan 3-image
-      // cap, upload.py:105, is a real sentence the owner needs) — otherwise ours.
+      // The endpoint's own Hebrew detail when it has one (file too large,
+      // wrong type: a real sentence the owner needs) — otherwise ours.
       const detail = err?.response?.data?.detail;
       setFieldErrors((errs) => ({
         ...errs,
@@ -818,6 +822,7 @@ export default function ExperienceForm({ mode = "create", initial = null, onSucc
 // cannot cover.
 // MEH-2015: `required` mirrors ui/Input's marker — the ONE asterisk mechanism.
 // The span is aria-hidden; the hosted control carries aria-required itself.
+/** @param {{ id?: string, label: import("react").ReactNode, required?: boolean, error?: import("react").ReactNode, children?: import("react").ReactNode }} props */
 function Field({ id, label, required, error, children }) {
   return (
     <div>

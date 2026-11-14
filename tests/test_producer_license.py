@@ -47,6 +47,7 @@ def _register_payload(
         "category_ids": category_ids,
         "primary_contact_method": "whatsapp",
         "declaration_accepted": True,  # MEH-759: mandatory binding declaration
+        "farmer_declaration_accepted": True,  # MEH-2923: VEGGIES needs the grower line
     }
     if license_number is not None:
         payload["producer_license_number"] = license_number
@@ -519,7 +520,9 @@ class TestOwnerPutGrandfathersLicense:
         producer, user = self._owner(db, category=bakery)  # NULL license
         resp = client.put(
             "/producers/me",
-            json={"category_ids": [bakery.id, veggies.id]},
+            # MEH-3137: adding ירקות also needs the grower declaration; this
+            # case is about the license rule, so the flag is sent.
+            json={"category_ids": [bakery.id, veggies.id], "farmer_declaration_accepted": True},
             headers=auth_header(user),
         )
         assert resp.status_code == 200, resp.text

@@ -129,7 +129,7 @@ def record_event_registration(db: Session, registration: Any, event: Any) -> Non
 
 
 def record_experience_registration(
-    db: Session, registration: Any, experience: Any, producer_id: UUID | None
+    db: Session, registration: Any, experience: Any, producer_id: Any
 ) -> None:
     base = shekels_to_agorot(experience.price_per_person)
     _record(
@@ -186,7 +186,7 @@ def count_bag_and_commit(db: Session, order: Any) -> None:
     db.commit()
 
 
-def void(db: Session, *, kind: str, source_id: UUID) -> None:
+def void(db: Session, *, kind: str, source_id: Any) -> None:
     """Mark a counted row voided (a booking cancelled before it took place)."""
     db.flush()  # see _record: the caller's errors stay the caller's
     try:

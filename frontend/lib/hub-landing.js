@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Module:   hub-landing
  * Purpose:  MEH-2975 — where a link to the listing hub should land. The hub is

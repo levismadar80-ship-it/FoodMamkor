@@ -372,7 +372,7 @@ def send_due_followups(db: Session) -> dict[int, int]:
                 subject, body = _build_email(step, p, first_name)
                 # MEH-2952: a test business / test owner → dropped and logged.
                 send_email(
-                    user.email,
+                    user.email,  # type: ignore[arg-type]
                     subject,
                     body,
                     test_cause=bool(p.is_test or user.is_test),

@@ -1,3 +1,4 @@
+// @ts-check
 // MEH-435: PostHog is loaded lazily the first time a production event fires
 // with a key configured, then reused. Module-level singleton so init runs
 // once regardless of how many events queue behind it (posthog buffers its

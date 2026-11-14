@@ -1,7 +1,7 @@
 """meh3179_billable_events
 
 Revision ID: d5b8f2a6c341
-Revises: c3e7a1f5d829
+Revises: d4f8b2c6e135
 Create Date: 2026-11-14 17:00:00.000000+00:00
 
 MEH-3179 (subscription infrastructure, stage 1 — no charging): one new table,
@@ -34,7 +34,7 @@ from sqlalchemy.dialects import postgresql
 # revision identifiers, used by Alembic.
 revision: str = "d5b8f2a6c341"
 # Single head on staging when authored (14/11): c3e7a1f5d829 (MEH-3117).
-down_revision: Union[str, None] = "c3e7a1f5d829"
+down_revision: Union[str, None] = "d4f8b2c6e135"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 

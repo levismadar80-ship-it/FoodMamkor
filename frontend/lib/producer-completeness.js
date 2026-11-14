@@ -1,3 +1,4 @@
+// @ts-check
 // Single source of truth for the producer-completeness check used by the
 // admin producers list. Extracted into its own module so it can be unit
 // tested without spinning up React.

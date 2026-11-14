@@ -1,3 +1,4 @@
+// @ts-check
 /* eslint-disable max-lines, max-lines-per-function */
 "use client";
 
@@ -111,6 +112,7 @@ const COMPARE_STOPS = ["row1", "row2", "row3"];
 // asserts the equality for all four reused labels in both locales, and fails
 // if a sixth chapter is added without a mirror entry. (Chapter 01 is exempt:
 // the story section had no eyebrow, so "הסיפור" is genuinely new copy.)
+/** @param {{ label: import("react").ReactNode, as?: import("react").ElementType }} props */
 function Chapter({ label, as: Tag = "p" }) {
   return (
     <div className="flex items-center gap-3 mb-3 md:mb-4">
@@ -774,7 +776,7 @@ export default function AboutPage() {
           to /about via absolute inset-0 on this relative root; full-bleed, RTL-neutral. */}
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-0 z-[1] opacity-[0.035]"
+        className="pointer-events-none absolute inset-0 z-decor opacity-[0.035]"
         style={{
           backgroundImage:
             "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='aboutGrain'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23aboutGrain)'/%3E%3C/svg%3E\")",

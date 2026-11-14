@@ -1,11 +1,12 @@
 import re
 from datetime import date, datetime, time, timedelta, timezone
 from decimal import Decimal
-from typing import Annotated, Literal
+from typing import Annotated, Any, Literal, Self, cast
 from urllib.parse import urlparse
 from uuid import UUID
 
 from pydantic import (
+    ModelWrapValidatorHandler,
     AfterValidator,
     BaseModel,
     EmailStr,
@@ -73,7 +74,7 @@ _HHMM_REGEX = re.compile(r"^([01]\d|2[0-3]):[0-5]\d$")
 _MAX_ORDER_RANGES_PER_DAY = 3
 
 
-def _validate_order_day(day: str, hours) -> list[dict[str, str]]:
+def _validate_order_day(day: str, hours: Any) -> list[dict[str, str]]:
     """Validate ONE day's ranges and return them normalised.
 
     Split out of `_order_window_validator` so that function stays under the
@@ -132,7 +133,7 @@ _PAYMENT_INFO_KEYS = frozenset({"methods", "timing", "note"})
 _LETTER_RE = re.compile(r"[א-תa-zA-Z]")
 
 
-def _payment_methods(raw) -> list[str]:
+def _payment_methods(raw: Any) -> list[str]:
     if raw is None:
         return []
     if not isinstance(raw, list):
@@ -145,7 +146,7 @@ def _payment_methods(raw) -> list[str]:
     return [m for m in PAYMENT_METHODS if m in raw]
 
 
-def _payment_note(raw) -> str | None:
+def _payment_note(raw: Any) -> str | None:
     if raw is None:
         return None
     if not isinstance(raw, str):
@@ -161,7 +162,7 @@ def _payment_note(raw) -> str | None:
     return note
 
 
-def _payment_info_validator(v):
+def _payment_info_validator(v: Any) -> dict[str, Any] | None:
     """Validate producers.payment_info on write (MEH-3035).
 
     Returns the normalised dict, or None when nothing was said (no methods,
@@ -188,7 +189,7 @@ def _payment_info_validator(v):
     return out
 
 
-def _order_window_validator(v):
+def _order_window_validator(v: Any) -> dict[str, Any] | None:
     """Validate producers.order_window on write (MEH-1543, MEH-1869).
 
     Canonical shape is a LIST of ranges per day:
@@ -233,7 +234,7 @@ _SPECIAL_HOURS_RETENTION_DAYS = 30
 _ISO_DATE_REGEX = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 
 
-def _validate_special_date(key, entry) -> dict:
+def _validate_special_date(key: Any, entry: Any) -> dict[str, Any]:
     """Validate ONE date's entry and return it normalised.
 
     Split out of `_special_hours_validator` for the same two reasons
@@ -260,7 +261,9 @@ def _validate_special_date(key, entry) -> dict:
     # [] is the CLOSED marker, so it must not reach _validate_order_day — that
     # function rejects an empty list ("at least one range"), which is the right
     # rule for a weekly day and the wrong one for a date.
-    day: dict = {"ranges": [] if not ranges else _validate_order_day(key, ranges)}
+    day: dict[str, Any] = {
+        "ranges": [] if not ranges else _validate_order_day(key, ranges)
+    }
 
     note = entry.get("note")
     if note is not None:
@@ -272,7 +275,7 @@ def _validate_special_date(key, entry) -> dict:
     return day
 
 
-def _special_hours_validator(v):
+def _special_hours_validator(v: Any) -> dict[str, Any] | None:
     """Validate producers.special_hours on write (MEH-1889 chunk A).
 
     Shape — date-keyed overrides above the weekly axes:
@@ -808,9 +811,15 @@ def _image_url_list_validator(value: list[str] | None) -> list[str] | None:
     # Drop blank entries, validate each surviving URL. Preserves order.
     if value is None:
         return value
-    return [
-        _image_url_validator(v) for v in value if v is not None and str(v).strip() != ""
-    ]
+    # Every surviving entry is non-blank, so _image_url_validator returns a str.
+    return cast(
+        list[str],
+        [
+            _image_url_validator(v)
+            for v in value
+            if v is not None and str(v).strip() != ""
+        ],
+    )
 
 
 def _require_categories_validator(value: list[int] | None) -> list[int]:
@@ -990,6 +999,11 @@ class ProducerRegister(BaseModel):
     # fact that ToS consent reached no column at all; `terms_accepted` below is
     # its actual carrier.
     declaration_accepted: bool = False
+    # MEH-2923: the grower line («גידלתי בחלקתי בלבד»), sent on its own. The
+    # server requires it when a category is in FARMER_DECLARATION_CATEGORIES
+    # (auth.py, before the upgrade/new split) and stamps it separately as
+    # farmer_declared_at / farmer_declaration_version.
+    farmer_declaration_accepted: bool = False
     # MEH-1995: the terms-of-service checkbox (`agreedToTerms` on both register
     # forms), which until now was a pure client-side gate — it disabled the
     # submit button and was then discarded, leaving no evidence of consent.
@@ -1060,7 +1074,7 @@ class ProducerRegister(BaseModel):
     # same 422s — see _sanitized_business_name for the full rationale.
     @field_validator("description")
     @classmethod
-    def _sanitize_description(cls, v):
+    def _sanitize_description(cls, v: str | None) -> str | None:
         return sanitize_text(v, max_length=2000)
 
     # MEH-829: same bleach/XSS defense-in-depth as description above — these two
@@ -1068,12 +1082,12 @@ class ProducerRegister(BaseModel):
     # ProducerUpdate twins already run.
     @field_validator("short_description")
     @classmethod
-    def _sanitize_short_description(cls, v):
+    def _sanitize_short_description(cls, v: str | None) -> str | None:
         return sanitize_text(v, max_length=160)
 
     @field_validator("address")
     @classmethod
-    def _sanitize_address(cls, v):
+    def _sanitize_address(cls, v: str | None) -> str | None:
         return sanitize_text(v, max_length=255)
 
     # MEH-2015 chunk B (adversarial-review finding): city is public-rendered
@@ -1083,7 +1097,7 @@ class ProducerRegister(BaseModel):
     # instead of `Field(min_length=1)` silently accepting "   ".
     @field_validator("city")
     @classmethod
-    def _sanitize_city(cls, v):
+    def _sanitize_city(cls, v: str) -> str | str | None:
         return sanitize_text(v, max_length=100)
 
     # MEH-870: reject punctuation-only values on the PUBLIC registration path,
@@ -1100,7 +1114,7 @@ class ProducerRegister(BaseModel):
     # REUSES: backend/app/schemas/schemas.py:16 (_min_letters_validator)
     @field_validator("short_description")
     @classmethod
-    def _validate_short_description_letters(cls, v):
+    def _validate_short_description_letters(cls, v: str | None) -> str | None:
         # Guard is load-bearing: _min_letters_validator(None) coerces None → ""
         # and raises (HOT-003), which would reject an absent optional tagline.
         # _validate_address_alnum below needs no guard — _min_alnum_validator
@@ -1111,7 +1125,7 @@ class ProducerRegister(BaseModel):
 
     @field_validator("address")
     @classmethod
-    def _validate_address_alnum(cls, v):
+    def _validate_address_alnum(cls, v: str | None) -> str | None:
         return _min_alnum_validator(v)
 
     # MEH-2015 chunk B: city's floor, min_count=1 (not the ≥3 used for
@@ -1122,12 +1136,12 @@ class ProducerRegister(BaseModel):
     # not optional, so a stripped-to-nothing value is exactly what must 422.
     @field_validator("city")
     @classmethod
-    def _validate_city_letters(cls, v):
+    def _validate_city_letters(cls, v: str) -> str:
         return _min_letters_validator(v, min_count=1)
 
     @field_validator("primary_contact_method")
     @classmethod
-    def _validate_primary_contact_method(cls, v):
+    def _validate_primary_contact_method(cls, v: str) -> str | str | None:
         return _contact_method_validator(v)
 
     # MEH-296: same http(s) scheme guard as ProducerUpdate. ProducerRegister
@@ -1135,24 +1149,24 @@ class ProducerRegister(BaseModel):
     # external_order_form columns here — those are owner-edit-only).
     @field_validator("website")
     @classmethod
-    def _validate_contact_urls(cls, v):
+    def _validate_contact_urls(cls, v: str | None) -> str | None:
         return _url_scheme_validator(v)
 
     # MEH-1537: phone format + empty→None. No whatsapp_group on this schema.
     @field_validator("phone")
     @classmethod
-    def _validate_phone(cls, v):
+    def _validate_phone(cls, v: str | None) -> str | None:
         return _phone_validator(v)
 
     # MEH-1608: URL/@ → bare handle (the renderer builds the link itself).
     @field_validator("instagram")
     @classmethod
-    def _normalize_instagram_handle(cls, v):
+    def _normalize_instagram_handle(cls, v: str | None) -> str | None:
         return _normalize_instagram(v)
 
     @field_validator("contact_email", mode="before")
     @classmethod
-    def _normalize_email(cls, v):
+    def _normalize_email(cls, v: Any) -> Any:
         return _normalize_contact_email(v)
 
     # MEH-1471: reject any non-null referral_source outside the allowed key set
@@ -1162,7 +1176,7 @@ class ProducerRegister(BaseModel):
     # dependency out of the module-top imports.
     @field_validator("referral_source")
     @classmethod
-    def _validate_referral_source(cls, v):
+    def _validate_referral_source(cls, v: str | None) -> str | None:
         from app.constants import REFERRAL_SOURCE_KEYS
 
         if v is None:
@@ -1178,12 +1192,14 @@ class ProducerRegister(BaseModel):
     # short_description/address above. Cap mirrors the DB column (120).
     @field_validator("referral_source_other")
     @classmethod
-    def _sanitize_referral_source_other(cls, v):
+    def _sanitize_referral_source_other(cls, v: str | None) -> str | None:
         return sanitize_text(v, max_length=120)
 
     @field_validator("category_ids")
     @classmethod
-    def _require_categories(cls, v, info: ValidationInfo):
+    def _require_categories(
+        cls, v: list[int], info: ValidationInfo
+    ) -> list[int] | list[int] | None:
         # MEH-2460: an organizer carries no food category (ADR-036, decision 4)
         # — whatever was sent is dropped, and the ≥1 rule does not apply.
         if info.data.get("kind") == "organizer":
@@ -1209,7 +1225,7 @@ class ProducerRegister(BaseModel):
     # rows rather than the column, so the city list is actually visible to the
     # live filter. See the router-side comment at auth.py for the write.
     @model_validator(mode="after")
-    def _validate_location_mode(self):
+    def _validate_location_mode(self) -> Self:
         # MEH-2460: an organizer has no fixed address and delivers nothing, so
         # the form does not ask (address / map / delivery are hidden for it). The DB CHECK producer_location_mode
         # (has_physical_location OR offers_delivery) still applies to the row,
@@ -1244,7 +1260,7 @@ class ProducerRegister(BaseModel):
 
     @field_validator("delivery_areas", "delivery_cities", mode="before")
     @classmethod
-    def _cap_delivery_meh3022(cls, v):
+    def _cap_delivery_meh3022(cls, v: Any) -> Any:
         # MEH-3022: Hebrew sentence before pydantic's English max_length one.
         return cap_list(v, MAX_DELIVERY_CITIES, DELIVERY_CITIES_DETAIL)
 
@@ -1319,11 +1335,19 @@ class ProducerClaimRequest(BaseModel):
     token: str = Field(min_length=1, max_length=2048)
     declaration_accepted: bool = False
     terms_accepted: bool = False
+    # MEH-3137: the grower line («גידלתי בחלקתי בלבד») apart from the licensing
+    # declaration, required for ירקות/פירות (services/farmer_declaration.py).
+    farmer_declaration_accepted: bool = False
 
 
 class ProducerClaimOut(BaseModel):
     producer_id: UUID
     status: str
+
+
+class ProducerClaimNewLinkOut(BaseModel):
+    # MEH-3122: always the same body — see request_new_claim_link.
+    ok: bool
 
 
 # ---------------------------------------------------------------------------
@@ -1359,7 +1383,7 @@ class OwnerInviteCreate(BaseModel):
 
     @field_validator("email", mode="before")
     @classmethod
-    def _normalise_email(cls, v):
+    def _normalise_email(cls, v: Any) -> Any:
         """Lower + trim BEFORE EmailStr, so the uniqueness checks in the
         handler and the row we store agree with `users.email` — which is
         itself stored as typed, and compared with `func.lower` on both sides.
@@ -1459,12 +1483,12 @@ class OwnerInviteAccept(BaseModel):
 
     @field_validator("email", mode="before")
     @classmethod
-    def _normalise_email(cls, v):
+    def _normalise_email(cls, v: Any) -> Any:
         return v.strip().lower() if isinstance(v, str) else v
 
     @field_validator("code", mode="before")
     @classmethod
-    def _strip_code(cls, v):
+    def _strip_code(cls, v: Any) -> Any:
         """People paste the code with spaces around it, and some mail clients
         insert a non-breaking space. Strip both before the comparison, which is
         on a hash and therefore unforgiving."""
@@ -1477,6 +1501,9 @@ class OwnerInviteAccept(BaseModel):
     # silently unrecorded consent.
     terms_accepted: bool
     declaration_accepted: bool
+    # MEH-3137: the grower line, apart from the licensing declaration. Optional:
+    # only a grower category needs it, and the handler checks that.
+    farmer_declaration_accepted: bool = False
 
     @field_validator("terms_accepted")
     @classmethod
@@ -1504,7 +1531,7 @@ class OwnerInviteEmailCodeRequest(BaseModel):
 
     @field_validator("email", mode="before")
     @classmethod
-    def _normalise_email(cls, v):
+    def _normalise_email(cls, v: Any) -> Any:
         return v.strip().lower() if isinstance(v, str) else v
 
 
@@ -1630,7 +1657,7 @@ class DeliveryAreaCreate(BaseModel):
     # no-DB-CHECK design exists to avoid.
     @field_validator("delivery_fee")
     @classmethod
-    def _validate_area_delivery_fee(cls, v):
+    def _validate_area_delivery_fee(cls, v: int | None) -> int | None:
         if v is None:
             return None
         # 0 is legal and load-bearing — "משלוח חינם" to this area, distinct
@@ -1745,7 +1772,7 @@ class ProducerLocationCreate(BaseModel):
 
     @field_validator("label")
     @classmethod
-    def _validate_label(cls, v):
+    def _validate_label(cls, v: str | None) -> str | None:
         return _optional_label_letters(v)
 
 
@@ -1771,7 +1798,7 @@ class ProducerLocationUpdate(BaseModel):
 
     @field_validator("label")
     @classmethod
-    def _validate_label(cls, v):
+    def _validate_label(cls, v: str | None) -> str | None:
         return _optional_label_letters(v)
 
 
@@ -1899,14 +1926,14 @@ class ProducerOfferCreate(BaseModel):
 
     @field_validator("offer_type")
     @classmethod
-    def _validate_offer_type(cls, v):
+    def _validate_offer_type(cls, v: str) -> str:
         if v not in OFFER_TYPES:
             raise ValueError(f"סוג הטבה חייב להיות אחד מ: {', '.join(OFFER_TYPES)}")
         return v
 
     @field_validator("threshold_unit")
     @classmethod
-    def _validate_threshold_unit(cls, v):
+    def _validate_threshold_unit(cls, v: str | None) -> str | None:
         if v is not None and v not in THRESHOLD_UNITS:
             raise ValueError(
                 f"יחידת המידה חייבת להיות אחת מ: {', '.join(THRESHOLD_UNITS)}"
@@ -1915,7 +1942,7 @@ class ProducerOfferCreate(BaseModel):
 
     @field_validator("threshold_value")
     @classmethod
-    def _validate_threshold_value(cls, v):
+    def _validate_threshold_value(cls, v: int | None) -> int | None:
         # `is not None`, never truthiness: 0 must reach this check and be
         # rejected explicitly, not slip through as "absent".
         if v is not None and v <= 0:
@@ -1924,7 +1951,7 @@ class ProducerOfferCreate(BaseModel):
 
     @field_validator("headline")
     @classmethod
-    def _validate_headline(cls, v):
+    def _validate_headline(cls, v: str | None) -> str | None:
         if v is None:
             return v
         v = v.strip()
@@ -1937,7 +1964,7 @@ class ProducerOfferCreate(BaseModel):
         return v
 
     @model_validator(mode="after")
-    def _validate_offer_shape(self):
+    def _validate_offer_shape(self) -> Self:
         # Both-or-neither, same equality form as the DB CHECK.
         if (self.threshold_value is None) != (self.threshold_unit is None):
             raise ValueError(
@@ -2007,22 +2034,22 @@ class ProductCreate(BaseModel):
 
     @field_validator("allergens")
     @classmethod
-    def _validate_allergens(cls, v):
+    def _validate_allergens(cls, v: list[str] | None) -> list[str] | None:
         return normalize_allergens(v)
 
     @field_validator("image_url", mode="before")
     @classmethod
-    def empty_str_to_none(cls, v):
+    def empty_str_to_none(cls, v: Any) -> Any:
         return None if v == "" else v
 
     # MEH-1222: reject malformed image URLs at the write boundary.
     @field_validator("image_url")
     @classmethod
-    def _validate_image_url(cls, v):
+    def _validate_image_url(cls, v: str | None) -> str | None:
         return _image_url_validator(v)
 
     @model_validator(mode="after")
-    def check_price_max_gte_min(self):
+    def check_price_max_gte_min(self) -> Self:
         if self.price_max is not None and self.price_max < self.price_min:
             raise ValueError("price_max must be greater than or equal to price_min")
         return self
@@ -2051,22 +2078,22 @@ class ProductUpdate(BaseModel):
 
     @field_validator("allergens")
     @classmethod
-    def _validate_allergens(cls, v):
+    def _validate_allergens(cls, v: list[str] | None) -> list[str] | None:
         return normalize_allergens(v)
 
     @field_validator("image_url", mode="before")
     @classmethod
-    def empty_str_to_none(cls, v):
+    def empty_str_to_none(cls, v: Any) -> Any:
         return None if v == "" else v
 
     # MEH-1222: reject malformed image URLs at the write boundary.
     @field_validator("image_url")
     @classmethod
-    def _validate_image_url(cls, v):
+    def _validate_image_url(cls, v: str | None) -> str | None:
         return _image_url_validator(v)
 
     @model_validator(mode="after")
-    def check_price_max_gte_min(self):
+    def check_price_max_gte_min(self) -> Self:
         if (
             self.price_min is not None
             and self.price_max is not None
@@ -2129,6 +2156,8 @@ class ProducerCreate(BaseModel):
     # no primary_contact_method, so only the URL-scheme guard applies below).
     facebook: str | None = None
     external_order_form: str | None = None
+    # MEH-3137: grower declaration for ירקות/פירות (services/farmer_declaration.py).
+    farmer_declaration_accepted: bool = False
     # MEH-1153: same ≥1-category server-side parity as ProducerRegister.
     category_ids: list[int] = Field(
         default_factory=list, validate_default=True, max_length=MAX_SMALL_LIST
@@ -2142,30 +2171,30 @@ class ProducerCreate(BaseModel):
     # MEH-296 3d: http(s) scheme guard on the URL fields (reuse Chunk-2 helper).
     @field_validator("website", "facebook", "external_order_form")
     @classmethod
-    def _validate_contact_urls(cls, v):
+    def _validate_contact_urls(cls, v: str | None) -> str | None:
         return _url_scheme_validator(v)
 
     # MEH-1537: phone format (no contact_email / whatsapp_group on this schema).
     @field_validator("phone")
     @classmethod
-    def _validate_phone(cls, v):
+    def _validate_phone(cls, v: str | None) -> str | None:
         return _phone_validator(v)
 
     # MEH-1608: URL/@ → bare handle (the renderer builds the link itself).
     @field_validator("instagram")
     @classmethod
-    def _normalize_instagram_handle(cls, v):
+    def _normalize_instagram_handle(cls, v: str | None) -> str | None:
         return _normalize_instagram(v)
 
     @field_validator("category_ids")
     @classmethod
-    def _require_categories(cls, v):
+    def _require_categories(cls, v: list[int]) -> list[int] | list[int] | None:
         # MEH-1297: enforce the ≤3 cap alongside the MEH-1153 ≥1 requirement.
         return _cap_categories_validator(_require_categories_validator(v))
 
     @field_validator("delivery_areas", mode="before")
     @classmethod
-    def _cap_delivery_meh3022(cls, v):
+    def _cap_delivery_meh3022(cls, v: Any) -> Any:
         # MEH-3022: Hebrew sentence before pydantic's English max_length one.
         return cap_list(v, MAX_DELIVERY_CITIES, DELIVERY_CITIES_DETAIL)
 
@@ -2237,65 +2266,65 @@ class ProducerAdminCreate(BaseModel):
     # MEH-1297: cap categories at 3 (admin create).
     @field_validator("category_ids")
     @classmethod
-    def _cap_categories(cls, v):
+    def _cap_categories(cls, v: list[int]) -> list[int] | list[int] | None:
         return _cap_categories_validator(v)
 
     @field_validator("description")
     @classmethod
-    def _sanitize_description(cls, v):
+    def _sanitize_description(cls, v: str | None) -> str | None:
         return sanitize_text(v, max_length=2000)
 
     @field_validator("short_description")
     @classmethod
-    def _sanitize_short_description(cls, v):
+    def _sanitize_short_description(cls, v: str | None) -> str | None:
         return sanitize_text(v, max_length=200)
 
     @field_validator("admin_notes")
     @classmethod
-    def _sanitize_admin_notes(cls, v):
+    def _sanitize_admin_notes(cls, v: str | None) -> str | None:
         return sanitize_text(v, max_length=2000)
 
     # MEH-296 3d: same boundary guards as ProducerUpdate (reuse Chunk-2 helpers).
     @field_validator("primary_contact_method")
     @classmethod
-    def _validate_primary_contact_method(cls, v):
+    def _validate_primary_contact_method(cls, v: str) -> str | str | None:
         return _contact_method_validator(v)
 
     @field_validator("website", "facebook", "external_order_form")
     @classmethod
-    def _validate_contact_urls(cls, v):
+    def _validate_contact_urls(cls, v: str | None) -> str | None:
         return _url_scheme_validator(v)
 
     # MEH-1537: phone / whatsapp_group format + contact_email empty→None.
     @field_validator("phone")
     @classmethod
-    def _validate_phone(cls, v):
+    def _validate_phone(cls, v: str | None) -> str | None:
         return _phone_validator(v)
 
     @field_validator("whatsapp_group")
     @classmethod
-    def _validate_whatsapp_group(cls, v):
+    def _validate_whatsapp_group(cls, v: str | None) -> str | None:
         return _whatsapp_group_validator(v)
 
     # MEH-1608: URL/@ → bare handle (the renderer builds the link itself).
     @field_validator("instagram")
     @classmethod
-    def _normalize_instagram_handle(cls, v):
+    def _normalize_instagram_handle(cls, v: str | None) -> str | None:
         return _normalize_instagram(v)
 
     @field_validator("contact_email", mode="before")
     @classmethod
-    def _normalize_email(cls, v):
+    def _normalize_email(cls, v: Any) -> Any:
         return _normalize_contact_email(v)
 
     # MEH-1222: reject malformed image URLs in the producer photo array.
     @field_validator("images")
     @classmethod
-    def _validate_images(cls, v):
+    def _validate_images(cls, v: list[str]) -> list[str] | list[str] | None:
         return _image_url_list_validator(v)
 
     @model_validator(mode="after")
-    def _validate_location_mode(self):
+    def _validate_location_mode(self) -> Self:
         if not self.has_physical_location and not self.offers_delivery:
             raise ValueError("חייב לפחות אחד: חנות פיזית או משלוחים")
         # MEH-903 A: XOR now guards delivery_area_cities (the delivery_areas store)
@@ -2321,7 +2350,7 @@ class ProducerAdminCreate(BaseModel):
 
     @field_validator("images", mode="before")
     @classmethod
-    def _cap_images_meh3022(cls, v):
+    def _cap_images_meh3022(cls, v: Any) -> Any:
         # MEH-3022: Hebrew sentence before pydantic's English max_length one.
         return cap_list(v, MAX_GALLERY_IMAGES, GALLERY_IMAGES_DETAIL)
 
@@ -2332,7 +2361,7 @@ class ProducerAdminCreate(BaseModel):
         mode="before",
     )
     @classmethod
-    def _cap_delivery_meh3022(cls, v):
+    def _cap_delivery_meh3022(cls, v: Any) -> Any:
         # MEH-3022: Hebrew sentence before pydantic's English max_length one.
         return cap_list(v, MAX_DELIVERY_CITIES, DELIVERY_CITIES_DETAIL)
 
@@ -2488,6 +2517,8 @@ class ProducerUpdate(BaseModel):
     # extra="forbid" on this model), not a 422.
     images: list[str] | None = Field(None, max_length=MAX_GALLERY_IMAGES)
     status: str | None = None
+    # MEH-3137: grower declaration for ירקות/פירות (services/farmer_declaration.py).
+    farmer_declaration_accepted: bool = False
     category_ids: list[int] | None = Field(None, max_length=MAX_SMALL_LIST)
     delivery_area_cities: list[str] | None = Field(
         None, max_length=MAX_DELIVERY_CITIES
@@ -2534,14 +2565,14 @@ class ProducerUpdate(BaseModel):
     # open/close) or explicit null to clear. Validated below (day keys, HH:MM
     # 24h, close>open → 422 Hebrew). Owner-writable path opened in
     # producer_me.py (_PRODUCER_WRITABLE_FIELDS).
-    order_window: dict | None = None
+    order_window: dict[str, Any] | None = None
     # MEH-1889 chunk A: per-date overrides above order_window. Validated by
     # _special_hours_validator; explicit null clears it, same as order_window.
-    special_hours: dict | None = None
+    special_hours: dict[str, Any] | None = None
     # MEH-3035: how the business takes payment. Validated below
     # (_payment_info_validator). Owner-writable via producer_me.py
     # (_PRODUCER_WRITABLE_FIELDS, MEH-3035 chunk 2, with PaymentInfoEditor).
-    payment_info: dict | None = None
+    payment_info: dict[str, Any] | None = None
     # MEH-1577: structured delivery cost (whole shekels, producer-level).
     # Validated below — both reject negatives, free_delivery_above additionally
     # rejects 0. delivery_fee=0 is ACCEPTED and meaningful ("משלוח חינם"), which
@@ -2553,17 +2584,17 @@ class ProducerUpdate(BaseModel):
     # MEH-1297: cap categories at 3 (admin/owner update). None passes through.
     @field_validator("category_ids")
     @classmethod
-    def _cap_categories(cls, v):
+    def _cap_categories(cls, v: list[int] | None) -> list[int] | None:
         return _cap_categories_validator(v)
 
     @field_validator("description")
     @classmethod
-    def _sanitize_description(cls, v):
+    def _sanitize_description(cls, v: str | None) -> str | None:
         return sanitize_text(v, max_length=2000)
 
     @field_validator("short_description")
     @classmethod
-    def _sanitize_short_description(cls, v):
+    def _sanitize_short_description(cls, v: str | None) -> str | None:
         return sanitize_text(v, max_length=200)
 
     # MEH-1494 chunk B: the editor's note is free text an admin types, so it
@@ -2581,7 +2612,7 @@ class ProducerUpdate(BaseModel):
     # same floor, same Hebrew message, same three scripts (MEH-2236).
     @field_validator("recommended_note")
     @classmethod
-    def _validate_recommended_note(cls, v):
+    def _validate_recommended_note(cls, v: str | None) -> str | None:
         if v is None:
             return v
         cleaned = sanitize_text(v, max_length=500)
@@ -2593,26 +2624,26 @@ class ProducerUpdate(BaseModel):
     # bleach strip as the register path (_sanitize_address on ProducerRegister).
     @field_validator("address")
     @classmethod
-    def _sanitize_address(cls, v):
+    def _sanitize_address(cls, v: str | None) -> str | None:
         return sanitize_text(v, max_length=255)
 
     # MEH-1490: see normalize_google_place_id above.
     @field_validator("google_place_id")
     @classmethod
-    def _validate_google_place_id(cls, v):
+    def _validate_google_place_id(cls, v: str | None) -> str | None:
         return normalize_google_place_id(v)
 
     # MEH-1335: owner bio — strip HTML + cap at 300 (spec: "כמה מילים עלייך",
     # dashboard textarea counter matches this server-side cap).
     @field_validator("owner_bio")
     @classmethod
-    def _sanitize_owner_bio(cls, v):
+    def _sanitize_owner_bio(cls, v: str | None) -> str | None:
         return sanitize_text(v, max_length=300)
 
     # MEH-1335: owner photo — image-URL guard, not just scheme (MEH-1222 class).
     @field_validator("owner_photo_url")
     @classmethod
-    def _validate_owner_photo_url(cls, v):
+    def _validate_owner_photo_url(cls, v: str | None) -> str | None:
         return _image_url_validator(v)
 
     # MEH-1508 ch2: the validation debt from chunk 1 — VARCHAR has no enum type,
@@ -2622,7 +2653,7 @@ class ProducerUpdate(BaseModel):
     # would 500 on the constraint.
     @field_validator("vegan_scope", "vegetarian_scope")
     @classmethod
-    def _validate_dietary_scope(cls, v):
+    def _validate_dietary_scope(cls, v: str | None) -> str | None:
         allowed = {"unknown", "some", "all"}
         if v not in allowed:
             raise ValueError(f"scope חייב להיות אחד מ: {', '.join(sorted(allowed))}")
@@ -2630,14 +2661,14 @@ class ProducerUpdate(BaseModel):
 
     @field_validator("reservist_owned")
     @classmethod
-    def _reject_null_reservist_owned(cls, v):
+    def _reject_null_reservist_owned(cls, v: bool | None) -> bool | None:
         if v is None:
             raise ValueError("reservist_owned חייב להיות true או false")
         return v
 
     @field_validator("gluten_free_facility", "lactose_free_facility")
     @classmethod
-    def _validate_facility_scope(cls, v):
+    def _validate_facility_scope(cls, v: str | None) -> str | None:
         allowed = {"unknown", "shared", "dedicated"}
         if v not in allowed:
             raise ValueError(f"מתקן חייב להיות אחד מ: {', '.join(sorted(allowed))}")
@@ -2645,7 +2676,7 @@ class ProducerUpdate(BaseModel):
 
     @field_validator("availability_state")
     @classmethod
-    def _validate_availability_state(cls, v):
+    def _validate_availability_state(cls, v: str | None) -> str | None:
         # MEH-2758: membership only. The pause-only rule needs the CURRENT
         # state (an admin form resubmitting a legacy row's unchanged value must
         # still save), so it lives in admin.py, not here.
@@ -2657,17 +2688,17 @@ class ProducerUpdate(BaseModel):
 
     @field_validator("order_window")
     @classmethod
-    def _validate_order_window(cls, v):
+    def _validate_order_window(cls, v: dict[str, Any] | None) -> dict[str, Any] | None:
         return _order_window_validator(v)
 
     @field_validator("special_hours")
     @classmethod
-    def _validate_special_hours(cls, v):
+    def _validate_special_hours(cls, v: dict[str, Any] | None) -> dict[str, Any] | None:
         return _special_hours_validator(v)
 
     @field_validator("payment_info")
     @classmethod
-    def _validate_payment_info(cls, v):
+    def _validate_payment_info(cls, v: dict[str, Any] | None) -> dict[str, Any] | None:
         return _payment_info_validator(v)
 
     # MEH-2153: delegates to the shared guard so the count/length/trim rules
@@ -2675,17 +2706,17 @@ class ProducerUpdate(BaseModel):
     # dedupe they were missing.
     @field_validator("custom_questions")
     @classmethod
-    def _validate_custom_questions(cls, v):
+    def _validate_custom_questions(cls, v: list[str] | None) -> list[str] | None:
         return _custom_questions_validator(v)
 
     @field_validator("primary_contact_method")
     @classmethod
-    def _validate_primary_contact_method(cls, v):
+    def _validate_primary_contact_method(cls, v: str | None) -> str | None:
         return _contact_method_validator(v)
 
     @field_validator("website", "facebook", "external_order_form")
     @classmethod
-    def _validate_contact_urls(cls, v):
+    def _validate_contact_urls(cls, v: str | None) -> str | None:
         return _url_scheme_validator(v)
 
     # MEH-1537: phone / whatsapp_group format + contact_email empty→None. This
@@ -2693,12 +2724,12 @@ class ProducerUpdate(BaseModel):
     # bulk setattr), so validating here covers both write paths at once.
     @field_validator("phone")
     @classmethod
-    def _validate_phone(cls, v):
+    def _validate_phone(cls, v: str | None) -> str | None:
         return _phone_validator(v)
 
     @field_validator("whatsapp_group")
     @classmethod
-    def _validate_whatsapp_group(cls, v):
+    def _validate_whatsapp_group(cls, v: str | None) -> str | None:
         return _whatsapp_group_validator(v)
 
     # MEH-1676: the owner's opt-out for the public «לא מגיעים אליך?» CTA
@@ -2708,7 +2739,7 @@ class ProducerUpdate(BaseModel):
 
     @field_validator("coverage_cta_enabled")
     @classmethod
-    def _coverage_cta_not_null(cls, v):
+    def _coverage_cta_not_null(cls, v: bool | None) -> bool | None:
         if v is None:
             raise ValueError("coverage_cta_enabled must be true or false")
         return v
@@ -2716,22 +2747,22 @@ class ProducerUpdate(BaseModel):
     # MEH-1608: URL/@ → bare handle (the renderer builds the link itself).
     @field_validator("instagram")
     @classmethod
-    def _normalize_instagram_handle(cls, v):
+    def _normalize_instagram_handle(cls, v: str | None) -> str | None:
         return _normalize_instagram(v)
 
     @field_validator("contact_email", mode="before")
     @classmethod
-    def _normalize_email(cls, v):
+    def _normalize_email(cls, v: Any) -> Any:
         return _normalize_contact_email(v)
 
     # MEH-1222: reject malformed image URLs in the producer photo array.
     @field_validator("images")
     @classmethod
-    def _validate_images(cls, v):
+    def _validate_images(cls, v: list[str] | None) -> list[str] | None:
         return _image_url_list_validator(v)
 
     @model_validator(mode="after")
-    def _validate_location_mode(self):
+    def _validate_location_mode(self) -> Self:
         hp = self.has_physical_location
         od = self.offers_delivery
         # Only validate when both are explicitly set (partial updates allowed)
@@ -2767,7 +2798,7 @@ class ProducerUpdate(BaseModel):
         return self
 
     @model_validator(mode="after")
-    def _validate_vacation_until(self):
+    def _validate_vacation_until(self) -> Self:
         # AUD-039: the admin write path must not persist an already-past
         # return date. Israel-tz "today" (not server UTC) so an admin in
         # Israel isn't blocked on a date that's still today locally. Only
@@ -2788,7 +2819,7 @@ class ProducerUpdate(BaseModel):
     # year. Out-of-range → 422 with the single Hebrew detail the spec locks.
     @field_validator("established_year")
     @classmethod
-    def _validate_established_year(cls, v):
+    def _validate_established_year(cls, v: int | None) -> int | None:
         if v is None:
             return None
         if v < 1800 or v > israel_today().year:
@@ -2811,7 +2842,7 @@ class ProducerUpdate(BaseModel):
     # a typo catch and is a product-level cap, not a storage-level one.
     @field_validator("delivery_fee")
     @classmethod
-    def _validate_delivery_fee(cls, v):
+    def _validate_delivery_fee(cls, v: int | None) -> int | None:
         if v is None:
             return None
         # 0 is legal and load-bearing: it is how an owner says "delivery is
@@ -2824,7 +2855,7 @@ class ProducerUpdate(BaseModel):
 
     @field_validator("free_delivery_above")
     @classmethod
-    def _validate_free_delivery_above(cls, v):
+    def _validate_free_delivery_above(cls, v: int | None) -> int | None:
         if v is None:
             return None
         # Stricter than delivery_fee by one value: a "free above ₪0" threshold
@@ -2838,7 +2869,7 @@ class ProducerUpdate(BaseModel):
 
     @field_validator("images", mode="before")
     @classmethod
-    def _cap_images_meh3022(cls, v):
+    def _cap_images_meh3022(cls, v: Any) -> Any:
         # MEH-3022: Hebrew sentence before pydantic's English max_length one.
         return cap_list(v, MAX_GALLERY_IMAGES, GALLERY_IMAGES_DETAIL)
 
@@ -2850,7 +2881,7 @@ class ProducerUpdate(BaseModel):
         mode="before",
     )
     @classmethod
-    def _cap_delivery_meh3022(cls, v):
+    def _cap_delivery_meh3022(cls, v: Any) -> Any:
         # MEH-3022: Hebrew sentence before pydantic's English max_length one.
         return cap_list(v, MAX_DELIVERY_CITIES, DELIVERY_CITIES_DETAIL)
 
@@ -3000,7 +3031,7 @@ class ProducerListOut(BaseModel):
     # /producers, /map cards, favorites) could derive "open for orders now"
     # while the producer PAGE already could. Defaults to None, so every
     # existing response is byte-identical for a producer that has no window.
-    order_window: dict | None = None
+    order_window: dict[str, Any] | None = None
     # MEH-1889 chunk B (MEH-2264): per-date overrides above order_window,
     # order-axis authoritative — `{"YYYY-MM-DD": {"ranges": [...], "note"?}}`,
     # `"ranges": []` = closed that date. On the LIST contract, not only the
@@ -3009,7 +3040,7 @@ class ProducerListOut(BaseModel):
     # data, and a card saying "open" on Yom Kippur is exactly the drift this
     # field exists to prevent. Defaults to None; every existing response is
     # byte-identical for a producer with no overrides.
-    special_hours: dict | None = None
+    special_hours: dict[str, Any] | None = None
     # MEH-17: flexible contact methods.
     primary_contact_method: str = "whatsapp"
     contact_email: str | None = None
@@ -3128,13 +3159,13 @@ class ProducerListOut(BaseModel):
 
     @field_validator("verified_at", mode="before")
     @classmethod
-    def _verified_at_date_only(cls, v):
+    def _verified_at_date_only(cls, v: Any) -> Any:
         # MEH-762: collapse the producers.verified_at TIMESTAMPTZ to a pure
         # date so no time component ever reaches the public payload.
         return v.date() if isinstance(v, datetime) else v
 
     @model_validator(mode="after")
-    def _compute_trust_tier(self):
+    def _compute_trust_tier(self) -> Self:
         from app.services.trust_tier import compute_trust_tier
 
         self.trust_tier = compute_trust_tier(self)
@@ -3159,7 +3190,9 @@ class ProducerListOut(BaseModel):
 
     @model_validator(mode="wrap")
     @classmethod
-    def _compute_verification_tier(cls, data, handler):
+    def _compute_verification_tier(
+        cls, data: Any, handler: ModelWrapValidatorHandler[Self]
+    ) -> Self:
         # MEH-762 (ADR-022 D2/D3): resolve the public tier from verified_at +
         # the category licensing requirement. Mirrors the MEH-530 name-
         # membership predicate (license_validation.categories_require_license)
@@ -3192,7 +3225,7 @@ class ProducerListOut(BaseModel):
         if isinstance(data, (dict, BaseModel)):
             return model
 
-        def source(name):
+        def source(name: str) -> Any:
             return getattr(data, name, None)
 
         if verification_is_current(model.verified_at, source("license_expires_at")):
@@ -3206,7 +3239,7 @@ class ProducerListOut(BaseModel):
         return model
 
     @model_validator(mode="after")
-    def _derive_lat_lng_from_primary_location(self):
+    def _derive_lat_lng_from_primary_location(self) -> Self:
         """MEH-1938 chunk 5a (Q1 ruling, Sapir 01/09): `lat` / `lng` STAY in the
         contract and are DERIVED from the primary `producer_locations` row —
         never read from the `Producer.lat/lng` columns, which no reader falls
@@ -3260,7 +3293,7 @@ class ProducerDetailOut(ProducerListOut):
 
     @field_validator("product_groups", mode="before")
     @classmethod
-    def _null_groups_are_empty(cls, v):
+    def _null_groups_are_empty(cls, v: Any) -> Any:
         return v or []
 
     delivery_areas: list[DeliveryAreaOut] = []
@@ -3285,11 +3318,11 @@ class ProducerDetailOut(ProducerListOut):
     # unused → the public page (MEH-1546) renders nothing. Read-only here;
     # written via producer_me PUT. Inherited onto ProducerOwnerOut so the
     # dashboard editor (MEH-1544) can reload the saved value.
-    order_window: dict | None = None
+    order_window: dict[str, Any] | None = None
     # MEH-3035: how the business takes payment ({methods, timing, note}) or
     # None. Detail only (the business page's «איך משלמים?» chip and JSON-LD
     # paymentAccepted); inherited onto ProducerOwnerOut for the editor.
-    payment_info: dict | None = None
+    payment_info: dict[str, Any] | None = None
     # MEH-210 Phase 2 — custom WhatsApp question chips
     custom_questions: list[str] | None = None
     # MEH-1490: admin-mapped Google Maps Place ID. Exposed on read so the admin
@@ -3320,7 +3353,7 @@ class GooglePlaceIdIn(BaseModel):
 
     @field_validator("google_place_id")
     @classmethod
-    def _validate_google_place_id(cls, v):
+    def _validate_google_place_id(cls, v: str | None) -> str | None:
         return normalize_google_place_id(v)
 
 
@@ -3490,7 +3523,7 @@ class ProducerAdminOut(ProducerDetailOut):
     license_pending: bool = False
 
     @model_validator(mode="after")
-    def _compute_license_pending(self):
+    def _compute_license_pending(self) -> Self:
         # Inline import mirrors the sibling _compute_verification_tier validator
         # (above) — keeps the constants dependency out of the module-top imports.
         from app.constants import LICENSE_REQUIRED_CATEGORIES
@@ -3520,6 +3553,10 @@ class ProducerOwnerOut(ProducerDetailOut):
     # producer_license_number/address owner-private precedent below).
     kosher: str | None = None
     producer_license_number: str | None = None
+    # MEH-3137: whether she has recorded the grower declaration, so the
+    # categories card asks for it only when a grower category needs it. A
+    # timestamp of her own act, owner-private like the license number.
+    farmer_declared_at: datetime | None = None
     # MEH-829: owner sees her own submitted street address (private — not on the
     # public DetailOut/ListOut).
     address: str | None = None
@@ -3552,7 +3589,7 @@ class KashrutRequestCreate(BaseModel):
 
     @field_validator("cert_url")
     @classmethod
-    def _validate_cert_url(cls, v):
+    def _validate_cert_url(cls, v: str | None) -> str | None:
         if v is not None and not v.startswith(("https://", "http://")):
             raise ValueError("cert_url חייב להתחיל ב-https:// או http://")
         return v
@@ -3653,7 +3690,7 @@ class AdminChecklistItemIn(BaseModel):
 
     @field_validator("hint")
     @classmethod
-    def _strip_hint(cls, v):
+    def _strip_hint(cls, v: str | None) -> str | None:
         if v is None:
             return None
         stripped = v.strip()
@@ -3905,7 +3942,7 @@ class HomeProductCreate(BaseModel):
 
     @field_validator("title")
     @classmethod
-    def _sanitize_title(cls, v):
+    def _sanitize_title(cls, v: str) -> str | str | None:
         return sanitize_text(v, max_length=200)
 
     @field_validator("title")
@@ -3915,28 +3952,28 @@ class HomeProductCreate(BaseModel):
 
     @field_validator("description")
     @classmethod
-    def _sanitize_description(cls, v):
+    def _sanitize_description(cls, v: str | None) -> str | None:
         return sanitize_text(v, max_length=1000)
 
     @field_validator("location_notes")
     @classmethod
-    def _sanitize_location_notes(cls, v):
+    def _sanitize_location_notes(cls, v: str | None) -> str | None:
         return sanitize_text(v, max_length=200)
 
     @field_validator("allergens")
     @classmethod
-    def _sanitize_allergens(cls, v):
+    def _sanitize_allergens(cls, v: str | None) -> str | None:
         return sanitize_text(v, max_length=200)
 
     # MEH-1222: reject malformed image URLs (public neighbor-product form).
     @field_validator("photo")
     @classmethod
-    def _validate_photo(cls, v):
+    def _validate_photo(cls, v: str | None) -> str | None:
         return _image_url_validator(v)
 
     @field_validator("images")
     @classmethod
-    def _validate_images(cls, v):
+    def _validate_images(cls, v: list[str]) -> list[str] | list[str] | None:
         return _image_url_list_validator(v)
 
 
@@ -3965,33 +4002,33 @@ class HomeProductUpdate(BaseModel):
 
     @field_validator("title")
     @classmethod
-    def _sanitize_title(cls, v):
+    def _sanitize_title(cls, v: str | None) -> str | None:
         return sanitize_text(v, max_length=200)
 
     @field_validator("description")
     @classmethod
-    def _sanitize_description(cls, v):
+    def _sanitize_description(cls, v: str | None) -> str | None:
         return sanitize_text(v, max_length=1000)
 
     @field_validator("location_notes")
     @classmethod
-    def _sanitize_location_notes(cls, v):
+    def _sanitize_location_notes(cls, v: str | None) -> str | None:
         return sanitize_text(v, max_length=200)
 
     @field_validator("allergens")
     @classmethod
-    def _sanitize_allergens(cls, v):
+    def _sanitize_allergens(cls, v: str | None) -> str | None:
         return sanitize_text(v, max_length=200)
 
     # MEH-1222: reject malformed image URLs (public neighbor-product form).
     @field_validator("photo")
     @classmethod
-    def _validate_photo(cls, v):
+    def _validate_photo(cls, v: str | None) -> str | None:
         return _image_url_validator(v)
 
     @field_validator("images")
     @classmethod
-    def _validate_images(cls, v):
+    def _validate_images(cls, v: list[str] | None) -> list[str] | None:
         return _image_url_list_validator(v)
 
 
@@ -4094,7 +4131,7 @@ class RatingSubmit(BaseModel):
 
     @field_validator("comment")
     @classmethod
-    def _sanitize_comment(cls, v):
+    def _sanitize_comment(cls, v: str | None) -> str | None:
         return sanitize_text(v, max_length=100)
 
 
@@ -4164,7 +4201,7 @@ class RegistrationCreate(BaseModel):
 
     @field_validator("email", mode="before")
     @classmethod
-    def _clean_email(cls, v):
+    def _clean_email(cls, v: Any) -> Any:
         cleaned = _normalize_contact_email(v)
         if cleaned is None:
             raise ValueError("כתובת אימייל לא תקינה")
@@ -4210,7 +4247,7 @@ class ExperienceCreate(BaseModel):
 
     @field_validator("category")
     @classmethod
-    def _check_category(cls, v):
+    def _check_category(cls, v: str | None) -> str | None:
         return _experience_category(v)
 
     event_date: date
@@ -4245,12 +4282,12 @@ class ExperienceCreate(BaseModel):
 
     @field_validator("registration_url")
     @classmethod
-    def _validate_registration_url(cls, v):
+    def _validate_registration_url(cls, v: str | None) -> str | None:
         return _url_scheme_validator(v)
 
     @field_validator("title")
     @classmethod
-    def _sanitize_title(cls, v):
+    def _sanitize_title(cls, v: str) -> str | str | None:
         return sanitize_text(v, max_length=300)
 
     @field_validator("title")
@@ -4260,17 +4297,17 @@ class ExperienceCreate(BaseModel):
 
     @field_validator("description")
     @classmethod
-    def _sanitize_description(cls, v):
+    def _sanitize_description(cls, v: str) -> str | str | None:
         return sanitize_text(v, max_length=5000)
 
     @field_validator("requirements")
     @classmethod
-    def _sanitize_requirements(cls, v):
+    def _sanitize_requirements(cls, v: str | None) -> str | None:
         return sanitize_text(v, max_length=1000)
 
     @field_validator("address")
     @classmethod
-    def _sanitize_address(cls, v):
+    def _sanitize_address(cls, v: str | None) -> str | None:
         return sanitize_text(v, max_length=300)
 
     # MEH-2013: min_length=1 alone accepts "   ", which is city-less by every
@@ -4287,7 +4324,7 @@ class ExperienceCreate(BaseModel):
     # MEH-1222: reject malformed image URLs at the write boundary.
     @field_validator("image_url")
     @classmethod
-    def _validate_image_url(cls, v):
+    def _validate_image_url(cls, v: str | None) -> str | None:
         return _image_url_validator(v)
 
 
@@ -4299,7 +4336,7 @@ class ExperienceUpdate(BaseModel):
 
     @field_validator("category")
     @classmethod
-    def _check_category(cls, v):
+    def _check_category(cls, v: str | None) -> str | None:
         return _experience_category(v)
 
     event_date: date | None = None
@@ -4325,33 +4362,33 @@ class ExperienceUpdate(BaseModel):
 
     @field_validator("registration_url")
     @classmethod
-    def _validate_registration_url(cls, v):
+    def _validate_registration_url(cls, v: str | None) -> str | None:
         return _url_scheme_validator(v)
 
     @field_validator("title")
     @classmethod
-    def _sanitize_title(cls, v):
+    def _sanitize_title(cls, v: str | None) -> str | None:
         return sanitize_text(v, max_length=300)
 
     @field_validator("description")
     @classmethod
-    def _sanitize_description(cls, v):
+    def _sanitize_description(cls, v: str | None) -> str | None:
         return sanitize_text(v, max_length=5000)
 
     @field_validator("requirements")
     @classmethod
-    def _sanitize_requirements(cls, v):
+    def _sanitize_requirements(cls, v: str | None) -> str | None:
         return sanitize_text(v, max_length=1000)
 
     @field_validator("address")
     @classmethod
-    def _sanitize_address(cls, v):
+    def _sanitize_address(cls, v: str | None) -> str | None:
         return sanitize_text(v, max_length=300)
 
     # MEH-1222: reject malformed image URLs at the write boundary.
     @field_validator("image_url")
     @classmethod
-    def _validate_image_url(cls, v):
+    def _validate_image_url(cls, v: str | None) -> str | None:
         return _image_url_validator(v)
 
 
@@ -4480,7 +4517,7 @@ class ProducerRecipeBase(BaseModel):
 
     @field_validator("title")
     @classmethod
-    def _sanitize_title(cls, v):
+    def _sanitize_title(cls, v: str) -> str | str | None:
         return sanitize_text(v, max_length=200)
 
     @field_validator("title")
@@ -4490,24 +4527,24 @@ class ProducerRecipeBase(BaseModel):
 
     @field_validator("description")
     @classmethod
-    def _sanitize_description(cls, v):
+    def _sanitize_description(cls, v: str | None) -> str | None:
         return sanitize_text(v, max_length=2000) if v else v
 
     @field_validator("ingredients")
     @classmethod
-    def _sanitize_ingredients(cls, v):
+    def _sanitize_ingredients(cls, v: str) -> str | str | None:
         return sanitize_text(v, max_length=5000)
 
     @field_validator("instructions")
     @classmethod
-    def _sanitize_instructions(cls, v):
+    def _sanitize_instructions(cls, v: str) -> str | str | None:
         return sanitize_text(v, max_length=10000)
 
     # MEH-1222: reject malformed image URLs at the write boundary
     # (inherited by ProducerRecipeCreate).
     @field_validator("image_url")
     @classmethod
-    def _validate_image_url(cls, v):
+    def _validate_image_url(cls, v: str | None) -> str | None:
         return _image_url_validator(v)
 
 
@@ -4531,28 +4568,28 @@ class ProducerRecipeUpdate(BaseModel):
 
     @field_validator("title")
     @classmethod
-    def _sanitize_title(cls, v):
+    def _sanitize_title(cls, v: str | None) -> str | None:
         return sanitize_text(v, max_length=200) if v else v
 
     @field_validator("description")
     @classmethod
-    def _sanitize_description(cls, v):
+    def _sanitize_description(cls, v: str | None) -> str | None:
         return sanitize_text(v, max_length=2000) if v else v
 
     @field_validator("ingredients")
     @classmethod
-    def _sanitize_ingredients(cls, v):
+    def _sanitize_ingredients(cls, v: str | None) -> str | None:
         return sanitize_text(v, max_length=5000) if v else v
 
     @field_validator("instructions")
     @classmethod
-    def _sanitize_instructions(cls, v):
+    def _sanitize_instructions(cls, v: str | None) -> str | None:
         return sanitize_text(v, max_length=10000) if v else v
 
     # MEH-1222: reject malformed image URLs at the write boundary.
     @field_validator("image_url")
     @classmethod
-    def _validate_image_url(cls, v):
+    def _validate_image_url(cls, v: str | None) -> str | None:
         return _image_url_validator(v)
 
 
@@ -4636,7 +4673,7 @@ class OutreachLeadCreate(BaseModel):
     # REUSES: backend/app/schemas/schemas.py:196 — _normalize_instagram
     @field_validator("instagram")
     @classmethod
-    def _normalize_instagram_handle(cls, v):
+    def _normalize_instagram_handle(cls, v: str | None) -> str | None:
         return _normalize_instagram(v)
 
 
@@ -4656,7 +4693,7 @@ class OutreachLeadUpdate(BaseModel):
     # MEH-1616: see OutreachLeadCreate above — PATCH writes the same column.
     @field_validator("instagram")
     @classmethod
-    def _normalize_instagram_handle(cls, v):
+    def _normalize_instagram_handle(cls, v: str | None) -> str | None:
         return _normalize_instagram(v)
 
 
@@ -4700,10 +4737,11 @@ class BusinessSuggestionCreate(BaseModel):
       users AND from screen readers), so any value at all means a bot. The
       router answers 201 and stores nothing — never a 4xx, which would tell
       the bot what tripped it.
-    - `suggester_email` is optional PII. It is normalised through
-      `_normalize_contact_email` (:342) so a cleared field arrives as None
-      rather than 422-ing, and capped at 254 to match the column. It is NEVER
-      echoed back: see BusinessSuggestionAck.
+    - `suggester_email` is still ACCEPTED but IGNORED by the router since
+      MEH-2642: the stored address is the signed-in, verified account's only.
+      It stays in the schema so an old client does not 422. DO NOT wire it
+      back in — a typed address is unverified (MEH-2642). It is still
+      normalised through `_normalize_contact_email` (:342) and never echoed.
 
     `Field(max_length=…)` sits at field level on `instagram` / `suggester_name`
     / `reason`, whose separate `@field_validator`s may return None. That is
@@ -4729,7 +4767,7 @@ class BusinessSuggestionCreate(BaseModel):
 
     @field_validator("city")
     @classmethod
-    def _validate_city(cls, v):
+    def _validate_city(cls, v: str) -> str:
         return clean_display_city(v)
 
     # REUSES: backend/app/schemas/schemas.py:406 — _normalize_instagram.
@@ -4738,7 +4776,7 @@ class BusinessSuggestionCreate(BaseModel):
     # profile URL or a leading @ would produce a dead link.
     @field_validator("instagram")
     @classmethod
-    def _normalize_instagram_handle(cls, v):
+    def _normalize_instagram_handle(cls, v: str | None) -> str | None:
         return _normalize_instagram(v)
 
     # MEH-2633 security review (04/11), finding 1. PhoneNumberField caps the
@@ -4760,24 +4798,26 @@ class BusinessSuggestionCreate(BaseModel):
     # this endpoint's no-oracle property rests on.
     @field_validator("phone")
     @classmethod
-    def _phone_fits_the_column(cls, v):
+    def _phone_fits_the_column(
+        cls, v: PhoneNumberField | None
+    ) -> PhoneNumberField | None:
         if v is not None and len(v) > _OUTREACH_PHONE_MAX_LEN:
             raise ValueError("מספר טלפון לא תקין")
         return v
 
     @field_validator("suggester_name")
     @classmethod
-    def _sanitize_suggester_name(cls, v):
+    def _sanitize_suggester_name(cls, v: str | None) -> str | None:
         return sanitize_text(v, max_length=100)
 
     @field_validator("reason")
     @classmethod
-    def _sanitize_reason(cls, v):
+    def _sanitize_reason(cls, v: str | None) -> str | None:
         return sanitize_text(v, max_length=1000)
 
     @field_validator("suggester_email", mode="before")
     @classmethod
-    def _normalize_suggester_email(cls, v):
+    def _normalize_suggester_email(cls, v: Any) -> Any:
         normalized = _normalize_contact_email(v)
         # The length cap lives here, not in Field(...) — see the docstring.
         # 254 is the column width and the RFC 5321 maximum for an address.
@@ -4786,7 +4826,7 @@ class BusinessSuggestionCreate(BaseModel):
         return normalized
 
     @model_validator(mode="after")
-    def _require_one_contact(self):
+    def _require_one_contact(self) -> Self:
         if not (self.instagram or self.phone or self.website):
             raise ValueError("צריך לפחות דרך אחת ליצור קשר עם בית העסק")
         return self
@@ -4893,12 +4933,12 @@ class GroupBuyCreate(BaseModel):
     # differs only by max_length across schemas.
     @field_validator("description")
     @classmethod
-    def _sanitize_description(cls, v):
+    def _sanitize_description(cls, v: str | None) -> str | None:
         return sanitize_text(v, max_length=2000)
 
     @field_validator("fulfillment_note", "pickup_note", "delivery_note")
     @classmethod
-    def _clean_fulfillment_text(cls, v: str | None, info) -> str | None:
+    def _clean_fulfillment_text(cls, v: str | None, info: ValidationInfo) -> str | None:
         # Blank means "not given" — the model validator below decides whether
         # that is allowed. Given but with no real words ("." / "כן"): the
         # MEH-555 letter floor, with the field's own message.
@@ -4914,7 +4954,7 @@ class GroupBuyCreate(BaseModel):
         return v
 
     @model_validator(mode="after")
-    def _require_pickup_or_delivery(self):
+    def _require_pickup_or_delivery(self) -> Self:
         # MEH-2621: copy approved by Sapir 30/10.
         if not (self.pickup_note or self.delivery_note or self.fulfillment_note):
             raise ValueError("יש למלא איסוף או משלוח")
@@ -4997,7 +5037,7 @@ class CategoryRequestUpdate(BaseModel):
     # domain type — it is the only field needing this exact rule.
     @field_validator("admin_notes")
     @classmethod
-    def _sanitize_admin_notes(cls, v):
+    def _sanitize_admin_notes(cls, v: str | None) -> str | None:
         return sanitize_text(v, max_length=1000)
 
 
@@ -5021,7 +5061,7 @@ class ProducerNameChangeRequestCreate(BaseModel):
 
     @field_validator("reason")
     @classmethod
-    def _sanitize_reason(cls, v):
+    def _sanitize_reason(cls, v: str | None) -> str | None:
         return sanitize_text(v, max_length=500)
 
 
@@ -5047,7 +5087,7 @@ class ProducerNameChangeRequestUpdate(BaseModel):
 
     @field_validator("admin_notes")
     @classmethod
-    def _sanitize_admin_notes(cls, v):
+    def _sanitize_admin_notes(cls, v: str | None) -> str | None:
         return sanitize_text(v, max_length=1000)
 
 
@@ -5106,17 +5146,17 @@ class EventCreate(BaseModel):
     # MEH-2469: wall-clock times, offsets dropped before any comparison.
     @field_validator("event_time", "end_time")
     @classmethod
-    def _naive_times(cls, v):
+    def _naive_times(cls, v: time | None) -> time | None:
         return naive_wall_clock(v)
 
     @field_validator("description")
     @classmethod
-    def _sanitize_description(cls, v):
+    def _sanitize_description(cls, v: str | None) -> str | None:
         return sanitize_text(v, max_length=2000)
 
     @field_validator("location")
     @classmethod
-    def _sanitize_location(cls, v):
+    def _sanitize_location(cls, v: str | None) -> str | None:
         return sanitize_text(v, max_length=200)
 
     # MEH-2013: twin of ExperienceCreate._require_city — min_length=1 alone
@@ -5132,7 +5172,7 @@ class EventCreate(BaseModel):
     # MEH-1222: reject malformed image URLs at the write boundary.
     @field_validator("image_url")
     @classmethod
-    def _validate_image_url(cls, v):
+    def _validate_image_url(cls, v: str | None) -> str | None:
         return _image_url_validator(v)
 
     # MEH-1811: registration_url had NO validator and lands directly in an
@@ -5146,12 +5186,12 @@ class EventCreate(BaseModel):
     # REUSES: schemas.py:1122 — ProducerCreate._validate_contact_urls.
     @field_validator("registration_url")
     @classmethod
-    def _validate_registration_url(cls, v):
+    def _validate_registration_url(cls, v: str | None) -> str | None:
         return _url_scheme_validator(v)
 
     # MEH-2469: end after start, both on the same day.
     @model_validator(mode="after")
-    def _check_end_time(self):
+    def _check_end_time(self) -> Self:
         problem = event_end_time_problem(self.event_time, self.end_time)
         if problem:
             raise ValueError(problem)
@@ -5183,23 +5223,23 @@ class EventUpdate(BaseModel):
     # MEH-2469: wall-clock times, offsets dropped before any comparison.
     @field_validator("event_time", "end_time")
     @classmethod
-    def _naive_times(cls, v):
+    def _naive_times(cls, v: time | None) -> time | None:
         return naive_wall_clock(v)
 
     @field_validator("description")
     @classmethod
-    def _sanitize_description(cls, v):
+    def _sanitize_description(cls, v: str | None) -> str | None:
         return sanitize_text(v, max_length=2000)
 
     @field_validator("location")
     @classmethod
-    def _sanitize_location(cls, v):
+    def _sanitize_location(cls, v: str | None) -> str | None:
         return sanitize_text(v, max_length=200)
 
     # MEH-1222: reject malformed image URLs at the write boundary.
     @field_validator("image_url")
     @classmethod
-    def _validate_image_url(cls, v):
+    def _validate_image_url(cls, v: str | None) -> str | None:
         return _image_url_validator(v)
 
     # MEH-1811: parity with the Create twin — an event created clean could
@@ -5207,7 +5247,7 @@ class EventUpdate(BaseModel):
     # MEH-1626 chunk-1 note above describes for `title`. See EventCreate.
     @field_validator("registration_url")
     @classmethod
-    def _validate_registration_url(cls, v):
+    def _validate_registration_url(cls, v: str | None) -> str | None:
         return _url_scheme_validator(v)
 
 
@@ -5321,7 +5361,7 @@ class ReviewCreateNested(BaseModel):
 
     @field_validator("body")
     @classmethod
-    def _sanitize_body(cls, v):
+    def _sanitize_body(cls, v: str) -> str | str | None:
         return sanitize_text(v, max_length=500)
 
 
@@ -5341,7 +5381,7 @@ class ReviewReplyUpdate(BaseModel):
 
     @field_validator("reply")
     @classmethod
-    def _validate_reply(cls, v):
+    def _validate_reply(cls, v: str | None) -> str:
         v = sanitize_text(v, max_length=1000)
         stripped = (v or "").strip()
         if not stripped:
@@ -5595,7 +5635,7 @@ class AlertPrefsIn(BaseModel):
     # MEH-3117: new_rescue alert type; defaults to on like the siblings.
     notify_new_rescue: bool = True
     whatsapp_opt_in: bool = False
-    push_subscription: dict | None = None
+    push_subscription: dict[str, Any] | None = None
 
 
 class AlertPrefsOut(BaseModel):
@@ -5696,17 +5736,17 @@ class ContactIn(BaseModel):
 
     @field_validator("name")
     @classmethod
-    def _sanitize_name(cls, v):
+    def _sanitize_name(cls, v: str) -> str | str | None:
         return sanitize_text(v, max_length=200)
 
     @field_validator("message")
     @classmethod
-    def _sanitize_message(cls, v):
+    def _sanitize_message(cls, v: str) -> str | str | None:
         return sanitize_text(v, max_length=5000)
 
     @field_validator("topic")
     @classmethod
-    def _validate_topic(cls, v):
+    def _validate_topic(cls, v: str | None) -> str | None:
         if v is None:
             return v
         v = v.strip()

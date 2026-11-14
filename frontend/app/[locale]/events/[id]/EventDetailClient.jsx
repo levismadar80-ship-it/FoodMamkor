@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 import SeedMark from "@/components/brand/SeedMark";
@@ -44,20 +45,31 @@ import { SkeletonBlock } from "@/components/Skeleton";
 const MiniMap = dynamic(() => import("@/components/MiniMap"), { ssr: false });
 
 // MEH-3043: short, for the sticky phone bar beside the sign-up button.
+/** @type {Intl.DateTimeFormatOptions} */
 const BAR_DATE_OPTIONS = { weekday: "short", day: "numeric", month: "numeric" };
 // MEH-3057: the tile beside it already says month + day, so the row's text
 // is the weekday only («יום שישי · 17:00») — the full date read twice.
+/** @type {Intl.DateTimeFormatOptions} */
 const DETAIL_DATE_OPTIONS = { weekday: "long" };
 
 // MEH-476 PR 3b2: extracted from app/[locale]/events/[id]/page.js so the
 // route can export generateMetadata (Client Components cannot). page.js
 // renders this component; logic + state unchanged from pre-3b2 behavior.
-export default function EventDetailClient() {
+/**
+ * MEH-3199: `initialEvent` is the page's own server fetch (page.js getEvent),
+ * so the first HTML already carries the event — crawlers and slow phones see
+ * the content, not a skeleton. The client still refetches with the viewer's
+ * token (the owner / admin view), and a failed refetch keeps the server copy.
+ * State is seeded once; a later prop change (same id) is not re-applied — the
+ * refetch brings the fresh copy. Without it the page loads client-side as before.
+ * @param {{ initialEvent?: object | null }} props
+ */
+export default function EventDetailClient({ initialEvent = null } = {}) {
   const t = useTranslations("events.detail");
   const locale = useLocale();
   const { id } = useParams();
-  const [event, setEvent] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [event, setEvent] = useState(initialEvent);
+  const [loading, setLoading] = useState(!initialEvent);
   // MEH-2548: the owner's upcoming events — «עוד אירועים של…» and, on a
   // past event, «the next one». Best effort: a failure just hides them.
   const [moreEvents, setMoreEvents] = useState([]);
@@ -66,9 +78,12 @@ export default function EventDetailClient() {
     api
       .get(`/events/${id}`)
       .then((r) => setEvent(r.data))
-      .catch(() => setEvent(null))
+      // MEH-3199: a failed refetch never blanks a page the server already drew.
+      .catch(() => {
+        if (!initialEvent) setEvent(null);
+      })
       .finally(() => setLoading(false));
-  }, [id]);
+  }, [id, initialEvent]);
 
   const ownerId = event?.producer_id;
   useEffect(() => {
@@ -135,8 +150,9 @@ export default function EventDetailClient() {
     ? t("organizer_line", { name: event.producer_name })
     : `${t("organized_by")} ${event.producer_name}`;
 
-  // The canonical page address for share + the calendar entry. Client-only
-  // component past the loading gate, so window is defined here.
+  // The canonical page address for share + the calendar entry. MEH-3199: this
+  // also renders on the server now, where it is "" — ShareButton and the
+  // calendar link read it only in click handlers, after hydration.
   const pageUrl = typeof window === "undefined" ? "" : `${window.location.origin}${window.location.pathname}`;
 
   // MEH-2548: «היום» / «מחר» / «השבוע» beside the date, or the past-event

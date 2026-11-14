@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * MEH-2602: the ONE reading of "what does delivery cost" for a business —
  * shared by the discovery card and the business page's DeliveryBlock.

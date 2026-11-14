@@ -14,9 +14,11 @@ import path from "node:path";
 import { render } from "@testing-library/react";
 
 const init = vi.fn();
+const addIntegration = vi.fn();
 vi.mock("@sentry/nextjs", () => ({
   init: (...args) => init(...args),
-  replayIntegration: () => ({}),
+  addIntegration: (...args) => addIntegration(...args),
+  replayIntegration: () => ({ name: "Replay" }),
   captureRouterTransitionStart: () => {},
 }));
 
@@ -32,6 +34,21 @@ const TOKEN = "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJwLTEifQ.s1g-_x";
 const event = () => ({
   request: { url: `https://mehamakor.co.il/claim/${TOKEN}` },
   transaction: `/claim/${TOKEN}`,
+});
+
+// Every fresh import of instrumentation-client adds a consent listener on the
+// real window. Drop them after each case (in EVERY describe here) so a module
+// from an earlier case cannot answer a later case's consent event.
+const added = [];
+const realAdd = window.addEventListener.bind(window);
+beforeEach(() => {
+  vi.spyOn(window, "addEventListener").mockImplementation((type, fn, opts) => {
+    added.push([type, fn]);
+    realAdd(type, fn, opts);
+  });
+});
+afterEach(() => {
+  for (const [type, fn] of added.splice(0)) window.removeEventListener(type, fn);
 });
 
 describe("Sentry configs redact the claim token", () => {
@@ -61,28 +78,60 @@ describe("Sentry configs redact the claim token", () => {
 
 // rrweb's own recording events carry the page URL and cannot be scrubbed
 // (@sentry/replay: beforeAddRecordingEvent only sees custom events), so a tab
-// that opens on a claim link must record no replay at all.
-describe("Sentry client records no replay on a claim link", () => {
+// that opens on a bearer-token link must record no replay at all. MEH-3193:
+// a replay is also a session recording, so it waits for the "all" cookie
+// answer — init carries none, and it is added only once allowed.
+// DISCRIMINATION: restore the old `integrations: onClaimLink ? [] : [replay]`
+// and the "no consent" rows fail (a replay at init without consent).
+describe("Sentry client replay: consent + token links (MEH-2324, MEH-3193)", () => {
   const env = { ...process.env };
   beforeEach(() => {
     vi.resetModules();
     init.mockClear();
+    addIntegration.mockClear();
+    localStorage.clear();
     process.env.NEXT_PUBLIC_SENTRY_DSN = "https://k@o.ingest.sentry.io/1";
   });
   afterEach(() => {
+    vi.restoreAllMocks();
     process.env = { ...env };
+    localStorage.clear();
     window.history.replaceState({}, "", "/");
   });
 
   it.each([
-    [`/claim/${TOKEN}`, 0],
-    [`/en/claim/${TOKEN}`, 0],
-    ["/claim", 1],
-    ["/producers", 1],
-  ])("opened on %s → %s replay integration(s)", async (path, count) => {
+    [`/claim/${TOKEN}`, "all", 0],
+    [`/en/claim/${TOKEN}`, "all", 0],
+    [`/owner-invite/${TOKEN}`, "all", 0],
+    ["/claim", "all", 1],
+    ["/producers", "all", 1],
+    ["/producers", "essential", 0],
+    ["/producers", null, 0],
+  ])("opened on %s with consent %s → %s replay integration(s)", async (path, consent, count) => {
     window.history.replaceState({}, "", path);
+    if (consent) localStorage.setItem("cookieConsent", consent);
     await import("../instrumentation-client.js");
-    expect(init.mock.calls[0][0].integrations).toHaveLength(count);
+    expect(init.mock.calls[0][0].integrations).toHaveLength(0);
+    expect(addIntegration).toHaveBeenCalledTimes(count);
+  });
+
+  it("is added the moment she accepts all cookies, once", async () => {
+    window.history.replaceState({}, "", "/producers");
+    await import("../instrumentation-client.js");
+    expect(addIntegration).not.toHaveBeenCalled();
+    const { setCookieConsent } = await import("../lib/cookie-consent.js");
+    setCookieConsent("all");
+    expect(addIntegration).toHaveBeenCalledTimes(1);
+    setCookieConsent("all");
+    expect(addIntegration).toHaveBeenCalledTimes(1);
+  });
+
+  it("accepting all cookies on a token link still records nothing", async () => {
+    window.history.replaceState({}, "", `/owner-invite/${TOKEN}`);
+    await import("../instrumentation-client.js");
+    const { setCookieConsent } = await import("../lib/cookie-consent.js");
+    setCookieConsent("all");
+    expect(addIntegration).not.toHaveBeenCalled();
   });
 });
 

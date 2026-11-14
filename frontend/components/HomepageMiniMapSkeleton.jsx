@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Module:   HomepageMiniMapSkeleton
  * Purpose:  SSR-able loading fallback for the HomepageMiniMap dynamic import
