@@ -37,6 +37,11 @@ STREAK_LOOKBACK_MONTHS = 6
 _BOOKINGS = case((BillableEvent.kind == "rescue_bag", BillableEvent.quantity), else_=1)
 
 
+# The ledger starts in 2026; the upper bound only keeps datetime() in range.
+MIN_YEAR = 2020
+MAX_YEAR = 2100
+
+
 @dataclass(frozen=True)
 class Month:
     year: int
@@ -53,7 +58,12 @@ class Month:
         year_text, _, month_text = text.partition("-")
         if len(year_text) != 4 or len(month_text) != 2:
             raise ValueError(text)
+        if not (year_text.isascii() and month_text.isascii()):
+            raise ValueError(text)  # int() would also take non-ASCII digits
         first = date(int(year_text), int(month_text), 1)  # validates the range
+        # A far year passes date() and then overflows in next().start().
+        if not MIN_YEAR <= first.year <= MAX_YEAR:
+            raise ValueError(text)
         return cls(first.year, first.month)
 
     def previous(self) -> "Month":

@@ -111,6 +111,59 @@ class TestSummarize:
             billing_summary.summarize(db, producer.id, Month(2026, 12))["bookings"] == 1
         )
 
+    def test_the_month_edge_follows_the_clock_change(self, db):
+        """In summer Israel is UTC+3: April starts 31/3 21:00 UTC and October
+        30/9 21:00 UTC. A fixed +02:00 would put both rows a month early."""
+        producer = make_producer(db)
+        _row(db, producer, at=datetime(2026, 3, 31, 21, 30, tzinfo=timezone.utc))
+        _row(db, producer, at=datetime(2026, 9, 30, 21, 30, tzinfo=timezone.utc))
+        counts = {
+            m: billing_summary.summarize(db, producer.id, Month(2026, m))["bookings"]
+            for m in (3, 4, 9, 10)
+        }
+        assert counts == {3: 0, 4: 1, 9: 0, 10: 1}
+
+    def test_nothing_is_charged_even_in_a_busy_month(self, db):
+        producer = make_producer(db)
+        _row(db, producer)
+        s = billing_summary.summarize(db, producer.id, NOV)
+        pl = current_price_list()
+        assert s["fee_without_subscription_agorot"] > 0  # control: a fee exists
+        assert (s["phase"], s["charged_agorot"]) == ("launch", 0)
+        assert (s["threshold"], s["price_list_version"]) == (
+            pl.threshold_bookings_per_month,
+            pl.version,
+        )
+
+    def test_the_subscriber_fee_is_rounded_per_booking(self, db):
+        """Like the stored plain fee: each booking is rounded to a whole agora.
+        20 bookings of 1.25 ₪ at 2% are 2.5 agorot each → 3 each → 60, where
+        rounding the month once would give 50."""
+        producer = make_producer(db)
+        for _ in range(20):
+            _row(db, producer, base=125, fee=6)
+        s = billing_summary.summarize(db, producer.id, NOV)
+        assert s["fee_with_subscription_agorot"] == 4900 + 60
+
+    def test_the_summary_carries_counts_and_amounts_only(self, db):
+        producer = make_producer(db)
+        _row(db, producer)
+        s = billing_summary.summarize(db, producer.id, NOV)
+        assert set(s) == {
+            "month",
+            "phase",
+            "bookings",
+            "value_agorot",
+            "by_kind",
+            "threshold",
+            "over_threshold",
+            "fee_without_subscription_agorot",
+            "fee_with_subscription_agorot",
+            "charged_agorot",
+            "price_list_version",
+        }
+        assert set(s["by_kind"][0]) == {"kind", "bookings", "value_agorot"}
+
     def test_the_threshold_is_reached_at_exactly_twenty(self, db):
         producer = make_producer(db)
         threshold = current_price_list().threshold_bookings_per_month
@@ -152,7 +205,9 @@ class TestRoutes:
         r = client.get("/admin/billing/overview", headers=auth_header(owner))
         assert r.status_code == 403
 
-    @pytest.mark.parametrize("month", ["2026-13", "2026-00", "11-2026", "2026-1"])
+    @pytest.mark.parametrize(
+        "month", ["2026-13", "2026-00", "11-2026", "2026-1", "9999-12", "0001-01"]
+    )
     def test_a_bad_month_is_422(self, client, db, month):
         producer = make_producer(db)
         owner = _owner(db, producer, "billing-owner3@example.com")
@@ -214,6 +269,32 @@ class TestAdminOverview:
         assert body["businesses_over_threshold"] == 3
         assert body["businesses_over_two_months"] == 1
         assert body["rows"][0]["name"] == "ב חדש"  # busiest first
+
+    def test_the_overview_counts_like_the_summary(self, client, db):
+        """Bags count by quantity, a group-buy order counts once whatever its
+        units, a voided row counts nothing, and the value is summed."""
+        producer = make_producer(db, name="מעורב")
+        _row(db, producer, kind="rescue_bag", quantity=3, base=4500, fee=600)
+        _row(db, producer, kind="group_buy_order", quantity=3, base=27000, fee=1350)
+        _row(db, producer, status="voided")
+        admin = make_user(db, role="admin", email="billing-admin3@example.com")
+        db.commit()
+        r = client.get(
+            "/admin/billing/overview?month=2026-11", headers=auth_header(admin)
+        )
+        assert r.status_code == 200, r.text
+        (row,) = r.json()["rows"]
+        assert (row["bookings"], row["value_agorot"]) == (4, 31500)
+        assert set(row) == {
+            "producer_id",
+            "name",
+            "bookings",
+            "value_agorot",
+            "over_threshold",
+            "months_over_in_a_row",
+        }
+        mine = billing_summary.summarize(db, producer.id, NOV)
+        assert (mine["bookings"], mine["value_agorot"]) == (4, 31500)
 
     def test_an_empty_month(self, client, db):
         admin = make_user(db, role="admin", email="billing-admin2@example.com")

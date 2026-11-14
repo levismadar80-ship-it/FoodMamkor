@@ -466,7 +466,10 @@ per bag; every other row counts one.
   fee_without_subscription_agorot, fee_with_subscription_agorot, charged_agorot,
   price_list_version}`. The two fee figures are what the month WOULD cost on each
   track of the current price list: plain commission, or subscription + reduced
-  commission.
+  commission. The plain figure is the fee stored on each row (its own price
+  list); the subscriber figure is recomputed per booking with the current list.
+  One list exists today; a month that spans a price change will need both
+  figures taken from the row's list.
 - 🔒 `GET /admin/billing/overview` (60/minute) — every real business (test
   businesses excluded) with a counted booking that month, busiest first:
   `{month, threshold, businesses_over_threshold, businesses_over_two_months,

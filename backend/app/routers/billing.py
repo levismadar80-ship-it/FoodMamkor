@@ -28,7 +28,9 @@ from app.services.billing_summary import Month
 
 router = APIRouter(tags=["billing"])
 
-_MONTH = Query(None, pattern=r"^\d{4}-\d{2}$", description="YYYY-MM (Israel month)")
+_MONTH = Query(
+    None, pattern=r"^[0-9]{4}-[0-9]{2}$", description="YYYY-MM (Israel month)"
+)
 
 
 def _month(text: str | None) -> Month:
