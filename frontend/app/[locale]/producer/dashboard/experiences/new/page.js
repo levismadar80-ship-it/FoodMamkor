@@ -36,14 +36,15 @@ export default function NewExperiencePage() {
 
   if (authLoading || !user || user.role !== "producer") return null;
 
-  // Unchanged from the page this replaces: moderation already yields a pending
-  // state, and GET /experiences/{id} lets the owner read her own pending item
-  // (experiences.py `is_owner` bypasses the public-visibility filter), so the
-  // ?pending=1 detail redirect stays valid. No producerStatus branch here —
-  // that one belongs to events, where a pending business's event 404s.
-  const handleSuccess = (data) => {
+  // MEH-3213: every new experience is saved as status=pending (experiences.py
+  // submit_experience). The public /experiences/<id> page fetches it on the
+  // server with NO token, and GET /experiences/{id} 404s a pending item for
+  // anyone but the owner, so the old `/experiences/<id>?pending=1` redirect
+  // landed the owner on a 404. Her own list shows the item with its «ממתין»
+  // status; the toast says it went for approval.
+  const handleSuccess = () => {
     showToast.success(t("toast_submitted"), { icon: <Seed size={12} /> });
-    router.push(`/experiences/${data.id}?pending=1`);
+    router.push("/producer/dashboard/experiences");
   };
 
   return (
