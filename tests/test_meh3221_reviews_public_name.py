@@ -58,3 +58,14 @@ def test_is_mine_only_for_the_author(client, db):
     theirs = client.get(f"/producers/{producer.id}/reviews", headers=auth_header(other))
     assert mine.json()["reviews"][0]["is_mine"] is True
     assert theirs.json()["reviews"][0]["is_mine"] is False
+
+
+@pytest.mark.parametrize("path", ["/producers/{pid}/reviews", "/reviews?producer_id={pid}"])
+def test_bad_bearer_is_401_not_anonymous(client, db, path):
+    """MEH-1627 semantics of get_current_user_optional, now on these GETs:
+    a garbage token is refused (the api client refreshes and retries), it is
+    never silently treated as anonymous. No header stays a 200."""
+    _author, _other, producer = _seed(db)
+    url = path.format(pid=producer.id)
+    assert client.get(url).status_code == 200
+    assert client.get(url, headers={"Authorization": "Bearer not-a-jwt"}).status_code == 401

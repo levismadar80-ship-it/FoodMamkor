@@ -94,7 +94,7 @@ beforeEach(() => {
 
 const withReply = {
   id: "rev-1",
-  user_id: "u-1",
+  
   user_name: "לקוחה טובה",
   stars: 5,
   body: "מוצרים מעולים",
@@ -105,7 +105,7 @@ const withReply = {
 
 const noReply = {
   id: "rev-2",
-  user_id: "u-2",
+  
   user_name: "לקוח נוסף",
   stars: 4,
   body: "טעים",
@@ -237,7 +237,7 @@ describe("ReviewsSection — zero reviews, reader view: no empty state, only the
     authState.user = { id: "u-9", producer_id: null };
     mockReviews([
       {
-        id: "rev-9", user_id: "u-2", user_name: "לקוח", stars: 4, body: "טעים",
+        id: "rev-9", user_name: "לקוח", stars: 4, body: "טעים",
         created_at: "2026-07-01T11:00:00", reply: null, reply_at: null,
       },
     ]);
@@ -248,7 +248,7 @@ describe("ReviewsSection — zero reviews, reader view: no empty state, only the
   it("a name opening with an emoji keeps the whole glyph in the initial circle (no split surrogate)", async () => {
     mockReviews([
       {
-        id: "rev-e", user_id: "u-3", user_name: "🧑‍🍳 דנה", stars: 5, body: "מעולה",
+        id: "rev-e", user_name: "🧑‍🍳 דנה", stars: 5, body: "מעולה",
         created_at: "2026-07-01T11:00:00", reply: null, reply_at: null,
       },
     ]);
@@ -381,7 +381,7 @@ describe("ReviewsSection — review-invite token (MEH-1428 chunk 2)", () => {
     sessionStorage.clear();
     apiMock.post.mockReset();
     apiMock.post.mockResolvedValue({
-      data: { id: "rev-new", user_id: "u-9", stars: 5, body: "x", created_at: "2026-10-25T10:00:00" },
+      data: { id: "rev-new", stars: 5, body: "x", created_at: "2026-10-25T10:00:00" },
     });
     authState.user = { id: "u-9", producer_id: null };
     window.history.replaceState({}, "", "/");
@@ -649,7 +649,7 @@ describe("ReviewsSection — reviews look (MEH-2592)", () => {
   });
 
   it("show more is a full-width button", async () => {
-    const many = Array.from({ length: 4 }, (_, i) => ({ ...noReply, id: `r${i}`, user_id: `u${i}` }));
+    const many = Array.from({ length: 4 }, (_, i) => ({ ...noReply, id: `r${i}` }));
     apiMock.get.mockResolvedValue({ data: { reviews: many, total: 4, page: 1, pages: 1 } });
     render(<ReviewsSection producerId="p-1" />);
     const more = await screen.findByRole("button", { name: /show_more/ });
@@ -677,7 +677,7 @@ describe("ReviewsSection — author initial (MEH-2705)", () => {
   async function renderedName(user_name) {
     mockReviews([
       {
-        id: "rev-n", user_id: "u-5", user_name, stars: 5, body: "מעולה מאוד",
+        id: "rev-n", user_name, stars: 5, body: "מעולה מאוד",
         created_at: "2026-07-01T11:00:00", reply: null, reply_at: null,
       },
     ]);
@@ -711,9 +711,9 @@ describe("ReviewsSection — live total reported upward (MEH-2705)", () => {
   it("reports the fetched total, then total+1 after a first review", async () => {
     authState.user = { id: "u-new", producer_id: null };
     try { localStorage.setItem("wa_clicked_p-1", "1"); } catch {}
-    mockReviews([withReply, noReply, { ...noReply, id: "rev-3", user_id: "u-3" }]);
+    mockReviews([withReply, noReply, { ...noReply, id: "rev-3" }]);
     apiMock.post.mockResolvedValue({
-      data: { id: "rev-new", user_id: "u-new", user_name: "חדש", stars: 5, body: "מעולה מאוד מאוד", created_at: "2026-07-03T10:00:00", reply: null },
+      data: { id: "rev-new", user_name: "חדש", stars: 5, body: "מעולה מאוד מאוד", created_at: "2026-07-03T10:00:00", reply: null },
     });
     const onTotalChange = vi.fn();
     render(<ReviewsSection producerId="p-1" reviewCount={3} onTotalChange={onTotalChange} />);
@@ -724,6 +724,35 @@ describe("ReviewsSection — live total reported upward (MEH-2705)", () => {
     fireEvent.change(screen.getByRole("textbox"), { target: { value: "מעולה מאוד מאוד" } });
     fireEvent.submit(screen.getByRole("textbox").closest("form"));
     await waitFor(() => expect(onTotalChange).toHaveBeenLastCalledWith(4));
+    try { localStorage.removeItem("wa_clicked_p-1"); } catch {}
+  });
+});
+
+// MEH-3221 (B10): the public payload has no user_id; `is_mine` says which
+// review is the viewer's own. An edit replaces that row and leaves the total.
+describe("ReviewsSection — own review found by is_mine (MEH-3221)", () => {
+  it("editing my review replaces my row only; the total stays", async () => {
+    authState.user = { id: "u-me", producer_id: null };
+    try { localStorage.setItem("wa_clicked_p-1", "1"); } catch {}
+    const mine = { ...noReply, id: "rev-mine", user_name: "אני מ.", body: "גרסה ראשונה של הביקורת", is_mine: true };
+    mockReviews([withReply, mine]);
+    apiMock.post.mockResolvedValue({
+      data: { ...mine, stars: 5, body: "גרסה שנייה של הביקורת" },
+    });
+    const onTotalChange = vi.fn();
+    render(<ReviewsSection producerId="p-1" reviewCount={2} onTotalChange={onTotalChange} />);
+    await screen.findByText("תודה רבה על המילים החמות!");
+    expect(onTotalChange).toHaveBeenLastCalledWith(2);
+    fireEvent.click(screen.getByTestId("reviews-star-5"));
+    // Pre-filled from the row flagged is_mine.
+    expect(screen.getByRole("textbox").value).toBe("גרסה ראשונה של הביקורת");
+    fireEvent.change(screen.getByRole("textbox"), { target: { value: "גרסה שנייה של הביקורת" } });
+    fireEvent.submit(screen.getByRole("textbox").closest("form"));
+    await screen.findByText("גרסה שנייה של הביקורת");
+    expect(screen.queryByText("גרסה ראשונה של הביקורת")).not.toBeInTheDocument();
+    expect(screen.getByText("תודה רבה על המילים החמות!")).toBeInTheDocument();
+    expect(onTotalChange).toHaveBeenLastCalledWith(2);
+    authState.user = null;
     try { localStorage.removeItem("wa_clicked_p-1"); } catch {}
   });
 });
@@ -741,10 +770,10 @@ describe("ReviewsSection — the initial on a seed tint (MEH-2833 board 4)", () 
 
   it("tint = the reviewer's seed at ~24% over cream, ring at ~55%, letter in text ink", async () => {
     const { seedColorFor } = await import("@/lib/brand-seeds");
-    mockReviews([{ id: "rev-s", user_id: "u-77", user_name: "רונית כ.", stars: 5, body: "טעים", created_at: "2026-07-01T11:00:00", reply: null, reply_at: null }]);
+    mockReviews([{ id: "rev-s", user_name: "רונית כ.", stars: 5, body: "טעים", created_at: "2026-07-01T11:00:00", reply: null, reply_at: null }]);
     render(<ReviewsSection producerId="p-1" isOwner={false} />);
     const initial = await screen.findByTestId("review-initial");
-    const seed = seedColorFor("u-77");
+    const seed = seedColorFor("rev-s");
     expect(initial.getAttribute("data-seed")).toBe(seed.name);
     expect(initial.style.background).toBe(`rgb(${mix(seed.fill, 0.24).join(", ")})`);
     expect(initial.style.boxShadow).toContain(`rgb(${mix(seed.fill, 0.55).join(", ")})`);
@@ -760,13 +789,13 @@ describe("ReviewsSection — the initial on a seed tint (MEH-2833 board 4)", () 
     expect(pickable).toHaveLength(4);
     const idFor = {};
     for (let i = 0; Object.keys(idFor).length < pickable.length && i < 500; i += 1) {
-      const name = seedColorFor(`u-${i}`).name;
-      if (!(name in idFor)) idFor[name] = `u-${i}`;
+      const name = seedColorFor(`rev-${i}`).name;
+      if (!(name in idFor)) idFor[name] = `rev-${i}`;
     }
     expect(Object.keys(idFor).sort()).toEqual([...pickable].sort());
     // One render per seed: the list shows 3 reviews before «more».
     for (const name of pickable) {
-      mockReviews([{ id: `rev-${name}`, user_id: idFor[name], user_name: "רונית כ.", stars: 5, body: "טעים", created_at: "2026-07-01T11:00:00", reply: null, reply_at: null }]);
+      mockReviews([{ id: idFor[name], user_name: "רונית כ.", stars: 5, body: "טעים", created_at: "2026-07-01T11:00:00", reply: null, reply_at: null }]);
       const { unmount } = render(<ReviewsSection producerId="p-1" isOwner={false} />);
       const el = await screen.findByTestId("review-initial");
       expect(el.getAttribute("data-seed")).toBe(name);
@@ -775,6 +804,19 @@ describe("ReviewsSection — the initial on a seed tint (MEH-2833 board 4)", () 
       expect(ratio(hexRgb("#1C1A17"), bg), name).toBeGreaterThanOrEqual(4.5);
       unmount();
     }
+  });
+
+  it("MEH-3221: two reviewers with the same short name get their own seed (keyed by review id)", async () => {
+    mockReviews([
+      { ...noReply, id: "rev-0", user_name: "דנה כ." },
+      { ...noReply, id: "rev-3", user_name: "דנה כ." },
+    ]);
+    const { seedColorFor } = await import("@/lib/brand-seeds");
+    expect(seedColorFor("rev-0").name).not.toBe(seedColorFor("rev-3").name);
+    render(<ReviewsSection producerId="p-1" isOwner={false} />);
+    await waitFor(() => expect(screen.getAllByTestId("review-initial")).toHaveLength(2));
+    const seeds = screen.getAllByTestId("review-initial").map((el) => el.getAttribute("data-seed"));
+    expect(seeds).toEqual([seedColorFor("rev-0").name, seedColorFor("rev-3").name]);
   });
 
   it("the same reviewer always gets the same seed; two different ones can differ", async () => {
@@ -851,7 +893,7 @@ describe("ReviewsSection — rating distribution (MEH-1337)", () => {
       data: { reviews: [withReply, noReply], total: 4, page: 1, pages: 1, rating_counts: asStr({ 5: 2, 4: 2 }) },
     });
     apiMock.post.mockResolvedValue({
-      data: { id: "rev-new", user_id: "u-new", user_name: "חדש", stars: 3, body: "טוב מאוד מאוד", created_at: "2026-07-03T10:00:00", reply: null },
+      data: { id: "rev-new", user_name: "חדש", stars: 3, body: "טוב מאוד מאוד", created_at: "2026-07-03T10:00:00", reply: null },
     });
     render(<ReviewsSection producerId="p-1" avgRating={4.4} reviewCount={4} />);
     await screen.findByText("תודה רבה על המילים החמות!");
@@ -890,7 +932,7 @@ describe("ReviewsSection — no empty band above the invite row at zero reviews 
   const GAP = /\bmt-8\b/;
   const one = [
     {
-      id: "rev-1", user_id: "u-2", user_name: "לקוח", stars: 4, body: "טעים",
+      id: "rev-1", user_name: "לקוח", stars: 4, body: "טעים",
       created_at: "2026-07-01T11:00:00", reply: null, reply_at: null,
     },
   ];

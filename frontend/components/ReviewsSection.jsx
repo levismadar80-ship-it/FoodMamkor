@@ -612,7 +612,7 @@ export default function ReviewsSection({
                     from the person who gave them. */}
                 <div className="flex items-start gap-3 mb-3">
                   <ReviewInitial
-                    seedKey={review.user_id ?? review.user_name}
+                    seedKey={review.id}
                     letter={avatarInitial(formatName(review.user_name, anonymousFallback), "")}
                   />
                   <div className="min-w-0">
