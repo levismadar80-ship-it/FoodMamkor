@@ -170,6 +170,15 @@ describe("useProducersFeed — MEH-3198 load error + retry", () => {
     expect(producerCalls.at(-1)[1]).toEqual({ params: { has_delivery: true } });
   });
 
+  it("a failed search-this-area fetch reported from outside sets the error state", async () => {
+    routeProducers(() => Promise.resolve({ data: validProducers }));
+    const { result } = renderHook(() => useProducersFeed());
+    await waitFor(() => expect(result.current.allProducers).toHaveLength(2));
+    act(() => result.current.reportLoadFailure(new Error("network")));
+    expect(result.current.loadError).toBe(true);
+    expect(result.current.allProducers).toHaveLength(0);
+  });
+
   it("a list written from outside (search this area) ends the error state", async () => {
     routeProducers(() => Promise.reject(new Error("network")));
     const { result } = renderHook(() => useProducersFeed());

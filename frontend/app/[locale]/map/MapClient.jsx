@@ -353,6 +353,7 @@ export default function MapPage() {
     setCommittedBounds: filters.setCommittedBounds,
     categories: feed.categories,
     setAllProducers: feed.setAllProducers,
+    reportLoadFailure: feed.reportLoadFailure,
     setSheetSnap: hints.setSheetSnap,
   });
 

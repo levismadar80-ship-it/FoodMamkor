@@ -158,4 +158,19 @@ test.describe("MEH-2824 · desktop unchanged", () => {
     }));
     expect(m).toEqual({ body: "0px", footer: "0px" });
   });
+
+  // MEH-3198: with the cookie banner up the body reserve was 68px on desktop
+  // /map. The banner is left showing here (no consent stored), so the
+  // reserve is live and a zero is the rule, not an absent banner.
+  test("/map with the cookie banner up: no body reserve, no scroll", async ({ page }) => {
+    await page.goto("/he/map");
+    await expect(page.locator("[data-map-shell=desktop]")).toBeVisible({ timeout: 15_000 });
+    await expect.poll(() => rootVar(page, "--cookie-banner-h"), { timeout: 10_000 }).not.toMatch(/^(|0px)$/);
+    const m = await page.evaluate(() => ({
+      pad: parseFloat(getComputedStyle(document.body).paddingBottom),
+      overflow: document.scrollingElement!.scrollHeight - innerHeight,
+    }));
+    expect.soft(m.pad, "body carries no bottom reserve on /map").toBe(0);
+    expect.soft(m.overflow, "nothing to scroll below the map").toBeLessThanOrEqual(1);
+  });
 });

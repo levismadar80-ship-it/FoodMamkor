@@ -62,6 +62,7 @@ export function useMapSync({
   // from useProducersFeed
   categories,
   setAllProducers,
+  reportLoadFailure,
   // from useFirstVisitHints
   setSheetSnap,
 }) {
@@ -297,7 +298,8 @@ export function useMapSync({
     api
       .get("/producers", { params })
       .then((r) => setAllProducers(r.data))
-      .catch(() => setAllProducers([]));
+      // MEH-3198: a failure shows the error + «נסו שוב», not "no businesses".
+      .catch((err) => (reportLoadFailure ? reportLoadFailure(err) : setAllProducers([])));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mapBounds, chipState, categories, cityFilter]);
 

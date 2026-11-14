@@ -163,6 +163,9 @@ export function useProducersFeed({ readInitialParams = null } = {}) {
     catalogSnapshot,
     snapshotPending,
     loadError,
+    // MEH-3198: a failed «חפשו באזור זה» refetch (useMapSync) is a failed load
+    // too, not "no businesses". «נסו שוב» then repeats the last list load.
+    reportLoadFailure: (reason) => handleLoadFailure(reason),
     retry: () => loadProducers(lastParams.current),
   };
 }

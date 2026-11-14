@@ -270,3 +270,28 @@ describe("useMapSync — a marker tap on a phone keeps the sheet at PEEK (MEH-31
     expect(props.setSheetSnap).not.toHaveBeenCalled();
   });
 });
+
+// MEH-3198: a failed «חפשו באזור זה» fetch is a failed load, not "no
+// businesses": it reports the failure (error + «נסו שוב») instead of writing
+// an empty list. Red on the pre-fix hook, which called setAllProducers([]).
+describe("useMapSync — a failed search-this-area fetch (MEH-3198)", () => {
+  it("reports the failure and does not write an empty list", async () => {
+    const api = (await import("@/lib/api")).default;
+    api.get.mockImplementationOnce(() => Promise.reject(new Error("network")));
+    const reportLoadFailure = vi.fn();
+    const props = {
+      chipState: {}, cityFilter: null, buildParams: () => ({}),
+      setActiveProducerId: vi.fn(), setSelectedProducer: vi.fn(), setHoveredProducerId: vi.fn(),
+      setMapMoved: vi.fn(), setCommittedBounds: vi.fn(), categories: [],
+      setAllProducers: vi.fn(), reportLoadFailure, setSheetSnap: vi.fn(),
+    };
+    const { result } = renderHook(() => useMapSync(props));
+    await act(async () => {
+      result.current.handleSearchThisArea();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    expect(reportLoadFailure).toHaveBeenCalledTimes(1);
+    expect(props.setAllProducers).not.toHaveBeenCalled();
+  });
+});
