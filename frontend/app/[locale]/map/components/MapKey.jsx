@@ -4,7 +4,7 @@ import { useEffect, useId, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Check, Question, X } from "@phosphor-icons/react";
 
-import { styleForProducer } from "@/lib/category-registry";
+import { CATEGORY_STYLES, styleForProducer } from "@/lib/category-registry";
 
 /**
  * MapKey — "מה רואים במפה?" (MEH-2424).
@@ -73,7 +73,13 @@ function SampleCluster() {
 // sample does too, from the same registry call, instead of the green leaf it
 // used to show (a leaf pickup pin appears only for an uncategorised business).
 // Bakery is the example because it is the commonest pickup case.
-const PICKUP_SAMPLE = styleForProducer({ categories: [{ name: "לחמים ואפייה" }] });
+// The bakery category is found by its icon name, so no Hebrew literal lives in
+// this component (HebrewLiteralRatchet); the style still comes from the map's
+// own call.
+const BAKERY_CATEGORY = Object.keys(CATEGORY_STYLES).find(
+  (name) => CATEGORY_STYLES[name].iconName === "Bread",
+);
+const PICKUP_SAMPLE = styleForProducer({ categories: [{ name: BAKERY_CATEGORY }] });
 
 function SamplePickup() {
   const { color, icon: Glyph } = PICKUP_SAMPLE;
