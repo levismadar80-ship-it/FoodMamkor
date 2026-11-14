@@ -64,6 +64,8 @@ RESERVED_SLUGS: frozenset[str] = frozenset(
         "share",
         "upgrade",
         "verify-email",
+        # MEH-3079: the weekly-summary unsubscribe page (/unsubscribe/weekly).
+        "unsubscribe",
     }
 )
 
