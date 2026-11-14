@@ -6187,6 +6187,14 @@
             ],
             "title": "Producer License Number"
           },
+          "product_groups": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/ProductGroupOut"
+            },
+            "title": "Product Groups",
+            "type": "array"
+          },
           "products": {
             "default": [],
             "items": {
@@ -8060,6 +8068,14 @@
             "default": "whatsapp",
             "title": "Primary Contact Method",
             "type": "string"
+          },
+          "product_groups": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/ProductGroupOut"
+            },
+            "title": "Product Groups",
+            "type": "array"
           },
           "products": {
             "default": [],
@@ -10270,6 +10286,14 @@
             ],
             "title": "Producer License Number"
           },
+          "product_groups": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/ProductGroupOut"
+            },
+            "title": "Product Groups",
+            "type": "array"
+          },
           "products": {
             "default": [],
             "items": {
@@ -12174,6 +12198,87 @@
         "title": "ProductCreate",
         "type": "object"
       },
+      "ProductGroupAssignIn": {
+        "properties": {
+          "group_id": {
+            "anyOf": [
+              {
+                "maxLength": 36,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Group Id"
+          }
+        },
+        "title": "ProductGroupAssignIn",
+        "type": "object"
+      },
+      "ProductGroupIn": {
+        "properties": {
+          "id": {
+            "anyOf": [
+              {
+                "maxLength": 36,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Id"
+          },
+          "name": {
+            "maxLength": 200,
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "title": "ProductGroupIn",
+        "type": "object"
+      },
+      "ProductGroupOut": {
+        "description": "MEH-3055: one owner-defined product group (producers.product_groups).",
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ],
+        "title": "ProductGroupOut",
+        "type": "object"
+      },
+      "ProductGroupsIn": {
+        "description": "The whole ordered list. Absent ids are deleted, order is list order.",
+        "properties": {
+          "groups": {
+            "items": {
+              "$ref": "#/components/schemas/ProductGroupIn"
+            },
+            "maxItems": 40,
+            "title": "Groups",
+            "type": "array"
+          }
+        },
+        "required": [
+          "groups"
+        ],
+        "title": "ProductGroupsIn",
+        "type": "object"
+      },
       "ProductHit": {
         "properties": {
           "description": {
@@ -12226,6 +12331,25 @@
         "title": "ProductHit",
         "type": "object"
       },
+      "ProductOrderIn": {
+        "description": "Every product of the business, in the order the owner wants.",
+        "properties": {
+          "product_ids": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "maxItems": 100,
+            "title": "Product Ids",
+            "type": "array"
+          }
+        },
+        "required": [
+          "product_ids"
+        ],
+        "title": "ProductOrderIn",
+        "type": "object"
+      },
       "ProductOut": {
         "properties": {
           "allergens": {
@@ -12252,6 +12376,17 @@
               }
             ],
             "title": "Description"
+          },
+          "group_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Group Id"
           },
           "id": {
             "format": "uuid",
@@ -12313,6 +12448,17 @@
           "name": {
             "title": "Name",
             "type": "string"
+          },
+          "position": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Position"
           },
           "price_max": {
             "anyOf": [
@@ -20190,7 +20336,7 @@
     },
     "/auth/verify-email": {
       "get": {
-        "description": "Consume email verification token. Clears token on success.\n\nMEH-320: 404 (not_found) / 410 (expired) split + structured logging,\nsame pattern MEH-304 applied to /auth/reset-password. Diagnostics\nonly — does not change happy-path behavior. The actual root cause\nof the staging 400 will be identified from the [VERIFY-EMAIL]\nlog entries this surfaces.",
+        "description": "Consume the one-time token (MEH-320: 404 unknown / 410 expired).\nMEH-3087: after the token is consumed, verify_email_session may sign in.",
         "operationId": "verify_email_auth_verify_email_get",
         "parameters": [
           {
@@ -23565,6 +23711,136 @@
         ]
       }
     },
+    "/producers/me/product-groups": {
+      "get": {
+        "operationId": "list_my_product_groups_producers_me_product_groups_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ProductGroupOut"
+                  },
+                  "title": "Response List My Product Groups Producers Me Product Groups Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "List My Product Groups",
+        "tags": [
+          "producer-management"
+        ]
+      },
+      "put": {
+        "description": "The whole ordered list in one write: add (no id), rename, reorder,\ndelete (absent). Products of a deleted group become ungrouped.",
+        "operationId": "replace_my_product_groups_producers_me_product_groups_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProductGroupsIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ProductGroupOut"
+                  },
+                  "title": "Response Replace My Product Groups Producers Me Product Groups Put",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Replace My Product Groups",
+        "tags": [
+          "producer-management"
+        ]
+      }
+    },
+    "/producers/me/product-order": {
+      "put": {
+        "description": "`product_ids` must be exactly the business's products, each once —\na partial list would leave two products sharing a position.",
+        "operationId": "set_my_product_order_producers_me_product_order_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProductOrderIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ProductOut"
+                  },
+                  "title": "Response Set My Product Order Producers Me Product Order Put",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Set My Product Order",
+        "tags": [
+          "producer-management"
+        ]
+      }
+    },
     "/producers/me/products": {
       "get": {
         "operationId": "list_my_products_producers_me_products_get",
@@ -23731,6 +24007,64 @@
           }
         ],
         "summary": "Update My Product",
+        "tags": [
+          "producer-management"
+        ]
+      }
+    },
+    "/producers/me/products/{product_id}/group": {
+      "put": {
+        "operationId": "set_my_product_group_producers_me_products__product_id__group_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "product_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Product Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProductGroupAssignIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Set My Product Group",
         "tags": [
           "producer-management"
         ]

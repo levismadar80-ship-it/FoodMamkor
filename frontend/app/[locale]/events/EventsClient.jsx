@@ -34,6 +34,7 @@ import useTabsKeyboard from "@/hooks/useTabsKeyboard";
 import HubShell from "@/components/HubShell";
 import Button from "@/components/ui/Button";
 import SectionHeading from "@/components/ui/SectionHeading";
+import { SkeletonBlock } from "@/components/Skeleton";
 
 // MEH-134: S10 "The Almanac" visual port. Events API + filter logic +
 // date formatting (lib/format-date.js) untouched — layout layer only.
@@ -565,14 +566,14 @@ function SkeletonRows({ srLabel }) {
       {[0, 1, 2, 3, 4].map((i) => (
         <div key={i} className="grid grid-cols-[64px_1fr] md:grid-cols-[104px_1fr] border-b border-border">
           <div className="py-5 grid justify-items-center content-start gap-2">
-            <span className="w-8 h-8 rounded bg-border/60 animate-pulse" />
-            <span className="w-7 h-2.5 rounded bg-border/60 animate-pulse" />
+            <SkeletonBlock className="w-8 h-8 rounded" />
+            <SkeletonBlock className="w-7 h-2.5 rounded" />
           </div>
           <div className="py-5 ps-3 pe-4 grid gap-2.5">
-            <span className="w-12 h-2.5 rounded bg-border/60 animate-pulse" />
-            <span className="w-3/4 h-4 rounded bg-border/60 animate-pulse" />
-            <span className="w-1/2 h-3 rounded bg-border/60 animate-pulse" />
-            <span className="w-24 h-5 rounded-full bg-border/60 animate-pulse" />
+            <SkeletonBlock className="w-12 h-2.5 rounded" />
+            <SkeletonBlock className="w-3/4 h-4 rounded" />
+            <SkeletonBlock className="w-1/2 h-3 rounded" />
+            <SkeletonBlock className="w-24 h-5 rounded-full" />
           </div>
         </div>
       ))}
