@@ -10,6 +10,7 @@
     "app/[locale]/admin/users/page.js": 1,
     "app/[locale]/login/LoginClient.jsx": 2,
     "app/[locale]/owner-invite/OwnerInviteClient.jsx": 2,
+    "app/[locale]/producer/dashboard/edit/LocationHoursField.jsx": 2,
     "app/[locale]/producer/dashboard/edit/LocationsEditor.jsx": 1,
     "app/[locale]/producer/dashboard/edit/OrderWindowEditor.jsx": 2,
     "app/[locale]/producer/dashboard/edit/PaymentInfoEditor.jsx": 1,

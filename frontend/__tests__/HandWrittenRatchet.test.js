@@ -56,7 +56,12 @@ export function rawTextFields(src) {
       const ty = attrs.find((a) => a.name.name === "type");
       if (ty?.value?.type === "StringLiteral" && NOT_TEXT.has(ty.value.value)) return;
       const ca = attrs.find((a) => a.name.name === "className");
-      if (!ca?.value || !BORDERED.test(classText(p, ca))) return;
+      if (!ca?.value) return;
+      const text = classText(p, ca);
+      // className={SOME_CONST}: no string to read, so it counts. Pulling the
+      // classes into a constant must not hide a field from the ratchet.
+      const opaque = ca.value.type === "JSXExpressionContainer" && text.trim() === "";
+      if (!opaque && !BORDERED.test(text)) return;
       n++;
     },
   });
@@ -104,6 +109,8 @@ describe("hand-written copies of a shared component only shrink", () => {
     expect(rawTextFields('<input type="text" className="border rounded-sm" />')).toBe(1);
     expect(rawTextFields('<input className={`w-full border ${x}`} />')).toBe(1);
     expect(rawTextFields('<input type="checkbox" className="border" />')).toBe(0);
+    expect(rawTextFields('<input type="time" className={TIME_INPUT_CLASS} />')).toBe(1);
+    expect(rawTextFields('<input className="sr-only" />')).toBe(0);
     expect(rawTextFields('<Input type="text" className="border" />')).toBe(0);
     // anchored to a real file: the shared owner itself holds exactly one.
     expect(rawTextFields(fs.readFileSync(path.join(ROOT, "components/ui/Input.jsx"), "utf8"))).toBe(1);
