@@ -110,9 +110,8 @@ def count_in_window(
     unset it is `utc_now()`, which is what the dashboard always gets.
     """
     if window.distinct_col is not None:
-        # analytics.py is legacy-untyped; the calls are typed at this boundary.
-        counter = unique_views_count(  # type: ignore[no-untyped-call]
-            israel_day_of(time_col),  # type: ignore[no-untyped-call]
+        counter = unique_views_count(
+            israel_day_of(time_col),
             hash_col=window.distinct_col,
             row_id_col=model.id,
         )
@@ -129,7 +128,7 @@ def count_in_window(
         # for the request that straddles it (see rollup_snapshot's docstring).
         watermark, rolled_up = rollup_snapshot(db, producer_id, window.rollup_col)
         if watermark is not None:
-            q = q.filter(israel_day_of(time_col) > watermark)  # type: ignore[no-untyped-call]
+            q = q.filter(israel_day_of(time_col) > watermark)
     if window.extra_filter is not None:
         q = q.filter(window.extra_filter)
     return int(q.scalar() or 0) + int(rolled_up)

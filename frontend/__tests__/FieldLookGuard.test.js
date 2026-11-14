@@ -93,7 +93,10 @@ describe("MEH-3092 — form field look", () => {
       const hits = fieldIssues(fs.readFileSync(f, "utf8"), seen);
       if (hits.length) offenders.push(`${path.relative(ROOT, f).split(path.sep).join("/")}: ${hits.join(", ")}`);
     }
-    expect(seen.fields, "corpus control: the walker sees bordered fields").toBeGreaterThan(80);
+    // Proves the walker sees bordered fields at all. Not a floor on how many
+    // exist: hand-written fields move into ui/Input as MEH-3102 proceeds (62
+    // were left after MEH-3146), and the look then has one owner to check.
+    expect(seen.fields, "corpus control: the walker sees bordered fields").toBeGreaterThan(20);
     expect(offenders).toEqual([]);
   }, 60_000); // walks every file in app/ + components/; timed out at 5 s on a loaded CI shard
 });

@@ -38,6 +38,7 @@ if ROOT not in sys.path:
     sys.path.insert(0, ROOT)
 
 import logging  # noqa: E402  # imports must follow sys.path.insert (script run-from-backend shim)
+from typing import Any, cast  # noqa: E402  # imports must follow sys.path.insert (script run-from-backend shim)
 import re  # noqa: E402  # imports must follow sys.path.insert (script run-from-backend shim)
 
 import httpx  # noqa: E402  # imports must follow sys.path.insert (script run-from-backend shim)
@@ -71,14 +72,14 @@ class LocalityParseError(RuntimeError):
     """Records arrived but no locality name could be read from them."""
 
 
-def _first(rec: dict, keys: tuple[str, ...]):
+def _first(rec: dict[str, Any], keys: tuple[str, ...]) -> Any:
     for k in keys:
         if rec.get(k) not in (None, ""):
             return rec[k]
     return None
 
 
-def _discover_name_key(fields: list, records: list[dict]) -> str | None:
+def _discover_name_key(fields: list[Any], records: list[dict[str, Any]]) -> str | None:
     """Return the record key holding the Hebrew locality name, or None.
 
     Prefers the schema CKAN publishes in ``result.fields``; falls back to the
@@ -104,7 +105,7 @@ def _discover_name_key(fields: list, records: list[dict]) -> str | None:
     return None
 
 
-def parse_localities(payload: dict) -> list[dict]:
+def parse_localities(payload: dict[str, Any]) -> list[dict[str, Any]]:
     """Turn a datastore_search response into ``[{name_he, lat, lng}, …]``.
 
     Raises :class:`LocalityParseError` when records were received but none
@@ -125,7 +126,7 @@ def parse_localities(payload: dict) -> list[dict]:
             f"column matching {_NAME_FIELD_RE.pattern!r}; keys seen: {keys_seen}"
         )
 
-    cities: list[dict] = []
+    cities: list[dict[str, Any]] = []
     for rec in records:
         # The dataset pads names to a fixed width with trailing spaces;
         # collapse any internal runs too so the UNIQUE name_he matches what a
@@ -148,14 +149,14 @@ def parse_localities(payload: dict) -> list[dict]:
     return cities
 
 
-def _fetch_payload() -> dict:
+def _fetch_payload() -> dict[str, Any]:
     log.info("Fetching city list from data.gov.il …")
     resp = httpx.get(DATA_GOV_URL, timeout=30)
     resp.raise_for_status()
-    return resp.json()
+    return cast(dict[str, Any], resp.json())
 
 
-def _fetch_cities() -> list[dict]:
+def _fetch_cities() -> list[dict[str, Any]]:
     """Fetch from data.gov.il and return list of {name_he, lat, lng} dicts."""
     payload = _fetch_payload()
     records = (payload.get("result") or {}).get("records") or []

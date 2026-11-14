@@ -1,7 +1,9 @@
+from collections.abc import AsyncIterator
 import asyncio
 import os
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
+from typing import Any
 from urllib.parse import urlparse
 
 import structlog
@@ -436,7 +438,7 @@ def _run_rescue_digest_job() -> None:
         db.close()
 
 
-def _run_weekly_owner_summary_job(now=None) -> None:
+def _run_weekly_owner_summary_job(now: datetime | None = None) -> None:
     """MEH-3079: Sunday-morning weekly summary email to business owners.
 
     `now` is passed only by the boot catch-up run: the missed fire time, so it
@@ -461,7 +463,7 @@ def _run_weekly_owner_summary_job(now=None) -> None:
         db.close()
 
 
-def _register_rescue_digest(scheduler) -> None:
+def _register_rescue_digest(scheduler: Any) -> None:
     """Moved verbatim out of lifespan (MEH-3079); behaviour unchanged."""
     # MEH-2756: the rescue pickup-code digest. Registered only when the pilot
     # AND the digest gate are both on — the digest cannot work before Meta
@@ -494,7 +496,7 @@ def _register_rescue_digest(scheduler) -> None:
         )
 
 
-def _register_weekly_owner_summary(scheduler, now=None) -> bool:
+def _register_weekly_owner_summary(scheduler: Any, now: datetime | None = None) -> bool:
     """MEH-3079: add the weekly summary job only when its flag is on.
 
     REUSES: _register_rescue_digest above (the MEH-2756 gate) — merging sends nothing
@@ -555,7 +557,7 @@ def _register_weekly_owner_summary(scheduler, now=None) -> bool:
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     log.info("=" * 60)
     log.info("mehamakor backend starting up")
     log.info("db_url        = %s", _redacted_db_url())

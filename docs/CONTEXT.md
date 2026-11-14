@@ -21,7 +21,7 @@ Mehamakor (`mehamakor.co.il` — the canonical production origin, MEH-1322; stag
 These rules pass through every product decision. If a design choice violates one, STOP and ask.
 
 - **Magazine, not marketplace.** Every design decision passes through this test.
-- **No transaction fees, ever.** No commissions, no checkout. (See ADR-010 for the six pricing LOCKs.)
+- **Base page free; money never buys ranking.** Prices are published from day one, a business is billed only after a results threshold, and booking commissions are allowed; no checkout — customer money does not pass through the site. (See ADR-042 and docs/PRICING.md.)
 - **Manual approval for every business.** No auto-approve at any scale.
 - **Two-tier licensing (ADR-022).** מאומת (license verified, gold badge, free forever) / מוצהר (binding declaration, legally exempt categories only — never negatively labeled). Unlicensed food production where a license is legally required stays out. No home cooks — illegal in Israel.
 - **No "שכנות מבשלות מהבית" / "אוכל ביתי" / "מהמטבח של השכן"** in marketing copy. Ever.

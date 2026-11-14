@@ -24,6 +24,7 @@ History:  MEH-1490 (creation) — external trust signal, live-fetch only.
           Google, so a slow Places API does not hold a DB pool connection.
 """
 
+from typing import Any
 import logging
 from uuid import UUID
 
@@ -67,7 +68,7 @@ _SEARCH_FIELD_MASK = (
 MAX_CANDIDATES = 3
 
 
-def _fetch_place_details(place_id: str) -> dict | None:
+def _fetch_place_details(place_id: str) -> dict[str, Any] | None:
     """Live GET the three Google fields for a place_id. Fail-quiet: returns None
     on missing key, any HTTP/parse error, or an incomplete payload. NEVER caches.
     """
@@ -111,7 +112,7 @@ def get_google_rating(
     producer_id: UUID,
     request: Request,
     db: Session = Depends(get_db),
-):
+) -> GoogleRatingOut | Response:
     """Live Google rating for a producer, or 204 when the line must not render.
 
     204 (empty, no layout hole client-side) when: no mapped place_id, the live
@@ -146,7 +147,9 @@ def get_google_rating(
     return GoogleRatingOut(**details)
 
 
-def _search_place_candidates(name: str | None, city: str | None) -> list[dict] | None:
+def _search_place_candidates(
+    name: str | None, city: str | None
+) -> list[dict[str, Any]] | None:
     """Live Places Text Search for `<name> <city>`, up to MAX_CANDIDATES.
     Fail-quiet: returns None on missing key, empty query, any HTTP/parse error,
     or no results. NEVER caches — userRatingCount is passed to the caller for
@@ -181,7 +184,7 @@ def _search_place_candidates(name: str | None, city: str | None) -> list[dict] |
         log.warning("[google_rating] Text Search call failed: %s — fail-quiet", exc)
         return None
 
-    candidates: list[dict] = []
+    candidates: list[dict[str, Any]] = []
     for place in (data.get("places") or [])[:MAX_CANDIDATES]:
         place_id = place.get("id")
         if not place_id:
@@ -198,7 +201,9 @@ def _search_place_candidates(name: str | None, city: str | None) -> list[dict] |
     return candidates or None
 
 
-@router.get("/admin/producers/{producer_id}/google-place-candidates")
+@router.get(
+    "/admin/producers/{producer_id}/google-place-candidates", response_model=None
+)
 @limiter.limit("30/minute")
 def get_google_place_candidates(
     producer_id: UUID,
@@ -208,7 +213,7 @@ def get_google_place_candidates(
     q: str | None = Query(None, max_length=120),
     admin: User = Depends(require_admin),
     db: Session = Depends(get_db),
-):
+) -> dict[str, Any] | Response:
     """Admin-only: up to 3 Google Place candidates for a producer, or 204.
 
     Builds the query from the producer's own name + city — or from `q` when the
@@ -251,7 +256,7 @@ def put_google_place_id(
     request: Request,
     admin: User = Depends(require_admin),
     db: Session = Depends(get_db),
-):
+) -> GooglePlaceIdOut:
     """Admin-only: set (or clear, with null/blank) one producer's place_id.
 
     Writes ONLY producers.google_place_id — the one Google datum the ToS lets us
@@ -266,6 +271,6 @@ def put_google_place_id(
     )
     if producer is None:
         raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
-    producer.google_place_id = body.google_place_id
+    producer.google_place_id = body.google_place_id  # type: ignore[assignment]
     db.commit()
     return GooglePlaceIdOut(google_place_id=producer.google_place_id)

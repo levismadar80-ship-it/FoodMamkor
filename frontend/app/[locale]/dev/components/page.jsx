@@ -189,7 +189,7 @@ export default function DevComponentsPage() {
                 </div>
               }
               overlay={
-                <div className="absolute bottom-3 start-3 z-[2]">
+                <div className="absolute bottom-3 start-3 z-dev-badge">
                   <Badge variant="primary" size="sm">
                     {c.label}
                   </Badge>

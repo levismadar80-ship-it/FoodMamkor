@@ -17,6 +17,7 @@ History:  MEH-2763 (creation)
 
 from __future__ import annotations
 
+from typing import Any
 from collections.abc import Iterable
 from uuid import UUID
 
@@ -50,7 +51,7 @@ def registered_counts(
 
 def method_problem(
     method: str, *, phone: str | None, registration_url: str | None
-) -> dict | None:
+) -> dict[str, Any] | None:
     """The 422 detail when `method` cannot work with what the owner has, else
     None. `phone` is the business phone the visitor would be sent to."""
     if method == "whatsapp" and canonical_il_msisdn(phone) is None:

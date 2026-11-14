@@ -24,6 +24,7 @@ History:  MEH-509 PR3 (creation); MEH-509 (incident 2026-05-23: JSON
 
 from __future__ import annotations
 
+from typing import Any
 import json
 import logging
 import re
@@ -75,7 +76,7 @@ _SYSTEM_PROMPT_TEMPLATE = (
 )
 
 
-def _build_prompt(profile: dict) -> tuple[str, str]:
+def _build_prompt(profile: dict[str, Any]) -> tuple[str, str]:
     """Build the (system_prompt, user_content) pair with a per-request
     canary suffix on the wrapper tag name. Returns the two strings the
     Anthropic SDK consumes directly.
@@ -97,7 +98,7 @@ def _build_prompt(profile: dict) -> tuple[str, str]:
     return system_prompt, user_content
 
 
-def _build_profile_payload(producer: Producer) -> dict:
+def _build_profile_payload(producer: Producer) -> dict[str, Any]:
     """PII-safe profile snapshot. Phone is reduced to last-4 only; we never
     send the full number to the model. No password hash, no tokens, no
     internal IDs."""
@@ -112,7 +113,7 @@ def _build_profile_payload(producer: Producer) -> dict:
     }
 
 
-def _clamp_score(raw) -> int | None:
+def _clamp_score(raw: Any) -> int | None:
     """Clamp to [0, 100]; return None on unparseable."""
     try:
         score = int(raw)
@@ -125,7 +126,7 @@ def _clamp_score(raw) -> int | None:
     return score
 
 
-def _truncate_reasoning(raw) -> str | None:
+def _truncate_reasoning(raw: object) -> str | None:
     if raw is None:
         return None
     text = str(raw).strip()
@@ -144,7 +145,7 @@ _CODE_FENCE_OPEN_RE = re.compile(r"^```[a-zA-Z0-9_-]*\s*")
 _CODE_FENCE_CLOSE_RE = re.compile(r"\s*```$")
 
 
-def _extract_json_object(raw: str) -> dict | None:
+def _extract_json_object(raw: str) -> dict[str, Any] | None:
     text = (raw or "").strip()
     if not text:
         return None
@@ -191,7 +192,7 @@ def _unreadable_reason(response: object) -> str:
     return "unparseable"
 
 
-def _call_anthropic(profile: dict) -> tuple[int | None, str | None]:
+def _call_anthropic(profile: dict[str, Any]) -> tuple[int | None, str | None]:
     """Single non-streaming Anthropic call. Returns (score, reasoning) or
     (None, None) on any failure. Caller is responsible for the DB UPDATE.
     Fail-open: every exception path returns NULLs + logs a warning."""
@@ -211,7 +212,7 @@ def _call_anthropic(profile: dict) -> tuple[int | None, str | None]:
         # The explicit httpx.Client() bypasses the SDK's broken
         # `httpx.Client(proxies=...)` call (httpx 0.28+ renamed to
         # proxy=). Documented in .claude/rules/backend.md.
-        client = anthropic.Anthropic(
+        client: Any = anthropic.Anthropic(
             api_key=settings.anthropic_api_key,
             http_client=httpx.Client(timeout=_TIMEOUT_SECONDS),
         )
@@ -301,8 +302,8 @@ def score_producer(producer_id: UUID | str) -> None:
             # grey "אין מידע" badge. PR3 spec explicitly forbids retry.
             return
 
-        producer.risk_score = score
-        producer.risk_reasoning = reasoning
+        producer.risk_score = score  # type: ignore[assignment]
+        producer.risk_reasoning = reasoning  # type: ignore[assignment]
         db.commit()
         # PII guard: log last-4 of phone only, never the full number
         # or the body of the reasoning.

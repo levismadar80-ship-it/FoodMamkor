@@ -1,4 +1,3 @@
-# guard-ok: not in [tool.mypy].files — it imports app/schemas/schemas.py / app/limits.py, which are untyped (5,850 lines, ~190 strict errors) and would be reported as this file's (MEH-3055)
 """
 Module:   product_organize
 Purpose:  The owner sets the order of her products and sorts them into
@@ -81,7 +80,7 @@ def replace_my_product_groups(
             Product.producer_id == producer.id,
             Product.group_id.in_(removed),
         ).update({Product.group_id: None}, synchronize_session=False)
-    producer.product_groups = new
+    producer.product_groups = new  # type: ignore[assignment]
     db.commit()
     return new
 
@@ -105,9 +104,9 @@ def set_my_product_order(
             detail="רשימת המוצרים השתנתה בינתיים. כדאי לרענן את הדף ולנסות שוב.",
         )
     for pos, pid in enumerate(ids):
-        by_id[pid].position = pos
+        by_id[pid].position = pos  # type: ignore[assignment,index]
     db.commit()
-    return [by_id[pid] for pid in ids]
+    return [by_id[pid] for pid in ids]  # type: ignore[index]
 
 
 @router.put("/products/{product_id}/group", response_model=ProductOut)
@@ -130,7 +129,7 @@ def set_my_product_group(
         known = {g["id"] for g in _groups(_my_producer(user, db))}
         if body.group_id not in known:
             raise HTTPException(status_code=404, detail="הקבוצה לא נמצאה")
-    product.group_id = body.group_id
+    product.group_id = body.group_id  # type: ignore[assignment]
     db.commit()
     db.refresh(product)
     return product
