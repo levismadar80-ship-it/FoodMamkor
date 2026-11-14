@@ -5,10 +5,13 @@ import {
   CalendarCheck,
   ChatCircleDots,
   Check,
+  CreditCard,
   Gift,
   HandCoins,
   ListChecks,
   Prohibit,
+  Timer,
+  WarningCircle,
 } from "@phosphor-icons/react/ssr";
 import SeedMark from "@/components/brand/SeedMark";
 import { Link } from "@/i18n/navigation";
@@ -71,6 +74,10 @@ const NOTES = [
   { key: "early", Icon: Gift },
   { key: "dispute", Icon: ChatCircleDots },
   { key: "change", Icon: CalendarCheck },
+  // After charging starts: a new business's trial, cancelling, an unpaid charge.
+  { key: "trial", Icon: Timer },
+  { key: "cancel", Icon: CreditCard },
+  { key: "unpaid", Icon: WarningCircle },
 ];
 
 /** @param {{ children: import("react").ReactNode, onDark?: boolean }} props */
@@ -202,7 +209,7 @@ export default async function PricingPage({ params }) {
               <p className="rounded bg-background-alt px-3 py-2 text-sm leading-relaxed text-text">{t("fee_example", v)}</p>
               <div className="mt-auto border-t border-border pt-3">
                 <p className="font-medium text-text">{t("fee_fit")}</p>
-                <p className="mt-1 text-sm leading-relaxed text-fg-muted">{t("fee_note")}</p>
+                <p className="mt-1 text-sm leading-relaxed text-fg-muted">{t("fee_note", v)}</p>
               </div>
             </OptionCard>
           </div>
@@ -215,6 +222,9 @@ export default async function PricingPage({ params }) {
             </p>
             <p className="leading-relaxed text-text/85">{t("stay_body")}</p>
           </div>
+          <p className="mt-4 leading-relaxed text-text/85" data-testid="pricing-compare">
+            {t("compare_body", v)}
+          </p>
         </section>
 
         {/* ── Short answers ── */}
@@ -242,6 +252,9 @@ export default async function PricingPage({ params }) {
 
         <p className="mb-6 text-center text-sm text-fg-muted" data-testid="pricing-as-of">
           {t("as_of", v)}
+          <span className="block" data-testid="pricing-vat">
+            {t("vat")}
+          </span>
         </p>
 
         <p className="pb-14 text-center sm:pb-20">

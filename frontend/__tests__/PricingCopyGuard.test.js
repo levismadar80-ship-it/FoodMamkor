@@ -114,6 +114,11 @@ describe("PricingCopyGuard (MEH-3166)", () => {
     ["pricing.page.early_body", ["earlyMonths", "subBagFee", "subPercent"]],
     ["pricing.page.dispute_body", ["disputeDays"]],
     ["pricing.page.change_body", ["priceChangeDays"]],
+    ["pricing.page.trial_body", ["trialDays"]],
+    ["terms.sections.pricing.trial", ["trialDays"]],
+    ["terms.sections.pricing.threshold", ["threshold"]],
+    ["pricing.page.fee_note", ["threshold"]],
+    ["pricing.page.fee_example", ["exampleFee", "exampleKeep", "examplePrice"]],
   ])("%s carries its own number", (key, expected) => {
     expect(placeholders(MESSAGES.he[key]).sort()).toEqual(expected);
     expect(placeholders(MESSAGES.en[key]).sort()).toEqual(expected);
@@ -134,7 +139,12 @@ describe("PricingCopyGuard (MEH-3166)", () => {
     expect(pick(/שקית הצלה שנאספה \| (\d+) ₪ לשקית/, "bag fee")).toBe(list.commission.rescueBagFee);
     expect(pick(/מנוי משלם עמלה מופחתת: (\d+)% /, "subscriber percent")).toBe(list.subscriberCommission.paidBookingPercent);
     expect(pick(/ו-(\d+) ₪ לשקית במקום/, "subscriber bag fee")).toBe(list.subscriberCommission.rescueBagFee);
-    expect(pick(/מ-(\d+) הזמנות ומעלה בחודש/, "threshold")).toBe(list.thresholdBookingsPerMonth);
+    expect(pick(/הגיעו ל-(\d+) ₪ \(הרשמות בתשלום/, "threshold")).toBe(list.thresholdPaidBookingsPerMonth);
+    expect(pricingCopyValues(list).threshold.replace(/,/g, "")).toBe(String(list.thresholdPaidBookingsPerMonth));
+    expect(pick(/עמלה ב-(\d+) הימים הראשונים/, "trial days")).toBe(list.trialDays);
+    // «ונשארים לכם»: the fee and what is kept add up to the example price.
+    const shown = pricingCopyValues(list);
+    expect(Number(shown.exampleFee) + Number(shown.exampleKeep)).toBe(list.exampleBookingPrice);
     // «עמלה מופחתת» has to be true: a subscriber's rate is below the plain one.
     expect(list.subscriberCommission.paidBookingPercent).toBeLessThan(list.commission.paidBookingPercent);
     expect(list.subscriberCommission.rescueBagFee).toBeLessThan(list.commission.rescueBagFee);

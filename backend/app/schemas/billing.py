@@ -26,7 +26,8 @@ class BillingSummaryOut(BaseModel):
     bookings: int
     value_agorot: int
     by_kind: list[BillingKindOut]
-    threshold: int
+    # Paid bookings (agorot) a month must reach before it is billed.
+    threshold_agorot: int
     over_threshold: bool
     # What each route WOULD cost under the price list. Nothing is charged.
     fee_without_subscription_agorot: int
@@ -46,7 +47,7 @@ class BillingOverviewRowOut(BaseModel):
 
 class BillingOverviewOut(BaseModel):
     month: str
-    threshold: int
+    threshold_agorot: int
     businesses_over_threshold: int
     businesses_over_two_months: int
     rows: list[BillingOverviewRowOut]

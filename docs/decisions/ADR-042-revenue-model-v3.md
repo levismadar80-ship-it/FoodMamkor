@@ -27,6 +27,7 @@ ADR-010, ADR-027 and ADR-030 locked "no transaction fees, no commissions" and al
 - **Disputing a count.** Each charge is preceded by a summary; a business has a fixed window to report a counted booking that did not take place, and it is checked before the charge. Delivery platforms give merchants 14 to 30 days for the same.
 - **Bookings taken off the site.** No enforcement and no penalty. The commission applies only to bookings recorded in the site's tools; direct contact stays free. Platforms that police this (bans for steering users away) do it where they hold the payment; this site does not, and repeat in-person custom is where policing works worst.
 - **Changing the price list.** Written notice before a change takes effect (the EU platform-to-business rule sets 15 days as a floor; this site gives more).
+- **Later the same day (Sapir approved the research doc).** The results threshold is an **amount** of paid bookings in a month, not a count (a count let a few large orders pay nothing while many small ones crossed). The trial in point 6 is a period **without commission** for a business that joins after the launch period, with no credit card. A change to the price list is announced 60 days ahead and a yearly subscription keeps its price until it renews. A business that picks no track keeps the page; paid tools close to new bookings and existing bookings are honoured. Numbers in PRICING.md.
 - The terms of use carry these promises (section «מחירים ותשלום לבתי עסק»), with the numbers read from the price list.
 
 ## Consequences

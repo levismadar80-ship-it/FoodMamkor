@@ -53,8 +53,11 @@ const PRICE_LISTS = Object.freeze({
       paidBookingPercent: 2,
       rescueBagFee: 1,
     }),
-    // Billing starts per business, only above this many bookings in a month.
-    thresholdBookingsPerMonth: 20,
+    // A business pays only for a month in which its PAID bookings through the
+    // site reached this many ₪ (Sapir 14/11, replaces "20 bookings": five
+    // group orders of 2,000 ₪ paid nothing while twenty 25 ₪ bags crossed).
+    // A free sign-up has no amount, so it never counts toward it.
+    thresholdPaidBookingsPerMonth: 1000,
     // Written notice before a business's first charge.
     noticeDays: 60,
     // MEH-3197: a business that joined during the launch period pays the
@@ -64,8 +67,12 @@ const PRICE_LISTS = Object.freeze({
     // Days a business has, after a monthly summary, to report a counted
     // booking that did not take place. It is checked before the charge.
     disputeDays: 14,
-    // Written notice before a change to this list takes effect.
-    priceChangeNoticeDays: 30,
+    // Written notice before a change to this list takes effect. A yearly
+    // subscription keeps its price until it renews.
+    priceChangeNoticeDays: 60,
+    // A business that joins after charging has started pays no commission
+    // for this many days, and gives no credit card.
+    trialDays: 90,
     // The price of the paid sign-up used in the worked example on the price
     // list. The fee shown next to it is computed, never typed.
     exampleBookingPrice: 100,
@@ -125,7 +132,13 @@ export function pricingCopyValues(list = currentPriceList()) {
     breakEven: String(subscriptionBreakEven(list)),
     // «כשהעמלות מגיעות ל-100 ₪ בחודש»: true for percent bookings and for bags alike.
     breakEvenFees: String(subscriptionBreakEvenFees(list)),
-    threshold: String(list.thresholdBookingsPerMonth),
+    // What a business keeps of the example booking: price − fee.
+    exampleKeep: String(
+      list.exampleBookingPrice - (list.exampleBookingPrice * list.commission.paidBookingPercent) / 100
+    ),
+    // «1,000»: one fixed grouping, so it reads the same in every locale.
+    threshold: list.thresholdPaidBookingsPerMonth.toLocaleString("en-US"),
+    trialDays: String(list.trialDays),
     noticeDays: String(list.noticeDays),
     earlyMonths: String(list.launchJoinerMonths),
     disputeDays: String(list.disputeDays),
@@ -159,4 +172,10 @@ export const PRICING_COPY_KEYS = Object.freeze([
   "terms.sections.pricing.dispute",
   "terms.sections.pricing.early",
   "terms.sections.pricing.change",
+  "terms.sections.pricing.threshold",
+  "terms.sections.pricing.nochoice",
+  "terms.sections.pricing.trial",
+  "terms.sections.pricing.cancel",
+  "terms.sections.pricing.unpaid",
+  "terms.sections.pricing.vat",
 ]);

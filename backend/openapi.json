@@ -460,14 +460,14 @@
             "title": "Rows",
             "type": "array"
           },
-          "threshold": {
-            "title": "Threshold",
+          "threshold_agorot": {
+            "title": "Threshold Agorot",
             "type": "integer"
           }
         },
         "required": [
           "month",
-          "threshold",
+          "threshold_agorot",
           "businesses_over_threshold",
           "businesses_over_two_months",
           "rows"
@@ -555,8 +555,8 @@
             "title": "Price List Version",
             "type": "integer"
           },
-          "threshold": {
-            "title": "Threshold",
+          "threshold_agorot": {
+            "title": "Threshold Agorot",
             "type": "integer"
           },
           "value_agorot": {
@@ -570,7 +570,7 @@
           "bookings",
           "value_agorot",
           "by_kind",
-          "threshold",
+          "threshold_agorot",
           "over_threshold",
           "fee_without_subscription_agorot",
           "fee_with_subscription_agorot",

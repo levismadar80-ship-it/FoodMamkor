@@ -54,7 +54,10 @@ def test_backend_price_list_equals_the_sites():
         == _js_number("rescueBagFee", subscriber) * AGOROT_PER_SHEKEL
     )
     assert "monthlyCap" not in JS  # Sapir 14/11: there is no monthly cap
-    assert pl.threshold_bookings_per_month == _js_number("thresholdBookingsPerMonth")
+    assert pl.threshold_paid_bookings_agorot == (
+        _js_number("thresholdPaidBookingsPerMonth") * AGOROT_PER_SHEKEL
+    )
+    assert pl.trial_days == _js_number("trialDays")
     assert pl.notice_days == _js_number("noticeDays")
     assert pl.launch_joiner_months == _js_number("launchJoinerMonths")
     assert pl.dispute_days == _js_number("disputeDays")
@@ -76,7 +79,9 @@ def test_backend_price_list_equals_the_document():
         f"{pl.paid_booking_percent}%" in DOC
     )
     assert f"ו-{sub_bag} ₪ לשקית במקום {bag} ₪" in DOC
-    assert f"מ-{pl.threshold_bookings_per_month} הזמנות ומעלה בחודש" in DOC
+    threshold = pl.threshold_paid_bookings_agorot // AGOROT_PER_SHEKEL
+    assert f"הגיעו ל-{threshold} ₪ (הרשמות בתשלום" in DOC
+    assert f"עמלה ב-{pl.trial_days} הימים הראשונים" in DOC
     assert f"{pl.notice_days} יום בכתב" in DOC
     assert f"ב-{pl.launch_joiner_months} החודשים הראשונים של החיוב" in DOC
     assert f"**ערעור על ספירה:** {pl.dispute_days} יום" in DOC

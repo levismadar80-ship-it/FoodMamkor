@@ -198,12 +198,12 @@ function renderBody(id, t) {
               ),
             })}
           </p>
-          {["launch", "scope", "dispute", "early"].map((key) => (
+          {["launch", "nochoice", "threshold", "scope", "dispute", "early", "trial", "cancel", "unpaid", "change"].map((key) => (
             <p key={key} className="mb-3">
               {t(`sections.pricing.${key}`, v)}
             </p>
           ))}
-          <p>{t("sections.pricing.change", v)}</p>
+          <p>{t("sections.pricing.vat")}</p>
         </>
       );
     }

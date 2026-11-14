@@ -458,11 +458,12 @@ equal to `frontend/lib/pricing.js` and `docs/PRICING.md` by
 Read-only; nothing is charged (`phase: "launch"`, `charged_agorot: 0`). A month is
 an Israel calendar month (`?month=YYYY-MM`, default the current one; a malformed
 value → 422). Voided rows are never counted. A rescue order counts one booking
-per bag; every other row counts one.
+per bag; every other row counts one. The threshold is an AMOUNT: a month is
+over it when the value of its paid bookings reaches `threshold_agorot`.
 
 - 👤 `GET /producers/me/billing/summary` (60/minute) — the caller's own business
   only (the id comes from the session). `{month, phase, bookings, value_agorot,
-  by_kind[{kind, bookings, value_agorot}], threshold, over_threshold,
+  by_kind[{kind, bookings, value_agorot}], threshold_agorot, over_threshold,
   fee_without_subscription_agorot, fee_with_subscription_agorot, charged_agorot,
   price_list_version}`. The two fee figures are what the month WOULD cost on each
   track of the current price list: plain commission, or subscription + reduced
@@ -471,8 +472,8 @@ per bag; every other row counts one.
   One list exists today; a month that spans a price change will need both
   figures taken from the row's list.
 - 🔒 `GET /admin/billing/overview` (60/minute) — every real business (test
-  businesses excluded) with a counted booking that month, busiest first:
-  `{month, threshold, businesses_over_threshold, businesses_over_two_months,
+  businesses excluded) with a counted booking that month, highest value first:
+  `{month, threshold_agorot, businesses_over_threshold, businesses_over_two_months,
   rows[{producer_id, name, bookings, value_agorot, over_threshold,
   months_over_in_a_row}]}`. `months_over_in_a_row` looks back at most 6 months.
 

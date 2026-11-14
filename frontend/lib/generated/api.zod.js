@@ -34,7 +34,7 @@ export const AdminBillingOverviewAdminBillingOverviewGetResponse = /*#__PURE__*/
   "producer_id": /*#__PURE__*/ zod.uuid(),
   "value_agorot": /*#__PURE__*/ zod.int()
 })),
-  "threshold": /*#__PURE__*/ zod.int()
+  "threshold_agorot": /*#__PURE__*/ zod.int()
 })
 
 
@@ -5232,7 +5232,7 @@ export const MyBillingSummaryProducersMeBillingSummaryGetResponse = /*#__PURE__*
   "over_threshold": /*#__PURE__*/ zod.boolean(),
   "phase": /*#__PURE__*/ zod.string(),
   "price_list_version": /*#__PURE__*/ zod.int(),
-  "threshold": /*#__PURE__*/ zod.int(),
+  "threshold_agorot": /*#__PURE__*/ zod.int(),
   "value_agorot": /*#__PURE__*/ zod.int()
 })
 

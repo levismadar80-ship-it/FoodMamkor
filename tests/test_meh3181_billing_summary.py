@@ -130,8 +130,8 @@ class TestSummarize:
         pl = current_price_list()
         assert s["fee_without_subscription_agorot"] > 0  # control: a fee exists
         assert (s["phase"], s["charged_agorot"]) == ("launch", 0)
-        assert (s["threshold"], s["price_list_version"]) == (
-            pl.threshold_bookings_per_month,
+        assert (s["threshold_agorot"], s["price_list_version"]) == (
+            pl.threshold_paid_bookings_agorot,
             pl.version,
         )
 
@@ -155,7 +155,7 @@ class TestSummarize:
             "bookings",
             "value_agorot",
             "by_kind",
-            "threshold",
+            "threshold_agorot",
             "over_threshold",
             "fee_without_subscription_agorot",
             "fee_with_subscription_agorot",
@@ -164,16 +164,31 @@ class TestSummarize:
         }
         assert set(s["by_kind"][0]) == {"kind", "bookings", "value_agorot"}
 
-    def test_the_threshold_is_reached_at_exactly_twenty(self, db):
+    def test_the_threshold_is_an_amount_reached_at_exactly_its_value(self, db):
         producer = make_producer(db)
-        threshold = current_price_list().threshold_bookings_per_month
-        for _ in range(threshold - 1):
-            _row(db, producer, base=0, fee=0)
+        threshold = current_price_list().threshold_paid_bookings_agorot
+        _row(db, producer, base=threshold - 1, fee=0)
         assert (
             billing_summary.summarize(db, producer.id, NOV)["over_threshold"] is False
         )
-        _row(db, producer, base=0, fee=0)
+        _row(db, producer, base=1, fee=0)
         assert billing_summary.summarize(db, producer.id, NOV)["over_threshold"] is True
+
+    def test_free_sign_ups_never_reach_the_threshold(self, db):
+        """Under the old rule (20 bookings a month) this month was over."""
+        producer = make_producer(db)
+        for _ in range(25):
+            _row(db, producer, base=0, fee=0)
+        s = billing_summary.summarize(db, producer.id, NOV)
+        assert (s["bookings"], s["over_threshold"]) == (25, False)
+
+    def test_a_few_large_orders_reach_the_threshold(self, db):
+        """Under the old rule five bookings were far below the threshold."""
+        producer = make_producer(db)
+        for _ in range(5):
+            _row(db, producer, kind="group_buy_order", base=200000, fee=10000)
+        s = billing_summary.summarize(db, producer.id, NOV)
+        assert (s["bookings"], s["over_threshold"]) == (5, True)
 
 
 class TestRoutes:
@@ -218,12 +233,12 @@ class TestRoutes:
 
 
 class TestAdminOverview:
-    def _busy(self, db, producer, month_start, n):
-        for _ in range(n):
-            _row(db, producer, at=month_start + timedelta(days=5), base=0, fee=0)
+    def _busy(self, db, producer, month_start, value_agorot):
+        """One paid booking of `value_agorot` in that month."""
+        _row(db, producer, at=month_start + timedelta(days=5), base=value_agorot, fee=0)
 
     def test_who_passed_the_threshold_and_for_how_long(self, client, db):
-        threshold = current_price_list().threshold_bookings_per_month
+        threshold = current_price_list().threshold_paid_bookings_agorot
         nov = datetime(2026, 11, 1, 12, tzinfo=timezone.utc)
         octo = datetime(2026, 10, 1, 12, tzinfo=timezone.utc)
         sep = datetime(2026, 9, 1, 12, tzinfo=timezone.utc)
@@ -236,7 +251,7 @@ class TestAdminOverview:
         self._busy(db, fresh, nov, threshold + 2)
         self._busy(db, gap, sep, threshold)
         self._busy(db, gap, nov, threshold)
-        self._busy(db, small, nov, 3)
+        self._busy(db, small, nov, threshold - 1)
         test_biz = make_producer(db, name="עסק בדיקה")
         test_biz.is_test = True
         db.commit()
@@ -268,7 +283,7 @@ class TestAdminOverview:
         )
         assert body["businesses_over_threshold"] == 3
         assert body["businesses_over_two_months"] == 1
-        assert body["rows"][0]["name"] == "ב חדש"  # busiest first
+        assert body["rows"][0]["name"] == "ב חדש"  # highest value first
 
     def test_the_overview_counts_like_the_summary(self, client, db):
         """Bags count by quantity, a group-buy order counts once whatever its
@@ -305,6 +320,10 @@ class TestAdminOverview:
         assert r.status_code == 200
         assert r.json()["rows"] == []
         assert r.json()["businesses_over_threshold"] == 0
+        assert (
+            r.json()["threshold_agorot"]
+            == current_price_list().threshold_paid_bookings_agorot
+        )
 
 
 class TestMonth:

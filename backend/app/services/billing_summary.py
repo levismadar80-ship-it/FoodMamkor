@@ -123,14 +123,17 @@ def summarize(db: Session, producer_id: UUID, month: Month) -> dict[str, Any]:
             else subscriber_booking_fee_agorot(base, pl)
         )
     total = sum(v["bookings"] for v in per_kind.values())
+    # The threshold is the month's PAID value, not a count: a free sign-up
+    # has no amount and never moves a business over it.
+    value = sum(v["value_agorot"] for v in per_kind.values())
     return {
         "month": month.label(),
         "phase": "launch",
         "bookings": total,
-        "value_agorot": sum(v["value_agorot"] for v in per_kind.values()),
+        "value_agorot": value,
         "by_kind": [{"kind": kind, **per_kind[kind]} for kind in BILLABLE_KINDS],
-        "threshold": pl.threshold_bookings_per_month,
-        "over_threshold": total >= pl.threshold_bookings_per_month,
+        "threshold_agorot": pl.threshold_paid_bookings_agorot,
+        "over_threshold": value >= pl.threshold_paid_bookings_agorot,
         "fee_without_subscription_agorot": plain_fee,
         "fee_with_subscription_agorot": pl.subscription_monthly_agorot + reduced_fee,
         "charged_agorot": 0,
@@ -158,8 +161,8 @@ def _bookings_by_business(db: Session, month: Month) -> dict[UUID, tuple[int, in
 
 
 def overview(db: Session, month: Month) -> dict[str, Any]:
-    """Every business with a counted booking in `month`, busiest first."""
-    threshold = current_price_list().threshold_bookings_per_month
+    """Every business with a counted booking in `month`, highest value first."""
+    threshold = current_price_list().threshold_paid_bookings_agorot
     this_month = _bookings_by_business(db, month)
 
     # Months in a row at or over the threshold, ending with `month`.
@@ -169,7 +172,7 @@ def overview(db: Session, month: Month) -> dict[str, Any]:
     for _ in range(STREAK_LOOKBACK_MONTHS):
         counts = this_month if cursor == month else _bookings_by_business(db, cursor)
         still_running = {
-            pid for pid in still_running if counts.get(pid, (0, 0))[0] >= threshold
+            pid for pid in still_running if counts.get(pid, (0, 0))[1] >= threshold
         }
         if not still_running:
             break
@@ -189,15 +192,15 @@ def overview(db: Session, month: Month) -> dict[str, Any]:
             "name": names.get(pid, ""),
             "bookings": bookings,
             "value_agorot": value,
-            "over_threshold": bookings >= threshold,
+            "over_threshold": value >= threshold,
             "months_over_in_a_row": streak[pid],
         }
         for pid, (bookings, value) in this_month.items()
     ]
-    rows.sort(key=lambda r: (-r["bookings"], r["name"]))
+    rows.sort(key=lambda r: (-r["value_agorot"], r["name"]))
     return {
         "month": month.label(),
-        "threshold": threshold,
+        "threshold_agorot": threshold,
         "businesses_over_threshold": sum(1 for r in rows if r["over_threshold"]),
         "businesses_over_two_months": sum(
             1 for r in rows if r["months_over_in_a_row"] >= 2
