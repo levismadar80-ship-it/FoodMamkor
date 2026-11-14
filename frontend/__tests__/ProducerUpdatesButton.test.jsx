@@ -145,7 +145,6 @@ describe("MEH-2526 · ProducerUpdatesButton", () => {
       notify_delivery_area: true,
       notify_new_recipe: true,
       notify_new_group_buy: true,
-      notify_new_rescue: true,
       whatsapp_opt_in: false,
       push_subscription: null,
     });
@@ -205,7 +204,6 @@ describe("MEH-2526 · ProducerUpdatesButton", () => {
       notify_delivery_area: true,
       notify_new_recipe: true,
       notify_new_group_buy: true,
-      notify_new_rescue: true,
     });
     await waitFor(() => expect(button()).toHaveAttribute("aria-pressed", "true"));
   });
@@ -244,7 +242,6 @@ describe("MEH-2526 · ProducerUpdatesButton", () => {
       notify_delivery_area: false,
       notify_new_recipe: false,
       notify_new_group_buy: false,
-      notify_new_rescue: false,
       // The chosen channel survives an off/on cycle.
       whatsapp_opt_in: true,
       push_subscription: null,

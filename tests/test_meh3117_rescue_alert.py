@@ -178,6 +178,42 @@ class TestTrigger:
         assert resp.status_code == 422
         assert calls == []
 
+    def test_a_bag_whose_pickup_window_is_over_fires_nothing(
+        self, client, db, monkeypatch, rescue_on, shop
+    ):
+        calls = _capture_fire_alerts(monkeypatch)
+        now = utc_now()
+        body = _payload(
+            shop["location"],
+            pickup_start=(now - timedelta(hours=3)).isoformat(),
+            pickup_end=(now - timedelta(hours=1)).isoformat(),
+            cancel_until=(now - timedelta(hours=4)).isoformat(),
+        )
+        resp = client.post(
+            "/rescue/offers", json=body, headers=auth_header(shop["owner"])
+        )
+        # Whether the API accepts a past window is not this test's subject;
+        # either way nobody is told about bags that can no longer be collected.
+        assert resp.status_code in (201, 422), resp.text
+        assert calls == []
+
+    def test_a_business_cancel_fires_nothing(
+        self, client, db, monkeypatch, rescue_on, shop
+    ):
+        created = client.post(
+            "/rescue/offers",
+            json=_payload(shop["location"]),
+            headers=auth_header(shop["owner"]),
+        )
+        assert created.status_code == 201, created.text
+        calls = _capture_fire_alerts(monkeypatch)  # from here on
+        r = client.post(
+            f"/rescue/offers/{created.json()['id']}/cancel",
+            headers=auth_header(shop["owner"]),
+        )
+        assert r.status_code == 200, r.text
+        assert calls == []
+
     def test_a_reservation_fires_nothing(
         self, client, db, monkeypatch, rescue_on, shop
     ):

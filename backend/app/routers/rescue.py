@@ -458,8 +458,8 @@ def _queue_new_rescue_alert(
     here only, after the commit: never on cancel, reservation or handover.
     Same fan-out, channels and 24h cap as the other alert types.
     """
-    if offer.date != israel_today():
-        return
+    if offer.date != israel_today() or offer.pickup_end <= utc_now():
+        return  # not today, or the pickup window is already over
     from app.routers.alerts import AlertContent, fire_alerts
 
     # Approved copy, Sapir 14/11 (MEH-3117 rows 2 and 3).

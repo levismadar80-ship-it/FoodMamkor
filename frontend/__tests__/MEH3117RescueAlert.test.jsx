@@ -5,7 +5,7 @@
  *
  * Cells covered (5-state rule): rescue list 0 → hint, 1 → no hint;
  * group buys 0 → hint, many → no hint; prefs row present with the pilot on,
- * absent with it off.
+ * absent with it off (and then not sent, and not counted by the button).
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, waitFor, fireEvent } from "@testing-library/react";
@@ -61,6 +61,18 @@ describe("/rescue list", () => {
     expect(hint.textContent).toContain(H.rescue);
     const link = screen.getByText(H.cta).closest("a");
     expect(link.getAttribute("href")).toBe("/producers");
+  });
+
+  it("1 bag: no hint", async () => {
+    const now = Date.now();
+    fetchOffers.mockResolvedValue([{
+      id: "o1", qty_left: 2, price_agorot: 1500, value_min_agorot: null, value_max_agorot: null,
+      pickup_start: new Date(now + 36e5).toISOString(), pickup_end: new Date(now + 3 * 36e5).toISOString(),
+      producer: { id: "p1", name: "מאפייה", city: "חיפה", image: null }, distance_km: null,
+    }]);
+    render(wrap(<RescueList />));
+    await screen.findByTestId("rescue-list-rows");
+    expect(screen.queryByTestId("hub-alert-hint-rescue")).toBeNull();
   });
 
   it("a failed fetch is not empty: no hint", async () => {
@@ -129,7 +141,12 @@ describe("AlertPrefsPanel — rescue row", () => {
   it("pilot off: no rescue row", async () => {
     process.env.NEXT_PUBLIC_RESCUE_BAGS_ENABLED = "false";
     api.get.mockResolvedValue({ data: { enabled: false } });
+    api.put.mockReset();
+    api.put.mockResolvedValue({ data: {} });
     await renderPanel();
     expect(screen.queryByText(ROW)).toBeNull();
+    fireEvent.click(screen.getByText(he.sweep_tail.alert_prefs.save_cta));
+    await waitFor(() => expect(api.put).toHaveBeenCalledTimes(1));
+    expect("notify_new_rescue" in api.put.mock.calls[0][1]).toBe(false);
   });
 });

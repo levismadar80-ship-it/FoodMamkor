@@ -132,7 +132,8 @@ export default function AlertPrefsPanel({ producerId, producerName, onClose }) {
         notify_delivery_area: effective.notify_delivery_area,
         notify_new_recipe: effective.notify_new_recipe,
         notify_new_group_buy: effective.notify_new_group_buy,
-        notify_new_rescue: effective.notify_new_rescue,
+        // Sent only where its row is shown; otherwise the API default holds.
+        ...(rescueBagsEnabled() ? { notify_new_rescue: effective.notify_new_rescue } : {}),
         whatsapp_opt_in: effective.whatsapp_opt_in,
         push_subscription,
       });
