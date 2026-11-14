@@ -15,7 +15,7 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { markSeen, readSeenVersion, unseenRelease } from "@/lib/whats-new";
+import { markSeen, newToolHrefs, readSeenVersion, unseenRelease } from "@/lib/whats-new";
 
 const SEEN_EVENT = "mehamakor:whats-new-seen";
 export const WELCOME_DISMISSED_KEY = "mehamakor.owner_welcome.dismissed";
@@ -47,6 +47,19 @@ export function useUnseenRelease() {
   }, [release]);
 
   return { release, dismiss };
+}
+
+/**
+ * Tool hrefs that carry a «חדש» pill right now. Empty on the server and before
+ * mount (the clock is read in an effect, so SSR and hydration agree).
+ * @returns {Set<string>}
+ */
+export function useNewTools() {
+  const [tools, setTools] = useState(() => new Set());
+  useEffect(() => {
+    setTools(newToolHrefs(Date.now()));
+  }, []);
+  return tools;
 }
 
 /** Mark every release as seen — the archive page calls this on open. */

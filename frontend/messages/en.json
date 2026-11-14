@@ -4453,6 +4453,33 @@
         "cta": "Complete your page",
         "close": "Close"
       },
+      "new_tool": {
+        "pill": "New",
+        "dot": "There is a new tool"
+      },
+      "first_moments": {
+        "first_review": {
+          "title": "Your first review is here",
+          "body": "Someone took the time to write about you. A short reply shows others that you care.",
+          "cta": "Read and reply"
+        },
+        "first_whatsapp": {
+          "title": "Your first WhatsApp tap",
+          "body": "Someone tapped the button on your page to message you. It's worth checking whether a message arrived.",
+          "cta": "See all stats"
+        },
+        "views_100": {
+          "title": "100 views of your page",
+          "body": "A hundred times, someone stopped to read about you. Sharing your link will bring more.",
+          "cta": "See all stats"
+        },
+        "first_follower": {
+          "title": "Your first follower",
+          "body": "Someone saved your business, and updates on what you post will reach them.",
+          "cta": "See all stats"
+        },
+        "close": "Close"
+      },
       "section_errors": {
         "analytics": "We couldn't load your stats",
         "profile": "We couldn't load your business details",

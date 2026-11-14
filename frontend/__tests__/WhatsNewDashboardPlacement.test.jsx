@@ -4,6 +4,7 @@
  *   old business  → «חדש במהמקור» card + row, no welcome
  *   new business  → welcome only (never both in the top slot), row still there
  *   organizer     → neither card nor row
+ *   first moment due → its card takes the slot over «מה חדש»; welcome still wins
  * Mocks copied from DashboardSingleCompletenessWidget.test.jsx (same page).
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
@@ -75,6 +76,9 @@ vi.mock("@phosphor-icons/react", () => ({
   Eye: (p) => <span {...p} />,
   // MEH-3200: WhatsNewCard (dashboard home) renders a close X.
   X: (p) => <span {...p} />,
+  // MEH-3200 part 2: FirstMomentCard icons (rendered by this file only).
+  Star: (p) => <span {...p} />,
+  UserPlus: (p) => <span {...p} />,
   // MEH-964 1D: page.js now imports Sparkle (KPI zero-state) + LockSimple
   // (share-locked hint); both mount on the no-activity / locked paths.
   Sparkle: (p) => <span {...p} />,
@@ -90,7 +94,7 @@ vi.mock("@/components/HolidayIcon", () => ({ default: () => null }));
 // its ring (role="progressbar") is the thing we count.
 
 const DAY = 24 * 60 * 60 * 1000;
-const profileState = vi.hoisted(() => ({ value: {} }));
+const profileState = vi.hoisted(() => ({ value: {}, analytics: { profile_strength: 0 } }));
 
 vi.mock("@/lib/api", () => ({
   default: {
@@ -100,7 +104,7 @@ vi.mock("@/lib/api", () => ({
           data: { producer: { id: 1, name: "עסק", status: "approved", availability_state: "accepting_orders" } },
         });
       }
-      if (url === "/producers/me/analytics") return Promise.resolve({ data: { profile_strength: 0 } });
+      if (url === "/producers/me/analytics") return Promise.resolve({ data: profileState.analytics });
       if (url === "/producers/me") return Promise.resolve({ data: profileState.value });
       return Promise.resolve({ data: null });
     }),
@@ -115,7 +119,10 @@ const profile = (over) => ({
 });
 
 describe("dashboard home — «מה חדש» and welcome placement (MEH-3200)", () => {
-  beforeEach(() => window.localStorage.clear());
+  beforeEach(() => {
+    window.localStorage.clear();
+    profileState.analytics = { profile_strength: 0 };
+  });
 
   it("old business: the «מה חדש» card and row, no welcome", async () => {
     profileState.value = profile({ created_at: new Date(Date.now() - 400 * DAY).toISOString() });
@@ -131,6 +138,25 @@ describe("dashboard home — «מה חדש» and welcome placement (MEH-3200)", 
     expect(await screen.findByTestId("owner-welcome")).toBeInTheDocument();
     expect(screen.queryByTestId("whats-new-card")).toBeNull();
     expect(screen.getByTestId("whats-new-row")).toBeInTheDocument();
+  });
+
+  it("first moment due (part 2): its card takes the slot over «מה חדש»", async () => {
+    // A previous visit stored 0 reviews; now there is 1.
+    window.localStorage.setItem("mehamakor.first_moments", JSON.stringify({ baseline: { first_review: 0 }, done: [] }));
+    profileState.analytics = { profile_strength: 0, total_reviews: 1 };
+    profileState.value = profile({ created_at: new Date(Date.now() - 400 * DAY).toISOString() });
+    render(<ProducerDashboardPage />);
+    expect(await screen.findByTestId("first-moment")).toHaveAttribute("data-moment", "first_review");
+    expect(screen.queryByTestId("whats-new-card")).toBeNull();
+  });
+
+  it("first moment due for a new business: the welcome card still wins", async () => {
+    window.localStorage.setItem("mehamakor.first_moments", JSON.stringify({ baseline: { first_review: 0 }, done: [] }));
+    profileState.analytics = { profile_strength: 0, total_reviews: 1 };
+    profileState.value = profile({ created_at: new Date().toISOString() });
+    render(<ProducerDashboardPage />);
+    expect(await screen.findByTestId("owner-welcome")).toBeInTheDocument();
+    expect(screen.queryByTestId("first-moment")).toBeNull();
   });
 
   it("organizer: neither card nor row", async () => {

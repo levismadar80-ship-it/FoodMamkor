@@ -23,11 +23,14 @@
  */
 
 /**
- * @typedef {{ version: string, key: string, date: string, items: number }} WhatsNewRelease
+ * @typedef {{ version: string, key: string, date: string, items: number, tools?: string[] }} WhatsNewRelease
  *   version — the release tag without the «v» ("1.5.1").
  *   key     — the messages key under whats_new.releases ("v1_5_1").
  *   date    — release day, YYYY-MM-DD (shown as month + year).
  *   items   — how many lines (i0…) the release has; 0 = nothing for businesses.
+ *   tools   — optional: dashboard hrefs of tools this release ADDS. Each gets a
+ *             «חדש» pill on its «כלים» tile, and the tab a dot, for
+ *             NEW_TOOL_DAYS after `date` (MEH-3200 part 2).
  */
 
 /** Newest first. @type {WhatsNewRelease[]} */
@@ -36,6 +39,27 @@ export const WHATS_NEW_RELEASES = [
 ];
 
 export const WHATS_NEW_SEEN_KEY = "mehamakor.whats_new.seen";
+
+/** How long a new tool keeps its «חדש» pill (approved 14/11). */
+export const NEW_TOOL_DAYS = 14;
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+/**
+ * Dashboard hrefs that are "new" at `now`: listed in `tools` of a release
+ * whose date is at most NEW_TOOL_DAYS ago (and not in the future).
+ * @param {number} now epoch ms
+ * @param {WhatsNewRelease[]} [releases]
+ * @returns {Set<string>}
+ */
+export function newToolHrefs(now, releases = WHATS_NEW_RELEASES) {
+  const out = new Set();
+  for (const r of releases) {
+    const age = now - Date.parse(`${r.date}T00:00:00Z`);
+    if (Number.isNaN(age) || age < 0 || age > NEW_TOOL_DAYS * DAY_MS) continue;
+    for (const href of r.tools ?? []) out.add(href);
+  }
+  return out;
+}
 
 /**
  * Releases that have something to show, newest first.

@@ -20,6 +20,8 @@ import WhatsNewCard from "@/components/producer/WhatsNewCard";
 import WhatsNewRow from "@/components/producer/WhatsNewRow";
 import OwnerWelcomeCard from "@/components/producer/OwnerWelcomeCard";
 import { useOwnerWelcome } from "@/hooks/useWhatsNew";
+import { useFirstMoment } from "@/hooks/useFirstMoment";
+import FirstMomentCard from "@/components/producer/FirstMomentCard";
 import DraftSubmitBanner from "@/components/producer/DraftSubmitBanner";
 import ChangesRequestedBanner from "./ChangesRequestedBanner";
 import RejectedBanner from "./RejectedBanner";
@@ -333,6 +335,7 @@ export default function ProducerDashboardPage() {
 
   // MEH-3200: a hook — above the early returns.
   const welcome = useOwnerWelcome(profile?.created_at);
+  const firstMoment = useFirstMoment(analytics);
   if (authLoading || !user || user.role !== "producer") return null;
   // MEH-956: graceful state on a failed dashboard fetch (404 / non-2xx).
   // Mirrors the status-banner cards in the main return. Must precede the
@@ -478,10 +481,17 @@ export default function ProducerDashboardPage() {
           under the greeting. Renders nothing when nothing is waiting. */}
       {/* MEH-3200: a new business's one-time welcome, else the newest unseen
           «מה חדש» release — never both. Not for an organizer (business copy). */}
-      {/* Wait for /producers/me (it carries created_at) so the welcome card
-          never replaces a «חדש במהמקור» card already on screen. */}
-      {!isOrganizer && (profile || profileError) &&
-        (welcome.show ? <OwnerWelcomeCard onClose={welcome.dismiss} /> : <WhatsNewCard />)}
+      {/* Wait for /producers/me (created_at) and the analytics (the moment
+          counts) so no card replaces another one already on screen. One card
+          in the slot: welcome → first moment (part 2) → «חדש במהמקור». */}
+      {!isOrganizer && (profile || profileError) && (analytics || analyticsError) &&
+        (welcome.show ? (
+          <OwnerWelcomeCard onClose={welcome.dismiss} />
+        ) : firstMoment.moment ? (
+          <FirstMomentCard moment={firstMoment.moment} onClose={firstMoment.dismiss} />
+        ) : (
+          <WhatsNewCard />
+        ))}
       <OwnerAttentionCard attention={data?.attention} />
 
       {/* MEH-1025 Chunk B: admin completion-request banner. Renders only when
