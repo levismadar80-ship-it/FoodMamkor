@@ -6,6 +6,7 @@ import { showToast } from "@/lib/toast";
 import { SITE_URL } from "@/lib/env";
 import { BRAND_NAME } from "@/lib/constants";
 import { tryNativeShare } from "@/lib/share-link";
+import { copyText } from "@/lib/clipboard";
 
 /**
  * Module:   ShareSiteActions
@@ -13,7 +14,7 @@ import { tryNativeShare } from "@/lib/share-link";
  *           opens the phone's own share sheet (WhatsApp, Instagram, Facebook…
  *           are all inside it), with copy-link as the fallback where there is
  *           no sheet. `full` adds copy-link + email cards under it.
- * Touches:  navigator.share · navigator.clipboard · mailto.
+ * Touches:  navigator.share · lib/clipboard (copyText) · mailto.
  * Does NOT: offer a WhatsApp-only share (Sapir 08/11 — sharing is the generic
  *           sheet; contact-the-business WhatsApp buttons are a different thing
  *           and live elsewhere) or share a single business page (ShareButton.jsx).
@@ -31,26 +32,8 @@ import { tryNativeShare } from "@/lib/share-link";
 // it as "no handler opened" and run the clipboard fallback.
 const MAIL_FALLBACK_MS = 1200;
 
-// MEH-1223: real success — execCommand can return false OR throw, so a double
-// failure must be reported as one, never as «הועתק».
-async function copyText(value) {
-  try {
-    await navigator.clipboard.writeText(value);
-    return true;
-  } catch {
-    const ta = document.createElement("textarea");
-    ta.value = value;
-    document.body.appendChild(ta);
-    ta.select();
-    try {
-      return document.execCommand("copy");
-    } catch {
-      return false;
-    } finally {
-      document.body.removeChild(ta);
-    }
-  }
-}
+// MEH-1223: real success — a double failure is reported as one, never as
+// «הועתק». copyText (lib/clipboard.js) answers true only on a real copy.
 
 const SHARE_TONE = {
   light: "bg-primary text-background hover:bg-primary-dark",

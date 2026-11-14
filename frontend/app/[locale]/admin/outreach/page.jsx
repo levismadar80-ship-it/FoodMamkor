@@ -13,6 +13,7 @@ import AdminLoadError from "@/components/admin/AdminLoadError";
 import Pagination from "@/components/Pagination";
 import Button from "@/components/ui/Button";
 import InlineMessage from "@/components/ui/InlineMessage";
+import { copyText } from "@/lib/clipboard";
 
 /**
  * /admin/outreach — manual lead pipeline (MEH-22).
@@ -139,8 +140,10 @@ export default function AdminOutreachPage() {
       // Copy the link to clipboard immediately so the admin can paste
       // it into WhatsApp / the phone call.
       const url = `${window.location.origin}/register/producer?prefill=${r.data.prefill_token}`;
-      await navigator.clipboard?.writeText?.(url).catch(() => {});
-      showToast.success(t("outreach.toasts.link_copied"));
+      // The prefill was created either way; the toast says whether the link
+      // really reached the clipboard (it used to say «הועתק» on a failed copy).
+      if (await copyText(url)) showToast.success(t("outreach.toasts.link_copied"));
+      else showToast.error(t("outreach.toasts.copy_failed"));
     } catch {
       showToast.error(t("outreach.toasts.prefill_failed"));
     }
@@ -711,12 +714,8 @@ function WhatsAppModal({ lead, onClose, onPrefillMinted }) {
     const body = t.raw(`outreach.wa_templates.${tpl.key}_body`)
       .replaceAll("{name}", fresh.name)
       .replaceAll("{prefillUrl}", url);
-    try {
-      await navigator.clipboard.writeText(body);
-      showToast.success(t("outreach.toasts.copied"));
-    } catch {
-      showToast.error(t("outreach.toasts.copy_failed"));
-    }
+    if (await copyText(body)) showToast.success(t("outreach.toasts.copied"));
+    else showToast.error(t("outreach.toasts.copy_failed"));
   };
 
   return (

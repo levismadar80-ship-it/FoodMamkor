@@ -7,6 +7,7 @@ import { detailToMessage } from "@/lib/errors";
 import { OwnerInviteCreatedSchema } from "@/lib/api-schemas";
 import Button from "@/components/ui/Button";
 import InlineMessage from "@/components/ui/InlineMessage";
+import { copyOrThrow } from "@/lib/clipboard";
 
 /**
  * Module:   OwnerInvitePanel
@@ -209,10 +210,7 @@ export default function OwnerInvitePanel({ producerId, producer, onChanged }) {
 
   const copy = () => {
     if (!minted) return;
-    const write = navigator.clipboard?.writeText
-      ? navigator.clipboard.writeText(minted.invite_url)
-      : Promise.reject(new Error("clipboard unavailable"));
-    write
+    copyOrThrow(minted.invite_url)
       .then(() => {
         setCopyFailed(false);
         setCopied(true);
@@ -254,10 +252,7 @@ export default function OwnerInvitePanel({ producerId, producer, onChanged }) {
   // sentence (`messageText`), so the two buttons cannot drift apart.
   const copyMessage = () => {
     if (!minted) return;
-    const write = navigator.clipboard?.writeText
-      ? navigator.clipboard.writeText(messageText)
-      : Promise.reject(new Error("clipboard unavailable"));
-    write
+    copyOrThrow(messageText)
       .then(() => {
         setCopyFailed(false);
         setMessageCopied(true);

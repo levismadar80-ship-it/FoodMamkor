@@ -25,17 +25,23 @@ import { shareOrCopy } from "@/lib/share-link";
 import { rescueBagsEnabled } from "@/lib/rescue";
 import Button from "@/components/ui/Button";
 import { SwitchTrack } from "@/components/ui/Switch";
+import { copyOrThrow } from "@/lib/clipboard";
 
 function VanityLinkCard({ slug }) {
   const t = useTranslations("dashboard.producer.vanity_link");
   const url = `${SITE_URL}/p/${slug}`;
   const [copied, setCopied] = useState(false);
 
+  // MEH-3064: a failed copy says so — this one used to do nothing at all
+  // (no catch: an unhandled rejection and a dead button).
+  const tFollowers = useTranslations("sweep_tail.followers");
   const copy = () => {
-    navigator.clipboard.writeText(url).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    });
+    copyOrThrow(url)
+      .then(() => {
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      })
+      .catch(() => showToast.error(tFollowers("share_error")));
   };
 
   // MEH-2827 PR 8: «שתפו» opens the phone's own share sheet — Instagram
@@ -890,12 +896,7 @@ function ZeroStateShareButton({ slug }) {
   // A failed copy says so (no clipboard API, or a rejected write) — the tap
   // must never do nothing (MEH-2884 review).
   const copy = () => {
-    if (!navigator.clipboard?.writeText) {
-      showToast.error(tFollowers("share_error"));
-      return;
-    }
-    navigator.clipboard
-      .writeText(url)
+    copyOrThrow(url)
       .then(() => showToast.success(tVanity("copied")))
       .catch(() => showToast.error(tFollowers("share_error")));
   };

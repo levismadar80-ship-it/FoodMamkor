@@ -49,6 +49,7 @@ import {
   loadFonts,
   wrapText,
 } from "@/components/StoryCardCanvas";
+import { copyOrThrow } from "@/lib/clipboard";
 
 const W = 1080;
 const H = 1920;
@@ -383,10 +384,7 @@ export default function ReviewCardCanvas({ producer }) {
     ]
       .filter(Boolean)
       .join("\n");
-    const write = navigator.clipboard?.writeText
-      ? navigator.clipboard.writeText(caption)
-      : Promise.reject(new Error("clipboard unavailable"));
-    write
+    copyOrThrow(caption)
       .then(() => {
         setCaptionCopied(true);
         clearTimeout(copiedTimer.current);
