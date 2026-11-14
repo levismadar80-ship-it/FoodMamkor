@@ -186,6 +186,17 @@ describe("ProducersClient free-text search (MEH-830)", () => {
     expect(screen.getByTestId("en-search-notice-mount")).toBeInTheDocument();
   });
 
+  // MEH-3153: an Enter before React hydrates is a NATIVE GET submit of this
+  // form. The fallback only keeps the term if the field is named q — measured
+  // on WebKit (iPhone run): without the name the page reloaded as /producers?
+  // and the typed word was gone.
+  it("the native (pre-hydration) submit carries the term as q", () => {
+    render(<ProducersClient {...PROPS} />);
+    const box = screen.getByRole("searchbox");
+    fireEvent.change(box, { target: { value: "לחם" } });
+    expect(new FormData(box.closest("form")).get("q")).toBe("לחם");
+  });
+
   it("hydrates the box from an existing ?q= param", () => {
     params = { q: "לחם" };
     render(<ProducersClient {...PROPS} />);

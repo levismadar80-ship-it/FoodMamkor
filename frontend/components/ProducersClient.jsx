@@ -985,6 +985,10 @@ export default function ProducersClient({
           <MagnifyingGlass size={18} weight="regular" aria-hidden="true" className="text-fg-muted" />
           <input
             id="producers-search-input"
+            // MEH-3153: name="q" is the no-JS / pre-hydration fallback. An Enter
+            // before React hydrates is a native GET submit; without a name it
+            // reloaded /producers and dropped the term (seen on WebKit/iPhone).
+            name="q"
             ref={searchInputRef}
             type="search"
             value={searchInput}
