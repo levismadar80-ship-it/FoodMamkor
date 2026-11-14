@@ -3,6 +3,8 @@ import { Leaf } from "@phosphor-icons/react";
 
 import MapProducerCard from "@/components/MapProducerCard";
 import { SkeletonStyles } from "@/components/Skeleton";
+import Button from "@/components/ui/Button";
+import InlineMessage from "@/components/ui/InlineMessage";
 
 /**
  * Vertical list of producer cards. Verbatim move of the `cardList`
@@ -51,6 +53,10 @@ export default function MapCardList({
   // only when loading AND empty: a refetch with stale rows keeps the rows
   // (no flash), and a genuine empty (loading resolved) still shows the pin.
   loading = false,
+  // MEH-3198: the newest load failed. An empty list then means "could not
+  // load", not "no results", so it gets its own state with «נסו שוב».
+  loadError = false,
+  onRetry = null,
 }) {
   const t = useTranslations();
   if (loading && visibleProducers.length === 0) {
@@ -63,6 +69,18 @@ export default function MapCardList({
           <div key={i} className="skeleton-box rounded-lg h-20 mb-3" aria-hidden="true" />
         ))}
         <SkeletonStyles />
+      </div>
+    );
+  }
+  if (loadError && visibleProducers.length === 0) {
+    return (
+      <div data-testid="map-card-list-error" className="text-center py-12">
+        <InlineMessage size="inherit" className="mb-3">{t("map.errors.load_failed")}</InlineMessage>
+        {onRetry && (
+          <Button variant="outlined" onClick={onRetry} data-testid="map-card-list-retry">
+            {t("error.retry")}
+          </Button>
+        )}
       </div>
     );
   }
