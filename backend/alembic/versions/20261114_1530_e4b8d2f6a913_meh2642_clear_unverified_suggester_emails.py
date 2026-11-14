@@ -6,12 +6,18 @@ Create Date: 2026-11-14 15:30:00.000000+00:00
 
 MEH-2642 — data-only, no schema change. Until PR #4498, POST
 /business-suggestions took any typed address plus a "send me an update" tick
-with no proof the address belonged to whoever typed it. #4498 stops new ones
-(the update goes only to a signed-in, verified account) and refuses to thank
-an address that is not one. This revision clears what the old form left
-behind: on a community lead whose address is NOT the address of a verified
-account, `suggested_by_email` becomes NULL and `suggester_wants_update`
-becomes false. Leads whose address IS a verified account keep both.
+with no proof the address belonged to whoever typed it, and stored the
+address even without the tick. #4498 stops new ones (the update goes only to
+a signed-in, verified account) and refuses to thank an address that is not
+one; this revision ships in the same release as #4498 and must not land
+without it. It clears what the old form left behind: on a community lead,
+`suggested_by_email` becomes NULL and `suggester_wants_update` becomes false
+UNLESS the address is a verified account AND the update was asked for. A
+lead keeps an address only when it has both a proved owner and a purpose.
+
+Known residual: a lead has no user_id, so a stranger who typed a real
+verified member's address and ticked the box cannot be told apart from that
+member; such a row is kept. #4498 closes that hole for new suggestions.
 
 Recorded: the number of rows cleared is logged on upgrade (a count only,
 never an address). Reversal point: the database backup taken before the
@@ -46,10 +52,13 @@ CLEANUP_SQL = sa.text(
            suggester_wants_update = false
      WHERE l.source = 'community'
        AND l.suggested_by_email IS NOT NULL
-       AND NOT EXISTS (
-             SELECT 1 FROM users u
-              WHERE lower(u.email) = lower(trim(l.suggested_by_email))
-                AND u.email_verified IS TRUE
+       AND NOT (
+             l.suggester_wants_update IS TRUE
+             AND EXISTS (
+                   SELECT 1 FROM users u
+                    WHERE lower(u.email) = lower(trim(l.suggested_by_email))
+                      AND u.email_verified IS TRUE
+                 )
            )
     """
 )
@@ -57,7 +66,10 @@ CLEANUP_SQL = sa.text(
 
 def upgrade() -> None:
     result = op.get_bind().execute(CLEANUP_SQL)
-    log.info("MEH-2642: cleared %s unverified suggester address(es)", result.rowcount)
+    log.info(
+        "MEH-2642: cleared %s unproved or unconsented suggester address(es)",
+        result.rowcount,
+    )
 
 
 def downgrade() -> None:
