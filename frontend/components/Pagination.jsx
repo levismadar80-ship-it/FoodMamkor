@@ -20,6 +20,8 @@ import { buildPageRange, clampPage } from "@/lib/pagination";
  *   role="navigation", aria-label="Pagination" (translated)
  *   aria-current="page" on the active button
  *   Disabled prev/next when at boundaries.
+ *
+ * @param {{ page: number, totalPages: number, onChange: (...args: any[]) => any, perPage?: number, onPerPageChange?: (...args: any[]) => any, perPageOptions?: number[] }} props
  */
 export default function Pagination({
   page,

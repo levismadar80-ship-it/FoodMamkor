@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 /**
@@ -56,6 +57,7 @@ function toInt(v) {
   return Number.isFinite(n) ? Math.trunc(n) : null;
 }
 
+/** @param {{ mode?: "create"|"edit", initial?: any, onSaved?: (...args: any[]) => any, onCancel?: (...args: any[]) => any }} props */
 export default function RecipeForm({ mode = "create", initial, onSaved, onCancel }) {
   const t = useTranslations("recipes.form");
   // MEH-848: shared generic error copy (collapsed from recipes.form.errors.generic).

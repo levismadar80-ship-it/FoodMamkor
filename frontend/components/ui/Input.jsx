@@ -39,6 +39,21 @@ import { Check } from "@phosphor-icons/react";
  * @example
  * <Input type="email" label="אימייל" helperText="לא נשתף עם אף אחד" />
  * <Input type="text" label="שם" error="שדה חובה" />
+ *
+ * @param {{
+ *   type?: string,
+ *   label?: import("react").ReactNode,
+ *   helperText?: import("react").ReactNode,
+ *   error?: import("react").ReactNode,
+ *   success?: boolean,
+ *   successText?: import("react").ReactNode,
+ *   startAdornment?: import("react").ReactNode,
+ *   id?: string,
+ *   className?: string,
+ *   disabled?: boolean,
+ *   required?: boolean,
+ *   [key: string]: any,
+ * }} props — any other prop is forwarded to the native <input>.
  */
 export default function Input({
   type = "text",

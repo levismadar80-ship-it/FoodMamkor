@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * SectionHeading — the one heading for a section of a page (MEH-3020).
  *
@@ -37,6 +38,7 @@ export const SECTION_HEADING_CLASSES = `${SECTION_HEADING_ROLES.page} text-text`
 // A text-* class that is a colour, not a size step.
 const COLOR = /(^|\s)text-(?!(?:2xs|xs|sm|base|lg|xl|[2-9]xl|headline-|body-|label-|center|start|end|left|right|balance|pretty|wrap|nowrap|ellipsis|clip|\[))[a-z]/;
 
+/** @param {{ as?: import("react").ElementType, size?: "page" | "content", className?: string, children?: import("react").ReactNode, [key: string]: any }} props */
 export default function SectionHeading({ as: Tag = "h2", size = "page", className = "", children, ...rest }) {
   const role = SECTION_HEADING_ROLES[size] || SECTION_HEADING_ROLES.page;
   const ink = COLOR.test(className) ? "" : " text-text";

@@ -816,6 +816,7 @@ export default function ExperienceForm({ mode = "create", initial = null, onSucc
 // cannot cover.
 // MEH-2015: `required` mirrors ui/Input's marker — the ONE asterisk mechanism.
 // The span is aria-hidden; the hosted control carries aria-required itself.
+/** @param {{ id?: string, label: import("react").ReactNode, required?: boolean, error?: import("react").ReactNode, children?: import("react").ReactNode }} props */
 function Field({ id, label, required, error, children }) {
   return (
     <div>

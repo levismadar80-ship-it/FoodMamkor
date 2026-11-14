@@ -50,6 +50,18 @@ import {
  *     caller already knows. OPT-IN: omit it and the query is composed exactly
  *     as before, so all five existing consumers are byte-identical. Same
  *     opt-in shape as MiniMap's zoom/showNavigation (MEH-1808).
+ *
+ * @param {{
+ *   id: string,
+ *   label?: string,
+ *   value: string,
+ *   onChange: (text: string) => void,
+ *   onSelect?: (picked: any) => void,
+ *   placeholder?: string,
+ *   className?: string,
+ *   inputTestId?: string,
+ *   city?: string,
+ * }} props
  */
 export default function AddressSearch({
   id,

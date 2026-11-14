@@ -120,6 +120,12 @@ function InviteStar({ value, lit, mode, loginHref, producerId, ariaLabel, onHove
  * @param {boolean} [p.first]  nothing above it in the section (zero reviews):
  *   no hairline and no top gap — they separate the row from reviews that
  *   are not there (MEH-3053).
+ * @param {string} [p.loginHref]  login link with a return path (mode login).
+ * @param {string|number} [p.producerId]
+ * @param {string} [p.producerName]
+ * @param {number} [p.value]  the chosen rating (mode write).
+ * @param {(n: number) => void} [p.onPick]
+ * @param {string} [p.testId]
  */
 export default function ReviewInviteCard(p) {
   const { mode, loginHref, producerId, producerName, value = 0, onPick, bare, first, testId } = p;

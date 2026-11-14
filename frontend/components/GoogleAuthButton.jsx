@@ -7,6 +7,7 @@ import { gsiLang, useGoogleSignIn } from "@/lib/use-google-sign-in";
 import { env } from "@/lib/env";
 import { detailToMessage } from "@/lib/errors";
 
+/** @param {{ onSuccess?: (...args: any[]) => any, onError?: (...args: any[]) => any, termsAccepted?: boolean }} props */
 export default function GoogleAuthButton({ onSuccess, onError, termsAccepted = false }) {
   const t = useTranslations("auth.oauth");
   const { loginWithGoogle } = useAuth();

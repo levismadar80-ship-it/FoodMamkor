@@ -51,6 +51,7 @@ function Action({ action, className }) {
 const SEED_ICON = "seed";
 const SEED_MARK_PX = 76;
 
+/** @param {{ icon?: import("react").ElementType | "seed", eyebrow?: import("react").ReactNode, title?: import("react").ReactNode, body?: import("react").ReactNode, bodyRole?: string, primary?: any, secondary?: any, children?: import("react").ReactNode, testid?: string }} props */
 export default function StatusPage({
   icon: Icon,
   eyebrow,

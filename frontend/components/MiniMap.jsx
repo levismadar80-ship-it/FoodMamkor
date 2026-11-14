@@ -308,6 +308,7 @@ function singlePointHandlers({ draggableMarker, onMarkerDragEnd, onExpand }) {
 // competes with that button in the parent's stacking context and wins: the
 // button stayed visible only over the grey not-yet-loaded area, and vanished as
 // soon as a pan or zoom put tiles under it — the overlay lost its only exit.
+/** @param {{ interactive?: boolean, onExpand?: (...args: any[]) => any, mapKey?: string, center: any, points?: any[], lat?: any, lng?: any, name?: string, fallbackLabel?: string, producer?: any, zoom?: number, draggableMarker?: boolean, onMarkerDragEnd?: (...args: any[]) => any }} props */
 function MapSurface({ interactive, onExpand, mapKey, center, points, lat, lng, name, fallbackLabel, producer, zoom, draggableMarker, onMarkerDragEnd }) {
   return (
     <MapContainer

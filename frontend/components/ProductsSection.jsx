@@ -1066,6 +1066,7 @@ export default function ProductsSection({
 // like every other field in the card. Plain number, no ₪ — the currency glyph
 // is already rendered inside the input below, and products are numeric since
 // MEH-295.
+/** @param {{ id: string, label: import("react").ReactNode, optionalSuffix?: import("react").ReactNode, value: any, onChange: (...args: any[]) => any, placeholder?: string, required?: boolean, error?: import("react").ReactNode }} props */
 function PriceField({ id, label, optionalSuffix, value, onChange, placeholder, required = false, error }) {
   return (
     <Input
@@ -1183,6 +1184,7 @@ function IngredientsAllergensFields({ idPrefix, ingredients, allergens, onIngred
 // REUSES: components/CategorySelector.jsx:163-200 selected idiom
 // (border-primary bg-green-50 vs border-border hover:border-primary) — ADR-019
 // states via the primary/cream family, no new state token.
+/** @param {{ label: import("react").ReactNode, pressed: boolean, onToggle: (...args: any[]) => any, iconKey?: string }} props */
 function DietChip({ label, pressed, onToggle, iconKey }) {
   // MEH-1472: leading Phosphor glyph from the canonical chip-icon map. null for
   // keys without an icon (e.g. vegetarian) → the chip stays text-only, matching

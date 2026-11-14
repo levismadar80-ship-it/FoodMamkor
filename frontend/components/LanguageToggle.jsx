@@ -34,6 +34,8 @@ import { useRouter, usePathname } from "@/i18n/navigation";
  *           (frontend/public/robots.txt; flagged stale in
  *           docs/audits/2026-06-13-seo-meta.md:223) — and AccountSheet was
  *           called the sole consumer, which the restore ended).
+ *
+ * @param {{ variant?: string, className?: string, children?: import("react").ReactNode }} props
  */
 export default function LanguageToggle({ variant = "default", className = "", children }) {
   const t = useTranslations("nav");

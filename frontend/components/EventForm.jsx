@@ -632,6 +632,7 @@ export default function EventForm({ mode = "create", initial = null, onSuccess, 
 // (the category <select>) can carry an inline message instead of the raw 422
 // that noValidate left as the only failure path. The asterisk mechanism above
 // is untouched on purpose — MEH-2015 owns consolidating it.
+/** @param {{ id?: string, label: import("react").ReactNode, required?: boolean, error?: import("react").ReactNode, children?: import("react").ReactNode }} props */
 function Field({ id, label, required, error, children }) {
   return (
     <div>
