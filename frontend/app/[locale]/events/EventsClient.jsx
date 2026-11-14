@@ -20,6 +20,7 @@ import api from "@/lib/api";
 import { formatEventDate } from "@/lib/format-date";
 import CitySearch from "@/components/CitySearch";
 import { WHEN_CHIP_PREFIX, WHEN_KEYS, matchesWhen } from "@/lib/event-date-filter";
+import { israelToday } from "@/lib/israel-date";
 import ChipScrollRow from "@/components/ChipScrollRow";
 import CalendarView from "@/components/CalendarView";
 // MEH-2497: the date-rail row (and its row normalizer) now lives in one shared
@@ -184,6 +185,7 @@ export default function EventsPage({ initialTab = "events", titles = null }) {
     const p = new URLSearchParams(window.location.search);
     setTab(urlTab);
     setView("list");
+    setWhen(null); // MEH-3118: a history move across tabs clears the shortcut too
     setCity(p.get("city") || "");
     setCategories(categoriesFor(urlTab, p.getAll("category")));
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -250,7 +252,11 @@ export default function EventsPage({ initialTab = "events", titles = null }) {
   // even when the tab is experiences.
   // MEH-3118: the date shortcut narrows the loaded rows on the Israel calendar.
   const events = useMemo(
-    () => (when ? rows.filter((row) => matchesWhen(row.event_date, when)) : rows),
+    () => {
+      if (!when) return rows;
+      const today = israelToday(); // once per filter, not once per row
+      return rows.filter((row) => matchesWhen(row.event_date, when, today));
+    },
     [rows, when],
   );
   const activeCategories = isExp ? EXPERIENCE_CATEGORY_KEYS : CATEGORY_KEYS;
@@ -284,6 +290,9 @@ export default function EventsPage({ initialTab = "events", titles = null }) {
     if (k.startsWith(WHEN_CHIP_PREFIX)) {
       const next = k.slice(WHEN_CHIP_PREFIX.length);
       setWhen((prev) => (prev === next ? null : next)); // tap again = off
+      // The calendar opens on the current month; a weekend that crosses into
+      // next month would show an empty grid. A shortcut reads as a list.
+      setView("list");
       return;
     }
     if (k === "all") setWhen(null);

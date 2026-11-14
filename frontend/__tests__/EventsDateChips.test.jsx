@@ -38,7 +38,12 @@ const ROWS = [
 ];
 vi.mock("@/lib/api", () => ({ default: { get: vi.fn() } }));
 vi.mock("@/components/SaveButton", () => ({ default: () => null }));
-vi.mock("@/components/HubShell", () => ({ default: () => null }));
+// The shell is not the subject; it only has to hand back the tab switch.
+vi.mock("@/components/HubShell", () => ({
+  default: ({ onSelect }) => (
+    <button data-testid="to-experiences" onClick={(e) => onSelect("experiences", e)}>x</button>
+  ),
+}));
 vi.mock("@/lib/cloudinary", () => ({ optimizeCloudinary: (u) => u }));
 vi.mock("@/lib/format-date", () => ({ formatEventDate: () => "" }));
 vi.mock("@/components/CalendarView", () => ({ default: () => null }));
@@ -102,6 +107,12 @@ describe("matchesWhen", () => {
     expect(matchesWhen("2026-11-28", "weekend", "2026-11-22")).toBe(true);
     expect(matchesWhen("2026-11-22", "weekend", "2026-11-22")).toBe(false);
   });
+  it("today and tomorrow are exact days", () => {
+    expect(matchesWhen("2026-11-18", "today", TODAY)).toBe(true);
+    expect(matchesWhen("2026-11-19", "today", TODAY)).toBe(false);
+    expect(matchesWhen("2026-11-19", "tomorrow", TODAY)).toBe(true);
+    expect(matchesWhen("2026-11-18", "tomorrow", TODAY)).toBe(false);
+  });
   it("no shortcut matches everything; an unreadable date matches none", () => {
     expect(matchesWhen("2026-11-22", null, TODAY)).toBe(true);
     expect(matchesWhen("not-a-date", "today", TODAY)).toBe(false);
@@ -139,6 +150,18 @@ describe("the chips on the list", () => {
     fireEvent.click(chip("when:weekend"));
     fireEvent.click(chip("all"));
     expect(shown().length).toBe(ROWS.length);
+  });
+
+  it("switching to the other tab clears the shortcut; it never reaches the URL or the API", async () => {
+    await mount();
+    fireEvent.click(chip("when:today"));
+    expect(window.location.search).not.toContain("when");
+    fireEvent.click(screen.getByTestId("to-experiences"));
+    await waitFor(() => expect(chip("when:today").dataset.active).toBe("false"));
+    await waitFor(() => expect(shown().length).toBe(ROWS.length));
+    for (const call of api.get.mock.calls) {
+      expect(JSON.stringify(call[1]?.params ?? {})).not.toContain("when");
+    }
   });
 
   it("a shortcut with no rows shows the filtered-to-zero surface, chips kept", async () => {
