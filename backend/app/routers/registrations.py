@@ -405,9 +405,7 @@ def cancel_registration(
             billing_ledger.void(
                 db,
                 kind=(
-                    "event_registration"
-                    if reg.event_id
-                    else "experience_registration"
+                    "event_registration" if reg.event_id else "experience_registration"
                 ),
                 source_id=reg.id,
             )
