@@ -227,60 +227,34 @@ class TestWebsiteScheme:
 
 
 class TestPhoneColumnWidth:
-    """`PhoneNumberField` caps the INPUT at 30 chars (schemas.py:539-541) while
-    `outreach_leads.phone` is `String(20)` (models.py:761). The validator strips
-    only [\\s()-], so a parenthesised Hebrew note survives into the column and
-    the two limits disagree by 10 characters.
+    """`PhoneNumberField` caps the INPUT at 30 chars while `outreach_leads.phone`
+    is `String(20)`. Until MEH-2641 the validator stripped only [\\s()-] and
+    returned the rest, so a parenthesised Hebrew note survived into the column
+    (FINDING-3: a long one overflowed it -> unhandled 500). Since MEH-2641 the
+    validator returns the digit projection, so a note is dropped and the value
+    always fits.
     """
 
-    def test_phone_with_note_is_stored_with_the_note_text_glued_on(self, client, db):
-        """The exact sheet value. It does NOT 422 and it does NOT 500 — it is
-        accepted and stored as `0541234567ווטסאפ`, which is what the admin
-        table then renders inside a `tel:` href (page.jsx:230-232).
-        """
+    def test_phone_with_note_is_stored_as_digits(self, client, db):
+        """The exact sheet value: accepted, stored without the note text, so
+        the admin table's `tel:` href (page.jsx) is a real number."""
         h = auth_header(_admin(db, "ph-note@example.com"))
         r = _post(client, h, name="עם הערה", phone="054-1234567 (ווטסאפ)")
         assert r.status_code == 201
-        assert r.json()["phone"] == "0541234567ווטסאפ"
+        assert r.json()["phone"] == "0541234567"
 
-    @pytest.mark.xfail(
-        strict=True,
-        reason="FINDING-3: a phone note long enough to push the stripped value "
-        "past 20 chars (schema cap is 30) reaches the DB and raises an "
-        "unhandled psycopg2 StringDataRightTruncation -> 500, not a 422.",
-    )
-    def test_long_phone_note_is_rejected_with_422_not_500(self, db):
+    def test_long_phone_note_never_500s(self, db):
+        """FINDING-3, closed by MEH-2641: 22 chars after separator stripping
+        used to reach the String(20) column and 500. Now it stores digits."""
         h = auth_header(_admin(db, "ph-long@example.com"))
-        # 27 input chars (inside the schema's 30 cap); 22 after separator
-        # stripping, i.e. 2 over the String(20) column.
         raw = "0501234567 (ווטסאפ בלבד נא)"
         assert len(raw) <= 30
         with TestClient(app, raise_server_exceptions=False) as c:
             r = c.post(
                 "/admin/outreach", json={"name": "טלפון ארוך", "phone": raw}, headers=h
             )
-        assert r.status_code == 422, f"got {r.status_code}"
-
-    def test_long_phone_note_currently_500s(self, db):
-        """The positive half of FINDING-3 — the observed status code."""
-        h = auth_header(_admin(db, "ph-long2@example.com"))
-        with TestClient(app, raise_server_exceptions=False) as c:
-            r = c.post(
-                "/admin/outreach",
-                json={"name": "טלפון ארוך 2", "phone": "0501234567 (ווטסאפ בלבד נא)"},
-                headers=h,
-            )
-        assert r.status_code == 500
-
-    def test_note_that_fits_the_column_is_accepted(self, client, db):
-        """Boundary control: exactly 20 stored chars still lands. Without this
-        the 500 above could be read as "any note fails", which is not true and
-        would misdescribe the finding.
-        """
-        h = auth_header(_admin(db, "ph-fit@example.com"))
-        r = _post(client, h, name="הערה קצרה", phone="0501234567 (ווטסאפ בלבד)")
-        assert r.status_code == 201
-        assert len(r.json()["phone"]) == 20
+        assert r.status_code == 201, f"got {r.status_code}"
+        assert r.json()["phone"] == "0501234567"
 
 
 class TestLengthCaps:
