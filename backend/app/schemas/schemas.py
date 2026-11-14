@@ -5413,6 +5413,11 @@ class AdminReviewOut(BaseModel):
     # MEH-2381: ISO time of the author's last edit while hidden; None = not
     # edited since the admin last hid or unhid it. Admin-only, like `source`.
     edited_after_hidden_at: str | None = None
+    # MEH-3259: the business owner's reply, its time, and the AI verdict on
+    # it — so the admin can read it, see a FLAGGED one, and remove it.
+    reply: str | None = None
+    reply_at: str | None = None
+    reply_ai_moderation_status: Literal["APPROVED", "FLAGGED"] | None = None
 
     model_config = {"from_attributes": True}
 

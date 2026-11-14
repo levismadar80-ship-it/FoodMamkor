@@ -2162,6 +2162,11 @@ class ProducerReview(Base):
             "ai_moderation_status IN ('APPROVED', 'FLAGGED')",
             name="ck_producer_reviews_ai_moderation_status",
         ),
+        # MEH-3259: same two values for the owner reply's verdict.
+        CheckConstraint(
+            "reply_ai_moderation_status IN ('APPROVED', 'FLAGGED')",
+            name="ck_producer_reviews_reply_ai_moderation_status",
+        ),
     )
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -2199,6 +2204,11 @@ class ProducerReview(Base):
     # FLAGGED review still publishes.
     # Nullable, Expand-only (ADR-007). Alembic revision c4e81a2f9b6d.
     ai_moderation_status = Column(String(16), nullable=True)
+    # MEH-3259: the AI verdict on `reply` at its last write — same values and
+    # NULL rules as ai_moderation_status (NULL = no reply, a fail-open, or a
+    # reply that predates the column). REJECTED is a 422, never stored.
+    # Nullable, Expand-only (ADR-007). Alembic revision f2c7a9d4b1e6.
+    reply_ai_moderation_status = Column(String(16), nullable=True)
     # MEH-2381: when the author last changed body or stars while the review
     # was hidden. NULL = not edited since the admin last hid or unhid it (both
     # clear it). Admin-only signal. Nullable, Expand-only (ADR-007). Alembic

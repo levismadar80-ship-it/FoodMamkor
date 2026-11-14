@@ -10,6 +10,7 @@ import { showToast } from "@/lib/toast";
 import InfoTooltip from "@/components/InfoTooltip";
 import AdminLoadError from "@/components/admin/AdminLoadError";
 import Button from "@/components/ui/Button";
+import AdminReviewReply from "@/components/admin/AdminReviewReply";
 
 /**
  * Admin moderation page for producer reviews (MEH-10).
@@ -17,6 +18,7 @@ import Button from "@/components/ui/Button";
  * Backend endpoints:
  *   GET    /admin/reviews         — list all, newest first
  *   DELETE /reviews/:id           — reuses owner-or-admin handler
+ *   PUT    /admin/reviews/:id/clear-reply — MEH-3259, via AdminReviewReply.
  *   PUT    /admin/reviews/:id/hide · /unhide — MEH-2360 buttons for the
  *          sticky hide from MEH-2348; the row flips in place, no reload.
  *          MEH-2381: a hidden row the author edited since carries
@@ -211,7 +213,12 @@ export default function AdminReviewsPage() {
 
   const filtered = reviews.filter((r) => {
     if (starFilter !== "all" && r.stars !== Number(starFilter)) return false;
-    if (flaggedOnly && r.ai_moderation_status !== "FLAGGED") return false;
+    // MEH-3259: a flagged owner reply counts too.
+    if (
+      flaggedOnly &&
+      r.ai_moderation_status !== "FLAGGED" &&
+      r.reply_ai_moderation_status !== "FLAGGED"
+    ) return false;
     if (!search) return true;
     const q = search.toLowerCase();
     return (
@@ -361,6 +368,18 @@ export default function AdminReviewsPage() {
                       {!r.title && !r.body && (
                         <span className="text-muted opacity-60">—</span>
                       )}
+                      <AdminReviewReply
+                        review={r}
+                        onRemoved={(id) =>
+                          setReviews((prev) =>
+                            prev.map((item) =>
+                              item.id === id
+                                ? { ...item, reply: null, reply_at: null, reply_ai_moderation_status: null }
+                                : item,
+                            ),
+                          )
+                        }
+                      />
                     </td>
                     <td className="px-4 py-3 text-muted text-xs" data-label={t("reviews.columns.date")}>
                       {r.created_at

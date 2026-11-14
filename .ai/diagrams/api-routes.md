@@ -172,6 +172,7 @@ graph TD
     ReviewsAdmin[/admin/reviews page] --> AdminRevList[GET /admin/reviews<br/>🛡️ all reviews incl. hidden]
     ReviewsAdmin --> RevHide[PUT /admin/reviews/{id}/hide<br/>🛡️ sticky — author edit keeps it,<br/>author DELETE → 404 MEH-2348<br/>clears edited_after_hidden_at MEH-2381]
     ReviewsAdmin --> RevUnhide[PUT /admin/reviews/{id}/unhide<br/>🛡️ MEH-2348 the only way back]
+    ReviewsAdmin --> RevClearReply[PUT /admin/reviews/{id}/clear-reply<br/>🛡️ MEH-3259 remove owner reply]
 
     Analytics[/admin/analytics page] --> AdminAnalytics[GET /admin/analytics<br/>🛡️ charts + heatmap + top producers]
 
