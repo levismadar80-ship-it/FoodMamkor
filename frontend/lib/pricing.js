@@ -59,7 +59,7 @@ const PRICE_LISTS = Object.freeze({
     noticeDays: 60,
     // The price of the paid sign-up used in the worked example on the price
     // list. The fee shown next to it is computed, never typed.
-    exampleBookingPrice: 200,
+    exampleBookingPrice: 100,
   }),
 });
 
