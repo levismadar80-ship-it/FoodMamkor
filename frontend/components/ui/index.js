@@ -18,4 +18,3 @@ export { default as BackLink } from "./BackLink";
 export { default as Tooltip } from "./Tooltip";
 export { default as Popover } from "./Popover";
 export { default as EmptyState } from "./EmptyState";
-export { default as Dialog } from "./Dialog";

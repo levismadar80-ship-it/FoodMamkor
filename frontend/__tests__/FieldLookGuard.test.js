@@ -14,6 +14,7 @@
  * Blind spot, stated: a className passed as a bare variable has no string to
  * read and is skipped.
  */
+import { describe, it, expect } from "vitest";
 import fs from "node:fs";
 import path from "node:path";
 import { parse } from "@babel/parser";

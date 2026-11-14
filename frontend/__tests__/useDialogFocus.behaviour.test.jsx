@@ -3,6 +3,7 @@
  * Tab wraps inside, Escape closes, [data-autofocus] gets focus, focus returns
  * to the opener, and `open` with nothing mounted installs no Tab trap.
  */
+import { describe, it, expect } from "vitest";
 import { useRef, useState } from "react";
 import { render, screen, fireEvent, act } from "@testing-library/react";
 import useDialogFocus, { useDialogEscape } from "@/hooks/useDialogFocus";

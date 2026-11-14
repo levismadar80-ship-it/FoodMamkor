@@ -6,6 +6,7 @@
  * Only literal size/weight props on components imported from
  * @phosphor-icons/react are read; a computed size is the caller's business.
  */
+import { describe, it, expect } from "vitest";
 import fs from "node:fs";
 import path from "node:path";
 import { parse } from "@babel/parser";

@@ -12,6 +12,7 @@
  * A file-level check for 2 and 3 is deliberate: the handler sits in an effect
  * or on the element, never at a fixed AST spot.
  */
+import { describe, it, expect } from "vitest";
 import fs from "node:fs";
 import path from "node:path";
 import { parse } from "@babel/parser";

@@ -12,6 +12,7 @@
  *  2. a padded panel (border or tinted card background + p-N, not an overlay)
  *     is never rounded-xl — that is the dialog radius.
  */
+import { describe, it, expect } from "vitest";
 import fs from "node:fs";
 import path from "node:path";
 import { parse } from "@babel/parser";
@@ -23,6 +24,10 @@ const ROOT = path.resolve(__dirname, "..");
 const EXEMPT = new Set([
   "components/public/ProductSheet.jsx",
   "app/[locale]/producer/[id]/components/ProducerSections.jsx",
+  // MEH-3096: the one dialog shell. Its panel is rounded-xl by the rule above
+  // (a dialog is xl); the fixed overlay sits on the parent element, so the
+  // line-level OVERLAY check cannot see it.
+  "components/ui/Dialog.jsx",
 ]);
 
 const OFF_SCALE = /(?:^|\s)(?:[a-z0-9-]+:)*rounded(?:-[tbse]{1,2})?-(?:2xl|3xl)(?=\s|$)/;

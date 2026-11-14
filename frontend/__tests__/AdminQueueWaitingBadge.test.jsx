@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
 import { render, screen, cleanup } from "@testing-library/react";
 import { WaitingBadge } from "@/app/[locale]/admin/producers/AdminProducersTable";
+import { formatDate } from "@/lib/format-date";
 
 // next-intl: return the dotted key plus the interpolated values, so the
 // assertions below pin the KEY and the day count without depending on the
@@ -103,8 +104,10 @@ describe("MEH-2110 — the tooltip names which timestamp it shows", () => {
     );
     const title = badge.getAttribute("title");
     expect(title).toContain("admin.producers.table.waiting_tooltip_resubmitted");
-    expect(title).toContain(new Date("2026-08-26T09:00:00Z").toLocaleString("he-IL"));
-    expect(title).not.toContain(new Date("2026-08-16T09:00:00Z").toLocaleString("he-IL"));
+    // MEH-3070: dates print through lib/format-date (Israel time, 26.08.2026, 12:00).
+    expect(title).toContain(formatDate("2026-08-26T09:00:00Z", "he", "dateTime"));
+    expect(title).toContain("26.08.2026, 12:00");
+    expect(title).not.toContain(formatDate("2026-08-16T09:00:00Z", "he", "dateTime"));
   });
 
   it("a draft keeps counting from created_at even with stale stamps", () => {
