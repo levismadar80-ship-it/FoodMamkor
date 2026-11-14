@@ -34,6 +34,12 @@ from app.schemas.schemas import (
     event_end_time_problem,
 )
 from app.services import indexnow  # MEH-2852
+from app.services.booking_cancellations import (  # MEH-3227
+    after_item_edit,
+    cancel_item_signups,
+    is_test_item,
+    item_state,
+)
 from app.services.producer_listing import (  # MEH-2952
     is_live_owner_row,
     not_test_producer,
@@ -434,11 +440,13 @@ def update_event(  # noqa: PLR0913 — all args are FastAPI-injected; MEH-3022 a
         if method_issue:
             raise HTTPException(status_code=422, detail=method_issue)
     _cap_event_returning_to_upcoming(db, event, changes)  # MEH-3022
+    before = item_state(event)
     for field, value in changes.items():
         if field == "category" and value not in VALID_CATEGORIES:
             raise HTTPException(status_code=400, detail="קטגוריה לא תקינה")
         setattr(event, field, value)
-
+    # MEH-3227: cancelled → sign-ups cancelled; moved → registrants told.
+    after_item_edit(db, event, before, background_tasks, is_test_item(event))
     db.commit()
     db.refresh(event)
     event = cast(  # re-read of the row just committed
@@ -474,6 +482,8 @@ def delete_event(
         raise HTTPException(status_code=404, detail="Event not found")
     # MEH-2852: read before the delete — the page goes with the row.
     was_public = indexnow.is_public_owner(event.producer)
+    # MEH-3227: registrants are told before the cascade removes their rows.
+    cancel_item_signups(db, event, background_tasks, is_test_item(event))
     db.delete(event)
     db.commit()
     if was_public:

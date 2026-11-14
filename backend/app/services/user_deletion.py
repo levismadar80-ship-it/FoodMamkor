@@ -27,10 +27,8 @@ from app.models.models import (
     Report,
 )
 from app.services import retired_slugs  # MEH-2528
-from app.services.group_buy_delist import (  # MEH-2503
-    cancel_live_group_buys,
-    withdraw_user_commits,
-)
+from app.services.booking_cancellations import delist_business  # MEH-3227
+from app.services.group_buy_delist import withdraw_user_commits  # MEH-2503
 
 
 def delete_user_and_data(
@@ -173,7 +171,7 @@ def _delete_own_producer(
         # MEH-2503: her own live group buys are cancelled and their
         # participants told, as on a suspension (MEH-2498) — before the
         # unlink, since the helper skips users linked to this producer.
-        cancel_live_group_buys(db, producer, background_tasks)
+        delist_business(db, producer, background_tasks)  # MEH-3227: + bags, sign-ups
         # MEH-2528: her business's URL stays reserved after she leaves, so
         # the next business with that name cannot inherit her links.
         retired_slugs.retire_slug(db, producer, "deleted")

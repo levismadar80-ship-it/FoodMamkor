@@ -169,18 +169,9 @@ def send_cancel_email(to: str, producer_name: str, test_cause: bool = False) -> 
     send_email(to, subject, body, html=html_body, test_cause=test_cause)
 
 
-def send_business_cancel_email(
-    to: str, producer_name: str, test_cause: bool = False
-) -> None:
-    """MEH-2738 — the business cancelled today's bag, so the buyer's
-    reservation went with it. Copy approved word for word by Sapir on 6/11
-    (text 7). Links to today's bags elsewhere; no code, nothing to pay."""
-    name = " ".join(producer_name.split())
+def _send_bag_cancelled(to: str, name: str, line1: str, test_cause: bool) -> None:
+    """The «הסל ב… בוטל» card: one reason line, then the link to today's bags."""
     subject = f"הסל ב{name} בוטל"
-    line1 = (
-        f"בית העסק {name} ביטל את סל ההפתעה של היום, ולכן גם השריון שלכם בוטל. "
-        "אין צורך להגיע ואין מה לשלם."
-    )
     line2 = "מצטערים. אולי יש סל אחר באזור:"
     link_text = "לסלים של היום"
     list_url = f"{settings.frontend_url}/rescue"
@@ -210,3 +201,32 @@ def send_business_cancel_email(
 </body>
 </html>"""
     send_email(to, subject, body, html=html_body, test_cause=test_cause)
+
+
+def send_business_cancel_email(
+    to: str, producer_name: str, test_cause: bool = False
+) -> None:
+    """MEH-2738 — the business cancelled today's bag, so the buyer's
+    reservation went with it. Copy approved word for word by Sapir on 6/11
+    (text 7). Links to today's bags elsewhere; no code, nothing to pay."""
+    name = " ".join(producer_name.split())
+    line1 = (
+        f"בית העסק {name} ביטל את סל ההפתעה של היום, ולכן גם השריון שלכם בוטל. "
+        "אין צורך להגיע ואין מה לשלם."
+    )
+    _send_bag_cancelled(to, name, line1, test_cause)
+
+
+def send_delisted_cancel_email(
+    to: str, producer_name: str, test_cause: bool = False
+) -> None:
+    """MEH-3227 (D1) — the SITE took the business off (suspended, rejected,
+    deleted), so its live bags went with it. «בית העסק ביטל» would be false
+    here, so the reason line says the business is no longer listed — and no
+    more (the group-buy precedent, MEH-2498). Copy approved by Sapir 14/11."""
+    name = " ".join(producer_name.split())
+    line1 = (
+        f"בית העסק {name} כבר לא מופיע במהמקור, ולכן השריון שלכם לסל בוטל. "
+        "אין צורך להגיע ואין מה לשלם."
+    )
+    _send_bag_cancelled(to, name, line1, test_cause)
