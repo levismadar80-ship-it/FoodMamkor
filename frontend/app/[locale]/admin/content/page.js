@@ -10,6 +10,7 @@ import { showToast } from "@/lib/toast";
 // in-flight lock (and create/update/page-save swallowed errors silently).
 import { useAdminAction } from "@/lib/use-admin-action";
 import Button from "@/components/ui/Button";
+import Input from "@/components/ui/Input";
 
 export default function AdminContentPage() {
   const t = useTranslations("admin");
@@ -108,11 +109,11 @@ function CategoriesEditor() {
   return (
     <div className="bg-surface border border-border rounded-md p-5 space-y-4">
       <form onSubmit={create} className="flex gap-2">
-        <input
+        <Input inline size="md"
           placeholder={t("content.categories.name_placeholder")}
           value={name}
           onChange={(e) => setName(e.target.value)}
-          className="flex-1 min-w-0 border border-border rounded-sm px-3 py-2 focus-ring"
+          className="flex-1 min-w-0"
         />
         <Button
           type="submit"
@@ -196,13 +197,15 @@ function CategoryRow({ cat, onSave, onDelete, saving }) {
     // intrinsic width pushed the count and the save/delete buttons past the
     // card's edge; now they drop to a second line instead.
     <li className="flex flex-wrap gap-2 items-center border border-border rounded-md p-2">
-      <input
+      <Input
+        inline
+        size="md"
         value={name}
         onChange={(e) => setName(e.target.value)}
         readOnly={locked}
         title={locked ? t("content.categories.system_hint") : undefined}
         data-testid={`category-name-${cat.id}`}
-        className={`flex-1 min-w-[10rem] border border-border rounded-sm px-2 py-1 focus-ring ${locked ? "bg-accent text-muted cursor-not-allowed" : ""}`}
+        className={`flex-1 min-w-[10rem] ${locked ? "bg-accent text-muted cursor-not-allowed" : ""}`.trim()}
       />
       {/* MEH-1034: per-row producer count (the editor is a list, not a table). */}
       <span className="text-xs text-muted whitespace-nowrap">
@@ -266,11 +269,11 @@ function PageEditor({ slug }) {
 
   return (
     <div className="bg-surface border border-border rounded-md p-5 space-y-3">
-      <input
+      <Input inline size="md"
         value={page.title}
         onChange={(e) => { setPage({ ...page, title: e.target.value }); setSaved(false); }}
         placeholder={t("content.page_editor.title_placeholder")}
-        className="w-full border border-border rounded-sm px-3 py-2 font-semibold focus-ring"
+        className="w-full font-semibold"
       />
       <textarea
         value={page.body}

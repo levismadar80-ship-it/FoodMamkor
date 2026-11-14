@@ -10,6 +10,7 @@ import { showToast } from "@/lib/toast";
 import InfoTooltip from "@/components/InfoTooltip";
 import AdminLoadError from "@/components/admin/AdminLoadError";
 import Button from "@/components/ui/Button";
+import Input from "@/components/ui/Input";
 
 /**
  * Admin moderation page for producer reviews (MEH-10).
@@ -240,11 +241,11 @@ export default function AdminReviewsPage() {
       </div>
 
       <div className="flex flex-col md:flex-row gap-3">
-        <input
+        <Input inline size="md"
           placeholder={t("reviews.search_placeholder")}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="flex-1 border border-border rounded-sm px-3 py-2 focus-ring"
+          className="flex-1"
         />
         <select
           value={starFilter}

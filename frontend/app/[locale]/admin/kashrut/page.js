@@ -19,6 +19,7 @@ import { CODE_TO_KEY } from "@/components/KashrutBadgeStrip";
 import { SkeletonTable } from "@/components/Skeleton";
 import Button from "@/components/ui/Button";
 import Dialog from "@/components/ui/Dialog";
+import Input from "@/components/ui/Input";
 
 function shortDate(iso, locale) {
   if (!iso) return "—";
@@ -339,7 +340,7 @@ export default function AdminKashrutPage() {
             <label htmlFor="kashrut-expires-on" className="text-sm font-medium block mb-1.5">
               {t("kashrut.approve_modal.date_label")}
             </label>
-            <input
+            <Input inline size="sm"
               id="kashrut-expires-on"
               type="date"
               required
@@ -347,7 +348,7 @@ export default function AdminKashrutPage() {
               max={israelDateOffset(400)}
               value={approveDate}
               onChange={(e) => setApproveDate(e.target.value)}
-              className="w-full border rounded-sm p-3 text-sm focus-ring"
+              className="w-full"
             />
             <p className="text-xs text-fg-muted mt-2">{t("kashrut.approve_modal.hint")}</p>
             <div className="flex gap-3 mt-4">

@@ -9,6 +9,7 @@ import Button from "@/components/ui/Button";
 import { formatDate } from "@/lib/format-date";
 import InlineMessage from "@/components/ui/InlineMessage";
 import { copyOrThrow } from "@/lib/clipboard";
+import Input from "@/components/ui/Input";
 
 /**
  * Module:   ClaimLinkPanel
@@ -91,14 +92,14 @@ export default function ClaimLinkPanel({ producerId }) {
             {t("url_label")}
           </label>
           <div className="flex flex-col sm:flex-row gap-2">
-            <input
+            <Input inline size="sm"
               id="claim-link-url"
               data-testid="claim-link-url"
               readOnly
               dir="ltr"
               value={link.url}
               onFocus={(e) => e.target.select()}
-              className="flex-1 min-w-0 border border-border rounded-sm px-3 py-2 text-sm bg-background focus-ring"
+              className="flex-1 min-w-0"
             />
             <Button
               type="button"
