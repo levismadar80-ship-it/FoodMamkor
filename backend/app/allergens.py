@@ -6,6 +6,8 @@ English); the Hebrew labels live in frontend messages. Self-declared by the
 business — shown on the product sheet as «לפי הצהרת בית העסק», never verified.
 """
 
+from collections.abc import Iterable
+
 ALLERGEN_CODES: tuple[str, ...] = (
     "gluten",
     "milk",
@@ -26,7 +28,7 @@ ALLERGEN_CODES: tuple[str, ...] = (
 _ALLOWED = frozenset(ALLERGEN_CODES)
 
 
-def normalize_allergens(value):
+def normalize_allergens(value: Iterable[str] | None) -> list[str] | None:
     """None stays None, and so does an empty list: NULL means "the owner
     filled nothing", and storing [] could later be read as "contains no
     allergens", which is a food-safety claim nobody made. A non-empty list is

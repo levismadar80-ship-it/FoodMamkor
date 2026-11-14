@@ -15,9 +15,23 @@
 import fs from "node:fs";
 import path from "node:path";
 import { describe, it, expect } from "vitest";
+import tailwindConfig from "../tailwind.config.js";
 
 const FRONTEND = path.resolve(__dirname, "..");
 const read = (rel) => fs.readFileSync(path.join(FRONTEND, rel), "utf8");
+
+/**
+ * MEH-3169: z values are named tokens defined once in tailwind.config.js — a
+ * class `z-<name>` or a property `var(--z-<name>)`. Resolve through that object
+ * so every comparison below is still between the numbers that render.
+ */
+const Z = tailwindConfig.theme.extend.zIndex;
+const zOfVar = (value) => {
+  const m = /^var\(--z-([a-z0-9-]+)\)$/.exec(value.trim());
+  if (!m) return Number(value);
+  if (!(m[1] in Z)) throw new Error(`var(--z-${m[1]}) is not a token in tailwind.config.js zIndex`);
+  return Number(Z[m[1]]);
+};
 
 /** Declarations of the `.custom-cursor { … }` rule (the bare one, not modifiers). */
 function cursorRule() {
@@ -33,13 +47,14 @@ function decl(body, prop) {
   return m ? m[2].trim() : null;
 }
 
-/** Inline numeric zIndex values in ChatWidget (launcher + panel). */
+/** Inline zIndex values in ChatWidget (launcher + panel), numeric or `var(--z-…)`. */
 function chatZ() {
   const src = read("components/ChatWidget.jsx");
-  return [...src.matchAll(/zIndex:\s*(\d+)/g)].map((m) => Number(m[1]));
+  return [...src.matchAll(/zIndex:\s*(?:(\d+)|"(var\(--z-[a-z0-9-]+\))")/g)]
+    .map((m) => (m[1] !== undefined ? Number(m[1]) : zOfVar(m[2])));
 }
 
-/** Every arbitrary Tailwind z-[N] applied in a className in app/ + components/. */
+/** Every z class applied in app/ + components/: arbitrary z-[N] or a named token. */
 function tailwindZ() {
   const isComment = (l) => /^\s*(\*|\/\/|\/\*|\{\/\*)/.test(l);
   const out = [];
@@ -52,6 +67,9 @@ function tailwindZ() {
         if (isComment(line)) return;
         for (const m of line.matchAll(/z-\[(\d+)\]/g)) {
           out.push({ z: Number(m[1]), at: `${path.relative(FRONTEND, p)}:${i + 1}` });
+        }
+        for (const m of line.matchAll(/(?<![\w-])z-([a-z][a-z0-9-]*)(?![\w-])/g)) {
+          if (m[1] in Z) out.push({ z: Number(Z[m[1]]), at: `${path.relative(FRONTEND, p)}:${i + 1}` });
         }
       });
     }
@@ -72,14 +90,14 @@ describe("CustomCursor paints above fixed overlays (MEH-2300)", () => {
   });
 
   it("cursor z-index is strictly above the chat launcher and panel", () => {
-    const cursor = Number(decl(cursorRule(), "z-index"));
+    const cursor = zOfVar(decl(cursorRule(), "z-index"));
     for (const z of chatZ()) {
       expect(cursor, `cursor ${cursor} must be > chat zIndex ${z} (a tie loses on DOM order)`).toBeGreaterThan(z);
     }
   });
 
-  it("cursor z-index is strictly above every z-[N] token in the app", () => {
-    const cursor = Number(decl(cursorRule(), "z-index"));
+  it("cursor z-index is strictly above every z class in the app (z-[N] or a named token)", () => {
+    const cursor = zOfVar(decl(cursorRule(), "z-index"));
     const notBelow = tailwindZ().filter(({ z }) => z >= cursor);
     expect(
       notBelow.map(({ z, at }) => `z-[${z}] ${at}`),

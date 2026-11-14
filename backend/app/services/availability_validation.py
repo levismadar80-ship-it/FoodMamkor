@@ -40,7 +40,7 @@ class AvailabilityValidationError(ValueError):
     a `kind` so the router can map it to the right HTTP status (400 for an
     invalid value, 422 for a semantic/return-date violation)."""
 
-    def __init__(self, message: str, *, kind: str):
+    def __init__(self, message: str, *, kind: str) -> None:
         super().__init__(message)
         self.kind = kind
 

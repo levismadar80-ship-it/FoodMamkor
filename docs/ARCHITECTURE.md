@@ -13,7 +13,7 @@ mehamakor/
 │   ├── app/                    routers, models, schemas, services, auth, config
 │   ├── alembic/versions/       migration revisions (sole schema authority — ADR-003)
 │   └── scripts/                backend ops scripts
-├── frontend/                   Next.js 14 App Router (JavaScript)
+├── frontend/                   Next.js 16 App Router (JavaScript)
 │   ├── app/                    routes — one dir per page (server + client)
 │   ├── components/             shared React components
 │   ├── lib/                    auth-context, api, cloudinary, schemas
@@ -59,7 +59,7 @@ mehamakor/
 Files in `.claude/central-components.json` get adversarial review even
 if `npm run build` fails (workflow rule 20). Logic risk > syntax risk.
 Current set: `MapClient.jsx`, `MapComponent.jsx`, `producers/page.jsx`,
-`app/page.js`, `app/layout.js`, `language-context.js`, `ProducerCard.jsx`,
+`app/page.js`, `app/layout.js`, `ProducerCard.jsx`,
 `Header.jsx`, `BottomNav.jsx`, `Footer.jsx`, `backend/app/main.py`,
 `backend/app/routers/auth.py`, `backend/app/config.py`. Refactor planned: MEH-407.
 

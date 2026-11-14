@@ -42,6 +42,7 @@ def checkins(monkeypatch):
 
 def _stub_services(monkeypatch):
     from app.services import (
+        admin_pending_reminder,
         analytics_rollup,
         auto_reply_watchdog,
         onboarding_followup,
@@ -51,6 +52,9 @@ def _stub_services(monkeypatch):
     )
 
     monkeypatch.setattr(onboarding_followup, "send_due_followups", lambda db: {})
+    monkeypatch.setattr(
+        admin_pending_reminder, "send_admin_pending_reminder", lambda db: 0
+    )
     monkeypatch.setattr(pending_nudge, "send_pending_nudges", lambda db: {})
     monkeypatch.setattr(auto_reply_watchdog, "run_watchdog", lambda db: {})
     monkeypatch.setattr(analytics_rollup, "run_rollup", lambda db: {})
@@ -64,6 +68,12 @@ JOBS = [
         "onboarding-followups-daily",
         "crontab",
         job_heartbeat.FOLLOWUP_CRON,
+    ),
+    (
+        "_run_admin_pending_reminder_job",
+        "admin-pending-reminder-daily",
+        "crontab",
+        job_heartbeat.ADMIN_PENDING_REMINDER_CRON,
     ),
     (
         "_run_watchdog_job",
@@ -198,4 +208,5 @@ def test_flagged_jobs_absent_when_flags_off(monkeypatch):
     triggers = _registered(monkeypatch, flags_on=False)
     assert "_run_watchdog_job" not in triggers
     assert "_run_rescue_digest_job" not in triggers
-    assert len(triggers) == 3
+    flagged = {"_run_watchdog_job", "_run_rescue_digest_job"}
+    assert set(triggers) == {j[0] for j in JOBS} - flagged

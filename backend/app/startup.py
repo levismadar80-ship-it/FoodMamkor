@@ -1,3 +1,4 @@
+from collections.abc import AsyncIterator
 import asyncio
 import os
 from typing import Any
@@ -11,6 +12,7 @@ from fastapi import FastAPI
 from app.config import settings
 from app.sentry import capture_background_exception
 from app.services.job_heartbeat import (
+    ADMIN_PENDING_REMINDER_CRON,
     ANALYTICS_ROLLUP_CRON,
     FOLLOWUP_CRON,
     RESCUE_DIGEST_INTERVAL_MINUTES,
@@ -321,6 +323,29 @@ def _run_followup_job() -> None:
 
 
 # MEH-3155: Sentry Crons heartbeat — a missed run raises an issue.
+@heartbeat(
+    "admin-pending-reminder-daily", cron_monitor_config(ADMIN_PENDING_REMINDER_CRON)
+)
+def _run_admin_pending_reminder_job() -> None:
+    """MEH-3147: morning email to the admin listing businesses waiting for
+    approval 2+ business days. Fresh session per run; any exception is
+    swallowed so the scheduler thread never dies."""
+    from app.database import SessionLocal
+    from app.services.admin_pending_reminder import send_admin_pending_reminder
+
+    db = SessionLocal()
+    try:
+        listed = send_admin_pending_reminder(db)
+        log.info("[ADMIN-REMINDER] daily run complete listed=%s", listed)
+    except Exception as exc:
+        db.rollback()
+        capture_background_exception(exc, task="admin_pending_reminder")
+        log.error("[ADMIN-REMINDER] daily run crashed", exc_info=True)
+    finally:
+        db.close()
+
+
+# MEH-3155: Sentry Crons heartbeat — a missed run raises an issue.
 @heartbeat("auto-reply-watchdog", interval_monitor_config(WATCHDOG_INTERVAL_MINUTES))
 def _run_watchdog_job() -> None:
     """MEH-509 PR2b: 5-min after-hours watchdog tick. Shares the same
@@ -454,6 +479,18 @@ def register_scheduler_jobs(followup_scheduler: Any) -> None:
         id="meh_539_onboarding_followups_daily",
         replace_existing=True,
     )
+    # MEH-3147: admin pending-approval reminder. 05:00 UTC = 07:00/08:00
+    # Israel, before the admin's day starts. coalesce + a 3h grace: a pause
+    # over the fire time sends it late rather than skipping the day.
+    followup_scheduler.add_job(
+        _run_admin_pending_reminder_job,
+        CronTrigger.from_crontab(ADMIN_PENDING_REMINDER_CRON, timezone="UTC"),
+        id="meh_3147_admin_pending_reminder_daily",
+        replace_existing=True,
+        max_instances=1,
+        coalesce=True,
+        misfire_grace_time=3 * 3600,
+    )
     # MEH-509 PR2b: register the after-hours watchdog on the same
     # scheduler. Gated by WATCHDOG_ENABLED (default False) so the empty-
     # table cron does not spin until PR2c webhook receiver ships.
@@ -544,7 +581,7 @@ def register_scheduler_jobs(followup_scheduler: Any) -> None:
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     log.info("=" * 60)
     log.info("mehamakor backend starting up")
     log.info("db_url        = %s", _redacted_db_url())

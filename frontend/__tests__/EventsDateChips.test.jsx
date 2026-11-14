@@ -28,13 +28,12 @@ vi.mock("next-intl", () => ({
   useTranslations: (ns) => (k) => (ns ? `${ns}.${k}` : k),
   useLocale: () => "he",
 }));
+// Two categories, so the category chips are drawn (MEH-3124 hides them when
+// only one category has rows).
 const row = (id, event_date, category = "שוק") => ({
   id, title: `event ${id}`, event_date, event_time: "10:00", city: "חיפה",
   category, price: 0, producer_name: "בית עסק", description: "",
 });
-// Two categories on purpose: with a single one the category chips are not
-// drawn at all (MEH-3124), and "before the categories" would have nothing to
-// come before.
 const ROWS = [
   row("today", "2026-11-18"), row("tomorrow", "2026-11-19"), row("fri", "2026-11-20"),
   row("sat", "2026-11-21"), row("next-sun", "2026-11-22"), row("next-fri", "2026-11-27", "קטיף"),
@@ -167,13 +166,33 @@ describe("the chips on the list", () => {
     }
   });
 
-  it("a shortcut with no rows shows the filtered-to-zero surface, chips kept", async () => {
-    api.get.mockResolvedValue({ data: [row("next-fri", "2026-11-27")] });
+  it("a shortcut with no rows is not drawn (MEH-3128)", async () => {
+    api.get.mockResolvedValue({
+      data: [row("today", "2026-11-18", "אחר"), row("next-fri", "2026-11-27", "טעימות")],
+    });
     render(<EventsClient />);
-    await screen.findByText("event next-fri");
+    await screen.findByText("event today");
+    expect(chip("when:today")).not.toBeNull();
+    expect(chip("when:tomorrow")).toBeNull();
+    expect(chip("when:weekend")).toBeNull();
+  });
+
+  it("a picked shortcut that reaches 0 stays, on the filtered-to-zero surface", async () => {
+    // today is picked; then a category narrows the rows to one with no «today».
+    // «אחר» / «טעימות» are in both vocabularies, so the tab does not matter.
+    api.get.mockImplementation((_, cfg = {}) =>
+      Promise.resolve({
+        data: [].concat(cfg.params?.category ?? []).includes("טעימות")
+          ? [row("next-fri", "2026-11-27", "טעימות")]
+          : [row("today", "2026-11-18", "אחר"), row("next-fri", "2026-11-27", "טעימות")],
+      }),
+    );
+    render(<EventsClient />);
+    await screen.findByText("event today");
     fireEvent.click(chip("when:today"));
-    await waitFor(() => expect(screen.queryByText("event next-fri")).toBeNull());
+    fireEvent.click(chip("טעימות"));
+    await waitFor(() => expect(screen.getByText("events.list.no_results_cta")).toBeTruthy());
     expect(chip("when:today")).not.toBeNull(); // the way back is still there
-    expect(screen.getByText("events.list.no_results_cta")).toBeTruthy();
+    expect(chip("when:today").dataset.active).toBe("true");
   });
 });

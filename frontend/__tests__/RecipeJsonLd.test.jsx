@@ -22,7 +22,8 @@ describe("buildRecipeSchema (schema.org/Recipe JSON-LD)", () => {
     expect(s["@context"]).toBe("https://schema.org");
     expect(s["@type"]).toBe("Recipe");
     expect(s.name).toBe("חלת מחמצת");
-    expect(s.url).toBe("/test-slug/recipes/abc");
+    // MEH-3177: absolute — a relative url is invalid for schema.org Recipe.
+    expect(s.url).toMatch(/^https?:\/\/[^/]+\/test-slug\/recipes\/abc$/);
     expect(s.inLanguage).toBe("he-IL");
   });
 

@@ -5,6 +5,7 @@ import { MapPin, X } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import { COOKIE_CONSENT_EVENT, hasCookieConsent } from "@/lib/cookie-consent";
 import Button from "@/components/ui/Button";
+import { COLOR } from "@/lib/color-tokens";
 
 const DISMISS_KEY = "location_banner_dismissed";
 
@@ -57,7 +58,7 @@ export default function LocationBanner({ hasCity, onOpenModal, suppressed = fals
   return (
     <div
       className="mx-4 md:mx-auto max-w-3xl mb-6 flex items-start justify-between gap-3 rounded-md px-4 py-3"
-      style={{ backgroundColor: "#EAF3DE", color: "#2e6853" }}
+      style={{ backgroundColor: COLOR["green-50"], color: COLOR.primary }}
       role="status"
     >
       <div className="flex items-start gap-2 min-w-0">

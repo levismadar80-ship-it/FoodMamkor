@@ -107,4 +107,6 @@ or `backend/app/auth.py` — update:
 - [.ai/diagrams/](../../.ai/diagrams/) — `auth-flow.md`, `db-schema.md`,
   `api-routes.md`
 
-Keep them in sync. Drifted diagrams are actively misleading.
+DATA.md is the endpoint inventory: `scripts/checks/api-docs-route-guard.sh`
+fails when a path in `backend/openapi.json` is not named there (MEH-3192).
+The diagrams are maps, not inventories — not checked; keep them current by hand.

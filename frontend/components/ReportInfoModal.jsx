@@ -18,6 +18,8 @@ import { useTranslations } from "next-intl";
 import { showToast } from "@/lib/toast";
 import api from "@/lib/api";
 import Button from "@/components/ui/Button";
+import Input from "@/components/ui/Input";
+import Textarea from "@/components/ui/Textarea";
 import Dialog from "@/components/ui/Dialog";
 import { useAccountPrefillValue } from "@/lib/use-account-prefill";
 
@@ -73,37 +75,29 @@ export default function ReportInfoModal({ open, onClose, producerSlug }) {
         </h2>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <textarea
-              autoFocus
-              data-autofocus
-              required
-              maxLength={1000}
-              rows={4}
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              placeholder={t("placeholder")}
-              className="w-full border rounded-sm px-3 py-2 text-sm text-start resize-none focus-ring"
-            />
-          </div>
+          <Textarea
+            autoFocus
+            data-autofocus
+            required
+            maxLength={1000}
+            rows={4}
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+            placeholder={t("placeholder")}
+            className="text-start resize-none"
+          />
 
-          <div>
-            <label
-              htmlFor="report-info-email"
-              className="block text-xs text-fg-muted mb-1"
-            >
-              {t("email_label")}
-            </label>
-            <input
-              id="report-info-email"
-              type="email"
-              autoComplete="email"
-              maxLength={254}
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full border rounded-sm px-3 py-2 text-sm text-start focus-ring"
-            />
-          </div>
+          <Input
+            size="sm"
+            id="report-info-email"
+            type="email"
+            label={t("email_label")}
+            autoComplete="email"
+            maxLength={254}
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="text-start"
+          />
 
           <div className="flex gap-3 pt-1">
             <Button
