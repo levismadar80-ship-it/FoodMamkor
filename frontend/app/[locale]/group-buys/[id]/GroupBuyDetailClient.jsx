@@ -32,6 +32,7 @@ import Dialog from "@/components/ui/Dialog";
 import { shareOrCopyText } from "@/lib/share-link";
 import SectionHeading from "@/components/ui/SectionHeading";
 import InlineMessage from "@/components/ui/InlineMessage";
+import { parseNaiveUtc } from "@/lib/dates";
 
 // MEH-975: schema bounds for GroupBuyCommitRequest.quantity
 // (backend/app/schemas/schemas.py:1602 — int, ge=1, le=100). Clamp the
@@ -228,7 +229,8 @@ export default function GroupBuyDetailClient({ id }) {
   const fulfilled = gb.status === "fulfilled";
   const cancelled = gb.status === "cancelled";
   const open = gb.status === "open";
-  const expired = new Date(gb.deadline) < new Date();
+  // MEH-3219 B13: deadline is naive UTC — parsed as UTC, not device-local.
+  const expired = parseNaiveUtc(gb.deadline) < new Date();
   const discount = groupBuyDiscountPct(gb.price_per_unit_regular, gb.price_per_unit_group);
   const heroSrc = gb.producer_image_url
     ? optimizeCloudinary(gb.producer_image_url, { aspectRatio: IMAGE_RATIOS.banner, width: 1200 })
@@ -305,7 +307,7 @@ export default function GroupBuyDetailClient({ id }) {
         )}
         <p className="mt-2.5 border-t border-accent/35 pt-2 flex w-full items-center gap-1 text-xs text-fg-muted">
           <Clock size={14} aria-hidden="true" />
-          {t("deadline_prefix", { date: formatEventDate(gb.deadline, locale, { day: "numeric", month: "long", year: "numeric" }) })}
+          {t("deadline_prefix", { date: formatEventDate(parseNaiveUtc(gb.deadline), locale, { day: "numeric", month: "long", year: "numeric" }) })}
         </p>
       </div>
 
