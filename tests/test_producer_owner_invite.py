@@ -2454,3 +2454,58 @@ def test_owner_invite_is_a_reserved_slug():
     from app.slug_utils import is_reserved
 
     assert is_reserved("owner-invite")
+
+
+class TestGrowerDeclarationOnAccept:
+    """MEH-3137: the invite page shows the grower box when the lookup says
+    `requires_farmer_declaration`. The server now requires and records it
+    apart from the licensing declaration, as registration does (MEH-2923)."""
+
+    def _veg_invite(self, client, db, name="ירקות"):
+        from conftest import make_category
+
+        from app.models import ProducerCategory
+
+        p = approved(db)
+        cat = make_category(db, name=name)
+        db.add(ProducerCategory(producer_id=p.id, category_id=cat.id))
+        db.commit()
+        _, token = invite(client, db, p)
+        return p, token
+
+    def test_veg_without_the_grower_flag_is_422_and_the_link_survives(self, client, db):
+        p, token = self._veg_invite(client, db)
+        r = accept_invite(client, token)
+        assert r.status_code == 422, r.text
+        assert r.json()["detail"] == "יש לאשר את הצהרת המגדל כדי להמשיך"
+        row = _row(db, p)
+        assert row.owner_invite_accepted_at is None
+        assert row.farmer_declared_at is None
+
+    def test_fruit_with_the_flag_stamps_the_grower_columns(self, client, db):
+        from app.constants import FARMER_DECLARATION_VERSION
+
+        p, token = self._veg_invite(client, db, name="פירות")
+        r = accept_invite(client, token, farmer_declaration_accepted=True)
+        assert r.status_code == 200, r.text
+        row = _row(db, p)
+        assert row.farmer_declared_at is not None
+        assert row.farmer_declaration_version == FARMER_DECLARATION_VERSION
+
+    def test_non_grower_business_stamps_nothing(self, client, db):
+        p = approved(db)
+        _, token = invite(client, db, p)
+        assert accept_invite(client, token).status_code == 200
+        assert _row(db, p).farmer_declared_at is None
+
+    def test_lookup_does_not_ask_a_business_already_declared(self, client, db):
+        """The accept route ignores the flag once the line is recorded, so the
+        lookup must not show the box either (reviewer finding, MEH-3137)."""
+        from datetime import datetime, timezone
+
+        p, token = self._veg_invite(client, db)
+        assert client.get(_lookup_url(token)).json()["requires_farmer_declaration"] is True
+        row = _row(db, p)
+        row.farmer_declared_at = datetime.now(timezone.utc)
+        db.commit()
+        assert client.get(_lookup_url(token)).json()["requires_farmer_declaration"] is False

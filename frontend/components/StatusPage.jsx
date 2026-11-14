@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 import SeedMark from "@/components/brand/SeedMark";
@@ -50,14 +51,7 @@ function Action({ action, className }) {
 const SEED_ICON = "seed";
 const SEED_MARK_PX = 76;
 
-/**
- * MEH-3079: every prop is optional (the loading frame passes only children);
- * typed so a `// @ts-check` caller is not told otherwise.
- * @param {{
- *   icon?: any, eyebrow?: any, title?: any, body?: any, bodyRole?: string,
- *   primary?: any, secondary?: any, children?: any, testid?: string,
- * }} props
- */
+/** @param {{ icon?: import("react").ElementType | "seed", eyebrow?: import("react").ReactNode, title?: import("react").ReactNode, body?: import("react").ReactNode, bodyRole?: string, primary?: { label: import("react").ReactNode, href?: string, onClick?: () => void, testid?: string }, secondary?: { label: import("react").ReactNode, href?: string, onClick?: () => void, testid?: string }, children?: import("react").ReactNode, testid?: string }} props */
 export default function StatusPage({
   icon: Icon,
   eyebrow,

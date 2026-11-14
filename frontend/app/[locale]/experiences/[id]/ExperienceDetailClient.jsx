@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 import SeedMark from "@/components/brand/SeedMark";
@@ -47,6 +48,7 @@ import { avatarInitial } from "@/components/ui/Avatar";
 const MiniMap = dynamic(() => import("@/components/MiniMap"), { ssr: false });
 
 // MEH-3043: short, for the sticky phone bar beside the sign-up button.
+/** @type {Intl.DateTimeFormatOptions} */
 const BAR_DATE_OPTIONS = { weekday: "short", day: "numeric", month: "numeric" };
 
 function longDate(iso, locale) {

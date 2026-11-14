@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Module:   order-status
  * Purpose:  Pure mapper + formatters behind the producer page's SINGLE status

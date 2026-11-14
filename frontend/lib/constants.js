@@ -1,3 +1,4 @@
+// @ts-check
 export const BRAND_NAME = "מהמקור";
 
 // MEH-476 PR Wave 6: outbound surface variant (sitemap slugs, Latin-script

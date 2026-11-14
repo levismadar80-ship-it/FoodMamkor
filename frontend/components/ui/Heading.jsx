@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Heading — typographic scale primitive (MEH-602).
  *

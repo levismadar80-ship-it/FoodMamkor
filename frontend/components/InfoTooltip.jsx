@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 import { useEffect, useId, useRef, useState } from "react";
@@ -10,6 +11,7 @@ const POSITION_CLASSES = {
   end: "start-full top-1/2 -translate-y-1/2 ms-2",
 };
 
+/** @param {{ content: import("react").ReactNode, label?: string, position?: "top"|"bottom"|"start"|"end" }} props */
 export default function InfoTooltip({
   content,
   label,

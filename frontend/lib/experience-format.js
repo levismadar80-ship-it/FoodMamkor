@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Module:   experience-format
  * Purpose:  An experience's duration as a reader says it — «שעה וחצי», not

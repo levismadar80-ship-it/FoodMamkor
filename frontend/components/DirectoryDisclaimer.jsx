@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Directory-only disclaimer — required by Israeli consumer protection law.
  *

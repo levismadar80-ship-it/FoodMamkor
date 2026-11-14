@@ -394,6 +394,10 @@ class Producer(Base):
     # (ProducerAdminOut), never public — MEH-530 privacy-first precedent.
     declared_at = Column(DateTime(timezone=True), nullable=True)
     declaration_version = Column(String(10), nullable=True)
+    # MEH-2923: the grower declaration, recorded APART from the licensing pair
+    # above. NULL = not a grower category, or a row from before the revision.
+    farmer_declared_at = Column(DateTime(timezone=True), nullable=True)
+    farmer_declaration_version = Column(String(10), nullable=True)
     # MEH-762 (ADR-022 public tier contract, Chunk 1): tier-1 "מאומת"
     # verification trail. Both nullable, Expand-only (ADR-007, no backfill).
     # `verified_at` = when the admin checked the qualifying document

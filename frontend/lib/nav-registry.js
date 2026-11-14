@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Module:   nav-registry
  * Purpose:  MEH-1703 chunk 1 — one declaration per navigation item, covering

@@ -49,6 +49,8 @@ import { resolveStoreHours } from "@/lib/hours";
 // descriptions MEH-1354, popular-6 + search, ≤3 cap MEH-1297, primary-first)
 // instead of its own flat checkbox grid. Same selection contract (category_ids).
 import CategorySelector from "@/components/CategorySelector";
+import { requiresFarmerDeclaration } from "@/lib/farmer-declaration";
+import FarmerDeclarationCheckbox from "@/components/FarmerDeclarationCheckbox";
 import CategoryRequestModal from "@/components/CategoryRequestModal";
 import Input from "@/components/ui/Input";
 import CitiesAutocomplete from "@/components/CitiesAutocomplete";
@@ -109,6 +111,7 @@ export function ViewOnPageLink({ producerId, anchor, testId }) {
 // directly — the default page export is unchanged.
 export function CategoriesCard({ profile, onSave, reportDirty = () => {} }) {
   const t = useTranslations("dashboard.producer.categories");
+  const [farmerConfirmed, setFarmerConfirmed] = useState(false);
   const [allCategories, setAllCategories] = useState([]);
   const seedIds = (profile?.categories || []).map((c) => c.id);
   const [selected, setSelected] = useState(seedIds);
@@ -159,6 +162,11 @@ export function CategoriesCard({ profile, onSave, reportDirty = () => {} }) {
     return () => reportDirty("categories", false);
   }, [dirty, reportDirty]);
 
+  // MEH-3137: ask only when she never recorded it (null). Absent = unknown
+  // (an older payload) — the server still guards, so the card does not guess.
+  const farmerAsk = profile?.farmer_declared_at === null &&
+    requiresFarmerDeclaration(allCategories.filter((c) => selected.includes(c.id)).map((c) => c.name));
+
   const toggle = (id) => {
     setSaved(false);
     setErrorMsg(null);
@@ -172,9 +180,16 @@ export function CategoriesCard({ profile, onSave, reportDirty = () => {} }) {
     setSaved(false);
     setErrorMsg(null);
     try {
-      await api.put("/producers/me", { category_ids: selected });
+      await api.put("/producers/me", {
+        category_ids: selected,
+        ...(farmerAsk && { farmer_declaration_accepted: farmerConfirmed }),
+      });
       // Keep the parent profile in sync so a re-render reseeds correctly.
-      onSave({ categories: allCategories.filter((c) => selected.includes(c.id)) });
+      onSave({
+        categories: allCategories.filter((c) => selected.includes(c.id)),
+        // MEH-3137: the server just recorded the grower line, so stop asking.
+        ...(farmerAsk && { farmer_declared_at: new Date().toISOString() }),
+      });
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
     } catch (err) {
@@ -203,6 +218,10 @@ export function CategoriesCard({ profile, onSave, reportDirty = () => {} }) {
           onChange={toggle}
           onRequestCategory={() => setShowCategoryModal(true)}
         />
+      )}
+
+      {farmerAsk && (
+        <FarmerDeclarationCheckbox checked={farmerConfirmed} onChange={setFarmerConfirmed} />
       )}
 
       <CategoryRequestModal
@@ -240,8 +259,8 @@ export function CategoriesCard({ profile, onSave, reportDirty = () => {} }) {
 // ============================================================
 
 // MEH-1352: free-plan image cap surfaced in the UI. Single source for the
-// magic number in JSX — the authoritative enforcement is the 403 in
-// backend/app/routers/upload.py (free plan, len(images) >= 3); keep in sync.
+// magic number in JSX — the authoritative enforcement is the 403 on
+// PUT /producers/me (backend/app/services/gallery_cap.py, MEH-3220); keep in sync.
 const FREE_IMAGE_CAP = 3;
 
 // MEH-2911: statuses whose gallery may not be emptied. Mirrors
@@ -287,8 +306,8 @@ export function ImagesCard({ profile, onSave, reportDirty = () => {} }) {
   // and reds if the two drift.
   const isGalleryLocked = LAST_PHOTO_GUARDED_STATUSES.has(profile?.status);
 
-  // MEH-1352: cap applies to the free plan only (mirrors the upload.py 403
-  // guard). atCap disables the picker; the backend 403 stays as safety net.
+  // MEH-1352: cap applies to the free plan only (mirrors the gallery_cap.py
+  // 403 on save, MEH-3220). atCap disables the picker; the backend 403 stays as safety net.
   const capApplies = (profile?.plan ?? "free") === "free";
   const atCap = capApplies && images.length >= FREE_IMAGE_CAP;
 

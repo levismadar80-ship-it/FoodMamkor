@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Module:   producer-route
  * Purpose:  Single source of truth for "is this the public producer detail

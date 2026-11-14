@@ -1,3 +1,5 @@
+// @ts-check
+/// <reference path="../types/browser-globals.d.ts" />
 "use client";
 
 import { useEffect, useRef } from "react";

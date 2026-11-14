@@ -1,3 +1,4 @@
+// @ts-check
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import UnsubscribeClient from "./UnsubscribeClient";
 

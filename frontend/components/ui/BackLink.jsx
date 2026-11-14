@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 // MEH-2728: a client component so a SERVER page can render it too

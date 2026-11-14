@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * BrandLoader — the site-wide "waiting for a whole page" indicator (MEH-2599).
  *
@@ -32,6 +33,7 @@ import { SEED_PATH, SEED_ROTATIONS, SEEDS_LIGHT } from "@/lib/brand-seeds";
 
 // MEH-2833: the seeds come from the seed layer's one source. Same values as
 // before (verbatim from public/logo.svg), same tuple shape — no visual change.
+/** @type {[number, string, string, number][]} */
 const SEEDS = SEED_ROTATIONS.map((deg, i) => [
   deg,
   SEEDS_LIGHT[i].fill,

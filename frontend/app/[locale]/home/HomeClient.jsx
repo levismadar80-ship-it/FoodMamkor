@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 import { useState } from "react";
@@ -62,7 +63,7 @@ export default function HomeClient({
     user,
     producers, regionFallback, categories, filters, chips,
     visibleCount, producersLoading, geoLoading,
-    recentlyViewed, showNewUserHint, locationModalOpen, setLocationModalOpen,
+    recentlyViewed, locationModalOpen, setLocationModalOpen,
     fridayMode, userCity,
     visibleProducers, hasMore, categoryCards,
     statsProducersCount, statsLoaded, showTrustCount,
@@ -248,7 +249,6 @@ export default function HomeClient({
         filters={filters}
         chips={chips}
         categories={categories}
-        showNewUserHint={showNewUserHint}
         onRemoveChip={handleRemoveChip}
         onToggleChip={handleToggleChip}
         onClearChips={handleClearChips}

@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
@@ -34,7 +35,7 @@ function GroupBuyCard({ gb }) {
   const funded = gb.status === "funded";
   const pct = groupBuyProgressPct(gb.commits_count, gb.min_participants);
   const deadline = new Date(gb.deadline);
-  const daysLeft = Math.max(0, Math.ceil((deadline - Date.now()) / 86400000));
+  const daysLeft = Math.max(0, Math.ceil((deadline.getTime() - Date.now()) / 86400000));
   const discount = groupBuyDiscountPct(gb.price_per_unit_regular, gb.price_per_unit_group);
   const remaining = Math.max(0, gb.min_participants - gb.commits_count);
   const imgSrc = gb.producer_image_url

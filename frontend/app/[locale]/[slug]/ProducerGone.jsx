@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 // MEH-2534: what the URL of a DELETED business shows. The backend answers 410

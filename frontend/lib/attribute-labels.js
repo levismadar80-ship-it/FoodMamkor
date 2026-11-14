@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * MEH-1082 [T-C]: single source of truth for shared attribute chip labels.
  *

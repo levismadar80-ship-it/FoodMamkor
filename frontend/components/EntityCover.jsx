@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Module:   EntityCover
  * Purpose:  The masthead of an entity detail page — the entity's photo, else a
@@ -26,7 +27,7 @@ const TONES = {
  * @param {string=}  props.imageUrl   Cloudinary URL; falsy → the band.
  * @param {string}   props.alt        Accessible name of the photo (the title).
  * @param {"primary"|"accent"=} props.tone
- * @param {Function} props.Icon       Category icon for the band.
+ * @param {import("react").ElementType} props.Icon       Category icon for the band.
  * @param {React.ReactNode=} props.actions  Corner actions (save heart).
  * @param {{month:string, day:string|number, weekday:string}=} props.dateTile
  * @param {string}   props.testIdPrefix  "event" → event-cover / -band / -actions / -date-tile.

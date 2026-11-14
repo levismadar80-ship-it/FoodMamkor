@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Module:   marker-glyph
  * Purpose:  Stringify a Phosphor icon component to a white, fill-weight SVG for

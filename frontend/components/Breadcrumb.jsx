@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 import { Link } from "@/i18n/navigation";

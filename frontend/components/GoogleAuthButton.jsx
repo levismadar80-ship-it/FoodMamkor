@@ -1,3 +1,5 @@
+// @ts-check
+/// <reference path="../types/browser-globals.d.ts" />
 "use client";
 
 import { useRef } from "react";
@@ -7,6 +9,7 @@ import { gsiLang, useGoogleSignIn } from "@/lib/use-google-sign-in";
 import { env } from "@/lib/env";
 import { detailToMessage } from "@/lib/errors";
 
+/** @param {{ onSuccess?: () => void, onError?: (message: string) => void, termsAccepted?: boolean }} props */
 export default function GoogleAuthButton({ onSuccess, onError, termsAccepted = false }) {
   const t = useTranslations("auth.oauth");
   const { loginWithGoogle } = useAuth();

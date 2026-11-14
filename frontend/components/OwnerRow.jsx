@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * OwnerRow — who runs an event or an experience, as one tappable row:
  * initial avatar, the line, and a forward chevron (the Eventbrite «Organized

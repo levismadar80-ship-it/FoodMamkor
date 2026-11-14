@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Module:   orderWindow
  * Purpose:  Derive the CURRENT order-acceptance status from a producer's

@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Module:   region-pages
  * Purpose:  Single owner of the category x region landing pages (MEH-2790) —
