@@ -1,4 +1,5 @@
 import hashlib
+import math
 import secrets
 from datetime import datetime, timedelta, timezone
 from typing import Any
@@ -203,6 +204,48 @@ def decode_producer_claim_token(token: str) -> UUID | None:
         return None
     claims = token_obj.claims
     if claims.get("scope") != PRODUCER_CLAIM_SCOPE:
+        return None
+    try:
+        return UUID(str(claims.get("producer_id")))
+    except (TypeError, ValueError):
+        return None
+
+
+# MEH-3122: how long after `exp` an owner can still ASK for a new link.
+PRODUCER_CLAIM_RENEW_GRACE_DAYS = 90
+
+
+def decode_lapsed_producer_claim_token(token: str) -> UUID | None:
+    """Return the producer id of a claim token that is correctly signed and
+    scoped, whether or not it has expired — up to
+    PRODUCER_CLAIM_RENEW_GRACE_DAYS past `exp`. None on anything else.
+
+    DO NOT use this to grant anything. It exists for ONE caller: the «send me
+    a new link» request (routers/producer_claim.py), which only tells the
+    admin that the owner of that draft asked. The claim and its preview keep
+    decode_producer_claim_token, where an expired link is dead.
+
+    The signature, the scope and the presence of `exp` are checked exactly as
+    there; only the "not yet expired" test is replaced by a bounded window.
+    """
+    try:
+        token_obj = jose_jwt.decode(token, _jwt_key(), algorithms=[settings.algorithm])
+    except (JoseError, ValueError):
+        return None
+    claims = token_obj.claims
+    if claims.get("scope") != PRODUCER_CLAIM_SCOPE:
+        return None
+    exp = claims.get("exp")
+    if (
+        isinstance(exp, bool)
+        or not isinstance(exp, (int, float))
+        or not math.isfinite(exp)
+    ):
+        return None
+    oldest = datetime.now(timezone.utc) - timedelta(
+        days=PRODUCER_CLAIM_RENEW_GRACE_DAYS
+    )
+    if exp < oldest.timestamp():
         return None
     try:
         return UUID(str(claims.get("producer_id")))

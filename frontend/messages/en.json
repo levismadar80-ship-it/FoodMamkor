@@ -5896,7 +5896,9 @@
     "invalid": {
       "title": "This link is not active",
       "body": "It may be more than 14 days since it was sent, or it was copied only in part. Write to us and we will send a new link.",
-      "contact": "Contact us"
+      "contact": "Contact us",
+      "new_link": "Send me a new link",
+      "new_link_sent": "Got it. We will send you a new link."
     },
     "claimed": {
       "title": "This page is already linked to an account",
