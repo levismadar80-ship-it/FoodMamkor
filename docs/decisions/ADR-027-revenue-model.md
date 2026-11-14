@@ -1,6 +1,6 @@
 # ADR-027 — Revenue model: base free forever, no transaction fees, trigger-gated premium
 
-**Status:** Accepted (Council 12/07/2026 + Sapir ✓)
+**Status:** Accepted (Council 12/07/2026 + Sapir ✓) · §2, §4 and the §3 trigger superseded by ADR-042 (14/11/2026); §1 stands
 
 ## Decision
 1. הדף הבסיסי של בית עסק — חינם לעולם (דף עריכתי, תמונות, פרטי קשר).
