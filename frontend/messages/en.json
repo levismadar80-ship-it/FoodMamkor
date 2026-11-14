@@ -6727,6 +6727,7 @@
   "pricing": {
     "link_full": "See the full price list",
     "link_short": "Price list",
+    "link_footer": "Price list",
     "page": {
       "eyebrow": "Price list for businesses",
       "h1": "Free to join. You pay only once there are bookings.",

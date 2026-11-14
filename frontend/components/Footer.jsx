@@ -15,6 +15,7 @@ import CollectionNotice from "@/components/CollectionNotice";
 import api from "@/lib/api";
 import { detailToMessage } from "@/lib/errors";
 import { BRAND_NAME } from "@/lib/constants";
+import { PRICING_PATH } from "@/lib/pricing";
 import { useExperiencesNavGate } from "@/lib/use-experiences-nav-gate";
 import { useEventsNavGate } from "@/lib/use-events-nav-gate";
 import { useHubNavGate } from "@/lib/use-hub-nav-gate";
@@ -163,6 +164,9 @@ export default function Footer() {
     { href: "/join", label: t("nav.footer.add_business") },
     { href: "/about/process", label: t("nav.footer.process") },
     { href: "/about/for-businesses", label: t("nav.footer.faq_businesses") },
+    // MEH-3219: the price list is one tap from every page, in the business
+    // group only; the reader-facing groups carry no price.
+    { href: PRICING_PATH, label: t("pricing.link_footer") },
   ];
 
   return (

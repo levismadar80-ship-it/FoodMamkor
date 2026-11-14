@@ -115,7 +115,7 @@ describe("Footer link groups collapse on mobile (MEH-2397)", () => {
     expect(navLinks.sort()).toEqual(
       // MEH-2858: «גלו עסקים» → / left the footer (the logo links home).
       // /recommend: a nav link, in «עלינו» (Sapir 13/11).
-      ["/about", "/about/for-businesses", "/about/why-local", "/about/process", "/join", "/map", "/producers", "/recommend", "/recommend#share"].sort(),
+      ["/about", "/about/for-businesses", "/about/why-local", "/about/process", "/join", "/join/pricing", "/map", "/producers", "/recommend", "/recommend#share"].sort(),
     );
   });
 });
