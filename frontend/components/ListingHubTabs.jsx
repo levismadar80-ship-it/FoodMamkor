@@ -17,13 +17,15 @@
  *           MEH-2858), app/[locale]/events/EventsClient.jsx (the one caller
  *           that passes `onSelect` and an `action`).
  * History:  MEH-2859 (creation — lifted out of EventsClient, which held this
- *           row inline for two tabs).
+ *           row inline for two tabs). MEH-3125 (two groups: the row shows only
+ *           the active tab's group).
  */
 
 import { Link } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
 
 import useTabsKeyboard from "@/hooks/useTabsKeyboard";
+import { HUB_GROUPS, hubGroupOf } from "@/lib/hub-landing";
 import { useHubNavGate } from "@/lib/use-hub-nav-gate";
 
 /**
@@ -36,12 +38,13 @@ import { useHubNavGate } from "@/lib/use-hub-nav-gate";
  * data-gated nav affordance (Header's experiences link, the Footer's links).
  */
 export const HUB_TABS = Object.freeze([
-  { value: "events", href: "/events", labelKey: "tab_events", local: true },
+  // MEH-3125: `group` = the nav entry the tab sits under (lib/hub-landing.js).
+  { value: "events", href: "/events", labelKey: "tab_events", local: true, group: HUB_GROUPS.whatsOn },
   // «חוויות», not «חוויות וסדנאות» — the short form is the TAB ROW's only;
   // the route's own H1 and metadata keep the full name.
-  { value: "experiences", href: "/experiences", labelKey: "tab_experiences_short", local: true },
-  { value: "groupBuys", href: "/group-buys", labelKey: "tab_group_buys", gate: "groupBuys" },
-  { value: "rescue", href: "/rescue", labelKey: "tab_rescue", gate: "rescue" },
+  { value: "experiences", href: "/experiences", labelKey: "tab_experiences_short", local: true, group: HUB_GROUPS.whatsOn },
+  { value: "groupBuys", href: "/group-buys", labelKey: "tab_group_buys", gate: "groupBuys", group: HUB_GROUPS.opportunities },
+  { value: "rescue", href: "/rescue", labelKey: "tab_rescue", gate: "rescue", group: HUB_GROUPS.opportunities },
 ]);
 
 /**
@@ -67,7 +70,19 @@ export default function ListingHubTabs({ active, onSelect = null, action = null 
   // — so without this the row would render on /group-buys and /rescue with
   // NOTHING selected and no tab stop at all, which takes the whole tablist out
   // of the keyboard order (the failure hooks/useTabsKeyboard.js warns about).
-  const tabs = HUB_TABS.filter((tab) => !tab.gate || gates[tab.gate] || tab.value === active);
+  //
+  // MEH-3125: only the ACTIVE tab's group — «אירועים · חוויות» under the
+  // «אירועים» nav entry, «קבוצות רכישה · סלי הפתעה» under «הזדמנויות». The
+  // other group is one nav tap away, not a tab in this row.
+  const group = hubGroupOf(active);
+  const tabs = HUB_TABS.filter(
+    (tab) => tab.group === group && (!tab.gate || gates[tab.gate] || tab.value === active),
+  );
+  // The row is drawn even with a single tab. Hiding it was tried and
+  // reverted in review (MEH-3125): the gates start false on the server and in
+  // the first client render, so a hidden row would mount AFTER paint on every
+  // visit with supply and push the list down (CLS). Only a tab is added
+  // inside an existing row, as before (MEH-3049).
 
   const isLocal = (tab) => Boolean(onSelect) && tab.local;
 

@@ -17,14 +17,14 @@ import { isProducerDetail } from "@/lib/producer-route";
 import { isRegisterRoute } from "@/lib/register-route"; // MEH-2927
 import { useCallback, useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
-import { Compass, MapTrifold, Flower, CalendarBlank, User } from "@phosphor-icons/react";
+import { Basket, Compass, MapTrifold, Flower, CalendarBlank, User } from "@phosphor-icons/react";
 import { useAuth } from "@/lib/auth-context";
 import { useTranslations } from "next-intl";
 import AccountSheet from "@/components/AccountSheet";
 import { itemsForSurface } from "@/lib/nav-registry";
 import { useEventsNavGate } from "@/lib/use-events-nav-gate";
 import { useExperiencesNavGate } from "@/lib/use-experiences-nav-gate";
-import { hubLandingHref } from "@/lib/hub-landing";
+import { HUB_GROUPS, hubLandingHref, isHubHref, isHubPath } from "@/lib/hub-landing";
 import { useHubNavGate } from "@/lib/use-hub-nav-gate";
 import Avatar from "@/components/ui/Avatar";
 
@@ -84,16 +84,29 @@ const TOP_THRESHOLD = 60; // scrollY under this → always expanded
 // any of the four date-bound types has supply it is «אירועים» → the hub;
 // otherwise it is «אודות», as before. Both ids are listed and the registry's
 // `dataGate` / `yieldsTo` pair (resolved in the component) decides which one
-// renders, so the pill never grows a fifth tab and never offers an empty hub.
-const BOTTOM_NAV_ORDER = ["home", "map", "whatsOn", "about"];
+// renders, so the pill never offers an empty hub.
+//
+// MEH-3125 (Sapir 14/11): «הזדמנויות» (group buys + rescue bags) is a fifth
+// tab of its own, present only while its group has supply. With both groups
+// in supply the pill is גלו · מפה · אירועים · הזדמנויות · חשבון — the
+// Apple / Material cap of five.
+const BOTTOM_NAV_ORDER = ["home", "map", "whatsOn", "about", "opportunities"];
 // Icons stay shell-local for the same reason: the pill's 22px Phosphor set is
 // a rendering decision, not an identity one, and the Header uses none of them.
-const BOTTOM_NAV_ICONS = { home: Compass, map: MapTrifold, whatsOn: CalendarBlank, about: Flower };
-// MEH-2965: the hub is four routes under one tab row (ListingHubTabs), so its
-// pill tab is current on all four. Segment boundary, not a bare prefix —
-// `/eventsx` is not the hub (the MEH-1971 slug lesson in Header.jsx).
-const HUB_ROUTES = ["/events", "/experiences", "/group-buys", "/rescue"];
-const onRoute = (pathname, route) => pathname === route || pathname.startsWith(`${route}/`);
+const BOTTOM_NAV_ICONS = {
+  home: Compass,
+  map: MapTrifold,
+  whatsOn: CalendarBlank,
+  about: Flower,
+  opportunities: Basket,
+};
+// MEH-3125: which hub group each gated pill tab opens (lib/hub-landing.js).
+const HUB_GROUP_BY_GATE = {
+  "listing-supply": HUB_GROUPS.whatsOn,
+  "opportunity-supply": HUB_GROUPS.opportunities,
+};
+// MEH-2965 / MEH-3125: each hub tab is current on every route of its own
+// group (isHubPath — segment boundary, so `/eventsx` is not the hub).
 
 export default function BottomNav() {
   const pathname = usePathname();
@@ -204,14 +217,23 @@ export default function BottomNav() {
   const showExperiences = useExperiencesNavGate();
   const showGroupBuys = useHubNavGate("groupBuys");
   const showRescue = useHubNavGate("rescue");
-  const hasListings = showEvents || showExperiences || showGroupBuys || showRescue;
+  // MEH-3125: one gate per group. «אירועים» (and the «אודות» it displaces)
+  // answers to events + experiences only; «הזדמנויות» to the other two.
+  const supply = { events: showEvents, experiences: showExperiences, groupBuys: showGroupBuys, rescue: showRescue };
+  const gateOpen = {
+    "listing-supply": showEvents || showExperiences,
+    "opportunity-supply": showGroupBuys || showRescue,
+  };
 
   const isActive = (href) => {
     const path = pathname || "/";
     if (href === "/") return path === "/";
     // MEH-2975: the hub tab's href is whichever hub route has supply, so the
-    // test is "is this a hub href", not "is this /events".
-    if (HUB_ROUTES.includes(href)) return HUB_ROUTES.some((route) => onRoute(path, route));
+    // test is "is this a hub href", not "is this /events". MEH-3125: and only
+    // its own group's routes — on /rescue «הזדמנויות» is current, not «אירועים».
+    for (const group of Object.values(HUB_GROUPS)) {
+      if (isHubHref(href, group)) return isHubPath(path, group);
+    }
     return path.startsWith(href);
   };
 
@@ -229,8 +251,8 @@ export default function BottomNav() {
     // item is gated on supply (`dataGate`) or gives its slot up to one that is
     // (`yieldsTo`), not what the current supply is.
     .filter(({ item, surface }) => {
-      if (item.dataGate === "listing-supply") return hasListings;
-      if (surface.yieldsTo === "listing-supply") return !hasListings;
+      if (item.dataGate in HUB_GROUP_BY_GATE) return gateOpen[item.dataGate];
+      if (surface.yieldsTo in HUB_GROUP_BY_GATE) return !gateOpen[surface.yieldsTo];
       return true;
     })
     .map((entry) => ({
@@ -238,13 +260,8 @@ export default function BottomNav() {
       // MEH-2975: the hub tab lands on the first hub route whose supply gate
       // is open, not on an empty «אירועים» when the supply is elsewhere.
       href:
-        entry.item.dataGate === "listing-supply"
-          ? hubLandingHref({
-              events: showEvents,
-              experiences: showExperiences,
-              groupBuys: showGroupBuys,
-              rescue: showRescue,
-            })
+        entry.item.dataGate in HUB_GROUP_BY_GATE
+          ? hubLandingHref(supply, HUB_GROUP_BY_GATE[entry.item.dataGate])
           : entry.item.href,
       Icon: BOTTOM_NAV_ICONS[entry.item.id],
       label: t(entry.surface.labelKey),

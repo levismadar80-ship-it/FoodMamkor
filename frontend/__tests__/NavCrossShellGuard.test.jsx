@@ -108,7 +108,7 @@ vi.mock("@phosphor-icons/react", () => {
   };
   return {
     MagnifyingGlass: stub("MagnifyingGlass"), SealCheck: stub("SealCheck"),
-    Compass: stub("Compass"), MapTrifold: stub("MapTrifold"), Flower: stub("Flower"), CalendarBlank: stub("CalendarBlank"),
+    Compass: stub("Compass"), MapTrifold: stub("MapTrifold"), Flower: stub("Flower"), CalendarBlank: stub("CalendarBlank"), Basket: stub("Basket"),
     User: stub("User"), Heart: stub("Heart"), Gear: stub("Gear"),
     Storefront: stub("Storefront"), SignIn: stub("SignIn"), SignOut: stub("SignOut"),
     ArrowUpLeft: stub("ArrowUpLeft"), Gauge: stub("Gauge"),
@@ -129,7 +129,9 @@ vi.mock("@/lib/use-experiences-nav-gate", () => ({
 // "gate open" in this suite is exactly the one ref above and no hook reaches
 // the real api.
 vi.mock("@/lib/use-events-nav-gate", () => ({ useEventsNavGate: () => false }));
-vi.mock("@/lib/use-hub-nav-gate", () => ({ useHubNavGate: () => false }));
+// MEH-3125: the rescue read clears the separate `opportunity-supply` gate.
+const rescueGateRef = { current: false };
+vi.mock("@/lib/use-hub-nav-gate", () => ({ useHubNavGate: (hub) => hub === "rescue" && rescueGateRef.current }));
 
 const STATES = {
   guest: { user: null, signedIn: false, role: null },
@@ -148,6 +150,7 @@ beforeEach(() => {
   pathnameRef.current = "/about";
   userRef.current = null;
   experiencesGateRef.current = true;
+  rescueGateRef.current = false;
 });
 
 // ───────────────────────── the classifier under test ─────────────────────────
@@ -503,5 +506,29 @@ describe("MEH-1703 chunk 4 — items declared on both platforms render on both",
     expect(desktopHrefs).not.toContain(hub.href);
     expect(mobileHrefs).not.toContain(hub.href);
     expect(mobileHrefs).not.toContain("/about");
+  });
+
+  // MEH-3125: the second gated hub link. The loop above skips data-gated
+  // items, so without this «הזדמנויות» could lose a platform unseen.
+  it("the opportunities link reaches desktop AND mobile while its gate is open, and not while closed", () => {
+    const item = NAV_ITEMS.find((i) => i.dataGate === "opportunity-supply");
+    expect(item, "no opportunity-supply item in the registry").toBeTruthy();
+
+    const closedHeader = hrefsIn(render(<Header />).container);
+    cleanup();
+    const closedPill = hrefsIn(render(<BottomNav />).container);
+    cleanup();
+    expect(closedHeader).not.toContain("/rescue");
+    expect(closedPill).not.toContain("/rescue");
+
+    rescueGateRef.current = true;
+    const desktopHrefs = hrefsIn(render(<Header />).container);
+    cleanup();
+    const mobileHrefs = hrefsIn(render(<BottomNav />).container);
+    // Only rescue has supply, so both land on /rescue, not the default href.
+    expect(desktopHrefs).toContain("/rescue");
+    expect(mobileHrefs).toContain("/rescue");
+    expect(desktopHrefs).not.toContain(item.href);
+    expect(mobileHrefs).not.toContain(item.href);
   });
 });

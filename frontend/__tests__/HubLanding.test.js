@@ -4,7 +4,7 @@
 import { describe, expect, it } from "vitest";
 
 import { HUB_TABS } from "@/components/ListingHubTabs";
-import { HUB_LANDING_ORDER, hubLandingHref, isHubHref, isHubPath } from "@/lib/hub-landing";
+import { HUB_GROUPS, HUB_LANDING_ORDER, hubGroupOf, hubLandingHref, isHubHref, isHubPath } from "@/lib/hub-landing";
 
 describe("hubLandingHref", () => {
   it.each([
@@ -34,6 +34,7 @@ describe("hubLandingHref", () => {
   it("follows the tab row: same routes, same order", () => {
     expect(HUB_LANDING_ORDER.map((entry) => entry.href)).toEqual(HUB_TABS.map((tab) => tab.href));
     expect(HUB_LANDING_ORDER.map((entry) => entry.gate)).toEqual(HUB_TABS.map((tab) => tab.value));
+    expect(HUB_LANDING_ORDER.map((entry) => entry.group)).toEqual(HUB_TABS.map((tab) => tab.group));
   });
 
   it.each(["/events", "/events/12", "/experiences", "/group-buys/7", "/rescue"])("%s is a hub path", (path) => {
@@ -48,5 +49,63 @@ describe("hubLandingHref", () => {
   it("knows a hub href from any other", () => {
     expect(["/events", "/experiences", "/group-buys", "/rescue"].map(isHubHref)).toEqual([true, true, true, true]);
     expect(["/", "/about", "/map", "/events/12"].map(isHubHref)).toEqual([false, false, false, false]);
+  });
+
+});
+
+// MEH-3125: two nav entries, each landing inside its own group only.
+describe("hub groups", () => {
+  const { whatsOn, opportunities } = HUB_GROUPS;
+
+  it.each([
+    [{ events: true, groupBuys: true }, whatsOn, "/events"],
+    [{ experiences: true, rescue: true }, whatsOn, "/experiences"],
+    // Supply only in the OTHER group: the events entry still lands on its own
+    // first route, never across into the opportunities group.
+    [{ groupBuys: true, rescue: true }, whatsOn, "/events"],
+    [{ events: true, groupBuys: true }, opportunities, "/group-buys"],
+    [{ events: true, rescue: true }, opportunities, "/rescue"],
+    [{ events: true, experiences: true }, opportunities, "/group-buys"],
+    [{}, opportunities, "/group-buys"],
+  ])("%j in %s → %s", (supply, group, href) => {
+    expect(hubLandingHref(supply, group)).toBe(href);
+  });
+
+  it.each([
+    ["/events", whatsOn, true],
+    ["/experiences/3", whatsOn, true],
+    ["/group-buys", whatsOn, false],
+    ["/rescue", whatsOn, false],
+    ["/group-buys/7", opportunities, true],
+    ["/rescue", opportunities, true],
+    ["/events", opportunities, false],
+    ["/rescued", opportunities, false],
+  ])("%s in %s → %s", (path, group, expected) => {
+    expect(isHubPath(path, group)).toBe(expected);
+  });
+
+  it("knows each group's own hrefs", () => {
+    expect(["/events", "/experiences", "/group-buys", "/rescue"].map((h) => isHubHref(h, opportunities))).toEqual([
+      false,
+      false,
+      true,
+      true,
+    ]);
+    expect(["/events", "/experiences", "/group-buys", "/rescue"].map((h) => isHubHref(h, whatsOn))).toEqual([
+      true,
+      true,
+      false,
+      false,
+    ]);
+  });
+
+  it("maps each tab value to its group", () => {
+    expect(["events", "experiences", "groupBuys", "rescue", "nope"].map(hubGroupOf)).toEqual([
+      whatsOn,
+      whatsOn,
+      opportunities,
+      opportunities,
+      null,
+    ]);
   });
 });
