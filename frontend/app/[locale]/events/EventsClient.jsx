@@ -244,6 +244,8 @@ export default function EventsPage({ initialTab = "events", titles = null }) {
       if (ticket !== loadTicket.current) return; // superseded
       setRows([]);
       setLoadError(true);
+      // MEH-3124: a failed load forgets the set — every chip, not last city's.
+      setPresent({ tab, city, cats: null });
     } finally {
       if (ticket === loadTicket.current) setLoading(false);
     }

@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, fireEvent, waitFor, cleanup } from "@testing-library/react";
 import EventsClient from "@/app/[locale]/events/EventsClient";
+import api from "@/lib/api";
 import { EVENT_CATEGORIES, EXPERIENCE_CATEGORIES } from "@/lib/event-categories";
 import { visibleCategoryChips, presentCategories } from "@/lib/event-category-gate";
 
@@ -157,7 +158,12 @@ describe("category chips show only categories with results (MEH-3124)", () => {
     await waitFor(() => expect(drawn()).toEqual(["all", MARKET, HARVEST]));
   });
 
-  it("a picked chip stays drawn after its city changes to one without it", async () => {
+  // The rule «a picked chip always stays» is pinned on the pure function below
+  // ("1 present → … a picked one stays"): in the page a picked chip outside a
+  // KNOWN set is unreachable, because a category-less load is the only thing
+  // that learns a set. What the page can reach is this: city changed with a
+  // chip picked → set unknown → every chip, the picked one included.
+  it("a city change with a chip picked → set unknown → every chip (the way back stays)", async () => {
     db = [row(MARKET, "חיפה"), row(HARVEST, "חיפה"), row(MARKET, "עכו"), row(TASTING, "עכו")];
     render(<EventsClient />);
     await settle();
@@ -167,7 +173,18 @@ describe("category chips show only categories with results (MEH-3124)", () => {
     await settle();
     await waitFor(() => expect(screen.getByTestId("events-no-results")).toBeInTheDocument());
     // the way back is still on screen: the picked chip, so it can be untapped
-    expect(drawn()).toContain(HARVEST);
+    expect(drawn()).toEqual(["all", ...EVENT_CATEGORIES.map((c) => c.key)]);
+  });
+
+  it("a failed load forgets the last city's set — every chip shows", async () => {
+    db = [row(MARKET, "חיפה"), row(HARVEST, "חיפה")];
+    render(<EventsClient />);
+    await settle();
+    await waitFor(() => expect(drawn()).toEqual(["all", MARKET, HARVEST]));
+
+    api.get.mockImplementationOnce(() => Promise.reject(new Error("timeout")));
+    fireEvent.change(screen.getByTestId("city-input"), { target: { value: "עכו" } });
+    await waitFor(() => expect(drawn()).toEqual(["all", ...EVENT_CATEGORIES.map((c) => c.key)]));
   });
 
   it("a deep link with a category (set unknown) shows every chip — fail open", async () => {
