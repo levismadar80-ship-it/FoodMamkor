@@ -8,7 +8,8 @@ MEH-460 Pkg 2: Pydantic schemas live in app.schemas.schemas per ADR-006 R1.
 """
 
 import asyncio
-from datetime import datetime, timezone
+import secrets
+from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from sqlalchemy.orm import Session
@@ -32,7 +33,9 @@ from app.rate_limit import limiter
 # move both helpers to app/auth_cookies.py.
 from app.routers.auth import _set_fingerprint_cookie, _set_refresh_cookie
 from app.schemas.schemas import PasswordChange, ProfileUpdate, UserOut
+from app.services.auth_emails import send_verify_email
 from app.services.password_policy import validate_password
+from app.utils.clock import utc_now
 
 router = APIRouter(prefix="/users/me", tags=["users"])
 
@@ -49,6 +52,8 @@ def update_profile(
 
     - Name is trimmed and must be non-empty.
     - Email uniqueness is re-checked; collisions are rejected with 409.
+    - MEH-3095: a changed email is an unproved one. The account goes back to
+      unverified and a fresh link is mailed to the NEW address.
     """
     # MEH-375: snapshot avatar BEFORE mutation so we can destroy the
     # prior Cloudinary asset AFTER db.commit succeeds. The destroy site
@@ -69,6 +74,7 @@ def update_profile(
     # a value that sanitizes away, so `name: "   "` is a 422 from the schema —
     # louder than the old handler-side check, and it can no longer be swallowed.
     sent = data.model_fields_set
+    email_changed = False
 
     if "name" in sent and data.name is not None:
         user.name = data.name
@@ -92,9 +98,26 @@ def update_profile(
                     detail="האימייל כבר בשימוש",
                 )
             user.email = new_email
+            # MEH-3095: `email_verified` vouches for the address, not for the
+            # account. Keeping it across a change let a verified account move
+            # to an address nobody proved and keep every verified-only action.
+            # A new token also kills any link still pending for the old address.
+            user.email_verified = False
+            user.email_verify_token = secrets.token_urlsafe(32)
+            user.email_verify_expires = utc_now() + timedelta(hours=24)
+            email_changed = True
 
     db.commit()
     db.refresh(user)
+
+    if email_changed and user.email_verify_token:
+        # After the commit, to the new address only (same call as resend-verify).
+        send_verify_email(
+            user.email,
+            user.name,
+            user.email_verify_token,
+            test_cause=bool(user.is_test),
+        )
 
     # MEH-375: post-commit destroy of the prior avatar when its value
     # changed, regardless of how the change happened (PATCH swap or
