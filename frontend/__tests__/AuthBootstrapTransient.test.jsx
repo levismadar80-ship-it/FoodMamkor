@@ -97,3 +97,45 @@ describe("AuthProvider bootstrap — transient /auth/me failure (MEH-2467)", () 
     expect(localStorage.getItem("token")).toBeNull();
   });
 });
+
+// MEH-3172: the same split, exposed as a flag the layouts read.
+function FlagProbe() {
+  const { loading, authUnreachable } = useAuth();
+  if (loading) return <p>loading</p>;
+  return <p data-testid="flag">{String(authUnreachable)}</p>;
+}
+
+async function flagAfter(error) {
+  localStorage.setItem("token", "jwt");
+  apiGet.mockRejectedValueOnce(error);
+  render(
+    <AuthProvider>
+      <FlagProbe />
+    </AuthProvider>,
+  );
+  return (await screen.findByTestId("flag")).textContent;
+}
+
+describe("AuthProvider — authUnreachable (MEH-3172)", () => {
+  it("Network Error with a stored token → unreachable", async () => {
+    expect(await flagAfter(axiosError(null))).toBe("true");
+  });
+
+  it("502 → unreachable", async () => {
+    expect(await flagAfter(axiosError(502))).toBe("true");
+  });
+
+  it("401 → not unreachable (a real sign-out)", async () => {
+    expect(await flagAfter(axiosError(401))).toBe("false");
+  });
+
+  it("no stored token → not unreachable", async () => {
+    render(
+      <AuthProvider>
+        <FlagProbe />
+      </AuthProvider>,
+    );
+    expect((await screen.findByTestId("flag")).textContent).toBe("false");
+    expect(apiGet).not.toHaveBeenCalled();
+  });
+});
