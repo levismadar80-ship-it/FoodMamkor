@@ -448,7 +448,7 @@ export function ImagesCard({ profile, onSave, reportDirty = () => {} }) {
           if (!e.currentTarget.contains(e.relatedTarget)) setDragOver(false);
         }}
         onDrop={atCap ? (e) => e.preventDefault() : handleDrop}
-        className={`inline-flex items-center text-sm border border-dashed rounded-md px-4 py-3 transition focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/30 ${
+        className={`inline-flex items-center text-sm border border-dashed rounded-md px-4 py-3 transition focus-within:border-primary focus-within:ring-2 focus-within:ring-primary ${
           atCap
             ? "border-border text-fg-muted cursor-not-allowed"
             : dragOver

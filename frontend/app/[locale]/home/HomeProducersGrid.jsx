@@ -33,6 +33,7 @@ import { useCatalogSnapshot } from "@/lib/use-catalog-snapshot";
 import { LOAD_MORE_CAP } from "@/lib/use-home-page";
 import Button from "@/components/ui/Button";
 import SectionHeading from "@/components/ui/SectionHeading";
+import ShowMore, { SHOW_MORE_BLOCK_CLASSES } from "@/components/ui/ShowMore";
 
 // 🔒 The axes the home row PROMOTES onto the surface; every other axis stays
 // one tap away inside the FilterSheet. CHANGING THIS LIST IS A SAPIR DECISION,
@@ -253,7 +254,7 @@ export function HomeProducersGrid({
         </SectionHeading>
         {/* MEH-2598: the active chips ride along (lib/filter-url), so the map
             opens on the same search the grid is showing. */}
-        <Link href={`/map${chipsToQuery(chips)}`} data-testid="home-map-link" className="text-primary hover:underline flex items-center gap-1 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40">
+        <Link href={`/map${chipsToQuery(chips)}`} data-testid="home-map-link" className="text-primary hover:underline flex items-center gap-1 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
           <MapPin size={14} className="text-current" />
           {t("home.producers.map_link")}
         </Link>
@@ -428,7 +429,7 @@ export function HomeProducersGrid({
               // span that the bare aria-label suppresses, so with an attribute
               // tag also active the two buttons were indistinguishable by name.
               aria-label={`${t("home.producers.clear_filter")} ${activeCategory.name}`}
-              className="inline-flex items-center gap-1 bg-green-50 text-primary ps-3 pe-2 py-1 rounded-full text-sm hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+              className="inline-flex items-center gap-1 bg-green-50 text-primary ps-3 pe-2 py-1 rounded-full text-sm hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
             >
               <span>{activeCategory.name}</span>
               <X size={12} weight="bold" aria-hidden="true" />
@@ -620,7 +621,7 @@ export function HomeProducersGrid({
               ) : (
                 <Link
                   href="/map"
-                  className="inline-flex items-center gap-2 bg-primary text-white px-6 py-3 rounded-sm hover:bg-primary-dark transition font-medium"
+                  className="inline-flex items-center gap-2 bg-primary text-white px-6 py-3 rounded-full hover:bg-primary-dark transition font-medium"
                 >
                   {t("home.producers.explore_map")}
                 </Link>
@@ -631,7 +632,7 @@ export function HomeProducersGrid({
                 <Link
                   href={filters.delivery_city ? `/recommend?city=${encodeURIComponent(filters.delivery_city)}` : "/recommend"}
                   data-testid="recommend-link-home-empty"
-                  className="inline-flex items-center gap-1 min-h-touch text-sm font-semibold text-primary underline underline-offset-4 hover:text-primary-dark rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                  className="inline-flex items-center gap-1 min-h-touch text-sm font-semibold text-primary underline underline-offset-4 hover:text-primary-dark rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                 >
                   {t("nav.footer.recommend")}
                   <ArrowLeft size={16} className="ltr:rotate-180" aria-hidden="true" />
@@ -640,41 +641,22 @@ export function HomeProducersGrid({
             </div>
           )}
           {hasMore && (
-            <div className="text-center mt-8">
+            <div className="mt-8">
               {/* MEH-1387: one expansion max — at the cap (reached by clicking
                   or restored from sessionStorage) the button becomes a link to
                   the full /producers listing, same outline-pill style. */}
               {visibleCount >= LOAD_MORE_CAP ? (
                 <Link
                   href="/producers"
-                  className="inline-block bg-surface text-primary border-2 border-primary px-8 py-3 rounded-sm hover:bg-green-50 transition font-medium"
+                  className={SHOW_MORE_BLOCK_CLASSES}
                 >
                   {t("home.producers.all_businesses")}
                 </Link>
               ) : (
-                <button
-                  onClick={onLoadMore}
-                  className="bg-surface text-primary border-2 border-primary px-8 py-3 rounded-sm hover:bg-green-50 transition font-medium"
-                >
-                  {t("home.producers.load_more")}
-                </button>
+                // MEH-3052: the shared ShowMore (block).
+                <ShowMore onClick={onLoadMore} label={t("home.producers.load_more")} />
               )}
             </div>
-          )}
-          {/* MEH-2827 PR 4: one quiet line after the list — no card, no button —
-              so the way to /recommend is not only the footer. */}
-          {producers.length > 0 && (
-            <p className="mt-8 text-center text-sm text-fg-muted" data-testid="home-recommend-line">
-              {t("recommend.title")}{" "}
-              <Link
-                href="/recommend"
-                data-testid="recommend-link-home"
-                className="inline-flex items-center gap-1 min-h-touch text-sm font-semibold text-primary underline underline-offset-4 hover:text-primary-dark rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
-              >
-                {t("nav.footer.recommend")}
-                <ArrowLeft size={16} className="ltr:rotate-180" aria-hidden="true" />
-              </Link>
-            </p>
           )}
           {/* MEH-1476: surprise-me relocated here from the hero (was
               MEH-1288/MEH-1369). Full-catalog random producer via onSurprise
@@ -695,6 +677,23 @@ export function HomeProducersGrid({
                 {t("home.hero.surprise_me")}
               </button>
             </div>
+          )}
+          {/* MEH-2827 PR 4: one quiet line after the list — no card, no button —
+              so the way to /recommend is not only the footer. Last in the
+              section, under «הפתיעו אותי» (Sapir 13/11): the two browse actions
+              stay together, the contribution ask comes after browsing. */}
+          {producers.length > 0 && (
+            <p className="mt-8 text-center text-sm text-fg-muted" data-testid="home-recommend-line">
+              {t("recommend.title")}{" "}
+              <Link
+                href="/recommend"
+                data-testid="recommend-link-home"
+                className="inline-flex items-center gap-1 min-h-touch text-sm font-semibold text-primary underline underline-offset-4 hover:text-primary-dark rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+              >
+                {t("nav.footer.recommend")}
+                <ArrowLeft size={16} className="ltr:rotate-180" aria-hidden="true" />
+              </Link>
+            </p>
           )}
         </>
       )}

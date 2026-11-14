@@ -361,7 +361,7 @@ export default function SpecialHoursEditor({ profile, onSave, reportDirty = () =
             onClick={revertChanges}
             disabled={saving}
             data-testid="special-hours-revert"
-            className="border border-border text-fg-muted px-4 py-2 rounded-full text-sm font-medium hover:border-primary hover:text-text transition disabled:opacity-60"
+            className="border border-border text-fg-muted px-4 py-2 rounded-full text-sm font-medium hover:border-primary hover:text-text transition disabled:opacity-50"
           >
             {tRange("revert_cta")}
           </button>

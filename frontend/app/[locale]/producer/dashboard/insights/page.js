@@ -220,7 +220,7 @@ function DeepAnalyticsSection({ analytics, profile }) {
             aria-pressed={period === p}
             data-testid={`insights-period-${p}`}
             onClick={() => setPeriod(p)}
-            className={`min-h-touch px-4 rounded-full text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${
+            className={`min-h-touch px-4 rounded-full text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
               period === p ? "bg-primary text-white" : "text-text hover:bg-green-50"
             }`}
           >

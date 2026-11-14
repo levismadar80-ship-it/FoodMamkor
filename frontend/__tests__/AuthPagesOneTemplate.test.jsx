@@ -40,7 +40,7 @@ vi.mock("@/i18n/navigation", () => ({
   ),
 }));
 vi.mock("next/image", () => ({ default: () => null }));
-vi.mock("@phosphor-icons/react", () => ({ Eye: () => null, EyeSlash: () => null, Leaf: () => null }));
+vi.mock("@phosphor-icons/react", () => ({ Eye: () => null, EyeSlash: () => null, Leaf: () => null, ArrowRight: () => null }));
 vi.mock("@/lib/api", () => ({ default: { post: vi.fn() } }));
 vi.mock("@/components/PasswordInput", () => ({
   default: (props) => <input aria-label="password" {...props} />,

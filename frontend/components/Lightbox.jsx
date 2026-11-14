@@ -45,7 +45,7 @@ const LIGHTBOX_MAX_WIDTH = 1920;
 const OVERLAY_CONTROL_CLS =
   "rounded-full bg-white/40 hover:bg-white/60 ring-1 ring-white/70 " +
   "flex items-center justify-center text-white transition " +
-  "focus-visible:ring-2 focus-visible:ring-white";
+  "focus-visible:ring-2 focus-visible:ring-white/70";
 
 /**
  * Lightbox — full-screen image viewer opened from ImageGallery.

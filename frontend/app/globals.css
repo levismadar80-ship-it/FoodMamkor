@@ -159,10 +159,13 @@
    distances, ratings) so digits + separators don't reorder under bidi. */
 .numeric { unicode-bidi: isolate; }
 
-/* Tokenizes the inline `ring-primary/40` idiom (= primary #2e6853 @ 40%). */
+/* The site focus ring (MEH-3060): a solid primary ring behind a white gap —
+   the same look as inline `focus-visible:ring-2 ring-primary ring-offset-2`.
+   The old 40% ring measured ~1.8:1 on cream (WCAG 1.4.11 asks 3:1) and
+   vanished on a green button. */
 .focus-ring:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 2px rgba(46, 104, 83, 0.40);
+  box-shadow: 0 0 0 2px theme("colors.surface"), 0 0 0 4px theme("colors.primary");
 }
 
 /* Ghost button: transparent bg, border/text from the `text` token on cream
@@ -414,6 +417,45 @@ body:has([data-meets-footer]) footer[data-site-footer] {
    geometry rather than trusting this comment. */
 .leaflet-tooltip {
   left: 0; /* rtl-ok: positioning origin, see the measured table above */
+}
+
+/* MEH-3066 — the business name beside its pin (lib/map-pin-labels.js).
+   Invisible until the map container carries `mehamakor-labels-on` (zoom ≥ 13);
+   a label that collides is `visibility: hidden` so it still has a box for the
+   next placement pass. `visibility` / colours only — Leaflet
+   writes `opacity` and `transform` inline on tooltips, never these
+   (frontend.md MEH-1619; probed in the PR). Qualified with .leaflet-tooltip:
+   leaflet.css loads after this file and its equal-specificity
+   `.leaflet-tooltip` rule won colour, background and padding (measured:
+   computed colour was Leaflet's dark grey on opaque white). */
+.leaflet-tooltip.mehamakor-pin-label {
+  /* visibility, not display: Leaflet places a "left" tooltip from its
+     offsetWidth, which is 0 under display:none — every label then opened
+     over its own pin (measured: label 506–599 vs its pin 510–546). */
+  visibility: hidden;
+  max-width: 9.5rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 1px 6px;
+  border: 0;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.94);
+  color: theme("colors.text"); /* token, raw-color-tokens.sh */
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.5;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.18);
+  pointer-events: none;
+}
+.leaflet-tooltip.mehamakor-pin-label::before {
+  display: none; /* no arrow — a name tag, not a callout */
+}
+.mehamakor-labels-on .leaflet-tooltip.mehamakor-pin-label {
+  visibility: visible;
+}
+.mehamakor-labels-on .leaflet-tooltip.mehamakor-pin-label.mehamakor-pin-label-hidden {
+  visibility: hidden;
 }
 
 /* MEH-30 follow-up: hide the CookieBanner while the /map bottom sheet

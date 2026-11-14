@@ -41,7 +41,7 @@ export default function EditHubCard({
       type="button"
       onClick={onClick}
       data-testid={testId}
-      className="w-full min-h-touch flex items-center justify-between gap-3 p-5 text-start bg-surface border border-border rounded-lg hover:border-primary/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 transition"
+      className="w-full min-h-touch flex items-center justify-between gap-3 p-5 text-start bg-surface border border-border rounded-lg hover:border-primary/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary transition"
     >
       <span className="min-w-0">
         <span className="block text-base font-bold text-text">

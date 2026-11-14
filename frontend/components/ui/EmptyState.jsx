@@ -98,7 +98,7 @@ export default function EmptyState({
         // out of scope here, flagged rather than changed.
         <Link
           href={unblockHref}
-          className="min-h-touch min-w-touch inline-flex items-center justify-center text-sm font-medium text-primary underline underline-offset-2 hover:text-primary-dark focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 rounded-sm transition"
+          className="min-h-touch min-w-touch inline-flex items-center justify-center text-sm font-medium text-primary underline underline-offset-2 hover:text-primary-dark focus:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-sm transition"
         >
           {unblockLabel}
         </Link>
@@ -108,14 +108,14 @@ export default function EmptyState({
           {ctaHref ? (
             <Link
               href={ctaHref}
-              className="inline-block bg-primary text-white rounded-full px-6 py-3 text-sm font-medium hover:bg-primary-dark transition focus-visible:ring-2 focus-visible:ring-primary/40"
+              className="inline-block bg-primary text-white rounded-full px-6 py-3 text-sm font-medium hover:bg-primary-dark transition focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
             >
               {ctaLabel}
             </Link>
           ) : (
             <button
               onClick={ctaOnClick}
-              className="inline-block bg-primary text-white rounded-full px-6 py-3 text-sm font-medium hover:bg-primary-dark transition focus-visible:ring-2 focus-visible:ring-primary/40"
+              className="inline-block bg-primary text-white rounded-full px-6 py-3 text-sm font-medium hover:bg-primary-dark transition focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
             >
               {ctaLabel}
             </button>
