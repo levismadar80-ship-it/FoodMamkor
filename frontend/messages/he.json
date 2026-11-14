@@ -4447,6 +4447,15 @@
       "greeting": "שלום {name}",
       "welcome_subtitle": "ברוכים הבאים לניהול העסק של <business>{name}</business>",
       "welcome_subtitle_generic": "ברוכים הבאים לניהול העסק שלכם",
+      "attention": {
+        "title": "מה מחכה לך",
+        "reviews": "{count, plural, one {ביקורת אחת בלי תגובה} other {# ביקורות בלי תגובה}}",
+        "reviews_cta": "לענות",
+        "signups": "{count, plural, one {הרשמה חדשה ל{title}} other {# הרשמות חדשות ל{title}}}",
+        "signups_cta": "לרשימה",
+        "group_buys": "{count, plural, one {קבוצת רכישה הגיעה ליעד} other {# קבוצות רכישה הגיעו ליעד}}",
+        "group_buys_cta": "לפרטים"
+      },
       "status": {
         "pending": {
           "title": "הפרופיל שלך בסקירה",

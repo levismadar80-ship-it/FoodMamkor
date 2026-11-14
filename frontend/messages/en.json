@@ -4451,6 +4451,15 @@
       "greeting": "Hi {name}",
       "welcome_subtitle": "Welcome to managing <business>{name}</business>",
       "welcome_subtitle_generic": "Welcome to managing your business",
+      "attention": {
+        "title": "Waiting for you",
+        "reviews": "{count, plural, one {One review without a reply} other {# reviews without a reply}}",
+        "reviews_cta": "Reply",
+        "signups": "{count, plural, one {One new sign-up for {title}} other {# new sign-ups for {title}}}",
+        "signups_cta": "See the list",
+        "group_buys": "{count, plural, one {A group buy reached its goal} other {# group buys reached their goal}}",
+        "group_buys_cta": "Details"
+      },
       "status": {
         "pending": {
           "title": "Your profile is under review",
