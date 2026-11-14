@@ -13,7 +13,9 @@
  * Related:  app/[locale]/contact/ContactClient.jsx (the public-form pattern
  *           this follows); components/CitySearch.jsx (MEH-1767 canonical
  *           component); backend/app/routers/business_suggestions.py.
- * History:  MEH-2633 (creation, chunk B).
+ * History:  MEH-2633 (creation, chunk B); MEH-2642 (the email field is gone:
+ *           the update opt-in shows only to a signed-in visitor, and the
+ *           server uses the account address).
  *
  * THE FIVE STATES (CLAUDE.md conditional-UI rule)
  * -----------------------------------------------
@@ -40,16 +42,18 @@ import Input from "@/components/ui/Input";
 import CitySearch from "@/components/CitySearch";
 import CollectionNotice from "@/components/CollectionNotice";
 import api from "@/lib/api";
+import { useAuth } from "@/lib/auth-context";
 import Button from "@/components/ui/Button";
 import BusinessCtaLink from "@/components/BusinessCtaLink";
 import ShareClient from "@/app/[locale]/share/ShareClient";
 import InlineMessage from "@/components/ui/InlineMessage";
-import EmailTypoHint from "@/components/EmailTypoHint";
 import { useAccountPrefill } from "@/lib/use-account-prefill";
 
 // The recommender's own fields → account field (MEH-3112). Never the
 // business fields: those describe someone else.
-const SUGGESTER_PREFILL = { suggester_name: "name", suggester_email: "email" };
+// MEH-2642: name only — the address is never typed or sent; the server
+// reads the verified account email.
+const SUGGESTER_PREFILL = { suggester_name: "name" };
 
 const EMPTY = {
   name: "",
@@ -59,7 +63,8 @@ const EMPTY = {
   website: "",
   reason: "",
   suggester_name: "",
-  suggester_email: "",
+  // MEH-2642: no suggester_email — the server takes the address from the
+  // signed-in account only, so the form no longer collects one.
   wants_update: false,
   company: "",
 };
@@ -100,6 +105,13 @@ export default function RecommendClient() {
   // sign up your store, side by side). Both strings already approved.
   const tHome = useTranslations("home.cta");
   const tJoin = useTranslations("join");
+  // MEH-2642: same context BusinessCtaLink reads in this tree (it is always
+  // under AuthProvider). null = signed out.
+  const user = useAuth().user ?? null;
+  // The server uses the account address only once it is verified, so the
+  // opt-in is offered only then — otherwise the success panel would promise
+  // an email nobody will send.
+  const canGetUpdate = Boolean(user?.email_verified);
   const [form, setForm] = useState(EMPTY);
   const refillFromAccount = useAccountPrefill(setForm, SUGGESTER_PREFILL);
   const [status, setStatus] = useState("idle");
@@ -135,8 +147,9 @@ export default function RecommendClient() {
 
     setStatus("submitting");
     try {
-      await api.post("/business-suggestions", form);
-      setThanked(form.wants_update);
+      const wantsUpdate = canGetUpdate && form.wants_update;
+      await api.post("/business-suggestions", { ...form, wants_update: wantsUpdate });
+      setThanked(wantsUpdate);
       setStatus("success");
       setForm(EMPTY);
       refillFromAccount();
@@ -300,44 +313,37 @@ export default function RecommendClient() {
                 maxLength={100}
               />
             </div>
-            <div className="mt-4">
-              {/* MEH-3123: field + typo hint are one block, so the privacy
-                  notice below still sits right after the field's block. */}
-              <div>
-              <Input
-                id="recommend-suggester-email"
-                type="email"
-                autoComplete="email"
-                label={t("field_suggester_email_label")}
-                value={form.suggester_email}
-                onChange={set("suggester_email")}
-              />
-              <EmailTypoHint fieldId="recommend-suggester-email" value={form.suggester_email} onAccept={(email) => set("suggester_email")({ target: { value: email } })} />
+            {/* MEH-2642 (Sapir 14/11, option 2): no email field. A typed
+                address was never verified, so anyone could have put a
+                stranger's address on a lead and had our mail sent there. The
+                update opt-in is offered only to a signed-in visitor, and the
+                server uses the account's address. A guest still recommends,
+                with no update. */}
+            {canGetUpdate && (
+              <div className="mt-4">
+                <label className="flex items-center gap-2 text-sm text-text">
+                  <input
+                    type="checkbox"
+                    checked={form.wants_update}
+                    onChange={(e) => setForm({ ...form, wants_update: e.target.checked })}
+                    data-testid="recommend-wants-update"
+                  />
+                  {t("wants_update_label")}
+                </label>
+                {/* Privacy Protection Law Amendment 13 §11: the notice sits AT
+                    the point of collection — now the opt-in, since that is
+                    what makes us use the account address — and states purpose
+                    + who it does not go to. Wording approved 04/11, unchanged.
+                    The link label is surface-owned (`recommend.privacy_link`):
+                    the approved text is «מדיניות הפרטיות», while the shared
+                    register-page label reads «למדיניות הפרטיות». */}
+                <CollectionNotice
+                  message={tNotice("business_suggestion")}
+                  linkLabel={t("privacy_link")}
+                  testId="recommend-collection-notice"
+                />
               </div>
-              {/* Privacy Protection Law Amendment 13 §11: the notice sits AT
-                  the point of collection — directly under the field, not only
-                  in a policy — and states purpose + who it does not go to.
-                  Sapir approved this wording 04/11. The link label is
-                  surface-owned (`recommend.privacy_link`) because the approved
-                  text is «מדיניות הפרטיות», while the shared register-page
-                  label reads «למדיניות הפרטיות»; reusing that would alter
-                  approved copy, editing it would alter the register pages. */}
-              <CollectionNotice
-                message={tNotice("business_suggestion")}
-                linkLabel={t("privacy_link")}
-                testId="recommend-collection-notice"
-              />
-            </div>
-
-            <label className="flex items-center gap-2 mt-4 text-sm text-text">
-              <input
-                type="checkbox"
-                checked={form.wants_update}
-                onChange={(e) => setForm({ ...form, wants_update: e.target.checked })}
-                data-testid="recommend-wants-update"
-              />
-              {t("wants_update_label")}
-            </label>
+            )}
 
             {/* HONEYPOT. Hidden from sighted users AND from assistive tech
                 (aria-hidden + tabIndex -1), so no human can reach it and any

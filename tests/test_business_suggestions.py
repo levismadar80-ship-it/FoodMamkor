@@ -40,6 +40,12 @@ def _payload(**overrides) -> dict:
     return body
 
 
+def _signed_in(db, email: str = "dana@example-suggester.co.il") -> dict:
+    """MEH-2642: the stored suggester address comes only from the account,
+    so a test that expects an address posts as a signed-in user with it."""
+    return auth_header(make_user(db, email=email))
+
+
 def _silence_notify(monkeypatch) -> MagicMock:
     """Stub the admin ping. Returns the mock so a test can assert ON it."""
     import app.routers.business_suggestions as mod
@@ -55,7 +61,7 @@ def _silence_notify(monkeypatch) -> MagicMock:
 class TestSubmitSuggestion:
     def test_happy_path_creates_community_lead(self, client, db, monkeypatch):
         _silence_notify(monkeypatch)
-        r = client.post(ENDPOINT, json=_payload())
+        r = client.post(ENDPOINT, json=_payload(), headers=_signed_in(db))
         assert r.status_code == 201
 
         rows = db.query(OutreachLead).all()
@@ -208,16 +214,19 @@ class TestDuplicateSuggestion:
         self, client, db, monkeypatch
     ):
         _silence_notify(monkeypatch)
-        assert client.post(ENDPOINT, json=_payload()).status_code == 201
+        assert (
+            client.post(ENDPOINT, json=_payload(), headers=_signed_in(db)).status_code
+            == 201
+        )
         r = client.post(
             ENDPOINT,
             json=_payload(
                 name="  מעדניית הזיתים  ",
                 city="חיפה",
                 reason="גם אני ממליצה",
-                suggester_email="second@example-suggester.co.il",
                 suggester_name="יעל",
             ),
+            headers=_signed_in(db, "second@example-suggester.co.il"),
         )
         assert r.status_code == 201
         # Identical body — the endpoint is not an oracle for "already queued".
@@ -287,7 +296,9 @@ class TestDuplicateSuggestion:
 
         assert (
             client.post(
-                ENDPOINT, json=_payload(suggester_email="late@example-suggester.co.il")
+                ENDPOINT,
+                json=_payload(),
+                headers=_signed_in(db, "late@example-suggester.co.il"),
             ).status_code
             == 201
         )
@@ -325,9 +336,8 @@ class TestDuplicateSuggestion:
         assert (
             client.post(
                 ENDPOINT,
-                json=_payload(
-                    suggester_name=None, suggester_email="second@example-suggester.co.il"
-                ),
+                json=_payload(suggester_name=None),
+                headers=_signed_in(db, "second@example-suggester.co.il"),
             ).status_code
             == 201
         )
@@ -345,7 +355,8 @@ class TestDuplicateSuggestion:
         client.post(ENDPOINT, json=_payload(suggester_name=None, suggester_email=None))
         client.post(
             ENDPOINT,
-            json=_payload(suggester_name="יעל", suggester_email="y@example-suggester.co.il"),
+            json=_payload(suggester_name="יעל"),
+            headers=_signed_in(db, "y@example-suggester.co.il"),
         )
         db.expire_all()
         lead = db.query(OutreachLead).one()
@@ -437,14 +448,16 @@ class TestLoggedInPrefill:
             == "member@example-suggester.co.il"
         )
 
-    def test_a_typed_email_always_wins(self, client, db, monkeypatch):
+    def test_the_account_email_wins_over_a_typed_one(self, client, db, monkeypatch):
+        """MEH-2642 INVERTS the old "a typed email always wins": a typed
+        address is unverified, so it could be a stranger's."""
         _silence_notify(monkeypatch)
         user = make_user(db, email="member@example-suggester.co.il")
         r = client.post(ENDPOINT, json=_payload(), headers=auth_header(user))
         assert r.status_code == 201
         assert (
             db.query(OutreachLead).one().suggested_by_email
-            == "dana@example-suggester.co.il"
+            == "member@example-suggester.co.il"
         )
 
     def test_no_opt_in_means_the_account_email_is_NOT_stored(
@@ -463,16 +476,13 @@ class TestLoggedInPrefill:
         assert r.status_code == 201
         assert db.query(OutreachLead).one().suggested_by_email is None
 
-    def test_a_typed_email_is_kept_even_without_opt_in(self, client, db, monkeypatch):
-        """Control: the narrowing applies ONLY to the server-side prefill. An
-        address the visitor typed themselves is their own act and is stored."""
+    def test_a_typed_email_is_not_stored_anonymously(self, client, db, monkeypatch):
+        """MEH-2642 INVERTS the old control "a typed email is kept": with no
+        account there is no address we can trust, so none is stored."""
         _silence_notify(monkeypatch)
         r = client.post(ENDPOINT, json=_payload(wants_update=False))
         assert r.status_code == 201
-        assert (
-            db.query(OutreachLead).one().suggested_by_email
-            == "dana@example-suggester.co.il"
-        )
+        assert db.query(OutreachLead).one().suggested_by_email is None
 
     def test_anonymous_submission_stores_no_email_when_none_given(
         self, client, db, monkeypatch

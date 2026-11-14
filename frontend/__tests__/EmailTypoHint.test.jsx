@@ -115,17 +115,19 @@ describe("EmailTypoHint — review findings 2 and 3", () => {
   });
 });
 
-// The six public forms named on MEH-3123 each wire the hint to their own email
+// The public forms named on MEH-3123 (five since MEH-2642 removed the
+// /recommend email field) each wire the hint to their own email
 // field. Reads the source: a form that drops the hint, or points it at another
 // field id, goes red here.
 import { readFileSync } from "node:fs";
 import path from "node:path";
 
-describe("EmailTypoHint is wired in the six public forms", () => {
+describe("EmailTypoHint is wired in the public forms with an email field", () => {
   it.each([
     ["components/RegistrationCta.jsx", '"signup-email"', "email"],
     ["app/[locale]/contact/ContactClient.jsx", '"contact-email"', "email"],
-    ["app/[locale]/recommend/RecommendClient.jsx", '"recommend-suggester-email"', "suggester_email"],
+    // RecommendClient left this list in MEH-2642: the form has no email field
+    // any more (RecommendBusiness.test.jsx asserts the field is absent).
     ["app/[locale]/register/RegisterClient.jsx", '"register-email"', "email"],
     ["app/[locale]/register/producer/RegisterProducerClient.jsx", '"producer-account-email"', "email"],
     ["components/DeliveryWaitlistForm.jsx", "{inputId}", ""],

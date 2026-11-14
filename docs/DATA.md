@@ -1528,8 +1528,11 @@ POST /business-suggestions       public — { name, city, instagram|phone|websit
                                  except where the slot is empty (an admin-typed
                                  lead), which is filled so the person can still be
                                  thanked. `source` is never rewritten.
-                                 logged-in caller: suggester_email is prefilled
-                                 from the account ONLY when the field is empty.
+                                 MEH-2642: a typed suggester_email is accepted
+                                 but IGNORED. The stored address is the signed-in
+                                 account's, only if email_verified and only with
+                                 wants_update; otherwise no address and
+                                 wants_update=false.
 ```
 
 `outreach_leads` gains five columns (revision `d7a511246b14`, no new table):
