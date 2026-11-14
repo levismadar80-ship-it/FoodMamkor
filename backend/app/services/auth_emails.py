@@ -378,6 +378,38 @@ def send_deletion_email(email: str, name: str, test_cause: bool = False) -> None
     send_email(email, "מהמקור - החשבון שלך נמחק", body, test_cause=test_cause)
 
 
+def _hint(address: str) -> str:
+    """`noa@example.com` -> `n***@example.com`: enough to recognise, not to read."""
+    local, _, domain = (address or "").partition("@")
+    return f"{local[:1]}***@{domain}" if domain else "***"
+
+
+def send_email_changed_notice(
+    old_email: str, name: str, new_email: str, test_cause: bool = False
+) -> None:
+    """MEH-3104: tell the OLD address that the account moved away from it.
+
+    Without it a takeover is silent: whoever changed the address also gets
+    every later reset link. Same shape as Google / GitHub / OWASP's email-change
+    control — the old address hears about it and is told where to turn.
+    """
+    contact_url = f"{settings.frontend_url}/contact"
+    body = (
+        f"שלום {name},\n\n"
+        f"כתובת האימייל בחשבון שלך במהמקור שונתה ל-{_hint(new_email)}.\n"
+        f"מעכשיו ההודעות מהאתר יישלחו לכתובת החדשה.\n\n"
+        f"אם השינוי נעשה על ידך, אין צורך לעשות דבר.\n"
+        f"אם לא, צרו איתנו קשר מיד ונחזיר את החשבון: {contact_url}\n\n"
+        f"בברכה,\nצוות מהמקור"
+    )
+    send_email(
+        old_email,
+        "מהמקור - כתובת האימייל בחשבון שונתה",
+        body,
+        test_cause=test_cause,
+    )
+
+
 # ---------------------------------------------------------------------------
 # MEH-2974 — owner invite for a business an admin built end to end
 # ---------------------------------------------------------------------------

@@ -135,3 +135,49 @@ class TestProviderIdMustMatch:
         db.commit()
         res = client.post("/auth/google", json={"id_token": "x"})
         assert res.status_code == 200, res.text
+
+
+NOTICE = "app.routers.users_me.send_email_changed_notice"
+
+
+class TestOldAddressIsTold:
+    """MEH-3104: the old address hears about the change, so a takeover is not silent."""
+
+    def _run(self, client, user, body):
+        with patch(SEND), patch(NOTICE) as notice:
+            res = client.patch("/users/me", json=body, headers=auth_header(user))
+        return res, notice
+
+    def test_a_real_change_mails_the_old_address(self, client, db):
+        user = make_user(db, email="old1@example.com", email_verified=True)
+        res, notice = self._run(
+            client, user, {"email": "new1@example.com", "current_password": PASSWORD}
+        )
+        assert res.status_code == 200, res.text
+        assert notice.call_count == 1
+        assert notice.call_args.args[0] == "old1@example.com"
+
+    def test_same_address_mails_nobody(self, client, db):
+        user = make_user(db, email="old2@example.com")
+        res, notice = self._run(client, user, {"email": "old2@example.com"})
+        assert res.status_code == 200, res.text
+        assert notice.call_count == 0
+
+    def test_a_refused_change_mails_nobody(self, client, db):
+        user = make_user(db, email="old3@example.com")
+        res, notice = self._run(client, user, {"email": "new3@example.com"})
+        assert res.status_code == 403, res.text
+        assert notice.call_count == 0
+
+    def test_the_notice_names_the_new_address_only_in_part(self, monkeypatch):
+        from app.services import auth_emails
+
+        sent = {}
+        monkeypatch.setattr(
+            auth_emails, "send_email", lambda to, subject, body, **kw: sent.update(to=to, body=body)
+        )
+        auth_emails.send_email_changed_notice("old@example.com", "נועה", "noa.new@example.org")
+        assert sent["to"] == "old@example.com"
+        assert "n***@example.org" in sent["body"]
+        assert "noa.new" not in sent["body"]
+        assert "/contact" in sent["body"]
