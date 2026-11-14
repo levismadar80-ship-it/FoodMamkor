@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 import {
@@ -77,21 +78,21 @@ const PLACEMENT_CLASSES = {
  *   Its own onClick, if any, still runs first.
  * @param {import("react").ReactNode} props.children — rich content.
  * @param {"top"|"bottom"} [props.placement="bottom"]
- * @param {"tooltip"|"dialog"} [props.role="tooltip"] — per content kind.
- * @param {boolean} [props.sheetOnMobile=false] — below lg, present as a fixed
+ * @param {"tooltip"|"dialog"} [props.role="tooltip"] - per content kind.
+ * @param {boolean} [props.sheetOnMobile=false] - below lg, present as a fixed
  *   bottom sheet with backdrop + focus trap (MEH-1334), portalled to
  *   document.body (MEH-2622). Desktop unchanged.
- * @param {string} [props.contentClassName] — width/extras on the ANCHORED
+ * @param {string} [props.contentClassName] - width/extras on the ANCHORED
  *   panel only (widths like w-64 would fight the sheet's inset-x-0 stretch).
- * @param {string} [props.sheetContentClassName] — layout extras for the sheet
+ * @param {string} [props.sheetContentClassName] - layout extras for the sheet
  *   presentation (no widths).
- * @param {string} [props.contentTestId] — data-testid passthrough.
- * @param {boolean} [props.overlay=false] — MEH-1592. Render the ANCHORED panel
+ * @param {string} [props.contentTestId] - data-testid passthrough.
+ * @param {boolean} [props.overlay=false] - MEH-1592. Render the ANCHORED panel
  *   in an overlay layer (portal → document.body, `position: fixed`) positioned
  *   against the viewport instead of absolutely inside the wrapper. Use when the
  *   default in-flow panel would overlap siblings or be clipped by an ancestor's
  *   `overflow-hidden`. No effect in sheet mode (the sheet is already fixed).
- * @param {import("react").RefObject<HTMLElement>} [props.avoidRef] — overlay
+ * @param {import("react").RefObject<HTMLElement>} [props.avoidRef] - overlay
  *   mode only. The panel is placed so it fully clears THIS element's box
  *   (above it, flipping below when there is no room). Defaults to the trigger,
  *   which only clears the trigger itself — pass the row/container when the

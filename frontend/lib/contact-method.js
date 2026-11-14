@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Primary contact method helpers (MEH-17). Pure functions — no React.
  *

@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * The one path to a business page.
  *

@@ -1,3 +1,4 @@
+// @ts-check
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { Envelope } from "@phosphor-icons/react/ssr";
 import { buildAlternates, buildEntityTitle, urlForLocalePath, OG_LOCALE } from "@/lib/i18n-seo";

@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Module:   organizers/[slug]/page
  * Purpose:  The public page of a markets / events organizer (kind='organizer',
@@ -47,6 +48,7 @@ async function getOrganizer(slug) {
   const res = await serverFetch(url, { next: { revalidate: 60 } });
   if (res.status === 404) return null;
   if (!res.ok) {
+    /** @type {Error & { status?: number, slug?: string }} */
     const err = new Error(
       `organizer lookup failed: ${res.status} ${res.statusText} (slug=${slug})`,
     );

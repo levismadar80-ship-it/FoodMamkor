@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 import { useState } from "react";
@@ -24,7 +25,7 @@ export const CODE_TO_KEY = {
 function daysUntil(dateStr) {
   const date = dateStr ? parseNaiveUtc(dateStr) : null;
   if (!date) return null;
-  const diff = date - new Date();
+  const diff = date.getTime() - new Date().getTime();
   return Math.ceil(diff / (1000 * 60 * 60 * 24));
 }
 
@@ -86,16 +87,20 @@ function CertModal({ src, expiryText, onClose, t }) {
 }
 
 /**
- * @param {"chips"|"quiet"} [variant="chips"] — "chips" is the legacy pill
+ * @param {object} props
+ * @param {"chips"|"quiet"} [props.variant="chips"] - "chips" is the legacy pill
  *   strip (ProfileCompletenessCard); "quiet" (MEH-1334) renders the producer
  *   header's single quiet kosher line: icon + labels joined on one row. Both
  *   variants share the MEH-1260 expiry gate + CODE_TO_KEY contract — one owner.
- * @param {{badge_code: string}[]} [certs=[]] — MEH-1672, badges whose approved
+ * @param {string[]} [props.badges] the producer's kashrut badge codes.
+ * @param {string} [props.verified_at]
+ * @param {string} [props.expires_at] - MEH-1260 expiry gate.
+ * @param {{badge_code: string}[]} [props.certs=[]] - MEH-1672, badges whose approved
  *   certificate the backend will serve. Badge codes only; the URL is built
  *   from producerId + badge_code and points at our proxy, never Cloudinary.
- * @param {string|number} [producerId] — required for the cert route; without
+ * @param {string|number} [props.producerId] - required for the cert route; without
  *   it no badge becomes tappable and the strip renders exactly as before.
- * @param {string} [className] — MEH-2592: the quiet line's own size + colour
+ * @param {string} [props.className] - MEH-2592: the quiet line's own size + colour
  *   classes, replacing the default `text-[12.5px] text-muted` (the header
  *   renders the line as an outlined chip in its tags row). REPLACES rather than
  *   appends: two Tailwind utilities of one property resolve by stylesheet

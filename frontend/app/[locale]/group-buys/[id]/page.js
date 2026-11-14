@@ -1,3 +1,4 @@
+// @ts-check
 import { isOwnerPreview } from "@/lib/owner-preview";
 import { notFound } from "next/navigation";
 import * as Sentry from "@sentry/nextjs";
@@ -50,6 +51,7 @@ async function getGroupBuy(id) {
       level: "error",
       extra: { route: ROUTE, id, status: res.status },
     });
+    /** @type {Error & { status?: number, entityId?: string }} */
     const err = new Error(
       `group-buy lookup failed: ${res.status} ${res.statusText} (id=${id})`
     );

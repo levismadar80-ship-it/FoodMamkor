@@ -1,3 +1,4 @@
+// @ts-check
 // Cloudinary URL helper — injects f_auto,q_auto so images ship as WebP/AVIF
 // with automatic quality. Safe for non-Cloudinary URLs (returned unchanged).
 //

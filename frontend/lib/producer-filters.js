@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * The home + /producers filter config, DERIVED from lib/filter-taxonomy.js.
  *
@@ -255,7 +256,7 @@ export function visibleAxisChips({
   status = "pending",
   chipState = {},
   now = null,
-  complete: completeArg,
+  complete: completeArg = null,
   fallbackCatalog = null,
   fallbackComplete = false,
 }) {

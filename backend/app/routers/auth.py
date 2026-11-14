@@ -41,6 +41,7 @@ from app.services.auth_notifications import (
     notify_producer_registered,
 )
 from app.services.user_deletion import delete_user_and_data  # MEH-2585
+from app.services import resend_verify_cap  # MEH-2906
 from app.services.verify_session import (  # MEH-3087
     set_signup_marker,
     verify_email_session,
@@ -64,6 +65,7 @@ from app.services.producer_queries import (
 from app.services.password_policy import validate_password
 from app.database import get_db
 from app.models import Category, Producer, ProducerCategory, User
+from app.services.farmer_declaration import farmer_declaration_stamp
 from app.rate_limit import email_from_body, limiter
 from app.schemas.schemas import (
     AppleAuthRequest,
@@ -510,6 +512,13 @@ async def register_producer(
             db, data.category_ids, data.producer_license_number
         )
 
+    # MEH-2923: the grower declaration is checked HERE (after the license check, so
+    # that 422 keeps its priority), not only by the client
+    # gate, and recorded on its own columns (services/farmer_declaration.py).
+    farmer_stamp = farmer_declaration_stamp(
+        db, data.category_ids, data.farmer_declaration_accepted
+    )
+
     if upgrade_path:
         # ---- UPGRADE PATH (UNCHANGED in MEH-328) -----------------------
         # Authenticated user upgrading to producer. No enumeration vector —
@@ -572,6 +581,7 @@ async def register_producer(
             # above guarantees declaration_accepted is True here.
             declared_at=datetime.now(timezone.utc),
             declaration_version=DECLARATION_VERSION,
+            **farmer_stamp,  # MEH-2923: grower declaration, its own record
             # MEH-2100: registration creates a DRAFT, not a queue entry. The
             # business is invisible to the admin review queue until the owner
             # presses "שליחה לבדיקה" (POST /producers/me/submit-for-review),
@@ -807,6 +817,7 @@ async def register_producer(
             # above guarantees declaration_accepted is True here.
             declared_at=datetime.now(timezone.utc),
             declaration_version=DECLARATION_VERSION,
+            **farmer_stamp,  # MEH-2923: grower declaration, its own record
             # MEH-2100: see the upgrade branch above — same value, same reason.
             # These two branches are the only Producer writers on this route
             # and both had to move; a fix to one alone would have left the
@@ -1584,9 +1595,11 @@ def resend_verify(
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> dict[str, Any]:
-    """Re-send verification email. Rate-limited to 3/hour per IP."""
+    """Re-send verification email. 3/hour per IP, plus 3/hour and 10/day
+    per account (MEH-2906, services/resend_verify_cap.py)."""
     if user.email_verified:
         return {"detail": "האימייל כבר מאומת"}
+    resend_verify_cap.enforce_per_account_cap(str(user.id))  # MEH-2906
     token = secrets.token_urlsafe(32)
     expires = utc_now() + timedelta(hours=24)
     user.email_verify_token = token  # type: ignore[assignment]

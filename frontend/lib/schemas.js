@@ -1,3 +1,4 @@
+// @ts-check
 import { z } from "zod";
 
 // Producer from API — lat/lng can be null in the DB (producers registered

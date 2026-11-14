@@ -62,6 +62,7 @@ from app.services.auth_notifications import (
     notify_admin_claim_link_requested,
     notify_producer_registered,
 )
+from app.services.farmer_declaration import farmer_declaration_stamp_for_existing
 from app.services.producer_risk import score_producer
 
 logger = structlog.get_logger(__name__)
@@ -312,10 +313,20 @@ def claim_producer(
         raise HTTPException(status_code=404, detail=_LINK_INVALID)
     if not _claimable(db, producer):
         raise HTTPException(status_code=409, detail=_ALREADY_CLAIMED)
+    # MEH-3137: the grower line is recorded apart, like registration (MEH-2923).
+    # Raised before any write, so a 422 leaves the link claimable.
+    farmer_stamp = farmer_declaration_stamp_for_existing(
+        db,
+        producer,
+        [c.id for c in producer.categories],
+        body.farmer_declaration_accepted,
+    )
 
     now = datetime.now(timezone.utc)
     producer.declared_at = now  # type: ignore[assignment]
     producer.declaration_version = DECLARATION_VERSION  # type: ignore[assignment]
+    for field, value in farmer_stamp.items():
+        setattr(producer, field, value)
     user.producer_id = producer.id
     user.role = "producer"  # type: ignore[assignment]
     user.is_producer = True  # type: ignore[assignment]

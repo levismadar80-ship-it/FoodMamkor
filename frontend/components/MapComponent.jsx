@@ -1,3 +1,6 @@
+// @ts-check
+/// <reference path="../types/browser-globals.d.ts" />
+/// <reference path="../types/leaflet-plugins.d.ts" />
 "use client";
 
 import { useEffect, useRef } from "react";
@@ -673,6 +676,7 @@ export default function MapComponent({
             // distance labels render live (useUserLocation subscribers re-render on
             // the dispatched event). No prior code path ever wrote user_location.
             setUserLocation(latitude, longitude);
+            /** @type {[number, number]} */
             const latlng = [latitude, longitude];
             programmaticMoveRef.current = true;
             mapInstanceRef.current.flyTo(latlng, 13, { duration: 1.2 });
@@ -750,6 +754,7 @@ export default function MapComponent({
     // listener is attached, so it can neither fire "search this area" nor
     // count as a user move.
     const savedView = readMapViewState();
+    /** @type {[number, number]} */
     const initialCenter = savedView ? [savedView.lat, savedView.lng] : [32.4, 34.95];
     const initialZoom = savedView ? savedView.zoom : 8;
     mapInstanceRef.current = L.map(containerRef.current, { zoomControl: true }).setView(

@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 import { ChatCircle } from "@phosphor-icons/react";

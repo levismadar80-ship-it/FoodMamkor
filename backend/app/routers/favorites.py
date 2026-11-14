@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session, joinedload
 from app.rate_limit import limiter
 from app.auth import get_current_user
 from app.database import get_db
-from app.models import Favorite, Producer, User
+from app.models import Favorite, FavoriteAlert, Producer, User
 from app.schemas.schemas import FavoriteOut
 from app.services.producer_listing import is_business
 from app.services.producer_queries import (
@@ -116,5 +116,13 @@ def remove_favorite(
     if not fav:
         raise HTTPException(status_code=404, detail="Not in favorites")
     db.delete(fav)
+    # MEH-3222 (B6): alerts require a favorite (alerts.py set_alert_prefs
+    # refuses without one). Unfavoriting used to leave the FavoriteAlert row,
+    # so WhatsApp/push alerts kept firing for a business she had removed.
+    # Re-favoriting starts with alerts off, as for a first favorite.
+    db.query(FavoriteAlert).filter(
+        FavoriteAlert.user_id == user.id,
+        FavoriteAlert.producer_id == producer_id,
+    ).delete(synchronize_session=False)
     db.commit()
     return {"detail": "Removed from favorites"}

@@ -1,3 +1,4 @@
+// @ts-check
 import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 

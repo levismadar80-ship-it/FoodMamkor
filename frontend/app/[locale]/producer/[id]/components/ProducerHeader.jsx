@@ -1,3 +1,4 @@
+// @ts-check
 import { Fragment, useEffect, useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
