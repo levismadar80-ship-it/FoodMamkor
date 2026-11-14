@@ -49,7 +49,7 @@ import LoginPromptModal from "./LoginPromptModal";
  * open panel instead of leaving it on pre-write values. A failed prefs GET
  * leaves the button disabled rather than assuming OFF.
  */
-const TYPES = ["notify_new_event", "notify_new_product", "notify_delivery_area", "notify_new_recipe", "notify_new_group_buy"];
+const TYPES = ["notify_new_event", "notify_new_product", "notify_delivery_area", "notify_new_recipe", "notify_new_group_buy", "notify_new_rescue"];
 
 // MEH-2562: the pill sat alone under the header and read as an orphan. On the
 // page it now matches its neighbours instead: "gallery" = the hero circle

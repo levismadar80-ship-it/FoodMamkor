@@ -6,14 +6,19 @@ Purpose:  The rescue-bags pilot API — a business publishes today's bags, a
           reserving again.
 Touches:  DB tables rescue_offers / rescue_orders / rescue_reviews /
           rescue_typical_items and `users.rescue_no_show_count` +
-          `users.rescue_block_cleared_at`. Outbound: EMAIL only, to the buyer,
+          `users.rescue_block_cleared_at`. Outbound: EMAIL to the buyer,
           queued after the commit and fail-open (services/rescue_emails.py) —
           on a reservation (MEH-2715), on the buyer's own cancel (MEH-2737),
           and when the business cancels the offer (MEH-2738).
+          Plus the follower alert on a bag for today (MEH-3117).
 Does NOT: take payment. There is none in the pilot: the buyer pays at the
           counter, no endpoint quotes a total to charge and no order row
           records money.
-          It also sends no WhatsApp and nothing to the business:
+          It sends no rescue-specific WhatsApp and nothing to the business.
+          (MEH-3117: the generic favorite alert — push + the approved
+          favorite_alert_he_v1 template — does go out to followers when a
+          bag for today is published, through alerts.fire_alerts.)
+          Not built:
             - the pickup_start digest of codes to the business. `fire_alerts`
               is the wrong mechanism (it fans out to CONSUMERS who opted in
               through FavoriteAlert columns, from inside a request, not on a
@@ -28,7 +33,8 @@ Related:  app/models/models.py (RescueOffer and siblings, the status tuples),
           app/schemas/rescue.py (every request/response shape),
           app/routers/group_buys.py:238-258 (the with_for_update pattern this
           reuses for stock, MEH-773)
-History:  MEH-2646 (creation, chunk 2/4 of the rescue-bags pilot MEH-2643)
+History:  MEH-2646 (creation, chunk 2/4 of the rescue-bags pilot MEH-2643);
+          MEH-3117 (new_rescue favorite alert on create_offer)
 """
 
 import logging
@@ -337,6 +343,7 @@ def _order_or_404(db: Session, order_id: UUID) -> RescueOrder:
 def create_offer(
     request: Request,
     body: RescueOfferCreate,
+    background_tasks: BackgroundTasks,
     current_user: User = Depends(require_verified_producer),
     db: Session = Depends(get_db),
 ):
@@ -433,7 +440,43 @@ def create_offer(
     db.add(offer)
     db.commit()
     db.refresh(offer)
+    _queue_new_rescue_alert(background_tasks, db, producer, offer)
     return offer
+
+
+def _queue_new_rescue_alert(
+    background_tasks: BackgroundTasks,
+    db: Session,
+    producer: Producer,
+    offer: RescueOffer,
+) -> None:
+    """MEH-3117: tell the people who saved this business that it has bags today.
+
+    Only for an offer dated TODAY on the Israel clock — the approved title
+    says «היום», so a bag published tonight for tomorrow sends nothing (a
+    morning-of send would need a scheduler job; not in the pilot). Fired
+    here only, after the commit: never on cancel, reservation or handover.
+    Same fan-out, channels and 24h cap as the other alert types.
+    """
+    if offer.date != israel_today():
+        return
+    from app.routers.alerts import AlertContent, fire_alerts
+
+    # Approved copy, Sapir 14/11 (MEH-3117 rows 2 and 3).
+    background_tasks.add_task(
+        fire_alerts,
+        db,
+        producer.id,
+        "new_rescue",
+        AlertContent(
+            title=f"סלי הפתעה היום ב{producer.name}",
+            body=(
+                f"{offer.qty_total} סלים, איסוף "
+                f"{israel_hhmm(offer.pickup_start)}–{israel_hhmm(offer.pickup_end)}"
+            ),
+            url="/rescue",
+        ),
+    )
 
 
 @router.get(

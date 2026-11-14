@@ -5214,6 +5214,7 @@
       "row_delivery_area": "New delivery areas",
       "row_new_recipe": "New recipes",
       "row_new_group_buy": "New group buys",
+      "row_new_rescue": "Surprise bags",
       "row_whatsapp_opt_in": "Send via WhatsApp",
       "phone_required_prompt": "To get WhatsApp updates we'll need your phone number",
       "phone_save_cta": "Save and enable",
@@ -6631,5 +6632,10 @@
       "body": "This link is no longer valid. Write to us and we will send a new one.",
       "contact": "Contact us"
     }
+  },
+  "hub_alert_hint": {
+    "rescue": "Want to know when there are bags? Save a business and turn on surprise-bag alerts.",
+    "group_buys": "Want to know when a group opens? Save a business and turn on group-buy alerts.",
+    "cta": "Browse businesses"
   }
 }
