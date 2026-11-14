@@ -230,7 +230,9 @@ export function DeliveryDayRow({ cityActive, daysActive, onSelectDay, onClearDay
   const portalOr = (node) => (panelHost ? createPortal(node, panelHost) : node);
   // In a row the chip matches the row's other controls (py-2.5); alone it
   // keeps its compact pill height.
-  const chipPadY = inRow ? "py-2.5" : "py-1";
+  // MEH-3195: in a chip row the wrapper's 1px border + 42px = the 44px of the
+  // other filter chips (a touch target); the stacked form keeps its own size.
+  const chipPadY = inRow ? "py-2.5 min-h-[42px]" : "py-1";
 
   const handleClearClick = (e) => {
     // The ✕ sits INSIDE the chip's visual pill but is its own <button> (a
