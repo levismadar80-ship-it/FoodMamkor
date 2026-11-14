@@ -156,7 +156,7 @@ export default function PasswordInput({
           required={required}
           autoComplete={autoComplete}
           dir="ltr"
-          className="w-full min-h-touch border border-border rounded-sm pr-12 pl-3 py-2.5 text-right outline-none focus-visible:ring-2 focus-visible:ring-primary transition" // rtl-ok: pr-12 reserves the dir="ltr" eye toggle (MEH-2554 — pr-11 let the 44px toggle sit on the text)
+          className="w-full min-h-touch border border-border rounded-sm bg-surface-card text-text pr-12 pl-3 py-2.5 text-right outline-none focus-visible:ring-2 focus-visible:ring-primary transition" // rtl-ok: pr-12 reserves the dir="ltr" eye toggle (MEH-2554 — pr-11 let the 44px toggle sit on the text)
         />
         <button
           type="button"
