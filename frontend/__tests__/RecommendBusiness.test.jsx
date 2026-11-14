@@ -369,3 +369,18 @@ describe("RecommendClient", () => {
     expect(api.post.mock.calls[0][1].company).toBe("Acme SEO Ltd");
   });
 });
+
+describe("MEH-3112 — signed in: only the recommender's own fields are prefilled", () => {
+  it("fills the suggester name (MEH-2642: no email field), never the business's name or phone", () => {
+    authState.user = { id: 5, name: "נועה כהן", email: "noa@example.com", phone: "052-1234567", email_verified: true };
+    try {
+      render(<RecommendClient />);
+      expect(document.getElementById("recommend-suggester-name").value).toBe("נועה כהן");
+      expect(document.getElementById("recommend-suggester-email")).toBeNull();
+      expect(document.getElementById("recommend-name").value).toBe("");
+      expect(document.getElementById("recommend-phone").value).toBe("");
+    } finally {
+      authState.user = null;
+    }
+  });
+});

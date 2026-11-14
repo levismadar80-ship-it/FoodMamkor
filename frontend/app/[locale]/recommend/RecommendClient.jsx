@@ -47,6 +47,13 @@ import Button from "@/components/ui/Button";
 import BusinessCtaLink from "@/components/BusinessCtaLink";
 import ShareClient from "@/app/[locale]/share/ShareClient";
 import InlineMessage from "@/components/ui/InlineMessage";
+import { useAccountPrefill } from "@/lib/use-account-prefill";
+
+// The recommender's own fields → account field (MEH-3112). Never the
+// business fields: those describe someone else.
+// MEH-2642: name only — the address is never typed or sent; the server
+// reads the verified account email.
+const SUGGESTER_PREFILL = { suggester_name: "name" };
 
 const EMPTY = {
   name: "",
@@ -106,6 +113,7 @@ export default function RecommendClient() {
   // an email nobody will send.
   const canGetUpdate = Boolean(user?.email_verified);
   const [form, setForm] = useState(EMPTY);
+  const refillFromAccount = useAccountPrefill(setForm, SUGGESTER_PREFILL);
   const [status, setStatus] = useState("idle");
   const [contactError, setContactError] = useState(false);
   // Captured at submit time: the success copy differs by whether an update was
@@ -144,6 +152,7 @@ export default function RecommendClient() {
       setThanked(wantsUpdate);
       setStatus("success");
       setForm(EMPTY);
+      refillFromAccount();
     } catch (err) {
       setStatus(err.response?.status === 429 ? "rate_limited" : "error");
     }
@@ -297,6 +306,7 @@ export default function RecommendClient() {
             <div className="mt-4">
               <Input
                 id="recommend-suggester-name"
+                autoComplete="name"
                 label={t("field_suggester_name_label")}
                 value={form.suggester_name}
                 onChange={set("suggester_name")}
