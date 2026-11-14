@@ -2332,6 +2332,8 @@
       "edited_after_hidden": "Edited after hidden",
       "keep_hidden": "Keep hidden",
       "ai_flagged_only": "Only flagged reviews",
+      "conflict_owner": "Not shown: the author owns this business",
+      "conflict_competitor": "Not shown: the author owns another business on the site",
       "hidden": "Hidden",
       "hide": "Hide",
       "unhide": "Unhide",

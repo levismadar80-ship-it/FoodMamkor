@@ -346,6 +346,16 @@ export default function AdminReviewsPage() {
                           {t("reviews.edited_after_hidden")}
                         </span>
                       )}
+                      {/* MEH-3258: a conflict review is left out of the public
+                          list and the rating; the admin still sees why. */}
+                      {r.conflict && (
+                        <span
+                          data-testid="review-conflict-tag"
+                          className="inline-block mb-1 me-1 px-2 py-0.5 rounded-full text-xs bg-surface border border-border text-fg-muted"
+                        >
+                          {t(r.conflict === "owner" ? "reviews.conflict_owner" : "reviews.conflict_competitor")}
+                        </span>
+                      )}
                       {r.ai_moderation_status === "FLAGGED" && (
                         <span
                           data-testid="review-ai-flag"
