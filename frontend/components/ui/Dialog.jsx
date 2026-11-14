@@ -39,6 +39,7 @@ import useDialogFocus, { useDialogEscape } from "@/hooks/useDialogFocus";
  *   className?: string,
  *   testId?: string,
  *   fallbackFocus?: () => HTMLElement | null | undefined,
+ *   closeOnBackdrop?: boolean,
  *   children?: any,
  * }} props
  */
@@ -54,6 +55,7 @@ export default function Dialog({
   className = "",
   testId,
   fallbackFocus,
+  closeOnBackdrop = true,
   children,
 }) {
   const ref = useRef(null);
@@ -79,7 +81,9 @@ export default function Dialog({
       role="presentation"
       className="fixed inset-0 z-[9000] flex items-center justify-center bg-black/40 p-4"
       onClick={(e) => {
-        if (e.target === e.currentTarget) dismiss();
+        // A dialog holding typed text passes closeOnBackdrop={false}: a stray
+        // click (or a text-selection drag ending on the scrim) must not discard it.
+        if (closeOnBackdrop && e.target === e.currentTarget) dismiss();
       }}
     >
       <Panel

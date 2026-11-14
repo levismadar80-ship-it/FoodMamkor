@@ -263,7 +263,7 @@ export default function ProducerDecisionModal({
   const handlePrimary = () => (groupOf(value) === REJECT ? onRequestConfirm() : onSubmit());
 
   return (
-    <Dialog
+    <Dialog closeOnBackdrop={false}
       labelledBy="producer-decision-title"
       size="lg"
       dismissible={!submitting}

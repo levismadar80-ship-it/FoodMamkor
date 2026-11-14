@@ -196,7 +196,7 @@ export default function AdminExperiencesPage() {
 
       {/* Feedback modal */}
       {modalEx && (
-        <Dialog
+        <Dialog closeOnBackdrop={false}
           labelledBy="experience-feedback-title"
           size="lg"
           dismissible={!busy}

@@ -195,7 +195,7 @@ export default function AdminRecipesPage() {
 
       {/* Feedback modal */}
       {modalRecipe && (
-        <Dialog
+        <Dialog closeOnBackdrop={false}
           labelledBy="recipe-feedback-title"
           size="lg"
           dismissible={!busy}

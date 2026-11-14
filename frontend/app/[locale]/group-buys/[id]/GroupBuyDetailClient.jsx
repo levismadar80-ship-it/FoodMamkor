@@ -543,11 +543,12 @@ export default function GroupBuyDetailClient({ id }) {
 
       {/* MEH-1250: destructive cancel-commitment confirm — dedicated modal
           replacing native confirm() (error-idiom unification, MEH-999
-          JUDGMENT). z-[9500] matches LoginPromptModal so it clears the sticky
-          header (z-1050) + BottomNav (z-1000) on this consumer page; the admin
-          feedback-modal idiom (z-50) is unsafe here. */}
+          JUDGMENT). MEH-3096: on the shared ui/Dialog (ordinary modal tier,
+          above the sticky header z-1050 and BottomNav z-1000). Initial
+          focus stays on the first button (MEH-2199 test); no dismiss while
+          the DELETE is in flight. */}
       {confirmCancelOpen && (
-        <Dialog labelledBy="gb-cancel-title" size="sm" onClose={() => setConfirmCancelOpen(false)}>
+        <Dialog labelledBy="gb-cancel-title" size="sm" dismissible={!cancelling} onClose={() => setConfirmCancelOpen(false)}>
             <h2
               id="gb-cancel-title"
               className="font-headline-md text-lg font-bold text-text mb-4"
@@ -563,6 +564,7 @@ export default function GroupBuyDetailClient({ id }) {
                 {cancelling ? t("cancelling") : t("cancel_cta")}
               </Button>
               <button
+                disabled={cancelling}
                 onClick={() => setConfirmCancelOpen(false)}
                 className="flex-1 bg-surface border border-border text-text py-2.5 rounded-full hover:bg-green-50 transition text-sm font-medium"
               >

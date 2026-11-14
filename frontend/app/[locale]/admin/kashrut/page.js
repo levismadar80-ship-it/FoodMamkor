@@ -330,7 +330,7 @@ export default function AdminKashrutPage() {
 
       {/* MEH-2518: approve modal — the expiry printed on the certificate. */}
       {approveModal && (
-        <Dialog
+        <Dialog closeOnBackdrop={false}
           labelledBy="kashrut-approve-title"
           dismissible={!busy}
           onClose={() => setApproveModal(null)}
@@ -370,7 +370,7 @@ export default function AdminKashrutPage() {
 
       {/* MEH-2518: revoke modal — takes an approved badge down. */}
       {revokeModal && (
-        <Dialog
+        <Dialog closeOnBackdrop={false}
           labelledBy="kashrut-revoke-title"
           dismissible={!busy}
           onClose={() => setRevokeModal(null)}
@@ -403,7 +403,7 @@ export default function AdminKashrutPage() {
 
       {/* Reject modal */}
       {rejectModal && (
-        <Dialog
+        <Dialog closeOnBackdrop={false}
           labelledBy="kashrut-reject-title"
           dismissible={!busy}
           onClose={() => setRejectModal(null)}
