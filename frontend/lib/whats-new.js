@@ -23,6 +23,8 @@
  * entry, with `items: 0`: the guard then passes and nothing is shown.
  */
 
+import { israelToday } from "@/lib/israel-date";
+
 /**
  * @typedef {{ version: string, key: string, date: string, items: number, tools?: string[] }} WhatsNewRelease
  *   version — the release tag without the «v» ("1.5.1").
@@ -47,7 +49,9 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 
 /**
  * Dashboard hrefs that are "new" at `now`: listed in `tools` of a release
- * whose date is at most NEW_TOOL_DAYS ago (and not in the future).
+ * whose date is at most NEW_TOOL_DAYS Israel days ago (and not in the future).
+ * Days are counted between Israel calendar dates (testing.md, MEH-2290): the
+ * pill appears at 00:00 Israel time on the release day.
  * @param {number} now epoch ms
  * @param {WhatsNewRelease[]} [releases]
  * @returns {Set<string>}
@@ -55,7 +59,8 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 export function newToolHrefs(now, releases = WHATS_NEW_RELEASES) {
   const out = new Set();
   for (const r of releases) {
-    const age = now - Date.parse(`${r.date}T00:00:00Z`);
+    // Both sides are UTC midnights of calendar dates → an exact day count.
+    const age = Date.parse(`${israelToday(new Date(now))}T00:00:00Z`) - Date.parse(`${r.date}T00:00:00Z`);
     if (Number.isNaN(age) || age < 0 || age > NEW_TOOL_DAYS * DAY_MS) continue;
     for (const href of r.tools ?? []) out.add(href);
   }

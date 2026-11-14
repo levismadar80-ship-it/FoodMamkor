@@ -4,15 +4,17 @@
  * Purpose:  The once-only «רגע ראשון» cards on the dashboard home (MEH-3200
  *           part 2, approved by Sapir 14/11): first review, first WhatsApp
  *           click, 100 page views, first follower.
- * Touches:  nothing — pure logic. Storage (one JSON key under FIRST_MOMENTS_KEY)
- *           is read and written in hooks/useFirstMoment.js.
+ * Touches:  nothing — pure logic. Storage (one JSON key per business,
+ *           firstMomentsKey) is read and written in hooks/useFirstMoment.js.
  * Does NOT: render (components/producer/FirstMomentCard.jsx) or fetch — the
  *           counts come from GET /producers/me/analytics, already loaded by the
  *           dashboard home.
  * Rule:     the FIRST time the dashboard sees a count, it is stored silently
  *           (no card). A card shows only when a later count crosses the
- *           threshold that the stored count was below, and each moment shows
- *           once: closing it, or opening its button, retires it for good.
+ *           threshold that the stored count was below. A due card stays until
+ *           the owner closes it or opens its button; either retires it for
+ *           good (a celebration she may not have seen yet is not spent by one
+ *           unread render).
  * History:  MEH-3200 part 2 (creation).
  */
 
@@ -29,7 +31,15 @@ export const MOMENTS = [
   { key: "first_follower", threshold: 1, href: "/producer/dashboard/insights", read: (a) => a?.follower_count },
 ];
 
-export const FIRST_MOMENTS_KEY = "mehamakor.first_moments";
+const FIRST_MOMENTS_KEY = "mehamakor.first_moments";
+
+/**
+ * Storage key for one business: counts belong to a business, not a browser.
+ * @param {string | number} producerId
+ */
+export function firstMomentsKey(producerId) {
+  return `${FIRST_MOMENTS_KEY}.${producerId}`;
+}
 
 /** @typedef {{ baseline: Record<string, number>, done: string[] }} MomentState */
 

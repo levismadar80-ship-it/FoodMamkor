@@ -102,10 +102,16 @@ export function isNewBusiness(createdAt, now) {
 
 /**
  * @param {string | null | undefined} createdAt
- * @returns {{ show: boolean, dismiss: () => void }}
+ * @returns {{ show: boolean, ready: boolean, dismiss: () => void }}
+ *   ready — `show` has been worked out for THIS createdAt. Until then the home
+ *   keeps its top slot closed, so a card never mounts and is then replaced by
+ *   the welcome card (MEH-3200 part 2 review).
  */
 export function useOwnerWelcome(createdAt) {
   const [show, setShow] = useState(false);
+  const [evaluatedFor, setEvaluatedFor] = useState(
+    /** @type {{ v: string | null | undefined } | null} */ (null),
+  );
   // Holds the dismissal for this visit even when storage is blocked.
   const closed = useRef(false);
 
@@ -117,6 +123,7 @@ export function useOwnerWelcome(createdAt) {
       // blocked storage: rely on the in-memory flag
     }
     setShow(!dismissed && isNewBusiness(createdAt, Date.now()));
+    setEvaluatedFor({ v: createdAt });
   }, [createdAt]);
 
   const dismiss = useCallback(() => {
@@ -129,5 +136,5 @@ export function useOwnerWelcome(createdAt) {
     setShow(false);
   }, []);
 
-  return { show, dismiss };
+  return { show, ready: evaluatedFor !== null && evaluatedFor.v === createdAt, dismiss };
 }

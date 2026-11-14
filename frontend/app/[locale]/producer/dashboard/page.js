@@ -335,7 +335,13 @@ export default function ProducerDashboardPage() {
 
   // MEH-3200: a hook — above the early returns.
   const welcome = useOwnerWelcome(profile?.created_at);
-  const firstMoment = useFirstMoment(analytics);
+  // Organizers get no moments; the counts are stored per business. Wait for
+  // the profile (or its error) so an organizer is known before anything is stored.
+  const momentsOff = !(profile || profileError) || (profile?.kind ?? user?.producer_kind) === "organizer";
+  const firstMoment = useFirstMoment(momentsOff ? null : analytics, user?.producer_id ?? profile?.id);
+  // Latch: if the top slot opened without analytics (fetch failed), a moment
+  // found after a retry waits for the next visit instead of swapping cards.
+  const slotOpenedWithAnalytics = useRef(/** @type {boolean | null} */ (null));
   if (authLoading || !user || user.role !== "producer") return null;
   // MEH-956: graceful state on a failed dashboard fetch (404 / non-2xx).
   // Mirrors the status-banner cards in the main return. Must precede the
@@ -428,6 +434,12 @@ export default function ProducerDashboardPage() {
   // Review #3711 F9: fall back to /auth/me while /producers/me is loading (or
   // failed), so business-only cards never flash for an organizer.
   const isOrganizer = (profile?.kind ?? user?.producer_kind) === "organizer";
+  // MEH-3200: the top slot opens once profile (created_at), the welcome
+  // decision for it, and analytics (moment counts) are all settled.
+  const slotOpen =
+    !isOrganizer && Boolean(profile || profileError) && welcome.ready && Boolean(analytics || analyticsError);
+  if (slotOpen && slotOpenedWithAnalytics.current === null) slotOpenedWithAnalytics.current = Boolean(analytics);
+  const slotMoment = slotOpenedWithAnalytics.current ? firstMoment.moment : null;
 
   return (
     <div
@@ -484,11 +496,11 @@ export default function ProducerDashboardPage() {
       {/* Wait for /producers/me (created_at) and the analytics (the moment
           counts) so no card replaces another one already on screen. One card
           in the slot: welcome → first moment (part 2) → «חדש במהמקור». */}
-      {!isOrganizer && (profile || profileError) && (analytics || analyticsError) &&
+      {slotOpen &&
         (welcome.show ? (
           <OwnerWelcomeCard onClose={welcome.dismiss} />
-        ) : firstMoment.moment ? (
-          <FirstMomentCard moment={firstMoment.moment} onClose={firstMoment.dismiss} />
+        ) : slotMoment ? (
+          <FirstMomentCard moment={slotMoment} onClose={firstMoment.dismiss} />
         ) : (
           <WhatsNewCard />
         ))}

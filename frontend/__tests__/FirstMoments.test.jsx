@@ -27,9 +27,12 @@ vi.mock("@/lib/whats-new", async (importOriginal) => {
   };
 });
 
-import { FIRST_MOMENTS_KEY, MOMENTS, retireMoment, stepMoments } from "@/lib/first-moments";
-import { newToolHrefs, NEW_TOOL_DAYS } from "@/lib/whats-new";
+import { MOMENTS, firstMomentsKey, retireMoment, stepMoments } from "@/lib/first-moments";
+import { readFileSync } from "node:fs";
+import path from "node:path";
+import { newToolHrefs, NEW_TOOL_DAYS, WHATS_NEW_RELEASES } from "@/lib/whats-new";
 import { useFirstMoment } from "@/hooks/useFirstMoment";
+import { israelToday } from "@/lib/israel-date";
 import FirstMomentCard from "@/components/producer/FirstMomentCard";
 import NewToolPill from "@/components/producer/NewToolPill";
 
@@ -41,6 +44,19 @@ const A = ({ reviews = 0, wa = 0, views = 0, followers = 0 } = {}) => ({
   follower_count: followers,
 });
 const fm = he.dashboard.producer.first_moments;
+const KEY = firstMomentsKey(7);
+
+// The table Sapir approved word for word on 14/11 — pinned here, so a typo in
+// he.json goes red instead of being read back as the expected value.
+const APPROVED = {
+  pill: "חדש",
+  dot: "יש כלי חדש",
+  close: "סגירה",
+  first_review: ["הביקורת הראשונה שלכם הגיעה", "מישהי טרחה לכתוב עליכם. תשובה קצרה מכם מראה לאחרות שאכפת לכם.", "לקריאה ולתשובה"],
+  first_whatsapp: ["הלחיצה הראשונה על וואטסאפ", "מישהי לחצה על הכפתור בעמוד שלכם כדי לכתוב לכם. כדאי לבדוק אם הגיעה הודעה.", "לכל הנתונים"],
+  views_100: ["100 צפיות בעמוד שלכם", "מאה פעמים מישהי עצרה לקרוא עליכם. שיתוף הלינק שלכם יביא עוד.", "לכל הנתונים"],
+  first_follower: ["העוקבת הראשונה שלכם", "מישהי שמרה את העסק שלכם, ועדכונים על מה שתפרסמו יגיעו אליה.", "לכל הנתונים"],
+};
 
 beforeEach(() => {
   window.localStorage.clear();
@@ -87,18 +103,19 @@ describe("lib/first-moments — stepMoments", () => {
     expect(s1.state.baseline.first_follower).toBe(1);
   });
 
-  it("every moment has its approved copy in he", () => {
-    for (const m of MOMENTS) {
-      for (const k of ["title", "body", "cta"]) expect(fm[m.key][k].trim().length).toBeGreaterThan(0);
-    }
+  it("he.json holds exactly the approved copy", () => {
+    expect(MOMENTS.map((m) => m.key)).toEqual(["first_review", "first_whatsapp", "views_100", "first_follower"]);
+    for (const m of MOMENTS) expect([fm[m.key].title, fm[m.key].body, fm[m.key].cta]).toEqual(APPROVED[m.key]);
+    expect(fm.close).toBe(APPROVED.close);
+    expect(he.dashboard.producer.new_tool).toEqual({ pill: APPROVED.pill, dot: APPROVED.dot });
   });
 });
 
 describe("useFirstMoment", () => {
   it("silent on the first visit, the card on a later crossing, gone for good after dismiss", () => {
-    const h = renderHook(({ a }) => useFirstMoment(a), { initialProps: { a: A() } });
+    const h = renderHook(({ a }) => useFirstMoment(a, 7), { initialProps: { a: A() } });
     expect(h.result.current.moment).toBeNull();
-    expect(window.localStorage.getItem(FIRST_MOMENTS_KEY)).not.toBeNull();
+    expect(window.localStorage.getItem(KEY)).not.toBeNull();
     h.rerender({ a: A({ wa: 1 }) });
     expect(h.result.current.moment?.key).toBe("first_whatsapp");
     act(() => h.result.current.dismiss());
@@ -108,15 +125,42 @@ describe("useFirstMoment", () => {
   });
 
   it("null analytics (still loading): nothing stored, nothing due", () => {
-    const h = renderHook(() => useFirstMoment(null));
+    const h = renderHook(() => useFirstMoment(null, 7));
     expect(h.result.current.moment).toBeNull();
-    expect(window.localStorage.getItem(FIRST_MOMENTS_KEY)).toBeNull();
+    expect(window.localStorage.getItem(KEY)).toBeNull();
+  });
+
+  it("no business id: nothing stored, nothing due", () => {
+    const h = renderHook(({ a }) => useFirstMoment(a, undefined), { initialProps: { a: A() } });
+    h.rerender({ a: A({ reviews: 1 }) });
+    expect(h.result.current.moment).toBeNull();
+    expect(Object.keys(window.localStorage)).toEqual([]);
+  });
+
+  it("per business: A's state never decides B's first visit", () => {
+    // A saw 3 reviews (done) and 0 followers.
+    renderHook(() => useFirstMoment(A({ reviews: 3 }), "A"));
+    // B: first visit with 5 followers → silent; then 1 review → B's own card.
+    const b = renderHook(({ a }) => useFirstMoment(a, "B"), { initialProps: { a: A({ followers: 5 }) } });
+    expect(b.result.current.moment).toBeNull();
+    b.rerender({ a: A({ followers: 5, reviews: 1 }) });
+    expect(b.result.current.moment?.key).toBe("first_review");
+  });
+
+  it("dismiss with corrupt storage keeps the other baselines", () => {
+    const h = renderHook(({ a }) => useFirstMoment(a, 7), { initialProps: { a: A() } });
+    h.rerender({ a: A({ reviews: 1 }) });
+    window.localStorage.setItem(KEY, "{not json");
+    act(() => h.result.current.dismiss());
+    const stored = JSON.parse(window.localStorage.getItem(KEY));
+    expect(stored.done).toEqual(["first_review"]);
+    expect(stored.baseline).toEqual({ first_review: 0, first_whatsapp: 0, views_100: 0, first_follower: 0 });
   });
 
   it("storage that throws: no card, no error", () => {
     vi.spyOn(Storage.prototype, "getItem").mockImplementation(() => { throw new Error("blocked"); });
     vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => { throw new Error("blocked"); });
-    const h = renderHook(({ a }) => useFirstMoment(a), { initialProps: { a: A() } });
+    const h = renderHook(({ a }) => useFirstMoment(a, 7), { initialProps: { a: A() } });
     h.rerender({ a: A({ reviews: 1 }) });
     expect(h.result.current.moment).toBeNull();
   });
@@ -148,6 +192,28 @@ describe("new tools («חדש» pill)", () => {
     expect(newToolHrefs(day0, [rel("2026-11-15")]).size).toBe(0);
   });
 
+  it("1 tool: new on its release day, gone after the window", () => {
+    const one = [rel("2026-11-15", ["/a"])];
+    expect([...newToolHrefs(day0, one)]).toEqual(["/a"]);
+    expect(newToolHrefs(day0 + (NEW_TOOL_DAYS + 1) * DAY, one).size).toBe(0);
+  });
+
+  it("days are Israel days: 00:30 Israel on the release day is already day 0", () => {
+    // 2026-11-14 22:30 UTC = 2026-11-15 00:30 Israel (UTC+2 in November).
+    const justAfterMidnight = Date.parse("2026-11-14T22:30:00Z");
+    expect(newToolHrefs(justAfterMidnight, [rel("2026-11-15", ["/a"])]).has("/a")).toBe(true);
+    // …and 23:30 Israel on day 14 is still inside, 00:30 on day 15 is out.
+    expect(newToolHrefs(Date.parse("2026-11-29T21:30:00Z"), [rel("2026-11-15", ["/a"])]).has("/a")).toBe(true);
+    expect(newToolHrefs(Date.parse("2026-11-29T22:30:00Z"), [rel("2026-11-15", ["/a"])]).size).toBe(0);
+  });
+
+  it("every `tools` href in the real releases has a «חדש» pill on a «כלים» tile", () => {
+    const page = readFileSync(path.resolve(__dirname, "../app/[locale]/producer/dashboard/tools/page.js"), "utf8");
+    const pilled = new Set([...page.matchAll(/<NewToolPill href="([^"]+)"/g)].map((m) => m[1]));
+    expect(pilled.size).toBeGreaterThan(0);
+    for (const r of WHATS_NEW_RELEASES) for (const href of r.tools ?? []) expect(pilled).toContain(href);
+  });
+
   it("1 and many tools: new from day 0 through day 14, not on day 15 or before release", () => {
     const list = [rel("2026-11-15", ["/a", "/b"]), rel("2026-10-01", ["/old"])];
     expect([...newToolHrefs(day0, list)]).toEqual(["/a", "/b"]);
@@ -157,7 +223,7 @@ describe("new tools («חדש» pill)", () => {
   });
 
   it("the pill shows on a new tool's tile only", () => {
-    const today = new Date().toISOString().slice(0, 10);
+    const today = israelToday();
     toolsMock.list = [rel(today, ["/producer/dashboard/rescue"])];
     wrap(
       <>
