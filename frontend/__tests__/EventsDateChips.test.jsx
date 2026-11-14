@@ -28,13 +28,15 @@ vi.mock("next-intl", () => ({
   useTranslations: (ns) => (k) => (ns ? `${ns}.${k}` : k),
   useLocale: () => "he",
 }));
-const row = (id, event_date) => ({
+// Two categories, so the category chips are drawn (MEH-3124 hides them when
+// only one category has rows).
+const row = (id, event_date, category = "שוק") => ({
   id, title: `event ${id}`, event_date, event_time: "10:00", city: "חיפה",
-  category: "שוק", price: 0, producer_name: "בית עסק", description: "",
+  category, price: 0, producer_name: "בית עסק", description: "",
 });
 const ROWS = [
   row("today", "2026-11-18"), row("tomorrow", "2026-11-19"), row("fri", "2026-11-20"),
-  row("sat", "2026-11-21"), row("next-sun", "2026-11-22"), row("next-fri", "2026-11-27"),
+  row("sat", "2026-11-21"), row("next-sun", "2026-11-22"), row("next-fri", "2026-11-27", "קטיף"),
 ];
 vi.mock("@/lib/api", () => ({ default: { get: vi.fn() } }));
 vi.mock("@/components/SaveButton", () => ({ default: () => null }));
