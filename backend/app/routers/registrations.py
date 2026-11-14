@@ -123,7 +123,7 @@ def _time_text(t: time | None) -> str:
 
 def _experience_when(ex: Experience) -> str:
     if ex.is_recurring:
-        schedule = (ex.recurring_schedule or "").strip()  # type: ignore[union-attr]
+        schedule = (ex.recurring_schedule or "").strip()
         return f"מתקיימת באופן קבוע: {schedule}" if schedule else "מתקיימת באופן קבוע"
     return _date_text(ex.event_date)  # type: ignore[arg-type]
 
