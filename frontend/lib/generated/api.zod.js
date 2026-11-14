@@ -7222,4 +7222,4 @@ export const WebhookReceiveWebhookWhatsappPostResponse = /*#__PURE__*/ zod.unkno
  * logging in and can only opt out its own business. Idempotent.
  * @summary Unsubscribe Weekly Summary
  */
-export const UnsubscribeWeeklySummaryWeeklySummaryUnsubscribePostResponse = /*#__PURE__*/ zod.unknown()
+export const UnsubscribeWeeklySummaryWeeklySummaryUnsubscribePostResponse = /*#__PURE__*/ zod.record(/*#__PURE__*/ zod.string(), /*#__PURE__*/ zod.string())

@@ -27081,7 +27081,13 @@
           "200": {
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "title": "Response Unsubscribe Weekly Summary Weekly Summary Unsubscribe Post",
+                  "type": "object"
+                }
               }
             },
             "description": "Successful Response"
