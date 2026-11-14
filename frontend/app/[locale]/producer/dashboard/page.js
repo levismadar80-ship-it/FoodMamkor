@@ -15,6 +15,7 @@ import { showToast } from "@/lib/toast";
 import { getUpcomingHoliday } from "@/lib/holidays";
 import HolidayIcon from "@/components/HolidayIcon";
 import ProfileCompletenessCard from "@/components/ProfileCompletenessCard";
+import OwnerAttentionCard from "@/components/producer/OwnerAttentionCard";
 import DraftSubmitBanner from "@/components/producer/DraftSubmitBanner";
 import ChangesRequestedBanner from "./ChangesRequestedBanner";
 import RejectedBanner from "./RejectedBanner";
@@ -466,6 +467,10 @@ export default function ProducerDashboardPage() {
           {t("nav.view_page")}
         </LocaleLink>
       )}
+
+      {/* MEH-3108: «מה מחכה לך» — what is waiting for the owner, right
+          under the greeting. Renders nothing when nothing is waiting. */}
+      <OwnerAttentionCard attention={data?.attention} />
 
       {/* MEH-1025 Chunk B: admin completion-request banner. Renders only when
           requested_changes is set; the CTA routes to the edit tab. */}
