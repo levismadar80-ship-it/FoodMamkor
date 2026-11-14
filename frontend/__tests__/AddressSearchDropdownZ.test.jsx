@@ -20,6 +20,7 @@ import { render, screen, fireEvent } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
 import he from "../messages/he.json";
 import AddressSearch from "@/components/AddressSearch";
+import tailwindConfig from "../tailwind.config.js";
 import { autocompleteAddresses, resolveSuggestion } from "@/lib/places";
 
 vi.mock("@/lib/places", () => ({
@@ -29,6 +30,17 @@ vi.mock("@/lib/places", () => ({
 }));
 
 const ROOT = path.resolve(__dirname, "..");
+
+/**
+ * MEH-3169: the scale is named tokens (`z-autocomplete`, `var(--z-map-controls)`)
+ * defined once in tailwind.config.js. Resolve a name to its number through that
+ * one object, so the bounds below still compare the values that render.
+ */
+const Z = tailwindConfig.theme.extend.zIndex;
+function zOfName(name, where) {
+  if (!(name in Z)) throw new Error(`${where}: "${name}" is not a token in tailwind.config.js zIndex`);
+  return Number(Z[name]);
+}
 
 /**
  * Highest z-index Leaflet can put on screen inside one of our maps.
@@ -42,7 +54,8 @@ const ROOT = path.resolve(__dirname, "..");
  */
 function leafletCeilingFromSource() {
   const css = fs.readFileSync(path.join(ROOT, "app/globals.css"), "utf8");
-  const zs = [...css.matchAll(/z-index:\s*(\d+)\s*!important/g)].map((m) => Number(m[1]));
+  const zs = [...css.matchAll(/z-index:\s*(?:(\d+)|var\(--z-([a-z0-9-]+)\))\s*!important/g)]
+    .map((m) => (m[1] !== undefined ? Number(m[1]) : zOfName(m[2], "globals.css")));
   if (zs.length === 0) throw new Error("globals.css: no forced Leaflet z-index found");
   return Math.max(...zs);
 }
@@ -50,13 +63,15 @@ function leafletCeilingFromSource() {
 /** The header's own token, read from source so this test tracks the real value. */
 function headerZFromSource() {
   const src = fs.readFileSync(path.join(ROOT, "components/Header.jsx"), "utf8");
-  const m = src.match(/sticky top-0 z-\[(\d+)\]/);
+  const m = src.match(/sticky top-0 z-(?:\[(\d+)\]|([a-z][a-z0-9-]*))/);
   if (!m) throw new Error("Header.jsx: could not find the sticky header z token");
-  return Number(m[1]);
+  return m[1] !== undefined ? Number(m[1]) : zOfName(m[2], "Header.jsx");
 }
 
 /** The listbox's z token, read off the element the component actually renders. */
 function listboxZ(el) {
+  const named = el.className.split(/\s+/).find((c) => /^z-[a-z]/.test(c) && c.slice(2) in Z);
+  if (named) return zOfName(named.slice(2), "listbox");
   const m = el.className.match(/(?:^|\s)z-\[(\d+)\]/);
   if (!m) {
     const plain = el.className.match(/(?:^|\s)z-(\d+)(?:\s|$)/);
