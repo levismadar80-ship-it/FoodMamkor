@@ -903,6 +903,14 @@ POST   /auth/owner-invite/email-code               public — 5/hour. v3. Body {
                                                      endpoint takes an arbitrary address from whoever holds the link, so a different answer would be an account-existence oracle.
                                                      What differs is invisible: a taken address is not mailed and no code is stored, so the acceptance it would lead to dies at the
                                                      409 it was always going to die at. An invalid link still 404s — that is a fact about the LINK, which the caller already holds.
+POST   /auth/owner-invite/email-code-existing      signed in + verified email (require_verified_email) — 5/hour. MEH-3256 (grill retro D8). Body {token}.
+                                                     Mails a code to the SIGNED-IN account's own address (no address input, so no oracle), records it on owner_invite_email.
+                                                     403 for an admin / super-admin account, 409 for an account that already has a business (producer_id or is_producer).
+POST   /auth/owner-invite/accept-existing          signed in + verified email — 10/15 min. MEH-3256. Body {token, code, terms_accepted, declaration_accepted}.
+                                                     Same refusals, then the code (422, one attempt), then the user row is locked FOR UPDATE and the refusals are
+                                                     re-read on it, then _has_owner (409), then the SAME conditional UPDATE as /accept (`_claim_invite`, one owner).
+                                                     The account becomes the owner (role="producer", producer_id, is_producer, terms stamp), token_version += 1 so every
+                                                     older (consumer) session dies, and a fresh session is issued like login. No users row is created, no password touched.
 POST   /auth/owner-invite/accept                   public — 10/15 min. Body {token, email, code, password, terms_accepted, declaration_accepted}; both consents required (422),
                                                      full password policy (422). v3: the address must equal owner_invite_email and the code must verify against
                                                      owner_invite_code_hash (compare_digest) inside its 10-minute window and under 5 attempts. A wrong code or a mismatched

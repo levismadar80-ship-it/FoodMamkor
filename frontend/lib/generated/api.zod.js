@@ -2956,6 +2956,17 @@ export const AcceptOwnerInviteAuthOwnerInviteAcceptPostResponse = /*#__PURE__*/ 
 
 
 /**
+ * @summary Accept Owner Invite Existing
+ */
+export const acceptOwnerInviteExistingAuthOwnerInviteAcceptExistingPostResponseTokenTypeDefault = `bearer`;
+
+export const AcceptOwnerInviteExistingAuthOwnerInviteAcceptExistingPostResponse = /*#__PURE__*/ zod.object({
+  "access_token": /*#__PURE__*/ zod.string(),
+  "token_type": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), acceptOwnerInviteExistingAuthOwnerInviteAcceptExistingPostResponseTokenTypeDefault)
+})
+
+
+/**
  * Send a verification code to the address she typed.
  *
  * THE RESPONSE IS THE SAME WHATEVER HAPPENS — same status, same bytes —
@@ -2974,6 +2985,14 @@ export const AcceptOwnerInviteAuthOwnerInviteAcceptPostResponse = /*#__PURE__*/ 
  * @summary Send Owner Invite Email Code
  */
 export const SendOwnerInviteEmailCodeAuthOwnerInviteEmailCodePostResponse = /*#__PURE__*/ zod.unknown()
+
+
+/**
+ * Mail a code to the signed-in account's own address. The address is
+ * not an input, so there is no existence oracle to keep closed here.
+ * @summary Send Owner Invite Code Existing
+ */
+export const SendOwnerInviteCodeExistingAuthOwnerInviteEmailCodeExistingPostResponse = /*#__PURE__*/ zod.unknown()
 
 
 /**
