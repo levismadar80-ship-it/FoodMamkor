@@ -1,7 +1,7 @@
 """Hard-delete a user and everything that belongs to her.
 
 One implementation for both doors (MEH-2585): the self-service
-``DELETE /auth/me`` (auth.delete_account) and the admin action
+``POST /auth/me/delete`` (auth.delete_account) and the admin action
 ``DELETE /admin/users/{id}`` (admin_extra.admin_delete_user). Before this
 module the logic lived inline in auth.delete_account. It moved here with the same
 steps in the same order (two helpers split out to satisfy ruff's complexity

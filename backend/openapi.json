@@ -19562,7 +19562,7 @@
     },
     "/admin/users/{user_id}": {
       "delete": {
-        "description": "MEH-2585: hard-delete a user and her data — same cascade as the\nself-service DELETE /auth/me (services/user_deletion.py), minus the\nconfirmation email (an admin removal, often of a test account).\n\nAdmins are refused: demote first, so removing an admin is always two\ndeliberate steps and the protected super-admin can never be deleted.",
+        "description": "MEH-2585: hard-delete a user and her data — same cascade as the\nself-service POST /auth/me/delete (services/user_deletion.py), minus the\nconfirmation email (an admin removal, often of a test account).\n\nAdmins are refused: demote first, so removing an admin is always two\ndeliberate steps and the protected super-admin can never be deleted.",
         "operationId": "admin_delete_user_admin_users__user_id__delete",
         "parameters": [
           {

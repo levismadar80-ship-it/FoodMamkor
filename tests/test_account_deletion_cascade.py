@@ -1,4 +1,4 @@
-"""MEH-249 — DELETE /auth/me must cascade a Producer row too.
+"""MEH-249 — POST /auth/me/delete must cascade a Producer row too.
 
 Before MEH-249, deleting a producer-user cleaned up HomeProducts,
 Favorites, and Reports but left the Producer row in the public
@@ -6,7 +6,7 @@ directory (with stale reviews, followers, and page views). GDPR /
 חוק הגנת הפרטיות violation — the user consented to display only
 while active.
 
-MEH-513 — DELETE /auth/me must also destroy the producer's story_card
+MEH-513 — POST /auth/me/delete must also destroy the producer's story_card
 Cloudinary asset with bypass_reserved=True (the asset lives under
 mehamakor/producers/*, which is in RESERVED_PUBLIC_ID_PREFIXES; a plain
 destroy call would be silently rejected).

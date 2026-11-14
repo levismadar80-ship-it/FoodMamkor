@@ -15,6 +15,7 @@ router would be an import cycle in either load order.
 from __future__ import annotations
 
 import time
+from collections.abc import Callable
 from typing import Any, Literal
 
 from fastapi import HTTPException
@@ -87,16 +88,28 @@ class AccountDeleteRequest(BaseModel):
     id_token: str | None = Field(None, max_length=8192)
 
 
-def _provider_claims(user: User, id_token: str) -> dict[str, Any] | None:
+def _linked_providers(user: User) -> list[tuple[str, Callable[[str], Any]]]:
+    """(stored provider id, verifier) for every provider linked to ``user``.
+    An account linked to both may re-confirm with either (review finding,
+    PR #4603): someone who signs in with Apple must not be asked for Google."""
+    pairs: list[tuple[str, Callable[[str], Any]]] = []
     if user.google_id:
-        return oauth_verifiers.verify_google_token(id_token)
+        pairs.append((str(user.google_id), oauth_verifiers.verify_google_token))
     if user.apple_id:
-        return oauth_verifiers.verify_apple_token(id_token)
-    return None
+        pairs.append((str(user.apple_id), oauth_verifiers.verify_apple_token))
+    return pairs
 
 
-def _linked_id(user: User) -> str:
-    return str(user.google_id or user.apple_id or "")
+def _fresh_match(claims: Any, linked_id: str) -> bool:
+    # DO NOT accept any valid token — it must be THIS account's provider id,
+    # and recent, or a token for another account (or an old one) would pass.
+    if not isinstance(claims, dict):
+        return False
+    issued_at = int(claims.get("iat") or 0)
+    return (
+        str(claims.get("sub") or "") == linked_id
+        and time.time() - issued_at <= REAUTH_MAX_AGE_SECONDS
+    )
 
 
 def _reauth_error(user: User) -> HTTPException:
@@ -116,13 +129,9 @@ def verify_deletion_credentials(user: User, body: AccountDeleteRequest) -> None:
         ):
             raise HTTPException(status_code=403, detail=WRONG_PASSWORD)
         return
-    claims = _provider_claims(user, body.id_token) if body.id_token else None
-    if not claims:
-        raise _reauth_error(user)
-    # DO NOT accept any valid token — it must be THIS account's provider id,
-    # and recent, or a token for another account (or an old one) would pass.
-    issued_at = int(claims.get("iat") or 0)
-    if str(claims.get("sub") or "") != _linked_id(user) or (
-        time.time() - issued_at > REAUTH_MAX_AGE_SECONDS
+    if body.id_token and any(
+        _fresh_match(verify(body.id_token), linked_id)
+        for linked_id, verify in _linked_providers(user)
     ):
-        raise _reauth_error(user)
+        return
+    raise _reauth_error(user)

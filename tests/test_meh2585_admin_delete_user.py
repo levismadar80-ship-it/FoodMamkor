@@ -1,6 +1,6 @@
 """MEH-2585 — DELETE /admin/users/{id}: an admin can remove a (test) user.
 
-Same cascade as the self-service DELETE /auth/me (services/user_deletion.py),
+Same cascade as the self-service POST /auth/me/delete (services/user_deletion.py),
 minus the confirmation email. Admins — and the protected super-admin — are
 refused, so removing an admin always takes a demote first.
 """

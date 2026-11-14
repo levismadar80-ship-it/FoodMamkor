@@ -403,7 +403,7 @@ def test_group_own_auth_forgot_password(client, db, transport, is_test):
 def test_group_own_auth_account_deletion_reads_the_flag_before_the_row_goes(
     client, db, transport, is_test
 ):
-    """DELETE /auth/me: `is_test` is captured BEFORE the row is deleted."""
+    """POST /auth/me/delete: `is_test` is captured BEFORE the row is deleted."""
     user = make_user(db, email="leaving@sample.co.il")
     user.is_test = is_test
     db.commit()

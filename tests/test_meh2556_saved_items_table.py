@@ -6,7 +6,7 @@ owns, because chunk 2 relies on them instead of re-checking in Python:
 
 - one save per (user, type, item) — a double tap cannot create two rows;
 - only the three known types — a typo in the API cannot store a fourth;
-- deleting the account deletes its saves (DELETE /auth/me).
+- deleting the account deletes its saves (POST /auth/me/delete).
 
 Each case asserts the DB's answer, not "the constraint exists", so dropping a
 constraint from the revision turns it red.

@@ -117,12 +117,14 @@ def test_oauth_account_without_token_is_told_to_sign_in_again(client, db):
         None,  # token failed verification
         {"sub": "someone-else", "iat": "now"},  # valid token, other account
         {"sub": "g-sub-123", "iat": "old"},  # this account, but 10 minutes old
+        {"sub": "g-sub-123"},  # this account, no iat at all
+        {"iat": "now"},  # fresh, but no sub at all
     ],
-    ids=["invalid-token", "other-account-sub", "stale-iat"],
+    ids=["invalid-token", "other-account-sub", "stale-iat", "no-iat", "no-sub"],
 )
 def test_oauth_account_rejects_bad_tokens(client, db, monkeypatch, claims):
     user = _oauth_user(db)
-    if claims is not None:
+    if claims is not None and "iat" in claims:
         now = int(time.time())
         claims = {**claims, "iat": now if claims["iat"] == "now" else now - 600}
     monkeypatch.setattr(oauth_verifiers, "verify_google_token", lambda _t: claims)
@@ -153,6 +155,23 @@ def test_apple_account_is_checked_against_apple(client, db, monkeypatch):
         oauth_verifiers,
         "verify_apple_token",
         lambda _t: {"sub": "a-sub-9", "iat": int(time.time())},
+    )
+    r = client.post(URL, json={"id_token": "tok"}, headers=auth_header(user))
+    assert r.status_code == 200
+    assert _gone(db, user.id)
+
+
+def test_account_linked_to_both_can_confirm_with_apple(client, db, monkeypatch):
+    """Review finding on PR #4603: Google was the only accepted provider when
+    both were linked, so an Apple-first account could not be deleted."""
+    user = _oauth_user(db)
+    user.apple_id = "a-sub-both"  # type: ignore[assignment]
+    db.commit()
+    monkeypatch.setattr(oauth_verifiers, "verify_google_token", lambda _t: None)
+    monkeypatch.setattr(
+        oauth_verifiers,
+        "verify_apple_token",
+        lambda _t: {"sub": "a-sub-both", "iat": int(time.time())},
     )
     r = client.post(URL, json={"id_token": "tok"}, headers=auth_header(user))
     assert r.status_code == 200

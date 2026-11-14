@@ -1,7 +1,7 @@
 """User self-service endpoints (MEH-16).
 
 Sits at prefix /users/me and handles profile update + password change.
-Account deletion is already served by DELETE /auth/me — not duplicated
+Account deletion is already served by POST /auth/me/delete — not duplicated
 here to avoid two code paths on the same destructive action.
 
 MEH-460 Pkg 2: Pydantic schemas live in app.schemas.schemas per ADR-006 R1.

@@ -834,7 +834,7 @@ POST   /auth/login               public  — email+password → JWT (no policy v
 GET    /auth/me                  auth    — current user; producer_kind (MEH-2460) beside producer_status
 POST   /auth/google              public  — Google OAuth ID token exchange
 POST   /auth/apple               public  — Apple Sign In ID token (App Store)
-POST   /auth/me/delete           auth    — account deletion (App Store). MEH-3248: 403 for admins / super-admin (account_guards.assert_deletable); body {password} or, for an account without one, {id_token} — a Google/Apple token for THIS account, issued ≤5 min ago; 5/hour. Replaces the bodyless DELETE /auth/me (removed)
+POST   /auth/me/delete           auth    — account deletion (App Store). MEH-3248: 403 for admins / super-admin (account_guards.assert_deletable); body {password} or, for an account without one, {id_token} — a Google/Apple token for THIS account, issued ≤5 min ago (either linked provider when both are; fails closed when the provider's client id is not configured); 5/hour. Replaces the bodyless DELETE /auth/me (removed)
 POST   /auth/check-password      public  — MEH-306 stateless policy preview (30/min/IP), no DB write
 POST   /auth/forgot-password     public  — MEH-306: 10/15min IP + 5/15min email
 POST   /auth/reset-password      public  — MEH-306: 10/15min IP, full policy + reuse check, stamps password_changed_at
