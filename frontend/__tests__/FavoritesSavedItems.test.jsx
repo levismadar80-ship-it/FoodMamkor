@@ -231,6 +231,16 @@ describe("/favorites — one saved item (1)", () => {
     expect(chip(F.filter_experiences)).toBeUndefined();
   });
 
+  // A past event still sits in the «אירועים» tab under «עברו», so it counts:
+  // the gate reads the type's rows, not only the upcoming ones.
+  it("an event that already passed (the type holds only «עברו»): its chip is drawn with «1»", async () => {
+    serve({ recipes: [recipe(1)], events: [event(1, -3)] });
+    await renderPage();
+    await screen.findByText("אירוע 1");
+    expect(chip(F.filter_events)).toBeTruthy();
+    expect(screen.getByTestId("favorites-count-events").textContent).toBe("1");
+  });
+
   it("the open chip stays when its last item is unsaved: «עדיין לא שמרת אירועים», and it leaves once another chip is picked", async () => {
     serve({ recipes: [recipe(1)], events: [event(1, 3)] });
     await renderPage();
