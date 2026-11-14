@@ -50,10 +50,10 @@ export function holidaysOn(isoDay = israelToday()) {
   return out;
 }
 
-// Snapshot for callers that only need the keys and icons (copy, icon tests).
-// Anything that compares dates calls holidaysOn(today) instead, so a server
-// process that lives across Shavuot never serves a stale year.
-export const HOLIDAYS = holidaysOn();
+// Keys, icons and colours only — NO dates, and no computation at import (a
+// date snapshot taken at import goes stale across Shavuot, and costs a cold
+// scan on every page load). Anything that needs dates calls holidaysOn(day).
+export const HOLIDAYS = HOLIDAY_META;
 
 const BANNER_ADVANCE_DAYS = 7;
 const DASHBOARD_ADVANCE_DAYS = 14;

@@ -6,7 +6,8 @@
  *           (MEH-3017). Same approach as Google/Outlook holiday calendars:
  *           the dates are derived from the calendar, never hand-entered.
  * Touches:  nothing — pure date math on the built-in Intl Hebrew calendar
- *           (ICU, present in Node and in every browser we support). No library.
+ *           (ICU). Node is tested in vitest; WebKit (Safari's own ICU) by
+ *           e2e/flows/manual/holiday-calendar.spec.ts. No library.
  * Does NOT: decide which holiday is shown when, or hold any words/icons —
  *           that is lib/holidays.js (and messages/{he,en}.json `holidays.*`).
  * Related:  lib/holidays.js (the only consumer); __tests__/holidays.test.js
@@ -19,10 +20,12 @@ const DAY_MS = 86400000;
 // Hebrew year Y starts in Tishri of Gregorian year Y - 3761.
 const HEBREW_TO_GREGORIAN_OFFSET = 3761;
 // Rosh Hashana never falls before 5 September or after 5 October, so a scan
-// that starts on 15 August covers the whole Hebrew year within 400 days.
+// that starts on 15 August reaches 1 Tishri and runs on past 6 Sivan (the
+// last anchor needed) within 400 days. It does not reach the end of Elul.
 const SCAN_START_MONTH = 7; // August (0-based)
 const SCAN_START_DAY = 15;
 const SCAN_DAYS = 400;
+const MIN_HEBREW_YEAR = 5000;
 
 /**
  * Each holiday as an anchor day of the Hebrew calendar plus offsets in days.
@@ -89,6 +92,9 @@ const cache = new Map();
 export function holidayDatesForYear(hebrewYear) {
   const hit = cache.get(hebrewYear);
   if (hit) return hit;
+  // A runtime that ignores u-ca-hebrew answers in Gregorian years (≈2026);
+  // a nonsense year would scan for nothing. Both say nothing, once.
+  if (!Number.isInteger(hebrewYear) || hebrewYear < MIN_HEBREW_YEAR) return {};
 
   /** @type {Map<string, number>} "Month day" → UTC instant */
   const anchors = new Map();
@@ -107,7 +113,10 @@ export function holidayDatesForYear(hebrewYear) {
   const out = {};
   for (const [key, rule] of Object.entries(HOLIDAY_RULES)) {
     const t = anchors.get(`${rule.month} ${rule.day}`);
-    if (t === undefined) return {}; // no Hebrew calendar here — say nothing
+    if (t === undefined) {
+      cache.set(hebrewYear, {}); // no usable Hebrew calendar — say nothing, and don't rescan
+      return {};
+    }
     out[key] = {
       start: isoOf(t + rule.startOffset * DAY_MS),
       end: isoOf(t + rule.endOffset * DAY_MS),
