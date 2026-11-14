@@ -149,19 +149,24 @@ for (const locale of ["he", "en"] as const) {
   });
 }
 
-// MEH-2984: arriving from a hub route of the OTHER group (/group-buys). That
-// is a real navigation, but /events and /experiences are ISR and Link
-// prefetches them, so the page swaps without the route-level loader. The old
-// force-dynamic /events streamed app/[locale]/loading.js over everything.
-//
-// MEH-3125: /group-buys no longer carries an «אירועים» tab — the hub split
-// into two nav entries — so the way back is the «אירועים» nav link. It
-// lands on the first of events / experiences that has supply, so both count.
+// MEH-2984 pinned that a hub tab of the OTHER group (/group-buys → «אירועים»)
+// arrived without the route-level loader: the tab row's Link prefetched the
+// ISR route. MEH-3125 split the hub into two nav entries, so /group-buys no
+// longer has an events tab and that path is gone. The way across is now the
+// «אירועים» nav link, which — like every site-chrome Link — carries
+// prefetch={false} on purpose (MEH-2850, +137 KB per page otherwise), so a
+// no-loader assertion would test a prefetch that is switched off. What this
+// pins instead is the split itself: the link leaves the opportunities group
+// and lands in the events group, whose tab row shows events tabs only.
 const EVENTS_GROUP = /\/(events|experiences)$/;
 for (const locale of ["he", "en"] as const) {
   const prefix = locale === "en" ? "/en" : "";
-  test(`${locale}: /group-buys → «אירועים» nav link arrives without the whole-page loader`, async ({ page }) => {
-    await page.goto(`${prefix}/group-buys`);
+  test(`${locale}: /group-buys → «אירועים» nav link lands in the events group`, async ({ page }) => {
+    const hubFrom = await openHub(page, `${prefix}/group-buys`);
+    // The row is drawn and holds its own tab, so the count below is not 0
+    // merely because nothing rendered yet.
+    await expect(hubFrom.locator('[data-tab-value="groupBuys"]')).toHaveAttribute("aria-selected", "true");
+    await expect(hubFrom.locator('[data-tab-value="events"], [data-tab-value="experiences"]')).toHaveCount(0);
     const link = page
       // Header on desktop, the pill on mobile (the header copy is hidden
       // there); the first visible link into the events group either way.
@@ -169,35 +174,13 @@ for (const locale of ["he", "en"] as const) {
       .filter({ visible: true })
       .first();
     await expect(link).toBeVisible({ timeout: 15_000 });
-    const target = new URL((await link.getAttribute("href")) ?? "", page.url()).pathname;
-    // Let Link's viewport prefetch of that ROUTE land first: a resource whose
-    // URL names it (any RSC form), never the /api list call.
-    await page.waitForLoadState("load");
-    await expect
-      .poll(() =>
-        page.evaluate(
-          (route) =>
-            performance
-              .getEntriesByType("resource")
-              // Same-origin only (MEH-3013): the hub hero photo is a Cloudinary
-              // URL ending «…/events/hero-market.jpg».
-              .some(
-                (e) =>
-                  e.name.startsWith(location.origin) &&
-                  new RegExp(`${route}(?![\\w-])`).test(new URL(e.name).pathname) &&
-                  !/\/api\//.test(e.name),
-              ),
-          target,
-        ),
-      )
-      .toBe(true);
-
-    await startSampler(page);
     await link.click();
-    const samples = await readSamples(page);
 
     await expect(page).toHaveURL(EVENTS_GROUP);
-    expect(samples.filter((s) => s.loader), "route loader painted on the way in").toEqual([]);
+    const hub = liveHub(page);
+    await expect(hub).toHaveCount(1, { timeout: 15_000 });
+    await expect(hub.locator('[role="tab"][aria-selected="true"]')).toHaveCount(1);
+    await expect(hub.locator('[data-tab-value="groupBuys"], [data-tab-value="rescue"]')).toHaveCount(0);
     await expect(page.locator("h1")).toBeVisible();
   });
 }

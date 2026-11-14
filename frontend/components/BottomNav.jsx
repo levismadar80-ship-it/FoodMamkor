@@ -422,7 +422,10 @@ export default function BottomNav() {
   // the tap target relaxes from 44→40px min-height in compact mode.
   const tabCls = (active) =>
     [
-      "relative w-full min-w-[64px] flex flex-col items-center justify-center gap-[4px]",
+      // MEH-3125: min-w-0, not 64px. Five tabs (with «הזדמנויות») at 64px
+      // pushed «חשבון» off a 320px screen (E2E 43/44); flex-1 shares the
+      // width and the longest label (46px) still fits a 52px tab at 320.
+      "relative w-full min-w-0 flex flex-col items-center justify-center gap-[4px]",
       isCompact ? "min-h-[40px]" : "min-h-touch",
       // NAV — label-clip fix: py-1.5 → py-1. The 22px icon + 4px gap + label
       // wrapper overflowed the expanded pill's inner box; trimming the tab's
