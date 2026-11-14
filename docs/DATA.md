@@ -1118,7 +1118,7 @@ POST   /producers/{id}/contact-click              public    — 10/min, body {me
 ```
 GET    /favorites                  auth
 POST   /favorites/{producer_id}    auth
-DELETE /favorites/{producer_id}    auth
+DELETE /favorites/{producer_id}    auth — MEH-3222: also deletes her FavoriteAlert row for that business (alerts need a favorite); re-favoriting starts with alerts off
 ```
 
 ### Home products — מהמטבח של השכן (`app/routers/home_products.py`)
