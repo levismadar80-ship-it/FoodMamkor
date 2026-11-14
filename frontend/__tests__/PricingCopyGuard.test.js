@@ -123,7 +123,7 @@ describe("PricingCopyGuard (MEH-3166)", () => {
     // «עמלה מופחתת» has to be true: a subscriber's rate is below the plain one.
     expect(list.subscriberCommission.paidBookingPercent).toBeLessThan(list.commission.paidBookingPercent);
     expect(list.subscriberCommission.rescueBagFee).toBeLessThan(list.commission.rescueBagFee);
-    // «משתלם כש… עוברות {breakEven}»: at that amount the subscription is not dearer.
+    // The break-even the docs quote (and a future note may show): at that amount the subscription is not dearer.
     const breakEven = Number(pricingCopyValues(list).breakEven);
     const plain = (breakEven * list.commission.paidBookingPercent) / 100;
     const subscribed = list.subscription.monthly + (breakEven * list.subscriberCommission.paidBookingPercent) / 100;
