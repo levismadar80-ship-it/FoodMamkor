@@ -4641,6 +4641,7 @@
       },
       "phone_verify": {
         "title": "Verify your business phone",
+        "reverify_title": "Your business WhatsApp number isn't verified yet",
         "description": "We'll send a 6-digit code to your business WhatsApp number. Verifying is one of the steps before you send your profile for review.",
         "send_cta": "Send verification code",
         "sending": "Sending...",

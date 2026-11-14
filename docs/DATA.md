@@ -999,7 +999,7 @@ GET    /categories                                public
 
 # Producer-self (role=producer)
 GET    /producers/me                              producer
-PUT    /producers/me                              producer — MEH-999: license gate grandfathers already-held categories (validates NEWLY-ADDED category_ids only, so MEH-971 license-pending producers can edit their profile); clearing a held producer_license_number while a license-required category remains → 422. MEH-3220: free plan, `images` growing past 3 → 403 Hebrew (services/gallery_cap.py); same/shorter list saves.
+PUT    /producers/me                              producer — MEH-999: license gate grandfathers already-held categories (validates NEWLY-ADDED category_ids only, so MEH-971 license-pending producers can edit their profile); clearing a held producer_license_number while a license-required category remains → 422. MEH-3220: free plan, `images` growing past 3 → 403 Hebrew (services/gallery_cap.py); same/shorter list saves. MEH-3245: a changed `phone` (compared as a normalised Israeli number) resets phone_verified=false and burns open codes; the owner re-verifies from the dashboard box.
                                                   MEH-2073: notification-only admin ping when an ALREADY-APPROVED producer changes a
                                                   sensitive field — SENSITIVE_FIELDS = {phone, vegan_scope, vegetarian_scope,
                                                   gluten_free_facility, whatsapp_group (MEH-2626)} (producer_me.py; `city` left
@@ -1012,7 +1012,7 @@ PUT    /producers/me                              producer — MEH-999: license 
                                                   (_sensitive_edit_task), because the notifier's preamble sits outside its own
                                                   per-channel try blocks and a raising BackgroundTask would break the owner's 200.
 POST   /producers/me/verify-phone                producer  — send WhatsApp OTP (3/10min); MEH-2122 B: 503 «לא הצלחנו לשלוח את הקוד בוואטסאפ כרגע…» when WhatsApp is configured and the send failed (test rows and unconfigured envs stay 200)
-POST   /producers/me/verify-phone/confirm        producer  — confirm code, sets phone_verified (5/min)
+POST   /producers/me/verify-phone/confirm        producer  — confirm code, sets phone_verified (5/min). MEH-3245: the code must have been sent to the CURRENT number (a code for an earlier number → 400)
 POST   /producers/me/kashrut-request             producer  — request a kashrut badge (10/hr)
 POST   /producers/me/name-change-requests        producer  — MEH-1872 file a business-name change for re-moderation (5/hr).
                                                The public producers.name does NOT move here — only an admin approval moves it.
@@ -1266,7 +1266,7 @@ badge; experiences still require admin approval, so Haiku is enough.
 # Producer moderation
 GET    /admin/producers                        admin — filter: status, search
 POST   /admin/producers                        admin — create auto-approved; MEH-2322 `as_draft: true` → status "draft", no owner, license guard skipped (the approve gate still enforces it) — for the owner-claim link
-PUT    /admin/producers/{id}                   admin
+PUT    /admin/producers/{id}                   admin — MEH-3245: a changed `phone` resets phone_verified=false and burns open codes (services/phone_reverify.py)
 POST   /admin/producers/{id}/toggle-status     admin — MEH-2945: inactive→approved runs the approval gates (photo, licence, verified WhatsApp) → 422; approved→inactive is never gated
 DELETE /admin/producers/{id}                   admin
 GET    /admin/producers/pending                admin

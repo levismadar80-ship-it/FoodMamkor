@@ -242,6 +242,7 @@ files = [
     "app/services/owner_attention.py",
     "app/services/password_policy.py",
     "app/services/pending_nudge.py",
+    "app/services/phone_reverify.py",
     "app/services/producer_listing.py",
     "app/services/producer_queries.py",
     "app/services/producer_recipe_moderation.py",

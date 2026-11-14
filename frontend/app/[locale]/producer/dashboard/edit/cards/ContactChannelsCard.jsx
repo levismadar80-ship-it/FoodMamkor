@@ -20,6 +20,7 @@ import { detailToMessage } from "@/lib/errors";
 import { ViewOnPageLink } from "../cards";
 import Button from "@/components/ui/Button";
 import InlineMessage from "@/components/ui/InlineMessage";
+import PhoneVerifyCard from "@/components/PhoneVerifyCard";
 
 // Which value field backs each primary method (empty-on-save guard). Shared
 // by the contact preview above and ContactChannelsCard below. MEH-1165 item 5
@@ -62,6 +63,8 @@ export function ContactChannelsCard({
   // business. Same lift-up shape as reportDirty; this card's own behaviour is
   // unchanged.
   onMethodChange = () => {},
+  // Grill B8: a live business that changed its number re-verifies here.
+  onPhoneVerified = () => {},
 }) {
   const t = useTranslations("dashboard.producer.contact_channels");
   // MEH-1115: point-of-decision explainers (top-level whats_this namespace).
@@ -133,8 +136,11 @@ export function ContactChannelsCard({
         external_order_form: form.external_order_form.trim() || null,
         primary_contact_method: form.primary_contact_method,
       };
-      await api.put("/producers/me", payload);
-      onSave(payload);
+      const res = await api.put("/producers/me", payload);
+      // Grill B8: a changed number comes back unverified; carry that up so
+      // the verify box below opens without a reload.
+      const verified = res?.data?.phone_verified;
+      onSave(typeof verified === "boolean" ? { ...payload, phone_verified: verified } : payload);
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
     } catch (err) {
@@ -161,6 +167,12 @@ export function ContactChannelsCard({
       <div className="space-y-3">
         <Input type="tel" inputMode="tel" dir="ltr" label={t("field_phone")} helperText={t("phone_field_helper")} value={form.phone}
           onChange={(e) => upd("phone", e.target.value)} error={fieldError("phone")} />
+        {/* Grill B8 (Sapir 14/11, «שניהם»): a draft verifies in its submit
+            banner; a live business whose new number is unverified does it here,
+            right under the field. The dashboard home shows the same box. */}
+        {profile?.status !== "draft" && profile?.phone && profile?.phone_verified === false && (
+          <PhoneVerifyCard variant="reverify" onVerified={onPhoneVerified} />
+        )}
         {/* MEH-1597: each placeholder shows the shape that field's validator
             actually accepts (ProducerUpdate, backend/app/schemas/schemas.py).
             instagram is the odd one out: it has NO validator (:997 is a bare
