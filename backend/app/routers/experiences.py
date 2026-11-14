@@ -196,8 +196,9 @@ def _publicly_visible_query(db: Session) -> OrmQuery[Experience]:
 
     Deliberately NOT included here, because both are route-specific and
     predate this gate:
-      * ``event_date >= today`` — the listing hides past experiences; the
-        detail route still serves them by direct link.
+      * ``event_date >= today`` — the listing hides past experiences (a
+        recurring one stays listed, MEH-3250); the detail route still serves
+        them by direct link.
       * ``is_active`` — MEH-1419 drops host-cancelled ones from the feed only.
     """
     return (
@@ -266,9 +267,9 @@ def list_experiences(
     producer_id: UUID | None = None,
     db: Session = Depends(get_db),
 ) -> list[ExperienceListOut] | list[dict[str, Any]]:
-    """Only approved + upcoming (event_date >= today), and only from an
-    approved business (MEH-1749). Past experiences drop out of the public
-    feed automatically."""
+    """Only approved + upcoming (event_date >= today, or recurring —
+    MEH-3250), and only from an approved business (MEH-1749). Past one-off
+    experiences drop out of the public feed automatically."""
     q = _public_listing_query(db)
     if producer_id:
         q = q.filter(Producer.id == producer_id)

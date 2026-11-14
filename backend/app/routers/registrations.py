@@ -121,6 +121,13 @@ def _time_text(t: time | None) -> str:
     return t.strftime("%H:%M") if t else ""
 
 
+def _experience_when(ex: Experience) -> str:
+    if ex.is_recurring:
+        schedule = (ex.recurring_schedule or "").strip()  # type: ignore[union-attr]
+        return f"מתקיימת באופן קבוע: {schedule}" if schedule else "מתקיימת באופן קבוע"
+    return _date_text(ex.event_date)  # type: ignore[arg-type]
+
+
 # ---------- sign-up ----------
 
 
@@ -261,8 +268,11 @@ def register_for_experience(
         reg.email,  # type: ignore[arg-type]
         VisitorEmail(
             title=ex.title,  # type: ignore[arg-type]
-            date_text=_date_text(ex.event_date),  # type: ignore[arg-type]
-            time_text=_time_text(ex.event_time),  # type: ignore[arg-type]
+            # MEH-3250: a recurring experience's event_date is its FIRST
+            # occasion, often long past — the email gives the host's schedule
+            # (approved page copy «מתקיימת באופן קבוע» when she left none).
+            date_text=_experience_when(ex),
+            time_text="" if ex.is_recurring else _time_text(ex.event_time),  # type: ignore[arg-type]
             place=place,  # type: ignore[arg-type]
             host_name=host_name,  # type: ignore[arg-type]
             item_url=f"{settings.frontend_url}/experiences/{ex.id}",
@@ -400,7 +410,11 @@ def cancel_registration(
     db.commit()
 
     # A late cancel of a past item changes nothing for the owner — no email.
-    if was_active and item.event_date >= israel_today():
+    # MEH-3250: a recurring experience is never past by its first date.
+    is_upcoming = item.event_date >= israel_today() or bool(
+        getattr(item, "is_recurring", False)
+    )
+    if was_active and is_upcoming:
         if reg.event_id:
             owner_email = _owner_email_for_event(db, item)
             owner = db.get(Producer, item.producer_id)

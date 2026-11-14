@@ -106,3 +106,31 @@ def test_purge_keeps_fresh_signup_of_old_recurring_experience(client, db, sent):
 
     left = {r.email for r in db.query(Registration).all()}
     assert left == {"dana@example.com"}
+
+
+def test_confirmation_email_gives_the_schedule_not_the_first_date(client, db, sent):  # noqa: F811
+    """The visitor's email printed event_date — the long-past first occasion."""
+    weekly, _ = _pair(db)
+    weekly.recurring_schedule = "כל שישי 9:00"
+    db.commit()
+    assert (
+        client.post(
+            f"/experiences/{weekly.id}/registrations", json=_signup()
+        ).status_code
+        == 201
+    )
+    visitor = next(m for kind, _, m in sent if kind == "visitor")
+    assert visitor.date_text == "מתקיימת באופן קבוע: כל שישי 9:00"
+    assert visitor.time_text == ""
+
+
+def test_cancel_on_recurring_experience_tells_the_host(client, db, sent):  # noqa: F811
+    """The cancel email was skipped once event_date had passed — for a
+    recurring experience that is every day after the first occasion."""
+    from app.models.models import Registration
+
+    weekly, _ = _pair(db)
+    client.post(f"/experiences/{weekly.id}/registrations", json=_signup())
+    token = db.query(Registration).one().cancel_token
+    assert client.post(f"/registrations/{token}/cancel").status_code == 200
+    assert [k for k, _, _ in sent if k == "owner_cancel"] == ["owner_cancel"]
