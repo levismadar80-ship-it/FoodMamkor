@@ -3350,6 +3350,16 @@
     "error_body": "The link may have expired or opened only partway. Try again from the email, or get in touch.",
     "cta_home": "Back to home"
   },
+  "weekly_summary_unsubscribe": {
+    "meta_title": "Stop the weekly summary",
+    "loading": "Updating…",
+    "success_title": "The weekly summary is off",
+    "success_body": "We won't send this business's weekly summary any more. All the numbers are still on your dashboard, under Insights.",
+    "error_title": "This link isn't valid",
+    "error_body": "The link may have opened only partway. Try again from the email, or get in touch.",
+    "cta_insights": "Go to Insights",
+    "cta_home": "Back to home"
+  },
   "delivery_waitlist_host_confirm": {
     "meta_title": "Pickup point confirmation",
     "loading": "Confirming…",
