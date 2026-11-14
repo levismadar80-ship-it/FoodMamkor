@@ -34,6 +34,7 @@ import useTabsKeyboard from "@/hooks/useTabsKeyboard";
 import HubShell from "@/components/HubShell";
 import Button from "@/components/ui/Button";
 import SectionHeading from "@/components/ui/SectionHeading";
+import { SkeletonBlock } from "@/components/Skeleton";
 
 // MEH-134: S10 "The Almanac" visual port. Events API + filter logic +
 // date formatting (lib/format-date.js) untouched — layout layer only.
@@ -473,7 +474,7 @@ function EmptyState({ tab, t }) {
   return (
     <div data-testid="events-empty-dataset" className="flex flex-col items-center text-center px-6 py-16">
       <div className="grid place-items-center w-[76px] h-[76px] rounded-full bg-accent/10 border border-accent/25 text-accent">
-        <Icon size={36} />
+        <Icon size={32} />
       </div>
       {/* MEH-858 F4: empty-state title is h2 (was h4) — only heading under the
           page h1 when the feed is empty, so h1 → h2 with no skip. */}
@@ -487,7 +488,7 @@ function EmptyState({ tab, t }) {
         {isExp && (
           <Link
             href="/producer/dashboard/experiences/new"
-            className="w-full max-w-[260px] inline-flex items-center justify-center gap-2 bg-primary text-white text-sm font-semibold px-5 py-3 rounded-sm"
+            className="w-full max-w-[260px] inline-flex items-center justify-center gap-2 bg-primary text-white text-sm font-semibold px-5 py-3 rounded-full"
           >
             <Plus size={18} weight="bold" />
             {t("empty_experiences_cta")}
@@ -565,14 +566,14 @@ function SkeletonRows({ srLabel }) {
       {[0, 1, 2, 3, 4].map((i) => (
         <div key={i} className="grid grid-cols-[64px_1fr] md:grid-cols-[104px_1fr] border-b border-border">
           <div className="py-5 grid justify-items-center content-start gap-2">
-            <span className="w-8 h-8 rounded bg-border/60 animate-pulse" />
-            <span className="w-7 h-2.5 rounded bg-border/60 animate-pulse" />
+            <SkeletonBlock className="w-8 h-8 rounded" />
+            <SkeletonBlock className="w-7 h-2.5 rounded" />
           </div>
           <div className="py-5 ps-3 pe-4 grid gap-2.5">
-            <span className="w-12 h-2.5 rounded bg-border/60 animate-pulse" />
-            <span className="w-3/4 h-4 rounded bg-border/60 animate-pulse" />
-            <span className="w-1/2 h-3 rounded bg-border/60 animate-pulse" />
-            <span className="w-24 h-5 rounded-full bg-border/60 animate-pulse" />
+            <SkeletonBlock className="w-12 h-2.5 rounded" />
+            <SkeletonBlock className="w-3/4 h-4 rounded" />
+            <SkeletonBlock className="w-1/2 h-3 rounded" />
+            <SkeletonBlock className="w-24 h-5 rounded-full" />
           </div>
         </div>
       ))}

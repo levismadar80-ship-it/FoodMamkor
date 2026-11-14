@@ -173,7 +173,7 @@ export default function KashrutBadgeStrip({
                     onClick={() => setOpenCert(code)}
                     aria-haspopup="dialog"
                     data-testid={`kashrut-cert-trigger-${code}`}
-                    className="underline underline-offset-2 hover:text-primary transition focus-visible:ring-2 focus-visible:ring-primary/40 rounded"
+                    className="underline underline-offset-2 hover:text-primary transition focus-visible:ring-2 focus-visible:ring-primary rounded"
                   >
                     {label}
                   </button>
@@ -217,7 +217,7 @@ export default function KashrutBadgeStrip({
               onClick={() => setOpenCert(code)}
               aria-haspopup="dialog"
               data-testid={`kashrut-cert-trigger-${code}`}
-              className={`${pill} hover:bg-primary/10 transition focus-visible:ring-2 focus-visible:ring-primary/40`}
+              className={`${pill} hover:bg-primary/10 transition focus-visible:ring-2 focus-visible:ring-primary`}
             >
               {label}
             </button>

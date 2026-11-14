@@ -146,7 +146,7 @@ export default function GooglePlaceLink({ producerId, placeId, onLinked }) {
                 onChange={(e) => setManual(e.target.value)}
                 placeholder="השם בגוגל או place_id"
                 dir="auto"
-                className="min-w-0 flex-1 rounded-lg border border-border px-2.5 py-1.5 text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                className="min-w-0 flex-1 rounded-sm border border-border px-2.5 py-1.5 text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
               />
               <button
                 type="submit"

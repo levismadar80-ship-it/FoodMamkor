@@ -79,7 +79,7 @@ export default function ReportInfoModal({ open, onClose, producerSlug }) {
               value={message}
               onChange={(e) => setMessage(e.target.value)}
               placeholder={t("placeholder")}
-              className="w-full border rounded-md px-3 py-2 text-sm text-start resize-none"
+              className="w-full border rounded-sm px-3 py-2 text-sm text-start resize-none focus-ring"
             />
           </div>
 
@@ -96,7 +96,7 @@ export default function ReportInfoModal({ open, onClose, producerSlug }) {
               maxLength={254}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full border rounded-md px-3 py-2 text-sm text-start"
+              className="w-full border rounded-sm px-3 py-2 text-sm text-start focus-ring"
             />
           </div>
 

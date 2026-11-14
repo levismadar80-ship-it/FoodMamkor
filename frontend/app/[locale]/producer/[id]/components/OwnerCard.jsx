@@ -3,6 +3,7 @@ import { useTranslations } from "next-intl";
 import ImageWithFallback from "@/components/ImageWithFallback";
 import { IMAGE_RATIOS } from "@/lib/cloudinary";
 import SectionHeading from "@/components/ui/SectionHeading";
+import { avatarInitial } from "@/components/ui/Avatar";
 
 /**
  * Module:   OwnerCard
@@ -48,7 +49,7 @@ export default function OwnerCard({ producer, heading, nested = false }) {
   // Single-letter initials always — never two letters in Hebrew (revision-2 #12).
   // Array.from: the first CODE POINT, so a name opening with an emoji or any
   // astral character does not split its surrogate pair (CI review, MEH-2592).
-  const initial = name ? Array.from(name)[0] : null;
+  const initial = name ? avatarInitial(name) : null;
   const avatarSize = nested ? 48 : bio ? 88 : 56;
 
   if (nested) {

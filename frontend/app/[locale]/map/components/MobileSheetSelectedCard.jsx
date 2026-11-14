@@ -86,7 +86,7 @@ export default function MobileSheetSelectedCard({
         // ps-9 clears the deselect × (top-start, w-7) so the label never sits
         // under it in RTL (start = right, where both live).
         <div className="mb-1.5 flex items-center gap-1 ps-9 pe-1 text-xs text-fg-muted">
-          <MapPin size={13} weight="fill" className="shrink-0 text-primary" />
+          <MapPin size={14} weight="fill" className="shrink-0 text-primary" />
           <span className="truncate">{locationLabel}</span>
         </div>
       ) : null}

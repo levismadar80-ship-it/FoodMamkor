@@ -15,10 +15,12 @@
  * not a `fixed inset-0` overlay (ADR-023) and is not seen here; blur is guarded
  * by the sibling ModalOverlayNoBlur.test.js.
  *
- * Two `fixed inset-0` surfaces are NOT scrims and are exempt by value:
+ * Three `fixed inset-0` surfaces are NOT scrims and are exempt by value:
  *   - components/Lightbox.jsx  bg-black/95 — the immersive photo viewer
  *   - components/MiniMap.jsx   bg-surface    — the full-screen map surface
- * They double as the positive control: the walk must find both, so a regex
+ *   - components/RegistrationOverlays.jsx bg-surface — the full-screen phone
+ *     sign-up sheet (MEH-3043); it covers the page, nothing shows through
+ * They double as the positive control: the walk must find all, so a regex
  * that sees nothing cannot pass as clean.
  */
 import { describe, it, expect } from "vitest";
@@ -30,6 +32,7 @@ const SCRIM = "bg-black/40";
 const EXEMPT = {
   "components/Lightbox.jsx": "bg-black/95",
   "components/MiniMap.jsx": "bg-surface",
+  "components/RegistrationOverlays.jsx": "bg-surface",
 };
 
 function walk(dir, out = []) {
@@ -73,7 +76,7 @@ describe("MEH-1687 D — every modal scrim is bg-black/40", () => {
     // shell itself must be among the scrims seen — that is the anchor now.
     expect(scrims, "corpus control: scrims must be found").toBeGreaterThanOrEqual(8);
     expect(scrimFiles.has("components/ui/Dialog.jsx"), "anchor: the shared Dialog scrim is walked").toBe(true);
-    expect([...exemptSeen].sort(), "positive control: both exempt surfaces seen").toEqual(Object.keys(EXEMPT).sort());
+    expect([...exemptSeen].sort(), "positive control: every exempt surface seen").toEqual(Object.keys(EXEMPT).sort());
     expect(offenders).toEqual([]);
   });
 });

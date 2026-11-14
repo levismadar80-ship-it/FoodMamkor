@@ -10,10 +10,11 @@
  */
 import { CaretLeft } from "@phosphor-icons/react";
 import { Link } from "@/i18n/navigation";
+import { avatarInitial } from "@/components/ui/Avatar";
 
 export default function OwnerRow({ href, name, testId, children }) {
   // A whole code point, never half a surrogate pair (review #3801).
-  const initial = Array.from((name || "").trim())[0] ?? "";
+  const initial = avatarInitial(name, "");
   const body = (
     <>
       <span

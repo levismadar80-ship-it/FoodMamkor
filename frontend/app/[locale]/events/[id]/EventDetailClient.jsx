@@ -36,17 +36,18 @@ import { downloadIcs } from "@/lib/event-ics";
 import Button from "@/components/ui/Button";
 import RegistrationCta from "@/components/RegistrationCta";
 import SectionHeading from "@/components/ui/SectionHeading";
+import { avatarInitial } from "@/components/ui/Avatar";
+import { SkeletonBlock } from "@/components/Skeleton";
 
 // MEH-1404: reuse the producer-detail static map + Waze/Gmaps block on events
 // that carry coords. ssr:false — leaflet touches window at module eval.
 const MiniMap = dynamic(() => import("@/components/MiniMap"), { ssr: false });
 
-const DETAIL_DATE_OPTIONS = {
-  weekday: "long",
-  day: "numeric",
-  month: "long",
-  year: "numeric",
-};
+// MEH-3043: short, for the sticky phone bar beside the sign-up button.
+const BAR_DATE_OPTIONS = { weekday: "short", day: "numeric", month: "numeric" };
+// MEH-3057: the tile beside it already says month + day, so the row's text
+// is the weekday only («יום שישי · 17:00») — the full date read twice.
+const DETAIL_DATE_OPTIONS = { weekday: "long" };
 
 // MEH-476 PR 3b2: extracted from app/[locale]/events/[id]/page.js so the
 // route can export generateMetadata (Client Components cannot). page.js
@@ -94,16 +95,16 @@ export default function EventDetailClient() {
       // MEH-1957: same fix as the list skeleton — aria-label needs a role to be
       // permitted; without it axe reports aria-prohibited-attr (serious).
       <div role="status" aria-busy="true" aria-label={t("loading")}>
-        <div className="h-[360px] bg-border/60 animate-pulse" />
+        <SkeletonBlock as="div" className="h-[360px]" />
         <div className="max-w-3xl mx-auto px-4 py-12">
-          <span className="block w-24 h-6 rounded-full bg-border/60 animate-pulse mb-3" />
-          <span className="block w-3/4 h-10 rounded bg-border/60 animate-pulse mb-4" />
+          <SkeletonBlock className="block w-24 h-6 rounded-full mb-3" />
+          <SkeletonBlock className="block w-3/4 h-10 rounded mb-4" />
           <div className="flex flex-wrap gap-4 mb-6">
-            <span className="w-40 h-4 rounded bg-border/60 animate-pulse" />
-            <span className="w-28 h-4 rounded bg-border/60 animate-pulse" />
-            <span className="w-20 h-4 rounded bg-border/60 animate-pulse" />
+            <SkeletonBlock className="w-40 h-4 rounded" />
+            <SkeletonBlock className="w-28 h-4 rounded" />
+            <SkeletonBlock className="w-20 h-4 rounded" />
           </div>
-          <span className="block w-full h-32 rounded-lg bg-border/60 animate-pulse" />
+          <SkeletonBlock className="block w-full h-32 rounded-lg" />
         </div>
       </div>
     );
@@ -161,6 +162,11 @@ export default function EventDetailClient() {
   // «יצירת קשר עם בית העסק» fallback is gone — every event has a method now
   // (site_form by default), and the on-site form carries «או שאלה למארחת».
   const isFull = event.max_participants != null && event.spots_left === 0;
+  // MEH-3043: the date beside the sign-up button on the sticky phone bar.
+  const barNote = [
+    formatEventDate(event.event_date, locale, BAR_DATE_OPTIONS),
+    formatTimeRange(event.event_time) || null,
+  ].filter(Boolean).join(" · ");
   const cta =
     isPast || event.is_active === false ? null : (
       <RegistrationCta
@@ -171,6 +177,7 @@ export default function EventDetailClient() {
         phone={event.producer_phone}
         url={event.registration_url}
         isFull={isFull}
+        barNote={barNote}
       />
     );
 
@@ -239,7 +246,7 @@ export default function EventDetailClient() {
                 className="inline-flex items-center gap-2 min-h-touch text-base text-text hover:text-primary rounded transition focus-ring"
               >
                 <span aria-hidden="true" className="w-7 h-7 rounded-full bg-green-50 text-primary text-sm font-bold grid place-items-center">
-                  {Array.from(event.producer_name.trim())[0] ?? ""}
+                  {avatarInitial(event.producer_name, "")}
                 </span>
                 <span>{ownerLabel}</span>
                 <CaretLeft size={14} className="text-primary ltr:rotate-180" aria-hidden="true" />
@@ -269,7 +276,7 @@ export default function EventDetailClient() {
         {/* Details card: below the title on mobile, a sticky side card on
             desktop (Airbnb / Eventbrite). */}
         <aside className="mt-6 lg:mt-0 lg:col-start-2 lg:row-start-1 lg:row-span-2 lg:sticky lg:top-24 space-y-4">
-          <div className="bg-surface border border-border rounded-lg overflow-hidden lg:shadow-md" data-testid="event-info">
+          <div className="bg-surface border border-border rounded-lg overflow-hidden lg:shadow-lg" data-testid="event-info">
             <div className={infoRow}>
               {/* MEH-2989: the date tile is this row's icon (Luma) — the
                   date used to repeat on the cover and in a desktop header. */}

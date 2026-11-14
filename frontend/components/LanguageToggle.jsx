@@ -82,7 +82,7 @@ export default function LanguageToggle({ variant = "default", className = "", ch
   const bare = variant === "bare";
   const shellCls = bare
     ? ""
-    : "flex items-center justify-center w-9 h-9 rounded-full hover:bg-black/10 transition focus-visible:ring-2 focus-visible:ring-primary/40";
+    : "flex items-center justify-center w-9 h-9 rounded-full hover:bg-black/10 transition focus-visible:ring-2 focus-visible:ring-primary";
 
   return (
     <button
@@ -93,7 +93,7 @@ export default function LanguageToggle({ variant = "default", className = "", ch
       data-current-locale={locale}
       className={`${shellCls} ${className}`.trim()}
     >
-      <Globe size={bare ? 19 : 20} weight="regular" aria-hidden="true" />
+      <Globe size={20} weight="regular" aria-hidden="true" />
       {children}
     </button>
   );

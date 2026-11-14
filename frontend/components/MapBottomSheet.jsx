@@ -247,7 +247,7 @@ export default function MapBottomSheet({
     <div
       ref={sheetRef}
       data-testid="map-bottom-sheet"
-      className="fixed inset-x-0 bottom-0 z-[600] bg-background rounded-t-3xl border-t border-border flex flex-col"
+      className="fixed inset-x-0 bottom-0 z-[600] bg-background rounded-t-xl border-t border-border flex flex-col"
       style={{
         height: sheetHeight(heightVh),
         transition: transient != null ? "none" : "height 0.3s cubic-bezier(0.32,0.72,0,1)",
@@ -295,10 +295,10 @@ export default function MapBottomSheet({
             <Link
               href={`/recommend?city=${encodeURIComponent(zeroCity)}`}
               data-testid="recommend-link-city-zero"
-              className="-my-2.5 shrink-0 inline-flex items-center gap-1 min-h-touch text-sm font-semibold text-primary underline underline-offset-4 hover:text-primary-dark rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+              className="-my-2.5 shrink-0 inline-flex items-center gap-1 min-h-touch text-sm font-semibold text-primary underline underline-offset-4 hover:text-primary-dark rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
             >
               {tNav("recommend")}
-              <ArrowLeft size={15} className="ltr:rotate-180" aria-hidden="true" />
+              <ArrowLeft size={16} className="ltr:rotate-180" aria-hidden="true" />
             </Link>
           </div>
         ) : count === 0 && filtered && onResetFilters ? (

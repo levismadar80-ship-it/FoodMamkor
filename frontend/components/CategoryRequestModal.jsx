@@ -67,7 +67,7 @@ export default function CategoryRequestModal({ open, onClose, producerId }) {
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder={t("name_placeholder")}
-              className="w-full border rounded-md px-3 py-2 text-sm text-start"
+              className="w-full border rounded-sm px-3 py-2 text-sm text-start focus-ring"
             />
             <p className="text-xs text-fg-muted mt-1">{t("name_example")}</p>
           </div>
@@ -79,7 +79,7 @@ export default function CategoryRequestModal({ open, onClose, producerId }) {
               value={examples}
               onChange={(e) => setExamples(e.target.value)}
               placeholder={t("examples_placeholder")}
-              className="w-full border rounded-md px-3 py-2 text-sm text-start resize-none"
+              className="w-full border rounded-sm px-3 py-2 text-sm text-start resize-none focus-ring"
             />
             <p className="text-xs text-fg-muted mt-1">{t("examples_hint")}</p>
           </div>

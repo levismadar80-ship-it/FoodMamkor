@@ -77,7 +77,14 @@ After every PR — send the Vercel preview URL:
 >   *) echo "skip: previews off unless [preview] in commit msg (MEH-1044/MEH-1378)"; exit 0 ;; esac
 > ```
 >
-> `staging` and `main` build unconditionally. **Every other branch builds only
+> `main` builds unconditionally. **`staging` builds only when something that
+> ships changed** since its last successful build (MEH-3094, 13/11 —
+> `scripts/vercel-ignore-build.sh`, the same rule as
+> `scripts/frontend-touched.sh`: `frontend/` minus tests, `backend/`, the
+> checks); a docs-only merge is `CANCELED` with `skip: nothing that ships
+> changed`. Any doubt (no previous sha, shallow clone) builds. Why: on Pro,
+> Vercel bills **Build CPU minutes** (76% of the credit, 9–13/11).
+> The ignoreCommand line above is the pre-13/11 text. **Every other branch builds only
 > when the commit message contains `[preview]`.** So the table above ("`feature/*`
 > → Vercel preview URL only") describes what a feature branch *can* produce, not
 > what it produces by default — and an absent preview is the configured

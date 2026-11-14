@@ -25,6 +25,8 @@ vi.mock("next/image", () => ({
 // CategoryRequestModal / EventForm suites use — the link's behaviour is
 // CollectionNotice.test.jsx's job; this file is about the nav groups.
 vi.mock("@/i18n/navigation", () => ({
+  // MEH-3059: Footer prefetches «כל בתי העסק» on intent via router.prefetch.
+  useRouter: () => ({ prefetch: () => {} }),
   Link: ({ href, children, ...rest }) => (
     <a href={typeof href === "string" ? href : "#"} {...rest}>
       {children}
@@ -84,9 +86,9 @@ describe("Footer nav split into audience groups (MEH-1177; three since MEH-2858)
     // asserted in EventsNavGate.test.jsx.
     // MEH-2858: «גלו עסקים» → / is gone (the logo links home), and the three
     // "who we are" links moved to their own «עלינו» group.
-    // /recommend joined «גלו» from the utility row (Sapir 13/11).
-    expect(discover).toEqual(["/producers", "/map", "/recommend"]);
-    expect(about).toEqual(["/about", "/about/why-local", "/recommend#share"]);
+    expect(discover).toEqual(["/producers", "/map"]);
+    // «המליצו על בית עסק» sits next to «ספרו עלינו» (Sapir 13/11).
+    expect(about).toEqual(["/about", "/about/why-local", "/recommend", "/recommend#share"]);
     expect(business).toEqual(["/join", "/about/process", "/about/for-businesses"]);
   });
 

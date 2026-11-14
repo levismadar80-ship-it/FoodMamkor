@@ -230,7 +230,7 @@ export default function AddressSearch({
           {label}
         </label>
       )}
-      <div className="flex items-center gap-2 bg-surface border border-border rounded-sm px-3 py-2 min-w-0 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/30 transition">
+      <div className="flex items-center gap-2 bg-surface border border-border rounded-sm px-3 py-2 min-w-0 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary transition">
         <svg
           className="w-4 h-4 text-fg-muted shrink-0"
           fill="none"

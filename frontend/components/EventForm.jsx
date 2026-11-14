@@ -561,7 +561,7 @@ export default function EventForm({ mode = "create", initial = null, onSuccess, 
                :811/:829, RecipeForm:290, dashboard/edit/cards.jsx:382) — inventory
                on MEH-2031, deliberately out of this diff.
                REUSES: components/ExperienceForm.jsx:499-514 (MEH-2012). */
-            <label className="flex flex-col items-center justify-center text-center text-sm text-fg-muted border border-dashed border-border rounded-sm px-4 py-6 cursor-pointer hover:bg-green-50 transition focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/30">
+            <label className="flex flex-col items-center justify-center text-center text-sm text-fg-muted border border-dashed border-border rounded-sm px-4 py-6 cursor-pointer hover:bg-green-50 transition focus-within:border-primary focus-within:ring-2 focus-within:ring-primary">
               <input
                 type="file"
                 accept="image/*"

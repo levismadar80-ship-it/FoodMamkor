@@ -75,7 +75,7 @@ describe("/about/for-businesses/guides (FinalGuides)", () => {
       expect(classes(a)).not.toContain("bg-surface");
     }
     const end = container.querySelector("footer");
-    expect(classes(end)).toEqual(expect.arrayContaining(["rounded-xl", "bg-background-alt", "p-5"]));
+    expect(classes(end)).toEqual(expect.arrayContaining(["rounded-lg", "bg-background-alt", "p-5"]));
     expect(classes(container.querySelector("section"))).not.toContain("min-h-screen");
   });
 });

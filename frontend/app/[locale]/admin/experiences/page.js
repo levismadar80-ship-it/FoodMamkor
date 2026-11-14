@@ -16,7 +16,7 @@ import Dialog from "@/components/ui/Dialog";
 // Tab values map to admin.experiences.tabs.* keys; labels resolved in render
 const TAB_VALUES = ["pending", "changes_requested", "approved", "rejected", "all"];
 
-function formatDate(iso, locale) {
+function shortDate(iso, locale) {
   if (!iso) return "—";
   return formatEventDate(iso, locale, { day: "2-digit", month: "2-digit", year: "2-digit" });
 }
@@ -215,7 +215,7 @@ export default function AdminExperiencesPage() {
               value={feedback}
               onChange={(e) => setFeedback(e.target.value)}
               rows={5}
-              className="w-full border border-border rounded-md px-3 py-2 text-sm bg-surface"
+              className="w-full border border-border rounded-sm px-3 py-2 text-sm bg-surface focus-ring"
               placeholder={
                 modalAction === "changes"
                   ? t("experiences.modal.changes_placeholder")
@@ -289,7 +289,7 @@ function ExperienceRow({ ex, busy, t, locale, onApprove, onChanges, onReject }) 
           )}
         </td>
         <td className="p-3 text-fg-muted" data-label={t("experiences.columns.host")}>{ex.host?.name || "—"}</td>
-        <td className="p-3 text-fg-muted" data-label={t("experiences.columns.date")}>{formatDate(ex.event_date, locale)}</td>
+        <td className="p-3 text-fg-muted" data-label={t("experiences.columns.date")}>{shortDate(ex.event_date, locale)}</td>
         <td className="p-3 text-fg-muted" data-label={t("experiences.columns.city")}>{ex.city || "—"}</td>
         <td className="p-3" data-label={t("experiences.columns.claude")}>
           <span className={`text-xs px-2 py-1 rounded-full ${modBadge}`}>

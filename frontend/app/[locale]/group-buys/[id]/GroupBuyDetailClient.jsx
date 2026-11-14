@@ -4,9 +4,9 @@ import SeedBurst from "@/components/brand/SeedBurst";
 import { useEffect, useState } from "react";
 import * as Sentry from "@sentry/nextjs";
 import { useRouter } from "next/navigation";
-import { Link } from "@/i18n/navigation";
 import Breadcrumb from "@/components/Breadcrumb";
 import HistoryBackLink from "@/components/HistoryBackLink";
+import BackLink from "@/components/ui/BackLink";
 import { MagnifyingGlass, MapPin, Clock, ShoppingCart, Truck, ShareNetwork, Check } from "@phosphor-icons/react";
 import Image from "next/image";
 import OwnerRow from "@/components/OwnerRow";
@@ -185,9 +185,7 @@ export default function GroupBuyDetailClient({ id }) {
       <div className="max-w-2xl mx-auto px-4 py-20 text-center">
         <MagnifyingGlass size={40} className="text-fg-muted mx-auto mb-4" aria-hidden="true" />
         <p className="text-lg font-medium text-text">{t("not_found_title")}</p>
-        <Link href="/group-buys" className="text-primary underline decoration-[1.5px] underline-offset-[5px] decoration-primary/35 hover:decoration-current mt-4 inline-block">
-          {t("back_to_list")}
-        </Link>
+        <BackLink href="/group-buys" label={t("back_to_list")} className="mt-4" />
       </div>
     );
   }
@@ -231,11 +229,11 @@ export default function GroupBuyDetailClient({ id }) {
   const showRemaining = !expired && open && remaining > 0;
 
   const joinCard = (
-    <div className="rounded-2xl border border-border bg-surface-card p-5 md:p-6" data-testid="group-buy-join-card">
+    <div className="rounded-lg border border-border bg-surface-card p-5 md:p-6" data-testid="group-buy-join-card">
       {/* MEH-2827 PR 7 (FinalGroupBuyFlow): two price tiles — the group price
           framed in primary, the regular price beside it, struck through. */}
       <div className="grid grid-cols-2 gap-2">
-        <div className="rounded-xl border-2 border-primary bg-background px-3 py-2.5" data-testid="group-buy-price-group">
+        <div className="rounded-lg border-2 border-primary bg-background px-3 py-2.5" data-testid="group-buy-price-group">
           <p className="text-xs font-semibold text-primary">{tForm("price_group_label")}</p>
           <p className="mt-0.5 flex items-baseline gap-1">
             <span dir="ltr" className="font-headline-md text-4xl font-black text-primary leading-none">
@@ -244,7 +242,7 @@ export default function GroupBuyDetailClient({ id }) {
             {gb.unit && <span className="text-xs text-fg-muted">{t("unit_suffix", { unit: gb.unit })}</span>}
           </p>
         </div>
-        <div className="rounded-xl border border-border px-3 py-2.5" data-testid="group-buy-price-regular">
+        <div className="rounded-lg border border-border px-3 py-2.5" data-testid="group-buy-price-regular">
           <p className="text-xs font-medium text-fg-muted">{tForm("price_regular_label")}</p>
           <p className="mt-0.5">
             <span dir="ltr" className="text-2xl text-fg-muted line-through leading-none">
@@ -255,7 +253,7 @@ export default function GroupBuyDetailClient({ id }) {
       </div>
       {discount > 0 && <p className="mt-2 text-sm font-semibold text-gold-deep">{t("discount_hint", { discount })}</p>}
 
-      <div className="mt-4 rounded-xl bg-background-alt px-3 py-3" data-testid="group-buy-progress">
+      <div className="mt-4 rounded-lg bg-background-alt px-3 py-3" data-testid="group-buy-progress">
         {stacked ? (
           <>
             <div className="text-end mb-2">
@@ -413,7 +411,7 @@ export default function GroupBuyDetailClient({ id }) {
                 />
               ) : (
                 <div className="absolute inset-0 grid place-items-center" data-testid="group-buy-image-missing">
-                  <ShoppingCart size={56} weight="light" className="text-primary/70" aria-hidden="true" />
+                  <ShoppingCart size={64} weight="regular" className="text-primary/70" aria-hidden="true" />
                 </div>
               )}
               {/* MEH-2827 PR 7: no -% pill on the photo — the price tiles say it. */}
@@ -441,7 +439,7 @@ export default function GroupBuyDetailClient({ id }) {
             {/* MEH-2544: how a group buy works, while it can still be joined —
                 copy approved by Sapir 29/10. */}
             {open && (
-              <section className="mt-6 rounded-xl bg-background-alt p-4" data-testid="group-buy-how">
+              <section className="mt-6 rounded-lg bg-background-alt p-4" data-testid="group-buy-how">
                 <SectionHeading size="content" className="mb-3">{t("how_title")}</SectionHeading>
                 <ol className="space-y-2">
                   {[t("how_join"), t("how_unlock", { min: gb.min_participants }), t("how_no_commit")].map((line, i) => (
@@ -494,7 +492,7 @@ export default function GroupBuyDetailClient({ id }) {
                         // layout is the same: icon column, then label over note.
                         <div key={kind} className="relative ps-[34px] min-w-0" data-testid={`group-buy-${kind}-note`}>
                           <dt className="text-sm font-bold text-text">
-                            <Icon size={22} className="text-primary absolute start-0 top-0.5" aria-hidden="true" />
+                            <Icon size={24} className="text-primary absolute start-0 top-0.5" aria-hidden="true" />
                             {t(`${kind}_label`)}
                           </dt>
                           <dd className="text-base text-text whitespace-pre-line">{note}</dd>
@@ -504,7 +502,7 @@ export default function GroupBuyDetailClient({ id }) {
                 ) : (
                   gb.fulfillment_note && (
                     <p className="flex gap-3 text-base text-text whitespace-pre-line" data-testid="group-buy-fulfillment-note">
-                      <MapPin size={22} className="text-primary shrink-0 mt-0.5" aria-hidden="true" />
+                      <MapPin size={24} className="text-primary shrink-0 mt-0.5" aria-hidden="true" />
                       <span>{gb.fulfillment_note}</span>
                     </p>
                   )

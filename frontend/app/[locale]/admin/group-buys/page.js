@@ -11,6 +11,7 @@ import { detailToMessage } from "@/lib/errors";
 import { formatPrice } from "@/lib/utils";
 import { SkeletonList } from "@/components/Skeleton";
 import { ADMIN_NEXT_STATUSES } from "@/lib/group-buy-transitions";
+import BackLink from "@/components/ui/BackLink";
 
 // Status class map; labels resolved via t() in render
 const STATUS_CLS = {
@@ -74,9 +75,7 @@ export default function AdminGroupBuysPage() {
     <div>
       <div className="flex items-center justify-between mb-6">
         <div>
-          <Link href="/admin" className="text-sm text-primary hover:underline">
-            {t("common.back_to_dashboard")}
-          </Link>
+          <BackLink href="/admin" label={t("common.back_to_dashboard")} />
           <h1 className="font-headline-md text-2xl font-bold text-text mt-1">
             {t("group_buys.title")}
           </h1>
@@ -116,7 +115,7 @@ export default function AdminGroupBuysPage() {
         <SkeletonList count={4} label={t("common.loading_f")} />
       ) : items.length === 0 ? (
         <div className="text-center py-16 text-fg-muted">
-          <ShoppingCart size={36} className="text-fg-muted mx-auto mb-3" aria-hidden="true" />
+          <ShoppingCart size={32} className="text-fg-muted mx-auto mb-3" aria-hidden="true" />
           <p>{t("group_buys.empty")}</p>
         </div>
       ) : (

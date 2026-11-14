@@ -33,11 +33,22 @@ import { ArrowRight } from "@phosphor-icons/react";
  * translation value: a text arrow is a fixed glyph that cannot flip per locale,
  * which is exactly how the pre-MEH-999 keys ended up pointing the wrong way.
  */
-export default function BackLink({ href, label }) {
+// MEH-3060: every back link on the site is this component (BackLinkGuard
+// test). `tone="onDark"` is the admin sidebar; `className` carries layout only.
+const TONES = {
+  default: "text-primary hover:underline focus-visible:ring-primary",
+  onDark: "text-green-50/70 hover:text-white focus-visible:ring-gold-on-dark",
+};
+
+/**
+ * @param {{ href: string, label: import("react").ReactNode, tone?: "default"|"onDark", className?: string, "data-testid"?: string }} props
+ */
+export default function BackLink({ href, label, tone = "default", className = "", "data-testid": testId }) {
   return (
     <Link
       href={href}
-      className="inline-flex items-center gap-1 text-sm text-primary hover:underline"
+      data-testid={testId}
+      className={`inline-flex items-center gap-1 text-sm rounded-sm focus-visible:outline-none focus-visible:ring-2 ${TONES[tone] ?? TONES.default} ${className}`}
     >
       <ArrowRight size={16} weight="bold" aria-hidden="true" className="ltr:rotate-180" />
       {label}
