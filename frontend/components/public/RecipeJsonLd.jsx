@@ -13,6 +13,7 @@
 
 import { serializeJsonLd } from "@/lib/seo"; // MEH-1069: shared JSON-LD escaper
 import { splitRecipeLines } from "@/lib/recipe-lines"; // MEH-2540: shared with RecipeDetail
+import { SITE_URL } from "@/lib/env";
 
 const ISO_MIN_LIMIT = 1440; // matches the Pydantic ge/le on prep/cook fields.
 
@@ -51,7 +52,10 @@ export function buildRecipeSchema({ recipe, producerName, canonicalUrl }) {
     prepTime: minutesToIso8601(recipe.prep_time_min),
     cookTime: minutesToIso8601(recipe.cook_time_min),
     recipeYield: recipe.servings ? String(recipe.servings) : undefined,
-    url: canonicalUrl,
+    // MEH-3177: schema.org wants an absolute URL; the page passes a path.
+    url: canonicalUrl && canonicalUrl.startsWith("/") ? `${SITE_URL}${canonicalUrl}` : canonicalUrl,
+    // MEH-3177: Google "recommended" for Recipe — the date part of created_at.
+    datePublished: typeof recipe.created_at === "string" ? recipe.created_at.slice(0, 10) : undefined,
     inLanguage: "he-IL",
   };
   // Strip absent keys for a clean serialization. MEH-741: drop null too, so

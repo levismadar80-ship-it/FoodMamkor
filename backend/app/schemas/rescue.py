@@ -189,7 +189,7 @@ class RescueTypicalItemsIn(BaseModel):
 
     @field_validator("allergens")
     @classmethod
-    def _known_codes_only(cls, value):
+    def _known_codes_only(cls, value: list[str] | None) -> list[str] | None:
         """Normalise through the shared helper so the bag and the product
         sheet cannot drift on what a valid code is.
 

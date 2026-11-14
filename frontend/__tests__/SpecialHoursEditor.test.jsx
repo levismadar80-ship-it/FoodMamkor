@@ -26,7 +26,7 @@ import {
   specialHoursIssues,
   upcomingSpecialCount,
 } from "@/lib/special-hours";
-import { HOLIDAYS } from "@/lib/holidays";
+import { holidaysOn } from "@/lib/holidays";
 
 vi.mock("next-intl", () => {
   const t = (key) => key;
@@ -37,17 +37,19 @@ vi.mock("@/lib/api", () => ({
 }));
 
 // Saturday 05/09/2026, 10:00 Israel. Every chip expectation below is DERIVED
-// from HOLIDAYS rather than naming dates: the chips read that file as-is, so a
-// date fix there (MEH-2263) must move the chips and not this suite.
+// from holidaysOn(TODAY) rather than naming dates — the same frozen day the
+// chips are built for, so the suite does not depend on the real clock
+// (MEH-3017; the dates themselves are pinned in holidays.test.js).
 const NOW = new Date("2026-09-05T07:00:00Z");
 const TODAY = "2026-09-05";
 
 /** The keys holidays.js says are still ahead of TODAY, oldest first. */
-const UPCOMING_KEYS = Object.entries(HOLIDAYS)
+const TABLE = holidaysOn(TODAY);
+const UPCOMING_KEYS = Object.entries(TABLE)
   .filter(([, h]) => h.end >= TODAY)
   .sort(([, a], [, b]) => a.start.localeCompare(b.start))
   .map(([key]) => key);
-const PAST_KEYS = Object.keys(HOLIDAYS).filter((k) => !UPCOMING_KEYS.includes(k));
+const PAST_KEYS = Object.keys(TABLE).filter((k) => !UPCOMING_KEYS.includes(k));
 
 const ONE = { "2026-09-21": { ranges: [], note: "יום כיפור" } };
 const MANY = {
@@ -129,7 +131,7 @@ describe("lib/special-hours — rows ⇄ payload", () => {
   });
 });
 
-describe("lib/special-hours — holiday chips read HOLIDAYS as-is", () => {
+describe("lib/special-hours — holiday chips read holidaysOn(today)", () => {
   it("lists only holidays that have not ended, oldest first, with their remaining dates", () => {
     const chips = holidayChips([], TODAY);
     expect(chips.map((c) => c.key)).toEqual(UPCOMING_KEYS);
@@ -138,7 +140,7 @@ describe("lib/special-hours — holiday chips read HOLIDAYS as-is", () => {
     // one holiday ahead, or every case below is vacuous.
     expect(chips.length).toBeGreaterThan(0);
     const first = chips[0];
-    const h = HOLIDAYS[first.key];
+    const h = TABLE[first.key];
     // MEH-2741: the lib carries dates, not words — the editor adds the name.
     expect(first.name).toBeUndefined();
     expect(first.dates[0]).toBe(h.start < TODAY ? TODAY : h.start);
@@ -165,8 +167,12 @@ describe("lib/special-hours — holiday chips read HOLIDAYS as-is", () => {
     expect(out).toHaveLength(chip.dates.length);
   });
 
-  it("no chips at all once every holiday in the file has passed", () => {
-    expect(holidayChips([], "2099-01-01")).toEqual([]);
+  // MEH-3017: the dates are computed from the Hebrew calendar, so there is no
+  // "after the table ends" any more. Before MEH-3017 this read [] on purpose.
+  it("years ahead the chips still come, computed, and never offer a past date", () => {
+    const chips = holidayChips([], "2099-01-01");
+    expect(chips.length).toBeGreaterThan(0);
+    expect(chips.flatMap((c) => c.dates).every((d) => d >= "2099-01-01")).toBe(true);
   });
 });
 

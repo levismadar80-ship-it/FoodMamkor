@@ -23,9 +23,6 @@ vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: vi.fn(), replace: vi.fn(), back: vi.fn() }),
 }));
 
-vi.mock("@/lib/language-context", () => ({
-  useLanguage: () => ({ lang: "he" }),
-}));
 
 vi.mock("next-intl", () => ({
   useLocale: () => "he",
@@ -81,7 +78,7 @@ describe("Header pointer-events shield (MEH-1251 Chunk B)", () => {
     expect(header.className).toMatch(/\bpointer-events-none\b/);
     // Guardrail: pointer-events only — the z / sticky tokens are untouched.
     expect(header.className).toMatch(/\bsticky\b/);
-    expect(header.className).toMatch(/z-\[1050\]/);
+    expect(header.className).toMatch(/(^|\s)z-header(\s|$)/);
   });
 
   it("sets pointer-events-none on the full-width nav-shell wrapper", () => {

@@ -163,7 +163,10 @@ test.describe("licence card", () => {
     expect(writes[0].body).toEqual({ producer_license_number: "1234567" });
     await expect(page.getByTestId("license-save-success")).toHaveText("מספר הרישיון נשמר");
 
-    await page.reload();
+    // MEH-3153: openAt() is itself a full document load (page.goto), so it is
+    // the reload. A page.reload() right before it raced two navigations: on
+    // WebKit the reloaded page's in-flight /auth/me was aborted by the goto,
+    // and the layout pushed /login over it (MEH-3172).
     await openAt(page, "license");
     await expect(field(page)).toHaveValue("1234567");
     // The card header says the licence is on file (MEH-2430 — it used to

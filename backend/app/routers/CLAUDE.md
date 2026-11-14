@@ -59,4 +59,4 @@ new router:
 - `backend/app/router_registry.py` — central registration site.
 - `backend/app/auth.py` — JWT, fingerprint binding, deps.
 - `backend/app/rate_limit.py` — slowapi limiter instance.
-- `.ai/diagrams/api-routes.md` — keep in sync (Workflow rule 12).
+- `.ai/diagrams/api-routes.md` — the route map (Workflow rule 12). The full path list is `docs/DATA.md`, enforced against `backend/openapi.json` by `scripts/checks/api-docs-route-guard.sh` (MEH-3192).

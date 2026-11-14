@@ -19,6 +19,7 @@ import { mapPinPoints, producerPoints } from "@/lib/producerPoints";
 import { readMapViewState, writeMapViewState } from "@/lib/map-view-state";
 // MEH-3066: business name beside its pin when zoomed in (own module, §16).
 import { bindPinLabel, installPinLabels, isPrimaryLocation } from "@/lib/map-pin-labels";
+import { COLOR } from "@/lib/color-tokens";
 
 /**
  * MapComponent — raw-Leaflet map with custom category-colored markers
@@ -195,7 +196,7 @@ function createCategoryMarker(
     ? `<div style="
         position:absolute;bottom:-2px;right:-2px;z-index:1;
         width:12px;height:12px;border-radius:50%;
-        background:#2e6853;border:1.5px solid #fff;
+        background:${COLOR.primary};border:1.5px solid #fff;
         display:flex;align-items:center;justify-content:center;
         font-size:7px;color:#fff;font-weight:700;line-height:1;
         pointer-events:none;
@@ -206,7 +207,7 @@ function createCategoryMarker(
   // The hex stays inline (Leaflet divIcon = raw HTML string); #2E4A2E equals
   // the `state-selected` token (= primary-dark, MEH-763 #970) by design.
   const borderWidth = active ? 3 : 2;
-  const borderColor = active ? "#2E4A2E" : "#2e6853";
+  const borderColor = active ? COLOR["state-selected"] : COLOR.primary;
 
   // Single box-shadow value (avoids cascade overwrite): drop shadow + state ring
   // (active glow / hover ring).
@@ -326,7 +327,7 @@ function createSingleBusinessClusterIcon(producer, markerCount) {
     <div style="position:relative;width:${size}px;height:${size}px;">
       <div style="
         width:${size}px;height:${size}px;border-radius:50%;overflow:hidden;
-        border:2px solid #2e6853;
+        border:2px solid ${COLOR.primary};
         box-shadow:0 2px 8px rgba(0,0,0,0.2);
         display:flex;align-items:center;justify-content:center;
         background:${categoryColor};
@@ -334,7 +335,7 @@ function createSingleBusinessClusterIcon(producer, markerCount) {
       <div style="
         position:absolute;top:-4px;right:-4px;
         min-width:18px;height:18px;padding:0 4px;box-sizing:border-box;
-        border-radius:9px;background:#2e6853;border:2px solid #fff;
+        border-radius:9px;background:${COLOR.primary};border:2px solid #fff;
         display:flex;align-items:center;justify-content:center;
         font-family:'DM Sans',sans-serif;font-size:11px;font-weight:600;
         line-height:1;color:#fff;pointer-events:none;
@@ -429,6 +430,13 @@ export default function MapComponent({
   // resulting `moveend` should NOT mark the map as "user-moved" and
   // should NOT pop the "search this area" button.
   const programmaticMoveRef = useRef(false);
+  // MEH-3153: true only while our own invalidateSize() runs. A container that
+  // settles after init (Safari's toolbar, a late flex/grid pass) makes Leaflet
+  // re-centre and fire a synchronous moveend that nobody asked for. Measured on
+  // WebKit (iPhone 390x664): a fresh /map visit wrote map_view_state from
+  // invalidateSize twice before any touch, and the same moveend reached
+  // onMapMove, i.e. «חפשו באזור זה».
+  const layoutMoveRef = useRef(false);
 
   // Keep latest callbacks in refs so we don't re-init the map whenever
   // the parent passes new arrow functions.
@@ -673,8 +681,8 @@ export default function MapComponent({
             } else {
               myLocationMarkerRef.current = L.circleMarker(latlng, {
                 radius: 8,
-                color: "#2e6853",
-                fillColor: "#2e6853",
+                color: COLOR.primary,
+                fillColor: COLOR.primary,
                 fillOpacity: 0.85,
                 weight: 2,
                 interactive: true,
@@ -823,7 +831,7 @@ export default function MapComponent({
         return L.divIcon({
           html: `
             <div style="
-              background:#2e6853;color:#fff;border-radius:50%;
+              background:${COLOR.primary};color:#fff;border-radius:50%;
               width:40px;height:40px;display:flex;align-items:center;
               justify-content:center;font-family:'DM Sans',sans-serif;
               font-size:13px;font-weight:600;border:2px solid #fff;
@@ -858,6 +866,9 @@ export default function MapComponent({
 
     mapInstanceRef.current.on("moveend", () => {
       fireBounds();
+      // A resize re-centre keeps the same centre, so there is nothing new to
+      // save and the visitor did not move the map (MEH-3153).
+      if (layoutMoveRef.current) return;
       // docs/archive/MAP_IMPROVEMENTS.md #1 — notify parent that the user moved the
       // map so it can show "search this area". Suppress for our own
       // flyTo/fitBounds calls (initial fit, focusProducer, my-location).
@@ -899,7 +910,17 @@ export default function MapComponent({
     // settles + on any subsequent container resize.
     const scheduleInvalidate = () => {
       if (!mapInstanceRef.current) return;
-      requestAnimationFrame(() => mapInstanceRef.current?.invalidateSize());
+      requestAnimationFrame(() => {
+        if (!mapInstanceRef.current) return;
+        // Leaflet fires this moveend synchronously (debounceMoveend is off),
+        // so the flag covers exactly the event invalidateSize causes.
+        layoutMoveRef.current = true;
+        try {
+          mapInstanceRef.current.invalidateSize();
+        } finally {
+          layoutMoveRef.current = false;
+        }
+      });
     };
     scheduleInvalidate();
     setTimeout(scheduleInvalidate, 150);
