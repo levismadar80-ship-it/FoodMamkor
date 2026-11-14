@@ -3682,6 +3682,30 @@
         "title": "GroupBuyOut",
         "type": "object"
       },
+      "GroupBuyStatusCountsOut": {
+        "description": "How many group buys each public status tab would list right now.",
+        "properties": {
+          "fulfilled": {
+            "title": "Fulfilled",
+            "type": "integer"
+          },
+          "funded": {
+            "title": "Funded",
+            "type": "integer"
+          },
+          "open": {
+            "title": "Open",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "open",
+          "funded",
+          "fulfilled"
+        ],
+        "title": "GroupBuyStatusCountsOut",
+        "type": "object"
+      },
       "GroupBuyStatusOut": {
         "properties": {
           "detail": {
@@ -21802,6 +21826,57 @@
           }
         ],
         "summary": "Create Group Buy",
+        "tags": [
+          "group-buys"
+        ]
+      }
+    },
+    "/group-buys/counts": {
+      "get": {
+        "description": "MEH-3128: how many group buys each status tab would list, so the page\nhides a tab that would open on an empty state. Numbers only.",
+        "operationId": "count_group_buys_by_status_group_buys_counts_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "city",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 100,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "City"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GroupBuyStatusCountsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Count Group Buys By Status",
         "tags": [
           "group-buys"
         ]

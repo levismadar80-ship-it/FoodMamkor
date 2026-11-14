@@ -11,7 +11,7 @@
 //
 // The three gates: visibleAxisChips (lib/producer-filters.js, MEH-2767) ·
 // visibleCategoryChips (lib/event-category-gate.js, MEH-3124) · dropZeroChips
-// (lib/chip-gate.js, MEH-3128). `gateToken` must appear in the file, so a
+// (lib/chip-gate.js, MEH-3128). `gate` must appear in the file, so a
 // listed gate that is deleted goes red as well.
 import { describe, it, expect } from "vitest";
 import fs from "node:fs";
@@ -22,16 +22,16 @@ const SCAN = ["app", "components", "lib"];
 
 // key: "<file relative to frontend/>::<chips expression's first token>"
 const REGISTRY = {
-  "app/[locale]/group-buys/GroupBuysClient.jsx::dropZeroChips": { gateToken: "dropZeroChips" },
-  "app/[locale]/events/EventsClient.jsx::shownChips": { gateToken: "visibleCategoryChips" },
-  "app/[locale]/home/HomeProducersGrid.jsx::gatedChips": { gateToken: "visibleAxisChips" },
-  "app/[locale]/home/HomeProducersGrid.jsx::sheetChips": { gateToken: "visibleAxisChips" },
-  "components/ProducersClient.jsx::visibleChipDefs": { gateToken: "visibleAxisChips" },
-  "components/ProducersClient.jsx::sheetChips": { gateToken: "visibleAxisChips" },
+  "app/[locale]/group-buys/GroupBuysClient.jsx::dropZeroChips": { gate: "dropZeroChips" },
+  "app/[locale]/events/EventsClient.jsx::shownChips": { gate: "visibleCategoryChips" },
+  "app/[locale]/home/HomeProducersGrid.jsx::gatedChips": { gate: "visibleAxisChips" },
+  "app/[locale]/home/HomeProducersGrid.jsx::sheetChips": { gate: "visibleAxisChips" },
+  "components/ProducersClient.jsx::visibleChipDefs": { gate: "visibleAxisChips" },
+  "components/ProducersClient.jsx::sheetChips": { gate: "visibleAxisChips" },
   // categories with no live business are dropped (visibleCategories, MEH-2131)
-  "components/ProducersClient.jsx::categoryChips": { gateToken: "visibleCategories" },
-  "app/[locale]/map/components/FilterChipsBar.jsx::categoryChipsWithIcons": { gateToken: "visibleCategoryChips" },
-  "app/[locale]/map/components/FilterChipsBar.jsx::visibleToggleChips": { gateToken: "visibleToggleChips" },
+  "components/ProducersClient.jsx::categoryChips": { gate: "visibleCategories" },
+  "app/[locale]/map/components/FilterChipsBar.jsx::categoryChipsWithIcons": { gate: "visibleCategoryChips" },
+  "app/[locale]/map/components/FilterChipsBar.jsx::visibleToggleChips": { gate: "visibleToggleChips" },
   // Not filters, or a pass-through of a row already gated upstream:
   "app/[locale]/favorites/FavoritesClient.jsx::FILTERS": {
     exempt:
@@ -115,7 +115,7 @@ describe("every chip row hides chips with no results (MEH-3128)", () => {
       }
       const file = key.split("::")[0];
       const src = fs.readFileSync(path.join(ROOT, file), "utf8");
-      expect(src.includes(entry.gateToken), `${file} no longer uses ${entry.gateToken}`).toBe(true);
+      expect(src.includes(entry.gate), `${file} no longer uses ${entry.gate}`).toBe(true);
     }
   });
 });
