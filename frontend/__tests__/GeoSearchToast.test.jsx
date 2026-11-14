@@ -15,7 +15,7 @@ vi.mock("@/lib/schemas", () => ({
   GeoSearchSchema: { safeParse: () => ({ success: false, error: { issues: [{ message: h.message }] } }) },
 }));
 vi.mock("@/lib/map-chips", () => ({ boundsToCenterRadius: () => ({ lat: 0, lng: 0, radius_km: 0.1 }) }));
-vi.mock("@/components/MapBottomSheet", () => ({ HALF: 45 }));
+vi.mock("@/components/MapBottomSheet", () => ({ PEEK: 14, HALF: 45 }));
 
 import { useMapSync } from "@/app/[locale]/map/state/useMapSync";
 

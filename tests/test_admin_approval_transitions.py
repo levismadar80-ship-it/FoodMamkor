@@ -55,7 +55,9 @@ def test_toggle_approved_to_inactive(client, db):
 
 
 def test_toggle_inactive_to_approved(client, db):
-    producer = make_producer(db, status="inactive")
+    # MEH-2945: un-pausing runs the approval gates, so the row passes them
+    # (the gated cases live in test_meh2945_unpause_gate.py).
+    producer = make_producer(db, status="inactive", images=[TEST_IMAGE], phone_verified=True)
     resp = _toggle(client, producer.id, _admin(db))
     assert resp.status_code == 200, resp.text
     assert resp.json()["status"] == "approved"

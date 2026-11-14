@@ -600,6 +600,7 @@ function AddLeadModal({ onClose, onCreated }) {
           />
         </div>
         <Input
+          type="tel"
           placeholder={t("outreach.modal_add.phone_placeholder")}
           value={form.phone}
           onChange={set("phone")}

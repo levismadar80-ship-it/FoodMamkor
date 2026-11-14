@@ -1278,6 +1278,8 @@ function RegisterProducerPageBody({ routeKind }) {
               <input
                 id="producer-phone"
                 data-testid="register-details-phone"
+                type="tel"
+                autoComplete="tel"
                 placeholder={t("auth.register.producer.fields.phone")}
                 value={form.phone}
                 onChange={set("phone")}
