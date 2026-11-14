@@ -267,6 +267,26 @@ process.env.VERCEL_AUTOMATION_BYPASS_SECRET, "x-vercel-set-bypass-cookie":
 "true" }`. Control: `/he` → 200 with them, 302 → `vercel.com/sso-api` without.
 Never write the secret to a file, commit, PR body or log.
 
+### 3. Log in as a seeded demo account — a screen behind login is checked, not skipped (MEH-3140)
+
+Staging carries three QA users, and their passwords are in every session's env:
+
+| Role | Account | Password env var |
+|---|---|---|
+| business owner (`/producer/dashboard`) | `demo-owner@example.com` | `DEMO_OWNER_PASSWORD` |
+| consumer | `demo-consumer@example.com` | `DEMO_CONSUMER_PASSWORD` |
+| admin (`/admin`) | `demo-admin@example.com` | `DEMO_ADMIN_PASSWORD` |
+
+Log in inside the same Playwright context (fill `/login`, or POST
+`/api/auth/login` as `frontend/e2e/global-setup.ts` does); a token fetched with
+curl fails the fingerprint check. `/auth/login` is 5/minute per IP — one login
+per role per run. Never write "I could not see the dashboard / admin": check it
+on the demo account, or say which step failed. If a login is refused, that is a
+finding to report (the E2E run logs in with the same three on every staging
+push). Staging only — the seed refuses production. Details:
+[docs/DEPLOYMENT.md](../../docs/DEPLOYMENT.md) «Staging QA auth fixtures».
+`DemoAccountsRuleSync.test.js` keeps this table equal to `global-setup.ts`.
+
 ### Corollary — a Railway `000` from the sandbox is NOT an outage
 
 `*.up.railway.app` is egress-blocked here. Probe the backend through

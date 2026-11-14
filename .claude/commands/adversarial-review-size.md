@@ -1,8 +1,8 @@
 Run adversarial review specialized for code-size drift on central components.
 
 Use this variant when the diff touches any file listed in
-`.claude/central-components.json` (13 files: `MapClient.jsx`, `MapComponent.jsx`,
-`producers/page.jsx`, `app/page.js`, `app/layout.js`, `language-context.js`,
+`.claude/central-components.json` (12 files: `MapClient.jsx`, `MapComponent.jsx`,
+`producers/page.jsx`, `app/page.js`, `app/layout.js`,
 `ProducerCard.jsx`, `Header.jsx`, `BottomNav.jsx`, `Footer.jsx`, `main.py`,
 `auth.py`, `config.py`).
 

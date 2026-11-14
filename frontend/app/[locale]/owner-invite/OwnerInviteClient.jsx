@@ -23,6 +23,7 @@ import PasswordInput from "@/components/PasswordInput";
 import StatusPage from "@/components/StatusPage";
 import BrandLoader from "@/components/BrandLoader";
 import Button from "@/components/ui/Button";
+import Input from "@/components/ui/Input";
 import InlineMessage from "@/components/ui/InlineMessage";
 
 /**
@@ -333,10 +334,8 @@ export default function OwnerInviteClient({ tokenFromPath = null }) {
 
       <form onSubmit={submit} noValidate data-testid="owner-invite-form" className="space-y-4">
         <div>
-          <label className="block text-sm text-fg-muted mb-1" htmlFor="owner-invite-email">
-            {t("email_label")}
-          </label>
-          <input
+          <Input
+            label={t("email_label")}
             id="owner-invite-email"
             data-testid="owner-invite-email"
             type="email"
@@ -349,7 +348,6 @@ export default function OwnerInviteClient({ tokenFromPath = null }) {
               // she holds belongs to the address she just left.
               setCodeSentTo(null);
             }}
-            className="w-full min-h-touch border border-border rounded-sm ps-4 py-3 bg-surface text-text focus-ring"
           />
         </div>
 
@@ -381,10 +379,8 @@ export default function OwnerInviteClient({ tokenFromPath = null }) {
         </div>
 
         <div>
-          <label className="block text-sm text-fg-muted mb-1" htmlFor="owner-invite-code">
-            {t("code_label")}
-          </label>
-          <input
+          <Input
+            label={t("code_label")}
             id="owner-invite-code"
             data-testid="owner-invite-code"
             // `inputMode` + `autoComplete` so a phone offers the digit pad and
@@ -396,7 +392,7 @@ export default function OwnerInviteClient({ tokenFromPath = null }) {
             dir="ltr"
             value={code}
             onChange={(e) => setCode(e.target.value)}
-            className="w-full min-h-touch border border-border rounded-sm ps-4 py-3 bg-surface text-text tracking-[0.3em] focus-ring"
+            className="tracking-[0.3em]"
           />
         </div>
 
