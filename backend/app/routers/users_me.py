@@ -75,8 +75,10 @@ def _change_email(
     # MEH-3104: a session alone is not enough to move the account. Without
     # this, a stolen session could change the address, ask for a password
     # reset there and take the account. Same check and copy as change_password.
-    if not current_password or not user.password_hash or not verify_password(
-        current_password, user.password_hash
+    if (
+        not current_password
+        or not user.password_hash
+        or not verify_password(current_password, user.password_hash)
     ):
         raise HTTPException(status_code=403, detail="הסיסמה הנוכחית שגויה")
     existing = db.query(User).filter(User.email == new_email).first()
