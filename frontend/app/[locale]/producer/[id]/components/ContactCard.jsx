@@ -30,6 +30,7 @@ import { usePreviewMode } from "@/lib/preview-mode"; // MEH-2916
 // — same detection mechanics + MEH-1223 real-success flag (a double failure
 // shows the failure toast, never a false "copied").
 const MAIL_FALLBACK_MS = 1200;
+import { copyText } from "@/lib/clipboard";
 
 function armMailtoFallback(email, t) {
   if (!email) return;
@@ -49,23 +50,7 @@ function armMailtoFallback(email, t) {
   document.addEventListener("visibilitychange", onVisibility);
   timer = setTimeout(async () => {
     removeListeners();
-    let copied = false;
-    try {
-      await navigator.clipboard.writeText(email);
-      copied = true;
-    } catch {
-      const ta = document.createElement("textarea");
-      ta.value = email;
-      document.body.appendChild(ta);
-      ta.select();
-      try {
-        copied = document.execCommand("copy");
-      } catch {
-        copied = false;
-      } finally {
-        document.body.removeChild(ta);
-      }
-    }
+    const copied = await copyText(email);
     showToast.error(
       copied
         ? t("producer.detail.contact_card.email_fallback_toast")
