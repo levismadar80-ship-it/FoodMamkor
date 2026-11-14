@@ -63,7 +63,8 @@
       "newsletter_label": "Newsletter email",
       "newsletter_placeholder": "Your email, please",
       "newsletter_submit": "Join",
-      "newsletter_success": "Welcome to Mehamakor See you in your inbox"
+      "newsletter_success": "Welcome to Mehamakor See you in your inbox",
+      "cookie_settings": "Cookie settings"
     },
     "whats_on": "What's on"
   },
@@ -3738,8 +3739,8 @@
     "meta_title": "Accessibility Statement",
     "meta_description": "Mehamakor's accessibility statement — we are committed to making the site usable for all users, including people with disabilities.",
     "heading": "Accessibility Statement",
-    "date_label": "The site has been tested using automated tools and manual checks. A formal accessibility audit by an external certified accessibility examiner has not yet been performed.",
-    "statement_date": "Statement last updated: July 2026",
+    "date_label": "We tested the site in November 2026 with automated tools, at phone and desktop screen sizes. A formal audit by an external certified accessibility examiner has not yet been performed.",
+    "statement_date": "Statement last updated: November 2026",
     "sections": {
       "commitment": {
         "title": "Accessibility commitment",
@@ -3754,14 +3755,14 @@
         "item_rtl": "Full RTL and Hebrew screen-reader support.",
         "item_contrast": "Reasonable color contrast between text and background.",
         "item_alt": "Alternative text (alt) for meaningful images.",
-        "item_keyboard": "Keyboard navigation across all pages.",
+        "item_keyboard": "Keyboard navigation for menus, forms and buttons.",
         "item_labels": "Clear labels for forms and buttons.",
         "item_fonts": "Font sizes that can be enlarged in the browser.",
         "item_semantic": "Semantic structure (landmarks, headings) to support assistive technologies."
       },
       "gaps": {
         "title": "Areas not yet fully accessible",
-        "body": "Some pages, content, or features may not yet be fully accessible, including content uploaded by users (for example, images without alternative text). We work continuously to improve and expand accessibility."
+        "body": "These are the parts we know are not yet fully accessible: the interactive map, where the list of businesses beside it gives the same information; images that businesses upload themselves, some of which still have no alternative text, while the business's details are also written as text on its page; a few color pairs that do not yet meet the AA contrast level, such as the inactive labels in the bottom menu; and third-party content such as the map tiles. If any of these stops you from using the site, contact the accessibility coordinator and we will help another way. We work continuously to improve and expand accessibility."
       },
       "contact": {
         "title": "Contact the accessibility coordinator",
@@ -3959,7 +3960,7 @@
     "meta_title": "Privacy Policy",
     "meta_description": "Mehamakor's privacy policy — what data we collect, how we use it, and your rights under the Protection of Privacy Law (Amendment 13, 2025).",
     "heading": "Privacy Policy",
-    "date_label": "Last updated: July 2026 · Aligned with the Protection of Privacy Law, 1981 and Amendment 13 (2025)",
+    "date_label": "Last updated: November 2026 · Aligned with the Protection of Privacy Law, 1981 and Amendment 13 (2025)",
     "collection_notice": {
       "chat": "What you write here is sent to Anthropic to draft the reply.",
       "password_reset": "Your email is used only to send the reset link.",
@@ -4052,6 +4053,7 @@
           "posthog": "<b>PostHog</b> — product analytics (which screens were viewed, which registration steps were completed). Loaded only after analytics-cookie consent in the cookie banner, with data stored on EU servers by default.",
           "infra": "<b>Vercel & Railway</b> — site infrastructure and servers; the database is hosted on Railway."
         },
+        "transfer": "Some of these providers store and process data outside Israel, mainly in the United States and the European Union. We pass them only what is needed to run the service, subject to each provider's terms of service and privacy policy.",
         "outro": "We do <b>not sell</b> your information to third parties for marketing purposes."
       },
       "rights": {
@@ -4083,7 +4085,7 @@
       },
       "cookies": {
         "title": "6. Cookies",
-        "body": "We use essential cookies to maintain your session and the site's normal operation, plus analytics cookies for usage analysis. On your first visit you'll see a notice that lets you choose between \"I agree\" and \"essential only.\" You can change this preference any time through your browser settings."
+        "body": "We use essential cookies to maintain your session and the site's normal operation, plus analytics cookies for usage analysis. On your first visit you'll see a notice that lets you choose between \"I agree\" and \"essential only.\" You can change this preference any time with the \"Cookie settings\" button here and at the bottom of the site's pages, or in your browser settings. Withdrawing consent stops collection from that moment; cookies already stored can be deleted in your browser settings."
       },
       "retention": {
         "title": "7. Data retention and security",
