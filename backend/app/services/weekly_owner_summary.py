@@ -304,7 +304,7 @@ class _Candidate:
 
     id: Any
     name: str
-    is_test: bool
+    test_business: bool  # Producer.is_test, read only (MEH-2952 guard: no is_test writes)
     sent_at: Any
 
 
@@ -329,7 +329,7 @@ def _candidates(db: Session, now: datetime) -> list[_Candidate]:
         .all()
     )
     return [
-        _Candidate(id=r[0], name=r[1] or "", is_test=bool(r[2]), sent_at=r[3])
+        _Candidate(id=r[0], name=r[1] or "", test_business=bool(r[2]), sent_at=r[3])
         for r in rows
     ]
 
@@ -439,7 +439,7 @@ def send_weekly_summaries(db: Session, now: datetime | None = None) -> dict[str,
                 subject,
                 plain,
                 html=html,
-                test_cause=cand.is_test or owner_is_test,
+                test_cause=cand.test_business or owner_is_test,
             )
             counters["sent"] += 1
         except Exception:  # noqa: BLE001 — one business never stops the run
