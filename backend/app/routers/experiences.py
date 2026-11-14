@@ -44,6 +44,12 @@ from app.schemas.schemas import (
     ExperienceValidateResult,
 )
 from app.services import indexnow  # MEH-2852
+from app.services.booking_cancellations import (  # MEH-3227
+    after_item_edit,
+    cancel_item_signups,
+    is_test_item,
+    item_state,
+)
 from app.services.date_rules import refuse_past_date  # MEH-3224
 from app.services.experience_moderation import validate_experience
 from app.services.experience_notifications import (
@@ -581,8 +587,11 @@ def update_experience(  # noqa: PLR0913 — all args are FastAPI-injected; MEH-3
     if touches_range and _min_above_max(new_min, new_max):
         raise HTTPException(status_code=422, detail=_MIN_ABOVE_MAX_DETAIL)
     _check_method_edit(db, ex, payload)
+    before = item_state(ex)
     for field, value in payload.items():
         setattr(ex, field, value)
+    # MEH-3227: cancelled → sign-ups cancelled; moved → registrants told.
+    after_item_edit(db, ex, before, background_tasks, is_test_item(ex))
 
     # MEH-2663: the sign-up tally is a counter, never NULL, and never above
     # the cap — the dashboard clamps, and a direct PUT is clamped the same way.
@@ -673,6 +682,8 @@ def delete_experience(
         raise HTTPException(status_code=404, detail="Experience not found")
     # MEH-2852: only a page that was public has anything to take down.
     removed_urls = indexnow.experience_urls(ex.id) if _is_public(ex) else []
+    # MEH-3227: registrants are told before the cascade removes their rows.
+    cancel_item_signups(db, ex, background_tasks, is_test_item(ex))
     db.delete(ex)
     db.commit()
     indexnow.schedule(background_tasks, removed_urls)

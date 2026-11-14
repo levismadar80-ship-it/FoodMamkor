@@ -801,6 +801,29 @@ via `slowapi` — see `backend/app/rate_limit.py` and
 > untouched; re-activation un-cancels nothing; a failing email never fails the
 > admin action. No schema change.
 >
+> **MEH-3227 — the same four paths cancel bags and sign-ups too.** Suspend,
+> reject-while-live, admin delete and the owner's `DELETE /auth/me` all call
+> `services/booking_cancellations.delist_business`, which runs the MEH-2498
+> group-buy cancel and then: every `active` rescue offer of the business whose
+> pickup has not ended → `cancelled`, its `reserved` orders → `cancelled`, one
+> email per buyer («הסל ב{name} בוטל» / «…כבר לא מופיע במהמקור, ולכן השריון
+> שלכם לסל בוטל»); every `registered` sign-up to its events from today on and to
+> experiences its owner hosts (today on) → `cancelled`, one email
+> each («ההרשמה ל-"{title}" בוטלה»). Suspend and admin delete also mail the
+> owner («הדף של {name} הוסתר מהאתר» / «…הוסר», with a /contact link); reject
+> already sends its own email, and the account deletion is her own act. Past
+> or ended bookings and other businesses are untouched. Rows are read before
+> the delete cascade. No schema change.
+>
+> **MEH-3227 — the business changes one event or experience.**
+> `PUT /events/{id}` / `PUT /experiences/{id}` with `is_active` true→false, and
+> `DELETE` on either, cancel the item's `registered` sign-ups and mail each
+> registrant («"{title}" בוטל»); a PUT that changes `event_date` or
+> `event_time` of an active item keeps the sign-ups and mails the new time
+> with the cancel link («המועד של "{title}" השתנה»). A past item sends
+> nothing. All mail is a BackgroundTask (fail-open, `test_cause` for a test
+> business).
+>
 > **MEH-2502 — the admin edit cannot change status.** `PUT
 > /admin/producers/{id}` with `status` in the body → **422** «לא ניתן לשנות
 > סטטוס בעריכה — יש להשתמש באישור, בדחייה או בהשעיה.», nothing written. Status

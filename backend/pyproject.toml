@@ -213,6 +213,7 @@ files = [
     "app/services/auto_reply_watchdog.py",
     "app/services/availability_validation.py",
     "app/services/bio_generator.py",
+    "app/services/booking_cancellations.py",
     "app/services/category_slug.py",
     "app/services/chat_db_tools.py",
     "app/services/chat_feature_coverage.py",
