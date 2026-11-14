@@ -78,3 +78,37 @@ describe("cookie settings re-open the banner", () => {
     expect(reload).not.toHaveBeenCalled();
   });
 });
+
+// Review finding (MEH-3196): /map renders no footer and the dashboards render
+// the slim DashboardFooter, so the footer button alone did not reach "every
+// page". The privacy policy's cookies section and DashboardFooter carry it too.
+// DISCRIMINATION: before this fix neither surface rendered a cookie control.
+import DashboardFooter from "@/components/DashboardFooter";
+import CookieSettingsButton from "@/components/CookieSettingsButton";
+
+vi.mock("next/image", () => ({ default: (p) => <img alt="" {...p} /> }));
+
+describe("the control is reachable without the site footer", () => {
+  it("DashboardFooter carries «הגדרות עוגיות» and it opens the banner", () => {
+    localStorage.setItem("cookieConsent", "all");
+    render(<><CookieBanner /><DashboardFooter /></>);
+    expect(screen.queryByTestId("cookie-banner")).toBeNull();
+    fireEvent.click(screen.getByTestId("dashboard-footer-cookie-settings"));
+    expect(screen.getByTestId("cookie-banner")).toBeTruthy();
+  });
+
+  it("the page-body variant (privacy policy) opens the banner", () => {
+    localStorage.setItem("cookieConsent", "essential");
+    render(<><CookieBanner /><CookieSettingsButton variant="outlined" testId="privacy-cookie-settings" /></>);
+    fireEvent.click(screen.getByTestId("privacy-cookie-settings"));
+    expect(screen.getByTestId("cookie-banner")).toBeTruthy();
+  });
+
+  it("the privacy page renders that control inside its cookies section", async () => {
+    const fs = await import("node:fs");
+    const src = fs.readFileSync("app/[locale]/privacy/page.js", "utf8");
+    const cookiesCase = src.slice(src.indexOf('case "cookies"'), src.indexOf('case "retention"'));
+    expect(cookiesCase).toContain("<CookieSettingsButton");
+    expect(cookiesCase).toContain('variant="outlined"');
+  });
+});

@@ -3647,7 +3647,7 @@
     "meta_title": "Accessibility Statement",
     "meta_description": "Mehamakor's accessibility statement — we are committed to making the site usable for all users, including people with disabilities.",
     "heading": "Accessibility Statement",
-    "date_label": "We tested the site in November 2026 with automated tools and manual checks on phone and desktop. A formal audit by an external certified accessibility examiner has not yet been performed.",
+    "date_label": "We tested the site in November 2026 with automated tools, at phone and desktop screen sizes. A formal audit by an external certified accessibility examiner has not yet been performed.",
     "statement_date": "Statement last updated: November 2026",
     "sections": {
       "commitment": {
@@ -3661,7 +3661,7 @@
       "features": {
         "title": "Accessibility features in this site",
         "item_rtl": "Full RTL and Hebrew screen-reader support.",
-        "item_contrast": "Color contrast between text and background, checked against level AA.",
+        "item_contrast": "Reasonable color contrast between text and background.",
         "item_alt": "Alternative text (alt) for meaningful images.",
         "item_keyboard": "Keyboard navigation for menus, forms and buttons.",
         "item_labels": "Clear labels for forms and buttons.",
@@ -3670,7 +3670,7 @@
       },
       "gaps": {
         "title": "Areas not yet fully accessible",
-        "body": "These are the parts we know are not yet fully accessible: the interactive map, where the list of businesses beside it gives the same information; images that businesses upload themselves, some of which still have no alternative text; and third-party content such as the map tiles. If any of these stops you from using the site, contact the accessibility coordinator and we will help another way. We work continuously to improve and expand accessibility."
+        "body": "These are the parts we know are not yet fully accessible: the interactive map, where the list of businesses beside it gives the same information; images that businesses upload themselves, some of which still have no alternative text, while the business's details are also written as text on its page; a few color pairs that do not yet meet the AA contrast level, such as the inactive labels in the bottom menu; and third-party content such as the map tiles. If any of these stops you from using the site, contact the accessibility coordinator and we will help another way. We work continuously to improve and expand accessibility."
       },
       "contact": {
         "title": "Contact the accessibility coordinator",
@@ -3961,7 +3961,7 @@
           "posthog": "<b>PostHog</b> — product analytics (which screens were viewed, which registration steps were completed). Loaded only after analytics-cookie consent in the cookie banner, with data stored on EU servers by default.",
           "infra": "<b>Vercel & Railway</b> — site infrastructure and servers; the database is hosted on Railway."
         },
-        "transfer": "Some of these providers store and process data outside Israel, mainly in the United States and the European Union. We pass them only what is needed to run the service, and only to providers bound to keep the data confidential and secure.",
+        "transfer": "Some of these providers store and process data outside Israel, mainly in the United States and the European Union. We pass them only what is needed to run the service, subject to each provider's terms of service and privacy policy.",
         "outro": "We do <b>not sell</b> your information to third parties for marketing purposes."
       },
       "rights": {
@@ -3993,7 +3993,7 @@
       },
       "cookies": {
         "title": "6. Cookies",
-        "body": "We use essential cookies to maintain your session and the site's normal operation, plus analytics cookies for usage analysis. On your first visit you'll see a notice that lets you choose between \"I agree\" and \"essential only.\" You can change this preference any time through the \"Cookie settings\" link at the bottom of every page, or in your browser settings."
+        "body": "We use essential cookies to maintain your session and the site's normal operation, plus analytics cookies for usage analysis. On your first visit you'll see a notice that lets you choose between \"I agree\" and \"essential only.\" You can change this preference any time with the \"Cookie settings\" button here and at the bottom of the site's pages, or in your browser settings. Withdrawing consent stops collection from that moment; cookies already stored can be deleted in your browser settings."
       },
       "retention": {
         "title": "7. Data retention and security",
