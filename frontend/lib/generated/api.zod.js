@@ -6213,6 +6213,7 @@ export const ReportProducerProducersProducerIdReportPostResponse = /*#__PURE__*/
  * @summary List Reviews Nested
  */
 export const listReviewsNestedProducersProducerIdReviewsGetResponseRatingCountsDefault = {};
+export const listReviewsNestedProducersProducerIdReviewsGetResponseReviewsItemIsMineDefault = false;
 
 export const ListReviewsNestedProducersProducerIdReviewsGetResponse = /*#__PURE__*/ zod.object({
   "page": /*#__PURE__*/ zod.int(),
@@ -6222,11 +6223,11 @@ export const ListReviewsNestedProducersProducerIdReviewsGetResponse = /*#__PURE_
   "body": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "created_at": /*#__PURE__*/ zod.string(),
   "id": /*#__PURE__*/ zod.uuid(),
+  "is_mine": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), listReviewsNestedProducersProducerIdReviewsGetResponseReviewsItemIsMineDefault),
   "producer_id": /*#__PURE__*/ zod.uuid(),
   "reply": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "reply_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "stars": /*#__PURE__*/ zod.int(),
-  "user_id": /*#__PURE__*/ zod.uuid(),
   "user_name": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
 })),
   "total": /*#__PURE__*/ zod.int()
@@ -6248,15 +6249,17 @@ export const ListReviewsNestedProducersProducerIdReviewsGetResponse = /*#__PURE_
  *   4. Body is moderated by Haiku (fail-open).
  * @summary Create Review Nested
  */
+export const createReviewNestedProducersProducerIdReviewsPostResponseIsMineDefault = false;
+
 export const CreateReviewNestedProducersProducerIdReviewsPostResponse = /*#__PURE__*/ zod.object({
   "body": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "created_at": /*#__PURE__*/ zod.string(),
   "id": /*#__PURE__*/ zod.uuid(),
+  "is_mine": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), createReviewNestedProducersProducerIdReviewsPostResponseIsMineDefault),
   "producer_id": /*#__PURE__*/ zod.uuid(),
   "reply": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "reply_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "stars": /*#__PURE__*/ zod.int(),
-  "user_id": /*#__PURE__*/ zod.uuid(),
   "user_name": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
 })
 
@@ -6651,15 +6654,17 @@ export const CreateReviewRescueOrdersOrderIdReviewPostResponse = /*#__PURE__*/ z
 /**
  * @summary List Reviews
  */
+export const listReviewsReviewsGetResponseIsMineDefault = false;
+
 export const ListReviewsReviewsGetResponseItem = /*#__PURE__*/ zod.object({
   "body": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "created_at": /*#__PURE__*/ zod.string(),
   "id": /*#__PURE__*/ zod.uuid(),
+  "is_mine": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), listReviewsReviewsGetResponseIsMineDefault),
   "producer_id": /*#__PURE__*/ zod.uuid(),
   "reply": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "reply_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "stars": /*#__PURE__*/ zod.int(),
-  "user_id": /*#__PURE__*/ zod.uuid(),
   "user_name": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
 })
 export const ListReviewsReviewsGetResponse = /*#__PURE__*/ zod.array(ListReviewsReviewsGetResponseItem)
@@ -6679,15 +6684,17 @@ export const DeleteReviewReviewsReviewIdDeleteResponse = /*#__PURE__*/ zod.unkno
  * voice. An empty/blank reply clears it.
  * @summary Set Review Reply
  */
+export const setReviewReplyReviewsReviewIdReplyPutResponseIsMineDefault = false;
+
 export const SetReviewReplyReviewsReviewIdReplyPutResponse = /*#__PURE__*/ zod.object({
   "body": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "created_at": /*#__PURE__*/ zod.string(),
   "id": /*#__PURE__*/ zod.uuid(),
+  "is_mine": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), setReviewReplyReviewsReviewIdReplyPutResponseIsMineDefault),
   "producer_id": /*#__PURE__*/ zod.uuid(),
   "reply": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "reply_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "stars": /*#__PURE__*/ zod.int(),
-  "user_id": /*#__PURE__*/ zod.uuid(),
   "user_name": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
 })
 

@@ -44,6 +44,7 @@ from app.schemas.schemas import (
     ExperienceValidateResult,
 )
 from app.services import indexnow  # MEH-2852
+from app.services.date_rules import refuse_past_date  # MEH-3224
 from app.services.experience_moderation import validate_experience
 from app.services.experience_notifications import (
     host_test_cause,
@@ -419,6 +420,7 @@ def submit_experience(
     """
     if _min_above_max(data.min_participants, data.max_participants):
         raise HTTPException(status_code=422, detail=_MIN_ABOVE_MAX_DETAIL)
+    refuse_past_date(data.event_date)  # MEH-3224 (D6)
     # MEH-2763: the method's prerequisite (mobile / phone / URL).
     problem = method_problem(
         data.registration_method,
@@ -569,6 +571,8 @@ def update_experience(  # noqa: PLR0913 — all args are FastAPI-injected; MEH-3
     # experience to pending, which takes its public page down.
     was_public = _is_public(ex)
     payload = data.model_dump(exclude_unset=True)
+    # MEH-3224 (D6): same rule as events.update_event.
+    refuse_past_date(payload.get("event_date"), ex.event_date)  # type: ignore[arg-type]
     # Only an edit that touches min or max is checked, so a stored pair that
     # is somehow already inverted never blocks an unrelated edit.
     touches_range = "min_participants" in payload or "max_participants" in payload

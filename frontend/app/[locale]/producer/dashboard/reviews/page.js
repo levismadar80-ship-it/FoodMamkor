@@ -63,7 +63,7 @@ function OwnerReviewRow({ review, onSaved }) {
       className={`bg-surface border rounded-lg p-4 ${review.reply ? "border-border" : "border-primary"}`}
     >
       <div className="flex items-start gap-3 mb-2">
-        <ReviewInitial seedKey={review.user_id ?? review.user_name} letter={avatarInitial(name, "")} />
+        <ReviewInitial seedKey={review.id} letter={avatarInitial(name, "")} />
         <div className="min-w-0">
           <p className="font-semibold text-text leading-snug">
             {name}

@@ -46,7 +46,7 @@ vi.mock("@/lib/api", () => {
 });
 
 const review = (id, reply = null) => ({
-  id, user_id: id, user_name: `לקוחה ${id}`, stars: 5, body: `גוף ${id}`,
+  id, user_name: `לקוחה ${id}`, stars: 5, body: `גוף ${id}`,
   created_at: "2026-11-10T10:00:00Z", reply, reply_at: reply ? "2026-11-11T10:00:00Z" : null,
 });
 

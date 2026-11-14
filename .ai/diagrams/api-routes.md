@@ -74,7 +74,7 @@ graph TD
     Waitlist -.->|PUT /producers/me adds the city → BackgroundTask<br/>notify_cities: one email per entry, notified_at stamped| WaitlistMail[Resend email<br/>«{business} מגיעים עכשיו גם ל{city}»<br/>fail-open per recipient]
     WaitlistMail -.->|link in the email| WaitlistUnsub[POST /delivery-waitlist/unsubscribe<br/>🌐 signed token → deletes the entry<br/>idempotent 200 · 400 bad token]
 
-    GProducer --> GReviews[GET /producers/{id}/reviews<br/>🌐 paginated]
+    GProducer --> GReviews[GET /producers/{id}/reviews<br/>🌐 paginated · JWT optional · MEH-3221<br/>no user_id · server-shortened user_name · is_mine]
     GProducer --> Reports_post[POST /producers/{id}/report<br/>🔑 rate-limited]
     GProducer --> ReportInfo[POST /reports/producer-info<br/>🌐 rate-limited 5/day<br/>MEH-1443 email-only, no persist<br/>404 for an organizer MEH-2465]
 ```
@@ -125,11 +125,11 @@ graph TD
     NeighborList --> HPClick[POST /home-products/{id}/whatsapp-click<br/>🔑 schedules Twilio follow-up]
     NeighborList --> HPRate[POST /home-products/rate/{token}<br/>🌐 token-based single-use]
 
-    Events[/events + /experiences] --> EventCreate[POST /events<br/>✅👤 verified producer — MEH-1164 F5;<br/>MEH-1161: pending producer's events stay hidden]
+    Events[/events + /experiences] --> EventCreate[POST /events<br/>✅👤 verified producer — MEH-1164 F5;<br/>MEH-1161: pending producer's events stay hidden;<br/>MEH-3224: past event_date → 422 (PUT too)]
     Events --> EventReads[GET /events + /upcoming + /id<br/>🌐 approved producers only — MEH-1161:<br/>pending filtered from lists, detail 404,<br/>owner/admin bypass;<br/>MEH-2459: organizer-owned events included,<br/>EventOut.owner_kind + owner_slug;<br/>MEH-2546: + owner_image_url;<br/>MEH-2847: ?category repeats → IN,<br/>checked against VALID_CATEGORIES<br/>(same on GET /experiences)]
     Events --> OrganizerPage[GET /organizers/{slug} + GET /organizers<br/>🌐 MEH-2461: approved organizers only,<br/>upcoming events; sitemap source<br/>MEH-2475: + owner story, contact channels]
     Events --> EventMine[GET /events/mine<br/>👤 producer — own events, all states<br/>incl. inactive — MEH-1405 manage list]
-    Events --> ExpCreate[POST /experiences<br/>✅👤 verified producer — MEH-2246: same gate as<br/>POST /events, since MEH-1749 hides a<br/>non-business experience from every read path;<br/>then Claude Haiku pre-check + admin approval queue]
+    Events --> ExpCreate[POST /experiences<br/>✅👤 verified producer — MEH-2246: same gate as<br/>POST /events, since MEH-1749 hides a<br/>non-business experience from every read path;<br/>then Claude Haiku pre-check + admin approval queue;<br/>MEH-3224: past event_date → 422 (PUT too)]
     Events --> ExpCount[GET /experiences/count<br/>public — MEH-1918<br/>same predicate as GET /experiences;<br/>gates the nav link at >= 3]
     Events --> GbCounts[GET /group-buys/counts<br/>public — MEH-3128<br/>same query as GET /group-buys;<br/>hides an empty status tab]
 ```
