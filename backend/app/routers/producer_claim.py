@@ -246,7 +246,10 @@ def claim_producer(
     # MEH-3137: the grower line is recorded apart, like registration (MEH-2923).
     # Raised before any write, so a 422 leaves the link claimable.
     farmer_stamp = farmer_declaration_stamp_for_existing(
-        db, producer, [c.id for c in producer.categories], body.farmer_declaration_accepted
+        db,
+        producer,
+        [c.id for c in producer.categories],
+        body.farmer_declaration_accepted,
     )
 
     now = datetime.now(timezone.utc)

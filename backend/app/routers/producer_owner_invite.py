@@ -802,7 +802,10 @@ async def accept_owner_invite(
     # MEH-3137: the grower line is a consent, checked with the other consents —
     # before the code is spent, so a 422 leaves both the link and the code live.
     farmer_stamp = farmer_declaration_stamp_for_existing(
-        db, producer, [c.id for c in producer.categories], body.farmer_declaration_accepted
+        db,
+        producer,
+        [c.id for c in producer.categories],
+        body.farmer_declaration_accepted,
     )
 
     invited_name = producer.owner_invite_name
