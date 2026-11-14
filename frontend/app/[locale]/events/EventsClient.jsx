@@ -25,6 +25,8 @@ import CalendarView from "@/components/CalendarView";
 // component, so the home «אירועים קרובים» preview renders the same row.
 import EventEntryRow, { toEventEntry } from "@/components/EventEntryRow";
 import { EVENT_CATEGORIES, EXPERIENCE_CATEGORIES, withAll } from "@/lib/event-categories";
+// MEH-3124: a category chip shows only when it has results in this city.
+import { presentCategories, visibleCategoryChips } from "@/lib/event-category-gate";
 // MEH-2199 chunk 3: this page shipped the tablist keyboard layer inline in
 // chunk 2; /settings then needed the identical behaviour, so it was lifted to
 // a shared hook and this file retrofitted onto it. Two copies of the RTL arrow
@@ -101,6 +103,9 @@ export default function EventsPage({ initialTab = "events", titles = null }) {
   // pending must not let that earlier request's late result overwrite the
   // newer one. Each load() takes a ticket; only the latest ticket may commit.
   const loadTicket = useRef(0);
+  // MEH-3124: the categories that have at least one result for {tab, city},
+  // read from a category-less list. cats === null = unknown → all chips show.
+  const [present, setPresent] = useState({ tab: null, city: null, cats: null });
   // MEH-1085 (DISC-08): city + category are deep-linkable — seeded from the
   // URL on mount. A URL category is accepted only when it
   // belongs to the initial tab's vocabulary, so a cross-tab share link can't
@@ -231,6 +236,10 @@ export default function EventsPage({ initialTab = "events", titles = null }) {
       const r = await api.get(endpoint, { params, timeout: 15000 });
       if (ticket !== loadTicket.current) return; // superseded
       setRows(r.data);
+      // MEH-3124: with no category picked, the list IS the category-less set
+      // for {tab, city}. No second request for the other case (MEH-2984: a
+      // deep link costs one request) — an unknown set shows every chip.
+      if (!categories.length) setPresent({ tab, city, cats: presentCategories(r.data) });
     } catch {
       if (ticket !== loadTicket.current) return; // superseded
       setRows([]);
@@ -312,6 +321,20 @@ export default function EventsPage({ initialTab = "events", titles = null }) {
   const isZero = !loading && !loadError && events.length === 0;
   const datasetEmpty = isZero && !filtersActive;
   const filteredToZero = isZero && filtersActive;
+
+  // MEH-3124: hide a category chip with no results here (a picked one stays).
+  // With nothing picked, the last set for this tab stands in while a new city
+  // loads (no flicker); with a category picked, only this city's set counts.
+  const presentKnown =
+    present.tab === tab && (!categories.length || present.city === city);
+  const shownChips = visibleCategoryChips({
+    chips,
+    vocabulary: new Set((isExp ? EXPERIENCE_CATEGORIES : EVENT_CATEGORIES).map((c) => c.key)),
+    present: presentKnown ? present.cats : null,
+    active: activeChipKeys,
+  });
+  // «הכל» alone filters nothing — then the row is not drawn at all.
+  const showChipRow = shownChips.some((c) => c.key !== "all");
 
   return (
     <div>
@@ -403,14 +426,16 @@ export default function EventsPage({ initialTab = "events", titles = null }) {
           </div>
 
           {/* Category chips — shared ChipScrollRow (rounded-md, MEH-764). */}
-          <div className="max-w-5xl mx-auto px-4 pt-3">
-            <ChipScrollRow
-              variant="category"
-              chips={chips}
-              activeKeys={activeChipKeys}
-              onChipClick={onChipClick}
-            />
-          </div>
+          {showChipRow && (
+            <div className="max-w-5xl mx-auto px-4 pt-3">
+              <ChipScrollRow
+                variant="category"
+                chips={shownChips}
+                activeKeys={activeChipKeys}
+                onChipClick={onChipClick}
+              />
+            </div>
+          )}
         </>
       )}
 
