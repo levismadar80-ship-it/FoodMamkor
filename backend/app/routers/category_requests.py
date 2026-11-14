@@ -1,5 +1,6 @@
 """MEH-141: Category request flow — public submit + admin review."""
 
+from typing import Any
 from uuid import UUID
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
@@ -28,7 +29,7 @@ def submit_category_request(
     background_tasks: BackgroundTasks,
     user: User | None = Depends(get_current_user_optional),
     db: Session = Depends(get_db),
-):
+) -> CategoryRequestOut | CategoryRequest:
     # MEH-386 (BOLA): producer_id from the body cannot be trusted when the
     # caller is anonymous — anyone could claim to represent any producer.
     # Use the caller's own producer_id from the JWT when authenticated;
@@ -67,23 +68,23 @@ def submit_category_request(
     )
     background_tasks.add_task(
         notify_admin_new_category_request,
-        row.requested_name,
+        row.requested_name,  # type: ignore[arg-type]
         producer_name,
         test_cause=test_cause,
     )
     return row
 
 
-@router.get("/admin/category-requests")
+@router.get("/admin/category-requests", response_model=None)
 @limiter.limit("120/minute")
 def list_category_requests(
     request: Request,
     db: Session = Depends(get_db),
-    _=Depends(require_admin),
-):
+    _: User = Depends(require_admin),
+) -> dict[str, Any] | list[dict[str, Any]]:
     rows = db.query(CategoryRequest).order_by(CategoryRequest.created_at.desc()).all()
     # Group by normalised requested_name (case-insensitive, trimmed).
-    grouped: dict[str, dict] = {}
+    grouped: dict[str, dict[str, Any]] = {}
     for r in rows:
         key = r.requested_name.strip().lower()
         if key not in grouped:
@@ -118,16 +119,16 @@ def review_category_request(
     request_id: UUID,
     body: CategoryRequestUpdate,
     db: Session = Depends(get_db),
-    _=Depends(require_admin),
-):
+    _: User = Depends(require_admin),
+) -> CategoryRequestOut | CategoryRequest:
     row = db.get(CategoryRequest, request_id)
     if not row:
         raise HTTPException(status_code=404, detail="בקשה לא נמצאה")
-    row.status = body.status
+    row.status = body.status  # type: ignore[assignment]
     # Only overwrite notes when the caller explicitly provides them.
     if body.admin_notes is not None:
-        row.admin_notes = body.admin_notes
-    row.reviewed_at = utc_now()
+        row.admin_notes = body.admin_notes  # type: ignore[assignment]
+    row.reviewed_at = utc_now()  # type: ignore[assignment]
     db.commit()
     db.refresh(row)
     return row

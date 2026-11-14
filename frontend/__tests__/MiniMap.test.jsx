@@ -170,6 +170,9 @@ vi.mock("@phosphor-icons/react", async (importOriginal) => {
 });
 
 import MiniMap from "@/components/MiniMap";
+import tailwindConfig from "../tailwind.config.js";
+
+const Z_SCALE = tailwindConfig.theme.extend.zIndex;
 
 describe("MiniMap — B5 Waze next to Google (MEH-1233)", () => {
   it("renders both Waze and Google nav links with correct hrefs + accessible names", () => {
@@ -776,8 +779,14 @@ describe("MEH-2148 — the mini-map contains its own z-index", () => {
     // token at all, while the lower bound is what keeps that case failing.
     // Widening the reader alone turns a correct red into a green: measured on
     // `z-[-1]`, reader-only goes 31/31 on a button rendered BEHIND its own map.
+    //
+    // MEH-3169 added the third form, a named page-scale token (`z-map-controls`),
+    // resolved through tailwind.config.js — the regression reintroducing a page
+    // token would now arrive in that spelling.
     const match = className.match(/(?:^|\s)z-(?:\[(-?\d+)\]|(-?\d+))(?:\s|$)/);
-    return match ? Number(match[1] ?? match[2]) : null;
+    if (match) return Number(match[1] ?? match[2]);
+    const named = className.split(/\s+/).find((c) => /^z-[a-z]/.test(c) && c.slice(2) in Z_SCALE);
+    return named ? Number(Z_SCALE[named.slice(2)]) : null;
   };
 
   // Anchor on `expand.parentElement`, then VALIDATE that anchor by containment,

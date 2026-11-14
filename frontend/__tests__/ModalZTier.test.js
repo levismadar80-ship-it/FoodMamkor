@@ -58,7 +58,7 @@ describe("full-screen dialog z-tier (MEH-2093 chunk B)", () => {
 
     // ...and does NOT fire on the tier the dialogs were moved to, nor on a
     // non-overlay z-50 (an absolute dropdown), which must stay untouched.
-    expect(offendingLines(["<synthetic>"], bad.replace("z-50", "z-[9000]"))).toHaveLength(0);
+    expect(offendingLines(["<synthetic>"], bad.replace("z-50", "z-modal"))).toHaveLength(0);
     expect(offendingLines(["<synthetic>"], '<ul className="absolute z-50 mt-1 w-full">')).toHaveLength(0);
   });
 
@@ -68,7 +68,9 @@ describe("full-screen dialog z-tier (MEH-2093 chunk B)", () => {
     expect(files.length).toBeGreaterThan(100);
     // The tier the dialogs moved to must actually be present in the real files,
     // otherwise the zero below could just mean "nothing was scanned".
-    const withTier = files.filter((f) => fs.readFileSync(f, "utf8").includes("z-[9000]"));
+    // `z-modal` is the MEH-3169 name for the 9000 tier; the lookarounds keep
+    // `z-modal-interrupt` (9500) from counting as the ordinary tier.
+    const withTier = files.filter((f) => /(?<![\w-])z-modal(?![\w-])/.test(fs.readFileSync(f, "utf8")));
     expect(withTier.length).toBeGreaterThan(0);
   });
 

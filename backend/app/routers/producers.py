@@ -1,3 +1,4 @@
+from typing import Any
 from urllib.parse import urlparse
 from uuid import UUID
 
@@ -232,9 +233,9 @@ def list_producers(
     offset: int = Query(0, ge=0),
     # MEH-102 — exclude a single producer by UUID (used by similar-producers widget).
     exclude: UUID | None = None,
-    response: Response = None,
+    response: Response = None,  # type: ignore[assignment]  # FastAPI injects it; widening the annotation would change param parsing
     db: Session = Depends(get_db),
-):
+) -> list[ProducerListOut] | list[Producer]:
     # MEH-1483: validate the sort axis explicitly (the router's manual-422
     # pattern, cf. record_contact_click). None/"newest" = default created_at
     # DESC; "rating" = avg_rating DESC nulls-last. An unknown value 422s rather
@@ -324,9 +325,9 @@ def list_producers(
     return results
 
 
-@router.get("/producers/count")
+@router.get("/producers/count", response_model=None)
 @limiter.limit("60/minute")
-def producers_count(request: Request, db: Session = Depends(get_db)):
+def producers_count(request: Request, db: Session = Depends(get_db)) -> dict[str, Any]:
     """MEH-159 — lightweight total count for keeping pagination fresh client-side.
 
     MEH-1986: applies the catalog's default-hide rule, so this number and the
@@ -348,7 +349,9 @@ def producers_count(request: Request, db: Session = Depends(get_db)):
 
 @router.get("/producers/cities", response_model=list[ProducerCityOut])
 @limiter.limit("60/minute")
-def producers_cities(request: Request, db: Session = Depends(get_db)):
+def producers_cities(
+    request: Request, db: Session = Depends(get_db)
+) -> list[ProducerCityOut] | list[dict[str, object]]:
     """MEH-970 — per-city approved-producer counts for the /map region control.
 
     GROUP BY city over approved producers only. NULL / blank cities are
@@ -385,7 +388,9 @@ def producers_cities(request: Request, db: Session = Depends(get_db)):
 
 @router.get("/producers/random", response_model=ProducerRandomOut)
 @limiter.limit("60/minute")
-def random_producer(request: Request, db: Session = Depends(get_db)):
+def random_producer(
+    request: Request, db: Session = Depends(get_db)
+) -> ProducerRandomOut:
     """MEH-1288 — one random approved producer for the homepage "הפתיעו אותי"
     button. Returns only {id, slug} (enough for the client to navigate). 404
     when the catalog is empty — the button is render-gated on the approved
@@ -417,7 +422,9 @@ def random_producer(request: Request, db: Session = Depends(get_db)):
 
 @router.get("/producers/by-slug/{slug}", response_model=ProducerDetailOut)
 @limiter.limit("120/minute")
-def get_producer_by_slug(slug: str, request: Request, db: Session = Depends(get_db)):
+def get_producer_by_slug(
+    slug: str, request: Request, db: Session = Depends(get_db)
+) -> ProducerDetailOut:
     producer = (
         db.query(Producer)
         .options(
@@ -468,7 +475,7 @@ def get_producer(
     request: Request,
     viewer: User | None = Depends(get_current_user_optional),
     db: Session = Depends(get_db),
-):
+) -> ProducerDetailOut:
     producer = (
         db.query(Producer)
         .options(
@@ -547,7 +554,7 @@ def record_producer_view(
     # token must degrade to "anonymous view" and never to a 401 the page
     # has already navigated away from.
     current_user: User | None = Depends(get_current_user_lenient),
-):
+) -> None:
     """Record one page view for the producer dashboard.
 
     The browser reports this explicitly instead of it being a side effect of
@@ -590,7 +597,7 @@ def record_producer_view(
     )
 
 
-@router.post("/producers/{producer_id}/whatsapp-click")
+@router.post("/producers/{producer_id}/whatsapp-click", response_model=None)
 @limiter.limit("10/minute")  # SECURITY FIX #2 — cap anonymous write abuse
 def record_whatsapp_click(
     request: Request,
@@ -607,7 +614,7 @@ def record_whatsapp_click(
     # the click would simply be lost. An expired token degrades to an
     # unattributed click; losing attribution beats losing the click.
     current_user: User | None = Depends(get_current_user_lenient),
-):
+) -> dict[str, Any]:
     """Log a WhatsApp CTA click for the producer dashboard.
 
     Auth optional — JWT is accepted when present so the click can be
@@ -679,7 +686,7 @@ def record_contact_click(
     # MEH-1627: lenient — same keepalive/sendBeacon rationale as
     # whatsapp-click above. Fire-and-forget telemetry cannot retry.
     current_user: User | None = Depends(get_current_user_lenient),
-):
+) -> None:
     """Log a contact-method click for the producer dashboard.
 
     Accepts method ∈ _VALID_CONTACT_METHODS. Auth optional —
@@ -720,7 +727,7 @@ def join_delivery_waitlist(
     data: DeliveryWaitlistIn,
     db: Session = Depends(get_db),
     current_user: User | None = Depends(get_current_user_lenient),
-):
+) -> DeliveryWaitlistOut:
     """«תודיעו לי כשתגיעו ל{עיר}» — join a business's per-city delivery waitlist.
 
     No account needed: email + city. Returns 201 `added`, or 200 `exists`
@@ -746,7 +753,10 @@ def join_delivery_waitlist(
         producer.is_test or (current_user is not None and current_user.is_test)
     )
     existing = delivery_waitlist.find_entry(
-        db, producer.id, city=data.city, email=data.email
+        db,
+        producer.id,  # type: ignore[arg-type]
+        city=data.city,
+        email=data.email,
     )
     if existing is not None:
         # MEH-2673: a repeat signup that ticks «אשמח לארח» (re)sends the
@@ -771,7 +781,7 @@ def join_delivery_waitlist(
                     host_confirm = "sent"
                     background_tasks.add_task(
                         delivery_waitlist.send_host_confirmation,
-                        *mail_args,
+                        *mail_args,  # type: ignore[arg-type]
                         test_cause=test_cause,
                     )
                 else:
@@ -810,20 +820,20 @@ def join_delivery_waitlist(
         host_confirm = "sent"
         background_tasks.add_task(
             delivery_waitlist.send_host_confirmation,
-            *mail_args,
+            *mail_args,  # type: ignore[arg-type]
             test_cause=test_cause,
         )
     return DeliveryWaitlistOut(status="added", host_confirm=host_confirm)
 
 
-@router.post("/delivery-waitlist/host-confirm", status_code=200)
+@router.post("/delivery-waitlist/host-confirm", status_code=200, response_model=None)
 @limiter.limit("10/minute")
 def confirm_delivery_waitlist_host(
     request: Request,
     data: DeliveryWaitlistHostConfirmIn,
     background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
-):
+) -> dict[str, Any] | JSONResponse:
     """MEH-2673: «מאשרים, אפשר להעביר» — the signed link from the host
     confirmation email. Turns the entry's wants_to_host on, so the business
     sees this email in its pickup_hosts list. Idempotent. 400 on a token
@@ -848,7 +858,7 @@ def confirm_delivery_waitlist_host(
             resent = True
             background_tasks.add_task(
                 delivery_waitlist.send_host_confirmation,
-                *mail_args,
+                *mail_args,  # type: ignore[arg-type]
                 test_cause=bool(entry.producer and entry.producer.is_test),
             )
         else:
@@ -858,19 +868,19 @@ def confirm_delivery_waitlist_host(
             content={"detail": "הקישור לא תקין או שפג תוקפו", "resent": resent},
         )
     if not entry.wants_to_host:
-        entry.wants_to_host = True
-        entry.host_confirmed_at = utc_now()
+        entry.wants_to_host = True  # type: ignore[assignment]
+        entry.host_confirmed_at = utc_now()  # type: ignore[assignment]
         db.commit()
     return {"producer_name": entry.producer.name}
 
 
-@router.post("/delivery-waitlist/unsubscribe", status_code=200)
+@router.post("/delivery-waitlist/unsubscribe", status_code=200, response_model=None)
 @limiter.limit("10/minute")
 def unsubscribe_delivery_waitlist(
     request: Request,
     data: DeliveryWaitlistUnsubscribeIn,
     db: Session = Depends(get_db),
-):
+) -> dict[str, Any]:
     """Remove one delivery-waitlist entry via the signed token from its email.
 
     Idempotent: an already-removed entry is still 200. 400 on a token that
@@ -893,7 +903,7 @@ def create_producer(
     data: ProducerCreate,
     user: User = Depends(require_verified_email),
     db: Session = Depends(get_db),
-):
+) -> ProducerDetailOut | Producer:
     """Create a DRAFT producer row.
 
     SECURITY: this endpoint was historically public, which meant anyone
@@ -925,7 +935,7 @@ def create_producer(
 @limiter.limit("60/minute")
 def list_categories(
     request: Request, response: Response, db: Session = Depends(get_db)
-):
+) -> list[CategoryOut] | list[Category]:
     # MEH-1833: the category list is the most static public payload we serve —
     # same edge policy as /producers. No auth or user state is read here.
     response.headers["Cache-Control"] = _PUBLIC_CATALOG_CACHE
@@ -1003,14 +1013,14 @@ def _servable_kashrut_certs(
     )
 
 
-@router.get("/producers/{producer_id}/kashrut-cert/{badge_code}")
+@router.get("/producers/{producer_id}/kashrut-cert/{badge_code}", response_model=None)
 @limiter.limit("30/minute")
 def get_kashrut_cert(
     request: Request,
     producer_id: UUID,
     badge_code: str,
     db: Session = Depends(get_db),
-):
+) -> dict[str, Any] | Response:
     """MEH-1672: stream an approved, in-date kashrut certificate photo.
 
     A proxy, not a redirect: `cert_url` points at a `type=upload` Cloudinary
@@ -1053,7 +1063,7 @@ def get_kashrut_cert(
     # so an explicit host allowlist makes the SSRF defense here explicit
     # rather than resting on operational trust of the upload flow. No
     # redirect-follow either — a redirect off-host would defeat the check.
-    if urlparse(match.cert_url).hostname not in _ALLOWED_CERT_HOSTS:
+    if urlparse(match.cert_url).hostname not in _ALLOWED_CERT_HOSTS:  # type: ignore[call-overload]
         logger.warning(
             "kashrut cert_url host not allowlisted", producer_id=str(producer_id)
         )
@@ -1061,7 +1071,10 @@ def get_kashrut_cert(
 
     try:
         with httpx.stream(
-            "GET", match.cert_url, timeout=10.0, follow_redirects=False
+            "GET",
+            match.cert_url,  # type: ignore[arg-type]
+            timeout=10.0,
+            follow_redirects=False,
         ) as upstream:
             if upstream.status_code != 200:
                 raise HTTPException(status_code=404, detail="לא נמצא")

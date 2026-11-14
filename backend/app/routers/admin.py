@@ -1,7 +1,7 @@
 import logging
 from datetime import datetime, timedelta, timezone
 from html import escape as _html_escape
-from typing import NamedTuple
+from typing import Any, cast, NamedTuple
 from uuid import UUID
 
 import httpx
@@ -14,7 +14,7 @@ from fastapi import (
     Query,
     Request,
 )
-from sqlalchemy import func, text
+from sqlalchemy import ColumnElement, CursorResult, func, text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, joinedload, selectinload
 
@@ -120,7 +120,7 @@ def _guard_supplied_slug(raw: str) -> None:
         )
 
 
-def _yes_no(value) -> bool:
+def _yes_no(value: object) -> bool:
     """Parse Hebrew/English yes/no values from Excel."""
     if value is None:
         return False
@@ -180,7 +180,7 @@ def _mint_slug_if_absent(db: Session, producer: Producer) -> None:
     later approval could repair it.
     """
     if not producer.slug:
-        producer.slug = _ensure_unique_slug(db, _slugify(producer.name)) or None
+        producer.slug = _ensure_unique_slug(db, _slugify(producer.name)) or None  # type: ignore[arg-type,assignment]
 
 
 def _apply_approval_state(producer: Producer) -> None:
@@ -197,18 +197,18 @@ def _apply_approval_state(producer: Producer) -> None:
     which needs the session (it queries for collisions) and must run *after*
     the re-read on the retry path so it sees the winner's committed slug.
     """
-    producer.status = "approved"
+    producer.status = "approved"  # type: ignore[assignment]
     # MEH-1011: clear the request-changes trail on approve — the completion
     # request (if any) is resolved once the business is approved.
-    producer.requested_changes = None
-    producer.changes_requested_at = None
+    producer.requested_changes = None  # type: ignore[assignment]
+    producer.changes_requested_at = None  # type: ignore[assignment]
     # MEH-2210: symmetric clearing of the rejection trail — an approved
     # business must not carry a stale "לא אושרה" reason into its dashboard
     # (the banner reads producer_rejection_reason off GET /auth/me).
     # `resubmission_count` is deliberately NOT reset: it is history, and the
     # cap is per business, not per rejection.
-    producer.rejection_reason = None
-    producer.rejection_reason_code = None
+    producer.rejection_reason = None  # type: ignore[assignment]
+    producer.rejection_reason_code = None  # type: ignore[assignment]
 
 
 class ApprovalOverrides(NamedTuple):
@@ -231,7 +231,7 @@ class ApprovalOverrides(NamedTuple):
 
 
 def _assert_approvable(
-    db: Session, producer: Producer, overrides: ApprovalOverrides, admin_id
+    db: Session, producer: Producer, overrides: ApprovalOverrides, admin_id: UUID
 ) -> None:
     """The approval gates, in one owner, run against the row being written.
 
@@ -357,7 +357,9 @@ def _is_slug_collision(exc: IntegrityError) -> bool:
     source names the constraint. Unknown means raise, never retry.
     """
     orig = getattr(exc, "orig", None)
-    constraint = getattr(getattr(orig, "diag", None), "constraint_name", None)
+    constraint: str | None = getattr(
+        getattr(orig, "diag", None), "constraint_name", None
+    )
     if constraint:
         return constraint == SLUG_UNIQUE_CONSTRAINT
     return SLUG_UNIQUE_CONSTRAINT in str(orig or exc)
@@ -368,7 +370,7 @@ def _persist_approval(
     producer_id: UUID,
     producer: Producer,
     overrides: ApprovalOverrides,
-    admin_id,
+    admin_id: UUID,
 ) -> Producer:
     """Mint the slug and commit, retrying once on a unique-slug collision.
 
@@ -402,7 +404,7 @@ def _persist_approval(
         db.rollback()
         if not _is_slug_collision(exc):
             raise
-    producer = db.query(Producer).filter(Producer.id == producer_id).first()
+    producer = db.query(Producer).filter(Producer.id == producer_id).first()  # type: ignore[assignment]
     if not producer:
         raise HTTPException(status_code=404, detail="בית עסק לא נמצא") from None
     # MEH-2017: the gates run on BOTH paths. This row is fresh from the database
@@ -417,7 +419,7 @@ def _persist_approval(
     return producer
 
 
-def _apply_categories(db: Session, producer: Producer, category_ids: list[int]):
+def _apply_categories(db: Session, producer: Producer, category_ids: list[int]) -> None:
     db.query(ProducerCategory).filter(
         ProducerCategory.producer_id == producer.id
     ).delete()
@@ -426,7 +428,7 @@ def _apply_categories(db: Session, producer: Producer, category_ids: list[int]):
         db.add(ProducerCategory(producer_id=producer.id, category_id=cid, position=pos))
 
 
-def _apply_delivery_cities(db: Session, producer: Producer, cities: list[str]):
+def _apply_delivery_cities(db: Session, producer: Producer, cities: list[str]) -> None:
     db.query(DeliveryArea).filter(DeliveryArea.producer_id == producer.id).delete()
     for city in cities:
         city = (city or "").strip()
@@ -435,7 +437,7 @@ def _apply_delivery_cities(db: Session, producer: Producer, cities: list[str]):
         db.add(DeliveryArea(producer_id=producer.id, city=city))
 
 
-def _attach_has_owner(db: Session, producers) -> None:
+def _attach_has_owner(db: Session, producers: list[Any]) -> None:
     """MEH-2495 — hydrate `has_owner` for every row in ONE query.
 
     `users.producer_id` has no unique index (producer_claim.py residual risks),
@@ -474,7 +476,7 @@ def _attach_has_owner(db: Session, producers) -> None:
         if ids
         else []
     )
-    owners: dict = {}
+    owners: dict[str, Any] = {}
     for pid, _uid, name, email in rows:
         owners.setdefault(pid, {"name": name, "email": email})
     for p in producers:
@@ -482,7 +484,7 @@ def _attach_has_owner(db: Session, producers) -> None:
         p.owner = owners.get(p.id)
 
 
-def _attach_aging(producer) -> None:
+def _attach_aging(producer: Any) -> None:
     """MEH-2110 — hydrate `business_days_waiting` for an admin list row.
 
     The server is the single source of truth for aging: one implementation,
@@ -530,7 +532,7 @@ def _attach_aging(producer) -> None:
 REVIEW_WINDOW_DAYS = 365
 
 
-def _recommended_review_due_clause():
+def _recommended_review_due_clause() -> ColumnElement[bool]:
     """SQL: the row carries the pick AND its clock is unset or past the window."""
     cutoff = israel_now() - timedelta(days=REVIEW_WINDOW_DAYS)
     return Producer.is_recommended.is_(True) & (
@@ -550,7 +552,7 @@ def list_producers(
     recommended_review_due: bool = Query(False),
     user: User = Depends(require_admin),
     db: Session = Depends(get_db),
-):
+) -> list[ProducerAdminOut] | list[Producer]:
     q = db.query(Producer).options(
         joinedload(Producer.categories),
         joinedload(Producer.products),
@@ -641,7 +643,7 @@ def admin_create_producer(
     background_tasks: BackgroundTasks,
     user: User = Depends(require_admin),
     db: Session = Depends(get_db),
-):
+) -> ProducerAdminOut | Producer:
     """Admin-created producers are auto-approved — unless `as_draft`, which
     prepares an ownerless draft for the owner-claim link (MEH-2322)."""
     slug = data.slug or _slugify(data.name)
@@ -733,7 +735,7 @@ def admin_create_producer(
     # check cannot. Same distinction `_sync_active_offer` (producer_me.py)
     # already relies on: "omitted" and "explicitly false" are different answers.
     if data.delivery_area_cities and "offers_delivery" not in data.model_fields_set:
-        producer.offers_delivery = True
+        producer.offers_delivery = True  # type: ignore[assignment]
 
     # MEH-2059 (MEH-1938 chunk 4b): the admin half of the dual-write. Same
     # helper the four signup paths call (producer_queries.py:351), so this is
@@ -770,7 +772,7 @@ def license_expiry_reminders(
     request: Request,
     user: User = Depends(require_admin),
     db: Session = Depends(get_db),
-):
+) -> LicenseExpiryReminderOut:
     """MEH-2072: approved businesses whose licence expires within 30 days.
 
     Read-only. Nothing is sent, nothing is hidden, nothing is un-verified — v1
@@ -832,7 +834,7 @@ def license_expiry_reminders(
             # business with no phone on file still needs its licence chased —
             # the admin just reaches it another way. Filtering it out would hide
             # the row entirely, which is the opposite of what this list is for.
-            phone_masked=mask_phone(producer.phone),
+            phone_masked=mask_phone(producer.phone),  # type: ignore[arg-type]
             expires_at=producer.license_expires_at,
             # Computed here, not per client: same reasoning as
             # business_days_waiting on ProducerAdminOut — the number the admin
@@ -850,7 +852,7 @@ def license_expiry_reminders(
     )
 
 
-def _apply_recommended_pick(producer: Producer, payload: dict) -> None:
+def _apply_recommended_pick(producer: Producer, payload: dict[str, Any]) -> None:
     """Normalise the editorial pick and stamp/clear its date on a transition.
 
     MEH-1494 chunk B. The stamp is driven by the TRANSITION, never by the
@@ -886,14 +888,16 @@ def _apply_recommended_pick(producer: Producer, payload: dict) -> None:
     # (narrowing it is Alembic, and this handler is not where that belongs).
     payload["is_recommended"] = will_be
     if will_be and not was:
-        producer.recommended_at = israel_now()
+        producer.recommended_at = israel_now()  # type: ignore[assignment]
     elif was and not will_be:
         # Clearing the date takes the row OUT of the review list rather than
         # leaving it there forever as permanently overdue.
-        producer.recommended_at = None
+        producer.recommended_at = None  # type: ignore[assignment]
 
 
-def _retire_replaced_slug(db: Session, producer: Producer, payload: dict) -> None:
+def _retire_replaced_slug(
+    db: Session, producer: Producer, payload: dict[str, Any]
+) -> None:
     """MEH-2528 — an admin edit that changes or clears the slug retires the old
     one, so the next business with that name cannot inherit its links; a slug
     this business retired earlier and now takes back is released again.
@@ -904,10 +908,10 @@ def _retire_replaced_slug(db: Session, producer: Producer, payload: dict) -> Non
         return
     retired_slugs.retire_slug(db, producer, "renamed")
     if payload["slug"]:
-        retired_slugs.reclaim(db, payload["slug"], producer.id)
+        retired_slugs.reclaim(db, payload["slug"], producer.id)  # type: ignore[arg-type]
 
 
-def _guard_vacation_return_date(producer: Producer, payload: dict) -> None:
+def _guard_vacation_return_date(producer: Producer, payload: dict[str, Any]) -> None:
     """MEH-2782: a paused business always has a return date, on the admin PUT
     too — the owner endpoint has required it since AUD-039/040. The past-date
     check stays in ProducerUpdate._validate_vacation_until."""
@@ -929,7 +933,7 @@ def _guard_vacation_return_date(producer: Producer, payload: dict) -> None:
         )
 
 
-def _guard_availability_change(producer: Producer, payload: dict) -> None:
+def _guard_availability_change(producer: Producer, payload: dict[str, Any]) -> None:
     """MEH-2758: pause-only availability writes on the admin PUT.
 
     Only a CHANGE is checked, since ProducerForm sends availability_state on
@@ -941,7 +945,7 @@ def _guard_availability_change(producer: Producer, payload: dict) -> None:
     if "availability_state" not in payload or new_state == producer.availability_state:
         return
     try:
-        validate_transition(producer.availability_state, new_state)
+        validate_transition(producer.availability_state, cast(str, new_state))  # type: ignore[arg-type]
     except AvailabilityValidationError as e:
         raise HTTPException(
             status_code=422,
@@ -964,7 +968,7 @@ def admin_update_producer(
     background_tasks: BackgroundTasks,
     user: User = Depends(require_admin),
     db: Session = Depends(get_db),
-):
+) -> ProducerAdminOut | Producer:
     producer = db.query(Producer).filter(Producer.id == producer_id).first()
     if not producer:
         raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
@@ -1011,7 +1015,7 @@ def admin_update_producer(
     if "slug" in payload and payload["slug"]:
         _guard_supplied_slug(payload["slug"])
         candidate = _slugify(payload["slug"])
-        payload["slug"] = _ensure_unique_slug(db, candidate, exclude_id=producer.id)
+        payload["slug"] = _ensure_unique_slug(db, candidate, exclude_id=producer.id)  # type: ignore[arg-type]
 
     # MEH-2528: read before the setattr loop below overwrites `producer.slug`.
     _retire_replaced_slug(db, producer, payload)
@@ -1066,7 +1070,7 @@ def admin_update_producer(
 
         destroy_removed_images(
             old_images,
-            producer.images or [],
+            producer.images or [],  # type: ignore[arg-type]
             context="admin.admin_update_producer images",
         )
 
@@ -1090,13 +1094,13 @@ def admin_update_producer(
 _TOGGLEABLE_STATUSES = {"approved", "inactive"}
 
 
-@router.post("/producers/{producer_id}/toggle-status")
+@router.post("/producers/{producer_id}/toggle-status", response_model=None)
 def toggle_producer_status(
     producer_id: UUID,
     background_tasks: BackgroundTasks,
     user: User = Depends(require_admin),
     db: Session = Depends(get_db),
-):
+) -> dict[str, Any]:
     """Toggle approved <-> inactive (hides from public listings).
 
     Refuses any other source status with 409 — use the approve/reject flow.
@@ -1124,8 +1128,8 @@ def toggle_producer_status(
         # approve flow, which takes the explicit overrides and logs them.
         # MEH-769's "no side-effects" rule is untouched: this adds a check, not
         # the approval email/WhatsApp.
-        _assert_approvable(db, producer, ApprovalOverrides(), user.id)
-    producer.status = "inactive" if was_approved else "approved"
+        _assert_approvable(db, producer, ApprovalOverrides(), user.id)  # type: ignore[arg-type]
+    producer.status = "inactive" if was_approved else "approved"  # type: ignore[assignment]
     if was_approved:
         # MEH-2974: suspending a live page REVOKES any outstanding owner
         # invite on it.
@@ -1150,10 +1154,10 @@ def toggle_producer_status(
         # An ACCEPTED invite is left alone: `owner_invite_accepted_at` is the
         # record that it happened, and the business has a real owner now.
         if producer.owner_invite_token_hash and not producer.owner_invite_accepted_at:
-            producer.owner_invite_token_hash = None
-            producer.owner_invite_code_hash = None
-            producer.owner_invite_code_expires_at = None
-            producer.owner_invite_code_attempts = None
+            producer.owner_invite_token_hash = None  # type: ignore[assignment]
+            producer.owner_invite_code_hash = None  # type: ignore[assignment]
+            producer.owner_invite_code_expires_at = None  # type: ignore[assignment]
+            producer.owner_invite_code_attempts = None  # type: ignore[assignment]
         # MEH-2498: suspending takes the business off the site, so its live
         # group buys go with it — cancelled in the same commit, participants
         # mailed. Folded into the block above rather than left as a second
@@ -1166,13 +1170,13 @@ def toggle_producer_status(
     return {"detail": "Status toggled", "status": producer.status}
 
 
-@router.delete("/producers/{producer_id}")
+@router.delete("/producers/{producer_id}", response_model=None)
 def admin_delete_producer(
     producer_id: UUID,
     background_tasks: BackgroundTasks,
     user: User = Depends(require_admin),
     db: Session = Depends(get_db),
-):
+) -> dict[str, Any]:
     producer = db.query(Producer).filter(Producer.id == producer_id).first()
     if not producer:
         raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
@@ -1247,16 +1251,16 @@ def admin_delete_producer(
     for url in old_image_urls:
         destroy_image(url, context="admin.admin_delete_producer images")
     for url in old_product_urls:
-        destroy_image(url, context="admin.admin_delete_producer product_image")
+        destroy_image(url, context="admin.admin_delete_producer product_image")  # type: ignore[arg-type]
     # MEH-510: bypass_reserved=True — the producer is gone, the slot is now an orphan.
     destroy_image(
-        old_story_card_url,
+        old_story_card_url,  # type: ignore[arg-type]
         bypass_reserved=True,
         context="admin.admin_delete_producer story_card",
     )
     # MEH-1335: owner photo — non-reserved namespace, default reject list OK.
     destroy_image(
-        old_owner_photo_url,
+        old_owner_photo_url,  # type: ignore[arg-type]
         context="admin.admin_delete_producer owner_photo",
     )
 
@@ -1266,7 +1270,7 @@ def admin_delete_producer(
 @router.get("/producers/pending", response_model=list[ProducerAdminOut])
 def pending_producers(
     user: User = Depends(require_admin), db: Session = Depends(get_db)
-):
+) -> list[ProducerAdminOut] | list[Producer]:
     results = (
         db.query(Producer)
         .options(
@@ -1292,7 +1296,7 @@ def pending_producers(
     return results
 
 
-@router.post("/producers/{producer_id}/approve")
+@router.post("/producers/{producer_id}/approve", response_model=None)
 def approve_producer(  # noqa: PLR0913 — all 6 args are FastAPI-injected (path id, BackgroundTasks, two override flags, auth dep, db dep); MEH-2852 added the IndexNow hop
     producer_id: UUID,
     background_tasks: BackgroundTasks,
@@ -1305,7 +1309,7 @@ def approve_producer(  # noqa: PLR0913 — all 6 args are FastAPI-injected (path
     allow_unverified_phone: bool = Query(default=False),
     user: User = Depends(require_admin),
     db: Session = Depends(get_db),
-):
+) -> dict[str, Any]:
     producer = db.query(Producer).filter(Producer.id == producer_id).first()
     if not producer:
         raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
@@ -1339,13 +1343,13 @@ def approve_producer(  # noqa: PLR0913 — all 6 args are FastAPI-injected (path
     # phone) live in _assert_approvable, which _persist_approval also calls
     # after its re-read so the retry path cannot approve a row this path would
     # have rejected.
-    _assert_approvable(db, producer, overrides, user.id)
+    _assert_approvable(db, producer, overrides, user.id)  # type: ignore[arg-type]
     # MEH-1817: the approval column writes live in _apply_approval_state so the
     # retry path below can re-apply exactly the same set after a rollback.
     _apply_approval_state(producer)
     # MEH-1817: slug mint + commit, extracted so this handler stays under the
     # C901 ceiling. See _persist_approval for why the commit is retried.
-    producer = _persist_approval(db, producer_id, producer, overrides, user.id)
+    producer = _persist_approval(db, producer_id, producer, overrides, user.id)  # type: ignore[arg-type]
 
     # MEH-509 PR1: capture primitives before any post-commit work — ORM
     # attributes are safe here (no expire_on_commit configured on this
@@ -1361,7 +1365,7 @@ def approve_producer(  # noqa: PLR0913 — all 6 args are FastAPI-injected (path
     p_test = bool(producer.is_test or (producer_user and producer_user.is_test))
     if producer_user:
         _send_notification_email(
-            producer_user.email,
+            producer_user.email,  # type: ignore[arg-type]
             # MEH-2113: the celebratory headline, in the one place it is TRUE.
             # It was rejected for the registration screen (MEH-2100 item 9)
             # precisely because onboarding was not complete there; at approval
@@ -1373,15 +1377,15 @@ def approve_producer(  # noqa: PLR0913 — all 6 args are FastAPI-injected (path
             # very approval), so both parts can carry the /p/{slug} link. A
             # producer with no slug still gets a well-formed mail — both
             # builders drop their view-page block whole.
-            _producer_approved_body(p_name, p_slug),
-            html=_producer_approved_html(p_name, p_slug),
+            _producer_approved_body(p_name, p_slug),  # type: ignore[arg-type]
+            html=_producer_approved_html(p_name, p_slug),  # type: ignore[arg-type]
             test_cause=p_test,
         )
 
     # MEH-509 PR1: fire producer_approved_v1 WhatsApp template to the
     # producer. Fail-open at the service layer — any failure here must
     # NOT block the 200 response (approval already committed above).
-    notify_producer_approved(p_name, p_phone, p_slug, p_id, test_cause=p_test)
+    notify_producer_approved(p_name, p_phone, p_slug, p_id, test_cause=p_test)  # type: ignore[arg-type]
     # MEH-2852: the business page just appeared.
     indexnow.schedule(background_tasks, indexnow.producer_urls(producer))
 
@@ -1439,7 +1443,9 @@ def _compose_rejection_reason(preset_key: str | None, reason: str) -> str:
 
 
 @router.get("/producers/rejection-presets", response_model=list[RejectionPresetOut])
-def list_rejection_presets(user: User = Depends(require_admin)):
+def list_rejection_presets(
+    user: User = Depends(require_admin),
+) -> list[RejectionPresetOut] | list[dict[str, str]]:
     """MEH-226: the reject-modal's radio options. Serving them from the same
     dict the handler composes with is what keeps the admin UI from growing a
     second copy of the Hebrew labels."""
@@ -1456,7 +1462,7 @@ def admin_get_producer(
     producer_id: UUID,
     user: User = Depends(require_admin),
     db: Session = Depends(get_db),
-):
+) -> ProducerAdminOut | Producer:
     """MEH-2072: the single-producer admin read. There was none before, and the
     admin EDIT PAGE was loading the PUBLIC serializer instead.
 
@@ -1523,14 +1529,14 @@ def admin_get_producer(
     return producer
 
 
-@router.post("/producers/{producer_id}/reject")
+@router.post("/producers/{producer_id}/reject", response_model=None)
 def reject_producer(
     producer_id: UUID,
     background_tasks: BackgroundTasks,
     body: ProducerRejectIn = Body(default_factory=ProducerRejectIn),
     user: User = Depends(require_admin),
     db: Session = Depends(get_db),
-):
+) -> dict[str, Any]:
     # MEH-226: validate BEFORE mutating — an unknown preset must not leave the
     # producer rejected with an empty reason. Mirrors request_producer_changes'
     # handler-side 400 (admin.py:829).
@@ -1567,26 +1573,26 @@ def reject_producer(
     # An accepted invite is left alone: the business has a real owner. Same
     # fields the suspension clears; the record that an invite was sent stays.
     if producer.owner_invite_token_hash and not producer.owner_invite_accepted_at:
-        producer.owner_invite_token_hash = None
-        producer.owner_invite_code_hash = None
-        producer.owner_invite_code_expires_at = None
-        producer.owner_invite_code_attempts = None
-    producer.status = "rejected"
+        producer.owner_invite_token_hash = None  # type: ignore[assignment]
+        producer.owner_invite_code_hash = None  # type: ignore[assignment]
+        producer.owner_invite_code_expires_at = None  # type: ignore[assignment]
+        producer.owner_invite_code_attempts = None  # type: ignore[assignment]
+    producer.status = "rejected"  # type: ignore[assignment]
     # MEH-226: the reason is persisted in the SAME commit as the status flip —
     # before this it lived only in the email body, so a rejected owner saw
     # "נדחה" with no reason on her dashboard (the banner reads
     # producer_rejection_reason off GET /auth/me).
-    producer.rejection_reason = composed_reason or None
+    producer.rejection_reason = composed_reason or None  # type: ignore[assignment]
     # MEH-2210: the preset key is the structured reason code. Same dict as the
     # composed text (PRODUCER_REJECTION_PRESETS, validated above), so there is
     # exactly one vocabulary; the owner dashboard branches its copy on it.
     # NULL when a legacy caller sent free text only.
-    producer.rejection_reason_code = preset_key
+    producer.rejection_reason_code = preset_key  # type: ignore[assignment]
     # MEH-1011: clear any request-changes trail on reject — a rejected producer
     # must not carry a stale "ממתין להשלמה" trail in ProducerAdminOut. Symmetric
     # with approve_producer's clearing.
-    producer.requested_changes = None
-    producer.changes_requested_at = None
+    producer.requested_changes = None  # type: ignore[assignment]
+    producer.changes_requested_at = None  # type: ignore[assignment]
     db.commit()
     if was_live:  # MEH-2852: the live page just went away.
         indexnow.schedule(background_tasks, indexnow.producer_urls(producer))
@@ -1602,11 +1608,13 @@ def reject_producer(
         # lives there. Same link the changes-requested mail builds.
         dashboard_link = f"{settings.frontend_url}/producer/dashboard"
         _send_notification_email(
-            producer_user.email,
+            producer_user.email,  # type: ignore[arg-type]
             f'מהמקור - עדכון לגבי העסק "{producer.name}"',
-            _producer_rejected_body(producer.name, composed_reason, dashboard_link),
+            _producer_rejected_body(producer.name, composed_reason, dashboard_link),  # type: ignore[arg-type]
             html=_producer_rejected_html(
-                producer.name, composed_reason, dashboard_link
+                producer.name,  # type: ignore[arg-type]
+                composed_reason,
+                dashboard_link,
             ),
             test_cause=p_test,
         )
@@ -1631,13 +1639,13 @@ def reject_producer(
 # Unlike reject_producer (terminal → status="rejected"), this KEEPS the
 # producer pending and records the admin's feedback so the business can fix
 # the gap (missing photo / license) and be approved.
-@router.post("/producers/{producer_id}/request-changes")
+@router.post("/producers/{producer_id}/request-changes", response_model=None)
 def request_producer_changes(
     producer_id: UUID,
     body: RequestChangesIn,
     user: User = Depends(require_admin),
     db: Session = Depends(get_db),
-):
+) -> dict[str, Any]:
     """Send a completion request to a pending producer. `feedback` is required
     (it becomes the body of the email to the producer) — empty/whitespace → 400,
     mirroring admin_recipes.py:123. Status stays "pending"; no rejection.
@@ -1667,9 +1675,9 @@ def request_producer_changes(
             detail="ניתן לשלוח בקשת השלמה רק לבית עסק בהמתנה לאישור",
         )
 
-    producer.requested_changes = feedback
+    producer.requested_changes = feedback  # type: ignore[assignment]
     # tz-aware (MEH-762 D1, mirrors grant_verified) — the column is TIMESTAMPTZ.
-    producer.changes_requested_at = datetime.now(timezone.utc)
+    producer.changes_requested_at = datetime.now(timezone.utc)  # type: ignore[assignment]
     # status intentionally unchanged — stays "pending".
     db.commit()
 
@@ -1683,9 +1691,9 @@ def request_producer_changes(
     p_test = bool(producer.is_test or (producer_user and producer_user.is_test))
     if producer_user:
         _send_notification_email(
-            producer_user.email,
+            producer_user.email,  # type: ignore[arg-type]
             f'מהמקור — נשאר פרט אחד לפני האישור של "{p_name}"',
-            _producer_changes_requested_body(p_name, feedback, dashboard_link),
+            _producer_changes_requested_body(p_name, feedback, dashboard_link),  # type: ignore[arg-type]
             test_cause=p_test,
         )
 
@@ -1693,7 +1701,10 @@ def request_producer_changes(
     # Meta-approved). Post-commit + fail-open — a Meta outage or missing phone
     # must never affect the 200; the function handles skip/raise internally.
     notify_producer_changes_requested(
-        p_name, producer.phone, feedback, test_cause=p_test
+        p_name,  # type: ignore[arg-type]
+        producer.phone,  # type: ignore[arg-type]
+        feedback,
+        test_cause=p_test,
     )
 
     # Notify admin via WhatsApp
@@ -1718,13 +1729,13 @@ def request_producer_changes(
 # DROPPED in MEH-766 ch6 (revision d4e7a92c81b5); verified_at is the only
 # verification axis. The public verification_tier resolver + exposure landed
 # in MEH-762 Chunk 3.
-@router.post("/producers/{producer_id}/grant-verified")
+@router.post("/producers/{producer_id}/grant-verified", response_model=None)
 def grant_verified(
     producer_id: UUID,
     body: GrantVerifiedIn,
     user: User = Depends(require_admin),
     db: Session = Depends(get_db),
-):
+) -> dict[str, Any]:
     """Stamp the tier-1 verification result after the admin checks the
     qualifying document (license / exemption / cosmetics — VERIFICATION.md
     §2). Re-grant overwrites verified_at + verification_doc_type (the legit
@@ -1744,8 +1755,8 @@ def grant_verified(
         )
     # tz-aware (MEH-762 D1, mirrors MEH-759) — NOT naive utcnow; the column
     # is TIMESTAMPTZ. Public exposure is date-granularity only (Chunk 3).
-    producer.verified_at = datetime.now(timezone.utc)
-    producer.verification_doc_type = body.doc_type
+    producer.verified_at = datetime.now(timezone.utc)  # type: ignore[assignment]
+    producer.verification_doc_type = body.doc_type  # type: ignore[assignment]
     db.commit()
     return {
         "detail": "תג מאומת הוענק",
@@ -1754,12 +1765,12 @@ def grant_verified(
     }
 
 
-@router.post("/producers/{producer_id}/revoke-verified")
+@router.post("/producers/{producer_id}/revoke-verified", response_model=None)
 def revoke_verified(
     producer_id: UUID,
     user: User = Depends(require_admin),
     db: Session = Depends(get_db),
-):
+) -> dict[str, Any]:
     """Clear the tier-1 "מאומת" stamp (mistake correction). Idempotent —
     clearing an already-unverified producer is a no-op success. (The legacy
     is_verified column was dropped in MEH-766 ch6.)
@@ -1767,8 +1778,8 @@ def revoke_verified(
     producer = db.query(Producer).filter(Producer.id == producer_id).first()
     if not producer:
         raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
-    producer.verified_at = None
-    producer.verification_doc_type = None
+    producer.verified_at = None  # type: ignore[assignment]
+    producer.verification_doc_type = None  # type: ignore[assignment]
     db.commit()
     return {"detail": "תג מאומת הוסר"}
 
@@ -1789,13 +1800,13 @@ def revoke_verified(
 # --- MEH-53: Instagram story card ---
 
 
-@router.post("/producers/{producer_id}/story-card")
+@router.post("/producers/{producer_id}/story-card", response_model=None)
 def upload_story_card(
     producer_id: UUID,
     body: StoryCardUploadRequest,
     user: User = Depends(require_admin),
     db: Session = Depends(get_db),
-):
+) -> dict[str, Any]:
     """Accept base64 JPEG canvas export, upload to Cloudinary, persist URL."""
     producer = db.query(Producer).filter(Producer.id == producer_id).first()
     if not producer:
@@ -1845,8 +1856,10 @@ def upload_story_card(
 
 
 # --- Stats ---
-@router.get("/stats")
-def get_stats(user: User = Depends(require_admin), db: Session = Depends(get_db)):
+@router.get("/stats", response_model=None)
+def get_stats(
+    user: User = Depends(require_admin), db: Session = Depends(get_db)
+) -> dict[str, Any]:
     return {
         # MEH-2465 (review #3723): businesses only, matching /admin/dashboard.
         "total_producers": db.query(Producer)
@@ -1889,11 +1902,11 @@ _DATA_GOV_URL = (
 # which is a committed artifact that `frontend/lib/generated/` is derived
 # from. Internal history does not belong in the API contract, and putting it
 # there drags two generated files into every such diff.
-@router.post("/seed-cities", status_code=200)
+@router.post("/seed-cities", status_code=200, response_model=None)
 def seed_cities(
     user: User = Depends(require_admin),
     db: Session = Depends(get_db),
-):
+) -> dict[str, Any]:
     """Idempotent: fetch Israeli localities from data.gov.il and upsert into cities table."""
     # Imported here, not at module scope: `scripts.seed_cities` calls
     # `logging.basicConfig` when imported (it is written to be run as a
@@ -1932,7 +1945,7 @@ def seed_cities(
             ),
             city,
         )
-        inserted += result.rowcount
+        inserted += cast(CursorResult[Any], result).rowcount
     db.commit()
     return {"seeded": inserted}
 
@@ -2353,7 +2366,7 @@ def _send_notification_email(
     body: str,
     html: str | None = None,
     test_cause: bool = False,
-):
+) -> None:
     """MEH-2151: `html` is OPTIONAL and defaults to None.
 
     That default is what keeps the three pre-existing callers (rejected,
@@ -2367,7 +2380,7 @@ def _send_notification_email(
     send_email(to_email, subject, body, html=html, test_cause=test_cause)
 
 
-def _send_whatsapp(to: str, body: str, test_cause: bool = False):
+def _send_whatsapp(to: str, body: str, test_cause: bool = False) -> None:
     """Send WhatsApp admin notification via Meta Cloud API.
 
     MEH-508: send_text is fail-open (False on missing config or HTTP error,

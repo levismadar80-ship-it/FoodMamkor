@@ -8,6 +8,7 @@ import { Check, MagnifyingGlass } from "@phosphor-icons/react";
 // gone, so there is one owner of that decision instead of three.
 import { resolveCategoryGlyph } from "@/lib/category-registry";
 import ShowMore from "@/components/ui/ShowMore";
+import Input from "@/components/ui/Input";
 
 /**
  * CategorySelector — register step-02 producer category picker (S7 card aesthetic).
@@ -192,23 +193,17 @@ export default function CategorySelector({ categories, selectedIds, onChange, on
       <p className="text-2xs text-fg-muted mb-2">{t("cap_hint")}</p>
 
       {/* Search — magnifier on the start side, 16px font to avoid iOS zoom. */}
-      <label htmlFor="category-search" className="block text-sm font-medium text-text mb-1">
-        {t("search_label")}
-      </label>
-      <div className="relative mb-3">
-        <MagnifyingGlass
-          size={18}
-          className="absolute start-3.5 top-1/2 -translate-y-1/2 text-fg-muted pointer-events-none"
-          aria-hidden="true"
-        />
-        <input
+      <div className="mb-3">
+        <Input
           id="category-search"
           data-testid="category-search"
           type="search"
+          label={t("search_label")}
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder={t("search_placeholder")}
-          className="w-full border border-border rounded-sm ps-[46px] pe-3 py-2 text-base bg-surface-card text-text focus:outline-none focus:border-primary focus-visible:ring-2 focus-visible:ring-primary transition"
+          startAdornment={<MagnifyingGlass size={18} aria-hidden="true" />}
+          className="text-base"
           dir="rtl"
         />
       </div>

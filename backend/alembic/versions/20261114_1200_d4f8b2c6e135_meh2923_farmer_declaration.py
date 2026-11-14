@@ -1,7 +1,7 @@
 """meh2923_farmer_declaration
 
 Revision ID: d4f8b2c6e135
-Revises: c3e7a1f5d829
+Revises: e4b8d2f6a913
 Create Date: 2026-11-14 12:00:00.000000+00:00
 
 MEH-2923 (הצהרת המגדל): the grower declaration gets its OWN record, apart
@@ -36,7 +36,7 @@ import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
 revision: str = "d4f8b2c6e135"
-down_revision: Union[str, None] = "c3e7a1f5d829"
+down_revision: Union[str, None] = "e4b8d2f6a913"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
