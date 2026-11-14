@@ -155,7 +155,7 @@ export default function MapPane({
           transparent element across the top of the pane is something a future
           hit-test or a11y sweep would still have to reason about. */}
       {mapMoved && (
-        <div className="absolute top-4 inset-x-0 z-[1000] px-4 flex flex-col items-center gap-2 pointer-events-none">
+        <div className="absolute top-4 inset-x-0 z-map-controls px-4 flex flex-col items-center gap-2 pointer-events-none">
           <div className="pointer-events-auto">
             <button type="button" data-testid="map-search-this-area" onClick={(e) => { e.stopPropagation(); onSearchThisArea(); }} className="bg-surface-floating border border-border rounded-full px-5 py-2.5 text-sm font-medium hover:bg-green-50 transition flex items-center gap-2 focus-visible:ring-2 focus-visible:ring-primary">
                 <MagnifyingGlass size={16} weight="bold" className="text-primary" />
@@ -166,7 +166,7 @@ export default function MapPane({
       )}
       {!mapMoved && visibleProducers.length === 0 && allProducers.length > 0 && (
         // eslint-disable-next-line no-restricted-syntax -- rtl-ok: horizontal centering idiom
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[1000] bg-surface-floating rounded-lg border border-border p-6 text-center max-w-[280px]" role="status">
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-map-controls bg-surface-floating rounded-lg border border-border p-6 text-center max-w-[280px]" role="status">
           <Leaf size={48} className="text-primary mx-auto mb-3" aria-hidden="true" />
           {/* MEH-2425: this overlay fires when the loaded set is non-empty but
               nothing survives the client-side filters — i.e. mostly BECAUSE of
@@ -194,7 +194,7 @@ export default function MapPane({
           one job, Google-Maps model) so the expanded legend can no longer sit on
           it. Physical `right-4` — NOT logical `end-`/`start-` — because the
           legend is anchored with physical `left-4`; a logical prop would flip per
-          `dir` and re-collide with the legend in /en (LTR). z-[1000] controls
+          `dir` and re-collide with the legend in /en (LTR). The map-controls z
           tier + bottom-24 unchanged; the right corner has no growable chrome, so
           no measured offset is needed (the opposite-corner move removes it). */}
       <button
@@ -204,7 +204,7 @@ export default function MapPane({
         data-testid="map-gps-button"
         aria-label={t("map.pane.aria.center_on_me")}
         // eslint-disable-next-line no-restricted-syntax -- rtl-ok: geographic map control; physical right keeps it opposite the physical-left legend in every locale
-        className="hidden lg:flex absolute bottom-24 right-4 w-11 h-11 rounded-full bg-surface-floating border border-border shadow-lg items-center justify-center text-primary hover:bg-green-50 transition-colors z-[1000] focus-visible:ring-2 focus-visible:ring-primary disabled:opacity-50"
+        className="hidden lg:flex absolute bottom-24 right-4 w-11 h-11 rounded-full bg-surface-floating border border-border shadow-lg items-center justify-center text-primary hover:bg-green-50 transition-colors z-map-controls focus-visible:ring-2 focus-visible:ring-primary disabled:opacity-50"
       >
         {gpsLoading
           ? <ButtonSpinner size={20} />
@@ -217,7 +217,7 @@ export default function MapPane({
           so md:block leaked the legend into the 768–1023px band where it overlapped the
           NearMePill. lg matches the desktop GPS button (lg:flex) + desktop shell (lg:grid). */}
       {/* rtl-ok: map overlay, physical left = map-canvas start */}
-      <div ref={legendRef} data-testid="map-legend" className="hidden lg:block absolute bottom-4 left-4 z-[800]">
+      <div ref={legendRef} data-testid="map-legend" className="hidden lg:block absolute bottom-4 left-4 z-map-legend">
         {/* MEH-1217: origin-bottom-left so the panel reads as growing up out
             of the toggle (its near/left edge already shares the button's left
             edge — both block children of the bottom-4 left-4 container).

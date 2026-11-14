@@ -64,7 +64,7 @@ export default function NearMePill({ onClick }) {
       // its side) the picked-business card leaves no map strip for this
       // button to ride into, so it steps aside until the card is closed. The
       // mobile shell carries `group/mapshell` + `data-pick`.
-      className="lg:hidden absolute end-4 z-[1000] w-11 h-11 rounded-full bg-background border border-border flex items-center justify-center text-primary hover:bg-green-50 focus-visible:ring-2 focus-visible:ring-primary [@media(max-height:600px)]:group-data-[pick=on]/mapshell:hidden"
+      className="lg:hidden absolute end-4 z-map-controls w-11 h-11 rounded-full bg-background border border-border flex items-center justify-center text-primary hover:bg-green-50 focus-visible:ring-2 focus-visible:ring-primary [@media(max-height:600px)]:group-data-[pick=on]/mapshell:hidden"
     >
       <Crosshair size={20} weight="bold" aria-hidden="true" />
     </button>

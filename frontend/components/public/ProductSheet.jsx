@@ -412,7 +412,7 @@ export default function ProductSheet({
 
   return (
     <div
-      className="fixed inset-0 z-[1060] flex items-end justify-center bg-black/40 md:items-center"
+      className="fixed inset-0 z-product-sheet flex items-end justify-center bg-black/40 md:items-center"
       onClick={onClose}
       role="presentation"
       data-testid="product-sheet-backdrop"

@@ -465,16 +465,18 @@ body:has([data-meets-footer]) footer[data-site-footer] {
 body.sheet-open .cookie-banner {
   display: none;
 }
-/* Map z-index token system (see CLAUDE.md § "Map z-index tokens"):
+/* Map z-index token system (see .claude/rules/rtl.md § "Map z-index tokens").
+   The --z-* properties are emitted on :root from the Z_INDEX scale in
+   tailwind.config.js (MEH-3169), so each value is written once:
    Leaflet controls default to z-index within their own stacking context.
    Override to page-level z-index so they stay above the mobile bottom
    sheet (z-600) and category legend (z-800). */
 .leaflet-control-zoom {
-  z-index: 1000 !important;
+  z-index: var(--z-map-controls) !important;
 }
 .leaflet-top.leaflet-left,
 .leaflet-top.leaflet-right {
-  z-index: 1000 !important;
+  z-index: var(--z-map-controls) !important;
 }
 /* MEH-15 + MEH-30 #2/#3: Leaflet attribution (© OpenStreetMap) is
    legally required to be VISIBLE. Earlier pass pinned it to z-index:1
@@ -489,7 +491,7 @@ body.sheet-open .cookie-banner {
    10px. Hardcoded hex by design — MEH-686 removed :root token CSS vars. */
 .leaflet-control-attribution {
   font-size: 10px;
-  z-index: 1001 !important;
+  z-index: var(--z-map-attribution) !important;
   color: #5c584f;
   /* MEH-1365: ride ABOVE the /map bottom sheet's live top edge instead of
      painting over its content (z-1001 > sheet z-600, and both z values are
@@ -755,7 +757,7 @@ body.sheet-open .cookie-banner {
      over the chat (the native one is already gone via .custom-cursor-on).
      10001 = the top of the scale, above the z-[10000] skip link too. Must stay
      pointer-events:none — guarded by __tests__/CustomCursorZOrder.test.js. */
-  z-index: 10001;
+  z-index: var(--z-cursor);
   transition:
     transform 0.18s ease-out,
     opacity 0.25s ease-out;

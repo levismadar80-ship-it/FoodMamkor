@@ -427,7 +427,7 @@ export default function HeroSearch({
           id={listboxId}
           role="listbox"
           data-testid="hero-search-dropdown"
-          className="absolute z-[1000] top-full mt-2 inset-x-0 bg-surface border border-border rounded-md shadow-xl max-h-[70vh] overflow-auto text-start"
+          className="absolute z-hero-suggestions top-full mt-2 inset-x-0 bg-surface border border-border rounded-md shadow-xl max-h-[70vh] overflow-auto text-start"
           dir="rtl"
         >
           {loading && !hasAutoResults && (
@@ -531,7 +531,7 @@ export default function HeroSearch({
           id={listboxId}
           role="listbox"
           data-testid="hero-search-history"
-          className="absolute z-[1000] top-full mt-2 inset-x-0 bg-surface border border-border rounded-md shadow-xl text-start"
+          className="absolute z-hero-suggestions top-full mt-2 inset-x-0 bg-surface border border-border rounded-md shadow-xl text-start"
           dir="rtl"
         >
           {recentSearches.length > 0 ? (
