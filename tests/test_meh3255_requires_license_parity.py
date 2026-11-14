@@ -82,3 +82,13 @@ def test_migration_snapshot_equals_the_name_list():
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
     assert set(mod.LICENSED_NAMES) == set(LICENSE_REQUIRED_CATEGORIES)
+
+
+def test_a_plain_category_row_defaults_to_no_licence(db):
+    """Every other writer (tests, fixtures, a future one) relies on the
+    column default being False."""
+    cat = Category(name="עציצים", slug="pots")
+    db.add(cat)
+    db.commit()
+    db.refresh(cat)
+    assert cat.requires_license is False

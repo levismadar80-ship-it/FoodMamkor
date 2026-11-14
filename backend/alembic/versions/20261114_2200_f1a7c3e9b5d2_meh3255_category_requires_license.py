@@ -65,13 +65,28 @@ def upgrade() -> None:
         ),
     )
     bind = op.get_bind()
+    total = bind.execute(sa.text("SELECT count(*) FROM categories")).scalar_one()
     marked = bind.execute(
         sa.text(
             "UPDATE categories SET requires_license = true WHERE name = ANY(:names)"
         ),
         {"names": list(LICENSED_NAMES)},
     ).rowcount
-    print(f"[MEH-3255] marked requires_license=true: {marked} of {len(LICENSED_NAMES)}")
+    print(
+        f"[MEH-3255] categories total={total} · "
+        f"marked requires_license=true: {marked} of {len(LICENSED_NAMES)}"
+    )
+    # A fresh database legitimately marks only the rows earlier revisions
+    # inserted (measured: 2 of 9); the seed writes the rest on INSERT. A
+    # populated table where NONE matched means the names drifted from this
+    # snapshot — every licensed category would silently read "no".
+    # REUSES: b7d3e5a9c1f4 (MEH-1456) — the same refuse-on-zero rule.
+    if total > 0 and marked == 0:
+        raise RuntimeError(
+            f"[MEH-3255] refusing: {total} categories exist but none carries a "
+            "licensed name — LICENSE_REQUIRED_CATEGORIES drifted from this "
+            "revision's snapshot. Reconcile by migration."
+        )
 
 
 def downgrade() -> None:
