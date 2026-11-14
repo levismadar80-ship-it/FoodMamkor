@@ -21266,7 +21266,7 @@
     },
     "/experiences": {
       "get": {
-        "description": "Only approved + upcoming (event_date >= today), and only from an\napproved business (MEH-1749). Past experiences drop out of the public\nfeed automatically.",
+        "description": "Only approved + upcoming (event_date >= today, or recurring —\nMEH-3250), and only from an approved business (MEH-1749). Past one-off\nexperiences drop out of the public feed automatically.",
         "operationId": "list_experiences_experiences_get",
         "parameters": [
           {

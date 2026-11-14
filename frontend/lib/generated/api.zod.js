@@ -3443,9 +3443,9 @@ export const RegisterForEventEventsEventIdRegistrationsPostResponse = /*#__PURE_
 
 
 /**
- * Only approved + upcoming (event_date >= today), and only from an
- * approved business (MEH-1749). Past experiences drop out of the public
- * feed automatically.
+ * Only approved + upcoming (event_date >= today, or recurring —
+ * MEH-3250), and only from an approved business (MEH-1749). Past one-off
+ * experiences drop out of the public feed automatically.
  * @summary List Experiences
  */
 export const listExperiencesExperiencesGetResponseIsRecurringDefault = false;
