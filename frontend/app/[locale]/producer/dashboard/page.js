@@ -344,7 +344,10 @@ export default function ProducerDashboardPage() {
   const firstMoment = useFirstMoment(momentsOff ? null : analytics, user?.producer_id ?? profile?.id);
   // Latch: if the top slot opened without analytics (fetch failed), a moment
   // found after a retry waits for the next visit instead of swapping cards.
-  const slotOpenedWithAnalytics = useRef(/** @type {boolean | null} */ (null));
+  // State, not a ref: it is read while rendering (react-hooks/refs).
+  const [slotOpenedWithAnalytics, setSlotOpenedWithAnalytics] = useState(
+    /** @type {boolean | null} */ (null),
+  );
   if (authLoading || !user || user.role !== "producer") return null;
   // MEH-956: graceful state on a failed dashboard fetch (404 / non-2xx).
   // Mirrors the status-banner cards in the main return. Must precede the
@@ -441,8 +444,9 @@ export default function ProducerDashboardPage() {
   // decision for it, and analytics (moment counts) are all settled.
   const slotOpen =
     !isOrganizer && Boolean(profile || profileError) && welcome.ready && Boolean(analytics || analyticsError);
-  if (slotOpen && slotOpenedWithAnalytics.current === null) slotOpenedWithAnalytics.current = Boolean(analytics);
-  const slotMoment = slotOpenedWithAnalytics.current ? firstMoment.moment : null;
+  if (slotOpen && slotOpenedWithAnalytics === null) setSlotOpenedWithAnalytics(Boolean(analytics));
+  // `??` covers the render that sets the latch, before the new state is read.
+  const slotMoment = (slotOpenedWithAnalytics ?? (slotOpen && Boolean(analytics))) ? firstMoment.moment : null;
 
   return (
     <div
