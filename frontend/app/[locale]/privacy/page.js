@@ -1,9 +1,11 @@
+// @ts-check
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { Envelope } from "@phosphor-icons/react/ssr";
 import { buildAlternates, buildEntityTitle, urlForLocalePath, OG_LOCALE } from "@/lib/i18n-seo";
 import { BRAND_NAME } from "@/lib/constants";
 import { CONTACT_EMAIL } from "@/lib/env.client";
 import SectionHeading from "@/components/ui/SectionHeading";
+import CookieSettingsButton from "@/components/CookieSettingsButton";
 
 // MEH-475 PR-C4b/chunk-3: privacy policy i18n. SECTIONS-array shape
 // matches accessibility (chunk 2). Operator section (MEH-630) preserved
@@ -149,6 +151,9 @@ function renderBody(id, t) {
               </li>
             ))}
           </ul>
+          {/* MEH-3196: transfers abroad (Privacy Protection Regulations,
+              transfer of data abroad, 2001) — the providers above. */}
+          <p className="mt-3">{t("sections.third_parties.transfer")}</p>
           <p className="mt-3">
             {t.rich("sections.third_parties.outro", {
               b: (chunks) => <strong>{chunks}</strong>,
@@ -176,7 +181,18 @@ function renderBody(id, t) {
         </>
       );
     case "cookies":
-      return t("sections.cookies.body");
+      // MEH-3196: the withdrawal control also lives here, so it is reachable
+      // from routes without the site footer (/map, the dashboards).
+      return (
+        <>
+          <p>{t("sections.cookies.body")}</p>
+          <CookieSettingsButton
+            testId="privacy-cookie-settings"
+            variant="outlined"
+            className="mt-3"
+          />
+        </>
+      );
     case "retention":
       return t("sections.retention.body");
     case "minors":

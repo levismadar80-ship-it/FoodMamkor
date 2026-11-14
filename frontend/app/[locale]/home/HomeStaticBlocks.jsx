@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 import { useEffect, useLayoutEffect, useState } from "react";
@@ -205,6 +206,7 @@ function HomeProducerStrip({
  * design's persona example copy stays in the freeze file only. Frame copy
  * (eyebrow / CTA patterns) is locked from the freeze via home.featured.*.
  *
+ * @param {object} props
  * @param {?{
  *   quote: string,        // feature headline — display line, no terminal period
  *   name: string,         // first name — interpolated into both CTAs

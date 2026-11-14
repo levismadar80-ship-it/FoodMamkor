@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Shared SEO helpers for producer pages (both /producer/[id] and /[slug]).
  *
@@ -28,6 +29,8 @@ import en from "../messages/en.json";
 import { parseHours, resolveStoreHours } from "./hours";
 import { primaryPoint } from "./producerPoints.js";
 import { instagramUrl } from "./social-links";
+// MEH-3160: the Israel calendar date has one owner (israel-clock-guard).
+import { israelToday } from "./israel-date";
 import { PAYMENT_METHODS } from "./payment-info";
 // Review #3726: deadlines are naive UTC — parse as UTC, never as local time.
 import { parseNaiveUtc } from "./dates";
@@ -111,6 +114,17 @@ export function buildTitle(producer, locale = "he") {
   const city = producer.city || "";
   const shape = category && city ? "full" : city ? "city" : category ? "category" : "name";
   return producerSeoT(locale)(`title_${shape}`, { name: producer.name, category, city, brand: brandFor(locale) });
+}
+
+/**
+ * MEH-3177: buildTitle without the trailing « | brand» — for pages whose
+ * layout `title.template` adds the brand (MEH-2853: one title pattern).
+ * Keeps the category + city that local searches match on.
+ */
+export function buildTitleNoBrand(producer, locale = "he") {
+  const full = buildTitle(producer, locale);
+  const suffix = ` | ${brandFor(locale)}`;
+  return full.endsWith(suffix) ? full.slice(0, -suffix.length) : full;
 }
 
 /**
@@ -664,6 +678,41 @@ function eventOwnerUrl(event) {
  * EventOut (backend/app/schemas/schemas.py:1742). All values are serialized
  * by the caller via JSON.stringify — no raw interpolation into HTML.
  */
+/**
+ * MEH-3177: the Israel UTC offset ("+02:00" / "+03:00") on a calendar date, so
+ * a local "2026-11-20T18:00" start becomes an unambiguous instant. Without an
+ * offset Google reads the time in the crawler's zone. Returns "" when the
+ * runtime cannot tell (the time then stays as it was — never a wrong offset).
+ */
+export function israelOffset(date, time = "12:00") {
+  // The wall time is local, so read the offset twice: once at the wall time
+  // taken as UTC, then again at the instant that offset gives. The second read
+  // is right on DST days too (01:30 on the spring-forward Friday is still +02).
+  const read = (d) => {
+    const name = new Intl.DateTimeFormat("en-US", {
+      // guard-ok: reads the UTC offset of a given event date, not today or the time now.
+      timeZone: "Asia/Jerusalem",
+      timeZoneName: "longOffset",
+    })
+      .formatToParts(d)
+      .find((p) => p.type === "timeZoneName")?.value;
+    const m = name && name.match(/GMT([+-])(\d{2}):?(\d{2})/);
+    if (!m) return null;
+    const mins = (Number(m[2]) * 60 + Number(m[3])) * (m[1] === "-" ? -1 : 1);
+    return { text: `${m[1]}${m[2]}:${m[3]}`, mins };
+  };
+  try {
+    const wall = new Date(`${date}T${time}:00Z`);
+    if (Number.isNaN(wall.getTime())) return "";
+    const first = read(wall);
+    if (!first) return "";
+    const second = read(new Date(wall.getTime() - first.mins * 60000));
+    return (second || first).text;
+  } catch {
+    return "";
+  }
+}
+
 export function buildEventJsonLd(event, locale = "he") {
   if (!event) return null;
   const eventUrl = `${SITE_URL}/events/${event.id}`;
@@ -671,14 +720,15 @@ export function buildEventJsonLd(event, locale = "he") {
   // startDate: event_date (required on EventOut) + optional event_time (HH:MM).
   let startDate = event.event_date || undefined;
   if (startDate && event.event_time) {
-    startDate = `${startDate}T${String(event.event_time).slice(0, 5)}`;
+    const t = String(event.event_time).slice(0, 5);
+    startDate = `${startDate}T${t}${israelOffset(event.event_date, t)}`;
   }
 
   // MEH-2469: endDate (Google "recommended") — same day, only with a start
   // time (the API rejects an end without a start).
   const endDate =
     event.event_date && event.event_time && event.end_time
-      ? `${event.event_date}T${String(event.end_time).slice(0, 5)}`
+      ? `${event.event_date}T${String(event.end_time).slice(0, 5)}${israelOffset(event.event_date, String(event.end_time).slice(0, 5))}`
       : undefined;
 
   const ev = {
@@ -686,7 +736,12 @@ export function buildEventJsonLd(event, locale = "he") {
     "@id": `${eventUrl}#event`,
     name: event.title,
     url: eventUrl,
-    eventStatus: "https://schema.org/EventScheduled",
+    // MEH-3177: a cancelled event stays reachable by link; say so (the
+    // experience builder below already did, MEH-1419).
+    eventStatus:
+      event.is_active === false
+        ? "https://schema.org/EventCancelled"
+        : "https://schema.org/EventScheduled",
   };
   if (startDate) ev.startDate = startDate;
   if (endDate) ev.endDate = endDate;
@@ -795,7 +850,7 @@ export function buildExperienceJsonLd(experience, locale = "he") {
     "@id": `${url}#event`,
     name: experience.title,
     url,
-    startDate: time ? `${date}T${time}` : date,
+    startDate: time ? `${date}T${time}${israelOffset(date, time)}` : date,
     // MEH-1419: a host-cancelled experience stays reachable by link.
     eventStatus:
       experience.is_active === false
@@ -837,11 +892,6 @@ export function isGroupBuyLive(groupBuy, now = new Date()) {
   return deadline != null && deadline > now;
 }
 
-/** The Israel calendar date ("YYYY-MM-DD") of an instant. */
-function israelDate(d) {
-  return new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Jerusalem" }).format(d);
-}
-
 /** Review #3726: commits at the cap — joining is refused, so it is not InStock. */
 function isGroupBuyFull(groupBuy) {
   const max = Number(groupBuy?.max_participants);
@@ -878,7 +928,7 @@ export function buildGroupBuyJsonLd(groupBuy, locale = "he", now = new Date()) {
   // Review #3726: the deadline's ISRAEL date — a naive-UTC 22:30 on 1 Nov is
   // 2 Nov here, and slicing the string would state the day before.
   const deadline = parseNaiveUtc(groupBuy.deadline);
-  if (deadline) offer.priceValidUntil = israelDate(deadline);
+  if (deadline) offer.priceValidUntil = israelToday(deadline);
   if (groupBuy.producer_name) {
     offer.seller = { "@type": "Organization", name: groupBuy.producer_name };
     if (producerUrl) offer.seller.url = producerUrl;

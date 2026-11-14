@@ -14,6 +14,7 @@ History:  MEH-1255 (creation); MEH-1879 (nationwide-requires-delivery guard);
           MEH-1943 chunk 3 (`{code, message, params}` details).
 """
 
+from typing import Any
 from fastapi import HTTPException
 
 from app.models.models import Producer
@@ -37,7 +38,9 @@ NATIONWIDE_REQUIRES_DELIVERY_DETAIL = {
 }
 
 
-def ensure_exclusion_requires_nationwide(producer: Producer, payload: dict) -> None:
+def ensure_exclusion_requires_nationwide(
+    producer: Producer, payload: dict[str, Any]
+) -> None:
     """Raise 422 when the EFFECTIVE post-update state would carry excluded
     cities without nationwide mode.
 
@@ -64,7 +67,9 @@ def ensure_exclusion_requires_nationwide(producer: Producer, payload: dict) -> N
         )
 
 
-def ensure_nationwide_requires_delivery(producer: Producer, payload: dict) -> None:
+def ensure_nationwide_requires_delivery(
+    producer: Producer, payload: dict[str, Any]
+) -> None:
     """Raise 422 when the EFFECTIVE post-update state would be nationwide
     delivery on a business that declares it does not deliver.
 

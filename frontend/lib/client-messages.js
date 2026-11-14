@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * MEH-2233: which message namespaces the ROOT client provider ships.
  *

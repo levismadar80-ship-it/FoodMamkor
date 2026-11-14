@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Module:   guide-product-photography
  * Purpose:  /about/for-businesses/guides/product-photography — Guide 2 of 3

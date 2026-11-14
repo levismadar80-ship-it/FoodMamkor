@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 import { useEffect, useRef } from "react";
@@ -13,6 +14,9 @@ import { useFocusReturn } from "@/lib/use-focus-return";
  * Props:
  *   - open: boolean
  *   - onClose: () => void
+ *   - title: string (default: modals.login_prompt.title, «רוצה לשמור?»)
+ *            MEH-3130: the reviews / updates / rescue-bag hand-offs name
+ *            their own action; the save hearts keep the default.
  *   - message: string (default: modals.login_prompt.default_message)
  *   - nextPath: string (the URL to redirect back to after login)
  *
@@ -45,10 +49,18 @@ import { useFocusReturn } from "@/lib/use-focus-return";
  *
  * Z-index: z-[9500] — below chat widget (9999) + cookie banner (9998),
  * above everything else (map legend 800, controls 1000).
+ *
+ * @param {object} p
+ * @param {boolean} p.open
+ * @param {() => void} p.onClose
+ * @param {string} [p.title]
+ * @param {string} [p.message]
+ * @param {string} [p.nextPath]
  */
 export default function LoginPromptModal({
   open,
   onClose,
+  title,
   message,
   nextPath = "/",
 }) {
@@ -104,7 +116,7 @@ export default function LoginPromptModal({
 
   const overlay = (
     <div
-      className="fixed inset-0 z-[9500] flex items-center justify-center p-4 bg-black/40"
+      className="fixed inset-0 z-modal-interrupt flex items-center justify-center p-4 bg-black/40"
       onClick={onClose}
       role="presentation"
     >
@@ -137,7 +149,7 @@ export default function LoginPromptModal({
           id="login-prompt-title"
           className="font-headline-md text-xl font-bold text-text mb-3 px-8"
         >
-          {t("title")}
+          {title ?? t("title")}
         </h2>
         <p className="text-text mb-6 leading-relaxed">{promptMessage}</p>
 

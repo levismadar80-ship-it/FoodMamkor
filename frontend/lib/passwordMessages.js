@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Failure-key → translation lookup for the MEH-306 password policy.
  *

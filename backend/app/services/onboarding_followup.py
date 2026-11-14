@@ -239,7 +239,7 @@ _EMAIL_5B_BODY = """\
 
 חודש שהעמוד שלכם חי. תודה.
 
-דבר אחד שעוד לא עשינו: תג "מאומת". הוא מופיע ליד שם העסק ואומר ללקוחות שבדקנו רישיון או פטור, ומתי. חינם, לתמיד.
+דבר אחד שעוד לא עשינו: תג "מאומת". הוא מופיע ליד שם העסק ואומר ללקוחות שבדקנו רישיון או פטור, ומתי. התג בחינם.
 
 כדי לקבל אותו:
 ✅ רישיון ייצור, רישיון עסק או אישור פטור (PDF / תמונה ברורה)
@@ -372,7 +372,7 @@ def send_due_followups(db: Session) -> dict[int, int]:
                 subject, body = _build_email(step, p, first_name)
                 # MEH-2952: a test business / test owner → dropped and logged.
                 send_email(
-                    user.email,
+                    user.email,  # type: ignore[arg-type]
                     subject,
                     body,
                     test_cause=bool(p.is_test or user.is_test),

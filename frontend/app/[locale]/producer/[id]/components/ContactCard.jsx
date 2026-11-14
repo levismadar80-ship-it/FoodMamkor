@@ -1,3 +1,4 @@
+// @ts-check
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import {
@@ -217,7 +218,7 @@ export default function ContactCard({ producer, isVacation }) {
   // disabled. Sapir's ruling, 11/11.
   const isPreview = usePreviewMode();
   const linkTarget = (value) =>
-    isPreview ? { "aria-disabled": "true", tabIndex: -1 } : { href: value };
+    isPreview ? { "aria-disabled": /** @type {const} */ ("true"), tabIndex: -1 } : { href: value };
 
   const onChannelClick = (e, { key }) => {
     if (isPreview) {
@@ -290,7 +291,8 @@ export default function ContactCard({ producer, isVacation }) {
                 ? "flex flex-col gap-1 mt-4 pt-3 border-t border-border"
                 : "grid grid-cols-4 gap-x-1 gap-y-3 mt-4 pt-4 border-t border-border"
             }
-            role="list"
+            // MEH-3191: no list roles — a listitem role on an <a> replaces the
+            // link role (axe aria-allowed-role), so a screen reader lost "link".
           >
             {channels.map((channel) => {
               const { key, Icon, href } = channel;
@@ -305,7 +307,6 @@ export default function ContactCard({ producer, isVacation }) {
                     key={key}
                     {...linkTarget(href(producer))}
                     {...linkAttrs(key)}
-                    role="listitem"
                     data-testid="contact-single-row"
                     // MEH-2775: a bare value ("0501234567") says nothing to a
                     // screen reader — prefix the channel's existing aria name.
@@ -340,7 +341,6 @@ export default function ContactCard({ producer, isVacation }) {
                   key={key}
                   {...linkTarget(href(producer))}
                   {...linkAttrs(key)}
-                  role="listitem"
                   // MEH-1583: stable locator for the VRT reveal shot — the
                   // circle's only other handle is its Hebrew aria-label, and
                   // E2E must not key on copy (docs/E2E-LOCATORS.md).
@@ -371,7 +371,6 @@ export default function ContactCard({ producer, isVacation }) {
               <a
                 {...linkTarget(contactHref("phone", producer))}
                 data-testid="revealed-phone"
-                role="listitem"
                 className={`${ROW_ANATOMY} ${single ? "" : "col-span-4"} text-primary-dark focus-visible:ring-2 focus-visible:ring-primary`}
               >
                 <Phone size={18} className="shrink-0" aria-hidden="true" />

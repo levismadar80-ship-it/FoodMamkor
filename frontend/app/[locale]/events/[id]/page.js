@@ -1,3 +1,4 @@
+// @ts-check
 import { notFound } from "next/navigation";
 import * as Sentry from "@sentry/nextjs";
 import { getTranslations } from "next-intl/server";
@@ -11,9 +12,9 @@ import { BRAND_NAME } from "@/lib/constants";
 
 // MEH-476 PR 3b2: server wrapper for the originally-client /events/[id] page.
 // Client Components cannot export generateMetadata; the actual UI lives in
-// EventDetailClient.jsx and renders unchanged. Server-side fetch is for
-// metadata only — the client still fetches independently for interactive
-// state (loading skeleton, 404 page). If the metadata fetch fails or
+// EventDetailClient.jsx. MEH-3199: the server fetch now also feeds the body
+// (`initialEvent`), so the first HTML carries the event; the client refetches
+// with the viewer's token on top. If the metadata fetch fails or
 // returns no event, fall back to seo.event.title_fallback so we still
 // emit valid hreflang/canonical.
 // MEH-1885: safeParse + Sentry + render the raw payload. Failure behaviour is
@@ -54,6 +55,7 @@ async function getEvent(id) {
       level: "error",
       extra: { route: ROUTE, id, status: res.status },
     });
+    /** @type {Error & { status?: number, entityId?: string }} */
     const err = new Error(
       `event lookup failed: ${res.status} ${res.statusText} (id=${id})`
     );
@@ -159,7 +161,8 @@ export default async function EventDetailPage(props) {
   return (
     <>
       <EventJsonLd event={event} locale={params.locale} />
-      <EventDetailClient />
+      {/* key: a client-side move to another event starts from its own data. */}
+      <EventDetailClient key={event.id ?? params.id} initialEvent={event} />
     </>
   );
 }

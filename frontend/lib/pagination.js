@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Pagination helpers (MEH-23). Pure functions — no React, no DOM.
  */

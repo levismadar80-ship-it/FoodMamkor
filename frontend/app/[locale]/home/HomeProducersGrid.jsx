@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 import { Link } from "@/i18n/navigation";
@@ -327,7 +328,7 @@ export function HomeProducersGrid({
             data-testid="home-filters-button"
             // REUSES: frontend/components/ProducersClient.jsx:775-787 — same
             // trigger, same inactive chip visuals, same inline count.
-            className="inline-flex items-center gap-1.5 whitespace-nowrap px-4 py-2.5 rounded-md text-sm font-medium border transition bg-surface text-text border-border hover:border-primary hover:text-primary"
+            className="inline-flex items-center gap-1.5 whitespace-nowrap px-4 min-h-11 py-2.5 rounded-md text-sm font-medium border transition bg-surface text-text border-border hover:border-primary hover:text-primary"
           >
             {/* `Faders`, not `FadersHorizontal` as the card's prose says: the
                 two shipped sheet triggers both use `Faders`
@@ -483,8 +484,8 @@ export function HomeProducersGrid({
           {/* MEH-2634: the first-visit "tap the heart" hint is gone. It was the
               third green box a first-time visitor met (cookie banner, city
               banner, this) and taught a feature nobody had asked for yet. The
-              `showNewUserHint` prop is still threaded in from use-home-page.js
-              for now — removing that state machine is out of this PR's scope. */}
+              grid no longer receives `showNewUserHint`; the hint state in
+              use-home-page.js is now unread (cleanup = MEH-3167 follow-up). */}
           <div className="grid grid-cols-2 gap-3 md:gap-6 lg:grid-cols-4" data-testid="home-producers-grid">
             {visibleProducers.map((p, idx) => (
               <motion.div

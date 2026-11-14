@@ -1,0 +1,27 @@
+# Paths in backend/openapi.json not yet named in docs/DATA.md (as of 14/11/2026, MEH-3192).
+# Shrink-only: document a path, then delete its line (the guard fails on a stale line).
+/admin/category-requests
+/admin/category-requests/{}
+/admin/group-buys
+/admin/kashrut/expiry-reminders
+/admin/outreach/{}
+/admin/outreach/{}/prefill-token
+/admin/producers/{}/google-place-candidates
+/admin/producers/{}/story-card
+/admin/seed-cities
+/auth/logout
+/auth/logout-all-devices
+/auth/refresh
+/auth/resend-verify
+/auth/verify-email
+/category-requests
+/holiday-mode
+/producers/me/bio/generate
+/producers/me/kashrut-requests
+/producers/me/products/{}
+/push-vapid-key
+/register/producer/prefill/{}
+/reviews/{}/reply
+/upload/avatar
+/upload/kashrut-cert
+/users/me/favorites/{}/alerts

@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 import { useEffect, useRef } from "react";
@@ -271,7 +272,7 @@ export default function FilterSheet({
         type="button"
         aria-label={t("filters.sheet.close_aria")}
         onClick={onClose}
-        className="fixed inset-0 z-[1200] bg-black/40 lg:bg-transparent"
+        className="fixed inset-0 z-filter-sheet bg-black/40 lg:bg-transparent"
       />
       <div
         ref={panelRef}
@@ -291,7 +292,7 @@ export default function FilterSheet({
         // the footer's own pb, where it sits UNDER the footer instead of under
         // a scrolling body. lg: restores the container pad: the anchored
         // desktop panel has no safe-area to clear and no notch to sit in.
-        className={`fixed inset-x-0 bottom-0 z-[1200] rounded-t-xl border-t border-border bg-background p-4 pb-0 max-h-[80dvh] overflow-y-auto overscroll-contain lg:absolute lg:inset-x-auto lg:bottom-auto lg:top-full ${align === "start" ? "lg:start-0" : "lg:end-0"} lg:mt-2 lg:w-80 lg:rounded-xl lg:border lg:shadow-lg lg:max-h-[min(600px,calc(100vh-220px))] lg:pb-4`}
+        className={`fixed inset-x-0 bottom-0 z-filter-sheet rounded-t-xl border-t border-border bg-background p-4 pb-0 max-h-[80dvh] overflow-y-auto overscroll-contain lg:absolute lg:inset-x-auto lg:bottom-auto lg:top-full ${align === "start" ? "lg:start-0" : "lg:end-0"} lg:mt-2 lg:w-80 lg:rounded-xl lg:border lg:shadow-lg lg:max-h-[min(600px,calc(100vh-220px))] lg:pb-4`}
       >
         {/* Drag handle — mobile-only close affordance (MapBottomSheet 44×5 chrome). */}
         <div

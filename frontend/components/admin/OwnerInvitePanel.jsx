@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 import { useEffect, useRef, useState } from "react";
@@ -457,6 +458,7 @@ function firstName(full) {
   return parts[0] || "";
 }
 
+/** @param {{ id: string, label: string, value: string, onChange: (v: string) => void, type?: string, dir?: string, placeholder?: string }} props */
 function Field({ id, label, value, onChange, type = "text", dir, placeholder }) {
   return (
     <div>

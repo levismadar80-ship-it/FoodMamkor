@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Module:   contact-topics
  * Purpose:  The one whitelist of contact-form topics, and the ?topic= reader

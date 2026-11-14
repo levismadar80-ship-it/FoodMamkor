@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * highlightMatch(text, query)
  *

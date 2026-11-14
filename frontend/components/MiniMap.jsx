@@ -1,3 +1,5 @@
+// @ts-check
+/// <reference path="../types/leaflet-plugins.d.ts" />
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -308,6 +310,7 @@ function singlePointHandlers({ draggableMarker, onMarkerDragEnd, onExpand }) {
 // competes with that button in the parent's stacking context and wins: the
 // button stayed visible only over the grey not-yet-loaded area, and vanished as
 // soon as a pan or zoom put tiles under it — the overlay lost its only exit.
+/** @param {{ interactive?: boolean, onExpand?: () => void, mapKey?: string, center: { lat: number | string, lng: number | string }, points?: object[], lat?: number | string, lng?: number | string, name?: string, fallbackLabel?: string, producer?: import("@/types/entities").ProducerSummary, zoom?: number, draggableMarker?: boolean, onMarkerDragEnd?: (pos: { lat: number, lng: number }) => void }} props */
 function MapSurface({ interactive, onExpand, mapKey, center, points, lat, lng, name, fallbackLabel, producer, zoom, draggableMarker, onMarkerDragEnd }) {
   return (
     <MapContainer
@@ -334,7 +337,7 @@ function MapSurface({ interactive, onExpand, mapKey, center, points, lat, lng, n
           legal text, never translated.
           REUSES: frontend/components/HomepageMiniMap.jsx:233,236 */}
       <TileLayer
-        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+        url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
       />
       {/* MEH-1611: one pin per point of THIS business — branch → filled
@@ -394,6 +397,8 @@ function MapSurface({ interactive, onExpand, mapKey, center, points, lat, lng, n
  * MEH-1659: the inline map gains +/− and stops being frozen, and any tap on it
  * opens a fullscreen overlay where every gesture works. All three consumers
  * (producer / events / experiences) get this through the unchanged props API.
+ *
+ * @param {{ lat?: number|string, lng?: number|string, name?: string, locations?: object[], producer?: import("@/types/entities").ProducerSummary, zoom?: number, showNavigation?: boolean, draggableMarker?: boolean, onMarkerDragEnd?: (pos: { lat: number, lng: number }) => void }} props
  */
 export default function MiniMap({
   lat,
@@ -579,7 +584,7 @@ export default function MiniMap({
           role="dialog"
           aria-modal="true"
           aria-label={t("expanded_aria")}
-          className="fixed inset-0 z-[1150] bg-surface"
+          className="fixed inset-0 z-minimap-fullscreen bg-surface"
         >
           {/* MEH-2182: `surfaceProps` carries `draggableMarker` / `onMarkerDragEnd`
               here too, so the overlay marker is draggable as well — deliberately.

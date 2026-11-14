@@ -1,3 +1,4 @@
+// @ts-check
 import RescueSection from "@/components/rescue/RescueSection";
 import { useCallback, useEffect, useState } from "react";
 import Image from "next/image";
@@ -254,6 +255,7 @@ export default function ProducerSections({
   // order when she set one, else photos first; grouped products laid out
   // group by group. The signature product stays out of the grid.
   const productGroups = producer.product_groups || [];
+  /** @type {Array<import("@/lib/product-order").OrderedProduct & { name?: string, description?: string, price_min?: number | null, price_max?: number | null, price_range?: string | null }>} */
   const gridUnsorted = signatureProduct
     ? (producer.products || []).filter((p) => p.id !== signatureProduct.id)
     : producer.products || [];
@@ -881,7 +883,9 @@ export default function ProducerSections({
           <button
             type="button"
             onClick={() => setReportOpen(true)}
-            className="underline hover:text-text transition"
+            // MEH-3195: the text link was 16px tall; the hit area is now 44px
+            // without moving the line (negative block margin absorbs it).
+            className="inline-flex items-center min-h-11 -my-3.5 underline hover:text-text transition"
           >
             {t("producer.detail.contact_card.report_info_link")}
           </button>

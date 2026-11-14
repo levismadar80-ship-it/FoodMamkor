@@ -1,3 +1,4 @@
+// @ts-check
 // MEH-50: שוק שישי mode — Thu 18:00 → Fri 14:00 Israel time.
 // Pure function, no async, no deps. Uses Intl for correct DST handling.
 

@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Module:   claim-token
  * Purpose:  Keep bearer tokens that arrive in a URL out of every URL after the

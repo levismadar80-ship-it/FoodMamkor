@@ -31,6 +31,7 @@ import { passwordValid, validateIsraeliPhone, validateEmail } from "@/lib/valida
 import { useAuth } from "@/lib/auth-context";
 import { getSeasonalPlaceholder } from "@/lib/producer-description-placeholders";
 import { CONTACT_EMAIL } from "@/lib/env.client";
+import { PRICING_PATH } from "@/lib/pricing";
 import {
   hasLicenseFormatWarning,
   requiresProducerLicense,
@@ -304,6 +305,13 @@ function RegisterProducerPageBody({ routeKind }) {
   // photos) and its «what happens after» are about a business.
   const [showPreflight, setShowPreflight] = useState(!routeIsOrganizer);
   const [categories, setCategories] = useState([]);
+  // MEH-3193: a failed /categories left step 3 with no tiles and a required
+  // choice nobody could make. Now it says so and offers a retry.
+  const [categoriesFailed, setCategoriesFailed] = useState(false);
+  const loadCategories = () => {
+    setCategoriesFailed(false);
+    api.get("/categories").then((r) => setCategories(r.data)).catch(() => setCategoriesFailed(true));
+  };
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   // MEH-1769: false on the server AND on the first client render, raised only
@@ -527,7 +535,7 @@ function RegisterProducerPageBody({ routeKind }) {
   // submit. The producer case joins it (409 already_has_producer at submit).
 
   useEffect(() => {
-    api.get("/categories").then((r) => setCategories(r.data));
+    loadCategories();
     try {
       const saved = localStorage.getItem(DRAFT_KEY);
       if (saved) {
@@ -819,6 +827,9 @@ function RegisterProducerPageBody({ routeKind }) {
         // consent (agreedToTerms) is a separate gate enforced at submit.
         declaration_accepted:
           declarationConfirmed && (!farmerDeclarationRequired || farmerConfirmed),
+        // MEH-2923: the grower line on its own, so the server can require and
+        // record it apart from the licensing declaration.
+        farmer_declaration_accepted: farmerDeclarationRequired && farmerConfirmed,
         // MEH-1995: the ToS consent the comment above calls "a separate gate
         // enforced at submit" — it was enforced and then discarded, reaching
         // no column. Sent now so users.terms_accepted_at + terms_version get
@@ -1249,7 +1260,17 @@ function RegisterProducerPageBody({ routeKind }) {
             {/* MEH-2183: the no-cost promise, stated on the step where the
                 seller starts investing real effort. */}
             <p data-testid="register-details-free-hint" className="text-xs text-fg-muted text-start">
-              {t("auth.register.producer.steps.business.free_hint")}
+              {t("auth.register.producer.steps.business.free_hint")}{" "}
+              {/* MEH-3166: new tab, so a half-filled form is not lost. */}
+              <Link
+                href={PRICING_PATH}
+                target="_blank"
+                rel="noopener"
+                data-testid="register-pricing-link"
+                className="underline underline-offset-2 text-primary rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+              >
+                {t("pricing.link_short")}
+              </Link>
             </p>
 
             <Input
@@ -1460,6 +1481,14 @@ function RegisterProducerPageBody({ routeKind }) {
               aria-describedby={fieldErrors.category_ids ? "register-category-error" : undefined}
               className="focus-ring rounded-md"
             >
+              {categoriesFailed && (
+                <div data-testid="register-categories-failed" className="flex items-center gap-3 mb-3">
+                  <InlineMessage size="xs" className="text-start">{t("dashboard.producer.categories.fetch_error")}</InlineMessage>
+                  <Button type="button" variant="secondary" size="sm" onClick={loadCategories}>
+                    {t("errors.boundary.retry")}
+                  </Button>
+                </div>
+              )}
               <CategorySelector
                 categories={categories}
                 selectedIds={form.category_ids}

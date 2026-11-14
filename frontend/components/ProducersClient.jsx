@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 import { useState, useCallback, useEffect, useRef } from "react";
@@ -749,7 +750,11 @@ export default function ProducersClient({
   // Empty term flows through the same clear-q path as the 🔍 chip ×.
   const handleSearchSubmit = (e) => {
     e.preventDefault();
-    const term = searchInput.trim();
+    // MEH-3153: read the field, not state. Text typed while the page hydrates
+    // can sit in the DOM before React's state hears it (PrehydrationInputReplay
+    // catches up later), and what the visitor sees in the box is what she means.
+    const term = (searchInputRef.current?.value ?? searchInput).trim();
+    setSearchInput(term);
     setSearchQ(term);
     syncUrl(chips, cityFilter, term, categoryFilter);
     fetchFiltered(chips, cityFilter, term, categoryFilter);
@@ -962,7 +967,7 @@ export default function ProducersClient({
           )}
         </h1>
         <Link
-          href={`/map${producersToMapQuery({ chips, categoryKeys: activeCategoryKeys, city: cityFilter || "" })}`}
+          href={`/map${producersToMapQuery({ chips, categoryKeys: [...activeCategoryKeys], city: cityFilter || "" })}`}
           data-testid="producers-map-link"
           className="shrink-0 text-primary hover:underline flex items-center gap-1 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
         >
@@ -985,6 +990,10 @@ export default function ProducersClient({
           <MagnifyingGlass size={18} weight="regular" aria-hidden="true" className="text-fg-muted" />
           <input
             id="producers-search-input"
+            // MEH-3153: name="q" is the no-JS / pre-hydration fallback. An Enter
+            // before React hydrates is a native GET submit; without a name it
+            // reloaded /producers and dropped the term (seen on WebKit/iPhone).
+            name="q"
             ref={searchInputRef}
             type="search"
             value={searchInput}
@@ -1070,7 +1079,7 @@ export default function ProducersClient({
             data-testid="producers-filters-button"
             // REUSES: frontend/app/[locale]/map/components/FilterChipsBar.jsx:80-96
             // — same trigger, same inactive chip visuals, same inline count.
-            className="inline-flex items-center gap-1.5 whitespace-nowrap px-4 py-2.5 rounded-md text-sm font-medium border transition bg-surface text-text border-border hover:border-primary hover:text-primary"
+            className="inline-flex items-center gap-1.5 whitespace-nowrap px-4 min-h-11 py-2.5 rounded-md text-sm font-medium border transition bg-surface text-text border-border hover:border-primary hover:text-primary"
           >
             <Faders size={16} aria-hidden="true" />
             {t("filters.filter_label")}

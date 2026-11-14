@@ -11,7 +11,7 @@
     "app/[locale]/admin/producers/AdminProducersTable.jsx",
     "app/[locale]/admin/reviews/page.jsx",
     "app/[locale]/admin/settings/page.js",
-    "app/[locale]/producer/dashboard/edit/page.js",
+    "app/[locale]/producer/dashboard/edit/cards/CustomQuestionsCard.jsx",
     "app/[locale]/producer/dashboard/group-buys/page.js",
     "app/[locale]/producer/dashboard/insights/page.js",
     "components/admin/ProducerForm.jsx"

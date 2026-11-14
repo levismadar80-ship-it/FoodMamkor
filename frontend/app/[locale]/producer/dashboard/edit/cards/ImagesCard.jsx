@@ -4,7 +4,7 @@
 /**
  * Module:   producer/dashboard/edit/cards/ImagesCard
  * Purpose:  Owner-facing gallery images editor (upload, remove, reorder, free-plan cap).
- * Does NOT: enforce the image cap: the 403 in backend upload.py does.
+ * Does NOT: enforce the image cap: the 403 on save (backend gallery_cap.py) does.
  * Related:  ../cards.jsx (re-exports this, so existing imports keep working);
  *           ../page.js (renders the cards).
  * History:  MEH-3152 — moved VERBATIM out of edit/cards.jsx (2,618 lines) into
@@ -32,8 +32,8 @@ import { ViewOnPageLink } from "./ViewOnPageLink";
 // ============================================================
 
 // MEH-1352: free-plan image cap surfaced in the UI. Single source for the
-// magic number in JSX — the authoritative enforcement is the 403 in
-// backend/app/routers/upload.py (free plan, len(images) >= 3); keep in sync.
+// magic number in JSX — the authoritative enforcement is the 403 on
+// PUT /producers/me (backend/app/services/gallery_cap.py, MEH-3220); keep in sync.
 const FREE_IMAGE_CAP = 3;
 
 // MEH-2911: statuses whose gallery may not be emptied. Mirrors
@@ -79,8 +79,8 @@ export function ImagesCard({ profile, onSave, reportDirty = () => {} }) {
   // and reds if the two drift.
   const isGalleryLocked = LAST_PHOTO_GUARDED_STATUSES.has(profile?.status);
 
-  // MEH-1352: cap applies to the free plan only (mirrors the upload.py 403
-  // guard). atCap disables the picker; the backend 403 stays as safety net.
+  // MEH-1352: cap applies to the free plan only (mirrors the gallery_cap.py
+  // 403 on save, MEH-3220). atCap disables the picker; the backend 403 stays as safety net.
   const capApplies = (profile?.plan ?? "free") === "free";
   const atCap = capApplies && images.length >= FREE_IMAGE_CAP;
 

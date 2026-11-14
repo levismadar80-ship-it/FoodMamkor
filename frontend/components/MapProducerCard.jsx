@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 import { useState } from "react";
@@ -20,6 +21,7 @@ import {
   FULFILLMENT_WASH_NEUTRAL,
   FULFILLMENT_ICON_PX,
 } from "@/lib/fulfillmentTags";
+import { COLOR } from "@/lib/color-tokens";
 
 // MEH-1133: aspect at/above which a thumbnail source is treated as "logo-like"
 // (wide banner/logo) and letterboxed (object-contain) instead of cropped
@@ -59,6 +61,8 @@ function categoryTint(hex, alpha) {
  * History:  MEH-826 (client distance); MEH-1133 (logo letterbox); MEH-1178
  *           (uniform template); MEH-1210 (price removed); MEH-1211 (broken-img
  *           fallback); MEH-1243 (Direction B + 🔒 Pin-Echo redesign).
+ *
+ * @param {{ producer: import("@/types/entities").ProducerSummary, active?: boolean, onClick?: (producer: import("@/types/entities").ProducerSummary) => void }} props
  */
 export default function MapProducerCard({ producer, active, onClick }) {
   const t = useTranslations("map.producer_card");
@@ -143,7 +147,7 @@ export default function MapProducerCard({ producer, active, onClick }) {
       {/* Thumbnail — START (right in RTL, first child). #EAF3DE placeholder tile. */}
       <div
         className="shrink-0 self-stretch w-[88px] min-[1180px]:w-[88px] max-[1179px]:w-[72px] relative rounded overflow-hidden"
-        style={{ backgroundColor: "#EAF3DE" }}
+        style={{ backgroundColor: COLOR["green-50"] }}
         data-testid="map-thumb"
       >
         {imgSrc && !imgError ? (

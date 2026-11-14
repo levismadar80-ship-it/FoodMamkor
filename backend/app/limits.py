@@ -23,6 +23,7 @@ DO NOT lower a cap without checking live data first — a business already above
 a new cap can no longer save its own form.
 """
 
+from typing import Any
 from fastapi import HTTPException
 
 # --- Per-business caps (rows a business may own) -----------------------------
@@ -87,7 +88,7 @@ CAPS = {
 }
 
 
-def cap_list(value, cap: int, detail: str):
+def cap_list(value: Any, cap: int, detail: str) -> Any:
     """mode="before" validator body: refuse an over-long list in Hebrew before
     pydantic's own max_length check answers in English."""
     if value is not None and isinstance(value, list | tuple) and len(value) > cap:
@@ -123,7 +124,7 @@ OWNED_TABLE_EXEMPT = {
     "category_requests": "rate-limited public form, admin-moderated",
     "reports": "rate-limited public form, admin-moderated",
     "delivery_waitlist": "one row per email per business, rate-limited public form",
-    "phone_otp_tokens": "rate-limited OTP send, short-lived rows",
+    "phone_otp_tokens": "rate-limited OTP send; deleted one day after expiry by the daily retention purge (MEH-3171)",
     "alert_log": "system-written fan-out log, capped per send by MEH-1338",
     "producer_analytics_daily": "one row per business per day, system-written",
     "producer_page_views": "system-written analytics, rate-limited beacon",

@@ -1266,3 +1266,37 @@ Rule: BRAND.md §7. he.json only; en.json, keys and code unchanged. Left in Lati
 | 16 | `registration.form.whatsapp` | `WhatsApp` | `וואטסאפ` | ✅ MEH-2837 PR 2 |
 | 17 | `registration.form.whatsapp_needs_mobile` | `כדי לבחור WhatsApp צריך מספר נייד בפרטי העסק` | `כדי לבחור וואטסאפ צריך מספר נייד בפרטי העסק` | ✅ MEH-2837 PR 2 |
 | 18 | `registration.cta.whatsapp` | `הרשמה ב-WhatsApp` | `הרשמה בוואטסאפ` | ✅ MEH-2837 PR 2 |
+
+---
+
+## Section 19 — Pricing copy: one home (MEH-3166, ADR-042)
+
+**Approved by Sapir 14/11/2026** («מאשרת הכל», on the proposal table). The revenue model changed (ADR-042), so every earlier row in this file that says «בלי עמלות», «אין עמלות על עסקאות» or «חינם לעולם» is **superseded by this section** — the rows stay as history.
+
+From here on a sentence about fees, a subscription or "free forever" lives in one of two places, and `frontend/__tests__/PricingCopyGuard.test.js` fails on any other. The guard's vocabulary is those promises only: «חינם להצטרף» on its own is not flagged, because joining and the page stay free under ADR-042 §1.
+
+- the `pricing.*` namespace (the price-list page `/join/pricing` and the short link labels), or
+- a key listed in `PRICING_COPY_KEYS` in `frontend/lib/pricing.js`.
+
+Numbers are never written into the copy. They are ICU values (`{monthly}`, `{yearly}`, `{percent}`, `{bagFee}`, `{subPercent}`, `{subBagFee}`, `{breakEven}`, `{breakEvenFees}`, `{threshold}`, `{noticeDays}`, `{asOf}`, `{examplePrice}`, `{exampleFee}`) supplied by `frontend/lib/pricing.js`, the same numbers as `docs/PRICING.md`.
+
+| Key | he (live) |
+|---|---|
+| `join.trust_hint` | `חינם להצטרף` |
+| `join.meta_line` | `חינם להצטרף · כ-5 דקות · עולה תוך עד 3 ימי עסקים` |
+| `join.faq.a_cost` | `ההצטרפות והעמוד שלכם חינם. בתקופת ההשקה גם כל הכלים חינם. בהמשך, בית עסק שמקבל {threshold} הזמנות ומעלה בחודש דרך האתר יבחר בין מנוי של {monthly} ₪ לחודש עם עמלה מופחתת, לבין עמלה קטנה על כל הזמנה בלי מנוי. נודיע {noticeDays} יום מראש, בכתב.` |
+| `join.faq.a_price` | `אתם. המחיר בעמוד הוא שלכם.` |
+| `join.faq.a_revenue` | `כרגע לא מרוויחים. בהמשך ההכנסה תגיע ממנוי כלים ומעמלה קטנה על הזמנות שהגיעו דרך האתר, ורק מבית עסק שכבר רואה תוצאות. לא ממכירת מקום בראש הרשימה, לא מפרסומות ולא ממכירת מידע.` |
+| `about_business.faq.cost.a` | `העמוד שלכם חינם. בתקופת ההשקה גם כל הכלים חינם. כשיהיו לכם {threshold} הזמנות ומעלה בחודש דרך האתר, אודיע לכם {noticeDays} יום מראש, ואז תבחרו: מנוי של {monthly} ₪ לחודש עם עמלה מופחתת, או עמלה קטנה על כל הזמנה בלי מנוי. אם זה לא מתאים, העמוד נשאר שלכם בחינם.` |
+| `about_business.faq.revenue_model.a` | `כרגע לא מרוויחה. מהמקור הוא פרויקט צעיר, ואני בונה אותו כי אני מאמינה שאוכל אמיתי ומקומי צריך בית. בהמשך ההכנסה תגיע ממנוי כלים ומעמלה קטנה על הזמנות, ורק מבית עסק שהאתר כבר מביא לו תוצאות. לא ממכירת מקום בראש הרשימה. כך האתר מרוויח רק אם הוא עובד בשבילכם.` |
+| `about_business.faq.difference.a` | `שם העסק הוא עוד שורה בפיד או ברשימת תוצאות. כאן כל עסק מקבל עמוד משלו עם הסיפור, התמונות והאנשים שמאחוריו — כמו כתבה עליך, לא כמו מודעה. בלי אלגוריתם שמחליט מי יראה אותך. ומאחורי האתר עומדת אני, ספיר — קוראת כל מייל אישית ועונה. ואם תרצו לרדת מהאתר, מסירות את העסק בלי שאלות.` |
+| `about_why_local.fairness_body` | `בלי מתווכים: הכסף עובר ישירות למי שגידל, אפה, בישל או יצר.` |
+| `about_why_local.start_body` | `בשביל זה מהמקור קיים: מקום אחד שמרכז בתי עסק מקומיים — כל אחד נבחר ואושר ידנית, לכל אחד עמוד עם הסיפור שלו, והקשר איתו ישיר, בלי מתווכים.` |
+| `about_why_local.changes_3` | `המחיר שמופיע הוא של בית העסק, והתשלום עובר ישירות אליו.` |
+| `auth.register.producer.subtitle` | `כ־5 דקות. חינם להצטרף. הלקוחות מגיעים ישירות אליכם` |
+| `auth.register.producer.steps.business.free_hint` | `ההרשמה והעמוד בחינם. כל הכלים חינם בתקופת ההשקה.` |
+| `home.cta.body_l3` | `חינם להצטרף. נשמח להכיר.` |
+| `business_features.total_line` | `{count} כלים, כולם חינם בתקופת ההשקה. לחצו על כרטיס לכל הכלים שלו.` |
+
+The full text of the price-list page is `pricing.page.*` in `messages/he.json` / `en.json`. The chat's answer to «האם האתר בחינם» is in `backend/app/routers/chat.py` and names no price.
+

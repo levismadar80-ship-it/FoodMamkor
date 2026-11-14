@@ -4,5 +4,4 @@
 2790 backend/app/routers/producer_me.py
 2365 backend/app/routers/admin.py
 2087 frontend/app/[locale]/register/producer/RegisterProducerClient.jsx
-1710 frontend/app/[locale]/producer/dashboard/edit/page.js
 1588 backend/app/routers/auth.py

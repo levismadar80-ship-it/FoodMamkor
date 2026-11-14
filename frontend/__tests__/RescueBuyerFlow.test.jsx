@@ -12,7 +12,7 @@
  * orphan the rule exists for is (many × reserved) — covered below.
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor, within } from "@testing-library/react";
 
 import heMessages from "../messages/he.json";
 
@@ -410,7 +410,8 @@ describe("the business-page section — landing from a bag link", () => {
     window.history.replaceState(null, "", "/hatzala#section-rescue");
     render(<RescueSection producer={PRODUCER} />);
     await screen.findByTestId("rescue-reserve");
-    expect(scrolled).toHaveBeenCalledTimes(1);
+    // MEH-3217: the scroll runs in an effect after the bag renders — wait for it.
+    await waitFor(() => expect(scrolled).toHaveBeenCalledTimes(1));
   });
 
   it("does not scroll on an ordinary visit", async () => {
@@ -843,12 +844,19 @@ describe("the confirmation after the counter or the cutoff (MEH-2694)", () => {
 });
 
 describe("a guest taps reserve (MEH-2700)", () => {
-  it("gets the sign-in line and no request is sent, so no 'session expired' toast", async () => {
+  // MEH-3130: the inline line had no way to sign in — the shared login prompt
+  // now says why AND offers «היכנסו» back to this section.
+  it("gets the login prompt (title, why, a way to sign in) and no request is sent", async () => {
     authUser = null;
     render(<RescueSection producer={PRODUCER} />);
     fireEvent.click(await screen.findByTestId("rescue-reserve"));
-    const err = await screen.findByTestId("rescue-section-error");
-    expect(err.textContent).toBe(lookup("rescue.errors.sign_in"));
+    const dialog = await screen.findByRole("dialog");
+    expect(within(dialog).getByRole("heading").textContent).toBe(lookup("rescue.login_prompt_title"));
+    expect(dialog).toHaveTextContent(lookup("rescue.login_prompt_message"));
+    expect(within(dialog).getByRole("link").getAttribute("href")).toMatch(
+      /^\/login\?redirect=.*section-rescue/,
+    );
+    expect(screen.queryByTestId("rescue-section-error")).toBeNull();
     expect(reserveBag).not.toHaveBeenCalled();
   });
 });

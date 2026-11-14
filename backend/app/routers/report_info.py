@@ -79,7 +79,7 @@ def report_producer_info(
 
     # MEH-1401: RTL HTML template so the mail renders right in Gmail. Message
     # is HTML-escaped (untrusted visitor input); newlines → <br>.
-    name_html = html_escape(producer.name or "")
+    name_html = html_escape(producer.name or "")  # type: ignore[arg-type]
     slug_html = html_escape(data.producer_slug)
     message_html = html_escape(data.message).replace("\n", "<br>")
     reply_html = (

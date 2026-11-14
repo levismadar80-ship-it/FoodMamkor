@@ -6,7 +6,7 @@ Purpose:  Owner-claim link — an admin prepares a DRAFT business with no owner,
           transmits a password.
 Touches:  producers (declared_at, declaration_version — read status, locked
           FOR UPDATE on claim; claim_link_sent_at — stamped, FOR UPDATE, on
-          mint), users (producer_id, role, is_producer, terms_accepted_at,
+          mint; name, city — read for the new-link request), users (producer_id, role, is_producer, terms_accepted_at,
           terms_version — the claimant's row locked FOR UPDATE first). Background: WhatsApp welcome to the business phone,
           producer welcome email, risk score. products (admin create / delete
           on an ownerless draft only) and the deleted product's Cloudinary
@@ -22,9 +22,12 @@ Related:  backend/app/auth.py create/decode_producer_claim_token ·
           backend/app/routers/admin.py admin_create_producer (`as_draft`).
 History:  MEH-2322 (MEH-2321 chunk A, creation). MEH-2326 (chunk D): admin
           adds / deletes products on an ownerless draft. MEH-2496: the mint
-          stamps producers.claim_link_sent_at (its only DB write).
+          stamps producers.claim_link_sent_at (its only DB write). MEH-3122:
+          POST /producer-claim/new-link-request — the owner of a lapsed link
+          asks; the admin is told; nothing is minted or sent to the owner.
 """
 
+import threading
 from datetime import datetime, timezone
 from uuid import UUID
 
@@ -34,6 +37,7 @@ from sqlalchemy.orm import Session
 
 from app.auth import (
     create_producer_claim_token,
+    decode_lapsed_producer_claim_token,
     decode_producer_claim_token,
     get_current_user,
     require_admin,
@@ -45,6 +49,7 @@ from app.models import Producer, Product, User
 from app.rate_limit import limiter
 from app.schemas.schemas import (
     ProducerClaimLinkOut,
+    ProducerClaimNewLinkOut,
     ProducerClaimOut,
     ProducerClaimPreviewOut,
     ProducerClaimPreviewRequest,
@@ -53,7 +58,11 @@ from app.schemas.schemas import (
     ProductOut,
 )
 from app.services.auth_emails import send_welcome_email
-from app.services.auth_notifications import notify_producer_registered
+from app.services.auth_notifications import (
+    notify_admin_claim_link_requested,
+    notify_producer_registered,
+)
+from app.services.farmer_declaration import farmer_declaration_stamp_for_existing
 from app.services.producer_risk import score_producer
 
 logger = structlog.get_logger(__name__)
@@ -98,7 +107,7 @@ def _claimable(db: Session, producer: Producer) -> bool:
     # DO NOT widen to approved / imported listings without a decision — a
     # claim there would hand a stranger holding a leaked link control of a
     # page that is already live (MEH-2321 D2).
-    return producer.status == "draft" and not _has_owner(db, producer.id)
+    return producer.status == "draft" and not _has_owner(db, producer.id)  # type: ignore[arg-type,return-value]
 
 
 @router.post(
@@ -111,7 +120,7 @@ def create_claim_link(
     producer_id: UUID,
     user: User = Depends(require_admin),
     db: Session = Depends(get_db),
-):
+) -> ProducerClaimLinkOut:
     # MEH-2496: FOR UPDATE because this route now writes. It serialises the
     # stamp with a concurrent claim (claim_producer locks this row too), so a
     # mint cannot stamp a draft whose claim committed between our owner check
@@ -127,9 +136,9 @@ def create_claim_link(
             status_code=409,
             detail="אפשר ליצור קישור הזמנה רק לטיוטה שעוד לא נשלחה לבדיקה",
         )
-    if _has_owner(db, producer.id):
+    if _has_owner(db, producer.id):  # type: ignore[arg-type]
         raise HTTPException(status_code=409, detail=_ALREADY_CLAIMED)
-    token, expires_at = create_producer_claim_token(producer.id)
+    token, expires_at = create_producer_claim_token(producer.id)  # type: ignore[arg-type]
     # MEH-2496: the stamp the drafts list reads («קישור נשלח ב-…»). Every 409
     # above raises before this line, so a refused mint stamps nothing. It
     # records the LATEST link only — an earlier link stays valid until its own
@@ -138,7 +147,7 @@ def create_claim_link(
     # Read before the commit: it expires every instance in the session (the
     # admin `user` included), and an attribute read after it re-SELECTs.
     admin_id = str(user.id)
-    producer.claim_link_sent_at = datetime.now(timezone.utc)
+    producer.claim_link_sent_at = datetime.now(timezone.utc)  # type: ignore[assignment]
     db.commit()
     logger.info(
         "producer_claim.link_created",
@@ -157,7 +166,7 @@ def preview_claim(
     request: Request,
     body: ProducerClaimPreviewRequest,
     db: Session = Depends(get_db),
-):
+) -> ProducerClaimPreviewOut:
     producer_id = decode_producer_claim_token(body.token)
     producer = (
         db.query(Producer).filter(Producer.id == producer_id).first()
@@ -180,6 +189,68 @@ def preview_claim(
     )
 
 
+# MEH-3122: one admin notice per draft per day, however many times the button
+# is pressed or from how many addresses. Process-local on purpose (no table,
+# no Alembic): a restart or a second replica can let one extra notice through,
+# which costs one email. Bounded by the number of drafts.
+_NEW_LINK_COOLDOWN_SECONDS = 24 * 60 * 60
+_new_link_last_notice: dict[UUID, float] = {}
+# Sync routes run on a thread pool: the check and the stamp are one step, so
+# two presses that land together cannot both pass.
+_new_link_lock = threading.Lock()
+
+
+def _new_link_notice_due(producer_id: UUID) -> bool:
+    now = datetime.now(timezone.utc).timestamp()
+    with _new_link_lock:
+        last = _new_link_last_notice.get(producer_id)
+        if last is not None and now - last < _NEW_LINK_COOLDOWN_SECONDS:
+            return False
+        _new_link_last_notice[producer_id] = now
+        return True
+
+
+@router.post("/producer-claim/new-link-request", response_model=ProducerClaimNewLinkOut)
+@limiter.limit("5/hour")
+def request_new_claim_link(
+    request: Request,
+    body: ProducerClaimPreviewRequest,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
+) -> ProducerClaimNewLinkOut:
+    """The owner opened a claim link that no longer works and asks for a new
+    one. Sapir's decision (14/11): the admin is told and sends the link
+    herself — this route never mints a link and never returns one.
+
+    DO NOT branch the response on the token. The answer is the same for a
+    forged token, an unknown draft, a claimed draft and a real request, so it
+    cannot be used to probe which producer ids exist (same reason as
+    _LINK_INVALID above).
+    """
+    producer_id = decode_lapsed_producer_claim_token(body.token)
+    producer = (
+        db.query(Producer).filter(Producer.id == producer_id).first()
+        if producer_id
+        else None
+    )
+    # Only a draft that can still be claimed: for a page that already has an
+    # owner there is no link to send.
+    # A link that has not expired yet is accepted too: the page only offers the
+    # button after the server refused the link, and a notice for a live link
+    # costs the admin one message.
+    if producer and _claimable(db, producer) and _new_link_notice_due(producer.id):  # type: ignore[arg-type]
+        # The cooldown is stamped when the notice is queued, not when it is
+        # delivered; this line is the record if the delivery fails.
+        logger.info("producer_claim.new_link_requested", producer_id=str(producer.id))
+        background_tasks.add_task(
+            notify_admin_claim_link_requested,
+            producer.name,  # type: ignore[arg-type]
+            producer.city,  # type: ignore[arg-type]
+            test_cause=bool(producer.is_test),
+        )
+    return ProducerClaimNewLinkOut(ok=True)
+
+
 @router.post("/producer-claim", response_model=ProducerClaimOut)
 @limiter.limit("10/hour")
 def claim_producer(
@@ -188,7 +259,7 @@ def claim_producer(
     background_tasks: BackgroundTasks,
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
-):
+) -> ProducerClaimOut:
     # MEH-2322: lock the claimant's row FIRST, and re-read it under the lock.
     # `user` was loaded by get_current_user before any lock, so a second claim
     # by the same account, started before the first one committed, would check
@@ -199,7 +270,7 @@ def claim_producer(
     # identity-mapped `user` with its stale attributes, and the lock fixes
     # nothing. test_same_account_two_links_in_flight_second_is_409 covers it.
     user = (
-        db.query(User)
+        db.query(User)  # type: ignore[assignment]
         .filter(User.id == user.id)
         .with_for_update()
         .populate_existing()
@@ -242,15 +313,25 @@ def claim_producer(
         raise HTTPException(status_code=404, detail=_LINK_INVALID)
     if not _claimable(db, producer):
         raise HTTPException(status_code=409, detail=_ALREADY_CLAIMED)
+    # MEH-3137: the grower line is recorded apart, like registration (MEH-2923).
+    # Raised before any write, so a 422 leaves the link claimable.
+    farmer_stamp = farmer_declaration_stamp_for_existing(
+        db,
+        producer,
+        [c.id for c in producer.categories],
+        body.farmer_declaration_accepted,
+    )
 
     now = datetime.now(timezone.utc)
-    producer.declared_at = now
-    producer.declaration_version = DECLARATION_VERSION
+    producer.declared_at = now  # type: ignore[assignment]
+    producer.declaration_version = DECLARATION_VERSION  # type: ignore[assignment]
+    for field, value in farmer_stamp.items():
+        setattr(producer, field, value)
     user.producer_id = producer.id
-    user.role = "producer"
-    user.is_producer = True
-    user.terms_accepted_at = now
-    user.terms_version = TERMS_VERSION
+    user.role = "producer"  # type: ignore[assignment]
+    user.is_producer = True  # type: ignore[assignment]
+    user.terms_accepted_at = now  # type: ignore[assignment]
+    user.terms_version = TERMS_VERSION  # type: ignore[assignment]
     db.commit()
 
     # Capture before the session closes — background tasks run after it.
@@ -261,11 +342,18 @@ def claim_producer(
     # Same three side effects as a self-registered draft (register_producer
     # upgrade_path). The admin ping stays where it already is: at submit.
     background_tasks.add_task(
-        notify_producer_registered, p_name, p_phone, test_cause=p_test
+        notify_producer_registered,
+        p_name,  # type: ignore[arg-type]
+        p_phone,  # type: ignore[arg-type]
+        test_cause=p_test,
     )
-    background_tasks.add_task(score_producer, p_id)
+    background_tasks.add_task(score_producer, p_id)  # type: ignore[arg-type]
     background_tasks.add_task(
-        send_welcome_email, user.email, user.name, "producer", test_cause=p_test
+        send_welcome_email,
+        user.email,  # type: ignore[arg-type]
+        user.name,  # type: ignore[arg-type]
+        "producer",
+        test_cause=p_test,
     )
     return ProducerClaimOut(producer_id=p_id, status=producer.status)
 
@@ -321,7 +409,7 @@ def admin_create_draft_product(
     data: ProductCreate,
     user: User = Depends(require_admin),
     db: Session = Depends(get_db),
-):
+) -> ProductOut | Product:
     # No new-product alert (producer_me.create_my_product fires one): a draft
     # is not public, so nobody can have favourited it.
     producer = _editable_draft(db, producer_id)
@@ -351,7 +439,7 @@ def admin_delete_draft_product(
     product_id: UUID,
     user: User = Depends(require_admin),
     db: Session = Depends(get_db),
-):
+) -> None:
     _editable_draft(db, producer_id)
     # Scoped to THIS producer: a product id from another business is a 404,
     # never a cross-business delete.
@@ -371,7 +459,7 @@ def admin_delete_draft_product(
         from app.cloudinary_utils import destroy_image
 
         destroy_image(
-            old_image_url,
+            old_image_url,  # type: ignore[arg-type]
             context="producer_claim.admin_delete_draft_product image",
         )
     logger.info(

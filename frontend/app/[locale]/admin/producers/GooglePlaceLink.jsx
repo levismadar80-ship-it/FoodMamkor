@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 /**
@@ -26,6 +27,7 @@
  */
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import api from "@/lib/api";
 import InlineMessage from "@/components/ui/InlineMessage";
 import Input from "@/components/ui/Input";
@@ -37,6 +39,7 @@ const GOOGLE_MIN_REVIEWS = 20;
 const PLACE_ID_RE = /^ChI[A-Za-z0-9_-]{10,}$/;
 
 export default function GooglePlaceLink({ producerId, placeId, onLinked }) {
+  const t = useTranslations("admin.producers.review.google_place");
   const [linkedId, setLinkedId] = useState(placeId || null);
   const [replacing, setReplacing] = useState(false);
   const [candidates, setCandidates] = useState(null);
@@ -94,24 +97,24 @@ export default function GooglePlaceLink({ producerId, placeId, onLinked }) {
 
   return (
     <div className="mt-3 max-w-xl text-xs">
-      <p className="font-medium text-text">פרופיל Google</p>
+      <p className="font-medium text-text">{t("heading")}</p>
 
       {linkedId && !replacing && (
         <p className="mt-1 flex items-center gap-2 text-text">
-          <span>מקושר ✓</span>
+          <span>{t("linked")}</span>
           <button
             type="button"
             onClick={() => setReplacing(true)}
             className="text-primary underline"
           >
-            החלפה
+            {t("replace")}
           </button>
         </p>
       )}
 
       {!linkedId && (
         <p className="mt-1 text-muted">
-          לא מקושר — בלי קישור, הדירוג מגוגל לא יופיע בדף העסק.
+          {t("not_linked")}
         </p>
       )}
 
@@ -123,30 +126,30 @@ export default function GooglePlaceLink({ producerId, placeId, onLinked }) {
             disabled={searching}
             className="rounded-lg border border-border px-3 py-1.5 text-text hover:bg-background-alt disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
           >
-            {searching ? "מחפשת…" : "חפשי בגוגל"}
+            {searching ? t("searching") : t("search_google")}
           </button>
 
           {searchState === "empty" && (
             <p className="mt-2 text-muted" role="status">
-              לא נמצאו תוצאות בגוגל
+              {t("no_results")}
             </p>
           )}
           {searchState === "error" && (
             <InlineMessage size="inherit" className="mt-2">
-              החיפוש נכשל, נסי שוב
+              {t("search_error")}
             </InlineMessage>
           )}
 
           {searchState && (
             <form onSubmit={submitManual} className="mt-2 flex gap-2" data-testid="google-place-manual">
               <label className="sr-only" htmlFor={`gpl-manual-${producerId}`}>
-                השם בגוגל או place_id
+                {t("manual_label")}
               </label>
               <Input inline size="md"
                 id={`gpl-manual-${producerId}`}
                 value={manual}
                 onChange={(e) => setManual(e.target.value)}
-                placeholder="השם בגוגל או place_id"
+                placeholder={t("manual_label")}
                 dir="auto"
                 className="min-w-0 flex-1"
               />
@@ -155,7 +158,7 @@ export default function GooglePlaceLink({ producerId, placeId, onLinked }) {
                 disabled={searching || saving || !manual.trim()}
                 className="rounded-lg border border-border px-3 py-1.5 text-text hover:bg-background-alt disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
               >
-                חיפוש
+                {t("manual_submit")}
               </button>
             </form>
           )}
@@ -174,10 +177,10 @@ export default function GooglePlaceLink({ producerId, placeId, onLinked }) {
                     {c.formatted_address && (
                       <span className="block text-muted">{c.formatted_address}</span>
                     )}
-                    <span className="block text-muted">{c.user_rating_count} ביקורות</span>
+                    <span className="block text-muted">{t("reviews_count", { count: String(c.user_rating_count) })}</span>
                     {c.user_rating_count < GOOGLE_MIN_REVIEWS && (
                       <span className="mt-0.5 block text-error">
-                        פחות מ-20 ביקורות — השורה לא תוצג
+                        {t("too_few_reviews")}
                       </span>
                     )}
                   </button>
@@ -188,10 +191,10 @@ export default function GooglePlaceLink({ producerId, placeId, onLinked }) {
         </div>
       )}
 
-      {saving && <p className="mt-2 text-muted">שומרת…</p>}
+      {saving && <p className="mt-2 text-muted">{t("saving")}</p>}
       {saveError && (
         <InlineMessage size="inherit" className="mt-2">
-          השמירה נכשלה, נסי שוב
+          {t("save_error")}
         </InlineMessage>
       )}
     </div>

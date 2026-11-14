@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 import { useEffect, useRef, useState } from "react";
@@ -46,6 +47,7 @@ export default function SectionAnchorNav({ items, ariaLabel, className = "" }) {
   const isRtl = useLocale() !== "en";
   const startPx = canScrollStart ? START_FADE_PX : 0;
   const endPx = canScrollEnd ? END_FADE_PX : 0;
+  /** @type {import("react").CSSProperties & Record<`--${string}`, string>} */
   const fadeVars = {
     "--chip-fade-start": `${isRtl ? startPx : endPx}px`,
     "--chip-fade-end": `${isRtl ? endPx : startPx}px`,

@@ -6,12 +6,13 @@ These helpers carry no FastAPI surface and can be imported by any router
 or background job that needs to hydrate or count Producer rows.
 """
 
+from typing import Any, cast
 from datetime import timedelta
 from uuid import UUID
 
 import structlog
 from fastapi import HTTPException
-from sqlalchemy import func, select
+from sqlalchemy import ColumnElement, func, ScalarSelect, select
 from sqlalchemy.orm import Session
 
 from app.models import (
@@ -34,7 +35,9 @@ logger = structlog.get_logger(__name__)
 EARTH_RADIUS_KM = 6371.0
 
 
-def _haversine_expr(lat: float, lng: float, target_lat, target_lng):
+def _haversine_expr(
+    lat: float, lng: float, target_lat: Any, target_lng: Any
+) -> ColumnElement[Any]:
     """Core Haversine formula (km) between a fixed (lat, lng) and a pair of
     target lat/lng column expressions. Parameterized on the target columns so
     the same trig can measure to `Producer.lat/lng` (single-point) or to
@@ -60,7 +63,7 @@ RATING_PRIOR_MEAN = 4.0
 RATING_PRIOR_WEIGHT = 5
 
 
-def weighted_rating_expr():
+def weighted_rating_expr() -> ColumnElement[Any]:
     """MEH-2617: SQL expression for the Bayesian average used to order by rating:
 
         (avg_rating * reviews_count + M * C) / (reviews_count + C)
@@ -75,7 +78,7 @@ def weighted_rating_expr():
     return (total + RATING_PRIOR_MEAN * RATING_PRIOR_WEIGHT) / (n + RATING_PRIOR_WEIGHT)
 
 
-def haversine_min_km(lat: float, lng: float):
+def haversine_min_km(lat: float, lng: float) -> ScalarSelect[Any]:
     """MEH-1402 (MEH-1388 chunk 2): NEAREST-point distance (km) from the
     caller's (lat, lng) to a producer, measured across ALL of that producer's
     `producer_locations` rows — the minimum wins (radius/sort want the closest
@@ -122,7 +125,7 @@ def haversine_min_km(lat: float, lng: float):
     )
 
 
-def attach_badge_fields(producer):
+def attach_badge_fields(producer: Any) -> Any:
     """MEH-18 — hydrate the computed fields the badge system consumes.
     Safe to call on already-loaded ORM instances. Assumes the products
     and delivery_areas collections are already loaded (via selectinload
@@ -268,16 +271,19 @@ def attach_badge_fields(producer):
     return producer
 
 
-def attach_favorites_counts(producers, db: Session):
+def attach_favorites_counts(producers: list[Any], db: Session) -> list[Any]:
     """MEH-106: batch-load favorites_count for a list of producers (single query)."""
     if not producers:
         return producers
     ids = [p.id for p in producers]
-    counts = dict(
-        db.query(Favorite.producer_id, func.count(Favorite.user_id))
-        .filter(Favorite.producer_id.in_(ids))
-        .group_by(Favorite.producer_id)
-        .all()
+    counts: dict[Any, int] = dict(
+        cast(
+            "list[tuple[Any, int]]",
+            db.query(Favorite.producer_id, func.count(Favorite.user_id))
+            .filter(Favorite.producer_id.in_(ids))
+            .group_by(Favorite.producer_id)
+            .all(),
+        )
     )
     for p in producers:
         p.favorites_count = counts.get(p.id, 0)
@@ -296,7 +302,7 @@ def _rescue_pilot_on() -> bool:
     return rescue.rescue_bags_enabled()
 
 
-def attach_rescue_saving(producers, db: Session):
+def attach_rescue_saving(producers: list[Any], db: Session) -> list[Any]:
     """MEH-2716: batch-set `rescued_recently` — the «מצילים מזון» system badge.
 
     True when, in the last RESCUE_SAVING_WINDOW_DAYS, the business handed a
@@ -343,7 +349,7 @@ def attach_rescue_saving(producers, db: Session):
     return producers
 
 
-def attach_favorites_count(producer, db: Session):
+def attach_favorites_count(producer: Any, db: Session) -> Any:
     """MEH-106: load favorites_count for a single producer."""
     producer.favorites_count = (
         db.query(func.count(Favorite.user_id))
@@ -444,7 +450,7 @@ def persist_registration_delivery_areas(
         )
         wrote_any = True
     if wrote_any:
-        producer.offers_delivery = True
+        producer.offers_delivery = True  # type: ignore[assignment]
 
 
 def create_primary_branch_location(
@@ -526,7 +532,7 @@ def create_primary_branch_location(
     return location
 
 
-def _demote_other_primaries(db: Session, producer_id, keep_id) -> None:
+def _demote_other_primaries(db: Session, producer_id: Any, keep_id: Any) -> None:
     """Enforce the single-primary invariant in application code.
 
     There is NO database constraint behind this — `producer_locations` has no
@@ -550,7 +556,7 @@ def _demote_other_primaries(db: Session, producer_id, keep_id) -> None:
         .all()
     )
     for row in stale:
-        row.is_primary = False
+        row.is_primary = False  # type: ignore[assignment]
 
 
 def upsert_primary_branch_location(

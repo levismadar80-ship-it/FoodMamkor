@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 /**
@@ -118,6 +119,7 @@ function isNativeValidUrl(value) {
 const isWholeNumber = (value) => Number.isInteger(Number(value));
 
 function validateEventForm(f, t, tReg) {
+  /** @type {Record<string, string>} */
   const errors = {};
   if (!f.title.trim()) errors.title = t("error_title_required");
   if (!f.event_date) errors.event_date = t("error_date_required");
@@ -154,12 +156,16 @@ function validateEventForm(f, t, tReg) {
 }
 
 /**
- * @param {"create"|"edit"} mode
- * @param {object|null} initial  event (EventOut) to prefill in edit mode
- * @param {(data:object)=>void} onSuccess  called with the created/updated event
- * @param {string} cancelHref  where the cancel link points
+ * @param {object} props
+ * @param {"create"|"edit"} [props.mode]
+ * @param {object|null} [props.initial]  event (EventOut) to prefill in edit mode
+ * @param {(data:object)=>void} props.onSuccess  called with the created/updated event
+ * @param {string} [props.cancelHref]  where the cancel link points
+ * @param {boolean} [props.emailUnverified]  MEH-2918: show the verify notice up front
  */
-export default function EventForm({ mode = "create", initial = null, onSuccess, cancelHref = "/producer/dashboard" }) {
+// MEH-2918: emailUnverified (from the page's useAuth) shows the verify notice
+// up front; a 403 still shows it (and re-mounts it focused) when the prop is stale.
+export default function EventForm({ mode = "create", initial = null, onSuccess, cancelHref = "/producer/dashboard", emailUnverified = false }) {
   const t = useTranslations("sweep_tail.event_new");
   const tReg = useTranslations("registration.form");
   const tCat = useTranslations("events.categories");
@@ -223,8 +229,8 @@ export default function EventForm({ mode = "create", initial = null, onSuccess, 
   };
   const [form, setForm] = useState(() => seed(initial));
   const [error, setError] = useState("");
-  const [fieldErrors, setFieldErrors] = useState({});
-  const [unverified, setUnverified] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState(/** @type {Record<string, string>} */ ({}));
+  const [unverifiedHits, setUnverifiedHits] = useState(0); // MEH-2918: 403 count, re-mounts the notice
   const [submitting, setSubmitting] = useState(false);
   const [uploading, setUploading] = useState(false);
 
@@ -257,7 +263,7 @@ export default function EventForm({ mode = "create", initial = null, onSuccess, 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
-    setUnverified(false);
+    setUnverifiedHits(0);
 
     const errors = validateEventForm(form, t, tReg);
     if (Object.keys(errors).length > 0) {
@@ -286,10 +292,12 @@ export default function EventForm({ mode = "create", initial = null, onSuccess, 
       const r = isEdit
         ? await api.put(`/events/${initial.id}`, payload)
         : await api.post("/events", payload);
-      onSuccess?.(r.data);
+      // MEH-3213: awaited, so the button stays disabled while the page decides
+      // where to land (events/new may still be asking for the business status).
+      await onSuccess?.(r.data);
     } catch (err) {
       if (isUnverifiedEmailError(err)) {
-        setUnverified(true);
+        setUnverifiedHits((h) => h + 1);
       } else {
         setError(detailToMessage(err.response?.data?.detail) || t("error_generic"));
       }
@@ -300,7 +308,7 @@ export default function EventForm({ mode = "create", initial = null, onSuccess, 
 
   return (
     <>
-      {unverified && <UnverifiedEmailNotice className="mb-4" />}
+      {(unverifiedHits > 0 || emailUnverified) && <UnverifiedEmailNotice key={unverifiedHits} live={unverifiedHits > 0} focusOnMount={unverifiedHits > 0} className="mb-4" />}
       {error && (
         <InlineMessage as="div" variant="box" className="rounded-sm p-3 mb-4">
           {error}
@@ -632,6 +640,7 @@ export default function EventForm({ mode = "create", initial = null, onSuccess, 
 // (the category <select>) can carry an inline message instead of the raw 422
 // that noValidate left as the only failure path. The asterisk mechanism above
 // is untouched on purpose — MEH-2015 owns consolidating it.
+/** @param {{ id?: string, label: import("react").ReactNode, required?: boolean, error?: import("react").ReactNode, children?: import("react").ReactNode }} props */
 function Field({ id, label, required, error, children }) {
   return (
     <div>

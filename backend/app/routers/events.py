@@ -10,7 +10,7 @@ DELETE /events/{id}              delete (owner only)
 MEH-458: Pydantic schemas live in app.schemas.schemas per ADR-006 R1.
 """
 
-from typing import Annotated
+from typing import Annotated, Any, cast
 from uuid import UUID
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, Request
@@ -34,6 +34,7 @@ from app.schemas.schemas import (
     event_end_time_problem,
 )
 from app.services import indexnow  # MEH-2852
+from app.services.date_rules import refuse_past_date  # MEH-3224
 from app.services.producer_listing import (  # MEH-2952
     is_live_owner_row,
     not_test_producer,
@@ -62,7 +63,7 @@ def _serialize(event: Event, registered: int | None = None) -> EventOut:
     if registered is None:
         session = object_session(event)
         registered = (
-            registered_counts(session, event_ids=[event.id]).get(event.id, 0)
+            registered_counts(session, event_ids=[event.id]).get(event.id, 0)  # type: ignore[call-overload,list-item]
             if session is not None
             else 0
         )
@@ -117,13 +118,13 @@ def _serialize(event: Event, registered: int | None = None) -> EventOut:
 
 def _serialize_many(db: Session, events: list[Event]) -> list[EventOut]:
     """MEH-2763: one grouped count for the whole list, not one per row."""
-    counts = registered_counts(db, event_ids=[ev.id for ev in events])
-    return [_serialize(ev, counts.get(ev.id, 0)) for ev in events]
+    counts = registered_counts(db, event_ids=[ev.id for ev in events])  # type: ignore[misc]
+    return [_serialize(ev, counts.get(ev.id, 0)) for ev in events]  # type: ignore[call-overload]
 
 
-def _producer_phone(db: Session, producer_id) -> str | None:
+def _producer_phone(db: Session, producer_id: UUID) -> str | None:
     producer = db.get(Producer, producer_id)
-    return producer.phone if producer else None
+    return producer.phone if producer else None  # type: ignore[return-value]
 
 
 # ============================================================
@@ -139,7 +140,7 @@ def list_events(
     filters: Annotated[EventFilters, Query()],
     viewer: User | None = Depends(get_current_user_optional),
     db: Session = Depends(get_db),
-):
+) -> list[EventOut]:
     q = (
         db.query(Event)
         .options(joinedload(Event.producer))
@@ -195,7 +196,7 @@ def upcoming_events(
     request: Request,
     limit: int = Query(3, ge=1, le=20),
     db: Session = Depends(get_db),
-):
+) -> list[EventOut]:
     events = (
         db.query(Event)
         .options(joinedload(Event.producer))
@@ -222,7 +223,7 @@ def upcoming_events(
 def list_my_events(
     user: User = Depends(require_producer),
     db: Session = Depends(get_db),
-):
+) -> list[EventOut]:
     events = (
         db.query(Event)
         .options(joinedload(Event.producer))
@@ -240,7 +241,7 @@ def get_event(
     event_id: UUID,
     viewer: User | None = Depends(get_current_user_optional),
     db: Session = Depends(get_db),
-):
+) -> EventOut:
     event = (
         db.query(Event)
         .options(joinedload(Event.producer))
@@ -270,7 +271,7 @@ def create_event(
     background_tasks: BackgroundTasks,
     user: User = Depends(require_verified_producer),
     db: Session = Depends(get_db),
-):
+) -> EventOut:
     if data.category not in VALID_CATEGORIES:
         raise HTTPException(
             status_code=400,
@@ -283,6 +284,9 @@ def create_event(
         )
     if not user.producer_id:
         raise HTTPException(status_code=403, detail="Producer account required")
+    # MEH-3224 (D6): a past date would publish a dead event and fire the
+    # new-event alert to every follower.
+    refuse_past_date(data.event_date)
     # MEH-3022: cap on UPCOMING events — past ones are history and never count.
     enforce_cap(
         db.query(Event)
@@ -297,7 +301,7 @@ def create_event(
     # MEH-2763: the method's prerequisite (mobile / phone / URL).
     problem = method_problem(
         data.registration_method,
-        phone=_producer_phone(db, user.producer_id),
+        phone=_producer_phone(db, user.producer_id),  # type: ignore[arg-type]
         registration_url=data.registration_url,
     )
     if problem:
@@ -327,7 +331,7 @@ def create_event(
     db.refresh(event)
     # Reload with producer relation for serialization
     event = (
-        db.query(Event)
+        db.query(Event)  # type: ignore[assignment]
         .options(joinedload(Event.producer))
         .filter(Event.id == event.id)
         .first()
@@ -340,7 +344,7 @@ def create_event(
     background_tasks.add_task(
         fire_alerts,
         db,
-        user.producer_id,
+        user.producer_id,  # type: ignore[arg-type]
         "new_event",
         AlertContent(
             title=f"🎉 אירוע חדש: {data.title}",
@@ -355,7 +359,9 @@ def create_event(
     return _serialize(event)
 
 
-def _cap_event_returning_to_upcoming(db: Session, event: Event, changes: dict) -> None:
+def _cap_event_returning_to_upcoming(
+    db: Session, event: Event, changes: dict[str, Any]
+) -> None:
     """MEH-3022: a PUT that brings an event back into the upcoming set
     (reactivate, or move a past date to today or later) takes a slot, so it
     meets the same cap as POST. Otherwise cancel-create-reactivate repeats
@@ -388,7 +394,7 @@ def update_event(  # noqa: PLR0913 — all args are FastAPI-injected; MEH-3022 a
     background_tasks: BackgroundTasks,
     user: User = Depends(require_producer),
     db: Session = Depends(get_db),
-):
+) -> EventOut:
     event = db.query(Event).filter(Event.id == event_id).first()
     if not event:
         raise HTTPException(status_code=404, detail="Event not found")
@@ -399,6 +405,9 @@ def update_event(  # noqa: PLR0913 — all args are FastAPI-injected; MEH-3022 a
         raise HTTPException(status_code=404, detail="Event not found")
 
     changes = data.model_dump(exclude_unset=True)
+    # MEH-3224 (D6): moving an event INTO the past is refused; an edit that
+    # leaves the stored date alone is not.
+    refuse_past_date(changes.get("event_date"), event.event_date)  # type: ignore[arg-type]
     # MEH-2469: a PUT may carry only one of the pair, so the end-time rule is
     # checked against the values the row will hold after the update — never
     # against the payload alone.
@@ -425,8 +434,8 @@ def update_event(  # noqa: PLR0913 — all args are FastAPI-injected; MEH-3022 a
     )
     if method_changed or url_changed:
         method_issue = method_problem(
-            changes.get("registration_method") or event.registration_method,
-            phone=_producer_phone(db, event.producer_id),
+            changes.get("registration_method") or event.registration_method,  # type: ignore[arg-type]
+            phone=_producer_phone(db, event.producer_id),  # type: ignore[arg-type]
             registration_url=changes.get("registration_url", event.registration_url),
         )
         if method_issue:
@@ -439,11 +448,12 @@ def update_event(  # noqa: PLR0913 — all args are FastAPI-injected; MEH-3022 a
 
     db.commit()
     db.refresh(event)
-    event = (
+    event = cast(  # re-read of the row just committed
+        Event,
         db.query(Event)
         .options(joinedload(Event.producer))
         .filter(Event.id == event.id)
-        .first()
+        .first(),
     )
     # MEH-2852: edited or cancelled (is_active) — the page changed either way.
     if indexnow.is_public_owner(event.producer):
@@ -451,7 +461,7 @@ def update_event(  # noqa: PLR0913 — all args are FastAPI-injected; MEH-3022 a
     return _serialize(event)
 
 
-@router.delete("/events/{event_id}")
+@router.delete("/events/{event_id}", response_model=None)
 @limiter.limit("60/hour")  # MEH-3022
 def delete_event(
     request: Request,  # required by slowapi (MEH-3022)
@@ -459,7 +469,7 @@ def delete_event(
     background_tasks: BackgroundTasks,
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
-):
+) -> dict[str, Any]:
     event = db.query(Event).filter(Event.id == event_id).first()
     if not event:
         raise HTTPException(status_code=404, detail="Event not found")
