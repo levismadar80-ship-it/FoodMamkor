@@ -14289,6 +14289,11 @@
             "title": "Id",
             "type": "string"
           },
+          "is_mine": {
+            "default": false,
+            "title": "Is Mine",
+            "type": "boolean"
+          },
           "producer_id": {
             "format": "uuid",
             "title": "Producer Id",
@@ -14320,11 +14325,6 @@
             "title": "Stars",
             "type": "integer"
           },
-          "user_id": {
-            "format": "uuid",
-            "title": "User Id",
-            "type": "string"
-          },
           "user_name": {
             "anyOf": [
               {
@@ -14340,7 +14340,6 @@
         "required": [
           "id",
           "producer_id",
-          "user_id",
           "stars",
           "created_at"
         ],
@@ -25164,6 +25163,11 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
         "summary": "List Reviews Nested",
         "tags": [
           "reviews"
@@ -26130,6 +26134,11 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
         "summary": "List Reviews",
         "tags": [
           "reviews"
