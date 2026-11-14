@@ -159,6 +159,7 @@ def test_clear_reply_is_admin_only(client, db, monkeypatch):
         f"/admin/reviews/{review.id}/clear-reply", headers=auth_header(owner)
     )
     assert r.status_code == 403
+    assert client.put(f"/admin/reviews/{review.id}/clear-reply").status_code == 401
 
 
 def test_clear_reply_unknown_review_is_404(client, db):
@@ -172,6 +173,11 @@ def test_clear_reply_unknown_review_is_404(client, db):
 
 
 def test_reply_prompt_names_the_reply_not_a_review():
-    who, task, approved = reviews_mod._MODERATION_SUBJECTS["review_reply"]
+    who, task, rules = reviews_mod._MODERATION_SUBJECTS["review_reply"]
     assert "בעלת בית עסק" in task
-    assert "ללקוחה" in approved
+    assert "ללקוחה" in rules
+    # The business's own contact details are not "advertising" in a reply;
+    # the reviewer's personal details still are.
+    assert "פרטי הקשר שלו עצמו" in rules
+    assert "פרטים אישיים של הלקוחה" in rules
+    assert "פרסומת" not in rules.split("REJECTED")[1]

@@ -12,7 +12,7 @@
  * History:  MEH-3259 (creation).
  */
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Trash } from "@phosphor-icons/react";
 import Dialog from "@/components/ui/Dialog";
@@ -28,6 +28,9 @@ export default function AdminReviewReply({ review, onRemoved }) {
   const tError = useTranslations("error");
   const [confirming, setConfirming] = useState(false);
   const [removing, setRemoving] = useState(false);
+  // The opener unmounts with the reply, so focus goes back to the row's next
+  // control (its hide/delete button) instead of falling to <body>.
+  const rowRef = useRef(/** @type {HTMLElement | null} */ (null));
 
   if (!review.reply) return null;
 
@@ -48,6 +51,9 @@ export default function AdminReviewReply({ review, onRemoved }) {
 
   return (
     <div
+      ref={(el) => {
+        if (el) rowRef.current = el.closest("tr") ?? el.parentElement;
+      }}
       data-testid="review-reply"
       className="mt-2 border-s-2 border-border ps-3"
     >
@@ -82,6 +88,7 @@ export default function AdminReviewReply({ review, onRemoved }) {
           size="sm"
           dismissible={!removing}
           onClose={() => setConfirming(false)}
+          fallbackFocus={() => rowRef.current?.querySelector("button") ?? null}
           className="space-y-4"
         >
           <p id={`reply-remove-title-${review.id}`} className="font-medium text-base">

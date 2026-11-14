@@ -149,23 +149,31 @@ def _moderate_review_body(body: str | None) -> str | None:
 
 def _moderate_reply_text(text: str | None) -> str | None:
     """MEH-3259: the same check on a business owner's public reply to a
-    review — same verdicts, same fail-open. Only the prompt's subject differs:
-    a reply answers a customer, so "legitimate" means a polite answer, and
-    insulting the reviewer or exposing her details is REJECTED."""
+    review — same verdicts, same fail-open. Only the prompt's subject and
+    rules differ: a reply answers a customer, so the business's own contact
+    details and an invitation to come back are allowed, while insulting the
+    reviewer or exposing HER details is REJECTED."""
     return _moderate_text(text, "review_reply")
 
 
-# MEH-3259: the per-kind half of the moderation prompt.
+# MEH-3259: the per-kind half of the moderation prompt —
+# (who, task, rules). The review rules are byte-identical to the pre-3259
+# prompt. A reply gets its own rules: the business's own phone / site and
+# "come try the new batch" are a normal answer, not advertising.
 _MODERATION_SUBJECTS: dict[str, tuple[str, str, str]] = {
     "review": (
         "אתה מודרטור ביקורות לאתר מהמקור — פלטפורמה לאוכל בריא ומקומי בישראל.",
         "בדוק את טקסט הביקורת המוגשת ותחזיר JSON בלבד.",
-        "APPROVED אם: ביקורת לגיטימית על מוצר/שירות של בית עסק",
+        """APPROVED אם: ביקורת לגיטימית על מוצר/שירות של בית עסק
+FLAGGED אם: לשון פוגענית קלה, תוכן לא ברור, ספאם קל
+REJECTED אם: לשון גסה/מבזה, פרסומת, מידע אישי, גזענות, תרמית""",
     ),
     "review_reply": (
         "אתה מודרטור לאתר מהמקור — פלטפורמה לאוכל בריא ומקומי בישראל.",
         "בדוק את התגובה הפומבית שבעלת בית עסק כתבה לביקורת של לקוחה, ותחזיר JSON בלבד.",
-        "APPROVED אם: תשובה עניינית או מנומסת ללקוחה, גם כשהיא חולקת על הביקורת",
+        """APPROVED אם: תשובה עניינית או מנומסת ללקוחה, גם כשהיא חולקת על הביקורת. מותר לבית העסק לציין את פרטי הקשר שלו עצמו (טלפון, אתר) ולהזמין את הלקוחה לחזור או לנסות מוצר
+FLAGGED אם: טון עוקצני או מתגונן, תוכן לא ברור, פרסום שאינו קשור לביקורת
+REJECTED אם: עלבון או השפלה של הלקוחה, איום, חשיפת פרטים אישיים של הלקוחה (שם מלא, טלפון, כתובת), לשון גסה, גזענות""",
     ),
 }
 
@@ -178,7 +186,7 @@ def _moderate_text(body: str | None, kind: str) -> str | None:
         log.info("[reviews] no AI client — skipping moderation (fail-open)")
         report_fail_open(kind, "no_client")
         return None
-    who, task, approved = _MODERATION_SUBJECTS[kind]
+    who, task, rules = _MODERATION_SUBJECTS[kind]
     # MEH-2350: the review text is tagged data in the user turn, never
     # part of the instructions.
     data_rule, user_content = wrap_submission(kind, {"טקסט": body})
@@ -190,9 +198,7 @@ def _moderate_text(body: str | None, kind: str) -> str | None:
 החזר JSON בלבד (ללא ```json):
 {{"status": "APPROVED" | "FLAGGED" | "REJECTED", "reason": "..."}}
 
-{approved}
-FLAGGED אם: לשון פוגענית קלה, תוכן לא ברור, ספאם קל
-REJECTED אם: לשון גסה/מבזה, פרסומת, מידע אישי, גזענות, תרמית"""
+{rules}"""
     truncated = False
     try:
         msg = client.messages.create(

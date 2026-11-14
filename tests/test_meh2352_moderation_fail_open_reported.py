@@ -70,7 +70,20 @@ def _review():
     )
 
 
-SURFACES = [_experience, _recipe, _review]
+def _review_reply():
+    # MEH-3259: the owner reply runs the real _moderate_text path under its
+    # own surface tag, so a fail-open on replies is visible on its own.
+    from app.routers import reviews as mod
+
+    return (
+        mod,
+        "_get_ai_client",
+        lambda: mod._moderate_reply_text("תודה רבה, נשמח לראות אותך שוב"),
+        "review_reply",
+    )
+
+
+SURFACES = [_experience, _recipe, _review, _review_reply]
 OK = json.dumps({"status": "REJECTED", "reason": "x", "suggestion": None})
 
 
@@ -110,7 +123,7 @@ def calls(monkeypatch):
         "json-not-an-object",
     ],
 )
-@pytest.mark.parametrize("surface", SURFACES, ids=["experience", "recipe", "review"])
+@pytest.mark.parametrize("surface", SURFACES, ids=["experience", "recipe", "review", "review_reply"])
 def test_fail_open_is_reported(monkeypatch, calls, surface, client, reason):
     seen, patch = calls
     mod, getter, run, name = surface()
@@ -119,7 +132,7 @@ def test_fail_open_is_reported(monkeypatch, calls, surface, client, reason):
     # MEH-2390: a review has no verdict on fail-open (None → stored NULL, so
     # the next save re-checks); the item still publishes. Experiences and
     # recipes keep APPROVED — their status gates nothing an edit can reuse.
-    assert run() == (None if name == "review" else "APPROVED")
+    assert run() == (None if name in ("review", "review_reply") else "APPROVED")
     assert seen == [(name, reason)]
 
 
@@ -128,7 +141,7 @@ def test_fail_open_is_reported(monkeypatch, calls, surface, client, reason):
     [_Msg(OK), _Msg(None, stop_reason="refusal")],
     ids=["real-verdict", "refusal"],
 )
-@pytest.mark.parametrize("surface", SURFACES, ids=["experience", "recipe", "review"])
+@pytest.mark.parametrize("surface", SURFACES, ids=["experience", "recipe", "review", "review_reply"])
 def test_model_verdict_is_not_reported(monkeypatch, calls, surface, msg):
     seen, patch = calls
     mod, getter, run, _ = surface()
