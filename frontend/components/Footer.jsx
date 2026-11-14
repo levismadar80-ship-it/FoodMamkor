@@ -149,6 +149,10 @@ export default function Footer() {
     { href: "/about", label: t("nav.footer.about") },
     // MEH-1289: reader-facing "why local" editorial page.
     { href: "/about/why-local", label: t("nav.footer.why_local") },
+    // MEH-3265: the badges explainer was linked only from /about and the badge
+    // popovers. The label repeats the page's approved H1 (about_badges.h1) —
+    // its own key, because about_badges is a server-only namespace.
+    { href: "/about/badges", label: t("nav.footer.badges") },
     // MEH-1160: reader-facing share page — the site-level viral loop.
     // MEH-2827 PR 5: /share became the «ספרו עלינו» section of /recommend
     // (/share 308s there too); the label is unchanged.
@@ -164,6 +168,10 @@ export default function Footer() {
     { href: "/join", label: t("nav.footer.add_business") },
     { href: "/about/process", label: t("nav.footer.process") },
     { href: "/about/for-businesses", label: t("nav.footer.faq_businesses") },
+    // MEH-3265: the guides index was reachable only from /about/for-businesses.
+    // The label repeats the page's approved title (guides.index.meta_title) —
+    // its own key, because guides is a server-only namespace.
+    { href: "/about/for-businesses/guides", label: t("nav.footer.guides") },
   ];
 
   return (
