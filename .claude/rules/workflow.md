@@ -499,6 +499,31 @@ concurrent loops. Tiers + `mehamakor-dod` self-check: ADR-025.
     decisions on the same screen (e.g. MEH-912); (7) a recommendation. Sapir
     picks, then code. Post-launch, add a PostHog click event on the feature.
     Precedent: MEH-2724 built under the hero before the study was asked for.
+
+    ### 37b — big-sites check before code: every page, block, behaviour (Sapir 14/11, MEH-3110)
+
+    Sapir never has to ask «how do the big sites do it». **Scope:** every new
+    page, new block, new behaviour (form prefill, a sticky bar, a filter) and
+    every UI change that changes a pattern. **Exempt:** a bug fix that restores
+    intended behaviour, copy-only, internal work — say so in one line.
+    - **New page** (a new `page.*` under `frontend/app/[locale]/`, admin and
+      `dev/` excluded) → full review: (1) 375 + 1440 screenshots; (2) the
+      closest big sites (Airbnb · Wolt · Etsy · Yelp · Google Maps ·
+      Eventbrite, or whichever fits), with sources; (3) each gap with a real
+      rendered mock, the px it moves, what it costs; (4) a recommendation per
+      gap, "leave as is" included; (5) pre-launch vs post-launch, post-launch →
+      Linear. Record it in
+      [docs/audits/2026-11-big-sites-page-reviews.md](../../docs/audits/2026-11-big-sites-page-reviews.md).
+    - **Anything else in scope** → light check before code: 2–4 big sites
+      with sources, what each does, a recommendation. Written into the Linear
+      card and the PR body under `## Big sites`.
+    - **Decision:** one option is clearly the industry standard, needs no new
+      copy and no placement choice → CC builds it and reports. Otherwise
+      Sapir picks (rule 37 for placement, rule 22 for copy).
+    - **PR body:** `## Big sites` with the findings, or
+      `Big sites: n/a — <reason>`. `scripts/checks/big-sites-guard.sh`
+      (Repo guards, warn-only) prints a WARNING for a PR touching
+      `frontend/app` or `frontend/components` (tests excluded) without either.
 38. **A PR that changes what users see: CC self-merges it to staging after the
     full self-check (Sapir 09/11, MEH-2860 — replaces MEH-2825's wait for
     «go merge» on staging merges).** The self-check, all five before the merge:
