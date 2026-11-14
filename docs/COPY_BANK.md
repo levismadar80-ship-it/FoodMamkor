@@ -1278,7 +1278,7 @@ From here on a sentence about fees, a subscription or "free forever" lives in on
 - the `pricing.*` namespace (the price-list page `/join/pricing` and the short link labels), or
 - a key listed in `PRICING_COPY_KEYS` in `frontend/lib/pricing.js`.
 
-Numbers are never written into the copy. They are ICU values (`{monthly}`, `{yearly}`, `{percent}`, `{bagFee}`, `{subPercent}`, `{subBagFee}`, `{breakEven}`, `{threshold}`, `{noticeDays}`, `{asOf}`, `{examplePrice}`, `{exampleFee}`) supplied by `frontend/lib/pricing.js`, the same numbers as `docs/PRICING.md`.
+Numbers are never written into the copy. They are ICU values (`{monthly}`, `{yearly}`, `{percent}`, `{bagFee}`, `{subPercent}`, `{subBagFee}`, `{breakEven}`, `{breakEvenBookings}`, `{threshold}`, `{noticeDays}`, `{asOf}`, `{examplePrice}`, `{exampleFee}`) supplied by `frontend/lib/pricing.js`, the same numbers as `docs/PRICING.md`.
 
 | Key | he (live) |
 |---|---|

@@ -81,6 +81,15 @@ function subscriptionBreakEven(list) {
 }
 
 /**
+ * Bookings a month, at the example price, from which the subscription has
+ * paid for itself: monthly / (what a subscriber saves on one booking).
+ */
+function subscriptionBreakEvenBookings(list) {
+  const saved = list.commission.paidBookingPercent - list.subscriberCommission.paidBookingPercent;
+  return Math.ceil((list.subscription.monthly * 100) / (list.exampleBookingPrice * saved));
+}
+
+/**
  * The ICU values every pricing sentence takes. Strings, not numbers, so a
  * message renders «49» in every locale instead of a locale-formatted number.
  * Pass the whole object to `t()` — a message uses the ones it names.
@@ -101,6 +110,8 @@ export function pricingCopyValues(list = currentPriceList()) {
     // Monthly paid bookings (₪) above which the subscription costs less than
     // the plain commission, rounded up to the next 50. Computed, never typed.
     breakEven: String(subscriptionBreakEven(list)),
+    // «עם 9 הרשמות בחודש»: bookings, at the example price, that cover the subscription.
+    breakEvenBookings: String(subscriptionBreakEvenBookings(list)),
     threshold: String(list.thresholdBookingsPerMonth),
     noticeDays: String(list.noticeDays),
   };
