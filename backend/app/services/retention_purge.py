@@ -7,6 +7,8 @@ Purpose:  Enforce the retention windows the privacy policy promises (Sapir's
 Touches:  DB tables `producer_page_views`, `producer_whatsapp_clicks`,
           `alert_log` — DELETE only, in batches, committing per batch.
           MEH-2763: also `registrations`, 30 days after the item's date.
+          MEH-3244: `producer_contact_clicks` past 90 days are UPDATEd —
+          ip_hash and user_id set to NULL, the row kept.
           Reads the roll-up watermark through analytics_rollup — never
           the aggregate table directly (the MEH-2079 single-reader guard).
 Does NOT: roll anything up (analytics_rollup.py owns that); decide WHEN to
@@ -46,11 +48,12 @@ import logging
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta, timezone
 
-from sqlalchemy import CursorResult, delete, select
+from sqlalchemy import CursorResult, delete, or_, select, update
 from sqlalchemy.orm import Session
 
 from app.models.models import (
     AlertLog,
+    ContactClick,
     Event,
     Experience,
     ProducerPageView,
@@ -84,6 +87,7 @@ class PurgeResult:
     clicks_deleted: int
     alerts_deleted: int
     registrations_deleted: int = 0
+    contact_clicks_anonymized: int = 0
 
 
 def _israel_day_start_utc(day: date) -> datetime:
@@ -154,6 +158,47 @@ def _purge_registrations(db: Session, today: date) -> int:
     return total
 
 
+def _anonymize_contact_clicks(db: Session, today: date) -> int:
+    """MEH-3244 (Sapir 14/11: «90 יום כמו וואטסאפ»): contact clicks older
+    than RAW_RETENTION_DAYS lose `ip_hash` and `user_id`; the row stays.
+
+    Not a DELETE: this table has no aggregate column (producer_me.py
+    `windowed(ContactClick, …)` counts raw rows on every arm, `total` too), so
+    deleting would shrink the owner's all-time count. Clearing the two
+    identifying columns keeps the count and drops the personal data, which is
+    why no watermark guard is needed here. Same side effect as the WhatsApp
+    purge: past 90 days a click no longer proves contact for a review
+    (reviews.py, the user_id lookup). Batched; rolls back and re-raises."""
+    cutoff = _israel_day_start_utc(today - timedelta(days=RAW_RETENTION_DAYS))
+    total = 0
+    while True:
+        ids = (
+            select(ContactClick.id)
+            .where(
+                ContactClick.clicked_at < cutoff,
+                or_(
+                    ContactClick.ip_hash.is_not(None), ContactClick.user_id.is_not(None)
+                ),
+            )
+            .limit(BATCH_SIZE)
+        )
+        try:
+            result = db.execute(
+                update(ContactClick)
+                .where(ContactClick.id.in_(ids.scalar_subquery()))
+                .values(ip_hash=None, user_id=None)
+                .execution_options(synchronize_session=False)
+            )
+            db.commit()
+        except Exception:
+            db.rollback()
+            raise
+        changed = cast("CursorResult[Any]", result).rowcount or 0
+        total += changed
+        if changed < BATCH_SIZE:
+            return total
+
+
 def run_purge(
     db: Session, *, today: date | None = None, now: datetime | None = None
 ) -> PurgeResult:
@@ -181,7 +226,8 @@ def run_purge(
     )
 
     registrations = _purge_registrations(db, today)
+    contacts = _anonymize_contact_clicks(db, today)
 
-    result = PurgeResult(boundary, views, clicks, alerts, registrations)
+    result = PurgeResult(boundary, views, clicks, alerts, registrations, contacts)
     logger.info("[RETENTION-PURGE] %s", result)
     return result

@@ -541,6 +541,9 @@ producer_whatsapp_clicks (
 -- row per (business, Israel calendar day), kept forever so the raw rows can
 -- be purged (chunk C, 90 days) without the owner's dashboard numbers moving.
 -- No viewer identifiers of any kind (that is its licence to be unbounded).
+-- `producer_contact_clicks` has no column here, so its rows are never deleted:
+-- past the same 90 days the purge sets their `ip_hash` and `user_id` to NULL
+-- and keeps the row, so the contact total does not move (MEH-3244).
 -- Written ONLY by services/analytics_rollup.py (daily 01:30 UTC via the
 -- startup.py scheduler, or `scripts/rollup_analytics.py --from/--to`) with
 -- INSERT … ON CONFLICT DO NOTHING: a rolled-up day is immutable, never
