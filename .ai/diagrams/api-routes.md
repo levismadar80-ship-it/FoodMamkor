@@ -74,7 +74,7 @@ graph TD
     WaitlistMail -.->|link in the email| WaitlistUnsub[POST /delivery-waitlist/unsubscribe<br/>🌐 signed token → deletes the entry<br/>idempotent 200 · 400 bad token]
 
     GProducer --> GReviews[GET /producers/{id}/reviews<br/>🌐 paginated]
-    GProducer --> Reports_post[POST /producers/{id}/report<br/>🔑 rate-limited]
+    GProducer --> Reports_post[POST /producers/{id}/report<br/>🔑 rate-limited<br/>MEH-3223: emails admin_email (open count)]
     GProducer --> ReportInfo[POST /reports/producer-info<br/>🌐 rate-limited 5/day<br/>MEH-1443 email-only, no persist<br/>404 for an organizer MEH-2465]
 ```
 

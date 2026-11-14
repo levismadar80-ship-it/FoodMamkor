@@ -52,11 +52,17 @@ def test_a_report_emails_the_admin_once(client, db, mail):
 
 
 def test_the_count_is_of_open_reports(client, db, mail):
+    from app.models.models import Report
+
     producer = make_producer(db)
+    _report(client, db, producer, email="old@example.com")
+    # an already-handled report is not counted
+    db.query(Report).update({"status": "dismissed"})
+    db.commit()
     _report(client, db, producer, email="a@example.com")
     _report(client, db, producer, email="b@example.com")
 
-    assert mail.call_count == 2
+    assert mail.call_count == 3
     assert "דיווחים פתוחים על בית העסק: 2" in mail.call_args.args[2]
 
 
