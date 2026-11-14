@@ -299,7 +299,7 @@ ruleset belong to the aggregators, the practical consequences invert:
   change.
 - **The real fragility moved inside the aggregator.** Deleting or merging a job
   means updating `ci-gate`'s `needs:` list **and** its `R_*` env block
-  (`pr-checks.yml:707-743`). A `needs:` entry naming a job that no longer exists
+  (the `ci-gate` job in `pr-checks.yml`). A `needs:` entry naming a job that no longer exists
   fails the workflow outright; an `R_*` reference to a removed job resolves empty,
   and `check_ran` treats empty as "did not run" → **every PR red**. That, not the
   Settings list, is what must change with any job merge (MEH-2212's

@@ -3,7 +3,7 @@
 # Module:   api-docs-route-guard.sh
 # Purpose:  fail when a path in backend/openapi.json is not named in
 #           docs/DATA.md (workflow rule 12 / backend.md «Docs update rule» was
-#           prose only — 26 of 202 paths had drifted out, 14/11/2026).
+#           prose only — 25 of 202 paths had drifted out, 14/11/2026).
 # Touches:  nothing — reads files and prints.
 # Does NOT: check .ai/diagrams/api-routes.md, which is a map, not the
 #           inventory (one owner per fact, Smell #1); or the content of the

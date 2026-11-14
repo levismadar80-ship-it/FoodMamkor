@@ -17,9 +17,19 @@ ROOT = os.environ.get("GATE_ROOT", os.getcwd())
 GATES = [("pr-checks.yml", "ci-gate"), ("deploy.yml", "deploy-gate"), ("e2e.yml", "e2e-gate")]
 
 
+def strip_comments(text):
+    """Drop YAML/shell comments: whole comment lines and ` # ...` tails."""
+    out = []
+    for l in text.splitlines():
+        if re.match(r"^\s*#", l):
+            continue
+        out.append(re.sub(r"\s+#.*$", "", l))
+    return "\n".join(out)
+
+
 def jobs(text):
     """{job_id: (first_line_no, block_text)} for the top-level jobs: map."""
-    lines = text.splitlines()
+    lines = strip_comments(text).splitlines()
     try:
         start = next(i for i, l in enumerate(lines) if re.match(r"^jobs:\s*$", l))
     except StopIteration:
@@ -44,11 +54,12 @@ def jobs(text):
 
 def needs_of(block):
     m = re.search(r"^    needs:\s*\[([^\]]*)\]", block, re.M)
+    unq = lambda x: x.strip().strip("'\"")
     if m:
-        return [x.strip() for x in m.group(1).split(",") if x.strip()]
+        return [unq(x) for x in m.group(1).split(",") if unq(x)]
     m = re.search(r"^    needs:\s*\n((?:      - .*\n?)+)", block, re.M)
     if m:
-        return [re.sub(r"^\s*-\s*", "", x).strip() for x in m.group(1).splitlines() if x.strip()]
+        return [unq(re.sub(r"^\s*-\s*", "", x)) for x in m.group(1).splitlines() if x.strip()]
     m = re.search(r"^    needs:\s*([A-Za-z0-9_-]+)\s*$", block, re.M)
     return [m.group(1)] if m else []
 
@@ -107,6 +118,11 @@ def self_test():
         ("job in needs with no R_ vote", SAMPLE.replace("          R_B: ${{ needs.b.result }}\n", "").replace('; check "$R_B"', ""), 1),
         ("R_ defined, never checked", SAMPLE.replace('; check "$R_B"', ""), 1),
         ("gate job missing", SAMPLE.replace("  gate:", "  other:"), 1),
+        ("column-0 comment inside jobs:", SAMPLE.replace("  gate:", "# gates\n  gate:"), 0),
+        ("comment line and trailing comment in a block list", SAMPLE.replace("needs: [a, b]", "needs:\n      - a  # first\n      # note\n      - b"), 0),
+        ("quoted ids", SAMPLE.replace("needs: [a, b]", 'needs: ["a", \'b\']'), 0),
+        ("comment mentioning a removed job", SAMPLE.replace("        run: |", "        # needs.zz.result was removed\n        run: |"), 0),
+        ("R_ used only in a comment is not a check", SAMPLE.replace('; check "$R_B"', '  # "$R_B" later'), 1),
     ]
     bad = 0
     for name, text, want in cases:

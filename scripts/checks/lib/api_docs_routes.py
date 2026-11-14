@@ -24,7 +24,9 @@ METHODS = {"get", "post", "put", "patch", "delete"}
 
 def norm(path):
     """/producers/{producer_id}/ → /producers/{}  (param names differ between doc and code)."""
-    p = re.sub(r"\{[^}]*\}", "{}", path.strip())
+    p = re.sub(r"[.:,;)]+$", "", path.strip())  # sentence punctuation after a path
+    p = re.sub(r"\{[^}]*\}", "{}", p)
+    p = re.sub(r"/:[A-Za-z_][A-Za-z0-9_]*", "/{}", p)  # /a/:id style
     if p.startswith("/api/"):
         p = p[4:]
     return p.rstrip("/") or "/"
@@ -36,7 +38,12 @@ def spec_paths(text):
 
 
 def doc_paths(text):
-    return {norm(m) for m in re.findall(r"/[A-Za-z0-9_\-{}/.:]*", text)}
+    # The root "/" is never matched: a bare slash appears in any prose.
+    # It is required only when written as `/` in backticks.
+    found = {norm(m) for m in re.findall(r"/[A-Za-z0-9_\-{}/.:]+", text)}
+    if "`/`" in text:
+        found.add("/")
+    return found
 
 
 def baseline(text):
@@ -54,6 +61,7 @@ def check(spec_text, doc_text, base_text):
 
 def self_test():
     spec = json.dumps({"paths": {"/a": {"get": {}}, "/b/{id}": {"post": {}}, "/c": {"get": {}}, "/x": {"parameters": []}}})
+    root_spec = json.dumps({"paths": {"/": {"get": {}}, "/a": {"get": {}}}})
     cases = [
         ("documented with another param name", "`GET /a` `POST /b/{producer_id}` /c", "", ([], [])),
         ("/api prefix in the doc counts", "/api/a /api/b/{x} /api/c", "", ([], [])),
@@ -63,10 +71,15 @@ def self_test():
         ("baseline line for a removed path is stale", "/a /b/{id} /c", "/gone\n", ([], ["/gone"])),
         ("a path with no operations is not required", "/a /b/{} /c", "", ([], [])),
         ("prefix of a path is not a match", "/a /b /c", "", (["/b/{}"], [])),
+        ("sentence punctuation after a path still counts", "see /a. then /b/{id}: and /c,", "", ([], [])),
+        ("colon param style counts", "/a /b/:id /c", "", ([], [])),
     ]
     bad = 0
-    for name, doc, base, want in cases:
-        got = check(spec, doc, base)
+    for name, doc, base, want, sp in [c + (spec,) for c in cases] + [
+        ("a stray slash in prose does not document the root", "/a and a/b", "", (["/"], []), root_spec),
+        ("the root documented as `/` counts", "`/` and /a", "", ([], []), root_spec),
+    ]:
+        got = check(sp, doc, base)
         ok = (list(got[0]), list(got[1])) == (want[0], want[1])
         bad += not ok
         print(f"  {'ok ' if ok else 'BAD'} {name}: {got}")
