@@ -274,7 +274,7 @@ export default function GroupBuysClient() {
           // MEH-2994: the shared empty state (was a hand-built copy of it,
           // MEH-862) — same icon and the same two strings.
           <div data-testid="group-buys-empty">
-            <EmptyState icon={ShoppingCart} title={t("empty_title")} description={t("empty_subtitle")} />
+            <EmptyState icon={ShoppingCart} title={t("empty_title")} description={t("empty_subtitle")} headingLevel={2} />
             {/* MEH-3117: the way out — the group-buy alert (MEH-2828). */}
             <HubAlertHint kind="group_buys" className="-mt-6 pb-12" />
           </div>

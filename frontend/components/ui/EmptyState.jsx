@@ -47,7 +47,12 @@ export default function EmptyState({
   // existing meaning for the NON-gated case only. One prop, one rendering.
   unblockLabel,
   unblockHref,
+  // MEH-3191: the title's heading level. Default h3 (unchanged for every
+  // caller); a page whose h1 sits right above the empty state passes 2, so
+  // the outline does not skip a level (axe heading-order).
+  headingLevel = 3,
 }) {
+  const TitleTag = headingLevel === 2 ? "h2" : "h3";
   // Gating wins over any CTA the caller passed — see the `gated` note above.
   const showCta = !gated && ctaLabel && (ctaHref || ctaOnClick);
   const showUnblockLink = gated && unblockLabel && unblockHref;
@@ -74,7 +79,7 @@ export default function EmptyState({
           {emoji}
         </p>
       ) : null}
-      <h3 className="font-headline-md text-2xl font-bold text-text mb-2">{title}</h3>
+      <TitleTag className="font-headline-md text-2xl font-bold text-text mb-2">{title}</TitleTag>
       {description && (
         <p className="text-base text-fg-muted max-w-xs mx-auto mb-6">{description}</p>
       )}
