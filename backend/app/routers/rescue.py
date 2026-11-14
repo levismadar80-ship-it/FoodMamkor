@@ -76,6 +76,7 @@ from app.models.models import (
     User,
 )
 from app.rate_limit import limiter
+from app.services import billing_ledger  # MEH-3179
 from app.schemas.rescue import (
     RescueNoShowStateOut,
     RescueOfferCreate,
@@ -987,7 +988,7 @@ def mark_handed(
     order.status = "handed"
     order.handed_at = utc_now()
     order.handed_by = current_user.id
-    db.commit()
+    billing_ledger.count_bag_and_commit(db, order)  # MEH-3179: ledger row, then commit
     db.refresh(order)
     return order
 

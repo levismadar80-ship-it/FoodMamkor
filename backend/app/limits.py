@@ -129,6 +129,7 @@ OWNED_TABLE_EXEMPT = {
     "producer_page_views": "system-written analytics, rate-limited beacon",
     "producer_contact_clicks": "system-written analytics, rate-limited beacon",
     "producer_whatsapp_clicks": "system-written analytics, rate-limited beacon",
+    "billable_events": "system-written ledger: one row per registration / group-buy order / rescue order (unique on kind + source_id), each of which is itself capped or rate-limited (MEH-3179)",
 }
 
 # Write routes allowed to run without a per-route rate limit, with the reason.

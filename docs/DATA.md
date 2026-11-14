@@ -422,6 +422,36 @@ Only items whose owner picked `registration_method = 'site_form'` take rows.
 PII is returned to the owner/admin only. Purged 30 days after the item's
 date (`retention_purge._purge_registrations`, the promise under the form).
 
+### Billable events (ledger of bookings through the site — MEH-3179, migration `d5b8f2a6c341`)
+
+```sql
+billable_events (
+  id uuid PK,
+  producer_id FK producers ON DELETE CASCADE,
+  kind: event_registration|experience_registration|group_buy_order|rescue_bag,
+  source_id uuid,                 -- the registration / group-buy commit / rescue order; NOT a FK (outlives it)
+  occurred_at timestamptz,
+  quantity int >= 1,              -- units in a group-buy order, bags in a rescue order
+  base_amount_agorot int,         -- the price of the booking (0 = free)
+  fee_agorot int,                 -- what the price list would ask; nothing is charged in the launch phase
+  price_list_version int,         -- app/pricing.py
+  status: counted|voided, voided_at,
+  created_at,
+  UNIQUE (kind, source_id)        -- a booking is counted once
+)
+```
+
+No personal data. Written only by `app/services/billing_ledger.py`, in the
+booking's own transaction behind a SAVEPOINT (a ledger error never fails the
+booking): on a sign-up (`registrations.py`), when a group buy becomes
+`fulfilled` — one row per participant's order (`group_buys.py`), and when a
+rescue order is marked handed (`rescue.py`). A sign-up cancelled before the
+item's date is `voided`; a late cancel stays counted. No route reads it yet —
+the monthly summary is MEH-3181. The numbers come from `app/pricing.py`, held
+equal to `frontend/lib/pricing.js` and `docs/PRICING.md` by
+`tests/test_meh3179_pricing_mirror.py`. Adds one table →
+**`EXPECTED_TABLES` 50 → 51**.
+
 ### Experiences (community workshops — **admin-moderated**)
 
 ```sql

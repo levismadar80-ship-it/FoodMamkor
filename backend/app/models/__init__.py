@@ -47,8 +47,14 @@ from app.models.models import (
     StaticPage,
     User,
 )
+# MEH-3179: its own module (models.py is at its size baseline). Imported here
+# so Base.metadata — and with it Alembic and the test schema — sees the table.
+from app.models.billing import BILLABLE_KINDS, BILLABLE_STATUSES, BillableEvent
 
 __all__ = [
+    "BillableEvent",
+    "BILLABLE_KINDS",
+    "BILLABLE_STATUSES",
     "Producer",
     "User",
     "Category",

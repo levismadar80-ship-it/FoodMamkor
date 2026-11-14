@@ -18,6 +18,7 @@ from app.auth import (
 from app.database import get_db
 from app.models.models import GroupBuy, GroupBuyCommit, Producer, User
 from app.rate_limit import limiter
+from app.services import billing_ledger  # MEH-3179
 from app.schemas.schemas import (
     GroupBuyCommitRequest,
     GroupBuyCreate,
@@ -586,6 +587,8 @@ def update_group_buy_status(  # noqa: PLR0913 — all 6 args are FastAPI-injecte
     is_public = indexnow.is_public_business(gb.producer)  # MEH-2852
 
     gb.status = data.status
+    if data.status == "fulfilled":  # MEH-3179: each participant's order counts
+        billing_ledger.record_group_buy_fulfilled(db, gb, gb.commits)
     db.commit()
     # MEH-2852: cancelled / fulfilled — the public page changed.
     if is_public:
@@ -650,6 +653,8 @@ def admin_update_status(  # noqa: PLR0913 — FastAPI-injected args (path, 2 que
     is_public = indexnow.is_public_business(gb.producer)  # MEH-2852
 
     gb.status = status
+    if status == "fulfilled":  # MEH-3179
+        billing_ledger.record_group_buy_fulfilled(db, gb, gb.commits)
     db.commit()
     if is_public:
         indexnow.schedule(background_tasks, indexnow.group_buy_urls(gb.id))

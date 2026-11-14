@@ -34,6 +34,7 @@ from app.config import settings
 from app.database import get_db
 from app.models import Event, Experience, Producer, Registration, User
 from app.rate_limit import limiter
+from app.services import billing_ledger  # MEH-3179
 from app.services.producer_listing import is_live_owner_row  # MEH-2952
 from app.routers.experiences import _publicly_visible_query
 from app.schemas.schemas import (
@@ -169,6 +170,9 @@ def register_for_event(
 
     reg = _new_registration(data, event_id=event.id)
     db.add(reg)
+    db.flush()
+    # MEH-3179: counted in the same transaction; never fails the sign-up.
+    billing_ledger.record_event_registration(db, reg, event)
     db.commit()
 
     producer = db.get(Producer, event.producer_id)
@@ -240,6 +244,12 @@ def register_for_experience(
 
     reg = _new_registration(data, experience_id=ex.id)
     db.add(reg)
+    db.flush()
+    # MEH-3179: counted for the host's business, if the host has one.
+    ledger_host = db.get(User, ex.host_user_id)
+    billing_ledger.record_experience_registration(
+        db, reg, ex, ledger_host.producer_id if ledger_host else None
+    )
     db.commit()
 
     host = db.get(User, ex.host_user_id)
@@ -389,6 +399,18 @@ def cancel_registration(
     if was_active:
         reg.status = "cancelled"
         reg.cancelled_at = utc_now()
+        # MEH-3179: a cancel before the item took place is not a booking the
+        # business got. A late cancel of a past item stays counted.
+        if item.event_date >= israel_today():
+            billing_ledger.void(
+                db,
+                kind=(
+                    "event_registration"
+                    if reg.event_id
+                    else "experience_registration"
+                ),
+                source_id=reg.id,
+            )
     db.commit()
 
     # A late cancel of a past item changes nothing for the owner — no email.

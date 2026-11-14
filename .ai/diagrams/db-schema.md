@@ -223,6 +223,7 @@ erDiagram
     users ||--o{ experiences : "hosts (producer)"
     events ||--o{ registrations : "on-site sign-ups (MEH-2763)"
     experiences ||--o{ registrations : "on-site sign-ups (MEH-2763)"
+    producers ||--o{ billable_events : "bookings counted (MEH-3179)"
     home_products ||--o{ home_product_whatsapp_clicks : "gets clicks"
     home_product_whatsapp_clicks ||--o| home_product_ratings : "optional 1:1"
 
@@ -290,6 +291,21 @@ erDiagram
         string status "registered|cancelled"
         timestamp created_at
         timestamp cancelled_at
+    }
+
+    billable_events {
+        uuid id PK
+        uuid producer_id FK
+        string kind "event_registration|experience_registration|group_buy_order|rescue_bag"
+        uuid source_id "not a FK: outlives the booking row"
+        timestamp occurred_at
+        int quantity
+        int base_amount_agorot
+        int fee_agorot "computed, not charged"
+        int price_list_version
+        string status "counted|voided"
+        timestamp voided_at
+        timestamp created_at
     }
 
     experiences {
@@ -575,6 +591,12 @@ erDiagram
 > `pickup_end` is AFTER this stamp — so one write releases a buyer and the
 > no-show rows stay in the history for the chunk-5 metrics. Adds no table →
 > `EXPECTED_TABLES` unchanged. Migration `b2e6d4a17c93`.
+
+> **MEH-3179 — `billable_events` (14/11/2026):** the ledger ADR-042's monthly
+> billing will count from: one row per booking a business got through the site,
+> no personal data, written by `services/billing_ledger.py`. Nothing is charged.
+> Adds one table → **`EXPECTED_TABLES` 50 → 51** (`pr-checks.yml`). Migration
+> `d5b8f2a6c341`.
 
 > **MEH-2763 — `registrations` + `registration_method` (06/11/2026):** the
 > owner picks «איך נרשמים?» per event / experience; `site_form` stores one row
