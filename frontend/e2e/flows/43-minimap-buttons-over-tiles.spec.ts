@@ -117,7 +117,20 @@ async function expectButtonOverTiles(page: Page, name: string, zoom?: number): P
   // then a stale tile could sit on top. Wait for the zoom animation to finish.
   await expect(page.locator(".leaflet-zoom-anim")).toHaveCount(0);
   // A visible button reads 0 here; a covered one reads ~1.
-  expect(await tileShareOver(page, name), `"${name}" is painted over by map tiles`).toBeLessThan(0.05);
+  // MEH-3014: read it with a short poll, not once. On a loaded CI runner the
+  // first read sometimes came back 1 or 0.14 on the first try and 0 on the
+  // retry: the element screenshot is clipped to a box measured a moment
+  // earlier, and the producer page is still laying out (dynamic sections),
+  // so the clip can land on the map beside the button. A real paint-over
+  // (no `isolate`) covers the button for good, so it still reads ~1 on every
+  // poll and fails here — shown failing with `isolation: auto` forced.
+  await expect
+    .poll(() => tileShareOver(page, name), {
+      message: `"${name}" is painted over by map tiles`,
+      timeout: 5_000,
+      intervals: [250, 500, 1_000],
+    })
+    .toBeLessThan(0.05);
   return zoom ?? Math.max(...seen);
 }
 
