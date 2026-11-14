@@ -3806,6 +3806,18 @@ export const CreateGroupBuyGroupBuysPostResponse = /*#__PURE__*/ zod.unknown()
 
 
 /**
+ * MEH-3128: how many group buys each status tab would list, so the page
+ * hides a tab that would open on an empty state. Numbers only.
+ * @summary Count Group Buys By Status
+ */
+export const CountGroupBuysByStatusGroupBuysCountsGetResponse = /*#__PURE__*/ zod.object({
+  "fulfilled": /*#__PURE__*/ zod.int(),
+  "funded": /*#__PURE__*/ zod.int(),
+  "open": /*#__PURE__*/ zod.int()
+}).check(/*#__PURE__*/ zod.describe('How many group buys each public status tab would list right now.'))
+
+
+/**
  * @summary Get Group Buy
  */
 export const getGroupBuyGroupBuysGroupBuyIdGetResponseCommitsCountDefault = 0;

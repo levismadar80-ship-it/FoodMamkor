@@ -32,6 +32,10 @@ let params = {}; // drives useSearchParams().get(key)
 let unfilteredRows = [];
 let filteredRows = [];
 
+// MEH-3128: the date shortcuts count rows against the Israel clock; the
+// fixtures sit on 2026-12-01, so «today» is frozen well before it (rule:
+// clock-dependent tests freeze the clock).
+vi.mock("@/lib/israel-date", () => ({ israelToday: () => "2026-11-18" }));
 vi.mock("next/navigation", () => ({
   // MEH-2847: EventsClient reads the category axis with getAll (multi-select);
   // a param may be a string or an array of strings.
@@ -266,10 +270,9 @@ describe("/events — empty dataset vs filtered to zero (MEH-1865)", () => {
       expect(screen.queryByTestId("events-empty-dataset")).toBeNull();
       expect(screen.queryByTestId("events-no-results")).toBeNull();
       // MEH-3124: one row = one category, and a lone category chip filters
-      // nothing, so no category chip is drawn. The chip row itself stays for
-      // the date shortcuts (MEH-3118): city search + that row = 2 controls.
-      expect(filterControlCount()).toBe(2);
-      expect(document.querySelector(`[data-key="${row(1).category}"]`)).toBeNull();
+      // nothing; MEH-3128: its date is in none of the three shortcuts — so
+      // only the city search is drawn.
+      expect(filterControlCount()).toBe(1);
       expect(screen.getByText("event 1")).toBeInTheDocument();
     });
 

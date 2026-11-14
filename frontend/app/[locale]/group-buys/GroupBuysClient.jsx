@@ -13,6 +13,8 @@ import { formatPrice } from "@/lib/utils";
 import { groupBuyProgressPct, groupBuyDiscountPct } from "@/lib/group-buy-progress"; // MEH-2540, MEH-2544
 import CitySearch from "@/components/CitySearch";
 import ChipScrollRow from "@/components/ChipScrollRow";
+import { dropZeroChips } from "@/lib/chip-gate"; // MEH-3128
+import { CountGroupBuysByStatusGroupBuysCountsGetResponse as StatusCountsOut } from "@/lib/generated/api.zod";
 import Button from "@/components/ui/Button";
 import EmptyState from "@/components/ui/EmptyState";
 import HubAlertHint from "@/components/HubAlertHint";
@@ -154,6 +156,26 @@ export default function GroupBuysClient() {
   const [city, setCity] = useState("");
   const [statusFilter, setStatusFilter] = useState("open");
   const statusKeys = useMemo(() => ({ [statusFilter]: true }), [statusFilter]);
+  // MEH-3128: rows per status tab for this city — a tab with 0 is not drawn.
+  // null = unknown (loading or failed) → every tab, as before.
+  const [statusCounts, setStatusCounts] = useState(null);
+  useEffect(() => {
+    let live = true;
+    // The last city's counts stand in while this one loads (no flicker per
+    // keystroke); a response for an older city is dropped (`live`).
+    api
+      .get("/group-buys/counts", { params: city ? { city } : {} })
+      // Zod before use (rule 19); a shape we don't know shows every tab.
+      .then((r) => {
+        if (!live) return;
+        const parsed = StatusCountsOut.safeParse(r.data);
+        setStatusCounts(parsed.success ? parsed.data : null);
+      })
+      .catch(() => live && setStatusCounts(null));
+    return () => {
+      live = false;
+    };
+  }, [city]);
 
   useEffect(() => {
     load();
@@ -209,11 +231,15 @@ export default function GroupBuysClient() {
         <div className="pt-3 mb-3">
           <ChipScrollRow
             variant="toggle"
-            chips={[
-              { key: "open", label: t("status_open") },
-              { key: "funded", label: t("status_funded") },
-              { key: "fulfilled", label: t("status_fulfilled") },
-            ]}
+            chips={dropZeroChips({
+              chips: [
+                { key: "open", label: t("status_open") },
+                { key: "funded", label: t("status_funded") },
+                { key: "fulfilled", label: t("status_fulfilled") },
+              ],
+              counts: statusCounts,
+              active: [statusFilter],
+            })}
             activeKeys={statusKeys}
             onChipClick={(key) => setStatusFilter(key)}
           />
