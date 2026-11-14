@@ -26,6 +26,7 @@ business-suggestion ping is visitor-caused and takes no flag.
 
 import logging
 import re
+from typing import TypeVar
 from uuid import UUID
 
 from app.config import settings
@@ -39,6 +40,8 @@ from app.services.whatsapp_templates import (
 )
 from app.utils.pii import mask_phone
 
+T = TypeVar("T")
+
 logger = logging.getLogger(__name__)
 
 
@@ -50,7 +53,7 @@ def _normalize_il_phone(phone: str) -> str:
     return phone
 
 
-def _skip_test_cause(notifier: str, result):
+def _skip_test_cause(notifier: str, result: T) -> T:
     """MEH-2952: a send caused by a test business / test account.
 
     Returned BEFORE the preflight and the send, so none of the ERROR / WARNING

@@ -99,7 +99,7 @@ def create_refresh_token(user_id: UUID, token_version: int) -> str:
     return jose_jwt.encode({"alg": settings.algorithm}, payload, _jwt_key())
 
 
-def decode_refresh_token(token: str) -> dict | None:
+def decode_refresh_token(token: str) -> dict[str, Any] | None:
     """MEH-326: validate a refresh token. Returns claims on success, None
     on any failure (invalid signature, expired, wrong scope). Never raises
     — callers branch on None.
@@ -286,7 +286,8 @@ def _maybe_bump_last_active(db: Session, user: User) -> None:
     if last is not None and (now - last) < _LAST_ACTIVE_THROTTLE:
         return
     try:
-        user.last_active_at = now
+        # Legacy Column[] typing (no Mapped[]); same idiom as auto_reply_watchdog.py:170.
+        user.last_active_at = now  # type: ignore[assignment]
         db.commit()
     except Exception:
         logger.warning(
@@ -321,7 +322,7 @@ _INVALID_TOKEN_HEADERS = {"WWW-Authenticate": 'Bearer error="invalid_token"'}
 _NO_CREDENTIAL_HEADERS = {"WWW-Authenticate": 'Bearer realm="mehamakor"'}
 
 
-def _validate_access_scope(claims: dict) -> None:
+def _validate_access_scope(claims: dict[str, Any]) -> None:
     # MEH-326: only access-scope tokens are valid here. Refresh tokens go
     # to /auth/refresh; presenting one as a Bearer access token is rejected.
     # Fail-open on missing scope claim — pre-MEH-326 tokens (no scope) are
@@ -336,7 +337,7 @@ def _validate_access_scope(claims: dict) -> None:
         )
 
 
-def _check_password_change_invalidation(user: User, claims: dict) -> None:
+def _check_password_change_invalidation(user: User, claims: dict[str, Any]) -> None:
     # MEH-305: invalidate sessions issued before the most-recent password
     # change. Fail-open when iat is absent (legacy tokens issued before
     # MEH-305 deployed) or when password_changed_at is NULL (user has
@@ -358,7 +359,7 @@ def _check_password_change_invalidation(user: User, claims: dict) -> None:
         )
 
 
-def _check_token_version(user: User, claims: dict) -> None:
+def _check_token_version(user: User, claims: dict[str, Any]) -> None:
     # MEH-206: token_version check — fail-open so tokens issued before
     # this column was added (no `tv` claim) are still accepted.
     tv = claims.get("tv")
@@ -370,7 +371,7 @@ def _check_token_version(user: User, claims: dict) -> None:
         )
 
 
-def _check_fingerprint(request: Request, claims: dict) -> None:
+def _check_fingerprint(request: Request, claims: dict[str, Any]) -> None:
     # MEH-327: fingerprint check — fail-open for tokens without the claim
     # (pre-MEH-327, max 15-min window). Mirrors MEH-206/MEH-326 fail-open
     # patterns. Gate runs before _maybe_bump_last_active so invalid tokens

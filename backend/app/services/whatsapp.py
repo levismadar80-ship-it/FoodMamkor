@@ -83,7 +83,7 @@ UNDELIVERED_WINDOW_DAYS = 7
 STUCK_ACCEPTED_AFTER = timedelta(days=1)
 
 
-def undelivered_predicate(model, now: datetime):
+def undelivered_predicate(model: Any, now: datetime) -> Any:
     """The one SQL filter for "did not reach the recipient", last 7 days:
     failed / window_expired, OR accepted for longer than STUCK_ACCEPTED_AFTER.
     Shared by the admin list (routers/admin_whatsapp.py) and the admin-home
