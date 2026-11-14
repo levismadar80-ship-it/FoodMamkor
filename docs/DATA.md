@@ -1544,6 +1544,14 @@ POST /business-suggestions       public — { name, city, instagram|phone|websit
 **`suggested_by_email` is admin-only** — the single reader is `OutreachLeadOut`,
 behind `require_admin`; no public endpoint returns it and it is never logged
 unmasked (`services/email.py:47` `_mask`). Retention is MEH-2638.
+MEH-2642 data revision `e4b8d2f6a913` (no schema change) clears
+`suggested_by_email` and sets `suggester_wants_update=false` on `community`
+rows unless the address belongs to a user with a verified email AND the
+update was asked for: those addresses were typed before the opt-in and proof
+existed. Ships with #4498. The name is kept; only the row count is logged.
+Residual: a stranger who typed a verified member's address with the tick is
+indistinguishable (no `user_id`) and kept. Downgrade is a no-op; the
+pre-release DB backup is the way back.
 
 ```
 GET  /admin/outreach?source=     admin — new optional filter, exact, validated
