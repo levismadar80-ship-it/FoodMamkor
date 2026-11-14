@@ -4,7 +4,8 @@
  * Purpose:  The «מה חדש» release list for business owners (MEH-3200): which
  *           versions have news for businesses, how many lines each has, and
  *           whether the owner has already seen the newest one.
- * Touches:  window.localStorage (one key, read/write wrapped in try/catch).
+ * Touches:  nothing — pure data and helpers. The seen key is read and written
+ *           in hooks/useWhatsNew.js.
  * Does NOT: hold the text. Each line lives in messages/{he,en}.json under
  *           dashboard.producer.whats_new.releases.<key>.i0…iN, so the i18n
  *           tooling sees it and he/en stay in step (WhatsNew.test.jsx).
@@ -68,24 +69,6 @@ export function compareVersions(a, b) {
     if (d !== 0) return d;
   }
   return 0;
-}
-
-/** @returns {string | null} the last version the owner marked as seen. */
-export function readSeenVersion() {
-  try {
-    return window.localStorage.getItem(WHATS_NEW_SEEN_KEY);
-  } catch {
-    return null;
-  }
-}
-
-/** @param {string} version */
-export function markSeen(version) {
-  try {
-    window.localStorage.setItem(WHATS_NEW_SEEN_KEY, version);
-  } catch {
-    // Private mode / blocked storage: the card simply shows again next time.
-  }
 }
 
 /**

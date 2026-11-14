@@ -15,9 +15,27 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { markSeen, readSeenVersion, unseenRelease } from "@/lib/whats-new";
+import { WHATS_NEW_SEEN_KEY, unseenRelease } from "@/lib/whats-new";
 
 const SEEN_EVENT = "mehamakor:whats-new-seen";
+
+/** @returns {string | null} the last version the owner marked as seen. */
+function readSeenVersion() {
+  try {
+    return window.localStorage.getItem(WHATS_NEW_SEEN_KEY);
+  } catch {
+    return null;
+  }
+}
+
+/** @param {string} version */
+function markSeen(version) {
+  try {
+    window.localStorage.setItem(WHATS_NEW_SEEN_KEY, version);
+  } catch {
+    // Private mode / blocked storage: the card simply shows again next time.
+  }
+}
 export const WELCOME_DISMISSED_KEY = "mehamakor.owner_welcome.dismissed";
 const DAY_MS = 24 * 60 * 60 * 1000;
 /** A business older than this (day 30 still counts) never sees the welcome card. */
