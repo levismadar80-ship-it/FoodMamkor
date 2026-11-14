@@ -41,6 +41,7 @@ from app.schemas.schemas import (
     ExperienceValidateRequest,
     ExperienceValidateResult,
 )
+from app.services import billing_ledger  # MEH-3179
 from app.services import indexnow  # MEH-2852
 from app.services.experience_moderation import validate_experience
 from app.services.experience_notifications import (
@@ -664,6 +665,8 @@ def delete_experience(
         raise HTTPException(status_code=404, detail="Experience not found")
     # MEH-2852: only a page that was public has anything to take down.
     removed_urls = indexnow.experience_urls(ex.id) if _is_public(ex) else []
+    # MEH-3179: sign-ups for an upcoming experience that is deleted never happen.
+    billing_ledger.void_item_registrations(db, ex, kind="experience_registration")
     db.delete(ex)
     db.commit()
     indexnow.schedule(background_tasks, removed_urls)

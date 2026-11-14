@@ -98,12 +98,120 @@ class TestRegistrations:
         (row,) = _rows(db)
         assert (row.base_amount_agorot, row.fee_agorot) == (0, 0)
 
-    def test_duplicate_signup_is_not_counted_twice(self, client, db):
+    def test_recording_one_signup_twice_writes_one_row(self, client, db):
+        """The route answers a repeat sign-up before it reaches the ledger, so
+        the ledger's own guard is exercised by calling it twice."""
         owner = _owner(db)
         ev = _event(db, owner, price=50)
-        for _ in range(2):
-            client.post(f"/events/{ev.id}/registrations", json=_signup())
+        client.post(f"/events/{ev.id}/registrations", json=_signup())
+        reg = db.query(Registration).filter_by(event_id=ev.id).one()
+        billing_ledger.record_event_registration(db, reg, ev)
+        db.commit()
         assert len(_rows(db)) == 1
+
+    def test_a_host_with_no_business_is_not_counted(self, client, db):
+        """The sign-up route refuses such an experience (404), so the ledger's
+        own guard is what is checked: no business, no row."""
+        host = _owner(db)
+        ex = _experience(db, host, price_per_person=120)
+        client.post(f"/experiences/{ex.id}/registrations", json=_signup())
+        reg = db.query(Registration).filter_by(experience_id=ex.id).one()
+        db.query(BillableEvent).delete()
+        db.commit()
+
+        billing_ledger.record_experience_registration(db, reg, ex, None)
+        db.commit()
+        assert _rows(db) == []
+        billing_ledger.record_experience_registration(db, reg, ex, host.producer_id)
+        db.commit()
+        assert len(_rows(db)) == 1  # control: the same call with a business writes
+
+    def test_cancelling_an_experience_signup_voids_the_row(self, client, db):
+        host = _owner(db)
+        ex = _experience(db, host, price_per_person=120)
+        client.post(f"/experiences/{ex.id}/registrations", json=_signup())
+        reg = db.query(Registration).filter_by(experience_id=ex.id).one()
+        r = client.post(f"/registrations/{reg.cancel_token}/cancel")
+        assert r.status_code == 200, r.text
+        (row,) = _rows(db)
+        assert row.status == "voided"
+
+    def test_deleting_an_upcoming_event_voids_its_rows(self, client, db):
+        owner = _owner(db)
+        ev = _event(db, owner, price=200)
+        client.post(f"/events/{ev.id}/registrations", json=_signup())
+        r = client.delete(f"/events/{ev.id}", headers=auth_header(owner))
+        assert r.status_code in (200, 204), r.text
+        (row,) = _rows(db)
+        assert row.status == "voided"
+
+    def test_deleting_a_past_event_keeps_its_rows_counted(self, client, db):
+        owner = _owner(db)
+        ev = _event(db, owner, price=200)
+        client.post(f"/events/{ev.id}/registrations", json=_signup())
+        ev.event_date = israel_today() - timedelta(days=1)
+        db.commit()
+        r = client.delete(f"/events/{ev.id}", headers=auth_header(owner))
+        assert r.status_code in (200, 204), r.text
+        (row,) = _rows(db)
+        assert row.status == "counted"
+
+    def test_deleting_an_upcoming_experience_voids_its_rows(self, client, db):
+        host = _owner(db)
+        ex = _experience(db, host, price_per_person=120)
+        client.post(f"/experiences/{ex.id}/registrations", json=_signup())
+        r = client.delete(f"/experiences/{ex.id}", headers=auth_header(host))
+        assert r.status_code in (200, 204), r.text
+        (row,) = _rows(db)
+        assert row.status == "voided"
+
+    def test_a_database_error_in_the_ledger_does_not_fail_the_signup(
+        self, client, db, monkeypatch
+    ):
+        """A negative fee breaks ck_billable_events_amounts INSIDE the
+        savepoint: the row is refused, the sign-up still commits."""
+        seen = []
+        monkeypatch.setattr(billing_ledger, "booking_fee_agorot", lambda base: -1)
+        monkeypatch.setattr(
+            billing_ledger,
+            "capture_background_exception",
+            lambda exc, **kw: seen.append(type(exc).__name__),
+        )
+        owner = _owner(db)
+        ev = _event(db, owner, price=200)
+        r = client.post(f"/events/{ev.id}/registrations", json=_signup())
+        assert r.status_code == 201, r.text
+        assert db.query(Registration).filter_by(event_id=ev.id).count() == 1
+        assert _rows(db) == []
+        assert seen == ["IntegrityError"]
+
+    def test_a_failed_void_does_not_fail_the_cancel(self, client, db, monkeypatch):
+        owner = _owner(db)
+        ev = _event(db, owner, price=200)
+        client.post(f"/events/{ev.id}/registrations", json=_signup())
+        reg = db.query(Registration).filter_by(event_id=ev.id).one()
+
+        def boom():
+            raise RuntimeError("clock down")
+
+        monkeypatch.setattr(billing_ledger, "_now", boom)
+        monkeypatch.setattr(
+            billing_ledger, "capture_background_exception", lambda *a, **kw: None
+        )
+        r = client.post(f"/registrations/{reg.cancel_token}/cancel")
+        assert r.status_code == 200, r.text
+        db.expire_all()
+        assert db.query(Registration).filter_by(id=reg.id).one().status == "cancelled"
+        (row,) = _rows(db)
+        assert row.status == "counted"
+
+    def test_timestamps_are_timezone_aware(self, client, db):
+        owner = _owner(db)
+        ev = _event(db, owner, price=200)
+        client.post(f"/events/{ev.id}/registrations", json=_signup())
+        (row,) = _rows(db)
+        assert row.occurred_at.tzinfo is not None
+        assert row.created_at.tzinfo is not None
 
     def test_experience_signup_is_counted_for_the_hosts_business(self, client, db):
         host = _owner(db)
@@ -202,6 +310,20 @@ class TestGroupBuy:
             (1, 9000, 450),
             (3, 27000, 1350),
         ]
+
+    def test_the_admin_route_counts_a_fulfilled_group_too(self, client, db):
+        producer, _, gb = self._funded(db)
+        admin = make_user(db, email="ledger-admin@example.com", role="admin")
+        db.commit()
+        r = client.patch(
+            f"/admin/group-buys/{gb.id}/status",
+            params={"status": "fulfilled"},
+            headers=auth_header(admin),
+        )
+        assert r.status_code == 200, r.text
+        rows = _rows(db)
+        assert len(rows) == 2
+        assert {x.producer_id for x in rows} == {producer.id}
 
     def test_a_cancelled_group_counts_nothing(self, client, db):
         _, owner, gb = self._funded(db)

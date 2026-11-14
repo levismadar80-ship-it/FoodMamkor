@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from decimal import ROUND_HALF_UP, Decimal
 from typing import Any
 from uuid import UUID
@@ -33,9 +34,15 @@ from app.pricing import (
     rescue_bag_fee_agorot,
 )
 from app.sentry import capture_background_exception
-from app.utils.clock import utc_now
+from app.models.models import Registration
+from app.utils.clock import israel_today
 
 logger = logging.getLogger(__name__)
+
+
+def _now() -> datetime:
+    """Aware UTC — the ledger's columns are timestamptz (utc_now() is naive)."""
+    return datetime.now(timezone.utc)
 
 
 def shekels_to_agorot(amount: Any) -> int:
@@ -67,6 +74,10 @@ def _record(db: Session, booking: _Booking) -> None:
     """
     if booking.producer_id is None:
         return  # an experience hosted by a user with no business: not billable
+    # The caller's own pending changes are flushed OUT here, so an error in
+    # them surfaces as the caller's error and is never mistaken for (and
+    # swallowed as) a ledger failure.
+    db.flush()
     try:
         with db.begin_nested():
             exists = (
@@ -84,7 +95,8 @@ def _record(db: Session, booking: _Booking) -> None:
                     producer_id=booking.producer_id,
                     kind=booking.kind,
                     source_id=booking.source_id,
-                    occurred_at=utc_now(),
+                    occurred_at=_now(),
+                    created_at=_now(),
                     quantity=max(booking.quantity, 1),
                     base_amount_agorot=booking.base_amount_agorot,
                     fee_agorot=booking.fee_agorot,
@@ -175,6 +187,7 @@ def count_bag_and_commit(db: Session, order: Any) -> None:
 
 def void(db: Session, *, kind: str, source_id: UUID) -> None:
     """Mark a counted row voided (a booking cancelled before it took place)."""
+    db.flush()  # see _record: the caller's errors stay the caller's
     try:
         with db.begin_nested():
             db.query(BillableEvent).filter(
@@ -182,10 +195,46 @@ def void(db: Session, *, kind: str, source_id: UUID) -> None:
                 BillableEvent.source_id == source_id,
                 BillableEvent.status == "counted",
             ).update(
-                {"status": "voided", "voided_at": utc_now()},
+                {"status": "voided", "voided_at": _now()},
                 synchronize_session=False,
             )
             db.flush()
     except Exception as exc:  # noqa: BLE001 — the ledger must never break a cancel
         logger.exception("billing ledger: could not void %s %s", kind, source_id)
         capture_background_exception(exc, task="billing_ledger.void")
+
+
+def void_item_registrations(db: Session, item: Any, *, kind: str) -> None:
+    """Void the rows of an UPCOMING event / experience that is being deleted.
+
+    Its sign-ups never take place, so they are not bookings the business got.
+    A past item keeps its rows: those sign-ups happened. Call BEFORE the
+    delete — the registrations cascade away with the item.
+    """
+    if item.event_date is None or item.event_date < israel_today():
+        return
+    column = (
+        Registration.event_id
+        if kind == "event_registration"
+        else Registration.experience_id
+    )
+    db.flush()
+    try:
+        with db.begin_nested():
+            ids = [
+                row_id
+                for (row_id,) in db.query(Registration.id).filter(column == item.id)
+            ]
+            if not ids:
+                return
+            db.query(BillableEvent).filter(
+                BillableEvent.kind == kind,
+                BillableEvent.source_id.in_(ids),
+                BillableEvent.status == "counted",
+            ).update(
+                {"status": "voided", "voided_at": _now()},
+                synchronize_session=False,
+            )
+    except Exception as exc:  # noqa: BLE001 — the ledger must never break a delete
+        logger.exception("billing ledger: could not void rows of %s %s", kind, item.id)
+        capture_background_exception(exc, task="billing_ledger.void_item")

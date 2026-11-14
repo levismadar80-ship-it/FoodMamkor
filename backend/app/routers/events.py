@@ -26,6 +26,7 @@ from app.auth import (
 from app.database import get_db
 from app.models import Event, Producer, User
 from app.rate_limit import limiter
+from app.services import billing_ledger  # MEH-3179
 from app.schemas.schemas import (
     EventCreate,
     EventFilters,
@@ -471,6 +472,8 @@ def delete_event(
         raise HTTPException(status_code=404, detail="Event not found")
     # MEH-2852: read before the delete — the page goes with the row.
     was_public = indexnow.is_public_owner(event.producer)
+    # MEH-3179: sign-ups for an upcoming event that is deleted never happen.
+    billing_ledger.void_item_registrations(db, event, kind="event_registration")
     db.delete(event)
     db.commit()
     if was_public:

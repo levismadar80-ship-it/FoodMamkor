@@ -432,8 +432,8 @@ billable_events (
   source_id uuid,                 -- the registration / group-buy commit / rescue order; NOT a FK (outlives it)
   occurred_at timestamptz,
   quantity int >= 1,              -- units in a group-buy order, bags in a rescue order
-  base_amount_agorot int,         -- the price of the booking (0 = free)
-  fee_agorot int,                 -- what the price list would ask; nothing is charged in the launch phase
+  base_amount_agorot bigint,      -- the price of the booking (0 = free)
+  fee_agorot bigint,              -- the NON-subscriber fee of that price list; a subscriber's reduced fee is computed at summary time. Nothing is charged in the launch phase
   price_list_version int,         -- app/pricing.py
   status: counted|voided, voided_at,
   created_at,
@@ -446,7 +446,10 @@ booking's own transaction behind a SAVEPOINT (a ledger error never fails the
 booking): on a sign-up (`registrations.py`), when a group buy becomes
 `fulfilled` — one row per participant's order (`group_buys.py`), and when a
 rescue order is marked handed (`rescue.py`). A sign-up cancelled before the
-item's date is `voided`; a late cancel stays counted. No route reads it yet —
+item's date is `voided`, and so are the rows of an upcoming event / experience
+that is deleted (`events.py`, `experiences.py`); a late cancel and a past item
+stay counted. Test businesses (`is_test`) are recorded like any other and left
+out where the numbers are read (the admin view, MEH-3181). No route reads it yet —
 the monthly summary is MEH-3181. The numbers come from `app/pricing.py`, held
 equal to `frontend/lib/pricing.js` and `docs/PRICING.md` by
 `tests/test_meh3179_pricing_mirror.py`. Adds one table →

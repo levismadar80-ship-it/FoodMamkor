@@ -78,8 +78,13 @@ def test_backend_price_list_equals_the_document():
 
 
 def test_the_worked_example_on_the_price_list_is_what_the_ledger_computes():
+    """The page shows exampleFee = price x percent / 100 (pricing.js); the
+    ledger must reach the same figure from the same two numbers."""
     example = _js_number("exampleBookingPrice")
-    assert booking_fee_agorot(example * AGOROT_PER_SHEKEL) == 10 * AGOROT_PER_SHEKEL
+    percent = _js_number("paidBookingPercent", _js_block("commission"))
+    shown_fee_agorot = example * percent  # (price * percent / 100) shekels, in agorot
+    assert shown_fee_agorot > 0
+    assert booking_fee_agorot(example * AGOROT_PER_SHEKEL) == shown_fee_agorot
 
 
 def test_rounding_is_half_up_to_a_whole_agora():

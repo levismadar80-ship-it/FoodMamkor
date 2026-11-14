@@ -17,8 +17,10 @@ History:  MEH-3179 (creation, 2026-11-14). Lives in its own module, not in
 from __future__ import annotations
 
 import uuid
+from datetime import datetime, timezone
 
 from sqlalchemy import (
+    BigInteger,
     CheckConstraint,
     Column,
     DateTime,
@@ -31,7 +33,6 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import UUID
 
 from app.database import Base
-from app.utils.clock import utc_now
 
 BILLABLE_KINDS = (
     "event_registration",
@@ -56,14 +57,23 @@ class BillableEvent(Base):
     # counts. NOT a foreign key on purpose: registrations are purged 30 days
     # after the item's date and the count must outlive them.
     source_id = Column(UUID(as_uuid=True), nullable=False)
-    occurred_at = Column(DateTime(timezone=True), nullable=False, default=utc_now)
+    occurred_at = Column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(timezone.utc),
+    )
     quantity = Column(Integer, nullable=False, default=1)
-    base_amount_agorot = Column(Integer, nullable=False, default=0)
-    fee_agorot = Column(Integer, nullable=False, default=0)
+    # BigInteger: units x price of a group-buy order can pass 2^31 agorot.
+    base_amount_agorot = Column(BigInteger, nullable=False, default=0)
+    fee_agorot = Column(BigInteger, nullable=False, default=0)
     price_list_version = Column(Integer, nullable=False)
     status = Column(String(10), nullable=False, default="counted")
     voided_at = Column(DateTime(timezone=True), nullable=True)
-    created_at = Column(DateTime(timezone=True), nullable=False, default=utc_now)
+    created_at = Column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(timezone.utc),
+    )
 
     __table_args__ = (
         # One booking is counted once, however many times the hook runs.
