@@ -32,7 +32,8 @@ const ERROR_DOC =
 const OK_DOC = `<!doctype html><html><head><meta charset="utf-8"></head><body><h1>A real producer</h1></body></html>`;
 
 // Never reached over the network — every request below is fulfilled by a route.
-const UNUSED_ORIGIN = "http://localhost:9";
+// Not port 9: WebKit blocks restricted ports before page.route() sees the request (MEH-3153).
+const UNUSED_ORIGIN = "http://localhost:39009";
 
 test.describe("_producer-fixture self-test", () => {
   test("assertDetailRendered is silent on a healthy page and reports on the error document", async ({

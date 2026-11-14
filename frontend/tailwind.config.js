@@ -61,6 +61,64 @@ function withFontVariables(tokenFontFamily) {
   );
 }
 
+// MEH-3169: the z-index scale, by ROLE. Each value is the literal it replaced,
+// byte for byte, so the rendered stacking order does not move. One value can
+// carry two roles (598, 800, 1000, 1001, 1050, 1150, 1200, 9999): each role gets
+// its own name, so a later change to one of them does not drag the other.
+// Every name is a Tailwind class (`z-modal`) AND a CSS custom property
+// (`var(--z-modal)`, emitted on :root by the plugin below). The property is for
+// the places a class cannot reach: globals.css declarations and inline `style`
+// objects (ChatWidget). Both come from this one object, so each value is written
+// exactly once. The scale as documentation, with owners:
+// .claude/rules/rtl.md § "Map z-index tokens", kept in sync by
+// __tests__/ZTokenLedgerSync.test.js.
+const Z_INDEX = {
+  decor: "1", // decorative texture overlay (about pages)
+  "dev-badge": "2", // dev playground card badge
+  "sticky-bar": "598", // producer contact bar · event sign-up bar
+  "map-picked-card": "598", // phone map: picked-business card, under the sheet
+  "map-sheet": "600", // /map bottom sheet
+  "map-legend": "800", // /map desktop legend
+  "row-menu": "800", // admin table row menu
+  popover: "800", // ui/Popover desktop panel
+  "map-controls": "1000", // map chrome + Leaflet controls (globals.css)
+  "bottom-nav": "1000", // mobile BottomNav pill
+  "back-to-top": "1000", // BackToTop button
+  "hero-suggestions": "1000", // home hero search dropdowns
+  "account-scrim": "1001", // AccountSheet overlay
+  "user-menu": "1001", // Header UserMenu dropdown
+  "map-attribution": "1001", // Leaflet attribution (globals.css)
+  "account-sheet": "1002", // AccountSheet panel
+  autocomplete: "1010", // address / city suggestion lists
+  header: "1050", // global sticky header
+  "chat-launcher-mobile": "1050", // ChatWidget launcher below lg (inline style)
+  "product-sheet": "1060", // public product sheet
+  "cookie-banner": "1100", // cookie banner
+  "alerts-sheet": "1150", // /favorites + business-page alerts sheet and scrim
+  "minimap-fullscreen": "1150", // MiniMap fullscreen overlay
+  "filter-sheet": "1200", // FilterSheet scrim + sheet
+  "popover-sheet-scrim": "1200", // ui/Popover mobile sheet scrim
+  "popover-sheet": "1210", // ui/Popover mobile bottom sheet
+  toast: "2000", // Toaster stack, below both modal tiers
+  modal: "9000", // ordinary modals
+  "modal-interrupt": "9500", // interrupt modals, above an ordinary modal
+  "install-prompt": "9997", // PWA install prompt
+  tooltip: "9999", // tooltips
+  chat: "9999", // ChatWidget panel + desktop launcher (inline style)
+  "skip-link": "10000", // skip-to-content link, on focus
+  cursor: "10001", // custom cursor dot, top of the scale (MEH-2300)
+};
+
+// `:root { --z-<name>: <value> }` for every token above. A plugin function
+// (Tailwind v3) rather than hand-written CSS, so the value has one owner.
+function zIndexVariables({ addBase }) {
+  addBase({
+    ":root": Object.fromEntries(
+      Object.entries(Z_INDEX).map(([name, value]) => [`--z-${name}`, value]),
+    ),
+  });
+}
+
 module.exports = {
   // MEH-2418: `hover:` only applies where a real pointer can hover. On touch
   // (iOS keeps :hover on the last tapped element) a tapped card stayed in its
@@ -87,7 +145,8 @@ module.exports = {
       fontFamily: {
         ...withFontVariables(tokens.theme.extend.fontFamily),
       },
+      zIndex: Z_INDEX,
     },
   },
-  plugins: [],
+  plugins: [zIndexVariables],
 };

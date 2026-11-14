@@ -65,7 +65,11 @@ describe("ADR-038 — red/amber are spelled danger/warning", () => {
           if (RAW.test(line)) offenders.push(`${path.relative(ROOT, f)}:${i + 1}`);
         });
     }
-    expect(tokenUses, "corpus control: the token spelling must be found").toBeGreaterThan(100);
+    // The control proves the matcher sees the token spelling at all. It is not
+    // a floor on usage: fields that move to ui/Input take their red from the
+    // primitive (border-error), so this count goes down as MEH-3102 proceeds
+    // (it stood at exactly 100 after MEH-3145).
+    expect(tokenUses, "corpus control: the token spelling must be found").toBeGreaterThan(50);
     expect(offenders).toEqual([]);
   });
 });

@@ -14,6 +14,7 @@ Three surfaces, single owner (workflow.md "two parallel mechanisms" rule):
   post-merge.
 """
 
+from typing import Any
 import logging
 import os
 import time
@@ -38,7 +39,7 @@ _PLACES_PROBE_INPUT = "תל אביב"
 _PLACES_PROBE_TIMEOUT_SECONDS = 5.0
 
 
-def _places_probe() -> tuple[int, dict]:
+def _places_probe() -> tuple[int, dict[str, Any]]:
     """(http status to return, body) for GET /health/places.
 
     Three outcomes, never an exception:
@@ -101,7 +102,7 @@ _REPORT_WINDOW_SECONDS = 600
 _last_places_report_at: float | None = None
 
 
-def _report_places_error(body: dict) -> None:
+def _report_places_error(body: dict[str, Any]) -> None:
     """One Sentry issue per Google status word, so the alert rule fires on the
     first failure and the next occurrences group under it. Throttled to one
     event per `_REPORT_WINDOW_SECONDS` per process. Never raises."""
@@ -133,9 +134,9 @@ def _report_places_error(body: dict) -> None:
         log.debug("[health/places] report to Sentry failed")
 
 
-@router.get("/health/places")
+@router.get("/health/places", response_model=None)
 @limiter.limit("10/minute")
-def places_health(request: Request):
+def places_health(request: Request) -> dict[str, Any] | JSONResponse:
     """MEH-2482 — is the Google Places key answering right now?
 
     Unauthenticated so a cron (docs/ci/places-health-probe.patch.md) or an
@@ -175,13 +176,13 @@ def _db_select_1_ok() -> tuple[bool, str | None]:
 
 @router.get("/health/liveness")
 @router.head("/health/liveness")
-def liveness() -> dict:
+def liveness() -> dict[str, Any]:
     return {"status": "alive"}
 
 
-@router.get("/health/readiness")
-@router.head("/health/readiness")
-def readiness(request: Request):
+@router.get("/health/readiness", response_model=None)
+@router.head("/health/readiness", response_model=None)
+def readiness(request: Request) -> dict[str, Any] | JSONResponse:
     db_state = getattr(request.app.state, "db_init_status", "not_scheduled")
 
     ok, db_err = _db_select_1_ok()
@@ -225,7 +226,7 @@ def _env_first(*names: str) -> str:
     return "unknown"
 
 
-def _version_block(request: Request) -> dict:
+def _version_block(request: Request) -> dict[str, Any]:
     """The four MEH-1596 boot facts. Exactly four keys — see the test.
 
     ``booted_at`` and ``alembic_head`` are read from ``app.state``, written
@@ -261,7 +262,7 @@ def _version_block(request: Request) -> dict:
 # (FastAPI only warns; the document still serves).
 @router.get("/health", operation_id="health_alias_get")
 @router.head("/health", operation_id="health_alias_head")
-def health_alias(request: Request) -> dict:
+def health_alias(request: Request) -> dict[str, Any]:
     """Backwards-compat alias. Pre-MEH-483 shape preserved verbatim.
 
     Migrate Railway healthcheck path to ``/health/readiness`` manually

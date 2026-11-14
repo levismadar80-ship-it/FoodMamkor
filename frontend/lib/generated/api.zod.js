@@ -3806,6 +3806,18 @@ export const CreateGroupBuyGroupBuysPostResponse = /*#__PURE__*/ zod.unknown()
 
 
 /**
+ * MEH-3128: how many group buys each status tab would list, so the page
+ * hides a tab that would open on an empty state. Numbers only.
+ * @summary Count Group Buys By Status
+ */
+export const CountGroupBuysByStatusGroupBuysCountsGetResponse = /*#__PURE__*/ zod.object({
+  "fulfilled": /*#__PURE__*/ zod.int(),
+  "funded": /*#__PURE__*/ zod.int(),
+  "open": /*#__PURE__*/ zod.int()
+}).check(/*#__PURE__*/ zod.describe('How many group buys each public status tab would list right now.'))
+
+
+/**
  * @summary Get Group Buy
  */
 export const getGroupBuyGroupBuysGroupBuyIdGetResponseCommitsCountDefault = 0;
@@ -4049,6 +4061,22 @@ export const GetOrganizerOrganizersSlugGetResponse = /*#__PURE__*/ zod.object({
 export const ClaimProducerProducerClaimPostResponse = /*#__PURE__*/ zod.object({
   "producer_id": /*#__PURE__*/ zod.uuid(),
   "status": /*#__PURE__*/ zod.string()
+})
+
+
+/**
+ * The owner opened a claim link that no longer works and asks for a new
+ * one. Sapir's decision (14/11): the admin is told and sends the link
+ * herself — this route never mints a link and never returns one.
+ *
+ * DO NOT branch the response on the token. The answer is the same for a
+ * forged token, an unknown draft, a claimed draft and a real request, so it
+ * cannot be used to probe which producer ids exist (same reason as
+ * _LINK_INVALID above).
+ * @summary Request New Claim Link
+ */
+export const RequestNewClaimLinkProducerClaimNewLinkRequestPostResponse = /*#__PURE__*/ zod.object({
+  "ok": /*#__PURE__*/ zod.boolean()
 })
 
 

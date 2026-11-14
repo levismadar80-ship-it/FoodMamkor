@@ -20,6 +20,7 @@ import api from "@/lib/api";
 import { formatEventDate } from "@/lib/format-date";
 import CitySearch from "@/components/CitySearch";
 import { WHEN_CHIP_PREFIX, WHEN_KEYS, matchesWhen } from "@/lib/event-date-filter";
+import { dropZeroChips } from "@/lib/chip-gate"; // MEH-3128
 import { israelToday } from "@/lib/israel-date";
 import ChipScrollRow from "@/components/ChipScrollRow";
 import CalendarView from "@/components/CalendarView";
@@ -372,8 +373,23 @@ export default function EventsPage({ initialTab = "events", titles = null }) {
     present: presentKnown ? present.cats : null,
     active: activeChipKeys,
   });
+  // MEH-3128: a date shortcut with no row in what is loaded (this tab, city
+  // and categories) is not drawn either; the picked one stays. Counted on the
+  // loaded rows, so no request; unknown while loading or after a failure →
+  // every shortcut (fail open).
+  const whenCounts = useMemo(() => {
+    if (loading || loadError) return null;
+    const today = israelToday();
+    return Object.fromEntries(
+      WHEN_KEYS.map((k) => [
+        `${WHEN_CHIP_PREFIX}${k}`,
+        rows.filter((row) => matchesWhen(row.event_date, k, today)).length,
+      ]),
+    );
+  }, [rows, loading, loadError]);
+  const gatedChips = dropZeroChips({ chips: shownChips, counts: whenCounts, active: [...activeChipKeys] });
   // «הכל» alone filters nothing — then the row is not drawn at all.
-  const showChipRow = shownChips.some((c) => c.key !== "all");
+  const showChipRow = gatedChips.some((c) => c.key !== "all");
 
   return (
     <div>
@@ -469,7 +485,7 @@ export default function EventsPage({ initialTab = "events", titles = null }) {
             <div className="max-w-5xl mx-auto px-4 pt-3">
               <ChipScrollRow
                 variant="category"
-                chips={shownChips}
+                chips={gatedChips}
                 activeKeys={activeChipKeys}
                 onChipClick={onChipClick}
               />
