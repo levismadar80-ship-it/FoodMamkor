@@ -16,6 +16,7 @@ import Button from "@/components/ui/Button";
 import Switch from "@/components/ui/Switch";
 import { SkeletonBlock } from "@/components/Skeleton";
 import { rescueBagsEnabled } from "@/lib/rescue";
+import Input from "@/components/ui/Input";
 
 const DEFAULT_PREFS = {
   notify_new_event: true,
@@ -254,7 +255,8 @@ export default function AlertPrefsPanel({ producerId, producerName, onClose }) {
           {showPhoneField && (
             <div className="rounded-sm bg-primary/5 border border-primary/20 p-3 space-y-2">
               <p className="text-xs text-text">{t("phone_required_prompt")}</p>
-              <input
+              <Input
+                size="sm"
                 type="tel"
                 value={phoneInput}
                 onChange={(e) => setPhoneInput(e.target.value)}
@@ -262,7 +264,7 @@ export default function AlertPrefsPanel({ producerId, producerName, onClose }) {
                 placeholder={t("phone_placeholder")}
                 dir="ltr"
                 aria-label={t("phone_required_prompt")}
-                className="w-full border border-border rounded-sm px-3 py-2 text-sm text-start outline-none focus:border-primary focus-visible:ring-2 focus-visible:ring-primary transition"
+                className="text-start"
               />
               {/* MEH-1359: the save button is disabled until the phone is valid — say
                   why, so the greyed-out state isn't an unexplained dead end. */}

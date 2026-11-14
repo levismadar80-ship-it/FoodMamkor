@@ -8,6 +8,7 @@ import { detailToMessage } from "@/lib/errors";
 import { showToast } from "@/lib/toast";
 import Button from "@/components/ui/Button";
 import InlineMessage from "@/components/ui/InlineMessage";
+import Input from "@/components/ui/Input";
 
 /**
  * PhoneVerifyCard — producer-facing WhatsApp OTP flow.
@@ -174,7 +175,9 @@ export default function PhoneVerifyCard({ onVerified }) {
             {t("code_label")}
           </label>
           <div className="flex flex-wrap items-center gap-2">
-            <input
+            <Input
+              inline
+              size="sm"
               id="otp-code"
               type="text"
               inputMode="numeric"
@@ -183,7 +186,7 @@ export default function PhoneVerifyCard({ onVerified }) {
               value={code}
               onChange={handleCodeChange}
               placeholder={t("code_placeholder")}
-              className="w-40 text-center tracking-[0.3em] border border-border rounded-sm px-3 py-2 text-sm focus:border-primary outline-none focus-ring"
+              className="w-40 text-center tracking-[0.3em]"
             />
             <Button
               type="button"
