@@ -473,11 +473,17 @@ async function panMap(page: Page, shell: Locator): Promise<void> {
   await expect(shell.getByTestId("map-search-this-area"), "control: the drag must register as a user move").toBeVisible();
 }
 
-/** Tap a marker on the mobile shell — the sheet opens to HALF (45vh, MapBottomSheet.jsx) with the selected card pinned. */
-async function tapMarkerOpensSheet(page: Page, shell: Locator, p: Producer): Promise<void> {
+/**
+ * Tap a marker on the mobile shell. MEH-3119: the sheet STAYS at PEEK and the
+ * picked business shows once, as a card floating over the map. (Until then the
+ * tap opened the sheet to HALF with the card pinned above a list that also
+ * held the same business.)
+ */
+async function tapMarkerShowsCard(page: Page, shell: Locator, p: Producer): Promise<void> {
   await markerOf(shell, p).click();
   await expect(shell.getByTestId("map-selected-card")).toBeVisible();
-  await sheetSettledAt(page, shell, 0.45); // HALF (MapBottomSheet.jsx)
+  await settleSheet(shell);
+  await expectAtPeek(page, shell);
 }
 
 /**
@@ -1322,21 +1328,87 @@ test.describe("manual › map city search width + dropdown z-index", () => {
 
 // ════════════════════════════════════════════════════════════════════════════
 test.describe("manual › map z-index token system + UI bugfixes", () => {
+  // MT:MEH-1010:6 · MT:z:b4 — MEH-3119: a marker tap on a phone shows the picked
+  //   business ONCE: a card floating over the map, above the collapsed sheet.
+  //   The X is in its own row (it used to cover the photo) and closes the card.
+  //   The controls that ride the sheet edge clear the card too.
+  test("mobile: a marker tap shows one floating card above the PEEK sheet; controls clear it; the X closes it", async ({ page }, info) => {
+    mobileOnly(info, "the floating card is the mobile shell's selection");
+    const { shell } = await gotoWithCatalog(page, info);
+    await tapMarkerShowsCard(page, shell, P_TLV);
+    const card = shell.getByTestId("map-selected-card");
+    await expect(card).toHaveCount(1);
+    await expect(card).toContainText(P_TLV.name);
+    await expect(shell.getByTestId("map-legend-toggle")).toBeHidden();
+    // Outside the sheet, and sitting on its top edge.
+    await expect(bottomSheet(shell).getByTestId("map-selected-card")).toHaveCount(0);
+    const cardBox = await box(card);
+    const sheet = await box(bottomSheet(shell));
+    expect(cardBox.y + cardBox.height, "the card ends above the sheet's top edge").toBeLessThanOrEqual(sheet.y);
+    expect(sheet.y - (cardBox.y + cardBox.height), "…and close to it, not adrift up the map").toBeLessThanOrEqual(16);
+
+    // The X: its own row above the business card, never over the photo.
+    const close = shell.getByTestId("map-selected-card-close");
+    const closeBox = await box(close);
+    const inner = await box(card.getByTestId("map-card"));
+    expect(closeBox.width, "44px tap target").toBeGreaterThanOrEqual(44);
+    expect(closeBox.height, "44px tap target").toBeGreaterThanOrEqual(44);
+    expect(await hitTestIsSelf(close), "the X takes its own tap").toBe(true);
+    // Its painted circle (32px, centred in the 44px target) ends above the card.
+    expect(closeBox.y + closeBox.height / 2 + 16, "the X's circle ends above the business card").toBeLessThanOrEqual(inner.y + 1);
+
+    // Controls that ride the sheet edge now ride the card's top instead. Polled:
+    // the pill's `bottom` animates for 300ms after the card reports its height.
+    // (No hit test here: the pill is z-1000 over a z-598 card, so it would win
+    // one even while sitting on the card.)
+    const pill = shell.getByTestId("map-near-me-pill");
+    await expect
+      .poll(async () => {
+        const pillBox = await box(pill);
+        return pillBox.y + pillBox.height <= (await box(card)).y;
+      }, { message: "near-me sits above the card" })
+      .toBe(true);
+    // The attribution lifts with the same edge. Measured against the map
+    // container's spill below the fold (see attributionRide): it may sit that
+    // many px lower than the card's real top, never more.
+    await expect
+      .poll(async () => {
+        const attr = await box(attribution(shell));
+        const container = await box(mapCanvas(shell));
+        const vh = await page.evaluate(() => window.innerHeight);
+        const spill = Math.max(0, container.y + container.height - vh);
+        return attr.y + attr.height - spill <= (await box(card)).y;
+      }, { message: "the attribution rides above the card" })
+      .toBe(true);
+
+    await close.click();
+    await expect(card).toHaveCount(0);
+    await expectAtPeek(page, shell);
+  });
+
   // MT:z:b1 · MT:z:r4 — mobile, sheet open: the zoom +/- control is still
   //   clickable above it, and zooming works (tiles at z+1 are fetched).
   // MT:z:r2 — «קרוב אליי» is clickable with the sheet open.
-  // MT:z:b4 — the selected card's X is reachable and closes it.
   // MT:z:b3 — the sheet content scrolls to its end (the last card is fully
   //   reachable above the nav band). DRIFT: the «מידע נוסף» CTA is gone.
   // MT:z:a2 — sheet at HALF: the attribution rides ABOVE the sheet edge.
-  // MT:MEH-1010:6 — mobile: a marker tap opens the sheet with the pinned card;
-  //   no legend.
-  test("mobile with the sheet open: zoom + near-me still take clicks, the X closes the pinned card, the list scrolls to its end", async ({ page }, info) => {
+  // MEH-3119 — with the sheet open the floating card is gone: the picked
+  //   business is its own row in the list, marked active, once.
+  test("mobile with the sheet open: zoom + near-me still take clicks, the picked business is one list row, the list scrolls to its end", async ({ page }, info) => {
     mobileOnly(info, "the bottom sheet is the mobile shell's list");
     await installGeo(page, 1);
     const { shell, tiles } = await gotoWithCatalog(page, info);
-    await tapMarkerOpensSheet(page, shell, P_TLV);
-    await expect(shell.getByTestId("map-selected-card")).toContainText(P_TLV.name);
+    // The LAST business in the list, so its row is below the fold when the
+    // sheet opens and only the scroll-into-view can put it on screen.
+    const picked = PRODUCERS[PRODUCERS.length - 1];
+    await tapMarkerShowsCard(page, shell, picked);
+    // Since MEH-3119 a marker tap no longer opens the sheet; the handle does
+    // (a click toggles it — the drag is covered by the MEH-2510 test below).
+    await shell.getByTestId("map-sheet-handle").click();
+    await sheetSettledAt(page, shell, 0.45); // HALF (MapBottomSheet.jsx)
+    await expect(shell.getByTestId("map-selected-card"), "no second copy of the picked business with the list open").toHaveCount(0);
+    await expect(cardOf(shell, picked), "the picked business is exactly one list row").toHaveCount(1);
+    await expect(cardOf(shell, picked), "its row is brought fully into view").toBeInViewport({ ratio: 1 });
     await expect(shell.getByTestId("map-legend-toggle")).toBeHidden();
     // MT:z:a2 — the attribution rides the HALF edge: its bottom sits at
     // `container bottom − sheet height − 6px` (the MEH-1365 rule), and it
@@ -1364,12 +1436,6 @@ test.describe("manual › map z-index token system + UI bugfixes", () => {
       const c = await box(content);
       return last.y + last.height <= c.y + c.height + 1;
     }, "the last card must be fully reachable").toBe(true);
-
-    await content.evaluate((el) => el.scrollTo({ top: 0, behavior: "auto" }));
-    const close = shell.getByTestId("map-selected-card-close");
-    await expect(close).toBeVisible();
-    await close.click();
-    await expect(shell.getByTestId("map-selected-card")).toHaveCount(0);
   });
 
   // MT:z:b2 — desktop: hovering a marker yields exactly ONE tooltip source — the
@@ -1712,6 +1778,7 @@ const SHELL_ONLY: Record<string, { shell: "desktop" | "phone"; why: string }> = 
   "map-mobile-bar": { shell: "phone", why: "the phone's top bar container" },
   "map-bottom-sheet": { shell: "phone", why: "the phone's card list container" },
   "map-sheet-content": { shell: "phone", why: "inside map-bottom-sheet" },
+  "map-sheet-handle": { shell: "phone", why: "the bottom sheet's handle (click toggles it, MEH-3119); desktop has no sheet" },
   "sheet-count": { shell: "phone", why: "phone count; desktop shows map-list-count" },
 };
 // Shown by state, not by shell: «חפשו באזור זה» (MapPane.jsx, both shells)

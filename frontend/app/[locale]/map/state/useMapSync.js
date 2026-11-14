@@ -5,7 +5,7 @@ import api from "@/lib/api";
 import { showToast } from "@/lib/toast";
 import { GeoSearchSchema, GEO_SEARCH_ERROR_KEYS } from "@/lib/schemas";
 import { boundsToCenterRadius } from "@/lib/map-chips";
-import { HALF } from "@/components/MapBottomSheet";
+import { PEEK } from "@/components/MapBottomSheet";
 
 /**
  * Map ↔ list synchronization for /map. Owns Leaflet refs, marker /
@@ -146,7 +146,7 @@ export function useMapSync({
     setTimeout(() => mapApiRef.current?.focusProducer(producer.id), 250);
   }, [setActiveProducerId, setSelectedProducer]);
 
-  // MEH-58 Phase 2: mobile tap marker → sheet HALF + scroll card.
+  // MEH-58 Phase 2 → MEH-3119: mobile tap marker → sheet PEEK + floating card.
   // Desktop click marker → mini-popup only (handled by MapComponent).
   const handleMarkerClick = useCallback((producer, location = null) => {
     setActiveProducerId(producer.id);
@@ -157,7 +157,13 @@ export function useMapSync({
     setSelectedLocation(location);
     const isDesktop = typeof window !== "undefined" && window.innerWidth >= 1024;
     if (!isDesktop) {
-      setSheetSnap(HALF);
+      // MEH-3119: a marker tap on a phone drops the sheet to PEEK; the picked
+      // business shows as ONE card floating over the map (MapClient renders
+      // MobileSheetSelectedCard while the sheet is at PEEK). It used to open the
+      // sheet to HALF with a pinned card above the list, where the same
+      // business appeared twice. Nothing to scroll: the list is collapsed.
+      setSheetSnap(PEEK);
+      return;
     }
     // MEH-1010: pick the VISIBLE wrapper from the per-id Set (offsetParent is
     // null inside the display:none shell) — same visible-instance discipline
@@ -177,14 +183,15 @@ export function useMapSync({
   // MEH-2049: back from a producer page, reopen the business that was
   // selected — card open, pin active — WITHOUT a flyTo: the camera was
   // already restored as the map's first setView. Same state the marker tap
-  // sets (sheet to HALF on a phone so the card is on screen), minus the move.
+  // sets (sheet to PEEK on a phone, the picked card floating over the map —
+  // MEH-3119), minus the move.
   const restoreSelection = useCallback((producer, location = null) => {
     if (!producer?.id) return;
     setActiveProducerId(producer.id);
     setSelectedProducer(producer);
     setSelectedLocation(location);
     const isDesktop = typeof window !== "undefined" && window.innerWidth >= 1024;
-    if (!isDesktop) setSheetSnap(HALF);
+    if (!isDesktop) setSheetSnap(PEEK); // MEH-3119: the floating card, as after a marker tap
   }, [setActiveProducerId, setSelectedProducer, setSheetSnap]);
 
   // docs/archive/MAP_IMPROVEMENTS.md #3 — hover sync: map → card

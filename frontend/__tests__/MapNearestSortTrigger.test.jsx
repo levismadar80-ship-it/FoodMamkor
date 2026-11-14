@@ -62,7 +62,7 @@ vi.mock("@/lib/rating-gate", () => ({
 // --- heavy children: stubbed to nothing. None renders the sort control. ---
 vi.mock("@/components/CitySearch", () => ({ default: () => null }));
 vi.mock("@/components/LocationModal", () => ({ default: () => null }));
-vi.mock("@/components/MapBottomSheet", () => ({ default: () => null }));
+vi.mock("@/components/MapBottomSheet", () => ({ default: () => null, PEEK: 14, HALF: 45 }));
 vi.mock("@/app/[locale]/map/components/CityPickerModal", () => ({ default: () => null }));
 // MEH-2506: the mobile origin tag is handed to FilterChipsBar, so the stub
 // renders it — otherwise the mobile shell's ✕ would vanish from this test.

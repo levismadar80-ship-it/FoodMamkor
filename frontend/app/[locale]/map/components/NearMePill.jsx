@@ -60,7 +60,11 @@ export default function NearMePill({ onClick }) {
       // transition-colors is intentionally omitted: the inline style block above
       // already animates background-color (alongside `bottom`), so the Tailwind
       // utility would be overridden anyway.
-      className="lg:hidden absolute end-4 z-[1000] w-11 h-11 rounded-full bg-background border border-border flex items-center justify-center text-primary hover:bg-green-50 focus-visible:ring-2 focus-visible:ring-primary"
+      // MEH-3119: on a short screen (≤600px tall: old small phones, a phone on
+      // its side) the picked-business card leaves no map strip for this
+      // button to ride into, so it steps aside until the card is closed. The
+      // mobile shell carries `group/mapshell` + `data-pick`.
+      className="lg:hidden absolute end-4 z-[1000] w-11 h-11 rounded-full bg-background border border-border flex items-center justify-center text-primary hover:bg-green-50 focus-visible:ring-2 focus-visible:ring-primary [@media(max-height:600px)]:group-data-[pick=on]/mapshell:hidden"
     >
       <Crosshair size={20} weight="bold" aria-hidden="true" />
     </button>
