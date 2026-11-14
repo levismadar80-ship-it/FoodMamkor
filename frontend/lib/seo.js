@@ -689,6 +689,7 @@ export function israelOffset(date, time = "12:00") {
   // is right on DST days too (01:30 on the spring-forward Friday is still +02).
   const read = (d) => {
     const name = new Intl.DateTimeFormat("en-US", {
+      // guard-ok: reads the UTC offset of a given event date, not today or the time now.
       timeZone: "Asia/Jerusalem",
       timeZoneName: "longOffset",
     })
