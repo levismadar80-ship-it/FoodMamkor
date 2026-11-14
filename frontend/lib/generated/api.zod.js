@@ -4080,8 +4080,8 @@ export const ProducerNameCheckProducerNameCheckGetResponse = /*#__PURE__*/ zod.o
   "id": /*#__PURE__*/ zod.string(),
   "name": /*#__PURE__*/ zod.string(),
   "slug": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])
-}))
-})
+}).check(/*#__PURE__*/ zod.describe('One live business whose name equals the name being registered.')))
+}).check(/*#__PURE__*/ zod.describe('GET \/producer-name-check (MEH-3086) — at most three matches.'))
 
 
 /**

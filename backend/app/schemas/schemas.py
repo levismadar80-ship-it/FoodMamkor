@@ -5949,3 +5949,18 @@ class SavedItemsOut(BaseModel):
     recipes: list[SavedRecipeOut]
     events: list[SavedEventOut]
     experiences: list[SavedExperienceOut]
+
+
+class NameMatch(BaseModel):
+    """One live business whose name equals the name being registered."""
+
+    id: str
+    slug: str | None
+    name: str
+    city: str | None
+
+
+class NameCheckOut(BaseModel):
+    """GET /producer-name-check (MEH-3086) — at most three matches."""
+
+    matches: list[NameMatch]

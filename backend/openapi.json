@@ -4099,6 +4099,7 @@
         "type": "object"
       },
       "NameCheckOut": {
+        "description": "GET /producer-name-check (MEH-3086) — at most three matches.",
         "properties": {
           "matches": {
             "items": {
@@ -4115,6 +4116,7 @@
         "type": "object"
       },
       "NameMatch": {
+        "description": "One live business whose name equals the name being registered.",
         "properties": {
           "city": {
             "anyOf": [
