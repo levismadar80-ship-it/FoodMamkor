@@ -17,16 +17,18 @@ Search before you create: a button, field, dialog, message, heading, toggle,
 avatar, loading state or "back" link already has ONE owner below. Build from it
 (`className` for layout only); never copy its classes into a new file. Import
 by path (`@/components/ui/Dialog`) — `ui/index.js` re-exports only some.
-The guard in the last column reds a hand-written copy. Full rules: `docs/DESIGN.md`.
+The last column is the guard that pins the owner or its look; some cover only
+part (noted in the row) — read the guard's header. Full rules: `docs/DESIGN.md`.
 `ComponentCatalogGuard.test.js` fails when a `ui/` file is missing from this table.
 
 | Need | Owner | Guard |
 |---|---|---|
-| Filled / outlined / destructive action | `ui/Button.jsx` | `ButtonPrimitiveGuard`, `ActionShapeGuard` |
-| Text field with label + error | `ui/Input.jsx` | `FieldLookGuard` |
-| Centred modal | `ui/Dialog.jsx` | `DialogContractGuard` |
+| Filled / outlined / destructive action | `ui/Button.jsx` | `ButtonPrimitiveGuard`, `ActionShapeGuard` (pill shape) |
+| Text field with label + error | `ui/Input.jsx` | `FieldLookGuard` (look of a raw field only) |
+| Centred modal (focus trap: `hooks/useDialogFocus.js`) | `ui/Dialog.jsx` | `DialogContractGuard` |
 | Error / «נשמר» message inside a page or form | `ui/InlineMessage.jsx` | `InlineMessageGuard` |
-| A section's h2 | `ui/SectionHeading.jsx` | `HomeSectionHeadingGuard` |
+| Transient toast (`showToast.*`) | `lib/toast.js`, `Toaster.jsx` | — |
+| A section's h2 | `ui/SectionHeading.jsx` | `HomeSectionHeadingGuard` (home page only) |
 | On/off toggle | `ui/Switch.jsx` | `SwitchGuard` |
 | Person's photo or initial | `ui/Avatar.jsx` | `AvatarGuard` |
 | "Back to X" link (dashboard) | `ui/BackLink.jsx` | `BackLinkGuard` |
@@ -40,7 +42,9 @@ The guard in the last column reds a hand-written copy. Full rules: `docs/DESIGN.
 | Styled text link · pill · h1–h4 · card shell | `ui/Link.jsx`, `ui/Badge.jsx`, `ui/Heading.jsx`, `ui/Card.jsx` | `CardRadiusGuard` (radius only) |
 | Loading bar / box · spinner in a button | `Skeleton.jsx` (`SkeletonBlock`), `ButtonSpinner.jsx` | `LoadingGuard` |
 | Copy a link | `lib/clipboard.js` | `ClipboardGuard` |
-| Masthead of an entity page | `EntityCover.jsx` | `EntityRegistryGuard` |
+| Masthead of an entity page | `EntityCover.jsx` | `EntityRegistryGuard` (imports only) |
+| Head of a «מה קורה» hub tab | `HubShell.jsx` | `HubShellGuard` |
+| Print a date | `lib/format-date.js` | `DateFormatGuard` |
 | «→ חזרה» to the previous page · location trail | `HistoryBackLink.jsx` · `Breadcrumb.jsx` | — |
 | Horizontal chip row | `ChipScrollRow.jsx` | — |
 | City / address field | `CitySearch.jsx` · `AddressSearch.jsx` | ESLint `no-restricted-syntax` |

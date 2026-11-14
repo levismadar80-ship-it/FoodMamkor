@@ -37,12 +37,10 @@ describe("components/CLAUDE.md shared-component table", () => {
   const section = catalogSection();
   const rows = tableRows(section);
 
-  it("reads a real table", () => {
-    expect(rows.length).toBeGreaterThanOrEqual(uiFiles().length / 2);
-  });
-
   it("names every file in components/ui", () => {
-    const missing = uiFiles().filter((f) => !section.includes(`ui/${f}`));
+    // Owner column only: a mention in prose is not a row.
+    const owners = rows.map((r) => r.split("|")[2] || "").join(" ");
+    const missing = uiFiles().filter((f) => !owners.includes(`\`ui/${f}\``));
     expect(missing, `add a row to components/CLAUDE.md «${HEADING}» for`).toEqual([]);
   });
 
@@ -51,14 +49,20 @@ describe("components/CLAUDE.md shared-component table", () => {
     const named = owners.flatMap((o) => [...o.matchAll(/`([^`(]+\.(?:jsx?|tsx?))`/g)].map((m) => m[1].trim()));
     expect(named.length).toBeGreaterThan(0);
     const gone = named.filter((p) => {
-      const rel = p.startsWith("lib/") ? p : path.join("components", p);
+      const rel = /^(lib|hooks|app)\//.test(p) ? p : path.join("components", p);
       return !fs.existsSync(path.join(ROOT, rel));
     });
     expect(gone).toEqual([]);
   });
 
   it("names only guards that exist", () => {
-    const guards = rows.flatMap((r) => [...(r.split("|")[3] || "").matchAll(/`([A-Za-z]\w*)`/g)].map((m) => m[1]));
+    const cells = rows.map((r) => (r.split("|")[3] || "").trim());
+    // A guard cell is «—», an ESLint rule, or backticked test names (+ a note).
+    const unreadable = cells.filter((c) => c !== "—" && !c.startsWith("ESLint") && !/`[A-Za-z]\w*`/.test(c));
+    expect(unreadable, "guard cell with no backticked test name").toEqual([]);
+    const guards = cells
+      .filter((c) => !c.startsWith("ESLint"))
+      .flatMap((c) => [...c.matchAll(/`([A-Za-z]\w*)`/g)].map((m) => m[1]));
     expect(guards.length).toBeGreaterThan(0);
     const gone = guards.filter(
       (g) => !["js", "jsx"].some((ext) => fs.existsSync(path.join(ROOT, "__tests__", `${g}.test.${ext}`))),
