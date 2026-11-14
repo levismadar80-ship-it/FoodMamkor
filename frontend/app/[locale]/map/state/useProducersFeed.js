@@ -42,12 +42,19 @@ export function useProducersFeed({ readInitialParams = null } = {}) {
   // true until the mount fetch answers — success, malformed or network
   // failure alike — so the chip gates can tell "not yet" from "failed".
   const [snapshotPending, setSnapshotPending] = useState(true);
+  // MEH-3198: the newest list load failed (network or malformed). The list
+  // shows an error with «נסו שוב» instead of "no businesses found", which
+  // would read as "there are none". Cleared by the next successful load.
+  const [loadError, setLoadError] = useState(false);
+  // MEH-3198: the params of the newest call, so «נסו שוב» repeats exactly it.
+  const lastParams = useRef({});
 
   // MEH-779: a malformed payload degrades to the same state as a network
   // failure — empty list + toast — so the map never crashes on bad data.
   const handleLoadFailure = (reason) => {
     console.error("[חפשי באזור זה] GET /producers failed:", reason);
     setAllProducers([]);
+    setLoadError(true);
     showToast.error(t("map.errors.load_failed"));
   };
 
@@ -60,6 +67,7 @@ export function useProducersFeed({ readInitialParams = null } = {}) {
 
   const loadProducers = (params = {}, { snapshot = false, then = null } = {}) => {
     const requestId = ++latestRequest.current;
+    if (!then) lastParams.current = params;
     const isLatest = () => requestId === latestRequest.current;
     setLoading(true);
     api
@@ -92,6 +100,7 @@ export function useProducersFeed({ readInitialParams = null } = {}) {
           return;
         }
         setAllProducers(parsed.data);
+        setLoadError(false);
       })
       .catch((reason) => {
         if (snapshot) setSnapshotPending(false);
@@ -142,11 +151,18 @@ export function useProducersFeed({ readInitialParams = null } = {}) {
 
   return {
     allProducers,
-    setAllProducers,
+    // MEH-3198: a list written from outside (the «חפשו באזור זה» refetch in
+    // useMapSync) is a new answer, so it ends the error state too.
+    setAllProducers: (next) => {
+      setLoadError(false);
+      setAllProducers(next);
+    },
     categories,
     loadProducers,
     loading,
     catalogSnapshot,
     snapshotPending,
+    loadError,
+    retry: () => loadProducers(lastParams.current),
   };
 }

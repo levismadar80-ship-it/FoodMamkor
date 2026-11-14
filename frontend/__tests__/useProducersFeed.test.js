@@ -121,3 +121,60 @@ describe("useProducersFeed — MEH-1054 loading flag", () => {
     await waitFor(() => expect(result.current.loading).toBe(false));
   });
 });
+
+// MEH-3198: a failed load is not "no businesses". The feed reports it, the
+// list shows «נסו שוב», and a retry repeats the newest call.
+// DISCRIMINATION: before MEH-3198 the hook returned no loadError / retry, so
+// every case below fails on `undefined`.
+describe("useProducersFeed — MEH-3198 load error + retry", () => {
+  beforeEach(() => {
+    api.get.mockReset();
+    showToast.error.mockClear();
+  });
+
+  it("network failure sets loadError; a successful retry clears it", async () => {
+    let fail = true;
+    routeProducers(() => (fail ? Promise.reject(new Error("network")) : Promise.resolve({ data: validProducers })));
+    const { result } = renderHook(() => useProducersFeed());
+    await waitFor(() => expect(result.current.loadError).toBe(true));
+    fail = false;
+    act(() => result.current.retry());
+    await waitFor(() => expect(result.current.allProducers).toHaveLength(2));
+    expect(result.current.loadError).toBe(false);
+  });
+
+  it("a malformed payload also sets loadError", async () => {
+    routeProducers(() => Promise.resolve({ data: [{ id: 1, name: 123 }] }));
+    const { result } = renderHook(() => useProducersFeed());
+    await waitFor(() => expect(result.current.loadError).toBe(true));
+  });
+
+  it("a failed retry keeps the error state", async () => {
+    routeProducers(() => Promise.reject(new Error("network")));
+    const { result } = renderHook(() => useProducersFeed());
+    await waitFor(() => expect(result.current.loadError).toBe(true));
+    act(() => result.current.retry());
+    await waitFor(() => expect(showToast.error).toHaveBeenCalledTimes(2));
+    expect(result.current.loadError).toBe(true);
+  });
+
+  it("retry repeats the newest call's params", async () => {
+    routeProducers(() => Promise.reject(new Error("network")));
+    const { result } = renderHook(() => useProducersFeed());
+    await waitFor(() => expect(result.current.loadError).toBe(true));
+    act(() => result.current.loadProducers({ has_delivery: true }));
+    await waitFor(() => expect(showToast.error).toHaveBeenCalledTimes(2));
+    act(() => result.current.retry());
+    await waitFor(() => expect(showToast.error).toHaveBeenCalledTimes(3));
+    const producerCalls = api.get.mock.calls.filter(([url]) => url === "/producers");
+    expect(producerCalls.at(-1)[1]).toEqual({ params: { has_delivery: true } });
+  });
+
+  it("a list written from outside (search this area) ends the error state", async () => {
+    routeProducers(() => Promise.reject(new Error("network")));
+    const { result } = renderHook(() => useProducersFeed());
+    await waitFor(() => expect(result.current.loadError).toBe(true));
+    act(() => result.current.setAllProducers(validProducers));
+    expect(result.current.loadError).toBe(false);
+  });
+});

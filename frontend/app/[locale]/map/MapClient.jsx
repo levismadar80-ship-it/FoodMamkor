@@ -921,6 +921,9 @@ export default function MapPage() {
       // too is a no-op there (the sheet swaps children for its own skeleton
       // while loading) and makes the sidebar mount safe.
       loading={feed.loading}
+      // MEH-3198: a failed load shows an error with «נסו שוב», not "none found".
+      loadError={feed.loadError}
+      onRetry={feed.retry}
       visibleProducers={sortedProducers}
       hoveredProducerId={filters.hoveredProducerId}
       activeProducerId={filters.activeProducerId}
