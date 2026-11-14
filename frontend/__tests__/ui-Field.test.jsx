@@ -9,7 +9,7 @@ import { fieldClasses } from "@/components/ui/field";
 describe("ui/field — compact fields share one look and one wiring", () => {
   it("fieldClasses: size, error border, and block are the only moving parts", () => {
     expect(fieldClasses()).toBe(
-      "w-full rounded-sm border bg-surface text-text px-3 py-2 text-sm placeholder:text-fg-muted focus-ring border-border disabled:opacity-50 disabled:cursor-not-allowed",
+      "w-full rounded-sm border bg-surface-card text-text px-3 py-2 text-sm placeholder:text-fg-muted transition-colors duration-fast ease-quart focus-ring border-border focus:border-primary disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-background",
     );
     expect(fieldClasses({ size: "xs" })).toContain("px-2 py-1 text-sm");
     expect(fieldClasses({ invalid: true })).toContain("border-error");
@@ -59,10 +59,34 @@ describe("ui/field — compact fields share one look and one wiring", () => {
     expect(el.className).toBe(fieldClasses());
   });
 
-  it("Select with zero options and inline renders a bare, empty select", () => {
-    const { container } = render(<Select inline aria-label="ריק" className="w-32" />);
+  it("Select inline is bare; inline with a label gets the shell back", () => {
+    const { container, rerender } = render(<Select inline aria-label="ריק" className="w-32" />);
     expect(container.firstChild.tagName).toBe("SELECT");
-    expect(container.firstChild.children.length).toBe(0);
+    expect(container.firstChild.className.split(" ")).not.toContain("w-full");
+    rerender(<Select inline label="עם תווית" />);
+    expect(container.firstChild.tagName).toBe("DIV");
+    expect(screen.getByLabelText("עם תווית").tagName).toBe("SELECT");
+  });
+
+  it("Input md + inline: 44px field, no wrapper, same look source", () => {
+    const { container } = render(<Input inline aria-label="חיפוש" className="flex-1" />);
+    expect(container.firstChild.tagName).toBe("INPUT");
+    expect(container.firstChild.className).toBe(`${fieldClasses({ size: "md", block: false })} flex-1`);
+    expect(container.firstChild.className.split(" ")).toContain("min-h-touch");
+  });
+
+  it("compact Input: required marks the label and the control; successText is not shown", () => {
+    render(<Input size="sm" label="שם" required success successText="מצוין" />);
+    expect(screen.getByLabelText(/שם/)).toBeRequired();
+    expect(screen.getByText("*", { exact: false })).toBeInTheDocument();
+    expect(screen.queryByText("מצוין")).not.toBeInTheDocument();
+  });
+
+  it("Textarea rows: 3 by default, the caller's value wins", () => {
+    const { rerender } = render(<Textarea label="א" />);
+    expect(screen.getByLabelText("א")).toHaveAttribute("rows", "3");
+    rerender(<Textarea label="א" rows={6} />);
+    expect(screen.getByLabelText("א")).toHaveAttribute("rows", "6");
   });
 
   it("Textarea: helper text is described-by; an error replaces it and sets aria-invalid", () => {

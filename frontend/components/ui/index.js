@@ -18,15 +18,3 @@ export { default as BackLink } from "./BackLink";
 export { default as Tooltip } from "./Tooltip";
 export { default as Popover } from "./Popover";
 export { default as EmptyState } from "./EmptyState";
-// MEH-3132: every primitive in this folder is reachable from here;
-// ComponentCatalogGuard.test.js reds a new one that is not.
-export { default as Avatar } from "./Avatar";
-export { default as Dialog } from "./Dialog";
-export { default as FactLine } from "./FactLine";
-export { default as InlineMessage } from "./InlineMessage";
-export { default as RatingCompact } from "./RatingCompact";
-export { default as SectionHeading } from "./SectionHeading";
-export { default as ShowMore } from "./ShowMore";
-export { default as Switch } from "./Switch";
-export { default as Select } from "./Select";
-export { default as Textarea } from "./Textarea";

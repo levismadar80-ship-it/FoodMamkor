@@ -40,7 +40,6 @@ export default function Select({
   id,
   className = "",
   required = false,
-
   children,
   ...rest
 }) {
@@ -58,7 +57,6 @@ export default function Select({
       aria-invalid={invalid || undefined}
       aria-describedby={message ? describedById : undefined}
       className={`${fieldClasses({ size, invalid, block: !inline })} ${className}`.trim()}
-
       {...rest}
     >
       {children}

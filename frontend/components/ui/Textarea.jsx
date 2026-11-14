@@ -15,6 +15,8 @@ import { fieldClasses, FieldShell } from "./field";
  * Related:  ui/field.jsx (look + shell), ui/Input.jsx.
  * History:  MEH-3136 (creation).
  *
+ * No resize default: pass `resize-none` or `resize-y` in `className`.
+ *
  * `inline` renders the bare <textarea> with no wrapper and no `w-full`, for a
  * control inside a row (the caller sets the width in `className`).
  *

@@ -21,7 +21,10 @@ import { fieldClasses, FieldShell } from "./field";
  * Sizes  : md (default, 44px, the labelled form field) | sm (px-3 py-2
  *          text-sm) | xs (px-2 py-1 text-sm, a control inside a row). sm/xs
  *          take their look from ui/field.jsx and do not support
- *          startAdornment / success.
+ *          startAdornment / success / successText (ignored). A password field
+ *          with an eye toggle is components/PasswordInput.jsx, not this.
+ *          `size` here is the visual size, not the native character-width
+ *          attribute.
  * inline : render the bare <input> with no wrapper and no w-full, for a field
  *          inside a row; the caller sets the width in className and gives it
  *          an aria-label (or a <label htmlFor> of its own).
@@ -90,6 +93,8 @@ export default function Input({
   // MEH-3136: the compact sizes and the inline form. The "md" block below is
   // untouched so its class string and DOM stay byte-identical.
   if (size !== "md" || inline) {
+    // No success state here: an error or the helper text only.
+    const compactMessage = error || helperText;
     const compact = (
       <input
         id={inputId}
@@ -97,18 +102,14 @@ export default function Input({
         disabled={disabled}
         required={required || undefined}
         aria-invalid={hasError || undefined}
-        aria-describedby={message ? describedById : undefined}
-        className={
-          size === "md"
-            ? `min-h-touch rounded-sm border bg-surface-card px-3 text-text placeholder:text-fg-muted focus-ring ${hasError ? "border-error" : "border-border"} disabled:opacity-50 disabled:cursor-not-allowed ${className}`.trim()
-            : `${fieldClasses({ size, invalid: hasError, block: !inline })} ${className}`.trim()
-        }
+        aria-describedby={compactMessage ? describedById : undefined}
+        className={`${fieldClasses({ size, invalid: hasError, block: !inline })} ${className}`.trim()}
         {...rest}
       />
     );
-    if (inline && !label && !message) return compact;
+    if (inline && !label && !compactMessage) return compact;
     return (
-      <FieldShell id={inputId} label={label} required={required} message={message} describedById={describedById} invalid={hasError}>
+      <FieldShell id={inputId} label={label} required={required} message={compactMessage} describedById={describedById} invalid={hasError}>
         {compact}
       </FieldShell>
     );

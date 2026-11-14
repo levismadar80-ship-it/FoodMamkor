@@ -14,25 +14,32 @@
  * History:  MEH-3136 (creation).
  */
 
-/** Padding + text size per compact size. `sm` is a form field, `xs` sits in a row of controls. */
-export const FIELD_SIZES = {
+/**
+ * Padding + text size per size. `md` is the 44px field (used here only for an
+ * inline md Input — the labelled md Input keeps its own locked string), `sm`
+ * is a compact form field (~38px, the height the hand-written fields had),
+ * `xs` sits in a row of controls.
+ */
+const FIELD_SIZES = {
+  md: "min-h-touch px-3",
   sm: "px-3 py-2 text-sm",
   xs: "px-2 py-1 text-sm",
 };
 
 /**
- * @param {{ size?: "sm" | "xs", invalid?: boolean, block?: boolean }} [opts]
+ * @param {{ size?: "md" | "sm" | "xs", invalid?: boolean, block?: boolean }} [opts]
  * `block` false leaves the width to the caller (`flex-1`, `w-20`): a field
  * inside a row must not also say `w-full`.
  */
 export function fieldClasses({ size = "sm", invalid = false, block = true } = {}) {
   return [
     block ? "w-full" : "",
-    "rounded-sm border bg-surface text-text",
+    // Same fill, placeholder, transition and focus border as the md Input.
+    "rounded-sm border bg-surface-card text-text",
     FIELD_SIZES[size] || FIELD_SIZES.sm,
-    "placeholder:text-fg-muted focus-ring",
-    invalid ? "border-error" : "border-border",
-    "disabled:opacity-50 disabled:cursor-not-allowed",
+    "placeholder:text-fg-muted transition-colors duration-fast ease-quart focus-ring",
+    invalid ? "border-error" : "border-border focus:border-primary",
+    "disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-background",
   ]
     .filter(Boolean)
     .join(" ");
