@@ -2441,7 +2441,7 @@
       "ready_title": "Is it time to start charging?",
       "ready_no": "Not yet",
       "ready_yes": "Yes, it is time",
-      "ready_rule": "Charging starts when {goal} businesses get paid bookings of <amount></amount> or more a month through the site, two months in a row.",
+      "ready_rule": "Charging starts when {goal} businesses get paid bookings of <amount></amount> or more a month through the site, {months, plural, one {for one month} other {# months in a row}}.",
       "ready_progress": "Now: {count} of {goal} businesses",
       "month_title": "This month: {month}",
       "month_over_label": "Businesses that got paid bookings of <amount></amount> or more this month",

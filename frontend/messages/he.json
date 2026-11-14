@@ -2441,7 +2441,7 @@
       "ready_title": "האם הגיע הזמן להתחיל לגבות?",
       "ready_no": "עדיין לא",
       "ready_yes": "כן, הגיע הזמן",
-      "ready_rule": "מתחילים לגבות כש-{goal} בתי עסק מקבלים דרך האתר הזמנות בתשלום של <amount></amount> ומעלה בחודש, חודשיים ברצף.",
+      "ready_rule": "מתחילים לגבות כש-{goal} בתי עסק מקבלים דרך האתר הזמנות בתשלום של <amount></amount> ומעלה בחודש, {months, plural, one {חודש אחד} two {חודשיים ברצף} other {# חודשים ברצף}}.",
       "ready_progress": "כרגע: {count} מתוך {goal} בתי עסק",
       "month_title": "החודש: {month}",
       "month_over_label": "בתי עסק שקיבלו החודש הזמנות בתשלום של <amount></amount> ומעלה",

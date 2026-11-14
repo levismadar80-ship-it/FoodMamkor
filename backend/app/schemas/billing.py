@@ -66,6 +66,8 @@ class BillingOverviewOut(BaseModel):
     businesses_over_two_months: int
     # How many businesses two months in a row is the signal to start billing.
     start_billing_businesses: int
+    # ...and how many months in a row each of them has to reach the amount.
+    start_billing_months: int
     would_pay_total_agorot: int
     phase: Literal["launch", "billing"]  # "launch" = nothing is charged
     # The month and the five before it, newest first.

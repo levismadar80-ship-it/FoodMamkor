@@ -474,7 +474,7 @@ over it when the value of its paid bookings reaches `threshold_agorot`.
 - 🔒 `GET /admin/billing/overview` (60/minute) — every real business (test
   businesses excluded) with a counted booking that month, highest value first:
   `{month, threshold_agorot, businesses_over_threshold, businesses_over_two_months,
-  start_billing_businesses, would_pay_total_agorot, phase,
+  start_billing_businesses, start_billing_months, would_pay_total_agorot, phase,
   history[{month, businesses, businesses_over_threshold, value_agorot,
   would_pay_total_agorot}],
   rows[{producer_id, name, bookings, value_agorot, over_threshold,

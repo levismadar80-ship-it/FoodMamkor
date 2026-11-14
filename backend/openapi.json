@@ -513,6 +513,10 @@
             "title": "Start Billing Businesses",
             "type": "integer"
           },
+          "start_billing_months": {
+            "title": "Start Billing Months",
+            "type": "integer"
+          },
           "threshold_agorot": {
             "title": "Threshold Agorot",
             "type": "integer"
@@ -528,6 +532,7 @@
           "businesses_over_threshold",
           "businesses_over_two_months",
           "start_billing_businesses",
+          "start_billing_months",
           "would_pay_total_agorot",
           "phase",
           "history",

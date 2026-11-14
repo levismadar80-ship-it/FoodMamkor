@@ -80,6 +80,7 @@ function ReadyCard({ data }) {
       >
         {t.rich("ready_rule", {
           goal,
+          months: data.start_billing_months,
           amount: amountOf(data.threshold_agorot),
         })}
       </p>

@@ -38,6 +38,7 @@ HISTORY_MONTHS = STREAK_LOOKBACK_MONTHS
 # Sapir is told «הגיע הזמן» when this many businesses were over the threshold
 # two months in a row (her standing ask, 14/11/2026). A signal, not a switch.
 START_BILLING_BUSINESSES = 10
+START_BILLING_MONTHS = 2
 # One rescue ORDER can hold several bags, and each collected bag is a booking;
 # every other row is one booking whatever its quantity.
 _BOOKINGS = case((BillableEvent.kind == "rescue_bag", BillableEvent.quantity), else_=1)
@@ -196,6 +197,9 @@ def overview(db: Session, month: Month) -> dict[str, Any]:
         for pid in still_running:
             streak[pid] += 1
 
+    # Every month is judged by TODAY's amount. One price list exists; once a
+    # second version changes the amount, a past month has to be judged by the
+    # list in force then (the rows carry price_list_version). MEH-3180.
     history = [
         {
             "month": m.label(),
@@ -240,9 +244,10 @@ def overview(db: Session, month: Month) -> dict[str, Any]:
         "threshold_agorot": threshold,
         "businesses_over_threshold": sum(1 for r in rows if r["over_threshold"]),
         "businesses_over_two_months": sum(
-            1 for r in rows if r["months_over_in_a_row"] >= 2
+            1 for r in rows if r["months_over_in_a_row"] >= START_BILLING_MONTHS
         ),
         "start_billing_businesses": START_BILLING_BUSINESSES,
+        "start_billing_months": START_BILLING_MONTHS,
         "would_pay_total_agorot": sum(r["would_pay_agorot"] for r in rows),
         # "launch" = nothing is charged. The same word summarize() returns.
         "phase": "launch",

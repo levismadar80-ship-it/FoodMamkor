@@ -44,6 +44,7 @@ export const AdminBillingOverviewAdminBillingOverviewGetResponse = /*#__PURE__*/
   "would_pay_agorot": /*#__PURE__*/ zod.int()
 })),
   "start_billing_businesses": /*#__PURE__*/ zod.int(),
+  "start_billing_months": /*#__PURE__*/ zod.int(),
   "threshold_agorot": /*#__PURE__*/ zod.int(),
   "would_pay_total_agorot": /*#__PURE__*/ zod.int()
 })

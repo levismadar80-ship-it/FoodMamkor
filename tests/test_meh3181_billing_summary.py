@@ -334,6 +334,14 @@ class TestAdminOverview:
         assert rows["מעל"]["would_pay_agorot"] == 5000
         assert rows["מתחת"]["would_pay_agorot"] == 0
         assert r.json()["would_pay_total_agorot"] == 5000
+        # The rule the screen states comes from the server, not from its copy.
+        assert (
+            r.json()["start_billing_businesses"],
+            r.json()["start_billing_months"],
+        ) == (
+            billing_summary.START_BILLING_BUSINESSES,
+            billing_summary.START_BILLING_MONTHS,
+        )
 
     def test_the_history_is_six_months_newest_first_each_with_its_own_totals(
         self, client, db

@@ -42,6 +42,7 @@ const overview = (rows, extra = {}) => ({
   businesses_over_two_months: rows.filter((r) => r.months_over_in_a_row >= 2)
     .length,
   start_billing_businesses: 10,
+  start_billing_months: 2,
   would_pay_total_agorot: rows.reduce((sum, r) => sum + r.would_pay_agorot, 0),
   phase: "launch",
   history: [
