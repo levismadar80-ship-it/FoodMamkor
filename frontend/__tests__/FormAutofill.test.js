@@ -7,6 +7,9 @@ import path from "node:path";
 // (The business phone on «המליצו» and the admin business form stay without
 // autoComplete on purpose: autofill would put her own details there.)
 //
+// Contact / recommend (suggester) / report-info name+email got theirs in
+// MEH-3112 (#4473), which also guards them.
+//
 // Each case names the element by an anchor unique to it (its id, testid or a
 // line inside it) and reads the WHOLE JSX element around that anchor, from
 // its opening `<` to its `/>`, so an attribute on a neighbouring field can't
@@ -28,6 +31,7 @@ const CASES = [
   ["user signup email", "app/[locale]/register/RegisterClient.jsx", 'data-testid="register-email"', { type: "email", autoComplete: "email" }],
   ["forgot-password email", "app/[locale]/forgot-password/ForgotPasswordClient.jsx", 'data-testid="forgot-email"', { type: "email", autoComplete: "email" }],
   ["reset-password confirm", "app/[locale]/reset-password/ResetPasswordClient.jsx", "value={confirm}", { autoComplete: "new-password" }],
+  ["settings name", "app/[locale]/settings/page.jsx", 'id="profile-name"', { autoComplete: "name" }],
   ["settings phone", "app/[locale]/settings/page.jsx", 'id="profile-phone"', { type: "tel", autoComplete: "tel" }],
   ["alerts phone", "components/AlertPrefsPanel.jsx", "value={phoneInput}", { type: "tel", autoComplete: "tel" }],
   ["footer newsletter email", "components/Footer.jsx", 'id="footer-newsletter-email"', { type: "email", autoComplete: "email" }],
