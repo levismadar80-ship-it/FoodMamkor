@@ -32,7 +32,8 @@ def checkins(monkeypatch):
         return "cid-1"
 
     monkeypatch.setattr(job_heartbeat, "_capture_checkin", spy)
-    monkeypatch.setenv("ENV", "production")
+    monkeypatch.setenv("ENV", "development")
+    monkeypatch.setenv("RAILWAY_ENVIRONMENT", "production")
     import app.database
 
     monkeypatch.setattr(app.database, "SessionLocal", lambda: _NoopSession())
@@ -138,6 +139,7 @@ def test_job_exception_reports_error_and_propagates(monkeypatch, checkins):
 
 def test_no_checkins_outside_production(monkeypatch, checkins):
     monkeypatch.setenv("ENV", "staging")
+    monkeypatch.setenv("RAILWAY_ENVIRONMENT", "staging")
     _stub_services(monkeypatch)
     startup._run_analytics_rollup_job()
     assert checkins == []

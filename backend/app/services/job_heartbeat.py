@@ -5,7 +5,7 @@ Purpose:  Give every APScheduler job a Sentry Crons heartbeat. When a job stops
           a run hangs), Sentry raises a "missed check-in" issue. A job that is
           silent is no longer indistinguishable from a job that is healthy.
 Touches:  Sentry (check-in envelopes via sentry_sdk.crons.capture_checkin).
-          Production only (ENV=production): staging redeploys many times a
+          Production only (ENV or RAILWAY_ENVIRONMENT = production): staging redeploys many times a
           day and would page on every restart. No-op without
           BACKEND_SENTRY_DSN too.
 Does NOT: detect a run that FAILED inside the job — each job swallows
@@ -77,7 +77,12 @@ def _capture_checkin(**kwargs: Any) -> str | None:
 
 
 def _enabled() -> bool:
-    return os.getenv("ENV", "development").strip() == "production"
+    # REUSES: backend/app/config.py:245 — production = ENV or Railway's own
+    # RAILWAY_ENVIRONMENT (set by Railway itself, cannot be forgotten).
+    return "production" in (
+        os.getenv("ENV", "").strip().lower(),
+        os.getenv("RAILWAY_ENVIRONMENT", "").strip().lower(),
+    )
 
 
 def heartbeat(
