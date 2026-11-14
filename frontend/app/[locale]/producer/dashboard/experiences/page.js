@@ -31,6 +31,7 @@ import BackLink from "@/components/ui/BackLink";
 import { STATUS_CLASSES } from "@/lib/dashboard-status-classes";
 import { SkeletonList } from "@/components/Skeleton";
 import RegistrationsList from "@/components/RegistrationsList";
+import Input from "@/components/ui/Input";
 
 const STATUS_STYLE = {
   approved: STATUS_CLASSES.success,
@@ -89,7 +90,7 @@ function SignupCountField({ ex, t, onSaved, label, max }) {
         {label}
       </label>
       <div className="flex items-center gap-2">
-        <input
+        <Input inline size="md"
           id={id}
           type="number"
           inputMode="numeric"
@@ -106,7 +107,7 @@ function SignupCountField({ ex, t, onSaved, label, max }) {
           onKeyDown={(e) => {
             if (e.key === "Enter") e.currentTarget.blur();
           }}
-          className="w-20 min-h-touch border border-border rounded-sm px-3 text-center numeric focus-ring disabled:opacity-50"
+          className="w-20 text-center numeric"
         />
         <span className="text-sm text-fg-muted numeric" aria-hidden="true">/ {ex.max_participants}</span>
         {state === "saved" && <Check size={18} weight="bold" className="text-primary" aria-hidden="true" />}

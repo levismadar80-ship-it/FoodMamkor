@@ -5,8 +5,11 @@
  *     least the pixels it displays (1x w_828 · 2x w_1600 · 3x w_1920); 640px
  *     and up, and /en everywhere (taller band), keep the w_1920 url. Same
  *     Cloudinary transform (c_fill,g_auto,ar_16:9).
- *  B) Heebo-latin is no longer preloaded; every other face, Cormorant
- *     included, keeps next/font's default preload.
+ *  B) Heebo-latin is no longer preloaded; every other face keeps next/font's
+ *     default preload.
+ *  B2) Option א (Sapir 14/11): Cormorant Garamond is not preloaded either. It
+ *     sets small Latin runs only, never the LCP element; its size-adjusted
+ *     Times fallback swaps without moving the layout.
  */
 import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
@@ -67,7 +70,7 @@ describe("MEH-2850 A — hero photo sized to the phone, unchanged from 640px", (
   });
 });
 
-describe("MEH-2850 B — only Heebo-latin, never requested on the home page, loses its preload", () => {
+describe("MEH-2850 B — Heebo-latin and Cormorant lose their preload, the rest keep it", () => {
   const src = fs.readFileSync(path.resolve(__dirname, "../app/fonts.js"), "utf8");
   /** The `{...}` argument of `export const <name> = localFont(`. */
   const callOf = (name) => {
@@ -82,13 +85,16 @@ describe("MEH-2850 B — only Heebo-latin, never requested on the home page, los
     }
     return src.slice(start, i + 1);
   };
-  it.each(["heeboLatin"])("%s: preload false", (name) => {
+  it.each(["heeboLatin", "cormorantGaramond"])("%s: preload false", (name) => {
     expect(callOf(name)).toMatch(/\bpreload:\s*false\b/);
   });
-  // cormorantGaramond is drawn on `/` (event times, rescue prices, the account
-  // sheet's language toggle): without its preload that text flashed in the
-  // fallback face — a visible change, so it stays preloaded.
-  it.each(["frankRuhlLibre", "frankRuhlLibreLatin", "dmSans", "heebo", "cormorantGaramond"])("%s: still preloaded (no preload: false)", (name) => {
+  // The swap without preload must not move the layout: Cormorant keeps its
+  // metric-adjusted Times fallback.
+  it("cormorantGaramond keeps its adjusted fallback", () => {
+    expect(callOf("cormorantGaramond")).toMatch(/adjustFontFallback:\s*"Times New Roman"/);
+  });
+  // The faces that set Hebrew text and headlines stay preloaded.
+  it.each(["frankRuhlLibre", "frankRuhlLibreLatin", "dmSans", "heebo"])("%s: still preloaded (no preload: false)", (name) => {
     expect(callOf(name)).not.toMatch(/\bpreload:\s*false\b/);
   });
 });

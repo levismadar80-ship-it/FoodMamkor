@@ -192,7 +192,9 @@ Eight instances in one week:
 
 Run `/adversarial-review` on all changed files; fix every REFEREE verdict before
 the PR. The independent pass is a **fresh reviewer subagent** given the diff and
-the card's acceptance_criteria; its findings are fixed or answered in the PR. The
+the card's acceptance_criteria; its findings are fixed or answered in the PR. Its
+brief always asks one more question: which docs describe what this diff changed
+(rule 11), and were they updated in it (MEH-3192 — no guard can see this). The
 `claude[bot]` CI review is off since 08/11 (Sapir, until MEH-569) — don't wait for
 its comment. `auth.py` / `upload.py` / permissions / `backend/app/routers/**` also get
 the built-in `/security-review`, and `auth.py` / `upload.py` / permissions a

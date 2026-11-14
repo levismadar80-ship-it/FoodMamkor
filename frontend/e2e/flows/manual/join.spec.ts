@@ -2,6 +2,7 @@ import type { Locator } from "@playwright/test";
 import { test, expect, type Page } from "../_cloudinary-stub";
 import he from "../../../messages/he.json";
 import en from "../../../messages/en.json";
+import { pricingCopyValues } from "../../../lib/pricing";
 
 /**
  * Spec:     manual/join
@@ -55,6 +56,9 @@ import en from "../../../messages/en.json";
  */
 
 const COPY = he.join;
+// MEH-3166: the cost answer takes its numbers from lib/pricing.js as ICU values.
+const PRICING_VALUES: Record<string, string> = pricingCopyValues();
+const COST_ANSWER = COPY.faq.a_cost.replace(/\{(\w+)\}/g, (_m, name: string) => PRICING_VALUES[name]);
 const SHOWCASE_HE = he.about_business.showcase;
 const SHOWCASE_EN = en.about_business.showcase;
 const FIRST_PAINT = { timeout: 15_000 };
@@ -145,13 +149,10 @@ test.describe("manual › /join (MEH-995)", () => {
     await expect(hero.getByTestId("join-cta")).toHaveText(COPY.cta);
     await expect(cta).toHaveAttribute("href", /\/register\/producer(?:[/?#]|$)/);
     await expect(hero).toContainText(COPY.trust_hint);
-    // #4216 (approved by Sapir 08/11): the trust hint under the button is
-    // «חינם, בלי עמלות» — a promise of NO fees, the opposite of the fee/premium
-    // pitch this deny-list keeps out of the hero. The approved hint is taken
-    // out first (read from he.json, never retyped); any OTHER fee word in the
-    // hero still fails.
-    expect(COPY.trust_hint, "control: the approved hint is the one carrying «עמלות»").toContain("עמלות");
-    const heroText = ((await hero.textContent()) ?? "").replace(COPY.trust_hint, "");
+    // MEH-3166 (ADR-042): the hint under the button is «חינם להצטרף» and no
+    // longer names fees, so the whole hero is checked — nothing is taken out
+    // first. The price answer lives in the FAQ and on /join/pricing.
+    const heroText = (await hero.textContent()) ?? "";
     for (const word of HERO_FEES_VOCAB) {
       expect(heroText, `hero must not mention "${word}"`).not.toContain(word);
     }
@@ -198,9 +199,8 @@ test.describe("manual › /join (MEH-995)", () => {
     await expect(processLink).toHaveAttribute("href", /\/about\/process(?:[/?#]|$)/);
   });
 
-  // MT:MEH-995:3 — FAQ at the end: "כמה זה עולה?" with the locked no-fees answer, link "לכל השאלות" → /about/for-businesses.
-  // MEH-2799: the section now has its own h2 and four questions (h3); the cost
-  // answer keeps «— לעולם» (ADR-030 §5).
+  // MT:MEH-995:3 — FAQ at the end: "כמה זה עולה?" with the ADR-042 answer (MEH-3166), link "לכל השאלות" → /about/for-businesses.
+  // MEH-2799: the section now has its own h2 and its questions are h3.
   test("FAQ: heading, four questions, the locked cost answer, link to the full FAQ", async ({ page }) => {
     await gotoJoin(page);
     const faq = scope(page).getByTestId("join-faq");
@@ -214,17 +214,18 @@ test.describe("manual › /join (MEH-995)", () => {
     // question opens its answer.
     const items = faq.getByTestId("join-faq-item");
     const first = items.nth(0);
-    await expect(first.getByText(COPY.faq.a_cost)).toBeHidden();
+    await expect(first.getByText(COST_ANSWER)).toBeHidden();
     // MEH-2841 reordered FAQ_KEYS to [cost, price, google, updates, revenue,
     // customers], so index 1 is now the price answer, not the Google one.
     // The ticket named only the count; this positional assertion is the
     // other half, and it would have gone red on the wrong text.
     await expect(items.nth(1).getByText(COPY.faq.a_price)).toBeHidden();
     await first.locator("summary").click();
-    await expect(first.getByText(COPY.faq.a_cost)).toBeVisible();
-    const allLink = faq.getByRole("link");
+    await expect(first.getByText(COST_ANSWER)).toBeVisible();
+    // MEH-3166: the cost answer carries the one link to the price list.
+    await expect(first.getByTestId("join-pricing-link")).toHaveAttribute("href", /\/join\/pricing(?:[/?#]|$)/);
+    const allLink = faq.getByRole("link", { name: COPY.faq.all_link });
     await expect(allLink).toHaveCount(1);
-    await expect(allLink).toHaveText(COPY.faq.all_link);
     await expect(allLink).toHaveAttribute("href", /\/about\/for-businesses(?:[/?#]|$)/);
   });
 
@@ -355,20 +356,49 @@ test.describe("manual › /join (MEH-995)", () => {
   }
 
   // Zero video bytes before the features are seen; then only the selected clip.
-  test("video requests: none on load, then only the selected clip once the section is in view", async ({ page }) => {
+  test("video requests: none on load, then only the selected clip once the section is in view", async ({ page, browserName }) => {
     const videoUrls: string[] = [];
+    const bodyBytes = new Map<string, number>();
     page.on("request", (req) => {
       if (/\.mp4(?:$|\?)/.test(req.url())) videoUrls.push(new URL(req.url()).pathname);
+    });
+    page.on("requestfinished", async (req) => {
+      if (!/\.mp4(?:$|\?)/.test(req.url())) return;
+      // sizes() rejects if the page closes mid-call; a lost sample must not
+      // surface as an unhandled rejection after the test ended.
+      const responseBodySize = await req.sizes().then((s) => s.responseBodySize, () => 0);
+      const path = new URL(req.url()).pathname;
+      bodyBytes.set(path, (bodyBytes.get(path) ?? 0) + responseBodySize);
     });
     await page.setViewportSize({ width: 390, height: 844 });
     await gotoJoin(page);
     // Gate on a real readiness signal: the features section is hydrated (its
     // selected card exists) before the "nothing yet" read is trusted.
     await expect(scope(page).locator('[data-testid="join-group-card"][data-selected="true"]')).toHaveCount(1);
-    expect(videoUrls, "a video was requested before any interaction").toEqual([]);
+    if (browserName === "chromium") {
+      expect(videoUrls, "a video was requested before any interaction").toEqual([]);
+    } else {
+      // MEH-3153: Playwright's WebKit opens a request for every preload="none"
+      // <video src> at parse time, even with JavaScript off, and reads no body
+      // (measured: responseBodySize 0 for both /join videos). The promise of
+      // this row is zero video BYTES before interaction, so on WebKit each early
+      // request must finish having transferred nothing.
+      const early = [...new Set(videoUrls)];
+      await expect.poll(() => early.filter((u) => !bodyBytes.has(u)), { timeout: 10_000 }).toEqual([]);
+      expect(early.filter((u) => (bodyBytes.get(u) ?? 0) > 0), "video bytes arrived before any interaction").toEqual([]);
+      videoUrls.length = 0;
+    }
     await scope(page).getByTestId("join-clip").scrollIntoViewIfNeeded();
     await expect.poll(() => videoUrls.length, { timeout: 10_000 }).toBeGreaterThan(0);
     expect([...new Set(videoUrls)]).toEqual(["/images/join/clip-page.mp4"]);
+    if (browserName !== "chromium") {
+      // Positive control for the zero-bytes read above: once the clip is in
+      // view, this engine must report bytes for it — otherwise a "0" before
+      // interaction would be the instrument, not the page.
+      await expect
+        .poll(() => bodyBytes.get("/images/join/clip-page.mp4") ?? 0, { timeout: 15_000 })
+        .toBeGreaterThan(0);
+    }
   });
 
   // Phone shelf: a tapped card ends centred. Taps go through dispatchEvent, not
@@ -452,6 +482,12 @@ test.describe("manual › /join (MEH-995)", () => {
   // never blanks, no card ever shows an unloaded image.
   test.describe("swipe smoothness, with motion", () => {
     test.use({ reducedMotion: "no-preference" });
+    // MEH-3153: Playwright's headless WebKit finishes a smooth scrollBy on this
+    // scroll-snap shelf in ONE frame (measured 14/11: 1 moving frame; a plain
+    // overflow box in the same engine animates over 13). Frame-by-frame
+    // sampling has nothing to sample there, so these run on Chromium, where
+    // the "Safari-like" case below already emulates Safari's missing scrollend.
+    test.skip(({ browserName }) => browserName === "webkit", "headless WebKit jumps the snap shelf in one frame");
 
     test("one swipe: selection only after the shelf settles, panel never blanks, no blank media", async ({ page }) => {
       await page.setViewportSize({ width: 390, height: 844 });
@@ -545,6 +581,12 @@ test.describe("manual › /join (MEH-995)", () => {
     // 90ms quiet (~6 frames at 60fps) + one commit frame + one of slack.
     const PANEL_LAG_FRAMES = 8;
     test.use({ reducedMotion: "no-preference" });
+    // MEH-3153: Playwright's headless WebKit finishes a smooth scrollBy on this
+    // scroll-snap shelf in ONE frame (measured 14/11: 1 moving frame; a plain
+    // overflow box in the same engine animates over 13). Frame-by-frame
+    // sampling has nothing to sample there, so these run on Chromium, where
+    // the "Safari-like" case below already emulates Safari's missing scrollend.
+    test.skip(({ browserName }) => browserName === "webkit", "headless WebKit jumps the snap shelf in one frame");
 
     test("the header lights up mid-swipe; the panel follows soon after the shelf stops", async ({ page }) => {
       await page.addInitScript(() => {

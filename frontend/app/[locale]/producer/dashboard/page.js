@@ -32,6 +32,7 @@ import { rescueBagsEnabled } from "@/lib/rescue";
 import Button from "@/components/ui/Button";
 import { SwitchTrack } from "@/components/ui/Switch";
 import { copyOrThrow } from "@/lib/clipboard";
+import Input from "@/components/ui/Input";
 
 function VanityLinkCard({ slug }) {
   const t = useTranslations("dashboard.producer.vanity_link");
@@ -138,7 +139,7 @@ function StatusSupportModal({ onClose }) {
   return (
     <div
       ref={dialogRef}
-      className="fixed inset-0 z-[9000] flex items-end sm:items-center justify-center bg-black/40 px-4"
+      className="fixed inset-0 z-modal flex items-end sm:items-center justify-center bg-black/40 px-4"
       role="dialog"
       aria-modal="true"
       aria-label={t("section_aria")}
@@ -735,7 +736,7 @@ export default function ProducerDashboardPage() {
               <label htmlFor="vacation-until" className="text-sm text-fg-muted whitespace-nowrap">
                 {t("availability.vacation_return_label")}
               </label>
-              <input
+              <Input inline size="sm"
                 id="vacation-until"
                 type="date"
                 value={vacationUntil}
@@ -744,7 +745,6 @@ export default function ProducerDashboardPage() {
                 // offered a value the server would then reject.
                 min={israelToday()}
                 onChange={(e) => { setVacationUntil(e.target.value); setVacationDateError(""); }}
-                className="border border-border rounded-sm px-3 py-1.5 text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                 dir="ltr"
                 aria-invalid={vacationDateError ? "true" : undefined}
                 aria-describedby={vacationDateError ? "vacation-until-error" : undefined}

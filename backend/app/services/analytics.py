@@ -28,16 +28,17 @@ Prometheus) — everything is pure Python + SQLAlchemy, keeping the image
 small and the deploy fast.
 """
 
+from sqlalchemy.sql.functions import Function
 import hashlib
 import logging
 import time
 from collections import deque
 from dataclasses import dataclass
 from threading import Lock
-from typing import Literal, Optional
+from typing import Any, cast, Literal, Optional, TYPE_CHECKING
 from uuid import UUID
 
-from sqlalchemy import and_, case, distinct, func, tuple_
+from sqlalchemy import and_, case, ColumnElement, distinct, func, tuple_
 from sqlalchemy.orm import Session
 
 from app.config import settings
@@ -48,6 +49,9 @@ from app.models import (
     User,
 )
 
+if TYPE_CHECKING:
+    from starlette.requests import Request
+
 logger = logging.getLogger(__name__)
 
 
@@ -56,7 +60,7 @@ logger = logging.getLogger(__name__)
 # ============================================================
 
 
-def israel_day_of(time_col):
+def israel_day_of(time_col: Any) -> Function[Any]:
     """The Israel calendar day a naive-UTC timestamp column falls in.
 
     `created_at` is stored naive-UTC, so this needs the double `timezone()`:
@@ -68,12 +72,12 @@ def israel_day_of(time_col):
 
 
 def unique_views_count(
-    day_col,
+    day_col: Any,
     *,
-    hash_col=ProducerPageView.viewer_ip_hash,
-    row_id_col=ProducerPageView.id,
-    scope_col=None,
-):
+    hash_col: Any = ProducerPageView.viewer_ip_hash,
+    row_id_col: Any = ProducerPageView.id,
+    scope_col: Any = None,
+) -> ColumnElement[int]:
     """MEH-160: one page view per visitor per Israel calendar day.
 
     THE dedupe expression for `producer_page_views`, and the reason it is a
@@ -299,7 +303,7 @@ def record_analytics_event(
         if event == "page_view":
             city: Optional[str] = None
             if ctx.viewer is not None and ctx.viewer.city:
-                city = ctx.viewer.city
+                city = ctx.viewer.city  # type: ignore[assignment]
             # Only accept known referrer values — the caller-supplied string
             # reaches here unvalidated, so this set is the ONLY thing keeping
             # the column bounded. DO NOT widen it to accept arbitrary input;
@@ -351,7 +355,7 @@ def _user_agent_of(request: object) -> Optional[str]:
     headers = getattr(request, "headers", None)
     if headers is None:
         return None
-    return headers.get("user-agent")
+    return cast(Optional[str], headers.get("user-agent"))
 
 
 def _client_ip_of(request: object) -> Optional[str]:
@@ -370,7 +374,7 @@ def _client_ip_of(request: object) -> Optional[str]:
     # door this whole ticket exists to remove. Caught in review on the PR.
     from app.rate_limit import get_real_client_ip
 
-    return get_real_client_ip(request)
+    return get_real_client_ip(cast("Request", request))
 
 
 # ============================================================
@@ -395,7 +399,7 @@ def record_request(duration_ms: float) -> None:
         _samples.append((time.monotonic(), duration_ms))
 
 
-def server_health() -> dict:
+def server_health() -> dict[str, Any]:
     """Compute (avg_response_time_ms, requests_per_minute) over last hour."""
     cutoff = time.monotonic() - _METRICS_WINDOW_SECONDS
     with _samples_lock:

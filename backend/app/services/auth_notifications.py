@@ -26,6 +26,7 @@ business-suggestion ping is visitor-caused and takes no flag.
 
 import logging
 import re
+from typing import TypeVar
 from uuid import UUID
 
 from app.config import settings
@@ -39,6 +40,8 @@ from app.services.whatsapp_templates import (
 )
 from app.utils.pii import mask_phone
 
+T = TypeVar("T")
+
 logger = logging.getLogger(__name__)
 
 
@@ -50,7 +53,7 @@ def _normalize_il_phone(phone: str) -> str:
     return phone
 
 
-def _skip_test_cause(notifier: str, result):
+def _skip_test_cause(notifier: str, result: T) -> T:
     """MEH-2952: a send caused by a test business / test account.
 
     Returned BEFORE the preflight and the send, so none of the ERROR / WARNING
@@ -290,6 +293,49 @@ def notify_admin_new_recipe(
             "[NOTIFY] Admin recipe-pending email FAILED for "
             f"'{safe_title}' (business '{safe_name}'): {e}"
         )
+
+
+def notify_admin_claim_link_requested(
+    producer_name: str, city: str | None, test_cause: bool = False
+) -> None:
+    """MEH-3122: the owner of a draft opened a claim link that is no longer
+    active and pressed «שלחו לי קישור חדש». Tell the admin, who mints and sends
+    the new link from the admin panel as before — nothing is sent to the
+    owner from here, and no link is created.
+
+    REUSES: notify_admin_producer_resubmit below — same WhatsApp + email pair,
+    per-channel guards, fire-and-forget.
+    """
+    if test_cause:
+        _skip_test_cause("notify_admin_claim_link_requested", None)
+        return
+    safe_name = _sanitize_wa_param(producer_name)
+    safe_city = _sanitize_wa_param(city) if city else "לא צוין"
+    subject = f"מהמקור - {safe_name} ביקש קישור חדש לדרישת בעלות"
+    message = (
+        f"העסק {safe_name} פתח קישור לדרישת בעלות שכבר לא פעיל, וביקש קישור חדש."
+        f"\nעיר: {safe_city}"
+        f"\nלשליחת קישור חדש: {settings.frontend_url}/admin/producers"
+    )
+    try:
+        if settings.admin_whatsapp_to:
+            if not send_text(
+                settings.admin_whatsapp_to, message, test_cause=test_cause
+            ):
+                logger.warning(
+                    f"[WHATSAPP] Claim-link request NOT delivered for '{safe_name}'"
+                )
+        else:
+            logger.debug(f"[WHATSAPP] Would send: {message}")
+    except Exception as e:  # noqa: BLE001 — fire-and-forget, log with context
+        logger.error(
+            f"[NOTIFY] Claim-link request WhatsApp FAILED for '{safe_name}': {e}"
+        )
+    try:
+        if settings.admin_email:
+            send_email(settings.admin_email, subject, message, test_cause=test_cause)
+    except Exception as e:  # noqa: BLE001 — fire-and-forget, log with context
+        logger.error(f"[NOTIFY] Claim-link request email FAILED for '{safe_name}': {e}")
 
 
 def notify_admin_producer_resubmit(
