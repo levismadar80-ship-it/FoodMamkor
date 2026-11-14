@@ -520,7 +520,9 @@ class TestOwnerPutGrandfathersLicense:
         producer, user = self._owner(db, category=bakery)  # NULL license
         resp = client.put(
             "/producers/me",
-            json={"category_ids": [bakery.id, veggies.id]},
+            # MEH-3137: adding ירקות also needs the grower declaration; this
+            # case is about the license rule, so the flag is sent.
+            json={"category_ids": [bakery.id, veggies.id], "farmer_declaration_accepted": True},
             headers=auth_header(user),
         )
         assert resp.status_code == 200, resp.text
