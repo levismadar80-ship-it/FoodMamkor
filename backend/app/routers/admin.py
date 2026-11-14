@@ -78,7 +78,11 @@ from app.services.producer_queries import (
     create_primary_branch_location,
     upsert_primary_branch_location,
 )
-from app.services.review_conflicts import recompute_after_categories_changed  # MEH-3258
+from app.services.review_conflicts import (  # MEH-3258
+    recompute_after_categories_changed,
+    recompute_after_owner_unlinked,
+    reviewed_by_owners_of,
+)
 from app.slug_utils import is_reserved, rejected_characters
 
 # MEH-2020 — `_slugify` used to be a full copy of `slug_utils.slugify` here,
@@ -1226,6 +1230,9 @@ def admin_delete_producer(
     # Resetting role keeps the (role, producer_id) pair consistent — mirrors
     # the atomic set in the register flow (auth.py:511-514).
     # Admin-created producers have no linked user → update is a no-op.
+    # MEH-3258: her reviews on other businesses stop being in conflict once
+    # she is unlinked — read which ones now, recompute them after the commit.
+    owner_reviewed = reviewed_by_owners_of(db, producer.id)
     db.query(User).filter(User.producer_id == producer.id).update(
         {"producer_id": None, "is_producer": False, "role": "consumer"},
         synchronize_session=False,
@@ -1243,6 +1250,7 @@ def admin_delete_producer(
     # already pre-empts the NotNullViolation the old MEH-755 bulk-delete guarded.
     db.delete(producer)
     db.commit()
+    recompute_after_owner_unlinked(db, owner_reviewed)  # MEH-3258
     indexnow.schedule(background_tasks, removed_urls)  # MEH-2852
 
     # Post-commit orphan cleanup, fail-open per destroy_image contract.

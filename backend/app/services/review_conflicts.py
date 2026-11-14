@@ -17,6 +17,7 @@ Related:  routers/reviews.py:_shares_category (the same intersection rule, for
 History:  MEH-3258 (creation — grill retro D2, Sapir 14/11).
 """
 
+import logging
 from typing import Any
 from uuid import UUID
 
@@ -25,6 +26,8 @@ from sqlalchemy.orm import Session, aliased
 from sqlalchemy.sql.elements import ColumnElement
 
 from app.models import Producer, ProducerCategory, ProducerReview, User
+
+logger = logging.getLogger(__name__)
 
 
 def _owner_conflict() -> ColumnElement[bool]:
@@ -92,8 +95,38 @@ def recompute_producer_rating(producer_id: UUID, db: Session) -> None:
 
 
 def _recompute_all(db: Session, producer_ids: set[Any]) -> None:
+    # Runs after the caller's own commit, so a failure here must not turn a
+    # saved change into a 500. Fail-open per business, logged; the next
+    # review write on that business recomputes it again.
     for pid in producer_ids:
-        recompute_producer_rating(pid, db)
+        try:
+            recompute_producer_rating(pid, db)
+        except Exception:  # noqa: BLE001 — post-commit side effect, fail-open
+            db.rollback()
+            logger.exception("review_conflicts: recompute failed for %s", pid)
+
+
+def reviewed_by_owners_of(db: Session, producer_id: Any) -> set[Any]:
+    """Businesses reviewed by the current owner(s) of `producer_id`. Read
+    BEFORE the owners are unlinked (admin delete), recomputed after."""
+    owner_ids = [
+        u[0] for u in db.query(User.id).filter(User.producer_id == producer_id)
+    ]
+    if not owner_ids:
+        return set()
+    return {
+        r[0]
+        for r in db.query(ProducerReview.producer_id).filter(
+            ProducerReview.user_id.in_(owner_ids),
+            ProducerReview.producer_id != producer_id,
+        )
+    }
+
+
+def recompute_after_owner_unlinked(db: Session, producer_ids: set[Any]) -> None:
+    """The owner(s) of a business were unlinked (the business was deleted):
+    their reviews on other businesses count again."""
+    _recompute_all(db, producer_ids)
 
 
 def recompute_after_owner_linked(db: Session, user_id: Any) -> None:

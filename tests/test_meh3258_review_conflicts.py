@@ -18,7 +18,9 @@ BODY = "המוצרים מדהימים ואוהבת את השירות!"
 
 
 def _review(db, producer, author, stars):
-    r = ProducerReview(producer_id=producer.id, user_id=author.id, stars=stars, body=BODY)
+    r = ProducerReview(
+        producer_id=producer.id, user_id=author.id, stars=stars, body=BODY
+    )
     db.add(r)
     db.commit()
     db.refresh(r)
@@ -94,7 +96,9 @@ class TestCompetitorConflict:
         assert str(r.id) not in ids and page["total"] == 0
         assert _rating(db, target) == (0.0, 0)
 
-    def test_cross_category_owner_review_stays(self, client, db, bakery_cat, cheese_cat):
+    def test_cross_category_owner_review_stays(
+        self, client, db, bakery_cat, cheese_cat
+    ):
         """MEH-2076 policy: the bakery owner really does buy the cheese."""
         dairy = make_producer(db, name="מחלבה", category=cheese_cat)
         bakery = make_producer(db, name="מאפייה", category=bakery_cat)
@@ -109,7 +113,11 @@ class TestCompetitorConflict:
     def test_shared_secondary_category_counts(self, client, db, bakery_cat, cheese_cat):
         target = make_producer(db, name="יעד", category=cheese_cat)
         rival = make_producer(db, name="מתחרה", category=bakery_cat)
-        db.add(ProducerCategory(producer_id=rival.id, category_id=cheese_cat.id, position=1))
+        db.add(
+            ProducerCategory(
+                producer_id=rival.id, category_id=cheese_cat.id, position=1
+            )
+        )
         db.commit()
         author = make_user(db, email="secondary@example.com")
         r = _review(db, target, author, 2)
@@ -132,7 +140,9 @@ class TestCounts:
 
     def test_many_conflicts_among_many(self, client, db, bakery_cat):
         target = make_producer(db, name="יעד", category=bakery_cat)
-        rivals = [make_producer(db, name=f"מתחרה {i}", category=bakery_cat) for i in range(3)]
+        rivals = [
+            make_producer(db, name=f"מתחרה {i}", category=bakery_cat) for i in range(3)
+        ]
         keep = make_user(db, email="keep@example.com")
         _review(db, target, keep, 5)
         for i, rival in enumerate(rivals):
@@ -160,9 +170,17 @@ class TestConflictLifts:
 
 
 class TestTriggers:
-    def test_claim_recomputes_the_competitor_she_reviewed(self, client, db, bakery_cat, monkeypatch):
-        for name in ("notify_producer_registered", "score_producer", "send_welcome_email"):
-            monkeypatch.setattr(f"app.routers.producer_claim.{name}", lambda *a, **k: None)
+    def test_claim_recomputes_the_competitor_she_reviewed(
+        self, client, db, bakery_cat, monkeypatch
+    ):
+        for name in (
+            "notify_producer_registered",
+            "score_producer",
+            "send_welcome_email",
+        ):
+            monkeypatch.setattr(
+                f"app.routers.producer_claim.{name}", lambda *a, **k: None
+            )
         target = make_producer(db, name="יעד", category=bakery_cat)
         author = make_user(db, email="claimer@example.com")
         _review(db, target, author, 1)
@@ -178,7 +196,9 @@ class TestTriggers:
         assert r.status_code == 200, r.text
         assert _rating(db, target) == (0.0, 0)
 
-    def test_owner_category_change_recomputes_both_sides(self, client, db, bakery_cat, cheese_cat, monkeypatch):
+    def test_owner_category_change_recomputes_both_sides(
+        self, client, db, bakery_cat, cheese_cat, monkeypatch
+    ):
         target = make_producer(db, name="יעד", category=bakery_cat)
         mine = make_producer(db, name="שלי", category=cheese_cat)
         owner = make_user(db, email="switch@example.com", role="producer")
@@ -194,13 +214,87 @@ class TestTriggers:
         assert r.status_code == 200, r.text
         assert _rating(db, target) == (0.0, 0)
 
-    def test_save_without_categories_does_not_recompute(self, db, monkeypatch):
-        from app.services import review_conflicts
+    def test_save_without_categories_leaves_the_rating(
+        self, client, db, bakery_cat, cheese_cat
+    ):
+        """A PUT with no category_ids must not recompute: seed a stale stored
+        rating and check it survives (a recompute would rewrite it)."""
+        target = make_producer(db, name="יעד", category=bakery_cat)
+        mine = make_producer(db, name="שלי", category=bakery_cat)
+        owner = make_user(db, email="nocat@example.com", role="producer")
+        _review(db, target, owner, 1)
+        _own(db, owner, mine)
+        target.avg_rating, target.reviews_count = 1.0, 1  # stale on purpose
+        db.commit()
+        r = client.put(
+            "/producers/me",
+            json={"description": "תיאור חדש של העסק שלי"},
+            headers=auth_header(db.get(User, owner.id)),
+        )
+        assert r.status_code == 200, r.text
+        assert _rating(db, target) == (1.0, 1)
 
-        calls = []
-        monkeypatch.setattr(review_conflicts, "_recompute_all", lambda db, ids: calls.append(ids))
-        review_conflicts.recompute_after_categories_changed(db, None, None)
-        assert calls == []
+    def test_registration_upgrade_recomputes(self, client, db, bakery_cat):
+        from conftest import valid_producer_register_payload
+
+        target = make_producer(db, name="יעד", category=bakery_cat)
+        author = make_user(db, email="upgrader@example.com")
+        _review(db, target, author, 1)
+        recompute_producer_rating(target.id, db)
+        assert _rating(db, target) == (1.0, 1)
+        payload = valid_producer_register_payload() | {
+            "phone": "0501234567",
+            "category_ids": [bakery_cat.id],
+        }
+        for field in ("email", "name", "password"):
+            payload.pop(field, None)
+        r = client.post(
+            "/auth/register/producer", json=payload, headers=auth_header(author)
+        )
+        assert r.status_code == 200, r.text
+        assert _rating(db, target) == (0.0, 0)
+
+    def test_admin_delete_brings_her_reviews_back(self, client, db, bakery_cat):
+        admin = make_user(db, email="admdel@example.com", role="admin")
+        target = make_producer(db, name="יעד", category=bakery_cat)
+        rival = make_producer(db, name="מתחרה", category=bakery_cat)
+        author = make_user(db, email="deleted-owner@example.com")
+        _review(db, target, author, 4)
+        _own(db, author, rival)
+        recompute_producer_rating(target.id, db)
+        assert _rating(db, target) == (0.0, 0)
+        r = client.delete(f"/admin/producers/{rival.id}", headers=auth_header(admin))
+        assert r.status_code in (200, 204), r.text
+        assert _rating(db, target) == (4.0, 1)
+
+    def test_admin_category_save_recomputes(self, client, db, bakery_cat, cheese_cat):
+        admin = make_user(db, email="admcat@example.com", role="admin")
+        target = make_producer(db, name="יעד", category=bakery_cat)
+        rival = make_producer(db, name="מתחרה", category=cheese_cat)
+        author = make_user(db, email="admcat-owner@example.com")
+        _review(db, target, author, 2)
+        _own(db, author, rival)
+        recompute_producer_rating(target.id, db)
+        assert _rating(db, target) == (2.0, 1)  # cross-category: counts
+        r = client.put(
+            f"/admin/producers/{rival.id}",
+            json={"category_ids": [bakery_cat.id]},
+            headers=auth_header(admin),
+        )
+        assert r.status_code == 200, r.text
+        assert _rating(db, target) == (0.0, 0)
+
+    def test_owner_badge_skips_a_conflicted_review(self, db, bakery_cat):
+        from app.services.owner_attention import _unreplied_reviews
+
+        shop = make_producer(db, category=bakery_cat)
+        owner = make_user(db, email="badge@example.com")
+        other = make_user(db, email="badge-other@example.com")
+        _review(db, shop, owner, 5)
+        _review(db, shop, other, 4)
+        assert _unreplied_reviews(db, shop.id) == 2  # control
+        _own(db, owner, shop)
+        assert _unreplied_reviews(db, shop.id) == 1
 
 
 class TestAdminSeesWhy:
