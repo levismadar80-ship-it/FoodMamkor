@@ -1006,6 +1006,13 @@ PUT    /producers/me                              producer — MEH-999: license 
                                                   and edit vegan_scope the next day unobserved. Fail-open at the task boundary
                                                   (_sensitive_edit_task), because the notifier's preamble sits outside its own
                                                   per-channel try blocks and a raising BackgroundTask would break the owner's 200.
+                                                  MEH-3261 (D11): for an APPROVED business, a changed description / short_description /
+                                                  owner_bio (compared after strip) goes through the AI check first
+                                                  (services/approved_edit_moderation.py) — REJECTED → 422 «הטקסט אינו עומד בהנחיות
+                                                  הקהילה שלנו. אפשר לנסח מחדש ולשמור שוב.» and nothing in the PUT is saved; fail-open
+                                                  saves. One admin ping «📝 עסק מאושר עדכן תוכן» per save that changed any of those
+                                                  three or `images`, « (סומן ע״י AI)» when FLAGGED. Product POST/PUT of an approved
+                                                  business get the same check on name/description (422 on REJECTED; ping only when FLAGGED).
 POST   /producers/me/verify-phone                producer  — send WhatsApp OTP (3/10min); MEH-2122 B: 503 «לא הצלחנו לשלוח את הקוד בוואטסאפ כרגע…» when WhatsApp is configured and the send failed (test rows and unconfigured envs stay 200)
 POST   /producers/me/verify-phone/confirm        producer  — confirm code, sets phone_verified (5/min)
 POST   /producers/me/kashrut-request             producer  — request a kashrut badge (10/hr)
