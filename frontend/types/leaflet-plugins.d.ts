@@ -9,7 +9,7 @@
  * Does NOT: type the cluster plugin completely, only the calls this repo makes.
  * History:  14/11/2026 — created (MEH-3167, legacy components/ type-check).
  */
-import "leaflet";
+import type { FeatureGroup, Layer } from "leaflet";
 
 declare module "leaflet" {
   interface MarkerClusterGroup extends FeatureGroup {
