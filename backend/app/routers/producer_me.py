@@ -1,6 +1,4 @@
-from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
-from typing import Any
 from uuid import UUID
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
@@ -24,13 +22,11 @@ from app.services.whatsapp import send_template
 from app.services.whatsapp_templates import OtpCodeV1
 from app.utils.clock import ISRAEL_TZ, israel_today, utc_now
 from app.models import (
-    ContactClick,
     DeliveryArea,
     DeliveryWaitlistEntry,
     Favorite,
     HomeProduct,
     Producer,
-    ProducerAnalyticsDaily,
     Product,
     ProducerLocation,
     ProducerOffer,
@@ -83,7 +79,7 @@ from app.services.license_validation import (
     enforce_license_gate_on_update,
 )
 from app.services.analytics import israel_day_of, unique_views_count
-from app.services.analytics_rollup import rollup_snapshot
+from app.services.producer_insights import metric_windows, new_followers_since
 from app.services.trust_tier import VALID_BADGE_CODES
 
 log = logging.getLogger(__name__)
@@ -1129,77 +1125,9 @@ def dashboard(
 # ============================================================
 
 
-@dataclass
-class WindowFilter:
-    """MEH-447: collapse the 2 optional kwargs of _count_in_window into a
-    single value object so the helper stays under PLR0913's 5-arg cap.
-    `extra_filter` is a SQLAlchemy ColumnElement — typed as Any to avoid
-    Pydantic-arbitrary-type friction on an internal-only helper."""
-
-    days: int | None = None
-    extra_filter: Any = None
-    # MEH-160: when set, count DISTINCT (israel-day, value) pairs instead of
-    # rows — one count per visitor per 24h Israel calendar day (Sapir's 09/08
-    # ruling: the 24h window is the analytics norm). Rows where the column IS
-    # NULL are still counted individually — they cannot be deduped against
-    # anything, and dropping them (which COUNT(DISTINCT) does silently) would
-    # trade over-counting for under-counting.
-    distinct_col: Any = None
-    # MEH-2079 chunk B2 (MEH-2283): the `producer_analytics_daily` column that
-    # holds this metric's per-day roll-up. Only the `total` arm (days=None)
-    # reads it — the `days=N` arms stay raw-only (Sapir's ruling 06/09), which
-    # is safe exactly as long as chunk C's retention window is ≥ 30 days.
-    rollup_col: Any = None
-
-
-def _count_in_window(
-    db: Session, model, time_col, producer_id, window: WindowFilter = WindowFilter()
-):
-    """Count rows for the given model, optionally windowed to last N days.
-
-    MEH-160: with ``window.distinct_col`` set, counts DISTINCT
-    (israel-day, value) pairs PLUS the NULL rows one-by-one — a visitor counts
-    once per 24h Israel calendar day (ruling 09/08), and a hit with no hash
-    counts individually. `producer_page_views` writes `viewer_ip_hash` on every
-    row and nothing ever read it, so one visitor refreshing N times counted as
-    N profile views — the inflation the ticket describes, reachable without
-    any spoofed user-agent. hash_ip's salt is settings.secret_key — stable per
-    deploy, not time-rotating — so the day grain comes from created_at, not
-    from the hash itself (a secret rotation resets uniques; acceptable, rare).
-
-    MEH-2283: with ``window.rollup_col`` set AND no day window, the aggregate
-    owns every Israel day up to the watermark and the raw table is read
-    only ABOVE it — `Σ aggregate.col + deduped raw WHERE israel_day > watermark`.
-    The raw side never reads a day the aggregate has, so once chunk C purges
-    those raw rows the number does not move. Same day grain as the job (the
-    Israel day — see analytics_rollup.py's header for why not UTC), so the
-    two halves partition the rows exactly and the sum equals the raw-only
-    count to the row (asserted before, after, and after-purge in
-    tests/test_meh2283_analytics_rollup.py).
-    """
-    if window.distinct_col is not None:
-        counter = unique_views_count(
-            israel_day_of(time_col),
-            hash_col=window.distinct_col,
-            row_id_col=model.id,
-        )
-    else:
-        counter = func.count(model.id)
-    q = db.query(counter).filter(model.producer_id == producer_id)
-    rolled_up = 0
-    if window.days is not None:
-        cutoff = utc_now() - timedelta(days=window.days)
-        q = q.filter(time_col >= cutoff)
-    elif window.rollup_col is not None:
-        # One statement for both halves — a roll-up committing between a
-        # separate watermark read and the sum double-counts the rolled day
-        # for the request that straddles it (see rollup_snapshot's docstring).
-        watermark, rolled_up = rollup_snapshot(db, producer_id, window.rollup_col)
-        if watermark is not None:
-            q = q.filter(israel_day_of(time_col) > watermark)
-    if window.extra_filter is not None:
-        q = q.filter(window.extra_filter)
-    return int(q.scalar() or 0) + rolled_up
+# MEH-3079: WindowFilter / _count_in_window moved to
+# app/services/producer_insights.py (count_in_window) so the weekly summary
+# email counts the same numbers the dashboard shows.
 
 
 @router.get("/analytics")
@@ -1225,52 +1153,15 @@ def producer_analytics(
 
     pid = producer.id
 
-    # Time-windowed counts for the 3 main metrics.
-    # MEH-2283: `rollup_col` names the aggregate column the `total` arm reads
-    # through (see WindowFilter). The three metrics the roll-up carries pass
-    # one; contact_clicks has no aggregate column and stays raw on every arm.
-    def windowed(model, time_col, *, extra=None, distinct_col=None, rollup_col=None):
-        return {
-            label: _count_in_window(
-                db,
-                model,
-                time_col,
-                pid,
-                WindowFilter(
-                    days=days,
-                    extra_filter=extra,
-                    distinct_col=distinct_col,
-                    rollup_col=rollup_col,
-                ),
-            )
-            for label, days in (("last_7d", 7), ("last_30d", 30), ("total", None))
-        }
-
-    # MEH-160: page views dedupe per (israel-day, viewer_ip_hash) — one count
-    # per visitor per 24h day (ruling 09/08). "Unique inside a window" is what
-    # models.py's own docstring said the column was for; until now nothing read
-    # it. The windowed counters therefore equal the SUM of their days' unique
-    # counts, so the headline numbers and the views_by_day chart agree by
-    # construction.
-    profile_views = windowed(
-        ProducerPageView,
-        ProducerPageView.created_at,
-        distinct_col=ProducerPageView.viewer_ip_hash,
-        rollup_col=ProducerAnalyticsDaily.views_unique,
-    )
-    search_appearances = windowed(
-        ProducerPageView,
-        ProducerPageView.created_at,
-        extra=(ProducerPageView.referrer == "search"),
-        distinct_col=ProducerPageView.viewer_ip_hash,
-        rollup_col=ProducerAnalyticsDaily.views_search_unique,
-    )
-    whatsapp_clicks = windowed(
-        ProducerWhatsAppClick,
-        ProducerWhatsAppClick.clicked_at,
-        rollup_col=ProducerAnalyticsDaily.whatsapp_clicks,
-    )
-    contact_clicks = windowed(ContactClick, ContactClick.clicked_at)
+    # MEH-3079: the four headline metrics × {last_7d, last_30d, total} come
+    # from app/services/producer_insights.py — the same function the weekly
+    # summary email reads, so the two can never disagree. The MEH-160 dedupe
+    # and MEH-2283 roll-up rules are documented there.
+    windows = metric_windows(db, pid)
+    profile_views = windows["profile_views"]
+    search_appearances = windows["search_appearances"]
+    whatsapp_clicks = windows["whatsapp_clicks"]
+    contact_clicks = windows["contact_clicks"]
 
     # Followers — MEH-1364 (decision A, MEH-1362): counted from `favorites`,
     # the canonical interest record, since MEH-1363 removed the follow button.
@@ -1284,15 +1175,8 @@ def producer_analytics(
         .scalar()
         or 0
     )
-    week_ago = utc_now() - timedelta(days=7)
-    new_followers_this_week = (
-        db.query(func.count(Favorite.producer_id))
-        .filter(
-            Favorite.producer_id == pid,
-            Favorite.created_at >= week_ago,
-        )
-        .scalar()
-        or 0
+    new_followers_this_week = new_followers_since(
+        db, pid, utc_now() - timedelta(days=7)
     )
 
     # Reviews — use the cached aggregate on the Producer row so we don't

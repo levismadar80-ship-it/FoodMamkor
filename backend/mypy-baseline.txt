@@ -13,9 +13,9 @@
 #
 # DO NOT hand-edit. Regenerate:  python scripts/mypy_baseline.py --update-baseline
 #
-# Frozen 2026-11-13 from mypy 2.4.1 over `mypy app/auth.py app/services/whatsapp.py app/services/whatsapp_templates.py app/services/auth_notifications.py app/services/auto_reply_watchdog.py --strict` (that file AND its import tree — mypy follows
+# Frozen 2026-11-14 from mypy 2.4.1 over `mypy app/auth.py app/schemas/group_buy_counts.py app/services/admin_pending_reminder.py app/services/whatsapp.py app/services/whatsapp_templates.py app/services/auth_notifications.py app/services/auto_reply_watchdog.py app/services/verify_session.py app/services/owner_attention.py app/services/producer_insights.py --strict` (that file AND its import tree — mypy follows
 # imports, so any module auth.py reaches transitively also appears here):
-# 113 errors, 10 files, 17 keys. Every number on this
+# 129 errors, 12 files, 26 keys. Every number on this
 # line is computed from the rows below, so it cannot drift from them.
 app/auth.py	assignment	1
 app/auth.py	type-arg	5
@@ -26,6 +26,15 @@ app/models/models.py	var-annotated	6
 app/sentry.py	arg-type	69
 app/sentry.py	no-untyped-def	1
 app/sentry.py	type-arg	7
+app/services/analytics.py	arg-type	1
+app/services/analytics.py	assignment	1
+app/services/analytics.py	no-any-return	1
+app/services/analytics.py	no-untyped-def	2
+app/services/analytics.py	type-arg	1
+app/services/analytics_rollup.py	arg-type	1
+app/services/analytics_rollup.py	attr-defined	1
+app/services/analytics_rollup.py	no-untyped-call	6
+app/services/analytics_rollup.py	no-untyped-def	2
 app/services/auth_notifications.py	no-any-return	10
 app/services/auth_notifications.py	no-untyped-def	2
 app/services/category_slug.py	no-untyped-def	1
