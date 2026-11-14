@@ -4526,6 +4526,7 @@
         "error_invalid": "Wrong or expired code. Please try again.",
         "error_no_phone": "No phone number on your profile. Add one, then verify.",
         "error_generic": "Something went wrong. Please try again.",
+        "error_send_failed": "We couldn't send the code on WhatsApp right now. Please try again in a few minutes.",
         "error_rate_limited": "Too many attempts. Please try again shortly."
       },
       "holiday_catalog_cta": "Update the catalog →",

@@ -133,6 +133,12 @@ def _is_configured() -> bool:
     return bool(settings.whatsapp_phone_number_id and settings.whatsapp_access_token)
 
 
+def is_configured() -> bool:
+    """Public read of the same check, for callers that must tell "nothing could
+    be sent here" (dev / CI) from "the send failed" (MEH-2122 B)."""
+    return _is_configured()
+
+
 def _safe_json(response: Any) -> dict[str, Any] | None:
     """Best-effort parse of a Graph response body to a dict, else None.
 

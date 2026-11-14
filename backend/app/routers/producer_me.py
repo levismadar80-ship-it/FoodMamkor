@@ -20,6 +20,7 @@ from app.services.availability_validation import (
     resolve_vacation_until,
     validate_transition,
 )
+from app.services.whatsapp import is_configured as whatsapp_is_configured
 from app.services.whatsapp import send_template
 from app.services.whatsapp_templates import OtpCodeV1
 from app.utils.clock import ISRAEL_TZ, israel_today, utc_now
@@ -1530,11 +1531,15 @@ def producer_analytics(
 # ---------------------------------------------------------------------------
 
 
+OTP_NOT_SENT = "לא הצלחנו לשלוח את הקוד בוואטסאפ כרגע. נסו שוב בעוד כמה דקות."
+
+
 def _send_whatsapp_otp(phone: str, code: str, test_cause: bool = False) -> bool:
     """Send a 6-digit OTP via WhatsApp Cloud API (MEH-508, MEH-754).
 
-    Fail-open: returns False if WHATSAPP_* config is missing or the Meta
-    Graph call errors — caller logs and still returns HTTP 200.
+    MEH-2122 B: a failed send where WhatsApp IS configured raises 503 — it
+    used to answer «קוד נשלח» and the owner waited for nothing. Unconfigured
+    (dev / CI) and test rows still return False quietly. The token stays live.
 
     MEH-754: switched from `send_text` (free-form) to the Meta
     AUTHENTICATION template `producer_otp_v1`. Free-form text is only
@@ -1547,7 +1552,10 @@ def _send_whatsapp_otp(phone: str, code: str, test_cause: bool = False) -> bool:
     WhatsApp. Independent of MEH-2231's OTP_TEST_* numbers, which are
     untouched: those decide the CODE, this decides whether anything is sent.
     """
-    return send_template(phone, OtpCodeV1(code=code), test_cause=test_cause)
+    sent = send_template(phone, OtpCodeV1(code=code), test_cause=test_cause)
+    if not sent and not test_cause and whatsapp_is_configured():
+        raise HTTPException(status_code=503, detail=OTP_NOT_SENT)
+    return sent
 
 
 _LOCAL_DB_HOSTS = frozenset({"localhost", "127.0.0.1", "::1"})

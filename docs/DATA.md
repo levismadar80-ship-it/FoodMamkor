@@ -1006,7 +1006,7 @@ PUT    /producers/me                              producer — MEH-999: license 
                                                   and edit vegan_scope the next day unobserved. Fail-open at the task boundary
                                                   (_sensitive_edit_task), because the notifier's preamble sits outside its own
                                                   per-channel try blocks and a raising BackgroundTask would break the owner's 200.
-POST   /producers/me/verify-phone                producer  — send WhatsApp OTP (3/10min)
+POST   /producers/me/verify-phone                producer  — send WhatsApp OTP (3/10min); MEH-2122 B: 503 «לא הצלחנו לשלוח את הקוד בוואטסאפ כרגע…» when WhatsApp is configured and the send failed (test rows and unconfigured envs stay 200)
 POST   /producers/me/verify-phone/confirm        producer  — confirm code, sets phone_verified (5/min)
 POST   /producers/me/kashrut-request             producer  — request a kashrut badge (10/hr)
 POST   /producers/me/name-change-requests        producer  — MEH-1872 file a business-name change for re-moderation (5/hr).
