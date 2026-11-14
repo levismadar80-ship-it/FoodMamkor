@@ -334,7 +334,7 @@ function MapSurface({ interactive, onExpand, mapKey, center, points, lat, lng, n
           legal text, never translated.
           REUSES: frontend/components/HomepageMiniMap.jsx:233,236 */}
       <TileLayer
-        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+        url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
       />
       {/* MEH-1611: one pin per point of THIS business — branch → filled

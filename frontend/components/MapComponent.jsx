@@ -764,7 +764,7 @@ export default function MapComponent({
     // Expose the initial center for E2E tests (05-map-navigation.spec.ts) —
     // the DEFAULT on a fresh visit, the RESTORED camera when one was saved.
     if (typeof window !== "undefined") window.__MAP_CENTER__ = initialCenter;
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
     }).addTo(mapInstanceRef.current);
 
