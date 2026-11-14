@@ -59,8 +59,8 @@ def retire_slug(db: "Session", producer: "Producer", reason: str) -> None:
     if row is None:
         db.add(RetiredSlug(slug=producer.slug, producer_id=owner_id, reason=reason))
     else:
-        row.producer_id = owner_id
-        row.reason = reason
+        row.producer_id = owner_id  # type: ignore[assignment]
+        row.reason = reason  # type: ignore[assignment]
     db.flush()
 
 
@@ -75,7 +75,7 @@ def is_retired(db: "Session", slug: str, owner_id: UUID | None = None) -> bool:
     row = db.get(RetiredSlug, slug)
     if row is None:
         return False
-    return owner_id is None or row.producer_id != owner_id
+    return owner_id is None or row.producer_id != owner_id  # type: ignore[return-value]
 
 
 def reclaim(db: "Session", slug: str, owner_id: UUID) -> None:

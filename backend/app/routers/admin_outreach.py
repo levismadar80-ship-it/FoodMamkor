@@ -9,6 +9,7 @@ manually by the admin. The Claude-search route was scoped out; if added
 later it would be a single new POST endpoint here.
 """
 
+from typing import Any
 import secrets
 from datetime import timedelta
 from uuid import UUID
@@ -68,7 +69,7 @@ def list_leads(
     source: str | None = None,
     _: User = Depends(require_admin),
     db: Session = Depends(get_db),
-):
+) -> list[OutreachLeadOut] | list[OutreachLead]:
     """List leads, newest first. Optional filters: status, city
     (case-insensitive contains), source (MEH-2633, exact)."""
     q = db.query(OutreachLead)
@@ -92,7 +93,7 @@ def create_lead(
     data: OutreachLeadCreate,
     _: User = Depends(require_admin),
     db: Session = Depends(get_db),
-):
+) -> OutreachLeadOut | OutreachLead:
     """Create a lead. Soft-unique on (lower(name), lower(city)) — returns
     409 with the existing lead's id when a duplicate is detected so the
     admin can navigate to it instead of creating a near-duplicate."""
@@ -138,7 +139,7 @@ def update_lead(
     data: OutreachLeadUpdate,
     _: User = Depends(require_admin),
     db: Session = Depends(get_db),
-):
+) -> OutreachLeadOut | OutreachLead:
     lead = db.query(OutreachLead).filter(OutreachLead.id == lead_id).first()
     if not lead:
         raise HTTPException(status_code=404, detail="ליד לא נמצא")
@@ -161,7 +162,7 @@ def delete_lead(
     lead_id: UUID,
     _: User = Depends(require_admin),
     db: Session = Depends(get_db),
-):
+) -> None:
     lead = db.query(OutreachLead).filter(OutreachLead.id == lead_id).first()
     if not lead:
         raise HTTPException(status_code=404, detail="ליד לא נמצא")
@@ -175,7 +176,7 @@ def mint_prefill_token(
     lead_id: UUID,
     _: User = Depends(require_admin),
     db: Session = Depends(get_db),
-):
+) -> OutreachLeadOut | OutreachLead:
     """Generate (or rotate) the prefill token for a lead. Returns the
     full lead so the admin UI can read `prefill_token` directly."""
     lead = db.query(OutreachLead).filter(OutreachLead.id == lead_id).first()
@@ -183,8 +184,8 @@ def mint_prefill_token(
         raise HTTPException(status_code=404, detail="ליד לא נמצא")
 
     # secrets.token_urlsafe(32) → ~43 chars URL-safe base64.
-    lead.prefill_token = secrets.token_urlsafe(32)
-    lead.prefill_token_expires_at = utc_now() + timedelta(days=PREFILL_TTL_DAYS)
+    lead.prefill_token = secrets.token_urlsafe(32)  # type: ignore[assignment]
+    lead.prefill_token_expires_at = utc_now() + timedelta(days=PREFILL_TTL_DAYS)  # type: ignore[assignment]
     db.commit()
     db.refresh(lead)
     return lead
@@ -198,7 +199,7 @@ def thank_suggester(
     lead_id: UUID,
     _: User = Depends(require_admin),
     db: Session = Depends(get_db),
-):
+) -> OutreachLeadOut:
     """Email the person who suggested this business that it has joined.
 
     Four separate 409s rather than one, each with its own Hebrew detail, so the
@@ -277,11 +278,11 @@ def thank_suggester(
 # --- Aggregate metrics ---
 
 
-@router.get("/metrics/summary")
+@router.get("/metrics/summary", response_model=None)
 def metrics_summary(
     _: User = Depends(require_admin),
     db: Session = Depends(get_db),
-):
+) -> dict[str, Any]:
     """Counters for the admin outreach page header.
 
     Naming maps to the spec wording:
@@ -348,7 +349,9 @@ prefill_router = APIRouter(prefix="/register/producer/prefill", tags=["auth"])
 # probing of a PII surface. 30/hour is generous for the real flow (an owner
 # opening a prefill link from outreach and refreshing a few times).
 @limiter.limit("30/hour")
-def get_prefill(request: Request, token: str, db: Session = Depends(get_db)):
+def get_prefill(
+    request: Request, token: str, db: Session = Depends(get_db)
+) -> OutreachPrefillResponse:
     """Public lookup — the token IS the auth. Returns 404 for invalid /
     expired tokens so the registration form just renders empty (no leak).
 

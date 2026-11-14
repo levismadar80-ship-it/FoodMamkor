@@ -6,8 +6,9 @@ Lives in a separate file from admin.py to keep things readable.
 MEH-460 Pkg 1: Pydantic schemas live in app.schemas.schemas per ADR-006 R1.
 """
 
+from typing import Any, cast
 import logging
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 from uuid import UUID
 
 from fastapi import APIRouter, BackgroundTasks, Body, Depends, HTTPException
@@ -138,7 +139,7 @@ def list_users(
     role: str | None = None,
     user: User = Depends(require_admin),
     db: Session = Depends(get_db),
-):
+) -> list[UserAdminOut]:
     q = db.query(User)
     if search:
         # F13 (MEH-1188): escape LIKE metacharacters so a user-supplied % / _
@@ -152,8 +153,8 @@ def list_users(
         q = q.filter(User.role == role)
     users = q.order_by(User.created_at.desc()).limit(500).all()
 
-    fav_counts = dict(
-        db.query(Favorite.user_id, func.count(Favorite.producer_id))
+    fav_counts: dict[Any, int] = dict(
+        db.query(Favorite.user_id, func.count(Favorite.producer_id))  # type: ignore[arg-type]  # Row is a tuple at runtime
         .group_by(Favorite.user_id)
         .all()
     )
@@ -179,13 +180,13 @@ def list_users(
     return out
 
 
-@router.put("/users/{user_id}/role")
+@router.put("/users/{user_id}/role", response_model=None)
 def update_user_role(
     user_id: UUID,
     data: UserRoleUpdate,
     user: User = Depends(require_admin),
     db: Session = Depends(get_db),
-):
+) -> dict[str, Any]:
     target = db.query(User).filter(User.id == user_id).first()
     if not target:
         raise HTTPException(status_code=404, detail="משתמש לא נמצא")
@@ -207,34 +208,34 @@ def update_user_role(
         )
     if target.id == user.id and data.role != "admin":
         raise HTTPException(status_code=403, detail="אדמין לא יכולה להוריד את עצמה")
-    target.role = data.role
+    target.role = data.role  # type: ignore[assignment]
     db.commit()
     return {"detail": "Role updated", "role": target.role}
 
 
-@router.post("/users/{user_id}/block")
+@router.post("/users/{user_id}/block", response_model=None)
 def block_user(
     user_id: UUID,
     user: User = Depends(require_admin),
     db: Session = Depends(get_db),
-):
+) -> dict[str, Any]:
     target = db.query(User).filter(User.id == user_id).first()
     if not target:
         raise HTTPException(status_code=404, detail="משתמש לא נמצא")
     if target.id == user.id:
         raise HTTPException(status_code=400, detail="Cannot block yourself")
-    target.is_blocked = not bool(target.is_blocked)
+    target.is_blocked = not bool(target.is_blocked)  # type: ignore[assignment]
     db.commit()
     return {"detail": "Blocked toggled", "is_blocked": target.is_blocked}
 
 
-@router.delete("/users/{user_id}")
+@router.delete("/users/{user_id}", response_model=None)
 def admin_delete_user(
     user_id: UUID,
     background_tasks: BackgroundTasks,
     user: User = Depends(require_admin),
     db: Session = Depends(get_db),
-):
+) -> dict[str, Any]:
     """MEH-2585: hard-delete a user and her data — same cascade as the
     self-service DELETE /auth/me (services/user_deletion.py), minus the
     confirmation email (an admin removal, often of a test account).
@@ -266,12 +267,12 @@ def admin_delete_user(
     return {"detail": "User deleted"}
 
 
-@router.get("/users/{user_id}/favorites")
+@router.get("/users/{user_id}/favorites", response_model=None)
 def user_favorites(
     user_id: UUID,
     user: User = Depends(require_admin),
     db: Session = Depends(get_db),
-):
+) -> dict[str, Any] | list[dict[str, str | Any | None]]:
     favs = db.query(Favorite).filter(Favorite.user_id == user_id).all()
     return [
         {
@@ -291,7 +292,7 @@ def user_favorites(
 @router.get("/categories", response_model=list[CategoryOut])
 def list_categories_admin(
     user: User = Depends(require_admin), db: Session = Depends(get_db)
-):
+) -> list[CategoryOut]:
     # MEH-1034: annotate each category with its producer count in ONE query
     # (outerjoin + group_by — no N+1). Query-time only; no DB column.
     rows = (
@@ -313,7 +314,7 @@ def create_category(
     data: CategoryIn,
     user: User = Depends(require_admin),
     db: Session = Depends(get_db),
-):
+) -> CategoryOut | Category:
     if db.query(Category).filter(Category.name == data.name).first():
         raise HTTPException(status_code=400, detail="קטגוריה בשם זה כבר קיימת")
     # MEH-2139 chunk 2: the column default (models.py) already derives a slug
@@ -363,7 +364,7 @@ def update_category(
     data: CategoryIn,
     user: User = Depends(require_admin),
     db: Session = Depends(get_db),
-):
+) -> CategoryOut | Category:
     """Rename / re-emoji a category. Two guards, both on the rename path only.
 
     MEH-1571: `LICENSE_REQUIRED_CATEGORIES` (app/constants.py) pins a משרד
@@ -413,19 +414,19 @@ def update_category(
         ):
             raise HTTPException(status_code=422, detail=CATEGORY_NAME_TAKEN_ERROR_HE)
 
-    cat.name = data.name
-    cat.emoji = data.emoji
+    cat.name = data.name  # type: ignore[assignment]
+    cat.emoji = data.emoji  # type: ignore[assignment]
     db.commit()
     db.refresh(cat)
     return cat
 
 
-@router.delete("/categories/{category_id}")
+@router.delete("/categories/{category_id}", response_model=None)
 def delete_category(
     category_id: int,
     user: User = Depends(require_admin),
     db: Session = Depends(get_db),
-):
+) -> dict[str, Any]:
     cat = db.query(Category).filter(Category.id == category_id).first()
     if not cat:
         raise HTTPException(status_code=404, detail="Category not found")
@@ -457,7 +458,7 @@ def get_static_page(
     slug: str,
     user: User = Depends(require_admin),
     db: Session = Depends(get_db),
-):
+) -> StaticPageOut | StaticPage:
     page = db.query(StaticPage).filter(StaticPage.slug == slug).first()
     if not page:
         # Auto-create empty page on first access so editor has something to edit
@@ -474,14 +475,14 @@ def update_static_page(
     data: StaticPageUpdate,
     user: User = Depends(require_admin),
     db: Session = Depends(get_db),
-):
+) -> StaticPageOut | StaticPage:
     page = db.query(StaticPage).filter(StaticPage.slug == slug).first()
     if not page:
         page = StaticPage(slug=slug, title=data.title, body=data.body)
         db.add(page)
     else:
-        page.title = data.title
-        page.body = data.body
+        page.title = data.title  # type: ignore[assignment]
+        page.body = data.body  # type: ignore[assignment]
     db.commit()
     db.refresh(page)
     return page
@@ -492,7 +493,7 @@ def update_static_page(
 # ============================================================
 
 
-def _primary_location_points(db: Session, *, limit: int | None = None):
+def _primary_location_points(db: Session, *, limit: int | None = None) -> list[Any]:
     """(producer_id, name, lat, lng) for every approved business that has a
     primary `producer_locations` row with usable coordinates.
 
@@ -526,10 +527,10 @@ def _primary_location_points(db: Session, *, limit: int | None = None):
     )
     if limit is not None:
         q = q.limit(limit)
-    return q.all()
+    return cast(list[Any], q.all())
 
 
-def _last_six_months(now):
+def _last_six_months(now: datetime) -> list[tuple[datetime, datetime]]:
     """[(month_start, next_month_start)] for the last 6 months, oldest first.
 
     A month starts at 00:00 on day 1 (UTC). `now.replace(day=1)` alone kept the
@@ -546,7 +547,13 @@ def _last_six_months(now):
     return [(s, (s + timedelta(days=32)).replace(day=1)) for s in reversed(starts)]
 
 
-def _counts_per_bucket(db, id_col, created_col, buckets, *filters):
+def _counts_per_bucket(
+    db: Session,
+    id_col: Any,
+    created_col: Any,
+    buckets: list[tuple[datetime, datetime]],
+    *filters: Any,
+) -> list[int]:
     """One SELECT for every bucket: count(id) FILTER (WHERE start <= created < end).
 
     MEH-2553: was one count query per month (Sentry N+1 MEHAMAKOR-BACKEND-25/-1N).
@@ -563,11 +570,11 @@ def _counts_per_bucket(db, id_col, created_col, buckets, *filters):
     return [int(n or 0) for n in q.one()]
 
 
-@router.get("/analytics")
+@router.get("/analytics", response_model=None)
 def get_analytics(
     user: User = Depends(require_admin),
     db: Session = Depends(get_db),
-):
+) -> dict[str, Any]:
     """Compact analytics for the admin dashboard."""
     now = utc_now()
 
@@ -680,28 +687,28 @@ DEFAULT_SETTINGS = {
 }
 
 
-@router.get("/settings")
+@router.get("/settings", response_model=None)
 def get_settings(
     user: User = Depends(require_admin),
     db: Session = Depends(get_db),
-):
+) -> dict[str, Any]:
     rows = db.query(AdminSetting).all()
-    saved = {row.key: row.value for row in rows}
+    saved: dict[Any, Any] = {row.key: row.value for row in rows}
     return {key: saved.get(key, default) for key, default in DEFAULT_SETTINGS.items()}
 
 
-@router.put("/settings")
+@router.put("/settings", response_model=None)
 def update_settings(
-    data: dict = Body(...),
+    data: dict[str, Any] = Body(...),
     user: User = Depends(require_admin),
     db: Session = Depends(get_db),
-):
+) -> dict[str, Any]:
     for key, value in data.items():
         if key not in DEFAULT_SETTINGS:
             continue
         row = db.query(AdminSetting).filter(AdminSetting.key == key).first()
         if row:
-            row.value = str(value) if value is not None else None
+            row.value = str(value) if value is not None else None  # type: ignore[assignment]
         else:
             db.add(
                 AdminSetting(key=key, value=str(value) if value is not None else None)
@@ -733,7 +740,7 @@ def _read_vacation_state(db: Session) -> VacationModeState:
 def _write_setting(db: Session, key: str, value: str) -> None:
     row = db.query(AdminSetting).filter(AdminSetting.key == key).first()
     if row:
-        row.value = value
+        row.value = value  # type: ignore[assignment]
     else:
         db.add(AdminSetting(key=key, value=value))
 
@@ -742,7 +749,7 @@ def _write_setting(db: Session, key: str, value: str) -> None:
 def get_vacation_mode(
     user: User = Depends(require_admin),
     db: Session = Depends(get_db),
-):
+) -> VacationModeState:
     return _read_vacation_state(db)
 
 
@@ -751,13 +758,17 @@ def set_vacation_mode(
     body: VacationModeState,
     user: User = Depends(require_admin),
     db: Session = Depends(get_db),
-):
+) -> VacationModeState:
     # VacationModeState's model_validator already rejected active+no-date.
     # When deactivating, clear the date so the persisted state can't drift
     # back into "active with stale date" after a future flip.
     if body.active:
         _write_setting(db, "vacation_mode_active", "true")
-        _write_setting(db, "vacation_return_date", body.return_date.isoformat())
+        _write_setting(
+            db,
+            "vacation_return_date",
+            cast(date, body.return_date).isoformat(),  # validator: active ⇒ date set
+        )
     else:
         _write_setting(db, "vacation_mode_active", "false")
         _write_setting(db, "vacation_return_date", "")
@@ -778,7 +789,7 @@ def get_producer_risk_score(
     producer_id: UUID,
     user: User = Depends(require_admin),
     db: Session = Depends(get_db),
-):
+) -> RiskScoreResponse:
     producer = db.query(Producer).filter(Producer.id == producer_id).first()
     if producer is None:
         raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
@@ -788,11 +799,11 @@ def get_producer_risk_score(
     )
 
 
-@router.post("/settings/test/{service}")
+@router.post("/settings/test/{service}", response_model=None)
 def test_service(
     service: str,
     user: User = Depends(require_admin),
-):
+) -> dict[str, Any]:
     """Smoke-test integrations. Returns ok=true/false without raising."""
     from app.config import settings as cfg
 
@@ -814,11 +825,11 @@ def test_service(
 # ============================================================
 
 
-@router.get("/dashboard")
+@router.get("/dashboard", response_model=None)
 def get_dashboard(
     user: User = Depends(require_admin),
     db: Session = Depends(get_db),
-):
+) -> dict[str, Any]:
     """Single endpoint that returns everything the dashboard needs."""
     now = utc_now()
     week_ago = now - timedelta(days=7)
@@ -1078,7 +1089,10 @@ def get_dashboard(
         .limit(10)
         .all()
     )
-    top_cities = [{"city": r.city, "count": int(r.count)} for r in top_city_rows]
+    top_cities = [
+        {"city": r.city, "count": int(r.count)}  # type: ignore[call-overload]  # labelled column, not tuple.count
+        for r in top_city_rows
+    ]
 
     return {
         "stats": stats,

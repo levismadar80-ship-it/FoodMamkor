@@ -429,6 +429,13 @@ export default function MapComponent({
   // resulting `moveend` should NOT mark the map as "user-moved" and
   // should NOT pop the "search this area" button.
   const programmaticMoveRef = useRef(false);
+  // MEH-3153: true only while our own invalidateSize() runs. A container that
+  // settles after init (Safari's toolbar, a late flex/grid pass) makes Leaflet
+  // re-centre and fire a synchronous moveend that nobody asked for. Measured on
+  // WebKit (iPhone 390x664): a fresh /map visit wrote map_view_state from
+  // invalidateSize twice before any touch, and the same moveend reached
+  // onMapMove, i.e. «חפשו באזור זה».
+  const layoutMoveRef = useRef(false);
 
   // Keep latest callbacks in refs so we don't re-init the map whenever
   // the parent passes new arrow functions.
@@ -858,6 +865,9 @@ export default function MapComponent({
 
     mapInstanceRef.current.on("moveend", () => {
       fireBounds();
+      // A resize re-centre keeps the same centre, so there is nothing new to
+      // save and the visitor did not move the map (MEH-3153).
+      if (layoutMoveRef.current) return;
       // docs/archive/MAP_IMPROVEMENTS.md #1 — notify parent that the user moved the
       // map so it can show "search this area". Suppress for our own
       // flyTo/fitBounds calls (initial fit, focusProducer, my-location).
@@ -899,7 +909,17 @@ export default function MapComponent({
     // settles + on any subsequent container resize.
     const scheduleInvalidate = () => {
       if (!mapInstanceRef.current) return;
-      requestAnimationFrame(() => mapInstanceRef.current?.invalidateSize());
+      requestAnimationFrame(() => {
+        if (!mapInstanceRef.current) return;
+        // Leaflet fires this moveend synchronously (debounceMoveend is off),
+        // so the flag covers exactly the event invalidateSize causes.
+        layoutMoveRef.current = true;
+        try {
+          mapInstanceRef.current.invalidateSize();
+        } finally {
+          layoutMoveRef.current = false;
+        }
+      });
     };
     scheduleInvalidate();
     setTimeout(scheduleInvalidate, 150);

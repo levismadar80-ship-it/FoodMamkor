@@ -38,6 +38,7 @@ import {
 } from "@phosphor-icons/react";
 import { useAuth } from "@/lib/auth-context";
 import EmptyState from "@/components/ui/EmptyState";
+import AuthUnreachableState from "@/components/AuthUnreachableState";
 import { SkeletonBlock } from "@/components/Skeleton";
 
 // Tab order is the source of truth for the persistent nav (locked design
@@ -132,7 +133,7 @@ export default function ProducerDashboardLayout({ children }) {
   const tAccount = useTranslations("account.menu");
   const router = useRouter();
   const pathname = usePathname();
-  const { user, loading: authLoading, logout } = useAuth();
+  const { user, loading: authLoading, logout, authUnreachable } = useAuth();
 
   // MEH-1599: 401 and 403 are DIFFERENT outcomes and must not share a branch.
   //   - unauthenticated (401) → /login, now carrying ?redirect= so she lands
@@ -145,7 +146,10 @@ export default function ProducerDashboardLayout({ children }) {
   // silently on the homepage with no explanation. `pathname` comes from
   // @/i18n/navigation, so it is locale-STRIPPED ("/producer/dashboard/edit")
   // and LoginClient re-adds the locale on the way back.
-  const isUnauthenticated = !authLoading && !user;
+  // MEH-3172: a stored token whose /auth/me never answered is not "signed
+  // out" — it renders a retry below instead of the /login push.
+  const isUnreachable = !authLoading && !user && authUnreachable;
+  const isUnauthenticated = !authLoading && !user && !authUnreachable;
   const isDenied = !authLoading && !!user && user.role !== "producer";
 
   // The single UX gate for the whole dashboard subtree. Real auth is enforced
@@ -162,6 +166,7 @@ export default function ProducerDashboardLayout({ children }) {
   //     rendering anything here would flash behind that redirect. Returning
   //     null is deliberate and UNCHANGED.
   if (authLoading) return <DashboardChromeSkeleton label={tA11y("loading")} />;
+  if (isUnreachable) return <AuthUnreachableState />;
   if (isUnauthenticated) return null;
 
   // 403 — in-app denied state with a route forward, not a browser redirect.

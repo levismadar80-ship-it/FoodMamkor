@@ -1,3 +1,5 @@
+from collections.abc import MutableMapping
+from typing import Any
 import logging
 import os
 import sys
@@ -17,14 +19,18 @@ _SENSITIVE_KEYS = frozenset(
 )
 
 
-def _redact_sensitive(logger, method, event_dict):
+def _redact_sensitive(
+    logger: Any, method: str, event_dict: MutableMapping[str, Any]
+) -> MutableMapping[str, Any]:
     for key in list(event_dict.keys()):
         if key.lower() in _SENSITIVE_KEYS:
             event_dict[key] = "[REDACTED]"
     return event_dict
 
 
-def _add_correlation_id(logger, method, event_dict):
+def _add_correlation_id(
+    logger: Any, method: str, event_dict: MutableMapping[str, Any]
+) -> MutableMapping[str, Any]:
     try:
         from asgi_correlation_id import correlation_id
 
@@ -45,7 +51,7 @@ def configure_logging() -> None:
     _is_dev = os.getenv("ENV", "development").lower() == "development"
     log_format = os.getenv("LOG_FORMAT", "console" if _is_dev else "json").lower()
 
-    shared_processors: list = [
+    shared_processors: list[Any] = [
         structlog.contextvars.merge_contextvars,
         _add_correlation_id,
         # NOTE: `structlog.stdlib.add_logger_name` intentionally OMITTED.
@@ -68,6 +74,7 @@ def configure_logging() -> None:
         _redact_sensitive,
     ]
 
+    renderer: Any
     if log_format == "json":
         renderer = structlog.processors.JSONRenderer()
     else:

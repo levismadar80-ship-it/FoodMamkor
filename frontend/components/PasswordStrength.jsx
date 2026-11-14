@@ -29,6 +29,7 @@ import { passwordRules } from "@/lib/validators";
  */
 export default function PasswordStrength({ password }) {
   const t = useTranslations("forms.password.strength");
+  const tRule = useTranslations("forms.password");
   if (!password) return null;
 
   const passed = passwordRules.reduce(
@@ -106,7 +107,7 @@ export default function PasswordStrength({ password }) {
               ) : (
                 <Circle size={14} aria-hidden="true" />
               )}
-              {rule.label}
+              {tRule(rule.labelKey, rule.labelValues)}
             </li>
           );
         })}

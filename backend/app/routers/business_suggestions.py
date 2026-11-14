@@ -80,7 +80,7 @@ def _append_second_suggestion_note(lead: OutreachLead, reason: str | None) -> No
     merged = f"{lead.notes}\n{line}" if lead.notes else line
     if len(merged) > NOTES_MAX_LEN:
         return
-    lead.notes = merged
+    lead.notes = merged  # type: ignore[assignment]
 
 
 @router.post(
@@ -96,7 +96,7 @@ def submit_business_suggestion(
     background_tasks: BackgroundTasks,
     user: User | None = Depends(get_current_user_optional),
     db: Session = Depends(get_db),
-):
+) -> BusinessSuggestionAck:
     """Accept a community suggestion.
 
     Every path answers the SAME body, `{"ok": true}` (BusinessSuggestionAck):
@@ -166,21 +166,21 @@ def submit_business_suggestion(
             and not existing.suggested_by_email
             and suggester_email
         ):
-            existing.suggested_by_email = suggester_email
+            existing.suggested_by_email = suggester_email  # type: ignore[assignment]
             # `or`, not a bare assign (adversarial review, finding 1): name and
             # email are each optional, so a first suggestion can leave a name
             # and no email. A later one carrying an email but no name used to
             # overwrite that name with None and lose it. Filling an EMPTY name
             # still works — tested both directions.
             existing.suggested_by_name = (
-                body.suggester_name or existing.suggested_by_name
+                body.suggester_name or existing.suggested_by_name  # type: ignore[assignment]
             )
-            existing.suggester_wants_update = wants_update
+            existing.suggester_wants_update = wants_update  # type: ignore[assignment]
         db.commit()
         background_tasks.add_task(
             notify_admin_new_business_suggestion,
-            existing.name,
-            existing.city,
+            existing.name,  # type: ignore[arg-type]
+            existing.city,  # type: ignore[arg-type]
             body.suggester_name,
             True,
         )
