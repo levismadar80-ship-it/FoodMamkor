@@ -8,8 +8,8 @@
  * Does NOT: gate business filters (visibleAxisChips, lib/producer-filters.js,
  *           MEH-2767) or the /events category set (visibleCategoryChips,
  *           lib/event-category-gate.js, MEH-3124). Every chip row in the app
- *           goes through one of the three, or carries a `chip-gate-exempt:`
- *           reason — __tests__/ChipRowGateGuard.test.js enforces that.
+ *           goes through one of the three, or is listed with an `exempt:`
+ *           reason in __tests__/ChipRowGateGuard.test.js, which enforces it.
  * Related:  app/[locale]/group-buys/GroupBuysClient.jsx (status tabs).
  * History:  MEH-3128 (creation, 14/11/2026 — Sapir: «תקבע מנגנון שיימנע מזה
  *           לקרות»).

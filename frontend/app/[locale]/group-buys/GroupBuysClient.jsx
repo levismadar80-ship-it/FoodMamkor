@@ -159,11 +159,12 @@ export default function GroupBuysClient() {
   const [statusCounts, setStatusCounts] = useState(null);
   useEffect(() => {
     let live = true;
-    setStatusCounts(null);
+    // The last city's counts stand in while this one loads (no flicker per
+    // keystroke); a response for an older city is dropped (`live`).
     api
       .get("/group-buys/counts", { params: city ? { city } : {} })
       .then((r) => live && setStatusCounts(r.data))
-      .catch(() => {});
+      .catch(() => live && setStatusCounts(null));
     return () => {
       live = false;
     };

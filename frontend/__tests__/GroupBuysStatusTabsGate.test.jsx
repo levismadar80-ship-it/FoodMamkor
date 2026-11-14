@@ -22,13 +22,17 @@ vi.mock("@/components/CitySearch", () => ({
     <input data-testid="city-input" value={value} onChange={(e) => onChange(e.target.value)} />
   ),
 }));
-let counts = null; // per city: { [city|""]: {open, funded, fulfilled} } or "fail"
+// per city: { [city|""]: {open, funded, fulfilled} | "fail" | () => Promise }, or "fail"
+let counts = null;
 vi.mock("@/lib/api", () => ({
   default: {
     get: vi.fn((url, config = {}) => {
       if (url === "/group-buys/counts") {
         if (counts === "fail") return Promise.reject(new Error("down"));
-        return Promise.resolve({ data: counts[config.params?.city ?? ""] });
+        const c = counts[config.params?.city ?? ""];
+        if (c === "fail") return Promise.reject(new Error("down"));
+        if (typeof c === "function") return c();
+        return Promise.resolve({ data: c });
       }
       return Promise.resolve({ data: [] });
     }),
@@ -68,5 +72,26 @@ describe("/group-buys status tabs hide when empty (MEH-3128)", () => {
     render(<GroupBuysClient />);
     await waitFor(() => expect(api.get).toHaveBeenCalledWith("/group-buys/counts", { params: {} }));
     expect(tabs()).toEqual(["status_open", "status_funded", "status_fulfilled"]);
+  });
+
+  it("a failure after a good count shows every tab again (not the old city's set)", async () => {
+    counts = { "": { open: 1, funded: 0, fulfilled: 0 }, "חיפה": "fail" };
+    render(<GroupBuysClient />);
+    await waitFor(() => expect(tabs()).toEqual(["status_open"]));
+    fireEvent.change(screen.getByTestId("city-input"), { target: { value: "חיפה" } });
+    await waitFor(() => expect(tabs()).toEqual(["status_open", "status_funded", "status_fulfilled"]));
+  });
+
+  it("a late answer for an older city does not overwrite the current one", async () => {
+    let releaseOld;
+    const old = new Promise((r) => { releaseOld = () => r({ data: { open: 1, funded: 1, fulfilled: 1 } }); });
+    counts = { "": () => old, "חיפה": { open: 1, funded: 0, fulfilled: 0 } };
+    render(<GroupBuysClient />);
+    fireEvent.change(screen.getByTestId("city-input"), { target: { value: "חיפה" } });
+    await waitFor(() => expect(tabs()).toEqual(["status_open"]));
+    releaseOld();
+    await old;
+    await new Promise((r) => setTimeout(r, 0));
+    expect(tabs()).toEqual(["status_open"]);
   });
 });

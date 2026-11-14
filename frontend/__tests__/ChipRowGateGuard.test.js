@@ -65,8 +65,19 @@ function findChipSites(root = ROOT) {
   for (const top of SCAN) {
     for (const file of walk(path.join(root, top))) {
       const src = fs.readFileSync(file, "utf8");
-      for (const m of src.matchAll(/\bchips=\{\s*([A-Za-z_$][\w$]*)/g)) {
-        sites.push(`${path.relative(root, file).split(path.sep).join("/")}::${m[1]}`);
+      // Any `chips={…}` / `chips = { … }` (an empty `= {}` default is a
+      // destructured parameter, not a row). A value that is not a plain name,
+      // a call `gate(…)` or `NAME.map(…)` (an inline array, a ternary, a
+      // spread) is recorded as `<inline>` — never listed, so it always fails:
+      // give the gated chips a name and list that.
+      for (const m of src.matchAll(/\bchips\s*=\s*\{(?!\s*\})\s*/g)) {
+        const rest = src.slice(m.index + m[0].length);
+        const head = rest.match(/^([A-Za-z_$][\w$]*)(\.map)?\s*(\(|\})?/);
+        // `cond ? a : b` starts with a name too: only a call or a closing
+        // brace right after the name counts as plain.
+        const plain = head && (head[3] === "(" || (head[3] === "}" && !head[2]));
+        const id = plain ? head[1] : "<inline>";
+        sites.push(`${path.relative(root, file).split(path.sep).join("/")}::${id}`);
       }
     }
   }
@@ -80,7 +91,6 @@ describe("every chip row hides chips with no results (MEH-3128)", () => {
     // Anchored to real files: if the regex or the walk broke, these vanish.
     expect(sites).toContain("app/[locale]/events/EventsClient.jsx::shownChips");
     expect(sites).toContain("components/ProducersClient.jsx::visibleChipDefs");
-    expect(sites.length).toBeGreaterThanOrEqual(Object.keys(REGISTRY).length);
   });
 
   it("a new chip row must be listed with its gate (or a reason it needs none)", () => {
@@ -93,7 +103,9 @@ describe("every chip row hides chips with no results (MEH-3128)", () => {
     ).toEqual([]);
   });
 
-  it("no listed row is stale, and each gated row's file still calls its gate", () => {
+  // File-level: the gate's name must still appear in the row's file. It cannot
+  // tell two rows in one file apart — reviewers check that (rule 5a).
+  it("no listed row is stale, and each gated row's file still names its gate", () => {
     const seen = new Set(sites);
     for (const [key, entry] of Object.entries(REGISTRY)) {
       expect(seen.has(key), `${key} is listed but no longer in the code`).toBe(true);
