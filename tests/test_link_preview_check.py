@@ -99,3 +99,29 @@ def test_page_that_does_not_answer_200_fails():
     verdict, measured, _ = _run(GOOD, page_status=500)
     assert verdict == "FAIL"
     assert "HTTP 500" in measured
+
+
+def test_single_quoted_content_before_property_uppercase_attr_passes():
+    # Valid HTML a hand-written page could emit: single quotes, content first,
+    # upper-case attribute name. A double-quote-only parser reads no tags.
+    page = (f"<html><head><meta content='מהמקור' PROPERTY='og:title'>"
+            f"<meta content='{IMG}' property='og:image'></head><body></body></html>")
+    verdict, measured, _ = _run(page)
+    assert verdict == "PASS", measured
+
+
+def test_escaped_ampersand_in_og_image_is_unescaped_before_fetch():
+    board = Board()
+    page = GOOD.replace(IMG, IMG + "?w=1200&amp;h=630")
+    fetched = []
+
+    def fetch(url, user_agent):
+        fetched.append(url)
+        if url.startswith(IMG):
+            ok = url == IMG + "?w=1200&h=630"
+            return (200 if ok else 404), b"x", {"content-type": "image/jpeg"}
+        return 200, page.encode(), {}
+
+    lp.check_link_preview("https://mehamakor.co.il", board, fetch, "/", "home")
+    assert board.rows[0][0] == "PASS", board.rows[0][2]
+    assert fetched[1] == IMG + "?w=1200&h=630"

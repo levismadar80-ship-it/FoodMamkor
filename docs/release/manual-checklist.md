@@ -51,11 +51,11 @@
 
 ## תצוגת קישור ב-WhatsApp — production
 
-אוטומטי: `scripts/checks/link_preview.py`, מתוך `smoke_production.py`, אחרי כל deploy ל-main. שולף את דף הבית ודף בית עסק עם User-Agent של WhatsApp, ומוודא ש-`og:title` ו-`og:image` נמצאים בתוך ה-`<head>` ושהתמונה עונה 200 עם `image/*`. ה-thread מצטט את השורה. דף בית עסק: SKIP עד שיש עסק ב-production.
+`scripts/checks/link_preview.py`, מתוך `smoke_production.py`. ה-thread מריץ את הסקריפט אחרי ה-deploy ל-main ומצטט את השורות: ב-«Post-deploy checks» הוא רץ רק כשה-push נגע ב-frontend/backend ועם `continue-on-error`, אז ירוק של ה-workflow לבדו לא מוכיח כלום. שולף את דף הבית ודף בית עסק עם User-Agent של WhatsApp, ומוודא ש-`og:title` ו-`og:image` נמצאים בתוך ה-`<head>` ושהתמונה עונה 200 עם `image/*`. ה-thread מצטט את השורה. דף בית עסק: SKIP עד שיש עסק ב-production.
 
 ## התחברות Google
 
-Claude ב-Chrome במחשב של ספיר, עם חשבון Google אמיתי. קובץ ה-prompt ב-`/mnt/project-files/sapir-tasks/`. עובר כש: חוזרים לאתר מחוברים, בלי מסך שגיאה ובלי לולאה. מה שספיר עושה: מאשרת את כרטיס החיבור בלבד.
+Claude ב-Chrome במחשב של ספיר, עם חשבון Google אמיתי. קובץ ה-prompt ב-`/mnt/project-files/sapir-tasks/`. עובר כש: חוזרים לאתר מחוברים, בלי מסך שגיאה ובלי לולאה. מה שספיר עושה: מאשרת את כרטיס החיבור בלבד — זה לא בדיקה. אם המחשב לא זמין: «לא נבדק», ולא נשלח אליה.
 
 **Apple:** הכפתור מוצג רק כש-`NEXT_PUBLIC_APPLE_CLIENT_ID` מוגדר (`LoginClient.jsx:156`). ה-thread בודק ב-Vercel connector. אם מוגדר: «סיכון שנותר», כי קוד ה-2FA של Apple נשלח למכשיר Apple.
 

@@ -23,6 +23,7 @@ body fails here, which is the whole point.
 
 from __future__ import annotations
 
+import html
 import re
 import urllib.parse
 
@@ -31,7 +32,8 @@ import urllib.parse
 WHATSAPP_UA = "WhatsApp/2.23.20.0 A"
 
 _META_RE = re.compile(r"<meta\b[^>]*>", re.IGNORECASE)
-_ATTR_RE = re.compile(r'([a-zA-Z:_-]+)\s*=\s*"([^"]*)"')
+# Double- or single-quoted values (HTML allows both; Next.js emits double).
+_ATTR_RE = re.compile(r"""([a-zA-Z:_-]+)\s*=\s*(?:"([^"]*)"|'([^']*)')""")
 
 
 def head_of(html: str) -> str:
@@ -47,8 +49,10 @@ def og_tags(head: str) -> dict[str, str]:
     """og:* properties found in a head fragment. First occurrence wins."""
     found: dict[str, str] = {}
     for tag in _META_RE.findall(head):
-        attrs = dict(_ATTR_RE.findall(tag))
-        prop = attrs.get("property") or attrs.get("name") or ""
+        # Attribute names are case-insensitive; values arrive HTML-escaped
+        # (an og:image query string is `?a=1&amp;b=2` in the markup).
+        attrs = {k.lower(): html.unescape(dq or sq) for k, dq, sq in _ATTR_RE.findall(tag)}
+        prop = (attrs.get("property") or attrs.get("name") or "").lower()
         if prop.startswith("og:") and prop not in found:
             found[prop] = attrs.get("content", "").strip()
     return found

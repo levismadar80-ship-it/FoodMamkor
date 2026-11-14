@@ -701,9 +701,9 @@ risk, not handed to a person.
 - [ ] Category icons render correctly (no font fallback to box characters)
 - [ ] Map markers visible and tappable
 - [ ] Bottom navigation works, icons sized correctly
-- [ ] WhatsApp button on a producer page opens the WhatsApp app (not the web)
-- [ ] Form inputs don't zoom on focus (iOS Safari quirk — `font-size: 16px`
-  on inputs is the fix)
+- [ ] WhatsApp button on a producer page has a `wa.me` link with the right text (opening the app itself = residual risk)
+- [ ] Form inputs have computed `font-size` ≥ 16px (the iOS Safari zoom-on-focus
+  quirk; checked in the DOM, since a screenshot cannot show the zoom)
 - [ ] Hebrew text aligns right, no LTR leakage
 - [ ] No horizontal scroll
 - [ ] Sticky elements (header, BottomNav) don't overlap content
@@ -1557,7 +1557,8 @@ The OAuth client id exists, but it needs the production URL whitelisted.
 
 Automatic since MEH-2749: `post-deploy-checks.yml` runs
 `scripts/checks/smoke_production.py` (pages, sitemap, images, WhatsApp link
-preview) after every push to `main`. The rows it cannot see are run by the
+preview) after a push to `main` that touched frontend/backend — non-blocking
+(`continue-on-error`), so the release thread also runs it and reads the lines. The rows it cannot see are run by the
 thread (Google login via Claude in Chrome, admin via the demo admin account),
 never by hand (MEH-3151). Historical list:
 
