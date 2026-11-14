@@ -17,6 +17,8 @@
  *           __tests__/ShareLink.test.js).
  */
 
+import { copyText as copyClipboard } from "@/lib/clipboard";
+
 /**
  * Open the device share sheet.
  * @param {{title?: string, text?: string, url?: string}} data
@@ -63,10 +65,5 @@ export async function shareOrCopyText({ data, copyText }) {
     const outcome = await tryNativeShare(data);
     if (outcome !== "unavailable") return outcome;
   }
-  try {
-    await navigator.clipboard.writeText(copyText);
-    return "copied";
-  } catch {
-    return "failed";
-  }
+  return (await copyClipboard(copyText)) ? "copied" : "failed";
 }

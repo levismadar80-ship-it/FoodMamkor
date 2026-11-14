@@ -26374,7 +26374,7 @@
     },
     "/users/me": {
       "patch": {
-        "description": "Update the current user's name and/or email.\n\n- Name is trimmed and must be non-empty.\n- Email uniqueness is re-checked; collisions are rejected with 409.",
+        "description": "Update the current user's name and/or email.\n\n- Name is trimmed and must be non-empty.\n- Email uniqueness is re-checked; collisions are rejected with 409.\n- MEH-3095: a changed email is an unproved one. The account goes back to\n  unverified and a fresh link is mailed to the NEW address.",
         "operationId": "update_profile_users_me_patch",
         "requestBody": {
           "content": {

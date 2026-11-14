@@ -6776,6 +6776,8 @@ export const UploadOwnerPhotoUploadOwnerPhotoPostResponse = /*#__PURE__*/ zod.un
  *
  * - Name is trimmed and must be non-empty.
  * - Email uniqueness is re-checked; collisions are rejected with 409.
+ * - MEH-3095: a changed email is an unproved one. The account goes back to
+ *   unverified and a fresh link is mailed to the NEW address.
  * @summary Update Profile
  */
 export const updateProfileUsersMePatchResponseEmailVerifiedDefault = false;
