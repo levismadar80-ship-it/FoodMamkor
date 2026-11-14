@@ -64,9 +64,17 @@ const SKIP_REFRESH = [
 const REFRESH_ALLOWED_EXACT = new Set(["/auth/register/producer"]);
 
 function _expireSession() {
+  // MEH-3173: announce the expiry only if there WAS a session to end. Several
+  // requests in flight together (the home page fires 5+ GETs at once) all
+  // 401, share one refresh, and each one lands here when it fails. The first
+  // call clears the stored session; every later call finds nothing to end and
+  // stays silent — one auth:expired, one toast, not five. A guest with no
+  // stored session never gets a "session expired" notice at all.
+  // Every sign-in path stores `token`, so its presence is the session.
+  const hadSession = localStorage.getItem("token") !== null;
   localStorage.removeItem("token");
   localStorage.removeItem("user");
-  if (typeof window !== "undefined") {
+  if (hadSession && typeof window !== "undefined") {
     window.dispatchEvent(new CustomEvent("auth:expired"));
   }
 }
