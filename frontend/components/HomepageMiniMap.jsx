@@ -260,7 +260,7 @@ export default function HomepageMiniMap() {
             >
               <TileLayer
                 attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
               />
               <DisableNonClickZoom />
               <CanvasClickToFullMap />

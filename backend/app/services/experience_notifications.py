@@ -95,7 +95,8 @@ def notify_host_changes_requested(
         f"לפני שנוכל לפרסם אותה.\n\n"
         f"הערות מהצוות:\n{feedback}\n\n"
         f"אחרי עדכון הפרטים, החוויה תחזור אוטומטית לתור האישור.\n"
-        f"לעריכה: {settings.frontend_url}/experiences/{experience_id}\n\n"
+        # The item is not public yet, so the public page is a 404 for her.
+        f"לעריכה: {settings.frontend_url}/producer/dashboard/experiences/{experience_id}/edit\n\n"
         f"בברכה,\nצוות מהמקור"
     )
     _send_email(host_email, subject, body, test_cause=test_cause)
