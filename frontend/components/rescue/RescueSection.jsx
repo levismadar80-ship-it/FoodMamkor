@@ -25,6 +25,8 @@ import { RESCUE_SECTION_ID } from "@/lib/producer-path";
 import SectionHeading from "@/components/ui/SectionHeading";
 import InlineMessage from "@/components/ui/InlineMessage";
 import LoginPromptModal from "@/components/LoginPromptModal";
+import UnverifiedEmailNotice from "@/components/UnverifiedEmailNotice";
+import { isUnverifiedEmailError } from "@/lib/errors";
 
 /**
  * Module:   RescueSection
@@ -50,6 +52,9 @@ function worthAgorot(offer) {
   if (typeof v !== "number" || typeof offer?.price_agorot !== "number") return null;
   return v > offer.price_agorot ? v : null;
 }
+
+const UNVERIFIED_KEY = "errors.unverified";
+
 export default function RescueSection({ producer }) {
   const t = useTranslations("rescue");
   // Allergen labels come from the product sheet's vocabulary (MEH-2662), so
@@ -172,7 +177,8 @@ export default function RescueSection({ producer }) {
     try {
       setOrder(await reserveBag({ offerId: offer.id }));
     } catch (err) {
-      setErrorKey(reserveErrorKey(err));
+      // MEH-3225: an unverified account gets the resend notice, not a dead end.
+      setErrorKey(isUnverifiedEmailError(err) ? UNVERIFIED_KEY : reserveErrorKey(err));
     } finally {
       setBusy(false);
     }
@@ -240,7 +246,9 @@ export default function RescueSection({ producer }) {
   const worth = shekels(worthAgorot(offer));
   const cancelUntil = israelTime(offer?.cancel_until);
   const cutoffPassed = offer?.cancel_until ? new Date(offer.cancel_until) <= new Date() : false;
-  const errorLine = errorKey && (
+  const errorLine = errorKey === UNVERIFIED_KEY ? (
+    <UnverifiedEmailNotice className="mt-3" text={t(UNVERIFIED_KEY)} />
+  ) : errorKey && (
     <InlineMessage className="font-body-sm" data-testid="rescue-section-error">
       {t(errorKey)}
     </InlineMessage>

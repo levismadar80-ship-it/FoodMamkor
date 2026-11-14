@@ -61,6 +61,7 @@ from app.auth import (
     get_current_user,
     require_admin,
     require_producer,
+    require_verified_email,
     require_verified_producer,
 )
 from app.config import settings
@@ -855,7 +856,8 @@ def create_order(
     request: Request,
     body: RescueOrderCreate,
     background_tasks: BackgroundTasks,
-    current_user: User = Depends(get_current_user),
+    # MEH-3225: verified email first — the code and no-show mails go there.
+    current_user: User = Depends(require_verified_email),
     db: Session = Depends(get_db),
 ) -> RescueOrderCreatedOut | dict[str, object]:
     """Reserve bags and get the 4-digit code read out at the counter."""
@@ -865,9 +867,8 @@ def create_order(
         )
 
     offer = _offer_for_update(db, body.offer_id)
-    # MEH-2952: a seeded test row's bag is not listed, so it is not reservable
-    # by id either; same 404 as a missing bag. (Cancel shares
-    # _offer_for_update and stays open, so the check lives here.)
+    # MEH-2952: a test row's bag is not listed, so not reservable by id either
+    # (same 404). Cancel shares _offer_for_update, so the check lives here.
     location = offer.location
     if (
         location is not None
@@ -888,8 +889,7 @@ def create_order(
             status_code=status.HTTP_409_CONFLICT, detail="זמן האיסוף חלף"
         )
 
-    # The pilot's two-bag cap is per BUYER per offer, not per request — three
-    # requests of two would otherwise walk straight past it.
+    # The two-bag cap is per BUYER per offer, not per request (3 × 2 = past it).
     already = int(
         db.query(func.coalesce(func.sum(RescueOrder.qty), 0))
         .filter(

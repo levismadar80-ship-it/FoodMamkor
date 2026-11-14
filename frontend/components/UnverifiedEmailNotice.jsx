@@ -21,13 +21,15 @@ import { useTranslations } from "next-intl";
 import { useResendVerification } from "@/lib/use-resend-verification";
 
 /**
- * @param {{ className?: string, live?: boolean, focusOnMount?: boolean }} props
+ * @param {{ className?: string, live?: boolean, focusOnMount?: boolean, text?: string }} props
  *   className: extra classes on the wrapper. live (default true): role="alert"
  *   — the 403 case. MEH-2918: the up-front notice passes live={false} (a
  *   standing condition, not an error to interrupt the page with) and, after a
  *   403, is re-mounted with live + focusOnMount so the press visibly answers.
+ *   text: the gate line; defaults to the publish wording. MEH-3225: the
+ *   rescue reserve passes its own, since «כדי לפרסם» is wrong there.
  */
-export default function UnverifiedEmailNotice({ className = "", live = true, focusOnMount = false }) {
+export default function UnverifiedEmailNotice({ className = "", live = true, focusOnMount = false, text }) {
   const t = useTranslations();
   const ref = useRef(/** @type {HTMLDivElement | null} */ (null));
   useEffect(() => {
@@ -48,7 +50,7 @@ export default function UnverifiedEmailNotice({ className = "", live = true, foc
     >
       <EnvelopeSimple size={18} className="text-accent mt-0.5 shrink-0" aria-hidden="true" />
       <div className="flex flex-col gap-1">
-        <span className="text-text">{t("auth.verify.publish_gate")}</span>
+        <span className="text-text">{text ?? t("auth.verify.publish_gate")}</span>
         {resendError ? (
           <span className="text-error text-xs font-medium">{resendError}</span>
         ) : !resendSent ? (
