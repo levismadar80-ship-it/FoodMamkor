@@ -193,7 +193,10 @@ export default async function PricingPage({ params }) {
             <OptionCard label={t("fee_title")} price={t("fee_price")} testId="pricing-commission">
               <CheckList items={FEE_ITEMS.map((key) => t(key, v))} />
               <p className="rounded bg-background-alt px-3 py-2 text-sm leading-relaxed text-text">{t("fee_example", v)}</p>
-              <p className="mt-auto border-t border-border pt-3 font-medium text-text">{t("fee_fit")}</p>
+              <div className="mt-auto border-t border-border pt-3">
+                <p className="font-medium text-text">{t("fee_fit")}</p>
+                <p className="mt-1 text-sm leading-relaxed text-fg-muted">{t("fee_note")}</p>
+              </div>
             </OptionCard>
           </div>
           <div

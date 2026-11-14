@@ -129,12 +129,17 @@ describe("PricingCopyGuard (MEH-3166)", () => {
     const subscribed = list.subscription.monthly + (breakEven * list.subscriberCommission.paidBookingPercent) / 100;
     expect(subscribed).toBeLessThanOrEqual(plain);
     expect(breakEven % 50).toBe(0);
-    // «עם N הרשמות … המנוי כבר משתלם»: true at N bookings, false at N − 1.
-    const bookings = Number(pricingCopyValues(list).breakEvenBookings);
-    const savedPerBooking =
-      (list.exampleBookingPrice * (list.commission.paidBookingPercent - list.subscriberCommission.paidBookingPercent)) / 100;
-    expect(bookings * savedPerBooking).toBeGreaterThanOrEqual(list.subscription.monthly);
-    expect((bookings - 1) * savedPerBooking).toBeLessThan(list.subscription.monthly);
+    // «כשהעמלות מגיעות ל-N ₪ … המנוי כבר זול יותר»: at N ₪ of plain commission the
+    // subscription track costs less, whether the month was all percent
+    // bookings or all rescue bags; and N is not padded by more than one step.
+    const fees = Number(pricingCopyValues(list).breakEvenFees);
+    const subscribedCost = (share) => list.subscription.monthly + fees * share;
+    const percentShare = list.subscriberCommission.paidBookingPercent / list.commission.paidBookingPercent;
+    const bagShare = list.subscriberCommission.rescueBagFee / list.commission.rescueBagFee;
+    expect(subscribedCost(percentShare)).toBeLessThan(fees);
+    expect(subscribedCost(bagShare)).toBeLessThan(fees);
+    expect(list.subscription.monthly + (fees - 10) * Math.max(percentShare, bagShare)).toBeGreaterThanOrEqual(fees - 10);
+    expect(fees % 10).toBe(0);
     const [year, month, day] = list.effectiveFrom.split("-");
     expect(doc, "docs/PRICING.md as-of date").toContain(`נכון ל-${Number(day)}/${Number(month)}/${year}`);
     expect(pick(/\*\*הודעה מראש:\*\* (\d+) יום/, "notice days")).toBe(list.noticeDays);
