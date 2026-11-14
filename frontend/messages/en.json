@@ -1981,7 +1981,8 @@
         "menu_aria": "More actions",
         "unblock": "Unblock",
         "block": "Block",
-        "delete": "Delete"
+        "delete": "Delete",
+        "clear_rescue_block": "Release bag block"
       },
       "favorites": {
         "of": "Favorites of {name}:",
@@ -1999,6 +2000,10 @@
         "prev": "Previous",
         "next": "Next",
         "page_of": "Page {page} of {total}"
+      },
+      "rescue": {
+        "blocked_badge": "Blocked from bags ({count} no-shows)",
+        "cleared": "Block released"
       }
     },
     "recipes": {
@@ -6133,7 +6138,7 @@
       "thanks": "Thank you! Your review is saved."
     },
     "errors": {
-      "blocked": "Reservations are blocked after two no-shows. Please write to us.",
+      "blocked": "Reservations are blocked after two no-shows. <contact>Write to us</contact>",
       "sold_out": "That bag is gone. There are others nearby.",
       "max_two": "You can reserve up to two bags.",
       "sign_in": "Sign in to reserve a bag.",

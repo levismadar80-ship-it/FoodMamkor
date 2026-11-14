@@ -2696,6 +2696,8 @@ export const GetStatsAdminStatsGetResponse = /*#__PURE__*/ zod.unknown()
 export const listUsersAdminUsersGetResponseFavoritesCountDefault = 0;
 export const listUsersAdminUsersGetResponseIsBlockedDefault = false;
 export const listUsersAdminUsersGetResponseIsSuperAdminDefault = false;
+export const listUsersAdminUsersGetResponseRescueActiveNoShowsDefault = 0;
+export const listUsersAdminUsersGetResponseRescueBlockedDefault = false;
 
 export const ListUsersAdminUsersGetResponseItem = /*#__PURE__*/ zod.object({
   "city": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -2708,6 +2710,8 @@ export const ListUsersAdminUsersGetResponseItem = /*#__PURE__*/ zod.object({
   "name": /*#__PURE__*/ zod.string(),
   "phone": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "producer_id": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.uuid(),/*#__PURE__*/ zod.null()])),
+  "rescue_active_no_shows": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), listUsersAdminUsersGetResponseRescueActiveNoShowsDefault),
+  "rescue_blocked": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), listUsersAdminUsersGetResponseRescueBlockedDefault),
   "role": /*#__PURE__*/ zod.string()
 })
 export const ListUsersAdminUsersGetResponse = /*#__PURE__*/ zod.array(ListUsersAdminUsersGetResponseItem)
@@ -6603,10 +6607,9 @@ export const MarkHandedRescueOrdersOrderIdHandedPostResponse = /*#__PURE__*/ zod
 
 
 /**
- * The business records that nobody came for the bag.
- *
- * Only after `pickup_end` — before that the buyer may still be on their way,
- * and a no-show is what blocks them from reserving again.
+ * The business records that nobody came for the bag — only after
+ * `pickup_end`: before that the buyer may still be on their way, and a
+ * no-show blocks reserving again. The buyer is mailed each time (MEH-3226).
  * @summary Mark No Show
  */
 export const markNoShowRescueOrdersOrderIdNoShowPostResponsePickupCodeMin = 4;

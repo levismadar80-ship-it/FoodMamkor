@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
+import { Link } from "@/i18n/navigation";
 import { Basket, Clock, MapPin, Bread } from "@phosphor-icons/react";
 
 import { useOptionalAuth } from "@/lib/auth-context";
@@ -236,7 +237,16 @@ export default function RescueSection({ producer }) {
   const cutoffPassed = offer?.cancel_until ? new Date(offer.cancel_until) <= new Date() : false;
   const errorLine = errorKey && (
     <InlineMessage className="font-body-sm" data-testid="rescue-section-error">
-      {t(errorKey)}
+      {/* MEH-3226: «כתבו לנו» on the block message is a real link to /contact. */}
+      {errorKey === "errors.blocked"
+        ? t.rich(errorKey, {
+            contact: (chunks) => (
+              <Link href="/contact" className="underline" data-testid="rescue-blocked-contact">
+                {chunks}
+              </Link>
+            ),
+          })
+        : t(errorKey)}
     </InlineMessage>
   );
   const from = israelTime(offer?.pickup_start);
