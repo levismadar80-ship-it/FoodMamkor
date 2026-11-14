@@ -29,16 +29,24 @@ async function selectedName(page: Page) {
   return page.getByTestId("map-selected-card").locator("h3").first().textContent();
 }
 
-// The pick may fly the map (focusProducer, 250 ms later, then a moveend):
-// read the camera only once two reads a moment apart agree.
+// The pick flies the map (focusProducer: 250 ms, then a 1.2 s flyTo) and the
+// camera is saved only on the moveend at the END of the flight, so during the
+// flight two reads agree although a write is still coming (MEH-3016: the
+// "before" read mid-flight, lat off by 0.036). Read the camera only after it
+// has stayed the same for longer than one whole flight.
+const STABLE_MS = 2_000;
+const STEP_MS = 250;
+
 async function settledCamera(page: Page) {
   let prev = JSON.stringify(await savedCamera(page));
-  for (let i = 0; i < 20; i++) {
-    await page.waitForTimeout(300);
+  let stableFor = 0;
+  for (let waited = 0; waited < 20_000 && stableFor < STABLE_MS; waited += STEP_MS) {
+    await page.waitForTimeout(STEP_MS);
     const now = JSON.stringify(await savedCamera(page));
-    if (now === prev) return JSON.parse(now);
+    stableFor = now === prev ? stableFor + STEP_MS : 0;
     prev = now;
   }
+  expect(stableFor, "map_view_state never settled").toBeGreaterThanOrEqual(STABLE_MS);
   return JSON.parse(prev);
 }
 
@@ -83,7 +91,7 @@ test.describe("manual › /map back-navigation restores camera + selection (MEH-
     await page.getByTestId("map-selected-card-close").click();
     await expect(page.getByTestId("map-selected-card")).toHaveCount(0);
     await expect.poll(async () => (await savedCamera(page))?.selectedId ?? null).toBeNull();
-    const before = await savedCamera(page);
+    const before = await settledCamera(page);
     await page.goto("/about");
     await page.goBack();
     await waitForMap(page);
