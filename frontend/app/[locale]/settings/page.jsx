@@ -353,6 +353,7 @@ export function ProfileTab() {
         <Input
           id="profile-name"
           type="text"
+          autoComplete="name"
           label={t("field_name_label")}
           value={name}
           onChange={(e) => setName(e.target.value)}
@@ -396,6 +397,7 @@ export function ProfileTab() {
         <Input
           id="profile-phone"
           type="tel"
+          autoComplete="tel"
           label={
             <>
               {t("field_phone_label")}{" "}
