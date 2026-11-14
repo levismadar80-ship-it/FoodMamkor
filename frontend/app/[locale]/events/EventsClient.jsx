@@ -19,6 +19,7 @@ import { useTranslations, useLocale } from "next-intl";
 import api from "@/lib/api";
 import { formatEventDate } from "@/lib/format-date";
 import CitySearch from "@/components/CitySearch";
+import { WHEN_CHIP_PREFIX, WHEN_KEYS, matchesWhen } from "@/lib/event-date-filter";
 import ChipScrollRow from "@/components/ChipScrollRow";
 import CalendarView from "@/components/CalendarView";
 // MEH-2497: the date-rail row (and its row normalizer) now lives in one shared
@@ -120,6 +121,9 @@ export default function EventsPage({ initialTab = "events", titles = null }) {
   // are read, so a deep link still costs exactly one request.
   const [city, setCity] = useState("");
   const [categories, setCategories] = useState([]);
+  // MEH-3118: date shortcut — null | "today" | "tomorrow" | "weekend". One at
+  // a time; filters the rows already loaded (no refetch).
+  const [when, setWhen] = useState(null);
   const [urlReady, setUrlReady] = useState(false);
   useEffect(() => {
     const p = new URLSearchParams(window.location.search);
@@ -148,6 +152,7 @@ export default function EventsPage({ initialTab = "events", titles = null }) {
   const applyTab = (next) => {
     setTab(next);
     setCategories(clearCategories);
+    setWhen(null);
     setCity("");
     // The old remount reset the view; keep that (MEH-2980 AC: states unchanged).
     setView("list");
@@ -243,7 +248,11 @@ export default function EventsPage({ initialTab = "events", titles = null }) {
   const isExp = tab === "experiences";
   // Backward-compatibility alias so the render code keeps using `events`
   // even when the tab is experiences.
-  const events = rows;
+  // MEH-3118: the date shortcut narrows the loaded rows on the Israel calendar.
+  const events = useMemo(
+    () => (when ? rows.filter((row) => matchesWhen(row.event_date, when)) : rows),
+    [rows, when],
+  );
   const activeCategories = isExp ? EXPERIENCE_CATEGORY_KEYS : CATEGORY_KEYS;
   const categoryLabel = (entry) =>
     isExp ? tExpCat(entry.labelKey) : tCat(entry.labelKey);
@@ -251,15 +260,33 @@ export default function EventsPage({ initialTab = "events", titles = null }) {
   // Chips → shared ChipScrollRow. The wire value for "all" is "" but
   // ChipScrollRow's reset sentinel is "all" — bridge the two so its
   // scroll-pinning behaves like /producers + /map.
-  const chips = activeCategories.map((c) => ({
+  // MEH-3118: «הכל» stays first (it clears everything), then the three date
+  // shortcuts, then the categories — one row, no second strip (Eventbrite and
+  // Meetup lead with the date pills).
+  const categoryChips = activeCategories.map((c) => ({
     key: c.key || "all",
     label: categoryLabel(c),
   }));
+  const whenChips = WHEN_KEYS.map((k) => ({ key: `${WHEN_CHIP_PREFIX}${k}`, label: t(`when_${k}`) }));
+  const chips = [
+    ...categoryChips.filter((c) => c.key === "all"),
+    ...whenChips,
+    ...categoryChips.filter((c) => c.key !== "all"),
+  ];
   // MEH-2847: multi-select, as on /producers (ProducersClient.jsx:498-509).
   // «הכל» clears the set (and is the active chip while it is empty); tapping
   // a selected chip removes it; any other chip is added.
-  const activeChipKeys = useMemo(() => new Set(categories), [categories]);
+  const activeChipKeys = useMemo(
+    () => new Set(when ? [...categories, `${WHEN_CHIP_PREFIX}${when}`] : categories),
+    [categories, when],
+  );
   const onChipClick = (k) => {
+    if (k.startsWith(WHEN_CHIP_PREFIX)) {
+      const next = k.slice(WHEN_CHIP_PREFIX.length);
+      setWhen((prev) => (prev === next ? null : next)); // tap again = off
+      return;
+    }
+    if (k === "all") setWhen(null);
     setCategories((prev) => {
       if (k === "all") return clearCategories(prev);
       return prev.includes(k) ? prev.filter((c) => c !== k) : [...prev, k];
@@ -294,6 +321,7 @@ export default function EventsPage({ initialTab = "events", titles = null }) {
   const resetFilters = () => {
     setCity("");
     setCategories(clearCategories);
+    setWhen(null);
   };
 
   // MEH-1865: a zero row count means two different things, and the page used
@@ -306,7 +334,7 @@ export default function EventsPage({ initialTab = "events", titles = null }) {
   // The reverse mistake (hiding the filters on a filtered-to-zero) is the one
   // that traps the reader with no way back but editing the URL, and it cannot
   // happen here.
-  const filtersActive = Boolean(city || categories.length);
+  const filtersActive = Boolean(city || categories.length || when);
   // MEH-2396: an error is not a zero. Neither zero surface may render on a
   // failed load, or the page claims a dataset it never received.
   const isZero = !loading && !loadError && events.length === 0;
