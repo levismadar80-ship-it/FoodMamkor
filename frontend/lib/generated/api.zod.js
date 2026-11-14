@@ -423,6 +423,7 @@ export const AdminListGroupBuysAdminGroupBuysGetResponseItem = /*#__PURE__*/ zod
   "status": /*#__PURE__*/ zod.string(),
   "title": /*#__PURE__*/ zod.string(),
   "unit": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "units_total": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "user_commit": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.object({
   "created_at": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
   "group_buy_id": /*#__PURE__*/ zod.uuid(),
@@ -3794,7 +3795,8 @@ export const ListGroupBuysGroupBuysGetResponseItem = /*#__PURE__*/ zod.object({
   "product_name": /*#__PURE__*/ zod.string(),
   "status": /*#__PURE__*/ zod.string(),
   "title": /*#__PURE__*/ zod.string(),
-  "unit": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
+  "unit": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "units_total": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()]))
 })
 export const ListGroupBuysGroupBuysGetResponse = /*#__PURE__*/ zod.array(ListGroupBuysGroupBuysGetResponseItem)
 
@@ -3844,6 +3846,7 @@ export const GetGroupBuyGroupBuysGroupBuyIdGetResponse = /*#__PURE__*/ zod.objec
   "status": /*#__PURE__*/ zod.string(),
   "title": /*#__PURE__*/ zod.string(),
   "unit": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "units_total": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "user_commit": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.object({
   "created_at": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
   "group_buy_id": /*#__PURE__*/ zod.uuid(),
@@ -5260,7 +5263,8 @@ export const ListMyGroupBuysProducersMeGroupBuysGetResponseItem = /*#__PURE__*/ 
   "product_name": /*#__PURE__*/ zod.string(),
   "status": /*#__PURE__*/ zod.string(),
   "title": /*#__PURE__*/ zod.string(),
-  "unit": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
+  "unit": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "units_total": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()]))
 })
 export const ListMyGroupBuysProducersMeGroupBuysGetResponse = /*#__PURE__*/ zod.array(ListMyGroupBuysProducersMeGroupBuysGetResponseItem)
 

@@ -3495,6 +3495,17 @@
             ],
             "title": "Unit"
           },
+          "units_total": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Units Total"
+          },
           "user_commit": {
             "anyOf": [
               {
@@ -3675,6 +3686,17 @@
               }
             ],
             "title": "Unit"
+          },
+          "units_total": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Units Total"
           }
         },
         "required": [
