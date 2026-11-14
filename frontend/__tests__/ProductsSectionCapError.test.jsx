@@ -46,3 +46,34 @@ describe("product cap error", () => {
     expect(screen.queryByText("boom")).toBeNull();
   });
 });
+
+// MEH-3261: an approved business's product text refused by the AI check
+// answers 422 with a Hebrew sentence — shown as-is on create and on edit.
+const REJECTED = "הטקסט אינו עומד בהנחיות הקהילה שלנו. אפשר לנסח מחדש ולשמור שוב.";
+
+describe("AI-rejected product text (MEH-3261)", () => {
+  it("422 on create shows the server's sentence", async () => {
+    api.post.mockRejectedValue({ response: { status: 422, data: { detail: REJECTED } } });
+    await submitNewProduct();
+    expect(await screen.findByText(REJECTED)).toBeInTheDocument();
+  });
+
+  it("422 on edit shows the server's sentence", async () => {
+    api.get.mockResolvedValue({
+      data: [{ id: "p1", name: "לחם", price_min: 32, price_max: null }],
+    });
+    api.put.mockRejectedValue({ response: { status: 422, data: { detail: REJECTED } } });
+    render(
+      <NextIntlClientProvider locale="he" messages={he} onError={() => {}}>
+        <ProductsSection />
+      </NextIntlClientProvider>,
+    );
+    fireEvent.click(
+      await screen.findByRole("button", {
+        name: P.card.edit_aria_template.replace("{name}", "לחם"),
+      }),
+    );
+    fireEvent.click(await screen.findByText(P.save_edit_cta));
+    expect(await screen.findByText(REJECTED)).toBeInTheDocument();
+  });
+});

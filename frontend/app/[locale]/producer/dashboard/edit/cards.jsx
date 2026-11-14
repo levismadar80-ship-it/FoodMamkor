@@ -798,8 +798,10 @@ export function DescriptionCard({ profile, onSave, reportDirty = () => {} }) {
       setSavedTagline(tagline);
       setSavedInstagram(instagram);
       setSaved(true);
-    } catch {
-      setError(t("error_save"));
+    } catch (err) {
+      // MEH-3261: an approved business's text refused by the AI check (422)
+      // shows the backend's sentence, not the generic "save failed".
+      setError(detailToMessage(err?.response?.data?.detail) || t("error_save"));
     }
     setSaving(false);
   };

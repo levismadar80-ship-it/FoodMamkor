@@ -40,7 +40,7 @@ log = logging.getLogger(__name__)
 # The business-level text a visitor reads on the public page.
 PRODUCER_TEXT_FIELDS = ("description", "short_description", "owner_bio")
 # A product's public text.
-PRODUCT_TEXT_FIELDS = ("name", "description")
+PRODUCT_TEXT_FIELDS = ("name", "description", "ingredients")
 
 # Order here is the order in the admin message.
 CONTENT_FIELD_LABELS: dict[str, str] = {
@@ -50,7 +50,7 @@ CONTENT_FIELD_LABELS: dict[str, str] = {
     "images": "תמונות",
     "products": "מוצרים",
 }
-FLAGGED_SUFFIX = " (סומן ע״י AI)"
+FLAGGED_SUFFIX = " — טקסט סומן ע״י AI"
 
 # Hebrew in `detail=` is required — backend/app/routers/CLAUDE.md.
 REJECTED_DETAIL = "הטקסט אינו עומד בהנחיות הקהילה שלנו. אפשר לנסח מחדש ולשמור שוב."
@@ -61,6 +61,7 @@ _FIELD_NAMES = {
     "short_description": "תיאור קצר",
     "owner_bio": "מאחורי העסק",
     "name": "שם המוצר",
+    "ingredients": "רכיבים",
 }
 _SYSTEM = """אתה מודרטור תוכן לאתר מהמקור — פלטפורמה לאוכל בריא ומקומי בישראל.
 בעלת בית עסק מאושר שינתה טקסט שמופיע בעמוד הציבורי של העסק. בדוק את הטקסט ותחזיר JSON בלבד.
@@ -70,9 +71,9 @@ _SYSTEM = """אתה מודרטור תוכן לאתר מהמקור — פלטפו
 החזר JSON בלבד (ללא ```json):
 {{"status": "APPROVED" | "FLAGGED" | "REJECTED", "reason": "..."}}
 
-APPROVED אם: תיאור של העסק, המוצרים, הסיפור או דרכי ההזמנה. מותר לציין את פרטי הקשר של העסק עצמו ומבצעים שלו
-FLAGGED אם: טענות בריאות מוגזמות, תוכן שלא קשור לאוכל, טקסט לא ברור
-REJECTED אם: לשון גסה או מבזה, גזענות, תוכן למבוגרים, טענות ריפוי מחלות, פעילות לא חוקית, פרסום של עסק אחר"""
+APPROVED אם: תיאור של העסק, המוצרים, הסיפור האישי של בעלת העסק או דרכי ההזמנה. מותר: פרטי הקשר של העסק עצמו, מבצעים שלו, אזכור ספקים, נקודות מכירה ושיתופי פעולה, אלכוהול (יקב, מבשלה), התאמה תזונתית (ללא גלוטן, מתאים לצליאק, טבעוני, דל סוכר). שם מוצר קצר הוא תקין
+FLAGGED אם: טענות בריאות מוגזמות, תוכן שלא קשור לעסק, טקסט לא ברור
+REJECTED אם: לשון גסה או מבזה, גזענות, תוכן מיני, טענה שמוצר מרפא או מונע מחלה, פעילות לא חוקית, פרסומת לעסק שאינו קשור לעסק הזה או הפניית לקוחות למתחרה"""
 
 _client: Any = None
 
@@ -89,7 +90,9 @@ def _get_client() -> Any:
         import httpx
 
         _client = anthropic.Anthropic(
-            api_key=settings.anthropic_api_key, http_client=httpx.Client()
+            api_key=settings.anthropic_api_key,
+            http_client=httpx.Client(),
+            max_retries=1,  # the call runs inside the owner's save
         )
         return _client
     except Exception:  # pragma: no cover — defensive
@@ -134,6 +137,9 @@ def moderate(texts: dict[str, str], surface: str) -> str | None:
         msg = client.messages.create(
             **ai_fast_request_kwargs(json_schema=REVIEW_VERDICT_SCHEMA),
             max_tokens=300,  # same headroom as reviews (MEH-2335)
+            # MEH-3261: the call runs inside the owner PUT, under the business's
+            # advisory lock — a slow AI must not hold it. A timeout fails open.
+            timeout=10.0,
             system=_SYSTEM.format(data_rule=data_rule),
             messages=[{"role": "user", "content": user_content}],
         )
@@ -184,7 +190,8 @@ def snapshot_content(producer: object) -> dict[str, Any]:
     snap: dict[str, Any] = {
         f: _norm(getattr(producer, f, None)) for f in PRODUCER_TEXT_FIELDS
     }
-    snap["images"] = list(getattr(producer, "images", None) or [])
+    # A set: reordering photos is not new content and pings nobody.
+    snap["images"] = frozenset(getattr(producer, "images", None) or [])
     return snap
 
 
@@ -260,7 +267,8 @@ def notify_admin_content_edit(
         if settings.admin_email:
             send_email(
                 settings.admin_email,
-                f"מהמקור - {_sanitize_wa_param(name)} עדכן תוכן",
+                f"מהמקור - {_sanitize_wa_param(name)} עדכן תוכן"
+                + (" (סומן ע״י AI)" if flagged else ""),
                 message,
                 test_cause=test_cause,
             )

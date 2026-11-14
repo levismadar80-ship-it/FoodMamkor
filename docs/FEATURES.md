@@ -79,6 +79,7 @@ left in v1" vs "what's planned for v2".
 | ✅ | v1 | Hybrid AI moderation: APPROVED / FLAGGED / REJECTED | `backend/app/services/home_product_moderation.py` |
 | ✅ | v1 | Real-time validation while typing (debounced 1.5s) | `frontend/components/HomeProductForm.jsx` |
 | ✅ | v1 | Experiences moderation: Claude Haiku pre-check + admin approval gate | `backend/app/services/experience_moderation.py`, `backend/app/routers/admin_experiences.py` |
+| ✅ | v1 | Approved-business edit check (MEH-3261): changed description / tagline / owner story and product name / description / ingredients go through the AI check (REJECTED → 422, nothing saved; fail-open saves); one admin ping per content save, marked when FLAGGED | `backend/app/services/approved_edit_moderation.py`, `backend/app/routers/producer_me.py` |
 | ✅ | v1 | `/admin/experiences` queue with tabs, approve / request-changes / reject + feedback modal | `frontend/app/admin/experiences/page.js` |
 | ✅ | v1 | Address autocomplete via Nominatim (street + house number) | `frontend/components/AddressSearch.jsx` |
 | ✅ | v1 | Trust badges (organic, kosher, storage, category) | `frontend/components/HomeProductCard.jsx` |

@@ -104,6 +104,14 @@ function focusFirstInvalidProductField(errors, idPrefix) {
   el?.scrollIntoView?.({ behavior: "smooth", block: "center" });
 }
 
+// MEH-3261: the backend's own Hebrew sentence for a refused save (409 cap,
+// 422 AI REJECTED). A Pydantic 422 carries a list, which yields null here.
+function serverSentence(err) {
+  const status = err?.response?.status;
+  if (status !== 409 && status !== 422) return null;
+  return detailToMessage(err.response.data?.detail);
+}
+
 function clearFieldError(setErrors, field) {
   setErrors((errs) => (errs[field] ? { ...errs, [field]: undefined } : errs));
 }
@@ -347,10 +355,8 @@ export default function ProductsSection({
     } catch (err) {
       // MEH-3022: the per-business cap answers 409 with the approved Hebrew
       // sentence — show it instead of the generic "save failed".
-      setError(
-        (err?.response?.status === 409 && detailToMessage(err.response.data?.detail)) ||
-          tErr("save_failed"),
-      );
+      // MEH-3261: so does the AI check's 422 (REJECTED) on an approved business.
+      setError(serverSentence(err) || tErr("save_failed"));
     } finally {
       setSaving(false);
     }
@@ -464,8 +470,8 @@ export default function ProductsSection({
       setProducts((p) => p.map((x) => (x.id === productId ? r.data : x)));
       setEditingId(null);
       showToast.success(t("toast_updated")); // MEH-1446
-    } catch {
-      setError(tErr("save_failed"));
+    } catch (err) {
+      setError(serverSentence(err) || tErr("save_failed")); // MEH-3261
     } finally {
       setSavingEdit(false);
     }
