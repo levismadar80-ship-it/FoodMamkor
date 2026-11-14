@@ -165,6 +165,9 @@ export const DASHBOARD_SUBPAGES = {
   // Reached in 1 tap from anywhere in the dashboard: the «צפייה בדף» link in
   // the tab row points here while the business is unapproved.
   "/producer/dashboard/preview": "/producer/dashboard",
+  // MEH-3200: the «מה חדש» release archive — not a tool, a page about the
+  // site itself. Reached from the home's top card and fixed row (1 tap).
+  "/producer/dashboard/whats-new": "/producer/dashboard",
 };
 
 /**
