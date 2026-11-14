@@ -17,7 +17,7 @@
 
 /** Fewer real categories than this → no category chip at all: with one
  * category present, its chip returns the same list as «הכל». */
-export const MIN_CATEGORIES_TO_FILTER = 2;
+const MIN_CATEGORIES_TO_FILTER = 2;
 
 /**
  * The categories present in a category-less list for the current tab + city.
