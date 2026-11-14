@@ -1426,7 +1426,10 @@
         "verified": "A verified business",
         "cluster": "How many businesses are in this area. Tap to zoom in",
         "pickup": "A pickup point or market stall",
-        "approximate": "Approximate location, not an exact address"
+        "approximate": "Approximate location, not an exact address",
+        "same_business": "Several points of the same business. Tap to zoom in",
+        "dimmed": "When you pick a business, the others fade",
+        "my_location": "Your location"
       }
     },
     "page": {
