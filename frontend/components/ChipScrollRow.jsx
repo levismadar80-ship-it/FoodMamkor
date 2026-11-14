@@ -433,7 +433,7 @@ export default function ChipScrollRow({
               tabIndex={chip.key === tabStopKey ? 0 : -1}
               // MEH-764: chips are rounded-md on ALL surfaces (/home, /producers,
               // /map) per DESIGN §Shapes / BRAND §3 (no pill on rectangles).
-              className={`inline-flex items-center gap-1.5 whitespace-nowrap px-4 py-2.5 rounded-md text-sm font-medium border transition shrink-0 snap-start ${stateClass}`}
+              className={`inline-flex items-center gap-1.5 whitespace-nowrap px-4 min-h-11 py-2.5 rounded-md text-sm font-medium border transition shrink-0 snap-start ${stateClass}`}
               style={stateStyle}
             >
               {/* MEH-2500: a SELECTED category chip swaps its glyph for a ✓.

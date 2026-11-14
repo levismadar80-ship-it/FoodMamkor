@@ -1078,7 +1078,7 @@ export default function ProducersClient({
             data-testid="producers-filters-button"
             // REUSES: frontend/app/[locale]/map/components/FilterChipsBar.jsx:80-96
             // — same trigger, same inactive chip visuals, same inline count.
-            className="inline-flex items-center gap-1.5 whitespace-nowrap px-4 py-2.5 rounded-md text-sm font-medium border transition bg-surface text-text border-border hover:border-primary hover:text-primary"
+            className="inline-flex items-center gap-1.5 whitespace-nowrap px-4 min-h-11 py-2.5 rounded-md text-sm font-medium border transition bg-surface text-text border-border hover:border-primary hover:text-primary"
           >
             <Faders size={16} aria-hidden="true" />
             {t("filters.filter_label")}
