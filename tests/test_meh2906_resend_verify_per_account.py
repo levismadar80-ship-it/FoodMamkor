@@ -61,13 +61,34 @@ def test_the_429_answer_is_hebrew(client, db, sent, trusted_proxy):
 
 
 def test_two_accounts_behind_one_ip_do_not_block_each_other(client, db, sent, trusted_proxy):
+    # `first` uses up ITS per-account allowance (3) from three IPs, one of
+    # which is SHARED_IP. `second` then calls from SHARED_IP: that IP has
+    # spent 1 of its 3 per-IP calls, so only a per-account cap keyed on the
+    # wrong thing (the IP, or a constant) could refuse it.
+    shared_ip = "192.0.2.10"
     first = make_user(db, email="first2906@example.com", email_verified=False)
     second = make_user(db, email="second2906@example.com", email_verified=False)
 
-    assert _post_from(client, first, "192.0.2.10").status_code == 200
-    assert _post_from(client, first, "192.0.2.11").status_code == 200
-    assert _post_from(client, second, "192.0.2.12").status_code == 200
-    assert _post_from(client, second, "192.0.2.13").status_code == 200
+    for ip in (shared_ip, "192.0.2.11", "192.0.2.12"):
+        assert _post_from(client, first, ip).status_code == 200
+    assert _post_from(client, first, "192.0.2.13").status_code == 429
+
+    assert _post_from(client, second, shared_ip).status_code == 200
+    assert sent.count("second2906@example.com") == 1
+
+
+def test_cap_storage_failure_fails_open(client, db, sent, trusted_proxy, monkeypatch):
+    # A failing per-account counter must not lock users out of verification.
+    # Patched at the module's own call site, not on the shared limiter, so the
+    # route's per-IP @limiter.limit keeps working and only this cap fails.
+    def _boom(*_a, **_k):
+        raise RuntimeError("storage down")
+
+    monkeypatch.setattr(resend_verify_cap, "parse_limit", _boom)
+    user = make_user(db, email="failopen2906@example.com", email_verified=False)
+
+    assert _post_from(client, user, "192.0.2.50").status_code == 200
+    assert sent == ["failopen2906@example.com"]
 
 
 def test_daily_cap_holds_when_the_hour_window_is_free(client, db, sent, trusted_proxy, monkeypatch):
