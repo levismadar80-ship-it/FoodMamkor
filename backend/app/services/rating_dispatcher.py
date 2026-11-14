@@ -75,7 +75,7 @@ def dispatch_pending_rating_requests(
     for click in eligible:
         try:
             send(click)
-            click.rating_sent = True
+            click.rating_sent = True  # type: ignore[assignment]
             sent_count += 1
         except Exception:
             # MEH-515: per-click try/except — single failure must not

@@ -32,6 +32,10 @@ let params = {}; // drives useSearchParams().get(key)
 let unfilteredRows = [];
 let filteredRows = [];
 
+// MEH-3128: the date shortcuts count rows against the Israel clock; the
+// fixtures sit on 2026-12-01, so «today» is frozen well before it (rule:
+// clock-dependent tests freeze the clock).
+vi.mock("@/lib/israel-date", () => ({ israelToday: () => "2026-11-18" }));
 vi.mock("next/navigation", () => ({
   // MEH-2847: EventsClient reads the category axis with getAll (multi-select);
   // a param may be a string or an array of strings.
@@ -126,15 +130,19 @@ vi.mock("@/components/ChipScrollRow", () => ({
 
 const CITY = "חיפה";
 const EVENT_CAT = EVENT_CATEGORIES.find((c) => c.labelKey === "harvest").key;
+// MEH-3124: a category chip shows only when the category has results, and
+// the row needs two categories to filter anything — so a fixture that wants
+// the chips on screen spreads its rows over two categories.
+const OTHER_CAT = EVENT_CATEGORIES.find((c) => c.labelKey === "market").key;
 const EXPERIENCES_TAB = "events.list.tab_experiences_short";
 
-const row = (id) => ({
+const row = (id, category = EVENT_CAT) => ({
   id,
   title: `event ${id}`,
   event_date: "2026-09-0" + id,
   event_time: "10:00",
   city: CITY,
-  category: EVENT_CAT,
+  category,
   price: 0,
   producer_name: "בית עסק",
   description: "",
@@ -238,7 +246,7 @@ describe("/events — empty dataset vs filtered to zero (MEH-1865)", () => {
     });
 
     it("same for a category chip (the other filter axis)", async () => {
-      unfilteredRows = [row(1)];
+      unfilteredRows = [row(1), row(2, OTHER_CAT)];
       filteredRows = [];
       await mount();
       // start from a real dataset, then filter to zero via the chip
@@ -261,12 +269,15 @@ describe("/events — empty dataset vs filtered to zero (MEH-1865)", () => {
 
       expect(screen.queryByTestId("events-empty-dataset")).toBeNull();
       expect(screen.queryByTestId("events-no-results")).toBeNull();
-      expect(filterControlCount()).toBe(2); // city search + category chips
+      // MEH-3124: one row = one category, and a lone category chip filters
+      // nothing; MEH-3128: its date is in none of the three shortcuts — so
+      // only the city search is drawn.
+      expect(filterControlCount()).toBe(1);
       expect(screen.getByText("event 1")).toBeInTheDocument();
     });
 
     it("many rows", async () => {
-      unfilteredRows = [row(1), row(2), row(3)];
+      unfilteredRows = [row(1), row(2, OTHER_CAT), row(3)];
       await mount();
 
       expect(screen.queryByTestId("events-empty-dataset")).toBeNull();
@@ -276,8 +287,8 @@ describe("/events — empty dataset vs filtered to zero (MEH-1865)", () => {
     });
 
     it("many rows WITH a filter that matched some — still no zero surface", async () => {
-      unfilteredRows = [row(1), row(2), row(3)];
-      filteredRows = [row(1), row(2)];
+      unfilteredRows = [row(1), row(2, OTHER_CAT), row(3)];
+      filteredRows = [row(1), row(2, OTHER_CAT)];
       params = { city: CITY };
       setUrl(`/events?city=${CITY}`);
       await mount();

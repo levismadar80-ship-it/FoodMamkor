@@ -4,6 +4,9 @@
 > of truth is `backend/app/routers/*.py`** (registered in
 > `backend/app/main.py::include_router` calls). If routes drift,
 > update this diagram in the same PR (workflow rule 11).
+> **This is a map, not the inventory.** The complete path list is
+> `docs/DATA.md`, which `scripts/checks/api-docs-route-guard.sh` checks
+> against `backend/openapi.json` (MEH-3192).
 >
 > Legend for auth columns:
 >   - 🌐 = public (no token)
@@ -23,7 +26,7 @@ graph LR
     App --> Producers[producers.router<br/>/producers/*]
     App --> ProducerMe[producer_me.router<br/>/producers/me/*]
     App --> ProductOrganize[product_organize.router<br/>/producers/me/product-groups<br/>/producers/me/product-order<br/>/producers/me/products/:id/group]
-    App --> ProducerClaim[producer_claim.router<br/>/admin/producers/:id/claim-link · /producer-claim/preview · /producer-claim<br/>MEH-2322 owner-claim link: 14-day HS256 scope=producer_claim, draft + ownerless only,<br/>claim stamps her declaration + terms, status stays draft]
+    App --> ProducerClaim[producer_claim.router<br/>/admin/producers/:id/claim-link · /producer-claim/preview · /producer-claim/new-link-request (MEH-3122: lapsed link, tells the admin only) · /producer-claim<br/>MEH-2322 owner-claim link: 14-day HS256 scope=producer_claim, draft + ownerless only,<br/>claim stamps her declaration + terms, status stays draft]
     App --> OwnerInvite[producer_owner_invite.router · .public_router<br/>/admin/producers/:id/owner-invite[/resend] · /auth/owner-invite/:token · …/email-code · …/accept<br/>MEH-2974 owner invite: APPROVED or INACTIVE + ownerless, sha256 of a token_urlsafe on the producer row,<br/>7 days, single-use, revoked by resend / cancel / suspension. NO users row until acceptance;<br/>v3 the address is optional on the invite and proved by a 6-digit code sha256 on the row 10 min 5 attempts;<br/>acceptance creates the user, stamps her declaration + terms, PUBLISHES a hidden page, and logs her in]
     App --> Rescue[rescue.router · rescue.admin_router<br/>/rescue/* · /admin/rescue/*<br/>MEH-2646 rescue-bags pilot — EVERY route 404s while RESCUE_BAGS_ENABLED is off (its default).<br/>No payment anywhere: the buyer pays at the counter]
     App --> NameRequests[producer_name_requests.router<br/>/producers/me/name-change-requests<br/>/admin/name-change-requests]
@@ -127,6 +130,7 @@ graph TD
     Events --> EventMine[GET /events/mine<br/>👤 producer — own events, all states<br/>incl. inactive — MEH-1405 manage list]
     Events --> ExpCreate[POST /experiences<br/>✅👤 verified producer — MEH-2246: same gate as<br/>POST /events, since MEH-1749 hides a<br/>non-business experience from every read path;<br/>then Claude Haiku pre-check + admin approval queue]
     Events --> ExpCount[GET /experiences/count<br/>public — MEH-1918<br/>same predicate as GET /experiences;<br/>gates the nav link at >= 3]
+    Events --> GbCounts[GET /group-buys/counts<br/>public — MEH-3128<br/>same query as GET /group-buys;<br/>hides an empty status tab]
 ```
 
 ## 5. Admin surface (role=admin)
@@ -140,7 +144,7 @@ graph TD
     Producers --> Reject[POST /admin/producers/{id}/reject<br/>🛡️ MEH-226 preset_key + reason, persists rejection_reason with the status flip, 400 before mutating, email post-commit;<br/>MEH-2210 also persists rejection_reason_code = preset_key;<br/>MEH-2498 from approved: the business's open/funded group buys → cancelled, participants get the delisted-cancel email]
     Producers --> RejectPresets[GET /admin/producers/rejection-presets<br/>🛡️ MEH-226 the 5 canonical reasons — backend owns the labels]
     Producers --> ProdChanges[POST /admin/producers/{id}/request-changes<br/>🛡️ MEH-1011 feedback required, pending-only 409, email + WA, non-terminal]
-    Producers --> Toggle[POST /admin/producers/{id}/toggle-status<br/>🛡️ MEH-2498 approved→inactive also cancels the business's open/funded group buys + delisted-cancel email]
+    Producers --> Toggle[POST /admin/producers/{id}/toggle-status<br/>🛡️ MEH-2498 approved→inactive also cancels the business's open/funded group buys + delisted-cancel email<br/>🛡️ MEH-2945 inactive→approved runs the approval gates (422)]
     Producers --> ClaimLink[POST /admin/producers/{id}/claim-link<br/>🛡️ MEH-2322 signed owner-claim URL for an ownerless draft, 14 days, 409 if owned / not draft;<br/>MEH-2495 also minted from the drafts-list row «העתקת הודעה עם קישור»;<br/>MEH-2496 locks the draft FOR UPDATE and stamps producers.claim_link_sent_at on success only]
     Producers --> AdminPListAll[GET /admin/producers<br/>🛡️ ProducerAdminOut rows; MEH-2495 has_owner derived per row in ONE batched query]
     Producers --> OwnerInviteAdmin[POST /admin/producers/{id}/owner-invite · …/resend · DELETE …<br/>🛡️ MEH-2974 invite the owner of an APPROVED or INACTIVE ownerless business, 10/hour;<br/>422 without the recorded written consent · 409 wrong status / already owned / email already a user;<br/>v3 the email is OPTIONAL — with none nothing is mailed and the admin copies the link;<br/>a resend drops a taken address rather than refusing; the raw link is returned ONCE — the DB keeps only its sha256]

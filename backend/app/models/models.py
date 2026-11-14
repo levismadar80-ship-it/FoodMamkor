@@ -200,7 +200,7 @@ class Producer(Base):
     # datetime.now(timezone.utc) — never naive utcnow. Expand-only (ADR-007).
     # Paired migration: e2a7c9d41b06.
     submitted_for_review_at = Column(DateTime(timezone=True), nullable=True)
-    images = Column(ARRAY(Text), default=[])
+    images: Column[list[str]] = Column(ARRAY(Text), default=[])
     # MEH-766 ch6: is_verified DROPPED (revision d4e7a92c81b5) — verification
     # is verification_tier/verified_at only (ADR-022). Do not re-add.
     # MEH-18: manual "מומלץ" (recommended) badge toggled by admins. Separate
@@ -485,12 +485,12 @@ class Producer(Base):
     offers_delivery = Column(Boolean, nullable=False, default=False)
     # Delivery scope — mutually exclusive: nationwide flag XOR city list.
     delivery_nationwide = Column(Boolean, nullable=False, default=False)
-    delivery_cities = Column(ARRAY(Text), nullable=False, default=[])
+    delivery_cities: Column[list[str]] = Column(ARRAY(Text), nullable=False, default=[])
     # MEH-1255: nationwide exclusion list — "משלוחים לכל הארץ חוץ מ:".
     # Only meaningful when delivery_nationwide=true; CHECK constraint
     # delivery_excluded_requires_nationwide keeps it empty otherwise
     # (ShipperHQ include/exclude zone model).
-    delivery_excluded_cities = Column(
+    delivery_excluded_cities: Column[list[str]] = Column(
         ARRAY(Text),
         nullable=False,
         default=[],
@@ -527,11 +527,11 @@ class Producer(Base):
     # MEH-51: trust ladder + kashrut badges
     phone_verified = Column(Boolean, default=False)
     ambassador = Column(Boolean, default=False)
-    kashrut_badges = Column(ARRAY(Text), default=[])
+    kashrut_badges: Column[list[str]] = Column(ARRAY(Text), default=[])
     kashrut_verified_at = Column(DateTime, nullable=True)
     kashrut_expires_at = Column(DateTime, nullable=True)
     # MEH-210 Phase 2 — producer-defined WhatsApp question chips (overrides category defaults).
-    custom_questions = Column(ARRAY(Text), nullable=True)
+    custom_questions: Column[list[str]] = Column(ARRAY(Text), nullable=True)
     # MEH-283 — admin reject reason surfaced on /auth/me as producer_rejection_reason.
     # Accessed in auth.py::get_me; missing column was raising AttributeError for any
     # user with a producer_id since MEH-206 (ORM never declared it, _migrate_columns
@@ -740,7 +740,7 @@ class Producer(Base):
         return [cc for c in value if (cc := canonical_city(c))]
 
     @property
-    def active_offer(self):
+    def active_offer(self) -> "ProducerOffer | None":
         """MEH-1823 chunk 2: the one offer that is live RIGHT NOW, or None.
 
         This is what `ProducerListOut.active_offer` serializes, and it is the
@@ -760,6 +760,7 @@ class Producer(Base):
         revisit if that ever stops being true.
         """
         today = israel_today()
+        offer: ProducerOffer
         for offer in self.offers:
             # BOTH ends of the window, not just the far one. Omitting the
             # starts_at half served a scheduled offer as live from the moment it
@@ -1642,6 +1643,9 @@ class FavoriteAlert(Base):
     # buy. Nullable + server_default true, exactly like MEH-1361; unlike the
     # siblings, the code reads NULL as ON (alerts.py, Sapir 08/11).
     notify_new_group_buy = Column(Boolean, default=True)
+    # MEH-3117: 6th alert type — fires when a favorited producer publishes
+    # rescue bags for TODAY. Same shape as notify_new_group_buy (NULL = ON).
+    notify_new_rescue = Column(Boolean, default=True)
     push_subscription = Column(JSON, nullable=True)
     whatsapp_opt_in = Column(Boolean, default=False)
     created_at = Column(DateTime, default=utc_now)
@@ -1803,7 +1807,8 @@ class HomeProduct(Base):
     unit = Column(String(30), nullable=True)  # e.g. "ק״ג" / "יח׳" / "ליטר" / "מנות"
     delivery_method = Column(String(30), nullable=True)  # pickup / delivery / both
     location_notes = Column(Text, nullable=True)  # "ליד הסופר, כניסה מהחנייה"
-    images = Column(ARRAY(Text), default=[])  # up to 4 photos (Cloudinary URLs)
+    # up to 4 photos (Cloudinary URLs)
+    images: Column[list[str]] = Column(ARRAY(Text), default=[])
     # AI moderation (see docs/MODERATION.md)
     moderation_status = Column(
         String(20), default="APPROVED"

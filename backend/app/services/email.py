@@ -25,6 +25,8 @@ separate product decision (MEH-1613 §7), deliberately not taken here.
 
 from __future__ import annotations
 
+from typing import Any
+
 import logging
 
 from app.config import settings
@@ -219,7 +221,7 @@ def send_email(  # noqa: PLR0913 — +test_cause, the MEH-2952 send-layer switch
     try:
         # MEH-2886 chunk 4: key + 10 s HTTP timeout (the SDK default is 30 s).
         resend = configure_resend(settings.resend_api_key)
-        params: dict = {
+        params: dict[str, Any] = {
             "from": settings.email_from_address,
             "to": to,
             "subject": subject,

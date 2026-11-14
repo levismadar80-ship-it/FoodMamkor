@@ -170,7 +170,10 @@ test.describe("order-window card — several ranges per day", () => {
     await expect(page.getByTestId("order-window-save-success")).toHaveText("חלון ההזמנות נשמר");
     expect(puts[0]).toEqual({ order_window: { sunday: [{ open: "09:00", close: "13:00" }, { open: "16:00", close: "20:00" }] } });
 
-    await page.reload();
+    // MEH-3153: openWindow() is itself a full document load (page.goto), so it is
+    // the reload. A page.reload() right before it raced two navigations: on
+    // WebKit the reloaded page's in-flight /auth/me was aborted by the goto,
+    // and the layout pushed /login over it (MEH-3172).
     await openWindow(page);
     await expect(from(page, SUN, 2)).toHaveValue("16:00");
     await expect(to(page, SUN, 2)).toHaveValue("20:00");

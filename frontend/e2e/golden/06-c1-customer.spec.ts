@@ -46,6 +46,7 @@ test.describe("C1 — customer (email)", () => {
           notify_delivery_area: false,
           notify_new_recipe: false,
           notify_new_group_buy: true,
+          notify_new_rescue: true,
           whatsapp_opt_in: false,
         },
       );

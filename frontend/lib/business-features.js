@@ -12,7 +12,9 @@
  *           time (the lib/diet-pages + lib/chip-copy pattern). Does NOT decide
  *           who may USE a tool: the code and its flags do that, and this
  *           registry only says what exists and how it is described. Does NOT
- *           carry per-plan tiers — everything here is free.
+ *           carry prices or per-plan tiers — every tool here is open to
+ *           every business during the launch period; prices live in
+ *           lib/pricing.js (ADR-042, MEH-3166).
  * Related:  lib/diet-pages.js and lib/category-registry.js (the pure-data
  *           module style this follows); lib/rescue.js:39 (rescueBagsEnabled);
  *           __tests__/BusinessFeaturesRegistry.test.js (the drift guard).
@@ -90,7 +92,7 @@ export const BUSINESS_FEATURES = [
   { id: "primary_cta", group: "contact", status: "live", tile: { icon: "ChatCircleText" }, codeRef: ["frontend/app/[locale]/producer/[id]/components/ContactCard.jsx", "frontend/app/[locale]/producer/[id]/components/StickyContactBar.jsx"] },
   { id: "wa_prefill", group: "contact", status: "live", tile: { icon: "PaperPlaneTilt" }, codeRef: ["frontend/app/[locale]/producer/[id]/components/ContactCard.jsx"] },
   { id: "product_wa", group: "contact", status: "live", codeRef: ["frontend/components/public/ProductSheet.jsx"] },
-  { id: "faq_answers", group: "contact", status: "live", tip: true, codeRef: ["frontend/app/[locale]/producer/dashboard/edit/page.js", "frontend/app/[locale]/producer/[id]/components/ProducerSections.jsx", "frontend/app/[locale]/producer/dashboard/edit/PaymentInfoEditor.jsx"] },
+  { id: "faq_answers", group: "contact", status: "live", tip: true, codeRef: ["frontend/app/[locale]/producer/dashboard/edit/page.js", "frontend/app/[locale]/producer/dashboard/edit/cards/CustomQuestionsCard.jsx", "frontend/app/[locale]/producer/[id]/components/ProducerSections.jsx", "frontend/app/[locale]/producer/dashboard/edit/PaymentInfoEditor.jsx"] },
   { id: "delivery_areas", group: "contact", status: "live", codeRef: ["frontend/app/[locale]/producer/dashboard/edit/LocationsEditor.jsx", "frontend/lib/delivery-coverage.js"] },
   { id: "delivery_checker", group: "contact", status: "live", tile: { icon: "Truck" }, codeRef: ["frontend/components/DeliveryChecker.jsx"] },
   { id: "wa_group", group: "contact", status: "live", codeRef: ["frontend/app/[locale]/producer/[id]/components/ContactCard.jsx"] },
@@ -113,7 +115,7 @@ export const BUSINESS_FEATURES = [
   { id: "kashrut_verified", group: "trust", status: "live", tile: { icon: "Certificate" }, codeRef: ["frontend/app/[locale]/admin/kashrut/page.js", "frontend/lib/badges.js"] },
   { id: "editor_pick", group: "trust", status: "live", tile: { icon: "Medal" }, codeRef: ["frontend/lib/featured-producer.js", "frontend/lib/badges.js"] },
   { id: "reservist_diet_tags", group: "trust", status: "live", codeRef: ["frontend/app/[locale]/producer/[id]/components/ReservistBadgeLine.jsx", "frontend/lib/badges.js"] },
-  { id: "reviews_contacted", group: "trust", status: "live", tile: { icon: "Star" }, codeRef: ["backend/app/routers/reviews.py", "frontend/components/ReviewsSection.jsx"] },
+  { id: "reviews_contacted", group: "trust", status: "live", tile: { icon: "Star" }, codeRef: ["backend/app/routers/reviews.py", "frontend/components/ReviewsSection.jsx", "frontend/app/[locale]/producer/dashboard/reviews/page.js"], dashboard: { home: "tools", href: "/producer/dashboard/reviews" } },
   { id: "review_request", group: "trust", status: "live", codeRef: ["frontend/components/producer/RequestReviewCard.jsx"] },
 
   // ── insights ────────────────────────────────────────────────────────────

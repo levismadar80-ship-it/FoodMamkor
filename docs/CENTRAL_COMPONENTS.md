@@ -24,7 +24,6 @@ See `.claude/central-components.json` for the authoritative list. Current entrie
 | `frontend/app/producers/page.jsx` | Producer detail page — auth gating, CTA layout, review section |
 | `frontend/app/page.js` | Homepage — hero, stats bar, category grid, Friday mode |
 | `frontend/app/layout.js` | Root layout — font loading, RTL dir, global providers |
-| `frontend/lib/language-context.js` | Language/RTL context — affects every component in the tree |
 
 ### Frontend medium (frequent co-changes, regression-prone)
 

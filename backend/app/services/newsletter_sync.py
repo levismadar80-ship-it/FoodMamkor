@@ -19,6 +19,7 @@ here as a Sentry event, not as a broken signup.
 
 from __future__ import annotations
 
+from typing import Any
 import logging
 import threading
 
@@ -39,7 +40,7 @@ _segment_id: str | None = None
 _segment_lock = threading.Lock()
 
 
-def _resend():
+def _resend() -> Any:
     """Return the configured SDK module, or None when there is no key."""
     if not settings.resend_api_key:
         return None
@@ -47,7 +48,7 @@ def _resend():
     return configure_resend(settings.resend_api_key)
 
 
-def _get_segment_id(resend) -> str:
+def _get_segment_id(resend: Any) -> str:
     global _segment_id
     if _segment_id:
         return _segment_id
@@ -68,7 +69,7 @@ def _is_not_found(exc: BaseException) -> bool:
     return str(getattr(exc, "code", "")) == "404"
 
 
-def _contact_exists(resend, email: str) -> bool:
+def _contact_exists(resend: Any, email: str) -> bool:
     """True if Resend has a contact for `email`; any non-404 error propagates."""
     try:
         resend.Contacts.get(email=email)

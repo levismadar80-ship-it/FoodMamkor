@@ -155,10 +155,13 @@ missing `claude[bot]` comment blocks nothing and is never waited for.
    Merging to staging follows rule 38.
 10. **After every PR — a test, not a checklist line (MEH-2796).** New
     behaviour gets an automated test (pytest / vitest / Playwright). Only what
-    automation cannot see (real iPhone Safari, a third-party console, a flag
-    flipped by hand) gets one line in
-    [docs/RELEASE_CHECKLIST.md](../../docs/RELEASE_CHECKLIST.md), cap 30.
-    `docs/MANUAL_TESTING.md` is archived — never add to it.
+    CI cannot see (WebKit-only, a third-party console, a flag flipped by hand)
+    gets one line in
+    [docs/RELEASE_CHECKLIST.md](../../docs/RELEASE_CHECKLIST.md) § ד׳, cap 30,
+    and its performer is the thread (WebKit simulation, a connector, Claude in
+    Chrome) — **never Sapir** (her decision 14/11, MEH-3151). What no tool can
+    prove goes to that section's «סיכון שנותר» list. `docs/MANUAL_TESTING.md`
+    is archived — never add to it.
 11. **After every PR — auto-update every doc your code touched**, same PR
     (DATA / ADMIN / DESIGN / FEATURES / SECURITY / DEPLOYMENT,
     `.ai/diagrams/`; CHANGELOG via rule 31). Stop hooks run build + pytest.
@@ -283,7 +286,8 @@ skips per [docs/EMERGENCY_OVERRIDE.md](../../docs/EMERGENCY_OVERRIDE.md).
      regenerate `parity.spec.ts-snapshots/` in the SAME PR.
 3. **Add a regression rule** here if the pattern is likely to recur.
 4. **Add a test** that would have caught it; else (real device only) a
-   line in `docs/RELEASE_CHECKLIST.md`.
+   «סיכון שנותר» line in `docs/RELEASE_CHECKLIST.md` § ד׳ — run by the
+   thread, never by Sapir (MEH-3151).
 5. **Update docs** if the fix reveals a non-obvious convention.
 6. **An anomaly seen during QA is explained or reported — never attributed to
    the harness and dropped.** Label an unverified diagnosis as unverified. A

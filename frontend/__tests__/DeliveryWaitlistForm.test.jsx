@@ -178,6 +178,19 @@ describe("DeliveryWaitlistForm on the checker's negative verdict (MEH-2618)", ()
     expect(screen.queryByTestId("delivery-waitlist-whatsapp-hint")).toBeNull();
   });
 
+  it("MEH-3112: the account loads after the page — her email still arrives in the form", async () => {
+    authState.value = { user: null, loading: true };
+    const view = setup();
+    commitCity("נתניה");
+    await waitFor(() => expect(form()).toBeTruthy());
+    authState.value = { user: { id: "u1", email: "late@example.com" }, loading: false };
+    view.rerender(
+      <DeliveryChecker offersDelivery nationwide={false} excluded={[]} areas={AREAS} producer={PRODUCER} />,
+    );
+    fireEvent.click(screen.getByTestId("delivery-waitlist-cta"));
+    expect(screen.getByTestId("delivery-waitlist-email").value).toBe("late@example.com");
+  });
+
   it("signed-in: prefills her email and points at WhatsApp alerts after", async () => {
     authState.value = { user: { id: "u1", email: "member@example.com" } };
     post.mockResolvedValue({ status: 201, data: { status: "added" } });

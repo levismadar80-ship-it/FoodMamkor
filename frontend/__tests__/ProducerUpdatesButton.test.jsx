@@ -62,6 +62,7 @@ const OFF = {
   notify_delivery_area: false,
   notify_new_recipe: false,
   notify_new_group_buy: false,
+  notify_new_rescue: false,
   whatsapp_opt_in: false,
   has_push: false,
 };
@@ -368,6 +369,15 @@ describe("MEH-2562 · variants", () => {
     expect(button()).toHaveTextContent("קבלת עדכונים");
     expect(button()).not.toHaveAttribute("aria-label");
     expect(button().className).toMatch(/min-h-touch/);
+  });
+
+  // MEH-3115: the bell read green while OFF next to a dark heart and share.
+  it("gallery: the bell is text-ink while off, like the heart beside it", () => {
+    renderButton({ variant: "gallery" });
+    const icon = button().querySelector("svg");
+    expect(icon.getAttribute("class")).toContain("text-text");
+    expect(icon.getAttribute("class")).not.toContain("text-primary");
+    expect(button().querySelector(".w-8")).toBeTruthy();
   });
 
   it("gallery reports ON through aria-pressed like the pill", async () => {

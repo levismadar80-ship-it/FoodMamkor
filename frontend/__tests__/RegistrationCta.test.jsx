@@ -11,6 +11,9 @@ import api from "@/lib/api";
 import RegistrationCta from "@/components/RegistrationCta";
 
 vi.mock("@/lib/api", () => ({ default: { post: vi.fn() } }));
+// MEH-3112: the signed-in account the sign-up form prefills from (null = guest).
+let mockAuth = null;
+vi.mock("@/lib/auth-context", () => ({ useOptionalAuth: () => mockAuth }));
 
 const C = he.registration.cta;
 const S = he.registration.signup;
@@ -348,5 +351,96 @@ describe("MEH-3043 — sticky phone bar", () => {
     unmount();
     cta({ method: "whatsapp", phone: null });
     expect(screen.queryByTestId("registration-bar")).toBeNull();
+  });
+});
+
+describe("MEH-3109 — the bar is a floating pill that steps aside at the footer", () => {
+  // One callback per observed node: the inline action and the site footer.
+  let observers;
+  let footer;
+  const fireFor = (node, isIntersecting) => act(() => observers.get(node)([{ isIntersecting }]));
+  beforeEach(() => {
+    observers = new Map();
+    window.IntersectionObserver = class {
+      constructor(cb) { this.cb = cb; }
+      observe(el) { observers.set(el, this.cb); }
+      disconnect() {}
+    };
+    footer = document.createElement("footer");
+    footer.setAttribute("data-site-footer", "");
+    document.body.appendChild(footer);
+  });
+  afterEach(() => {
+    delete window.IntersectionObserver;
+    footer.remove();
+    document.body.style.paddingBottom = "";
+  });
+  const inline = () => [...observers.keys()].find((n) => n !== footer);
+
+  it("is a rounded pill in a transparent shell, not a full-width white strip", () => {
+    cta({ method: "site_form", phone: null, barNote: "ו׳, 21.11 · 10:00" });
+    fireFor(inline(), false);
+    const bar = screen.getByTestId("registration-bar");
+    expect(bar.className).not.toMatch(/\bbg-surface\b/);
+    expect(bar.className).not.toMatch(/\bborder-t\b/);
+    expect(bar.className).toMatch(/\bpointer-events-none\b/);
+    const pill = screen.getByTestId("registration-bar-pill");
+    expect(pill.className).toMatch(/\brounded-full\b/);
+    expect(pill.className).toMatch(/\bpointer-events-auto\b/);
+    // Above the cookie banner while it is up (same offset var as ChatWidget).
+    expect(bar.className).toContain("var(--cookie-banner-h,0px)");
+  });
+
+  it("hides while the site footer is on screen and comes back after it", () => {
+    cta({ method: "site_form", phone: null });
+    fireFor(inline(), false);
+    expect(screen.getByTestId("registration-bar")).toBeInTheDocument();
+    fireFor(footer, true);
+    expect(screen.queryByTestId("registration-bar")).toBeNull();
+    fireFor(footer, false);
+    expect(screen.getByTestId("registration-bar")).toBeInTheDocument();
+  });
+
+  it("with a site footer the page end gets no extra room, not even for one commit (that room was the cream band under the footer)", () => {
+    // Every write to <body style>, including one undone a commit later.
+    const mo = new MutationObserver(() => {});
+    mo.observe(document.body, { attributes: true, attributeFilter: ["style"], attributeOldValue: true });
+    cta({ method: "site_form", phone: null });
+    fireFor(inline(), false);
+    const writes = mo.takeRecords().map(() => document.body.getAttribute("style") || "");
+    mo.disconnect();
+    expect(screen.getByTestId("registration-bar")).toBeInTheDocument();
+    expect(writes).toEqual([]);
+  });
+
+  it("with no site footer the page end gets room while the bar is up, and loses it when the bar goes", () => {
+    footer.remove();
+    cta({ method: "site_form", phone: null });
+    fireFor(inline(), false);
+    expect(document.body.style.paddingBottom).not.toBe("");
+    fireFor(inline(), true);
+    expect(document.body.style.paddingBottom).toBe("");
+  });
+});
+
+describe("MEH-3112 — a signed-in visitor finds her details in the sign-up form", () => {
+  afterEach(() => { mockAuth = null; });
+
+  it("signed in: name, phone and email are already filled and still editable", () => {
+    mockAuth = { user: { id: 3, name: "נועה כהן", phone: "052-1234567", email: "noa@example.com" } };
+    cta({ method: "site_form", phone: null });
+    fireEvent.click(screen.getByTestId("registration-open"));
+    expect(document.getElementById("signup-name").value).toBe("נועה כהן");
+    expect(document.getElementById("signup-phone").value).toBe("052-1234567");
+    expect(document.getElementById("signup-email").value).toBe("noa@example.com");
+    fireEvent.change(document.getElementById("signup-phone"), { target: { value: "0547654321" } });
+    expect(document.getElementById("signup-phone").value).toBe("0547654321");
+  });
+
+  it("guest: the form opens empty", () => {
+    cta({ method: "site_form", phone: null });
+    fireEvent.click(screen.getByTestId("registration-open"));
+    expect(document.getElementById("signup-name").value).toBe("");
+    expect(document.getElementById("signup-email").value).toBe("");
   });
 });

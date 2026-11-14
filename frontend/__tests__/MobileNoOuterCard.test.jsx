@@ -13,6 +13,8 @@ import { NextIntlClientProvider } from "next-intl";
 import he from "../messages/he.json";
 
 vi.mock("@/lib/auth-context", () => ({
+  // MEH-3112 prefill hook: a guest here, so the forms open empty as before.
+  useOptionalAuth: () => null,
   useAuth: () => ({
     user: { id: 1, name: "דנה", email: "d@example.com" },
     loading: false,

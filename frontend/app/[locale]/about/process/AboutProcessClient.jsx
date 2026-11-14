@@ -304,12 +304,14 @@ export default function AboutProcessClient() {
                 })}
               </p>
             </div>
+            {/* MEH-3114: below md, name + tag share one line and the document
+                line spans under them (was three stacked lines per row). */}
             <div className="border-t border-border">
               {CATS_A.map((key) => (
                 <div
                   key={key}
                   data-testid="process-matrix-row"
-                  className="grid grid-cols-1 md:grid-cols-[minmax(180px,1.1fr)_minmax(150px,auto)_1.4fr] gap-y-1.5 md:gap-6 py-4 border-b border-border md:items-center"
+                  className="grid grid-cols-[1fr_auto] items-center md:grid-cols-[minmax(180px,1.1fr)_minmax(150px,auto)_1.4fr] gap-x-3 gap-y-1 md:gap-6 py-3 md:py-4 border-b border-border"
                 >
                   <div className="font-headline-md font-bold text-lg md:text-lg leading-tight text-text">
                     {t(`matrix.catA.${key}`)}
@@ -317,7 +319,7 @@ export default function AboutProcessClient() {
                   <div>
                     <VerifiedTag />
                   </div>
-                  <div className="font-body-md text-sm leading-snug text-fg-muted">
+                  <div className="col-span-2 md:col-span-1 font-body-md text-sm leading-snug text-fg-muted">
                     {key === "honey" ? t("matrix.honey_doc") : t("matrix.groupA_doc")}
                   </div>
                 </div>
@@ -343,7 +345,7 @@ export default function AboutProcessClient() {
                 <div
                   key={key}
                   data-testid="process-matrix-row"
-                  className="grid grid-cols-1 md:grid-cols-[minmax(180px,1.1fr)_minmax(150px,auto)_1.4fr] gap-y-1.5 md:gap-6 py-4 border-b border-border md:items-center"
+                  className="grid grid-cols-[1fr_auto] items-center md:grid-cols-[minmax(180px,1.1fr)_minmax(150px,auto)_1.4fr] gap-x-3 gap-y-1 md:gap-6 py-3 md:py-4 border-b border-border"
                 >
                   <div className="font-headline-md font-bold text-lg md:text-lg leading-tight text-text">
                     {t(`matrix.catB.${key}.label`)}
@@ -359,7 +361,7 @@ export default function AboutProcessClient() {
                       </>
                     )}
                   </div>
-                  <div className="font-body-md text-sm leading-snug text-fg-muted">
+                  <div className="col-span-2 md:col-span-1 font-body-md text-sm leading-snug text-fg-muted">
                     {declaredOnly ? (
                       t(`matrix.catB.${key}.note`)
                     ) : (
@@ -427,7 +429,7 @@ export default function AboutProcessClient() {
           ~3.5%; top film because the tonal section fills are opaque. RTL-neutral. */}
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-0 z-[1] opacity-[0.035]"
+        className="pointer-events-none absolute inset-0 z-decor opacity-[0.035]"
         style={{
           backgroundImage:
             "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='processGrain'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23processGrain)'/%3E%3C/svg%3E\")",

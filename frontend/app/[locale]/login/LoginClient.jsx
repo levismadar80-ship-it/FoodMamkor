@@ -72,6 +72,10 @@ function LoginPageBody() {
   // owner's review link must land back on the form after signing up. Only a
   // clamped, explicitly-passed value travels; otherwise the link stays bare.
   const passedRedirect = safeInternalRedirect(params.get("redirect"), null);
+  // MEH-3120: arriving from «מועדפים» (FavoritesClient pushes
+  // /login?redirect=/<locale>/favorites) — say why a sign-in is asked for.
+  // Only the clamped internal path is read, so an outside URL shows nothing.
+  const fromFavorites = /(^|\/)favorites\/?$/.test((passedRedirect || "").split(/[?#]/)[0]);
   const registerHref = passedRedirect
     ? `/register?redirect=${encodeURIComponent(passedRedirect)}`
     : "/register";
@@ -235,6 +239,11 @@ function LoginPageBody() {
           <h1 className="font-headline-lg font-black text-headline-lg leading-tight text-text">
             {t("welcome")}
           </h1>
+          {fromFavorites && (
+            <p data-testid="login-reason" className="text-base text-fg-muted">
+              {t("reason_favorites")}
+            </p>
+          )}
         </div>
 
         {/* Social-first auth (S9 locked order): Google → Apple, then "או". */}
@@ -321,6 +330,8 @@ function LoginPageBody() {
                 // MEH-1617: value moved to auth.login.email_placeholder.
                 placeholder={t("email_placeholder")}
                 aria-invalid={emailInvalid || undefined}
+                // MEH-3191: point the field at its error so a screen reader reads it.
+                aria-describedby={emailInvalid ? "login-email-error" : undefined}
                 className={`w-full min-h-[54px] rounded-sm ps-11 pe-4 py-3.5 bg-surface-card text-text outline-none transition focus-visible:ring-2 focus-visible:ring-primary ${
                   emailInvalid
                     ? "border border-danger-400"
@@ -331,7 +342,7 @@ function LoginPageBody() {
               />
             </div>
             {emailInvalid && (
-              <InlineMessage size="xs" className="text-start">{t("email_invalid")}</InlineMessage>
+              <InlineMessage id="login-email-error" size="xs" className="text-start">{t("email_invalid")}</InlineMessage>
             )}
             {emailValid && (
               <p className="text-xs text-primary text-start">{t("valid")}</p>
@@ -373,6 +384,7 @@ function LoginPageBody() {
                 // able to sign in. Empty-submit is still blocked in handleSubmit
                 // (MEH-2623). Regression of MEH-418.
                 aria-invalid={passwordInvalid || undefined}
+                aria-describedby={passwordInvalid ? "login-password-error" : undefined}
                 className={`w-full min-h-[54px] rounded-sm ps-11 pe-12 py-3.5 bg-surface-card text-text outline-none transition focus-visible:ring-2 focus-visible:ring-primary ${
                   passwordInvalid
                     ? "border border-danger-400"
@@ -397,7 +409,7 @@ function LoginPageBody() {
               </button>
             </div>
             {passwordInvalid && (
-              <InlineMessage size="xs" className="text-start">{t("password_required")}</InlineMessage>
+              <InlineMessage id="login-password-error" size="xs" className="text-start">{t("password_required")}</InlineMessage>
             )}
             {passwordValidLength && (
               <p className="text-xs text-primary text-start" data-testid="login-password-valid">{t("valid")}</p>

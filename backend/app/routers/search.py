@@ -14,6 +14,7 @@ tokenisation + variant rules live in the helper imported below, and all four
 sub-queries here share those semantics with /producers?q=.
 """
 
+from typing import Any, cast
 import time
 
 import structlog
@@ -33,7 +34,7 @@ from app.utils.sql import LIKE_ESCAPE
 logger = structlog.get_logger(__name__)
 
 # In-memory cache for trending queries — single entry, 1-hour TTL.
-_trending_cache: dict = {"data": None, "ts": 0.0}
+_trending_cache: dict[str, Any] = {"data": None, "ts": 0.0}
 _TRENDING_TTL = 3600.0
 
 router = APIRouter(tags=["search"])
@@ -62,7 +63,7 @@ def _empty() -> SearchOut:
 # module docstring).
 
 
-def _token_conditions(tokens: list[str], columns: list) -> list:
+def _token_conditions(tokens: list[str], columns: list[Any]) -> list[Any]:
     """One condition per token: OR over (variant x column). AND-ed by .filter().
 
     Every pattern is escape_like-escaped by token_patterns; escape=LIKE_ESCAPE
@@ -87,7 +88,7 @@ def smart_search(
     q: str = Query("", max_length=200),
     limit: int = Query(8, ge=1, le=20),
     db: Session = Depends(get_db),
-):
+) -> SearchOut:
     q_clean = (q or "").strip()
     if not q_clean:
         return _empty()
@@ -201,14 +202,14 @@ def smart_search(
 
 @router.get("/search/trending", response_model=list[str])
 @limiter.limit("60/minute")
-def trending_searches(request: Request, db: Session = Depends(get_db)):
+def trending_searches(request: Request, db: Session = Depends(get_db)) -> list[str]:
     """Return top 5 queries that returned results, cached 1 hour."""
     now = time.monotonic()
     if (
         _trending_cache["data"] is not None
         and now - _trending_cache["ts"] < _TRENDING_TTL
     ):
-        return _trending_cache["data"]
+        return cast(list[str], _trending_cache["data"])
 
     try:
         rows = db.execute(

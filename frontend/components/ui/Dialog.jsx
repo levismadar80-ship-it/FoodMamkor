@@ -79,7 +79,7 @@ export default function Dialog({
   return (
     <div
       role="presentation"
-      className="fixed inset-0 z-[9000] flex items-center justify-center bg-black/40 p-4"
+      className="fixed inset-0 z-modal flex items-center justify-center bg-black/40 p-4"
       onClick={(e) => {
         // A dialog holding typed text passes closeOnBackdrop={false}: a stray
         // click (or a text-selection drag ending on the scrim) must not discard it.

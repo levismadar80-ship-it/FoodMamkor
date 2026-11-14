@@ -408,10 +408,9 @@ export default function ImageGallery({ images = [], producerId = null, producerN
         MEH-1047 slot it was pulled from. MEH-1334 decision 6 removed it to
         kill a ❤️-hero/actions-row duplication; that duplication is gone now
         that the row is desktop-only, so the removal's premise no longer
-        holds. Both circles share one anatomy (bg-surface/95, w-11 h-11,
-        rounded-full, shadow-md) — ShareButton's overlay variant was written
-        to mirror FavoriteButton's gallery circle, so they match by
-        construction rather than by copied class strings. */}
+        holds. All three circles (heart, share, bell) share one anatomy from
+        components/ui/overlay-icon-button.js — a 32px face in a 44px hit area (MEH-3115) —
+        so they match by construction rather than by copied class strings. */}
     {producerId && (
       <div className="absolute top-3 end-3 z-20 lg:hidden flex items-center gap-2">
         {/* MEH-2964: the IMAGED arm's copy of the hero actions. The imageless

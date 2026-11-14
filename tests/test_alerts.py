@@ -72,6 +72,7 @@ class TestGetAlertPrefs:
             "notify_delivery_area": False,
             "notify_new_recipe": False,
             "notify_new_group_buy": False,  # MEH-2828: no row → off, like the rest
+            "notify_new_rescue": False,  # MEH-3117: no row → off, like the rest
             "whatsapp_opt_in": False,
             "has_push": False,
         }
