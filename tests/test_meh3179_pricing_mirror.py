@@ -17,9 +17,16 @@ JS = (ROOT / "frontend" / "lib" / "pricing.js").read_text(encoding="utf-8")
 DOC = (ROOT / "docs" / "PRICING.md").read_text(encoding="utf-8")
 
 
-def _js_number(key: str) -> int:
-    found = re.findall(rf"\b{key}:\s*(\d+)", JS)
-    assert len(found) == 1, f"{key}: expected one value in pricing.js, got {found}"
+def _js_block(name: str) -> str:
+    """The body of one `name: Object.freeze({ ... })` block in pricing.js."""
+    found = re.search(rf"\b{name}: Object\.freeze\(\{{(.*?)\}}\)", JS, re.S)
+    assert found, f"{name}: block not found in pricing.js"
+    return found.group(1)
+
+
+def _js_number(key: str, text: str = JS) -> int:
+    found = re.findall(rf"\b{key}:\s*(\d+)", text)
+    assert len(found) == 1, f"{key}: expected one value, got {found}"
     return int(found[0])
 
 
@@ -35,9 +42,18 @@ def test_backend_price_list_equals_the_sites():
     assert pl.effective_from == re.search(r'effectiveFrom:\s*"([\d-]+)"', JS).group(1)
     assert pl.subscription_monthly_agorot == _js_number("monthly") * AGOROT_PER_SHEKEL
     assert pl.subscription_yearly_agorot == _js_number("yearly") * AGOROT_PER_SHEKEL
-    assert pl.paid_booking_percent == _js_number("paidBookingPercent")
-    assert pl.rescue_bag_fee_agorot == _js_number("rescueBagFee") * AGOROT_PER_SHEKEL
-    assert pl.monthly_cap_agorot == _js_number("monthlyCap") * AGOROT_PER_SHEKEL
+    plain, subscriber = _js_block("commission"), _js_block("subscriberCommission")
+    assert pl.paid_booking_percent == _js_number("paidBookingPercent", plain)
+    assert (
+        pl.rescue_bag_fee_agorot
+        == _js_number("rescueBagFee", plain) * AGOROT_PER_SHEKEL
+    )
+    assert pl.subscriber_booking_percent == _js_number("paidBookingPercent", subscriber)
+    assert (
+        pl.subscriber_bag_fee_agorot
+        == _js_number("rescueBagFee", subscriber) * AGOROT_PER_SHEKEL
+    )
+    assert "monthlyCap" not in JS  # Sapir 14/11: there is no monthly cap
     assert pl.threshold_bookings_per_month == _js_number("thresholdBookingsPerMonth")
     assert pl.notice_days == _js_number("noticeDays")
 
@@ -51,6 +67,12 @@ def test_backend_price_list_equals_the_document():
     assert f"| שנתי | {yearly} ₪ לשנה" in DOC
     assert f"| הרשמה לאירוע בתשלום | {pl.paid_booking_percent}% ממחיר ההרשמה |" in DOC
     assert f"| שקית הצלה שנאספה | {bag} ₪ לשקית |" in DOC
+    sub_bag = pl.subscriber_bag_fee_agorot // AGOROT_PER_SHEKEL
+    assert (
+        f"מנוי משלם עמלה מופחתת: {pl.subscriber_booking_percent}% במקום "
+        f"{pl.paid_booking_percent}%" in DOC
+    )
+    assert f"ו-{sub_bag} ₪ לשקית במקום {bag} ₪" in DOC
     assert f"מ-{pl.threshold_bookings_per_month} הזמנות ומעלה בחודש" in DOC
     assert f"{pl.notice_days} יום בכתב" in DOC
 

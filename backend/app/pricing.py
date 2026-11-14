@@ -28,7 +28,9 @@ class PriceList:
     subscription_yearly_agorot: int
     paid_booking_percent: int
     rescue_bag_fee_agorot: int
-    monthly_cap_agorot: int
+    # A subscriber pays the subscription and these reduced rates (no monthly cap).
+    subscriber_booking_percent: int
+    subscriber_bag_fee_agorot: int
     threshold_bookings_per_month: int
     notice_days: int
 
@@ -43,7 +45,8 @@ PRICE_LISTS: Final[dict[int, PriceList]] = {
         subscription_yearly_agorot=490 * AGOROT_PER_SHEKEL,
         paid_booking_percent=5,
         rescue_bag_fee_agorot=2 * AGOROT_PER_SHEKEL,
-        monthly_cap_agorot=49 * AGOROT_PER_SHEKEL,
+        subscriber_booking_percent=2,
+        subscriber_bag_fee_agorot=1 * AGOROT_PER_SHEKEL,
         threshold_bookings_per_month=20,
         notice_days=60,
     ),
