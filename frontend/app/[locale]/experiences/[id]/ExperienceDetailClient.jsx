@@ -77,8 +77,9 @@ const FEW_SPOTS = 3;
  * MEH-3199: `initialExperience` is the page's own server fetch (page.js
  * getExperience), so the first HTML already carries the workshop. The client
  * still refetches with the viewer's token (owner / admin fields), and a failed
- * refetch keeps the server copy. Without it (the segment's not-found.js) the
- * page loads client-side as before.
+ * refetch keeps the server copy. State is seeded once; a later prop change
+ * (same id) is not re-applied — the refetch brings the fresh copy. Without it
+ * (the segment's not-found.js) the page loads client-side as before.
  * @param {{ initialExperience?: object | null }} props
  */
 export default function ExperienceDetailClient({ initialExperience = null } = {}) {

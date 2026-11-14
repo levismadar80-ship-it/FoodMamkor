@@ -57,7 +57,8 @@ const DETAIL_DATE_OPTIONS = { weekday: "long" };
  * so the first HTML already carries the event — crawlers and slow phones see
  * the content, not a skeleton. The client still refetches with the viewer's
  * token (the owner / admin view), and a failed refetch keeps the server copy.
- * Without it (the segment's not-found.js) the page loads client-side as before.
+ * State is seeded once; a later prop change (same id) is not re-applied — the
+ * refetch brings the fresh copy. Without it the page loads client-side as before.
  * @param {{ initialEvent?: object | null }} props
  */
 export default function EventDetailClient({ initialEvent = null } = {}) {
@@ -146,8 +147,9 @@ export default function EventDetailClient({ initialEvent = null } = {}) {
     ? t("organizer_line", { name: event.producer_name })
     : `${t("organized_by")} ${event.producer_name}`;
 
-  // The canonical page address for share + the calendar entry. Client-only
-  // component past the loading gate, so window is defined here.
+  // The canonical page address for share + the calendar entry. MEH-3199: this
+  // also renders on the server now, where it is "" — ShareButton and the
+  // calendar link read it only in click handlers, after hydration.
   const pageUrl = typeof window === "undefined" ? "" : `${window.location.origin}${window.location.pathname}`;
 
   // MEH-2548: «היום» / «מחר» / «השבוע» beside the date, or the past-event
