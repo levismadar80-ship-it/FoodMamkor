@@ -282,7 +282,34 @@ describe("useMapSync — a failed area search keeps the list (MEH-3219 B15)", ()
     act(() => result.current.handleSearchThisArea());
     await waitFor(() => expect(showToast.error).toHaveBeenCalledWith("map.errors.load_failed"));
     expect(props.setAllProducers).not.toHaveBeenCalled();
+    // The on-screen list is filtered by the committed bounds: committing the
+    // new area on a failure filtered the old list down to nothing.
+    expect(props.setCommittedBounds).not.toHaveBeenCalled();
     expect(props.setMapMoved).toHaveBeenLastCalledWith(true);
+  });
+
+  it("commits the new area together with its list on success", async () => {
+    const { default: api } = await import("@/lib/api");
+    api.get.mockImplementationOnce(() => Promise.resolve({ data: [{ id: 7 }] }));
+    const { result, props } = setup();
+    act(() => result.current.handleSearchThisArea());
+    await waitFor(() => expect(props.setAllProducers).toHaveBeenCalledWith([{ id: 7 }]));
+    expect(props.setCommittedBounds).toHaveBeenCalledTimes(1);
+  });
+
+  it("drops an older reply that lands after a newer search", async () => {
+    const { default: api } = await import("@/lib/api");
+    let resolveOld;
+    api.get
+      .mockImplementationOnce(() => new Promise((r) => { resolveOld = r; }))
+      .mockImplementationOnce(() => Promise.resolve({ data: [{ id: 2 }] }));
+    const { result, props } = setup();
+    act(() => result.current.handleSearchThisArea());
+    act(() => result.current.handleSearchThisArea());
+    await waitFor(() => expect(props.setAllProducers).toHaveBeenCalledWith([{ id: 2 }]));
+    await act(async () => resolveOld({ data: [{ id: 1 }] }));
+    expect(props.setAllProducers).not.toHaveBeenCalledWith([{ id: 1 }]);
+    expect(props.setAllProducers).toHaveBeenCalledTimes(1);
   });
 });
 

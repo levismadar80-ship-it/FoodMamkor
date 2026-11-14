@@ -72,6 +72,8 @@ export function useMapSync({
   // hidden container (display:none, 0×0) produces degenerate bounds — we validate
   // below before using them.
   const mapRef = useRef(null);
+  // MEH-3219 B15: latest-wins counter for the «חפשו באזור זה» fetch.
+  const areaSearchSeq = useRef(0);
   // MEH-1010: producer.id → Set of card wrapper DOM nodes. The card list
   // renders twice (desktop sidebar + mobile sheet) — a single-node map let
   // the mobile mount overwrite the desktop node, so desktop marker-click
@@ -260,7 +262,9 @@ export function useMapSync({
       ? { north: ne.lat, south: sw.lat, east: ne.lng, west: sw.lng }
       : mapBounds;
 
-    setCommittedBounds(liveBounds);
+    // MEH-3219 B15: the bounds are committed only once the area's list has
+    // arrived (below). Committing first meant a failed fetch filtered the
+    // OLD list by the NEW bounds, which still read «אין בתי עסק».
     setMapMoved(false);
 
     const centerRadius = boundsToCenterRadius(liveBounds);
@@ -294,15 +298,23 @@ export function useMapSync({
     if (process.env.NODE_ENV !== "production") {
       console.log("[חפשי באזור זה] GET /producers", params);
     }
+    // Only the latest search may write: an older reply that lands after a
+    // newer tap must not overwrite it (REUSES: useProducersFeed.js latestRequest, MEH-2049).
+    const requestId = ++areaSearchSeq.current;
     api
       .get("/producers", { params })
-      .then((r) => setAllProducers(r.data))
+      .then((r) => {
+        if (requestId !== areaSearchSeq.current) return;
+        setAllProducers(r.data);
+        setCommittedBounds(liveBounds);
+      })
       // MEH-3219 B15: a failed area search (a 429 on a phone, a dropped
       // connection) used to empty the list, so the sheet said «אין בתי עסק»
       // about an area that has them. Keep what is on screen, say the load
       // failed (the mount load's string), and bring the «חפשו באזור זה» pill
       // back so one tap retries.
       .catch(() => {
+        if (requestId !== areaSearchSeq.current) return;
         showToast.error(t("map.errors.load_failed"));
         setMapMoved(true);
       });
