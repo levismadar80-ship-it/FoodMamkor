@@ -286,6 +286,21 @@ function RegisterPageBody() {
           cream, no floating white card. MEH-2577: OAuth now comes BEFORE the
           form, as on /login. */}
       <div className="w-full max-w-[416px] mx-auto">
+        {/* MEH-2922: /register is the CUSTOMER signup. A business owner who
+            landed here sees the way to business signup first, before the
+            heading and the form (it used to sit under the form, out of view).
+            Same approved strings and the same /join door as before
+            (MEH-2983). Header CTA stays removed (MEH-907). */}
+        <p className="mb-6 text-sm text-fg-muted text-start">
+          {t("auth.register.consumer.cta_producer")}{" "}
+          <Link
+            href="/join"
+            data-testid="register-producer-choice"
+            className="inline-flex items-center min-h-11 text-primary font-medium underline"
+          >
+            {t("auth.register.consumer.cta_producer_link")}
+          </Link>
+        </p>
         {/* Brand mark + heading */}
         {/* MEH-909: decorative Leaf badge removed for register↔login parity (MEH-839). */}
         <div className="mb-6 text-start">
@@ -481,12 +496,6 @@ function RegisterPageBody() {
           {t("auth.register.consumer.have_account")}{" "}
           <Link href="/login" data-testid="register-login-link" className="text-primary underline">
             {t("auth.register.consumer.login_link")}
-          </Link>
-        </p>
-        <p className="text-center text-sm text-fg-muted mt-2">
-          {t("auth.register.consumer.cta_producer")}{" "}
-          <Link href="/join" className="text-primary underline">
-            {t("auth.register.consumer.cta_producer_link")}
           </Link>
         </p>
       </div>
