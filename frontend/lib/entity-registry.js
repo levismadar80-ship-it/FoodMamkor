@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Module:   entity-registry
  * Purpose:  One list of the site's public entities (business, organizer,

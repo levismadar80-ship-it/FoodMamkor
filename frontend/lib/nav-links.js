@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Module:   nav-links
  * Purpose:  The one place that builds "navigate there" links (Waze + Google

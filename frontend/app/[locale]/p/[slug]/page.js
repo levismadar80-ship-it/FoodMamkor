@@ -1,3 +1,4 @@
+// @ts-check
 import { redirect } from "next/navigation";
 
 // /p/[slug] → canonical vanity URL, redirects to /[slug]

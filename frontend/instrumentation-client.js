@@ -10,6 +10,9 @@ import { scrubClaimTokens } from "./lib/claim-token";
 import { clientTracesSampleRate } from "./lib/sentry-sampling";
 import { replayAllowed } from "./lib/sentry-replay-gate";
 import { hasFullCookieConsent, COOKIE_CONSENT_EVENT } from "./lib/cookie-consent";
+import { clientSentryEnvironment, shouldDropClientEvent } from "./lib/sentry-environment";
+
+const currentNavigator = () => (typeof navigator !== "undefined" ? navigator : undefined);
 
 const dsn = process.env.NEXT_PUBLIC_SENTRY_DSN;
 
@@ -29,19 +32,25 @@ const makeReplay = () =>
 if (dsn) {
   Sentry.init({
     dsn,
-    environment: process.env.NEXT_PUBLIC_SENTRY_ENV || process.env.NODE_ENV,
+    // Where the page runs, not NODE_ENV (which is "production" on staging too).
+    environment:
+      process.env.NEXT_PUBLIC_SENTRY_ENV ||
+      clientSentryEnvironment(typeof window !== "undefined" ? window.location.hostname : ""),
     // MEH-2887: 0.1 on mehamakor.co.il, 0.01 on staging / previews (span quota).
     tracesSampleRate: clientTracesSampleRate(typeof window !== "undefined" ? window.location.hostname : ""),
     replaysOnErrorSampleRate: 1.0,
     replaysSessionSampleRate: 0,
     integrations: [],
     beforeSend(event) {
-      if (process.env.NODE_ENV === "development") return null;
+      // Local dev, and our own E2E runs / QA probes (navigator.webdriver),
+      // which stub API failures on purpose: noise, not user errors.
+      if (shouldDropClientEvent(process.env.NODE_ENV, currentNavigator())) return null;
       // MEH-2324: the owner-claim link is a bearer credential in its path
       // (/claim/<token>). Redact it from the URL, breadcrumbs and context.
       return scrubClaimTokens(event);
     },
-    beforeSendTransaction: (event) => scrubClaimTokens(event),
+    beforeSendTransaction: (event) =>
+      shouldDropClientEvent(process.env.NODE_ENV, currentNavigator()) ? null : scrubClaimTokens(event),
   });
 
   // Added after init, only once allowed: now if she already accepted all

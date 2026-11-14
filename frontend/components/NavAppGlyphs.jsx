@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 import { useId } from "react";

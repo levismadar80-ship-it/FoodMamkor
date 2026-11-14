@@ -4976,6 +4976,11 @@
             "title": "Email",
             "type": "string"
           },
+          "farmer_declaration_accepted": {
+            "default": false,
+            "title": "Farmer Declaration Accepted",
+            "type": "boolean"
+          },
           "password": {
             "description": "Password — additional checks via password_policy service",
             "maxLength": 200,
@@ -6818,6 +6823,11 @@
             ],
             "title": "Facebook"
           },
+          "farmer_declaration_accepted": {
+            "default": false,
+            "title": "Farmer Declaration Accepted",
+            "type": "boolean"
+          },
           "free_delivery_above": {
             "anyOf": [
               {
@@ -7433,6 +7443,11 @@
             "title": "Declaration Accepted",
             "type": "boolean"
           },
+          "farmer_declaration_accepted": {
+            "default": false,
+            "title": "Farmer Declaration Accepted",
+            "type": "boolean"
+          },
           "terms_accepted": {
             "default": false,
             "title": "Terms Accepted",
@@ -7512,6 +7527,11 @@
               }
             ],
             "title": "Facebook"
+          },
+          "farmer_declaration_accepted": {
+            "default": false,
+            "title": "Farmer Declaration Accepted",
+            "type": "boolean"
           },
           "instagram": {
             "anyOf": [
@@ -10002,6 +10022,18 @@
             ],
             "title": "Facebook"
           },
+          "farmer_declared_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Farmer Declared At"
+          },
           "favorites_count": {
             "default": 0,
             "title": "Favorites Count",
@@ -11111,6 +11143,11 @@
             ],
             "title": "Email"
           },
+          "farmer_declaration_accepted": {
+            "default": false,
+            "title": "Farmer Declaration Accepted",
+            "type": "boolean"
+          },
           "has_physical_location": {
             "default": true,
             "title": "Has Physical Location",
@@ -11636,6 +11673,11 @@
               }
             ],
             "title": "Facebook"
+          },
+          "farmer_declaration_accepted": {
+            "default": false,
+            "title": "Farmer Declaration Accepted",
+            "type": "boolean"
           },
           "free_delivery_above": {
             "anyOf": [
@@ -20330,7 +20372,7 @@
     },
     "/auth/resend-verify": {
       "post": {
-        "description": "Re-send verification email. Rate-limited to 3/hour per IP.",
+        "description": "Re-send verification email. 3/hour per IP, plus 3/hour and 10/day\nper account (MEH-2906, services/resend_verify_cap.py).",
         "operationId": "resend_verify_auth_resend_verify_post",
         "responses": {
           "200": {
@@ -26391,7 +26433,7 @@
     },
     "/upload/image": {
       "post": {
-        "description": "Upload image to Cloudinary. Validates size and real content type.\nEnforces free plan limit (3 images) for producers.",
+        "description": "Upload image to Cloudinary. Validates size and real content type.\nThe free-plan gallery cap is NOT here (MEH-3220, services/gallery_cap.py).",
         "operationId": "upload_image_upload_image_post",
         "requestBody": {
           "content": {

@@ -1,3 +1,4 @@
+// @ts-check
 // Category card data for the homepage category grid.
 // Pure module (no React imports) so it can be consumed by both the
 // HomeCategoryGrid component (frontend/app/[locale]/home/HomeCategoryGrid.jsx)

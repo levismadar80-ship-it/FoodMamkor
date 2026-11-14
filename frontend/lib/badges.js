@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Badge system (MEH-18). Pure functions — no React, no DOM.
  *

@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Shared validators for form inputs across the site.
  * Used in /register, /register/producer, and anywhere phone/password

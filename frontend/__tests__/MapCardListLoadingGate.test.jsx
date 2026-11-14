@@ -13,7 +13,7 @@
  * (Demonstrated in the PR body by construction.)
  */
 import { describe, it, expect, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, fireEvent } from "@testing-library/react";
 import MapCardList from "@/app/[locale]/map/components/MapCardList";
 
 vi.mock("next-intl", () => ({
@@ -73,5 +73,53 @@ describe("MapCardList — MEH-2425 reset only when something is filtered", () =>
     render(<MapCardList {...base} visibleProducers={[]} filtered={false} />);
     expect(screen.getByText("map.card_list.empty.heading")).toBeInTheDocument();
     expect(screen.queryByTestId("map-card-list-reset")).toBeNull();
+  });
+});
+
+// MEH-3198: after a failed load, an empty list is "could not load", not "no
+// results". DISCRIMINATION: the pre-MEH-3198 component has no loadError prop,
+// so the first two cases fail (the empty heading renders, no retry button).
+describe("MapCardList — MEH-3198 load error", () => {
+  it("error + empty: the error with «נסו שוב», not the empty state", () => {
+    const onRetry = vi.fn();
+    render(<MapCardList {...base} visibleProducers={[]} loadError onRetry={onRetry} />);
+    expect(screen.getByTestId("map-card-list-error")).toBeInTheDocument();
+    expect(screen.getByText("map.errors.load_failed")).toBeInTheDocument();
+    expect(screen.queryByText("map.card_list.empty.heading")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByTestId("map-card-list-retry"));
+    expect(onRetry).toHaveBeenCalledTimes(1);
+  });
+
+  // Review finding 4: the message is the shared InlineMessage (role="alert",
+  // the one error red), not a hand-written <p>. Red on the raw <p text-text>.
+  it("error + empty: the message is the shared InlineMessage (alert, error red)", () => {
+    render(<MapCardList {...base} visibleProducers={[]} loadError onRetry={() => {}} />);
+    const msg = screen.getByRole("alert");
+    expect(msg).toHaveTextContent("map.errors.load_failed");
+    expect(msg).toHaveClass("text-error");
+  });
+
+  it("error while loading again: the skeleton, not the error", () => {
+    render(<MapCardList {...base} visibleProducers={[]} loadError loading onRetry={() => {}} />);
+    expect(screen.getByTestId("sidebar-list-skeleton")).toBeInTheDocument();
+    expect(screen.queryByTestId("map-card-list-error")).not.toBeInTheDocument();
+  });
+
+  it("no error + empty (a filter with no results): the normal empty state", () => {
+    render(<MapCardList {...base} visibleProducers={[]} loadError={false} filtered />);
+    expect(screen.getByText("map.card_list.empty.heading")).toBeInTheDocument();
+    expect(screen.queryByTestId("map-card-list-error")).not.toBeInTheDocument();
+  });
+
+  it("error flag with one row and with many: the rows stay", () => {
+    const { rerender } = render(
+      <MapCardList {...base} visibleProducers={[{ id: 1, name: "א" }]} loadError onRetry={() => {}} />,
+    );
+    expect(screen.getAllByTestId("producer-card")).toHaveLength(1);
+    rerender(
+      <MapCardList {...base} visibleProducers={[{ id: 1, name: "א" }, { id: 2, name: "ב" }]} loadError onRetry={() => {}} />,
+    );
+    expect(screen.getAllByTestId("producer-card")).toHaveLength(2);
+    expect(screen.queryByTestId("map-card-list-error")).not.toBeInTheDocument();
   });
 });

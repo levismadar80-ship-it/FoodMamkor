@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Module:   panel-position
  * Purpose:  Viewport-fit geometry shared by every portaled, `position: fixed`

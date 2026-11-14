@@ -1388,7 +1388,7 @@
       }
     },
     "errors": {
-      "load_failed": "Couldn't load businesses — please try again",
+      "load_failed": "Couldn't load the businesses",
       "invalid_search": "Invalid search",
       "radius_too_small": "Move the map before searching",
       "radius_too_large": "Area too large — zoom in to search"

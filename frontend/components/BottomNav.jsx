@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 // MEH-731: locale-stripping usePathname (returns "/" on /he and /en) so the

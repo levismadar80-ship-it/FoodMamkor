@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 import { useTranslations } from "next-intl";
@@ -19,6 +20,8 @@ import { buildPageRange, clampPage } from "@/lib/pagination";
  *   role="navigation", aria-label="Pagination" (translated)
  *   aria-current="page" on the active button
  *   Disabled prev/next when at boundaries.
+ *
+ * @param {{ page: number, totalPages: number, onChange: (page: number) => void, perPage?: number, onPerPageChange?: (perPage: number) => void, perPageOptions?: number[] }} props
  */
 export default function Pagination({
   page,

@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Module:   admin/help/topics
  * Purpose:  MEH-2591 — the ordered list of «איך עושים…» help topics on
