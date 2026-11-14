@@ -1,3 +1,4 @@
+// @ts-check
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import {
   Camera,
@@ -265,7 +266,7 @@ export default async function FaqForBusinessesPage({ params }) {
               </p>
             </figcaption>
             <ul className="grid gap-4 sm:grid-cols-2">
-              {[
+              {/** @type {Array<[string, import("@phosphor-icons/react").Icon]>} */ ([
                 ["photos", Camera],
                 ["story", BookOpen],
                 // MEH-1285 legal-gated: restore after lawyer decision on
@@ -273,7 +274,7 @@ export default async function FaqForBusinessesPage({ params }) {
                 ["products", Basket],
                 ["delivery", Truck],
                 ["reviews", ChatCircleText],
-              ].map(([key, Icon]) => (
+              ]).map(([key, Icon]) => (
                 <li key={key} className="flex items-start gap-3">
                   <Icon
                     size={24}

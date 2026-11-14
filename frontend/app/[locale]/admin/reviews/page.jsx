@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 import Dialog from "@/components/ui/Dialog";
@@ -157,6 +158,11 @@ export default function AdminReviewsPage() {
   // the backend's message instead of the generic error.
   // `hide` is explicit, not !is_hidden: MEH-2381's "keep hidden" sends a
   // hide for a row that is already hidden, with `seen` = the edit it showed.
+  /**
+   * @param {{ id: number | string }} review
+   * @param {{ hide: boolean, seen?: string | null }} change
+   * @returns {Promise<boolean>} whether the toggle went through
+   */
   const setHidden = async (review, { hide, seen }) => {
     // MEH-2389: the button is aria-disabled, not disabled, while in flight —
     // a disabled button drops keyboard focus to <body>. So the guard is here.
@@ -206,7 +212,8 @@ export default function AdminReviewsPage() {
   // (cf. MEH-2389).
   const keepHidden = async (review) => {
     if (!(await setHidden(review, { hide: true, seen: review.edited_after_hidden_at }))) return;
-    document.querySelector(`[data-toggle-for="${review.id}"]`)?.focus();
+    const toggle = /** @type {HTMLElement | null} */ (document.querySelector(`[data-toggle-for="${review.id}"]`));
+    toggle?.focus();
   };
 
   const filtered = reviews.filter((r) => {

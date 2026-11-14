@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
@@ -118,7 +119,7 @@ function GroupBuyRow({ gb }) {
   const t = useTranslations("group_buys.card");
   const td = useTranslations("group_buys.detail");
   const funded = gb.status === "funded";
-  const daysLeft = Math.max(0, Math.ceil((new Date(gb.deadline) - Date.now()) / 86400000));
+  const daysLeft = Math.max(0, Math.ceil((new Date(gb.deadline).getTime() - Date.now()) / 86400000));
   const discount = groupBuyDiscountPct(gb.price_per_unit_regular, gb.price_per_unit_group);
   const remaining = Math.max(0, gb.min_participants - gb.commits_count);
   const progress = t("progress_label", { commits: gb.commits_count, min: gb.min_participants });

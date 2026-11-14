@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 import { cloneElement, useCallback, useEffect, useMemo, useRef, useState } from "react";

@@ -1,3 +1,4 @@
+// @ts-check
 import { notFound } from "next/navigation";
 import ProducerDetail from "@/app/[locale]/producer/[id]/ProducerDetail";
 import { buildProducerMetadata, buildJsonLd, buildTitleNoBrand, serializeJsonLd } from "@/lib/seo";
@@ -38,6 +39,7 @@ async function getProducerBySlug(slug) {
   // MEH-2534: the business existed and was deleted — its own page, not a 404.
   if (res.status === 410) return GONE;
   if (!res.ok) {
+    /** @type {Error & { status?: number, slug?: string }} */
     const err = new Error(
       `producer by-slug lookup failed: ${res.status} ${res.statusText} (slug=${slug})`
     );
