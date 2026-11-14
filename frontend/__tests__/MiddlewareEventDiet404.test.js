@@ -163,5 +163,27 @@ describe.each([
     backend({ status: 404 });
     expect(wasNotFound(await middleware(requestFor(`/he/${segment}`)))).toBe(false);
     expect(global.fetch).not.toHaveBeenCalled();
+  });  it("the /en/ locale gets the same real 404", async () => {
+    backend({ status: 404 });
+    expect(wasNotFound(await middleware(requestFor(`/en/${segment}/00000000-0000-0000-0000-000000000000`)))).toBe(true);
   });
+  it.each([
+    ["next-router-prefetch", "1"],
+    ["purpose", "prefetch"],
+    ["sec-purpose", "prefetch;prerender"],
+  ])("a prefetch (%s) is not checked — no backend GET per card", async (name, value) => {
+    backend({ status: 404 });
+    const req = requestFor(PAGE);
+    req.headers = new Map([[name, value]]);
+    expect(wasNotFound(await middleware(req))).toBe(false);
+    expect(global.fetch).not.toHaveBeenCalled();
+  });
+});
+
+// MEH-2977 control: the set of checked segments is closed. A detail route
+// that is not in it (recipes live under a business slug, not here) is never
+// asked about, so a set that grew too wide would go red.
+it.each(["recipes", "organizers", "producer"])("/%s/<id> is not checked", async (segment) => {
+  backend({ status: 404 });
+  expect(wasNotFound(await middleware(requestFor(`/he/${segment}/00000000-0000-0000-0000-000000000000`)))).toBe(false);
 });

@@ -122,6 +122,17 @@ const GONE = "gone";
 // as producerExists: only an ANSWERED "absent" becomes a 404; anything else
 // (5xx, 429, timeout, a missing count header) lets the page run.
 
+// MEH-2977: a Next <Link> prefetch (or a browser speculative load) runs this
+// middleware too; every card on a list page would cost a backend GET.
+function isPrefetch(request) {
+  const h = request.headers;
+  return Boolean(
+    h?.get?.("next-router-prefetch") ||
+      h?.get?.("purpose") === "prefetch" ||
+      /prefetch/.test(h?.get?.("sec-purpose") || ""),
+  );
+}
+
 // /events/<id>: the backend answers 404 for an unknown id and 422 for one that
 // is not a UUID (events/[id]/page.js treats both as "no such event").
 //
@@ -131,7 +142,9 @@ const GONE = "gone";
 // server fetch (events/[id]/page.js getEvent) is anonymous too and already
 // calls notFound() for her — the UI was the not-found page before this check;
 // only the status code changes from 200 to 404.
-async function eventExists(url) {
+// MEH-2977: the same reasoning holds for /group-buys/<id> and /experiences/<id>
+// (anonymous 404 for a non-public one; their pages' own fetch is anonymous too).
+async function entityExists(url) {
   try {
     const res = await fetch(url, { signal: AbortSignal.timeout(EXISTENCE_CHECK_TIMEOUT_MS) });
     if (res.status === 404 || res.status === 422) return false;
@@ -296,21 +309,24 @@ export default async function middleware(request) {
   // keeps its real 404 and MEH-1398's SEO guarantee holds where it matters.
 
   let exists = existsUrl ? await producerExists(existsUrl) : true;
-  // MEH-2706: event and diet pages (see eventExists / dietPageExists). These
+  // MEH-2706: entity detail and diet pages (see entityExists / dietPageExists). These
   // branches never overlap the slug check above (that one needs segs.length 1).
   // DO NOT add a static route under /events/ (e.g. /events/new) without
   // excluding it here: the backend would 404/422 it and this would mint a
   // real 404 for a real page. app/[locale]/events/ today holds only [id].
   // Cost: one uncached backend GET (≤3 s, then fail-open) per request on
-  // these two routes — the same trade the slug check already makes.
+  // these routes — the same trade the slug check already makes. The fetch
+  // comes from Vercel's IP, so it shares the backend's 120/min per-IP bucket
+  // with the pages' own server fetches; a <Link> prefetch is therefore
+  // skipped (MEH-2977) — its status code is never shown to anyone.
   // MEH-2977: /group-buys/<id> and /experiences/<id> have the same shape
   // (notFound() in generateMetadata, which streams) and the same backend
   // contract (404 unknown / 422 not a UUID, anonymous 404 for a non-public
   // one — their pages' own fetch is anonymous too), so they ride the same
   // check. app/[locale]/group-buys/ and experiences/ hold only [id] + the
   // list; /experiences/new is a next.config redirect, which runs before this.
-  if (segs.length === 2 && ENTITY_404_SEGMENTS.has(segs[0]) && segs[1]) {
-    exists = await eventExists(`${API_URL}/${segs[0]}/${encodeURIComponent(segs[1])}`);
+  if (segs.length === 2 && ENTITY_404_SEGMENTS.has(segs[0]) && segs[1] && !isPrefetch(request)) {
+    exists = await entityExists(`${API_URL}/${segs[0]}/${encodeURIComponent(segs[1])}`);
   } else if (segs.length === 3 && segs[0] === "producers" && segs[1] === "diet") {
     exists = await dietPageExists(decodeSlugParam(segs[2]));
   }
