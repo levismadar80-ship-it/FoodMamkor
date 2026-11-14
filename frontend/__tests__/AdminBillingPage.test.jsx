@@ -2,18 +2,28 @@
 // messages, so the plural forms and the amounts are what the admin reads.
 // States: error · 0 businesses · 1 · many (5-state rule).
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, within } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
 import he from "../messages/he.json";
 
 // A plain function, not vi.fn: vitest tracks a spy's returned promise, and a
 // rejected one then fails the test even though the page catches it.
-const { fetchState } = vi.hoisted(() => ({ fetchState: { calls: [], reply: () => Promise.resolve({ data: null }) } }));
-vi.mock("@/lib/api", () => ({ default: { get: (...args) => (fetchState.calls.push(args), fetchState.reply()) } }));
+const { fetchState } = vi.hoisted(() => ({
+  fetchState: { calls: [], reply: () => Promise.resolve({ data: null }) },
+}));
+vi.mock("@/lib/api", () => ({
+  default: {
+    get: (...args) => (fetchState.calls.push(args), fetchState.reply()),
+  },
+}));
 const get = {
   mock: fetchState,
-  mockResolvedValue: (value) => { fetchState.reply = () => Promise.resolve(value); },
-  mockRejectedValue: (error) => { fetchState.reply = () => Promise.reject(error); },
+  mockResolvedValue: (value) => {
+    fetchState.reply = () => Promise.resolve(value);
+  },
+  mockRejectedValue: (error) => {
+    fetchState.reply = () => Promise.reject(error);
+  },
 };
 vi.mock("@/i18n/navigation", () => ({
   Link: ({ href, children, ...rest }) => (
@@ -29,10 +39,20 @@ const overview = (rows, extra = {}) => ({
   month: "2026-11",
   threshold_agorot: 100000,
   businesses_over_threshold: rows.filter((r) => r.over_threshold).length,
-  businesses_over_two_months: rows.filter((r) => r.months_over_in_a_row >= 2).length,
+  businesses_over_two_months: rows.filter((r) => r.months_over_in_a_row >= 2)
+    .length,
   start_billing_businesses: 10,
   would_pay_total_agorot: rows.reduce((sum, r) => sum + r.would_pay_agorot, 0),
   phase: "launch",
+  history: [
+    {
+      month: "2026-11",
+      businesses: rows.length,
+      businesses_over_threshold: 0,
+      value_agorot: 0,
+      would_pay_total_agorot: 0,
+    },
+  ],
   rows,
   ...extra,
 });
@@ -53,8 +73,16 @@ const show = () =>
   render(
     <NextIntlClientProvider locale="he" messages={he}>
       <AdminBillingPage />
-    </NextIntlClientProvider>
+    </NextIntlClientProvider>,
   );
+
+const past = (label, businesses, over, pay) => ({
+  month: label,
+  businesses,
+  businesses_over_threshold: over,
+  value_agorot: pay * 20,
+  would_pay_total_agorot: pay,
+});
 
 describe("AdminBillingPage (MEH-3182)", () => {
   beforeEach(() => {
@@ -69,72 +97,143 @@ describe("AdminBillingPage (MEH-3182)", () => {
     expect(get.mock.calls).toEqual([["/admin/billing/overview"]]);
   });
 
-  it("0 businesses: the empty line, zeros in the tiles, billing shown as off", async () => {
+  it("says in words that billing is off and that it is not time yet", async () => {
     get.mockResolvedValue({ data: overview([]) });
     show();
-    expect(await screen.findByTestId("admin-billing-empty")).toHaveTextContent(he.admin.billing.empty);
-    expect(screen.queryByTestId("admin-billing-rows")).toBeNull();
-    expect(screen.getByTestId("admin-billing-over")).toHaveTextContent("0");
-    expect(screen.getByTestId("admin-billing-switch")).toHaveTextContent(he.admin.billing.switch_off);
-    expect(screen.getByTestId("admin-billing-threshold")).toHaveTextContent("1,000₪");
+    const off = await screen.findByTestId("admin-billing-switch");
+    expect(off).toHaveTextContent("החיוב כבוי");
+    expect(off).toHaveTextContent("אף בית עסק לא משלם לאתר כרגע");
+    expect(screen.getByTestId("admin-billing-ready-answer")).toHaveTextContent(
+      "עדיין לא",
+    );
+    // The rule is a full sentence with the goal and the amount spelled out.
+    expect(screen.getByTestId("admin-billing-threshold").textContent).toBe(
+      "מתחילים לגבות כש-10 בתי עסק מקבלים דרך האתר הזמנות בתשלום של 1,000₪ ומעלה בחודש, חודשיים ברצף.",
+    );
+    expect(screen.getByTestId("admin-billing-two-months").textContent).toBe(
+      "כרגע: 0 מתוך 10 בתי עסק",
+    );
   });
 
-  it("1 business under the threshold: no would-pay line", async () => {
-    get.mockResolvedValue({ data: overview([row("מאפיית הבוקר", false)]) });
+  it("no screen sentence uses the word «סף»: a new admin reads amounts, not jargon", () => {
+    // The check itself sees the word when it is there.
+    expect(/(^|[\s«])ל?ה?סף([\s.,:»]|$)/.test("עברו את הסף החודש")).toBe(true);
+    const withJargon = Object.entries(he.admin.billing).filter(([, text]) =>
+      // The word on its own; «כסף» contains the letters and is fine.
+      /(^|[\s«])ל?ה?סף([\s.,:»]|$)/.test(text),
+    );
+    expect(withJargon).toEqual([]);
+  });
+
+  it("0 businesses: the empty line and zeros", async () => {
+    get.mockResolvedValue({ data: overview([]) });
+    show();
+    expect(await screen.findByTestId("admin-billing-empty")).toHaveTextContent(
+      he.admin.billing.empty,
+    );
+    expect(screen.queryByTestId("admin-billing-row")).toBeNull();
+    expect(screen.getByTestId("admin-billing-over").textContent).toBe("0");
+    expect(screen.getByTestId("admin-billing-would-pay").textContent).toBe(
+      "0₪",
+    );
+  });
+
+  it("1 business that has not reached the amount: says so, and no would-pay line", async () => {
+    get.mockResolvedValue({ data: overview([row("דבש הגליל", false)]) });
     show();
     const item = await screen.findByTestId("admin-billing-row");
-    expect(item).toHaveTextContent("מאפיית הבוקר");
-    expect(item).toHaveTextContent(he.admin.billing.row_under);
-    expect(item).toHaveTextContent("הזמנה אחת");
-    expect(item).toHaveTextContent("300₪");
-    expect(item).not.toHaveTextContent("היה משלם");
-    expect(screen.queryByTestId("admin-billing-empty")).toBeNull();
+    expect(item.textContent).toBe(
+      "דבש הגלילהזמנה אחת דרך האתר, בסך 300₪עוד לא הגיע ל-1,000₪ החודש, ולכן לא היה משלם.",
+    );
   });
 
-  it("many businesses: each row its own state, the tiles carry the server's totals", async () => {
+  it("many businesses: each row its own sentences, the month card carries the server's totals", async () => {
     get.mockResolvedValue({
       data: overview([
-        row("א", true, { months_over_in_a_row: 3, bookings: 7 }),
-        row("ב", true, { months_over_in_a_row: 2, bookings: 2 }),
-        row("ג", false, { bookings: 12 }),
+        row("מאפייה", true, { months_over_in_a_row: 2, bookings: 14 }),
+        row("גבינות", true, { months_over_in_a_row: 1, bookings: 2 }),
+        row("דבש", false),
       ]),
     });
     show();
-    const rows = await screen.findAllByTestId("admin-billing-row");
-    expect(rows).toHaveLength(3);
-    expect(rows[0]).toHaveTextContent("מעל הסף, 3 חודשים ברצף");
-    expect(rows[0]).toHaveTextContent("7 הזמנות");
-    expect(rows[0]).toHaveTextContent("היה משלם החודש 60₪");
-    expect(rows[1]).toHaveTextContent("מעל הסף, חודשיים ברצף");
-    expect(rows[1]).toHaveTextContent("שתי הזמנות");
-    expect(rows[2]).toHaveTextContent("12 הזמנות");
-    expect(rows[2]).not.toHaveTextContent("היה משלם");
-    expect(screen.getByTestId("admin-billing-over")).toHaveTextContent("2");
-    const twoMonths = screen.getByTestId("admin-billing-two-months");
-    expect(within(twoMonths).getByText("2")).toBeInTheDocument();
-    expect(twoMonths).toHaveTextContent("10");
-    expect(screen.getByTestId("admin-billing-would-pay")).toHaveTextContent("120₪");
+    const items = await screen.findAllByTestId("admin-billing-row");
+    expect(items.map((item) => item.textContent)).toEqual([
+      "מאפייה14 הזמנות דרך האתר, בסך 1,200₪הגיע ל-1,000₪ החודש. זה החודש השני ברצף.היה משלם לאתר החודש: 60₪",
+      "גבינותשתי הזמנות דרך האתר, בסך 1,200₪הגיע ל-1,000₪ החודש. זה החודש הראשון ברצף.היה משלם לאתר החודש: 60₪",
+      "דבשהזמנה אחת דרך האתר, בסך 300₪עוד לא הגיע ל-1,000₪ החודש, ולכן לא היה משלם.",
+    ]);
+    expect(screen.getByTestId("admin-billing-over").textContent).toBe("2");
+    expect(screen.getByTestId("admin-billing-would-pay").textContent).toBe(
+      "120₪",
+    );
+    expect(screen.getByTestId("admin-billing-two-months").textContent).toBe(
+      "כרגע: 1 מתוך 10 בתי עסק",
+    );
+  });
+
+  it("the answer turns to «כן» only when the goal is met", async () => {
+    get.mockResolvedValue({
+      data: overview([], { businesses_over_two_months: 10 }),
+    });
+    show();
+    expect(
+      await screen.findByTestId("admin-billing-ready-answer"),
+    ).toHaveTextContent("כן, הגיע הזמן");
+  });
+
+  it("earlier months: no bookings · nobody reached the amount · one · two · many; the current month is not repeated", async () => {
+    get.mockResolvedValue({
+      data: overview([], {
+        history: [
+          past("2026-11", 4, 3, 17500),
+          past("2026-10", 4, 3, 17500),
+          past("2026-09", 3, 2, 9000),
+          past("2026-08", 2, 1, 6000),
+          past("2026-07", 1, 0, 0),
+          past("2026-06", 0, 0, 0),
+        ],
+      }),
+    });
+    show();
+    const lines = await screen.findAllByTestId("admin-billing-history-month");
+    expect(lines.map((line) => line.textContent)).toEqual([
+      "אוקטובר 20263 בתי עסק היו משלמים, בסך הכול 175₪",
+      "ספטמבר 2026שני בתי עסק היו משלמים, בסך הכול 90₪",
+      "אוגוסט 2026בית עסק אחד היה משלם, בסך הכול 60₪",
+      "יולי 2026אף בית עסק לא הגיע ל-1,000₪",
+      "יוני 2026לא היו הזמנות דרך האתר",
+    ]);
   });
 
   it("a failed fetch shows an error, never a screen of zeros", async () => {
     get.mockRejectedValue(new Error("down"));
     show();
-    expect(await screen.findByTestId("admin-billing-error")).toHaveTextContent(he.admin.billing.load_error);
+    expect(await screen.findByTestId("admin-billing-error")).toHaveTextContent(
+      he.admin.billing.load_error,
+    );
     expect(screen.queryByTestId("admin-billing")).toBeNull();
     expect(screen.queryByTestId("admin-billing-over")).toBeNull();
   });
 
-  it("an answer missing the new fields (an older server) is the error state, not a half-filled screen", async () => {
-    const { would_pay_total_agorot: _total, phase: _phase, ...older } = overview([]);
-    get.mockResolvedValue({ data: older });
-    show();
-    expect(await screen.findByTestId("admin-billing-error")).toHaveAttribute("role", "alert");
-    expect(screen.queryByTestId("admin-billing")).toBeNull();
-  });
+  it.each(["would_pay_total_agorot", "phase", "history"])(
+    "an answer without %s (an older server) is the error state, not a half-filled screen",
+    async (field) => {
+      const { [field]: _dropped, ...older } = overview([]);
+      get.mockResolvedValue({ data: older });
+      show();
+      expect(await screen.findByTestId("admin-billing-error")).toHaveAttribute(
+        "role",
+        "alert",
+      );
+      expect(screen.queryByTestId("admin-billing")).toBeNull();
+    },
+  );
 
-  it("billing reads as on only when the server says the launch phase is over", async () => {
+  it("billing reads as on only when the server says so", async () => {
     get.mockResolvedValue({ data: overview([], { phase: "billing" }) });
     show();
-    expect(await screen.findByTestId("admin-billing-switch")).toHaveTextContent(he.admin.billing.switch_on);
+    expect(await screen.findByTestId("admin-billing-switch")).toHaveTextContent(
+      he.admin.billing.switch_on_title,
+    );
   });
 });

@@ -416,6 +416,40 @@
         "title": "AvailabilityStateUpdate",
         "type": "object"
       },
+      "BillingHistoryMonthOut": {
+        "description": "One past month as it would have been billed (shadow billing).",
+        "properties": {
+          "businesses": {
+            "title": "Businesses",
+            "type": "integer"
+          },
+          "businesses_over_threshold": {
+            "title": "Businesses Over Threshold",
+            "type": "integer"
+          },
+          "month": {
+            "title": "Month",
+            "type": "string"
+          },
+          "value_agorot": {
+            "title": "Value Agorot",
+            "type": "integer"
+          },
+          "would_pay_total_agorot": {
+            "title": "Would Pay Total Agorot",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "month",
+          "businesses",
+          "businesses_over_threshold",
+          "value_agorot",
+          "would_pay_total_agorot"
+        ],
+        "title": "BillingHistoryMonthOut",
+        "type": "object"
+      },
       "BillingKindOut": {
         "properties": {
           "bookings": {
@@ -448,6 +482,13 @@
           "businesses_over_two_months": {
             "title": "Businesses Over Two Months",
             "type": "integer"
+          },
+          "history": {
+            "items": {
+              "$ref": "#/components/schemas/BillingHistoryMonthOut"
+            },
+            "title": "History",
+            "type": "array"
           },
           "month": {
             "title": "Month",
@@ -489,6 +530,7 @@
           "start_billing_businesses",
           "would_pay_total_agorot",
           "phase",
+          "history",
           "rows"
         ],
         "title": "BillingOverviewOut",

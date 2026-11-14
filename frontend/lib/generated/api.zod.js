@@ -25,6 +25,13 @@ export const GetAnalyticsAdminAnalyticsGetResponse = /*#__PURE__*/ zod.unknown()
 export const AdminBillingOverviewAdminBillingOverviewGetResponse = /*#__PURE__*/ zod.object({
   "businesses_over_threshold": /*#__PURE__*/ zod.int(),
   "businesses_over_two_months": /*#__PURE__*/ zod.int(),
+  "history": /*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
+  "businesses": /*#__PURE__*/ zod.int(),
+  "businesses_over_threshold": /*#__PURE__*/ zod.int(),
+  "month": /*#__PURE__*/ zod.string(),
+  "value_agorot": /*#__PURE__*/ zod.int(),
+  "would_pay_total_agorot": /*#__PURE__*/ zod.int()
+}).check(/*#__PURE__*/ zod.describe('One past month as it would have been billed (shadow billing).'))),
   "month": /*#__PURE__*/ zod.string(),
   "phase": /*#__PURE__*/ zod.enum(['launch', 'billing']),
   "rows": /*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({

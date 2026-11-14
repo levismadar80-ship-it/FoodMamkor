@@ -49,6 +49,16 @@ class BillingOverviewRowOut(BaseModel):
     would_pay_agorot: int
 
 
+class BillingHistoryMonthOut(BaseModel):
+    """One past month as it would have been billed (shadow billing)."""
+
+    month: str
+    businesses: int
+    businesses_over_threshold: int
+    value_agorot: int
+    would_pay_total_agorot: int
+
+
 class BillingOverviewOut(BaseModel):
     month: str
     threshold_agorot: int
@@ -58,4 +68,6 @@ class BillingOverviewOut(BaseModel):
     start_billing_businesses: int
     would_pay_total_agorot: int
     phase: Literal["launch", "billing"]  # "launch" = nothing is charged
+    # The month and the five before it, newest first.
+    history: list[BillingHistoryMonthOut]
     rows: list[BillingOverviewRowOut]

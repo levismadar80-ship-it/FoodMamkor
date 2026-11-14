@@ -2433,21 +2433,31 @@
     },
     "billing": {
       "title": "Billing",
-      "lead": "Nothing is charged today. This shows what would happen if billing were on, for the current month.",
-      "stat_over": "Over the threshold this month",
-      "stat_two_months": "Two months in a row",
-      "stat_two_months_goal": "Signal to start billing: {goal} businesses",
-      "stat_would": "Would come in this month",
-      "stat_switch": "Billing",
-      "switch_off": "Off",
-      "switch_on": "On",
-      "threshold_line": "Threshold: paid bookings through the site of <amount></amount> in a month.",
-      "empty": "No bookings through the site yet this month.",
-      "load_error": "We could not load the billing figures. Try refreshing the page.",
-      "row_over": "{months, plural, one {Over the threshold, first month} other {Over the threshold, # months in a row}}",
-      "row_under": "Under the threshold",
-      "row_bookings": "{count, plural, one {# booking} other {# bookings}}",
-      "row_would_pay": "Would pay <amount></amount> this month."
+      "lead": "This screen shows whether it is time to start charging businesses, and how much that would bring in.",
+      "switch_off_title": "Billing is off",
+      "switch_off_body": "No business pays the site right now. This screen only shows numbers; it charges nothing.",
+      "switch_on_title": "Billing is on",
+      "switch_on_body": "Businesses that reached the amount are charged once a month.",
+      "ready_title": "Is it time to start charging?",
+      "ready_no": "Not yet",
+      "ready_yes": "Yes, it is time",
+      "ready_rule": "Charging starts when {goal} businesses get paid bookings of <amount></amount> or more a month through the site, two months in a row.",
+      "ready_progress": "Now: {count} of {goal} businesses",
+      "month_title": "This month: {month}",
+      "month_over_label": "Businesses that got paid bookings of <amount></amount> or more this month",
+      "month_would_label": "What they would pay the site this month, if billing were on",
+      "rows_title": "Businesses with bookings this month",
+      "empty": "No business has had a booking through the site this month yet.",
+      "load_error": "We could not load the billing data. Try refreshing the page.",
+      "row_bookings": "{count, plural, one {# booking through the site} other {# bookings through the site}}, worth <amount></amount>",
+      "row_over": "Reached <amount></amount> this month. {months, plural, one {This is the first month in a row} other {# months in a row so far}}.",
+      "row_under": "Has not reached <amount></amount> this month, so would not pay.",
+      "row_would_pay": "Would pay the site this month: <amount></amount>",
+      "history_title": "Earlier months",
+      "history_lead": "What would have happened each month if billing had been on. None of it was charged.",
+      "history_line": "{over, plural, one {# business would have paid} other {# businesses would have paid}}, <amount></amount> in total",
+      "history_nobody": "No business reached <amount></amount>",
+      "history_none": "No bookings through the site"
     },
     "analytics": {
       "title": "Analytics",
@@ -2648,10 +2658,10 @@
           ]
         },
         "billing": {
-          "q": "Where do I see which businesses passed the threshold?",
+          "q": "Where do I see whether it is time to start charging businesses?",
           "steps": [
-            "On “Billing”: how many businesses passed the threshold this month, how many did so two months in a row, and what each would pay this month.",
-            "The screen is read-only. Nothing is charged during the launch period."
+            "On “Billing”: whether it is time to start charging, which businesses got bookings through the site this month, and what each would pay.",
+            "The screen is read-only. While it says “Billing is off”, nothing is charged."
           ]
         },
         "group_buys": {

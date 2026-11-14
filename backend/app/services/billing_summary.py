@@ -32,6 +32,9 @@ from app.utils.clock import ISRAEL_TZ, israel_today
 
 # How far back the admin view looks when it counts months in a row.
 STREAK_LOOKBACK_MONTHS = 6
+# The history the admin screen lists reads the same months as the streak; the
+# screen and docs/DATA.md say "the month and the five before it".
+HISTORY_MONTHS = STREAK_LOOKBACK_MONTHS
 # Sapir is told «הגיע הזמן» when this many businesses were over the threshold
 # two months in a row (her standing ask, 14/11/2026). A signal, not a switch.
 START_BILLING_BUSINESSES = 10
@@ -172,14 +175,19 @@ def _bookings_by_business(
 def overview(db: Session, month: Month) -> dict[str, Any]:
     """Every business with a counted booking in `month`, highest value first."""
     threshold = current_price_list().threshold_paid_bookings_agorot
-    this_month = _bookings_by_business(db, month)
+    # The month and the ones before it, newest first. One read per month feeds
+    # both the streak and the history (shadow billing).
+    months: list[Month] = [month]
+    while len(months) < HISTORY_MONTHS:
+        months.append(months[-1].previous())
+    by_month = {m.label(): _bookings_by_business(db, m) for m in months}
+    this_month = by_month[month.label()]
 
     # Months in a row at or over the threshold, ending with `month`.
     streak = {pid: 0 for pid in this_month}
     still_running = set(this_month)
-    cursor = month
-    for _ in range(STREAK_LOOKBACK_MONTHS):
-        counts = this_month if cursor == month else _bookings_by_business(db, cursor)
+    for cursor in months:
+        counts = by_month[cursor.label()]
         still_running = {
             pid for pid in still_running if counts.get(pid, (0, 0, 0))[1] >= threshold
         }
@@ -187,7 +195,24 @@ def overview(db: Session, month: Month) -> dict[str, Any]:
             break
         for pid in still_running:
             streak[pid] += 1
-        cursor = cursor.previous()
+
+    history = [
+        {
+            "month": m.label(),
+            "businesses": len(by_month[m.label()]),
+            "businesses_over_threshold": sum(
+                1 for _, value, _ in by_month[m.label()].values() if value >= threshold
+            ),
+            "value_agorot": sum(value for _, value, _ in by_month[m.label()].values()),
+            # The same rule as a row's would_pay_agorot, summed over the month.
+            "would_pay_total_agorot": sum(
+                fee
+                for _, value, fee in by_month[m.label()].values()
+                if value >= threshold
+            ),
+        }
+        for m in months
+    ]
 
     names: dict[UUID, str] = {}
     if this_month:
@@ -221,5 +246,6 @@ def overview(db: Session, month: Month) -> dict[str, Any]:
         "would_pay_total_agorot": sum(r["would_pay_agorot"] for r in rows),
         # "launch" = nothing is charged. The same word summarize() returns.
         "phase": "launch",
+        "history": history,
         "rows": rows,
     }

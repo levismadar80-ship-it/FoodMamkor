@@ -335,6 +335,100 @@ class TestAdminOverview:
         assert rows["מתחת"]["would_pay_agorot"] == 0
         assert r.json()["would_pay_total_agorot"] == 5000
 
+    def test_the_history_is_six_months_newest_first_each_with_its_own_totals(
+        self, client, db
+    ):
+        """Shadow billing: what each of the last months would have brought in."""
+        steady = make_producer(db, name="קבוע")
+        once = make_producer(db, name="פעם אחת")
+        _row(db, steady, base=120000, fee=6000)
+        _row(
+            db,
+            steady,
+            base=150000,
+            fee=7500,
+            at=datetime(2026, 10, 15, tzinfo=timezone.utc),
+        )
+        # Under the threshold in September: value counts, would-pay does not.
+        _row(
+            db,
+            steady,
+            base=40000,
+            fee=2000,
+            at=datetime(2026, 9, 15, tzinfo=timezone.utc),
+        )
+        _row(
+            db,
+            once,
+            base=200000,
+            fee=10000,
+            at=datetime(2026, 10, 20, tzinfo=timezone.utc),
+        )
+        _row(
+            db,
+            once,
+            status="voided",
+            base=300000,
+            fee=15000,
+            at=datetime(2026, 10, 21, tzinfo=timezone.utc),
+        )
+        # A test business never appears, in the month or in the history.
+        demo = make_producer(db, name="דמו")
+        demo.is_test = True
+        db.commit()
+        _row(
+            db,
+            demo,
+            base=500000,
+            fee=25000,
+            at=datetime(2026, 10, 10, tzinfo=timezone.utc),
+        )
+        admin = make_user(db, role="admin", email="billing-admin5@example.com")
+        db.commit()
+        r = client.get(
+            "/admin/billing/overview?month=2026-11", headers=auth_header(admin)
+        )
+        assert r.status_code == 200, r.text
+        history = r.json()["history"]
+        assert [h["month"] for h in history] == [
+            "2026-11",
+            "2026-10",
+            "2026-09",
+            "2026-08",
+            "2026-07",
+            "2026-06",
+        ]
+        by_month = {h["month"]: h for h in history}
+        assert by_month["2026-11"] == {
+            "month": "2026-11",
+            "businesses": 1,
+            "businesses_over_threshold": 1,
+            "value_agorot": 120000,
+            "would_pay_total_agorot": 6000,
+        }
+        assert by_month["2026-10"] == {
+            "month": "2026-10",
+            "businesses": 2,
+            "businesses_over_threshold": 2,
+            "value_agorot": 350000,
+            "would_pay_total_agorot": 17500,
+        }
+        assert by_month["2026-09"] == {
+            "month": "2026-09",
+            "businesses": 1,
+            "businesses_over_threshold": 0,
+            "value_agorot": 40000,
+            "would_pay_total_agorot": 0,
+        }
+        assert by_month["2026-08"]["businesses"] == 0
+        # The newest history line and the page's own totals are one computation.
+        assert (
+            history[0]["would_pay_total_agorot"] == r.json()["would_pay_total_agorot"]
+        )
+        # The streak still reads off the same months.
+        (row,) = r.json()["rows"]
+        assert row["months_over_in_a_row"] == 2
+
     def test_an_empty_month(self, client, db):
         admin = make_user(db, role="admin", email="billing-admin2@example.com")
         db.commit()
