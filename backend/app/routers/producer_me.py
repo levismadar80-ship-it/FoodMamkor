@@ -69,6 +69,7 @@ from app.services.auth_notifications import (
 from app.services.submission_confirmation import send_submission_confirmation
 from app.services.producer_risk import score_producer  # MEH-2602
 from app.services import indexnow  # MEH-2852
+from app.services.owner_attention import owner_attention  # MEH-3108
 from app.services.submission_gate import (
     attach_upcoming_events_count,
     submission_missing_items,
@@ -1092,8 +1093,7 @@ def dashboard(
         or 0
     )
 
-    # feature/producer-analytics: replace the hardcoded 0 with real counts
-    # from producer_whatsapp_clicks.
+    # feature/producer-analytics: real counts from producer_whatsapp_clicks.
     week_ago = utc_now() - timedelta(days=7)
     whatsapp_clicks_week = (
         db.query(func.count(ProducerWhatsAppClick.id))
@@ -1120,6 +1120,7 @@ def dashboard(
         },
         "favorites_count": int(favorites_count),
         "whatsapp_clicks_week": int(whatsapp_clicks_week),
+        "attention": owner_attention(db, producer.id, user.id),  # MEH-3108
     }
 
 

@@ -205,7 +205,10 @@ export default function ProducerDashboardToolsPage() {
           <p className="font-headline-md text-lg font-bold mb-1">{t("quick_links.recipes.title")}</p>
           <p className="text-sm text-fg-muted">{t("quick_links.recipes.sub")}</p>
         </Link>
-        {/* MEH-1165 item 2: direct route to the public-page reviews section
+        {/* MEH-3107: the tile now opens the dashboard's own reviews page
+            (unanswered first, reply in place) — MEH-1416's internal reply
+            surface. Before that:
+            MEH-1165 item 2: direct route to the public-page reviews section
             (id="reviews", ProducerSections.jsx:320) — the reply UI lives there
             and previously took 3+ taps via "הצגת העסק" + scroll.
             MEH-1357: candidate-to-move per Sapir's 18/07 verdict — documented
@@ -215,7 +218,7 @@ export default function ProducerDashboardToolsPage() {
             the same rule as RequestReviewCard below. */}
         {approved && (
         <Link
-          href={`/producer/${producer.id}#reviews`}
+          href="/producer/dashboard/reviews"
           className="bg-surface border border-border rounded-lg p-5 hover:border-primary transition"
         >
           <Star size={24} className="text-primary mb-2" aria-hidden="true" />
