@@ -55,6 +55,7 @@ const ALLOWED = {
   "components/ProfileCompletenessCard.jsx": 1, // owner card title
   "components/ReportInfoModal.jsx": 1, // dialog title
   "components/producer/BusinessQrCard.jsx": 1, // owner card title
+  "components/producer/OwnerAttentionCard.jsx": 1, // owner card title (MEH-3108, dashboard home)
   "components/ProducersClient.jsx": 2, // empty-state titles
   "components/RecipeForm.jsx": 1, // form title
   "components/RegistrationOverlays.jsx": 1, // sign-up sheet title (MEH-3043)
