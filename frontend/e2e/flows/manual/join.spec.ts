@@ -471,6 +471,12 @@ test.describe("manual › /join (MEH-995)", () => {
   // never blanks, no card ever shows an unloaded image.
   test.describe("swipe smoothness, with motion", () => {
     test.use({ reducedMotion: "no-preference" });
+    // MEH-3153: Playwright's headless WebKit finishes a smooth scrollBy on this
+    // scroll-snap shelf in ONE frame (measured 14/11: 1 moving frame; a plain
+    // overflow box in the same engine animates over 13). Frame-by-frame
+    // sampling has nothing to sample there, so these run on Chromium, where
+    // the "Safari-like" case below already emulates Safari's missing scrollend.
+    test.skip(({ browserName }) => browserName === "webkit", "headless WebKit jumps the snap shelf in one frame");
 
     test("one swipe: selection only after the shelf settles, panel never blanks, no blank media", async ({ page }) => {
       await page.setViewportSize({ width: 390, height: 844 });
@@ -564,6 +570,12 @@ test.describe("manual › /join (MEH-995)", () => {
     // 90ms quiet (~6 frames at 60fps) + one commit frame + one of slack.
     const PANEL_LAG_FRAMES = 8;
     test.use({ reducedMotion: "no-preference" });
+    // MEH-3153: Playwright's headless WebKit finishes a smooth scrollBy on this
+    // scroll-snap shelf in ONE frame (measured 14/11: 1 moving frame; a plain
+    // overflow box in the same engine animates over 13). Frame-by-frame
+    // sampling has nothing to sample there, so these run on Chromium, where
+    // the "Safari-like" case below already emulates Safari's missing scrollend.
+    test.skip(({ browserName }) => browserName === "webkit", "headless WebKit jumps the snap shelf in one frame");
 
     test("the header lights up mid-swipe; the panel follows soon after the shelf stops", async ({ page }) => {
       await page.addInitScript(() => {
