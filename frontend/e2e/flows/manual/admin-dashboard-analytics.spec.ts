@@ -464,7 +464,10 @@ test.describe("admin nav — the pending-businesses pill, the queue filter, «ע
     await openDashboard(page);
     await expect(pill(page, 1)).toHaveCount(2);
     stub.setDashboard(dashboard({ stats: { pending_producers: 0, open_reports: 0 }, pending_producers: [] }));
-    await page.reload();
+    // MEH-3153: openDashboard() is itself a full document load (page.goto), so it is
+    // the reload. A page.reload() right before it raced two navigations: on
+    // WebKit the reloaded page's in-flight /auth/me was aborted by the goto,
+    // and the layout pushed /login over it (MEH-3172).
     await openDashboard(page);
     await expect(navLink(page, "מה מחכה לטיפול"), "the nav is rendered").toBeVisible();
     await expect(page.locator('[aria-label$="פריטים לאישור"]')).toHaveCount(0);
