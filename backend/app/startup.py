@@ -9,6 +9,16 @@ from fastapi import FastAPI
 
 from app.config import settings
 from app.sentry import capture_background_exception
+from app.services.job_heartbeat import (
+    ANALYTICS_ROLLUP_CRON,
+    FOLLOWUP_CRON,
+    RESCUE_DIGEST_INTERVAL_MINUTES,
+    RETENTION_PURGE_CRON,
+    WATCHDOG_INTERVAL_MINUTES,
+    cron_monitor_config,
+    heartbeat,
+    interval_monitor_config,
+)
 
 log = structlog.get_logger("mehamakor.startup")
 
@@ -245,6 +255,8 @@ async def _init_db_background(app: FastAPI) -> None:
         app.state.alembic_head = "unknown"
 
 
+# MEH-3155: Sentry Crons heartbeat — a missed run raises an issue.
+@heartbeat("onboarding-followups-daily", cron_monitor_config(FOLLOWUP_CRON))
 def _run_followup_job() -> None:
     """MEH-539: daily APScheduler tick. Opens a fresh DB session per run
     (the BackgroundScheduler worker thread does not share the request-scoped
@@ -307,6 +319,8 @@ def _run_followup_job() -> None:
         db.close()
 
 
+# MEH-3155: Sentry Crons heartbeat — a missed run raises an issue.
+@heartbeat("auto-reply-watchdog", interval_monitor_config(WATCHDOG_INTERVAL_MINUTES))
 def _run_watchdog_job() -> None:
     """MEH-509 PR2b: 5-min after-hours watchdog tick. Shares the same
     APScheduler instance as the MEH-539 followup job (one scheduler, two
@@ -336,6 +350,8 @@ def _run_watchdog_job() -> None:
         db.close()
 
 
+# MEH-3155: Sentry Crons heartbeat — a missed run raises an issue.
+@heartbeat("analytics-rollup-daily", cron_monitor_config(ANALYTICS_ROLLUP_CRON))
 def _run_analytics_rollup_job() -> None:
     """MEH-2079 chunk B2 (MEH-2283): daily APScheduler tick that rolls every
     pending Israel day of raw producer analytics into `producer_analytics_daily`
@@ -365,6 +381,8 @@ def _run_analytics_rollup_job() -> None:
         db.close()
 
 
+# MEH-3155: Sentry Crons heartbeat — a missed run raises an issue.
+@heartbeat("retention-purge-daily", cron_monitor_config(RETENTION_PURGE_CRON))
 def _run_retention_purge_job() -> None:
     """MEH-2079 chunk C (MEH-2303): daily purge of raw analytics rows past
     the 90-day window that the roll-up already owns, and alert_log rows past
@@ -387,6 +405,10 @@ def _run_retention_purge_job() -> None:
         db.close()
 
 
+# MEH-3155: Sentry Crons heartbeat — a missed run raises an issue.
+@heartbeat(
+    "rescue-codes-digest", interval_monitor_config(RESCUE_DIGEST_INTERVAL_MINUTES)
+)
 def _run_rescue_digest_job() -> None:
     """MEH-2756: 5-min tick that sends each due rescue offer's pickup codes to
     the business at pickup_start.
@@ -498,7 +520,7 @@ async def lifespan(app: FastAPI):
     followup_scheduler = BackgroundScheduler(timezone="UTC")
     followup_scheduler.add_job(
         _run_followup_job,
-        CronTrigger(hour=10, minute=0),
+        CronTrigger.from_crontab(FOLLOWUP_CRON, timezone="UTC"),
         id="meh_539_onboarding_followups_daily",
         replace_existing=True,
     )
@@ -513,7 +535,7 @@ async def lifespan(app: FastAPI):
 
         followup_scheduler.add_job(
             _run_watchdog_job,
-            IntervalTrigger(minutes=5),
+            IntervalTrigger(minutes=WATCHDOG_INTERVAL_MINUTES),
             id="meh_509_pr2b_after_hours_watchdog",
             replace_existing=True,
             max_instances=1,
@@ -535,7 +557,7 @@ async def lifespan(app: FastAPI):
     # watermark and rolls both days.
     followup_scheduler.add_job(
         _run_analytics_rollup_job,
-        CronTrigger(hour=1, minute=30),
+        CronTrigger.from_crontab(ANALYTICS_ROLLUP_CRON, timezone="UTC"),
         id="meh_2283_analytics_rollup_daily",
         replace_existing=True,
         max_instances=1,
@@ -548,7 +570,7 @@ async def lifespan(app: FastAPI):
     # makes this a no-op for those days rather than a loss.
     followup_scheduler.add_job(
         _run_retention_purge_job,
-        CronTrigger(hour=2, minute=30),
+        CronTrigger.from_crontab(RETENTION_PURGE_CRON, timezone="UTC"),
         id="meh_2303_retention_purge_daily",
         replace_existing=True,
         max_instances=1,
@@ -570,7 +592,7 @@ async def lifespan(app: FastAPI):
 
         followup_scheduler.add_job(
             _run_rescue_digest_job,
-            IntervalTrigger(minutes=5),
+            IntervalTrigger(minutes=RESCUE_DIGEST_INTERVAL_MINUTES),
             id="meh_2756_rescue_codes_digest",
             replace_existing=True,
             max_instances=1,
