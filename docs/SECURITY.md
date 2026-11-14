@@ -366,7 +366,10 @@ sessions know not to drift.
   salt, limiting rainbow-table attacks across the old dataset. The
   hashing helper lives at `backend/app/services/analytics.py::hash_ip`
   and is the ONLY write path for the column — the Pydantic schema has
-  no `viewer_ip` field that could accidentally bypass it.
+  no `viewer_ip` field that could accidentally bypass it. Hashes do not
+  live forever either: raw page views are deleted after 90 days, and
+  `producer_contact_clicks.ip_hash` (with `user_id`) is set to NULL after
+  90 days (`services/retention_purge.py`, MEH-3244).
 
 - **Per-process in-memory sliding window for server_health (v1
   limitation).** `GET /admin/dashboard` exposes `response_time_avg_ms`

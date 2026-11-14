@@ -543,6 +543,9 @@ producer_whatsapp_clicks (
 -- row per (business, Israel calendar day), kept forever so the raw rows can
 -- be purged (chunk C, 90 days) without the owner's dashboard numbers moving.
 -- No viewer identifiers of any kind (that is its licence to be unbounded).
+-- `producer_contact_clicks` has no column here, so its rows are never deleted:
+-- past the same 90 days the purge sets their `ip_hash` and `user_id` to NULL
+-- and keeps the row, so the contact total does not move (MEH-3244).
 -- Written ONLY by services/analytics_rollup.py (daily 01:30 UTC via the
 -- startup.py scheduler, or `scripts/rollup_analytics.py --from/--to`) with
 -- INSERT … ON CONFLICT DO NOTHING: a rolled-up day is immutable, never
@@ -1435,7 +1438,7 @@ POST   /admin/recipes/{id}/reject           admin     — feedback optional → 
 
 ```
 GET    /producers/{id}/reviews   public — items do NOT carry `source` (admin-only on GET /admin/reviews via AdminReviewOut; dropped from the public payload on #3368 review — whether a reviewer was invited is moderation signal, not consumer data). MEH-1337: the page also carries `rating_counts` {"1".."5": int}, visible reviews per star over EVERY page (same visibility filter as `total`; always all five keys) — the business page draws its distribution bars from it at ≥5 reviews
-POST   /producers/{id}/reviews   auth  — upsert (1 per user per producer), 20/day. Body {stars, body, review_token?}. First review needs proof of contact: a WA/contact click row OR (MEH-1428) a valid `review_token` for THIS producer (the `rt` of GET /producers/me/review-link) — any bad/other-producer token → the same 403 «יש ליצור קשר עם בית העסק לפני כתיבת ביקורת». Response is the public ReviewOut — no `source` field (admin-only)
+POST   /producers/{id}/reviews   auth  — upsert (1 per user per producer), 20/day. Body {stars, body, review_token?}. First review needs proof of contact: a WA/contact click row from the last 90 days (older WhatsApp rows are purged and older contact rows lose `user_id`, MEH-3244) OR (MEH-1428) a valid `review_token` for THIS producer (the `rt` of GET /producers/me/review-link) — any bad/other-producer token → the same 403 «יש ליצור קשר עם בית העסק לפני כתיבת ביקורת». Response is the public ReviewOut — no `source` field (admin-only)
 POST   /reviews                  auth  — upsert (1 per user per producer)
 DELETE /reviews/{id}             auth  — owner or admin (stranger → 404; owner of an admin-hidden review → 404, MEH-2348)
 GET    /admin/reviews            admin — all reviews incl. hidden (AdminReviewOut; carries `source`, MEH-2349 `ai_moderation_status`, MEH-2381 `edited_after_hidden_at` ISO | null)
