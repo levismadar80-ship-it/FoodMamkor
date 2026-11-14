@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 /**
@@ -36,6 +37,11 @@ const PYDANTIC_VALUE_ERROR_PREFIX = "Value error, ";
 // the four producer create forms can detect it and render the resend CTA
 // instead of a dead-end error string.
 export const EMAIL_UNVERIFIED_CODE = "email_unverified";
+
+/**
+ * The object `detail` shape (MEH-1164 / MEH-1943): `{code, message, params}`.
+ * @typedef {{ code?: unknown, message?: unknown, params?: Object<string, unknown> }} ApiErrorDetailObject
+ */
 // Transition fallback: before the code field existed the detail was this bare
 // Hebrew string. Matching it too keeps detection working against any endpoint
 // or cached client that still emits the old shape.
@@ -77,13 +83,16 @@ export const LOCATION_SAME_CITY_CODE = "location_same_city_needs_label";
  * still yields the bare `message`. That fallback is the transition safety.
  *
  * @param {unknown} detail  `err.response.data.detail`
- * @returns {{city: string|null, existing_kind: string|null,
- *            existing_label: string|null, existing_count: number} | null}
+ * An object `detail` without `params` yields `{}`, so every field is optional.
+ *
+ * @returns {{city?: string|null, existing_kind?: string|null,
+ *            existing_label?: string|null, existing_count?: number} | null}
  */
 export function sameCityLabelParams(detail) {
   if (!detail || typeof detail !== "object" || Array.isArray(detail)) return null;
-  if (detail.code !== LOCATION_SAME_CITY_CODE) return null;
-  return detail.params ?? {};
+  const obj = /** @type {ApiErrorDetailObject} */ (detail);
+  if (obj.code !== LOCATION_SAME_CITY_CODE) return null;
+  return obj.params ?? {};
 }
 
 /**
@@ -149,10 +158,11 @@ export function detailToMessage(detail, resolveCode) {
     return detail || null;
   }
   if (detail && typeof detail === "object" && !Array.isArray(detail)) {
-    if (typeof detail.code === "string" && typeof resolveCode === "function") {
+    const obj = /** @type {ApiErrorDetailObject} */ (detail);
+    if (typeof obj.code === "string" && typeof resolveCode === "function") {
       let mapped;
       try {
-        mapped = resolveCode(detail.code, detail.params ?? {});
+        mapped = resolveCode(obj.code, obj.params ?? {});
       } catch (resolverError) {
         // A throwing resolver is treated as "did not match" — NOT as fatal.
         //
@@ -168,15 +178,15 @@ export function detailToMessage(detail, resolveCode) {
         // app/[locale]/error.js:15-17. Production degrades to `message`.
         if (process.env.NODE_ENV === "development") {
           console.warn(
-            `[detailToMessage] resolveCode threw for code "${detail.code}" — falling back to detail.message`,
+            `[detailToMessage] resolveCode threw for code "${obj.code}" — falling back to detail.message`,
             resolverError,
           );
         }
       }
       if (typeof mapped === "string" && mapped) return mapped;
     }
-    return typeof detail.message === "string" && detail.message
-      ? detail.message
+    return typeof obj.message === "string" && obj.message
+      ? obj.message
       : null;
   }
   if (Array.isArray(detail)) {

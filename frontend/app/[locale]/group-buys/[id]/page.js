@@ -1,3 +1,4 @@
+// @ts-check
 import { notFound } from "next/navigation";
 import * as Sentry from "@sentry/nextjs";
 import { getTranslations } from "next-intl/server";
@@ -49,6 +50,7 @@ async function getGroupBuy(id) {
       level: "error",
       extra: { route: ROUTE, id, status: res.status },
     });
+    /** @type {Error & { status?: number, entityId?: string }} */
     const err = new Error(
       `group-buy lookup failed: ${res.status} ${res.statusText} (id=${id})`
     );

@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 /**
@@ -49,6 +50,7 @@ import { useAccountPrefill } from "@/lib/use-account-prefill";
 
 // The recommender's own fields → account field (MEH-3112). Never the
 // business fields: those describe someone else.
+/** @type {Record<string, import("@/lib/use-account-prefill").AccountField>} */
 const SUGGESTER_PREFILL = { suggester_name: "name", suggester_email: "email" };
 
 const EMPTY = {

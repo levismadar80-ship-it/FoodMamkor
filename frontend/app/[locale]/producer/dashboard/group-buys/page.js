@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 import { Link, useRouter } from "@/i18n/navigation";
@@ -267,10 +268,10 @@ function NewGroupBuyForm({ producerCity, onCreated }) {
               {" *"}
             </span>
           </legend>
-          {[
+          {/** @type {Array<[string, import("react").RefObject<HTMLTextAreaElement>]>} */ ([
             ["pickup", pickupRef],
             ["delivery", deliveryRef],
-          ].map(([kind, ref]) => {
+          ]).map(([kind, ref]) => {
             const invalid = noteError?.includes(kind);
             return (
               <div key={kind} className="flex flex-col gap-1.5">
@@ -348,7 +349,9 @@ function GroupBuyActionDialog({ pending, busy, stale, error, onConfirm, onClose 
   // A confirmed cancel/deliver ends in a state with no action row, so the
   // button that opened this is gone by close time; focus goes to its card.
   const cardFallback = () =>
-    document.querySelector(`[data-group-buy-card="${CSS.escape(String(pending.gb.id))}"]`);
+    /** @type {HTMLElement | null} */ (
+      document.querySelector(`[data-group-buy-card="${CSS.escape(String(pending.gb.id))}"]`)
+    );
 
   const { gb, action } = pending;
   const destructive = action !== "deliver";

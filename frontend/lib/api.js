@@ -1,3 +1,4 @@
+// @ts-check
 import axios from "axios";
 import * as Sentry from "@sentry/nextjs";
 
@@ -18,7 +19,7 @@ api.interceptors.request.use((config) => {
   // _expireSession() having emptied localStorage first — otherwise a token
   // written by another tab mid-flight would re-authenticate a request whose
   // whole point is to carry no credentials.
-  if (config._noAuth) {
+  if (/** @type {typeof config & { _noAuth?: boolean }} */ (config)._noAuth) {
     delete config.headers.Authorization;
     return config;
   }

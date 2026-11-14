@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 import { useEffect, useRef, useState } from "react";
@@ -525,6 +526,7 @@ function isCloudinaryUrl(value) {
   }
 }
 
+/** @param {{ children: import("react").ReactNode, testid?: string }} props */
 function Shell({ children, testid }) {
   return (
     <div className="max-w-xl mx-auto px-4 py-10" data-testid={testid}>

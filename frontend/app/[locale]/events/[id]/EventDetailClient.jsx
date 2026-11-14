@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 import SeedMark from "@/components/brand/SeedMark";
@@ -44,9 +45,11 @@ import { SkeletonBlock } from "@/components/Skeleton";
 const MiniMap = dynamic(() => import("@/components/MiniMap"), { ssr: false });
 
 // MEH-3043: short, for the sticky phone bar beside the sign-up button.
+/** @type {Intl.DateTimeFormatOptions} */
 const BAR_DATE_OPTIONS = { weekday: "short", day: "numeric", month: "numeric" };
 // MEH-3057: the tile beside it already says month + day, so the row's text
 // is the weekday only («יום שישי · 17:00») — the full date read twice.
+/** @type {Intl.DateTimeFormatOptions} */
 const DETAIL_DATE_OPTIONS = { weekday: "long" };
 
 // MEH-476 PR 3b2: extracted from app/[locale]/events/[id]/page.js so the

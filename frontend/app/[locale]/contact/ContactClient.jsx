@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 import { useState, useEffect } from "react";
@@ -16,6 +17,7 @@ import EmailTypoHint from "@/components/EmailTypoHint";
 import { useAccountPrefill } from "@/lib/use-account-prefill";
 
 // form field → account field (MEH-3112).
+/** @type {Record<string, import("@/lib/use-account-prefill").AccountField>} */
 const CONTACT_PREFILL = { name: "name", email: "email" };
 
 // MEH-653: CONTACT_EMAIL now read from NEXT_PUBLIC_CONTACT_EMAIL (lib/env.client)

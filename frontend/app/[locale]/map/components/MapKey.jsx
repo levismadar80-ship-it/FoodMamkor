@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 import { useEffect, useId, useRef, useState } from "react";
@@ -147,6 +148,9 @@ function SampleMyLocation() {
   return <span className="w-4 h-4 rounded-full border-2 border-primary bg-primary/85" aria-hidden="true" />;
 }
 
+/**
+ * @param {{ buttonClassName?: string, buttonStyle?: import("react").CSSProperties, panelClassName?: string, testIdSuffix?: string }} props
+ */
 export default function MapKey({ buttonClassName = "", buttonStyle, panelClassName = "", testIdSuffix = "" }) {
   const t = useTranslations();
   const [open, setOpen] = useState(false);
@@ -169,6 +173,7 @@ export default function MapKey({ buttonClassName = "", buttonStyle, panelClassNa
     return () => document.removeEventListener("keydown", onKey);
   }, [open]);
 
+  /** @type {Array<[() => import("react").JSX.Element, string]>} */
   const rows = [
     [SamplePhoto, t("map.pane.key.photo")],
     [SampleVerified, t("map.pane.key.verified")],

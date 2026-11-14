@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -552,12 +553,12 @@ export default function FavoritesClient() {
           />
           {filter === "all" ? (
             <div className="space-y-10">
-              {[
+              {/** @type {Array<[string, import("react").ReactNode]>} */ ([
                 ["events", upcomingEvents.length > 0 && renderEvents(upcomingEvents, "events")],
                 ["experiences", upcomingExperiences.length > 0 && renderEvents(upcomingExperiences, "experiences")],
                 ["businesses", visibleFavorites.length > 0 && renderBusinesses()],
                 ["recipes", visibleSaved.recipes.length > 0 && renderRecipes()],
-              ]
+              ])
                 .filter(([, body]) => body)
                 .map(([key, body]) => (
                   <section key={key} aria-labelledby={`favorites-h-${key}`} data-testid={`favorites-section-${key}`}>

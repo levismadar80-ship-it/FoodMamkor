@@ -1,3 +1,4 @@
+// @ts-check
 import { useLayoutEffect, useRef } from "react";
 import { useTranslations } from "next-intl";
 import { MapPin, X } from "@phosphor-icons/react";

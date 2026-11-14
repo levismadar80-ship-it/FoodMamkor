@@ -1,3 +1,4 @@
+// @ts-check
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { CATEGORY_LEGEND, CATEGORY_STYLES } from "@/lib/category-registry";
@@ -166,10 +167,13 @@ export function useMapFilters({
   // unchanged for the two missing keys (`undefined` and `false` are both falsy
   // to `chipStateToParams`) and for the dead one (nothing reads `organic`).
   // `categoryKeys` stays explicit — it is not an attribute axis.
-  const [chipState, setChipState] = useState(() => ({
+  const [chipState, setChipState] = useState(
+    /** @returns {{ categoryKeys: string[], has_delivery?: boolean, pickup_points?: boolean } & Record<string, unknown>} */
+    () => ({
     categoryKeys: [],
     ...defaultsForKeys(TOGGLE_CHIPS.map((c) => c.key)),
-  }));
+    }),
+  );
   const urlHydrated = useRef(false);
   // MEH-2049: the catalog-arrival effect's two flags (see that effect).
   const skipCatalogOnce = useRef(false);

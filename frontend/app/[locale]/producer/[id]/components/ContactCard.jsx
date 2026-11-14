@@ -1,3 +1,4 @@
+// @ts-check
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import {
@@ -217,7 +218,7 @@ export default function ContactCard({ producer, isVacation }) {
   // disabled. Sapir's ruling, 11/11.
   const isPreview = usePreviewMode();
   const linkTarget = (value) =>
-    isPreview ? { "aria-disabled": "true", tabIndex: -1 } : { href: value };
+    isPreview ? { "aria-disabled": /** @type {const} */ ("true"), tabIndex: -1 } : { href: value };
 
   const onChannelClick = (e, { key }) => {
     if (isPreview) {

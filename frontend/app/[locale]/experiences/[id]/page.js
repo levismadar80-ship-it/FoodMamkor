@@ -1,3 +1,4 @@
+// @ts-check
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import * as Sentry from "@sentry/nextjs";
@@ -50,6 +51,7 @@ async function getExperience(id) {
       level: "error",
       extra: { route: ROUTE, id, status: res.status },
     });
+    /** @type {Error & { status?: number, entityId?: string }} */
     const err = new Error(
       `experience lookup failed: ${res.status} ${res.statusText} (id=${id})`
     );

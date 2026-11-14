@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 import { useEffect, useRef, useState } from "react";
@@ -350,6 +351,7 @@ export default function ClaimClient({ tokenFromPath = null }) {
   );
 }
 
+/** @param {{ children: import("react").ReactNode, testid?: string }} props */
 function Shell({ children, testid }) {
   return (
     <div className="max-w-xl mx-auto px-4 py-10" data-testid={testid}>
@@ -389,6 +391,7 @@ function Preview({ preview, kicker }) {
   );
 }
 
+/** @param {{ href: string, children: import("react").ReactNode, testid?: string }} props */
 function PrimaryLink({ href, children, testid }) {
   return (
     <Link

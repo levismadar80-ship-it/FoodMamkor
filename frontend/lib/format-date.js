@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Module:   format-date
  * Purpose:  Locale-aware date formatting for event / experience surfaces.
