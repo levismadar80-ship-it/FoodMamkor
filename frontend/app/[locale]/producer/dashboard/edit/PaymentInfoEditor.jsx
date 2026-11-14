@@ -38,6 +38,7 @@ import {
   serializePaymentInfo,
 } from "@/lib/payment-info";
 import Switch from "@/components/ui/Switch";
+import Input from "@/components/ui/Input";
 
 // Icons appear only here, in the picker (option א) — the public page uses one
 // Wallet icon for the whole answer. Bit and PayBox share the phone glyph: no
@@ -203,7 +204,7 @@ export default function PaymentInfoEditor({ profile, onSave, reportDirty = () =>
         <label htmlFor="payment-note" className="block text-sm font-medium mb-1.5">
           {t("note_label")}
         </label>
-        <input
+        <Input inline size="sm"
           id="payment-note"
           type="text"
           value={state.note}
@@ -212,7 +213,7 @@ export default function PaymentInfoEditor({ profile, onSave, reportDirty = () =>
           placeholder={t("note_placeholder")}
           aria-describedby="payment-note-help"
           data-testid="payment-note"
-          className="w-full text-sm border border-border rounded-sm px-3 py-2 bg-surface focus-ring"
+          className="w-full"
         />
         <p id="payment-note-help" className="mt-1 text-xs text-fg-muted">{t("note_help")}</p>
       </div>

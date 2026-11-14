@@ -2,8 +2,8 @@
 
 The pricing model is undecided (MEH-617); chat.py:91 previously promised
 "לשדרג לתוכנית פרמיום בהמשך". This guard fails CI if any future edit to
-SYSTEM_PROMPT re-introduces a premium/upgrade promise. The no-fees framing
-("אין עמלות") is a BRAND.md LOCK and is asserted present.
+SYSTEM_PROMPT re-introduces a premium/upgrade promise. The old no-fees framing
+("אין עמלות") was replaced by ADR-042 (MEH-3166) and is asserted absent.
 """
 
 from app.routers import chat
@@ -17,8 +17,16 @@ def test_system_prompt_has_no_premium_tier_promise():
         )
 
 
-def test_system_prompt_keeps_no_fees_lock():
-    assert "אין עמלות על עסקאות" in chat.SYSTEM_PROMPT
+def test_system_prompt_follows_the_revenue_model():
+    # MEH-3166 / ADR-042: the "no transaction fees" lock is gone. The chat must
+    # not promise it, must not promise free-forever, and must not quote a price
+    # (numbers live in frontend/lib/pricing.js) — it points at the price list.
+    for token in ("אין עמלות", "בלי עמלות", "חינם — תמיד", "חינם לתמיד", "לגמרי חינם — גם"):
+        assert token not in chat.SYSTEM_PROMPT, f"old pricing promise {token!r} is back"
+    assert "₪" not in chat.SYSTEM_PROMPT
+    assert "ש\"ח" not in chat.SYSTEM_PROMPT
+    assert "המחירון המלא מופיע באתר" in chat.SYSTEM_PROMPT
+    assert "ההרשמה והעמוד באתר חינם" in chat.SYSTEM_PROMPT
 
 
 def test_system_prompt_does_not_name_raw_milk():

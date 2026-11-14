@@ -10,6 +10,7 @@ This version:
   4. Tells Cloudinary resource_type="image" which adds a server-side check
 """
 
+from typing import Any
 import asyncio  # MEH-2551: Cloudinary's SDK is sync — every upload runs in to_thread
 import logging
 import uuid
@@ -62,14 +63,14 @@ def _sniff_image_type(header: bytes) -> str | None:
     return "heic" if is_heif else None
 
 
-@router.post("/image")
+@router.post("/image", response_model=None)
 @limiter.limit("20/hour")
 async def upload_image(
     request: Request,
     file: UploadFile,
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
-):
+) -> dict[str, Any]:
     """Upload image to Cloudinary. Validates size and real content type.
     Enforces free plan limit (3 images) for producers.
     """
@@ -145,14 +146,14 @@ async def upload_image(
         )
 
 
-@router.post("/avatar")
+@router.post("/avatar", response_model=None)
 @limiter.limit("10/hour")
 async def upload_avatar(
     request: Request,
     file: UploadFile,
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
-):
+) -> dict[str, Any]:
     """Upload a profile photo to Cloudinary. Same magic-byte validation as
     /upload/image but no freemium gate, smaller crop (400px square), and
     a dedicated avatars/ folder so producer gallery images stay separate.
@@ -177,7 +178,7 @@ async def upload_avatar(
 
     if not settings.cloudinary_cloud_name:
         url = f"/placeholder-image.png?avatar={uuid.uuid4().hex[:8]}"
-        user.avatar_url = url
+        user.avatar_url = url  # type: ignore[assignment]
         db.commit()
         return {"url": url}
 
@@ -220,14 +221,14 @@ async def upload_avatar(
         )
 
 
-@router.post("/owner-photo")
+@router.post("/owner-photo", response_model=None)
 @limiter.limit("10/hour")
 async def upload_owner_photo(
     request: Request,
     file: UploadFile,
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
-):
+) -> dict[str, Any]:
     """Upload the producer-owner's photo to Cloudinary (MEH-1335).
 
     Mirrors /upload/avatar: same magic-byte validation, square 400px
@@ -265,7 +266,7 @@ async def upload_owner_photo(
 
     if not settings.cloudinary_cloud_name:
         url = f"/placeholder-image.png?owner={uuid.uuid4().hex[:8]}"
-        producer.owner_photo_url = url
+        producer.owner_photo_url = url  # type: ignore[assignment]
         db.commit()
         return {"url": url}
 
@@ -303,13 +304,13 @@ async def upload_owner_photo(
         )
 
 
-@router.post("/kashrut-cert")
+@router.post("/kashrut-cert", response_model=None)
 @limiter.limit("10/hour")
 async def upload_kashrut_cert(
     request: Request,
     file: UploadFile,
     user: User = Depends(get_current_user),
-):
+) -> dict[str, Any]:
     """Upload a photo of a kashrut certificate → Cloudinary (MEH-1167).
 
     Mirrors /upload/owner-photo: same magic-byte sniff + 5 MB cap +

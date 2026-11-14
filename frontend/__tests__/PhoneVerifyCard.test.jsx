@@ -266,6 +266,18 @@ describe("PhoneVerifyCard — send (:42-58)", () => {
     expect(screen.getByRole("alert")).toHaveTextContent(T("error_generic"));
   });
 
+  // MEH-2122 B: the server says the WhatsApp send failed (503). The owner is
+  // told the code did not go out, no code field opens, and no cooldown starts,
+  // so trying again is one tap.
+  it("send 503 → error_send_failed alert, no code field, button stays usable", async () => {
+    apiMock.post.mockImplementationOnce(reject(503, "לא הצלחנו לשלוח"));
+    render(<PhoneVerifyCard />);
+    await click(sendBtn());
+    expect(screen.getByRole("alert")).toHaveTextContent(T("error_send_failed"));
+    expect(screen.queryByLabelText(T("code_label"))).toBeNull();
+    expect(sendBtn()).not.toBeDisabled();
+  });
+
   it("a retry after an error clears the previous alert", async () => {
     apiMock.post.mockImplementationOnce(reject(400, "no phone"));
     render(<PhoneVerifyCard />);

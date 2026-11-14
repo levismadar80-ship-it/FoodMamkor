@@ -150,8 +150,10 @@ function NewGroupBuyForm({ producerCity, onCreated, emailUnverified = false }) {
         </div>
 
         <div className="sm:col-span-2">
-          <label className="block text-sm font-medium mb-1">{t("description_label")}</label>
+          {/* MEH-3191: the label was a bare sibling, so the textarea had no name. */}
+          <label htmlFor="group-buy-description" className="block text-sm font-medium mb-1">{t("description_label")}</label>
           <textarea
+            id="group-buy-description"
             value={form.description}
             onChange={set("description")}
             placeholder={t("description_placeholder")}
