@@ -165,8 +165,12 @@ describe("lib/special-hours — holiday chips read HOLIDAYS as-is", () => {
     expect(out).toHaveLength(chip.dates.length);
   });
 
-  it("no chips at all once every holiday in the file has passed", () => {
-    expect(holidayChips([], "2099-01-01")).toEqual([]);
+  // MEH-3017: the dates are computed from the Hebrew calendar, so there is no
+  // "after the table ends" any more. Before MEH-3017 this read [] on purpose.
+  it("years ahead the chips still come, computed, and never offer a past date", () => {
+    const chips = holidayChips([], "2099-01-01");
+    expect(chips.length).toBeGreaterThan(0);
+    expect(chips.flatMap((c) => c.dates).every((d) => d >= "2099-01-01")).toBe(true);
   });
 });
 
