@@ -4,7 +4,8 @@
  * Purpose:  The once-only «רגע ראשון» cards on the dashboard home (MEH-3200
  *           part 2, approved by Sapir 14/11): first review, first WhatsApp
  *           click, 100 page views, first follower.
- * Touches:  window.localStorage (one JSON key, every access in try/catch).
+ * Touches:  nothing — pure logic. Storage (one JSON key under FIRST_MOMENTS_KEY)
+ *           is read and written in hooks/useFirstMoment.js.
  * Does NOT: render (components/producer/FirstMomentCard.jsx) or fetch — the
  *           counts come from GET /producers/me/analytics, already loaded by the
  *           dashboard home.
@@ -31,28 +32,6 @@ export const MOMENTS = [
 export const FIRST_MOMENTS_KEY = "mehamakor.first_moments";
 
 /** @typedef {{ baseline: Record<string, number>, done: string[] }} MomentState */
-
-/** @returns {MomentState | null} null = never stored (first visit) or unreadable. */
-export function readMomentState() {
-  try {
-    const raw = window.localStorage.getItem(FIRST_MOMENTS_KEY);
-    if (!raw) return null;
-    const s = JSON.parse(raw);
-    if (!s || typeof s !== "object" || typeof s.baseline !== "object" || !Array.isArray(s.done)) return null;
-    return s;
-  } catch {
-    return null;
-  }
-}
-
-/** @param {MomentState} state */
-export function writeMomentState(state) {
-  try {
-    window.localStorage.setItem(FIRST_MOMENTS_KEY, JSON.stringify(state));
-  } catch {
-    // blocked storage: no card is ever due, because nothing has a baseline
-  }
-}
 
 /** @param {unknown} v */
 const num = (v) => (typeof v === "number" && Number.isFinite(v) ? v : null);

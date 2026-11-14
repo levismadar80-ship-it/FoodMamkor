@@ -11,7 +11,29 @@
  */
 
 import { useCallback, useEffect, useState } from "react";
-import { readMomentState, retireMoment, stepMoments, writeMomentState } from "@/lib/first-moments";
+import { FIRST_MOMENTS_KEY, retireMoment, stepMoments } from "@/lib/first-moments";
+
+/** @returns {import("@/lib/first-moments").MomentState | null} null = never stored (first visit) or unreadable. */
+function readMomentState() {
+  try {
+    const raw = window.localStorage.getItem(FIRST_MOMENTS_KEY);
+    if (!raw) return null;
+    const s = JSON.parse(raw);
+    if (!s || typeof s !== "object" || typeof s.baseline !== "object" || !Array.isArray(s.done)) return null;
+    return s;
+  } catch {
+    return null;
+  }
+}
+
+/** @param {import("@/lib/first-moments").MomentState} state */
+function writeMomentState(state) {
+  try {
+    window.localStorage.setItem(FIRST_MOMENTS_KEY, JSON.stringify(state));
+  } catch {
+    // blocked storage: no card is ever due, because nothing has a baseline
+  }
+}
 
 /**
  * @param {any} analytics GET /producers/me/analytics payload, or null while loading.
