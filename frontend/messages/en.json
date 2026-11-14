@@ -4409,6 +4409,11 @@
         "body": "Your business may not be set up yet, or a temporary error occurred. If the problem persists, we're here to help.",
         "cta": "Contact us"
       },
+      "help_row": {
+        "title": "Need help?",
+        "body": "Write to us and we'll get back to you by the end of the business day.",
+        "cta": "Contact the team"
+      },
       "section_errors": {
         "analytics": "We couldn't load your stats",
         "profile": "We couldn't load your business details",
