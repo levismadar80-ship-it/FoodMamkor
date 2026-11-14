@@ -2672,8 +2672,8 @@ class ProducerNameChangeRequest(Base):
 class SearchQuery(Base):
     """Search telemetry — one row per /producers?search=... query.
 
-    Written from producers.py:310 (after search).  Read from search.py:218 to
-    compute /search/trending.
+    Written from producers.py:310 (after search). Nothing reads it in the app
+    since MEH-3257 removed /search/trending; kept for analysis.
     """
 
     __tablename__ = "search_queries"

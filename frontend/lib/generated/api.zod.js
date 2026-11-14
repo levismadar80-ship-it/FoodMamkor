@@ -6728,14 +6728,6 @@ export const SmartSearchSearchGetResponse = /*#__PURE__*/ zod.object({
 
 
 /**
- * Return top 5 queries that returned results, cached 1 hour.
- * @summary Trending Searches
- */
-export const TrendingSearchesSearchTrendingGetResponseItem = /*#__PURE__*/ zod.string()
-export const TrendingSearchesSearchTrendingGetResponse = /*#__PURE__*/ zod.array(TrendingSearchesSearchTrendingGetResponseItem)
-
-
-/**
  * @summary Get Stats
  */
 export const GetStatsStatsGetResponse = /*#__PURE__*/ zod.object({

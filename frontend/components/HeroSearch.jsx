@@ -11,7 +11,7 @@ import { useRouter } from "next/navigation";
 // next/link on the strength of a sibling file doing the same, which is
 // precedent, not verification.
 import { Link } from "@/i18n/navigation";
-import { MagnifyingGlass, ClockCounterClockwise, TrendUp } from "@phosphor-icons/react";
+import { MagnifyingGlass, ClockCounterClockwise } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import api from "@/lib/api";
 import { highlightMatch } from "@/lib/highlightMatch";
@@ -23,10 +23,11 @@ import { avatarInitial } from "@/components/ui/Avatar";
  *
  * Routes to /producers?q= on submit.
  *
- * Three dropdown states:
+ * Two dropdown states:
  *   empty + focused + recent exist    → recent searches (🕐, localStorage)
- *   empty + focused + no recent       → trending searches (TrendUp, /search/trending)
  *   ≥2 chars typed                    → live autocomplete (producers / categories / cities)
+ * MEH-3257: the "popular searches" fallback (empty + no recent) is gone —
+ * one IP could steer it (Sapir 14/11). Empty + no recent shows no dropdown.
  *
  * MEH-1684: the submit control is a CIRCLE (rounded-full) — it is the single
  * filled-primary control of the hero zone now that the "גלו בתי עסק" button is
@@ -131,7 +132,6 @@ export default function HeroSearch({
   const [highlightIdx, setHighlightIdx] = useState(0);
   const [loading, setLoading] = useState(false);
   const [recentSearches, setRecentSearches] = useState([]);
-  const [trending, setTrending] = useState([]);
   // MEH-1684: rotating placeholder. `phIdx` is 0 on the server and on the first
   // client paint, so SSR and hydration agree; only the interval advances it.
   const [phIdx, setPhIdx] = useState(0);
@@ -144,7 +144,6 @@ export default function HeroSearch({
   const containerRef = useRef(null);
   const inputRef = useRef(null);
   const abortRef = useRef(null);
-  const trendingFetchedRef = useRef(false);
 
   useEffect(() => {
     if (typeof window === "undefined" || !window.matchMedia) return;
@@ -247,22 +246,19 @@ export default function HeroSearch({
     return rows;
   }, [visible]);
 
-  // Empty-state rows (recent OR trending) as keyboard-navigable options,
+  // Empty-state rows (recent searches) as keyboard-navigable options,
   // so the dropdown is one listbox model in both states (ARIA APG combobox).
-  const emptyRows = useMemo(() => {
-    if (recentSearches.length > 0) {
-      return recentSearches.map((q) => ({ kind: "recent", id: q, data: q }));
-    }
-    return trending.map((q) => ({ kind: "trending", id: q, data: q }));
-  }, [recentSearches, trending]);
+  const emptyRows = useMemo(
+    () => recentSearches.map((q) => ({ kind: "recent", id: q, data: q })),
+    [recentSearches]
+  );
 
   // Derived open/mode flags (used by both the keyboard handler and render).
   const trimmed = value.trim();
   const isAutocomplete = trimmed.length >= 2;
   const hasAutoResults = flatRows.length > 0;
   const showAutocomplete = isOpen && isAutocomplete;
-  const showEmpty =
-    isOpen && !isAutocomplete && (recentSearches.length > 0 || trending.length > 0);
+  const showEmpty = isOpen && !isAutocomplete && recentSearches.length > 0;
   // The single set of rows the arrow keys + activedescendant address.
   const navRows = showAutocomplete ? flatRows : showEmpty ? emptyRows : [];
 
@@ -273,7 +269,7 @@ export default function HeroSearch({
 
   // Unified selection dispatch — autocomplete rows navigate, query rows search.
   const selectRow = (row) => {
-    if (row.kind === "recent" || row.kind === "trending") {
+    if (row.kind === "recent") {
       submitRaw(row.data);
     } else {
       navigate(row);
@@ -286,14 +282,6 @@ export default function HeroSearch({
     // MEH-1684: freeze the rotating placeholder for as long as the field is
     // focused (blur re-arms it — see handleBlur).
     setIsFocused(true);
-    // Fetch trending once per mount, only when input is empty.
-    if (!value.trim() && !trendingFetchedRef.current) {
-      trendingFetchedRef.current = true;
-      api
-        .get("/search/trending")
-        .then((r) => setTrending(Array.isArray(r.data) ? r.data : []))
-        .catch(() => {});
-    }
   };
 
   const submitRaw = (q = value.trim()) => {
@@ -326,8 +314,8 @@ export default function HeroSearch({
       return;
     }
 
-    // One keyboard model for both dropdown states (autocomplete + recent/
-    // trending): ArrowUp/Down move the active option, Enter selects it,
+    // One keyboard model for both dropdown states (autocomplete + recent):
+    // ArrowUp/Down move the active option, Enter selects it,
     // Escape closes, Delete removes the active recent query (APG combobox).
     if (navRows.length > 0) {
       if (e.key === "ArrowDown") {
@@ -525,7 +513,7 @@ export default function HeroSearch({
         </div>
       )}
 
-      {/* ---- Empty-input dropdown (recent or trending) ---- */}
+      {/* ---- Empty-input dropdown (recent searches) ---- */}
       {showEmpty && (
         <div
           id={listboxId}
@@ -534,80 +522,48 @@ export default function HeroSearch({
           className="absolute z-hero-suggestions top-full mt-2 inset-x-0 bg-surface border border-border rounded-md shadow-xl text-start"
           dir="rtl"
         >
-          {recentSearches.length > 0 ? (
-            <Section title={t("recent_heading")}>
-              {recentSearches.map((q, i) => (
-                <li
-                  key={q}
-                  id={rowId(i)}
-                  role="option"
-                  aria-selected={i === highlightIdx}
-                  className={`flex items-center justify-between px-3 py-2.5 text-sm cursor-pointer min-h-touch ${
-                    i === highlightIdx ? "bg-green-50 text-primary" : "text-text hover:bg-green-50/50"
-                  }`}
-                  onMouseEnter={() => setHighlightIdx(i)}
-                  onMouseDown={(e) => {
-                    e.preventDefault();
-                    submitRaw(q);
-                  }}
-                >
-                  <span className="flex items-center gap-2">
-                    <ClockCounterClockwise
-                      size={16}
-                      className="text-fg-muted shrink-0"
-                      aria-hidden="true"
-                    />
-                    {q}
-                  </span>
-                  {/* tabIndex -1: not a tab stop inside the option; keyboard
-                      users remove via the Delete key (handleKeyDown). */}
-                  <button
-                    type="button"
-                    tabIndex={-1}
-                    className="text-fg-muted hover:text-text p-1.5 min-h-touch min-w-touch flex items-center justify-center"
-                    aria-label={t("remove_recent_aria", { q })}
-                    onMouseDown={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      setRecentSearches(deleteRecent(q));
-                    }}
-                  >
-                    ×
-                  </button>
-                </li>
-              ))}
-            </Section>
-          ) : (
-            <Section title={t("trending_heading")}>
-              {trending.map((q, i) => (
-                <li
-                  key={q}
-                  id={rowId(i)}
-                  role="option"
-                  aria-selected={i === highlightIdx}
-                  className={`flex items-center gap-2 px-3 py-2.5 text-sm cursor-pointer min-h-touch ${
-                    i === highlightIdx ? "bg-green-50 text-primary" : "text-text hover:bg-green-50/50"
-                  }`}
-                  onMouseEnter={() => setHighlightIdx(i)}
-                  onMouseDown={(e) => {
-                    e.preventDefault();
-                    submitRaw(q);
-                  }}
-                >
-                  {/* MEH-2508: a quiet trend arrow, the same muted line glyph as
-                      the recent-search clock above — the green flame read as an
-                      emoji (Sapir 28/10). Google/YouTube mark trending queries
-                      with this arrow. */}
-                  <TrendUp
+          <Section title={t("recent_heading")}>
+            {recentSearches.map((q, i) => (
+              <li
+                key={q}
+                id={rowId(i)}
+                role="option"
+                aria-selected={i === highlightIdx}
+                className={`flex items-center justify-between px-3 py-2.5 text-sm cursor-pointer min-h-touch ${
+                  i === highlightIdx ? "bg-green-50 text-primary" : "text-text hover:bg-green-50/50"
+                }`}
+                onMouseEnter={() => setHighlightIdx(i)}
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  submitRaw(q);
+                }}
+              >
+                <span className="flex items-center gap-2">
+                  <ClockCounterClockwise
                     size={16}
                     className="text-fg-muted shrink-0"
                     aria-hidden="true"
                   />
                   {q}
-                </li>
-              ))}
-            </Section>
-          )}
+                </span>
+                {/* tabIndex -1: not a tab stop inside the option; keyboard
+                    users remove via the Delete key (handleKeyDown). */}
+                <button
+                  type="button"
+                  tabIndex={-1}
+                  className="text-fg-muted hover:text-text p-1.5 min-h-touch min-w-touch flex items-center justify-center"
+                  aria-label={t("remove_recent_aria", { q })}
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setRecentSearches(deleteRecent(q));
+                  }}
+                >
+                  ×
+                </button>
+              </li>
+            ))}
+          </Section>
         </div>
       )}
     </div>
