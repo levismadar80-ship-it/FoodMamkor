@@ -114,7 +114,7 @@ OWNED_TABLE_EXEMPT = {
     "rescue_typical_items": "one row per business (PUT replaces it)",
     "producer_offers": "history rows: each save deactivates the old offer and inserts one (producer_me.py ~190), so growth is bounded by the PUT /producers/me rate limit",
     "producer_name_change_requests": "409 while one is pending (producer_name_requests.py)",
-    "kashrut_badge_requests": "409 while one is pending per badge (producer_me.py)",
+    "kashrut_badge_requests": "409 while one is pending per badge (producer_me_review.py)",
     "producer_review_checks": "admin-only checklist rows, bounded by the checklist item count",
     "retired_slugs": "one row per rename; renames go through the pending name-change request",
     "users": "the owner's own account row(s)",

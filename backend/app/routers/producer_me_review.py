@@ -254,7 +254,7 @@ def confirm_phone_otp(
     # things were removed from between the claim above and the commit below —
     # the MEH-2051 advisory lock + its `db.expire`, the MEH-1816 `was_approvable`
     # snapshot, and the `_maybe_fire_review_ready` call. All three were
-    # MEASURED unreachable, not judged so: `_pending_and_approvable` (:293)
+    # MEASURED unreachable, not judged so: `_pending_and_approvable` (producer_me.py)
     # reads status/photos/licence and never `phone_verified`, so once MEH-2124
     # deleted the status flip the snapshot and the post-commit re-read
     # evaluated the same predicate over an unchanged row and the ping's
@@ -482,7 +482,7 @@ def request_producer_review(
 
     # REUSES: app/services/auth_notifications.py notify_admin_new_recipe pattern
     # (admin WhatsApp + email, fail-open). Lazy import mirrors the fire_alerts
-    # style already used in this file.
+    # style already used in producer_me.py.
     from app.services.auth_notifications import notify_admin_producer_resubmit
 
     if resubmitting:

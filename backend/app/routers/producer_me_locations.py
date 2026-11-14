@@ -1,8 +1,9 @@
 """
 Module:    producer_me_locations
 Purpose:   The owner's branches and sale points under
-           /producers/me/locations: list, add, edit, delete, set primary.
-Does NOT:  Geocode or validate delivery areas (services/delivery_validation.py)
+           /producers/me/locations: list, add, edit (which also sets the primary), delete.
+Does NOT:  Call a geocoder (it only fills the city centroid when a point is
+           unpinned), validate delivery areas (services/delivery_validation.py)
            or touch the profile fields (routers/producer_me.py).
 Split out of producer_me.py (MEH-3266); the code is moved verbatim.
 """
@@ -37,12 +38,12 @@ router = APIRouter(prefix="/producers/me", tags=["producer-management"])
 # ============================================================================
 # MEH-1421 (MEH-1388 chunk 4a): producer_locations owner CRUD.
 # Owner-scoped physical presence points (branch / pickup / market_stand),
-# mirroring the products CRUD shape above (list/create/update/delete).
+# mirroring the products CRUD shape in producer_me.py (list/create/update/delete).
 #
 # IDOR: `require_producer` gates the ROLE (403 for a non-producer, auth.py:268);
 # a location id that exists but belongs to ANOTHER producer raises 403 via
 # `_get_owned_location` — the security.md ownership invariant. This
-# INTENTIONALLY differs from the products 404-on-not-owned (producer_me.py:1108):
+# INTENTIONALLY differs from the products 404-on-not-owned (producer_me.py):
 # the MEH-1421 AC + IDOR test require a 403. There is NO admin override — an
 # admin has role != "producer" and is 403'd by require_producer upstream, so
 # admin location management is out of 4a scope (admin surface = the read-only

@@ -14,7 +14,7 @@ Does NOT: purge anything (chunk C lives in retention_purge.py, MEH-2303); decide
           is THE dedupe expression and this module reuses it verbatim.
 Related:  backend/app/models/models.py::ProducerAnalyticsDaily;
           backend/app/services/analytics.py:70 (unique_views_count);
-          backend/app/routers/producer_me.py (`_count_in_window` — the
+          backend/app/routers/producer_me_analytics.py (`_count_in_window` — the
           `total` arm reads through `rollup_snapshot`);
           backend/app/startup.py (`_run_analytics_rollup_job`).
 History:  MEH-2079 chunk B2 / MEH-2283 (creation, 06/09). Rulings by Sapir,
@@ -86,7 +86,7 @@ UNIQUE_CONSTRAINT = "uq_producer_analytics_daily_producer_day"
 #: the retention window has (after chunk C) no raw rows left to count, and a
 #: zero written for it would be an undercount frozen forever (property 1).
 #: Chunk C must use the same number; if it does not, the `days=N` arms in
-#: producer_me.py need the same seam as `total` (recorded on MEH-2283).
+#: producer_me_analytics.py need the same seam as `total` (recorded on MEH-2283).
 RAW_RETENTION_DAYS = 90
 
 
