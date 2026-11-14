@@ -32,6 +32,12 @@ describe("middleware matcher — Sentry tunnel (MEH-2976)", () => {
     expect(matches("/map")).toBe(true);
   });
 
+  it("a business slug that only STARTS with monitoring still gets the middleware", () => {
+    // as-needed locale prefix: /<slug> works only through the middleware rewrite.
+    expect(matches("/monitoring-lab")).toBe(true);
+    expect(matches("/monitoringx")).toBe(true);
+  });
+
   it("next.config.js names the same tunnel path the matcher skips", () => {
     const src = readFileSync(join(__dirname, "..", "next.config.js"), "utf8");
     expect(src).toMatch(/tunnelRoute:\s*"\/monitoring"/);

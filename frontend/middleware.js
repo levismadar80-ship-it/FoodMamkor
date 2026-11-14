@@ -334,7 +334,7 @@ export const config = {
   matcher: [
     // MEH-2976: `monitoring` is the Sentry tunnel (next.config.js tunnelRoute);
     // the locale redirect must not turn it into /he/monitoring.
-    "/((?!api|_next|_vercel|monitoring|.*\\..*).*)",
+    "/((?!api|_next|_vercel|monitoring(?:/|$)|.*\\..*).*)",
     // MEH-2324: the owner-claim link /claim/<token>. The token is a JWT, so
     // the path has dots and the entry above skips it; without this it never
     // gets the locale rewrite and 404s. (Bare /claim matches both entries,
