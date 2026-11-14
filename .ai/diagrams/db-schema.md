@@ -148,7 +148,7 @@ erDiagram
         int position "MEH-3055: owner order, NULL = never ordered"
         varchar group_id "MEH-3055: id in producers.product_groups, no FK, nullable"
         varchar price_unit "MEH-3218: unit|kg|100g, default unit"
-        boolean is_orderable "MEH-3218: default false, the owner opts each product in"
+        boolean is_orderable "MEH-3218: default true; the opt-in is per business, the owner can take a product out"
         boolean in_stock "MEH-3218: default true"
         boolean contains_alcohol "MEH-3218: default false"
     }

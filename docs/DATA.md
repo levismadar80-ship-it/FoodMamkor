@@ -271,7 +271,7 @@ products       (id, producer_id FK, name, description,
                 is_low_carb Boolean NOT NULL DEFAULT FALSE,
                 ingredients Text NULL,                           -- MEH-2662: owner-declared free-text ingredient list; NULL = not filled
                 price_unit String(8) NOT NULL DEFAULT 'unit',    -- MEH-3218: unit | kg | 100g (CHECK products_price_unit_check). The price itself stays price_min/price_max; min == max is an exact price
-                is_orderable Boolean NOT NULL DEFAULT FALSE,     -- MEH-3218: the owner opts each product into on-site ordering
+                is_orderable Boolean NOT NULL DEFAULT TRUE,      -- MEH-3218: the opt-in is per BUSINESS (producer_order_settings.enabled); the owner can take a single product out
                 in_stock Boolean NOT NULL DEFAULT TRUE,          -- MEH-3218
                 contains_alcohol Boolean NOT NULL DEFAULT FALSE, -- MEH-3218
                 allergens Text[] NULL)                           -- MEH-2662: owner-declared codes from app/allergens.py (14-item closed list, canonical order, unknown → 422); NULL = not filled, never "none"      -- MEH-1934: 6th dietary axis ("דל פחמימות"). Partial index idx_products_dietary on (producer_id) WHERE any flag TRUE — predicate extended with is_vegetarian in MEH-1438 and with both MEH-1934 flags in revision a2f7d4c8e153 (a product marked only low-carb would otherwise fall outside the index)
