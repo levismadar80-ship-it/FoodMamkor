@@ -13,7 +13,7 @@
 // The button is the 44px hit area; the face is a <span> inside it. Hover and
 // focus are drawn on the face (a NAMED group, `group/ovl`, so a caller inside a
 // hoverable `group` card cannot light the face), because a ring around the
-// invisible 44px box would float off the circle. The ring-black/5 hairline
+// invisible 44px box would float off the circle. The ring-border hairline
 // keeps the white face's edge visible on a white photo.
 //
 // Not covered on purpose: ProductSheet's carousel chevrons and close button
@@ -22,7 +22,7 @@
 export const OVERLAY_ICON_BUTTON =
   "group/ovl w-11 h-11 grid place-items-center rounded-full transition disabled:opacity-50 focus-visible:outline-none";
 export const OVERLAY_ICON_FACE =
-  "w-8 h-8 grid place-items-center rounded-full bg-surface/95 shadow-sm ring-1 ring-black/5 transition group-hover/ovl:bg-surface group-focus-visible/ovl:ring-2 group-focus-visible/ovl:ring-primary";
+  "w-8 h-8 grid place-items-center rounded-full bg-surface/95 shadow-sm ring-1 ring-border transition group-hover/ovl:bg-surface group-focus-visible/ovl:ring-2 group-focus-visible/ovl:ring-primary";
 export const OVERLAY_ICON_SIZE = 18;
 // Off = the page's text ink, on = the saved-green fill — the same pair the
 // heart has always used, so the bell beside it no longer reads green while off.
