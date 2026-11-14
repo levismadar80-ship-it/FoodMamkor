@@ -72,7 +72,7 @@ async def upload_image(
     db: Session = Depends(get_db),
 ) -> dict[str, Any]:
     """Upload image to Cloudinary. Validates size and real content type.
-    Enforces free plan limit (3 images) for producers.
+    The free-plan gallery cap is NOT here (MEH-3220, services/gallery_cap.py).
     """
     # Read the whole file once so we can size-check and content-sniff. We cap
     # at MAX_FILE_SIZE + 1 so oversized uploads still fail cheaply without
@@ -95,21 +95,10 @@ async def upload_image(
             detail="רק תמונות JPG/PNG/WebP/GIF/HEIC מותרות",
         )
 
-    # Check freemium limit for producers
-    if user.role == "producer" and user.producer_id:
-        producer = db.query(Producer).filter(Producer.id == user.producer_id).first()
-        if (
-            producer
-            and producer.plan == "free"
-            and producer.images
-            and len(producer.images) >= 3
-        ):
-            raise HTTPException(
-                status_code=403,
-                # MEH-1008: neutral cap copy — no premium/upgrade promise while the
-                # pricing model is undecided (MEH-617); gender-neutral plural (ADR-024).
-                detail="אפשר להעלות עד 3 תמונות לבית עסק. כדי להוסיף תמונה חדשה, הסירו קודם תמונה קיימת.",
-            )
+    # MEH-3220: no plan cap here. This endpoint also serves product photos,
+    # event covers, recipes and workshops; the free-plan 3-photo cap is a
+    # GALLERY cap (MEH-1335) and lives in services/gallery_cap.py, called
+    # from PUT /producers/me.
 
     if not settings.cloudinary_cloud_name:
         # Dev fallback: return a local placeholder URL that won't trigger

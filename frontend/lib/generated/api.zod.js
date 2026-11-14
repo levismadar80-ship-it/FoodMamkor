@@ -6760,7 +6760,7 @@ export const UploadAvatarUploadAvatarPostResponse = /*#__PURE__*/ zod.unknown()
 
 /**
  * Upload image to Cloudinary. Validates size and real content type.
- * Enforces free plan limit (3 images) for producers.
+ * The free-plan gallery cap is NOT here (MEH-3220, services/gallery_cap.py).
  * @summary Upload Image
  */
 export const UploadImageUploadImagePostResponse = /*#__PURE__*/ zod.unknown()

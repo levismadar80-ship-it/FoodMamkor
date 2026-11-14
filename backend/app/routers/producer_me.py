@@ -71,6 +71,7 @@ from app.services.submission_confirmation import send_submission_confirmation
 from app.services.producer_risk import score_producer  # MEH-2602
 from app.services import indexnow  # MEH-2852
 from app.services.owner_attention import owner_attention  # MEH-3108
+from app.services.gallery_cap import assert_free_gallery_cap  # MEH-3220
 from app.services.submission_gate import (
     attach_upcoming_events_count,
     submission_missing_items,
@@ -954,6 +955,8 @@ def update_my_producer(
     # MEH-2911: raised BEFORE the setattr loop, so the whole PUT is refused
     # rather than half-applied. See the helper for the ruling it enforces.
     _assert_keeps_a_photo(producer, payload, old_images)
+    # MEH-3220: the free-plan 3-photo cap belongs to the gallery write.
+    assert_free_gallery_cap(producer, payload, old_images)
 
     for field, value in payload.items():
         if field in _PRODUCER_WRITABLE_FIELDS:
