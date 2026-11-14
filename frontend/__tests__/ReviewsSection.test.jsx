@@ -65,6 +65,7 @@ vi.mock("@/lib/contact-tracking", () => ({
 }));
 vi.mock("@phosphor-icons/react", () => ({
   Star: (props) => <span data-testid="icon-star" {...props} />,
+  DotsThreeVertical: (props) => <span {...props} />,
   User: (props) => <span data-testid="icon-user" {...props} />,
   ShieldCheck: (props) => <span data-testid="icon-shield" {...props} />,
   Leaf: (props) => <span data-testid="icon-leaf" {...props} />,

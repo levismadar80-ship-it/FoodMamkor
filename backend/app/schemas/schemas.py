@@ -4105,6 +4105,34 @@ class ProducerInfoReportCreate(BaseModel):
         return stripped
 
 
+# MEH-3260: why a visitor reports a review (the public dialog's radio list).
+REVIEW_REPORT_REASONS = ("fake", "abusive", "personal", "irrelevant", "other")
+
+
+class ReviewReportCreate(BaseModel):
+    """MEH-3260: «דיווח על ביקורת» — emailed to the admin, no DB row, no
+    automatic action. `details` is optional except for reason "other"."""
+
+    producer_slug: str = Field(..., min_length=1, max_length=200)
+    review_id: UUID
+    reason: Literal["fake", "abusive", "personal", "irrelevant", "other"]
+    details: str | None = Field(None, max_length=1000)
+    reporter_email: EmailStr | None = None
+
+    @field_validator("details")
+    @classmethod
+    def _clean_details(cls, v: str | None) -> str | None:
+        v = sanitize_text(v, max_length=1000)
+        stripped = (v or "").strip()
+        return stripped or None
+
+    @model_validator(mode="after")
+    def _other_needs_details(self) -> "ReviewReportCreate":
+        if self.reason == "other" and not self.details:
+            raise ValueError("ספרו לנו בכמה מילים מה הבעיה")
+        return self
+
+
 # --- Rating ---
 class RatingSubmit(BaseModel):
     stars: int = Field(..., ge=1, le=5)

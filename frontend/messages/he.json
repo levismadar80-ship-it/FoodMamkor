@@ -3398,6 +3398,20 @@
     }
   },
   "reviews": {
+    "report": {
+      "menu_aria": "אפשרויות לביקורת של {user}",
+      "report_link": "דיווח על הביקורת",
+      "dialog_title": "דיווח על ביקורת",
+      "dialog_intro": "מה הבעיה בביקורת? נבדוק ונחליט אם להסיר אותה.",
+      "reason_fake": "נראית מזויפת או לא מבוססת על ניסיון אמיתי",
+      "reason_abusive": "פוגענית או בוטה",
+      "reason_personal": "חושפת פרטים אישיים",
+      "reason_irrelevant": "לא קשורה לבית העסק הזה, או ספאם",
+      "reason_other": "סיבה אחרת",
+      "details_label": "פרטים נוספים (לא חובה)",
+      "details_required": "ספרו לנו בכמה מילים מה הבעיה",
+      "success_toast": "תודה, הדיווח הגיע אלינו. נבדוק אותו בהקדם."
+    },
     "section_heading": "מה אומרים הלקוחות",
     "anonymous_fallback": "לקוח",
     "star_aria": "{value, plural, one {כוכב אחד} two {{value} כוכבים} other {{value} כוכבים}}",

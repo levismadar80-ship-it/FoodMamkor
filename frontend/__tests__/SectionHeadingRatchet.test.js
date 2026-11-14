@@ -54,6 +54,7 @@ const ALLOWED = {
   "components/LoginPromptModal.jsx": 1, // dialog title
   "components/ProfileCompletenessCard.jsx": 1, // owner card title
   "components/ReportInfoModal.jsx": 1, // dialog title
+  "components/ReviewReportMenu.jsx": 1, // dialog title (MEH-3260)
   "components/producer/BusinessQrCard.jsx": 1, // owner card title
   "components/producer/OwnerAttentionCard.jsx": 1, // owner card title (MEH-3108, dashboard home)
   "components/ProducersClient.jsx": 2, // empty-state titles

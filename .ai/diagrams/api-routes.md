@@ -76,6 +76,7 @@ graph TD
     GProducer --> GReviews[GET /producers/{id}/reviews<br/>🌐 paginated]
     GProducer --> Reports_post[POST /producers/{id}/report<br/>🔑 rate-limited]
     GProducer --> ReportInfo[POST /reports/producer-info<br/>🌐 rate-limited 5/day<br/>MEH-1443 email-only, no persist<br/>404 for an organizer MEH-2465]
+    GProducer --> ReportReview[POST /reports/review<br/>🌐 rate-limited 5/day<br/>MEH-3260 email-only, repeat collapsed]
 ```
 
 ## 3. Auth + account self-service

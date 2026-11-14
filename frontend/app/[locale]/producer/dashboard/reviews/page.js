@@ -10,7 +10,8 @@
  * Touches:  GET /producers/me (the business id) · GET /reviews?producer_id=
  *           (every visible review, newest first) · PUT /reviews/{id}/reply
  *           (through ReviewReply, the same control as the public page).
- * Does NOT: hide or report a review (admin only), or show hidden reviews —
+ * Does NOT: hide a review (admin only; MEH-3260 lets the owner REPORT one
+ *           through the card's ⋮), or show hidden reviews —
  *           the list is what customers see on the public page.
  * Related:  components/ReviewsSection.jsx (ReviewReply, StarRow, the name
  *           format) · dashboard/tools/page.js (the «ביקורות» tile).
@@ -35,6 +36,7 @@ import {
   REVIEW_DATE_OPTIONS,
 } from "@/components/ReviewsSection";
 import { avatarInitial } from "@/components/ui/Avatar";
+import ReviewReportMenu from "@/components/ReviewReportMenu";
 
 // Both are untyped JSX components whose inferred props mark every prop
 // required; the dashboard uses their optional subset.
@@ -76,6 +78,10 @@ function OwnerReviewRow({ review, onSaved }) {
           <div className="mt-1 flex">
             <StarRow value={review.stars} size={14} ariaLabel={t("star_aria", { value: review.stars })} />
           </div>
+        </div>
+        {/* MEH-3260: the owner can report a review too. */}
+        <div className="ms-auto -mt-2 -me-2 shrink-0">
+          <ReviewReportMenu review={review} producerId={review.producer_id} authorName={name} />
         </div>
       </div>
       {review.body && <p className="text-base text-text/85 leading-relaxed whitespace-pre-line">{review.body}</p>}
