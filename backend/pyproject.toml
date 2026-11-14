@@ -231,6 +231,7 @@ files = [
     "app/services/group_buy_notifications.py",
     "app/services/home_product_moderation.py",
     "app/services/indexnow.py",
+    "app/services/invite_gate.py",
     "app/services/job_heartbeat.py",
     "app/services/license_validation.py",
     "app/services/moderation_fail_open.py",
