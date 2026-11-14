@@ -363,7 +363,9 @@ test.describe("manual › /join (MEH-995)", () => {
     });
     page.on("requestfinished", async (req) => {
       if (!/\.mp4(?:$|\?)/.test(req.url())) return;
-      const { responseBodySize } = await req.sizes();
+      // sizes() rejects if the page closes mid-call; a lost sample must not
+      // surface as an unhandled rejection after the test ended.
+      const responseBodySize = await req.sizes().then((s) => s.responseBodySize, () => 0);
       const path = new URL(req.url()).pathname;
       bodyBytes.set(path, (bodyBytes.get(path) ?? 0) + responseBodySize);
     });
@@ -388,6 +390,14 @@ test.describe("manual › /join (MEH-995)", () => {
     await scope(page).getByTestId("join-clip").scrollIntoViewIfNeeded();
     await expect.poll(() => videoUrls.length, { timeout: 10_000 }).toBeGreaterThan(0);
     expect([...new Set(videoUrls)]).toEqual(["/images/join/clip-page.mp4"]);
+    if (browserName !== "chromium") {
+      // Positive control for the zero-bytes read above: once the clip is in
+      // view, this engine must report bytes for it — otherwise a "0" before
+      // interaction would be the instrument, not the page.
+      await expect
+        .poll(() => bodyBytes.get("/images/join/clip-page.mp4") ?? 0, { timeout: 15_000 })
+        .toBeGreaterThan(0);
+    }
   });
 
   // Phone shelf: a tapped card ends centred. Taps go through dispatchEvent, not

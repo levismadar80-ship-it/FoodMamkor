@@ -6,6 +6,13 @@ labelled `webkit-nightly`, or comments on the one already open. On a clean night
 it closes that issue. Manual dispatch runs never touch it. The job also gets
 `issues: write` (job-level `permissions`), which nothing else in the job uses.
 
+**Edges, on purpose:**
+- A night that hits the job timeout leaves no `results.json`, which reads as
+  `executed=0`, so it alerts. A hung night is not silent.
+- A night whose only problems are flaky tests counts as green, the same trade as
+  MEH-2972 for staging. The flaky count is in the summary line, and the weekly
+  scan reads it.
+
 **Why a patch:** `.github/**` cannot be written from a Claude Code session
 (`.claude/rules/security.md`). Claude in Chrome commits it on the PR branch,
 and then the session checks the PR diff byte for byte against this file.
@@ -43,7 +50,7 @@ reads the open `webkit-nightly` issue, plus the step summary line
 +      # closed when a night is clean. Schedule only, so a manual dispatch on a
 +      # branch never opens or closes it. Same shape as uptime.yml.
 +      - name: Alert on a red WebKit night
-+        if: always() && github.event_name == 'schedule' && steps.e2e-webkit-run.outcome != 'cancelled'
++        if: always() && github.event_name == 'schedule'
 +        working-directory: frontend
 +        env:
 +          GH_TOKEN: ${{ github.token }}
