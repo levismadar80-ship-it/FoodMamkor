@@ -55,6 +55,7 @@ import CitiesAutocomplete from "@/components/CitiesAutocomplete";
 import { DELIVERY_DAYS } from "@/lib/delivery-days";
 import { SkeletonForm } from "@/components/Skeleton";
 import Button from "@/components/ui/Button";
+import InlineMessage from "@/components/ui/InlineMessage";
 
 // ============================================================
 // MEH-1306: "view on page" back-link — closes the edit↔public loop from the
@@ -191,10 +192,10 @@ export function CategoriesCard({ profile, onSave, reportDirty = () => {} }) {
       <p className="text-xs text-fg-muted mb-4">{t("subtitle")}</p>
 
       {fetchError ? (
-        <p className="flex items-center gap-1.5 text-xs text-danger-600" role="alert">
+        <InlineMessage size="xs" className="flex items-center gap-1.5">
           <Warning size={16} weight="fill" aria-hidden="true" className="shrink-0" />
           {fetchError}
-        </p>
+        </InlineMessage>
       ) : (
         <CategorySelector
           categories={allCategories}
@@ -211,10 +212,10 @@ export function CategoriesCard({ profile, onSave, reportDirty = () => {} }) {
       />
 
       {errorMsg && (
-        <p className="mt-3 flex items-center gap-1.5 text-xs text-danger-600" role="alert">
+        <InlineMessage size="xs" className="mt-3 flex items-center gap-1.5">
           <Warning size={16} weight="fill" aria-hidden="true" className="shrink-0" />
           {errorMsg}
-        </p>
+        </InlineMessage>
       )}
 
       <Button
@@ -540,23 +541,19 @@ export function ImagesCard({ profile, onSave, reportDirty = () => {} }) {
           No positional classes: it sits in flow, so it mirrors with the
           document and needs no logical property (rtl.md). */}
       {lastPhotoBlocked && (
-        <p
-          className="mt-2 text-xs leading-snug text-error"
-          role="alert"
-          data-testid="images-last-photo-note"
-        >
+        <InlineMessage size="xs" className="mt-2 leading-snug" data-testid="images-last-photo-note">
           {t("last_photo")}
-        </p>
+        </InlineMessage>
       )}
 
       {errorMsg && (
         // MEH-1099: text-error (ADR-026) — the drag-drop path made this error
         // display newly reachable; sibling text-red-600 sites in the other
         // cards stay for the MEH-1086 follow-up sweep.
-        <p className="mt-3 flex items-center gap-1.5 text-xs text-error" role="alert">
+        <InlineMessage size="xs" className="mt-3 flex items-center gap-1.5">
           <Warning size={16} weight="fill" aria-hidden="true" className="shrink-0" />
           {errorMsg}
-        </p>
+        </InlineMessage>
       )}
 
       <Button
@@ -676,10 +673,10 @@ function AssistForm({ t, assist }) {
         <p className="text-2xs text-fg-muted text-center">{t("generate_hint_disabled")}</p>
       )}
       {error && (
-        <p className="text-xs text-error flex items-start gap-1.5" role="alert">
+        <InlineMessage size="xs" className="flex items-start gap-1.5">
           <Warning size={15} weight="fill" aria-hidden="true" className="shrink-0 mt-px" />
           {error}
-        </p>
+        </InlineMessage>
       )}
     </div>
   );
@@ -898,10 +895,10 @@ export function DescriptionCard({ profile, onSave, reportDirty = () => {} }) {
       </Button>
 
       {error && !assistOpen && (
-        <p className="text-xs text-error flex items-start gap-1.5" role="alert">
+        <InlineMessage size="xs" className="flex items-start gap-1.5">
           <Warning size={15} weight="fill" aria-hidden="true" className="shrink-0 mt-px" />
           {error}
-        </p>
+        </InlineMessage>
       )}
     </div>
   );
@@ -1116,10 +1113,10 @@ export function OwnerStoryCard({ profile, onSave, reportDirty = () => {} }) {
       </Button>
 
       {error && (
-        <p className="text-xs text-error flex items-start gap-1.5" role="alert">
+        <InlineMessage size="xs" className="flex items-start gap-1.5">
           <Warning size={15} weight="fill" aria-hidden="true" className="shrink-0 mt-px" />
           {error}
-        </p>
+        </InlineMessage>
       )}
     </div>
   );
@@ -1202,10 +1199,10 @@ export function PricingCard({ profile, onSave, reportDirty = () => {} }) {
       </div>
 
       {errorMsg && (
-        <p className="mt-3 flex items-center gap-1.5 text-xs text-danger-600" role="alert">
+        <InlineMessage size="xs" className="mt-3 flex items-center gap-1.5">
           <Warning size={16} weight="fill" aria-hidden="true" className="shrink-0" />
           {errorMsg}
-        </p>
+        </InlineMessage>
       )}
 
       <Button
@@ -1332,10 +1329,10 @@ export function LicenseCard({ profile, onSave, reportDirty = () => {} }) {
       )}
 
       {errorMsg && (
-        <p className="mt-3 flex items-center gap-1.5 text-xs text-danger-600" role="alert">
+        <InlineMessage size="xs" className="mt-3 flex items-center gap-1.5">
           <Warning size={16} weight="fill" aria-hidden="true" className="shrink-0" />
           {errorMsg}
-        </p>
+        </InlineMessage>
       )}
 
       <Button
@@ -1627,10 +1624,10 @@ export function KashrutCard({ profile, reportDirty = () => {} }) {
         </Button>
 
         {error && (
-          <p className="text-xs text-error flex items-start gap-1.5" role="alert">
+          <InlineMessage size="xs" className="flex items-start gap-1.5">
             <Warning size={15} weight="fill" aria-hidden="true" className="shrink-0 mt-px" />
             {error}
-          </p>
+          </InlineMessage>
         )}
         {submitted && !error && (
           <p
@@ -2150,10 +2147,10 @@ export function DeliveryCard({ profile, onSave, reportDirty = () => {} }) {
       </div>
 
       {errorMsg && (
-        <p className="mt-3 flex items-center gap-1.5 text-xs text-danger-600" role="alert">
+        <InlineMessage size="xs" className="mt-3 flex items-center gap-1.5">
           <Warning size={16} weight="fill" aria-hidden="true" className="shrink-0" />
           {errorMsg}
-        </p>
+        </InlineMessage>
       )}
 
       <Button
@@ -2440,10 +2437,10 @@ export function OffersCard({ profile, onSave, reportDirty = () => {} }) {
       </div>
 
       {errorMsg && (
-        <p className="mt-3 flex items-center gap-1.5 text-xs text-danger-600" role="alert">
+        <InlineMessage size="xs" className="mt-3 flex items-center gap-1.5">
           <Warning size={16} weight="fill" aria-hidden="true" className="shrink-0" />
           {errorMsg}
-        </p>
+        </InlineMessage>
       )}
 
       <Button
@@ -2603,9 +2600,9 @@ export function BusinessNameCard({ profile }) {
             <p className="text-sm text-fg-muted">{t("same_name_hint")}</p>
           )}
           {error && (
-            <p className="text-sm text-danger-700" role="alert" data-testid="name-change-error">
+            <InlineMessage data-testid="name-change-error">
               {error}
-            </p>
+            </InlineMessage>
           )}
           <Button
             type="submit"

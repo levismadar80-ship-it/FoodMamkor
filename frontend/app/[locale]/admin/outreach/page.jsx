@@ -12,6 +12,7 @@ import Input from "@/components/ui/Input";
 import AdminLoadError from "@/components/admin/AdminLoadError";
 import Pagination from "@/components/Pagination";
 import Button from "@/components/ui/Button";
+import InlineMessage from "@/components/ui/InlineMessage";
 
 /**
  * /admin/outreach — manual lead pipeline (MEH-22).
@@ -621,7 +622,7 @@ function AddLeadModal({ onClose, onCreated }) {
           rows={2}
           className="w-full border border-border rounded-md px-3 py-2"
         />
-        {error && <p className="text-sm text-danger-600" role="alert">{error}</p>}
+        {error && <InlineMessage>{error}</InlineMessage>}
         <div className="flex gap-2">
           <button
             type="button"

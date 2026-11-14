@@ -23,6 +23,7 @@ import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { CaretDown } from "@phosphor-icons/react";
 import api from "@/lib/api";
+import InlineMessage from "@/components/ui/InlineMessage";
 import { SkeletonBlock } from "@/components/Skeleton";
 
 /**
@@ -57,9 +58,9 @@ export default function RegistrationsList({ kind, itemId, count = 0 }) {
       </summary>
       <div className="mt-2">
         {failed ? (
-          <p className="text-danger-700" role="alert">
+          <InlineMessage size="inherit">
             {t("load_error")}
-          </p>
+          </InlineMessage>
         ) : rows === null ? (
           <SkeletonBlock as="div" className="h-5 w-40 rounded" aria-busy="true" />
         ) : rows.length === 0 ? (

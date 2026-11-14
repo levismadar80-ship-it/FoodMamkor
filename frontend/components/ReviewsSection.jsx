@@ -20,6 +20,8 @@ import EmptyState from "@/components/ui/EmptyState";
 import { SkeletonList } from "@/components/Skeleton";
 import { seedColorFor } from "@/lib/brand-seeds";
 import SectionHeading from "@/components/ui/SectionHeading";
+import InlineMessage from "@/components/ui/InlineMessage";
+import { avatarInitial } from "@/components/ui/Avatar";
 
 // MEH-2833 (seed layer, board 4): a reviewer's initial sits on a soft tint of
 // "their" seed — the seed colour mixed ~24% into the cream page, with an inset
@@ -218,7 +220,7 @@ function ReviewReply({ review, isOwner, onSaved }) {
           className="w-full border border-border rounded-sm px-3 py-2 bg-surface resize-none focus-visible:ring-2 focus-visible:ring-primary/40 outline-none text-sm"
         />
         {error && (
-          <p className="text-sm text-error mt-1" role="alert">{error}</p>
+          <InlineMessage className="mt-1">{error}</InlineMessage>
         )}
         <div className="flex items-center gap-4 mt-2">
           {/* MEH-1103: action buttons carry min-h-touch (WCAG 2.5.5). */}
@@ -604,7 +606,7 @@ export default function ReviewsSection({
                 <div className="flex items-start gap-3 mb-3">
                   <ReviewInitial
                     seedKey={review.user_id ?? review.user_name}
-                    letter={Array.from(formatName(review.user_name, anonymousFallback))[0]}
+                    letter={avatarInitial(formatName(review.user_name, anonymousFallback), "")}
                   />
                   <div className="min-w-0">
                     <p className="font-body-md font-semibold text-base text-text leading-snug">
@@ -714,9 +716,9 @@ export default function ReviewsSection({
               <p className="text-xs text-fg-muted mt-1">{body.length}/500</p>
             </div>
             {error && (
-              <p className="text-sm text-error" role="alert">
+              <InlineMessage>
                 {error}
-              </p>
+              </InlineMessage>
             )}
             <div className="flex items-center gap-4">
               <button

@@ -39,6 +39,7 @@ import {
   canAddSpecialRange,
 } from "@/lib/special-hours";
 import Button from "@/components/ui/Button";
+import InlineMessage from "@/components/ui/InlineMessage";
 
 export default function SpecialHoursEditor({ profile, onSave, reportDirty = () => {} }) {
   const t = useTranslations("dashboard.producer.special_hours");
@@ -318,9 +319,9 @@ export default function SpecialHoursEditor({ profile, onSave, reportDirty = () =
               />
 
               {issueReason && (
-                <span className="mt-1 block text-xs text-error" role="alert">
+                <InlineMessage as="span" size="xs" className="mt-1 block">
                   {reasonText(issueReason)}
-                </span>
+                </InlineMessage>
               )}
             </div>
           );
@@ -340,10 +341,10 @@ export default function SpecialHoursEditor({ profile, onSave, reportDirty = () =
       )}
 
       {errorMsg && (
-        <p className="mt-4 flex items-center gap-1.5 text-xs text-error" role="alert">
+        <InlineMessage size="xs" className="mt-4 flex items-center gap-1.5">
           <Warning size={16} weight="fill" aria-hidden="true" className="shrink-0" />
           {errorMsg}
-        </p>
+        </InlineMessage>
       )}
 
       <div className="mt-4 flex flex-wrap items-center gap-3">

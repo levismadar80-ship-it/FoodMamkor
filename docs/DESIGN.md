@@ -633,6 +633,11 @@ front matter for the normative token bindings.
   **לחמים ואפייה** (growers are the core of "from the source"; bakeries are the
   largest share of the Wave 1 leads). Captions are the name only — no 01–10
   numerals.
+- **On/off switch (MEH-3065):** every `role="switch"` draws its track from
+  `components/ui/Switch.jsx` — `<Switch>` for a standalone toggle (44px tap
+  target), `<SwitchTrack>` inside a row that is itself the switch button.
+  One size (40×24, 16px knob); the knob moves by logical inset (`start-1` off →
+  `end-1` on), never `translate-x`. Guard: `__tests__/SwitchGuard.test.js`.
 
 ## Action hierarchy
 
@@ -684,6 +689,11 @@ reads as a rendering bug (the ghost-strip class). Rules:
   below another measures the layer above at runtime. `Header` publishes its
   live height as the `--chrome-top` CSS var (ResizeObserver); downstream sticky
   chrome offsets off `var(--chrome-top, …)`, never a frozen `top-[82px]`.
+- **Person avatar (MEH-3069):** the signed-in person's circle is
+  `components/ui/Avatar.jsx` — photo, else ONE initial from `avatarInitial()`
+  (first code point, upper-cased, «?» when empty). Header 34px, BottomNav 24px,
+  account sheet 40px (`tone="none"` inside its own ring), settings 64px.
+  Guard: `__tests__/AvatarGuard.test.js`.
 
 ## Do's and Don'ts
 
@@ -979,6 +989,18 @@ location_type group instead carry the marker as `sr-only` text inside the
 element supplying the group's accessible name (the `aria-label`/
 `aria-labelledby` target) — same "(חובה)" wording as `license_required_label`,
 audible once, never announced as "star".
+
+## In-place messages (MEH-3072)
+
+A form-level or page-level message that appears in place (a submit error,
+«נשמר», a row's load error) is `components/ui/InlineMessage.jsx`:
+`tone` error (role alert) / success / info (role status), `size` sm / xs /
+inherit, `variant` text / box. **One red: `text-error` (#b3261e, 5.8:1 on the
+cream page).** `text-danger-600` (#dc2626) measures 4.26:1 there, under AA for
+small text, so it is not used for message text. A field's own error under its
+input belongs to the form-field primitives (MEH-3060). Guard:
+`__tests__/InlineMessageGuard.test.js` (per-file ratchet on hand-written
+`role="alert"`).
 
 ## References
 

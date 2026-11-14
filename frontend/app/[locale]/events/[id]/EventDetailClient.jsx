@@ -36,6 +36,7 @@ import { downloadIcs } from "@/lib/event-ics";
 import Button from "@/components/ui/Button";
 import RegistrationCta from "@/components/RegistrationCta";
 import SectionHeading from "@/components/ui/SectionHeading";
+import { avatarInitial } from "@/components/ui/Avatar";
 import { SkeletonBlock } from "@/components/Skeleton";
 
 // MEH-1404: reuse the producer-detail static map + Waze/Gmaps block on events
@@ -245,7 +246,7 @@ export default function EventDetailClient() {
                 className="inline-flex items-center gap-2 min-h-touch text-base text-text hover:text-primary rounded transition focus-ring"
               >
                 <span aria-hidden="true" className="w-7 h-7 rounded-full bg-green-50 text-primary text-sm font-bold grid place-items-center">
-                  {Array.from(event.producer_name.trim())[0] ?? ""}
+                  {avatarInitial(event.producer_name, "")}
                 </span>
                 <span>{ownerLabel}</span>
                 <CaretLeft size={14} className="text-primary ltr:rotate-180" aria-hidden="true" />

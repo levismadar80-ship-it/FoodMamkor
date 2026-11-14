@@ -185,7 +185,7 @@ describe("MEH-1611 — focus-on-select demotes, never removes", () => {
   beforeEach(reset);
 
   it("keeps the marker population identical before and after a selection — exactly 0 removed", () => {
-    const { rerender } = render(<MapComponent producers={ALL} focusedProducerId={null} />);
+    const { rerender } = render(<MapComponent showAllPickupPoints producers={ALL} focusedProducerId={null} />);
     const before = recorder.markers.length;
     expect(before).toBe(TOTAL_MARKERS);
     // Deltas, not absolutes: mounting the map legitimately builds the layer
@@ -194,7 +194,7 @@ describe("MEH-1611 — focus-on-select demotes, never removes", () => {
     const batchesBefore = recorder.addLayersBatches.length;
     const clearsBefore = recorder.clearLayersCalls;
 
-    rerender(<MapComponent producers={ALL} focusedProducerId="p-multi" />);
+    rerender(<MapComponent showAllPickupPoints producers={ALL} focusedProducerId="p-multi" />);
 
     // The whole point of the ticket: demote != remove. Nothing leaves the
     // cluster group, nothing is re-added, the group is not wiped and rebuilt.
@@ -207,10 +207,10 @@ describe("MEH-1611 — focus-on-select demotes, never removes", () => {
   });
 
   it("flags exactly the selected business's own pins, and nobody else's", () => {
-    const { rerender } = render(<MapComponent producers={ALL} focusedProducerId={null} />);
+    const { rerender } = render(<MapComponent showAllPickupPoints producers={ALL} focusedProducerId={null} />);
     expect(focusedMarkers()).toHaveLength(0);
 
-    rerender(<MapComponent producers={ALL} focusedProducerId="p-multi" />);
+    rerender(<MapComponent showAllPickupPoints producers={ALL} focusedProducerId="p-multi" />);
 
     // p-multi owns 3 of the 5 markers; the other 2 belong to other businesses
     // and are the ones the CSS rule fades.
@@ -236,11 +236,11 @@ describe("MEH-1611 — focus-on-select demotes, never removes", () => {
     // marker effect and rebuild the whole layer, which is not what this asserts.
     const feed = [...ALL, pinless];
     const { container, rerender } = render(
-      <MapComponent producers={feed} focusedProducerId={null} />,
+      <MapComponent showAllPickupPoints producers={feed} focusedProducerId={null} />,
     );
     const mapEl = container.firstChild;
 
-    rerender(<MapComponent producers={feed} focusedProducerId="p-pinless" />);
+    rerender(<MapComponent showAllPickupPoints producers={feed} focusedProducerId="p-pinless" />);
 
     expect(mapEl.classList.contains("mehamakor-map-focused")).toBe(false);
     // and nothing was falsely tagged as the focus target
@@ -251,37 +251,37 @@ describe("MEH-1611 — focus-on-select demotes, never removes", () => {
 
   it("puts the demote class on the map container while selected, and takes it off on deselect", () => {
     const { container, rerender } = render(
-      <MapComponent producers={ALL} focusedProducerId={null} />,
+      <MapComponent showAllPickupPoints producers={ALL} focusedProducerId={null} />,
     );
     // The map container is the component's only rendered node.
     const mapEl = container.firstChild;
     expect(mapEl.classList.contains("mehamakor-map-focused")).toBe(false);
 
-    rerender(<MapComponent producers={ALL} focusedProducerId="p-multi" />);
+    rerender(<MapComponent showAllPickupPoints producers={ALL} focusedProducerId="p-multi" />);
     expect(mapEl.classList.contains("mehamakor-map-focused")).toBe(true);
 
-    rerender(<MapComponent producers={ALL} focusedProducerId={null} />);
+    rerender(<MapComponent showAllPickupPoints producers={ALL} focusedProducerId={null} />);
     expect(mapEl.classList.contains("mehamakor-map-focused")).toBe(false);
   });
 
   it("restores every pin on deselect", () => {
-    const { rerender } = render(<MapComponent producers={ALL} focusedProducerId="p-multi" />);
+    const { rerender } = render(<MapComponent showAllPickupPoints producers={ALL} focusedProducerId="p-multi" />);
     expect(focusedMarkers().length).toBeGreaterThan(0);
 
-    rerender(<MapComponent producers={ALL} focusedProducerId={null} />);
+    rerender(<MapComponent showAllPickupPoints producers={ALL} focusedProducerId={null} />);
 
     expect(focusedMarkers()).toHaveLength(0);
     expect(recorder.markers).toHaveLength(TOTAL_MARKERS);
     expect(recorder.removeLayerCalls).toBe(0);
   });
 
-  it("keeps the selected business focused across a marker rebuild (refetch / layer toggle)", () => {
-    const { rerender } = render(<MapComponent producers={ALL} focusedProducerId="p-multi" />);
+  it("keeps the selected business focused across a marker rebuild (refetch)", () => {
+    const { rerender } = render(<MapComponent showAllPickupPoints producers={ALL} focusedProducerId="p-multi" />);
     reset();
     // A "חפשי באזור זה" refetch hands down a new producers array while the
     // selection is still live — the rebuilt markers must come back focused.
     rerender(
-      <MapComponent producers={[...ALL]} focusedProducerId="p-multi" showSecondaryLayer={false} />,
+      <MapComponent showAllPickupPoints producers={[...ALL]} focusedProducerId="p-multi" />,
     );
     const focused = focusedMarkers();
     expect(focused.length).toBeGreaterThan(0);
@@ -301,7 +301,7 @@ describe("MEH-1611 — focusProducer frames all of a business's points", () => {
   });
 
   it("fitBounds over ALL usable points when the business has >= 2, zoom-capped", () => {
-    render(<MapComponent producers={ALL} registerApi={registerApi} />);
+    render(<MapComponent showAllPickupPoints producers={ALL} registerApi={registerApi} />);
     api.focusProducer("p-multi");
 
     expect(recorder.flyTo).toHaveLength(0); // not the single-point path
@@ -319,7 +319,7 @@ describe("MEH-1611 — focusProducer frames all of a business's points", () => {
   });
 
   it("keeps the existing flyTo for a single-point business", () => {
-    render(<MapComponent producers={ALL} registerApi={registerApi} />);
+    render(<MapComponent showAllPickupPoints producers={ALL} registerApi={registerApi} />);
     api.focusProducer("p-single");
 
     expect(recorder.fitBounds).toHaveLength(0);
@@ -348,7 +348,7 @@ describe("MEH-1611 — focusProducer frames all of a business's points", () => {
         { kind: "pickup", label: "איסוף — מרכז בנימינה", lat: 32.519, lng: 34.953, is_primary: true, precision: "exact" },
       ],
     };
-    render(<MapComponent producers={[...ALL, deliveryOnly]} registerApi={registerApi} />);
+    render(<MapComponent showAllPickupPoints producers={[...ALL, deliveryOnly]} registerApi={registerApi} />);
     api.focusProducer("demo-delivery-pickup");
 
     expect(recorder.fitBounds).toHaveLength(0); // one usable point → the flyTo branch
@@ -358,7 +358,7 @@ describe("MEH-1611 — focusProducer frames all of a business's points", () => {
   });
 
   it("moves the camera without removing or re-adding any marker", () => {
-    render(<MapComponent producers={ALL} registerApi={registerApi} />);
+    render(<MapComponent showAllPickupPoints producers={ALL} registerApi={registerApi} />);
     const before = recorder.markers.length;
     api.focusProducer("p-multi");
     expect(recorder.markers).toHaveLength(before);
