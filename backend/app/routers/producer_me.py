@@ -71,6 +71,7 @@ from app.services.submission_confirmation import send_submission_confirmation
 from app.services.producer_risk import score_producer  # MEH-2602
 from app.services import indexnow  # MEH-2852
 from app.services.owner_attention import owner_attention  # MEH-3108
+from app.services.phone_reverify import reset_verification_if_phone_changed  # grill B8
 from app.services.submission_gate import (
     attach_upcoming_events_count,
     submission_missing_items,
@@ -932,6 +933,7 @@ def update_my_producer(
     # before commit would orphan-leak in the opposite direction (assets
     # gone, DB still references them) if commit raises.
     old_images = list(producer.images or [])
+    old_phone: str | None = producer.phone  # type: ignore[assignment]  # grill B8
 
     # MEH-2475: an ORGANIZER's city. `city` stays out of the set above for a
     # business (ruling A: its city follows the primary location row, and a PUT
@@ -952,6 +954,9 @@ def update_my_producer(
     for field, value in payload.items():
         if field in _PRODUCER_WRITABLE_FIELDS:
             setattr(producer, field, value)
+
+    # Grill B8: a new WhatsApp number is not a verified one (MEH-745).
+    reset_verification_if_phone_changed(db, producer, payload, old_phone)
 
     # Handle delivery areas (replaces existing rows like the admin endpoint).
     # MEH-1644: structured rows take precedence over the flat city list.
