@@ -106,7 +106,7 @@ def delete_user_and_data(
     # privacy policy says every identifiable record goes at deletion
     # («עם מחיקת חשבון נמחקים כל הנתונים המזוהים מיידית»), so they go here,
     # before the producer (whose phone counts as hers) is deleted.
-    _erase_contact_trail(db, user, producer_id, background_tasks)
+    _erase_contact_trail(db, user, producer_id, background_tasks)  # type: ignore[arg-type]
 
     # 2. If this user owns a Producer, remove the FK reference from the user
     #    row first (User.producer_id has no ondelete, so deleting the
