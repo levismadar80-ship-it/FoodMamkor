@@ -1,6 +1,6 @@
 /**
  * MEH-3115 — every icon-only button that sits on a photo shares ONE anatomy:
- * a 44px button with a 32px face inside it (lib/overlay-icon-button.js).
+ * a 44px button with a 32px face inside it (components/ui/overlay-icon-button.js).
  *
  * Before this card each component carried its own copy of a 44px
  * `shadow-lg` circle string, and the bell beside the heart was green while
@@ -19,7 +19,7 @@ import {
   OVERLAY_ICON_BUTTON,
   OVERLAY_ICON_FACE,
   overlayIconInk,
-} from "@/lib/overlay-icon-button";
+} from "@/components/ui/overlay-icon-button";
 
 const ROOT = path.resolve(__dirname, "..");
 const OWNERS = [
@@ -54,8 +54,21 @@ describe("MEH-3115 · overlay icon anatomy", () => {
 
   it.each(OWNERS)("%s imports the shared anatomy", (rel) => {
     const src = fs.readFileSync(path.join(ROOT, rel), "utf8");
-    expect(src).toMatch(/from "@\/lib\/overlay-icon-button"/);
+    expect(src).toMatch(/from "@\/components\/ui\/overlay-icon-button"/);
     expect(src).toMatch(/OVERLAY_ICON_FACE/);
+  });
+
+  // The class strings live in a JS constant, so Tailwind only generates them if
+  // the file is inside a `content` glob. The first build had it in lib/, which
+  // is not scanned: group/ovl, ring-border and the named group-* variants never
+  // reached the CSS, and the face rendered transparent with a default ring.
+  it("the anatomy file sits inside a Tailwind content glob", async () => {
+    const cfg = (await import("../tailwind.config.js")).default;
+    const globs = cfg.content.filter((g) => typeof g === "string");
+    const file = "./components/ui/overlay-icon-button.js";
+    expect(fs.existsSync(path.join(ROOT, file))).toBe(true);
+    const roots = globs.map((g) => g.split("**")[0]);
+    expect(roots.some((r) => file.startsWith(r))).toBe(true);
   });
 
   it("the old heavy 44px circle is gone from components/ and app/", () => {

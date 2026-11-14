@@ -23,7 +23,7 @@ import {
   OVERLAY_ICON_FACE,
   OVERLAY_ICON_SIZE,
   overlayIconInk,
-} from "@/lib/overlay-icon-button";
+} from "@/components/ui/overlay-icon-button";
 
 /**
  * MEH-2526 — the producer page's permanent "get updates" toggle.

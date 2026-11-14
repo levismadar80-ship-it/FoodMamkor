@@ -18,7 +18,7 @@ import {
   setPendingAction,
 } from "@/lib/pending-action";
 import LoginPromptModal from "./LoginPromptModal";
-import { OVERLAY_ICON_BUTTON, OVERLAY_ICON_FACE, OVERLAY_ICON_SIZE } from "@/lib/overlay-icon-button";
+import { OVERLAY_ICON_BUTTON, OVERLAY_ICON_FACE, OVERLAY_ICON_SIZE } from "@/components/ui/overlay-icon-button";
 
 /**
  * SaveButton — the heart for a recipe, event or experience (MEH-2558,

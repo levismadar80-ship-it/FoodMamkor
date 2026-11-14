@@ -613,7 +613,8 @@ front matter for the normative token bindings.
   preview; MEH-1693 returned the heart, MEH-2671 put the group top-end).
   Every icon-only button on a photo shares one anatomy: a 32px white face
   inside a 44px hit area, text-ink icon, green only when on
-  (`lib/overlay-icon-button.js`, MEH-3115); desktop hero clean. **Verified popover** (hero seal): locked dateless copy +
+  (`components/ui/overlay-icon-button.js`, MEH-3115); desktop hero clean.
+  **Verified popover** (hero seal): locked dateless copy +
   link to `/about#verification`; mobile = bottom sheet with focus trap
   (`ui/Popover` `sheetOnMobile`). **Contact card:** one CTA + quick answers
   (3 visible + "עוד שאלות", MEH-1302 behavior intact) + circular hairline icon

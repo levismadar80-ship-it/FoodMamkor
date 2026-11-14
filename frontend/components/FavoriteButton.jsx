@@ -27,7 +27,7 @@ import {
   OVERLAY_ICON_FACE,
   OVERLAY_ICON_SIZE,
   overlayIconInk,
-} from "@/lib/overlay-icon-button";
+} from "@/components/ui/overlay-icon-button";
 
 /**
  * FavoriteButton — save button for a producer. Visible to guests too

@@ -409,7 +409,7 @@ export default function ImageGallery({ images = [], producerId = null, producerN
         kill a ❤️-hero/actions-row duplication; that duplication is gone now
         that the row is desktop-only, so the removal's premise no longer
         holds. All three circles (heart, share, bell) share one anatomy from
-        lib/overlay-icon-button.js — a 32px face in a 44px hit area (MEH-3115) —
+        components/ui/overlay-icon-button.js — a 32px face in a 44px hit area (MEH-3115) —
         so they match by construction rather than by copied class strings. */}
     {producerId && (
       <div className="absolute top-3 end-3 z-20 lg:hidden flex items-center gap-2">

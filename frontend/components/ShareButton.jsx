@@ -6,7 +6,7 @@ import {
   OVERLAY_ICON_BUTTON,
   OVERLAY_ICON_FACE,
   OVERLAY_ICON_SIZE,
-} from "@/lib/overlay-icon-button";
+} from "@/components/ui/overlay-icon-button";
 import { BRAND_NAME } from "@/lib/constants";
 import { labelInName } from "@/lib/label-in-name";
 import Button from "@/components/ui/Button";
