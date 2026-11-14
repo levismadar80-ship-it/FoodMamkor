@@ -14,21 +14,35 @@
  * History:  MEH-1164 sub-chunk B.
  */
 
+import { useEffect, useRef } from "react";
 import { EnvelopeSimple } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import { useResendVerification } from "@/lib/use-resend-verification";
 
 /**
- * @param {{ className?: string }} props  optional extra classes on the wrapper.
+ * @param {{ className?: string, live?: boolean, focusOnMount?: boolean }} props
+ *   className: extra classes on the wrapper. live (default true): role="alert"
+ *   — the 403 case. MEH-2918: the up-front notice passes live={false} (a
+ *   standing condition, not an error to interrupt the page with) and, after a
+ *   403, is re-mounted with live + focusOnMount so the press visibly answers.
  */
-export default function UnverifiedEmailNotice({ className = "" }) {
+export default function UnverifiedEmailNotice({ className = "", live = true, focusOnMount = false }) {
   const t = useTranslations();
+  const ref = useRef(/** @type {HTMLDivElement | null} */ (null));
+  useEffect(() => {
+    if (!focusOnMount || !ref.current) return;
+    ref.current.scrollIntoView?.({ block: "center" });
+    ref.current.focus?.({ preventScroll: true });
+  }, [focusOnMount]);
   const { resendSent, resendSending, resendError, handleResend } =
     useResendVerification();
 
   return (
     <div
-      role="alert"
+      ref={ref}
+      role={live ? "alert" : undefined}
+      tabIndex={focusOnMount ? -1 : undefined}
+      data-testid="unverified-email-notice"
       className={`bg-background-alt border border-border rounded-sm p-3 text-sm flex items-start gap-2 ${className}`}
     >
       <EnvelopeSimple size={18} className="text-accent mt-0.5 shrink-0" aria-hidden="true" />

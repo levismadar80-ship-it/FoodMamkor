@@ -67,7 +67,7 @@ function NewGroupBuyForm({ producerCity, onCreated, emailUnverified = false }) {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   // MEH-1164 B: verified-email 403 → resend CTA notice instead of a dead-end.
-  const [unverified, setUnverified] = useState(false);
+  const [unverifiedHits, setUnverifiedHits] = useState(0); // MEH-2918: 403 count, re-mounts the notice
   // MEH-2453 / MEH-2621 split (UI): pickup or delivery is required — at least one of the
   // two boxes, each with real words if filled. `noteError` names the boxes the
   // error belongs to: both when both are blank, else the one that is too short.
@@ -89,7 +89,7 @@ function NewGroupBuyForm({ producerCity, onCreated, emailUnverified = false }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
-    setUnverified(false);
+    setUnverifiedHits(0);
     const pickupNote = form.pickup_note.trim();
     const deliveryNote = form.delivery_note.trim();
     const tooShort = (text) => text !== "" && countLetters(text) < NOTE_MIN_LETTERS;
@@ -119,7 +119,7 @@ function NewGroupBuyForm({ producerCity, onCreated, emailUnverified = false }) {
       onCreated();
     } catch (err) {
       if (isUnverifiedEmailError(err)) {
-        setUnverified(true);
+        setUnverifiedHits((h) => h + 1);
       } else {
         setError(detailToMessage(err.response?.data?.detail) || tError("generic"));
       }
@@ -133,7 +133,7 @@ function NewGroupBuyForm({ producerCity, onCreated, emailUnverified = false }) {
       <h2 className="font-headline-lg text-lg font-bold text-text">{t("heading")}</h2>
       {/* MEH-992: one-line concept intro — what a group-buy is */}
       <p className="text-sm text-fg-muted">{t("concept_intro")}</p>
-      {emailUnverified && <UnverifiedEmailNotice />}
+      {emailUnverified && <UnverifiedEmailNotice key={unverifiedHits} live={unverifiedHits > 0} focusOnMount={unverifiedHits > 0} />}
 
       <div className="grid sm:grid-cols-2 gap-4">
         <div className="sm:col-span-2">
@@ -314,7 +314,7 @@ function NewGroupBuyForm({ producerCity, onCreated, emailUnverified = false }) {
       </div>
 
       {/* MEH-1165: role="alert" so the submit error is announced to AT. */}
-      {unverified && !emailUnverified && <UnverifiedEmailNotice />}
+      {unverifiedHits > 0 && !emailUnverified && <UnverifiedEmailNotice />}
       {error && <InlineMessage>{error}</InlineMessage>}
       <Button
         type="submit"
