@@ -209,12 +209,40 @@ describe("/favorites — one saved item (1)", () => {
     expect(screen.queryByRole("heading", { name: "מתכון 1" })).toBeNull();
   });
 
-  it("one recipe, «אירועים» chip: «עדיין לא שמרת אירועים»", async () => {
+  // MEH-3174: a type with nothing saved has no chip (it would open on an
+  // empty screen). «הכל» and «בתי עסק» always stay.
+  it("one recipe: no «אירועים» / «חוויות» chip; «הכל», «בתי עסק», «מתכונים» stay", async () => {
     serve({ recipes: [recipe(1)] });
     await renderPage();
     await screen.findByRole("heading", { name: "מתכון 1" });
+    expect(chip(F.filter_events)).toBeUndefined();
+    expect(chip(F.filter_experiences)).toBeUndefined();
+    expect(chip(F.filter_all)).toBeTruthy();
+    expect(chip(F.filter_businesses)).toBeTruthy();
+    expect(chip(F.filter_recipes)).toBeTruthy();
+  });
+
+  it("one event (1): its chip is drawn with «1»", async () => {
+    serve({ recipes: [recipe(1)], events: [event(1, 3)] });
+    await renderPage();
+    await screen.findByText("אירוע 1");
+    expect(chip(F.filter_events)).toBeTruthy();
+    expect(screen.getByTestId("favorites-count-events").textContent).toBe("1");
+    expect(chip(F.filter_experiences)).toBeUndefined();
+  });
+
+  it("the open chip stays when its last item is unsaved: «עדיין לא שמרת אירועים», and it leaves once another chip is picked", async () => {
+    serve({ recipes: [recipe(1)], events: [event(1, 3)] });
+    await renderPage();
+    await screen.findByText("אירוע 1");
     fireEvent.click(chip(F.filter_events));
-    expect(screen.getByTestId("favorites-type-empty").textContent).toBe(F.empty_events);
+    cache.unsaved.add(`event:${uid(201)}`);
+    cache.listeners.forEach((l) => l());
+    await waitFor(() => expect(screen.getByTestId("favorites-type-empty").textContent).toBe(F.empty_events));
+    expect(chip(F.filter_events)).toBeTruthy();
+    expect(screen.getByTestId("favorites-count-events").textContent).toBe("0");
+    fireEvent.click(chip(F.filter_all));
+    expect(chip(F.filter_events)).toBeUndefined();
   });
 });
 
@@ -236,6 +264,8 @@ describe("/favorites — many, mixed", () => {
     expect(past.getByText("אירוע 2")).toBeTruthy();
     expect(past.getByText("חוויה 2")).toBeTruthy();
     expect(screen.getByTestId("favorites-count-all").textContent).toBe("8");
+    // many of every type: all five chips
+    for (const k of ["all", "businesses", "events", "experiences", "recipes"]) expect(chip(F[`filter_${k}`])).toBeTruthy();
   });
 
   it("«אירועים»: upcoming events, then only the past EVENTS", async () => {
@@ -284,6 +314,8 @@ describe("/favorites — the saved half fails", () => {
     expect(screen.queryByTestId("favorites-count-recipes")).toBeNull();
     expect(screen.queryByTestId("favorites-count-all")).toBeNull();
     expect(screen.getByTestId("favorites-count-businesses").textContent).toBe("1");
+    // MEH-3174: counts unknown → every chip stays (a hidden chip would claim «0»).
+    for (const k of ["all", "businesses", "events", "experiences", "recipes"]) expect(chip(F[`filter_${k}`])).toBeTruthy();
     fireEvent.click(screen.getByTestId("favorites-saved-retry"));
     expect(await screen.findByRole("heading", { name: "מתכון 1" })).toBeTruthy();
     expect(screen.queryByTestId("favorites-saved-error")).toBeNull();
