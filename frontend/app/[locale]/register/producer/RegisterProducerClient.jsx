@@ -817,6 +817,9 @@ function RegisterProducerPageBody({ routeKind }) {
         // consent (agreedToTerms) is a separate gate enforced at submit.
         declaration_accepted:
           declarationConfirmed && (!farmerDeclarationRequired || farmerConfirmed),
+        // MEH-2923: the grower line on its own, so the server can require and
+        // record it apart from the licensing declaration.
+        farmer_declaration_accepted: farmerDeclarationRequired && farmerConfirmed,
         // MEH-1995: the ToS consent the comment above calls "a separate gate
         // enforced at submit" — it was enforced and then discarded, reaching
         // no column. Sent now so users.terms_accepted_at + terms_version get

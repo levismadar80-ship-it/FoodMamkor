@@ -11074,6 +11074,11 @@
             ],
             "title": "Email"
           },
+          "farmer_declaration_accepted": {
+            "default": false,
+            "title": "Farmer Declaration Accepted",
+            "type": "boolean"
+          },
           "has_physical_location": {
             "default": true,
             "title": "Has Physical Location",

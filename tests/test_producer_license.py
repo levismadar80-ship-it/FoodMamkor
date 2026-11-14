@@ -47,6 +47,7 @@ def _register_payload(
         "category_ids": category_ids,
         "primary_contact_method": "whatsapp",
         "declaration_accepted": True,  # MEH-759: mandatory binding declaration
+        "farmer_declaration_accepted": True,  # MEH-2923: VEGGIES needs the grower line
     }
     if license_number is not None:
         payload["producer_license_number"] = license_number

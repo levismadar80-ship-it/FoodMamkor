@@ -980,6 +980,11 @@ class ProducerRegister(BaseModel):
     # fact that ToS consent reached no column at all; `terms_accepted` below is
     # its actual carrier.
     declaration_accepted: bool = False
+    # MEH-2923: the grower line («גידלתי בחלקתי בלבד»), sent on its own. The
+    # server requires it when a category is in FARMER_DECLARATION_CATEGORIES
+    # (auth.py, before the upgrade/new split) and stamps it separately as
+    # farmer_declared_at / farmer_declaration_version.
+    farmer_declaration_accepted: bool = False
     # MEH-1995: the terms-of-service checkbox (`agreedToTerms` on both register
     # forms), which until now was a pure client-side gate — it disabled the
     # submit button and was then discarded, leaving no evidence of consent.

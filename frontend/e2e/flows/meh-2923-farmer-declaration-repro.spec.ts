@@ -84,4 +84,14 @@ test.describe("MEH-2923 grower declaration — 2 of 3 boxes on «ירקות»", 
       await expect(alert.first()).toBeVisible();
     });
   }
+
+  test("all three ticked → one POST that carries the grower line on its own (chunk 4)", async ({ page }) => {
+    await reachStory(page);
+    for (const cb of await page.getByTestId("register-frame-story").getByRole("checkbox").all()) await cb.check();
+    await page.getByTestId("register-story-submit").click();
+    await expect.poll(() => posts.length).toBe(1);
+    const body = JSON.parse(posts[0]);
+    expect(body.declaration_accepted).toBe(true);
+    expect(body.farmer_declaration_accepted).toBe(true);
+  });
 });
