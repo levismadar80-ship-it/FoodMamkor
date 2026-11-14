@@ -1193,6 +1193,7 @@ function EditPageInner() {
             onSave={(patch) => setProfile((p) => (p ? { ...p, ...patch } : p))}
             reportDirty={reportDirty}
             onMethodChange={setLiveContactMethod}
+            onPhoneVerified={() => setProfile((p) => (p ? { ...p, phone_verified: true } : p))}
           />
         </EditAccordionCard>
 

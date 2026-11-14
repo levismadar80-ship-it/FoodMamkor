@@ -29,6 +29,7 @@ import { GroupBuyStatusResultSchema, OwnerGroupBuySchema } from "@/lib/api-schem
 import { SkeletonList } from "@/components/Skeleton";
 import Button from "@/components/ui/Button";
 import InlineMessage from "@/components/ui/InlineMessage";
+import { israelWallClockToIso, parseNaiveUtc } from "@/lib/dates";
 
 const STATUS_CLS = {
   open: STATUS_CLASSES.info,
@@ -114,7 +115,9 @@ function NewGroupBuyForm({ producerCity, onCreated, emailUnverified = false }) {
         price_per_unit_group: Number(form.price_per_unit_group),
         min_participants: Number(form.min_participants),
         max_participants: form.max_participants ? Number(form.max_participants) : undefined,
-        deadline: new Date(form.deadline).toISOString(),
+        // MEH-3219 B13: the field says «לפי שעון ישראל» — read it in Israel,
+        // not in the device's zone.
+        deadline: israelWallClockToIso(form.deadline),
       });
       showToast.success(t("toast_created")); // MEH-1446
       onCreated();
@@ -647,11 +650,13 @@ export default function ProducerGroupBuysPage() {
             // MEH-2430: an open group buy past its deadline stayed «פתוחה» —
             // nothing moves the status server-side on its own. Display only;
             // since MEH-2435 the owner closes it with «סגירת הקבוצה» below.
-            // deadline is a full UTC timestamp (form sends toISOString), so an
-            // instant compare is right here, unlike the date-only event lists.
+            // deadline is a full UTC instant (the form sends the Israel wall
+            // clock as UTC, israelWallClockToIso), so an instant compare is
+            // right here, unlike the date-only event lists.
             // It reads the device clock: a skewed clock only swaps «ביטול» and
             // «סגירה», since the server takes both as open → cancelled.
-            const deadlinePassed = gb.status === "open" && new Date(gb.deadline) < new Date();
+            // MEH-3219 B13: the server serialises it naive (no Z), so parse as UTC.
+            const deadlinePassed = gb.status === "open" && parseNaiveUtc(gb.deadline) < new Date();
             const actions = ownerActions(gb, deadlinePassed);
             const cls = deadlinePassed
               ? STATUS_CLASSES.neutral
@@ -697,7 +702,7 @@ export default function ProducerGroupBuysPage() {
 
                 <div className="flex items-center justify-between text-xs text-fg-muted">
                   <span>
-                    {t("deadline_prefix", { date: formatEventDate(gb.deadline, locale, { day: "numeric", month: "numeric", year: "numeric" }) })}
+                    {t("deadline_prefix", { date: formatEventDate(parseNaiveUtc(gb.deadline), locale, { day: "numeric", month: "numeric", year: "numeric" }) })}
                   </span>
                   <Link
                     href={`/group-buys/${gb.id}?preview=1`}

@@ -113,6 +113,7 @@ from app.schemas.schemas import (
     ProducerClaimPreviewOut,
     Token,
 )
+from app.services.invite_gate import assert_invitable_content  # MEH-3246
 from app.services import indexnow  # MEH-2852
 from app.services.email import send_email
 from app.services.farmer_declaration import farmer_declaration_stamp_for_existing
@@ -356,6 +357,7 @@ def create_owner_invite(  # noqa: PLR0913 — six FastAPI-injected parameters, n
     admin corrects a typo in the address without a separate revoke step.
     """
     producer = _load_invitable(db, producer_id)
+    assert_invitable_content(db, producer)  # MEH-3246
     # Only when she gave one: v3 lets the admin mint a link with no address at
     # all, and the owner then types her own on the page, where it is proven
     # with a code. An absent address cannot collide with anything.
@@ -426,6 +428,7 @@ def resend_owner_invite(
     # «resend» 404 for exactly the link the admin is most likely to re-copy.
     if not producer.owner_invite_token_hash:
         raise HTTPException(status_code=404, detail=_NO_INVITE)
+    assert_invitable_content(db, producer)  # MEH-3246
     # NOT a 409 any more, and the reason is a v3 consequence the first version
     # missed: since the code endpoint, `owner_invite_email` may have been
     # written by WHOEVER HOLDS THE LINK, not by the admin. Refusing to resend

@@ -23,12 +23,12 @@
 | Pages — public | 53 | 50 | 0 | 3 | 0 |
 | Pages — dashboard | 20 | 17 | 0 | 3 | 0 |
 | Pages — admin | 19 | 17 | 0 | 2 | 0 |
-| State-machine rows (audit, every non-exempt section) | 45 | 40 | 0 | 4 | 1 |
+| State-machine rows (audit, every non-exempt section) | 45 | 40 | 1 | 3 | 1 |
 | Mandatory extra rows (§B.3) | 25 | 22 | 1 | 2 | 0 |
 
 Pages opened by a CI-run Playwright spec: **40 / 92** — the rest are covered only by a Vitest import (which may test no more than the page's metadata).
 
-**GAP cells in total: 85** (route positive 6 · route negative 64 · tools 1 · pages 8 · machine rows 4 · extra rows 2). Not a gate yet — the plan's gate is "no *new* GAP" (a ratchet), later.
+**GAP cells in total: 84** (route positive 6 · route negative 64 · tools 1 · pages 8 · machine rows 3 · extra rows 2). Not a gate yet — the plan's gate is "no *new* GAP" (a ratchet), later.
 
 ## Top gaps by risk
 
@@ -127,7 +127,7 @@ Registration order of the app. Actor from the dependency tree: `require_admin` �
 | 52 | DELETE | `/admin/producers/{producer_id}/owner-invite` | `producer_owner_invite.cancel_owner_invite` | admin | GAP | GAP | — | 12 |
 | 53 | POST | `/auth/owner-invite/email-code` | `producer_owner_invite.send_owner_invite_email_code` | anonymous | `tests/test_producer_owner_invite.py:147` | n/a | — | 9 |
 | 54 | POST | `/auth/owner-invite/accept` | `producer_owner_invite.accept_owner_invite` | anonymous | `tests/test_producer_owner_invite.py:157` | n/a | — | 9 |
-| 55 | GET | `/auth/owner-invite/{token}` | `producer_owner_invite.get_owner_invite` | anonymous (token in request) | `tests/test_producer_owner_invite.py:363` | n/a | — | 4 |
+| 55 | GET | `/auth/owner-invite/{token}` | `producer_owner_invite.get_owner_invite` | anonymous (token in request) | `tests/test_producer_owner_invite.py:369` | n/a | — | 4 |
 | 56 | GET | `/producers` | `producers.list_producers` | anonymous | `tests/test_account_deletion_cascade.py:132` | n/a | e2e-mock `frontend/e2e/flows/manual/home.spec.ts:502` | 1 |
 | 57 | GET | `/producers/count` | `producers.producers_count` | anonymous | `tests/test_api.py:3626` | n/a | e2e-mock `frontend/e2e/flows/manual/home.spec.ts:502` | 1 |
 | 58 | GET | `/producers/cities` | `producers.producers_cities` | anonymous | `tests/test_api.py:3651` | n/a | e2e-mock `frontend/e2e/flows/manual/home.spec.ts:502` | 1 |
@@ -238,8 +238,8 @@ Registration order of the app. Actor from the dependency tree: `require_admin` �
 | 163 | POST | `/admin/recipes/{recipe_id}/approve` | `admin_recipes.approve_recipe` | admin | `tests/test_indexnow.py:527` | `tests/test_expansion_admin_authz.py:39` (table row) | — | 9 |
 | 164 | POST | `/admin/recipes/{recipe_id}/request-changes` | `admin_recipes.request_recipe_changes` | admin | `tests/test_indexnow.py:535` | GAP | — | 11 |
 | 165 | POST | `/admin/recipes/{recipe_id}/reject` | `admin_recipes.reject_recipe` | admin | `tests/test_indexnow.py:535` | `tests/test_expansion_admin_authz.py:40` (table row) | — | 9 |
-| 166 | GET | `/producers/{producer_id}/reviews` | `reviews.list_reviews_nested` | anonymous | `tests/test_api.py:2699` | n/a | e2e-mock `frontend/e2e/flows/manual/home.spec.ts:502` | 1 |
-| 167 | GET | `/reviews` | `reviews.list_reviews` | anonymous | `tests/test_organizer_kind.py:437` | n/a | — | 1 |
+| 166 | GET | `/producers/{producer_id}/reviews` | `reviews.list_reviews_nested` | anonymous (optional auth) | `tests/test_api.py:2699` | n/a | e2e-mock `frontend/e2e/flows/manual/home.spec.ts:502` | 1 |
+| 167 | GET | `/reviews` | `reviews.list_reviews` | anonymous (optional auth) | `tests/test_organizer_kind.py:437` | n/a | — | 1 |
 | 168 | POST | `/producers/{producer_id}/reviews` | `reviews.create_review_nested` | registered user | `tests/test_api.py:2724` | `tests/test_api.py:2716` | e2e-mock `frontend/e2e/flows/manual/home.spec.ts:502` | 8 |
 | 169 | DELETE | `/reviews/{review_id}` | `reviews.delete_review` | registered user | `tests/test_meh2348_review_hide_sticky.py:84` | GAP | — | 9 |
 | 170 | PUT | `/reviews/{review_id}/reply` | `reviews.set_review_reply` | registered user | `tests/test_meh2381_review_edited_after_hidden.py:174` | GAP | — | 10 |
@@ -502,14 +502,14 @@ A site `file:line` is mapped to the route whose handler contains it (or reaches 
 
 | § | Transition / write | Site | Routes reached | Verdict | Note |
 |---|---|---|---|---|---|
-| 1 | ∅ → `draft` | auth.py:571, auth.py:781, producer_queries.py:662, admin.py:390 | `POST /auth/register/producer`, `POST /admin/producers` | `tests/test_admin_delete_producer.py:46` | — |
+| 1 | ∅ → `draft` | auth.py:571, auth.py:781, producer_queries.py:662, admin.py:391 | `POST /auth/register/producer`, `POST /admin/producers` | `tests/test_admin_delete_producer.py:46` | — |
 | 1 | `draft` → `pending` | producer_me.py:1942 | `POST /producers/me/request-review`, `POST /producers/me/submit-for-review` | `tests/test_api.py:2245` | — |
 | 1 | `rejected` → `pending` | producer_me.py:1856 | `POST /producers/me/kashrut-request` | `tests/test_trust_ladder.py:214` | — |
 | 1 | `pending`/`rejected` → `approved` | admin_decisions.py:146, producer_approval.py:122 | `POST /admin/producers/{producer_id}/approve` | `tests/test_admin_approval_transitions.py:121` | — |
 | 1 | `pending`/`approved` → `rejected` | admin_decisions.py:300 | `POST /admin/producers/{producer_id}/reject` | `tests/test_admin_approval_transitions.py:398` | — |
-| 1 | `approved` ⇄ `inactive` | admin.py:805 | `POST /admin/producers/{producer_id}/toggle-status` | `tests/test_admin_approval_transitions.py:38` | — |
+| 1 | `approved` ⇄ `inactive` | admin.py:810 | `POST /admin/producers/{producer_id}/toggle-status` | `tests/test_admin_approval_transitions.py:38` | — |
 | 1 | `pending` → `pending` + feedback | — | `POST /admin/producers/{producer_id}/request-changes` | `tests/test_changes_requested_whatsapp.py:59` | — |
-| 1 | any → any via admin PUT | admin.py:654 | `PUT /admin/producers/{producer_id}` | `tests/test_admin_approval_transitions.py:530` | — |
+| 1 | any → any via admin PUT | admin.py:655 | `PUT /admin/producers/{producer_id}` | `tests/test_admin_approval_transitions.py:530` | — |
 | 2 | ∅ → `open` | group_buys.py:396 | `POST /group-buys` | `tests/test_group_buys_api.py:319` | — |
 | 2 | `open` → `funded` | group_buys.py:295 | `POST /group-buys/{group_buy_id}/commit` | `tests/test_group_buys_api.py:243` | — |
 | 2 | `funded` → `open` | group_buys.py:340 | `DELETE /group-buys/{group_buy_id}/commit` | `tests/test_group_buys_api.py:249` | — |
@@ -536,11 +536,11 @@ A site `file:line` is mapped to the route whose handler contains it (or reaches 
 | 5 | `(needs_revision, published=False)` | admin_recipes.py:219 | `POST /admin/recipes/{recipe_id}/request-changes` | `tests/test_indexnow.py:535` | — |
 | 5 | `(rejected, published=False)` | admin_recipes.py:254 | `POST /admin/recipes/{recipe_id}/reject` | `tests/test_indexnow.py:535` | — |
 | 6 | create / upsert-edit | reviews.py:538 | `POST /producers/{producer_id}/reviews` | `tests/test_api.py:2724` | — |
-| 6 | edit via race branch | reviews.py:577 | `DELETE /reviews/{review_id}` | `tests/test_meh2348_review_hide_sticky.py:84` | a DELETE handler for a non-delete transition — audit line may be off |
-| 6 | hide | reviews.py:708 | `PUT /admin/reviews/{review_id}/hide`, `GET /admin/reviews` | `tests/test_meh2381_review_edited_after_hidden.py:96` | nearest function — audit line may have drifted |
-| 6 | unhide | reviews.py:731 | `PUT /admin/reviews/{review_id}/hide` | `tests/test_meh2381_review_edited_after_hidden.py:96` | — |
-| 6 | delete (owner/admin) | reviews.py:581 | `DELETE /reviews/{review_id}` | `tests/test_meh2348_review_hide_sticky.py:84` | — |
-| 6 | user account deletion (DB cascade) | user_deletion.py:112 | — | GAP | — |
+| 6 | edit via race branch | reviews.py:577 | `POST /producers/{producer_id}/reviews` | `tests/test_api.py:2724` | — |
+| 6 | hide | reviews.py:708 | `PUT /reviews/{review_id}/reply` | `tests/test_meh2381_review_edited_after_hidden.py:174` | — |
+| 6 | unhide | reviews.py:731 | `PUT /reviews/{review_id}/reply` | `tests/test_meh2381_review_edited_after_hidden.py:174` | nearest function — audit line may have drifted |
+| 6 | delete (owner/admin) | reviews.py:581 | `POST /producers/{producer_id}/reviews` | `tests/test_api.py:2724` | a delete transition reached no DELETE handler — audit line may be off |
+| 6 | user account deletion (DB cascade) | user_deletion.py:112 | — | weak `tests/test_meh3252_pii_after_account_delete.py:118` (names delete_user_and_data) | — |
 | 7 | §7 — whole section | whatsapp_webhook.py:588 | `POST /webhook/whatsapp` | `tests/test_meh_509_pr2c_webhook.py:247` | — |
 | 8 | §8 — whole section | home_products.py:177, router_registry.py:100, router_registry.py:66, home_products.py:228 … | — | n/a (home_products.py is not mounted) | — |
 | 9 | `registrations.status` | registrations.py:375, registrations.py:377, registrations.py:383, registrations.py:226 … | `POST /registrations/{token}/cancel`, `POST /experiences/{experience_id}/registrations`, `PUT /experiences/{experience_id}` | `tests/test_meh2763_registrations.py:362` | nearest function — audit line may have drifted; nearest write handler — audit line may have drifted |
@@ -555,7 +555,7 @@ A row is covered when one test function calls the listed route(s) and matches th
 | Kind | Row | Evidence | Note | Score |
 |---|---|---|---|---|
 | negative | wrong phone OTP code is refused | `tests/test_meh1176_otp_confirm_rate_limit.py:35` | — | 10 |
-| negative | expired phone OTP code is refused | `tests/test_trust_ladder.py:182` | — | 10 |
+| negative | expired phone OTP code is refused | `tests/test_phone_change_reverify.py:73` | — | 10 |
 | negative | expired password-reset token is refused | `tests/test_api.py:4202` | — | 9 |
 | negative | expired email-verify token is refused | `tests/test_verify_email.py:55` | — | 6 |
 | negative | double submit-for-review | `tests/test_meh2899_double_submit.py:181` | — | 9 |

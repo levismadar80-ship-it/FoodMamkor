@@ -5395,7 +5395,10 @@ class ReviewReplyUpdate(BaseModel):
 class ReviewOut(BaseModel):
     id: UUID
     producer_id: UUID
-    user_id: UUID
+    # MEH-3221 (B10): the public payload carries no user_id and only the
+    # shortened name («שם פרטי + אות»). `is_mine` replaces the client-side
+    # `user_id === me` comparison; False for an anonymous viewer.
+    is_mine: bool = False
     user_name: str | None = None
     stars: int
     body: str | None = None
