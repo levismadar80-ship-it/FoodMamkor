@@ -101,6 +101,8 @@ export function AuthProvider({ children }) {
       setUser(null);
       const redirect = encodeURIComponent(window.location.pathname);
       showToast.info(t("sessionExpired"), {
+        // MEH-3173: fixed id — however many times expiry is announced, one toast.
+        id: "session-expired",
         duration: 5000,
         action: { label: t("loginAgainCta"), href: `/login?redirect=${redirect}` },
       });
