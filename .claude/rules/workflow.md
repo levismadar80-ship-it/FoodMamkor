@@ -499,6 +499,21 @@ concurrent loops. Tiers + `mehamakor-dod` self-check: ADR-025.
     decisions on the same screen (e.g. MEH-912); (7) a recommendation. Sapir
     picks, then code. Post-launch, add a PostHog click event on the feature.
     Precedent: MEH-2724 built under the hero before the study was asked for.
+
+    ### 37b — every new page gets a big-sites review before code (Sapir 14/11, MEH-3110)
+
+    A new page (a new `page.*` under `frontend/app/[locale]/`, admin and
+    `dev/` excluded) gets a «learn from the big sites» review before the first
+    edit: (1) staging or local screenshots at 375 + 1440; (2) the closest big
+    sites for that kind of page (Airbnb · Wolt · Etsy · Yelp · Google Maps ·
+    Eventbrite, or whichever fits), with sources; (3) each gap named with a
+    real rendered mock, the px it moves and what it costs; (4) a
+    recommendation per gap, "leave as is" included; (5) pre-launch vs
+    post-launch split, post-launch → Linear. Sapir picks, then code. New copy
+    in a mock is draft until she approves it word for word (rule 22). Record
+    the page and its decisions in
+    [docs/audits/2026-11-big-sites-page-reviews.md](../../docs/audits/2026-11-big-sites-page-reviews.md)
+    in the same docs PR. A new block on an existing page is rule 37, not this.
 38. **A PR that changes what users see: CC self-merges it to staging after the
     full self-check (Sapir 09/11, MEH-2860 — replaces MEH-2825's wait for
     «go merge» on staging merges).** The self-check, all five before the merge:
