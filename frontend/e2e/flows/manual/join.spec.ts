@@ -355,17 +355,36 @@ test.describe("manual › /join (MEH-995)", () => {
   }
 
   // Zero video bytes before the features are seen; then only the selected clip.
-  test("video requests: none on load, then only the selected clip once the section is in view", async ({ page }) => {
+  test("video requests: none on load, then only the selected clip once the section is in view", async ({ page, browserName }) => {
     const videoUrls: string[] = [];
+    const bodyBytes = new Map<string, number>();
     page.on("request", (req) => {
       if (/\.mp4(?:$|\?)/.test(req.url())) videoUrls.push(new URL(req.url()).pathname);
+    });
+    page.on("requestfinished", async (req) => {
+      if (!/\.mp4(?:$|\?)/.test(req.url())) return;
+      const { responseBodySize } = await req.sizes();
+      const path = new URL(req.url()).pathname;
+      bodyBytes.set(path, (bodyBytes.get(path) ?? 0) + responseBodySize);
     });
     await page.setViewportSize({ width: 390, height: 844 });
     await gotoJoin(page);
     // Gate on a real readiness signal: the features section is hydrated (its
     // selected card exists) before the "nothing yet" read is trusted.
     await expect(scope(page).locator('[data-testid="join-group-card"][data-selected="true"]')).toHaveCount(1);
-    expect(videoUrls, "a video was requested before any interaction").toEqual([]);
+    if (browserName === "chromium") {
+      expect(videoUrls, "a video was requested before any interaction").toEqual([]);
+    } else {
+      // MEH-3153: Playwright's WebKit opens a request for every preload="none"
+      // <video src> at parse time, even with JavaScript off, and reads no body
+      // (measured: responseBodySize 0 for both /join videos). The promise of
+      // this row is zero video BYTES before interaction, so on WebKit each early
+      // request must finish having transferred nothing.
+      const early = [...new Set(videoUrls)];
+      await expect.poll(() => early.filter((u) => !bodyBytes.has(u)), { timeout: 10_000 }).toEqual([]);
+      expect(early.filter((u) => (bodyBytes.get(u) ?? 0) > 0), "video bytes arrived before any interaction").toEqual([]);
+      videoUrls.length = 0;
+    }
     await scope(page).getByTestId("join-clip").scrollIntoViewIfNeeded();
     await expect.poll(() => videoUrls.length, { timeout: 10_000 }).toBeGreaterThan(0);
     expect([...new Set(videoUrls)]).toEqual(["/images/join/clip-page.mp4"]);
