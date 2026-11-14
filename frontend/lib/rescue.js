@@ -88,6 +88,7 @@ export function israelTime(iso) {
     hour: "2-digit",
     minute: "2-digit",
     hour12: false,
+    // guard-ok: formats one instant as HH:MM; derives no "today" or "open now".
     timeZone: "Asia/Jerusalem",
   }).format(d);
 }
