@@ -1278,16 +1278,16 @@ From here on a sentence about fees, a subscription or "free forever" lives in on
 - the `pricing.*` namespace (the price-list page `/join/pricing` and the short link labels), or
 - a key listed in `PRICING_COPY_KEYS` in `frontend/lib/pricing.js`.
 
-Numbers are never written into the copy. They are ICU values (`{monthly}`, `{yearly}`, `{percent}`, `{bagFee}`, `{cap}`, `{threshold}`, `{noticeDays}`, `{asOf}`, `{examplePrice}`, `{exampleFee}`) supplied by `frontend/lib/pricing.js`, the same numbers as `docs/PRICING.md`.
+Numbers are never written into the copy. They are ICU values (`{monthly}`, `{yearly}`, `{percent}`, `{bagFee}`, `{subPercent}`, `{subBagFee}`, `{breakEven}`, `{threshold}`, `{noticeDays}`, `{asOf}`, `{examplePrice}`, `{exampleFee}`) supplied by `frontend/lib/pricing.js`, the same numbers as `docs/PRICING.md`.
 
 | Key | he (live) |
 |---|---|
 | `join.trust_hint` | `חינם להצטרף` |
 | `join.meta_line` | `חינם להצטרף · כ-5 דקות · עולה תוך עד 3 ימי עסקים` |
-| `join.faq.a_cost` | `ההצטרפות והעמוד שלכם חינם. בתקופת ההשקה גם כל הכלים חינם. בהמשך, בית עסק שמקבל {threshold} הזמנות ומעלה בחודש דרך האתר יבחר בין מנוי של {monthly} ₪ לחודש לבין עמלה קטנה על כל הזמנה. נודיע {noticeDays} יום מראש, בכתב.` |
+| `join.faq.a_cost` | `ההצטרפות והעמוד שלכם חינם. בתקופת ההשקה גם כל הכלים חינם. בהמשך, בית עסק שמקבל {threshold} הזמנות ומעלה בחודש דרך האתר יבחר בין מנוי של {monthly} ₪ לחודש עם עמלה מופחתת, לבין עמלה קטנה על כל הזמנה בלי מנוי. נודיע {noticeDays} יום מראש, בכתב.` |
 | `join.faq.a_price` | `אתם. המחיר בעמוד הוא שלכם.` |
 | `join.faq.a_revenue` | `כרגע לא מרוויחים. בהמשך ההכנסה תגיע ממנוי כלים ומעמלה קטנה על הזמנות שהגיעו דרך האתר, ורק מבית עסק שכבר רואה תוצאות. לא ממכירת מקום בראש הרשימה, לא מפרסומות ולא ממכירת מידע.` |
-| `about_business.faq.cost.a` | `העמוד שלכם חינם. בתקופת ההשקה גם כל הכלים חינם. כשיהיו לכם {threshold} הזמנות ומעלה בחודש דרך האתר, אודיע לכם {noticeDays} יום מראש, ואז תבחרו: מנוי של {monthly} ₪ לחודש, או עמלה קטנה על כל הזמנה. אם זה לא מתאים, העמוד נשאר שלכם בחינם.` |
+| `about_business.faq.cost.a` | `העמוד שלכם חינם. בתקופת ההשקה גם כל הכלים חינם. כשיהיו לכם {threshold} הזמנות ומעלה בחודש דרך האתר, אודיע לכם {noticeDays} יום מראש, ואז תבחרו: מנוי של {monthly} ₪ לחודש עם עמלה מופחתת, או עמלה קטנה על כל הזמנה בלי מנוי. אם זה לא מתאים, העמוד נשאר שלכם בחינם.` |
 | `about_business.faq.revenue_model.a` | `כרגע לא מרוויחה. מהמקור הוא פרויקט צעיר, ואני בונה אותו כי אני מאמינה שאוכל אמיתי ומקומי צריך בית. בהמשך ההכנסה תגיע ממנוי כלים ומעמלה קטנה על הזמנות, ורק מבית עסק שהאתר כבר מביא לו תוצאות. לא ממכירת מקום בראש הרשימה. כך האתר מרוויח רק אם הוא עובד בשבילכם.` |
 | `about_business.faq.difference.a` | `שם העסק הוא עוד שורה בפיד או ברשימת תוצאות. כאן כל עסק מקבל עמוד משלו עם הסיפור, התמונות והאנשים שמאחוריו — כמו כתבה עליך, לא כמו מודעה. בלי אלגוריתם שמחליט מי יראה אותך. ומאחורי האתר עומדת אני, ספיר — קוראת כל מייל אישית ועונה. ואם תרצו לרדת מהאתר, מסירות את העסק בלי שאלות.` |
 | `about_why_local.fairness_body` | `בלי מתווכים: הכסף עובר ישירות למי שגידל, אפה, בישל או יצר.` |
