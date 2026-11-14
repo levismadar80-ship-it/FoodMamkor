@@ -164,7 +164,7 @@ export default function AdminGroupBuysPage() {
                     </button>
                   ))}
                   <Link
-                    href={`/group-buys/${gb.id}`}
+                    href={`/group-buys/${gb.id}?preview=1`}
                     target="_blank"
                     className="text-xs text-primary hover:underline ms-auto"
                   >

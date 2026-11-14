@@ -695,7 +695,7 @@ export default function ProducerGroupBuysPage() {
                     {t("deadline_prefix", { date: formatEventDate(gb.deadline, locale, { day: "numeric", month: "numeric", year: "numeric" }) })}
                   </span>
                   <Link
-                    href={`/group-buys/${gb.id}`}
+                    href={`/group-buys/${gb.id}?preview=1`}
                     className="text-primary hover:underline"
                   >
                     {t("view_public")}

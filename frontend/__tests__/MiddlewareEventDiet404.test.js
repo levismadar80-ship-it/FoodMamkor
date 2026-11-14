@@ -167,6 +167,19 @@ describe.each([
     backend({ status: 404 });
     expect(wasNotFound(await middleware(requestFor(`/en/${segment}/00000000-0000-0000-0000-000000000000`)))).toBe(true);
   });
+  it.each(["preview=1", "pending=1"])("an owner preview (?%s) is left to the page", async (qs) => {
+    backend({ status: 404 });
+    const req = requestFor(PAGE);
+    req.nextUrl.searchParams = new URLSearchParams(qs);
+    expect(wasNotFound(await middleware(req))).toBe(false);
+    expect(global.fetch).not.toHaveBeenCalled();
+  });
+  it("control: another query string is still checked", async () => {
+    backend({ status: 404 });
+    const req = requestFor(PAGE);
+    req.nextUrl.searchParams = new URLSearchParams("utm_source=x");
+    expect(wasNotFound(await middleware(req))).toBe(true);
+  });
   it.each([
     ["next-router-prefetch", "1"],
     ["purpose", "prefetch"],

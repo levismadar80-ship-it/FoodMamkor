@@ -1,3 +1,4 @@
+import { isOwnerPreview } from "@/lib/owner-preview";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import * as Sentry from "@sentry/nextjs";
@@ -85,6 +86,11 @@ export async function generateMetadata(props) {
   // notFound() alone streams 200 + 404 UI, because the shared
   // app/[locale]/loading.js boundary flushes the shell first — bots would
   // keep crawling a soft 404. (MEH-1045 established this on the slug route.)
+  // Owner/admin preview (lib/owner-preview.js): the anonymous fetch cannot
+  // see a pending item, so say nothing indexable and let the browser ask.
+  if (!experience && isOwnerPreview(await props.searchParams)) {
+    return { title: t("title_fallback"), robots: { index: false, follow: false }, alternates };
+  }
   if (!experience) notFound();
   const entityName = experience?.title || experience?.name;
 
@@ -140,11 +146,14 @@ export default async function ExperienceDetailPage(props) {
   // Same request as generateMetadata (revalidate:60 dedupes it), which already
   // 404s a missing experience; belt-and-braces for the body.
   const experience = await getExperience(params.id);
-  if (!experience) notFound();
+  // Owner/admin preview (lib/owner-preview.js): render the client, which asks
+  // again with the user's token; the backend decides whether she may see it.
+  const preview = !experience && isOwnerPreview(await props.searchParams);
+  if (!experience && !preview) notFound();
   const t = await getTranslations({ locale: params.locale, namespace: "experiences.detail" });
   return (
     <>
-      <ExperienceJsonLd experience={experience} locale={params.locale} />
+      {experience && <ExperienceJsonLd experience={experience} locale={params.locale} />}
       {/* MEH-2754: min-h-screen keeps the footer below the fold while the
           fallback shows, so swapping in the page shifts nothing in view. */}
       <Suspense

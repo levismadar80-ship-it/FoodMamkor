@@ -1,6 +1,7 @@
 import * as Sentry from "@sentry/nextjs";
 import createMiddleware from "next-intl/middleware";
 import { NextResponse } from "next/server";
+import { isOwnerPreview } from "./lib/owner-preview";
 import { routing } from "./i18n/routing";
 import { isSlugShaped, decodeSlugParam } from "./lib/slug";
 import { DIET_PAGE_MIN, getDietPage, isDietPageBacked } from "./lib/diet-pages";
@@ -325,7 +326,10 @@ export default async function middleware(request) {
   // one — their pages' own fetch is anonymous too), so they ride the same
   // check. app/[locale]/group-buys/ and experiences/ hold only [id] + the
   // list; /experiences/new is a next.config redirect, which runs before this.
-  if (segs.length === 2 && ENTITY_404_SEGMENTS.has(segs[0]) && segs[1] && !isPrefetch(request)) {
+  if (segs.length === 2 && ENTITY_404_SEGMENTS.has(segs[0]) && segs[1] && !isPrefetch(request) &&
+    // An owner/admin preview (?preview=1 / ?pending=1) is left to the page,
+    // which asks again with her token (lib/owner-preview.js).
+    !isOwnerPreview(request.nextUrl.searchParams)) {
     exists = await entityExists(`${API_URL}/${segs[0]}/${encodeURIComponent(segs[1])}`);
   } else if (segs.length === 3 && segs[0] === "producers" && segs[1] === "diet") {
     exists = await dietPageExists(decodeSlugParam(segs[2]));
