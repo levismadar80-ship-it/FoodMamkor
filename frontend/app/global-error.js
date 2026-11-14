@@ -14,10 +14,11 @@
 
 import { useEffect } from "react";
 import * as Sentry from "@sentry/nextjs";
+import { COLOR } from "@/lib/color-tokens";
 
 // Hardcoded Hebrew — next-intl is unavailable at this boundary (it replaces
 // the root layout, so no NextIntlClientProvider). Copy mirrors errors.boundary.
-const PRIMARY = "#2e6853"; // brand primary token
+const PRIMARY = COLOR.primary; // brand primary token
 const PRIMARY_DARK = "#234f3f";
 
 export default function GlobalError({ error, reset }) {

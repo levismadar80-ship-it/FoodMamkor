@@ -1072,7 +1072,7 @@ export default function MapPage() {
             search-this-area pill + zoom control.
             MEH-1133: surface was `bg-background/95 backdrop-blur` — the 5% map
             bleed-through behind the category chips read as the chips "floating"
-            over the tiles. Now fully-opaque cream (`bg-background` = #F5F0E8), so
+            over the tiles. Now fully-opaque cream (`bg-background`, F5F0E8), so
             the bar is a solid band the map starts cleanly below (the blur becomes
             moot once nothing shows through).
 

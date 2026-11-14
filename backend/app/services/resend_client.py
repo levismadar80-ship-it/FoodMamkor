@@ -17,13 +17,15 @@ History:  MEH-2886 chunk 4 (creation).
 
 from __future__ import annotations
 
+from typing import Any
+
 # MEH-2886: a code constant, not an env var — Sapir 10/11 ("10s timeout on
 # Resend"). 10 s is well above a normal send (well under 1 s) and a third of
 # the SDK default, so one stuck call ties up a worker thread for 10 s, not 30.
 RESEND_TIMEOUT_SECONDS = 10
 
 
-def configure_resend(api_key: str):
+def configure_resend(api_key: str) -> Any:
     """Set the key and the timeout, and return the SDK module.
 
     Idempotent: the HTTP client is replaced only when it is not already ours,
@@ -37,8 +39,8 @@ def configure_resend(api_key: str):
     # callers' fail-open and silently send nothing (MEH-2886 review). The same
     # guard keeps real mail flowing if a future SDK renames them — the stock
     # 30 s client is then simply left in place.
-    stock_client_type = getattr(resend, "RequestsClient", None)
-    client = getattr(resend, "default_http_client", None)
+    stock_client_type: Any = getattr(resend, "RequestsClient", None)
+    client: Any = getattr(resend, "default_http_client", None)
     # DO NOT widen to isinstance — only the SDK's own stock client is replaced;
     # a client someone else installed (or a subclass) is left alone.
     if (

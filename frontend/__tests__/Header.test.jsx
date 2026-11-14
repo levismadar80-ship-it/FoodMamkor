@@ -23,13 +23,6 @@ vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: vi.fn(), replace: vi.fn(), back: vi.fn() }),
 }));
 
-// MEH-629 item 6: the setLang mock was removed — PR #731 dropped the
-// setLang destructure from useLanguage(). Header no longer touches it;
-// locale changes flow through next-intl's router.
-vi.mock("@/lib/language-context", () => ({
-  useLanguage: () => ({ lang: "he" }),
-}));
-
 // MEH-471: Header reads useTranslations() from next-intl directly.
 // MEH-1176 F3: DICT refreshed to the SHIPPED he.json values (nav.explore
 // "גלו" per ADR-014 plural voice, nav.login "כניסה", account.menu.* for the

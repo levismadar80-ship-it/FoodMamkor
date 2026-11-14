@@ -2,6 +2,7 @@
 
 import { useId } from "react";
 import { useTranslations } from "next-intl";
+import { COLOR } from "@/lib/color-tokens";
 
 // MEH-2588: moved out of MiniMap.jsx so the event / experience detail pages
 // show the same Waze + Google Maps marks as the business page.
@@ -16,12 +17,12 @@ export function WazeGlyph() {
         fill="#33CCFF"
         d="M12 2C6.5 2 2 6.3 2 11.6c0 2.9 1.4 5.5 3.6 7.2-.2.5-.6 1.1-1.3 1.6-.4.3-.3.9.2 1 1.7.4 3.4.1 4.7-.6.9.2 1.8.3 2.8.3 5.5 0 10-4.3 10-9.5S17.5 2 12 2z"
       />
-      <circle cx="9" cy="10" r="1.3" fill="#1C1A17" />
-      <circle cx="15" cy="10" r="1.3" fill="#1C1A17" />
+      <circle cx="9" cy="10" r="1.3" fill={COLOR.text} />
+      <circle cx="15" cy="10" r="1.3" fill={COLOR.text} />
       <path
         d="M8.5 13.5c.8 1.5 2 2.3 3.5 2.3s2.7-.8 3.5-2.3"
         fill="none"
-        stroke="#1C1A17"
+        stroke={COLOR.text}
         strokeWidth="1.4"
         strokeLinecap="round"
       />

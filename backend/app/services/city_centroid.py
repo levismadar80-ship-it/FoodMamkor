@@ -47,7 +47,7 @@ Centroid = tuple[float, float]
 logger = logging.getLogger(__name__)
 
 
-def _usable(value) -> bool:
+def _usable(value: object) -> bool:
     # bool is excluded on purpose: isinstance(True, int) is True in Python, so
     # a stray boolean would read as latitude 1. Mirrors submission_gate.
     if isinstance(value, bool) or not isinstance(value, (int, float)):
@@ -143,7 +143,7 @@ def city_centroid(db: Session, name: str | None) -> Centroid | None:
     # The table is ~1.3K rows; a full scan here is cheaper than a functional
     # index for a path that only runs when the exact match missed.
     for row in db.query(City).filter(City.lat.isnot(None)).all():
-        if city_key(row.name_he) == key:
+        if city_key(row.name_he) == key:  # type: ignore[arg-type]
             found = _as_centroid(row)
             if found:
                 return found

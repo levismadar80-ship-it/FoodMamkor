@@ -154,6 +154,8 @@ const TARGET_NOISE = [
   // reason phrase says.
   "[GSI_LOGGER]: The given origin is not allowed for the given client ID.",
   "Failed to load resource: the server responded with a status of 403 () @ https://accounts.google.com/gsi/",
+  // MEH-3153: the same refusal as WebKit words it (reason phrase included).
+  "Failed to load resource: the server responded with a status of 403 (Forbidden) @ https://accounts.google.com/gsi/",
 ] as const;
 
 /** Collect console errors so a test can FAIL on them rather than log them. */

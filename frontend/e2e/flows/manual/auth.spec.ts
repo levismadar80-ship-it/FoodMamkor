@@ -512,7 +512,8 @@ test.describe("manual › /register split-editorial layout (MEH-788)", () => {
   test("/en/register: the overlay is in English and the heading with it", async ({ page }, info) => {
     await page.goto("/en/register");
     const overlay = page.getByText("Fresh · Local · From the source", { exact: true });
-    if (info.project.name === "mobile") {
+    // MEH-3153: isMobile, not the project name — webkit-iphone13 is a phone too.
+    if (info.project.use.isMobile) {
       await expect(overlay, "the English overlay is rendered in the (hidden) image pane").toHaveCount(1);
       await expect(overlay, "MEH-2568: no image band below lg").toBeHidden();
     } else {
