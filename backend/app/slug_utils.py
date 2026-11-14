@@ -7,6 +7,7 @@ RESERVED_SLUGS: frozenset[str] = frozenset(
     {
         # App navigation routes
         "about",
+        "monitoring",  # MEH-2976: Sentry tunnel route (frontend next.config.js)
         "map",
         "events",
         "neighbor",
