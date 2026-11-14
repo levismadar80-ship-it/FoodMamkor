@@ -140,6 +140,12 @@ slowapi limit + Hebrew error`. `<examples>` blocks in prompts are
 ephemeral; REUSES anchors are permanent — they give the next CC session
 the provenance for free.
 
+**4. A "temporary" carries its expiry (MEH-3144).** A comment with `TODO`,
+`FIXME`, `HACK`, `@deprecated`, "strangler" or "DELETE THIS FILE" needs
+`LEGACY(YYYY-MM-DD, MEH-1234)` on that line or a neighbour.
+`scripts/checks/temporary-marker-guard.sh` fails without it, and
+`legacy-expiry-check.sh` fails when the date passes. Prefer finishing it now.
+
 **Discovery recipe:**
 
 ```
