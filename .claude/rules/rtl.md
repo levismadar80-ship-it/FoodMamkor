@@ -143,7 +143,7 @@ z-index left in `frontend/` (Tailwind bracket values, CSS `z-index: N`, inline
 `zIndex: N`) occurrence by occurrence in `scripts/checks/z-index-baseline.txt`,
 and reds the required *Repo guards* job on any literal not in that file, or any
 baseline line that no longer matches (the file can only shrink). After MEH-3169
-the baseline holds only test-file literals. A new literal therefore needs
+the baseline is empty (0 lines). A new literal therefore needs
 `--update-baseline` **and a reason in the PR body**; a new token needs a row
 here. `frontend/__tests__/ZTokenLedgerSync.test.js` checks the scale, the code
 and these rows against each other: every name in the scale is used, every
