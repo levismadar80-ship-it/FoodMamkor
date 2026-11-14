@@ -110,18 +110,23 @@ describe("auth-context city write-back (MEH-1485)", () => {
     await screen.findByText("דנה");
 
     // An explicit pick elsewhere sets localStorage + fires the shared event.
-    await act(async () => {
-      localStorage.setItem("user_city", "רעננה");
-      window.dispatchEvent(new CustomEvent(USER_CITY_CHANGED_EVENT));
-    });
+    localStorage.setItem("user_city", "רעננה");
 
-    // MEH-2265: the listener is re-registered by a useEffect keyed on [user]
-    // (auth-context.js:108-119), so on a slow runner the dispatch can land
-    // before the new registration. Asserted with waitFor rather than a bare
-    // expect — the assertion itself is unchanged, only the moment it is read.
-    await waitFor(() =>
-      expect(apiPatch).toHaveBeenCalledWith("/users/me", { city: "רעננה" }),
-    );
+    // MEH-2265 → MEH-3190: the listener is re-registered by a useEffect keyed
+    // on [user] (auth-context.js `onCityChanged`). The name can be on screen
+    // before that passive effect has run, so on a slow runner a single
+    // dispatch lands on the OLD listener (user === null → no-op) and is lost
+    // for good — a waitFor around the assertion alone cannot recover it
+    // (CI run 43615524541, 14/11). Dispatch inside the waitFor: each retry
+    // fires the event again until the logged-in listener is the one that
+    // hears it. The assertion is unchanged; a build where the logged-in
+    // listener never PATCHes still times out red.
+    await waitFor(() => {
+      act(() => {
+        window.dispatchEvent(new CustomEvent(USER_CITY_CHANGED_EVENT));
+      });
+      expect(apiPatch).toHaveBeenCalledWith("/users/me", { city: "רעננה" });
+    });
   });
 
   it("seed value (localCity === profile city) does NOT trigger a redundant PATCH", async () => {

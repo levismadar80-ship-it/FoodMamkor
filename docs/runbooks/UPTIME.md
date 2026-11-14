@@ -1,6 +1,6 @@
 # Runbook — uptime alert (MEH-2202)
 
-> **Audience:** Sapir, when GitHub opens an `uptime:` issue.
+> **Audience:** any thread, when GitHub opens an `uptime:` issue. Steps 1–3 run through the Railway and Vercel connectors (logs, deployments); nothing here is a step for Sapir (MEH-3151).
 > **Moved here from `HANDOFF.md` on 2026-10-26 (MEH-2345).** It is a standing procedure, not session state, so it does not belong in a file that is archived every week.
 
 **כשמגיעה התראה על issue חדש בכותרת `uptime: mehamakor.co.il probe failing` — לבדוק Railway logs לפני כל דבר אחר.**

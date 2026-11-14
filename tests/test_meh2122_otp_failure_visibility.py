@@ -7,6 +7,8 @@ producer-facing consequence is in `producer_me.py:1301`, which discards the
 outcome — so a producer whose OTP never left the building sees success,
 cannot verify her phone, and can never pass the submission gate
 (`submission_gate.py` requires `phone_verified`). Nothing anywhere reports it.
+(Chunk B, PR #4517, since answers 503 on that path where WhatsApp is set up;
+see tests/test_meh2122_otp_send_failure.py.)
 
 WHY THE LEVEL IS THE FIX AND NOT A COSMETIC. Two consumers read it:
 
@@ -26,8 +28,7 @@ WHY THE LEVEL IS THE FIX AND NOT A COSMETIC. Two consumers read it:
     live the moment this merges.
 
 SCOPE. Chunk A is the level on the failure branch, nothing else. The response
-shape stays `{"detail": "קוד נשלח"}` (that is Chunk B, and it drags retry UX
-with it). `_persist_outbound`'s own best-effort WARNING is a different concern
+shape stayed `{"detail": "קוד נשלח"}` here (Chunk B changed that later). `_persist_outbound`'s own best-effort WARNING is a different concern
 and is deliberately untouched.
 
 DISCRIMINATION (workflow rule, MEH-1619/MEH-1930). Every assertion below was

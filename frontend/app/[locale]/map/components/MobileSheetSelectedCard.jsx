@@ -72,7 +72,7 @@ export default function MobileSheetSelectedCard({
     <div
       ref={rootRef}
       data-testid="map-selected-card"
-      className="lg:hidden fixed inset-x-3 z-[598] mx-auto max-w-md rounded-xl border border-border bg-background p-2 shadow-lg"
+      className="lg:hidden fixed inset-x-3 z-map-picked-card mx-auto max-w-md rounded-xl border border-border bg-background p-2 shadow-lg"
       style={{
         bottom: `calc(var(--map-sheet-own-h, 14vh) + ${GAP_PX}px)`,
         transitionProperty: "bottom",

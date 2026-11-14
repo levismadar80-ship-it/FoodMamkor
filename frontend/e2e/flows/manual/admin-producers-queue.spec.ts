@@ -1,10 +1,19 @@
 import { test, expect, type Page } from "../_cloudinary-stub";
 import type { Route } from "@playwright/test";
-// The map the chips are painted from, imported rather than remembered (the
+// The colour map the chips are painted from, imported rather than remembered (the
 // MEH-2168 lesson flows/33 records). Plain-JS module, no .d.ts — same import
 // flows/33 carries; the expect-error keeps this file at zero e2e-tsc errors.
+import fs from "node:fs";
+import path from "node:path";
 // @ts-expect-error TS7016 — untyped JS module
-import { PRODUCER_STATUS_LABELS, PRODUCER_STATUS_COLORS, UNKNOWN_STATUS_COLOR } from "../../../lib/producer-status.js";
+import { PRODUCER_STATUS_COLORS, UNKNOWN_STATUS_COLOR } from "../../../lib/producer-status.js";
+
+// MEH-3170: the status labels moved from lib/producer-status.js to
+// messages/he.json (`admin.producers.status_label.*`). Read from the catalog
+// the app ships, so the asserted chip text is exactly what renders.
+const PRODUCER_STATUS_LABELS: Record<string, string> = JSON.parse(
+  fs.readFileSync(path.join(__dirname, "..", "..", "..", "messages", "he.json"), "utf8"),
+).admin.producers.status_label;
 
 /**
  * Spec:     manual/admin-producers-queue — MEH-1249 chunk 12a

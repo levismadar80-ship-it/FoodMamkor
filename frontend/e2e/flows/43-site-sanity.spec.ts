@@ -142,6 +142,12 @@ async function layout(page: Page, withCovered: boolean): Promise<Layout> {
     const controls = [...document.querySelectorAll<HTMLElement>(CONTROL)].filter((el) => {
       const r = el.getBoundingClientRect();
       const cs = getComputedStyle(el);
+      // MEH-3166: a control the browser is not rendering is not on the page to
+      // be covered or off-screen — a link inside a CLOSED <details> answer keeps
+      // a box (the closed slot is `content-visibility: hidden`) and was reported
+      // as "covered" by the next question. checkVisibility() is false for that
+      // and for display:none ancestors; the <summary> itself stays checked.
+      if (typeof el.checkVisibility === "function" && !el.checkVisibility()) return false;
       // ≤ 1px boxes are sr-only (skip links, visually-hidden inputs).
       return r.width > 1 && r.height > 1 && cs.visibility !== "hidden" && !el.closest("[aria-hidden=true], [inert]");
     });

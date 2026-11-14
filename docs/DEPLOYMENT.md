@@ -299,11 +299,12 @@ ruleset belong to the aggregators, the practical consequences invert:
   change.
 - **The real fragility moved inside the aggregator.** Deleting or merging a job
   means updating `ci-gate`'s `needs:` list **and** its `R_*` env block
-  (`pr-checks.yml:707-743`). A `needs:` entry naming a job that no longer exists
+  (the `ci-gate` job in `pr-checks.yml`). A `needs:` entry naming a job that no longer exists
   fails the workflow outright; an `R_*` reference to a removed job resolves empty,
   and `check_ran` treats empty as "did not run" → **every PR red**. That, not the
-  Settings list, is what must be updated in the same breath as any job merge
-  (MEH-2212's consolidation proposal).
+  Settings list, is what must change with any job merge (MEH-2212's
+  consolidation proposal) — and `scripts/checks/gate-wiring-guard.sh` now fails
+  the PR when the two drift (MEH-3192).
 
 **Decision rule — skipping a check on docs-only PRs:**
 
@@ -629,10 +630,16 @@ Moved to [docs/RELEASE_CHECKLIST.md](./RELEASE_CHECKLIST.md) on 2026-11-07 (MEH-
 
 ## Testing workflow — Vercel preview URLs
 
-**Every PR gets a Vercel preview URL.** Before merging to `staging`, that
-preview URL must be tested on a real device — primarily on mobile, since the
-phone is the dominant viewport for mehamakor.co.il and many bugs only surface
-in actual iOS Safari / Android Chrome.
+> **14/11/2026 (MEH-3151): nobody tests by hand.** Sapir's decision: «לא עושים
+> בדיקות ידניות יותר». Everything below that once said "the user tests on a
+> phone" is done by the thread: screenshots of the preview at 390×844 WebKit +
+> 1280 Chromium that the thread reads itself (workflow rule 38), 375/1440 in
+> `qa-artifacts/` (rule 23), and the release-time rows in
+> [RELEASE_CHECKLIST.md](./RELEASE_CHECKLIST.md) § ד׳.
+
+A feature branch gets a Vercel preview only for a `[preview]` commit (rule 9).
+The thread screenshots it — mobile first, since the phone is the dominant
+viewport for mehamakor.co.il.
 
 ### How preview URLs are generated
 
@@ -659,10 +666,9 @@ automatically by the Vercel bot within ~60 seconds of the PR opening.
 2. push commits
 3. open PR feature/* → staging
 4. Vercel auto-builds + comments preview URL on the PR (~60s)
-5. assistant surfaces preview URL to the user:
-     "בדיקי על: https://food-mamkor-<hash>.vercel.app"
-6. user tests on mobile → approves
-7. merge to staging
+5. assistant screenshots the preview (390 WebKit + 1280 Chromium) and reads them
+6. full self-check of workflow rule 38 (gates, reviewer, copy table)
+7. assistant merges to staging (rule 38)
 8. Vercel auto-deploys staging to staging.mehamakor.online
 9. final smoke test on staging subdomain
 10. open PR staging → main
@@ -675,8 +681,8 @@ automatically by the Vercel bot within ~60 seconds of the PR opening.
 - **Vercel preview URL** — either pasted directly into the PR description, or
   a placeholder line (`Vercel preview: posted as a comment by @vercel below`)
   with the bot comment serving as the source of truth.
-- **A test plan checklist** — the specific things the user should verify on
-  the preview URL before approving. At minimum: "loads on mobile", "no console
+- **A test plan checklist** — the specific things the thread verified on
+  the preview URL, each with its evidence (screenshot, run link). At minimum: "loads on mobile", "no console
   errors", "the changed flow works end-to-end".
 - **A list of behavioral changes** — anything that affects what users see or
   how they interact. Doc-only PRs can say "no functional changes" and skip
@@ -684,29 +690,21 @@ automatically by the Vercel bot within ~60 seconds of the PR opening.
 
 ### Critical rule
 
-**Never merge a PR to `staging` until the user has tested the preview URL.**
-This is enforced by workflow rule #8 in [CLAUDE.md](../CLAUDE.md). Even when
-the assistant is confident the change is safe, the human-on-mobile check
-catches things desktop QA misses: rendering on small viewports, RTL edge
-cases, real-device touch targets, font fallbacks, third-party SDK behavior
-with the actual production CSP, etc.
+**Never merge a PR to `staging` without the rule-38 self-check** — gates green,
+preview screenshots read, fresh reviewer, copy diffed. There is no human
+phone check to wait for (MEH-2302, MEH-3151). What a simulator cannot show
+(real iOS keyboard, felt smoothness) is written in the release PR as residual
+risk, not handed to a person.
 
-The only exception is hotfixes — see [Branch Strategy → Hotfixes](#hotfixes)
-above. Even hotfixes should ideally get a preview-URL check, but if production
-is on fire, ship and verify after.
-
-### Mobile testing checklist
-
-When the user opens the preview URL on a phone, these are the things worth
-checking — particularly for any UI-touching PR:
+### What the thread looks at in the 390 screenshots
 
 - [ ] Homepage hero loads, search pill is tappable
 - [ ] Category icons render correctly (no font fallback to box characters)
 - [ ] Map markers visible and tappable
 - [ ] Bottom navigation works, icons sized correctly
-- [ ] WhatsApp button on a producer page opens the WhatsApp app (not the web)
-- [ ] Form inputs don't zoom on focus (iOS Safari quirk — `font-size: 16px`
-  on inputs is the fix)
+- [ ] WhatsApp button on a producer page has a `wa.me` link with the right text (opening the app itself = residual risk)
+- [ ] Form inputs have computed `font-size` ≥ 16px (the iOS Safari zoom-on-focus
+  quirk; checked in the DOM, since a screenshot cannot show the zoom)
 - [ ] Hebrew text aligns right, no LTR leakage
 - [ ] No horizontal scroll
 - [ ] Sticky elements (header, BottomNav) don't overlap content
@@ -1558,7 +1556,12 @@ The OAuth client id exists, but it needs the production URL whitelisted.
 
 ## 5. Post-deploy smoke test
 
-Run through this checklist in a real browser:
+Automatic since MEH-2749: `post-deploy-checks.yml` runs
+`scripts/checks/smoke_production.py` (pages, sitemap, images, WhatsApp link
+preview) after a push to `main` that touched frontend/backend — non-blocking
+(`continue-on-error`), so the release thread also runs it and reads the lines. The rows it cannot see are run by the
+thread (Google login via Claude in Chrome, admin via the demo admin account),
+never by hand (MEH-3151). Historical list:
 
 - [ ] `https://mehamakor.co.il` loads the homepage with producer cards
 - [ ] `/map` shows the Leaflet map with markers

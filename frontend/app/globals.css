@@ -70,12 +70,15 @@
    blur) → @media reduced-transparency (forces opaque again, must come LAST so
    it overrides @supports at equal specificity). ─────────────────────────── */
 .nav-pill-glass {
-  background: #FFFEFB; /* ≡ surface-floating */
+  background: theme("colors.surface-floating");
   border: 1px solid #E9E3D6;
 }
 @supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
   .nav-pill-glass {
-    background: rgba(255, 254, 251, 0.62);
+    /* MEH-3191: was 0.62 — the active label measured 2.9:1 over /rescue
+       content scrolling under it (axe, 390px). 0.9 keeps the frost and
+       holds ≥4.5:1 over any content (worst case: black under the pill). */
+    background: rgba(255, 254, 251, 0.9);
     -webkit-backdrop-filter: blur(16px) saturate(150%);
     backdrop-filter: blur(16px) saturate(150%);
     border: 1px solid rgba(255, 255, 255, 0.6);
@@ -83,7 +86,7 @@
 }
 @media (prefers-reduced-transparency: reduce) {
   .nav-pill-glass {
-    background: #FFFEFB;
+    background: theme("colors.surface-floating");
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
     border: 1px solid #E9E3D6;
@@ -95,7 +98,7 @@
    utils above). Photography+Texture Hybrid (S14). No new hues. ───────────── */
 
 /* `--scrim-ink` (S14): contrast scrim for the hero text band. Warm ink =
-   rgb(28 26 23) ≡ the `text` token #1c1a17 (brand warmth, not pure black).
+   rgb(28 26 23) ≡ the `text` token 1c1a17 (brand warmth, not pure black).
    S14 hero discipline: ONLY H1 + subtitle ride this — the search card + CTAs
    sit on cream below. MEH-788: the hero photo is now shorter (so the seam
    search + primary CTA clear the laptop fold), which rides the 2-line H1
@@ -118,7 +121,7 @@
 /* `.seam-cut` (S14 DS gesture №4): a hand-cut paper deckle bridging a
    cream ↔ background-alt section transition — the cream folds, nothing
    floats. A thin divider strip (no asset, no shadow): solid background-alt
-   (#ede4d2 ≡ the `background-alt` token) with a torn TOP edge (~4px), so the
+   (ede4d2 ≡ the `background-alt` token) with a torn TOP edge (~4px), so the
    cream above shows through the tears; the alt section continues below it.
    `.seam-cut.flip` mirrors it (scaleY) for the bottom edge of an alt block.
    Decorative — always aria-hidden. */
@@ -289,9 +292,9 @@ body {
      MEH-537 audit that later re-recommended adding one — the audit scored
      the home page with this exact layer already live and apparently was not
      aware of it. See PR body for the full Phase 0 finding. */
-  background-color: #F5F0E8;
+  background-color: theme("colors.background");
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='400' height='400' filter='url(%23noise)' opacity='0.02'/%3E%3C/svg%3E");
-  color: #1C1A17;
+  color: theme("colors.text");
 }
 
 h1, h2, h3 {
@@ -474,16 +477,18 @@ body:has([data-meets-footer]) footer[data-site-footer] {
 body.sheet-open .cookie-banner {
   display: none;
 }
-/* Map z-index token system (see CLAUDE.md § "Map z-index tokens"):
+/* Map z-index token system (see .claude/rules/rtl.md § "Map z-index tokens").
+   The --z-* properties are emitted on :root from the Z_INDEX scale in
+   tailwind.config.js (MEH-3169), so each value is written once:
    Leaflet controls default to z-index within their own stacking context.
    Override to page-level z-index so they stay above the mobile bottom
    sheet (z-600) and category legend (z-800). */
 .leaflet-control-zoom {
-  z-index: 1000 !important;
+  z-index: var(--z-map-controls) !important;
 }
 .leaflet-top.leaflet-left,
 .leaflet-top.leaflet-right {
-  z-index: 1000 !important;
+  z-index: var(--z-map-controls) !important;
 }
 /* MEH-15 + MEH-30 #2/#3: Leaflet attribution (© OpenStreetMap) is
    legally required to be VISIBLE. Earlier pass pinned it to z-index:1
@@ -494,12 +499,13 @@ body.sheet-open .cookie-banner {
    above the header's 1000) so the attribution is never hidden. */
 /* MEH-919: drop the opacity:0.6 dimming + set an explicit AA color. The
    dimmed default Leaflet link (~#5fa7c4 on the ~#ededed attribution bg) was
-   2.29:1, below WCAG AA. fg-muted #5c584f reaches ~6.5:1, kept quiet at
-   10px. Hardcoded hex by design — MEH-686 removed :root token CSS vars. */
+   2.29:1, below WCAG AA. fg-muted 5c584f reaches ~6.5:1, kept quiet at
+   10px. Written as theme("colors.fg-muted") since MEH-3169, which compiles to
+   the same hex (MEH-686 removed :root token CSS vars). */
 .leaflet-control-attribution {
   font-size: 10px;
-  z-index: 1001 !important;
-  color: #5c584f;
+  z-index: var(--z-map-attribution) !important;
+  color: theme("colors.fg-muted");
   /* MEH-1365: ride ABOVE the /map bottom sheet's live top edge instead of
      painting over its content (z-1001 > sheet z-600, and both z values are
      locked by history: 1 → header covered it (MEH-15/30), 600 is the sheet
@@ -754,7 +760,7 @@ body.sheet-open .cookie-banner {
 .custom-cursor {
   width: 12px;
   height: 12px;
-  background: #2e6853;
+  background: theme("colors.primary");
   border-radius: 50%;
   position: fixed;
   pointer-events: none;
@@ -764,19 +770,19 @@ body.sheet-open .cookie-banner {
      over the chat (the native one is already gone via .custom-cursor-on).
      10001 = the top of the scale, above the z-[10000] skip link too. Must stay
      pointer-events:none — guarded by __tests__/CustomCursorZOrder.test.js. */
-  z-index: 10001;
+  z-index: var(--z-cursor);
   transition:
     transform 0.18s ease-out,
     opacity 0.25s ease-out;
   /* MEH-1931: `mix-blend-mode: multiply` used to sit here and is deliberately
-     gone. multiply(#2e6853, near-black) ≈ black, so the dot vanished on every
+     gone. multiply(primary 2e6853, near-black) ≈ black, so the dot vanished on every
      dark surface — `.custom-cursor-on *{cursor:none}` had already removed the
      native one, leaving no pointer at all inside the Lightbox (bg-black/95).
      DO NOT re-add the blend to "keep the cream look": a halo cannot rescue it,
      because an element carrying mix-blend-mode blends as a GROUP with its
      backdrop — a white ring on this same element multiplies to black too.
      Measured, not assumed (probe + numbers in the MEH-1931 PR body).
-     Dropping the blend is imperceptible on cream: over #F5F0E8 multiply
+     Dropping the blend is imperceptible on cream: over F5F0E8 multiply
      yields rgb(44,98,76) vs rgb(46,104,83) unblended — ≤7/255 per channel on
      a 12px dot. The ring below then carries the dark surfaces and stays
      invisible on light ones (white-on-cream). */

@@ -17,6 +17,7 @@ History:  MEH-662 (creation; deduplicates two parallel implementations
 from __future__ import annotations
 
 from datetime import date
+from typing import cast
 
 from sqlalchemy.orm import Session
 
@@ -38,12 +39,16 @@ def read_vacation_state(db: Session) -> tuple[bool, date | None]:
       "true" + valid ISO date               → (True, parsed_date)
       "true" + invalid ISO                  → (False, None)  (corrupt-state coerce)
     """
-    rows = {
-        r.key: r.value
-        for r in db.query(AdminSetting).filter(
-            AdminSetting.key.in_(["vacation_mode_active", "vacation_return_date"])
-        )
-    }
+    # Annotation only: key is String, value is nullable Text (models.py).
+    rows = cast(
+        "dict[str, str | None]",
+        {
+            r.key: r.value
+            for r in db.query(AdminSetting).filter(
+                AdminSetting.key.in_(["vacation_mode_active", "vacation_return_date"])
+            )
+        },
+    )
     active = (rows.get("vacation_mode_active") or "false").lower() == "true"
     return_date_raw = rows.get("vacation_return_date") or ""
     if not active:

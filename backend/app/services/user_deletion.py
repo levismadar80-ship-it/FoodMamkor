@@ -13,6 +13,7 @@ The caller owns everything around the deletion: auth checks, rate limits and
 whether a confirmation email is sent. This function commits.
 """
 
+from uuid import UUID
 from fastapi import BackgroundTasks
 from sqlalchemy.orm import Session
 
@@ -80,7 +81,7 @@ def delete_user_and_data(
     # The sibling fix on the admin path is admin_delete_producer (MEH-510).
     # Destroy runs AFTER the final db.commit so a constraint failure
     # leaves DB and Cloudinary in sync.
-    captured_urls, old_story_card_url = _capture_image_urls(db, user, producer_id)
+    captured_urls, old_story_card_url = _capture_image_urls(db, user, producer_id)  # type: ignore[arg-type]
 
     # 1. Clean up user-linked (not producer-linked) rows that don't cascade
     #    from the user delete. HomeProduct.user_id is CASCADE, but we keep
@@ -101,7 +102,7 @@ def delete_user_and_data(
     # way /group-buys/{id}/commit DELETE does (funded → open below minimum).
     withdraw_user_commits(db, user)
 
-    _delete_own_producer(db, user, producer_id, background_tasks)
+    _delete_own_producer(db, user, producer_id, background_tasks)  # type: ignore[arg-type]
 
     # 3. Finally, delete the user itself.
     db.delete(user)
@@ -141,10 +142,10 @@ def delete_user_and_data(
 
 
 def _capture_image_urls(
-    db: Session, user: User, producer_id
+    db: Session, user: User, producer_id: UUID | None
 ) -> tuple[list[str], str | None]:
     """Cloudinary URLs owned by ``user`` (see the MEH-375 note at the call)."""
-    captured_urls: list[str] = [user.avatar_url] if user.avatar_url else []
+    captured_urls: list[str] = [user.avatar_url] if user.avatar_url else []  # type: ignore[list-item]
     old_story_card_url: str | None = None
     producer = (
         db.query(Producer).filter(Producer.id == producer_id).first()
@@ -152,17 +153,17 @@ def _capture_image_urls(
         else None
     )
     if producer is not None:
-        old_story_card_url = producer.story_card_url
-        captured_urls += [url for url in producer.images or [] if url]
+        old_story_card_url = producer.story_card_url  # type: ignore[assignment]
+        captured_urls += [url for url in producer.images or [] if url]  # type: ignore[union-attr]
         products = db.query(Product).filter(Product.producer_id == producer.id)
-        captured_urls += [p.image_url for p in products.all() if p.image_url]
+        captured_urls += [p.image_url for p in products.all() if p.image_url]  # type: ignore[misc]
     for hp in db.query(HomeProduct).filter(HomeProduct.user_id == user.id).all():
         captured_urls += [url for url in [hp.photo, *(hp.images or [])] if url]
     return captured_urls, old_story_card_url
 
 
 def _delete_own_producer(
-    db: Session, user: User, producer_id, background_tasks: BackgroundTasks
+    db: Session, user: User, producer_id: UUID | None, background_tasks: BackgroundTasks
 ) -> None:
     """Step 2: unlink and hard-delete the user's own business, if any."""
     if producer_id is None:
@@ -176,7 +177,7 @@ def _delete_own_producer(
         # MEH-2528: her business's URL stays reserved after she leaves, so
         # the next business with that name cannot inherit her links.
         retired_slugs.retire_slug(db, producer, "deleted")
-    user.producer_id = None
+    user.producer_id = None  # type: ignore[assignment]
     db.flush()
     if producer is not None:
         # MEH-816: phone_otp_tokens cascade via the DB FK (ondelete=CASCADE)
