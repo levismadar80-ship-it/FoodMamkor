@@ -65,6 +65,13 @@ describe("/events/<id> (MEH-2706)", () => {
     backend({ status: 404 });
     expect(wasNotFound(await middleware(requestFor("/en/events/00000000-0000-0000-0000-000000000000")))).toBe(true);
   });
+  it("?preview=1 does not skip the check — the events page has no preview branch", async () => {
+    backend({ status: 404 });
+    const req = requestFor(EVENT);
+    req.nextUrl.searchParams = new URLSearchParams("preview=1");
+    expect(wasNotFound(await middleware(req))).toBe(true);
+    expect(global.fetch).toHaveBeenCalledTimes(1);
+  });
   it("control: existing event passes through", async () => {
     backend({ status: 200 });
     expect(wasNotFound(await middleware(requestFor(EVENT)))).toBe(false);
@@ -163,7 +170,8 @@ describe.each([
     backend({ status: 404 });
     expect(wasNotFound(await middleware(requestFor(`/he/${segment}`)))).toBe(false);
     expect(global.fetch).not.toHaveBeenCalled();
-  });  it("the /en/ locale gets the same real 404", async () => {
+  });
+  it("the /en/ locale gets the same real 404", async () => {
     backend({ status: 404 });
     expect(wasNotFound(await middleware(requestFor(`/en/${segment}/00000000-0000-0000-0000-000000000000`)))).toBe(true);
   });
@@ -171,14 +179,22 @@ describe.each([
     backend({ status: 404 });
     const req = requestFor(PAGE);
     req.nextUrl.searchParams = new URLSearchParams(qs);
-    expect(wasNotFound(await middleware(req))).toBe(false);
+    const res = await middleware(req);
+    expect(wasNotFound(res)).toBe(false);
     expect(global.fetch).not.toHaveBeenCalled();
+    expect(res.headers.get("X-Robots-Tag")).toBe("noindex, nofollow");
   });
   it("control: another query string is still checked", async () => {
     backend({ status: 404 });
     const req = requestFor(PAGE);
     req.nextUrl.searchParams = new URLSearchParams("utm_source=x");
     expect(wasNotFound(await middleware(req))).toBe(true);
+  });
+  it("control: a page without the preview flag gets no X-Robots-Tag", async () => {
+    backend({ status: 200 });
+    const req = requestFor(PAGE);
+    req.nextUrl.searchParams = new URLSearchParams("utm_source=x");
+    expect((await middleware(req)).headers.get("X-Robots-Tag")).toBeUndefined();
   });
   it.each([
     ["next-router-prefetch", "1"],

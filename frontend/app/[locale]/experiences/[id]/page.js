@@ -89,7 +89,7 @@ export async function generateMetadata(props) {
   // Owner/admin preview (lib/owner-preview.js): the anonymous fetch cannot
   // see a pending item, so say nothing indexable and let the browser ask.
   if (!experience && isOwnerPreview(await props.searchParams)) {
-    return { title: t("title_fallback"), robots: { index: false, follow: false }, alternates };
+    return { title: t("title_fallback"), robots: { index: false, follow: false } };
   }
   if (!experience) notFound();
   const entityName = experience?.title || experience?.name;

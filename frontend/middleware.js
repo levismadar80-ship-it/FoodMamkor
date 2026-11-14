@@ -111,6 +111,9 @@ const EXISTENCE_CHECK_TIMEOUT_MS = 3000;
 // The page segment equals the backend path (/events/<id>, /group-buys/<id>,
 // /experiences/<id>). DO NOT add a segment that has a static child route.
 const ENTITY_404_SEGMENTS = new Set(["events", "group-buys", "experiences"]);
+// The two of them whose page renders an owner/admin preview (lib/owner-preview.js).
+// /events/<id> has no preview branch, so it keeps its 404 check on ?preview=1.
+const OWNER_PREVIEW_SEGMENTS = new Set(["group-buys", "experiences"]);
 
 // producerExists() result for a deleted business (truthy: it is not a 404).
 const GONE = "gone";
@@ -326,10 +329,12 @@ export default async function middleware(request) {
   // one — their pages' own fetch is anonymous too), so they ride the same
   // check. app/[locale]/group-buys/ and experiences/ hold only [id] + the
   // list; /experiences/new is a next.config redirect, which runs before this.
+  // An owner/admin preview (?preview=1 / ?pending=1) is left to the page,
+  // which asks again with her token (lib/owner-preview.js).
+  const ownerPreview = segs.length === 2 && OWNER_PREVIEW_SEGMENTS.has(segs[0]) &&
+    isOwnerPreview(request.nextUrl.searchParams);
   if (segs.length === 2 && ENTITY_404_SEGMENTS.has(segs[0]) && segs[1] && !isPrefetch(request) &&
-    // An owner/admin preview (?preview=1 / ?pending=1) is left to the page,
-    // which asks again with her token (lib/owner-preview.js).
-    !isOwnerPreview(request.nextUrl.searchParams)) {
+    !ownerPreview) {
     exists = await entityExists(`${API_URL}/${segs[0]}/${encodeURIComponent(segs[1])}`);
   } else if (segs.length === 3 && segs[0] === "producers" && segs[1] === "diet") {
     exists = await dietPageExists(decodeSlugParam(segs[2]));
@@ -358,6 +363,9 @@ export default async function middleware(request) {
     return res;
   }
 
+  // A preview URL is never indexed, whatever the streamed metadata says: the
+  // header does not depend on where Next places the robots <meta>.
+  if (ownerPreview) intlResponse.headers.set("X-Robots-Tag", "noindex, nofollow");
   return intlResponse;
 }
 
