@@ -18,13 +18,13 @@ History:  MEH-3086 (creation).
 """
 
 from fastapi import APIRouter, Depends, Query, Request
-from pydantic import BaseModel
 from sqlalchemy import ColumnElement, func
 from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.models import Producer
 from app.rate_limit import limiter
+from app.schemas.schemas import NameCheckOut, NameMatch
 from app.services.producer_listing import is_business
 
 router = APIRouter(tags=["producers"])
@@ -44,17 +44,6 @@ _PY_TABLE = {
     **{ord(ch): " " for ch in _ODD_SPACES},
     **{ord(ch): None for ch in _QUOTES + _INVISIBLE},
 }
-
-
-class NameMatch(BaseModel):
-    id: str
-    slug: str | None
-    name: str
-    city: str | None
-
-
-class NameCheckOut(BaseModel):
-    matches: list[NameMatch]
 
 
 def name_key(value: str) -> str:
