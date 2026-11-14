@@ -1149,7 +1149,7 @@ GET    /events                    public — filter: city, category, from_date, 
 GET    /events/upcoming            public — limit=N next events; approved producers only (MEH-1161)
 GET    /events/mine                producer — owner's own events, ALL states incl. inactive (MEH-1405; dashboard manage list). Declared before /events/{id} so "mine" isn't a UUID path.
 GET    /events/{event_id}          public — pending producer's event → 404 for strangers (MEH-1161; owner/admin bypass)
-POST   /events                     producer — require_verified_producer (MEH-1164 F5): producer role + verified email — unverified → 403 "יש לאמת את כתובת האימייל תחילה"; non-producer → "Producer access required" (role checked first). A pending producer's event stays hidden until the business is approved — MEH-1161
+POST   /events                     producer — require_verified_producer (MEH-1164 F5): producer role + verified email — unverified → 403 "יש לאמת את כתובת האימייל תחילה"; non-producer → "Producer access required" (role checked first). A pending producer's event stays hidden until the business is approved — MEH-1161 · event_date before today (Israel) → 422 «התאריך כבר עבר. יש לבחור תאריך מהיום והלאה»; PUT /events/{id} and PUT /experiences/{id} refuse moving the date into the past, an unchanged past date still saves; POST /experiences the same (MEH-3224)
 PUT    /events/{event_id}          producer — owner only (cross-owner → 404)
 DELETE /events/{event_id}          auth    — owner or admin (stranger → 404)
 ```
