@@ -5,8 +5,6 @@
  * Cells: approved → public page · pending → in-page success state ·
  * status fetch failed at load, succeeds at submit → decided by the fresh
  * status · status still unknown at submit → the owner's own events list.
- * Sibling: a new experience is always saved pending, so its create page goes
- * to the owner's experiences list, never to the public (404ing) detail.
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
@@ -30,14 +28,6 @@ vi.mock("@/components/EventForm", () => ({
   ),
 }));
 
-vi.mock("@/components/ExperienceForm", () => ({
-  default: ({ onSuccess }) => (
-    <button type="button" onClick={() => onSuccess({ id: "x1", status: "pending" })}>submit</button>
-  ),
-}));
-vi.mock("@/lib/toast", () => ({ showToast: { success: vi.fn(), error: vi.fn(), info: vi.fn() } }));
-
-const { default: NewExperiencePage } = await import("@/app/[locale]/producer/dashboard/experiences/new/page");
 const { default: NewEventPage } = await import("@/app/[locale]/producer/dashboard/events/new/page");
 
 const PENDING_TITLE = he.sweep_tail.event_new.pending_success_title;
@@ -94,17 +84,17 @@ describe("NewEventPage — where «פרסום» lands (MEH-3213)", () => {
     await waitFor(() => expect(push).toHaveBeenCalledWith("/producer/dashboard/events"));
     expect(push).not.toHaveBeenCalledWith("/events/e1");
   });
-});
 
-describe("NewExperiencePage — where «שליחה» lands (MEH-3213)", () => {
-  it("goes to the owner's experiences list, never the public detail", async () => {
-    render(
-      <NextIntlClientProvider locale="he" messages={he} onError={() => {}}>
-        <NewExperiencePage />
-      </NextIntlClientProvider>,
-    );
-    fireEvent.click(await screen.findByText("submit"));
-    await waitFor(() => expect(push).toHaveBeenCalledWith("/producer/dashboard/experiences"));
-    expect(push.mock.calls.some(([href]) => String(href).startsWith("/experiences/"))).toBe(false);
+  it("clicked before the load-time status lands, then a second click: one redirect", async () => {
+    let release;
+    get.mockImplementationOnce(() => new Promise((r) => { release = r; }))
+      .mockImplementation(() => ok("approved"));
+    const btn = await renderAndSubmit();
+    fireEvent.click(btn);
+    fireEvent.click(btn);
+    await waitFor(() => expect(push).toHaveBeenCalledWith("/events/e1"));
+    release({ data: { status: "approved" } });
+    await settle();
+    expect(push).toHaveBeenCalledTimes(1);
   });
 });

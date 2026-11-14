@@ -288,7 +288,9 @@ export default function EventForm({ mode = "create", initial = null, onSuccess, 
       const r = isEdit
         ? await api.put(`/events/${initial.id}`, payload)
         : await api.post("/events", payload);
-      onSuccess?.(r.data);
+      // MEH-3213: awaited, so the button stays disabled while the page decides
+      // where to land (events/new may still be asking for the business status).
+      await onSuccess?.(r.data);
     } catch (err) {
       if (isUnverifiedEmailError(err)) {
         setUnverifiedHits((h) => h + 1);

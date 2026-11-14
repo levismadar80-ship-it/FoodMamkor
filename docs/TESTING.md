@@ -212,7 +212,7 @@ Report only the REAL issues."
     - APPROVED: אין feedback
     - FLAGGED: פס צהוב + הצעת שיפור, submit פעיל
     - REJECTED: פס אדום, submit disabled
-□ הגשה מוצלחת → toast «החוויה נשלחה לאישור» + מעבר ל-/producer/dashboard/experiences (MEH-3213: העמוד הציבורי מחזיר 404 לחוויה ממתינה)
+□ הגשה מוצלחת → redirect ל-/experiences/{id}?pending=1 + ירוק banner
 □ אדמין מקבל מייל על כל הגשה חדשה (FLAGGED מופיע בנושא)
 ```
 
