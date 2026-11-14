@@ -328,9 +328,15 @@ class TestMyGroupBuys:
         assert rows[str(empty.id)]["units_total"] == 0
         public = client.get(f"/group-buys/{gb.id}").json()
         assert public.get("units_total") is None
-        for row in rows.values():
-            assert "email" not in str(row)
-            assert "phone" not in row
+        # Another business's commits never reach this owner's rows.
+        other, _ = _producer_user(db, email="other6@test.com")
+        theirs = _make_group_buy(db, other, status="funded")
+        stranger = make_user(db, role="consumer", email="units9@example.com")
+        db.add(GroupBuyCommit(group_buy_id=theirs.id, user_id=stranger.id, quantity=40))
+        db.commit()
+        rows = {r["id"]: r for r in client.get(self.URL, headers=auth_header(owner)).json()}
+        assert set(rows) == {str(gb.id), str(empty.id)}
+        assert rows[str(gb.id)]["units_total"] == 8
 
 
 # ---------- create ----------
