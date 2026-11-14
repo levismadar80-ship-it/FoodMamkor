@@ -138,12 +138,16 @@ test.describe("MEH-2824 · footer reaches the screen edge under the floating nav
     // Control: the reserve is live on this page (BottomNav published its height),
     // so a zero below is the rule, not an unset variable.
     await expect.poll(() => rootVar(page, "--bottom-nav-clearance"), { timeout: 10_000 }).not.toBe("");
-    const m = await page.evaluate(() => ({
-      pad: parseFloat(getComputedStyle(document.body).paddingBottom),
-      overflow: document.scrollingElement!.scrollHeight - innerHeight,
-    }));
-    expect.soft(m.pad, "body carries no bottom reserve on /map").toBe(0);
-    expect.soft(m.overflow, "nothing to scroll below the map").toBeLessThanOrEqual(1);
+    expect(await page.evaluate(() => parseFloat(getComputedStyle(document.body).paddingBottom)), "body carries no bottom reserve on /map").toBe(0);
+    // Polled: the shell's height is calc(100dvh - header) with the header
+    // measured after mount, so the first frames can overflow by a few px
+    // (seen: 18px once on CI) before the measurement lands.
+    await expect
+      .poll(() => page.evaluate(() => document.scrollingElement!.scrollHeight - innerHeight), {
+        message: "nothing to scroll below the map",
+        timeout: 5_000,
+      })
+      .toBeLessThanOrEqual(1);
   });
 
   // MEH-3198 follow-up: with the cookie banner up on a phone, the reserve is
