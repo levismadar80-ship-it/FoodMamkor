@@ -436,10 +436,18 @@ def _normalize_contact_email(value: str | None) -> str | None:
 
 
 def _phone_validator(value: str | None) -> str | None:
-    """Strip separators (spaces/dashes/parens) ONLY — keep the +/digits as typed
-    so the wa.me builders (frontend `normalizePhone` re-strips to digits anyway,
-    lib/utils.js) are unaffected. Validate the digit-only projection against the
-    audit regex. Empty/whitespace → None.
+    """Return the digit projection, with one leading `+` kept when the value
+    was typed with one. Validate that projection against the audit regex.
+    Empty/whitespace → None.
+
+    MEH-2641: this used to return `cleaned` (only spaces/dashes/parens
+    removed), so any other character survived to the column —
+    '+' * 15 + '0501234567' and 'ABCDEFGHIJKLMNO0501234567' were accepted at
+    25 chars and overflowed the String(20) phone columns with an unhandled
+    500. Returning what was validated is what bounds the stored length:
+    `_PHONE_DIGITS_RE` allows at most 13 digits, so the value is ≤ 14 chars.
+    The wa.me builders are unaffected (frontend `normalizePhone`,
+    lib/utils.js, re-strips to digits anyway).
     """
     if value is None:
         return None
@@ -450,7 +458,7 @@ def _phone_validator(value: str | None) -> str | None:
     digits = re.sub(r"\D", "", cleaned)
     if not _PHONE_DIGITS_RE.match(digits):
         raise ValueError("מספר טלפון לא תקין")
-    return cleaned
+    return ("+" + digits) if cleaned.startswith("+") else digits
 
 
 # MEH-2626: the field is the business's WhatsApp UPDATES link — a group invite
@@ -755,8 +763,10 @@ SanitizedAddressField = Annotated[
 ]
 # MEH-1537 semantics preserved verbatim: separators stripped, digit projection
 # validated, empty/whitespace → None. The 30-char cap is the widest existing
-# call site; the real bound is _PHONE_DIGITS_RE (≤13 digits), which is what
-# keeps every value inside the String(20) columns.
+# call site. Since MEH-2641 the validator RETURNS the digit projection it
+# checks (≤13 digits, plus an optional leading "+"), and that is what keeps
+# every stored value inside the String(20) columns. Before MEH-2641 this line
+# claimed the same while the validator returned the raw `cleaned` string.
 PhoneNumberField = Annotated[
     str, Field(max_length=30), AfterValidator(_phone_validator)
 ]
@@ -4744,11 +4754,10 @@ class BusinessSuggestionCreate(BaseModel):
     # Rejecting here means BOTH paths answer 422 for the same body, so the
     # asymmetry is gone rather than merely harder to reach.
     #
-    # Deliberately NOT fixed in `_phone_validator`: nine other schemas share
-    # it, and its own comment claims the digit regex "keeps every value inside
-    # the String(20) columns", which is false. That is a pre-existing latent
-    # bug with a wide blast radius and belongs to its own card, not to a
-    # merge-time patch.
+    # MEH-2641 then fixed `_phone_validator` itself (it now returns the digit
+    # projection, ≤ 14 chars), so this check can no longer fire on a value
+    # the shared validator lets through. It stays as the column-width guard
+    # this endpoint's no-oracle property rests on.
     @field_validator("phone")
     @classmethod
     def _phone_fits_the_column(cls, v):
