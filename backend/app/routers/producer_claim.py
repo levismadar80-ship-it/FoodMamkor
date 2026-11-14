@@ -216,7 +216,7 @@ def request_new_claim_link(
     body: ProducerClaimPreviewRequest,
     background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
-):
+) -> ProducerClaimNewLinkOut:
     """The owner opened a claim link that no longer works and asks for a new
     one. Sapir's decision (14/11): the admin is told and sends the link
     herself — this route never mints a link and never returns one.
@@ -237,14 +237,14 @@ def request_new_claim_link(
     # A link that has not expired yet is accepted too: the page only offers the
     # button after the server refused the link, and a notice for a live link
     # costs the admin one message.
-    if producer and _claimable(db, producer) and _new_link_notice_due(producer.id):
+    if producer and _claimable(db, producer) and _new_link_notice_due(producer.id):  # type: ignore[arg-type]
         # The cooldown is stamped when the notice is queued, not when it is
         # delivered; this line is the record if the delivery fails.
         logger.info("producer_claim.new_link_requested", producer_id=str(producer.id))
         background_tasks.add_task(
             notify_admin_claim_link_requested,
-            producer.name,
-            producer.city,
+            producer.name,  # type: ignore[arg-type]
+            producer.city,  # type: ignore[arg-type]
             test_cause=bool(producer.is_test),
         )
     return ProducerClaimNewLinkOut(ok=True)

@@ -166,7 +166,7 @@ def submit_business_suggestion(
             and not existing.suggested_by_email
             and suggester_email
         ):
-            existing.suggested_by_email = suggester_email  # type: ignore[assignment]
+            existing.suggested_by_email = suggester_email
             # `or`, not a bare assign (adversarial review, finding 1): name and
             # email are each optional, so a first suggestion can leave a name
             # and no email. A later one carrying an email but no name used to
