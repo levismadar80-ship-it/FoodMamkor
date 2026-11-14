@@ -162,7 +162,7 @@ export default function PhoneVerifyCard({ onVerified, variant = "submit" }) {
 
   return (
     <div data-testid={reverify ? "phone-reverify-card" : undefined} className="mt-3 bg-surface border border-primary/20 rounded-md p-4">
-      <p className="font-semibold text-text mb-1 inline-flex items-center gap-1.5">
+      <p className={`font-semibold text-text flex items-center gap-1.5 ${reverify ? "mb-3" : "mb-1"}`}>
         <ChatCircleText size={18} className="text-primary" aria-hidden="true" />
         {reverify ? t("reverify_title") : t("title")}
       </p>
