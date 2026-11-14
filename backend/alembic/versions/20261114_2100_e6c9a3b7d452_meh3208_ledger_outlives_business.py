@@ -19,9 +19,11 @@ details. No row is deleted by this revision or by any job.
 Approved by Sapir 14/11/2026 20:48Z-20:49Z (thread «מודל עסקי ותמחור מנוי»).
 Adds no table: EXPECTED_TABLES unchanged.
 
-Downgrade restores CASCADE and drops `producer_ref`. Rows whose business was
-already deleted are KEPT with a NULL `producer_id` (the column stays
-nullable): a downgrade must not be the thing that erases the ledger.
+Downgrade restores CASCADE and drops `producer_ref`. It REFUSES to run while
+any row has a NULL `producer_id` (a business deleted after the upgrade):
+dropping `producer_ref` would leave those rows with no business id at all,
+and a downgrade must not be the thing that erases the ledger. `producer_id`
+stays nullable after a downgrade.
 
 # DO NOT add a column here later — a new revision, Alembic only (MEH-267).
 """
@@ -65,6 +67,19 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
+    orphans = (
+        op.get_bind()
+        .execute(
+            sa.text("SELECT count(*) FROM billable_events WHERE producer_id IS NULL")
+        )
+        .scalar()
+    )
+    if orphans:
+        raise RuntimeError(
+            f"MEH-3208: {orphans} ledger row(s) belong to a deleted business; "
+            "dropping producer_ref would erase which business they were. "
+            "Export them first, then downgrade by hand."
+        )
     op.drop_constraint(FK, "billable_events", type_="foreignkey")
     op.create_foreign_key(
         FK,

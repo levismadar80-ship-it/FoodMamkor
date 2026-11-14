@@ -79,7 +79,7 @@ def test_an_admin_deleting_a_business_keeps_the_ledger_rows(client, db):
     row_id = _counted(db, producer)
 
     r = client.delete(f"/admin/producers/{producer_id}", headers=auth_header(admin))
-    assert r.status_code in (200, 204), r.text
+    assert r.status_code == 200, r.text
     assert db.query(Producer).filter(Producer.id == producer_id).first() is None
 
     row = _kept(db, row_id)
@@ -95,6 +95,9 @@ def test_a_deleted_business_is_not_a_row_on_the_admin_screen(client, db):
     _counted(db, stays)
     db.delete(gone)
     db.commit()
+
+    # Both rows are still in the table; only the screen leaves one out.
+    assert db.query(BillableEvent).count() == 2
 
     overview = billing_summary.overview(db, NOV)
     assert [r["name"] for r in overview["rows"]] == ["נשאר"]
