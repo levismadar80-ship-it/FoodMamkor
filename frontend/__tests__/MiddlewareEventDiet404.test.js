@@ -65,6 +65,13 @@ describe("/events/<id> (MEH-2706)", () => {
     backend({ status: 404 });
     expect(wasNotFound(await middleware(requestFor("/en/events/00000000-0000-0000-0000-000000000000")))).toBe(true);
   });
+  it("?preview=1 does not skip the check — the events page has no preview branch", async () => {
+    backend({ status: 404 });
+    const req = requestFor(EVENT);
+    req.nextUrl.searchParams = new URLSearchParams("preview=1");
+    expect(wasNotFound(await middleware(req))).toBe(true);
+    expect(global.fetch).toHaveBeenCalledTimes(1);
+  });
   it("control: existing event passes through", async () => {
     backend({ status: 200 });
     expect(wasNotFound(await middleware(requestFor(EVENT)))).toBe(false);
@@ -121,4 +128,92 @@ describe("/producers/diet/<slug> (MEH-2706)", () => {
     backend({ status: 500 });
     expect(wasNotFound(await middleware(requestFor("/he/producers/diet/vegan")))).toBe(false);
   });
+});
+
+// MEH-2977: /group-buys/<id> and /experiences/<id> had the MEH-2706 shape —
+// notFound() in generateMetadata streams 200 — but were never added to the
+// middleware check. Measured 14/11 on production and staging: 200 for a
+// missing id on both, while /events/<id> answered 404.
+describe.each([
+  ["group-buys", "/group-buys/"],
+  ["experiences", "/experiences/"],
+])("/%s/<id> (MEH-2977)", (segment, apiPath) => {
+  const PAGE = `/he/${segment}/00000000-0000-0000-0000-000000000000`;
+  it("backend 404 → real 404", async () => {
+    backend({ status: 404 });
+    expect(wasNotFound(await middleware(requestFor(PAGE)))).toBe(true);
+  });
+  it("backend 422 (id is not a UUID) → real 404", async () => {
+    backend({ status: 422 });
+    expect(wasNotFound(await middleware(requestFor(`/he/${segment}/999999999`)))).toBe(true);
+  });
+  it("asks the backend about exactly that id, on its own API path", async () => {
+    backend({ status: 404 });
+    await middleware(requestFor(`/${segment}/00000000-0000-0000-0000-000000000000`));
+    expect(global.fetch.mock.calls[0][0]).toMatch(
+      new RegExp(`${apiPath}00000000-0000-0000-0000-000000000000$`)
+    );
+  });
+  it("control: an existing one passes through", async () => {
+    backend({ status: 200 });
+    expect(wasNotFound(await middleware(requestFor(PAGE)))).toBe(false);
+  });
+  it.each([500, 429, 503])("control: backend %i fails open", async (status) => {
+    backend({ status });
+    expect(wasNotFound(await middleware(requestFor(PAGE)))).toBe(false);
+  });
+  it("control: network error fails open", async () => {
+    backend({ throws: true });
+    expect(wasNotFound(await middleware(requestFor(PAGE)))).toBe(false);
+  });
+  it("control: the list page itself is never checked", async () => {
+    backend({ status: 404 });
+    expect(wasNotFound(await middleware(requestFor(`/he/${segment}`)))).toBe(false);
+    expect(global.fetch).not.toHaveBeenCalled();
+  });
+  it("the /en/ locale gets the same real 404", async () => {
+    backend({ status: 404 });
+    expect(wasNotFound(await middleware(requestFor(`/en/${segment}/00000000-0000-0000-0000-000000000000`)))).toBe(true);
+  });
+  it.each(["preview=1", "pending=1"])("an owner preview (?%s) is left to the page", async (qs) => {
+    backend({ status: 404 });
+    const req = requestFor(PAGE);
+    req.nextUrl.searchParams = new URLSearchParams(qs);
+    const res = await middleware(req);
+    expect(wasNotFound(res)).toBe(false);
+    expect(global.fetch).not.toHaveBeenCalled();
+    expect(res.headers.get("X-Robots-Tag")).toBe("noindex, nofollow");
+  });
+  it("control: another query string is still checked", async () => {
+    backend({ status: 404 });
+    const req = requestFor(PAGE);
+    req.nextUrl.searchParams = new URLSearchParams("utm_source=x");
+    expect(wasNotFound(await middleware(req))).toBe(true);
+  });
+  it("control: a page without the preview flag gets no X-Robots-Tag", async () => {
+    backend({ status: 200 });
+    const req = requestFor(PAGE);
+    req.nextUrl.searchParams = new URLSearchParams("utm_source=x");
+    expect((await middleware(req)).headers.get("X-Robots-Tag")).toBeUndefined();
+  });
+  it.each([
+    ["next-router-prefetch", "1"],
+    ["purpose", "prefetch"],
+    ["sec-purpose", "prefetch;prerender"],
+  ])("a prefetch (%s) is not checked — no backend GET per card", async (name, value) => {
+    backend({ status: 404 });
+    const req = requestFor(PAGE);
+    req.headers = new Map([[name, value]]);
+    expect(wasNotFound(await middleware(req))).toBe(false);
+    expect(global.fetch).not.toHaveBeenCalled();
+  });
+});
+
+// MEH-2977 control: the set of checked segments is closed. A detail route
+// that is not in it (recipes live under a business slug, not here) is never
+// asked about, so a set that grew too wide would go red. (/organizers/<slug>
+// joined the set on purpose 14/11 — MiddlewareSoft404Siblings.test.js.)
+it.each(["recipes", "producer"])("/%s/<id> is not checked", async (segment) => {
+  backend({ status: 404 });
+  expect(wasNotFound(await middleware(requestFor(`/he/${segment}/00000000-0000-0000-0000-000000000000`)))).toBe(false);
 });

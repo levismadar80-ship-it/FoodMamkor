@@ -132,7 +132,9 @@ describe("AdminExperiencesPage — queue rendering (MEH-2280)", () => {
     expect(within(row).queryByText("FLAGGED")).not.toBeInTheDocument();
     expect(within(row).getByRole("link", { name: X.actions.view })).toHaveAttribute(
       "href",
-      "/experiences/e1",
+      // MEH-2977: the admin opens a pending item as an owner preview, so the
+      // middleware leaves the 404 decision to the page.
+      "/experiences/e1?preview=1",
     );
   });
 
