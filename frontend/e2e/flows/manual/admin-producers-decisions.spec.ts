@@ -546,7 +546,13 @@ test.describe("review checklist", () => {
 // ── MT:MEH-1399:20-25 — the evidence dossier ──────────────────────────────
 
 test.describe("review checklist — evidence dossier", () => {
-  test.use({ permissions: ["clipboard-read", "clipboard-write"] });
+  // MEH-3153: a clipboard grant exists only in Chromium; on WebKit the option
+  // made newPage throw for every test here, including the three that never
+  // touch the clipboard. The copy test itself skips off Chromium (below).
+  test.use({
+    permissions: async ({ browserName }, use) =>
+      use(browserName === "chromium" ? ["clipboard-read", "clipboard-write"] : []),
+  });
 
   const dossier = (page: Page) => page.getByTestId("review-evidence");
 
