@@ -1216,8 +1216,8 @@ GET    /group-buys/counts               public  — {"open": N, "funded": N, "fu
 GET    /experiences/mine               auth    — owner's submissions, any status (incl. is_active=False)
 GET    /experiences/{id}               mixed   — approved=public; non-approved=owner+admin
                                          MEH-2476: `host` = {id, name, producer_id, producer_slug, producer_name, producer_phone} — the producer_* four only when the host's business is public (approved, kind=producer), else null. Same on every experience response.
-POST   /experiences                    auth    — require_verified_producer (MEH-2246: producer role first → 403 "Producer access required", then email-verified → 403 {code: email_unverified}; was require_verified_email). 10/hour. REJECTED → 400. APPROVED/FLAGGED → pending.
-PUT    /experiences/{id}               auth    — owner only (cross-owner → 404). A CONTENT edit resets to status=pending + re-runs Claude; a pure is_active toggle (cancel/reactivate, MEH-1419) does NOT re-moderate.
+POST   /experiences                    auth    — require_verified_producer (MEH-2246: producer role first → 403 "Producer access required", then email-verified → 403 {code: email_unverified}; was require_verified_email). 10/hour. REJECTED → 400. APPROVED/FLAGGED → pending. event_date before today (Israel) → 422 «התאריך כבר עבר. יש לבחור תאריך מהיום והלאה» (MEH-3224).
+PUT    /experiences/{id}               auth    — owner only (cross-owner → 404). A CONTENT edit resets to status=pending + re-runs Claude; a pure is_active toggle (cancel/reactivate, MEH-1419) does NOT re-moderate. Moving event_date before today → 422; an unchanged past date still saves (MEH-3224).
 DELETE /experiences/{id}               auth    — owner or admin (stranger → 404)
 ```
 
