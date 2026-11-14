@@ -143,5 +143,8 @@ describe("PricingCopyGuard (MEH-3166)", () => {
     const [year, month, day] = list.effectiveFrom.split("-");
     expect(doc, "docs/PRICING.md as-of date").toContain(`נכון ל-${Number(day)}/${Number(month)}/${year}`);
     expect(pick(/\*\*הודעה מראש:\*\* (\d+) יום/, "notice days")).toBe(list.noticeDays);
+    expect(pick(/ב-(\d+) החודשים הראשונים של החיוב/, "launch joiner months")).toBe(list.launchJoinerMonths);
+    expect(pick(/\*\*ערעור על ספירה:\*\* (\d+) יום/, "dispute days")).toBe(list.disputeDays);
+    expect(pick(/\*\*שינוי במחירון:\*\* (\d+) יום/, "price change notice")).toBe(list.priceChangeNoticeDays);
   });
 });

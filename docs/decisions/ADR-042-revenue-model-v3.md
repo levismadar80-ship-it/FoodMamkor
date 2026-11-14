@@ -20,6 +20,15 @@ ADR-010, ADR-027 and ADR-030 locked "no transaction fees, no commissions" and al
 7. **Money never buys ranking, exposure, editorial choice, badges or verification — labelled or not.** No display ads, no sale of data, free for readers. Unchanged from ADR-030 §1 and §4 and ADR-010 LOCKs 3–6. "Magazine, not marketplace" stays the brand test.
 8. **Numbers are not locked.** Prices, rates, the threshold and the trial length live in PRICING.md and change with Sapir's approval, without a new ADR. Changing points 1–7 needs one.
 
+## Amendment 14/11/2026 (MEH-3197, Sapir delegated the decisions)
+
+- Point 6 is superseded by the price model of the same day: a subscriber pays a **reduced** commission, not none (numbers in PRICING.md).
+- **Launch joiners.** A business that joined during the launch period pays the subscriber's rates without a subscription for a fixed number of months from its first billed month. Practice elsewhere: a founding rate that is lower and time-limited (first sellers at a lower commission, a discount locked for a period), not a permanent exemption.
+- **Disputing a count.** Each charge is preceded by a summary; a business has a fixed window to report a counted booking that did not take place, and it is checked before the charge. Delivery platforms give merchants 14 to 30 days for the same.
+- **Bookings taken off the site.** No enforcement and no penalty. The commission applies only to bookings recorded in the site's tools; direct contact stays free. Platforms that police this (bans for steering users away) do it where they hold the payment; this site does not, and repeat in-person custom is where policing works worst.
+- **Changing the price list.** Written notice before a change takes effect (the EU platform-to-business rule sets 15 days as a floor; this site gives more).
+- The terms of use carry these promises (section «מחירים ותשלום לבתי עסק»), with the numbers read from the price list.
+
 ## Consequences
 
 **Positive:**

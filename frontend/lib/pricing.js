@@ -57,6 +57,15 @@ const PRICE_LISTS = Object.freeze({
     thresholdBookingsPerMonth: 20,
     // Written notice before a business's first charge.
     noticeDays: 60,
+    // MEH-3197: a business that joined during the launch period pays the
+    // subscriber's rates without a subscription for this many months, counted
+    // from its own first billed month.
+    launchJoinerMonths: 12,
+    // Days a business has, after a monthly summary, to report a counted
+    // booking that did not take place. It is checked before the charge.
+    disputeDays: 14,
+    // Written notice before a change to this list takes effect.
+    priceChangeNoticeDays: 30,
     // The price of the paid sign-up used in the worked example on the price
     // list. The fee shown next to it is computed, never typed.
     exampleBookingPrice: 100,
@@ -118,6 +127,9 @@ export function pricingCopyValues(list = currentPriceList()) {
     breakEvenFees: String(subscriptionBreakEvenFees(list)),
     threshold: String(list.thresholdBookingsPerMonth),
     noticeDays: String(list.noticeDays),
+    earlyMonths: String(list.launchJoinerMonths),
+    disputeDays: String(list.disputeDays),
+    priceChangeDays: String(list.priceChangeNoticeDays),
   };
 }
 
@@ -140,4 +152,11 @@ export const PRICING_COPY_KEYS = Object.freeze([
   "about_business.faq.cost.q",
   "about_business.faq.cost.a",
   "about_business.faq.revenue_model.a",
+  // MEH-3197: the terms of use state the same promises as the price list.
+  "terms.sections.pricing.free",
+  "terms.sections.pricing.launch",
+  "terms.sections.pricing.scope",
+  "terms.sections.pricing.dispute",
+  "terms.sections.pricing.early",
+  "terms.sections.pricing.change",
 ]);

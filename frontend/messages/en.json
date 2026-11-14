@@ -4083,8 +4083,17 @@
         "title": "10. Privacy",
         "body": "Use of the platform is also subject to the <privacylink>privacy policy</privacylink>, which forms an integral part of these terms."
       },
+      "pricing": {
+        "title": "11. Prices and payment for businesses",
+        "free": "Joining the site and the business page are free. The prices of the paid tools are published on <pricinglink>the price list</pricinglink>.",
+        "launch": "During the launch period businesses are not charged. A business is charged only after written notice, {noticeDays} days ahead. A business that does not want the paid tools may stop using them, and its page stays on the site, free.",
+        "scope": "The commission applies only to bookings recorded in the site's tools. Direct contact between a business and its customers, on WhatsApp, by phone or by email, is not charged. Customers pay the business directly.",
+        "dispute": "Before each charge the business receives a summary of the bookings that were counted. The business may tell us within {disputeDays} days about a booking that did not take place, and it is checked before the charge.",
+        "early": "A business that joined during the launch period pays the reduced commission without a subscription, for the first {earlyMonths} months of its billing. The end date of the launch period will be published on the price list.",
+        "change": "A change to the price list is published on the price list and sent in writing to businesses {priceChangeDays} days before it takes effect."
+      },
       "contact": {
-        "title": "11. Contact",
+        "title": "12. Contact",
         "intro": "For any question or inquiry regarding the terms of use:"
       }
     }
@@ -6703,6 +6712,12 @@
       "counted_body": "A registration that was not cancelled, an order in a group buy that closed, and a bag that was collected. A cancellation or a no-show is not counted. A message on WhatsApp, a phone call or an email is not counted and costs nothing.",
       "notice_title": "Before the first charge",
       "notice_body": "We will tell you {noticeDays} days ahead, in writing. If you would rather not continue with paid tools, you keep your page, free.",
+      "early_title": "If you join during the launch period",
+      "early_body": "A reduced commission without a subscription: {subPercent}% and {subBagFee} ₪ per bag, for the first {earlyMonths} months of billing.",
+      "dispute_title": "If a booking that did not happen was counted",
+      "dispute_body": "Before each charge we send a summary of the bookings. You have {disputeDays} days to write to us, and we check before charging.",
+      "change_title": "If the price list changes",
+      "change_body": "We will tell you {priceChangeDays} days ahead, in writing.",
       "money_title": "Your customers' money",
       "money_body": "Goes straight to you. Mehamakor does not charge your customers and does not hold your money.",
       "never_title": "What is not for sale",

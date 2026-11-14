@@ -4,6 +4,7 @@ import { Link } from "@/i18n/navigation";
 import { buildAlternates, buildEntityTitle, urlForLocalePath, OG_LOCALE } from "@/lib/i18n-seo";
 import { BRAND_NAME } from "@/lib/constants";
 import { CONTACT_EMAIL } from "@/lib/env.client";
+import { PRICING_PATH, pricingCopyValues } from "@/lib/pricing";
 import SectionHeading from "@/components/ui/SectionHeading";
 
 // MEH-475 PR-C4b/chunk-3: terms of use i18n. SECTIONS-array shape
@@ -58,6 +59,7 @@ const SECTION_IDS = [
   "changes",
   "law",
   "privacy",
+  "pricing",
   "contact",
 ];
 
@@ -181,6 +183,30 @@ function renderBody(id, t) {
           </Link>
         ),
       });
+    case "pricing": {
+      // MEH-3197: the same promises the price list makes, with the numbers
+      // read from lib/pricing.js (never typed into the copy).
+      const v = pricingCopyValues();
+      return (
+        <>
+          <p className="mb-3">
+            {t.rich("sections.pricing.free", {
+              pricinglink: (chunks) => (
+                <Link href={PRICING_PATH} className="text-primary underline">
+                  {chunks}
+                </Link>
+              ),
+            })}
+          </p>
+          {["launch", "scope", "dispute", "early"].map((key) => (
+            <p key={key} className="mb-3">
+              {t(`sections.pricing.${key}`, v)}
+            </p>
+          ))}
+          <p>{t("sections.pricing.change", v)}</p>
+        </>
+      );
+    }
     case "contact":
       return (
         <>

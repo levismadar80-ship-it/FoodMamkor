@@ -33,6 +33,11 @@ class PriceList:
     subscriber_bag_fee_agorot: int
     threshold_bookings_per_month: int
     notice_days: int
+    # MEH-3197: months a launch-period joiner pays the subscriber's rates
+    # without a subscription; days to report a wrong count; notice of a change.
+    launch_joiner_months: int
+    dispute_days: int
+    price_change_notice_days: int
 
 
 # DO NOT edit a version a business may already have agreed to — add a new
@@ -49,6 +54,9 @@ PRICE_LISTS: Final[dict[int, PriceList]] = {
         subscriber_bag_fee_agorot=1 * AGOROT_PER_SHEKEL,
         threshold_bookings_per_month=20,
         notice_days=60,
+        launch_joiner_months=12,
+        dispute_days=14,
+        price_change_notice_days=30,
     ),
 }
 

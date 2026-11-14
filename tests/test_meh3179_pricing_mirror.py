@@ -56,6 +56,9 @@ def test_backend_price_list_equals_the_sites():
     assert "monthlyCap" not in JS  # Sapir 14/11: there is no monthly cap
     assert pl.threshold_bookings_per_month == _js_number("thresholdBookingsPerMonth")
     assert pl.notice_days == _js_number("noticeDays")
+    assert pl.launch_joiner_months == _js_number("launchJoinerMonths")
+    assert pl.dispute_days == _js_number("disputeDays")
+    assert pl.price_change_notice_days == _js_number("priceChangeNoticeDays")
 
 
 def test_backend_price_list_equals_the_document():
@@ -75,6 +78,9 @@ def test_backend_price_list_equals_the_document():
     assert f"ו-{sub_bag} ₪ לשקית במקום {bag} ₪" in DOC
     assert f"מ-{pl.threshold_bookings_per_month} הזמנות ומעלה בחודש" in DOC
     assert f"{pl.notice_days} יום בכתב" in DOC
+    assert f"ב-{pl.launch_joiner_months} החודשים הראשונים של החיוב" in DOC
+    assert f"**ערעור על ספירה:** {pl.dispute_days} יום" in DOC
+    assert f"**שינוי במחירון:** {pl.price_change_notice_days} יום" in DOC
 
 
 def test_the_worked_example_on_the_price_list_is_what_the_ledger_computes():

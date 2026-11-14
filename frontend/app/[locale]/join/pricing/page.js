@@ -2,7 +2,10 @@
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import {
   BellRinging,
+  CalendarCheck,
+  ChatCircleDots,
   Check,
+  Gift,
   HandCoins,
   ListChecks,
   Prohibit,
@@ -64,6 +67,10 @@ const NOTES = [
   { key: "counted", Icon: ListChecks },
   { key: "notice", Icon: BellRinging },
   { key: "money", Icon: HandCoins },
+  // MEH-3197: what a business asks next — early joiners, a wrong count, a price change.
+  { key: "early", Icon: Gift },
+  { key: "dispute", Icon: ChatCircleDots },
+  { key: "change", Icon: CalendarCheck },
 ];
 
 /** @param {{ children: import("react").ReactNode, onDark?: boolean }} props */
@@ -210,7 +217,7 @@ export default async function PricingPage({ params }) {
           </div>
         </section>
 
-        {/* ── Three short answers ── */}
+        {/* ── Short answers ── */}
         <section className="mb-12 grid grid-cols-1 gap-4 sm:mb-16 sm:grid-cols-3" data-testid="pricing-notes">
           {NOTES.map(({ key, Icon }) => (
             <div key={key} className={CARD}>
