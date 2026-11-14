@@ -66,13 +66,42 @@ describe("useAccountPrefill", () => {
     expect(val("email")).toBe("noa@example.com");
   });
 
-  it("runs once per account: a field she cleared stays cleared on the next render", () => {
+  it("a profile refresh (same account id, new object) does not refill a field she cleared", () => {
     authValue = { user: NOA };
     const { rerender } = render(<Form />);
     fireEvent.change(screen.getByTestId("email"), { target: { value: "" } });
     authValue = { user: { ...NOA } }; // same account, new object (profile refresh)
     act(() => rerender(<Form />));
     expect(val("email")).toBe("");
+  });
+
+  it("sign-out empties the fields that still hold that account's details, keeps what she typed; the next account fills fresh", () => {
+    authValue = { user: NOA };
+    const { rerender } = render(<Form />);
+    fireEvent.change(screen.getByTestId("name"), { target: { value: "דנה" } });
+    authValue = { user: null };
+    act(() => rerender(<Form />));
+    expect([val("name"), val("phone"), val("email")]).toEqual(["דנה", "", ""]);
+    authValue = { user: { id: 8, name: "רות", phone: "", email: "rut@example.com" } };
+    act(() => rerender(<Form />));
+    expect([val("name"), val("phone"), val("email")]).toEqual(["דנה", "", "rut@example.com"]);
+  });
+
+  it("refill() puts her details back after the form resets (a second message)", () => {
+    authValue = { user: NOA };
+    function Resetting() {
+      const [form, setForm] = useState({ name: "", email: "" });
+      const refill = useAccountPrefill(setForm, { name: "name", email: "email" });
+      return (
+        <>
+          <input data-testid="rname" value={form.name} readOnly />
+          <button data-testid="reset" onClick={() => { setForm({ name: "", email: "" }); refill(); }} />
+        </>
+      );
+    }
+    render(<Resetting />);
+    fireEvent.click(screen.getByTestId("reset"));
+    expect(screen.getByTestId("rname").value).toBe("נועה כהן");
   });
 
   it("single-value form fills from the account and keeps typed text", () => {

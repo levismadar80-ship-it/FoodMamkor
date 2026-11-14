@@ -33,7 +33,7 @@ export default function ContactClient() {
   const tPrivacyLink = useTranslations("auth.register.consumer.terms");
   const [form, setForm] = useState(EMPTY_FORM);
   // MEH-3112: a signed-in visitor finds her own name and email in place.
-  useAccountPrefill(setForm, CONTACT_PREFILL);
+  const refillFromAccount = useAccountPrefill(setForm, CONTACT_PREFILL);
   // MEH-2832 (moved from /about, MEH-1113): every «כתבו לנו» on the site links
   // here with ?topic=. A whitelisted value preselects the topic; anything else
   // falls back to "general" silently. Read once on mount, client-side only
@@ -56,6 +56,8 @@ export default function ContactClient() {
       await api.post("/contact", form);
       setStatus("success");
       setForm(EMPTY_FORM);
+      // «שלחו הודעה נוספת» opens the form again with her details in place.
+      refillFromAccount();
     } catch (err) {
       setStatus("error");
       setErrorMsg(detailToMessage(err.response?.data?.detail) || t("error_default"));

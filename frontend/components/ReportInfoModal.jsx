@@ -26,7 +26,7 @@ export default function ReportInfoModal({ open, onClose, producerSlug }) {
   const [message, setMessage] = useState("");
   const [email, setEmail] = useState("");
   // MEH-3112: a signed-in visitor's own email, still editable.
-  useAccountPrefillValue(setEmail, "email");
+  const refillEmail = useAccountPrefillValue(setEmail, "email");
   const [loading, setLoading] = useState(false);
 
   if (!open) return null;
@@ -46,6 +46,7 @@ export default function ReportInfoModal({ open, onClose, producerSlug }) {
       showToast.success(t("toasts.success"), { duration: 4000 });
       setMessage("");
       setEmail("");
+      refillEmail();
       onClose();
     } catch {
       showToast.error(t("toasts.error"));

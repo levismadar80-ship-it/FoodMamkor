@@ -100,7 +100,7 @@ export default function RecommendClient() {
   const tHome = useTranslations("home.cta");
   const tJoin = useTranslations("join");
   const [form, setForm] = useState(EMPTY);
-  useAccountPrefill(setForm, SUGGESTER_PREFILL);
+  const refillFromAccount = useAccountPrefill(setForm, SUGGESTER_PREFILL);
   const [status, setStatus] = useState("idle");
   const [contactError, setContactError] = useState(false);
   // Captured at submit time: the success copy differs by whether an update was
@@ -138,6 +138,7 @@ export default function RecommendClient() {
       setThanked(form.wants_update);
       setStatus("success");
       setForm(EMPTY);
+      refillFromAccount();
     } catch (err) {
       setStatus(err.response?.status === 429 ? "rate_limited" : "error");
     }

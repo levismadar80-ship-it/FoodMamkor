@@ -28,26 +28,42 @@ function accountValue(user, key) {
   return typeof v === "string" ? v.trim() : "";
 }
 
-/** Calls `apply(user)` once per signed-in account id (never for a guest). */
-function useOncePerAccount(apply) {
+/**
+ * Calls `apply(user)` once per signed-in account id (never for a guest), and
+ * `clear(previousUser)` when that account signs out — so one person's details
+ * never stay on screen for the next (review, MEH-3112). Returns `refill()`,
+ * which re-applies for the current account (a form that resets after a send).
+ */
+function useOncePerAccount(apply, clear) {
   const user = useOptionalAuth()?.user ?? null;
   const id = user?.id ?? null;
   const seen = useRef(null);
+  const userRef = useRef(user);
+  userRef.current = user;
   useEffect(() => {
-    if (!user || id === null || seen.current === id) return;
-    seen.current = id;
-    apply(user);
+    if (id === null) {
+      if (seen.current !== null) clear(seen.current);
+      seen.current = null;
+      return;
+    }
+    if (seen.current?.id === id) return;
+    seen.current = userRef.current;
+    apply(userRef.current);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- once per account id
   }, [id]);
+  return () => {
+    if (userRef.current) apply(userRef.current);
+  };
 }
 
 /**
  * Object form: `map` = { formField: accountField }.
  * @param {(update: (prev: Record<string, any>) => Record<string, any>) => void} setForm
  * @param {Record<string, AccountField>} map
+ * @returns {() => void} refill — call after resetting the form
  */
 export function useAccountPrefill(setForm, map) {
-  useOncePerAccount((user) =>
+  const fill = (user) =>
     setForm((prev) => {
       let next = prev;
       for (const [field, key] of Object.entries(map)) {
@@ -58,18 +74,38 @@ export function useAccountPrefill(setForm, map) {
         }
       }
       return next;
-    }),
-  );
+    });
+  // Sign-out: empty only what is still exactly the old account's value.
+  const clear = (old) =>
+    setForm((prev) => {
+      let next = prev;
+      for (const [field, key] of Object.entries(map)) {
+        const value = accountValue(old, key);
+        if (value && String(prev?.[field] ?? "").trim() === value) {
+          if (next === prev) next = { ...prev };
+          next[field] = "";
+        }
+      }
+      return next;
+    });
+  return useOncePerAccount(fill, clear);
 }
 
 /**
  * Single-value form (a plain string state).
  * @param {(update: (prev: string) => string) => void} setValue
  * @param {AccountField} key
+ * @returns {() => void} refill
  */
 export function useAccountPrefillValue(setValue, key) {
-  useOncePerAccount((user) => {
-    const value = accountValue(user, key);
-    if (value) setValue((prev) => (String(prev ?? "").trim() ? prev : value));
-  });
+  return useOncePerAccount(
+    (user) => {
+      const value = accountValue(user, key);
+      if (value) setValue((prev) => (String(prev ?? "").trim() ? prev : value));
+    },
+    (old) => {
+      const value = accountValue(old, key);
+      if (value) setValue((prev) => (String(prev ?? "").trim() === value ? "" : prev));
+    },
+  );
 }

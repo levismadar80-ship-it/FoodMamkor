@@ -5,9 +5,10 @@ import api from "@/lib/api";
 
 // MEH-2827 PR 5: the owner line under the subtitle is a BusinessCtaLink,
 // which reads the auth context. A guest sees the join link.
+// MEH-3112 prefill hook: a guest unless a test signs someone in.
+let mockSignedIn = null;
 vi.mock("@/lib/auth-context", () => ({
-  // MEH-3112 prefill hook: a guest here, so the forms open empty as before.
-  useOptionalAuth: () => null, useAuth: () => ({ user: null, loading: false }) }));
+  useOptionalAuth: () => (mockSignedIn ? { user: mockSignedIn } : null), useAuth: () => ({ user: null, loading: false }) }));
 vi.mock("@/lib/api", () => ({
   default: { post: vi.fn(() => Promise.resolve({ data: { ok: true } })) },
 }));
@@ -318,5 +319,20 @@ describe("RecommendClient", () => {
     // The CLIENT must not silently drop it — the trap is server-side, and a
     // client that stripped the field would disarm it with no visible symptom.
     expect(api.post.mock.calls[0][1].company).toBe("Acme SEO Ltd");
+  });
+});
+
+describe("MEH-3112 — signed in: only the recommender's own fields are prefilled", () => {
+  it("fills suggester name + email, never the business's name or phone", () => {
+    mockSignedIn = { id: 5, name: "נועה כהן", email: "noa@example.com", phone: "052-1234567" };
+    try {
+      render(<RecommendClient />);
+      expect(document.getElementById("recommend-suggester-name").value).toBe("נועה כהן");
+      expect(document.getElementById("recommend-suggester-email").value).toBe("noa@example.com");
+      expect(document.getElementById("recommend-name").value).toBe("");
+      expect(document.getElementById("recommend-phone").value).toBe("");
+    } finally {
+      mockSignedIn = null;
+    }
   });
 });
