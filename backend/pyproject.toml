@@ -253,6 +253,7 @@ files = [
     "app/services/rating_dispatcher.py",
     "app/services/registration_emails.py",
     "app/services/registrations.py",
+    "app/services/report_notifications.py",
     "app/services/rescue_digest.py",
     "app/services/rescue_emails.py",
     "app/services/resend_client.py",
