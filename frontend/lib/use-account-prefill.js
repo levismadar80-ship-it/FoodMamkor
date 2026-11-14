@@ -71,7 +71,8 @@ export function useAccountPrefill(setForm, map) {
         const value = accountValue(user, key);
         if (value && !String(prev?.[field] ?? "").trim()) {
           if (next === prev) next = { ...prev };
-          /** @type {Record<string, unknown>} */ (next)[field] = value;
+          const draft = /** @type {Record<string, unknown>} */ (next);
+          draft[field] = value;
         }
       }
       return next;
@@ -84,7 +85,8 @@ export function useAccountPrefill(setForm, map) {
         const value = accountValue(old, key);
         if (value && String(prev?.[field] ?? "").trim() === value) {
           if (next === prev) next = { ...prev };
-          /** @type {Record<string, unknown>} */ (next)[field] = "";
+          const draft = /** @type {Record<string, unknown>} */ (next);
+          draft[field] = "";
         }
       }
       return next;
