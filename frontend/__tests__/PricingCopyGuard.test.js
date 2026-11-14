@@ -2,6 +2,10 @@
 //
 // Before this guard «חינם, בלי עמלות» was hand-written in 19 strings, so a
 // change of model meant searching the whole site. The contract it holds:
+//   SCOPE: the vocabulary is fees, subscriptions and "free forever" — the
+//   promises ADR-042 changed. «חינם להצטרף» / "free to join" alone is not
+//   flagged: joining and the page stay free under ADR-042 §1, so that phrase
+//   may appear anywhere.
 //   1. A message that uses pricing vocabulary lives under `pricing.*`, or is
 //      named in PRICING_COPY_KEYS (lib/pricing.js), or is in OTHER_MEANING
 //      below with the reason the word means something else there.
@@ -20,8 +24,8 @@ import en from "../messages/en.json";
 import { PRICING_COPY_KEYS, currentPriceList, pricingCopyValues } from "../lib/pricing";
 
 const VOCAB = {
-  he: /עמלה|עמלות|עמלת|דמי מנוי|מנוי|לתמיד|חינם תמיד|תמיד חינם/,
-  en: /commission|subscription|transaction fee|no fees|free forever|forever free|always free/i,
+  he: /עמלה|עמלות|עמלת|דמי מנוי|מנוי|לתמיד|לעולם|חינם,? תמיד|תמיד חינם|אחוז מ/,
+  en: /commission|subscription|transaction fee|no fees?\b|free forever|forever free|always free|for life|cut of/i,
 };
 
 // Keys where the word is not about what a business pays. Each needs a reason.
@@ -94,6 +98,10 @@ describe("PricingCopyGuard (MEH-3166)", () => {
       expect(MESSAGES.he[key], `he ${key}`).toBeTypeOf("string");
       expect(MESSAGES.en[key], `en ${key}`).toBeTypeOf("string");
     }
+    // Same numbers in both languages: a translation must not drop or swap one.
+    for (const key of pricingKeys("he")) {
+      expect(placeholders(MESSAGES.en[key]).sort(), `${key} placeholders`).toEqual(placeholders(MESSAGES.he[key]).sort());
+    }
   });
 
   it("the numbers equal docs/PRICING.md", () => {
@@ -110,7 +118,11 @@ describe("PricingCopyGuard (MEH-3166)", () => {
     expect(pick(/קנייה קבוצתית שנסגרה \| (\d+)% /, "group-buy percent")).toBe(list.commission.paidBookingPercent);
     expect(pick(/שקית הצלה שנאספה \| (\d+) ₪ לשקית/, "bag fee")).toBe(list.commission.rescueBagFee);
     expect(pick(/מחיר המנוי החודשי \((\d+) ₪\)/, "monthly cap")).toBe(list.commission.monthlyCap);
-    expect(pick(/אחרי שעבר (\d+) הזמנות בחודש/, "threshold")).toBe(list.thresholdBookingsPerMonth);
+    expect(pick(/מ-(\d+) הזמנות ומעלה בחודש/, "threshold")).toBe(list.thresholdBookingsPerMonth);
+    // The copy says the cap is "the price of the subscription" — keep it true.
+    expect(list.commission.monthlyCap).toBe(list.subscription.monthly);
+    const [year, month, day] = list.effectiveFrom.split("-");
+    expect(doc, "docs/PRICING.md as-of date").toContain(`נכון ל-${Number(day)}/${Number(month)}/${year}`);
     expect(pick(/\*\*הודעה מראש:\*\* (\d+) יום/, "notice days")).toBe(list.noticeDays);
   });
 });

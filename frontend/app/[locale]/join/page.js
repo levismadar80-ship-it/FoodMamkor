@@ -105,8 +105,8 @@ const LINK_CLASS =
   "inline-flex items-center gap-2 text-primary font-semibold hover:underline rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary";
 const CARD_CLASS = "bg-background border border-primary/20 rounded-md px-5 py-4";
 // MEH-2841 (Sapir, 08/11): cost and price lead, because they are the two
-// questions that stop a registration — «בלי עמלות» used to live only in
-// a_cost, far down the page. Then discovery, then the «one more place to
+// questions that stop a registration. (The price promise itself changed
+// with ADR-042 — MEH-3166; a_cost now takes its numbers from lib/pricing.js.) Then discovery, then the «one more place to
 // update» objection that keeps coming back in Topaz's calls.
 const FAQ_KEYS = ["cost", "price", "google", "updates", "revenue", "customers"];
 // MEH-2799 (Sapir, 07/11): the site's FAQ pattern — a <details> accordion
@@ -239,7 +239,7 @@ export default async function JoinPage({ params }) {
         </section>
 
         {/* ── FAQ — the price answer lives here (Etsy pattern), not in the
-               hero. a_cost dropped «— לעולם» on Sapir's call, 07/11 (ADR-030 §5 rewritten). ── */}
+               hero. Since MEH-3166 a_cost follows ADR-042 and links to /join/pricing. ── */}
         <section className="pb-14 sm:pb-20" data-testid="join-faq">
           <p className="text-sm font-medium text-fg-muted text-center mb-2">{t("faq.eyebrow")}</p>
           <SectionHeading className="text-center mb-8">

@@ -1273,12 +1273,12 @@ Rule: BRAND.md §7. he.json only; en.json, keys and code unchanged. Left in Lati
 
 **Approved by Sapir 14/11/2026** («מאשרת הכל», on the proposal table). The revenue model changed (ADR-042), so every earlier row in this file that says «בלי עמלות», «אין עמלות על עסקאות» or «חינם לעולם» is **superseded by this section** — the rows stay as history.
 
-From here on a sentence about price lives in one of two places, and `frontend/__tests__/PricingCopyGuard.test.js` fails on any other:
+From here on a sentence about fees, a subscription or "free forever" lives in one of two places, and `frontend/__tests__/PricingCopyGuard.test.js` fails on any other. The guard's vocabulary is those promises only: «חינם להצטרף» on its own is not flagged, because joining and the page stay free under ADR-042 §1.
 
 - the `pricing.*` namespace (the price-list page `/join/pricing` and the short link labels), or
 - a key listed in `PRICING_COPY_KEYS` in `frontend/lib/pricing.js`.
 
-Numbers are never written into the copy. They are ICU values (`{monthly}`, `{yearly}`, `{percent}`, `{bagFee}`, `{cap}`, `{threshold}`, `{noticeDays}`) supplied by `frontend/lib/pricing.js`, the same numbers as `docs/PRICING.md`.
+Numbers are never written into the copy. They are ICU values (`{monthly}`, `{yearly}`, `{percent}`, `{bagFee}`, `{cap}`, `{threshold}`, `{noticeDays}`, `{asOf}`, `{examplePrice}`, `{exampleFee}`) supplied by `frontend/lib/pricing.js`, the same numbers as `docs/PRICING.md`.
 
 | Key | he (live) |
 |---|---|

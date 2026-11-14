@@ -3728,7 +3728,7 @@
       "q_google": "How is this different from Google and Instagram?",
       "q_updates": "Is this one more place I need to keep updated?",
       "a_google": "Google is good for being found in search, and it's worth keeping. Here you get a page of your own in an article style, a contact button on the channel you chose (on WhatsApp, with a ready-made message too), and reviews only from people who contacted you. You can also put the link to your Mehamakor page on your Google profile. Keep your Instagram as usual and link to it from your page; here the customer also sees prices, delivery areas and hours without asking.",
-      "a_updates": "Hardly. There are no orders or stock on the site, so when something runs out, customers just ask you. You only update when something permanent changes.",
+      "a_updates": "Hardly. There is no stock to keep up to date on the site, so when something runs out, customers just ask you. You only update when something permanent changes.",
       "q_revenue": "If everything is free, how do you make money?",
       "a_revenue": "Right now we don't. Later, income will come from a tools subscription and a small commission on bookings that came through the site, and only from a business that already sees results. Not from selling a place at the top of the list, not from ads and not from selling data.",
       "q_customers": "Who gets the customers?",
@@ -3786,7 +3786,7 @@
     "faq": {
       "cost": {
         "q": "How much does it cost — and what happens when you start charging?",
-        "a": "Your page is free. During the launch period every tool is free too. When you get {threshold} or more bookings a month through the site, I will tell you {noticeDays} days ahead, and then you choose: a subscription of ₪{monthly} a month, or a small commission on each booking. If neither suits you, your page stays yours, free."
+        "a": "Your page is free. During the launch period every tool is free too. When you get {threshold} or more bookings a month through the site, I will tell you in writing {noticeDays} days ahead, and then you choose: a subscription of ₪{monthly} a month, or a small commission on each booking. If neither suits you, your page stays yours, free."
       },
       "revenue_model": {
         "q": "If everything is free — how does Mehamakor make money?",
@@ -6674,22 +6674,21 @@
     "cta": "Browse businesses"
   },
   "pricing": {
-    "claim_short": "Free to join",
     "link_full": "See the full price list",
     "link_short": "Price list",
     "page": {
-      "eyebrow": "For businesses",
-      "h1": "Price list for businesses",
-      "lead": "Your page is free. You pay for tools only once the site already brings you bookings.",
-      "launch_title": "Launch period",
-      "launch_body": "Everything is free. Nothing is charged today.",
+      "eyebrow": "Price list for businesses",
+      "h1": "Free to join. You pay only once there are bookings.",
+      "lead": "No credit card and no commitment. Every price is here, up front.",
+      "launch_title": "Today: the launch period",
+      "launch_body": "Everything is free: your page and every tool.",
       "free_title": "Free",
       "free_lead": "For every approved business, with no time limit:",
       "free_item_page": "Your page: story, photos and contact details",
       "free_item_found": "A place on the map and in search",
       "free_item_verified": "Licence verification and its badge",
       "results_title": "Once there are results",
-      "results_lead": "A business that gets {threshold} or more bookings a month through the site chooses one of two ways:",
+      "results_lead": "A business that gets {threshold} or more bookings a month through the site chooses how to continue:",
       "sub_title": "Tools subscription",
       "sub_price": "₪{monthly} a month",
       "sub_note": "Or ₪{yearly} a year. No commission on bookings.",
@@ -6701,7 +6700,7 @@
       "fee_item_free": "Free registration: no commission",
       "fee_cap": "Never more than ₪{cap} a month, the price of the subscription.",
       "counted_title": "What counts as a booking",
-      "counted_body": "A registration that was not cancelled, an order in a group buy that closed, and a bag that was collected. A cancellation or a no-show is not counted.",
+      "counted_body": "A registration that was not cancelled, an order in a group buy that closed, and a bag that was collected. A cancellation or a no-show is not counted. A message on WhatsApp, a phone call or an email is not counted and costs nothing.",
       "notice_title": "Before the first charge",
       "notice_body": "We will tell you {noticeDays} days ahead, in writing. If you would rather not continue with paid tools, you keep your page, free.",
       "money_title": "Your customers' money",
@@ -6712,11 +6711,20 @@
       "closing_line": "Signing up takes a few minutes, and your page is free.",
       "back_link": "Back to the join page",
       "or": "or",
-      "sub_fit": "Fits a business with many bookings.",
-      "fee_fit": "Fits a business with few bookings.",
+      "sub_fit": "A fixed price you know in advance. Paying yearly costs less.",
+      "fee_fit": "You pay only in a month that has bookings.",
       "fee_example": "For example: a workshop sign-up at ₪{examplePrice} is a ₪{exampleFee} fee.",
       "tools_link": "See the full list of tools",
-      "as_of": "Price list as of {asOf}."
+      "as_of": "Price list as of {asOf}.",
+      "steps_label": "How it works",
+      "step2_title": "When the site brings you bookings",
+      "step2_body": "From {threshold} bookings a month through the site, we tell you in writing {noticeDays} days ahead.",
+      "step3_title": "You choose",
+      "step3_body": "A subscription, a commission per booking, or just the page, free.",
+      "stay_title": "Just the page",
+      "stay_price": "Free",
+      "stay_body": "No paid tools and nothing to pay. Your page stays on the site, as it is today.",
+      "cta": "Join, free"
     }
   }
 }

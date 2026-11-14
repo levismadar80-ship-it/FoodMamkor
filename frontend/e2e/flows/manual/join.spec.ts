@@ -199,9 +199,8 @@ test.describe("manual › /join (MEH-995)", () => {
     await expect(processLink).toHaveAttribute("href", /\/about\/process(?:[/?#]|$)/);
   });
 
-  // MT:MEH-995:3 — FAQ at the end: "כמה זה עולה?" with the locked no-fees answer, link "לכל השאלות" → /about/for-businesses.
-  // MEH-2799: the section now has its own h2 and four questions (h3); the cost
-  // answer keeps «— לעולם» (ADR-030 §5).
+  // MT:MEH-995:3 — FAQ at the end: "כמה זה עולה?" with the ADR-042 answer (MEH-3166), link "לכל השאלות" → /about/for-businesses.
+  // MEH-2799: the section now has its own h2 and its questions are h3.
   test("FAQ: heading, four questions, the locked cost answer, link to the full FAQ", async ({ page }) => {
     await gotoJoin(page);
     const faq = scope(page).getByTestId("join-faq");
