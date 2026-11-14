@@ -370,6 +370,15 @@ describe("MEH-2562 · variants", () => {
     expect(button().className).toMatch(/min-h-touch/);
   });
 
+  // MEH-3115: the bell read green while OFF next to a dark heart and share.
+  it("gallery: the bell is text-ink while off, like the heart beside it", () => {
+    renderButton({ variant: "gallery" });
+    const icon = button().querySelector("svg");
+    expect(icon.getAttribute("class")).toContain("text-text");
+    expect(icon.getAttribute("class")).not.toContain("text-primary");
+    expect(button().querySelector(".w-8")).toBeTruthy();
+  });
+
   it("gallery reports ON through aria-pressed like the pill", async () => {
     mockUser.current = { id: "u1" };
     serve({ favorites: [{ producer_id: PID }], alerts: { ...OFF, enabled: true, notify_new_event: true } });
