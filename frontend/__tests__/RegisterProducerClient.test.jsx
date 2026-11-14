@@ -1895,7 +1895,7 @@ describe("RegisterProducerClient — categories load failure (MEH-3193)", () => 
     );
     await walkToCategory();
     const failed = await screen.findByTestId("register-categories-failed");
-    expect(within(failed).getByText("registration.list.load_error")).toBeInTheDocument();
+    expect(within(failed).getByText("dashboard.producer.categories.fetch_error")).toBeInTheDocument();
     const before = api.get.mock.calls.filter(([u]) => u === "/categories").length;
     failCategories = false;
     fireEvent.click(within(failed).getByText("errors.boundary.retry"));

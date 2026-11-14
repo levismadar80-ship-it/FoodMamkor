@@ -1472,7 +1472,7 @@ function RegisterProducerPageBody({ routeKind }) {
             >
               {categoriesFailed && (
                 <div data-testid="register-categories-failed" className="flex items-center gap-3 mb-3">
-                  <InlineMessage size="xs" className="text-start">{t("registration.list.load_error")}</InlineMessage>
+                  <InlineMessage size="xs" className="text-start">{t("dashboard.producer.categories.fetch_error")}</InlineMessage>
                   <Button type="button" variant="secondary" size="sm" onClick={loadCategories}>
                     {t("errors.boundary.retry")}
                   </Button>

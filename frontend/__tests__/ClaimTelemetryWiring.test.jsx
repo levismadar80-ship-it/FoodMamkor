@@ -36,6 +36,21 @@ const event = () => ({
   transaction: `/claim/${TOKEN}`,
 });
 
+// Every fresh import of instrumentation-client adds a consent listener on the
+// real window. Drop them after each case (in EVERY describe here) so a module
+// from an earlier case cannot answer a later case's consent event.
+const added = [];
+const realAdd = window.addEventListener.bind(window);
+beforeEach(() => {
+  vi.spyOn(window, "addEventListener").mockImplementation((type, fn, opts) => {
+    added.push([type, fn]);
+    realAdd(type, fn, opts);
+  });
+});
+afterEach(() => {
+  for (const [type, fn] of added.splice(0)) window.removeEventListener(type, fn);
+});
+
 describe("Sentry configs redact the claim token", () => {
   const env = { ...process.env };
   beforeEach(() => {
@@ -70,15 +85,7 @@ describe("Sentry configs redact the claim token", () => {
 // and the "no consent" rows fail (a replay at init without consent).
 describe("Sentry client replay: consent + token links (MEH-2324, MEH-3193)", () => {
   const env = { ...process.env };
-  // Each fresh import adds a consent listener; drop them so one case's module
-  // cannot answer another case's event.
-  const added = [];
-  const realAdd = window.addEventListener.bind(window);
   beforeEach(() => {
-    vi.spyOn(window, "addEventListener").mockImplementation((type, fn, opts) => {
-      added.push([type, fn]);
-      realAdd(type, fn, opts);
-    });
     vi.resetModules();
     init.mockClear();
     addIntegration.mockClear();
@@ -86,7 +93,6 @@ describe("Sentry client replay: consent + token links (MEH-2324, MEH-3193)", () 
     process.env.NEXT_PUBLIC_SENTRY_DSN = "https://k@o.ingest.sentry.io/1";
   });
   afterEach(() => {
-    for (const [type, fn] of added.splice(0)) window.removeEventListener(type, fn);
     vi.restoreAllMocks();
     process.env = { ...env };
     localStorage.clear();
@@ -115,10 +121,9 @@ describe("Sentry client replay: consent + token links (MEH-2324, MEH-3193)", () 
     expect(addIntegration).not.toHaveBeenCalled();
     const { setCookieConsent } = await import("../lib/cookie-consent.js");
     setCookieConsent("all");
-    const afterFirst = addIntegration.mock.calls.length;
-    expect(afterFirst).toBeGreaterThanOrEqual(1);
+    expect(addIntegration).toHaveBeenCalledTimes(1);
     setCookieConsent("all");
-    expect(addIntegration).toHaveBeenCalledTimes(afterFirst);
+    expect(addIntegration).toHaveBeenCalledTimes(1);
   });
 
   it("accepting all cookies on a token link still records nothing", async () => {

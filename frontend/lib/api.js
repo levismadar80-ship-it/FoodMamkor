@@ -15,8 +15,21 @@ const api = axios.create({
   timeout: 15000,
 });
 
+// MEH-3193: a file upload is not "a stalled backend" — a multi-MB photo on a
+// slow phone connection can need far longer than 15 s (the trap MEH-2396
+// recorded in EventsClient). FormData bodies get 2 minutes unless the caller
+// set its own timeout.
+export const UPLOAD_TIMEOUT_MS = 120000;
+
 // Attach JWT token to requests
 api.interceptors.request.use((config) => {
+  if (
+    typeof FormData !== "undefined" &&
+    config.data instanceof FormData &&
+    config.timeout === 15000
+  ) {
+    config.timeout = UPLOAD_TIMEOUT_MS;
+  }
   // MEH-1627: _noAuth marks the deliberate anonymous retry issued after a
   // failed refresh. Honour it structurally rather than relying on
   // _expireSession() having emptied localStorage first — otherwise a token

@@ -30,6 +30,31 @@ describe("api client timeout", () => {
     const { default: api } = await vi.importActual("@/lib/api");
     expect(api.defaults.timeout).toBe(15000);
   });
+
+  // The request interceptors run in order; feed a config through all of them
+  // the way axios would, and read the timeout that would be sent.
+  async function sentTimeout(api, data, timeout = api.defaults.timeout) {
+    let config = { headers: {}, data, timeout };
+    for (const h of api.interceptors.request.handlers) {
+      if (h && h.fulfilled) config = await h.fulfilled(config);
+    }
+    return config.timeout;
+  }
+
+  it("a file upload (FormData) gets 2 minutes, not 15 s", async () => {
+    const { default: api } = await vi.importActual("@/lib/api");
+    expect(await sentTimeout(api, new FormData())).toBe(120000);
+  });
+
+  it("a JSON body keeps the 15 s cap", async () => {
+    const { default: api } = await vi.importActual("@/lib/api");
+    expect(await sentTimeout(api, { name: "x" })).toBe(15000);
+  });
+
+  it("an upload whose caller set its own timeout keeps it", async () => {
+    const { default: api } = await vi.importActual("@/lib/api");
+    expect(await sentTimeout(api, new FormData(), 5000)).toBe(5000);
+  });
 });
 
 const serverFetch = vi.fn();
