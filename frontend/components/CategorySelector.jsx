@@ -203,6 +203,7 @@ export default function CategorySelector({ categories, selectedIds, onChange, on
           onChange={(e) => setQuery(e.target.value)}
           placeholder={t("search_placeholder")}
           startAdornment={<MagnifyingGlass size={18} aria-hidden="true" />}
+          className="text-base"
           dir="rtl"
         />
       </div>
