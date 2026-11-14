@@ -4408,6 +4408,11 @@
         "body": "ייתכן שעדיין לא הוקם לך עסק, או שאירעה תקלה זמנית. אם הבעיה נמשכת, אנחנו כאן בשבילך.",
         "cta": "צרו קשר"
       },
+      "help_row": {
+        "title": "צריכים עזרה?",
+        "body": "כתבו לנו ונחזור אליכם עד סוף יום העבודה.",
+        "cta": "פנייה לצוות"
+      },
       "section_errors": {
         "analytics": "לא הצלחנו לטעון את הסטטיסטיקות",
         "profile": "לא הצלחנו לטעון את פרטי העסק",
@@ -4450,6 +4455,15 @@
       "greeting": "שלום {name}",
       "welcome_subtitle": "ברוכים הבאים לניהול העסק של <business>{name}</business>",
       "welcome_subtitle_generic": "ברוכים הבאים לניהול העסק שלכם",
+      "attention": {
+        "title": "מה מחכה לך",
+        "reviews": "{count, plural, one {ביקורת אחת בלי תגובה} two {# ביקורות בלי תגובה} other {# ביקורות בלי תגובה}}",
+        "reviews_cta": "לענות",
+        "signups": "{count, plural, one {הרשמה חדשה ל{title}} two {# הרשמות חדשות ל{title}} other {# הרשמות חדשות ל{title}}}",
+        "signups_cta": "לרשימה",
+        "group_buys": "{count, plural, one {קבוצת רכישה הגיעה ליעד} two {# קבוצות רכישה הגיעו ליעד} other {# קבוצות רכישה הגיעו ליעד}}",
+        "group_buys_cta": "לפרטים"
+      },
       "status": {
         "pending": {
           "title": "הפרופיל שלך בסקירה",
@@ -5169,6 +5183,9 @@
       },
       "week": {
         "all_insights": "לכל הנתונים ←"
+      },
+      "reviews_page": {
+        "summary": "{unanswered} בלי תגובה · {total} בסך הכל"
       }
     },
     "page_preview": {

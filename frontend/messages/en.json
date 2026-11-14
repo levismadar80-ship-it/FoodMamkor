@@ -4412,6 +4412,11 @@
         "body": "Your business may not be set up yet, or a temporary error occurred. If the problem persists, we're here to help.",
         "cta": "Contact us"
       },
+      "help_row": {
+        "title": "Need help?",
+        "body": "Write to us and we'll get back to you by the end of the business day.",
+        "cta": "Contact the team"
+      },
       "section_errors": {
         "analytics": "We couldn't load your stats",
         "profile": "We couldn't load your business details",
@@ -4454,6 +4459,15 @@
       "greeting": "Hi {name}",
       "welcome_subtitle": "Welcome to managing <business>{name}</business>",
       "welcome_subtitle_generic": "Welcome to managing your business",
+      "attention": {
+        "title": "Waiting for you",
+        "reviews": "{count, plural, one {One review without a reply} other {# reviews without a reply}}",
+        "reviews_cta": "Reply",
+        "signups": "{count, plural, one {One new sign-up for {title}} other {# new sign-ups for {title}}}",
+        "signups_cta": "See the list",
+        "group_buys": "{count, plural, one {A group buy reached its goal} other {# group buys reached their goal}}",
+        "group_buys_cta": "Details"
+      },
       "status": {
         "pending": {
           "title": "Your profile is under review",
@@ -5173,6 +5187,9 @@
       },
       "week": {
         "all_insights": "All your numbers →"
+      },
+      "reviews_page": {
+        "summary": "{unanswered} without a reply · {total} in total"
       }
     },
     "page_preview": {
