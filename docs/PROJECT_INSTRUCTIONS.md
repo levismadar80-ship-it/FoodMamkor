@@ -1,6 +1,6 @@
 # Claude project instructions — the source Sapir pastes from
 
-**Last reviewed:** 2026-10-26 · **Owner:** Sapir · **Decision:** [ADR-035](./decisions/ADR-035-one-home-per-fact.md) (MEH-2344)
+**Last reviewed:** 2026-11-14 · **Owner:** Sapir · **Decision:** [ADR-035](./decisions/ADR-035-one-home-per-fact.md) (MEH-2344)
 
 The block below is the text of the Claude project's instructions. **Edit it here,
 in a PR, then paste it into the project.** Never edit the pasted copy first:
@@ -61,4 +61,6 @@ LOCK (שינוי רק ב-ADR חדש)
 - פיצ'ר UI חדש — מחקר מיקום לפני קוד (workflow.md כלל 37); אני בוחרת מיקום.
 - נתקעת אחרי 2 ניסיונות — עוצרת ומתארת. כל טענה על קוד עם file:line.
 - אישור ממני: «go» / «מאשרת» / «כן».
+- אין לי רואה חשבון. שאלות מס וחוק בודקים מול מקורות רשמיים ומציינים מה לא אומת;
+  לא משאירים לי «לשאול רואה חשבון».
 ```
