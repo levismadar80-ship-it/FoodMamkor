@@ -21,23 +21,24 @@ from __future__ import annotations
 
 import json
 from decimal import Decimal
-from typing import Any
+from typing import Any, cast
 
 import structlog
 
 from app.config import settings
 
+
 logger = structlog.get_logger(__name__)
 
 # Module-level client — lazy constructed on first call to avoid import-time
 # crashes when anthropic isn't installed (e.g. during tests or migrations).
-_client = None
+_client: Any = None
 
 
 VALID_STATUSES = {"APPROVED", "FLAGGED", "REJECTED"}
 
 
-def _get_client():
+def _get_client() -> Any:
     global _client
     if _client is not None:
         return _client
@@ -117,7 +118,7 @@ REJECTED אם:
 }}"""
 
 
-def _parse_response_text(text: str) -> dict:
+def _parse_response_text(text: str) -> dict[str, Any]:
     """Extract JSON from a model response. Tolerates surrounding whitespace
     or accidental prose by grabbing the first balanced {...} block."""
     text = text.strip()
@@ -132,10 +133,10 @@ def _parse_response_text(text: str) -> dict:
     end = text.rfind("}")
     if start >= 0 and end > start:
         text = text[start : end + 1]
-    return json.loads(text)
+    return cast(dict[str, Any], json.loads(text))
 
 
-def _safe_decimal(value) -> float | None:
+def _safe_decimal(value: object) -> float | None:
     if value is None:
         return None
     try:
@@ -145,7 +146,7 @@ def _safe_decimal(value) -> float | None:
         return None
 
 
-def validate_home_product(listing: dict[str, Any]) -> dict:
+def validate_home_product(listing: dict[str, Any]) -> dict[str, Any]:
     """Run the moderation check. Returns a dict with keys:
         status:     APPROVED | FLAGGED | REJECTED
         reason:     str | None

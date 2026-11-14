@@ -1,3 +1,4 @@
+from collections.abc import Awaitable, Callable
 import time as _time
 
 import structlog
@@ -21,9 +22,9 @@ from app.utils.pii import redact_url_tokens  # MEH-2974
 # tracked in MEH-376/379). Shim no-ops cleanly until the follow-up
 # ticket adds `sentry_sdk.init(...)`.
 try:  # pragma: no cover — exercised once sentry_sdk lands
-    import sentry_sdk as _sentry_sdk  # type: ignore[import-not-found]
+    import sentry_sdk as _sentry_sdk
 except ImportError:  # pragma: no cover
-    _sentry_sdk = None
+    _sentry_sdk = None  # type: ignore[assignment]
 
 log = structlog.get_logger("mehamakor.middleware")
 
@@ -76,7 +77,9 @@ def apply_security_headers(request: Request, response: Response) -> Response:
     return response
 
 
-async def add_security_headers(request: Request, call_next) -> Response:
+async def add_security_headers(
+    request: Request, call_next: Callable[[Request], Awaitable[Response]]
+) -> Response:
     response: Response = await call_next(request)
     return apply_security_headers(request, response)
 
@@ -96,7 +99,9 @@ async def server_error_with_headers(request: Request, exc: Exception) -> Respons
     )
 
 
-async def record_request_metrics(request: Request, call_next) -> Response:
+async def record_request_metrics(
+    request: Request, call_next: Callable[[Request], Awaitable[Response]]
+) -> Response:
     start = _time.monotonic()
     try:
         response: Response = await call_next(request)
@@ -283,7 +288,10 @@ def install_middlewares(app: FastAPI) -> None:
       that mistake was caught in code review and locked here.
     """
     app.state.limiter = limiter
-    app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+    app.add_exception_handler(
+        RateLimitExceeded,
+        _rate_limit_exceeded_handler,  # type: ignore[arg-type]  # slowapi types the handler for its own exception
+    )
     # MEH-2761: Starlette hands an `Exception` handler to ServerErrorMiddleware
     # (outermost), so this is the only way the 500 gets the security headers.
     app.add_exception_handler(Exception, server_error_with_headers)

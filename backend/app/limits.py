@@ -23,6 +23,7 @@ DO NOT lower a cap without checking live data first — a business already above
 a new cap can no longer save its own form.
 """
 
+from typing import Any
 from fastapi import HTTPException
 
 # --- Per-business caps (rows a business may own) -----------------------------
@@ -87,7 +88,7 @@ CAPS = {
 }
 
 
-def cap_list(value, cap: int, detail: str):
+def cap_list(value: Any, cap: int, detail: str) -> Any:
     """mode="before" validator body: refuse an over-long list in Hebrew before
     pydantic's own max_length check answers in English."""
     if value is not None and isinstance(value, list | tuple) and len(value) > cap:

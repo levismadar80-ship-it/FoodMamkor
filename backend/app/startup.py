@@ -1,3 +1,4 @@
+from collections.abc import AsyncIterator
 import asyncio
 import os
 from contextlib import asynccontextmanager
@@ -418,7 +419,7 @@ def _run_rescue_digest_job() -> None:
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     log.info("=" * 60)
     log.info("mehamakor backend starting up")
     log.info("db_url        = %s", _redacted_db_url())
