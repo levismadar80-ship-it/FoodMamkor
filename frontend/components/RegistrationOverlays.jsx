@@ -30,7 +30,7 @@ const DESKTOP_QUERY = "(min-width: 1024px)";
 // Room at the page end while the bar is up, on a page with no site footer:
 // the layout's own bottom inset (it clears the nav pill) + pill 60px + 8px gap.
 // Inline padding replaces the layout's pb class, so the inset is added back.
-export const BAR_ROOM = "calc(var(--bottom-inset, 5rem) + 68px)";
+const BAR_ROOM = "calc(var(--bottom-inset, 5rem) + 68px)";
 
 const FOCUSABLE = 'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
 
