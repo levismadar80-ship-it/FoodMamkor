@@ -71,6 +71,16 @@ Next.js 14 (App Router) + Tailwind + Framer Motion + Leaflet. JavaScript
 
 ---
 
+## Shared components — search before you create
+
+Before writing a button, field, dialog, message, heading, toggle, avatar,
+loading state or back link, read the table in
+[frontend/components/CLAUDE.md](../../frontend/components/CLAUDE.md) «Shared
+components» and build from its owner. Extend the owner with a prop before
+writing a sibling.
+
+---
+
 ## Cloudinary
 
 All image URLs go through `lib/cloudinary.js`. The helper injects
