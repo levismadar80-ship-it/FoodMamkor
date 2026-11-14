@@ -69,14 +69,16 @@ export default function PasswordField({
       <div className="relative">
         <input
           id={inputId}
-          type={shown ? "text" : "password"}
-          dir="ltr"
           required={required || undefined}
           aria-invalid={isInvalid || undefined}
           aria-describedby={message ? describedById : undefined}
           // rtl-ok: pr-12 reserves the 44px eye toggle inside the dir="ltr" input
           className={`${fieldClasses({ size, invalid: isInvalid })} pr-12 text-right ${className}`.trim()}
           {...rest}
+          // After the spread on purpose: a caller must not be able to override
+          // these two, the toggle and the physical-right layout depend on them.
+          type={shown ? "text" : "password"}
+          dir="ltr"
         />
         <button
           type="button"

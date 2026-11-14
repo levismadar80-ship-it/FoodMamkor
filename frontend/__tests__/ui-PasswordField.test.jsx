@@ -63,4 +63,12 @@ describe("ui/PasswordField", () => {
     expect(input).toHaveAttribute("placeholder", "שוב");
     expect(input).toHaveAttribute("autocomplete", "new-password");
   });
+
+  it("a caller cannot override type or dir (the toggle and the layout depend on them)", () => {
+    // @ts-expect-error -- `type` is not in the prop type; this is the runtime half.
+    render(<PasswordField label="אימות" type="text" dir="rtl" {...labels} />);
+    const input = screen.getByLabelText("אימות");
+    expect(input).toHaveAttribute("type", "password");
+    expect(input).toHaveAttribute("dir", "ltr");
+  });
 });
