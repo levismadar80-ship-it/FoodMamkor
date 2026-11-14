@@ -82,8 +82,8 @@ function AppleReauth({ onToken, label }) {
   }, [clientId]);
   const signIn = async () => {
     try {
-      // @ts-ignore — AppleID is a global script.
-      const res = await window.AppleID?.auth.signIn();
+      // AppleID is a global script; its sign-in result is untyped.
+      const res = /** @type {any} */ (await window.AppleID?.auth.signIn());
       if (res?.authorization?.id_token) onToken(res.authorization.id_token);
     } catch {
       // popup closed: nothing to do, the prompt stays on screen
