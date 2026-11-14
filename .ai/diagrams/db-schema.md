@@ -295,7 +295,8 @@ erDiagram
 
     billable_events {
         uuid id PK
-        uuid producer_id FK
+        uuid producer_id FK "SET NULL when the business is deleted"
+        uuid producer_ref "the same id, kept; not a FK (MEH-3208)"
         string kind "event_registration|experience_registration|group_buy_order|rescue_bag"
         uuid source_id "not a FK: outlives the booking row"
         timestamp occurred_at
@@ -597,6 +598,11 @@ erDiagram
 > no personal data, written by `services/billing_ledger.py`. Nothing is charged.
 > Adds one table → **`EXPECTED_TABLES` 50 → 51** (`pr-checks.yml`). Migration
 > `d5b8f2a6c341`.
+
+> **MEH-3208 — the ledger outlives the business (14/11/2026):** `producer_id`
+> ON DELETE CASCADE → SET NULL (nullable) + new `producer_ref` (the same id,
+> no FK). Deleting a business no longer deletes its rows. Adds no table →
+> `EXPECTED_TABLES` unchanged. Migration `e6c9a3b7d452`.
 
 > **MEH-2763 — `registrations` + `registration_method` (06/11/2026):** the
 > owner picks «איך נרשמים?» per event / experience; `site_form` stores one row

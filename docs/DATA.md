@@ -422,12 +422,13 @@ Only items whose owner picked `registration_method = 'site_form'` take rows.
 PII is returned to the owner/admin only. Purged 30 days after the item's
 date (`retention_purge._purge_registrations`, the promise under the form).
 
-### Billable events (ledger of bookings through the site — MEH-3179, migration `d5b8f2a6c341`)
+### Billable events (ledger of bookings through the site — MEH-3179, migration `d5b8f2a6c341`; kept after the business is deleted — MEH-3208, migration `e6c9a3b7d452`)
 
 ```sql
 billable_events (
   id uuid PK,
-  producer_id FK producers ON DELETE CASCADE,
+  producer_id FK producers ON DELETE SET NULL,  -- NULL once the business is deleted; the row stays (MEH-3208)
+  producer_ref uuid NOT NULL,     -- the same business id, kept after the delete; NOT a FK. Fills itself from producer_id
   kind: event_registration|experience_registration|group_buy_order|rescue_bag,
   source_id uuid,                 -- the registration / group-buy commit / rescue order; NOT a FK (outlives it)
   occurred_at timestamptz,
@@ -440,6 +441,12 @@ billable_events (
   UNIQUE (kind, source_id)        -- a booking is counted once
 )
 ```
+
+Rows are never deleted, by a business delete or by any job: they are the
+record of what a business was, or would be, billed (bookkeeping records are
+kept seven years from the end of the tax year, or six from the yearly report,
+the later; source: secondary guides, the regulation text itself was not read).
+The admin screen lists only businesses that still exist.
 
 No personal data. Written only by `app/services/billing_ledger.py`, in the
 booking's own transaction behind a SAVEPOINT (a ledger error never fails the

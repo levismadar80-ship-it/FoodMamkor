@@ -93,6 +93,7 @@ def _record(db: Session, booking: _Booking) -> None:
             db.add(
                 BillableEvent(
                     producer_id=booking.producer_id,
+                    producer_ref=booking.producer_id,
                     kind=booking.kind,
                     source_id=booking.source_id,
                     occurred_at=_now(),

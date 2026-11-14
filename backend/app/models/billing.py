@@ -9,8 +9,10 @@ Does NOT: hold personal data (no name, phone, email or user id — only the
           `fee_agorot` is what the price list WOULD ask, nothing is billed in
           the launch phase. Writing rows is app/services/billing_ledger.py.
 Related:  app/pricing.py · app/services/billing_ledger.py ·
-          alembic/versions/20261114_1700_d5b8f2a6c341_meh3179_billable_events.py
-History:  MEH-3179 (creation, 2026-11-14). Lives in its own module, not in
+          alembic/versions/20261114_1700_d5b8f2a6c341_meh3179_billable_events.py ·
+          alembic/versions/20261114_2100_e6c9a3b7d452_meh3208_ledger_outlives_business.py
+History:  MEH-3179 (creation, 2026-11-14) · MEH-3208 (rows outlive the
+          business: SET NULL + `producer_ref`, 2026-11-14). Lives in its own module, not in
           models.py, which is at its file-size baseline (exec §16).
 """
 
@@ -47,10 +49,23 @@ class BillableEvent(Base):
     __tablename__ = "billable_events"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    # NULL once the business is deleted: the row stays (MEH-3208). Records of
+    # what a business was, or would be, billed are kept seven years from the
+    # end of the tax year (income-tax bookkeeping rules), so deleting a
+    # business must not delete them.
     producer_id = Column(
         UUID(as_uuid=True),
-        ForeignKey("producers.id", ondelete="CASCADE"),
+        ForeignKey("producers.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    # The same id, kept after the business is gone. NOT a foreign key on
+    # purpose, like `source_id`: it says which rows belonged together, and to
+    # which invoice, without pointing at a person or a page.
+    producer_ref = Column(
+        UUID(as_uuid=True),
         nullable=False,
+        # A writer that sets only `producer_id` still gets the kept copy.
+        default=lambda ctx: ctx.get_current_parameters()["producer_id"],
     )
     kind = Column(String(30), nullable=False)
     # The id of the registration / group-buy commit / rescue order this row

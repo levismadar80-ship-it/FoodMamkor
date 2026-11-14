@@ -368,6 +368,7 @@ def test_the_ledger_holds_no_personal_data():
     assert set(BillableEvent.__table__.columns.keys()) == {
         "id",
         "producer_id",
+        "producer_ref",
         "kind",
         "source_id",
         "occurred_at",
