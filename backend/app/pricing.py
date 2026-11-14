@@ -66,6 +66,20 @@ PRICE_LISTS: Final[dict[int, PriceList]] = {
 
 CURRENT_PRICE_LIST_VERSION: Final = 1
 
+# THE SWITCH (MEH-3180). "launch" = nothing is billed and every paid tool is
+# open to every business, whatever its billing state. "billing" = a business
+# whose state is `page_only` or `unpaid` cannot open NEW paid bookings
+# (app/services/capabilities.py). It is a constant on purpose, not an
+# environment variable: turning billing on is a reviewed change with Sapir's
+# approval, never a setting someone flips in a console.
+# Typed `str`, not Final: tests switch it on to prove the gate closes.
+BILLING_PHASE: str = "launch"
+BILLING_PHASES: Final = ("launch", "billing")
+
+
+def billing_is_on() -> bool:
+    return BILLING_PHASE == "billing"
+
 
 def current_price_list() -> PriceList:
     return PRICE_LISTS[CURRENT_PRICE_LIST_VERSION]

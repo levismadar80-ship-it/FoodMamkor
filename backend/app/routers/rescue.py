@@ -76,7 +76,7 @@ from app.models.models import (
     User,
 )
 from app.rate_limit import limiter
-from app.services import billing_ledger  # MEH-3179
+from app.services import billing_ledger, capabilities  # MEH-3179 · MEH-3180
 from app.schemas.rescue import (
     RescueNoShowStateOut,
     RescueOfferCreate,
@@ -338,7 +338,7 @@ def _order_or_404(db: Session, order_id: UUID) -> RescueOrder:
     "/offers",
     response_model=RescueOfferOut,
     status_code=status.HTTP_201_CREATED,
-    dependencies=[Depends(require_rescue_enabled)],
+    dependencies=[Depends(require_rescue_enabled), Depends(capabilities.bags_open)],
 )
 @limiter.limit("20/minute")
 def create_offer(

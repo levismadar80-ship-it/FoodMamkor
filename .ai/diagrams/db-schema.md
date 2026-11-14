@@ -224,6 +224,7 @@ erDiagram
     events ||--o{ registrations : "on-site sign-ups (MEH-2763)"
     experiences ||--o{ registrations : "on-site sign-ups (MEH-2763)"
     producers ||--o{ billable_events : "bookings counted (MEH-3179)"
+    producers ||--o| business_billing : "billing state (MEH-3180)"
     home_products ||--o{ home_product_whatsapp_clicks : "gets clicks"
     home_product_whatsapp_clicks ||--o| home_product_ratings : "optional 1:1"
 
@@ -293,11 +294,21 @@ erDiagram
         timestamp cancelled_at
     }
 
+    business_billing {
+        uuid producer_id PK "FK producers, CASCADE"
+        string state "launch|notice|active|page_only|unpaid"
+        timestamp state_since
+        int price_list_version
+        boolean subscribed
+        timestamp created_at
+        timestamp updated_at
+    }
+
     billable_events {
         uuid id PK
         uuid producer_id FK "SET NULL when the business is deleted"
         uuid producer_ref "the same id, kept; not a FK (MEH-3208)"
-        string kind "event_registration|experience_registration|group_buy_order|rescue_bag"
+        string kind "event_registration|experience_registration|group_buy_order|rescue_bag|product_order"
         uuid source_id "not a FK: outlives the booking row"
         timestamp occurred_at
         int quantity
@@ -603,6 +614,13 @@ erDiagram
 > ON DELETE CASCADE → SET NULL (nullable) + new `producer_ref` (the same id,
 > no FK). Deleting a business no longer deletes its rows. Adds no table →
 > `EXPECTED_TABLES` unchanged. Migration `e6c9a3b7d452`.
+
+> **MEH-3180 — `business_billing` (14/11/2026):** billing state per business
+> (no row = launch), read only through `services/capabilities.py`. Nothing
+> closes while `app.pricing.BILLING_PHASE` is `launch`. Also adds
+> `product_order` to the `billable_events.kind` CHECK (MEH-3216). Adds one
+> table → **`EXPECTED_TABLES` 51 → 52**, edited once on the merge train together
+> with the product-orders tables. Migration `f7d1b4c8e563`.
 
 > **MEH-2763 — `registrations` + `registration_method` (06/11/2026):** the
 > owner picks «איך נרשמים?» per event / experience; `site_form` stores one row

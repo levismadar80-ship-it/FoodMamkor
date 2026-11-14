@@ -3,7 +3,7 @@ Module:   billing
 Purpose:  The `billable_events` table — one row per booking a business got
           through the site (ADR-042), kept so the count survives after the
           booking itself is purged or deleted.
-Touches:  billable_events.
+Touches:  billable_events, business_billing.
 Does NOT: hold personal data (no name, phone, email or user id — only the
           business, what kind of booking, and amounts), and does NOT charge:
           `fee_agorot` is what the price list WOULD ask, nothing is billed in
@@ -23,6 +23,7 @@ from datetime import datetime, timezone
 
 from sqlalchemy import (
     BigInteger,
+    Boolean,
     CheckConstraint,
     Column,
     DateTime,
@@ -41,8 +42,64 @@ BILLABLE_KINDS = (
     "experience_registration",
     "group_buy_order",
     "rescue_bag",
+    # MEH-3216: an order of products through the site, counted when handed
+    # over. Written by the product-orders work once it lands; nothing yet.
+    "product_order",
 )
 BILLABLE_STATUSES = ("counted", "voided")
+
+# MEH-3180: where a business stands in billing. No row = "launch".
+# What each state may do is decided in app/services/capabilities.py only.
+BILLING_STATES = ("launch", "notice", "active", "page_only", "unpaid")
+
+
+class BusinessBilling(Base):
+    """One row per business that has LEFT the launch default (MEH-3180).
+
+    Its own table, not columns on `producers`: the page of a business and its
+    billing account are different things with different readers, the way a
+    payments system keeps a customer / subscription apart from the user row.
+    No payment details and no personal data. A change of state will also be
+    written to a history table when the billing stage builds the transitions.
+    DO NOT read this table in a route — ask app/services/capabilities.py.
+    """
+
+    __tablename__ = "business_billing"
+
+    # CASCADE: this is the business's CURRENT state and has no meaning without
+    # it. What it was billed is the ledger below, and that is kept (MEH-3208).
+    producer_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("producers.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    state = Column(String(12), nullable=False)
+    state_since = Column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(timezone.utc),
+    )
+    # The price list the business joined billing under (app/pricing.py).
+    price_list_version = Column(Integer, nullable=True)
+    subscribed = Column(Boolean, nullable=False, default=False, server_default="false")
+    created_at = Column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(timezone.utc),
+    )
+    updated_at = Column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+    )
+
+    __table_args__ = (
+        CheckConstraint(
+            "state IN ('launch','notice','active','page_only','unpaid')",
+            name="ck_business_billing_state",
+        ),
+    )
 
 
 class BillableEvent(Base):
@@ -95,7 +152,7 @@ class BillableEvent(Base):
         UniqueConstraint("kind", "source_id", name="uq_billable_events_kind_source"),
         CheckConstraint(
             "kind IN ('event_registration','experience_registration',"
-            "'group_buy_order','rescue_bag')",
+            "'group_buy_order','rescue_bag','product_order')",
             name="ck_billable_events_kind",
         ),
         CheckConstraint(

@@ -19,6 +19,7 @@ from app.database import get_db
 from app.models.models import GroupBuy, GroupBuyCommit, Producer, User
 from app.rate_limit import limiter
 from app.services import billing_ledger  # MEH-3179
+from app.services import capabilities  # MEH-3180
 from app.schemas.schemas import (
     GroupBuyCommitRequest,
     GroupBuyCreate,
@@ -409,6 +410,8 @@ def create_group_buy(
         raise HTTPException(
             status_code=403, detail="מארגן שווקים ואירועים לא יכול לפתוח קבוצת רכישה"
         )
+    # MEH-3180: a paid tool. Open to everyone while billing is off.
+    capabilities.require_paid_tool(db, producer.id, "group_buy")
 
     # MEH-3022: cap on group buys still running (open or funded).
     enforce_cap(

@@ -429,7 +429,7 @@ billable_events (
   id uuid PK,
   producer_id FK producers ON DELETE SET NULL,  -- NULL once the business is deleted; the row stays (MEH-3208)
   producer_ref uuid NOT NULL,     -- the same business id, kept after the delete; NOT a FK. Fills itself from producer_id
-  kind: event_registration|experience_registration|group_buy_order|rescue_bag,
+  kind: event_registration|experience_registration|group_buy_order|rescue_bag|product_order,  -- product_order (MEH-3216): no writer yet
   source_id uuid,                 -- the registration / group-buy commit / rescue order; NOT a FK (outlives it)
   occurred_at timestamptz,
   quantity int >= 1,              -- units in a group-buy order, bags in a rescue order
@@ -496,6 +496,38 @@ over it when the value of its paid bookings reaches `threshold_agorot`.
 asked of this module, not read off `producers.plan`. Today it owns one rule, moved
 from `upload.py` unchanged: a business whose `plan` is exactly `free` may hold 3
 gallery images.
+
+**Billing state and paid tools (MEH-3180), switched off.**
+
+```sql
+business_billing (                -- migration f7d1b4c8e563; one row per business that left the launch default
+  producer_id uuid PK FK producers ON DELETE CASCADE,
+  state: launch|notice|active|page_only|unpaid,   -- no row = launch
+  state_since timestamptz,
+  price_list_version int NULL,    -- the list the business joined billing under (app/pricing.py)
+  subscribed bool NOT NULL DEFAULT false,
+  created_at, updated_at
+)
+```
+
+Its own table, not columns on `producers`: the page and the billing account are
+separate things. No payment details, no personal data. Read only through
+`services/capabilities.py`. The state and the switch `app.pricing.BILLING_PHASE` (`launch` today; a
+code constant, not an env var). While the switch is `launch` every state is
+open. Once it is `billing`, a business in `page_only` or `unpaid` gets **403**
+(`capabilities.PAID_TOOL_CLOSED_DETAIL`) on a NEW paid booking:
+
+| Tool | Routes that ask |
+|---|---|
+| paid sign-up (price > 0 **and** `registration_method = site_form`) | `POST /events`, `PUT /events/{id}`, `POST /experiences`, `PUT /experiences/{id}` — an edit asks only when it MAKES the item a paid site sign-up |
+| group buy | `POST /group-buys` |
+| rescue bags | `POST /rescue/offers` (route dependency `capabilities.bags_open`) |
+| product orders (MEH-3216) | none yet — the route that turns ordering on joins the list with that work |
+
+Never closed: the page, WhatsApp / link / free sign-ups, editing or running an
+item that already exists. Nothing moves a business between states yet (the
+billing stage). `tests/test_meh3180_billing_state.py` fails when a route listed
+in `capabilities.PAID_TOOL_ROUTES` stops asking.
 
 ### Experiences (community workshops — **admin-moderated**)
 

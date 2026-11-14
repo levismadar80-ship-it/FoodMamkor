@@ -27,6 +27,7 @@ from app.database import get_db
 from app.models import Event, Producer, User
 from app.rate_limit import limiter
 from app.services import billing_ledger  # MEH-3179
+from app.services import capabilities  # MEH-3180
 from app.schemas.schemas import (
     EventCreate,
     EventFilters,
@@ -304,6 +305,11 @@ def create_event(
     if problem:
         raise HTTPException(status_code=422, detail=problem)
 
+    # MEH-3180: a priced sign-up through the site's form is a paid tool.
+    capabilities.require_paid_signup(
+        db, user.producer_id, price=data.price, method=data.registration_method
+    )
+
     event = Event(
         producer_id=user.producer_id,
         title=data.title,
@@ -433,6 +439,16 @@ def update_event(  # noqa: PLR0913 — all args are FastAPI-injected; MEH-3022 a
         if method_issue:
             raise HTTPException(status_code=422, detail=method_issue)
     _cap_event_returning_to_upcoming(db, event, changes)  # MEH-3022
+    # MEH-3180: only an edit that MAKES the event a paid site sign-up asks;
+    # one that already was stays editable (what exists carries on).
+    capabilities.require_paid_signup(
+        db,
+        event.producer_id,
+        price=changes.get("price", event.price),
+        method=changes.get("registration_method", event.registration_method),
+        was_price=event.price,
+        was_method=event.registration_method,
+    )
     for field, value in changes.items():
         if field == "category" and value not in VALID_CATEGORIES:
             raise HTTPException(status_code=400, detail="קטגוריה לא תקינה")

@@ -14,7 +14,7 @@ from datetime import datetime, timedelta, timezone
 
 import pytest
 
-from app.models.billing import BillableEvent
+from app.models.billing import BILLABLE_KINDS, BillableEvent
 from app.pricing import current_price_list
 from app.services import billing_summary
 from app.services.billing_summary import Month
@@ -59,7 +59,7 @@ class TestSummarize:
         assert (s["bookings"], s["value_agorot"], s["over_threshold"]) == (0, 0, False)
         assert s["fee_without_subscription_agorot"] == 0
         assert s["charged_agorot"] == 0
-        assert [k["bookings"] for k in s["by_kind"]] == [0, 0, 0, 0]
+        assert [k["bookings"] for k in s["by_kind"]] == [0] * len(BILLABLE_KINDS)
 
     def test_one_paid_signup(self, db):
         producer = make_producer(db)
@@ -76,6 +76,8 @@ class TestSummarize:
         _row(db, producer, kind="experience_registration", base=12000, fee=600)
         _row(db, producer, kind="group_buy_order", base=27000, fee=1350, quantity=3)
         _row(db, producer, kind="rescue_bag", base=3000, fee=400, quantity=2)
+        # MEH-3216: a product order handed over, 80 ₪, 5%.
+        _row(db, producer, kind="product_order", base=8000, fee=400)
         s = billing_summary.summarize(db, producer.id, NOV)
         by_kind = {k["kind"]: k["bookings"] for k in s["by_kind"]}
         # A group-buy order is one booking whatever its units; each bag is one.
@@ -84,12 +86,15 @@ class TestSummarize:
             "experience_registration": 1,
             "group_buy_order": 1,
             "rescue_bag": 2,
+            "product_order": 1,
         }
-        assert s["bookings"] == 5
-        assert s["value_agorot"] == 62000
-        assert s["fee_without_subscription_agorot"] == 3350
-        # 2% of 590 ₪ of paid bookings = 11.80 ₪, plus 2 bags at 1 ₪, plus 49 ₪.
-        assert s["fee_with_subscription_agorot"] == 4900 + 1180 + 200
+        # Every kind the ledger knows is in this test.
+        assert set(by_kind) == set(BILLABLE_KINDS)
+        assert s["bookings"] == 6
+        assert s["value_agorot"] == 70000
+        assert s["fee_without_subscription_agorot"] == 3750
+        # 2% of 670 ₪ of paid bookings = 13.40 ₪, plus 2 bags at 1 ₪, plus 49 ₪.
+        assert s["fee_with_subscription_agorot"] == 4900 + 1340 + 200
 
     def test_voided_and_other_months_are_not_counted(self, db):
         producer = make_producer(db)

@@ -129,6 +129,7 @@ OWNED_TABLE_EXEMPT = {
     "producer_page_views": "system-written analytics, rate-limited beacon",
     "producer_contact_clicks": "system-written analytics, rate-limited beacon",
     "producer_whatsapp_clicks": "system-written analytics, rate-limited beacon",
+    "business_billing": "at most one row per business by construction: producer_id is the primary key (MEH-3180)",
     "billable_events": "system-written ledger: one row per registration / group-buy order / rescue order (unique on kind + source_id), each of which is itself capped or rate-limited (MEH-3179)",
 }
 

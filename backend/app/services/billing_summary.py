@@ -22,6 +22,7 @@ from sqlalchemy import case, func
 from sqlalchemy.orm import Session
 
 from app.models.billing import BILLABLE_KINDS, BillableEvent
+from app import pricing
 from app.models.models import Producer
 from app.pricing import (
     current_price_list,
@@ -135,7 +136,7 @@ def summarize(db: Session, producer_id: UUID, month: Month) -> dict[str, Any]:
     value = sum(v["value_agorot"] for v in per_kind.values())
     return {
         "month": month.label(),
-        "phase": "launch",
+        "phase": pricing.BILLING_PHASE,
         "bookings": total,
         "value_agorot": value,
         "by_kind": [{"kind": kind, **per_kind[kind]} for kind in BILLABLE_KINDS],
@@ -250,7 +251,7 @@ def overview(db: Session, month: Month) -> dict[str, Any]:
         "start_billing_months": START_BILLING_MONTHS,
         "would_pay_total_agorot": sum(r["would_pay_agorot"] for r in rows),
         # "launch" = nothing is charged. The same word summarize() returns.
-        "phase": "launch",
+        "phase": pricing.BILLING_PHASE,
         "history": history,
         "rows": rows,
     }
