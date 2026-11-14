@@ -76,20 +76,20 @@ describe("MEH-2148 — the /map top-centre slot has ONE owner", () => {
     // Three separate cues so a partial regression names itself.
     expect(stack.className).toContain("flex-col");
     expect(stack.className).toContain("absolute");
-    expect(stack.className).toContain("z-[1000]");
+    expect(stack.className).toContain("z-map-controls");
   });
 
   it("the pill's wrapper carries no absolute positioning of its own", () => {
     render(<MapPane {...base} mapMoved />);
     const wrapper = pill().closest("button").parentElement;
     expect(wrapper.className).not.toContain("absolute");
-    expect(wrapper.className).not.toContain("z-[1000]");
+    expect(wrapper.className).not.toContain("z-map-controls");
   });
 
   it("the stack is ABSENT from the DOM when nothing renders in it", () => {
     const { container } = render(<MapPane {...base} mapMoved={false} />);
     const strips = [...container.querySelectorAll("div")].filter(
-      (d) => d.className.includes("flex-col") && d.className.includes("z-[1000]")
+      (d) => d.className.includes("flex-col") && d.className.includes("z-map-controls")
     );
     expect(strips, "an empty full-width strip should not be rendered at all").toHaveLength(0);
   });

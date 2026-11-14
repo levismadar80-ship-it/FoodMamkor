@@ -10,7 +10,8 @@
  *           lib/event-category-gate.js, MEH-3124). Every chip row in the app
  *           goes through one of the three, or is listed with an `exempt:`
  *           reason in __tests__/ChipRowGateGuard.test.js, which enforces it.
- * Related:  app/[locale]/group-buys/GroupBuysClient.jsx (status tabs).
+ * Related:  app/[locale]/group-buys/GroupBuysClient.jsx (status tabs);
+ *           app/[locale]/favorites/FavoritesClient.jsx (type tabs, MEH-3174).
  * History:  MEH-3128 (creation, 14/11/2026 — Sapir: «תקבע מנגנון שיימנע מזה
  *           לקרות»).
  */

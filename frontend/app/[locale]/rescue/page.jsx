@@ -6,6 +6,7 @@ import HubShell from "@/components/HubShell";
 import { HUB_CONTENT_CLASS } from "@/lib/hub-layout";
 import RescueList from "@/components/rescue/RescueList";
 import { rescueBagsEnabled } from "@/lib/rescue";
+import { buildAlternates } from "@/lib/i18n-seo";
 
 /**
  * Route:    /rescue
@@ -18,7 +19,13 @@ import { rescueBagsEnabled } from "@/lib/rescue";
 export async function generateMetadata({ params }) {
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: "rescue" });
-  return { title: t("page.title"), description: t("page.description") };
+  // MEH-3177: without its own alternates the page inherited the layout's
+  // home canonical + hreflang, which tells Google /rescue is a copy of /.
+  return {
+    title: t("page.title"),
+    description: t("page.description"),
+    alternates: buildAlternates("/rescue", locale),
+  };
 }
 
 // MEH-3049: the locale is passed explicitly and set for the request. Without it

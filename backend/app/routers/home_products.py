@@ -1,3 +1,4 @@
+from typing import Any
 import secrets
 from uuid import UUID
 
@@ -23,7 +24,7 @@ from app.services.home_product_moderation import validate_home_product
 router = APIRouter(prefix="/home-products", tags=["home-products"])
 
 
-def _enrich_home_product(hp: HomeProduct, db: Session) -> dict:
+def _enrich_home_product(hp: HomeProduct, db: Session) -> dict[str, Any]:
     """Build HomeProductOut data with rating info."""
     avg = (
         db.query(func.avg(HomeProductRating.stars))
@@ -79,9 +80,11 @@ def _enrich_home_product(hp: HomeProduct, db: Session) -> dict:
 # --- Rating by token routes MUST come before /{product_id} to avoid shadowing ---
 
 
-@router.get("/rate/{token}")
+@router.get("/rate/{token}", response_model=None)
 @limiter.limit("30/minute")
-def get_rating_page(request: Request, token: str, db: Session = Depends(get_db)):
+def get_rating_page(
+    request: Request, token: str, db: Session = Depends(get_db)
+) -> dict[str, Any]:
     """Get info for the rating page (accessed via WhatsApp link)."""
     click = (
         db.query(HomeProductWhatsAppClick)
@@ -105,7 +108,7 @@ def get_rating_page(request: Request, token: str, db: Session = Depends(get_db))
 def validate_home_product_endpoint(
     request: Request,
     data: HomeProductModerationRequest,
-):
+) -> HomeProductModerationResult:
     """Run the moderation check WITHOUT persisting anything. Used by the
     frontend form to surface warnings/blocks while the user is still typing.
 
@@ -115,11 +118,11 @@ def validate_home_product_endpoint(
     return HomeProductModerationResult(**result)
 
 
-@router.post("/rate/{token}")
+@router.post("/rate/{token}", response_model=None)
 @limiter.limit("10/hour")
 def submit_rating(
     request: Request, token: str, data: RatingSubmit, db: Session = Depends(get_db)
-):
+) -> dict[str, Any]:
     """Submit a rating via token (no login required)."""
     click = (
         db.query(HomeProductWhatsAppClick)
@@ -139,7 +142,7 @@ def submit_rating(
         comment=data.comment,
     )
     db.add(rating)
-    click.rated = True
+    click.rated = True  # type: ignore[assignment]
     db.commit()
 
     # Check if listing should be auto-hidden (3 negative ratings ≤2 stars)
@@ -158,7 +161,7 @@ def submit_rating(
             .first()
         )
         if hp:
-            hp.is_hidden = True
+            hp.is_hidden = True  # type: ignore[assignment]
             db.commit()
 
     return {"detail": "Rating submitted. Thank you!"}
@@ -173,7 +176,7 @@ def list_home_products(
     request: Request,
     city: str | None = None,
     db: Session = Depends(get_db),
-):
+) -> list[HomeProductOut] | list[dict[str, Any]]:
     q = db.query(HomeProduct).filter(
         HomeProduct.is_active.is_(True),
         HomeProduct.is_hidden.is_(False),
@@ -189,7 +192,7 @@ def get_home_product(
     product_id: UUID,
     db: Session = Depends(get_db),
     viewer: User | None = Depends(get_current_user_optional),
-):
+) -> HomeProductOut | dict[str, Any]:
     hp = db.query(HomeProduct).filter(HomeProduct.id == product_id).first()
     if not hp:
         raise HTTPException(status_code=404, detail="Home product not found")
@@ -209,7 +212,7 @@ def create_home_product(
     data: HomeProductCreate,
     user: User = Depends(require_verified_email),
     db: Session = Depends(get_db),
-):
+) -> HomeProductOut | dict[str, Any]:
     # NOTE: fire_alerts is deliberately NOT called here. HomeProduct.user_id
     # is the seller, but FavoriteAlert is keyed by producer_id. There's no
     # producer-favorited relationship for individual home cooks. If we ever
@@ -278,7 +281,7 @@ def update_home_product(
     data: HomeProductUpdate,
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
-):
+) -> HomeProductOut | dict[str, Any]:
     hp = db.query(HomeProduct).filter(HomeProduct.id == product_id).first()
     if not hp:
         raise HTTPException(status_code=404, detail="Home product not found")
@@ -306,44 +309,44 @@ def update_home_product(
     if "photo" in payload and old_photo and old_photo != hp.photo:
         from app.cloudinary_utils import destroy_image
 
-        destroy_image(old_photo, context="home_products.update_home_product photo")
+        destroy_image(old_photo, context="home_products.update_home_product photo")  # type: ignore[arg-type]
     if "images" in payload:
         from app.cloudinary_utils import destroy_removed_images
 
         destroy_removed_images(
             old_images,
-            hp.images or [],
+            hp.images or [],  # type: ignore[arg-type]
             context="home_products.update_home_product images",
         )
 
     return _enrich_home_product(hp, db)
 
 
-@router.delete("/{product_id}")
+@router.delete("/{product_id}", response_model=None)
 def deactivate_home_product(
     product_id: UUID,
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
-):
+) -> dict[str, Any]:
     hp = db.query(HomeProduct).filter(HomeProduct.id == product_id).first()
     if not hp:
         raise HTTPException(status_code=404, detail="Home product not found")
     # SECURITY FIX (IDOR): owner OR admin may deactivate (CLAUDE.md rule #5).
     if hp.user_id != user.id and user.role != "admin":
         raise HTTPException(status_code=403, detail="Not your listing")
-    hp.is_active = False
+    hp.is_active = False  # type: ignore[assignment]
     db.commit()
     return {"detail": "Listing deactivated"}
 
 
-@router.post("/{product_id}/whatsapp-click")
+@router.post("/{product_id}/whatsapp-click", response_model=None)
 @limiter.limit("10/minute")
 def log_whatsapp_click(
     request: Request,
     product_id: UUID,
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
-):
+) -> dict[str, Any]:
     hp = db.query(HomeProduct).filter(HomeProduct.id == product_id).first()
     if not hp:
         raise HTTPException(status_code=404, detail="Home product not found")
@@ -359,7 +362,9 @@ def log_whatsapp_click(
 
 @router.get("/{product_id}/ratings", response_model=dict)
 @limiter.limit("60/minute")
-def get_ratings(request: Request, product_id: UUID, db: Session = Depends(get_db)):
+def get_ratings(
+    request: Request, product_id: UUID, db: Session = Depends(get_db)
+) -> dict[str, Any]:
     avg = (
         db.query(func.avg(HomeProductRating.stars))
         .filter(HomeProductRating.home_product_id == product_id)

@@ -992,7 +992,7 @@ export default function ProductsSection({
           aria-modal, Escape closes, buttons disabled while busy, failure keeps
           the dialog open with the error shown. */}
       {confirmDelete && (
-        <div className="fixed inset-0 z-[9000] flex items-center justify-center bg-black/40 px-4">
+        <div className="fixed inset-0 z-modal flex items-center justify-center bg-black/40 px-4">
           <div
             ref={deleteDialogRef}
             role="dialog"
@@ -1033,7 +1033,7 @@ export default function ProductsSection({
           busy). Confirming adds the product as-is; declining sends nothing and
           leaves the form filled so the name can be changed. */}
       {confirmDuplicate && (
-        <div className="fixed inset-0 z-[9000] flex items-center justify-center bg-black/40 px-4">
+        <div className="fixed inset-0 z-modal flex items-center justify-center bg-black/40 px-4">
           <div
             ref={duplicateDialogRef}
             role="dialog"

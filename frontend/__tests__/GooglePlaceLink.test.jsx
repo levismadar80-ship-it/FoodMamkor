@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { screen, fireEvent, waitFor } from "@testing-library/react";
+import { renderHe as render } from "./helpers/render-with-he";
 import GooglePlaceLink from "@/app/[locale]/admin/producers/GooglePlaceLink";
 import AdminReviewChecklist from "@/app/[locale]/admin/producers/AdminReviewChecklist";
 import api from "@/lib/api";

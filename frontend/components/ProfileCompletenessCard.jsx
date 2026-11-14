@@ -5,6 +5,7 @@ import { Link } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
 import { Check, ArrowRight } from "@phosphor-icons/react";
 import { producerCompleteness, COMPLETENESS_FIELDS } from "@/lib/producer-completeness";
+import { COLOR } from "@/lib/color-tokens";
 
 /**
  * ProfileCompletenessCard — MEH-288.
@@ -72,8 +73,8 @@ const EDIT_HUB = "/producer/dashboard/edit";
 // a failure. Incomplete uses the gold token (#896714); complete uses the
 // primary token (#2e6853). No threat colour.
 const RING_STROKE = {
-  incomplete: "#896714",
-  complete: "#2e6853",
+  incomplete: COLOR.accent,
+  complete: COLOR.primary,
 };
 
 function ProgressRing({ percent, tone, label }) {
@@ -99,7 +100,7 @@ function ProgressRing({ percent, tone, label }) {
         cy={size / 2}
         r={r}
         fill="none"
-        stroke="#e5dfd3"
+        stroke={COLOR.border}
         strokeWidth={stroke}
       />
       <circle
@@ -122,7 +123,7 @@ function ProgressRing({ percent, tone, label }) {
         textAnchor="middle"
         fontSize="14"
         fontWeight="700"
-        fill="#1c1a17"
+        fill={COLOR.text}
       >
         {percent}%
       </text>

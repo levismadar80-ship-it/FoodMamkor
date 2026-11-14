@@ -18,11 +18,15 @@ Both readers — the public schema tier and the `?verified` listing filter — g
 through this module, so they cannot disagree about the same business.
 """
 
-from datetime import date, datetime
+from typing import TYPE_CHECKING
+from datetime import date
 
-from sqlalchemy import or_
+from sqlalchemy import ColumnElement, or_
 
 from app.utils.clock import israel_today
+
+if TYPE_CHECKING:
+    from app.models.models import Producer
 
 
 def licence_lapsed(license_expires_at: date | None, today: date | None = None) -> bool:
@@ -33,7 +37,7 @@ def licence_lapsed(license_expires_at: date | None, today: date | None = None) -
 
 
 def verification_is_current(
-    verified_at: datetime | None,
+    verified_at: date | None,
     license_expires_at: date | None,
     today: date | None = None,
 ) -> bool:
@@ -41,7 +45,9 @@ def verification_is_current(
     return verified_at is not None and not licence_lapsed(license_expires_at, today)
 
 
-def verified_current_condition(producer_model, today: date | None = None):
+def verified_current_condition(
+    producer_model: "type[Producer]", today: date | None = None
+) -> ColumnElement[bool]:
     """SQL twin of `verification_is_current` for the `?verified` filter."""
     day = today or israel_today()
     return (producer_model.verified_at.isnot(None)) & or_(

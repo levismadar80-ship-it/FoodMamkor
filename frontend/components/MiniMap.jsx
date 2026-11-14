@@ -584,7 +584,7 @@ export default function MiniMap({
           role="dialog"
           aria-modal="true"
           aria-label={t("expanded_aria")}
-          className="fixed inset-0 z-[1150] bg-surface"
+          className="fixed inset-0 z-minimap-fullscreen bg-surface"
         >
           {/* MEH-2182: `surfaceProps` carries `draggableMarker` / `onMarkerDragEnd`
               here too, so the overlay marker is draggable as well — deliberately.

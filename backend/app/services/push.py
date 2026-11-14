@@ -6,6 +6,7 @@ This follows the same pattern as the AI fail-open rule in CLAUDE.md.
 
 from __future__ import annotations
 
+from typing import Any
 import json
 import logging
 
@@ -13,7 +14,7 @@ log = logging.getLogger(__name__)
 
 
 def send_push_notification(
-    subscription: dict, *, title: str, body: str, url: str = "/"
+    subscription: dict[str, Any], *, title: str, body: str, url: str = "/"
 ) -> None:
     """Send a single Web Push notification to one subscription endpoint.
 
