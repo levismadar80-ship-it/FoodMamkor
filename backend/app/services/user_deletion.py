@@ -102,11 +102,11 @@ def delete_user_and_data(
     db.query(Favorite).filter(Favorite.user_id == user.id).delete()
     db.query(Report).filter(Report.reporter_id == user.id).delete()
 
-    # MEH-3219 B4: rows keyed by her email / phone, not by user_id. The
+    # MEH-3252: rows keyed by her email / phone, not by user_id. The
     # privacy policy says every identifiable record goes at deletion
     # («עם מחיקת חשבון נמחקים כל הנתונים המזוהים מיידית»), so they go here,
     # before the producer (whose phone counts as hers) is deleted.
-    _erase_contact_trail(db, user, producer_id)
+    _erase_contact_trail(db, user, producer_id, background_tasks)
 
     # 2. If this user owns a Producer, remove the FK reference from the user
     #    row first (User.producer_id has no ondelete, so deleting the
@@ -214,8 +214,10 @@ def _phone_forms(phone: str | None) -> set[str]:
     return {canonical, "+" + canonical, "0" + canonical[3:]}
 
 
-def _erase_contact_trail(db: Session, user: User, producer_id: UUID | None) -> None:
-    """MEH-3219 B4: delete the email/phone-keyed rows that do not cascade.
+def _erase_contact_trail(
+    db: Session, user: User, producer_id: UUID | None, background_tasks: BackgroundTasks
+) -> None:
+    """MEH-3252: delete the email/phone-keyed rows that do not cascade.
 
     - newsletter_subscribers, contact_messages, delivery_waitlist: by email
       (case-insensitive) — delivery_waitlist also by user_id, whose FK is
@@ -224,12 +226,24 @@ def _erase_contact_trail(db: Session, user: User, producer_id: UUID | None) -> N
       phone and, when her business goes with her, the business phone.
     - outreach_leads: the lead is about a business and stays; only the
       suggester's name and email are cleared, with her update consent.
+
+    Kept on purpose: event/experience registrations. They were handed to the
+    business for that date and the policy gives them their own window
+    («נמחקים 30 יום אחרי המועד», retention_purge.REGISTRATION_RETENTION_DAYS).
+    A phone match can also clear a WhatsApp log of another account that
+    typed the same number; users.phone is not unique, and the log is the
+    admin inbox, not anyone's account data.
     """
     email = (user.email or "").strip().lower()
     if email:
         db.query(NewsletterSubscriber).filter(
             func.lower(NewsletterSubscriber.email) == email
         ).delete(synchronize_session=False)
+        # The list is also held in Resend Contacts (MEH-2611): remove it
+        # there too, as the unsubscribe link does. Fail-open, post-request.
+        from app.services.newsletter_sync import sync_unsubscribe
+
+        background_tasks.add_task(sync_unsubscribe, email)
         db.query(ContactMessage).filter(
             func.lower(ContactMessage.email) == email
         ).delete(synchronize_session=False)
