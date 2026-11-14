@@ -454,7 +454,9 @@ export default function ReviewsSection({
   // Pre-fill form if user already has a review (passed WA gate before).
   useEffect(() => {
     if (!user) return;
-    const mine = reviews.find((r) => r.user_id === user.id);
+    // MEH-3221 (B10): the server says which review is mine — no user_id in
+    // the public payload any more.
+    const mine = reviews.find((r) => r.is_mine);
     if (mine) {
       setStars(mine.stars);
       setBody(mine.body || "");
@@ -479,8 +481,11 @@ export default function ReviewsSection({
       // WhatsApp-click path posts exactly the body it always did.
       const payload = inviteToken ? { stars, body, review_token: inviteToken } : { stars, body };
       const r = await api.post(`/producers/${producerId}/reviews`, payload);
-      const previous = reviews.find((x) => x.user_id === r.data.user_id);
-      setReviews((prev) => [r.data, ...prev.filter((x) => x.user_id !== r.data.user_id)]);
+      // MEH-3221: one review per user per business, so the previous one is
+      // the row with the same id, or the one flagged mine.
+      const isPrev = (x) => x.id === r.data.id || x.is_mine;
+      const previous = reviews.find(isPrev);
+      setReviews((prev) => [r.data, ...prev.filter((x) => !isPrev(x))]);
       setTotal((tt) => tt + (previous ? 0 : 1));
       // MEH-1337: keep the bars in step with the total — move the owner's own
       // star (edit) or add it (new review), so the five counts still sum to it.
@@ -609,7 +614,7 @@ export default function ReviewsSection({
                     from the person who gave them. */}
                 <div className="flex items-start gap-3 mb-3">
                   <ReviewInitial
-                    seedKey={review.user_id ?? review.user_name}
+                    seedKey={review.id}
                     letter={avatarInitial(formatName(review.user_name, anonymousFallback), "")}
                   />
                   <div className="min-w-0">
