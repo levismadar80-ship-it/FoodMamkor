@@ -11,7 +11,7 @@
  */
 
 /** Same pattern ClarityScript.jsx uses — one list of token paths. */
-export const TOKEN_LINK_PATH = /\/(claim|owner-invite)\/[^/]/;
+const TOKEN_LINK_PATH = /\/(claim|owner-invite)\/[^/]/;
 
 /**
  * @param {string} pathname
