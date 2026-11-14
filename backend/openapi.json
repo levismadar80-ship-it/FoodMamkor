@@ -12712,6 +12712,18 @@
             ],
             "title": "City"
           },
+          "current_password": {
+            "anyOf": [
+              {
+                "maxLength": 256,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Current Password"
+          },
           "email": {
             "anyOf": [
               {
