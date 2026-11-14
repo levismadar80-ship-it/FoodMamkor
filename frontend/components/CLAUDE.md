@@ -1,7 +1,7 @@
 # Directory: `frontend/components/`
 
 ## Purpose
-Reusable React components for the Next.js 14 App Router frontend.
+Reusable React components for the Next.js 16 App Router frontend.
 Hebrew RTL (`dir="rtl"` is set at the layout root). JavaScript with
 JSDoc — no TypeScript.
 

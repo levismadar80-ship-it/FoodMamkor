@@ -13,7 +13,7 @@ mehamakor/
 │   ├── app/                    routers, models, schemas, services, auth, config
 │   ├── alembic/versions/       migration revisions (sole schema authority — ADR-003)
 │   └── scripts/                backend ops scripts
-├── frontend/                   Next.js 14 App Router (JavaScript)
+├── frontend/                   Next.js 16 App Router (JavaScript)
 │   ├── app/                    routes — one dir per page (server + client)
 │   ├── components/             shared React components
 │   ├── lib/                    auth-context, api, cloudinary, schemas
