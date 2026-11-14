@@ -467,7 +467,12 @@ export default function Header() {
               switching (was gap-11 at rest → gap-9 at y=60) per Sapir 09/07 +
               NAV-01. Fixed compact geometry, scroll-independent, matches the
               frozen end-cap/gap above. start of the row (visual right in RTL). */}
-          <div className="flex items-center gap-9">
+          {/* MEH-3125: five links (with «הזדמנויות») outgrow 92vw at 768px with
+              150% text (and 1024 at 200%) — «אודות» landed at x -172. The lead
+              group and the links wrap at md+, like the pill itself (MEH-2522),
+              and the link gap is gap-6 below lg so 768 at 100% stays one row.
+              lg+ geometry (gap-9) is unchanged. */}
+          <div className="flex md:flex-wrap md:min-w-0 items-center gap-9 md:gap-y-1">
             <Link prefetch={false} href="/" onClick={handleHomeClick} className="shrink-0 inline-flex items-center min-h-touch" aria-label={BRAND_NAME}>
               <Image
                 src="/logo.png"
@@ -487,7 +492,7 @@ export default function Header() {
             </Link>
 
             {/* NAV LINKS — desktop only, part of the lead group. */}
-            <div className="hidden md:flex items-center gap-9">
+            <div className="hidden md:flex md:flex-wrap items-center gap-x-6 lg:gap-x-9 gap-y-1">
               {NAV_ITEMS.map((item) => (
                 <NavLink
                   key={item.id}
