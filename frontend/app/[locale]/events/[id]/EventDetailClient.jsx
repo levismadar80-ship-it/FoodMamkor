@@ -52,12 +52,20 @@ const DETAIL_DATE_OPTIONS = { weekday: "long" };
 // MEH-476 PR 3b2: extracted from app/[locale]/events/[id]/page.js so the
 // route can export generateMetadata (Client Components cannot). page.js
 // renders this component; logic + state unchanged from pre-3b2 behavior.
-export default function EventDetailClient() {
+/**
+ * MEH-3199: `initialEvent` is the page's own server fetch (page.js getEvent),
+ * so the first HTML already carries the event — crawlers and slow phones see
+ * the content, not a skeleton. The client still refetches with the viewer's
+ * token (the owner / admin view), and a failed refetch keeps the server copy.
+ * Without it (the segment's not-found.js) the page loads client-side as before.
+ * @param {{ initialEvent?: object | null }} props
+ */
+export default function EventDetailClient({ initialEvent = null } = {}) {
   const t = useTranslations("events.detail");
   const locale = useLocale();
   const { id } = useParams();
-  const [event, setEvent] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [event, setEvent] = useState(initialEvent);
+  const [loading, setLoading] = useState(!initialEvent);
   // MEH-2548: the owner's upcoming events — «עוד אירועים של…» and, on a
   // past event, «the next one». Best effort: a failure just hides them.
   const [moreEvents, setMoreEvents] = useState([]);
@@ -66,9 +74,12 @@ export default function EventDetailClient() {
     api
       .get(`/events/${id}`)
       .then((r) => setEvent(r.data))
-      .catch(() => setEvent(null))
+      // MEH-3199: a failed refetch never blanks a page the server already drew.
+      .catch(() => {
+        if (!initialEvent) setEvent(null);
+      })
       .finally(() => setLoading(false));
-  }, [id]);
+  }, [id, initialEvent]);
 
   const ownerId = event?.producer_id;
   useEffect(() => {

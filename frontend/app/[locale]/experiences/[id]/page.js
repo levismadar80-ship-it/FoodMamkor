@@ -154,7 +154,8 @@ export default async function ExperienceDetailPage(props) {
           </div>
         }
       >
-        <ExperienceDetailClient />
+        {/* MEH-3199: server data in the first HTML; key resets on a move to another workshop. */}
+        <ExperienceDetailClient key={experience.id ?? params.id} initialExperience={experience} />
       </Suspense>
     </>
   );
