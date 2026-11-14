@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -6,15 +7,16 @@ import { ArrowLeft } from "@phosphor-icons/react";
 import { Link } from "@/i18n/navigation";
 
 import { SkeletonStyles } from "@/components/Skeleton";
+import Button from "@/components/ui/Button";
+import InlineMessage from "@/components/ui/InlineMessage";
 
 // S5 FINAL (MEH-763): split-view sheet — TWO snap points, peek + 45vh open.
 // PEEK/HALF export names kept (useFirstVisitHints and useMapSync import PEEK —
 // a marker tap leaves the sheet collapsed since MEH-3119; MapClient imports
 // both) — only HALF's value moved 55→45.
-// FULL is retained as an exported constant but no longer a snap stop.
+// FULL (92vh) was dropped as a snap stop and, unused, removed (MEH-3161).
 const PEEK = 14;
 const HALF = 45;
-const FULL = 92;
 const SNAPS = [PEEK, HALF];
 
 // MEH-2510: PEEK is 14vh, but the nav pill floating over the sheet is a FIXED
@@ -111,8 +113,13 @@ export default function MapBottomSheet({
   hasOrigin = false,
   // MEH-3119: px the picked-business card adds above the sheet's top edge.
   rideExtraPx = 0,
+  // MEH-3198: the list failed to load. The peek row is the only line a phone
+  // shows, so the failure and the retry live on it — not «אין בתי עסק».
+  loadError = false,
+  onRetry,
 }) {
   const t = useTranslations("map.bottom_sheet");
+  const tRoot = useTranslations();
   // MEH-1054: existing key reused for the skeleton's AT label (no new copy).
   const tSkeleton = useTranslations("common.skeleton");
   // MEH-2827 PR 4: a town with no businesses is a town someone could recommend.
@@ -305,6 +312,15 @@ export default function MapBottomSheet({
             style={{ width: "120px", height: "14px" }}
             aria-hidden="true"
           />
+        ) : loadError && count === 0 && onRetry ? (
+          <div className="flex items-center justify-between gap-3 w-full">
+            <InlineMessage className="font-medium" data-testid="sheet-load-error">
+              {tRoot("map.errors.load_failed")}
+            </InlineMessage>
+            <Button variant="text" size="sm" onClick={onRetry} data-testid="sheet-retry" className="-my-2.5 shrink-0">
+              {tRoot("error.retry")}
+            </Button>
+          </div>
         ) : zeroCity ? (
           // MEH-2639: a town with no businesses is not an empty result. The
           // list below is the full set, nearest-first from this town's
@@ -387,4 +403,4 @@ export default function MapBottomSheet({
   );
 }
 
-export { PEEK, HALF, FULL };
+export { PEEK, HALF };

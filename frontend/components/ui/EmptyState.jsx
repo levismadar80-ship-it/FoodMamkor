@@ -1,3 +1,4 @@
+// @ts-check
 import { Link } from "@/i18n/navigation";
 
 // MEH-1630 chunk 1 (decision 1): disc geometry per `size`. Class strings are
@@ -9,6 +10,7 @@ const CIRCLE_SIZES = {
   lg: { disc: "w-24 h-24", icon: 40 },
 };
 
+/** @param {{ icon?: import("react").ElementType, emoji?: string, title?: import("react").ReactNode, description?: import("react").ReactNode, ctaLabel?: import("react").ReactNode, ctaHref?: string, ctaOnClick?: (e: import("react").MouseEvent) => void, secondaryLabel?: import("react").ReactNode, secondaryHref?: string, example?: import("react").ReactNode, circle?: boolean, size?: "sm"|"md"|"lg", gated?: boolean, unblockLabel?: import("react").ReactNode, unblockHref?: string, headingLevel?: 2|3 }} props */
 export default function EmptyState({
   // MEH-979b: `icon` is the Emoji-LOCK-safe visual — pass a Phosphor icon
   // component (e.g. ShoppingCart). `emoji` is the legacy prop still used by

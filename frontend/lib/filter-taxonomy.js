@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Module:   filter-taxonomy
  * Purpose:  MEH-2130 — THE single definition of every consumer filter axis.
@@ -411,7 +412,11 @@ export function chipsForKeys(keys) {
   });
 }
 
-/** `{ key: false, … }` for a key list — the untouched-filters state. */
+/**
+ * `{ key: false, … }` for a key list — the untouched-filters state.
+ * @param {string[]} keys
+ * @returns {Record<string, boolean>}
+ */
 export function defaultsForKeys(keys) {
   return Object.fromEntries(keys.map((key) => [key, false]));
 }

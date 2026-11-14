@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Module:   page (home)
  * Purpose:  Server shell for the homepage — fetches the first-paint producer

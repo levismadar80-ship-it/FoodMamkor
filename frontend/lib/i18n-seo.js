@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Shared i18n SEO helpers — MEH-476 PR 3b2.
  *

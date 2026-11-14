@@ -432,7 +432,8 @@ describe("the business-page section — landing from a bag link", () => {
     window.history.replaceState(null, "", "/hatzala#section-rescue");
     render(<RescueSection producer={PRODUCER} />);
     await screen.findByTestId("rescue-reserve");
-    expect(scrolled).toHaveBeenCalledTimes(1);
+    // MEH-3217: the scroll runs in an effect after the bag renders — wait for it.
+    await waitFor(() => expect(scrolled).toHaveBeenCalledTimes(1));
   });
 
   it("does not scroll on an ordinary visit", async () => {

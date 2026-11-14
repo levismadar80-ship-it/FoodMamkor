@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 import { Suspense, useCallback, useEffect, useState } from "react";

@@ -104,3 +104,53 @@ describe("Edit-tab CategoriesCard (isolation)", () => {
     expect(await screen.findByText(C.fetch_error)).toBeInTheDocument();
   });
 });
+
+
+// MEH-3137 — moving into ירקות/פירות asks for the grower declaration once.
+// `farmer_declared_at: null` = she never recorded it; a timestamp = she did;
+// absent = unknown (older payloads), where the card does not ask.
+describe("CategoriesCard — grower declaration (MEH-3137)", () => {
+  const SOAP = [{ id: 2, name: "סבונים טבעיים", slug: "care" }];
+
+  it("adding ירקות with no recorded declaration: the box appears and its tick is sent", async () => {
+    const { onSave } = renderCard({ profile: { categories: SOAP, farmer_declared_at: null } });
+    await screen.findByTestId("category-chip-1");
+    expect(screen.queryByTestId("categories-farmer")).toBeNull();
+    fireEvent.click(chip(1));
+    const box = screen.getByTestId("categories-farmer");
+    expect(screen.getByText(he.auth.register.producer.terms.farmer_declaration)).toBeTruthy();
+    fireEvent.click(box);
+    fireEvent.click(screen.getByRole("button", { name: C.save_cta }));
+    await waitFor(() =>
+      expect(api.put).toHaveBeenCalledWith("/producers/me", {
+        category_ids: [2, 1],
+        farmer_declaration_accepted: true,
+      }),
+    );
+    // …and the parent learns the line is now recorded, so the card stops asking.
+    await waitFor(() =>
+      expect(onSave).toHaveBeenCalledWith(
+        expect.objectContaining({ farmer_declared_at: expect.any(String) }),
+      ),
+    );
+  });
+
+  it("declaration already recorded: no box, no key", async () => {
+    renderCard({ profile: { categories: SOAP, farmer_declared_at: "2026-11-14T10:00:00Z" } });
+    await screen.findByTestId("category-chip-1");
+    fireEvent.click(chip(1));
+    expect(screen.queryByTestId("categories-farmer")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: C.save_cta }));
+    await waitFor(() =>
+      expect(api.put).toHaveBeenCalledWith("/producers/me", { category_ids: [2, 1] }),
+    );
+  });
+
+  it("no grower category selected: no box", async () => {
+    renderCard({ profile: { categories: [{ id: 1, name: "ירקות", slug: "veg" }], farmer_declared_at: null } });
+    await screen.findByTestId("category-chip-1");
+    fireEvent.click(chip(1)); // remove ירקות
+    fireEvent.click(chip(2));
+    expect(screen.queryByTestId("categories-farmer")).toBeNull();
+  });
+});

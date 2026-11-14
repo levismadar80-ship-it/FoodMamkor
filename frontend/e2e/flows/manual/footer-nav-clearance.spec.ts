@@ -126,13 +126,44 @@ test.describe("MEH-2824 · footer reaches the screen edge under the floating nav
     });
   }
 
-  test("/map renders no site footer, so <body> keeps the reserve", async ({ page }) => {
+  // MEH-3198: /map renders no site footer, and its shell already fills the
+  // viewport (calc(100dvh - header)), so the body reserve only added a scroll —
+  // measured 80px on a phone. The map shell drops it (globals.css). This test
+  // used to assert the reserve stayed on <body> here; that was the bug.
+  test("/map: no site footer, no body reserve, the page does not scroll", async ({ page }) => {
     await page.addInitScript(() => localStorage.setItem("cookieConsent", "essential"));
     await page.goto("/he/map");
-    await page.waitForTimeout(800);
+    await expect(page.locator("[data-map-shell=mobile]")).toBeVisible({ timeout: 15_000 });
     await expect(page.locator("footer[data-site-footer]")).toHaveCount(0);
-    const pad = await page.evaluate(() => parseFloat(getComputedStyle(document.body).paddingBottom));
-    expect(pad).toBeGreaterThan(0);
+    // Control: the reserve is live on this page (BottomNav published its height),
+    // so a zero below is the rule, not an unset variable.
+    await expect.poll(() => rootVar(page, "--bottom-nav-clearance"), { timeout: 10_000 }).not.toBe("");
+    expect(await page.evaluate(() => parseFloat(getComputedStyle(document.body).paddingBottom)), "body carries no bottom reserve on /map").toBe(0);
+    // Polled: the shell's height is calc(100dvh - header) with the header
+    // measured after mount, so the first frames can overflow by a few px
+    // (seen: 18px once on CI) before the measurement lands.
+    await expect
+      .poll(() => page.evaluate(() => document.scrollingElement!.scrollHeight - innerHeight), {
+        message: "nothing to scroll below the map",
+        timeout: 5_000,
+      })
+      .toBeLessThanOrEqual(1);
+  });
+
+  // MEH-3198 follow-up: with the cookie banner up on a phone, the reserve is
+  // the banner alone (not nav + banner), and the near-me pill at the bottom of
+  // the map can still be scrolled clear of the banner and tapped.
+  test("/map with the cookie banner up: reserve = banner, near-me pill reachable", async ({ page }) => {
+    await page.goto("/he/map");
+    await expect(page.locator("[data-map-shell=mobile]")).toBeVisible({ timeout: 15_000 });
+    await expect.poll(() => rootVar(page, "--cookie-banner-h"), { timeout: 10_000 }).not.toMatch(/^(|0px)$/);
+    const m = await page.evaluate(() => ({
+      pad: parseFloat(getComputedStyle(document.body).paddingBottom),
+      banner: parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--cookie-banner-h")),
+    }));
+    expect.soft(Math.abs(m.pad - m.banner), `body reserve ${m.pad} vs banner ${m.banner}`).toBeLessThanOrEqual(1);
+    // trial: actionability only (no click side effects) — fails if the banner covers the pill.
+    await page.getByTestId("map-near-me-pill").click({ trial: true, timeout: 5_000 });
   });
 });
 
@@ -146,5 +177,20 @@ test.describe("MEH-2824 · desktop unchanged", () => {
       footer: getComputedStyle(document.querySelector("footer[data-site-footer]")!).paddingBottom,
     }));
     expect(m).toEqual({ body: "0px", footer: "0px" });
+  });
+
+  // MEH-3198: with the cookie banner up the body reserve on /map is the
+  // banner's height and nothing more — the banner floats over the bottom of
+  // the map, so that much scroll is what lets its last row be reached. The
+  // banner is left showing (no consent stored), so the reserve is live.
+  test("/map with the cookie banner up: the reserve is the banner only", async ({ page }) => {
+    await page.goto("/he/map");
+    await expect(page.locator("[data-map-shell=desktop]")).toBeVisible({ timeout: 15_000 });
+    await expect.poll(() => rootVar(page, "--cookie-banner-h"), { timeout: 10_000 }).not.toMatch(/^(|0px)$/);
+    const m = await page.evaluate(() => ({
+      pad: parseFloat(getComputedStyle(document.body).paddingBottom),
+      banner: parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--cookie-banner-h")),
+    }));
+    expect.soft(Math.abs(m.pad - m.banner), `body reserve ${m.pad} vs banner ${m.banner}`).toBeLessThanOrEqual(1);
   });
 });

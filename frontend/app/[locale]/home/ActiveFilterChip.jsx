@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 import { MapPin, X } from "@phosphor-icons/react";

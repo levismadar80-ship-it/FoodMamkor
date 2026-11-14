@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Module:   share-link
  * Purpose:  One way for a business owner to share her public link: the

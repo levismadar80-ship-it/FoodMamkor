@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * The consent line under the Google/Apple buttons names only the providers
  * actually rendered — each button is gated on its own NEXT_PUBLIC_*_CLIENT_ID,

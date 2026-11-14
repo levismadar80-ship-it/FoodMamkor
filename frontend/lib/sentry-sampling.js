@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Module:   sentry-sampling
  * Purpose:  MEH-2887 — one place that decides the Sentry traces sample rate,

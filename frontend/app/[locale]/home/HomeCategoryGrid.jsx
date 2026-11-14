@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 import { Link } from "@/i18n/navigation";
@@ -13,6 +14,7 @@ import { resolveCategoryGlyph } from "@/lib/category-registry";
 import SectionHeading from "@/components/ui/SectionHeading";
 
 // MEH-643: ease-quart curve [0.25,1,0.5,1] mirrored for Framer (= .ease-quart, MEH-136).
+/** @type {[number, number, number, number]} cubic-bezier control points */
 const EASE_QUART = [0.25, 1, 0.5, 1];
 
 /**

@@ -1,3 +1,4 @@
+// @ts-check
 /* eslint-disable max-lines, max-lines-per-function */
 "use client";
 
@@ -111,6 +112,7 @@ const COMPARE_STOPS = ["row1", "row2", "row3"];
 // asserts the equality for all four reused labels in both locales, and fails
 // if a sixth chapter is added without a mirror entry. (Chapter 01 is exempt:
 // the story section had no eyebrow, so "הסיפור" is genuinely new copy.)
+/** @param {{ label: import("react").ReactNode, as?: import("react").ElementType }} props */
 function Chapter({ label, as: Tag = "p" }) {
   return (
     <div className="flex items-center gap-3 mb-3 md:mb-4">

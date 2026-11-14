@@ -1,3 +1,4 @@
+// @ts-check
 import ClaimClient from "./ClaimClient";
 import { claimMetadata } from "./claim-metadata";
 
