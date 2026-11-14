@@ -22,7 +22,9 @@ function sourceFiles(dir, out = []) {
 
 /** Files under `dirs` that import, require or mock one of the old modules. */
 function importersOfOldLayer(read, files) {
-  const re = /["'`](?:@\/|(?:\.\.?\/)+)?lib\/(?:language-context|i18n-key-map)(?:\.js)?["'`]/;
+  // Any module path that ends in one of the two names, so `./language-context`
+  // written inside lib/ counts too.
+  const re = /["'`](?:[^"'`\s]*\/)?(?:language-context|i18n-key-map)(?:\.js)?["'`]/;
   return files.filter((f) => re.test(read(f)));
 }
 
@@ -32,8 +34,9 @@ describe("one i18n mechanism", () => {
       "a.jsx": 'import { useLanguage } from "@/lib/language-context";',
       "b.js": 'vi.mock("@/lib/i18n-key-map", () => ({}));',
       "c.jsx": 'import { useTranslations } from "next-intl";',
+      "lib/d.js": 'import { mapKey } from "./i18n-key-map";',
     };
-    expect(importersOfOldLayer((f) => fake[f], Object.keys(fake))).toEqual(["a.jsx", "b.js"]);
+    expect(importersOfOldLayer((f) => fake[f], Object.keys(fake))).toEqual(["a.jsx", "b.js", "lib/d.js"]);
   });
 
   it("the old files are gone", () => {
