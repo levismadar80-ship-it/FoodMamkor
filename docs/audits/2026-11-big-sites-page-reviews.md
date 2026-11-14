@@ -1,7 +1,8 @@
 # «ללמוד מהאתרים הגדולים» — מרשם דפים
 
 Workflow rule 37b ([.claude/rules/workflow.md](../../.claude/rules/workflow.md)):
-every new page under `frontend/app/[locale]/` gets this review before code.
+every new page under `frontend/app/[locale]/` gets this full review before
+code (smaller UI changes get the light check in the PR body, same rule).
 This file says which pages have had it, where the decision lives, and what is
 still open. As of 14/11/2026 (MEH-3110). Linear is the live status; this is
 the index.
