@@ -31,6 +31,7 @@ import { passwordValid, validateIsraeliPhone, validateEmail } from "@/lib/valida
 import { useAuth } from "@/lib/auth-context";
 import { getSeasonalPlaceholder } from "@/lib/producer-description-placeholders";
 import { CONTACT_EMAIL } from "@/lib/env.client";
+import { PRICING_PATH } from "@/lib/pricing";
 import {
   hasLicenseFormatWarning,
   requiresProducerLicense,
@@ -1249,7 +1250,17 @@ function RegisterProducerPageBody({ routeKind }) {
             {/* MEH-2183: the no-cost promise, stated on the step where the
                 seller starts investing real effort. */}
             <p data-testid="register-details-free-hint" className="text-xs text-fg-muted text-start">
-              {t("auth.register.producer.steps.business.free_hint")}
+              {t("auth.register.producer.steps.business.free_hint")}{" "}
+              {/* MEH-3166: new tab, so a half-filled form is not lost. */}
+              <Link
+                href={PRICING_PATH}
+                target="_blank"
+                rel="noopener"
+                data-testid="register-pricing-link"
+                className="underline underline-offset-2 text-primary rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+              >
+                {t("pricing.link_short")}
+              </Link>
             </p>
 
             <Input

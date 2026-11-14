@@ -682,6 +682,10 @@ describe("RegisterProducerClient — MEH-2183 locked copy placement", () => {
     expect(screen.getByTestId("register-details-free-hint")).toHaveTextContent(
       `${K}.steps.business.free_hint`,
     );
+    // MEH-3166: the hint links to the price list, in a new tab so the form survives.
+    const pricing = screen.getByTestId("register-pricing-link");
+    expect(pricing.getAttribute("href")).toMatch(/\/join\/pricing$/);
+    expect(pricing).toHaveAttribute("target", "_blank");
   });
 
   // MEH-2185: this case used to assert the photo-next hint was PRESENT. The copy

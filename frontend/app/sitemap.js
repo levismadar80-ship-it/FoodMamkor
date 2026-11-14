@@ -148,6 +148,7 @@ export default async function sitemap() {
     // crawlers were offered only /register/producer, whose server HTML is a
     // loading placeholder.
     { path: "/join", priority: 0.7, changeFrequency: "monthly" },
+    { path: "/join/pricing", priority: 0.5, changeFrequency: "monthly" },
     { path: "/register/producer", priority: 0.7, changeFrequency: "monthly" },
     // MEH-803: /register, /login, /contact intentionally NOT listed (/search
     // itself is gone — it 308s to /producers since MEH-819) —
