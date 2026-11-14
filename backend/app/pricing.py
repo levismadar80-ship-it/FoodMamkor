@@ -71,3 +71,21 @@ def rescue_bag_fee_agorot(quantity: int, price_list: PriceList | None = None) ->
     """The fixed fee for `quantity` collected rescue bags."""
     pl = price_list or current_price_list()
     return max(quantity, 0) * pl.rescue_bag_fee_agorot
+
+
+def subscriber_booking_fee_agorot(
+    base_agorot: int, price_list: PriceList | None = None
+) -> int:
+    """The reduced commission a subscriber pays on one paid booking."""
+    pl = price_list or current_price_list()
+    if base_agorot <= 0:
+        return 0
+    return (base_agorot * pl.subscriber_booking_percent + 50) // 100
+
+
+def subscriber_bag_fee_agorot(
+    quantity: int, price_list: PriceList | None = None
+) -> int:
+    """The reduced fixed fee a subscriber pays for `quantity` collected bags."""
+    pl = price_list or current_price_list()
+    return max(quantity, 0) * pl.subscriber_bag_fee_agorot

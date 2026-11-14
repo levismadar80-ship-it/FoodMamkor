@@ -20,6 +20,25 @@ export const GetAnalyticsAdminAnalyticsGetResponse = /*#__PURE__*/ zod.unknown()
 
 
 /**
+ * @summary Admin Billing Overview
+ */
+export const AdminBillingOverviewAdminBillingOverviewGetResponse = /*#__PURE__*/ zod.object({
+  "businesses_over_threshold": /*#__PURE__*/ zod.int(),
+  "businesses_over_two_months": /*#__PURE__*/ zod.int(),
+  "month": /*#__PURE__*/ zod.string(),
+  "rows": /*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
+  "bookings": /*#__PURE__*/ zod.int(),
+  "months_over_in_a_row": /*#__PURE__*/ zod.int(),
+  "name": /*#__PURE__*/ zod.string(),
+  "over_threshold": /*#__PURE__*/ zod.boolean(),
+  "producer_id": /*#__PURE__*/ zod.uuid(),
+  "value_agorot": /*#__PURE__*/ zod.int()
+})),
+  "threshold": /*#__PURE__*/ zod.int()
+})
+
+
+/**
  * @summary List Categories Admin
  */
 export const listCategoriesAdminAdminCategoriesGetResponseIsSystemDefault = false;
@@ -5193,6 +5212,29 @@ export const ProducerAnalyticsProducersMeAnalyticsGetResponse = /*#__PURE__*/ zo
  * @summary Set Availability State
  */
 export const SetAvailabilityStateProducersMeAvailabilityStatePostResponse = /*#__PURE__*/ zod.unknown()
+
+
+/**
+ * The caller's own business only — the id comes from the session, never the URL.
+ * @summary My Billing Summary
+ */
+export const MyBillingSummaryProducersMeBillingSummaryGetResponse = /*#__PURE__*/ zod.object({
+  "bookings": /*#__PURE__*/ zod.int(),
+  "by_kind": /*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
+  "bookings": /*#__PURE__*/ zod.int(),
+  "kind": /*#__PURE__*/ zod.string(),
+  "value_agorot": /*#__PURE__*/ zod.int()
+})),
+  "charged_agorot": /*#__PURE__*/ zod.int(),
+  "fee_with_subscription_agorot": /*#__PURE__*/ zod.int(),
+  "fee_without_subscription_agorot": /*#__PURE__*/ zod.int(),
+  "month": /*#__PURE__*/ zod.string(),
+  "over_threshold": /*#__PURE__*/ zod.boolean(),
+  "phase": /*#__PURE__*/ zod.string(),
+  "price_list_version": /*#__PURE__*/ zod.int(),
+  "threshold": /*#__PURE__*/ zod.int(),
+  "value_agorot": /*#__PURE__*/ zod.int()
+})
 
 
 /**

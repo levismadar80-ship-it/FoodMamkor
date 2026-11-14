@@ -416,6 +416,170 @@
         "title": "AvailabilityStateUpdate",
         "type": "object"
       },
+      "BillingKindOut": {
+        "properties": {
+          "bookings": {
+            "title": "Bookings",
+            "type": "integer"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "value_agorot": {
+            "title": "Value Agorot",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "kind",
+          "bookings",
+          "value_agorot"
+        ],
+        "title": "BillingKindOut",
+        "type": "object"
+      },
+      "BillingOverviewOut": {
+        "properties": {
+          "businesses_over_threshold": {
+            "title": "Businesses Over Threshold",
+            "type": "integer"
+          },
+          "businesses_over_two_months": {
+            "title": "Businesses Over Two Months",
+            "type": "integer"
+          },
+          "month": {
+            "title": "Month",
+            "type": "string"
+          },
+          "rows": {
+            "items": {
+              "$ref": "#/components/schemas/BillingOverviewRowOut"
+            },
+            "title": "Rows",
+            "type": "array"
+          },
+          "threshold": {
+            "title": "Threshold",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "month",
+          "threshold",
+          "businesses_over_threshold",
+          "businesses_over_two_months",
+          "rows"
+        ],
+        "title": "BillingOverviewOut",
+        "type": "object"
+      },
+      "BillingOverviewRowOut": {
+        "properties": {
+          "bookings": {
+            "title": "Bookings",
+            "type": "integer"
+          },
+          "months_over_in_a_row": {
+            "title": "Months Over In A Row",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "over_threshold": {
+            "title": "Over Threshold",
+            "type": "boolean"
+          },
+          "producer_id": {
+            "format": "uuid",
+            "title": "Producer Id",
+            "type": "string"
+          },
+          "value_agorot": {
+            "title": "Value Agorot",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "producer_id",
+          "name",
+          "bookings",
+          "value_agorot",
+          "over_threshold",
+          "months_over_in_a_row"
+        ],
+        "title": "BillingOverviewRowOut",
+        "type": "object"
+      },
+      "BillingSummaryOut": {
+        "properties": {
+          "bookings": {
+            "title": "Bookings",
+            "type": "integer"
+          },
+          "by_kind": {
+            "items": {
+              "$ref": "#/components/schemas/BillingKindOut"
+            },
+            "title": "By Kind",
+            "type": "array"
+          },
+          "charged_agorot": {
+            "title": "Charged Agorot",
+            "type": "integer"
+          },
+          "fee_with_subscription_agorot": {
+            "title": "Fee With Subscription Agorot",
+            "type": "integer"
+          },
+          "fee_without_subscription_agorot": {
+            "title": "Fee Without Subscription Agorot",
+            "type": "integer"
+          },
+          "month": {
+            "title": "Month",
+            "type": "string"
+          },
+          "over_threshold": {
+            "title": "Over Threshold",
+            "type": "boolean"
+          },
+          "phase": {
+            "title": "Phase",
+            "type": "string"
+          },
+          "price_list_version": {
+            "title": "Price List Version",
+            "type": "integer"
+          },
+          "threshold": {
+            "title": "Threshold",
+            "type": "integer"
+          },
+          "value_agorot": {
+            "title": "Value Agorot",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "month",
+          "phase",
+          "bookings",
+          "value_agorot",
+          "by_kind",
+          "threshold",
+          "over_threshold",
+          "fee_without_subscription_agorot",
+          "fee_with_subscription_agorot",
+          "charged_agorot",
+          "price_list_version"
+        ],
+        "title": "BillingSummaryOut",
+        "type": "object"
+      },
       "BioGenerateIn": {
         "properties": {
           "area": {
@@ -15596,6 +15760,63 @@
         ]
       }
     },
+    "/admin/billing/overview": {
+      "get": {
+        "operationId": "admin_billing_overview_admin_billing_overview_get",
+        "parameters": [
+          {
+            "description": "YYYY-MM (Israel month)",
+            "in": "query",
+            "name": "month",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "pattern": "^\\d{4}-\\d{2}$",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "YYYY-MM (Israel month)",
+              "title": "Month"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BillingOverviewOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Admin Billing Overview",
+        "tags": [
+          "billing"
+        ]
+      }
+    },
     "/admin/categories": {
       "get": {
         "operationId": "list_categories_admin_admin_categories_get",
@@ -23380,6 +23601,64 @@
         "summary": "Set Availability State",
         "tags": [
           "producer-management"
+        ]
+      }
+    },
+    "/producers/me/billing/summary": {
+      "get": {
+        "description": "The caller's own business only — the id comes from the session, never the URL.",
+        "operationId": "my_billing_summary_producers_me_billing_summary_get",
+        "parameters": [
+          {
+            "description": "YYYY-MM (Israel month)",
+            "in": "query",
+            "name": "month",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "pattern": "^\\d{4}-\\d{2}$",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "YYYY-MM (Israel month)",
+              "title": "Month"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BillingSummaryOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "My Billing Summary",
+        "tags": [
+          "billing"
         ]
       }
     },

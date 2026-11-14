@@ -22,6 +22,7 @@ from app.config import settings
 from app.database import get_db
 from app.models import Producer, User
 from app.rate_limit import limiter
+from app.services.capabilities import gallery_is_full
 
 log = logging.getLogger("app.upload")
 
@@ -97,12 +98,7 @@ async def upload_image(
     # Check freemium limit for producers
     if user.role == "producer" and user.producer_id:
         producer = db.query(Producer).filter(Producer.id == user.producer_id).first()
-        if (
-            producer
-            and producer.plan == "free"
-            and producer.images
-            and len(producer.images) >= 3
-        ):
+        if gallery_is_full(producer):  # MEH-3181: the cap lives in capabilities
             raise HTTPException(
                 status_code=403,
                 # MEH-1008: neutral cap copy — no premium/upgrade promise while the

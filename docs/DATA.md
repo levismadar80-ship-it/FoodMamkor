@@ -449,11 +449,34 @@ rescue order is marked handed (`rescue.py`). A sign-up cancelled before the
 item's date is `voided`, and so are the rows of an upcoming event / experience
 that is deleted (`events.py`, `experiences.py`); a late cancel and a past item
 stay counted. Test businesses (`is_test`) are recorded like any other and left
-out where the numbers are read (the admin view, MEH-3181). No route reads it yet —
-the monthly summary is MEH-3181. The numbers come from `app/pricing.py`, held
+out where the numbers are read (the admin view, MEH-3181). The numbers come from `app/pricing.py`, held
 equal to `frontend/lib/pricing.js` and `docs/PRICING.md` by
 `tests/test_meh3179_pricing_mirror.py`. Adds one table →
 **`EXPECTED_TABLES` 50 → 51**.
+
+**Monthly summary (MEH-3181, `routers/billing.py` → `services/billing_summary.py`).**
+Read-only; nothing is charged (`phase: "launch"`, `charged_agorot: 0`). A month is
+an Israel calendar month (`?month=YYYY-MM`, default the current one; a malformed
+value → 422). Voided rows are never counted. A rescue order counts one booking
+per bag; every other row counts one.
+
+- 👤 `GET /producers/me/billing/summary` (60/minute) — the caller's own business
+  only (the id comes from the session). `{month, phase, bookings, value_agorot,
+  by_kind[{kind, bookings, value_agorot}], threshold, over_threshold,
+  fee_without_subscription_agorot, fee_with_subscription_agorot, charged_agorot,
+  price_list_version}`. The two fee figures are what the month WOULD cost on each
+  track of the current price list: plain commission, or subscription + reduced
+  commission.
+- 🔒 `GET /admin/billing/overview` (60/minute) — every real business (test
+  businesses excluded) with a counted booking that month, busiest first:
+  `{month, threshold, businesses_over_threshold, businesses_over_two_months,
+  rows[{producer_id, name, bookings, value_agorot, over_threshold,
+  months_over_in_a_row}]}`. `months_over_in_a_row` looks back at most 6 months.
+
+**Capabilities (MEH-3181, `services/capabilities.py`).** What a business may do is
+asked of this module, not read off `producers.plan`. Today it owns one rule, moved
+from `upload.py` unchanged: a business whose `plan` is exactly `free` may hold 3
+gallery images.
 
 ### Experiences (community workshops — **admin-moderated**)
 
