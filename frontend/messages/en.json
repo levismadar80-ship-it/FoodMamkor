@@ -3721,7 +3721,7 @@
       "eyebrow": "Common questions",
       "q_cost": "How much does it cost?",
       "q_price": "Who sets the price?",
-      "a_cost": "Joining and your page are free. During the launch period every tool is free too. Later, a business that gets {threshold} or more bookings a month through the site will choose between a subscription of ₪{monthly} a month and a small commission on each booking. We will tell you {noticeDays} days ahead, in writing.",
+      "a_cost": "Joining and your page are free. During the launch period every tool is free too. Later, a business that gets {threshold} or more bookings a month through the site will choose between a subscription of ₪{monthly} a month with a reduced commission, and a small commission on each booking with no subscription. We will tell you {noticeDays} days ahead, in writing.",
       "a_price": "You do. The price on your page is yours.",
       "all_link": "All the questions",
       "heading": "What businesses ask",
@@ -3786,7 +3786,7 @@
     "faq": {
       "cost": {
         "q": "How much does it cost — and what happens when you start charging?",
-        "a": "Your page is free. During the launch period every tool is free too. When you get {threshold} or more bookings a month through the site, I will tell you in writing {noticeDays} days ahead, and then you choose: a subscription of ₪{monthly} a month, or a small commission on each booking. If neither suits you, your page stays yours, free."
+        "a": "Your page is free. During the launch period every tool is free too. When you get {threshold} or more bookings a month through the site, I will tell you in writing {noticeDays} days ahead, and then you choose: a subscription of ₪{monthly} a month with a reduced commission, or a small commission on each booking with no subscription. If neither suits you, your page stays yours, free."
       },
       "revenue_model": {
         "q": "If everything is free — how does Mehamakor make money?",
@@ -6691,14 +6691,14 @@
       "results_lead": "A business that gets {threshold} or more bookings a month through the site chooses how to continue:",
       "sub_title": "Tools subscription",
       "sub_price": "₪{monthly} a month",
-      "sub_note": "Or ₪{yearly} a year. No commission on bookings.",
+      "sub_note": "Or ₪{yearly} a year.",
+      "sub_fee": "Plus a reduced commission on bookings: {subPercent}% instead of {percent}%, and ₪{subBagFee} a bag instead of ₪{bagFee}.",
       "fee_title": "No subscription",
       "fee_price": "A commission per booking",
       "fee_item_booking": "{percent}% of a paid registration to an event, experience or workshop",
       "fee_item_group": "{percent}% of an order in a group buy that closed",
       "fee_item_bag": "₪{bagFee} per rescue bag collected",
       "fee_item_free": "Free registration: no commission",
-      "fee_cap": "Never more than ₪{cap} a month, the price of the subscription.",
       "counted_title": "What counts as a booking",
       "counted_body": "A registration that was not cancelled, an order in a group buy that closed, and a bag that was collected. A cancellation or a no-show is not counted. A message on WhatsApp, a phone call or an email is not counted and costs nothing.",
       "notice_title": "Before the first charge",
@@ -6711,7 +6711,7 @@
       "closing_line": "Signing up takes a few minutes, and your page is free.",
       "back_link": "Back to the join page",
       "or": "or",
-      "sub_fit": "A fixed price you know in advance. Paying yearly costs less.",
+      "sub_fit": "Worth it once paid bookings pass about ₪{breakEven} a month.",
       "fee_fit": "You pay only in a month that has bookings.",
       "fee_example": "For example: a workshop sign-up at ₪{examplePrice} is a ₪{exampleFee} fee.",
       "tools_link": "See the full list of tools",

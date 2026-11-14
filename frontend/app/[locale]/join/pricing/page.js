@@ -179,7 +179,8 @@ export default async function PricingPage({ params }) {
           <div className="grid grid-cols-1 items-stretch gap-3 sm:grid-cols-[1fr_auto_1fr] sm:gap-4">
             <OptionCard label={t("sub_title")} price={t("sub_price", v)} testId="pricing-subscription">
               <p className="leading-relaxed text-text/85">{t("sub_note", v)}</p>
-              <p className="mt-auto border-t border-border pt-3 font-medium text-text">{t("sub_fit")}</p>
+              <p className="leading-relaxed text-text">{t("sub_fee", v)}</p>
+              <p className="mt-auto border-t border-border pt-3 font-medium text-text">{t("sub_fit", v)}</p>
             </OptionCard>
             <p className="self-center text-center font-headline-md text-lg font-bold text-fg-muted" aria-hidden="true">
               {t("or")}
@@ -187,7 +188,6 @@ export default async function PricingPage({ params }) {
             <OptionCard label={t("fee_title")} price={t("fee_price")} testId="pricing-commission">
               <CheckList items={FEE_ITEMS.map((key) => t(key, v))} />
               <p className="rounded bg-background-alt px-3 py-2 text-sm leading-relaxed text-text">{t("fee_example", v)}</p>
-              <p className="font-medium text-text">{t("fee_cap", v)}</p>
               <p className="mt-auto border-t border-border pt-3 font-medium text-text">{t("fee_fit")}</p>
             </OptionCard>
           </div>

@@ -117,10 +117,18 @@ describe("PricingCopyGuard (MEH-3166)", () => {
     expect(pick(/הרשמה לאירוע בתשלום \| (\d+)% /, "event percent")).toBe(list.commission.paidBookingPercent);
     expect(pick(/קנייה קבוצתית שנסגרה \| (\d+)% /, "group-buy percent")).toBe(list.commission.paidBookingPercent);
     expect(pick(/שקית הצלה שנאספה \| (\d+) ₪ לשקית/, "bag fee")).toBe(list.commission.rescueBagFee);
-    expect(pick(/מחיר המנוי החודשי \((\d+) ₪\)/, "monthly cap")).toBe(list.commission.monthlyCap);
+    expect(pick(/מנוי משלם עמלה מופחתת: (\d+)% /, "subscriber percent")).toBe(list.subscriberCommission.paidBookingPercent);
+    expect(pick(/ו-(\d+) ₪ לשקית במקום/, "subscriber bag fee")).toBe(list.subscriberCommission.rescueBagFee);
     expect(pick(/מ-(\d+) הזמנות ומעלה בחודש/, "threshold")).toBe(list.thresholdBookingsPerMonth);
-    // The copy says the cap is "the price of the subscription" — keep it true.
-    expect(list.commission.monthlyCap).toBe(list.subscription.monthly);
+    // «עמלה מופחתת» has to be true: a subscriber's rate is below the plain one.
+    expect(list.subscriberCommission.paidBookingPercent).toBeLessThan(list.commission.paidBookingPercent);
+    expect(list.subscriberCommission.rescueBagFee).toBeLessThan(list.commission.rescueBagFee);
+    // «משתלם כש… עוברות {breakEven}»: at that amount the subscription is not dearer.
+    const breakEven = Number(pricingCopyValues(list).breakEven);
+    const plain = (breakEven * list.commission.paidBookingPercent) / 100;
+    const subscribed = list.subscription.monthly + (breakEven * list.subscriberCommission.paidBookingPercent) / 100;
+    expect(subscribed).toBeLessThanOrEqual(plain);
+    expect(breakEven % 50).toBe(0);
     const [year, month, day] = list.effectiveFrom.split("-");
     expect(doc, "docs/PRICING.md as-of date").toContain(`נכון ל-${Number(day)}/${Number(month)}/${year}`);
     expect(pick(/\*\*הודעה מראש:\*\* (\d+) יום/, "notice days")).toBe(list.noticeDays);

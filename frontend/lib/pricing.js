@@ -2,7 +2,7 @@
 /**
  * Module:   pricing
  * Purpose:  The one place the site reads its prices from — subscription,
- *           booking commissions, the monthly cap, the results threshold and
+ *           booking commissions (with and without a subscription), the results threshold and
  *           the notice period — plus the list of message keys that are
  *           allowed to talk about price at all.
  * Touches:  nothing — pure data + pure helpers, no React, no fetch, no env.
@@ -45,9 +45,13 @@ const PRICE_LISTS = Object.freeze({
       paidBookingPercent: 5,
       // A rescue bag marked as collected.
       rescueBagFee: 2,
-      // A business never pays more in commissions in one month than the
-      // monthly subscription costs.
-      monthlyCap: 49,
+    }),
+    // A subscriber pays the subscription AND a reduced commission, so what a
+    // business pays keeps growing with its bookings (Sapir 14/11: no monthly
+    // cap; the subscription lowers the commission instead of removing it).
+    subscriberCommission: Object.freeze({
+      paidBookingPercent: 2,
+      rescueBagFee: 1,
     }),
     // Billing starts per business, only above this many bookings in a month.
     thresholdBookingsPerMonth: 20,
@@ -67,6 +71,16 @@ export function currentPriceList() {
 }
 
 /**
+ * Paid bookings a month (₪) from which subscribing is the cheaper choice:
+ * monthly / (percent − subscriber percent), rounded up to the next 50.
+ */
+function subscriptionBreakEven(list) {
+  const saved = list.commission.paidBookingPercent - list.subscriberCommission.paidBookingPercent;
+  const exact = (list.subscription.monthly * 100) / saved;
+  return Math.ceil(exact / 50) * 50;
+}
+
+/**
  * The ICU values every pricing sentence takes. Strings, not numbers, so a
  * message renders «49» in every locale instead of a locale-formatted number.
  * Pass the whole object to `t()` — a message uses the ones it names.
@@ -82,7 +96,11 @@ export function pricingCopyValues(list = currentPriceList()) {
     yearly: String(list.subscription.yearly),
     percent: String(list.commission.paidBookingPercent),
     bagFee: String(list.commission.rescueBagFee),
-    cap: String(list.commission.monthlyCap),
+    subPercent: String(list.subscriberCommission.paidBookingPercent),
+    subBagFee: String(list.subscriberCommission.rescueBagFee),
+    // Monthly paid bookings (₪) above which the subscription costs less than
+    // the plain commission, rounded up to the next 50. Computed, never typed.
+    breakEven: String(subscriptionBreakEven(list)),
     threshold: String(list.thresholdBookingsPerMonth),
     noticeDays: String(list.noticeDays),
   };
