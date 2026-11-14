@@ -14,6 +14,7 @@ import { groupBuyProgressPct, groupBuyDiscountPct } from "@/lib/group-buy-progre
 import CitySearch from "@/components/CitySearch";
 import ChipScrollRow from "@/components/ChipScrollRow";
 import { dropZeroChips } from "@/lib/chip-gate"; // MEH-3128
+import { CountGroupBuysByStatusGroupBuysCountsGetResponse as StatusCountsOut } from "@/lib/generated/api.zod";
 import Button from "@/components/ui/Button";
 import EmptyState from "@/components/ui/EmptyState";
 import { SkeletonBlock } from "@/components/Skeleton";
@@ -163,7 +164,12 @@ export default function GroupBuysClient() {
     // keystroke); a response for an older city is dropped (`live`).
     api
       .get("/group-buys/counts", { params: city ? { city } : {} })
-      .then((r) => live && setStatusCounts(r.data))
+      // Zod before use (rule 19); a shape we don't know shows every tab.
+      .then((r) => {
+        if (!live) return;
+        const parsed = StatusCountsOut.safeParse(r.data);
+        setStatusCounts(parsed.success ? parsed.data : null);
+      })
       .catch(() => live && setStatusCounts(null));
     return () => {
       live = false;
