@@ -15,17 +15,20 @@ from datetime import datetime, timedelta, timezone
 import pytest
 from joserfc import jwt as jose_jwt
 
-from conftest import make_producer, make_user
+from conftest import auth_header, make_producer, make_user
 from app.auth import (
     PRODUCER_CLAIM_RENEW_GRACE_DAYS,
     PRODUCER_CLAIM_SCOPE,
     _jwt_key,
+    create_access_token,
     create_producer_claim_token,
+    create_refresh_token,
     create_review_invite_token,
     decode_lapsed_producer_claim_token,
     decode_producer_claim_token,
 )
 from app.config import settings
+from app.models import User
 from app.routers import producer_claim
 
 URL = "/producer-claim/new-link-request"
@@ -34,10 +37,12 @@ CLAIM = "/producer-claim"
 EXPECTED_BODY = {"ok": True}
 
 
-def _mint(producer_id, *, exp_delta, scope=PRODUCER_CLAIM_SCOPE, with_exp=True, key=None):
+def _mint(producer_id, *, exp_delta, scope=PRODUCER_CLAIM_SCOPE, with_exp=True, key=None, exp=None):
     now = datetime.now(timezone.utc)
     payload = {"producer_id": str(producer_id), "iat": int(now.timestamp()), "scope": scope}
-    if with_exp:
+    if exp is not None:
+        payload["exp"] = exp
+    elif with_exp:
         payload["exp"] = now + exp_delta
     return jose_jwt.encode({"alg": settings.algorithm}, payload, key or _jwt_key())
 
@@ -108,6 +113,21 @@ class TestDecodeLapsed:
         assert decode_lapsed_producer_claim_token(
             _mint(p.id, exp_delta=timedelta(0), with_exp=False)
         ) is None
+
+    def test_string_exp_is_refused(self, db):
+        p = _draft(db)
+        stamp = str(int((datetime.now(timezone.utc) - timedelta(days=1)).timestamp()))
+        assert decode_lapsed_producer_claim_token(
+            _mint(p.id, exp_delta=timedelta(0), exp=stamp)
+        ) is None
+
+    def test_access_token_is_refused(self, db):
+        user = make_user(db)
+        assert decode_lapsed_producer_claim_token(create_access_token(user.id)) is None
+
+    def test_refresh_token_is_refused(self, db):
+        user = make_user(db)
+        assert decode_lapsed_producer_claim_token(create_refresh_token(user.id, 0)) is None
 
     def test_garbage_is_refused(self):
         assert decode_lapsed_producer_claim_token("nope") is None
@@ -206,14 +226,36 @@ class TestNewLinkRequest:
 
     def test_asking_does_not_revive_the_expired_link(self, client, db, notices):
         """The request must not make the dead link usable: preview stays 404
-        and the claim stays refused."""
+        and a SIGNED-IN claim with it is refused exactly as before."""
         p = _draft(db)
         token = _expired(p)
+        user = make_user(db, email="asker3122@example.com")
         _post(client, token)
+        assert len(notices) == 1
         assert client.post(PREVIEW, json={"token": token}).status_code == 404
-        assert client.post(CLAIM, json={"token": token}).status_code in (401, 404, 422)
-        db.refresh(p)
-        assert p.status == "draft"
+        r = client.post(
+            CLAIM,
+            json={"token": token, "declaration_accepted": True, "terms_accepted": True},
+            headers=auth_header(user),
+        )
+        assert r.status_code == 404, r.text
+        db.expire_all()
+        assert db.get(User, user.id).producer_id is None
+        assert db.get(type(p), p.id).status == "draft"
+
+    def test_still_valid_link_also_tells_the_admin(self, client, db, notices):
+        """Documented behaviour: the page offers the button only after a
+        refusal, and a notice for a live link costs one message."""
+        p = _draft(db)
+        r = _post(client, create_producer_claim_token(p.id)[0])
+        assert r.status_code == 200 and r.json() == EXPECTED_BODY
+        assert len(notices) == 1
+
+    def test_access_token_as_input_tells_nobody(self, client, db, notices):
+        user = make_user(db)
+        r = _post(client, create_access_token(user.id))
+        assert r.status_code == 200 and r.json() == EXPECTED_BODY
+        assert notices == []
 
 
 class TestNotifierMessage:

@@ -27,6 +27,7 @@ History:  MEH-2322 (MEH-2321 chunk A, creation). MEH-2326 (chunk D): admin
           asks; the admin is told; nothing is minted or sent to the owner.
 """
 
+import threading
 from datetime import datetime, timezone
 from uuid import UUID
 
@@ -193,15 +194,19 @@ def preview_claim(
 # which costs one email. Bounded by the number of drafts.
 _NEW_LINK_COOLDOWN_SECONDS = 24 * 60 * 60
 _new_link_last_notice: dict[UUID, float] = {}
+# Sync routes run on a thread pool: the check and the stamp are one step, so
+# two presses that land together cannot both pass.
+_new_link_lock = threading.Lock()
 
 
 def _new_link_notice_due(producer_id: UUID) -> bool:
     now = datetime.now(timezone.utc).timestamp()
-    last = _new_link_last_notice.get(producer_id)
-    if last is not None and now - last < _NEW_LINK_COOLDOWN_SECONDS:
-        return False
-    _new_link_last_notice[producer_id] = now
-    return True
+    with _new_link_lock:
+        last = _new_link_last_notice.get(producer_id)
+        if last is not None and now - last < _NEW_LINK_COOLDOWN_SECONDS:
+            return False
+        _new_link_last_notice[producer_id] = now
+        return True
 
 
 @router.post("/producer-claim/new-link-request", response_model=ProducerClaimNewLinkOut)
@@ -229,7 +234,13 @@ def request_new_claim_link(
     )
     # Only a draft that can still be claimed: for a page that already has an
     # owner there is no link to send.
+    # A link that has not expired yet is accepted too: the page only offers the
+    # button after the server refused the link, and a notice for a live link
+    # costs the admin one message.
     if producer and _claimable(db, producer) and _new_link_notice_due(producer.id):
+        # The cooldown is stamped when the notice is queued, not when it is
+        # delivered; this line is the record if the delivery fails.
+        logger.info("producer_claim.new_link_requested", producer_id=str(producer.id))
         background_tasks.add_task(
             notify_admin_claim_link_requested,
             producer.name,
