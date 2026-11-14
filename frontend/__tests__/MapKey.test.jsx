@@ -19,6 +19,19 @@ import { styleForProducer } from "@/lib/category-registry";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
+// Leaflet factories that put something visible on the map, counted per kind in
+// CODE only (comments stripped), constructor forms folded into the factory name.
+function markerCallSites(source) {
+  const code = source.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "").replace(/([^:"'`])\/\/.*$/gm, "$1");
+  const re = /\b(?:new\s+)?L\.(divIcon|icon|marker|circleMarker|circle|polygon|polyline|rectangle|imageOverlay|svgOverlay|videoOverlay|popup|tooltip)\(/gi;
+  const out = {};
+  for (const m of code.matchAll(re)) {
+    const name = `L.${m[1][0].toLowerCase()}${m[1].slice(1)}`;
+    out[name] = (out[name] ?? 0) + 1;
+  }
+  return out;
+}
+
 const hexToRgb = (hex) => {
   const n = parseInt(hex.slice(1), 16);
   return `rgb(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255})`;
@@ -76,25 +89,41 @@ describe("map key (MEH-2424)", () => {
   });
 
   // MEH-3119: the key went stale once the map grew marks it did not explain.
-  // Every mark the map draws is created at one of these call sites in
-  // MapComponent.jsx; a new one turns this red until it gets a key row (or a
-  // reason here) and the list below is updated.
+  // Every mark the map draws is built at a Leaflet factory call in
+  // MapComponent.jsx. Each call site is listed here WITH the key rows that
+  // explain it; a new call site (or a removed one) turns the count red, and
+  // the entry it then needs must name rows the panel really renders. It is a
+  // tripwire, not a proof: it cannot tell that a row's drawing is right.
   it("every marker the map creates has a key row", () => {
     const src = readFileSync(resolve(__dirname, "../components/MapComponent.jsx"), "utf8");
-    const sites = src.match(/L\.(divIcon|circleMarker|circle|icon|marker|polygon|polyline|rectangle)\(/g) ?? [];
+    const sites = markerCallSites(src);
     const KNOWN = {
-      "L.divIcon(": ["photo/verified (createCategoryMarker)", "pickup (createSecondaryMarker)", "same_business (createSingleBusinessClusterIcon)", "cluster (iconCreateFunction)"],
-      "L.circleMarker(": ["my_location"],
-      "L.marker(": ["every pin — wears one of the divIcons above"],
+      "L.divIcon": [
+        ["photo", "verified", "approximate", "dimmed"], // createCategoryMarker
+        ["pickup", "approximate", "dimmed"], // createSecondaryMarker
+        ["same_business"], // createSingleBusinessClusterIcon
+        ["cluster"], // iconCreateFunction
+      ],
+      "L.circleMarker": [["my_location"]],
+      "L.marker": [[]], // every pin; it wears one of the divIcons above
     };
-    const counts = sites.reduce((acc, k) => ({ ...acc, [k]: (acc[k] ?? 0) + 1 }), {});
-    expect(counts).toEqual(Object.fromEntries(Object.entries(KNOWN).map(([k, v]) => [k, v.length])));
+    expect(sites).toEqual(Object.fromEntries(Object.entries(KNOWN).map(([k, v]) => [k, v.length])));
     renderKey();
     fireEvent.click(toggle());
-    const texts = screen.getAllByTestId("map-key-row").map((r) => r.textContent);
-    for (const k of ["photo", "verified", "pickup", "same_business", "cluster", "my_location", "dimmed", "approximate"]) {
-      expect(texts, `key row for ${k}`).toContain(K[k]);
-    }
+    const rendered = screen.getAllByTestId("map-key-row").map((r) => r.textContent);
+    const explained = [...new Set(Object.values(KNOWN).flat(2))];
+    // both directions: every listed row is on screen, and no row on screen is unowned
+    expect(explained.map((k) => K[k]).sort()).toEqual([...rendered].sort());
+  });
+
+  // The tripwire's own control (testing.md: a probe ships with a self-test):
+  // it must see a new factory call, a `new L.Marker`, and must NOT count a
+  // call that only appears in a comment.
+  it("markerCallSites: counts code, ignores comments, sees constructor forms", () => {
+    expect(markerCallSites("const a = L.divIcon({});\n// L.divIcon( in a comment\n/* L.circle( */")).toEqual({ "L.divIcon": 1 });
+    expect(markerCallSites("new L.Marker(x); L.imageOverlay(u, b); L.popup()")).toEqual({ "L.marker": 1, "L.imageOverlay": 1, "L.popup": 1 });
+    const real = readFileSync(resolve(__dirname, "../components/MapComponent.jsx"), "utf8");
+    expect(markerCallSites(real + "\nL.divIcon({ html: '' });")["L.divIcon"]).toBe(markerCallSites(real)["L.divIcon"] + 1);
   });
 
   it.each([

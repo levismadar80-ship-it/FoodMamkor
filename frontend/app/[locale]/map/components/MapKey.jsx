@@ -89,15 +89,20 @@ function SamplePickup() {
 // MEH-3119: an approximate point shows two ways on the map — a halo around a
 // business pin, a dashed ring on a pickup pin (createSecondaryMarker
 // borderStyle) — so the sample shows both side by side.
+const APPROX_HALO = { boxShadow: "0 0 0 4px rgba(46,104,83,0.14)" };
+
 function SampleApproximate() {
   const { color, icon: Glyph } = PICKUP_SAMPLE;
   return (
-    <span className="flex items-center gap-2" aria-hidden="true">
+    <span className="flex items-center gap-3" aria-hidden="true">
       <span
-        className={`relative shrink-0 w-5 h-5 rounded-full border-2 border-primary bg-gradient-to-br from-[#c9b48a] via-[#8aa37b] to-[#4f7a5f]`}
-        style={{ boxShadow: "0 0 0 4px rgba(46,104,83,0.18)" }}
+        className="relative shrink-0 w-5 h-5 rounded-full border-2 border-primary bg-gradient-to-br from-[#c9b48a] via-[#8aa37b] to-[#4f7a5f]"
+        style={APPROX_HALO}
       />
-      <span className="w-5 h-5 rounded-full bg-surface border-2 border-dashed flex items-center justify-center" style={{ borderColor: color }}>
+      <span
+        className="w-5 h-5 rounded-full bg-surface border-2 border-dashed flex items-center justify-center"
+        style={{ ...APPROX_HALO, borderColor: color }}
+      >
         <Glyph size={12} color={color} />
       </span>
     </span>
@@ -106,13 +111,14 @@ function SampleApproximate() {
 
 // MEH-3119: several points of ONE business that sit together cluster into its
 // category glyph with a count badge (MapComponent.jsx createSingleBusinessClusterIcon).
+// Scaled like every sample here: the map's 36px pin / 18px badge at 28px / 16px.
 function SampleSameBusiness() {
   const { color, icon: Glyph } = PICKUP_SAMPLE;
   return (
-    <span className={`${PIN} flex items-center justify-center`} style={{ background: color }} aria-hidden="true">
-      <Glyph size={14} color="#fff" weight="fill" />
+    <span className={`${PIN} flex items-center justify-center text-surface`} style={{ background: color }} aria-hidden="true">
+      <Glyph size={14} weight="fill" />
       {/* eslint-disable-next-line no-restricted-syntax -- rtl-ok: mirrors the cluster's physical top-right badge */}
-      <span className="absolute -top-1.5 -right-1.5 min-w-[16px] h-4 px-0.5 rounded-full bg-primary border border-white text-white text-2xs font-semibold numeric flex items-center justify-center">
+      <span className="absolute -top-1 -right-1 min-w-4 h-4 px-0.5 rounded-full bg-primary border border-surface text-surface text-2xs leading-none font-semibold numeric flex items-center justify-center">
         3
       </span>
     </span>
@@ -123,11 +129,9 @@ function SampleSameBusiness() {
 // filter globals.css puts on `.mehamakor-map-focused` markers.
 function SampleDimmed() {
   return (
-    <span
-      className={`${PIN} bg-gradient-to-br from-[#c9b48a] via-[#8aa37b] to-[#4f7a5f]`}
-      style={{ filter: "grayscale(1) opacity(0.35)" }}
-      aria-hidden="true"
-    />
+    <span className="flex" style={{ filter: "grayscale(1) opacity(0.35)" }}>
+      <SamplePhoto />
+    </span>
   );
 }
 
@@ -210,7 +214,7 @@ export default function MapKey({ buttonClassName = "", buttonStyle, panelClassNa
             {rows.map(([Sample, label]) => (
               <li key={label} className="flex items-center gap-3">
                 {/* MEH-3119: a fixed-width slot so a two-mark sample keeps every label aligned */}
-                <span className="shrink-0 w-12 flex items-center justify-center">
+                <span className="shrink-0 w-14 flex items-center justify-center">
                   <Sample />
                 </span>
                 <span data-testid="map-key-row" className="text-sm text-text leading-snug">
