@@ -79,9 +79,10 @@ timestamp built from the UTC clock is green at most hours and red at one.
   not only at the hour the suite happens to run.
 - Review question: what does this assertion read at 21:30 UTC on the Monday
   after the clock change — late October, and late March?
-- `scripts/checks/test-clock-guard.sh` (warn-only, MEH-2382) prints `WARNING`
-  for any `date.today()` left in `tests/`; `guard-ok: <reason>` within ±1 line
-  is the escape hatch. It was born with zero findings — a WARNING is a new one.
+- `scripts/checks/test-clock-guard.sh` (blocking since MEH-3160; warn-only
+  before, MEH-2382) fails on any `date.today()` in `tests/`; `guard-ok:
+  <reason>` within ±1 line is the escape hatch. `israel-clock-guard.sh` does
+  the same for a private Israel formatter in `frontend/`.
 
 ---
 
