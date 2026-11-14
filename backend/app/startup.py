@@ -436,8 +436,11 @@ def _run_rescue_digest_job() -> None:
         db.close()
 
 
-def _run_weekly_owner_summary_job() -> None:
+def _run_weekly_owner_summary_job(now=None) -> None:
     """MEH-3079: Sunday-morning weekly summary email to business owners.
+
+    `now` is passed only by the boot catch-up run: the missed fire time, so it
+    counts the same 7-day window the cron would have, not a later one.
 
     Same shape as _run_rescue_digest_job: fresh session (the scheduler worker
     thread cannot share request-scoped sessions), the service is
@@ -449,7 +452,7 @@ def _run_weekly_owner_summary_job() -> None:
 
     db = SessionLocal()
     try:
-        counters = send_weekly_summaries(db)
+        counters = send_weekly_summaries(db, now=now)
         log.info("[WEEKLY-SUMMARY] run complete counters=%s", counters)
     except Exception as exc:
         capture_background_exception(exc, task="weekly_owner_summary")
@@ -516,6 +519,7 @@ def _register_weekly_owner_summary(scheduler, now=None) -> bool:
         JOB_ID,
         LATE_RUN_WINDOW,
         catchup_due,
+        last_scheduled_fire,
         summary_enabled,
     )
 
@@ -539,6 +543,8 @@ def _register_weekly_owner_summary(scheduler, now=None) -> bool:
         scheduler.add_job(
             _run_weekly_owner_summary_job,
             DateTrigger(run_date=now + CATCHUP_DELAY),
+            # Count the missed fire's window, not the boot time's.
+            kwargs={"now": last_scheduled_fire(now)},
             id=CATCHUP_JOB_ID,
             replace_existing=True,
             max_instances=1,

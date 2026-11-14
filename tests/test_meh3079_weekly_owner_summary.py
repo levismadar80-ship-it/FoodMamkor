@@ -25,6 +25,7 @@ from zoneinfo import ZoneInfo
 from urllib.parse import parse_qs, urlparse
 
 import pytest
+from sqlalchemy import text
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.date import DateTrigger
 
@@ -390,6 +391,8 @@ class TestRestartCatchUp:
         assert job is not None
         assert isinstance(job.trigger, DateTrigger)
         assert job.trigger.run_date == now + timedelta(minutes=1)
+        # it counts the window the missed cron would have counted, not a later one
+        assert job.kwargs == {"now": fire}
         # the weekly cron is still there alongside it
         assert scheduler.get_job(wos.JOB_ID) is not None
 
@@ -445,19 +448,25 @@ class TestSendLoopSafety:
         assert wos._claim(db, producer.id, now) is True
         assert wos._claim(db, producer.id, now) is False
 
-    def test_one_failing_send_does_not_stop_the_next(self, db, sent, monkeypatch):
+    def test_an_exception_before_hand_off_restores_the_claim_and_the_next_still_sends(
+        self, db, sent, monkeypatch
+    ):
+        """A failure between the claim and send_email (building the email)
+        puts the stamp back and does not stop the run. A delivery failure
+        INSIDE send_email is not this path: send_email is fail-open and
+        returns None (MEH-1613), so that claim stands."""
         a, owner_a = _business(db, name="נכשל")
         b, owner_b = _business(db, name="עובר")
         _views(db, a.id, 2)
         _views(db, b.id, 2)
-        real = wos.send_email
+        real = wos.build_email
 
-        def flaky(to, *args, **kwargs):
-            if to == owner_a.email:
+        def flaky(m):
+            if m.business_name == "נכשל":
                 raise RuntimeError("boom")
-            return real(to, *args, **kwargs)
+            return real(m)
 
-        monkeypatch.setattr(wos, "send_email", flaky)
+        monkeypatch.setattr(wos, "build_email", flaky)
         counters = wos.send_weekly_summaries(db)
         assert [c["to"] for c in sent] == [owner_b.email]
         assert counters["failed"] == 1
@@ -467,6 +476,52 @@ class TestSendLoopSafety:
         assert a.weekly_summary_sent_at is None  # claim undone: retried next run
         assert b.weekly_summary_sent_at is not None
 
+    def test_a_business_deleted_mid_run_does_not_stop_the_run(self, db, sent, monkeypatch):
+        """The first claim commits, which expires every ORM row the session
+        holds. A candidate deleted after that must not raise outside the
+        per-business try and end the run for everyone after it."""
+        made = [_business(db, name=f"עסק {i}") for i in range(3)]
+        for p, _ in made:
+            _views(db, p.id, 1)
+        first, gone, last = sorted(made, key=lambda pair: str(pair[0].id))
+        gone_id = gone[0].id
+        real_claim = wos._claim
+
+        def claim_then_delete(session, pid, now):
+            won = real_claim(session, pid, now)
+            if pid == first[0].id:
+                session.execute(
+                    text("DELETE FROM producer_page_views WHERE producer_id = :p"),
+                    {"p": gone_id},
+                )
+                session.execute(
+                    text("UPDATE users SET producer_id = NULL WHERE producer_id = :p"),
+                    {"p": gone_id},
+                )
+                session.execute(text("DELETE FROM producers WHERE id = :p"), {"p": gone_id})
+                session.commit()
+            return won
+
+        monkeypatch.setattr(wos, "_claim", claim_then_delete)
+        wos.send_weekly_summaries(db)
+        assert [c["to"] for c in sent] == [first[1].email, last[1].email]
+
+    def test_throttle_comes_before_the_claim(self, db, sent, monkeypatch):
+        """A process killed during the pause must not leave a claimed row."""
+        events: list[str] = []
+        real_claim = wos._claim
+        monkeypatch.setattr(wos, "_sleep", lambda _s: events.append("sleep"))
+        monkeypatch.setattr(
+            wos,
+            "_claim",
+            lambda *a: events.append("claim") or real_claim(*a),
+        )
+        for i in range(3):
+            p, _ = _business(db, name=f"עסק {i}")
+            _views(db, p.id, 1)
+        wos.send_weekly_summaries(db)
+        assert events == ["claim", "sleep", "claim", "sleep", "claim"]
+
     def test_throttle_between_sends(self, db, sent, pauses):
         for i in range(3):
             p, _ = _business(db, name=f"עסק {i}")
@@ -474,7 +529,8 @@ class TestSendLoopSafety:
         wos.send_weekly_summaries(db)
         assert len(sent) == 3
         assert pauses == [wos.SEND_INTERVAL_SECONDS] * 2
-        assert 0.3 <= wos.SEND_INTERVAL_SECONDS <= 1.0
+        # 0.6 s ≈ 1.7/s: under Resend's 2/s with room for the app's other mail.
+        assert 0.6 <= wos.SEND_INTERVAL_SECONDS <= 1.0
 
     def test_send_counts_against_the_run_clock(self, db, sent):
         """A run at a frozen `now` counts THAT week, not the wall clock's."""

@@ -24,9 +24,18 @@ Rules (all enforced in `send_weekly_summaries`):
   - an owner with a verified email only;
   - not opted out, and not already sent within the last 6 days;
   - each row is CLAIMED with one conditional UPDATE … RETURNING before its
-    send, so two overlapping runs (a rolling deploy) cannot both send it; a
-    failed send puts the previous stamp back so the next run retries it;
-  - sends are spaced SEND_INTERVAL_SECONDS apart (Resend's per-second cap).
+    send, so two overlapping runs (a rolling deploy) cannot both send it.
+    An exception between the claim and the hand-off to `send_email` (token
+    or email building) puts the previous stamp back, so the next run retries
+    it. A failed DELIVERY does not: `send_email` is fail-open and returns
+    None on every path (MEH-1613), so once handed off the claim stands. A
+    process killed between the claim and the hand-off loses that one
+    business's week;
+  - sends are spaced SEND_INTERVAL_SECONDS apart (Resend's per-second cap),
+    the pause taken BEFORE the claim so a kill during it leaves no claim;
+  - candidates are read as plain column rows, never ORM instances: every
+    claim commits, and a commit expires instances — a re-SELECT on attribute
+    access outside the per-business try would end the run for everyone.
 """
 
 from __future__ import annotations
@@ -75,9 +84,9 @@ CATCHUP_DELAY = timedelta(minutes=1)
 
 # Pause between two sends. Resend rate-limits its API per team (documented
 # default: 2 requests/second — not re-measured for this account), and every
-# other email the app sends shares that budget; 0.5 s keeps this job at or
-# under it. Tests set `_sleep` to a recorder instead of sleeping.
-SEND_INTERVAL_SECONDS = 0.5
+# other email the app sends shares that budget; 0.6 s (~1.7/s) leaves room
+# for them. Tests set `_sleep` to a recorder instead of sleeping.
+SEND_INTERVAL_SECONDS = 0.6
 _sleep = time.sleep
 
 INSIGHTS_PATH = "/producer/dashboard/insights"
@@ -289,10 +298,25 @@ def catchup_due(now: datetime) -> bool:
     return now - last_scheduled_fire(now) < LATE_RUN_WINDOW
 
 
-def _candidates(db: Session, now: datetime) -> list[Any]:
+@dataclass(frozen=True)
+class _Candidate:
+    """The columns the loop needs, copied out — no ORM instance to expire."""
+
+    id: Any
+    name: str
+    is_test: bool
+    sent_at: Any
+
+
+def _candidates(db: Session, now: datetime) -> list[_Candidate]:
     cutoff = now - RESEND_AFTER
     rows: list[Any] = (
-        db.query(Producer)
+        db.query(
+            Producer.id,
+            Producer.name,
+            Producer.is_test,
+            Producer.weekly_summary_sent_at,
+        )
         .filter(
             _is_business(),
             Producer.weekly_summary_opt_out.is_(False),
@@ -304,7 +328,10 @@ def _candidates(db: Session, now: datetime) -> list[Any]:
         .order_by(Producer.id)
         .all()
     )
-    return rows
+    return [
+        _Candidate(id=r[0], name=r[1] or "", is_test=bool(r[2]), sent_at=r[3])
+        for r in rows
+    ]
 
 
 def _claim(db: Session, producer_id: Any, now: datetime) -> bool:
@@ -368,13 +395,10 @@ def send_weekly_summaries(db: Session, now: datetime | None = None) -> dict[str,
     }
     base = settings.frontend_url.rstrip("/")
     first_send = True
-    for producer in _candidates(db, now):
-        # Read every attribute up front: after a commit or a rollback the ORM
-        # row is expired, and the except block below must not reload it.
-        pid = producer.id
-        name = producer.name or ""
-        producer_is_test = bool(producer.is_test)
-        previous = producer.weekly_summary_sent_at
+    for cand in _candidates(db, now):
+        # Plain values (see _candidates): nothing here can re-SELECT after the
+        # claim commits or the except block rolls back.
+        pid = cand.id
         counters["scanned"] += 1
         claimed = False
         try:
@@ -388,32 +412,34 @@ def send_weekly_summaries(db: Session, now: datetime | None = None) -> dict[str,
             if numbers["profile_views"] <= 0:
                 counters["zero_views"] += 1
                 continue
+            # Pause BEFORE claiming: a kill during the sleep leaves no claim.
+            if not first_send:
+                _sleep(SEND_INTERVAL_SECONDS)
             if not _claim(db, pid, now):
                 counters["already_claimed"] += 1
                 continue
             claimed = True
+            first_send = False
             token = create_unsubscribe_token(pid)
             subject, plain, html = build_email(
                 SummaryEmail(
-                    business_name=name,
+                    business_name=cand.name,
                     numbers=numbers,
                     insights_url=f"{base}{INSIGHTS_PATH}",
                     unsubscribe_url=f"{base}{UNSUBSCRIBE_PATH}?token={token}",
                 )
             )
-            if not first_send:
-                _sleep(SEND_INTERVAL_SECONDS)
-            first_send = False
             # send_email is fail-open and returns None on every path (its
-            # MEH-1613 contract, pinned by tests) — so the claim stands for
-            # "handed to the sender", like the MEH-539 email_followup_*_sent_at
-            # columns. Only an exception here undoes it.
+            # MEH-1613 contract, pinned by tests), and never raises — so from
+            # here the claim stands for "handed to the sender", like the
+            # MEH-539 email_followup_*_sent_at columns, even if Resend then
+            # refuses it. Only an exception BEFORE this call undoes the claim.
             send_email(
                 owner_email,
                 subject,
                 plain,
                 html=html,
-                test_cause=producer_is_test or owner_is_test,
+                test_cause=cand.is_test or owner_is_test,
             )
             counters["sent"] += 1
         except Exception:  # noqa: BLE001 — one business never stops the run
@@ -422,7 +448,7 @@ def send_weekly_summaries(db: Session, now: datetime | None = None) -> dict[str,
             logger.warning("[WEEKLY-SUMMARY] producer_id=%s failed", pid, exc_info=True)
             if claimed:
                 try:
-                    _unclaim(db, pid, now, previous)
+                    _unclaim(db, pid, now, cand.sent_at)
                 except Exception:  # noqa: BLE001
                     db.rollback()
                     logger.warning(
