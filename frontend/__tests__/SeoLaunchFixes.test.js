@@ -11,6 +11,9 @@ const read = (p) => fs.readFileSync(path.join(root, p), "utf8");
 describe("israelOffset — DST-aware, from the Israel clock", () => {
   it("winter date → +02:00", () => expect(israelOffset("2026-01-15", "18:00")).toBe("+02:00"));
   it("summer date → +03:00", () => expect(israelOffset("2026-07-15", "18:00")).toBe("+03:00"));
+  // Israel 2026: spring forward Fri 27/03 02:00 local (00:00Z); fall back Sun 25/10 02:00 local (23:00Z the day before).
+  it("01:30 on the spring-forward day is still winter time", () => expect(israelOffset("2026-03-27", "01:30")).toBe("+02:00"));
+  it("00:30 on the fall-back day is still summer time", () => expect(israelOffset("2026-10-25", "00:30")).toBe("+03:00"));
   it("garbage date → empty string, never a wrong offset", () => expect(israelOffset("not-a-date")).toBe(""));
 });
 
@@ -51,13 +54,17 @@ describe("noindex on signed-in surfaces", () => {
 
 describe("robots.txt blocks the bare URL, not only the subtree", () => {
   const txt = read("public/robots.txt");
-  it("no Disallow line for admin / dashboard ends in a slash", () => {
-    const bad = txt.split("\n").filter((l) => /^Disallow: (\/en)?\/(admin|producer\/dashboard)\/$/.test(l));
-    expect(bad).toEqual([]);
+  it("every admin / dashboard subtree rule has its exact-match twin", () => {
+    const lines = txt.split("\n");
+    for (const sub of lines.filter((l) => /^Disallow: (\/en)?\/(admin|producer\/dashboard)\/$/.test(l))) {
+      expect(lines).toContain(sub.replace(/\/$/, "$"));
+    }
   });
-  it("the rules are still there (7 groups × he/en)", () => {
-    const n = txt.split("\n").filter((l) => /^Disallow: (\/en)?\/admin$/.test(l)).length;
-    expect(n).toBeGreaterThanOrEqual(2);
+  it("the bare URL is blocked exactly, not by prefix (a /admin-bakery business slug stays crawlable)", () => {
+    const lines = txt.split("\n");
+    expect(lines.filter((l) => /^Disallow: (\/en)?\/admin\$$/.test(l)).length).toBeGreaterThanOrEqual(2);
+    expect(lines.filter((l) => /^Disallow: (\/en)?\/admin\/$/.test(l)).length).toBeGreaterThanOrEqual(2);
+    expect(lines.filter((l) => /^Disallow: (\/en)?\/admin$/.test(l))).toEqual([]);
   });
 });
 

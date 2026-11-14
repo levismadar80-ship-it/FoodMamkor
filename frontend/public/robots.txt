@@ -13,11 +13,13 @@ Allow: /
 # uncrawlable landing page. Longest-match wins (Google/Bing), so the more
 # specific Allow overrides the shorter Disallow.
 Allow: /register/producer
-Disallow: /admin
+Disallow: /admin$
+Disallow: /admin/
 Disallow: /api/
 Disallow: /settings
 Disallow: /favorites
-Disallow: /producer/dashboard
+Disallow: /producer/dashboard$
+Disallow: /producer/dashboard/
 Disallow: /login
 Disallow: /register
 
@@ -25,10 +27,12 @@ Disallow: /register
 # route above also exists under /en/. robots.txt rules are plain prefixes —
 # "/admin/" does not match "/en/admin/" — so each rule needs its /en twin.
 Allow: /en/register/producer
-Disallow: /en/admin
+Disallow: /en/admin$
+Disallow: /en/admin/
 Disallow: /en/settings
 Disallow: /en/favorites
-Disallow: /en/producer/dashboard
+Disallow: /en/producer/dashboard$
+Disallow: /en/producer/dashboard/
 Disallow: /en/login
 Disallow: /en/register
 
@@ -76,18 +80,22 @@ Disallow: /
 User-agent: OAI-SearchBot
 Allow: /
 Allow: /register/producer
-Disallow: /admin
+Disallow: /admin$
+Disallow: /admin/
 Disallow: /api/
 Disallow: /settings
 Disallow: /favorites
-Disallow: /producer/dashboard
+Disallow: /producer/dashboard$
+Disallow: /producer/dashboard/
 Disallow: /login
 Disallow: /register
 Allow: /en/register/producer
-Disallow: /en/admin
+Disallow: /en/admin$
+Disallow: /en/admin/
 Disallow: /en/settings
 Disallow: /en/favorites
-Disallow: /en/producer/dashboard
+Disallow: /en/producer/dashboard$
+Disallow: /en/producer/dashboard/
 Disallow: /en/login
 Disallow: /en/register
 
@@ -95,18 +103,22 @@ Disallow: /en/register
 User-agent: ChatGPT-User
 Allow: /
 Allow: /register/producer
-Disallow: /admin
+Disallow: /admin$
+Disallow: /admin/
 Disallow: /api/
 Disallow: /settings
 Disallow: /favorites
-Disallow: /producer/dashboard
+Disallow: /producer/dashboard$
+Disallow: /producer/dashboard/
 Disallow: /login
 Disallow: /register
 Allow: /en/register/producer
-Disallow: /en/admin
+Disallow: /en/admin$
+Disallow: /en/admin/
 Disallow: /en/settings
 Disallow: /en/favorites
-Disallow: /en/producer/dashboard
+Disallow: /en/producer/dashboard$
+Disallow: /en/producer/dashboard/
 Disallow: /en/login
 Disallow: /en/register
 
@@ -114,18 +126,22 @@ Disallow: /en/register
 User-agent: Claude-SearchBot
 Allow: /
 Allow: /register/producer
-Disallow: /admin
+Disallow: /admin$
+Disallow: /admin/
 Disallow: /api/
 Disallow: /settings
 Disallow: /favorites
-Disallow: /producer/dashboard
+Disallow: /producer/dashboard$
+Disallow: /producer/dashboard/
 Disallow: /login
 Disallow: /register
 Allow: /en/register/producer
-Disallow: /en/admin
+Disallow: /en/admin$
+Disallow: /en/admin/
 Disallow: /en/settings
 Disallow: /en/favorites
-Disallow: /en/producer/dashboard
+Disallow: /en/producer/dashboard$
+Disallow: /en/producer/dashboard/
 Disallow: /en/login
 Disallow: /en/register
 
@@ -133,18 +149,22 @@ Disallow: /en/register
 User-agent: Claude-User
 Allow: /
 Allow: /register/producer
-Disallow: /admin
+Disallow: /admin$
+Disallow: /admin/
 Disallow: /api/
 Disallow: /settings
 Disallow: /favorites
-Disallow: /producer/dashboard
+Disallow: /producer/dashboard$
+Disallow: /producer/dashboard/
 Disallow: /login
 Disallow: /register
 Allow: /en/register/producer
-Disallow: /en/admin
+Disallow: /en/admin$
+Disallow: /en/admin/
 Disallow: /en/settings
 Disallow: /en/favorites
-Disallow: /en/producer/dashboard
+Disallow: /en/producer/dashboard$
+Disallow: /en/producer/dashboard/
 Disallow: /en/login
 Disallow: /en/register
 
@@ -152,18 +172,22 @@ Disallow: /en/register
 User-agent: PerplexityBot
 Allow: /
 Allow: /register/producer
-Disallow: /admin
+Disallow: /admin$
+Disallow: /admin/
 Disallow: /api/
 Disallow: /settings
 Disallow: /favorites
-Disallow: /producer/dashboard
+Disallow: /producer/dashboard$
+Disallow: /producer/dashboard/
 Disallow: /login
 Disallow: /register
 Allow: /en/register/producer
-Disallow: /en/admin
+Disallow: /en/admin$
+Disallow: /en/admin/
 Disallow: /en/settings
 Disallow: /en/favorites
-Disallow: /en/producer/dashboard
+Disallow: /en/producer/dashboard$
+Disallow: /en/producer/dashboard/
 Disallow: /en/login
 Disallow: /en/register
 

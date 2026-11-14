@@ -682,17 +682,28 @@ function eventOwnerUrl(event) {
  * runtime cannot tell (the time then stays as it was — never a wrong offset).
  */
 export function israelOffset(date, time = "12:00") {
-  try {
-    const probe = new Date(`${date}T${time}:00Z`);
-    if (Number.isNaN(probe.getTime())) return "";
+  // The wall time is local, so read the offset twice: once at the wall time
+  // taken as UTC, then again at the instant that offset gives. The second read
+  // is right on DST days too (01:30 on the spring-forward Friday is still +02).
+  const read = (d) => {
     const name = new Intl.DateTimeFormat("en-US", {
       timeZone: "Asia/Jerusalem",
       timeZoneName: "longOffset",
     })
-      .formatToParts(probe)
+      .formatToParts(d)
       .find((p) => p.type === "timeZoneName")?.value;
-    const m = name && name.match(/GMT([+-]\d{2}):?(\d{2})/);
-    return m ? `${m[1]}:${m[2]}` : "";
+    const m = name && name.match(/GMT([+-])(\d{2}):?(\d{2})/);
+    if (!m) return null;
+    const mins = (Number(m[2]) * 60 + Number(m[3])) * (m[1] === "-" ? -1 : 1);
+    return { text: `${m[1]}${m[2]}:${m[3]}`, mins };
+  };
+  try {
+    const wall = new Date(`${date}T${time}:00Z`);
+    if (Number.isNaN(wall.getTime())) return "";
+    const first = read(wall);
+    if (!first) return "";
+    const second = read(new Date(wall.getTime() - first.mins * 60000));
+    return (second || first).text;
   } catch {
     return "";
   }
