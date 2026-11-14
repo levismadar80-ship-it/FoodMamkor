@@ -26,6 +26,7 @@ from app.schemas.schemas import (
     GroupBuyStatusOut,
     GroupBuyStatusUpdate,
 )
+from app.schemas.group_buy_counts import GroupBuyStatusCountsOut
 from app.services.group_buy_notifications import (
     send_cancelled_notifications,
     send_funded_notifications,
@@ -108,6 +109,10 @@ def _is_public(db: Session, group_buy_id: UUID) -> bool:
     )
 
 
+# MEH-3128: the three tabs /group-buys shows (GroupBuysClient.jsx chips).
+PUBLIC_STATUS_TABS = ("open", "funded", "fulfilled")
+
+
 @router.get("", response_model=list[GroupBuyOut])
 @limiter.limit("120/minute")
 def list_group_buys(
@@ -118,9 +123,17 @@ def list_group_buys(
     producer_id: UUID | None = Query(None),
     db: Session = Depends(get_db),
 ):
-    q = _public_group_buys(db).filter(GroupBuy.status == status)  # MEH-2484
+    q = _status_tab_query(db, status, city)
     if producer_id:
         q = q.filter(GroupBuy.producer_id == producer_id)
+    items = q.order_by(GroupBuy.deadline.asc()).all()
+    return [_enrich(gb) for gb in items]
+
+
+def _status_tab_query(db: Session, status: str, city: str | None):
+    """The rows one public status tab lists — shared by the list and the
+    counts, so a tab's count and its list can never disagree (MEH-3128)."""
+    q = _public_group_buys(db).filter(GroupBuy.status == status)  # MEH-2484
     if status == "open":
         # MEH-2540: nothing closes an open group buy past its deadline (see
         # OWNER_TRANSITIONS), so the «פתוחות» tab listed it next to a join
@@ -129,8 +142,24 @@ def list_group_buys(
         q = q.filter(GroupBuy.deadline >= utc_now())
     if city:
         q = q.filter(GroupBuy.city == city)
-    items = q.order_by(GroupBuy.deadline.asc()).all()
-    return [_enrich(gb) for gb in items]
+    return q
+
+
+# DO NOT move this below `/{group_buy_id}` — FastAPI matches in declaration
+# order, and "counts" would then fail UUID parsing (same trap as
+# experiences.py /count).
+@router.get("/counts", response_model=GroupBuyStatusCountsOut)
+@limiter.limit("60/minute")
+def count_group_buys_by_status(
+    request: Request,
+    city: str | None = Query(None, max_length=100),
+    db: Session = Depends(get_db),
+):
+    """MEH-3128: how many group buys each status tab would list, so the page
+    hides a tab that would open on an empty state. Numbers only."""
+    return GroupBuyStatusCountsOut(
+        **{s: _status_tab_query(db, s, city).count() for s in PUBLIC_STATUS_TABS}
+    )
 
 
 @me_router.get("/producers/me/group-buys", response_model=list[GroupBuyOut])
