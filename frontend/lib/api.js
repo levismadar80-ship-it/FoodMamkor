@@ -9,10 +9,27 @@ const api = axios.create({
   // parsing reads repeated bare keys; the bracketed form is silently ignored,
   // which would drop a multi-id category filter. Applies to every array param.
   paramsSerializer: { indexes: null },
+  // MEH-3193: no request waits forever. Before this, a stalled backend left
+  // /events, /experiences and /map on skeletons with no message (measured
+  // 20 s stall, 14/11); after 15 s the page's own error state takes over.
+  timeout: 15000,
 });
+
+// MEH-3193: a file upload is not "a stalled backend" — a multi-MB photo on a
+// slow phone connection can need far longer than 15 s (the trap MEH-2396
+// recorded in EventsClient). FormData bodies get 2 minutes unless the caller
+// set its own timeout.
+export const UPLOAD_TIMEOUT_MS = 120000;
 
 // Attach JWT token to requests
 api.interceptors.request.use((config) => {
+  if (
+    typeof FormData !== "undefined" &&
+    config.data instanceof FormData &&
+    config.timeout === 15000
+  ) {
+    config.timeout = UPLOAD_TIMEOUT_MS;
+  }
   // MEH-1627: _noAuth marks the deliberate anonymous retry issued after a
   // failed refresh. Honour it structurally rather than relying on
   // _expireSession() having emptied localStorage first — otherwise a token
