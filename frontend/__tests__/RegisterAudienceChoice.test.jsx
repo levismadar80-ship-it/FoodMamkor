@@ -90,10 +90,10 @@ describe("MEH-2922 — /register offers business signup before the customer form
     paramsRef.current = new URLSearchParams("");
   });
 
-  it("renders a link to /register/producer that precedes the customer form in the DOM", () => {
+  it("renders a link to /join (MEH-2983 main door) that precedes the customer form in the DOM", () => {
     render(<RegisterClient />);
     const link = screen.getByTestId("register-producer-choice");
-    expect(link.getAttribute("href")).toBe("/register/producer");
+    expect(link.getAttribute("href")).toBe("/join");
     const form = screen.getByTestId("register-form");
     // DOCUMENT_POSITION_FOLLOWING (4): the form comes after the link.
     expect(link.compareDocumentPosition(form) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();

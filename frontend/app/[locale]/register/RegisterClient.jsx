@@ -288,12 +288,12 @@ function RegisterPageBody() {
         {/* MEH-2922: /register is the CUSTOMER signup. A business owner who
             landed here sees the way to business signup first, before the
             heading and the form (it used to sit under the form, out of view).
-            Same approved strings as before; the link now goes straight to
-            /register/producer. Header CTA stays removed (MEH-907). */}
+            Same approved strings and the same /join door as before
+            (MEH-2983). Header CTA stays removed (MEH-907). */}
         <p className="mb-6 text-sm text-fg-muted text-start">
           {t("auth.register.consumer.cta_producer")}{" "}
           <Link
-            href="/register/producer"
+            href="/join"
             data-testid="register-producer-choice"
             className="inline-flex items-center min-h-11 text-primary font-medium underline"
           >
