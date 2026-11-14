@@ -10,6 +10,8 @@ import { ALLERGEN_CODES, toggleAllergen } from "@/lib/allergens";
 import { detailToMessage, errorMessage } from "@/lib/errors";
 import { israelTime, leftoverGroupUrl, shekels } from "@/lib/rescue";
 import Button from "@/components/ui/Button";
+import UnverifiedEmailNotice from "@/components/UnverifiedEmailNotice";
+import { useOptionalAuth } from "@/lib/auth-context";
 import { showToast } from "@/lib/toast";
 import { shareOrCopyText } from "@/lib/share-link";
 
@@ -38,6 +40,7 @@ const AT = { code: "code", orders: "orders", cancel: "cancel", publish: "publish
 
 export default function RescueTab() {
   const t = useTranslations("rescue.dashboard");
+  const emailUnverified = useOptionalAuth()?.user?.email_verified === false; // MEH-2918
   const tShare = useTranslations("share");
   const tCopied = useTranslations("dashboard.producer.vanity_link");
   // The allergen LABELS are the product sheet's, not a second copy: one
@@ -537,6 +540,8 @@ export default function RescueTab() {
       ) : (
         <section className="border border-border rounded-md px-4 py-4 space-y-3" data-notice-scope="publish">
           <h3 className="font-headline-md text-base font-black text-text">{t("publish_title")}</h3>
+          {/* MEH-2918: say it before the fields — publish 403s without it (rescue.py:340). */}
+          {emailUnverified && <UnverifiedEmailNotice />}
           <div className="grid grid-cols-2 gap-3">
             <label className="font-body-sm text-sm">
               {t("field.qty")}

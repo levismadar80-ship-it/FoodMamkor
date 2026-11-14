@@ -61,7 +61,7 @@ export default function NewExperiencePage() {
       </h1>
       <p className="text-fg-muted mb-8">{t("subtitle")}</p>
 
-      <ExperienceForm mode="create" onSuccess={handleSuccess} cancelHref={LIST_HREF} />
+      <ExperienceForm mode="create" onSuccess={handleSuccess} cancelHref={LIST_HREF} emailUnverified={user?.email_verified === false} />
     </div>
   );
 }

@@ -217,7 +217,9 @@ function validateExperienceForm(f, t, tReg) {
  * @param {(data:object)=>void} onSuccess  called with the created/updated row
  * @param {string} cancelHref
  */
-export default function ExperienceForm({ mode = "create", initial = null, onSuccess, cancelHref = "/experiences" }) {
+// MEH-2918: emailUnverified (from the page's useAuth) shows the verify notice
+// up front; `unverified` stays as the 403 backstop.
+export default function ExperienceForm({ mode = "create", initial = null, onSuccess, cancelHref = "/experiences", emailUnverified = false }) {
   const t = useTranslations("experiences.new");
   const tReg = useTranslations("registration.form");
   const tCat = useTranslations("experiences.categories");
@@ -415,7 +417,7 @@ export default function ExperienceForm({ mode = "create", initial = null, onSucc
 
   return (
     <form onSubmit={submit} noValidate className="bg-background border border-border rounded-lg p-6 space-y-5">
-      {unverified && <UnverifiedEmailNotice />}
+      {(unverified || emailUnverified) && <UnverifiedEmailNotice />}
       {serverError && (
         <div className="bg-danger-50 border border-danger-200 text-danger-700 rounded-md p-3 text-sm">{serverError}</div>
       )}

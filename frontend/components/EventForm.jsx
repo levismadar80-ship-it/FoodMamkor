@@ -159,7 +159,9 @@ function validateEventForm(f, t, tReg) {
  * @param {(data:object)=>void} onSuccess  called with the created/updated event
  * @param {string} cancelHref  where the cancel link points
  */
-export default function EventForm({ mode = "create", initial = null, onSuccess, cancelHref = "/producer/dashboard" }) {
+// MEH-2918: emailUnverified (from the page's useAuth) shows the verify notice
+// up front; `unverified` stays as the 403 backstop.
+export default function EventForm({ mode = "create", initial = null, onSuccess, cancelHref = "/producer/dashboard", emailUnverified = false }) {
   const t = useTranslations("sweep_tail.event_new");
   const tReg = useTranslations("registration.form");
   const tCat = useTranslations("events.categories");
@@ -300,7 +302,7 @@ export default function EventForm({ mode = "create", initial = null, onSuccess, 
 
   return (
     <>
-      {unverified && <UnverifiedEmailNotice className="mb-4" />}
+      {(unverified || emailUnverified) && <UnverifiedEmailNotice className="mb-4" />}
       {error && (
         <InlineMessage as="div" variant="box" className="rounded-sm p-3 mb-4">
           {error}

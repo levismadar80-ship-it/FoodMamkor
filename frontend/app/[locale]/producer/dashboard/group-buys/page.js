@@ -45,7 +45,8 @@ const NOTE_MIN_LETTERS = 3;
 const NOTE_LETTER = /[\u05d0-\u05eaa-zA-Z\u0621-\u063f\u0641-\u064a\u066e-\u066f\u0671-\u06d3]/g;
 const countLetters = (text) => (text.match(NOTE_LETTER) || []).length;
 
-function NewGroupBuyForm({ producerCity, onCreated }) {
+// MEH-2918: emailUnverified → the verify notice opens the form, before any field.
+function NewGroupBuyForm({ producerCity, onCreated, emailUnverified = false }) {
   const t = useTranslations("group_buys.dashboard.form");
   // MEH-848: shared generic error copy (collapsed from group_buys.dashboard.form.errors.generic).
   const tError = useTranslations("error");
@@ -132,6 +133,7 @@ function NewGroupBuyForm({ producerCity, onCreated }) {
       <h2 className="font-headline-lg text-lg font-bold text-text">{t("heading")}</h2>
       {/* MEH-992: one-line concept intro — what a group-buy is */}
       <p className="text-sm text-fg-muted">{t("concept_intro")}</p>
+      {emailUnverified && <UnverifiedEmailNotice />}
 
       <div className="grid sm:grid-cols-2 gap-4">
         <div className="sm:col-span-2">
@@ -312,7 +314,7 @@ function NewGroupBuyForm({ producerCity, onCreated }) {
       </div>
 
       {/* MEH-1165: role="alert" so the submit error is announced to AT. */}
-      {unverified && <UnverifiedEmailNotice />}
+      {unverified && !emailUnverified && <UnverifiedEmailNotice />}
       {error && <InlineMessage>{error}</InlineMessage>}
       <Button
         type="submit"
@@ -602,6 +604,7 @@ export default function ProducerGroupBuysPage() {
         <div className="mb-8">
           <NewGroupBuyForm
             producerCity={producerCity}
+            emailUnverified={user?.email_verified === false}
             onCreated={() => {
               setShowForm(false);
               load();
