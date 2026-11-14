@@ -1054,7 +1054,7 @@ PUT    /producers/me/locations/{id}               producer  — update (60/hr). 
                                                               same-city check only when city/label in the patch.
 DELETE /producers/me/locations/{id}               producer  — delete. Cross-owner → 403. Deleting the primary promotes
                                                               the oldest survivor so exactly one primary remains.
-GET    /producers/me/dashboard                    producer  — stable legacy: favorites_count + whatsapp_clicks_week
+GET    /producers/me/dashboard                    producer  — stable legacy: favorites_count + whatsapp_clicks_week + attention {unreplied_reviews, new_signups[{kind,title,count}] (7 days), funded_group_buys} (MEH-3108)
 GET    /producers/me/analytics                    producer  — feature/producer-analytics (April 2026)
                                                               profile_views / search_appearances / whatsapp_clicks
                                                               as {last_7d, last_30d, total}; follower_count +

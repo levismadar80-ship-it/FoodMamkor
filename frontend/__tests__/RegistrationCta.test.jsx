@@ -350,3 +350,72 @@ describe("MEH-3043 — sticky phone bar", () => {
     expect(screen.queryByTestId("registration-bar")).toBeNull();
   });
 });
+
+describe("MEH-3109 — the bar is a floating pill that steps aside at the footer", () => {
+  // One callback per observed node: the inline action and the site footer.
+  let observers;
+  let footer;
+  const fireFor = (node, isIntersecting) => act(() => observers.get(node)([{ isIntersecting }]));
+  beforeEach(() => {
+    observers = new Map();
+    window.IntersectionObserver = class {
+      constructor(cb) { this.cb = cb; }
+      observe(el) { observers.set(el, this.cb); }
+      disconnect() {}
+    };
+    footer = document.createElement("footer");
+    footer.setAttribute("data-site-footer", "");
+    document.body.appendChild(footer);
+  });
+  afterEach(() => {
+    delete window.IntersectionObserver;
+    footer.remove();
+    document.body.style.paddingBottom = "";
+  });
+  const inline = () => [...observers.keys()].find((n) => n !== footer);
+
+  it("is a rounded pill in a transparent shell, not a full-width white strip", () => {
+    cta({ method: "site_form", phone: null, barNote: "ו׳, 21.11 · 10:00" });
+    fireFor(inline(), false);
+    const bar = screen.getByTestId("registration-bar");
+    expect(bar.className).not.toMatch(/\bbg-surface\b/);
+    expect(bar.className).not.toMatch(/\bborder-t\b/);
+    expect(bar.className).toMatch(/\bpointer-events-none\b/);
+    const pill = screen.getByTestId("registration-bar-pill");
+    expect(pill.className).toMatch(/\brounded-full\b/);
+    expect(pill.className).toMatch(/\bpointer-events-auto\b/);
+    // Above the cookie banner while it is up (same offset var as ChatWidget).
+    expect(bar.className).toContain("var(--cookie-banner-h,0px)");
+  });
+
+  it("hides while the site footer is on screen and comes back after it", () => {
+    cta({ method: "site_form", phone: null });
+    fireFor(inline(), false);
+    expect(screen.getByTestId("registration-bar")).toBeInTheDocument();
+    fireFor(footer, true);
+    expect(screen.queryByTestId("registration-bar")).toBeNull();
+    fireFor(footer, false);
+    expect(screen.getByTestId("registration-bar")).toBeInTheDocument();
+  });
+
+  it("with a site footer the page end gets no extra room, not even for one commit (that room was the cream band under the footer)", () => {
+    // Every write to <body style>, including one undone a commit later.
+    const mo = new MutationObserver(() => {});
+    mo.observe(document.body, { attributes: true, attributeFilter: ["style"], attributeOldValue: true });
+    cta({ method: "site_form", phone: null });
+    fireFor(inline(), false);
+    const writes = mo.takeRecords().map(() => document.body.getAttribute("style") || "");
+    mo.disconnect();
+    expect(screen.getByTestId("registration-bar")).toBeInTheDocument();
+    expect(writes).toEqual([]);
+  });
+
+  it("with no site footer the page end gets room while the bar is up, and loses it when the bar goes", () => {
+    footer.remove();
+    cta({ method: "site_form", phone: null });
+    fireFor(inline(), false);
+    expect(document.body.style.paddingBottom).not.toBe("");
+    fireFor(inline(), true);
+    expect(document.body.style.paddingBottom).toBe("");
+  });
+});

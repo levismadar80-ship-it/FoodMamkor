@@ -15,7 +15,8 @@
  *           producer page's sticky bar — same show-when-inline-is-gone rule),
  *           components/public/ProductSheet.jsx (scroll-lock + Escape + Tab
  *           trap + focus return — the modal contract copied here).
- * History:  MEH-3043 (creation).
+ * History:  MEH-3043 (creation). MEH-3109 (floating pill, steps aside at
+ *           the footer).
  */
 
 import { useEffect, useRef, useState } from "react";
@@ -26,8 +27,10 @@ import { X } from "@phosphor-icons/react";
 // card (EventDetailClient / ExperienceDetailClient `lg:grid`).
 const DESKTOP_QUERY = "(min-width: 1024px)";
 
-// Room at the page end while the bar is up (bar ≈ 68px + breathing space).
-const BAR_ROOM = "76px";
+// Room at the page end while the bar is up, on a page with no site footer:
+// the layout's own bottom inset (it clears the nav pill) + pill 60px + 8px gap.
+// Inline padding replaces the layout's pb class, so the inset is added back.
+const BAR_ROOM = "calc(var(--bottom-inset, 5rem) + 68px)";
 
 const FOCUSABLE = 'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
 
@@ -64,34 +67,66 @@ export function useInView(ref, active = true) {
   return inView;
 }
 
+/** Whether the site footer is on screen (BackToTop's MEH-2417 rule). null
+ * when the page has no site footer or no IntersectionObserver. */
+function useFooterInView() {
+  const [inView, setInView] = useState(null);
+  useEffect(() => {
+    if (typeof IntersectionObserver === "undefined") return undefined;
+    // The SITE footer, not the first <footer> in the document.
+    const footer = document.querySelector("footer[data-site-footer]");
+    if (!footer) return undefined;
+    setInView(false);
+    const io = new IntersectionObserver(([entry]) => setInView(entry.isIntersecting));
+    io.observe(footer);
+    return () => io.disconnect();
+  }, []);
+  return inView;
+}
+
 /**
- * Phone only (lg:hidden). Sits on top of the BottomNav pill: its bottom is the
+ * Phone only (lg:hidden). A floating pill 8px above the BottomNav pill, with
+ * the nav shell's geometry (14px gutters, rounded-full) — the producer page's
+ * sticky contact pill (MEH-3027) is the same shape. Its bottom is the
  * clearance BottomNav publishes (`--bottom-nav-clearance`, MEH-1950 — the
- * same var CookieBanner reads), which is the bare safe-area on routes with no
- * pill. While it shows, the chat launcher steps aside ([data-chat-hide],
- * MEH-2835).
+ * same var CookieBanner reads). While it shows, the chat launcher steps aside
+ * ([data-chat-hide], MEH-2835).
+ *
+ * MEH-3109: it steps aside while the site footer is on screen (BackToTop's
+ * MEH-2417 rule). Before, a full-width white strip sat over the dark footer,
+ * and the room it reserved at the page end showed as a cream band under the
+ * footer (Sapir, 14/11). The footer starts right after the content, so once
+ * the bar hides nothing is left under it — the body padding is only needed on
+ * a page with no site footer. While the cookie banner is up the pill sits
+ * above it (`--cookie-banner-h`, as ChatWidget / BackToTop do).
  */
 export function StickyRegistrationBar({ note, children }) {
-  // While the bar is up, the page gets room for it at the end, so the last
-  // lines (footer, «more events») can still scroll out from under it.
+  const footerInView = useFooterInView();
   useEffect(() => {
-    if (isDesktop()) return undefined;
+    // Decided in the effect itself, not from footerInView: that starts null,
+    // and a first-commit write would paint the room for a frame (review).
+    if (isDesktop() || document.querySelector("footer[data-site-footer]")) return undefined;
     const prev = document.body.style.paddingBottom;
     document.body.style.paddingBottom = BAR_ROOM;
+    const ours = document.body.style.paddingBottom;
     return () => {
       // Only undo our own write — never put back a value someone else replaced.
-      if (document.body.style.paddingBottom === BAR_ROOM) document.body.style.paddingBottom = prev;
+      if (document.body.style.paddingBottom === ours) document.body.style.paddingBottom = prev;
     };
   }, []);
+  if (footerInView) return null;
   return (
     <div
-      className="vv-pin lg:hidden fixed inset-x-0 bottom-[var(--bottom-nav-clearance,calc(env(safe-area-inset-bottom)+72px))] z-[598] bg-surface border-t border-border shadow-lg"
+      className="vv-pin lg:hidden fixed inset-x-0 bottom-[calc(var(--bottom-nav-clearance,calc(env(safe-area-inset-bottom)+72px))+8px+var(--cookie-banner-h,0px))] z-[598] flex px-[14px] pointer-events-none"
       data-testid="registration-bar"
       data-chat-hide=""
     >
-      <div className="flex items-center gap-3 px-4 py-2.5">
-        {note && <p className="flex-1 min-w-0 text-sm font-semibold text-text">{note}</p>}
-        <div className={note ? "shrink-0 min-w-[55%]" : "flex-1"}>{children}</div>
+      <div
+        className="pointer-events-auto w-full flex items-center gap-3 rounded-full bg-surface border border-border shadow-lg p-1.5"
+        data-testid="registration-bar-pill"
+      >
+        {note && <p className="flex-1 min-w-0 ps-3.5 text-sm font-semibold text-text truncate">{note}</p>}
+        <div className={note ? "shrink-0 basis-1/2" : "flex-1"}>{children}</div>
       </div>
     </div>
   );
