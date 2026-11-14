@@ -402,6 +402,10 @@ def after_item_edit(
     if was_active and not item.is_active:
         return cancel_item_signups(db, item, background_tasks, test_cause)
     moved = (item.event_date, item.event_time) != (old_date, old_time)
-    if item.is_active and moved:
+    # A past item moved forward: its registrants were for the old, past date.
+    was_upcoming = bool(old_date and old_date >= israel_today())
+    if isinstance(item, Experience) and item.is_recurring:
+        was_upcoming = True
+    if item.is_active and moved and was_upcoming:
         return notify_item_moved(db, item, background_tasks, test_cause)
     return 0

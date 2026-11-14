@@ -64,7 +64,10 @@ def _kinds(sent):
 def _business(db, status="approved"):
     producer = make_producer(db, name="מאפיית הגליל", status=status, city="חיפה")
     owner = make_user(
-        db, role="producer", email=f"owner-{producer.id}@example.com", email_verified=True
+        db,
+        role="producer",
+        email=f"owner-{producer.id}@example.com",
+        email_verified=True,
     )
     owner.producer_id = producer.id
     owner.is_producer = True
@@ -103,7 +106,9 @@ def _bag(db, producer, buyers, **over):
     for i, email in enumerate(buyers):
         buyer = make_user(db, email=email)
         db.add(
-            RescueOrder(offer_id=offer.id, user_id=buyer.id, qty=1, pickup_code=f"{i:04d}")
+            RescueOrder(
+                offer_id=offer.id, user_id=buyer.id, qty=1, pickup_code=f"{i:04d}"
+            )
         )
     db.commit()
     return offer
@@ -177,7 +182,8 @@ class TestSuspend:
     def test_nothing_booked_mails_only_the_owner(self, client, db, sent):
         producer, owner = _business(db)
         r = client.post(
-            f"/admin/producers/{producer.id}/toggle-status", headers=auth_header(_admin(db))
+            f"/admin/producers/{producer.id}/toggle-status",
+            headers=auth_header(_admin(db)),
         )
         assert r.status_code == 200, r.text
         assert _kinds(sent) == [("send_owner_delisted", owner.email)]
@@ -195,7 +201,8 @@ class TestSuspend:
         r2 = _signup(db, ex, "x1@example.com")
 
         r = client.post(
-            f"/admin/producers/{producer.id}/toggle-status", headers=auth_header(_admin(db))
+            f"/admin/producers/{producer.id}/toggle-status",
+            headers=auth_header(_admin(db)),
         )
         assert r.status_code == 200, r.text
 
@@ -236,7 +243,8 @@ class TestSuspend:
         _signup(db, theirs, "theirs@example.com")
 
         client.post(
-            f"/admin/producers/{producer.id}/toggle-status", headers=auth_header(_admin(db))
+            f"/admin/producers/{producer.id}/toggle-status",
+            headers=auth_header(_admin(db)),
         )
         db.expire_all()
         assert db.get(RescueOffer, ended.id).status == "active"
@@ -247,7 +255,8 @@ class TestSuspend:
         ev = _event(db, producer)
         reg = _signup(db, ev, "e1@example.com")
         client.post(
-            f"/admin/producers/{producer.id}/toggle-status", headers=auth_header(_admin(db))
+            f"/admin/producers/{producer.id}/toggle-status",
+            headers=auth_header(_admin(db)),
         )
         assert _statuses(db, Registration, [reg.id]) == [("registered",)]
         assert not [s for s in sent if s[0] != "send_owner_delisted"]
@@ -373,7 +382,9 @@ class TestEventChanges:
         gone = _signup(db, ev, "gone@example.com")
         gone.status = "cancelled"
         db.commit()
-        client.put(f"/events/{ev.id}", json={"is_active": False}, headers=auth_header(owner))
+        client.put(
+            f"/events/{ev.id}", json={"is_active": False}, headers=auth_header(owner)
+        )
         assert sent == []
 
 
@@ -383,7 +394,9 @@ class TestExperienceChanges:
         ex = _experience(db, owner)
         reg = _signup(db, ex, "a@example.com")
         r = client.put(
-            f"/experiences/{ex.id}", json={"is_active": False}, headers=auth_header(owner)
+            f"/experiences/{ex.id}",
+            json={"is_active": False},
+            headers=auth_header(owner),
         )
         assert r.status_code == 200, r.text
         assert _statuses(db, Registration, [reg.id]) == [("cancelled",)]
@@ -456,9 +469,89 @@ class TestCopy:
 
         out = []
         monkeypatch.setattr(
-            rescue_emails, "send_email", lambda to, subject, body, **k: out.append((subject, body))
+            rescue_emails,
+            "send_email",
+            lambda to, subject, body, **k: out.append((subject, body)),
         )
         rescue_emails.send_delisted_cancel_email("b@example.com", "מאפיית הגליל")
         subject, body = out[0]
         assert subject == "הסל במאפיית הגליל בוטל"
         assert "כבר לא מופיע במהמקור, ולכן השריון שלכם לסל בוטל." in body
+
+
+class TestReviewCells:
+    """Cells the fresh review named (MEH-3227)."""
+
+    def test_two_orders_one_buyer_get_one_mail(self, client, db, sent):
+        producer, owner = _business(db)
+        offer = _bag(db, producer, ["twice@example.com"])
+        buyer_id = db.query(RescueOrder).filter_by(offer_id=offer.id).one().user_id
+        db.add(
+            RescueOrder(offer_id=offer.id, user_id=buyer_id, qty=1, pickup_code="9999")
+        )
+        db.commit()
+        client.post(
+            f"/admin/producers/{producer.id}/toggle-status",
+            headers=auth_header(_admin(db)),
+        )
+        assert _kinds(sent) == [
+            ("send_delisted_cancel_email", "twice@example.com"),
+            ("send_owner_delisted", owner.email),
+        ]
+        db.expire_all()
+        statuses = {
+            o.status for o in db.query(RescueOrder).filter_by(offer_id=offer.id)
+        }
+        assert statuses == {"cancelled"}
+
+    def test_many_registrants_on_a_deleted_experience_each_get_one(
+        self, client, db, sent
+    ):
+        _, owner = _business(db)
+        ex = _experience(db, owner)
+        for e in ("a@example.com", "b@example.com", "c@example.com"):
+            _signup(db, ex, e)
+        client.delete(f"/experiences/{ex.id}", headers=auth_header(owner))
+        assert [to for _, to, _, _ in sorted(sent, key=lambda c: c[1])] == [
+            "a@example.com",
+            "b@example.com",
+            "c@example.com",
+        ]
+
+    def test_a_recurring_experience_with_a_past_first_date_counts(
+        self, client, db, sent
+    ):
+        producer, owner = _business(db)
+        ex = _experience(db, owner, days=-10, is_recurring=True)
+        reg = _signup(db, ex, "weekly@example.com")
+        client.post(
+            f"/admin/producers/{producer.id}/toggle-status",
+            headers=auth_header(_admin(db)),
+        )
+        assert _statuses(db, Registration, [reg.id]) == [("cancelled",)]
+        assert ("send_registrant_delisted", "weekly@example.com") in _kinds(sent)
+
+    def test_a_test_business_marks_every_mail_as_test(self, client, db, sent):
+        producer, owner = _business(db)
+        producer.is_test = True
+        db.commit()
+        _bag(db, producer, ["b1@example.com"])
+        _signup(db, _event(db, producer), "e1@example.com")
+        client.post(
+            f"/admin/producers/{producer.id}/toggle-status",
+            headers=auth_header(_admin(db)),
+        )
+        assert len(sent) == 3
+        assert all(kw.get("test_cause") is True for _, _, _, kw in sent)
+
+    def test_moving_a_past_event_forward_mails_nobody(self, client, db, sent):
+        producer, owner = _business(db)
+        ev = _event(db, producer, days=-3)
+        _signup(db, ev, "old@example.com")
+        r = client.put(
+            f"/events/{ev.id}",
+            json={"event_date": (israel_today() + timedelta(days=5)).isoformat()},
+            headers=auth_header(owner),
+        )
+        assert r.status_code == 200, r.text
+        assert sent == []
