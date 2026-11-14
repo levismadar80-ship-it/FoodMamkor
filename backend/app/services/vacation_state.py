@@ -38,8 +38,8 @@ def read_vacation_state(db: Session) -> tuple[bool, date | None]:
       "true" + valid ISO date               → (True, parsed_date)
       "true" + invalid ISO                  → (False, None)  (corrupt-state coerce)
     """
-    rows = {
-        r.key: r.value
+    rows: dict[str, str | None] = {
+        str(r.key): (None if r.value is None else str(r.value))
         for r in db.query(AdminSetting).filter(
             AdminSetting.key.in_(["vacation_mode_active", "vacation_return_date"])
         )
