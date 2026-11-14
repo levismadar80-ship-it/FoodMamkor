@@ -161,9 +161,21 @@ erDiagram
         int cancel_cutoff_hours "0..168, default 24"
         boolean shabbat_observant
         int min_order_agorot "nullable"
+        int slot_minutes "MEH-3262: 30|60|120, default 60"
+        int lead_time_hours "MEH-3262: 0..168, default 24"
         boolean alcohol_licensed "admin only"
         timestamp created_at
         timestamp updated_at
+    }
+
+    producer_order_windows {
+        uuid id PK
+        uuid producer_id FK "CASCADE; whole-list replace, max 28 per business (MEH-3262)"
+        smallint weekday "0 = Sunday .. 6 = Saturday, as producers.order_window"
+        time start_time "Israel clock"
+        time end_time
+        string fulfilment "pickup|delivery"
+        timestamp created_at
     }
 
     product_orders {
@@ -559,6 +571,7 @@ erDiagram
     users ||--o{ rescue_orders : "reserves"
     producers ||--o| rescue_typical_items : "usual contents"
     producers ||--o| producer_order_settings : "ordering on/off + rules (MEH-3218)"
+    producers ||--o{ producer_order_windows : "weekly ordering windows (MEH-3262)"
     producers ||--o{ product_orders : "order requests (MEH-3218)"
     users |o--o{ product_orders : "buyer, when logged in"
     product_orders ||--o{ product_order_items : "lines, name+price copied"

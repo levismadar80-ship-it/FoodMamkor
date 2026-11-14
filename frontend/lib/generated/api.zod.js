@@ -2195,9 +2195,11 @@ export const SetAlcoholLicensedAdminProducersProducerIdOrderSettingsAlcoholPutRe
   "auto_confirm_slot_cap": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()]),
   "cancel_cutoff_hours": /*#__PURE__*/ zod.int(),
   "enabled": /*#__PURE__*/ zod.boolean(),
+  "lead_time_hours": /*#__PURE__*/ zod.int(),
   "min_order_agorot": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()]),
   "producer_id": /*#__PURE__*/ zod.uuid(),
-  "shabbat_observant": /*#__PURE__*/ zod.boolean()
+  "shabbat_observant": /*#__PURE__*/ zod.boolean(),
+  "slot_minutes": /*#__PURE__*/ zod.int()
 })
 
 
@@ -5436,9 +5438,11 @@ export const GetMyOrderSettingsProducersMeOrderSettingsGetResponse = /*#__PURE__
   "auto_confirm_slot_cap": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()]),
   "cancel_cutoff_hours": /*#__PURE__*/ zod.int(),
   "enabled": /*#__PURE__*/ zod.boolean(),
+  "lead_time_hours": /*#__PURE__*/ zod.int(),
   "min_order_agorot": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()]),
   "producer_id": /*#__PURE__*/ zod.uuid(),
-  "shabbat_observant": /*#__PURE__*/ zod.boolean()
+  "shabbat_observant": /*#__PURE__*/ zod.boolean(),
+  "slot_minutes": /*#__PURE__*/ zod.int()
 })
 
 
@@ -5453,9 +5457,39 @@ export const PutMyOrderSettingsProducersMeOrderSettingsPutResponse = /*#__PURE__
   "auto_confirm_slot_cap": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()]),
   "cancel_cutoff_hours": /*#__PURE__*/ zod.int(),
   "enabled": /*#__PURE__*/ zod.boolean(),
+  "lead_time_hours": /*#__PURE__*/ zod.int(),
   "min_order_agorot": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()]),
   "producer_id": /*#__PURE__*/ zod.uuid(),
-  "shabbat_observant": /*#__PURE__*/ zod.boolean()
+  "shabbat_observant": /*#__PURE__*/ zod.boolean(),
+  "slot_minutes": /*#__PURE__*/ zod.int()
+})
+
+
+/**
+ * @summary Get My Order Windows
+ */
+export const GetMyOrderWindowsProducersMeOrderWindowsGetResponse = /*#__PURE__*/ zod.object({
+  "windows": /*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
+  "end_time": /*#__PURE__*/ zod.iso.time({}),
+  "fulfilment": /*#__PURE__*/ zod.enum(['pickup', 'delivery']),
+  "start_time": /*#__PURE__*/ zod.iso.time({}),
+  "weekday": /*#__PURE__*/ zod.int()
+}))
+})
+
+
+/**
+ * Replace the business's whole week. The list is capped by the schema,
+ * so the table cannot grow past 28 rows a business (MEH-3022).
+ * @summary Put My Order Windows
+ */
+export const PutMyOrderWindowsProducersMeOrderWindowsPutResponse = /*#__PURE__*/ zod.object({
+  "windows": /*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
+  "end_time": /*#__PURE__*/ zod.iso.time({}),
+  "fulfilment": /*#__PURE__*/ zod.enum(['pickup', 'delivery']),
+  "start_time": /*#__PURE__*/ zod.iso.time({}),
+  "weekday": /*#__PURE__*/ zod.int()
+}))
 })
 
 
@@ -5643,6 +5677,20 @@ export const SetMyProductGroupProducersMeProductsProductIdGroupPutResponse = /*#
   "price_max": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "price_min": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "price_range": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
+})
+
+
+/**
+ * Set one product's ordering fields. The lookup is scoped to the caller's
+ * own business, so another business's product is a 404, not a 403.
+ * @summary Put Product Ordering
+ */
+export const PutProductOrderingProducersMeProductsProductIdOrderingPutResponse = /*#__PURE__*/ zod.object({
+  "contains_alcohol": /*#__PURE__*/ zod.boolean(),
+  "id": /*#__PURE__*/ zod.uuid(),
+  "in_stock": /*#__PURE__*/ zod.boolean(),
+  "is_orderable": /*#__PURE__*/ zod.boolean(),
+  "price_unit": /*#__PURE__*/ zod.enum(['unit', 'kg', '100g'])
 })
 
 
@@ -6250,6 +6298,38 @@ export const GetGoogleRatingProducersProducerIdGoogleRatingGetResponse = /*#__PU
  * @summary Get Kashrut Cert
  */
 export const GetKashrutCertProducersProducerIdKashrutCertBadgeCodeGetResponse = /*#__PURE__*/ zod.unknown()
+
+
+/**
+ * What can be ordered from this business, and when.
+ *
+ * One 404 for every "no": unknown business, a business not shown on the
+ * site, a seeded test row, ordering never switched on, or switched off.
+ * @summary Get Order Menu
+ */
+export const GetOrderMenuProducersProducerIdOrderMenuGetResponse = /*#__PURE__*/ zod.object({
+  "cancel_cutoff_hours": /*#__PURE__*/ zod.int(),
+  "lead_time_hours": /*#__PURE__*/ zod.int(),
+  "min_order_agorot": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()]),
+  "producer_id": /*#__PURE__*/ zod.uuid(),
+  "products": /*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
+  "contains_alcohol": /*#__PURE__*/ zod.boolean(),
+  "id": /*#__PURE__*/ zod.uuid(),
+  "image_url": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
+  "in_stock": /*#__PURE__*/ zod.boolean(),
+  "name": /*#__PURE__*/ zod.string(),
+  "price_is_estimate": /*#__PURE__*/ zod.boolean(),
+  "price_max_agorot": /*#__PURE__*/ zod.int(),
+  "price_min_agorot": /*#__PURE__*/ zod.int(),
+  "price_unit": /*#__PURE__*/ zod.enum(['unit', 'kg', '100g'])
+})),
+  "slots": /*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
+  "alcohol_ok": /*#__PURE__*/ zod.boolean(),
+  "end": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "fulfilment": /*#__PURE__*/ zod.enum(['pickup', 'delivery']),
+  "start": /*#__PURE__*/ zod.iso.datetime({"offset":true})
+}))
+})
 
 
 /**

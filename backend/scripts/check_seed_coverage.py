@@ -314,6 +314,7 @@ EXEMPT_TABLES = {
     # MEH-3218 on-site ordering — dark behind product_orders_enabled; a seed
     # row would show an order no visitor sent and a setting no owner chose.
     "producer_order_settings": "MEH-3218 on-site ordering — dark behind a flag; saved by an owner at runtime",
+    "producer_order_windows": "MEH-3262 on-site ordering — dark behind a flag; saved by an owner at runtime",
     "product_orders": "MEH-3218 on-site ordering — a visitor's order request, runtime only",
     "product_order_items": "MEH-3218 on-site ordering — lines of a visitor's order, runtime only",
     "product_order_events": "MEH-3218 on-site ordering — status log of an order, runtime only",

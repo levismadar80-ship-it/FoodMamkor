@@ -16,8 +16,8 @@
 
 | Rows | Count | covered | weak | GAP | n/a |
 |---|---|---|---|---|---|
-| API routes (actor actions) | 241 | 228 | 7 | 6 | 0 |
-| — negative cell of gated routes (401/403) | 173 | 109 | 0 | 64 | 0 |
+| API routes (actor actions) | 245 | 232 | 7 | 6 | 0 |
+| — negative cell of gated routes (401/403) | 176 | 109 | 0 | 67 | 0 |
 | Internal routes (allowlisted) | 10 + 4 docs | — | — | — | — |
 | Business tools | 51 | 49 | 1 | 1 | 0 |
 | Pages — public | 53 | 50 | 0 | 3 | 0 |
@@ -28,7 +28,7 @@
 
 Pages opened by a CI-run Playwright spec: **40 / 91** — the rest are covered only by a Vitest import (which may test no more than the page's metadata).
 
-**GAP cells in total: 85** (route positive 6 · route negative 64 · tools 1 · pages 8 · machine rows 4 · extra rows 2). Not a gate yet — the plan's gate is "no *new* GAP" (a ratchet), later.
+**GAP cells in total: 88** (route positive 6 · route negative 67 · tools 1 · pages 8 · machine rows 4 · extra rows 2). Not a gate yet — the plan's gate is "no *new* GAP" (a ratchet), later.
 
 ## Top gaps by risk
 
@@ -311,9 +311,13 @@ Registration order of the app. Actor from the dependency tree: `require_admin` �
 | 246 | PUT | `/producers/me/rescue/offers/{offer_id}/donated` | `rescue.set_donated` | business/organizer · flag: rescue | `tests/test_meh2703_rescue_donated.py:82` | GAP | e2e-mock `frontend/e2e/flows/manual/home.spec.ts:502` | 9 |
 | 247 | GET | `/producers/me/rescue/typical-items` | `rescue.get_typical_items` | business/organizer · flag: rescue | `tests/test_meh2752_rescue_allergens.py:78` | GAP | e2e-mock `frontend/e2e/flows/manual/home.spec.ts:502` | 5 |
 | 248 | PUT | `/producers/me/rescue/typical-items` | `rescue.set_typical_items` | business/organizer · flag: rescue | `tests/test_meh2752_rescue_allergens.py:68` | GAP | e2e-mock `frontend/e2e/flows/manual/home.spec.ts:502` | 7 |
-| 249 | GET | `/producers/me/order-settings` | `product_orders.get_my_order_settings` | business/organizer | `tests/test_meh3218_product_orders.py:357` | `tests/test_meh3218_product_orders.py:415` | e2e-mock `frontend/e2e/flows/manual/home.spec.ts:502` | 3 |
-| 250 | PUT | `/producers/me/order-settings` | `product_orders.put_my_order_settings` | business/organizer | `tests/test_meh3218_product_orders.py:380` | `tests/test_meh3218_product_orders.py:413` | e2e-mock `frontend/e2e/flows/manual/home.spec.ts:502` | 5 |
-| 251 | PUT | `/admin/producers/{producer_id}/order-settings/alcohol` | `product_orders.set_alcohol_licensed` | admin | `tests/test_meh3218_product_orders.py:447` | `tests/test_meh3218_product_orders.py:438` | — | 5 |
+| 249 | GET | `/producers/me/order-settings` | `product_orders.get_my_order_settings` | business/organizer | `tests/test_meh3218_product_orders.py:359` | `tests/test_meh3218_product_orders.py:419` | e2e-mock `frontend/e2e/flows/manual/home.spec.ts:502` | 3 |
+| 250 | PUT | `/producers/me/order-settings` | `product_orders.put_my_order_settings` | business/organizer | `tests/test_meh3218_product_orders.py:384` | `tests/test_meh3218_product_orders.py:417` | e2e-mock `frontend/e2e/flows/manual/home.spec.ts:502` | 5 |
+| 251 | PUT | `/admin/producers/{producer_id}/order-settings/alcohol` | `product_orders.set_alcohol_licensed` | admin | `tests/test_meh3218_product_orders.py:451` | `tests/test_meh3218_product_orders.py:442` | — | 5 |
+| 252 | GET | `/producers/me/order-windows` | `product_order_offer.get_my_order_windows` | business/organizer | `tests/test_meh3262_order_windows.py:308` | GAP | e2e-mock `frontend/e2e/flows/manual/home.spec.ts:502` | 5 |
+| 253 | PUT | `/producers/me/order-windows` | `product_order_offer.put_my_order_windows` | business/organizer | `tests/test_meh3262_order_windows.py:302` | GAP | e2e-mock `frontend/e2e/flows/manual/home.spec.ts:502` | 7 |
+| 254 | PUT | `/producers/me/products/{product_id}/ordering` | `product_order_offer.put_product_ordering` | business/organizer | `tests/test_meh3262_order_windows.py:451` | GAP | e2e-mock `frontend/e2e/flows/manual/dashboard-delivery.spec.ts:122` | 9 |
+| 255 | GET | `/producers/{producer_id}/order-menu` | `product_order_offer.get_order_menu` | anonymous | `tests/test_meh3262_order_windows.py:558` | n/a | e2e-mock `frontend/e2e/flows/manual/home.spec.ts:502` | 1 |
 
 ### Internal routes (allowlisted — not actor actions)
 

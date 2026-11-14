@@ -86,6 +86,8 @@ def valid_settings_payload() -> dict:
         "cancel_cutoff_hours": 24,
         "shabbat_observant": False,
         "min_order_agorot": None,
+        "slot_minutes": 60,
+        "lead_time_hours": 24,
     }
 
 
@@ -364,6 +366,8 @@ def test_a_business_that_never_saved_has_ordering_off(client, db, flag_on):
         "cancel_cutoff_hours": 24,
         "shabbat_observant": False,
         "min_order_agorot": None,
+        "slot_minutes": 60,
+        "lead_time_hours": 24,
         "alcohol_licensed": False,
     }
 

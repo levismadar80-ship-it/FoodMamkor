@@ -54,6 +54,7 @@ from app.models.product_orders import (
     PRODUCT_ORDER_STATUSES,
     PRODUCT_PRICE_UNITS,
     ProducerOrderSettings,
+    ProducerOrderWindow,
     ProductOrder,
     ProductOrderEvent,
     ProductOrderItem,
@@ -114,6 +115,7 @@ __all__ = [
     "ProducerOffer",
     # MEH-3218 — on-site ordering (stage 1 of MEH-3216)
     "ProducerOrderSettings",
+    "ProducerOrderWindow",
     "ProductOrder",
     "ProductOrderItem",
     "ProductOrderEvent",
