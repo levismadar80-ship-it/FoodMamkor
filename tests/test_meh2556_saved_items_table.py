@@ -6,7 +6,7 @@ owns, because chunk 2 relies on them instead of re-checking in Python:
 
 - one save per (user, type, item) — a double tap cannot create two rows;
 - only the three known types — a typo in the API cannot store a fourth;
-- deleting the account deletes its saves (DELETE /auth/me).
+- deleting the account deletes its saves (POST /auth/me/delete).
 
 Each case asserts the DB's answer, not "the constraint exists", so dropping a
 constraint from the revision turns it red.
@@ -82,7 +82,7 @@ def test_deleting_the_account_deletes_its_saves(client, db):
     _save(db, keeper, "recipe")
     user_id = user.id
 
-    resp = client.delete("/auth/me", headers=auth_header(user))
+    resp = client.post("/auth/me/delete", json={"password": "Zx7Yp9Mq2Lr4"}, headers=auth_header(user))
     assert resp.status_code == 200, resp.text
 
     db.expire_all()

@@ -68,6 +68,8 @@ const RESERVED = new Set([
   "registration",
   // MEH-3079: the weekly-summary unsubscribe page (/unsubscribe/weekly).
   "unsubscribe",
+  // MEH-3248: the confirmation after an account deletion.
+  "account-deleted",
 ]);
 
 // Real slugs are produced by backend _slugify

@@ -205,6 +205,7 @@ files = [
     "app/schemas/rescue.py",
     "app/schemas/schemas.py",
     "app/sentry.py",
+    "app/services/account_guards.py",
     "app/services/admin_pending_reminder.py",
     "app/services/analytics.py",
     "app/services/analytics_rollup.py",
