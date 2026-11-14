@@ -13,7 +13,8 @@
  */
 
 // Common personal-mail domains in Israel. Numbered ISP domains (012/013/014…)
-// are left out on purpose: they sit one edit apart from each other.
+// are left out on purpose: they sit one edit apart from each other. live.com
+// is left out too: life/love/line/lime.com are one edit away.
 const KNOWN = [
   "gmail.com",
   "walla.co.il",
@@ -23,10 +24,27 @@ const KNOWN = [
   "yahoo.com",
   "outlook.com",
   "icloud.com",
-  "live.com",
   "me.com",
   "bezeqint.net",
   "netvision.net.il",
+];
+
+// Real mail domains that sit close to a KNOWN one — never "corrected".
+const REAL = [
+  "ymail.com",
+  "mail.com",
+  "email.com",
+  "gmx.com",
+  "gmx.net",
+  "aol.com",
+  "msn.com",
+  "live.com",
+  "googlemail.com",
+  "rocketmail.com",
+  "proton.me",
+  "protonmail.com",
+  "wall.com",
+  "cloud.com",
 ];
 
 // Endings that are never right, and what they meant.
@@ -60,20 +78,34 @@ function distance(a, b) {
   return d[a.length][b.length];
 }
 
-/** The nearest well-known domain within the allowed distance, else null. */
+/** Split "walla.co.il" into ["walla", "co.il"]. */
+function split(domain) {
+  const dot = domain.indexOf(".");
+  return [domain.slice(0, dot), domain.slice(dot + 1)];
+}
+
+/**
+ * The nearest well-known domain with the SAME ending and the SAME first
+ * letter, within an edit distance that grows with the name's length; else
+ * null. The first-letter rule keeps zmail/fmail/bigmail.com (other real
+ * providers) from turning into gmail.com.
+ */
 function nearestKnown(domain) {
+  const [name, tld] = split(domain);
   let best = null;
   let bestDist = Infinity;
   for (const known of KNOWN) {
-    const dist = distance(domain, known);
+    const [kName, kTld] = split(known);
+    if (kTld !== tld || kName[0] !== name[0]) continue;
+    const dist = distance(name, kName);
     if (dist < bestDist) {
       best = known;
       bestDist = dist;
     }
   }
   if (!best) return null;
-  // Short names (me.com) sit one edit from real, unrelated domains.
-  const limit = best.length >= 9 ? 2 : best.length >= 8 ? 1 : 0;
+  const kLen = split(best)[0].length;
+  const limit = kLen >= 7 ? 2 : kLen >= 5 ? 1 : 0;
   return bestDist > 0 && bestDist <= limit ? best : null;
 }
 
@@ -84,19 +116,23 @@ function nearestKnown(domain) {
  */
 export function suggestEmail(email) {
   const value = String(email ?? "").trim();
-  const at = value.lastIndexOf("@");
-  if (at < 1 || at === value.length - 1) return null;
+  const at = value.indexOf("@");
+  if (at < 1 || at === value.length - 1 || value.lastIndexOf("@") !== at) return null;
   const local = value.slice(0, at);
   let domain = value.slice(at + 1).toLowerCase();
   if (!domain.includes(".") && !domain.endsWith("coil")) return null;
-  if (KNOWN.includes(domain)) return null;
+  if (KNOWN.includes(domain) || REAL.includes(domain)) return null;
   for (const [bad, good] of BAD_ENDINGS) {
     if (domain.endsWith(bad)) {
       domain = domain.slice(0, -bad.length) + good;
       break;
     }
   }
-  const fixed = KNOWN.includes(domain) ? domain : nearestKnown(domain) ?? domain;
+  // Gmail has one address space: gmail.co.il / gmail.net / gmal.co.il are
+  // all a mistake for gmail.com.
+  const name = split(domain)[0];
+  if (name[0] === "g" && distance(name, "gmail") <= 1) domain = "gmail.com";
+  const fixed = KNOWN.includes(domain) || REAL.includes(domain) ? domain : nearestKnown(domain) ?? domain;
   const suggestion = `${local}@${fixed}`;
   return suggestion.toLowerCase() === value.toLowerCase() ? null : suggestion;
 }

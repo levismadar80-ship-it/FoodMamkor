@@ -17,6 +17,10 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { suggestEmail } from "@/lib/email-typo";
 
+// Longer than a tap (pointer-down → pointer-up), short enough to read as
+// "right after leaving the field".
+const SHOW_DELAY_MS = 300;
+
 /**
  * @param {{ fieldId: string, value: string, onAccept: (email: string) => void, className?: string }} props
  */
@@ -27,23 +31,40 @@ export default function EmailTypoHint({ fieldId, value, onAccept, className = ""
   useEffect(() => {
     const el = document.getElementById(fieldId);
     if (!el) return undefined;
-    const onBlur = () => setSettled(true);
-    const onFocus = () => setSettled(false);
+    /** @type {ReturnType<typeof setTimeout> | undefined} */
+    let timer;
+    // The blur comes on pointer-DOWN of whatever she tapped next. Showing the
+    // line at once would push a submit button below it down mid-tap, and the
+    // pointer-up would miss it. Wait out a tap first.
+    const onBlur = () => {
+      clearTimeout(timer);
+      timer = setTimeout(() => setSettled(true), SHOW_DELAY_MS);
+    };
+    const onFocus = () => {
+      clearTimeout(timer);
+      setSettled(false);
+    };
     el.addEventListener("blur", onBlur);
     el.addEventListener("focus", onFocus);
     return () => {
+      clearTimeout(timer);
       el.removeEventListener("blur", onBlur);
       el.removeEventListener("focus", onFocus);
     };
   }, [fieldId]);
 
   const suggestion = settled ? suggestEmail(value) : null;
-  // Nothing rendered without a suggestion: an empty node would still take a
-  // space-y gap in the forms that stack their fields.
-  if (!suggestion) return null;
+  // The live region is always in the DOM (VoiceOver on iOS announces only a
+  // change inside a region that already exists). Empty, it is sr-only, so it
+  // takes no line and no flex/space-y gap in the forms that stack fields.
   return (
-    <p role="status" className={`text-sm text-fg-muted ${className}`} data-testid="email-typo-hint">
-      {t.rich("email_typo", {
+    <p
+      role="status"
+      className={suggestion ? `text-sm text-fg-muted ${className}` : "sr-only"}
+      data-testid={suggestion ? "email-typo-hint" : undefined}
+    >
+      {suggestion &&
+        t.rich("email_typo", {
           email: suggestion,
           fix: (chunks) => (
             <button
@@ -56,7 +77,7 @@ export default function EmailTypoHint({ fieldId, value, onAccept, className = ""
               {chunks}
             </button>
           ),
-      })}
+        })}
     </p>
   );
 }

@@ -14,6 +14,11 @@ describe("suggestEmail", () => {
     ["noa@yahooo.com", "noa@yahoo.com"],
     ["Noa.Cohen@GMIAL.COM", "Noa.Cohen@gmail.com"],
     ["noa@business.con", "noa@business.com"],
+    // review finding 7: Gmail has one address space.
+    ["noa@gmail.co.il", "noa@gmail.com"],
+    ["noa@gmail.net", "noa@gmail.com"],
+    ["noa@gmal.co.il", "noa@gmail.com"],
+    ["noa@hotmail.con", "noa@hotmail.com"],
   ])("%s → %s", (input, expected) => {
     expect(suggestEmail(input)).toBe(expected);
   });
@@ -26,6 +31,28 @@ describe("suggestEmail", () => {
     "noa@012.net.il",
     "noa@me.com",
     "noa@mo.com",
+    // review finding 1: real providers and real names near a known domain.
+    "noa@ymail.com",
+    "noa@mail.com",
+    "noa@email.com",
+    "noa@zmail.com",
+    "noa@fmail.com",
+    "noa@pmail.com",
+    "noa@kmail.com",
+    "noa@tmail.com",
+    "noa@bigmail.com",
+    "noa@cloud.com",
+    "noa@live.com",
+    "noa@life.com",
+    "noa@love.com",
+    "noa@line.com",
+    "noa@lime.com",
+    "noa@wall.com",
+    "noa@hotmail.co.il",
+    "noa@walla.com",
+    "noa@sub.gmail.com",
+    // review finding 5: more than one @ stays invalid, no half-fix.
+    "a@b@gmial.com",
     "noa@",
     "@gmail.com",
     "noa",

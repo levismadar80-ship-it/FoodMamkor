@@ -293,6 +293,9 @@ export default function RecommendClient() {
               />
             </div>
             <div className="mt-4">
+              {/* MEH-3123: field + typo hint are one block, so the privacy
+                  notice below still sits right after the field's block. */}
+              <div>
               <Input
                 id="recommend-suggester-email"
                 type="email"
@@ -301,6 +304,7 @@ export default function RecommendClient() {
                 onChange={set("suggester_email")}
               />
               <EmailTypoHint fieldId="recommend-suggester-email" value={form.suggester_email} onAccept={(email) => set("suggester_email")({ target: { value: email } })} />
+              </div>
               {/* Privacy Protection Law Amendment 13 §11: the notice sits AT
                   the point of collection — directly under the field, not only
                   in a policy — and states purpose + who it does not go to.

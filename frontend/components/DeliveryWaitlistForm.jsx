@@ -194,7 +194,10 @@ export default function DeliveryWaitlistForm({ producer = null, city = "", descr
           <X size={18} aria-hidden="true" />
         </button>
       </div>
-      <div className="flex flex-col gap-2 sm:flex-row">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-start">
+        {/* MEH-3123: the typo hint sits under the FIELD (not under the button
+            on a phone), so field + hint share one column. */}
+        <div className="flex-1 flex flex-col gap-1">
         <input
           id={inputId}
           type="email"
@@ -207,8 +210,10 @@ export default function DeliveryWaitlistForm({ producer = null, city = "", descr
           data-testid="delivery-waitlist-email"
           /* MEH-976 pattern: plaintext bidi so a Hebrew placeholder reads RTL
              and the typed Latin address LTR, without flipping the field. */
-          className="flex-1 min-h-touch rounded-full border border-primary/15 bg-surface px-4 text-sm [unicode-bidi:plaintext] focus:border-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+          className="w-full min-h-touch rounded-full border border-primary/15 bg-surface px-4 text-sm [unicode-bidi:plaintext] focus:border-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
         />
+        <EmailTypoHint fieldId={inputId} value={email} onAccept={setEmail} className="ps-4" />
+        </div>
         <Button
           type="submit"
           disabled={busy}
@@ -218,7 +223,6 @@ export default function DeliveryWaitlistForm({ producer = null, city = "", descr
           {busy ? t("sending") : t("submit")}
         </Button>
       </div>
-      <EmailTypoHint fieldId={inputId} value={email} onAccept={setEmail} className="mt-1" />
       {/* MEH-2674: opt-in to host a pickup point in this city. Unticked by
           default; the hint under it says the mail-confirmation step out loud
           so nobody thinks the box alone hands her email to the business. */}
