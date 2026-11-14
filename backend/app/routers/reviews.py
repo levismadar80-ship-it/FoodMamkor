@@ -800,7 +800,7 @@ def admin_list_reviews(
             # MEH-2349: "APPROVED" | "FLAGGED" | None (no body / predates it).
             ai_moderation_status=r.ai_moderation_status,
             # MEH-2381: None = not edited since the last hide/unhide.
-            edited_after_hidden_at=_iso_or_none(r.edited_after_hidden_at),  # type: ignore[arg-type]
+            edited_after_hidden_at=_iso_or_none(r.edited_after_hidden_at),
             # MEH-3258: "owner" | "competitor" | None — why a review that is
             # not hidden still stays off the public page and the rating.
             conflict="owner" if is_owner else ("competitor" if is_competitor else None),
