@@ -647,8 +647,9 @@ export default function ProducerGroupBuysPage() {
             // MEH-2430: an open group buy past its deadline stayed «פתוחה» —
             // nothing moves the status server-side on its own. Display only;
             // since MEH-2435 the owner closes it with «סגירת הקבוצה» below.
-            // deadline is a full UTC timestamp (form sends toISOString), so an
-            // instant compare is right here, unlike the date-only event lists.
+            // deadline is a full UTC instant (the form sends the Israel wall
+            // clock as UTC, israelWallClockToIso), so an instant compare is
+            // right here, unlike the date-only event lists.
             // It reads the device clock: a skewed clock only swaps «ביטול» and
             // «סגירה», since the server takes both as open → cancelled.
             // MEH-3219 B13: the server serialises it naive (no Z), so parse as UTC.
