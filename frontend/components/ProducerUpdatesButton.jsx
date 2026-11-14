@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { rescueBagsEnabled } from "@/lib/rescue";
 import { Bell } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import { useAuth } from "@/lib/auth-context";
@@ -18,6 +19,12 @@ import {
   setPendingAction,
 } from "@/lib/pending-action";
 import LoginPromptModal from "./LoginPromptModal";
+import {
+  OVERLAY_ICON_BUTTON,
+  OVERLAY_ICON_FACE,
+  OVERLAY_ICON_SIZE,
+  overlayIconInk,
+} from "@/components/ui/overlay-icon-button";
 
 /**
  * MEH-2526 — the producer page's permanent "get updates" toggle.
@@ -49,7 +56,12 @@ import LoginPromptModal from "./LoginPromptModal";
  * open panel instead of leaving it on pre-write values. A failed prefs GET
  * leaves the button disabled rather than assuming OFF.
  */
-const TYPES = ["notify_new_event", "notify_new_product", "notify_delivery_area", "notify_new_recipe", "notify_new_group_buy"];
+const BASE_TYPES = ["notify_new_event", "notify_new_product", "notify_delivery_area", "notify_new_recipe", "notify_new_group_buy"];
+// MEH-3117: the rescue type counts only where the pilot is on. With it off the
+// panel shows no rescue row, so counting it would let the button read ON with
+// every visible switch off (reviewer, 14/11). Off → the field is not sent and
+// the API default keeps it.
+const TYPES = rescueBagsEnabled() ? [...BASE_TYPES, "notify_new_rescue"] : BASE_TYPES;
 
 // MEH-2562: the pill sat alone under the header and read as an orphan. On the
 // page it now matches its neighbours instead: "gallery" = the hero circle
@@ -63,8 +75,8 @@ const VARIANT_CLASS = {
         ? "bg-primary/10 text-primary border-primary/30 hover:bg-primary/15"
         : "bg-surface text-text border-border hover:bg-green-50"
     }`,
-  gallery: () =>
-    `bg-surface/95 hover:bg-surface rounded-full w-11 h-11 flex items-center justify-center shadow-lg hover:scale-105 ${FOCUS}`,
+  // MEH-3115: the shared photo-button anatomy; the face is drawn inside.
+  gallery: () => OVERLAY_ICON_BUTTON,
   quiet: (on) =>
     `inline-flex items-center gap-1.5 min-h-touch py-2 text-sm font-medium rounded ${FOCUS} ${
       on ? "text-primary" : "text-text hover:text-primary"
@@ -235,13 +247,24 @@ export default function ProducerUpdatesButton({
         data-variant={variant}
         className={VARIANT_CLASS[variant](on)}
       >
-        <Bell
-          size={variant === "gallery" ? 20 : variant === "quiet" ? 17 : 18}
-          weight={on ? "fill" : "regular"}
-          className={variant === "quiet" && !on ? "text-primary-dark" : "text-primary"}
-          aria-hidden="true"
-        />
-        {variant !== "gallery" && t("updates_button.label")}
+        {variant === "gallery" ? (
+          // MEH-3115: same ink as the heart beside it — text colour while off,
+          // green only once on (it read green while off before).
+          <span className={OVERLAY_ICON_FACE}>
+            <Bell size={OVERLAY_ICON_SIZE} weight={on ? "fill" : "regular"} className={overlayIconInk(on)} aria-hidden="true" />
+          </span>
+        ) : (
+          <>
+            {/* icon-ok: 17 is the quiet row's size from before MEH-3115 — the old nested ternary hid it from IconScaleGuard; not changed here (out of scope). */}
+            <Bell
+              size={variant === "quiet" ? 17 : 18}
+              weight={on ? "fill" : "regular"}
+              className={variant === "quiet" && !on ? "text-primary-dark" : "text-primary"}
+              aria-hidden="true"
+            />
+            {t("updates_button.label")}
+          </>
+        )}
       </button>
       <LoginPromptModal
         open={showLoginModal}
