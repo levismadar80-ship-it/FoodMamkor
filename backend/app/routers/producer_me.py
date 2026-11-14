@@ -20,6 +20,7 @@ from app.services.availability_validation import (
     resolve_vacation_until,
     validate_transition,
 )
+from app.services.whatsapp import is_configured as whatsapp_is_configured
 from app.services.whatsapp import send_template
 from app.services.whatsapp_templates import OtpCodeV1
 from app.utils.clock import ISRAEL_TZ, israel_today, utc_now
@@ -1650,11 +1651,18 @@ def send_phone_otp(
     db.commit()
 
     if test_code is None:
-        _send_whatsapp_otp(
-            producer.phone,
-            code,
-            test_cause=bool(producer.is_test or user.is_test),  # MEH-2952
-        )
+        test_cause = bool(producer.is_test or user.is_test)  # MEH-2952
+        sent = _send_whatsapp_otp(producer.phone, code, test_cause=test_cause)
+        # MEH-2122 B: a send that failed where WhatsApp IS set up used to answer
+        # «קוד נשלח» anyway, and the owner waited for a message that never came.
+        # Now the owner hears it. Unconfigured (dev / CI) and test rows stay 200: there
+        # nothing was meant to go out. The new token stays live — if Meta
+        # delivered after all, the code still works.
+        if not sent and not test_cause and whatsapp_is_configured():
+            raise HTTPException(
+                status_code=503,
+                detail="לא הצלחנו לשלוח את הקוד בוואטסאפ כרגע. נסו שוב בעוד כמה דקות.",
+            )
     else:
         # MEH-2231: a fixed code is a bypass event. WARNING so it is filterable
         # in Railway logs and an audit can tell a test run from a real one

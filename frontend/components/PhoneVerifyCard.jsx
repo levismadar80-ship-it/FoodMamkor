@@ -103,6 +103,8 @@ export default function PhoneVerifyCard({ onVerified }) {
       const sc = err.response?.status;
       if (sc === 400) setError(t("error_no_phone"));
       else if (sc === 429) showToast.error(detailToMessage(err.response?.data?.detail) || t("error_rate_limited"));
+      // MEH-2122 B: the WhatsApp send itself failed — say so, not "something".
+      else if (sc === 503) setError(t("error_send_failed"));
       else setError(t("error_generic"));
     } finally {
       setSending(false);
