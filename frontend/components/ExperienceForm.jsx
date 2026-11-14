@@ -217,7 +217,9 @@ function validateExperienceForm(f, t, tReg) {
  * @param {(data:object)=>void} onSuccess  called with the created/updated row
  * @param {string} cancelHref
  */
-export default function ExperienceForm({ mode = "create", initial = null, onSuccess, cancelHref = "/experiences" }) {
+// MEH-2918: emailUnverified (from the page's useAuth) shows the verify notice
+// up front; a 403 still shows it (and re-mounts it focused) when the prop is stale.
+export default function ExperienceForm({ mode = "create", initial = null, onSuccess, cancelHref = "/experiences", emailUnverified = false }) {
   const t = useTranslations("experiences.new");
   const tReg = useTranslations("registration.form");
   const tCat = useTranslations("experiences.categories");
@@ -230,7 +232,7 @@ export default function ExperienceForm({ mode = "create", initial = null, onSucc
   const [submitting, setSubmitting] = useState(false);
   const [serverError, setServerError] = useState("");
   const [fieldErrors, setFieldErrors] = useState({});
-  const [unverified, setUnverified] = useState(false);
+  const [unverifiedHits, setUnverifiedHits] = useState(0); // MEH-2918: 403 count, re-mounts the notice
   // MEH-2012: an upload is in flight. Gates submit — a form posted mid-upload
   // would save the PREVIOUS image_url while the owner is watching a new one
   // upload, which reads as the upload having been ignored.
@@ -344,7 +346,7 @@ export default function ExperienceForm({ mode = "create", initial = null, onSucc
   const submit = async (e) => {
     e.preventDefault();
     setServerError("");
-    setUnverified(false);
+    setUnverifiedHits(0);
 
     const errors = validateExperienceForm(form, t, tReg);
     if (Object.keys(errors).length > 0) {
@@ -402,7 +404,7 @@ export default function ExperienceForm({ mode = "create", initial = null, onSucc
       onSuccess?.(r.data);
     } catch (err) {
       const detail = err.response?.data?.detail;
-      if (isUnverifiedEmailError(err)) setUnverified(true);
+      if (isUnverifiedEmailError(err)) setUnverifiedHits((h) => h + 1);
       else if (detail && typeof detail === "object" && detail.reason) setServerError(detail.reason);
       else if (typeof detail === "string") setServerError(detail);
       // MEH-2766: «איך נרשמים?» prerequisites answer {code, message}.
@@ -415,7 +417,7 @@ export default function ExperienceForm({ mode = "create", initial = null, onSucc
 
   return (
     <form onSubmit={submit} noValidate className="bg-background border border-border rounded-lg p-6 space-y-5">
-      {unverified && <UnverifiedEmailNotice />}
+      {(unverifiedHits > 0 || emailUnverified) && <UnverifiedEmailNotice key={unverifiedHits} live={unverifiedHits > 0} focusOnMount={unverifiedHits > 0} />}
       {serverError && (
         <div className="bg-danger-50 border border-danger-200 text-danger-700 rounded-md p-3 text-sm">{serverError}</div>
       )}
