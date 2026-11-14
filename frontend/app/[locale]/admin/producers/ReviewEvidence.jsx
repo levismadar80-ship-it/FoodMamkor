@@ -41,6 +41,7 @@ import {
 } from "@phosphor-icons/react";
 import { HEALTH_MINISTRY_FOOD_REGISTRY_URL } from "@/lib/official-registries";
 import { instagramUrl } from "@/lib/social-links";
+import { copyText } from "@/lib/clipboard";
 
 const ICON = 14;
 const SECTION_ICON = 16;
@@ -116,14 +117,12 @@ export default function ReviewEvidence({ producer }) {
   } = producer;
 
   const copyName = async () => {
-    try {
-      await navigator.clipboard.writeText(name || "");
+    // Clipboard can be denied (permissions, insecure origin). Staying silent
+    // is right: the name is on screen and selectable, so the admin loses a
+    // convenience, not the ability to do the check.
+    if (await copyText(name || "")) {
       setCopied(true);
       window.setTimeout(() => setCopied(false), 2000);
-    } catch {
-      // Clipboard can be denied (permissions, insecure origin). Staying silent
-      // is right: the name is on screen and selectable, so the admin loses a
-      // convenience, not the ability to do the check.
     }
   };
 

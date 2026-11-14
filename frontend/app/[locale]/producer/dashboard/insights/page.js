@@ -34,6 +34,7 @@ import InfoTooltip from "@/components/InfoTooltip";
 import { SITE_URL } from "@/lib/env";
 import { showToast } from "@/lib/toast";
 import { shareOrCopy } from "@/lib/share-link";
+import { copyOrThrow } from "@/lib/clipboard";
 
 export default function ProducerDashboardInsightsPage() {
   const router = useRouter();
@@ -169,12 +170,7 @@ function DeepAnalyticsSection({ analytics, profile }) {
   const shareUrl =
     profile?.status === "approved" && profile?.slug ? `${SITE_URL}/p/${profile.slug}` : null;
   const copyShareUrl = () => {
-    if (!navigator.clipboard?.writeText) {
-      showToast.error(tFollowers("share_error"));
-      return;
-    }
-    navigator.clipboard
-      .writeText(shareUrl)
+    copyOrThrow(shareUrl)
       .then(() => showToast.success(tFollowers("share_toast")))
       .catch(() => showToast.error(tFollowers("share_error")));
   };

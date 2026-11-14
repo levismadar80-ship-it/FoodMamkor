@@ -8,6 +8,7 @@ import { ProducerClaimLinkSchema } from "@/lib/api-schemas";
 import Button from "@/components/ui/Button";
 import { formatDate } from "@/lib/format-date";
 import InlineMessage from "@/components/ui/InlineMessage";
+import { copyOrThrow } from "@/lib/clipboard";
 
 /**
  * Module:   ClaimLinkPanel
@@ -62,10 +63,7 @@ export default function ClaimLinkPanel({ producerId }) {
 
   const copy = () => {
     if (!link) return;
-    const write = navigator.clipboard?.writeText
-      ? navigator.clipboard.writeText(link.url)
-      : Promise.reject(new Error("clipboard unavailable"));
-    write
+    copyOrThrow(link.url)
       .then(() => {
         setCopyFailed(false);
         setCopied(true);
