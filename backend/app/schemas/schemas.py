@@ -1595,7 +1595,7 @@ class CategoryOut(BaseModel):
     is_system: bool = False
     # MEH-3255 (D10): manufacturer licence required for this category. Same
     # ADR-006 R1 reasoning as `is_system` — the new column rides CategoryOut.
-    requires_license: bool = False
+    requires_license: bool
     # MEH-1034: query-time count over producer_categories, populated only by
     # GET /admin/categories. Optional so public consumers (GET /categories,
     # ProducerOut.categories) serialize unchanged — NOT a DB column.

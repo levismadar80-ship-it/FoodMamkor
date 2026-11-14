@@ -778,7 +778,6 @@
             "title": "Producer Count"
           },
           "requires_license": {
-            "default": false,
             "title": "Requires License",
             "type": "boolean"
           },
@@ -796,7 +795,8 @@
         },
         "required": [
           "id",
-          "name"
+          "name",
+          "requires_license"
         ],
         "title": "CategoryOut",
         "type": "object"
