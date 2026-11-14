@@ -6,7 +6,7 @@ Purpose:  Owner-claim link — an admin prepares a DRAFT business with no owner,
           transmits a password.
 Touches:  producers (declared_at, declaration_version — read status, locked
           FOR UPDATE on claim; claim_link_sent_at — stamped, FOR UPDATE, on
-          mint), users (producer_id, role, is_producer, terms_accepted_at,
+          mint; name, city — read for the new-link request), users (producer_id, role, is_producer, terms_accepted_at,
           terms_version — the claimant's row locked FOR UPDATE first). Background: WhatsApp welcome to the business phone,
           producer welcome email, risk score. products (admin create / delete
           on an ownerless draft only) and the deleted product's Cloudinary
@@ -22,7 +22,9 @@ Related:  backend/app/auth.py create/decode_producer_claim_token ·
           backend/app/routers/admin.py admin_create_producer (`as_draft`).
 History:  MEH-2322 (MEH-2321 chunk A, creation). MEH-2326 (chunk D): admin
           adds / deletes products on an ownerless draft. MEH-2496: the mint
-          stamps producers.claim_link_sent_at (its only DB write).
+          stamps producers.claim_link_sent_at (its only DB write). MEH-3122:
+          POST /producer-claim/new-link-request — the owner of a lapsed link
+          asks; the admin is told; nothing is minted or sent to the owner.
 """
 
 from datetime import datetime, timezone
@@ -34,6 +36,7 @@ from sqlalchemy.orm import Session
 
 from app.auth import (
     create_producer_claim_token,
+    decode_lapsed_producer_claim_token,
     decode_producer_claim_token,
     get_current_user,
     require_admin,
@@ -45,6 +48,7 @@ from app.models import Producer, Product, User
 from app.rate_limit import limiter
 from app.schemas.schemas import (
     ProducerClaimLinkOut,
+    ProducerClaimNewLinkOut,
     ProducerClaimOut,
     ProducerClaimPreviewOut,
     ProducerClaimPreviewRequest,
@@ -53,7 +57,10 @@ from app.schemas.schemas import (
     ProductOut,
 )
 from app.services.auth_emails import send_welcome_email
-from app.services.auth_notifications import notify_producer_registered
+from app.services.auth_notifications import (
+    notify_admin_claim_link_requested,
+    notify_producer_registered,
+)
 from app.services.producer_risk import score_producer
 
 logger = structlog.get_logger(__name__)
@@ -178,6 +185,58 @@ def preview_claim(
         # the grower declaration (RegisterProducerClient FARMER_DECLARATION_*).
         category_names=[c.name for c in producer.categories],
     )
+
+
+# MEH-3122: one admin notice per draft per day, however many times the button
+# is pressed or from how many addresses. Process-local on purpose (no table,
+# no Alembic): a restart or a second replica can let one extra notice through,
+# which costs one email. Bounded by the number of drafts.
+_NEW_LINK_COOLDOWN_SECONDS = 24 * 60 * 60
+_new_link_last_notice: dict[UUID, float] = {}
+
+
+def _new_link_notice_due(producer_id: UUID) -> bool:
+    now = datetime.now(timezone.utc).timestamp()
+    last = _new_link_last_notice.get(producer_id)
+    if last is not None and now - last < _NEW_LINK_COOLDOWN_SECONDS:
+        return False
+    _new_link_last_notice[producer_id] = now
+    return True
+
+
+@router.post("/producer-claim/new-link-request", response_model=ProducerClaimNewLinkOut)
+@limiter.limit("5/hour")
+def request_new_claim_link(
+    request: Request,
+    body: ProducerClaimPreviewRequest,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
+):
+    """The owner opened a claim link that no longer works and asks for a new
+    one. Sapir's decision (14/11): the admin is told and sends the link
+    herself — this route never mints a link and never returns one.
+
+    DO NOT branch the response on the token. The answer is the same for a
+    forged token, an unknown draft, a claimed draft and a real request, so it
+    cannot be used to probe which producer ids exist (same reason as
+    _LINK_INVALID above).
+    """
+    producer_id = decode_lapsed_producer_claim_token(body.token)
+    producer = (
+        db.query(Producer).filter(Producer.id == producer_id).first()
+        if producer_id
+        else None
+    )
+    # Only a draft that can still be claimed: for a page that already has an
+    # owner there is no link to send.
+    if producer and _claimable(db, producer) and _new_link_notice_due(producer.id):
+        background_tasks.add_task(
+            notify_admin_claim_link_requested,
+            producer.name,
+            producer.city,
+            test_cause=bool(producer.is_test),
+        )
+    return ProducerClaimNewLinkOut(ok=True)
 
 
 @router.post("/producer-claim", response_model=ProducerClaimOut)

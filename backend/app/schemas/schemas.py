@@ -1316,6 +1316,11 @@ class ProducerClaimOut(BaseModel):
     status: str
 
 
+class ProducerClaimNewLinkOut(BaseModel):
+    # MEH-3122: always the same body — see request_new_claim_link.
+    ok: bool
+
+
 # ---------------------------------------------------------------------------
 # MEH-2974: owner invite for a business an admin built end to end.
 # Routers: routers/producer_owner_invite.py (admin + public).

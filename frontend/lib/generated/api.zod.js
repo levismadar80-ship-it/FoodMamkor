@@ -4053,6 +4053,22 @@ export const ClaimProducerProducerClaimPostResponse = /*#__PURE__*/ zod.object({
 
 
 /**
+ * The owner opened a claim link that no longer works and asks for a new
+ * one. Sapir's decision (14/11): the admin is told and sends the link
+ * herself — this route never mints a link and never returns one.
+ *
+ * DO NOT branch the response on the token. The answer is the same for a
+ * forged token, an unknown draft, a claimed draft and a real request, so it
+ * cannot be used to probe which producer ids exist (same reason as
+ * _LINK_INVALID above).
+ * @summary Request New Claim Link
+ */
+export const RequestNewClaimLinkProducerClaimNewLinkRequestPostResponse = /*#__PURE__*/ zod.object({
+  "ok": /*#__PURE__*/ zod.boolean()
+})
+
+
+/**
  * @summary Preview Claim
  */
 export const previewClaimProducerClaimPreviewPostResponseCategoryNamesDefault = [];
