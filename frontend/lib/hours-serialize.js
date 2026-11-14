@@ -33,10 +33,10 @@ export function emptyDay() {
  * MEH-1870: a day carries a LIST of ranges (lunch break, or Friday morning +
  * מוצ"ש). Capped so the editor stays a form rather than a scheduler.
  */
-export const MAX_RANGES_PER_DAY = 3;
+const MAX_RANGES_PER_DAY = 3;
 
 /** A single editor range carrying the defaults. */
-export function emptyRange() {
+function emptyRange() {
   return { from: DEFAULT_OPEN, to: DEFAULT_CLOSE };
 }
 
