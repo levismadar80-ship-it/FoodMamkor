@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { rescueBagsEnabled } from "@/lib/rescue";
 import { Bell } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import { useAuth } from "@/lib/auth-context";
@@ -49,7 +50,12 @@ import LoginPromptModal from "./LoginPromptModal";
  * open panel instead of leaving it on pre-write values. A failed prefs GET
  * leaves the button disabled rather than assuming OFF.
  */
-const TYPES = ["notify_new_event", "notify_new_product", "notify_delivery_area", "notify_new_recipe", "notify_new_group_buy"];
+const BASE_TYPES = ["notify_new_event", "notify_new_product", "notify_delivery_area", "notify_new_recipe", "notify_new_group_buy"];
+// MEH-3117: the rescue type counts only where the pilot is on. With it off the
+// panel shows no rescue row, so counting it would let the button read ON with
+// every visible switch off (reviewer, 14/11). Off → the field is not sent and
+// the API default keeps it.
+const TYPES = rescueBagsEnabled() ? [...BASE_TYPES, "notify_new_rescue"] : BASE_TYPES;
 
 // MEH-2562: the pill sat alone under the header and read as an orphan. On the
 // page it now matches its neighbours instead: "gallery" = the hero circle

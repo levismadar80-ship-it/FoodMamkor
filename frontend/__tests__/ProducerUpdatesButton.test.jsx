@@ -62,6 +62,7 @@ const OFF = {
   notify_delivery_area: false,
   notify_new_recipe: false,
   notify_new_group_buy: false,
+  notify_new_rescue: false,
   whatsapp_opt_in: false,
   has_push: false,
 };
