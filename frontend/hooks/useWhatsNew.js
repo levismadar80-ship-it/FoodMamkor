@@ -15,7 +15,7 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { WHATS_NEW_SEEN_KEY, unseenRelease } from "@/lib/whats-new";
+import { WHATS_NEW_SEEN_KEY, newToolHrefs, unseenRelease } from "@/lib/whats-new";
 
 const SEEN_EVENT = "mehamakor:whats-new-seen";
 
@@ -67,6 +67,22 @@ export function useUnseenRelease() {
   return { release, dismiss };
 }
 
+/**
+ * Tool hrefs that carry a «חדש» pill right now. Empty on the server and before
+ * mount (the clock is read in an effect, so SSR and hydration agree).
+ * @returns {Set<string>}
+ */
+export function useNewTools() {
+  const [tools, setTools] = useState(() => new Set());
+  useEffect(() => {
+    // Keep the first empty Set when nothing is new: no extra render of
+    // every dashboard page on mount (it re-ran the layout's /login effect).
+    const fresh = newToolHrefs(Date.now());
+    if (fresh.size > 0) setTools(fresh);
+  }, []);
+  return tools;
+}
+
 /** Mark every release as seen — the archive page calls this on open. */
 export function markAllSeen() {
   const r = unseenRelease(readSeenVersion());
@@ -89,10 +105,16 @@ export function isNewBusiness(createdAt, now) {
 
 /**
  * @param {string | null | undefined} createdAt
- * @returns {{ show: boolean, dismiss: () => void }}
+ * @returns {{ show: boolean, ready: boolean, dismiss: () => void }}
+ *   ready — `show` has been worked out for THIS createdAt. Until then the home
+ *   keeps its top slot closed, so a card never mounts and is then replaced by
+ *   the welcome card (MEH-3200 part 2 review).
  */
 export function useOwnerWelcome(createdAt) {
   const [show, setShow] = useState(false);
+  const [evaluatedFor, setEvaluatedFor] = useState(
+    /** @type {{ v: string | null | undefined } | null} */ (null),
+  );
   // Holds the dismissal for this visit even when storage is blocked.
   const closed = useRef(false);
 
@@ -104,6 +126,7 @@ export function useOwnerWelcome(createdAt) {
       // blocked storage: rely on the in-memory flag
     }
     setShow(!dismissed && isNewBusiness(createdAt, Date.now()));
+    setEvaluatedFor({ v: createdAt });
   }, [createdAt]);
 
   const dismiss = useCallback(() => {
@@ -116,5 +139,5 @@ export function useOwnerWelcome(createdAt) {
     setShow(false);
   }, []);
 
-  return { show, dismiss };
+  return { show, ready: evaluatedFor !== null && evaluatedFor.v === createdAt, dismiss };
 }

@@ -69,7 +69,7 @@ left in v1" vs "what's planned for v2".
 | ✅ | v1 | Producer dashboard (`/producer/dashboard`) — availability + favorites + quick links | `frontend/app/producer/dashboard/page.js` |
 | ✅ | v1 | Toggle "available today" | `backend/app/routers/producer_me.py` |
 | ✅ | v1 | Add event from dashboard | `frontend/app/producer/dashboard/events/new/page.js` |
-| ✅ | v1.5.1 | «מה חדש» for business owners (MEH-3200): a top card on the dashboard home while the newest release is unseen, a fixed row above «צריכים עזרה?», and an archive page; plus a one-time welcome card for a business ≤ 30 days old. Seen state in localStorage | `frontend/lib/whats-new.js`, `frontend/components/producer/WhatsNew*.jsx`, `frontend/app/[locale]/producer/dashboard/whats-new/page.js` |
+| ✅ | v1.5.1 | «מה חדש» for business owners (MEH-3200): a top card on the dashboard home while the newest release is unseen, a fixed row above «צריכים עזרה?», and an archive page; plus a one-time welcome card for a business ≤ 30 days old. Part 2: a «חדש» pill on a new «כלים» tile + a dot on the tab for 14 days, and once-only first-moment cards (first review / WhatsApp click / 100 views / first follower). Seen state in localStorage | `frontend/lib/whats-new.js`, `frontend/components/producer/WhatsNew*.jsx`, `frontend/app/[locale]/producer/dashboard/whats-new/page.js` |
 | ❌ | v1 | Follow / unfollow producers — button removed (MEH-1363), endpoints removed (MEH-2370); interest is a favorite. `producer_followers` table dropped (MEH-2392) | — |
 
 ### Home cooks (`/neighbor`)

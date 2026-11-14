@@ -17,7 +17,6 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.auth import require_admin
-from app.config import settings
 from app.constants import LICENSE_REQUIRED_CATEGORIES
 from app.database import get_db
 from app.services.producer_listing import is_business  # MEH-2459
@@ -54,6 +53,10 @@ from app.schemas.schemas import (
     UserRoleUpdate,
     VacationModeState,
 )
+from app.services.account_guards import (  # MEH-3248: moved here, re-exported
+    assert_deletable,
+    is_super_admin,
+)
 from app.services.analytics import israel_day_of, server_health, unique_views_count
 from app.services.category_slug import resolve_unique_slug
 from app.services.user_deletion import delete_user_and_data  # MEH-2585
@@ -64,17 +67,6 @@ from app.utils.sql import LIKE_ESCAPE, escape_like
 
 router = APIRouter(prefix="/admin", tags=["admin-extra"])
 logger = logging.getLogger(__name__)
-
-
-def is_super_admin(target: User) -> bool:
-    """MEH-2890: the protected owner account, from SUPER_ADMIN_EMAIL (config).
-    EXACT match on the stored address, as the old constant was: emails are
-    unique case-sensitively, so a case-insensitive match would hand the
-    protection to anyone who registers a case variant. Never true when the
-    setting is empty — and production cannot run with it empty
-    (config._load_settings refuses to boot)."""
-    protected = settings.super_admin_email
-    return bool(protected) and (target.email or "").strip() == protected
 
 
 # MEH-1571: shared Hebrew copy for the two update_category guards. Named
@@ -237,7 +229,7 @@ def admin_delete_user(
     db: Session = Depends(get_db),
 ) -> dict[str, Any]:
     """MEH-2585: hard-delete a user and her data — same cascade as the
-    self-service DELETE /auth/me (services/user_deletion.py), minus the
+    self-service POST /auth/me/delete (services/user_deletion.py), minus the
     confirmation email (an admin removal, often of a test account).
 
     Admins are refused: demote first, so removing an admin is always two
@@ -248,13 +240,8 @@ def admin_delete_user(
         raise HTTPException(status_code=404, detail="משתמש לא נמצא")
     if target.id == user.id:
         raise HTTPException(status_code=400, detail="אי אפשר למחוק את עצמך מכאן")
-    if is_super_admin(target):
-        raise HTTPException(status_code=403, detail="לא ניתן למחוק את האדמין הראשי")
-    if target.role == "admin":
-        raise HTTPException(
-            status_code=403,
-            detail="לא ניתן למחוק אדמין. קודם מורידים את הרשאת האדמין.",
-        )
+    # MEH-3248: one rule for both doors (services/account_guards.py).
+    assert_deletable(target, door="admin")
     # Irreversible, so leave a trail in the Railway logs: ids only, no email.
     logger.info(
         "[admin.delete_user] admin_id=%s deleted user_id=%s role=%s producer_id=%s",

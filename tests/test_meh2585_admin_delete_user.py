@@ -1,12 +1,12 @@
 """MEH-2585 — DELETE /admin/users/{id}: an admin can remove a (test) user.
 
-Same cascade as the self-service DELETE /auth/me (services/user_deletion.py),
+Same cascade as the self-service POST /auth/me/delete (services/user_deletion.py),
 minus the confirmation email. Admins — and the protected super-admin — are
 refused, so removing an admin always takes a demote first.
 """
 
+from app.config import settings as app_settings  # MEH-3248: was admin_extra.settings
 from app.models.models import Favorite, Producer, ProducerReview, User
-from app.routers import admin_extra
 from tests.conftest import auth_header, make_producer, make_user
 
 
@@ -79,7 +79,7 @@ def test_admin_cannot_delete_another_admin(client, db):
 def test_admin_cannot_delete_super_admin_even_when_not_admin_role(client, db, monkeypatch):
     """The owner's account is a producer-role account on prod; still protected.
     MEH-2890: the address comes from SUPER_ADMIN_EMAIL, not from the code."""
-    monkeypatch.setattr(admin_extra.settings, "super_admin_email", "owner@example.com")
+    monkeypatch.setattr(app_settings, "super_admin_email", "owner@example.com")
     admin = _admin(db)
     protected = make_user(db, role="producer", email="owner@example.com")
 
@@ -160,7 +160,7 @@ def test_both_doors_destroy_every_owned_image(client, db, monkeypatch):
 
     expected = {"avatar.jpg", "biz1.jpg", "biz2.jpg", "prod.jpg", "hp.jpg", "hp2.jpg"}
     for tag, call in (
-        ("self", lambda u: client.delete("/auth/me", headers=auth_header(u))),
+        ("self", lambda u: client.post("/auth/me/delete", json={"password": "Zx7Yp9Mq2Lr4"}, headers=auth_header(u))),
         ("admin", lambda u: client.delete(f"/admin/users/{u.id}", headers=auth_header(_admin(db)))),
     ):
         calls = []

@@ -1,7 +1,7 @@
 """User self-service endpoints (MEH-16).
 
 Sits at prefix /users/me and handles profile update + password change.
-Account deletion is already served by DELETE /auth/me — not duplicated
+Account deletion is already served by POST /auth/me/delete — not duplicated
 here to avoid two code paths on the same destructive action.
 
 MEH-460 Pkg 2: Pydantic schemas live in app.schemas.schemas per ADR-006 R1.
@@ -40,7 +40,7 @@ from app.rate_limit import limiter
 # boundary, but the alternative is duplicating refresh + fingerprint
 # cookie attributes — the single-source-of-truth wins. Future refactor:
 # move both helpers to app/auth_cookies.py.
-from app.routers.admin_extra import is_super_admin  # MEH-3104
+from app.services.account_guards import is_super_admin  # MEH-3104, MEH-3248
 from app.routers.auth import _set_fingerprint_cookie, _set_refresh_cookie
 from app.schemas.schemas import PasswordChange, ProfileUpdate, UserOut
 from app.services.auth_emails import send_verify_email

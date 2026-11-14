@@ -410,6 +410,31 @@ Vercel ב-09/11, ולכן:
 
 ---
 
+## דף ציבורי יתום (MEH-3265)
+
+`frontend/__tests__/PublicPageReachabilityGuard.test.js` (vitest, רץ ב-CI gate).
+כל `page.*` תחת `app/[locale]/` (חוץ מ-admin, dev ו-producer/dashboard, שהוא
+של `DashboardPlacementGuard`) חייב שורה ב-`ROUTES` שבקובץ: indexed · hub ·
+family · noindex · redirect. דף חדש בלי שורה נכשל, כך שמי שמוסיפה דף מחליטה מה
+הוא.
+
+- **indexed** חייב להופיע ב-`lib/sitemap-static.js`, ו-**hub** ב-`HUBS`
+  (`lib/listing-supply.js`). **family** (נתיב דינמי) חייב needle ב-`app/sitemap.js`.
+- לכל אחד מהם צריך קישור נכנס מקובץ שמבקרת יכולה להגיע אליו: לא מהתיקייה של
+  הדף עצמו, לא מ-admin, dev או מלוח הבקרה, ולא מקבצים של דף noindex. ההתאמה
+  היא לנתיב מדויק, ו-`"/about"` לא נחשב קישור ל-`/about/badges`. כשהקישור נבנה
+  מרשימה (המדריכים) או מ-helper (דפי תזונה), השורה מציינת `linkedFrom`: קובץ
+  והמחרוזות שמהן הקישור בנוי.
+- **noindex** צריך `index: false` בדף, בקובץ שהוא מייבא ישירות או ב-layout מעליו,
+  ואסור שיופיע ב-sitemap. כל נתיב ב-sitemap חייב דף קיים שה-`robots.txt` לא חוסם.
+- תקנון, פרטיות והצהרת נגישות נעולים בפוטר.
+- `EXCEPTIONS`: דף שפטור מבדיקת הקישור, עם כרטיס. חריג שכבר לא נחוץ נכשל. היום
+  יש שניים: דפי התזונה והאזור, שמקושרים רק אחד מהשני (MEH-3111).
+
+זו בדיקה סטטית ולא סריקה. קישור מאחורי flag נחשב גם אם הוא לא מוצג היום. החלק
+שבודק את האתר החי (ה-sitemap מול מה שהסורק מגיע אליו דרך קישורים, כמו דוח orphan
+pages של Screaming Frog ו-Ahrefs) רשום ב-MEH-3111.
+
 ## בדיקות אחרי עלייה (MEH-2749)
 
 אחרי כל push ל-`staging` / `main`, כשה-build החדש עלה, רצים מול האתר החי:

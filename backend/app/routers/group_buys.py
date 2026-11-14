@@ -185,7 +185,12 @@ def list_my_group_buys(
         .order_by(GroupBuy.created_at.desc())
         .all()
     )
-    return [_enrich(gb) for gb in items]
+    # MEH-3254 (D7): the business learns how many units to prepare — a sum,
+    # never who asked for them (MEH-1651). Owner-only: this route, not _enrich.
+    return [
+        {**_enrich(gb), "units_total": sum(c.quantity or 0 for c in gb.commits)}
+        for gb in items
+    ]
 
 
 @router.get("/{group_buy_id}", response_model=GroupBuyDetail)

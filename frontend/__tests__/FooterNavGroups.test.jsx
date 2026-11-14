@@ -88,8 +88,8 @@ describe("Footer nav split into audience groups (MEH-1177; three since MEH-2858)
     // "who we are" links moved to their own «עלינו» group.
     expect(discover).toEqual(["/producers", "/map"]);
     // «המליצו על בית עסק» sits next to «ספרו עלינו» (Sapir 13/11).
-    expect(about).toEqual(["/about", "/about/why-local", "/recommend", "/recommend#share"]);
-    expect(business).toEqual(["/join", "/about/process", "/about/for-businesses"]);
+    expect(about).toEqual(["/about", "/about/why-local", "/about/badges", "/recommend", "/recommend#share"]);
+    expect(business).toEqual(["/join", "/about/process", "/about/for-businesses", "/about/for-businesses/guides"]);
   });
 
   it("the groups come in the order גלו · עלינו · לבתי עסק", () => {
@@ -101,13 +101,13 @@ describe("Footer nav split into audience groups (MEH-1177; three since MEH-2858)
 
   // MEH-2858: 8 — «גלו עסקים» → / left on purpose (the logo links home); the
   // brand-column logo link is asserted below so home stays one tap away.
-  it("keeps all 9 ungated nav links exactly once (no link dropped in the split)", () => {
+  it("keeps all 11 ungated nav links exactly once (no link dropped in the split)", () => {
     render(<Footer />);
     const navLinks = Array.from(
       screen.getByRole("navigation", { name: "nav.footer.nav_aria" }).querySelectorAll("a[href]"),
     ).map((a) => a.getAttribute("href"));
     expect(navLinks.sort()).toEqual(
-      ["/about", "/about/for-businesses", "/about/why-local", "/about/process", "/join", "/map", "/producers", "/recommend", "/recommend#share"].sort(),
+      ["/about", "/about/badges", "/about/for-businesses", "/about/for-businesses/guides", "/about/why-local", "/about/process", "/join", "/map", "/producers", "/recommend", "/recommend#share"].sort(),
     );
   });
 

@@ -10,7 +10,7 @@ Does NOT: test the purge (chunk C — does not exist) or the `days=N` arms'
           seam (ruled raw-only for now; the ≥30-day retention condition is
           recorded on the card, not asserted here).
 Related:  backend/app/services/analytics_rollup.py;
-          backend/app/routers/producer_me.py::_count_in_window;
+          backend/app/services/producer_insights.py::count_in_window;
           backend/app/startup.py::_run_analytics_rollup_job;
           backend/scripts/rollup_analytics.py;
           tests/test_meh160_view_dedupe.py (the dedupe these numbers inherit).

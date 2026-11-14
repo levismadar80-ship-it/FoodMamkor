@@ -403,12 +403,12 @@ def test_group_own_auth_forgot_password(client, db, transport, is_test):
 def test_group_own_auth_account_deletion_reads_the_flag_before_the_row_goes(
     client, db, transport, is_test
 ):
-    """DELETE /auth/me: `is_test` is captured BEFORE the row is deleted."""
+    """POST /auth/me/delete: `is_test` is captured BEFORE the row is deleted."""
     user = make_user(db, email="leaving@sample.co.il")
     user.is_test = is_test
     db.commit()
 
-    r = client.delete("/auth/me", headers=auth_header(user))
+    r = client.post("/auth/me/delete", json={"password": "Zx7Yp9Mq2Lr4"}, headers=auth_header(user))
 
     assert r.status_code == 200, r.text
     assert _to(transport.emails) == ([] if is_test else ["leaving@sample.co.il"])
@@ -1167,6 +1167,13 @@ PINNED: dict[tuple[str, str, str], tuple[int, str, str]] = {
         OWN,
         "producer.is_test or owner.is_test",
     ),
+    # MEH-3079: the weekly owner summary — mail to the business's owner about
+    # her own page, flagged by either row (read up front, before the claim).
+    ("services/weekly_owner_summary.py", "send_weekly_summaries", "send_email"): (
+        1,
+        OWN,
+        "producer_is_test or owner_is_test",
+    ),
     # --- content_notifications ---
     ("services/content_notifications.py", "notify_recipe_approved", "send_email"): (
         1,
@@ -1282,6 +1289,12 @@ PINNED: dict[tuple[str, str, str], tuple[int, str, str]] = {
         OWN,
         "wrapper param ← owner producer.is_test / host_test_cause(host)",
     ),
+    # MEH-3223: one email to the admin per new report.
+    ("services/report_notifications.py", "notify_admin_new_report", "send_email"): (
+        1,
+        BUS,
+        "wrapper param ← producer.is_test",
+    ),
     ("services/rescue_emails.py", "send_reservation_email", "send_email"): (
         1,
         CON,
@@ -1292,9 +1305,25 @@ PINNED: dict[tuple[str, str, str], tuple[int, str, str]] = {
         CON,
         "wrapper param ← producer.is_test or user.is_test",
     ),
-    ("services/rescue_emails.py", "send_business_cancel_email", "send_email"): (
+    # MEH-3227 (D1): the two «הסל ב… בוטל» mails share one sender.
+    ("services/rescue_emails.py", "_send_bag_cancelled", "send_email"): (
         1,
         CON,
+        "wrapper param ← producer.is_test",
+    ),
+    ("services/registration_emails.py", "_send_lines", "send_email"): (
+        1,
+        CON,
+        "wrapper param ← producer.is_test / host_test_cause(host)",
+    ),
+    ("services/registration_emails.py", "send_registrant_moved", "send_email"): (
+        1,
+        CON,
+        "wrapper param ← producer.is_test / host_test_cause(host)",
+    ),
+    ("services/booking_cancellations.py", "send_owner_delisted", "send_email"): (
+        1,
+        OWN,
         "wrapper param ← producer.is_test",
     ),
     (
