@@ -66,7 +66,7 @@ moment it is introduced, which is the only moment anyone knows about it.
 
 ## Stack
 
-Next.js 14 (App Router) + Tailwind + Framer Motion + Leaflet. JavaScript
+Next.js 16 (App Router) + Tailwind + Framer Motion + Leaflet. JavaScript
 (not TypeScript); JSDoc for typed params where it matters.
 
 ---
