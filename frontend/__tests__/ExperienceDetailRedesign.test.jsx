@@ -199,6 +199,25 @@ describe("MEH-2989 — no repeated information", () => {
     expect(screen.getByTestId("experience-info").contains(tiles[0])).toBe(true);
   });
 
+  // MEH-3057: the tile already says «נובמבר 20» — a one-off row is the
+  // weekday + time; «starts from» on a recurring one keeps the full date.
+  it("a one-off date row is the weekday and time, not the date again", async () => {
+    await renderWith();
+    const text = screen.getByTestId("experience-date").textContent;
+    expect(text).toBe("יום שישי · 10:00");
+    expect(text).not.toMatch(/20|נובמבר|2026/);
+  });
+
+  it("a one-off with no time → the weekday alone", async () => {
+    await renderWith({ event_time: null });
+    expect(screen.getByTestId("experience-date").textContent).toBe("יום שישי");
+  });
+
+  it("a recurring date row keeps the full start date", async () => {
+    await renderWith({ is_recurring: true });
+    expect(screen.getByTestId("experience-date").textContent).toMatch(/20 בנובמבר 2026/);
+  });
+
   it("the breadcrumb is desktop only", async () => {
     await renderWith();
     expect(screen.getByTestId("breadcrumb").className.split(" ")).toEqual(

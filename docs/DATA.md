@@ -975,6 +975,7 @@ GET    /producers/cities                          public — MEH-970: per-city A
                                                GROUP BY city over approved producers; NULL/blank city omitted;
                                                ordered count desc, then city. Counts live from DB (MEH-519 over-claim guard).
                                                response_model=list[ProducerCityOut] → [{ "city": str, "count": int }]
+GET    /producer-name-check?name=               public, 30/min — MEH-3086: the sign-up form's "already on the site?" hint. Returns `{matches:[{id,slug,name,city}]}` (max 3): live businesses (`is_business()`) whose name EQUALS `name` after lower-casing, dropping quote marks and collapsing spaces. Never a prefix match, never a draft/pending/rejected page, and nothing is written to `search_queries`. Names under 3 chars → empty list.
 GET    /producers/random                          public — MEH-1288: one random APPROVED producer for the homepage
                                                "הפתיעו אותי" button. ORDER BY random() LIMIT 1; 404 when the catalog is
                                                empty (button is render-gated client-side on statsProducersCount > 0).

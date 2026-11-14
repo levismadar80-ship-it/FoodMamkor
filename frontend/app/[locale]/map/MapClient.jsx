@@ -692,7 +692,8 @@ export default function MapPage() {
 
   // MEH-2506 / MEH-2769: each shell passes its origin tag in, so it shares one row
   // with the active-filter tags instead of opening a row of its own.
-  const renderFilterChipsBar = (originTag = null) => (
+  // MEH-3062: the phone shell passes singleRow — categories join the service rail.
+  const renderFilterChipsBar = (originTag = null, singleRow = false) => (
     <FilterChipsBar
       visibleCategoryChips={filters.visibleCategoryChips}
       chipState={filters.chipState}
@@ -706,6 +707,7 @@ export default function MapPage() {
       resetAllFilters={filters.resetAllFilters}
       cityFilter={filters.cityFilter}
       originTag={originTag}
+      singleRow={singleRow}
     />
   );
 
@@ -1097,7 +1099,7 @@ export default function MapPage() {
               "explicit clear" requirement exists to prevent. MEH-2506: a compact
               tag on the active-filter row under the chips (FilterChipsBar),
               not a full row above them. */}
-          {renderFilterChipsBar(mobileOriginTag)}
+          {renderFilterChipsBar(mobileOriginTag, true)}
         </div>
 
         {/* Map fills the rest — MEH-933 R2: pt = the bar's live MEASURED height

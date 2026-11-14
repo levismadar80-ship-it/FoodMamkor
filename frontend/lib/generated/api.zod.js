@@ -4035,6 +4035,24 @@ export const PreviewClaimProducerClaimPreviewPostResponse = /*#__PURE__*/ zod.ob
 
 
 /**
+ * Live businesses whose name equals `name` (exact, after `name_key`).
+ *
+ * Exact match only — DO NOT turn this into a prefix or substring match:
+ * that would make an anonymous route a way to list the directory by
+ * typing letters, which is what GET /producers is rate-shaped for.
+ * @summary Producer Name Check
+ */
+export const ProducerNameCheckProducerNameCheckGetResponse = /*#__PURE__*/ zod.object({
+  "matches": /*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
+  "city": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
+  "id": /*#__PURE__*/ zod.string(),
+  "name": /*#__PURE__*/ zod.string(),
+  "slug": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])
+}))
+})
+
+
+/**
  * @summary List Producers
  */
 export const listProducersProducersGetResponseAmbassadorDefault = false;

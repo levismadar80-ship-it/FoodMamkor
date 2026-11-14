@@ -43,6 +43,7 @@ vi.mock("leaflet", () => {
       latlng,
       icon: opts?.icon ?? null,
       on: () => marker,
+      bindTooltip: () => marker, // MEH-3066: the name label beside the pin
       setIcon: (icon) => {
         marker.icon = icon;
         return marker;

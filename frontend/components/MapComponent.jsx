@@ -17,6 +17,8 @@ import { styleForProducer } from "@/lib/category-registry";
 import { categoryGlyphSvg } from "@/lib/marker-glyph";
 import { mapPinPoints, producerPoints } from "@/lib/producerPoints";
 import { readMapViewState, writeMapViewState } from "@/lib/map-view-state";
+// MEH-3066: business name beside its pin when zoomed in (own module, §16).
+import { bindPinLabel, installPinLabels, isPrimaryLocation } from "@/lib/map-pin-labels";
 
 /**
  * MapComponent — raw-Leaflet map with custom category-colored markers
@@ -414,6 +416,7 @@ export default function MapComponent({
   const mapInstanceRef = useRef(null);
   const clusterGroupRef = useRef(null);
   const markersRef = useRef(new Map()); // producer.id → { marker, producer }
+  const pinLabelsRef = useRef(null); // MEH-3066: { refresh, remove }
   const hoveredIdRef = useRef(null);
   const activeIdRef = useRef(null);
   // MAP_IMPROVEMENTS bug #13 — reuse a single marker for "my location"
@@ -517,6 +520,7 @@ export default function MapComponent({
     showSelectedExtras(id);
     if (prev) refreshMarkerIcon(prev);
     if (id) refreshMarkerIcon(id);
+    pinLabelsRef.current?.refresh(); // MEH-3066: the selected name places first
     // MEH-1663: demote the surroundings ONLY when the selected business actually
     // owns a pin. The class fades every marker that is not tagged focused
     // (globals.css:359), so selecting a business with zero markers would grey the
@@ -579,6 +583,10 @@ export default function MapComponent({
     // MEH-1568: the producer itself, so a single-business cluster can render
     // that business's category marker (colour + glyph) rather than a "1".
     marker.producer = p;
+    // MEH-3066: the name rides only the business's own pin — a pickup /
+    // market point never repeats it (MEH-3054 context). CSS shows it from
+    // PIN_LABEL_MIN_ZOOM; installPinLabels hides the ones that collide.
+    if (isPrimaryLocation(loc)) bindPinLabel(marker, markerLabel, p.id);
 
     // MEH-765: keyboard a11y — the divIcon has no native `alt`, so set
     // role + accessible name on each marker's element via the `add` event
@@ -670,6 +678,8 @@ export default function MapComponent({
                 fillOpacity: 0.85,
                 weight: 2,
                 interactive: true,
+                // MEH-3066: a name label never covers the "you are here" dot.
+                className: "mehamakor-my-location",
               }).addTo(mapInstanceRef.current);
             }
             onSuccess?.({ lat: latitude, lng: longitude });
@@ -825,6 +835,11 @@ export default function MapComponent({
       },
     });
     mapInstanceRef.current.addLayer(clusterGroupRef.current);
+    // MEH-3066: re-place name labels when the view or the clusters change.
+    pinLabelsRef.current = installPinLabels(mapInstanceRef.current, () => activeIdRef.current);
+    const refreshPinLabels = () => pinLabelsRef.current?.refresh();
+    const clusterGroupForLabels = clusterGroupRef.current;
+    clusterGroupForLabels.on("animationend spiderfied unspiderfied", refreshPinLabels);
 
     const fireBounds = () => {
       if (!mapInstanceRef.current) return;
@@ -905,6 +920,9 @@ export default function MapComponent({
 
     return () => {
       if (resizeObserver) resizeObserver.disconnect();
+      clusterGroupForLabels.off("animationend spiderfied unspiderfied", refreshPinLabels);
+      pinLabelsRef.current?.remove();
+      pinLabelsRef.current = null;
       if (mapInstanceRef.current) {
         mapInstanceRef.current.remove();
         mapInstanceRef.current = null;
@@ -983,6 +1001,7 @@ export default function MapComponent({
     // MEH-1424: single bulk add — one clustering pass + one icon build per
     // visible cluster (see the comment on bulkMarkers above).
     clusterGroupRef.current.addLayers(bulkMarkers);
+    pinLabelsRef.current?.refresh(); // MEH-3066
 
     // MEH-3054: a rebuild while a business is selected (a refetch, the chip)
     // re-adds its extra points; applyFocus would not, as the id is unchanged.

@@ -73,6 +73,7 @@ vi.mock("leaflet", () => {
       // real carrier of the focus flag.
       icon: null,
       on: () => marker,
+      bindTooltip: () => marker, // MEH-3066: the name label beside the pin
       setIcon: (icon) => {
         marker.icon = icon;
         return marker;
