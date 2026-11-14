@@ -1,0 +1,29 @@
+{
+  "rawTextFields": {
+    "app/[locale]/admin/content/page.js": 3,
+    "app/[locale]/admin/help/page.jsx": 1,
+    "app/[locale]/admin/kashrut/page.js": 1,
+    "app/[locale]/admin/outreach/page.jsx": 1,
+    "app/[locale]/admin/producers/AdminProducersToolbar.jsx": 1,
+    "app/[locale]/admin/producers/GooglePlaceLink.jsx": 1,
+    "app/[locale]/admin/reviews/page.jsx": 1,
+    "app/[locale]/admin/users/page.js": 1,
+    "app/[locale]/login/LoginClient.jsx": 2,
+    "app/[locale]/producer/dashboard/edit/LocationHoursField.jsx": 2,
+    "components/DeliveryWaitlistForm.jsx": 1,
+    "components/PasswordInput.jsx": 1,
+    "components/admin/ClaimLinkPanel.jsx": 1,
+    "components/admin/OwnerInvitePanel.jsx": 2
+  },
+  "infoTooltipImporters": [
+    "app/[locale]/admin/experiences/page.js",
+    "app/[locale]/admin/kashrut/page.js",
+    "app/[locale]/admin/producers/AdminProducersTable.jsx",
+    "app/[locale]/admin/reviews/page.jsx",
+    "app/[locale]/admin/settings/page.js",
+    "app/[locale]/producer/dashboard/edit/page.js",
+    "app/[locale]/producer/dashboard/group-buys/page.js",
+    "app/[locale]/producer/dashboard/insights/page.js",
+    "components/admin/ProducerForm.jsx"
+  ]
+}

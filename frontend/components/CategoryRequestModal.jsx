@@ -6,6 +6,8 @@ import { showToast } from "@/lib/toast";
 import api from "@/lib/api";
 import CollectionNotice from "@/components/CollectionNotice";
 import Button from "@/components/ui/Button";
+import Input from "@/components/ui/Input";
+import Textarea from "@/components/ui/Textarea";
 import Dialog from "@/components/ui/Dialog";
 
 function countLetters(s) {
@@ -58,31 +60,29 @@ export default function CategoryRequestModal({ open, onClose, producerId }) {
         </h2>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <input
-              autoFocus
-              data-autofocus
-              required
-              maxLength={100}
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder={t("name_placeholder")}
-              className="w-full border rounded-sm px-3 py-2 text-sm text-start focus-ring"
-            />
-            <p className="text-xs text-fg-muted mt-1">{t("name_example")}</p>
-          </div>
+          <Input
+            size="sm"
+            type="text"
+            autoFocus
+            data-autofocus
+            required
+            maxLength={100}
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder={t("name_placeholder")}
+            helperText={t("name_example")}
+            className="text-start"
+          />
 
-          <div>
-            <textarea
-              maxLength={300}
-              rows={3}
-              value={examples}
-              onChange={(e) => setExamples(e.target.value)}
-              placeholder={t("examples_placeholder")}
-              className="w-full border rounded-sm px-3 py-2 text-sm text-start resize-none focus-ring"
-            />
-            <p className="text-xs text-fg-muted mt-1">{t("examples_hint")}</p>
-          </div>
+          <Textarea
+            maxLength={300}
+            rows={3}
+            value={examples}
+            onChange={(e) => setExamples(e.target.value)}
+            placeholder={t("examples_placeholder")}
+            helperText={t("examples_hint")}
+            className="text-start resize-none"
+          />
 
           <CollectionNotice
             message={tNotice("category_request")}

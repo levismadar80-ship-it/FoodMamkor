@@ -1,7 +1,8 @@
 "use client";
 
-import { useId } from "react";
+import { forwardRef, useId } from "react";
 import { Check } from "@phosphor-icons/react";
+import { fieldClasses, FieldShell } from "./field";
 
 /**
  * Input — labelled text field primitive (MEH-602).
@@ -13,7 +14,23 @@ import { Check } from "@phosphor-icons/react";
  *           and passes `error` text when a field is invalid.
  * Related:  globals.css (.focus-ring), tokens (border, surface-card, fg-muted).
  * History:  MEH-602 (creation); MEH-1128 D1 (startAdornment + success —
- *           default path byte-identical, locked by ui-Input.test.jsx snapshots).
+ *           default path byte-identical, locked by ui-Input.test.jsx snapshots);
+ *           MEH-3136 (size sm/xs + inline, for the compact fields that were
+ *           hand-written because only the 44px "md" field existed).
+ *
+ * Sizes  : md (default, 44px, the labelled form field) | sm (px-3 py-2
+ *          text-sm) | xs (px-2 py-1 text-sm, a control inside a row). sm/xs
+ *          take their look from ui/field.jsx and do not support
+ *          startAdornment / success / successText (ignored). A password field
+ *          with an eye toggle is components/PasswordInput.jsx, not this.
+ *          `size` here is the visual size, not the native character-width
+ *          attribute.
+ * inline : render the bare <input> with no wrapper and no w-full, for a field
+ *          inside a row; the caller sets the width in className and gives it
+ *          an aria-label (or a <label htmlFor> of its own).
+ *
+ * invalid: mark the field red (+ aria-invalid) with no message of its own, for
+ *          a caller that renders the error text itself; `error` does both.
  *
  * Types  : text | email | tel | search (any native type passes through)
  * States : default | focus | error | success | disabled
@@ -38,8 +55,22 @@ import { Check } from "@phosphor-icons/react";
  * @example
  * <Input type="email" label="אימייל" helperText="לא נשתף עם אף אחד" />
  * <Input type="text" label="שם" error="שדה חובה" />
+ *
+ * `ref` reaches the native <input> (MEH-3146), for a caller that focuses it.
+ *
+ * @type {import("react").ForwardRefExoticComponent<{
+ *   label?: import("react").ReactNode,
+ *   helperText?: import("react").ReactNode,
+ *   error?: import("react").ReactNode,
+ *   success?: boolean,
+ *   successText?: import("react").ReactNode,
+ *   startAdornment?: import("react").ReactNode,
+ *   size?: "md" | "sm" | "xs",
+ *   inline?: boolean,
+ *   invalid?: boolean,
+ * } & Omit<import("react").InputHTMLAttributes<HTMLInputElement>, "size"> & import("react").RefAttributes<HTMLInputElement>>}
  */
-export default function Input({
+const Input = forwardRef(function Input({
   type = "text",
   label,
   helperText,
@@ -63,19 +94,51 @@ export default function Input({
   // aria-required is needed; the span is aria-hidden so readers do not
   // additionally hear "star".
   required = false,
+  size = "md",
+  inline = false,
+  invalid = false,
   ...rest
-}) {
+}, ref) {
   const autoId = useId();
   const inputId = id || autoId;
   const describedById = `${inputId}-desc`;
-  const hasError = !!error;
+  // MEH-3145: `invalid` marks the field (red border + aria-invalid) when the
+  // caller renders the message itself and wires it with aria-describedby.
+  const hasError = invalid || !!error;
   // MEH-1128 D1: error wins over success (a field can't be valid and invalid).
   const showSuccess = !hasError && !!success;
   const successMessage = showSuccess && successText;
   const message = error || successMessage || helperText;
 
+  // MEH-3136: the compact sizes and the inline form. The "md" block below is
+  // untouched so its class string and DOM stay byte-identical.
+  if (size !== "md" || inline) {
+    // No success state here: an error or the helper text only.
+    const compactMessage = error || helperText;
+    const compact = (
+      <input
+        ref={ref}
+        id={inputId}
+        type={type}
+        disabled={disabled}
+        required={required || undefined}
+        aria-invalid={hasError || undefined}
+        aria-describedby={compactMessage ? describedById : undefined}
+        className={`${fieldClasses({ size, invalid: hasError, block: !inline })} ${className}`.trim()}
+        {...rest}
+      />
+    );
+    if (inline && !label && !compactMessage) return compact;
+    return (
+      <FieldShell id={inputId} label={label} required={required} message={compactMessage} describedById={describedById} invalid={hasError}>
+        {compact}
+      </FieldShell>
+    );
+  }
+
   const inputEl = (
     <input
+      ref={ref}
       id={inputId}
       type={type}
       disabled={disabled}
@@ -152,4 +215,6 @@ export default function Input({
         ))}
     </div>
   );
-}
+});
+
+export default Input;

@@ -40,6 +40,7 @@ import {
 } from "@/lib/special-hours";
 import Button from "@/components/ui/Button";
 import InlineMessage from "@/components/ui/InlineMessage";
+import Input from "@/components/ui/Input";
 
 export default function SpecialHoursEditor({ profile, onSave, reportDirty = () => {} }) {
   const t = useTranslations("dashboard.producer.special_hours");
@@ -228,14 +229,14 @@ export default function SpecialHoursEditor({ profile, onSave, reportDirty = () =
               data-date={row.date || undefined}
             >
               <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-                <input
+                <Input inline size="xs"
                   type="date"
                   value={row.date}
                   min={today ?? undefined}
                   onChange={(e) => patchRow(i, { date: e.target.value })}
                   aria-label={t("date_label")}
                   data-testid={`special-hours-date-${i}`}
-                  className="numeric text-sm border border-border rounded-sm px-2 py-1 bg-surface focus-ring"
+                  className="numeric"
                 />
                 <label className="flex items-center gap-2 text-sm cursor-pointer min-h-[34px]">
                   <input
@@ -264,20 +265,20 @@ export default function SpecialHoursEditor({ profile, onSave, reportDirty = () =
                     <div key={rangeIdx} className="flex items-center gap-2">
                       {/* Time range is inherently LTR numeric (HH:MM–HH:MM). rtl-ok */}
                       <div className="flex items-center gap-2" dir="ltr">
-                        <input
+                        <Input inline size="xs"
                           type="time"
                           value={range.from}
                           onChange={(e) => patchRange(i, rangeIdx, { from: e.target.value })}
                           aria-label={`${row.date} ${tRange("from_label")} ${rangeIdx + 1}`}
-                          className="numeric text-sm border border-border rounded-sm px-2 py-1 bg-surface focus-ring"
+                          className="numeric"
                         />
                         <span aria-hidden="true" className="text-fg-muted">–</span>
-                        <input
+                        <Input inline size="xs"
                           type="time"
                           value={range.to}
                           onChange={(e) => patchRange(i, rangeIdx, { to: e.target.value })}
                           aria-label={`${row.date} ${tRange("to_label")} ${rangeIdx + 1}`}
-                          className="numeric text-sm border border-border rounded-sm px-2 py-1 bg-surface focus-ring"
+                          className="numeric"
                         />
                       </div>
                       {row.ranges.length > 1 && (
@@ -307,7 +308,7 @@ export default function SpecialHoursEditor({ profile, onSave, reportDirty = () =
                 </div>
               )}
 
-              <input
+              <Input inline size="xs"
                 type="text"
                 value={row.note}
                 maxLength={MAX_SPECIAL_NOTE_LENGTH}
@@ -315,7 +316,7 @@ export default function SpecialHoursEditor({ profile, onSave, reportDirty = () =
                 aria-label={t("note_label")}
                 placeholder={t("note_placeholder")}
                 data-testid={`special-hours-note-${i}`}
-                className="mt-2 w-full text-sm border border-border rounded-sm px-2 py-1 bg-surface focus-ring"
+                className="mt-2 w-full"
               />
 
               {issueReason && (
