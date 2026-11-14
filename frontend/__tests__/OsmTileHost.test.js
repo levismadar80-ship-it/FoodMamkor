@@ -15,6 +15,16 @@ import fs from "node:fs";
 import path from "node:path";
 
 const read = (f) => fs.readFileSync(path.join(process.cwd(), f), "utf-8");
+// Block and line comments stripped, so a historical note is not a "use".
+const code = (f) => read(f).replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
+const walk = (dir) =>
+  fs.readdirSync(path.join(process.cwd(), dir), { withFileTypes: true }).flatMap((e) => {
+    const rel = path.join(dir, e.name);
+    if (e.isDirectory()) return walk(rel);
+    return /\.(jsx?|tsx?)$/.test(e.name) ? [rel] : [];
+  });
+const SOURCE_FILES = ["components", "app", "lib"].flatMap(walk);
+// The three tile layers known today (anchors: the scan below must find them).
 const TILE_LAYER_FILES = [
   "components/MapComponent.jsx",
   "components/MiniMap.jsx",
@@ -41,6 +51,16 @@ describe("OSM tile host (MEH-3077)", () => {
     expect(read(f)).not.toMatch(SHARD);
   });
 
+  it("scan: every file with an OSM tile URL template is a known tile layer", () => {
+    const withTiles = SOURCE_FILES.filter((f) => /openstreetmap\.org\/\{z\}/.test(code(f)));
+    expect(withTiles.sort()).toEqual([...TILE_LAYER_FILES].sort());
+  });
+
+  it("scan: no source file under components/app/lib uses an a/b/c shard", () => {
+    const offenders = SOURCE_FILES.filter((f) => SHARD.test(code(f)));
+    expect(offenders).toEqual([]);
+  });
+
   it("the layout preconnects to the single host, not the shards", () => {
     const layout = read("app/[locale]/layout.js");
     expect(layout).toContain('href="https://tile.openstreetmap.org"');
@@ -49,5 +69,9 @@ describe("OSM tile host (MEH-3077)", () => {
 
   it("CSP img-src admits the bare tile host", () => {
     expect(imgSrc()).toContain("https://tile.openstreetmap.org");
+  });
+
+  it("CSP img-src no longer allows the unused shard wildcard", () => {
+    expect(imgSrc()).not.toContain("https://*.tile.openstreetmap.org");
   });
 });
