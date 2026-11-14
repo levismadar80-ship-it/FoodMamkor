@@ -31,6 +31,7 @@ from app.routers import (
     producer_owner_invite,
     producer_recipes,
     product_organize,
+    product_orders,
     rescue,
     producers,
     registrations,
@@ -44,6 +45,29 @@ from app.routers import (
     users_me,
     whatsapp_webhook,
 )
+
+
+def _register_flagged_features(app: FastAPI) -> None:
+    """Features behind a switch that is off by default. Split out of
+    register_routers only to keep that function under the statement limit
+    (MEH-3218); the order of registration carries no meaning."""
+    # MEH-2646: the rescue-bags pilot. Every route inside answers 404 while
+    # RESCUE_BAGS_ENABLED is off, which is its default — registering the
+    # routers does not expose the feature.
+    # Registered last simply to keep the pilot's two lines together; the
+    # position carries no meaning. (It was briefly believed to shrink the
+    # openapi.json diff — measured, it does not: the ~450 apparent deletions
+    # there are JSON key reflow, and a semantic compare against HEAD shows
+    # exactly 8 paths and 10 schemas added and nothing else changed.)
+    app.include_router(rescue.router)
+    app.include_router(rescue.admin_router)
+    # MEH-2649: GET /producers/me/rescue/orders — the business's own counter
+    # list, beside /producers/me/group-buys.
+    app.include_router(rescue.me_router)
+    # MEH-3218: on-site ordering, stage 1 — the business's ordering settings.
+    # Every route answers 404 while PRODUCT_ORDERS_ENABLED is off (the default).
+    app.include_router(product_orders.me_router)
+    app.include_router(product_orders.admin_router)
 
 
 def register_routers(app: FastAPI) -> None:
@@ -152,16 +176,4 @@ def register_routers(app: FastAPI) -> None:
     app.include_router(holiday_mode.router)
     # MEH-509 PR2c: Meta WhatsApp webhook receiver. /webhook/whatsapp.
     app.include_router(whatsapp_webhook.router)
-    # MEH-2646: the rescue-bags pilot. Every route inside answers 404 while
-    # RESCUE_BAGS_ENABLED is off, which is its default — registering the
-    # routers does not expose the feature.
-    # Registered last simply to keep the pilot's two lines together; the
-    # position carries no meaning. (It was briefly believed to shrink the
-    # openapi.json diff — measured, it does not: the ~450 apparent deletions
-    # there are JSON key reflow, and a semantic compare against HEAD shows
-    # exactly 8 paths and 10 schemas added and nothing else changed.)
-    app.include_router(rescue.router)
-    app.include_router(rescue.admin_router)
-    # MEH-2649: GET /producers/me/rescue/orders — the business's own counter
-    # list, beside /producers/me/group-buys.
-    app.include_router(rescue.me_router)
+    _register_flagged_features(app)

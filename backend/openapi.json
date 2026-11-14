@@ -9764,6 +9764,141 @@
         "title": "ProducerOfferOut",
         "type": "object"
       },
+      "ProducerOrderAlcoholIn": {
+        "additionalProperties": false,
+        "properties": {
+          "alcohol_licensed": {
+            "title": "Alcohol Licensed",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "alcohol_licensed"
+        ],
+        "title": "ProducerOrderAlcoholIn",
+        "type": "object"
+      },
+      "ProducerOrderSettingsIn": {
+        "additionalProperties": false,
+        "description": "What the owner may change. Every field is required: the settings screen\nsaves the whole form, so a missing field is a client bug, not \"leave it\".",
+        "properties": {
+          "auto_confirm": {
+            "title": "Auto Confirm",
+            "type": "boolean"
+          },
+          "auto_confirm_slot_cap": {
+            "anyOf": [
+              {
+                "maximum": 500.0,
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Auto Confirm Slot Cap"
+          },
+          "cancel_cutoff_hours": {
+            "default": 24,
+            "maximum": 168.0,
+            "minimum": 0.0,
+            "title": "Cancel Cutoff Hours",
+            "type": "integer"
+          },
+          "enabled": {
+            "title": "Enabled",
+            "type": "boolean"
+          },
+          "min_order_agorot": {
+            "anyOf": [
+              {
+                "maximum": 10000000.0,
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Min Order Agorot"
+          },
+          "shabbat_observant": {
+            "title": "Shabbat Observant",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "enabled",
+          "auto_confirm",
+          "shabbat_observant"
+        ],
+        "title": "ProducerOrderSettingsIn",
+        "type": "object"
+      },
+      "ProducerOrderSettingsOut": {
+        "properties": {
+          "alcohol_licensed": {
+            "title": "Alcohol Licensed",
+            "type": "boolean"
+          },
+          "auto_confirm": {
+            "title": "Auto Confirm",
+            "type": "boolean"
+          },
+          "auto_confirm_slot_cap": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Auto Confirm Slot Cap"
+          },
+          "cancel_cutoff_hours": {
+            "title": "Cancel Cutoff Hours",
+            "type": "integer"
+          },
+          "enabled": {
+            "title": "Enabled",
+            "type": "boolean"
+          },
+          "min_order_agorot": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Min Order Agorot"
+          },
+          "producer_id": {
+            "format": "uuid",
+            "title": "Producer Id",
+            "type": "string"
+          },
+          "shabbat_observant": {
+            "title": "Shabbat Observant",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "producer_id",
+          "enabled",
+          "auto_confirm",
+          "auto_confirm_slot_cap",
+          "cancel_cutoff_hours",
+          "shabbat_observant",
+          "min_order_agorot",
+          "alcohol_licensed"
+        ],
+        "title": "ProducerOrderSettingsOut",
+        "type": "object"
+      },
       "ProducerOwnerOut": {
         "properties": {
           "active_offer": {
@@ -17846,6 +17981,65 @@
         ]
       }
     },
+    "/admin/producers/{producer_id}/order-settings/alcohol": {
+      "put": {
+        "description": "Mark a business as licensed to sell alcohol (or take the mark away).\n\nSapir's decision of 14/11: alcohol can be ordered only from a business an\nadmin has marked. The mark does not switch ordering on — `enabled` is the\nowner's own choice and a row created here starts with it off.",
+        "operationId": "set_alcohol_licensed_admin_producers__producer_id__order_settings_alcohol_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "producer_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Producer Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProducerOrderAlcoholIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProducerOrderSettingsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Set Alcohol Licensed",
+        "tags": [
+          "product-orders"
+        ]
+      }
+    },
     "/admin/producers/{producer_id}/owner-invite": {
       "delete": {
         "description": "Withdraw an invite that has not been accepted.\n\nClears the PII too, not only the token. The address and the name belong to\nsomeone who is not a user of the site and now never will be through this\nlink, so the row should stop holding them (MEH-2208's תיקון 13 class).\n`owner_invite_created_by` and the consent note are kept: they are the audit\nrecord of an invite that WAS sent, and deleting that is the one thing a\ncancel must not do.\n\nDeliberately NOT gated on `status == \"approved\"` — see `_load_invitable`.",
@@ -23860,6 +24054,78 @@
         "summary": "Request Name Change",
         "tags": [
           "producer-name-requests"
+        ]
+      }
+    },
+    "/producers/me/order-settings": {
+      "get": {
+        "description": "The business's ordering settings; the defaults (off) if never saved.",
+        "operationId": "get_my_order_settings_producers_me_order_settings_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProducerOrderSettingsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Get My Order Settings",
+        "tags": [
+          "product-orders"
+        ]
+      },
+      "put": {
+        "description": "Save the whole settings form. `alcohol_licensed` is not in the body and\nis never touched here — only the admin route writes it.",
+        "operationId": "put_my_order_settings_producers_me_order_settings_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProducerOrderSettingsIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProducerOrderSettingsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Put My Order Settings",
+        "tags": [
+          "product-orders"
         ]
       }
     },

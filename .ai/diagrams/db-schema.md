@@ -492,6 +492,12 @@ erDiagram
     rescue_orders ||--o| rescue_reviews : "one review each"
     users ||--o{ rescue_orders : "reserves"
     producers ||--o| rescue_typical_items : "usual contents"
+    producers ||--o| producer_order_settings : "ordering on/off + rules (MEH-3218)"
+    producers ||--o{ product_orders : "order requests (MEH-3218)"
+    users |o--o{ product_orders : "buyer, when logged in"
+    product_orders ||--o{ product_order_items : "lines, name+price copied"
+    product_orders ||--o{ product_order_events : "status log"
+    products |o--o{ product_order_items : "SET NULL on delete"
 
     rescue_offers {
         uuid id PK "MEH-2644"

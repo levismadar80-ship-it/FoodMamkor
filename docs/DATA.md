@@ -636,7 +636,34 @@ rescue_typical_items   (id uuid PK, producer_id uuid FK→producers CASCADE UNIQ
                         created_at, updated_at)            -- MEH-2644, MEH-2752
 alembic_lineage        (revision varchar(64) PK, recorded_at timestamptz
                         NOT NULL default now())                       -- MEH-2903
+producer_order_settings (producer_id uuid PK FK→producers CASCADE,
+                        enabled bool default false, auto_confirm bool default false,
+                        auto_confirm_slot_cap int nullable (>=1),
+                        cancel_cutoff_hours int default 24 (0..168),
+                        shabbat_observant bool default false,
+                        min_order_agorot int nullable, alcohol_licensed bool default false,
+                        created_at, updated_at)                       -- MEH-3218
+product_orders         (id uuid PK, producer_id uuid FK→producers CASCADE,
+                        user_id uuid FK→users SET NULL nullable,
+                        customer_name, customer_phone, fulfilment pickup|delivery,
+                        delivery_address, slot_start, slot_end, note,
+                        estimated_total_agorot int, final_total_agorot int nullable,
+                        delivery_fee_agorot int default 0, status, payment_status,
+                        pickup_code char(4) nullable, age_declared bool,
+                        expires_at, confirmed_at, handed_at, closed_at,
+                        created_at, updated_at)                       -- MEH-3218
+product_order_items    (id uuid PK, order_id uuid FK→product_orders CASCADE,
+                        product_id uuid FK→products SET NULL nullable,
+                        name, unit_price_agorot int, price_is_estimate bool,
+                        price_unit unit|kg|100g, qty int (1..99),
+                        contains_alcohol bool)                        -- MEH-3218
+product_order_events   (id uuid PK, order_id uuid FK→product_orders CASCADE,
+                        from_status nullable, to_status, actor customer|business|admin|system,
+                        actor_user_id uuid FK→users SET NULL nullable, note,
+                        created_at)                                   -- MEH-3218
 ```
+
+> **MEH-3218 — on-site ordering, stage 1 (14/11/2026):** the tables behind «בקשת הזמנה» (parent MEH-3216), all dormant until `PRODUCT_ORDERS_ENABLED` (default off). A buyer picks products, pickup or delivery and a time; the business confirms. **No payment anywhere:** the buyer pays the business directly, so `payment_status` has the single value `direct_to_business` and the CHECK refuses anything else (ADR-042 §5). The column exists so on-site payment can be added later as a CHECK widening. Money is integer agorot; `estimated_total_agorot` is what the buyer saw, `final_total_agorot` is set at confirmation (weighed goods), `delivery_fee_agorot` is separate. An order line **copies** the product's name and price, and `product_id` is SET NULL, so renaming or deleting a product does not rewrite past orders. `status` is one of pending · confirmed · change_proposed · ready · handed · declined · cancelled · expired · no_show, and the **only writer** is `services/product_order_state.py::apply_transition`, which also appends the `product_order_events` row (from, to, who). Ordering is **opt-in per business**: no `producer_order_settings` row, or `enabled=false`, means off. `alcohol_licensed` is admin-only. Also adds four columns to `products`, each NOT NULL with a server default (no backfill): `price_unit` ('unit' · 'kg' · '100g'), `is_orderable` (true), `in_stock` (true), `contains_alcohol` (false). **No new price column:** `price_min == price_max` is the exact price. Vocabularies live once in `app/models/product_orders.py`; `tests/test_meh3218_product_orders.py` reds if the revision's CHECK literals drift. Migration `d5a7c3e9f1b4`; **`EXPECTED_TABLES` +4**. Routes (all 404 while the flag is off): `GET /producers/me/order-settings` 👤 (the defaults, ordering off, when never saved) · `PUT /producers/me/order-settings` 👤 (saves the whole form; auto-confirm needs a per-slot cap; never touches `alcohol_licensed`) · `PUT /admin/producers/{producer_id}/order-settings/alcohol` 🛡️. No route creates or changes an order yet.
 
 > **MEH-2903 — `alembic_lineage` (11/11/2026):** boot bookkeeping, not app data. `alembic_version` stores only the current head, so an older image booting on a newer database (a backend rollback) cannot tell its own head is an ancestor of the database's revision. `backend/scripts/migrate_on_boot.py` (the only writer) records the image's whole revision chain here after every successful `upgrade head`; an image whose database is ahead of it takes rollback mode only if its own head is listed here, and otherwise fails the boot naming both revisions. Nothing in `app/` reads or writes it. Migration `19ac967d78fb`; **`EXPECTED_TABLES` 49 → 50**.
 
