@@ -54,6 +54,14 @@ NO_CODES_DETAIL = "אי אפשר לאשר הזמנות נוספות כרגע. צ
 WRONG_PICKUP_CODE_DETAIL = "הקוד לא תואם להזמנה הזאת"
 TOO_EARLY_NO_SHOW_DETAIL = "אפשר לסמן «לא הגיעו» רק אחרי שעבר מועד ההזמנה"
 PROPOSED_SLOT_DETAIL = "המועד המוצע לא נמצא בחלונות הזמן של בית העסק"
+SLOT_PASSED_DETAIL = "מועד ההזמנה כבר עבר, ולכן אי אפשר לאשר אותה"
+PROPOSAL_PASSED_DETAIL = "המועד שהוצע כבר עבר. צריך לפנות ישירות לבית העסק"
+FINAL_TOTAL_FIXED_DETAIL = (
+    "בהזמנה במחיר קבוע הסכום כבר ידוע. כדי לשנות אותו צריך להציע שינוי"
+)
+FINAL_TOTAL_TOO_HIGH_DETAIL = (
+    "הסכום הסופי גבוה מההערכה שהוצגה בהזמנה. כדי לקבוע סכום גבוה יותר צריך להציע שינוי"
+)
 
 
 def _move(db: Session, order: ProductOrder, to: str, actor: Actor, note: Any) -> None:
@@ -123,7 +131,9 @@ def assign_pickup_code(db: Session, order: ProductOrder) -> None:
             return
 
 
-def _clear_proposal(order: ProductOrder) -> None:
+def clear_proposal(order: ProductOrder) -> None:
+    """Called on every move out of `change_proposed`, so a proposal nobody
+    accepted does not stay on a closed order."""
     order.proposed_slot_start = None  # type: ignore[assignment]
     order.proposed_slot_end = None  # type: ignore[assignment]
     order.proposed_total_agorot = None  # type: ignore[assignment]
@@ -155,17 +165,29 @@ def buyer_can_cancel(order: ProductOrder, cutoff: int, now: datetime) -> bool:
 def buyer_cancel(db: Session, order_id: Any, actor: Actor) -> ProductOrder:
     order = lock_order(db, order_id)
     cutoff = cutoff_hours(db, order)
-    if order.status == "confirmed" and not buyer_can_cancel(order, cutoff, utc_now()):
+    # A packed (`ready`) order gets the same answer as one past the cutoff:
+    # where to turn, not the state machine's "not allowed".
+    if order.status in ("confirmed", "ready") and not buyer_can_cancel(
+        order, cutoff, utc_now()
+    ):
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT, detail=CUTOFF_PASSED_DETAIL
         )
     _move(db, order, "cancelled", actor, None)
+    clear_proposal(order)
     return order
 
 
 def buyer_accept_change(db: Session, order: ProductOrder, actor: Actor) -> ProductOrder:
     lock_business(db, order.producer_id)
     order = lock_order(db, order.id)
+    # MEH-3263: an order confirmed after its slot could be reported as a
+    # no-show at once, for a hand-over nobody was ever told to come to.
+    agreed_start = order.proposed_slot_start or order.slot_start
+    if order.status == "change_proposed" and utc_now() >= agreed_start:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, detail=PROPOSAL_PASSED_DETAIL
+        )
     _move(db, order, "confirmed", actor, None)
     if order.proposed_slot_start is not None:
         order.slot_start = order.proposed_slot_start
@@ -175,12 +197,39 @@ def buyer_accept_change(db: Session, order: ProductOrder, actor: Actor) -> Produ
         if order.proposed_total_agorot is not None
         else order.estimated_total_agorot
     )
-    _clear_proposal(order)
+    clear_proposal(order)
     assign_pickup_code(db, order)
     return order
 
 
 # --- the business ------------------------------------------------------------
+
+
+def _check_confirmable(
+    order: ProductOrder, has_estimate: bool, final_total_agorot: int | None
+) -> None:
+    """What a business may do on its own word. The slot must still be ahead
+    (a late confirm followed by «no-show» would block a buyer who was never
+    told to come). The final total is hers to set only where the buyer was
+    shown an estimate, and only up to the figure shown; anything above it, or
+    any change to a fixed price, needs the buyer's yes — propose-change."""
+    if utc_now() >= order.slot_start:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, detail=SLOT_PASSED_DETAIL
+        )
+    detail = None
+    if has_estimate and final_total_agorot is None:
+        detail = NEEDS_FINAL_TOTAL_DETAIL
+    elif not has_estimate and final_total_agorot is not None:
+        detail = FINAL_TOTAL_FIXED_DETAIL
+    elif final_total_agorot is not None and final_total_agorot > int(
+        order.estimated_total_agorot
+    ):
+        detail = FINAL_TOTAL_TOO_HIGH_DETAIL
+    if detail is not None:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=detail
+        )
 
 
 def business_confirm(
@@ -192,11 +241,8 @@ def business_confirm(
     lock_business(db, producer_id)
     order = lock_order(db, order_id)
     has_estimate = any(line.price_is_estimate for line in order.items)
-    if final_total_agorot is None and has_estimate:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail=NEEDS_FINAL_TOTAL_DETAIL,
-        )
+    if order.status == "pending":
+        _check_confirmable(order, has_estimate, final_total_agorot)
     _move(db, order, "confirmed", actor, None)
     if final_total_agorot is None:
         final_total_agorot = int(order.estimated_total_agorot)
@@ -277,4 +323,5 @@ def business_simple_move(
     """decline, ready, cancel: a move with at most a note."""
     order = lock_order(db, order_id)
     _move(db, order, to_status, actor, note)
+    clear_proposal(order)
     return order

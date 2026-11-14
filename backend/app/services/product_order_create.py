@@ -43,6 +43,7 @@ from app.models.product_orders import (
     ProductOrderItem,
 )
 from app.schemas.product_order_buy import OrderCreateIn
+from app.schemas.product_orders import MAX_MIN_ORDER_AGOROT
 from app.services import product_order_delivery as delivery
 from app.services import product_order_phone as phone_codes
 from app.services.product_order_actions import assign_pickup_code
@@ -70,6 +71,9 @@ MAX_OPEN_ORDERS_PER_BUSINESS = 200
 # long — long enough for a lost answer, short enough that the key is not a
 # standing credential.
 REPLAY_WINDOW = timedelta(minutes=10)
+# The largest goods total one order may carry: the same ceiling a final total
+# and a business minimum have (100,000 ₪), far below the int32 column.
+MAX_ORDER_TOTAL_AGOROT = MAX_MIN_ORDER_AGOROT
 
 _AGOROT_PER_SHEKEL = 100
 
@@ -85,6 +89,7 @@ BELOW_MINIMUM_DETAIL = "סכום ההזמנה נמוך ממינימום ההזמ
 AGE_DETAIL = "להזמנה שיש בה אלכוהול צריך להצהיר על גיל 18 ומעלה"
 ALCOHOL_SLOT_DETAIL = "אי אפשר לקבל הזמנה שיש בה אלכוהול במועד הזה. צריך לבחור מועד אחר"
 KEY_REUSED_DETAIL = "ההזמנה הזאת כבר נשלחה"
+TOO_LARGE_DETAIL = "ההזמנה גדולה מדי להזמנה באתר. צריך לפנות ישירות לבית העסק"
 CODE_USED_DETAIL = phone_codes.CODE_WRONG_DETAIL
 
 
@@ -318,6 +323,8 @@ def create_order(db: Session, body: OrderCreateIn, user: User | None) -> Created
     if has_alcohol and not slot.alcohol_ok:
         raise _conflict(ALCOHOL_SLOT_DETAIL)
     subtotal = sum(int(line.unit_price_agorot) * int(line.qty) for line in lines)
+    if subtotal > MAX_ORDER_TOTAL_AGOROT:
+        raise _conflict(TOO_LARGE_DETAIL)
     if row.min_order_agorot is not None and subtotal < int(row.min_order_agorot):
         raise _conflict(BELOW_MINIMUM_DETAIL)
     fee, city, address = _delivery_fee(db, producer, body, subtotal)
@@ -342,7 +349,13 @@ def create_order(db: Session, body: OrderCreateIn, user: User | None) -> Created
         items=lines,
     )
     db.add(order)
-    db.flush()
+    try:
+        db.flush()
+    except IntegrityError as clash:
+        # The unique index on the idempotency key: a twin request that held
+        # another phone number's lock got there first. This one wrote nothing.
+        db.rollback()
+        raise _conflict(KEY_REUSED_DETAIL) from clash
     record_created(db, order, Actor("customer", user.id if user else None))  # type: ignore[arg-type]
     has_estimate = any(line.price_is_estimate for line in lines)
     if _may_auto_confirm(db, row, order, has_estimate):
@@ -354,11 +367,5 @@ def create_order(db: Session, body: OrderCreateIn, user: User | None) -> Created
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=CODE_USED_DETAIL
         )
-    try:
-        db.commit()
-    except IntegrityError as clash:
-        # The unique index on the idempotency key: a twin request on another
-        # phone number's lock. It created nothing; say so.
-        db.rollback()
-        raise _conflict(KEY_REUSED_DETAIL) from clash
+    db.commit()
     return Created(order, token)

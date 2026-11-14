@@ -63,8 +63,10 @@ def _private(response: Response) -> None:
     response.headers["Cache-Control"] = "no-store"
 
 
+# MEH-3263: 5, not 10 — every call may message a stranger's phone, and the
+# site-wide ceiling is shared by every buyer.
 @router.post("/product-orders/phone-code", dependencies=_GATE)
-@limiter.limit("10/hour")
+@limiter.limit("5/hour")
 def send_order_phone_code(
     request: Request,
     body: PhoneCodeIn,
@@ -97,7 +99,13 @@ def send_order_phone_code(
         )
     code = phone_codes.issue_code(db, phone, fixed_code=test_code)
     if test_code is None:
-        _send_whatsapp_otp(f"+{phone}", code)
+        _send_whatsapp_otp(
+            f"+{phone}",
+            code,
+            # MEH-2952: takes_orders() already refuses a test business; the
+            # flag is passed so the send layer holds this site too.
+            test_cause=bool(producer is not None and producer.is_test),
+        )
     else:
         log.warning(
             "product orders: OTP test mode, fixed code issued, WhatsApp "

@@ -14,6 +14,7 @@ order's own timestamps instead of the clock.
 """
 
 import ast
+import re
 import uuid
 from datetime import time, timedelta
 from pathlib import Path
@@ -30,6 +31,8 @@ from app.models.product_orders import (
     ProductOrderEvent,
     ProductOrderPhoneCode,
 )
+from app.rate_limit import limiter
+from app.routers import product_order_business as business_module
 from app.routers import product_order_buyer as buyer_module
 from app.routers import product_orders as orders_module
 from app.services import product_order_actions as actions
@@ -117,7 +120,9 @@ class Shop:
         self.headers = auth_header(self.owner)
 
 
-def slot_of(client, shop, fulfilment="pickup", nth=0, alcohol_ok=None) -> str:
+def slot_of(client, shop, fulfilment="pickup", nth=1, alcohol_ok=None) -> str:
+    # nth=1, not 0: the first slot can start at the next full hour, and a
+    # test that reads the menu at xx:59:59 would post after it began.
     menu = client.get(f"/producers/{shop.id}/order-menu").json()
     slots = [
         s
@@ -214,7 +219,10 @@ def test_every_route_is_404_while_the_flag_is_off(client, db):
         ),
     ]
     assert [a.status_code for a in answers] == [404] * len(answers)
-    assert len(answers) == 14
+    # Counted off the routers, so a route added without a line here fails.
+    assert len(answers) == len(buyer_module.router.routes) + len(
+        business_module.router.routes
+    )
     db.expire_all()
     assert db.query(ProductOrderPhoneCode).count() == 0
     assert db.query(ProductOrder).one().status == "pending"
@@ -313,6 +321,9 @@ def test_the_fourth_code_to_one_phone_within_an_hour_is_refused(
         {"created_at": utc_now() - timedelta(minutes=61)}
     )
     db.commit()
+    # The per-IP limit (5/hour) is a separate fence; this test is about the
+    # per-phone one, so the test client's own address gets a fresh hour too.
+    limiter._storage.reset()
     assert client.post("/product-orders/phone-code", json=body).status_code == 200
 
 
@@ -595,7 +606,9 @@ def test_alcohol_needs_a_licensed_business_a_declaration_and_a_day_slot(
 ):
     shop = Shop(db)
     wine = [{"product_id": str(shop.wine.id), "qty": 1}]
-    assert send(client, shop, sent, items=wine, age_declared=True).status_code == 409
+    unlicensed = send(client, shop, sent, items=wine, age_declared=True)
+    assert unlicensed.status_code == 409
+    assert create_module.PRODUCT_GONE_DETAIL in unlicensed.text
 
     db.query(ProducerOrderSettings).update({"alcohol_licensed": True})
     db.add(
@@ -847,7 +860,9 @@ def test_a_buyer_cancels_freely_before_confirmation_and_until_the_cutoff_after(
     assert actions.CUTOFF_PASSED_DETAIL in late.text
 
     set_order("ready", 30)  # packed: the buyer cannot cancel at all
-    assert client.post("/product-orders/status/cancel", json=ref).status_code == 403
+    packed = client.post("/product-orders/status/cancel", json=ref)
+    assert packed.status_code == 409
+    assert actions.CUTOFF_PASSED_DETAIL in packed.text
 
     set_order("confirmed", 2.1)  # outside the cutoff
     assert client.post("/product-orders/status", json=ref).json()["can_cancel"] is True
@@ -1133,15 +1148,29 @@ def test_deleting_an_account_cancels_her_open_orders_and_removes_her_from_all(
         "user_id": buyer_id,
         "delivery_address": "הרצל 1",
         "note": "לצלצל פעמיים",
-        "status_token_hash": None,
     }
-    stored_order(db, shop, "ready", pickup_code="4821", **private)
+    token = create_module.status_token_for(str(uuid.uuid4()))
+    stored_order(
+        db,
+        shop,
+        "ready",
+        pickup_code="4821",
+        status_token_hash=create_module.token_hash(token),
+        **private,
+    )
+    assert (
+        client.post("/product-orders/status", json={"token": token}).status_code == 200
+    )
     stored_order(db, shop, "pending", **private)
     stored_order(db, shop, "handed", **private)
     someone_else = stored_order(db, shop, "pending", customer_phone="972500000000")
 
     res = client.delete("/auth/me", headers=buyer_headers)
     assert res.status_code == 200, res.text
+    # The link she was given stops opening the order.
+    assert (
+        client.post("/product-orders/status", json={"token": token}).status_code == 404
+    )
     db.expire_all()
     assert db.query(User).filter(User.id == buyer_id).count() == 0
     hers = db.query(ProductOrder).filter(ProductOrder.id != someone_else.id).all()
@@ -1191,11 +1220,33 @@ def _status_assignments(path: Path) -> list[int]:
                     for k in arg.keys
                 ):
                     lines.append(node.lineno)
+        if isinstance(node, ast.Call):
+            name = getattr(node.func, "attr", "") or getattr(node.func, "id", "")
+            by_keyword = name in ("ProductOrder", "values", "update") and any(
+                k.arg == "status" for k in node.keywords
+            )
+            by_setattr = (
+                name == "setattr"
+                and len(node.args) > 1
+                and isinstance(node.args[1], ast.Constant)
+                and node.args[1].value == "status"
+            )
+            if by_keyword or by_setattr:
+                lines.append(node.lineno)
     return lines
 
 
+# Every app file that names the order model, wherever it lives: a status
+# written from an admin router or a scheduler is the same breach. A file that
+# starts using ProductOrder joins this list by itself.
 ORDER_FILES = sorted(
-    p for p in APP.rglob("product_order*.py") if p.parent.name != "models"
+    p
+    for p in APP.rglob("*.py")
+    if p.parent.name != "models"
+    and (
+        p.name.startswith("product_order")
+        or re.search(r"\bProductOrder\b", p.read_text(encoding="utf-8"))
+    )
 )
 
 
@@ -1221,9 +1272,163 @@ def test_the_status_probe_catches_each_way_of_writing_a_status(tmp_path):
         "self.order.status: str = 'x'\n",
         "db.query(ProductOrder).update({'status': 'x'})\n",
         "db.query(ProductOrder).update({ProductOrder.status: 'x'})\n",
+        "order = ProductOrder(producer_id=1, status='confirmed')\n",
+        "setattr(order, 'status', 'confirmed')\n",
+        "db.execute(update(ProductOrder).values(status='x'))\n",
     ):
         probe = tmp_path / "probe.py"
         probe.write_text(source, encoding="utf-8")
         assert _status_assignments(probe) == [1], source
     probe.write_text("if order.status == 'x':\n    pass\n", encoding="utf-8")
     assert _status_assignments(probe) == []
+
+
+# --- answers to the independent review (MEH-3263) ----------------------------
+
+
+def test_asking_for_a_code_does_not_say_whether_a_phone_is_blocked(
+    client, db, flag_on, sent
+):
+    shop = Shop(db)
+    recent = utc_now() - timedelta(days=1)
+    for _ in range(create_module.NO_SHOW_LIMIT):
+        stored_order(db, shop, "no_show", closed_at=recent)
+    res = client.post(
+        "/product-orders/phone-code", json={"producer_id": shop.id, "phone": PHONE}
+    )
+    assert res.status_code == 200, res.text
+    assert len(sent) == 1
+
+
+def test_an_order_whose_slot_has_passed_cannot_be_confirmed(client, db, flag_on):
+    shop = Shop(db)
+    past = utc_now() - timedelta(hours=3)
+    order = stored_order(
+        db, shop, "pending", slot_start=past, slot_end=past + timedelta(hours=1)
+    )
+    act = f"/producers/me/product-orders/{order.id}"
+    late = client.post(f"{act}/confirm", json={}, headers=shop.headers)
+    assert late.status_code == 409
+    assert actions.SLOT_PASSED_DETAIL in late.text
+    # ...and so it can never be turned into a no-show against the buyer.
+    assert client.post(f"{act}/no-show", headers=shop.headers).status_code in (403, 409)
+    db.expire_all()
+    assert db.query(ProductOrder).one().status == "pending"
+
+
+def test_a_proposal_whose_slot_has_passed_cannot_be_accepted(client, db, flag_on):
+    shop = Shop(db)
+    past = utc_now() - timedelta(hours=3)
+    token = create_module.status_token_for(str(uuid.uuid4()))
+    stored_order(
+        db,
+        shop,
+        "change_proposed",
+        proposed_slot_start=past,
+        proposed_slot_end=past + timedelta(hours=1),
+        status_token_hash=create_module.token_hash(token),
+    )
+    late = client.post("/product-orders/status/accept-change", json={"token": token})
+    assert late.status_code == 409
+    assert actions.PROPOSAL_PASSED_DETAIL in late.text
+    db.expire_all()
+    assert db.query(ProductOrder).one().status == "change_proposed"
+
+
+def test_the_business_cannot_set_a_total_the_buyer_never_saw(client, db, flag_on, sent):
+    shop = Shop(db)
+    fixed = send(client, shop, sent).json()  # two loaves, 56 ₪, a fixed price
+    url = f"/producers/me/product-orders/{fixed['id']}/confirm"
+    for total in (0, 5600, 9_900_000):
+        res = client.post(url, json={"final_total_agorot": total}, headers=shop.headers)
+        assert res.status_code == 422, total
+        assert actions.FINAL_TOTAL_FIXED_DETAIL in res.text
+
+    weighed = send(
+        client, shop, sent, items=[{"product_id": str(shop.cheese.id), "qty": 1}]
+    ).json()  # shown to the buyer at the high end: 130 ₪
+    url = f"/producers/me/product-orders/{weighed['id']}/confirm"
+    above = client.post(url, json={"final_total_agorot": 13001}, headers=shop.headers)
+    assert above.status_code == 422
+    assert actions.FINAL_TOTAL_TOO_HIGH_DETAIL in above.text
+    at_most = client.post(url, json={"final_total_agorot": 13000}, headers=shop.headers)
+    assert at_most.status_code == 200, at_most.text
+    db.expire_all()
+    assert sorted(o.status for o in db.query(ProductOrder)) == ["confirmed", "pending"]
+
+
+def test_a_proposal_does_not_stay_on_an_order_that_closed_without_it(
+    client, db, flag_on
+):
+    shop = Shop(db)
+    for close in ("business", "buyer"):
+        token = create_module.status_token_for(str(uuid.uuid4()))
+        order = stored_order(
+            db,
+            shop,
+            "change_proposed",
+            proposed_total_agorot=6100,
+            proposal_note="חלה גדולה יותר",
+            status_token_hash=create_module.token_hash(token),
+        )
+        if close == "business":
+            res = client.post(
+                f"/producers/me/product-orders/{order.id}/cancel",
+                json={"note": "נגמר המלאי"},
+                headers=shop.headers,
+            )
+        else:
+            res = client.post("/product-orders/status/cancel", json={"token": token})
+        assert res.status_code == 200, (close, res.text)
+        db.refresh(order)
+        assert (order.status, order.proposed_total_agorot, order.proposal_note) == (
+            "cancelled",
+            None,
+            None,
+        ), close
+
+
+def test_an_order_too_large_for_the_site_is_refused_not_crashed(
+    client, db, flag_on, sent
+):
+    shop = Shop(db)
+    shop.bread.price_min = shop.bread.price_max = 10_000
+    db.commit()
+    res = send(
+        client, shop, sent, items=[{"product_id": str(shop.bread.id), "qty": 99}]
+    )
+    assert res.status_code == 409
+    assert create_module.TOO_LARGE_DETAIL in res.text
+    assert db.query(ProductOrder).count() == 0
+
+
+def test_a_twin_request_that_loses_the_race_gets_409_not_500(
+    client, db, flag_on, sent, monkeypatch
+):
+    """Two requests with one idempotency key on two phones: each holds its
+    own phone's lock, so the second passes the replay check and meets the
+    unique index when it writes. Staged by blinding the replay check."""
+    shop = Shop(db)
+    first = send(client, shop, sent)
+    assert first.status_code == 201
+    key = db.query(ProductOrder).one().idempotency_key
+    monkeypatch.setattr(create_module, "_replayed", lambda *a: None)
+    twin = send(client, shop, sent, phone=OTHER_PHONE, idempotency_key=key)
+    assert twin.status_code == 409
+    assert create_module.KEY_REUSED_DETAIL in twin.text
+    assert db.query(ProductOrder).count() == 1
+
+
+def test_one_address_gets_five_codes_an_hour_whatever_the_phones(
+    client, db, flag_on, sent
+):
+    shop = Shop(db)
+    answers = [
+        client.post(
+            "/product-orders/phone-code",
+            json={"producer_id": shop.id, "phone": f"050-555-000{n}"},
+        ).status_code
+        for n in range(6)
+    ]
+    assert answers == [200] * 5 + [429]
+    assert len(sent) == 5

@@ -21,10 +21,11 @@ from typing import Any
 from sqlalchemy.orm import Session
 
 from app.models.product_orders import PRODUCT_ORDER_OPEN_STATUSES, ProductOrder
+from app.services.product_order_actions import clear_proposal
 from app.services.product_order_state import SYSTEM, apply_transition
 
-DELETED_BUYER_NAME = "לקוח שנמחק"
-ACCOUNT_DELETED_NOTE = "החשבון של הלקוח נמחק"
+DELETED_BUYER_NAME = "חשבון שנמחק"
+ACCOUNT_DELETED_NOTE = "החשבון נמחק"
 
 
 def release_buyer_orders(db: Session, user_id: Any) -> int:
@@ -49,4 +50,5 @@ def release_buyer_orders(db: Session, user_id: Any) -> int:
         order.status_token_hash = None  # type: ignore[assignment]
         order.idempotency_key = None  # type: ignore[assignment]
         order.pickup_code = None  # type: ignore[assignment]
+        clear_proposal(order)
     return len(orders)
