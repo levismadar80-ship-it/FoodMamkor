@@ -436,6 +436,94 @@ def _run_rescue_digest_job() -> None:
         db.close()
 
 
+def _run_weekly_owner_summary_job() -> None:
+    """MEH-3079: Sunday-morning weekly summary email to business owners.
+
+    Same shape as _run_rescue_digest_job: fresh session (the scheduler worker
+    thread cannot share request-scoped sessions), the service is
+    fail-isolated per business, and this wrapper only logs the counters and
+    reports a crash to Sentry so the scheduler thread never dies.
+    """
+    from app.database import SessionLocal
+    from app.services.weekly_owner_summary import send_weekly_summaries
+
+    db = SessionLocal()
+    try:
+        counters = send_weekly_summaries(db)
+        log.info("[WEEKLY-SUMMARY] run complete counters=%s", counters)
+    except Exception as exc:
+        capture_background_exception(exc, task="weekly_owner_summary")
+        log.error("[WEEKLY-SUMMARY] run crashed", exc_info=True)
+    finally:
+        db.close()
+
+
+def _register_rescue_digest(scheduler) -> None:
+    """Moved verbatim out of lifespan (MEH-3079); behaviour unchanged."""
+    # MEH-2756: the rescue pickup-code digest. Registered only when the pilot
+    # AND the digest gate are both on — the digest cannot work before Meta
+    # approves `rescue_codes_digest_v1`, so RESCUE_DIGEST_ENABLED defaults
+    # False and merging the feature sends nothing. Interval rather than cron
+    # because pickup_start is per-offer; see _run_rescue_digest_job. The
+    # watchdog's guards, for the same reason it has them: max_instances=1 +
+    # coalesce so a slow run cannot overlap the next tick, and a 60s grace so
+    # a brief pause runs it late instead of skipping a window.
+    from app.services.rescue_digest import digest_enabled as _digest_enabled
+
+    if settings.rescue_bags_enabled and _digest_enabled():
+        from apscheduler.triggers.interval import IntervalTrigger
+
+        scheduler.add_job(
+            _run_rescue_digest_job,
+            IntervalTrigger(minutes=5),
+            id="meh_2756_rescue_codes_digest",
+            replace_existing=True,
+            max_instances=1,
+            coalesce=True,
+            misfire_grace_time=60,
+        )
+        log.info("[RESCUE-DIGEST] job registered — every 5 minutes")
+    else:
+        log.info(
+            "[RESCUE-DIGEST] disabled (pilot=%s, digest=%s) — no job registered",
+            settings.rescue_bags_enabled,
+            _digest_enabled(),
+        )
+
+
+def _register_weekly_owner_summary(scheduler) -> bool:
+    """MEH-3079: add the weekly summary job only when its flag is on.
+
+    REUSES: _register_rescue_digest above (the MEH-2756 gate) — merging sends nothing
+    until WEEKLY_OWNER_SUMMARY_ENABLED=true. Sunday 08:00 on the Israel clock
+    (the trigger carries the zone, so DST moves with it). max_instances=1 +
+    coalesce so a slow run cannot overlap the next; a 12h grace so a restart
+    over the fire time sends late that Sunday rather than skipping the week
+    (the 6-day sent_at stamp keeps a late run from sending twice).
+    Returns whether the job was registered.
+    """
+    from apscheduler.triggers.cron import CronTrigger
+
+    from app.services.weekly_owner_summary import JOB_ID, summary_enabled
+
+    if not summary_enabled():
+        log.info(
+            "[WEEKLY-SUMMARY] disabled (WEEKLY_OWNER_SUMMARY_ENABLED=false) — no job"
+        )
+        return False
+    scheduler.add_job(
+        _run_weekly_owner_summary_job,
+        CronTrigger(day_of_week="sun", hour=8, minute=0, timezone="Asia/Jerusalem"),
+        id=JOB_ID,
+        replace_existing=True,
+        max_instances=1,
+        coalesce=True,
+        misfire_grace_time=12 * 3600,
+    )
+    log.info("[WEEKLY-SUMMARY] job registered — Sunday 08:00 Asia/Jerusalem")
+    return True
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     log.info("=" * 60)
@@ -586,35 +674,11 @@ async def lifespan(app: FastAPI):
         coalesce=True,
         misfire_grace_time=6 * 3600,
     )
-    # MEH-2756: the rescue pickup-code digest. Registered only when the pilot
-    # AND the digest gate are both on — the digest cannot work before Meta
-    # approves `rescue_codes_digest_v1`, so RESCUE_DIGEST_ENABLED defaults
-    # False and merging the feature sends nothing. Interval rather than cron
-    # because pickup_start is per-offer; see _run_rescue_digest_job. The
-    # watchdog's guards, for the same reason it has them: max_instances=1 +
-    # coalesce so a slow run cannot overlap the next tick, and a 60s grace so
-    # a brief pause runs it late instead of skipping a window.
-    from app.services.rescue_digest import digest_enabled as _digest_enabled
-
-    if settings.rescue_bags_enabled and _digest_enabled():
-        from apscheduler.triggers.interval import IntervalTrigger
-
-        followup_scheduler.add_job(
-            _run_rescue_digest_job,
-            IntervalTrigger(minutes=5),
-            id="meh_2756_rescue_codes_digest",
-            replace_existing=True,
-            max_instances=1,
-            coalesce=True,
-            misfire_grace_time=60,
-        )
-        log.info("[RESCUE-DIGEST] job registered — every 5 minutes")
-    else:
-        log.info(
-            "[RESCUE-DIGEST] disabled (pilot=%s, digest=%s) — no job registered",
-            settings.rescue_bags_enabled,
-            _digest_enabled(),
-        )
+    # MEH-2756 rescue digest + MEH-3079 weekly owner summary: both gated by
+    # a flag that defaults off (helpers above; moved out of lifespan to keep
+    # it under ruff's PLR0915 statement cap).
+    _register_rescue_digest(followup_scheduler)
+    _register_weekly_owner_summary(followup_scheduler)
     followup_scheduler.start()
     app.state.followup_scheduler = followup_scheduler
     log.info(

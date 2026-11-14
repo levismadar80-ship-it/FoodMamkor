@@ -1487,6 +1487,9 @@ POST /newsletter                 public — { email } → newsletter_subscribers
                                    `newsletter` (MEH-2611; never clears an opt-out)
 POST /newsletter/unsubscribe     public — { token } → deletes the row
                                  + deletes the Resend contact (MEH-2611); a Broadcast-footer opt-out stays sticky
+POST /weekly-summary/unsubscribe public — { token } → producers.weekly_summary_opt_out = true (MEH-3079)
+                                 rate-limited 20/hour per IP; token scope `weekly_summary_unsubscribe`,
+                                 sub = producer id; 400 «הקישור אינו תקין או שפג תוקפו.»; idempotent 200
 POST /contact                    public — { name, email, message, topic? } → contact_messages row
                                  + SMTP email to CONTACT_EMAIL (falls back to
                                  ADMIN_EMAIL). Fail-open: if SMTP is unconfigured

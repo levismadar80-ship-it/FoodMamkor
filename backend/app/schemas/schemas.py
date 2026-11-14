@@ -5674,6 +5674,12 @@ class NewsletterUnsubscribeIn(BaseModel):
     token: str = Field(..., min_length=1)
 
 
+# MEH-3079: the weekly owner summary's unsubscribe link — same shape, its own
+# token scope (services/weekly_owner_summary.py).
+class WeeklySummaryUnsubscribeIn(BaseModel):
+    token: str = Field(..., min_length=1, max_length=2048)
+
+
 # MEH-1113: contact-form topic whitelist → Hebrew label. Single source of
 # truth for both the ContactIn validator (keys = allowed values) and the
 # router's label mapping (marketing.py imports this) — avoids the two-parallel-

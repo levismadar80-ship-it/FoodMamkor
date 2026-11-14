@@ -7196,3 +7196,14 @@ export const WebhookChallengeWebhookWhatsappGetResponse = /*#__PURE__*/ zod.unkn
  * @summary Webhook Receive
  */
 export const WebhookReceiveWebhookWhatsappPostResponse = /*#__PURE__*/ zod.unknown()
+
+
+/**
+ * Stop the weekly summary email for the business named in the token.
+ *
+ * The token is the authorization (subject = producer id, scope
+ * `weekly_summary_unsubscribe`), so the link works from the email without
+ * logging in and can only opt out its own business. Idempotent.
+ * @summary Unsubscribe Weekly Summary
+ */
+export const UnsubscribeWeeklySummaryWeeklySummaryUnsubscribePostResponse = /*#__PURE__*/ zod.unknown()

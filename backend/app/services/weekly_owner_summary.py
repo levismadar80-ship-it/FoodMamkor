@@ -1,0 +1,301 @@
+"""
+Module:   weekly_owner_summary
+Purpose:  Once a week, each live business owner gets a short email with the
+          last 7 days of her page: views, WhatsApp clicks, other contact
+          clicks and new saves to favorites, plus a link to the dashboard's
+          «תובנות» screen (MEH-3079, like Google Business / Etsy weekly stats).
+Touches:  reads producers + users; writes producers.weekly_summary_sent_at;
+          sends through app.services.email.send_email (Resend, fail-open).
+Does NOT: count anything itself — every number comes from
+          services/producer_insights.py, the same functions the dashboard
+          endpoint calls. Does not hold the scheduler (app/startup.py) and
+          does not own the unsubscribe route (routers/marketing.py).
+Related:  backend/app/startup.py `_register_weekly_owner_summary` ·
+          backend/app/routers/marketing.py `unsubscribe_weekly_summary` ·
+          frontend/app/[locale]/unsubscribe/weekly/page.js ·
+          migration 0cfa83f0f53e (the two producers columns).
+History:  MEH-3079 (creation).
+
+Rules (all enforced in `send_weekly_summaries`):
+  - never a zero email: a business whose deduped 7-day views are 0 is skipped
+    (and NOT stamped, so it is looked at again next week);
+  - live businesses only (`producer_listing.is_business()`: approved, a
+    business not an organizer, not a seeded test row — MEH-2952);
+  - an owner with a verified email only;
+  - not opted out, and not already sent within the last 6 days.
+"""
+
+from __future__ import annotations
+
+import importlib
+import logging
+from dataclasses import dataclass
+from datetime import datetime, timedelta, timezone
+from html import escape as html_escape
+from typing import Any
+from uuid import UUID
+
+from joserfc import jwt as jose_jwt
+from joserfc.errors import JoseError
+from joserfc.jwk import OctKey
+from sqlalchemy import or_
+from sqlalchemy.orm import Session
+
+from app.config import settings
+from app.models import Producer, User
+from app.services.email import send_email
+from app.services.email_branding import email_logo_html
+from app.services.producer_insights import WeeklyNumbers, weekly_numbers
+
+logger = logging.getLogger(__name__)
+
+# A business stamped less than this long ago is skipped. Six days, not seven,
+# so a run that fires a few hours late one week still sends the next week.
+RESEND_AFTER = timedelta(days=6)
+
+JOB_ID = "meh_3079_weekly_owner_summary"
+
+INSIGHTS_PATH = "/producer/dashboard/insights"
+UNSUBSCRIBE_PATH = "/unsubscribe/weekly"
+
+
+def summary_enabled() -> bool:
+    """The send gate. Default False: merging this sends nothing.
+
+    Read through `getattr`, the same way `rescue_digest.digest_enabled` reads
+    its flag: `config.py` is denied to Claude Code, so Sapir adds the field
+    `weekly_owner_summary_enabled: bool = False` from the patch in the PR body,
+    and until she does this reads False rather than raising.
+    """
+    return bool(getattr(settings, "weekly_owner_summary_enabled", False))
+
+
+# ---------------------------------------------------------------------------
+# Unsubscribe token — stateless, signed, its own scope.
+# REUSES: backend/app/routers/marketing.py:57-87 — the MEH-1330 newsletter
+# token (joserfc + SECRET_KEY, no exp so an old email still works). A separate
+# scope so a newsletter token cannot opt a business out, and vice versa; the
+# subject is the producer id, so the token only ever opts out its own business.
+# ---------------------------------------------------------------------------
+UNSUBSCRIBE_SCOPE = "weekly_summary_unsubscribe"
+
+
+def _key() -> OctKey:
+    return OctKey.import_key(settings.secret_key.encode())
+
+
+def create_unsubscribe_token(producer_id: UUID) -> str:
+    payload = {"sub": str(producer_id), "scope": UNSUBSCRIBE_SCOPE}
+    token: str = jose_jwt.encode({"alg": settings.algorithm}, payload, _key())
+    return token
+
+
+def decode_unsubscribe_token(token: str) -> UUID | None:
+    """The producer id of a valid token, else None. Never raises."""
+    try:
+        claims: Any = jose_jwt.decode(
+            token, _key(), algorithms=[settings.algorithm]
+        ).claims
+    except (JoseError, ValueError):
+        return None
+    if claims.get("scope") != UNSUBSCRIBE_SCOPE:
+        return None
+    sub = claims.get("sub")
+    if not isinstance(sub, str):
+        return None
+    try:
+        return UUID(sub)
+    except ValueError:
+        return None
+
+
+# ---------------------------------------------------------------------------
+# The email. Copy: Hebrew, gender-neutral plural (ADR-037). Copy decisions
+# were delegated for MEH-3079; the strings are listed in the PR body.
+# ---------------------------------------------------------------------------
+
+
+def subject_for(views: int) -> str:
+    if views == 1:
+        return "השבוע אדם אחד צפה בעמוד שלכם"
+    return f"השבוע {views} אנשים צפו בעמוד שלכם"
+
+
+@dataclass(frozen=True)
+class SummaryEmail:
+    business_name: str
+    numbers: WeeklyNumbers
+    insights_url: str
+    unsubscribe_url: str
+
+
+def _rows(n: WeeklyNumbers) -> list[tuple[str, int]]:
+    """Label → number. Views always; the others only when not zero."""
+    rows = [("צפיות בעמוד", n["profile_views"])]
+    optional = [
+        ("קליקים בוואטסאפ", n["whatsapp_clicks"]),
+        ("קליקים על טלפון, אתר ועוד", n["contact_clicks"]),
+        ("שמרו את העסק במועדפים", n["new_followers"]),
+    ]
+    rows += [(label, value) for label, value in optional if value > 0]
+    return rows
+
+
+def build_email(m: SummaryEmail) -> tuple[str, str, str]:
+    """(subject, plain text, html)."""
+    name = " ".join((m.business_name or "").split())
+    subject = subject_for(m.numbers["profile_views"])
+    intro = f"כך נראו 7 הימים האחרונים של {name} במהמקור:"
+    rows = _rows(m.numbers)
+    footer = "הסיכום הזה נשלח פעם בשבוע לבתי העסק במהמקור."
+    stop = "להפסקת הסיכום השבועי"
+
+    plain = (
+        f"{subject}\n\n{intro}\n"
+        + "\n".join(f"{label}: {value}" for label, value in rows)
+        + f"\n\nלכל הנתונים: {m.insights_url}\n\n"
+        f"{footer}\n{stop}: {m.unsubscribe_url}\n\nצוות מהמקור"
+    )
+
+    e = html_escape
+    rows_html = "".join(
+        '<tr><td style="padding:6px 0;border-bottom:1px solid #efeae0;'
+        f'text-align:right;">{e(label)}</td>'
+        '<td style="padding:6px 0;border-bottom:1px solid #efeae0;'
+        f'text-align:left;font-weight:bold;">{value}</td></tr>'
+        for label, value in rows
+    )
+    # REUSES: backend/app/services/registration_emails.py:37 — the card shell
+    # (logo, green heading band, outline button), plus an unsubscribe footer.
+    html = f"""\
+<!DOCTYPE html>
+<html dir="rtl" lang="he">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#F5F0E8;">
+<table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background:#F5F0E8;padding:24px 12px;direction:rtl;font-family:Arial,Helvetica,sans-serif;">
+  <tr><td align="center">
+    <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="max-width:520px;margin:0 auto;">
+      <tr><td style="text-align:right;padding:0 4px 14px;">{email_logo_html()}</td></tr>
+      <tr><td style="background:#ffffff;border-radius:14px;border:1px solid #e5dfd3;overflow:hidden;">
+        <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
+          <tr><td style="background:#2e6853;color:#ffffff;padding:18px 22px;text-align:right;font-size:19px;font-weight:bold;line-height:1.4;">{e(subject)}</td></tr>
+          <tr><td style="padding:18px 22px 6px;text-align:right;font-size:15px;color:#1c1a17;line-height:1.8;">
+            {e(intro)}
+            <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="margin-top:8px;font-size:15px;color:#1c1a17;">{rows_html}</table>
+          </td></tr>
+          <tr><td style="padding:16px 22px 24px;text-align:center;"><a href="{e(m.insights_url)}" style="display:inline-block;background:#ffffff;color:#2e6853;border:2px solid #2e6853;text-decoration:none;font-size:15px;font-weight:bold;padding:11px 28px;border-radius:10px;">לכל הנתונים</a></td></tr>
+        </table>
+      </td></tr>
+      <tr><td style="text-align:center;padding:14px 4px 0;font-size:12px;color:#8a8478;line-height:1.6;">
+        {e(footer)}<br>
+        <a href="{e(m.unsubscribe_url)}" style="color:#8a8478;text-decoration:underline;">{e(stop)}</a><br>
+        צוות מהמקור
+      </td></tr>
+    </table>
+  </td></tr>
+</table>
+</body>
+</html>"""
+    return subject, plain, html
+
+
+# ---------------------------------------------------------------------------
+# The job.
+# ---------------------------------------------------------------------------
+
+
+def _owner(db: Session, producer_id: UUID) -> Any:
+    """The business's earliest account with a verified email (or None).
+
+    ORM rows are typed Any here: models.py is untyped, so its Column
+    attributes would read as Column[...] instead of their values.
+    """
+    owner: Any = (
+        db.query(User)
+        .filter(
+            User.producer_id == producer_id,
+            User.email.isnot(None),
+            User.email_verified.is_(True),
+            User.is_blocked.isnot(True),
+        )
+        .order_by(User.created_at.asc())
+        .first()
+    )
+    return owner
+
+
+def _is_business() -> Any:
+    """`producer_listing.is_business()` — THE live-business rule (ADR-036,
+    MEH-2952: approved, kind=producer, not a test row).
+
+    Loaded by name, not imported, so mypy --strict over this module does not
+    pull producer_listing's untyped import tree (routers/rescue, schemas, …)
+    into the backend-mypy ratchet. It is still the one rule, not a copy.
+    """
+    return importlib.import_module("app.services.producer_listing").is_business()
+
+
+def _candidates(db: Session, now: datetime) -> list[Any]:
+    cutoff = now - RESEND_AFTER
+    rows: list[Any] = (
+        db.query(Producer)
+        .filter(
+            _is_business(),
+            Producer.weekly_summary_opt_out.is_(False),
+            or_(
+                Producer.weekly_summary_sent_at.is_(None),
+                Producer.weekly_summary_sent_at < cutoff,
+            ),
+        )
+        .order_by(Producer.id)
+        .all()
+    )
+    return rows
+
+
+def send_weekly_summaries(db: Session, now: datetime | None = None) -> dict[str, int]:
+    """Send this week's summaries. Fail-isolated per business; never raises
+    for one business's failure. Returns counters for the job log."""
+    now = now or datetime.now(timezone.utc)
+    counters = {"scanned": 0, "sent": 0, "zero_views": 0, "no_owner": 0, "failed": 0}
+    base = settings.frontend_url.rstrip("/")
+    for producer in _candidates(db, now):
+        counters["scanned"] += 1
+        try:
+            owner = _owner(db, producer.id)
+            if owner is None:
+                counters["no_owner"] += 1
+                continue
+            numbers = weekly_numbers(db, producer.id)
+            if numbers["profile_views"] <= 0:
+                counters["zero_views"] += 1
+                continue
+            token = create_unsubscribe_token(producer.id)
+            subject, plain, html = build_email(
+                SummaryEmail(
+                    business_name=producer.name or "",
+                    numbers=numbers,
+                    insights_url=f"{base}{INSIGHTS_PATH}",
+                    unsubscribe_url=f"{base}{UNSUBSCRIBE_PATH}?token={token}",
+                )
+            )
+            send_email(
+                owner.email,
+                subject,
+                plain,
+                html=html,
+                test_cause=bool(producer.is_test or owner.is_test),
+            )
+            # send_email is fail-open and never raises: this stamp means
+            # "handed to the sender", the same contract as the MEH-539
+            # email_followup_*_sent_at columns.
+            producer.weekly_summary_sent_at = now
+            db.commit()
+            counters["sent"] += 1
+        except Exception:  # noqa: BLE001 — one business never stops the run
+            db.rollback()
+            counters["failed"] += 1
+            logger.warning(
+                "[WEEKLY-SUMMARY] producer_id=%s failed", producer.id, exc_info=True
+            )
+    return counters
