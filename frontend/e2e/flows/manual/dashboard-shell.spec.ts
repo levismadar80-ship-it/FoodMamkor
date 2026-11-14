@@ -712,7 +712,8 @@ test.describe("dashboard shell — tools tab", () => {
       "/producer/dashboard/experiences",
       "/producer/dashboard/group-buys",
       "/producer/dashboard/recipes",
-      `/producer/${PRODUCER_ID}#reviews`,
+      // MEH-3107: the reviews tile opens the dashboard's own reviews page.
+      "/producer/dashboard/reviews",
     ]) {
       await expect(
         grid.locator(`a[href$="${href}"]`),
