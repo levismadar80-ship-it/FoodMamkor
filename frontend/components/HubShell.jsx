@@ -18,7 +18,8 @@
  *           tabs, /group-buys a short centred hero; both read as another site
  *           next to /events). Hero lifted from EventsClient (MEH-788).
  *           MEH-3113 (low band 150/200px min-height, smaller type: first
- *           event 662→~536px at 375, 703→~543px at 1440).
+ *           event 662→536px at 375, 703→543px at 1440, measured; scrim
+ *           kept ≥ 0.6 alpha to the top edge).
  */
 
 import ListingHubTabs from "@/components/ListingHubTabs";
@@ -34,14 +35,17 @@ const HUB_HERO_IMAGE = optimizeCloudinary(
 );
 
 // MEH-788: green-900 scrim, bottom-anchored, so white H1 + subtitle hold
-// ≥ 4.5:1 over ANY crop (worst case ≈ 5.7:1 under the H1 top line).
+// ≥ 4.5:1 over ANY crop.
+// MEH-3113: the band is now low and its text fills most of it (and at 200%
+// text the band grows with the text), so the scrim no longer fades to 0 at
+// the top. Worst case is the eyebrow at 200% text, ~92% up: alpha ≈ 0.68,
+// white over a pure-white crop ≈ 4.9:1. Min alpha 0.6 at the very top edge.
 const HERO_SCRIM =
   "linear-gradient(to top," +
   "rgb(20 50 40 / 0.92) 0%," +
   "rgb(20 50 40 / 0.88) 50%," +
-  "rgb(20 50 40 / 0.72) 72%," +
-  "rgb(20 50 40 / 0.30) 88%," +
-  "rgb(20 50 40 / 0) 100%)";
+  "rgb(20 50 40 / 0.76) 85%," +
+  "rgb(20 50 40 / 0.6) 100%)";
 
 /**
  * @param {object} props

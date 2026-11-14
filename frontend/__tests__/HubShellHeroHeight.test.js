@@ -27,3 +27,13 @@ describe("HubShell hero height (MEH-3113)", () => {
     for (const px of sizes) expect(px).toBeLessThanOrEqual(HERO_MAX_PX);
   });
 });
+
+describe("HubShell hero scrim (MEH-3113)", () => {
+  it("never drops below 0.6 alpha, because the text now fills the low band", () => {
+    const m = SRC.match(/const HERO_SCRIM =([\s\S]*?);/);
+    if (!m) throw new Error("HERO_SCRIM not found in HubShell.jsx");
+    const alphas = [...m[1].matchAll(/\/\s*([\d.]+)\)/g)].map((a) => Number(a[1]));
+    expect(alphas.length).toBeGreaterThan(2);
+    expect(Math.min(...alphas)).toBeGreaterThanOrEqual(0.6);
+  });
+});
