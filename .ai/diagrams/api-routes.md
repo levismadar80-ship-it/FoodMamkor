@@ -205,6 +205,7 @@ graph LR
     Footer[Footer newsletter form] --> Newsletter[POST /newsletter<br/>🌐 5/hour per IP<br/>idempotent — returns 201 whether<br/>already subscribed or not]
     Newsletter -.->|background, fail-open| ResendContacts[Resend Contacts<br/>segment newsletter · MEH-2611<br/>sent from Resend Broadcasts]
     Unsub[POST /newsletter/unsubscribe<br/>signed token] -.->|delete contact| ResendContacts
+    WeeklyUnsub[POST /weekly-summary/unsubscribe<br/>🌐 20/hour · signed token, MEH-3079] -->|weekly_summary_opt_out = true| ProducersTable[(producers)]
 
     ContactForm[/contact page form] --> Contact[POST /contact<br/>🌐 5/hour per IP<br/>persists to contact_messages +<br/>SMTP email to CONTACT_EMAIL,<br/>fail-open on SMTP errors]
     RecommendForm[/recommend page form] --> BizSuggestion[POST /business-suggestions<br/>🌐 5/hour per IP<br/>MEH-2633 · outreach_leads row, source=community<br/>response is ALWAYS ok:true — no id, no echo<br/>honeypot filled → 201, nothing stored<br/>duplicate → note appended, no second row]

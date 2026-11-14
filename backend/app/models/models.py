@@ -670,6 +670,13 @@ class Producer(Base):
     # which is what holds the send to EXACTLY ONE email.
     # See migration d3b7f1a92c64.
     email_pending_nudge_sent_at = Column(DateTime(timezone=True), nullable=True)
+    # MEH-3079: weekly summary email. opt_out is set by the signed unsubscribe
+    # link; sent_at is the idempotency stamp (skip if < 6 days old). Expand-only
+    # (ADR-007), migration 0cfa83f0f53e. Sender: services/weekly_owner_summary.
+    weekly_summary_opt_out = Column(
+        Boolean, nullable=False, default=False, server_default=text("false")
+    )
+    weekly_summary_sent_at = Column(DateTime(timezone=True), nullable=True)
 
     # MEH-1297: order_by position so categories[0] is deterministic (the
     # producer's primary/first-selected category), not an arbitrary row.

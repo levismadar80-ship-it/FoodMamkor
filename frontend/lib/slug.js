@@ -66,6 +66,8 @@ const RESERVED = new Set([
   "rescue",
   // MEH-2768: the sign-up cancel link (/registration/{token}).
   "registration",
+  // MEH-3079: the weekly-summary unsubscribe page (/unsubscribe/weekly).
+  "unsubscribe",
 ]);
 
 // Real slugs are produced by backend _slugify

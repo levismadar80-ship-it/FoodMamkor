@@ -15594,6 +15594,21 @@
         "title": "ValidationError",
         "type": "object"
       },
+      "WeeklySummaryUnsubscribeIn": {
+        "properties": {
+          "token": {
+            "maxLength": 2048,
+            "minLength": 1,
+            "title": "Token",
+            "type": "string"
+          }
+        },
+        "required": [
+          "token"
+        ],
+        "title": "WeeklySummaryUnsubscribeIn",
+        "type": "object"
+      },
       "WhatsAppClickIn": {
         "description": "MEH-1677: OPTIONAL body of POST /producers/{id}/whatsapp-click.\n\nThe endpoint took no body before this. It still accepts none -- the\nanonymous path uses `navigator.sendBeacon`, which cannot set\n`Content-Type: application/json` (it sends text/plain, which FastAPI\nrejects with 422), so a REQUIRED body would break every anonymous\nWhatsApp click on the site. Only the coverage CTA sends a body, and it\nuses fetch(keepalive) for exactly that reason.\n\n`city` is validated SOFTLY on purpose: a value that is not in the\ncanonical city list is still STORED, not dropped. The point of the\ncapture is to learn where demand actually is, including spellings and\nlocalities our list does not carry yet -- discarding those would delete\nthe most interesting rows.",
         "properties": {
@@ -27118,6 +27133,52 @@
         "summary": "Webhook Receive",
         "tags": [
           "webhook"
+        ]
+      }
+    },
+    "/weekly-summary/unsubscribe": {
+      "post": {
+        "description": "Stop the weekly summary email for the business named in the token.\n\nThe token is the authorization (subject = producer id, scope\n`weekly_summary_unsubscribe`), so the link works from the email without\nlogging in and can only opt out its own business. Idempotent.",
+        "operationId": "unsubscribe_weekly_summary_weekly_summary_unsubscribe_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WeeklySummaryUnsubscribeIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "title": "Response Unsubscribe Weekly Summary Weekly Summary Unsubscribe Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Unsubscribe Weekly Summary",
+        "tags": [
+          "marketing"
         ]
       }
     }

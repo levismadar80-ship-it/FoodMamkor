@@ -18,6 +18,8 @@ from app.services.job_heartbeat import (
     RESCUE_DIGEST_INTERVAL_MINUTES,
     RETENTION_PURGE_CRON,
     WATCHDOG_INTERVAL_MINUTES,
+    WEEKLY_OWNER_SUMMARY_CRON,
+    WEEKLY_OWNER_SUMMARY_TZ,
     cron_monitor_config,
     heartbeat,
     interval_monitor_config,
@@ -465,6 +467,104 @@ def _run_rescue_digest_job() -> None:
         db.close()
 
 
+def _send_weekly_owner_summary(now: datetime | None = None) -> None:
+    """MEH-3079: Sunday-morning weekly summary email to business owners.
+
+    `now` is passed only by the boot catch-up run: the missed fire time, so it
+    counts the same 7-day window the cron would have, not a later one.
+
+    Same shape as _run_rescue_digest_job: fresh session (the scheduler worker
+    thread cannot share request-scoped sessions), the service is
+    fail-isolated per business, and this wrapper only logs the counters and
+    reports a crash to Sentry so the scheduler thread never dies.
+    """
+    from app.database import SessionLocal
+    from app.services.weekly_owner_summary import send_weekly_summaries
+
+    db = SessionLocal()
+    try:
+        counters = send_weekly_summaries(db, now=now)
+        log.info("[WEEKLY-SUMMARY] run complete counters=%s", counters)
+    except Exception as exc:
+        capture_background_exception(exc, task="weekly_owner_summary")
+        log.error("[WEEKLY-SUMMARY] run crashed", exc_info=True)
+    finally:
+        db.close()
+
+
+# MEH-3155: Sentry Crons heartbeat — a missed Sunday run raises an issue.
+@heartbeat(
+    "weekly-owner-summary",
+    cron_monitor_config(WEEKLY_OWNER_SUMMARY_CRON, timezone=WEEKLY_OWNER_SUMMARY_TZ),
+)
+def _run_weekly_owner_summary_job() -> None:
+    """The scheduled Sunday run (MEH-3079); the catch-up calls
+    _send_weekly_owner_summary directly with the missed fire time."""
+    _send_weekly_owner_summary()
+
+
+def _register_weekly_owner_summary(scheduler: Any, now: datetime | None = None) -> bool:
+    """MEH-3079: add the weekly summary job only when its flag is on.
+
+    REUSES: the MEH-2756 rescue-digest gate in register_scheduler_jobs — merging sends nothing
+    until WEEKLY_OWNER_SUMMARY_ENABLED=true. Sunday 08:00 on the Israel clock
+    (the trigger carries the zone, so DST moves with it). max_instances=1 +
+    coalesce so a slow run cannot overlap the next. The 12h misfire grace
+    only covers a fire THIS process missed while running (a stalled worker).
+    The scheduler is in-memory, so a process that boots after 08:00 Sunday
+    has no record of that fire and its cron's next run is next Sunday; for
+    that case, a boot within 12h of the fire also adds a one-off run about a
+    minute later (`catchup_due`). The 6-day sent_at stamp and the per-row
+    claim keep a catch-up that overlaps a real run from sending twice.
+    `now` (aware) is injectable for tests. Returns whether the job was
+    registered.
+    """
+    from apscheduler.triggers.cron import CronTrigger
+    from apscheduler.triggers.date import DateTrigger
+
+    from app.services.weekly_owner_summary import (
+        CATCHUP_DELAY,
+        CATCHUP_JOB_ID,
+        JOB_ID,
+        LATE_RUN_WINDOW,
+        catchup_due,
+        last_scheduled_fire,
+        summary_enabled,
+    )
+
+    if not summary_enabled():
+        log.info(
+            "[WEEKLY-SUMMARY] disabled (WEEKLY_OWNER_SUMMARY_ENABLED=false) — no job"
+        )
+        return False
+    scheduler.add_job(
+        _run_weekly_owner_summary_job,
+        CronTrigger.from_crontab(
+            WEEKLY_OWNER_SUMMARY_CRON, timezone=WEEKLY_OWNER_SUMMARY_TZ
+        ),
+        id=JOB_ID,
+        replace_existing=True,
+        max_instances=1,
+        coalesce=True,
+        misfire_grace_time=int(LATE_RUN_WINDOW.total_seconds()),
+    )
+    log.info("[WEEKLY-SUMMARY] job registered — Sunday 08:00 Asia/Jerusalem")
+    now = now or datetime.now(timezone.utc)
+    if catchup_due(now):
+        scheduler.add_job(
+            _send_weekly_owner_summary,
+            DateTrigger(run_date=now + CATCHUP_DELAY),
+            # Count the missed fire's window, not the boot time's.
+            kwargs={"now": last_scheduled_fire(now)},
+            id=CATCHUP_JOB_ID,
+            replace_existing=True,
+            max_instances=1,
+            misfire_grace_time=int(LATE_RUN_WINDOW.total_seconds()),
+        )
+        log.info("[WEEKLY-SUMMARY] booted within 12h of the fire — catch-up run added")
+    return True
+
+
 def register_scheduler_jobs(followup_scheduler: Any) -> None:
     """Add every background job to the scheduler (not started here).
 
@@ -578,6 +678,8 @@ def register_scheduler_jobs(followup_scheduler: Any) -> None:
             settings.rescue_bags_enabled,
             _digest_enabled(),
         )
+    # MEH-3079: weekly summary email, flag-gated (WEEKLY_OWNER_SUMMARY_ENABLED).
+    _register_weekly_owner_summary(followup_scheduler)
 
 
 @asynccontextmanager
