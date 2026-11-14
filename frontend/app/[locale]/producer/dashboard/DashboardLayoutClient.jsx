@@ -42,6 +42,7 @@ import { useAuth } from "@/lib/auth-context";
 import EmptyState from "@/components/ui/EmptyState";
 import AuthUnreachableState from "@/components/AuthUnreachableState";
 import { SkeletonBlock } from "@/components/Skeleton";
+import { useNewTools } from "@/hooks/useWhatsNew";
 
 // Tab order is the source of truth for the persistent nav (locked design
 // order: Overview / Edit / Insights / Tools). `exact` marks the index route
@@ -140,6 +141,9 @@ export default function ProducerDashboardLayout({ children }) {
   const tDenied = useTranslations("errors.access_denied.producer");
   const tA11y = useTranslations("a11y");
   const tAccount = useTranslations("account.menu");
+  const tNewTool = useTranslations("dashboard.producer.new_tool");
+  // MEH-3200 part 2: a dot on «כלים» while a tool from a recent release is new.
+  const newTools = useNewTools();
   const router = useRouter();
   const pathname = usePathname();
   const { user, loading: authLoading, logout, authUnreachable } = useAuth();
@@ -237,7 +241,14 @@ export default function ProducerDashboardLayout({ children }) {
                 }`}
               >
                 <tab.Icon size={18} weight={active ? "fill" : "regular"} aria-hidden="true" />
-                {t(tab.key)}
+                <span className="inline-flex items-center gap-1">
+                  {t(tab.key)}
+                  {tab.key === "tools" && newTools.size > 0 && (
+                    <span data-testid="new-tool-dot" className="w-2 h-2 rounded-full bg-primary inline-block shrink-0">
+                      <span className="sr-only">{" "}{tNewTool("dot")}</span>
+                    </span>
+                  )}
+                </span>
               </Link>
             );
           })}

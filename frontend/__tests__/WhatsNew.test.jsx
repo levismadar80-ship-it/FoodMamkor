@@ -231,6 +231,19 @@ describe("welcome card", () => {
     expect(h.result.current.show).toBe(false);
   });
 
+  it("useOwnerWelcome.ready: false until worked out for the current created_at", () => {
+    const h = renderHook(({ c }) => useOwnerWelcome(c), { initialProps: { c: undefined } });
+    expect(h.result.current.ready).toBe(true);
+    // The profile lands: the very render that carries the new date is not ready.
+    const seen = [];
+    const probe = renderHook(({ c }) => { const r = useOwnerWelcome(c); seen.push([c, r.ready]); return r; }, { initialProps: { c: undefined } });
+    const created = new Date().toISOString();
+    probe.rerender({ c: created });
+    expect(seen).toContainEqual([created, false]);
+    expect(probe.result.current.ready).toBe(true);
+    expect(probe.result.current.show).toBe(true);
+  });
+
   it("useOwnerWelcome: shown for a new business until dismissed, then never again", () => {
     const created = new Date().toISOString();
     const first = renderHook(() => useOwnerWelcome(created));
