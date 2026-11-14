@@ -34,6 +34,7 @@ import CollectionNotice from "@/components/CollectionNotice";
 import { EVENT_CATEGORIES as CATEGORY_KEYS } from "@/lib/event-categories";
 import Button from "@/components/ui/Button";
 import RegistrationMethodField from "@/components/RegistrationMethodField";
+import InlineMessage from "@/components/ui/InlineMessage";
 
 const DEFAULTS = {
   title: "",
@@ -301,9 +302,9 @@ export default function EventForm({ mode = "create", initial = null, onSuccess, 
     <>
       {unverified && <UnverifiedEmailNotice className="mb-4" />}
       {error && (
-        <div className="bg-danger-50 border border-danger-200 text-danger-700 rounded-sm p-3 mb-4 text-sm" role="alert">
+        <InlineMessage as="div" variant="box" className="rounded-sm p-3 mb-4">
           {error}
-        </div>
+        </InlineMessage>
       )}
 
       <form onSubmit={handleSubmit} noValidate className="space-y-5">

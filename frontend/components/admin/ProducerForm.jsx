@@ -25,6 +25,7 @@ import {
   requiresProducerLicense,
 } from "@/lib/license-required-categories";
 import Button from "@/components/ui/Button";
+import InlineMessage from "@/components/ui/InlineMessage";
 
 // MEH-1297: a producer may hold at most 3 categories; the first-selected is the
 // primary (drives categories[0] on the card/map pin). Mirrors the backend cap
@@ -696,9 +697,9 @@ export default function ProducerForm({ initial = null, producerId = null }) {
                   </p>
                 )}
                 {placeSearchState === "error" && (
-                  <p className="mt-2 text-sm text-error" role="alert">
+                  <InlineMessage className="mt-2">
                     {t("producers.form.fields.google_place_error")}
-                  </p>
+                  </InlineMessage>
                 )}
                 {placeCandidates?.length > 0 && (
                   <ul className="mt-2 space-y-1.5">

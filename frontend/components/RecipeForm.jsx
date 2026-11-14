@@ -31,6 +31,7 @@ import { Leaf } from "@phosphor-icons/react";
 import Input from "@/components/ui/Input";
 import UnverifiedEmailNotice from "@/components/UnverifiedEmailNotice";
 import Button from "@/components/ui/Button";
+import InlineMessage from "@/components/ui/InlineMessage";
 
 // MEH-1128 Wave B: single-line fields render via ui/Input; baseInput remains
 // for the textareas only (no textarea primitive yet — epic Wave D+).
@@ -355,9 +356,9 @@ export default function RecipeForm({ mode = "create", initial, onSaved, onCancel
 
       {unverified && <UnverifiedEmailNotice />}
       {error && (
-        <p className="text-sm text-error" role="alert">
+        <InlineMessage>
           {error}
-        </p>
+        </InlineMessage>
       )}
 
       <div className="flex items-center gap-3">

@@ -23,6 +23,7 @@ import { useTranslations } from "next-intl";
 import { ClipboardText, CheckCircle, Warning } from "@phosphor-icons/react";
 import api from "@/lib/api";
 import { detailToMessage } from "@/lib/errors";
+import InlineMessage from "@/components/ui/InlineMessage";
 
 export default function ChangesRequestedBanner({ profile }) {
   const t = useTranslations("dashboard.producer.changes_requested");
@@ -122,10 +123,10 @@ export default function ChangesRequestedBanner({ profile }) {
           </div>
 
           {status === "error" && errorMsg && (
-            <p className="mt-2 flex items-center gap-1.5 text-xs text-error" role="alert">
+            <InlineMessage size="xs" className="mt-2 flex items-center gap-1.5">
               <Warning size={15} weight="fill" aria-hidden="true" className="shrink-0" />
               {errorMsg}
-            </p>
+            </InlineMessage>
           )}
         </div>
       </div>

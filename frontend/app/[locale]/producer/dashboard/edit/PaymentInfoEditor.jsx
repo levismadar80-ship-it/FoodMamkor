@@ -29,6 +29,7 @@ import {
 import api from "@/lib/api";
 import { detailToMessage } from "@/lib/errors";
 import Button from "@/components/ui/Button";
+import InlineMessage from "@/components/ui/InlineMessage";
 import {
   PAYMENT_METHODS,
   PAYMENT_TIMINGS,
@@ -217,10 +218,10 @@ export default function PaymentInfoEditor({ profile, onSave, reportDirty = () =>
       </div>
 
       {errorMsg && (
-        <p className="flex items-center gap-1.5 text-xs text-danger-600" role="alert">
+        <InlineMessage size="xs" className="flex items-center gap-1.5">
           <Warning size={16} weight="fill" aria-hidden="true" className="shrink-0" />
           {errorMsg}
-        </p>
+        </InlineMessage>
       )}
 
       <div className="flex flex-wrap items-center gap-3">

@@ -9,6 +9,7 @@ import { detailToMessage } from "@/lib/errors";
 import { BADGE_CONFIG } from "@/lib/badges";
 import { useBadgeCopy } from "@/lib/use-badge-copy";
 import { badgeIcon } from "@/lib/chip-icons";
+import InlineMessage from "@/components/ui/InlineMessage";
 import Switch from "@/components/ui/Switch";
 
 /**
@@ -106,10 +107,10 @@ export default function ReservistOwnedCard({ profile, onSave }) {
       </p>
 
       {errorMsg && (
-        <p className="flex items-center gap-1.5 text-xs text-error" role="alert">
+        <InlineMessage size="xs" className="flex items-center gap-1.5">
           <Warning size={16} weight="fill" aria-hidden="true" className="shrink-0" />
           {errorMsg}
-        </p>
+        </InlineMessage>
       )}
     </div>
   );

@@ -18,6 +18,7 @@ import { detailToMessage } from "@/lib/errors";
 import { showToast } from "@/lib/toast";
 import { env } from "@/lib/env";
 import { optimizeCloudinary } from "@/lib/cloudinary";
+import InlineMessage from "@/components/ui/InlineMessage";
 
 /**
  * Module:   LoginClient
@@ -330,7 +331,7 @@ function LoginPageBody() {
               />
             </div>
             {emailInvalid && (
-              <p className="text-xs text-error text-start" role="alert">{t("email_invalid")}</p>
+              <InlineMessage size="xs" className="text-start">{t("email_invalid")}</InlineMessage>
             )}
             {emailValid && (
               <p className="text-xs text-primary text-start">{t("valid")}</p>
@@ -396,7 +397,7 @@ function LoginPageBody() {
               </button>
             </div>
             {passwordInvalid && (
-              <p className="text-xs text-error text-start" role="alert">{t("password_required")}</p>
+              <InlineMessage size="xs" className="text-start">{t("password_required")}</InlineMessage>
             )}
             {passwordValidLength && (
               <p className="text-xs text-primary text-start" data-testid="login-password-valid">{t("valid")}</p>
@@ -408,9 +409,9 @@ function LoginPageBody() {
                field-level role="alert" nodes above it. A bare getByRole("alert")
                is ambiguous here (strict-mode violation, measured), so the spec
                targets this id. */
-            <p className="text-error text-sm text-start" data-testid="login-error" role="alert">
+            <InlineMessage className="text-start" data-testid="login-error">
               {error}
-            </p>
+            </InlineMessage>
           )}
 
           {/* Submit — S9 green pill + reading-forward arrow (Refs MEH-1033).

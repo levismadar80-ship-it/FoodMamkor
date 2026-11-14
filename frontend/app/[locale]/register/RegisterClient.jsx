@@ -18,6 +18,7 @@ import { PASSWORD_MIN_LENGTH, validateEmail } from "@/lib/validators";
 import { safeInternalRedirect } from "@/lib/safe-redirect";
 import { env } from "@/lib/env";
 import { optimizeCloudinary } from "@/lib/cloudinary";
+import InlineMessage from "@/components/ui/InlineMessage";
 
 /**
  * Module:   RegisterClient
@@ -352,9 +353,9 @@ function RegisterPageBody() {
                 })}
               </p>
               {oauthError && (
-                <p data-testid="register-oauth-error" className="text-error text-sm" role="alert">
+                <InlineMessage data-testid="register-oauth-error">
                   {oauthError}
-                </p>
+                </InlineMessage>
               )}
             </div>
             <div className="relative my-5">
@@ -450,7 +451,7 @@ function RegisterPageBody() {
           </label>
           {/* MEH-328 Chunk D: "האימייל כבר רשום" inline warning removed.
               Duplicate-attempt email (Chunks A+B) is the only signal. */}
-          {error && <p data-testid="register-error" className="text-error text-sm" role="alert">{error}</p>}
+          {error && <InlineMessage data-testid="register-error">{error}</InlineMessage>}
           {/* MEH-839: filled-green primary, mirrors /login's CTA fill
               (LoginClient.jsx:303) — was a ghost/outline. Height stays in
               register's 44px field rhythm (MEH-838), not login's 54px. */}
