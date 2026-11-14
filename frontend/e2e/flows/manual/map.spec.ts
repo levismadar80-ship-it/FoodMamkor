@@ -330,7 +330,8 @@ type TileLog = Array<{ z: number; t: number }>;
 /** Stub the two incidental external hosts; record which zoom each tile request asked for. */
 async function stubExternal(page: Page): Promise<TileLog> {
   const tiles: TileLog = [];
-  // A RegExp, not a glob: the tile host carries a subdomain (`a.tile.…`), which
+  // A RegExp, not a glob: the tile host used to carry a subdomain (`a.tile.…`,
+  // single host since MEH-3077), which
   // a `**/tile.openstreetmap.org/**` glob does not match (measured — it recorded
   // nothing, and a null log is also the reassuring answer, testing.md).
   await page.route(/tile\.openstreetmap\.org\//, (route: Route) => {
