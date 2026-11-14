@@ -1292,9 +1292,25 @@ PINNED: dict[tuple[str, str, str], tuple[int, str, str]] = {
         CON,
         "wrapper param ← producer.is_test or user.is_test",
     ),
-    ("services/rescue_emails.py", "send_business_cancel_email", "send_email"): (
+    # MEH-3227 (D1): the two «הסל ב… בוטל» mails share one sender.
+    ("services/rescue_emails.py", "_send_bag_cancelled", "send_email"): (
         1,
         CON,
+        "wrapper param ← producer.is_test",
+    ),
+    ("services/registration_emails.py", "_send_lines", "send_email"): (
+        1,
+        CON,
+        "wrapper param ← producer.is_test / host_test_cause(host)",
+    ),
+    ("services/registration_emails.py", "send_registrant_moved", "send_email"): (
+        1,
+        CON,
+        "wrapper param ← producer.is_test / host_test_cause(host)",
+    ),
+    ("services/booking_cancellations.py", "send_owner_delisted", "send_email"): (
+        1,
+        OWN,
         "wrapper param ← producer.is_test",
     ),
     (

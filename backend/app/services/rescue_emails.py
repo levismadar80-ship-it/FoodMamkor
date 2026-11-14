@@ -214,7 +214,7 @@ def send_business_cancel_email(
         f"בית העסק {name} ביטל את סל ההפתעה של היום, ולכן גם השריון שלכם בוטל. "
         "אין צורך להגיע ואין מה לשלם."
     )
-    _send_bag_cancelled(to, name, line1, test_cause)
+    _send_bag_cancelled(to, name, line1, test_cause=test_cause)
 
 
 def send_delisted_cancel_email(
@@ -229,4 +229,4 @@ def send_delisted_cancel_email(
         f"בית העסק {name} כבר לא מופיע במהמקור, ולכן השריון שלכם לסל בוטל. "
         "אין צורך להגיע ואין מה לשלם."
     )
-    _send_bag_cancelled(to, name, line1, test_cause)
+    _send_bag_cancelled(to, name, line1, test_cause=test_cause)
