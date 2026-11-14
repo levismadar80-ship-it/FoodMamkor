@@ -545,7 +545,7 @@ class TestNeverInAResponse:
             "class A(BaseModel):\n    x: bool = Field(serialization_alias='is_test')"
         )
         assert schema_fields_named_is_test(aliased) == [2]
-        real = (BACKEND / "app/schemas/producer.py").read_text("utf-8")
+        real = (BACKEND / "app/schemas/producer_out.py").read_text("utf-8")
         assert "class ProducerDetailOut(" in real
         assert schema_fields_named_is_test(real) == []
 

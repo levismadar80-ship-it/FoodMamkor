@@ -972,20 +972,22 @@ from app.schemas.group_buys_requests import (  # noqa: E402
 )
 from app.schemas.producer import (  # noqa: E402
     AVAILABILITY_STATES as AVAILABILITY_STATES,
+    ProducerAdminCreate as ProducerAdminCreate,
+    ProducerAdminUpdate as ProducerAdminUpdate,
+    ProducerCreate as ProducerCreate,
+    ProducerUpdate as ProducerUpdate,
+    WRITABLE_AVAILABILITY_STATES as WRITABLE_AVAILABILITY_STATES,
+    normalize_google_place_id as normalize_google_place_id,
+)
+from app.schemas.producer_out import (  # noqa: E402
     GooglePlaceIdIn as GooglePlaceIdIn,
     GooglePlaceIdOut as GooglePlaceIdOut,
     GoogleRatingOut as GoogleRatingOut,
     KashrutCertRef as KashrutCertRef,
-    ProducerAdminCreate as ProducerAdminCreate,
     ProducerAdminOut as ProducerAdminOut,
-    ProducerAdminUpdate as ProducerAdminUpdate,
-    ProducerCreate as ProducerCreate,
     ProducerDetailOut as ProducerDetailOut,
     ProducerListOut as ProducerListOut,
     ProducerOwnerOut as ProducerOwnerOut,
-    ProducerUpdate as ProducerUpdate,
-    WRITABLE_AVAILABILITY_STATES as WRITABLE_AVAILABILITY_STATES,
-    normalize_google_place_id as normalize_google_place_id,
 )
 from app.schemas.recipes_outreach import (  # noqa: E402
     BusinessSuggestionAck as BusinessSuggestionAck,

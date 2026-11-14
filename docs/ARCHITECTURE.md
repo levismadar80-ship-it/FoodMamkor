@@ -38,7 +38,7 @@ mehamakor/
 |---|---|
 | Add an API endpoint | `backend/app/routers/<domain>.py` (register in `router_registry.py`) |
 | Modify DB schema | `backend/app/models/models.py` + new Alembic revision (`docs/MIGRATIONS.md`) |
-| Change API I/O shape | `backend/app/schemas/schemas.py` |
+| Change API I/O shape | the area module under `backend/app/schemas/` (shared validators in `schemas.py`) |
 | Tweak auth / JWT | `backend/app/auth.py` + `backend/app/config.py` |
 | Add a backend service | `backend/app/services/<name>.py` |
 | Add a frontend page | `frontend/app/<route>/page.js` |

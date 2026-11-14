@@ -1,5 +1,4 @@
 # lines path — files over 1500 lines when the guard was born (13/11/2026). Lower a number when the file shrinks; remove the line when it drops under 1500. Never raise one.
-1513 backend/app/schemas/producer.py
 3266 backend/app/models/models.py
 2790 backend/app/routers/producer_me.py
 2622 frontend/app/[locale]/producer/dashboard/edit/cards.jsx

@@ -4,7 +4,7 @@ Purpose:   Everything else the site sends or receives: users admin,
            static pages, profile, search, alerts, chat, stats,
            newsletter, contact, click tracking, delivery waitlist, saved
            items, name check.
-Does NOT:  Hold any of the larger areas above.
+Does NOT:  Hold any of the larger areas; each has its own module.
 Split out of schemas/schemas.py (MEH-3270); the code is moved verbatim and
 every name is still importable from app.schemas.schemas.
 """

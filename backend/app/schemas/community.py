@@ -18,7 +18,7 @@ from app.schemas.schemas import (
     _image_url_validator,
     _min_letters_validator,
 )
-from app.schemas.producer import ProducerListOut
+from app.schemas.producer_out import ProducerListOut
 
 
 # --- User ---
