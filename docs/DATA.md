@@ -840,7 +840,7 @@ POST   /auth/check-password      public  — MEH-306 stateless policy preview (3
 POST   /auth/forgot-password     public  — MEH-306: 10/15min IP + 5/15min email
 POST   /auth/reset-password      public  — MEH-306: 10/15min IP, full policy + reuse check, stamps password_changed_at
 PATCH  /users/me/password        auth    — MEH-306: full policy + reuse, stamps password_changed_at, returns 204
-PATCH  /users/me                 auth    — MEH-3095: a changed email resets email_verified, issues a new verify token and mails the link to the NEW address; a Google/Apple account cannot change its email (400 EMAIL_CHANGE_UNSUPPORTED); a lost race on the unique index is 409
+PATCH  /users/me                 auth    — MEH-3095: a changed email resets email_verified, issues a new verify token and mails the link to the NEW address; a Google/Apple account cannot change its email (400 EMAIL_CHANGE_UNSUPPORTED); a lost race on the unique index is 409; MEH-3104: a real email change needs `current_password` (403 «הסיסמה הנוכחית שגויה»), clears any pending reset token, and the SUPER_ADMIN_EMAIL account cannot change its email (400 EMAIL_CHANGE_UNSUPPORTED)
 ```
 
 ### Owner-claim link (`app/routers/producer_claim.py`) — MEH-2322 (MEH-2321 chunk A)
@@ -1212,6 +1212,7 @@ its admin-override, so an admin still deletes (→ 200).
 POST   /experiences/validate           public  — 30/hour, real-time Claude Haiku hint
 GET    /experiences                    public  — filter: category, city. category repeats (?category=A&category=B → OR, AND with city; each value checked against EXPERIENCE_CATEGORIES, an unknown one matches nothing — MEH-2847). Only approved+upcoming+is_active (MEH-1419).
 GET    /experiences/count              public  — {"count": N} for the SAME set GET /experiences returns (MEH-1918). Both go through _public_listing_query, so the number can never disagree with the list. Declared BEFORE /{experience_id} or the catch-all eats it. Used to data-gate the "חוויות" nav link at >= 3.
+GET    /group-buys/counts               public  — {"open": N, "funded": N, "fulfilled": N} for ?city= (MEH-3128). Same `_status_tab_query` as GET /group-buys, so a tab's count and its list agree. Declared before /{group_buy_id}. 60/min. /group-buys hides a status tab whose count is 0 (the selected one stays; a failed count shows every tab).
 GET    /experiences/mine               auth    — owner's submissions, any status (incl. is_active=False)
 GET    /experiences/{id}               mixed   — approved=public; non-approved=owner+admin
                                          MEH-2476: `host` = {id, name, producer_id, producer_slug, producer_name, producer_phone} — the producer_* four only when the host's business is public (approved, kind=producer), else null. Same on every experience response.
@@ -1261,7 +1262,7 @@ badge; experiences still require admin approval, so Haiku is enough.
 GET    /admin/producers                        admin — filter: status, search
 POST   /admin/producers                        admin — create auto-approved; MEH-2322 `as_draft: true` → status "draft", no owner, license guard skipped (the approve gate still enforces it) — for the owner-claim link
 PUT    /admin/producers/{id}                   admin
-POST   /admin/producers/{id}/toggle-status     admin
+POST   /admin/producers/{id}/toggle-status     admin — MEH-2945: inactive→approved runs the approval gates (photo, licence, verified WhatsApp) → 422; approved→inactive is never gated
 DELETE /admin/producers/{id}                   admin
 GET    /admin/producers/pending                admin
 POST   /admin/producers/{id}/approve           admin — emails + WhatsApp; ?allow_without_license=true overrides the MEH-971 license-pending guard (refuses approval when a license-required category has no producer_license_number)

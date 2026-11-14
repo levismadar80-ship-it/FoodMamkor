@@ -655,7 +655,11 @@ describe("MEH-2730 each message sits next to what caused it", () => {
     render(<RescueTab />);
     await pointsLoaded();
     fireEvent.click(screen.getByTestId("rescue-publish-today"));
-    expect((await screen.findByTestId("rescue-tab-notice")).textContent).toBe("יש לאמת את כתובת האימייל תחילה");
+    // MEH-2918: this refusal now opens the shared email notice (gate sentence
+    // + «שלחו שוב») inside the form, instead of a second copy of the sentence
+    // in the error line. Still no crash on the object detail.
+    expect((await screen.findByTestId("unverified-email-notice")).getAttribute("role")).toBe("alert");
+    expect(screen.queryByTestId("rescue-tab-notice")).toBeNull();
   });
 
   it("a validation error (array detail) shows its sentence instead of crashing", async () => {
