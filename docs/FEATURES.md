@@ -106,6 +106,7 @@ left in v1" vs "what's planned for v2".
 | ✅ | v1 | Content / static pages | `frontend/app/admin/content/` |
 | ✅ | v1 | Analytics | `frontend/app/admin/analytics/` |
 | ✅ | v1 | Settings | `frontend/app/admin/settings/` |
+| ✅ | v1.5 | MEH-3182: Billing, read-only (`/admin/billing`): businesses over the results threshold, what each would pay, billing off in launch | `frontend/app/[locale]/admin/billing/page.js`, `backend/app/services/billing_summary.py` |
 | ✅ | v1 | Admin seed via `ADMIN_EMAIL` + `ADMIN_PASSWORD` env vars | `backend/seed_data.py` |
 | 🚧 | v1 | MEH-51: Kashrut badge review queue (`/admin/kashrut`) — approve/reject with notes | `frontend/app/admin/kashrut/page.js`, `backend/app/routers/admin_kashrut.py` |
 | 🚧 | v1 | MEH-51: 5-tier Trust Ladder — real-time computed, TrustBadge.jsx + KashrutBadgeStrip.jsx | `backend/app/services/trust_tier.py`, `frontend/components/TrustBadge.jsx` |

@@ -32,6 +32,9 @@ from app.utils.clock import ISRAEL_TZ, israel_today
 
 # How far back the admin view looks when it counts months in a row.
 STREAK_LOOKBACK_MONTHS = 6
+# Sapir is told «הגיע הזמן» when this many businesses were over the threshold
+# two months in a row (her standing ask, 14/11/2026). A signal, not a switch.
+START_BILLING_BUSINESSES = 10
 # One rescue ORDER can hold several bags, and each collected bag is a booking;
 # every other row is one booking whatever its quantity.
 _BOOKINGS = case((BillableEvent.kind == "rescue_bag", BillableEvent.quantity), else_=1)
@@ -141,13 +144,17 @@ def summarize(db: Session, producer_id: UUID, month: Month) -> dict[str, Any]:
     }
 
 
-def _bookings_by_business(db: Session, month: Month) -> dict[UUID, tuple[int, int]]:
-    """producer_id → (bookings, value_agorot) for one month, real businesses only."""
+def _bookings_by_business(
+    db: Session, month: Month
+) -> dict[UUID, tuple[int, int, int]]:
+    """producer_id → (bookings, value_agorot, fee_agorot) for one month, real
+    businesses only. The fee is the plain commission stored on each row."""
     rows = (
         db.query(
             BillableEvent.producer_id,
             func.coalesce(func.sum(_BOOKINGS), 0),
             func.coalesce(func.sum(BillableEvent.base_amount_agorot), 0),
+            func.coalesce(func.sum(BillableEvent.fee_agorot), 0),
         )
         .join(Producer, Producer.id == BillableEvent.producer_id)
         # REUSES: services/producer_listing.py:95 (not_test_producer) — written out
@@ -157,7 +164,9 @@ def _bookings_by_business(db: Session, month: Month) -> dict[UUID, tuple[int, in
         .group_by(BillableEvent.producer_id)
         .all()
     )
-    return {pid: (int(bookings), int(value)) for pid, bookings, value in rows}
+    return {
+        pid: (int(bookings), int(value), int(fee)) for pid, bookings, value, fee in rows
+    }
 
 
 def overview(db: Session, month: Month) -> dict[str, Any]:
@@ -172,7 +181,7 @@ def overview(db: Session, month: Month) -> dict[str, Any]:
     for _ in range(STREAK_LOOKBACK_MONTHS):
         counts = this_month if cursor == month else _bookings_by_business(db, cursor)
         still_running = {
-            pid for pid in still_running if counts.get(pid, (0, 0))[1] >= threshold
+            pid for pid in still_running if counts.get(pid, (0, 0, 0))[1] >= threshold
         }
         if not still_running:
             break
@@ -194,8 +203,11 @@ def overview(db: Session, month: Month) -> dict[str, Any]:
             "value_agorot": value,
             "over_threshold": value >= threshold,
             "months_over_in_a_row": streak[pid],
+            # What the month WOULD cost without a subscription. A month under
+            # the threshold is not billed, so it would cost nothing.
+            "would_pay_agorot": fee if value >= threshold else 0,
         }
-        for pid, (bookings, value) in this_month.items()
+        for pid, (bookings, value, fee) in this_month.items()
     ]
     rows.sort(key=lambda r: (-r["value_agorot"], r["name"]))
     return {
@@ -205,5 +217,9 @@ def overview(db: Session, month: Month) -> dict[str, Any]:
         "businesses_over_two_months": sum(
             1 for r in rows if r["months_over_in_a_row"] >= 2
         ),
+        "start_billing_businesses": START_BILLING_BUSINESSES,
+        "would_pay_total_agorot": sum(r["would_pay_agorot"] for r in rows),
+        # "launch" = nothing is charged. The same word summarize() returns.
+        "phase": "launch",
         "rows": rows,
     }

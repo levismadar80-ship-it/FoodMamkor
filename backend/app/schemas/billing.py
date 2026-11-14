@@ -11,6 +11,8 @@ from __future__ import annotations
 
 from uuid import UUID
 
+from typing import Literal
+
 from pydantic import BaseModel
 
 
@@ -22,7 +24,7 @@ class BillingKindOut(BaseModel):
 
 class BillingSummaryOut(BaseModel):
     month: str  # "YYYY-MM", an Israel calendar month
-    phase: str  # "launch" = nothing is charged
+    phase: Literal["launch", "billing"]  # "launch" = nothing is charged
     bookings: int
     value_agorot: int
     by_kind: list[BillingKindOut]
@@ -43,6 +45,8 @@ class BillingOverviewRowOut(BaseModel):
     value_agorot: int
     over_threshold: bool
     months_over_in_a_row: int
+    # Plain commission the month would cost; 0 under the threshold.
+    would_pay_agorot: int
 
 
 class BillingOverviewOut(BaseModel):
@@ -50,4 +54,8 @@ class BillingOverviewOut(BaseModel):
     threshold_agorot: int
     businesses_over_threshold: int
     businesses_over_two_months: int
+    # How many businesses two months in a row is the signal to start billing.
+    start_billing_businesses: int
+    would_pay_total_agorot: int
+    phase: Literal["launch", "billing"]  # "launch" = nothing is charged
     rows: list[BillingOverviewRowOut]

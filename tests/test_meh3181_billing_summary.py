@@ -283,6 +283,7 @@ class TestAdminOverview:
         )
         assert body["businesses_over_threshold"] == 3
         assert body["businesses_over_two_months"] == 1
+        assert (body["phase"], body["start_billing_businesses"]) == ("launch", 10)
         assert body["rows"][0]["name"] == "ב חדש"  # highest value first
 
     def test_the_overview_counts_like_the_summary(self, client, db):
@@ -300,6 +301,10 @@ class TestAdminOverview:
         assert r.status_code == 200, r.text
         (row,) = r.json()["rows"]
         assert (row["bookings"], row["value_agorot"]) == (4, 31500)
+        # 315 ₪ is under the threshold: the fees exist (600 + 1350; the voided
+        # row's 1000 is not counted) and the month would still cost nothing.
+        assert (row["over_threshold"], row["would_pay_agorot"]) == (False, 0)
+        assert r.json()["would_pay_total_agorot"] == 0
         assert set(row) == {
             "producer_id",
             "name",
@@ -307,9 +312,28 @@ class TestAdminOverview:
             "value_agorot",
             "over_threshold",
             "months_over_in_a_row",
+            "would_pay_agorot",
         }
         mine = billing_summary.summarize(db, producer.id, NOV)
         assert (mine["bookings"], mine["value_agorot"]) == (4, 31500)
+
+    def test_a_month_over_the_threshold_would_pay_its_stored_fees(self, client, db):
+        over = make_producer(db, name="מעל")
+        under = make_producer(db, name="מתחת")
+        _row(db, over, base=90000, fee=4500)
+        _row(db, over, base=10000, fee=500)
+        _row(db, over, status="voided", base=50000, fee=2500)
+        _row(db, under, base=99999, fee=5000)
+        admin = make_user(db, role="admin", email="billing-admin4@example.com")
+        db.commit()
+        r = client.get(
+            "/admin/billing/overview?month=2026-11", headers=auth_header(admin)
+        )
+        assert r.status_code == 200, r.text
+        rows = {x["name"]: x for x in r.json()["rows"]}
+        assert rows["מעל"]["would_pay_agorot"] == 5000
+        assert rows["מתחת"]["would_pay_agorot"] == 0
+        assert r.json()["would_pay_total_agorot"] == 5000
 
     def test_an_empty_month(self, client, db):
         admin = make_user(db, role="admin", email="billing-admin2@example.com")

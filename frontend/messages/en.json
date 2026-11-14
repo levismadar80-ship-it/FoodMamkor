@@ -1545,6 +1545,7 @@
         "category_requests": "Category requests",
         "whatsapp_failures": "Undelivered messages",
         "analytics": "Analytics",
+        "billing": "Billing",
         "settings": "Settings",
         "help": "Help",
         "name_change_requests": "Name changes"
@@ -2430,6 +2431,24 @@
       "change_status": "Change status:",
       "view_page": "View page →"
     },
+    "billing": {
+      "title": "Billing",
+      "lead": "Nothing is charged today. This shows what would happen if billing were on, for the current month.",
+      "stat_over": "Over the threshold this month",
+      "stat_two_months": "Two months in a row",
+      "stat_two_months_goal": "Signal to start billing: {goal} businesses",
+      "stat_would": "Would come in this month",
+      "stat_switch": "Billing",
+      "switch_off": "Off",
+      "switch_on": "On",
+      "threshold_line": "Threshold: paid bookings through the site of <amount></amount> in a month.",
+      "empty": "No bookings through the site yet this month.",
+      "load_error": "We could not load the billing figures. Try refreshing the page.",
+      "row_over": "{months, plural, one {Over the threshold, first month} other {Over the threshold, # months in a row}}",
+      "row_under": "Under the threshold",
+      "row_bookings": "{count, plural, one {# booking} other {# bookings}}",
+      "row_would_pay": "Would pay <amount></amount> this month."
+    },
     "analytics": {
       "title": "Analytics",
       "subtitle": "Platform insights",
@@ -2626,6 +2645,13 @@
           "q": "Where do I see numbers about the site?",
           "steps": [
             "On “Analytics”: monthly growth, popular categories, top cities, most-favourited businesses and a map."
+          ]
+        },
+        "billing": {
+          "q": "Where do I see which businesses passed the threshold?",
+          "steps": [
+            "On “Billing”: how many businesses passed the threshold this month, how many did so two months in a row, and what each would pay this month.",
+            "The screen is read-only. Nothing is charged during the launch period."
           ]
         },
         "group_buys": {

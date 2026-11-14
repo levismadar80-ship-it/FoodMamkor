@@ -26,15 +26,19 @@ export const AdminBillingOverviewAdminBillingOverviewGetResponse = /*#__PURE__*/
   "businesses_over_threshold": /*#__PURE__*/ zod.int(),
   "businesses_over_two_months": /*#__PURE__*/ zod.int(),
   "month": /*#__PURE__*/ zod.string(),
+  "phase": /*#__PURE__*/ zod.enum(['launch', 'billing']),
   "rows": /*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
   "bookings": /*#__PURE__*/ zod.int(),
   "months_over_in_a_row": /*#__PURE__*/ zod.int(),
   "name": /*#__PURE__*/ zod.string(),
   "over_threshold": /*#__PURE__*/ zod.boolean(),
   "producer_id": /*#__PURE__*/ zod.uuid(),
-  "value_agorot": /*#__PURE__*/ zod.int()
+  "value_agorot": /*#__PURE__*/ zod.int(),
+  "would_pay_agorot": /*#__PURE__*/ zod.int()
 })),
-  "threshold_agorot": /*#__PURE__*/ zod.int()
+  "start_billing_businesses": /*#__PURE__*/ zod.int(),
+  "threshold_agorot": /*#__PURE__*/ zod.int(),
+  "would_pay_total_agorot": /*#__PURE__*/ zod.int()
 })
 
 
@@ -5230,7 +5234,7 @@ export const MyBillingSummaryProducersMeBillingSummaryGetResponse = /*#__PURE__*
   "fee_without_subscription_agorot": /*#__PURE__*/ zod.int(),
   "month": /*#__PURE__*/ zod.string(),
   "over_threshold": /*#__PURE__*/ zod.boolean(),
-  "phase": /*#__PURE__*/ zod.string(),
+  "phase": /*#__PURE__*/ zod.enum(['launch', 'billing']),
   "price_list_version": /*#__PURE__*/ zod.int(),
   "threshold_agorot": /*#__PURE__*/ zod.int(),
   "value_agorot": /*#__PURE__*/ zod.int()

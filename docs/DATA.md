@@ -474,8 +474,12 @@ over it when the value of its paid bookings reaches `threshold_agorot`.
 - 🔒 `GET /admin/billing/overview` (60/minute) — every real business (test
   businesses excluded) with a counted booking that month, highest value first:
   `{month, threshold_agorot, businesses_over_threshold, businesses_over_two_months,
+  start_billing_businesses, would_pay_total_agorot, phase,
   rows[{producer_id, name, bookings, value_agorot, over_threshold,
-  months_over_in_a_row}]}`. `months_over_in_a_row` looks back at most 6 months.
+  months_over_in_a_row, would_pay_agorot}]}`. `months_over_in_a_row` looks back at
+  most 6 months. `would_pay_agorot` is the month's stored fees for a business at
+  or over the threshold and 0 under it; nothing is charged. `phase` is `launch`
+  until billing is switched on. Read by `/admin/billing` (MEH-3182).
 
 **Capabilities (MEH-3181, `services/capabilities.py`).** What a business may do is
 asked of this module, not read off `producers.plan`. Today it owns one rule, moved

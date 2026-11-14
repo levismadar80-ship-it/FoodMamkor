@@ -453,6 +453,14 @@
             "title": "Month",
             "type": "string"
           },
+          "phase": {
+            "enum": [
+              "launch",
+              "billing"
+            ],
+            "title": "Phase",
+            "type": "string"
+          },
           "rows": {
             "items": {
               "$ref": "#/components/schemas/BillingOverviewRowOut"
@@ -460,8 +468,16 @@
             "title": "Rows",
             "type": "array"
           },
+          "start_billing_businesses": {
+            "title": "Start Billing Businesses",
+            "type": "integer"
+          },
           "threshold_agorot": {
             "title": "Threshold Agorot",
+            "type": "integer"
+          },
+          "would_pay_total_agorot": {
+            "title": "Would Pay Total Agorot",
             "type": "integer"
           }
         },
@@ -470,6 +486,9 @@
           "threshold_agorot",
           "businesses_over_threshold",
           "businesses_over_two_months",
+          "start_billing_businesses",
+          "would_pay_total_agorot",
+          "phase",
           "rows"
         ],
         "title": "BillingOverviewOut",
@@ -501,6 +520,10 @@
           "value_agorot": {
             "title": "Value Agorot",
             "type": "integer"
+          },
+          "would_pay_agorot": {
+            "title": "Would Pay Agorot",
+            "type": "integer"
           }
         },
         "required": [
@@ -509,7 +532,8 @@
           "bookings",
           "value_agorot",
           "over_threshold",
-          "months_over_in_a_row"
+          "months_over_in_a_row",
+          "would_pay_agorot"
         ],
         "title": "BillingOverviewRowOut",
         "type": "object"
@@ -548,6 +572,10 @@
             "type": "boolean"
           },
           "phase": {
+            "enum": [
+              "launch",
+              "billing"
+            ],
             "title": "Phase",
             "type": "string"
           },
