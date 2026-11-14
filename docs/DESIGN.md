@@ -689,6 +689,11 @@ reads as a rendering bug (the ghost-strip class). Rules:
   below another measures the layer above at runtime. `Header` publishes its
   live height as the `--chrome-top` CSS var (ResizeObserver); downstream sticky
   chrome offsets off `var(--chrome-top, …)`, never a frozen `top-[82px]`.
+- **Person avatar (MEH-3069):** the signed-in person's circle is
+  `components/ui/Avatar.jsx` — photo, else ONE initial from `avatarInitial()`
+  (first code point, upper-cased, «?» when empty). Header 34px, BottomNav 24px,
+  account sheet 40px (`tone="none"` inside its own ring), settings 64px.
+  Guard: `__tests__/AvatarGuard.test.js`.
 
 ## Do's and Don'ts
 

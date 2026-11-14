@@ -26,6 +26,7 @@ import { firstFailureMessage } from "@/lib/passwordMessages";
 import { validateIsraeliPhone } from "@/lib/validators";
 import Button from "@/components/ui/Button";
 import { loginHrefBackHere } from "@/lib/safe-redirect";
+import Avatar from "@/components/ui/Avatar";
 import { SkeletonBlock } from "@/components/Skeleton";
 import ButtonSpinner from "@/components/ButtonSpinner";
 
@@ -313,8 +314,6 @@ export function ProfileTab() {
     }
   };
 
-  const initial = (user.name || user.email || "?").trim().charAt(0).toUpperCase();
-
   return (
     // MEH-2565: card from md up only. On a phone the profile form uses the full
     // width; the security tab keeps its cards (three separate sections).
@@ -327,16 +326,8 @@ export function ProfileTab() {
           className="relative w-16 h-16 rounded-full cursor-pointer group shrink-0"
           aria-label={t("avatar_aria")}
         >
-          {user.avatar_url ? (
-            // raw img: OAuth provider avatar — host not in remotePatterns
-            // (frozen this ticket).
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={user.avatar_url} alt="" className="w-16 h-16 rounded-full object-cover" />
-          ) : (
-            <div className="w-16 h-16 rounded-full flex items-center justify-center text-white text-2xl font-semibold bg-primary">
-              {initial}
-            </div>
-          )}
+          {/* MEH-3069: the shared circle; email initial when there is no name. */}
+          <Avatar src={user.avatar_url} name={user.name || user.email} size={64} />
           {/* MEH-222: camera overlay — always visible on mobile (opacity-30) so the tap target is discoverable; desktop hides it until hover.
               MEH-2418: the md+ hide is gated to hover-capable pointers — with hoverOnlyWhenSupported a touch tablet never fires group-hover, so a bare md:opacity-0 left the overlay invisible there. */}
           <div className="absolute inset-0 rounded-full bg-black/40 flex items-center justify-center opacity-30 md:[@media(hover:hover)_and_(pointer:fine)]:opacity-0 md:group-hover:opacity-100 transition-opacity">

@@ -20,6 +20,7 @@ import EmptyState from "@/components/ui/EmptyState";
 import { SkeletonList } from "@/components/Skeleton";
 import { seedColorFor } from "@/lib/brand-seeds";
 import SectionHeading from "@/components/ui/SectionHeading";
+import { avatarInitial } from "@/components/ui/Avatar";
 
 // MEH-2833 (seed layer, board 4): a reviewer's initial sits on a soft tint of
 // "their" seed — the seed colour mixed ~24% into the cream page, with an inset
@@ -604,7 +605,7 @@ export default function ReviewsSection({
                 <div className="flex items-start gap-3 mb-3">
                   <ReviewInitial
                     seedKey={review.user_id ?? review.user_name}
-                    letter={Array.from(formatName(review.user_name, anonymousFallback))[0]}
+                    letter={avatarInitial(formatName(review.user_name, anonymousFallback), "")}
                   />
                   <div className="min-w-0">
                     <p className="font-body-md font-semibold text-base text-text leading-snug">
