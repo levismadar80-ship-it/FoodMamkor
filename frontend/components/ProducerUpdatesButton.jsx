@@ -272,7 +272,9 @@ export default function ProducerUpdatesButton({
           clearPendingAction();
           setShowLoginModal(false);
         }}
-        message={t("button.login_prompt_message")}
+        // MEH-3130: name THIS action — it showed the save hearts' «רוצה לשמור?».
+        title={t("updates_button.login_prompt_title")}
+        message={t("updates_button.login_prompt_message")}
         nextPath={nextPath}
       />
     </>

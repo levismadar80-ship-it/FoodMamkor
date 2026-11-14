@@ -23,6 +23,7 @@ import Button from "@/components/ui/Button";
 import { RESCUE_SECTION_ID } from "@/lib/producer-path";
 import SectionHeading from "@/components/ui/SectionHeading";
 import InlineMessage from "@/components/ui/InlineMessage";
+import LoginPromptModal from "@/components/LoginPromptModal";
 
 /**
  * Module:   RescueSection
@@ -57,6 +58,9 @@ export default function RescueSection({ producer }) {
   const [order, setOrder] = useState(null);
   const [busy, setBusy] = useState(false);
   const [errorKey, setErrorKey] = useState(null);
+  // MEH-3130: a guest's tap opens the shared login prompt (title + why +
+  // «היכנסו» back to this page). It was an inline line with no way to sign in.
+  const [loginOpen, setLoginOpen] = useState(false);
   const [reviewed, setReviewed] = useState(false);
   // MEH-2737: shown once the cancel went through, until the next reserve.
   const [cancelled, setCancelled] = useState(false);
@@ -156,7 +160,8 @@ export default function RescueSection({ producer }) {
     // request would 401, and the refresh interceptor would then add its
     // "session expired" toast — wrong for someone who never signed in.
     if (auth && !auth.loading && !auth.user) {
-      setErrorKey("errors.sign_in");
+      setErrorKey(null);
+      setLoginOpen(true);
       return;
     }
     setBusy(true);
@@ -249,6 +254,17 @@ export default function RescueSection({ producer }) {
       className="mt-12 scroll-mt-[calc(var(--chrome-top,82px)_+_var(--section-nav-h,68px))] md:scroll-mt-24"
     >
       <SectionHeading size="content">{t("section.title")}</SectionHeading>
+      <LoginPromptModal
+        open={loginOpen}
+        onClose={() => setLoginOpen(false)}
+        title={t("login_prompt_title")}
+        message={t("login_prompt_message")}
+        nextPath={
+          typeof window !== "undefined"
+            ? `${window.location.pathname}${window.location.search}#${RESCUE_SECTION_ID}`
+            : "/"
+        }
+      />
 
       {cancelled && (
         <p

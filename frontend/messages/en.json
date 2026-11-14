@@ -3327,6 +3327,9 @@
     "saved_toast": "Your review was saved",
     "invite_title": "How was {name}?",
     "invite_hint": "Every review here follows a real contact with the business",
+    "login_prompt_title": "Write a review",
+    "login_prompt_message": "To write a review, sign in to your account. Reviews here are written only after contacting the business through Mehamakor.",
+    "contact_first_toast": "To write a review, first contact the business with one of the buttons here.",
     "loading": "Loading reviews...",
     "owner_only_eyebrow": "Only visible to you",
     "owner_empty_title": "First reviews come from happy customers",
@@ -3479,7 +3482,9 @@
     "empty_events": "No saved events yet",
     "empty_experiences": "No saved experiences yet",
     "updates_button": {
-      "label": "Get updates"
+      "label": "Get updates",
+      "login_prompt_title": "Get updates",
+      "login_prompt_message": "To get updates from this business, sign in to your account."
     },
     "button": {
       "saved_toast_first_time": "Saved! Find all your favorites on the Favorites page in the menu",
@@ -6031,6 +6036,8 @@
       "failed": "We couldn't send your review. Try again.",
       "thanks": "Thank you! Your review is saved."
     },
+    "login_prompt_title": "Reserve a bag",
+    "login_prompt_message": "To reserve a bag, sign in to your account.",
     "errors": {
       "blocked": "Reservations are blocked after two no-shows. Please write to us.",
       "sold_out": "That bag is gone. There are others nearby.",

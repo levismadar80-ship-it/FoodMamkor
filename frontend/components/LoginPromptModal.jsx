@@ -13,6 +13,9 @@ import { useFocusReturn } from "@/lib/use-focus-return";
  * Props:
  *   - open: boolean
  *   - onClose: () => void
+ *   - title: string (default: modals.login_prompt.title, «רוצה לשמור?»)
+ *            MEH-3130: the reviews / updates / rescue-bag hand-offs name
+ *            their own action; the save hearts keep the default.
  *   - message: string (default: modals.login_prompt.default_message)
  *   - nextPath: string (the URL to redirect back to after login)
  *
@@ -49,6 +52,7 @@ import { useFocusReturn } from "@/lib/use-focus-return";
 export default function LoginPromptModal({
   open,
   onClose,
+  title,
   message,
   nextPath = "/",
 }) {
@@ -137,7 +141,7 @@ export default function LoginPromptModal({
           id="login-prompt-title"
           className="font-headline-md text-xl font-bold text-text mb-3 px-8"
         >
-          {t("title")}
+          {title ?? t("title")}
         </h2>
         <p className="text-text mb-6 leading-relaxed">{promptMessage}</p>
 
