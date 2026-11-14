@@ -78,8 +78,6 @@ export default function ShareButton({
     return (
       <button
         onClick={handleShare}
-        // Mirrors FavoriteButton's gallery circle so the hero corner control
-        // swap (heart → share, MEH-1334 decision 6) is visually seamless.
         // MEH-3115: the shared photo-button anatomy (44px hit, 32px face).
         className={OVERLAY_ICON_BUTTON}
         // MEH-2964: a locator, as the `outline` variant below already has. The

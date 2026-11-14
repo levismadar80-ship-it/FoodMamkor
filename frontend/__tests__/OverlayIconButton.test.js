@@ -5,8 +5,9 @@
  * Before this card each component carried its own copy of a 44px
  * `shadow-lg` circle string, and the bell beside the heart was green while
  * off. The source walk below fails if any of the photo variants stops
- * importing the shared anatomy, or if the old heavy circle string comes back
- * anywhere under components/ or app/.
+ * importing the shared anatomy, or if that exact old class string comes back
+ * under components/ or app/. It does NOT catch a new circle written with a
+ * different class string — review still owns that.
  *
  * Corpus control: the walk must find the five owners by name, so a
  * mis-rooted walk cannot pass as clean.
