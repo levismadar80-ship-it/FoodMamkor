@@ -86,11 +86,7 @@ export async function generateMetadata(props) {
   const t = await getTranslations({ locale, namespace: "producers" });
   const indexLabel = t("title.all");
   const title =
-    page === 1
-      ? indexLabel
-      : locale === "he"
-        ? `${indexLabel} — עמוד ${page}`
-        : `${indexLabel} — page ${page}`;
+    page === 1 ? indexLabel : t("title.page", { label: indexLabel, page: String(page) });
 
   // Build alternates from /producers, then for paginated variants append
   // ?page=N to BOTH canonical and every languages URL so each EN/HE
@@ -108,12 +104,9 @@ export async function generateMetadata(props) {
   // og/twitter get no template from Next.js, so they carry the brand themselves.
   const socialTitle = buildEntityTitle(title, locale);
 
-  const description =
-    locale === "he"
-      // MEH-2634: "דפדפי" (feminine singular) → "גלו", the plural voice the
-      // rest of the site uses. Literal word swap as specified.
-      ? "גלו בכל בתי העסק, מגדלים וחוות מקומיות על מהמקור."
-      : "Browse all local food businesses, growers, and farms on Mehamakor.";
+  // MEH-2634: "דפדפי" (feminine singular) → "גלו", the plural voice the rest
+  // of the site uses. MEH-3170: the copy moved to messages/*.json verbatim.
+  const description = t("index_meta.description");
 
   return {
     // MEH-2853: plain title — the layout template `%s | <brand>` adds the brand.

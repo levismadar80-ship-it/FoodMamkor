@@ -1879,6 +1879,66 @@
         "resend": "Send again",
         "cancel_invite": "Cancel invite",
         "error": "We could not send the invite"
+      },
+      "status_label": {
+        "draft": "Draft",
+        "pending": "Awaiting admin approval",
+        "approved": "Approved",
+        "rejected": "Rejected",
+        "inactive": "Inactive"
+      },
+      "review": {
+        "checklist": {
+          "title": "Pre-approval checklist",
+          "saving": "Saving…",
+          "loading": "Loading…",
+          "load_error": "Couldn't load the checklist.",
+          "retry": "Try again",
+          "empty": "No active items. You can add some in Settings."
+        },
+        "approve_confirm": {
+          "message": "{count} checklist items are still unticked. Approve anyway?",
+          "message_unavailable": "The checklist didn't load — there's no way to confirm every item was checked.",
+          "confirm": "Approve anyway",
+          "cancel": "Back to review"
+        },
+        "google_place": {
+          "heading": "Google profile",
+          "linked": "Linked ✓",
+          "replace": "Replace",
+          "not_linked": "Not linked — without a link, the Google rating won't appear on the business page.",
+          "searching": "Searching…",
+          "search_google": "Search Google",
+          "no_results": "No results on Google",
+          "search_error": "Search failed, try again",
+          "manual_label": "Name on Google or place_id",
+          "manual_submit": "Search",
+          "reviews_count": "{count} reviews",
+          "too_few_reviews": "Fewer than 20 reviews — the line won't be shown",
+          "saving": "Saving…",
+          "save_error": "Saving failed, try again"
+        },
+        "evidence": {
+          "heading": "Review file",
+          "license": "License",
+          "health_registry": "Ministry of Health registry",
+          "copied": "Copied ✓",
+          "copy_name": "Copy business name",
+          "license_number": "Number: {number}",
+          "no_license_number": "No license number",
+          "license_expiry": "Valid until: {date}",
+          "signals": "Signs of life",
+          "website": "Website",
+          "instagram": "Instagram",
+          "google_search": "Search Google",
+          "no_links": "No website or Instagram",
+          "photos": "Photos",
+          "no_photos": "No photos",
+          "reverse_search": "Reverse search",
+          "reverse_search_alt": "Reverse image search",
+          "kashrut": "Kashrut",
+          "certificate": "Certificate: {code}"
+        }
       }
     },
     "users": {
@@ -2325,6 +2385,27 @@
         "submit": "Save settings",
         "nothing_to_save_title": "No changes to save",
         "unsaved_count": "{count} unsaved changes"
+      },
+      "checklist": {
+        "title": "Pre-approval checklist",
+        "load_error": "Couldn't load the checklist.",
+        "retry": "Try again",
+        "loading": "Loading…",
+        "intro": "The items you see when you review a business. A change here takes effect right away, no deploy. An item that's no longer relevant — stop using it; an item already ticked for any business can't be deleted, so the review record never loses its subject.",
+        "label_too_short": "Label too short — at least 3 letters",
+        "save_error_gone": "One of the items no longer exists — refresh the page",
+        "save_error": "Saving failed",
+        "move_up": "Move “{label}” up",
+        "move_down": "Move “{label}” down",
+        "new_item": "New item",
+        "item_label": "Item",
+        "hint_label": "Explanation (optional)",
+        "active": "In use",
+        "inactive": "No longer in use",
+        "add": "Add item",
+        "saving": "Saving…",
+        "save": "Save checklist",
+        "saved": "Saved ✓"
       }
     },
     "content": {
@@ -3253,7 +3334,8 @@
     "title": {
       "all": "All businesses",
       "search_results": "Results for:",
-      "map_link": "View on map"
+      "map_link": "View on map",
+      "page": "{label} — page {page}"
     },
     "search_input": {
       "label": "Search businesses",
@@ -3303,6 +3385,9 @@
       "prev": "← Previous",
       "next": "Next →",
       "page_of": "Page {page} of {totalPages}"
+    },
+    "index_meta": {
+      "description": "Browse all local food businesses, growers, and farms on Mehamakor."
     }
   },
   "reviews": {
@@ -3595,7 +3680,8 @@
       "ordering_link_label": "Open",
       "escalation": "Another question? Get in touch",
       "escalation_email_subject": "A question via Mehamakor",
-      "more_questions": "More questions"
+      "more_questions": "More questions",
+      "wa_suffix": " (WhatsApp)"
     }
   },
   "directory": {
@@ -3636,7 +3722,8 @@
         "download_review": "Download review card",
         "review_headline": "What our customers say",
         "reviews_empty": "No reviews to share yet. <link>Send customers a review request link</link>"
-      }
+      },
+      "caption_from": "{name} from {city}"
     }
   },
   "footer": {
