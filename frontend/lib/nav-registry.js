@@ -168,7 +168,9 @@ export const NAV_ITEMS = Object.freeze([
     kind: "link",
     href: "/events",
     surfaces: {
-      header: { labelKey: "nav.whats_on", audience: "all" },
+      // MEH-3125: «אירועים» on desktop too (Sapir 14/11), not «מה קורה» —
+      // with «הזדמנויות» beside it, this link names events + experiences only.
+      header: { labelKey: "nav.events", audience: "all" },
       // MEH-2965: «אירועים», not «מה קורה» — as a lone tab label the latter
       // reads as a greeting (Sapir 12/11). An existing string; it names the
       // hub's first tab, and the other three types are in the same tab row.
@@ -189,6 +191,10 @@ export const NAV_ITEMS = Object.freeze([
      * to the first hub route that has supply (lib/hub-landing.js), so a
      * visitor does not open an empty «אירועים» tab when the supply is in
      * another type.
+     *
+     * MEH-3125: narrowed again, to events + experiences. Group buys and
+     * rescue bags moved to the `opportunities` item below, with their own
+     * gate; `listing-supply` now means "events or experiences have supply".
      */
     dataGate: "listing-supply",
     note:
@@ -196,6 +202,24 @@ export const NAV_ITEMS = Object.freeze([
       "the about item (which declares `yieldsTo` on its bottomNav surface) while the " +
       "gate is open, so the pill stays at four tabs. The Footer still links " +
       "/experiences separately and is untouched.",
+  },
+  {
+    // MEH-3125 (Sapir 14/11): group buys + rescue bags get their own entry,
+    // apart from events. Same shape as whatsOn: data-gated (absent, never
+    // disabled) on its OWN group's supply, and both shells render it to the
+    // first route of the group that has supply (lib/hub-landing.js).
+    id: "opportunities",
+    kind: "link",
+    href: "/group-buys",
+    surfaces: {
+      header: { labelKey: "nav.opportunities", audience: "all" },
+      bottomNav: { labelKey: "nav.opportunities", audience: "all" },
+    },
+    dataGate: "opportunity-supply",
+    note:
+      "Both platforms. On the pill it is a fifth tab (Apple/Material cap), " +
+      "present only while a group buy is open or rescue bags are on today; the " +
+      "about item does not yield to it, only to whatsOn.",
   },
   {
     id: "search",

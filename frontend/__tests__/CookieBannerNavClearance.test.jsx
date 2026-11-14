@@ -54,6 +54,7 @@ vi.mock("@phosphor-icons/react", () => ({
   MapTrifold: (props) => <span {...props} />,
   Flower: (props) => <span {...props} />,
   CalendarBlank: (props) => <span {...props} />,
+  Basket: (props) => <span {...props} />,
   User: (props) => <span {...props} />,
 }));
 vi.mock("@/components/AccountSheet", () => ({ default: () => null }));
