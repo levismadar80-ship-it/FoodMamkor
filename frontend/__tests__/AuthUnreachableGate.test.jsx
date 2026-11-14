@@ -48,6 +48,7 @@ describe("MEH-3172 /auth/me unreachable ≠ signed out", () => {
   beforeEach(() => {
     push.mockClear();
     authState.retrySession.mockClear();
+    authState.logout.mockClear();
     authState.user = null;
     authState.authUnreachable = false;
   });
@@ -62,6 +63,9 @@ describe("MEH-3172 /auth/me unreachable ≠ signed out", () => {
       expect(screen.queryByTestId("child")).toBeNull();
       fireEvent.click(screen.getByRole("button", { name: "error.retry" }));
       expect(authState.retrySession).toHaveBeenCalledTimes(1);
+      // A persistent failure is not a trap: the sign-out is right there.
+      fireEvent.click(screen.getByRole("button", { name: "account.menu.logout" }));
+      expect(authState.logout).toHaveBeenCalledTimes(1);
     });
 
     it(`${name}: signed out (no user, reachable) → still pushes /login`, () => {
