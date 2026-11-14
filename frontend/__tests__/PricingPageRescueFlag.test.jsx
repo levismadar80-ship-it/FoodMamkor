@@ -65,4 +65,14 @@ describe("price list and the rescue-bag flag (MEH-3219)", () => {
     }
     expect(pricingCopyKey("notice_body", false)).toBe("notice_body");
   });
+
+  // The terms are one text for both flag states: they name the reduced
+  // commission by what subscribers pay, never a per-bag fee.
+  it.each(["he", "en"])("%s: the terms' pricing section names no bag fee", (locale) => {
+    const section = MESSAGES[locale].terms.sections.pricing;
+    expect(Object.keys(section).length).toBeGreaterThan(10);
+    for (const [key, text] of Object.entries(section)) {
+      expect(text, `${locale} terms.sections.pricing.${key}`).not.toMatch(BAG_WORDS[locale]);
+    }
+  });
 });
