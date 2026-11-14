@@ -91,6 +91,6 @@ describe("MEH-3199 — workshop page SSR", () => {
 
   it("page.js hands its server fetch to the client, keyed by id", () => {
     const src = readFileSync(join(process.cwd(), "app/[locale]/experiences/[id]/page.js"), "utf8");
-    expect(src).toMatch(/<ExperienceDetailClient\s+key=\{experience\.id \?\? params\.id\}\s+initialExperience=\{experience\}\s*\/>/);
+    expect(src).toMatch(/<ExperienceDetailClient\s+key=\{experience\?\.id \?\? params\.id\}\s+initialExperience=\{experience\}\s*\/>/);
   });
 });
