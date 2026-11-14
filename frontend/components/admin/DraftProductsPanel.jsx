@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 import { useState } from "react";
@@ -30,6 +31,7 @@ import InlineMessage from "@/components/ui/InlineMessage";
 const EMPTY_FORM = { name: "", description: "", price_min: "", price_max: "" };
 
 function validate(f, tErr) {
+  /** @type {Record<string, string>} */
   const errors = {};
   if (!f.name.trim()) errors.name = tErr("name_required");
   const min = Number(f.price_min);
@@ -52,7 +54,7 @@ export default function DraftProductsPanel({ producerId, initialProducts = [] })
   const tProducts = useTranslations("settings.products");
   const [products, setProducts] = useState(initialProducts);
   const [form, setForm] = useState(EMPTY_FORM);
-  const [fieldErrors, setFieldErrors] = useState({});
+  const [fieldErrors, setFieldErrors] = useState(/** @type {Record<string, string>} */ ({}));
   const [error, setError] = useState(null);
   const [saving, setSaving] = useState(false);
   const [confirmId, setConfirmId] = useState(null);

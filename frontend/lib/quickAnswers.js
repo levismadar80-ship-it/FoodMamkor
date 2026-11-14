@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Module:   quickAnswers
  * Purpose:  Pure answer descriptors for the producer contact card's "Quick

@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 import { useEffect, useState } from "react";
@@ -227,6 +228,7 @@ const EMPTY = {
 // Focus-retention fix: Section + Field live at MODULE scope. Defining them
 // inside ProducerForm recreated their component identity on every render, so
 // React remounted the whole subtree and dropped input focus mid-typing.
+/** @param {{ title: import("react").ReactNode, children?: import("react").ReactNode, testId?: string }} props */
 function Section({ title, children, testId }) {
   return (
     <div className="bg-surface rounded-md border border-border p-6" data-testid={testId}>

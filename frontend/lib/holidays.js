@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * MEH-55: Israel food holiday calendar.
  * Holidays include advance window (7 days before) and active period.

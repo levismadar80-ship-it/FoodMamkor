@@ -311,9 +311,21 @@ function selfTest() {
     // otherwise the fixture and the baseline have drifted apart and one of them
     // is lying about the same freeze.
     const bl = parseBaselineIfPresent();
+    // Keys whose debt was paid after the fixture was captured: still pinned
+    // against the fixture above (the parser must count them), but the baseline
+    // row is gone, so they cannot agree with it. Each must be ABSENT from the
+    // baseline — a key here that is back in the baseline fails below.
+    // MEH-3161 (14/11/2026): lib/places.js lost its unused export.
+    const PAID_DOWN = new Set(["lib/places.js\texports"]);
+    check(
+      "real-payload/paid-down-keys-are-gone",
+      bl.size === 0 || [...PAID_DOWN].every((k) => !bl.has(k)),
+      "a PAID_DOWN key is back in lint-ratchet-baseline.tsv — remove it from PAID_DOWN",
+    );
     check(
       "real-payload/agrees-with-baseline",
-      bl.size === 0 || expected.every(([k, v]) => bl.get(k) === v),
+      bl.size === 0 ||
+        expected.every(([k, v]) => PAID_DOWN.has(k) || bl.get(k) === v),
       "fixture counts disagree with lint-ratchet-baseline.tsv for the same keys",
     );
     check(

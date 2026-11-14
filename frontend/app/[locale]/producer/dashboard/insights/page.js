@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 /**
@@ -449,6 +450,9 @@ function WindowedMetricCard({ label, icon: Icon, windows, tooltip, period }) {
   );
 }
 
+/**
+ * @param {{ label: string, icon: import("react").ElementType, value: import("react").ReactNode, sub: import("react").ReactNode, empty?: import("react").ReactNode, action?: import("react").ReactNode }} props
+ */
 function SimpleCard({ label, icon: Icon, value, sub, empty, action = null }) {
   return (
     <div className="bg-surface border border-border rounded-lg p-5">

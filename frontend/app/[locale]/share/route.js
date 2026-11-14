@@ -1,3 +1,4 @@
+// @ts-check
 import { getPathname } from "@/i18n/navigation";
 
 /**

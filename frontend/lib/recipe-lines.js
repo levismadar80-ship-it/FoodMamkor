@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * MEH-2540: one recipe line-splitter for the page and its JSON-LD.
  *

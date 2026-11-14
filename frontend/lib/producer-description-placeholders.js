@@ -1,3 +1,4 @@
+// @ts-check
 import { israelToday } from "@/lib/israel-date";
 
 // MEH-532: seasonal Hebrew placeholders for the producer-registration

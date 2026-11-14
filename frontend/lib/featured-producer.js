@@ -1,3 +1,4 @@
+// @ts-check
 // §10 "Meet a Producer" selector — extracted from use-home-page.js for unit
 // testability (MEH-542). Reuses the existing is_recommended flag (no schema).
 

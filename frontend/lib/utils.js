@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Frontend utility helpers — keep small, pure, and side-effect-free.
  * More specialized utilities live in their own files (see `validators.js`
@@ -28,7 +29,7 @@
  * loop, not WhatsApp's ordinary interstitial), the revert is this function.
  *
  * @param {string} phone — normalised digits (output of normalizePhone)
- * @param {string} [text] — pre-filled message text (plain, not encoded)
+ * @param {string} [text] - pre-filled message text (plain, not encoded)
  */
 export function getWhatsAppHref(phone, text = "") {
   return `https://wa.me/${phone}?text=${encodeURIComponent(text)}`;

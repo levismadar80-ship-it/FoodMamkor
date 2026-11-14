@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 import SeedBurst from "@/components/brand/SeedBurst";
@@ -64,7 +65,8 @@ export default function GroupBuyDetailClient({ id }) {
   const { user, loading: authLoading } = useAuth();
   const [gb, setGb] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [quantity, setQuantity] = useState(1);
+  // A string while typing, clamped back to a number on blur.
+  const [quantity, setQuantity] = useState(/** @type {number | string} */ (1));
   const [submitting, setSubmitting] = useState(false);
   const [cancelling, setCancelling] = useState(false);
   // MEH-1250: destructive cancel-commitment confirm dialog (replaces native confirm()).

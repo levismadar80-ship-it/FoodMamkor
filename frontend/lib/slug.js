@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Module:   slug
  * Purpose:  Cheap slug-shape guard for the root catch-all route — reject bot

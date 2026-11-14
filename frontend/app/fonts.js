@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * The four brand typefaces, self-hosted from files committed in this repo.
  *

@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 import { Link as LocaleLink } from "@/i18n/navigation";
@@ -16,6 +17,10 @@ import { getUpcomingHoliday } from "@/lib/holidays";
 import HolidayIcon from "@/components/HolidayIcon";
 import ProfileCompletenessCard from "@/components/ProfileCompletenessCard";
 import OwnerAttentionCard from "@/components/producer/OwnerAttentionCard";
+import WhatsNewCard from "@/components/producer/WhatsNewCard";
+import WhatsNewRow from "@/components/producer/WhatsNewRow";
+import OwnerWelcomeCard from "@/components/producer/OwnerWelcomeCard";
+import { useOwnerWelcome } from "@/hooks/useWhatsNew";
 import DraftSubmitBanner from "@/components/producer/DraftSubmitBanner";
 import ChangesRequestedBanner from "./ChangesRequestedBanner";
 import RejectedBanner from "./RejectedBanner";
@@ -328,6 +333,8 @@ export default function ProducerDashboardPage() {
     }
   };
 
+  // MEH-3200: a hook — above the early returns.
+  const welcome = useOwnerWelcome(profile?.created_at);
   if (authLoading || !user || user.role !== "producer") return null;
   // MEH-956: graceful state on a failed dashboard fetch (404 / non-2xx).
   // Mirrors the status-banner cards in the main return. Must precede the
@@ -471,6 +478,12 @@ export default function ProducerDashboardPage() {
 
       {/* MEH-3108: «מה מחכה לך» — what is waiting for the owner, right
           under the greeting. Renders nothing when nothing is waiting. */}
+      {/* MEH-3200: a new business's one-time welcome, else the newest unseen
+          «מה חדש» release — never both. Not for an organizer (business copy). */}
+      {/* Wait for /producers/me (it carries created_at) so the welcome card
+          never replaces a «חדש במהמקור» card already on screen. */}
+      {!isOrganizer && (profile || profileError) &&
+        (welcome.show ? <OwnerWelcomeCard onClose={welcome.dismiss} /> : <WhatsNewCard />)}
       <OwnerAttentionCard attention={data?.attention} />
 
       {/* MEH-1025 Chunk B: admin completion-request banner. Renders only when
@@ -883,6 +896,7 @@ export default function ProducerDashboardPage() {
           business that got stuck had no way in (Shopify «Help», Wolt support
           chat, Google «Support» are always one tap away). Last on the page, so
           on a phone it sits right above the layout's «יציאה מהחשבון». */}
+      {!isOrganizer && (profile || profileError) && <WhatsNewRow />}
       <div
         data-testid="dashboard-help-row"
         className="bg-surface border border-border rounded-lg p-4 mb-6 flex items-center justify-between gap-3"

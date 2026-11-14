@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Module:   event-when
  * Purpose:  How close an event's date is to today in Israel — the «היום» /

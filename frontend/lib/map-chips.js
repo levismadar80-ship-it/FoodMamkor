@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Map filter chips (MEH-14). Category chips: all · meat · produce · dairy ·
  * bread (keys). MEH-2748: the words a reader sees are `map_category_chips.<key>`

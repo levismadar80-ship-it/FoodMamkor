@@ -1,3 +1,4 @@
+// @ts-check
 // MEH-2253 — the prop value that makes the `inert` attribute PRESENT depends
 // on which React is rendering, and this repo runs two of them:
 //
@@ -26,5 +27,9 @@ export function inertAttrValueFor(version) {
   return major >= 19 ? true : "";
 }
 
-/** Pass as `inert={hidden ? INERT_PRESENT : undefined}`. */
-export const INERT_PRESENT = inertAttrValueFor(reactVersion);
+/**
+ * Pass as `inert={hidden ? INERT_PRESENT : undefined}`.
+ * Typed boolean because React 19's JSX types declare `inert?: boolean`. The ""
+ * value only occurs under React 18 (vitest), which renders the attribute from it.
+ */
+export const INERT_PRESENT = /** @type {boolean} */ (inertAttrValueFor(reactVersion));

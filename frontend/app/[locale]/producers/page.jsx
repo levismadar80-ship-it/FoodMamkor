@@ -1,3 +1,4 @@
+// @ts-check
 import { Suspense } from "react";
 import { getTranslations } from "next-intl/server";
 import ProducersClient from "@/components/ProducersClient";

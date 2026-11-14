@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * MEH-1864 — rating data gate.
  *

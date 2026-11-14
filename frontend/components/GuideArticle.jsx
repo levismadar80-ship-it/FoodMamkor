@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Module:   GuideArticle
  * Purpose:  Shared shell for MEH-539 onboarding guide pages under
