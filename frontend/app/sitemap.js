@@ -27,10 +27,11 @@ import {
   regionCities,
   regionPagePath,
 } from "@/lib/region-pages";
-// MEH-2369: the three "something happening" hubs are listed only with supply.
+// MEH-2369: the "something happening" hubs (and /rescue, MEH-3265) are listed only with supply.
 import { HUBS, getAllHubCounts, hubBelongsInSitemap } from "@/lib/listing-supply";
 // MEH-2478: one owner of "a group buy can still be joined" (open + before deadline).
 import { isGroupBuyLive } from "@/lib/seo";
+import { SITEMAP_STATIC_PAGES } from "@/lib/sitemap-static";
 
 // localePrefix is "as-needed": defaultLocale (he) has no prefix; others get /<locale>.
 function urlForLocale(path, locale) {
@@ -134,37 +135,9 @@ async function mapWithConcurrency(items, { limit, task }) {
 export default async function sitemap() {
   const now = new Date();
 
-  const staticDefs = [
-    { path: "", priority: 1.0, changeFrequency: "daily" },
-    { path: "/map", priority: 0.9, changeFrequency: "daily" },
-    { path: "/about", priority: 0.6, changeFrequency: "monthly" },
-    // MEH-875: secondary indexable landing routes (all under app/[locale]/).
-    { path: "/about/process", priority: 0.5, changeFrequency: "monthly" },
-    { path: "/about/for-businesses", priority: 0.5, changeFrequency: "monthly" },
-    // MEH-1289: reader-facing "why local" editorial page.
-    { path: "/about/why-local", priority: 0.5, changeFrequency: "monthly" },
-    // MEH-2701: badges explainer («מה אומרים התגים»).
-    { path: "/about/badges", priority: 0.4, changeFrequency: "monthly" },
-    // MEH-2967: the business landing page (MEH-995). It was never listed, so
-    // crawlers were offered only /register/producer, whose server HTML is a
-    // loading placeholder.
-    { path: "/join", priority: 0.7, changeFrequency: "monthly" },
-    { path: "/join/pricing", priority: 0.5, changeFrequency: "monthly" },
-    { path: "/register/producer", priority: 0.7, changeFrequency: "monthly" },
-    // MEH-803: /register, /login, /contact intentionally NOT listed (/search
-    // itself is gone — it 308s to /producers since MEH-819) —
-    // each page sets robots:{index:false} (MEH-641 auth chrome / MEH-658 utility
-    // route), so emitting them here produced GSC "Submitted URL marked 'noindex'".
-    // The sitemap lists indexable URLs only; the pages' noindex directives stay.
-    { path: "/terms", priority: 0.2, changeFrequency: "yearly" },
-    // MEH-3177: indexable pages that were never offered.
-    { path: "/privacy", priority: 0.2, changeFrequency: "yearly" },
-    { path: "/accessibility", priority: 0.2, changeFrequency: "yearly" },
-    { path: "/about/for-businesses/guides", priority: 0.4, changeFrequency: "monthly" },
-    { path: "/about/for-businesses/guides/business-story", priority: 0.4, changeFrequency: "monthly" },
-    { path: "/about/for-businesses/guides/customer-messages", priority: 0.4, changeFrequency: "monthly" },
-    { path: "/about/for-businesses/guides/product-photography", priority: 0.4, changeFrequency: "monthly" },
-  ];
+  // MEH-3265: the fixed list lives in lib/sitemap-static.js so the
+  // reachability guard reads the same array this file emits.
+  const staticDefs = SITEMAP_STATIC_PAGES.map((def) => ({ ...def }));
   // MEH-2369: /events, /experiences and /group-buys used to sit in staticDefs
   // unconditionally — three empty pages offered to Google daily while
   // production had zero of each. They join only when the hub is KNOWN to list
