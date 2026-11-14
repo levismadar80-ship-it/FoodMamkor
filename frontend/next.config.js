@@ -80,7 +80,7 @@ const securityHeaders = [
     key: "Content-Security-Policy",
     value: [
       "default-src 'self'",
-      `img-src 'self' https://res.cloudinary.com https://images.unsplash.com https://*.tile.openstreetmap.org https://unpkg.com https://*.googleusercontent.com data: blob:${vercelLiveImg}`,
+      `img-src 'self' https://res.cloudinary.com https://images.unsplash.com https://tile.openstreetmap.org https://unpkg.com https://*.googleusercontent.com data: blob:${vercelLiveImg}`,
       // MEH-435: PostHog's EU assets host serves the remote config script and
       // any lazily loaded extension once NEXT_PUBLIC_POSTHOG_KEY is set.
       `script-src 'self' 'unsafe-inline' 'unsafe-eval' https://accounts.google.com https://appleid.cdn-apple.com https://eu-assets.i.posthog.com${vercelLiveScript}`,
