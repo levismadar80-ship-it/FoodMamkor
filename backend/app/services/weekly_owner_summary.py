@@ -304,7 +304,9 @@ class _Candidate:
 
     id: Any
     name: str
-    test_business: bool  # Producer.is_test, read only (MEH-2952 guard: no is_test writes)
+    test_business: (
+        bool  # Producer.is_test, read only (MEH-2952 guard: no is_test writes)
+    )
     sent_at: Any
 
 
