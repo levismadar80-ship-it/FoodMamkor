@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Module:   ClosingCtaBand
  * Purpose:  The one full-green band that ends every page closing on a business

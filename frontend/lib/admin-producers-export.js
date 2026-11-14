@@ -1,3 +1,4 @@
+// @ts-check
 // CSV export for the admin producers table.
 //
 // Builds a UTF-8 CSV (with BOM so Excel auto-detects encoding) and

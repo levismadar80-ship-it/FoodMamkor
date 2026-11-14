@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Module:   safe-redirect
  * Purpose:  Clamp a post-login `?redirect=` value to an internal, same-origin

@@ -1,3 +1,4 @@
+// @ts-check
 import { FILTER_AXES, homeParamFor } from "@/lib/filter-taxonomy";
 import { CATEGORY_CHIPS } from "@/lib/map-chips";
 

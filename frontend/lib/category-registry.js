@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Module:   category-registry
  * Purpose:  Single source of truth for every category's presentation data —

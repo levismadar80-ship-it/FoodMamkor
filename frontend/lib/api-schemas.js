@@ -1,3 +1,4 @@
+// @ts-check
 // Rule-19 (Zod validation before consuming API responses) — NON-map sites.
 //
 // The map feed already validates via lib/schemas.js (ProducerSchema /

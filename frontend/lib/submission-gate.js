@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Module:   submission-gate
  * Purpose:  Answer "may this business be sent for review, and if not, what is

@@ -1,3 +1,4 @@
+// @ts-check
 import { useTranslations } from "next-intl";
 import { Leaf } from "@phosphor-icons/react";
 

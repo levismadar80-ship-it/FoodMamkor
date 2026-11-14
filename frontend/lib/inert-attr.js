@@ -1,3 +1,4 @@
+// @ts-check
 // MEH-2253 — the prop value that makes the `inert` attribute PRESENT depends
 // on which React is rendering, and this repo runs two of them:
 //

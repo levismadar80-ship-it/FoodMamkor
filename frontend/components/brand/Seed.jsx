@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Seed — one seed, as a brand element (MEH-2833). Unlike the logo, a single
  * seed may be rotated, scaled and given any seed colour. Decoration only:

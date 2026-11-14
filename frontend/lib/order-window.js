@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Module:   order-window
  * Purpose:  Convert between the backend `producers.order_window` JSONB shape

@@ -1,3 +1,4 @@
+// @ts-check
 import { Link } from "@/i18n/navigation";
 
 // MEH-1630 chunk 1 (decision 1): disc geometry per `size`. Class strings are

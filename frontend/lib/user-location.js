@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * User location — localStorage cache + cross-component sync hook.
  *

@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Module:   brand-seeds
  * Purpose:  The seed layer's one source: the logo's five pomegranate seeds —

@@ -1,3 +1,4 @@
+// @ts-check
 import { getTranslations } from "next-intl/server";
 import LoginClient from "./LoginClient";
 import { BRAND_NAME } from "@/lib/constants";

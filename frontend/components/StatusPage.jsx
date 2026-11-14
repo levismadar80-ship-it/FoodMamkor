@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 import SeedMark from "@/components/brand/SeedMark";

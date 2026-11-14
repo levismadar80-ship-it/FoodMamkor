@@ -1,3 +1,4 @@
+// @ts-check
 import { getTranslations } from "next-intl/server";
 
 // MEH-2974: shared by /owner-invite and /owner-invite/[token]. The page is a

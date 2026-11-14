@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Module:   hours-serialize
  * Purpose:  The inverse of lib/hours.parseHours — turn the structured 7-day

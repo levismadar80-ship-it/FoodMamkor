@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * The home + /producers filter config, DERIVED from lib/filter-taxonomy.js.
  *
