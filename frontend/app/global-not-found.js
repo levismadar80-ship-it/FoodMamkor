@@ -23,7 +23,6 @@ import { FONT_VARIABLES } from "./fonts";
 import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getMessages } from "next-intl/server";
 import { AuthProvider } from "@/lib/auth-context";
-import { LanguageProvider } from "@/lib/language-context";
 import Header from "@/components/Header";
 import FooterSlot from "@/components/FooterSlot";
 import BottomNav from "@/components/BottomNav";
@@ -46,14 +45,12 @@ export default async function GlobalNotFound() {
       <body className="font-body-md bg-background text-text min-h-screen flex flex-col pb-[var(--bottom-inset)]">
         <NextIntlClientProvider locale={locale} messages={messages}>
           <AuthProvider>
-            <LanguageProvider>
               <Header />
               <main id="main-content" tabIndex={-1} className="flex-1 focus:outline-none">
                 <NotFound />
               </main>
               <FooterSlot />
               <BottomNav />
-            </LanguageProvider>
           </AuthProvider>
         </NextIntlClientProvider>
       </body>

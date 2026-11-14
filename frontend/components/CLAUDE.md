@@ -13,10 +13,9 @@ shape on any new non-trivial component. For sticky/scroll-aware
 behavior see `frontend/components/Header.jsx`.
 
 ## Conventions specific to this dir
-- **Imports**: `useAuth` from `@/lib/auth-context`, `useLanguage` from
-  `@/lib/language-context`, `api` from `@/lib/api`. Translations via
-  `useTranslations` from `next-intl` (only for files already migrated;
-  see Gotchas).
+- **Imports**: `useAuth` from `@/lib/auth-context`, `api` from `@/lib/api`.
+  Translations via `useTranslations` / `useLocale` from `next-intl` — the
+  only i18n mechanism (see Gotchas).
 - **Icons**: `@phosphor-icons/react` exclusively — never Heroicons or
   lucide.
 - **RTL**: never use `left-*` / `right-*` / `ml-*` / `mr-*` /
@@ -35,11 +34,9 @@ behavior see `frontend/components/Header.jsx`.
 - **Central components require `/adversarial-review`** even on a green
   build — e.g. `MapClient.jsx`, `ProducerCard.jsx`
   listed in `.claude/central-components.json` (workflow rule 20).
-- **i18n migration mid-flight** (MEH-366): `lib/language-context.js` is
-  the legacy homegrown provider; the codebase is migrating to
-  `next-intl`. Some components use `useTranslations`, others still call
-  `useLanguage().t(...)`. Match the pattern of the file you're editing
-  — do not bulk-rewrite.
+- **One i18n mechanism** (MEH-3139): `next-intl` only. The old
+  `lib/language-context.js` (`useLanguage()`) and `lib/i18n-key-map.js` are
+  deleted; `OneI18nMechanismGuard.test.js` fails if either comes back.
 - **Zod before consuming an API response** (workflow rule 19) — `safeParse()`
   via `lib/schemas.js` or `lib/api-schemas.js` (which re-exports it). Covers
   the home grid, `/map` and `/favorites`, and each routes failure to its own

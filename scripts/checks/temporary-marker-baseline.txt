@@ -1,0 +1,4 @@
+# path<TAB>marker line — temporary markers that predate temporary-marker-guard.sh (MEH-3144).
+# Remove a line when the marker is dated with LEGACY(date, ticket) or deleted. Never add one.
+backend/app/routers/admin_extra.py	# + timezone rule; a public /friday-mode endpoint is TODO).
+backend/app/routers/holiday_mode.py	# TODO(MEH-407 follow-up): replace SessionLocal() with Depends(get_db).

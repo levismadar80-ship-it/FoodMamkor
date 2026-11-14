@@ -12,9 +12,9 @@ import { useRouter, usePathname } from "@/i18n/navigation";
  *           (which dropped query params via `router.replace(pathname)`).
  * Touches:  next-intl router (locale prefix + NEXT_LOCALE cookie via
  *           middleware), URL search params (preserved as-is).
- * Does NOT: Persist to localStorage (next-intl middleware handles cookie
- *           — the localStorage path in lib/language-context.js is a
- *           pre-Wave-1 backward-compat shim, separate concern).
+ * Does NOT: Remember the choice outside the URL. `localeDetection` is off
+ *           (i18n/routing.js), so the `/en` prefix is the locale; an
+ *           un-prefixed URL is always Hebrew.
  * Related:  frontend/i18n/routing.js (locales + as-needed prefix),
  *           frontend/i18n/navigation.js (router/pathname exports),
  *           frontend/components/Header.jsx:400-402 (desktop pill —
@@ -32,7 +32,11 @@ import { useRouter, usePathname } from "@/i18n/navigation";
  *           said to hold `Disallow: /en/` — it does not and did not
  *           (frontend/public/robots.txt; flagged stale in
  *           docs/audits/2026-06-13-seo-meta.md:223) — and AccountSheet was
- *           called the sole consumer, which the restore ended).
+ *           called the sole consumer, which the restore ended);
+ *           MEH-3139 (the `localStorage.lang` write left with the old
+ *           LanguageProvider shim that was its only reader. That shim
+ *           redirected on mount to the saved locale, which also bounced a
+ *           visitor off a shared link in the other language).
  */
 export default function LanguageToggle({ variant = "default", className = "", children }) {
   const t = useTranslations("nav");
@@ -51,23 +55,6 @@ export default function LanguageToggle({ variant = "default", className = "", ch
     // other statically generated page that includes the global Header.
     // Suspense-wrapping LanguageToggle at the layout level would also
     // work but is overkill for a value that's only needed at click-time.
-    // Legacy useLanguage().setLang() at language-context.js:49 dropped
-    // query params silently — fixed here.
-    if (typeof window !== "undefined") {
-      // MEH-475: LanguageProvider's pre-Wave-1 backward-compat shim
-      // (lib/language-context.js:35-42) reads `localStorage.lang` on mount
-      // and force-redirects if the saved value doesn't match the URL
-      // locale. Without writing here, every page navigation after the
-      // toggle would flip the user back to the OLD locale (stale shim
-      // wins over the just-set NEXT_LOCALE cookie). Write the shim's
-      // storage key so both paths agree until MEH-472 deletes the shim.
-      try {
-        window.localStorage.setItem("lang", nextLocale);
-      } catch {
-        // private mode / quota — middleware cookie still flips the URL,
-        // shim race only matters for users with localStorage enabled.
-      }
-    }
     const search = typeof window !== "undefined" ? window.location.search : "";
     const hash = typeof window !== "undefined" ? window.location.hash : "";
     const href = `${pathname}${search}${hash}`;
