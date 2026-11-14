@@ -65,14 +65,8 @@ export default function EnSearchNotice({ className = "" }) {
     >
       <span>{t("body")}</span>
       {/* The CTA REUSES LanguageToggle rather than calling router.replace
-          itself, and that is load-bearing rather than tidiness. LanguageToggle
-          also writes `localStorage.lang` (LanguageToggle.jsx:57-66, MEH-475):
-          without it the pre-Wave-1 shim in lib/language-context.js reads the
-          stale saved locale on the next mount and flips the visitor straight
-          back to /en. A hand-rolled switch would look correct in review and
-          bounce the user on their very next navigation.
-          It also preserves query + hash, so a deep /en path returns to its /he
-          twin rather than the homepage — which is the acceptance criterion. */}
+          itself: it preserves query + hash, so a deep /en path returns to its
+          /he twin rather than the homepage — which is the acceptance criterion. */}
       <LanguageToggle
         variant="bare"
         className="inline-flex items-center gap-1 font-medium text-primary underline underline-offset-2 hover:text-primary-dark"

@@ -6,7 +6,6 @@
     "frontend/app/[locale]/producers/page.jsx",
     "frontend/app/[locale]/page.js",
     "frontend/app/[locale]/layout.js",
-    "frontend/lib/language-context.js",
     "frontend/components/ProducerCard.jsx",
     "frontend/components/Header.jsx",
     "frontend/components/BottomNav.jsx",

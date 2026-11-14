@@ -61,10 +61,9 @@ describe("EnSearchNotice", () => {
   });
 
   it("delegates the CTA to LanguageToggle rather than its own navigation", () => {
-    // Path+query preservation AND the localStorage.lang shim write both live in
-    // LanguageToggle. If a future refactor inlines router.replace here, the
-    // visitor gets bounced back to /en on the next mount — this asserts the
-    // delegation itself, which is the property that prevents that.
+    // Path+query preservation lives in LanguageToggle. If a future refactor
+    // inlines router.replace here, a deep /en path lands on the homepage —
+    // this asserts the delegation itself, which is what prevents that.
     render(<EnSearchNotice />);
     expect(screen.getByTestId("lang-toggle")).toBeTruthy();
   });
