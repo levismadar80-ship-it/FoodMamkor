@@ -60,6 +60,7 @@ function hebrewFormatter() {
 
 /** @param {number} t UTC-midnight instant */
 function isoOf(t) {
+  // guard-ok: t is a UTC-midnight calendar instant, not "now"; no clock is read.
   return new Date(t).toISOString().slice(0, 10);
 }
 

@@ -58,7 +58,8 @@ function useOncePerAccount(apply, clear) {
 
 /**
  * Object form: `map` = { formField: accountField }.
- * @param {(update: (prev: Record<string, any>) => Record<string, any>) => void} setForm
+ * @template {Record<string, unknown>} T
+ * @param {(update: (prev: T) => T) => void} setForm  a React state setter
  * @param {Record<string, AccountField>} map
  * @returns {() => void} refill — call after resetting the form
  */
@@ -70,7 +71,8 @@ export function useAccountPrefill(setForm, map) {
         const value = accountValue(user, key);
         if (value && !String(prev?.[field] ?? "").trim()) {
           if (next === prev) next = { ...prev };
-          next[field] = value;
+          const draft = /** @type {Record<string, unknown>} */ (next);
+          draft[field] = value;
         }
       }
       return next;
@@ -83,7 +85,8 @@ export function useAccountPrefill(setForm, map) {
         const value = accountValue(old, key);
         if (value && String(prev?.[field] ?? "").trim() === value) {
           if (next === prev) next = { ...prev };
-          next[field] = "";
+          const draft = /** @type {Record<string, unknown>} */ (next);
+          draft[field] = "";
         }
       }
       return next;

@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 import { ArrowUpLeft, WhatsappLogo } from "@phosphor-icons/react";

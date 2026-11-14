@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Module:   HomepageMiniMapLazy
  * Purpose:  Fetch the homepage mini-map (Leaflet + its tiles) only when the

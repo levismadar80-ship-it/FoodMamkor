@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Module:   pending-action
  * Purpose:  One-shot "finish what the guest started" intent across the login

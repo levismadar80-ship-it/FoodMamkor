@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 import { notFound } from "next/navigation";

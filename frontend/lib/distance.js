@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Distance helpers (MEH-12). JS port of the Haversine formula that the
  * backend uses in raw SQL on producers.lat/lng (see CLAUDE.md "no

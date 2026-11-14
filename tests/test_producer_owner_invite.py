@@ -159,8 +159,14 @@ def accept_invite(client, token, email=INVITE_EMAIL, **over):
     )
 
 
+# MEH-3246: an invite needs a photo (and a licence where the category needs
+# one), so the invitable factories carry one photo unless a test says otherwise.
+_PHOTO = ["https://res.cloudinary.com/demo/image/upload/v1/invite.jpg"]
+
+
 def approved(db, **kw):
     """An approved business with no owner — the only shape invitable."""
+    kw.setdefault("images", _PHOTO)
     return make_producer(db, status="approved", **kw)
 
 
@@ -345,7 +351,7 @@ class TestAdminCreate:
     def test_409_when_the_business_is_neither_approved_nor_hidden(
         self, client, db, status
     ):
-        p = make_producer(db, status=status)
+        p = make_producer(db, status=status, images=_PHOTO)
         clean = _snapshot(db, p)
         r, _ = invite(client, db, p)
         assert r.status_code == 409, r.text
@@ -357,7 +363,7 @@ class TestAdminCreate:
         """(v3) The card's own flow: the admin builds the page HIDDEN, hands it
         over, and the owner's acceptance is what puts it in front of anyone.
         `inactive` was a 409 until v3 — this is the test that says it is not."""
-        p = make_producer(db, status="inactive")
+        p = make_producer(db, status="inactive", images=_PHOTO)
         r, token = invite(client, db, p)
         assert r.status_code == 200, r.text
         assert client.get(_lookup_url(token)).json()["will_publish"] is True
@@ -1875,7 +1881,7 @@ class TestAcceptPublishes:
         monkeypatch.setattr(
             poi.indexnow, "notify", lambda urls: pinged.append(list(urls))
         )
-        p = make_producer(db, status="inactive")
+        p = make_producer(db, status="inactive", images=_PHOTO)
         # The slug is what the announced URL is built from, so it is set
         # explicitly rather than left to the factory — the assertion below
         # names it.
@@ -1910,7 +1916,7 @@ class TestAcceptPublishes:
             "notify_admin_owner_invite_accepted",
             lambda *a, **k: calls.append((a, k)),
         )
-        hidden = make_producer(db, status="inactive")
+        hidden = make_producer(db, status="inactive", images=_PHOTO)
         _, t1 = invite(client, db, hidden)
         assert accept_invite(client, t1).status_code == 200
 
@@ -2157,7 +2163,7 @@ class TestExposure:
         the before-assertion while being broken, and one present in both would
         satisfy the after-assertion while leaking.
         """
-        p = make_producer(db, status="inactive")
+        p = make_producer(db, status="inactive", images=_PHOTO)
         _, token = invite(client, db, p)
 
         detail = client.get(f"/producers/{p.id}")
@@ -2454,3 +2460,58 @@ def test_owner_invite_is_a_reserved_slug():
     from app.slug_utils import is_reserved
 
     assert is_reserved("owner-invite")
+
+
+class TestGrowerDeclarationOnAccept:
+    """MEH-3137: the invite page shows the grower box when the lookup says
+    `requires_farmer_declaration`. The server now requires and records it
+    apart from the licensing declaration, as registration does (MEH-2923)."""
+
+    def _veg_invite(self, client, db, name="ירקות"):
+        from conftest import make_category
+
+        from app.models import ProducerCategory
+
+        p = approved(db)
+        cat = make_category(db, name=name)
+        db.add(ProducerCategory(producer_id=p.id, category_id=cat.id))
+        db.commit()
+        _, token = invite(client, db, p)
+        return p, token
+
+    def test_veg_without_the_grower_flag_is_422_and_the_link_survives(self, client, db):
+        p, token = self._veg_invite(client, db)
+        r = accept_invite(client, token)
+        assert r.status_code == 422, r.text
+        assert r.json()["detail"] == "יש לאשר את הצהרת המגדל כדי להמשיך"
+        row = _row(db, p)
+        assert row.owner_invite_accepted_at is None
+        assert row.farmer_declared_at is None
+
+    def test_fruit_with_the_flag_stamps_the_grower_columns(self, client, db):
+        from app.constants import FARMER_DECLARATION_VERSION
+
+        p, token = self._veg_invite(client, db, name="פירות")
+        r = accept_invite(client, token, farmer_declaration_accepted=True)
+        assert r.status_code == 200, r.text
+        row = _row(db, p)
+        assert row.farmer_declared_at is not None
+        assert row.farmer_declaration_version == FARMER_DECLARATION_VERSION
+
+    def test_non_grower_business_stamps_nothing(self, client, db):
+        p = approved(db)
+        _, token = invite(client, db, p)
+        assert accept_invite(client, token).status_code == 200
+        assert _row(db, p).farmer_declared_at is None
+
+    def test_lookup_does_not_ask_a_business_already_declared(self, client, db):
+        """The accept route ignores the flag once the line is recorded, so the
+        lookup must not show the box either (reviewer finding, MEH-3137)."""
+        from datetime import datetime, timezone
+
+        p, token = self._veg_invite(client, db)
+        assert client.get(_lookup_url(token)).json()["requires_farmer_declaration"] is True
+        row = _row(db, p)
+        row.farmer_declared_at = datetime.now(timezone.utc)
+        db.commit()
+        assert client.get(_lookup_url(token)).json()["requires_farmer_declaration"] is False

@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Recently-viewed producers — localStorage helpers (MEH-11).
  *

@@ -1,3 +1,4 @@
+// @ts-check
 import { useTranslations } from "next-intl";
 
 import ImageWithFallback from "@/components/ImageWithFallback";
@@ -34,6 +35,8 @@ import { avatarInitial } from "@/components/ui/Avatar";
  *   the business" pattern): a small h3 heading, no white card, a smaller
  *   green-50 avatar. The standalone card stays for the organizer page and for
  *   a business with no description (no «אודות» section to sit in).
+ *
+ * @param {{ producer: object, heading?: string, nested?: boolean }} props
  */
 export default function OwnerCard({ producer, heading, nested = false }) {
   const t = useTranslations("producer.detail.owner_card");

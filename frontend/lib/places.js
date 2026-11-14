@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Module:   places
  * Purpose:  Address-autocomplete provider abstraction for AddressSearch
@@ -34,7 +35,7 @@
  * renders exactly like "דרך שרה matched nothing". The caller needs to tell
  * them apart to log something actionable.
  */
-export class ProviderError extends Error {
+class ProviderError extends Error {
   constructor(provider, status, detail) {
     super(`${provider} address lookup rejected (HTTP ${status})`);
     this.name = "ProviderError";
@@ -135,6 +136,10 @@ export function composeScopedQuery(query, city) {
   return q.includes(c) ? q : `${q}, ${c}`;
 }
 
+/**
+ * @param {string} query
+ * @param {{ signal?: AbortSignal, city?: string }} [options]
+ */
 async function nominatimAutocomplete(query, { signal, city } = {}) {
   const url =
     "https://nominatim.openstreetmap.org/search" +
@@ -172,6 +177,10 @@ async function nominatimAutocomplete(query, { signal, city } = {}) {
 
 // --- Google Places API (New) -------------------------------------------------
 
+/**
+ * @param {string} query
+ * @param {{ signal?: AbortSignal, sessionToken?: string, city?: string }} [options]
+ */
 async function googleAutocomplete(query, { signal, sessionToken, city } = {}) {
   const res = await fetch(
     "https://places.googleapis.com/v1/places:autocomplete",
@@ -244,6 +253,10 @@ function normalizeGoogleDetails(place) {
   };
 }
 
+/**
+ * @param {{ raw?: { placeId?: string } } | null | undefined} suggestion
+ * @param {{ sessionToken?: string }} [options]
+ */
 async function googleResolve(suggestion, { sessionToken } = {}) {
   const placeId = suggestion?.raw?.placeId;
   if (!placeId) return null;

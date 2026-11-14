@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * CLIENT-SAFE INVARIANT
  *

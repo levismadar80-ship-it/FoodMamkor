@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Module:   register-draft
  * Purpose:  Own the on-disk shape of the producer-registration draft — what is

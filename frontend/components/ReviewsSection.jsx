@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 import { useEffect, useRef, useState } from "react";
@@ -61,6 +62,7 @@ export function ReviewInitial({ seedKey, letter }) {
 // HOT-018 (MEH-782): numeric short date (e.g. 7.6.2026) — preserves the prior
 // `toLocaleDateString` default while routing through the Invalid-Date-guarded,
 // locale-aware helper so /en no longer renders Hebrew review dates.
+/** @type {Intl.DateTimeFormatOptions} */
 export const REVIEW_DATE_OPTIONS = { year: "numeric", month: "numeric", day: "numeric" };
 
 // "Sapir L." — first name + last initial (privacy)
@@ -326,10 +328,9 @@ export default function ReviewsSection({
   const [hasClickedWa, setHasClickedWa] = useState(false);
   // MEH-1428 chunk 2: the invite token for THIS producer, if any.
   const [inviteToken, setInviteToken] = useState(null);
-  // Guest login prompt target. Set after mount (window is client-only) so the
-  // server markup and the first client render agree; until then it is plain
-  // /login, which is what it always was.
-  const [loginHref, setLoginHref] = useState("/login");
+  // Guest login prompt return path. Set after mount (window is client-only) so
+  // the server markup and the first client render agree; until then "/".
+  const [loginNext, setLoginNext] = useState("/");
   const sectionRef = useRef(null);
   // MEH-2705: the header and the sticky bar render producer.reviews_count from
   // the server (ISR, up to 60 s old), so a new review left them one behind.
@@ -376,7 +377,8 @@ export default function ReviewsSection({
     // Same redirect shape as LoginPromptModal.jsx:103 (clamped by
     // lib/safe-redirect.js on the login side).
     const back = `${window.location.pathname}${window.location.search}#reviews`;
-    setLoginHref(`/login?redirect=${encodeURIComponent(back)}`);
+    // MEH-3130: the path only — LoginPromptModal builds the /login link.
+    setLoginNext(back);
   }, [producerId]);
 
   // 13/11/2026: a star tapped on the invite row before the reader could write
@@ -452,7 +454,9 @@ export default function ReviewsSection({
   // Pre-fill form if user already has a review (passed WA gate before).
   useEffect(() => {
     if (!user) return;
-    const mine = reviews.find((r) => r.user_id === user.id);
+    // MEH-3221 (B10): the server says which review is mine — no user_id in
+    // the public payload any more.
+    const mine = reviews.find((r) => r.is_mine);
     if (mine) {
       setStars(mine.stars);
       setBody(mine.body || "");
@@ -477,8 +481,11 @@ export default function ReviewsSection({
       // WhatsApp-click path posts exactly the body it always did.
       const payload = inviteToken ? { stars, body, review_token: inviteToken } : { stars, body };
       const r = await api.post(`/producers/${producerId}/reviews`, payload);
-      const previous = reviews.find((x) => x.user_id === r.data.user_id);
-      setReviews((prev) => [r.data, ...prev.filter((x) => x.user_id !== r.data.user_id)]);
+      // MEH-3221: one review per user per business, so the previous one is
+      // the row with the same id, or the one flagged mine.
+      const isPrev = (x) => x.id === r.data.id || x.is_mine;
+      const previous = reviews.find(isPrev);
+      setReviews((prev) => [r.data, ...prev.filter((x) => !isPrev(x))]);
       setTotal((tt) => tt + (previous ? 0 : 1));
       // MEH-1337: keep the bars in step with the total — move the owner's own
       // star (edit) or add it (new review), so the five counts still sum to it.
@@ -607,7 +614,7 @@ export default function ReviewsSection({
                     from the person who gave them. */}
                 <div className="flex items-start gap-3 mb-3">
                   <ReviewInitial
-                    seedKey={review.user_id ?? review.user_name}
+                    seedKey={review.id}
                     letter={avatarInitial(formatName(review.user_name, anonymousFallback), "")}
                   />
                   <div className="min-w-0">
@@ -671,7 +678,7 @@ export default function ReviewsSection({
         <ReviewInviteCard
           mode="login"
           first={inviteFirst}
-          loginHref={loginHref}
+          loginNext={loginNext}
           producerId={producerId}
           producerName={producerName}
         />

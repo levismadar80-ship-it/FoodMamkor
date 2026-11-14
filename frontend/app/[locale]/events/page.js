@@ -1,3 +1,4 @@
+// @ts-check
 import { getTranslations } from "next-intl/server";
 import EventsClient from "./EventsClient";
 import { hubTabTitles } from "./hub-tab-titles";

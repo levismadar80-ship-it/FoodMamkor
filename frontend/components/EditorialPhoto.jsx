@@ -1,3 +1,4 @@
+// @ts-check
 import Image from "next/image";
 import { optimizeCloudinary } from "@/lib/cloudinary";
 

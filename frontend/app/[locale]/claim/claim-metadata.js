@@ -1,3 +1,4 @@
+// @ts-check
 import { getTranslations } from "next-intl/server";
 
 // MEH-2324: shared by /claim and /claim/[token]. The page is a private

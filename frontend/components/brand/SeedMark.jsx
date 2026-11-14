@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * SeedMark — the full bloom (the logo's five seeds, in place), as decoration.
  * MEH-2833: the logo is never rotated, recoloured or rearranged; a crop

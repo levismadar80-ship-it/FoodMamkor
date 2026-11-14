@@ -999,6 +999,11 @@ class ProducerRegister(BaseModel):
     # fact that ToS consent reached no column at all; `terms_accepted` below is
     # its actual carrier.
     declaration_accepted: bool = False
+    # MEH-2923: the grower line («גידלתי בחלקתי בלבד»), sent on its own. The
+    # server requires it when a category is in FARMER_DECLARATION_CATEGORIES
+    # (auth.py, before the upgrade/new split) and stamps it separately as
+    # farmer_declared_at / farmer_declaration_version.
+    farmer_declaration_accepted: bool = False
     # MEH-1995: the terms-of-service checkbox (`agreedToTerms` on both register
     # forms), which until now was a pure client-side gate — it disabled the
     # submit button and was then discarded, leaving no evidence of consent.
@@ -1330,6 +1335,9 @@ class ProducerClaimRequest(BaseModel):
     token: str = Field(min_length=1, max_length=2048)
     declaration_accepted: bool = False
     terms_accepted: bool = False
+    # MEH-3137: the grower line («גידלתי בחלקתי בלבד») apart from the licensing
+    # declaration, required for ירקות/פירות (services/farmer_declaration.py).
+    farmer_declaration_accepted: bool = False
 
 
 class ProducerClaimOut(BaseModel):
@@ -1493,6 +1501,9 @@ class OwnerInviteAccept(BaseModel):
     # silently unrecorded consent.
     terms_accepted: bool
     declaration_accepted: bool
+    # MEH-3137: the grower line, apart from the licensing declaration. Optional:
+    # only a grower category needs it, and the handler checks that.
+    farmer_declaration_accepted: bool = False
 
     @field_validator("terms_accepted")
     @classmethod
@@ -2145,6 +2156,8 @@ class ProducerCreate(BaseModel):
     # no primary_contact_method, so only the URL-scheme guard applies below).
     facebook: str | None = None
     external_order_form: str | None = None
+    # MEH-3137: grower declaration for ירקות/פירות (services/farmer_declaration.py).
+    farmer_declaration_accepted: bool = False
     # MEH-1153: same ≥1-category server-side parity as ProducerRegister.
     category_ids: list[int] = Field(
         default_factory=list, validate_default=True, max_length=MAX_SMALL_LIST
@@ -2504,6 +2517,8 @@ class ProducerUpdate(BaseModel):
     # extra="forbid" on this model), not a 422.
     images: list[str] | None = Field(None, max_length=MAX_GALLERY_IMAGES)
     status: str | None = None
+    # MEH-3137: grower declaration for ירקות/פירות (services/farmer_declaration.py).
+    farmer_declaration_accepted: bool = False
     category_ids: list[int] | None = Field(None, max_length=MAX_SMALL_LIST)
     delivery_area_cities: list[str] | None = Field(
         None, max_length=MAX_DELIVERY_CITIES
@@ -3538,6 +3553,10 @@ class ProducerOwnerOut(ProducerDetailOut):
     # producer_license_number/address owner-private precedent below).
     kosher: str | None = None
     producer_license_number: str | None = None
+    # MEH-3137: whether she has recorded the grower declaration, so the
+    # categories card asks for it only when a grower category needs it. A
+    # timestamp of her own act, owner-private like the license number.
+    farmer_declared_at: datetime | None = None
     # MEH-829: owner sees her own submitted street address (private — not on the
     # public DetailOut/ListOut).
     address: str | None = None
@@ -5376,7 +5395,10 @@ class ReviewReplyUpdate(BaseModel):
 class ReviewOut(BaseModel):
     id: UUID
     producer_id: UUID
-    user_id: UUID
+    # MEH-3221 (B10): the public payload carries no user_id and only the
+    # shortened name («שם פרטי + אות»). `is_mine` replaces the client-side
+    # `user_id === me` comparison; False for an anonymous viewer.
+    is_mine: bool = False
     user_name: str | None = None
     stars: int
     body: str | None = None

@@ -81,6 +81,7 @@ from app.services import indexnow
 from app.services.auth_emails import send_owner_invite_code_email
 from app.services.auth_notifications import notify_admin_owner_invite_accepted
 from app.services.email import send_email
+from app.services.farmer_declaration import farmer_declaration_stamp_for_existing
 
 logger = structlog.get_logger(__name__)
 
@@ -181,6 +182,14 @@ def accept_owner_invite_existing(  # noqa: PLR0913 — FastAPI-injected paramete
     if producer is None:
         raise HTTPException(status_code=404, detail=_LINK_INVALID)
     _refuse_account(user)
+    # MEH-3137: the same grower-line gate as `/accept`, checked before the
+    # code is spent so a 422 leaves both the link and the code live.
+    farmer_stamp = farmer_declaration_stamp_for_existing(
+        db,
+        producer,
+        [c.id for c in producer.categories],
+        body.farmer_declaration_accepted,
+    )
 
     # Captured now: `populate_existing` below refreshes this same object.
     seen_version = int(user.token_version or 0)
@@ -209,7 +218,7 @@ def accept_owner_invite_existing(  # noqa: PLR0913 — FastAPI-injected paramete
     p_test = bool(producer.is_test or locked.is_test)
     p_urls = indexnow.producer_urls(producer)
 
-    if not _claim_invite(db, producer.id, body.token, now):  # type: ignore[arg-type]
+    if not _claim_invite(db, producer.id, body.token, now, farmer_stamp):  # type: ignore[arg-type]
         db.rollback()
         raise HTTPException(status_code=404, detail=_LINK_INVALID)
 

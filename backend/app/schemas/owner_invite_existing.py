@@ -28,6 +28,8 @@ class OwnerInviteExistingAccept(BaseModel):
     # version), and the licensing declaration for THIS business.
     terms_accepted: bool
     declaration_accepted: bool
+    # MEH-3137: required only when a grower category needs the line.
+    farmer_declaration_accepted: bool = False
 
     @field_validator("code", mode="before")
     @classmethod

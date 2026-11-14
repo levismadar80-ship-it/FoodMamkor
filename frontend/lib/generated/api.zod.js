@@ -3080,7 +3080,8 @@ export const RegisterProducerOauthAuthRegisterProducerOauthPostResponse = /*#__P
 
 
 /**
- * Re-send verification email. Rate-limited to 3/hour per IP.
+ * Re-send verification email. 3/hour per IP, plus 3/hour and 10/day
+ * per account (MEH-2906, services/resend_verify_cap.py).
  * @summary Resend Verify
  */
 export const ResendVerifyAuthResendVerifyPostResponse = /*#__PURE__*/ zod.unknown()
@@ -4875,6 +4876,7 @@ export const GetMyProducerProducersMeGetResponse = /*#__PURE__*/ zod.object({
   "established_year": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "external_order_form": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "facebook": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "farmer_declared_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()])),
   "favorites_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), getMyProducerProducersMeGetResponseFavoritesCountDefault),
   "free_delivery_above": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "gluten_free_facility": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), getMyProducerProducersMeGetResponseGlutenFreeFacilityDefault),
@@ -5097,6 +5099,7 @@ export const UpdateMyProducerProducersMePutResponse = /*#__PURE__*/ zod.object({
   "established_year": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "external_order_form": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "facebook": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "farmer_declared_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()])),
   "favorites_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), updateMyProducerProducersMePutResponseFavoritesCountDefault),
   "free_delivery_above": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "gluten_free_facility": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), updateMyProducerProducersMePutResponseGlutenFreeFacilityDefault),
@@ -6229,6 +6232,7 @@ export const ReportProducerProducersProducerIdReportPostResponse = /*#__PURE__*/
  * @summary List Reviews Nested
  */
 export const listReviewsNestedProducersProducerIdReviewsGetResponseRatingCountsDefault = {};
+export const listReviewsNestedProducersProducerIdReviewsGetResponseReviewsItemIsMineDefault = false;
 
 export const ListReviewsNestedProducersProducerIdReviewsGetResponse = /*#__PURE__*/ zod.object({
   "page": /*#__PURE__*/ zod.int(),
@@ -6238,11 +6242,11 @@ export const ListReviewsNestedProducersProducerIdReviewsGetResponse = /*#__PURE_
   "body": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "created_at": /*#__PURE__*/ zod.string(),
   "id": /*#__PURE__*/ zod.uuid(),
+  "is_mine": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), listReviewsNestedProducersProducerIdReviewsGetResponseReviewsItemIsMineDefault),
   "producer_id": /*#__PURE__*/ zod.uuid(),
   "reply": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "reply_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "stars": /*#__PURE__*/ zod.int(),
-  "user_id": /*#__PURE__*/ zod.uuid(),
   "user_name": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
 })),
   "total": /*#__PURE__*/ zod.int()
@@ -6264,15 +6268,17 @@ export const ListReviewsNestedProducersProducerIdReviewsGetResponse = /*#__PURE_
  *   4. Body is moderated by Haiku (fail-open).
  * @summary Create Review Nested
  */
+export const createReviewNestedProducersProducerIdReviewsPostResponseIsMineDefault = false;
+
 export const CreateReviewNestedProducersProducerIdReviewsPostResponse = /*#__PURE__*/ zod.object({
   "body": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "created_at": /*#__PURE__*/ zod.string(),
   "id": /*#__PURE__*/ zod.uuid(),
+  "is_mine": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), createReviewNestedProducersProducerIdReviewsPostResponseIsMineDefault),
   "producer_id": /*#__PURE__*/ zod.uuid(),
   "reply": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "reply_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "stars": /*#__PURE__*/ zod.int(),
-  "user_id": /*#__PURE__*/ zod.uuid(),
   "user_name": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
 })
 
@@ -6667,15 +6673,17 @@ export const CreateReviewRescueOrdersOrderIdReviewPostResponse = /*#__PURE__*/ z
 /**
  * @summary List Reviews
  */
+export const listReviewsReviewsGetResponseIsMineDefault = false;
+
 export const ListReviewsReviewsGetResponseItem = /*#__PURE__*/ zod.object({
   "body": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "created_at": /*#__PURE__*/ zod.string(),
   "id": /*#__PURE__*/ zod.uuid(),
+  "is_mine": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), listReviewsReviewsGetResponseIsMineDefault),
   "producer_id": /*#__PURE__*/ zod.uuid(),
   "reply": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "reply_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "stars": /*#__PURE__*/ zod.int(),
-  "user_id": /*#__PURE__*/ zod.uuid(),
   "user_name": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
 })
 export const ListReviewsReviewsGetResponse = /*#__PURE__*/ zod.array(ListReviewsReviewsGetResponseItem)
@@ -6695,15 +6703,17 @@ export const DeleteReviewReviewsReviewIdDeleteResponse = /*#__PURE__*/ zod.unkno
  * voice. An empty/blank reply clears it.
  * @summary Set Review Reply
  */
+export const setReviewReplyReviewsReviewIdReplyPutResponseIsMineDefault = false;
+
 export const SetReviewReplyReviewsReviewIdReplyPutResponse = /*#__PURE__*/ zod.object({
   "body": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "created_at": /*#__PURE__*/ zod.string(),
   "id": /*#__PURE__*/ zod.uuid(),
+  "is_mine": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), setReviewReplyReviewsReviewIdReplyPutResponseIsMineDefault),
   "producer_id": /*#__PURE__*/ zod.uuid(),
   "reply": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "reply_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "stars": /*#__PURE__*/ zod.int(),
-  "user_id": /*#__PURE__*/ zod.uuid(),
   "user_name": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
 })
 
@@ -6776,7 +6786,7 @@ export const UploadAvatarUploadAvatarPostResponse = /*#__PURE__*/ zod.unknown()
 
 /**
  * Upload image to Cloudinary. Validates size and real content type.
- * Enforces free plan limit (3 images) for producers.
+ * The free-plan gallery cap is NOT here (MEH-3220, services/gallery_cap.py).
  * @summary Upload Image
  */
 export const UploadImageUploadImagePostResponse = /*#__PURE__*/ zod.unknown()

@@ -1,3 +1,4 @@
+// @ts-check
 // Rule-19 (Zod validation before consuming API responses) — NON-map sites.
 //
 // The map feed already validates via lib/schemas.js (ProducerSchema /
@@ -20,7 +21,7 @@ import { ProducerSchema } from "@/lib/schemas";
 export { ProducerSchema, ProducersResponseSchema } from "@/lib/schemas";
 
 // GET /categories → list[CategoryOut] = { id:int, name:str, emoji?:str|null }
-export const CategorySchema = z.object({
+const CategorySchema = z.object({
   id: z.union([z.number(), z.string()]),
   name: z.string(),
   emoji: z.string().nullable().optional(),

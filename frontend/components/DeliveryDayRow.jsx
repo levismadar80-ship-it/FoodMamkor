@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 import { useEffect, useId, useRef, useState } from "react";

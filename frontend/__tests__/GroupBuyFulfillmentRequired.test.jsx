@@ -166,3 +166,16 @@ describe("pickup and delivery on the create form", () => {
     });
   }
 });
+
+// MEH-3219 B13: the deadline field says «לפי שעון ישראל», so 12:00 typed in
+// January is 10:00 UTC whatever zone the device (or this runner) is in. The old
+// `new Date(value).toISOString()` read it in the device zone.
+describe("deadline is read in Israel time", () => {
+  it("2099-01-01 12:00 Israel → 10:00 UTC", async () => {
+    const { pickup, form } = await openForm();
+    fireEvent.change(pickup, { target: { value: "מהמשק" } });
+    fireEvent.submit(form);
+    await waitFor(() => expect(post).toHaveBeenCalledTimes(1));
+    expect(post.mock.calls[0][1].deadline).toBe("2099-01-01T10:00:00.000Z");
+  });
+});

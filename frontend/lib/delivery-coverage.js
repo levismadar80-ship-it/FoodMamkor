@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Module:   delivery-coverage
  * Purpose:  The rule for whether a producer's public page shows the

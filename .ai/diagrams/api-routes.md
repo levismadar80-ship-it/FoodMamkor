@@ -15,6 +15,7 @@
 >   - ✅👤 = verified producer (`require_verified_producer` — producer role + verified email; unverified → 403 `יש לאמת את כתובת האימייל תחילה`, MEH-1164 F5). Applies to the **create** endpoints `POST /events`, `POST /experiences` (MEH-2246), `POST /producers/me/recipes`, `POST /group-buys`. Also `PATCH /group-buys/{id}/status` (MEH-2436: owner of that business only; an admin uses `PATCH /admin/group-buys/{id}/status`).
 >   - 🌐 group buys (MEH-2484): `GET /group-buys`, `GET /group-buys/{id}` and `POST /group-buys/{id}/commit` serve only a group buy whose business passes `is_business()` (approved, `kind='producer'`); otherwise 404 `קבוצת הרכש לא נמצאה`. The API still answers the owner and admin `200`; the public page itself is server-rendered without auth, so it 404s for them too. Leaving (`DELETE …/commit`) is not gated.
 >   - 🛡️ = admin role (`require_admin`)
+>   - MEH-3137: `PUT /producers/me`, claim, owner-invite accept and `POST /producers` take `farmer_declaration_accepted`; moving into ירקות/פירות with no recorded grower line and no flag → 422 Hebrew. Details: `docs/DATA.md` → MEH-3137.
 >   - MEH-2852: the write routes that make a public page appear, change or disappear (business approve / edit / hide / reject / delete, owner `PUT /producers/me`, events, group buys, admin experience + recipe moderation) queue an IndexNow ping after the commit — production only, no response change. Full list: `docs/DATA.md` → "IndexNow".
 >   - MEH-2716: `GET /producers`, `/producers/{id}`, `/producers/by-slug/{slug}` and `GET /users/me/favorites` carry computed `rescued_recently` («מצילים מזון» badge: a surprise bag handed or given away free in the last 30 days; always false while the rescue pilot is off).
 
@@ -73,7 +74,7 @@ graph TD
     Waitlist -.->|PUT /producers/me adds the city → BackgroundTask<br/>notify_cities: one email per entry, notified_at stamped| WaitlistMail[Resend email<br/>«{business} מגיעים עכשיו גם ל{city}»<br/>fail-open per recipient]
     WaitlistMail -.->|link in the email| WaitlistUnsub[POST /delivery-waitlist/unsubscribe<br/>🌐 signed token → deletes the entry<br/>idempotent 200 · 400 bad token]
 
-    GProducer --> GReviews[GET /producers/{id}/reviews<br/>🌐 paginated]
+    GProducer --> GReviews[GET /producers/{id}/reviews<br/>🌐 paginated · JWT optional · MEH-3221<br/>no user_id · server-shortened user_name · is_mine]
     GProducer --> Reports_post[POST /producers/{id}/report<br/>🔑 rate-limited]
     GProducer --> ReportInfo[POST /reports/producer-info<br/>🌐 rate-limited 5/day<br/>MEH-1443 email-only, no persist<br/>404 for an organizer MEH-2465]
 ```
@@ -96,7 +97,7 @@ graph TD
 
     Favorites[/favorites page] --> ListFavs[GET /users/me/favorites<br/>🔑 skips not-live businesses MEH-2513]
     Favorites --> AddFav[POST /users/me/favorites/{id}<br/>🔑 404 for an organizer MEH-2465<br/>or a not-live business MEH-2513]
-    Favorites --> DelFav[DELETE /users/me/favorites/{id}<br/>🔑]
+    Favorites --> DelFav[DELETE /users/me/favorites/{id}<br/>🔑 also deletes her FavoriteAlert row · MEH-3222]
     Favorites --> ListSaved[GET /users/me/saved<br/>🔑 recipes/events/experiences, public only MEH-2557]
     Favorites --> SavedIds[GET /users/me/saved/ids<br/>🔑 hearts cache]
     Favorites --> AddSaved[POST /users/me/saved/{type}/{id}<br/>🔑 404 unless public]
@@ -124,11 +125,11 @@ graph TD
     NeighborList --> HPClick[POST /home-products/{id}/whatsapp-click<br/>🔑 schedules Twilio follow-up]
     NeighborList --> HPRate[POST /home-products/rate/{token}<br/>🌐 token-based single-use]
 
-    Events[/events + /experiences] --> EventCreate[POST /events<br/>✅👤 verified producer — MEH-1164 F5;<br/>MEH-1161: pending producer's events stay hidden]
+    Events[/events + /experiences] --> EventCreate[POST /events<br/>✅👤 verified producer — MEH-1164 F5;<br/>MEH-1161: pending producer's events stay hidden;<br/>MEH-3224: past event_date → 422 (PUT too)]
     Events --> EventReads[GET /events + /upcoming + /id<br/>🌐 approved producers only — MEH-1161:<br/>pending filtered from lists, detail 404,<br/>owner/admin bypass;<br/>MEH-2459: organizer-owned events included,<br/>EventOut.owner_kind + owner_slug;<br/>MEH-2546: + owner_image_url;<br/>MEH-2847: ?category repeats → IN,<br/>checked against VALID_CATEGORIES<br/>(same on GET /experiences)]
     Events --> OrganizerPage[GET /organizers/{slug} + GET /organizers<br/>🌐 MEH-2461: approved organizers only,<br/>upcoming events; sitemap source<br/>MEH-2475: + owner story, contact channels]
     Events --> EventMine[GET /events/mine<br/>👤 producer — own events, all states<br/>incl. inactive — MEH-1405 manage list]
-    Events --> ExpCreate[POST /experiences<br/>✅👤 verified producer — MEH-2246: same gate as<br/>POST /events, since MEH-1749 hides a<br/>non-business experience from every read path;<br/>then Claude Haiku pre-check + admin approval queue]
+    Events --> ExpCreate[POST /experiences<br/>✅👤 verified producer — MEH-2246: same gate as<br/>POST /events, since MEH-1749 hides a<br/>non-business experience from every read path;<br/>then Claude Haiku pre-check + admin approval queue;<br/>MEH-3224: past event_date → 422 (PUT too)]
     Events --> ExpCount[GET /experiences/count<br/>public — MEH-1918<br/>same predicate as GET /experiences;<br/>gates the nav link at >= 3]
     Events --> GbCounts[GET /group-buys/counts<br/>public — MEH-3128<br/>same query as GET /group-buys;<br/>hides an empty status tab]
 ```

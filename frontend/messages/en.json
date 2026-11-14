@@ -66,7 +66,7 @@
       "newsletter_success": "Welcome to Mehamakor See you in your inbox",
       "cookie_settings": "Cookie settings"
     },
-    "whats_on": "What's on"
+    "opportunities": "Finds"
   },
   "auth": {
     "verify": {
@@ -1388,7 +1388,7 @@
       }
     },
     "errors": {
-      "load_failed": "Couldn't load businesses — please try again",
+      "load_failed": "Couldn't load the businesses",
       "invalid_search": "Invalid search",
       "radius_too_small": "Move the map before searching",
       "radius_too_large": "Area too large — zoom in to search"
@@ -3423,6 +3423,9 @@
     "saved_toast": "Your review was saved",
     "invite_title": "How was {name}?",
     "invite_hint": "Every review here follows a real contact with the business",
+    "login_prompt_title": "Write a review",
+    "login_prompt_message": "To write a review, sign in to your account. Reviews here are written only after contacting the business through Mehamakor.",
+    "contact_first_toast": "To write a review, first contact the business with one of the buttons here.",
     "loading": "Loading reviews...",
     "owner_only_eyebrow": "Only visible to you",
     "owner_empty_title": "First reviews come from happy customers",
@@ -3574,7 +3577,9 @@
     "empty_events": "No saved events yet",
     "empty_experiences": "No saved experiences yet",
     "updates_button": {
-      "label": "Get updates"
+      "label": "Get updates",
+      "login_prompt_title": "Get updates",
+      "login_prompt_message": "To get updates from this business, sign in to your account."
     },
     "button": {
       "saved_toast_first_time": "Saved! Find all your favorites on the Favorites page in the menu",
@@ -4520,6 +4525,33 @@
         "body": "Write to us and we'll get back to you by the end of the business day.",
         "cta": "Contact the team"
       },
+      "whats_new": {
+        "card_title": "New on Mehamakor",
+        "card_all": "All updates",
+        "card_close": "Close",
+        "row_title": "What's new on Mehamakor",
+        "row_body": "What changed on the site and in your dashboard",
+        "row_cta": "Read",
+        "row_unread": "New update",
+        "page_title": "What's new on Mehamakor",
+        "page_subtitle": "What changed for businesses, newest first",
+        "latest_label": "New",
+        "empty": "No updates yet. When something changes, it will show up here.",
+        "releases": {
+          "v1_5_1": {
+            "i0": "Your dashboard home now shows «Waiting for you»: reviews you haven't answered yet and new sign-ups.",
+            "i1": "You can reorder the products on your page by dragging them, and sort them into groups.",
+            "i2": "The «Share» button sends the link to your page straight to an Instagram story or WhatsApp."
+          }
+        }
+      },
+      "welcome_card": {
+        "title": "Welcome to Mehamakor",
+        "body": "I'm Sapir. I started Mehamakor so people can find businesses like yours. I approve every page personally, and everything you need to make your page work for you is here.",
+        "whatsapp": "Questions? I answer on WhatsApp.",
+        "cta": "Complete your page",
+        "close": "Close"
+      },
       "section_errors": {
         "analytics": "We couldn't load your stats",
         "profile": "We couldn't load your business details",
@@ -4609,6 +4641,7 @@
       },
       "phone_verify": {
         "title": "Verify your business phone",
+        "reverify_title": "Your business WhatsApp number isn't verified yet",
         "description": "We'll send a 6-digit code to your business WhatsApp number. Verifying is one of the steps before you send your profile for review.",
         "send_cta": "Send verification code",
         "sending": "Sending...",
@@ -6132,6 +6165,8 @@
       "failed": "We couldn't send your review. Try again.",
       "thanks": "Thank you! Your review is saved."
     },
+    "login_prompt_title": "Reserve a bag",
+    "login_prompt_message": "To reserve a bag, sign in to your account.",
     "errors": {
       "blocked": "Reservations are blocked after two no-shows. Please write to us.",
       "sold_out": "That bag is gone. There are others nearby.",

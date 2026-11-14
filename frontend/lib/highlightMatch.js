@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * highlightMatch(text, query) — MEH-99 Enhancement 3.
  *

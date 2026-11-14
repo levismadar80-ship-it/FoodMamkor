@@ -287,3 +287,48 @@ def test_non_consumer_role_is_not_overwritten(client, db):
     user = make_user(db, role="producer", email="role-3256@example.com")
     r = client.post(CODE_URL, json={"token": token}, headers=auth_header(user))
     assert r.status_code == 409
+
+
+# MEH-3137 × MEH-3256: the grower line is gated on /accept-existing exactly as
+# on /accept — a grower-category page needs it, and a 422 spends nothing.
+def _veg_invited(client, db, name="ירקות"):
+    from conftest import make_category
+
+    from app.models import ProducerCategory
+
+    producer = approved(db)
+    cat = make_category(db, name=name)
+    db.add(ProducerCategory(producer_id=producer.id, category_id=cat.id))
+    db.commit()
+    r, token = invite(client, db, producer)
+    assert r.status_code == 200, r.text
+    return producer, token
+
+
+def test_grower_page_without_the_flag_is_422_and_nothing_is_spent(client, db):
+    producer, token = _veg_invited(client, db)
+    user = _consumer(db)
+    code = _arm(client, token, user)[2]
+    r = _accept(client, token, user, code)
+    assert r.status_code == 422, r.text
+    assert r.json()["detail"] == "יש לאשר את הצהרת המגדל כדי להמשיך"
+    row = _row(db, producer)
+    assert row.owner_invite_accepted_at is None
+    assert row.owner_invite_code_attempts in (None, 0)
+    assert row.farmer_declared_at is None
+    # The code is still good: the same code now succeeds with the flag.
+    r = _accept(client, token, user, code, farmer_declaration_accepted=True)
+    assert r.status_code == 200, r.text
+
+
+def test_grower_page_with_the_flag_stamps_the_grower_columns(client, db):
+    from app.constants import FARMER_DECLARATION_VERSION
+
+    producer, token = _veg_invited(client, db, name="פירות")
+    user = _consumer(db)
+    code = _arm(client, token, user)[2]
+    r = _accept(client, token, user, code, farmer_declaration_accepted=True)
+    assert r.status_code == 200, r.text
+    row = _row(db, producer)
+    assert row.farmer_declared_at is not None
+    assert row.farmer_declaration_version == FARMER_DECLARATION_VERSION

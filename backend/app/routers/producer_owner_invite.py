@@ -110,8 +110,10 @@ from app.schemas.schemas import (
     ProducerClaimPreviewOut,
     Token,
 )
+from app.services.invite_gate import assert_invitable_content  # MEH-3246
 from app.services import indexnow  # MEH-2852
 from app.services.email import send_email
+from app.services.farmer_declaration import farmer_declaration_stamp_for_existing
 from app.services.auth_notifications import notify_admin_owner_invite_accepted
 from app.services.auth_emails import (
     send_owner_invite_code_email,
@@ -209,7 +211,10 @@ def _email_taken(db: Session, email: str) -> bool:
 def _requires_farmer_declaration(producer: Producer) -> bool:
     """Reads the categories already loaded on the row — no extra query, the
     same membership-by-name test `license_pending` makes over
-    LICENSE_REQUIRED_CATEGORIES."""
+    LICENSE_REQUIRED_CATEGORIES. MEH-3137: a business whose grower line is
+    already recorded is not asked again (the accept route ignores it then)."""
+    if producer.farmer_declared_at is not None:
+        return False
     return any(
         c.name in FARMER_DECLARATION_CATEGORIES for c in (producer.categories or [])
     )
@@ -349,6 +354,7 @@ def create_owner_invite(  # noqa: PLR0913 — six FastAPI-injected parameters, n
     admin corrects a typo in the address without a separate revoke step.
     """
     producer = _load_invitable(db, producer_id)
+    assert_invitable_content(db, producer)  # MEH-3246
     # Only when she gave one: v3 lets the admin mint a link with no address at
     # all, and the owner then types her own on the page, where it is proven
     # with a code. An absent address cannot collide with anything.
@@ -419,6 +425,7 @@ def resend_owner_invite(
     # «resend» 404 for exactly the link the admin is most likely to re-copy.
     if not producer.owner_invite_token_hash:
         raise HTTPException(status_code=404, detail=_NO_INVITE)
+    assert_invitable_content(db, producer)  # MEH-3246
     # NOT a 409 any more, and the reason is a v3 consequence the first version
     # missed: since the code endpoint, `owner_invite_email` may have been
     # written by WHOEVER HOLDS THE LINK, not by the admin. Refusing to resend
@@ -746,7 +753,13 @@ def _verify_email_code(
         raise HTTPException(status_code=422, detail=_BAD_CODE)
 
 
-def _claim_invite(db: Session, producer_id: UUID, token: str, now: datetime) -> int:
+def _claim_invite(
+    db: Session,
+    producer_id: UUID,
+    token: str,
+    now: datetime,
+    farmer_stamp: dict[str, Any],
+) -> int:
     """The one conditional UPDATE that spends an invite (MEH-1820). Shared by
     `/accept` (new account) and `/accept-existing` (MEH-3256, signed-in
     account) so the claim — and every column it clears — has ONE owner.
@@ -772,6 +785,8 @@ def _claim_invite(db: Session, producer_id: UUID, token: str, now: datetime) -> 
                 # both NULL) — this is the moment it becomes signed.
                 Producer.declared_at: now,
                 Producer.declaration_version: DECLARATION_VERSION,
+                # MEH-3137: {} unless a grower category needed the line.
+                **{getattr(Producer, k): v for k, v in farmer_stamp.items()},
                 # v3: the page goes live in the SAME statement that claims the
                 # token. Set unconditionally rather than only when the row
                 # read `inactive`: both invitable statuses END at `approved`,
@@ -842,6 +857,14 @@ async def accept_owner_invite(
     producer = _live_invite(db, body.token)
     if producer is None:
         raise HTTPException(status_code=404, detail=_LINK_INVALID)
+    # MEH-3137: the grower line is a consent, checked with the other consents —
+    # before the code is spent, so a 422 leaves both the link and the code live.
+    farmer_stamp = farmer_declaration_stamp_for_existing(
+        db,
+        producer,
+        [c.id for c in producer.categories],
+        body.farmer_declaration_accepted,
+    )
 
     invited_name = producer.owner_invite_name
 
@@ -895,7 +918,7 @@ async def accept_owner_invite(
     # belt-and-braces — the read above is NOT under a lock, so its answer is
     # already stale by the time we get here, and this clause is the only one
     # whose verdict counts.
-    claimed = _claim_invite(db, producer.id, body.token, now)  # type: ignore[arg-type]
+    claimed = _claim_invite(db, producer.id, body.token, now, farmer_stamp)  # type: ignore[arg-type]
     if not claimed:
         db.rollback()
         raise HTTPException(status_code=404, detail=_LINK_INVALID)
