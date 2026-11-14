@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 // MEH-2578: locale-aware Link — next/link dropped the /en prefix, and with

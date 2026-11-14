@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Module:   special-hours
  * Purpose:  Convert between the backend `producers.special_hours` JSONB shape

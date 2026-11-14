@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Module:   admin-review-checklist
  * Purpose:  Static config for the pre-approval review checklist an admin runs

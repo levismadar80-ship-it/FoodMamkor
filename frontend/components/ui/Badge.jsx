@@ -1,3 +1,4 @@
+// @ts-check
 import Tooltip from "./Tooltip";
 
 /**

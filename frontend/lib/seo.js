@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Shared SEO helpers for producer pages (both /producer/[id] and /[slug]).
  *

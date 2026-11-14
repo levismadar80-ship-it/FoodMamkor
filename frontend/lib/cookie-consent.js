@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Cookie-consent storage contract — the ONE place that knows the localStorage
  * key, the accepted values and the event name (MEH-2394 reviewer note: the

@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 import { useLocale, useTranslations } from "next-intl";

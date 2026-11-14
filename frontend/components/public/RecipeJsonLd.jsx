@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * RecipeJsonLd — MEH-591 chunk 4/4 of the producer-recipes epic.
  *

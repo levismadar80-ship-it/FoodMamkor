@@ -1,3 +1,4 @@
+// @ts-check
 import { Link } from "@/i18n/navigation";
 import { Heart, MapPin, ChatCircle } from "@phosphor-icons/react/ssr";
 import { getTranslations, setRequestLocale } from "next-intl/server";

@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 import { Link as LocaleLink } from "@/i18n/navigation";

@@ -1,3 +1,4 @@
+// @ts-check
 import "../globals.css";
 import { FONT_VARIABLES } from "../fonts";
 import { notFound } from "next/navigation";

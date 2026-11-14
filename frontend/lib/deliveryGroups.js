@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Module:   deliveryGroups
  * Purpose:  Pivot a producer's delivery_areas by dispatch day (MEH-1305 A) so

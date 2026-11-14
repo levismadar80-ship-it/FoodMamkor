@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 // MEH-731: locale-stripping usePathname (returns "/map" on /he/map and

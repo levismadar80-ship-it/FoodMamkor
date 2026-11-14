@@ -1,3 +1,4 @@
+// @ts-check
 import RouteMessagesProvider from "@/components/i18n/RouteMessagesProvider";
 import AdminLayoutClient from "./AdminLayoutClient";
 

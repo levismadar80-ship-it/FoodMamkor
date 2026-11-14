@@ -1,3 +1,4 @@
+// @ts-check
 import { Link as NextLink } from "@/i18n/navigation";
 
 /**

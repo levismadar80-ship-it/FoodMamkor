@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 /**
  * useBadgeCopy — the one reader of a badge's words (MEH-2740, MEH-1687 phase 7b).

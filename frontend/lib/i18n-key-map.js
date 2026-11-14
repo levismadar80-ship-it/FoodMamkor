@@ -1,3 +1,4 @@
+// @ts-check
 // MEH-471 strangler-fig: maps homegrown flat keys → next-intl dotted keys.
 // Used by language-context.js (LanguageProvider shim) + use-home-page.js
 // so downstream consumers of useLanguage().t can keep passing old keys

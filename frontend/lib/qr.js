@@ -1,3 +1,4 @@
+// @ts-check
 import { SITE_URL } from "./seo";
 
 /**

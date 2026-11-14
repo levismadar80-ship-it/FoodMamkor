@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Module:   business-features
  * Purpose:  Single owner of the tools a business gets on mehamakor — what

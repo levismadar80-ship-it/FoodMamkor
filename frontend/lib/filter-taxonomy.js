@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Module:   filter-taxonomy
  * Purpose:  MEH-2130 — THE single definition of every consumer filter axis.

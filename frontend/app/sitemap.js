@@ -1,3 +1,4 @@
+// @ts-check
 // Dynamic sitemap (LAUNCH_CHECKLIST week 1 — SEO).
 // Next.js App Router reads the default export and serves it at /sitemap.xml.
 // SITE_URL + API_URL helpers are validated by Zod at build time (lib/env.js).

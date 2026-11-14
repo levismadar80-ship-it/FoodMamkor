@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Module:   global-not-found
  * Purpose:  App Router global 404 boundary (Next 16 experimental.globalNotFound,
