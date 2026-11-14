@@ -4098,6 +4098,66 @@
         "title": "LoginRequest",
         "type": "object"
       },
+      "NameCheckOut": {
+        "description": "GET /producer-name-check (MEH-3086) — at most three matches.",
+        "properties": {
+          "matches": {
+            "items": {
+              "$ref": "#/components/schemas/NameMatch"
+            },
+            "title": "Matches",
+            "type": "array"
+          }
+        },
+        "required": [
+          "matches"
+        ],
+        "title": "NameCheckOut",
+        "type": "object"
+      },
+      "NameMatch": {
+        "description": "One live business whose name equals the name being registered.",
+        "properties": {
+          "city": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "City"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "slug": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Slug"
+          }
+        },
+        "required": [
+          "id",
+          "slug",
+          "name",
+          "city"
+        ],
+        "title": "NameMatch",
+        "type": "object"
+      },
       "NewsletterIn": {
         "properties": {
           "email": {
@@ -22181,6 +22241,50 @@
         "summary": "Preview Claim",
         "tags": [
           "producer-claim"
+        ]
+      }
+    },
+    "/producer-name-check": {
+      "get": {
+        "description": "Live businesses whose name equals `name` (exact, after `name_key`).\n\nExact match only — DO NOT turn this into a prefix or substring match:\nthat would make an anonymous route a way to list the directory by\ntyping letters, which is what GET /producers is rate-shaped for.",
+        "operationId": "producer_name_check_producer_name_check_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "maxLength": 200,
+              "title": "Name",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NameCheckOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Producer Name Check",
+        "tags": [
+          "producers"
         ]
       }
     },

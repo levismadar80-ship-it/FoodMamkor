@@ -290,6 +290,12 @@
           "category": "Category",
           "story": "Story"
         },
+        "name_check": {
+          "title": "There is already a page with this name on the site",
+          "match_with_city": "{name}, {city}",
+          "body": "If this is your business, we will connect you to the existing page. If it is a different business, carry on as usual.",
+          "contact_cta": "Write to us"
+        },
         "fields": {
           "name": "e.g. Ruth Levi",
           "name_label": "Full name",
@@ -352,6 +358,9 @@
               "prefer_not_to_say": "Prefer not to say"
             }
           }
+        },
+        "card_preview": {
+          "summary": "How your card will look on the site"
         },
         "story_card": {
           "title": "Your story becomes your business page",
@@ -421,7 +430,7 @@
           "inbox_title": "Check your inbox",
           "inbox_body": "If the email is available, a verification message has been sent. Please check your inbox.",
           "inbox_hint": "Didn't get it? Check spam or try again in a minute.",
-          "inbox_next": "After you click the link in the email, log in with your email and password and continue completing your page.",
+          "inbox_next": "You can log in right now with your email and password and continue completing your page. The link in the email verifies your email address.",
           "back_home": "Back to home"
         }
       }

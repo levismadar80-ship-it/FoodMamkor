@@ -79,6 +79,18 @@ describe("<HistoryBackLink /> (MEH-2857)", () => {
     expect(back).toHaveBeenCalledTimes(1);
   });
 
+  // MEH-3057: an inline box let the category chip share its line, touching
+  // it. Block-level (`flex`, sized to its text) — the next element always
+  // starts a new row, on every page that renders it.
+  it("is a row of its own: block-level flex, never inline", () => {
+    spy = vi.spyOn(window.performance, "getEntriesByType").mockReturnValue([{ name: `${window.location.origin}/some-business` }]);
+    render(<HistoryBackLink />);
+    const classes = screen.getByTestId("history-back").className.split(/\s+/);
+    expect(classes).toContain("flex");
+    expect(classes).toContain("w-fit");
+    expect(classes.filter((c) => /^(inline|inline-flex|inline-block)$/.test(c))).toEqual([]);
+  });
+
   it("direct landing → renders nothing", () => {
     spy = vi.spyOn(window.performance, "getEntriesByType").mockReturnValue([{ name: window.location.href }]);
     const { container } = render(<HistoryBackLink />);

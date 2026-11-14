@@ -154,6 +154,15 @@ describe("producer dashboard status banners (MEH-1355)", () => {
     expect(screen.queryByTestId("status-rejected-banner")).not.toBeInTheDocument();
   });
 
+  it("pending: the banner carries the three review steps, the first marked current (MEH-3073)", async () => {
+    setup("pending");
+    render(<ProducerDashboardPage />);
+    const banner = await screen.findByTestId("status-pending-banner");
+    const steps = banner.querySelectorAll('[data-testid="status-pending-step"]');
+    expect([...steps].map((li) => li.textContent)).toEqual(["next_step1", "next_step2", "next_step3"]);
+    expect([...steps].map((li) => li.getAttribute("aria-current"))).toEqual(["step", null, null]);
+  });
+
   it("inactive: renders the amber banner + support trigger (literal 'inactive')", async () => {
     setup("inactive");
     render(<ProducerDashboardPage />);

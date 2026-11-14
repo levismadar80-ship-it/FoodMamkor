@@ -17,6 +17,9 @@ function lookup(key) {
   return key.split(".").reduce((o, k) => (o == null ? o : o[k]), heMessages);
 }
 
+// MEH-3074: the STORY-step preview mounts the real ProducerCard, which this
+// file's mocks do not feed; its wiring is covered in RegisterProducerClient.test.jsx.
+vi.mock("@/components/RegisterCardPreview", () => ({ default: () => null }));
 vi.mock("next-intl", () => ({
   useTranslations: () => {
     const t = (key) => {
