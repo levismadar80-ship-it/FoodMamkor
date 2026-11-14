@@ -19,6 +19,7 @@ import { useExperiencesNavGate } from "@/lib/use-experiences-nav-gate";
 import { useEventsNavGate } from "@/lib/use-events-nav-gate";
 import { useHubNavGate } from "@/lib/use-hub-nav-gate";
 import { useAuth } from "@/lib/auth-context";
+import { openCookieSettings } from "@/lib/cookie-consent";
 import ShareSiteActions from "@/components/ShareSiteActions";
 import Seed from "@/components/brand/Seed";
 import { SEEDS_DARK } from "@/lib/brand-seeds";
@@ -426,6 +427,19 @@ export default function Footer() {
                 </Link>
               </li>
             ))}
+            {/* MEH-3196: withdrawing cookie consent is as easy as giving it —
+                a button (it opens the banner, it goes nowhere), styled as the
+                links beside it. */}
+            <li>
+              <button
+                type="button"
+                onClick={openCookieSettings}
+                data-testid="footer-cookie-settings"
+                className="inline-flex items-center min-h-touch text-sm text-green-100 hover:text-white transition"
+              >
+                {t("nav.footer.cookie_settings")}
+              </button>
+            </li>
           </ul>
         </div>
       </div>
