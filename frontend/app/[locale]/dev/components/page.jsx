@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { MagnifyingGlass, Heart, ArrowRight, Leaf } from "@phosphor-icons/react";
 import { Button, Input, Card, Badge, Heading, Link } from "@/components/ui";
 import ShowMore from "@/components/ui/ShowMore";
+import PasswordField from "@/components/ui/PasswordField";
 import Select from "@/components/ui/Select";
 import Textarea from "@/components/ui/Textarea";
 import { useTranslations } from "next-intl";
@@ -133,6 +134,9 @@ export default function DevComponentsPage() {
             <option value="north">North</option>
             <option value="center">Centre</option>
           </Select>
+          {/* MEH-3141: current / repeat password with the eye toggle. */}
+          <PasswordField label="Current password" required showLabel="Show password" hideLabel="Hide password" />
+          <PasswordField label="Repeat password" defaultValue="abc" error="Passwords do not match" showLabel="Show password" hideLabel="Hide password" />
           <Textarea label="Note" placeholder="A few words" helperText="Up to 300 characters" />
           <Textarea label="Note, invalid" defaultValue="…" error="Too long" />
           {/* MEH-1128 D1: startAdornment (currency + icon) and success state. */}
