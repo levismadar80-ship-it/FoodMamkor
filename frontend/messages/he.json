@@ -5166,6 +5166,9 @@
       },
       "week": {
         "all_insights": "לכל הנתונים ←"
+      },
+      "reviews_page": {
+        "summary": "{unanswered} בלי תגובה · {total} בסך הכל"
       }
     },
     "page_preview": {

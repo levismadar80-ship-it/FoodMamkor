@@ -60,6 +60,7 @@ const TABS = [
       "/producer/dashboard/group-buys",
       "/producer/dashboard/recipes",
       "/producer/dashboard/rescue",
+      "/producer/dashboard/reviews", // MEH-3107
     ],
   },
 ];
