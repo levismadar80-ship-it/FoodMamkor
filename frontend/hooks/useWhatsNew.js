@@ -75,7 +75,10 @@ export function useUnseenRelease() {
 export function useNewTools() {
   const [tools, setTools] = useState(() => new Set());
   useEffect(() => {
-    setTools(newToolHrefs(Date.now()));
+    // Keep the first empty Set when nothing is new: no extra render of
+    // every dashboard page on mount (it re-ran the layout's /login effect).
+    const fresh = newToolHrefs(Date.now());
+    if (fresh.size > 0) setTools(fresh);
   }, []);
   return tools;
 }
