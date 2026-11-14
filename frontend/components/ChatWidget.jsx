@@ -6,6 +6,7 @@ import { useTranslations } from "next-intl";
 import api from "@/lib/api";
 import CollectionNotice from "@/components/CollectionNotice";
 import { INERT_PRESENT } from "@/lib/inert-attr";
+import { COLOR } from "@/lib/color-tokens";
 
 /**
  * ChatWidget — floating Q&A bot, all screen sizes.
@@ -466,7 +467,7 @@ export default function ChatWidget({ hideOnMobile = false } = {}) {
               value={input} onChange={(e) => setInput(e.target.value)}
               placeholder={t("input_placeholder")} maxLength={500} disabled={sending}
               className="flex-1 min-w-0 bg-transparent outline-none focus-visible:ring-2 focus-visible:ring-primary rounded text-sm text-text placeholder:text-fg-muted disabled:opacity-50"
-              style={{ caretColor: "#2e6853" }}
+              style={{ caretColor: COLOR.primary }}
               autoComplete="off"
             />
             <button

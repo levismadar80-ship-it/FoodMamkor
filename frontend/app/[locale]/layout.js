@@ -28,6 +28,7 @@ import {
   OG_LOCALE,
   OG_ALTERNATE_LOCALES,
 } from "@/lib/i18n-seo";
+import { COLOR } from "@/lib/color-tokens";
 
 // MEH-1831 / MEH-2029: the four brand typefaces are self-hosted from .woff2
 // files committed in this repo, and the build makes no network request for
@@ -193,7 +194,7 @@ export async function generateMetadata({ params }) {
 }
 
 export const viewport = {
-  themeColor: "#2e6853",
+  themeColor: COLOR.primary,
 };
 
 export function generateStaticParams() {

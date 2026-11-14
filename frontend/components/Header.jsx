@@ -318,7 +318,7 @@ export default function Header() {
           text-fg-muted on the body's cream — the prior surface-aware cream ink
           was a holdover from when the strip sat over the hero photo, and
           rendered cream-on-cream once the strip moved onto the body bg
-          (1.00:1 AA fail). #5C584F on #F5F0E8 = 7.66:1 AA pass; the black
+          (1.00:1 AA fail). fg-muted 5C584F on cream F5F0E8 = 7.66:1 AA pass; the black
           text-shadow halo went with it (it only existed to rescue the cream
           ink). Desktop-only via `hidden md:flex`; copy + gold SealCheck kept. */}
       {showStrip && (
