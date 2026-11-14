@@ -68,6 +68,13 @@ describe("MEH-3260 review report menu", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     authState.user = null;
+    authState.loading = false;
+  });
+
+  it("session still loading: no ⋮ yet (the author must not see it on her own review)", () => {
+    authState.loading = true;
+    renderMenu();
+    expect(screen.queryByRole("button")).toBeNull();
   });
 
   it("menu closed: a guest sees the ⋮ with aria-haspopup=menu, no menu, no dialog", () => {

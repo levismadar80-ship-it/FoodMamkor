@@ -160,3 +160,42 @@ def test_email_escapes_visitor_text():
     assert "<script>" not in html
     assert "<img src=x>" not in html
     assert "&lt;script&gt;" in html
+    assert "<b>x</b>" not in html and "&lt;b&gt;x&lt;/b&gt;" in html
+
+
+def test_unknown_business_is_404(client, db):
+    _, review = _setup(db)
+    with patch("app.routers.report_info.send_email") as send:
+        r = client.post(
+            "/reports/review",
+            json={
+                "producer_slug": "no-such-business",
+                "review_id": str(review.id),
+                "reason": "fake",
+            },
+        )
+    assert r.status_code == 404
+    assert r.json()["detail"] == "בית עסק לא נמצא"
+    send.assert_not_called()
+
+
+def test_email_names_the_review_id_and_keeps_the_subject_on_one_line():
+    subject, text, html = review_reports.build_email(
+        review_reports.ReviewReportMail(
+            business="חוות\r\nBcc: x@example.com",
+            slug="s",
+            reason="fake",
+            reporter="guest",
+            reporter_email='a"><script>@example.com',
+            details=None,
+            review_author="a",
+            review_stars=1,
+            review_body="b",
+            admin_url="https://example.com/admin/reviews",
+            review_id="rev-123",
+        )
+    )
+    assert "\n" not in subject and "\r" not in subject
+    assert "מזהה ביקורת: rev-123" in text
+    assert "rev-123" in html
+    assert '"><script>' not in html

@@ -146,9 +146,12 @@ function ReviewReportDialog({ reviewId, producerId, onClose }) {
  */
 export default function ReviewReportMenu({ review, producerId, authorName }) {
   const t = useTranslations("reviews.report");
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
   const [open, setOpen] = useState(false);
 
+  // Wait for the session: before it loads, the author would briefly see the
+  // menu on her own review.
+  if (loading) return null;
   // The author does not report her own review (she can edit or delete it).
   if (user && review.user_id && String(user.id) === String(review.user_id)) return null;
 

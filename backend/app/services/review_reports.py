@@ -79,11 +79,14 @@ class ReviewReportMail:
     review_stars: int
     review_body: str
     admin_url: str
+    review_id: str = ""
 
 
 def build_email(m: ReviewReportMail) -> tuple[str, str, str]:
     """Return (subject, text, html) for the admin."""
-    subject = f"מהמקור - דיווח על ביקורת: {m.business}"
+    # A business name is free text: never let a line break reach a header.
+    business_line = " ".join(m.business.split())
+    subject = f"מהמקור - דיווח על ביקורת: {business_line}"
     reason_label = REASON_LABELS[m.reason]
     reporter_label = REPORTER_LABELS[m.reporter]
     reply_line = (
@@ -97,7 +100,8 @@ def build_email(m: ReviewReportMail) -> tuple[str, str, str]:
         f"מי דיווחה: {reporter_label}\n"
         f"{reply_line}\n\n"
         f"פרטים: {m.details or '—'}\n\n"
-        f"הביקורת ({m.review_stars}★, {m.review_author}):\n{m.review_body or '—'}\n\n"
+        f"הביקורת ({m.review_stars}★, {m.review_author}):\n{m.review_body or '—'}\n"
+        f"מזהה ביקורת: {m.review_id or '—'}\n\n"
         f"לטיפול: {m.admin_url}"
     )
 
@@ -137,6 +141,7 @@ def build_email(m: ReviewReportMail) -> tuple[str, str, str]:
               <hr style="border:none;border-top:1px solid #eee;margin:16px 0;">
               {p(f"הביקורת ({m.review_stars}★, {html_escape(m.review_author)}):", 13, "#666")}
               {p(body_html)}
+              {p(f"מזהה ביקורת: {html_escape(m.review_id or '—')}", 12, "#888")}
               {p(f'<a href="{html_escape(m.admin_url)}" style="color:#2e6853;">לטיפול במסך הביקורות</a>')}
             </td>
           </tr>

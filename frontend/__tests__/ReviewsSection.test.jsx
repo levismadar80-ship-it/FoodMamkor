@@ -949,3 +949,22 @@ describe("ReviewsSection — no empty band above the invite row at zero reviews 
     expect(form.className).toMatch(GAP);
   });
 });
+
+// MEH-3260: the ⋮ report menu is mounted per review card, and hidden on the
+// signed-in author's own review. 0 / 1 / many reviews, one of them hers.
+describe("ReviewsSection — report menu mount (MEH-3260)", () => {
+  const mk = (i, userId) => ({ ...noReply, id: `rev-m${i}`, user_id: userId, body: `גוף ${i}` });
+
+  it.each([
+    [0, [], 0],
+    [1, [mk(1, "u-9")], 1],
+    [3, [mk(1, "u-me"), mk(2, "u-8"), mk(3, "u-9")], 2],
+  ])("%i reviews → %#: one ⋮ per review not written by the viewer", async (_n, reviews, expected) => {
+    authState.user = { id: "u-me" };
+    mockReviews(reviews);
+    render(<ReviewsSection producerId="p-1" isOwner={false} />);
+    if (reviews.length) await screen.findByText(reviews[0].body);
+    else await waitFor(() => expect(apiMock.get).toHaveBeenCalled());
+    expect(screen.queryAllByLabelText("menu_aria")).toHaveLength(expected);
+  });
+});

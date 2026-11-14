@@ -181,6 +181,7 @@ def report_review(
             review_stars=int(review.stars),
             review_body=review.body or "",  # type: ignore[arg-type]
             admin_url=f"{settings.frontend_url.rstrip('/')}/admin/reviews",
+            review_id=str(review.id),
         )
     )
     send_email(

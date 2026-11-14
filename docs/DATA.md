@@ -1479,8 +1479,9 @@ POST /reports/review           🌐 public (optional auth), rate-limited 5/day/I
                                details?(≤1000, required for other), reporter_email?}. 404 «ביקורת לא נמצאה» unless
                                the review is a visible review of that business. Emails admin: subject
                                «מהמקור - דיווח על ביקורת: {business}», reason, «מי דיווחה: אורחת / משתמשת רשומה /
-                               בעלת העסק», the review text, a link to /admin/reviews. Same IP + same review within
-                               24 h → 204, no second email (in-memory, capped at 5,000 keys). NO DB row, no
+                               בעלת העסק», the review text, the review id, a link to /admin/reviews. Same IP + same
+                               review within 24 h → 204, no second email; the first report wins even if the reason
+                               changed (in-memory, capped at 5,000 keys). NO DB row, no
                                automatic action. 204.
 ```
 
