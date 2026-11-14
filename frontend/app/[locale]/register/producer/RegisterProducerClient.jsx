@@ -17,6 +17,7 @@ import PasswordStrength from "@/components/PasswordStrength";
 import ProducerOAuthButtons from "@/components/ProducerOAuthButtons";
 import RegisterCardPreview from "@/components/RegisterCardPreview";
 import Input from "@/components/ui/Input";
+import Select from "@/components/ui/Select";
 import RegisterNameCheck from "@/components/RegisterNameCheck";
 import RegisterPreflight from "./RegisterPreflight";
 // MEH-1808: Leaflet touches `window` at import time, so the confirmation map is
@@ -30,6 +31,7 @@ import { passwordValid, validateIsraeliPhone, validateEmail } from "@/lib/valida
 import { useAuth } from "@/lib/auth-context";
 import { getSeasonalPlaceholder } from "@/lib/producer-description-placeholders";
 import { CONTACT_EMAIL } from "@/lib/env.client";
+import { PRICING_PATH } from "@/lib/pricing";
 import {
   hasLicenseFormatWarning,
   requiresProducerLicense,
@@ -303,6 +305,13 @@ function RegisterProducerPageBody({ routeKind }) {
   // photos) and its «what happens after» are about a business.
   const [showPreflight, setShowPreflight] = useState(!routeIsOrganizer);
   const [categories, setCategories] = useState([]);
+  // MEH-3193: a failed /categories left step 3 with no tiles and a required
+  // choice nobody could make. Now it says so and offers a retry.
+  const [categoriesFailed, setCategoriesFailed] = useState(false);
+  const loadCategories = () => {
+    setCategoriesFailed(false);
+    api.get("/categories").then((r) => setCategories(r.data)).catch(() => setCategoriesFailed(true));
+  };
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   // MEH-1769: false on the server AND on the first client render, raised only
@@ -526,7 +535,7 @@ function RegisterProducerPageBody({ routeKind }) {
   // submit. The producer case joins it (409 already_has_producer at submit).
 
   useEffect(() => {
-    api.get("/categories").then((r) => setCategories(r.data));
+    loadCategories();
     try {
       const saved = localStorage.getItem(DRAFT_KEY);
       if (saved) {
@@ -1183,7 +1192,7 @@ function RegisterProducerPageBody({ routeKind }) {
                   *
                 </span>
               </label>
-              <input
+              <Input
                 id="producer-account-password"
                 type="password"
                 data-testid="register-account-password"
@@ -1191,7 +1200,6 @@ function RegisterProducerPageBody({ routeKind }) {
                 value={form.password}
                 onChange={set("password")}
                 required
-                className="w-full border rounded-sm px-3 py-2 min-h-touch focus-ring"
                 dir="ltr"
                 minLength={12}
                 autoComplete="new-password"
@@ -1249,7 +1257,17 @@ function RegisterProducerPageBody({ routeKind }) {
             {/* MEH-2183: the no-cost promise, stated on the step where the
                 seller starts investing real effort. */}
             <p data-testid="register-details-free-hint" className="text-xs text-fg-muted text-start">
-              {t("auth.register.producer.steps.business.free_hint")}
+              {t("auth.register.producer.steps.business.free_hint")}{" "}
+              {/* MEH-3166: new tab, so a half-filled form is not lost. */}
+              <Link
+                href={PRICING_PATH}
+                target="_blank"
+                rel="noopener"
+                data-testid="register-pricing-link"
+                className="underline underline-offset-2 text-primary rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+              >
+                {t("pricing.link_short")}
+              </Link>
             </p>
 
             <Input
@@ -1275,7 +1293,7 @@ function RegisterProducerPageBody({ routeKind }) {
                   *
                 </span>
               </label>
-              <input
+              <Input
                 id="producer-phone"
                 data-testid="register-details-phone"
                 type="tel"
@@ -1284,11 +1302,8 @@ function RegisterProducerPageBody({ routeKind }) {
                 value={form.phone}
                 onChange={set("phone")}
                 required
-                aria-invalid={phoneErrorMessage ? "true" : undefined}
+                invalid={!!phoneErrorMessage}
                 aria-describedby={phoneErrorMessage ? "register-phone-error" : undefined}
-                className={`w-full border rounded-sm px-3 py-2 min-h-touch focus-ring ${
-                  phoneErrorMessage ? "border-danger-400" : ""
-                }`}
                 dir="ltr"
               />
               {phoneErrorMessage && (
@@ -1463,6 +1478,14 @@ function RegisterProducerPageBody({ routeKind }) {
               aria-describedby={fieldErrors.category_ids ? "register-category-error" : undefined}
               className="focus-ring rounded-md"
             >
+              {categoriesFailed && (
+                <div data-testid="register-categories-failed" className="flex items-center gap-3 mb-3">
+                  <InlineMessage size="xs" className="text-start">{t("dashboard.producer.categories.fetch_error")}</InlineMessage>
+                  <Button type="button" variant="secondary" size="sm" onClick={loadCategories}>
+                    {t("errors.boundary.retry")}
+                  </Button>
+                </div>
+              )}
               <CategorySelector
                 categories={categories}
                 selectedIds={form.category_ids}
@@ -1505,7 +1528,7 @@ function RegisterProducerPageBody({ routeKind }) {
                 <p className="text-xs text-fg-muted mb-2 text-start">
                   {t("auth.register.producer.fields.license_what_is_it")}
                 </p>
-                <input
+                <Input
                   id="producer-license-required"
                   data-testid="register-category-license"
                   value={form.producer_license_number}
@@ -1518,7 +1541,7 @@ function RegisterProducerPageBody({ routeKind }) {
                   maxLength={20}
                   inputMode="numeric"
                   // text-right kept: dir="ltr" numeric license — physical right = start side in the RTL form; logical text-start would follow the field's own ltr direction instead
-                  className="w-full border rounded-sm ps-3 pe-3 py-2 min-h-touch text-right focus-ring"
+                  className="text-right"
                   dir="ltr"
                 />
                 {licenseWarning && (
@@ -1593,14 +1616,14 @@ function RegisterProducerPageBody({ routeKind }) {
                 >
                   {t("auth.register.producer.fields.license_optional_label")}
                 </label>
-                <input
+                <Input
                   id="producer-license-optional"
                   value={form.producer_license_number}
                   onChange={set("producer_license_number")}
                   maxLength={20}
                   inputMode="numeric"
                   // text-right kept: dir="ltr" numeric license — physical right = start side in the RTL form; logical text-start would follow the field's own ltr direction instead
-                  className="w-full border rounded-sm ps-3 pe-3 py-2 min-h-touch text-right focus-ring"
+                  className="text-right"
                   dir="ltr"
                 />
                 {licenseWarning && (
@@ -1798,7 +1821,8 @@ function RegisterProducerPageBody({ routeKind }) {
               >
                 {t("auth.register.producer.fields.referral_source.optional_hint")}
               </p>
-              <select
+              <Select
+                size="md"
                 id="register-referral-source"
                 data-testid="register-referral-source"
                 value={form.referral_source}
@@ -1812,7 +1836,7 @@ function RegisterProducerPageBody({ routeKind }) {
                       value === "other" ? prev.referral_source_other : "",
                   }));
                 }}
-                className="w-full border rounded-sm px-3 py-2 min-h-touch bg-surface text-start focus-ring"
+                className="text-start"
               >
                 <option value="" disabled>
                   {t("auth.register.producer.fields.referral_source.placeholder")}
@@ -1824,9 +1848,9 @@ function RegisterProducerPageBody({ routeKind }) {
                     )}
                   </option>
                 ))}
-              </select>
+              </Select>
               {form.referral_source === "other" && (
-                <input
+                <Input
                   id="register-referral-source-other"
                   data-testid="register-referral-source-other"
                   type="text"
@@ -1842,7 +1866,7 @@ function RegisterProducerPageBody({ routeKind }) {
                   aria-label={t(
                     "auth.register.producer.fields.referral_source.other_placeholder",
                   )}
-                  className="w-full border rounded-sm px-3 py-2 min-h-touch mt-2 text-start focus-ring"
+                  className="mt-2 text-start"
                 />
               )}
             </div>

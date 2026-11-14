@@ -32,13 +32,10 @@ const REGISTRY = {
   "components/ProducersClient.jsx::categoryChips": { gate: "visibleCategories" },
   "app/[locale]/map/components/FilterChipsBar.jsx::categoryChipsWithIcons": { gate: "visibleCategoryChips" },
   "app/[locale]/map/components/FilterChipsBar.jsx::visibleToggleChips": { gate: "visibleToggleChips" },
+  // the reader's own saved items: a type with 0 saved has no chip; «הכל»,
+  // «בתי עסק» and the open chip stay (MEH-3174 — was exempt under MEH-3128)
+  "app/[locale]/favorites/FavoritesClient.jsx::shownFilters": { gate: "dropZeroChips" },
   // Not filters, or a pass-through of a row already gated upstream:
-  "app/[locale]/favorites/FavoritesClient.jsx::FILTERS": {
-    exempt:
-      "the reader's own saved items, not a discovery filter: every chip shows its count " +
-      "(the counts approach, MEH-2560), and a type with 0 opens its own guiding empty " +
-      "state («עדיין לא שמרת אירועים») — FavoritesSavedItems.test.jsx pins it",
-  },
   "components/ProducersClient.jsx::cityRowChips": {
     exempt: "the chosen city as one chip that opens the city picker — not a filter value",
   },

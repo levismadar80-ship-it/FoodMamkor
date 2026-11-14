@@ -22,6 +22,8 @@ import logging
 import os
 import threading
 import time
+from collections.abc import Iterator
+from typing import Any
 
 from app.utils.pii import redact_url_tokens
 
@@ -111,7 +113,7 @@ _hook_reentry = threading.local()
 
 
 @contextlib.contextmanager
-def _hook_guard():
+def _hook_guard() -> Iterator[bool]:
     """Yield True on first entry, False if this thread is already inside a hook.
 
     Thread-local by construction: a re-entrant call can only arrive on the SAME
@@ -144,12 +146,12 @@ def _reset_budget_state() -> None:
         _burst_state.clear()
 
 
-def _exception_values(event: dict) -> list:
+def _exception_values(event: dict[str, Any]) -> list[Any]:
     """The event's exception chain, or [] for a log/message event."""
     return ((event.get("exception") or {}).get("values")) or []
 
 
-def _drop_reason(event: dict) -> str | None:
+def _drop_reason(event: dict[str, Any]) -> str | None:
     """Unconditional drops. Returns a reason string, or None to keep.
 
     Two classes, both measured in the header block above. Neither is a
@@ -192,7 +194,7 @@ def _drop_reason(event: dict) -> str | None:
     """
     values = _exception_values(event)
 
-    prefix = _DUPLICATE_LOG_PREFIXES.get(event.get("logger"))
+    prefix = _DUPLICATE_LOG_PREFIXES.get(event.get("logger") or "")
     if prefix is not None and not values:
         logentry = event.get("logentry") or {}
         message = str(logentry.get("message") or event.get("message") or "")
@@ -214,7 +216,7 @@ def _drop_reason(event: dict) -> str | None:
     return None
 
 
-def _event_fingerprint(event: dict) -> str:
+def _event_fingerprint(event: dict[str, Any]) -> str:
     """Stable grouping key for an event dict. Pure — no DB, no network.
 
     Built from the same signals Sentry itself groups on, so one Sentry issue
@@ -329,7 +331,7 @@ def _is_noisy(fingerprint: str, now: float | None = None) -> bool:
     return bucket is not None and now < bucket[2]
 
 
-def _scrub_event_urls(event: dict) -> None:
+def _scrub_event_urls(event: dict[str, Any]) -> None:
     """Strip one-time tokens out of the URLs the SDK itself fills in.
 
     MEH-2974. `middleware.py` already redacts the two fields WE set — the
@@ -362,7 +364,9 @@ def _scrub_event_urls(event: dict) -> None:
         return
 
 
-def before_send(event: dict, hint: dict | None = None) -> dict | None:
+def before_send(
+    event: dict[str, Any], hint: dict[str, Any] | None = None
+) -> dict[str, Any] | None:
     """Sentry ``before_send`` hook. Returns the event, or None to drop it.
 
     TRAP 1 — FAIL OPEN. Without ``debug=True`` an exception raised inside
@@ -401,7 +405,7 @@ def before_send(event: dict, hint: dict | None = None) -> dict | None:
             return event
 
 
-def error_sampler(event: dict, hint: dict | None = None) -> float:
+def error_sampler(event: dict[str, Any], hint: dict[str, Any] | None = None) -> float:
     """Sentry ``error_sampler`` hook. Returns a sample rate in [0.0, 1.0].
 
     Preferred over a static ``sample_rate`` because a static rate cannot
@@ -514,7 +518,7 @@ def init_sentry() -> None:
                 logger.name,
             )
 
-        init_kwargs = {
+        init_kwargs: dict[str, Any] = {
             "dsn": dsn,
             "environment": environment,
             "release": release,
@@ -528,7 +532,7 @@ def init_sentry() -> None:
             sentry_sdk.init(**init_kwargs)
         except TypeError:
             # MEH-2114: `error_sampler` needs sentry-sdk >= 1.33. pyproject.toml:30
-            # pins `sentry-sdk[fastapi]==2.60.0`, which is far past that — but the
+            # pins `sentry-sdk[fastapi]==2.73.0`, which is far past that — but the
             # SDK is NOT installed in the CC sandbox, so this was never verified by
             # import. Without this fallback an unexpected TypeError would fall into
             # the outer handler and disable Sentry ENTIRELY, which is the exact

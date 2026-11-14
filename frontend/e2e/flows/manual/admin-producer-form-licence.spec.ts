@@ -217,6 +217,9 @@ async function stubPublic(page: Page, cityCalls?: string[]): Promise<Stub> {
   // The wizard's ACCOUNT frame checks password strength on every keystroke past
   // 12 characters — incidental, and a real call otherwise (flows/29 does the same).
   await page.route("**/auth/check-password", (r) => json(r, { score: 4, feedback: [] }));
+  // RegisterNameCheck fires this after a debounce once the name has 3+ letters.
+  // Chromium usually reached CATEGORY before the timer; WebKit did not (MEH-3153).
+  await page.route((u) => /\/api\/producer-name-check\/?$/.test(u.pathname), (r) => json(r, { matches: [] }));
   return { unstubbed };
 }
 

@@ -13,7 +13,7 @@ History:  MEH-530 (creation, 2026-05-15).
 """
 
 from collections.abc import Iterable
-from typing import TYPE_CHECKING
+from typing import Any, TYPE_CHECKING
 
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
@@ -77,7 +77,7 @@ def ensure_license_for_categories(
 def enforce_license_gate_on_update(
     db: Session,
     producer: "Producer",
-    payload: dict,
+    payload: dict[str, Any],
     category_ids: list[int] | None,
 ) -> None:
     """Shared by the owner PUT (producer_me.py) and the admin PUT (admin.py) —
@@ -106,7 +106,7 @@ def enforce_license_gate_on_update(
         else []
     )
     # Helper short-circuits on an empty list, so this only fires for adds.
-    ensure_license_for_categories(db, added_category_ids, effective_license)
+    ensure_license_for_categories(db, added_category_ids, effective_license)  # type: ignore[arg-type]
 
     # MEH-999 (2c): the one hole grandfathering would open — a LICENSED
     # producer blanking her license while keeping a license-required category.

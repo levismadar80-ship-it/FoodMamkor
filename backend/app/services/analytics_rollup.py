@@ -58,11 +58,12 @@ either way — `today` is `israel_today()`.
 
 from __future__ import annotations
 
+from typing import Any, cast
 import logging
 from dataclasses import dataclass
 from datetime import date, timedelta
 
-from sqlalchemy import func, literal, select, union
+from sqlalchemy import CursorResult, func, literal, Select, select, Table, union
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.orm import Session
 
@@ -110,7 +111,9 @@ def rollup_watermark(db: Session) -> date | None:
     return db.execute(select(func.max(ProducerAnalyticsDaily.day))).scalar()
 
 
-def rollup_snapshot(db: Session, producer_id, column) -> tuple[date | None, int]:
+def rollup_snapshot(
+    db: Session, producer_id: Any, column: Any
+) -> tuple[date | None, int]:
     """`(watermark, Σ column over the producer's aggregate rows)` — from ONE
     statement, deliberately.
 
@@ -179,7 +182,7 @@ def pending_days(db: Session, *, today: date | None = None) -> list[date]:
     return [start + timedelta(days=i) for i in range((yesterday - start).days + 1)]
 
 
-def _day_select(day: date):
+def _day_select(day: date) -> Select[Any]:
     """One SELECT producing every producer's counts for `day`, in the column
     order of the INSERT below.
 
@@ -266,7 +269,7 @@ def roll_up_day(db: Session, day: date) -> int | None:
         if _day_is_rolled(db, day):
             return None
         stmt = (
-            pg_insert(ProducerAnalyticsDaily.__table__)
+            pg_insert(cast("Table", ProducerAnalyticsDaily.__table__))
             .from_select(
                 [
                     "producer_id",
@@ -286,7 +289,7 @@ def roll_up_day(db: Session, day: date) -> int | None:
             )
             .on_conflict_do_nothing(constraint=UNIQUE_CONSTRAINT)
         )
-        inserted = db.execute(stmt).rowcount
+        inserted = cast("CursorResult[Any]", db.execute(stmt)).rowcount
         db.commit()
         return int(inserted or 0)
     except Exception:

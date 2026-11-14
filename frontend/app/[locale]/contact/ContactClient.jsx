@@ -5,6 +5,7 @@ import { CheckCircle, Leaf, Envelope, Timer } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import Input from "@/components/ui/Input";
+import InlineMessage from "@/components/ui/InlineMessage";
 import CollectionNotice from "@/components/CollectionNotice";
 import api from "@/lib/api";
 import { detailToMessage } from "@/lib/errors";
@@ -46,11 +47,37 @@ export default function ContactClient() {
   }, []);
   const [status, setStatus] = useState("idle"); // idle | loading | success | error
   const [errorMsg, setErrorMsg] = useState("");
+  // MEH-3191: our own field errors instead of the browser's bubbles, which
+  // speak the browser's language and set no aria-invalid. Strings reuse the
+  // approved required / email-invalid copy (registration.signup.*).
+  const tField = useTranslations("registration.signup");
+  const [fieldErrors, setFieldErrors] = useState({});
 
-  const set = (field) => (e) => setForm({ ...form, [field]: e.target.value });
+  // MEH-3191: editing a field clears its own error, so a fixed field stops
+  // announcing aria-invalid before the next submit.
+  const set = (field) => (e) => {
+    setForm({ ...form, [field]: e.target.value });
+    if (fieldErrors[field]) setFieldErrors({ ...fieldErrors, [field]: undefined });
+  };
+
+  const validate = () => {
+    const errs = {};
+    if (!form.name.trim()) errs.name = tField("required");
+    if (!form.email.trim()) errs.email = tField("required");
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) errs.email = tField("email_invalid");
+    if (!form.message.trim()) errs.message = tField("required");
+    return errs;
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    const errs = validate();
+    setFieldErrors(errs);
+    const first = ["name", "email", "message"].find((k) => errs[k]);
+    if (first) {
+      document.getElementById(`contact-${first}`)?.focus();
+      return;
+    }
     setStatus("loading");
     setErrorMsg("");
     try {
@@ -125,7 +152,7 @@ export default function ContactClient() {
               </button>
             </div>
           ) : (
-            <form onSubmit={handleSubmit} data-chat-hide="" className="space-y-4">
+            <form onSubmit={handleSubmit} data-chat-hide="" noValidate className="space-y-4">
               {/* MEH-1145 Wave E2: plain labeled fields → ui/Input (canon 44px
                   boxed recipe; value/onChange/required pass through unchanged). */}
               <Input
@@ -136,6 +163,7 @@ export default function ContactClient() {
                 value={form.name}
                 onChange={set("name")}
                 required
+                error={fieldErrors.name}
               />
               <Input
                 id="contact-email"
@@ -146,6 +174,7 @@ export default function ContactClient() {
                 onChange={set("email")}
                 required
                 dir="ltr"
+                error={fieldErrors.email}
               />
               <EmailTypoHint fieldId="contact-email" value={form.email} onAccept={(email) => set("email")({ target: { value: email } })} />
               {/* MEH-2832: topic select (moved from the /about form, MEH-1113).
@@ -181,8 +210,15 @@ export default function ContactClient() {
                   onChange={set("message")}
                   required
                   rows={5}
+                  aria-invalid={fieldErrors.message ? true : undefined}
+                  aria-describedby={fieldErrors.message ? "contact-message-error" : undefined}
                   className="w-full border border-border rounded-sm px-3 py-2 resize-none focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                 />
+                {fieldErrors.message && (
+                  <InlineMessage id="contact-message-error" size="xs" className="text-start mt-1">
+                    {fieldErrors.message}
+                  </InlineMessage>
+                )}
               </div>
 
               {/* MEH-1981: notice-at-collection (Privacy Law Amendment 13 §11)

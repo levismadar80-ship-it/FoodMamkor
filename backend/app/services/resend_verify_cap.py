@@ -13,7 +13,6 @@ History:  MEH-2906 (creation, 14/11/2026).
 from __future__ import annotations
 
 import logging
-from uuid import UUID
 
 from fastapi import HTTPException
 from limits import parse as parse_limit
@@ -33,14 +32,14 @@ TOO_MANY_DETAIL = (
 )
 
 
-def enforce_per_account_cap(user_id: UUID) -> None:
+def enforce_per_account_cap(user_id: str) -> None:
     """Spend one unit of every per-account window, or raise 429.
 
     Fail-OPEN when the counter cannot be read: the per-IP route limit still
     holds, and a broken counter must not stop a real person from getting
     their verify mail (the same trade-off as chat's site-wide cap).
     """
-    key = str(user_id)
+    key = user_id
     for raw in PER_ACCOUNT_LIMITS:
         try:
             allowed = bool(limiter._limiter.hit(parse_limit(raw), NAMESPACE, key))

@@ -6,6 +6,7 @@ import { useTranslations } from "next-intl";
 import api from "@/lib/api";
 import CollectionNotice from "@/components/CollectionNotice";
 import { INERT_PRESENT } from "@/lib/inert-attr";
+import { COLOR } from "@/lib/color-tokens";
 
 /**
  * ChatWidget — floating Q&A bot, all screen sizes.
@@ -310,7 +311,7 @@ export default function ChatWidget({ hideOnMobile = false } = {}) {
   // the MEH-850 vertical calc are unchanged — only the horizontal axis flips
   // from physical to logical, so the FAB tracks the inline-END corner per locale.
   const launcherStyle = {
-    position: "fixed", zIndex: 9999,
+    position: "fixed", zIndex: "var(--z-chat)",
     insetInlineEnd: isDesktop ? 24 : 16,
     bottom: isDesktop ? 24 : MOBILE_LAUNCHER_BOTTOM,
   };
@@ -319,7 +320,7 @@ export default function ChatWidget({ hideOnMobile = false } = {}) {
   // corner — CookieBanner 1100, FilterSheet 1200, Toaster 2000, InstallPrompt
   // 9997. At 9999 it painted over the open filter sheet's end corner. The
   // panel keeps 9999 (it is the sheet here).
-  if (!isDesktop) Object.assign(launcherStyle, { zIndex: 1050 });
+  if (!isDesktop) Object.assign(launcherStyle, { zIndex: "var(--z-chat-launcher-mobile)" });
   // MEH-2835 PR 2: stepping aside = a 150ms fade, no pointer events, inert.
   if (!isDesktop) {
     Object.assign(launcherStyle, {
@@ -332,7 +333,7 @@ export default function ChatWidget({ hideOnMobile = false } = {}) {
   // launcher (insetInlineEnd:24, insetInlineStart:auto); mobile stays full-width
   // (both inline insets 0 → spans edge-to-edge in either direction).
   const panelStyle = {
-    position: "fixed", zIndex: 9999,
+    position: "fixed", zIndex: "var(--z-chat)",
     bottom: isDesktop ? 24 : 0,
     insetInlineEnd: isDesktop ? 24 : 0,
     insetInlineStart: isDesktop ? "auto" : 0,
@@ -466,7 +467,7 @@ export default function ChatWidget({ hideOnMobile = false } = {}) {
               value={input} onChange={(e) => setInput(e.target.value)}
               placeholder={t("input_placeholder")} maxLength={500} disabled={sending}
               className="flex-1 min-w-0 bg-transparent outline-none focus-visible:ring-2 focus-visible:ring-primary rounded text-sm text-text placeholder:text-fg-muted disabled:opacity-50"
-              style={{ caretColor: "#2e6853" }}
+              style={{ caretColor: COLOR.primary }}
               autoComplete="off"
             />
             <button

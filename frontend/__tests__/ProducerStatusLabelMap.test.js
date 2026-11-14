@@ -3,11 +3,12 @@
  *
  * The bug this guards: `draft` became the status every new registration starts
  * in (MEH-2100) and was never added to `producer-status.js`, so the admin chip
- * fell through `PRODUCER_STATUS_LABELS[status] ?? status` and rendered the raw
+ * fell through `PRODUCER_STATUS_LABELS[status] ?? status` (since MEH-3170:
+ * `PRODUCER_STATUSES` + `admin.producers.status_label.*`) and rendered the raw
  * English string "draft" inside a Hebrew table — on the most common status.
  *
  * WHY THIS ASSERTS AGAINST A HARDCODED LIST rather than importing the map's own
- * keys: a test built from `Object.keys(PRODUCER_STATUS_LABELS)` agrees with the
+ * keys: a test built from `PRODUCER_STATUSES` agrees with the
  * map by construction and passes no matter which statuses are missing. The list
  * below is an INDEPENDENT statement of what the backend can emit, taken from
  * the enumeration in `backend/app/models/models.py` and the admin `?status=`
@@ -21,7 +22,7 @@ import { describe, it, expect } from "vitest";
 import he from "@/messages/he.json";
 import en from "@/messages/en.json";
 import {
-  PRODUCER_STATUS_LABELS,
+  PRODUCER_STATUSES,
   PRODUCER_STATUS_COLORS,
   getProducerStatusLabel,
   getProducerStatusColor,
@@ -34,11 +35,23 @@ const DB_STATUSES = ["draft", "pending", "approved", "rejected", "inactive"];
 
 const HEBREW = /[֐-׿]/;
 
+// A translator scoped to `admin`, over the catalog the app ships. A missing key
+// returns the dotted path, which is neither the code nor Hebrew — so a status
+// listed in PRODUCER_STATUSES but absent from he.json goes red below.
+const adminT = (m) => (key) => key.split(".").reduce((node, part) => node?.[part], m.admin) ?? `admin.${key}`;
+
 describe("MEH-2126 — producer status label map covers the whole machine", () => {
   it.each(DB_STATUSES)("%s has a Hebrew label, not the raw code", (status) => {
-    const label = getProducerStatusLabel(status);
+    const label = getProducerStatusLabel(status, adminT(he));
     expect(label).not.toBe(status);
     expect(label).toMatch(HEBREW);
+  });
+
+  it.each(DB_STATUSES)("%s has an English label too, not the raw code or a key", (status) => {
+    const label = getProducerStatusLabel(status, adminT(en));
+    expect(label).not.toBe(status);
+    expect(label).not.toMatch(/^admin\./);
+    expect(label).not.toMatch(HEBREW);
   });
 
   it.each(DB_STATUSES)("%s has its own colour, not the unknown fallback", (status) => {
@@ -56,7 +69,7 @@ describe("MEH-2126 — producer status label map covers the whole machine", () =
   it("still falls back safely for a code it does not know", () => {
     // The fallback is not being removed — it is the net for a status added to
     // the backend before this map catches up. It must stay non-crashing.
-    expect(getProducerStatusLabel("some_future_status")).toBe("some_future_status");
+    expect(getProducerStatusLabel("some_future_status", adminT(he))).toBe("some_future_status");
     expect(getProducerStatusColor("some_future_status")).toBe(UNKNOWN_STATUS_COLOR);
   });
 
@@ -66,7 +79,9 @@ describe("MEH-2126 — producer status label map covers the whole machine", () =
   // behind is the same defect wearing the other map, and the first version of
   // this file checked only one of them (CI review, MEH-2126).
   it.each([
-    ["PRODUCER_STATUS_LABELS", PRODUCER_STATUS_LABELS],
+    ["PRODUCER_STATUSES", Object.fromEntries(PRODUCER_STATUSES.map((k) => [k, true]))],
+    ["he admin.producers.status_label", he.admin.producers.status_label],
+    ["en admin.producers.status_label", en.admin.producers.status_label],
     ["PRODUCER_STATUS_COLORS", PRODUCER_STATUS_COLORS],
   ])("%s declares nothing for a status the backend cannot emit", (_name, map) => {
     for (const key of Object.keys(map)) {

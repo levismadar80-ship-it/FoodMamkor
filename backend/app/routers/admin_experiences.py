@@ -12,6 +12,7 @@ if RESEND_API_KEY isn't configured the log line is still written but the router
 always returns 200 so the admin UI can move on.
 """
 
+from typing import Any
 from uuid import UUID
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query
@@ -19,7 +20,7 @@ from sqlalchemy.orm import Session, joinedload
 
 from app.auth import require_admin
 from app.database import get_db
-from app.models import Experience, User
+from app.models import Experience, Producer, User
 from app.routers.experiences import _serialize_detail
 from app.services import indexnow  # MEH-2852
 from app.services.registrations import registered_counts
@@ -34,7 +35,7 @@ from app.services.experience_notifications import (
 router = APIRouter(prefix="/admin/experiences", tags=["admin-experiences"])
 
 
-def _host_business(ex: Experience):
+def _host_business(ex: Experience) -> Producer | None:
     """MEH-2852: the business behind the host — public only when approved
     (experiences._publicly_visible_query)."""
     return ex.host.producer if ex.host else None
@@ -56,15 +57,15 @@ def admin_list_experiences(
     ),
     user: User = Depends(require_admin),
     db: Session = Depends(get_db),
-):
+) -> Any:
     q = db.query(Experience).options(
         joinedload(Experience.host).joinedload(User.producer)
     )
     if status and status != "all":
         q = q.filter(Experience.status == status)
     rows = q.order_by(Experience.created_at.desc()).all()
-    counts = registered_counts(db, experience_ids=[ex.id for ex in rows])
-    return [_serialize_detail(ex, counts.get(ex.id, 0)) for ex in rows]
+    counts = registered_counts(db, experience_ids=[ex.id for ex in rows])  # type: ignore[misc]
+    return [_serialize_detail(ex, counts.get(ex.id, 0)) for ex in rows]  # type: ignore[call-overload]
 
 
 # ---------- Approve ----------
@@ -76,7 +77,7 @@ def approve_experience(
     background_tasks: BackgroundTasks,
     user: User = Depends(require_admin),
     db: Session = Depends(get_db),
-):
+) -> ExperienceDetailOut | dict[str, Any]:
     ex = (
         db.query(Experience)
         .options(joinedload(Experience.host).joinedload(User.producer))
@@ -86,9 +87,9 @@ def approve_experience(
     if not ex:
         raise HTTPException(status_code=404, detail="Experience not found")
 
-    ex.status = "approved"
-    ex.admin_feedback = None
-    ex.rejection_reason = None
+    ex.status = "approved"  # type: ignore[assignment]
+    ex.admin_feedback = None  # type: ignore[assignment]
+    ex.rejection_reason = None  # type: ignore[assignment]
     db.commit()
     db.refresh(ex)
     _ping_if_public(background_tasks, ex)  # MEH-2852: the page appeared
@@ -96,7 +97,7 @@ def approve_experience(
     if ex.host and ex.host.email:
         notify_host_approved(
             ex.host.email,
-            ex.title,
+            ex.title,  # type: ignore[arg-type]
             str(ex.id),
             test_cause=host_test_cause(ex.host),  # MEH-2952
         )
@@ -117,7 +118,7 @@ def request_changes(
     background_tasks: BackgroundTasks,
     user: User = Depends(require_admin),
     db: Session = Depends(get_db),
-):
+) -> ExperienceDetailOut | dict[str, Any]:
     if not action.feedback:
         raise HTTPException(status_code=400, detail="feedback is required")
 
@@ -131,8 +132,8 @@ def request_changes(
         raise HTTPException(status_code=404, detail="Experience not found")
 
     was_live = ex.status == "approved"  # MEH-2852
-    ex.status = "changes_requested"
-    ex.admin_feedback = action.feedback
+    ex.status = "changes_requested"  # type: ignore[assignment]
+    ex.admin_feedback = action.feedback  # type: ignore[assignment]
     db.commit()
     db.refresh(ex)
     if was_live:  # MEH-2852: the live page just went away
@@ -141,7 +142,7 @@ def request_changes(
     if ex.host and ex.host.email:
         notify_host_changes_requested(
             ex.host.email,
-            ex.title,
+            ex.title,  # type: ignore[arg-type]
             str(ex.id),
             action.feedback,
             test_cause=host_test_cause(ex.host),  # MEH-2952
@@ -160,7 +161,7 @@ def reject_experience(
     background_tasks: BackgroundTasks,
     user: User = Depends(require_admin),
     db: Session = Depends(get_db),
-):
+) -> ExperienceDetailOut | dict[str, Any]:
     ex = (
         db.query(Experience)
         .options(joinedload(Experience.host).joinedload(User.producer))
@@ -171,8 +172,8 @@ def reject_experience(
         raise HTTPException(status_code=404, detail="Experience not found")
 
     was_live = ex.status == "approved"  # MEH-2852
-    ex.status = "rejected"
-    ex.rejection_reason = action.feedback or ""
+    ex.status = "rejected"  # type: ignore[assignment]
+    ex.rejection_reason = action.feedback or ""  # type: ignore[assignment]
     db.commit()
     db.refresh(ex)
     if was_live:  # MEH-2852: the live page just went away
@@ -181,7 +182,7 @@ def reject_experience(
     if ex.host and ex.host.email:
         notify_host_rejected(
             ex.host.email,
-            ex.title,
+            ex.title,  # type: ignore[arg-type]
             action.feedback or "",
             test_cause=host_test_cause(ex.host),  # MEH-2952
         )

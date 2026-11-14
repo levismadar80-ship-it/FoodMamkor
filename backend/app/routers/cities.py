@@ -16,8 +16,9 @@ then the alias table only ever ran on the results, so a name that is not a
 prefix of its official form was unreachable.
 """
 
+from typing import Any
 from fastapi import APIRouter, Depends, Query, Request
-from sqlalchemy import or_
+from sqlalchemy import ColumnElement, or_
 from sqlalchemy.orm import Session
 
 from app.data.cities import (
@@ -69,7 +70,7 @@ def _prefixes(clean: str) -> list[str]:
     return sorted(f for f in forms if f)
 
 
-def _ilike_any(column, clean: str):
+def _ilike_any(column: Any, clean: str) -> ColumnElement[bool]:
     return or_(*[column.ilike(f"{p}%") for p in _prefixes(clean)])
 
 
@@ -95,13 +96,13 @@ def _live_business_cities(db: Session, clean: str) -> list[str]:
     return [row[0] for row in rows]
 
 
-@router.get("/cities")
+@router.get("/cities", response_model=None)
 @limiter.limit("60/minute")
 def list_cities(
     request: Request,
     q: str | None = Query(None, max_length=100),
     db: Session = Depends(get_db),
-):
+) -> dict[str, Any] | list[str]:
     """Autocomplete: cities table (canonical) ∪ live business cities,
     with the static list as the unseeded-env fallback (MEH-1349).
 
