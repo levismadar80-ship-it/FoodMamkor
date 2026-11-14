@@ -41,7 +41,7 @@ flowchart TD
     OAuthChoice -->|Apple| AppleFlow[POST /auth/apple<br/>body: identity_token + terms_accepted?<br/>required for App Store]
     GoogleFlow --> VerifyG[google-auth:<br/>verify id_token against<br/>GOOGLE_CLIENT_ID]
     AppleFlow --> VerifyA[PyJWT:<br/>verify identity_token against<br/>Apple public keys + APPLE_CLIENT_ID]
-    VerifyG --> UpsertG[Upsert User by google_id<br/>role=consumer]
+    VerifyG --> UpsertG[Upsert User by google_id<br/>role=consumer<br/>MEH-3104: email match with a different provider id → 409]
     VerifyA --> UpsertA[Upsert User by apple_id<br/>role=consumer]
     UpsertG --> IssueJWTo[create_access_token user.id]
     UpsertA --> IssueJWTo
