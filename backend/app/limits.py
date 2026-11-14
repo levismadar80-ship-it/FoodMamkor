@@ -124,7 +124,7 @@ OWNED_TABLE_EXEMPT = {
     "category_requests": "rate-limited public form, admin-moderated",
     "reports": "rate-limited public form, admin-moderated",
     "delivery_waitlist": "one row per email per business, rate-limited public form",
-    "phone_otp_tokens": "rate-limited OTP send, short-lived rows",
+    "phone_otp_tokens": "rate-limited OTP send; deleted one day after expiry by the daily retention purge (MEH-3171)",
     "alert_log": "system-written fan-out log, capped per send by MEH-1338",
     "producer_analytics_daily": "one row per business per day, system-written",
     "producer_page_views": "system-written analytics, rate-limited beacon",

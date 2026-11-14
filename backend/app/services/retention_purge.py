@@ -7,6 +7,7 @@ Purpose:  Enforce the retention windows the privacy policy promises (Sapir's
 Touches:  DB tables `producer_page_views`, `producer_whatsapp_clicks`,
           `alert_log` — DELETE only, in batches, committing per batch.
           MEH-2763: also `registrations`, 30 days after the item's date.
+          MEH-3171: also `phone_otp_tokens`, one day after `expires_at`.
           Reads the roll-up watermark through analytics_rollup — never
           the aggregate table directly (the MEH-2079 single-reader guard).
 Does NOT: roll anything up (analytics_rollup.py owns that); decide WHEN to
@@ -53,6 +54,7 @@ from app.models.models import (
     AlertLog,
     Event,
     Experience,
+    PhoneOtpToken,
     ProducerPageView,
     ProducerWhatsAppClick,
     Registration,
@@ -68,6 +70,10 @@ ALERT_LOG_RETENTION_DAYS = 30
 #: MEH-2763 — the sign-up form promises «נמחקים 30 יום אחרי המועד»
 #: (approved 6/11). Counted from the event's / experience's own date.
 REGISTRATION_RETENTION_DAYS = 30
+# MEH-3171: an OTP row is useless once it expires but carries a phone number
+# (PII). Keep it one day past expiry (support can still see a failed attempt),
+# then delete it.
+OTP_RETENTION_AFTER_EXPIRY = timedelta(days=1)
 
 #: Rows per DELETE statement. Small enough that one batch never holds a long
 #: lock on a table the request path writes to; the loop runs until empty.
@@ -84,6 +90,7 @@ class PurgeResult:
     clicks_deleted: int
     alerts_deleted: int
     registrations_deleted: int = 0
+    otps_deleted: int = 0
 
 
 def _israel_day_start_utc(day: date) -> datetime:
@@ -182,6 +189,13 @@ def run_purge(
 
     registrations = _purge_registrations(db, today)
 
-    result = PurgeResult(boundary, views, clicks, alerts, registrations)
+    otps = _delete_in_batches(
+        db,
+        PhoneOtpToken,
+        PhoneOtpToken.expires_at,
+        now - OTP_RETENTION_AFTER_EXPIRY,
+    )
+
+    result = PurgeResult(boundary, views, clicks, alerts, registrations, otps)
     logger.info("[RETENTION-PURGE] %s", result)
     return result

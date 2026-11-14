@@ -228,6 +228,7 @@ producers (
   -- so a product renamed after the vote no longer strands the name.
 
 -- MEH-51: one-time WhatsApp OTP for phone verification
+-- MEH-3171: rows are deleted one day after expires_at (retention_purge, daily)
 phone_otp_tokens (
   id uuid PK, producer_id FK,
   phone varchar, code varchar(6),
