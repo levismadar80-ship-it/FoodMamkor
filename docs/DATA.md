@@ -859,6 +859,8 @@ via `slowapi` — see `backend/app/rate_limit.py` and
 > transition safety. The role-first 403 (`"Producer access required"`) stays a
 > plain string. Additive — no schema change.
 
+> **MEH-3254 (grill retro D7, 2026-11-14):** `GroupBuyOut.units_total: int | null` — the sum of `group_buy_commits.quantity`. Filled **only** on `GET /producers/me/group-buys` (the owner's own list), `null` on every public reader. A count, never a roster (MEH-1651). No schema change.
+
 ### Auth (`app/routers/auth.py`)
 
 ```
