@@ -147,6 +147,72 @@ erDiagram
         text_array allergens "MEH-2662: codes from app/allergens.py, nullable"
         int position "MEH-3055: owner order, NULL = never ordered"
         varchar group_id "MEH-3055: id in producers.product_groups, no FK, nullable"
+        varchar price_unit "MEH-3218: unit|kg|100g, default unit"
+        boolean is_orderable "MEH-3218: default false, the owner opts each product in"
+        boolean in_stock "MEH-3218: default true"
+        boolean contains_alcohol "MEH-3218: default false"
+    }
+
+    producer_order_settings {
+        uuid producer_id PK "FK producers, CASCADE; one row per business"
+        boolean enabled "default false"
+        boolean auto_confirm
+        int auto_confirm_slot_cap "required when auto_confirm"
+        int cancel_cutoff_hours "0..168, default 24"
+        boolean shabbat_observant
+        int min_order_agorot "nullable"
+        boolean alcohol_licensed "admin only"
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    product_orders {
+        uuid id PK
+        uuid producer_id FK
+        uuid user_id FK "nullable, SET NULL; guest orders have none"
+        string customer_name
+        string customer_phone
+        string fulfilment "pickup|delivery"
+        string delivery_address "nullable"
+        timestamp slot_start
+        timestamp slot_end
+        text note
+        int estimated_total_agorot
+        int final_total_agorot "nullable until the business confirms"
+        int delivery_fee_agorot
+        string status "pending|confirmed|change_proposed|ready|handed|declined|cancelled|expired|no_show"
+        string payment_status "direct_to_business only"
+        string pickup_code
+        boolean age_declared
+        timestamp expires_at
+        timestamp confirmed_at
+        timestamp handed_at
+        timestamp closed_at
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    product_order_items {
+        uuid id PK
+        uuid order_id FK "CASCADE"
+        uuid product_id FK "nullable, SET NULL; the line outlives the product"
+        string name "copied at order time"
+        int unit_price_agorot "copied at order time"
+        boolean price_is_estimate
+        string price_unit "unit|kg|100g"
+        int qty "1..99"
+        boolean contains_alcohol
+    }
+
+    product_order_events {
+        uuid id PK
+        uuid order_id FK "CASCADE"
+        string from_status "NULL on the first row"
+        string to_status
+        string actor "customer|business|admin|system"
+        uuid actor_user_id FK "nullable, SET NULL"
+        text note
+        timestamp created_at
     }
 
     delivery_areas {

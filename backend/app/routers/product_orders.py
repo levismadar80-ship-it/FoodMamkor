@@ -22,6 +22,7 @@ from typing import Any
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.auth import require_admin, require_producer
@@ -85,6 +86,30 @@ def _settings_row(db: Session, producer_id: Any) -> ProducerOrderSettings | None
     )
 
 
+def _settings_row_for_write(db: Session, producer_id: Any) -> ProducerOrderSettings:
+    """The business's row, created if it is the first save.
+
+    Two first saves can race — a double-tapped save, or the admin's alcohol
+    mark landing with the owner's first save. The loser's INSERT hits the
+    primary key; it then reads the winner's row and writes onto that, instead
+    of answering 500. The savepoint keeps the outer transaction usable.
+    """
+    row = _settings_row(db, producer_id)
+    if row is not None:
+        return row
+    try:
+        with db.begin_nested():
+            row = ProducerOrderSettings(producer_id=producer_id)
+            db.add(row)
+            db.flush()
+        return row
+    except IntegrityError:
+        existing = _settings_row(db, producer_id)
+        if existing is None:
+            raise
+        return existing
+
+
 def _own_producer_id(user: User) -> Any:
     """The caller's own business. There is no producer id in the path, so there
     is no other business's row to reach — the ownership check is structural."""
@@ -126,10 +151,7 @@ def put_my_order_settings(
     """Save the whole settings form. `alcohol_licensed` is not in the body and
     is never touched here — only the admin route writes it."""
     producer_id = _own_producer_id(user)
-    row = _settings_row(db, producer_id)
-    if row is None:
-        row = ProducerOrderSettings(producer_id=producer_id)
-        db.add(row)
+    row = _settings_row_for_write(db, producer_id)
     for field, value in body.model_dump().items():
         setattr(row, field, value)
     db.commit()
@@ -160,10 +182,7 @@ def set_alcohol_licensed(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail=NO_BUSINESS_DETAIL
         )
-    row = _settings_row(db, producer_id)
-    if row is None:
-        row = ProducerOrderSettings(producer_id=producer_id)
-        db.add(row)
+    row = _settings_row_for_write(db, producer_id)
     row.alcohol_licensed = body.alcohol_licensed  # type: ignore[assignment]
     db.commit()
     db.refresh(row)

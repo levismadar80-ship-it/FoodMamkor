@@ -163,7 +163,13 @@ def apply_transition(
 
 
 def record_created(db: Session, order: ProductOrder, actor: Actor) -> ProductOrderEvent:
-    """The first log row of an order: nothing -> its starting status."""
+    """The first log row of an order: nothing -> pending.
+
+    An order is born pending and nowhere else; anything further is a move, and
+    moves go through apply_transition so they are checked and logged as such.
+    """
+    if str(order.status) != "pending":
+        raise InvalidTransition(INVALID_TRANSITION_DETAIL)
     event = ProductOrderEvent(
         order_id=order.id,
         from_status=None,

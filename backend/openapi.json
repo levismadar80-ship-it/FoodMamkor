@@ -9800,7 +9800,6 @@
             "title": "Auto Confirm Slot Cap"
           },
           "cancel_cutoff_hours": {
-            "default": 24,
             "maximum": 168.0,
             "minimum": 0.0,
             "title": "Cancel Cutoff Hours",
@@ -9831,7 +9830,10 @@
         "required": [
           "enabled",
           "auto_confirm",
-          "shabbat_observant"
+          "auto_confirm_slot_cap",
+          "cancel_cutoff_hours",
+          "shabbat_observant",
+          "min_order_agorot"
         ],
         "title": "ProducerOrderSettingsIn",
         "type": "object"

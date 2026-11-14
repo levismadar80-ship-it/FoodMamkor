@@ -3304,6 +3304,7 @@ class AlembicLineage(Base):
 # MEH-3218: the on-site ordering tables live in their own module (this file is
 # on the file-size baseline). Imported here, at the end, so that everything
 # importing models.py — Alembic's env.py included — registers them on
-# Base.metadata. DO NOT move this import up: product_orders.py must not be
-# imported before Base's other tables it references by name are defined.
+# Base.metadata. It sits at the end only to keep the model definitions above
+# free of a mid-file import; product_orders.py imports nothing from this file,
+# so there is no cycle either way.
 import app.models.product_orders  # noqa: E402,F401

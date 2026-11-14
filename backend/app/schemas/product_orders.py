@@ -16,10 +16,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-from app.models.product_orders import (
-    PRODUCT_ORDER_DEFAULT_CUTOFF_HOURS,
-    PRODUCT_ORDER_MAX_CUTOFF_HOURS,
-)
+from app.models.product_orders import PRODUCT_ORDER_MAX_CUTOFF_HOURS
 
 # Upper bounds that exist only so a typo cannot store nonsense: 500 orders in
 # one pickup window, or a 100,000 ₪ minimum order.
@@ -39,16 +36,12 @@ class ProducerOrderSettingsIn(BaseModel):
 
     enabled: bool
     auto_confirm: bool
-    auto_confirm_slot_cap: int | None = Field(
-        default=None, ge=1, le=MAX_AUTO_CONFIRM_SLOT_CAP
-    )
-    cancel_cutoff_hours: int = Field(
-        default=PRODUCT_ORDER_DEFAULT_CUTOFF_HOURS,
-        ge=0,
-        le=PRODUCT_ORDER_MAX_CUTOFF_HOURS,
-    )
+    # `...` = required, including the nullable ones: omitting a field must not
+    # silently clear a saved minimum or reset the cutoff to its default.
+    auto_confirm_slot_cap: int | None = Field(..., ge=1, le=MAX_AUTO_CONFIRM_SLOT_CAP)
+    cancel_cutoff_hours: int = Field(..., ge=0, le=PRODUCT_ORDER_MAX_CUTOFF_HOURS)
     shabbat_observant: bool
-    min_order_agorot: int | None = Field(default=None, ge=0, le=MAX_MIN_ORDER_AGOROT)
+    min_order_agorot: int | None = Field(..., ge=0, le=MAX_MIN_ORDER_AGOROT)
 
     @model_validator(mode="after")
     def _auto_confirm_needs_a_cap(self) -> "ProducerOrderSettingsIn":

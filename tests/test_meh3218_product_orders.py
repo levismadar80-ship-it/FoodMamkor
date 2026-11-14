@@ -28,12 +28,16 @@ from datetime import timedelta
 from pathlib import Path
 
 import pytest
+from sqlalchemy import CheckConstraint
 from sqlalchemy.exc import IntegrityError
 
 from app.models.models import Product
 from app.models.product_orders import (
     PRODUCT_ORDER_ACTORS,
+    PRODUCT_ORDER_DEFAULT_CUTOFF_HOURS,
     PRODUCT_ORDER_FULFILMENTS,
+    PRODUCT_ORDER_MAX_CUTOFF_HOURS,
+    PRODUCT_ORDER_MAX_QTY_PER_ITEM,
     PRODUCT_ORDER_PAYMENT_STATUSES,
     PRODUCT_ORDER_STATUSES,
     PRODUCT_PRICE_UNITS,
@@ -231,6 +235,40 @@ def test_revision_check_literals_match_the_model_tuples():
         start = source.index(needle) + len(needle)
         assert quoted(source[start : source.index(")", start)]) == values, needle
 
+    # The numbers, which `alembic check` does not compare either.
+    for literal in (
+        f"cancel_cutoff_hours <= {PRODUCT_ORDER_MAX_CUTOFF_HOURS}",
+        f"qty <= {PRODUCT_ORDER_MAX_QTY_PER_ITEM}",
+        f'server_default=sa.text("{PRODUCT_ORDER_DEFAULT_CUTOFF_HOURS}")',
+    ):
+        assert literal in source, literal
+
+
+def test_the_products_model_check_lists_the_same_price_units():
+    """models.py spells the units a third time (it cannot import the tuple
+    without a cycle); this keeps that copy equal to the tuple."""
+    checks = {
+        c.name: str(c.sqltext)
+        for c in Product.__table__.constraints
+        if isinstance(c, CheckConstraint)
+    }
+    found = tuple(re.findall(r"'([a-z0-9]+)'", checks["products_price_unit_check"]))
+    assert found == PRODUCT_PRICE_UNITS
+
+
+def test_an_order_is_born_pending_or_not_logged_at_all(db):
+    _, producer = _owner(db)
+    born = _order(db, producer)
+    state.record_created(db, born, Actor("customer"))
+    db.commit()
+    first = db.query(ProductOrderEvent).filter_by(order_id=born.id).one()
+    assert (first.from_status, first.to_status) == (None, "pending")
+
+    smuggled = _order(db, producer, status="handed")
+    with pytest.raises(InvalidTransition):
+        state.record_created(db, smuggled, Actor("customer"))
+    assert db.query(ProductOrderEvent).filter_by(order_id=smuggled.id).count() == 0
+
 
 def test_an_order_cannot_be_marked_paid(db):
     """Customer money does not pass through the site (ADR-042 §5). The one
@@ -242,7 +280,10 @@ def test_an_order_cannot_be_marked_paid(db):
     db.rollback()
 
 
-def test_the_order_line_keeps_the_name_and_price_the_buyer_saw(db):
+def test_deleting_a_product_keeps_the_order_line_and_nulls_its_product_id(db):
+    """What this proves is the foreign key: the line and the values stored on
+    it outlive the product. The COPY from product to line is made by the order
+    route, which does not exist yet — its test arrives with it."""
     _, producer = _owner(db)
     product = Product(producer_id=producer.id, name="חלה", price_min=28, price_max=28)
     db.add(product)
@@ -430,6 +471,67 @@ def test_admin_licence_for_a_business_that_does_not_exist_is_404(client, db, fla
     )
     assert res.status_code == 404
     assert db.query(ProducerOrderSettings).count() == 0
+
+
+def test_the_alcohol_route_refuses_everyone_but_an_admin(client, db, flag_on):
+    _, producer = _owner(db)
+    consumer = make_user(db)
+    url = f"/admin/producers/{producer.id}/order-settings/alcohol"
+    anonymous = client.put(url, json={"alcohol_licensed": True})
+    as_consumer = client.put(
+        url, json={"alcohol_licensed": True}, headers=auth_header(consumer)
+    )
+    assert (anonymous.status_code, as_consumer.status_code) == (401, 403)
+    assert db.query(ProducerOrderSettings).count() == 0
+
+
+def test_a_business_account_with_no_business_gets_404_not_a_row(client, db, flag_on):
+    orphan = make_user(db, role="producer")
+    res = client.put(
+        "/producers/me/order-settings",
+        json=valid_settings_payload(),
+        headers=auth_header(orphan),
+    )
+    assert res.status_code == 404
+    assert db.query(ProducerOrderSettings).count() == 0
+
+
+def test_omitting_a_field_is_refused_instead_of_clearing_it(client, db, flag_on):
+    owner, _ = _owner(db)
+    client.put(
+        "/producers/me/order-settings",
+        json=valid_settings_payload() | {"min_order_agorot": 5000},
+        headers=auth_header(owner),
+    )
+    partial = valid_settings_payload()
+    del partial["min_order_agorot"]
+    res = client.put(
+        "/producers/me/order-settings", json=partial, headers=auth_header(owner)
+    )
+    assert res.status_code == 422
+    assert db.query(ProducerOrderSettings).one().min_order_agorot == 5000
+
+
+def test_a_first_save_that_loses_the_race_writes_onto_the_winners_row(db):
+    """The loser of two first saves must land on the existing row, not raise."""
+    _, producer = _owner(db)
+    db.add(ProducerOrderSettings(producer_id=producer.id, alcohol_licensed=True))
+    db.commit()
+    real = orders_module._settings_row
+    # Simulate the race: the first read answers "no row" although one exists.
+    calls = {"n": 0}
+
+    def racing(session, producer_id):
+        calls["n"] += 1
+        return None if calls["n"] == 1 else real(session, producer_id)
+
+    orders_module._settings_row = racing
+    try:
+        row = orders_module._settings_row_for_write(db, producer.id)
+    finally:
+        orders_module._settings_row = real
+    assert row.alcohol_licensed is True
+    assert db.query(ProducerOrderSettings).count() == 1
 
 
 def test_auto_confirm_without_a_slot_cap_is_refused_in_hebrew(client, db, flag_on):
