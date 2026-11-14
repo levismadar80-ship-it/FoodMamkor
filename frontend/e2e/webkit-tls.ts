@@ -23,7 +23,7 @@ const WEBKIT_RUN = process.env.PW_WEBKIT === "1";
 /** The plain-http target the workflow starts with `next start`. */
 const PLAIN_LOCAL = /^http:\/\/localhost:3000\/?$/;
 
-export const WEBKIT_TLS_PORT = 3443;
+const WEBKIT_TLS_PORT = 3443;
 export const WEBKIT_TLS_URL = `https://localhost:${WEBKIT_TLS_PORT}`;
 
 /** True only for the WebKit run against the local plain-http server. */
