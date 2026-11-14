@@ -69,6 +69,12 @@ moment it is introduced, which is the only moment anyone knows about it.
 Next.js 16 (App Router) + Tailwind + Framer Motion + Leaflet. JavaScript
 (not TypeScript); JSDoc for typed params where it matters.
 
+**Next 16 is newer than most training data.** Before using a Next API you have
+not used in this repo (routing, caching, `proxy`, metadata, image config), read
+its guide under `frontend/node_modules/next/dist/docs/` and heed deprecation
+notices. The same note lives in `frontend/AGENTS.md`, but that file is written
+by `next dev` and gitignored, so a fresh clone does not have it.
+
 ---
 
 ## Cloudinary
