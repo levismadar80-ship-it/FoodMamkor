@@ -343,7 +343,7 @@ Registration order of the app. Actor from the dependency tree: `require_admin` �
 | `multi_locations` | page | live | — | n/a | `frontend/__tests__/LocationFormDisclosure.test.jsx:25` | n/a | covered |
 | `draft_claim` | page | live | — | `tests/test_meh2496_claim_link_sent_at.py:65` (5/5 routes in file) | `frontend/__tests__/AdminClaimLink.test.jsx:18` | n/a | covered |
 | `ai_writer` | page | live | — | `tests/test_api.py:2152` (imports module) | n/a | n/a | covered |
-| `guides` | page | live | — | n/a | `frontend/__tests__/TitlesGuidesCopy.test.jsx:45` | GAP | covered |
+| `guides` | page | live | — | n/a | `frontend/__tests__/TitlesGuidesCopy.test.jsx:47` | GAP | covered |
 | `social_signup` | page | live | — | `tests/test_api.py:4286` (16/16 routes in file) | `frontend/__tests__/AuthPagesAuthedRedirect.test.jsx:4` | n/a | covered |
 | `wa_approval` | page | live | — | `tests/test_expansion_whatsapp.py:24` (imports module) | n/a | n/a | covered |
 | `onboarding_emails` | page | live | — | `tests/test_meh1965_email_copy_contract.py:81` (imports module) | n/a | n/a | covered |
@@ -397,7 +397,7 @@ Registration order of the app. Actor from the dependency tree: `require_admin` �
 | `/about/badges` | GAP | `frontend/__tests__/title-pattern.test.js:139` | covered |
 | `/about/for-businesses/guides/business-story` | `frontend/e2e/flows/manual/hebrew-typography.spec.ts:95` | `frontend/__tests__/title-pattern.test.js:180` | covered |
 | `/about/for-businesses/guides/customer-messages` | GAP | `frontend/__tests__/title-pattern.test.js:181` | covered |
-| `/about/for-businesses/guides` | GAP | `frontend/__tests__/TitlesGuidesCopy.test.jsx:45` | covered |
+| `/about/for-businesses/guides` | GAP | `frontend/__tests__/TitlesGuidesCopy.test.jsx:47` | covered |
 | `/about/for-businesses/guides/product-photography` | GAP | `frontend/__tests__/title-pattern.test.js:182` | covered |
 | `/about/for-businesses` | `frontend/e2e/flows/manual/join.spec.ts:234` | `frontend/__tests__/BusinessFaqClosedOnLoad.test.jsx:36` | covered |
 | `/about` | `frontend/e2e/flows/13-static-pages-render.spec.ts:8` | `frontend/__tests__/title-pattern.test.js:135` | covered |
@@ -441,7 +441,7 @@ Registration order of the app. Actor from the dependency tree: `require_admin` �
 | `/registration/[token]` | GAP | `frontend/__tests__/title-pattern.test.js:178` | covered |
 | `/rescue` | GAP | `frontend/__tests__/title-pattern.test.js:174` | covered |
 | `/reset-password` | `frontend/e2e/flows/11-password-policy.spec.ts:144` | `frontend/__tests__/title-pattern.test.js:167` | covered |
-| `/settings` | `frontend/e2e/flows/11-password-policy.spec.ts:202` | `frontend/__tests__/MobileNoOuterCard.test.jsx:34` | covered |
+| `/settings` | `frontend/e2e/flows/11-password-policy.spec.ts:202` | `frontend/__tests__/MobileNoOuterCard.test.jsx:36` | covered |
 | `/terms` | GAP | `frontend/__tests__/title-pattern.test.js:141` | covered |
 | `/verify-email` | GAP | `frontend/__tests__/title-pattern.test.js:168` | covered |
 
