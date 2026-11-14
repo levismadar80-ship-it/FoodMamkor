@@ -123,13 +123,14 @@ export function HomeCategoryGrid({ categoryCards }) {
                   put a 65% green scrim here; forbidden now — legibility comes from
                   moving the caption OFF the photo, never a tint). The relative +
                   overflow-hidden aspect wrapper both locks the frame proportion
-                  (zero CLS) and clips the motion-safe hover zoom. alt = Hebrew
-                  category name. */}
+                  (zero CLS) and clips the motion-safe hover zoom. MEH-3191: alt="" — the
+                  link already says the category name, so a named alt read
+                  it twice («ירקות ירקות»). */}
               <div className={["relative overflow-hidden", aspectClassName].join(" ")} data-testid="home-category-image-frame">
                 <Image
                   data-testid="home-category-image"
                   src={card.image}
-                  alt={card.name}
+                  alt=""
                   fill
                   sizes="(min-width: 1024px) 112px, (min-width: 768px) 20vw, 144px"
                   className="object-cover transition-transform duration-base ease-quart motion-safe:group-hover:scale-105"

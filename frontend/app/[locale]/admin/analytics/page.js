@@ -6,6 +6,7 @@ import { useTranslations } from "next-intl";
 import { Heart } from "@phosphor-icons/react";
 import api from "@/lib/api";
 import { SkeletonTiles } from "@/components/Skeleton";
+import { COLOR } from "@/lib/color-tokens";
 
 export default function AdminAnalyticsPage() {
   const t = useTranslations("admin");
@@ -64,11 +65,11 @@ export default function AdminAnalyticsPage() {
             <span className="flex items-center gap-1"><span className="inline-block w-3 border-t-2 border-dashed border-accent"></span>{t("analytics.legend_users")}</span>
           </div>
           <svg viewBox={`0 0 ${W} ${H + 20}`} className="w-full">
-            <path d={path("producers")} fill="none" stroke="#2e6853" strokeWidth="2" />
+            <path d={path("producers")} fill="none" stroke={COLOR.primary} strokeWidth="2" />
             {/* MEH-2554: both series were #2e6853 — the legend promised two lines the
                 eye could not tell apart. Users = accent + dashed, so the split
                 does not rest on colour alone (WCAG 1.4.1). */}
-            <path d={path("users")} fill="none" stroke="#896714" strokeWidth="2" strokeDasharray="5 4" />
+            <path d={path("users")} fill="none" stroke={COLOR.accent} strokeWidth="2" strokeDasharray="5 4" />
             {months.map((m, i) => {
               const x = pad + i * stepX;
               return (

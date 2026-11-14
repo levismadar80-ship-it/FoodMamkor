@@ -17,6 +17,7 @@ MEH-103 verified reviews system:
 MEH-458: Pydantic schemas live in app.schemas.schemas per ADR-006 R1.
 """
 
+from typing import Any, cast
 import logging
 import math
 from datetime import datetime
@@ -56,14 +57,15 @@ from app.services.content_notifications import (
 )
 from app.utils.clock import utc_now
 
+
 router = APIRouter(tags=["reviews"])
 log = logging.getLogger(__name__)
 
 HAIKU_MODEL = AI_FAST_MODEL  # MEH-2335: single source in app.config
-_ai_client = None
+_ai_client: Any = None
 
 
-def _get_ai_client():
+def _get_ai_client() -> Any:
     global _ai_client
     if _ai_client is not None:
         return _ai_client
@@ -115,7 +117,7 @@ def _ai_status_for_write(
         and existing.body == body
         and existing.ai_moderation_status is not None
     ):
-        return existing.ai_moderation_status
+        return existing.ai_moderation_status  # type: ignore[return-value]
     return _checked_ai_status(body)
 
 
@@ -207,8 +209,8 @@ def _recompute_producer_rating(producer_id: UUID, db: Session) -> None:
     )
     producer = db.query(Producer).filter(Producer.id == producer_id).first()
     if producer:
-        producer.avg_rating = float(row.avg) if row.avg is not None else 0.0
-        producer.reviews_count = int(row.cnt or 0)
+        producer.avg_rating = float(row.avg) if row.avg is not None else 0.0  # type: ignore[assignment]
+        producer.reviews_count = int(row.cnt or 0)  # type: ignore[assignment]
         db.commit()
 
 
@@ -239,7 +241,7 @@ def list_reviews_nested(
     producer_id: UUID,
     page: int = Query(1, ge=1),
     db: Session = Depends(get_db),
-):
+) -> ReviewsPage:
     """Paginated visible reviews for a producer (10 per page, newest first)."""
     base = (
         db.query(ProducerReview)
@@ -261,10 +263,13 @@ def list_reviews_nested(
     )
     # MEH-1337: per-star counts over every visible review, not this page.
     # Same visibility filter as `base` (and as _recompute_producer_rating).
-    by_star = dict(
-        base.with_entities(ProducerReview.stars, func.count(ProducerReview.id))
-        .group_by(ProducerReview.stars)
-        .all()
+    by_star: dict[Any, int] = dict(
+        cast(
+            "list[tuple[Any, int]]",
+            base.with_entities(ProducerReview.stars, func.count(ProducerReview.id))
+            .group_by(ProducerReview.stars)
+            .all(),
+        )
     )
     return ReviewsPage(
         reviews=[_serialize(r) for r in rows],
@@ -282,7 +287,7 @@ def list_reviews(
     request: Request,
     producer_id: UUID,
     db: Session = Depends(get_db),
-):
+) -> list[ReviewOut]:
     reviews = (
         db.query(ProducerReview)
         .options(joinedload(ProducerReview.user))
@@ -337,7 +342,9 @@ def _invited_by_token(review_token: str | None, producer_id: UUID) -> bool:
     if not review_token:
         return False
     claims = decode_review_invite_token(review_token)
-    return bool(claims) and claims.get("producer_id") == str(producer_id)
+    return bool(claims) and cast(dict[str, Any], claims).get("producer_id") == str(
+        producer_id
+    )
 
 
 def _apply_review_edit(
@@ -369,10 +376,10 @@ def _apply_review_edit(
     if locked is None:
         raise HTTPException(status_code=404, detail="ביקורת לא נמצאה")
     if review.is_hidden and (review.body != data.body or review.stars != data.stars):
-        review.edited_after_hidden_at = utc_now()
-    review.stars = data.stars
-    review.body = data.body
-    review.ai_moderation_status = ai_status
+        review.edited_after_hidden_at = utc_now()  # type: ignore[assignment]
+    review.stars = data.stars  # type: ignore[assignment]
+    review.body = data.body  # type: ignore[assignment]
+    review.ai_moderation_status = ai_status  # type: ignore[assignment]
 
 
 @router.post(
@@ -388,7 +395,7 @@ def create_review_nested(  # noqa: PLR0913 — all 6 args are FastAPI-injected (
     background_tasks: BackgroundTasks,
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
-):
+) -> ReviewOut:
     """Submit or update a review.
 
     Guards (checked in order):
@@ -427,7 +434,9 @@ def create_review_nested(  # noqa: PLR0913 — all 6 args are FastAPI-injected (
     # reviewer got past that gate — a click today, a signed invite link once
     # MEH-1428 lands — so it cannot be attached to either of those paths.
     if user.producer_id is not None and _shares_category(
-        db, user.producer_id, producer_id
+        db,
+        user.producer_id,  # type: ignore[arg-type]
+        producer_id,
     ):
         raise HTTPException(
             status_code=403,
@@ -528,7 +537,7 @@ def create_review_nested(  # noqa: PLR0913 — all 6 args are FastAPI-injected (
         except IntegrityError:
             db.rollback()
             review = (
-                db.query(ProducerReview)
+                db.query(ProducerReview)  # type: ignore[assignment]
                 .filter(
                     ProducerReview.producer_id == producer_id,
                     ProducerReview.user_id == user.id,
@@ -548,7 +557,7 @@ def create_review_nested(  # noqa: PLR0913 — all 6 args are FastAPI-injected (
         db, background_tasks, producer_id, data.stars, is_new_review, reviewer=user
     )
     review = (
-        db.query(ProducerReview)
+        db.query(ProducerReview)  # type: ignore[assignment]
         .options(joinedload(ProducerReview.user))
         .filter(ProducerReview.id == review.id)
         .first()
@@ -561,14 +570,14 @@ def create_review_nested(  # noqa: PLR0913 — all 6 args are FastAPI-injected (
 # ---------------------------------------------------------------------------
 
 
-@router.delete("/reviews/{review_id}")
+@router.delete("/reviews/{review_id}", response_model=None)
 @limiter.limit("30/hour")  # MEH-3022
 def delete_review(
     request: Request,  # required by slowapi (MEH-3022)
     review_id: UUID,
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
-):
+) -> dict[str, Any]:
     review = db.query(ProducerReview).filter(ProducerReview.id == review_id).first()
     if not review:
         raise HTTPException(status_code=404, detail="ביקורת לא נמצאה")
@@ -586,7 +595,7 @@ def delete_review(
     producer_id = review.producer_id
     db.delete(review)
     db.commit()
-    _recompute_producer_rating(producer_id, db)
+    _recompute_producer_rating(producer_id, db)  # type: ignore[arg-type]
     return {"detail": "Review deleted"}
 
 
@@ -595,13 +604,18 @@ def delete_review(
 # ---------------------------------------------------------------------------
 
 
-def _producer_page_path(producer) -> str:
+def _producer_page_path(producer: Producer) -> str:
     base = f"/p/{producer.slug}" if producer.slug else f"/producer/{producer.id}"
     return f"{base}#reviews"
 
 
 def _queue_new_review_mail(  # noqa: PLR0913 — +reviewer, the MEH-2952 cause
-    db, background_tasks, producer_id, stars, is_new, reviewer=None
+    db: Session,
+    background_tasks: BackgroundTasks,
+    producer_id: UUID,
+    stars: int,
+    is_new: bool,
+    reviewer: User | None = None,
 ) -> None:
     """MEH-2602: a new review mails the owner (an edit does not).
 
@@ -614,8 +628,8 @@ def _queue_new_review_mail(  # noqa: PLR0913 — +reviewer, the MEH-2952 cause
     if producer and owner and owner.email:
         background_tasks.add_task(
             notify_owner_new_review,
-            owner.email,
-            producer.name,
+            owner.email,  # type: ignore[arg-type]
+            producer.name,  # type: ignore[arg-type]
             stars,
             _producer_page_path(producer),
             test_cause=bool(
@@ -633,7 +647,7 @@ def set_review_reply(  # noqa: PLR0913 — all args are FastAPI-injected; MEH-30
     background_tasks: BackgroundTasks,
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
-):
+) -> ReviewOut:
     """Set/edit the business-owner's reply to a review. Owner-only — only the
     reviewed producer's owner (review.producer_id == user.producer_id) may
     reply; anyone else gets 404 so the review's existence isn't leaked
@@ -649,11 +663,11 @@ def set_review_reply(  # noqa: PLR0913 — all args are FastAPI-injected; MEH-30
 
     first_reply = bool(data.reply) and not review.reply
     if data.reply:
-        review.reply = data.reply
-        review.reply_at = utc_now()
+        review.reply = data.reply  # type: ignore[assignment]
+        review.reply_at = utc_now()  # type: ignore[assignment]
     else:
-        review.reply = None  # empty/blank → clear
-        review.reply_at = None
+        review.reply = None  # type: ignore[assignment]  # empty/blank → clear
+        review.reply_at = None  # type: ignore[assignment]
     db.commit()
 
     # MEH-2602: the reviewer hears about the first answer, not each edit of it.
@@ -663,19 +677,20 @@ def set_review_reply(  # noqa: PLR0913 — all args are FastAPI-injected; MEH-30
         if reviewer and reviewer.email and producer:
             background_tasks.add_task(
                 notify_reviewer_reply,
-                reviewer.email,
-                producer.name,
+                reviewer.email,  # type: ignore[arg-type]
+                producer.name,  # type: ignore[arg-type]
                 _producer_page_path(producer),
                 # MEH-2952: caused by the business that replied, by the
                 # account that wrote the reply.
                 test_cause=bool(producer.is_test or user.is_test),
             )
 
-    review = (
+    review = cast(  # re-read of the row just committed
+        ProducerReview,
         db.query(ProducerReview)
         .options(joinedload(ProducerReview.user))
         .filter(ProducerReview.id == review.id)
-        .first()
+        .first(),
     )
     return _serialize(review)
 
@@ -700,13 +715,13 @@ def _iso_or_none(value: datetime | None) -> str | None:
     return value.isoformat() if value else None
 
 
-@router.put("/admin/reviews/{review_id}/hide")
+@router.put("/admin/reviews/{review_id}/hide", response_model=None)
 def hide_review(
     review_id: UUID,
     seen: str | None = Query(None, max_length=40),
     _: User = Depends(require_admin),
     db: Session = Depends(get_db),
-):
+) -> dict[str, Any]:
     """Set is_hidden=True on a review. Recomputes producer aggregates.
 
     MEH-2381: `seen` is the edited_after_hidden_at the admin's page showed
@@ -722,24 +737,24 @@ def hide_review(
     )
     if not review:
         raise HTTPException(status_code=404, detail=_ADMIN_REVIEW_NOT_FOUND)
-    if seen is not None and seen != _iso_or_none(review.edited_after_hidden_at):
+    if seen is not None and seen != _iso_or_none(review.edited_after_hidden_at):  # type: ignore[arg-type]
         db.rollback()
         raise HTTPException(status_code=409, detail=_ADMIN_REVIEW_CHANGED)
-    review.is_hidden = True
+    review.is_hidden = True  # type: ignore[assignment]
     # MEH-2381: hiding (or re-hiding, "keep hidden") means the admin has seen
     # the current text.
-    review.edited_after_hidden_at = None
+    review.edited_after_hidden_at = None  # type: ignore[assignment]
     db.commit()
-    _recompute_producer_rating(review.producer_id, db)
+    _recompute_producer_rating(review.producer_id, db)  # type: ignore[arg-type]
     return {"detail": "Review hidden", "id": str(review_id)}
 
 
-@router.put("/admin/reviews/{review_id}/unhide")
+@router.put("/admin/reviews/{review_id}/unhide", response_model=None)
 def unhide_review(
     review_id: UUID,
     _: User = Depends(require_admin),
     db: Session = Depends(get_db),
-):
+) -> dict[str, Any]:
     """MEH-2348: set is_hidden=False — the only way a hidden review returns.
     Recomputes producer aggregates."""
     review = (
@@ -750,10 +765,10 @@ def unhide_review(
     )
     if not review:
         raise HTTPException(status_code=404, detail=_ADMIN_REVIEW_NOT_FOUND)
-    review.is_hidden = False
-    review.edited_after_hidden_at = None  # MEH-2381: public again
+    review.is_hidden = False  # type: ignore[assignment]
+    review.edited_after_hidden_at = None  # type: ignore[assignment]  # MEH-2381: public again
     db.commit()
-    _recompute_producer_rating(review.producer_id, db)
+    _recompute_producer_rating(review.producer_id, db)  # type: ignore[arg-type]
     return {"detail": "Review unhidden", "id": str(review_id)}
 
 
@@ -761,7 +776,7 @@ def unhide_review(
 def admin_list_reviews(
     _: User = Depends(require_admin),
     db: Session = Depends(get_db),
-):
+) -> list[AdminReviewOut]:
     """All reviews (including hidden) for moderation."""
     rows = (
         db.query(ProducerReview)
@@ -789,7 +804,7 @@ def admin_list_reviews(
             # MEH-2349: "APPROVED" | "FLAGGED" | None (no body / predates it).
             ai_moderation_status=r.ai_moderation_status,
             # MEH-2381: None = not edited since the last hide/unhide.
-            edited_after_hidden_at=_iso_or_none(r.edited_after_hidden_at),
+            edited_after_hidden_at=_iso_or_none(r.edited_after_hidden_at),  # type: ignore[arg-type]
         )
         for r in rows
     ]

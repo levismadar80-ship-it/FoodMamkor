@@ -328,7 +328,7 @@ export function HomeProducersGrid({
             data-testid="home-filters-button"
             // REUSES: frontend/components/ProducersClient.jsx:775-787 — same
             // trigger, same inactive chip visuals, same inline count.
-            className="inline-flex items-center gap-1.5 whitespace-nowrap px-4 py-2.5 rounded-md text-sm font-medium border transition bg-surface text-text border-border hover:border-primary hover:text-primary"
+            className="inline-flex items-center gap-1.5 whitespace-nowrap px-4 min-h-11 py-2.5 rounded-md text-sm font-medium border transition bg-surface text-text border-border hover:border-primary hover:text-primary"
           >
             {/* `Faders`, not `FadersHorizontal` as the card's prose says: the
                 two shipped sheet triggers both use `Faders`

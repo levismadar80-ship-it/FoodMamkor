@@ -883,7 +883,9 @@ export default function ProducerSections({
           <button
             type="button"
             onClick={() => setReportOpen(true)}
-            className="underline hover:text-text transition"
+            // MEH-3195: the text link was 16px tall; the hit area is now 44px
+            // without moving the line (negative block margin absorbs it).
+            className="inline-flex items-center min-h-11 -my-3.5 underline hover:text-text transition"
           >
             {t("producer.detail.contact_card.report_info_link")}
           </button>

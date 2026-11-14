@@ -11,15 +11,15 @@
  *           `getUpcomingSpecialDates`). Nothing here renders.
  * Related:  frontend/lib/order-window.js (range helpers REUSED verbatim, so
  *           a valid range means the same thing on both editors),
- *           frontend/lib/holidays.js (HOLIDAYS — the suggestion-chip source,
- *           per Sapir's 05/09 ruling; MEH-2263 owns any wrong date in it),
+ *           frontend/lib/holidays.js (holidaysOn — the suggestion-chip source,
+ *           per Sapir's 05/09 ruling; dates computed since MEH-3017),
  *           backend/app/schemas/schemas.py (_special_hours_validator — the
  *           authority these rules mirror).
  * History:  MEH-2264 (MEH-1889 chunk B) — creation.
  */
 
 import { israelToday } from "@/lib/israel-date";
-import { HOLIDAYS } from "@/lib/holidays";
+import { holidaysOn } from "@/lib/holidays";
 import { canAddOrderRange, emptyOrderRange, orderDayIssues } from "@/lib/order-window";
 
 export const MAX_SPECIAL_NOTE_LENGTH = 200;
@@ -170,12 +170,12 @@ function eachDate(start, end) {
  * `dates` are the holiday's calendar days from today onward; `added` is true
  * when EVERY one of them is already a row, so the chip can render as taken.
  * Never applied automatically (ruling ב) — the caller adds rows on tap.
- * Reads HOLIDAYS as-is: a wrong date there is MEH-2263's to fix, and this
+ * Reads holidaysOn(today) as-is (MEH-3017: computed, never stale), and this
  * function is correct by construction the moment it lands.
  */
 export function holidayChips(rows, today = israelToday()) {
   const present = new Set(rows.map((row) => row.date));
-  return Object.entries(HOLIDAYS)
+  return Object.entries(holidaysOn(today))
     .filter(([, holiday]) => holiday.end >= today)
     .sort(([, a], [, b]) => a.start.localeCompare(b.start))
     .map(([key, holiday]) => {

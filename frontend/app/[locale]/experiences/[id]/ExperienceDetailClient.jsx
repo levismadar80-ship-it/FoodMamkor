@@ -75,7 +75,16 @@ function endTimeFrom(start, minutes) {
 // «נשארו N מקומות» shows at this many spots or fewer (approved 4/11).
 const FEW_SPOTS = 3;
 
-export default function ExperienceDetailClient() {
+/**
+ * MEH-3199: `initialExperience` is the page's own server fetch (page.js
+ * getExperience), so the first HTML already carries the workshop. The client
+ * still refetches with the viewer's token (owner / admin fields), and a failed
+ * refetch keeps the server copy. State is seeded once; a later prop change
+ * (same id) is not re-applied — the refetch brings the fresh copy. Without it
+ * (the segment's not-found.js) the page loads client-side as before.
+ * @param {{ initialExperience?: object | null }} props
+ */
+export default function ExperienceDetailClient({ initialExperience = null } = {}) {
   const t = useTranslations("experiences.detail");
   // MEH-2476: the place-type labels are the form's own («בבית פרטי» / «מקום ציבורי»).
   const tForm = useTranslations("experiences.new");
@@ -87,8 +96,8 @@ export default function ExperienceDetailClient() {
   const search = useSearchParams();
   const justSubmitted = search.get("pending") === "1";
 
-  const [ex, setEx] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [ex, setEx] = useState(initialExperience);
+  const [loading, setLoading] = useState(!initialExperience);
   const [notFound, setNotFound] = useState(false);
 
   useEffect(() => {
@@ -96,9 +105,12 @@ export default function ExperienceDetailClient() {
     api
       .get(`/experiences/${id}`)
       .then((r) => setEx(r.data))
-      .catch(() => setNotFound(true))
+      // MEH-3199: a failed refetch never blanks a page the server already drew.
+      .catch(() => {
+        if (!initialExperience) setNotFound(true);
+      })
       .finally(() => setLoading(false));
-  }, [id]);
+  }, [id, initialExperience]);
 
   // MEH-1140: free semantics stay here; numeric formatting is lib/utils canon.
   const priceDisplay = (p) => {

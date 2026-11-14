@@ -49,7 +49,8 @@ const RISK_LOW_MAX = 30;
 const RISK_MED_MAX = 70;
 
 function StatusBadge({ status }) {
-  const label = getProducerStatusLabel(status);
+  const t = useTranslations("admin");
+  const label = getProducerStatusLabel(status, t);
   const cls = getProducerStatusColor(status);
   return <span className={`text-xs px-2 py-1 rounded-full ${cls}`}>{label}</span>;
 }

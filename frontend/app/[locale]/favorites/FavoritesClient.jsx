@@ -19,6 +19,7 @@ import ProducerCard from "@/components/ProducerCard";
 import AlertPrefsPanel from "@/components/AlertPrefsPanel";
 import Breadcrumb from "@/components/Breadcrumb";
 import ChipScrollRow from "@/components/ChipScrollRow";
+import { dropZeroChips } from "@/lib/chip-gate";
 import { SkeletonProducerGrid } from "@/components/Skeleton";
 import EventEntryRow, { toEventEntry } from "@/components/EventEntryRow";
 import RecipeCard from "@/components/public/RecipeCard";
@@ -123,7 +124,7 @@ function FavoriteCardWrapper({ fav, open, onToggle, onClose }) {
         // below, and Tailwind arbitrary values take no spaces.
         <div
           ref={panelRef}
-          className="fixed inset-x-3 bottom-[calc(var(--bottom-nav-clearance,calc(4.5rem+env(safe-area-inset-bottom,0px)))+8px)] z-[1150] sm:absolute sm:inset-x-auto sm:bottom-auto sm:top-14 sm:start-0 sm:w-72"
+          className="fixed inset-x-3 bottom-[calc(var(--bottom-nav-clearance,calc(4.5rem+env(safe-area-inset-bottom,0px)))+8px)] z-alerts-sheet sm:absolute sm:inset-x-auto sm:bottom-auto sm:top-14 sm:start-0 sm:w-72"
         >
           <AlertPrefsPanel
             producerId={fav.producer_id}
@@ -340,6 +341,18 @@ export default function FavoritesClient() {
   };
   counts.all = counts.businesses + counts.events + counts.experiences + counts.recipes;
 
+  // MEH-3174: a type with nothing saved gets no chip — it would open on an
+  // empty screen (Airbnb wishlists, Etsy favourites show only groups that
+  // hold something). «הכל» and «בתי עסק» always stay; the open chip stays
+  // at 0 as the way back, with its own empty state. When the saved half
+  // failed to load the counts are unknown, so every chip stays.
+  const shownFilters = dropZeroChips({
+    chips: FILTERS.map((key) => ({ key })),
+    counts: savedError ? null : counts,
+    active: [filter],
+    keep: ["all", "businesses"],
+  }).map((chip) => chip.key);
+
   // MEH-1479: clear the error, show the skeleton again, and bump attempt to
   // re-trigger the fetch effect.
   const handleRetry = () => {
@@ -529,11 +542,12 @@ export default function FavoritesClient() {
         </div>
       ) : (
         <>
-          {/* MEH-2560: one chip per type, each with its count. */}
+          {/* MEH-2560: one chip per type, each with its count. MEH-3174: only
+              types that hold something (shownFilters above). */}
           <ChipScrollRow
             variant="category"
             className="mb-6"
-            chips={FILTERS.map((key) => ({
+            chips={shownFilters.map((key) => ({
               key,
               label: (
                 <>

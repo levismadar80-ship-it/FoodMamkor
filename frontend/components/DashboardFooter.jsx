@@ -12,6 +12,7 @@ import { useTranslations } from "next-intl";
 // MEH-2998: the © year is the Israel calendar year, so the server (UTC) and
 // every browser agree on it on New Year's night — see lib/established-year.
 import { currentIsraelYear } from "@/lib/established-year";
+import CookieSettingsButton from "@/components/CookieSettingsButton";
 
 /**
  * DashboardFooter (MEH-1954) — slim footer for the producer dashboard.
@@ -68,6 +69,13 @@ export default function DashboardFooter() {
               </Link>
             </li>
           ))}
+          {/* MEH-3196: withdrawing cookie consent from a dashboard too. */}
+          <li>
+            <CookieSettingsButton
+              testId="dashboard-footer-cookie-settings"
+              className="inline-flex items-center min-h-touch text-sm text-green-100 hover:text-white transition"
+            />
+          </li>
         </ul>
       </div>
       {/* MEH-1954: no sr-only brand name here. Footer.jsx:117 uses one as an

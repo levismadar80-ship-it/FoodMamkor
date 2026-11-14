@@ -54,19 +54,24 @@ async function replayPostLoginAction(t) {
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  // MEH-3172: a token is stored but /auth/me never answered (network, 5xx, a
+  // request aborted by a navigation). Not "signed out": the layouts that gate
+  // on `user` show a retry state for this instead of pushing /login.
+  const [authUnreachable, setAuthUnreachable] = useState(false);
   const t = useTranslations("auth.toasts");
 
   // MEH-434 — keep the Sentry launch_cohort tag in sync with the signed-in
   // user (derived client-side from user.created_at). Observability only.
   useLaunchCohortTag(user);
 
-  useEffect(() => {
+  const loadSession = () => {
     const token = localStorage.getItem("token");
     if (token) {
       api
         .get("/auth/me")
         .then((res) => {
           setUser(res.data);
+          setAuthUnreachable(false);
           // MEH-1485: seed localStorage user_city from the profile city so
           // the personalization stores stop diverging (no-op when
           // localStorage already holds a recent explicit choice).
@@ -85,13 +90,25 @@ export function AuthProvider({ children }) {
           if (status === 401 || status === 403) {
             localStorage.removeItem("token");
             localStorage.removeItem("user");
+          } else {
+            setAuthUnreachable(true);
           }
         })
         .finally(() => setLoading(false));
     } else {
       setLoading(false);
     }
-  }, []);
+  };
+
+  // Mount only, as before: a re-run on every render would refetch /auth/me.
+  useEffect(() => loadSession(), []);
+
+  // MEH-3172: the retry button of that state. Back to loading, ask again.
+  const retrySession = () => {
+    setAuthUnreachable(false);
+    setLoading(true);
+    loadSession();
+  };
 
   // MEH-156: listen for JWT expiry events fired by the API interceptor.
   // setUser/resetFavoritesCache/showToast are all stable refs — empty deps is correct.
@@ -100,8 +117,11 @@ export function AuthProvider({ children }) {
       resetFavoritesCache();
       resetSavedCache();
       setUser(null);
+      setAuthUnreachable(false);
       const redirect = encodeURIComponent(window.location.pathname);
       showToast.info(t("sessionExpired"), {
+        // MEH-3173: fixed id — however many times expiry is announced, one toast.
+        id: "session-expired",
         duration: 5000,
         action: { label: t("loginAgainCta"), href: `/login?redirect=${redirect}` },
       });
@@ -190,6 +210,7 @@ export function AuthProvider({ children }) {
     resetFavoritesCache();
     resetSavedCache();
     setUser(null);
+    setAuthUnreachable(false);
     api.post("/auth/logout").catch(() => {});
   };
 
@@ -210,6 +231,7 @@ export function AuthProvider({ children }) {
     resetFavoritesCache();
     resetSavedCache();
     setUser(null);
+    setAuthUnreachable(false);
     api.post("/auth/logout").catch(() => {});
   };
 
@@ -252,6 +274,8 @@ export function AuthProvider({ children }) {
       value={{
         user,
         loading,
+        authUnreachable,
+        retrySession,
         login,
         register,
         loginWithGoogle,

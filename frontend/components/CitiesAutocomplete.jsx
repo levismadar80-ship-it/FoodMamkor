@@ -271,7 +271,7 @@ export default function CitiesAutocomplete({
           // cite this value as evidence of a repaired bug. The measurement is
           // runnable rather than recited here, because file:line citations rot
           // and it does not: e2e/qa-meh2102-dropdown-vs-map.mjs.
-          className="absolute z-[1010] start-0 end-0 mt-1 max-h-48 overflow-y-auto bg-surface border border-border rounded-md shadow-lg text-sm"
+          className="absolute z-autocomplete start-0 end-0 mt-1 max-h-48 overflow-y-auto bg-surface border border-border rounded-md shadow-lg text-sm"
         >
           {suggestions.map((city, i) => (
             <li

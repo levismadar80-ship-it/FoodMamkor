@@ -6,6 +6,7 @@ import { useTranslations } from "next-intl";
 import { Check } from "@phosphor-icons/react";
 import useScrollAffordance, { ScrollArrows } from "@/hooks/useScrollAffordance";
 import { useChipCopy } from "@/lib/use-chip-copy";
+import { COLOR } from "@/lib/color-tokens";
 
 // Firefox mouse wheels report deltaMode=DOM_DELTA_LINE (units = lines,
 // ~3/notch) — normalize to px or the wheel-scroll crawls. 16px/line is
@@ -16,7 +17,7 @@ const WHEEL_LINE_PX = 16;
 // carries no iconColor (an admin category with no CATEGORY_STYLES entry). The
 // DEFAULT category green (= primary / DEFAULT_CATEGORY_STYLE.color) — never a
 // new palette colour (MEH-763 lock).
-const DEFAULT_CAT_RING = "#2e6853";
+const DEFAULT_CAT_RING = COLOR.primary;
 
 // MEH-1545/MEH-1572: the row's trailing NON-CONTENT scroll extent while the
 // end spacer is mounted — the w-12 spacer (48px, fade clearance) + its gap-2
@@ -436,7 +437,7 @@ export default function ChipScrollRow({
               tabIndex={chip.key === tabStopKey ? 0 : -1}
               // MEH-764: chips are rounded-md on ALL surfaces (/home, /producers,
               // /map) per DESIGN §Shapes / BRAND §3 (no pill on rectangles).
-              className={`inline-flex items-center gap-1.5 whitespace-nowrap px-4 py-2.5 rounded-md text-sm font-medium border transition shrink-0 snap-start ${stateClass}`}
+              className={`inline-flex items-center gap-1.5 whitespace-nowrap px-4 min-h-11 py-2.5 rounded-md text-sm font-medium border transition shrink-0 snap-start ${stateClass}`}
               style={stateStyle}
             >
               {/* MEH-2500: a SELECTED category chip swaps its glyph for a ✓.

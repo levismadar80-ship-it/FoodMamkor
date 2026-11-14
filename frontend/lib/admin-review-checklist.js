@@ -15,12 +15,11 @@
  *           docs/VERIFICATION.md §2 (source of the items).
  * History:  MEH-1396 (creation).
  *
- * Raw-Hebrew static config — same idiom as frontend/lib/producer-status.js
- * (admin-internal, single-language; deliberately no i18n / en.json twin).
+ * MEH-3170: the rendered copy (the heading above the items and the
+ * approve-confirm dialog) lives in messages/{he,en}.json under
+ * `admin.producers.review.*`. What stays here is the 7-item seed below, which
+ * is data, not rendered copy.
  */
-
-// Heading rendered above the checklist items.
-export const ADMIN_REVIEW_CHECKLIST_TITLE = "רשימת בדיקה לפני אישור";
 
 // The 7 review items. `id` is a stable session-state key (never rendered);
 // `label` + optional `hint` are the admin-facing Hebrew copy. Source: §2 of
@@ -60,18 +59,19 @@ export const ADMIN_REVIEW_CHECKLIST = [
   },
 ];
 
-// Approve-confirm dialog copy (soft warning shown when items remain unticked).
-// `message` interpolates the remaining count; the buttons are fixed labels.
-export const ADMIN_REVIEW_APPROVE_CONFIRM = {
-  // MEH-2175: `count === null` means the checklist could not be loaded, so
-  // there is no number to report and reporting one would be a fabrication.
-  // The branch lives here rather than at the render site so the dialog in
-  // admin/producers/page.js needs no change — it already asks this module
-  // what to say.
-  message: (count) =>
-    count === null
-      ? "רשימת הבדיקה לא נטענה — לא ניתן לוודא שכל הסעיפים נבדקו."
-      : `נשארו ${count} סעיפים לא מסומנים ברשימת הבדיקה. לאשר בכל זאת?`,
-  confirmLabel: "אשרי בכל זאת",
-  cancelLabel: "חזרה לבדיקה",
-};
+/**
+ * Approve-confirm dialog message (soft warning shown when items remain
+ * unticked). MEH-2175: `count === null` means the checklist could not be
+ * loaded, so there is no number to report and reporting one would be a
+ * fabrication. The branch lives here rather than at the render site so the
+ * dialog in admin/producers/page.js only asks this module what to say.
+ *
+ * @param {(key: string, values?: object) => string} t — translator scoped to
+ *   `admin.producers.review.approve_confirm`
+ * @param {number|null} count — unticked items, or null when the list is unknown
+ */
+export function approveConfirmMessage(t, count) {
+  return count === null
+    ? t("message_unavailable")
+    : t("message", { count: String(count) });
+}

@@ -35,6 +35,7 @@ import {
   GATED_DIET_KEYS,
   visibleAxisChips,
 } from "@/lib/producer-filters";
+import { COLOR } from "./color-tokens";
 
 // `matches` lists every DB category.name variant the chip should resolve to.
 // Names drift between seed_data.py, CATEGORY_STYLES (map-categories.js), and
@@ -62,10 +63,10 @@ export const CATEGORY_CHIPS = [
   // MEH-927: "בשר ודגים" split into "בשר" + "דגים"; "דגים" folded into the meat
   // chip for launch (legacy "בשר ודגים" kept for any pre-migration admin rows).
   { key: "meat", matches: ["בשר ועוף", "בשר", "דגים", "בשר ודגים", "בשר, עוף ודגים"], iconName: "בשר", iconColor: "#c04040" },
-  { key: "produce", matches: ["ירקות ופירות", "ירקות", "ירקות, פירות ומשקים"], slugs: ["fruit"], iconName: "ירקות", iconColor: "#2e6853" },
+  { key: "produce", matches: ["ירקות ופירות", "ירקות", "ירקות, פירות ומשקים"], slugs: ["fruit"], iconName: "ירקות", iconColor: COLOR.primary },
   // MEH-2783: eggs join dairy («חלב וביצים», the Market Wagon "Dairy & Eggs" department).
   { key: "dairy", matches: ["חלב וגבינות", "חלב"], slugs: ["eggs"], iconName: "חלב וגבינות", iconColor: "#3b72ad" },
-  { key: "bread", matches: ["לחם ומאפה", "לחם", "לחמים ואפייה", "לחמים"], iconName: "לחמים ואפייה", iconColor: "#896714" },
+  { key: "bread", matches: ["לחם ומאפה", "לחם", "לחמים ואפייה", "לחמים"], iconName: "לחמים ואפייה", iconColor: COLOR.accent },
   // MEH-2783 (Sapir 06/11, «6 קבוצות שמכסות הכל»): two departments so every DB
   // category has a chip — the farm-marketplace pattern (Market Wagon: Pantry +
   // Non-Food). categoryGroupCoverage.test.js pins that each canonical category

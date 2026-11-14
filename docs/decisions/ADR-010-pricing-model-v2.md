@@ -1,6 +1,6 @@
 # ADR-010: Pricing model v2.0 — six LOCKs and four hypothesis options
 
-**Status:** Accepted · Supersedes the rejected Subscription Freemium model in pricing-model.md v1.0
+**Status:** Accepted · LOCK 1 (no transaction fees) and LOCK 2 (no commissions) superseded by ADR-042 (14/11/2026); LOCKs 3–6 stand · Supersedes the rejected Subscription Freemium model in pricing-model.md v1.0
 **Date:** 2026-05-23
 **Deciders:** Sapir Levi
 **Source:** `Drive/01-Strategy/02-pricing-model.md` v2.0 (2026-05-16, post-adversarial review); Doc-Consolidation-Plan §B.7 G1; MEH-686 Session 2

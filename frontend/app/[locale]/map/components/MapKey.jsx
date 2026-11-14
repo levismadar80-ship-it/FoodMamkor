@@ -31,7 +31,7 @@ import { CATEGORY_STYLES, styleForProducer } from "@/lib/category-registry";
 // Same token set as NearMePill.jsx (MapPane's shared constant left with the
 // pickup-layer toggle, 13/11).
 const CONTROL_CLASS =
-  "w-11 h-11 rounded-full shadow-lg items-center justify-center transition-colors z-[1000] focus-visible:ring-2 focus-visible:ring-primary";
+  "w-11 h-11 rounded-full shadow-lg items-center justify-center transition-colors z-map-controls focus-visible:ring-2 focus-visible:ring-primary";
 const CONTROL_OFF = "bg-surface-floating text-primary border border-border hover:bg-green-50";
 const CONTROL_ON = "bg-primary text-white border border-primary";
 
@@ -205,7 +205,7 @@ export default function MapKey({ buttonClassName = "", buttonStyle, panelClassNa
           id={panelId}
           aria-labelledby={`${panelId}-title`}
           data-testid="map-key-panel"
-          className={`absolute z-[1000] rounded-lg border border-border bg-surface-floating p-4 shadow-lg ${panelClassName}`}
+          className={`absolute z-map-controls rounded-lg border border-border bg-surface-floating p-4 shadow-lg ${panelClassName}`}
         >
           <div className="flex items-start justify-between gap-3 mb-2">
             <h2 id={`${panelId}-title`} className="font-headline-md text-base font-bold text-text">

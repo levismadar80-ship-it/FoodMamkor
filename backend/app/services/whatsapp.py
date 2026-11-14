@@ -83,7 +83,7 @@ UNDELIVERED_WINDOW_DAYS = 7
 STUCK_ACCEPTED_AFTER = timedelta(days=1)
 
 
-def undelivered_predicate(model, now: datetime):
+def undelivered_predicate(model: Any, now: datetime) -> Any:
     """The one SQL filter for "did not reach the recipient", last 7 days:
     failed / window_expired, OR accepted for longer than STUCK_ACCEPTED_AFTER.
     Shared by the admin list (routers/admin_whatsapp.py) and the admin-home
@@ -131,6 +131,12 @@ def _graph_api_base() -> str:
 
 def _is_configured() -> bool:
     return bool(settings.whatsapp_phone_number_id and settings.whatsapp_access_token)
+
+
+def is_configured() -> bool:
+    """Public read of the same check, for callers that must tell "nothing could
+    be sent here" (dev / CI) from "the send failed" (MEH-2122 B)."""
+    return _is_configured()
 
 
 def _safe_json(response: Any) -> dict[str, Any] | None:
