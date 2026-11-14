@@ -127,7 +127,7 @@ export default function EventEntryRow({ entry, freeLabel, compact = false }) {
       </span>
     )
   ) : (
-    <Icon size={26} weight="duotone" />
+    <Icon size={24} weight="regular" />
   );
 
   // MEH-2559: the heart sits on the picture's corner as a SIBLING of the row

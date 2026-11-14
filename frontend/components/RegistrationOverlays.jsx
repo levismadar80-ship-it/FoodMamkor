@@ -85,7 +85,7 @@ export function StickyRegistrationBar({ note, children }) {
   }, []);
   return (
     <div
-      className="vv-pin lg:hidden fixed inset-x-0 bottom-[var(--bottom-nav-clearance,calc(env(safe-area-inset-bottom)+72px))] z-[598] bg-surface border-t border-border shadow-[0_-4px_12px_rgba(0,0,0,0.06)]"
+      className="vv-pin lg:hidden fixed inset-x-0 bottom-[var(--bottom-nav-clearance,calc(env(safe-area-inset-bottom)+72px))] z-[598] bg-surface border-t border-border shadow-lg"
       data-testid="registration-bar"
       data-chat-hide=""
     >
@@ -160,7 +160,7 @@ export function RegistrationSheet({ title, closeLabel, onClose, children }) {
           className="absolute bottom-2 end-2 w-11 h-11 flex items-center justify-center rounded-full text-fg-muted hover:bg-background focus-ring"
           data-testid="registration-sheet-close"
         >
-          <X size={22} aria-hidden="true" />
+          <X size={24} aria-hidden="true" />
         </button>
       </div>
       <div className="flex-1 overflow-y-auto px-4 pt-4 space-y-3" style={{ paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 24px)" }}>

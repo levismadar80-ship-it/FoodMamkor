@@ -56,7 +56,7 @@ describe("CategorySelector food/home grouping (MEH-1098 B1)", () => {
 
   it("expanded view shows מזון/בית-וטיפוח headers with food before home-care", () => {
     renderSelector();
-    fireEvent.click(screen.getByText(/עוד קטגוריות/)); // expand to all 18
+    fireEvent.click(screen.getByText(/^הצגת (?!פחות)/)); // expand to all 18
 
     const food = screen.getByText(S.group_food); // "מזון"
     const home = screen.getByText(S.group_home); // "בית וטיפוח"
@@ -92,7 +92,7 @@ describe("CategorySelector — a DB rename no longer breaks the grid (MEH-2139)"
         <CategorySelector categories={CATS} selectedIds={[]} onChange={() => {}} />
       </NextIntlClientProvider>,
     );
-    fireEvent.click(screen.getByText(/עוד קטגוריות/));
+    fireEvent.click(screen.getByText(/^הצגת (?!פחות)/));
     expect(
       PRECEDES(screen.getByText(S.group_food), screen.getByText(S.group_home)),
     ).toBe(true);
@@ -104,7 +104,7 @@ describe("CategorySelector — a DB rename no longer breaks the grid (MEH-2139)"
         <CategorySelector categories={RENAMED} selectedIds={[]} onChange={() => {}} />
       </NextIntlClientProvider>,
     );
-    fireEvent.click(screen.getByText(/עוד קטגוריות/));
+    fireEvent.click(screen.getByText(/^הצגת (?!פחות)/));
 
     const home = screen.getByText(S.group_home);
     // slug "cosmetics" — whatever it is now called.

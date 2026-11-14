@@ -96,8 +96,7 @@ function walk(dir, out = []) {
 // Everything else on these files that wants an icon goes through <FactLine>.
 const RAW_ALLOWED = {
   "components/DeliveryBlock.jsx": {
-    CaretDown: 3, // the three show-more / show-less toggle buttons
-    CaretUp: 3, // (delivery areas, compact cities, pickup stands)
+    // MEH-3052: the three show-more toggles are the shared ShowMore now (its caret lives there).
     Phone: 1, // tap-to-call link on a pickup stand
   },
   "components/DeliveryChecker.jsx": {
@@ -136,7 +135,7 @@ describe("MEH-3028 — the matchers work on known answers (control)", () => {
 
   it("anchored to a real file: the matcher sees DeliveryBlock's imports", () => {
     const src = fs.readFileSync(path.join(ROOT, "components/DeliveryBlock.jsx"), "utf8");
-    // The file renders Phosphor icons today (the toggle carets at least), so a
+    // The file renders Phosphor icons today (the pickup-stand Phone at least), so a
     // dead matcher returning {} would fail here rather than pass the guards.
     expect(Object.keys(rawIconCounts(src)).length).toBeGreaterThan(0);
   });

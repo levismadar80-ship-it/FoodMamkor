@@ -251,7 +251,7 @@ export default function FilterSheet({
         // longer label overflow VISIBLY (one pill wider than its
         // column) instead of silently growing every pill's height,
         // which is the failure this constraint exists to catch.
-        className={`flex items-center justify-center gap-1.5 min-h-touch lg:min-h-[36px] rounded-full border px-2.5 py-2 lg:py-1 text-sm lg:text-sm font-medium whitespace-nowrap transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${extraClass} ${
+        className={`flex items-center justify-center gap-1.5 min-h-touch lg:min-h-[36px] rounded-full border px-2.5 py-2 lg:py-1 text-sm lg:text-sm font-medium whitespace-nowrap transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${extraClass} ${
           active
             ? "bg-primary text-white border-primary"
             : "bg-surface text-text border-border hover:border-primary"
@@ -291,7 +291,7 @@ export default function FilterSheet({
         // the footer's own pb, where it sits UNDER the footer instead of under
         // a scrolling body. lg: restores the container pad: the anchored
         // desktop panel has no safe-area to clear and no notch to sit in.
-        className={`fixed inset-x-0 bottom-0 z-[1200] rounded-t-3xl border-t border-border bg-background p-4 pb-0 max-h-[80dvh] overflow-y-auto overscroll-contain lg:absolute lg:inset-x-auto lg:bottom-auto lg:top-full ${align === "start" ? "lg:start-0" : "lg:end-0"} lg:mt-2 lg:w-80 lg:rounded-xl lg:border lg:shadow-lg lg:max-h-[min(600px,calc(100vh-220px))] lg:pb-4`}
+        className={`fixed inset-x-0 bottom-0 z-[1200] rounded-t-xl border-t border-border bg-background p-4 pb-0 max-h-[80dvh] overflow-y-auto overscroll-contain lg:absolute lg:inset-x-auto lg:bottom-auto lg:top-full ${align === "start" ? "lg:start-0" : "lg:end-0"} lg:mt-2 lg:w-80 lg:rounded-xl lg:border lg:shadow-lg lg:max-h-[min(600px,calc(100vh-220px))] lg:pb-4`}
       >
         {/* Drag handle — mobile-only close affordance (MapBottomSheet 44×5 chrome). */}
         <div
@@ -418,7 +418,7 @@ export default function FilterSheet({
                                 >
                                   <span
                                     aria-hidden="true"
-                                    className="inline-flex items-center justify-center w-5 h-5 rounded-full border border-fg-muted/40 text-2xs leading-none transition group-hover:bg-fg-muted/10 group-focus-visible:ring-2 group-focus-visible:ring-primary/40"
+                                    className="inline-flex items-center justify-center w-5 h-5 rounded-full border border-fg-muted/40 text-2xs leading-none transition group-hover:bg-fg-muted/10 group-focus-visible:ring-2 group-focus-visible:ring-primary"
                                   >
                                     i
                                   </span>
@@ -507,7 +507,7 @@ export default function FilterSheet({
                             >
                               <span
                                 aria-hidden="true"
-                                className="inline-flex items-center justify-center w-5 h-5 rounded-full border border-fg-muted/40 text-2xs leading-none transition group-hover:bg-fg-muted/10 group-focus-visible:ring-2 group-focus-visible:ring-primary/40"
+                                className="inline-flex items-center justify-center w-5 h-5 rounded-full border border-fg-muted/40 text-2xs leading-none transition group-hover:bg-fg-muted/10 group-focus-visible:ring-2 group-focus-visible:ring-primary"
                               >
                                 i
                               </span>
@@ -529,7 +529,7 @@ export default function FilterSheet({
                       // rewritten around a different query.
                       data-testid={`chip-${chip.key}`}
                       onClick={() => onToggleChip(chip.key)}
-                      className="flex flex-1 items-center justify-between gap-3 min-h-touch lg:min-h-[36px] py-1.5 lg:py-1 text-start rounded-md hover:bg-background-alt focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 transition-colors"
+                      className="flex flex-1 items-center justify-between gap-3 min-h-touch lg:min-h-[36px] py-1.5 lg:py-1 text-start rounded-md hover:bg-background-alt focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary transition-colors"
                     >
                       <span className="flex items-center gap-2 text-sm lg:text-sm font-medium text-text">
                         {icon && <span aria-hidden="true">{icon}</span>}
@@ -576,7 +576,7 @@ export default function FilterSheet({
           <button
             type="button"
             onClick={onClose}
-            className="flex-1 min-h-touch lg:min-h-[36px] rounded-md bg-primary text-white text-sm lg:text-sm font-medium px-4 py-2.5 lg:py-1.5 hover:opacity-90 transition"
+            className="flex-1 min-h-touch lg:min-h-[36px] rounded-full bg-primary text-white text-sm lg:text-sm font-medium px-4 py-2.5 lg:py-1.5 hover:opacity-90 transition"
           >
             {/* MEH-2169: the count is the sheet's only feedback that a toggle did
                 anything — filters apply LIVE, so nothing else on this surface

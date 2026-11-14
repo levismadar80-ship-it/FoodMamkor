@@ -63,7 +63,7 @@ function scrollToContactCard() {
 }
 
 const STAR_TAP =
-  "inline-flex min-h-touch min-w-touch items-center justify-center rounded-lg transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40";
+  "inline-flex min-h-touch min-w-touch items-center justify-center rounded-lg transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary";
 
 function InviteStar({ value, lit, mode, loginHref, producerId, ariaLabel, onHover, onPick, pressed }) {
   const icon = (
@@ -138,7 +138,7 @@ export default function ReviewInviteCard(p) {
           className="flex h-12 w-12 flex-none items-center justify-center rounded-full bg-background-alt text-fg-muted"
           aria-hidden="true"
         >
-          <User size={26} />
+          <User size={24} />
         </span>
         <div className="min-w-0">
           <p className="font-body-md text-base font-bold text-text">{title}</p>

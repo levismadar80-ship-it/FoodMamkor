@@ -36,7 +36,7 @@ import InlineMessage from "@/components/ui/InlineMessage";
 import { RegistrationSheet, StickyRegistrationBar, isDesktop, useInView } from "@/components/RegistrationOverlays";
 
 const BTN =
-  "flex items-center justify-center min-h-[48px] w-full bg-primary text-white px-6 rounded-full font-semibold hover:bg-primary-dark transition focus-ring disabled:opacity-60";
+  "flex items-center justify-center min-h-[48px] w-full bg-primary text-white px-6 rounded-full font-semibold hover:bg-primary-dark transition focus-ring disabled:opacity-50";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 

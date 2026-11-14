@@ -110,7 +110,7 @@ export default function JoinStickyBar() {
         <BusinessCtaLink
           href="/register/producer"
           data-testid="join-sticky-cta"
-          className="inline-flex shrink-0 items-center rounded-lg bg-primary px-6 py-2.5 font-medium text-background transition hover:bg-primary-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2"
+          className="inline-flex shrink-0 items-center rounded-lg bg-primary px-6 py-2.5 font-medium text-background transition hover:bg-primary-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
         >
           {t("cta")}
         </BusinessCtaLink>

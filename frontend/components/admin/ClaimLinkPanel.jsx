@@ -6,6 +6,7 @@ import api from "@/lib/api";
 import { detailToMessage } from "@/lib/errors";
 import { ProducerClaimLinkSchema } from "@/lib/api-schemas";
 import Button from "@/components/ui/Button";
+import { formatDate } from "@/lib/format-date";
 import InlineMessage from "@/components/ui/InlineMessage";
 import { copyOrThrow } from "@/lib/clipboard";
 
@@ -73,13 +74,7 @@ export default function ClaimLinkPanel({ producerId }) {
   };
 
   const expires = link
-    ? new Intl.DateTimeFormat(locale === "he" ? "he-IL" : locale, {
-        // guard-ok: display formatting of a server-issued expiry, not a "today" decision (MEH-2383)
-        timeZone: "Asia/Jerusalem",
-        day: "2-digit",
-        month: "2-digit",
-        year: "numeric",
-      }).format(new Date(link.expires_at))
+    ? formatDate(link.expires_at, locale)
     : null;
 
   return (
@@ -103,7 +98,7 @@ export default function ClaimLinkPanel({ producerId }) {
               dir="ltr"
               value={link.url}
               onFocus={(e) => e.target.select()}
-              className="flex-1 min-w-0 border border-border rounded-md px-3 py-2 text-sm bg-background"
+              className="flex-1 min-w-0 border border-border rounded-sm px-3 py-2 text-sm bg-background focus-ring"
             />
             <Button
               type="button"
@@ -136,7 +131,7 @@ export default function ClaimLinkPanel({ producerId }) {
         data-testid="claim-link-create"
         onClick={create}
         disabled={busy}
-        className="min-h-touch bg-surface border border-primary text-primary rounded-md px-6 py-2 text-sm font-medium hover:bg-background transition disabled:opacity-50"
+        className="min-h-touch bg-surface border border-primary text-primary rounded-full px-6 py-2 text-sm font-medium hover:bg-background transition disabled:opacity-50"
       >
         {busy ? t("creating") : t("create")}
       </button>

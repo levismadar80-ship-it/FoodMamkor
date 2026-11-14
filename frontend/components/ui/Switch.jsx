@@ -37,7 +37,7 @@ export function SwitchTrack({ on, focusRing = true, className = "" }) {
       aria-hidden="true"
       data-switch-track=""
       className={`relative block shrink-0 w-10 h-6 rounded-full transition-colors ${
-        focusRing ? "group-focus-visible:ring-2 group-focus-visible:ring-primary/40" : ""
+        focusRing ? "group-focus-visible:ring-2 group-focus-visible:ring-primary" : ""
       } ${on ? "bg-primary" : "bg-border"} ${className}`}
     >
       <span

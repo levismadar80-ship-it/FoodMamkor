@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Dialog from "@/components/ui/Dialog";
 import { Phone } from "@phosphor-icons/react";
 import { useLocale, useTranslations } from "next-intl";
 import api from "@/lib/api";
@@ -12,6 +13,7 @@ import Input from "@/components/ui/Input";
 import AdminLoadError from "@/components/admin/AdminLoadError";
 import Pagination from "@/components/Pagination";
 import Button from "@/components/ui/Button";
+import { formatDate } from "@/lib/format-date";
 import InlineMessage from "@/components/ui/InlineMessage";
 import { copyText } from "@/lib/clipboard";
 
@@ -221,7 +223,7 @@ export default function AdminOutreachPage() {
           placeholder={t("outreach.filters.city_placeholder")}
           value={cityFilter}
           onChange={(e) => setCityFilter(e.target.value)}
-          className="flex-1 border border-border rounded-md px-3 py-2"
+          className="flex-1 border border-border rounded-sm px-3 py-2 focus-ring"
         />
         <Button
           type="button"
@@ -336,7 +338,7 @@ export default function AdminOutreachPage() {
                       <select
                         value={lead.status}
                         onChange={(e) => handleStatusChange(lead.id, e.target.value)}
-                        className="text-xs border border-border rounded-lg px-2 py-1 bg-surface"
+                        className="text-xs border border-border rounded-sm px-2 py-1 bg-surface focus-ring"
                         aria-label={t("outreach.columns.status")}
                         data-testid={`status-select-${lead.id}`}
                       >
@@ -352,7 +354,7 @@ export default function AdminOutreachPage() {
                         <button
                           type="button"
                           onClick={() => handleMintToken(lead.id)}
-                          className="text-xs px-2 py-1 rounded-lg bg-primary text-white hover:bg-primary-dark"
+                          className="text-xs px-2 py-1 rounded-full bg-primary text-white hover:bg-primary-dark"
                           title={t("outreach.actions.prefill_title")}
                         >
                           {t("outreach.actions.prefill")}
@@ -465,7 +467,7 @@ function isSuggestion(lead) {
  */
 function ThankSuggesterCell({ lead, locale, t, onThank }) {
   const thankedDate = lead.suggester_thanked_at
-    ? new Date(lead.suggester_thanked_at).toLocaleDateString(locale)
+    ? formatDate(lead.suggester_thanked_at, locale)
     : null;
   const reason = thankBlockedReason(lead);
 
@@ -491,7 +493,7 @@ function ThankSuggesterCell({ lead, locale, t, onThank }) {
         disabled
         aria-describedby={tipId}
         data-testid={`thank-suggester-${lead.id}`}
-        className="text-xs px-2 py-1 rounded-lg border border-border text-primary disabled:opacity-40 disabled:cursor-not-allowed"
+        className="text-xs px-2 py-1 rounded-lg border border-border text-primary disabled:opacity-50 disabled:cursor-not-allowed"
       >
         {t("outreach.thank_suggester")}
       </button>
@@ -514,7 +516,7 @@ function StatusChip({ id, label, count, active, onClick }) {
       onClick={onClick}
       aria-pressed={active}
       data-testid={`outreach-chip-${id}`}
-      className={`inline-flex items-center gap-2 min-h-touch px-4 rounded-full border text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${
+      className={`inline-flex items-center gap-2 min-h-touch px-4 rounded-full border text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
         active
           ? "bg-primary text-white border-primary"
           : "bg-surface text-text border-border hover:border-primary/40"
@@ -568,18 +570,15 @@ function AddLeadModal({ onClose, onCreated }) {
   };
 
   return (
-    <div
-      className="fixed inset-0 bg-black/40 z-[9500] flex items-center justify-center p-4"
-      onClick={onClose}
+    <Dialog
+      as="form"
+      labelledBy="outreach-add-title"
+      dismissible={!saving}
+      onClose={onClose}
+      onSubmit={handleSubmit}
+      className="space-y-3"
     >
-      <form
-        role="dialog"
-        aria-modal="true"
-        onClick={(e) => e.stopPropagation()}
-        onSubmit={handleSubmit}
-        className="bg-surface rounded-lg p-6 max-w-md w-full space-y-3"
-      >
-        <h2 className="font-headline-md text-xl font-bold">{t("outreach.modal_add.title")}</h2>
+        <h2 id="outreach-add-title" className="font-headline-md text-xl font-bold">{t("outreach.modal_add.title")}</h2>
         {/* MEH-1128 Wave C: label-less ui/Input — placeholder-only parity
             with the old inputs (no labels invented; notes textarea stays). */}
         <Input
@@ -623,7 +622,7 @@ function AddLeadModal({ onClose, onCreated }) {
           value={form.notes}
           onChange={set("notes")}
           rows={2}
-          className="w-full border border-border rounded-md px-3 py-2"
+          className="w-full border border-border rounded-sm px-3 py-2 focus-ring"
         />
         {error && <InlineMessage>{error}</InlineMessage>}
         <div className="flex gap-2">
@@ -642,25 +641,15 @@ function AddLeadModal({ onClose, onCreated }) {
             {saving ? t("outreach.modal_add.submit_saving") : t("outreach.modal_add.submit")}
           </Button>
         </div>
-      </form>
-    </div>
+    </Dialog>
   );
 }
 
 function ScriptModal({ onClose }) {
   const t = useTranslations("admin");
   return (
-    <div
-      className="fixed inset-0 bg-black/40 z-[9500] flex items-center justify-center p-4"
-      onClick={onClose}
-    >
-      <div
-        role="dialog"
-        aria-modal="true"
-        onClick={(e) => e.stopPropagation()}
-        className="bg-surface rounded-lg p-6 max-w-lg w-full"
-      >
-        <h2 className="font-headline-md text-xl font-bold mb-3 inline-flex items-center gap-2">
+    <Dialog labelledBy="outreach-script-title" size="lg" onClose={onClose}>
+        <h2 id="outreach-script-title" className="font-headline-md text-xl font-bold mb-3 inline-flex items-center gap-2">
           <Phone size={20} className="text-primary" aria-hidden="true" />
           {t("outreach.modal_script.title")}
         </h2>
@@ -674,8 +663,7 @@ function ScriptModal({ onClose }) {
         >
           {t("outreach.modal_script.close")}
         </Button>
-      </div>
-    </div>
+    </Dialog>
   );
 }
 
@@ -719,17 +707,8 @@ function WhatsAppModal({ lead, onClose, onPrefillMinted }) {
   };
 
   return (
-    <div
-      className="fixed inset-0 bg-black/40 z-[9500] flex items-center justify-center p-4"
-      onClick={onClose}
-    >
-      <div
-        role="dialog"
-        aria-modal="true"
-        onClick={(e) => e.stopPropagation()}
-        className="bg-surface rounded-lg p-6 max-w-lg w-full space-y-4"
-      >
-        <h2 className="font-headline-md text-xl font-bold">
+    <Dialog labelledBy="outreach-whatsapp-title" size="lg" onClose={onClose} className="space-y-4">
+        <h2 id="outreach-whatsapp-title" className="font-headline-md text-xl font-bold">
           {t("outreach.modal_wa.title", { name: lead.name })}
         </h2>
         {tokenBusy && (
@@ -771,7 +750,6 @@ function WhatsAppModal({ lead, onClose, onPrefillMinted }) {
         >
           {t("outreach.modal_wa.close")}
         </button>
-      </div>
-    </div>
+    </Dialog>
   );
 }

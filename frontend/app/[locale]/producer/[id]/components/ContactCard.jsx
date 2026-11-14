@@ -316,7 +316,7 @@ export default function ContactCard({ producer, isVacation }) {
                         : undefined
                     }
                     onClick={(e) => onChannelClick(e, channel)}
-                    className={`${ROW_ANATOMY} text-primary-dark hover:text-primary hover:underline underline-offset-2 transition focus-visible:ring-2 focus-visible:ring-primary/40`}
+                    className={`${ROW_ANATOMY} text-primary-dark hover:text-primary hover:underline underline-offset-2 transition focus-visible:ring-2 focus-visible:ring-primary`}
                   >
                     <Icon size={18} className="shrink-0" aria-hidden="true" />
                     {value ? (
@@ -349,7 +349,7 @@ export default function ContactCard({ producer, isVacation }) {
                   // the accessible name is the name alone, not "name + icon".
                   aria-label={t(channel.ariaKey ?? `producer.detail.contact_card.aria.${key}`)}
                   onClick={(e) => onChannelClick(e, channel)}
-                  className="group flex flex-col items-center gap-1.5 text-center text-xs leading-tight text-text rounded-lg focus-visible:ring-2 focus-visible:ring-primary/40"
+                  className="group flex flex-col items-center gap-1.5 text-center text-xs leading-tight text-text rounded-lg focus-visible:ring-2 focus-visible:ring-primary"
                 >
                   <span className="flex items-center justify-center w-11 h-11 rounded-full bg-background text-primary-dark transition group-hover:bg-green-50 group-hover:text-primary">
                     <Icon size={18} aria-hidden="true" />
@@ -372,7 +372,7 @@ export default function ContactCard({ producer, isVacation }) {
                 {...linkTarget(contactHref("phone", producer))}
                 data-testid="revealed-phone"
                 role="listitem"
-                className={`${ROW_ANATOMY} ${single ? "" : "col-span-4"} text-primary-dark focus-visible:ring-2 focus-visible:ring-primary/40`}
+                className={`${ROW_ANATOMY} ${single ? "" : "col-span-4"} text-primary-dark focus-visible:ring-2 focus-visible:ring-primary`}
               >
                 <Phone size={18} className="shrink-0" aria-hidden="true" />
                 <span dir="ltr" className="numeric">

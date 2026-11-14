@@ -55,6 +55,7 @@ describe("MEH-1687 D — every modal scrim is bg-black/40", () => {
     const files = ["app", "components"].flatMap((d) => walk(path.join(ROOT, d)));
     let scrims = 0;
     const exemptSeen = new Set();
+    const scrimFiles = new Set();
     const offenders = [];
     for (const f of files) {
       const rel = path.relative(ROOT, f).split(path.sep).join("/");
@@ -66,10 +67,15 @@ describe("MEH-1687 D — every modal scrim is bg-black/40", () => {
           continue;
         }
         scrims += 1;
+        scrimFiles.add(rel);
         if (bgs.length !== 1 || bgs[0] !== SCRIM) offenders.push(`${rel}: ${bgs.join(" ")}`);
       }
     }
-    expect(scrims, "corpus control: scrims must be found").toBeGreaterThanOrEqual(15);
+    // MEH-3096 moved the centred dialogs onto the one shell components/ui/Dialog.jsx,
+    // so the raw count fell from ~23 to 11. The floor follows it, and the shared
+    // shell itself must be among the scrims seen — that is the anchor now.
+    expect(scrims, "corpus control: scrims must be found").toBeGreaterThanOrEqual(8);
+    expect(scrimFiles.has("components/ui/Dialog.jsx"), "anchor: the shared Dialog scrim is walked").toBe(true);
     expect([...exemptSeen].sort(), "positive control: every exempt surface seen").toEqual(Object.keys(EXEMPT).sort());
     expect(offenders).toEqual([]);
   });

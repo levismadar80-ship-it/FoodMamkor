@@ -964,7 +964,7 @@ export default function ProducersClient({
         <Link
           href={`/map${producersToMapQuery({ chips, categoryKeys: activeCategoryKeys, city: cityFilter || "" })}`}
           data-testid="producers-map-link"
-          className="shrink-0 text-primary hover:underline flex items-center gap-1 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+          className="shrink-0 text-primary hover:underline flex items-center gap-1 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
         >
           <MapPin size={14} className="text-current" aria-hidden="true" />
           {t("title.map_link")}
@@ -981,7 +981,7 @@ export default function ProducersClient({
         <label htmlFor="producers-search-input" className="sr-only">
           {t("search_input.label")}
         </label>
-        <div className="flex-1 min-w-0 flex items-center gap-2 border border-border rounded-full px-4 min-h-touch bg-surface focus-within:ring-2 focus-within:ring-primary/40">
+        <div className="flex-1 min-w-0 flex items-center gap-2 border border-border rounded-full px-4 min-h-touch bg-surface focus-within:ring-2 focus-within:ring-primary">
           <MagnifyingGlass size={18} weight="regular" aria-hidden="true" className="text-fg-muted" />
           <input
             id="producers-search-input"
@@ -1199,7 +1199,7 @@ export default function ProducersClient({
               className="inline-flex items-center gap-1 bg-surface text-primary border border-primary rounded-full px-3 py-1 text-xs font-medium whitespace-nowrap shrink-0"
             >
               <span aria-hidden="true" className="text-2xs font-bold">×</span>
-              <MagnifyingGlass size={13} weight="bold" aria-hidden="true" />{searchQ}
+              <MagnifyingGlass size={14} weight="bold" aria-hidden="true" />{searchQ}
             </button>
           )}
           {hasActiveChips && (
@@ -1231,7 +1231,7 @@ export default function ProducersClient({
               aria-busy={geoSortPending || undefined}
               aria-label={t("sort.aria_label")}
               data-testid="producers-sort"
-              className="appearance-none bg-transparent border-0 font-medium text-primary min-h-touch ps-1 pe-6 cursor-pointer rounded-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1 disabled:opacity-60"
+              className="appearance-none bg-transparent border-0 font-medium text-primary min-h-touch ps-1 pe-6 cursor-pointer rounded-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1 disabled:opacity-50"
             >
               <option value="newest">{t("sort.newest")}</option>
               {ratingSortEnabled && <option value="rating">{t("sort.top_rated")}</option>}
@@ -1337,8 +1337,8 @@ export function FilterEmptyState({ onClear, onPickCategory, searchQ, categories 
         aria-hidden="true"
       >
         {searchQ
-          ? <MagnifyingGlass size={28} weight="bold" className="text-primary" aria-hidden="true" />
-          : <Plant size={28} weight="fill" className="text-primary" aria-hidden="true" />}
+          ? <MagnifyingGlass size={24} weight="bold" className="text-primary" aria-hidden="true" />
+          : <Plant size={24} weight="fill" className="text-primary" aria-hidden="true" />}
       </div>
       <h2 className="font-headline-md text-xl font-bold text-text mb-2">
         {searchQ
@@ -1376,10 +1376,10 @@ export function FilterEmptyState({ onClear, onPickCategory, searchQ, categories 
           <Link
             href={`/recommend?name=${encodeURIComponent(searchQ)}`}
             data-testid="recommend-link-search"
-            className="inline-flex items-center gap-1 min-h-touch text-sm font-semibold text-primary underline underline-offset-4 hover:text-primary-dark rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+            className="inline-flex items-center gap-1 min-h-touch text-sm font-semibold text-primary underline underline-offset-4 hover:text-primary-dark rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
           >
             {tNav("recommend")}
-            <ArrowLeft size={15} className="ltr:rotate-180" aria-hidden="true" />
+            <ArrowLeft size={16} className="ltr:rotate-180" aria-hidden="true" />
           </Link>
         </div>
       )}
@@ -1400,7 +1400,7 @@ function CatalogEmptyState() {
         className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-50 mb-4"
         aria-hidden="true"
       >
-        <Leaf size={28} weight="fill" className="text-primary" aria-hidden="true" />
+        <Leaf size={24} weight="fill" className="text-primary" aria-hidden="true" />
       </div>
       <h2 className="font-headline-md text-xl font-bold text-text mb-2">
         {t("title")}
@@ -1412,7 +1412,7 @@ function CatalogEmptyState() {
         {!isAdmin && (
           <Link
             href="/join"
-            className="bg-primary text-white px-6 py-3 rounded-md font-medium hover:bg-primary-dark transition"
+            className="bg-primary text-white px-6 py-3 rounded-full font-medium hover:bg-primary-dark transition"
           >
             {t("add_cta")}
           </Link>
@@ -1425,7 +1425,7 @@ function CatalogEmptyState() {
             same-page jump rather than a cross-page hop. */}
         <Link
           href="#newsletter"
-          className="border border-primary text-primary px-6 py-3 rounded-md font-medium hover:bg-green-50 transition"
+          className="border border-primary text-primary px-6 py-3 rounded-full font-medium hover:bg-green-50 transition"
         >
           {t("notify_cta")}
         </Link>
@@ -1441,7 +1441,7 @@ function PageOverflowState() {
       <p className="text-fg-muted mb-4">{t("message")}</p>
       <Link
         href="/producers"
-        className="inline-flex items-center bg-primary text-white px-5 py-2 rounded-md hover:bg-primary-dark transition"
+        className="inline-flex items-center bg-primary text-white px-5 py-2 rounded-full hover:bg-primary-dark transition"
       >
         {t("back_cta")}
       </Link>

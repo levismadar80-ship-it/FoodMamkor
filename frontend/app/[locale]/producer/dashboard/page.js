@@ -1,7 +1,8 @@
 "use client";
 
 import { Link as LocaleLink } from "@/i18n/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
+import useDialogFocus, { useDialogEscape } from "@/hooks/useDialogFocus";
 import { EnvelopeSimple, Eye, LockSimple, ShoppingBag, Sparkle, Warning, WhatsappLogo, X } from "@phosphor-icons/react";
 // MEH-956: locale-aware Link for the load-error CTA — preserves the active
 // locale on /contact (bare next/link drops it for `en` under as-needed).
@@ -71,7 +72,7 @@ function VanityLinkCard({ slug }) {
           type="button"
           onClick={share}
           data-testid="vanity-share"
-          className="flex-1 text-sm text-center rounded-sm px-3 py-1.5 bg-primary text-background hover:bg-primary-dark transition"
+          className="flex-1 text-sm text-center rounded-full px-3 py-1.5 bg-primary text-background hover:bg-primary-dark transition"
         >
           {tShare("trigger")}
         </button>
@@ -126,15 +127,19 @@ function SectionFetchError({ message, retryLabel, onRetry, testid }) {
 // banners below — wa.me + mailto, same two-channel layout as the original.
 function StatusSupportModal({ onClose }) {
   const t = useTranslations("dashboard.producer.status.support");
+  const dialogRef = useRef(null);
+  useDialogFocus(dialogRef, true);
+  useDialogEscape(true, onClose);
   return (
     <div
+      ref={dialogRef}
       className="fixed inset-0 z-[9000] flex items-end sm:items-center justify-center bg-black/40 px-4"
       role="dialog"
       aria-modal="true"
       aria-label={t("section_aria")}
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
-      <div className="bg-surface rounded-t-3xl sm:rounded-xl w-full max-w-sm p-6 space-y-4">
+      <div className="bg-surface rounded-t-xl sm:rounded-xl w-full max-w-sm p-6 space-y-4">
         <h2 className="font-semibold text-text text-lg">{t("heading")}</h2>
         <p className="text-sm text-fg-muted">{t("body")}</p>
         <a
@@ -143,7 +148,7 @@ function StatusSupportModal({ onClose }) {
           rel="noopener noreferrer"
           className="flex items-center gap-3 rounded-lg border border-border px-4 py-3 hover:bg-green-50 transition"
         >
-          <WhatsappLogo size={22} weight="fill" className="text-[#25D366] shrink-0" />
+          <WhatsappLogo size={24} weight="fill" className="text-[#25D366] shrink-0" />
           <div>
             <p className="text-sm font-medium">{t("whatsapp_label")}</p>
             <p className="text-xs text-fg-muted">{t("whatsapp_hours")}</p>
@@ -153,7 +158,7 @@ function StatusSupportModal({ onClose }) {
           href="mailto:contact@mehamakor.co.il"
           className="flex items-center gap-3 rounded-lg border border-border px-4 py-3 hover:bg-green-50 transition"
         >
-          <EnvelopeSimple size={22} className="text-primary shrink-0" />
+          <EnvelopeSimple size={24} className="text-primary shrink-0" />
           <div>
             <p className="text-sm font-medium">{t("email_label")}</p>
             <p className="text-xs text-fg-muted">contact@mehamakor.co.il</p>
@@ -722,7 +727,7 @@ export default function ProducerDashboardPage() {
                 // offered a value the server would then reject.
                 min={israelToday()}
                 onChange={(e) => { setVacationUntil(e.target.value); setVacationDateError(""); }}
-                className="border border-border rounded-sm px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
+                className="border border-border rounded-sm px-3 py-1.5 text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                 dir="ltr"
                 aria-invalid={vacationDateError ? "true" : undefined}
                 aria-describedby={vacationDateError ? "vacation-until-error" : undefined}
@@ -768,7 +773,7 @@ export default function ProducerDashboardPage() {
           data-testid="home-rescue-card"
           className="flex items-start gap-3 bg-surface border border-border rounded-lg p-5 mb-6 hover:border-primary transition"
         >
-          <ShoppingBag size={22} className="text-primary shrink-0 mt-0.5" aria-hidden="true" />
+          <ShoppingBag size={24} className="text-primary shrink-0 mt-0.5" aria-hidden="true" />
           <span>
             <span className="block font-semibold text-text">{t("quick_links.rescue.title")}</span>
             <span className="block text-sm text-fg-muted">{t("quick_links.rescue.sub")}</span>
@@ -906,7 +911,7 @@ function ZeroStateShareButton({ slug }) {
       type="button"
       data-testid="overview-zero-share"
       onClick={() => shareOrCopy({ url, text: tVanity("wa_text_template", { url: "" }).trim(), copy })}
-      className="mt-4 text-sm rounded-sm px-4 py-1.5 bg-primary text-background hover:bg-primary-dark transition"
+      className="mt-4 text-sm rounded-full px-4 py-1.5 bg-primary text-background hover:bg-primary-dark transition"
     >
       {tShare("trigger")}
     </button>

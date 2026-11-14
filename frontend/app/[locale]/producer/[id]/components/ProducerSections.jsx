@@ -43,6 +43,7 @@ import ReviewsSection from "@/components/ReviewsSection";
 // from) the native reviews block, only for producers an admin mapped.
 import GoogleRatingLine from "@/components/GoogleRatingLine";
 import SectionHeading from "@/components/ui/SectionHeading";
+import ShowMore from "@/components/ui/ShowMore";
 import FactLine from "@/components/ui/FactLine";
 
 // MEH-1853: `loading:` placeholder REVERTED 06/08 — it measurably made CLS
@@ -601,10 +602,9 @@ export default function ProducerSections({
           )}
           {/* MEH-3021: same look as «הצגת כל האירועים» (ProducerActivities). */}
           {collapsible && (
-            <button
-              type="button"
+            <ShowMore
               data-testid="products-toggle"
-              aria-expanded={showAllProducts}
+              expanded={showAllProducts}
               onClick={() => {
                 if (showAllProducts) {
                   setShowAllProducts(false);
@@ -615,15 +615,14 @@ export default function ProducerSections({
                   setShowAllProducts(true);
                 }
               }}
-              className="mt-4 text-sm text-primary hover:text-primary-dark font-medium underline"
-            >
-              {showAllProducts
+              className="mt-4"
+              label={showAllProducts
                 ? t("producer.detail.sections.products.show_less")
                 : t("producer.detail.sections.products.show_all", {
                     // MEH-3055: with a chip on, «all N» means all N in that group.
                     count: !showGroupChips || activeGroup == null ? sheetTotal : gridProducts.length,
                   })}
-            </button>
+            />
           )}
 
           {/* PR #3974: the gluten production-facility sentence lives with the

@@ -6,6 +6,7 @@ import api from "@/lib/api";
 import { detailToMessage } from "@/lib/errors";
 import { OwnerInviteCreatedSchema } from "@/lib/api-schemas";
 import Button from "@/components/ui/Button";
+import { formatDate } from "@/lib/format-date";
 import InlineMessage from "@/components/ui/InlineMessage";
 import { copyOrThrow } from "@/lib/clipboard";
 
@@ -117,16 +118,7 @@ export default function OwnerInvitePanel({ producerId, producer, onChanged }) {
       : localInvite || { email: null, name: null, sent_at: null, expires_at: null };
   const pending = Boolean(invite.sent_at) && !acceptedAt && !owner;
 
-  const fmtDate = (value) =>
-    value
-      ? new Intl.DateTimeFormat(locale === "he" ? "he-IL" : locale, {
-          // guard-ok: display formatting of a server-issued stamp, not a "today" decision (MEH-2383)
-          timeZone: "Asia/Jerusalem",
-          day: "2-digit",
-          month: "2-digit",
-          year: "numeric",
-        }).format(new Date(value))
-      : "";
+  const fmtDate = (value) => formatDate(value, locale);
 
   // Every request shares this shape: clear the previous link FIRST (after a
   // refusal the link on screen may belong to an invite that no longer exists,
@@ -317,7 +309,7 @@ export default function OwnerInvitePanel({ producerId, producer, onChanged }) {
               dir="ltr"
               value={minted.invite_url}
               onFocus={(e) => e.target.select()}
-              className="flex-1 min-w-0 border border-border rounded-md px-3 py-2 text-sm bg-background"
+              className="flex-1 min-w-0 border border-border rounded-sm px-3 py-2 text-sm bg-background focus-ring"
             />
             <Button type="button" data-testid="owner-invite-copy" onClick={copy} variant="primary" size="sm">
               {copied ? t("copied") : t("copy")}
@@ -336,7 +328,7 @@ export default function OwnerInvitePanel({ producerId, producer, onChanged }) {
               target="_blank"
               rel="noopener noreferrer"
               data-testid="owner-invite-whatsapp"
-              className="min-h-touch inline-flex items-center justify-center bg-surface border border-primary text-primary rounded-md px-4 py-2 text-sm font-medium hover:bg-background transition"
+              className="min-h-touch inline-flex items-center justify-center bg-surface border border-primary text-primary rounded-full px-4 py-2 text-sm font-medium hover:bg-background transition"
             >
               {t("send_whatsapp")}
             </a>
@@ -478,7 +470,7 @@ function Field({ id, label, value, onChange, type = "text", dir, placeholder }) 
         placeholder={placeholder}
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full min-h-touch border border-border rounded-md px-3 py-2 text-sm bg-background"
+        className="w-full min-h-touch border border-border rounded-sm px-3 py-2 text-sm bg-background focus-ring"
       />
     </div>
   );

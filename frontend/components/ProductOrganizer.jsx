@@ -29,7 +29,7 @@ import { orderProducts } from "@/lib/product-order";
 /** @typedef {{ id: string, name: string }} Group */
 
 const ICON_BTN =
-  "inline-flex items-center justify-center w-11 h-11 rounded-sm text-fg-muted hover:text-text hover:bg-black/5 disabled:opacity-30 disabled:pointer-events-none focus-visible:ring-2 focus-visible:ring-primary/40";
+  "inline-flex items-center justify-center w-11 h-11 rounded-sm text-fg-muted hover:text-text hover:bg-black/5 disabled:opacity-50 disabled:pointer-events-none focus-visible:ring-2 focus-visible:ring-primary";
 
 /**
  * @template T
@@ -285,7 +285,7 @@ function OrderRow({ product, index, last, groups, onDrop, onMove, onAssign, t })
               data-testid="product-group-select"
               value={product.group_id || ""}
               onChange={(e) => onAssign(product.id, e.target.value)}
-              className="mt-1 w-full max-w-[12rem] min-h-touch text-sm border border-border rounded-sm px-2 bg-surface-card"
+              className="mt-1 w-full max-w-[12rem] min-h-touch text-sm border border-border rounded-sm px-2 bg-surface-card focus-ring"
             >
               <option value="">{t("product_group_none")}</option>
               {groups.map((g) => (
@@ -373,7 +373,7 @@ function GroupsEditor({ groups, onSave, onDelete, t }) {
                 maxLength={40}
                 aria-label={t("group_rename_aria", { name: g.name })}
                 onBlur={(e) => rename(g.id, e.target.value)}
-                className="flex-1 min-w-0 min-h-touch text-sm border border-border rounded-sm px-2 bg-surface-card"
+                className="flex-1 min-w-0 min-h-touch text-sm border border-border rounded-sm px-2 bg-surface-card focus-ring"
               />
               <button
                 type="button"
@@ -418,14 +418,14 @@ function GroupsEditor({ groups, onSave, onDelete, t }) {
             maxLength={40}
             placeholder={t("group_add_placeholder")}
             onChange={(e) => setDraft(e.target.value)}
-            className="w-full min-h-touch text-sm border border-border rounded-sm px-2 bg-surface-card"
+            className="w-full min-h-touch text-sm border border-border rounded-sm px-2 bg-surface-card focus-ring"
           />
         </span>
         <button
           type="submit"
           data-testid="product-group-add"
           disabled={!draft.trim()}
-          className="shrink-0 min-h-touch text-sm text-primary border border-primary/30 rounded-sm px-4 hover:bg-primary/5 transition disabled:opacity-40"
+          className="shrink-0 min-h-touch text-sm text-primary border border-primary/30 rounded-sm px-4 hover:bg-primary/5 transition disabled:opacity-50"
         >
           {t("group_add_cta")}
         </button>

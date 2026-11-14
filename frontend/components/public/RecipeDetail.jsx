@@ -44,9 +44,10 @@ import { seedColorFor } from "@/lib/brand-seeds";
 import { splitRecipeLines } from "@/lib/recipe-lines"; // MEH-2540
 import { formatPriceRange } from "@/lib/utils";
 import SectionHeading from "@/components/ui/SectionHeading";
+import BackLink from "@/components/ui/BackLink";
 
 const LINK_FOCUS =
-  "rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40";
+  "rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary";
 
 // Tailwind needs the literal class names — never build `grid-cols-${n}`.
 const FACT_COLS = { 1: "grid-cols-1", 2: "grid-cols-2", 3: "grid-cols-3" };
@@ -58,7 +59,7 @@ const tileLabel = (label) => label.replace(/:\s*$/, "");
 function FactTile({ icon: Icon, label, value }) {
   return (
     <div className="flex flex-col items-center gap-1 px-2 py-3 text-center">
-      <Icon size={22} className="text-primary" aria-hidden="true" />
+      <Icon size={24} className="text-primary" aria-hidden="true" />
       <span className="text-sm text-fg-muted">{label}</span>
       <span className="text-base font-bold text-text">{value}</span>
     </div>
@@ -348,12 +349,7 @@ export default function RecipeDetail({ recipe, producer, relatedProducts }) {
               </div>
             </section>
 
-            <Link
-              href={`/${producer.slug}`}
-              className={`mt-8 inline-block text-sm text-primary hover:underline ${LINK_FOCUS}`}
-            >
-              {t("back_to_producer")}
-            </Link>
+            <BackLink href={`/${producer.slug}`} label={t("back_to_producer")} className="mt-8" />
           </div>
         </div>
       </div>

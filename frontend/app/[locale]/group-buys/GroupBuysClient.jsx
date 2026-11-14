@@ -58,7 +58,7 @@ function GroupBuyCard({ gb }) {
           />
         ) : (
           <div className="absolute inset-0 grid place-items-center" data-testid="group-buy-image-missing">
-            <ShoppingCart size={44} weight="light" className="text-primary/70" aria-hidden="true" />
+            <ShoppingCart size={48} weight="regular" className="text-primary/70" aria-hidden="true" />
           </div>
         )}
         {discount > 0 && (

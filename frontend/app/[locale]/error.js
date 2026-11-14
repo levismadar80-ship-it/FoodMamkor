@@ -25,7 +25,7 @@ export default function GlobalError({ error, reset }) {
           <Image src="/logo.png" alt={BRAND_NAME} width={120} height={40} className="mx-auto" />
         </Link>
         <WarningCircle
-          size={72}
+          size={64}
           color="#2e6853"
           className="mx-auto mb-5"
           aria-hidden="true"
@@ -46,7 +46,7 @@ export default function GlobalError({ error, reset }) {
           </Button>
           <Link
             href="/"
-            className="border border-primary text-primary px-6 py-3 rounded-full hover:bg-green-50 transition font-medium focus-visible:ring-2 focus-visible:ring-primary/40"
+            className="border border-primary text-primary px-6 py-3 rounded-full hover:bg-green-50 transition font-medium focus-visible:ring-2 focus-visible:ring-primary"
           >
             {t("home")}
           </Link>

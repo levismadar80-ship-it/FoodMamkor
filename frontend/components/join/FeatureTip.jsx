@@ -57,7 +57,7 @@ export default function FeatureTip({ label, text, describedBy }) {
         aria-controls={tipId}
         onClick={() => setOpen((v) => !v)}
         data-testid="join-feature-tip-button"
-        className="ms-1.5 inline-flex h-6 w-6 items-center justify-center rounded-full border border-primary/40 text-xs font-bold text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+        className="ms-1.5 inline-flex h-6 w-6 items-center justify-center rounded-full border border-primary/40 text-xs font-bold text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
       >
         ?
       </button>

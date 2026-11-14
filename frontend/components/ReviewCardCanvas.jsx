@@ -452,7 +452,7 @@ export default function ReviewCardCanvas({ producer }) {
                 data-testid="review-card-pick"
                 value={index}
                 onChange={(e) => setIndex(Number(e.target.value))}
-                className="w-full max-w-sm border border-border rounded-sm px-3 py-2 text-sm bg-surface focus:outline-none focus:ring-2 focus:ring-primary/40"
+                className="w-full max-w-sm border border-border rounded-sm px-3 py-2 text-sm bg-surface focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
               >
                 {reviews.map((rv, i) => (
                   <option key={rv.id} value={i}>
@@ -497,7 +497,7 @@ export default function ReviewCardCanvas({ producer }) {
               onClick={download}
               disabled={!rendered}
               data-testid="review-card-download"
-              className="text-sm border border-border px-4 py-2 rounded-sm hover:border-primary transition disabled:opacity-40"
+              className="text-sm border border-border px-4 py-2 rounded-sm hover:border-primary transition disabled:opacity-50"
             >
               <DownloadSimple size={16} className="inline align-[-2px]" aria-hidden="true" />{" "}
               {t("owner.download_review")}

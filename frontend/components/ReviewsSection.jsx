@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { CaretDown, EyeSlash, Star } from "@phosphor-icons/react";
+import { EyeSlash, Star } from "@phosphor-icons/react";
 import { useTranslations, useLocale } from "next-intl";
 import api from "@/lib/api";
 import { detailToMessage } from "@/lib/errors";
@@ -20,6 +20,7 @@ import EmptyState from "@/components/ui/EmptyState";
 import { SkeletonList } from "@/components/Skeleton";
 import { seedColorFor } from "@/lib/brand-seeds";
 import SectionHeading from "@/components/ui/SectionHeading";
+import ShowMore from "@/components/ui/ShowMore";
 import InlineMessage from "@/components/ui/InlineMessage";
 import { avatarInitial } from "@/components/ui/Avatar";
 
@@ -217,7 +218,7 @@ function ReviewReply({ review, isOwner, onSaved }) {
           rows={2}
           maxLength={1000}
           placeholder={t("reply_placeholder")}
-          className="w-full border border-border rounded-sm px-3 py-2 bg-surface resize-none focus-visible:ring-2 focus-visible:ring-primary/40 outline-none text-sm"
+          className="w-full border border-border rounded-sm px-3 py-2 bg-surface resize-none focus-visible:ring-2 focus-visible:ring-primary outline-none text-sm"
         />
         {error && (
           <InlineMessage className="mt-1">{error}</InlineMessage>
@@ -228,7 +229,7 @@ function ReviewReply({ review, isOwner, onSaved }) {
             type="button"
             onClick={save}
             disabled={saving || draft.trim().length < 2}
-            className="min-h-touch bg-primary-dark text-white px-5 py-1.5 rounded-sm hover:opacity-90 transition disabled:opacity-60 text-sm font-medium"
+            className="min-h-touch bg-primary-dark text-white px-5 py-1.5 rounded-full hover:opacity-90 transition disabled:opacity-50 text-sm font-medium"
           >
             {saving ? t("submit_saving") : t("reply_save")}
           </button>
@@ -651,16 +652,9 @@ export default function ReviewsSection({
             // center idiom (no physical props). Replaces the MEH-877 carousel.
             // "הצג עוד" only — no "show less" (MEH-1387 anti-pattern).
             // MEH-2592: a full-width button, like Airbnb's «הצגת כל הביקורות».
+            // MEH-3052: the shared ShowMore (block) — one look site-wide.
             <div className="mt-4">
-              <button
-                type="button"
-                onClick={handleShowMore}
-                disabled={loading}
-                className="w-full min-h-touch inline-flex items-center justify-center gap-1 rounded-xl border border-border bg-surface-card text-sm font-semibold text-text hover:bg-green-50 transition disabled:opacity-50"
-              >
-                {t("show_more")}
-                <CaretDown size={16} aria-hidden="true" />
-              </button>
+              <ShowMore onClick={handleShowMore} disabled={loading} label={t("show_more")} />
             </div>
           )}
         </>
@@ -710,7 +704,7 @@ export default function ReviewsSection({
                 onChange={(e) => setBody(e.target.value)}
                 rows={4}
                 maxLength={500}
-                className="w-full border border-border rounded-xl px-3 py-2.5 bg-surface-card resize-none focus-visible:ring-2 focus-visible:ring-primary/40 outline-none"
+                className="w-full border border-border rounded-sm px-3 py-2.5 bg-surface-card resize-none focus-visible:ring-2 focus-visible:ring-primary outline-none"
                 placeholder={t("body_placeholder")}
               />
               <p className="text-xs text-fg-muted mt-1">{body.length}/500</p>
@@ -724,7 +718,7 @@ export default function ReviewsSection({
               <button
                 type="submit"
                 disabled={submitting}
-                className="min-h-touch bg-primary-dark text-white px-6 py-2 rounded-full hover:opacity-90 transition disabled:opacity-60 text-sm font-medium"
+                className="min-h-touch bg-primary-dark text-white px-6 py-2 rounded-full hover:opacity-90 transition disabled:opacity-50 text-sm font-medium"
               >
                 {submitting ? t("submit_saving") : t("submit")}
               </button>

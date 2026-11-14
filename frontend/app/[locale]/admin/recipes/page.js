@@ -8,6 +8,7 @@ import api from "@/lib/api";
 import { detailToMessage } from "@/lib/errors";
 import { showToast } from "@/lib/toast";
 import { SkeletonTable } from "@/components/Skeleton";
+import Dialog from "@/components/ui/Dialog";
 
 /**
  * Admin recipes moderation queue (MEH-997 seed fix).
@@ -23,7 +24,7 @@ import { SkeletonTable } from "@/components/Skeleton";
 // backend's `moderation_status` query param regex.
 const TAB_VALUES = ["pending", "needs_revision", "approved", "rejected", "all"];
 
-function formatDate(iso, locale) {
+function shortDate(iso, locale) {
   if (!iso) return "—";
   return formatEventDate(iso, locale, { day: "2-digit", month: "2-digit", year: "2-digit" });
 }
@@ -194,12 +195,14 @@ export default function AdminRecipesPage() {
 
       {/* Feedback modal */}
       {modalRecipe && (
-        <div className="fixed inset-0 bg-black/40 z-[9000] flex items-center justify-center p-4">
-          <div
-            data-testid="admin-recipes-feedback-modal"
-            className="bg-background rounded-lg p-6 max-w-lg w-full border border-border"
-          >
-            <h2 className="font-headline-md text-xl font-bold text-text mb-2">
+        <Dialog closeOnBackdrop={false}
+          labelledBy="recipe-feedback-title"
+          size="lg"
+          dismissible={!busy}
+          onClose={closeModal}
+          testId="admin-recipes-feedback-modal"
+        >
+            <h2 id="recipe-feedback-title" className="font-headline-md text-xl font-bold text-text mb-2">
               {modalAction === "changes" ? t("recipes.modal.changes_title") : t("recipes.modal.reject_title")}
             </h2>
             <p className="text-fg-muted text-sm mb-4">
@@ -212,7 +215,7 @@ export default function AdminRecipesPage() {
               value={feedback}
               onChange={(e) => setFeedback(e.target.value)}
               rows={5}
-              className="w-full border border-border rounded-md px-3 py-2 text-sm bg-surface"
+              className="w-full border border-border rounded-sm px-3 py-2 text-sm bg-surface focus-ring"
               placeholder={
                 modalAction === "changes"
                   ? t("recipes.modal.changes_placeholder")
@@ -239,8 +242,7 @@ export default function AdminRecipesPage() {
                 {busy ? t("common.sending") : t("recipes.modal.submit")}
               </button>
             </div>
-          </div>
-        </div>
+        </Dialog>
       )}
     </div>
   );
@@ -274,7 +276,7 @@ function RecipeRow({ recipe, busy, t, locale, onApprove, onChanges, onReject }) 
             {recipe.title}
           </button>
         </td>
-        <td className="p-3 text-fg-muted" data-label={t("recipes.columns.created")}>{formatDate(recipe.created_at, locale)}</td>
+        <td className="p-3 text-fg-muted" data-label={t("recipes.columns.created")}>{shortDate(recipe.created_at, locale)}</td>
         <td className="p-3 text-fg-muted" data-label={t("recipes.columns.published")}>
           {recipe.published ? t("recipes.published_yes") : t("recipes.published_no")}
         </td>

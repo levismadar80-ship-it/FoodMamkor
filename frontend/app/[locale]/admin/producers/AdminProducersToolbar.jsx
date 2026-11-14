@@ -16,7 +16,7 @@ function SearchInput({ value, onChange, onSearch }) {
       value={value}
       onChange={(e) => onChange(e.target.value)}
       onKeyDown={(e) => e.key === "Enter" && onSearch()}
-      className="flex-1 border border-border rounded-md px-3 py-2"
+      className="flex-1 border border-border rounded-sm px-3 py-2 focus-ring"
     />
   );
 }
@@ -28,7 +28,7 @@ function StatusSelect({ value, onChange }) {
       value={value}
       onChange={(e) => onChange(e.target.value)}
       aria-label={t("producers.table.columns.status")}
-      className="border border-border rounded-md px-3 py-2 bg-surface"
+      className="border border-border rounded-sm px-3 py-2 bg-surface focus-ring"
     >
       <option value="all">{t("producers.toolbar.all_statuses")}</option>
       <option value="approved">{t("producers.toolbar.active")}</option>
@@ -99,7 +99,7 @@ function ToolbarActions({ onExport }) {
       </button>
       <Link
         href="/admin/producers/new"
-        className="bg-primary text-white px-4 py-2 rounded-md text-sm whitespace-nowrap text-center"
+        className="bg-primary text-white px-4 py-2 rounded-full text-sm whitespace-nowrap text-center"
       >
         {t("producers.toolbar.new_producer")}
       </Link>

@@ -10,6 +10,7 @@ import { formatPrice } from "@/lib/utils";
 import { groupBuyDiscountPct } from "@/lib/group-buy-progress";
 import EventEntryRow, { toEventEntry } from "@/components/EventEntryRow";
 import SectionHeading from "@/components/ui/SectionHeading";
+import ShowMore from "@/components/ui/ShowMore";
 
 // MEH-2602: the business page lists its open group buys and upcoming
 // experiences, fetched client-side by producer_id; a failed fetch or an empty
@@ -128,7 +129,7 @@ function GroupBuyRow({ gb }) {
     <Link
       href={`/group-buys/${gb.id}`}
       data-testid="producer-group-buy-row"
-      className="flex rounded-2xl border border-border bg-surface-card p-4 hover:border-primary transition focus-ring"
+      className="flex rounded-lg border border-border bg-surface-card p-4 hover:border-primary transition focus-ring"
     >
       <div className="min-w-0 flex-1">
         <div className="flex items-start justify-between gap-3">
@@ -231,13 +232,12 @@ export default function ProducerActivities({ producerId, events = [], sectionRef
             ))}
           </div>
           {entries.length > EVENTS_PREVIEW && !showAll && (
-            <button
-              type="button"
+            // MEH-3052: the shared ShowMore (block).
+            <ShowMore
               onClick={() => setShowAll(true)}
-              className="mt-4 text-sm text-primary hover:text-primary-dark font-medium underline"
-            >
-              {t("events.show_all_count", { count: entries.length })}
-            </button>
+              label={t("events.show_all_count", { count: entries.length })}
+              className="mt-4"
+            />
           )}
         </section>
       )}
@@ -253,14 +253,12 @@ export default function ProducerActivities({ producerId, events = [], sectionRef
             ))}
           </div>
           {groupBuys.length > GROUP_BUYS_PREVIEW && !showAllGroupBuys && (
-            <button
-              type="button"
+            <ShowMore
               onClick={() => setShowAllGroupBuys(true)}
               data-testid="group-buys-show-all"
-              className="mt-4 text-sm text-primary hover:text-primary-dark font-medium underline"
-            >
-              {t("group_buys.show_all")}
-            </button>
+              label={t("group_buys.show_all_count", { count: groupBuys.length })}
+              className="mt-4"
+            />
           )}
         </section>
       )}

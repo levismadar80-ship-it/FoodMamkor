@@ -475,7 +475,7 @@ export default function StoryCardCanvas({ producer, mode = "admin", onUploaded, 
           onClick={download}
           disabled={!rendered}
           data-testid="story-card-download"
-          className="text-sm border border-border px-4 py-2 rounded-sm hover:border-primary transition disabled:opacity-40"
+          className="text-sm border border-border px-4 py-2 rounded-sm hover:border-primary transition disabled:opacity-50"
         >
           <DownloadSimple size={16} className="inline align-[-2px]" aria-hidden="true" />{" "}
           {downloadLabel}
