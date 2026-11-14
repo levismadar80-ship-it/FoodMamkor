@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 import fs from "node:fs";
 import path from "node:path";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, renderHook } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
 import he from "../messages/he.json";
 
@@ -18,7 +18,7 @@ vi.mock("@/i18n/navigation", () => ({
 
 import ContactClient from "@/app/[locale]/contact/ContactClient";
 import EmptyState from "@/components/ui/EmptyState";
-import { dashboardTitle } from "@/lib/use-dashboard-title";
+import { dashboardTitle, useDashboardTitle } from "@/lib/use-dashboard-title";
 
 const read = (f) => fs.readFileSync(path.join(__dirname, "..", f), "utf8");
 
@@ -58,6 +58,17 @@ describe("/contact — our own Hebrew field errors, not the browser's bubbles", 
     );
     expect(post).not.toHaveBeenCalled();
   });
+
+  it("editing a field clears its own error (no stale aria-invalid)", () => {
+    renderContact();
+    fireEvent.submit(document.getElementById("contact-message").closest("form"));
+    const name = document.getElementById("contact-name");
+    expect(name.getAttribute("aria-invalid")).toBe("true");
+    fireEvent.change(name, { target: { value: "דנה" } });
+    expect(name.getAttribute("aria-invalid")).not.toBe("true");
+    // the other fields keep theirs until edited
+    expect(document.getElementById("contact-email").getAttribute("aria-invalid")).toBe("true");
+  });
 });
 
 describe("/login — the field error is linked to its field", () => {
@@ -80,6 +91,18 @@ describe("dashboard — each screen has its own title", () => {
   it("no active tab → null, so the page keeps its own title", () => {
     expect(dashboardTitle(null, "he")).toBeNull();
   });
+  it("the hook sets the tab's title and restores the previous one when no tab is active", () => {
+    document.title = "לוח בקרה | מהמקור";
+    const { rerender } = renderHook(({ label, path }) => useDashboardTitle(label, "he", path), {
+      initialProps: { label: "סקירה", path: "/producer/dashboard" },
+    });
+    expect(document.title).toBe("סקירה | מהמקור");
+    rerender({ label: "כלים", path: "/producer/dashboard/tools" });
+    expect(document.title).toBe("כלים | מהמקור");
+    rerender({ label: null, path: "/producer/dashboard/somewhere" });
+    expect(document.title).toBe("לוח בקרה | מהמקור");
+  });
+
   it("the dashboard shell calls the hook", () => {
     expect(read("app/[locale]/producer/dashboard/DashboardLayoutClient.jsx")).toContain("useDashboardTitle(");
   });

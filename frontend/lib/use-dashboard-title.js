@@ -25,11 +25,19 @@ export function dashboardTitle(label, locale) {
 /**
  * @param {string | null | undefined} label
  * @param {string} locale
- * @param {string} pathname  re-run on every navigation, since Next may reset the title
+ * @param {string} pathname  re-run on every navigation (a defensive re-apply;
+ *                           not observed that Next resets it)
  */
 export function useDashboardTitle(label, locale, pathname) {
   useEffect(() => {
     const title = dashboardTitle(label, locale);
-    if (title) document.title = title;
+    if (!title) return undefined;
+    const previous = document.title;
+    document.title = title;
+    // A screen with no tab (or leaving the dashboard) must not keep the last
+    // tab's title: restore what was there before this tab set it.
+    return () => {
+      if (document.title === title) document.title = previous;
+    };
   }, [label, locale, pathname]);
 }

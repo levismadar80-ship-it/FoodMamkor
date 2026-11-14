@@ -71,8 +71,10 @@ export default function Input({
   // attribute below — byte-identical to what ...rest always did. An earlier
   // shape of this change intercepted it (marker + aria-required, no native
   // attr) and that was a measured regression: ContactClient and the
-  // group-buys form have no JS required-validation — the browser gate WAS
+  // group-buys form had no JS required-validation — the browser gate WAS
   // their empty-field gate, and intercepting the attribute deleted it.
+  // (MEH-3191: ContactClient now validates in JS with noValidate; the
+  // group-buys form still relies on the browser gate.)
   // Native required already announces "required" to AT, so no separate
   // aria-required is needed; the span is aria-hidden so readers do not
   // additionally hear "star".

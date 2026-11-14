@@ -53,7 +53,12 @@ export default function ContactClient() {
   const tField = useTranslations("registration.signup");
   const [fieldErrors, setFieldErrors] = useState({});
 
-  const set = (field) => (e) => setForm({ ...form, [field]: e.target.value });
+  // MEH-3191: editing a field clears its own error, so a fixed field stops
+  // announcing aria-invalid before the next submit.
+  const set = (field) => (e) => {
+    setForm({ ...form, [field]: e.target.value });
+    if (fieldErrors[field]) setFieldErrors({ ...fieldErrors, [field]: undefined });
+  };
 
   const validate = () => {
     const errs = {};
