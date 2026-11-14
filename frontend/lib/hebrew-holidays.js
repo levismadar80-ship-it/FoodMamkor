@@ -35,7 +35,7 @@ const MIN_HEBREW_YEAR = 5000;
  * on the day itself.
  * @type {Record<string, { month: string, day: number, startOffset: number, endOffset: number }>}
  */
-export const HOLIDAY_RULES = {
+const HOLIDAY_RULES = {
   rosh_hashana: { month: "Tishri", day: 1, startOffset: -1, endOffset: 1 },
   sukkot: { month: "Tishri", day: 15, startOffset: -1, endOffset: 7 }, // to Shemini Atzeret
   chanuka: { month: "Kislev", day: 25, startOffset: 0, endOffset: 7 },
