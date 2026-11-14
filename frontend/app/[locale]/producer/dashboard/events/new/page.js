@@ -2,7 +2,7 @@
 "use client";
 
 import { Link, useRouter } from "@/i18n/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import api from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
@@ -15,9 +15,12 @@ export default function NewEventPage() {
   // MEH-1161: a pending producer's event is hidden from the public until the
   // business is approved — the public detail would 404 for anyone else, so
   // instead of redirecting there, show an in-page success state with the
-  // "visible after approval" hint. null = status unknown → keep the redirect.
+  // "visible after approval" hint. null = status unknown → see handleSuccess.
   const [producerStatus, setProducerStatus] = useState(null);
   const [createdPending, setCreatedPending] = useState(false);
+  // MEH-3213: EventForm re-enables its button as soon as onSuccess returns,
+  // while handleSuccess may still be asking for the status — one landing only.
+  const landedRef = useRef(false);
 
   useEffect(() => {
     if (!user || user.role !== "producer") return;
@@ -34,12 +37,27 @@ export default function NewEventPage() {
 
   // MEH-1405: form body extracted to <EventForm>. The create page keeps the
   // pending-approval decision (it depends on the page-level producerStatus).
-  const handleSuccess = (data) => {
-    if (producerStatus && producerStatus !== "approved") {
-      setCreatedPending(true);
-      return;
+  // MEH-3213: the public /events/<id> page is fetched anonymously and 404s for
+  // a business that is not live. So an unknown status (the load-time fetch
+  // failed or has not landed) is asked again here, and if it is STILL unknown
+  // the owner goes to their own events list, never to the public page.
+  const handleSuccess = async (data) => {
+    if (landedRef.current) return;
+    landedRef.current = true;
+    let status = producerStatus;
+    if (!status) {
+      status = await api
+        .get("/producers/me")
+        .then((r) => r.data?.status || null)
+        .catch(() => null);
     }
-    router.push(`/events/${data.id}`);
+    if (status === "approved") {
+      router.push(`/events/${data.id}`);
+    } else if (status) {
+      setCreatedPending(true);
+    } else {
+      router.push("/producer/dashboard/events");
+    }
   };
 
   if (createdPending) {
