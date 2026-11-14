@@ -12,6 +12,10 @@ import { CONTACT_EMAIL } from "@/lib/env.client";
 import Button from "@/components/ui/Button";
 import { CONTACT_TOPICS, DEFAULT_CONTACT_TOPIC, contactTopicFrom } from "@/lib/contact-topics";
 import SectionHeading from "@/components/ui/SectionHeading";
+import { useAccountPrefill } from "@/lib/use-account-prefill";
+
+// form field → account field (MEH-3112).
+const CONTACT_PREFILL = { name: "name", email: "email" };
 
 // MEH-653: CONTACT_EMAIL now read from NEXT_PUBLIC_CONTACT_EMAIL (lib/env.client)
 // with a "contact@mehamakor.co.il" fallback. Must still match the backend
@@ -28,6 +32,8 @@ export default function ContactClient() {
   const tNotice = useTranslations("privacy.collection_notice");
   const tPrivacyLink = useTranslations("auth.register.consumer.terms");
   const [form, setForm] = useState(EMPTY_FORM);
+  // MEH-3112: a signed-in visitor finds her own name and email in place.
+  const refillFromAccount = useAccountPrefill(setForm, CONTACT_PREFILL);
   // MEH-2832 (moved from /about, MEH-1113): every «כתבו לנו» on the site links
   // here with ?topic=. A whitelisted value preselects the topic; anything else
   // falls back to "general" silently. Read once on mount, client-side only
@@ -50,6 +56,8 @@ export default function ContactClient() {
       await api.post("/contact", form);
       setStatus("success");
       setForm(EMPTY_FORM);
+      // «שלחו הודעה נוספת» opens the form again with her details in place.
+      refillFromAccount();
     } catch (err) {
       setStatus("error");
       setErrorMsg(detailToMessage(err.response?.data?.detail) || t("error_default"));
@@ -122,6 +130,7 @@ export default function ContactClient() {
               <Input
                 id="contact-name"
                 type="text"
+                autoComplete="name"
                 label={t("field_name_label")}
                 value={form.name}
                 onChange={set("name")}
@@ -130,6 +139,7 @@ export default function ContactClient() {
               <Input
                 id="contact-email"
                 type="email"
+                autoComplete="email"
                 label={t("field_email_label")}
                 value={form.email}
                 onChange={set("email")}
