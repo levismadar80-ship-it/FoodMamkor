@@ -311,6 +311,27 @@ class TestMyGroupBuys:
         resp = client.get(self.URL)
         assert resp.status_code == 401
 
+    def test_units_total_is_the_sum_of_quantities_and_owner_only(self, client, db):
+        """MEH-3254 (grill retro D7): the business sees how many units to
+        prepare — a number, never a roster (MEH-1651). Public readers keep
+        `units_total` null."""
+        producer, owner = _producer_user(db, email="mine6@test.com")
+        gb = _make_group_buy(db, producer, status="funded")
+        empty = _make_group_buy(db, producer)
+        for i, qty in enumerate((3, 5)):
+            buyer = make_user(db, role="consumer", email=f"units{i}@example.com")
+            db.add(GroupBuyCommit(group_buy_id=gb.id, user_id=buyer.id, quantity=qty))
+        db.commit()
+        resp = client.get(self.URL, headers=auth_header(owner))
+        rows = {r["id"]: r for r in resp.json()}
+        assert rows[str(gb.id)]["units_total"] == 8
+        assert rows[str(empty.id)]["units_total"] == 0
+        public = client.get(f"/group-buys/{gb.id}").json()
+        assert public.get("units_total") is None
+        for row in rows.values():
+            assert "email" not in str(row)
+            assert "phone" not in row
+
 
 # ---------- create ----------
 class TestCreate:

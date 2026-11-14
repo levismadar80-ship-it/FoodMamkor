@@ -1147,7 +1147,7 @@
       "status_funded": "Reached the goal",
       "status_fulfilled": "Fulfilled",
       "status_hint_open": "Join now without paying. Once the minimum is reached, the group price unlocks.",
-      "status_hint_funded": "These groups reached the minimum. Joining is closed and the business is in touch with the participants.",
+      "status_hint_funded": "These groups reached the minimum. Joining is closed, and participants contact the business to arrange their order.",
       "status_hint_fulfilled": "The orders were delivered to the participants.",
       "empty_title": "No active group-buys yet",
       "empty_subtitle": "When businesses open group-buys, you'll find them here"
@@ -1183,7 +1183,7 @@
       "delivery_label": "Delivery",
       "how_title": "How it works",
       "how_join": "Join now. You pay nothing through the site",
-      "how_unlock": "Once {min} people join, the group price unlocks and the business gets in touch",
+      "how_unlock": "Once {min} people join, the group price unlocks and you contact the business to arrange your order",
       "how_no_commit": "Didn't reach the goal by the deadline? Nobody is committed",
       "quantity_label": "Quantity",
       "submitting": "Joining...",
@@ -1221,6 +1221,10 @@
       "empty_description": "You set the minimum participants and the deadline. If the minimum isn't reached, no one pays. Perfect for a weekly neighborhood veggie box, a family cheese bundle, or a group order of harvest olive oil.",
       "empty_cta": "+ Create first group",
       "progress_label": "{commits} / {min} participants",
+      "units_ordered": "{count, plural, one {Total ordered: 1 unit} other {Total ordered: # units}}",
+      "units_ordered_with_unit": "Total ordered: {count} (unit: {unit})",
+      "units_requested": "{count, plural, one {Requested so far: 1 unit} other {Requested so far: # units}}",
+      "units_requested_with_unit": "Requested so far: {count} (unit: {unit})",
       "deadline_prefix": "Deadline: {date}",
       "view_public": "View public page →",
       "form": {

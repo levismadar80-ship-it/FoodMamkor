@@ -691,6 +691,10 @@ export default function ProducerGroupBuysPage() {
                     />
                   </div>
                 </div>
+                {/* MEH-3254 (grill retro D7): how many units to prepare — a sum,
+                    never who asked (MEH-1651). «מבוקשת עד כה» while open; hidden
+                    at 0 and for a cancelled group. */}
+                <UnitsLine gb={gb} t={t} />
 
                 <div className="flex items-center justify-between text-xs text-fg-muted">
                   <span>
@@ -747,3 +751,18 @@ export default function ProducerGroupBuysPage() {
     </div>
   );
 }
+
+/** MEH-3254 (D7): the units line under the progress bar on the owner's card.
+ * @param {{ gb: { status: string, units_total?: number | null, unit?: string | null }, t: (key: string, values?: object) => string }} props */
+function UnitsLine({ gb, t }) {
+  const count = gb.units_total ?? 0;
+  if (count <= 0 || gb.status === "cancelled") return null;
+  const base = gb.status === "open" ? "units_requested" : "units_ordered";
+  const unit = gb.unit?.trim();
+  return (
+    <p data-testid="group-buy-units" className="text-xs text-fg-muted mb-2">
+      {unit ? t(`${base}_with_unit`, { count, unit }) : t(base, { count })}
+    </p>
+  );
+}
+
