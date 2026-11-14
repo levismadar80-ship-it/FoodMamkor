@@ -28,10 +28,17 @@ function makeCert() {
   return { key: fs.readFileSync(key), cert: fs.readFileSync(cert) };
 }
 
-// An absolute redirect built by Next from its own (plain-http) view of the
-// request would throw the browser back to http and drop the Secure cookies
-// again. Point any such Location back at the https origin.
-const PLAIN_ORIGINS = [`http://localhost:${TARGET_PORT}`, `http://localhost:${LISTEN}`];
+// An absolute redirect built by Next from its own view of the request would
+// throw the browser off the proxy: back to http (Secure cookies dropped), or
+// to https on Next's own port, where nothing speaks TLS (the /share route
+// handler answered `https://localhost:3000/recommend#share` — it takes the
+// proto from x-forwarded-proto but the port from its own socket). Point any
+// such Location back at the https origin.
+const PLAIN_ORIGINS = [
+  `http://localhost:${TARGET_PORT}`,
+  `http://localhost:${LISTEN}`,
+  `https://localhost:${TARGET_PORT}`,
+];
 function rewriteLocation(location) {
   if (!location) return location;
   for (const o of PLAIN_ORIGINS) {

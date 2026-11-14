@@ -345,7 +345,10 @@ test.describe("/admin/settings — vacation mode", () => {
     await vacationSave(page).click();
     await expect(page.getByText("מצב חופשה הופעל עד 2026-10-01")).toBeVisible();
     expect(writes).toEqual([{ method: "POST", url: "/admin/settings/vacation", body: { active: true, return_date: "2026-10-01" } }]);
-    await page.reload();
+    // MEH-3153: open*() is itself a full document load (page.goto), so it is
+    // the reload. A page.reload() right before it raced two navigations: on
+    // WebKit the reloaded page's in-flight /auth/me was aborted by the goto,
+    // AdminShell saw no user and pushed /login over the goto.
     await openSettings(page);
     await expect(vacationSwitch(page), "the reload reads the persisted state back").toHaveAttribute("aria-checked", "true");
     await expect(returnDate(page)).toHaveValue("2026-10-01");
@@ -354,7 +357,10 @@ test.describe("/admin/settings — vacation mode", () => {
     await vacationSave(page).click();
     await expect(page.getByText("מצב חופשה בוטל")).toBeVisible();
     expect(writes[1]).toEqual({ method: "POST", url: "/admin/settings/vacation", body: { active: false, return_date: null } });
-    await page.reload();
+    // MEH-3153: open*() is itself a full document load (page.goto), so it is
+    // the reload. A page.reload() right before it raced two navigations: on
+    // WebKit the reloaded page's in-flight /auth/me was aborted by the goto,
+    // AdminShell saw no user and pushed /login over the goto.
     await openSettings(page);
     await expect(vacationSwitch(page)).toHaveAttribute("aria-checked", "false");
     await expect(returnDate(page)).toHaveCount(0);
