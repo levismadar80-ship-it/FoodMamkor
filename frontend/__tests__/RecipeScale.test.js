@@ -38,6 +38,11 @@ describe("scaleRecipeLine", () => {
     "חבילת שמרים (50 גרם)",
     "0 סוכר",
     "1/0 כוס",
+    "1 / 2 כוס סוכר",
+    "1 1 גרם",
+    "1,000 גרם קמח",
+    "2-1,500 גרם",
+    "0.001 גרם זעפרן",
     "",
   ])("a line with no readable leading amount stays as written: «%s»", (line) => {
     expect(scaleRecipeLine(line, 2)).toBe(line);

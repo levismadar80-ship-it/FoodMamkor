@@ -71,7 +71,12 @@ function FactTile({ icon: Icon, label, value }) {
 // announced when it changes.
 function ServingsStepper({ value, onChange, t }) {
   const btn =
-    "w-11 h-11 grid place-items-center rounded-full border border-border text-text hover:border-primary focus-ring disabled:opacity-40 disabled:hover:border-border";
+    "w-11 h-11 grid place-items-center rounded-full border border-border text-text hover:border-primary focus-ring aria-disabled:opacity-40 aria-disabled:hover:border-border aria-disabled:cursor-default";
+  // aria-disabled, not disabled: a button that disables itself under the
+  // finger drops keyboard focus to the page.
+  const step = (next, blocked) => () => !blocked && onChange(clampServings(next));
+  const atMin = value <= MIN_SERVINGS;
+  const atMax = value >= MAX_SERVINGS;
   return (
     <div className="mb-2 flex items-center justify-between gap-3" data-testid="servings-stepper">
       <span className="text-base font-medium text-text">{t("servings_stepper_label")}</span>
@@ -80,8 +85,8 @@ function ServingsStepper({ value, onChange, t }) {
           type="button"
           className={btn}
           aria-label={t("servings_less")}
-          disabled={value <= MIN_SERVINGS}
-          onClick={() => onChange(clampServings(value - 1))}
+          aria-disabled={atMin}
+          onClick={step(value - 1, atMin)}
         >
           <Minus size={18} weight="bold" aria-hidden="true" />
         </button>
@@ -96,8 +101,8 @@ function ServingsStepper({ value, onChange, t }) {
           type="button"
           className={btn}
           aria-label={t("servings_more")}
-          disabled={value >= MAX_SERVINGS}
-          onClick={() => onChange(clampServings(value + 1))}
+          aria-disabled={atMax}
+          onClick={step(value + 1, atMax)}
         >
           <Plus size={18} weight="bold" aria-hidden="true" />
         </button>

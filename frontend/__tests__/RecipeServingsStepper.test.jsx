@@ -81,12 +81,16 @@ describe("recipe servings stepper", () => {
 
   it("stops at 1 and at 100", () => {
     const first = mount({ servings: 1 });
-    expect(less().disabled).toBe(true);
-    expect(more().disabled).toBe(false);
+    expect(less().getAttribute("aria-disabled")).toBe("true");
+    expect(more().getAttribute("aria-disabled")).toBe("false");
+    fireEvent.click(less());
+    expect(screen.getByTestId("servings-value").textContent).toBe("1");
     first.unmount();
     mount({ servings: 100 });
-    expect(more().disabled).toBe(true);
-    expect(less().disabled).toBe(false);
+    expect(more().getAttribute("aria-disabled")).toBe("true");
+    expect(less().getAttribute("aria-disabled")).toBe("false");
+    fireEvent.click(more());
+    expect(screen.getByTestId("servings-value").textContent).toBe("100");
   });
 
   it("no line starts with an amount: the stepper still works, nothing moves", () => {

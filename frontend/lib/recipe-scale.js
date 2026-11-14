@@ -30,7 +30,15 @@ const NUM = String.raw`\d+(?:[.,]\d+)?`;
 const AMOUNT = String.raw`(?:\d+\s+\d+\/\d+|\d+\/\d+|\d+\s?${GLYPH_CLASS}|${GLYPH_CLASS}|${NUM})`;
 // An amount, or a range of two («2-3 כפות»). What follows must not make the
 // number something other than an amount: «3% שומן», «180° », «2x», «1:1».
-const LEADING = new RegExp(String.raw`^(${AMOUNT})(?:(\s?[-–]\s?)(${AMOUNT}))?(?![\d%°:\/.,]|[A-Za-z])`);
+// A second number or a slash after a space is refused too: «1 / 2 כוס» and
+// «1 1 גרם» would otherwise have only their first digit scaled, which reads
+// as a different amount rather than as an untouched line.
+const LEADING = new RegExp(
+  String.raw`^(${AMOUNT})(?:(\s?[-–]\s?)(${AMOUNT}))?(?![\d%°:\/.,]|[A-Za-z]|\s*\/|\s+[\d½⅓⅔¼¾⅛])`,
+);
+// «1,000 גרם»: a comma followed by exactly three digits is a thousands
+// separator at least as often as a decimal one. Not ours to guess.
+const THOUSANDS = /^\d{1,3},\d{3}$/;
 
 // Fractions a cook reads at a glance; anything else is shown as a decimal.
 const NICE = /** @type {Array<[number, string]>} */ ([
@@ -100,12 +108,14 @@ export function scaleRecipeLine(line, factor) {
   if (!line || !Number.isFinite(factor) || factor <= 0 || factor === 1) return line;
   const m = LEADING.exec(line);
   if (!m) return line;
+  if (THOUSANDS.test(m[1]) || (m[3] && THOUSANDS.test(m[3]))) return line;
   const first = parseAmount(m[1]);
   const second = m[3] ? parseAmount(m[3]) : null;
   if (!(first > 0) || (second !== null && !(second > 0))) return line;
   const a = formatAmount(first * factor);
   const b = second === null ? "" : formatAmount(second * factor);
-  if (!a || (second !== null && !b)) return line;
+  // "0" would print «0 גרם» for a tiny amount; the owner's line is better.
+  if (!a || a === "0" || (second !== null && (!b || b === "0"))) return line;
   const amount = `${a}${second === null ? "" : `${m[2]}${b}`}`;
   return `${isolate(amount)}${line.slice(m[0].length)}`;
 }
