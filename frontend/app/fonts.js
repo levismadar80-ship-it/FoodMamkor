@@ -197,11 +197,13 @@ export const cormorantGaramond = localFont({
     { path: "./fonts/cormorant-garamond-latin-italic.woff2", weight: "600", style: "italic" },
   ],
   display: "swap",
-  // MEH-2850: stays preloaded. Without it, Cormorant text drawn on `/` (the
-  // event times in «אירועים קרובים», the language toggle in the account
-  // sheet) showed in the Times fallback until the face arrived — measured on
-  // the PR preview 08/11. That is a visible change, which Sapir's condition
-  // for this card rules out without her call.
+  // MEH-2850 (option א, Sapir 14/11): not preloaded. It only sets small Latin
+  // runs (event times in «אירועים קרובים», the language toggle), none of them
+  // the LCP element, and preloading it cost every page its bytes against the
+  // 1.30MB budget. The trade, accepted: until the face arrives those runs show
+  // in the size-adjusted Times fallback below, so they swap without moving the
+  // layout. Same rule web.dev gives: preload only the font the first paint needs.
+  preload: false,
   variable: "--font-latin",
   declarations: [
     {
