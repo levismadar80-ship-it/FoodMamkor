@@ -609,8 +609,12 @@ front matter for the normative token bindings.
   שמירה·מעקב·שיתוף(lg+) beside the title (borderless icon+label, ≥44px);
   guests see them and get the login prompt; the intended action auto-completes
   after sign-in with scroll restore (`lib/pending-action.js`). **Mobile hero
-  overlay = share** (`lg:hidden`; the heart's one home is the actions row);
-  desktop hero clean. **Verified popover** (hero seal): locked dateless copy +
+  overlay = heart · share · bell** (`lg:hidden`; hidden in the owner's
+  preview; MEH-1693 returned the heart, MEH-2671 put the group top-end).
+  Every icon-only button on a photo shares one anatomy: a 32px white face
+  inside a 44px hit area, text-ink icon, green only when on
+  (`components/ui/overlay-icon-button.js`, MEH-3115); desktop hero clean.
+  **Verified popover** (hero seal): locked dateless copy +
   link to `/about#verification`; mobile = bottom sheet with focus trap
   (`ui/Popover` `sheetOnMobile`). **Contact card:** one CTA + quick answers
   (3 visible + "עוד שאלות", MEH-1302 behavior intact) + circular hairline icon
