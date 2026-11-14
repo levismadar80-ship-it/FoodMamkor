@@ -9,7 +9,8 @@
  * pass-through, so each fails on it; the "control" cases stop "always 404".
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { REGION_KEYS } from "@/lib/region-pages";
+import { REGION_KEYS, regionCities } from "@/lib/region-pages";
+import { _resetCategoriesMemo } from "@/lib/middleware-exists";
 
 vi.mock("next-intl/middleware", () => ({
   default: () => () => ({ headers: new Map(), __intl: true }),
@@ -48,6 +49,7 @@ const wasNotFound = (res) => Boolean(res?.__rewrite) && res.status === 404;
 
 beforeEach(() => {
   rewrite.mockClear();
+  _resetCategoriesMemo();
   vi.spyOn(console, "error").mockImplementation(() => {});
 });
 afterEach(() => vi.restoreAllMocks());
@@ -64,6 +66,13 @@ describe("/organizers/<slug>", () => {
   it("control: an existing organizer passes through", async () => {
     backend([[/\/organizers\//, { status: 200 }]]);
     expect(wasNotFound(await middleware(requestFor("/he/organizers/real-org")))).toBe(false);
+  });
+  it("a percent-encoded Hebrew slug is decoded once, not double-encoded", async () => {
+    backend([[/\/organizers\//, { status: 200 }]]);
+    const slug = "מאפיית-הכפר";
+    expect(wasNotFound(await middleware(requestFor(`/he/organizers/${encodeURIComponent(slug)}`)))).toBe(false);
+    expect(global.fetch.mock.calls[0][0]).toContain(`/organizers/${encodeURIComponent(slug)}`);
+    expect(global.fetch.mock.calls[0][0]).not.toMatch(/%25/);
   });
   it("control: backend 500 fails open", async () => {
     backend([[/\/organizers\//, { status: 500 }]]);
@@ -117,6 +126,38 @@ describe("/producers/<category>/<region>", () => {
   it("control: categories 500 fails open", async () => {
     backend([[/\/categories$/, { status: 500 }]]);
     expect(wasNotFound(await middleware(requestFor(`/he/producers/no-such-cat/${REGION}`)))).toBe(false);
+  });
+  it("queries the region's full city list, like the page's citiesQuery", async () => {
+    backend([[/\/categories$/, CATS], [/\/producers\?category=7/, { total: 9 }]]);
+    await middleware(requestFor(`/he/producers/bakery/${REGION}`));
+    const expected = regionCities(REGION).map((c) => `cities=${encodeURIComponent(c)}`).join("&");
+    expect(expected.length).toBeGreaterThan(0);
+    expect(global.fetch.mock.calls[1][0]).toContain(`category=7&${expected}&limit=1`);
+  });
+  it("control: count call 500 fails open", async () => {
+    backend([[/\/categories$/, CATS], [/\/producers\?category=7/, { status: 500 }]]);
+    expect(wasNotFound(await middleware(requestFor(`/he/producers/bakery/${REGION}`)))).toBe(false);
+  });
+  it("control: a blank X-Total-Count is unknown, not zero", async () => {
+    backend([[/\/categories$/, CATS], [/\/producers\?category=7/, { total: "" }]]);
+    expect(wasNotFound(await middleware(requestFor(`/he/producers/bakery/${REGION}`)))).toBe(false);
+  });
+  it("the category list is fetched once per TTL, not per request (60/min limit)", async () => {
+    backend([[/\/categories$/, CATS], [/\/producers\?category=7/, { total: 9 }]]);
+    await middleware(requestFor(`/he/producers/bakery/${REGION}`));
+    await middleware(requestFor(`/he/producers/bakery/${REGION}`));
+    const catCalls = global.fetch.mock.calls.filter(([u]) => /\/categories$/.test(u));
+    expect(catCalls).toHaveLength(1);
+  });
+  it.each([
+    [`/he/producers/no-such-cat/${REGION}`],
+    ["/he/some-bakery/recipes/00000000-0000-0000-0000-000000000000"],
+  ])("a prefetch of %s is not checked", async (path) => {
+    backend([[/./, { status: 404 }]]);
+    const req = requestFor(path);
+    req.headers = new Map([["next-router-prefetch", "1"]]);
+    expect(wasNotFound(await middleware(req))).toBe(false);
+    expect(global.fetch).not.toHaveBeenCalled();
   });
   it("control: /producers/diet/<slug> still takes the diet branch", async () => {
     backend([[/gluten_free=true/, { total: 9 }]]);

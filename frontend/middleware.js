@@ -338,7 +338,9 @@ export default async function middleware(request) {
     isOwnerPreview(request.nextUrl.searchParams);
   if (segs.length === 2 && ENTITY_404_SEGMENTS.has(segs[0]) && segs[1] && !isPrefetch(request) &&
     !ownerPreview) {
-    exists = await entityExists(`${API_URL}/${segs[0]}/${encodeURIComponent(segs[1])}`);
+    // decodeSlugParam: the pathname is percent-encoded, and an organizer slug can
+    // be Hebrew (re-encoding it raw would send %25D7… and mint a false 404).
+    exists = await entityExists(`${API_URL}/${segs[0]}/${encodeURIComponent(decodeSlugParam(segs[1]))}`);
   } else if (segs.length === 3 && segs[0] === "producers" && segs[1] === "diet") {
     exists = await dietPageExists(decodeSlugParam(segs[2]));
   } else if (segs.length === 3 && segs[0] === "producers" && !isPrefetch(request)) {

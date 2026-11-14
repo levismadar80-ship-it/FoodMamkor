@@ -6,8 +6,12 @@
  *           a streamed 200 (their notFound() runs after the shell flushes).
  * Does NOT: decide the page's content — the pages keep their own resolvers
  *           (`[slug]/recipes/[recipe_id]/page.jsx` getJson,
- *           `producers/[category]/[region]/page.js` resolveCell). This only
- *           mirrors their "answered absence" cases.
+ *           `producers/[category]/[region]/page.js` resolveCell). It mirrors
+ *           their "answered absence" cases, plus one more: a 422 (malformed
+ *           recipe id), which the page throws on, is a 404 here too.
+ * Cost:     /categories is limited to 60/min per IP and every middleware
+ *           request shares Vercel's IP, so the list is memoised per isolate
+ *           for CATEGORIES_TTL_MS (the page itself caches it for 300 s).
  * Contract: fail OPEN. Only an answered absence returns false; a 5xx, a 429,
  *           a timeout or a missing X-Total-Count returns true and the page
  *           runs as before (same rule as dietPageExists in middleware.js).
@@ -17,6 +21,14 @@
 import { REGION_PAGE_MIN, getRegion, regionCities } from "./region-pages";
 
 const TIMEOUT_MS = 3000;
+const CATEGORIES_TTL_MS = 300_000;
+/** @type {{ at: number, rows: Array<{ id: unknown, slug: string }> } | null} */
+let categoriesMemo = null;
+
+/** Test hook: forget the memoised category list. */
+export function _resetCategoriesMemo() {
+  categoriesMemo = null;
+}
 
 /**
  * @param {string} url
@@ -55,19 +67,24 @@ export async function recipeExists(apiUrl, slug, recipeId, report) {
  */
 export async function regionCellExists(apiUrl, categorySlug, regionKey, report) {
   if (!getRegion(regionKey)) return false;
-  const catRes = await get(`${apiUrl}/categories`, report);
-  if (!catRes || !catRes.ok) return true;
-  let categories;
-  try {
-    categories = await catRes.json();
-  } catch {
-    return true;
+  let categories = categoriesMemo && Date.now() - categoriesMemo.at < CATEGORIES_TTL_MS
+    ? categoriesMemo.rows
+    : null;
+  if (!categories) {
+    const catRes = await get(`${apiUrl}/categories`, report);
+    if (!catRes || !catRes.ok) return true;
+    try {
+      categories = await catRes.json();
+    } catch {
+      return true;
+    }
+    if (!Array.isArray(categories)) return true;
+    categoriesMemo = { at: Date.now(), rows: categories };
   }
-  if (!Array.isArray(categories)) return true;
   const category = categories.find((c) => c && c.slug === categorySlug);
   if (!category) return false;
   const cities = regionCities(regionKey).map((c) => `cities=${encodeURIComponent(c)}`).join("&");
-  const url = `${apiUrl}/producers?category=${encodeURIComponent(category.id)}&${cities}&limit=1&offset=0`;
+  const url = `${apiUrl}/producers?category=${encodeURIComponent(String(category.id))}&${cities}&limit=1&offset=0`;
   const res = await get(url, report);
   if (!res || !res.ok) return true;
   const raw = res.headers?.get?.("x-total-count") ?? null;
