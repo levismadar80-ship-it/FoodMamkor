@@ -18,6 +18,7 @@ import { buildAlternates, buildEntityTitle, OG_LOCALE } from "@/lib/i18n-seo";
 // the contact form + email instead of an Instagram DM (untracked, no record).
 import { CONTACT_EMAIL } from "@/lib/env.client";
 import SectionHeading from "@/components/ui/SectionHeading";
+import { PRICING_PATH, pricingCopyValues } from "@/lib/pricing";
 
 // MEH-475 PR-C4b/chunk-4: for-businesses FAQ i18n. First production
 // pattern for JSON-LD that consumes translation keys via a t() pass.
@@ -110,7 +111,7 @@ function buildFaqJsonLd(t) {
       name: t(`faq.${k}.q`),
       acceptedAnswer: {
         "@type": "Answer",
-        text: t(`faq.${k}.a`).replace(/\*\*/g, ""),
+        text: t(`faq.${k}.a`, pricingCopyValues()).replace(/\*\*/g, ""),
       },
     })),
   };
@@ -142,6 +143,8 @@ export default async function FaqForBusinessesPage({ params }) {
   const t = await getTranslations({ locale, namespace: "about_business" });
   const tHome = await getTranslations({ locale, namespace: "home" });
   const tJoin = await getTranslations({ locale, namespace: "join" });
+  const tPricing = await getTranslations({ locale, namespace: "pricing" });
+  const pricingValues = pricingCopyValues();
   const jsonLd = buildFaqJsonLd(t);
   return (
     <>
@@ -203,7 +206,20 @@ export default async function FaqForBusinessesPage({ params }) {
                         />
                       </summary>
                       <div className="px-5 pb-5 pt-1 text-base leading-relaxed text-text/90">
-                        {renderAnswer(t(`faq.${item.key}.a`))}
+                        {/* MEH-3166: price numbers come from lib/pricing.js; the
+                            cost answer links to the full price list. */}
+                        {renderAnswer(t(`faq.${item.key}.a`, pricingValues))}
+                        {item.key === "cost" && (
+                          <p className="mt-3">
+                            <Link
+                              href={PRICING_PATH}
+                              className="font-semibold text-primary underline underline-offset-2 hover:no-underline rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                              data-testid="for-businesses-pricing-link"
+                            >
+                              {tPricing("link_full")}
+                            </Link>
+                          </p>
+                        )}
                       </div>
                     </details>
                   </li>

@@ -12,7 +12,9 @@
  *           time (the lib/diet-pages + lib/chip-copy pattern). Does NOT decide
  *           who may USE a tool: the code and its flags do that, and this
  *           registry only says what exists and how it is described. Does NOT
- *           carry per-plan tiers — everything here is free.
+ *           carry prices or per-plan tiers — every tool here is open to
+ *           every business during the launch period; prices live in
+ *           lib/pricing.js (ADR-042, MEH-3166).
  * Related:  lib/diet-pages.js and lib/category-registry.js (the pure-data
  *           module style this follows); lib/rescue.js:39 (rescueBagsEnabled);
  *           __tests__/BusinessFeaturesRegistry.test.js (the drift guard).

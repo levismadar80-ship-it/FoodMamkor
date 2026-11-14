@@ -9,6 +9,7 @@ import JoinStickyBar from "@/components/join/JoinStickyBar";
 import { BRAND_NAME } from "@/lib/constants";
 import { buildAlternates, buildEntityTitle, OG_LOCALE } from "@/lib/i18n-seo";
 import SectionHeading from "@/components/ui/SectionHeading";
+import { PRICING_PATH, pricingCopyValues } from "@/lib/pricing";
 
 /**
  * /join — producer recruitment landing (MEH-995; rebuilt to the approved
@@ -117,6 +118,8 @@ export default async function JoinPage({ params }) {
   const { locale } = await params;
   setRequestLocale(locale);
   const t = await getTranslations({ locale, namespace: "join" });
+  const tPricing = await getTranslations({ locale, namespace: "pricing" });
+  const pricingValues = pricingCopyValues();
   const sample = t("features.sample_label");
 
   const steps = ["1", "2", "3", "4"].map((n) => ({
@@ -183,7 +186,10 @@ export default async function JoinPage({ params }) {
       </div>
 
       {/* ── Features: full-bleed background-alt band ── */}
-      <JoinFeatures />
+      {/* MEH-3166: the price list links here («לרשימת הכלים המלאה»). */}
+      <div id="tools" className="scroll-mt-24">
+        <JoinFeatures />
+      </div>
 
       <div className="max-w-3xl mx-auto px-4 sm:px-6 pt-14 sm:pt-20">
         {/* ── How it works — 4 numbered spreads, then the signup video ── */}
@@ -257,7 +263,19 @@ export default async function JoinPage({ params }) {
                     className="mt-1 shrink-0 text-primary transition-transform motion-reduce:transition-none group-open:rotate-180"
                   />
                 </summary>
-                <p className="px-5 pb-5 pt-0 leading-relaxed text-text/85">{t(`faq.a_${key}`)}</p>
+                {/* MEH-3166: the cost answer takes its numbers from lib/pricing.js
+                    and is the one place on /join that links to the price list. */}
+                <p className="px-5 pb-5 pt-0 leading-relaxed text-text/85">
+                  {t(`faq.a_${key}`, pricingValues)}
+                  {key === "cost" && (
+                    <>
+                      {" "}
+                      <Link href={PRICING_PATH} className={LINK_CLASS} data-testid="join-pricing-link">
+                        {tPricing("link_full")}
+                      </Link>
+                    </>
+                  )}
+                </p>
               </details>
             ))}
           </div>
