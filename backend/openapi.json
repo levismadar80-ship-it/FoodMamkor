@@ -20330,7 +20330,7 @@
     },
     "/auth/resend-verify": {
       "post": {
-        "description": "Re-send verification email. Rate-limited to 3/hour per IP.",
+        "description": "Re-send verification email. 3/hour per IP, plus 3/hour and 10/day\nper account (MEH-2906, services/resend_verify_cap.py).",
         "operationId": "resend_verify_auth_resend_verify_post",
         "responses": {
           "200": {
