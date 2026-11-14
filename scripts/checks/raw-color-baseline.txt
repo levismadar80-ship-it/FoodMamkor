@@ -80,9 +80,6 @@ frontend/app/[locale]/admin/reviews/page.jsx:bg-gray-50
 frontend/app/[locale]/admin/reviews/page.jsx:bg-yellow-100
 frontend/app/[locale]/admin/reviews/page.jsx:text-yellow-500
 frontend/app/[locale]/admin/reviews/page.jsx:text-yellow-800
-frontend/app/[locale]/admin/settings/page.js:bg-gray-200
-frontend/app/[locale]/admin/settings/page.js:bg-gray-200
-frontend/app/[locale]/admin/settings/page.js:bg-gray-200
 frontend/app/[locale]/admin/users/page.js:bg-gray-100
 frontend/app/[locale]/admin/users/page.js:bg-gray-50
 frontend/app/[locale]/admin/users/page.js:bg-gray-50

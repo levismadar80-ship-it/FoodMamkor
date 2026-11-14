@@ -633,6 +633,11 @@ front matter for the normative token bindings.
   **לחמים ואפייה** (growers are the core of "from the source"; bakeries are the
   largest share of the Wave 1 leads). Captions are the name only — no 01–10
   numerals.
+- **On/off switch (MEH-3065):** every `role="switch"` draws its track from
+  `components/ui/Switch.jsx` — `<Switch>` for a standalone toggle (44px tap
+  target), `<SwitchTrack>` inside a row that is itself the switch button.
+  One size (40×24, 16px knob); the knob moves by logical inset (`start-1` off →
+  `end-1` on), never `translate-x`. Guard: `__tests__/SwitchGuard.test.js`.
 
 ## Action hierarchy
 
