@@ -98,6 +98,7 @@ const ROUTES = {
   "/producers/[category]/[region]": { kind: "family", sitemap: "regionPagePath(", linkedFrom: ["app/[locale]/producers/[category]/[region]/page.js", "regionPagePath("] },
   // Legacy id route: ProducerCard links here only for a business with no slug.
   "/producer/[id]": { kind: "family", sitemap: "`/producer/${p.id}`", linkedFrom: ["components/ProducerCard.jsx", "`/producer/${producer.id}`"] },
+  "/account-deleted": { kind: "noindex" },
   "/business-gone": { kind: "noindex" },
   "/claim": { kind: "noindex" },
   "/claim/[token]": { kind: "noindex" },
@@ -117,6 +118,7 @@ const ROUTES = {
   "/registration/[token]": { kind: "noindex" },
   "/reset-password": { kind: "noindex" },
   "/settings": { kind: "noindex" },
+  "/unsubscribe/weekly": { kind: "noindex" },
   "/verify-email": { kind: "noindex" },
   "/p/[slug]": { kind: "redirect" },
 };
