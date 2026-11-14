@@ -3,7 +3,7 @@
 // promise that the business contacts the group. And the owner's units line
 // must read right in the singular and the plural.
 import { describe, expect, it } from "vitest";
-import { IntlMessageFormat } from "intl-messageformat";
+import { createTranslator } from "next-intl";
 import he from "@/messages/he.json";
 import en from "@/messages/en.json";
 
@@ -28,11 +28,17 @@ describe("group-buy copy (MEH-3254)", () => {
   });
 
   const fmt = (locale, key, values) =>
-    new IntlMessageFormat((locale === "he" ? he : en).group_buys.dashboard[key], locale).format(values);
+    createTranslator({
+      locale,
+      messages: locale === "he" ? he : en,
+      namespace: "group_buys.dashboard",
+    })(key, values);
 
   it("units line, he: singular and plural", () => {
     expect(fmt("he", "units_ordered", { count: 1 })).toBe("סה״כ הוזמנה: יחידה אחת");
     expect(fmt("he", "units_ordered", { count: 14 })).toBe("סה״כ הוזמנו: 14 יחידות");
+    expect(fmt("he", "units_ordered", { count: 2 })).toBe("סה״כ הוזמנו: שתי יחידות");
+    expect(fmt("he", "units_requested", { count: 2 })).toBe("כמות מבוקשת עד כה: שתי יחידות");
     expect(fmt("he", "units_requested_with_unit", { count: 3, unit: "מארז" })).toBe("כמות מבוקשת עד כה: 3 (יחידה: מארז)");
   });
 
