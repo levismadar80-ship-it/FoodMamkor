@@ -68,10 +68,10 @@ def _change_email(db: Session, user: User, new_email: str) -> bool:
     existing = db.query(User).filter(User.email == new_email).first()
     if existing and existing.id != user.id:
         raise HTTPException(status_code=409, detail="האימייל כבר בשימוש")
-    user.email = new_email
-    user.email_verified = False
-    user.email_verify_token = secrets.token_urlsafe(32)
-    user.email_verify_expires = utc_now() + timedelta(hours=24)
+    user.email = new_email  # type: ignore[assignment]
+    user.email_verified = False  # type: ignore[assignment]
+    user.email_verify_token = secrets.token_urlsafe(32)  # type: ignore[assignment]
+    user.email_verify_expires = utc_now() + timedelta(hours=24)  # type: ignore[assignment]
     return True
 
 
@@ -83,7 +83,7 @@ def update_profile(
     background_tasks: BackgroundTasks,
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
-):
+) -> UserOut | User:
     """Update the current user's name and/or email.
 
     - Name is trimmed and must be non-empty.
@@ -113,16 +113,16 @@ def update_profile(
     email_changed = False
 
     if "name" in sent and data.name is not None:
-        user.name = data.name
+        user.name = data.name  # type: ignore[assignment]
 
     if data.avatar_url is not None:
-        user.avatar_url = data.avatar_url
+        user.avatar_url = data.avatar_url  # type: ignore[assignment]
 
     if data.city is not None:
-        user.city = data.city.strip() or None
+        user.city = data.city.strip() or None  # type: ignore[assignment]
 
     if "phone" in sent:
-        user.phone = data.phone
+        user.phone = data.phone  # type: ignore[assignment]
 
     if data.email is not None:
         email_changed = _change_email(db, user, data.email.lower())
@@ -142,9 +142,9 @@ def update_profile(
         # After the commit, to the new address only, off the request path.
         background_tasks.add_task(
             send_verify_email,
-            user.email,
-            user.name,
-            user.email_verify_token,
+            user.email,  # type: ignore[arg-type]
+            user.name,  # type: ignore[arg-type]
+            user.email_verify_token,  # type: ignore[arg-type]
             test_cause=bool(user.is_test),
         )
 
@@ -156,7 +156,7 @@ def update_profile(
     if old_avatar and old_avatar != user.avatar_url:
         from app.cloudinary_utils import destroy_image
 
-        destroy_image(old_avatar, context="users_me.update_profile avatar")
+        destroy_image(old_avatar, context="users_me.update_profile avatar")  # type: ignore[arg-type]
 
     return user
 
@@ -169,7 +169,7 @@ async def change_password(
     response: Response,
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
-):
+) -> None:
     """Change the current user's password.
 
     Rejects OAuth-only accounts (no existing password_hash) with a
@@ -193,7 +193,9 @@ async def change_password(
     # MEH-306: bcrypt verify blocks ~50-200ms; offload to a thread
     # so the async handler doesn't block the event loop.
     if not await asyncio.to_thread(
-        verify_password, data.current_password, user.password_hash
+        verify_password,
+        data.current_password,
+        user.password_hash,  # type: ignore[arg-type]
     ):
         raise HTTPException(
             status_code=403,
@@ -204,15 +206,15 @@ async def change_password(
     # but don't want to remember a new one. HIBP fail-open is internal.
     # Order matters: verify_password (above) runs first so a wrong-current
     # caller gets 403, not 422. Per workflow rule 6 (guard test invariant).
-    result = await validate_password(data.new_password, current_hash=user.password_hash)
+    result = await validate_password(data.new_password, current_hash=user.password_hash)  # type: ignore[arg-type]
     if not result.ok:
         raise HTTPException(status_code=422, detail={"failures": result.failures})
     # MEH-306: bcrypt hash also blocks; offload.
-    user.password_hash = await asyncio.to_thread(hash_password, data.new_password)
+    user.password_hash = await asyncio.to_thread(hash_password, data.new_password)  # type: ignore[arg-type]
     # MEH-306: stamp the column → MEH-305 invalidates all sessions whose
     # iat predates this timestamp, including this device's current access
     # token. Set-Cookie below re-arms only the caller's device.
-    user.password_changed_at = datetime.now(timezone.utc)
+    user.password_changed_at = datetime.now(timezone.utc)  # type: ignore[assignment]
     db.commit()
     db.refresh(user)
     # MEH-306: Set-Cookie on the 204 response. Body stays empty (frontend

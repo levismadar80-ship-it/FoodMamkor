@@ -1,21 +1,4 @@
 # Files that existed untyped when typed-new-modules.sh was born (13/11/2026). Only remove lines (when a file gets typed or deleted); never add.
-backend/app/main.py
-backend/app/router_registry.py
-backend/app/routers/organizers.py
-backend/app/routers/producer_claim.py
-backend/app/routers/producer_me.py
-backend/app/routers/producer_name_requests.py
-backend/app/routers/producer_owner_invite.py
-backend/app/routers/producers.py
-backend/app/routers/registrations.py
-backend/app/routers/report_info.py
-backend/app/routers/reports.py
-backend/app/routers/saved_items.py
-backend/app/routers/search.py
-backend/app/routers/system.py
-backend/app/routers/upload.py
-backend/app/routers/users_me.py
-backend/app/routers/whatsapp_webhook.py
 frontend/app/[locale]/[slug]/ProducerGone.jsx
 frontend/app/[locale]/[slug]/not-found.js
 frontend/app/[locale]/[slug]/page.js

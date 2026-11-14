@@ -54,7 +54,7 @@ def request_name_change(
     body: ProducerNameChangeRequestCreate,
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
-):
+) -> ProducerNameChangeRequestOut | ProducerNameChangeRequest:
     """File a name-change request. The public name does not move here."""
     producer = _own_producer(user, db)
 
@@ -100,7 +100,7 @@ def list_own_name_change_requests(
     request: Request,
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
-):
+) -> list[ProducerNameChangeRequestOut] | list[ProducerNameChangeRequest]:
     """The owner's own history — so she can see a request is still pending."""
     producer = _own_producer(user, db)
     return (
@@ -120,8 +120,8 @@ def list_name_change_requests(
     request: Request,
     status: str = "pending",
     db: Session = Depends(get_db),
-    _=Depends(require_admin),
-):
+    _: User = Depends(require_admin),
+) -> list[ProducerNameChangeRequestOut] | list[ProducerNameChangeRequest]:
     """The admin queue. Old and new name travel together on every row."""
     return (
         db.query(ProducerNameChangeRequest)
@@ -141,8 +141,8 @@ def review_name_change_request(
     request_id: UUID,
     body: ProducerNameChangeRequestUpdate,
     db: Session = Depends(get_db),
-    _=Depends(require_admin),
-):
+    _: User = Depends(require_admin),
+) -> ProducerNameChangeRequestOut | ProducerNameChangeRequest:
     """Approve (the name moves) or reject (it does not). The only writer of
     `producers.name` outside the admin producer form."""
     row = db.get(ProducerNameChangeRequest, request_id)
@@ -159,10 +159,10 @@ def review_name_change_request(
             raise HTTPException(status_code=404, detail="בית העסק לא נמצא")
         producer.name = row.requested_name
 
-    row.status = body.status
+    row.status = body.status  # type: ignore[assignment]
     if body.admin_notes is not None:
-        row.admin_notes = body.admin_notes
-    row.reviewed_at = utc_now()
+        row.admin_notes = body.admin_notes  # type: ignore[assignment]
+    row.reviewed_at = utc_now()  # type: ignore[assignment]
     db.commit()
     db.refresh(row)
     return row
