@@ -3721,7 +3721,7 @@
       "eyebrow": "Common questions",
       "q_cost": "How much does it cost?",
       "q_price": "Who sets the price?",
-      "a_cost": "Joining and your page are free. During the launch period every tool is free too. Later, a business that gets {threshold} or more bookings a month through the site will choose between a subscription of ₪{monthly} a month with a reduced commission, and a small commission on each booking with no subscription. We will tell you {noticeDays} days ahead, in writing.",
+      "a_cost": "Joining and your page are free. During the launch period every tool is free too. Later, a business that gets {threshold} or more bookings a month through the site will choose how to go on: a subscription of ₪{monthly} a month with a reduced commission, a small commission on each booking with no subscription, or just the page, free and without paid tools. We will tell you {noticeDays} days ahead, in writing.",
       "a_price": "You do. The price on your page is yours.",
       "all_link": "All the questions",
       "heading": "What businesses ask",
