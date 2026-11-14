@@ -557,6 +557,30 @@ concurrent loops. Tiers + `mehamakor-dod` self-check: ADR-025.
     the tree.
     Reason: a probe under a glob that can't be deleted (rule 32b) leaves a
     permanent local `1 failed` and a blocking Stop hook (12/11).
+43. **Match the task to skills before the first plan or edit (Sapir 14/11,
+    MEH-3176).** Skills load only when a task happens to resemble their
+    description, so a routine-looking task skips them. Before starting, read
+    the table, invoke every row that fits (Skill tool), and write one line in
+    the first reply and in the PR body: `Skills: <names>` or
+    `Skills: none fit — <why>`. `scripts/checks/skills-line-guard.sh` warns on
+    a PR body without it.
+
+    | Task | Skills |
+    |---|---|
+    | New / changed page, block, component | `critique`, `design-review:design-principles`; before PR `polish` |
+    | Hebrew copy, labels, errors, emails | `hebrew-content-writer`, `clarify` (copy still needs Sapir's word-for-word OK, rule 22) |
+    | Accessibility, forms, modals | `israeli-accessibility-compliance` |
+    | Signup / registration / onboarding | `signup-flow-cro`, `onboarding-cro`, `form-cro` |
+    | Metadata, landing pages, sitemap, JSON-LD | `seo-audit`, `schema-markup`, `ai-seo` |
+    | Email flows | `email-sequence` |
+    | Pricing, plans, upgrade prompts | `pricing-strategy`, `paywall-upgrade-cro` |
+    | Personal data, consent, terms, legal | `israeli-privacy-shield`, `israeli-ecommerce-compliance`, `hebrew-legal-research` |
+    | RTL / i18n | `hebrew-rtl-best-practices`, `hebrew-i18n` |
+    | Errors, edge cases, empty states | `harden` |
+    | Speed | `optimize` |
+    | Big or ambiguous feature | `grilling` (rule 4 interview) |
+    | Linear grooming | `backlog-groom` |
+    | Any code PR | `mehamakor-dod`, `adversarial-review` (+ variant, rule 5a), `security-review` for auth / upload / routers |
 
 ---
 
