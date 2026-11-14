@@ -111,7 +111,8 @@ def _render_all(monkeypatch, client, db):
         "כותרת", "<tr><td>שורה</td></tr>"
     )
 
-    from app.routers import admin, marketing
+    from app.routers import marketing
+    from app.routers import admin_decisions as admin
 
     out["admin.approved"] = admin._producer_approved_html("משק ברק", "meshek-barak")
     out["admin.rejected"] = admin._producer_rejected_html("משק ברק", "חסר מסמך")

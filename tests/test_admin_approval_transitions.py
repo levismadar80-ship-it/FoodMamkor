@@ -24,7 +24,7 @@ path, zero on a blocked toggle).
 """
 import pytest
 
-import app.routers.admin as admin_module
+import app.routers.admin_decisions as admin_module
 from app.models.models import Producer
 from app.constants import LICENSE_REQUIRED_CATEGORIES
 from conftest import auth_header, make_category, make_producer, make_user

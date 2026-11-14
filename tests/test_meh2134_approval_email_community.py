@@ -30,7 +30,7 @@ from pathlib import Path
 import pytest
 
 from app.config import settings
-from app.routers.admin import (
+from app.services.admin_producer_emails import (
     _producer_approved_body,
     _producer_changes_requested_body,
     _producer_rejected_body,

@@ -24,7 +24,7 @@ History:  MEH-2017 (creation). The limitation was recorded as a comment in
 """
 
 from app.models import Producer, User
-from app.routers import admin as admin_module
+from app.services import producer_approval as admin_module
 from tests.conftest import auth_header, make_producer, make_user
 
 IMAGE = "https://res.cloudinary.com/demo/image/upload/v1/x.jpg"

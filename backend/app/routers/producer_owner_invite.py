@@ -99,7 +99,10 @@ from app.constants import (
 from app.database import get_db
 from app.models import Producer, User
 from app.rate_limit import limiter
-from app.routers.admin import _producer_approved_body, _producer_approved_html
+from app.services.admin_producer_emails import (
+    _producer_approved_body,
+    _producer_approved_html,
+)
 from app.routers.auth import _set_fingerprint_cookie, _set_refresh_cookie
 from app.schemas.schemas import (
     OwnerInviteAccept,

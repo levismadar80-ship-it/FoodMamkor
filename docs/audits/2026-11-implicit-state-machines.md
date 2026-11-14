@@ -61,7 +61,7 @@ with seven satellites, each of which some reader consults:
 | Column | file:line | Who reads it as state |
 |---|---|---|
 | `status` | `models.py:157` | everything |
-| `phone_verified` | `models.py:508` | approve gate (`admin.py:294`), submit gate |
+| `phone_verified` | `models.py:508` | approve gate (`producer_approval.py:242`), submit gate |
 | `submitted_for_review_at` | `models.py:189` | SLA badge + queue sort (`admin.py:453`, `:561`) |
 | `resubmission_count` / `resubmitted_at` | `models.py:534-535` | resubmit cap (`producer_me.py:1818`) |
 | `requested_changes` / `changes_requested_at` | `models.py:548-549` | "pending but ball-in-owner's-court" |
@@ -72,9 +72,9 @@ with seven satellites, each of which some reader consults:
 **Verdict: the best-governed machine in the repo, and still implicit.** There is no
 transition table; the legal moves are the union of five handlers. What makes it work is
 that each handler carries its own guard *and* its guards were extracted into shared
-owners — `_apply_approval_state` (`admin.py:185`), `_assert_approvable` (`admin.py:232`),
+owners — `_apply_approval_state` (`producer_approval.py:108`), `_assert_approvable` (`producer_approval.py:155`),
 `submission_missing_items` (`services/submission_gate.py`). That extraction is the thing
-that keeps the retry path in `_persist_approval` (`admin.py:340`) from approving a row
+that keeps the retry path in `_persist_approval` (`producer_approval.py:290`) from approving a row
 the main path would have refused.
 
 ### Transitions — every write point
@@ -84,9 +84,9 @@ the main path would have refused.
 | ∅ → `draft` | `auth.py:571`, `auth.py:781`, `producer_queries.py:662`, `admin.py:657` | n/a (creation) |
 | `draft` → `pending` | `producer_me.py:1942` (`POST /producers/me/submit-for-review`) | ✅ draft-only 409 + `submission_missing_items` 422 |
 | `rejected` → `pending` | `producer_me.py:1856` (`POST .../request-review`) | ✅ `FOR UPDATE`, cap, gate |
-| `pending`/`rejected` → `approved` | `admin.py:199` via `_apply_approval_state` | ✅ draft 409 + photo/licence/phone gates, re-asserted on retry |
-| `pending`/`approved` → `rejected` | `admin.py:1457` | ✅ draft 409, preset validated before mutation |
-| `approved` ⇄ `inactive` | `admin.py:1056` | ✅ `_TOGGLEABLE_STATUSES` (MEH-769) |
+| `pending`/`rejected` → `approved` | `admin_decisions.py:146` via `_apply_approval_state` (`producer_approval.py:122`) | ✅ draft 409 + photo/licence/phone gates, re-asserted on retry |
+| `pending`/`approved` → `rejected` | `admin_decisions.py:300` | ✅ draft 409, preset validated before mutation |
+| `approved` ⇄ `inactive` | `admin.py:805` | ✅ `_TOGGLEABLE_STATUSES` (MEH-769) |
 | `pending` → `pending` + feedback | `admin.py` `request_producer_changes` | ✅ |
 | any → any via admin PUT | **refused** — `admin.py:916-921` (MEH-2502) | ✅ 422 |
 
