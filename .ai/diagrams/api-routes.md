@@ -4,6 +4,9 @@
 > of truth is `backend/app/routers/*.py`** (registered in
 > `backend/app/main.py::include_router` calls). If routes drift,
 > update this diagram in the same PR (workflow rule 11).
+> **This is a map, not the inventory.** The complete path list is
+> `docs/DATA.md`, which `scripts/checks/api-docs-route-guard.sh` checks
+> against `backend/openapi.json` (MEH-3192).
 >
 > Legend for auth columns:
 >   - 🌐 = public (no token)

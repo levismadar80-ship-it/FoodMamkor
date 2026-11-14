@@ -302,8 +302,9 @@ ruleset belong to the aggregators, the practical consequences invert:
   (`pr-checks.yml:707-743`). A `needs:` entry naming a job that no longer exists
   fails the workflow outright; an `R_*` reference to a removed job resolves empty,
   and `check_ran` treats empty as "did not run" → **every PR red**. That, not the
-  Settings list, is what must be updated in the same breath as any job merge
-  (MEH-2212's consolidation proposal).
+  Settings list, is what must change with any job merge (MEH-2212's
+  consolidation proposal) — and `scripts/checks/gate-wiring-guard.sh` now fails
+  the PR when the two drift (MEH-3192).
 
 **Decision rule — skipping a check on docs-only PRs:**
 
