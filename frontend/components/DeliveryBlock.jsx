@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Truck, Package, Phone } from "@phosphor-icons/react";
+import { Truck, Package, Phone, Clock } from "@phosphor-icons/react";
 import { WazeGlyph, GoogleMapsGlyph } from "@/components/NavAppGlyphs";
 import { useTranslations } from "next-intl";
 import { formatPrice } from "@/lib/utils";
@@ -15,6 +15,7 @@ import HoursText from "@/components/HoursText";
 import { coordsNavLinks } from "@/lib/nav-links";
 import SectionHeading from "@/components/ui/SectionHeading";
 import ShowMore from "@/components/ui/ShowMore";
+import FactLine from "@/components/ui/FactLine";
 
 // MEH-2592 C: every row list in the block (areas and pickup) sits in one soft
 // card instead of between hairlines, and rows carry their own side padding.
@@ -181,13 +182,10 @@ function capSections(sections, limit) {
 function AreaGroup({ label, rows, t, feeOf = () => null }) {
   return (
     <div>
-      {/* MEH-2592 C: the day reads as a small gold heading. Its truck came
-          back at Sapir's ask (30/10) — the icon is how the eye finds the
-          delivery rows. */}
-      <p className="flex items-center gap-1.5 text-sm font-bold text-gold-deep mb-1.5">
-        <Truck size={16} className="text-primary" aria-hidden="true" data-testid="area-group-icon" />
-        {label}
-      </p>
+      {/* MEH-2592 C: the day reads as a small gold heading. MEH-3028: text
+          only — the truck now leads the fee line once, instead of repeating
+          on every day (Sapir, option א, 13/11). */}
+      <p className="text-sm font-bold text-gold-deep mb-1.5">{label}</p>
       <ul className={LIST_CARD}>
         {rows.map((da) => (
           <AreaRow key={da.id ?? da.city} da={da} t={t} fee={feeOf(da)} />
@@ -337,13 +335,12 @@ function PickupRows({ locations, t, tMap }) {
     <div className="mb-4">
       {/* MEH-2592 C: «חינם» once, as a tag beside the heading, instead of on
           every row (MEH-1646 (b) still holds: every pickup shape says it). */}
-      <p className="flex items-center gap-2 text-base font-bold text-text mb-2">
-        <Package size={18} className="text-primary" aria-hidden="true" data-testid="pickup-heading-icon" />
+      <FactLine icon={Package} className="text-base font-bold text-text mb-2" data-testid="pickup-heading">
         {t("pickup")}
-        <span className="rounded-full bg-green-50 px-2 py-0.5 text-xs font-bold text-primary">
+        <span className="ms-1.5 rounded-full bg-green-50 px-2 py-0.5 text-xs font-bold text-primary">
           {t("free")}
         </span>
-      </p>
+      </FactLine>
       <ul className={LIST_CARD}>
         {visible.map((loc, i) => (
           <PickupRow key={`${loc.city ?? ""}-${loc.label ?? ""}-${i}`} loc={loc} t={t} tMap={tMap} />
@@ -570,9 +567,10 @@ export default function DeliveryBlock({
   const hasExclusions = nationwide && excluded.length > 0;
   return (
     <section className="mt-12">
-      {/* MEH-2592: part C dropped this truck; Sapir asked for it back (30/10). */}
-      <SectionHeading size="content" className="mb-4 flex items-center gap-2">
-        <Truck size={22} className="text-primary" aria-hidden="true" data-testid="delivery-heading-icon" />
+      {/* MEH-3028: a section heading is text only, site-wide (Sapir, option א,
+          13/11) — supersedes the 30/10 ask to put the truck back here. The
+          truck leads the fee line below instead, via FactLine. */}
+      <SectionHeading size="content" className="mb-4">
         {t("heading")}
       </SectionHeading>
 
@@ -596,11 +594,7 @@ export default function DeliveryBlock({
           isolated for the same reason AreaRow's min_order is (MEH-1168 P1):
           RTL otherwise reorders "35₪". */}
       {feeSegments && (
-        <p
-          className="flex items-center gap-1.5 text-sm text-text mb-4"
-          data-testid="delivery-fee-line"
-        >
-          <Truck size={16} className="text-primary" aria-hidden="true" />
+        <FactLine icon={Truck} className="text-sm text-text mb-4" data-testid="delivery-fee-line">
           <span>
             {feeSegments.map((seg, i) => (
               <span key={seg.before || i}>
@@ -611,13 +605,12 @@ export default function DeliveryBlock({
               </span>
             ))}
           </span>
-        </p>
+        </FactLine>
       )}
 
       {nationwide ? (
         <>
           <span className="inline-flex items-center gap-1.5 bg-green-50 text-text border border-border rounded-xl text-sm px-3 py-1.5 font-medium mb-4">
-            <Truck size={14} className="text-current ms-1" aria-hidden="true" />
             {hasExclusions
               ? t("nationwide_except", { cities: excluded.join(", ") })
               : t("nationwide")}
@@ -647,11 +640,14 @@ export default function DeliveryBlock({
               in a subline; group: a header per distinct day; flat: no day data. */}
           {grouped.mode === "hoist" && (
             <>
-              <p
-                className="flex items-center gap-1.5 text-sm text-fg-muted mb-2"
+              <FactLine
+                // MEH-3028: a clock only for the order cutoff; the bare
+                // «יוצאים בימי X» is the one-day form of the day labels,
+                // which carry no icon.
+                icon={cutoff ? Clock : null}
+                className="text-sm text-fg-muted mb-2"
                 data-testid="delivery-order-cutoff"
               >
-                <Truck size={16} className="text-primary" aria-hidden="true" />
                 {/* MEH-1646 (a): with a single-day order window the cutoff line
                     REPLACES dispatch_days — day still stated exactly once. */}
                 {cutoff
@@ -661,7 +657,7 @@ export default function DeliveryBlock({
                       delivery_day: grouped.day,
                     })
                   : t("dispatch_days", { day: grouped.day })}
-              </p>
+              </FactLine>
               {/* MEH-1903: first AREA_PREVIEW_LIMIT rows until expanded. */}
               <ul className={LIST_CARD}>
                 {visibleAreaRows.map((da) => (
@@ -688,13 +684,13 @@ export default function DeliveryBlock({
               {/* MEH-1646 (a): 2+ distinct delivery days → no single day to
                   promise, so the cutoff renders WITHOUT the delivery half. */}
               {cutoff && (
-                <p
-                  className="flex items-center gap-1.5 text-sm text-fg-muted -mb-2"
+                <FactLine
+                  icon={Clock}
+                  className="text-sm text-fg-muted -mb-2"
                   data-testid="delivery-order-cutoff"
                 >
-                  <Truck size={16} className="text-primary" aria-hidden="true" />
                   {t("order_cutoff", { day: cutoffDayLabel, time: cutoff.close })}
-                </p>
+                </FactLine>
               )}
               {/* MEH-1903: day groups then the "arranged" bucket, capped on the
                   TOTAL visible rows — a group entirely past the cap is absent
@@ -722,15 +718,14 @@ export default function DeliveryBlock({
         <PickupRows locations={pickupLocations} t={t} tMap={tMap} />
       ) : (
         pickup && (
-          <p className="flex items-center gap-2 text-base font-bold text-text mb-4">
-            <Package size={18} className="text-primary" aria-hidden="true" data-testid="pickup-heading-icon" />
+          <FactLine icon={Package} className="text-base font-bold text-text mb-4" data-testid="pickup-heading">
             {t("pickup")}
             {/* MEH-1646 (b): the generic fallback line carries the same tag
                 as the location rows — no producer shape misses it. */}
-            <span className="rounded-full bg-green-50 px-2 py-0.5 text-xs font-bold text-primary">
+            <span className="ms-1.5 rounded-full bg-green-50 px-2 py-0.5 text-xs font-bold text-primary">
               {t("free")}
             </span>
-          </p>
+          </FactLine>
         )
       )}
     </section>

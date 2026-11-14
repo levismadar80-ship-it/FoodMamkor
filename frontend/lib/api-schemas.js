@@ -319,3 +319,16 @@ export const GroupBuyProducerDeliverySchema = z
       .default([]),
   })
   .loose();
+
+// GET /producer-name-check → { matches: [{ id, slug?, name, city? }] } (MEH-3086).
+// The sign-up form's "is this business already on the site?" hint.
+export const NameCheckResponseSchema = z.object({
+  matches: z.array(
+    z.object({
+      id: z.string(),
+      slug: z.string().nullable().optional(),
+      name: z.string(),
+      city: z.string().nullable().optional(),
+    })
+  ),
+});

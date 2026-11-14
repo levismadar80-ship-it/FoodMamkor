@@ -658,21 +658,6 @@ export function HomeProducersGrid({
               )}
             </div>
           )}
-          {/* MEH-2827 PR 4: one quiet line after the list — no card, no button —
-              so the way to /recommend is not only the footer. */}
-          {producers.length > 0 && (
-            <p className="mt-8 text-center text-sm text-fg-muted" data-testid="home-recommend-line">
-              {t("recommend.title")}{" "}
-              <Link
-                href="/recommend"
-                data-testid="recommend-link-home"
-                className="inline-flex items-center gap-1 min-h-touch text-sm font-semibold text-primary underline underline-offset-4 hover:text-primary-dark rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
-              >
-                {t("nav.footer.recommend")}
-                <ArrowLeft size={15} className="ltr:rotate-180" aria-hidden="true" />
-              </Link>
-            </p>
-          )}
           {/* MEH-1476: surprise-me relocated here from the hero (was
               MEH-1288/MEH-1369). Full-catalog random producer via onSurprise
               (use-home-page handleSurprise → GET /producers/random); gated on
@@ -692,6 +677,23 @@ export function HomeProducersGrid({
                 {t("home.hero.surprise_me")}
               </button>
             </div>
+          )}
+          {/* MEH-2827 PR 4: one quiet line after the list — no card, no button —
+              so the way to /recommend is not only the footer. Last in the
+              section, under «הפתיעו אותי» (Sapir 13/11): the two browse actions
+              stay together, the contribution ask comes after browsing. */}
+          {producers.length > 0 && (
+            <p className="mt-8 text-center text-sm text-fg-muted" data-testid="home-recommend-line">
+              {t("recommend.title")}{" "}
+              <Link
+                href="/recommend"
+                data-testid="recommend-link-home"
+                className="inline-flex items-center gap-1 min-h-touch text-sm font-semibold text-primary underline underline-offset-4 hover:text-primary-dark rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+              >
+                {t("nav.footer.recommend")}
+                <ArrowLeft size={15} className="ltr:rotate-180" aria-hidden="true" />
+              </Link>
+            </p>
           )}
         </>
       )}

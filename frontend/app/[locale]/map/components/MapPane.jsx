@@ -4,7 +4,6 @@ import dynamic from "next/dynamic";
 
 import { useTranslations } from "next-intl";
 import {
-  CircleNotch,
   Leaf,
   MagnifyingGlass,
   MapTrifold,
@@ -14,6 +13,8 @@ import {
 
 import { CATEGORY_LEGEND } from "@/lib/category-registry";
 import MapKey from "./MapKey";
+import { SkeletonBlock } from "@/components/Skeleton";
+import ButtonSpinner from "@/components/ButtonSpinner";
 
 // NearMePill sits at sheet-edge + 12px and is 44px tall; +12px again clears it.
 const NEAR_ME_STACK_OFFSET_PX = 68;
@@ -39,10 +40,10 @@ const sheetRide = (offsetPx) =>
 function MapLoadingState() {
   const t = useTranslations();
   return (
-    <div className="w-full h-full rounded-md bg-background animate-pulse flex flex-col items-center justify-center gap-3">
+    <SkeletonBlock as="div" tone="page" className="w-full h-full rounded-md flex flex-col items-center justify-center gap-3">
       <MapTrifold size={48} className="text-primary/30" />
       <p className="text-fg-muted text-sm">{t("map.client.loading_map")}</p>
-    </div>
+    </SkeletonBlock>
   );
 }
 
@@ -83,8 +84,10 @@ export default function MapPane({
   registerApi,
   mapRef,
   // Sapir 13/11: the pickup-layer toggle (MEH-1412) and its reminder (MEH-2046)
-  // are gone. Pickup points are always drawn; MapComponent defaults
-  // showSecondaryLayer to true.
+  // are gone (MEH-3045). MEH-3054: one pin per business; a business's pickup
+  // points show when it is selected, and every business's while the
+  // «איסוף עצמי» chip is on (this flag, from useMapFilters).
+  showAllPickupPoints = false,
   // MEH-1611: id of the selected business (focus-on-select demote). Pure
   // pass-through — MapClient owns the state, MapComponent renders the effect.
   focusedProducerId,
@@ -122,6 +125,7 @@ export default function MapPane({
         registerApi={registerApi}
         mapRef={mapRef}
         focusedProducerId={focusedProducerId}
+        showAllPickupPoints={showAllPickupPoints}
       />
 
 
@@ -203,7 +207,7 @@ export default function MapPane({
         className="hidden lg:flex absolute bottom-24 right-4 w-11 h-11 rounded-full bg-surface-floating border border-border shadow-md items-center justify-center text-primary hover:bg-green-50 transition-colors z-[1000] focus-visible:ring-2 focus-visible:ring-primary/40 disabled:opacity-60"
       >
         {gpsLoading
-          ? <CircleNotch size={20} className="animate-spin" aria-hidden="true" />
+          ? <ButtonSpinner size={20} />
           : <NavigationArrow size={20} weight="fill" aria-hidden="true" />
         }
       </button>

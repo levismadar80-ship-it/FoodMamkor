@@ -10,6 +10,7 @@ import { BADGE_CONFIG } from "@/lib/badges";
 import { useBadgeCopy } from "@/lib/use-badge-copy";
 import { useChipCopy } from "@/lib/use-chip-copy";
 import Popover from "@/components/ui/Popover";
+import { SwitchTrack } from "@/components/ui/Switch";
 
 /**
  * Module:   FilterSheet
@@ -534,18 +535,7 @@ export default function FilterSheet({
                         {icon && <span aria-hidden="true">{icon}</span>}
                         {chip.label}
                       </span>
-                      <span
-                        aria-hidden="true"
-                        className={`relative shrink-0 w-10 h-6 rounded-full transition-colors ${
-                          active ? "bg-primary" : "bg-border"
-                        }`}
-                      >
-                        <span
-                          className={`absolute top-1 w-4 h-4 rounded-full bg-surface shadow transition-all ${
-                            active ? "end-1" : "start-1"
-                          }`}
-                        />
-                      </span>
+                      <SwitchTrack on={active} focusRing={false} />
                     </button>
                   </div>
                 );
