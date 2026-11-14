@@ -307,6 +307,25 @@ def _run_followup_job() -> None:
         db.close()
 
 
+def _run_admin_pending_reminder_job() -> None:
+    """MEH-3147: morning email to the admin listing businesses waiting for
+    approval 2+ business days. Fresh session per run; any exception is
+    swallowed so the scheduler thread never dies."""
+    from app.database import SessionLocal
+    from app.services.admin_pending_reminder import send_admin_pending_reminder
+
+    db = SessionLocal()
+    try:
+        listed = send_admin_pending_reminder(db)
+        log.info("[ADMIN-REMINDER] daily run complete listed=%s", listed)
+    except Exception as exc:
+        db.rollback()
+        capture_background_exception(exc, task="admin_pending_reminder")
+        log.error("[ADMIN-REMINDER] daily run crashed", exc_info=True)
+    finally:
+        db.close()
+
+
 def _run_watchdog_job() -> None:
     """MEH-509 PR2b: 5-min after-hours watchdog tick. Shares the same
     APScheduler instance as the MEH-539 followup job (one scheduler, two
@@ -501,6 +520,18 @@ async def lifespan(app: FastAPI):
         CronTrigger(hour=10, minute=0),
         id="meh_539_onboarding_followups_daily",
         replace_existing=True,
+    )
+    # MEH-3147: admin pending-approval reminder. 05:00 UTC = 07:00/08:00
+    # Israel, before the admin's day starts. coalesce + a 3h grace: a pause
+    # over the fire time sends it late rather than skipping the day.
+    followup_scheduler.add_job(
+        _run_admin_pending_reminder_job,
+        CronTrigger(hour=5, minute=0),
+        id="meh_3147_admin_pending_reminder_daily",
+        replace_existing=True,
+        max_instances=1,
+        coalesce=True,
+        misfire_grace_time=3 * 3600,
     )
     # MEH-509 PR2b: register the after-hours watchdog on the same
     # scheduler. Gated by WATCHDOG_ENABLED (default False) so the empty-

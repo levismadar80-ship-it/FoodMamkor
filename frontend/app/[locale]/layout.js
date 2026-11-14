@@ -5,7 +5,6 @@ import { NextIntlClientProvider, hasLocale } from "next-intl";
 import { MotionConfig } from "framer-motion";
 import { getMessages, getTranslations, setRequestLocale } from "next-intl/server";
 import { AuthProvider } from "@/lib/auth-context";
-import { LanguageProvider } from "@/lib/language-context";
 import Header from "@/components/Header";
 import VerifyBanner from "@/components/VerifyBanner";
 import FooterSlot from "@/components/FooterSlot";
@@ -253,7 +252,6 @@ export default async function LocaleLayout({ children, params }) {
             namespaces stay out of every page's payload (lib/client-messages.js). */}
         <NextIntlClientProvider messages={rootClientMessages(await getMessages())}>
           <AuthProvider>
-            <LanguageProvider>
               <SmoothScrollProvider>
                 {/* MEH-788: global reduced-motion off-switch for ALL
                     framer-motion (FadeInSection scroll-reveals, home hero/grid,
@@ -284,7 +282,6 @@ export default async function LocaleLayout({ children, params }) {
                 <PrehydrationInputReplay />
                 </MotionConfig>
               </SmoothScrollProvider>
-            </LanguageProvider>
           </AuthProvider>
         </NextIntlClientProvider>
         {CLARITY_PROJECT_ID && <ClarityScript projectId={CLARITY_PROJECT_ID} />}

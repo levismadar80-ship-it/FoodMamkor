@@ -29,6 +29,7 @@ const RESERVED = new Set([
   "upgrade", "messages", "discover", "publish", "newsletter",
   "api", "_next", "favicon.ico", "manifest.json",
   "robots.txt", "sitemap.xml", "sw.js",
+  "monitoring", // MEH-2976: Sentry tunnel (next.config.js tunnelRoute)
   // MEH-2148: real `app/[locale]/` route directories that were absent.
   "accessibility", "contact", "dev", "events", "experiences",
   "forgot-password", "group-buys", "home", "join", "privacy",
