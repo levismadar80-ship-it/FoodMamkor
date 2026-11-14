@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { renderHook, act } from "@testing-library/react";
+import { renderHook, act, waitFor } from "@testing-library/react";
 import { useMapSync } from "@/app/[locale]/map/state/useMapSync";
 
 // MEH-1298: lock the desktop half of the tap-target fix — handleCardClick must
@@ -8,7 +8,7 @@ import { useMapSync } from "@/app/[locale]/map/state/useMapSync";
 // two taps of the MEH-1243 select→navigate gesture).
 vi.mock("next-intl", () => ({ useTranslations: () => (k) => k }));
 vi.mock("@/lib/api", () => ({ default: { get: vi.fn(() => Promise.resolve({ data: [] })) } }));
-vi.mock("@/lib/toast", () => ({ showToast: { info: vi.fn() } }));
+vi.mock("@/lib/toast", () => ({ showToast: { info: vi.fn(), error: vi.fn() } }));
 vi.mock("@/lib/schemas", () => ({ GEO_SEARCH_ERROR_KEYS: [], GeoSearchSchema: { safeParse: () => ({ success: true, data: {} }) } }));
 vi.mock("@/lib/map-chips", () => ({ boundsToCenterRadius: () => ({ lat: 0, lng: 0, radius_km: 5 }) }));
 vi.mock("@/components/MapBottomSheet", () => ({ PEEK: 14, HALF: 45 }));
@@ -270,3 +270,19 @@ describe("useMapSync — a marker tap on a phone keeps the sheet at PEEK (MEH-31
     expect(props.setSheetSnap).not.toHaveBeenCalled();
   });
 });
+
+// MEH-3219 B15: a failed «חפשו באזור זה» fetch must not empty the list — the
+// sheet would then read «אין בתי עסק» about an area that has them.
+describe("useMapSync — a failed area search keeps the list (MEH-3219 B15)", () => {
+  it("does not clear the producers, toasts the load error and re-offers the search", async () => {
+    const { default: api } = await import("@/lib/api");
+    const { showToast } = await import("@/lib/toast");
+    api.get.mockImplementationOnce(() => Promise.reject(Object.assign(new Error("429"), { response: { status: 429 } })));
+    const { result, props } = setup();
+    act(() => result.current.handleSearchThisArea());
+    await waitFor(() => expect(showToast.error).toHaveBeenCalledWith("map.errors.load_failed"));
+    expect(props.setAllProducers).not.toHaveBeenCalled();
+    expect(props.setMapMoved).toHaveBeenLastCalledWith(true);
+  });
+});
+

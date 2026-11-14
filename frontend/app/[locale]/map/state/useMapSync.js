@@ -297,7 +297,15 @@ export function useMapSync({
     api
       .get("/producers", { params })
       .then((r) => setAllProducers(r.data))
-      .catch(() => setAllProducers([]));
+      // MEH-3219 B15: a failed area search (a 429 on a phone, a dropped
+      // connection) used to empty the list, so the sheet said «אין בתי עסק»
+      // about an area that has them. Keep what is on screen, say the load
+      // failed (the mount load's string), and bring the «חפשו באזור זה» pill
+      // back so one tap retries.
+      .catch(() => {
+        showToast.error(t("map.errors.load_failed"));
+        setMapMoved(true);
+      });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mapBounds, chipState, categories, cityFilter]);
 
