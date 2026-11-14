@@ -19,6 +19,7 @@ import { safeInternalRedirect } from "@/lib/safe-redirect";
 import { env } from "@/lib/env";
 import { optimizeCloudinary } from "@/lib/cloudinary";
 import InlineMessage from "@/components/ui/InlineMessage";
+import EmailTypoHint from "@/components/EmailTypoHint";
 
 /**
  * Module:   RegisterClient
@@ -390,6 +391,7 @@ function RegisterPageBody() {
           <Input
             id="register-name"
             data-testid="register-name"
+            autoComplete="name"
             label={t("auth.register.consumer.fields.name")}
             value={form.name}
             onChange={set("name")}
@@ -402,6 +404,7 @@ function RegisterPageBody() {
             id="register-email"
             data-testid="register-email"
             type="email"
+            autoComplete="email"
             label={t("auth.register.consumer.fields.email")}
             value={form.email}
             onChange={set("email")}
@@ -411,6 +414,7 @@ function RegisterPageBody() {
             className="text-end"
             dir="ltr"
           />
+          <EmailTypoHint fieldId="register-email" value={form.email} onAccept={(email) => set("email")({ target: { value: email } })} />
           <div>
             <label htmlFor="pw-password" className="block text-sm font-medium mb-1">
               {t("auth.register.consumer.fields.password")}{" "}

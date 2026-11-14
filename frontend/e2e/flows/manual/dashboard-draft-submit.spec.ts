@@ -282,8 +282,9 @@ test.describe("WhatsApp verification from the draft", () => {
     await expect(cta(page)).toBeDisabled();
 
     await card.getByRole("button", { name: "שלחו קוד אימות" }).click();
+    // MEH-3126: the 6th digit verifies on its own — no tap on «אמתו». The
+    // single confirm POST is asserted below (posts has exactly two entries).
     await card.getByLabel("קוד אימות").fill("123456");
-    await card.getByRole("button", { name: "אמתו" }).click();
 
     // MEH-2305: verifying is one step, not the submission — the toast points at the button.
     await expect(page.getByText('הטלפון אומת! כשכל השלבים מוכנים, לחצו "שליחה לבדיקה" כדי שנכיר את העסק.')).toBeVisible();

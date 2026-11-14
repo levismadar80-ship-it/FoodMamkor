@@ -1056,6 +1056,10 @@
       "prep_time_label": "זמן הכנה:",
       "cook_time_label": "זמן בישול:",
       "servings_label": "מנות:",
+      "servings_stepper_label": "מנות",
+      "servings_less": "פחות מנות",
+      "servings_more": "יותר מנות",
+      "servings_note": "הכמויות חושבו ל-{n} מנות. שורה בלי מספר נשארת כמו שנכתבה.",
       "minutes_unit": "דק",
       "ingredients_heading": "רכיבים",
       "instructions_heading": "הוראות הכנה",
@@ -1426,7 +1430,10 @@
         "verified": "בית עסק מאומת",
         "cluster": "כמה בתי עסק באזור. לחצו כדי להתקרב",
         "pickup": "נקודת איסוף או דוכן בשוק",
-        "approximate": "מיקום משוער, לא כתובת מדויקת"
+        "approximate": "מיקום משוער, לא כתובת מדויקת",
+        "same_business": "כמה נקודות של אותו בית עסק. לחצו כדי להתקרב",
+        "dimmed": "כשבוחרים בית עסק, שאר בתי העסק מתעמעמים",
+        "my_location": "המיקום שלכם"
       }
     },
     "page": {
@@ -3180,6 +3187,7 @@
     }
   },
   "forms": {
+    "email_typo": "אולי התכוונו ל־<fix>{email}</fix>?",
     "password": {
       "placeholder_default": "סיסמה",
       "aria_label_default": "סיסמה",

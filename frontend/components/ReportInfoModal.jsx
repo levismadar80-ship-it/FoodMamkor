@@ -19,11 +19,14 @@ import { showToast } from "@/lib/toast";
 import api from "@/lib/api";
 import Button from "@/components/ui/Button";
 import Dialog from "@/components/ui/Dialog";
+import { useAccountPrefillValue } from "@/lib/use-account-prefill";
 
 export default function ReportInfoModal({ open, onClose, producerSlug }) {
   const t = useTranslations("modals.report_info");
   const [message, setMessage] = useState("");
   const [email, setEmail] = useState("");
+  // MEH-3112: a signed-in visitor's own email, still editable.
+  const refillEmail = useAccountPrefillValue(setEmail, "email");
   const [loading, setLoading] = useState(false);
 
   if (!open) return null;
@@ -43,6 +46,7 @@ export default function ReportInfoModal({ open, onClose, producerSlug }) {
       showToast.success(t("toasts.success"), { duration: 4000 });
       setMessage("");
       setEmail("");
+      refillEmail();
       onClose();
     } catch {
       showToast.error(t("toasts.error"));
@@ -93,6 +97,7 @@ export default function ReportInfoModal({ open, onClose, producerSlug }) {
             <input
               id="report-info-email"
               type="email"
+              autoComplete="email"
               maxLength={254}
               value={email}
               onChange={(e) => setEmail(e.target.value)}

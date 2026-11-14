@@ -24,6 +24,9 @@ vi.mock("next-intl", () => ({
 }));
 
 vi.mock("@/lib/use-focus-return", () => ({ useFocusReturn: vi.fn() }));
+// MEH-3112: the signed-in account the email prefills from (null = guest).
+let mockSignedIn = null;
+vi.mock("@/lib/auth-context", () => ({ useOptionalAuth: () => (mockSignedIn ? { user: mockSignedIn } : null) }));
 vi.mock("@/lib/toast", () => ({
   showToast: { success: vi.fn(), error: vi.fn(), info: vi.fn() },
 }));
@@ -173,5 +176,21 @@ describe("ReportInfoModal dialog contract (MEH-2039)", () => {
     expect(panel.parentElement.getAttribute("role")).toBe("presentation");
     expect(panel.className).not.toContain("inset-0");
     expect(panel).toHaveAttribute("aria-modal", "true");
+  });
+});
+
+describe("MEH-3112 — a signed-in visitor's email is already in place", () => {
+  afterEach(() => { mockSignedIn = null; });
+
+  it("mounted closed, opened later: the email is there", () => {
+    mockSignedIn = { id: 4, name: "נועה", email: "noa@example.com" };
+    const { rerender } = render(<ReportInfoModal open={false} onClose={() => {}} producerSlug={SLUG} />);
+    rerender(<ReportInfoModal open={true} onClose={() => {}} producerSlug={SLUG} />);
+    expect(screen.getByRole("dialog").querySelector("#report-info-email").value).toBe("noa@example.com");
+  });
+
+  it("guest: the email field is empty", () => {
+    render(<ReportInfoModal open={true} onClose={() => {}} producerSlug={SLUG} />);
+    expect(screen.getByRole("dialog").querySelector("#report-info-email").value).toBe("");
   });
 });

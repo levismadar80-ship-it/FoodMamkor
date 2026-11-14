@@ -33,7 +33,9 @@ vi.mock("@/i18n/navigation", () => ({
 }));
 vi.mock("next/image", () => ({ default: ({ priority, ...p }) => <img alt="" {...p} /> }));
 const authState = { user: null, loading: false };
-vi.mock("@/lib/auth-context", () => ({ useAuth: () => authState }));
+vi.mock("@/lib/auth-context", () => ({
+  // MEH-3112 prefill hook: a guest here, so the forms open empty as before.
+  useOptionalAuth: () => null, useAuth: () => authState }));
 vi.mock("@/lib/toast", () => ({ showToast: { success: vi.fn(), error: vi.fn(), info: vi.fn() } }));
 vi.mock("@/lib/env", () => ({ SITE_URL: "https://mehamakor.co.il" }));
 vi.mock("@/lib/api", () => ({ default: { get: vi.fn(() => new Promise(() => {})), post: vi.fn(() => Promise.resolve({ data: {} })) } }));

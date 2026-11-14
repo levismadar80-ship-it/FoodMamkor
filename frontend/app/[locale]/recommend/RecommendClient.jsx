@@ -44,6 +44,12 @@ import Button from "@/components/ui/Button";
 import BusinessCtaLink from "@/components/BusinessCtaLink";
 import ShareClient from "@/app/[locale]/share/ShareClient";
 import InlineMessage from "@/components/ui/InlineMessage";
+import EmailTypoHint from "@/components/EmailTypoHint";
+import { useAccountPrefill } from "@/lib/use-account-prefill";
+
+// The recommender's own fields → account field (MEH-3112). Never the
+// business fields: those describe someone else.
+const SUGGESTER_PREFILL = { suggester_name: "name", suggester_email: "email" };
 
 const EMPTY = {
   name: "",
@@ -95,6 +101,7 @@ export default function RecommendClient() {
   const tHome = useTranslations("home.cta");
   const tJoin = useTranslations("join");
   const [form, setForm] = useState(EMPTY);
+  const refillFromAccount = useAccountPrefill(setForm, SUGGESTER_PREFILL);
   const [status, setStatus] = useState("idle");
   const [contactError, setContactError] = useState(false);
   // Captured at submit time: the success copy differs by whether an update was
@@ -132,6 +139,7 @@ export default function RecommendClient() {
       setThanked(form.wants_update);
       setStatus("success");
       setForm(EMPTY);
+      refillFromAccount();
     } catch (err) {
       setStatus(err.response?.status === 429 ? "rate_limited" : "error");
     }
@@ -285,6 +293,7 @@ export default function RecommendClient() {
             <div className="mt-4">
               <Input
                 id="recommend-suggester-name"
+                autoComplete="name"
                 label={t("field_suggester_name_label")}
                 value={form.suggester_name}
                 onChange={set("suggester_name")}
@@ -292,13 +301,19 @@ export default function RecommendClient() {
               />
             </div>
             <div className="mt-4">
+              {/* MEH-3123: field + typo hint are one block, so the privacy
+                  notice below still sits right after the field's block. */}
+              <div>
               <Input
                 id="recommend-suggester-email"
                 type="email"
+                autoComplete="email"
                 label={t("field_suggester_email_label")}
                 value={form.suggester_email}
                 onChange={set("suggester_email")}
               />
+              <EmailTypoHint fieldId="recommend-suggester-email" value={form.suggester_email} onAccept={(email) => set("suggester_email")({ target: { value: email } })} />
+              </div>
               {/* Privacy Protection Law Amendment 13 §11: the notice sits AT
                   the point of collection — directly under the field, not only
                   in a policy — and states purpose + who it does not go to.
