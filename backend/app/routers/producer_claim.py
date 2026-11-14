@@ -106,7 +106,7 @@ def _claimable(db: Session, producer: Producer) -> bool:
     # DO NOT widen to approved / imported listings without a decision — a
     # claim there would hand a stranger holding a leaked link control of a
     # page that is already live (MEH-2321 D2).
-    return producer.status == "draft" and not _has_owner(db, producer.id)
+    return producer.status == "draft" and not _has_owner(db, producer.id)  # type: ignore[arg-type,return-value]
 
 
 @router.post(
@@ -119,7 +119,7 @@ def create_claim_link(
     producer_id: UUID,
     user: User = Depends(require_admin),
     db: Session = Depends(get_db),
-):
+) -> ProducerClaimLinkOut:
     # MEH-2496: FOR UPDATE because this route now writes. It serialises the
     # stamp with a concurrent claim (claim_producer locks this row too), so a
     # mint cannot stamp a draft whose claim committed between our owner check
@@ -135,9 +135,9 @@ def create_claim_link(
             status_code=409,
             detail="אפשר ליצור קישור הזמנה רק לטיוטה שעוד לא נשלחה לבדיקה",
         )
-    if _has_owner(db, producer.id):
+    if _has_owner(db, producer.id):  # type: ignore[arg-type]
         raise HTTPException(status_code=409, detail=_ALREADY_CLAIMED)
-    token, expires_at = create_producer_claim_token(producer.id)
+    token, expires_at = create_producer_claim_token(producer.id)  # type: ignore[arg-type]
     # MEH-2496: the stamp the drafts list reads («קישור נשלח ב-…»). Every 409
     # above raises before this line, so a refused mint stamps nothing. It
     # records the LATEST link only — an earlier link stays valid until its own
@@ -146,7 +146,7 @@ def create_claim_link(
     # Read before the commit: it expires every instance in the session (the
     # admin `user` included), and an attribute read after it re-SELECTs.
     admin_id = str(user.id)
-    producer.claim_link_sent_at = datetime.now(timezone.utc)
+    producer.claim_link_sent_at = datetime.now(timezone.utc)  # type: ignore[assignment]
     db.commit()
     logger.info(
         "producer_claim.link_created",
@@ -165,7 +165,7 @@ def preview_claim(
     request: Request,
     body: ProducerClaimPreviewRequest,
     db: Session = Depends(get_db),
-):
+) -> ProducerClaimPreviewOut:
     producer_id = decode_producer_claim_token(body.token)
     producer = (
         db.query(Producer).filter(Producer.id == producer_id).first()
@@ -258,7 +258,7 @@ def claim_producer(
     background_tasks: BackgroundTasks,
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
-):
+) -> ProducerClaimOut:
     # MEH-2322: lock the claimant's row FIRST, and re-read it under the lock.
     # `user` was loaded by get_current_user before any lock, so a second claim
     # by the same account, started before the first one committed, would check
@@ -269,7 +269,7 @@ def claim_producer(
     # identity-mapped `user` with its stale attributes, and the lock fixes
     # nothing. test_same_account_two_links_in_flight_second_is_409 covers it.
     user = (
-        db.query(User)
+        db.query(User)  # type: ignore[assignment]
         .filter(User.id == user.id)
         .with_for_update()
         .populate_existing()
@@ -314,13 +314,13 @@ def claim_producer(
         raise HTTPException(status_code=409, detail=_ALREADY_CLAIMED)
 
     now = datetime.now(timezone.utc)
-    producer.declared_at = now
-    producer.declaration_version = DECLARATION_VERSION
+    producer.declared_at = now  # type: ignore[assignment]
+    producer.declaration_version = DECLARATION_VERSION  # type: ignore[assignment]
     user.producer_id = producer.id
-    user.role = "producer"
-    user.is_producer = True
-    user.terms_accepted_at = now
-    user.terms_version = TERMS_VERSION
+    user.role = "producer"  # type: ignore[assignment]
+    user.is_producer = True  # type: ignore[assignment]
+    user.terms_accepted_at = now  # type: ignore[assignment]
+    user.terms_version = TERMS_VERSION  # type: ignore[assignment]
     db.commit()
 
     # Capture before the session closes — background tasks run after it.
@@ -331,11 +331,18 @@ def claim_producer(
     # Same three side effects as a self-registered draft (register_producer
     # upgrade_path). The admin ping stays where it already is: at submit.
     background_tasks.add_task(
-        notify_producer_registered, p_name, p_phone, test_cause=p_test
+        notify_producer_registered,
+        p_name,  # type: ignore[arg-type]
+        p_phone,  # type: ignore[arg-type]
+        test_cause=p_test,
     )
-    background_tasks.add_task(score_producer, p_id)
+    background_tasks.add_task(score_producer, p_id)  # type: ignore[arg-type]
     background_tasks.add_task(
-        send_welcome_email, user.email, user.name, "producer", test_cause=p_test
+        send_welcome_email,
+        user.email,  # type: ignore[arg-type]
+        user.name,  # type: ignore[arg-type]
+        "producer",
+        test_cause=p_test,
     )
     return ProducerClaimOut(producer_id=p_id, status=producer.status)
 
@@ -391,7 +398,7 @@ def admin_create_draft_product(
     data: ProductCreate,
     user: User = Depends(require_admin),
     db: Session = Depends(get_db),
-):
+) -> ProductOut | Product:
     # No new-product alert (producer_me.create_my_product fires one): a draft
     # is not public, so nobody can have favourited it.
     producer = _editable_draft(db, producer_id)
@@ -421,7 +428,7 @@ def admin_delete_draft_product(
     product_id: UUID,
     user: User = Depends(require_admin),
     db: Session = Depends(get_db),
-):
+) -> None:
     _editable_draft(db, producer_id)
     # Scoped to THIS producer: a product id from another business is a 404,
     # never a cross-business delete.
@@ -441,7 +448,7 @@ def admin_delete_draft_product(
         from app.cloudinary_utils import destroy_image
 
         destroy_image(
-            old_image_url,
+            old_image_url,  # type: ignore[arg-type]
             context="producer_claim.admin_delete_draft_product image",
         )
     logger.info(
