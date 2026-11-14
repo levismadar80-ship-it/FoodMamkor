@@ -343,8 +343,9 @@ describe("MEH-2569 — one filter row on /producers", () => {
 
   it("the trigger's wrapper is sticky below lg, so it stays put while the rail scrolls", () => {
     render(<ProducersClient {...props(items(3))} />);
-    const lead = screen.getByTestId("producers-filter-row").firstElementChild;
-    expect(lead.contains(TRIGGER())).toBe(true);
+    // MEH-3075: the wrapper is the rail child that holds the trigger.
+    const lead = [...screen.getByTestId("producers-filter-row").children].find((c) => c.contains(TRIGGER()));
+    expect(lead).toBeTruthy();
     expect(lead.className.split(/\s+/)).toContain("sticky");
     // The city chip's ChipScrollRow root is `relative`; without a z-index the
     // later positioned sibling paints over the sticky trigger as it scrolls.
@@ -398,5 +399,77 @@ describe("MEH-2598 — «הצגה במפה» carries the active filters", () => 
     render(<ProducersClient {...props(items(3))} />);
     fireEvent.click(screen.getByTestId("producers-promoted-chip-has_delivery"));
     expect(mapLink().getAttribute("href")).toBe("/map?has_delivery=1");
+  });
+});
+
+// MEH-3075 (Sapir 13/11): below lg ONE chip row — «סינון», the categories, then
+// the service / city / day chips — and that row stays under the header while
+// the list scrolls. «הצגה במפה» carries the category groups and the city.
+describe("MEH-3075 — one sticky filter row on the phone, and a map link that keeps the filters", () => {
+  const DAIRY = { id: 7, name: "חלב וגבינות", slug: null };
+  const withDairy = (n) => items(n).map((p) => ({ ...p, categories: [DAIRY] }));
+  const serveCategories = async () => {
+    const { default: api } = await import("@/lib/api");
+    api.get.mockImplementation((url) =>
+      Promise.resolve(
+        url === "/categories"
+          ? { data: [DAIRY], headers: {} }
+          : { data: [], headers: { "x-total-count": "0" } },
+      ),
+    );
+  };
+
+  it("puts the category chips INSIDE the filter rail, in /map's order «סינון» → categories → services, with no CSS reorder", async () => {
+    await serveCategories();
+    render(<ProducersClient {...props(withDairy(3))} />);
+    const cats = await screen.findByTestId("producers-category-row");
+    const rail = screen.getByTestId("producers-filter-row");
+    expect(rail.contains(cats)).toBe(true);
+    const follows = (a, b) => !!(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING);
+    // DOM order IS the visual and tab order at every width (VisualOrderGuard).
+    expect(follows(TRIGGER(), cats)).toBe(true);
+    expect(follows(cats, screen.getByTestId("producers-promoted-chip-has_delivery"))).toBe(true);
+    const lead = [...rail.children].find((c) => c.contains(TRIGGER()));
+    expect(lead.className).not.toMatch(/order-/);
+    // The rail scrolls below lg (shrink-0); lg+ the block fills the first line.
+    const cc = cats.className.split(/\s+/);
+    expect(cc).toEqual(expect.arrayContaining(["shrink-0", "lg:flex-1", "lg:min-w-0"]));
+    // lg+ a full-basis break sends the service chips to their own line.
+    const brk = screen.getByTestId("producers-filter-row-break");
+    expect(brk.className.split(/\s+/)).toContain("lg:basis-full");
+    expect(follows(cats, brk) && follows(brk, screen.getByTestId("producers-promoted-chip-has_delivery"))).toBe(true);
+    // The micro-label is for screen readers only.
+    expect(screen.getByTestId("producers-category-label").className.split(/\s+/)).toContain("sr-only");
+  });
+
+  it("the bar holding the rail AND the day-panel host is sticky under the header below lg", () => {
+    render(<ProducersClient {...props(items(3))} />);
+    const bar = screen.getByTestId("producers-filter-bar");
+    expect(bar.contains(screen.getByTestId("producers-filter-row"))).toBe(true);
+    expect(bar.contains(screen.getByTestId("producers-day-panel-host"))).toBe(true);
+    const cls = bar.className.split(/\s+/);
+    expect(cls).toEqual(expect.arrayContaining(["max-lg:sticky", "max-lg:top-[var(--chrome-top,82px)]", "bg-background"]));
+    // Plain flow at lg+: no unprefixed sticky.
+    expect(cls).not.toContain("sticky");
+  });
+
+  it("«הצגה במפה» carries the category group, and the city as a delivery question", async () => {
+    await serveCategories();
+    params = { category: "7", city: "חדרה" };
+    render(<ProducersClient {...props(withDairy(3))} />);
+    await screen.findByTestId("producers-category-row");
+    const href = screen.getByTestId("producers-map-link").getAttribute("href");
+    const sp = new URLSearchParams(href.split("?")[1]);
+    expect(sp.getAll("category_group")).toEqual(["dairy"]);
+    expect(sp.get("city")).toBe("חדרה");
+    expect(sp.get("has_delivery")).toBe("1");
+    // /producers' own params never leak to /map.
+    expect(sp.has("category")).toBe(false);
+  });
+
+  it("leaves the search text behind — /map has no text search", () => {
+    params = { q: "גבינה" };
+    render(<ProducersClient {...props(items(3))} />);
+    expect(screen.getByTestId("producers-map-link").getAttribute("href")).toBe("/map");
   });
 });

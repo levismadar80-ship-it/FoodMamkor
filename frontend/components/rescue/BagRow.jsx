@@ -66,7 +66,7 @@ export default function BagRow({ offer, headingTag = "h3" }) {
     <Link
       href={rescueBagPath(producer)}
       data-testid="rescue-bag-row"
-      className="relative grid grid-cols-[64px_minmax(0,1fr)_auto] md:grid-cols-[88px_minmax(0,1fr)_auto] border-b border-border transition hover:bg-surface-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+      className="relative grid grid-cols-[64px_minmax(0,1fr)_auto] md:grid-cols-[88px_minmax(0,1fr)_auto] border-b border-border transition hover:bg-surface-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
     >
       {/* Start-edge tick, full height — EventEntryRow's, same colour. */}
       <span aria-hidden="true" className="absolute start-0 inset-y-0 w-[3px] bg-primary" />
@@ -139,7 +139,7 @@ export default function BagRow({ offer, headingTag = "h3" }) {
         className={`my-4 me-4 w-16 h-16 md:w-20 md:h-20 rounded-md bg-cover bg-center grid place-items-center ${image ? "bg-border" : "bg-green-50 text-primary"}`}
         style={thumbBg}
       >
-        {image ? null : <Basket size={24} weight="duotone" />}
+        {image ? null : <Basket size={24} weight="regular" />}
       </div>
     </Link>
   );

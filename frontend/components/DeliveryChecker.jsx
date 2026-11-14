@@ -149,7 +149,7 @@ export default function DeliveryChecker({
   return (
     // MEH-2592 C: a soft green band instead of a bordered card, a round field
     // (CitySearch's `pill`), and the label as the band's heading.
-    <div className="mb-6 rounded-2xl bg-green-50 p-3.5" data-testid="delivery-checker">
+    <div className="mb-6 rounded-lg bg-green-50 p-3.5" data-testid="delivery-checker">
       <div
         data-testid="delivery-checker-input"
         className="[&_label]:text-base [&_label]:font-bold [&_label]:mb-2"

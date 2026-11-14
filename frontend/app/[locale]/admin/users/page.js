@@ -148,13 +148,13 @@ export default function AdminUsersPage() {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && searchUsers()}
-          className="flex-1 border border-border rounded-md px-3 py-2"
+          className="flex-1 border border-border rounded-sm px-3 py-2 focus-ring"
         />
         <select
           value={role}
           onChange={(e) => setRole(e.target.value)}
           aria-label={t("users.columns.role")}
-          className="border border-border rounded-md px-3 py-2 bg-surface"
+          className="border border-border rounded-sm px-3 py-2 bg-surface focus-ring"
         >
           <option value="all">{t("users.role_filter.all")}</option>
           <option value="consumer">{t("users.role_filter.consumer")}</option>
@@ -333,7 +333,7 @@ export default function AdminUsersPage() {
             <select
               value={pageSize}
               onChange={(e) => changePageSize(Number(e.target.value))}
-              className="border border-border rounded-md px-2 py-1 bg-surface"
+              className="border border-border rounded-sm px-2 py-1 bg-surface focus-ring"
             >
               <option value={25}>25</option>
               <option value={50}>50</option>
@@ -344,7 +344,7 @@ export default function AdminUsersPage() {
             <button
               onClick={() => setPage(currentPage - 1)}
               disabled={currentPage === 1}
-              className="px-3 py-1.5 rounded-md border border-border disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-50 transition"
+              className="px-3 py-1.5 rounded-md border border-border disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition"
             >
               {t("users.pagination.prev")}
             </button>
@@ -354,7 +354,7 @@ export default function AdminUsersPage() {
             <button
               onClick={() => setPage(currentPage + 1)}
               disabled={currentPage === totalPages}
-              className="px-3 py-1.5 rounded-md border border-border disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-50 transition"
+              className="px-3 py-1.5 rounded-md border border-border disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition"
             >
               {t("users.pagination.next")}
             </button>

@@ -52,6 +52,7 @@ import EmptyState from "@/components/ui/EmptyState";
 import CitySearch from "@/components/CitySearch";
 import AddressSearch from "@/components/AddressSearch";
 import Button from "@/components/ui/Button";
+import { SkeletonBlock } from "@/components/Skeleton";
 
 // Leaflet touches `window` at import time, so the confirmation map is loaded
 // client-side only. REUSES: RegisterProducerClient.jsx:24 — same dynamic import
@@ -338,7 +339,7 @@ export default function LocationsEditor() {
   }
 
   if (locations === null) {
-    return <div className="h-16 animate-pulse rounded-lg bg-surface-card" />;
+    return <SkeletonBlock as="div" className="h-16 rounded-lg" />;
   }
 
   return (
@@ -431,7 +432,7 @@ export default function LocationsEditor() {
           className="inline-flex items-center gap-1.5 rounded-full border border-primary/40 px-3 py-1.5 text-sm font-medium text-primary hover:bg-primary/5"
           data-testid="locations-add"
         >
-          <Plus size={15} weight="bold" />
+          <Plus size={16} weight="bold" />
           {t("add_cta")}
         </button>
       ) : null}
@@ -460,7 +461,7 @@ function LocationRow({ loc, kindLabel, deleting, onEdit, onDelete, onSetPrimary 
             </span>
             {loc.is_primary ? (
               <span className="inline-flex items-center gap-0.5 rounded-full bg-primary/10 px-1.5 py-0.5 text-xs text-primary">
-                <Star size={11} weight="fill" />
+                <Star size={12} weight="fill" />
                 {t("primary_badge")}
               </span>
             ) : null}
@@ -761,7 +762,7 @@ function LocationForm({
           <select
             value={form.kind}
             onChange={set("kind")}
-            className="w-full rounded-sm border border-border bg-surface px-3 py-2 text-sm"
+            className="w-full rounded-sm border border-border bg-surface px-3 py-2 text-sm focus-ring"
             data-testid="location-kind"
           >
             {KINDS.map((k) => (
@@ -931,7 +932,7 @@ function LocationForm({
                 setPrecisionTouched(true);
                 set("location_precision")(e);
               }}
-              className="w-full rounded-sm border border-border bg-surface px-3 py-2 text-sm"
+              className="w-full rounded-sm border border-border bg-surface px-3 py-2 text-sm focus-ring"
               data-testid="location-precision"
             >
               <option value="exact">{tForm("precision_exact")}</option>
@@ -1136,7 +1137,7 @@ const TextInput = forwardRef(function TextInput(
       onChange={onChange}
       placeholder={placeholder}
       data-testid={testid}
-      className="w-full rounded-sm border border-border bg-surface px-3 py-2 text-sm"
+      className="w-full rounded-sm border border-border bg-surface px-3 py-2 text-sm focus-ring"
     />
   );
 });

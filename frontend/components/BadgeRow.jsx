@@ -252,12 +252,12 @@ function VerifiedTierBadge({ producer, surface, t, avoidRef = null }) {
           iconOnly
             ? // Card seal sits over the photo (shipped Assembly-v2 slot) —
               // surface-card backing keeps the gold glyph legible there.
-              "inline-flex items-center rounded-full bg-surface-card border border-accent/40 text-accent p-1 group-focus-visible:ring-2 group-focus-visible:ring-accent/40"
+              "inline-flex items-center rounded-full bg-surface-card border border-accent/40 text-accent p-1 group-focus-visible:ring-2 group-focus-visible:ring-primary"
             : // MEH-2032: bg-accent/10 on the cream page background computed 4.07:1
               // (AA fail for 12px text) — same usage-level fix as the iconOnly
               // branch above (MEH-2025/#2825): solid bg-surface-card gets accent
               // to 5.19:1.
-              `${VERIFIED_CHIP_CLASS} group-focus-visible:ring-2 group-focus-visible:ring-accent/40 transition`
+              `${VERIFIED_CHIP_CLASS} group-focus-visible:ring-2 group-focus-visible:ring-primary transition`
         }
       >
         <SealCheck size={iconOnly ? 16 : 14} aria-hidden="true" />
@@ -310,7 +310,7 @@ function VerifiedTierBadge({ producer, surface, t, avoidRef = null }) {
           >
             {t("verified_popover_link")}
             {/* Forward chevron points LEFT in RTL (MEH-1334 revision-1 #11) */}
-            <CaretLeft size={13} aria-hidden="true" />
+            <CaretLeft size={14} aria-hidden="true" />
           </LocaleLink>
         </Popover>
       </span>
@@ -368,7 +368,7 @@ function Badge({ badge, surface = "hero", avoidRef = null }) {
     >
       <span>{badge.tooltip}</span>
       {/* Forward chevron points LEFT in RTL (mirrors the verified popover). */}
-      <CaretLeft size={13} className="mt-0.5 shrink-0" aria-hidden="true" />
+      <CaretLeft size={14} className="mt-0.5 shrink-0" aria-hidden="true" />
     </LocaleLink>
   ) : (
     badge.tooltip
@@ -406,7 +406,7 @@ function Badge({ badge, surface = "hero", avoidRef = null }) {
             data-badge={badge.key}
             className="group inline-flex items-center justify-center min-h-[24px] min-w-[24px] max-w-full focus:outline-none"
           >
-            <span className={`inline-flex items-center max-w-full ${compact ? "gap-0.5 px-2" : "gap-1 px-2.5"} text-xs py-0.5 rounded-xl font-medium group-focus-visible:ring-2 group-focus-visible:ring-primary/40 transition ${colorClass}`}>
+            <span className={`inline-flex items-center max-w-full ${compact ? "gap-0.5 px-2" : "gap-1 px-2.5"} text-xs py-0.5 rounded-xl font-medium group-focus-visible:ring-2 group-focus-visible:ring-primary transition ${colorClass}`}>
               {/* MEH-2584: same glyph as the filter chip (lib/chip-icons.js),
                   aria-hidden — the label stays the accessible name. */}
               {icon && <span aria-hidden="true" className="inline-flex shrink-0">{icon}</span>}

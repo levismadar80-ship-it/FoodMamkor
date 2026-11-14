@@ -144,7 +144,7 @@ export default function RescueConfirmation({ order, onCancel, cancelling = false
           onClick={() => setAsking(true)}
           disabled={cancelling}
           data-testid="rescue-confirmation-cancel"
-          className="mt-4 font-body-sm text-sm text-fg-muted underline disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 rounded"
+          className="mt-4 font-body-sm text-sm text-fg-muted underline disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded"
         >
           {t("confirm.cancel")}
         </button>

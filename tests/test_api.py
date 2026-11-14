@@ -30,6 +30,20 @@ _REGISTER_ACK_DETAIL = (
 )
 
 
+
+def _signup_cookie_shape(resp):
+    """(name, value length, attributes) of the reply's ONLY Set-Cookie.
+
+    MEH-3087 — used by the register anti-enumeration tests: the marker's
+    value is random-looking by design, everything else must be identical.
+    """
+    cookies = resp.headers.get_list("set-cookie")
+    assert len(cookies) == 1, cookies
+    pair, _, attrs = cookies[0].partition(";")
+    name, _, value = pair.partition("=")
+    return name, len(value), attrs.lower()
+
+
 class TestAuth:
     def test_register_new_email_creates_user_and_returns_ack(self, client, db):
         # MEH-328: OWASP-strict anti-enumeration. No access_token in body;
@@ -525,13 +539,13 @@ class TestAuth:
         # Content (the response body the attacker sees) must be byte-identical.
         assert r_new.content == r_pw.content == r_g.content == r_a.content
         # Defensive: also no Set-Cookie divergence between branches.
-        assert (
-            r_new.headers.get_list("set-cookie")
-            == r_pw.headers.get_list("set-cookie")
-            == r_g.headers.get_list("set-cookie")
-            == r_a.headers.get_list("set-cookie")
-            == []
-        )
+        # MEH-3087: every branch now sets ONE signup-marker cookie. Its value
+        # is an HMAC that differs per request (also between two new-email
+        # replies), so the comparison is on everything but the value: one
+        # cookie, same name, same attributes, same value length.
+        shapes = [_signup_cookie_shape(r) for r in (r_new, r_pw, r_g, r_a)]
+        assert shapes[0] == shapes[1] == shapes[2] == shapes[3]
+        assert shapes[0][0] == "signup_marker"
 
     def test_login_returns_jwt(self, client, db):
         make_user(db, email="bob@test.com", password="Zx7Yp9Mq2Lr4")
@@ -943,13 +957,13 @@ class TestAuth:
         for r in (r_new, r_pw, r_g, r_a):
             assert r.status_code == 200
         assert r_new.content == r_pw.content == r_g.content == r_a.content
-        assert (
-            r_new.headers.get_list("set-cookie")
-            == r_pw.headers.get_list("set-cookie")
-            == r_g.headers.get_list("set-cookie")
-            == r_a.headers.get_list("set-cookie")
-            == []
-        )
+        # MEH-3087: every branch now sets ONE signup-marker cookie. Its value
+        # is an HMAC that differs per request (also between two new-email
+        # replies), so the comparison is on everything but the value: one
+        # cookie, same name, same attributes, same value length.
+        shapes = [_signup_cookie_shape(r) for r in (r_new, r_pw, r_g, r_a)]
+        assert shapes[0] == shapes[1] == shapes[2] == shapes[3]
+        assert shapes[0][0] == "signup_marker"
 
     def test_register_producer_collision_creates_no_producer_row(
         self, client, db, monkeypatch

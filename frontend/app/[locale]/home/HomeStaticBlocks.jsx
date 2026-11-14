@@ -10,6 +10,7 @@ import ClosingCtaBand from "@/components/ClosingCtaBand";
 import { optimizeCloudinary, IMAGE_RATIOS } from "@/lib/cloudinary";
 import useScrollAffordance, { ScrollArrows } from "@/hooks/useScrollAffordance";
 import SectionHeading from "@/components/ui/SectionHeading";
+import { SkeletonBlock } from "@/components/Skeleton";
 
 /**
  * RECENTLY VIEWED (task 13) — horizontal scroll strip of producers
@@ -71,7 +72,7 @@ export function HomeFavoritesStrip({ items, reserve = false }) {
         <Link
           href="/favorites"
           data-testid="home-favorites-all"
-          className="shrink-0 whitespace-nowrap text-sm font-medium text-primary underline decoration-[1.5px] underline-offset-[5px] decoration-primary/35 hover:decoration-current focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 rounded"
+          className="shrink-0 whitespace-nowrap text-sm font-medium text-primary underline decoration-[1.5px] underline-offset-[5px] decoration-primary/35 hover:decoration-current focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded"
         >
           {t("home.favorites_strip.all")}
         </Link>
@@ -145,7 +146,7 @@ function HomeProducerStrip({
                   aria-hidden="true"
                   className={STRIP_CARD}
                 >
-                  <div className={`${STRIP_CARD_IMAGE} animate-pulse`} />
+                  <SkeletonBlock as="div" tone="brand" className="w-full h-[100px]" />
                   <div className="p-2.5">
                     <p className={`${STRIP_CARD_NAME} invisible`}>&nbsp;</p>
                     <p className={`${STRIP_CARD_CITY} invisible`}>&nbsp;</p>
@@ -160,7 +161,7 @@ function HomeProducerStrip({
                 key={p.id}
                 href={href}
                 data-testid={testIds.card}
-                className={`${STRIP_CARD} transition group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/40`}
+                className={`${STRIP_CARD} transition group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary`}
               >
                 <div className={`relative ${STRIP_CARD_IMAGE} overflow-hidden`} data-testid={testIds.image}>
                   {imgSrc && failedImgs[p.id] !== imgSrc ? (

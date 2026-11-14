@@ -79,7 +79,7 @@ export default function ReportButton({ producerId, quiet = false }) {
                   value={reason}
                   onChange={(e) => setReason(e.target.value)}
                   placeholder={t("reason_placeholder")}
-                  className="w-full border rounded-md p-3 mb-3 resize-none h-24"
+                  className="w-full border rounded-sm p-3 mb-3 resize-none h-24 focus-ring"
                   maxLength={500}
                   required
                 />

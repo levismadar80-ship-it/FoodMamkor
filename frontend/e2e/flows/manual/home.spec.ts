@@ -1744,11 +1744,12 @@ test.describe("manual › «קרוב אליי» is real geolocation (MEH-1269 ·
 test.describe("manual › category cards — caption strip + hover zoom (MEH-1224)", () => {
   const catCards = (page: Page) => scope(page).getByTestId("home-category-card");
 
-  // MT:1224:1 — the name sits on a solid strip BELOW the photo, and no
-  //   text is painted over the image. Asserted geometrically (caption box
-  //   entirely below the image box) plus the token claim that the strip is
-  //   opaque — not as a hex literal.
-  test("the caption sits on a solid strip below the photo, never over it", async ({ page }) => {
+  // MT:1224:1 — the name sits BELOW the photo, and no text is painted over
+  //   the image. Asserted geometrically (caption box entirely below the image
+  //   box). MEH-3061 removed the card frame and its surface-card fill, so the
+  //   old "the strip is opaque" read is gone: with no frame it could only find
+  //   the page background, which is green whatever the card does.
+  test("the caption sits below the photo, never over it", async ({ page }) => {
     await consent(page);
     await stubTiles(page);
     await mockApi(page);
@@ -1773,19 +1774,7 @@ test.describe("manual › category cards — caption strip + hover zoom (MEH-122
     expect(rects.captionTop, "the caption starts at or below the image's bottom edge").toBeGreaterThanOrEqual(
       rects.frameBottom - 1,
     );
-    const fill = await caption.evaluate((el) => {
-      // Walk up to the first ancestor that paints a background — the strip's
-      // fill comes from the card root (bg-surface-card), which is what makes it
-      // opaque; a transparent chain would put the text over the photo.
-      let n: HTMLElement | null = el as HTMLElement;
-      while (n) {
-        const bg = getComputedStyle(n).backgroundColor;
-        if (bg && bg !== "rgba(0, 0, 0, 0)" && bg !== "transparent") return bg;
-        n = n.parentElement;
-      }
-      return "rgba(0, 0, 0, 0)";
-    });
-    expect(fill, "the caption strip is painted, not transparent over the photo").not.toBe("rgba(0, 0, 0, 0)");
+    await expect(caption, "the caption is its own block, not an overlay on the photo").not.toHaveCSS("position", "absolute");
   });
 
   // MT:1224:2 — a motion-safe hover zoom on the photo (desktop).
@@ -1866,11 +1855,12 @@ test.describe("manual › category cards — caption strip + hover zoom (MEH-122
 
 // ════════════════════════════════════════════════════════════════════════════
 // MEH-2412 — on a phone the ten category cards are ONE swipeable row, not a
-// 2-hero + 2×4 stack (~1,400px of scroll before the first business). Desktop
-// keeps the MEH-991 v8 4-column grid with span-2 heroes. The pair discriminates:
-// the phone test is red on the old stack (section far taller, nothing overflows
-// sideways); the desktop test is red if the row leaked past `md:`.
-test.describe("manual › category cards — phone row, desktop grid (MEH-2412)", () => {
+// 2-hero + 2×4 stack (~1,400px of scroll before the first business).
+// MEH-3061 — desktop is ONE row too: ten equal cells, no heroes, no sideways
+// scroll (the old 4-column grid put the first business ~2,100px down at 1440).
+// The pair discriminates: the phone test is red on the old stack; the desktop
+// test is red on the old 4-column grid (rows, columns and widths all differ).
+test.describe("manual › category cards — one row on phone and desktop (MEH-2412 · MEH-3061)", () => {
   const grid = (page: Page) => scope(page).getByTestId("home-category-grid");
   const rail = (page: Page) => scope(page).getByTestId("home-category-rail");
 
@@ -1914,8 +1904,8 @@ test.describe("manual › category cards — phone row, desktop grid (MEH-2412)"
     expect(lastInView, "the tenth card is reachable by swiping to the end").toBe(true);
   });
 
-  test("on desktop the cards stay a 4-column grid with span-2 heroes", async ({ page }, info) => {
-    desktopOnly(info, "the grid is the desktop layout");
+  test("on desktop the ten cards are one row of equal cells with no sideways scroll", async ({ page }, info) => {
+    desktopOnly(info, "the ten-column row is the desktop layout");
     await consent(page);
     await stubTiles(page);
     await mockApi(page);
@@ -1926,17 +1916,22 @@ test.describe("manual › category cards — phone row, desktop grid (MEH-2412)"
       const cards = [...el.querySelectorAll('[data-testid="home-category-card"]')].map((c) =>
         c.getBoundingClientRect(),
       );
+      const widths = cards.map((r) => r.width);
+      // Rows from offsetTop — the cards enter on a whileInView y-slide (see above).
+      const tops = new Set([...el.children].map((w) => (w as HTMLElement).offsetTop));
       return {
         display: getComputedStyle(el).display,
         cols: getComputedStyle(el).gridTemplateColumns.split(" ").length,
-        heroW: cards[0].width,
-        smallW: cards[2].width,
+        rows: tops.size,
+        widest: Math.max(...widths),
+        narrowest: Math.min(...widths),
         overflows: el.scrollWidth > el.clientWidth + 1,
       };
     });
     expect(m.display).toBe("grid");
-    expect(m.cols).toBe(4);
-    expect(m.heroW, "a hero spans two columns").toBeGreaterThan(m.smallW * 1.8);
+    expect(m.cols, "ten columns").toBe(10);
+    expect(m.rows, "all ten cards share one row").toBe(1);
+    expect(m.widest - m.narrowest, "every card is the same width — no hero").toBeLessThanOrEqual(1);
     expect(m.overflows, "no sideways scroll on desktop").toBe(false);
   });
 });

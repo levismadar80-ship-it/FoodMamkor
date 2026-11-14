@@ -238,7 +238,7 @@ function RegisterPageBody() {
           <h1 className="font-headline-lg text-3xl font-black text-text mb-2">{t("auth.register.consumer.email_sent.title")}</h1>
           <p className="text-fg-muted text-sm mb-3">{t("auth.register.consumer.email_sent.body")}</p>
           <p className="text-fg-muted text-xs mb-6">{t("auth.register.consumer.email_sent.hint")}</p>
-          <Link href="/" data-testid="register-email-sent-home" className="block w-full border-2 border-primary-dark text-primary-dark bg-transparent py-3 rounded-md hover:bg-primary-dark hover:text-white transition font-medium text-center">
+          <Link href="/" data-testid="register-email-sent-home" className="block w-full border-2 border-primary-dark text-primary-dark bg-transparent py-3 rounded-full hover:bg-primary-dark hover:text-white transition font-medium text-center">
             {t("auth.register.consumer.email_sent.back_home")}
           </Link>
         </div>
@@ -458,7 +458,7 @@ function RegisterPageBody() {
             type="submit"
             data-testid="register-submit"
             disabled={loading}
-            className="w-full min-h-touch flex items-center justify-center bg-primary text-white py-3 rounded-md font-bold hover:bg-primary-dark transition disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-primary/40"
+            className="w-full min-h-touch flex items-center justify-center bg-primary text-white py-3 rounded-full font-bold hover:bg-primary-dark transition disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
           >
             {loading ? (
               <span className="inline-flex items-center gap-2">

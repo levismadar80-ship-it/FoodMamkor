@@ -13,6 +13,7 @@ import Input from "@/components/ui/Input";
 import AdminLoadError from "@/components/admin/AdminLoadError";
 import Pagination from "@/components/Pagination";
 import Button from "@/components/ui/Button";
+import { formatDate } from "@/lib/format-date";
 
 /**
  * /admin/outreach — manual lead pipeline (MEH-22).
@@ -218,7 +219,7 @@ export default function AdminOutreachPage() {
           placeholder={t("outreach.filters.city_placeholder")}
           value={cityFilter}
           onChange={(e) => setCityFilter(e.target.value)}
-          className="flex-1 border border-border rounded-md px-3 py-2"
+          className="flex-1 border border-border rounded-sm px-3 py-2 focus-ring"
         />
         <Button
           type="button"
@@ -333,7 +334,7 @@ export default function AdminOutreachPage() {
                       <select
                         value={lead.status}
                         onChange={(e) => handleStatusChange(lead.id, e.target.value)}
-                        className="text-xs border border-border rounded-lg px-2 py-1 bg-surface"
+                        className="text-xs border border-border rounded-sm px-2 py-1 bg-surface focus-ring"
                         aria-label={t("outreach.columns.status")}
                         data-testid={`status-select-${lead.id}`}
                       >
@@ -349,7 +350,7 @@ export default function AdminOutreachPage() {
                         <button
                           type="button"
                           onClick={() => handleMintToken(lead.id)}
-                          className="text-xs px-2 py-1 rounded-lg bg-primary text-white hover:bg-primary-dark"
+                          className="text-xs px-2 py-1 rounded-full bg-primary text-white hover:bg-primary-dark"
                           title={t("outreach.actions.prefill_title")}
                         >
                           {t("outreach.actions.prefill")}
@@ -462,7 +463,7 @@ function isSuggestion(lead) {
  */
 function ThankSuggesterCell({ lead, locale, t, onThank }) {
   const thankedDate = lead.suggester_thanked_at
-    ? new Date(lead.suggester_thanked_at).toLocaleDateString(locale)
+    ? formatDate(lead.suggester_thanked_at, locale)
     : null;
   const reason = thankBlockedReason(lead);
 
@@ -488,7 +489,7 @@ function ThankSuggesterCell({ lead, locale, t, onThank }) {
         disabled
         aria-describedby={tipId}
         data-testid={`thank-suggester-${lead.id}`}
-        className="text-xs px-2 py-1 rounded-lg border border-border text-primary disabled:opacity-40 disabled:cursor-not-allowed"
+        className="text-xs px-2 py-1 rounded-lg border border-border text-primary disabled:opacity-50 disabled:cursor-not-allowed"
       >
         {t("outreach.thank_suggester")}
       </button>
@@ -511,7 +512,7 @@ function StatusChip({ id, label, count, active, onClick }) {
       onClick={onClick}
       aria-pressed={active}
       data-testid={`outreach-chip-${id}`}
-      className={`inline-flex items-center gap-2 min-h-touch px-4 rounded-full border text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${
+      className={`inline-flex items-center gap-2 min-h-touch px-4 rounded-full border text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
         active
           ? "bg-primary text-white border-primary"
           : "bg-surface text-text border-border hover:border-primary/40"
@@ -624,7 +625,7 @@ function AddLeadModal({ onClose, onCreated }) {
           value={form.notes}
           onChange={set("notes")}
           rows={2}
-          className="w-full border border-border rounded-md px-3 py-2"
+          className="w-full border border-border rounded-sm px-3 py-2 focus-ring"
         />
         {error && <p className="text-sm text-danger-600" role="alert">{error}</p>}
         <div className="flex gap-2">

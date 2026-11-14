@@ -193,7 +193,7 @@ export default async function FaqForBusinessesPage({ params }) {
                     <details
                       className="group rounded-lg border border-border bg-surface transition-colors"
                     >
-                      <summary className="cursor-pointer list-none flex items-start justify-between gap-4 px-5 py-4 font-headline-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 rounded-lg text-text text-lg font-semibold">
+                      <summary className="cursor-pointer list-none flex items-start justify-between gap-4 px-5 py-4 font-headline-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-lg text-text text-lg font-semibold">
                         <span>{t(`faq.${item.key}.q`)}</span>
                         <CaretDown
                           aria-hidden="true"
@@ -260,8 +260,8 @@ export default async function FaqForBusinessesPage({ params }) {
               ].map(([key, Icon]) => (
                 <li key={key} className="flex items-start gap-3">
                   <Icon
-                    size={22}
-                    weight="duotone"
+                    size={24}
+                    weight="regular"
                     className="mt-0.5 shrink-0 text-primary"
                     aria-hidden="true"
                   />

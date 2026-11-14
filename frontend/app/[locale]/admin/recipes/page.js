@@ -23,7 +23,7 @@ import { SkeletonTable } from "@/components/Skeleton";
 // backend's `moderation_status` query param regex.
 const TAB_VALUES = ["pending", "needs_revision", "approved", "rejected", "all"];
 
-function formatDate(iso, locale) {
+function shortDate(iso, locale) {
   if (!iso) return "—";
   return formatEventDate(iso, locale, { day: "2-digit", month: "2-digit", year: "2-digit" });
 }
@@ -212,7 +212,7 @@ export default function AdminRecipesPage() {
               value={feedback}
               onChange={(e) => setFeedback(e.target.value)}
               rows={5}
-              className="w-full border border-border rounded-md px-3 py-2 text-sm bg-surface"
+              className="w-full border border-border rounded-sm px-3 py-2 text-sm bg-surface focus-ring"
               placeholder={
                 modalAction === "changes"
                   ? t("recipes.modal.changes_placeholder")
@@ -274,7 +274,7 @@ function RecipeRow({ recipe, busy, t, locale, onApprove, onChanges, onReject }) 
             {recipe.title}
           </button>
         </td>
-        <td className="p-3 text-fg-muted" data-label={t("recipes.columns.created")}>{formatDate(recipe.created_at, locale)}</td>
+        <td className="p-3 text-fg-muted" data-label={t("recipes.columns.created")}>{shortDate(recipe.created_at, locale)}</td>
         <td className="p-3 text-fg-muted" data-label={t("recipes.columns.published")}>
           {recipe.published ? t("recipes.published_yes") : t("recipes.published_no")}
         </td>

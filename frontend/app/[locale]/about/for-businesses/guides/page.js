@@ -94,7 +94,7 @@ export default async function GuidesIndexPage({ params }) {
           ))}
         </ul>
 
-        <footer className="mt-8 rounded-xl bg-background-alt p-5">
+        <footer className="mt-8 rounded-lg bg-background-alt p-5">
           {/* MEH-2832: questions go to the one contact form, not Instagram
               (Instagram stays in the site footer as social). */}
           <p className="text-base text-text/90" data-testid="guides-footer-question">

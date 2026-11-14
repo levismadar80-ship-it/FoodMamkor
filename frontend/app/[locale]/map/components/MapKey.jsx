@@ -26,7 +26,7 @@ import { Check, Leaf, Question, X } from "@phosphor-icons/react";
 // Same token set as NearMePill.jsx (MapPane's shared constant left with the
 // pickup-layer toggle, 13/11).
 const CONTROL_CLASS =
-  "w-11 h-11 rounded-full shadow-md items-center justify-center transition-colors z-[1000] focus-visible:ring-2 focus-visible:ring-primary/40";
+  "w-11 h-11 rounded-full shadow-lg items-center justify-center transition-colors z-[1000] focus-visible:ring-2 focus-visible:ring-primary";
 const CONTROL_OFF = "bg-surface-floating text-primary border border-border hover:bg-green-50";
 const CONTROL_ON = "bg-primary text-white border border-primary";
 
@@ -46,6 +46,7 @@ function SampleVerified() {
       {/* rtl-ok: mirrors the marker's physical bottom-right badge */}
       {/* eslint-disable-next-line no-restricted-syntax -- rtl-ok: the map badge is physically bottom-right in every locale */}
       <span className="absolute -bottom-1 -right-1 w-3.5 h-3.5 rounded-full bg-primary border border-white flex items-center justify-center">
+        {/* icon-ok: an 8px tick inside the 14px legend copy of the marker's verified badge — a scale step would fill it */}
         <Check size={8} weight="bold" className="text-white" />
       </span>
     </span>
@@ -55,7 +56,7 @@ function SampleVerified() {
 function SampleCluster() {
   return (
     <span
-      className="shrink-0 w-7 h-7 rounded-full bg-primary text-white border-2 border-white shadow-md flex items-center justify-center text-2xs font-semibold numeric"
+      className="shrink-0 w-7 h-7 rounded-full bg-primary text-white border-2 border-white shadow-lg flex items-center justify-center text-2xs font-semibold numeric"
       aria-hidden="true"
     >
       5
@@ -67,7 +68,7 @@ function SamplePickup() {
   return (
     <span className="shrink-0 w-7 h-7 flex items-center justify-center" aria-hidden="true">
       <span className="w-5 h-5 rounded-full bg-surface border-2 border-primary flex items-center justify-center">
-        <Leaf size={10} className="text-primary" />
+        <Leaf size={12} className="text-primary" />
       </span>
     </span>
   );
@@ -144,7 +145,7 @@ export default function MapKey({ buttonClassName = "", buttonStyle, panelClassNa
               type="button"
               onClick={close}
               aria-label={t("common.aria.close")}
-              className="-m-2 inline-flex w-11 h-11 shrink-0 items-center justify-center rounded-full text-fg-muted hover:text-primary focus-visible:ring-2 focus-visible:ring-primary/40"
+              className="-m-2 inline-flex w-11 h-11 shrink-0 items-center justify-center rounded-full text-fg-muted hover:text-primary focus-visible:ring-2 focus-visible:ring-primary"
             >
               <X size={16} weight="bold" aria-hidden="true" />
             </button>

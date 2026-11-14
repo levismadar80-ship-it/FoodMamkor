@@ -332,6 +332,22 @@ home) and `SectionHeadingRatchet.test.js` (a public file may not gain a
 hand-sized h2; the allowance list only shrinks). Bands (the green «היכרות»
 band, the closing CTA band) keep their own h2.
 
+**Section headings are text only; icons lead fact lines (MEH-3028, 13/11/2026).**
+No icon inside a `<SectionHeading>`, anywhere on the site. An icon marks one
+*kind* of fact on the line that states it, and goes through
+`components/ui/FactLine.jsx` (14px, `text-fg-muted`, fixed gap). Business page
+kinds: delivery fee → Truck · order cutoff / hours → Clock · city → MapPin ·
+self-pickup → Package. Repeated labels of the same kind (the gold day labels
+«ימי חמישי», the one-day «יוצאים בימי …» line, the «משלוחים לכל הארץ» chip)
+carry no icon — one truck per section, not one per day. The icon sits in a
+one-line-tall box, so a wrapped line keeps it beside its first line. Sapir
+chose this over «an icon on every heading» (research artifact
+FGymGHjHMLDCstmSEDP2Bm: Google Maps, Airbnb, Wolt, Etsy all keep section titles
+plain and put the icon on the fact row). Buttons, links, answer states, chips
+and card titles keep their own icons. Guard: `FactLineIconGuard.test.js` (no
+icon in any SectionHeading; on the business-page files a raw icon only as
+listed, with its reason).
+
 **Headings never strand one word on the last line** — `h1, h2, h3` carry
 `text-wrap: balance` in `globals.css` (MEH-2488). **Hebrew is never
 letter-spaced** (no `tracking-*` on Hebrew; MEH-2488 removed the last two:
@@ -412,6 +428,24 @@ lift on hover** (that is a SaaS pattern, off-brand). Cards are white surfaces on
 cream with a `border #E5DFD3` hairline; that tonal contrast is the entire
 elevation language.
 
+**Three shadows, for things that float (MEH-3067, 13/11/2026).** `shadow-sm` =
+a resting float (sticky bar, toggle knob); `shadow-lg` = menus, popovers,
+floating buttons; `shadow-xl` = modals and sheets. Nothing else — no bare
+`shadow`, no `shadow-md`/`2xl`, no arbitrary `shadow-[…]` (the cookie banner's
+upward shadow is the one design exemption). Cards stay flat.
+
+**One disabled look, one focus look (MEH-3067).** Disabled = `opacity-50` on
+every disabled variant (`disabled:`, `aria-disabled:`, `group-disabled:`).
+Keyboard focus = a 2px ring on `focus-visible` (or `focus-within` on an input
+wrapper; never plain `focus:`), **solid** `primary` on cream/white — the old 40%
+ring measured ~1.8:1 on cream, under WCAG 1.4.11's 3:1 — with
+`ring-offset-2` when the element itself is green; `gold-on-dark` on the green
+bands, `white/70` on photos, `black/40` on the Apple button, `danger-400/40` on
+a destructive action. `.focus-ring` is the same look as a class. Files other
+open PRs own on 13/11 (ProductSheet, ProducerSections, HistoryBackLink) are
+exempt until those land.
+`StateTokensGuard.test.js` reds anything else.
+
 ### State management — opacity-on-cream + fg-muted (ADR-019)
 
 This is the load-bearing rule for all component states, and it is why the
@@ -447,6 +481,21 @@ in-between for smaller cards and chips; modals use `rounded.xl` (20px). **No
 actions, full rounding is reserved for genuinely circular elements (avatars,
 icon buttons).
 
+**One radius per surface kind (MEH-3091, 13/11/2026).** A content card or
+panel (bordered, or a tinted `bg-background-alt` box) is `rounded-lg`; a small
+row or chip is `rounded-md`; a field is `rounded-sm`; a dialog, a sheet and
+large media are `rounded-xl`, and a bottom sheet rounds its top only
+(`rounded-t-xl`). ProducerCard and the listing cards stay square (Assembly v2,
+`ui/Card.jsx`). `rounded-2xl` / `rounded-3xl` are not on the token scale and are
+banned. `CardRadiusGuard.test.js` enforces both halves.
+
+**Fields look the same everywhere (MEH-3092, 13/11/2026).** Every bordered
+`input` / `textarea` / `select` — the shared `ui/Input.jsx` included — is
+`rounded-sm` and carries `focus-ring` (or an explicit focus-visible ring), so no
+browser draws its own outline. `FieldLookGuard.test.js` enforces it. Moving the
+hand-written fields onto `ui/Input.jsx` (one label / error / describedby owner)
+is post-launch.
+
 **No off-scale radius (MEH-1687 phase 5, 06/11/2026).** Radius is a scale step,
 never `rounded-[Npx]`. The 140 off-scale sites (107 of them 10px) were placed by
 the rule above: buttons and primary/outline link-actions → `rounded-full`;
@@ -459,6 +508,13 @@ primary, destructive or outlined action is `components/ui/Button.jsx`
 (`variant="primary" | "danger" | "outlined"`, `size="sm" | "md" | "lg"`), never a
 hand-styled `<button>`; layout classes (`w-full`, `flex-1`, margins) go in
 `className`. `ButtonPrimitiveGuard.test.js` ratchets the hand-styled remainder.
+
+**Every action is a pill, on every element (MEH-3058, 13/11/2026).** A `<Link>` or
+`<a>` that looks like an action (green fill + white text, or green outline + green
+text) is `rounded-full` too (`<Button>` has no `href` yet). Secondary actions
+next to a primary one (copy link, email) are outlined pills, not cards.
+`ActionShapeGuard.test.js` reds a new off-shape action written as a class string on `<button>`, `<Link>`
+or `<a>` (classes kept in a const or `cn()` are not seen) and ratchets the existing ones (shrink only).
 
 _As-of 03/11: the front-matter `button-primary` binding still reads
 `{rounded.sm}`, because the token scale has no `full` step. Adding one changes
@@ -617,6 +673,11 @@ front matter for the normative token bindings.
   **לחמים ואפייה** (growers are the core of "from the source"; bakeries are the
   largest share of the Wave 1 leads). Captions are the name only — no 01–10
   numerals.
+- **On/off switch (MEH-3065):** every `role="switch"` draws its track from
+  `components/ui/Switch.jsx` — `<Switch>` for a standalone toggle (44px tap
+  target), `<SwitchTrack>` inside a row that is itself the switch button.
+  One size (40×24, 16px knob); the knob moves by logical inset (`start-1` off →
+  `end-1` on), never `translate-x`. Guard: `__tests__/SwitchGuard.test.js`.
 
 ## Action hierarchy
 
@@ -668,6 +729,11 @@ reads as a rendering bug (the ghost-strip class). Rules:
   below another measures the layer above at runtime. `Header` publishes its
   live height as the `--chrome-top` CSS var (ResizeObserver); downstream sticky
   chrome offsets off `var(--chrome-top, …)`, never a frozen `top-[82px]`.
+- **Person avatar (MEH-3069):** the signed-in person's circle is
+  `components/ui/Avatar.jsx` — photo, else ONE initial from `avatarInitial()`
+  (first code point, upper-cased, «?» when empty). Header 34px, BottomNav 24px,
+  account sheet 40px (`tone="none"` inside its own ring), settings 64px.
+  Guard: `__tests__/AvatarGuard.test.js`.
 
 ## Do's and Don'ts
 
@@ -849,6 +915,20 @@ returns to what opened it (`hooks/useDialogFocus.js`; mark the safe button
 not mid-request). `DialogContractGuard.test.js` enforces it. One shared
 `Dialog` component for the look (overlay, radius, close button) is post-launch.
 
+## Icons (MEH-3089)
+
+Phosphor only (`@phosphor-icons/react`). One scale and three weights, so two
+icons doing the same job look the same anywhere on the site.
+
+- **Size:** 12 · 14 · 16 · 18 · 20 · 24 in the UI (16 inline with body text,
+  18–20 inside buttons, 24 for a stand-alone icon button); 32 · 40 · 48 · 64
+  for display icons (empty states, page heads). Nothing in between.
+- **Weight:** `regular` by default, `bold` for small icons that must hold up
+  at 12–14 px, `fill` for a selected or active state (a saved heart, the
+  current tab). No `duotone`, `light` or `thin`.
+- Enforced by `frontend/__tests__/IconScaleGuard.test.js` on literal `size`
+  and `weight` props.
+
 ## Interactive sizing minimums
 
 Interactive elements — anything a user reads to act on or taps — carry two
@@ -925,6 +1005,25 @@ hover-only underline (or none):
 
 Colour alone (`text-primary`) is **not** a cue: on a page whose headings are
 already green it does not read as "tap me".
+
+## Back links (MEH-3085, 13/11/2026)
+
+A link back to a parent page is `components/ui/BackLink` — it draws the arrow
+(pointing back in both directions), the colour, the focus ring; `tone="onDark"`
+on the admin sidebar. Never type «→» into a back label: screen readers read it
+aloud and it cannot flip per locale. `BackLinkGuard.test.js` reds a `<Link>`/`<a>`
+whose text is a `back*` key, and a back label with a typed arrow. A link dressed
+as a button that goes home is an action (ActionShapeGuard), not a back link.
+
+## Dates (MEH-3070, 13/11/2026)
+
+A date on screen is printed by `formatDate(value, locale, style)` or
+`formatEventDate` from `lib/format-date.js` — Israel time, the page locale, and
+an empty string (never «Invalid Date») for a bad value. Styles: `numeric`
+(05.11.2026: tables, dashboards, expiry lines), `dayMonth` (5 בנובמבר), `long`
+(יום חמישי, 5 בנובמבר). «Today» comes from `lib/israel-date.js`.
+`DateFormatGuard.test.js` reds `toLocaleDateString` / `toLocaleTimeString` /
+`new Intl.DateTimeFormat` in a page or component.
 
 ## Required-field marking (MEH-2015)
 

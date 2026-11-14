@@ -60,7 +60,7 @@ export default function NearMePill({ onClick }) {
       // transition-colors is intentionally omitted: the inline style block above
       // already animates background-color (alongside `bottom`), so the Tailwind
       // utility would be overridden anyway.
-      className="lg:hidden absolute end-4 z-[1000] w-11 h-11 rounded-full bg-background border border-border flex items-center justify-center text-primary hover:bg-green-50 focus-visible:ring-2 focus-visible:ring-primary/40"
+      className="lg:hidden absolute end-4 z-[1000] w-11 h-11 rounded-full bg-background border border-border flex items-center justify-center text-primary hover:bg-green-50 focus-visible:ring-2 focus-visible:ring-primary"
     >
       <Crosshair size={20} weight="bold" aria-hidden="true" />
     </button>

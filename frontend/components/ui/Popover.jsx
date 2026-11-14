@@ -342,7 +342,7 @@ export default function Popover({
           ? // MEH-2622: select-none + no touch-callout — on iOS a long press
             // on the sheet selected it and the page behind it, painting the
             // whole screen in the blue selection tint (Sapir's screenshots).
-            `fixed inset-x-0 bottom-0 z-[1210] block select-none [-webkit-touch-callout:none] rounded-t-2xl border-t border-border bg-surface p-5 pb-[calc(1.25rem+env(safe-area-inset-bottom,0px))] shadow-2xl text-sm text-text leading-relaxed text-start ${sheetContentClassName}`
+            `fixed inset-x-0 bottom-0 z-[1210] block select-none [-webkit-touch-callout:none] rounded-t-xl border-t border-border bg-surface p-5 pb-[calc(1.25rem+env(safe-area-inset-bottom,0px))] shadow-xl text-sm text-text leading-relaxed text-start ${sheetContentClassName}`
           : overlayActive
             ? // Same visual as the anchored panel; `fixed` + measured offsets
               // replace `absolute` + the placement classes. z unchanged at 800
