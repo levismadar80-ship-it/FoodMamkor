@@ -19,6 +19,7 @@ import Button from "@/components/ui/Button";
 import EmptyState from "@/components/ui/EmptyState";
 import HubAlertHint from "@/components/HubAlertHint";
 import { SkeletonBlock } from "@/components/Skeleton";
+import { parseNaiveUtc } from "@/lib/dates";
 
 // MEH-3013: the hero photo is the hub's shared one (components/HubShell.jsx);
 // this page's own MEH-797 photo retired so a tab switch never swaps images.
@@ -33,7 +34,8 @@ function GroupBuyCard({ gb }) {
   const td = useTranslations("group_buys.detail");
   const funded = gb.status === "funded";
   const pct = groupBuyProgressPct(gb.commits_count, gb.min_participants);
-  const deadline = new Date(gb.deadline);
+  // MEH-3219 B13: naive UTC, parsed as UTC.
+  const deadline = parseNaiveUtc(gb.deadline) ?? new Date(NaN);
   const daysLeft = Math.max(0, Math.ceil((deadline - Date.now()) / 86400000));
   const discount = groupBuyDiscountPct(gb.price_per_unit_regular, gb.price_per_unit_group);
   const remaining = Math.max(0, gb.min_participants - gb.commits_count);

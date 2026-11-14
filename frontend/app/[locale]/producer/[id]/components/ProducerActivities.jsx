@@ -11,6 +11,7 @@ import { groupBuyDiscountPct } from "@/lib/group-buy-progress";
 import EventEntryRow, { toEventEntry } from "@/components/EventEntryRow";
 import SectionHeading from "@/components/ui/SectionHeading";
 import ShowMore from "@/components/ui/ShowMore";
+import { parseNaiveUtc } from "@/lib/dates";
 
 // MEH-2602: the business page lists its open group buys and upcoming
 // experiences, fetched client-side by producer_id; a failed fetch or an empty
@@ -118,7 +119,7 @@ function GroupBuyRow({ gb }) {
   const t = useTranslations("group_buys.card");
   const td = useTranslations("group_buys.detail");
   const funded = gb.status === "funded";
-  const daysLeft = Math.max(0, Math.ceil((new Date(gb.deadline) - Date.now()) / 86400000));
+  const daysLeft = Math.max(0, Math.ceil(((parseNaiveUtc(gb.deadline)?.getTime() ?? 0) - Date.now()) / 86400000));
   const discount = groupBuyDiscountPct(gb.price_per_unit_regular, gb.price_per_unit_group);
   const remaining = Math.max(0, gb.min_participants - gb.commits_count);
   const progress = t("progress_label", { commits: gb.commits_count, min: gb.min_participants });
