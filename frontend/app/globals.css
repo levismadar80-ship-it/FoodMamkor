@@ -359,6 +359,13 @@ body:has([data-meets-footer]) footer[data-site-footer] {
   footer[data-site-footer] {
     padding-bottom: var(--bottom-inset);
   }
+  /* MEH-3198: /map sizes its shell to the viewport (calc(100dvh - header)),
+     and its bottom sheet clears the nav pill itself, so the body reserve only
+     added a scroll: measured 80px on a phone (172 with the cookie banner) and
+     68px on desktop with the banner, the page sliding under the header. */
+  body:has([data-map-shell]) {
+    padding-bottom: 0;
+  }
 }
 
 /* Leaflet map fixes */

@@ -126,13 +126,24 @@ test.describe("MEH-2824 · footer reaches the screen edge under the floating nav
     });
   }
 
-  test("/map renders no site footer, so <body> keeps the reserve", async ({ page }) => {
+  // MEH-3198: /map renders no site footer, and its shell already fills the
+  // viewport (calc(100dvh - header)), so the body reserve only added a scroll —
+  // measured 80px on a phone. The map shell drops it (globals.css). This test
+  // used to assert the reserve stayed on <body> here; that was the bug.
+  test("/map: no site footer, no body reserve, the page does not scroll", async ({ page }) => {
     await page.addInitScript(() => localStorage.setItem("cookieConsent", "essential"));
     await page.goto("/he/map");
-    await page.waitForTimeout(800);
+    await expect(page.locator("[data-map-shell=mobile]")).toBeVisible({ timeout: 15_000 });
     await expect(page.locator("footer[data-site-footer]")).toHaveCount(0);
-    const pad = await page.evaluate(() => parseFloat(getComputedStyle(document.body).paddingBottom));
-    expect(pad).toBeGreaterThan(0);
+    // Control: the reserve is live on this page (BottomNav published its height),
+    // so a zero below is the rule, not an unset variable.
+    await expect.poll(() => rootVar(page, "--bottom-nav-clearance"), { timeout: 10_000 }).not.toBe("");
+    const m = await page.evaluate(() => ({
+      pad: parseFloat(getComputedStyle(document.body).paddingBottom),
+      overflow: document.scrollingElement!.scrollHeight - innerHeight,
+    }));
+    expect.soft(m.pad, "body carries no bottom reserve on /map").toBe(0);
+    expect.soft(m.overflow, "nothing to scroll below the map").toBeLessThanOrEqual(1);
   });
 });
 
