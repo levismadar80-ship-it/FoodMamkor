@@ -113,7 +113,7 @@ export const BUSINESS_FEATURES = [
   { id: "kashrut_verified", group: "trust", status: "live", tile: { icon: "Certificate" }, codeRef: ["frontend/app/[locale]/admin/kashrut/page.js", "frontend/lib/badges.js"] },
   { id: "editor_pick", group: "trust", status: "live", tile: { icon: "Medal" }, codeRef: ["frontend/lib/featured-producer.js", "frontend/lib/badges.js"] },
   { id: "reservist_diet_tags", group: "trust", status: "live", codeRef: ["frontend/app/[locale]/producer/[id]/components/ReservistBadgeLine.jsx", "frontend/lib/badges.js"] },
-  { id: "reviews_contacted", group: "trust", status: "live", tile: { icon: "Star" }, codeRef: ["backend/app/routers/reviews.py", "frontend/components/ReviewsSection.jsx"] },
+  { id: "reviews_contacted", group: "trust", status: "live", tile: { icon: "Star" }, codeRef: ["backend/app/routers/reviews.py", "frontend/components/ReviewsSection.jsx", "frontend/app/[locale]/producer/dashboard/reviews/page.js"], dashboard: { home: "tools", href: "/producer/dashboard/reviews" } },
   { id: "review_request", group: "trust", status: "live", codeRef: ["frontend/components/producer/RequestReviewCard.jsx"] },
 
   // ── insights ────────────────────────────────────────────────────────────
