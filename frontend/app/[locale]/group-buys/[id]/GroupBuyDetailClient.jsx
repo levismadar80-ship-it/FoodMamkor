@@ -46,6 +46,27 @@ function clampQuantity(value) {
   return Math.min(QTY_MAX, Math.max(QTY_MIN, n));
 }
 
+// MEH-3130: a guest's chosen quantity survives the trip to /login and back
+// (the «כניסה להצטרפות» button), as the review row keeps a tapped star.
+const QTY_DRAFT_KEY = (gbId) => `group_buy_draft_qty_${gbId}`;
+
+function saveDraftQuantity(gbId, value) {
+  try {
+    sessionStorage.setItem(QTY_DRAFT_KEY(gbId), String(clampQuantity(value)));
+  } catch {}
+}
+
+/** Read and clear the kept quantity; null when none (or storage is blocked). */
+function takeDraftQuantity(gbId) {
+  try {
+    const raw = sessionStorage.getItem(QTY_DRAFT_KEY(gbId));
+    if (raw === null) return null;
+    sessionStorage.removeItem(QTY_DRAFT_KEY(gbId));
+    return clampQuantity(raw);
+  } catch {}
+  return null;
+}
+
 export default function GroupBuyDetailClient({ id }) {
   const t = useTranslations("group_buys.detail");
   // MEH-848: shared generic error copy (collapsed from group_buys.detail.errors.generic).
@@ -65,6 +86,11 @@ export default function GroupBuyDetailClient({ id }) {
   const [gb, setGb] = useState(null);
   const [loading, setLoading] = useState(true);
   const [quantity, setQuantity] = useState(1);
+  useEffect(() => {
+    if (!user) return;
+    const kept = takeDraftQuantity(id);
+    if (kept) setQuantity(kept);
+  }, [user, id]);
   const [submitting, setSubmitting] = useState(false);
   const [cancelling, setCancelling] = useState(false);
   // MEH-1250: destructive cancel-commitment confirm dialog (replaces native confirm()).
@@ -131,6 +157,7 @@ export default function GroupBuyDetailClient({ id }) {
     e.preventDefault();
     if (!user) {
       // MEH-2982: come back to this group buy after signing in, not to "/".
+      saveDraftQuantity(id, quantity);
       router.push(loginHrefBackHere());
       return;
     }

@@ -45,8 +45,13 @@ vi.mock("@/lib/toast", () => {
 // LoginPromptModal is FavoriteButton's logged-out path; stub it to an
 // observable open flag so the test asserts the hand-off, not the modal.
 vi.mock("@/components/LoginPromptModal", () => ({
-  default: ({ open, message }) =>
-    open ? <div data-testid="login-prompt">{message}</div> : null,
+  default: ({ open, title, message }) =>
+    open ? (
+      <div data-testid="login-prompt">
+        <span data-testid="login-prompt-title">{title}</span>
+        {message}
+      </div>
+    ) : null,
 }));
 
 import api from "@/lib/api";
@@ -111,8 +116,15 @@ describe("MEH-2526 · ProducerUpdatesButton", () => {
 
     fireEvent.click(button());
 
+    // MEH-3130: the prompt names updates, not the save hearts' «רוצה לשמור?».
     expect(screen.getByTestId("login-prompt")).toHaveTextContent(
+      he.favorites.updates_button.login_prompt_message,
+    );
+    expect(screen.getByTestId("login-prompt")).not.toHaveTextContent(
       he.favorites.button.login_prompt_message,
+    );
+    expect(screen.getByTestId("login-prompt-title")).toHaveTextContent(
+      he.favorites.updates_button.login_prompt_title,
     );
     expect(JSON.parse(sessionStorage.getItem("pending_action"))).toMatchObject({
       type: "updates",

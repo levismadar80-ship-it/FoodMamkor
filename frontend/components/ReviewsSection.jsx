@@ -325,10 +325,9 @@ export default function ReviewsSection({
   const [hasClickedWa, setHasClickedWa] = useState(false);
   // MEH-1428 chunk 2: the invite token for THIS producer, if any.
   const [inviteToken, setInviteToken] = useState(null);
-  // Guest login prompt target. Set after mount (window is client-only) so the
-  // server markup and the first client render agree; until then it is plain
-  // /login, which is what it always was.
-  const [loginHref, setLoginHref] = useState("/login");
+  // Guest login prompt return path. Set after mount (window is client-only) so
+  // the server markup and the first client render agree; until then "/".
+  const [loginNext, setLoginNext] = useState("/");
   const sectionRef = useRef(null);
   // MEH-2705: the header and the sticky bar render producer.reviews_count from
   // the server (ISR, up to 60 s old), so a new review left them one behind.
@@ -375,7 +374,8 @@ export default function ReviewsSection({
     // Same redirect shape as LoginPromptModal.jsx:103 (clamped by
     // lib/safe-redirect.js on the login side).
     const back = `${window.location.pathname}${window.location.search}#reviews`;
-    setLoginHref(`/login?redirect=${encodeURIComponent(back)}`);
+    // MEH-3130: the path only — LoginPromptModal builds the /login link.
+    setLoginNext(back);
   }, [producerId]);
 
   // 13/11/2026: a star tapped on the invite row before the reader could write
@@ -670,7 +670,7 @@ export default function ReviewsSection({
         <ReviewInviteCard
           mode="login"
           first={inviteFirst}
-          loginHref={loginHref}
+          loginNext={loginNext}
           producerId={producerId}
           producerName={producerName}
         />

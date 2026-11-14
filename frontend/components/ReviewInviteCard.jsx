@@ -3,7 +3,8 @@
 import { useState } from "react";
 import { ShieldCheck, Star, User } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
-import { Link } from "@/i18n/navigation";
+import LoginPromptModal from "@/components/LoginPromptModal";
+import { showToast } from "@/lib/toast";
 
 /**
  * Module:   ReviewInviteCard
@@ -21,10 +22,14 @@ import { Link } from "@/i18n/navigation";
  *   "write"   — may write (contacted, or holds an invite link). The same row;
  *               a star opens the form with that rating, and inside the open
  *               form (bare) the stars ARE the rating picker.
- *   "login"   — guest. Each star is a link to sign in; the login page
- *               returns to this page's #reviews (ReviewsSection builds it).
+ *   "login"   — guest. A star opens LoginPromptModal, which says why an
+ *               account is needed before it sends anyone to /login (MEH-3130;
+ *               it was a bare link to /login). «היכנסו» returns to this
+ *               page's #reviews (ReviewsSection builds `loginNext`).
  *   "contact" — signed in, has not contacted the business yet. Each star
- *               scrolls to the contact card, where the contact happens.
+ *               scrolls to the contact card and a toast says why (MEH-3130;
+ *               the scroll used to be silent). A toast, not a line here: the
+ *               scroll moves this row off screen.
  * History:  MEH-2999 (creation) — replaced «התחברו וצרו קשר בוואטסאפ כדי
  *           לכתוב ביקורת». 13/11/2026 (Sapir, option ד): white card → the
  *           Google row; «קניתם אצלם?» → a question with the business name (not
@@ -65,7 +70,7 @@ function scrollToContactCard() {
 const STAR_TAP =
   "inline-flex min-h-touch min-w-touch items-center justify-center rounded-lg transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary";
 
-function InviteStar({ value, lit, mode, loginHref, producerId, ariaLabel, onHover, onPick, pressed }) {
+function InviteStar({ value, lit, mode, producerId, ariaLabel, onHover, onPick, onAsk, pressed }) {
   const icon = (
     <Star
       size={STAR_SIZE}
@@ -84,13 +89,6 @@ function InviteStar({ value, lit, mode, loginHref, producerId, ariaLabel, onHove
       if (e.pointerType === "mouse") onHover(value);
     },
   };
-  if (mode === "login") {
-    return (
-      <Link href={loginHref} onClick={() => saveDraftStars(producerId, value)} {...common}>
-        {icon}
-      </Link>
-    );
-  }
   if (mode === "write") {
     return (
       <button type="button" aria-pressed={pressed} onClick={() => onPick(value)} {...common}>
@@ -103,7 +101,7 @@ function InviteStar({ value, lit, mode, loginHref, producerId, ariaLabel, onHove
       type="button"
       onClick={() => {
         saveDraftStars(producerId, value);
-        scrollToContactCard();
+        onAsk();
       }}
       {...common}
     >
@@ -122,9 +120,19 @@ function InviteStar({ value, lit, mode, loginHref, producerId, ariaLabel, onHove
  *   are not there (MEH-3053).
  */
 export default function ReviewInviteCard(p) {
-  const { mode, loginHref, producerId, producerName, value = 0, onPick, bare, first, testId } = p;
+  const { mode, loginNext, producerId, producerName, value = 0, onPick, bare, first, testId } = p;
   const t = useTranslations("reviews");
   const [hovered, setHovered] = useState(0);
+  const [loginOpen, setLoginOpen] = useState(false);
+  // MEH-3130: a star the reader may not use yet says why. Guest → the shared
+  // login prompt; signed in without a contact → contact card + a toast.
+  const onAsk =
+    mode === "login"
+      ? () => setLoginOpen(true)
+      : () => {
+          scrollToContactCard();
+          showToast.info(t("contact_first_toast"));
+        };
   const title = t("invite_title", { name: producerName || "" });
   const shown = hovered || (mode === "write" ? value : 0);
   return (
@@ -161,7 +169,7 @@ export default function ReviewInviteCard(p) {
                 pressed={mode === "write" ? value === i + 1 : undefined}
                 onPick={onPick}
                 mode={mode}
-                loginHref={loginHref}
+                onAsk={onAsk}
                 producerId={producerId}
                 ariaLabel={t("star_aria", { value: i + 1 })}
                 onHover={setHovered}
@@ -176,6 +184,15 @@ export default function ReviewInviteCard(p) {
           <ShieldCheck size={16} className="flex-none text-primary" aria-hidden="true" />
           {t("invite_hint")}
         </p>
+      )}
+      {mode === "login" && (
+        <LoginPromptModal
+          open={loginOpen}
+          onClose={() => setLoginOpen(false)}
+          title={t("login_prompt_title")}
+          message={t("login_prompt_message")}
+          nextPath={loginNext || "/"}
+        />
       )}
     </div>
   );
