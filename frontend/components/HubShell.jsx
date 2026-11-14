@@ -17,6 +17,8 @@
  * History:  MEH-3013 (creation — /rescue had no hero and its own H1 above the
  *           tabs, /group-buys a short centred hero; both read as another site
  *           next to /events). Hero lifted from EventsClient (MEH-788).
+ *           MEH-3113 (low band 150/200px min-height, smaller type: first
+ *           event 662→~536px at 375, 703→~543px at 1440).
  */
 
 import ListingHubTabs from "@/components/ListingHubTabs";
@@ -58,7 +60,7 @@ export default function HubShell({ active, eyebrow, title, subtitle, image = HUB
           global off-switch (globals.css). */}
       <section
         data-testid="hub-hero"
-        className="relative isolate w-full overflow-hidden h-[clamp(240px,34svh,300px)] md:h-[clamp(300px,40svh,380px)]"
+        className="relative isolate w-full overflow-hidden flex flex-col justify-end min-h-[150px] md:min-h-[200px]"
       >
         <div className="absolute inset-0 overflow-hidden" aria-hidden="true">
           <div
@@ -73,13 +75,16 @@ export default function HubShell({ active, eyebrow, title, subtitle, image = HUB
           />
         </div>
         <div className="absolute inset-0" aria-hidden="true" style={{ backgroundImage: HERO_SCRIM }} />
-        <div className="absolute inset-x-0 bottom-0 px-4 pb-6 md:px-14 md:pb-10 text-background">
+        {/* MEH-3113: a low band (big-sites review, wave 1) so the list starts in the
+            first screen. min-h, not h, and the text in normal flow: at 200% text
+            the band grows instead of clipping the title. */}
+        <div className="relative px-4 pt-8 pb-3.5 md:px-14 md:pt-10 md:pb-6 text-background">
           <div className="max-w-5xl mx-auto">
             <p className="text-xs font-semibold text-green-100">{eyebrow}</p>
-            <h1 className="font-headline-display font-black text-3xl md:text-6xl leading-tight text-background mt-1.5 md:mt-3">
+            <h1 className="font-headline-display font-black text-2xl md:text-4xl leading-tight text-background mt-1 md:mt-2">
               {title}
             </h1>
-            <p className="text-base md:text-xl text-background/85 mt-2 leading-snug">{subtitle}</p>
+            <p className="text-sm md:text-lg text-background/85 mt-1 md:mt-1.5 leading-snug">{subtitle}</p>
           </div>
         </div>
       </section>
