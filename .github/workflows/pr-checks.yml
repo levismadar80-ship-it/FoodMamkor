@@ -483,7 +483,9 @@ jobs:
           # experiences) — 48 -> 49.
           # MEH-2903: alembic_lineage (the revisions each boot applied, written
           # only by scripts/migrate_on_boot.py) — 49 -> 50.
-          EXPECTED_TABLES=50
+          # MEH-3179: billable_events (ledger of bookings through the site,
+          # counted for ADR-042 billing; no personal data) — 50 -> 51.
+          EXPECTED_TABLES=51
 
           TABLE_COUNT=$(psql -h localhost -U postgres -d mehamakor_test -tAc \
             "SELECT COUNT(*) FROM information_schema.tables
