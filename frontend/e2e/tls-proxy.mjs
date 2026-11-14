@@ -10,23 +10,29 @@ import https from "node:https";
 import os from "node:os";
 import path from "node:path";
 
-const LISTEN = Number(process.env.TLS_PROXY_PORT || 3443);
-const TARGET_PORT = Number(process.env.TLS_PROXY_TARGET_PORT || 3000);
+const LISTEN = 3443;
+const TARGET_PORT = 3000;
 const PUBLIC_ORIGIN = `https://localhost:${LISTEN}`;
 
-const dir = fs.mkdtempSync(path.join(os.tmpdir(), "tls-proxy-"));
-const key = path.join(dir, "key.pem");
-const cert = path.join(dir, "cert.pem");
-execFileSync("openssl", [
-  "req", "-x509", "-newkey", "rsa:2048", "-nodes", "-days", "2",
-  "-subj", "/CN=localhost", "-keyout", key, "-out", cert,
-], { stdio: "ignore" });
+// Plain HTTP/1.1 only: `next start` needs no websocket/HMR upgrade, so
+// hop-by-hop headers are passed through untouched. Port 3443 is fixed and
+// mirrored in e2e/webkit-tls.ts (WEBKIT_TLS_PORT); change both together.
+function makeCert() {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "tls-proxy-"));
+  const key = path.join(dir, "key.pem");
+  const cert = path.join(dir, "cert.pem");
+  execFileSync("openssl", [
+    "req", "-x509", "-newkey", "rsa:2048", "-nodes", "-days", "2",
+    "-subj", "/CN=localhost", "-keyout", key, "-out", cert,
+  ], { stdio: "ignore" });
+  return { key: fs.readFileSync(key), cert: fs.readFileSync(cert) };
+}
 
 // An absolute redirect built by Next from its own (plain-http) view of the
 // request would throw the browser back to http and drop the Secure cookies
 // again. Point any such Location back at the https origin.
 const PLAIN_ORIGINS = [`http://localhost:${TARGET_PORT}`, `http://localhost:${LISTEN}`];
-export function rewriteLocation(location) {
+function rewriteLocation(location) {
   if (!location) return location;
   for (const o of PLAIN_ORIGINS) {
     if (location.startsWith(o)) return PUBLIC_ORIGIN + location.slice(o.length);
@@ -55,14 +61,17 @@ function forward(req, res) {
     },
   );
   upstream.on("error", (err) => {
+    if (res.headersSent) return res.destroy(err);
     res.writeHead(502, { "content-type": "text/plain" });
     res.end(`tls-proxy: upstream error: ${err.message}`);
   });
+  // A browser that drops the connection must not leave the upstream open.
+  res.on("close", () => upstream.destroy());
   req.pipe(upstream);
 }
 
 if (process.argv[1] && process.argv[1].endsWith("tls-proxy.mjs")) {
   https
-    .createServer({ key: fs.readFileSync(key), cert: fs.readFileSync(cert) }, forward)
+    .createServer(makeCert(), forward)
     .listen(LISTEN, () => console.log(`[tls-proxy] ${PUBLIC_ORIGIN} -> http://localhost:${TARGET_PORT}`));
 }

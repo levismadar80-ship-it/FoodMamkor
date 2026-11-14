@@ -148,6 +148,8 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
   fs.mkdirSync(AUTH_DIR, { recursive: true });
   // MEH-3153: the WebKit run browses over the HTTPS proxy, so its token must
   // sit in THAT origin's localStorage; the login request itself stays on baseURL.
+  // Valid for a WebKit-only invocation (the nightly runs --project=webkit-iphone13);
+  // a Chromium project in the same PW_WEBKIT=1 run would find its token missing.
   const origin = webkitTlsEnabled() ? WEBKIT_TLS_URL : new URL(baseURL).origin;
 
   for (const role of ROLES) {
