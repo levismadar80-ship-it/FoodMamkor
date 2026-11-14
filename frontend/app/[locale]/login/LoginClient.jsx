@@ -72,6 +72,10 @@ function LoginPageBody() {
   // owner's review link must land back on the form after signing up. Only a
   // clamped, explicitly-passed value travels; otherwise the link stays bare.
   const passedRedirect = safeInternalRedirect(params.get("redirect"), null);
+  // MEH-3120: arriving from «מועדפים» (FavoritesClient pushes
+  // /login?redirect=/<locale>/favorites) — say why a sign-in is asked for.
+  // Only the clamped internal path is read, so an outside URL shows nothing.
+  const fromFavorites = /(^|\/)favorites\/?$/.test((passedRedirect || "").split(/[?#]/)[0]);
   const registerHref = passedRedirect
     ? `/register?redirect=${encodeURIComponent(passedRedirect)}`
     : "/register";
@@ -235,6 +239,11 @@ function LoginPageBody() {
           <h1 className="font-headline-lg font-black text-headline-lg leading-tight text-text">
             {t("welcome")}
           </h1>
+          {fromFavorites && (
+            <p data-testid="login-reason" className="text-base text-fg-muted">
+              {t("reason_favorites")}
+            </p>
+          )}
         </div>
 
         {/* Social-first auth (S9 locked order): Google → Apple, then "או". */}

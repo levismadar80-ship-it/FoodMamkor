@@ -17,6 +17,7 @@ import { dropZeroChips } from "@/lib/chip-gate"; // MEH-3128
 import { CountGroupBuysByStatusGroupBuysCountsGetResponse as StatusCountsOut } from "@/lib/generated/api.zod";
 import Button from "@/components/ui/Button";
 import EmptyState from "@/components/ui/EmptyState";
+import HubAlertHint from "@/components/HubAlertHint";
 import { SkeletonBlock } from "@/components/Skeleton";
 
 // MEH-3013: the hero photo is the hub's shared one (components/HubShell.jsx);
@@ -274,6 +275,8 @@ export default function GroupBuysClient() {
           // MEH-862) — same icon and the same two strings.
           <div data-testid="group-buys-empty">
             <EmptyState icon={ShoppingCart} title={t("empty_title")} description={t("empty_subtitle")} />
+            {/* MEH-3117: the way out — the group-buy alert (MEH-2828). */}
+            <HubAlertHint kind="group_buys" className="-mt-6 pb-12" />
           </div>
         ) : (
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
