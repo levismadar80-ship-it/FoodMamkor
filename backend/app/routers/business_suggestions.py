@@ -116,20 +116,20 @@ def submit_business_suggestion(
     if (body.company or "").strip():
         return BusinessSuggestionAck()
 
-    # Server-side prefill, not an echo of anything the client said: a
-    # logged-in visitor who left the email field empty gets their account
-    # address, so the thank-you can reach them. An email they DID type always
-    # wins — overriding it would silently retarget their mail.
-    #
-    # The prefill is gated on `wants_update` (adversarial review, finding 3).
-    # The notice at the point of collection promises the address is used ONLY
-    # to send the update about this suggestion, so with no opt-in there is no
-    # purpose to hold it for — and MEH-2638 would then keep it for 180 days.
-    # This NARROWS the chunk-A line "prefill if the field is empty"; it does
-    # not touch an address the visitor typed, which is their own act.
-    suggester_email = body.suggester_email or (
+    # MEH-2642 (Sapir 14/11, option 2): the suggester address comes ONLY from
+    # a signed-in account, and only with the opt-in. A typed
+    # `suggester_email` is ignored: it was never verified, so anyone could
+    # put a stranger's address on a lead and have our thank-you mail sent
+    # there. An anonymous visitor can still recommend, just with no address.
+    # The opt-in gate keeps adversarial-review finding 3 (purpose limitation:
+    # the notice promises the address is used only for this update, and
+    # MEH-2638 would keep it 180 days).
+    # DO NOT fall back to body.suggester_email — that is the MEH-2642 hole.
+    suggester_email = (
         getattr(user, "email", None) if user is not None and body.wants_update else None
     )
+    # No address → no update can be sent, so none is recorded as owed.
+    wants_update = bool(suggester_email)
 
     existing = _find_existing_lead(db, _norm(body.name), _norm(body.city))
     if existing is not None:
@@ -168,7 +168,7 @@ def submit_business_suggestion(
             existing.suggested_by_name = (
                 body.suggester_name or existing.suggested_by_name
             )
-            existing.suggester_wants_update = body.wants_update
+            existing.suggester_wants_update = wants_update
         db.commit()
         background_tasks.add_task(
             notify_admin_new_business_suggestion,
@@ -189,7 +189,7 @@ def submit_business_suggestion(
         status="new",
         suggested_by_name=body.suggester_name,
         suggested_by_email=suggester_email,
-        suggester_wants_update=body.wants_update,
+        suggester_wants_update=wants_update,
         suggestion_reason=body.reason,
     )
     db.add(lead)

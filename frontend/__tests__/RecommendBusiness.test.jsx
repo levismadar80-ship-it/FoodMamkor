@@ -5,7 +5,14 @@ import api from "@/lib/api";
 
 // MEH-2827 PR 5: the owner line under the subtitle is a BusinessCtaLink,
 // which reads the auth context. A guest sees the join link.
-vi.mock("@/lib/auth-context", () => ({ useAuth: () => ({ user: null, loading: false }) }));
+// MEH-2642: the update opt-in reads the same context (useAuth), so the
+// mock is switchable — `authState.user` null = guest, an object = signed in.
+const authState = vi.hoisted(() => ({ user: null }));
+vi.mock("@/lib/auth-context", () => ({
+  useAuth: () => ({ user: authState.user, loading: false }),
+  useOptionalAuth: () => ({ user: authState.user, loading: false }),
+}));
+const MEMBER = { id: 7, email: "member@example.com", role: "user" };
 vi.mock("@/lib/api", () => ({
   default: { post: vi.fn(() => Promise.resolve({ data: { ok: true } })) },
 }));
@@ -41,7 +48,6 @@ vi.mock("next-intl", () => {
     "recommend.field_website_label": "אתר",
     "recommend.field_reason_label": "מה מיוחד שם? (לא חובה)",
     "recommend.field_suggester_name_label": "השם שלכם (לא חובה)",
-    "recommend.field_suggester_email_label": "אימייל (לא חובה)",
     "recommend.wants_update_label": "עדכנו אותי כשבית העסק עולה לאתר",
     "recommend.submit": "שליחת ההמלצה",
     "recommend.success": "תודה! קיבלנו את ההמלצה. נבדוק ונפנה לבית העסק.",
@@ -91,6 +97,7 @@ function fillValid() {
 describe("RecommendClient", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    authState.user = null;
     api.post.mockResolvedValue({ data: { ok: true } });
   });
 
@@ -107,10 +114,11 @@ describe("RecommendClient", () => {
   it("renders the privacy notice as a link, not literal <link> tags", () => {
     // The failure this catches is visible to a human and invisible to a
     // tag-free mock: `t()` instead of `t.rich()` prints "<link>…</link>".
+    authState.user = MEMBER;
     render(<RecommendClient />);
-    // getAllByText, not getByText: since the collection notice landed there
-    // are TWO links with this label (the consent line under the button and the
-    // notice under the email field). Both must be real links.
+    // getAllByText, not getByText: a signed-in visitor sees TWO links with
+    // this label (the consent line under the button and the notice under the
+    // update opt-in). Both must be real links.
     const links = screen.getAllByText("מדיניות הפרטיות");
     expect(links.length).toBe(2);
     for (const el of links) expect(el.tagName).toBe("A");
@@ -121,6 +129,7 @@ describe("RecommendClient", () => {
     // Amendment 13 §11: purpose + who it is NOT shared with, next to the
     // field. Asserting the sentence, not just the component's presence — an
     // empty or wrong message would render a link with no disclosure.
+    authState.user = MEMBER;
     render(<RecommendClient />);
     const notice = screen.getByTestId("recommend-collection-notice");
     expect(notice).toHaveTextContent("נשתמש באימייל רק כדי לעדכן אתכם על ההמלצה הזו");
@@ -130,20 +139,51 @@ describe("RecommendClient", () => {
     expect(link.getAttribute("href")).toContain("/privacy");
   });
 
-  it("the notice sits with the email field, not at the end of the form", () => {
+  it("the notice sits with the update opt-in, not at the end of the form", () => {
     // "At the point of collection" is a position, not just a presence: a
     // notice under the submit button is a different (weaker) disclosure.
+    // MEH-2642: the opt-in is now what makes us use an address (the
+    // account's), so the notice follows the checkbox.
+    authState.user = MEMBER;
     render(<RecommendClient />);
-    const email = document.getElementById("recommend-suggester-email");
+    const optIn = screen.getByTestId("recommend-wants-update");
     const notice = screen.getByTestId("recommend-collection-notice");
-    // The notice's IMMEDIATELY PRECEDING sibling must be the email field's
-    // block. `parentElement.contains(email)` was the first attempt and it is
-    // not a check: the <form> contains the email too, so moving the notice to
-    // the very end of the form satisfied it — a mutation proved that green.
-    // previousElementSibling is what distinguishes "next to the field" from
-    // "somewhere in the same form".
+    // previousElementSibling, not parentElement.contains: the <form> contains
+    // everything, so a notice moved to the end of the form would pass that.
     expect(notice.previousElementSibling).toBeTruthy();
-    expect(notice.previousElementSibling.contains(email)).toBe(true);
+    expect(notice.previousElementSibling.contains(optIn)).toBe(true);
+  });
+
+  // ---------- MEH-2642: no typed email, the account address only ----------
+  it("renders no email field for anyone", () => {
+    render(<RecommendClient />);
+    expect(document.getElementById("recommend-suggester-email")).toBeNull();
+    expect(document.querySelector('input[type="email"]')).toBeNull();
+  });
+
+  it("a guest sees neither the update opt-in nor the email notice", () => {
+    render(<RecommendClient />);
+    expect(screen.getByTestId("recommend-form")).toBeInTheDocument();
+    expect(screen.queryByTestId("recommend-wants-update")).toBeNull();
+    expect(screen.queryByTestId("recommend-collection-notice")).toBeNull();
+    // Control: the consent line under the button is still there for a guest.
+    expect(screen.getAllByText("מדיניות הפרטיות").length).toBe(1);
+  });
+
+  it("a signed-in visitor sees the opt-in, unchecked", () => {
+    authState.user = MEMBER;
+    render(<RecommendClient />);
+    expect(screen.getByTestId("recommend-wants-update")).not.toBeChecked();
+  });
+
+  it("a guest's post carries no email and wants_update false", async () => {
+    render(<RecommendClient />);
+    fillValid();
+    fireEvent.submit(screen.getByTestId("recommend-form"));
+    await screen.findByTestId("recommend-success");
+    const body = api.post.mock.calls[0][1];
+    expect(body).not.toHaveProperty("suggester_email");
+    expect(body.wants_update).toBe(false);
   });
 
   it("keeps the browser's empty-field gate: no noValidate, native required", () => {
@@ -236,6 +276,7 @@ describe("RecommendClient", () => {
   });
 
   it("opting in swaps the success copy for the email promise", async () => {
+    authState.user = MEMBER;
     render(<RecommendClient />);
     fillValid();
     fireEvent.click(screen.getByTestId("recommend-wants-update"));
