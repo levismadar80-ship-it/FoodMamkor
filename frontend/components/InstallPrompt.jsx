@@ -143,7 +143,7 @@ export default function InstallPrompt() {
       // var. `md:bottom-6` unchanged and still wins at md+, where no pill renders.
       className="vv-pin fixed bottom-[calc(var(--bottom-nav-clearance,calc(4.5rem+env(safe-area-inset-bottom,0px)))+24px)] md:bottom-6 start-4 end-4 md:start-auto md:end-6 md:w-80 bg-surface rounded-lg shadow-xl border border-border p-4 z-[9997] flex items-start gap-3"
     >
-      <DeviceMobile size={28} weight="fill" className="shrink-0 text-primary" aria-hidden="true" />
+      <DeviceMobile size={24} weight="fill" className="shrink-0 text-primary" aria-hidden="true" />
       <div className="flex-1 min-w-0">
         <p className="font-semibold text-text text-sm leading-snug">{t("title")}</p>
         {ios ? (

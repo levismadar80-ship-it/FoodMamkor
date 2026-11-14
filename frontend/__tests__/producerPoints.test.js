@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { producerPoints, producerInBounds, primaryPoint } from "@/lib/producerPoints";
+import { mapPinPoints, producerPoints, producerInBounds, primaryPoint } from "@/lib/producerPoints";
 
 // producerPoints also returns `location` (the source row, needed by the marker
 // layer). These helpers assert the coordinate triple without restating it.
@@ -156,5 +156,31 @@ describe("producerInBounds — viewport predicate (MEH-1670)", () => {
 
   it("filters nothing when no viewport has been committed", () => {
     expect(producerInBounds({ lat: null, lng: null, locations: [] }, null)).toBe(true);
+  });
+});
+
+// MEH-3054 (option ה׳): the points /map draws for a business.
+describe("mapPinPoints — one pin per business", () => {
+  const B = { kind: "branch", is_primary: true, lat: 32.0, lng: 35.0 };
+  const B2 = { kind: "branch", is_primary: false, lat: 32.5, lng: 35.0 };
+  const P1 = { kind: "pickup", lat: 31.0, lng: 35.0 };
+  const P2 = { kind: "market_stand", lat: 31.5, lng: 35.0 };
+  const lats = (pts) => pts.map((p) => p.lat);
+
+  it("drops pickup / market_stand rows when a branch exists", () => {
+    expect(lats(mapPinPoints({ locations: [B, P1, P2] }))).toEqual([32.0]);
+  });
+  it("keeps every branch (a business with two stores shows both)", () => {
+    expect(lats(mapPinPoints({ locations: [B, P1, B2] }))).toEqual([32.0, 32.5]);
+  });
+  it("pickup-only business: its FIRST usable point stands in", () => {
+    expect(lats(mapPinPoints({ locations: [{ kind: "pickup", lat: null, lng: 1 }, P2, P1] }))).toEqual([31.5]);
+  });
+  it("no usable row → no pin", () => {
+    expect(mapPinPoints({ locations: [] })).toEqual([]);
+    expect(mapPinPoints(null)).toEqual([]);
+  });
+  it("expanded → every usable row", () => {
+    expect(lats(mapPinPoints({ locations: [B, P1, P2] }, { expanded: true }))).toEqual([32.0, 31.0, 31.5]);
   });
 });

@@ -30,6 +30,7 @@ import {
   regionCities,
   regionPagePath,
 } from "@/lib/region-pages";
+import BackLink from "@/components/ui/BackLink";
 
 const PER_PAGE = 24;
 
@@ -273,9 +274,7 @@ export default async function RegionLandingPage({ params }) {
       )}
 
       <p className="mt-10">
-        <Link href="/producers" className="text-primary underline">
-          {t("back_to_hub")}
-        </Link>
+        <BackLink href="/producers" label={t("back_to_hub")} />
       </p>
     </main>
   );

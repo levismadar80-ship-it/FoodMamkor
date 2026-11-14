@@ -80,7 +80,7 @@ function ReviewBody({ text, rowId, t }) {
           aria-expanded={expanded}
           aria-controls={bodyId}
           data-testid="review-body-toggle"
-          className="mt-1 text-xs text-fg-muted underline underline-offset-2 hover:text-text transition-colors rounded focus-visible:ring-2 focus-visible:ring-primary/40"
+          className="mt-1 text-xs text-fg-muted underline underline-offset-2 hover:text-text transition-colors rounded focus-visible:ring-2 focus-visible:ring-primary"
         >
           {expanded ? t("reviews.collapse") : t("reviews.expand")}
         </button>
@@ -385,7 +385,7 @@ export default function AdminReviewsPage() {
                           onClick={() => setHidden(r, { hide: !r.is_hidden })}
                           aria-disabled={togglingIds.has(r.id)}
                           data-testid={r.is_hidden ? "review-unhide" : "review-hide"}
-                          className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-lg text-fg-muted hover:bg-surface aria-disabled:opacity-60 aria-disabled:cursor-not-allowed focus-visible:ring-2 focus-visible:ring-primary/40"
+                          className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-lg text-fg-muted hover:bg-surface aria-disabled:opacity-50 aria-disabled:cursor-not-allowed focus-visible:ring-2 focus-visible:ring-primary"
                           aria-label={t(r.is_hidden ? "reviews.unhide_aria" : "reviews.hide_aria", {
                             user: r.user_name || t("reviews.default_user"),
                           })}
@@ -399,7 +399,7 @@ export default function AdminReviewsPage() {
                             onClick={() => keepHidden(r)}
                             aria-disabled={togglingIds.has(r.id)}
                             data-testid="review-keep-hidden"
-                            className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-lg text-fg-muted hover:bg-surface aria-disabled:opacity-60 aria-disabled:cursor-not-allowed focus-visible:ring-2 focus-visible:ring-primary/40"
+                            className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-lg text-fg-muted hover:bg-surface aria-disabled:opacity-50 aria-disabled:cursor-not-allowed focus-visible:ring-2 focus-visible:ring-primary"
                           >
                             <EyeSlash size={14} />
                             {t("reviews.keep_hidden")}
@@ -409,7 +409,7 @@ export default function AdminReviewsPage() {
                           type="button"
                           onClick={() => handleDelete(r)}
                           disabled={deletingId === r.id}
-                          className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-lg text-danger-600 hover:bg-danger-50 disabled:opacity-60 focus-visible:ring-2 focus-visible:ring-danger-400/40"
+                          className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-lg text-danger-600 hover:bg-danger-50 disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-danger-400/40"
                           aria-label={t("reviews.delete_aria", { user: r.user_name || t("reviews.default_user") })}
                         >
                           <Trash size={14} />

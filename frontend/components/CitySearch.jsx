@@ -272,8 +272,8 @@ export default function CitySearch({
         </label>
       )}
       {/* MEH-1127: wrapper py-2 removed (input min-h-touch alone sets the ~44px
-          field height, aligning with sibling register inputs); rounded-sm matches (MEH-3092). */}
-      <div className={`flex items-center gap-2 bg-surface border min-w-0 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/30 transition ${pill ? "rounded-full px-4 border-primary/15" : "rounded-sm px-3 border-border"}`}>
+          field height, aligning with sibling register inputs); rounded-sm matches. */}
+      <div className={`flex items-center gap-2 bg-surface border min-w-0 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary transition ${pill ? "rounded-full px-4 border-primary/15" : "rounded-sm px-3 border-border"}`}>
         <svg className="w-4 h-4 text-fg-muted shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1 1 0 01-1.414 0l-4.243-4.243a8 8 0 1111.314 0z" />
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />

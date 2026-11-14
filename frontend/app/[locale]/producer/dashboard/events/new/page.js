@@ -54,7 +54,7 @@ export default function NewEventPage() {
           <p className="text-fg-muted mb-6">{t("pending_success_hint")}</p>
           <Link
             href="/producer/dashboard"
-            className="inline-block bg-primary text-white px-6 py-3 rounded-sm hover:bg-primary-dark transition font-medium"
+            className="inline-block bg-primary text-white px-6 py-3 rounded-full hover:bg-primary-dark transition font-medium"
           >
             {t("pending_success_dashboard")}
           </Link>

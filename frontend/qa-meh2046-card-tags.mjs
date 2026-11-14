@@ -170,7 +170,7 @@ if (await acceptAll.count()) await acceptAll.first().click();
 // CDP rather than with `new TouchEvent` in the page: a synthetic touchmove
 // carries no usable `touches` list unless every point is a real `Touch`, and
 // Playwright's own touchscreen API only exposes tap.
-const sheet = page.locator('div[class*="rounded-t-3xl"][class*="z-[600]"]').first();
+const sheet = page.locator('div[class*="rounded-t-xl"][class*="z-[600]"]').first();
 const sheetBox = await sheet.boundingBox();
 const cdp = await page.context().newCDPSession(page);
 const dragFrom = sheetBox.y + 10;

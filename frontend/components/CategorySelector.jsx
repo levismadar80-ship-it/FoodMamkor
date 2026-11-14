@@ -7,6 +7,7 @@ import { Check, MagnifyingGlass } from "@phosphor-icons/react";
 // lookup — the local `Leaf` import that used to supply the fallback here is
 // gone, so there is one owner of that decision instead of three.
 import { resolveCategoryGlyph } from "@/lib/category-registry";
+import ShowMore from "@/components/ui/ShowMore";
 
 /**
  * CategorySelector — register step-02 producer category picker (S7 card aesthetic).
@@ -207,7 +208,7 @@ export default function CategorySelector({ categories, selectedIds, onChange, on
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder={t("search_placeholder")}
-          className="w-full border border-border rounded-sm ps-[46px] pe-3 py-2 text-base bg-surface-card text-text focus:outline-none focus:border-primary focus-visible:ring-2 focus-visible:ring-primary/40 transition"
+          className="w-full border border-border rounded-sm ps-[46px] pe-3 py-2 text-base bg-surface-card text-text focus:outline-none focus:border-primary focus-visible:ring-2 focus-visible:ring-primary transition"
           dir="rtl"
         />
       </div>
@@ -278,7 +279,7 @@ export default function CategorySelector({ categories, selectedIds, onChange, on
                     {/* MEH-2163: same two renderings as before — the mapped
                         glyph at 46px, the fallback at 46px `weight="light"`.
                         Only the identity of the fallback moved (registry). */}
-                    {isFallback ? <Glyph size={46} weight="light" /> : <Glyph size={46} />}
+                    {isFallback ? <Glyph size={48} weight="regular" /> : <Glyph size={48} />}
                   </span>
                   <span className="min-w-0">
                     <span className="block font-headline-display font-bold text-xl leading-tight text-text">
@@ -311,14 +312,14 @@ export default function CategorySelector({ categories, selectedIds, onChange, on
           </div>
 
           {!q && restCats.length > 0 && (
-            <button
-              type="button"
+            // MEH-3052: the shared ShowMore (inline) — carries the 44px floor F7 set.
+            <ShowMore
+              size="inline"
               onClick={() => setExpanded((v) => !v)}
-              // F7 (register polish): py-3 lifts the tap target to ≥44px (text-sm 20px + 2×12px) without changing the visible text size.
-              className="mt-2 py-3 text-sm text-primary hover:underline block"
-            >
-              {expanded ? t("show_less") : t("show_more", { count: restCats.length })}
-            </button>
+              expanded={expanded}
+              label={expanded ? t("show_less") : t("show_more", { count: restCats.length })}
+              className="mt-2"
+            />
           )}
         </>
       )}

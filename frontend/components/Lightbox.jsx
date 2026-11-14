@@ -45,7 +45,7 @@ const LIGHTBOX_MAX_WIDTH = 1920;
 const OVERLAY_CONTROL_CLS =
   "rounded-full bg-white/40 hover:bg-white/60 ring-1 ring-white/70 " +
   "flex items-center justify-center text-white transition " +
-  "focus-visible:ring-2 focus-visible:ring-white";
+  "focus-visible:ring-2 focus-visible:ring-white/70";
 
 /**
  * Lightbox — full-screen image viewer opened from ImageGallery.
@@ -160,7 +160,7 @@ export default function Lightbox({ images = [], startIndex = 0, onClose }) {
           aria-label={t("close_aria")}
           className={`absolute top-4 end-4 z-10 w-11 h-11 ${OVERLAY_CONTROL_CLS}`}
         >
-          <X size={22} weight="bold" aria-hidden="true" />
+          <X size={24} weight="bold" aria-hidden="true" />
         </button>
 
         {/* Main image */}

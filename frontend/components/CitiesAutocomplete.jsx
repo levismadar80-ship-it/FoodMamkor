@@ -203,7 +203,7 @@ export default function CitiesAutocomplete({
 
       {/* Selected chips + input */}
       <div
-        className="min-h-[42px] flex flex-wrap gap-1.5 items-center border border-border rounded-sm px-3 py-2 bg-surface focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/30 cursor-text"
+        className="min-h-[42px] flex flex-wrap gap-1.5 items-center border border-border rounded-sm px-3 py-2 bg-surface focus-within:border-primary focus-within:ring-2 focus-within:ring-primary cursor-text"
         onClick={() => inputRef.current?.focus()}
       >
         {value.map((city) => (
@@ -270,7 +270,7 @@ export default function CitiesAutocomplete({
           // cite this value as evidence of a repaired bug. The measurement is
           // runnable rather than recited here, because file:line citations rot
           // and it does not: e2e/qa-meh2102-dropdown-vs-map.mjs.
-          className="absolute z-[1010] start-0 end-0 mt-1 max-h-48 overflow-y-auto bg-surface border border-border rounded-md shadow-md text-sm"
+          className="absolute z-[1010] start-0 end-0 mt-1 max-h-48 overflow-y-auto bg-surface border border-border rounded-md shadow-lg text-sm"
         >
           {suggestions.map((city, i) => (
             <li

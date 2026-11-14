@@ -34,6 +34,8 @@ import { showToast } from "@/lib/toast";
 // MEH-1140: canonical shekel format ("35₪") — one owner in lib/utils.
 import { formatPriceRange } from "@/lib/utils";
 import EmptyState from "@/components/ui/EmptyState";
+import ProductOrganizer from "@/components/ProductOrganizer";
+import { orderProducts } from "@/lib/product-order";
 import Input from "@/components/ui/Input";
 import Button from "@/components/ui/Button";
 
@@ -244,7 +246,7 @@ export default function ProductsSection({
     setLoading(true);
     setLoadError(false);
     api.get("/producers/me/products")
-      .then((r) => setProducts(r.data))
+      .then((r) => setProducts(orderProducts(r.data || []))) // MEH-3055: owner order
       .catch(() => setLoadError(true))
       .finally(() => setLoading(false));
   }, [reloadKey]);
@@ -595,7 +597,7 @@ export default function ProductsSection({
               <p className="text-2xs text-fg-muted mb-1">{t("empty.sample_label")}</p>
               <div className="border border-border rounded-md p-3 bg-surface-card flex items-center gap-3">
                 <div className="w-14 h-14 rounded-sm bg-green-50 flex items-center justify-center shrink-0">
-                  <Package size={22} className="text-fg-muted" aria-hidden="true" />
+                  <Package size={24} className="text-fg-muted" aria-hidden="true" />
                 </div>
                 <div className="min-w-0">
                   <p className="text-sm font-medium text-text">{t("empty.sample_name")}</p>
@@ -808,7 +810,7 @@ export default function ProductsSection({
                       : "card.top_product_mark_aria_template",
                     { name: product.name },
                   )}
-                  className={`p-1.5 rounded-full transition disabled:opacity-40 ${
+                  className={`p-1.5 rounded-full transition disabled:opacity-50 ${
                     isTopProduct(product)
                       ? "text-primary hover:bg-primary/10"
                       : "text-fg-muted hover:text-primary hover:bg-primary/5"
@@ -832,7 +834,7 @@ export default function ProductsSection({
                 onClick={() => { setError(""); setConfirmDelete({ id: product.id, name: product.name }); }}
                 disabled={deletingId === product.id}
                 aria-label={t("card.delete_aria_template", { name: product.name })}
-                className="p-1.5 rounded-full text-fg-muted hover:text-error hover:bg-danger-50 transition disabled:opacity-40"
+                className="p-1.5 rounded-full text-fg-muted hover:text-error hover:bg-danger-50 transition disabled:opacity-50"
               >
                 <Trash size={16} aria-hidden="true" />
               </button>
@@ -840,6 +842,12 @@ export default function ProductsSection({
           )
         ))}
       </div>
+
+      {/* MEH-3055: order + groups, under the rows they act on. Hidden while a
+          row is being edited or added, so two forms never compete. */}
+      {products && !adding && editingId == null && (
+        <ProductOrganizer products={products} onProductsChange={setProducts} />
+      )}
 
       {adding && (
         <form onSubmit={handleAdd} noValidate className="border border-border rounded-md p-4 space-y-5 bg-green-50">
@@ -1216,7 +1224,7 @@ function UploadZone({ imageUrl, uploading, onUpload, onRemove, tForm }) {
             display:none removes it and the wrapping label is not natively
             focusable (WCAG 2.1.1). Ring on focus-within is the keyboard
             affordance; this label has no border, so the ring alone carries it. */}
-        <label className="cursor-pointer text-sm text-primary underline decoration-[1.5px] underline-offset-[5px] decoration-primary/35 hover:decoration-current rounded focus-within:ring-2 focus-within:ring-primary/30">
+        <label className="cursor-pointer text-sm text-primary underline decoration-[1.5px] underline-offset-[5px] decoration-primary/35 hover:decoration-current rounded focus-within:ring-2 focus-within:ring-primary">
           {uploading ? tForm("image_uploading") : tForm("image_replace")}
           <input
             type="file"
@@ -1235,7 +1243,7 @@ function UploadZone({ imageUrl, uploading, onUpload, onRemove, tForm }) {
   // MEH-2033: sr-only + focus-within — same keyboard-reachability fix as
   // EventForm (MEH-2031) / ExperienceForm (MEH-2012), word for word.
   return (
-    <label className="flex flex-col items-center justify-center gap-1 text-center text-sm text-fg-muted border border-dashed border-border rounded-sm px-4 py-6 cursor-pointer hover:bg-green-50 transition focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/30">
+    <label className="flex flex-col items-center justify-center gap-1 text-center text-sm text-fg-muted border border-dashed border-border rounded-sm px-4 py-6 cursor-pointer hover:bg-green-50 transition focus-within:border-primary focus-within:ring-2 focus-within:ring-primary">
       <Package size={20} className="text-fg-muted" aria-hidden="true" />
       <span>{uploading ? tForm("image_uploading") : tForm("image_upload_cta")}</span>
       <input

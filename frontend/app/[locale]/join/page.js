@@ -101,7 +101,7 @@ function JoinVideo({ name, ariaLabel, sampleLabel, testId }) {
 }
 
 const LINK_CLASS =
-  "inline-flex items-center gap-2 text-primary font-semibold hover:underline rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40";
+  "inline-flex items-center gap-2 text-primary font-semibold hover:underline rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary";
 const CARD_CLASS = "bg-background border border-primary/20 rounded-md px-5 py-4";
 // MEH-2841 (Sapir, 08/11): cost and price lead, because they are the two
 // questions that stop a registration — «בלי עמלות» used to live only in
@@ -249,7 +249,7 @@ export default async function JoinPage({ params }) {
                 open={FAQ_OPEN.has(key) || undefined}
                 className="group rounded-lg border border-border bg-surface-card"
               >
-                <summary className="flex cursor-pointer list-none items-start justify-between gap-4 rounded-lg px-5 py-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40">
+                <summary className="flex cursor-pointer list-none items-start justify-between gap-4 rounded-lg px-5 py-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
                   <h3 className="font-headline-md text-lg font-bold text-text">{t(`faq.q_${key}`)}</h3>
                   <CaretDown
                     aria-hidden="true"

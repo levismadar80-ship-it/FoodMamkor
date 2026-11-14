@@ -558,7 +558,7 @@ export default function ExperienceForm({ mode = "create", initial = null, onSucc
              the same idiom as AddressSearch.jsx:196 / CitiesAutocomplete.jsx:206.
              EventForm.jsx has the original `hidden`; not touched from here, noted
              on the PR. (CI reviewer, PR #2814.) */
-          <label className="flex flex-col items-center justify-center text-center text-sm text-fg-muted border border-dashed border-border rounded-sm px-4 py-6 cursor-pointer hover:bg-green-50 transition focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/30">
+          <label className="flex flex-col items-center justify-center text-center text-sm text-fg-muted border border-dashed border-border rounded-sm px-4 py-6 cursor-pointer hover:bg-green-50 transition focus-within:border-primary focus-within:ring-2 focus-within:ring-primary">
             <input
               id="experience-image"
               type="file"

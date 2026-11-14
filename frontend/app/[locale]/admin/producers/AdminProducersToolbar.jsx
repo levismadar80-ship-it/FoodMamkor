@@ -99,7 +99,7 @@ function ToolbarActions({ onExport }) {
       </button>
       <Link
         href="/admin/producers/new"
-        className="bg-primary text-white px-4 py-2 rounded-md text-sm whitespace-nowrap text-center"
+        className="bg-primary text-white px-4 py-2 rounded-full text-sm whitespace-nowrap text-center"
       >
         {t("producers.toolbar.new_producer")}
       </Link>

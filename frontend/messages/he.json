@@ -290,6 +290,12 @@
           "category": "קטגוריה",
           "story": "סיפור"
         },
+        "name_check": {
+          "title": "כבר יש באתר עמוד בשם הזה",
+          "match_with_city": "{name}, {city}",
+          "body": "אם זה העסק שלכם, נחבר אתכם לעמוד הקיים. אם זה עסק אחר, אפשר להמשיך כרגיל.",
+          "contact_cta": "כתבו לנו"
+        },
         "fields": {
           "name": "לדוגמה: רותי לוי",
           "name_label": "שם מלא",
@@ -352,6 +358,9 @@
               "prefer_not_to_say": "מעדיפה לא לענות"
             }
           }
+        },
+        "card_preview": {
+          "summary": "כך הכרטיס ייראה באתר"
         },
         "story_card": {
           "title": "הסיפור שלכם הופך לעמוד העסק",
@@ -421,7 +430,7 @@
           "inbox_title": "בדקו את תיבת האימייל שלכם",
           "inbox_body": "אם האימייל פנוי, נשלחה אליכם הודעת אימות. אנא בדקו את תיבת הדואר.",
           "inbox_hint": "לא קיבלתם? בדקו בספאם או נסו שוב בעוד דקה.",
-          "inbox_next": "אחרי הלחיצה על הקישור במייל נכנסים עם האימייל והסיסמה וממשיכים להשלים את העמוד.",
+          "inbox_next": "אפשר להיכנס כבר עכשיו עם האימייל והסיסמה ולהמשיך להשלים את העמוד. הקישור במייל מאמת את כתובת האימייל.",
           "back_home": "חזרה לדף הראשי"
         }
       }
@@ -513,7 +522,7 @@
       "empty_subtext_category": "נסו קטגוריה אחרת, או נקו את הסינון כדי לראות את כל העסקים",
       "clear_category_cta": "נקו את הסינון",
       "explore_map": "גלו על המפה",
-      "load_more": "עוד בתי עסק",
+      "load_more": "הצגת עוד בתי עסק",
       "all_businesses": "לכל בתי העסק ←",
       "geo_chip": "בתי עסק ליד המיקום שלך",
       "city_chip": "עסקים באזור {city}",
@@ -585,9 +594,6 @@
     },
     "skeleton": {
       "loading_businesses": "טעינת עסקים טריים"
-    },
-    "star_rating": {
-      "count_aria": "{count, plural, one {דירוג אחד} two {{count} דירוגים} other {({count} דירוגים)}}"
     }
   },
   "category": {
@@ -819,11 +825,16 @@
         "events": {
           "heading": "אירועים קרובים",
           "free": "כניסה חופשית",
-          "show_all_count": "הצגת כל האירועים"
+          "show_all_count": "הצגת כל {count} האירועים"
         },
         "products": {
           "heading": "מוצרים",
           "signature_label": "המוצר המוביל",
+          "show_all": "הצגת כל {count} המוצרים",
+          "show_less": "הצגת פחות",
+          "groups_all": "הכל",
+          "groups_other": "עוד מוצרים",
+          "groups_aria": "סינון המוצרים לפי קבוצה",
           "diet": {
             "gluten_free": "ללא גלוטן",
             "vegan": "טבעוני",
@@ -850,7 +861,8 @@
         },
         "group_buys": {
           "heading": "קבוצות רכישה פתוחות",
-          "show_all": "הצגת כל קבוצות הרכישה"
+          "show_all": "הצגת כל קבוצות הרכישה",
+          "show_all_count": "הצגת כל {count} קבוצות הרכישה"
         }
       },
       "header": {
@@ -1049,7 +1061,7 @@
       "related_products_heading": "המוצרים שלנו במתכון",
       "producer_cta_heading": "כל הפריטים מהמתכון — אצל {name}",
       "producer_cta_link": "לעמוד המלא של {name}",
-      "back_to_producer": "→ חזרה לדף בית העסק",
+      "back_to_producer": "חזרה לדף בית העסק",
       "meta_title_not_found": "מתכון לא נמצא",
       "meta_title_template": "{recipeTitle} | {producerName}"
     },
@@ -1107,7 +1119,7 @@
       "toast_delete_error": "שגיאה במחיקה"
     },
     "edit": {
-      "back": "→ חזרה למתכונים",
+      "back": "חזרה למתכונים",
       "heading": "עריכת מתכון",
       "loading": "בטעינה...",
       "not_found": "המתכון לא נמצא"
@@ -1281,10 +1293,10 @@
       "delivery_day_group": "ימי {day}",
       "arranged_group": "בתיאום מראש",
       "pickup": "איסוף עצמי",
-      "show_all_cities": "{count, plural, one {הצג עיר נוספת} two {הצג שתי ערים נוספות} other {הצג עוד {count} ערים}}",
-      "show_all_pickup": "{count, plural, one {הצג נקודת איסוף נוספת} two {הצג שתי נקודות איסוף נוספות} other {הצג עוד {count} נקודות איסוף}}",
-      "show_all_areas": "{count, plural, one {הצג אזור משלוח נוסף} two {הצג שני אזורי משלוח נוספים} other {הצג עוד {count} אזורי משלוח}}",
-      "show_less": "הצג פחות",
+      "show_all_cities": "{count, plural, one {הצגת עיר נוספת} two {הצגת שתי ערים נוספות} other {הצגת עוד {count} ערים}}",
+      "show_all_pickup": "{count, plural, one {הצגת נקודת איסוף נוספת} two {הצגת שתי נקודות איסוף נוספות} other {הצגת עוד {count} נקודות איסוף}}",
+      "show_all_areas": "{count, plural, one {הצגת אזור משלוח נוסף} two {הצגת שני אזורי משלוח נוספים} other {הצגת עוד {count} אזורי משלוח}}",
+      "show_less": "הצגת פחות",
       "checker": {
         "label": "יש משלוח לעיר שלך?",
         "placeholder": "הקלידו עיר",
@@ -1493,9 +1505,9 @@
       "reject": "דחה",
       "search": "חפש",
       "submit": "אישור",
-      "back": "→ חזרה לפאנל הניהול",
-      "back_to_dashboard": "→ לוח אדמין",
-      "back_home": "→ חזרה לאתר",
+      "back": "חזרה לפאנל הניהול",
+      "back_to_dashboard": "לוח אדמין",
+      "back_home": "חזרה לאתר",
       "error_loading": "שגיאה בטעינת המידע",
       "error_generic": "שגיאה",
       "no_data": "אין נתונים עדיין",
@@ -3216,8 +3228,8 @@
       "group_home": "בית וטיפוח",
       "no_results_prefix": "לא מצאת את הקטגוריה שלך?",
       "no_results_cta": "ספרו לנו ←",
-      "show_more": "← עוד קטגוריות ({count})",
-      "show_less": "↑ פחות קטגוריות"
+      "show_more": "{count, plural, one {הצגת קטגוריה נוספת} two {הצגת שתי קטגוריות נוספות} other {הצגת עוד {count} קטגוריות}}",
+      "show_less": "הצגת פחות"
     }
   },
   "producers": {
@@ -3287,7 +3299,7 @@
     "star_aria": "{value, plural, one {כוכב אחד} two {{value} כוכבים} other {{value} כוכבים}}",
     "summary_based_on": "{total, plural, one {מבוסס על ביקורת אחת} two {מבוסס על {total} ביקורות} other {מבוסס על {total} ביקורות}}",
     "summary_count": "{count, plural, one {ביקורת אחת} two {{count} ביקורות} other {{count} ביקורות}}",
-    "show_more": "הצג עוד ביקורות",
+    "show_more": "הצגת עוד ביקורות",
     "write_cta": "כתבו ביקורת",
     "form_heading": "כתבו ביקורת",
     "rating_label": "דירוג",
@@ -5412,6 +5424,30 @@
       },
       "top_product_hint": "סמנו מוצר אחד ככוכב כדי להפוך אותו למוצר המוביל — הוא יוצג ככרטיס בולט בראש רשימת המוצרים בעמוד שלכם.",
       "top_product_empty_hint": "הוסיפו מוצר כדי לבחור מוצר מוביל.",
+      "organize": {
+        "open_cta": "סידור וקבוצות",
+        "open_hint": "קובעים באיזה סדר המוצרים מופיעים בדף, ומחלקים אותם לקבוצות.",
+        "done_cta": "סיום",
+        "groups_heading": "קבוצות",
+        "groups_where": "כשיש לפחות שתי קבוצות עם מוצרים, הן מופיעות בדף שלכם כסינון מעל רשימת המוצרים.",
+        "groups_empty": "עוד אין קבוצות.",
+        "group_add_label": "קבוצה חדשה",
+        "group_add_placeholder": "למשל: לחמים, עוגות, מארזים",
+        "group_add_cta": "הוספה",
+        "group_rename_aria": "שם הקבוצה {name}",
+        "group_delete_aria": "מחיקת הקבוצה {name}",
+        "group_deleted": "הקבוצה נמחקה. המוצרים שבה נשארו בדף.",
+        "order_heading": "סדר המוצרים",
+        "order_where": "גוררים את הידית או משתמשים בחיצים. הסדר נשמר מיד, וכך המוצרים יופיעו בדף.",
+        "order_where_grouped": "גוררים את הידית או משתמשים בחיצים. הסדר נשמר מיד. בדף, המוצרים מוצגים לפי הקבוצות, ובתוך כל קבוצה לפי הסדר הזה.",
+        "drag_aria": "גרירת {name}",
+        "move_up_aria": "הזזת {name} למעלה",
+        "move_down_aria": "הזזת {name} למטה",
+        "product_group_label": "הקבוצה של {name}",
+        "product_group_none": "בלי קבוצה",
+        "saved": "נשמר",
+        "save_failed": "השמירה לא הצליחה. כדאי לנסות שוב."
+      },
       "duplicate_name_confirm": {
         "title": "יש כבר מוצר בשם הזה. להמשיך?",
         "confirm": "הוסיפו מוצר",

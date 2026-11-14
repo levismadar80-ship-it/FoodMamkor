@@ -239,7 +239,7 @@ function CategoryRow({ cat, onSave, onDelete, saving }) {
             onClick={() => onSave(cat.id, name)}
             disabled={!dirty || saving}
             data-testid={`category-save-${cat.id}`}
-            className="text-xs bg-primary text-white px-3 py-1 rounded-lg disabled:opacity-30"
+            className="text-xs bg-primary text-white px-3 py-1 rounded-full disabled:opacity-50"
           >
             {t("content.categories.save")}
           </button>

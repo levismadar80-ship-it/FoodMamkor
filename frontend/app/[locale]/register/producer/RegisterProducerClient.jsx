@@ -15,7 +15,9 @@ import CategorySelector from "@/components/CategorySelector";
 import CitySearch from "@/components/CitySearch";
 import PasswordStrength from "@/components/PasswordStrength";
 import ProducerOAuthButtons from "@/components/ProducerOAuthButtons";
+import RegisterCardPreview from "@/components/RegisterCardPreview";
 import Input from "@/components/ui/Input";
+import RegisterNameCheck from "@/components/RegisterNameCheck";
 import RegisterPreflight from "./RegisterPreflight";
 // MEH-1808: Leaflet touches `window` at import time, so the confirmation map is
 // client-only — same mount idiom as every other consumer
@@ -944,7 +946,7 @@ function RegisterProducerPageBody({ routeKind }) {
           {/* CTA reuses the account-menu dashboard label (single owner, no new key). */}
           <button
             onClick={() => router.push("/producer/dashboard")}
-            className="border-2 border-primary-dark text-primary-dark bg-transparent px-6 py-3 rounded-md hover:bg-primary-dark hover:text-white transition font-medium text-sm"
+            className="border-2 border-primary-dark text-primary-dark bg-transparent px-6 py-3 rounded-full hover:bg-primary-dark hover:text-white transition font-medium text-sm"
           >
             {t("account.menu.dashboard")}
           </button>
@@ -1261,6 +1263,7 @@ function RegisterProducerPageBody({ routeKind }) {
               required
               dir="rtl"
             />
+            <RegisterNameCheck name={form.producer_name} />
 
             <div>
               <label htmlFor="producer-phone" className="block text-sm font-medium text-text mb-1 text-start">
@@ -1682,6 +1685,16 @@ function RegisterProducerPageBody({ routeKind }) {
               <p className="text-fg-muted text-start leading-relaxed">{t("auth.register.producer.story_card.body")}</p>
             </div>
 
+            {/* MEH-3074: the real card, opened on demand so the submit button
+                stays where it was on a phone. Organizers have no card — they
+                are not in the business list. */}
+            {!isOrganizer && (
+              <RegisterCardPreview
+                form={{ ...form, ...fulfilmentBooleans(form.fulfilment) }}
+                categories={categories}
+              />
+            )}
+
             {/* MEH-914: photo-to-publish disclosure (copy only). Gate: admin.py:442. */}
             <p data-testid="photo-disclosure-story" className="text-xs text-fg-muted text-start leading-relaxed">{t("auth.register.producer.photo_disclosure")}</p>
 
@@ -2039,7 +2052,7 @@ function RegisterProducerPageBody({ routeKind }) {
               <button
                 data-testid="register-success-dashboard-cta"
                 onClick={() => router.push("/producer/dashboard")}
-                className="w-full bg-primary-dark text-white px-6 py-3 rounded-md hover:bg-primary transition font-medium text-sm"
+                className="w-full bg-primary-dark text-white px-6 py-3 rounded-full hover:bg-primary transition font-medium text-sm"
               >
                 {t("auth.register.producer.success.cta")}
               </button>
@@ -2073,12 +2086,27 @@ function RegisterProducerPageBody({ routeKind }) {
               {t("auth.register.producer.success.inbox_next")}
             </p>
             <p className="text-xs text-fg-muted mb-6 text-center leading-relaxed">{t("auth.register.producer.success.tier_trust")}</p>
-            <button
-              onClick={() => router.push("/")}
-              className="border-2 border-primary-dark text-primary-dark bg-transparent px-6 py-3 rounded-md hover:bg-primary-dark hover:text-white transition font-medium text-sm"
-            >
-              {t("auth.register.producer.success.back_home")}
-            </button>
+            {/* MEH-2920: login does not wait for the email link (auth.py login
+                never reads email_verified), so the screen offers the way that
+                exists. This path holds no token (MEH-328 ack), hence a link to
+                /login that returns to the dashboard — never router.push to a
+                page that would bounce. Home drops to the secondary action. */}
+            <div className="flex flex-col items-center gap-3">
+              <Link
+                href={`/login?redirect=${encodeURIComponent("/producer/dashboard")}`}
+                data-testid="register-confirm-dashboard-cta"
+                className="w-full sm:max-w-xs bg-primary-dark text-white px-6 py-3 rounded-full hover:bg-primary transition font-medium text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+              >
+                {t("auth.register.producer.success.cta")}
+              </Link>
+              <button
+                onClick={() => router.push("/")}
+                data-testid="register-confirm-home"
+                className="text-primary-dark underline-offset-4 hover:underline px-6 py-2 rounded-md font-medium text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+              >
+                {t("auth.register.producer.success.back_home")}
+              </button>
+            </div>
           </div>
         )}
       </div>

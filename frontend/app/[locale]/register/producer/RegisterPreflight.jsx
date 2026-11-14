@@ -72,7 +72,7 @@ export default function RegisterPreflight({ showAccountLine, onStart }) {
         <Link
           href="/about/process"
           data-testid="register-preflight-process-link"
-          className="inline-flex items-center gap-1 text-primary font-semibold hover:underline mt-1 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+          className="inline-flex items-center gap-1 text-primary font-semibold hover:underline mt-1 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
         >
           {t("after_link")}
           <ArrowLeft size={16} aria-hidden="true" />
@@ -99,7 +99,7 @@ export default function RegisterPreflight({ showAccountLine, onStart }) {
         <Link
           href="/join"
           data-testid="register-preflight-join-link"
-          className="inline-flex items-center gap-1 text-primary underline underline-offset-4 hover:text-primary-dark rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+          className="inline-flex items-center gap-1 text-primary underline underline-offset-4 hover:text-primary-dark rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
         >
           {t("join_link")}
           <ArrowLeft size={14} aria-hidden="true" />
@@ -116,7 +116,7 @@ export default function RegisterPreflight({ showAccountLine, onStart }) {
         <Link
           href="/register/organizer"
           data-testid="register-preflight-organizer-link"
-          className="inline-flex items-center gap-1 text-primary underline underline-offset-4 hover:text-primary-dark rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+          className="inline-flex items-center gap-1 text-primary underline underline-offset-4 hover:text-primary-dark rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
         >
           {t("organizer_link")}
           <ArrowLeft size={14} aria-hidden="true" />

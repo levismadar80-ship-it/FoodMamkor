@@ -111,6 +111,15 @@ vi.mock("@/components/CategorySelector", () => ({
   ),
 }));
 
+// MEH-3074: the STORY-step preview mounts the real ProducerCard. Its own
+// behaviour is covered in ProducerCard.test.jsx; here only the producer object
+// the wizard hands it crosses the boundary.
+vi.mock("@/components/ProducerCard", () => ({
+  default: ({ producer }) => (
+    <div data-testid="preview-card" data-producer={JSON.stringify(producer)} />
+  ),
+}));
+
 // OAuth widget has GSI side effects + is frozen — stub it out.
 vi.mock("@/components/ProducerOAuthButtons", () => ({ default: () => <div data-testid="oauth" /> }));
 
@@ -500,7 +509,10 @@ describe("RegisterProducerClient — didUpgrade CONFIRM split (MEH-328 chunk D)"
     expect(screen.getByText(`${K}.success.inbox_title`)).toBeInTheDocument();
     // The upgrade success UI must NOT leak into the anonymous path.
     expect(screen.queryByText(`${K}.success.title`)).not.toBeInTheDocument();
-    expect(screen.queryByText(`${K}.success.cta`)).not.toBeInTheDocument();
+    // MEH-2920: this screen now carries its own «ללוח הבקרה» LINK (to /login),
+    // so the label is no longer the tell. The upgrade screen's token-backed
+    // BUTTON is — it must still be absent here.
+    expect(screen.queryByTestId("register-success-dashboard-cta")).not.toBeInTheDocument();
     // No token was returned, so none may be stored and auth isn't refreshed.
     expect(localStorage.getItem("token")).toBeNull();
     expect(refreshUser).not.toHaveBeenCalled();
@@ -1315,6 +1327,18 @@ async function fillWizardAndSubmit() {
   await waitFor(() => expect(api.post).toHaveBeenCalledTimes(1));
 }
 
+describe("non-upgrade confirm screen — the way in that exists (MEH-2920)", () => {
+  it("links to login-then-dashboard as the primary action; home is secondary", async () => {
+    api.post.mockResolvedValue({ data: {} }); // anti-enum ack, no token
+    await fillWizardAndSubmit();
+    const cta = await screen.findByTestId("register-confirm-dashboard-cta");
+    expect(cta.tagName).toBe("A");
+    expect(cta.getAttribute("href")).toBe("/login?redirect=%2Fproducer%2Fdashboard");
+    expect(cta.textContent).toBe(`${K}.success.cta`);
+    expect(screen.getByTestId("register-confirm-home").textContent).toBe(`${K}.success.back_home`);
+  });
+});
+
 describe("RegisterProducerClient — draft survives the anti-enum ack (MEH-1815)", () => {
   it("keeps the draft after a non-upgrade ack, because that 200 may be a collision", async () => {
     api.post.mockResolvedValue({ data: {} }); // no access_token
@@ -1812,5 +1836,36 @@ describe("RegisterProducerClient — a step change starts at the top (MEH-2927)"
     expect(document.activeElement).toBe(screen.getByTestId("register-details-name"));
     // …and the step effect left the viewport to MEH-1807.
     expect(scrollToSpy).not.toHaveBeenCalled();
+  });
+});
+
+describe("STORY step — card preview (MEH-3074)", () => {
+  it("offers a closed, inert preview of the real card, fed from the form", async () => {
+    await renderWizard();
+    await fillAccountToDetails();
+    await fillDetailsToStory();
+    fireEvent.change(screen.getByTestId("register-story-tagline"), {
+      target: { value: "לחם מחמצת" },
+    });
+
+    const details = screen.getByTestId("register-card-preview");
+    expect(details.tagName).toBe("DETAILS");
+    expect(details.hasAttribute("open")).toBe(false);
+    expect(details.querySelector("summary").textContent).toBe(`${K}.card_preview.summary`);
+    // Closed: the card is not mounted at all, so none of its effects run.
+    expect(screen.queryByTestId("preview-card")).toBeNull();
+
+    details.open = true;
+    fireEvent(details, new Event("toggle"));
+    expect(screen.getByTestId("register-card-preview-body").hasAttribute("inert")).toBe(true);
+
+    const producer = JSON.parse(screen.getByTestId("preview-card").dataset.producer);
+    expect(producer.name).toBe("העסק שלי");
+    expect(producer.city).toBe("תל אביב");
+    expect(producer.short_description).toBe("לחם מחמצת");
+    expect(producer.categories.map((c) => c.id)).toEqual([1]);
+    expect(producer.has_physical_location).toBe(true);
+    expect(producer.offers_delivery).toBe(false);
+    expect(producer.images).toEqual([]);
   });
 });

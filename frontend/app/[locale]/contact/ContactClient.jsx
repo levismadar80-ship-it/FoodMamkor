@@ -66,7 +66,7 @@ export default function ContactClient() {
     <section className="min-h-screen">
       <div className="max-w-2xl mx-auto px-4 py-16">
         {/* MEH-2565: card from md up only — on a phone the form uses the full width. */}
-        <div className="md:bg-surface md:rounded-lg md:p-8 md:border md:border-border md:shadow-[0_2px_12px_rgba(46,104,83,0.04)]">
+        <div className="md:bg-surface md:rounded-lg md:p-8 md:border md:border-border md:shadow-sm">
           {/* MEH-2827 (FinalContact): the standard page title, start-aligned. */}
           <h1 className="font-headline-lg mb-3 text-primary-dark text-[clamp(28px,6vw,44px)] leading-[1.15] font-black text-start">
             {t("title")}
@@ -98,7 +98,7 @@ export default function ContactClient() {
           {status === "success" ? (
             <div className="text-center py-8">
               <div className="mb-4 flex justify-center">
-                <CheckCircle size={56} weight="fill" className="text-primary" aria-hidden="true" />
+                <CheckCircle size={64} weight="fill" className="text-primary" aria-hidden="true" />
               </div>
               <SectionHeading size="content" className="mb-2">
                 {t("success_title")}
@@ -147,7 +147,7 @@ export default function ContactClient() {
                   data-testid="contact-topic"
                   value={form.topic}
                   onChange={set("topic")}
-                  className="w-full min-h-touch bg-surface-card border border-border rounded-sm px-3 py-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                  className="w-full min-h-touch bg-surface-card border border-border rounded-sm px-3 py-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                 >
                   {CONTACT_TOPICS.map((key) => (
                     <option key={key} value={key}>
@@ -169,7 +169,7 @@ export default function ContactClient() {
                   onChange={set("message")}
                   required
                   rows={5}
-                  className="w-full border border-border rounded-sm px-3 py-2 resize-none focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                  className="w-full border border-border rounded-sm px-3 py-2 resize-none focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                 />
               </div>
 

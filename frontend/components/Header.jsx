@@ -24,6 +24,7 @@ import { hubLandingHref, isHubHref, isHubPath } from "@/lib/hub-landing";
 import { useHubNavGate } from "@/lib/use-hub-nav-gate";
 import { itemsForSurface } from "@/lib/nav-registry";
 import LanguageToggle from "@/components/LanguageToggle";
+import Avatar from "@/components/ui/Avatar";
 
 /**
  * MEH-1703 chunk 2 — ORDER stays here, identity comes from the registry.
@@ -325,7 +326,7 @@ export default function Header() {
           <p
             className="flex items-center justify-center gap-1.5 pb-2.5 text-xs font-medium text-fg-muted"
           >
-            <SealCheck size={15} weight="fill" className="text-accent" aria-hidden="true" />
+            <SealCheck size={16} weight="fill" className="text-accent" aria-hidden="true" />
             {t("nav.trust_strip")}
           </p>
         </div>
@@ -434,10 +435,10 @@ export default function Header() {
             // the pill toward the ~58px reach target. Padding is NOT animated
             // (stays out of the transition allowlist — MEH-732 guardrail).
             !isHomepage
-              ? "bg-background border-border shadow-[0_8px_30px_rgba(46,104,83,0.12)] py-1.5"
+              ? "bg-background border-border shadow-lg py-1.5"
               : transparent
-                ? "bg-background supports-[backdrop-filter]:bg-background/85 supports-[backdrop-filter]:backdrop-blur-md border-border shadow-[0_8px_30px_rgba(46,104,83,0.12)] py-1.5"
-                : "bg-background supports-[backdrop-filter]:bg-background/60 supports-[backdrop-filter]:backdrop-blur-md border-border shadow-[0_8px_30px_rgba(46,104,83,0.12)] py-1.5",
+                ? "bg-background supports-[backdrop-filter]:bg-background/85 supports-[backdrop-filter]:backdrop-blur-md border-border shadow-lg py-1.5"
+                : "bg-background supports-[backdrop-filter]:bg-background/60 supports-[backdrop-filter]:backdrop-blur-md border-border shadow-lg py-1.5",
             // MEH-1072: WIDTH is now FIXED geometry (gap-8, end-cap px-6 since MEH-1103) at every
             // scroll position — supersedes MEH-899 width switching per Sapir
             // 09/07 + NAV-01. The rest-wide→compact snap (gap-14/px-11 →
@@ -502,7 +503,7 @@ export default function Header() {
               aria-label={t("nav.search_label")}
               className="hidden md:flex items-center justify-center w-11 h-11 rounded-full transition-colors duration-fast ease-quart focus-ring text-fg-muted hover:bg-primary/5"
             >
-              <MagnifyingGlass size={22} weight="regular" aria-hidden="true" />
+              <MagnifyingGlass size={24} weight="regular" aria-hidden="true" />
             </button>
             {/* MEH-1698: desktop language toggle restored. MEH-896 (b7919b39,
                 21/06) removed it "until the EN i18n wave (MEH-472)"; MEH-472
@@ -563,7 +564,7 @@ export default function Header() {
               aria-label={t("nav.search_label")}
               className="md:hidden flex items-center justify-center w-11 h-11 rounded-full focus-ring text-fg-muted"
             >
-              <MagnifyingGlass size={22} weight="regular" aria-hidden="true" />
+              <MagnifyingGlass size={24} weight="regular" aria-hidden="true" />
             </button>
           </div>
         </nav>
@@ -665,8 +666,6 @@ const MENU_ARROW_DELTA = { ArrowDown: 1, ArrowUp: -1 };
 
 function UserMenu({ user, logout, open, setOpen, menuRef }) {
   const t = useTranslations();
-  const initial = (user.name || "?").trim().charAt(0).toUpperCase();
-  const hasAvatar = !!user.avatar_url;
 
   // MEH-1226: align with the "profile = public page, settings = config"
   // pattern (LinkedIn / Airbnb). Producer menu leads with the dashboard,
@@ -805,16 +804,10 @@ function UserMenu({ user, logout, open, setOpen, menuRef }) {
         aria-haspopup="menu"
         aria-expanded={open}
         aria-label={t("account.menu.aria", { name: user.name })}
-        className={`w-[34px] h-[34px] rounded-full overflow-hidden flex items-center justify-center focus-ring ${hasAvatar ? "" : "bg-primary"}`}
+        className="w-[34px] h-[34px] rounded-full flex items-center justify-center focus-ring"
       >
-        {hasAvatar ? (
-          // raw img: OAuth provider avatar — host not in remotePatterns
-          // (frozen this ticket). Same class as BottomNav/AccountSheet.
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={user.avatar_url} alt="" className="w-full h-full object-cover" />
-        ) : (
-          <span className="text-white text-sm font-semibold leading-none">{initial}</span>
-        )}
+        {/* MEH-3069: the shared circle (photo or one initial). */}
+        <Avatar src={user.avatar_url} name={user.name} size={34} />
       </button>
 
       {open && (
@@ -822,7 +815,7 @@ function UserMenu({ user, logout, open, setOpen, menuRef }) {
           role="menu"
           ref={menuListRef}
           onKeyDown={onMenuKeyDown}
-          className="absolute top-11 bg-surface-card border border-border rounded-md shadow-[0_4px_16px_rgba(0,0,0,0.08)] py-1 z-[1001]"
+          className="absolute top-11 bg-surface-card border border-border rounded-md shadow-lg py-1 z-[1001]"
           style={{ minWidth: 160, insetInlineStart: 0 }}
         >
           {items.map((item, i) => (
