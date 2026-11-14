@@ -491,20 +491,33 @@ def _register_rescue_digest(scheduler) -> None:
         )
 
 
-def _register_weekly_owner_summary(scheduler) -> bool:
+def _register_weekly_owner_summary(scheduler, now=None) -> bool:
     """MEH-3079: add the weekly summary job only when its flag is on.
 
     REUSES: _register_rescue_digest above (the MEH-2756 gate) — merging sends nothing
     until WEEKLY_OWNER_SUMMARY_ENABLED=true. Sunday 08:00 on the Israel clock
     (the trigger carries the zone, so DST moves with it). max_instances=1 +
-    coalesce so a slow run cannot overlap the next; a 12h grace so a restart
-    over the fire time sends late that Sunday rather than skipping the week
-    (the 6-day sent_at stamp keeps a late run from sending twice).
-    Returns whether the job was registered.
+    coalesce so a slow run cannot overlap the next. The 12h misfire grace
+    only covers a fire THIS process missed while running (a stalled worker).
+    The scheduler is in-memory, so a process that boots after 08:00 Sunday
+    has no record of that fire and its cron's next run is next Sunday; for
+    that case, a boot within 12h of the fire also adds a one-off run about a
+    minute later (`catchup_due`). The 6-day sent_at stamp and the per-row
+    claim keep a catch-up that overlaps a real run from sending twice.
+    `now` (aware) is injectable for tests. Returns whether the job was
+    registered.
     """
     from apscheduler.triggers.cron import CronTrigger
+    from apscheduler.triggers.date import DateTrigger
 
-    from app.services.weekly_owner_summary import JOB_ID, summary_enabled
+    from app.services.weekly_owner_summary import (
+        CATCHUP_DELAY,
+        CATCHUP_JOB_ID,
+        JOB_ID,
+        LATE_RUN_WINDOW,
+        catchup_due,
+        summary_enabled,
+    )
 
     if not summary_enabled():
         log.info(
@@ -518,9 +531,20 @@ def _register_weekly_owner_summary(scheduler) -> bool:
         replace_existing=True,
         max_instances=1,
         coalesce=True,
-        misfire_grace_time=12 * 3600,
+        misfire_grace_time=int(LATE_RUN_WINDOW.total_seconds()),
     )
     log.info("[WEEKLY-SUMMARY] job registered — Sunday 08:00 Asia/Jerusalem")
+    now = now or datetime.now(timezone.utc)
+    if catchup_due(now):
+        scheduler.add_job(
+            _run_weekly_owner_summary_job,
+            DateTrigger(run_date=now + CATCHUP_DELAY),
+            id=CATCHUP_JOB_ID,
+            replace_existing=True,
+            max_instances=1,
+            misfire_grace_time=int(LATE_RUN_WINDOW.total_seconds()),
+        )
+        log.info("[WEEKLY-SUMMARY] booted within 12h of the fire — catch-up run added")
     return True
 
 

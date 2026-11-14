@@ -1152,6 +1152,13 @@ PINNED: dict[tuple[str, str, str], tuple[int, str, str]] = {
         OWN,
         "producer.is_test or owner.is_test",
     ),
+    # MEH-3079: the weekly owner summary — mail to the business's owner about
+    # her own page, flagged by either row (read up front, before the claim).
+    ("services/weekly_owner_summary.py", "send_weekly_summaries", "send_email"): (
+        1,
+        OWN,
+        "producer_is_test or owner_is_test",
+    ),
     # --- content_notifications ---
     ("services/content_notifications.py", "notify_recipe_approved", "send_email"): (
         1,

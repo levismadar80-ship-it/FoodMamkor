@@ -13,8 +13,8 @@ half. They vanish from the `total` arm of **every other producer's** dashboard,
 permanently.
 
 WHAT IS AND IS NOT AFFECTED, because the first write-up of MEH-2801 got this
-too broad and the difference is the whole size of the bug: `_count_in_window`
-(`producer_me.py:1069-1079`) reads the watermark in exactly one of its three
+too broad and the difference is the whole size of the bug: `count_in_window`
+(`services/producer_insights.py`, moved out of `producer_me.py` in MEH-3079) reads the watermark in exactly one of its three
 arms. `last_7d` / `last_30d` are raw-only ("the `days=N` arms stay raw-only —
 Sapir's ruling 06/09") and `views_by_day` is raw-only (`:1222-1234`). Only
 `total` goes through the aggregate. These tests therefore assert on the

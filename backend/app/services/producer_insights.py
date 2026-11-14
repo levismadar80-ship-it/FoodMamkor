@@ -16,7 +16,9 @@ Related:  backend/app/routers/producer_me.py `producer_analytics` (caller) ·
           backend/app/services/analytics.py (unique_views_count) ·
           backend/app/services/analytics_rollup.py (rollup_snapshot).
 History:  MEH-3079 (extracted from producer_me.py, no behaviour change —
-          WindowFilter / _count_in_window moved here verbatim).
+          WindowFilter / _count_in_window moved here verbatim); then an
+          optional `now` threaded through weekly_numbers → metric_count →
+          WindowFilter.now, defaulting to utc_now() (dashboard unchanged).
 """
 
 from __future__ import annotations
@@ -69,6 +71,10 @@ class WindowFilter:
     # reads it — the `days=N` arms stay raw-only (Sapir's ruling 06/09), which
     # is safe exactly as long as chunk C's retention window is ≥ 30 days.
     rollup_col: Any = None
+    # MEH-3079: the clock the `days=N` window is measured back from (naive
+    # UTC). None = `utc_now()` — the dashboard never sets it; the weekly job
+    # passes its run time. A field, not a 6th parameter, for PLR0913.
+    now: datetime | None = None
 
 
 def count_in_window(
@@ -99,6 +105,9 @@ def count_in_window(
     two halves partition the rows exactly and the sum equals the raw-only
     count to the row (asserted before, after, and after-purge in
     tests/test_meh2283_analytics_rollup.py).
+
+    ``window.now`` (naive UTC, like the columns) anchors the `days=N` window;
+    unset it is `utc_now()`, which is what the dashboard always gets.
     """
     if window.distinct_col is not None:
         # analytics.py is legacy-untyped; the calls are typed at this boundary.
@@ -112,7 +121,7 @@ def count_in_window(
     q = db.query(counter).filter(model.producer_id == producer_id)
     rolled_up = 0
     if window.days is not None:
-        cutoff = utc_now() - timedelta(days=window.days)
+        cutoff = (window.now or utc_now()) - timedelta(days=window.days)
         q = q.filter(time_col >= cutoff)
     elif window.rollup_col is not None:
         # One statement for both halves — a roll-up committing between a
@@ -164,11 +173,17 @@ def _metric_specs() -> dict[str, tuple[Any, Any, dict[str, Any]]]:
     }
 
 
-def metric_count(db: Session, producer_id: UUID, metric: str, days: int | None) -> int:
+def metric_count(
+    db: Session,
+    producer_id: UUID,
+    metric: str,
+    days: int | None,
+    now: datetime | None = None,
+) -> int:
     """One metric over one window — the cell the dashboard shows."""
     model, time_col, kwargs = _metric_specs()[metric]
     return count_in_window(
-        db, model, time_col, producer_id, WindowFilter(days=days, **kwargs)
+        db, model, time_col, producer_id, WindowFilter(days=days, now=now, **kwargs)
     )
 
 
@@ -206,17 +221,20 @@ class WeeklyNumbers(TypedDict):
     new_followers: int
 
 
-def weekly_numbers(db: Session, producer_id: UUID) -> WeeklyNumbers:
+def weekly_numbers(
+    db: Session, producer_id: UUID, now: datetime | None = None
+) -> WeeklyNumbers:
     """The last-7-days column of the dashboard, for the weekly email.
 
     Same calls the analytics endpoint makes for `last_7d` and
-    `new_followers_this_week` — not a copy of their queries.
+    `new_followers_this_week` — not a copy of their queries. `now` is naive
+    UTC (the columns' shape) and defaults to `utc_now()`, the dashboard's
+    clock; the weekly job passes its run time so one run counts one window.
     """
+    now = now or utc_now()
     return {
-        "profile_views": metric_count(db, producer_id, "profile_views", 7),
-        "whatsapp_clicks": metric_count(db, producer_id, "whatsapp_clicks", 7),
-        "contact_clicks": metric_count(db, producer_id, "contact_clicks", 7),
-        "new_followers": new_followers_since(
-            db, producer_id, utc_now() - timedelta(days=7)
-        ),
+        "profile_views": metric_count(db, producer_id, "profile_views", 7, now),
+        "whatsapp_clicks": metric_count(db, producer_id, "whatsapp_clicks", 7, now),
+        "contact_clicks": metric_count(db, producer_id, "contact_clicks", 7, now),
+        "new_followers": new_followers_since(db, producer_id, now - timedelta(days=7)),
     }

@@ -261,7 +261,7 @@ def unsubscribe_weekly_summary(
     if producer is not None and not producer.weekly_summary_opt_out:
         producer.weekly_summary_opt_out = True
         db.commit()
-    return {"detail": "הסיכום השבועי לא יישלח יותר."}
+    return {"detail": "הסיכום השבועי לא יישלח עוד."}
 
 
 # MEH-1349: the duplicate GET /cities that lived here (producer ∪ delivery-area

@@ -20,11 +20,13 @@ from __future__ import annotations
 
 import itertools
 import uuid
-from datetime import timedelta
+from datetime import datetime, timedelta, timezone
+from zoneinfo import ZoneInfo
 from urllib.parse import parse_qs, urlparse
 
 import pytest
 from apscheduler.schedulers.background import BackgroundScheduler
+from apscheduler.triggers.date import DateTrigger
 
 from app import startup
 from app.models.models import (
@@ -100,6 +102,14 @@ def _favorite(db, producer_id, *, days_ago=1):
         )
     )
     db.commit()
+
+
+@pytest.fixture(autouse=True)
+def pauses(monkeypatch):
+    """Record the Resend throttle instead of sleeping through it."""
+    calls: list[float] = []
+    monkeypatch.setattr(wos, "_sleep", calls.append, raising=False)
+    return calls
 
 
 @pytest.fixture
@@ -263,11 +273,13 @@ class TestEmailContent:
         _favorite(db, producer.id)
         wos.send_weekly_summaries(db)
         (mail,) = sent
-        assert mail["subject"] == "השבוע 7 אנשים צפו בעמוד שלכם"
+        assert mail["subject"] == "השבוע היו 7 צפיות בעמוד שלכם"
+        # the green heading in the body says the same thing as the subject
+        assert "השבוע היו 7 צפיות בעמוד שלכם" in mail["html"]
         assert "מאפיית הבדיקה" in mail["body"]
         assert "צפיות בעמוד: 7" in mail["body"]
         assert "קליקים בוואטסאפ: 2" in mail["body"]
-        assert "שמרו את העסק במועדפים: 1" in mail["body"]
+        assert "שמירות במועדפים: 1" in mail["body"]
         # zero rows are left out, never shown as 0
         assert "קליקים על טלפון" not in mail["body"]
         assert "/producer/dashboard/insights" in mail["body"]
@@ -278,7 +290,7 @@ class TestEmailContent:
         assert wos.decode_unsubscribe_token(token) == producer.id
 
     def test_subject_singular(self):
-        assert wos.subject_for(1) == "השבוע אדם אחד צפה בעמוד שלכם"
+        assert wos.subject_for(1) == "השבוע הייתה צפייה אחת בעמוד שלכם"
 
 
 # ---------------------------------------------------------------------------
@@ -292,6 +304,7 @@ class TestUnsubscribe:
         token = wos.create_unsubscribe_token(producer.id)
         r = client.post("/weekly-summary/unsubscribe", json={"token": token})
         assert r.status_code == 200, r.text
+        assert r.json()["detail"] == "הסיכום השבועי לא יישלח עוד."
         db.refresh(producer)
         assert producer.weekly_summary_opt_out is True
 
@@ -349,6 +362,148 @@ class TestJobRegistration:
         assert job.max_instances == 1
         assert job.coalesce is True
         assert job.misfire_grace_time >= 6 * 3600
+
+
+# ---------------------------------------------------------------------------
+# Restart over the fire time — the one-off catch-up run
+# ---------------------------------------------------------------------------
+
+IL = ZoneInfo("Asia/Jerusalem")
+# Sunday 15/11/2026 08:00 Israel (winter, UTC+2) and Sunday 25/10/2026 08:00,
+# six hours after that morning's DST switch (02:00 → 01:00).
+SUNDAY_FIRE = datetime(2026, 11, 15, 8, 0, tzinfo=IL)
+DST_SUNDAY_FIRE = datetime(2026, 10, 25, 8, 0, tzinfo=IL)
+
+
+def _catchup(scheduler):
+    return scheduler.get_job(wos.CATCHUP_JOB_ID)
+
+
+class TestRestartCatchUp:
+    @pytest.mark.parametrize("fire", [SUNDAY_FIRE, DST_SUNDAY_FIRE], ids=["winter", "dst-day"])
+    def test_boot_11h59_after_the_fire_adds_a_one_off_run(self, monkeypatch, fire):
+        monkeypatch.setattr(wos, "summary_enabled", lambda: True)
+        scheduler = BackgroundScheduler(timezone="UTC")
+        now = (fire + timedelta(hours=11, minutes=59)).astimezone(timezone.utc)
+        assert startup._register_weekly_owner_summary(scheduler, now=now) is True
+        job = _catchup(scheduler)
+        assert job is not None
+        assert isinstance(job.trigger, DateTrigger)
+        assert job.trigger.run_date == now + timedelta(minutes=1)
+        # the weekly cron is still there alongside it
+        assert scheduler.get_job(wos.JOB_ID) is not None
+
+    def test_boot_12h01_after_the_fire_adds_nothing(self, monkeypatch):
+        monkeypatch.setattr(wos, "summary_enabled", lambda: True)
+        scheduler = BackgroundScheduler(timezone="UTC")
+        now = (SUNDAY_FIRE + timedelta(hours=12, minutes=1)).astimezone(timezone.utc)
+        startup._register_weekly_owner_summary(scheduler, now=now)
+        assert _catchup(scheduler) is None
+
+    def test_boot_one_minute_before_the_fire_adds_nothing(self, monkeypatch):
+        """07:59 Sunday: the last fire was a week ago; the cron covers today."""
+        monkeypatch.setattr(wos, "summary_enabled", lambda: True)
+        scheduler = BackgroundScheduler(timezone="UTC")
+        now = (SUNDAY_FIRE - timedelta(minutes=1)).astimezone(timezone.utc)
+        startup._register_weekly_owner_summary(scheduler, now=now)
+        assert _catchup(scheduler) is None
+
+    def test_no_catch_up_when_the_flag_is_off(self):
+        scheduler = BackgroundScheduler(timezone="UTC")
+        now = (SUNDAY_FIRE + timedelta(hours=1)).astimezone(timezone.utc)
+        assert startup._register_weekly_owner_summary(scheduler, now=now) is False
+        assert _catchup(scheduler) is None
+
+    def test_last_fire_is_the_israel_wall_clock_sunday_0800(self):
+        now = (SUNDAY_FIRE + timedelta(days=3)).astimezone(timezone.utc)
+        assert wos.last_scheduled_fire(now) == SUNDAY_FIRE
+
+
+# ---------------------------------------------------------------------------
+# Overlapping runs, failures, throttle, frozen clock
+# ---------------------------------------------------------------------------
+
+
+class TestSendLoopSafety:
+    def test_a_row_claimed_by_another_run_is_not_sent(self, db, sent, monkeypatch):
+        """Rolling deploy: run A picked its candidates, then run B stamped the
+        row. A must not send — the claim re-checks sent_at in the UPDATE."""
+        producer, _ = _business(db)
+        _views(db, producer.id, 4)
+        now = datetime.now(timezone.utc)
+        stale = wos._candidates(db, now)
+        assert [p.id for p in stale] == [producer.id]
+        assert wos._claim(db, producer.id, now) is True  # "run B"
+        monkeypatch.setattr(wos, "_candidates", lambda _db, _now: stale)
+        counters = wos.send_weekly_summaries(db, now=now)
+        assert sent == []
+        assert counters["already_claimed"] == 1
+
+    def test_claim_is_single_winner(self, db):
+        producer, _ = _business(db)
+        now = datetime.now(timezone.utc)
+        assert wos._claim(db, producer.id, now) is True
+        assert wos._claim(db, producer.id, now) is False
+
+    def test_one_failing_send_does_not_stop_the_next(self, db, sent, monkeypatch):
+        a, owner_a = _business(db, name="נכשל")
+        b, owner_b = _business(db, name="עובר")
+        _views(db, a.id, 2)
+        _views(db, b.id, 2)
+        real = wos.send_email
+
+        def flaky(to, *args, **kwargs):
+            if to == owner_a.email:
+                raise RuntimeError("boom")
+            return real(to, *args, **kwargs)
+
+        monkeypatch.setattr(wos, "send_email", flaky)
+        counters = wos.send_weekly_summaries(db)
+        assert [c["to"] for c in sent] == [owner_b.email]
+        assert counters["failed"] == 1
+        assert counters["sent"] == 1
+        db.refresh(a)
+        db.refresh(b)
+        assert a.weekly_summary_sent_at is None  # claim undone: retried next run
+        assert b.weekly_summary_sent_at is not None
+
+    def test_throttle_between_sends(self, db, sent, pauses):
+        for i in range(3):
+            p, _ = _business(db, name=f"עסק {i}")
+            _views(db, p.id, 1)
+        wos.send_weekly_summaries(db)
+        assert len(sent) == 3
+        assert pauses == [wos.SEND_INTERVAL_SECONDS] * 2
+        assert 0.3 <= wos.SEND_INTERVAL_SECONDS <= 1.0
+
+    def test_send_counts_against_the_run_clock(self, db, sent):
+        """A run at a frozen `now` counts THAT week, not the wall clock's."""
+        producer, _ = _business(db)
+        seeded = datetime(2026, 3, 1, 12, 0)  # naive UTC, like the column
+        db.add(ProducerPageView(producer_id=producer.id, viewer_ip_hash="a" * 64,
+                                created_at=seeded))
+        db.commit()
+        wos.send_weekly_summaries(db, now=(seeded + timedelta(days=1)).replace(tzinfo=timezone.utc))
+        assert [c["subject"] for c in sent] == ["השבוע הייתה צפייה אחת בעמוד שלכם"]
+
+
+class TestWindowEdge:
+    def test_weekly_numbers_at_the_frozen_window_edge(self, db):
+        producer, _ = _business(db)
+        t = datetime(2026, 3, 1, 12, 0)  # naive UTC, like the columns
+        db.add(ProducerPageView(producer_id=producer.id, viewer_ip_hash="b" * 64,
+                                created_at=t))
+        db.add(ProducerWhatsAppClick(producer_id=producer.id, clicked_at=t))
+        db.add(ContactClick(producer_id=producer.id, method="phone", clicked_at=t))
+        fan = make_user(db)
+        db.add(Favorite(user_id=fan.id, producer_id=producer.id, created_at=t))
+        db.commit()
+        inside = weekly_numbers(db, producer.id, now=t + timedelta(days=7))
+        assert inside == {"profile_views": 1, "whatsapp_clicks": 1,
+                          "contact_clicks": 1, "new_followers": 1}
+        outside = weekly_numbers(db, producer.id, now=t + timedelta(days=7, seconds=1))
+        assert outside == {"profile_views": 0, "whatsapp_clicks": 0,
+                           "contact_clicks": 0, "new_followers": 0}
 
 
 def test_sent_at_window_is_six_days():
