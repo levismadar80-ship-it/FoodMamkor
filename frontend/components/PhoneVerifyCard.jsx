@@ -95,6 +95,7 @@ export default function PhoneVerifyCard({ onVerified }) {
     setError("");
     try {
       await api.post("/producers/me/verify-phone");
+      lastAutoRef.current = ""; // a new code: anything typed may auto-send again
       setCodeSent(true);
       setCooldown(RESEND_COOLDOWN_SECONDS);
       rememberOtpSent();
@@ -122,6 +123,10 @@ export default function PhoneVerifyCard({ onVerified }) {
       if (sc === 400) setError(t("error_invalid"));
       else if (sc === 429) showToast.error(detailToMessage(err.response?.data?.detail) || t("error_rate_limited"));
       else setError(t("error_generic"));
+      // MEH-3126: a server/network failure says nothing about the code, so
+      // retyping it may auto-send again. A wrong code (400) or a rate limit
+      // (429) stays blocked until it changes; the button still sends.
+      if (sc !== 400 && sc !== 429) lastAutoRef.current = "";
     } finally {
       setConfirming(false);
     }

@@ -377,6 +377,33 @@ describe("PhoneVerifyCard — the 6th digit verifies on its own (MEH-3126)", () 
     expect(confirmCalls()).toEqual([[CONFIRM_URL, { code: "123456" }]]);
   });
 
+  it("a pasted «123-456» keeps all six digits and verifies", async () => {
+    await sendOk();
+    await typeCode("123-456");
+    expect(confirmCalls()).toEqual([[CONFIRM_URL, { code: "123456" }]]);
+  });
+
+  it("after a server error the same code may auto-send again (it said nothing about the code)", async () => {
+    await sendOk();
+    apiMock.post.mockImplementationOnce(reject(500, "boom"));
+    await typeCode("123456");
+    await typeCode("12345");
+    await typeCode("123456");
+    expect(confirmCalls()).toHaveLength(2);
+  });
+
+  it("a new code request lets a previously-wrong code auto-send again", async () => {
+    // Code sent 2 min ago: the box is open and the resend cooldown is over.
+    window.sessionStorage.setItem(SENT_AT_KEY, String(Date.now() - 120_000));
+    render(<PhoneVerifyCard />);
+    apiMock.post.mockImplementationOnce(reject(400, "wrong code"));
+    await typeCode("000000");
+    await typeCode("");
+    await click(sendBtn());
+    await typeCode("000000");
+    expect(confirmCalls()).toHaveLength(2);
+  });
+
   it("the input has no maxLength that would cut a spaced paste", async () => {
     await sendOk();
     expect(codeInput()).not.toHaveAttribute("maxlength");
