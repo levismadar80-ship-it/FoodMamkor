@@ -3061,7 +3061,8 @@ export const RegisterProducerOauthAuthRegisterProducerOauthPostResponse = /*#__P
 
 
 /**
- * Re-send verification email. Rate-limited to 3/hour per IP.
+ * Re-send verification email. 3/hour per IP, plus 3/hour and 10/day
+ * per account (MEH-2906, services/resend_verify_cap.py).
  * @summary Resend Verify
  */
 export const ResendVerifyAuthResendVerifyPostResponse = /*#__PURE__*/ zod.unknown()
