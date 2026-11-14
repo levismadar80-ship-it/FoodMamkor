@@ -22,6 +22,12 @@ import {
 import LoginPromptModal from "./LoginPromptModal";
 import AlertPrefsPanel from "./AlertPrefsPanel";
 import { labelInName } from "@/lib/label-in-name";
+import {
+  OVERLAY_ICON_BUTTON,
+  OVERLAY_ICON_FACE,
+  OVERLAY_ICON_SIZE,
+  overlayIconInk,
+} from "@/components/ui/overlay-icon-button";
 
 /**
  * FavoriteButton — save button for a producer. Visible to guests too
@@ -30,7 +36,7 @@ import { labelInName } from "@/lib/label-in-name";
  *
  * Variants:
  *   - "default" (sidebar pair with ShareButton)    — emoji heart in a 44×44 tap target
- *   - "gallery" (absolute overlay on ImageGallery) — white circle 44px, HeartStraight icon
+ *   - "gallery" (absolute overlay on ImageGallery) — 32px white circle in a 44px hit area (MEH-3115), HeartStraight icon
  *   - "inline"  (next to <h1> in producer header)  — small heart + "שמור" text
  *
  * Shared behavior: reads favorited state from the shared favorites-cache
@@ -192,14 +198,17 @@ export default function FavoriteButton({
     button = (
       <button
         {...commonProps}
-        className="bg-surface/95 hover:bg-surface rounded-full w-11 h-11 flex items-center justify-center shadow-lg hover:scale-105 transition disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-primary"
+        // MEH-3115: 44px hit area, 32px face — shared with share + bell.
+        className={OVERLAY_ICON_BUTTON}
       >
-        <HeartStraight
-          size={24}
-          weight={favorited ? "fill" : "regular"}
-          className={favorited ? "text-primary" : "text-text"}
-          aria-hidden="true"
-        />
+        <span className={OVERLAY_ICON_FACE}>
+          <HeartStraight
+            size={OVERLAY_ICON_SIZE}
+            weight={favorited ? "fill" : "regular"}
+            className={overlayIconInk(favorited)}
+            aria-hidden="true"
+          />
+        </span>
       </button>
     );
   } else if (variant === "quiet") {
