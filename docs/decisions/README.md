@@ -58,6 +58,8 @@ Permanent architectural decisions recorded once, never re-litigated.
 | [037](./ADR-037-neutral-reader-address.md) | Reader address is gender-neutral on every surface; feminine only for the founder's own voice and admin (supersedes ADR-024 §1 feminine half) | Accepted | 2026-11-04 | MEH-2661 |
 | [038](./ADR-038-status-color-scales.md) | Status colours are tokens — `danger-*` / `warning-*` scales at Tailwind red/amber values (narrows ADR-019, extends ADR-026) | Accepted | 2026-11-06 | MEH-1687 |
 | [039](./ADR-039-display-numerals.md) | The event price token is Frank Ruhl upright bold; Cormorant italic stays for times and inline Latin (narrows MEH-2488; band fact row rejected 07/11) | Accepted (amended) | 2026-11-07 | MEH-2804 |
+| [040](./ADR-040-who-joins-preference-not-gate.md) | Making or growing what you sell is a preference, not an entry gate — three levels, level 3 case by case at manual approval (licensing unchanged, ADR-022) | Accepted | 2026-11-11 | MEH-2953 |
+| [041](./ADR-041-home-meta-description-canonical-sentence.md) | The Hebrew meta description carries the canonical sentence, not the tagline (amends ADR-011's surface list) | Accepted | 2026-11-12 | MEH-2968 |
 
 ## Related
 - `docs/LOCKED_DECISIONS.md` — older free-form decisions; being migrated

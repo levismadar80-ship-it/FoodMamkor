@@ -4,26 +4,18 @@ import dynamic from "next/dynamic";
 
 import { useTranslations } from "next-intl";
 import {
-  CircleNotch,
   Leaf,
   MagnifyingGlass,
   MapTrifold,
   NavigationArrow,
   SquaresFour,
-  Stack,
 } from "@phosphor-icons/react";
 
 import { CATEGORY_LEGEND } from "@/lib/category-registry";
 import MapKey from "./MapKey";
+import { SkeletonBlock } from "@/components/Skeleton";
+import ButtonSpinner from "@/components/ButtonSpinner";
 
-// MEH-2046: the token set every circular /map control already shares — the
-// desktop GPS circle below and NearMePill.jsx:62 both carry it. Extracted to a
-// constant here because the layer toggle now makes three, and three copies of a
-// class string is how they drift apart.
-const MAP_CONTROL_CLASS =
-  "w-11 h-11 rounded-full shadow-md items-center justify-center transition-colors z-[1000] focus-visible:ring-2 focus-visible:ring-primary/40";
-const MAP_CONTROL_ON = "bg-primary text-white border border-primary";
-const MAP_CONTROL_OFF = "bg-surface-floating text-primary border border-border hover:bg-green-50";
 // NearMePill sits at sheet-edge + 12px and is 44px tall; +12px again clears it.
 const NEAR_ME_STACK_OFFSET_PX = 68;
 
@@ -48,10 +40,10 @@ const sheetRide = (offsetPx) =>
 function MapLoadingState() {
   const t = useTranslations();
   return (
-    <div className="w-full h-full rounded-md bg-background animate-pulse flex flex-col items-center justify-center gap-3">
+    <SkeletonBlock as="div" tone="page" className="w-full h-full rounded-md flex flex-col items-center justify-center gap-3">
       <MapTrifold size={48} className="text-primary/30" />
       <p className="text-fg-muted text-sm">{t("map.client.loading_map")}</p>
-    </div>
+    </SkeletonBlock>
   );
 }
 
@@ -91,14 +83,11 @@ export default function MapPane({
   onMapCanvasClick,
   registerApi,
   mapRef,
-  // MEH-1412: pickup/market_stand layer toggle (state owned by MapClient).
-  showSecondaryLayer,
-  onToggleSecondaryLayer,
-  // MEH-2046: ≥1 business currently drops off the map because the layer is off
-  // (producerPoints rule 2 — the layer toggle; it was rule 3 until MEH-1938
-  // chunk 5a deleted the Producer.lat/lng fallback rule). Computed in
-  // MapClient, which owns the feed.
-  secondaryHidden = false,
+  // Sapir 13/11: the pickup-layer toggle (MEH-1412) and its reminder (MEH-2046)
+  // are gone (MEH-3045). MEH-3054: one pin per business; a business's pickup
+  // points show when it is selected, and every business's while the
+  // «איסוף עצמי» chip is on (this flag, from useMapFilters).
+  showAllPickupPoints = false,
   // MEH-1611: id of the selected business (focus-on-select demote). Pure
   // pass-through — MapClient owns the state, MapComponent renders the effect.
   focusedProducerId,
@@ -135,63 +124,9 @@ export default function MapPane({
         onMapCanvasClick={onMapCanvasClick}
         registerApi={registerApi}
         mapRef={mapRef}
-        showSecondaryLayer={showSecondaryLayer}
         focusedProducerId={focusedProducerId}
+        showAllPickupPoints={showAllPickupPoints}
       />
-      {/* MEH-2046: the layer toggle moved OFF the canvas and into the map's own
-          control corners. As a labelled pill at top-start it read as a filter —
-          it sat where filters sit and looked like the chip row above it — while
-          it actually controls which markers are drawn. Icon-only, in the control
-          cluster, it reads as what it is. The MEH-1412 behaviour is unchanged:
-          same handler, same aria-pressed, same secondary layer.
-
-          Two placements because the two breakpoints have different control
-          corners, and this control joins whichever one already exists rather
-          than opening a third: desktop stacks above the GPS circle (physical
-          right, the documented geo exception), mobile stacks above NearMePill
-          in the bottom-END corner and rides the sheet edge the same way. Only
-          one is ever rendered — `hidden lg:flex` / `lg:hidden`. */}
-      <button
-        type="button"
-        onClick={onToggleSecondaryLayer}
-        aria-pressed={showSecondaryLayer}
-        aria-label={t("map.pane.pickup_layer.aria")}
-        data-testid="pickup-layer-toggle-desktop"
-        // rtl-ok: geographic map control; physical right keeps it in the GPS
-        // circle's column, opposite the physical-left legend, in every locale.
-        // No eslint-disable here: no-restricted-syntax reads string-literal
-        // classNames only, so it never sees this template literal — the
-        // check-rtl.sh hook is what covers it, and the marker is what it reads.
-        className={`hidden lg:flex absolute bottom-[152px] right-4 ${MAP_CONTROL_CLASS} ${
-          showSecondaryLayer ? MAP_CONTROL_ON : MAP_CONTROL_OFF
-        }`}
-      >
-        <Stack size={20} weight={showSecondaryLayer ? "fill" : "regular"} aria-hidden="true" />
-      </button>
-      <button
-        type="button"
-        onClick={onToggleSecondaryLayer}
-        aria-pressed={showSecondaryLayer}
-        aria-label={t("map.pane.pickup_layer.aria")}
-        data-testid="pickup-layer-toggle-mobile"
-        // REUSES: NearMePill.jsx:51 — the same `--map-sheet-h` ride, one row up,
-        // so the two move together instead of one crossing the other on a drag.
-        // A plain `bottom-4` was tried and is WRONG: once Leaflet mounts, the
-        // pane's box reaches down into the cookie-banner band (measured: the
-        // button landed at 760–804 with the banner at 728–820 and z-1100 over
-        // it). The sheet-edge ride is what keeps a bottom control clear of that,
-        // which is why the pill already uses it.
-        style={{
-          bottom: sheetRide(NEAR_ME_STACK_OFFSET_PX),
-          transitionProperty: "bottom, background-color",
-          transitionDuration: "var(--map-sheet-anim, 300ms)",
-        }}
-        className={`lg:hidden flex absolute end-4 ${MAP_CONTROL_CLASS} ${
-          showSecondaryLayer ? MAP_CONTROL_ON : MAP_CONTROL_OFF
-        }`}
-      >
-        <Stack size={20} weight={showSecondaryLayer ? "fill" : "regular"} aria-hidden="true" />
-      </button>
 
 
       {/* MEH-2148: ONE owner for the top-centre slot. Both of these used to be
@@ -210,44 +145,29 @@ export default function MapPane({
           `pointer-events-none` on the stack with `-auto` on each child: the
           column spans the full width at `top-4`, so without it this strip would
           swallow drags and clicks on the map underneath across the whole pane.
-          Same shield idiom as BottomNav.jsx:358 and the Header. */}
-      {/* MEH-2148: gated so the strip is absent from the DOM when neither child
-          renders, which is the common case. `pointer-events-none` already made
+          Same shield idiom as BottomNav.jsx:358 and the Header.
+
+          13/11: the pickup notice left with the layer toggle, so the
+          search-area pill is the slot's only child for now. */}
+      {/* MEH-2148: gated so the strip is absent from the DOM when nothing
+          renders in it, which is the common case. `pointer-events-none` already made
           an empty wrapper harmless, but harmless is not absent -- a full-width
           transparent element across the top of the pane is something a future
           hit-test or a11y sweep would still have to reason about. */}
-      {(mapMoved || secondaryHidden) && (
+      {mapMoved && (
         <div className="absolute top-4 inset-x-0 z-[1000] px-4 flex flex-col items-center gap-2 pointer-events-none">
-          {mapMoved && (
-            <div className="pointer-events-auto">
-              <button type="button" data-testid="map-search-this-area" onClick={(e) => { e.stopPropagation(); onSearchThisArea(); }} className="bg-surface-floating border border-border rounded-full px-5 py-2.5 text-sm font-medium hover:bg-green-50 transition flex items-center gap-2 focus-visible:ring-2 focus-visible:ring-primary/40">
+          <div className="pointer-events-auto">
+            <button type="button" data-testid="map-search-this-area" onClick={(e) => { e.stopPropagation(); onSearchThisArea(); }} className="bg-surface-floating border border-border rounded-full px-5 py-2.5 text-sm font-medium hover:bg-green-50 transition flex items-center gap-2 focus-visible:ring-2 focus-visible:ring-primary">
                 <MagnifyingGlass size={16} weight="bold" className="text-primary" />
                 {t("map.pane.search_this_area")}
               </button>
-            </div>
-          )}
-        {/* MEH-2046: the reminder, in the slot the pill vacated. A business whose
-            only points are pickup rows yields NO points at all when the layer is
-            off (producerPoints rule 2, deliberate) — so it does not fade or move,
-            it disappears. Silence there is the failure mode this line exists to
-            prevent; it renders only while businesses are actually being hidden.
-            MEH-2148: `self-start` keeps its original inline-start alignment
-            inside the centred column — logical, so it follows the locale. */}
-          {secondaryHidden && (
-            <div
-              role="status"
-              data-testid="pickup-layer-hidden-notice"
-              className="pointer-events-auto self-start max-w-[240px] rounded-lg border border-border bg-surface-floating px-3 py-1.5 text-xs text-fg-muted shadow-md"
-            >
-              {t("map.pane.pickup_layer.hidden_notice")}
-            </div>
-          )}
+          </div>
         </div>
       )}
       {!mapMoved && visibleProducers.length === 0 && allProducers.length > 0 && (
         // eslint-disable-next-line no-restricted-syntax -- rtl-ok: horizontal centering idiom
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[1000] bg-surface-floating rounded-lg border border-border p-6 text-center max-w-[280px]" role="status">
-          <Leaf size={44} className="text-primary mx-auto mb-3" aria-hidden="true" />
+          <Leaf size={48} className="text-primary mx-auto mb-3" aria-hidden="true" />
           {/* MEH-2425: this overlay fires when the loaded set is non-empty but
               nothing survives the client-side filters — i.e. mostly BECAUSE of
               a filter. "אין עסקים באזור זה עדיין" + "הוסיפו עסק" read as an
@@ -256,7 +176,7 @@ export default function MapPane({
           {filtered && onResetFilters ? (
             <>
               <h3 className="font-headline-md text-lg font-bold text-text mb-4" data-testid="map-pane-filtered-empty">{t("map.bottom_sheet.count_filtered_zero")}</h3>
-              <button type="button" onClick={onResetFilters} className="inline-block bg-primary text-white px-4 py-2 rounded-sm text-sm hover:bg-primary-dark transition">{t("map.bottom_sheet.reset_filters")}</button>
+              <button type="button" onClick={onResetFilters} className="inline-block bg-primary text-white px-4 py-2 rounded-full text-sm hover:bg-primary-dark transition">{t("map.bottom_sheet.reset_filters")}</button>
             </>
           ) : (
             // MEH-2639: the body and the «הוסיפו עסק» link are gone. This
@@ -284,10 +204,10 @@ export default function MapPane({
         data-testid="map-gps-button"
         aria-label={t("map.pane.aria.center_on_me")}
         // eslint-disable-next-line no-restricted-syntax -- rtl-ok: geographic map control; physical right keeps it opposite the physical-left legend in every locale
-        className="hidden lg:flex absolute bottom-24 right-4 w-11 h-11 rounded-full bg-surface-floating border border-border shadow-md items-center justify-center text-primary hover:bg-green-50 transition-colors z-[1000] focus-visible:ring-2 focus-visible:ring-primary/40 disabled:opacity-60"
+        className="hidden lg:flex absolute bottom-24 right-4 w-11 h-11 rounded-full bg-surface-floating border border-border shadow-lg items-center justify-center text-primary hover:bg-green-50 transition-colors z-[1000] focus-visible:ring-2 focus-visible:ring-primary disabled:opacity-50"
       >
         {gpsLoading
-          ? <CircleNotch size={20} className="animate-spin" aria-hidden="true" />
+          ? <ButtonSpinner size={20} />
           : <NavigationArrow size={20} weight="fill" aria-hidden="true" />
         }
       </button>
@@ -349,17 +269,15 @@ export default function MapPane({
           data-testid="map-legend-toggle"
           aria-label={t("map.pane.aria.categories")}
           aria-expanded={legendOpen}
-          className="w-8 h-8 rounded-full bg-surface-floating border border-border flex items-center justify-center hover:bg-green-50 transition focus-visible:ring-2 focus-visible:ring-primary/40"
+          className="w-8 h-8 rounded-full bg-surface-floating border border-border flex items-center justify-center hover:bg-green-50 transition focus-visible:ring-2 focus-visible:ring-primary"
         >
           <SquaresFour size={16} weight="bold" className="text-text" />
         </button>
       </div>
       {/* MEH-2424: "מה רואים במפה?" — the marker key, one more circle in the
-          same control column as the layer toggle above it, so the column grows
-          upward instead of a new corner opening. Same per-shell split as the
-          layer toggle: desktop sits one step (44px + 8px) above it on the
-          physical-right GPS column; mobile rides the sheet edge one step above
-          it. The panel drops in from the top of the pane: full-width on the
+          control column. It took the slot the pickup-layer toggle left (Sapir
+          13/11): desktop one step (44px + 8px) above the physical-right GPS
+          circle; mobile rides the sheet edge one step above NearMePill. The panel drops in from the top of the pane: full-width on the
           phone, a 320px card in the desktop control column. Rendered LAST in
           the pane: the panel shares the map-control z token, so DOM
           order is what puts it over the other controls it can cover. */}
@@ -368,13 +286,13 @@ export default function MapPane({
         // Physical right keeps it in the GPS circle's column, opposite the
         // physical-left legend, in every locale (the documented map exception).
         // rtl-ok: geographic map control
-        buttonClassName="hidden lg:flex absolute bottom-[204px] right-4"
+        buttonClassName="hidden lg:flex absolute bottom-[152px] right-4"
         panelClassName="hidden lg:block top-4 right-4 w-80" // rtl-ok: panel opens in that same column
       />
       <MapKey
         testIdSuffix="-mobile"
         buttonStyle={{
-          bottom: sheetRide(NEAR_ME_STACK_OFFSET_PX + 56),
+          bottom: sheetRide(NEAR_ME_STACK_OFFSET_PX),
           transitionProperty: "bottom, background-color",
           transitionDuration: "var(--map-sheet-anim, 300ms)",
         }}

@@ -34,6 +34,7 @@ import { useTranslations } from "next-intl";
 import ClosingCtaBand from "@/components/ClosingCtaBand";
 import Seed from "@/components/brand/Seed";
 import { SEEDS_LIGHT } from "@/lib/brand-seeds";
+import SectionHeading from "@/components/ui/SectionHeading";
 
 // MEH-2833: the four steps' seeds — logo order without sand.
 const STEP_SEEDS = SEEDS_LIGHT.filter((seed) => seed.name !== "sand");
@@ -101,19 +102,19 @@ export default function AboutProcessClient() {
   // background since the chip is now fully opaque.
   const VerifiedTag = () => (
     <span className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold bg-surface-card text-accent border border-accent/30 whitespace-nowrap">
-      <SealCheck size={13} aria-hidden />
+      <SealCheck size={14} aria-hidden />
       <span className="ms-[0.14em]">{t("tier.verified")}</span>
     </span>
   );
   const OptVerifiedTag = () => (
     <span className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold bg-transparent text-fg-muted border border-dashed border-border whitespace-nowrap">
-      <SealCheck size={13} aria-hidden />
+      <SealCheck size={14} aria-hidden />
       <span className="ms-[0.14em]">{t("tier.verified")}</span>
     </span>
   );
   const DeclaredTag = () => (
     <span className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold bg-green-50 text-primary-dark border border-primary/20 whitespace-nowrap">
-      <Note size={13} aria-hidden />
+      <Note size={14} aria-hidden />
       <span className="ms-[0.14em]">{t("tier.declared")}</span>
     </span>
   );
@@ -124,7 +125,7 @@ export default function AboutProcessClient() {
       <section data-testid="process-hero" className="bg-background py-12 md:py-20 scroll-mt-24">
         <div className="max-w-3xl mx-auto px-4 md:px-12">
           <span className="inline-flex items-center gap-2 font-body-md font-semibold text-xs text-accent mb-4">
-            <Path size={15} aria-hidden />
+            <Path size={16} aria-hidden />
             {t("hero.eyebrow")}
           </span>
           <h1 className="font-headline-display font-black text-text tracking-tight leading-[1.02] text-[clamp(32px,8vw,56px)] max-w-[15ch]">
@@ -182,7 +183,7 @@ export default function AboutProcessClient() {
                 </span>
                 <div>
                   <div className="flex items-center gap-2.5 mb-2">
-                    <Icon size={19} className="text-primary shrink-0" aria-hidden />
+                    <Icon size={20} className="text-primary shrink-0" aria-hidden />
                     <h3 className="font-headline-md font-bold text-xl leading-tight text-text">
                       {t(`steps.s${i + 1}_title`)}
                     </h3>
@@ -195,7 +196,7 @@ export default function AboutProcessClient() {
             ))}
           </ol>
           {/* badge aside — the optional מאומת step is explicitly separate from step 4 */}
-          <div data-testid="process-badge-aside" className="mt-8 grid grid-cols-[auto_1fr] gap-3 items-start rounded-xl border border-dashed border-accent/50 bg-accent/5 p-4">
+          <div data-testid="process-badge-aside" className="mt-8 grid grid-cols-[auto_1fr] gap-3 items-start rounded-lg border border-dashed border-accent/50 bg-accent/5 p-4">
             <SealCheck size={20} className="text-accent mt-0.5 shrink-0" aria-hidden />
             <div>
               <div className="font-body-md font-semibold text-sm text-text mb-1">
@@ -213,9 +214,9 @@ export default function AboutProcessClient() {
       <section data-testid="process-everyone" className="bg-background-alt py-12 md:py-20 scroll-mt-24">
         <div className="max-w-5xl mx-auto px-4 md:px-12">
           <Marker>{t("everyone.marker")}</Marker>
-          <h2 className="font-headline-lg font-bold text-text text-[clamp(26px,5.4vw,32px)] leading-tight tracking-tight">
+          <SectionHeading className="leading-tight">
             {t("everyone.h2")}
-          </h2>
+          </SectionHeading>
           <p className="mt-3.5 font-body-md text-lg leading-relaxed text-text/90 max-w-[52ch]">
             {t("everyone.intro")}
           </p>
@@ -239,7 +240,7 @@ export default function AboutProcessClient() {
       <section data-testid="process-badge" className="bg-background py-12 md:py-20 scroll-mt-24">
         <div className="max-w-5xl mx-auto px-4 md:px-12">
           <Marker>{t("badge.marker")}</Marker>
-          <div className="rounded-3xl border border-border bg-surface/40 p-8 md:p-12 grid grid-cols-1 md:grid-cols-[1.05fr_0.95fr] gap-10 md:gap-12 md:items-center">
+          <div className="rounded-lg border border-border bg-surface/40 p-8 md:p-12 grid grid-cols-1 md:grid-cols-[1.05fr_0.95fr] gap-10 md:gap-12 md:items-center">
             <div>
               <p className="font-headline-md font-bold text-text text-[clamp(23px,5vw,28px)] leading-snug max-w-[24ch] tracking-tight">
                 {t.rich("badge.oneliner", {
@@ -252,7 +253,7 @@ export default function AboutProcessClient() {
               </p>
               <div className="flex flex-wrap items-center gap-4 mt-6">
                 <span className="inline-flex items-center gap-2 bg-background border border-accent text-accent rounded-full ps-3.5 pe-4 py-2 font-body-md font-semibold text-sm">
-                  <SealCheck size={17} aria-hidden />
+                  <SealCheck size={18} aria-hidden />
                   <span className="ms-[0.14em]">{t("tier.verified")}</span>
                 </span>
                 <span data-testid="process-badge-tooltip" className="inline-flex items-center gap-2 font-english italic text-base text-fg-muted">
@@ -283,9 +284,9 @@ export default function AboutProcessClient() {
       <section data-testid="process-matrix" className="bg-background-alt py-12 md:py-20 scroll-mt-24">
         <div className="max-w-5xl mx-auto px-4 md:px-12">
           <Marker>{t("matrix.marker")}</Marker>
-          <h2 className="font-headline-lg font-bold text-text text-[clamp(26px,5.4vw,32px)] leading-tight tracking-tight">
+          <SectionHeading className="leading-tight">
             {t("matrix.h2")}
-          </h2>
+          </SectionHeading>
           <p className="mt-3.5 font-body-md text-lg leading-relaxed text-text/90 max-w-[54ch]">
             {t("matrix.intro")}
           </p>
@@ -303,12 +304,14 @@ export default function AboutProcessClient() {
                 })}
               </p>
             </div>
+            {/* MEH-3114: below md, name + tag share one line and the document
+                line spans under them (was three stacked lines per row). */}
             <div className="border-t border-border">
               {CATS_A.map((key) => (
                 <div
                   key={key}
                   data-testid="process-matrix-row"
-                  className="grid grid-cols-1 md:grid-cols-[minmax(180px,1.1fr)_minmax(150px,auto)_1.4fr] gap-y-1.5 md:gap-6 py-4 border-b border-border md:items-center"
+                  className="grid grid-cols-[1fr_auto] items-center md:grid-cols-[minmax(180px,1.1fr)_minmax(150px,auto)_1.4fr] gap-x-3 gap-y-1 md:gap-6 py-3 md:py-4 border-b border-border"
                 >
                   <div className="font-headline-md font-bold text-lg md:text-lg leading-tight text-text">
                     {t(`matrix.catA.${key}`)}
@@ -316,7 +319,7 @@ export default function AboutProcessClient() {
                   <div>
                     <VerifiedTag />
                   </div>
-                  <div className="font-body-md text-sm leading-snug text-fg-muted">
+                  <div className="col-span-2 md:col-span-1 font-body-md text-sm leading-snug text-fg-muted">
                     {key === "honey" ? t("matrix.honey_doc") : t("matrix.groupA_doc")}
                   </div>
                 </div>
@@ -342,7 +345,7 @@ export default function AboutProcessClient() {
                 <div
                   key={key}
                   data-testid="process-matrix-row"
-                  className="grid grid-cols-1 md:grid-cols-[minmax(180px,1.1fr)_minmax(150px,auto)_1.4fr] gap-y-1.5 md:gap-6 py-4 border-b border-border md:items-center"
+                  className="grid grid-cols-[1fr_auto] items-center md:grid-cols-[minmax(180px,1.1fr)_minmax(150px,auto)_1.4fr] gap-x-3 gap-y-1 md:gap-6 py-3 md:py-4 border-b border-border"
                 >
                   <div className="font-headline-md font-bold text-lg md:text-lg leading-tight text-text">
                     {t(`matrix.catB.${key}.label`)}
@@ -358,7 +361,7 @@ export default function AboutProcessClient() {
                       </>
                     )}
                   </div>
-                  <div className="font-body-md text-sm leading-snug text-fg-muted">
+                  <div className="col-span-2 md:col-span-1 font-body-md text-sm leading-snug text-fg-muted">
                     {declaredOnly ? (
                       t(`matrix.catB.${key}.note`)
                     ) : (
@@ -378,7 +381,7 @@ export default function AboutProcessClient() {
           </div>
 
           {/* personal-process caveat */}
-          <div className="mt-9 grid grid-cols-[auto_1fr] gap-3 items-start rounded-2xl border border-primary/20 bg-primary/5 p-5">
+          <div className="mt-9 grid grid-cols-[auto_1fr] gap-3 items-start rounded-lg border border-primary/20 bg-primary/5 p-5">
             <HandHeart size={20} className="text-primary mt-0.5 shrink-0" aria-hidden />
             <p className="font-body-md text-sm leading-relaxed text-text max-w-[62ch]">
               {t("matrix.caveat")}

@@ -4,7 +4,7 @@ import { useState, useCallback, useEffect, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import { Link } from "@/i18n/navigation";
 import { MagnifyingGlass, Plant, Leaf, CaretDown, Faders, MapPin, ArrowLeft } from "@phosphor-icons/react";
-import { chipsToQuery } from "@/lib/filter-url";
+import { producersToMapQuery } from "@/lib/filter-url";
 import { useTranslations } from "next-intl";
 import Breadcrumb from "@/components/Breadcrumb";
 import ProducerCard from "@/components/ProducerCard";
@@ -48,6 +48,7 @@ import { useCatalogSnapshot } from "@/lib/use-catalog-snapshot";
 import EnSearchNotice from "@/components/EnSearchNotice";
 import { CategoriesResponseSchema } from "@/lib/api-schemas";
 import Button from "@/components/ui/Button";
+import ButtonSpinner from "@/components/ButtonSpinner";
 
 const FILTER_LIMIT = 100;
 const PAGE_SIZE = 24; // matches PER_PAGE in page.jsx
@@ -105,6 +106,16 @@ function initChipsFromParams(searchParams) {
   return result;
 }
 
+function initDaysFromParams(searchParams) {
+  if (!searchParams.get("city")) return [];
+  const raw = searchParams.getAll("delivery_days");
+  const legacy = searchParams.get("delivery_day");
+  const values = raw.length ? raw : legacy ? [legacy] : [];
+  return values
+    .filter((d, i, a) => DELIVERY_DAYS.includes(d) && a.indexOf(d) === i)
+    .slice(0, DELIVERY_DAYS.length);
+}
+
 export default function ProducersClient({
   initialItems,
   initialTotal,
@@ -150,15 +161,7 @@ export default function ProducersClient({
   // keeps working verbatim. Unknown and duplicate members are dropped rather
   // than 422'd (the MEH-1645 asymmetry: untrusted at the API, recoverable typo
   // in the browser), and the whole set still requires a city.
-  const [dayFilters, setDayFilters] = useState(() => {
-    if (!searchParams.get("city")) return [];
-    const raw = searchParams.getAll("delivery_days");
-    const legacy = searchParams.get("delivery_day");
-    const values = raw.length ? raw : legacy ? [legacy] : [];
-    return values
-      .filter((d, i, a) => DELIVERY_DAYS.includes(d) && a.indexOf(d) === i)
-      .slice(0, DELIVERY_DAYS.length);
-  });
+  const [dayFilters, setDayFilters] = useState(() => initDaysFromParams(searchParams));
   const dayFilterRef = useRef(dayFilters);
   useEffect(() => { dayFilterRef.current = dayFilters; }, [dayFilters]);
   const [filteredItems, setFilteredItems] = useState(null);
@@ -236,8 +239,15 @@ export default function ProducersClient({
 
   // ?focus=1 → focus the input on mount. The header search button lands here
   // with it (MEH-819).
+  // MEH-2987: the header search pushes /producers?focus=1 even when she is
+  // already here, which wipes q / category / chips from the URL while the page
+  // keeps showing them (a refresh or a shared link then loses the search).
+  // Once focused, write the live filter state back over that URL.
+  const restoreUrlRef = useRef(null);
   useEffect(() => {
-    if (shouldFocus) searchInputRef.current?.focus();
+    if (!shouldFocus) return;
+    searchInputRef.current?.focus();
+    restoreUrlRef.current?.();
   }, [shouldFocus]);
 
   // Keep the box in sync when q is cleared elsewhere (🔍 chip ×, clear all).
@@ -308,6 +318,10 @@ export default function ProducersClient({
     [],
   );
 
+  // MEH-2987: read by the ?focus=1 effect above (declared before syncUrl).
+  restoreUrlRef.current = () => syncUrl(chips, cityFilter, searchQ, categoryFilter);
+
+  const filterReqRef = useRef(0);
   const fetchFiltered = useCallback((chipState, city, q, category) => {
     const params = buildChipParams(chipState);
     if (city) params.delivery_city = city;
@@ -318,7 +332,9 @@ export default function ProducersClient({
     // MEH-1465: pass the whole array — api serializes it as repeated ?category=.
     if (category?.length) params.category = category;
     if (Object.keys(params).length === 0) {
+      filterReqRef.current += 1; // drop any fetch still in flight
       setFilteredItems(null);
+      setLoading(false);
       return;
     }
     // MEH-1483: sort added AFTER the no-filters check so a bare sort never
@@ -326,17 +342,60 @@ export default function ProducersClient({
     // to the unfiltered (infinite-scroll) list, whose sort the effect drives.
     // MEH-2294: distance carries lat+lng (and nothing when there is no fix).
     Object.assign(params, sortRequestParams(sortOrderRef.current, locRef.current));
+    // MEH-2987: last request wins. Back/Forward (and fast chip taps) can put two
+    // fetches in flight; without this an older response landing last would
+    // overwrite the list the URL and chips now describe.
+    const reqId = ++filterReqRef.current;
+    const isLatest = () => reqId === filterReqRef.current;
     setLoading(true);
     api
       .get("/producers", { params: { ...params, limit: FILTER_LIMIT, offset: 0 } })
       .then((r) => {
+        if (!isLatest()) return;
         const items = Array.isArray(r.data) ? r.data : [];
         setFilteredItems(items);
         trackEvent("producers_filter_results", { count: items.length });
       })
-      .catch(() => setFilteredItems([]))
-      .finally(() => setLoading(false));
+      .catch(() => { if (isLatest()) setFilteredItems([]); })
+      .finally(() => { if (isLatest()) setLoading(false); });
   }, []);
+
+  // MEH-2987: Back / Forward re-reads the filters from the URL. Every filter
+  // state above is hydrated from the URL ONCE, and a category selection is a
+  // pushState (MEH-1084: "Back cancels the category") — but nothing listened,
+  // so Back changed the address and left the filtered list on screen
+  // (measured on staging 12/11: Back → URL `/producers`, «בשר ודגים» still
+  // pressed, 4 cards of 24). Sort is left out on purpose: it is its own axis
+  // with its own refetch effect; an older entry can carry an older sort, so
+  // onPop rewrites the entry with the live sort instead of restoring it.
+  useEffect(() => {
+    const onPop = () => {
+      // Leaving /producers by Back also fires this before unmount — the
+      // destination's ?category= is not ours to read.
+      if (!/\/producers\/?$/.test(window.location.pathname)) return;
+      const sp = new URLSearchParams(window.location.search);
+      const nextChips = initChipsFromParams(sp);
+      const nextCity = sp.get("city") || null;
+      const nextDays = initDaysFromParams(sp);
+      const nextQ = sp.get("q") || "";
+      const nextCategory = sp.getAll("category");
+      setChips(nextChips);
+      setCityFilter(nextCity);
+      dayFilterRef.current = nextDays;
+      setDayFilters(nextDays);
+      setSearchQ(nextQ);
+      setSearchInput(nextQ);
+      setCategoryFilter(nextCategory);
+      // fetchFiltered clears to the unfiltered list itself when nothing is set.
+      fetchFiltered(nextChips, nextCity, nextQ, nextCategory);
+      // Sort is not restored from the entry (it has its own refetch effect),
+      // so rewrite this entry with the sort the view is actually in — the URL
+      // must never claim a sort the list is not showing.
+      syncUrl(nextChips, nextCity, nextQ, nextCategory);
+    };
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, [fetchFiltered]);
 
   const loadNextPage = useCallback(() => {
     if (loadingMore || !hasMore) return;
@@ -709,6 +768,31 @@ export default function ProducersClient({
     trackEvent("producers_clear_all");
   };
 
+  // MEH-2987: the empty state's category chips. They were `<Link href=
+  // "/producers?category=X">` — a navigation to the SAME route, and this
+  // component reads q / category from the URL only once (the useState
+  // initialisers above), so the URL changed and the page did not: the search
+  // stayed, the list stayed empty. Same outcome the link meant (a fresh view
+  // of that one category, everything else cleared), done through state.
+  // DO NOT turn these back into same-route Links — MEH-2987.
+  const pickEscapeCategory = (id) => {
+    const next = [String(id)];
+    setChips(CHIPS_DEFAULT);
+    setCityFilter(null);
+    dayFilterRef.current = [];
+    setDayFilters([]);
+    setSearchQ("");
+    setCategoryFilter(next);
+    // A new view, like any category selection (MEH-1084) → push, so Back
+    // returns to the search she typed.
+    syncUrl(CHIPS_DEFAULT, null, "", next, "push");
+    fetchFiltered(CHIPS_DEFAULT, null, "", next);
+    trackEvent("producers_empty_category_pick", { category: next });
+    // The chips sit at the bottom of the empty state; the results start at the
+    // top of the page, with the picked category lit in the row above them.
+    if (typeof window !== "undefined") window.scrollTo({ top: 0 });
+  };
+
   const cityChip = cityFilter ? { ...cityChipDef, label: cityFilter } : cityChipDef;
   // MEH-1418: Phosphor leading icons on the attribute chips; the city chip has
   // no icon entry, so it passes through text-only (byte-identical).
@@ -863,8 +947,9 @@ export default function ProducersClient({
       />
       {/* MEH-2598: «הצגה במפה» as on home — the list and the map are two views
           of one search, so the active attribute chips ride along
-          (lib/filter-url). Search text and category stay behind: /map has no
-          free-text search and keys categories differently. */}
+          (lib/filter-url). MEH-3075: the category groups and the city ride too
+          (producersToMapQuery); search text stays behind — /map has no
+          free-text search. */}
       <div className="flex items-center justify-between gap-3 mb-6">
         <h1 className="font-headline-lg text-3xl font-bold text-text">
           {searchQ ? (
@@ -877,9 +962,9 @@ export default function ProducersClient({
           )}
         </h1>
         <Link
-          href={`/map${chipsToQuery(chips)}`}
+          href={`/map${producersToMapQuery({ chips, categoryKeys: activeCategoryKeys, city: cityFilter || "" })}`}
           data-testid="producers-map-link"
-          className="shrink-0 text-primary hover:underline flex items-center gap-1 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+          className="shrink-0 text-primary hover:underline flex items-center gap-1 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
         >
           <MapPin size={14} className="text-current" aria-hidden="true" />
           {t("title.map_link")}
@@ -896,7 +981,7 @@ export default function ProducersClient({
         <label htmlFor="producers-search-input" className="sr-only">
           {t("search_input.label")}
         </label>
-        <div className="flex-1 min-w-0 flex items-center gap-2 border border-border rounded-full px-4 min-h-touch bg-surface focus-within:ring-2 focus-within:ring-primary/40">
+        <div className="flex-1 min-w-0 flex items-center gap-2 border border-border rounded-full px-4 min-h-touch bg-surface focus-within:ring-2 focus-within:ring-primary">
           <MagnifyingGlass size={18} weight="regular" aria-hidden="true" className="text-fg-muted" />
           <input
             id="producers-search-input"
@@ -923,17 +1008,8 @@ export default function ProducersClient({
           Self-hides while /categories hasn't resolved (or failed).
           MEH-1186: micro-label above the row names the behavior (category
           selection) vs the toggle row below (attribute filtering). */}
-      {categories.length > 0 && (
-        <div className="mb-3" data-testid="producers-category-row">
-          <p className="text-xs text-fg-muted mb-1" data-testid="producers-category-label">{t("filters.category_label")}</p>
-          <ChipScrollRow
-            variant="category"
-            chips={categoryChips}
-            activeKeys={activeCategoryKeys}
-            onChipClick={handleCategorySelect}
-          />
-        </div>
-      )}
+      {/* MEH-3075: the category block now renders INSIDE the filter row below
+          (categoryBlock), so the phone gets one row. */}
 
       {/* MEH-1862: the attribute chips moved into the FilterSheet behind a
           "סינון" button — the IA /map has run since MEH-1368
@@ -963,8 +1039,18 @@ export default function ProducersClient({
           lg:flex-wrap so the MEH-2598 service chips wrap instead of pushing
           the row past the viewport at 200% text (WCAG 1.4.4, 44-text-scale;
           same as /map ServiceChipRow). */}
+      {/* MEH-3075 (Sapir 13/11): below lg the filter row and its day panel stay
+          under the header while the list scrolls (Baymard: keep filters
+          reachable mid-list; Wolt / Etsy do the same). --chrome-top is the
+          header's live height (Header.jsx, MEH-1202). Bare z-30: above the
+          cards' own layers, below the header (1050), BottomNav (1000) and the
+          sheet (1200, portalled). lg+ is plain flow, as before. */}
       <div
-        className="-mx-4 -mt-1 mb-3 flex items-center gap-2 min-w-0 overflow-x-auto overscroll-x-none px-4 py-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden lg:-mx-1 lg:px-1 lg:overflow-visible lg:flex-wrap"
+        className="-mx-4 px-4 mb-3 bg-background max-lg:sticky max-lg:top-[var(--chrome-top,82px)] max-lg:z-30 max-lg:pt-1 lg:mx-0 lg:px-0"
+        data-testid="producers-filter-bar"
+      >
+      <div
+        className="-mx-4 -mt-1 flex items-center gap-2 min-w-0 overflow-x-auto overscroll-x-none px-4 py-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden lg:-mx-1 lg:px-1 lg:overflow-visible lg:flex-wrap"
         data-testid="producers-filter-row"
         onFocus={keepFocusedChipClear}
       >
@@ -1003,6 +1089,35 @@ export default function ProducersClient({
             align="start"
           />
         </div>
+        {/* MEH-3075 (Sapir 13/11): the categories ride the SAME rail as «סינון»
+            and the service chips — «סינון», categories, a hairline, then
+            משלוח/איסוף/city/day: /map's phone order (MEH-3062). This is the DOM
+            order at every width, because a CSS reorder is banned
+            (VisualOrderGuard, MEH-2747): below lg the rail scrolls (shrink-0),
+            at lg+ the block takes the rest of the first line and scrolls inside
+            itself if it ever overflows, and a line break sends the service chips
+            to a second line. The micro-label is for screen readers only. */}
+        {categories.length > 0 && (
+          <div className="shrink-0 lg:shrink lg:flex-1 lg:min-w-0" data-testid="producers-category-row">
+            <p className="sr-only" data-testid="producers-category-label">{t("filters.category_label")}</p>
+            <ChipScrollRow
+              variant="category"
+              chips={categoryChips}
+              activeKeys={activeCategoryKeys}
+              onChipClick={handleCategorySelect}
+              className="max-lg:-mb-1"
+            />
+          </div>
+        )}
+        {/* MEH-3075: the hairline /map's phone row draws between the categories
+            and the service chips (MEH-3062) — below lg; at lg+ the line break
+            after it starts the service chips' own line. */}
+        {categories.length > 0 && (
+          <span aria-hidden="true" className="shrink-0 self-stretch my-1.5 w-px bg-border lg:hidden" />
+        )}
+        {categories.length > 0 && (
+          <span aria-hidden="true" className="hidden lg:block lg:basis-full lg:h-0" data-testid="producers-filter-row-break" />
+        )}
         {/* MEH-2598 (Sapir 29/10, «אחיד»): the same promoted service trio as
             home and /map, between «סינון» and the city chip. `visibleChipDefs`
             is the gated list, so on_site appears only once the catalog
@@ -1034,7 +1149,10 @@ export default function ProducersClient({
           panelHost={dayPanelHost}
         />
       </div>
-      <div ref={setDayPanelHost} className="mb-3 empty:hidden" data-testid="producers-day-panel-host" />
+      {/* MEH-3075: inside the sticky bar below lg, so a panel taller than the
+          screen would be unreachable — cap it and let it scroll. */}
+      <div ref={setDayPanelHost} className="mt-3 empty:hidden max-lg:max-h-[60vh] max-lg:overflow-y-auto" data-testid="producers-day-panel-host" />
+      </div>
 
       {/* Results counter + active filters — MEH-1186: one control line.
           The removable chips (toggle ×, search ×) and
@@ -1081,7 +1199,7 @@ export default function ProducersClient({
               className="inline-flex items-center gap-1 bg-surface text-primary border border-primary rounded-full px-3 py-1 text-xs font-medium whitespace-nowrap shrink-0"
             >
               <span aria-hidden="true" className="text-2xs font-bold">×</span>
-              <MagnifyingGlass size={13} weight="bold" aria-hidden="true" />{searchQ}
+              <MagnifyingGlass size={14} weight="bold" aria-hidden="true" />{searchQ}
             </button>
           )}
           {hasActiveChips && (
@@ -1113,7 +1231,7 @@ export default function ProducersClient({
               aria-busy={geoSortPending || undefined}
               aria-label={t("sort.aria_label")}
               data-testid="producers-sort"
-              className="appearance-none bg-transparent border-0 font-medium text-primary min-h-touch ps-1 pe-6 cursor-pointer rounded-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1 disabled:opacity-60"
+              className="appearance-none bg-transparent border-0 font-medium text-primary min-h-touch ps-1 pe-6 cursor-pointer rounded-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1 disabled:opacity-50"
             >
               <option value="newest">{t("sort.newest")}</option>
               {ratingSortEnabled && <option value="rating">{t("sort.top_rated")}</option>}
@@ -1137,7 +1255,12 @@ export default function ProducersClient({
       {loading ? (
         <SkeletonProducerGrid count={8} />
       ) : showFilterEmpty ? (
-        <FilterEmptyState onClear={clearAll} searchQ={searchQ} categories={categories} />
+        <FilterEmptyState
+          onClear={clearAll}
+          onPickCategory={pickEscapeCategory}
+          searchQ={searchQ}
+          categories={categories}
+        />
       ) : showPageOverflow ? (
         <PageOverflowState />
       ) : showCatalogEmpty ? (
@@ -1162,11 +1285,9 @@ export default function ProducersClient({
               <div ref={sentinelRef} className="h-px" aria-hidden="true" />
               {loadingMore && (
                 <div className="flex justify-center py-8">
-                  <div
-                    className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin"
-                    role="status"
-                    aria-label={t("discovery.loading_more_aria")}
-                  />
+                  <span role="status" aria-label={t("discovery.loading_more_aria")} className="text-primary">
+                    <ButtonSpinner size={32} />
+                  </span>
                 </div>
               )}
               {!hasMore && appendItems.length > 0 && (
@@ -1196,7 +1317,7 @@ export default function ProducersClient({
   );
 }
 
-export function FilterEmptyState({ onClear, searchQ, categories = [] }) {
+export function FilterEmptyState({ onClear, onPickCategory, searchQ, categories = [] }) {
   const t = useTranslations("producers");
   // MEH-2827 PR 4: a search that found nothing is the moment someone knows a
   // business we don't — the footer link was the only way to /recommend.
@@ -1216,8 +1337,8 @@ export function FilterEmptyState({ onClear, searchQ, categories = [] }) {
         aria-hidden="true"
       >
         {searchQ
-          ? <MagnifyingGlass size={28} weight="bold" className="text-primary" aria-hidden="true" />
-          : <Plant size={28} weight="fill" className="text-primary" aria-hidden="true" />}
+          ? <MagnifyingGlass size={24} weight="bold" className="text-primary" aria-hidden="true" />
+          : <Plant size={24} weight="fill" className="text-primary" aria-hidden="true" />}
       </div>
       <h2 className="font-headline-md text-xl font-bold text-text mb-2">
         {searchQ
@@ -1227,16 +1348,18 @@ export function FilterEmptyState({ onClear, searchQ, categories = [] }) {
       <p className="text-fg-muted text-sm mb-6">
         {searchQ ? t("empty.search_hint") : t("empty.filters_hint")}
       </p>
-      {searchQ && escapeChips.length > 0 && (
+      {searchQ && onPickCategory && escapeChips.length > 0 && (
         <div className="flex flex-wrap justify-center gap-2 mb-6">
           {escapeChips.map((c) => (
-            <Link
+            <button
               key={c.id}
-              href={`/producers?category=${encodeURIComponent(String(c.id))}`}
+              type="button"
+              onClick={() => onPickCategory(c.id)}
+              data-testid="producers-empty-category"
               className="bg-surface border border-border text-text rounded-full px-4 py-1.5 text-sm hover:border-primary hover:text-primary transition"
             >
               {c.name}
-            </Link>
+            </button>
           ))}
         </div>
       )}
@@ -1253,10 +1376,10 @@ export function FilterEmptyState({ onClear, searchQ, categories = [] }) {
           <Link
             href={`/recommend?name=${encodeURIComponent(searchQ)}`}
             data-testid="recommend-link-search"
-            className="inline-flex items-center gap-1 min-h-touch text-sm font-semibold text-primary underline underline-offset-4 hover:text-primary-dark rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+            className="inline-flex items-center gap-1 min-h-touch text-sm font-semibold text-primary underline underline-offset-4 hover:text-primary-dark rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
           >
             {tNav("recommend")}
-            <ArrowLeft size={15} className="ltr:rotate-180" aria-hidden="true" />
+            <ArrowLeft size={16} className="ltr:rotate-180" aria-hidden="true" />
           </Link>
         </div>
       )}
@@ -1277,7 +1400,7 @@ function CatalogEmptyState() {
         className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-50 mb-4"
         aria-hidden="true"
       >
-        <Leaf size={28} weight="fill" className="text-primary" aria-hidden="true" />
+        <Leaf size={24} weight="fill" className="text-primary" aria-hidden="true" />
       </div>
       <h2 className="font-headline-md text-xl font-bold text-text mb-2">
         {t("title")}
@@ -1288,8 +1411,8 @@ function CatalogEmptyState() {
       <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
         {!isAdmin && (
           <Link
-            href="/register/producer"
-            className="bg-primary text-white px-6 py-3 rounded-md font-medium hover:bg-primary-dark transition"
+            href="/join"
+            className="bg-primary text-white px-6 py-3 rounded-full font-medium hover:bg-primary-dark transition"
           >
             {t("add_cta")}
           </Link>
@@ -1302,7 +1425,7 @@ function CatalogEmptyState() {
             same-page jump rather than a cross-page hop. */}
         <Link
           href="#newsletter"
-          className="border border-primary text-primary px-6 py-3 rounded-md font-medium hover:bg-green-50 transition"
+          className="border border-primary text-primary px-6 py-3 rounded-full font-medium hover:bg-green-50 transition"
         >
           {t("notify_cta")}
         </Link>
@@ -1318,7 +1441,7 @@ function PageOverflowState() {
       <p className="text-fg-muted mb-4">{t("message")}</p>
       <Link
         href="/producers"
-        className="inline-flex items-center bg-primary text-white px-5 py-2 rounded-md hover:bg-primary-dark transition"
+        className="inline-flex items-center bg-primary text-white px-5 py-2 rounded-full hover:bg-primary-dark transition"
       >
         {t("back_cta")}
       </Link>

@@ -15,11 +15,11 @@
  *           frontend/tailwind.config.js:29-36 (font tokens).
  * History:  MEH-539 (creation, 2026-05-16) — Phase 2D of MEH-615.
  */
-import { Link } from "@/i18n/navigation";
-import { ArrowRight } from "@phosphor-icons/react/ssr";
 import { getTranslations } from "next-intl/server";
 import { BRAND_NAME } from "@/lib/constants";
 import SeedMark from "@/components/brand/SeedMark";
+import SectionHeading from "@/components/ui/SectionHeading";
+import BackLink from "@/components/ui/BackLink";
 
 // MEH-821: brand colors via canonical ADR-019 token classes (text-primary,
 // text-primary-dark, text-text, text-accent, bg-background, border-border) —
@@ -54,12 +54,12 @@ function renderBlock(block, i) {
   switch (block.type) {
     case "h2":
       return (
-        <h2
+        <SectionHeading
           key={key}
-          className="font-headline-md mt-10 mb-3 sm:mt-12 text-primary text-2xl font-bold"
+          size="content" className="mt-10 mb-3 sm:mt-12 text-primary"
         >
           {block.text}
-        </h2>
+        </SectionHeading>
       );
     case "h3":
       return (
@@ -168,14 +168,8 @@ export default async function GuideArticle({
           <p className="text-sm mb-6 text-text/90">
             {t("founder_role", { brand: BRAND_NAME })} · mehamakor.co.il
           </p>
-          <Link
-            href={backHref}
-            className="inline-flex items-center gap-2 text-base underline text-primary"
-          >
-            {/* MEH-990: raw ← dingbat → Phosphor ArrowRight; rtl:rotate-180 = back/reading-forward in he (MEH-938 pattern) */}
-            <ArrowRight size={16} weight="bold" aria-hidden="true" className="rtl:rotate-180" />
-            {t("back")}
-          </Link>
+          {/* MEH-3060: BackLink — the old rtl:rotate-180 arrow pointed FORWARD in Hebrew. */}
+          <BackLink href={backHref} label={t("back")} />
         </footer>
       </article>
     </section>

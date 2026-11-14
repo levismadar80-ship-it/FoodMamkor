@@ -225,6 +225,40 @@ describe("AdminOutreachPage", () => {
     });
   });
 
+  // MEH-3103: «הכן פרופיל» used to toast «הקישור הועתק» even when the copy
+  // had failed (the rejection was swallowed). The toast now follows the copy.
+  describe("«הכן פרופיל» copy feedback", () => {
+    const setClipboard = (value) =>
+      Object.defineProperty(navigator, "clipboard", { value, configurable: true });
+    const mint = async () => {
+      const api = (await import("@/lib/api")).default;
+      api.post.mockResolvedValueOnce({ data: { ...sampleLead, prefill_token: "tok-1" } });
+      render(<AdminOutreachPage />);
+      await waitFor(() => screen.getByText("הכן פרופיל"));
+      fireEvent.click(screen.getByText("הכן פרופיל"));
+    };
+    beforeEach(() => {
+      showToast.success.mockClear();
+      showToast.error.mockClear();
+    });
+
+    it("copy succeeds → «הועתק» toast with the prefill link on the clipboard", async () => {
+      const writeText = vi.fn().mockResolvedValue(undefined);
+      setClipboard({ writeText });
+      await mint();
+      await waitFor(() => expect(showToast.success).toHaveBeenCalledWith("admin.outreach.toasts.link_copied"));
+      expect(writeText).toHaveBeenCalledWith(expect.stringContaining("/register/producer?prefill="));
+      expect(showToast.error).not.toHaveBeenCalled();
+    });
+
+    it("copy fails → copy_failed error, never «הועתק»", async () => {
+      setClipboard(undefined);
+      await mint();
+      await waitFor(() => expect(showToast.error).toHaveBeenCalledWith("admin.outreach.toasts.copy_failed"));
+      expect(showToast.success).not.toHaveBeenCalledWith("admin.outreach.toasts.link_copied");
+    });
+  });
+
   it("delete row is confirm-gated", async () => {
     const api = (await import("@/lib/api")).default;
     const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(true);

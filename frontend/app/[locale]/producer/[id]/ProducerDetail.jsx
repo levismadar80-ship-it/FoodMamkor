@@ -1,13 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { Link } from "@/i18n/navigation";
-import { CaretLeft } from "@phosphor-icons/react";
 import { MAP_REFERRER } from "@/lib/map-view-state";
 
 import Breadcrumb from "@/components/Breadcrumb";
+import HistoryBackLink from "@/components/HistoryBackLink";
 import ImageGallery from "@/components/ImageGallery";
 import ProducerUpdatesButton from "@/components/ProducerUpdatesButton";
 // MEH-1306: owner-only per-section pencil (self-gating, 0 DOM non-owner).
@@ -28,6 +27,10 @@ import { useStickyBar } from "./hooks/useStickyBar";
 import { buildShareUrl, categoryListingHref, getRenderableImages } from "./lib/producer-format";
 import { getSectionNavItems } from "./lib/section-nav";
 import { isOnVacation } from "@/lib/availability";
+import BackLink from "@/components/ui/BackLink";
+
+// Layout effect on the client, plain effect on the server (no layout there).
+const useIsomorphicLayoutEffect = typeof window === "undefined" ? useEffect : useLayoutEffect;
 
 /**
  * Producer detail page (docs/archive/ALL_PAGES_DESIGN.md עמוד 2).
@@ -49,8 +52,10 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
   // useSearchParams — for the same reason useProducerData.js:113 does: this
   // route is ISR-static and a render-time search-param read would need a
   // Suspense boundary; an effect also cannot mismatch hydration (MEH-517).
+  // MEH-3019: before paint (like HistoryBackLink's own read), so a map arrival
+  // never paints «→ חזרה» for a frame before «חזרה למפה» replaces it.
   const [fromMap, setFromMap] = useState(false);
-  useEffect(() => {
+  useIsomorphicLayoutEffect(() => {
     setFromMap(new URLSearchParams(window.location.search).get("from") === MAP_REFERRER);
   }, []);
 
@@ -137,10 +142,19 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
           otherwise), in-flow, above the fold. Self-gates on ownership; a
           non-owner viewer gets 0 DOM, so there is no reserved space / CLS. */}
       <OwnerEditBar producer={producer} />
-      {/* MEH-1146 chunk B: breadcrumb only — the redundant "→ חזרה" button was
-          removed (the breadcrumb already provides the home/category path). */}
-      <div className="mb-4" data-testid="producer-breadcrumb-block">
+      {/* MEH-1146 chunk B removed a "→ חזרה" button because the breadcrumb
+          covered the way back. MEH-3019 (Sapir 13/11): on a phone every crumb
+          repeats something already on screen (logo + bottom nav, the category
+          link in the facts line, the h1), so the breadcrumb is desktop only and
+          the phone gets the shared «→ חזרה» instead — shown only when a page of
+          the site is behind this one, and not beside «חזרה למפה» (same place).
+          Desktop is unchanged. The BreadcrumbList JSON-LD (lib/seo.js) does not
+          read this render. Margins sit on the children, so a direct arrival on
+          a phone leaves no empty gap above the gallery. */}
+      <div className="lg:mb-4" data-testid="producer-breadcrumb-block">
+        {!fromMap && <HistoryBackLink className="lg:hidden mb-2" />}
         <Breadcrumb
+          className="hidden lg:block"
           items={[
             { href: "/", label: t("producer.detail.breadcrumb_home") },
             ...(primaryCategory
@@ -150,19 +164,10 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
           ]}
         />
         {fromMap && (
-          <p className="mt-2">
-            {/* Points "back": CaretLeft in LTR, rtl:rotate-180 → right in he.
-                Same convention as MapProducerCard's chevron (CaretRight +
-                rtl:rotate-180 = forward). /map restores the camera the visitor
-                left on its own (lib/map-view-state.js). */}
-            <Link
-              href="/map"
-              data-testid="back-to-map"
-              className="inline-flex items-center gap-1 text-sm text-primary hover:underline focus-ring"
-            >
-              <CaretLeft size={16} className="rtl:rotate-180" aria-hidden="true" />
-              {t("producer.detail.back_to_map")}
-            </Link>
+          <p className="mb-2 lg:mb-0 lg:mt-2">
+            {/* MEH-3085: the site BackLink. /map restores the camera the
+                visitor left on its own (lib/map-view-state.js). */}
+            <BackLink href="/map" data-testid="back-to-map" label={t("producer.detail.back_to_map")} />
           </p>
         )}
       </div>

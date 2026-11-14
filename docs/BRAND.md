@@ -36,7 +36,7 @@ Surfaces may use clause 1 alone where space forbids the full version (mobile met
 
 ### Tagline vs hero subtitle — different decisions
 
-The **tagline** is specced for: footer brand line, meta description, OpenGraph card, `/about` narrative. **As of 2026-10-26 no code surface renders it** — the footer brand line is `nav.footer.brand_tagline` = `"ישר מהמקור — בתי עסק מקומיים, כולם במקום אחד"` (`Footer.jsx:136`), a string that predates ADR-011 and was never switched. Implement-or-retire is open: MEH-2364. The **hero subtitle** is a separate decision (MEH-620 winner copy from PR #690, 2026-05-16; `עסקים` → `בתי עסק` per ADR-024): `"ישר מהמקור אלייך. בתי עסק שכבר בדקנו בשבילך."` (`he.json` `…subtitle`) — punchy CTA-supporting copy, not the brand tagline. Both are canonical; they serve different surfaces. Don't conflate.
+The **tagline** is specced for: footer brand line, OpenGraph card, `/about` narrative. **Not the Hebrew meta description** since 2026-11-12: that carries the canonical sentence (`CANONICAL_SENTENCE`), because ChatGPT read the tagline there as the site's self-description ([ADR-041](./decisions/ADR-041-home-meta-description-canonical-sentence.md), MEH-2968). **As of 2026-10-26 no code surface renders it** — the footer brand line is `nav.footer.brand_tagline` = `"ישר מהמקור — בתי עסק מקומיים, כולם במקום אחד"` (`Footer.jsx:136`), a string that predates ADR-011 and was never switched. Implement-or-retire is open: MEH-2364. The **hero subtitle** is a separate decision (MEH-620 winner copy from PR #690, 2026-05-16; `עסקים` → `בתי עסק` per ADR-024): `"ישר מהמקור אלייך. בתי עסק שכבר בדקנו בשבילך."` (`he.json` `…subtitle`) — punchy CTA-supporting copy, not the brand tagline. Both are canonical; they serve different surfaces. Don't conflate.
 
 ## 3 · Brand LOCKs (cannot change without formal discussion)
 
@@ -226,6 +226,42 @@ Canonical home of the address-form rule. The Drive copy `03-Brand-Hub/07a-langua
 **למה:** ביקורת קופי 16/07 (MEH-1231) מצאה ערבוב פניות באותו טקסט. אין תקן רשמי בעברית (האקדמיה לא הכריעה); הכלל מבוסס "לכתוב לכולםן" + ראיית המחקר לעיל + אילוץ קול המגזין (בלי לוכסנים).
 
 _Sweep of the existing copy in `frontend/messages/he.json` against this rule = a separate card, opened after this section merges (report-only, `Refs MEH-1244`)._
+
+## 10 · מי מצטרף למהמקור (הכרעת ספיר 11/11/2026 — ADR-040)
+
+**הכלל: עדיפות למי שמייצר או מגדל בעצמו. זו העדפה, לא תנאי סף.**
+
+v1.3 קבע «רק מי שמייצר או מגדל בעצמו». ספיר תיקנה באותו יום: האתר לפני השקה ואין בו עדיין בתי עסק, ולכן הכלל הוא העדפה ולא חסימה. ההכרעה בכל מקרה נשארת אצל ספיר, באישור הידני.
+
+### שלוש רמות
+
+| רמה | מי | מה עושים |
+|---|---|---|
+| 1 | מייצר או מגדל בעצמו את מה שהוא מוכר | הליבה. ראשונים בפנייה, ראשונים בבחירת העורכת |
+| 2 | מייצר או מגדל בעצמו, ומוכר גם מוצרים של אחרים | מצטרף. עדיף שהדף יציג קודם את המוצרים שלו |
+| 3 | מוכר רק מוצרים של אחרים: חנות, מעדנייה, מסעדה | אפשרי, מקרה לגופו, באישור ספיר. לא ברירת מחדל ולא יעד של הפנייה הראשונה |
+
+### מה חל על כל רמה באותה מידה
+
+- רישוי: לפי ADR-022. הרישיון קובע את התג, לא את הכניסה. אישור בלי רישיון הוא חריג פרטני שספיר מאשרת, עסק אחד בכל פעם, והוא נרשם. (ADR-022 — רישוי דו-שכבתי, כולל התיקון מ-22/10/2026, MEH-2299.)
+- אישור ידני של כל עסק.
+- בלי מותגי תעשייה (מסמך 07 ב-Drive, סעיף 2): חנות שעיקר המדף שלה תאגידי אינה מתאימה.
+- אמת בדף: לא מציגים מוצר של אחרים כאילו בית העסק עשה אותו.
+- אוכל מבושל: בלי ניסוח של «אוכל ביתי» (§7 · Anti-patterns; נעול גם ב-§3 · Brand LOCKs).
+
+### מה נשאר סגור גם אחרי התיקון
+
+- **הצהרת המגדל** («התוצרת שאציע דרך מהמקור היא תוצרת שגידלתי בחלקתי בלבד») נשארת בקטגוריות הגידול. היום היא נבדקת בטופס ההרשמה בלבד; אכיפה ותיעוד בשרת הם MEH-2923, שעדיין פתוח. מי שמוכר פירות וירקות של אחרים אינו יכול לחתום עליה, ולכן אינו נרשם בקטגוריות האלה בלי שינוי בנוסח ההצהרה. שינוי כזה דורש עורך דין.
+- **מארגני קבוצות רכישה שאינם בית עסק** לא מצטרפים כבית עסק (MEH-2913 D2).
+
+### מתי חוזרים לשאלה
+
+כשיש באתר כ-50 בתי עסק מאושרים, או כשרמה 3 מגיעה לרבע מהם, המוקדם מביניהם: דיון פורמלי (§3 · Brand LOCKs — «cannot change without formal discussion») אם להפריד את רמה 3 לסוג רישום נפרד או לסגור אותה. הנימוק: קל להרחיב, קשה לצמצם.
+
+### בקופי
+
+- אין משפט בהרשמה שאומר למי האתר «מיועד» או «לא מיועד». הכלל הוא כלי עבודה פנימי של האישור, לא מסר לנרשמים.
+- בממשק לא משתמשים במילה «יצרן» (§7 · Anti-patterns — שם מופיע גם החריג של שם רישיון רשמי). הניסוח הפנימי: «מייצרים או מגדלים בעצמם».
 
 ---
 

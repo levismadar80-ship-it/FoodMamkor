@@ -18,6 +18,7 @@ import {
   setPendingAction,
 } from "@/lib/pending-action";
 import LoginPromptModal from "./LoginPromptModal";
+import { OVERLAY_ICON_BUTTON, OVERLAY_ICON_FACE, OVERLAY_ICON_SIZE } from "@/components/ui/overlay-icon-button";
 
 /**
  * SaveButton — the heart for a recipe, event or experience (MEH-2558,
@@ -31,23 +32,14 @@ import LoginPromptModal from "./LoginPromptModal";
  * primary green, never red (MEH-643).
  *
  * Variants:
- *   - "overlay" — white 44px circle on a hero image, next to ShareButton's
- *                 "overlay" (same look as FavoriteButton "gallery").
- *   - "row"     — 32px white circle on a list row's thumbnail corner, inside
- *                 a 44px tap target (MEH-2559, EventEntryRow).
+ *   - "overlay" — on a hero image, next to ShareButton's "overlay".
+ *   - "row"     — on a list row's thumbnail corner (MEH-2559, EventEntryRow).
+ *   Both: 32px white circle inside a 44px tap target (MEH-3115).
  */
-const VARIANT = {
-  overlay: {
-    button:
-      "bg-surface/95 hover:bg-surface rounded-full w-11 h-11 flex items-center justify-center shadow-md hover:scale-105",
-    size: 22,
-  },
-  row: {
-    button: "w-11 h-11 grid place-items-center rounded-full",
-    face: "w-8 h-8 grid place-items-center rounded-full bg-surface/95 shadow-sm",
-    size: 18,
-  },
-};
+// MEH-3115: both variants are now the one photo-button anatomy (44px hit,
+// 32px face). They stay two names because callers pass them.
+const PHOTO = { button: OVERLAY_ICON_BUTTON, face: OVERLAY_ICON_FACE, size: OVERLAY_ICON_SIZE };
+const VARIANT = { overlay: PHOTO, row: PHOTO };
 
 export default function SaveButton({ itemType, itemId, variant = "overlay" }) {
   const t = useTranslations("favorites.button");
@@ -157,7 +149,7 @@ export default function SaveButton({ itemType, itemId, variant = "overlay" }) {
         aria-pressed={saved}
         data-testid={`save-${itemType}`}
         data-variant={variant}
-        className={`${look.button} transition disabled:opacity-60 focus-visible:ring-2 focus-visible:ring-primary/40`}
+        className={look.button}
       >
         {look.face ? <span className={look.face}>{heart}</span> : heart}
       </button>

@@ -64,7 +64,8 @@
       "newsletter_placeholder": "Your email, please",
       "newsletter_submit": "Join",
       "newsletter_success": "Welcome to Mehamakor See you in your inbox"
-    }
+    },
+    "whats_on": "What's on"
   },
   "auth": {
     "verify": {
@@ -144,6 +145,7 @@
       "loading": "Loading...",
       "title": "Sign in to Mehamakor",
       "welcome": "Good to see you again",
+      "reason_favorites": "Sign in to see your favorites.",
       "hero_overlay": "Fresh · Local · From the source",
       "value_save": "Save businesses",
       "value_rate": "Write reviews",
@@ -246,7 +248,10 @@
           "after_title": "What happens next",
           "after_body": "Every business gets a personal intro — once you complete your profile and send it for review, our team checks the details, gets in touch if needed, and your business goes live within up to 3 business days.",
           "after_link": "How the acceptance process works",
-          "cta": "Start"
+          "join_link": "What a page looks like, what you get, and FAQ",
+          "cta": "Start",
+          "organizer_link": "Organizing a market or event? You have your own sign-up",
+          "group_buy_note": "Organizing a neighbourhood group buy? On the site only businesses open group buys, and you can join a business's group buy from its page."
         },
         "loading": "Loading...",
         "loading_form": "Loading registration form...",
@@ -285,6 +290,12 @@
           "details_organizer": "Details",
           "category": "Category",
           "story": "Story"
+        },
+        "name_check": {
+          "title": "There is already a page with this name on the site",
+          "match_with_city": "{name}, {city}",
+          "body": "If this is your business, we will connect you to the existing page. If it is a different business, carry on as usual.",
+          "contact_cta": "Write to us"
         },
         "fields": {
           "name": "e.g. Ruth Levi",
@@ -348,6 +359,9 @@
               "prefer_not_to_say": "Prefer not to say"
             }
           }
+        },
+        "card_preview": {
+          "summary": "How your card will look on the site"
         },
         "story_card": {
           "title": "Your story becomes your business page",
@@ -417,7 +431,7 @@
           "inbox_title": "Check your inbox",
           "inbox_body": "If the email is available, a verification message has been sent. Please check your inbox.",
           "inbox_hint": "Didn't get it? Check spam or try again in a minute.",
-          "inbox_next": "After you click the link in the email, log in with your email and password and continue completing your page.",
+          "inbox_next": "You can log in right now with your email and password and continue completing your page. The link in the email verifies your email address.",
           "back_home": "Back to home"
         }
       }
@@ -459,7 +473,7 @@
     "hero": {
       "title": "Real Food, Straight From the Source",
       "subtitle": "Straight from the source. Businesses we've already vetted for you.",
-      "friday_subtitle": "Friday is here What's on the Shabbat table?",
+      "friday_subtitle": "Shabbat is almost here. What's on your table?",
       "main_label": "Home — discover local businesses",
       "search_area_label": "Search businesses",
       "near_me": "Near me",
@@ -509,7 +523,7 @@
       "empty_subtext_category": "Try another category, or clear the filter to see all businesses",
       "clear_category_cta": "Clear the filter",
       "explore_map": "Explore on map",
-      "load_more": "More businesses",
+      "load_more": "Show more businesses",
       "all_businesses": "All businesses →",
       "geo_chip": "Businesses near you",
       "city_chip": "Businesses in {city}",
@@ -543,10 +557,17 @@
       "body_l2": "Every business here is hand-picked. A full page, photos, a story — yours.",
       "body_l3": "We'd love to meet."
     },
-    "events": {
-      "heading": "Upcoming events",
-      "all_events": "All events →",
-      "free": "Free entry"
+    "whats_on": {
+      "eyebrow": "Close to home",
+      "heading": "What's on at the businesses",
+      "all": "Everything that's on",
+      "until": "Until {date}",
+      "type": {
+        "event": "Event",
+        "experience": "Experience",
+        "group_buy": "Group buy",
+        "rescue": "Surprise basket"
+      }
     }
   },
   "common": {
@@ -574,9 +595,6 @@
     },
     "skeleton": {
       "loading_businesses": "Loading fresh businesses"
-    },
-    "star_rating": {
-      "count_aria": "{count, plural, one {1 rating} other {({count} ratings)}}"
     }
   },
   "category": {
@@ -714,6 +732,9 @@
       "title": "Register your business",
       "description": "Join Mehamakor — register your local food business. Every business is hand-picked."
     },
+    "register_organizer": {
+      "title": "Sign up as a market or event organizer"
+    },
     "claim": {
       "title": "Take your business page",
       "description": "We prepared a page for you on Mehamakor"
@@ -730,6 +751,10 @@
       "not_found": "Business not found | {brand}",
       "country": "Israel",
       "offer_catalog_name": "Products"
+    },
+    "owner_invite": {
+      "title": "Set a password for your business page",
+      "description": "Your page on Mehamakor is ready"
     }
   },
   "producer": {
@@ -801,11 +826,16 @@
         "events": {
           "heading": "Upcoming events",
           "free": "Free entry",
-          "show_all_count": "Show all events"
+          "show_all_count": "Show all {count} events"
         },
         "products": {
           "heading": "Products",
           "signature_label": "Signature product",
+          "show_all": "Show all {count} products",
+          "show_less": "Show less",
+          "groups_all": "All",
+          "groups_other": "More products",
+          "groups_aria": "Filter products by group",
           "diet": {
             "gluten_free": "Gluten-free",
             "vegan": "Vegan",
@@ -832,7 +862,8 @@
         },
         "group_buys": {
           "heading": "Open group buys",
-          "show_all": "Show all group buys"
+          "show_all": "Show all group buys",
+          "show_all_count": "Show all {count} group buys"
         }
       },
       "header": {
@@ -1031,7 +1062,7 @@
       "related_products_heading": "Our products in this recipe",
       "producer_cta_heading": "Everything in this recipe — from {name}",
       "producer_cta_link": "Visit {name}'s page",
-      "back_to_producer": "← Back to business page",
+      "back_to_producer": "Back to business page",
       "meta_title_not_found": "Recipe not found",
       "meta_title_template": "{recipeTitle} | {producerName}"
     },
@@ -1089,7 +1120,7 @@
       "toast_delete_error": "Delete failed"
     },
     "edit": {
-      "back": "← Back to recipes",
+      "back": "Back to recipes",
       "heading": "Edit recipe",
       "loading": "Loading...",
       "not_found": "Recipe not found"
@@ -1147,7 +1178,6 @@
       "submitting": "Joining...",
       "submit_join": "I want to join!",
       "submit_login": "Sign in to join",
-      "login_required": "You must sign in to join a group buy",
       "committed_confirm": "You joined this group buy",
       "committed_units": " ({count} units)",
       "cancelling": "Cancelling...",
@@ -1296,9 +1326,9 @@
       }
     },
     "friday_delivery": {
-      "today": "today",
-      "title": "Businesses delivering today",
-      "title_alt": "Businesses delivering today"
+      "today": "Friday",
+      "title": "Businesses delivering on Friday",
+      "title_alt": "Businesses delivering on Friday"
     },
     "holiday_banner": {
       "approaching": "{name} is approaching",
@@ -1390,18 +1420,16 @@
         "categories": "Categories"
       },
       "show_all": "Show all",
-      "pickup_layer": {
-        "label": "Self-pickup",
-        "aria": "Show or hide self-pickup and market stands on the map",
-        "hidden_notice": "The pickup-points layer is off — some businesses are hidden"
-      },
       "key": {
         "title": "What's on the map?",
         "photo": "A business. Tap for details",
         "verified": "A verified business",
         "cluster": "How many businesses are in this area. Tap to zoom in",
         "pickup": "A pickup point or market stall",
-        "approximate": "Approximate location, not an exact address"
+        "approximate": "Approximate location, not an exact address",
+        "same_business": "Several points of the same business. Tap to zoom in",
+        "dimmed": "When you pick a business, the others fade",
+        "my_location": "Your location"
       }
     },
     "page": {
@@ -1481,9 +1509,9 @@
       "reject": "Reject",
       "search": "Search",
       "submit": "Confirm",
-      "back": "← Back to admin panel",
-      "back_to_dashboard": "← Admin dashboard",
-      "back_home": "← Back to site",
+      "back": "Back to admin panel",
+      "back_to_dashboard": "Admin dashboard",
+      "back_home": "Back to site",
       "error_loading": "Error loading data",
       "error_generic": "Error",
       "no_data": "No data yet",
@@ -1813,6 +1841,40 @@
         "title": "Products in this draft",
         "intro": "Until the owner takes the page over, you can add and delete products here. She sets the diet labels herself after the claim.",
         "empty": "No products in this draft yet."
+      },
+      "owner_invite": {
+        "title": "Owner",
+        "empty": "This business has no connected owner yet.",
+        "invite": "Invite owner",
+        "invite_again": "Invite a different address",
+        "status_hidden": "The page is hidden and will go live when the business owner approves it from the link.",
+        "status_live": "Note: the page is already live. To have it go live only after approval, hide it before creating the link.",
+        "fields": {
+          "name": "Full name",
+          "email": "Email (optional)",
+          "note": "Consent record",
+          "note_placeholder": "For example: Instagram approval, 12/11"
+        },
+        "consent": "I received explicit written approval from the business owner to publish the page",
+        "send": "Send invite",
+        "sending": "Sending…",
+        "cancel_form": "Cancel",
+        "pending": "Link created · valid until {date}",
+        "pending_with_email": "Link created · valid until {date} · also sent to {email}",
+        "connected": "Connected: {name} · {email} · since {date}",
+        "url_label": "The link",
+        "copy": "Copy link",
+        "copied": "Copied",
+        "copy_failed": "Copying failed. You can select the link and copy it manually.",
+        "copy_message": "Copy message",
+        "message_copied": "Message copied",
+        "send_whatsapp": "Send on WhatsApp",
+        "whatsapp_text": "Hi {name}, the page for {business} on Mehamakor is ready. All that is left is to review it, approve and set a password, and the page goes live: {link} (the link is valid for 7 days)",
+        "expires": "Valid until {date}",
+        "link_shown_once": "The link is shown once only. If it is lost, send the invite again.",
+        "resend": "Send again",
+        "cancel_invite": "Cancel invite",
+        "error": "We could not send the invite"
       }
     },
     "users": {
@@ -2217,9 +2279,9 @@
         "holiday_hint": "Enable manually to test the banner on the dashboard and homepage before the holiday.",
         "holiday_active": "Holiday window active",
         "friday_mode": "Friday market mode",
-        "friday_tooltip": "Enable Friday mornings. Prioritises businesses selling at markets. Disables automatically after Shabbat.",
+        "friday_tooltip": "Turns on automatically from Thursday 18:00 to Friday 14:00. Prioritises businesses selling at markets.",
         "friday_tooltip_label": "Friday market mode info",
-        "friday_hint": "Enable manually to test Friday market mode (producers strip, hero heading, badge) outside the regular window (Wed 18:00 — Fri 14:00). This override applies in the current browser only.",
+        "friday_hint": "Enable manually to test Friday market mode (producers strip, hero heading, badge) outside the regular window (Thu 18:00 — Fri 14:00). This override applies in the current browser only.",
         "friday_active": "Friday market mode — override",
         "vacation": "Vacation mode",
         "vacation_tooltip": "Enable when you can't reply. Mehamakor's WhatsApp will send an automatic vacation reply instead of the regular after-hours message, until the date you set.",
@@ -2586,7 +2648,7 @@
   },
   "events": {
     "list": {
-      "title": "Food events near you",
+      "title": "What's on near you",
       "subtitle": "What's on this month — weekend after weekend, straight from the source",
       "subtitle_experiences": "Learn, taste, and discover — food experiences at local businesses",
       "eyebrow_events": "EVENTS · Close to home",
@@ -2598,6 +2660,9 @@
       "tab_events": "Events",
       "tab_experiences": "Workshops & experiences",
       "add_event": "Add event",
+      "when_today": "Today",
+      "when_tomorrow": "Tomorrow",
+      "when_weekend": "This weekend",
       "submit_experience": "Add experience",
       "view_mode_label": "View mode",
       "view_list": "List",
@@ -2615,7 +2680,10 @@
       "no_results_title": "No results found",
       "no_results_cta": "Clear filters",
       "free": "Free entry",
-      "organizer_line": "Organizer: {name}"
+      "organizer_line": "Organizer: {name}",
+      "tab_experiences_short": "Experiences",
+      "tab_group_buys": "Group buys",
+      "tab_rescue": "Surprise bags"
     },
     "categories": {
       "all": "All",
@@ -3115,6 +3183,7 @@
     }
   },
   "forms": {
+    "email_typo": "Did you mean <fix>{email}</fix>?",
     "password": {
       "placeholder_default": "Password",
       "aria_label_default": "Password",
@@ -3167,8 +3236,8 @@
       "group_home": "Home & care",
       "no_results_prefix": "Can't find your category?",
       "no_results_cta": "Tell us →",
-      "show_more": "→ More categories ({count})",
-      "show_less": "↑ Fewer categories"
+      "show_more": "{count, plural, one {Show 1 more category} other {Show {count} more categories}}",
+      "show_less": "Show less"
     }
   },
   "producers": {
@@ -3256,12 +3325,12 @@
     "error_invalid_stars": "Pick a rating between 1 and 5 stars",
     "error_body_too_short": "Reviews need at least 10 characters",
     "saved_toast": "Your review was saved",
-    "wa_gate_message": "Tap the WhatsApp button to get in touch — then you can write a review",
-    "login_prompt": "<login>Sign in</login> and reach out on WhatsApp to write a review",
+    "invite_title": "How was {name}?",
+    "invite_hint": "Every review here follows a real contact with the business",
     "loading": "Loading reviews...",
     "owner_only_eyebrow": "Only visible to you",
     "owner_empty_title": "First reviews come from happy customers",
-    "owner_empty_description": "Customers who reached out to you on WhatsApp can leave a verified review. Share the link to your profile — it's the fastest way to a first review.",
+    "owner_empty_description": "Customers who contacted you through your page can leave a verified review. Share the link to your profile — it's the fastest way to a first review.",
     "owner_empty_cta": "Share your profile",
     "pagination": {
       "prev_aria": "Previous page",
@@ -3441,6 +3510,7 @@
     "modal_title_event": "Share this event",
     "modal_title_experience": "Share this experience",
     "modal_title_recipe": "Share this recipe",
+    "modal_title_organizer": "Share this organizer page",
     "copy_link": "Copy link",
     "wa_message_with_meta": "I found {title} on Mehamakor 🌿",
     "wa_message_business_fallback": "a business",
@@ -3482,6 +3552,19 @@
       "share_to_friend": "Share with friends"
     },
     "question_chips": {
+      "payment_q": "How do I pay?",
+      "payment_methods": {
+        "bit": "Bit",
+        "paybox": "PayBox",
+        "bank_transfer": "Bank transfer",
+        "cash": "Cash",
+        "credit_card": "Credit card"
+      },
+      "payment_timing": {
+        "advance": "Pay in advance, with the order",
+        "on_pickup": "Pay on pickup or delivery",
+        "deposit": "Deposit in advance, the rest on delivery"
+      },
       "delivery_to_my_area": "Delivery to my area?",
       "city_placeholder": "[city]",
       "ask_us": "Ask us",
@@ -3730,6 +3813,10 @@
       "difference": {
         "q": "How is this different from Instagram or delivery apps — and who's behind it?",
         "a": "There, you're one more line in a feed or a results list. Here, every business gets a page of its own with the story, the photos and the people behind it — like an article about you, not like an ad. No commissions, no algorithm deciding who sees you. And behind the site is me, Sapir — I read every email personally and reply. And if you'd like to come off the site, we remove the business with no questions asked."
+      },
+      "organizers": {
+        "q": "Organizing a market, an event or a group buy?",
+        "a": "Market and event organizers have their own sign-up. On the site only businesses open group buys, and you can join a business's group from its page."
       }
     },
     "showcase": {
@@ -4330,6 +4417,11 @@
         "body": "Your business may not be set up yet, or a temporary error occurred. If the problem persists, we're here to help.",
         "cta": "Contact us"
       },
+      "help_row": {
+        "title": "Need help?",
+        "body": "Write to us and we'll get back to you by the end of the business day.",
+        "cta": "Contact the team"
+      },
       "section_errors": {
         "analytics": "We couldn't load your stats",
         "profile": "We couldn't load your business details",
@@ -4372,6 +4464,15 @@
       "greeting": "Hi {name}",
       "welcome_subtitle": "Welcome to managing <business>{name}</business>",
       "welcome_subtitle_generic": "Welcome to managing your business",
+      "attention": {
+        "title": "Waiting for you",
+        "reviews": "{count, plural, one {One review without a reply} other {# reviews without a reply}}",
+        "reviews_cta": "Reply",
+        "signups": "{count, plural, one {One new sign-up for {title}} other {# new sign-ups for {title}}}",
+        "signups_cta": "See the list",
+        "group_buys": "{count, plural, one {A group buy reached its goal} other {# group buys reached their goal}}",
+        "group_buys_cta": "Details"
+      },
       "status": {
         "pending": {
           "title": "Your profile is under review",
@@ -4557,7 +4658,8 @@
           "products": "First product in your catalog",
           "contact": "Contact details",
           "phone_verified": "WhatsApp verification",
-          "hours": "Opening hours"
+          "hours": "Opening hours",
+          "owner_photo": "Your photo"
         },
         "fields": {
           "city": "City",
@@ -4683,6 +4785,7 @@
         },
         "uploading": "Uploading image…",
         "remove_aria": "Remove image",
+        "last_photo": "You can't remove the last photo. Add another photo first, then remove this one.",
         "save_cta": "Save images",
         "saving": "Saving…",
         "saved": "Saved",
@@ -4833,6 +4936,33 @@
         "save_success": "Special hours saved",
         "summary_empty": "Not set",
         "summary_set": "{count, plural, one {1 date} other {# dates}}"
+      },
+      "payment_info": {
+        "heading": "How do customers pay you?",
+        "where": "Shown on your business page, in the FAQs next to the WhatsApp button",
+        "select_all": "Select all",
+        "methods": {
+          "bit": "Bit",
+          "paybox": "PayBox",
+          "bank_transfer": "Bank transfer",
+          "cash": "Cash",
+          "credit_card": "Credit card"
+        },
+        "timing_heading": "When do they pay?",
+        "timings": {
+          "advance": "In advance",
+          "on_pickup": "On pickup or delivery",
+          "deposit": "Deposit"
+        },
+        "note_label": "Anything else? (optional)",
+        "note_placeholder": "Custom cakes: 30% deposit with the order",
+        "note_help": "Up to 80 characters",
+        "save_cta": "Save",
+        "saving": "Saving…",
+        "save_success": "Saved",
+        "save_error": "Save failed. Please try again.",
+        "revert_cta": "Discard changes",
+        "summary_empty": "Not set"
       },
       "custom_questions": {
         "heading": "Questions that appear on your page",
@@ -5062,7 +5192,13 @@
       },
       "week": {
         "all_insights": "All your numbers →"
+      },
+      "reviews_page": {
+        "summary": "{unanswered} without a reply · {total} in total"
       }
+    },
+    "page_preview": {
+      "banner": "This is a preview. The page goes live once we approve the business."
     }
   },
   "sweep_tail": {
@@ -5103,6 +5239,7 @@
       "row_delivery_area": "New delivery areas",
       "row_new_recipe": "New recipes",
       "row_new_group_buy": "New group buys",
+      "row_new_rescue": "Surprise bags",
       "row_whatsapp_opt_in": "Send via WhatsApp",
       "phone_required_prompt": "To get WhatsApp updates we'll need your phone number",
       "phone_save_cta": "Save and enable",
@@ -5132,6 +5269,8 @@
       "field_end_time_label": "End time (optional)",
       "error_end_time_after_start": "The end time must be after the start time",
       "field_time_hint": "Optional — if blank, only the date is shown",
+      "saved_location_legend": "Event location",
+      "saved_location_other": "A different address",
       "field_location_label": "Specific location",
       "field_location_placeholder": "Exact address or directions",
       "field_city_label": "City",
@@ -5315,6 +5454,30 @@
       },
       "top_product_hint": "Star one product to make it your top product — it appears as a highlighted card at the top of the product list on your page.",
       "top_product_empty_hint": "Add a product to choose a top product.",
+      "organize": {
+        "open_cta": "Order and groups",
+        "open_hint": "Set the order your products appear in on your page, and sort them into groups.",
+        "done_cta": "Done",
+        "groups_heading": "Groups",
+        "groups_where": "When at least two groups have products, they appear on your page as filters above the product list.",
+        "groups_empty": "No groups yet.",
+        "group_add_label": "New group",
+        "group_add_placeholder": "e.g. Breads, Cakes, Gift boxes",
+        "group_add_cta": "Add",
+        "group_rename_aria": "Name of group {name}",
+        "group_delete_aria": "Delete group {name}",
+        "group_deleted": "Group deleted. Its products stay on your page.",
+        "order_heading": "Product order",
+        "order_where": "Drag the handle or use the arrows. The order saves right away and is how products appear on your page.",
+        "order_where_grouped": "Drag the handle or use the arrows. The order saves right away. On your page, products are shown by group, and inside each group in this order.",
+        "drag_aria": "Drag {name}",
+        "move_up_aria": "Move {name} up",
+        "move_down_aria": "Move {name} down",
+        "product_group_label": "Group of {name}",
+        "product_group_none": "No group",
+        "saved": "Saved",
+        "save_failed": "Saving failed. Please try again."
+      },
       "duplicate_name_confirm": {
         "title": "A product with this name already exists. Continue?",
         "confirm": "Add product",
@@ -6471,5 +6634,33 @@
     },
     "total_line": "{count} tools, all of them free. Tap a card to see all its tools.",
     "note_line": "Most of the tools do not need switching on. You fill in the details, and they work by themselves."
+  },
+  "owner_invite": {
+    "loading": "Loading the invite…",
+    "title": "The page for {business} is ready",
+    "subtitle": "This is how the page will look on the site. All that is left is to review it, set a password and approve.",
+    "preview_note": "Something not quite right? You can fix it from the dashboard right after you approve, or write to us.",
+    "email_label": "Email address (your username)",
+    "email_required": "An email address is required.",
+    "send_code": "Send a verification code",
+    "sending_code": "Sending…",
+    "code_sent": "We sent a code to this address. Did not arrive? Check the address and your spam folder, or write to us.",
+    "code_label": "Verification code",
+    "code_required": "Request a verification code and enter it.",
+    "password_label": "New password",
+    "password_placeholder": "New password",
+    "submit": "Approve and go to the dashboard",
+    "submit_publish": "Approve and publish the page",
+    "submitting": "Signing in…",
+    "submit_error": "We could not complete the sign-up",
+    "invalid": {
+      "body": "This link is no longer valid. Write to us and we will send a new one.",
+      "contact": "Contact us"
+    }
+  },
+  "hub_alert_hint": {
+    "rescue": "Want to know when there are bags? Save a business and turn on surprise-bag alerts.",
+    "group_buys": "Want to know when a group opens? Save a business and turn on group-buy alerts.",
+    "cta": "Browse businesses"
   }
 }

@@ -17,6 +17,11 @@ producer_approved_v1 hook for admin approval (works outside the 24h
 customer-service window — required since approval can land days after
 signup); MEH-1051 added the producer_changes_requested_v1 mirror for the
 MEH-1011 request-changes flow (WhatsApp alongside the existing email).
+
+MEH-2952: every notifier caused by a business takes `test_cause` (True when
+that business — or its owner — is a seeded test row) and hands it to
+send_text / send_template / send_email, which then send nothing. The
+business-suggestion ping is visitor-caused and takes no flag.
 """
 
 import logging
@@ -44,6 +49,17 @@ def _normalize_il_phone(phone: str) -> str:
     return phone
 
 
+def _skip_test_cause(notifier: str, result):
+    """MEH-2952: a send caused by a test business / test account.
+
+    Returned BEFORE the preflight and the send, so none of the ERROR / WARNING
+    lines below fire for it — Sentry's LoggingIntegration captures ERROR, and
+    a seeded test row must never page anyone. One INFO line instead.
+    """
+    logger.info("[NOTIFY] %s skipped: caused by a test row", notifier)
+    return result
+
+
 def _producer_wa_preflight(name: str, phone: str | None, kind: str) -> bool:
     """Shared MEH-287 skip-and-log gate for producer-facing WhatsApp.
 
@@ -65,13 +81,17 @@ def _producer_wa_preflight(name: str, phone: str | None, kind: str) -> bool:
     return True
 
 
-def notify_producer_registered(name: str, phone: str | None) -> bool:
+def notify_producer_registered(
+    name: str, phone: str | None, test_cause: bool = False
+) -> bool:
     """Send WhatsApp welcome template to the new producer (MEH-509 PR1).
 
     Fires the Meta-approved ``producer_welcome_v2`` template with one
     positional param: business name. Returns True on success, False on
     skip/failure (MEH-287 contract preserved).
     """
+    if test_cause:  # MEH-2952: before preflight / the send — no error log
+        return _skip_test_cause("notify_producer_registered", False)
     # MEH-509 PR1 prod-fix: template signature is 1 param (name only); the
     # original 2-param shape returned 400 from Meta. The earlier dashboard
     # URL construction was removed alongside the param — if a Quick-Reply
@@ -83,7 +103,11 @@ def notify_producer_registered(name: str, phone: str | None) -> bool:
     normalized = _normalize_il_phone(phone)
     try:
         # MEH-2320: v2 — v1's copy claimed "in review" before submission.
-        ok = send_template(normalized, ProducerWelcomeV2(producer_name=name))
+        ok = send_template(
+            normalized,
+            ProducerWelcomeV2(producer_name=name),
+            test_cause=test_cause,
+        )
     except Exception as e:  # belt-and-suspenders; send_template is fail-open
         logger.warning(
             f"[WHATSAPP] Producer welcome unexpected error for {mask_phone(normalized)}: {e}"
@@ -101,12 +125,15 @@ def notify_producer_approved(
     phone: str | None,
     slug: str | None,  # noqa: ARG001 — kept in signature; callers pre-wired
     producer_id: UUID | str,  # noqa: ARG001 — kept in signature; callers pre-wired
+    test_cause: bool = False,
 ) -> bool:
     """Send WhatsApp approval template once admin approves the producer.
 
     Fires ``producer_approved_v1`` with one positional param: business
     name. Returns True on success, False on skip/failure.
     """
+    if test_cause:  # MEH-2952: before preflight / the send — no error log
+        return _skip_test_cause("notify_producer_approved", False)
     # MEH-509 PR1 prod-fix: template signature is 1 param (name only); the
     # original 2-param shape (name + page_url) returned 400 from Meta. The
     # slug-vs-id URL construction was removed alongside the second param —
@@ -119,7 +146,11 @@ def notify_producer_approved(
         return False
     normalized = _normalize_il_phone(phone)
     try:
-        ok = send_template(normalized, ProducerApprovedV1(producer_name=name))
+        ok = send_template(
+            normalized,
+            ProducerApprovedV1(producer_name=name),
+            test_cause=test_cause,
+        )
     except Exception as e:  # belt-and-suspenders; send_template is fail-open
         logger.warning(
             f"[WHATSAPP] Producer approved unexpected error for {mask_phone(normalized)}: {e}"
@@ -151,7 +182,10 @@ def _sanitize_wa_param(text: str) -> str:
 
 
 def notify_producer_changes_requested(
-    name: str, phone: str | None, feedback: str
+    name: str,
+    phone: str | None,
+    feedback: str,
+    test_cause: bool = False,
 ) -> bool:
     """Send WhatsApp changes-requested template after an admin asks a pending
     producer to complete details (MEH-1011 flow, MEH-1051 template).
@@ -160,6 +194,8 @@ def notify_producer_changes_requested(
     two positional params: business name + what's missing. Returns True on
     success, False on skip/failure (MEH-287 contract preserved).
     """
+    if test_cause:  # MEH-2952: before preflight / the send — no error log
+        return _skip_test_cause("notify_producer_changes_requested", False)
     # Template shape is LOCKED to the Meta-approved form: 2 body params, no
     # button components (MEH-509 precedent: an un-approved URL button → 400).
     # `or not phone` narrows str | None → str for _normalize_il_phone below;
@@ -176,6 +212,7 @@ def notify_producer_changes_requested(
             ProducerChangesRequestedV1(
                 producer_name=_sanitize_wa_param(name), missing_details=sanitized
             ),
+            test_cause=test_cause,
         )
     except Exception as e:  # belt-and-suspenders; send_template is fail-open
         logger.warning(
@@ -191,7 +228,9 @@ def notify_producer_changes_requested(
     return False
 
 
-def notify_admin_new_recipe(producer_name: str, recipe_title: str) -> None:
+def notify_admin_new_recipe(
+    producer_name: str, recipe_title: str, test_cause: bool = False
+) -> None:
     """Ping admin (WhatsApp + email) that a recipe awaits moderation.
 
     MEH-1000 — closes the MEH-997 journey-1b gap: the /admin/recipes
@@ -202,6 +241,8 @@ def notify_admin_new_recipe(producer_name: str, recipe_title: str) -> None:
     swallows-and-logs any failure (MEH-977 — observable, never breaks
     the submission).
     """
+    if test_cause:  # MEH-2952: before preflight / the send — no error log
+        return _skip_test_cause("notify_admin_new_recipe", None)
     # Producer-controlled free text — flatten so a crafted title can't inject
     # extra lines (e.g. a fake URL line) into the admin message. Reuses the
     # MEH-1051 sanitizer (one flattener per file, MEH-271) — also covers
@@ -218,7 +259,7 @@ def notify_admin_new_recipe(producer_name: str, recipe_title: str) -> None:
     try:
         # WhatsApp via Meta Cloud API (send_text fail-opens on missing config).
         if settings.admin_whatsapp_to:
-            if send_text(settings.admin_whatsapp_to, message):
+            if send_text(settings.admin_whatsapp_to, message, test_cause=test_cause):
                 logger.info("[WHATSAPP] Recipe-pending notification sent to admin")
             else:
                 # send_text returned False without raising — keep the MEH-977
@@ -241,6 +282,7 @@ def notify_admin_new_recipe(producer_name: str, recipe_title: str) -> None:
                 settings.admin_email,
                 f"מהמקור - מתכון חדש ממתין לאישור: {safe_title}",
                 message,
+                test_cause=test_cause,
             )
     except Exception as e:  # noqa: BLE001 — fire-and-forget, log with context
         logger.error(
@@ -250,7 +292,10 @@ def notify_admin_new_recipe(producer_name: str, recipe_title: str) -> None:
 
 
 def notify_admin_producer_resubmit(
-    producer_name: str, city: str | None, resubmission_count: int | None = None
+    producer_name: str,
+    city: str | None,
+    resubmission_count: int | None = None,
+    test_cause: bool = False,
 ) -> None:
     """Ping admin (WhatsApp + email) that a producer finished completing her
     details after a request-changes and is ready for a re-review.
@@ -271,6 +316,8 @@ def notify_admin_producer_resubmit(
     swallows-and-logs any failure (MEH-977 — observable, never breaks the
     200 the producer already got).
     """
+    if test_cause:  # MEH-2952: before preflight / the send — no error log
+        return _skip_test_cause("notify_admin_producer_resubmit", None)
     # Producer-controlled free text — flatten so a crafted name can't inject
     # extra lines (e.g. a fake URL line) into the admin message. REUSES the
     # MEH-1051 sanitizer (one flattener per file, MEH-271).
@@ -290,7 +337,7 @@ def notify_admin_producer_resubmit(
     try:
         # WhatsApp via Meta Cloud API (send_text fail-opens on missing config).
         if settings.admin_whatsapp_to:
-            if send_text(settings.admin_whatsapp_to, message):
+            if send_text(settings.admin_whatsapp_to, message, test_cause=test_cause):
                 logger.info("[WHATSAPP] Producer-resubmit notification sent to admin")
             else:
                 # send_text returned False without raising — keep the MEH-977
@@ -308,14 +355,16 @@ def notify_admin_producer_resubmit(
 
     try:
         if settings.admin_email:
-            send_email(settings.admin_email, subject, message)
+            send_email(settings.admin_email, subject, message, test_cause=test_cause)
     except Exception as e:  # noqa: BLE001 — fire-and-forget, log with context
         logger.error(
             f"[NOTIFY] Admin producer-resubmit email FAILED for '{safe_name}': {e}"
         )
 
 
-def notify_admin_producer_review_ready(producer_name: str, city: str | None) -> None:
+def notify_admin_producer_review_ready(
+    producer_name: str, city: str | None, test_cause: bool = False
+) -> None:
     """Ping admin (WhatsApp + email) that a pending producer first became
     APPROVABLE — has ≥1 image and a license when its categories require one.
 
@@ -329,6 +378,8 @@ def notify_admin_producer_review_ready(producer_name: str, city: str | None) -> 
     REUSES: notify_admin_producer_resubmit above 1:1 — sanitizer, per-channel
     guards, fail-open, BackgroundTask contract.
     """
+    if test_cause:  # MEH-2952: before preflight / the send — no error log
+        return _skip_test_cause("notify_admin_producer_review_ready", None)
     safe_name = _sanitize_wa_param(producer_name)
     safe_city = _sanitize_wa_param(city) if city else "לא צוין"
     message = (
@@ -338,7 +389,7 @@ def notify_admin_producer_review_ready(producer_name: str, city: str | None) -> 
     )
     try:
         if settings.admin_whatsapp_to:
-            if send_text(settings.admin_whatsapp_to, message):
+            if send_text(settings.admin_whatsapp_to, message, test_cause=test_cause):
                 logger.info(
                     "[WHATSAPP] Producer review-ready notification sent to admin"
                 )
@@ -360,6 +411,7 @@ def notify_admin_producer_review_ready(producer_name: str, city: str | None) -> 
                 settings.admin_email,
                 f"מהמקור - {safe_name} מוכן לאישור",
                 message,
+                test_cause=test_cause,
             )
     except Exception as e:  # noqa: BLE001 — fire-and-forget, log with context
         logger.error(f"[NOTIFY] Admin review-ready email FAILED for '{safe_name}': {e}")
@@ -386,7 +438,9 @@ SENSITIVE_FIELD_LABELS: dict[str, str] = {
 
 
 def notify_admin_producer_sensitive_edit(
-    producer_name: str, changed_fields: list[str]
+    producer_name: str,
+    changed_fields: list[str],
+    test_cause: bool = False,
 ) -> None:
     """Ping admin (WhatsApp + email) that an APPROVED producer edited a field
     that carries identity or trust.
@@ -407,6 +461,8 @@ def notify_admin_producer_sensitive_edit(
     added to SENSITIVE_FIELDS without a label here should read oddly in the
     admin message, not vanish from it.
     """
+    if test_cause:  # MEH-2952: before preflight / the send — no error log
+        return _skip_test_cause("notify_admin_producer_sensitive_edit", None)
     safe_name = _sanitize_wa_param(producer_name)
     fields = ", ".join(
         SENSITIVE_FIELD_LABELS.get(field, field) for field in changed_fields
@@ -415,7 +471,7 @@ def notify_admin_producer_sensitive_edit(
 
     try:
         if settings.admin_whatsapp_to:
-            if send_text(settings.admin_whatsapp_to, message):
+            if send_text(settings.admin_whatsapp_to, message, test_cause=test_cause):
                 logger.info("[WHATSAPP] Sensitive-edit notification sent to admin")
             else:
                 logger.warning(
@@ -435,6 +491,7 @@ def notify_admin_producer_sensitive_edit(
                 settings.admin_email,
                 f"מהמקור - {safe_name} עדכן פרטים רגישים",
                 message,
+                test_cause=test_cause,
             )
     except Exception as e:  # noqa: BLE001 — fire-and-forget, log with context
         logger.error(
@@ -443,7 +500,9 @@ def notify_admin_producer_sensitive_edit(
 
 
 def notify_admin_new_category_request(
-    requested_name: str, producer_name: str | None
+    requested_name: str,
+    producer_name: str | None,
+    test_cause: bool = False,
 ) -> None:
     """Ping admin (WhatsApp + email) that a new category was requested.
 
@@ -453,6 +512,8 @@ def notify_admin_new_category_request(
     swallows-and-logs any failure (MEH-977 — observable, never breaks the
     submission). `producer_name` is None/empty for anonymous submissions.
     """
+    if test_cause:  # MEH-2952: before preflight / the send — no error log
+        return _skip_test_cause("notify_admin_new_category_request", None)
     # Producer-controlled free text — flatten so a crafted name can't inject
     # extra lines (e.g. a fake URL line) into the admin message. REUSES the
     # MEH-1051 sanitizer (one flattener per file, MEH-271) — also covers
@@ -469,7 +530,7 @@ def notify_admin_new_category_request(
     try:
         # WhatsApp via Meta Cloud API (send_text fail-opens on missing config).
         if settings.admin_whatsapp_to:
-            if send_text(settings.admin_whatsapp_to, message):
+            if send_text(settings.admin_whatsapp_to, message, test_cause=test_cause):
                 logger.info("[WHATSAPP] Category-request notification sent to admin")
             else:
                 # send_text returned False without raising — keep the MEH-977
@@ -492,6 +553,7 @@ def notify_admin_new_category_request(
                 settings.admin_email,
                 f"מהמקור - בקשת קטגוריה חדשה: {safe_requested}",
                 message,
+                test_cause=test_cause,
             )
     except Exception as e:  # noqa: BLE001 — fire-and-forget, log with context
         logger.error(
@@ -576,19 +638,97 @@ def notify_admin_new_business_suggestion(
         )
 
 
-def notify_admin_new_producer(name: str, city: str | None) -> None:
+def notify_admin_new_producer(
+    name: str, city: str | None, test_cause: bool = False
+) -> None:
     """Send WhatsApp + email notification to admin about new producer."""
+    if test_cause:  # MEH-2952: before preflight / the send — no error log
+        return _skip_test_cause("notify_admin_new_producer", None)
     message = (
         f"בית עסק חדש: {name} - {city or 'לא צוין'}\n"
         f"לאישור: {settings.frontend_url}/admin"
     )
     # WhatsApp via Meta Cloud API (send_text fail-opens on missing config).
     if settings.admin_whatsapp_to:
-        if send_text(settings.admin_whatsapp_to, message):
+        if send_text(settings.admin_whatsapp_to, message, test_cause=test_cause):
             logger.info("[WHATSAPP] Notification sent to admin")
     else:
         logger.debug(f"[WHATSAPP] Would send: {message}")
 
     # Email
     if settings.admin_email:
-        send_email(settings.admin_email, f"מהמקור - בית עסק חדש: {name}", message)
+        send_email(
+            settings.admin_email,
+            f"מהמקור - בית עסק חדש: {name}",
+            message,
+            test_cause=test_cause,
+        )
+
+
+def notify_admin_owner_invite_accepted(
+    producer_name: str,
+    owner_email: str,
+    published: bool,
+    test_cause: bool = False,
+) -> None:
+    """Ping admin (WhatsApp + email) that an owner accepted the invite an
+    admin sent her — she set a password, signed the terms and the licensing
+    declaration, and the page is now hers.
+
+    MEH-2974. This is the end of a loop the ADMIN started: she built the page
+    and handed it over, and nothing else tells her it landed. `published`
+    distinguishes the two outcomes, because only one of them changed what the
+    public can see: a hidden business went live at that moment, an already
+    approved one only gained an owner.
+
+    REUSES: notify_admin_producer_resubmit above 1:1 — same free-text
+    `send_text` to settings.admin_whatsapp_to plus email to
+    settings.admin_email, no Meta template, per-channel try blocks so a
+    WhatsApp raise cannot skip the email. Fire-and-forget: runs as a
+    BackgroundTask and swallows-and-logs any failure (MEH-977 — observable,
+    never breaks the 200 she already got).
+    """
+    if test_cause:  # MEH-2952: before preflight / the send — no error log
+        return _skip_test_cause("notify_admin_owner_invite_accepted", None)
+    # Both values are free text that reached us from outside: the name an
+    # admin typed, and an address the OWNER typed into the acceptance form.
+    # Flatten both so neither can inject an extra line into the admin message.
+    # REUSES the MEH-1051 sanitizer (one flattener per file, MEH-271).
+    safe_name = _sanitize_wa_param(producer_name)
+    safe_email = _sanitize_wa_param(owner_email)
+    headline = (
+        f"✅ {safe_name} אישרה את הדף — והדף עלה לאוויר"
+        if published
+        else f"✅ {safe_name} אישרה את הדף וקיבלה גישה"
+    )
+    subject = f"מהמקור - {safe_name} אישרה את ההזמנה"
+    message = (
+        f"{headline}\n"
+        f"בעלת העסק: {safe_email}\n"
+        f"לצפייה: {settings.frontend_url}/admin/producers"
+    )
+    try:
+        if settings.admin_whatsapp_to:
+            if send_text(settings.admin_whatsapp_to, message, test_cause=test_cause):
+                logger.info("[WHATSAPP] Owner-invite-accepted notification sent")
+            else:
+                # send_text returned False without raising — keep the MEH-977
+                # observability contract: log WITH business context.
+                logger.warning(
+                    "[WHATSAPP] Owner-invite-accepted notification NOT delivered "
+                    f"for '{safe_name}'"
+                )
+        else:
+            logger.debug(f"[WHATSAPP] Would send: {message}")
+    except Exception as e:  # noqa: BLE001 — fire-and-forget, log with context
+        logger.error(
+            f"[NOTIFY] Owner-invite-accepted WhatsApp FAILED for '{safe_name}': {e}"
+        )
+
+    try:
+        if settings.admin_email:
+            send_email(settings.admin_email, subject, message, test_cause=test_cause)
+    except Exception as e:  # noqa: BLE001 — fire-and-forget, log with context
+        logger.error(
+            f"[NOTIFY] Owner-invite-accepted email FAILED for '{safe_name}': {e}"
+        )

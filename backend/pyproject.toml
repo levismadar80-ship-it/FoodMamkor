@@ -35,10 +35,10 @@ dependencies = [
 dev = [
     "mutmut>=3.8.1",
     "mypy==2.4.1",
-    "pip-audit>=2.10.0",
+    "pip-audit>=2.10.1",
     "pytest>=9.2.0",
     "pytest-cov>=7.1.0",
-    "pytest-rerunfailures>=16.6.1",
+    "pytest-rerunfailures>=16.7",
     "pytest-timeout>=2.4.0",
     "pytest-xdist>=3.8.0",
     "ruff>=0.15.20",
@@ -141,7 +141,7 @@ strict = true
 plugins = ["pydantic.mypy"]
 # STOP-condition (a) triggered: auth.py + schemas/ = 57 errors > 50 threshold.
 # Scoped to auth.py only per MEH-562 spec §STOP-a. schemas/ deferred to follow-up ticket.
-files = ["app/auth.py", "app/services/whatsapp.py", "app/services/whatsapp_templates.py", "app/services/auth_notifications.py", "app/services/auto_reply_watchdog.py"]
+files = ["app/auth.py", "app/services/whatsapp.py", "app/services/whatsapp_templates.py", "app/services/auth_notifications.py", "app/services/auto_reply_watchdog.py", "app/services/verify_session.py", "app/services/owner_attention.py"]
 explicit_package_bases = true
 # Stubs not yet available for these FastAPI-stack libs:
 [[tool.mypy.overrides]]

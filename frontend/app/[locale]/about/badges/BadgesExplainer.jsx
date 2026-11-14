@@ -16,6 +16,7 @@ import { useBadgeCopy } from "@/lib/use-badge-copy";
 import { badgeIcon } from "@/lib/chip-icons";
 import { COLOR_CLASSES, VerifiedChip } from "@/components/BadgeRow";
 import { rescueBagsEnabled } from "@/lib/rescue";
+import SectionHeading from "@/components/ui/SectionHeading";
 
 // Target of the <link> tag inside a group's intro, when it has one. The link
 // text lives inside the sentence (t.rich), so no locale is left with a
@@ -26,7 +27,7 @@ const GROUP_LINKS = {
   "self-declared": "/contact?topic=correction",
 };
 
-const ITEM_CLASS = "grid gap-1.5 rounded-xl border border-border bg-surface-card p-4";
+const ITEM_CLASS = "grid gap-1.5 rounded-lg border border-border bg-surface-card p-4";
 const ITEM_TEXT_CLASS = "text-base leading-[1.7] text-text/85";
 
 // MEH-2827: «מובילת קהילה» is a TrustBadge (reviews-driven), not a
@@ -98,9 +99,9 @@ export default function BadgesExplainer() {
               data-testid={`badges-group-${evidence}`}
               className="scroll-mt-24 mt-10 sm:mt-12"
             >
-              <h2 className="font-headline-md mb-2 text-primary text-2xl font-bold">
+              <SectionHeading size="content" className="mb-2 text-primary">
                 {t(`groups.${evidence}.heading`)}
-              </h2>
+              </SectionHeading>
               <p className="mb-4 text-base sm:text-lg leading-[1.8] text-text/90">
                 {t.rich(`groups.${evidence}.intro`, {
                   link: (chunks) => (

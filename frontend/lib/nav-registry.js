@@ -36,11 +36,11 @@
  *      "Explore" vs "Discover", so picking one key would change what /en
  *      renders on one of the two surfaces. Header.jsx:171-173 records the
  *      split as deliberate (MEH-732, ADR-014).
- *   2. `favorites` and `settings` are auth-gated in the desktop dropdown
- *      (they live inside UserMenu, which only mounts for a logged-in user —
- *      Header.jsx:424) but UNGATED in the mobile sheet, where a guest sees
- *      both rows (AccountSheet.jsx:149-160). One shared `audience` would have
- *      to change one of the two surfaces.
+ *   2. `favorites` and `settings` were auth-gated in the desktop dropdown
+ *      (they live inside UserMenu, which only mounts for a logged-in user)
+ *      but UNGATED in the mobile sheet. MEH-2982 gated the sheet too, so both
+ *      surfaces now say "auth"; `audience` stays per-surface because other
+ *      items still differ.
  *
  * So `labelKey` and `audience` are per-surface. `href` is the shared field,
  * and it is the one this registry exists to make un-deletable in silence.
@@ -154,26 +154,48 @@ export const NAV_ITEMS = Object.freeze([
     href: "/about",
     surfaces: {
       header: { labelKey: "nav.about", audience: "all" },
-      bottomNav: { labelKey: "nav.about", audience: "all" },
+      // MEH-2965: on the pill «אודות» shares its slot with the hub entry
+      // below and gives it up while that gate is open. The Header shows both.
+      // `yieldsTo: <gate>` on a surface = "absent from this surface while
+      // <gate> is open"; the shell resolves it, as it does `dataGate`, and
+      // the cross-shell guard requires a `dataGate` item on the same surface
+      // to take the slot. With supply, /about is reached from the Footer.
+      bottomNav: { labelKey: "nav.about", audience: "all", yieldsTo: "listing-supply" },
     },
   },
   {
-    id: "experiences",
+    id: "whatsOn",
     kind: "link",
-    href: "/experiences",
+    href: "/events",
     surfaces: {
-      header: { labelKey: "nav.experiences", audience: "all" },
+      header: { labelKey: "nav.whats_on", audience: "all" },
+      // MEH-2965: «אירועים», not «מה קורה» — as a lone tab label the latter
+      // reads as a greeting (Sapir 12/11). An existing string; it names the
+      // hub's first tab, and the other three types are in the same tab row.
+      bottomNav: { labelKey: "nav.events", audience: "all" },
     },
     /**
-     * Data-gated on top of its audience: `useExperiencesNavGate()`
-     * (Header.jsx:178) hides it below EXPERIENCES_NAV_THRESHOLD upcoming
-     * public experiences. Absent, never disabled.
+     * Data-gated on top of its audience, and on a WIDER predicate than the
+     * item it replaced: the link now names all four date-bound types, so it
+     * appears when ANY of them has supply, not only experiences. Absent,
+     * never disabled — the same shape as before.
+     *
+     * MEH-2859: this entry was `experiences` (`/experiences`,
+     * `nav.experiences`, gate `experiences-supply`) until the hub grew from
+     * two tabs to four. The destination moved to the hub itself, `/events`,
+     * because that is where all four are now reachable from.
+     *
+     * MEH-2975: `href` here is the hub's DEFAULT. Both shells render the link
+     * to the first hub route that has supply (lib/hub-landing.js), so a
+     * visitor does not open an empty «אירועים» tab when the supply is in
+     * another type.
      */
-    dataGate: "experiences-supply",
-    only: "desktop",
+    dataGate: "listing-supply",
     note:
-      "Desktop only. use-experiences-nav-gate.js says the BottomNav is out of " +
-      "scope because its four slots are full (MEH-1918).",
+      "Both platforms since MEH-2965. On the pill it takes the third slot from " +
+      "the about item (which declares `yieldsTo` on its bottomNav surface) while the " +
+      "gate is open, so the pill stays at four tabs. The Footer still links " +
+      "/experiences separately and is untouched.",
   },
   {
     id: "search",
@@ -247,13 +269,13 @@ export const NAV_ITEMS = Object.freeze([
     href: "/favorites",
     surfaces: {
       headerMenu: { labelKey: "nav.favorites", audience: "auth" },
-      accountSheet: { labelKey: "nav.favorites", audience: "all" },
+      accountSheet: { labelKey: "nav.favorites", audience: "auth" },
     },
     note:
-      "Audience differs by surface, as shipped: the desktop row lives inside " +
-      "UserMenu (signed-in only, Header.jsx:424/583), while the sheet renders " +
-      "it unconditionally (AccountSheet.jsx:149-154), so a signed-out mobile " +
-      "reader sees it. Recorded, not changed.",
+      "Signed-in only on both surfaces. MEH-2982 (Sapir, 12/11) closed the " +
+      "asymmetry MEH-1703 recorded: the sheet showed this row to guests, and " +
+      "a guest tap only bounced her to /login with no explanation. A guest " +
+      "still reaches saving through the heart, which opens LoginPromptModal.",
   },
   {
     id: "settings",
@@ -261,9 +283,9 @@ export const NAV_ITEMS = Object.freeze([
     href: "/settings",
     surfaces: {
       headerMenu: { labelKey: "account.menu.settings", audience: "auth" },
-      accountSheet: { labelKey: "account.menu.settings", audience: "all" },
+      accountSheet: { labelKey: "account.menu.settings", audience: "auth" },
     },
-    note: "Same surface-dependent audience as `favorites` above.",
+    note: "Signed-in only on both surfaces, like `favorites` above (MEH-2982).",
   },
   {
     id: "producerDashboard",

@@ -18,6 +18,8 @@ import { PASSWORD_MIN_LENGTH, validateEmail } from "@/lib/validators";
 import { safeInternalRedirect } from "@/lib/safe-redirect";
 import { env } from "@/lib/env";
 import { optimizeCloudinary } from "@/lib/cloudinary";
+import InlineMessage from "@/components/ui/InlineMessage";
+import EmailTypoHint from "@/components/EmailTypoHint";
 
 /**
  * Module:   RegisterClient
@@ -238,7 +240,7 @@ function RegisterPageBody() {
           <h1 className="font-headline-lg text-3xl font-black text-text mb-2">{t("auth.register.consumer.email_sent.title")}</h1>
           <p className="text-fg-muted text-sm mb-3">{t("auth.register.consumer.email_sent.body")}</p>
           <p className="text-fg-muted text-xs mb-6">{t("auth.register.consumer.email_sent.hint")}</p>
-          <Link href="/" data-testid="register-email-sent-home" className="block w-full border-2 border-primary-dark text-primary-dark bg-transparent py-3 rounded-md hover:bg-primary-dark hover:text-white transition font-medium text-center">
+          <Link href="/" data-testid="register-email-sent-home" className="block w-full border-2 border-primary-dark text-primary-dark bg-transparent py-3 rounded-full hover:bg-primary-dark hover:text-white transition font-medium text-center">
             {t("auth.register.consumer.email_sent.back_home")}
           </Link>
         </div>
@@ -352,9 +354,9 @@ function RegisterPageBody() {
                 })}
               </p>
               {oauthError && (
-                <p data-testid="register-oauth-error" className="text-error text-sm" role="alert">
+                <InlineMessage data-testid="register-oauth-error">
                   {oauthError}
-                </p>
+                </InlineMessage>
               )}
             </div>
             <div className="relative my-5">
@@ -410,6 +412,7 @@ function RegisterPageBody() {
             className="text-end"
             dir="ltr"
           />
+          <EmailTypoHint fieldId="register-email" value={form.email} onAccept={(email) => set("email")({ target: { value: email } })} />
           <div>
             <label htmlFor="pw-password" className="block text-sm font-medium mb-1">
               {t("auth.register.consumer.fields.password")}{" "}
@@ -450,7 +453,7 @@ function RegisterPageBody() {
           </label>
           {/* MEH-328 Chunk D: "האימייל כבר רשום" inline warning removed.
               Duplicate-attempt email (Chunks A+B) is the only signal. */}
-          {error && <p data-testid="register-error" className="text-error text-sm" role="alert">{error}</p>}
+          {error && <InlineMessage data-testid="register-error">{error}</InlineMessage>}
           {/* MEH-839: filled-green primary, mirrors /login's CTA fill
               (LoginClient.jsx:303) — was a ghost/outline. Height stays in
               register's 44px field rhythm (MEH-838), not login's 54px. */}
@@ -458,7 +461,7 @@ function RegisterPageBody() {
             type="submit"
             data-testid="register-submit"
             disabled={loading}
-            className="w-full min-h-touch flex items-center justify-center bg-primary text-white py-3 rounded-md font-bold hover:bg-primary-dark transition disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-primary/40"
+            className="w-full min-h-touch flex items-center justify-center bg-primary text-white py-3 rounded-full font-bold hover:bg-primary-dark transition disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
           >
             {loading ? (
               <span className="inline-flex items-center gap-2">
@@ -482,7 +485,7 @@ function RegisterPageBody() {
         </p>
         <p className="text-center text-sm text-fg-muted mt-2">
           {t("auth.register.consumer.cta_producer")}{" "}
-          <Link href="/register/producer" className="text-primary underline">
+          <Link href="/join" className="text-primary underline">
             {t("auth.register.consumer.cta_producer_link")}
           </Link>
         </p>

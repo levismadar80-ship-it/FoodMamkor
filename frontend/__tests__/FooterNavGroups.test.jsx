@@ -25,6 +25,8 @@ vi.mock("next/image", () => ({
 // CategoryRequestModal / EventForm suites use — the link's behaviour is
 // CollectionNotice.test.jsx's job; this file is about the nav groups.
 vi.mock("@/i18n/navigation", () => ({
+  // MEH-3059: Footer prefetches «כל בתי העסק» on intent via router.prefetch.
+  useRouter: () => ({ prefetch: () => {} }),
   Link: ({ href, children, ...rest }) => (
     <a href={typeof href === "string" ? href : "#"} {...rest}>
       {children}
@@ -85,7 +87,8 @@ describe("Footer nav split into audience groups (MEH-1177; three since MEH-2858)
     // MEH-2858: «גלו עסקים» → / is gone (the logo links home), and the three
     // "who we are" links moved to their own «עלינו» group.
     expect(discover).toEqual(["/producers", "/map"]);
-    expect(about).toEqual(["/about", "/about/why-local", "/recommend#share"]);
+    // «המליצו על בית עסק» sits next to «ספרו עלינו» (Sapir 13/11).
+    expect(about).toEqual(["/about", "/about/why-local", "/recommend", "/recommend#share"]);
     expect(business).toEqual(["/join", "/about/process", "/about/for-businesses"]);
   });
 
@@ -98,13 +101,13 @@ describe("Footer nav split into audience groups (MEH-1177; three since MEH-2858)
 
   // MEH-2858: 8 — «גלו עסקים» → / left on purpose (the logo links home); the
   // brand-column logo link is asserted below so home stays one tap away.
-  it("keeps all 8 ungated nav links exactly once (no link dropped in the split)", () => {
+  it("keeps all 9 ungated nav links exactly once (no link dropped in the split)", () => {
     render(<Footer />);
     const navLinks = Array.from(
       screen.getByRole("navigation", { name: "nav.footer.nav_aria" }).querySelectorAll("a[href]"),
     ).map((a) => a.getAttribute("href"));
     expect(navLinks.sort()).toEqual(
-      ["/about", "/about/for-businesses", "/about/why-local", "/about/process", "/join", "/map", "/producers", "/recommend#share"].sort(),
+      ["/about", "/about/for-businesses", "/about/why-local", "/about/process", "/join", "/map", "/producers", "/recommend", "/recommend#share"].sort(),
     );
   });
 

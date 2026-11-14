@@ -7,6 +7,7 @@ import api from "@/lib/api";
 import { showToast } from "@/lib/toast";
 import { ReviewInviteLinkSchema } from "@/lib/api-schemas";
 import Button from "@/components/ui/Button";
+import { copyOrThrow } from "@/lib/clipboard";
 
 /**
  * Module:   RequestReviewCard
@@ -60,10 +61,7 @@ export default function RequestReviewCard() {
     if (!url) return;
     // No clipboard API at all (insecure context, some in-app WebViews) is the
     // same outcome as a rejected write: say so, don't throw from the handler.
-    const write = navigator.clipboard?.writeText
-      ? navigator.clipboard.writeText(url)
-      : Promise.reject(new Error("clipboard unavailable"));
-    write
+    copyOrThrow(url)
       .then(() => {
         setCopied(true);
         clearTimeout(copiedTimer.current);

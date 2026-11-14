@@ -28,6 +28,7 @@ import { optimizeCloudinary } from "@/lib/cloudinary";
 // MEH-788: gentle scroll-reveal on the content sections (hero excluded — LCP).
 import FadeInSection, { REVEAL_PRESET } from "@/components/FadeInSection";
 import { COLOR_CLASSES, VerifiedChip } from "@/components/BadgeRow";
+import SectionHeading from "@/components/ui/SectionHeading";
 
 // MEH-1130: the editorial image layer. Raw asset URLs — every transform is
 // applied by optimizeCloudinary at the call site, never baked into the string
@@ -139,10 +140,10 @@ function ExitLink({ href, testId, children, spacing = "mt-8" }) {
     <LocaleLink
       href={href}
       data-testid={testId}
-      className={`${spacing} inline-flex items-center gap-1 font-body-md font-semibold text-primary underline underline-offset-4 hover:text-primary-dark rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40`}
+      className={`${spacing} inline-flex items-center gap-1 font-body-md font-semibold text-primary underline underline-offset-4 hover:text-primary-dark rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary`}
     >
       {children}
-      <ArrowLeft size={15} aria-hidden="true" />
+      <ArrowLeft size={16} aria-hidden="true" />
     </LocaleLink>
   );
 }
@@ -190,10 +191,10 @@ export default function AboutPage() {
           <Link
             href="/map"
             data-testid="about-hero-cta"
-            className="mt-6 inline-flex items-center gap-2 min-h-[48px] px-6 py-3 bg-primary text-white rounded-sm font-body-md font-semibold text-base hover:bg-primary-dark transition-colors focus-ring"
+            className="mt-6 inline-flex items-center gap-2 min-h-[48px] px-6 py-3 bg-primary text-white rounded-full font-body-md font-semibold text-base hover:bg-primary-dark transition-colors focus-ring"
           >
             {t("hero.cta_map")}
-            <ArrowLeft size={19} aria-hidden="true" />
+            <ArrowLeft size={20} aria-hidden="true" />
           </Link>
           {/* MEH-2192: dateline. Small muted line, start-aligned like the rest
               of the hero — an E-E-A-T freshness signal a reader can check. */}
@@ -281,12 +282,12 @@ export default function AboutPage() {
                 heading below can be asserted to share these exact classes —
                 the two chapter headings must read as one rank, and a class
                 string is the only thing that guarantees it. */}
-            <h2
+            <SectionHeading
               data-testid="about-story-h2"
-              className="font-headline-lg font-bold text-text text-[clamp(23px,4vw,30px)] leading-tight !mb-6"
+              className="leading-tight !mb-6"
             >
               {t("story.greeting")}
-            </h2>
+            </SectionHeading>
             <p className="text-fg-muted">{t("story.p1")}</p>
             <p>{t("story.p2")}</p>
             <p>{t("story.p3")}</p>
@@ -375,10 +376,10 @@ export default function AboutPage() {
               href="/about/for-businesses"
               data-testid="about-biz-strip"
               aria-labelledby="about-biz-lead about-biz-cta"
-              className="inline-flex items-center gap-1 font-body-md font-semibold text-primary underline underline-offset-4 hover:text-primary-dark rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+              className="inline-flex items-center gap-1 font-body-md font-semibold text-primary underline underline-offset-4 hover:text-primary-dark rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
             >
               <span id="about-biz-cta">{tAbout("biz_strip")}</span>
-              <ArrowLeft size={15} aria-hidden="true" />
+              <ArrowLeft size={16} aria-hidden="true" />
             </LocaleLink>
           </div>
         </div>
@@ -408,9 +409,9 @@ export default function AboutPage() {
       <FadeInSection as="section" data-testid="about-comparison" {...REVEAL_PRESET} className="bg-background py-9 md:py-14 scroll-mt-24">
         <div className="max-w-3xl mx-auto px-4 md:px-12">
           <Chapter label={tAbout("chapter.2.label")} />
-          <h2 className="font-headline-lg font-bold text-text text-[clamp(23px,4vw,30px)] leading-tight !mb-6">
+          <SectionHeading className="leading-tight !mb-6">
             {t("parallax.quote")}
-          </h2>
+          </SectionHeading>
           {/* 05/11 (Sapir, option A): a two-column table replaced the gold-dot
               spine. The spine read as a timeline (step 1 → 2 → 3) while the
               content is an unordered comparison, and the «בסופר —» prefix on
@@ -541,10 +542,10 @@ export default function AboutPage() {
       <FadeInSection as="section" {...REVEAL_PRESET} className="bg-background-alt py-9 md:py-14 scroll-mt-24">
         <div className="max-w-3xl mx-auto px-4 md:px-12">
           <Chapter label={tAbout("chapter.4.label")} />
-          <div className="border-2 border-accent/30 rounded-3xl p-8 md:p-14">
-            <h2 className="font-headline-lg font-bold text-text text-[clamp(23px,4vw,30px)] leading-tight">
+          <div className="border-2 border-accent/30 rounded-lg p-8 md:p-14">
+            <SectionHeading className="leading-tight">
               {t("values.heading")}
-            </h2>
+            </SectionHeading>
             <p className="font-body-md text-fg-muted text-lg leading-relaxed mt-4 max-w-[54ch]">
               {t("values.intro")}
             </p>
@@ -584,7 +585,7 @@ export default function AboutPage() {
           <Chapter label={tBadges("h1")} as="h2" />
           <div className="grid gap-3">
             {SHOW_VERIFICATION && (
-              <article id="verification" className="scroll-mt-24 rounded-xl border border-border bg-surface-card p-5">
+              <article id="verification" className="scroll-mt-24 rounded-lg border border-border bg-surface-card p-5">
                 <div className="flex flex-wrap items-center justify-between gap-2.5 mb-2.5">
                   <h3 className="font-headline-md font-bold text-text text-xl leading-tight">{t("verification.heading")}</h3>
                   <VerifiedChip label={tTier("verified_label")} />
@@ -596,14 +597,14 @@ export default function AboutPage() {
                 <LocaleLink
                   href="/about/process"
                   data-testid="verification-process-link"
-                  className="mt-3 inline-flex min-h-touch items-center gap-1 font-body-md font-semibold text-primary underline underline-offset-4 hover:text-primary-dark rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                  className="mt-3 inline-flex min-h-touch items-center gap-1 font-body-md font-semibold text-primary underline underline-offset-4 hover:text-primary-dark rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                 >
                   {tProcess("crosslink_from_about")}
-                  <ArrowLeft size={15} aria-hidden="true" />
+                  <ArrowLeft size={16} aria-hidden="true" />
                 </LocaleLink>
               </article>
             )}
-            <article id="editors-pick" className="scroll-mt-24 rounded-xl border border-border bg-surface-card p-5">
+            <article id="editors-pick" className="scroll-mt-24 rounded-lg border border-border bg-surface-card p-5">
               <div className="flex flex-wrap items-center justify-between gap-2.5 mb-2.5">
                 <h3 className="font-headline-md font-bold text-text text-xl leading-tight">{t("editors_pick.heading")}</h3>
                 <span
@@ -624,7 +625,7 @@ export default function AboutPage() {
                 ))}
               </ul>
             </article>
-            <article id="community-leader" className="scroll-mt-24 rounded-xl border border-border bg-surface-card p-5">
+            <article id="community-leader" className="scroll-mt-24 rounded-lg border border-border bg-surface-card p-5">
               <div className="flex flex-wrap items-center justify-between gap-2.5 mb-2.5">
                 <h3 className="font-headline-md font-bold text-text text-xl leading-tight">{t("community_leader.heading")}</h3>
                 {/* The TrustBadge tier-4 face without its tooltip wrapper: that
@@ -643,10 +644,10 @@ export default function AboutPage() {
           <LocaleLink
             href="/about/badges"
             data-testid="about-badges-link"
-            className="mt-5 inline-flex min-h-touch items-center gap-1 font-body-md font-semibold text-primary underline underline-offset-4 hover:text-primary-dark rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+            className="mt-5 inline-flex min-h-touch items-center gap-1 font-body-md font-semibold text-primary underline underline-offset-4 hover:text-primary-dark rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
           >
             {t("badges_link.label")}
-            <ArrowLeft size={15} aria-hidden="true" />
+            <ArrowLeft size={16} aria-hidden="true" />
           </LocaleLink>
         </div>
       </FadeInSection>
@@ -656,9 +657,9 @@ export default function AboutPage() {
         <FadeInSection as="section" {...REVEAL_PRESET} className="bg-background py-9 md:py-14 scroll-mt-24">
           <div className="max-w-3xl mx-auto px-4 md:px-12 text-center">
             <div className="border-y border-border py-12 md:py-14">
-              <h2 className="font-headline-lg font-bold text-text text-[clamp(23px,4vw,30px)] leading-tight max-w-[18ch] mx-auto">
+              <SectionHeading className="leading-tight max-w-[18ch] mx-auto">
                 {t("testimonials.heading")}
-              </h2>
+              </SectionHeading>
               <p className="font-body-md text-fg-muted text-base md:text-lg mt-4 max-w-[42ch] mx-auto">
                 {t("testimonials.subtitle")}
               </p>
@@ -731,9 +732,9 @@ export default function AboutPage() {
           land on. scroll-mt-24 offsets the sticky header. */}
       <FadeInSection id="contact" data-chat-hide="" as="section" {...REVEAL_PRESET} className="bg-background py-9 md:py-14 scroll-mt-24">
         <div className="max-w-2xl mx-auto px-4 md:px-12">
-          <h2 className="font-headline-lg font-bold text-text text-[clamp(23px,4vw,30px)] leading-tight">
+          <SectionHeading className="leading-tight">
             {t("contact.heading")}
-          </h2>
+          </SectionHeading>
           <p className="font-body-md text-fg-muted text-lg mt-3 max-w-[48ch] leading-relaxed">
             {t("contact.subtitle")}
           </p>
@@ -742,7 +743,7 @@ export default function AboutPage() {
               Mirrors the testimonials-CTA link treatment. */}
           <Link
             href="/messages"
-            className="inline-flex items-center gap-2 mt-4 text-primary font-semibold hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 rounded"
+            className="inline-flex items-center gap-2 mt-4 text-primary font-semibold hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded"
           >
             {t("messages_link")}
             <ArrowLeft size={18} aria-hidden="true" />
@@ -757,7 +758,7 @@ export default function AboutPage() {
             <Link
               href="/contact"
               data-testid="about-contact-link"
-              className="inline-flex items-center gap-2 min-h-[48px] px-6 py-3 bg-primary text-background rounded-full font-body-md font-semibold hover:bg-primary-dark transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2"
+              className="inline-flex items-center gap-2 min-h-[48px] px-6 py-3 bg-primary text-background rounded-full font-body-md font-semibold hover:bg-primary-dark transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
             >
               {tNav("contact")}
               <ArrowLeft size={18} aria-hidden="true" />

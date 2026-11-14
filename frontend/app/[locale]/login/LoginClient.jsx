@@ -18,6 +18,7 @@ import { detailToMessage } from "@/lib/errors";
 import { showToast } from "@/lib/toast";
 import { env } from "@/lib/env";
 import { optimizeCloudinary } from "@/lib/cloudinary";
+import InlineMessage from "@/components/ui/InlineMessage";
 
 /**
  * Module:   LoginClient
@@ -71,6 +72,10 @@ function LoginPageBody() {
   // owner's review link must land back on the form after signing up. Only a
   // clamped, explicitly-passed value travels; otherwise the link stays bare.
   const passedRedirect = safeInternalRedirect(params.get("redirect"), null);
+  // MEH-3120: arriving from «מועדפים» (FavoritesClient pushes
+  // /login?redirect=/<locale>/favorites) — say why a sign-in is asked for.
+  // Only the clamped internal path is read, so an outside URL shows nothing.
+  const fromFavorites = /(^|\/)favorites\/?$/.test((passedRedirect || "").split(/[?#]/)[0]);
   const registerHref = passedRedirect
     ? `/register?redirect=${encodeURIComponent(passedRedirect)}`
     : "/register";
@@ -234,6 +239,11 @@ function LoginPageBody() {
           <h1 className="font-headline-lg font-black text-headline-lg leading-tight text-text">
             {t("welcome")}
           </h1>
+          {fromFavorites && (
+            <p data-testid="login-reason" className="text-base text-fg-muted">
+              {t("reason_favorites")}
+            </p>
+          )}
         </div>
 
         {/* Social-first auth (S9 locked order): Google → Apple, then "או". */}
@@ -320,7 +330,7 @@ function LoginPageBody() {
                 // MEH-1617: value moved to auth.login.email_placeholder.
                 placeholder={t("email_placeholder")}
                 aria-invalid={emailInvalid || undefined}
-                className={`w-full min-h-[54px] rounded-sm ps-11 pe-4 py-3.5 bg-surface-card text-text outline-none transition focus-visible:ring-2 focus-visible:ring-primary/40 ${
+                className={`w-full min-h-[54px] rounded-sm ps-11 pe-4 py-3.5 bg-surface-card text-text outline-none transition focus-visible:ring-2 focus-visible:ring-primary ${
                   emailInvalid
                     ? "border border-danger-400"
                     : emailValid
@@ -330,7 +340,7 @@ function LoginPageBody() {
               />
             </div>
             {emailInvalid && (
-              <p className="text-xs text-error text-start" role="alert">{t("email_invalid")}</p>
+              <InlineMessage size="xs" className="text-start">{t("email_invalid")}</InlineMessage>
             )}
             {emailValid && (
               <p className="text-xs text-primary text-start">{t("valid")}</p>
@@ -372,7 +382,7 @@ function LoginPageBody() {
                 // able to sign in. Empty-submit is still blocked in handleSubmit
                 // (MEH-2623). Regression of MEH-418.
                 aria-invalid={passwordInvalid || undefined}
-                className={`w-full min-h-[54px] rounded-sm ps-11 pe-12 py-3.5 bg-surface-card text-text outline-none transition focus-visible:ring-2 focus-visible:ring-primary/40 ${
+                className={`w-full min-h-[54px] rounded-sm ps-11 pe-12 py-3.5 bg-surface-card text-text outline-none transition focus-visible:ring-2 focus-visible:ring-primary ${
                   passwordInvalid
                     ? "border border-danger-400"
                     : passwordValidLength
@@ -384,7 +394,7 @@ function LoginPageBody() {
               <button
                 type="button"
                 onClick={() => setShowPassword((v) => !v)}
-                className="absolute end-2 top-1/2 -translate-y-1/2 grid place-items-center w-11 h-11 rounded-full text-fg-muted hover:text-primary transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                className="absolute end-2 top-1/2 -translate-y-1/2 grid place-items-center w-11 h-11 rounded-full text-fg-muted hover:text-primary transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                 aria-label={showPassword ? t("password_hide") : t("password_show")}
                 aria-pressed={showPassword}
               >
@@ -396,7 +406,7 @@ function LoginPageBody() {
               </button>
             </div>
             {passwordInvalid && (
-              <p className="text-xs text-error text-start" role="alert">{t("password_required")}</p>
+              <InlineMessage size="xs" className="text-start">{t("password_required")}</InlineMessage>
             )}
             {passwordValidLength && (
               <p className="text-xs text-primary text-start" data-testid="login-password-valid">{t("valid")}</p>
@@ -408,9 +418,9 @@ function LoginPageBody() {
                field-level role="alert" nodes above it. A bare getByRole("alert")
                is ambiguous here (strict-mode violation, measured), so the spec
                targets this id. */
-            <p className="text-error text-sm text-start" data-testid="login-error" role="alert">
+            <InlineMessage className="text-start" data-testid="login-error">
               {error}
-            </p>
+            </InlineMessage>
           )}
 
           {/* Submit — S9 green pill + reading-forward arrow (Refs MEH-1033).
@@ -419,7 +429,7 @@ function LoginPageBody() {
             type="submit"
             data-testid="login-submit"
             disabled={loading}
-            className="w-full min-h-[54px] flex items-center justify-center bg-primary text-white rounded-full px-6 font-bold hover:bg-primary-dark transition disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-primary/40"
+            className="w-full min-h-[54px] flex items-center justify-center bg-primary text-white rounded-full px-6 font-bold hover:bg-primary-dark transition disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
           >
             {loading ? (
               <span className="inline-flex items-center justify-center gap-2">

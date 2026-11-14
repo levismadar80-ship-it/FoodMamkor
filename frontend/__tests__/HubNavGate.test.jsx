@@ -11,7 +11,7 @@ import { render, screen, waitFor } from "@testing-library/react";
 const get = vi.fn();
 vi.mock("@/lib/api", () => ({ default: { get: (...a) => get(...a), post: vi.fn() } }));
 
-import { useHubNavGate } from "@/lib/use-hub-nav-gate";
+import { useHubNavGate, resetHubNavGateRequests } from "@/lib/use-hub-nav-gate";
 
 function Probe({ hub }) {
   const visible = useHubNavGate(hub);
@@ -21,6 +21,7 @@ const gate = () => screen.getByTestId("gate").textContent;
 const list = (n) => Promise.resolve({ data: Array.from({ length: n }, (_, i) => ({ id: `x${i}` })) });
 
 beforeEach(() => {
+  resetHubNavGateRequests();
   get.mockReset();
   sessionStorage.clear();
   vi.stubEnv("NEXT_PUBLIC_RESCUE_BAGS_ENABLED", "true");
@@ -101,5 +102,34 @@ describe("rescue pilot off in this build (MEH-2858)", () => {
     await new Promise((r) => setTimeout(r, 20));
     expect(get).not.toHaveBeenCalled();
     expect(gate()).toBe("hidden");
+  });
+});
+
+// MEH-3049: every hub tab is its own route, so the tab row mounts fresh on each
+// switch. A cached answer must be on screen in the FIRST committed frame —
+// otherwise the row is drawn without the tab and jumps when it appears. The
+// commit is driven with flushSync and NO act(): layout effects (and their
+// setState) flush inside that commit, passive effects do not, so the old
+// useEffect version reads "hidden" here and the fix reads "shown".
+describe("useHubNavGate — cached answer is in the first frame (MEH-3049)", () => {
+  it.each(["groupBuys", "rescue"])("%s: cached true → shown before any passive effect runs", async (hub) => {
+    const { createRoot } = await import("react-dom/client");
+    const { flushSync } = await import("react-dom");
+    const key = hub === "rescue" ? "meh_rescue_offers_any" : "meh_group_buys_any";
+    sessionStorage.setItem(key, JSON.stringify({ any: true, at: Date.now() }));
+    const prev = globalThis.IS_REACT_ACT_ENVIRONMENT;
+    globalThis.IS_REACT_ACT_ENVIRONMENT = false;
+    const host = document.createElement("div");
+    document.body.appendChild(host);
+    const root = createRoot(host);
+    try {
+      flushSync(() => root.render(<Probe hub={hub} />));
+      expect(host.textContent).toBe("shown");
+      expect(get).not.toHaveBeenCalled();
+    } finally {
+      flushSync(() => root.unmount());
+      host.remove();
+      globalThis.IS_REACT_ACT_ENVIRONMENT = prev;
+    }
   });
 });

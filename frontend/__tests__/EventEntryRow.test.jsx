@@ -103,7 +103,8 @@ describe("EventEntryRow", () => {
     expect(bg.startsWith('url("')).toBe(true);
   });
 
-  it("the event's own photo wins over the owner's, with no initial badge", () => {
+  // MEH-3009: the initial marks every picture row, the event's own photo too.
+  it("the event's own photo wins over the owner's, still marked with the owner's initial", () => {
     const both = {
       ...EVENT,
       image_url: "https://res.cloudinary.com/demo/image/upload/event.jpg",
@@ -113,6 +114,23 @@ describe("EventEntryRow", () => {
     const img = screen.getByTestId("event-row-image");
     expect(img.getAttribute("data-kind")).toBe("event");
     expect(img.style.backgroundImage).toContain("event.jpg");
+    expect(screen.getByTestId("event-row-owner-initial").textContent).toBe("ש");
+  });
+
+  it("an experience photo is marked with the host business's initial", () => {
+    const hosted = { ...EXPERIENCE, host: { name: "דנה", producer_name: "משק ברק" } };
+    render(<EventEntryRow entry={toEventEntry(hosted, "experiences", t)} freeLabel="חינם" />);
+    expect(screen.getByTestId("event-row-owner-initial").textContent).toBe("מ");
+  });
+
+  it("an experience host with only a personal name gives that initial", () => {
+    render(<EventEntryRow entry={toEventEntry(EXPERIENCE, "experiences", t)} freeLabel="חינם" />);
+    expect(screen.getByTestId("event-row-owner-initial").textContent).toBe("מ");
+  });
+
+  it("a category tile (no picture at all) carries no initial", () => {
+    render(<EventEntryRow entry={toEventEntry(EVENT, "events", t)} freeLabel="חינם" />);
+    expect(screen.getByTestId("event-row-image").getAttribute("data-kind")).toBe("category");
     expect(screen.queryByTestId("event-row-owner-initial")).toBeNull();
   });
 

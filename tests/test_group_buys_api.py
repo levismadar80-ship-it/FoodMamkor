@@ -852,7 +852,7 @@ class TestFundedNotificationPrivacy:
     def test_producer_body_has_no_contact_details_and_pins_content(self):
         sent = {}
 
-        def _capture(to, subject, body, html=None):
+        def _capture(to, subject, body, html=None, test_cause=False):
             sent.update(to=to, subject=subject, body=body)
 
         with mock.patch(
@@ -873,7 +873,7 @@ class TestFundedNotificationPrivacy:
     def test_participant_body_has_no_contact_details_and_pins_content(self):
         sent = {}
 
-        def _capture(to, subject, body, html=None):
+        def _capture(to, subject, body, html=None, test_cause=False):
             sent.update(to=to, subject=subject, body=body)
 
         with mock.patch(
@@ -906,7 +906,7 @@ class TestFundedNotificationDispatch:
         sends = []
         monkeypatch.setattr(
             "app.services.group_buy_notifications.send_email",
-            lambda to, subject, body, html=None: sends.append(
+            lambda to, subject, body, html=None, test_cause=False: sends.append(
                 {"to": to, "subject": subject, "body": body}
             ),
         )
@@ -1382,7 +1382,7 @@ class TestCancelNotification:
         sends = []
         monkeypatch.setattr(
             "app.services.group_buy_notifications.send_email",
-            lambda to, subject, body, html=None: sends.append(
+            lambda to, subject, body, html=None, test_cause=False: sends.append(
                 {"to": to, "subject": subject, "body": body}
             ),
         )
@@ -1409,7 +1409,7 @@ class TestCancelNotification:
     def test_template_wording_and_no_contact_details(self):
         sent = {}
 
-        def _capture(to, subject, body, html=None):
+        def _capture(to, subject, body, html=None, test_cause=False):
             sent.update(to=to, subject=subject, body=body)
 
         with mock.patch("app.services.group_buy_notifications.send_email", _capture):

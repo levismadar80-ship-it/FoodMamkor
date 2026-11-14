@@ -221,6 +221,11 @@ async function stubSession(page: Page, opts: SessionOpts = {}): Promise<void> {
         email: "owner@example.com",
         name: "שקד",
         role,
+        // MEH-2916: the dashboard shell branches «צפייה בדף» on
+        // producer_status, so /auth/me has to carry it. Driven by the same
+        // `status` option as the producer record below — a business has one
+        // status, and two stubs disagreeing about it is a bug generator.
+        producer_status: status,
         ...(producerId === null ? {} : { producer_id: producerId }),
       }),
     }),
@@ -426,10 +431,18 @@ test.describe("dashboard shell — tab nav", () => {
   test("the view-page link targets the UUID route, and vanishes without a producer_id", async ({
     page,
   }) => {
-    await stubSession(page);
+    await stubSession(page); // status defaults to "approved"
     await openOverview(page);
-    // The UUID route, NOT /p/{slug}: the owner-exception lets her see her own
-    // page while pending, where the slug route is approved-only and 404s.
+    // The UUID route, NOT /p/{slug}, for an APPROVED business.
+    //
+    // MEH-2916 corrected the reason this line used to give. It said "the
+    // owner-exception lets her see her own page while pending", and that
+    // stopped being true at MEH-2101: the page's SSR fetch is anonymous
+    // (lib/server-fetch.js sends no Authorization), so for a pending business
+    // the UUID route is a real 404 and the owner was shown «בית העסק הזה לא
+    // נמצא» about her own page. The exception still exists at the API — it is
+    // the PAGE that stopped using it. Pending now goes to the dashboard
+    // preview, asserted in the cell below.
     await expect(tabNav(page).getByRole("link", { name: "צפייה בדף" })).toHaveAttribute(
       "href",
       new RegExp(`/producer/${PRODUCER_ID}$`),
@@ -439,6 +452,20 @@ test.describe("dashboard shell — tab nav", () => {
     await stubSession(page, { producerId: null });
     await openOverview(page);
     await expect(tabNav(page).getByRole("link", { name: "צפייה בדף" })).toHaveCount(0);
+  });
+
+  // MEH-2916 (pilot A4): the other half of the same link. Without this cell
+  // the one above passes for a build that sends EVERY owner to the UUID
+  // route, which is the regression it is meant to pin.
+  test("the view-page link targets the dashboard preview while the business is pending", async ({
+    page,
+  }) => {
+    await stubSession(page, { status: "pending" });
+    await openOverview(page);
+    await expect(tabNav(page).getByRole("link", { name: "צפייה בדף" })).toHaveAttribute(
+      "href",
+      /\/producer\/dashboard\/preview$/,
+    );
   });
 });
 
@@ -685,7 +712,8 @@ test.describe("dashboard shell — tools tab", () => {
       "/producer/dashboard/experiences",
       "/producer/dashboard/group-buys",
       "/producer/dashboard/recipes",
-      `/producer/${PRODUCER_ID}#reviews`,
+      // MEH-3107: the reviews tile opens the dashboard's own reviews page.
+      "/producer/dashboard/reviews",
     ]) {
       await expect(
         grid.locator(`a[href$="${href}"]`),

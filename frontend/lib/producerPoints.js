@@ -60,12 +60,45 @@ export function producerPoints(producer, { includeSecondary = true } = {}) {
 
   // Rule 1: a row is a point only with both coordinates usable.
   // Rule 2: the toggle filters what we RETURN. A business whose only usable
-  // rows are hidden pickups yields [] — it stays off the map while the layer
-  // is hidden, and hiddenWhenSecondaryOff() is how the UI says so.
+  // rows are hidden pickups yields []. /map no longer offers a layer toggle
+  // (Sapir 13/11), so callers there always pass the default `true`.
   return locations
     .filter((loc) => isUsableCoord(loc?.lat) && isUsableCoord(loc?.lng))
     .filter((loc) => includeSecondary || !isSecondary(loc?.kind))
     .map((loc) => ({ lat: loc.lat, lng: loc.lng, kind: loc.kind ?? null, location: loc }));
+}
+
+/**
+ * MEH-3054 (option ה׳, Sapir 13/11): the points /map DRAWS for a business.
+ *
+ * One pin per business by default, so ten businesses with five pickup points
+ * each read as ten pins, not sixty (a business may hold up to 20 locations,
+ * backend/app/limits.py:32, with no separate pickup cap):
+ *
+ * - `expanded` false (default): every usable NON-secondary row (a branch is a
+ *   real store, and a business with two stores shows both). When the business
+ *   has no usable non-secondary row at all — pickup-only — its FIRST usable
+ *   secondary row stands in, so it never vanishes from the map. That vanishing
+ *   is what the removed layer toggle's reminder existed for (MEH-3045).
+ * - `expanded` true: every usable row, as `producerPoints()` returns them. /map
+ *   expands one business when it is selected, and all of them while the
+ *   «איסוף עצמי» chip (`pickup_points`) is on.
+ *
+ * The viewport list filter uses the same function with the same `expanded`
+ * flag as the marker layer, so a card is in the list exactly when one of its
+ * drawn pins is on screen (Sapir 27/07: the two must agree). Selecting a
+ * business does not change the list, so selection is not an input there.
+ *
+ * @param {object|null} producer  a ProducerListOut-shaped object
+ * @param {{expanded?: boolean}} [opts]
+ * @returns {Array<{lat: number, lng: number, kind: string|null, location: object}>}
+ */
+export function mapPinPoints(producer, { expanded = false } = {}) {
+  const all = producerPoints(producer);
+  if (expanded) return all;
+  const main = all.filter((pt) => !isSecondary(pt.kind));
+  if (main.length > 0) return main;
+  return all.slice(0, 1);
 }
 
 /**
@@ -111,25 +144,6 @@ export function primaryPoint(producer) {
 }
 
 /**
- * MEH-2046: does this producer disappear from the map when the secondary
- * (pickup / market_stand) layer is switched off?
- *
- * True exactly when it has points today and none of them survives rule 2 —
- * i.e. every usable row it owns is a pickup or a market stand. Such a business
- * vanishes outright rather than reappearing at some other coordinate (there is
- * no fallback to fall to — MEH-1938 chunk 5a), and that is deliberate, so the
- * honest fix is to TELL the user the layer is hiding businesses rather than to
- * change the rule.
- *
- * Composes `producerPoints` twice and reads its results; it does not
- * reimplement or alter either rule. MEH-1670 semantics unchanged.
- */
-export function hiddenWhenSecondaryOff(producer) {
-  if (producerPoints(producer).length === 0) return false;
-  return producerPoints(producer, { includeSecondary: false }).length === 0;
-}
-
-/**
  * Is any of the producer's points inside `bounds`?
  *
  * `bounds` is the /map `committedBounds` shape ({north, south, east, west}).
@@ -139,7 +153,10 @@ export function hiddenWhenSecondaryOff(producer) {
  */
 export function producerInBounds(producer, bounds, opts) {
   if (!bounds) return true; // no committed viewport → no filtering
-  return producerPoints(producer, opts).some(
+  // MEH-3054: `opts.pins` → test the pins /map draws (mapPinPoints), not every
+  // row; `opts.expanded` is passed through to it.
+  const points = opts?.pins ? mapPinPoints(producer, opts) : producerPoints(producer, opts);
+  return points.some(
     (pt) =>
       pt.lat >= bounds.south &&
       pt.lat <= bounds.north &&

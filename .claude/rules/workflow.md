@@ -1,8 +1,9 @@
 # Full workflow rules
 
 Rules only. Each rule's sources, incidents and measurements live verbatim in
-[docs/rules-history/workflow.md](../../docs/rules-history/workflow.md) — same
-headings and numbers; read it before re-opening a rule.
+[docs/rules-history/workflow.md](../../docs/rules-history/workflow.md) (to
+26/10) and [docs/rules-history/2026-11-13/workflow.md](../../docs/rules-history/2026-11-13/workflow.md)
+(to 13/11) — same headings and numbers; read them before re-opening a rule.
 `scripts/checks/rules-inventory-guard.sh` fails if a rule goes missing here.
 
 ---
@@ -104,12 +105,9 @@ archived).
 
 ## The reviewer is a fresh subagent — the CI reviewer is off (Sapir 08/11, until MEH-569)
 
-The `claude[bot]` CI review (`claude-review.yml`, workflow «Claude PR Review»,
-job «Adversarial review (calibration)») was red
-on every PR for a reason it never printed (MEH-2845), so Sapir disabled it from
-the Actions page until the MEH-569 audit. Its job goes to a **fresh reviewer
-subagent** (rule 5a): a missing `claude[bot]` comment blocks nothing and is
-never waited for. (MEH-1844's "the CI reviewer works" — 13/08 — is history.)
+The `claude[bot]` CI review (`claude-review.yml`) is disabled until the
+MEH-569 audit. Its job goes to a **fresh reviewer subagent** (rule 5a); a
+missing `claude[bot]` comment blocks nothing and is never waited for.
 
 ---
 
@@ -194,6 +192,7 @@ never waited for. (MEH-1844's "the CI reviewer works" — 13/08 — is history.)
 21. **Never merge without a verified green CI signal.** All jobs failing in <2 s
     with no logs = budget exhaustion, neither pass nor fail — check billing,
     wait. Never merge on a green you cannot explain or a red you cannot read.
+    The only exception is rule 39.
     - **Triggers:** a push whose tip SHA already exists on `origin` fires
       nothing; push a NEW SHA (real commit or staging merge, never empty).
     - **Cancelled ≠ failed:** newer run for the head SHA in progress → wait;
@@ -438,12 +437,10 @@ concurrent loops. Tiers + `mehamakor-dod` self-check: ADR-025.
     self-clear it.** Sapir clears it, even after merge is authorized and even on
     CC's own marker, even when it looks stale. Never edit metadata or push a
     no-op to get past a gate; only fix a real cause CC owns. "Auto-merge
-    unarmed" is not a substitute for the marker. Narrowly: the ADR-032 §2.5
-    "RED stops until the adversarial reviewer runs" is satisfied by the
-    **fresh reviewer subagent's** pass (rule 5a) with its findings fixed or
-    answered — not by waiting for a `claude[bot]` comment, which is off since
-    08/11 (Sapir, until MEH-569). That is the only thing the pass satisfies: a
-    `do-not-merge` label or any other marker is still Sapir's to clear.
+    unarmed" is not a substitute for the marker. Narrowly: ADR-032 §2.5 ("RED
+    stops until the adversarial reviewer runs") is satisfied by the fresh
+    reviewer subagent's pass (rule 5a) with findings fixed or answered — and
+    by nothing else; any label or marker is still Sapir's to clear.
 
     ### 30b — the marker is a LABEL, not a sentence (MEH-1523)
 
@@ -471,6 +468,14 @@ concurrent loops. Tiers + `mehamakor-dod` self-check: ADR-025.
     When a parallel actor produced a forbidden state, act unasked **only** in
     the direction that adds a constraint (disarm auto-merge: yes; arm, clear a
     marker, merge: no) — and report.
+
+    ### 32b — when a delete is denied, leave the file and say so
+
+    A denied `rm` is a decision about the file: never `mv` it, `git clean`,
+    `git rm`, truncate or stub it. Leave it, finish the task, report its path
+    and why. Untracked stays untracked: stage by explicit path, never
+    `git add -A`. Any denied action is
+    reported, not re-attempted through another verb (Sapir 11/11).
 33. **A DoD checkbox is a claim of fact — check it only for a box you performed
     yourself and can cite evidence for (MEH-1755).** Otherwise leave `[ ]` with
     a reason in prose; same for N/A.
@@ -513,6 +518,45 @@ concurrent loops. Tiers + `mehamakor-dod` self-check: ADR-025.
     merges, or new copy not in an approved table still stops CC (rules 22, 30;
     ADR-016 amendment). This adds to rule 23 (375/1440 in `qa-artifacts/`) and
     replaces none of it.
+39. **A red E2E gate blocks a merge to staging unless all three hold, and the
+    PR body says so, one line each (Sapir 11/11, every PR from then on).**
+    (a) **0 failed**: quote each shard's `executed=… unexpected=0 …` line.
+    (b) **Every flaky test is in a spec this PR does not touch, and has a
+    card**: name the card. (c) **The flaky tests' names and lines are read and
+    quoted, not inferred**: the `✘` / `✓ (retry #1)` lines and the error block,
+    from the job log or the report. A count, a summary comment, or "not in the
+    flaky list" is not (c). If the log can't be read, run the E2E once more and
+    quote that run. If any of the three is missing, don't merge.
+    `--fail-on-flaky-tests` stays on; this never loosens the gate. A flake
+    with no card gets one before the merge (#4316).
+40. **A PR that touches `frontend/` or `backend/app` carries the `run-e2e`
+    label before it merges, and the PR body quotes the E2E result (Sapir
+    11/11).** Quote it — each shard's `N passed` / `N failed` / `N flaky`, or
+    the `✘` lines — never "E2E gate: success". **A gate that aggregated a
+    SKIPPED run is not evidence**: `Playwright E2E` does not run on a feature
+    PR without that label (MEH-2779), and `E2E gate` reports `success` either
+    way. Read per-JOB conclusions, not the run's (a cancelled shadow job makes
+    the run read `cancelled`). Rule 39 = when a red may be passed; this = there
+    must be a run at all.
+41. **Nothing merges to staging while staging is red — any session, any PR
+    (Sapir 11/11).** The only PR that may merge into a red staging is the one
+    that fixes the red, and its body says so.
+    **Deciding whether staging is red is the hard half, and the obvious test
+    is wrong.** "The latest staging run passed" is not it: a run that SKIPPED
+    Playwright reports `E2E gate: success`, so the newest green can mean
+    nothing ran. Read back through the staging runs to the last one whose
+    `Playwright E2E` jobs actually EXECUTED, and use that conclusion. A gap of
+    skips does not clear an earlier failure — it leaves the question open, and
+    an open question is not a green.
+    A run whose jobs can't be read is unverified, never assumed green.
+42. **A probe or scratch test is never written inside a test glob (Sapir
+    12/11).** Not `frontend/__tests__/**`, not `frontend/e2e/**`, not
+    `tests/**`. One-off probes, DOM dumps and throwaway harnesses go in a
+    scratch directory outside every glob the runners scan; if one must run
+    under vitest, invoke it by explicit path from there and do not save it in
+    the tree.
+    Reason: a probe under a glob that can't be deleted (rule 32b) leaves a
+    permanent local `1 failed` and a blocking Stop hook (12/11).
 
 ---
 

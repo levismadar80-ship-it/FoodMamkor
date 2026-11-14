@@ -8,6 +8,7 @@ import JoinFeatures from "@/components/join/JoinFeatures";
 import JoinStickyBar from "@/components/join/JoinStickyBar";
 import { BRAND_NAME } from "@/lib/constants";
 import { buildAlternates, buildEntityTitle, OG_LOCALE } from "@/lib/i18n-seo";
+import SectionHeading from "@/components/ui/SectionHeading";
 
 /**
  * /join — producer recruitment landing (MEH-995; rebuilt to the approved
@@ -100,7 +101,7 @@ function JoinVideo({ name, ariaLabel, sampleLabel, testId }) {
 }
 
 const LINK_CLASS =
-  "inline-flex items-center gap-2 text-primary font-semibold hover:underline rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40";
+  "inline-flex items-center gap-2 text-primary font-semibold hover:underline rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary";
 const CARD_CLASS = "bg-background border border-primary/20 rounded-md px-5 py-4";
 // MEH-2841 (Sapir, 08/11): cost and price lead, because they are the two
 // questions that stop a registration — «בלי עמלות» used to live only in
@@ -109,7 +110,7 @@ const CARD_CLASS = "bg-background border border-primary/20 rounded-md px-5 py-4"
 const FAQ_KEYS = ["cost", "price", "google", "updates", "revenue", "customers"];
 // MEH-2799 (Sapir, 07/11): the site's FAQ pattern — a <details> accordion
 // (/about/for-businesses/page.js:183) — with EVERY question closed on load.
-// That page opens its cost question (:66); Sapir chose all-closed for /join.
+// That page used to open its cost question; since MEH-3003 both are all-closed.
 const FAQ_OPEN = new Set();
 
 export default async function JoinPage({ params }) {
@@ -174,9 +175,9 @@ export default async function JoinPage({ params }) {
         {/* ── One page video, click-to-play (MEH-2310's /join half) ── */}
         <section className="mb-14 sm:mb-20 text-center" data-testid="join-video">
           <p className="text-sm font-medium text-fg-muted mb-2">{t("video.eyebrow")}</p>
-          <h2 className="font-headline-lg font-bold text-text mb-6 text-[clamp(26px,3.5vw,38px)]">
+          <SectionHeading className="mb-6">
             {t("video.heading")}
-          </h2>
+          </SectionHeading>
           <JoinVideo name="video-page" ariaLabel={t("video.aria")} sampleLabel={sample} testId="join-page-video" />
         </section>
       </div>
@@ -188,9 +189,9 @@ export default async function JoinPage({ params }) {
         {/* ── How it works — 4 numbered spreads, then the signup video ── */}
         <section className="mb-14 sm:mb-20" data-testid="join-how">
           <p className="text-sm font-medium text-fg-muted text-center mb-2">{t("how.eyebrow")}</p>
-          <h2 className="font-headline-lg font-bold text-text text-center mb-10 text-[clamp(26px,3.5vw,38px)]">
+          <SectionHeading className="text-center mb-10">
             {t("how.heading")}
-          </h2>
+          </SectionHeading>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-10 gap-y-10">
             {steps.map((step) => (
               <div key={step.numeral}>
@@ -235,9 +236,9 @@ export default async function JoinPage({ params }) {
                hero. a_cost dropped «— לעולם» on Sapir's call, 07/11 (ADR-030 §5 rewritten). ── */}
         <section className="pb-14 sm:pb-20" data-testid="join-faq">
           <p className="text-sm font-medium text-fg-muted text-center mb-2">{t("faq.eyebrow")}</p>
-          <h2 className="font-headline-lg font-bold text-text text-center mb-8 text-[clamp(26px,3.5vw,38px)]">
+          <SectionHeading className="text-center mb-8">
             {t("faq.heading")}
-          </h2>
+          </SectionHeading>
           <div className="flex flex-col gap-3">
             {FAQ_KEYS.map((key) => (
               // REUSES: app/[locale]/about/for-businesses/page.js:183 — native
@@ -248,7 +249,7 @@ export default async function JoinPage({ params }) {
                 open={FAQ_OPEN.has(key) || undefined}
                 className="group rounded-lg border border-border bg-surface-card"
               >
-                <summary className="flex cursor-pointer list-none items-start justify-between gap-4 rounded-lg px-5 py-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40">
+                <summary className="flex cursor-pointer list-none items-start justify-between gap-4 rounded-lg px-5 py-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
                   <h3 className="font-headline-md text-lg font-bold text-text">{t(`faq.q_${key}`)}</h3>
                   <CaretDown
                     aria-hidden="true"

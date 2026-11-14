@@ -51,6 +51,9 @@
 
 export function trackContactClick(producerId, method) {
   if (!producerId) return;
+  // MEH-2999: any contact channel opens the first-review gate server-side
+  // (reviews.py, MEH-2204), so it unlocks the review form here too.
+  markContactedLocal(producerId, method);
   const token = typeof localStorage !== "undefined" ? localStorage.getItem("token") : null;
   const headers = { "Content-Type": "application/json" };
   if (token) headers["Authorization"] = `Bearer ${token}`;
@@ -125,6 +128,68 @@ export function markWhatsAppClickedLocal(producerId) {
   } catch {
     // private mode / quota — review-form unlock is best-effort
   }
+  announceContacted(producerId);
+}
+
+// MEH-2999: tell an already-mounted ReviewsSection on THIS page. A tel: /
+// mailto: tap does not leave the page, so the unlock must not wait for a
+// reload (localStorage `storage` events only reach OTHER tabs).
+export const CONTACTED_EVENT = "mehamakor:contacted";
+function announceContacted(producerId) {
+  try {
+    window.dispatchEvent(new CustomEvent(CONTACTED_EVENT, { detail: { producerId } }));
+  } catch {
+    // no window (SSR) — nothing is mounted to tell
+  }
+}
+
+// MEH-2999: the browser half of the first-review gate. The server accepts a
+// review after a click on ANY contact channel (reviews.py, MEH-2204), but the
+// form used to unlock on the WhatsApp flag alone, so a customer who phoned or
+// emailed never saw it. `contacted_<id>` holds the channel, so the form-open
+// repair in ReviewsSection can re-send THAT click with the user's token.
+// DO NOT unlock the form from a channel the server's gate does not accept.
+// The unlock is a hint, not a promise: the server can still drop the click
+// (owner / admin viewer, bot UA, rate limit), and then the POST /reviews 403
+// is the real answer — same as it has always been for WhatsApp.
+function markContactedLocal(producerId, method) {
+  if (!producerId || !method) return;
+  try {
+    localStorage.setItem(`contacted_${producerId}`, method);
+  } catch {
+    // private mode / quota — review-form unlock is best-effort
+  }
+  announceContacted(producerId);
+}
+
+/**
+ * How this browser contacted the business: "whatsapp", another channel key,
+ * or null. WhatsApp wins when both are set (its re-ping is the older path).
+ */
+export function contactedMethodLocal(producerId) {
+  if (!producerId) return null;
+  try {
+    if (localStorage.getItem(`wa_clicked_${producerId}`) === "1") return "whatsapp";
+    return localStorage.getItem(`contacted_${producerId}`) || null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * MEH-2999: one handler for every primary-CTA site (contact card, sticky bar,
+ * product sheet). WhatsApp keeps its own endpoint + flag (MEH-1426); every
+ * other channel is a contact click — before this, a non-WhatsApp primary CTA
+ * recorded nothing at all, so its customers could never pass the review gate.
+ */
+export function trackPrimaryCtaClick(producerId, method) {
+  if (!producerId || !method) return;
+  if (method === "whatsapp") {
+    pingWhatsAppBeacon(producerId);
+    markWhatsAppClickedLocal(producerId);
+    return;
+  }
+  trackContactClick(producerId, method);
 }
 
 export function trackProducerView(producerId, referrer) {
@@ -147,4 +212,21 @@ export function trackProducerView(producerId, referrer) {
     // tracking is best-effort — a failed view beacon is invisible to the
     // visitor and must not reach Sentry as an error.
   }
+}
+
+/**
+ * MEH-2991: count a tap on a contact channel of ANY entity page that shows a
+ * business's / organizer's contact details (the organizer page, a workshop's
+ * host). WhatsApp → the WhatsApp click beacon; every other channel → the
+ * contact-click ping. Before this only the business page counted its clicks,
+ * so an organizer's or a host's insights read 0 whatever people did.
+ *
+ * Review unlock: a WhatsApp tap here does not set the WhatsApp flag; any
+ * other channel does, through trackContactClick (MEH-2999) — the server's
+ * first-review gate accepts that contact click (reviews.py, MEH-2204).
+ */
+export function trackChannelClick(producerId, channel) {
+  if (!producerId) return;
+  if (channel === "whatsapp") pingWhatsAppBeacon(producerId);
+  else trackContactClick(producerId, channel);
 }

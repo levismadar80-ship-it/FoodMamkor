@@ -102,9 +102,9 @@ export default function PasswordStrength({ password }) {
               }`}
             >
               {ok ? (
-                <Check size={13} weight="bold" aria-hidden="true" />
+                <Check size={14} weight="bold" aria-hidden="true" />
               ) : (
-                <Circle size={13} aria-hidden="true" />
+                <Circle size={14} aria-hidden="true" />
               )}
               {rule.label}
             </li>

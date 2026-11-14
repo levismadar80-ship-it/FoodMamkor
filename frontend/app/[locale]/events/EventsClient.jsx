@@ -1,11 +1,11 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useSearchParams } from "next/navigation";
 import { Link } from "@/i18n/navigation";
-// MEH-2245: the tab is the ROUTE (/events vs /experiences), so switching it is
-// a navigation. next-intl's router keeps the locale prefix (/en/experiences).
-import { useRouter } from "@/i18n/navigation";
+// MEH-2245: the tab is the ROUTE (/events vs /experiences). MEH-2980: a tab
+// switch rewrites that route in place (history.pushState, keeping any /en
+// prefix) instead of navigating; usePathname follows Back / Forward.
+import { usePathname } from "@/i18n/navigation";
 import {
   ArrowCounterClockwise,
   ArrowRight,
@@ -17,22 +17,28 @@ import {
 } from "@phosphor-icons/react";
 import { useTranslations, useLocale } from "next-intl";
 import api from "@/lib/api";
-import { optimizeCloudinary } from "@/lib/cloudinary";
 import { formatEventDate } from "@/lib/format-date";
 import CitySearch from "@/components/CitySearch";
+import { WHEN_CHIP_PREFIX, WHEN_KEYS, matchesWhen } from "@/lib/event-date-filter";
+import { israelToday } from "@/lib/israel-date";
 import ChipScrollRow from "@/components/ChipScrollRow";
 import CalendarView from "@/components/CalendarView";
 // MEH-2497: the date-rail row (and its row normalizer) now lives in one shared
 // component, so the home «אירועים קרובים» preview renders the same row.
 import EventEntryRow, { toEventEntry } from "@/components/EventEntryRow";
 import { EVENT_CATEGORIES, EXPERIENCE_CATEGORIES, withAll } from "@/lib/event-categories";
+// MEH-3124: a category chip shows only when it has results in this city.
+import { presentCategories, visibleCategoryChips } from "@/lib/event-category-gate";
 // MEH-2199 chunk 3: this page shipped the tablist keyboard layer inline in
 // chunk 2; /settings then needed the identical behaviour, so it was lifted to
 // a shared hook and this file retrofitted onto it. Two copies of the RTL arrow
 // mapping would drift, and a drifted arrow direction is invisible in review —
 // it reads as a plausible line either way.
 import useTabsKeyboard from "@/hooks/useTabsKeyboard";
+import HubShell from "@/components/HubShell";
 import Button from "@/components/ui/Button";
+import SectionHeading from "@/components/ui/SectionHeading";
+import { SkeletonBlock } from "@/components/Skeleton";
 
 // MEH-134: S10 "The Almanac" visual port. Events API + filter logic +
 // date formatting (lib/format-date.js) untouched — layout layer only.
@@ -43,33 +49,7 @@ import Button from "@/components/ui/Button";
 // MEH-2248 deleted the component itself). MEH-2771: the calendar view
 // lists its month through the same EventEntryRow (renderItem).
 
-// MEH-788: events hero — license-clean Pexels market-produce photo (3:4
-// 2400×3200, Pexels Free). Smart-cropped to a wide 16:9 band via g_auto
-// (Cloudinary saliency) then CSS cover fills the height-capped band — same
-// discipline as the home hero (a downward-angle source under plain center-cover
-// would slice the produce). w_1920 downscales the 2400px original (never
-// upscales). f_auto,q_auto via the helper — no hardcoded transform string.
-// REUSES: app/[locale]/home/HomeHero.jsx:18 (optimizeCloudinary ar + width)
-const HERO_MAX_WIDTH = 1920;
-const HERO_IMAGE = optimizeCloudinary(
-  "https://res.cloudinary.com/dfzpscjks/image/upload/v1782159035/events/hero-market.jpg",
-  { aspectRatio: "16:9", width: HERO_MAX_WIDTH }
-);
-
-// MEH-788: green hero scrim — the green-900 (#143228 ≡ rgb(20 50 40)) analogue
-// of HomeHero's warm `--scrim-ink` (globals.css). Inline (not a globals.css
-// utility) to keep the wire inside EventsClient.jsx per the MEH-788 scope, and
-// green (not warm ink) to carry the page's existing primary-dark hero identity.
-// Bottom-anchored band: H1 sits in the lower third (α ≥ .72), subtitle lower
-// still (α ≥ .88), so white text holds ≥ 4.5:1 over ANY g_auto crop. Worst case
-// = a blown-white highlight under the H1 top line at α ≈ .72 → ≈ 5.7:1 ≥ 4.5.
-const HERO_SCRIM =
-  "linear-gradient(to top," +
-  "rgb(20 50 40 / 0.92) 0%," +
-  "rgb(20 50 40 / 0.88) 50%," +
-  "rgb(20 50 40 / 0.72) 72%," +
-  "rgb(20 50 40 / 0.30) 88%," +
-  "rgb(20 50 40 / 0) 100%)";
+// MEH-3013: the MEH-788 hero (photo + scrim) moved to components/HubShell.jsx.
 
 // MEH-869: category sets moved to the shared lib/event-categories.js
 // (were duplicated across 5 call-sites). withAll() prepends the "all" chip.
@@ -81,19 +61,36 @@ const EXPERIENCE_CATEGORY_KEYS = withAll(EXPERIENCE_CATEGORIES);
 // is not a state change and does not refetch — as setCategory("") on "" was.
 const clearCategories = (prev) => (prev.length ? [] : prev);
 
+// MEH-2980: which hub tab a pathname names — null for anything else (tests
+// render on "/"). Works with or without the /en prefix.
+const tabFromPath = (path) =>
+  /\/experiences\/?$/.test(path || "") ? "experiences" : /\/events\/?$/.test(path || "") ? "events" : null;
+
+// MEH-2847 / MEH-2980: the URL's ?category= values that belong to `tab`'s
+// vocabulary (one bad value is dropped without dropping the good ones).
+const categoriesFor = (tab, values) => {
+  const vocab = tab === "experiences" ? EXPERIENCE_CATEGORIES : EVENT_CATEGORIES;
+  const known = new Set(vocab.map((c) => c.key));
+  return [...new Set(values)].filter((k) => known.has(k));
+};
+
 // MEH-2245: one hub behind two routes. `initialTab` is decided by the route
 // that mounts this component (/events → "events", /experiences →
 // "experiences") — never by a ?tab= query. The old query-string deep-link
 // 308s to /experiences in next.config.js redirects().
-export default function EventsPage({ initialTab = "events" }) {
+export default function EventsPage({ initialTab = "events", titles = null }) {
   const t = useTranslations("events.list");
   const tErr = useTranslations("error");
   const tCat = useTranslations("events.categories");
   const tExpCat = useTranslations("events.experience_categories");
   const locale = useLocale();
-  const router = useRouter();
-  const search = useSearchParams();
-  const [tab, setTab] = useState(initialTab);
+  // MEH-2980: the route (pathname) is the tab — read it so Back / Forward
+  // across an in-place switch land on the right tab.
+  const pathname = usePathname();
+  // MEH-2980: the PATH wins over the prop. After an in-place switch, Next
+  // keeps the first route's tree in that history entry, so a Back from some
+  // other page can restore /events with the /experiences page mounted.
+  const [tab, setTab] = useState(() => tabFromPath(pathname) || initialTab);
   // View mode — list (default) vs calendar. Independent of tab; applies
   // to whichever data set (events / experiences) is loaded.
   const [view, setView] = useState("list");
@@ -108,6 +105,9 @@ export default function EventsPage({ initialTab = "events" }) {
   // pending must not let that earlier request's late result overwrite the
   // newer one. Each load() takes a ticket; only the latest ticket may commit.
   const loadTicket = useRef(0);
+  // MEH-3124: the categories that have at least one result for {tab, city},
+  // read from a category-less list. cats === null = unknown → all chips show.
+  const [present, setPresent] = useState({ tab: null, city: null, cats: null });
   // MEH-1085 (DISC-08): city + category are deep-linkable — seeded from the
   // URL on mount. A URL category is accepted only when it
   // belongs to the initial tab's vocabulary, so a cross-tab share link can't
@@ -118,39 +118,96 @@ export default function EventsPage({ initialTab = "events" }) {
   // (?category=X) hydrates the same way (getAll → ["X"]). Each value is
   // checked against the vocabulary on its own, so one bad value is dropped
   // without dropping the good ones; duplicates collapse.
-  const [city, setCity] = useState(() => search.get("city") || "");
-  const [categories, setCategories] = useState(() => {
-    const vocab = initialTab === "experiences" ? EXPERIENCE_CATEGORIES : EVENT_CATEGORIES;
-    const known = new Set(vocab.map((c) => c.key));
-    return [...new Set(search.getAll("category"))].filter((k) => known.has(k));
-  });
+  // MEH-2984: read from window.location in a mount effect, NOT useSearchParams.
+  // useSearchParams forced a <Suspense> in both pages and, to keep the H1 in
+  // the server HTML, `force-dynamic` (MEH-2878) — and a force-dynamic route
+  // cannot be prefetched, so arriving from /group-buys or /rescue streamed the
+  // whole-page loader. Without it both pages are ISR like /group-buys.
+  // `urlReady` holds the first fetch (and the URL writer) until the filters
+  // are read, so a deep link still costs exactly one request.
+  const [city, setCity] = useState("");
+  const [categories, setCategories] = useState([]);
+  // MEH-3118: date shortcut — null | "today" | "tomorrow" | "weekend". One at
+  // a time; filters the rows already loaded (no refetch).
+  const [when, setWhen] = useState(null);
+  const [urlReady, setUrlReady] = useState(false);
+  useEffect(() => {
+    const p = new URLSearchParams(window.location.search);
+    setCity(p.get("city") || "");
+    setCategories(categoriesFor(tabFromPath(window.location.pathname) || tab, p.getAll("category")));
+    setUrlReady(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Reset filters when switching tabs — the two tabs have different
   // category vocabularies, so keeping a cross-tab category would
   // silently filter to zero rows. The URL-sync effect below mirrors the
   // reset into the query string.
-  // MEH-2245: the switch is also a route change (/events ↔ /experiences).
-  // Local state flips first so the tablist responds on the same tick
-  // (aria-selected / roving tabindex — EventsTabsKeyboard.test.jsx); the
-  // route then mounts this same component with the matching initialTab.
-  const switchTab = (next) => {
-    if (next === tab) return;
+  // MEH-2245: each tab owns its URL (/events, /experiences).
+  // MEH-2980: the switch happens IN PLACE. It used to be router.push, and the
+  // two pages are separate force-dynamic routes under [locale], so every tab
+  // tap streamed app/[locale]/loading.js over the WHOLE page (hero, tabs and
+  // list gone for ~450 ms on a phone, measured on staging), then remounted
+  // this component and fetched the list a second time. Now the URL is written
+  // with the native history.pushState, which Next (>= 14.1) folds into its
+  // router — usePathname follows it and Back / Forward still work — without a
+  // server round trip. Deep links and refreshes still hit the real route, so
+  // each page keeps its own metadata; only document.title is set here.
+  // DO NOT go back to router.push / <Link> navigation for these two tabs —
+  // e2e/flows/46-hub-tab-switch.spec.ts reds on the loading flash (MEH-2980).
+  const applyTab = (next) => {
     setTab(next);
     setCategories(clearCategories);
+    setWhen(null);
     setCity("");
-    router.push(next === "experiences" ? "/experiences" : "/events");
+    // The old remount reset the view; keep that (MEH-2980 AC: states unchanged).
+    setView("list");
   };
+
+  const switchTab = (next) => {
+    if (next === tab) return;
+    applyTab(next);
+    const current = window.location.pathname;
+    const path = /\/(events|experiences)\/?$/.test(current)
+      ? current.replace(/\/(events|experiences)\/?$/, `/${next}`)
+      : `/${next}`;
+    window.history.pushState(null, "", path);
+    if (titles?.[next]) document.title = titles[next];
+  };
+
+  // MEH-2980: Back / Forward across an in-place switch. The pathname moves
+  // without this component remounting, so the tab follows it here.
+  // - Read window.location, not the hook value: usePathname lags our own
+  //   pushState (Next applies it in a transition), so on a quick A→B→A the
+  //   hook can still say B while the URL already says A.
+  // - On a history move the URL is the truth for the filters too: the entry
+  //   may carry ?city= / ?category= that the reset never saw (Back to
+  //   /events?city=X must filter by X, not show the city in the bar only).
+  useEffect(() => {
+    const urlTab = tabFromPath(window.location.pathname);
+    if (urlTab && titles?.[urlTab]) document.title = titles[urlTab];
+    if (!urlTab || urlTab === tab) return;
+    const p = new URLSearchParams(window.location.search);
+    setTab(urlTab);
+    setView("list");
+    setWhen(null); // MEH-3118: a history move across tabs clears the shortcut too
+    setCity(p.get("city") || "");
+    setCategories(categoriesFor(urlTab, p.getAll("category")));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathname]);
 
   // MEH-1085 (DISC-08): single URL writer — the query string always mirrors
   // {city, category}, so filters survive refresh/share and the switchTab
   // reset clears them from the URL too — a cross-tab category is never
   // resurrected. Shallow history.replaceState, NOT router.replace: a Next
-  // navigation from this mount-time effect re-suspends the useSearchParams
-  // boundary (page.js Suspense) and resets client state — the E2E calendar
-  // toggle caught exactly that. replaceState keeps it a pure URL mirror
-  // (and preserves the locale-prefixed pathname on /en).
+  // navigation from here would remount the page and reset client state — the
+  // E2E calendar toggle caught exactly that. replaceState keeps it a pure URL
+  // mirror (and preserves the locale-prefixed pathname on /en).
   // MEH-2245: `tab` is no longer written — the route carries it.
+  // MEH-2984: not before the mount effect has read the URL — the first commit
+  // still holds empty filters and would wipe a deep link's query.
   useEffect(() => {
+    if (!urlReady) return;
     const p = new URLSearchParams();
     if (city) p.set("city", city);
     // MEH-2847: one ?category= per selected key — the /producers format.
@@ -160,12 +217,13 @@ export default function EventsPage({ initialTab = "events" }) {
     if (qs === current) return;
     const path = window.location.pathname;
     window.history.replaceState(null, "", qs ? `${path}?${qs}` : path);
-  }, [city, categories]);
+  }, [urlReady, city, categories]);
 
   useEffect(() => {
+    if (!urlReady) return; // MEH-2984: one request, with the URL's filters
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tab, city, categories]);
+  }, [urlReady, tab, city, categories]);
 
   const load = async () => {
     const ticket = ++loadTicket.current;
@@ -185,10 +243,16 @@ export default function EventsPage({ initialTab = "events" }) {
       const r = await api.get(endpoint, { params, timeout: 15000 });
       if (ticket !== loadTicket.current) return; // superseded
       setRows(r.data);
+      // MEH-3124: with no category picked, the list IS the category-less set
+      // for {tab, city}. No second request for the other case (MEH-2984: a
+      // deep link costs one request) — an unknown set shows every chip.
+      if (!categories.length) setPresent({ tab, city, cats: presentCategories(r.data) });
     } catch {
       if (ticket !== loadTicket.current) return; // superseded
       setRows([]);
       setLoadError(true);
+      // MEH-3124: a failed load forgets the set — every chip, not last city's.
+      setPresent({ tab, city, cats: null });
     } finally {
       if (ticket === loadTicket.current) setLoading(false);
     }
@@ -197,7 +261,15 @@ export default function EventsPage({ initialTab = "events" }) {
   const isExp = tab === "experiences";
   // Backward-compatibility alias so the render code keeps using `events`
   // even when the tab is experiences.
-  const events = rows;
+  // MEH-3118: the date shortcut narrows the loaded rows on the Israel calendar.
+  const events = useMemo(
+    () => {
+      if (!when) return rows;
+      const today = israelToday(); // once per filter, not once per row
+      return rows.filter((row) => matchesWhen(row.event_date, when, today));
+    },
+    [rows, when],
+  );
   const activeCategories = isExp ? EXPERIENCE_CATEGORY_KEYS : CATEGORY_KEYS;
   const categoryLabel = (entry) =>
     isExp ? tExpCat(entry.labelKey) : tCat(entry.labelKey);
@@ -205,15 +277,36 @@ export default function EventsPage({ initialTab = "events" }) {
   // Chips → shared ChipScrollRow. The wire value for "all" is "" but
   // ChipScrollRow's reset sentinel is "all" — bridge the two so its
   // scroll-pinning behaves like /producers + /map.
-  const chips = activeCategories.map((c) => ({
+  // MEH-3118: «הכל» stays first (it clears everything), then the three date
+  // shortcuts, then the categories — one row, no second strip (Eventbrite and
+  // Meetup lead with the date pills).
+  const categoryChips = activeCategories.map((c) => ({
     key: c.key || "all",
     label: categoryLabel(c),
   }));
+  const whenChips = WHEN_KEYS.map((k) => ({ key: `${WHEN_CHIP_PREFIX}${k}`, label: t(`when_${k}`) }));
+  const chips = [
+    ...categoryChips.filter((c) => c.key === "all"),
+    ...whenChips,
+    ...categoryChips.filter((c) => c.key !== "all"),
+  ];
   // MEH-2847: multi-select, as on /producers (ProducersClient.jsx:498-509).
   // «הכל» clears the set (and is the active chip while it is empty); tapping
   // a selected chip removes it; any other chip is added.
-  const activeChipKeys = useMemo(() => new Set(categories), [categories]);
+  const activeChipKeys = useMemo(
+    () => new Set(when ? [...categories, `${WHEN_CHIP_PREFIX}${when}`] : categories),
+    [categories, when],
+  );
   const onChipClick = (k) => {
+    if (k.startsWith(WHEN_CHIP_PREFIX)) {
+      const next = k.slice(WHEN_CHIP_PREFIX.length);
+      setWhen((prev) => (prev === next ? null : next)); // tap again = off
+      // The calendar opens on the current month; a weekend that crosses into
+      // next month would show an empty grid. A shortcut reads as a list.
+      setView("list");
+      return;
+    }
+    if (k === "all") setWhen(null);
     setCategories((prev) => {
       if (k === "all") return clearCategories(prev);
       return prev.includes(k) ? prev.filter((c) => c !== k) : [...prev, k];
@@ -222,7 +315,8 @@ export default function EventsPage({ initialTab = "events" }) {
 
   // MEH-2199: one handler per tablist. The hook reads each row's own tabs out
   // of the DOM, so the two rows on this page cannot interfere with each other.
-  const onMainTabsKeyDown = useTabsKeyboard(switchTab);
+  // MEH-2859: the main tablist's handler moved into ListingHubTabs with the
+  // row itself; only the list/calendar view toggle is still this page's own.
   const onViewTabsKeyDown = useTabsKeyboard(setView);
 
   // Group rows into consecutive month buckets (same logic as before —
@@ -247,6 +341,7 @@ export default function EventsPage({ initialTab = "events" }) {
   const resetFilters = () => {
     setCity("");
     setCategories(clearCategories);
+    setWhen(null);
   };
 
   // MEH-1865: a zero row count means two different things, and the page used
@@ -259,12 +354,26 @@ export default function EventsPage({ initialTab = "events" }) {
   // The reverse mistake (hiding the filters on a filtered-to-zero) is the one
   // that traps the reader with no way back but editing the URL, and it cannot
   // happen here.
-  const filtersActive = Boolean(city || categories.length);
+  const filtersActive = Boolean(city || categories.length || when);
   // MEH-2396: an error is not a zero. Neither zero surface may render on a
   // failed load, or the page claims a dataset it never received.
   const isZero = !loading && !loadError && events.length === 0;
   const datasetEmpty = isZero && !filtersActive;
   const filteredToZero = isZero && filtersActive;
+
+  // MEH-3124: hide a category chip with no results here (a picked one stays).
+  // With nothing picked, the last set for this tab stands in while a new city
+  // loads (no flicker); with a category picked, only this city's set counts.
+  const presentKnown =
+    present.tab === tab && (!categories.length || present.city === city);
+  const shownChips = visibleCategoryChips({
+    chips,
+    vocabulary: new Set((isExp ? EXPERIENCE_CATEGORIES : EVENT_CATEGORIES).map((c) => c.key)),
+    present: presentKnown ? present.cats : null,
+    active: activeChipKeys,
+  });
+  // «הכל» alone filters nothing — then the row is not drawn at all.
+  const showChipRow = shownChips.some((c) => c.key !== "all");
 
   return (
     <div>
@@ -272,94 +381,31 @@ export default function EventsPage({ initialTab = "events" }) {
           (/producers, /group-buys) carries one, and «בית › חוויות» on a
           first-level page only repeats the bottom nav. Detail pages keep theirs. */}
 
-      {/* Header — type-led per tab, now a full-bleed Ken Burns produce hero
-          (MEH-788). Image on all viewports; the green HERO_SCRIM band holds the
-          H1 + subtitle ≥ AA over any g_auto crop. Reuses the home-hero motion
-          (kenburns-right, globals.css) — honours prefers-reduced-motion via the
-          global off-switch (animation:none) + <MotionConfig reducedMotion>. */}
-      <section className="relative isolate w-full overflow-hidden h-[clamp(240px,34svh,300px)] md:h-[clamp(300px,40svh,380px)]">
-        {/* Ken Burns layer — decorative produce photo. inset -5% gives the
-            ≤1.08 zoom drift room. REUSES: app/[locale]/home/HomeHero.jsx:67 */}
-        <div className="absolute inset-0 overflow-hidden" aria-hidden="true">
-          <div
-            className="kenburns-right absolute"
-            style={{
-              inset: "-5%",
-              backgroundImage: `url(${HERO_IMAGE})`,
-              backgroundSize: "cover",
-              backgroundPosition: "center",
-              backgroundRepeat: "no-repeat",
-            }}
-          />
-        </div>
-
-        {/* green scrim band (HERO_SCRIM) — H1 + subtitle stay ≥ AA over the photo */}
-        <div className="absolute inset-0" aria-hidden="true" style={{ backgroundImage: HERO_SCRIM }} />
-
-        {/* Text — bottom-anchored on the scrim; start-aligned (RTL right). */}
-        <div className="absolute inset-x-0 bottom-0 px-4 pb-6 md:px-14 md:pb-10 text-background">
-          <div className="max-w-5xl mx-auto">
-            <p className="text-xs font-semibold text-green-100">
-              {isExp ? t("eyebrow_experiences") : t("eyebrow_events")}
-            </p>
-            <h1 className="font-headline-display font-black text-3xl md:text-6xl leading-tight text-background mt-1.5 md:mt-3">
-              {isExp ? t("h1_experiences") : t("title")}
-            </h1>
-            <p className="text-base md:text-xl text-background/85 mt-2 leading-snug">
-              {isExp ? t("subtitle_experiences") : t("subtitle")}
-            </p>
-          </div>
-        </div>
-      </section>
-
-      {/* Tabs — producer events vs community experiences + per-tab add */}
-      <div className="max-w-5xl mx-auto px-4 pt-4">
-        {/* MEH-916: the add-event Link is NOT a tab — a tablist may only own
-            role="tab" children (axe aria-required-children). The flex row +
-            border-b move to this outer div; the inner div is the tablist,
-            wrapping only the two tabs. The Link stays a sibling in the same
-            flex row (ms-auto), so the layout is unchanged. */}
-        <div className="flex items-end gap-4 border-b border-border">
-          <div
-            role="tablist"
-            className="flex items-end gap-4"
-            onKeyDown={onMainTabsKeyDown}
-          >
-          <button
-            role="tab"
-            data-tab-value="events"
-            aria-selected={!isExp}
-            tabIndex={isExp ? -1 : 0}
-            onClick={() => switchTab("events")}
-            className={`pb-3 pt-2 min-h-touch inline-flex items-center text-sm md:text-base font-semibold border-b-2 -mb-px transition ${
-              !isExp ? "border-primary text-primary" : "border-transparent text-fg-muted hover:text-primary"
-            }`}
-          >
-            {t("tab_events")}
-          </button>
-          <button
-            role="tab"
-            data-tab-value="experiences"
-            aria-selected={isExp}
-            tabIndex={isExp ? 0 : -1}
-            onClick={() => switchTab("experiences")}
-            className={`pb-3 pt-2 min-h-touch inline-flex items-center text-sm md:text-base font-semibold border-b-2 -mb-px transition ${
-              isExp ? "border-primary text-primary" : "border-transparent text-fg-muted hover:text-primary"
-            }`}
-          >
-            {t("tab_experiences")}
-          </button>
-          </div>
+      {/* MEH-3013: hero + tab row come from the shared HubShell, so all four
+          hub tabs keep one frame (components/HubShell.jsx). */}
+      {/* MEH-2859: the row is now the shared four-tab hub row (events ·
+          experiences · group buys · surprise baskets) in
+          components/ListingHubTabs.jsx, so /group-buys and /rescue render the
+          same one instead of a second copy. `onSelect` keeps this page's
+          same-tick local switch for its own two tabs (MEH-2245); the other two
+          are plain route changes. The add link moves in as `action`. */}
+      <HubShell
+        active={isExp ? "experiences" : "events"}
+        eyebrow={isExp ? t("eyebrow_experiences") : t("eyebrow_events")}
+        title={isExp ? t("h1_experiences") : t("title")}
+        subtitle={isExp ? t("subtitle_experiences") : t("subtitle")}
+        onSelect={switchTab}
+        action={
           <Link
             href={isExp ? "/producer/dashboard/experiences/new" : "/producer/dashboard/events/new"}
-            className="ms-auto min-w-0 self-center min-h-touch inline-flex items-center text-sm font-medium text-primary hover:underline"
+            className="min-w-0 min-h-touch inline-flex items-center text-sm font-medium text-primary hover:underline"
           >
             {isExp ? t("submit_experience") : t("add_event")}
             {/* MEH-990: raw → dingbat → Phosphor ArrowRight; rtl:rotate-180 = reading-forward in he (MEH-938 pattern) */}
             <ArrowRight size={16} weight="bold" aria-hidden="true" className="ms-1 rtl:rotate-180" />
           </Link>
-        </div>
-      </div>
+        }
+      />
 
       {/* Toolbar + category chips — the tab's filter controls. MEH-1865: on an
           empty dataset there is nothing to filter and nothing to re-view, so
@@ -419,14 +465,16 @@ export default function EventsPage({ initialTab = "events" }) {
           </div>
 
           {/* Category chips — shared ChipScrollRow (rounded-md, MEH-764). */}
-          <div className="max-w-5xl mx-auto px-4 pt-3">
-            <ChipScrollRow
-              variant="category"
-              chips={chips}
-              activeKeys={activeChipKeys}
-              onChipClick={onChipClick}
-            />
-          </div>
+          {showChipRow && (
+            <div className="max-w-5xl mx-auto px-4 pt-3">
+              <ChipScrollRow
+                variant="category"
+                chips={shownChips}
+                activeKeys={activeChipKeys}
+                onChipClick={onChipClick}
+              />
+            </div>
+          )}
         </>
       )}
 
@@ -455,9 +503,9 @@ export default function EventsPage({ initialTab = "events" }) {
                 <div className="flex items-baseline gap-2.5 pt-6 pb-1.5">
                   {/* MEH-858 F4: month divider is the h2 rung (was a span) so
                       the outline is h1 → h2 → h3 with no skipped level. */}
-                  <h2 className="font-headline-md text-2xl font-bold text-text leading-none">
+                  <SectionHeading size="content" className="leading-none">
                     {group.monthLabel}
-                  </h2>
+                  </SectionHeading>
                   <span dir="ltr" className="font-english italic text-base font-medium text-accent numeric">
                     {group.yearLabel}
                   </span>
@@ -490,13 +538,13 @@ function EmptyState({ tab, t }) {
   return (
     <div data-testid="events-empty-dataset" className="flex flex-col items-center text-center px-6 py-16">
       <div className="grid place-items-center w-[76px] h-[76px] rounded-full bg-accent/10 border border-accent/25 text-accent">
-        <Icon size={36} />
+        <Icon size={32} />
       </div>
       {/* MEH-858 F4: empty-state title is h2 (was h4) — only heading under the
           page h1 when the feed is empty, so h1 → h2 with no skip. */}
-      <h2 className="font-headline-md text-2xl font-bold text-text mt-5 max-w-[22ch] leading-snug">
+      <SectionHeading size="content" className="mt-5 max-w-[22ch] leading-snug">
         {isExp ? t("empty_experiences_title") : t("empty_events_title")}
-      </h2>
+      </SectionHeading>
       <p className="text-sm text-fg-muted mt-2.5 max-w-[30ch] leading-relaxed">
         {isExp ? t("empty_experiences_body") : t("empty_events_body")}
       </p>
@@ -504,7 +552,7 @@ function EmptyState({ tab, t }) {
         {isExp && (
           <Link
             href="/producer/dashboard/experiences/new"
-            className="w-full max-w-[260px] inline-flex items-center justify-center gap-2 bg-primary text-white text-sm font-semibold px-5 py-3 rounded-sm"
+            className="w-full max-w-[260px] inline-flex items-center justify-center gap-2 bg-primary text-white text-sm font-semibold px-5 py-3 rounded-full"
           >
             <Plus size={18} weight="bold" />
             {t("empty_experiences_cta")}
@@ -531,9 +579,9 @@ function EmptyState({ tab, t }) {
 function LoadError({ tErr, onRetry }) {
   return (
     <div data-testid="events-load-error" role="alert" className="flex flex-col items-center text-center px-6 py-16">
-      <h2 className="font-headline-md text-2xl font-bold text-text max-w-[22ch] leading-snug">
+      <SectionHeading size="content" className="max-w-[22ch] leading-snug">
         {tErr("generic")}
-      </h2>
+      </SectionHeading>
       <Button
         type="button"
         onClick={onRetry}
@@ -554,9 +602,9 @@ function LoadError({ tErr, onRetry }) {
 function NoResults({ t, onReset }) {
   return (
     <div data-testid="events-no-results" className="flex flex-col items-center text-center px-6 py-16">
-      <h2 className="font-headline-md text-2xl font-bold text-text max-w-[22ch] leading-snug">
+      <SectionHeading size="content" className="max-w-[22ch] leading-snug">
         {t("no_results_title")}
-      </h2>
+      </SectionHeading>
       <Button
         type="button"
         onClick={onReset}
@@ -582,14 +630,14 @@ function SkeletonRows({ srLabel }) {
       {[0, 1, 2, 3, 4].map((i) => (
         <div key={i} className="grid grid-cols-[64px_1fr] md:grid-cols-[104px_1fr] border-b border-border">
           <div className="py-5 grid justify-items-center content-start gap-2">
-            <span className="w-8 h-8 rounded bg-border/60 animate-pulse" />
-            <span className="w-7 h-2.5 rounded bg-border/60 animate-pulse" />
+            <SkeletonBlock className="w-8 h-8 rounded" />
+            <SkeletonBlock className="w-7 h-2.5 rounded" />
           </div>
           <div className="py-5 ps-3 pe-4 grid gap-2.5">
-            <span className="w-12 h-2.5 rounded bg-border/60 animate-pulse" />
-            <span className="w-3/4 h-4 rounded bg-border/60 animate-pulse" />
-            <span className="w-1/2 h-3 rounded bg-border/60 animate-pulse" />
-            <span className="w-24 h-5 rounded-full bg-border/60 animate-pulse" />
+            <SkeletonBlock className="w-12 h-2.5 rounded" />
+            <SkeletonBlock className="w-3/4 h-4 rounded" />
+            <SkeletonBlock className="w-1/2 h-3 rounded" />
+            <SkeletonBlock className="w-24 h-5 rounded-full" />
           </div>
         </div>
       ))}

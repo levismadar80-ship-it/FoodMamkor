@@ -72,6 +72,7 @@ class TestGetAlertPrefs:
             "notify_delivery_area": False,
             "notify_new_recipe": False,
             "notify_new_group_buy": False,  # MEH-2828: no row → off, like the rest
+            "notify_new_rescue": False,  # MEH-3117: no row → off, like the rest
             "whatsapp_opt_in": False,
             "has_push": False,
         }
@@ -154,7 +155,9 @@ class TestFireAlerts:
             "app.services.push.send_push_notification",
             lambda sub, **kw: push_calls.append(sub),
         )
-        monkeypatch.setattr("app.routers.alerts.send_template", lambda to, tmpl: True)
+        monkeypatch.setattr(
+            "app.routers.alerts.send_template", lambda to, tmpl, test_cause=False: True
+        )
 
         producer = make_producer(db, name="Farm FanOut")
         opted_in = make_user(db, email="in@example.com")
@@ -183,7 +186,7 @@ class TestFireAlerts:
         """Monkeypatch send_template to capture (to, template); returns the dict."""
         captured = {}
 
-        def fake_send_template(to, template):
+        def fake_send_template(to, template, test_cause=False):
             captured["to"] = to
             captured["template"] = template
             return True
@@ -299,7 +302,9 @@ class TestFireAlerts:
             calls.append({"sub": sub, "title": title, "body": body, "url": url})
 
         monkeypatch.setattr("app.services.push.send_push_notification", fake_push)
-        monkeypatch.setattr("app.routers.alerts.send_template", lambda to, tmpl: True)
+        monkeypatch.setattr(
+            "app.routers.alerts.send_template", lambda to, tmpl, test_cause=False: True
+        )
 
         producer = make_producer(db, name="Farm Push")
         user = make_user(db, email="push@example.com")
@@ -323,7 +328,9 @@ class TestFireAlerts:
             raise RuntimeError("boom")
 
         monkeypatch.setattr("app.services.push.send_push_notification", flaky_push)
-        monkeypatch.setattr("app.routers.alerts.send_template", lambda to, tmpl: True)
+        monkeypatch.setattr(
+            "app.routers.alerts.send_template", lambda to, tmpl, test_cause=False: True
+        )
 
         producer = make_producer(db, name="Farm Failopen")
         u1 = make_user(db, email="r1@example.com")
@@ -390,7 +397,9 @@ class TestDeliveryAreaTargeting:
             calls.append({"sub": sub, "title": title, "body": body, "url": url})
 
         monkeypatch.setattr("app.services.push.send_push_notification", fake_push)
-        monkeypatch.setattr("app.routers.alerts.send_template", lambda to, tmpl: True)
+        monkeypatch.setattr(
+            "app.routers.alerts.send_template", lambda to, tmpl, test_cause=False: True
+        )
         return calls
 
     def _delivery_alert(self, db, producer, *, email, city, **extra):

@@ -57,6 +57,8 @@ import ReportButton from "@/components/ReportButton";
 vi.mock("@phosphor-icons/react", () => ({
   X: () => <span />,
   Crosshair: () => <span />,
+  // MEH-3068: the geo button shows ButtonSpinner (CircleNotch) while locating.
+  CircleNotch: () => <span />,
 }));
 
 vi.mock("@/components/CitySearch", () => ({

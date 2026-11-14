@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
+import Dialog from "@/components/ui/Dialog";
 import { useTranslations, useFormatter } from "next-intl";
 import { StarOfDavid, X } from "@phosphor-icons/react";
 import { parseNaiveUtc } from "@/lib/dates";
@@ -38,82 +39,13 @@ function daysUntil(dateStr) {
  * `max-h`-capped so it fits a 375px viewport with native pinch-zoom intact.
  */
 function CertModal({ src, expiryText, onClose, t }) {
-  const closeRef = useRef(null);
-  // MEH-2039: the trap scopes to the panel, not the fixed inset-0 overlay.
-  const panelRef = useRef(null);
-  // MEH-2129: initial focus is MOUNT-ONLY, and that is why it is its own
-  // effect. Both call sites (:220, :277 below) pass `onClose` as an inline
-  // arrow, so its identity changes on every parent render. Sharing the
-  // `[onClose]` effect below meant every re-render tore the effect down and
-  // rebuilt it — firing `.focus()` again and yanking focus back to the close
-  // button out from under whoever had tabbed into the modal. An empty
-  // dependency array is the fix: the modal is mounted only while it is open
-  // (`{openCert && <CertModal …/>}`), so "on mount" IS "on open".
-  //
-  // MEASURED, not assumed: changing `openCert` from one code to another
-  // WITHOUT closing first re-renders this component in place — same DOM node,
-  // same close button, no remount — so the mount-only effect does not re-focus
-  // on that path, where the old `[onClose]` effect did. That path is not
-  // reachable: the overlay is `fixed inset-0 z-[9000]`, so the triggers behind
-  // it cannot be clicked, and the Tab trap below keeps keyboard focus inside
-  // the panel. The reachable switch is close-then-open, which unmounts and
-  // remounts, and re-focuses exactly as before.
-  useEffect(() => {
-    closeRef.current?.focus();
-    // Deliberately empty: this must run once per open, never per render.
-    // (No disable directive needed — `closeRef` is a ref, so
-    // react-hooks/exhaustive-deps has nothing to require here.)
-  }, []);
-
-  // MEH-2039: Tab trap ONLY. The body scroll lock was already here and is
-  // deliberately left untouched. This effect keeps `[onClose]` — re-running it
-  // is harmless (it only re-binds a listener and re-reads the overflow value,
-  // which the cleanup has already restored), and `onClose` genuinely must be
-  // current for Escape to close the right modal.
-  // REUSES: LoginPromptModal.jsx:42-77 for the trap half.
-  useEffect(() => {
-    const onKey = (e) => {
-      if (e.key === "Escape") { onClose(); return; }
-      if (e.key !== "Tab") return;
-
-      const focusables = panelRef.current?.querySelectorAll(
-        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
-      );
-      if (!focusables?.length) return;
-      const first = focusables[0];
-      const last = focusables[focusables.length - 1];
-
-      if (e.shiftKey && document.activeElement === first) {
-        e.preventDefault();
-        last.focus();
-      } else if (!e.shiftKey && document.activeElement === last) {
-        e.preventDefault();
-        first.focus();
-      }
-    };
-    document.addEventListener("keydown", onKey);
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.removeEventListener("keydown", onKey);
-      document.body.style.overflow = prev;
-    };
-  }, [onClose]);
-
+  // MEH-3096: overlay, Tab trap, Escape, scroll lock and focus return come
+  // from ui/Dialog. Initial focus is the close button (data-autofocus) — once
+  // per open, which is what MEH-2129's mount-only effect protected.
   return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      aria-label={t("cert.dialog_label")}
-      data-testid="kashrut-cert-modal"
-      className="fixed inset-0 z-[9000] flex items-center justify-center bg-black/40 p-4"
-      onClick={(e) => {
-        if (e.target === e.currentTarget) onClose();
-      }}
-    >
-      <div ref={panelRef} className="bg-surface-floating rounded-lg border border-border w-full max-w-md p-4 relative" dir="rtl">
+    <Dialog label={t("cert.dialog_label")} onClose={onClose} testId="kashrut-cert-modal" className="relative">
         <button
-          ref={closeRef}
+          data-autofocus
           type="button"
           onClick={onClose}
           aria-label={t("cert.close")}
@@ -125,7 +57,9 @@ function CertModal({ src, expiryText, onClose, t }) {
         {/* raw img: src is our own /kashrut-cert proxy route, not a Cloudinary
             URL — lib/cloudinary.js has nothing to transform, and the host is
             not in next.config.js images.remotePatterns (frozen this ticket). */}
-        {/* MEH-2038: the top margin is STILL REQUIRED and had to grow 6→11. The
+        {/* MEH-3096: Dialog's p-6 panel → mt-9: top-3 + h-11 = 56px, content
+            starts at 24px, 32px needed, 36px given (the same 4px slack).
+            MEH-2038: the top margin is STILL REQUIRED and had to grow 6→11. The
             image is w-full, so moving the close button to end-3 does not clear
             it horizontally — only vertical separation works. Button: top-3
             (12px) + h-11 (44px) = 56px from the card top; the p-4 content box
@@ -138,7 +72,7 @@ function CertModal({ src, expiryText, onClose, t }) {
           src={src}
           alt={t("cert.image_alt")}
           data-testid="kashrut-cert-image"
-          className="w-full max-h-[70vh] object-contain rounded mt-11"
+          className="w-full max-h-[70vh] object-contain rounded mt-9"
         />
         <div className="mt-3 space-y-1 text-sm">
           {expiryText && <p className="font-medium text-text">{expiryText}</p>}
@@ -147,8 +81,7 @@ function CertModal({ src, expiryText, onClose, t }) {
               checked it — we never assert the business "is kosher". */}
           <p className="text-fg-muted">{t("cert.original_at_business")}</p>
         </div>
-      </div>
-    </div>
+    </Dialog>
   );
 }
 
@@ -240,7 +173,7 @@ export default function KashrutBadgeStrip({
                     onClick={() => setOpenCert(code)}
                     aria-haspopup="dialog"
                     data-testid={`kashrut-cert-trigger-${code}`}
-                    className="underline underline-offset-2 hover:text-primary transition focus-visible:ring-2 focus-visible:ring-primary/40 rounded"
+                    className="underline underline-offset-2 hover:text-primary transition focus-visible:ring-2 focus-visible:ring-primary rounded"
                   >
                     {label}
                   </button>
@@ -284,7 +217,7 @@ export default function KashrutBadgeStrip({
               onClick={() => setOpenCert(code)}
               aria-haspopup="dialog"
               data-testid={`kashrut-cert-trigger-${code}`}
-              className={`${pill} hover:bg-primary/10 transition focus-visible:ring-2 focus-visible:ring-primary/40`}
+              className={`${pill} hover:bg-primary/10 transition focus-visible:ring-2 focus-visible:ring-primary`}
             >
               {label}
             </button>

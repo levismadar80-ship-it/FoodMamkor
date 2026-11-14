@@ -25,6 +25,7 @@ import logging
 from datetime import datetime, timedelta, timezone
 from typing import Tuple
 
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.config import settings
@@ -337,7 +338,26 @@ def send_due_followups(db: Session) -> dict[int, int]:
                 # photos and the catalog — an organizer (ADR-036) sells
                 # nothing. Narrows the audience; no copy changes.
                 Producer.kind == "producer",
-                Producer.created_at <= cutoff,
+                # MEH-2974 (closed decision 7): the sequence counts from the
+                # day the OWNER arrived, not the day the row was created.
+                #
+                # For a self-registered business those are the same moment and
+                # `owner_invite_accepted_at` is NULL, so the COALESCE falls
+                # back to `created_at` and the behaviour is byte-identical —
+                # that equivalence is the control in
+                # tests/test_producer_owner_invite.py::TestOnboardingFollowupClock
+                # (`test_a_self_registered_business_is_unchanged`), without
+                # which the new-path test could pass because the whole
+                # sequence broke.
+                #
+                # For an admin-built business they are not: Sapir can build the
+                # page weeks before its owner ever opens the invite. Keyed on
+                # `created_at`, such an owner would receive «עברו כמה ימים»
+                # (step 3) and «חודש איתנו» (step 5) on day one — or, worse,
+                # the whole sequence would already be past due and she would
+                # get all four at once, on the day she arrived.
+                func.coalesce(Producer.owner_invite_accepted_at, Producer.created_at)
+                <= cutoff,
                 column.is_(None),
             )
             .all()
@@ -350,7 +370,13 @@ def send_due_followups(db: Session) -> dict[int, int]:
                 parts = (user.name or "").strip().split()
                 first_name = parts[0] if parts else ""
                 subject, body = _build_email(step, p, first_name)
-                send_email(user.email, subject, body)
+                # MEH-2952: a test business / test owner → dropped and logged.
+                send_email(
+                    user.email,
+                    subject,
+                    body,
+                    test_cause=bool(p.is_test or user.is_test),
+                )
                 setattr(p, column_attr, datetime.now(timezone.utc))
                 db.commit()
                 counts[step] += 1

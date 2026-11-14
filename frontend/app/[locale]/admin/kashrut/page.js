@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useTranslations, useLocale } from "next-intl";
 import { ArrowSquareOut } from "@phosphor-icons/react";
 import { formatEventDate } from "@/lib/format-date";
+import { israelToday } from "@/lib/israel-date";
 import api from "@/lib/api";
 import { detailToMessage } from "@/lib/errors";
 import { showToast } from "@/lib/toast";
@@ -17,8 +18,9 @@ import InfoTooltip from "@/components/InfoTooltip";
 import { CODE_TO_KEY } from "@/components/KashrutBadgeStrip";
 import { SkeletonTable } from "@/components/Skeleton";
 import Button from "@/components/ui/Button";
+import Dialog from "@/components/ui/Dialog";
 
-function formatDate(iso, locale) {
+function shortDate(iso, locale) {
   if (!iso) return "—";
   return formatEventDate(iso, locale, { day: "2-digit", month: "2-digit", year: "numeric" });
 }
@@ -26,8 +28,7 @@ function formatDate(iso, locale) {
 // MEH-2518: the server accepts tomorrow … today+400 (Israel calendar,
 // KASHRUT_EXPIRY_MAX_DAYS); the picker offers the same window.
 function israelDateOffset(days) {
-  const d = new Date(Date.now() + days * 86400000);
-  return new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Jerusalem" }).format(d);
+  return israelToday(new Date(Date.now() + days * 86400000));
 }
 
 export default function AdminKashrutPage() {
@@ -201,7 +202,7 @@ export default function AdminKashrutPage() {
                       <span className="font-medium">{row.name}</span>
                       <span className="text-fg-muted text-xs flex items-center gap-3">
                         <span dir="ltr">{row.phone_masked}</span>
-                        <span>{formatDate(row.expires_at, locale)}</span>
+                        <span>{shortDate(row.expires_at, locale)}</span>
                         {row.sent === true && (
                           <span className="text-primary">{t("kashrut.reminders.row_sent")}</span>
                         )}
@@ -235,7 +236,7 @@ export default function AdminKashrutPage() {
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
           aria-label={t("producers.table.columns.status")}
-          className="border rounded-sm px-3 py-2 text-sm"
+          className="border rounded-sm px-3 py-2 text-sm focus-ring"
         >
           <option value="pending">{t("kashrut.status.pending")}</option>
           <option value="approved">{t("kashrut.status.approved")}</option>
@@ -287,7 +288,7 @@ export default function AdminKashrutPage() {
                       <span className="text-fg-muted text-xs">{t("kashrut.no_cert")}</span>
                     )}
                   </td>
-                  <td className="px-4 py-3 text-fg-muted" data-label={t("kashrut.columns.date")}>{formatDate(row.created_at, locale)}</td>
+                  <td className="px-4 py-3 text-fg-muted" data-label={t("kashrut.columns.date")}>{shortDate(row.created_at, locale)}</td>
                   <td className="px-4 py-3 text-fg-muted text-xs" data-label={t("kashrut.columns.notes")}>{row.notes || "—"}</td>
                   {statusFilter === "pending" && (
                     <td className="px-4 py-3" data-cell="actions">
@@ -329,9 +330,12 @@ export default function AdminKashrutPage() {
 
       {/* MEH-2518: approve modal — the expiry printed on the certificate. */}
       {approveModal && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-[9000] p-4">
-          <div className="bg-surface rounded-lg p-6 w-full max-w-md shadow-xl" dir="rtl">
-            <h2 className="font-semibold text-lg mb-3">{t("kashrut.approve_modal.title")}</h2>
+        <Dialog closeOnBackdrop={false}
+          labelledBy="kashrut-approve-title"
+          dismissible={!busy}
+          onClose={() => setApproveModal(null)}
+        >
+            <h2 id="kashrut-approve-title" className="font-semibold text-lg mb-3">{t("kashrut.approve_modal.title")}</h2>
             <label htmlFor="kashrut-expires-on" className="text-sm font-medium block mb-1.5">
               {t("kashrut.approve_modal.date_label")}
             </label>
@@ -343,7 +347,7 @@ export default function AdminKashrutPage() {
               max={israelDateOffset(400)}
               value={approveDate}
               onChange={(e) => setApproveDate(e.target.value)}
-              className="w-full border rounded-sm p-3 text-sm"
+              className="w-full border rounded-sm p-3 text-sm focus-ring"
             />
             <p className="text-xs text-fg-muted mt-2">{t("kashrut.approve_modal.hint")}</p>
             <div className="flex gap-3 mt-4">
@@ -361,21 +365,23 @@ export default function AdminKashrutPage() {
                 {busy ? t("kashrut.approve_modal.submitting") : t("kashrut.approve_modal.submit")}
               </Button>
             </div>
-          </div>
-        </div>
+        </Dialog>
       )}
 
       {/* MEH-2518: revoke modal — takes an approved badge down. */}
       {revokeModal && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-[9000] p-4">
-          <div className="bg-surface rounded-lg p-6 w-full max-w-md shadow-xl" dir="rtl">
-            <h2 className="font-semibold text-lg mb-3">{t("kashrut.revoke_modal.title")}</h2>
+        <Dialog closeOnBackdrop={false}
+          labelledBy="kashrut-revoke-title"
+          dismissible={!busy}
+          onClose={() => setRevokeModal(null)}
+        >
+            <h2 id="kashrut-revoke-title" className="font-semibold text-lg mb-3">{t("kashrut.revoke_modal.title")}</h2>
             <p className="text-sm text-fg-muted mb-3">{t("kashrut.revoke_modal.body")}</p>
             <textarea
               value={revokeNotes}
               onChange={(e) => setRevokeNotes(e.target.value)}
               placeholder={t("kashrut.revoke_modal.placeholder")}
-              className="w-full border rounded-sm p-3 text-sm resize-none h-24"
+              className="w-full border rounded-sm p-3 text-sm resize-none h-24 focus-ring"
             />
             <div className="flex gap-3 mt-4">
               <button
@@ -392,20 +398,22 @@ export default function AdminKashrutPage() {
                 {busy ? t("kashrut.revoke_modal.submitting") : t("kashrut.revoke_modal.submit")}
               </button>
             </div>
-          </div>
-        </div>
+        </Dialog>
       )}
 
       {/* Reject modal */}
       {rejectModal && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-[9000] p-4">
-          <div className="bg-surface rounded-lg p-6 w-full max-w-md shadow-xl" dir="rtl">
-            <h2 className="font-semibold text-lg mb-3">{t("kashrut.reject_modal.title")}</h2>
+        <Dialog closeOnBackdrop={false}
+          labelledBy="kashrut-reject-title"
+          dismissible={!busy}
+          onClose={() => setRejectModal(null)}
+        >
+            <h2 id="kashrut-reject-title" className="font-semibold text-lg mb-3">{t("kashrut.reject_modal.title")}</h2>
             <textarea
               value={rejectNotes}
               onChange={(e) => setRejectNotes(e.target.value)}
               placeholder={t("kashrut.reject_modal.placeholder")}
-              className="w-full border rounded-sm p-3 text-sm resize-none h-24"
+              className="w-full border rounded-sm p-3 text-sm resize-none h-24 focus-ring"
             />
             <div className="flex gap-3 mt-4">
               <button
@@ -422,8 +430,7 @@ export default function AdminKashrutPage() {
                 {busy ? t("kashrut.reject_modal.submitting") : t("kashrut.reject_modal.submit")}
               </button>
             </div>
-          </div>
-        </div>
+        </Dialog>
       )}
     </div>
   );

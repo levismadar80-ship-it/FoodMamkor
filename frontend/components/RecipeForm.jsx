@@ -31,11 +31,12 @@ import { Leaf } from "@phosphor-icons/react";
 import Input from "@/components/ui/Input";
 import UnverifiedEmailNotice from "@/components/UnverifiedEmailNotice";
 import Button from "@/components/ui/Button";
+import InlineMessage from "@/components/ui/InlineMessage";
 
 // MEH-1128 Wave B: single-line fields render via ui/Input; baseInput remains
 // for the textareas only (no textarea primitive yet — epic Wave D+).
 const baseInput =
-  "w-full border border-border rounded-sm px-3 py-2 bg-surface text-start focus-visible:ring-2 focus-visible:ring-primary/40 outline-none";
+  "w-full border border-border rounded-sm px-3 py-2 bg-surface text-start focus-visible:ring-2 focus-visible:ring-primary outline-none";
 
 const EMPTY = {
   title: "",
@@ -303,7 +304,7 @@ export default function RecipeForm({ mode = "create", initial, onSaved, onCancel
             </button>
           </div>
         ) : (
-          <label className="inline-flex items-center text-sm border border-dashed border-border rounded-sm px-4 py-3 cursor-pointer hover:bg-green-50 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/30">
+          <label className="inline-flex items-center text-sm border border-dashed border-border rounded-sm px-4 py-3 cursor-pointer hover:bg-green-50 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary">
             {/* MEH-2033: sr-only + focus-within — keyboard reachability, the
                 MEH-2031 pattern. */}
             <input
@@ -355,9 +356,9 @@ export default function RecipeForm({ mode = "create", initial, onSaved, onCancel
 
       {unverified && <UnverifiedEmailNotice />}
       {error && (
-        <p className="text-sm text-error" role="alert">
+        <InlineMessage>
           {error}
-        </p>
+        </InlineMessage>
       )}
 
       <div className="flex items-center gap-3">

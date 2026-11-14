@@ -6,13 +6,16 @@
  */
 
 import { useEffect, useId, useState } from "react";
-import { Bell, BellSlash, Check, Confetti, CookingPot, Handbag, Truck, ChatCircle, ShoppingCart } from "@phosphor-icons/react";
+import { Basket, Bell, BellSlash, Check, Confetti, CookingPot, Handbag, Truck, ChatCircle, ShoppingCart } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import api from "@/lib/api";
 import { showToast } from "@/lib/toast";
 import { useAuth } from "@/lib/auth-context";
 import { validateIsraeliPhone } from "@/lib/validators";
 import Button from "@/components/ui/Button";
+import Switch from "@/components/ui/Switch";
+import { SkeletonBlock } from "@/components/Skeleton";
+import { rescueBagsEnabled } from "@/lib/rescue";
 
 const DEFAULT_PREFS = {
   notify_new_event: true,
@@ -22,6 +25,8 @@ const DEFAULT_PREFS = {
   notify_new_recipe: true,
   // MEH-2828: 5th alert type — the business opens a group buy.
   notify_new_group_buy: true,
+  // MEH-3117: 6th alert type — the business publishes rescue bags for today.
+  notify_new_rescue: true,
   whatsapp_opt_in: false,
 };
 
@@ -52,6 +57,7 @@ export default function AlertPrefsPanel({ producerId, producerName, onClose }) {
             notify_delivery_area: r.data.notify_delivery_area,
             notify_new_recipe: r.data.notify_new_recipe,
             notify_new_group_buy: r.data.notify_new_group_buy,
+            notify_new_rescue: r.data.notify_new_rescue,
             whatsapp_opt_in: r.data.whatsapp_opt_in,
           });
         } else {
@@ -126,6 +132,8 @@ export default function AlertPrefsPanel({ producerId, producerName, onClose }) {
         notify_delivery_area: effective.notify_delivery_area,
         notify_new_recipe: effective.notify_new_recipe,
         notify_new_group_buy: effective.notify_new_group_buy,
+        // Sent only where its row is shown; otherwise the API default holds.
+        ...(rescueBagsEnabled() ? { notify_new_rescue: effective.notify_new_rescue } : {}),
         whatsapp_opt_in: effective.whatsapp_opt_in,
         push_subscription,
       });
@@ -163,7 +171,7 @@ export default function AlertPrefsPanel({ producerId, producerName, onClose }) {
 
   if (loading) {
     return (
-      <div className="p-4 text-sm text-fg-muted text-center animate-pulse">{t("loading")}</div>
+      <SkeletonBlock as="div" tone="none" className="p-4 text-sm text-fg-muted text-center">{t("loading")}</SkeletonBlock>
     );
   }
 
@@ -173,20 +181,10 @@ export default function AlertPrefsPanel({ producerId, producerName, onClose }) {
         <Icon size={18} className="text-primary" aria-hidden="true" />
         {label}
       </span>
-      <button
-        role="switch"
-        aria-checked={prefs[key]}
+      <Switch
+        checked={prefs[key]}
         onClick={() => toggle(key)}
-        className={`relative w-10 h-6 rounded-full transition-colors focus-visible:ring-2 focus-visible:ring-primary/40 ${
-          prefs[key] ? "bg-primary" : "bg-border"
-        }`}
-      >
-        <span
-          className={`absolute top-1 w-4 h-4 rounded-full bg-surface shadow transition-all ${
-            prefs[key] ? "end-1" : "start-1"
-          }`}
-        />
-      </button>
+      />
     </label>
   );
 
@@ -241,6 +239,9 @@ export default function AlertPrefsPanel({ producerId, producerName, onClose }) {
           {toggleRow("notify_delivery_area", t("row_delivery_area"), Truck)}
           {toggleRow("notify_new_recipe", t("row_new_recipe"), CookingPot)}
           {toggleRow("notify_new_group_buy", t("row_new_group_buy"), ShoppingCart)}
+          {/* MEH-3117: only where the pilot is on — no toggle for a feature
+              the site does not show (off in production by default). */}
+          {rescueBagsEnabled() && toggleRow("notify_new_rescue", t("row_new_rescue"), Basket)}
         </div>
       </div>
 
@@ -261,7 +262,7 @@ export default function AlertPrefsPanel({ producerId, producerName, onClose }) {
                 placeholder={t("phone_placeholder")}
                 dir="ltr"
                 aria-label={t("phone_required_prompt")}
-                className="w-full border border-border rounded-sm px-3 py-2 text-sm text-start outline-none focus:border-primary focus:ring-2 focus:ring-primary/30 transition"
+                className="w-full border border-border rounded-sm px-3 py-2 text-sm text-start outline-none focus:border-primary focus-visible:ring-2 focus-visible:ring-primary transition"
               />
               {/* MEH-1359: the save button is disabled until the phone is valid — say
                   why, so the greyed-out state isn't an unexplained dead end. */}
@@ -291,7 +292,7 @@ export default function AlertPrefsPanel({ producerId, producerName, onClose }) {
             <button
               onClick={enablePush}
               disabled={pushStatus === "denied"}
-              className="w-full text-xs border border-primary/30 text-primary px-3 py-2 rounded-sm hover:bg-primary/5 transition disabled:opacity-40 flex items-center justify-center gap-1.5"
+              className="w-full text-xs border border-primary/30 text-primary px-3 py-2 rounded-sm hover:bg-primary/5 transition disabled:opacity-50 flex items-center justify-center gap-1.5"
             >
               {pushStatus === "denied" ? (
                 <>

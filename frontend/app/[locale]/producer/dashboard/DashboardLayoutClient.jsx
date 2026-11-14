@@ -38,6 +38,7 @@ import {
 } from "@phosphor-icons/react";
 import { useAuth } from "@/lib/auth-context";
 import EmptyState from "@/components/ui/EmptyState";
+import { SkeletonBlock } from "@/components/Skeleton";
 
 // Tab order is the source of truth for the persistent nav (locked design
 // order: Overview / Edit / Insights / Tools). `exact` marks the index route
@@ -59,6 +60,7 @@ const TABS = [
       "/producer/dashboard/group-buys",
       "/producer/dashboard/recipes",
       "/producer/dashboard/rescue",
+      "/producer/dashboard/reviews", // MEH-3107
     ],
   },
 ];
@@ -106,16 +108,16 @@ function DashboardChromeSkeleton({ label }) {
         <div className="max-w-5xl mx-auto px-2 sm:px-4 flex gap-1">
           {TABS.map((tab) => (
             <div key={tab.key} className="flex-1 sm:flex-none flex justify-center px-1 sm:px-4 py-3">
-              <div className="h-5 w-12 sm:w-20 bg-border rounded-sm animate-pulse" />
+              <SkeletonBlock as="div" className="h-5 w-12 sm:w-20 rounded-sm" />
             </div>
           ))}
         </div>
       </div>
       <div className="max-w-5xl mx-auto px-4 py-12 space-y-4">
-        <div className="h-8 w-48 bg-border rounded-md animate-pulse" />
+        <SkeletonBlock as="div" className="h-8 w-48 rounded-md" />
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {[0, 1, 2, 3, 4].map((i) => (
-            <div key={i} className="h-32 bg-border rounded-lg animate-pulse" />
+            <SkeletonBlock as="div" key={i} className="h-32 rounded-lg" />
           ))}
         </div>
       </div>
@@ -241,9 +243,20 @@ export default function ProducerDashboardLayout({ children }) {
           {/* MEH-2460: hidden for an organizer — /producer/{id} is a business
               page. Its public page is /organizers/{slug} (MEH-2461), reached
               from the overview's view-public link once a slug exists. */}
+          {/* MEH-2916 (pilot A4): while the business is unapproved, /producer/{id}
+              is a real 404 for this link's own SSR fetch — which sends the
+              owner to «בית העסק הזה לא נמצא» on her own page. The 404 stays
+              (Sapir, 11/11); the link goes to the dashboard preview instead,
+              which fetches with her token on the client. `producer_status`
+              already rides /auth/me (schemas.py, MEH-206), so this costs no
+              extra request. */}
           {user.producer_id && !isOrganizer && (
             <Link
-              href={`/producer/${user.producer_id}`}
+              href={
+                user.producer_status === "approved"
+                  ? `/producer/${user.producer_id}`
+                  : "/producer/dashboard/preview"
+              }
               aria-label={t("view_page")}
               data-testid="dashboard-view-page"
               // MEH-2429: icon-only below sm (min 44px target, name via

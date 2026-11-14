@@ -43,6 +43,13 @@ import api from "@/lib/api";
 import Button from "@/components/ui/Button";
 import BusinessCtaLink from "@/components/BusinessCtaLink";
 import ShareClient from "@/app/[locale]/share/ShareClient";
+import InlineMessage from "@/components/ui/InlineMessage";
+import EmailTypoHint from "@/components/EmailTypoHint";
+import { useAccountPrefill } from "@/lib/use-account-prefill";
+
+// The recommender's own fields → account field (MEH-3112). Never the
+// business fields: those describe someone else.
+const SUGGESTER_PREFILL = { suggester_name: "name", suggester_email: "email" };
 
 const EMPTY = {
   name: "",
@@ -94,6 +101,7 @@ export default function RecommendClient() {
   const tHome = useTranslations("home.cta");
   const tJoin = useTranslations("join");
   const [form, setForm] = useState(EMPTY);
+  const refillFromAccount = useAccountPrefill(setForm, SUGGESTER_PREFILL);
   const [status, setStatus] = useState("idle");
   const [contactError, setContactError] = useState(false);
   // Captured at submit time: the success copy differs by whether an update was
@@ -131,6 +139,7 @@ export default function RecommendClient() {
       setThanked(form.wants_update);
       setStatus("success");
       setForm(EMPTY);
+      refillFromAccount();
     } catch (err) {
       setStatus(err.response?.status === 429 ? "rate_limited" : "error");
     }
@@ -161,7 +170,7 @@ export default function RecommendClient() {
   return (
     <section className="min-h-screen">
       <div className="max-w-2xl mx-auto px-4 py-16">
-        <div className="md:bg-surface md:rounded-lg md:p-8 md:border md:border-border md:shadow-[0_2px_12px_rgba(46,104,83,0.04)]">
+        <div className="md:bg-surface md:rounded-lg md:p-8 md:border md:border-border md:shadow-sm">
           {/* MEH-2827 (FinalRecommend): the standard page title — start-aligned,
               fluid size, the same classes as /about/why-local's h1. The 5xl
               centred title broke into three lines on a phone. */}
@@ -176,12 +185,12 @@ export default function RecommendClient() {
           <p className="mt-3 mb-8 flex flex-wrap items-baseline gap-x-2 text-base text-start" data-testid="recommend-owner-line">
             <span className="text-fg-muted">{tHome("heading")}</span>
             <BusinessCtaLink
-              href="/register/producer"
+              href="/join"
               data-testid="recommend-owner-link"
-              className="inline-flex items-center gap-1 min-h-touch font-semibold text-primary underline underline-offset-4 hover:text-primary-dark rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+              className="inline-flex items-center gap-1 min-h-touch font-semibold text-primary underline underline-offset-4 hover:text-primary-dark rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
             >
               {tJoin("cta")}
-              <ArrowLeft size={15} className="ltr:rotate-180" aria-hidden="true" />
+              <ArrowLeft size={16} className="ltr:rotate-180" aria-hidden="true" />
             </BusinessCtaLink>
           </p>
 
@@ -284,6 +293,7 @@ export default function RecommendClient() {
             <div className="mt-4">
               <Input
                 id="recommend-suggester-name"
+                autoComplete="name"
                 label={t("field_suggester_name_label")}
                 value={form.suggester_name}
                 onChange={set("suggester_name")}
@@ -291,13 +301,19 @@ export default function RecommendClient() {
               />
             </div>
             <div className="mt-4">
+              {/* MEH-3123: field + typo hint are one block, so the privacy
+                  notice below still sits right after the field's block. */}
+              <div>
               <Input
                 id="recommend-suggester-email"
                 type="email"
+                autoComplete="email"
                 label={t("field_suggester_email_label")}
                 value={form.suggester_email}
                 onChange={set("suggester_email")}
               />
+              <EmailTypoHint fieldId="recommend-suggester-email" value={form.suggester_email} onAccept={(email) => set("suggester_email")({ target: { value: email } })} />
+              </div>
               {/* Privacy Protection Law Amendment 13 §11: the notice sits AT
                   the point of collection — directly under the field, not only
                   in a policy — and states purpose + who it does not go to.
@@ -343,14 +359,14 @@ export default function RecommendClient() {
             </div>
 
             {status === "error" && (
-              <p className="mt-4 text-sm text-error" role="alert" data-testid="recommend-error">
+              <InlineMessage className="mt-4" data-testid="recommend-error">
                 {t("error_generic")}
-              </p>
+              </InlineMessage>
             )}
             {status === "rate_limited" && (
-              <p className="mt-4 text-sm text-error" role="alert" data-testid="recommend-rate-limited">
+              <InlineMessage className="mt-4" data-testid="recommend-rate-limited">
                 {t("error_rate_limited")}
-              </p>
+              </InlineMessage>
             )}
 
             <Button

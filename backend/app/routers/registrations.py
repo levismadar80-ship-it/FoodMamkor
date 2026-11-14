@@ -34,6 +34,7 @@ from app.config import settings
 from app.database import get_db
 from app.models import Event, Experience, Producer, Registration, User
 from app.rate_limit import limiter
+from app.services.producer_listing import is_live_owner_row  # MEH-2952
 from app.routers.experiences import _publicly_visible_query
 from app.schemas.schemas import (
     RegistrationCancelInfoOut,
@@ -41,6 +42,7 @@ from app.schemas.schemas import (
     RegistrationCreatedOut,
     RegistrationOwnerOut,
 )
+from app.services.experience_notifications import host_test_cause  # MEH-2952
 from app.services.registration_emails import (
     OwnerCancelEmail,
     OwnerNewEmail,
@@ -67,7 +69,8 @@ def _event_for_signup(db: Session, event_id: UUID) -> Event:
     if event is None:
         raise HTTPException(status_code=404, detail="Event not found")
     producer = db.get(Producer, event.producer_id)
-    if producer is None or producer.status != "approved":
+    # MEH-2952: a seeded test row's event takes no real sign-ups either.
+    if not is_live_owner_row(producer):
         raise HTTPException(status_code=404, detail="Event not found")
     if not event.is_active or event.event_date < israel_today():
         raise HTTPException(status_code=409, detail=_CLOSED)
@@ -183,6 +186,8 @@ def register_for_event(
             item_url=item_url,
             cancel_url=f"{settings.frontend_url}/registration/{reg.cancel_token}",
         ),
+        # MEH-2952: caused by the business that runs the event.
+        test_cause=bool(producer and producer.is_test),
     )
     owner_email = _owner_email_for_event(db, event)
     if owner_email:
@@ -204,6 +209,7 @@ def register_for_event(
                 # the registrations, not the dashboard home (one tap saved).
                 manage_url=f"{settings.frontend_url}/producer/dashboard/events",
             ),
+            test_cause=bool(producer and producer.is_test),  # MEH-2952
         )
     return RegistrationCreatedOut()
 
@@ -256,6 +262,8 @@ def register_for_experience(
             item_url=f"{settings.frontend_url}/experiences/{ex.id}",
             cancel_url=f"{settings.frontend_url}/registration/{reg.cancel_token}",
         ),
+        # MEH-2952: caused by the host (or her business).
+        test_cause=host_test_cause(host),
     )
     if host and host.email:
         spots = (
@@ -275,6 +283,7 @@ def register_for_experience(
                 # MEH-2884: experiences tab, where the host sees this registration.
                 manage_url=f"{settings.frontend_url}/producer/dashboard/experiences",
             ),
+            test_cause=host_test_cause(host),  # MEH-2952
         )
     return RegistrationCreatedOut()
 
@@ -386,9 +395,12 @@ def cancel_registration(
     if was_active and item.event_date >= israel_today():
         if reg.event_id:
             owner_email = _owner_email_for_event(db, item)
+            owner = db.get(Producer, item.producer_id)
+            test_cause = bool(owner and owner.is_test)  # MEH-2952
         else:
             host = db.get(User, item.host_user_id)
             owner_email = host.email if host else None
+            test_cause = host_test_cause(host)  # MEH-2952
         if owner_email:
             background_tasks.add_task(
                 send_owner_cancellation,
@@ -402,6 +414,7 @@ def cancel_registration(
                         + ("events" if reg.event_id else "experiences")
                     ),
                 ),
+                test_cause=test_cause,
             )
     return RegistrationCancelInfoOut(
         kind="event" if reg.event_id else "experience",

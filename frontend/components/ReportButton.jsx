@@ -1,14 +1,17 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useState } from "react";
+import Dialog from "@/components/ui/Dialog";
 import { useTranslations } from "next-intl";
 import { useAuth } from "@/lib/auth-context";
 import api from "@/lib/api";
 import { detailToMessage } from "@/lib/errors";
-import { useFocusReturn } from "@/lib/use-focus-return";
 import Button from "@/components/ui/Button";
 
-export default function ReportButton({ producerId }) {
+// MEH-2999: `quiet` = the business page's fine-print row — same small grey
+// underlined link as its neighbours, led by a « · » separator. The red trigger
+// stood out as the loudest thing in the page's fine print.
+export default function ReportButton({ producerId, quiet = false }) {
   const t = useTranslations("report");
   const { user } = useAuth();
   const [showModal, setShowModal] = useState(false);
@@ -16,7 +19,6 @@ export default function ReportButton({ producerId }) {
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState("");
 
-  useFocusReturn(showModal);
 
   if (!user) return null;
 
@@ -35,21 +37,21 @@ export default function ReportButton({ producerId }) {
 
   return (
     <>
+      {quiet && <span aria-hidden="true" className="me-2">·</span>}
       <button
+        type="button"
         onClick={() => setShowModal(true)}
-        className="text-sm text-error hover:text-danger-700 transition flex items-center gap-1"
+        className={
+          quiet
+            ? "text-xs text-fg-muted underline hover:text-text transition"
+            : "text-sm text-error hover:text-danger-700 transition flex items-center gap-1"
+        }
       >
         {t("trigger")}
       </button>
 
       {showModal && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-[9000] p-4">
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="report-dialog-title"
-            className="bg-surface rounded-md p-6 max-w-md w-full"
-          >
+        <Dialog labelledBy="report-dialog-title" onClose={() => setShowModal(false)}>
             {submitted ? (
               <div className="text-center">
                 <p className="text-lg font-semibold mb-2">{t("success_title")}</p>
@@ -68,7 +70,7 @@ export default function ReportButton({ producerId }) {
                   value={reason}
                   onChange={(e) => setReason(e.target.value)}
                   placeholder={t("reason_placeholder")}
-                  className="w-full border rounded-md p-3 mb-3 resize-none h-24"
+                  className="w-full border rounded-sm p-3 mb-3 resize-none h-24 focus-ring"
                   maxLength={500}
                   required
                 />
@@ -87,8 +89,7 @@ export default function ReportButton({ producerId }) {
                 </div>
               </form>
             )}
-          </div>
-        </div>
+        </Dialog>
       )}
     </>
   );

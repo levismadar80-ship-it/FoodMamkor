@@ -108,7 +108,7 @@ vi.mock("@phosphor-icons/react", () => {
   };
   return {
     MagnifyingGlass: stub("MagnifyingGlass"), SealCheck: stub("SealCheck"),
-    Compass: stub("Compass"), MapTrifold: stub("MapTrifold"), Flower: stub("Flower"),
+    Compass: stub("Compass"), MapTrifold: stub("MapTrifold"), Flower: stub("Flower"), CalendarBlank: stub("CalendarBlank"),
     User: stub("User"), Heart: stub("Heart"), Gear: stub("Gear"),
     Storefront: stub("Storefront"), SignIn: stub("SignIn"), SignOut: stub("SignOut"),
     ArrowUpLeft: stub("ArrowUpLeft"), Gauge: stub("Gauge"),
@@ -125,6 +125,11 @@ vi.mock("@/components/LanguageToggle", () => ({
 vi.mock("@/lib/use-experiences-nav-gate", () => ({
   useExperiencesNavGate: () => experiencesGateRef.current,
 }));
+// MEH-2965: the other three reads behind the same gate. Closed and stubbed, so
+// "gate open" in this suite is exactly the one ref above and no hook reaches
+// the real api.
+vi.mock("@/lib/use-events-nav-gate", () => ({ useEventsNavGate: () => false }));
+vi.mock("@/lib/use-hub-nav-gate", () => ({ useHubNavGate: () => false }));
 
 const STATES = {
   guest: { user: null, signedIn: false, role: null },
@@ -408,6 +413,16 @@ describe("MEH-1703 chunk 4 — items declared on both platforms render on both",
       const state = STATES[stateName];
       pathnameRef.current = "/about";
       userRef.current = state.user;
+      // MEH-2965: a surface that shares its slot (`yieldsTo`) is on its
+      // platform only while the gate it names is CLOSED — the pill's «אודות»
+      // gives the slot to the hub link otherwise. So such an item is checked
+      // in the state where it is meant to render; the open-gate half is the
+      // dedicated case below. Without this the suite's default (gate open)
+      // would call the approved swap a missing item.
+      const yields = Object.values(item.surfaces).some(
+        (surface) => surface.yieldsTo === "listing-supply",
+      );
+      if (yields) experiencesGateRef.current = false;
 
       const header = render(<Header />);
       // The avatar dropdown only mounts for a signed-in user; open it so
@@ -428,8 +443,65 @@ describe("MEH-1703 chunk 4 — items declared on both platforms render on both",
 
       expect(desktopHrefs.length, "desktop harvested nothing").toBeGreaterThan(0);
       expect(mobileHrefs.length, "mobile harvested nothing").toBeGreaterThan(0);
-      expect(desktopHrefs, `${item.id} missing from desktop`).toContain(item.href);
-      expect(mobileHrefs, `${item.id} missing from mobile`).toContain(item.href);
+      // MEH-3026 (F2): «כניסה» carries ?redirect=<the page she is on>, so the
+      // question "does the item reach this shell" is asked of the PATH. The
+      // query is pinned separately (Header.test / AccountSheet.test).
+      const paths = (hrefs) => hrefs.map((href) => href.split("?")[0]);
+      expect(paths(desktopHrefs), `${item.id} missing from desktop`).toContain(item.href);
+      expect(paths(mobileHrefs), `${item.id} missing from mobile`).toContain(item.href);
     });
   }
+
+  // MEH-2965: the loop above skips data-gated items, so the hub link — on both
+  // platforms since this card — would otherwise be checked by nothing here.
+  // Gate open (the suite default): it is on the Header AND on the pill, and
+  // the pill's «אודות» has given up its slot.
+  // A surface may give its slot up only to something that takes it: without
+  // this, `yieldsTo` on a record with no taker would quietly delete an item
+  // from a platform while the registry still counts it as present there.
+  it("every yieldsTo surface has a dataGate item on the same surface to take the slot", () => {
+    const yielding = NAV_ITEMS.flatMap((item) =>
+      Object.entries(item.surfaces)
+        .filter(([, surface]) => surface.yieldsTo)
+        .map(([name, surface]) => ({ id: item.id, name, gate: surface.yieldsTo })),
+    );
+    expect(yielding.length, "no yieldsTo surface — this case is vacuous").toBeGreaterThan(0);
+    for (const { id, name, gate } of yielding) {
+      const takers = NAV_ITEMS.filter((item) => item.dataGate === gate && item.surfaces[name]);
+      expect(takers.map((item) => item.id), `${id}.${name} yields to "${gate}" but nothing takes it`).not.toEqual([]);
+    }
+  });
+
+  it("with the gate closed the hub link is on neither platform, and «אודות» is on the pill", () => {
+    experiencesGateRef.current = false;
+    const hub = NAV_ITEMS.find((i) => i.dataGate === "listing-supply");
+    const header = render(<Header />);
+    const desktopHrefs = hrefsIn(header.container);
+    cleanup();
+    const bottom = render(<BottomNav />);
+    const mobileHrefs = hrefsIn(bottom.container);
+
+    expect(desktopHrefs).not.toContain(hub.href);
+    expect(mobileHrefs).not.toContain(hub.href);
+    expect(mobileHrefs).toContain("/about");
+  });
+
+  it("the gated hub link reaches desktop AND mobile while its gate is open", () => {
+    const hub = NAV_ITEMS.find((i) => i.dataGate === "listing-supply");
+    const header = render(<Header />);
+    const desktopHrefs = hrefsIn(header.container);
+    cleanup();
+    const bottom = render(<BottomNav />);
+    const mobileHrefs = hrefsIn(bottom.container);
+
+    // MEH-2975: this suite opens the experiences gate only, so the hub link
+    // lands on /experiences — the first hub route with supply — on both
+    // platforms, and on /events (the registry's default href) on neither.
+    expect(hub.href).toBe("/events");
+    expect(desktopHrefs).toContain("/experiences");
+    expect(mobileHrefs).toContain("/experiences");
+    expect(desktopHrefs).not.toContain(hub.href);
+    expect(mobileHrefs).not.toContain(hub.href);
+    expect(mobileHrefs).not.toContain("/about");
+  });
 });

@@ -23,6 +23,8 @@ RESERVED_SLUGS: frozenset[str] = frozenset(
         "auth",
         # MEH-2322: owner-claim link landing page (/claim/<token>).
         "claim",
+        # MEH-2974: owner-invite link landing page (/owner-invite/<token>).
+        "owner-invite",
         # User/producer account routes
         "settings",
         "profile",

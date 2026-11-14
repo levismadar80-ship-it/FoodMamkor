@@ -26,8 +26,10 @@
  */
 
 import { useEffect, useRef } from "react";
+import Dialog from "@/components/ui/Dialog";
 import { useTranslations } from "next-intl";
 import Button from "@/components/ui/Button";
+import InlineMessage from "@/components/ui/InlineMessage";
 
 // The completion group. EVERY other preset key — `not_eligible` and any key
 // the backend grows later — falls to the terminal group. Fail-closed on
@@ -151,7 +153,15 @@ function DecisionForm({ presets, presetsError, value, setValue, freeText, setFre
   // without choosing FOR her — focus, never a preselection, so the submit
   // button's disabled-until-chosen contract still holds.
   useEffect(() => {
-    if (focusGroup === CHANGES && !presetsError) firstChangesRadio.current?.focus();
+    // MEH-3093: mark, don't focus — the dialog's useDialogFocus (parent effect,
+    // runs after this one) moves focus to [data-autofocus] and still records
+    // the row button as the element to return to.
+    // When the presets arrive after the dialog opened, focus is already
+    // inside it, so move it here directly.
+    const el = firstChangesRadio.current;
+    if (focusGroup !== CHANGES || presetsError || !el) return;
+    el.setAttribute("data-autofocus", "");
+    if (el.closest('[aria-modal="true"]')?.contains(document.activeElement)) el.focus();
   }, [focusGroup, presetsError, presets]);
 
   // A failed presets fetch keeps the modal unusable rather than falling back
@@ -160,9 +170,9 @@ function DecisionForm({ presets, presetsError, value, setValue, freeText, setFre
   if (presetsError) {
     return (
       <>
-        <p className="text-danger-600 text-sm mb-4" role="alert" data-testid="decision-presets-error">
+        <InlineMessage className="mb-4" data-testid="decision-presets-error">
           {t("producers.reject.presets_error")}
-        </p>
+        </InlineMessage>
         <div className="flex gap-2 justify-end">
           <button type="button" onClick={onClose} className="px-4 py-2 rounded-sm border border-border text-text hover:bg-green-50">
             {t("common.cancel")}
@@ -209,7 +219,7 @@ function DecisionForm({ presets, presetsError, value, setValue, freeText, setFre
         onChange={(e) => setFreeText(e.target.value)}
         rows={4}
         aria-required={isOther}
-        className="w-full border border-border rounded-md px-3 py-2 text-sm bg-surface"
+        className="w-full border border-border rounded-sm px-3 py-2 text-sm bg-surface focus-ring"
         placeholder={t("producers.decision.free_text_placeholder")}
       />
 
@@ -244,21 +254,9 @@ export default function ProducerDecisionModal({
   onClose, onSubmit, submitting,
 }) {
   const t = useTranslations("admin");
-
-  // Escape closes — but never mid-send, mirroring DeleteConfirmDialog's
-  // "Escape-unless-deleting" contract (page.js:48). A dismissal during the
-  // request would strand the admin with no idea whether the email went out.
-  useEffect(() => {
-    if (!producer) return undefined;
-    const onKey = (e) => {
-      if (e.key !== "Escape" || submitting) return;
-      if (confirming) onCancelConfirm();
-      else onClose();
-    };
-    globalThis.addEventListener("keydown", onKey);
-    return () => globalThis.removeEventListener("keydown", onKey);
-  }, [producer, submitting, confirming, onCancelConfirm, onClose]);
-
+  // Escape / overlay click close — never mid-send (a dismissal during the
+  // request would strand the admin with no idea whether the email went out),
+  // and from the confirm step they step back to the form first.
   if (!producer) return null;
 
   // The completion path is not terminal, so it sends straight away; only the
@@ -266,14 +264,13 @@ export default function ProducerDecisionModal({
   const handlePrimary = () => (groupOf(value) === REJECT ? onRequestConfirm() : onSubmit());
 
   return (
-    <div className="fixed inset-0 bg-black/40 z-[9000] flex items-center justify-center p-4">
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="producer-decision-title"
-        className="bg-background rounded-lg p-6 max-w-lg w-full border border-border text-start max-h-[90vh] overflow-y-auto"
-        data-testid="decision-modal"
-      >
+    <Dialog closeOnBackdrop={false}
+      labelledBy="producer-decision-title"
+      size="lg"
+      dismissible={!submitting}
+      onClose={confirming ? onCancelConfirm : onClose}
+      testId="decision-modal"
+    >
         <h2 id="producer-decision-title" className="font-headline-md text-xl font-bold text-text mb-4">
           {t("producers.decision.modal_title", { name: producer.name })}
         </h2>
@@ -293,7 +290,6 @@ export default function ProducerDecisionModal({
             onSubmit={handlePrimary}
           />
         )}
-      </div>
-    </div>
+    </Dialog>
   );
 }

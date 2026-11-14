@@ -107,10 +107,6 @@ export function useMapFilters({
   userCity,
   setUserCity,
   setShowCityPicker,
-  // MEH-1670: the pickup/market_stand layer toggle, owned by MapClient. The
-  // viewport filter needs it so the list drops a business at the same moment
-  // the map does — a producer whose only points are hidden pickups is off both.
-  showSecondaryLayer = true,
   // MEH-2170: the one-time mount catalog from useProducersFeed. null = not
   // loaded yet, and then no toggle is hidden.
   catalogSnapshot = null,
@@ -456,6 +452,10 @@ export function useMapFilters({
     });
   }, [allProducers, activeCategoryNames]);
 
+  // MEH-3054: the «איסוף עצמי» chip expands every business's pickup points on
+  // the map (mapPinPoints); the list filter below tests the same pins.
+  const showAllPickupPoints = !!chipState.pickup_points;
+
   // Bug #14 fix: filter the grid by `committedBounds`, NOT the live
   // `mapBounds`, so panning doesn't continuously reshuffle the list.
   // When `committedBounds` is null (initial state or after a reset) we
@@ -467,9 +467,9 @@ export function useMapFilters({
     // pickup pin sat on screen. producerInBounds derives points the same way the
     // marker layer does, so map and list agree by construction.
     return filteredByCategory.filter((p) =>
-      producerInBounds(p, committedBounds, { includeSecondary: showSecondaryLayer }),
+      producerInBounds(p, committedBounds, { pins: true, expanded: showAllPickupPoints }),
     );
-  }, [filteredByCategory, committedBounds, showSecondaryLayer]);
+  }, [filteredByCategory, committedBounds, showAllPickupPoints]);
 
   // MEH-722: per-category producer counts for the CURRENT viewport, computed
   // PRE category filter (from allProducers ∩ committedBounds, NOT visibleProducers
@@ -482,7 +482,7 @@ export function useMapFilters({
       // MEH-1670: same derivation as the list above — otherwise a chip could
       // read 0 while its card is visible in the list.
       : allProducers.filter((p) =>
-          producerInBounds(p, committedBounds, { includeSecondary: showSecondaryLayer }),
+          producerInBounds(p, committedBounds, { pins: true, expanded: showAllPickupPoints }),
         );
     const counts = {};
     for (const p of inView) {
@@ -490,7 +490,7 @@ export function useMapFilters({
       if (cat) counts[cat] = (counts[cat] ?? 0) + 1;
     }
     return counts;
-  }, [allProducers, committedBounds, showSecondaryLayer]);
+  }, [allProducers, committedBounds, showAllPickupPoints]);
 
   // Category chips visible in the current DB (hidden if no matching category loaded yet)
   const visibleCategoryChips = useMemo(
@@ -578,6 +578,7 @@ export function useMapFilters({
   return {
     // state
     chipState,
+    showAllPickupPoints,
     setChipState,
     visibleToggleChips,
     cityFilter,

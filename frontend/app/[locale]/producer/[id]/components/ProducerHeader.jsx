@@ -1,7 +1,7 @@
 import { Fragment, useEffect, useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
-import { Star, StarOfDavid } from "@phosphor-icons/react";
+import { MapPin, Star, StarOfDavid } from "@phosphor-icons/react";
 
 import AlertPrefsPanel from "@/components/AlertPrefsPanel";
 import BadgeRow from "@/components/BadgeRow";
@@ -10,6 +10,7 @@ import KashrutBadgeStrip from "@/components/KashrutBadgeStrip";
 import OfferBadge from "@/components/OfferBadge";
 import ProducerUpdatesButton from "@/components/ProducerUpdatesButton";
 import ShareButton from "@/components/ShareButton";
+import { usePreviewMode } from "@/lib/preview-mode"; // MEH-2916
 import { useAuth } from "@/lib/auth-context";
 import {
   ensureFavoritesLoaded,
@@ -18,7 +19,11 @@ import {
 } from "@/lib/favorites-cache";
 import { allBadges, isKashrutCurrent } from "@/lib/badges";
 import { getOrderWindowStatus } from "@/lib/orderWindow";
+import { useUserLocation } from "@/lib/user-location";
+import { formatDistance, haversineKm } from "@/lib/distance";
+import { primaryPoint, producerPoints } from "@/lib/producerPoints";
 import ReviewExcerpt from "./ReviewExcerpt";
+import { parseHasLocation } from "./ProducerSections";
 import { categoryListingHref, getVacationReturnDate } from "../lib/producer-format";
 import { resolveCategoryGlyph, styleForProducer } from "@/lib/category-registry";
 // MEH-1546: the meta-line status is the page's ONLY order-status element, so
@@ -99,8 +104,11 @@ export default function ProducerHeader({
   onUpdatesChanged,
   updatesSignal,
 }) {
+  const isPreview = usePreviewMode(); // MEH-2916
   const t = useTranslations();
   const locale = useLocale();
+  // MEH-3033: cached visitor location only — this page never asks for one.
+  const userLoc = useUserLocation();
 
   // MEH-1609 built the page's only AlertPrefsPanel mount here, reached by an
   // alerts_reentry bell in the actions row. MEH-1693 keeps the MOUNT (its
@@ -243,7 +251,7 @@ export default function ProducerHeader({
         // pull-quote — is ALSO an `a[href="#reviews"]` inside this header, so
         // an href selector resolves to two elements; the id keeps them apart.
         data-testid="trust-strip-rating"
-        className="inline-flex items-center gap-1.5 rounded text-text hover:text-primary focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent/40 transition-colors"
+        className="inline-flex items-center gap-1.5 rounded text-text hover:text-primary focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary transition-colors"
       >
         <Star size={18} weight="fill" className="text-accent" aria-hidden="true" />
         <span className="numeric font-headline-md text-lg font-bold" dir="ltr">
@@ -278,7 +286,54 @@ export default function ProducerHeader({
       </Link>,
     );
   }
-  if (producer.city) facts.push(<span key="city">{producer.city}</span>);
+  // MEH-1694 (Sapir's option ב, 13/11): the city is the way in to directions,
+  // as on Google's place card — it links to «הגעה ומיקום», where the Waze /
+  // Google buttons live (MiniMap). Only when that section renders (the same
+  // gate ProducerSections + section-nav read), else it would point at nothing.
+  // Same quiet underline as the category beside it (MEH-2831). No new copy:
+  // the accessible name is the city + the section's existing title.
+  if (producer.city) {
+    facts.push(
+      parseHasLocation(producer, primaryPoint(producer)) ? (
+        <a
+          key="city"
+          href="#section-location"
+          data-testid="producer-header-city-link"
+          aria-label={`${producer.city} · ${t("producer.detail.sections.location")}`}
+          className="group inline-flex min-h-[24px] items-center gap-1 text-text hover:text-primary focus-visible:text-primary transition"
+        >
+          <MapPin size={14} aria-hidden="true" className="shrink-0" />
+          <span className="underline decoration-text/35 decoration-[1.5px] underline-offset-[5px] group-hover:decoration-primary group-focus-visible:decoration-primary">
+            {producer.city}
+          </span>
+        </a>
+      ) : (
+        <span key="city">{producer.city}</span>
+      ),
+    );
+  }
+  // MEH-3033 (Sapir chose א, 13/11): distance as its OWN fact after the city
+  // (MEH-1694 turns the city into a link — never put this inside it). Same
+  // label as the cards: nearest location row, formatDistance, no «ממך»
+  // (MEH-1307). REUSES: components/ProducerCard.jsx:354-363.
+  // A delivery-only business (has_physical_location false) has no place to
+  // be «850 מ'» from — the page hides its location section for the same
+  // reason (ProducerSections parseHasLocation), so no distance either.
+  const points = userLoc && producer.has_physical_location !== false ? producerPoints(producer) : [];
+  const distanceLabel =
+    points.length > 0
+      ? formatDistance(
+          Math.min(...points.map((pt) => haversineKm(userLoc.lat, userLoc.lng, pt.lat, pt.lng))),
+          { unit: locale === "he" ? "he" : "latin" },
+        )
+      : null;
+  if (distanceLabel) {
+    facts.push(
+      <span key="distance" dir={locale === "he" ? "rtl" : "ltr"} data-testid="producer-header-distance">
+        {distanceLabel}
+      </span>,
+    );
+  }
   // MEH-1541: quiet "מאז {שנה}" heritage fact — a veteran-business trust
   // signal in the magazine voice, NOT a badge (no icon / gold / border; the
   // single-green rule stays with the status tag). Year numerals dir="ltr".
@@ -463,30 +518,43 @@ export default function ProducerHeader({
         className="hidden lg:flex items-center gap-5 mt-2 lg:absolute lg:top-0 lg:end-0 lg:mt-0"
         data-testid="producer-actions-row"
       >
-        <FavoriteButton
-          producerId={producer.id}
-          producerName={producer.name}
-          variant="quiet"
-          onFavorited={onOpenAlerts}
-        />
-        <ShareButton
-          variant="quiet"
-          url={shareUrl}
-          title={producer.name}
-          description={producer.description}
-          city={producer.city}
-          category={primaryCategory?.name}
-        />
+        {/* MEH-2916: neither belongs in the owner's preview. A link she
+            shared from here would 404 for whoever opened it — the business is
+            not public yet — and favouriting her own unapproved page files her
+            under someone else's feature. Sapir's ruling, 11/11. */}
+        {!isPreview && (
+          <>
+            <FavoriteButton
+              producerId={producer.id}
+              producerName={producer.name}
+              variant="quiet"
+              onFavorited={onOpenAlerts}
+            />
+            <ShareButton
+              variant="quiet"
+              url={shareUrl}
+              title={producer.name}
+              description={producer.description}
+              city={producer.city}
+              category={primaryCategory?.name}
+            />
+          </>
+        )}
         {/* MEH-2526 permanent updates toggle; MEH-2562 moved it into this row
             (desktop) and onto the hero circles (mobile, ImageGallery) — as a
-            lone pill under the header it read as an orphan. */}
-        <ProducerUpdatesButton
-          variant="quiet"
-          producerId={producer.id}
-          onOpenAlerts={onOpenAlerts}
-          onChanged={onUpdatesChanged}
-          refreshSignal={updatesSignal ?? alertsOpen}
-        />
+            lone pill under the header it read as an orphan.
+            MEH-2964: out of the owner's preview with the heart and the share,
+            for the same reason — it is a visitor subscribe, not her own
+            toggle (Sapir, 12/11). */}
+        {!isPreview && (
+          <ProducerUpdatesButton
+            variant="quiet"
+            producerId={producer.id}
+            onOpenAlerts={onOpenAlerts}
+            onChanged={onUpdatesChanged}
+            refreshSignal={updatesSignal ?? alertsOpen}
+          />
+        )}
       </div>
 
       {/* MEH-1609 built this mount; MEH-1693 keeps it and changes only what

@@ -14,13 +14,19 @@ import { Link, usePathname } from "@/i18n/navigation";
 // Navigation still works; it fetches on tap. Guarded by ChromePrefetchGuard.test.js.
 // MEH-1202: gate BottomNav OFF the producer detail page (shared route helper).
 import { isProducerDetail } from "@/lib/producer-route";
+import { isRegisterRoute } from "@/lib/register-route"; // MEH-2927
 import { useCallback, useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
-import { Compass, MapTrifold, Flower, User } from "@phosphor-icons/react";
+import { Compass, MapTrifold, Flower, CalendarBlank, User } from "@phosphor-icons/react";
 import { useAuth } from "@/lib/auth-context";
 import { useTranslations } from "next-intl";
 import AccountSheet from "@/components/AccountSheet";
 import { itemsForSurface } from "@/lib/nav-registry";
+import { useEventsNavGate } from "@/lib/use-events-nav-gate";
+import { useExperiencesNavGate } from "@/lib/use-experiences-nav-gate";
+import { hubLandingHref } from "@/lib/hub-landing";
+import { useHubNavGate } from "@/lib/use-hub-nav-gate";
+import Avatar from "@/components/ui/Avatar";
 
 // MEH-2359 / MEH-2431: subtrees with their own nav, where the pill never
 // renders. Shared by the render gates and the clearance publish (MEH-2490).
@@ -29,12 +35,18 @@ const isAdminRoute = (p) => p === "/admin" || (p || "").startsWith("/admin/");
 const NO_PILL_CLEARANCE = "calc(env(safe-area-inset-bottom, 0px) + 12px)";
 const isOwnerDashboardRoute = (p) =>
   p === "/producer/dashboard" || (p || "").startsWith("/producer/dashboard/");
+// MEH-2927 (pilot B3c): the registration flow. Same shape as the two above —
+// a surface whose own primary action sits where this pill floats. Imported
+// rather than redeclared: InstallPrompt gates on the same fact, and two
+// copies of one predicate is the Smell #1 shape (workflow.md). Same reason
+// `isProducerDetail` is imported above.
 
 /**
  * Mobile bottom nav — MEH-789 (Phase 6 "Cream Signature" port).
  *
  * Replaces the MEH-20 full-width bottom bar with the signature floating cream
- * pill: 4 DESTINATIONS (גלו · מפה · אודות · חשבון), zero actions. MEH-843:
+ * pill: 4 DESTINATIONS (גלו · מפה · אודות · חשבון), zero actions. MEH-2965:
+ * the third is «אירועים» → /events while any date-bound listing exists. MEH-843:
  * the per-tab solid-green highlight became a green-tint indicator across the 3
  * route tabs + Phosphor fill-on-active + 10.5px DM Sans labels. MEH-852: the
  * indicator is now a SINGLE nav-level capsule that measures the active tab's
@@ -63,14 +75,25 @@ const TOP_THRESHOLD = 60; // scrollY under this → always expanded
 
 // MEH-1703 chunk 3: the pill's destination sequence. Order lives HERE and not
 // in the registry because it genuinely differs per shell — the Header renders
-// home/map/experiences/about, this pill renders home/map/about, and no single
+// home/map/whatsOn/about, this pill renders home/map/(whatsOn|about), and no single
 // declaration order describes both (the chunk-0 finding; see the SHAPE NOTE in
 // lib/nav-registry.js). The registry supplies identity — which items exist,
 // their hrefs and their i18n keys — and this array supplies sequence.
-const BOTTOM_NAV_ORDER = ["home", "map", "about"];
+//
+// MEH-2965 (Sapir 12/11): the third slot is ONE slot with two tenants. While
+// any of the four date-bound types has supply it is «אירועים» → the hub;
+// otherwise it is «אודות», as before. Both ids are listed and the registry's
+// `dataGate` / `yieldsTo` pair (resolved in the component) decides which one
+// renders, so the pill never grows a fifth tab and never offers an empty hub.
+const BOTTOM_NAV_ORDER = ["home", "map", "whatsOn", "about"];
 // Icons stay shell-local for the same reason: the pill's 22px Phosphor set is
 // a rendering decision, not an identity one, and the Header uses none of them.
-const BOTTOM_NAV_ICONS = { home: Compass, map: MapTrifold, about: Flower };
+const BOTTOM_NAV_ICONS = { home: Compass, map: MapTrifold, whatsOn: CalendarBlank, about: Flower };
+// MEH-2965: the hub is four routes under one tab row (ListingHubTabs), so its
+// pill tab is current on all four. Segment boundary, not a bare prefix —
+// `/eventsx` is not the hub (the MEH-1971 slug lesson in Header.jsx).
+const HUB_ROUTES = ["/events", "/experiences", "/group-buys", "/rescue"];
+const onRoute = (pathname, route) => pathname === route || pathname.startsWith(`${route}/`);
 
 export default function BottomNav() {
   const pathname = usePathname();
@@ -169,11 +192,28 @@ export default function BottomNav() {
   const byId = new Map(
     itemsForSurface("bottomNav", navState).map((entry) => [entry.item.id, entry]),
   );
-  const hasAvatar = !!user?.avatar_url;
-  const initial = user ? (user.name || "?").trim().charAt(0).toUpperCase() : null;
 
-  const isActive = (href) =>
-    href === "/" ? (pathname || "/") === "/" : (pathname || "").startsWith(href);
+  // MEH-2965: the same four reads the Header makes for its «מה קורה» link
+  // (Header.jsx, MEH-2859). Each hook owns one endpoint, shares one request
+  // with every other consumer on the page, caches the answer per session and
+  // fails closed — so while loading, or with the backend unreachable, the slot
+  // stays «אודות» rather than offering an empty hub. They start false and
+  // flip in an effect, so on a hard load the slot paints «אודות» first and
+  // swaps once the answer is read; that is the price of failing closed.
+  const showEvents = useEventsNavGate();
+  const showExperiences = useExperiencesNavGate();
+  const showGroupBuys = useHubNavGate("groupBuys");
+  const showRescue = useHubNavGate("rescue");
+  const hasListings = showEvents || showExperiences || showGroupBuys || showRescue;
+
+  const isActive = (href) => {
+    const path = pathname || "/";
+    if (href === "/") return path === "/";
+    // MEH-2975: the hub tab's href is whichever hub route has supply, so the
+    // test is "is this a hub href", not "is this /events".
+    if (HUB_ROUTES.includes(href)) return HUB_ROUTES.some((route) => onRoute(path, route));
+    return path.startsWith(href);
+  };
 
   // 3 destination links + the account tab (rendered separately — it toggles
   // the sheet instead of navigating). Identity from the registry, sequence
@@ -185,9 +225,27 @@ export default function BottomNav() {
   // invisible in Hebrew and wrong on /en (nav-registry.js:107-109).
   const destinations = BOTTOM_NAV_ORDER.map((id) => byId.get(id))
     .filter(Boolean)
+    // The data gate stays here, as in the Header: the registry records THAT an
+    // item is gated on supply (`dataGate`) or gives its slot up to one that is
+    // (`yieldsTo`), not what the current supply is.
+    .filter(({ item, surface }) => {
+      if (item.dataGate === "listing-supply") return hasListings;
+      if (surface.yieldsTo === "listing-supply") return !hasListings;
+      return true;
+    })
     .map((entry) => ({
       id: entry.item.id,
-      href: entry.item.href,
+      // MEH-2975: the hub tab lands on the first hub route whose supply gate
+      // is open, not on an empty «אירועים» when the supply is elsewhere.
+      href:
+        entry.item.dataGate === "listing-supply"
+          ? hubLandingHref({
+              events: showEvents,
+              experiences: showExperiences,
+              groupBuys: showGroupBuys,
+              rescue: showRescue,
+            })
+          : entry.item.href,
       Icon: BOTTOM_NAV_ICONS[entry.item.id],
       label: t(entry.surface.labelKey),
     }));
@@ -286,7 +344,8 @@ export default function BottomNav() {
   // safe-area value set toasts flush on the screen edge (review on #3783).
   // The producer-detail gate is NOT in this set: its StickyContactBar is a
   // bottom layer, and the fallback is what keeps content clear of it.
-  const noBottomChrome = isAdminRoute(pathname) || isOwnerDashboardRoute(pathname);
+  const noBottomChrome =
+    isAdminRoute(pathname) || isOwnerDashboardRoute(pathname) || isRegisterRoute(pathname);
   // iOS drift pin: the clearance is the SHELL's own height (pill + safe-area + 16px
   // gutter), not `innerHeight - pill.top`. The two are equal while the pill sits
   // where CSS puts it — but iOS 26 Safari can leave every fixed-bottom layer
@@ -394,6 +453,13 @@ export default function BottomNav() {
   // list at 375 (27/10 audit). This reverses MEH-1202's "dashboard subtree
   // keeps the nav"; the header logo leads back to the site, where the nav returns.
   if (isOwnerDashboardRoute(pathname)) return null;
+  // MEH-2927 (pilot B3c): the registration flow. Measured at the iPhone VISUAL
+  // viewport rather than the device height — at 375x667 one pixel of the 48px
+  // «מתחילים» button was visible and unobstructed, at 390x664 sixteen. The
+  // pill contributes 6px of that at one size and none at the others; the
+  // cookie banner and the fold do the rest, which is why the answer is to take
+  // the pill off the flow rather than lift one button over it (Sapir, 11/11).
+  if (isRegisterRoute(pathname)) return null;
 
   return (
     <>
@@ -435,7 +501,7 @@ export default function BottomNav() {
             // MEH-1253: pointer-events-auto re-enables events on the pill (and
             // everything inside it — tabs, account button)
             // after the wrapper shield set pointer-events-none above.
-            "relative w-full flex items-stretch justify-between gap-1 rounded-full nav-pill-glass shadow-[0_8px_30px_rgba(46,104,83,0.12)] pointer-events-auto",
+            "relative w-full flex items-stretch justify-between gap-1 rounded-full nav-pill-glass shadow-lg pointer-events-auto",
             "transition-[height] duration-base ease-quart motion-reduce:transition-none",
             isCompact ? "h-12 p-1" : "h-14 p-1.5",
           ].join(" ")}
@@ -477,7 +543,7 @@ export default function BottomNav() {
                   {/* MEH-852: the active tint is the shared nav-level indicator
                       above — no per-tab capsule here anymore. */}
                   <Icon
-                    size={22}
+                    size={24}
                     weight={active ? "fill" : "regular"}
                     aria-hidden="true"
                     className="relative z-10"
@@ -510,20 +576,11 @@ export default function BottomNav() {
               {user ? (
                 // Avatar: green token circle + white initial (MEH-20 treatment,
                 // old raw-hex green → bg-primary token); image when one is set.
-                <span className="relative z-10 w-6 h-6 rounded-full overflow-hidden inline-flex items-center justify-center bg-primary">
-                  {hasAvatar ? (
-                    // raw img: OAuth provider avatar (auth.py:814 stores Google's
-                    // `picture`); its host is not in next.config.js
-                    // images.remotePatterns, frozen by this ticket.
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={user.avatar_url} alt="" className="w-full h-full object-cover" />
-                  ) : (
-                    <span className="text-white text-xs font-semibold leading-none">{initial}</span>
-                  )}
-                </span>
+                // MEH-3069: the shared circle (ui/Avatar).
+                <Avatar src={user.avatar_url} name={user.name} size={24} className="z-10" />
               ) : (
                 <User
-                  size={22}
+                  size={24}
                   weight={sheetOpen ? "fill" : "regular"}
                   aria-hidden="true"
                   className="relative z-10"

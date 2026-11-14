@@ -18,6 +18,7 @@ from uuid import UUID
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
 from sqlalchemy.orm import Session, joinedload
 
+from app.limits import enforce_cap
 from app.auth import require_producer, require_verified_producer
 from app.database import get_db
 from app.services.producer_listing import is_business  # MEH-2459
@@ -36,6 +37,16 @@ router = APIRouter(tags=["producer-recipes"])
 
 
 # ---------- Serialization ----------
+
+
+def _recipe_test_cause(db: Session, user: User) -> bool:
+    """MEH-2952: the submitting business or account is a seeded test row, so
+    the admin ping it causes is dropped and logged."""
+    if getattr(user, "is_test", False):
+        return True
+    return bool(
+        db.query(Producer.is_test).filter(Producer.id == user.producer_id).scalar()
+    )
 
 
 def _serialize(recipe: ProducerRecipe) -> dict:
@@ -129,6 +140,14 @@ def create_my_recipe(
     if not user.producer_id:
         raise HTTPException(status_code=403, detail="לא נמצא עסק מקושר")
 
+    # MEH-3022: per-business cap (app/limits.py), before the moderation call
+    # so a capped business does not spend an Anthropic request.
+    enforce_cap(
+        db.query(ProducerRecipe)
+        .filter(ProducerRecipe.producer_id == user.producer_id)
+        .count(),
+        "recipes",
+    )
     products = _validate_product_ids(db, user.producer_id, data.product_ids)
 
     verdict = validate_producer_recipe(data.model_dump(mode="json"))
@@ -169,7 +188,12 @@ def create_my_recipe(
     producer_name = (
         db.query(Producer.name).filter(Producer.id == user.producer_id).scalar() or ""
     )
-    background_tasks.add_task(notify_admin_new_recipe, producer_name, recipe.title)
+    background_tasks.add_task(
+        notify_admin_new_recipe,
+        producer_name,
+        recipe.title,
+        test_cause=_recipe_test_cause(db, user),  # MEH-2952
+    )
 
     recipe = (
         db.query(ProducerRecipe)
@@ -323,7 +347,12 @@ def update_my_recipe(  # noqa: PLR0913 — all 6 args are FastAPI-injected (slow
             db.query(Producer.name).filter(Producer.id == user.producer_id).scalar()
             or ""
         )
-        background_tasks.add_task(notify_admin_new_recipe, producer_name, recipe.title)
+        background_tasks.add_task(
+            notify_admin_new_recipe,
+            producer_name,
+            recipe.title,
+            test_cause=_recipe_test_cause(db, user),  # MEH-2952
+        )
 
     recipe = (
         db.query(ProducerRecipe)
@@ -339,7 +368,9 @@ def update_my_recipe(  # noqa: PLR0913 — all 6 args are FastAPI-injected (slow
 
 
 @router.delete("/producers/me/recipes/{recipe_id}")
+@limiter.limit("60/hour")  # MEH-3022
 def delete_my_recipe(
+    request: Request,  # required by slowapi (MEH-3022)
     recipe_id: UUID,
     background_tasks: BackgroundTasks,
     user: User = Depends(require_producer),

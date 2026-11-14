@@ -16,6 +16,15 @@ from pydantic import (
 )
 
 from app.allergens import normalize_allergens
+from app.limits import (
+    DELIVERY_CITIES_DETAIL,
+    GALLERY_IMAGES_DETAIL,
+    MAX_ADMIN_LIST,
+    MAX_DELIVERY_CITIES,
+    MAX_GALLERY_IMAGES,
+    MAX_SMALL_LIST,
+    cap_list,
+)
 from app.schemas.password import PasswordField
 from app.services.sanitization import sanitize_text
 from app.utils.clock import israel_today
@@ -109,6 +118,74 @@ def _validate_order_day(day: str, hours) -> list[dict[str, str]]:
         prev_close = close_t
         day_ranges.append({"open": open_t, "close": close_t})
     return day_ranges
+
+
+# MEH-3035: how a business takes payment. Fixed lists (Google / Booking
+# pattern — one wording for every business, translatable, filterable later)
+# plus one optional free line. Order here IS the display order.
+# DO NOT reorder or rename a value without a JSONB data migration — stored rows
+# carry these strings.
+PAYMENT_METHODS = ("bit", "paybox", "bank_transfer", "cash", "credit_card")
+PAYMENT_TIMINGS = ("advance", "on_pickup", "deposit")
+PAYMENT_NOTE_MAX = 80
+_PAYMENT_INFO_KEYS = frozenset({"methods", "timing", "note"})
+_LETTER_RE = re.compile(r"[א-תa-zA-Z]")
+
+
+def _payment_methods(raw) -> list[str]:
+    if raw is None:
+        return []
+    if not isinstance(raw, list):
+        raise ValueError("אמצעי התשלום חייבים להיות רשימה")
+    if len(raw) > 2 * len(PAYMENT_METHODS):
+        raise ValueError("יותר מדי אמצעי תשלום")
+    unknown = [m for m in raw if m not in PAYMENT_METHODS]
+    if unknown:
+        raise ValueError(f"אמצעי תשלום לא מוכר: {unknown[0]}")
+    return [m for m in PAYMENT_METHODS if m in raw]
+
+
+def _payment_note(raw) -> str | None:
+    if raw is None:
+        return None
+    if not isinstance(raw, str):
+        raise ValueError("ההערה על התשלום חייבת להיות טקסט")
+    note = raw.strip()
+    if not note:
+        return None
+    if len(note) > PAYMENT_NOTE_MAX:
+        raise ValueError(f"ההערה על התשלום ארוכה מדי (עד {PAYMENT_NOTE_MAX} תווים)")
+    # MEH-555: free text shown to readers needs at least 3 letters.
+    if len(_LETTER_RE.findall(note)) < 3:
+        raise ValueError("ההערה על התשלום צריכה לכלול לפחות 3 אותיות")
+    return note
+
+
+def _payment_info_validator(v):
+    """Validate producers.payment_info on write (MEH-3035).
+
+    Returns the normalised dict, or None when nothing was said (no methods,
+    no timing, no note) so the public page renders nothing. Unknown keys,
+    unknown methods/timings, a note over 80 chars or under 3 letters → 422.
+    """
+    if v is None:
+        return None
+    if not isinstance(v, dict):
+        raise ValueError("פרטי התשלום חייבים להיות אובייקט")
+    extra = set(v) - _PAYMENT_INFO_KEYS
+    if extra:
+        raise ValueError(f"שדה לא מוכר בפרטי התשלום: {sorted(extra)[0]}")
+    timing = v.get("timing")
+    if timing is not None and timing not in PAYMENT_TIMINGS:
+        raise ValueError("מתי משלמים: יש לבחור אחת מהאפשרויות")
+    out = {
+        "methods": _payment_methods(v.get("methods")),
+        "timing": timing,
+        "note": _payment_note(v.get("note")),
+    }
+    if not out["methods"] and out["timing"] is None and out["note"] is None:
+        return None
+    return out
 
 
 def _order_window_validator(v):
@@ -877,7 +954,9 @@ class ProducerRegister(BaseModel):
     # MEH-1153: server-side parity with the client's ≥1-category gate.
     # validate_default=True runs _require_categories_validator on the absent
     # case (default []) too, so both "missing" and "[]" 422.
-    category_ids: list[int] = Field(default_factory=list, validate_default=True)
+    category_ids: list[int] = Field(
+        default_factory=list, validate_default=True, max_length=MAX_SMALL_LIST
+    )
     # MEH-530: optional at Pydantic level. Router calls
     # ensure_license_for_categories which 422s if license is missing for
     # a category in LICENSE_REQUIRED_CATEGORIES. max_length=20 mirrors the
@@ -944,7 +1023,9 @@ class ProducerRegister(BaseModel):
     referral_source_other: str | None = Field(default=None, max_length=120)
     # MEH-293/MEH-479: dietary flags moved to per-product tagging via /settings.
     # Delivery areas
-    delivery_areas: list["DeliveryAreaCreate"] = []
+    delivery_areas: list["DeliveryAreaCreate"] = Field(
+        default_factory=list, max_length=MAX_DELIVERY_CITIES
+    )
     # MEH-1838 chunk A: delivery-shape fields — registration previously
     # captured NO axis at all (has_physical_location/offers_delivery both
     # silently defaulted at the DB layer), so every new business landed
@@ -958,7 +1039,9 @@ class ProducerRegister(BaseModel):
     has_physical_location: bool = True
     offers_delivery: bool = False
     delivery_nationwide: bool = False
-    delivery_cities: list[str] = []
+    delivery_cities: list[str] = Field(
+        default_factory=list, max_length=MAX_DELIVERY_CITIES
+    )
 
     # MEH-1623 shipped producer_name's bleach→floor pair as two inline
     # @field_validators here; MEH-1626 chunk 1 moved that exact logic into
@@ -1149,6 +1232,12 @@ class ProducerRegister(BaseModel):
             )
         return self
 
+    @field_validator("delivery_areas", "delivery_cities", mode="before")
+    @classmethod
+    def _cap_delivery_meh3022(cls, v):
+        # MEH-3022: Hebrew sentence before pydantic's English max_length one.
+        return cap_list(v, MAX_DELIVERY_CITIES, DELIVERY_CITIES_DETAIL)
+
 
 class GoogleAuthRequest(BaseModel):
     id_token: str
@@ -1225,6 +1314,202 @@ class ProducerClaimRequest(BaseModel):
 class ProducerClaimOut(BaseModel):
     producer_id: UUID
     status: str
+
+
+# ---------------------------------------------------------------------------
+# MEH-2974: owner invite for a business an admin built end to end.
+# Routers: routers/producer_owner_invite.py (admin + public).
+# ---------------------------------------------------------------------------
+
+
+class OwnerInviteCreate(BaseModel):
+    """What the admin sends to invite a business's owner.
+
+    `consent_confirmed` and `consent_note` are not form decoration: closed
+    decision 4 of the card is that no invite exists without a recorded written
+    consent, and these two columns plus `owner_invite_created_by` ARE the audit
+    trail. Both are enforced here rather than in the handler so the refusal is
+    a 422 on the body — the same classification as `terms_accepted` on
+    `UserRegister` above, and for the same reason: it is a statement about the
+    payload, not about which business it names, so it leaks nothing.
+    """
+
+    # OPTIONAL since v3 of the card, and that is a product fact rather than a
+    # convenience: most businesses reach us on Instagram or WhatsApp and we
+    # have no address for them, so the admin mints a link with none and the
+    # owner types her own on the acceptance page — where it is proven with a
+    # one-time code before any account exists. When the admin DOES have an
+    # address, the invite mail goes out as before.
+    email: EmailStr | None = None
+    # Same reasoning as `UserRegister.name`: this is a PERSON's name, so bleach
+    # only and no >=3-letter floor (two-letter Hebrew given names are real).
+    name: SanitizedPersonNameField
+    consent_confirmed: bool
+    consent_note: str = Field(min_length=1, max_length=500)
+
+    @field_validator("email", mode="before")
+    @classmethod
+    def _normalise_email(cls, v):
+        """Lower + trim BEFORE EmailStr, so the uniqueness checks in the
+        handler and the row we store agree with `users.email` — which is
+        itself stored as typed, and compared with `func.lower` on both sides.
+
+        An empty or whitespace-only string becomes None rather than a 422: the
+        admin form sends `""` for an untouched optional field, and "left blank"
+        is the normal case here, not an error.
+        """
+        if not isinstance(v, str):
+            return v
+        return v.strip().lower() or None
+
+    @field_validator("consent_confirmed")
+    @classmethod
+    def _consent_required(cls, v: bool) -> bool:
+        if v is not True:
+            raise ValueError(
+                "חובה לאשר שהתקבל אישור מפורש בכתב מבעלי העסק לפני שליחת הזמנה"
+            )
+        return v
+
+    @field_validator("consent_note")
+    @classmethod
+    def _note_not_blank(cls, v: str) -> str:
+        # `min_length=1` above rejects "" but NOT "   ", and a whitespace note
+        # is exactly as useless as an empty one for an audit trail.
+        stripped = (v or "").strip()
+        if not stripped:
+            raise ValueError("חובה לתעד איך התקבלה ההסכמה")
+        return stripped
+
+
+class OwnerInviteCreatedOut(BaseModel):
+    """The ONE response that carries the raw token, as part of `invite_url`.
+
+    Returned by create and by resend, and nowhere else: there is no GET that
+    re-reads it, because the database holds only the sha256. If the admin
+    loses the link she resends, which mints a new token and kills this one.
+    """
+
+    invite_url: str
+    # v3: optional, because an invite may be created with no address at all —
+    # the admin copies the link into WhatsApp and the owner types her own
+    # address on the page. `None` here is "nothing was sent anywhere", which is
+    # what the panel renders instead of a «נשלח אל» line.
+    email: EmailStr | None = None
+    name: str
+    sent_at: datetime
+    expires_at: datetime
+
+
+class OwnerInvitePublicOut(BaseModel):
+    """What the acceptance page may know before anyone has authenticated.
+
+    Deliberately three fields. The business NAME is already public on its own
+    page, and the EMAIL is the address the link was sent to — so a holder of
+    the link learns nothing about the business they did not already have. No
+    phone, no address, no license, no ids, and no token echo.
+    """
+
+    producer_name: str
+    # NULL when the admin minted the link without one (v3). The page then shows
+    # an empty, editable field instead of a read-only address.
+    email: EmailStr | None = None
+    # Whether the acceptance page must render the grower line beside the
+    # licensing declaration (constants.FARMER_DECLARATION_CATEGORIES). Computed
+    # server-side rather than shipped as `category_names` for the page to
+    # classify, because this page's whole job is collecting a declaration and
+    # the condition for it should not be re-derived by the client.
+    requires_farmer_declaration: bool
+    # v3: True when the business is still hidden, i.e. accepting PUBLISHES it.
+    # The page says so on the button («אישור והעלאת הדף» vs «אישור וכניסה
+    # ללוח הבקרה»), because those are different promises.
+    will_publish: bool = False
+    # v3: what the page will look like, so she approves something she has
+    # seen. Same five public fields as `ProducerClaimPreviewOut` — every one of
+    # them is already on the business's own page — and deliberately NOT the
+    # public endpoint itself: a hidden business must not become reachable
+    # through `/producers/*` before she accepts. Holding the link is the only
+    # way to see it.
+    preview: ProducerClaimPreviewOut | None = None
+
+
+class OwnerInviteAccept(BaseModel):
+    # URL-safe base64 of 32 random bytes is ~43 chars; the ceiling stops a
+    # megabyte body from reaching the hash function.
+    token: str = Field(min_length=1, max_length=512)
+    # v3: the address she typed, and the code that proves it. Both required —
+    # there is no path to an account without a verified address, including the
+    # case where the admin pre-filled one (she still confirms it with a code,
+    # because a pre-filled address is also just a string someone typed).
+    email: EmailStr
+    code: str = Field(min_length=1, max_length=12)
+    # Same 12-char schema floor as every other password entry point; the full
+    # policy (deny-list, HIBP) runs in the handler, which can await.
+    password: PasswordField
+
+    @field_validator("email", mode="before")
+    @classmethod
+    def _normalise_email(cls, v):
+        return v.strip().lower() if isinstance(v, str) else v
+
+    @field_validator("code", mode="before")
+    @classmethod
+    def _strip_code(cls, v):
+        """People paste the code with spaces around it, and some mail clients
+        insert a non-breaking space. Strip both before the comparison, which is
+        on a hash and therefore unforgiving."""
+        return v.replace("\u00a0", "").strip() if isinstance(v, str) else v
+
+    # NOT optional-with-default, unlike `ProducerRegister.terms_accepted`.
+    # There the default exists for backwards compatibility with callers that
+    # predate the field; here there is no such caller, and both consents are
+    # the entire point of the step — so an omitted box is a 422, never a
+    # silently unrecorded consent.
+    terms_accepted: bool
+    declaration_accepted: bool
+
+    @field_validator("terms_accepted")
+    @classmethod
+    def _terms_accepted_required(cls, v: bool) -> bool:
+        return _terms_must_be_accepted(v)
+
+    @field_validator("declaration_accepted")
+    @classmethod
+    def _declaration_accepted_required(cls, v: bool) -> bool:
+        if v is not True:
+            raise ValueError("יש לאשר את הצהרת הרישוי כדי להמשיך")
+        return v
+
+
+class OwnerInviteEmailCodeRequest(BaseModel):
+    """v3: «send a code to this address».
+
+    The response is a fixed 200 whatever happens — address free, address
+    already registered, send failed — so this shape carries nothing a caller
+    could use to tell those apart.
+    """
+
+    token: str = Field(min_length=1, max_length=512)
+    email: EmailStr
+
+    @field_validator("email", mode="before")
+    @classmethod
+    def _normalise_email(cls, v):
+        return v.strip().lower() if isinstance(v, str) else v
+
+
+class ProducerOwnerSummary(BaseModel):
+    """The account behind a business, for the admin's «בעלים» panel only.
+
+    Two fields, and the shape is the limit: the admin needs to see WHO she
+    handed the page to, never the account itself. Hydrated beside `has_owner`
+    (routers/admin.py `_attach_has_owner`) in the same single query, so it
+    costs no extra round-trip and cannot reintroduce the per-row SELECT
+    MEH-2541 removed from `GET /admin/producers`.
+    """
+
+    name: str
+    email: EmailStr
 
 
 # MEH-328: generic ack returned by POST /auth/register on ALL branches
@@ -1798,8 +2083,17 @@ class ProductOut(BaseModel):
     is_low_carb: bool = False  # MEH-1934
     ingredients: str | None = None  # MEH-2662
     allergens: list[str] | None = None  # MEH-2662
+    position: int | None = None  # MEH-3055: owner order, NULL = never ordered
+    group_id: str | None = None  # MEH-3055: id in producers.product_groups
 
     model_config = {"from_attributes": True}
+
+
+class ProductGroupOut(BaseModel):
+    """MEH-3055: one owner-defined product group (producers.product_groups)."""
+
+    id: str
+    name: str
 
 
 # --- Producer ---
@@ -1826,10 +2120,14 @@ class ProducerCreate(BaseModel):
     facebook: str | None = None
     external_order_form: str | None = None
     # MEH-1153: same ≥1-category server-side parity as ProducerRegister.
-    category_ids: list[int] = Field(default_factory=list, validate_default=True)
+    category_ids: list[int] = Field(
+        default_factory=list, validate_default=True, max_length=MAX_SMALL_LIST
+    )
     # MEH-530: see ProducerRegister for the validation rationale.
     producer_license_number: str | None = Field(default=None, max_length=20)
-    delivery_areas: list[DeliveryAreaCreate] = []
+    delivery_areas: list[DeliveryAreaCreate] = Field(
+        default_factory=list, max_length=MAX_DELIVERY_CITIES
+    )
 
     # MEH-296 3d: http(s) scheme guard on the URL fields (reuse Chunk-2 helper).
     @field_validator("website", "facebook", "external_order_form")
@@ -1854,6 +2152,12 @@ class ProducerCreate(BaseModel):
     def _require_categories(cls, v):
         # MEH-1297: enforce the ≤3 cap alongside the MEH-1153 ≥1 requirement.
         return _cap_categories_validator(_require_categories_validator(v))
+
+    @field_validator("delivery_areas", mode="before")
+    @classmethod
+    def _cap_delivery_meh3022(cls, v):
+        # MEH-3022: Hebrew sentence before pydantic's English max_length one.
+        return cap_list(v, MAX_DELIVERY_CITIES, DELIVERY_CITIES_DETAIL)
 
 
 class ProducerAdminCreate(BaseModel):
@@ -1901,18 +2205,24 @@ class ProducerAdminCreate(BaseModel):
     # grant-verified (verified_at) only; column stays at default False (drops ch6).
     # MEH-18
     is_recommended: bool = False
-    images: list[str] = []
-    category_ids: list[int] = []
-    delivery_area_cities: list[str] = []  # simple comma-split list
+    images: list[str] = Field(default_factory=list, max_length=MAX_GALLERY_IMAGES)
+    category_ids: list[int] = Field(default_factory=list, max_length=MAX_SMALL_LIST)
+    delivery_area_cities: list[str] = Field(
+        default_factory=list, max_length=MAX_DELIVERY_CITIES
+    )  # simple comma-split list
     # MEH-213 — location mode
     has_physical_location: bool = True
     offers_delivery: bool = False
     delivery_nationwide: bool = False
-    delivery_cities: list[str] = []
+    delivery_cities: list[str] = Field(
+        default_factory=list, max_length=MAX_DELIVERY_CITIES
+    )
     # MEH-1255: nationwide exclusion list ("לכל הארץ חוץ מ:") — only legal
     # with delivery_nationwide=true (validator below + DB CHECK
     # delivery_excluded_requires_nationwide).
-    delivery_excluded_cities: list[str] = []
+    delivery_excluded_cities: list[str] = Field(
+        default_factory=list, max_length=MAX_DELIVERY_CITIES
+    )
 
     # MEH-1297: cap categories at 3 (admin create).
     @field_validator("category_ids")
@@ -1998,6 +2308,23 @@ class ProducerAdminCreate(BaseModel):
                 '"לכל הארץ" מסומן, אבל "משלוחים" לא. סמנו "משלוחים", או בטלו את "לכל הארץ".'
             )
         return self
+
+    @field_validator("images", mode="before")
+    @classmethod
+    def _cap_images_meh3022(cls, v):
+        # MEH-3022: Hebrew sentence before pydantic's English max_length one.
+        return cap_list(v, MAX_GALLERY_IMAGES, GALLERY_IMAGES_DETAIL)
+
+    @field_validator(
+        "delivery_area_cities",
+        "delivery_cities",
+        "delivery_excluded_cities",
+        mode="before",
+    )
+    @classmethod
+    def _cap_delivery_meh3022(cls, v):
+        # MEH-3022: Hebrew sentence before pydantic's English max_length one.
+        return cap_list(v, MAX_DELIVERY_CITIES, DELIVERY_CITIES_DETAIL)
 
 
 # MEH-291 → MEH-2758 → MEH-2782: the availability enum is pause-only, like
@@ -2149,16 +2476,18 @@ class ProducerUpdate(BaseModel):
     # on the admin PUT they still reached those columns through the bulk
     # setattr. A stale client sending either key has it ignored (no
     # extra="forbid" on this model), not a 422.
-    images: list[str] | None = None
+    images: list[str] | None = Field(None, max_length=MAX_GALLERY_IMAGES)
     status: str | None = None
-    category_ids: list[int] | None = None
-    delivery_area_cities: list[str] | None = (
-        None  # admin form: simple list of city names
-    )
+    category_ids: list[int] | None = Field(None, max_length=MAX_SMALL_LIST)
+    delivery_area_cities: list[str] | None = Field(
+        None, max_length=MAX_DELIVERY_CITIES
+    )  # admin form: simple list of city names
     # MEH-1644: structured rows from the dashboard DeliveryCard — carries the
     # whitelist-validated delivery_day per city (DeliveryAreaCreate). Takes
     # precedence over delivery_area_cities in producer_me when both are sent.
-    delivery_areas: list[DeliveryAreaCreate] | None = None
+    delivery_areas: list[DeliveryAreaCreate] | None = Field(
+        None, max_length=MAX_DELIVERY_CITIES
+    )
     # MEH-1823 chunk 2: the owner's single offer, written through the same PUT
     # as delivery_areas. Three-valued on purpose, and the distinction is
     # load-bearing because `exclude_unset` cannot tell the last two apart on
@@ -2173,14 +2502,16 @@ class ProducerUpdate(BaseModel):
     has_physical_location: bool | None = None
     offers_delivery: bool | None = None
     delivery_nationwide: bool | None = None
-    delivery_cities: list[str] | None = None
+    delivery_cities: list[str] | None = Field(None, max_length=MAX_DELIVERY_CITIES)
     # MEH-1255: nationwide exclusion list. Schema validator catches the
     # explicit nationwide=false + excluded case; the routers guard the
     # EFFECTIVE state on partial updates (excluded sent while the stored
     # delivery_nationwide is false) so the DB CHECK never 500s.
-    delivery_excluded_cities: list[str] | None = None
+    delivery_excluded_cities: list[str] | None = Field(
+        None, max_length=MAX_DELIVERY_CITIES
+    )
     # MEH-210 Phase 2 — custom WhatsApp question chips
-    custom_questions: list[str] | None = None
+    custom_questions: list[str] | None = Field(None, max_length=MAX_SMALL_LIST)
     # MEH-291 — the 4-value availability enum; since MEH-2272 the only
     # availability field this schema accepts.
     availability_state: str | None = None
@@ -2197,6 +2528,10 @@ class ProducerUpdate(BaseModel):
     # MEH-1889 chunk A: per-date overrides above order_window. Validated by
     # _special_hours_validator; explicit null clears it, same as order_window.
     special_hours: dict | None = None
+    # MEH-3035: how the business takes payment. Validated below
+    # (_payment_info_validator). Owner-writable via producer_me.py
+    # (_PRODUCER_WRITABLE_FIELDS, MEH-3035 chunk 2, with PaymentInfoEditor).
+    payment_info: dict | None = None
     # MEH-1577: structured delivery cost (whole shekels, producer-level).
     # Validated below — both reject negatives, free_delivery_above additionally
     # rejects 0. delivery_fee=0 is ACCEPTED and meaningful ("משלוח חינם"), which
@@ -2319,6 +2654,11 @@ class ProducerUpdate(BaseModel):
     @classmethod
     def _validate_special_hours(cls, v):
         return _special_hours_validator(v)
+
+    @field_validator("payment_info")
+    @classmethod
+    def _validate_payment_info(cls, v):
+        return _payment_info_validator(v)
 
     # MEH-2153: delegates to the shared guard so the count/length/trim rules
     # that MEH-210 Phase 2 wrote inline live in one place, and picks up the
@@ -2485,6 +2825,24 @@ class ProducerUpdate(BaseModel):
         if v > MAX_DELIVERY_MONEY:
             raise ValueError("סף למשלוח חינם גבוה מדי")
         return v
+
+    @field_validator("images", mode="before")
+    @classmethod
+    def _cap_images_meh3022(cls, v):
+        # MEH-3022: Hebrew sentence before pydantic's English max_length one.
+        return cap_list(v, MAX_GALLERY_IMAGES, GALLERY_IMAGES_DETAIL)
+
+    @field_validator(
+        "delivery_area_cities",
+        "delivery_areas",
+        "delivery_cities",
+        "delivery_excluded_cities",
+        mode="before",
+    )
+    @classmethod
+    def _cap_delivery_meh3022(cls, v):
+        # MEH-3022: Hebrew sentence before pydantic's English max_length one.
+        return cap_list(v, MAX_DELIVERY_CITIES, DELIVERY_CITIES_DETAIL)
 
 
 class ProducerAdminUpdate(ProducerUpdate):
@@ -2887,6 +3245,14 @@ class ProducerDetailOut(ProducerListOut):
     # that matters here is the feature vanishing, not it appearing.
     coverage_cta_enabled: bool = True
     products: list[ProductOut] = []
+    # MEH-3055: ordered groups; a NULL column reads as no groups.
+    product_groups: list[ProductGroupOut] = []
+
+    @field_validator("product_groups", mode="before")
+    @classmethod
+    def _null_groups_are_empty(cls, v):
+        return v or []
+
     delivery_areas: list[DeliveryAreaOut] = []
     report_count: int = 0
     created_at: datetime | None = None
@@ -2910,6 +3276,10 @@ class ProducerDetailOut(ProducerListOut):
     # written via producer_me PUT. Inherited onto ProducerOwnerOut so the
     # dashboard editor (MEH-1544) can reload the saved value.
     order_window: dict | None = None
+    # MEH-3035: how the business takes payment ({methods, timing, note}) or
+    # None. Detail only (the business page's «איך משלמים?» chip and JSON-LD
+    # paymentAccepted); inherited onto ProducerOwnerOut for the editor.
+    payment_info: dict | None = None
     # MEH-210 Phase 2 — custom WhatsApp question chips
     custom_questions: list[str] | None = None
     # MEH-1490: admin-mapped Google Maps Place ID. Exposed on read so the admin
@@ -3037,6 +3407,36 @@ class ProducerAdminOut(ProducerDetailOut):
     # NULL = none minted since the column existed; the drafts list renders
     # nothing for it rather than an empty date.
     claim_link_sent_at: datetime | None = None
+    # MEH-2974: the owner invite, admin-only. Six readable fields and the
+    # linked account — enough for the «בעלים» panel's three states (no owner /
+    # invite pending / connected) without a second request.
+    #
+    # Note what is NOT here, by name, and that both absences are asserted in
+    # tests/test_producer_owner_invite.py::TestExposure:
+    #   * `owner_invite_token_hash` — the credential's only store. It is on NO
+    #     schema at all, so it cannot reach a response by inheritance, by a
+    #     `model_dump()` somewhere, or by appearing in openapi.json.
+    #   * `owner_invite_created_by` — a raw users id. Which admin minted the
+    #     invite is audit data the row and the logs carry; the panel renders
+    #     nothing from it, so exposing it would be an id for its own sake.
+    #
+    # `owner_invite_consent_note` IS here: the admin needs to read back what
+    # she recorded, both to check it and because the panel shows it. It is her
+    # own note about a business, in the same internal-operations class as
+    # `admin_notes` and `recommended_note` — admin-only, never on the public or
+    # owner shapes.
+    owner_invite_email: EmailStr | None = None
+    owner_invite_name: str | None = None
+    owner_invite_sent_at: datetime | None = None
+    owner_invite_expires_at: datetime | None = None
+    owner_invite_accepted_at: datetime | None = None
+    owner_invite_consent_note: str | None = None
+    # Derived, never stored — hydrated per response beside `has_owner` by
+    # routers/admin.py `_attach_has_owner`, in that one batched query. None
+    # means "this route did not hydrate it", exactly as for `has_owner`: a
+    # route that forgets fails CLOSED (the panel shows no owner line) rather
+    # than reporting a handed-over business as ownerless.
+    owner: ProducerOwnerSummary | None = None
     # MEH-1287 chunk B — the editorial seasonal mark, admin-only and READ-BACK
     # (ADR-006 R2: `ProducerAdminUpdate` writes it, so something has to return
     # it, or the admin form reopens empty and the next save silently clears a
@@ -3257,7 +3657,7 @@ class AdminChecklistItemsIn(BaseModel):
     is assigned from the index server-side rather than sent by the client, so
     two items can never claim the same slot."""
 
-    items: list[AdminChecklistItemIn]
+    items: list[AdminChecklistItemIn] = Field(..., max_length=MAX_ADMIN_LIST)
 
 
 class ProducerReviewCheckOut(BaseModel):
@@ -3283,7 +3683,7 @@ class ProducerReviewChecksIn(BaseModel):
     assumption that breaks when two admin tabs are open on the same producer.
     """
 
-    item_ids: list[UUID] = []
+    item_ids: list[UUID] = Field(default_factory=list, max_length=MAX_ADMIN_LIST)
 
 
 class LicenseExpiryReminderRow(BaseModel):
@@ -4992,6 +5392,9 @@ class ReviewsPage(BaseModel):
     total: int
     page: int
     pages: int
+    # MEH-1337: visible reviews per star, "1".."5", over the whole business
+    # (every page), for the distribution bars. Always all five keys.
+    rating_counts: dict[str, int] = {}
 
     model_config = {"from_attributes": True}
 
@@ -5176,6 +5579,8 @@ class AlertPrefsIn(BaseModel):
     notify_new_recipe: bool = True
     # MEH-2828: new_group_buy alert type; defaults to on like the siblings.
     notify_new_group_buy: bool = True
+    # MEH-3117: new_rescue alert type; defaults to on like the siblings.
+    notify_new_rescue: bool = True
     whatsapp_opt_in: bool = False
     push_subscription: dict | None = None
 
@@ -5187,6 +5592,7 @@ class AlertPrefsOut(BaseModel):
     notify_delivery_area: bool
     notify_new_recipe: bool
     notify_new_group_buy: bool
+    notify_new_rescue: bool
     whatsapp_opt_in: bool
     has_push: bool
 
@@ -5207,9 +5613,22 @@ class AlertContent(BaseModel):
 # reference resolves in module order. Router-local concerns (CHAT_MODEL,
 # MAX_HISTORY_TURNS, MAX_OUTPUT_TOKENS, SYSTEM_PROMPT, _strip_markdown,
 # _get_client) stay in chat.py — handler-side, not schema fields.
+# MEH-3010: what a visitor may type, matching the widget's maxLength
+# (frontend/components/ChatWidget.jsx:467). A bot posting straight to /chat
+# skips the widget, so the server holds the same line. Assistant turns echo
+# our own replies back and keep the wider 2000.
+CHAT_USER_MESSAGE_MAX = 500
+
+
 class ChatMessage(BaseModel):
     role: Literal["user", "assistant"]
     content: str = Field(min_length=1, max_length=2000)
+
+    @model_validator(mode="after")
+    def _cap_user_message(self) -> "ChatMessage":
+        if self.role == "user" and len(self.content) > CHAT_USER_MESSAGE_MAX:
+            raise ValueError(f"user message over {CHAT_USER_MESSAGE_MAX} chars")
+        return self
 
 
 class ChatRequest(BaseModel):
@@ -5533,3 +5952,18 @@ class SavedItemsOut(BaseModel):
     recipes: list[SavedRecipeOut]
     events: list[SavedEventOut]
     experiences: list[SavedExperienceOut]
+
+
+class NameMatch(BaseModel):
+    """One live business whose name equals the name being registered."""
+
+    id: str
+    slug: str | None
+    name: str
+    city: str | None
+
+
+class NameCheckOut(BaseModel):
+    """GET /producer-name-check (MEH-3086) — at most three matches."""
+
+    matches: list[NameMatch]

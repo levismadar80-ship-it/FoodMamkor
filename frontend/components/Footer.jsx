@@ -2,7 +2,7 @@
 
 // MEH-2578: locale-aware Link — next/link dropped the /en prefix, and with
 // localeDetection off an /en reader landed on the Hebrew page.
-import { Link } from "@/i18n/navigation";
+import { Link, useRouter } from "@/i18n/navigation";
 // MEH-2850: every Link element here carries prefetch={false} — the footer is
 // chrome on every page and links a dozen static pages; on a short page (or
 // once scrolled into view) each would be prefetched IN FULL. See Header.jsx.
@@ -22,6 +22,9 @@ import { useAuth } from "@/lib/auth-context";
 import ShareSiteActions from "@/components/ShareSiteActions";
 import Seed from "@/components/brand/Seed";
 import { SEEDS_DARK } from "@/lib/brand-seeds";
+// MEH-2998: the © year is the Israel calendar year, so the server (UTC) and
+// every browser agree on it on New Year's night — see lib/established-year.
+import { currentIsraelYear } from "@/lib/established-year";
 
 /**
  * Footer (MEH-37 redesign) — brings the implementation in line with the
@@ -58,6 +61,12 @@ import { SEEDS_DARK } from "@/lib/brand-seeds";
  */
 export default function Footer() {
   const t = useTranslations();
+  const router = useRouter();
+  // MEH-3059: prefetch on intent for a link whose target renders per request.
+  const intentPrefetch = (href) => {
+    const go = () => router.prefetch(href);
+    return { onPointerEnter: go, onTouchStart: go, onFocus: go };
+  };
   // MEH-2554: «כניסה לחשבון» is a guest link — a signed-in reader saw it too.
   const { user } = useAuth();
   // MEH-721: producer-CTA panel moved out of global footer — see file-header History block.
@@ -118,7 +127,11 @@ export default function Footer() {
   const discoverLinks = [
     // MEH-1060 (SEO-09): link to the /producers index — the crawlable catalog
     // walk was previously reachable only via sitemap/pagination, not the footer.
-    { href: "/producers", label: t("nav.footer.producers") },
+    // MEH-3059: /producers renders per request (?page=N), so with prefetch off
+    // the tap painted the site-wide brand loader. Prefetching on intent (hover,
+    // touch, focus) fetches only down to producers/loading.js — the page-shaped
+    // skeleton — and only for someone about to tap. prefetch={false} stays.
+    { href: "/producers", label: t("nav.footer.producers"), intentPrefetch: true },
     { href: "/map", label: t("nav.map") },
     ...(showEvents ? [{ href: "/events", label: t("nav.footer.events") }] : []),
     // MEH-1918: data-gated — the experiences link joins "גלו" only once
@@ -138,6 +151,10 @@ export default function Footer() {
     // MEH-1160: reader-facing share page — the site-level viral loop.
     // MEH-2827 PR 5: /share became the «ספרו עלינו» section of /recommend
     // (/share 308s there too); the label is unchanged.
+    // «המליצו על בית עסק» sits in «עלינו» next to «ספרו עלינו» (Sapir 13/11):
+    // both are a reader helping the site, both land on /recommend. It was in
+    // the utility row (MEH-2633), then briefly in «גלו» (MEH-3042).
+    { href: "/recommend", label: t("nav.footer.recommend") },
     { href: "/recommend#share", label: t("share_page.footer_link") },
   ];
   const businessLinks = [
@@ -268,6 +285,7 @@ export default function Footer() {
                             — interactive text carries no inline font sizing. */}
                         <Link prefetch={false}
                           href={link.href}
+                          {...(link.intentPrefetch ? intentPrefetch(link.href) : {})}
                           className="text-sm text-green-100 hover:text-white transition"
                         >
                           {link.label}
@@ -313,7 +331,7 @@ export default function Footer() {
                 type="submit"
                 disabled={status === "loading"}
                 aria-label={t("nav.footer.newsletter_submit")}
-                className="absolute end-0 top-1/2 -translate-y-1/2 flex h-11 w-11 items-center justify-center text-white/60 hover:text-white transition disabled:opacity-40"
+                className="absolute end-0 top-1/2 -translate-y-1/2 flex h-11 w-11 items-center justify-center text-white/60 hover:text-white transition disabled:opacity-50"
               >
                 {status === "loading" ? (
                   <ButtonSpinner />
@@ -350,7 +368,7 @@ export default function Footer() {
                 likely to pass the site on. One «שתפו» (the phone's own share
                 sheet), on-dark colours; shares the site URL. */}
             {status === "success" && (
-              <div className="mt-4 rounded-xl border border-background/15 bg-background/5 p-4" data-testid="newsletter-share">
+              <div className="mt-4 rounded-lg border border-background/15 bg-background/5 p-4" data-testid="newsletter-share">
                 <p className="text-sm font-semibold text-background">{t("share_page.h1")}</p>
                 <ShareSiteActions layout="compact" tone="dark" className="mt-3" />
               </div>
@@ -376,7 +394,7 @@ export default function Footer() {
           {/* MEH-788 copy-Δ: P5-v2 bottom-row lock — wordmark only; the leaf
               emoji dropped per the UI-surface emoji LOCK (MEH-657). */}
           <p className="text-green-100" style={{ fontSize: "11px" }}>
-            © {new Date().getFullYear()} {t("footer.copyright")}
+            © {currentIsraelYear()} {t("footer.copyright")}
           </p>
           {/* MEH-2417: wraps (and centres) at 375 instead of running five links
               edge to edge under the floating back-to-top button. */}
@@ -392,10 +410,6 @@ export default function Footer() {
               // contact is a top-3 expected footer utility link. MEH-2832: the
               // target is /contact, the site's one contact form (was /about#contact).
               { href: "/contact", label: t("nav.footer.contact") },
-              // MEH-2633: next to "צרו קשר", per the card. Sixth utility link —
-              // the row already wraps and centres at 375 (MEH-2417 above), so
-              // this does not re-open the edge-to-edge overflow that fixed.
-              { href: "/recommend", label: t("nav.footer.recommend") },
             ].map((link) => (
               <li key={link.href}>
                 {/* MEH-1103: 11px → 13px (DESIGN.md interactive floor is 14px

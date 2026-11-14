@@ -309,7 +309,7 @@ def test_send_notification_email_defaults_html_to_none(monkeypatch):
     """
     captured = {}
 
-    def _capture(to, subject, body, html=None, reply_to=None):
+    def _capture(to, subject, body, html=None, reply_to=None, test_cause=False):
         captured.update(to=to, subject=subject, body=body, html=html)
 
     monkeypatch.setattr(admin_module, "send_email", _capture)
@@ -327,7 +327,7 @@ def test_send_notification_email_forwards_an_html_part_when_given_one(monkeypatc
     """
     captured = {}
 
-    def _capture(to, subject, body, html=None, reply_to=None):
+    def _capture(to, subject, body, html=None, reply_to=None, test_cause=False):
         captured.update(html=html)
 
     monkeypatch.setattr(admin_module, "send_email", _capture)
@@ -353,7 +353,7 @@ def test_the_approval_endpoint_sends_both_parts_with_the_real_slug(
     """
     sent = {}
 
-    def _capture(to_email, subject, body, html=None):
+    def _capture(to_email, subject, body, html=None, test_cause=False):
         sent.update(to=to_email, subject=subject, body=body, html=html)
 
     monkeypatch.setattr(admin_module, "_send_notification_email", _capture)

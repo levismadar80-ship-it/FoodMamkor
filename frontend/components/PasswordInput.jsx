@@ -41,11 +41,12 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
-import { Eye, EyeSlash, Check, Circle, CircleNotch } from "@phosphor-icons/react";
+import { Eye, EyeSlash, Check, Circle } from "@phosphor-icons/react";
 
 import api from "@/lib/api";
 import { failureMessage } from "@/lib/passwordMessages";
 import { PASSWORD_MIN_LENGTH } from "@/lib/validators";
+import ButtonSpinner from "@/components/ButtonSpinner";
 
 const HIBP_DEBOUNCE_MS = 500;
 
@@ -155,13 +156,13 @@ export default function PasswordInput({
           required={required}
           autoComplete={autoComplete}
           dir="ltr"
-          className="w-full min-h-touch border border-border rounded-md pr-12 pl-3 py-2.5 text-right outline-none focus-visible:ring-2 focus-visible:ring-primary/40 transition" // rtl-ok: pr-12 reserves the dir="ltr" eye toggle (MEH-2554 — pr-11 let the 44px toggle sit on the text)
+          className="w-full min-h-touch border border-border rounded-sm pr-12 pl-3 py-2.5 text-right outline-none focus-visible:ring-2 focus-visible:ring-primary transition" // rtl-ok: pr-12 reserves the dir="ltr" eye toggle (MEH-2554 — pr-11 let the 44px toggle sit on the text)
         />
         <button
           type="button"
           data-testid={testId ? `${testId}-toggle` : undefined}
           onClick={() => setShow((v) => !v)}
-          className="absolute right-0.5 top-1/2 -translate-y-1/2 text-fg-muted hover:text-text transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 rounded-full p-3" // rtl-ok: eye toggle inside the dir="ltr" input
+          className="absolute right-0.5 top-1/2 -translate-y-1/2 text-fg-muted hover:text-text transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-full p-3" // rtl-ok: eye toggle inside the dir="ltr" input
           aria-label={show ? tForm("toggle_hide") : tForm("toggle_show")}
           aria-pressed={show}
           tabIndex={0}
@@ -185,9 +186,9 @@ export default function PasswordInput({
             }`}
           >
             {tooShort ? (
-              <Circle size={13} aria-hidden="true" />
+              <Circle size={14} aria-hidden="true" />
             ) : (
-              <Check size={13} weight="bold" aria-hidden="true" />
+              <Check size={14} weight="bold" aria-hidden="true" />
             )}
             {tooShort
               ? failureMessage("too_short", tValidation)
@@ -203,11 +204,11 @@ export default function PasswordInput({
             }`}
           >
             {breachOk ? (
-              <Check size={13} weight="bold" aria-hidden="true" />
+              <Check size={14} weight="bold" aria-hidden="true" />
             ) : breachPending ? (
-              <CircleNotch size={13} className="animate-spin" aria-hidden="true" />
+              <ButtonSpinner size={14} />
             ) : (
-              <Circle size={13} aria-hidden="true" />
+              <Circle size={14} aria-hidden="true" />
             )}
             {breachPending
               ? tForm("checking")
@@ -217,7 +218,7 @@ export default function PasswordInput({
           </li>
           {showCurrentPasswordReuse && (
             <li className="text-xs flex items-center gap-1.5 text-fg-muted">
-              <Circle size={13} aria-hidden="true" />
+              <Circle size={14} aria-hidden="true" />
               {tForm("different_from_current")}
             </li>
           )}

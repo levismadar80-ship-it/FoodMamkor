@@ -22,6 +22,12 @@ import {
 import LoginPromptModal from "./LoginPromptModal";
 import AlertPrefsPanel from "./AlertPrefsPanel";
 import { labelInName } from "@/lib/label-in-name";
+import {
+  OVERLAY_ICON_BUTTON,
+  OVERLAY_ICON_FACE,
+  OVERLAY_ICON_SIZE,
+  overlayIconInk,
+} from "@/components/ui/overlay-icon-button";
 
 /**
  * FavoriteButton — save button for a producer. Visible to guests too
@@ -30,7 +36,7 @@ import { labelInName } from "@/lib/label-in-name";
  *
  * Variants:
  *   - "default" (sidebar pair with ShareButton)    — emoji heart in a 44×44 tap target
- *   - "gallery" (absolute overlay on ImageGallery) — white circle 44px, HeartStraight icon
+ *   - "gallery" (absolute overlay on ImageGallery) — 32px white circle in a 44px hit area (MEH-3115), HeartStraight icon
  *   - "inline"  (next to <h1> in producer header)  — small heart + "שמור" text
  *
  * Shared behavior: reads favorited state from the shared favorites-cache
@@ -192,14 +198,17 @@ export default function FavoriteButton({
     button = (
       <button
         {...commonProps}
-        className="bg-surface/95 hover:bg-surface rounded-full w-11 h-11 flex items-center justify-center shadow-md hover:scale-105 transition disabled:opacity-60 focus-visible:ring-2 focus-visible:ring-primary/40"
+        // MEH-3115: 44px hit area, 32px face — shared with share + bell.
+        className={OVERLAY_ICON_BUTTON}
       >
-        <HeartStraight
-          size={22}
-          weight={favorited ? "fill" : "regular"}
-          className={favorited ? "text-primary" : "text-text"}
-          aria-hidden="true"
-        />
+        <span className={OVERLAY_ICON_FACE}>
+          <HeartStraight
+            size={OVERLAY_ICON_SIZE}
+            weight={favorited ? "fill" : "regular"}
+            className={overlayIconInk(favorited)}
+            aria-hidden="true"
+          />
+        </span>
       </button>
     );
   } else if (variant === "quiet") {
@@ -211,12 +220,12 @@ export default function FavoriteButton({
       <button
         {...commonProps}
         aria-label={labelInName(t("quiet_label"), label)}
-        className={`inline-flex items-center gap-1.5 min-h-touch py-2 text-sm font-medium rounded transition disabled:opacity-60 focus-visible:ring-2 focus-visible:ring-primary/40 ${
+        className={`inline-flex items-center gap-1.5 min-h-touch py-2 text-sm font-medium rounded transition disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-primary ${
           favorited ? "text-primary" : "text-text hover:text-primary"
         }`}
       >
         <HeartStraight
-          size={17}
+          size={18}
           weight={favorited ? "fill" : "regular"}
           className={favorited ? "text-primary" : "text-primary-dark"}
           aria-hidden="true"
@@ -229,7 +238,7 @@ export default function FavoriteButton({
       <button
         {...commonProps}
         aria-label={labelInName(t("inline_label"), label)}
-        className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium min-h-[32px] border transition disabled:opacity-60 focus-visible:ring-2 focus-visible:ring-primary/40 ${
+        className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium min-h-[32px] border transition disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-primary ${
           favorited
             ? "bg-primary/10 text-primary border-primary/30 hover:bg-primary/15"
             : "bg-surface text-text border-border hover:bg-green-50"
@@ -248,7 +257,7 @@ export default function FavoriteButton({
     button = (
       <button
         {...commonProps}
-        className="min-w-touch min-h-touch flex items-center justify-center hover:scale-110 transition disabled:opacity-60 focus-visible:ring-2 focus-visible:ring-primary/40 rounded-lg p-1"
+        className="min-w-touch min-h-touch flex items-center justify-center hover:scale-110 transition disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-primary rounded-lg p-1"
       >
         <HeartStraight
           size={24}

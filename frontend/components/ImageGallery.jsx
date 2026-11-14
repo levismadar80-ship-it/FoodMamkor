@@ -7,6 +7,7 @@ import { CaretLeft, Images, SealCheck } from "@phosphor-icons/react";
 import { Link as LocaleLink } from "@/i18n/navigation";
 import ImageWithFallback from "./ImageWithFallback";
 import FavoriteButton from "./FavoriteButton";
+import { usePreviewMode } from "@/lib/preview-mode"; // MEH-2916
 import ShareButton from "./ShareButton";
 import Lightbox from "./Lightbox";
 import Popover from "./ui/Popover";
@@ -28,6 +29,7 @@ import { getVerifiedPopoverBody } from "./BadgeRow";
 // verified are all scalars). Absent → getVerifiedPopoverBody falls back to the
 // generic dateless sentence, which is still true, just less specific.
 export default function ImageGallery({ images = [], producerId = null, producerName = "", verified = false, verificationDocType = null, verifiedAt = null, shareUrl = "", onFavorited, updatesButton = null }) {
+  const isPreview = usePreviewMode(); // MEH-2916
   const t = useTranslations("gallery");
   // MEH-1168 P2: the verified "מאומת" seal anchors to the name. For imageless
   // producers the name lives here in the Tinted Masthead (ProducerHeader omits
@@ -185,7 +187,7 @@ export default function ImageGallery({ images = [], producerId = null, producerN
                         solid surface-card fill it measures 5.19:1. Same idiom as the
                         icon-only chip branch in BadgeRow.jsx (bg-surface-card +
                         border-accent/40 + text-accent). */}
-                    <span className="inline-flex items-center gap-1 rounded-full border border-accent/40 bg-surface-card text-accent text-sm px-2.5 py-0.5 font-medium group-focus-visible:ring-2 group-focus-visible:ring-accent/40 transition">
+                    <span className="inline-flex items-center gap-1 rounded-full border border-accent/40 bg-surface-card text-accent text-sm px-2.5 py-0.5 font-medium group-focus-visible:ring-2 group-focus-visible:ring-primary transition">
                       <SealCheck size={16} aria-hidden="true" />
                       {tBadge("verified_label")}
                     </span>
@@ -212,7 +214,7 @@ export default function ImageGallery({ images = [], producerId = null, producerN
                 >
                   {tBadge("verified_popover_link")}
                   {/* Forward chevron points LEFT in RTL (MEH-1334 revision-1 #11) */}
-                  <CaretLeft size={13} aria-hidden="true" />
+                  <CaretLeft size={14} aria-hidden="true" />
                 </LocaleLink>
               </Popover>
             )}
@@ -225,14 +227,31 @@ export default function ImageGallery({ images = [], producerId = null, producerN
             MEH-2671: top-end corner, order heart → share → bell. */}
         {producerId && (
           <div className="absolute top-3 end-3 z-10 lg:hidden flex items-center gap-2">
-            <FavoriteButton
-              producerId={producerId}
-              producerName={producerName}
-              variant="gallery"
-              onFavorited={onFavorited}
-            />
-            <ShareButton variant="overlay" url={shareUrl} title={producerName} />
-            {updatesButton}
+            {/* MEH-2916: the phone's hero heart and share are the mobile twins
+                of the desktop row in ProducerHeader, and come out for the same
+                reason in the owner's preview — a shared link 404s for the
+                recipient while the business is unapproved.
+
+                MEH-2964: `updatesButton` goes too (Sapir, 12/11). It is not
+                the owner's own toggle: ProducerUpdatesButton writes through
+                lib/favorites-cache and opens LoginPromptModal, so it is a
+                visitor subscribe — the same class as the heart beside it.
+
+                ONE gate for all three, not a gate each: this file shipped a
+                bug because two near-identical sites drifted apart, and two
+                adjacent conditions leave a seam a fourth child can land in. */}
+            {!isPreview && (
+              <>
+                <FavoriteButton
+                  producerId={producerId}
+                  producerName={producerName}
+                  variant="gallery"
+                  onFavorited={onFavorited}
+                />
+                <ShareButton variant="overlay" url={shareUrl} title={producerName} />
+                {updatesButton}
+              </>
+            )}
           </div>
         )}
       </div>
@@ -268,7 +287,7 @@ export default function ImageGallery({ images = [], producerId = null, producerN
           type="button"
           onClick={(e) => openLightbox(0, e.currentTarget)}
           aria-label={t("open_aria", { current: 1 })}
-          className={`relative overflow-hidden bg-gray-100 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/60 ${
+          className={`relative overflow-hidden bg-gray-100 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary ${
             images.length >= 3 ? "row-span-2" : ""
           }`}
           data-testid="gallery-grid-hero"
@@ -302,7 +321,7 @@ export default function ImageGallery({ images = [], producerId = null, producerN
                   ? t("view_all", { n: images.length })
                   : t("open_aria", { current: idx + 1 })
               }
-              className="relative overflow-hidden bg-gray-100 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/60"
+              className="relative overflow-hidden bg-gray-100 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary"
               data-testid={isPillCell ? "gallery-grid-pill-cell" : "gallery-grid-cell"}
             >
               <ImageWithFallback
@@ -314,7 +333,7 @@ export default function ImageGallery({ images = [], producerId = null, producerN
               />
               {isPillCell && (
                 <span
-                  className="absolute bottom-3 end-3 z-10 inline-flex items-center gap-1.5 rounded-full bg-accent px-3 py-1.5 text-sm font-label-md text-white shadow-md pointer-events-none"
+                  className="absolute bottom-3 end-3 z-10 inline-flex items-center gap-1.5 rounded-full bg-accent px-3 py-1.5 text-sm font-label-md text-white shadow-lg pointer-events-none"
                   data-testid="gallery-all-pill"
                 >
                   <Images size={16} weight="bold" aria-hidden="true" />
@@ -340,7 +359,7 @@ export default function ImageGallery({ images = [], producerId = null, producerN
         type="button"
         onClick={(e) => openLightbox(current, e.currentTarget)}
         aria-label={t("open_aria", { current: current + 1 })}
-        className="absolute inset-0 w-full h-full focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/60"
+        className="absolute inset-0 w-full h-full focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary"
       >
         <ImageWithFallback
           src={images[current]}
@@ -389,20 +408,28 @@ export default function ImageGallery({ images = [], producerId = null, producerN
         MEH-1047 slot it was pulled from. MEH-1334 decision 6 removed it to
         kill a ❤️-hero/actions-row duplication; that duplication is gone now
         that the row is desktop-only, so the removal's premise no longer
-        holds. Both circles share one anatomy (bg-surface/95, w-11 h-11,
-        rounded-full, shadow-md) — ShareButton's overlay variant was written
-        to mirror FavoriteButton's gallery circle, so they match by
-        construction rather than by copied class strings. */}
+        holds. All three circles (heart, share, bell) share one anatomy from
+        components/ui/overlay-icon-button.js — a 32px face in a 44px hit area (MEH-3115) —
+        so they match by construction rather than by copied class strings. */}
     {producerId && (
       <div className="absolute top-3 end-3 z-20 lg:hidden flex items-center gap-2">
-        <FavoriteButton
-          producerId={producerId}
-          producerName={producerName}
-          variant="gallery"
-          onFavorited={onFavorited}
-        />
-        <ShareButton variant="overlay" url={shareUrl} title={producerName} />
-        {updatesButton}
+        {/* MEH-2964: the IMAGED arm's copy of the hero actions. The imageless
+            arm above was gated when the preview shipped (MEH-2916) and this
+            one was not — that card's probe fixture had `images: []`, so only
+            that arm was ever exercised and a business WITH photos still saw a
+            heart and a share in her own preview. One gate, as above. */}
+        {!isPreview && (
+          <>
+            <FavoriteButton
+              producerId={producerId}
+              producerName={producerName}
+              variant="gallery"
+              onFavorited={onFavorited}
+            />
+            <ShareButton variant="overlay" url={shareUrl} title={producerName} />
+            {updatesButton}
+          </>
+        )}
       </div>
     )}
     </div>

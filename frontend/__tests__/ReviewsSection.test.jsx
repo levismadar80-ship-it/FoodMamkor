@@ -1,8 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, waitFor, within } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor, within, act } from "@testing-library/react";
 import ReviewsSection from "@/components/ReviewsSection";
 // MEH-1426: mocked so the form-open re-ping is observable without a real beacon.
-import { pingWhatsAppBeacon } from "@/lib/contact-tracking";
+import { pingWhatsAppBeacon, trackContactClick } from "@/lib/contact-tracking";
 
 // MEH-1039: business-owner reply UI. These tests cover CHUNK C (display +
 // owner affordance). The PUT endpoint lands in CHUNK B (reviews.py, blocked
@@ -55,9 +55,18 @@ vi.mock("@/components/ui/EmptyState", () => ({ default: () => <div data-testid="
 vi.mock("@/lib/contact-tracking", () => ({
   pingWhatsAppBeacon: vi.fn(),
   markWhatsAppClickedLocal: vi.fn(),
+  trackContactClick: vi.fn(),
+  CONTACTED_EVENT: "mehamakor:contacted",
+  // MEH-2999: the real lookup — both flags live in jsdom's localStorage.
+  contactedMethodLocal: (id) =>
+    localStorage.getItem(`wa_clicked_${id}`) === "1"
+      ? "whatsapp"
+      : localStorage.getItem(`contacted_${id}`) || null,
 }));
 vi.mock("@phosphor-icons/react", () => ({
   Star: (props) => <span data-testid="icon-star" {...props} />,
+  User: (props) => <span data-testid="icon-user" {...props} />,
+  ShieldCheck: (props) => <span data-testid="icon-shield" {...props} />,
   Leaf: (props) => <span data-testid="icon-leaf" {...props} />,
   EyeSlash: (props) => <span data-testid="icon-eyeslash" {...props} />,
   CaretDown: (props) => <span {...props} />,
@@ -69,6 +78,7 @@ vi.mock("@phosphor-icons/react", () => ({
 beforeEach(() => {
   authState.user = null;
   authState.loading = false;
+  sessionStorage.removeItem("review_draft_stars_p-1");
   apiMock.get.mockReset();
   apiMock.put.mockReset();
   global.IntersectionObserver = class {
@@ -182,12 +192,13 @@ describe("ReviewsSection — zero reviews, reader view: no empty state, only the
   // state (Leaf + «עדיין אין ביקורות כאן.» + empty_gate_hint) is retired —
   // Sapir's call, the Google / Airbnb pattern. Unmapped keys fall through the
   // next-intl mock as raw key strings, so assertions target key names.
-  it("empty + logged-in non-gated viewer: no leaf, no empty message, the WhatsApp-gate line alone", async () => {
+  it("empty + logged-in non-gated viewer: no leaf, no empty message, the contact invite card alone", async () => {
     authState.user = { id: "u-9", producer_id: null };
     mockReviews([]);
     render(<ReviewsSection producerId="p-1" isOwner={false} />);
     const hint = await screen.findByTestId("reviews-write-hint");
-    expect(hint).toHaveTextContent("wa_gate_message");
+    expect(hint.dataset.mode).toBe("contact");
+    expect(hint).toHaveTextContent("invite_hint");
     expect(screen.queryByTestId("icon-leaf")).toBeNull();
     expect(screen.queryByText(/empty_message/)).toBeNull();
     expect(screen.queryByText(/empty_gate_hint/)).toBeNull();
@@ -197,7 +208,7 @@ describe("ReviewsSection — zero reviews, reader view: no empty state, only the
     mockReviews([]);
     render(<ReviewsSection producerId="p-1" isOwner={false} />);
     const hint = await screen.findByTestId("reviews-write-hint");
-    expect(within(hint).getByTestId("reviews-login-link")).toBeInTheDocument();
+    expect(within(hint).getByTestId("reviews-star-1")).toBeInTheDocument();
     expect(screen.queryByTestId("icon-leaf")).toBeNull();
     expect(screen.queryByText(/empty_message/)).toBeNull();
   });
@@ -211,7 +222,7 @@ describe("ReviewsSection — zero reviews, reader view: no empty state, only the
     await waitFor(() => expect(apiMock.get).toHaveBeenCalled());
     await new Promise((r) => setTimeout(r, 0));
     expect(screen.queryByTestId("reviews-write-hint")).toBeNull();
-    expect(screen.queryByTestId("reviews-login-link")).toBeNull();
+    expect(screen.queryByTestId("reviews-star-1")).toBeNull();
   });
 
   it("empty + owner: the coaching state still renders (owner-only), with no reader hint", async () => {
@@ -222,7 +233,7 @@ describe("ReviewsSection — zero reviews, reader view: no empty state, only the
     expect(screen.queryByTestId("reviews-write-hint")).toBeNull();
   });
 
-  it("reviews exist + logged-in non-gated viewer: the WhatsApp-gate line, as before", async () => {
+  it("reviews exist + logged-in non-gated viewer: the contact invite card", async () => {
     authState.user = { id: "u-9", producer_id: null };
     mockReviews([
       {
@@ -231,7 +242,7 @@ describe("ReviewsSection — zero reviews, reader view: no empty state, only the
       },
     ]);
     render(<ReviewsSection producerId="p-1" isOwner={false} />);
-    expect(await screen.findByText("wa_gate_message")).toBeInTheDocument();
+    expect((await screen.findByTestId("reviews-write-hint")).dataset.mode).toBe("contact");
   });
 
   it("a name opening with an emoji keeps the whole glyph in the initial circle (no split surrogate)", async () => {
@@ -282,13 +293,12 @@ describe("ReviewsSection — WA re-ping on form open (MEH-1426)", () => {
     localStorage.setItem(`wa_clicked_${PID}`, "1");
     mockReviews([]);
     render(<ReviewsSection producerId={PID} />);
-    const btn = await screen.findByText("write_cta");
-    fireEvent.click(btn);
+    fireEvent.click(await screen.findByTestId("reviews-star-5"));
     expect(pingWhatsAppBeacon).toHaveBeenCalledTimes(1);
     expect(pingWhatsAppBeacon).toHaveBeenCalledWith(PID);
     // Close and reopen — the re-ping must not fire a second time (once per mount).
     fireEvent.click(await screen.findByText("ביטול"));
-    fireEvent.click(await screen.findByText("write_cta"));
+    fireEvent.click(await screen.findByTestId("reviews-star-5"));
     expect(pingWhatsAppBeacon).toHaveBeenCalledTimes(1);
   });
 
@@ -297,8 +307,45 @@ describe("ReviewsSection — WA re-ping on form open (MEH-1426)", () => {
     mockReviews([]);
     render(<ReviewsSection producerId={PID} />);
     await waitFor(() => expect(apiMock.get).toHaveBeenCalled());
-    expect(screen.queryByText("write_cta")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("reviews-write-row")).not.toBeInTheDocument();
     expect(pingWhatsAppBeacon).not.toHaveBeenCalled();
+  });
+
+  // MEH-2999: a phone / email / website contact unlocks the form too, and the
+  // form-open repair re-sends THAT channel, never a WhatsApp click that did
+  // not happen.
+  it("logged-in + contacted by phone → the form unlocks; opening it re-sends the phone click once", async () => {
+    trackContactClick.mockClear();
+    authState.user = { id: "u-9", producer_id: null };
+    localStorage.setItem(`contacted_${PID}`, "phone");
+    mockReviews([]);
+    render(<ReviewsSection producerId={PID} />);
+    fireEvent.click(await screen.findByTestId("reviews-star-5"));
+    expect(trackContactClick).toHaveBeenCalledTimes(1);
+    expect(trackContactClick).toHaveBeenCalledWith(PID, "phone");
+    expect(pingWhatsAppBeacon).not.toHaveBeenCalled();
+    expect(screen.queryByTestId("reviews-write-hint")).toBeNull();
+  });
+
+  // MEH-2999 review: a tel: / mailto: tap keeps the page, so the card must
+  // flip without a reload.
+  it("signed in, contact made on THIS page → the card flips to the form at once", async () => {
+    authState.user = { id: "u-9", producer_id: null };
+    mockReviews([]);
+    render(<ReviewsSection producerId={PID} />);
+    expect(await screen.findByTestId("reviews-write-hint")).toBeInTheDocument();
+    localStorage.setItem(`contacted_${PID}`, "phone");
+    act(() => {
+      window.dispatchEvent(
+        new CustomEvent("mehamakor:contacted", { detail: { producerId: "other-id" } }),
+      );
+    });
+    expect(screen.getByTestId("reviews-write-hint")).toBeInTheDocument();
+    act(() => {
+      window.dispatchEvent(new CustomEvent("mehamakor:contacted", { detail: { producerId: PID } }));
+    });
+    expect(await screen.findByTestId("reviews-write-row")).toBeInTheDocument();
+    expect(screen.queryByTestId("reviews-write-hint")).toBeNull();
   });
 
   it("guest (not logged in) → no ping even if the local flag is set", async () => {
@@ -319,7 +366,7 @@ describe("ReviewsSection — review-invite token (MEH-1428 chunk 2)", () => {
   const PID = "prod-1428";
 
   const submitReview = async () => {
-    fireEvent.click(await screen.findByText("write_cta"));
+    fireEvent.click(await screen.findByTestId("reviews-star-5"));
     fireEvent.click(screen.getAllByLabelText("star_aria")[4]);
     fireEvent.change(screen.getByLabelText("body_label"), {
       target: { value: "מוצרים טעימים מאוד, ממליצה" },
@@ -368,7 +415,7 @@ describe("ReviewsSection — review-invite token (MEH-1428 chunk 2)", () => {
     mockReviews([]);
     render(<ReviewsSection producerId={PID} />);
     await waitFor(() => expect(apiMock.get).toHaveBeenCalled());
-    expect(screen.queryByText("write_cta")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("reviews-write-row")).not.toBeInTheDocument();
   });
 
   it("WhatsApp-click path unchanged: no token in storage → no review_token key in the body", async () => {
@@ -385,7 +432,7 @@ describe("ReviewsSection — review-invite token (MEH-1428 chunk 2)", () => {
     mockReviews([]);
     render(<ReviewsSection producerId={PID} isOwner />);
     await waitFor(() => expect(apiMock.get).toHaveBeenCalled());
-    expect(screen.queryByText("write_cta")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("reviews-write-row")).not.toBeInTheDocument();
   });
 
   it("guest with the link: the login prompt returns to this page's reviews, token in the URL", async () => {
@@ -395,7 +442,7 @@ describe("ReviewsSection — review-invite token (MEH-1428 chunk 2)", () => {
     // The guest prompt is a t.rich() chunk; render the link so its href is observable.
     render(<ReviewsSection producerId={PID} />);
     await waitFor(() => expect(sessionStorage.getItem(`review_invite_${PID}`)).toBe("tok-abc"));
-    const link = await screen.findByTestId("reviews-login-link");
+    const link = await screen.findByTestId("reviews-star-1");
     expect(link.getAttribute("href")).toBe(
       `/login?redirect=${encodeURIComponent("/p/meshek?rt=tok-abc#reviews")}`,
     );
@@ -425,7 +472,7 @@ describe("ReviewsSection — review-invite token (MEH-1428 chunk 2)", () => {
     render(<ReviewsSection producerId={PID} />);
     await waitFor(() => expect(apiMock.get).toHaveBeenCalled());
     expect(sessionStorage.getItem(`review_invite_${PID}`)).toBeNull();
-    expect(screen.queryByText("write_cta")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("reviews-write-row")).not.toBeInTheDocument();
   });
 });
 
@@ -469,25 +516,128 @@ describe("ReviewsSection — reviews look (MEH-2592)", () => {
     expect(reply.className).not.toContain("bg-green-50");
   });
 
-  it("guest: the login line sits UNDER the reviews, as plain text", async () => {
+  // MEH-2999 → 13/11/2026 (option ד): the invite is Google's row — no box,
+  // five separate star links, the business named in the question.
+  it("guest: the invite row sits UNDER the reviews; each star is a sign-in link", async () => {
     authState.user = null;
     mockReviews([noReply]);
-    render(<ReviewsSection producerId="p-1" />);
+    render(<ReviewsSection producerId="p-1" producerName="משק ברק" />);
     const body = await screen.findByText("טעים");
     const hint = screen.getByTestId("reviews-write-hint");
-    expect(hint).toContainElement(screen.getByTestId("reviews-login-link"));
+    const group = within(hint).getByTestId("reviews-invite-stars");
+    expect(group.getAttribute("aria-label")).toBe("invite_title");
+    for (let n = 1; n <= 5; n += 1) {
+      const star = within(group).getByTestId(`reviews-star-${n}`);
+      expect(star.tagName).toBe("A");
+      expect(star.getAttribute("href")).toMatch(/^\/login/);
+    }
+    expect(within(group).getAllByTestId("icon-star")).toHaveLength(5);
+    expect(hint).toHaveTextContent("invite_title");
+    expect(hint).toHaveTextContent("invite_hint");
     expect(following(body, hint)).toBe(true);
-    expect(hint.className).not.toContain("border");
+    // No white box: a hairline on top, no card surface.
+    expect(hint.className).toContain("border-t");
+    expect(hint.className).not.toContain("bg-surface-card");
+    expect(hint.className).not.toContain("rounded");
   });
 
-  it("logged-in, not gated, reviews exist: the WhatsApp-gate line sits UNDER the reviews", async () => {
+  it("guest: the tapped star is kept, and the form opens with it once the reader may write", async () => {
+    authState.user = null;
+    mockReviews([]);
+    const { unmount } = render(<ReviewsSection producerId="p-1" />);
+    fireEvent.click(await screen.findByTestId("reviews-star-4"));
+    expect(sessionStorage.getItem("review_draft_stars_p-1")).toBe("4");
+    unmount();
+    // Back from sign-in, already contacted: the form is open with 4 stars.
+    authState.user = { id: "u-9", producer_id: null };
+    localStorage.setItem("contacted_p-1", "phone");
+    try {
+      render(<ReviewsSection producerId="p-1" />);
+      await screen.findByText("form_heading");
+      const picked = screen.getAllByTestId("icon-star").filter((el) => el.getAttribute("weight") === "fill");
+      expect(picked).toHaveLength(4);
+      expect(sessionStorage.getItem("review_draft_stars_p-1")).toBeNull();
+      expect(screen.queryByTestId("reviews-write-row")).toBeNull();
+    } finally {
+      localStorage.removeItem("contacted_p-1");
+    }
+  });
+
+  it("may write: the same row; a star opens the form, no box, with that star chosen", async () => {
+    authState.user = { id: "u-9", producer_id: null };
+    localStorage.setItem("contacted_p-1", "phone");
+    try {
+      mockReviews([noReply]);
+      render(<ReviewsSection producerId="p-1" />);
+      const row = await screen.findByTestId("reviews-write-row");
+      expect(row.className).toContain("border-t");
+      expect(screen.queryByText("write_cta")).toBeNull();
+      fireEvent.click(within(row).getByTestId("reviews-star-3"));
+      const form = await screen.findByTestId("reviews-form");
+      expect(form.className).not.toMatch(/bg-surface|rounded/);
+      const pressed = within(form).getAllByRole("button", { pressed: true });
+      expect(pressed).toHaveLength(1);
+      expect(pressed[0].dataset.testid).toBe("reviews-star-3");
+    } finally {
+      localStorage.removeItem("contacted_p-1");
+    }
+  });
+
+  it("owner: a kept star never opens the form", async () => {
+    sessionStorage.setItem("review_draft_stars_p-1", "5");
+    authState.user = { id: "u-o", producer_id: "p-1" };
+    localStorage.setItem("contacted_p-1", "phone");
+    try {
+      mockReviews([]);
+      render(<ReviewsSection producerId="p-1" isOwner />);
+      await waitFor(() => expect(apiMock.get).toHaveBeenCalled());
+      expect(screen.queryByText("form_heading")).toBeNull();
+      // The owner path returns before the kept star is consumed.
+      expect(sessionStorage.getItem("review_draft_stars_p-1")).toBe("5");
+    } finally {
+      localStorage.removeItem("contacted_p-1");
+    }
+  });
+
+  it("storage blocked: tapping a star does not throw and the row still renders", async () => {
+    authState.user = null;
+    mockReviews([]);
+    const blocked = () => {
+      throw new DOMException("blocked", "SecurityError");
+    };
+    const getSpy = vi.spyOn(Storage.prototype, "getItem").mockImplementation(blocked);
+    const setSpy = vi.spyOn(Storage.prototype, "setItem").mockImplementation(blocked);
+    try {
+      render(<ReviewsSection producerId="p-1" />);
+      const star = await screen.findByTestId("reviews-star-2");
+      expect(() => fireEvent.click(star)).not.toThrow();
+      expect(screen.getByTestId("reviews-invite-stars").getAttribute("dir")).toBe("ltr");
+    } finally {
+      getSpy.mockRestore();
+      setSpy.mockRestore();
+    }
+  });
+
+  it("logged-in, not gated, reviews exist: the contact card sits UNDER the reviews; stars go to the contact card", async () => {
     authState.user = { id: "u-9", producer_id: null };
     mockReviews([noReply]);
-    render(<ReviewsSection producerId="p-1" />);
-    const body = await screen.findByText("טעים");
-    const hint = screen.getByTestId("reviews-write-hint");
-    expect(hint).toHaveTextContent("wa_gate_message");
-    expect(following(body, hint)).toBe(true);
+    const card = document.createElement("div");
+    card.setAttribute("data-testid", "contact-card");
+    card.scrollIntoView = vi.fn();
+    document.body.appendChild(card);
+    try {
+      render(<ReviewsSection producerId="p-1" />);
+      const body = await screen.findByText("טעים");
+      const hint = screen.getByTestId("reviews-write-hint");
+      expect(hint.dataset.mode).toBe("contact");
+      expect(following(body, hint)).toBe(true);
+      expect(within(hint).getByTestId("reviews-star-1").tagName).toBe("BUTTON");
+      fireEvent.click(within(hint).getByTestId("reviews-star-3"));
+      expect(sessionStorage.getItem("review_draft_stars_p-1")).toBe("3");
+      expect(card.scrollIntoView).toHaveBeenCalledTimes(1);
+    } finally {
+      card.remove();
+    }
   });
 
   it("owner: no write hint at all", async () => {
@@ -569,7 +719,7 @@ describe("ReviewsSection — live total reported upward (MEH-2705)", () => {
     render(<ReviewsSection producerId="p-1" reviewCount={3} onTotalChange={onTotalChange} />);
     await screen.findByText("תודה רבה על המילים החמות!");
     expect(onTotalChange).toHaveBeenLastCalledWith(3);
-    fireEvent.click(screen.getByText("write_cta"));
+    fireEvent.click(screen.getByTestId("reviews-star-5"));
     fireEvent.click(screen.getAllByRole("button", { name: "star_aria" })[4]);
     fireEvent.change(screen.getByRole("textbox"), { target: { value: "מעולה מאוד מאוד" } });
     fireEvent.submit(screen.getByRole("textbox").closest("form"));
@@ -632,5 +782,169 @@ describe("ReviewsSection — the initial on a seed tint (MEH-2833 board 4)", () 
     expect(seedColorFor("u-77")).toBe(seedColorFor("u-77"));
     const names = new Set(["u-1", "u-2", "u-3", "u-4", "u-5", "u-6", "u-7", "u-8"].map((id) => seedColorFor(id).name));
     expect(names.size).toBeGreaterThan(1);
+  });
+});
+
+// MEH-1337 — Google-style distribution: the summary (number · stars · count)
+// beside five bars, from 5 visible reviews. Counts come from the server
+// (`rating_counts`, every page), never from the 10 reviews on screen.
+describe("ReviewsSection — rating distribution (MEH-1337)", () => {
+  const counts = (o) => ({ 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, ...o });
+  const asStr = (o) => Object.fromEntries(Object.entries(counts(o)).map(([k, v]) => [String(k), v]));
+  function mockPage(total, rating_counts) {
+    apiMock.get.mockResolvedValue({ data: { reviews: [], total, page: 1, pages: 1, rating_counts } });
+  }
+
+  it("4 reviews → the one-line summary alone, no bars", async () => {
+    mockPage(4, asStr({ 5: 3, 4: 1 }));
+    render(<ReviewsSection producerId="p-1" avgRating={4.8} reviewCount={4} />);
+    await screen.findByTestId("reviews-summary");
+    await waitFor(() => expect(apiMock.get).toHaveBeenCalled());
+    expect(screen.queryByTestId("rating-distribution")).not.toBeInTheDocument();
+  });
+
+  it("5 reviews → five bars, 5★ first, each with its count; the summary stays", async () => {
+    mockPage(5, asStr({ 5: 3, 4: 1, 2: 1 }));
+    render(<ReviewsSection producerId="p-1" avgRating={4.2} reviewCount={5} />);
+    const dist = await screen.findByTestId("rating-distribution");
+    const rows = within(dist).getAllByRole("listitem");
+    expect(rows.map((r) => r.getAttribute("data-star"))).toEqual(["5", "4", "3", "2", "1"]);
+    expect(rows.map((r) => within(r).getByTestId("rating-bar-count").textContent)).toEqual(["3", "1", "0", "1", "0"]);
+    // the summary is still the same block, beside the bars
+    const summary = screen.getByTestId("reviews-summary");
+    expect(summary).toContainElement(dist);
+    expect(summary).toContainElement(screen.getByText("4.2"));
+  });
+
+  it("bar width is that star's share of all visible reviews; a star with none is an empty bar", async () => {
+    mockPage(5, asStr({ 5: 3, 4: 1, 2: 1 }));
+    render(<ReviewsSection producerId="p-1" avgRating={4.2} reviewCount={5} />);
+    const dist = await screen.findByTestId("rating-distribution");
+    const fill = (n) => within(dist).getByTestId(`rating-bar-fill-${n}`).style.width;
+    expect(fill(5)).toBe("60%");
+    expect(fill(4)).toBe("20%");
+    expect(fill(3)).toBe("0%");
+  });
+
+  it("counts cover every page: 12 reviews with only 10 on screen still read 12 in the bars", async () => {
+    apiMock.get.mockResolvedValue({
+      data: { reviews: [withReply, noReply], total: 12, page: 1, pages: 2, rating_counts: asStr({ 5: 7, 4: 3, 2: 2 }) },
+    });
+    render(<ReviewsSection producerId="p-1" avgRating={4.3} reviewCount={12} />);
+    const dist = await screen.findByTestId("rating-distribution");
+    const nums = within(dist).getAllByTestId("rating-bar-count").map((n) => Number(n.textContent));
+    expect(nums.reduce((a, b) => a + b, 0)).toBe(12);
+  });
+
+  it("an older API without rating_counts → the one-line summary, no bars", async () => {
+    mockPage(12, undefined);
+    render(<ReviewsSection producerId="p-1" avgRating={4.3} reviewCount={12} />);
+    await screen.findByTestId("reviews-summary");
+    await waitFor(() => expect(apiMock.get).toHaveBeenCalled());
+    expect(screen.queryByTestId("rating-distribution")).not.toBeInTheDocument();
+  });
+
+  it("a new 5th review moves the bars with the total: five counts still sum to 5", async () => {
+    authState.user = { id: "u-new", producer_id: null };
+    try { localStorage.setItem("wa_clicked_p-1", "1"); } catch {}
+    apiMock.get.mockResolvedValue({
+      data: { reviews: [withReply, noReply], total: 4, page: 1, pages: 1, rating_counts: asStr({ 5: 2, 4: 2 }) },
+    });
+    apiMock.post.mockResolvedValue({
+      data: { id: "rev-new", user_id: "u-new", user_name: "חדש", stars: 3, body: "טוב מאוד מאוד", created_at: "2026-07-03T10:00:00", reply: null },
+    });
+    render(<ReviewsSection producerId="p-1" avgRating={4.4} reviewCount={4} />);
+    await screen.findByText("תודה רבה על המילים החמות!");
+    expect(screen.queryByTestId("rating-distribution")).not.toBeInTheDocument();
+    fireEvent.click(await screen.findByTestId("reviews-star-3"));
+    fireEvent.change(screen.getByRole("textbox"), { target: { value: "טוב מאוד מאוד" } });
+    fireEvent.submit(screen.getByRole("textbox").closest("form"));
+    const dist = await screen.findByTestId("rating-distribution");
+    const nums = within(dist).getAllByTestId("rating-bar-count").map((n) => Number(n.textContent));
+    expect(nums).toEqual([2, 2, 1, 0, 0]);
+    authState.user = null;
+    try { localStorage.removeItem("wa_clicked_p-1"); } catch {}
+  });
+
+  it("shiftRatingCounts: an edit moves one count, a new review adds one", async () => {
+    const { shiftRatingCounts } = await import("@/components/ReviewsSection");
+    expect(shiftRatingCounts(asStr({ 5: 2, 4: 1 }), 5, 3)).toEqual(asStr({ 5: 1, 4: 1, 3: 1 }));
+    expect(shiftRatingCounts(asStr({ 5: 2 }), undefined, 4)).toEqual(asStr({ 5: 2, 4: 1 }));
+  });
+
+  it("each bar row has an accessible name built from existing copy (stars · count)", async () => {
+    mockPage(5, asStr({ 5: 5 }));
+    render(<ReviewsSection producerId="p-1" avgRating={5} reviewCount={5} />);
+    const dist = await screen.findByTestId("rating-distribution");
+    const first = within(dist).getAllByRole("listitem")[0];
+    expect(first.getAttribute("aria-label")).toBe("star_aria · summary_count");
+  });
+});
+
+// MEH-3053 (Sapir, 13/11): at zero reviews the invite row is the FIRST thing in
+// the section, so its own top margin + hairline (meant to separate it from the
+// reviews above) framed an empty band under the products list. Asserted per
+// cell: 0 × (guest, contact, write row, open form) drop it; 1+ keeps it.
+describe("ReviewsSection — no empty band above the invite row at zero reviews (MEH-3053)", () => {
+  const RULE = /\bborder-t\b/;
+  const GAP = /\bmt-8\b/;
+  const one = [
+    {
+      id: "rev-1", user_id: "u-2", user_name: "לקוח", stars: 4, body: "טעים",
+      created_at: "2026-07-01T11:00:00", reply: null, reply_at: null,
+    },
+  ];
+
+  beforeEach(() => localStorage.clear());
+
+  it("0 reviews, guest: the login row has no hairline and no top gap", async () => {
+    mockReviews([]);
+    render(<ReviewsSection producerId="p-1" isOwner={false} />);
+    const row = await screen.findByTestId("reviews-write-hint");
+    expect(row.className).not.toMatch(RULE);
+    expect(row.className).not.toMatch(GAP);
+  });
+
+  it("0 reviews, signed in, not contacted: the contact row has no hairline and no top gap", async () => {
+    authState.user = { id: "u-9", producer_id: null };
+    mockReviews([]);
+    render(<ReviewsSection producerId="p-1" isOwner={false} />);
+    const row = await screen.findByTestId("reviews-write-hint");
+    expect(row.dataset.mode).toBe("contact");
+    expect(row.className).not.toMatch(RULE);
+    expect(row.className).not.toMatch(GAP);
+  });
+
+  it("0 reviews, may write: the write row and the opened form have no hairline and no top gap", async () => {
+    authState.user = { id: "u-9", producer_id: null };
+    localStorage.setItem("wa_clicked_p-3053", "1");
+    mockReviews([]);
+    render(<ReviewsSection producerId="p-3053" isOwner={false} />);
+    const row = await screen.findByTestId("reviews-write-row");
+    expect(row.className).not.toMatch(RULE);
+    expect(row.className).not.toMatch(GAP);
+    fireEvent.click(screen.getByTestId("reviews-star-4"));
+    const form = await screen.findByTestId("reviews-form");
+    expect(form.className).not.toMatch(RULE);
+    expect(form.className).not.toMatch(GAP);
+  });
+
+  it("1 review, guest: the login row keeps its hairline and top gap under the list", async () => {
+    mockReviews(one);
+    render(<ReviewsSection producerId="p-1" isOwner={false} />);
+    const row = await screen.findByTestId("reviews-write-hint");
+    expect(row.className).toMatch(RULE);
+    expect(row.className).toMatch(GAP);
+  });
+
+  it("1 review, may write: the opened form keeps its hairline and top gap", async () => {
+    authState.user = { id: "u-9", producer_id: null };
+    localStorage.setItem("wa_clicked_p-3053", "1");
+    mockReviews(one);
+    render(<ReviewsSection producerId="p-3053" isOwner={false} />);
+    fireEvent.click(await screen.findByTestId("reviews-star-4"));
+    const form = await screen.findByTestId("reviews-form");
+    expect(form.className).toMatch(RULE);
+    expect(form.className).toMatch(GAP);
   });
 });

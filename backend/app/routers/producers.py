@@ -65,6 +65,7 @@ from app.services.producer_listing import (
     build_producers_query,
     catalog_default_availability_condition,
     is_business,
+    is_business_row,
 )
 from app.services.producer_queries import (
     attach_badge_fields,
@@ -492,7 +493,9 @@ def get_producer(
     # MEH-2459 — an organizer is never a public business either: same
     # owner/admin carve-out, same 404 for everyone else (its public face is
     # /organizers/{slug}, chunk 3).
-    if producer.status != "approved" or producer.kind != "producer":
+    # MEH-2952: and a seeded test row (is_test) — same carve-out; its page
+    # reopens with noindex in chunk 3.
+    if not is_business_row(producer):
         is_admin = getattr(viewer, "role", None) == "admin"
         is_owner = viewer is not None and viewer.producer_id == producer.id
         if not (is_admin or is_owner):
@@ -572,9 +575,10 @@ def record_producer_view(
     # extracted (services/analytics.py).
     # MEH-2459: `or kind != "producer"` mirrors the GET's gate above — an
     # organizer is 404 to strangers there, so it is 404 here too.
-    if (
-        producer.status != "approved" or producer.kind != "producer"
-    ) and not is_internal_viewer(current_user, producer_id):
+    # MEH-2952: the same is_business_row as the GET, test rows included.
+    if not is_business_row(producer) and not is_internal_viewer(
+        current_user, producer_id
+    ):
         raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
 
     record_analytics_event(
@@ -646,8 +650,21 @@ def record_whatsapp_click(
 # (contact-card bell + delivery-checker pill). It is a contact click, not a
 # WhatsApp CTA click — those stay on /whatsapp-click — so it lands here, and
 # the first-review gate (reviews.py, MEH-2204) reads it with no change there.
+# MEH-2999: facebook + external_order are primary-CTA channels too (MEH-296)
+# and secondary circles on the contact card; they were 422'd here, so those
+# clicks were lost and never opened the first-review gate. Every non-WhatsApp
+# key in frontend/lib/contact-method.js CONTACT_METHODS must be in this set —
+# frontend/__tests__/ContactMethodsBackendContract.test.js reds otherwise.
 _VALID_CONTACT_METHODS = frozenset(
-    {"phone", "instagram", "website", "email", "whatsapp_group"}
+    {
+        "phone",
+        "instagram",
+        "website",
+        "email",
+        "whatsapp_group",
+        "facebook",
+        "external_order",
+    }
 )
 
 
@@ -664,7 +681,7 @@ def record_contact_click(
 ):
     """Log a contact-method click for the producer dashboard.
 
-    Accepts method ∈ {phone, instagram, website, email}. Auth optional —
+    Accepts method ∈ _VALID_CONTACT_METHODS. Auth optional —
     JWT when present attributes the click to a registered user. IP is
     SHA-256 hashed (reuses hash_ip from services/analytics). Rate-limited
     10/minute per IP consistent with whatsapp-click.
@@ -723,6 +740,10 @@ def join_delivery_waitlist(
     )
     if producer is None:
         raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
+    # MEH-2952: a test business or a signed-in test account → no mail.
+    test_cause = bool(
+        producer.is_test or (current_user is not None and current_user.is_test)
+    )
     existing = delivery_waitlist.find_entry(
         db, producer.id, city=data.city, email=data.email
     )
@@ -748,7 +769,9 @@ def join_delivery_waitlist(
                     db.commit()
                     host_confirm = "sent"
                     background_tasks.add_task(
-                        delivery_waitlist.send_host_confirmation, *mail_args
+                        delivery_waitlist.send_host_confirmation,
+                        *mail_args,
+                        test_cause=test_cause,
                     )
                 else:
                     db.rollback()  # releases the advisory lock, nothing to write
@@ -784,7 +807,11 @@ def join_delivery_waitlist(
         # wants_to_host=False until the address itself clicks the link —
         # otherwise anyone could hand a stranger's email to a business.
         host_confirm = "sent"
-        background_tasks.add_task(delivery_waitlist.send_host_confirmation, *mail_args)
+        background_tasks.add_task(
+            delivery_waitlist.send_host_confirmation,
+            *mail_args,
+            test_cause=test_cause,
+        )
     return DeliveryWaitlistOut(status="added", host_confirm=host_confirm)
 
 
@@ -819,7 +846,9 @@ def confirm_delivery_waitlist_host(
             db.commit()
             resent = True
             background_tasks.add_task(
-                delivery_waitlist.send_host_confirmation, *mail_args
+                delivery_waitlist.send_host_confirmation,
+                *mail_args,
+                test_cause=bool(entry.producer and entry.producer.is_test),
             )
         else:
             db.rollback()  # releases the advisory lock, nothing to write
@@ -857,7 +886,9 @@ def unsubscribe_delivery_waitlist(
 
 
 @router.post("/producers", response_model=ProducerDetailOut, status_code=201)
+@limiter.limit("10/hour")  # MEH-3022
 def create_producer(
+    request: Request,  # required by slowapi (MEH-3022)
     data: ProducerCreate,
     user: User = Depends(require_verified_email),
     db: Session = Depends(get_db),

@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 
 import CitySearch from "@/components/CitySearch";
 import BagRow from "@/components/rescue/BagRow";
+import HubAlertHint from "@/components/HubAlertHint";
 import { fetchOffers } from "@/lib/rescue";
 
 /**
@@ -15,10 +16,12 @@ import { fetchOffers } from "@/lib/rescue";
  *           be rendered in a test without touching process.env.
  * Related:  components/rescue/BagRow.jsx, lib/rescue.js (fetchOffers parses
  *           with the generated Zod schema before this sees a row)
- * History:  MEH-2648 (creation)
+ * History:  MEH-2648 (creation); MEH-3117 (alert hint in the empty state)
  */
 export default function RescueList({ initialCity = "", limit = null, heading = null }) {
   const t = useTranslations("rescue");
+  // MEH-3013: the city field reads exactly as it does on the other hub tabs.
+  const tHub = useTranslations("events.list");
   const [city, setCity] = useState(initialCity || "");
   const [offers, setOffers] = useState(null); // null = not loaded yet
   const [failed, setFailed] = useState(false);
@@ -63,9 +66,10 @@ export default function RescueList({ initialCity = "", limit = null, heading = n
         value={city}
         onChange={setCity}
         onSubmit={() => load(city)}
-        label={t("list.city_label")}
-        placeholder={t("list.city_placeholder")}
+        label={tHub("filter_city_label")}
+        placeholder={tHub("filter_city_placeholder")}
         id="rescue-city"
+        className="md:max-w-xs"
       />
 
       {offers === null && (
@@ -81,9 +85,13 @@ export default function RescueList({ initialCity = "", limit = null, heading = n
       )}
 
       {offers !== null && !failed && offers.length === 0 && (
-        <p className="font-body-sm text-sm text-fg-muted" data-testid="rescue-list-empty">
-          {city ? t("list.empty_city", { city }) : t("list.empty")}
-        </p>
+        <div className="space-y-4">
+          <p className="font-body-sm text-sm text-fg-muted" data-testid="rescue-list-empty">
+            {city ? t("list.empty_city", { city }) : t("list.empty")}
+          </p>
+          {/* MEH-3117: the way out of «no bags» — the follower alert. */}
+          <HubAlertHint kind="rescue" align="start" />
+        </div>
       )}
 
       {shown && shown.length > 0 && (

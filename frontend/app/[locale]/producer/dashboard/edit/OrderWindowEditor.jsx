@@ -30,6 +30,7 @@ import {
   MAX_ORDER_RANGES_PER_DAY,
 } from "@/lib/order-window";
 import Button from "@/components/ui/Button";
+import InlineMessage from "@/components/ui/InlineMessage";
 
 export default function OrderWindowEditor({
   profile,
@@ -205,7 +206,7 @@ export default function OrderWindowEditor({
                           value={range.from}
                           onChange={(e) => patchRange(i, rangeIdx, { from: e.target.value })}
                           aria-label={`${tDays(key)} ${t("from_label")} ${rangeIdx + 1}`}
-                          className="numeric text-sm border border-border rounded-sm px-2 py-1 bg-surface"
+                          className="numeric text-sm border border-border rounded-sm px-2 py-1 bg-surface focus-ring"
                         />
                         <span aria-hidden="true" className="text-fg-muted">–</span>
                         <input
@@ -213,7 +214,7 @@ export default function OrderWindowEditor({
                           value={range.to}
                           onChange={(e) => patchRange(i, rangeIdx, { to: e.target.value })}
                           aria-label={`${tDays(key)} ${t("to_label")} ${rangeIdx + 1}`}
-                          className="numeric text-sm border border-border rounded-sm px-2 py-1 bg-surface"
+                          className="numeric text-sm border border-border rounded-sm px-2 py-1 bg-surface focus-ring"
                         />
                       </div>
                       {day.ranges.length > 1 && (
@@ -249,9 +250,9 @@ export default function OrderWindowEditor({
               )}
 
               {issueReason && (
-                <span className="w-full text-xs text-danger-600" role="alert">
+                <InlineMessage as="span" size="xs" className="w-full">
                   {t(issueReason)}
-                </span>
+                </InlineMessage>
               )}
             </div>
           );
@@ -259,10 +260,10 @@ export default function OrderWindowEditor({
       </div>
 
       {errorMsg && (
-        <p className="mt-4 flex items-center gap-1.5 text-xs text-danger-600" role="alert">
+        <InlineMessage size="xs" className="mt-4 flex items-center gap-1.5">
           <Warning size={16} weight="fill" aria-hidden="true" className="shrink-0" />
           {errorMsg}
-        </p>
+        </InlineMessage>
       )}
 
       <div className="mt-4 flex flex-wrap items-center gap-3">
@@ -279,7 +280,7 @@ export default function OrderWindowEditor({
             onClick={revertChanges}
             disabled={saving}
             data-testid="order-window-revert"
-            className="border border-border text-fg-muted px-4 py-2 rounded-full text-sm font-medium hover:border-primary hover:text-text transition disabled:opacity-60"
+            className="border border-border text-fg-muted px-4 py-2 rounded-full text-sm font-medium hover:border-primary hover:text-text transition disabled:opacity-50"
           >
             {t("revert_cta")}
           </button>
@@ -290,7 +291,7 @@ export default function OrderWindowEditor({
             onClick={clearAll}
             disabled={saving}
             data-testid="order-window-clear"
-            className="text-xs font-medium text-primary underline underline-offset-2 hover:text-primary-dark transition disabled:opacity-60"
+            className="text-xs font-medium text-primary underline underline-offset-2 hover:text-primary-dark transition disabled:opacity-50"
           >
             {t("clear_cta")}
           </button>

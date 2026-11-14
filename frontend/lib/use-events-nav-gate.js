@@ -49,8 +49,42 @@ function writeCache(any) {
   }
 }
 
+// MEH-2965: one request per page load, however many consumers mount. Header,
+// Footer and BottomNav mount in the same commit, all three miss the session
+// cache (it is written only when the response lands), and until this each
+// fired its own request. The promise is shared while in flight and dropped
+// when it settles; the session cache above owns everything after that.
+// Resolves to the answer, or null when there is none to give (error, bad body).
+let inFlight = null;
+/** Test seam: forget a request still in flight (a suite's never-settling stub
+ *  would otherwise answer every later case in the same module instance). */
+export function resetEventsNavGateRequest() {
+  inFlight = null;
+}
+function loadAny() {
+  if (!inFlight) {
+    inFlight = api
+      .get("/events/upcoming", { params: { limit: 1 } })
+      .then((res) => {
+        const parsed = UpcomingSchema.safeParse(res?.data);
+        if (!parsed.success) return null; // stays hidden
+        const any = parsed.data.length > 0;
+        writeCache(any);
+        return any;
+      })
+      // A hidden nav link is not a user-facing error.
+      .catch(() => null)
+      .finally(() => {
+        inFlight = null;
+      });
+  }
+  return inFlight;
+}
+
 /**
- * @returns {boolean} whether the footer should show the events link.
+ * @returns {boolean} whether the nav should show its events link (the Footer's
+ * «אירועים», and one of the four reads behind the Header's and BottomNav's hub
+ * link).
  * FAIL-CLOSED: starts false (no hydration flash), stays false on any error or
  * malformed body, and ignores responses after unmount.
  */
@@ -68,18 +102,9 @@ export function useEventsNavGate() {
       };
     }
 
-    api
-      .get("/events/upcoming", { params: { limit: 1 } })
-      .then((res) => {
-        const parsed = UpcomingSchema.safeParse(res?.data);
-        if (!parsed.success) return; // stays hidden
-        const any = parsed.data.length > 0;
-        writeCache(any);
-        if (alive) setVisible(any);
-      })
-      .catch(() => {
-        // A hidden footer link is not a user-facing error.
-      });
+    loadAny().then((any) => {
+      if (alive && any !== null) setVisible(any);
+    });
 
     return () => {
       alive = false;

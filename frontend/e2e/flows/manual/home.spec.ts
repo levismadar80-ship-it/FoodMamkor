@@ -880,6 +880,11 @@ test.describe("manual › hero — produce photo + Ken Burns (MEH-788)", () => {
   //   asserted is the structural claim underneath it — all three sit inside the
   //   hero band and none is clipped out of the first viewport.
   test("the headline, subtitle and chips row sit inside the hero band and in the viewport", async ({ page }) => {
+    // MEH-2979: the subtitle swaps to home.hero.friday_subtitle Thu 18:00 →
+    // Fri 14:00 Israel (lib/friday-mode.js), so an unfrozen clock reds this
+    // every week in that window. Pin a weekday noon, as parity.spec.ts does
+    // (MEH-1531). Real users' Friday behaviour is untouched.
+    await page.clock.setFixedTime(new Date("2026-07-15T09:00:00Z")); // Wed 12:00 IDT
     await consent(page);
     await stubTiles(page);
     await gotoHome(page);
@@ -1739,11 +1744,12 @@ test.describe("manual › «קרוב אליי» is real geolocation (MEH-1269 ·
 test.describe("manual › category cards — caption strip + hover zoom (MEH-1224)", () => {
   const catCards = (page: Page) => scope(page).getByTestId("home-category-card");
 
-  // MT:1224:1 — the name sits on a solid strip BELOW the photo, and no
-  //   text is painted over the image. Asserted geometrically (caption box
-  //   entirely below the image box) plus the token claim that the strip is
-  //   opaque — not as a hex literal.
-  test("the caption sits on a solid strip below the photo, never over it", async ({ page }) => {
+  // MT:1224:1 — the name sits BELOW the photo, and no text is painted over
+  //   the image. Asserted geometrically (caption box entirely below the image
+  //   box). MEH-3061 removed the card frame and its surface-card fill, so the
+  //   old "the strip is opaque" read is gone: with no frame it could only find
+  //   the page background, which is green whatever the card does.
+  test("the caption sits below the photo, never over it", async ({ page }) => {
     await consent(page);
     await stubTiles(page);
     await mockApi(page);
@@ -1768,19 +1774,7 @@ test.describe("manual › category cards — caption strip + hover zoom (MEH-122
     expect(rects.captionTop, "the caption starts at or below the image's bottom edge").toBeGreaterThanOrEqual(
       rects.frameBottom - 1,
     );
-    const fill = await caption.evaluate((el) => {
-      // Walk up to the first ancestor that paints a background — the strip's
-      // fill comes from the card root (bg-surface-card), which is what makes it
-      // opaque; a transparent chain would put the text over the photo.
-      let n: HTMLElement | null = el as HTMLElement;
-      while (n) {
-        const bg = getComputedStyle(n).backgroundColor;
-        if (bg && bg !== "rgba(0, 0, 0, 0)" && bg !== "transparent") return bg;
-        n = n.parentElement;
-      }
-      return "rgba(0, 0, 0, 0)";
-    });
-    expect(fill, "the caption strip is painted, not transparent over the photo").not.toBe("rgba(0, 0, 0, 0)");
+    await expect(caption, "the caption is its own block, not an overlay on the photo").not.toHaveCSS("position", "absolute");
   });
 
   // MT:1224:2 — a motion-safe hover zoom on the photo (desktop).
@@ -1861,11 +1855,12 @@ test.describe("manual › category cards — caption strip + hover zoom (MEH-122
 
 // ════════════════════════════════════════════════════════════════════════════
 // MEH-2412 — on a phone the ten category cards are ONE swipeable row, not a
-// 2-hero + 2×4 stack (~1,400px of scroll before the first business). Desktop
-// keeps the MEH-991 v8 4-column grid with span-2 heroes. The pair discriminates:
-// the phone test is red on the old stack (section far taller, nothing overflows
-// sideways); the desktop test is red if the row leaked past `md:`.
-test.describe("manual › category cards — phone row, desktop grid (MEH-2412)", () => {
+// 2-hero + 2×4 stack (~1,400px of scroll before the first business).
+// MEH-3061 — desktop is ONE row too: ten equal cells, no heroes, no sideways
+// scroll (the old 4-column grid put the first business ~2,100px down at 1440).
+// The pair discriminates: the phone test is red on the old stack; the desktop
+// test is red on the old 4-column grid (rows, columns and widths all differ).
+test.describe("manual › category cards — one row on phone and desktop (MEH-2412 · MEH-3061)", () => {
   const grid = (page: Page) => scope(page).getByTestId("home-category-grid");
   const rail = (page: Page) => scope(page).getByTestId("home-category-rail");
 
@@ -1909,8 +1904,8 @@ test.describe("manual › category cards — phone row, desktop grid (MEH-2412)"
     expect(lastInView, "the tenth card is reachable by swiping to the end").toBe(true);
   });
 
-  test("on desktop the cards stay a 4-column grid with span-2 heroes", async ({ page }, info) => {
-    desktopOnly(info, "the grid is the desktop layout");
+  test("on desktop the ten cards are one row of equal cells with no sideways scroll", async ({ page }, info) => {
+    desktopOnly(info, "the ten-column row is the desktop layout");
     await consent(page);
     await stubTiles(page);
     await mockApi(page);
@@ -1921,17 +1916,22 @@ test.describe("manual › category cards — phone row, desktop grid (MEH-2412)"
       const cards = [...el.querySelectorAll('[data-testid="home-category-card"]')].map((c) =>
         c.getBoundingClientRect(),
       );
+      const widths = cards.map((r) => r.width);
+      // Rows from offsetTop — the cards enter on a whileInView y-slide (see above).
+      const tops = new Set([...el.children].map((w) => (w as HTMLElement).offsetTop));
       return {
         display: getComputedStyle(el).display,
         cols: getComputedStyle(el).gridTemplateColumns.split(" ").length,
-        heroW: cards[0].width,
-        smallW: cards[2].width,
+        rows: tops.size,
+        widest: Math.max(...widths),
+        narrowest: Math.min(...widths),
         overflows: el.scrollWidth > el.clientWidth + 1,
       };
     });
     expect(m.display).toBe("grid");
-    expect(m.cols).toBe(4);
-    expect(m.heroW, "a hero spans two columns").toBeGreaterThan(m.smallW * 1.8);
+    expect(m.cols, "ten columns").toBe(10);
+    expect(m.rows, "all ten cards share one row").toBe(1);
+    expect(m.widest - m.narrowest, "every card is the same width — no hero").toBeLessThanOrEqual(1);
     expect(m.overflows, "no sideways scroll on desktop").toBe(false);
   });
 });
@@ -2109,6 +2109,17 @@ function strangersBetweenGridAndMap(page: Page): Promise<string[]> {
 
 // ════════════════════════════════════════════════════════════════════════════
 test.describe("manual › above-the-fold mini-map + trust band (MEH-604 · MEH-607)", () => {
+  // MEH-2979: Thu 18:00 → Fri 14:00 Israel the friday-delivery-strip mounts
+  // between the hero and the trust band (lib/friday-mode.js). It shifted the
+  // trust band by 219px against the 60px budget (:2383) and appeared on one
+  // project but not the other in the section-order check (:2192) — both seen
+  // in this window on 12/11. These tests are about layout, not the strip, so
+  // pin a weekday noon; the strip's own tests force it with
+  // friday_mode_override, which wins over the clock.
+  test.beforeEach(async ({ page }) => {
+    await page.clock.setFixedTime(new Date("2026-07-15T09:00:00Z")); // Wed 12:00 IDT
+  });
+
   // MT:604:1 — REVISED by MEH-2747 (Sapir 6/11, option א׳): the map comes
   //   right AFTER the businesses grid on phone and desktop alike. MEH-604's
   //   "second block, right under the hero" is retired. Asserted as DOM order
@@ -2156,6 +2167,11 @@ test.describe("manual › above-the-fold mini-map + trust band (MEH-604 · MEH-6
     const read = async (viewport: { width: number; height: number }) => {
       const ctx = await browser.newContext({ viewport, locale: "he-IL", timezoneId: "Asia/Jerusalem", reducedMotion: "reduce" });
       const page = await ctx.newPage();
+      // MEH-2986: this test opens its own contexts, so the describe's
+      // beforeEach clock (MEH-2979) never reaches them. Pin the same weekday
+      // noon here, or Thu 18:00 → Fri 14:00 Israel the friday-delivery-strip
+      // can be read on one viewport and not yet on the other.
+      await page.clock.setFixedTime(new Date("2026-07-15T09:00:00Z")); // Wed 12:00 IDT
       try {
         await consent(page);
         await stubTiles(page);
@@ -2182,6 +2198,11 @@ test.describe("manual › above-the-fold mini-map + trust band (MEH-604 · MEH-6
     // Control: the reader saw real sections, including the map this ticket moved.
     expect(phone.dom, "control: the reader found the mini-map on the phone").toContain("home-minimap");
     expect(desk.dom.length, "control: more than a couple of sections were read").toBeGreaterThan(3);
+    // MEH-2986 control: the pinned weekday clock reached both contexts. Without
+    // the pin, this reds Thu 18:00 → Fri 14:00 Israel, when the strip mounts.
+    expect([...phone.dom, ...desk.dom], "clock pin reached both contexts: no Friday strip").not.toContain(
+      "friday-delivery-strip"
+    );
     expect(phone.painted, "375: painted order = DOM order (no CSS reorder)").toEqual(phone.dom);
     expect(desk.painted, "1440: painted order = DOM order (no CSS reorder)").toEqual(desk.dom);
     expect(phone.dom, "the same sections, in the same order, on phone and desktop").toEqual(desk.dom);
@@ -2218,6 +2239,18 @@ test.describe("manual › above-the-fold mini-map + trust band (MEH-604 · MEH-6
     // run 33943227079's before it. `mountEffectRan` is this file's own
     // post-hydration signal (see its doc comment).
     await mountEffectRan(seen);
+    // The witness for the gate above: a hydration error raised from here on
+    // means an injection below landed in a region React had not hydrated yet.
+    // React 19 reports it through reportError (an uncaught error) and the
+    // console; both are collected and asserted empty at the end.
+    const hydrationErrors: string[] = [];
+    const isHydrationError = (text: string) => /#418\b|Hydration failed/.test(text);
+    page.on("pageerror", (e) => {
+      if (isHydrationError(e.message)) hydrationErrors.push(`pageerror: ${e.message.slice(0, 160)}`);
+    });
+    page.on("console", (m) => {
+      if (m.type() === "error" && isHydrationError(m.text())) hydrationErrors.push(`console: ${m.text().slice(0, 160)}`);
+    });
 
     const insert = (tag: string, testid?: string) =>
       page.evaluate(
@@ -2253,12 +2286,14 @@ test.describe("manual › above-the-fold mini-map + trust band (MEH-604 · MEH-6
     // CI (run 33943227079) reporting «a real element between the two must be
     // reported by name» with an empty result — a message that blames the
     // reader for what may be a fixture that did not survive to sample time.
-    // The two are different defects and must not share a failure. React can
-    // still replace the hero's subtree after `home-minimap` first appears, and
-    // an injected sibling goes with it; nothing above guarantees hydration is
-    // finished. So assert the injected node is attached AND still sits between
-    // the two sections before reading anything into what the reader returns.
-    // If this line is what goes red, the reader is not the suspect.
+    // The two are different defects and must not share a failure. Injecting
+    // is now gated on `mountEffectRan` above, so React should no longer replace
+    // the hero's subtree (and an injected sibling with it) after this point —
+    // but "should" is the gate's claim, not a fact this line can take on trust.
+    // So assert the injected node is attached AND still sits between the two
+    // sections before reading anything into what the reader returns, and
+    // (below) that no hydration error fired. If this line is what goes red,
+    // the reader is not the suspect.
     await expect(
       page.locator('[data-testid="interloper"]'),
       "fixture precondition: the injected block must survive to sample time — if THIS fails the reader is not implicated",
@@ -2278,6 +2313,10 @@ test.describe("manual › above-the-fold mini-map + trust band (MEH-604 · MEH-6
       "div[interloper]",
     );
     await remove('[data-testid="interloper"]');
+    expect(
+      hydrationErrors,
+      "no React hydration error (#418) after the mountEffectRan gate — one here means the gate let an injection into an unhydrated region",
+    ).toEqual([]);
   });
 
   // MT:604:3 — three tile preconnect links, all crossOrigin="anonymous".
@@ -2447,7 +2486,8 @@ test.describe("manual › static home blocks (overnight design batch)", () => {
     await expect(cta.getByRole("heading", { level: 2, name: CTA.heading })).toBeVisible();
     for (const line of [CTA.body_l1, CTA.body_l2, CTA.body_l3]) await expect(cta).toContainText(line);
     // MEH-2824: the band's one button is «מצטרפים», like /join (home.cta.button retired).
-    await expect(cta.getByRole("link", { name: he.join.cta })).toHaveAttribute("href", /\/register\/producer$/);
+    // MEH-2983: the home band leads to /join, the main door for businesses.
+    await expect(cta.getByRole("link", { name: he.join.cta })).toHaveAttribute("href", /\/join$/);
   });
 
   // MT:ODB:5 — the footer's copyright line: no leaf emoji. (The tagline's own

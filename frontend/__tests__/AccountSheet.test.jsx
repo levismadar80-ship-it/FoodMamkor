@@ -50,6 +50,18 @@ describe("AccountSheet", () => {
     );
   });
 
+  it("MEH-3026: on a business page the login row returns the guest to that page", async () => {
+    window.history.pushState({}, "", "/en/ruach-hasadeh");
+    render(<AccountSheet {...baseProps()} user={null} />);
+    // The link path has no locale (the sheet's Link adds it); the redirect
+    // value keeps /en, because the login page pushes it as-is.
+    expect(await screen.findByRole("link", { name: /nav\.login/ })).toHaveAttribute(
+      "href",
+      "/login?redirect=%2Fen%2Fruach-hasadeh",
+    );
+    window.history.pushState({}, "", "/");
+  });
+
   it("logged-in state: logout button dispatches logout() then onClose()", () => {
     const logout = vi.fn();
     const onClose = vi.fn();
@@ -84,6 +96,16 @@ describe("AccountSheet", () => {
     expect(
       screen.getByRole("link", { name: /account\.menu\.settings/ }),
     ).toHaveAttribute("href", "/settings");
+  });
+
+  it("MEH-2982: a guest sees login, the business CTA and language — no favorites, no settings", () => {
+    render(<AccountSheet {...baseProps()} user={null} />);
+    const hrefs = screen
+      .getAllByRole("link")
+      .map((a) => a.getAttribute("href"));
+    expect(hrefs).toEqual(["/login", "/register/producer"]);
+    expect(screen.queryByText("nav.favorites")).not.toBeInTheDocument();
+    expect(screen.queryByText("account.menu.settings")).not.toBeInTheDocument();
   });
 
   it("MEH-1228: producer sees the dashboard row first (→ /producer/dashboard)", () => {

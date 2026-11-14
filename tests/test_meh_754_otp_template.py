@@ -81,7 +81,7 @@ def test_send_whatsapp_otp_uses_send_template(monkeypatch):
 
     captured = {}
 
-    def fake_send_template(to, template):
+    def fake_send_template(to, template, test_cause=False):
         captured["to"] = to
         captured["template"] = template
         return True

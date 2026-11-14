@@ -15,7 +15,9 @@ import CategorySelector from "@/components/CategorySelector";
 import CitySearch from "@/components/CitySearch";
 import PasswordStrength from "@/components/PasswordStrength";
 import ProducerOAuthButtons from "@/components/ProducerOAuthButtons";
+import RegisterCardPreview from "@/components/RegisterCardPreview";
 import Input from "@/components/ui/Input";
+import RegisterNameCheck from "@/components/RegisterNameCheck";
 import RegisterPreflight from "./RegisterPreflight";
 // MEH-1808: Leaflet touches `window` at import time, so the confirmation map is
 // client-only — same mount idiom as every other consumer
@@ -46,6 +48,9 @@ import { FARMER_DECLARATION_CATEGORIES } from "@/lib/farmer-declaration";
 import BrandLoader from "@/components/BrandLoader";
 import Button from "@/components/ui/Button";
 import { showToast } from "@/lib/toast";
+import { shareOrCopyText } from "@/lib/share-link";
+import InlineMessage from "@/components/ui/InlineMessage";
+import EmailTypoHint from "@/components/EmailTypoHint";
 
 // MEH-847 (S7 Chunk B): wizard step enum — single source for the 3→5 re-index.
 const STEP = { ACCOUNT: 1, DETAILS: 2, CATEGORY: 3, STORY: 4, CONFIRM: 5 };
@@ -268,22 +273,9 @@ function RegisterProducerPageBody({ routeKind }) {
     const msg = t("auth.register.producer.success.share_msg");
     const url = (msg.match(/https?:\/\/\S+/) || [])[0];
     const text = url ? msg.replace(url, "").trim() : msg;
-    if (typeof navigator !== "undefined" && navigator.share) {
-      try {
-        await navigator.share(url ? { text, url } : { text });
-        return;
-      } catch (err) {
-        // Cancelled is her answer; any other failure falls through to the
-        // copy below (review of #4178).
-        if (err?.name === "AbortError") return;
-      }
-    }
-    try {
-      await navigator.clipboard.writeText(url || msg);
-      showToast.success(t("share.copied_toast"));
-    } catch {
-      // no clipboard either
-    }
+    // MEH-2996: the site's one share sequence (lib/share-link.js).
+    const outcome = await shareOrCopyText({ data: url ? { text, url } : { text }, copyText: url || msg });
+    if (outcome === "copied") showToast.success(t("share.copied_toast"));
   };
   const router = useRouter();
   const params = useSearchParams();
@@ -421,7 +413,9 @@ function RegisterProducerPageBody({ routeKind }) {
   // MEH-2640: addressConfirmed / addressConfirmLabel / addressCityMismatch
   // left with the address block. `form.address` and lat/lng stay in the form
   // shape (and in the payload, where the schema makes them optional) so the
-  // upgrade path and any saved draft keep their keys.
+  // upgrade path keeps its keys.
+  // MEH-2915: a saved draft no longer does — address/lat/lng/address_city are
+  // in DRAFT_OMITTED_FIELDS, so they live in form state for the session only.
 
   // MEH-1807: the GOV.UK-style summary next to "הצטרפו" is DERIVED from
   // fieldErrors rather than stored, so fixing a field removes its summary row
@@ -459,10 +453,12 @@ function RegisterProducerPageBody({ routeKind }) {
   // thing she just earned. (It is why MEH-2136's hierarchy fix read as a no-op
   // in the desktop before/after captures: the screen was correct and unseen.)
   //
-  // One effect on STEP.CONFIRM, not a call inside each branch. CONFIRM renders
-  // two different screens — the upgrade path and the inbox-check path — and a
-  // third added later cannot forget this, the same DRY argument the effect
-  // above makes for the funnel event.
+  // One effect on `step`, not a call inside each branch. It began as a
+  // CONFIRM-only effect for the reason below — CONFIRM renders two different
+  // screens, the upgrade path and the inbox-check path, and a third added
+  // later cannot forget this — and MEH-2927 widened it to every step change on
+  // the same DRY argument: a frame added to the wizard later gets this for
+  // free rather than having to remember it.
   //
   // `behavior: "instant"` is deliberate and is NOT the convention 20 lines
   // below, which omits `behavior` to defer to the stylesheet. That call moves
@@ -472,8 +468,37 @@ function RegisterProducerPageBody({ routeKind }) {
   // it is precisely what prefers-reduced-motion exists to suppress. "instant"
   // says that unconditionally instead of inheriting whatever `scroll-behavior`
   // happens to be on <html>. Precedent for the literal: ChipScrollRow.jsx:158.
+  // MEH-2927 (pilot B3a): EVERY step change starts at the top of the new step,
+  // not only CONFIRM. Measured at 390x844 before this: advancing ACCOUNT →
+  // DETAILS kept `scrollY` at 460 and left the step heading at y=-330, so the
+  // seller landed mid-form on a frame whose top she had never seen — four
+  // fields and the step's own question were above her.
+  // (Those numbers are the probe's output, quoted in the PR; the committed
+  // frame qa-artifacts/MEH-2927/02-step2-on-entry-390-AFTER.webp is the same
+  // view AFTER the fix. The before frame was not committed, so it is not
+  // cited as though it were.)
+  //
+  // The ONE exception is a cross-step validation bounce. MEH-1807 sets
+  // `pendingFocusIdRef` synchronously in `requestFocus`, BEFORE the `setStep`
+  // that sends her back, then focuses the offending field and scrolls it to
+  // `block: "center"`. Jumping to the top first would move the page out from
+  // under that and land her above the error she was sent to fix. The ref is
+  // still populated here because this effect is declared ABOVE the focus
+  // effect, so it runs first in the same commit — do not reorder them.
+  // Mount is not a step CHANGE, and scrolling there would be a no-op at best
+  // and a fight with the browser's own scroll restoration on a back-navigation
+  // at worst. A draft that resumes onto a later frame still scrolls, because
+  // that `setStep` lands after this ref is already set.
+  // Compares the previous step rather than arming a flag on first run: in
+  // StrictMode (dev) the effect body runs twice on mount, so a "have I run
+  // before" flag is set by the first invocation and the second one scrolls a
+  // page nobody navigated. A previous-value comparison is false on both.
+  const prevStepRef = useRef(step);
   useEffect(() => {
-    if (step !== STEP.CONFIRM) return;
+    const previous = prevStepRef.current;
+    prevStepRef.current = step;
+    if (previous === step) return;
+    if (pendingFocusIdRef.current) return;
     window.scrollTo({ top: 0, behavior: "instant" });
   }, [step]);
 
@@ -519,6 +544,21 @@ function RegisterProducerPageBody({ routeKind }) {
           // this beats deleting it.
           if (draft.restamp) {
             localStorage.setItem(DRAFT_KEY, packDraft(draft.form, null, Date.now()));
+          } else if (draft.stripped) {
+            // MEH-2915: the draft on disk still carries fields the form no
+            // longer accepts. parseDraft keeps them out of `form`, which is
+            // what the seller sees; this rewrite is what takes them off the
+            // device, without waiting for her next keystroke, a dismiss, or
+            // the 7-day expiry.
+            //
+            // Re-packed at the draft's ORIGINAL savedAt, never Date.now():
+            // stamping it now would restart MEH-1977's expiry for a draft
+            // nobody touched — the same defect the setAndSave no-op guard
+            // below exists to prevent.
+            localStorage.setItem(
+              DRAFT_KEY,
+              packDraft(draft.form, draft.step, draft.savedAt),
+            );
           }
           // MEH-1769: hasDraftContent replaces the 3-field truthiness test. An
           // empty-storage visit never reaches here at all (getItem returns
@@ -573,11 +613,19 @@ function RegisterProducerPageBody({ routeKind }) {
           let hasToken = false;
           try { hasToken = Boolean(localStorage.getItem("token")); } catch {}
           const resumeAt = safeResumeStep(draft.step, hasToken);
+          // MEH-2915: the draft no longer carries a phone and nothing
+          // prefills one, so a resume onto CATEGORY or STORY would hand her a
+          // frame she can complete and then bounce at submit — back to
+          // DETAILS, onto a required field she never saw go empty
+          // (CROSS_STEP_REQUIRED, the gate at the «הצטרפו» handler). Landing
+          // on the frame that owns the missing field is the honest stop.
+          const cappedResume =
+            resumeAt && !validateIsraeliPhone(form.phone) ? STEP.DETAILS : resumeAt;
           // MEH-2460 (review #3711): an organizer never stands on CATEGORY —
           // neither as a resume target nor as the frame she was on when she
           // pressed «continue».
           const skipCategory = (s) => (routeIsOrganizer && s === STEP.CATEGORY ? STEP.STORY : s);
-          if (resumeAt) setStep(skipCategory(resumeAt));
+          if (cappedResume) setStep(skipCategory(cappedResume));
           else if (routeIsOrganizer) setStep(skipCategory);
         } else {
           localStorage.removeItem(DRAFT_KEY);
@@ -612,6 +660,12 @@ function RegisterProducerPageBody({ routeKind }) {
   const setAndSave = (updater) => {
     setForm((prev) => {
       const next = updater(prev);
+      // MEH-2915: an updater that returns `prev` is a no-op — React bails out
+      // of the render, and writing here would still re-stamp the envelope's
+      // `savedAt`, restarting the 7-day expiry (MEH-1977) for a change that
+      // never happened. `handleCityKnownChange` takes that branch every time a
+      // late /cities response confirms the verdict it already had.
+      if (next === prev) return prev;
       saveDraft(next, step);
       return next;
     });
@@ -894,7 +948,7 @@ function RegisterProducerPageBody({ routeKind }) {
           {/* CTA reuses the account-menu dashboard label (single owner, no new key). */}
           <button
             onClick={() => router.push("/producer/dashboard")}
-            className="border-2 border-primary-dark text-primary-dark bg-transparent px-6 py-3 rounded-md hover:bg-primary-dark hover:text-white transition font-medium text-sm"
+            className="border-2 border-primary-dark text-primary-dark bg-transparent px-6 py-3 rounded-full hover:bg-primary-dark hover:text-white transition font-medium text-sm"
           >
             {t("account.menu.dashboard")}
           </button>
@@ -1043,7 +1097,8 @@ function RegisterProducerPageBody({ routeKind }) {
           </div>
         )}
 
-        {prefillToken && prefillApplied && (
+        {/* MEH-3026 (F10): the notice is about the form; once it is sent there is no form. */}
+        {prefillToken && prefillApplied && !submitted && (
           <div className="bg-green-50 text-primary border border-primary/30 rounded-md p-3 mb-4 text-sm inline-flex items-center gap-2">
             <Leaf size={16} aria-hidden="true" className="shrink-0" />
             {t("auth.register.producer.prefill_notice")}
@@ -1117,6 +1172,7 @@ function RegisterProducerPageBody({ routeKind }) {
               dir="ltr"
               autoComplete="email"
             />
+            <EmailTypoHint fieldId="producer-account-email" value={form.email} onAccept={(email) => set("email")({ target: { value: email } })} />
             {/* MEH-328 Chunk C: emailExistsWarning render block removed
                 with handleEmailBlur. emailExistsSubmitError block below
                 (rendered on 409 from submit) is preserved by Chunk D. */}
@@ -1135,14 +1191,14 @@ function RegisterProducerPageBody({ routeKind }) {
                 value={form.password}
                 onChange={set("password")}
                 required
-                className="w-full border rounded-md px-3 py-2 min-h-touch"
+                className="w-full border rounded-sm px-3 py-2 min-h-touch focus-ring"
                 dir="ltr"
                 minLength={12}
                 autoComplete="new-password"
               />
               <PasswordStrength password={form.password} />
             </div>
-            {stepError && <p role="alert" className="text-error text-sm">{stepError}</p>}
+            {stepError && <InlineMessage>{stepError}</InlineMessage>}
             <Button
               data-testid="register-account-next"
               onClick={() => {
@@ -1210,6 +1266,7 @@ function RegisterProducerPageBody({ routeKind }) {
               required
               dir="rtl"
             />
+            <RegisterNameCheck name={form.producer_name} />
 
             <div>
               <label htmlFor="producer-phone" className="block text-sm font-medium text-text mb-1 text-start">
@@ -1227,7 +1284,7 @@ function RegisterProducerPageBody({ routeKind }) {
                 required
                 aria-invalid={phoneErrorMessage ? "true" : undefined}
                 aria-describedby={phoneErrorMessage ? "register-phone-error" : undefined}
-                className={`w-full border rounded-md px-3 py-2 min-h-touch ${
+                className={`w-full border rounded-sm px-3 py-2 min-h-touch focus-ring ${
                   phoneErrorMessage ? "border-danger-400" : ""
                 }`}
                 dir="ltr"
@@ -1459,7 +1516,7 @@ function RegisterProducerPageBody({ routeKind }) {
                   maxLength={20}
                   inputMode="numeric"
                   // text-right kept: dir="ltr" numeric license — physical right = start side in the RTL form; logical text-start would follow the field's own ltr direction instead
-                  className="w-full border rounded-md ps-3 pe-3 py-2 min-h-touch text-right"
+                  className="w-full border rounded-sm ps-3 pe-3 py-2 min-h-touch text-right focus-ring"
                   dir="ltr"
                 />
                 {licenseWarning && (
@@ -1471,9 +1528,9 @@ function RegisterProducerPageBody({ routeKind }) {
                     from the gray, non-blocking format warning above). role=alert
                     announces it; mirrors the inline phone-error placement. */}
                 {!licensePending && licenseRequiredError && (
-                  <p role="alert" className="text-xs text-error mt-1 text-start">
+                  <InlineMessage size="xs" className="mt-1 text-start">
                     {t("auth.register.producer.validation.license_required")}
-                  </p>
+                  </InlineMessage>
                 )}
                 {/* MEH-971 chunk 1: opt-in to submit without a license number.
                     Checking it relaxes the advance gate + sends license_pending. */}
@@ -1492,11 +1549,21 @@ function RegisterProducerPageBody({ routeKind }) {
                     {t("auth.register.producer.fields.license_pending_optin_label")}
                   </span>
                 </label>
-                {licensePending && (
-                  <p className="text-xs text-fg-muted mt-1 text-start">
-                    {t("auth.register.producer.fields.license_pending_optin_hint")}
-                  </p>
-                )}
+                {/* MEH-2927 (pilot B3d): rendered unconditionally and hidden
+                    with `visibility`, not mounted on the tick. Measured at
+                    390x664: mounting it moved «הבא» down 36px in document
+                    space at the exact moment of the tap, which is a
+                    tap-target hazard right where the thumb already is.
+                    `invisible` reserves the element's REAL height — including
+                    however many lines it wraps to at this width, which a
+                    fixed min-height would have to guess — and keeps it out of
+                    the accessibility tree, which `opacity-0` would not. */}
+                <p
+                  className={`text-xs text-fg-muted mt-1 text-start${licensePending ? "" : " invisible"}`}
+                  data-testid="register-license-pending-hint"
+                >
+                  {t("auth.register.producer.fields.license_pending_optin_hint")}
+                </p>
               </div>
             ) : licenseOptionalExpanded ? (
               <div className="relative">
@@ -1531,7 +1598,7 @@ function RegisterProducerPageBody({ routeKind }) {
                   maxLength={20}
                   inputMode="numeric"
                   // text-right kept: dir="ltr" numeric license — physical right = start side in the RTL form; logical text-start would follow the field's own ltr direction instead
-                  className="w-full border rounded-md ps-3 pe-3 py-2 min-h-touch text-right"
+                  className="w-full border rounded-sm ps-3 pe-3 py-2 min-h-touch text-right focus-ring"
                   dir="ltr"
                 />
                 {licenseWarning && (
@@ -1621,6 +1688,16 @@ function RegisterProducerPageBody({ routeKind }) {
               <p className="text-fg-muted text-start leading-relaxed">{t("auth.register.producer.story_card.body")}</p>
             </div>
 
+            {/* MEH-3074: the real card, opened on demand so the submit button
+                stays where it was on a phone. Organizers have no card — they
+                are not in the business list. */}
+            {!isOrganizer && (
+              <RegisterCardPreview
+                form={{ ...form, ...fulfilmentBooleans(form.fulfilment) }}
+                categories={categories}
+              />
+            )}
+
             {/* MEH-914: photo-to-publish disclosure (copy only). Gate: admin.py:442. */}
             <p data-testid="photo-disclosure-story" className="text-xs text-fg-muted text-start leading-relaxed">{t("auth.register.producer.photo_disclosure")}</p>
 
@@ -1648,7 +1725,7 @@ function RegisterProducerPageBody({ routeKind }) {
                 disabled={descriptionDisabled}
                 placeholder={descriptionPlaceholder}
                 rows={6}
-                className="w-full border rounded-md ps-3 pe-3 py-2 text-start min-h-[9rem] md:min-h-[12rem] disabled:bg-green-50 disabled:text-fg-muted disabled:cursor-not-allowed"
+                className="w-full border rounded-sm ps-3 pe-3 py-2 text-start min-h-[9rem] md:min-h-[12rem] disabled:bg-green-50 disabled:text-fg-muted disabled:cursor-not-allowed focus-ring"
                 dir="rtl"
               />
               {!descriptionDisabled ? (
@@ -1733,7 +1810,7 @@ function RegisterProducerPageBody({ routeKind }) {
                       value === "other" ? prev.referral_source_other : "",
                   }));
                 }}
-                className="w-full border rounded-md px-3 py-2 min-h-touch bg-surface text-start"
+                className="w-full border rounded-sm px-3 py-2 min-h-touch bg-surface text-start focus-ring"
               >
                 <option value="" disabled>
                   {t("auth.register.producer.fields.referral_source.placeholder")}
@@ -1763,7 +1840,7 @@ function RegisterProducerPageBody({ routeKind }) {
                   aria-label={t(
                     "auth.register.producer.fields.referral_source.other_placeholder",
                   )}
-                  className="w-full border rounded-md px-3 py-2 min-h-touch mt-2 text-start"
+                  className="w-full border rounded-sm px-3 py-2 min-h-touch mt-2 text-start focus-ring"
                 />
               )}
             </div>
@@ -1818,7 +1895,7 @@ function RegisterProducerPageBody({ routeKind }) {
             {/* MEH-328 Chunk D: emailExistsSubmitError render block removed.
                 Non-upgrade collisions return identical 200 ack → step 3
                 inbox-check UI. Upgrade-path 409 still surfaces via `error`. */}
-            {error && <p role="alert" className="text-error text-sm">{error}</p>}
+            {error && <InlineMessage>{error}</InlineMessage>}
 
             {/* MEH-2200 (Amendment 13, s.11 disclosure duty): the collection
                 notice must be given AT collection, so it renders inline on the
@@ -1978,7 +2055,7 @@ function RegisterProducerPageBody({ routeKind }) {
               <button
                 data-testid="register-success-dashboard-cta"
                 onClick={() => router.push("/producer/dashboard")}
-                className="w-full bg-primary-dark text-white px-6 py-3 rounded-md hover:bg-primary transition font-medium text-sm"
+                className="w-full bg-primary-dark text-white px-6 py-3 rounded-full hover:bg-primary transition font-medium text-sm"
               >
                 {t("auth.register.producer.success.cta")}
               </button>
@@ -2012,12 +2089,27 @@ function RegisterProducerPageBody({ routeKind }) {
               {t("auth.register.producer.success.inbox_next")}
             </p>
             <p className="text-xs text-fg-muted mb-6 text-center leading-relaxed">{t("auth.register.producer.success.tier_trust")}</p>
-            <button
-              onClick={() => router.push("/")}
-              className="border-2 border-primary-dark text-primary-dark bg-transparent px-6 py-3 rounded-md hover:bg-primary-dark hover:text-white transition font-medium text-sm"
-            >
-              {t("auth.register.producer.success.back_home")}
-            </button>
+            {/* MEH-2920: login does not wait for the email link (auth.py login
+                never reads email_verified), so the screen offers the way that
+                exists. This path holds no token (MEH-328 ack), hence a link to
+                /login that returns to the dashboard — never router.push to a
+                page that would bounce. Home drops to the secondary action. */}
+            <div className="flex flex-col items-center gap-3">
+              <Link
+                href={`/login?redirect=${encodeURIComponent("/producer/dashboard")}`}
+                data-testid="register-confirm-dashboard-cta"
+                className="w-full sm:max-w-xs bg-primary-dark text-white px-6 py-3 rounded-full hover:bg-primary transition font-medium text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+              >
+                {t("auth.register.producer.success.cta")}
+              </Link>
+              <button
+                onClick={() => router.push("/")}
+                data-testid="register-confirm-home"
+                className="text-primary-dark underline-offset-4 hover:underline px-6 py-2 rounded-md font-medium text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+              >
+                {t("auth.register.producer.success.back_home")}
+              </button>
+            </div>
           </div>
         )}
       </div>

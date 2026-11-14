@@ -47,6 +47,12 @@ const DETAIL_ONLY = [
   // rather than assumed — producer_contract_snapshot.json has it on
   // ProducerDetailOut and NOT on ProducerListOut.
   "coverage_cta_enabled",
+  // MEH-3035: detail-only — producer_contract_snapshot.json lists it on
+  // ProducerDetailOut and not on ProducerListOut.
+  "payment_info",
+  // MEH-3055: detail-only — the producer page's group chips; the snapshot
+  // lists it on ProducerDetailOut and not on ProducerListOut.
+  "product_groups",
 ];
 
 const listKeys = () => Object.keys(ProducerListSchema.shape);

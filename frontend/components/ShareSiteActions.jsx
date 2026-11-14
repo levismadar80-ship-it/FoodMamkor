@@ -5,6 +5,8 @@ import { ShareNetwork, LinkSimple, EnvelopeSimple, Check } from "@phosphor-icons
 import { showToast } from "@/lib/toast";
 import { SITE_URL } from "@/lib/env";
 import { BRAND_NAME } from "@/lib/constants";
+import { tryNativeShare } from "@/lib/share-link";
+import { copyText } from "@/lib/clipboard";
 
 /**
  * Module:   ShareSiteActions
@@ -12,7 +14,7 @@ import { BRAND_NAME } from "@/lib/constants";
  *           opens the phone's own share sheet (WhatsApp, Instagram, Facebook…
  *           are all inside it), with copy-link as the fallback where there is
  *           no sheet. `full` adds copy-link + email cards under it.
- * Touches:  navigator.share · navigator.clipboard · mailto.
+ * Touches:  navigator.share · lib/clipboard (copyText) · mailto.
  * Does NOT: offer a WhatsApp-only share (Sapir 08/11 — sharing is the generic
  *           sheet; contact-the-business WhatsApp buttons are a different thing
  *           and live elsewhere) or share a single business page (ShareButton.jsx).
@@ -30,34 +32,17 @@ import { BRAND_NAME } from "@/lib/constants";
 // it as "no handler opened" and run the clipboard fallback.
 const MAIL_FALLBACK_MS = 1200;
 
-// MEH-1223: real success — execCommand can return false OR throw, so a double
-// failure must be reported as one, never as «הועתק».
-async function copyText(value) {
-  try {
-    await navigator.clipboard.writeText(value);
-    return true;
-  } catch {
-    const ta = document.createElement("textarea");
-    ta.value = value;
-    document.body.appendChild(ta);
-    ta.select();
-    try {
-      return document.execCommand("copy");
-    } catch {
-      return false;
-    } finally {
-      document.body.removeChild(ta);
-    }
-  }
-}
+// MEH-1223: real success — a double failure is reported as one, never as
+// «הועתק». copyText (lib/clipboard.js) answers true only on a real copy.
 
 const SHARE_TONE = {
   light: "bg-primary text-background hover:bg-primary-dark",
   dark: "bg-background text-primary hover:bg-surface-card",
 };
 
+// MEH-3058: secondary actions are outlined pills, same shape as «שתפו» above them.
 const CARD_CLASSES =
-  "flex flex-col items-center justify-center gap-1.5 rounded-xl border border-border bg-surface-card px-2 py-3 min-h-[72px] text-xs font-medium text-text text-center leading-tight hover:border-primary transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40";
+  "flex items-center justify-center gap-2 rounded-full border border-primary bg-surface-card px-3 min-h-touch text-sm font-semibold text-primary text-center leading-tight hover:bg-primary/5 active:bg-primary/10 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary";
 
 /**
  * @param {object} props
@@ -94,15 +79,9 @@ export default function ShareSiteActions({
   // share it as plain text with a generic compass icon instead of a link
   // card with the preview image. The message stays for copy/email.
   const share = async () => {
-    if (typeof navigator !== "undefined" && navigator.share) {
-      try {
-        await navigator.share({ title, url });
-      } catch {
-        // cancelled or refused — nothing else to do
-      }
-      return;
-    }
-    await copyLink();
+    // MEH-2996: lib/share-link.js owns the sequence. A sheet that refuses
+    // (not a cancel) now falls through to the copy, as on every other page.
+    if ((await tryNativeShare({ title, url })) === "unavailable") await copyLink();
   };
 
   // MEH-1220: the email action is a real <a href=mailto>, so a present handler
@@ -136,7 +115,7 @@ export default function ShareSiteActions({
       type="button"
       onClick={share}
       data-testid="share-native"
-      className={`flex w-full items-center justify-center gap-2 rounded-lg ${SHARE_TONE[tone] ?? SHARE_TONE.light} ${layout === "full" ? "min-h-[52px] text-base" : "min-h-touch text-sm"} px-4 font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40`}
+      className={`flex w-full items-center justify-center gap-2 rounded-full ${SHARE_TONE[tone] ?? SHARE_TONE.light} ${layout === "full" ? "min-h-[52px] text-base" : "min-h-touch text-sm"} px-4 font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary`}
     >
       <ShareNetwork size={18} aria-hidden="true" />
       {tShare("trigger")}
@@ -154,11 +133,11 @@ export default function ShareSiteActions({
       {shareButton}
       <div className="mt-3 grid grid-cols-2 gap-2.5">
         <button type="button" onClick={copyLink} className={CARD_CLASSES} data-testid="share-copy">
-          <LinkSimple size={22} aria-hidden="true" className="text-primary" />
+          <LinkSimple size={18} aria-hidden="true" />
           {t("copy")}
         </button>
         <a href={mailHref} onClick={handleEmailClick} className={CARD_CLASSES} data-testid="share-email">
-          <EnvelopeSimple size={22} aria-hidden="true" className="text-primary" />
+          <EnvelopeSimple size={18} aria-hidden="true" />
           {t("email")}
         </a>
       </div>

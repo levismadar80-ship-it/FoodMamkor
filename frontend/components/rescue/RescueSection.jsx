@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Basket, Clock, MapPin, Bread } from "@phosphor-icons/react";
 
@@ -20,6 +20,9 @@ import {
   shekels,
 } from "@/lib/rescue";
 import Button from "@/components/ui/Button";
+import { RESCUE_SECTION_ID } from "@/lib/producer-path";
+import SectionHeading from "@/components/ui/SectionHeading";
+import InlineMessage from "@/components/ui/InlineMessage";
 
 /**
  * Module:   RescueSection
@@ -59,6 +62,20 @@ export default function RescueSection({ producer }) {
   const [cancelled, setCancelled] = useState(false);
   // MEH-2738: the business cancelled today's bag, and hers with it.
   const [businessCancelled, setBusinessCancelled] = useState(false);
+  const landedOnHash = useRef(false);
+
+  // A bag row / home bag card links here as `/{slug}#section-rescue`. This
+  // section mounts only after its own offer fetch, i.e. after both the
+  // browser's native hash scroll and ProducerDetail's MEH-1306 re-apply have
+  // run against a DOM without it. Scroll once when the bag appears.
+  useEffect(() => {
+    if (!offer || landedOnHash.current) return;
+    landedOnHash.current = true;
+    if (window.location.hash !== `#${RESCUE_SECTION_ID}`) return;
+    requestAnimationFrame(() => {
+      document.getElementById(RESCUE_SECTION_ID)?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  }, [offer]);
 
   useEffect(() => {
     let alive = true;
@@ -218,20 +235,20 @@ export default function RescueSection({ producer }) {
   const cancelUntil = israelTime(offer?.cancel_until);
   const cutoffPassed = offer?.cancel_until ? new Date(offer.cancel_until) <= new Date() : false;
   const errorLine = errorKey && (
-    <p className="font-body-sm text-sm text-error" role="alert" data-testid="rescue-section-error">
+    <InlineMessage className="font-body-sm" data-testid="rescue-section-error">
       {t(errorKey)}
-    </p>
+    </InlineMessage>
   );
   const from = israelTime(offer?.pickup_start);
   const until = israelTime(offer?.pickup_end);
 
   return (
     <section
-      id="section-rescue"
+      id={RESCUE_SECTION_ID}
       data-testid="rescue-section"
       className="mt-12 scroll-mt-[calc(var(--chrome-top,82px)_+_var(--section-nav-h,68px))] md:scroll-mt-24"
     >
-      <h2 className="font-headline-md text-lg font-black text-text">{t("section.title")}</h2>
+      <SectionHeading size="content">{t("section.title")}</SectionHeading>
 
       {cancelled && (
         <p
@@ -280,7 +297,7 @@ export default function RescueSection({ producer }) {
           <div className="grid gap-3 min-w-0">
             <div className="flex items-center gap-2.5">
               <span aria-hidden="true" className="w-11 h-11 rounded-md bg-green-50 text-primary grid place-items-center shrink-0">
-                <Basket size={24} weight="duotone" />
+                <Basket size={24} weight="regular" />
               </span>
               {/* The only gold on the card, as on the home row: the stock is what makes someone hurry. */}
               <span className="text-xs font-bold text-gold-deep bg-gold-deep/10 rounded-full px-2.5 py-0.5 whitespace-nowrap" data-testid="rescue-section-stock">

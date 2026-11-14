@@ -7,8 +7,9 @@ import { usePathname } from "next/navigation";
 
 // MEH-2324: /claim/<token> carries a bearer credential in its path, and a
 // session recorder keeps the page URL. The claim page swaps the address to
-// /claim on mount; Clarity waits for that.
-const CLAIM_TOKEN_PATH = /\/claim\/[^/]/;
+// /claim on mount; Clarity waits for that. MEH-2974: /owner-invite/<token>
+// is the same shape and the same risk, so it waits the same way.
+const CLAIM_TOKEN_PATH = /\/(claim|owner-invite)\/[^/]/;
 
 export default function ClarityScript({ projectId }) {
   const [consented, setConsented] = useState(false);

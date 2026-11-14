@@ -21,13 +21,14 @@ from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, R
 from sqlalchemy import func
 from sqlalchemy.orm import Session, joinedload, object_session
 
+from app.limits import enforce_cap
 from app.auth import (
     get_current_user,
     get_current_user_optional,
     require_verified_producer,
 )
 from app.database import get_db
-from app.services.producer_listing import is_business  # MEH-2459
+from app.services.producer_listing import is_business, is_business_row  # MEH-2459
 from app.models import Experience, Producer, User
 from app.rate_limit import limiter
 from app.schemas.schemas import (
@@ -42,7 +43,10 @@ from app.schemas.schemas import (
 )
 from app.services import indexnow  # MEH-2852
 from app.services.experience_moderation import validate_experience
-from app.services.experience_notifications import notify_admin_new_submission
+from app.services.experience_notifications import (
+    host_test_cause,
+    notify_admin_new_submission,
+)
 from app.services.registrations import method_problem, registered_counts
 from app.utils.clock import israel_today
 
@@ -81,11 +85,7 @@ def _serialize_host(host: User | None) -> dict | None:
         return None
     out = {"id": host.id, "name": host.name}
     producer = host.producer
-    if (
-        producer is not None
-        and producer.status == "approved"
-        and producer.kind == "producer"
-    ):
+    if is_business_row(producer):  # MEH-2952: test rows too
         out.update(
             producer_id=producer.id,
             producer_slug=producer.slug,
@@ -434,6 +434,19 @@ def submit_experience(
             },
         )
 
+    # MEH-3022: cap on upcoming (or recurring) experiences this host holds;
+    # rejected ones never reach the page and do not count.
+    enforce_cap(
+        db.query(Experience)
+        .filter(
+            Experience.host_user_id == user.id,
+            Experience.status != "rejected",
+            (Experience.event_date >= israel_today())
+            | Experience.is_recurring.is_(True),
+        )
+        .count(),
+        "experiences",
+    )
     ex = Experience(
         title=data.title.strip(),
         description=data.description.strip(),
@@ -481,6 +494,7 @@ def submit_experience(
         host_name=user.name,
         city=ex.city,
         moderation_status=verdict["status"],
+        test_cause=host_test_cause(ex.host),  # MEH-2952
     )
 
     return _serialize_detail(ex)
@@ -529,7 +543,9 @@ def _check_method_edit(db: Session, ex: Experience, payload: dict) -> None:
 
 
 @router.put("/{experience_id}", response_model=ExperienceDetailOut)
-def update_experience(
+@limiter.limit("60/hour")  # MEH-3022
+def update_experience(  # noqa: PLR0913 — all args are FastAPI-injected; MEH-3022 added the slowapi request
+    request: Request,  # required by slowapi (MEH-3022)
     experience_id: UUID,
     data: ExperienceUpdate,
     background_tasks: BackgroundTasks,
@@ -629,7 +645,9 @@ def update_experience(
 
 
 @router.delete("/{experience_id}")
+@limiter.limit("60/hour")  # MEH-3022
 def delete_experience(
+    request: Request,  # required by slowapi (MEH-3022)
     experience_id: UUID,
     background_tasks: BackgroundTasks,
     user: User = Depends(get_current_user),

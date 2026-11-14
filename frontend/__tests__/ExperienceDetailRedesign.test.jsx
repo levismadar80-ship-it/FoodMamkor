@@ -32,7 +32,9 @@ vi.mock("@/i18n/navigation", () => ({
   ),
 }));
 vi.mock("next/dynamic", () => ({ default: () => () => <div data-testid="minimap" /> }));
-vi.mock("@/components/Breadcrumb", () => ({ default: () => null }));
+vi.mock("@/components/Breadcrumb", () => ({
+  default: ({ className }) => <nav data-testid="breadcrumb" className={className} />,
+}));
 vi.mock("@/lib/israel-date", () => ({ israelToday: () => "2026-10-29" }));
 
 const BASE = {
@@ -183,5 +185,63 @@ describe("MEH-2549 — navigation and the time chip", () => {
   it("recurring → no chip even when the start is tomorrow", async () => {
     await renderWith({ event_date: "2026-10-30", is_recurring: true });
     expect(screen.queryByTestId("experience-when")).toBeNull();
+  });
+});
+
+/**
+ * MEH-2989 — the experience page says each thing once, like the event page.
+ */
+describe("MEH-2989 — no repeated information", () => {
+  it("the date tile sits in the details card only", async () => {
+    await renderWith();
+    const tiles = screen.getAllByTestId("experience-date-tile");
+    expect(tiles).toHaveLength(1);
+    expect(screen.getByTestId("experience-info").contains(tiles[0])).toBe(true);
+  });
+
+  // MEH-3057: the tile already says «נובמבר 20» — a one-off row is the
+  // weekday + time; «starts from» on a recurring one keeps the full date.
+  it("a one-off date row is the weekday and time, not the date again", async () => {
+    await renderWith();
+    const text = screen.getByTestId("experience-date").textContent;
+    expect(text).toBe("יום שישי · 10:00");
+    expect(text).not.toMatch(/20|נובמבר|2026/);
+  });
+
+  it("a one-off with no time → the weekday alone", async () => {
+    await renderWith({ event_time: null });
+    expect(screen.getByTestId("experience-date").textContent).toBe("יום שישי");
+  });
+
+  it("a recurring date row keeps the full start date", async () => {
+    await renderWith({ is_recurring: true });
+    expect(screen.getByTestId("experience-date").textContent).toMatch(/20 בנובמבר 2026/);
+  });
+
+  it("the breadcrumb is desktop only", async () => {
+    await renderWith();
+    expect(screen.getByTestId("breadcrumb").className.split(" ")).toEqual(
+      expect.arrayContaining(["hidden", "lg:block"]),
+    );
+  });
+
+  it("category «אחר» → no chip", async () => {
+    await renderWith({ category: "אחר" });
+    expect(screen.queryByTestId("experience-category")).toBeNull();
+  });
+
+  it("the description and «מה להביא» come before the map", async () => {
+    await renderWith({ lat: 32.8, lng: 35.0, requirements: "סינר" });
+    const map = screen.getByTestId("minimap");
+    const desc = screen.getByText("סדנה של בוקר שלם");
+    const bring = screen.getByTestId("experience-bring");
+    expect(desc.compareDocumentPosition(map) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(bring.compareDocumentPosition(map) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it("no host card and no «כל החוויות» link at the end", async () => {
+    await renderWith();
+    expect(screen.queryByTestId("experience-host")).toBeNull();
+    expect(screen.queryByText(he.experiences.detail.all_experiences)).toBeNull();
   });
 });

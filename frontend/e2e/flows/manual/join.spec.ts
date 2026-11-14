@@ -532,8 +532,18 @@ test.describe("manual › /join (MEH-995)", () => {
   // Sapir, 07/11: "smooth, but a bit slow". Measured Safari-like: the card lit
   // up 167ms AFTER the shelf stopped. Run Safari-like here too (no
   // `scrollend`): the header must light up while the shelf is still moving,
-  // and the panel must follow within ~130ms of it stopping.
+  // and the panel must follow within a few frames of it stopping.
+  //
+  // MEH-2323: the lag is counted in animation FRAMES, not milliseconds. The
+  // old `<= 130ms` budget was red on a loaded CI runner (staging ca44069,
+  // 151.5ms) with no code change: every janky frame adds its full length to a
+  // wall-clock gap. A frame count does not grow that way — a slow frame makes
+  // the 90ms quiet timer (SETTLE_QUIET_MS) expire in FEWER frames, not more —
+  // and it still catches the regression this test exists for: the old 150ms
+  // quiet period is ~9 frames at 60fps, past the budget below.
   test.describe("swipe responsiveness, Safari-like, with motion", () => {
+    // 90ms quiet (~6 frames at 60fps) + one commit frame + one of slack.
+    const PANEL_LAG_FRAMES = 8;
     test.use({ reducedMotion: "no-preference" });
 
     test("the header lights up mid-swipe; the panel follows soon after the shelf stops", async ({ page }) => {
@@ -559,16 +569,18 @@ test.describe("manual › /join (MEH-995)", () => {
         node.scrollBy({ left: c.left + c.width / 2 - (s.left + s.width / 2), behavior: "smooth" });
         const ev: { lit?: number; panel?: number; stop?: number } = {};
         let last = node.scrollLeft;
+        let frame = 0;
         await new Promise<void>((done) => {
           const tick = () => {
+            frame += 1;
             const now = performance.now() - t0;
             if (node.scrollLeft !== last) {
               last = node.scrollLeft;
-              ev.stop = now;
+              ev.stop = frame;
             }
             // "Lit" = the header's green fill, the cue the eye actually sees.
-            if (ev.lit === undefined && card.querySelector("button")!.className.includes("bg-state-selected")) ev.lit = now;
-            if (ev.panel === undefined && panel.dataset.group === "found") ev.panel = now;
+            if (ev.lit === undefined && card.querySelector("button")!.className.includes("bg-state-selected")) ev.lit = frame;
+            if (ev.panel === undefined && panel.dataset.group === "found") ev.panel = frame;
             if (now < 2000) requestAnimationFrame(tick);
             else done();
           };
@@ -578,7 +590,8 @@ test.describe("manual › /join (MEH-995)", () => {
       });
       expect(t.lit, "the header never lit up").toBeDefined();
       expect(t.lit!, "the header waited for the shelf to stop").toBeLessThan(t.stop!);
-      expect(t.panel! - t.stop!, "the panel lagged the stop").toBeLessThanOrEqual(130);
+      expect(t.panel, "the panel never followed the swipe").toBeDefined();
+      expect(t.panel! - t.stop!, "the panel lagged the stop (frames)").toBeLessThanOrEqual(PANEL_LAG_FRAMES);
     });
   });
 

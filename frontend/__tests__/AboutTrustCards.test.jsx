@@ -107,7 +107,7 @@ describe("/about trust group — one section, three cards", () => {
     expect([...cards].map((c) => c.id)).toEqual(["verification", "editors-pick", "community-leader"]);
     for (const card of cards) {
       expect(classes(card)).toEqual(
-        expect.arrayContaining(["rounded-xl", "border", "border-border", "bg-surface-card", "p-5", "scroll-mt-24"]),
+        expect.arrayContaining(["rounded-lg", "border", "border-border", "bg-surface-card", "p-5", "scroll-mt-24"]),
       );
     }
   });

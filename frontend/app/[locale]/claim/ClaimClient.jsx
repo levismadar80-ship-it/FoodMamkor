@@ -16,6 +16,7 @@ import GoogleAuthButton from "@/components/GoogleAuthButton";
 import StatusPage from "@/components/StatusPage";
 import BrandLoader from "@/components/BrandLoader";
 import Button from "@/components/ui/Button";
+import InlineMessage from "@/components/ui/InlineMessage";
 
 /**
  * Module:   ClaimClient
@@ -246,9 +247,9 @@ export default function ClaimClient({ tokenFromPath = null }) {
             </Link>
           </p>
           {authError && (
-            <p className="text-sm text-error" role="alert" data-testid="claim-auth-error">
+            <InlineMessage data-testid="claim-auth-error">
               {authError}
-            </p>
+            </InlineMessage>
           )}
         </div>
       )}
@@ -330,9 +331,9 @@ export default function ClaimClient({ tokenFromPath = null }) {
           )}
 
           {(validation || submitError) && (
-            <p className="text-sm text-error" role="alert" data-testid="claim-error">
+            <InlineMessage data-testid="claim-error">
               {validation || submitError}
-            </p>
+            </InlineMessage>
           )}
 
           <Button
@@ -393,7 +394,7 @@ function PrimaryLink({ href, children, testid }) {
     <Link
       href={href}
       data-testid={testid}
-      className="min-h-touch w-full sm:w-auto inline-flex items-center justify-center bg-primary text-white rounded-md px-6 py-2 font-medium hover:bg-primary-dark transition"
+      className="min-h-touch w-full sm:w-auto inline-flex items-center justify-center bg-primary text-white rounded-full px-6 py-2 font-medium hover:bg-primary-dark transition"
     >
       {children}
     </Link>
@@ -406,7 +407,7 @@ function SwitchAccount({ onClick, children }) {
       type="button"
       onClick={onClick}
       data-testid="claim-switch-account"
-      className="min-h-touch w-full sm:w-auto bg-surface border border-primary text-primary rounded-md px-6 py-2 font-medium hover:bg-background transition"
+      className="min-h-touch w-full sm:w-auto bg-surface border border-primary text-primary rounded-full px-6 py-2 font-medium hover:bg-background transition"
     >
       {children}
     </button>

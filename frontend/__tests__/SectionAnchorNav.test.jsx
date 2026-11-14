@@ -288,6 +288,68 @@ describe("SectionAnchorNav — active section (aria-current)", () => {
     expect(pill("s-a")).not.toHaveAttribute("aria-current");
   });
 
+  // MEH-3006: scrolling up from reviews into the recipes (a section with no
+  // tab) left «ביקורות» underlined over the recipes.
+  function placeSections({ a, b }) {
+    const rect = ({ top, bottom }) => () => ({ top, bottom, left: 0, right: 0, width: 0, height: bottom - top });
+    document.getElementById("s-a").getBoundingClientRect = rect(a);
+    document.getElementById("s-b").getBoundingClientRect = rect(b);
+  }
+
+  it("no tab is current once the reader is past a tabbed section, in content with no tab", () => {
+    mountWithSections();
+    const b = document.getElementById("s-b");
+    act(() => {
+      ioCallback([{ target: b, isIntersecting: true }]);
+    });
+    expect(pill("s-b")).toHaveAttribute("aria-current", "true");
+    // innerHeight 768 in jsdom → band top 192. A ended at 100 (above the
+    // band), B starts at 900 (below it): the band sits in the untabbed gap.
+    placeSections({ a: { top: -800, bottom: 100 }, b: { top: 900, bottom: 1600 } });
+    act(() => {
+      ioCallback([{ target: b, isIntersecting: false }]);
+    });
+    expect(pill("s-a")).not.toHaveAttribute("aria-current");
+    expect(pill("s-b")).not.toHaveAttribute("aria-current");
+  });
+
+  it("a tabbed section still running through the band keeps its tab when nothing is reported in the band", () => {
+    mountWithSections();
+    const a = document.getElementById("s-a");
+    const b = document.getElementById("s-b");
+    act(() => {
+      ioCallback([{ target: b, isIntersecting: true }]);
+    });
+    // Nothing in the band per the observer, but A started above the band and
+    // ends below it: not a gap, so the last answer (B) stands.
+    placeSections({ a: { top: -500, bottom: 600 }, b: { top: 900, bottom: 1600 } });
+    act(() => {
+      ioCallback([
+        { target: a, isIntersecting: false },
+        { target: b, isIntersecting: false },
+      ]);
+    });
+    expect(pill("s-b")).toHaveAttribute("aria-current", "true");
+  });
+
+  it("a zero-height (not laid out) section is not read as 'ended above the band'", () => {
+    mountWithSections();
+    const a = document.getElementById("s-a");
+    const b = document.getElementById("s-b");
+    act(() => {
+      ioCallback([{ target: a, isIntersecting: true }]);
+    });
+    // A runs through the band; B is an empty wrapper measuring 0/0.
+    placeSections({ a: { top: -500, bottom: 600 }, b: { top: 0, bottom: 0 } });
+    act(() => {
+      ioCallback([
+        { target: a, isIntersecting: false },
+        { target: b, isIntersecting: false },
+      ]);
+    });
+    expect(pill("s-a")).toHaveAttribute("aria-current", "true");
+  });
+
   it("pills are keyboard-reachable links to their section id", () => {
     mountWithSections();
     expect(pill("s-a").tagName).toBe("A");

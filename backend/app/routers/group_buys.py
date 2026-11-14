@@ -7,6 +7,7 @@ from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, R
 from sqlalchemy import func
 from sqlalchemy.orm import Session, selectinload
 
+from app.limits import enforce_cap
 from app.auth import (
     get_current_user,
     get_current_user_optional,
@@ -228,11 +229,15 @@ def _maybe_notify_funded(
         gb.producer.name if gb.producer else "",
         str(gb.id),
         str(gb.producer_id),
+        # MEH-2952: a test business's group buy mails nobody.
+        test_cause=bool(gb.producer and gb.producer.is_test),
     )
 
 
 @router.post("/{group_buy_id}/commit", status_code=201)
-def commit_to_group_buy(
+@limiter.limit("20/minute")  # MEH-3022
+def commit_to_group_buy(  # noqa: PLR0913 — all args are FastAPI-injected; MEH-3022 added the slowapi request
+    request: Request,  # required by slowapi (MEH-3022)
     group_buy_id: UUID,
     data: GroupBuyCommitRequest,
     background_tasks: BackgroundTasks,
@@ -301,7 +306,9 @@ def commit_to_group_buy(
 
 
 @router.delete("/{group_buy_id}/commit", status_code=200)
+@limiter.limit("20/minute")  # MEH-3022
 def cancel_commit(
+    request: Request,  # required by slowapi (MEH-3022)
     group_buy_id: UUID,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
@@ -347,7 +354,9 @@ def cancel_commit(
 
 
 @router.post("", status_code=201)
+@limiter.limit("10/hour")  # MEH-3022
 def create_group_buy(
+    request: Request,  # required by slowapi (MEH-3022)
     data: GroupBuyCreate,
     background_tasks: BackgroundTasks,
     current_user: User = Depends(require_verified_producer),
@@ -370,6 +379,17 @@ def create_group_buy(
         raise HTTPException(
             status_code=403, detail="מארגן שווקים ואירועים לא יכול לפתוח קבוצת רכישה"
         )
+
+    # MEH-3022: cap on group buys still running (open or funded).
+    enforce_cap(
+        db.query(GroupBuy)
+        .filter(
+            GroupBuy.producer_id == producer.id,
+            GroupBuy.status.in_(("open", "funded")),
+        )
+        .count(),
+        "group_buys",
+    )
 
     if data.price_per_unit_group >= data.price_per_unit_regular:
         raise HTTPException(
@@ -533,6 +553,7 @@ def update_group_buy_status(  # noqa: PLR0913 — all 6 args are FastAPI-injecte
 
     title = gb.title
     producer_name = gb.producer.name if gb.producer else ""
+    producer_is_test = bool(gb.producer and gb.producer.is_test)  # MEH-2952
     is_public = indexnow.is_public_business(gb.producer)  # MEH-2852
 
     gb.status = data.status
@@ -548,6 +569,7 @@ def update_group_buy_status(  # noqa: PLR0913 — all 6 args are FastAPI-injecte
             title,
             producer_name,
             str(group_buy_id),
+            test_cause=producer_is_test,
         )
     return {"detail": "סטטוס עודכן", "status": gb.status}
 
@@ -595,6 +617,7 @@ def admin_update_status(  # noqa: PLR0913 — FastAPI-injected args (path, 2 que
         participant_emails = _cancel_recipients(db, gb, admin.id)
     title = gb.title
     producer_name = gb.producer.name if gb.producer else ""
+    producer_is_test = bool(gb.producer and gb.producer.is_test)  # MEH-2952
     is_public = indexnow.is_public_business(gb.producer)  # MEH-2852
 
     gb.status = status
@@ -608,5 +631,6 @@ def admin_update_status(  # noqa: PLR0913 — FastAPI-injected args (path, 2 que
             title,
             producer_name,
             str(group_buy_id),
+            test_cause=producer_is_test,
         )
     return {"detail": "סטטוס עודכן", "status": gb.status}

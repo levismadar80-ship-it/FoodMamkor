@@ -3,6 +3,7 @@ import { Envelope } from "@phosphor-icons/react/ssr";
 import { buildAlternates, buildEntityTitle, urlForLocalePath, OG_LOCALE } from "@/lib/i18n-seo";
 import { BRAND_NAME } from "@/lib/constants";
 import { CONTACT_EMAIL } from "@/lib/env.client";
+import SectionHeading from "@/components/ui/SectionHeading";
 
 // MEH-475 PR-C4b/chunk-3: privacy policy i18n. SECTIONS-array shape
 // matches accessibility (chunk 2). Operator section (MEH-630) preserved
@@ -213,11 +214,11 @@ export default async function PrivacyPage({ params }) {
             <section
               key={id}
               id={id}
-              className="bg-surface rounded-lg p-7 border border-border shadow-[0_2px_12px_rgba(46,104,83,0.04)]"
+              className="bg-surface rounded-lg p-7 border border-border shadow-sm"
             >
-              <h2 className="font-headline-md text-2xl font-bold text-text mb-3">
+              <SectionHeading size="content" className="mb-3">
                 {t(`sections.${id === "third-parties" ? "third_parties" : id}.title`)}
-              </h2>
+              </SectionHeading>
               <div className="text-text/85 leading-relaxed">
                 {renderBody(id, t)}
               </div>

@@ -259,11 +259,19 @@ def list_reviews_nested(
         .limit(PAGE_SIZE)
         .all()
     )
+    # MEH-1337: per-star counts over every visible review, not this page.
+    # Same visibility filter as `base` (and as _recompute_producer_rating).
+    by_star = dict(
+        base.with_entities(ProducerReview.stars, func.count(ProducerReview.id))
+        .group_by(ProducerReview.stars)
+        .all()
+    )
     return ReviewsPage(
         reviews=[_serialize(r) for r in rows],
         total=total,
         page=page,
         pages=max(1, math.ceil(total / PAGE_SIZE)),
+        rating_counts={str(n): int(by_star.get(n, 0)) for n in range(1, 6)},
     )
 
 
@@ -536,7 +544,9 @@ def create_review_nested(  # noqa: PLR0913 — all 6 args are FastAPI-injected (
             is_new_review = False  # the racing request already announced it
 
     _recompute_producer_rating(producer_id, db)
-    _queue_new_review_mail(db, background_tasks, producer_id, data.stars, is_new_review)
+    _queue_new_review_mail(
+        db, background_tasks, producer_id, data.stars, is_new_review, reviewer=user
+    )
     review = (
         db.query(ProducerReview)
         .options(joinedload(ProducerReview.user))
@@ -552,7 +562,9 @@ def create_review_nested(  # noqa: PLR0913 — all 6 args are FastAPI-injected (
 
 
 @router.delete("/reviews/{review_id}")
+@limiter.limit("30/hour")  # MEH-3022
 def delete_review(
+    request: Request,  # required by slowapi (MEH-3022)
     review_id: UUID,
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
@@ -588,8 +600,13 @@ def _producer_page_path(producer) -> str:
     return f"{base}#reviews"
 
 
-def _queue_new_review_mail(db, background_tasks, producer_id, stars, is_new) -> None:
-    """MEH-2602: a new review mails the owner (an edit does not)."""
+def _queue_new_review_mail(  # noqa: PLR0913 — +reviewer, the MEH-2952 cause
+    db, background_tasks, producer_id, stars, is_new, reviewer=None
+) -> None:
+    """MEH-2602: a new review mails the owner (an edit does not).
+
+    MEH-2952: the send is caused by the business AND by the reviewer — a test
+    row on either side drops it."""
     if not is_new:
         return
     producer = db.query(Producer).filter(Producer.id == producer_id).first()
@@ -601,11 +618,16 @@ def _queue_new_review_mail(db, background_tasks, producer_id, stars, is_new) -> 
             producer.name,
             stars,
             _producer_page_path(producer),
+            test_cause=bool(
+                producer.is_test or (reviewer is not None and reviewer.is_test)
+            ),
         )
 
 
 @router.put("/reviews/{review_id}/reply", response_model=ReviewOut)
-def set_review_reply(
+@limiter.limit("30/hour")  # MEH-3022
+def set_review_reply(  # noqa: PLR0913 — all args are FastAPI-injected; MEH-3022 added the slowapi request
+    request: Request,  # required by slowapi (MEH-3022)
     review_id: UUID,
     data: ReviewReplyUpdate,
     background_tasks: BackgroundTasks,
@@ -644,6 +666,9 @@ def set_review_reply(
                 reviewer.email,
                 producer.name,
                 _producer_page_path(producer),
+                # MEH-2952: caused by the business that replied, by the
+                # account that wrote the reply.
+                test_cause=bool(producer.is_test or user.is_test),
             )
 
     review = (

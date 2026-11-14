@@ -5,6 +5,7 @@ If a test needs one of these disabled to pass, the test is wrong or the
 invariant needs a new exception documented separately; don't quietly
 lower the bar.
 
+Pre-trim text (13/11): [docs/rules-history/2026-11-13/security.md](../../docs/rules-history/2026-11-13/security.md).
 Full threat model, header list, CORS config, and 3-step audit protocol:
 [docs/SECURITY.md](../../docs/SECURITY.md).
 
@@ -17,24 +18,19 @@ Full threat model, header list, CORS config, and 3-step audit protocol:
   boot (`config.py:161-166`), it does not fall back. Ephemeral in dev
   only (`config.py:171`). HS256 (`config.py:28`).
   **TTL: 15-minute access token** (`config.py:35`), 14-day refresh
-  (`config.py:36`). _This line previously said "24h TTL", which was
-  stale by a factor of 96 and understated the posture; corrected from
-  measured values in the MEH-1724 (P1) audit, `docs/audits/2026-07-full/p1-security-backend.md` §5._
-  The access token additionally carries a `scope` claim, a
-  `token_version` counter for revocation, password-change invalidation,
-  and a request-fingerprint binding — all enforced inside
-  `get_current_user` (`auth.py:261-275`). Do not weaken any of these to
-  lengthen a session.
-  _Every citation in this bullet re-derived from the source 2026-08-03
-  (MEH-1861) and found **accurate, unchanged**: `config.py:28` `HS256`,
-  `:35` `access_token_expire_minutes = 15`, `:36`
-  `refresh_token_expire_days = 14`, `:161-166` the production
-  `raise RuntimeError`, `:171` the dev ephemeral secret; and
-  `auth.py:261/273/274/275` = `_validate_access_scope`,
-  `_check_password_change_invalidation`, `_check_token_version`,
-  `_check_fingerprint`._
+  (`config.py:36`). The access token also carries a `scope` claim, a
+  `token_version` counter, password-change invalidation and a fingerprint
+  binding, all enforced in `get_current_user` (`auth.py:261-275`). Do not
+  weaken any of these to lengthen a session.
 - **Rate limiting via slowapi.** See `backend/app/rate_limit.py`.
   Per-route limits are set in the router file, not inline.
+- **Nothing grows without bound (MEH-3022).** Every non-admin write route
+  carries `@limiter.limit`; every list in a request body carries
+  `max_length`; every table with a FK to `producers.id` has a per-business
+  cap in `backend/app/limits.py` (`enforce_cap`, 409 + Hebrew) or an
+  `OWNED_TABLE_EXEMPT` reason. A rate limit is not a cap — 60/hour is 1,440
+  a day. `tests/test_meh3022_resource_caps.py` walks the whole app and fails
+  on a new route, list or table that has neither.
 - **IDOR ownership checks with admin override.** Every resource mutation
   (PUT/DELETE/PATCH) must check `resource.owner_id == current_user.id`
   OR `current_user.role == "admin"`. No exceptions.
@@ -57,39 +53,16 @@ Full threat model, header list, CORS config, and 3-step audit protocol:
   per-agent gating at the hook layer is feasible (Phase 2 follow-up
   pending). See [docs/agent-permissions-investigation.md](../../docs/agent-permissions-investigation.md).
 - **`permissions.deny` is tool × path, never "this file is locked".**
-  `Edit(.github/workflows/**)` in `.claude/settings.json` blocks exactly the
-  filesystem tools that name it — `Edit` / `Write` / `MultiEdit` — and nothing
-  else. The GitHub MCP write tools and the Contents API reach the same paths:
-  measured on PR #2629 (`f43afbf8` wrote `claude-review.yml` in the very
-  session whose `Edit` on it was denied), and again on 06/09 when
-  `frontend/eslint.config.mjs` landed through the Contents API as PR #3453,
-  while a `.claude/hooks/**` write through the same route was refused at the
-  sandbox proxy (403) — so the API path is open per path, not per policy.
-  That gap is what the 08/2026 permission split relies on, and it is a
-  **decision, not an oversight** (MEH-1915): the gate moves from edit time to
-  merge time — `.github/CODEOWNERS` landed in #3246; the ruleset half
-  (code-owner review) is paused on MEH-1501, because author and approver
-  currently share one GitHub account and the gate cannot tell them apart.
-  **So before writing "`.github/workflows/**` is CC-deny", ask *for which
-  tool?*** — the honest sentence *as of 06/09* (superseded for the CC sandbox
-  by the 28/10 measurement below) is: denied to the filesystem tools, open to
-  the API, and held until the merge-time gate is live by convention plus the
-  staged patches under `docs/ci/`.
-  **As of 28/10/2026 the Contents-API route is refused at the sandbox proxy —
-  measured, MEH-2486.** From one CC sandbox session, `PUT
-  /repos/…/contents/.github/workflows/<file>` **and** `POST /repos/…/git/refs`
-  (creating the branch) both answered `403 Write access to this GitHub API path
-  is not permitted through this proxy`, while PR creation and merge through the
-  REST API still worked in the same session. The GitHub MCP write tools named
-  above were **not** re-measured. So
-  a workflow change today is: CC prepares and verifies the exact patch (`git
-  apply --check` against staging, YAML incl. any embedded filter block), a human
-  — or Claude in Chrome in Sapir's browser, via the GitHub web editor — commits
-  it, and CC verifies the PR diff byte-for-byte before merging (#3740). Do
-  **not** write `.github/**` from the shell to get around the `Edit` deny; that
-  is routing around a decision, not a third path. Re-measure before relying on
-  either half of this paragraph — it is an as-of, and the proxy policy has
-  already changed once: the same Contents-API route landed #3453 on 06/09.
+  `Edit(.github/workflows/**)` blocks only `Edit` / `Write` / `MultiEdit`; the
+  API can reach the same paths, and that gap is a decision (MEH-1915: the gate
+  moves to merge time, CODEOWNERS). **As of 28/10/2026 (MEH-2486)** the sandbox
+  proxy refuses Contents-API writes to `.github/workflows/**` and branch
+  creation via `git/refs` (403); the GitHub MCP write tools were not
+  re-measured. So a workflow change = CC prepares and
+  verifies the patch (`git apply --check`, YAML incl. any embedded filter
+  block), a human or Claude in Chrome commits
+  it, CC verifies the PR diff byte-for-byte (#3740). Never write `.github/**`
+  from the shell to get around the deny. Re-measure before relying on this.
 
 ---
 
@@ -145,13 +118,8 @@ ask for the denied command to be run on your behalf, and do not treat the
 block as something to route around.** A deny is a decision, not an obstacle
 (workflow rule 32: CC adds constraints, never removes one).
 
-**Why the deny was left broad rather than narrowed** (Sapir's default under
-MEH-514, option א): the friction is one documented case in 15 months, the
-alternative above is free, and narrowing the pattern would first require
-establishing whether Claude Code's deny syntax supports partial matching at
-that resolution — which is unknown and untested. Zero-cost beat unknown-cost.
-This paragraph exists so the next session does not rediscover the friction and
-re-open the question; that rediscovery is what MEH-514 was.
+The deny stays broad on purpose (Sapir, MEH-514 option א): one friction case in
+15 months, a free alternative. Don't re-open it.
 
 ---
 

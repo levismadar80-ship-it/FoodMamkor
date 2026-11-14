@@ -13,7 +13,7 @@ import { TOGGLE_CHIPS, chipStateToParams } from "@/lib/map-chips";
 import { chipsFromQuery } from "@/lib/filter-url";
 import { readMapSelection, writeMapSelection } from "@/lib/map-view-state";
 import { geocodeCity } from "@/lib/places";
-import { producerPoints, hiddenWhenSecondaryOff } from "@/lib/producerPoints";
+import { mapPinPoints, producerPoints } from "@/lib/producerPoints";
 import { isRatingSortEnabled, mapRatingGateSource } from "@/lib/rating-gate";
 import { showToast } from "@/lib/toast";
 import { useUserCity } from "@/lib/use-user-city";
@@ -97,9 +97,6 @@ export default function MapPage() {
   const [showCityPicker, setShowCityPicker] = useState(false);
   const [locationModalOpen, setLocationModalOpen] = useState(false);
   const [gpsLoading, setGpsLoading] = useState(false);
-  // MEH-1412 (MEH-1388 chunk 3): pickup/market_stand marker layer visibility.
-  // Default on — all points show; the MapPane toggle flips it.
-  const [showSecondaryLayer, setShowSecondaryLayer] = useState(true);
   // Sort state for the desktop dropdown — consumed by sortedProducers below
   // (until this batch the select wrote state nothing read). `null` = "auto":
   // nearest when the visitor has a GPS fix, newest otherwise. GPS comes from
@@ -343,9 +340,6 @@ export default function MapPage() {
     userCity: userCityCtx.city,
     setUserCity: userCityCtx.setCity,
     setShowCityPicker,
-    // MEH-1670: the viewport filter derives points the same way the marker layer
-    // does, so it needs the same layer-toggle state.
-    showSecondaryLayer,
   });
   const sync = useMapSync({
     chipState: filters.chipState,
@@ -570,8 +564,10 @@ export default function MapPage() {
         // Producer.lat/lng directly — was Producer.lat/lng-only, whose 07/08
         // citation (MapClient.jsx:348-350) had already drifted to this site
         // by the time this chunk landed; re-verified live via grep.
+        // MEH-3054: the pins the map DRAWS (one per business unless the
+        // «איסוף עצמי» chip is on), so "nothing near you" matches the screen.
         const hasNearby = feed.allProducers.some((p) =>
-          producerPoints(p).some(
+          mapPinPoints(p, { expanded: filters.showAllPickupPoints }).some(
             (pt) => haversineKm(lat, lng, pt.lat, pt.lng) <= NEAR_ME_RADIUS_KM
           )
         );
@@ -586,7 +582,7 @@ export default function MapPage() {
         }
       }
     );
-  }, [sync.mapApiRef, feed.allProducers]);
+  }, [sync.mapApiRef, feed.allProducers, filters.showAllPickupPoints]);
 
   // MEH-970: the 800ms first-visit auto-open of LocationModal was removed
   // here — /map now renders immediately on the MEH-932 producer-band default
@@ -696,7 +692,8 @@ export default function MapPage() {
 
   // MEH-2506 / MEH-2769: each shell passes its origin tag in, so it shares one row
   // with the active-filter tags instead of opening a row of its own.
-  const renderFilterChipsBar = (originTag = null) => (
+  // MEH-3062: the phone shell passes singleRow — categories join the service rail.
+  const renderFilterChipsBar = (originTag = null, singleRow = false) => (
     <FilterChipsBar
       visibleCategoryChips={filters.visibleCategoryChips}
       chipState={filters.chipState}
@@ -710,6 +707,7 @@ export default function MapPage() {
       resetAllFilters={filters.resetAllFilters}
       cityFilter={filters.cityFilter}
       originTag={originTag}
+      singleRow={singleRow}
     />
   );
 
@@ -825,15 +823,6 @@ export default function MapPage() {
     };
   }, [selectedProducer, selectedLocation, mapRef, mapApiRef]);
 
-  // MEH-2046: is the layer toggle currently costing the user businesses? Read
-  // off the SAME list the pane draws (`filteredByCategory`), so the notice can
-  // never claim something the visible map contradicts. Short-circuits while the
-  // layer is on, which is the default and the common case.
-  const secondaryHidden = useMemo(
-    () => !showSecondaryLayer && filters.filteredByCategory.some(hiddenWhenSecondaryOff),
-    [showSecondaryLayer, filters.filteredByCategory],
-  );
-
   const mapPane = (
     <MapPane
       producers={filters.filteredByCategory}
@@ -844,10 +833,8 @@ export default function MapPage() {
       onMapCanvasClick={sync.handleMapCanvasClick}
       registerApi={sync.registerMapApi}
       mapRef={sync.mapRef}
-      showSecondaryLayer={showSecondaryLayer}
-      onToggleSecondaryLayer={() => setShowSecondaryLayer((v) => !v)}
-      secondaryHidden={secondaryHidden}
       focusedProducerId={focusedProducerId}
+      showAllPickupPoints={filters.showAllPickupPoints}
       mapMoved={filters.mapMoved}
       onSearchThisArea={sync.handleSearchThisArea}
       visibleProducers={filters.visibleProducers}
@@ -999,7 +986,7 @@ export default function MapPage() {
                   disabled={geoSortPending}
                   aria-label={t("map.client.sort.aria_label")}
                   aria-busy={geoSortPending || undefined}
-                  className="appearance-none bg-transparent border-0 text-sm font-medium text-primary min-h-touch ps-1 pe-6 cursor-pointer rounded-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1 disabled:opacity-60"
+                  className="appearance-none bg-transparent border-0 text-sm font-medium text-primary min-h-touch ps-1 pe-6 cursor-pointer rounded-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1 disabled:opacity-50"
                 >
                   {/* MEH-2014: never `disabled`. Choosing it without a known
                       location ASKS for one (handleSortChange) instead of
@@ -1112,7 +1099,7 @@ export default function MapPage() {
               "explicit clear" requirement exists to prevent. MEH-2506: a compact
               tag on the active-filter row under the chips (FilterChipsBar),
               not a full row above them. */}
-          {renderFilterChipsBar(mobileOriginTag)}
+          {renderFilterChipsBar(mobileOriginTag, true)}
         </div>
 
         {/* Map fills the rest — MEH-933 R2: pt = the bar's live MEASURED height

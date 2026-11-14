@@ -40,6 +40,10 @@ from app.services.auth_notifications import (
     notify_producer_registered,
 )
 from app.services.user_deletion import delete_user_and_data  # MEH-2585
+from app.services.verify_session import (  # MEH-3087
+    set_signup_marker,
+    verify_email_session,
+)
 from app.services.producer_risk import score_producer
 from app.services.oauth_verifiers import (
     # Aliases preserve the legacy underscore-prefixed module attribute
@@ -260,6 +264,7 @@ _REGISTER_ACK_DETAIL = (
 @limiter.limit("5/15 minutes", key_func=email_from_body)
 async def register(
     request: Request,
+    response: Response,
     data: UserRegister,
     background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
@@ -325,11 +330,20 @@ async def register(
         db.add(user)
         db.commit()
         db.refresh(user)
+        # MEH-2952: a test account's own auth mail is dropped and logged.
         background_tasks.add_task(
-            _send_verify_email, user.email, user.name, verify_token
+            _send_verify_email,
+            user.email,
+            user.name,
+            verify_token,
+            test_cause=bool(user.is_test),
         )
         background_tasks.add_task(
-            _send_welcome_email, user.email, user.name, "consumer"
+            _send_welcome_email,
+            user.email,
+            user.name,
+            "consumer",
+            test_cause=bool(user.is_test),
         )
     else:
         # MEH-328: never reveal which auth method the existing account uses
@@ -357,8 +371,11 @@ async def register(
                 existing_user.email,
                 existing_user.name,
                 provider,
+                test_cause=bool(existing_user.is_test),  # MEH-2952
             )
 
+    # MEH-3087: same cookie on both branches (see set_signup_marker).
+    set_signup_marker(response, None if existing_user else verify_token)
     return RegisterAck(detail=_REGISTER_ACK_DETAIL)
 
 
@@ -656,6 +673,8 @@ async def register_producer(
         p_name = producer.name
         p_phone = producer.phone
         p_id = producer.id
+        # MEH-2952: a test business or a test account → its sends are dropped.
+        p_test = bool(producer.is_test or user.is_test)
         # MEH-2100: the ADMIN ping does NOT fire here any more. Registration
         # now creates a draft, which is absent from the admin's default queue
         # — so "בית עסק חדש … לאישור: /admin" would send her to a view the
@@ -666,7 +685,9 @@ async def register_producer(
         # notify_producer_registered (to the OWNER) stays: "we got your
         # registration" is still accurate, and it is the message that tells
         # her to go finish the profile.
-        background_tasks.add_task(notify_producer_registered, p_name, p_phone)
+        background_tasks.add_task(
+            notify_producer_registered, p_name, p_phone, test_cause=p_test
+        )
         # MEH-509 PR3: Anthropic-Haiku-backed risk score. Fail-open;
         # signup is never blocked by Anthropic latency or errors.
         background_tasks.add_task(score_producer, p_id)
@@ -707,7 +728,7 @@ async def register_producer(
         #
         # Fail-open, like every other send — signup must never block on email.
         background_tasks.add_task(
-            _send_welcome_email, user.email, user.name, "producer"
+            _send_welcome_email, user.email, user.name, "producer", test_cause=p_test
         )
 
         whatsapp_expected = bool(
@@ -849,6 +870,8 @@ async def register_producer(
         p_name = producer.name
         p_phone = producer.phone
         p_id = producer.id
+        # MEH-2952: a test business or a test account → its sends are dropped.
+        p_test = bool(producer.is_test or user.is_test)
         # MEH-2100: the ADMIN ping does NOT fire here any more. Registration
         # now creates a draft, which is absent from the admin's default queue
         # — so "בית עסק חדש … לאישור: /admin" would send her to a view the
@@ -859,20 +882,22 @@ async def register_producer(
         # notify_producer_registered (to the OWNER) stays: "we got your
         # registration" is still accurate, and it is the message that tells
         # her to go finish the profile.
-        background_tasks.add_task(notify_producer_registered, p_name, p_phone)
+        background_tasks.add_task(
+            notify_producer_registered, p_name, p_phone, test_cause=p_test
+        )
         # MEH-509 PR3: Anthropic-Haiku-backed risk score. Fail-open;
         # signup is never blocked by Anthropic latency or errors.
         background_tasks.add_task(score_producer, p_id)
         background_tasks.add_task(
-            _send_verify_email, user.email, user.name, verify_token
+            _send_verify_email, user.email, user.name, verify_token, test_cause=p_test
         )
         background_tasks.add_task(
-            _send_welcome_email, user.email, user.name, "producer"
+            _send_welcome_email, user.email, user.name, "producer", test_cause=p_test
         )
     else:
         # MEH-328: collision branch — never reveal which auth method the
         # existing account uses. Email out-of-band so the legitimate owner
-        # knows where to log in. No DB writes, no cookies, no token.
+        # knows where to log in. No DB writes, no session cookies, no token.
         if existing_user.password_hash:
             provider = "password"
         elif existing_user.google_id:
@@ -894,8 +919,11 @@ async def register_producer(
                 existing_user.name,
                 provider,
                 "producer",
+                test_cause=bool(existing_user.is_test),  # MEH-2952
             )
 
+    # MEH-3087: same cookie on both branches (see set_signup_marker).
+    set_signup_marker(response, None if existing_user else verify_token)
     return RegisterAck(detail=_REGISTER_ACK_DETAIL)
 
 
@@ -993,7 +1021,11 @@ def google_auth(
 
     if is_new:
         background_tasks.add_task(
-            _send_welcome_email, user.email, user.name, "consumer"
+            _send_welcome_email,
+            user.email,
+            user.name,
+            "consumer",
+            test_cause=bool(user.is_test),  # MEH-2952
         )
     email_expected = bool(is_new and settings.resend_api_key)
     fp = generate_fingerprint()
@@ -1349,7 +1381,11 @@ def apple_auth(
 
     if is_new:
         background_tasks.add_task(
-            _send_welcome_email, user.email, user.name, "consumer"
+            _send_welcome_email,
+            user.email,
+            user.name,
+            "consumer",
+            test_cause=bool(user.is_test),  # MEH-2952
         )
     email_expected = bool(is_new and settings.resend_api_key)
     fp = generate_fingerprint()
@@ -1409,7 +1445,13 @@ def forgot_password(
             user.reset_token_expires_at,
         )
         reset_link = f"{settings.frontend_url}/reset-password?token={token}"
-        background_tasks.add_task(_send_reset_email, user.email, user.name, reset_link)
+        background_tasks.add_task(
+            _send_reset_email,
+            user.email,
+            user.name,
+            reset_link,
+            test_cause=bool(user.is_test),  # MEH-2952
+        )
     return {"detail": "אם האימייל קיים במערכת, ישלח קישור לאיפוס"}
 
 
@@ -1462,16 +1504,18 @@ async def reset_password(
 
 @router.get("/verify-email")
 @limiter.limit("10/minute")
-def verify_email(request: Request, token: str, db: Session = Depends(get_db)):
-    """Consume email verification token. Clears token on success.
-
-    MEH-320: 404 (not_found) / 410 (expired) split + structured logging,
-    same pattern MEH-304 applied to /auth/reset-password. Diagnostics
-    only — does not change happy-path behavior. The actual root cause
-    of the staging 400 will be identified from the [VERIFY-EMAIL]
-    log entries this surfaces.
-    """
-    user = db.query(User).filter(User.email_verify_token == token).first()
+def verify_email(
+    request: Request, response: Response, token: str, db: Session = Depends(get_db)
+):
+    """Consume the one-time token (MEH-320: 404 unknown / 410 expired).
+    MEH-3087: after the token is consumed, verify_email_session may sign in."""
+    # Row lock: two requests with one link must not both pass (MEH-3087).
+    user = (
+        db.query(User)
+        .filter(User.email_verify_token == token)
+        .with_for_update()
+        .first()
+    )
     if not user:
         logger.warning("[VERIFY-EMAIL] token_not_found token_prefix=%s", token[:8])
         raise HTTPException(status_code=404, detail="קישור האימות לא תקין")
@@ -1489,7 +1533,9 @@ def verify_email(request: Request, token: str, db: Session = Depends(get_db)):
     user.email_verify_expires = None
     db.commit()
     logger.info("[VERIFY-EMAIL] verified user_id=%s", user.id)
-    return {"detail": "האימייל אומת בהצלחה"}
+    return verify_email_session(
+        request, response, user, token, (_set_refresh_cookie, _set_fingerprint_cookie)
+    )
 
 
 @router.post("/resend-verify")
@@ -1507,7 +1553,9 @@ def resend_verify(
     user.email_verify_token = token
     user.email_verify_expires = expires
     db.commit()
-    _send_verify_email(user.email, user.name, token)
+    _send_verify_email(
+        user.email, user.name, token, test_cause=bool(user.is_test)
+    )  # MEH-2952
     return {"detail": "אימייל אימות נשלח"}
 
 
@@ -1542,9 +1590,12 @@ def delete_account(
     """
     user_email = user.email
     user_name = user.name
+    # MEH-2952: captured BEFORE the row is deleted — a test account's
+    # confirmation is dropped and logged like every other send it causes.
+    user_is_test = bool(user.is_test)
     delete_user_and_data(db, user, background_tasks, context="auth.delete_account")
 
     # Send confirmation email
-    _send_deletion_email(user_email, user_name)
+    _send_deletion_email(user_email, user_name, test_cause=user_is_test)
 
     return {"detail": "Account deleted successfully"}

@@ -21,6 +21,7 @@
 
 import { useTranslations } from "next-intl";
 import ProducerCard from "@/components/ProducerCard";
+import SectionHeading from "@/components/ui/SectionHeading";
 
 // ADDENDUM-4 §category A. THREE, not one: a curated "now in season" strip
 // showing a single business reads as an ad for that business rather than as an
@@ -40,12 +41,9 @@ export default function HomeSeasonalNow({ producers }) {
       data-testid="home-seasonal-now"
       aria-labelledby="home-seasonal-now-heading"
     >
-      <h2
-        id="home-seasonal-now-heading"
-        className="font-headline-md text-headline-md text-text mb-4"
-      >
+      <SectionHeading id="home-seasonal-now-heading" className="mb-4">
         {t("home.seasonal.heading")}
-      </h2>
+      </SectionHeading>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {rows.map((p) => (
           <ProducerCard key={p.id} producer={p} referrer="home-seasonal" />

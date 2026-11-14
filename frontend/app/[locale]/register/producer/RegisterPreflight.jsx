@@ -24,8 +24,13 @@ import Button from "@/components/ui/Button";
 export default function RegisterPreflight({ showAccountLine, onStart }) {
   const t = useTranslations("auth.register.producer.preflight");
 
+  // MEH-2970: space-y-4, not -5. Measured at 375×667: the approved copy cuts
+  // 40px, which clears 390×664 and leaves «מתחילים» 7px below the fold here —
+  // text tightened further wraps to the same line count, so copy alone cannot
+  // close it. The 4 gaps give the remaining 16px. The button does not move
+  // (Sapir, 12/11).
   return (
-    <div className="space-y-5" data-testid="register-preflight">
+    <div className="space-y-4" data-testid="register-preflight">
       <h2 className="font-headline-md text-lg font-black text-text">{t("title")}</h2>
 
       {/* Prep checklist — MEH-880 E1 reassurance-card token pattern
@@ -44,8 +49,14 @@ export default function RegisterPreflight({ showAccountLine, onStart }) {
         </ul>
       </div>
 
-      {/* MEH-994b: duration = "10 דקות" everywhere (Sapir decision) — must match
-          the page subtitle and the /about/for-businesses FAQ. */}
+      {/* MEH-994b: duration must match the page subtitle and the
+          /about/for-businesses FAQ.
+          MEH-2970: this comment used to say «10 דקות» and cite a Sapir
+          decision for it. Measured 12/11 — all four user-facing surfaces say
+          «כ־5 דקות» (he.json: the page subtitle :232, this key :246,
+          duration_hint :269, og_description :671). The strings agreed with
+          each other; the comment was the outlier. Sapir's ruling: keep the
+          strings, fix the comment. */}
       <p className="text-fg-muted text-sm flex items-center gap-2">
         <Clock size={16} className="shrink-0" aria-hidden="true" />
         {t("duration")}
@@ -61,7 +72,7 @@ export default function RegisterPreflight({ showAccountLine, onStart }) {
         <Link
           href="/about/process"
           data-testid="register-preflight-process-link"
-          className="inline-flex items-center gap-1 text-primary font-semibold hover:underline mt-1 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+          className="inline-flex items-center gap-1 text-primary font-semibold hover:underline mt-1 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
         >
           {t("after_link")}
           <ArrowLeft size={16} aria-hidden="true" />
@@ -79,6 +90,41 @@ export default function RegisterPreflight({ showAccountLine, onStart }) {
       >
         {t("cta")}
       </Button>
+
+      {/* MEH-2983: /join is the main door; this is the way back to it for
+          someone who landed here directly. A quiet, descriptive text link
+          (names what is there, not «עוד מידע») and AFTER the button, so it
+          never moves «מתחילים» above the fold (#4341). */}
+      <p className="text-center text-sm">
+        <Link
+          href="/join"
+          data-testid="register-preflight-join-link"
+          className="inline-flex items-center gap-1 text-primary underline underline-offset-4 hover:text-primary-dark rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+        >
+          {t("join_link")}
+          <ArrowLeft size={14} aria-hidden="true" />
+        </Link>
+      </p>
+
+      {/* MEH-2917: the organizer door (Sapir 11/11: back on the preflight,
+          where MEH-2640 said it moved). A link, never the removed checkbox —
+          the ROUTE decides the kind (MEH-2773). Group-buy organizers are told
+          here, before step 1, that the site has no sign-up for them: only a
+          verified business opens a group buy (group_buys.py
+          require_verified_producer). */}
+      <div className="space-y-1 text-center text-sm" data-testid="register-preflight-organizer">
+        <Link
+          href="/register/organizer"
+          data-testid="register-preflight-organizer-link"
+          className="inline-flex items-center gap-1 text-primary underline underline-offset-4 hover:text-primary-dark rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+        >
+          {t("organizer_link")}
+          <ArrowLeft size={14} aria-hidden="true" />
+        </Link>
+        <p className="text-fg-muted" data-testid="register-preflight-group-buy-note">
+          {t("group_buy_note")}
+        </p>
+      </div>
     </div>
   );
 }

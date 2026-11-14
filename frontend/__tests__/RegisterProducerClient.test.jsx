@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor, within } from "@testing-library/react";
 import RegisterProducerClient from "@/app/[locale]/register/producer/RegisterProducerClient";
 import api from "@/lib/api";
 
@@ -108,6 +108,15 @@ vi.mock("@/components/CategorySelector", () => ({
     <button type="button" data-testid="pick-category" onClick={() => onChange(1)}>
       category
     </button>
+  ),
+}));
+
+// MEH-3074: the STORY-step preview mounts the real ProducerCard. Its own
+// behaviour is covered in ProducerCard.test.jsx; here only the producer object
+// the wizard hands it crosses the boundary.
+vi.mock("@/components/ProducerCard", () => ({
+  default: ({ producer }) => (
+    <div data-testid="preview-card" data-producer={JSON.stringify(producer)} />
   ),
 }));
 
@@ -443,6 +452,33 @@ describe("RegisterProducerClient — pre-flight entry screen (MEH-994)", () => {
     expect(await screen.findByTestId("register-preflight")).toBeInTheDocument();
     expect(screen.queryByTestId("register-preflight-account-item")).not.toBeInTheDocument();
   });
+
+  // MEH-2983: someone who lands here without context gets a quiet way to the
+  // /join page, placed AFTER «מתחילים» so it never moves the button (#4341).
+  it("links to /join below «מתחילים»", async () => {
+    render(<RegisterProducerClient />);
+    const start = await screen.findByTestId("register-preflight-start");
+    const link = screen.getByTestId("register-preflight-join-link");
+    expect(link.getAttribute("href")).toBe("/join");
+    expect(link).toHaveTextContent(`${K}.preflight.join_link`);
+    // after the button in document order
+    expect(start.compareDocumentPosition(link) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  // MEH-2917: the organizer door lives on the preflight (Sapir 11/11), and
+  // the group-buy note sits there too — before step 1.
+  it("links organizers to their own sign-up and tells group-buy organizers before step 1", async () => {
+    render(<RegisterProducerClient />);
+    await screen.findByTestId("register-preflight");
+    const link = screen.getByTestId("register-preflight-organizer-link");
+    expect(link.getAttribute("href")).toBe("/register/organizer");
+    expect(link.textContent).toBe(`${K}.preflight.organizer_link`);
+    expect(screen.getByTestId("register-preflight-group-buy-note").textContent).toBe(
+      `${K}.preflight.group_buy_note`,
+    );
+    // a link, not the checkbox MEH-2640 removed: the preflight holds no checkbox at all
+    expect(within(screen.getByTestId("register-preflight")).queryAllByRole("checkbox")).toHaveLength(0);
+  });
 });
 
 // MEH-1176 F10 — the MEH-328 didUpgrade CONFIRM split had zero coverage,
@@ -473,7 +509,10 @@ describe("RegisterProducerClient — didUpgrade CONFIRM split (MEH-328 chunk D)"
     expect(screen.getByText(`${K}.success.inbox_title`)).toBeInTheDocument();
     // The upgrade success UI must NOT leak into the anonymous path.
     expect(screen.queryByText(`${K}.success.title`)).not.toBeInTheDocument();
-    expect(screen.queryByText(`${K}.success.cta`)).not.toBeInTheDocument();
+    // MEH-2920: this screen now carries its own «ללוח הבקרה» LINK (to /login),
+    // so the label is no longer the tell. The upgrade screen's token-backed
+    // BUTTON is — it must still be absent here.
+    expect(screen.queryByTestId("register-success-dashboard-cta")).not.toBeInTheDocument();
     // No token was returned, so none may be stored and auth isn't refreshed.
     expect(localStorage.getItem("token")).toBeNull();
     expect(refreshUser).not.toHaveBeenCalled();
@@ -979,7 +1018,12 @@ describe("RegisterProducerClient — cross-step validation (MEH-1807)", () => {
     await renderWizard();
     await fillAccountToDetails();
     await fillDetailsToStory();
-    seedForeignDraft({ producer_name: "", phone: "", city: "חיפה" });
+    // MEH-2915: the second blanked field is `city`, not `phone`. The draft no
+    // longer carries a phone at all — packDraft omits it and parseDraft strips
+    // it on the way back — so a draft can no longer blank one. `city` is the
+    // other cross-step DETAILS field, so the subject of this test (two
+    // missing fields → the summary list, landing on the first) is unchanged.
+    seedForeignDraft({ producer_name: "", city: "" });
     fireEvent.click(screen.getByTestId("register-draft-continue"));
     selectReferral();
     screen.getAllByRole("checkbox").forEach((cb) => fireEvent.click(cb));
@@ -989,8 +1033,8 @@ describe("RegisterProducerClient — cross-step validation (MEH-1807)", () => {
     const notice = screen.getByTestId("register-submit-gate-notice");
     expect(notice).toHaveTextContent(`${K}.validation.cross_step_summary`);
     expect(notice).toHaveTextContent(`${K}.validation.producer_name_required`);
-    expect(notice).toHaveTextContent(`${K}.validation.phone_required`);
-    // wizard order decides the landing field: producer_name precedes phone
+    expect(notice).toHaveTextContent(`${K}.validation.city_required`);
+    // wizard order decides the landing field: producer_name precedes city
     expect(document.activeElement).toBe(screen.getByTestId("register-details-name"));
   });
 
@@ -1131,6 +1175,145 @@ describe("RegisterProducerClient — logged-in producer/admin gate (MEH-1489)", 
 // not that a particular line moved — ADR-032 §3.6.
 const DRAFT_KEY = "producer_registration_draft";
 
+/**
+ * MEH-2915 — `setAndSave` writes the draft from inside the form updater, so an
+ * updater that returns `prev` unchanged used to write anyway. The write is not
+ * harmless: the envelope re-stamps `savedAt`, which restarts MEH-1977's 7-day
+ * expiry for a change that never happened.
+ *
+ * `handleCityKnownChange` is the live path — a late /cities response that
+ * confirms the verdict the field already had. The stub's blur re-asserts the
+ * SAME verdict; its double-click flips it, which is the control.
+ *
+ * The clock is advanced on every `Date.now()` so that a write would be visible:
+ * without it two writes in the same millisecond produce identical JSON and the
+ * assertion passes whether or not the guard exists.
+ */
+describe("MEH-2915 · a no-op update writes no draft", () => {
+  const seedCity = async () => {
+    await renderWizard();
+    await fillAccountToDetails();
+    fireEvent.change(screen.getByTestId("city"), { target: { value: "תל אביב" } });
+    const stored = localStorage.getItem(DRAFT_KEY);
+    expect(stored, "precondition: the keystroke itself wrote a draft").not.toBeNull();
+    return stored;
+  };
+
+  it("re-asserting the verdict the field already had leaves the draft untouched", async () => {
+    const clock = { t: 1_760_000_000_000 };
+    const nowSpy = vi.spyOn(Date, "now").mockImplementation(() => (clock.t += 1000));
+    try {
+      const before = await seedCity();
+      fireEvent.blur(screen.getByTestId("city")); // onKnownChange(true) — already true
+      expect(localStorage.getItem(DRAFT_KEY)).toBe(before);
+    } finally {
+      nowSpy.mockRestore();
+    }
+  });
+
+  it("control — a verdict that actually flips still writes", async () => {
+    const clock = { t: 1_760_000_000_000 };
+    const nowSpy = vi.spyOn(Date, "now").mockImplementation(() => (clock.t += 1000));
+    try {
+      const before = await seedCity();
+      fireEvent.doubleClick(screen.getByTestId("city")); // onKnownChange(false)
+      const after = localStorage.getItem(DRAFT_KEY);
+      expect(after).not.toBe(before);
+      expect(JSON.parse(after).form.city_known).toBe(false);
+    } finally {
+      nowSpy.mockRestore();
+    }
+  });
+});
+
+/**
+ * MEH-2915, found by adversarial review — two consequences of taking identity
+ * off the draft that the first pass left open.
+ *
+ * 1. Stripping on read keeps the fields out of the FORM. It does not by itself
+ *    change what is on disk: the mount effect only rewrote the key on the
+ *    pre-envelope restamp branch, so a v2 draft kept its bytes until the next
+ *    keystroke, a dismiss, or the 7-day expiry.
+ * 2. The draft no longer carries a phone and nothing prefills one, so a resume
+ *    onto CATEGORY or STORY completes a frame and then bounces at submit, back
+ *    to DETAILS, onto a field the seller never saw go empty.
+ */
+describe("MEH-2915 · an existing draft is rewritten, and the resume stops where it can finish", () => {
+  // A minute old, not a fixed epoch: MEH-1977 expires a draft at 7 days
+  // against the REAL clock, so a hard-coded stamp would make these cells pass
+  // only until that date — the trap .claude/rules/testing.md names for
+  // clock-dependent seeds. A minute is still far enough from `Date.now()` for
+  // an unwanted re-stamp to be visible.
+  const seedV2 = (form, step) => {
+    const savedAt = Date.now() - 60_000;
+    localStorage.setItem("token", "tok-123");
+    authState.user = { role: "user" };
+    localStorage.setItem(DRAFT_KEY, JSON.stringify({ v: 2, savedAt, step, form }));
+    return savedAt;
+  };
+
+  it("rewrites a stored draft that still carries identity, at its original savedAt", async () => {
+    {
+      const savedAt = seedV2(
+        {
+          producer_name: "הבית של דנה",
+          city: "תל אביב",
+          city_known: true,
+          email: "dana@example.com",
+          name: "דנה לוי",
+          phone: "0501234567",
+          address: "הרצל 1",
+        },
+        2,
+      );
+      await renderWizard();
+      await screen.findByTestId("register-draft-banner");
+
+      const raw = localStorage.getItem(DRAFT_KEY);
+      for (const gone of ["dana@example.com", "דנה לוי", "0501234567", "הרצל 1"]) {
+        expect(raw, `${gone} must be off the device, not just out of the form`).not.toContain(
+          gone,
+        );
+      }
+      expect(raw, "control: the business half stays").toContain("הבית של דנה");
+      // The rewrite must not restart MEH-1977's clock: the seed is a minute
+      // old, so a re-stamp at Date.now() would move this by ~60_000.
+      expect(JSON.parse(raw).savedAt).toBe(savedAt);
+    }
+  });
+
+  it("leaves a draft that carries no identity completely untouched", async () => {
+    // Control: without this, the case above passes for a mount effect that
+    // rewrites every draft it reads — which would restart the expiry clock on
+    // drafts that never needed touching.
+    seedV2({ producer_name: "הבית של דנה", city: "תל אביב", city_known: true }, 2);
+    const before = localStorage.getItem(DRAFT_KEY);
+    await renderWizard();
+    await screen.findByTestId("register-draft-banner");
+    expect(localStorage.getItem(DRAFT_KEY)).toBe(before);
+  });
+
+  it("a resume stored at STORY lands on DETAILS, where the missing phone lives", async () => {
+    seedV2(
+      { producer_name: "הבית של דנה", city: "תל אביב", city_known: true, category_ids: [1] },
+      4, // STORY
+    );
+    await renderWizard();
+    fireEvent.click(await screen.findByTestId("register-draft-continue"));
+    expect(await screen.findByTestId("register-frame-details")).toBeInTheDocument();
+    expect(screen.queryByTestId("register-frame-story")).not.toBeInTheDocument();
+
+    // Control: STORY is reachable — the landing above is the cap, not a wizard
+    // that cannot move. Fill the one thing the draft could not carry.
+    fireEvent.change(screen.getByTestId("register-details-phone"), {
+      target: { value: "0501234567" },
+    });
+    fireEvent.click(screen.getByTestId("register-fulfilment-onsite"));
+    fireEvent.click(screen.getByTestId("register-details-next"));
+    expect(await screen.findByTestId("register-frame-category")).toBeInTheDocument();
+  });
+});
+
 async function fillWizardAndSubmit() {
   await renderWizard();
   await fillAccountToDetails();
@@ -1143,6 +1326,18 @@ async function fillWizardAndSubmit() {
   fireEvent.click(screen.getByText(`${K}.actions.submit`));
   await waitFor(() => expect(api.post).toHaveBeenCalledTimes(1));
 }
+
+describe("non-upgrade confirm screen — the way in that exists (MEH-2920)", () => {
+  it("links to login-then-dashboard as the primary action; home is secondary", async () => {
+    api.post.mockResolvedValue({ data: {} }); // anti-enum ack, no token
+    await fillWizardAndSubmit();
+    const cta = await screen.findByTestId("register-confirm-dashboard-cta");
+    expect(cta.tagName).toBe("A");
+    expect(cta.getAttribute("href")).toBe("/login?redirect=%2Fproducer%2Fdashboard");
+    expect(cta.textContent).toBe(`${K}.success.cta`);
+    expect(screen.getByTestId("register-confirm-home").textContent).toBe(`${K}.success.back_home`);
+  });
+});
 
 describe("RegisterProducerClient — draft survives the anti-enum ack (MEH-1815)", () => {
   it("keeps the draft after a non-upgrade ack, because that 200 may be a collision", async () => {
@@ -1218,14 +1413,28 @@ describe("RegisterProducerClient — resumed drafts land where they can finish (
     expect(ph("producer_name").value).toBe("העסק שלי");
   });
 
-  it("signed in: lands on the stored frame, where the account fields are not submitted at all", async () => {
+  // MEH-2915 amended this cell. Its subject — with a token the ACCOUNT gate is
+  // SKIPPED, because the password problem that strands a signed-out resume
+  // does not apply — is unchanged and still asserted. What changed is how far
+  // past ACCOUNT a resume may land: the draft no longer carries a phone and
+  // nothing prefills one, so STORY is a frame she could fill completely and
+  // then bounce out of at submit (CROSS_STEP_REQUIRED), back to DETAILS, onto
+  // a required field she never saw go empty. This describe block is named
+  // "land where they can finish"; with no phone, that frame is DETAILS.
+  it("signed in: skips ACCOUNT and lands on the furthest frame it can finish from", async () => {
     localStorage.setItem("token", "tok-123");
     authState.user = { role: "user" };
-    seedDraftAtStep(4);
+    seedDraftAtStep(4); // STORY
     await renderWizard();
     fireEvent.click(await screen.findByTestId("register-draft-continue"));
 
-    expect(await screen.findByTestId("register-frame-story")).toBeTruthy();
+    // The token's effect — the thing this cell has always been about.
+    expect(screen.queryByTestId("register-frame-account")).toBeNull();
+    expect(await screen.findByTestId("register-frame-details")).toBeTruthy();
+    expect(screen.queryByTestId("register-frame-story")).toBeNull();
+
+    // …and the restore was still worth something: the business name is there.
+    expect(ph("producer_name").value).toBe("העסק שלי");
   });
 
   it("never lands on CONFIRM — that frame is only reachable from a 200", async () => {
@@ -1288,15 +1497,25 @@ describe("RegisterProducerClient — CONFIRM scrolls to the top (MEH-2138 chunk 
     expect(arg.behavior, "an animated approach to an unseen screen is the thing prefers-reduced-motion suppresses").not.toBe("smooth");
   }
 
-  it("does NOT scroll while the seller is still filling the form", async () => {
-    // CONTROL, and it runs first on purpose. Every assertion below is "scrollTo
-    // was called"; if some unrelated mount already called it, all of them pass
-    // against a component with no CONFIRM effect at all. This pins the count at
-    // zero right up to the submit, so the later calls can only come from CONFIRM.
+  // MEH-2927 CHANGED THIS CONTROL'S MECHANISM, NOT ITS PURPOSE — read before
+  // editing. It used to assert `scrollTo` was never called before the submit,
+  // so that the two "scrolled to the top" assertions below could only be
+  // satisfied by the CONFIRM effect. MEH-2927 makes every step change scroll to
+  // the top (pilot B3a), so a global count of zero is no longer available as
+  // the device.
+  //
+  // The purpose survives intact and is now enforced per transition: each test
+  // below clears the spy immediately before the submit, so a call counted after
+  // it can still only have come from CONFIRM. That is strictly stronger than
+  // the old global zero — it isolates the CONFIRM transition instead of relying
+  // on the rest of the wizard being silent. A component with no CONFIRM effect
+  // still goes red, which is the property MEH-2138 built this for.
+  it("asks for the top once per frame change, and no more", async () => {
     await renderWizard();
-    await fillAccountToDetails();
-    await fillDetailsToStory();
-    expect(scrollToSpy).not.toHaveBeenCalled();
+    await fillAccountToDetails(); // ACCOUNT → DETAILS
+    expect(scrollToSpy).toHaveBeenCalledTimes(1);
+    await fillDetailsToStory(); // DETAILS → CATEGORY → STORY
+    expect(scrollToSpy).toHaveBeenCalledTimes(3);
   });
 
   it("inbox-check branch (no access_token) scrolls to the top", async () => {
@@ -1304,6 +1523,7 @@ describe("RegisterProducerClient — CONFIRM scrolls to the top (MEH-2138 chunk 
     await renderWizard();
     await fillAccountToDetails();
     await fillDetailsToStory();
+    scrollToSpy.mockClear(); // MEH-2927: isolate the CONFIRM transition
     await fillStoryAndSubmit();
 
     expect(await screen.findByTestId("register-frame-confirm")).toBeInTheDocument();
@@ -1319,6 +1539,7 @@ describe("RegisterProducerClient — CONFIRM scrolls to the top (MEH-2138 chunk 
     await renderWizard();
     await screen.findByText(`${K}.steps.business.title`);
     await fillDetailsToStory();
+    scrollToSpy.mockClear(); // MEH-2927: isolate the CONFIRM transition
     await fillStoryAndSubmit();
 
     expect(await screen.findByTestId("register-success-pending")).toBeInTheDocument();
@@ -1415,14 +1636,14 @@ describe("MEH-2241 chunk B — a typed town CitySearch could not match is as mis
   });
 
   // Draft round-trip (CI reviewer on #3461): `packDraft` spreads every form
-  // field except `password` (lib/register-draft.js), so the verdict survives a
-  // reload. Asserted end-to-end — a restored draft is NOT re-challenged when
-  // the town was picked, and IS challenged when it was not — rather than by
-  // reading the stored JSON, which would pass identically if restoreDraft
-  // dropped the key on the way back in.
-  // packDraft spreads every field except `password`, so `city_known` rides
-  // the draft. Two cases, one per outcome, so a red in one cannot hide the
-  // other (CI reviewer on this PR).
+  // field except DRAFT_OMITTED_FIELDS (lib/register-draft.js), so the verdict
+  // survives a reload. Asserted end-to-end — a restored draft is NOT
+  // re-challenged when the town was picked, and IS challenged when it was not
+  // — rather than by reading the stored JSON, which would pass identically if
+  // restoreDraft dropped the key on the way back in.
+  // `city_known` is not an omitted field, so it rides the draft; MEH-2915 took
+  // the phone off it, which is why the helper types one. Two cases, one per
+  // outcome, so a red in one cannot hide the other (CI reviewer on this PR).
   async function restoreDraftWithCity(known) {
     localStorage.setItem("token", "tok-123");
     authState.user = { role: "user" };
@@ -1434,7 +1655,6 @@ describe("MEH-2241 chunk B — a typed town CitySearch could not match is as mis
         step: 2, // DETAILS
         form: {
           producer_name: "העסק שלי",
-          phone: "0501234567",
           city: known ? "תל אביב" : FREE_TEXT_TOWN,
           city_known: known,
         },
@@ -1443,6 +1663,13 @@ describe("MEH-2241 chunk B — a typed town CitySearch could not match is as mis
     await renderWizard();
     fireEvent.click(await screen.findByTestId("register-draft-continue"));
     await screen.findByTestId("register-frame-details");
+    // MEH-2915: the phone is no longer part of the draft (packDraft omits it,
+    // parseDraft strips it), so a restored draft arrives without one and the
+    // required gate would block the advance for a reason that is not this
+    // cell's subject. Typed in here, where it is setup rather than assertion.
+    fireEvent.change(screen.getByTestId("register-details-phone"), {
+      target: { value: "0501234567" },
+    });
   }
 
   it("draft round-trip — a restored list-picked town passes the gate", async () => {
@@ -1480,5 +1707,165 @@ describe("MEH-2241 chunk B — a typed town CitySearch could not match is as mis
     const [, body] = api.post.mock.calls[0];
     expect(body).not.toHaveProperty("city_known");
     expect(body.city).toBe("תל אביב");
+  });
+});
+
+// MEH-2927 (C13 / pilot B3a): a step change has to start at the top of the new
+// step. Measured at 390x844 on a local `next start` before the fix: advancing
+// from ACCOUNT to DETAILS kept scrollY=460 and left the step heading at
+// y=-330 — the seller lands in the middle of a form whose top she has never
+// seen. The committed frame qa-artifacts/MEH-2927/02-step2-on-entry-390-AFTER.webp
+// is that view AFTER the fix; the before frame was not committed, so the before
+// state is cited as the probe's numbers rather than as a file.
+/**
+ * MEH-2927 (pilot B3d) — ticking «יש לי רישיון ייצור» must not move «הבא».
+ *
+ * The hint below the checkbox used to mount on the tick, which pushed the
+ * button row down 36px in document space at the exact moment the thumb was on
+ * it. Reserved instead: the element is always rendered and hidden with
+ * `visibility`, so its real height — however many lines it wraps to — is held
+ * either way.
+ *
+ * 🔴 HONEST LIMIT, stated rather than glossed: jsdom computes no layout, so
+ * this file asserts the CLASS CONTRACT (always mounted, `invisible` only when
+ * unchecked). That discriminates on this change — the old code rendered
+ * nothing at all when unchecked — but it is NOT evidence about rendered
+ * pixels. The pixel measurement is in e2e/qa-meh2927-register-chrome.mjs,
+ * where a stylesheet exists, and its numbers are in the PR.
+ */
+describe("MEH-2927 · the licence hint reserves its space (B3d)", () => {
+  const hint = () => screen.queryByTestId("register-license-pending-hint");
+
+  async function reachLicenceCategory() {
+    // Same override as the MEH-530 block above (:774): the default
+    // /categories fixture is «ביצים», which needs no licence, so the block
+    // under test would never render. Id 1 is what the CategorySelector stub
+    // selects.
+    api.get.mockResolvedValue({ data: [{ id: 1, name: "חלב וגבינות" }] });
+    await renderWizard();
+    await fillAccountToDetails();
+    fireEvent.change(ph("phone"), { target: { value: "0501234567" } });
+    fireEvent.change(screen.getByTestId("city"), { target: { value: "תל אביב" } });
+    fireEvent.change(ph("producer_name"), { target: { value: "משק בדיקה" } });
+    fireEvent.click(screen.getByTestId("register-fulfilment-onsite"));
+    fireEvent.click(nextBtn());
+    await screen.findByTestId("register-frame-category");
+    fireEvent.click(await screen.findByTestId("pick-category"));
+  }
+
+  it("the hint is in the DOM before the box is ticked, holding its height", async () => {
+    await reachLicenceCategory();
+    const optin = screen.queryByTestId("register-license-pending-optin");
+    if (!optin) return expect.unreachable("the licence opt-in did not render");
+
+    expect(hint(), "mounted while unchecked — that is what reserves the space").toBeTruthy();
+    expect(hint().className).toContain("invisible");
+  });
+
+  it("…and becomes visible when it is ticked, without being re-mounted", async () => {
+    await reachLicenceCategory();
+    const optin = screen.queryByTestId("register-license-pending-optin");
+    if (!optin) return expect.unreachable("the licence opt-in did not render");
+
+    const before = hint();
+    fireEvent.click(optin);
+    expect(hint().className).not.toContain("invisible");
+    expect(hint(), "the same node, not a new one").toBe(before);
+  });
+});
+
+describe("RegisterProducerClient — a step change starts at the top (MEH-2927)", () => {
+  // Uses the module-level `scrollToSpy` (see its note at the top of the file)
+  // rather than a second vi.spyOn over it — stacking a spy on a spy is the one
+  // thing that note asks callers not to do.
+  it("scrolls to the top when the wizard advances a frame", async () => {
+    await renderWizard();
+    scrollToSpy.mockClear();
+
+    await fillAccountToDetails();
+
+    expect(scrollToSpy).toHaveBeenCalledWith(expect.objectContaining({ top: 0 }));
+  });
+
+  it("scrolls to the top when the wizard goes BACK a frame", async () => {
+    await renderWizard();
+    await fillAccountToDetails();
+    scrollToSpy.mockClear();
+
+    fireEvent.click(screen.getByTestId("register-details-back"));
+    await screen.findByTestId("register-frame-account");
+
+    expect(scrollToSpy).toHaveBeenCalledWith(expect.objectContaining({ top: 0 }));
+  });
+
+  // The one case that must NOT scroll: a cross-step validation bounce owns the
+  // viewport, because MEH-1807 focuses the offending field and scrolls it to
+  // `block: "center"`. Jumping to the top first would move the page out from
+  // under that, and the seller would land above the error she was sent to fix.
+  //
+  // This cell used to drive the DETAILS gate with an empty business name. That
+  // is a SAME-step refusal — runRequiredGate → requestFocus → return, and
+  // `setStep` never runs — so the step effect never fired and the case was
+  // green with the guard deleted. It proved nothing about the guard it was
+  // named after (MEH-1619: the construction must discriminate). The real
+  // cross-step bounce is the STORY submit, which calls
+  // `setStep(offenders[0].step)` — a genuine step change that must still not
+  // scroll. Rebuilt on the existing blanked-field harness, and shown red with
+  // `if (pendingFocusIdRef.current) return;` removed.
+  it("leaves the viewport to MEH-1807 when a cross-step bounce focuses a field", async () => {
+    // non-empty city → hasDraftContent() raises the banner at mount
+    localStorage.setItem(DRAFT_KEY, JSON.stringify({ city: "חיפה" }));
+    await renderWizard();
+    await fillAccountToDetails();
+    await fillDetailsToStory();
+    expect(screen.getByTestId("register-frame-story")).toBeInTheDocument();
+
+    // another tab blanks the business name; «continue» merges it back in
+    localStorage.setItem(DRAFT_KEY, JSON.stringify({ producer_name: "", city: "חיפה" }));
+    fireEvent.click(screen.getByTestId("register-draft-continue"));
+    selectReferral();
+    screen.getAllByRole("checkbox").forEach((cb) => fireEvent.click(cb));
+    scrollToSpy.mockClear();
+
+    fireEvent.click(screen.getByText(`${K}.actions.submit`));
+
+    // The bounce really happened — a step CHANGE, not a same-step refusal.
+    // Without this assertion the one below would pass on a form that never
+    // moved at all, which is exactly how the previous version failed.
+    expect(await screen.findByTestId("register-frame-details")).toBeInTheDocument();
+    expect(document.activeElement).toBe(screen.getByTestId("register-details-name"));
+    // …and the step effect left the viewport to MEH-1807.
+    expect(scrollToSpy).not.toHaveBeenCalled();
+  });
+});
+
+describe("STORY step — card preview (MEH-3074)", () => {
+  it("offers a closed, inert preview of the real card, fed from the form", async () => {
+    await renderWizard();
+    await fillAccountToDetails();
+    await fillDetailsToStory();
+    fireEvent.change(screen.getByTestId("register-story-tagline"), {
+      target: { value: "לחם מחמצת" },
+    });
+
+    const details = screen.getByTestId("register-card-preview");
+    expect(details.tagName).toBe("DETAILS");
+    expect(details.hasAttribute("open")).toBe(false);
+    expect(details.querySelector("summary").textContent).toBe(`${K}.card_preview.summary`);
+    // Closed: the card is not mounted at all, so none of its effects run.
+    expect(screen.queryByTestId("preview-card")).toBeNull();
+
+    details.open = true;
+    fireEvent(details, new Event("toggle"));
+    expect(screen.getByTestId("register-card-preview-body").hasAttribute("inert")).toBe(true);
+
+    const producer = JSON.parse(screen.getByTestId("preview-card").dataset.producer);
+    expect(producer.name).toBe("העסק שלי");
+    expect(producer.city).toBe("תל אביב");
+    expect(producer.short_description).toBe("לחם מחמצת");
+    expect(producer.categories.map((c) => c.id)).toEqual([1]);
+    expect(producer.has_physical_location).toBe(true);
+    expect(producer.offers_delivery).toBe(false);
+    expect(producer.images).toEqual([]);
   });
 });

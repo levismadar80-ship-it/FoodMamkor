@@ -41,6 +41,9 @@ import api from "@/lib/api";
 // present one, so the mock can never catch the wrong-namespace trap.
 // MEH-2200: `.rich` added for the collection notice on the STORY frame, which
 // this file walks through. Plain-string lookups are unchanged.
+// MEH-3074: the STORY-step preview mounts the real ProducerCard, which this
+// file's mocks do not feed; its wiring is covered in RegisterProducerClient.test.jsx.
+vi.mock("@/components/RegisterCardPreview", () => ({ default: () => null }));
 vi.mock("next-intl", () => ({
   useTranslations: (scope) => {
     const t = (key, values) => {

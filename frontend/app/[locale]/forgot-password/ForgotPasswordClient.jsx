@@ -9,6 +9,8 @@ import Input from "@/components/ui/Input";
 import CollectionNotice from "@/components/CollectionNotice";
 import { CONTACT_EMAIL } from "@/lib/env.client";
 import Button from "@/components/ui/Button";
+import BackLink from "@/components/ui/BackLink";
+import InlineMessage from "@/components/ui/InlineMessage";
 
 export default function ForgotPasswordClient() {
   const t = useTranslations();
@@ -85,9 +87,9 @@ export default function ForgotPasswordClient() {
             testId="forgot-collection-notice"
           />
           {error && (
-            <p className="text-danger-600 text-sm text-center" role="alert">
+            <InlineMessage className="text-center">
               {error}
-            </p>
+            </InlineMessage>
           )}
           <Button
             type="submit"
@@ -100,13 +102,7 @@ export default function ForgotPasswordClient() {
               : t("auth.passwordRecovery.forgot.submit")}
           </Button>
           <p className="text-center text-sm text-fg-muted">
-            <Link
-              href="/login"
-              data-testid="forgot-back-to-login"
-              className="text-primary underline decoration-[1.5px] underline-offset-[5px] decoration-primary/35 hover:decoration-current"
-            >
-              {t("auth.passwordRecovery.forgot.back_to_login")}
-            </Link>
+            <BackLink href="/login" data-testid="forgot-back-to-login" label={t("auth.passwordRecovery.forgot.back_to_login")} />
           </p>
         </form>
       )}

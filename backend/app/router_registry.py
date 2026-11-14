@@ -26,8 +26,11 @@ from app.routers import (
     organizers,
     producer_claim,
     producer_me,
+    producer_name_check,
     producer_name_requests,
+    producer_owner_invite,
     producer_recipes,
+    product_organize,
     rescue,
     producers,
     registrations,
@@ -54,9 +57,16 @@ def register_routers(app: FastAPI) -> None:
     """
     app.include_router(auth.router)
     app.include_router(cities.router)
+    app.include_router(producer_name_check.router)  # MEH-3086
     app.include_router(producer_me.router)
+    app.include_router(product_organize.router)  # MEH-3055
     # MEH-2322: owner-claim link (admin claim-link, public preview, claim).
     app.include_router(producer_claim.router)
+    # MEH-2974: two routers, one module — the admin half carries
+    # `require_admin`, the public half is reached with the invite token alone.
+    # Same split, same reason, as admin_outreach's `prefill_router` below.
+    app.include_router(producer_owner_invite.router)
+    app.include_router(producer_owner_invite.public_router)
     app.include_router(producers.router)
     app.include_router(organizers.router)  # MEH-2461
     app.include_router(favorites.router)

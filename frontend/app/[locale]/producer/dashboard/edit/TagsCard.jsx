@@ -7,6 +7,7 @@ import { Warning } from "@phosphor-icons/react";
 import api from "@/lib/api";
 import { detailToMessage } from "@/lib/errors";
 import Button from "@/components/ui/Button";
+import InlineMessage from "@/components/ui/InlineMessage";
 
 /**
  * Module:   TagsCard
@@ -197,10 +198,10 @@ export default function TagsCard({ profile, onSave, reportDirty = () => {} }) {
       </section>
 
       {errorMsg && (
-        <p className="flex items-center gap-1.5 text-xs text-danger-600" role="alert">
+        <InlineMessage size="xs" className="flex items-center gap-1.5">
           <Warning size={16} weight="fill" aria-hidden="true" className="shrink-0" />
           {errorMsg}
-        </p>
+        </InlineMessage>
       )}
 
       <Button

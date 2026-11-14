@@ -23,6 +23,8 @@ import os
 import threading
 import time
 
+from app.utils.pii import redact_url_tokens
+
 logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
@@ -327,6 +329,39 @@ def _is_noisy(fingerprint: str, now: float | None = None) -> bool:
     return bucket is not None and now < bucket[2]
 
 
+def _scrub_event_urls(event: dict) -> None:
+    """Strip one-time tokens out of the URLs the SDK itself fills in.
+
+    MEH-2974. `middleware.py` already redacts the two fields WE set — the
+    `route` tag and the `request_info` context — but `FastApiIntegration`
+    populates `event["request"]["url"]` from the raw ASGI scope, which no
+    code of ours passes through. So a path-carried credential
+    (`/auth/owner-invite/<token>`, `/claim/<jwt>`, `/registration/<token>`)
+    could still reach a third-party processor on any exception or sampled
+    trace, beside the redacted copy.
+
+    Raised by the fresh reviewer on PR #4356, where it was explicitly marked
+    unverified — the claim is about the SDK's internals, which no reading of
+    this file can settle. This closes it without needing to settle it: the
+    scrub costs one regex pass whether or not the field was ever populated,
+    and `test_sentry_event_url_is_scrubbed` exercises the function against an
+    event shaped the way the integration builds one. If the SDK never fills
+    that field, this is a no-op; if it does, the token does not leave.
+
+    Mutates in place, and swallows a malformed event rather than raising —
+    `before_send` fails open (TRAP 1), and a scrubber that breaks reporting
+    is worse than the leak it prevents.
+    """
+    try:
+        request = event.get("request")
+        if isinstance(request, dict) and isinstance(request.get("url"), str):
+            request["url"] = redact_url_tokens(request["url"])
+        if isinstance(event.get("transaction"), str):
+            event["transaction"] = redact_url_tokens(event["transaction"])
+    except Exception:  # noqa: BLE001 — never break reporting over a scrub
+        return
+
+
 def before_send(event: dict, hint: dict | None = None) -> dict | None:
     """Sentry ``before_send`` hook. Returns the event, or None to drop it.
 
@@ -349,6 +384,7 @@ def before_send(event: dict, hint: dict | None = None) -> dict | None:
             # MEH-2114", never to "no Sentry".
             return event
         try:
+            _scrub_event_urls(event)
             if _drop_reason(event) is not None:
                 return None
             if _burst_allow(_event_fingerprint(event)):

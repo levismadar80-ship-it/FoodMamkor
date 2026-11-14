@@ -12,6 +12,7 @@ import { firstFailureMessage } from "@/lib/passwordMessages";
 import { PASSWORD_MIN_LENGTH } from "@/lib/validators";
 import BrandLoader from "@/components/BrandLoader";
 import Button from "@/components/ui/Button";
+import InlineMessage from "@/components/ui/InlineMessage";
 
 export default function ResetPasswordClient() {
   const t = useTranslations();
@@ -163,7 +164,7 @@ function ResetPasswordForm() {
             placeholder={t("auth.passwordRecovery.reset.confirm_placeholder")}
             required
             dir="ltr"
-            className="w-full min-h-touch border border-border rounded-sm ps-4 py-3 bg-surface focus-visible:ring-2 focus-visible:ring-primary/40 outline-none transition focus:border-primary pr-12" // rtl-ok: pr-12 reserves the 44px eye toggle inside the dir="ltr" input (MEH-2554 PasswordInput fix)
+            className="w-full min-h-touch border border-border rounded-sm ps-4 py-3 bg-surface focus-visible:ring-2 focus-visible:ring-primary outline-none transition focus:border-primary pr-12" // rtl-ok: pr-12 reserves the 44px eye toggle inside the dir="ltr" input (MEH-2554 PasswordInput fix)
           />
           <button
             type="button"
@@ -180,7 +181,7 @@ function ResetPasswordForm() {
         </div>
 
         {error && (
-          <div className="text-danger-600 text-sm text-center" role="alert">
+          <InlineMessage as="div" className="text-center">
             <p>{error}</p>
             {isLinkError && (
               <Link
@@ -190,7 +191,7 @@ function ResetPasswordForm() {
                 {t("auth.passwordRecovery.reset.request_new_link")}
               </Link>
             )}
-          </div>
+          </InlineMessage>
         )}
 
         <Button

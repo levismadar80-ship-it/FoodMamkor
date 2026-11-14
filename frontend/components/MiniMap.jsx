@@ -11,6 +11,7 @@ import { styleForProducer } from "@/lib/category-registry";
 import { categoryGlyphSvg } from "@/lib/marker-glyph";
 import { useFocusReturn } from "@/lib/use-focus-return";
 import { WazeGlyph, GoogleMapsGlyph } from "@/components/NavAppGlyphs";
+import { coordsNavLinks } from "@/lib/nav-links";
 
 // Fix Leaflet's broken default icon paths in Next.js/webpack builds.
 // MEH-1834: served from /public/leaflet instead of a third-party CDN — three
@@ -62,7 +63,7 @@ const MAP_BUTTON_POSITION = "absolute top-3 right-3"; // rtl-ok: map control lay
 // `isolate`, the overlay is `fixed … z-[1150]` — so a LOCAL value is sufficient
 // and cannot reach the page scale again.
 const MAP_BUTTON_STYLE =
-  "z-10 flex h-11 w-11 items-center justify-center rounded-full border border-border bg-surface text-primary shadow-md transition hover:bg-green-50 focus-visible:ring-2 focus-visible:ring-primary/40";
+  "z-10 flex h-11 w-11 items-center justify-center rounded-full border border-border bg-surface text-primary shadow-lg transition hover:bg-green-50 focus-visible:ring-2 focus-visible:ring-primary";
 
 // pickup / market_stand are the business's satellite points; a branch (and any
 // unknown kind) is the business itself. Same split as the /map fan-out
@@ -517,8 +518,8 @@ export default function MiniMap({
   const primaryPoint = points.find((point) => point.is_primary === true) ?? null;
   const centerPoint = hasCoords ? { lat: Number(lat), lng: Number(lng) } : primaryPoint;
   if (!centerPoint) return null;
-  const wazeUrl = `https://waze.com/ul?ll=${centerPoint.lat},${centerPoint.lng}&navigate=yes`;
-  const gmapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${centerPoint.lat},${centerPoint.lng}`;
+  // MEH-2994: one builder for nav links (lib/nav-links.js).
+  const { waze: wazeUrl, google: gmapsUrl } = coordsNavLinks(centerPoint.lat, centerPoint.lng) ?? {};
 
   const surfaceProps = {
     center: centerPoint,
@@ -563,7 +564,7 @@ export default function MiniMap({
           aria-label={t("expand_aria")}
           className={`${MAP_BUTTON_POSITION} ${MAP_BUTTON_STYLE}`}
         >
-          <ArrowsOut size={22} weight="bold" aria-hidden="true" />
+          <ArrowsOut size={24} weight="bold" aria-hidden="true" />
         </button>
       </div>
 
@@ -598,7 +599,7 @@ export default function MiniMap({
             aria-label={t("close_aria")}
             className={`${MAP_BUTTON_POSITION} ${MAP_BUTTON_STYLE}`}
           >
-            <X size={22} weight="bold" aria-hidden="true" />
+            <X size={24} weight="bold" aria-hidden="true" />
           </button>
         </div>
       )}
@@ -615,7 +616,7 @@ export default function MiniMap({
           target="_blank"
           rel="noopener noreferrer"
           aria-label={t("open_in_waze_aria")}
-          className="flex-1 flex items-center justify-center gap-2 border border-border bg-surface text-text px-4 py-2 min-h-touch rounded-full text-sm font-medium hover:bg-green-50 transition focus-visible:ring-2 focus-visible:ring-primary/40"
+          className="flex-1 flex items-center justify-center gap-2 border border-border bg-surface text-text px-4 py-2 min-h-touch rounded-full text-sm font-medium hover:bg-green-50 transition focus-visible:ring-2 focus-visible:ring-primary"
         >
           <WazeGlyph />
           {t("open_in_waze")}
@@ -627,7 +628,7 @@ export default function MiniMap({
           // MEH-2308: no aria-label — the visible "מפות Google" is the name.
           // The old "פתיחה במפות Google" did not contain it as a word
           // (axe label-content-name-mismatch, WCAG 2.5.3).
-          className="flex-1 flex items-center justify-center gap-2 border border-border bg-surface text-text px-4 py-2 min-h-touch rounded-full text-sm font-medium hover:bg-green-50 transition focus-visible:ring-2 focus-visible:ring-primary/40"
+          className="flex-1 flex items-center justify-center gap-2 border border-border bg-surface text-text px-4 py-2 min-h-touch rounded-full text-sm font-medium hover:bg-green-50 transition focus-visible:ring-2 focus-visible:ring-primary"
         >
           <GoogleMapsGlyph />
           {t("open_in_google")}

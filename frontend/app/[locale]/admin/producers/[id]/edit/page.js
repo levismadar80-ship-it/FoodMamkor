@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { Link } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
 import { useAuth } from "@/lib/auth-context";
 import api from "@/lib/api";
@@ -10,7 +9,12 @@ import ProducerForm from "@/components/admin/ProducerForm";
 import DraftProductsPanel from "@/components/admin/DraftProductsPanel";
 import AdminLoadError from "@/components/admin/AdminLoadError";
 import ClaimLinkPanel from "@/components/admin/ClaimLinkPanel";
+import OwnerInvitePanel, {
+  OWNER_INVITABLE_STATUSES,
+} from "@/components/admin/OwnerInvitePanel";
+
 import { SkeletonForm } from "@/components/Skeleton";
+import BackLink from "@/components/ui/BackLink";
 
 export default function EditProducerPage() {
   const { user, loading } = useAuth();
@@ -79,9 +83,7 @@ export default function EditProducerPage() {
   return (
     <div className="max-w-5xl mx-auto px-4 py-8">
       <div className="mb-6">
-        <Link href="/admin?tab=producers" className="text-sm text-muted hover:text-primary">
-          {t("common.back")}
-        </Link>
+        <BackLink href="/admin?tab=producers" label={t("common.back")} />
         <h1 className="text-2xl font-bold mt-2">{t("producers.edit.title", { name: producer.name })}</h1>
       </div>
       {/* MEH-2326: the catalogue the owner receives with the claim link. Only a
@@ -93,6 +95,25 @@ export default function EditProducerPage() {
           carries no owner id, so a draft she has already claimed still shows
           the panel — the server answers that one with 409, shown verbatim. */}
       {producer.status === "draft" && <ClaimLinkPanel producerId={id} />}
+      {/* MEH-2974: the mirror image of the panel above — a business the admin
+          built and finished herself, handed to its owner with a one-time link.
+          The two preconditions stay disjoint by construction (`draft` here
+          vs `approved`/`inactive` there), so exactly one panel can ever
+          render. `inactive` joined the set in the card's v3 revision: a HIDDEN
+          page is now the normal starting point, because the owner's approval
+          is what publishes it — gating the panel on `approved` alone would
+          have made the main flow unreachable from the UI while the API
+          allowed it.
+          `onChanged` re-fetches: the panel's pending / connected line comes
+          from this page's producer, and only the just-minted link is local
+          to the panel. */}
+      {OWNER_INVITABLE_STATUSES.includes(producer.status) && (
+        <OwnerInvitePanel
+          producerId={id}
+          producer={producer}
+          onChanged={() => setReloadKey((k) => k + 1)}
+        />
+      )}
       <ProducerForm initial={producer} producerId={id} />
     </div>
   );

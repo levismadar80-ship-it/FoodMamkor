@@ -36,6 +36,8 @@ import "leaflet/dist/leaflet.css";
 import api from "@/lib/api";
 import { styleForProducer } from "@/lib/category-registry";
 import { primaryPoint } from "@/lib/producerPoints";
+import SectionHeading from "@/components/ui/SectionHeading";
+import { SkeletonBlock } from "@/components/Skeleton";
 
 // MEH-538: Tel Aviv (population center) initial frame. MEH-856: this is now
 // only the PRE-FIT initial/fallback — FitToBusinesses fitBounds()es to the real
@@ -133,10 +135,10 @@ function FitToBusinesses({ points }) {
 function PreviewSkeleton() {
   const t = useTranslations("map.homepage_mini");
   return (
-    <div className="w-full h-full rounded-md bg-green-50 animate-pulse flex flex-col items-center justify-center gap-3">
+    <SkeletonBlock as="div" tone="brand" className="w-full h-full rounded-md flex flex-col items-center justify-center gap-3">
       <MapTrifold size={48} className="text-primary/30" />
       <p className="text-fg-muted text-sm">{t("loading")}</p>
-    </div>
+    </SkeletonBlock>
   );
 }
 
@@ -236,9 +238,9 @@ export default function HomepageMiniMap() {
     >
       <div className="max-w-6xl mx-auto">
         <header className="mb-3 text-center">
-          <h2 className="text-xl md:text-2xl font-semibold text-text">
+          <SectionHeading>
             {t("dot_caption")}
-          </h2>
+          </SectionHeading>
           {/* MEH-2635: the «גלו בתי עסק לפי מיקום» subtitle is gone — it said
               the same thing as the heading above it in different words. */}
         </header>

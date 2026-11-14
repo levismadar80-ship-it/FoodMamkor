@@ -1,12 +1,12 @@
 import { useTranslations } from "next-intl";
-import { Star } from "@phosphor-icons/react";
 
 import { getPrimaryContactHref, getPrimaryContactLabel, getPrimaryMethod, isPrimaryExternal } from "@/lib/contact-method";
 import { withReferralParams } from "@/lib/utils";
 
-import { pingWhatsAppBeacon, markWhatsAppClickedLocal } from "@/lib/contact-tracking";
+import { trackPrimaryCtaClick } from "@/lib/contact-tracking";
 import { INERT_PRESENT } from "@/lib/inert-attr";
 import { getCtaVariant } from "@/components/ContactCtaVariants";
+import { usePreviewMode } from "@/lib/preview-mode"; // MEH-2916
 
 // MEH-1411: the sticky CTA mirrors the inline button's per-method icon.
 // MEH-2813: icon AND colour now come from the same map the inline button reads
@@ -25,16 +25,19 @@ import { getCtaVariant } from "@/components/ContactCtaVariants";
  * exit) and z-index (598, below CookieBanner@599 and BottomNav@1000)
  * are preserved exactly.
  *
- * Beacon dedup applied to this onClick. UNLIKE the ContactCard CTA
- * (mounted inline on mobile + in the desktop sidebar), this site fires
- * pingWhatsAppBeacon WITHOUT calling markWhatsAppClickedLocal — see
- * TODO below.
+ * Beacon dedup applied to this onClick. Same handler as the ContactCard
+ * CTA since MEH-2999 (trackPrimaryCtaClick, any channel).
  */
+// MEH-3027: the BottomNav pill's lift shadow (BottomNav.jsx nav className),
+// darker alpha because this pill is solid, not glass. rgba — no shadow token.
+const PILL_SHADOW = "shadow-lg";
+
 export default function StickyContactBar({
   producer,
   isVacation,
   isBarVisible,
 }) {
+  const isPreview = usePreviewMode(); // MEH-2916
   const t = useTranslations();
   const variant = getCtaVariant(getPrimaryMethod(producer));
   const CtaIcon = variant.Icon;
@@ -53,8 +56,8 @@ export default function StickyContactBar({
   if (!href) return null;
   return (
     <div
-      // MEH-76 chunk 3: border hex literal -> border-border token class; the
-      // soft lift shadow stays inline (no shadow token exists; rgba, not hex).
+      // MEH-76 chunk 3 (border token + inline lift shadow) is superseded by
+      // MEH-3027 below: no strip, so no border; the shadow is on the pill.
       // MEH-1146 chunk A: md:hidden -> lg:hidden so the bar covers the whole
       // single-column range (mobile + tablet) that mounts the inline
       // ContactCard; the desktop sidebar card takes over at lg+.
@@ -66,7 +69,18 @@ export default function StickyContactBar({
       // mounts this bar there is nothing below it to clear, and the offset was
       // rendering as a strip of dead page showing under the CTA. Measured at
       // 375px before the change: bar bottom 748, viewport 812, 64px of gap.
-      className="vv-pin lg:hidden fixed bottom-0 inset-x-0 z-[598] bg-surface border-t border-border"
+      //
+      // MEH-3027: the full-width white strip is gone; the CTA is now a floating
+      // pill with the BottomNav shell's geometry (14px side gutters, safe-area +
+      // 16px bottom gutter, rounded-full, h-12 = the nav pill's compact height;
+      // 56px read too heavy, Sapir 13/11). The strip put a 6px-radius
+      // rectangle ~15pt from the screen bottom on iPhone — inside the display's
+      // rounded corner — because env(safe-area-inset-bottom) is 0 without
+      // viewport-fit=cover (layout.js, MEH-2427), so the corner clipped it
+      // (Sapir, 13/11). A pill's ends follow the screen corner instead.
+      // pointer-events-none on the shell + auto on the pill: the transparent
+      // gutter band passes taps through to the page (MEH-1253's BottomNav fix).
+      className="vv-pin lg:hidden fixed bottom-0 inset-x-0 z-[598] flex px-[14px] pointer-events-none"
       data-testid="sticky-contact-bar"
       style={{
         // MEH-2148: with the bar flush, its own height is the whole distance it
@@ -79,8 +93,8 @@ export default function StickyContactBar({
         // MEH-2148: this was always here and was always inert -- the bar sat
         // above the home indicator, so there was nothing to inset for. Flush to
         // the edge it starts doing its job: it keeps the CTA off the indicator.
-        paddingBottom: "env(safe-area-inset-bottom, 0px)",
-        boxShadow: "0 -4px 12px rgba(0,0,0,0.06)",
+        // MEH-3027: + 16px, the BottomNav gutter — the inset alone is 0 here.
+        paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 16px)",
         opacity: isVacation ? 0.85 : 1,
       }}
       // MEH-1333: when parked off-screen the bar must be non-focusable, not just
@@ -97,51 +111,46 @@ export default function StickyContactBar({
       // (ChatWidget watches [data-chat-hide]); hidden bar → attribute gone.
       data-chat-hide={isBarVisible ? "" : undefined}
     >
-      <div className="flex items-center gap-3 px-4 py-3">
-        {/* Social proof — hidden if < 3 reviews. MEH-76 chunk 1: the vacation
-            notice that used to replace it was the page's THIRD vacation
-            surface — removed (single banner lives in ProducerHeader). The
-            CTA label below still carries the honest expectation line. */}
-        {producer.reviews_count >= 3 ? (
-          <div className="shrink-0 text-2xs text-fg-muted leading-tight">
-            {/* MEH-76: gold hex -> accent token, emoji star -> Phosphor,
-                rating digits bidi-isolated (.numeric, MEH-763 convention). */}
-            <div className="font-bold text-accent inline-flex items-center gap-0.5">
-              <Star size={11} weight="fill" aria-hidden="true" />
-              <span className="numeric">{Number(producer.avg_rating).toFixed(1)}</span>
-            </div>
-            <div>{t("producer.detail.header.review_count", { count: producer.reviews_count })}</div>
-          </div>
-        ) : null}
-        {/* Primary CTA */}
-        {href && (
-          <a
-            href={href}
-            data-testid="sticky-primary-cta"
-            {...(isPrimaryExternal(producer)
-              ? { target: "_blank", rel: isWebsite ? "noopener" : "noopener noreferrer" }
-              : {})}
-            // MEH-1426: TODO resolved — the sticky bar now matches the ContactCard
-            // CTA. A WhatsApp primary click both attributes (pingWhatsAppBeacon) and
-            // unlocks the review form (markWhatsAppClickedLocal, localStorage
-            // wa_clicked_<id>). Invariant: every WhatsApp click = attribution +
-            // unlock; a non-WhatsApp primary fires neither.
-            onClick={() => {
-              if (getPrimaryMethod(producer) === "whatsapp") {
-                pingWhatsAppBeacon(producer.id);
-                markWhatsAppClickedLocal(producer.id);
-              }
-            }}
-            // MEH-76 chunk 1: the vacation pale-green CTA fork was an ADR-019
-            // violation (state-color fill + raw hex). The CTA keeps its normal
-            // method-driven color — the whole bar is already dimmed via opacity.
-            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-md font-medium text-sm transition focus-visible:ring-2 ${variant.className}`}
-          >
-            <CtaIcon size={20} />
-            {isVacation ? t("producer.detail.sticky_bar.vacation_msg") : getPrimaryContactLabel(producer, t)}
-          </a>
-        )}
-      </div>
+      {/* MEH-3027: the ≥3-review rating that sat beside the CTA is dropped
+          from the floating pill (Sapir, 13/11) — it already shows in the page
+          header, and a floating control carries the one action only. */}
+      {/* Primary CTA */}
+      {href && (
+        <a
+          // MEH-2916: in the owner's preview the CTA stays VISIBLE — she is
+          // looking at how her page reads, and a missing button would
+          // misrepresent it — but it does not act. No href (so no WhatsApp
+          // app switch, no tel: dialler), out of the tab order, and
+          // announced as disabled. The onClick below also returns early, so
+          // the attribution beacon never fires for her own look at her own
+          // page. Sapir's ruling, 11/11.
+          {...(isPreview ? { "aria-disabled": "true", tabIndex: -1 } : { href })}
+          data-testid="sticky-primary-cta"
+          {...(!isPreview && isPrimaryExternal(producer)
+            ? { target: "_blank", rel: isWebsite ? "noopener" : "noopener noreferrer" }
+            : {})}
+          // MEH-1426 → MEH-2999: matches the ContactCard CTA. Every primary
+          // click (any channel) is recorded and unlocks the review form.
+          onClick={(e) => {
+            if (isPreview) {
+              e.preventDefault(); // MEH-2916
+              return;
+            }
+            // MEH-2999: any primary channel — same handler as ContactCard.
+            trackPrimaryCtaClick(producer.id, getPrimaryMethod(producer));
+          }}
+          // MEH-3027: the lift shadow only while shown. Parked at translateY(100%)
+          // the pill's top sits on the viewport edge and a 30px blur would leave
+          // a green haze along the bottom of a page with the bar "hidden".
+          // MEH-76 chunk 1: the vacation pale-green CTA fork was an ADR-019
+          // violation (state-color fill + raw hex). The CTA keeps its normal
+          // method-driven color — the whole bar is already dimmed via opacity.
+          className={`pointer-events-auto w-full h-12 flex items-center justify-center gap-2 rounded-full font-medium text-sm transition ${isBarVisible ? PILL_SHADOW : ""} focus-visible:ring-2 ${variant.className}`}
+        >
+          <CtaIcon size={20} />
+          {isVacation ? t("producer.detail.sticky_bar.vacation_msg") : getPrimaryContactLabel(producer, t)}
+        </a>
+      )}
     </div>
   );
 }

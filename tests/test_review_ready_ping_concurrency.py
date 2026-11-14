@@ -159,7 +159,7 @@ def test_two_concurrent_puts_ping_the_admin_once(client, db, monkeypatch):
             b_inside.set()
         return real_approvable(db_, producer_)
 
-    def fake_ping(name, city):
+    def fake_ping(name, city, test_cause=False):
         with lock:
             pings.append((name, city))
 
@@ -224,7 +224,7 @@ def test_a_second_put_after_the_first_completes_is_still_silent(client, db):
 
     pings: list[tuple] = []
 
-    with_ping = lambda name, city: pings.append((name, city))  # noqa: E731
+    with_ping = lambda name, city, test_cause=False: pings.append((name, city))  # noqa: E731
     original = pm.notify_admin_producer_review_ready
     pm.notify_admin_producer_review_ready = with_ping
     try:

@@ -55,6 +55,7 @@ import CitiesAutocomplete from "@/components/CitiesAutocomplete";
 import { DELIVERY_DAYS } from "@/lib/delivery-days";
 import { SkeletonForm } from "@/components/Skeleton";
 import Button from "@/components/ui/Button";
+import InlineMessage from "@/components/ui/InlineMessage";
 
 // ============================================================
 // MEH-1306: "view on page" back-link — closes the edit↔public loop from the
@@ -191,10 +192,10 @@ export function CategoriesCard({ profile, onSave, reportDirty = () => {} }) {
       <p className="text-xs text-fg-muted mb-4">{t("subtitle")}</p>
 
       {fetchError ? (
-        <p className="flex items-center gap-1.5 text-xs text-danger-600" role="alert">
+        <InlineMessage size="xs" className="flex items-center gap-1.5">
           <Warning size={16} weight="fill" aria-hidden="true" className="shrink-0" />
           {fetchError}
-        </p>
+        </InlineMessage>
       ) : (
         <CategorySelector
           categories={allCategories}
@@ -211,10 +212,10 @@ export function CategoriesCard({ profile, onSave, reportDirty = () => {} }) {
       />
 
       {errorMsg && (
-        <p className="mt-3 flex items-center gap-1.5 text-xs text-danger-600" role="alert">
+        <InlineMessage size="xs" className="mt-3 flex items-center gap-1.5">
           <Warning size={16} weight="fill" aria-hidden="true" className="shrink-0" />
           {errorMsg}
-        </p>
+        </InlineMessage>
       )}
 
       <Button
@@ -243,6 +244,13 @@ export function CategoriesCard({ profile, onSave, reportDirty = () => {} }) {
 // backend/app/routers/upload.py (free plan, len(images) >= 3); keep in sync.
 const FREE_IMAGE_CAP = 3;
 
+// MEH-2911: statuses whose gallery may not be emptied. Mirrors
+// `LAST_PHOTO_GUARDED_STATUSES` in backend/app/routers/producer_me.py, and
+// tests/test_meh2911_last_photo_guard.py reads this declaration out of this
+// file to red on drift — so keep the members a one-line list of double-quoted
+// string literals, whatever container holds them.
+const LAST_PHOTO_GUARDED_STATUSES = new Set(["approved", "inactive"]);
+
 // Exported for isolation tests (EditTabImagesCard.test.jsx) — see CategoriesCard.
 export function ImagesCard({ profile, onSave, reportDirty = () => {} }) {
   const t = useTranslations("dashboard.producer.images");
@@ -253,6 +261,31 @@ export function ImagesCard({ profile, onSave, reportDirty = () => {} }) {
   const [saved, setSaved] = useState(false);
   const [errorMsg, setErrorMsg] = useState(null);
   const [dragOver, setDragOver] = useState(false);
+  // MEH-2911: whether the last-photo removal was refused. A boolean, not
+  // an index: the note renders once, immediately after the thumbnail grid,
+  // so it can only ever belong to the single remaining thumbnail — an index
+  // would be dead data implying a per-cell placement the render does not do.
+  // (An earlier revision stored the index and said so in a comment that a
+  // reviewer read as a promise the code did not keep.)
+  const [lastPhotoBlocked, setLastPhotoBlocked] = useState(false);
+
+  // MEH-2911: a business that is live — or one click away from live — has a
+  // public page that would go photoless, so it may not drop to zero photos.
+  // A draft, pending or rejected business may still empty its gallery: the
+  // submit gate and the approve gate are where that is caught for those.
+  //
+  // `inactive` is in the set because `toggle_producer_status` (admin.py)
+  // moves a row back to `approved` without re-running the approval gates, so
+  // pause → empty → un-pause would otherwise publish a photoless business.
+  // Measured by MEH-2911's reviewer; the toggle's missing gate is MEH-2945.
+  //
+  // MUST match `LAST_PHOTO_GUARDED_STATUSES` in producer_me.py — two owners
+  // for one fact, which is the smell workflow.md names, and neither can be
+  // deleted (the pre-check has to run before any request; the backend has to
+  // answer a client that skipped it). So it is enforced instead:
+  // tests/test_meh2911_last_photo_guard.py reads this array out of this file
+  // and reds if the two drift.
+  const isGalleryLocked = LAST_PHOTO_GUARDED_STATUSES.has(profile?.status);
 
   // MEH-1352: cap applies to the free plan only (mirrors the upload.py 403
   // guard). atCap disables the picker; the backend 403 stays as safety net.
@@ -286,6 +319,8 @@ export function ImagesCard({ profile, onSave, reportDirty = () => {} }) {
         uploaded.push(r.data.url);
       }
       const next = [...images, ...uploaded];
+      // MEH-2911: the note told her to add a photo first; she has.
+      setLastPhotoBlocked(false);
       setImages(next);
       // MEH-1236: kill the upload≠save trap. Uploading a photo used to feel like
       // saving, but images[] only persisted on an explicit Save click — so the
@@ -333,8 +368,19 @@ export function ImagesCard({ profile, onSave, reportDirty = () => {} }) {
   // URL (backend drift / bad prior save), a value-filter would drop every
   // copy at once. Index-based removal deletes exactly the clicked thumbnail.
   const removeImage = (index) => {
+    // MEH-2911: refuse here as well as in the backend, so the owner is told
+    // at the moment she clicks instead of after a save round-trip. The
+    // backend 422 (producer_me.py::LAST_PHOTO_REMOVAL_MESSAGE) stays the
+    // authority — a client that ignores this still cannot empty the gallery.
+    if (isGalleryLocked && images.length === 1) {
+      setSaved(false);
+      setErrorMsg(null);
+      setLastPhotoBlocked(true);
+      return;
+    }
     setSaved(false);
     setErrorMsg(null);
+    setLastPhotoBlocked(false);
     setImages((prev) => prev.filter((_, i) => i !== index));
   };
 
@@ -348,7 +394,24 @@ export function ImagesCard({ profile, onSave, reportDirty = () => {} }) {
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
     } catch (err) {
-      setErrorMsg(detailToMessage(err?.response?.data?.detail) || t("save_error"));
+      const raw = err?.response?.data?.detail;
+      // MEH-2911: reachable when the business was approved in another tab
+      // after this card loaded, so the client pre-check above did not know
+      // to fire. Same message, same place — not the card-level error, which
+      // is what Sapir ruled against.
+      //
+      // Matched on the CODE. Two earlier bugs here, both found by review:
+      // the condition read `images.length === 1`, which is unsatisfiable
+      // (the backend only refuses an EMPTY list, and this sends the same
+      // `images` it then inspects — so the branch was dead and the refusal
+      // fell through to the card-foot error); and it compared a Hebrew
+      // sentence, which never matches on /en and would have shown an
+      // English-locale owner the raw Hebrew.
+      if (raw?.code === "last_photo_required") {
+        setLastPhotoBlocked(true);
+      } else {
+        setErrorMsg(detailToMessage(raw) || t("save_error"));
+      }
     } finally {
       setSaving(false);
     }
@@ -386,7 +449,7 @@ export function ImagesCard({ profile, onSave, reportDirty = () => {} }) {
           if (!e.currentTarget.contains(e.relatedTarget)) setDragOver(false);
         }}
         onDrop={atCap ? (e) => e.preventDefault() : handleDrop}
-        className={`inline-flex items-center text-sm border border-dashed rounded-md px-4 py-3 transition focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/30 ${
+        className={`inline-flex items-center text-sm border border-dashed rounded-md px-4 py-3 transition focus-within:border-primary focus-within:ring-2 focus-within:ring-primary ${
           atCap
             ? "border-border text-fg-muted cursor-not-allowed"
             : dragOver
@@ -460,14 +523,37 @@ export function ImagesCard({ profile, onSave, reportDirty = () => {} }) {
         </div>
       )}
 
+      {/* MEH-2911: directly under the thumbnail whose remove was refused —
+          not at the foot of the card next to `errorMsg` (Sapir's ruling).
+          With one photo left the grid above is a single cell, so a sibling
+          immediately after it reads as that cell's own message.
+
+          OUTSIDE the `images.length > 0` gate on purpose. The save-path
+          refusal (business approved in another tab after this card loaded)
+          arrives with the local list already EMPTY, so a note nested in the
+          grid would have rendered nowhere and the refusal would have fallen
+          through to the card-foot error — the placement the ruling forbids.
+          A reviewer found that; the earlier revision had it nested.
+
+          Not `col-span-full`: no longer a grid child. At 375 this wraps to
+          two lines, one at 1440 — read off the captures in qa-artifacts.
+
+          No positional classes: it sits in flow, so it mirrors with the
+          document and needs no logical property (rtl.md). */}
+      {lastPhotoBlocked && (
+        <InlineMessage size="xs" className="mt-2 leading-snug" data-testid="images-last-photo-note">
+          {t("last_photo")}
+        </InlineMessage>
+      )}
+
       {errorMsg && (
         // MEH-1099: text-error (ADR-026) — the drag-drop path made this error
         // display newly reachable; sibling text-red-600 sites in the other
         // cards stay for the MEH-1086 follow-up sweep.
-        <p className="mt-3 flex items-center gap-1.5 text-xs text-error" role="alert">
+        <InlineMessage size="xs" className="mt-3 flex items-center gap-1.5">
           <Warning size={16} weight="fill" aria-hidden="true" className="shrink-0" />
           {errorMsg}
-        </p>
+        </InlineMessage>
       )}
 
       <Button
@@ -567,7 +653,7 @@ function AssistForm({ t, assist }) {
           value={instagram}
           onChange={(e) => setInstagram(e.target.value.slice(0, 200))}
           placeholder={t("instagram_placeholder")}
-          className="w-full border border-border bg-surface rounded-sm px-3 py-2 text-sm"
+          className="w-full border border-border bg-surface rounded-sm px-3 py-2 text-sm focus-ring"
           dir="ltr"
           maxLength={200}
         />
@@ -580,17 +666,17 @@ function AssistForm({ t, assist }) {
         disabled={!canGenerate || loading}
         className="w-full bg-primary text-white py-2 rounded-full text-sm font-medium disabled:opacity-50 hover:bg-primary-dark transition flex items-center justify-center gap-2"
       >
-        <Sparkle size={15} weight="fill" aria-hidden="true" />
+        <Sparkle size={16} weight="fill" aria-hidden="true" />
         {loading ? t("generating") : t("generate_cta")}
       </button>
       {!canGenerate && (
         <p className="text-2xs text-fg-muted text-center">{t("generate_hint_disabled")}</p>
       )}
       {error && (
-        <p className="text-xs text-error flex items-start gap-1.5" role="alert">
-          <Warning size={15} weight="fill" aria-hidden="true" className="shrink-0 mt-px" />
+        <InlineMessage size="xs" className="flex items-start gap-1.5">
+          <Warning size={16} weight="fill" aria-hidden="true" className="shrink-0 mt-px" />
           {error}
-        </p>
+        </InlineMessage>
       )}
     </div>
   );
@@ -614,7 +700,7 @@ function AssistField({ label, value, onChange, placeholder, optional }) {
         value={value}
         onChange={(e) => onChange(e.target.value.slice(0, 200))}
         placeholder={placeholder}
-        className="w-full border border-border bg-surface rounded-sm px-3 py-2 text-sm"
+        className="w-full border border-border bg-surface rounded-sm px-3 py-2 text-sm focus-ring"
         dir="auto"
         maxLength={200}
       />
@@ -735,7 +821,7 @@ export function DescriptionCard({ profile, onSave, reportDirty = () => {} }) {
           value={description}
           onChange={(e) => { setDescription(e.target.value.slice(0, DESC_MAX)); setSaved(false); }}
           placeholder={t("desc_placeholder")}
-          className={`w-full rounded-sm px-3 py-2 text-sm resize-none h-24 transition-colors duration-500 ${
+          className={`w-full rounded-sm px-3 py-2 text-sm resize-none h-24 transition-colors duration-500 focus-ring ${
             highlight
               ? "border border-primary bg-primary/10 ring-2 ring-primary/20"
               : "border border-primary/30 bg-primary/5"
@@ -770,7 +856,7 @@ export function DescriptionCard({ profile, onSave, reportDirty = () => {} }) {
           onClick={() => setAssistOpen(true)}
           className="inline-flex items-center gap-2 text-primary font-medium text-sm self-start hover:text-primary-dark transition"
         >
-          <Sparkle size={15} weight="fill" aria-hidden="true" />
+          <Sparkle size={16} weight="fill" aria-hidden="true" />
           {t("assist_cta")}
         </button>
       )}
@@ -786,7 +872,7 @@ export function DescriptionCard({ profile, onSave, reportDirty = () => {} }) {
           value={tagline}
           onChange={(e) => { setTagline(e.target.value.slice(0, TAGLINE_MAX)); setSaved(false); }}
           placeholder={t("tagline_placeholder")}
-          className="w-full border border-primary/30 bg-primary/5 rounded-sm px-3 py-2 text-sm"
+          className="w-full border border-primary/30 bg-primary/5 rounded-sm px-3 py-2 text-sm focus-ring"
           dir="auto"
           maxLength={TAGLINE_MAX}
         />
@@ -809,10 +895,10 @@ export function DescriptionCard({ profile, onSave, reportDirty = () => {} }) {
       </Button>
 
       {error && !assistOpen && (
-        <p className="text-xs text-error flex items-start gap-1.5" role="alert">
-          <Warning size={15} weight="fill" aria-hidden="true" className="shrink-0 mt-px" />
+        <InlineMessage size="xs" className="flex items-start gap-1.5">
+          <Warning size={16} weight="fill" aria-hidden="true" className="shrink-0 mt-px" />
           {error}
-        </p>
+        </InlineMessage>
       )}
     </div>
   );
@@ -1003,7 +1089,7 @@ export function OwnerStoryCard({ profile, onSave, reportDirty = () => {} }) {
           value={bio}
           onChange={(e) => { setBio(e.target.value.slice(0, OWNER_BIO_MAX)); setSaved(false); }}
           placeholder={t("bio_placeholder")}
-          className="w-full border border-primary/30 bg-primary/5 rounded-sm px-3 py-2 text-sm resize-none h-24"
+          className="w-full border border-primary/30 bg-primary/5 rounded-sm px-3 py-2 text-sm resize-none h-24 focus-ring"
           dir="auto"
           maxLength={OWNER_BIO_MAX}
           data-testid="owner-bio-input"
@@ -1027,10 +1113,10 @@ export function OwnerStoryCard({ profile, onSave, reportDirty = () => {} }) {
       </Button>
 
       {error && (
-        <p className="text-xs text-error flex items-start gap-1.5" role="alert">
-          <Warning size={15} weight="fill" aria-hidden="true" className="shrink-0 mt-px" />
+        <InlineMessage size="xs" className="flex items-start gap-1.5">
+          <Warning size={16} weight="fill" aria-hidden="true" className="shrink-0 mt-px" />
           {error}
-        </p>
+        </InlineMessage>
       )}
     </div>
   );
@@ -1113,10 +1199,10 @@ export function PricingCard({ profile, onSave, reportDirty = () => {} }) {
       </div>
 
       {errorMsg && (
-        <p className="mt-3 flex items-center gap-1.5 text-xs text-danger-600" role="alert">
+        <InlineMessage size="xs" className="mt-3 flex items-center gap-1.5">
           <Warning size={16} weight="fill" aria-hidden="true" className="shrink-0" />
           {errorMsg}
-        </p>
+        </InlineMessage>
       )}
 
       <Button
@@ -1243,10 +1329,10 @@ export function LicenseCard({ profile, onSave, reportDirty = () => {} }) {
       )}
 
       {errorMsg && (
-        <p className="mt-3 flex items-center gap-1.5 text-xs text-danger-600" role="alert">
+        <InlineMessage size="xs" className="mt-3 flex items-center gap-1.5">
           <Warning size={16} weight="fill" aria-hidden="true" className="shrink-0" />
           {errorMsg}
-        </p>
+        </InlineMessage>
       )}
 
       <Button
@@ -1482,7 +1568,7 @@ export function KashrutCard({ profile, reportDirty = () => {} }) {
               setBadgeCode(e.target.value);
               setSubmitted(false);
             }}
-            className="w-full border border-primary/30 bg-primary/5 rounded-sm px-3 py-2 text-sm"
+            className="w-full border border-primary/30 bg-primary/5 rounded-sm px-3 py-2 text-sm focus-ring"
             data-testid="kashrut-badge-select"
           >
             <option value="">{t("select_placeholder")}</option>
@@ -1538,10 +1624,10 @@ export function KashrutCard({ profile, reportDirty = () => {} }) {
         </Button>
 
         {error && (
-          <p className="text-xs text-error flex items-start gap-1.5" role="alert">
-            <Warning size={15} weight="fill" aria-hidden="true" className="shrink-0 mt-px" />
+          <InlineMessage size="xs" className="flex items-start gap-1.5">
+            <Warning size={16} weight="fill" aria-hidden="true" className="shrink-0 mt-px" />
             {error}
-          </p>
+          </InlineMessage>
         )}
         {submitted && !error && (
           <p
@@ -1915,7 +2001,7 @@ export function DeliveryCard({ profile, onSave, reportDirty = () => {} }) {
                   value={form.fee}
                   onChange={(e) => set({ fee: e.target.value })}
                   placeholder={t("fee_placeholder")}
-                  className="w-32 border border-border rounded-sm px-3 py-2 text-sm"
+                  className="w-32 border border-border rounded-sm px-3 py-2 text-sm focus-ring"
                 />
               </div>
               <div>
@@ -1938,7 +2024,7 @@ export function DeliveryCard({ profile, onSave, reportDirty = () => {} }) {
                   value={form.freeAbove}
                   onChange={(e) => set({ freeAbove: e.target.value })}
                   placeholder={t("free_above_placeholder")}
-                  className="w-32 border border-border rounded-sm px-3 py-2 text-sm"
+                  className="w-32 border border-border rounded-sm px-3 py-2 text-sm focus-ring"
                 />
               </div>
             </div>
@@ -2003,7 +2089,7 @@ export function DeliveryCard({ profile, onSave, reportDirty = () => {} }) {
                               set({ fees: { ...form.fees, [c]: e.target.value } })
                             }
                             placeholder={t("area_fee_placeholder")}
-                            className="w-20 border border-border rounded-sm px-2 py-1 text-sm bg-surface"
+                            className="w-20 border border-border rounded-sm px-2 py-1 text-sm bg-surface focus-ring"
                           />
                           <select
                             value={form.days[c] || ""}
@@ -2012,7 +2098,7 @@ export function DeliveryCard({ profile, onSave, reportDirty = () => {} }) {
                             onChange={(e) =>
                               set({ days: { ...form.days, [c]: e.target.value } })
                             }
-                            className="border border-border rounded-sm px-2 py-1 text-sm bg-surface"
+                            className="border border-border rounded-sm px-2 py-1 text-sm bg-surface focus-ring"
                           >
                             <option value="">{t("day_arranged")}</option>
                             {DELIVERY_DAYS.map((d) => (
@@ -2061,10 +2147,10 @@ export function DeliveryCard({ profile, onSave, reportDirty = () => {} }) {
       </div>
 
       {errorMsg && (
-        <p className="mt-3 flex items-center gap-1.5 text-xs text-danger-600" role="alert">
+        <InlineMessage size="xs" className="mt-3 flex items-center gap-1.5">
           <Warning size={16} weight="fill" aria-hidden="true" className="shrink-0" />
           {errorMsg}
-        </p>
+        </InlineMessage>
       )}
 
       <Button
@@ -2241,7 +2327,7 @@ export function OffersCard({ profile, onSave, reportDirty = () => {} }) {
             value={form.type}
             data-testid="offer-type-select"
             onChange={(e) => set({ type: e.target.value })}
-            className="w-full border border-border rounded-sm px-3 py-2 text-sm bg-surface"
+            className="w-full border border-border rounded-sm px-3 py-2 text-sm bg-surface focus-ring"
           >
             <option value="">{t("type_none")}</option>
             {OFFER_TYPES.map((ot) => (
@@ -2273,14 +2359,14 @@ export function OffersCard({ profile, onSave, reportDirty = () => {} }) {
                   data-testid="offer-threshold-input"
                   onChange={(e) => set({ threshold: e.target.value })}
                   placeholder={t("threshold_placeholder")}
-                  className="w-24 border border-border rounded-sm px-3 py-2 text-sm"
+                  className="w-24 border border-border rounded-sm px-3 py-2 text-sm focus-ring"
                 />
                 <select
                   value={form.unit}
                   aria-label={t("unit_label")}
                   data-testid="offer-unit-select"
                   onChange={(e) => set({ unit: e.target.value })}
-                  className="border border-border rounded-sm px-3 py-2 text-sm bg-surface"
+                  className="border border-border rounded-sm px-3 py-2 text-sm bg-surface focus-ring"
                 >
                   <option value="">{t("unit_label")}</option>
                   {THRESHOLD_UNITS.map((u) => (
@@ -2318,7 +2404,7 @@ export function OffersCard({ profile, onSave, reportDirty = () => {} }) {
                 data-testid="offer-headline-input"
                 onChange={(e) => set({ headline: e.target.value })}
                 placeholder={t("headline_placeholder")}
-                className="w-full border border-border rounded-sm px-3 py-2 text-sm"
+                className="w-full border border-border rounded-sm px-3 py-2 text-sm focus-ring"
               />
               {missingCustomHeadline && (
                 <p className="text-xs text-danger-600 mt-1" data-testid="offer-headline-error">
@@ -2338,7 +2424,7 @@ export function OffersCard({ profile, onSave, reportDirty = () => {} }) {
                 value={form.expires}
                 data-testid="offer-expires-input"
                 onChange={(e) => set({ expires: e.target.value })}
-                className="border border-border rounded-sm px-3 py-2 text-sm"
+                className="border border-border rounded-sm px-3 py-2 text-sm focus-ring"
               />
               {missingExpiry && (
                 <p className="text-xs text-danger-600 mt-1" data-testid="offer-expiry-error">
@@ -2351,10 +2437,10 @@ export function OffersCard({ profile, onSave, reportDirty = () => {} }) {
       </div>
 
       {errorMsg && (
-        <p className="mt-3 flex items-center gap-1.5 text-xs text-danger-600" role="alert">
+        <InlineMessage size="xs" className="mt-3 flex items-center gap-1.5">
           <Warning size={16} weight="fill" aria-hidden="true" className="shrink-0" />
           {errorMsg}
-        </p>
+        </InlineMessage>
       )}
 
       <Button
@@ -2514,9 +2600,9 @@ export function BusinessNameCard({ profile }) {
             <p className="text-sm text-fg-muted">{t("same_name_hint")}</p>
           )}
           {error && (
-            <p className="text-sm text-danger-700" role="alert" data-testid="name-change-error">
+            <InlineMessage data-testid="name-change-error">
               {error}
-            </p>
+            </InlineMessage>
           )}
           <Button
             type="submit"

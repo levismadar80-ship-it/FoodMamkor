@@ -1,12 +1,17 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { CaretDown, EyeSlash, Star } from "@phosphor-icons/react";
+import { EyeSlash, Star } from "@phosphor-icons/react";
 import { useTranslations, useLocale } from "next-intl";
-import { Link } from "@/i18n/navigation";
 import api from "@/lib/api";
 import { detailToMessage } from "@/lib/errors";
-import { pingWhatsAppBeacon } from "@/lib/contact-tracking";
+import {
+  CONTACTED_EVENT,
+  contactedMethodLocal,
+  pingWhatsAppBeacon,
+  trackContactClick,
+} from "@/lib/contact-tracking";
+import ReviewInviteCard, { takeDraftStars } from "@/components/ReviewInviteCard";
 import { captureReviewInvite } from "@/lib/review-invite";
 import { useAuth } from "@/lib/auth-context";
 import { showToast } from "@/lib/toast";
@@ -14,6 +19,10 @@ import { formatEventDate } from "@/lib/format-date";
 import EmptyState from "@/components/ui/EmptyState";
 import { SkeletonList } from "@/components/Skeleton";
 import { seedColorFor } from "@/lib/brand-seeds";
+import SectionHeading from "@/components/ui/SectionHeading";
+import ShowMore from "@/components/ui/ShowMore";
+import InlineMessage from "@/components/ui/InlineMessage";
+import { avatarInitial } from "@/components/ui/Avatar";
 
 // MEH-2833 (seed layer, board 4): a reviewer's initial sits on a soft tint of
 // "their" seed — the seed colour mixed ~24% into the cream page, with an inset
@@ -30,7 +39,7 @@ const INITIAL_TINT = 0.24;
 const INITIAL_RING = 0.55;
 
 /** The reviewer's initial on their seed tint; the seed is resolved once. */
-function ReviewInitial({ seedKey, letter }) {
+export function ReviewInitial({ seedKey, letter }) {
   const seed = seedColorFor(seedKey);
   return (
     <span
@@ -51,13 +60,13 @@ function ReviewInitial({ seedKey, letter }) {
 // HOT-018 (MEH-782): numeric short date (e.g. 7.6.2026) — preserves the prior
 // `toLocaleDateString` default while routing through the Invalid-Date-guarded,
 // locale-aware helper so /en no longer renders Hebrew review dates.
-const REVIEW_DATE_OPTIONS = { year: "numeric", month: "numeric", day: "numeric" };
+export const REVIEW_DATE_OPTIONS = { year: "numeric", month: "numeric", day: "numeric" };
 
 // "Sapir L." — first name + last initial (privacy)
 // MEH-2705: the initial is the first LETTER of the last word that has one.
 // The old `parts[last][0]` took whatever came first, so «לקוחת בדיקות (QA)»
 // rendered «לקוחת (.» and «דנה כהן -» rendered «דנה -.».
-function formatName(fullName, fallback) {
+export function formatName(fullName, fallback) {
   if (!fullName) return fallback;
   const parts = fullName.trim().split(/\s+/);
   if (parts.length === 1) return parts[0];
@@ -74,7 +83,7 @@ function formatName(fullName, fallback) {
 // to `fill*100%` on top; the row is dir="ltr" so the clip grows from the star's
 // left edge (logical start inside the LTR container). Integer values (a single
 // review's `stars`) still render as solid full stars — same visual as before.
-function StarRow({ value, size = 16, ariaLabel }) {
+export function StarRow({ value, size = 16, ariaLabel }) {
   const numeric = Number(value) || 0;
   return (
     // MEH-1556: role="img" makes the aria-label legal here. Without a role,
@@ -110,31 +119,50 @@ function StarRow({ value, size = 16, ariaLabel }) {
   );
 }
 
-function StarPicker({ value, onChange, ariaLabelFn }) {
-  const [hover, setHover] = useState(0);
+// MEH-1337: Google-style distribution — one row per star, 5★ first. Shown
+// only from DISTRIBUTION_MIN visible reviews (fewer has nothing to distribute).
+// Counts are the server's `rating_counts` over EVERY visible review, never
+// the page of 10 on screen. Quiet bars in the star gold, no rating colours
+// (MEH-1334). No new copy: each row's name reuses star_aria + summary_count.
+const DISTRIBUTION_MIN = 5;
+
+export function shiftRatingCounts(counts, fromStars, toStars) {
+  const next = { ...counts };
+  const bump = (n, d) => {
+    const k = String(n);
+    next[k] = Math.max(0, (Number(next[k]) || 0) + d);
+  };
+  if (fromStars >= 1 && fromStars <= 5) bump(fromStars, -1);
+  if (toStars >= 1 && toStars <= 5) bump(toStars, 1);
+  return next;
+}
+
+function RatingDistribution({ counts, total, t }) {
   return (
-    <div className="flex gap-2" dir="ltr">
-      {[1, 2, 3, 4, 5].map((n) => {
-        const filled = n <= (hover || value);
+    <ul className="flex-1 min-w-0 max-w-xs space-y-1" data-testid="rating-distribution">
+      {[5, 4, 3, 2, 1].map((n) => {
+        const c = Number(counts[String(n)]) || 0;
+        const pct = total > 0 ? Math.round((c / total) * 100) : 0;
         return (
-          <button
+          <li
             key={n}
-            type="button"
-            className="transition hover:scale-110"
-            onMouseEnter={() => setHover(n)}
-            onMouseLeave={() => setHover(0)}
-            onClick={() => onChange(n)}
-            aria-label={ariaLabelFn(n)}
+            data-star={n}
+            className="flex items-center gap-2 text-xs text-fg-muted"
+            aria-label={`${t("star_aria", { value: n })} · ${t("summary_count", { count: c })}`}
           >
-            <Star
-              size={32}
-              weight={filled ? "fill" : "regular"}
-              color={filled ? "#896714" : "#e5dfd3"}
-            />
-          </button>
+            <span className="w-2 text-center tabular-nums" aria-hidden="true">{n}</span>
+            <span className="relative h-1.5 flex-1 overflow-hidden rounded-full bg-border" aria-hidden="true">
+              <span
+                className="absolute inset-y-0 start-0 rounded-full bg-accent"
+                data-testid={`rating-bar-fill-${n}`}
+                style={{ width: `${pct}%` }}
+              />
+            </span>
+            <span className="w-5 text-end tabular-nums" aria-hidden="true" data-testid="rating-bar-count">{c}</span>
+          </li>
         );
       })}
-    </div>
+    </ul>
   );
 }
 
@@ -152,7 +180,7 @@ function StarPicker({ value, onChange, ariaLabelFn }) {
  * Length rules (2-1000 chars, ≥3 letters, MEH-555) are enforced server-side;
  * the client only gates the trivial <2-char case on the Save button.
  */
-function ReviewReply({ review, isOwner, onSaved }) {
+export function ReviewReply({ review, isOwner, onSaved }) {
   const t = useTranslations("reviews");
   const tError = useTranslations("error");
   const locale = useLocale();
@@ -190,10 +218,10 @@ function ReviewReply({ review, isOwner, onSaved }) {
           rows={2}
           maxLength={1000}
           placeholder={t("reply_placeholder")}
-          className="w-full border border-border rounded-sm px-3 py-2 bg-surface resize-none focus-visible:ring-2 focus-visible:ring-primary/40 outline-none text-sm"
+          className="w-full border border-border rounded-sm px-3 py-2 bg-surface resize-none focus-visible:ring-2 focus-visible:ring-primary outline-none text-sm"
         />
         {error && (
-          <p className="text-sm text-error mt-1" role="alert">{error}</p>
+          <InlineMessage className="mt-1">{error}</InlineMessage>
         )}
         <div className="flex items-center gap-4 mt-2">
           {/* MEH-1103: action buttons carry min-h-touch (WCAG 2.5.5). */}
@@ -201,7 +229,7 @@ function ReviewReply({ review, isOwner, onSaved }) {
             type="button"
             onClick={save}
             disabled={saving || draft.trim().length < 2}
-            className="min-h-touch bg-primary-dark text-white px-5 py-1.5 rounded-sm hover:opacity-90 transition disabled:opacity-60 text-sm font-medium"
+            className="min-h-touch bg-primary-dark text-white px-5 py-1.5 rounded-full hover:opacity-90 transition disabled:opacity-50 text-sm font-medium"
           >
             {saving ? t("submit_saving") : t("reply_save")}
           </button>
@@ -257,9 +285,11 @@ function ReviewReply({ review, isOwner, onSaved }) {
  *   avgRating     — producer.avg_rating from server (0 if no reviews)
  *   reviewCount   — producer.reviews_count from server
  *
- * Gate: user must have clicked the producer's WhatsApp CTA (localStorage
- * `wa_clicked_{producerId}` === "1"). Backend enforces the same rule via
- * producer_whatsapp_clicks.user_id.
+ * Gate: the user contacted the business from the page, through ANY channel
+ * (MEH-2999: localStorage `wa_clicked_{id}` or `contacted_{id}`, read via
+ * contactedMethodLocal). Backend enforces the same rule via
+ * producer_whatsapp_clicks.user_id OR producer_contact_clicks.user_id
+ * (reviews.py, MEH-2204).
  * MEH-1428 chunk 2: OR hold the owner's "request a review" token (`?rt=`,
  * kept per producer by lib/review-invite.js) — forwarded as `review_token`
  * and verified server-side (reviews.py `_invited_by_token`).
@@ -270,6 +300,7 @@ export default function ReviewsSection({
   reviewCount = 0,
   isOwner = false,
   onTotalChange,
+  producerName = "",
 }) {
   const t = useTranslations("reviews");
   // MEH-848: shared generic error copy (collapsed from reviews.error_generic).
@@ -279,6 +310,8 @@ export default function ReviewsSection({
   const [reviews, setReviews] = useState([]);
   const [total, setTotal] = useState(reviewCount);
   const [pages, setPages] = useState(1);
+  // MEH-1337: per-star counts from the server; null until it answers.
+  const [ratingCounts, setRatingCounts] = useState(null);
   const [page, setPage] = useState(1);
   // Reviews render 3-at-a-time; "הצג עוד" reveals +3 and appends the next
   // server page when the local buffer runs out (replaces the old carousel).
@@ -318,7 +351,10 @@ export default function ReviewsSection({
   // (an extra click row is acceptable, server-side).
   const openReviewForm = () => {
     if (user && hasClickedWa && !rePingedRef.current) {
-      pingWhatsAppBeacon(producerId);
+      // MEH-2999: re-send the click on the channel that was used.
+      const method = contactedMethodLocal(producerId);
+      if (method === "whatsapp") pingWhatsAppBeacon(producerId);
+      else if (method) trackContactClick(producerId, method);
       rePingedRef.current = true;
     }
     setShowForm(true);
@@ -330,9 +366,8 @@ export default function ReviewsSection({
 
   useEffect(() => {
     try {
-      if (localStorage.getItem(`wa_clicked_${producerId}`) === "1") {
-        setHasClickedWa(true);
-      }
+      // MEH-2999: any contact channel, not only WhatsApp.
+      if (contactedMethodLocal(producerId)) setHasClickedWa(true);
     } catch {}
     setInviteToken(captureReviewInvite(producerId, window.location.search));
     // MEH-1428 chunk 2: come back to THIS page's reviews after login — a
@@ -341,6 +376,30 @@ export default function ReviewsSection({
     // lib/safe-redirect.js on the login side).
     const back = `${window.location.pathname}${window.location.search}#reviews`;
     setLoginHref(`/login?redirect=${encodeURIComponent(back)}`);
+  }, [producerId]);
+
+  // 13/11/2026: a star tapped on the invite row before the reader could write
+  // is kept (ReviewInviteCard) — once they can, open the form with it chosen,
+  // as Google does. Fires after sign-in (#reviews return) or a contact tap.
+  useEffect(() => {
+    if (!user || user.producer_id === producerId || showForm) return;
+    if (!hasClickedWa && !inviteToken) return;
+    const kept = takeDraftStars(producerId);
+    if (!kept) return;
+    setStars((s) => s || kept);
+    openReviewForm();
+  }, [user, hasClickedWa, inviteToken, producerId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // MEH-2999: a contact made on this page (a tel: / mailto: tap keeps the
+  // page) unlocks the form at once, not after a reload.
+  useEffect(() => {
+    const onContacted = (e) => {
+      if (e.detail?.producerId === producerId && contactedMethodLocal(producerId)) {
+        setHasClickedWa(true);
+      }
+    };
+    window.addEventListener(CONTACTED_EVENT, onContacted);
+    return () => window.removeEventListener(CONTACTED_EVENT, onContacted);
   }, [producerId]);
 
   const fetchPage = (p) => {
@@ -360,6 +419,8 @@ export default function ReviewsSection({
         });
         setTotal(r.data?.total ?? 0);
         setPages(r.data?.pages ?? 1);
+        const rc = r.data?.rating_counts;
+        if (rc && typeof rc === "object") setRatingCounts(rc);
         setPage(p);
       })
       .catch(() => {})
@@ -415,8 +476,12 @@ export default function ReviewsSection({
       // WhatsApp-click path posts exactly the body it always did.
       const payload = inviteToken ? { stars, body, review_token: inviteToken } : { stars, body };
       const r = await api.post(`/producers/${producerId}/reviews`, payload);
+      const previous = reviews.find((x) => x.user_id === r.data.user_id);
       setReviews((prev) => [r.data, ...prev.filter((x) => x.user_id !== r.data.user_id)]);
-      setTotal((tt) => tt + (reviews.some((x) => x.user_id === r.data.user_id) ? 0 : 1));
+      setTotal((tt) => tt + (previous ? 0 : 1));
+      // MEH-1337: keep the bars in step with the total — move the owner's own
+      // star (edit) or add it (new review), so the five counts still sum to it.
+      setRatingCounts((rc) => (rc ? shiftRatingCounts(rc, previous?.stars, r.data.stars) : rc));
       setShowForm(false);
       showToast.success(t("saved_toast"), { icon: <Star size={18} weight="fill" /> });
     } catch (err) {
@@ -443,7 +508,12 @@ export default function ReviewsSection({
   };
 
   const showSummary = total > 0 && avgRating > 0;
+  const showDistribution = showSummary && total >= DISTRIBUTION_MIN && ratingCounts !== null;
   const anonymousFallback = t("anonymous_fallback");
+  // MEH-3053: at zero reviews (no heading, no summary, no list) the invite row
+  // is the first thing in the section. Its hairline + mt-8 then framed an
+  // empty 80px band under the products list; the section's mt-12 is the gap.
+  const inviteFirst = !loading && total === 0 && reviews.length === 0;
 
   return (
     <section ref={sectionRef} className="mt-12">
@@ -452,10 +522,10 @@ export default function ReviewsSection({
           own — «ביקורות» over nothing but the write hint. At zero the section
           is the one quiet line; the count parenthesis was already gated. */}
       {total > 0 && (
-        <h2 className="font-headline-md text-2xl font-bold text-text mb-6">
+        <SectionHeading size="content" className="mb-6">
           {t("section_heading")}
           <span className="text-base font-normal text-fg-muted ms-2">({total})</span>
-        </h2>
+        </SectionHeading>
       )}
 
       {/* Rating summary block — only when ≥3 reviews */}
@@ -464,88 +534,33 @@ export default function ReviewsSection({
           pushed to one side: StarRow is a dir="ltr" flex row, so in a centred
           block it hugged the left edge while the number sat in the middle. */}
       {showSummary && (
-        <div className="flex items-center gap-2.5 mb-6" data-testid="reviews-summary">
-          <p
-            className="font-headline-md text-2xl font-bold leading-none text-text"
-            dir="ltr"
-          >
-            {Number(avgRating).toFixed(1)}
-          </p>
-          <StarRow
-            value={Number(avgRating)}
-            size={18}
-            ariaLabel={t("star_aria", { value: Number(avgRating).toFixed(1) })}
-          />
-          <p className="text-fg-muted text-sm">{t("summary_count", { count: total })}</p>
+        <div
+          className={showDistribution ? "flex items-center gap-6 mb-6" : "flex items-center gap-2.5 mb-6"}
+          data-testid="reviews-summary"
+        >
+          {/* MEH-1337: with the bars, the number · stars · count stack into one
+              column at the start, bars beside it (Google). Without, one line. */}
+          <div className={showDistribution ? "flex shrink-0 flex-col items-start gap-1" : "contents"}>
+            <p
+              className={
+                showDistribution
+                  ? "font-headline-md text-4xl font-bold leading-none text-text"
+                  : "font-headline-md text-2xl font-bold leading-none text-text"
+              }
+              dir="ltr"
+            >
+              {Number(avgRating).toFixed(1)}
+            </p>
+            <StarRow
+              value={Number(avgRating)}
+              size={showDistribution ? 14 : 18}
+              ariaLabel={t("star_aria", { value: Number(avgRating).toFixed(1) })}
+            />
+            <p className="text-fg-muted text-sm">{t("summary_count", { count: total })}</p>
+          </div>
+          {showDistribution && <RatingDistribution counts={ratingCounts} total={total} t={t} />}
         </div>
       )}
-
-      {/* Write review CTA / form */}
-      {user ? (
-        // Producer owners cannot review their own business (backend guard mirrors this)
-        user.producer_id === producerId ? null :
-        hasClickedWa || inviteToken ? (
-          !showForm ? (
-            <button
-              onClick={openReviewForm}
-              className="mb-6 min-h-touch border border-text text-text px-5 py-2 rounded-full text-sm font-medium hover:bg-green-50 transition"
-            >
-              {t("write_cta")}
-            </button>
-          ) : (
-            <form
-              onSubmit={handleSubmit}
-              className="bg-surface rounded-lg p-5 border border-border mb-8 space-y-4"
-            >
-              <h3 className="font-headline-md text-lg font-bold text-text">{t("form_heading")}</h3>
-              <div>
-                <label className="block text-sm text-text mb-2">{t("rating_label")}</label>
-                <StarPicker
-                  value={stars}
-                  onChange={setStars}
-                  ariaLabelFn={(n) => t("star_aria", { value: n })}
-                />
-              </div>
-              <div>
-                <label htmlFor="review-body" className="block text-sm text-text mb-1">
-                  {t("body_label")}
-                </label>
-                <textarea
-                  id="review-body"
-                  value={body}
-                  onChange={(e) => setBody(e.target.value)}
-                  rows={3}
-                  maxLength={500}
-                  className="w-full border border-border rounded-sm px-3 py-2 bg-surface resize-none focus-visible:ring-2 focus-visible:ring-primary/40 outline-none"
-                  placeholder={t("body_placeholder")}
-                />
-                <p className="text-xs text-fg-muted mt-1">{body.length}/500</p>
-              </div>
-              {error && (
-                <p className="text-sm text-error" role="alert">
-                  {error}
-                </p>
-              )}
-              <div className="flex items-center gap-4">
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  className="min-h-touch bg-primary-dark text-white px-6 py-2 rounded-sm hover:opacity-90 transition disabled:opacity-60 text-sm font-medium"
-                >
-                  {submitting ? t("submit_saving") : t("submit")}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowForm(false)}
-                  className="min-h-touch inline-flex items-center text-sm text-fg-muted hover:text-text transition"
-                >
-                  {t("cancel")}
-                </button>
-              </div>
-            </form>
-          )
-        ) : null
-      ) : null}
 
       {/* Reviews list */}
       {loading ? (
@@ -592,7 +607,7 @@ export default function ReviewsSection({
                 <div className="flex items-start gap-3 mb-3">
                   <ReviewInitial
                     seedKey={review.user_id ?? review.user_name}
-                    letter={Array.from(formatName(review.user_name, anonymousFallback))[0]}
+                    letter={avatarInitial(formatName(review.user_name, anonymousFallback), "")}
                   />
                   <div className="min-w-0">
                     <p className="font-body-md font-semibold text-base text-text leading-snug">
@@ -637,41 +652,101 @@ export default function ReviewsSection({
             // center idiom (no physical props). Replaces the MEH-877 carousel.
             // "הצג עוד" only — no "show less" (MEH-1387 anti-pattern).
             // MEH-2592: a full-width button, like Airbnb's «הצגת כל הביקורות».
+            // MEH-3052: the shared ShowMore (block) — one look site-wide.
             <div className="mt-4">
-              <button
-                type="button"
-                onClick={handleShowMore}
-                disabled={loading}
-                className="w-full min-h-touch inline-flex items-center justify-center gap-1 rounded-xl border border-border bg-surface-card text-sm font-semibold text-text hover:bg-green-50 transition disabled:opacity-50"
-              >
-                {t("show_more")}
-                <CaretDown size={16} aria-hidden="true" />
-              </button>
+              <ShowMore onClick={handleShowMore} disabled={loading} label={t("show_more")} />
             </div>
           )}
         </>
       )}
 
-      {/* MEH-2592: who may write a review, as one quiet line UNDER the reviews
-          rather than a box above them. Same gates as before: the login line
-          for a visitor; the WhatsApp-gate line (MEH-1139) for a logged-in,
-          non-owner, not-yet-gated reader — at zero reviews too, since the
-          reader empty state is gone (it used to carry its own hint). */}
-      {/* Nothing until /auth/me answers — a signed-in reader otherwise saw
-          the login line for a second before it swapped (30/10). */}
+      {/* MEH-2999: who may write a review, as a card UNDER the reviews (was a
+          quiet grey line, MEH-2592). Same gates: «login» for a visitor; «contact»
+          for a logged-in, non-owner reader who has not contacted the business
+          and holds no invite link — at zero reviews too. Nothing until
+          /auth/me answers, or a signed-in reader sees the guest card for a
+          second before it swaps (30/10). */}
       {authLoading ? null : !user ? (
-        <p className="mt-4 text-sm text-fg-muted" data-testid="reviews-write-hint">
-          {t.rich("login_prompt", {
-            login: (chunks) => (
-              <Link href={loginHref} data-testid="reviews-login-link" className="text-primary underline">{chunks}</Link>
-            ),
-          })}
-        </p>
-      ) : user.producer_id !== producerId && !hasClickedWa && !inviteToken ? (
-        <p className="mt-4 text-sm text-fg-muted" data-testid="reviews-write-hint">
-          {t("wa_gate_message")}
-        </p>
-      ) : null}
+        <ReviewInviteCard
+          mode="login"
+          first={inviteFirst}
+          loginHref={loginHref}
+          producerId={producerId}
+          producerName={producerName}
+        />
+      ) : user.producer_id === producerId ? null : !hasClickedWa && !inviteToken ? (
+        <ReviewInviteCard mode="contact" first={inviteFirst} producerId={producerId} producerName={producerName} />
+      ) : showForm ? (
+          // 13/11/2026 (Sapir, option ד): no white box — the form opens IN
+          // the Google row, the row's own stars are the rating picker.
+          <form
+            onSubmit={handleSubmit}
+            className={inviteFirst ? "space-y-4" : "mt-8 border-t border-border pt-5 space-y-4"}
+            data-testid="reviews-form"
+          >
+            <h3 className="sr-only">{t("form_heading")}</h3>
+            <ReviewInviteCard
+              mode="write"
+              bare
+              value={stars}
+              onPick={setStars}
+              testId="reviews-form-row"
+              producerId={producerId}
+              producerName={producerName}
+            />
+            <div>
+              <label htmlFor="review-body" className="block text-sm text-text mb-1">
+                {t("body_label")}
+              </label>
+              <textarea
+                id="review-body"
+                value={body}
+                onChange={(e) => setBody(e.target.value)}
+                rows={4}
+                maxLength={500}
+                className="w-full border border-border rounded-sm px-3 py-2.5 bg-surface-card resize-none focus-visible:ring-2 focus-visible:ring-primary outline-none"
+                placeholder={t("body_placeholder")}
+              />
+              <p className="text-xs text-fg-muted mt-1">{body.length}/500</p>
+            </div>
+            {error && (
+              <InlineMessage>
+                {error}
+              </InlineMessage>
+            )}
+            <div className="flex items-center gap-4">
+              <button
+                type="submit"
+                disabled={submitting}
+                className="min-h-touch bg-primary-dark text-white px-6 py-2 rounded-full hover:opacity-90 transition disabled:opacity-50 text-sm font-medium"
+              >
+                {submitting ? t("submit_saving") : t("submit")}
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowForm(false)}
+                className="min-h-touch inline-flex items-center text-sm text-fg-muted hover:text-text transition"
+              >
+                {t("cancel")}
+              </button>
+            </div>
+          </form>
+        ) : (
+        // Allowed to write, form closed: the same row; a star opens the form
+        // with that rating (replaces the «כתבו ביקורת» pill above the list).
+        <ReviewInviteCard
+          mode="write"
+          first={inviteFirst}
+          value={stars}
+          onPick={(n) => {
+            setStars(n);
+            openReviewForm();
+          }}
+          testId="reviews-write-row"
+          producerId={producerId}
+          producerName={producerName}
+        />
+      )}
     </section>
   );
 }

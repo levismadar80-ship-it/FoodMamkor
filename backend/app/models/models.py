@@ -167,6 +167,16 @@ class Producer(Base):
     kind = Column(
         String(20), nullable=False, default="producer", server_default="producer"
     )
+    # MEH-2952 (MEH-2892 §C.3): a seeded test business that may run on
+    # production for the post-release smoke. Hidden from every public surface
+    # by `producer_listing.is_business()` (the one rule; `include_test=True`
+    # only where a guard test allows it). Expand-only, NOT NULL + server
+    # default false (revision b8cb5480552f). Writers: the seed script and an
+    # admin toggle only (chunk 4) — never a self-service form, never a public
+    # response (tests/test_meh2952_is_test_guards.py).
+    is_test = Column(
+        Boolean, nullable=False, default=False, server_default=text("false")
+    )
     # MEH-2100: the instant the owner pressed "שליחה לבדיקה" and this row
     # moved draft -> pending. That instant, NOT created_at, is when the
     # 3-business-day review SLA starts once the submit gate ships.
@@ -443,6 +453,13 @@ class Producer(Base):
     # close>open, order + non-overlap, ≤3 → 422). Expand-only per ADR-007.
     # Paired migration for the COLUMN: f4a1e9c3b7d2 (MEH-1543).
     order_window = Column(JSONB, nullable=True)
+    # MEH-3035: how the business takes payment — {"methods": [...], "timing":
+    # str|None, "note": str|None}, or NULL (said nothing → the page renders
+    # nothing). Validated in schemas._payment_info_validator. Expand-only per
+    # ADR-007. Paired migration: e3a5c1d7f904.
+    payment_info = Column(JSONB, nullable=True)
+    # MEH-3055: ordered [{id, name}] product groups (b7d4e2a9c615).
+    product_groups = Column(JSONB, nullable=True)
     # MEH-1889 chunk A: per-DATE overrides above the weekly axes, shape
     # {"2026-09-22": {"ranges": [{"open": "09:00", "close": "13:00"}],
     #                 "note": "ערב ראש השנה"}} — keys ISO YYYY-MM-DD,
@@ -539,6 +556,91 @@ class Producer(Base):
     # success only). NULL = none minted since the column existed (revision
     # 8600916f1942, no backfill). Admin-only via ProducerAdminOut.
     claim_link_sent_at = Column(DateTime(timezone=True), nullable=True)
+    # MEH-2974: owner invite for a business an admin built end to end. Sapir
+    # creates the page through /admin after written consent from its owner,
+    # then hands it over: a one-time link on which the owner sets a password
+    # and signs the terms + the licensing declaration herself.
+    #
+    # The invite lives on THIS row and NOT in a table of its own, and there is
+    # no `users` row until the invite is accepted (card «החלטות סגורות» 2 + 3).
+    # Consequences worth knowing before reading any of it:
+    #   - no half-user: the onboarding follow-ups, the welcome email and
+    #     forgot-password all key on `users`, so none of them can fire for an
+    #     invitee who has not accepted;
+    #   - exactly one invite per business at a time. Re-inviting REPLACES it,
+    #     which is also how an outstanding link is revoked.
+    #
+    # DO NOT store the raw token. `owner_invite_token_hash` is the sha256 hex
+    #        of a `secrets.token_urlsafe(32)` that exists only in the creating
+    #        response and in the email — a DB reader must not be able to accept
+    #        an invite. The lookup hashes the candidate and matches on this
+    #        column (routers/producer_owner_invite.py).
+    # DO NOT expose any of these through ProducerAdminUpdate — the admin PUT
+    #        applies its payload with a bulk setattr (admin.py:1012), and these
+    #        are written only by the three owner-invite endpoints.
+    #
+    # All eight are nullable with no server_default and no backfill
+    # (ADR-007 expand-only): a row that predates the feature stays NULL, which
+    # reads as "never invited". Admin-only exposure via ProducerAdminOut; the
+    # hash is on NO schema at all. Paired migration: a7f3c2e94d18.
+    owner_invite_email = Column(String(200), nullable=True)
+    owner_invite_name = Column(String(200), nullable=True)
+    owner_invite_token_hash = Column(String(64), nullable=True, index=True)
+    owner_invite_expires_at = Column(DateTime(timezone=True), nullable=True)
+    owner_invite_sent_at = Column(DateTime(timezone=True), nullable=True)
+    # Set once, at acceptance. Also the onboarding-sequence clock: the day
+    # 2/5/10/30 emails count from here when it is set, from `created_at`
+    # otherwise (services/onboarding_followup.py) — an admin-built page can sit
+    # live for weeks before its owner ever sees it, and «עברו כמה ימים» has to
+    # mean days since SHE arrived.
+    owner_invite_accepted_at = Column(DateTime(timezone=True), nullable=True)
+    # The admin's own record of how the written consent was given, e.g.
+    # «אישור בוואטסאפ, 12/11». Required (non-blank) on every invite — this
+    # column plus `owner_invite_created_by` IS the audit trail.
+    owner_invite_consent_note = Column(Text, nullable=True)
+    # `use_alter` + an explicit name, exactly as `top_product_id` above does,
+    # and for the same reason: `users.producer_id` already points HERE, so this
+    # reference closes a producers ↔ users cycle. Without the pair, SQLAlchemy
+    # cannot order a `drop_all` and raises CircularDependencyError — which in
+    # this repo means `tests/conftest.py::_bootstrap_schema` fails and the
+    # WHOLE pytest suite errors at setup, not just this feature's tests.
+    # Measured: the first version of this column, with a bare
+    # `ForeignKey("users.id", ondelete="SET NULL")`, did exactly that.
+    # DO NOT drop either argument.
+    owner_invite_created_by = Column(
+        UUID(as_uuid=True),
+        ForeignKey(
+            "users.id",
+            ondelete="SET NULL",
+            use_alter=True,
+            name="fk_producers_owner_invite_created_by_users",
+        ),
+        nullable=True,
+    )
+    # MEH-2974 v3: the invite link no longer has to carry an email. Most
+    # businesses reach us on Instagram or WhatsApp and we have no address for
+    # them, so the admin may mint a link with none and the owner types her own
+    # on the acceptance page.
+    #
+    # That makes the link a pure bearer credential, and an address typed into
+    # it is unproven — a typo would lock her out of her own page, and a
+    # deliberate entry could park someone else's address on a live business.
+    # So the typed address is verified with a one-time CODE before any account
+    # exists (closed decision 14): `email_verified=True` then rests on the code,
+    # not on the invite mail having been delivered.
+    #
+    # Only the sha256 of the code is stored, which is stricter than the repo's
+    # existing OTP (`PhoneOtpToken.code` is plaintext, models.py:2518) and the
+    # same reasoning as the invite token two blocks up.
+    #
+    # `owner_invite_code_attempts` is the per-code counter. NULL and 0 both
+    # mean "no wrong guesses yet"; it is reset with every new code, and the
+    # code dies at OWNER_INVITE_CODE_MAX_ATTEMPTS so a 6-digit secret cannot be
+    # walked. All three are cleared together — by a resend, a cancel, or an
+    # acceptance.
+    owner_invite_code_hash = Column(String(64), nullable=True)
+    owner_invite_code_expires_at = Column(DateTime(timezone=True), nullable=True)
+    owner_invite_code_attempts = Column(Integer, nullable=True)
     # MEH-1011: producer "request-changes" trail — the non-terminal twin of
     # rejection_reason. When the admin sends a completion request (missing
     # photo / license), status STAYS "pending"; `requested_changes` holds the
@@ -762,6 +864,13 @@ class User(Base):
     google_id = Column(String(200), unique=True, nullable=True)
     apple_id = Column(String(200), unique=True, nullable=True)
     is_blocked = Column(Boolean, default=False)
+    # MEH-2952 (MEH-2892 §C.3): a test identity for the post-release smoke.
+    # Same rules as Producer.is_test: NOT NULL + server default false
+    # (revision b8cb5480552f), written only by the seed script and an admin
+    # toggle (chunk 4), never exposed in a public response.
+    is_test = Column(
+        Boolean, nullable=False, default=False, server_default=text("false")
+    )
     created_at = Column(DateTime, default=utc_now)
     # Analytics (feature/producer-analytics): updated on every authenticated
     # request via a tiny middleware in main.py. Used to compute daily-active-user
@@ -844,7 +953,15 @@ class User(Base):
     # history the chunk-5 metrics read. NULL = never cleared.
     rescue_block_cleared_at = Column(DateTime, nullable=True)
 
-    producer = relationship("Producer")
+    # MEH-2974: `foreign_keys` is REQUIRED here, and the requirement arrived
+    # with `producers.owner_invite_created_by`. There are now two foreign-key
+    # paths between `users` and `producers` — this column, and that one — so
+    # SQLAlchemy cannot infer which one joins this relationship and raises
+    # AmbiguousForeignKeysError while MAPPING, i.e. on the first ORM query of
+    # the process, for every caller, not only the invite's own. Same
+    # disambiguation, same reason, as `Product.producer` (:1202, MEH-2137).
+    # DO NOT remove it.
+    producer = relationship("Producer", foreign_keys="User.producer_id")
     favorites = relationship(
         "Favorite", back_populates="user", cascade="all, delete-orphan"
     )
@@ -1117,6 +1234,10 @@ class Product(Base):
     # allergen codes from the closed list in app/allergens.py. NULL = not
     # filled (the sheet shows nothing), never "contains none".
     ingredients = Column(Text, nullable=True)
+    # MEH-3055: owner order (NULL = never ordered) + group id from
+    # producers.product_groups (no FK; cleared by routers/product_organize.py).
+    position = Column(Integer, nullable=True)
+    group_id = Column(String(36), nullable=True)
     allergens: Column[list[str]] = Column(ARRAY(Text), nullable=True)
 
     # MEH-2137: the other half of the same disambiguation — see the comment on
@@ -1521,6 +1642,9 @@ class FavoriteAlert(Base):
     # buy. Nullable + server_default true, exactly like MEH-1361; unlike the
     # siblings, the code reads NULL as ON (alerts.py, Sapir 08/11).
     notify_new_group_buy = Column(Boolean, default=True)
+    # MEH-3117: 6th alert type — fires when a favorited producer publishes
+    # rescue bags for TODAY. Same shape as notify_new_group_buy (NULL = ON).
+    notify_new_rescue = Column(Boolean, default=True)
     push_subscription = Column(JSON, nullable=True)
     whatsapp_opt_in = Column(Boolean, default=False)
     created_at = Column(DateTime, default=utc_now)
@@ -3133,3 +3257,24 @@ class RescueTypicalItems(Base):
     updated_at = Column(DateTime, default=utc_now, onupdate=utc_now, nullable=False)
 
     producer = relationship("Producer")
+
+
+class AlembicLineage(Base):
+    """MEH-2903 — every Alembic revision a booted image has applied here.
+
+    `alembic_version` holds only the current head, so an OLDER image booting on
+    a newer database (a rollback) cannot tell whether its own head is an
+    ancestor of the database's revision. `scripts/migrate_on_boot.py` records
+    the image's whole chain after each successful `upgrade head`, and an older
+    image takes rollback mode only if its head is listed here.
+
+    Boot bookkeeping, not app data: nothing in `app/` reads or writes it.
+    History:  MEH-2903 (creation)
+    """
+
+    __tablename__ = "alembic_lineage"
+
+    revision = Column(String(64), primary_key=True)
+    recorded_at = Column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )

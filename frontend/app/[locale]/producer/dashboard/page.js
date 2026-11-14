@@ -1,7 +1,8 @@
 "use client";
 
 import { Link as LocaleLink } from "@/i18n/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
+import useDialogFocus, { useDialogEscape } from "@/hooks/useDialogFocus";
 import { EnvelopeSimple, Eye, LockSimple, ShoppingBag, Sparkle, Warning, WhatsappLogo, X } from "@phosphor-icons/react";
 // MEH-956: locale-aware Link for the load-error CTA — preserves the active
 // locale on /contact (bare next/link drops it for `en` under as-needed).
@@ -14,6 +15,7 @@ import { showToast } from "@/lib/toast";
 import { getUpcomingHoliday } from "@/lib/holidays";
 import HolidayIcon from "@/components/HolidayIcon";
 import ProfileCompletenessCard from "@/components/ProfileCompletenessCard";
+import OwnerAttentionCard from "@/components/producer/OwnerAttentionCard";
 import DraftSubmitBanner from "@/components/producer/DraftSubmitBanner";
 import ChangesRequestedBanner from "./ChangesRequestedBanner";
 import RejectedBanner from "./RejectedBanner";
@@ -24,17 +26,24 @@ import { SITE_URL, env } from "@/lib/env";
 import { shareOrCopy } from "@/lib/share-link";
 import { rescueBagsEnabled } from "@/lib/rescue";
 import Button from "@/components/ui/Button";
+import { SwitchTrack } from "@/components/ui/Switch";
+import { copyOrThrow } from "@/lib/clipboard";
 
 function VanityLinkCard({ slug }) {
   const t = useTranslations("dashboard.producer.vanity_link");
   const url = `${SITE_URL}/p/${slug}`;
   const [copied, setCopied] = useState(false);
 
+  // MEH-3064: a failed copy says so — this one used to do nothing at all
+  // (no catch: an unhandled rejection and a dead button).
+  const tFollowers = useTranslations("sweep_tail.followers");
   const copy = () => {
-    navigator.clipboard.writeText(url).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    });
+    copyOrThrow(url)
+      .then(() => {
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      })
+      .catch(() => showToast.error(tFollowers("share_error")));
   };
 
   // MEH-2827 PR 8: «שתפו» opens the phone's own share sheet — Instagram
@@ -55,6 +64,7 @@ function VanityLinkCard({ slug }) {
       <div className="flex gap-2">
         <button
           onClick={copy}
+          data-testid="vanity-copy"
           className="flex-1 text-sm border border-border rounded-sm px-3 py-1.5 hover:border-primary transition"
         >
           {copied ? t("copied") : t("copy_cta")}
@@ -63,7 +73,7 @@ function VanityLinkCard({ slug }) {
           type="button"
           onClick={share}
           data-testid="vanity-share"
-          className="flex-1 text-sm text-center rounded-sm px-3 py-1.5 bg-primary text-background hover:bg-primary-dark transition"
+          className="flex-1 text-sm text-center rounded-full px-3 py-1.5 bg-primary text-background hover:bg-primary-dark transition"
         >
           {tShare("trigger")}
         </button>
@@ -118,15 +128,19 @@ function SectionFetchError({ message, retryLabel, onRetry, testid }) {
 // banners below — wa.me + mailto, same two-channel layout as the original.
 function StatusSupportModal({ onClose }) {
   const t = useTranslations("dashboard.producer.status.support");
+  const dialogRef = useRef(null);
+  useDialogFocus(dialogRef, true);
+  useDialogEscape(true, onClose);
   return (
     <div
+      ref={dialogRef}
       className="fixed inset-0 z-[9000] flex items-end sm:items-center justify-center bg-black/40 px-4"
       role="dialog"
       aria-modal="true"
       aria-label={t("section_aria")}
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
-      <div className="bg-surface rounded-t-3xl sm:rounded-xl w-full max-w-sm p-6 space-y-4">
+      <div className="bg-surface rounded-t-xl sm:rounded-xl w-full max-w-sm p-6 space-y-4">
         <h2 className="font-semibold text-text text-lg">{t("heading")}</h2>
         <p className="text-sm text-fg-muted">{t("body")}</p>
         <a
@@ -135,7 +149,7 @@ function StatusSupportModal({ onClose }) {
           rel="noopener noreferrer"
           className="flex items-center gap-3 rounded-lg border border-border px-4 py-3 hover:bg-green-50 transition"
         >
-          <WhatsappLogo size={22} weight="fill" className="text-[#25D366] shrink-0" />
+          <WhatsappLogo size={24} weight="fill" className="text-[#25D366] shrink-0" />
           <div>
             <p className="text-sm font-medium">{t("whatsapp_label")}</p>
             <p className="text-xs text-fg-muted">{t("whatsapp_hours")}</p>
@@ -145,7 +159,7 @@ function StatusSupportModal({ onClose }) {
           href="mailto:contact@mehamakor.co.il"
           className="flex items-center gap-3 rounded-lg border border-border px-4 py-3 hover:bg-green-50 transition"
         >
-          <EnvelopeSimple size={22} className="text-primary shrink-0" />
+          <EnvelopeSimple size={24} className="text-primary shrink-0" />
           <div>
             <p className="text-sm font-medium">{t("email_label")}</p>
             <p className="text-xs text-fg-muted">contact@mehamakor.co.il</p>
@@ -171,6 +185,7 @@ function StatusSupportModal({ onClose }) {
 
 export default function ProducerDashboardPage() {
   const t = useTranslations("dashboard.producer");
+  const tSignup = useTranslations("auth.register.producer.success");
   const tHoliday = useTranslations("holidays");
   const { user, loading: authLoading } = useAuth();
   const [data, setData] = useState(null);
@@ -453,6 +468,10 @@ export default function ProducerDashboardPage() {
         </LocaleLink>
       )}
 
+      {/* MEH-3108: «מה מחכה לך» — what is waiting for the owner, right
+          under the greeting. Renders nothing when nothing is waiting. */}
+      <OwnerAttentionCard attention={data?.attention} />
+
       {/* MEH-1025 Chunk B: admin completion-request banner. Renders only when
           requested_changes is set; the CTA routes to the edit tab. */}
       <ChangesRequestedBanner profile={profile} />
@@ -503,6 +522,27 @@ export default function ProducerDashboardPage() {
           <p className="text-yellow-700">
             {t("status.pending.body")}
           </p>
+          {/* MEH-3073: where she stands, not only that she waits. An ordered
+              process, so an <ol>; the first step is the current one for the
+              whole life of this banner (approval removes the banner). Strings
+              are the three stage names of the signup flow — one home.
+              role="list": Safari drops list semantics once list-style is none. */}
+          <ol role="list" className="mt-3 flex flex-col gap-2 text-text" data-testid="status-pending-steps">
+            {["next_step1", "next_step2", "next_step3"].map((key, i) => (
+              <li
+                key={key}
+                data-testid="status-pending-step"
+                aria-current={i === 0 ? "step" : undefined}
+                className={`flex items-center gap-2 ${i === 0 ? "font-semibold" : ""}`}
+              >
+                <span
+                  aria-hidden="true"
+                  className={`h-3 w-3 shrink-0 rounded-full border-2 border-current ${i === 0 ? "bg-current" : "bg-transparent"}`}
+                />
+                {tSignup(key)}
+              </li>
+            ))}
+          </ol>
         </div>
       )}
 
@@ -664,18 +704,7 @@ export default function ProducerDashboardPage() {
             !isApproved ? "opacity-50 cursor-not-allowed" : ""
           }`}
         >
-          <span
-            aria-hidden="true"
-            className={`relative block w-10 h-6 shrink-0 rounded-full transition-colors group-focus-visible:ring-2 group-focus-visible:ring-primary/40 ${
-              pauseOn && isApproved ? "bg-primary" : "bg-border"
-            }`}
-          >
-            <span
-              className={`absolute top-1 w-4 h-4 rounded-full bg-surface shadow transition-all ${
-                pauseOn && isApproved ? "end-1" : "start-1"
-              }`}
-            />
-          </span>
+          <SwitchTrack on={pauseOn && isApproved} />
           {t("availability.options.on_vacation")}
         </button>
         {/* MEH-964 1D: why-locked hint, associated with the pause switch via
@@ -703,7 +732,7 @@ export default function ProducerDashboardPage() {
                 // offered a value the server would then reject.
                 min={israelToday()}
                 onChange={(e) => { setVacationUntil(e.target.value); setVacationDateError(""); }}
-                className="border border-border rounded-sm px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
+                className="border border-border rounded-sm px-3 py-1.5 text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                 dir="ltr"
                 aria-invalid={vacationDateError ? "true" : undefined}
                 aria-describedby={vacationDateError ? "vacation-until-error" : undefined}
@@ -749,7 +778,7 @@ export default function ProducerDashboardPage() {
           data-testid="home-rescue-card"
           className="flex items-start gap-3 bg-surface border border-border rounded-lg p-5 mb-6 hover:border-primary transition"
         >
-          <ShoppingBag size={22} className="text-primary shrink-0 mt-0.5" aria-hidden="true" />
+          <ShoppingBag size={24} className="text-primary shrink-0 mt-0.5" aria-hidden="true" />
           <span>
             <span className="block font-semibold text-text">{t("quick_links.rescue.title")}</span>
             <span className="block text-sm text-fg-muted">{t("quick_links.rescue.sub")}</span>
@@ -849,7 +878,31 @@ export default function ProducerDashboardPage() {
           Overview analytics for the lean KPI strip and moved the deep charts
           to the insights tab. */}
 
-      {/* MEH-1355: shared support modal for the rejected + inactive banners. */}
+      {/* MEH-3106: a permanent way to reach the team. Until now the support
+          modal opened only from the rejected / inactive banners, so a live
+          business that got stuck had no way in (Shopify «Help», Wolt support
+          chat, Google «Support» are always one tap away). Last on the page, so
+          on a phone it sits right above the layout's «יציאה מהחשבון». */}
+      <div
+        data-testid="dashboard-help-row"
+        className="bg-surface border border-border rounded-lg p-4 mb-6 flex items-center justify-between gap-3"
+      >
+        <div className="min-w-0">
+          <p className="font-semibold text-text text-sm">{t("help_row.title")}</p>
+          <p className="text-sm text-fg-muted">{t("help_row.body")}</p>
+        </div>
+        <button
+          type="button"
+          data-testid="dashboard-help-cta"
+          onClick={() => setSupportOpen(true)}
+          className="min-h-touch inline-flex items-center text-sm text-primary font-medium underline decoration-[1.5px] underline-offset-[5px] decoration-primary/35 hover:decoration-current shrink-0"
+        >
+          {t("help_row.cta")}
+        </button>
+      </div>
+
+      {/* MEH-1355: shared support modal for the rejected + inactive banners
+          (and, MEH-3106, the help row above). */}
       {supportOpen && <StatusSupportModal onClose={() => setSupportOpen(false)} />}
     </div>
   );
@@ -878,12 +931,7 @@ function ZeroStateShareButton({ slug }) {
   // A failed copy says so (no clipboard API, or a rejected write) — the tap
   // must never do nothing (MEH-2884 review).
   const copy = () => {
-    if (!navigator.clipboard?.writeText) {
-      showToast.error(tFollowers("share_error"));
-      return;
-    }
-    navigator.clipboard
-      .writeText(url)
+    copyOrThrow(url)
       .then(() => showToast.success(tVanity("copied")))
       .catch(() => showToast.error(tFollowers("share_error")));
   };
@@ -892,7 +940,7 @@ function ZeroStateShareButton({ slug }) {
       type="button"
       data-testid="overview-zero-share"
       onClick={() => shareOrCopy({ url, text: tVanity("wa_text_template", { url: "" }).trim(), copy })}
-      className="mt-4 text-sm rounded-sm px-4 py-1.5 bg-primary text-background hover:bg-primary-dark transition"
+      className="mt-4 text-sm rounded-full px-4 py-1.5 bg-primary text-background hover:bg-primary-dark transition"
     >
       {tShare("trigger")}
     </button>

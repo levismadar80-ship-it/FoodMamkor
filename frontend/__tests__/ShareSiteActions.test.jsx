@@ -26,12 +26,16 @@ vi.mock("next-intl", async () => {
   return { useTranslations: make, useLocale: () => "he" };
 });
 vi.mock("@/i18n/navigation", () => ({
+  // MEH-3059: Footer prefetches «כל בתי העסק» on intent via router.prefetch.
+  useRouter: () => ({ prefetch: () => {} }),
   Link: ({ href, children, prefetch, ...p }) => <a href={typeof href === "string" ? href : href?.pathname} {...p}>{children}</a>,
   getPathname: ({ href, locale }) => (locale === "he" ? href : `/${locale}${href}`),
 }));
 vi.mock("next/image", () => ({ default: ({ priority, ...p }) => <img alt="" {...p} /> }));
 const authState = { user: null, loading: false };
-vi.mock("@/lib/auth-context", () => ({ useAuth: () => authState }));
+vi.mock("@/lib/auth-context", () => ({
+  // MEH-3112 prefill hook: a guest here, so the forms open empty as before.
+  useOptionalAuth: () => null, useAuth: () => authState }));
 vi.mock("@/lib/toast", () => ({ showToast: { success: vi.fn(), error: vi.fn(), info: vi.fn() } }));
 vi.mock("@/lib/env", () => ({ SITE_URL: "https://mehamakor.co.il" }));
 vi.mock("@/lib/api", () => ({ default: { get: vi.fn(() => new Promise(() => {})), post: vi.fn(() => Promise.resolve({ data: {} })) } }));
@@ -122,13 +126,13 @@ describe("/recommend carries «ספרו עלינו»", () => {
     expect(screen.getByTestId("recommend-share")).toBeInTheDocument();
   });
 
-  it("owner line: a guest sees «יש לכם עסק? בואו אלינו» + «מצטרפים» to /register/producer", () => {
+  it("owner line: a guest sees «יש לכם עסק? בואו אלינו» + «מצטרפים» to /join (MEH-2983)", () => {
     render(<RecommendClient />);
     const line = screen.getByTestId("recommend-owner-line");
     expect(line).toHaveTextContent("יש לכם עסק? בואו אלינו");
     const link = screen.getByTestId("recommend-owner-link");
     expect(link).toHaveTextContent("מצטרפים");
-    expect(link.getAttribute("href")).toBe("/register/producer");
+    expect(link.getAttribute("href")).toBe("/join");
   });
 
   it("owner line: a producer is sent to the dashboard, an admin sees no link", () => {

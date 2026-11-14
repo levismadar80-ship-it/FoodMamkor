@@ -416,6 +416,27 @@ export const ProducerDetailSchema = ProducerListSchema.extend({
   // Kept as optional on purpose: `undefined` says "this payload did not carry
   // the field", which a default would erase.
   coverage_cta_enabled: z.boolean().optional(),
+  // MEH-3035: «איך משלמים?» — served as `dict | None`; the closed lists live in
+  // lib/payment-info.js and are applied by paymentAnswer(), not here, so a
+  // method the backend adds before this bundle deploys is dropped there, not
+  // turned into a parse failure. Declared because z.object strips undeclared
+  // keys (backend-contract-parity.test.js).
+  payment_info: z
+    .object({
+      methods: z.array(z.string()).optional(),
+      timing: z.string().nullable().optional(),
+      note: z.string().nullable().optional(),
+    })
+    .loose()
+    .nullable()
+    .optional(),
+  // MEH-3055: the owner's product groups, in her order — the public page turns
+  // them into filter chips. Declared because z.object strips undeclared keys:
+  // without it, any strict parse of this payload drops every chip.
+  product_groups: z
+    .array(z.object({ id: z.string(), name: z.string() }))
+    .nullable()
+    .optional(),
 });
 
 // MEH-1752: back-compat alias. Every existing importer of `ProducerSchema`

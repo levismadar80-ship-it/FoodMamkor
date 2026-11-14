@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { loginLinkFor } from "@/lib/safe-redirect";
 import { render, screen, fireEvent, cleanup } from "@testing-library/react";
 
 import {
@@ -34,8 +35,8 @@ import AccountSheet from "@/components/AccountSheet";
  * RED; restoring turns it GREEN.
  *
  * WHAT IS DELIBERATELY NOT ASSERTED:
- *   - ORDER. The Header renders home/map/experiences/about while the BottomNav
- *     renders home/map/about — the sequences genuinely differ, so no single
+ *   - ORDER. The Header renders home/map/whatsOn/about while the BottomNav
+ *     renders home/map/(whatsOn|about) — the sequences genuinely differ, so no single
  *     declaration order can describe both. Comparisons are sorted multisets.
  *     Order stays shell-local, which is exactly the chunk 0 finding.
  *   - The brand logo. Header.jsx:366 links "/" from an <img> anchor; it is a
@@ -49,7 +50,12 @@ import AccountSheet from "@/components/AccountSheet";
 
 const pathnameRef = { current: "/about" };
 const userRef = { current: null };
+// MEH-2859: the Header's gated item is «מה קורה» → /events, and its gate is
+// now ANY of the four date-bound types having supply, not experiences alone.
+// One ref per hook so a test can say WHICH type cleared it.
 const experiencesGateRef = { current: false };
+const eventsGateRef = { current: false };
+const hubGateRefs = { groupBuys: false, rescue: false };
 
 vi.mock("@/i18n/navigation", () => ({
   // MEH-2578: the chrome now takes Link from here, not next/link.
@@ -112,6 +118,7 @@ vi.mock("@phosphor-icons/react", () => {
     Compass: stub("Compass"),
     MapTrifold: stub("MapTrifold"),
     Flower: stub("Flower"),
+    CalendarBlank: stub("CalendarBlank"),
     User: stub("User"),
     // AccountSheet
     Heart: stub("Heart"),
@@ -136,6 +143,14 @@ vi.mock("@/components/LanguageToggle", () => ({
 
 vi.mock("@/lib/use-experiences-nav-gate", () => ({
   useExperiencesNavGate: () => experiencesGateRef.current,
+}));
+
+vi.mock("@/lib/use-events-nav-gate", () => ({
+  useEventsNavGate: () => eventsGateRef.current,
+}));
+
+vi.mock("@/lib/use-hub-nav-gate", () => ({
+  useHubNavGate: (hub) => hubGateRefs[hub] ?? false,
 }));
 
 const STATES = {
@@ -172,10 +187,15 @@ const STATES = {
  * hold an opinion on (supply of experiences; whether a producer has a linked
  * public page).
  */
+const HUB_HREFS = ["/events", "/experiences", "/group-buys", "/rescue"];
+
 function expectedLinks(surfaceName, state, gates = {}) {
   return itemsForSurface(surfaceName, state)
     .filter(({ item }) => item.kind === "link")
     .filter(({ item }) => !item.dataGate || gates[item.dataGate])
+    // MEH-2965: a surface that shares its slot gives it up while the gate it
+    // names is open (the pill's «אודות» ↔ «אירועים»).
+    .filter(({ surface }) => !surface.yieldsTo || !gates[surface.yieldsTo])
     .filter(({ surface }) => {
       const suppress = surface.suppressOnRoute;
       if (!suppress) return true; // no route gate on this surface → keep
@@ -183,7 +203,17 @@ function expectedLinks(surfaceName, state, gates = {}) {
       return !suppress.some((p) => (p.endsWith("/") ? path.startsWith(p) : path === p));
     })
     .map(({ item, surface }) => ({
-      href: item.href.replace(":producerId", state.producerId ?? ""),
+      // MEH-2975: the hub link's href is the first hub route with supply, so
+      // a case that opens one gate names the route it expects (`hubHref`).
+      href:
+        item.dataGate === "listing-supply" && gates.hubHref
+          ? gates.hubHref
+          : item.id === "login" && surfaceName === "header"
+            ? // MEH-3026 (F2): the header's «כניסה» returns her to the page
+              // she is on, so the expected href is derived the same way the
+              // registry's href is for every other row — from one owner.
+              loginLinkFor(pathnameRef.current)
+            : item.href.replace(":producerId", state.producerId ?? ""),
       label: surface.labelKey,
     }));
 }
@@ -218,6 +248,9 @@ beforeEach(() => {
   pathnameRef.current = "/about";
   userRef.current = null;
   experiencesGateRef.current = false;
+  eventsGateRef.current = false;
+  hubGateRefs.groupBuys = false;
+  hubGateRefs.rescue = false;
 });
 
 // ──────────────────────────── the control ────────────────────────────
@@ -309,20 +342,63 @@ describe("MEH-1703 — Header link row matches the registry", () => {
     });
   }
 
-  it("header surface picks up the experiences link when supply clears the gate", () => {
-    experiencesGateRef.current = true;
+  // MEH-2859: FOUR hooks can clear this one gate, and each is asserted on its
+  // own. A single "gates on" case would pass while three of the four were
+  // wired to nothing — which is the shape of gate this item replaced.
+  for (const [name, turnOn, hubHref] of [
+    ["events", () => { eventsGateRef.current = true; }, "/events"],
+    ["experiences", () => { experiencesGateRef.current = true; }, "/experiences"],
+    ["group buys", () => { hubGateRefs.groupBuys = true; }, "/group-buys"],
+    ["surprise baskets", () => { hubGateRefs.rescue = true; }, "/rescue"],
+  ]) {
+    it(`header surface picks up «מה קורה» when ${name} alone clears the gate`, () => {
+      turnOn();
+      userRef.current = null;
+      const { container } = render(<Header />);
+      const rendered = sortLinks(renderedLinks(container));
+
+      expect(rendered).toEqual(
+        sortLinks(expectedLinks("header", STATES.guest, { "listing-supply": true, hubHref })),
+      );
+      // Belt and braces: the gate really did add a link, so the case above is
+      // not passing because both sides are missing it. MEH-2975: it lands on
+      // the type that has the supply, and on no other hub route.
+      const hubHrefs = rendered.map((l) => l.href).filter((h) => HUB_HREFS.includes(h));
+      expect(hubHrefs).toEqual([hubHref]);
+    });
+  }
+
+  // MEH-2975: the hub is four routes under one tab row, so «מה קורה» is the
+  // current link on all of them — wherever its own href points. Before, with
+  // the href fixed at /events, a visitor on /group-buys saw no current link.
+  for (const path of ["/events", "/events/12", "/experiences", "/group-buys", "/rescue"]) {
+    it(`a hub link that lands on /group-buys is current on ${path}`, () => {
+      hubGateRefs.groupBuys = true;
+      userRef.current = null;
+      pathnameRef.current = path;
+      const { container } = render(<Header />);
+      const current = [...container.querySelectorAll('a[aria-current="page"]')].map((a) =>
+        a.getAttribute("href"),
+      );
+      expect(current).toEqual(["/group-buys"]);
+    });
+  }
+
+  it("the hub link is not current off the hub", () => {
+    hubGateRefs.groupBuys = true;
+    userRef.current = null;
+    pathnameRef.current = "/about";
+    const { container } = render(<Header />);
+    const current = [...container.querySelectorAll('a[aria-current="page"]')].map((a) =>
+      a.getAttribute("href"),
+    );
+    expect(current).toEqual(["/about"]);
+  });
+
+  it("with all four types empty the hub link is absent, not disabled", () => {
     userRef.current = null;
     const { container } = render(<Header />);
-    const rendered = sortLinks(renderedLinks(container));
-
-    expect(rendered).toEqual(
-      sortLinks(
-        expectedLinks("header", STATES.guest, { "experiences-supply": true }),
-      ),
-    );
-    // Belt and braces: the gate really did add a link, so the case above is
-    // not passing because both sides are missing it.
-    expect(rendered.map((l) => l.href)).toContain("/experiences");
+    expect(renderedLinks(container).map((l) => l.href)).not.toContain("/events");
   });
 
   it("suppresses the login link on /login, per suppressOnRoute", () => {
@@ -434,6 +510,30 @@ describe("MEH-1703 — BottomNav matches the registry", () => {
     });
   }
 
+  // MEH-2965: the pill's third slot. Each of the four hooks is asserted on its
+  // own, as for the Header above — and the swap is checked from both sides:
+  // the hub link arrives AND «אודות» leaves.
+  for (const [name, turnOn, hubHref] of [
+    ["events", () => { eventsGateRef.current = true; }, "/events"],
+    ["experiences", () => { experiencesGateRef.current = true; }, "/experiences"],
+    ["group buys", () => { hubGateRefs.groupBuys = true; }, "/group-buys"],
+    ["surprise baskets", () => { hubGateRefs.rescue = true; }, "/rescue"],
+  ]) {
+    it(`bottomNav surface swaps «אודות» for the hub when ${name} alone clears the gate`, () => {
+      turnOn();
+      userRef.current = null;
+      const { container } = render(<BottomNav />);
+      const rendered = sortLinks(renderedLinks(container));
+
+      expect(rendered).toEqual(
+        sortLinks(expectedLinks("bottomNav", STATES.guest, { "listing-supply": true, hubHref })),
+      );
+      const hrefs = rendered.map((l) => l.href);
+      expect(hrefs.filter((h) => HUB_HREFS.includes(h))).toEqual([hubHref]);
+      expect(hrefs).not.toContain("/about");
+    });
+  }
+
   it("renders the account control the registry declares", () => {
     userRef.current = null;
     render(<BottomNav />);
@@ -503,13 +603,18 @@ describe("MEH-1703 — recorded asymmetries hold as described", () => {
    * exist so that if a later chunk closes one of these gaps, the registry and
    * this file must be updated together rather than drifting apart.
    */
-  it("favorites/settings are ungated in the sheet but auth-gated in the dropdown", () => {
+  // MEH-2982 closed this asymmetry (Sapir, 12/11): the sheet now gates both
+  // rows like the dropdown. A guest sheet with either href is a regression.
+  it("favorites/settings are auth-gated in the sheet AND in the dropdown", () => {
     const { container } = render(
       <AccountSheet open onClose={() => {}} user={null} logout={() => {}} />,
     );
     const guestSheetHrefs = renderedLinks(container).map((l) => l.href);
-    expect(guestSheetHrefs).toContain("/favorites");
-    expect(guestSheetHrefs).toContain("/settings");
+    expect(guestSheetHrefs).not.toContain("/favorites");
+    expect(guestSheetHrefs).not.toContain("/settings");
+    // Control: the guest sheet did render its links (login is one of them),
+    // so the two absences above are not an empty render.
+    expect(guestSheetHrefs).toContain("/login");
 
     cleanup();
     userRef.current = null;

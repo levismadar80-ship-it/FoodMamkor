@@ -99,6 +99,12 @@ vi.mock("@/components/CitySearch", () => ({
     />
   ),
 }));
+// MEH-2859: the hub row grew to four tabs, two of them gated on their own
+// supply fetch. Pinned OFF here so this file keeps testing exactly the
+// events/experiences pair it was written for, and so the gates' requests
+// do not land in this file's api.get expectations. The four-tab row has
+// its own file: __tests__/ListingHubTabs.test.jsx.
+vi.mock("@/lib/use-hub-nav-gate", () => ({ useHubNavGate: () => false }));
 vi.mock("@/components/ChipScrollRow", () => ({
   // MEH-2847: EventsClient passes the selection as an `activeKeys` Set (the
   // real ChipScrollRow's multi-select prop); «הכל» is active while it is empty.
@@ -120,15 +126,19 @@ vi.mock("@/components/ChipScrollRow", () => ({
 
 const CITY = "חיפה";
 const EVENT_CAT = EVENT_CATEGORIES.find((c) => c.labelKey === "harvest").key;
-const EXPERIENCES_TAB = "events.list.tab_experiences";
+// MEH-3124: a category chip shows only when the category has results, and
+// the row needs two categories to filter anything — so a fixture that wants
+// the chips on screen spreads its rows over two categories.
+const OTHER_CAT = EVENT_CATEGORIES.find((c) => c.labelKey === "market").key;
+const EXPERIENCES_TAB = "events.list.tab_experiences_short";
 
-const row = (id) => ({
+const row = (id, category = EVENT_CAT) => ({
   id,
   title: `event ${id}`,
   event_date: "2026-09-0" + id,
   event_time: "10:00",
   city: CITY,
-  category: EVENT_CAT,
+  category,
   price: 0,
   producer_name: "בית עסק",
   description: "",
@@ -232,7 +242,7 @@ describe("/events — empty dataset vs filtered to zero (MEH-1865)", () => {
     });
 
     it("same for a category chip (the other filter axis)", async () => {
-      unfilteredRows = [row(1)];
+      unfilteredRows = [row(1), row(2, OTHER_CAT)];
       filteredRows = [];
       await mount();
       // start from a real dataset, then filter to zero via the chip
@@ -255,12 +265,16 @@ describe("/events — empty dataset vs filtered to zero (MEH-1865)", () => {
 
       expect(screen.queryByTestId("events-empty-dataset")).toBeNull();
       expect(screen.queryByTestId("events-no-results")).toBeNull();
-      expect(filterControlCount()).toBe(2); // city search + category chips
+      // MEH-3124: one row = one category, and a lone category chip filters
+      // nothing, so no category chip is drawn. The chip row itself stays for
+      // the date shortcuts (MEH-3118): city search + that row = 2 controls.
+      expect(filterControlCount()).toBe(2);
+      expect(document.querySelector(`[data-key="${row(1).category}"]`)).toBeNull();
       expect(screen.getByText("event 1")).toBeInTheDocument();
     });
 
     it("many rows", async () => {
-      unfilteredRows = [row(1), row(2), row(3)];
+      unfilteredRows = [row(1), row(2, OTHER_CAT), row(3)];
       await mount();
 
       expect(screen.queryByTestId("events-empty-dataset")).toBeNull();
@@ -270,8 +284,8 @@ describe("/events — empty dataset vs filtered to zero (MEH-1865)", () => {
     });
 
     it("many rows WITH a filter that matched some — still no zero surface", async () => {
-      unfilteredRows = [row(1), row(2), row(3)];
-      filteredRows = [row(1), row(2)];
+      unfilteredRows = [row(1), row(2, OTHER_CAT), row(3)];
+      filteredRows = [row(1), row(2, OTHER_CAT)];
       params = { city: CITY };
       setUrl(`/events?city=${CITY}`);
       await mount();

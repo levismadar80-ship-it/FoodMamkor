@@ -12,6 +12,8 @@ Does NOT: touch the DB, decide whether to send (the route does), or retry.
           reservation.
 Related:  app/routers/rescue.py::create_order, app/services/auth_emails.py
           (same HTML conventions), app/services/email.py
+          MEH-2952: each sender takes `test_cause` (the business or the buyer
+          is a seeded test row) and send_email then sends nothing.
 History:  MEH-2715 (creation)
 """
 
@@ -54,7 +56,9 @@ class ReservationEmail:
     cancel_until: str | None
 
 
-def send_reservation_email(to: str, m: ReservationEmail) -> None:
+def send_reservation_email(
+    to: str, m: ReservationEmail, test_cause: bool = False
+) -> None:
     # A name with a line break would break the Subject header; collapse all
     # whitespace runs to one space (the body keeps the same, cleaned name).
     name = " ".join(m.producer_name.split())
@@ -128,10 +132,10 @@ def send_reservation_email(to: str, m: ReservationEmail) -> None:
 </table>
 </body>
 </html>"""
-    send_email(to, subject, body, html=html_body)
+    send_email(to, subject, body, html=html_body, test_cause=test_cause)
 
 
-def send_cancel_email(to: str, producer_name: str) -> None:
+def send_cancel_email(to: str, producer_name: str, test_cause: bool = False) -> None:
     """MEH-2737 — the buyer cancelled; confirm it. Copy approved word for word
     by Sapir on 6/11 (text 4). No code in it: the code is no longer valid."""
     name = " ".join(producer_name.split())
@@ -162,10 +166,12 @@ def send_cancel_email(to: str, producer_name: str) -> None:
 </table>
 </body>
 </html>"""
-    send_email(to, subject, body, html=html_body)
+    send_email(to, subject, body, html=html_body, test_cause=test_cause)
 
 
-def send_business_cancel_email(to: str, producer_name: str) -> None:
+def send_business_cancel_email(
+    to: str, producer_name: str, test_cause: bool = False
+) -> None:
     """MEH-2738 — the business cancelled today's bag, so the buyer's
     reservation went with it. Copy approved word for word by Sapir on 6/11
     (text 7). Links to today's bags elsewhere; no code, nothing to pay."""
@@ -203,4 +209,4 @@ def send_business_cancel_email(to: str, producer_name: str) -> None:
 </table>
 </body>
 </html>"""
-    send_email(to, subject, body, html=html_body)
+    send_email(to, subject, body, html=html_body, test_cause=test_cause)

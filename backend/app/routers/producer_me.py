@@ -8,6 +8,7 @@ from sqlalchemy import func, text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, joinedload
 
+from app.limits import enforce_cap
 from app.auth import create_review_invite_token, require_producer
 from app.config import settings
 from app.constants import MAX_PRODUCER_RESUBMISSIONS
@@ -68,6 +69,7 @@ from app.services.auth_notifications import (
 from app.services.submission_confirmation import send_submission_confirmation
 from app.services.producer_risk import score_producer  # MEH-2602
 from app.services import indexnow  # MEH-2852
+from app.services.owner_attention import owner_attention  # MEH-3108
 from app.services.submission_gate import (
     attach_upcoming_events_count,
     submission_missing_items,
@@ -337,6 +339,13 @@ PRIMARY_MUST_BE_BRANCH_DETAIL = {
 }
 
 
+def _test_cause(producer, actor=None) -> bool:
+    """MEH-2952: the business, or the account acting on it, is a test row."""
+    return bool(
+        producer.is_test or (actor is not None and getattr(actor, "is_test", False))
+    )
+
+
 def _snapshot_sensitive(producer) -> dict:
     """Read the sensitive fields BEFORE the setattr loop mutates them.
 
@@ -347,7 +356,9 @@ def _snapshot_sensitive(producer) -> dict:
     return {field: getattr(producer, field, None) for field in SENSITIVE_FIELDS}
 
 
-def _maybe_fire_sensitive_edit(background_tasks, producer, before: dict) -> None:
+def _maybe_fire_sensitive_edit(
+    background_tasks, producer, before: dict, actor=None
+) -> None:
     """MEH-2073: one ping per PUT, listing every sensitive field that actually
     changed, and only for a producer that is ALREADY approved.
 
@@ -368,10 +379,13 @@ def _maybe_fire_sensitive_edit(background_tasks, producer, before: dict) -> None
             for field in SENSITIVE_FIELDS
             if before.get(field) != getattr(producer, field, None)
         ),
+        actor=actor,
     )
 
 
-def _fire_sensitive_edit(background_tasks, producer, changed: list[str]) -> None:
+def _fire_sensitive_edit(
+    background_tasks, producer, changed: list[str], actor=None
+) -> None:
     """MEH-2073 chunk 2: the gate + dispatch shared by BOTH call sites — the
     owner PUT (chunk 1, above) and the locations CRUD (chunk 2, below).
 
@@ -384,10 +398,19 @@ def _fire_sensitive_edit(background_tasks, producer, changed: list[str]) -> None
     """
     if producer.status != "approved" or not changed:
         return
-    background_tasks.add_task(_sensitive_edit_task, producer.name, changed)
+    background_tasks.add_task(
+        _sensitive_edit_task,
+        producer.name,
+        changed,
+        # MEH-2952: the business, or the owner account that made the edit
+        # (`actor`, when the caller has it), is a test row.
+        test_cause=_test_cause(producer, actor),
+    )
 
 
-def _sensitive_edit_task(producer_name: str, changed: list[str]) -> None:
+def _sensitive_edit_task(
+    producer_name: str, changed: list[str], test_cause: bool = False
+) -> None:
     """The fail-open boundary for the MEH-2073 ping.
 
     `notify_admin_producer_sensitive_edit` guards WhatsApp and email in
@@ -407,7 +430,9 @@ def _sensitive_edit_task(producer_name: str, changed: list[str]) -> None:
     notification-only scope. Reported rather than widened.
     """
     try:
-        notify_admin_producer_sensitive_edit(producer_name, changed)
+        notify_admin_producer_sensitive_edit(
+            producer_name, changed, test_cause=test_cause
+        )
     except Exception:  # noqa: BLE001 — fire-and-forget; the 200 is already out
         log.exception(
             "[NOTIFY] sensitive-edit ping failed for '%s' (fields=%s)",
@@ -416,14 +441,19 @@ def _sensitive_edit_task(producer_name: str, changed: list[str]) -> None:
         )
 
 
-def _maybe_fire_review_ready(background_tasks, db, producer, was_approvable) -> None:
+def _maybe_fire_review_ready(
+    background_tasks, db, producer, was_approvable, actor=None
+) -> None:
     """MEH-1351: review-ready ping on the false→true approvability transition
     of a pending producer (first image / license completed). Fire-and-forget
     BackgroundTask mirroring the resubmit ping's contract; the transition
     check (not a sent-flag) is the idempotency guard — no schema change."""
     if not was_approvable and _pending_and_approvable(db, producer):
         background_tasks.add_task(
-            notify_admin_producer_review_ready, producer.name, producer.city
+            notify_admin_producer_review_ready,
+            producer.name,
+            producer.city,
+            test_cause=_test_cause(producer, actor),  # MEH-2952
         )
 
 
@@ -442,6 +472,84 @@ def _maybe_fire_review_ready(background_tasks, db, producer, was_approvable) -> 
 # int4-pair form) — with the numeric halves deliberately made identical, which
 # is the case that would have collided if the spaces were shared.
 _PRODUCER_UPDATE_LOCK_NAMESPACE = 2007
+
+
+# MEH-2911: Sapir-approved copy, verbatim (10/11). The owner reads this
+# string, so rule 22 makes it hers — do not reword it, and do not
+# paraphrase it in a test. `frontend/messages/he.json`
+# (`dashboard.producer.images.last_photo`) carries the same sentence for
+# the inline message next to the remove button, and
+# tests/test_meh2911_last_photo_guard.py asserts the two are identical so
+# the pair cannot drift (workflow.md smell #1).
+LAST_PHOTO_REMOVAL_CODE = "last_photo_required"
+LAST_PHOTO_REMOVAL_MESSAGE = (
+    "אי אפשר להסיר את התמונה האחרונה. הוסיפו תמונה אחרת, ואז הסירו את זו."
+)
+
+# MEH-2911: the statuses the guard covers. `inactive` is here because a
+# reviewer measured the bypass it leaves open otherwise: an admin toggles
+# approved -> inactive, the owner empties the gallery through this route,
+# and the admin toggles back — and `toggle_producer_status` (admin.py)
+# re-approves WITHOUT running `_assert_approvable`, so the business is
+# live again with no photo. Sapir's ruling named "approved"; this widens
+# it by one status to close that chain at the owner's end, which costs an
+# inactive business nothing (it is not public, and it can still REPLACE
+# its photo). The toggle's own missing gate is the root cause and is
+# filed as MEH-2945 — this does not fix it.
+LAST_PHOTO_GUARDED_STATUSES = frozenset({"approved", "inactive"})
+
+
+def _assert_keeps_a_photo(producer, payload: dict, old_images: list) -> None:
+    """An APPROVED business may not remove its last gallery photo.
+
+    MEH-2911, Sapir's ruling (10/11) on the hole MEH-2907's reviewer
+    measured: an already-approved business could PUT `{"images": []}`, get
+    200, and stay live with an empty gallery.
+    `ProducerUpdate._validate_images` checks URL shape only, never
+    non-emptiness, and the approve-time gate (MEH-799,
+    `admin.py::_assert_approvable`) deliberately "lives at the moment of
+    approval" — so nothing re-checked afterwards. This is the owner-route
+    half of the same invariant.
+
+    DO NOT change `status` here. Option (ג), demoting the business back to
+    `pending`, was rejected explicitly: refuse the removal, keep the row.
+
+    Only `approved`, deliberately. A draft or pending business may still
+    empty its gallery — the submit gate and the approve gate are where
+    that is caught for those, and widening this would change behaviour the
+    ruling did not cover.
+
+    `old_images` is load-bearing, not defensive: a legacy approved row
+    whose gallery is ALREADY empty has no last photo to remove, and
+    without that clause such an owner could not save any field at all.
+
+    Extracted rather than inlined because the condition pushed
+    `update_my_producer` past ruff's C901 ceiling (11 > 10), which is an
+    error in this repo — a per-file ignore would have been removing a
+    constraint to fit a change (workflow rule 32).
+    """
+    if (
+        producer.status in LAST_PHOTO_GUARDED_STATUSES
+        and "images" in payload
+        and not payload["images"]
+        and old_images
+    ):
+        # MEH-1943 shape, deliberately, and not a bare string: the client
+        # has to recognise this refusal to render it next to the remove
+        # button rather than at the card foot, and comparing a HEBREW
+        # sentence in JS is both fragile and broken on /en — there the
+        # client's own copy is English, so the comparison can never match
+        # and an English-locale owner would be shown the raw Hebrew.
+        # `detailToMessage` (frontend/lib/errors.js) already renders
+        # `message` unchanged, so the copy is unaffected.
+        raise HTTPException(
+            status_code=422,
+            detail={
+                "code": LAST_PHOTO_REMOVAL_CODE,
+                "message": LAST_PHOTO_REMOVAL_MESSAGE,
+                "params": {},
+            },
+        )
 
 
 def _lock_producer_updates(db, producer_id) -> None:
@@ -722,6 +830,11 @@ def update_my_producer(
         # `note` display-only, and dates older than today-30 rejected (Sapir's
         # ruling ג). Explicit null clears it, same as order_window.
         "special_hours",
+        # MEH-3035 chunk 2: how the business takes payment. Chunk 1 shipped the
+        # column + _payment_info_validator; the write path opens here in the
+        # SAME PR as its editor (PaymentInfoEditor.jsx) and guidance-audit row,
+        # per the standing rule above. Explicit null clears it.
+        "payment_info",
         # MEH-2143 (MEH-1938 batch B4): `kosher` was REMOVED from this set.
         # Same disposition and standing rule as the blocks above — the column
         # stays, `admin.py:552` / `producer_import.py:323` (sheet column M) /
@@ -813,6 +926,10 @@ def update_my_producer(
         and _apply_organizer_city(producer, payload["city"])
     )
 
+    # MEH-2911: raised BEFORE the setattr loop, so the whole PUT is refused
+    # rather than half-applied. See the helper for the ruling it enforces.
+    _assert_keeps_a_photo(producer, payload, old_images)
+
     for field, value in payload.items():
         if field in _PRODUCER_WRITABLE_FIELDS:
             setattr(producer, field, value)
@@ -883,15 +1000,15 @@ def update_my_producer(
             delivery_waitlist.notify_cities, db, producer.id, new_cities
         )
 
-    _maybe_fire_review_ready(background_tasks, db, producer, was_approvable)
+    _maybe_fire_review_ready(background_tasks, db, producer, was_approvable, actor=user)
     # MEH-2073: notification only — runs after the commit above, adds a
     # BackgroundTask, and touches neither the response nor any column.
-    _maybe_fire_sensitive_edit(background_tasks, producer, sensitive_before)
+    _maybe_fire_sensitive_edit(background_tasks, producer, sensitive_before, actor=user)
     # MEH-2475 (review #3728): an approved organizer moving her city is the same
     # admin-visible event as a business moving its primary location (the
     # locations CRUD pings "city" through the same gate).
     if organizer_city_changed:
-        _fire_sensitive_edit(background_tasks, producer, ["city"])
+        _fire_sensitive_edit(background_tasks, producer, ["city"], actor=user)
     # MEH-2852: the public profile changed — tell IndexNow (production only).
     indexnow.schedule_public_producer(background_tasks, producer)
 
@@ -976,8 +1093,7 @@ def dashboard(
         or 0
     )
 
-    # feature/producer-analytics: replace the hardcoded 0 with real counts
-    # from producer_whatsapp_clicks.
+    # feature/producer-analytics: real counts from producer_whatsapp_clicks.
     week_ago = utc_now() - timedelta(days=7)
     whatsapp_clicks_week = (
         db.query(func.count(ProducerWhatsAppClick.id))
@@ -1004,6 +1120,7 @@ def dashboard(
         },
         "favorites_count": int(favorites_count),
         "whatsapp_clicks_week": int(whatsapp_clicks_week),
+        "attention": owner_attention(db, producer.id, user.id),  # MEH-3108
     }
 
 
@@ -1413,7 +1530,7 @@ def producer_analytics(
 # ---------------------------------------------------------------------------
 
 
-def _send_whatsapp_otp(phone: str, code: str) -> bool:
+def _send_whatsapp_otp(phone: str, code: str, test_cause: bool = False) -> bool:
     """Send a 6-digit OTP via WhatsApp Cloud API (MEH-508, MEH-754).
 
     Fail-open: returns False if WHATSAPP_* config is missing or the Meta
@@ -1425,8 +1542,12 @@ def _send_whatsapp_otp(phone: str, code: str) -> bool:
     producer who never messaged the business number never received the
     code. Templates are delivered unconditionally. send_template owns
     config / HTTP fail-open internally.
+
+    MEH-2952: `test_cause` — a test business (or test owner) gets no
+    WhatsApp. Independent of MEH-2231's OTP_TEST_* numbers, which are
+    untouched: those decide the CODE, this decides whether anything is sent.
     """
-    return send_template(phone, OtpCodeV1(code=code))
+    return send_template(phone, OtpCodeV1(code=code), test_cause=test_cause)
 
 
 _LOCAL_DB_HOSTS = frozenset({"localhost", "127.0.0.1", "::1"})
@@ -1529,7 +1650,11 @@ def send_phone_otp(
     db.commit()
 
     if test_code is None:
-        _send_whatsapp_otp(producer.phone, code)
+        _send_whatsapp_otp(
+            producer.phone,
+            code,
+            test_cause=bool(producer.is_test or user.is_test),  # MEH-2952
+        )
     else:
         # MEH-2231: a fixed code is a bypass event. WARNING so it is filterable
         # in Railway logs and an audit can tell a test run from a real one
@@ -1853,6 +1978,7 @@ def request_producer_review(
         new_count = producer.resubmission_count + 1
         producer_name = producer.name
         producer_city = producer.city
+        producer_is_test = _test_cause(producer, user)  # MEH-2952
         producer.status = "pending"
         producer.resubmission_count = new_count
         producer.resubmitted_at = datetime.now(timezone.utc)
@@ -1862,6 +1988,7 @@ def request_producer_review(
             producer_name,
             producer_city,
             resubmission_count=new_count,
+            test_cause=producer_is_test,
         )
         return {
             "detail": "נשלח לבדיקה חוזרת",
@@ -1870,7 +1997,10 @@ def request_producer_review(
         }
 
     background_tasks.add_task(
-        notify_admin_producer_resubmit, producer.name, producer.city
+        notify_admin_producer_resubmit,
+        producer.name,
+        producer.city,
+        test_cause=_test_cause(producer, user),  # MEH-2952
     )
     return {"detail": "נשלח לבדיקה חוזרת"}
 
@@ -1960,6 +2090,9 @@ def submit_for_review(
     # which works but reads as a different pattern from its siblings.
     owner_email = user.email
     submitted_at = producer.submitted_for_review_at
+    # MEH-2952: a test business / test owner → the admin ping and the owner's
+    # confirmation are both dropped and logged.
+    p_test = bool(producer.is_test or user.is_test)
     db.commit()
 
     # notify_admin_new_producer lives in services/auth_notifications.py. It
@@ -1974,7 +2107,9 @@ def submit_for_review(
     # a Resend/Meta outage must never turn the owner's successful submission
     # into an error, and post-commit placement mirrors _maybe_fire_review_ready
     # so the admin is never pinged about a transition that failed to persist.
-    background_tasks.add_task(notify_admin_new_producer, p_name, p_city)
+    background_tasks.add_task(
+        notify_admin_new_producer, p_name, p_city, test_cause=p_test
+    )
     # MEH-2602: re-score now. The only score was taken at registration, before
     # the owner filled contact_email / description, so the admin reviewing the
     # finished profile read «אין מייל» about a profile that had one (staging
@@ -1990,7 +2125,11 @@ def submit_for_review(
     # rejected re-submit and never on MEH-1236's request-review ping (a
     # different endpoint entirely, untouched).
     background_tasks.add_task(
-        send_submission_confirmation, owner_email, p_name, submitted_at
+        send_submission_confirmation,
+        owner_email,
+        p_name,
+        submitted_at,
+        test_cause=p_test,
     )
     return {"detail": "הפרופיל נשלח לבדיקה"}
 
@@ -2040,6 +2179,11 @@ def create_my_product(
     user: User = Depends(require_producer),
     db: Session = Depends(get_db),
 ):
+    # MEH-3022: per-business cap (app/limits.py).
+    enforce_cap(
+        db.query(Product).filter(Product.producer_id == user.producer_id).count(),
+        "products",
+    )
     product = Product(producer_id=user.producer_id, **data.model_dump())
     db.add(product)
     db.commit()
@@ -2095,7 +2239,9 @@ def update_my_product(
 
 
 @router.delete("/products/{product_id}", status_code=204)
+@limiter.limit("60/hour")  # MEH-3022
 def delete_my_product(
+    request: Request,  # required by slowapi (MEH-3022)
     product_id: UUID,
     user: User = Depends(require_producer),
     db: Session = Depends(get_db),
@@ -2478,6 +2624,7 @@ def create_my_location(
         .filter(ProducerLocation.producer_id == user.producer_id)
         .count()
     )
+    enforce_cap(existing_count, "locations")  # MEH-3022
     loc = ProducerLocation(producer_id=user.producer_id, **data.model_dump())
     _fill_centroid_when_unpinned(db, loc)
 
@@ -2592,7 +2739,9 @@ def update_my_location(  # noqa: PLR0913 — all 6 args are FastAPI-injected (sl
 
 
 @router.delete("/locations/{location_id}", status_code=204)
+@limiter.limit("60/hour")  # MEH-3022
 def delete_my_location(
+    request: Request,  # required by slowapi (MEH-3022)
     location_id: UUID,
     background_tasks: BackgroundTasks,
     user: User = Depends(require_producer),

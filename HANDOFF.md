@@ -4,6 +4,32 @@
 > Standing procedures live in [`docs/runbooks/`](./docs/runbooks/) — e.g. the [uptime alert runbook](./docs/runbooks/UPTIME.md).
 > Decision capture is proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-11-12 — רצועת הבית בכרטיסי תמונה, ו«אירועים» בסרגל התחתון של הנייד
+
+**שורה אחת:** #4334, #4340 ו-#4347 מוזגו ל-staging. שלושתם עם E2E מלא ירוק על ה-PR.
+
+**מה צריך לדעת לפני עבודה:**
+- **הסרגל התחתון בנייד:** מקום אחד, שני דיירים. `whatsOn` (עם `dataGate: "listing-supply"`) מקבל את המקום כשיש היצע, ו-`about` (עם `yieldsTo: "listing-supply"`) מפנה אותו. `NavCrossShellGuard.test.jsx` נכשל על `yieldsTo` בלי פריט `dataGate` באותו משטח.
+- **שערי ההיצע (`use-events-nav-gate`, `use-experiences-nav-gate`, `use-hub-nav-gate`):** בקשה אחת משותפת לכל endpoint. בטסטים קוראים ל-`reset…NavGateRequest` ב-`beforeEach`, אחרת בקשה שלא נסגרה נשארת בין טסטים.
+- **תמונות הבסיס של הנייד ב-`parity.spec.ts` מציגות «אודות»** בסרגל, והמוצר (עם `/api/experiences/count` מקובע ל-999) מציג «אירועים». ההבדל בתוך סף ה-2%, ולכן ה-VRT ירוק והרצת חידוש מלאה לא שמרה כלום. חידוש עתידי של אחת מהן יראה את השינוי הזה.
+- **הקישור לדף המאוחד (#4347):** «אירועים» בנייד ו«מה קורה» במחשב לוקחים את ה-href מ-`hubLandingHref` ב-`lib/hub-landing.js`, לפי השער הפתוח הראשון. ה-`href` ב-`nav-registry.js` הוא רק ברירת המחדל. טאב חדש בדף המאוחד מתווסף גם ל-`HUB_LANDING_ORDER`, ו-`HubLanding.test.js` נכשל אם הסדר שונה מ-`HUB_TABS`.
+- **פתוח אצל ספיר:** הצעה לסריקה של קישורים שמסומנים בקו רק במעבר עכבר.
+
+---
+
+## 2026-11-10 — אחה״צ: המחרוזות המאושרות, ‏prefetch, ‏SUPER_ADMIN_EMAIL, ‏PR גרסה v1.5.0
+
+**‏שורה אחת:** ‏#4279 ו-#4281 מוזגו. ‏#4280 (`SUPER_ADMIN_EMAIL`) ממתין ל-3 שורות של ספיר ב-`backend/.env.example`. ‏PR הגרסה **#4282** פתוח, ולא ממוזג בלי «go merge».
+
+**‏מה צריך לדעת לפני עבודה:**
+- ‏**Link בכרום של האתר = `prefetch={false}`.** ‏`ChromePrefetchGuard.test.js` סורק את Header, ‏BottomNav, ‏CookieBanner, ‏Footer, ‏CollectionNotice ו-DashboardFooter. Link חדש בלי זה מחזיר +120KB לכל דף.
+- ‏**`SUPER_ADMIN_EMAIL` (#4280, אחרי המיזוג):** ‏production לא עולה בלעדיו (`ENV=production` או `RAILWAY_ENVIRONMENT=production`). ההשוואה מדויקת, לא תלוית-רישיות, בכוונה: וריאנט רישיות הוא חשבון אחר שאפשר לרשום. מה להגדיר ב-Railway כתוב ב-MEH-2890.
+- ‏**שני פערים ישנים אצל האדמין הראשי, שלא תוקנו (צריך מחרוזת):** אדמין יכול לחסום את בעלת האתר. מחיקת עסק מאפסת את התפקיד של כל המשתמשים המקושרים אליו. הנוסח המוצע מופיע ב-MEH-2890.
+- ‏**ה-429 ב-E2E על staging:** ‏`/auth/login` מוגבל ל-5 בדקה **לפי IP**, לא לפי חשבון. ריצה על staging נכשלה ב-global setup עם 429. ה-jobs של Chromium ושל WebKit התחילו באותה שנייה, וכל אחד התחבר 4 פעמים. כבר נמדד שכל ה-CI יוצא מ-IP אחד (MEH-2284), ולכן זה הסבר סביר, אבל לא מאומת לריצה הזו. **זה לא** ריצות הצילום מה-sandbox, שהן IP אחר. התיקון המוצע (MEH-2892 §E2): ‏global setup סדרתי עם המתנה על 429.
+- ‏**ב-staging יש 9 הודעות WhatsApp בלי אישור מסירה.** כנראה ה-webhook לא מגיע.
+
+---
+
 ## 2026-11-10 — יום וערב: לוח הבקרה, QueuePool, ‏Sentry, סריקת סודות, ‏repo ציבורי
 
 **‏שורה אחת:** ‏25 PR-ים מוזגו ל-staging (‏#4178, ‏#4255–#4277, ו-PR המסמכים הזה, הפירוט ב-CHANGELOG). ‏Vercel עבר ל-Pro והריפו ציבורי, ולכן deploys ל-staging עובדים שוב מ-10/11 08:05. ‏staging מקדים את main ב-54 commits, כולל revision אחד של Alembic (MEH-2828, אושר).

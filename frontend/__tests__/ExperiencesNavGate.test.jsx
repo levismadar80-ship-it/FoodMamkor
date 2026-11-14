@@ -34,6 +34,8 @@ vi.mock("next/image", () => ({ default: (props) => <img alt={props.alt ?? ""} {.
 // context the key-echo next-intl mock above does not provide. Stubbed as in
 // FooterNavGroups.test.jsx — the link is CollectionNotice.test.jsx's job.
 vi.mock("@/i18n/navigation", () => ({
+  // MEH-3059: Footer prefetches «כל בתי העסק» on intent via router.prefetch.
+  useRouter: () => ({ prefetch: () => {} }),
   Link: ({ href, children, ...rest }) => (
     <a href={typeof href === "string" ? href : "#"} {...rest}>
       {children}
@@ -56,6 +58,7 @@ import Footer from "@/components/Footer";
 import {
   EXPERIENCES_NAV_THRESHOLD,
   useExperiencesNavGate,
+  resetExperiencesNavGateRequest,
 } from "@/lib/use-experiences-nav-gate";
 
 const ok = (count) => Promise.resolve({ data: { count } });
@@ -71,6 +74,7 @@ const gate = () => screen.getByTestId("gate").textContent;
 const experiencesLink = () => document.querySelector('a[href="/experiences"]');
 
 beforeEach(() => {
+  resetExperiencesNavGateRequest();
   get.mockReset();
   sessionStorage.clear();
 });

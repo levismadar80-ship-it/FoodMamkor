@@ -18,6 +18,7 @@ import { Link } from "@/i18n/navigation";
 import EditorialPhoto from "@/components/EditorialPhoto";
 import { BRAND_NAME } from "@/lib/constants";
 import { buildAlternates, buildEntityTitle, urlForLocalePath, OG_LOCALE } from "@/lib/i18n-seo";
+import SectionHeading from "@/components/ui/SectionHeading";
 
 // MEH-2597: the mid-article photo sits under this (0-based) section.
 const PHOTO_AFTER_SECTION = 1;
@@ -110,11 +111,12 @@ export default async function WhyLocalPage({ params }) {
                   <span className="h-px flex-1 bg-accent/35" />
                 </div>
               ) : null}
-              <h2
-                className={`font-headline-md mb-3 text-primary text-2xl font-bold ${i < NUMBERED_REASONS ? "" : "mt-10 sm:mt-12"}`}
+              <SectionHeading
+                size="content"
+                className={`mb-3 text-primary ${i < NUMBERED_REASONS ? "" : "mt-10 sm:mt-12"}`}
               >
                 {t(s.heading)}
-              </h2>
+              </SectionHeading>
               <p className="mb-4 text-base sm:text-lg leading-[1.8] text-text/90">
                 {s.rich
                   ? t.rich(s.body, {
@@ -145,10 +147,10 @@ export default async function WhyLocalPage({ params }) {
           {/* MEH-2827: the three short lines read as a list in one card, not
               three one-line paragraphs. Same keys, same words. */}
           <section>
-            <div data-testid="why-local-changes" className="rounded-xl bg-background-alt p-5 mt-10 sm:mt-12">
-              <h2 className="font-headline-md mb-3 text-primary text-2xl font-bold">
+            <div data-testid="why-local-changes" className="rounded-lg bg-background-alt p-5 mt-10 sm:mt-12">
+              <SectionHeading size="content" className="mb-3 text-primary">
                 {t("changes_h")}
-              </h2>
+              </SectionHeading>
               {/* role="list": Tailwind's list-style:none makes Safari/VoiceOver
                   drop the list semantics; this restores "list, 3 items". */}
               <ul role="list" className="grid gap-2.5">

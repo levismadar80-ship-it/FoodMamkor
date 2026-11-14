@@ -6,6 +6,7 @@ import { useTranslations } from "next-intl";
 
 import BagRow from "@/components/rescue/BagRow";
 import { fetchOffers, rescueBagsEnabled } from "@/lib/rescue";
+import SectionHeading from "@/components/ui/SectionHeading";
 
 /**
  * Module:   RescueHomeModule
@@ -56,9 +57,9 @@ export default function RescueHomeModule({ city = "" }) {
   return (
     <section className="max-w-7xl mx-auto px-4 pb-16" data-testid="rescue-home-module">
       <div className="flex items-baseline justify-between gap-3">
-        <h2 className="font-headline-md text-lg md:text-2xl font-black text-text">
+        <SectionHeading>
           {t("home.title_city", { city })}
-        </h2>
+        </SectionHeading>
         <Link
           href="/rescue"
           data-testid="rescue-home-all"

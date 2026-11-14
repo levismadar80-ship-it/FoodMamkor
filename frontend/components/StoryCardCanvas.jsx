@@ -47,6 +47,7 @@ import frankRuhlLibreLatinUrl from "@/app/fonts/frank-ruhl-libre-latin.woff2";
 import heeboHebrewUrl from "@/app/fonts/heebo-hebrew.woff2";
 import heeboLatinUrl from "@/app/fonts/heebo-latin.woff2";
 import Button from "@/components/ui/Button";
+import { copyOrThrow } from "@/lib/clipboard";
 
 const W = 1080;
 const H = 1920;
@@ -421,10 +422,7 @@ export default function StoryCardCanvas({ producer, mode = "admin", onUploaded, 
     // button that silently did nothing. Same class as the null-context crash
     // fixed on the draw path above. REUSES:
     // components/producer/RequestReviewCard.jsx:62-71.
-    const write = navigator.clipboard?.writeText
-      ? navigator.clipboard.writeText(caption)
-      : Promise.reject(new Error("clipboard unavailable"));
-    write
+    copyOrThrow(caption)
       .then(() => {
         setCaptionCopied(true);
         setTimeout(() => setCaptionCopied(false), 2500);
@@ -477,7 +475,7 @@ export default function StoryCardCanvas({ producer, mode = "admin", onUploaded, 
           onClick={download}
           disabled={!rendered}
           data-testid="story-card-download"
-          className="text-sm border border-border px-4 py-2 rounded-sm hover:border-primary transition disabled:opacity-40"
+          className="text-sm border border-border px-4 py-2 rounded-sm hover:border-primary transition disabled:opacity-50"
         >
           <DownloadSimple size={16} className="inline align-[-2px]" aria-hidden="true" />{" "}
           {downloadLabel}

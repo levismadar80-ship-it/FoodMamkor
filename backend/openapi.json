@@ -100,6 +100,7 @@
             "items": {
               "$ref": "#/components/schemas/AdminChecklistItemIn"
             },
+            "maxItems": 200,
             "title": "Items",
             "type": "array"
           }
@@ -257,6 +258,11 @@
             "title": "Notify New Recipe",
             "type": "boolean"
           },
+          "notify_new_rescue": {
+            "default": true,
+            "title": "Notify New Rescue",
+            "type": "boolean"
+          },
           "push_subscription": {
             "anyOf": [
               {
@@ -308,6 +314,10 @@
             "title": "Notify New Recipe",
             "type": "boolean"
           },
+          "notify_new_rescue": {
+            "title": "Notify New Rescue",
+            "type": "boolean"
+          },
           "whatsapp_opt_in": {
             "title": "Whatsapp Opt In",
             "type": "boolean"
@@ -320,6 +330,7 @@
           "notify_delivery_area",
           "notify_new_recipe",
           "notify_new_group_buy",
+          "notify_new_rescue",
           "whatsapp_opt_in",
           "has_push"
         ],
@@ -4097,6 +4108,66 @@
         "title": "LoginRequest",
         "type": "object"
       },
+      "NameCheckOut": {
+        "description": "GET /producer-name-check (MEH-3086) — at most three matches.",
+        "properties": {
+          "matches": {
+            "items": {
+              "$ref": "#/components/schemas/NameMatch"
+            },
+            "title": "Matches",
+            "type": "array"
+          }
+        },
+        "required": [
+          "matches"
+        ],
+        "title": "NameCheckOut",
+        "type": "object"
+      },
+      "NameMatch": {
+        "description": "One live business whose name equals the name being registered.",
+        "properties": {
+          "city": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "City"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "slug": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Slug"
+          }
+        },
+        "required": [
+          "id",
+          "slug",
+          "name",
+          "city"
+        ],
+        "title": "NameMatch",
+        "type": "object"
+      },
       "NewsletterIn": {
         "properties": {
           "email": {
@@ -4864,6 +4935,201 @@
         "title": "OutreachPrefillResponse",
         "type": "object"
       },
+      "OwnerInviteAccept": {
+        "properties": {
+          "code": {
+            "maxLength": 12,
+            "minLength": 1,
+            "title": "Code",
+            "type": "string"
+          },
+          "declaration_accepted": {
+            "title": "Declaration Accepted",
+            "type": "boolean"
+          },
+          "email": {
+            "format": "email",
+            "title": "Email",
+            "type": "string"
+          },
+          "password": {
+            "description": "Password — additional checks via password_policy service",
+            "maxLength": 200,
+            "minLength": 12,
+            "title": "Password",
+            "type": "string"
+          },
+          "terms_accepted": {
+            "title": "Terms Accepted",
+            "type": "boolean"
+          },
+          "token": {
+            "maxLength": 512,
+            "minLength": 1,
+            "title": "Token",
+            "type": "string"
+          }
+        },
+        "required": [
+          "token",
+          "email",
+          "code",
+          "password",
+          "terms_accepted",
+          "declaration_accepted"
+        ],
+        "title": "OwnerInviteAccept",
+        "type": "object"
+      },
+      "OwnerInviteCreate": {
+        "description": "What the admin sends to invite a business's owner.\n\n`consent_confirmed` and `consent_note` are not form decoration: closed\ndecision 4 of the card is that no invite exists without a recorded written\nconsent, and these two columns plus `owner_invite_created_by` ARE the audit\ntrail. Both are enforced here rather than in the handler so the refusal is\na 422 on the body — the same classification as `terms_accepted` on\n`UserRegister` above, and for the same reason: it is a statement about the\npayload, not about which business it names, so it leaks nothing.",
+        "properties": {
+          "consent_confirmed": {
+            "title": "Consent Confirmed",
+            "type": "boolean"
+          },
+          "consent_note": {
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Consent Note",
+            "type": "string"
+          },
+          "email": {
+            "anyOf": [
+              {
+                "format": "email",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Email"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "consent_confirmed",
+          "consent_note"
+        ],
+        "title": "OwnerInviteCreate",
+        "type": "object"
+      },
+      "OwnerInviteCreatedOut": {
+        "description": "The ONE response that carries the raw token, as part of `invite_url`.\n\nReturned by create and by resend, and nowhere else: there is no GET that\nre-reads it, because the database holds only the sha256. If the admin\nloses the link she resends, which mints a new token and kills this one.",
+        "properties": {
+          "email": {
+            "anyOf": [
+              {
+                "format": "email",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Email"
+          },
+          "expires_at": {
+            "format": "date-time",
+            "title": "Expires At",
+            "type": "string"
+          },
+          "invite_url": {
+            "title": "Invite Url",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "sent_at": {
+            "format": "date-time",
+            "title": "Sent At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "invite_url",
+          "name",
+          "sent_at",
+          "expires_at"
+        ],
+        "title": "OwnerInviteCreatedOut",
+        "type": "object"
+      },
+      "OwnerInviteEmailCodeRequest": {
+        "description": "v3: «send a code to this address».\n\nThe response is a fixed 200 whatever happens — address free, address\nalready registered, send failed — so this shape carries nothing a caller\ncould use to tell those apart.",
+        "properties": {
+          "email": {
+            "format": "email",
+            "title": "Email",
+            "type": "string"
+          },
+          "token": {
+            "maxLength": 512,
+            "minLength": 1,
+            "title": "Token",
+            "type": "string"
+          }
+        },
+        "required": [
+          "token",
+          "email"
+        ],
+        "title": "OwnerInviteEmailCodeRequest",
+        "type": "object"
+      },
+      "OwnerInvitePublicOut": {
+        "description": "What the acceptance page may know before anyone has authenticated.\n\nDeliberately three fields. The business NAME is already public on its own\npage, and the EMAIL is the address the link was sent to — so a holder of\nthe link learns nothing about the business they did not already have. No\nphone, no address, no license, no ids, and no token echo.",
+        "properties": {
+          "email": {
+            "anyOf": [
+              {
+                "format": "email",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Email"
+          },
+          "preview": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ProducerClaimPreviewOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "producer_name": {
+            "title": "Producer Name",
+            "type": "string"
+          },
+          "requires_farmer_declaration": {
+            "title": "Requires Farmer Declaration",
+            "type": "boolean"
+          },
+          "will_publish": {
+            "default": false,
+            "title": "Will Publish",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "producer_name",
+          "requires_farmer_declaration"
+        ],
+        "title": "OwnerInvitePublicOut",
+        "type": "object"
+      },
       "PasswordChange": {
         "properties": {
           "current_password": {
@@ -4906,10 +5172,10 @@
             "type": "boolean"
           },
           "category_ids": {
-            "default": [],
             "items": {
               "type": "integer"
             },
+            "maxItems": 20,
             "title": "Category Ids",
             "type": "array"
           },
@@ -4948,26 +5214,26 @@
             "title": "Contact Name"
           },
           "delivery_area_cities": {
-            "default": [],
             "items": {
               "type": "string"
             },
+            "maxItems": 300,
             "title": "Delivery Area Cities",
             "type": "array"
           },
           "delivery_cities": {
-            "default": [],
             "items": {
               "type": "string"
             },
+            "maxItems": 300,
             "title": "Delivery Cities",
             "type": "array"
           },
           "delivery_excluded_cities": {
-            "default": [],
             "items": {
               "type": "string"
             },
+            "maxItems": 300,
             "title": "Delivery Excluded Cities",
             "type": "array"
           },
@@ -5025,10 +5291,10 @@
             "type": "boolean"
           },
           "images": {
-            "default": [],
             "items": {
               "type": "string"
             },
+            "maxItems": 20,
             "title": "Images",
             "type": "array"
           },
@@ -5764,6 +6030,16 @@
             "title": "Organic Certified",
             "type": "boolean"
           },
+          "owner": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ProducerOwnerSummary"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "owner_bio": {
             "anyOf": [
               {
@@ -5775,6 +6051,76 @@
             ],
             "title": "Owner Bio"
           },
+          "owner_invite_accepted_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Owner Invite Accepted At"
+          },
+          "owner_invite_consent_note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Owner Invite Consent Note"
+          },
+          "owner_invite_email": {
+            "anyOf": [
+              {
+                "format": "email",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Owner Invite Email"
+          },
+          "owner_invite_expires_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Owner Invite Expires At"
+          },
+          "owner_invite_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Owner Invite Name"
+          },
+          "owner_invite_sent_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Owner Invite Sent At"
+          },
           "owner_photo_url": {
             "anyOf": [
               {
@@ -5785,6 +6131,18 @@
               }
             ],
             "title": "Owner Photo Url"
+          },
+          "payment_info": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Payment Info"
           },
           "phone": {
             "anyOf": [
@@ -5838,6 +6196,14 @@
               }
             ],
             "title": "Producer License Number"
+          },
+          "product_groups": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/ProductGroupOut"
+            },
+            "title": "Product Groups",
+            "type": "array"
           },
           "products": {
             "default": [],
@@ -6233,6 +6599,7 @@
                 "items": {
                   "type": "integer"
                 },
+                "maxItems": 20,
                 "type": "array"
               },
               {
@@ -6292,6 +6659,7 @@
                 "items": {
                   "type": "string"
                 },
+                "maxItems": 20,
                 "type": "array"
               },
               {
@@ -6306,6 +6674,7 @@
                 "items": {
                   "type": "string"
                 },
+                "maxItems": 300,
                 "type": "array"
               },
               {
@@ -6320,6 +6689,7 @@
                 "items": {
                   "$ref": "#/components/schemas/DeliveryAreaCreate"
                 },
+                "maxItems": 300,
                 "type": "array"
               },
               {
@@ -6334,6 +6704,7 @@
                 "items": {
                   "type": "string"
                 },
+                "maxItems": 300,
                 "type": "array"
               },
               {
@@ -6348,6 +6719,7 @@
                 "items": {
                   "type": "string"
                 },
+                "maxItems": 300,
                 "type": "array"
               },
               {
@@ -6494,6 +6866,7 @@
                 "items": {
                   "type": "string"
                 },
+                "maxItems": 20,
                 "type": "array"
               },
               {
@@ -6670,6 +7043,18 @@
               }
             ],
             "title": "Owner Photo Url"
+          },
+          "payment_info": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Payment Info"
           },
           "phone": {
             "anyOf": [
@@ -7035,6 +7420,7 @@
             "items": {
               "type": "integer"
             },
+            "maxItems": 20,
             "title": "Category Ids",
             "type": "array"
           },
@@ -7050,10 +7436,10 @@
             "title": "City"
           },
           "delivery_areas": {
-            "default": [],
             "items": {
               "$ref": "#/components/schemas/DeliveryAreaCreate"
             },
+            "maxItems": 300,
             "title": "Delivery Areas",
             "type": "array"
           },
@@ -7639,6 +8025,18 @@
             ],
             "title": "Owner Photo Url"
           },
+          "payment_info": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Payment Info"
+          },
           "phone": {
             "anyOf": [
               {
@@ -7680,6 +8078,14 @@
             "default": "whatsapp",
             "title": "Primary Contact Method",
             "type": "string"
+          },
+          "product_groups": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/ProductGroupOut"
+            },
+            "title": "Product Groups",
+            "type": "array"
           },
           "products": {
             "default": [],
@@ -9825,6 +10231,18 @@
             ],
             "title": "Owner Photo Url"
           },
+          "payment_info": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Payment Info"
+          },
           "phone": {
             "anyOf": [
               {
@@ -9877,6 +10295,14 @@
               }
             ],
             "title": "Producer License Number"
+          },
+          "product_groups": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/ProductGroupOut"
+            },
+            "title": "Product Groups",
+            "type": "array"
           },
           "products": {
             "default": [],
@@ -10143,6 +10569,26 @@
           "name"
         ],
         "title": "ProducerOwnerOut",
+        "type": "object"
+      },
+      "ProducerOwnerSummary": {
+        "description": "The account behind a business, for the admin's «בעלים» panel only.\n\nTwo fields, and the shape is the limit: the admin needs to see WHO she\nhanded the page to, never the account itself. Hydrated beside `has_owner`\n(routers/admin.py `_attach_has_owner`) in the same single query, so it\ncosts no extra round-trip and cannot reintroduce the per-row SELECT\nMEH-2541 removed from `GET /admin/producers`.",
+        "properties": {
+          "email": {
+            "format": "email",
+            "title": "Email",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "email"
+        ],
+        "title": "ProducerOwnerSummary",
         "type": "object"
       },
       "ProducerRandomOut": {
@@ -10557,6 +11003,7 @@
             "items": {
               "type": "integer"
             },
+            "maxItems": 20,
             "title": "Category Ids",
             "type": "array"
           },
@@ -10584,18 +11031,18 @@
             "type": "boolean"
           },
           "delivery_areas": {
-            "default": [],
             "items": {
               "$ref": "#/components/schemas/DeliveryAreaCreate"
             },
+            "maxItems": 300,
             "title": "Delivery Areas",
             "type": "array"
           },
           "delivery_cities": {
-            "default": [],
             "items": {
               "type": "string"
             },
+            "maxItems": 300,
             "title": "Delivery Cities",
             "type": "array"
           },
@@ -10872,11 +11319,11 @@
         "description": "The ticked item ids for a producer, as the whole set.\n\nSet semantics, not a diff: what arrives IS the state afterwards, so an id\nthat was ticked and is now absent gets its row deleted. A diff API would\nneed the client to know what it previously sent, which is exactly the\nassumption that breaks when two admin tabs are open on the same producer.",
         "properties": {
           "item_ids": {
-            "default": [],
             "items": {
               "format": "uuid",
               "type": "string"
             },
+            "maxItems": 200,
             "title": "Item Ids",
             "type": "array"
           }
@@ -10958,6 +11405,7 @@
                 "items": {
                   "type": "integer"
                 },
+                "maxItems": 20,
                 "type": "array"
               },
               {
@@ -11017,6 +11465,7 @@
                 "items": {
                   "type": "string"
                 },
+                "maxItems": 20,
                 "type": "array"
               },
               {
@@ -11031,6 +11480,7 @@
                 "items": {
                   "type": "string"
                 },
+                "maxItems": 300,
                 "type": "array"
               },
               {
@@ -11045,6 +11495,7 @@
                 "items": {
                   "$ref": "#/components/schemas/DeliveryAreaCreate"
                 },
+                "maxItems": 300,
                 "type": "array"
               },
               {
@@ -11059,6 +11510,7 @@
                 "items": {
                   "type": "string"
                 },
+                "maxItems": 300,
                 "type": "array"
               },
               {
@@ -11073,6 +11525,7 @@
                 "items": {
                   "type": "string"
                 },
+                "maxItems": 300,
                 "type": "array"
               },
               {
@@ -11219,6 +11672,7 @@
                 "items": {
                   "type": "string"
                 },
+                "maxItems": 20,
                 "type": "array"
               },
               {
@@ -11383,6 +11837,18 @@
               }
             ],
             "title": "Owner Photo Url"
+          },
+          "payment_info": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Payment Info"
           },
           "phone": {
             "anyOf": [
@@ -11742,6 +12208,87 @@
         "title": "ProductCreate",
         "type": "object"
       },
+      "ProductGroupAssignIn": {
+        "properties": {
+          "group_id": {
+            "anyOf": [
+              {
+                "maxLength": 36,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Group Id"
+          }
+        },
+        "title": "ProductGroupAssignIn",
+        "type": "object"
+      },
+      "ProductGroupIn": {
+        "properties": {
+          "id": {
+            "anyOf": [
+              {
+                "maxLength": 36,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Id"
+          },
+          "name": {
+            "maxLength": 200,
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "title": "ProductGroupIn",
+        "type": "object"
+      },
+      "ProductGroupOut": {
+        "description": "MEH-3055: one owner-defined product group (producers.product_groups).",
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ],
+        "title": "ProductGroupOut",
+        "type": "object"
+      },
+      "ProductGroupsIn": {
+        "description": "The whole ordered list. Absent ids are deleted, order is list order.",
+        "properties": {
+          "groups": {
+            "items": {
+              "$ref": "#/components/schemas/ProductGroupIn"
+            },
+            "maxItems": 40,
+            "title": "Groups",
+            "type": "array"
+          }
+        },
+        "required": [
+          "groups"
+        ],
+        "title": "ProductGroupsIn",
+        "type": "object"
+      },
       "ProductHit": {
         "properties": {
           "description": {
@@ -11794,6 +12341,25 @@
         "title": "ProductHit",
         "type": "object"
       },
+      "ProductOrderIn": {
+        "description": "Every product of the business, in the order the owner wants.",
+        "properties": {
+          "product_ids": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "maxItems": 100,
+            "title": "Product Ids",
+            "type": "array"
+          }
+        },
+        "required": [
+          "product_ids"
+        ],
+        "title": "ProductOrderIn",
+        "type": "object"
+      },
       "ProductOut": {
         "properties": {
           "allergens": {
@@ -11820,6 +12386,17 @@
               }
             ],
             "title": "Description"
+          },
+          "group_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Group Id"
           },
           "id": {
             "format": "uuid",
@@ -11881,6 +12458,17 @@
           "name": {
             "title": "Name",
             "type": "string"
+          },
+          "position": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Position"
           },
           "price_max": {
             "anyOf": [
@@ -13359,6 +13947,7 @@
                 "items": {
                   "type": "string"
                 },
+                "maxItems": 50,
                 "type": "array"
               },
               {
@@ -13373,6 +13962,7 @@
                 "items": {
                   "type": "string"
                 },
+                "maxItems": 50,
                 "type": "array"
               },
               {
@@ -13496,6 +14086,7 @@
                 "items": {
                   "type": "string"
                 },
+                "maxItems": 50,
                 "type": "array"
               },
               {
@@ -13731,6 +14322,14 @@
           "pages": {
             "title": "Pages",
             "type": "integer"
+          },
+          "rating_counts": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "default": {},
+            "title": "Rating Counts",
+            "type": "object"
           },
           "reviews": {
             "items": {
@@ -17198,6 +17797,159 @@
         ]
       }
     },
+    "/admin/producers/{producer_id}/owner-invite": {
+      "delete": {
+        "description": "Withdraw an invite that has not been accepted.\n\nClears the PII too, not only the token. The address and the name belong to\nsomeone who is not a user of the site and now never will be through this\nlink, so the row should stop holding them (MEH-2208's תיקון 13 class).\n`owner_invite_created_by` and the consent note are kept: they are the audit\nrecord of an invite that WAS sent, and deleting that is the one thing a\ncancel must not do.\n\nDeliberately NOT gated on `status == \"approved\"` — see `_load_invitable`.",
+        "operationId": "cancel_owner_invite_admin_producers__producer_id__owner_invite_delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "producer_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Producer Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Cancel Owner Invite",
+        "tags": [
+          "admin"
+        ]
+      },
+      "post": {
+        "description": "Invite (or re-invite) the owner of an approved business.\n\nA second call REPLACES the first invite, token and all — that is how an\nadmin corrects a typo in the address without a separate revoke step.",
+        "operationId": "create_owner_invite_admin_producers__producer_id__owner_invite_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "producer_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Producer Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OwnerInviteCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OwnerInviteCreatedOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Create Owner Invite",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/admin/producers/{producer_id}/owner-invite/resend": {
+      "post": {
+        "description": "Mint a new token for the invite already on the row and send it again.\n\nTakes no body on purpose: resending to a DIFFERENT address is a different\nact with a different consent, and it goes through create — which records a\nfresh `consent_note` for it.",
+        "operationId": "resend_owner_invite_admin_producers__producer_id__owner_invite_resend_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "producer_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Producer Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OwnerInviteCreatedOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Resend Owner Invite",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
     "/admin/producers/{producer_id}/products": {
       "post": {
         "operationId": "admin_create_draft_product_admin_producers__producer_id__products_post",
@@ -19247,6 +19999,131 @@
         ]
       }
     },
+    "/auth/owner-invite/accept": {
+      "post": {
+        "description": "Set a password, sign both consents, and walk into the dashboard.\n\nORDER MATTERS, and each step is placed where it is for a reason:\n\n  1. The two consent booleans are schema-level 422s (OwnerInviteAccept).\n     They are statements about the BODY and say nothing about which\n     business the token names, so they leak nothing and they run before any\n     read — the same classification register_producer gives its own\n     body-shape guards.\n  2. The password policy, also 422, also before any write.\n  3. The EMAIL CODE (v3), 422. She proves the address before anything\n     else is spent on it, and a wrong guess costs one of five attempts —\n     the counter is the only write a failed accept makes.\n  4. The email-taken and has-owner checks, 409, BEFORE the claim — so the\n     common race answers without having touched anything.\n  5. The claim: ONE conditional UPDATE (MEH-1820), never SELECT-then-set.\n  6. The INSERT, the publish if the business was hidden, then one commit.\n\nSteps 4 and 6 still race each other, and the backstop is NARROWER than it\nlooks: the unique index on `users.email` is case-SENSITIVE, while\n`_email_taken` compares lowercased. So it catches an exact-case collision —\nrolling the whole transaction back, claim included, which is what keeps the\n409 free of writes and the link usable — and does NOT catch one that\ndiffers only in case. That gap is `users.email` having no case-insensitive\nindex, which is repo-wide (`auth.py` looks accounts up with a raw `==`\neverywhere) and belongs to its own card; it is recorded here rather than\nhalf-fixed in one endpoint. Its blast radius is bounded: the racer's\naccount does not own the business, only the invitee's does.\n\nThe window itself is as small as it can be made — bcrypt moved above the\ncheck, so the only thing left between them is the UPDATE.",
+        "operationId": "accept_owner_invite_auth_owner_invite_accept_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OwnerInviteAccept"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Token"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Accept Owner Invite",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/auth/owner-invite/email-code": {
+      "post": {
+        "description": "Send a verification code to the address she typed.\n\nTHE RESPONSE IS THE SAME WHATEVER HAPPENS — same status, same bytes —\nfor an address that is free, one that already belongs to an account, and\none whose send fails. The reason is specific: this endpoint takes an\narbitrary address from anyone holding the link, so a different answer for\n\"already registered\" would turn it into an account-existence oracle for\nany address an attacker cares to try.\n\nWhat DOES differ is invisible from here: a registered address is not\nmailed and no code is stored, so the acceptance it would lead to fails at\nthe 409 it was always going to fail at.\n\nAn invalid link still 404s — that is a fact about the LINK, which the\ncaller already holds, not about any address.",
+        "operationId": "send_owner_invite_email_code_auth_owner_invite_email_code_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OwnerInviteEmailCodeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Send Owner Invite Email Code",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/auth/owner-invite/{token}": {
+      "get": {
+        "description": "What the acceptance page renders before she has typed anything.\n\n`request` is required by slowapi, which reads it by introspection.",
+        "operationId": "get_owner_invite_auth_owner_invite__token__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "token",
+            "required": true,
+            "schema": {
+              "title": "Token",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OwnerInvitePublicOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Owner Invite",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
     "/auth/refresh": {
       "post": {
         "description": "MEH-326: rotate access + refresh tokens via the HttpOnly cookie.\n\nNo request body. Reads `refresh_token` from cookies. On success:\nissues a new access token (returned in JSON body) AND rotates the\nrefresh cookie (new value, sliding 14d TTL). Failures: 401 (cookie\nabsent / decode failure / user not found / token_version drift) or\n403 (user blocked).\n\nRefresh tokens are post-MEH-326 only — no in-the-wild tokens predate\nthis code, so we strictly require the `tv` claim (unlike access\ntokens which fail-open on missing `tv` for backward compat).",
@@ -19469,7 +20346,7 @@
     },
     "/auth/verify-email": {
       "get": {
-        "description": "Consume email verification token. Clears token on success.\n\nMEH-320: 404 (not_found) / 410 (expired) split + structured logging,\nsame pattern MEH-304 applied to /auth/reset-password. Diagnostics\nonly — does not change happy-path behavior. The actual root cause\nof the staging 400 will be identified from the [VERIFY-EMAIL]\nlog entries this surfaces.",
+        "description": "Consume the one-time token (MEH-320: 404 unknown / 410 expired).\nMEH-3087: after the token is consumed, verify_email_session may sign in.",
         "operationId": "verify_email_auth_verify_email_get",
         "parameters": [
           {
@@ -21523,6 +22400,50 @@
         ]
       }
     },
+    "/producer-name-check": {
+      "get": {
+        "description": "Live businesses whose name equals `name` (exact, after `name_key`).\n\nExact match only — DO NOT turn this into a prefix or substring match:\nthat would make an anonymous route a way to list the directory by\ntyping letters, which is what GET /producers is rate-shaped for.",
+        "operationId": "producer_name_check_producer_name_check_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "maxLength": 200,
+              "title": "Name",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NameCheckOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Producer Name Check",
+        "tags": [
+          "producers"
+        ]
+      }
+    },
     "/producers": {
       "get": {
         "operationId": "list_producers_producers_get",
@@ -22800,6 +23721,136 @@
         ]
       }
     },
+    "/producers/me/product-groups": {
+      "get": {
+        "operationId": "list_my_product_groups_producers_me_product_groups_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ProductGroupOut"
+                  },
+                  "title": "Response List My Product Groups Producers Me Product Groups Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "List My Product Groups",
+        "tags": [
+          "producer-management"
+        ]
+      },
+      "put": {
+        "description": "The whole ordered list in one write: add (no id), rename, reorder,\ndelete (absent). Products of a deleted group become ungrouped.",
+        "operationId": "replace_my_product_groups_producers_me_product_groups_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProductGroupsIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ProductGroupOut"
+                  },
+                  "title": "Response Replace My Product Groups Producers Me Product Groups Put",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Replace My Product Groups",
+        "tags": [
+          "producer-management"
+        ]
+      }
+    },
+    "/producers/me/product-order": {
+      "put": {
+        "description": "`product_ids` must be exactly the business's products, each once —\na partial list would leave two products sharing a position.",
+        "operationId": "set_my_product_order_producers_me_product_order_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProductOrderIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ProductOut"
+                  },
+                  "title": "Response Set My Product Order Producers Me Product Order Put",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Set My Product Order",
+        "tags": [
+          "producer-management"
+        ]
+      }
+    },
     "/producers/me/products": {
       "get": {
         "operationId": "list_my_products_producers_me_products_get",
@@ -22966,6 +24017,64 @@
           }
         ],
         "summary": "Update My Product",
+        "tags": [
+          "producer-management"
+        ]
+      }
+    },
+    "/producers/me/products/{product_id}/group": {
+      "put": {
+        "operationId": "set_my_product_group_producers_me_products__product_id__group_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "product_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Product Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProductGroupAssignIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Set My Product Group",
         "tags": [
           "producer-management"
         ]
@@ -23604,7 +24713,7 @@
     },
     "/producers/{producer_id}/contact-click": {
       "post": {
-        "description": "Log a contact-method click for the producer dashboard.\n\nAccepts method ∈ {phone, instagram, website, email}. Auth optional —\nJWT when present attributes the click to a registered user. IP is\nSHA-256 hashed (reuses hash_ip from services/analytics). Rate-limited\n10/minute per IP consistent with whatsapp-click.",
+        "description": "Log a contact-method click for the producer dashboard.\n\nAccepts method ∈ _VALID_CONTACT_METHODS. Auth optional —\nJWT when present attributes the click to a registered user. IP is\nSHA-256 hashed (reuses hash_ip from services/analytics). Rate-limited\n10/minute per IP consistent with whatsapp-click.",
         "operationId": "record_contact_click_producers__producer_id__contact_click_post",
         "parameters": [
           {
@@ -25275,7 +26384,7 @@
     },
     "/users/me": {
       "patch": {
-        "description": "Update the current user's name and/or email.\n\n- Name is trimmed and must be non-empty.\n- Email uniqueness is re-checked; collisions are rejected with 409.",
+        "description": "Update the current user's name and/or email.\n\n- Name is trimmed and must be non-empty.\n- Email uniqueness is re-checked; collisions are rejected with 409.\n- MEH-3095: a changed email is an unproved one. The account goes back to\n  unverified and a fresh link is mailed to the NEW address.",
         "operationId": "update_profile_users_me_patch",
         "requestBody": {
           "content": {

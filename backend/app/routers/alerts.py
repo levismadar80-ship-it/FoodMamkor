@@ -22,10 +22,11 @@ import re
 from datetime import timedelta
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy import or_
 from sqlalchemy.orm import Session, joinedload
 
+from app.rate_limit import limiter
 from app.auth import get_current_user
 from app.data.cities import city_key
 from app.database import get_db
@@ -73,6 +74,7 @@ def get_alert_prefs(
             notify_delivery_area=False,
             notify_new_recipe=False,
             notify_new_group_buy=False,
+            notify_new_rescue=False,
             whatsapp_opt_in=False,
             has_push=False,
         )
@@ -83,13 +85,16 @@ def get_alert_prefs(
         notify_delivery_area=bool(alert.notify_delivery_area),
         notify_new_recipe=bool(alert.notify_new_recipe),
         notify_new_group_buy=_pref_on(alert.notify_new_group_buy),
+        notify_new_rescue=_pref_on(alert.notify_new_rescue),
         whatsapp_opt_in=bool(alert.whatsapp_opt_in),
         has_push=bool(alert.push_subscription),
     )
 
 
 @router.put("/{producer_id}/alerts", response_model=AlertPrefsOut)
+@limiter.limit("60/minute")  # MEH-3022
 def upsert_alert_prefs(
+    request: Request,  # required by slowapi (MEH-3022)
     producer_id: UUID,
     data: AlertPrefsIn,
     user: User = Depends(get_current_user),
@@ -133,6 +138,7 @@ def upsert_alert_prefs(
         alert.notify_delivery_area = data.notify_delivery_area
         alert.notify_new_recipe = data.notify_new_recipe
         alert.notify_new_group_buy = data.notify_new_group_buy
+        alert.notify_new_rescue = data.notify_new_rescue
         alert.whatsapp_opt_in = data.whatsapp_opt_in
         if data.push_subscription is not None:
             alert.push_subscription = data.push_subscription
@@ -145,6 +151,7 @@ def upsert_alert_prefs(
             notify_delivery_area=data.notify_delivery_area,
             notify_new_recipe=data.notify_new_recipe,
             notify_new_group_buy=data.notify_new_group_buy,
+            notify_new_rescue=data.notify_new_rescue,
             whatsapp_opt_in=data.whatsapp_opt_in,
             push_subscription=data.push_subscription,
         )
@@ -159,6 +166,7 @@ def upsert_alert_prefs(
         notify_delivery_area=bool(alert.notify_delivery_area),
         notify_new_recipe=bool(alert.notify_new_recipe),
         notify_new_group_buy=_pref_on(alert.notify_new_group_buy),
+        notify_new_rescue=_pref_on(alert.notify_new_rescue),
         whatsapp_opt_in=bool(alert.whatsapp_opt_in),
         has_push=bool(alert.push_subscription),
     )
@@ -178,13 +186,16 @@ _ALERT_COL = {
     # MEH-2828: fired from group_buys.create_group_buy once the group buy is
     # committed (status open) — not on edit, funded or cancel.
     "new_group_buy": "notify_new_group_buy",
+    # MEH-3117: fired from rescue.create_offer once an offer dated TODAY is
+    # committed — not for a later date, not on cancel or reservation.
+    "new_rescue": "notify_new_rescue",
 }
 
 # MEH-2828 (Sapir 08/11): for this column a NULL row reads as ON — the
 # migration's server_default opts existing rows in, and a row that somehow
 # carries NULL must not silently drop out of the alert. The four older
 # columns keep their existing behaviour (only TRUE fires; NULL reads as off).
-_NULL_IS_ON = frozenset({"notify_new_group_buy"})
+_NULL_IS_ON = frozenset({"notify_new_group_buy", "notify_new_rescue"})
 
 
 def _pref_on(value: bool | None) -> bool:
@@ -394,7 +405,17 @@ def fire_alerts(
                 # text message only delivers inside the 24h service window, which
                 # a favoriting customer almost never has open → Meta 131047
                 # window_expired and the alert vanishes silently.
-                _send_whatsapp_alert(alert.user.phone, producer_name, content)
+                _send_whatsapp_alert(
+                    alert.user.phone,
+                    producer_name,
+                    content,
+                    # MEH-2952: is_business() already drops a test business;
+                    # a test recipient account is dropped at the send layer.
+                    test_cause=bool(
+                        alert.user.is_test
+                        or (alert.producer is not None and alert.producer.is_test)
+                    ),
+                )
                 _record_alert_send(
                     db, alert.user_id, producer_id, _CHANNEL_WHATSAPP, alert_type
                 )
@@ -424,7 +445,9 @@ def _sanitize_wa_param(text: str) -> str:
     return re.sub(r"\s+", " ", _LEADING_EMOJI.sub("", text)).strip()
 
 
-def _send_whatsapp_alert(to: str, producer_name: str, content: AlertContent) -> None:
+def _send_whatsapp_alert(
+    to: str, producer_name: str, content: AlertContent, test_cause: bool = False
+) -> None:
     # MEH-1329: business-initiated, so send the approved utility template
     # favorite_alert_he_v1 (not a free-form text message). {{1}} = business name,
     # {{2}} = the sanitized headline; content.body carries a newline and is
@@ -456,4 +479,5 @@ def _send_whatsapp_alert(to: str, producer_name: str, content: AlertContent) -> 
             update_line=update_line,
             url_path=content.url,
         ),
+        test_cause=test_cause,
     )

@@ -6,7 +6,7 @@ import LocationBanner from "@/components/LocationBanner";
 import HolidayBanner from "@/components/HolidayBanner";
 import FridayDeliveryStrip from "@/components/FridayDeliveryStrip";
 import BackToTop from "@/components/BackToTop";
-import { UpcomingEventsPreview } from "@/app/[locale]/home/UpcomingEventsPreview";
+import HomeWhatsOn from "@/components/HomeWhatsOn";
 import {
   HomeFeaturedProducer,
   HomeRecentlyViewed,
@@ -26,6 +26,7 @@ import RescueHomeModule from "@/components/rescue/RescueHomeModule";
 // and its Leaflet-free skeleton live in HomepageMiniMapLazy, which starts the
 // import only when the visitor scrolls near the map.
 import HomepageMiniMapLazy from "@/components/HomepageMiniMapLazy";
+import { SkeletonBlock } from "@/components/Skeleton";
 
 // MEH-1688: the standalone "newest businesses" section is GONE, and with it
 // MEH-809's NEW_SECTION_MIN_PRODUCERS depth gate. MEH-809 hid the section on a
@@ -176,7 +177,7 @@ export default function HomeClient({
         </p>
         {!statsLoaded && (
           <p className={TRUST_COUNT_LINE} data-testid="trust-count-skeleton">
-            <span className="inline-block w-40 h-5 align-middle rounded-lg bg-text/10 animate-pulse" />
+            <SkeletonBlock className="inline-block w-40 h-5 align-middle rounded-lg" />
           </p>
         )}
         {statsLoaded && showTrustCount && (
@@ -310,9 +311,13 @@ export default function HomeClient({
           /about/process the real four steps, so both lived twice. */}
 
       {/* =========================
-          UPCOMING EVENTS PREVIEW (Task 6)
+          WHAT'S ON AT THE BUSINESSES (MEH-2859) — one strip over all four
+          date-bound types (events, experiences, group buys, surprise baskets),
+          in the slot the events-only preview held. Self-hides when none of the
+          four has anything, and asks nothing of any of them until the strip
+          nears the viewport.
           ========================= */}
-      <UpcomingEventsPreview />
+      <HomeWhatsOn />
 
       {/* MEH-912: recently-viewed demoted from between the category grid and the
           producer grid to a "resume browsing" band just above the closing CTA,

@@ -1,17 +1,19 @@
-import { Suspense } from "react";
 import { getTranslations } from "next-intl/server";
 import EventsClient from "./EventsClient";
+import { hubTabTitles } from "./hub-tab-titles";
 import { BRAND_NAME } from "@/lib/constants";
 import { buildAlternates, buildEntityTitle, urlForLocalePath, OG_LOCALE } from "@/lib/i18n-seo";
 import { getHubCount, hubRobots } from "@/lib/listing-supply";
 
-// MEH-2878: stays per-request on purpose. Its client body reads
-// useSearchParams() inside <Suspense>; on a cached (static) route Next renders
-// that subtree only in the browser, so the cached HTML would lose the page's
-// H1 and body (measured: production has the H1 in its HTML, a cached build
-// did not). Per-request keeps today's server-rendered HTML. Remove this only
-// together with moving the H1 out of the Suspense subtree.
-export const dynamic = "force-dynamic";
+// MEH-2984: ISR, like /group-buys — no longer `force-dynamic` (MEH-2878).
+// That flag was there because EventsClient read useSearchParams() inside a
+// <Suspense>, which on a static route renders only in the browser and drops
+// the H1 from the cached HTML. EventsClient now reads the query in a mount
+// effect, so the whole page (H1 included) is in the server HTML, and a
+// static page can be prefetched by the hub tabs — no whole-page loader when
+// arriving from /group-buys or /rescue. generateMetadata's supply count
+// revalidates hourly (lib/listing-supply.js).
+// DO NOT add useSearchParams back to EventsClient without re-reading this.
 
 // MEH-739: per-locale hreflang + self canonical via buildAlternates (was a
 // hand-built single-canonical entry with no hreflang languages map).
@@ -50,27 +52,11 @@ export async function generateMetadata({ params }) {
   };
 }
 
-// EventsClient uses useSearchParams() for the ?city= / ?category= deep-links.
-// Next.js 14 requires a Suspense boundary around any component that reads
-// search params in the App Router. MEH-2245: the tab is the route — this page
-// is the events tab; /experiences mounts the same component on the other tab.
+// MEH-2245: the tab is the route — this page is the events tab; the other
+// route mounts the same EventsClient on the other tab.
 export default async function EventsPage({ params }) {
-  // MEH-858 F2: Suspense fallback was a hardcoded HE string (leaked Hebrew on
-  // /en). Wire the existing events.list.loading_events key — same rendered
-  // string in HE, proper EN parity. Server component → getTranslations.
   const { locale } = await params;
-  const t = await getTranslations({ locale, namespace: "events.list" });
-  return (
-    // MEH-2754: min-h-screen keeps the footer below the fold while this
-    // fallback shows, so swapping in the page shifts nothing in view.
-    <Suspense
-      fallback={
-        <div className="max-w-5xl mx-auto px-4 py-16 text-center text-fg-muted min-h-screen" data-testid="page-suspense-fallback">
-          {t("loading_events")}
-        </div>
-      }
-    >
-      <EventsClient initialTab="events" />
-    </Suspense>
-  );
+  // MEH-2980: both tab titles, so an in-place tab switch can retitle the page.
+  const titles = await hubTabTitles(locale);
+  return <EventsClient initialTab="events" titles={titles} />;
 }

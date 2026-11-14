@@ -42,6 +42,7 @@ erDiagram
         string google_id UK
         string apple_id UK
         boolean is_blocked
+        boolean is_test "MEH-2952 — NOT NULL default false; seeded test identity; never in a response"
         timestamp created_at
         timestamp last_active_at "indexed, feeds DAU chart"
         timestamp terms_accepted_at "nullable, tz-aware — MEH-1995 ToS consent; NULL = no record held, never 'refused'"
@@ -62,6 +63,7 @@ erDiagram
         float lng
         string status "pending|approved|rejected"
         string kind "MEH-2459 — producer|organizer; NOT NULL default producer; CHECK producer_kind_values (ADR-036)"
+        boolean is_test "MEH-2952 — NOT NULL default false; hidden by is_business(); never in a response"
         float avg_rating "cached aggregate"
         int reviews_count "cached aggregate"
         boolean is_available_today "legacy — unread, unwritten, in no response (MEH-2272); MEH-2273 drops it"
@@ -72,6 +74,8 @@ erDiagram
         text recommended_note "nullable — MEH-1494 chunk A; the editor's reason. ADMIN-ONLY, never on a public serializer (guard test asserts absence by name)"
         date in_season_until "nullable — MEH-1287 chunk A, revision f5b8d2c7a3e9; date-bounded editorial curation for the seasonal homepage module (in season UNTIL, Israel day). NULL = not curated. Admin-only, not on ProducerUpdate"
         json special_hours "nullable JSONB — MEH-1889 chunk A, migration c4e81b7a2f96; per-DATE overrides keyed YYYY-MM-DD, ranges:[] = closed. ORDER-AXIS ONLY: overrides order_window (itself absent from this diagram — pre-existing drift since MEH-1543), never the free-text opening_hours; note is display-only"
+        json payment_info "nullable JSONB — MEH-3035, migration e3a5c1d7f904; {methods ⊆ bit/paybox/bank_transfer/cash/credit_card, timing ∈ advance/on_pickup/deposit, note ≤80}; all-empty stored as NULL; owner-writable via PUT /producers/me"
+        json product_groups "nullable JSONB — MEH-3055, migration b7d4e2a9c615; ordered [{id, name}] ≤20"
         string plan "free|premium"
         boolean grass_fed
         boolean reservist_owned "NOT NULL default false — owner-declared «עסק של מילואימניקים», badge only (migration f1c7a2b9d4e6)"
@@ -92,6 +96,17 @@ erDiagram
         int resubmission_count "NOT NULL DEFAULT 0 — MEH-2210, rejected→pending resubmissions used; history, never reset; cap constants.MAX_PRODUCER_RESUBMISSIONS=3"
         timestamp resubmitted_at "nullable — MEH-2210, tz-aware; latest resubmission"
         timestamp claim_link_sent_at "nullable — MEH-2496, tz-aware; latest owner-claim link minted (no backfill)"
+        string owner_invite_email "nullable — MEH-2974, VARCHAR(200); where the owner invite was sent (cleared on cancel)"
+        string owner_invite_name "nullable — MEH-2974, VARCHAR(200); the addressee (cleared on cancel)"
+        string owner_invite_token_hash "nullable — MEH-2974, VARCHAR(64) INDEXED; sha256 HEX of the link token. NEVER the token; on no response schema"
+        timestamp owner_invite_expires_at "nullable — MEH-2974, tz-aware; mint + 7 days"
+        timestamp owner_invite_sent_at "nullable — MEH-2974, tz-aware; latest invite sent"
+        timestamp owner_invite_accepted_at "nullable — MEH-2974, tz-aware; set once. Also the onboarding-sequence clock: COALESCE(this, created_at)"
+        text owner_invite_consent_note "nullable — MEH-2974; the admin's record of the written consent. Kept on cancel — it is the audit trail"
+        string owner_invite_created_by "nullable — MEH-2974, UUID FK users.id ON DELETE SET NULL, named + use_alter (users<->producers cycle)"
+        string owner_invite_code_hash "nullable — MEH-2974 v3, VARCHAR(64); sha256 HEX of the 6-digit email code. NEVER the code; on no response schema"
+        timestamp owner_invite_code_expires_at "nullable — MEH-2974 v3, tz-aware; send + 10 minutes"
+        int owner_invite_code_attempts "nullable — MEH-2974 v3; wrong guesses against the CURRENT code, capped at 5. The only write a failed accept makes"
         timestamp created_at
         timestamp updated_at "nullable — MEH-1291, tz-aware; onupdate=func.now() stamp, no backfill; public freshness signal (ProducerDetailOut)"
         text owner_bio "nullable — MEH-1335, app-capped 300; public OwnerCard story (NULL = compact variant)"
@@ -130,6 +145,8 @@ erDiagram
         boolean is_low_carb "MEH-1934: 6th dietary axis; independent of every other flag"
         text ingredients "MEH-2662: owner-declared, nullable"
         text_array allergens "MEH-2662: codes from app/allergens.py, nullable"
+        int position "MEH-3055: owner order, NULL = never ordered"
+        varchar group_id "MEH-3055: id in producers.product_groups, no FK, nullable"
     }
 
     delivery_areas {
@@ -525,6 +542,11 @@ erDiagram
         text allergens "text[] NULL — MEH-2752: NULL = not declared, never []"
         timestamp created_at
         timestamp updated_at
+    }
+
+    alembic_lineage {
+        string revision PK "MEH-2903 — every revision a booted image applied"
+        timestamp recorded_at "NOT NULL, default now()"
     }
 ```
 

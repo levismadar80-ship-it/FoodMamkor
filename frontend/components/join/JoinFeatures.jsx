@@ -43,6 +43,7 @@ import {
 } from "@/lib/business-features";
 import { rescueBagsEnabled } from "@/lib/rescue";
 import FeatureTip from "./FeatureTip";
+import SectionHeading from "@/components/ui/SectionHeading";
 
 /**
  * Module:   JoinFeatures
@@ -222,7 +223,7 @@ function GroupClip({ group, alt, labels, paused, setPaused }) {
           event.stopPropagation();
           setPaused((v) => !v);
         }}
-        className="absolute bottom-2 end-2 inline-flex h-11 w-11 items-center justify-center rounded-full bg-background/90 text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+        className="absolute bottom-2 end-2 inline-flex h-11 w-11 items-center justify-center rounded-full bg-background/90 text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
       >
         {paused ? <Play size={20} aria-hidden="true" /> : <Pause size={20} aria-hidden="true" />}
       </button>
@@ -279,7 +280,7 @@ function GroupCard({ group, selected, active, index, onSelect, copy, media }) {
           event.stopPropagation();
           onSelect(group, index);
         }}
-        className={`flex w-full items-center gap-3 px-3 py-3 text-start transition-colors duration-[220ms] ease-out motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/40 ${
+        className={`flex w-full items-center gap-3 px-3 py-3 text-start transition-colors duration-[220ms] ease-out motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary ${
           active ? "bg-state-selected text-background" : "bg-surface-card text-text"
         }`}
       >
@@ -508,9 +509,9 @@ export default function JoinFeatures() {
     <section data-testid="join-features" className="bg-background-alt py-14 sm:py-20">
       <div className="mx-auto max-w-5xl px-4 sm:px-6">
         <p className="mb-2 text-center text-sm font-medium text-fg-muted">{tj("eyebrow")}</p>
-        <h2 className="mb-3 text-center font-headline-lg text-[clamp(26px,3.5vw,38px)] font-bold text-text">
+        <SectionHeading className="mb-3 text-center">
           {tj("heading")}
-        </h2>
+        </SectionHeading>
         <p data-testid="join-features-count" className="mb-10 text-center text-text/85">
           {t("total_line", { count })}
         </p>
