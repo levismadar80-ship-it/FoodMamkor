@@ -138,4 +138,18 @@ describe("ui/Input", () => {
     expect(screen.getByText("שדה חובה")).toBeInTheDocument();
     expect(screen.queryByText("נראה טוב")).not.toBeInTheDocument();
   });
+
+  // MEH-3145: a caller that renders its own error text marks the field only.
+  it("invalid marks the field red with aria-invalid and renders no message, md and sm", () => {
+    const { rerender, container } = render(<Input label="טלפון" invalid aria-describedby="own-error" />);
+    for (const size of ["md", "sm"]) {
+      rerender(<Input label="טלפון" size={size} invalid aria-describedby="own-error" />);
+      const input = screen.getByLabelText("טלפון");
+      expect(input.className).toContain("border-error");
+      expect(input).toHaveAttribute("aria-invalid", "true");
+      expect(input).toHaveAttribute("aria-describedby", "own-error");
+      expect(input).not.toHaveAttribute("invalid");
+      expect(container.querySelector(".text-error")).toBeNull();
+    }
+  });
 });

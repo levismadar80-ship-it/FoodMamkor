@@ -29,6 +29,9 @@ import { fieldClasses, FieldShell } from "./field";
  *          inside a row; the caller sets the width in className and gives it
  *          an aria-label (or a <label htmlFor> of its own).
  *
+ * invalid: mark the field red (+ aria-invalid) with no message of its own, for
+ *          a caller that renders the error text itself; `error` does both.
+ *
  * Types  : text | email | tel | search (any native type passes through)
  * States : default | focus | error | success | disabled
  * Slots  : label / helperText / error / successText / startAdornment
@@ -79,12 +82,15 @@ export default function Input({
   required = false,
   size = "md",
   inline = false,
+  invalid = false,
   ...rest
 }) {
   const autoId = useId();
   const inputId = id || autoId;
   const describedById = `${inputId}-desc`;
-  const hasError = !!error;
+  // MEH-3145: `invalid` marks the field (red border + aria-invalid) when the
+  // caller renders the message itself and wires it with aria-describedby.
+  const hasError = invalid || !!error;
   // MEH-1128 D1: error wins over success (a field can't be valid and invalid).
   const showSuccess = !hasError && !!success;
   const successMessage = showSuccess && successText;
