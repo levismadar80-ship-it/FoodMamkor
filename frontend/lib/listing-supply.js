@@ -85,7 +85,7 @@ export function getHubCount(hubKey) {
 export async function getAllHubCounts() {
   const keys = Object.keys(HUBS);
   const counts = await Promise.all(keys.map(fetchCount));
-  return /** @type {{events: number|null, experiences: number|null, groupBuys: number|null}} */ (
+  return /** @type {{events: number|null, experiences: number|null, groupBuys: number|null, rescue: number|null}} */ (
     Object.fromEntries(keys.map((k, i) => [k, counts[i]]))
   );
 }
