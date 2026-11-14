@@ -71,7 +71,7 @@ function FactTile({ icon: Icon, label, value }) {
 // announced when it changes.
 function ServingsStepper({ value, onChange, t }) {
   const btn =
-    "w-11 h-11 grid place-items-center rounded-full border border-border text-text hover:border-primary focus-ring aria-disabled:opacity-40 aria-disabled:hover:border-border aria-disabled:cursor-default";
+    "w-11 h-11 grid place-items-center rounded-full border border-border text-text hover:border-primary focus-ring aria-disabled:opacity-50 aria-disabled:hover:border-border aria-disabled:cursor-default";
   // aria-disabled, not disabled: a button that disables itself under the
   // finger drops keyboard focus to the page.
   const step = (next, blocked) => () => !blocked && onChange(clampServings(next));
