@@ -197,6 +197,16 @@ describe("ProducersClient free-text search (MEH-830)", () => {
     expect(new FormData(box.closest("form")).get("q")).toBe("לחם");
   });
 
+  // MEH-3153: React replays an Enter that arrived during hydration BEFORE the
+  // typed text reaches state, so the submit must read the field itself.
+  it("a submit whose text never reached state (no change event) still writes ?q=", () => {
+    render(<ProducersClient {...PROPS} />);
+    const box = screen.getByRole("searchbox");
+    box.value = "דבש"; // DOM only — what the visitor typed before hydration
+    fireEvent.submit(box.closest("form"));
+    expect(window.location.search).toContain(`q=${encodeURIComponent("דבש")}`);
+  });
+
   it("hydrates the box from an existing ?q= param", () => {
     params = { q: "לחם" };
     render(<ProducersClient {...PROPS} />);

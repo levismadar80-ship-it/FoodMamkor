@@ -749,7 +749,11 @@ export default function ProducersClient({
   // Empty term flows through the same clear-q path as the 🔍 chip ×.
   const handleSearchSubmit = (e) => {
     e.preventDefault();
-    const term = searchInput.trim();
+    // MEH-3153: read the field, not state. Text typed while the page hydrates
+    // can sit in the DOM before React's state hears it (PrehydrationInputReplay
+    // catches up later), and what the visitor sees in the box is what she means.
+    const term = (searchInputRef.current?.value ?? searchInput).trim();
+    setSearchInput(term);
     setSearchQ(term);
     syncUrl(chips, cityFilter, term, categoryFilter);
     fetchFiltered(chips, cityFilter, term, categoryFilter);
