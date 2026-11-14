@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { renderHook, act } from "@testing-library/react";
 import { useMapSync } from "@/app/[locale]/map/state/useMapSync";
 
@@ -11,7 +11,7 @@ vi.mock("@/lib/api", () => ({ default: { get: vi.fn(() => Promise.resolve({ data
 vi.mock("@/lib/toast", () => ({ showToast: { info: vi.fn() } }));
 vi.mock("@/lib/schemas", () => ({ GEO_SEARCH_ERROR_KEYS: [], GeoSearchSchema: { safeParse: () => ({ success: true, data: {} }) } }));
 vi.mock("@/lib/map-chips", () => ({ boundsToCenterRadius: () => ({ lat: 0, lng: 0, radius_km: 5 }) }));
-vi.mock("@/components/MapBottomSheet", () => ({ HALF: 45 }));
+vi.mock("@/components/MapBottomSheet", () => ({ PEEK: 14, HALF: 45 }));
 
 function setup() {
   const props = {
@@ -234,5 +234,39 @@ describe("useMapSync — selectedLocation (MEH-1412)", () => {
       result.current.handleCardClick({ id: "pB", lat: 32, lng: 34 });
     });
     expect(result.current.selectedLocation).toBeNull();
+  });
+});
+
+// MEH-3119: on a phone a marker tap leaves the sheet collapsed, so the picked
+// business shows once (the card floating over the map), not pinned above a
+// list that also holds it. Before: setSheetSnap(HALF) + a list scroll.
+describe("useMapSync — a marker tap on a phone keeps the sheet at PEEK (MEH-3119)", () => {
+  const width = window.innerWidth;
+  afterEach(() => { window.innerWidth = width; });
+
+  it("phone: the sheet goes to PEEK and no list row is scrolled", () => {
+    window.innerWidth = 390;
+    const { result, props } = setup();
+    const row = document.createElement("div");
+    row.scrollIntoView = vi.fn();
+    result.current.cardRefs.current.set("p1", new Set([row]));
+    act(() => { result.current.handleMarkerClick({ id: "p1" }); });
+    expect(props.setSheetSnap).toHaveBeenCalledTimes(1);
+    expect(props.setSheetSnap).toHaveBeenCalledWith(14);
+    expect(row.scrollIntoView).not.toHaveBeenCalled();
+  });
+
+  it("phone: coming back from a business page restores to PEEK too", () => {
+    window.innerWidth = 390;
+    const { result, props } = setup();
+    act(() => { result.current.restoreSelection({ id: "p1" }); });
+    expect(props.setSheetSnap).toHaveBeenCalledWith(14);
+  });
+
+  it("desktop: the sheet is not touched", () => {
+    window.innerWidth = 1440;
+    const { result, props } = setup();
+    act(() => { result.current.handleMarkerClick({ id: "p1" }); });
+    expect(props.setSheetSnap).not.toHaveBeenCalled();
   });
 });
