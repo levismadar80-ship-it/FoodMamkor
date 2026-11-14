@@ -583,7 +583,7 @@ function WhatsOnGroup({ group, first, labels }) {
             (HomeProducersGrid.jsx:633), and a 44px tap height. */}
         <Link
           href={group.allHref}
-          className="inline-flex items-center gap-1 min-h-touch text-sm font-semibold text-primary underline underline-offset-4 hover:text-primary-dark rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+          className="inline-flex items-center gap-1 min-h-touch text-sm font-semibold text-primary underline underline-offset-4 hover:text-primary-dark rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
         >
           {group.all}
           <ArrowLeft size={15} className="ltr:rotate-180" aria-hidden="true" />

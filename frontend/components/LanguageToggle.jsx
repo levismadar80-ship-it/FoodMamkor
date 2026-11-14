@@ -82,7 +82,7 @@ export default function LanguageToggle({ variant = "default", className = "", ch
   const bare = variant === "bare";
   const shellCls = bare
     ? ""
-    : "flex items-center justify-center w-9 h-9 rounded-full hover:bg-black/10 transition focus-visible:ring-2 focus-visible:ring-primary/40";
+    : "flex items-center justify-center w-9 h-9 rounded-full hover:bg-black/10 transition focus-visible:ring-2 focus-visible:ring-primary";
 
   return (
     <button

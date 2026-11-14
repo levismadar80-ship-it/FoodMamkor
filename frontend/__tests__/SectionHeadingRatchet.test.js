@@ -57,6 +57,7 @@ const ALLOWED = {
   "components/producer/BusinessQrCard.jsx": 1, // owner card title
   "components/ProducersClient.jsx": 2, // empty-state titles
   "components/RecipeForm.jsx": 1, // form title
+  "components/RegistrationOverlays.jsx": 1, // sign-up sheet title (MEH-3043)
   "components/producer/RequestReviewCard.jsx": 1, // card title
   "components/producer/ShareKitSection.jsx": 1, // card title
   "components/public/ProductSheet.jsx": 1, // sheet title

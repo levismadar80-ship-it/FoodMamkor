@@ -161,7 +161,7 @@ export default function RecommendClient() {
   return (
     <section className="min-h-screen">
       <div className="max-w-2xl mx-auto px-4 py-16">
-        <div className="md:bg-surface md:rounded-lg md:p-8 md:border md:border-border md:shadow-[0_2px_12px_rgba(46,104,83,0.04)]">
+        <div className="md:bg-surface md:rounded-lg md:p-8 md:border md:border-border md:shadow-sm">
           {/* MEH-2827 (FinalRecommend): the standard page title — start-aligned,
               fluid size, the same classes as /about/why-local's h1. The 5xl
               centred title broke into three lines on a phone. */}
@@ -178,7 +178,7 @@ export default function RecommendClient() {
             <BusinessCtaLink
               href="/join"
               data-testid="recommend-owner-link"
-              className="inline-flex items-center gap-1 min-h-touch font-semibold text-primary underline underline-offset-4 hover:text-primary-dark rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+              className="inline-flex items-center gap-1 min-h-touch font-semibold text-primary underline underline-offset-4 hover:text-primary-dark rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
             >
               {tJoin("cta")}
               <ArrowLeft size={15} className="ltr:rotate-180" aria-hidden="true" />

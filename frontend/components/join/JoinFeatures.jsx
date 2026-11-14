@@ -223,7 +223,7 @@ function GroupClip({ group, alt, labels, paused, setPaused }) {
           event.stopPropagation();
           setPaused((v) => !v);
         }}
-        className="absolute bottom-2 end-2 inline-flex h-11 w-11 items-center justify-center rounded-full bg-background/90 text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+        className="absolute bottom-2 end-2 inline-flex h-11 w-11 items-center justify-center rounded-full bg-background/90 text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
       >
         {paused ? <Play size={20} aria-hidden="true" /> : <Pause size={20} aria-hidden="true" />}
       </button>
@@ -280,7 +280,7 @@ function GroupCard({ group, selected, active, index, onSelect, copy, media }) {
           event.stopPropagation();
           onSelect(group, index);
         }}
-        className={`flex w-full items-center gap-3 px-3 py-3 text-start transition-colors duration-[220ms] ease-out motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/40 ${
+        className={`flex w-full items-center gap-3 px-3 py-3 text-start transition-colors duration-[220ms] ease-out motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary ${
           active ? "bg-state-selected text-background" : "bg-surface-card text-text"
         }`}
       >

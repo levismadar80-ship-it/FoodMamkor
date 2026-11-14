@@ -9,6 +9,7 @@ import { useTranslations } from "next-intl";
 import LanguageToggle from "@/components/LanguageToggle";
 import { itemsForSurface } from "@/lib/nav-registry";
 import { loginLinkBackHere } from "@/lib/safe-redirect";
+import Avatar from "@/components/ui/Avatar";
 
 /**
  * Module:   AccountSheet
@@ -41,8 +42,6 @@ export default function AccountSheet({ open, onClose, user, logout }) {
   const t = useTranslations();
   const panelRef = useRef(null);
   const isIn = !!user;
-  const hasAvatar = !!user?.avatar_url;
-  const initial = user ? (user.name || "?").trim().charAt(0).toUpperCase() : null;
 
   // MEH-1703 chunk 3: which rows this sheet offers, and their hrefs/i18n keys,
   // come from the registry — the shell no longer restates them. `row(id)`
@@ -133,20 +132,15 @@ export default function AccountSheet({ open, onClose, user, logout }) {
         // MEH-868: clear the floating pill AND the safe-area inset (the pill
         // itself rides above safe-area via calc(env(safe-area-inset-bottom)+16px),
         // so a flat 88px overlapped it on notched devices).
-        className="vv-pin fixed inset-x-4 bottom-[calc(env(safe-area-inset-bottom)+88px)] z-[1002] rounded-xl bg-green-900 border border-white/10 p-[22px] shadow-[0_12px_40px_rgba(20,50,40,0.45)]"
+        className="vv-pin fixed inset-x-4 bottom-[calc(env(safe-area-inset-bottom)+88px)] z-[1002] rounded-xl bg-green-900 border border-white/10 p-[22px] shadow-xl"
       >
         {/* Head — avatar · name · state */}
         <div className="flex items-center gap-3 pb-4 border-b border-white/10">
           <span className="w-10 h-10 rounded-full overflow-hidden inline-flex items-center justify-center bg-white/10 border border-white/30 text-background">
             {isIn ? (
-              hasAvatar ? (
-                // raw img: OAuth provider avatar — host not in remotePatterns
-                // (frozen this ticket).
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={user.avatar_url} alt="" className="w-full h-full object-cover" />
-              ) : (
-                <span className="font-headline-md font-bold text-lg leading-none">{initial}</span>
-              )
+              // MEH-3069: the shared circle; the ring around it is this sheet's own
+              // (40px box with a 1px border → a 38px circle inside).
+              <Avatar src={user.avatar_url} name={user.name} size={38} tone="none" />
             ) : (
               <User size={20} weight="regular" aria-hidden="true" />
             )}

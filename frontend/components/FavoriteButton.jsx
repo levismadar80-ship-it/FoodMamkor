@@ -192,7 +192,7 @@ export default function FavoriteButton({
     button = (
       <button
         {...commonProps}
-        className="bg-surface/95 hover:bg-surface rounded-full w-11 h-11 flex items-center justify-center shadow-md hover:scale-105 transition disabled:opacity-60 focus-visible:ring-2 focus-visible:ring-primary/40"
+        className="bg-surface/95 hover:bg-surface rounded-full w-11 h-11 flex items-center justify-center shadow-lg hover:scale-105 transition disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-primary"
       >
         <HeartStraight
           size={22}
@@ -211,7 +211,7 @@ export default function FavoriteButton({
       <button
         {...commonProps}
         aria-label={labelInName(t("quiet_label"), label)}
-        className={`inline-flex items-center gap-1.5 min-h-touch py-2 text-sm font-medium rounded transition disabled:opacity-60 focus-visible:ring-2 focus-visible:ring-primary/40 ${
+        className={`inline-flex items-center gap-1.5 min-h-touch py-2 text-sm font-medium rounded transition disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-primary ${
           favorited ? "text-primary" : "text-text hover:text-primary"
         }`}
       >
@@ -229,7 +229,7 @@ export default function FavoriteButton({
       <button
         {...commonProps}
         aria-label={labelInName(t("inline_label"), label)}
-        className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium min-h-[32px] border transition disabled:opacity-60 focus-visible:ring-2 focus-visible:ring-primary/40 ${
+        className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium min-h-[32px] border transition disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-primary ${
           favorited
             ? "bg-primary/10 text-primary border-primary/30 hover:bg-primary/15"
             : "bg-surface text-text border-border hover:bg-green-50"
@@ -248,7 +248,7 @@ export default function FavoriteButton({
     button = (
       <button
         {...commonProps}
-        className="min-w-touch min-h-touch flex items-center justify-center hover:scale-110 transition disabled:opacity-60 focus-visible:ring-2 focus-visible:ring-primary/40 rounded-lg p-1"
+        className="min-w-touch min-h-touch flex items-center justify-center hover:scale-110 transition disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-primary rounded-lg p-1"
       >
         <HeartStraight
           size={24}

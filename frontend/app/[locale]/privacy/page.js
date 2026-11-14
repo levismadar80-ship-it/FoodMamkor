@@ -214,7 +214,7 @@ export default async function PrivacyPage({ params }) {
             <section
               key={id}
               id={id}
-              className="bg-surface rounded-lg p-7 border border-border shadow-[0_2px_12px_rgba(46,104,83,0.04)]"
+              className="bg-surface rounded-lg p-7 border border-border shadow-sm"
             >
               <SectionHeading size="content" className="mb-3">
                 {t(`sections.${id === "third-parties" ? "third_parties" : id}.title`)}

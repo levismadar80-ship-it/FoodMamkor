@@ -5,13 +5,15 @@ import { Link } from "@/i18n/navigation";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { Star, CaretRight } from "@phosphor-icons/react";
+import { CaretRight } from "@phosphor-icons/react";
 import { optimizeCloudinary } from "@/lib/cloudinary";
 import { MAP_REFERRER } from "@/lib/map-view-state";
 import { styleForProducer } from "@/lib/category-registry";
 import { useUserLocation } from "@/lib/user-location";
 import { haversineKm, formatDistance } from "@/lib/distance";
 import { producerPoints } from "@/lib/producerPoints";
+import RatingCompact from "@/components/ui/RatingCompact";
+import { hasCardRating } from "@/lib/rating-gate";
 import {
   fulfillmentTags,
   FULFILLMENT_WASH_GREEN,
@@ -80,9 +82,8 @@ export default function MapProducerCard({ producer, active, onClick }) {
 
   // MEH-1243 (🔒 rating): Google format ★ X.X (N), shown only at ≥3 reviews. Below
   // the threshold the row still reserves its height so every card is equal-height.
-  const reviewsCount = p.reviews_count || 0;
-  const rating = Number(p.avg_rating || 0);
-  const showRating = reviewsCount >= 3 && Number.isFinite(rating) && rating > 0;
+  // MEH-3071: the ≥3-reviews card rule lives in lib/rating-gate.js.
+  const showRating = hasCardRating(p);
 
   // MEH-826: client-side distance — haversine(user GPS, producer lat/lng). GPS is
   // read from sessionStorage (useUserLocation); shows only for GPS users (null
@@ -197,11 +198,8 @@ export default function MapProducerCard({ producer, active, onClick }) {
             reviews (uniform-height guarantee, 🔒 §5). MEH-1296: below the meta line. */}
         <div className="h-[18px] flex items-center" data-testid="map-rating-row">
           {showRating && (
-            <span className="inline-flex items-center gap-0.5 text-xs text-fg-muted" data-testid="map-rating">
-              <Star size={12} weight="fill" className="text-accent" aria-hidden="true" />
-              {/* 🔒 §7: ★ X.X (N), whole numeric block dir="ltr". */}
-              <bdi dir="ltr">{rating.toFixed(1)} ({reviewsCount})</bdi>
-            </span>
+            // 🔒 §7: ★ X.X (N), whole block dir="ltr" — the shared RatingCompact (MEH-3071).
+            <RatingCompact avg={p.avg_rating} count={p.reviews_count} size="xs" data-testid="map-rating" />
           )}
         </div>
 

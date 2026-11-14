@@ -75,7 +75,7 @@ export default function ShareButton({
         onClick={handleShare}
         // Mirrors FavoriteButton's gallery circle so the hero corner control
         // swap (heart → share, MEH-1334 decision 6) is visually seamless.
-        className="bg-surface/95 hover:bg-surface rounded-full w-11 h-11 flex items-center justify-center shadow-md hover:scale-105 transition focus-visible:ring-2 focus-visible:ring-primary/40"
+        className="bg-surface/95 hover:bg-surface rounded-full w-11 h-11 flex items-center justify-center shadow-lg hover:scale-105 transition focus-visible:ring-2 focus-visible:ring-primary"
         // MEH-2964: a locator, as the `outline` variant below already has. The
         // preview-gating test needs to count this button, and every other
         // attribute it carries is a translated string — matching on one would
@@ -95,7 +95,7 @@ export default function ShareButton({
     return (
       <button
         onClick={handleShare}
-        className="inline-flex items-center gap-1.5 min-h-touch py-2 text-sm font-medium text-text hover:text-primary rounded transition focus-visible:ring-2 focus-visible:ring-primary/40"
+        className="inline-flex items-center gap-1.5 min-h-touch py-2 text-sm font-medium text-text hover:text-primary rounded transition focus-visible:ring-2 focus-visible:ring-primary"
         title={t("copy_link")}
         aria-label={labelInName(t("quiet_label"), ariaLabel)}
       >
@@ -126,7 +126,7 @@ export default function ShareButton({
   return (
     <button
       onClick={handleShare}
-      className="inline-flex items-center justify-center gap-2 bg-surface border border-border px-3 py-2 min-h-touch min-w-touch rounded-sm hover:bg-green-50 transition text-sm focus-visible:ring-2 focus-visible:ring-primary/40"
+      className="inline-flex items-center justify-center gap-2 bg-surface border border-border px-3 py-2 min-h-touch min-w-touch rounded-sm hover:bg-green-50 transition text-sm focus-visible:ring-2 focus-visible:ring-primary"
       title={t("copy_link")}
       aria-label={labelInName(t("trigger"), ariaLabel)}
     >

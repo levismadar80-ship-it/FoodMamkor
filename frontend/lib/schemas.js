@@ -430,6 +430,13 @@ export const ProducerDetailSchema = ProducerListSchema.extend({
     .loose()
     .nullable()
     .optional(),
+  // MEH-3055: the owner's product groups, in her order — the public page turns
+  // them into filter chips. Declared because z.object strips undeclared keys:
+  // without it, any strict parse of this payload drops every chip.
+  product_groups: z
+    .array(z.object({ id: z.string(), name: z.string() }))
+    .nullable()
+    .optional(),
 });
 
 // MEH-1752: back-compat alias. Every existing importer of `ProducerSchema`
