@@ -1,5 +1,6 @@
 "use client";
 
+import Dialog from "@/components/ui/Dialog";
 import { useEffect, useRef, useState } from "react";
 import { useTranslations, useLocale } from "next-intl";
 import { formatEventDate } from "@/lib/format-date";
@@ -80,7 +81,7 @@ function ReviewBody({ text, rowId, t }) {
           aria-expanded={expanded}
           aria-controls={bodyId}
           data-testid="review-body-toggle"
-          className="mt-1 text-xs text-fg-muted underline underline-offset-2 hover:text-text transition-colors rounded focus-visible:ring-2 focus-visible:ring-primary/40"
+          className="mt-1 text-xs text-fg-muted underline underline-offset-2 hover:text-text transition-colors rounded focus-visible:ring-2 focus-visible:ring-primary"
         >
           {expanded ? t("reviews.collapse") : t("reviews.expand")}
         </button>
@@ -149,17 +150,6 @@ export default function AdminReviewsPage() {
       setDeletingId(null);
     }
   };
-
-  // Escape closes the dialog (unless a delete is mid-flight) — mirrors the
-  // MEH-1023 Ch.B dismissal contract.
-  useEffect(() => {
-    if (!confirmDelete) return undefined;
-    const onKey = (e) => {
-      if (e.key === "Escape" && !deleting) setConfirmDelete(null);
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [confirmDelete, deleting]);
 
   // MEH-2360: the row only flips after the server confirms, so a failed
   // request leaves the admin looking at the real state. A 404 means the review
@@ -254,12 +244,12 @@ export default function AdminReviewsPage() {
           placeholder={t("reviews.search_placeholder")}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="flex-1 border border-border rounded-md px-3 py-2"
+          className="flex-1 border border-border rounded-sm px-3 py-2 focus-ring"
         />
         <select
           value={starFilter}
           onChange={(e) => setStarFilter(e.target.value)}
-          className="border border-border rounded-md px-3 py-2 bg-surface"
+          className="border border-border rounded-sm px-3 py-2 bg-surface focus-ring"
           aria-label={t("reviews.filter_aria")}
         >
           <option value="all">{t("reviews.all_ratings")}</option>
@@ -385,7 +375,7 @@ export default function AdminReviewsPage() {
                           onClick={() => setHidden(r, { hide: !r.is_hidden })}
                           aria-disabled={togglingIds.has(r.id)}
                           data-testid={r.is_hidden ? "review-unhide" : "review-hide"}
-                          className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-lg text-fg-muted hover:bg-surface aria-disabled:opacity-60 aria-disabled:cursor-not-allowed focus-visible:ring-2 focus-visible:ring-primary/40"
+                          className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-lg text-fg-muted hover:bg-surface aria-disabled:opacity-50 aria-disabled:cursor-not-allowed focus-visible:ring-2 focus-visible:ring-primary"
                           aria-label={t(r.is_hidden ? "reviews.unhide_aria" : "reviews.hide_aria", {
                             user: r.user_name || t("reviews.default_user"),
                           })}
@@ -399,7 +389,7 @@ export default function AdminReviewsPage() {
                             onClick={() => keepHidden(r)}
                             aria-disabled={togglingIds.has(r.id)}
                             data-testid="review-keep-hidden"
-                            className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-lg text-fg-muted hover:bg-surface aria-disabled:opacity-60 aria-disabled:cursor-not-allowed focus-visible:ring-2 focus-visible:ring-primary/40"
+                            className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-lg text-fg-muted hover:bg-surface aria-disabled:opacity-50 aria-disabled:cursor-not-allowed focus-visible:ring-2 focus-visible:ring-primary"
                           >
                             <EyeSlash size={14} />
                             {t("reviews.keep_hidden")}
@@ -409,7 +399,7 @@ export default function AdminReviewsPage() {
                           type="button"
                           onClick={() => handleDelete(r)}
                           disabled={deletingId === r.id}
-                          className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-lg text-danger-600 hover:bg-danger-50 disabled:opacity-60 focus-visible:ring-2 focus-visible:ring-danger-400/40"
+                          className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-lg text-danger-600 hover:bg-danger-50 disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-danger-400/40"
                           aria-label={t("reviews.delete_aria", { user: r.user_name || t("reviews.default_user") })}
                         >
                           <Trash size={14} />
@@ -426,13 +416,13 @@ export default function AdminReviewsPage() {
 
       {/* Confirmation modal — mirrors content/page.js category-delete dialog (MEH-1023 Ch.B) */}
       {confirmDelete && (
-        <div className="fixed inset-0 z-[9000] flex items-center justify-center bg-black/40">
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="review-delete-title"
-            className="bg-surface rounded-lg shadow-xl p-6 max-w-sm w-full mx-4 text-start space-y-4"
-          >
+        <Dialog
+          labelledBy="review-delete-title"
+          size="sm"
+          dismissible={!deleting}
+          onClose={() => setConfirmDelete(null)}
+          className="space-y-4"
+        >
             <p id="review-delete-title" className="font-medium text-base">
               {t("reviews.confirm_delete", {
                 user: confirmDelete.user_name || t("reviews.default_user"),
@@ -447,7 +437,7 @@ export default function AdminReviewsPage() {
               >
                 {deleting ? t("reviews.deleting") : t("reviews.delete")}
               </Button>
-              <button
+              <button data-autofocus
                 disabled={deleting}
                 onClick={() => setConfirmDelete(null)}
                 className="px-4 py-2 rounded-full text-sm border border-border text-muted hover:bg-gray-50 transition disabled:opacity-50"
@@ -455,8 +445,7 @@ export default function AdminReviewsPage() {
                 {t("common.cancel")}
               </button>
             </div>
-          </div>
-        </div>
+        </Dialog>
       )}
     </div>
   );

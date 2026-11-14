@@ -101,7 +101,7 @@ export default function ManageEventsPage() {
         {Array.isArray(items) && items.length > 0 && (
           <Link
             href="/producer/dashboard/events/new"
-            className="inline-flex items-center gap-1.5 bg-primary text-white px-4 py-2 min-h-touch rounded-sm text-sm font-medium hover:bg-primary-dark transition"
+            className="inline-flex items-center gap-1.5 bg-primary text-white px-4 py-2 min-h-touch rounded-full text-sm font-medium hover:bg-primary-dark transition"
           >
             <CalendarPlus size={18} weight="bold" aria-hidden="true" />
             {t("create_cta")}

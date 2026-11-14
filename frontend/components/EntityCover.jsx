@@ -57,7 +57,7 @@ export default function EntityCover({ imageUrl, alt, tone = "primary", Icon, act
           aria-hidden="true"
           className={`h-[150px] lg:h-[200px] ${t.band} lg:rounded-xl grid place-items-center`}
         >
-          {Icon && <Icon size={54} weight="duotone" className="text-white/85" />}
+          {Icon && <Icon size={48} weight="regular" className="text-white/85" />}
         </div>
       )}
       {dateTile && (

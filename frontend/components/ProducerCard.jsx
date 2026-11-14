@@ -188,7 +188,7 @@ function CardHeart({ producer, onCountChange }) {
     >
       {/* Green ink, never red (MEH-636): outline default, green fill when saved. */}
       <HeartStraight
-        size={22}
+        size={24}
         weight={filled ? "fill" : "regular"}
         className="text-primary"
         aria-hidden="true"
@@ -453,7 +453,7 @@ export default function ProducerCard({ producer, active, onClick, referrer, high
             outward .focus-ring box-shadow on this edge-flush link (ImageGallery.jsx:100 idiom). */}
         <Link
           href={producerHref}
-          className="block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/40"
+          className="block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary"
         >
           <div className="relative w-full aspect-square lg:aspect-[4/3] overflow-hidden bg-background">
             {imgSrc && !imgError ? (
@@ -603,7 +603,7 @@ export default function ProducerCard({ producer, active, onClick, referrer, high
                   dir="ltr"
                   className="group inline-flex shrink-0 items-center justify-center min-h-touch min-w-touch -m-2.5 focus:outline-none"
                 >
-                  <span className="inline-flex items-center rounded-full bg-surface-card/95 border border-border text-fg-muted px-1.5 py-0.5 text-2xs font-medium group-focus-visible:ring-2 group-focus-visible:ring-primary/40">
+                  <span className="inline-flex items-center rounded-full bg-surface-card/95 border border-border text-fg-muted px-1.5 py-0.5 text-2xs font-medium group-focus-visible:ring-2 group-focus-visible:ring-primary">
                     +{hiddenBadges}
                   </span>
                 </button>

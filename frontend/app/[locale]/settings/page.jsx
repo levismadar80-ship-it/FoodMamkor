@@ -332,7 +332,7 @@ export function ProfileTab() {
           {/* MEH-222: camera overlay — always visible on mobile (opacity-30) so the tap target is discoverable; desktop hides it until hover.
               MEH-2418: the md+ hide is gated to hover-capable pointers — with hoverOnlyWhenSupported a touch tablet never fires group-hover, so a bare md:opacity-0 left the overlay invisible there. */}
           <div className="absolute inset-0 rounded-full bg-black/40 flex items-center justify-center opacity-30 md:[@media(hover:hover)_and_(pointer:fine)]:opacity-0 md:group-hover:opacity-100 transition-opacity">
-            <Camera size={24} weight="light" className="text-white" aria-hidden="true" />
+            <Camera size={24} weight="regular" className="text-white" aria-hidden="true" />
           </div>
           {uploading && (
             <div className="absolute inset-0 rounded-full bg-black/50 flex items-center justify-center">
@@ -383,7 +383,7 @@ export function ProfileTab() {
             value={user.email || ""}
             readOnly
             disabled
-            className="w-full border border-border rounded-md px-3 py-2 bg-background-alt text-fg-muted cursor-not-allowed"
+            className="w-full border border-border rounded-sm px-3 py-2 bg-background-alt text-fg-muted cursor-not-allowed focus-ring"
             dir="ltr"
           />
           <p className="text-xs text-fg-muted mt-1 text-right">
@@ -421,7 +421,7 @@ export function ProfileTab() {
 
         {message && (
           <p className="text-sm text-primary inline-flex items-center gap-1" role="status">
-            <CheckCircle size={15} weight="fill" aria-hidden="true" />
+            <CheckCircle size={16} weight="fill" aria-hidden="true" />
             {message}
           </p>
         )}
@@ -553,14 +553,14 @@ function PasswordChangeCard({ isOAuth }) {
               onChange={(e) => setCurrent(e.target.value)}
               required
               // eslint-disable-next-line no-restricted-syntax -- rtl-ok: eye toggle inside dir="ltr" input
-              className="w-full border border-border rounded-md pr-11 pl-3 py-2 outline-none focus-visible:ring-2 focus-visible:ring-primary/40 transition"
+              className="w-full border border-border rounded-sm pr-11 pl-3 py-2 outline-none focus-visible:ring-2 focus-visible:ring-primary transition"
               dir="ltr"
             />
             <button
               type="button"
               onClick={() => setShowCurrent((v) => !v)}
               // eslint-disable-next-line no-restricted-syntax -- rtl-ok
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-fg-muted hover:text-text transition rounded-full p-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-fg-muted hover:text-text transition rounded-full p-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
               aria-label={showCurrent ? t("eye_hide_current") : t("eye_show_current")}
               aria-pressed={showCurrent}
             >
@@ -609,14 +609,14 @@ function PasswordChangeCard({ isOAuth }) {
               required
               aria-invalid={mismatch || undefined}
               // rtl-ok
-              className={`w-full border rounded-md pr-11 pl-3 py-2 outline-none focus-visible:ring-2 focus-visible:ring-primary/40 transition ${mismatch ? "border-danger-400" : "border-border"}`}
+              className={`w-full border rounded-sm pr-11 pl-3 py-2 outline-none focus-visible:ring-2 focus-visible:ring-primary transition ${mismatch ? "border-danger-400" : "border-border"}`}
               dir="ltr"
             />
             <button
               type="button"
               onClick={() => setShowConfirm((v) => !v)}
               // eslint-disable-next-line no-restricted-syntax -- rtl-ok
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-fg-muted hover:text-text transition rounded-full p-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-fg-muted hover:text-text transition rounded-full p-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
               aria-label={showConfirm ? t("eye_hide_confirm") : t("eye_show_confirm")}
               aria-pressed={showConfirm}
             >
@@ -630,7 +630,7 @@ function PasswordChangeCard({ isOAuth }) {
 
         {message && (
           <p className="text-sm text-primary inline-flex items-center gap-1" role="status">
-            <CheckCircle size={15} weight="fill" aria-hidden="true" />
+            <CheckCircle size={16} weight="fill" aria-hidden="true" />
             {message}
           </p>
         )}
@@ -796,7 +796,7 @@ function DangerZoneCard() {
             value={emailInput}
             onChange={(e) => setEmailInput(e.target.value)}
             placeholder={user.email || ""}
-            className="w-full border border-danger-300 rounded-md px-3 py-2 outline-none focus-visible:ring-2 focus-visible:ring-danger-300 transition"
+            className="w-full border border-danger-300 rounded-sm px-3 py-2 outline-none focus-visible:ring-2 focus-visible:ring-danger-400/40 transition"
             dir="ltr"
             autoComplete="off"
           />

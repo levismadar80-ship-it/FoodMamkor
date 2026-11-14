@@ -103,7 +103,8 @@ describe("KashrutBadgeStrip certificate viewer — chips variant (MEH-1672)", ()
     expect(screen.queryByTestId("kashrut-cert-modal")).toBeNull();
 
     fireEvent.click(screen.getByTestId("kashrut-cert-trigger-badatz"));
-    fireEvent.click(screen.getByTestId("kashrut-cert-modal"));
+    // MEH-3096: the test id sits on the panel; the backdrop is its parent.
+    fireEvent.click(screen.getByTestId("kashrut-cert-modal").parentElement);
     expect(screen.queryByTestId("kashrut-cert-modal")).toBeNull();
 
     fireEvent.click(screen.getByTestId("kashrut-cert-trigger-badatz"));

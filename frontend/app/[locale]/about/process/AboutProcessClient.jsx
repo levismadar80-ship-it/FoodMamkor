@@ -102,19 +102,19 @@ export default function AboutProcessClient() {
   // background since the chip is now fully opaque.
   const VerifiedTag = () => (
     <span className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold bg-surface-card text-accent border border-accent/30 whitespace-nowrap">
-      <SealCheck size={13} aria-hidden />
+      <SealCheck size={14} aria-hidden />
       <span className="ms-[0.14em]">{t("tier.verified")}</span>
     </span>
   );
   const OptVerifiedTag = () => (
     <span className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold bg-transparent text-fg-muted border border-dashed border-border whitespace-nowrap">
-      <SealCheck size={13} aria-hidden />
+      <SealCheck size={14} aria-hidden />
       <span className="ms-[0.14em]">{t("tier.verified")}</span>
     </span>
   );
   const DeclaredTag = () => (
     <span className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold bg-green-50 text-primary-dark border border-primary/20 whitespace-nowrap">
-      <Note size={13} aria-hidden />
+      <Note size={14} aria-hidden />
       <span className="ms-[0.14em]">{t("tier.declared")}</span>
     </span>
   );
@@ -125,7 +125,7 @@ export default function AboutProcessClient() {
       <section data-testid="process-hero" className="bg-background py-12 md:py-20 scroll-mt-24">
         <div className="max-w-3xl mx-auto px-4 md:px-12">
           <span className="inline-flex items-center gap-2 font-body-md font-semibold text-xs text-accent mb-4">
-            <Path size={15} aria-hidden />
+            <Path size={16} aria-hidden />
             {t("hero.eyebrow")}
           </span>
           <h1 className="font-headline-display font-black text-text tracking-tight leading-[1.02] text-[clamp(32px,8vw,56px)] max-w-[15ch]">
@@ -183,7 +183,7 @@ export default function AboutProcessClient() {
                 </span>
                 <div>
                   <div className="flex items-center gap-2.5 mb-2">
-                    <Icon size={19} className="text-primary shrink-0" aria-hidden />
+                    <Icon size={20} className="text-primary shrink-0" aria-hidden />
                     <h3 className="font-headline-md font-bold text-xl leading-tight text-text">
                       {t(`steps.s${i + 1}_title`)}
                     </h3>
@@ -196,7 +196,7 @@ export default function AboutProcessClient() {
             ))}
           </ol>
           {/* badge aside — the optional מאומת step is explicitly separate from step 4 */}
-          <div data-testid="process-badge-aside" className="mt-8 grid grid-cols-[auto_1fr] gap-3 items-start rounded-xl border border-dashed border-accent/50 bg-accent/5 p-4">
+          <div data-testid="process-badge-aside" className="mt-8 grid grid-cols-[auto_1fr] gap-3 items-start rounded-lg border border-dashed border-accent/50 bg-accent/5 p-4">
             <SealCheck size={20} className="text-accent mt-0.5 shrink-0" aria-hidden />
             <div>
               <div className="font-body-md font-semibold text-sm text-text mb-1">
@@ -240,7 +240,7 @@ export default function AboutProcessClient() {
       <section data-testid="process-badge" className="bg-background py-12 md:py-20 scroll-mt-24">
         <div className="max-w-5xl mx-auto px-4 md:px-12">
           <Marker>{t("badge.marker")}</Marker>
-          <div className="rounded-3xl border border-border bg-surface/40 p-8 md:p-12 grid grid-cols-1 md:grid-cols-[1.05fr_0.95fr] gap-10 md:gap-12 md:items-center">
+          <div className="rounded-lg border border-border bg-surface/40 p-8 md:p-12 grid grid-cols-1 md:grid-cols-[1.05fr_0.95fr] gap-10 md:gap-12 md:items-center">
             <div>
               <p className="font-headline-md font-bold text-text text-[clamp(23px,5vw,28px)] leading-snug max-w-[24ch] tracking-tight">
                 {t.rich("badge.oneliner", {
@@ -253,7 +253,7 @@ export default function AboutProcessClient() {
               </p>
               <div className="flex flex-wrap items-center gap-4 mt-6">
                 <span className="inline-flex items-center gap-2 bg-background border border-accent text-accent rounded-full ps-3.5 pe-4 py-2 font-body-md font-semibold text-sm">
-                  <SealCheck size={17} aria-hidden />
+                  <SealCheck size={18} aria-hidden />
                   <span className="ms-[0.14em]">{t("tier.verified")}</span>
                 </span>
                 <span data-testid="process-badge-tooltip" className="inline-flex items-center gap-2 font-english italic text-base text-fg-muted">
@@ -379,7 +379,7 @@ export default function AboutProcessClient() {
           </div>
 
           {/* personal-process caveat */}
-          <div className="mt-9 grid grid-cols-[auto_1fr] gap-3 items-start rounded-2xl border border-primary/20 bg-primary/5 p-5">
+          <div className="mt-9 grid grid-cols-[auto_1fr] gap-3 items-start rounded-lg border border-primary/20 bg-primary/5 p-5">
             <HandHeart size={20} className="text-primary mt-0.5 shrink-0" aria-hidden />
             <p className="font-body-md text-sm leading-relaxed text-text max-w-[62ch]">
               {t("matrix.caveat")}

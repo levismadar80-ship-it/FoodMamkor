@@ -159,10 +159,13 @@
    distances, ratings) so digits + separators don't reorder under bidi. */
 .numeric { unicode-bidi: isolate; }
 
-/* Tokenizes the inline `ring-primary/40` idiom (= primary #2e6853 @ 40%). */
+/* The site focus ring (MEH-3060): a solid primary ring behind a white gap —
+   the same look as inline `focus-visible:ring-2 ring-primary ring-offset-2`.
+   The old 40% ring measured ~1.8:1 on cream (WCAG 1.4.11 asks 3:1) and
+   vanished on a green button. */
 .focus-ring:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 2px rgba(46, 104, 83, 0.40);
+  box-shadow: 0 0 0 2px theme("colors.surface"), 0 0 0 4px theme("colors.primary");
 }
 
 /* Ghost button: transparent bg, border/text from the `text` token on cream

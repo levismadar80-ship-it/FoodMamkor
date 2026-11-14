@@ -2,10 +2,10 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Link } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
 import { useAuth } from "@/lib/auth-context";
 import ProducerForm from "@/components/admin/ProducerForm";
+import BackLink from "@/components/ui/BackLink";
 
 export default function NewProducerPage() {
   const { user, loading } = useAuth();
@@ -21,9 +21,7 @@ export default function NewProducerPage() {
   return (
     <div className="max-w-5xl mx-auto px-4 py-8">
       <div className="mb-6">
-        <Link href="/admin?tab=producers" className="text-sm text-muted hover:text-primary">
-          {t("common.back")}
-        </Link>
+        <BackLink href="/admin?tab=producers" label={t("common.back")} />
         <h1 className="text-2xl font-bold mt-2">{t("producers.new.title")}</h1>
         <p className="text-muted text-sm mt-1">
           {t("producers.new.subtitle")}

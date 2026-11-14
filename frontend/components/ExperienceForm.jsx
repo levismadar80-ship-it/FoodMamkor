@@ -439,7 +439,7 @@ export default function ExperienceForm({ mode = "create", initial = null, onSucc
           onChange={setField("description")}
           rows={5}
           placeholder={t("field_description_placeholder")}
-          className={`w-full border rounded-md px-3 py-2 bg-surface ${
+          className={`w-full border rounded-sm px-3 py-2 bg-surface focus-ring ${
             fieldErrors.description ? "border-error" : "border-border"
           }`}
           required
@@ -473,7 +473,7 @@ export default function ExperienceForm({ mode = "create", initial = null, onSucc
           id="experience-category"
           value={form.category}
           onChange={setField("category")}
-          className="w-full border border-border rounded-md px-3 py-2 bg-surface"
+          className="w-full border border-border rounded-sm px-3 py-2 bg-surface focus-ring"
         >
           <option value="">{t("category_none")}</option>
           {CATEGORY_KEYS.map((c) => (
@@ -558,7 +558,7 @@ export default function ExperienceForm({ mode = "create", initial = null, onSucc
              the same idiom as AddressSearch.jsx:196 / CitiesAutocomplete.jsx:206.
              EventForm.jsx has the original `hidden`; not touched from here, noted
              on the PR. (CI reviewer, PR #2814.) */
-          <label className="flex flex-col items-center justify-center text-center text-sm text-fg-muted border border-dashed border-border rounded-sm px-4 py-6 cursor-pointer hover:bg-green-50 transition focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/30">
+          <label className="flex flex-col items-center justify-center text-center text-sm text-fg-muted border border-dashed border-border rounded-sm px-4 py-6 cursor-pointer hover:bg-green-50 transition focus-within:border-primary focus-within:ring-2 focus-within:ring-primary">
             <input
               id="experience-image"
               type="file"
@@ -743,7 +743,7 @@ export default function ExperienceForm({ mode = "create", initial = null, onSucc
           onChange={setField("requirements")}
           rows={3}
           placeholder={t("field_requirements_placeholder")}
-          className="w-full border border-border rounded-md px-3 py-2 bg-surface"
+          className="w-full border border-border rounded-sm px-3 py-2 bg-surface focus-ring"
         />
       </Field>
 

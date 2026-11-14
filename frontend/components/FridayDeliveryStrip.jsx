@@ -45,7 +45,7 @@ function ProducerMiniCard({ producer }) {
           </div>
         )}
         <span className="absolute top-1.5 end-1.5 inline-flex items-center gap-0.5 bg-primary text-white text-2xs font-bold px-1.5 py-0.5 rounded-full leading-none">
-          <ShoppingCart size={11} weight="fill" aria-hidden="true" />{t("today")}
+          <ShoppingCart size={12} weight="fill" aria-hidden="true" />{t("today")}
         </span>
       </div>
       <div className="px-2 py-1.5">

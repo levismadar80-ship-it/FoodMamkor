@@ -388,7 +388,7 @@ export default function HeroSearch({
         // INPUT, not on the wrapper — the dropdown is inset-x-0 against the
         // wrapper, so padding there would push it out of alignment with the
         // pill (logical prop: RTL start = right).
-        className="flex-1 min-w-0 ps-3.5 bg-transparent outline-none text-text placeholder:text-fg-muted text-base focus-visible:ring-2 focus-visible:ring-primary/40 rounded-full"
+        className="flex-1 min-w-0 ps-3.5 bg-transparent outline-none text-text placeholder:text-fg-muted text-base focus-visible:ring-2 focus-visible:ring-primary rounded-full"
         autoComplete="off"
         role="combobox"
         aria-expanded={showAutocomplete || showEmpty}
@@ -418,7 +418,7 @@ export default function HeroSearch({
         aria-label={t("submit_aria")}
         data-testid="hero-search-submit"
       >
-        <MagnifyingGlass size={22} weight="bold" aria-hidden="true" />
+        <MagnifyingGlass size={24} weight="bold" aria-hidden="true" />
       </button>
 
       {/* ---- Autocomplete dropdown (≥2 chars) ---- */}

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Truck, Package, CaretDown, CaretUp, Phone, Clock } from "@phosphor-icons/react";
+import { Truck, Package, Phone, Clock } from "@phosphor-icons/react";
 import { WazeGlyph, GoogleMapsGlyph } from "@/components/NavAppGlyphs";
 import { useTranslations } from "next-intl";
 import { formatPrice } from "@/lib/utils";
@@ -14,15 +14,16 @@ import WhatsAppUpdatesPill, { whatsappUpdatesHref } from "@/components/WhatsAppU
 import HoursText from "@/components/HoursText";
 import { coordsNavLinks } from "@/lib/nav-links";
 import SectionHeading from "@/components/ui/SectionHeading";
+import ShowMore from "@/components/ui/ShowMore";
 import FactLine from "@/components/ui/FactLine";
 
 // MEH-2592 C: every row list in the block (areas and pickup) sits in one soft
 // card instead of between hairlines, and rows carry their own side padding.
 const LIST_CARD =
-  "divide-y divide-border rounded-2xl border border-border bg-surface-card overflow-hidden";
+  "divide-y divide-border rounded-lg border border-border bg-surface-card overflow-hidden";
 // MEH-2592 C: the 44px logo circles (Waze, Google Maps) on each pickup stop.
 const NAV_CIRCLE =
-  "inline-flex items-center justify-center w-11 h-11 rounded-full border border-border bg-surface transition hover:bg-green-50 focus-visible:ring-2 focus-visible:ring-primary/40";
+  "inline-flex items-center justify-center w-11 h-11 rounded-full border border-border bg-surface transition hover:bg-green-50 focus-visible:ring-2 focus-visible:ring-primary";
 
 // Index-aligned with lib/orderWindow.js ORDER_DAY_KEYS — resolves a cutoff
 // dayIndex to the opening_hours.weekdays.* label ("יום רביעי" / "Wednesday").
@@ -137,19 +138,13 @@ const AREA_PREVIEW_LIMIT = 6;
 // consumer now owns a pluralised key naming its own entity.
 function AreaToggle({ expanded, onToggle, hiddenCount, t }) {
   return (
-    <button
-      type="button"
+    // MEH-3052: the shared ShowMore (inline); min-h-touch replaces mt-2.
+    <ShowMore
+      size="inline"
       onClick={onToggle}
-      aria-expanded={expanded}
-      className="mt-2 inline-flex items-center gap-1 text-sm font-medium text-primary"
-    >
-      {expanded ? t("show_less") : t("show_all_areas", { count: hiddenCount })}
-      {expanded ? (
-        <CaretUp size={16} aria-hidden="true" />
-      ) : (
-        <CaretDown size={16} aria-hidden="true" />
-      )}
-    </button>
+      expanded={expanded}
+      label={expanded ? t("show_less") : t("show_all_areas", { count: hiddenCount })}
+    />
   );
 }
 
@@ -228,19 +223,12 @@ function CompactCities({ areas, t }) {
         ))}
       </ul>
       {overLimit && (
-        <button
-          type="button"
+        <ShowMore
+          size="inline"
           onClick={() => setExpanded((v) => !v)}
-          aria-expanded={expanded}
-          className="mt-2 inline-flex items-center gap-1 text-sm font-medium text-primary"
-        >
-          {expanded ? t("show_less") : t("show_all_cities", { count: hiddenCount })}
-          {expanded ? (
-            <CaretUp size={16} aria-hidden="true" />
-          ) : (
-            <CaretDown size={16} aria-hidden="true" />
-          )}
-        </button>
+          expanded={expanded}
+          label={expanded ? t("show_less") : t("show_all_cities", { count: hiddenCount })}
+        />
       )}
     </div>
   );
@@ -279,7 +267,7 @@ function PickupRow({ loc, t, tMap }) {
           <a
             href={telHref}
             dir="ltr"
-            className="inline-flex items-center gap-1 min-h-touch text-sm font-medium text-primary hover:underline focus-visible:ring-2 focus-visible:ring-primary/40 rounded"
+            className="inline-flex items-center gap-1 min-h-touch text-sm font-medium text-primary hover:underline focus-visible:ring-2 focus-visible:ring-primary rounded"
           >
             <Phone size={14} aria-hidden="true" />
             {phone}
@@ -359,19 +347,12 @@ function PickupRows({ locations, t, tMap }) {
         ))}
       </ul>
       {overLimit && (
-        <button
-          type="button"
+        <ShowMore
+          size="inline"
           onClick={() => setExpanded((v) => !v)}
-          aria-expanded={expanded}
-          className="mt-2 inline-flex items-center gap-1 text-sm font-medium text-primary"
-        >
-          {expanded ? t("show_less") : t("show_all_pickup", { count: hiddenCount })}
-          {expanded ? (
-            <CaretUp size={16} aria-hidden="true" />
-          ) : (
-            <CaretDown size={16} aria-hidden="true" />
-          )}
-        </button>
+          expanded={expanded}
+          label={expanded ? t("show_less") : t("show_all_pickup", { count: hiddenCount })}
+        />
       )}
     </div>
   );
@@ -629,7 +610,7 @@ export default function DeliveryBlock({
 
       {nationwide ? (
         <>
-          <span className="inline-flex items-center gap-1.5 bg-green-50 text-text border border-border rounded-xl text-sm px-3 py-1.5 font-medium mb-4">
+          <span className="inline-flex items-center gap-1.5 bg-green-50 text-text border border-border rounded-md text-sm px-3 py-1.5 font-medium mb-4">
             {hasExclusions
               ? t("nationwide_except", { cities: excluded.join(", ") })
               : t("nationwide")}

@@ -321,7 +321,7 @@ function LoginPageBody() {
                 // MEH-1617: value moved to auth.login.email_placeholder.
                 placeholder={t("email_placeholder")}
                 aria-invalid={emailInvalid || undefined}
-                className={`w-full min-h-[54px] rounded-sm ps-11 pe-4 py-3.5 bg-surface-card text-text outline-none transition focus-visible:ring-2 focus-visible:ring-primary/40 ${
+                className={`w-full min-h-[54px] rounded-sm ps-11 pe-4 py-3.5 bg-surface-card text-text outline-none transition focus-visible:ring-2 focus-visible:ring-primary ${
                   emailInvalid
                     ? "border border-danger-400"
                     : emailValid
@@ -373,7 +373,7 @@ function LoginPageBody() {
                 // able to sign in. Empty-submit is still blocked in handleSubmit
                 // (MEH-2623). Regression of MEH-418.
                 aria-invalid={passwordInvalid || undefined}
-                className={`w-full min-h-[54px] rounded-sm ps-11 pe-12 py-3.5 bg-surface-card text-text outline-none transition focus-visible:ring-2 focus-visible:ring-primary/40 ${
+                className={`w-full min-h-[54px] rounded-sm ps-11 pe-12 py-3.5 bg-surface-card text-text outline-none transition focus-visible:ring-2 focus-visible:ring-primary ${
                   passwordInvalid
                     ? "border border-danger-400"
                     : passwordValidLength
@@ -385,7 +385,7 @@ function LoginPageBody() {
               <button
                 type="button"
                 onClick={() => setShowPassword((v) => !v)}
-                className="absolute end-2 top-1/2 -translate-y-1/2 grid place-items-center w-11 h-11 rounded-full text-fg-muted hover:text-primary transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                className="absolute end-2 top-1/2 -translate-y-1/2 grid place-items-center w-11 h-11 rounded-full text-fg-muted hover:text-primary transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                 aria-label={showPassword ? t("password_hide") : t("password_show")}
                 aria-pressed={showPassword}
               >
@@ -420,7 +420,7 @@ function LoginPageBody() {
             type="submit"
             data-testid="login-submit"
             disabled={loading}
-            className="w-full min-h-[54px] flex items-center justify-center bg-primary text-white rounded-full px-6 font-bold hover:bg-primary-dark transition disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-primary/40"
+            className="w-full min-h-[54px] flex items-center justify-center bg-primary text-white rounded-full px-6 font-bold hover:bg-primary-dark transition disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
           >
             {loading ? (
               <span className="inline-flex items-center justify-center gap-2">

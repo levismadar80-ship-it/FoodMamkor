@@ -2,6 +2,7 @@
 
 import { useTranslations } from "next-intl";
 import { israelToday } from "@/lib/israel-date";
+import { formatDate } from "@/lib/format-date";
 
 /**
  * Module:   AdminDraftLinkAge
@@ -33,13 +34,6 @@ const CLAIM_LINK_TTL_DAYS = 14;
 const WAITING_MARK_DAYS = 7;
 const DAY_MS = 24 * 60 * 60 * 1000;
 
-const DATE_FORMAT = new Intl.DateTimeFormat("he-IL", {
-  // guard-ok: display formatting of server-issued instants, not a "today" decision (MEH-2383)
-  timeZone: "Asia/Jerusalem",
-  day: "2-digit",
-  month: "2-digit",
-  year: "numeric",
-});
 
 // `YYYY-MM-DD` → whole days since the epoch, so two Israel dates subtract
 // to a calendar-day count with no DST hour in it.
@@ -53,8 +47,8 @@ function linkAge(sentAtIso, now) {
   if (Number.isNaN(sent.getTime())) return null;
   const expires = new Date(sent.getTime() + CLAIM_LINK_TTL_DAYS * DAY_MS);
   return {
-    sentDate: DATE_FORMAT.format(sent),
-    expiresDate: DATE_FORMAT.format(expires),
+    sentDate: formatDate(sent, "he"),
+    expiresDate: formatDate(expires, "he"),
     expired: now.getTime() >= expires.getTime(),
     daysWaiting: dayNumber(israelToday(now)) - dayNumber(israelToday(sent)),
   };

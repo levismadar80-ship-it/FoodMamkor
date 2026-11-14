@@ -62,7 +62,7 @@ export default function RegisterCardPreview({ form, categories }) {
       onToggle={(event) => setOpen(event.currentTarget.open)}
       className="group rounded-md border border-border bg-surface-card"
     >
-      <summary className="flex cursor-pointer list-none items-center justify-between gap-3 rounded-md px-4 py-3 text-sm font-medium text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40">
+      <summary className="flex cursor-pointer list-none items-center justify-between gap-3 rounded-md px-4 py-3 text-sm font-medium text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
         {t("card_preview.summary")}
         <CaretDown
           aria-hidden="true"

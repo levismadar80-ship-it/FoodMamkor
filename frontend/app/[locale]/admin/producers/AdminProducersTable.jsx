@@ -17,6 +17,7 @@ import { getProducerStatusLabel, getProducerStatusColor } from "@/lib/producer-s
 import { optimizeCloudinary } from "@/lib/cloudinary";
 import { BADGE_CONFIG, isKashrutCurrent } from "@/lib/badges";
 import { useBadgeCopy } from "@/lib/use-badge-copy";
+import { formatDate } from "@/lib/format-date";
 
 // Phosphor icon size used in trait tags + the action row.
 const ICON_SIZE_SM = 16;
@@ -60,7 +61,7 @@ export function AwaitingCompletionBadge({ producer }) {
   const t = useTranslations("admin");
   if (!producer.requested_changes) return null;
   const date = producer.changes_requested_at
-    ? new Date(producer.changes_requested_at).toLocaleDateString("he-IL")
+    ? formatDate(producer.changes_requested_at, "he")
     : null;
   return (
     <span
@@ -141,7 +142,7 @@ export function WaitingBadge({ producer }) {
     submitted: p.submitted_for_review_at,
     created: p.created_at,
   }[source];
-  const when = stamp ? new Date(stamp).toLocaleString("he-IL") : null;
+  const when = stamp ? formatDate(stamp, "he", "dateTime") : null;
   const title = when ? t(`producers.table.waiting_tooltip_${source}`, { when }) : undefined;
 
   return (
@@ -458,7 +459,7 @@ function PendingPhotoThumb({ url, index, producerName, t }) {
       target="_blank"
       rel="noopener noreferrer"
       title={alt}
-      className="relative block shrink-0 rounded-sm overflow-hidden border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary"
+      className="relative block shrink-0 rounded-sm overflow-hidden border border-border bg-background focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
       style={{ width: PENDING_THUMB_PX, height: PENDING_THUMB_PX }}
     >
       {broken ? (
@@ -468,7 +469,7 @@ function PendingPhotoThumb({ url, index, producerName, t }) {
           title={t("producers.table.photo_preview.broken")}
           className="flex h-full w-full items-center justify-center bg-danger-50 text-danger-600"
         >
-          <Warning size={22} weight="fill" aria-hidden="true" />
+          <Warning size={24} weight="fill" aria-hidden="true" />
         </span>
       ) : (
         // raw img: the URL is producer-submitted and may be ANY host (the

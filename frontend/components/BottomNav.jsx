@@ -501,7 +501,7 @@ export default function BottomNav() {
             // MEH-1253: pointer-events-auto re-enables events on the pill (and
             // everything inside it — tabs, account button)
             // after the wrapper shield set pointer-events-none above.
-            "relative w-full flex items-stretch justify-between gap-1 rounded-full nav-pill-glass shadow-[0_8px_30px_rgba(46,104,83,0.12)] pointer-events-auto",
+            "relative w-full flex items-stretch justify-between gap-1 rounded-full nav-pill-glass shadow-lg pointer-events-auto",
             "transition-[height] duration-base ease-quart motion-reduce:transition-none",
             isCompact ? "h-12 p-1" : "h-14 p-1.5",
           ].join(" ")}
@@ -543,7 +543,7 @@ export default function BottomNav() {
                   {/* MEH-852: the active tint is the shared nav-level indicator
                       above — no per-tab capsule here anymore. */}
                   <Icon
-                    size={22}
+                    size={24}
                     weight={active ? "fill" : "regular"}
                     aria-hidden="true"
                     className="relative z-10"
@@ -580,7 +580,7 @@ export default function BottomNav() {
                 <Avatar src={user.avatar_url} name={user.name} size={24} className="z-10" />
               ) : (
                 <User
-                  size={22}
+                  size={24}
                   weight={sheetOpen ? "fill" : "regular"}
                   aria-hidden="true"
                   className="relative z-10"
