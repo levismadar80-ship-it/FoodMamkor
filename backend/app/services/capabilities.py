@@ -115,18 +115,24 @@ def require_paid_signup(  # noqa: PLR0913 — keyword-only pairs: now vs before
     was_price: Any = None,
     was_method: Any = None,
     was_running: bool = False,
+    date: Any = None,
+    was_date: Any = None,
 ) -> None:
     """Ask only when this write OPENS a paid site sign-up: a new item, an edit
     that turns a free / WhatsApp item into one, or one that brings a cancelled
     or past paid item back (reactivating it, moving its date forward). An item
     that is already an open paid site sign-up stays editable, and cancelling
-    is never asked (what exists carries on).
+    is never asked (what exists carries on). One open item must not serve as
+    an endless supply of new paid bookings, so moving its date LATER or raising
+    its price also asks (`date` / `was_date`; a create passes neither).
 
     `running` = active and not in the past, after the write; `was_running` =
     the same before it. A create passes neither."""
     opens = is_paid_site_signup(price, method) and running
     was_open = is_paid_site_signup(was_price, was_method) and was_running
-    if opens and not was_open:
+    later = date is not None and was_date is not None and date > was_date
+    dearer = (price or 0) > (was_price or 0)
+    if opens and (not was_open or later or dearer):
         require_paid_tool(db, producer_id, "paid_signup")
 
 

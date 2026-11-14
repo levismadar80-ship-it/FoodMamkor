@@ -599,6 +599,8 @@ def update_experience(  # noqa: PLR0913 — all args are FastAPI-injected; MEH-3
         was_price=ex.price_per_person,
         was_method=ex.registration_method,
         was_running=capabilities.is_running(ex.is_active, ex.event_date),
+        date=payload.get("event_date", ex.event_date),
+        was_date=ex.event_date,
     )
     for field, value in payload.items():
         setattr(ex, field, value)

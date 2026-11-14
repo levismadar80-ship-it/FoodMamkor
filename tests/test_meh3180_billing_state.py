@@ -56,6 +56,12 @@ def test_the_shipped_switch_is_off():
     assert pricing.billing_is_on() is False
 
 
+def test_the_switch_stays_off_while_a_known_hole_is_open():
+    """A listed blocker is a way to pay less than was earned once billing
+    runs; the phase cannot move while one is listed."""
+    assert not pricing.SWITCH_ON_BLOCKERS or pricing.BILLING_PHASE == "launch"
+
+
 def test_every_state_has_an_answer_and_closed_states_are_real_states():
     assert capabilities.CLOSED_STATES < set(BILLING_STATES)
     assert capabilities.LAUNCH_STATE in BILLING_STATES
@@ -349,7 +355,40 @@ class TestWhatIsNeverClosed:
         _set_state(db, _producer_of(db, owner), "unpaid")
         r = client.put(
             f"/events/{ev.id}",
-            json={"event_date": (israel_today() + timedelta(days=9)).isoformat()},
+            json={"title": "שם חדש", "max_participants": 30},
+            headers=auth_header(owner),
+        )
+        assert r.status_code == 200, r.text
+
+    @pytest.mark.parametrize(
+        "change",
+        [
+            lambda ev: {"event_date": (ev.event_date + timedelta(days=30)).isoformat()},
+            lambda ev: {"price": float(ev.price) + 50},
+        ],
+        ids=["a-later-date", "a-higher-price"],
+    )
+    def test_an_open_paid_event_cannot_be_recycled_into_new_bookings(
+        self, client, db, billing_on, change
+    ):
+        """One running paid event must not serve as an endless supply of new
+        paid bookings for a business whose paid tools are closed."""
+        owner = _owner(db, email="recycle@example.com")
+        ev = _event(db, owner, price=120)
+        _set_state(db, _producer_of(db, owner), "page_only")
+        r = client.put(f"/events/{ev.id}", json=change(ev), headers=auth_header(owner))
+        assert r.status_code == 403, r.text
+
+    def test_an_earlier_date_and_a_lower_price_are_ordinary_edits(
+        self, client, db, billing_on
+    ):
+        owner = _owner(db, email="ordinary@example.com")
+        ev = _event(db, owner, price=120)
+        _set_state(db, _producer_of(db, owner), "page_only")
+        sooner = max(israel_today(), ev.event_date - timedelta(days=1))
+        r = client.put(
+            f"/events/{ev.id}",
+            json={"event_date": sooner.isoformat(), "price": 90},
             headers=auth_header(owner),
         )
         assert r.status_code == 200, r.text

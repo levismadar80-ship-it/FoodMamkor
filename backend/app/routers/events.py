@@ -441,8 +441,8 @@ def update_event(  # noqa: PLR0913 — all args are FastAPI-injected; MEH-3022 a
         if method_issue:
             raise HTTPException(status_code=422, detail=method_issue)
     _cap_event_returning_to_upcoming(db, event, changes)  # MEH-3022
-    # MEH-3180: only an edit that MAKES the event a paid site sign-up asks;
-    # one that already was stays editable (what exists carries on).
+    # MEH-3180: an edit that MAKES the event a paid site sign-up asks, and so
+    # does a later date or a higher price; the rest stays editable.
     capabilities.require_paid_signup(
         db,
         event.producer_id,
@@ -455,6 +455,8 @@ def update_event(  # noqa: PLR0913 — all args are FastAPI-injected; MEH-3022 a
         was_price=event.price,
         was_method=event.registration_method,
         was_running=capabilities.is_running(event.is_active, event.event_date),
+        date=changes.get("event_date", event.event_date),
+        was_date=event.event_date,
     )
     for field, value in changes.items():
         if field == "category" and value not in VALID_CATEGORIES:

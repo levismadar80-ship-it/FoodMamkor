@@ -76,6 +76,17 @@ CURRENT_PRICE_LIST_VERSION: Final = 1
 BILLING_PHASE: str = "launch"
 BILLING_PHASES: Final = ("launch", "billing")
 
+# MEH-3180: known holes that cost nothing while nothing is charged and must be
+# closed before the switch moves. A test keeps BILLING_PHASE at "launch" while
+# this is not empty; remove a line only in the change that fixes it.
+SWITCH_ON_BLOCKERS: Final[tuple[str, ...]] = (
+    # A past paid event / experience can be given a future date and then
+    # deleted; billing_ledger.void_item_registrations sees an upcoming item and
+    # voids sign-ups that did take place. The ledger row does not hold the
+    # item's date at sign-up, so the fix needs a column (billing stage).
+    "void-after-redate",
+)
+
 
 def billing_is_on() -> bool:
     return BILLING_PHASE == "billing"

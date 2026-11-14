@@ -79,5 +79,15 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
+    # The ledger is the only record of what a business was counted for; a
+    # downgrade over rows would erase it (same rule as the two later revisions).
+    rows = (
+        op.get_bind().execute(sa.text("SELECT count(*) FROM billable_events")).scalar()
+    )
+    if rows:
+        raise RuntimeError(
+            f"MEH-3179: billable_events holds {rows} row(s); dropping the table "
+            "would erase the billing ledger. Export it first, then downgrade by hand."
+        )
     op.drop_index("ix_billable_events_producer_occurred", table_name="billable_events")
     op.drop_table("billable_events")
