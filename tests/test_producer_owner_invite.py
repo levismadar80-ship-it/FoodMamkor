@@ -2497,3 +2497,15 @@ class TestGrowerDeclarationOnAccept:
         _, token = invite(client, db, p)
         assert accept_invite(client, token).status_code == 200
         assert _row(db, p).farmer_declared_at is None
+
+    def test_lookup_does_not_ask_a_business_already_declared(self, client, db):
+        """The accept route ignores the flag once the line is recorded, so the
+        lookup must not show the box either (reviewer finding, MEH-3137)."""
+        from datetime import datetime, timezone
+
+        p, token = self._veg_invite(client, db)
+        assert client.get(_lookup_url(token)).json()["requires_farmer_declaration"] is True
+        row = _row(db, p)
+        row.farmer_declared_at = datetime.now(timezone.utc)
+        db.commit()
+        assert client.get(_lookup_url(token)).json()["requires_farmer_declaration"] is False

@@ -113,7 +113,7 @@ describe("CategoriesCard — grower declaration (MEH-3137)", () => {
   const SOAP = [{ id: 2, name: "סבונים טבעיים", slug: "care" }];
 
   it("adding ירקות with no recorded declaration: the box appears and its tick is sent", async () => {
-    renderCard({ profile: { categories: SOAP, farmer_declared_at: null } });
+    const { onSave } = renderCard({ profile: { categories: SOAP, farmer_declared_at: null } });
     await screen.findByTestId("category-chip-1");
     expect(screen.queryByTestId("categories-farmer")).toBeNull();
     fireEvent.click(chip(1));
@@ -126,6 +126,12 @@ describe("CategoriesCard — grower declaration (MEH-3137)", () => {
         category_ids: [2, 1],
         farmer_declaration_accepted: true,
       }),
+    );
+    // …and the parent learns the line is now recorded, so the card stops asking.
+    await waitFor(() =>
+      expect(onSave).toHaveBeenCalledWith(
+        expect.objectContaining({ farmer_declared_at: expect.any(String) }),
+      ),
     );
   });
 

@@ -209,7 +209,10 @@ def _email_taken(db: Session, email: str) -> bool:
 def _requires_farmer_declaration(producer: Producer) -> bool:
     """Reads the categories already loaded on the row — no extra query, the
     same membership-by-name test `license_pending` makes over
-    LICENSE_REQUIRED_CATEGORIES."""
+    LICENSE_REQUIRED_CATEGORIES. MEH-3137: a business whose grower line is
+    already recorded is not asked again (the accept route ignores it then)."""
+    if producer.farmer_declared_at is not None:
+        return False
     return any(
         c.name in FARMER_DECLARATION_CATEGORIES for c in (producer.categories or [])
     )

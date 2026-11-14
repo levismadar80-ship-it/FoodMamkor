@@ -14,7 +14,7 @@ stamps it once. A business that already recorded it is not asked again.
 """
 
 from app.constants import FARMER_DECLARATION_VERSION
-from app.models import Producer
+from app.models import Producer, User
 from conftest import auth_header, make_category, make_producer, make_user
 
 GROWER_422 = "יש לאשר את הצהרת המגדל כדי להמשיך"
@@ -98,7 +98,9 @@ class TestCreateRoute:
         assert r.json()["detail"] == GROWER_422
         assert db.query(Producer).count() == 0
 
-    def test_veg_with_the_flag_is_stamped(self, client, db):
+    def test_veg_with_the_flag_is_created_but_not_stamped(self, client, db):
+        """The row is an ownerless draft: the caller is not its owner, so the
+        declaration is left for the claim / owner invite to collect."""
         user = make_user(db, email="create3137b@example.com")
         veg = make_category(db, name="ירקות", emoji="🥬")
         r = client.post(
@@ -109,5 +111,7 @@ class TestCreateRoute:
         assert r.status_code == 201, r.text
         db.expire_all()
         row = db.query(Producer).one()
-        assert row.farmer_declared_at is not None
-        assert row.farmer_declaration_version == FARMER_DECLARATION_VERSION
+        # Nobody owns it yet (ownership is users.producer_id).
+        assert db.query(User).filter(User.producer_id == row.id).count() == 0
+        assert row.farmer_declared_at is None
+        assert row.farmer_declaration_version is None

@@ -185,7 +185,11 @@ export function CategoriesCard({ profile, onSave, reportDirty = () => {} }) {
         ...(farmerAsk && { farmer_declaration_accepted: farmerConfirmed }),
       });
       // Keep the parent profile in sync so a re-render reseeds correctly.
-      onSave({ categories: allCategories.filter((c) => selected.includes(c.id)) });
+      onSave({
+        categories: allCategories.filter((c) => selected.includes(c.id)),
+        // MEH-3137: the server just recorded the grower line, so stop asking.
+        ...(farmerAsk && { farmer_declared_at: new Date().toISOString() }),
+      });
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
     } catch (err) {
