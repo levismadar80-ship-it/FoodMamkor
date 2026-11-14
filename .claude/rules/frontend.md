@@ -66,8 +66,41 @@ moment it is introduced, which is the only moment anyone knows about it.
 
 ## Stack
 
-Next.js 14 (App Router) + Tailwind + Framer Motion + Leaflet. JavaScript
+Next.js 16 (App Router) + Tailwind + Framer Motion + Leaflet. JavaScript
 (not TypeScript); JSDoc for typed params where it matters.
+
+**Next 16 is newer than most training data.** Before using a Next API you have
+not used in this repo (routing, caching, `proxy`, metadata, image config), read
+its guide under `frontend/node_modules/next/dist/docs/` and heed deprecation
+notices. The same note lives in `frontend/AGENTS.md`, but that file is written
+by `next dev` and gitignored, so a fresh clone does not have it.
+
+---
+
+## Shared helpers — search `frontend/lib` before you write one
+
+Formatting, links and validation each have ONE owner. Import it; a second
+`toLocaleDateString`, `wa.me/` builder or phone regex is the bug. When none
+fits, extend the owner. `SharedHelpersTableGuard.test.js` fails when a file or
+export named here no longer exists.
+
+| Need | Owner (`frontend/lib/`) | Exports |
+|---|---|---|
+| Print a date | `format-date.js` | `formatDate`, `formatEventDate` |
+| "Today" in Israel time | `israel-date.js` | `israelToday` |
+| Price, price range | `utils.js` | `formatPrice`, `formatPriceRange` |
+| Phone: normalise · validate | `utils.js` · `validators.js` | `normalizePhone` · `validateIsraeliPhone` |
+| Email / password rules | `validators.js` | `validateEmail`, `passwordRules` |
+| WhatsApp link | `utils.js` | `getWhatsAppHref` |
+| A business's contact button (href, label) | `contact-method.js` | `getPrimaryContactHref`, `getPrimaryContactLabel` |
+| Opening hours: parse, open-now | `hours.js` | `parseHours`, `computeStatus` |
+| Distance in km | `distance.js` | `haversineKm`, `formatDistance` |
+| Share / copy a link | `share-link.js` · `clipboard.js` | `shareOrCopy` · `copyText` |
+| API error → Hebrew message / toast | `errors.js` | `detailToMessage`, `showErrorToast` |
+| Toast | `toast.js` | `showToast` |
+| Login link that returns here · safe redirect target | `safe-redirect.js` | `loginHrefBackHere`, `safeInternalRedirect` |
+| Image URL / ratio | `cloudinary.js` | `optimizeCloudinary`, `IMAGE_RATIOS` |
+| Fetch in a server component | `server-fetch.js` | `serverFetch` |
 
 ---
 
