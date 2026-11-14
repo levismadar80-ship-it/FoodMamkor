@@ -29,7 +29,7 @@ const SIGNUP_HREF = {
  * @param {any} attention
  * @returns {{ key: string, text: [string, Record<string, any>], cta: string, href: string }[]}
  */
-export function attentionRows(attention) {
+function attentionRows(attention) {
   if (!attention) return [];
   /** @type {{ key: string, text: [string, Record<string, any>], cta: string, href: string }[]} */
   const rows = [];
