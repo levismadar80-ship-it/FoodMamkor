@@ -10,7 +10,8 @@ Does NOT: change an order — services/product_order_state.py is the only
 Related:  app/services/user_deletion.py (the owner deletes her account),
           app/routers/admin.py::admin_delete_producer (an admin deletes a
           business) — the two hard-delete paths that call this
-History:  MEH-3262 (creation; stage 2a of MEH-3216)
+History:  MEH-3262 (creation; stage 2a of MEH-3216); MEH-3263 (locks the
+          business row before the check)
 """
 
 from typing import Any
@@ -18,11 +19,12 @@ from typing import Any
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
-from app.models.product_orders import ProductOrder
+from app.models.models import Producer
+from app.models.product_orders import PRODUCT_ORDER_OPEN_STATUSES, ProductOrder
 
 # An order someone is still waiting on. Deleting the business under it would
 # leave a buyer with a confirmed order and nobody to hand it over.
-OPEN_ORDER_STATUSES = ("pending", "change_proposed", "confirmed", "ready")
+OPEN_ORDER_STATUSES = PRODUCT_ORDER_OPEN_STATUSES
 
 OPEN_ORDERS_BLOCK_DELETE_DETAIL = (
     "אי אפשר למחוק בית עסק שיש לו הזמנות פתוחות. צריך לסגור אותן קודם"
@@ -48,7 +50,13 @@ def refuse_delete_with_open_orders(db: Session, producer_id: Any) -> None:
     Not behind the feature flag on purpose: with the flag off there are no
     orders, and if it is switched off while orders are open they still count.
     """
-    if producer_id is not None and has_open_orders(db, producer_id):
+    if producer_id is None:
+        return
+    # MEH-3263: lock the business row first. The order route locks the same
+    # row before it writes, so an order cannot slip in between this check and
+    # the delete that follows it in the same transaction.
+    db.query(Producer.id).filter(Producer.id == producer_id).with_for_update().first()
+    if has_open_orders(db, producer_id):
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail=OPEN_ORDERS_BLOCK_DELETE_DETAIL,

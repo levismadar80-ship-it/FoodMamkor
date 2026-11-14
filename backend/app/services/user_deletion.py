@@ -28,6 +28,7 @@ from app.models.models import (
 )
 from app.services import retired_slugs  # MEH-2528
 from app.services.product_order_guards import refuse_delete_with_open_orders
+from app.services.product_order_privacy import release_buyer_orders
 from app.services.group_buy_delist import (  # MEH-2503
     cancel_live_group_buys,
     withdraw_user_commits,
@@ -49,6 +50,10 @@ def delete_user_and_data(
     producer_id = user.producer_id
     # MEH-3262: before the first write — a business with an open order stays.
     refuse_delete_with_open_orders(db, producer_id)
+    # MEH-3263: her own orders as a BUYER — open ones are cancelled, and all
+    # of them lose her name, phone, address and note. The rows stay
+    # (product_orders.user_id is SET NULL): they are the business's record.
+    release_buyer_orders(db, user.id)
 
     # MEH-1150: capture the OTHER businesses this user has reviewed BEFORE the
     # cascade runs. ProducerReview.user_id is ondelete=CASCADE (models.py), so

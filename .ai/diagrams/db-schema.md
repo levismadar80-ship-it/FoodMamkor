@@ -200,8 +200,25 @@ erDiagram
         timestamp confirmed_at
         timestamp handed_at
         timestamp closed_at
+        string status_token_hash "MEH-3263: sha256 of the buyer's token; partial UNIQUE"
+        string idempotency_key "MEH-3263: client UUID per attempt; partial UNIQUE"
+        string delivery_city "MEH-3263: canonical city, delivery only"
+        timestamp proposed_slot_start "MEH-3263: while change_proposed"
+        timestamp proposed_slot_end
+        int proposed_total_agorot
+        text proposal_note
         timestamp created_at
         timestamp updated_at
+    }
+
+    product_order_phone_codes {
+        uuid id PK
+        string phone "canonical 9725XXXXXXXX (MEH-3263)"
+        string code_hash "HMAC-SHA256(secret, phone:code); the code is never stored"
+        timestamp expires_at "10 minutes"
+        int attempts "5 wrong tries burn the code"
+        timestamp used_at "nullable; single use"
+        timestamp created_at
     }
 
     product_order_items {

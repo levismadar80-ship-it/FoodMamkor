@@ -5550,6 +5550,322 @@ export const SetMyProductOrderProducersMeProductOrderPutResponse = /*#__PURE__*/
 
 
 /**
+ * The business's orders, the soonest slot first.
+ * @summary List Business Orders
+ */
+export const ListBusinessOrdersProducersMeProductOrdersGetResponse = /*#__PURE__*/ zod.object({
+  "orders": /*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
+  "age_declared": /*#__PURE__*/ zod.boolean(),
+  "created_at": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "customer_name": /*#__PURE__*/ zod.string(),
+  "customer_phone": /*#__PURE__*/ zod.string(),
+  "delivery_address": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
+  "delivery_city": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
+  "delivery_fee_agorot": /*#__PURE__*/ zod.int(),
+  "estimated_total_agorot": /*#__PURE__*/ zod.int(),
+  "expires_at": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()]),
+  "final_total_agorot": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()]),
+  "fulfilment": /*#__PURE__*/ zod.string(),
+  "has_estimate": /*#__PURE__*/ zod.boolean(),
+  "id": /*#__PURE__*/ zod.uuid(),
+  "items": /*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
+  "contains_alcohol": /*#__PURE__*/ zod.boolean(),
+  "name": /*#__PURE__*/ zod.string(),
+  "price_is_estimate": /*#__PURE__*/ zod.boolean(),
+  "price_unit": /*#__PURE__*/ zod.string(),
+  "qty": /*#__PURE__*/ zod.int(),
+  "unit_price_agorot": /*#__PURE__*/ zod.int()
+})),
+  "note": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
+  "producer_id": /*#__PURE__*/ zod.uuid(),
+  "proposal": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.object({
+  "note": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
+  "slot_end": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()]),
+  "slot_start": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()]),
+  "total_agorot": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])
+}),/*#__PURE__*/ zod.null()]),
+  "slot_end": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "slot_start": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "status": /*#__PURE__*/ zod.string()
+})),
+  "total": /*#__PURE__*/ zod.int()
+})
+
+
+/**
+ * @summary Cancel Order
+ */
+export const CancelOrderProducersMeProductOrdersOrderIdCancelPostResponse = /*#__PURE__*/ zod.object({
+  "age_declared": /*#__PURE__*/ zod.boolean(),
+  "created_at": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "customer_name": /*#__PURE__*/ zod.string(),
+  "customer_phone": /*#__PURE__*/ zod.string(),
+  "delivery_address": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
+  "delivery_city": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
+  "delivery_fee_agorot": /*#__PURE__*/ zod.int(),
+  "estimated_total_agorot": /*#__PURE__*/ zod.int(),
+  "expires_at": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()]),
+  "final_total_agorot": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()]),
+  "fulfilment": /*#__PURE__*/ zod.string(),
+  "has_estimate": /*#__PURE__*/ zod.boolean(),
+  "id": /*#__PURE__*/ zod.uuid(),
+  "items": /*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
+  "contains_alcohol": /*#__PURE__*/ zod.boolean(),
+  "name": /*#__PURE__*/ zod.string(),
+  "price_is_estimate": /*#__PURE__*/ zod.boolean(),
+  "price_unit": /*#__PURE__*/ zod.string(),
+  "qty": /*#__PURE__*/ zod.int(),
+  "unit_price_agorot": /*#__PURE__*/ zod.int()
+})),
+  "note": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
+  "producer_id": /*#__PURE__*/ zod.uuid(),
+  "proposal": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.object({
+  "note": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
+  "slot_end": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()]),
+  "slot_start": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()]),
+  "total_agorot": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])
+}),/*#__PURE__*/ zod.null()]),
+  "slot_end": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "slot_start": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "status": /*#__PURE__*/ zod.string()
+})
+
+
+/**
+ * @summary Confirm Order
+ */
+export const ConfirmOrderProducersMeProductOrdersOrderIdConfirmPostResponse = /*#__PURE__*/ zod.object({
+  "age_declared": /*#__PURE__*/ zod.boolean(),
+  "created_at": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "customer_name": /*#__PURE__*/ zod.string(),
+  "customer_phone": /*#__PURE__*/ zod.string(),
+  "delivery_address": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
+  "delivery_city": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
+  "delivery_fee_agorot": /*#__PURE__*/ zod.int(),
+  "estimated_total_agorot": /*#__PURE__*/ zod.int(),
+  "expires_at": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()]),
+  "final_total_agorot": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()]),
+  "fulfilment": /*#__PURE__*/ zod.string(),
+  "has_estimate": /*#__PURE__*/ zod.boolean(),
+  "id": /*#__PURE__*/ zod.uuid(),
+  "items": /*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
+  "contains_alcohol": /*#__PURE__*/ zod.boolean(),
+  "name": /*#__PURE__*/ zod.string(),
+  "price_is_estimate": /*#__PURE__*/ zod.boolean(),
+  "price_unit": /*#__PURE__*/ zod.string(),
+  "qty": /*#__PURE__*/ zod.int(),
+  "unit_price_agorot": /*#__PURE__*/ zod.int()
+})),
+  "note": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
+  "producer_id": /*#__PURE__*/ zod.uuid(),
+  "proposal": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.object({
+  "note": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
+  "slot_end": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()]),
+  "slot_start": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()]),
+  "total_agorot": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])
+}),/*#__PURE__*/ zod.null()]),
+  "slot_end": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "slot_start": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "status": /*#__PURE__*/ zod.string()
+})
+
+
+/**
+ * @summary Decline Order
+ */
+export const DeclineOrderProducersMeProductOrdersOrderIdDeclinePostResponse = /*#__PURE__*/ zod.object({
+  "age_declared": /*#__PURE__*/ zod.boolean(),
+  "created_at": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "customer_name": /*#__PURE__*/ zod.string(),
+  "customer_phone": /*#__PURE__*/ zod.string(),
+  "delivery_address": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
+  "delivery_city": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
+  "delivery_fee_agorot": /*#__PURE__*/ zod.int(),
+  "estimated_total_agorot": /*#__PURE__*/ zod.int(),
+  "expires_at": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()]),
+  "final_total_agorot": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()]),
+  "fulfilment": /*#__PURE__*/ zod.string(),
+  "has_estimate": /*#__PURE__*/ zod.boolean(),
+  "id": /*#__PURE__*/ zod.uuid(),
+  "items": /*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
+  "contains_alcohol": /*#__PURE__*/ zod.boolean(),
+  "name": /*#__PURE__*/ zod.string(),
+  "price_is_estimate": /*#__PURE__*/ zod.boolean(),
+  "price_unit": /*#__PURE__*/ zod.string(),
+  "qty": /*#__PURE__*/ zod.int(),
+  "unit_price_agorot": /*#__PURE__*/ zod.int()
+})),
+  "note": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
+  "producer_id": /*#__PURE__*/ zod.uuid(),
+  "proposal": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.object({
+  "note": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
+  "slot_end": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()]),
+  "slot_start": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()]),
+  "total_agorot": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])
+}),/*#__PURE__*/ zod.null()]),
+  "slot_end": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "slot_start": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "status": /*#__PURE__*/ zod.string()
+})
+
+
+/**
+ * @summary Hand Order Over
+ */
+export const HandOrderOverProducersMeProductOrdersOrderIdHandedPostResponse = /*#__PURE__*/ zod.object({
+  "age_declared": /*#__PURE__*/ zod.boolean(),
+  "created_at": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "customer_name": /*#__PURE__*/ zod.string(),
+  "customer_phone": /*#__PURE__*/ zod.string(),
+  "delivery_address": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
+  "delivery_city": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
+  "delivery_fee_agorot": /*#__PURE__*/ zod.int(),
+  "estimated_total_agorot": /*#__PURE__*/ zod.int(),
+  "expires_at": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()]),
+  "final_total_agorot": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()]),
+  "fulfilment": /*#__PURE__*/ zod.string(),
+  "has_estimate": /*#__PURE__*/ zod.boolean(),
+  "id": /*#__PURE__*/ zod.uuid(),
+  "items": /*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
+  "contains_alcohol": /*#__PURE__*/ zod.boolean(),
+  "name": /*#__PURE__*/ zod.string(),
+  "price_is_estimate": /*#__PURE__*/ zod.boolean(),
+  "price_unit": /*#__PURE__*/ zod.string(),
+  "qty": /*#__PURE__*/ zod.int(),
+  "unit_price_agorot": /*#__PURE__*/ zod.int()
+})),
+  "note": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
+  "producer_id": /*#__PURE__*/ zod.uuid(),
+  "proposal": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.object({
+  "note": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
+  "slot_end": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()]),
+  "slot_start": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()]),
+  "total_agorot": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])
+}),/*#__PURE__*/ zod.null()]),
+  "slot_end": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "slot_start": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "status": /*#__PURE__*/ zod.string()
+})
+
+
+/**
+ * @summary Report No Show
+ */
+export const ReportNoShowProducersMeProductOrdersOrderIdNoShowPostResponse = /*#__PURE__*/ zod.object({
+  "age_declared": /*#__PURE__*/ zod.boolean(),
+  "created_at": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "customer_name": /*#__PURE__*/ zod.string(),
+  "customer_phone": /*#__PURE__*/ zod.string(),
+  "delivery_address": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
+  "delivery_city": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
+  "delivery_fee_agorot": /*#__PURE__*/ zod.int(),
+  "estimated_total_agorot": /*#__PURE__*/ zod.int(),
+  "expires_at": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()]),
+  "final_total_agorot": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()]),
+  "fulfilment": /*#__PURE__*/ zod.string(),
+  "has_estimate": /*#__PURE__*/ zod.boolean(),
+  "id": /*#__PURE__*/ zod.uuid(),
+  "items": /*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
+  "contains_alcohol": /*#__PURE__*/ zod.boolean(),
+  "name": /*#__PURE__*/ zod.string(),
+  "price_is_estimate": /*#__PURE__*/ zod.boolean(),
+  "price_unit": /*#__PURE__*/ zod.string(),
+  "qty": /*#__PURE__*/ zod.int(),
+  "unit_price_agorot": /*#__PURE__*/ zod.int()
+})),
+  "note": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
+  "producer_id": /*#__PURE__*/ zod.uuid(),
+  "proposal": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.object({
+  "note": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
+  "slot_end": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()]),
+  "slot_start": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()]),
+  "total_agorot": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])
+}),/*#__PURE__*/ zod.null()]),
+  "slot_end": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "slot_start": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "status": /*#__PURE__*/ zod.string()
+})
+
+
+/**
+ * @summary Propose Order Change
+ */
+export const ProposeOrderChangeProducersMeProductOrdersOrderIdProposeChangePostResponse = /*#__PURE__*/ zod.object({
+  "age_declared": /*#__PURE__*/ zod.boolean(),
+  "created_at": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "customer_name": /*#__PURE__*/ zod.string(),
+  "customer_phone": /*#__PURE__*/ zod.string(),
+  "delivery_address": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
+  "delivery_city": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
+  "delivery_fee_agorot": /*#__PURE__*/ zod.int(),
+  "estimated_total_agorot": /*#__PURE__*/ zod.int(),
+  "expires_at": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()]),
+  "final_total_agorot": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()]),
+  "fulfilment": /*#__PURE__*/ zod.string(),
+  "has_estimate": /*#__PURE__*/ zod.boolean(),
+  "id": /*#__PURE__*/ zod.uuid(),
+  "items": /*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
+  "contains_alcohol": /*#__PURE__*/ zod.boolean(),
+  "name": /*#__PURE__*/ zod.string(),
+  "price_is_estimate": /*#__PURE__*/ zod.boolean(),
+  "price_unit": /*#__PURE__*/ zod.string(),
+  "qty": /*#__PURE__*/ zod.int(),
+  "unit_price_agorot": /*#__PURE__*/ zod.int()
+})),
+  "note": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
+  "producer_id": /*#__PURE__*/ zod.uuid(),
+  "proposal": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.object({
+  "note": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
+  "slot_end": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()]),
+  "slot_start": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()]),
+  "total_agorot": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])
+}),/*#__PURE__*/ zod.null()]),
+  "slot_end": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "slot_start": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "status": /*#__PURE__*/ zod.string()
+})
+
+
+/**
+ * @summary Ready Order
+ */
+export const ReadyOrderProducersMeProductOrdersOrderIdReadyPostResponse = /*#__PURE__*/ zod.object({
+  "age_declared": /*#__PURE__*/ zod.boolean(),
+  "created_at": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "customer_name": /*#__PURE__*/ zod.string(),
+  "customer_phone": /*#__PURE__*/ zod.string(),
+  "delivery_address": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
+  "delivery_city": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
+  "delivery_fee_agorot": /*#__PURE__*/ zod.int(),
+  "estimated_total_agorot": /*#__PURE__*/ zod.int(),
+  "expires_at": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()]),
+  "final_total_agorot": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()]),
+  "fulfilment": /*#__PURE__*/ zod.string(),
+  "has_estimate": /*#__PURE__*/ zod.boolean(),
+  "id": /*#__PURE__*/ zod.uuid(),
+  "items": /*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
+  "contains_alcohol": /*#__PURE__*/ zod.boolean(),
+  "name": /*#__PURE__*/ zod.string(),
+  "price_is_estimate": /*#__PURE__*/ zod.boolean(),
+  "price_unit": /*#__PURE__*/ zod.string(),
+  "qty": /*#__PURE__*/ zod.int(),
+  "unit_price_agorot": /*#__PURE__*/ zod.int()
+})),
+  "note": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
+  "producer_id": /*#__PURE__*/ zod.uuid(),
+  "proposal": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.object({
+  "note": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
+  "slot_end": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()]),
+  "slot_start": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()]),
+  "total_agorot": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])
+}),/*#__PURE__*/ zod.null()]),
+  "slot_end": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "slot_start": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "status": /*#__PURE__*/ zod.string()
+})
+
+
+/**
  * @summary List My Products
  */
 export const listMyProductsProducersMeProductsGetResponseIsGlutenFreeDefault = false;
@@ -6467,6 +6783,177 @@ export const GetPublicRecipeProducersSlugRecipesRecipeIdGetResponse = /*#__PURE_
 
 
 /**
+ * Send an order request. A guest and a logged-in buyer take the same
+ * path: both prove the phone with a code.
+ * @summary Send Order
+ */
+export const SendOrderProductOrdersPostResponse = /*#__PURE__*/ zod.object({
+  "can_cancel": /*#__PURE__*/ zod.boolean(),
+  "created_at": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "customer_name": /*#__PURE__*/ zod.string(),
+  "delivery_city": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
+  "delivery_fee_agorot": /*#__PURE__*/ zod.int(),
+  "estimated_total_agorot": /*#__PURE__*/ zod.int(),
+  "expires_at": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()]),
+  "final_total_agorot": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()]),
+  "fulfilment": /*#__PURE__*/ zod.string(),
+  "id": /*#__PURE__*/ zod.uuid(),
+  "items": /*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
+  "contains_alcohol": /*#__PURE__*/ zod.boolean(),
+  "name": /*#__PURE__*/ zod.string(),
+  "price_is_estimate": /*#__PURE__*/ zod.boolean(),
+  "price_unit": /*#__PURE__*/ zod.string(),
+  "qty": /*#__PURE__*/ zod.int(),
+  "unit_price_agorot": /*#__PURE__*/ zod.int()
+})),
+  "note": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
+  "phone_masked": /*#__PURE__*/ zod.string(),
+  "pickup_code": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
+  "producer_id": /*#__PURE__*/ zod.uuid(),
+  "producer_name": /*#__PURE__*/ zod.string(),
+  "proposal": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.object({
+  "note": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
+  "slot_end": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()]),
+  "slot_start": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()]),
+  "total_agorot": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])
+}),/*#__PURE__*/ zod.null()]),
+  "slot_end": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "slot_start": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "status": /*#__PURE__*/ zod.string(),
+  "status_token": /*#__PURE__*/ zod.string()
+})
+
+
+/**
+ * Send a six-digit code to the phone a buyer wants to order with.
+ *
+ * Only for a business that takes orders now, so the route cannot be used to
+ * message phones at will. Fails closed: with WhatsApp not configured there
+ * is no way to prove a phone, so there is no order.
+ * @summary Send Order Phone Code
+ */
+export const SendOrderPhoneCodeProductOrdersPhoneCodePostResponse = /*#__PURE__*/ zod.record(/*#__PURE__*/ zod.string(), /*#__PURE__*/ zod.string())
+
+
+/**
+ * A read, sent as POST so the token stays out of the URL.
+ * @summary Read Order Status
+ */
+export const ReadOrderStatusProductOrdersStatusPostResponse = /*#__PURE__*/ zod.object({
+  "can_cancel": /*#__PURE__*/ zod.boolean(),
+  "created_at": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "customer_name": /*#__PURE__*/ zod.string(),
+  "delivery_city": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
+  "delivery_fee_agorot": /*#__PURE__*/ zod.int(),
+  "estimated_total_agorot": /*#__PURE__*/ zod.int(),
+  "expires_at": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()]),
+  "final_total_agorot": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()]),
+  "fulfilment": /*#__PURE__*/ zod.string(),
+  "id": /*#__PURE__*/ zod.uuid(),
+  "items": /*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
+  "contains_alcohol": /*#__PURE__*/ zod.boolean(),
+  "name": /*#__PURE__*/ zod.string(),
+  "price_is_estimate": /*#__PURE__*/ zod.boolean(),
+  "price_unit": /*#__PURE__*/ zod.string(),
+  "qty": /*#__PURE__*/ zod.int(),
+  "unit_price_agorot": /*#__PURE__*/ zod.int()
+})),
+  "note": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
+  "phone_masked": /*#__PURE__*/ zod.string(),
+  "pickup_code": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
+  "producer_id": /*#__PURE__*/ zod.uuid(),
+  "producer_name": /*#__PURE__*/ zod.string(),
+  "proposal": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.object({
+  "note": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
+  "slot_end": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()]),
+  "slot_start": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()]),
+  "total_agorot": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])
+}),/*#__PURE__*/ zod.null()]),
+  "slot_end": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "slot_start": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "status": /*#__PURE__*/ zod.string()
+})
+
+
+/**
+ * @summary Accept Proposed Change
+ */
+export const AcceptProposedChangeProductOrdersStatusAcceptChangePostResponse = /*#__PURE__*/ zod.object({
+  "can_cancel": /*#__PURE__*/ zod.boolean(),
+  "created_at": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "customer_name": /*#__PURE__*/ zod.string(),
+  "delivery_city": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
+  "delivery_fee_agorot": /*#__PURE__*/ zod.int(),
+  "estimated_total_agorot": /*#__PURE__*/ zod.int(),
+  "expires_at": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()]),
+  "final_total_agorot": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()]),
+  "fulfilment": /*#__PURE__*/ zod.string(),
+  "id": /*#__PURE__*/ zod.uuid(),
+  "items": /*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
+  "contains_alcohol": /*#__PURE__*/ zod.boolean(),
+  "name": /*#__PURE__*/ zod.string(),
+  "price_is_estimate": /*#__PURE__*/ zod.boolean(),
+  "price_unit": /*#__PURE__*/ zod.string(),
+  "qty": /*#__PURE__*/ zod.int(),
+  "unit_price_agorot": /*#__PURE__*/ zod.int()
+})),
+  "note": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
+  "phone_masked": /*#__PURE__*/ zod.string(),
+  "pickup_code": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
+  "producer_id": /*#__PURE__*/ zod.uuid(),
+  "producer_name": /*#__PURE__*/ zod.string(),
+  "proposal": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.object({
+  "note": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
+  "slot_end": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()]),
+  "slot_start": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()]),
+  "total_agorot": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])
+}),/*#__PURE__*/ zod.null()]),
+  "slot_end": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "slot_start": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "status": /*#__PURE__*/ zod.string()
+})
+
+
+/**
+ * @summary Cancel Own Order
+ */
+export const CancelOwnOrderProductOrdersStatusCancelPostResponse = /*#__PURE__*/ zod.object({
+  "can_cancel": /*#__PURE__*/ zod.boolean(),
+  "created_at": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "customer_name": /*#__PURE__*/ zod.string(),
+  "delivery_city": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
+  "delivery_fee_agorot": /*#__PURE__*/ zod.int(),
+  "estimated_total_agorot": /*#__PURE__*/ zod.int(),
+  "expires_at": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()]),
+  "final_total_agorot": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()]),
+  "fulfilment": /*#__PURE__*/ zod.string(),
+  "id": /*#__PURE__*/ zod.uuid(),
+  "items": /*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
+  "contains_alcohol": /*#__PURE__*/ zod.boolean(),
+  "name": /*#__PURE__*/ zod.string(),
+  "price_is_estimate": /*#__PURE__*/ zod.boolean(),
+  "price_unit": /*#__PURE__*/ zod.string(),
+  "qty": /*#__PURE__*/ zod.int(),
+  "unit_price_agorot": /*#__PURE__*/ zod.int()
+})),
+  "note": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
+  "phone_masked": /*#__PURE__*/ zod.string(),
+  "pickup_code": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
+  "producer_id": /*#__PURE__*/ zod.uuid(),
+  "producer_name": /*#__PURE__*/ zod.string(),
+  "proposal": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.object({
+  "note": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
+  "slot_end": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()]),
+  "slot_start": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()]),
+  "total_agorot": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])
+}),/*#__PURE__*/ zod.null()]),
+  "slot_end": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "slot_start": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "status": /*#__PURE__*/ zod.string()
+})
+
+
+/**
  * Return the VAPID public key for the frontend push subscription.
  * @summary Get Vapid Public Key
  */
@@ -7194,6 +7681,48 @@ export const UpsertAlertPrefsUsersMeFavoritesProducerIdAlertsPutResponse = /*#__
  * @summary Change Password
  */
 export const ChangePasswordUsersMePasswordPatchResponse = /*#__PURE__*/ zod.void()
+
+
+/**
+ * The logged-in buyer's orders, newest first.
+ * @summary List Own Orders
+ */
+export const ListOwnOrdersUsersMeProductOrdersGetResponse = /*#__PURE__*/ zod.object({
+  "orders": /*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
+  "can_cancel": /*#__PURE__*/ zod.boolean(),
+  "created_at": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "customer_name": /*#__PURE__*/ zod.string(),
+  "delivery_city": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
+  "delivery_fee_agorot": /*#__PURE__*/ zod.int(),
+  "estimated_total_agorot": /*#__PURE__*/ zod.int(),
+  "expires_at": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()]),
+  "final_total_agorot": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()]),
+  "fulfilment": /*#__PURE__*/ zod.string(),
+  "id": /*#__PURE__*/ zod.uuid(),
+  "items": /*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
+  "contains_alcohol": /*#__PURE__*/ zod.boolean(),
+  "name": /*#__PURE__*/ zod.string(),
+  "price_is_estimate": /*#__PURE__*/ zod.boolean(),
+  "price_unit": /*#__PURE__*/ zod.string(),
+  "qty": /*#__PURE__*/ zod.int(),
+  "unit_price_agorot": /*#__PURE__*/ zod.int()
+})),
+  "note": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
+  "phone_masked": /*#__PURE__*/ zod.string(),
+  "pickup_code": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
+  "producer_id": /*#__PURE__*/ zod.uuid(),
+  "producer_name": /*#__PURE__*/ zod.string(),
+  "proposal": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.object({
+  "note": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]),
+  "slot_end": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()]),
+  "slot_start": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()]),
+  "total_agorot": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])
+}),/*#__PURE__*/ zod.null()]),
+  "slot_end": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "slot_start": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "status": /*#__PURE__*/ zod.string()
+}))
+})
 
 
 /**
