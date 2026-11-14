@@ -154,6 +154,7 @@ function ResetPasswordForm() {
         />
 
         <PasswordField
+          autoComplete="new-password"
           value={confirm}
           onChange={(e) => setConfirm(e.target.value)}
           placeholder={t("auth.passwordRecovery.reset.confirm_placeholder")}

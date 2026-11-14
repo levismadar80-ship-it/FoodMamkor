@@ -6,7 +6,7 @@ import { CaretDown, MapPin, MapPinLine, Rows, X } from "@phosphor-icons/react";
 
 import CitySearch from "@/components/CitySearch";
 import LocationModal from "@/components/LocationModal";
-import MapBottomSheet from "@/components/MapBottomSheet";
+import MapBottomSheet, { HALF, PEEK } from "@/components/MapBottomSheet";
 import { haversineKm } from "@/lib/distance";
 import { defaultsForKeys } from "@/lib/filter-taxonomy";
 import { TOGGLE_CHIPS, chipStateToParams } from "@/lib/map-chips";
@@ -44,8 +44,9 @@ import { useProducersFeed } from "./state/useProducersFeed";
 const NEAR_ME_RADIUS_KM = 25;
 const NEAR_ME_DEFAULT_CENTER = [32.4, 34.95];
 const NEAR_ME_DEFAULT_ZOOM = 8;
-// MEH-2843: wait for the bottom sheet to settle at HALF (--map-sheet-anim is
-// 300ms) before measuring whether the tapped marker sits under it.
+// MEH-2843: wait for the bottom sheet (and, since MEH-3119, the picked card
+// riding its edge) to settle (--map-sheet-anim is 300ms) before measuring
+// whether the tapped marker sits under it.
 const MOBILE_PICK_PAN_DELAY_MS = 350;
 // MEH-2639: the zoom a city flyTo lands on. Same value handleGpsClick already
 // uses for a GPS fix (:~470), so "the map moved to where I said I am" looks
@@ -759,11 +760,12 @@ export default function MapPage() {
   }, [selectedProducer, selectedLocation, mapRef]);
 
   // MEH-2843: after a pick on a phone, the tapped marker must not sit under
-  // the sheet that just opened over it. Once the sheet has settled (its
-  // --map-sheet-anim, 300ms), if the marker's BOTTOM edge is below — or within
-  // 16px of — the sheet's top edge (the card lives inside the sheet, whose
-  // header above the card is opaque too), pan up so that edge sits 24px above
-  // it. The icons are centre-anchored, so the latlng point is the marker's
+  // what covers the bottom of the map: the picked card floating above the
+  // collapsed sheet (MEH-3119), or the open sheet when there is no card. Once
+  // that has settled (--map-sheet-anim, 300ms), if the marker's BOTTOM edge is
+  // below — or within 16px of — the cover's top edge, pan up so that edge sits
+  // 24px above it. Re-measured when the sheet changes snap with a business
+  // picked, since the cover changes with it. The icons are centre-anchored, so the latlng point is the marker's
   // middle: measured at 390×844, panning the point left the lower half of a
   // 36px marker 6px from the card. The rendered icon nearest the point gives
   // the real bottom; no icon found → the point itself.
@@ -776,6 +778,7 @@ export default function MapPage() {
   // moveend raised the banner. So: if the map is moving when the sheet has
   // settled, measure and pan once that move has ended.
   const { mapApiRef } = sync;
+  const { sheetSnap } = hints;
   useEffect(() => {
     if (!selectedProducer || typeof window === "undefined") return undefined;
     if (window.matchMedia?.("(min-width: 1024px)")?.matches) return undefined;
@@ -794,7 +797,10 @@ export default function MapPage() {
       const sheet = document.querySelector('[data-testid="map-bottom-sheet"]');
       if (!map?.latLngToContainerPoint || !api?.panBy || !sheet) return;
       const mapTop = map.getContainer().getBoundingClientRect().top;
-      const edge = sheet.getBoundingClientRect().top - mapTop;
+      // MEH-3119: the picked card floats above the sheet, so ITS top is the
+      // edge the marker must clear; the sheet's top when no card is up.
+      const cover = document.querySelector('[data-testid="map-selected-card"]') ?? sheet;
+      const edge = cover.getBoundingClientRect().top - mapTop;
       const { x, y } = map.latLngToContainerPoint([target.lat, target.lng]);
       const box = map.getContainer().getBoundingClientRect();
       let bottom = y;
@@ -821,7 +827,29 @@ export default function MapPage() {
       live?.off?.("moveend", onMoveEnd);
       live?.off?.("moveend", afterMove);
     };
-  }, [selectedProducer, selectedLocation, mapRef, mapApiRef]);
+  }, [selectedProducer, selectedLocation, mapRef, mapApiRef, sheetSnap]);
+
+  // MEH-3119: one card per picked business on a phone. `showPickCard` is the
+  // whole rule; `pickCardHeight` is what the card reports so the sheet-edge
+  // controls ride above it.
+  const [pickCardHeight, setPickCardHeight] = useState(0);
+  const showPickCard = !!selectedProducer && sheetSnap === PEEK;
+  // Opening the sheet with a business picked: bring its row into view, since
+  // the floating card that showed it has just left.
+  const selectedId = selectedProducer?.id ?? null;
+  const { cardRefs } = sync;
+  useEffect(() => {
+    if (sheetSnap !== HALF || selectedId == null) return undefined;
+    const timer = window.setTimeout(() => {
+      for (const n of cardRefs.current.get(selectedId) ?? []) {
+        if (n.isConnected && n.offsetParent !== null) n.scrollIntoView?.({ block: "nearest" });
+      }
+    }, MOBILE_PICK_PAN_DELAY_MS);
+    return () => window.clearTimeout(timer);
+    // Only a snap change scrolls: picking a row while the sheet is open must
+    // leave the list still (the MEH-1243 tap-again-to-open gesture).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sheetSnap]);
 
   const mapPane = (
     <MapPane
@@ -1031,7 +1059,7 @@ export default function MapPage() {
       </div>
 
       {/* =================== MOBILE (below lg) — full map + sheet =================== */}
-      <div ref={mobileShellRef} data-testid="map-mobile-shell" data-chat-hide="" data-map-shell="mobile" className="lg:hidden" style={{ height: `calc(100dvh - ${mobileTopOffset}px)`, position: "relative" }}>
+      <div ref={mobileShellRef} data-testid="map-mobile-shell" data-chat-hide="" data-map-shell="mobile" data-pick={showPickCard ? "on" : undefined} className="group/mapshell lg:hidden" style={{ height: `calc(100dvh - ${mobileTopOffset}px)`, position: "relative" }}>
         {/* Sticky filter bar — MEH-933 R2: sits at top-0 of the mobile shell.
             The shell is in normal flow AFTER the sticky <Header> (layout.js:221),
             so it already begins below the header band — the bar needs NO header
@@ -1149,6 +1177,19 @@ export default function MapPage() {
             (same goToMyLocation path as the filter-bar crosshair). */}
         <NearMePill onClick={handleGoToMyLocation} />
 
+        {/* MEH-3119: the picked business, once. Sheet at PEEK → this card floats
+            over the map; sheet open → the list's own active row is the
+            selection and this card is not mounted. Mounted BEFORE the
+            sheet so keyboard / screen-reader order reaches it before the list
+            (it is `fixed`, so the order is not visual). */}
+        {showPickCard && (
+          <MobileSheetSelectedCard
+            selectedProducer={filters.selectedProducer}
+            selectedLocation={sync.selectedLocation}
+            onClose={() => filters.setSelectedProducer(null)}
+            onHeight={setPickCardHeight}
+          />
+        )}
         {/* Bottom sheet. MEH-1054 (MAP-16): loading rides the feed's initial
             fetch so the sheet shows a list skeleton instead of flashing an
             empty "0" state before the first /producers response lands. */}
@@ -1164,12 +1205,8 @@ export default function MapPage() {
           zeroCity={cityZero ? filters.cityFilter.trim() : ""}
           nearMeEmpty={nearMeEmpty}
           hasOrigin={!!userLoc || filters.cityFilter.trim() !== ""}
+          rideExtraPx={showPickCard ? pickCardHeight : 0}
         >
-          <MobileSheetSelectedCard
-            selectedProducer={filters.selectedProducer}
-            selectedLocation={sync.selectedLocation}
-            onClose={() => filters.setSelectedProducer(null)}
-          />
           {cardList}
         </MapBottomSheet>
       </div>

@@ -258,6 +258,7 @@ export default function AlertPrefsPanel({ producerId, producerName, onClose }) {
               <Input
                 size="sm"
                 type="tel"
+                autoComplete="tel"
                 value={phoneInput}
                 onChange={(e) => setPhoneInput(e.target.value)}
                 // MEH-1617: value moved to sweep_tail.alert_prefs.phone_placeholder.
