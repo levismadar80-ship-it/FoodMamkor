@@ -122,3 +122,46 @@ describe("/producers/diet/<slug> (MEH-2706)", () => {
     expect(wasNotFound(await middleware(requestFor("/he/producers/diet/vegan")))).toBe(false);
   });
 });
+
+// MEH-2977: /group-buys/<id> and /experiences/<id> had the MEH-2706 shape —
+// notFound() in generateMetadata streams 200 — but were never added to the
+// middleware check. Measured 14/11 on production and staging: 200 for a
+// missing id on both, while /events/<id> answered 404.
+describe.each([
+  ["group-buys", "/group-buys/"],
+  ["experiences", "/experiences/"],
+])("/%s/<id> (MEH-2977)", (segment, apiPath) => {
+  const PAGE = `/he/${segment}/00000000-0000-0000-0000-000000000000`;
+  it("backend 404 → real 404", async () => {
+    backend({ status: 404 });
+    expect(wasNotFound(await middleware(requestFor(PAGE)))).toBe(true);
+  });
+  it("backend 422 (id is not a UUID) → real 404", async () => {
+    backend({ status: 422 });
+    expect(wasNotFound(await middleware(requestFor(`/he/${segment}/999999999`)))).toBe(true);
+  });
+  it("asks the backend about exactly that id, on its own API path", async () => {
+    backend({ status: 404 });
+    await middleware(requestFor(`/${segment}/00000000-0000-0000-0000-000000000000`));
+    expect(global.fetch.mock.calls[0][0]).toMatch(
+      new RegExp(`${apiPath}00000000-0000-0000-0000-000000000000$`)
+    );
+  });
+  it("control: an existing one passes through", async () => {
+    backend({ status: 200 });
+    expect(wasNotFound(await middleware(requestFor(PAGE)))).toBe(false);
+  });
+  it.each([500, 429, 503])("control: backend %i fails open", async (status) => {
+    backend({ status });
+    expect(wasNotFound(await middleware(requestFor(PAGE)))).toBe(false);
+  });
+  it("control: network error fails open", async () => {
+    backend({ throws: true });
+    expect(wasNotFound(await middleware(requestFor(PAGE)))).toBe(false);
+  });
+  it("control: the list page itself is never checked", async () => {
+    backend({ status: 404 });
+    expect(wasNotFound(await middleware(requestFor(`/he/${segment}`)))).toBe(false);
+    expect(global.fetch).not.toHaveBeenCalled();
+  });
+});

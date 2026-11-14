@@ -106,6 +106,11 @@ function reportFiveHundredToSentry(url, status) {
 // can absorb.
 const EXISTENCE_CHECK_TIMEOUT_MS = 3000;
 
+// MEH-2706 / MEH-2977: detail routes whose missing id gets a real 404 here.
+// The page segment equals the backend path (/events/<id>, /group-buys/<id>,
+// /experiences/<id>). DO NOT add a segment that has a static child route.
+const ENTITY_404_SEGMENTS = new Set(["events", "group-buys", "experiences"]);
+
 // producerExists() result for a deleted business (truthy: it is not a 404).
 const GONE = "gone";
 
@@ -298,8 +303,14 @@ export default async function middleware(request) {
   // real 404 for a real page. app/[locale]/events/ today holds only [id].
   // Cost: one uncached backend GET (≤3 s, then fail-open) per request on
   // these two routes — the same trade the slug check already makes.
-  if (segs.length === 2 && segs[0] === "events" && segs[1]) {
-    exists = await eventExists(`${API_URL}/events/${encodeURIComponent(segs[1])}`);
+  // MEH-2977: /group-buys/<id> and /experiences/<id> have the same shape
+  // (notFound() in generateMetadata, which streams) and the same backend
+  // contract (404 unknown / 422 not a UUID, anonymous 404 for a non-public
+  // one — their pages' own fetch is anonymous too), so they ride the same
+  // check. app/[locale]/group-buys/ and experiences/ hold only [id] + the
+  // list; /experiences/new is a next.config redirect, which runs before this.
+  if (segs.length === 2 && ENTITY_404_SEGMENTS.has(segs[0]) && segs[1]) {
+    exists = await eventExists(`${API_URL}/${segs[0]}/${encodeURIComponent(segs[1])}`);
   } else if (segs.length === 3 && segs[0] === "producers" && segs[1] === "diet") {
     exists = await dietPageExists(decodeSlugParam(segs[2]));
   }
