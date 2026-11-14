@@ -23,7 +23,7 @@ const SCAN = ["app", "components", "lib"];
 // key: "<file relative to frontend/>::<chips expression's first token>"
 const REGISTRY = {
   "app/[locale]/group-buys/GroupBuysClient.jsx::dropZeroChips": { gate: "dropZeroChips" },
-  "app/[locale]/events/EventsClient.jsx::shownChips": { gate: "visibleCategoryChips" },
+  "app/[locale]/events/EventsClient.jsx::gatedChips": { gate: "dropZeroChips" }, // categories: visibleCategoryChips; dates: dropZeroChips
   "app/[locale]/home/HomeProducersGrid.jsx::gatedChips": { gate: "visibleAxisChips" },
   "app/[locale]/home/HomeProducersGrid.jsx::sheetChips": { gate: "visibleAxisChips" },
   "components/ProducersClient.jsx::visibleChipDefs": { gate: "visibleAxisChips" },
@@ -89,7 +89,7 @@ describe("every chip row hides chips with no results (MEH-3128)", () => {
 
   it("the scan sees the rows it must see (control: a dead scan would pass everything)", () => {
     // Anchored to real files: if the regex or the walk broke, these vanish.
-    expect(sites).toContain("app/[locale]/events/EventsClient.jsx::shownChips");
+    expect(sites).toContain("app/[locale]/events/EventsClient.jsx::gatedChips");
     expect(sites).toContain("components/ProducersClient.jsx::visibleChipDefs");
   });
 

@@ -13,6 +13,10 @@ import { visibleCategoryChips, presentCategories } from "@/lib/event-category-ga
 
 let params = {}; // drives useSearchParams(); a value may be a string or an array
 
+// MEH-3128: the date shortcuts count rows against the Israel clock; the
+// fixtures sit on 2026-12-01, so «today» is frozen well before it (rule:
+// clock-dependent tests freeze the clock).
+vi.mock("@/lib/israel-date", () => ({ israelToday: () => "2026-11-18" }));
 vi.mock("next/navigation", () => ({
   useSearchParams: () => ({
     get: (k) => (k in params ? [].concat(params[k])[0] : null),
@@ -142,11 +146,11 @@ describe("category chips show only categories with results (MEH-3124)", () => {
     await waitFor(() => expect(drawn()).toEqual(["all", MARKET, TASTING]));
   });
 
-  it("one category → no category chip (the date shortcuts still draw the row)", async () => {
+  it("one category, no date shortcut with rows → «הכל» alone, no row drawn", async () => {
     db = [row(MARKET), row(MARKET)];
     render(<EventsClient />);
     await settle();
-    await waitFor(() => expect(drawn()).toEqual(["all"]));
+    await waitFor(() => expect(screen.queryByTestId("chip-row")).toBeNull());
     expect(screen.getAllByRole("heading", { level: 3 })).toHaveLength(2); // the list stays
   });
 
