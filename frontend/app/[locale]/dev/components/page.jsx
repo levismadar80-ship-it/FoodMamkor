@@ -4,6 +4,8 @@ import { notFound } from "next/navigation";
 import { MagnifyingGlass, Heart, ArrowRight, Leaf } from "@phosphor-icons/react";
 import { Button, Input, Card, Badge, Heading, Link } from "@/components/ui";
 import ShowMore from "@/components/ui/ShowMore";
+import Select from "@/components/ui/Select";
+import Textarea from "@/components/ui/Textarea";
 import { useTranslations } from "next-intl";
 
 /**
@@ -119,6 +121,20 @@ export default function DevComponentsPage() {
           <Input type="search" label="חיפוש" placeholder="מה בא לך לאכול?" />
           <Input type="text" label="שדה שגוי" defaultValue="??" error="יש להזין לפחות 3 אותיות" />
           <Input type="text" label="מושבת" placeholder="לא ניתן לעריכה" disabled />
+          {/* MEH-3136: compact sizes, the inline form, Select and Textarea. */}
+          <Input size="sm" type="text" label="שדה קטן (sm)" placeholder="שם המוצר" />
+          <Input size="sm" type="text" label="שדה קטן שגוי" defaultValue="?" error="יש להזין לפחות 3 אותיות" />
+          <div className="flex items-center gap-2">
+            <Input inline size="xs" type="time" aria-label="משעה" className="numeric" defaultValue="08:00" />
+            <Input inline size="xs" type="time" aria-label="עד שעה" className="numeric" defaultValue="14:00" />
+            <Input inline size="xs" type="number" aria-label="כמות" className="w-20" defaultValue="3" />
+          </div>
+          <Select label="אזור" defaultValue="center" helperText="בחירה אחת">
+            <option value="north">צפון</option>
+            <option value="center">מרכז</option>
+          </Select>
+          <Textarea label="הערה" placeholder="כמה מילים" helperText="עד 300 תווים" />
+          <Textarea label="הערה שגויה" defaultValue="…" error="ארוך מדי" />
           {/* MEH-1128 D1: startAdornment (currency + icon) and success state. */}
           <Input type="number" dir="ltr" className="text-end" label="מחיר" placeholder="49" startAdornment="₪" />
           <Input type="search" label="יישוב" placeholder="חפשו עיר…" startAdornment={<MagnifyingGlass size={16} aria-hidden="true" />} />

@@ -24,7 +24,9 @@ part (noted in the row) — read the guard's header. Full rules: `docs/DESIGN.md
 | Need | Owner | Guard |
 |---|---|---|
 | Filled / outlined / destructive action | `ui/Button.jsx` | `ButtonPrimitiveGuard`, `ActionShapeGuard` (pill shape) |
-| Text field with label + error | `ui/Input.jsx` | `HandWrittenRatchet` (no new raw text field), `FieldLookGuard` (look) |
+| Text field: labelled (`md`), compact (`size="sm"`/`"xs"`), in a row (`inline`) | `ui/Input.jsx` | `HandWrittenRatchet` (no new raw text field), `FieldLookGuard` (look) |
+| Dropdown · multi-line text, same label + error wiring | `ui/Select.jsx`, `ui/Textarea.jsx` | `FieldLookGuard` (look) |
+| Field look + label shell behind those three (don't use directly in a page) | `ui/field.jsx` | — |
 | Centred modal (focus trap: `hooks/useDialogFocus.js`) | `ui/Dialog.jsx` | `DialogContractGuard` |
 | Error / «נשמר» message inside a page or form | `ui/InlineMessage.jsx` | `InlineMessageGuard` |
 | Transient toast (`showToast.*`) | `lib/toast.js`, `Toaster.jsx` | — |

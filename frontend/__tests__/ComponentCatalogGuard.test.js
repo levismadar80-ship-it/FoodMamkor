@@ -46,7 +46,11 @@ describe("components/CLAUDE.md shared-component table", () => {
 
   it("ui/index.js re-exports every component in the folder", () => {
     const barrel = fs.readFileSync(path.join(ROOT, "components", "ui", "index.js"), "utf8");
-    const components = uiFiles().filter((f) => f.endsWith(".jsx")).map((f) => f.replace(/\.jsx$/, ""));
+    // A component file is one with a default export (field.jsx holds helpers).
+    const components = uiFiles()
+      .filter((f) => f.endsWith(".jsx"))
+      .filter((f) => /^export default /m.test(fs.readFileSync(path.join(ROOT, "components", "ui", f), "utf8")))
+      .map((f) => f.replace(/\.jsx$/, ""));
     expect(components.length).toBeGreaterThan(0);
     const missing = components.filter((n) => !new RegExp(`default as ${n} \\} from "\\./${n}"`).test(barrel));
     expect(missing, "add to components/ui/index.js").toEqual([]);

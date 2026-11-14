@@ -28,3 +28,5 @@ export { default as RatingCompact } from "./RatingCompact";
 export { default as SectionHeading } from "./SectionHeading";
 export { default as ShowMore } from "./ShowMore";
 export { default as Switch } from "./Switch";
+export { default as Select } from "./Select";
+export { default as Textarea } from "./Textarea";

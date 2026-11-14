@@ -2,6 +2,7 @@
 
 import { useId } from "react";
 import { Check } from "@phosphor-icons/react";
+import { fieldClasses, FieldShell } from "./field";
 
 /**
  * Input — labelled text field primitive (MEH-602).
@@ -13,7 +14,17 @@ import { Check } from "@phosphor-icons/react";
  *           and passes `error` text when a field is invalid.
  * Related:  globals.css (.focus-ring), tokens (border, surface-card, fg-muted).
  * History:  MEH-602 (creation); MEH-1128 D1 (startAdornment + success —
- *           default path byte-identical, locked by ui-Input.test.jsx snapshots).
+ *           default path byte-identical, locked by ui-Input.test.jsx snapshots);
+ *           MEH-3136 (size sm/xs + inline, for the compact fields that were
+ *           hand-written because only the 44px "md" field existed).
+ *
+ * Sizes  : md (default, 44px, the labelled form field) | sm (px-3 py-2
+ *          text-sm) | xs (px-2 py-1 text-sm, a control inside a row). sm/xs
+ *          take their look from ui/field.jsx and do not support
+ *          startAdornment / success.
+ * inline : render the bare <input> with no wrapper and no w-full, for a field
+ *          inside a row; the caller sets the width in className and gives it
+ *          an aria-label (or a <label htmlFor> of its own).
  *
  * Types  : text | email | tel | search (any native type passes through)
  * States : default | focus | error | success | disabled
@@ -63,6 +74,8 @@ export default function Input({
   // aria-required is needed; the span is aria-hidden so readers do not
   // additionally hear "star".
   required = false,
+  size = "md",
+  inline = false,
   ...rest
 }) {
   const autoId = useId();
@@ -73,6 +86,33 @@ export default function Input({
   const showSuccess = !hasError && !!success;
   const successMessage = showSuccess && successText;
   const message = error || successMessage || helperText;
+
+  // MEH-3136: the compact sizes and the inline form. The "md" block below is
+  // untouched so its class string and DOM stay byte-identical.
+  if (size !== "md" || inline) {
+    const compact = (
+      <input
+        id={inputId}
+        type={type}
+        disabled={disabled}
+        required={required || undefined}
+        aria-invalid={hasError || undefined}
+        aria-describedby={message ? describedById : undefined}
+        className={
+          size === "md"
+            ? `min-h-touch rounded-sm border bg-surface-card px-3 text-text placeholder:text-fg-muted focus-ring ${hasError ? "border-error" : "border-border"} disabled:opacity-50 disabled:cursor-not-allowed ${className}`.trim()
+            : `${fieldClasses({ size, invalid: hasError, block: !inline })} ${className}`.trim()
+        }
+        {...rest}
+      />
+    );
+    if (inline && !label && !message) return compact;
+    return (
+      <FieldShell id={inputId} label={label} required={required} message={message} describedById={describedById} invalid={hasError}>
+        {compact}
+      </FieldShell>
+    );
+  }
 
   const inputEl = (
     <input

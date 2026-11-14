@@ -112,8 +112,8 @@ describe("hand-written copies of a shared component only shrink", () => {
     expect(rawTextFields('<input type="time" className={TIME_INPUT_CLASS} />')).toBe(1);
     expect(rawTextFields('<input className="sr-only" />')).toBe(0);
     expect(rawTextFields('<Input type="text" className="border" />')).toBe(0);
-    // anchored to a real file: the shared owner itself holds exactly one.
-    expect(rawTextFields(fs.readFileSync(path.join(ROOT, "components/ui/Input.jsx"), "utf8"))).toBe(1);
+    // anchored to a real file: the shared owner holds two (md, and compact/inline).
+    expect(rawTextFields(fs.readFileSync(path.join(ROOT, "components/ui/Input.jsx"), "utf8"))).toBe(2);
     expect(Object.keys(now.fields).length).toBeGreaterThan(0);
   });
 
