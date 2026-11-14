@@ -29,7 +29,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { Leaf, Clock, CookingPot, Users, Check, CaretLeft } from "@phosphor-icons/react";
+import { Leaf, Clock, CookingPot, Users, Check, CaretLeft, Minus, Plus } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation"; // MEH-2543: next/link dropped the /en prefix
 import { optimizeCloudinary, IMAGE_RATIOS } from "@/lib/cloudinary";
@@ -42,6 +42,7 @@ import Seed from "@/components/brand/Seed"; // MEH-2844
 import HistoryBackLink from "@/components/HistoryBackLink"; // MEH-2857
 import { seedColorFor } from "@/lib/brand-seeds";
 import { splitRecipeLines } from "@/lib/recipe-lines"; // MEH-2540
+import { MAX_SERVINGS, MIN_SERVINGS, clampServings, scaleRecipeLine } from "@/lib/recipe-scale"; // MEH-3121
 import { formatPriceRange } from "@/lib/utils";
 import SectionHeading from "@/components/ui/SectionHeading";
 import BackLink from "@/components/ui/BackLink";
@@ -66,6 +67,45 @@ function FactTile({ icon: Icon, label, value }) {
   );
 }
 
+// MEH-3121: − n + for the number of servings. 44px buttons; the number is
+// announced when it changes.
+function ServingsStepper({ value, onChange, t }) {
+  const btn =
+    "w-11 h-11 grid place-items-center rounded-full border border-border text-text hover:border-primary focus-ring disabled:opacity-40 disabled:hover:border-border";
+  return (
+    <div className="mb-2 flex items-center justify-between gap-3" data-testid="servings-stepper">
+      <span className="text-base font-medium text-text">{t("servings_stepper_label")}</span>
+      <div className="flex items-center gap-2">
+        <button
+          type="button"
+          className={btn}
+          aria-label={t("servings_less")}
+          disabled={value <= MIN_SERVINGS}
+          onClick={() => onChange(clampServings(value - 1))}
+        >
+          <Minus size={18} weight="bold" aria-hidden="true" />
+        </button>
+        <span
+          className="min-w-8 text-center text-lg font-bold text-text tabular-nums"
+          aria-live="polite"
+          data-testid="servings-value"
+        >
+          {value}
+        </span>
+        <button
+          type="button"
+          className={btn}
+          aria-label={t("servings_more")}
+          disabled={value >= MAX_SERVINGS}
+          onClick={() => onChange(clampServings(value + 1))}
+        >
+          <Plus size={18} weight="bold" aria-hidden="true" />
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function RecipeDetail({ recipe, producer, relatedProducts }) {
   const t = useTranslations("recipes.detail");
   const ingredients = splitRecipeLines(recipe.ingredients);
@@ -85,6 +125,14 @@ export default function RecipeDetail({ recipe, producer, relatedProducts }) {
       : `${window.location.origin}${window.location.pathname}`;
 
   const [checked, setChecked] = useState(() => new Set());
+  // MEH-3121: the reader can change the number of servings; the amount each
+  // line starts with follows. Only when the recipe states its servings.
+  const baseServings = recipe.servings ? clampServings(recipe.servings) : null;
+  const [servings, setServings] = useState(baseServings);
+  const scaled = baseServings !== null && servings !== baseServings;
+  const shownIngredients = scaled
+    ? ingredients.map((line) => scaleRecipeLine(line, servings / baseServings))
+    : ingredients;
   const toggleIngredient = (i) =>
     setChecked((prev) => {
       const next = new Set(prev);
@@ -216,8 +264,11 @@ export default function RecipeDetail({ recipe, producer, relatedProducts }) {
               <SectionHeading size="content" className="mb-3">
                 {t("ingredients_heading")}
               </SectionHeading>
+              {baseServings !== null && (
+                <ServingsStepper value={servings} onChange={setServings} t={t} />
+              )}
               <ul className="divide-y divide-border">
-                {ingredients.map((line, i) => {
+                {shownIngredients.map((line, i) => {
                   const on = checked.has(i);
                   return (
                     <li key={i}>
@@ -243,6 +294,11 @@ export default function RecipeDetail({ recipe, producer, relatedProducts }) {
                   );
                 })}
               </ul>
+              {scaled && (
+                <p className="mt-3 text-sm text-fg-muted" data-testid="servings-note">
+                  {t("servings_note", { n: servings })}
+                </p>
+              )}
             </section>
           )}
 
