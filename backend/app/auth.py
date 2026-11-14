@@ -236,9 +236,15 @@ def decode_lapsed_producer_claim_token(token: str) -> UUID | None:
     if claims.get("scope") != PRODUCER_CLAIM_SCOPE:
         return None
     exp = claims.get("exp")
-    if isinstance(exp, bool) or not isinstance(exp, (int, float)) or not math.isfinite(exp):
+    if (
+        isinstance(exp, bool)
+        or not isinstance(exp, (int, float))
+        or not math.isfinite(exp)
+    ):
         return None
-    oldest = datetime.now(timezone.utc) - timedelta(days=PRODUCER_CLAIM_RENEW_GRACE_DAYS)
+    oldest = datetime.now(timezone.utc) - timedelta(
+        days=PRODUCER_CLAIM_RENEW_GRACE_DAYS
+    )
     if exp < oldest.timestamp():
         return None
     try:

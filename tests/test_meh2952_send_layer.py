@@ -509,6 +509,10 @@ def _notifier_calls():
             lambda tc: an.notify_admin_producer_resubmit("x", "c", test_cause=tc),
         ),
         (
+            "claim_link_requested",
+            lambda tc: an.notify_admin_claim_link_requested("x", "c", test_cause=tc),
+        ),
+        (
             "review_ready",
             lambda tc: an.notify_admin_producer_review_ready("x", "c", test_cause=tc),
         ),
@@ -1049,6 +1053,17 @@ PINNED: dict[tuple[str, str, str], tuple[int, str, str]] = {
         BUS,
         "same",
     ),
+    # MEH-3122: the owner of a draft asked for a new claim link.
+    (
+        "services/auth_notifications.py",
+        "notify_admin_claim_link_requested",
+        "send_text",
+    ): (1, BUS, "wrapper param ← producer.is_test"),
+    (
+        "services/auth_notifications.py",
+        "notify_admin_claim_link_requested",
+        "send_email",
+    ): (1, BUS, "same"),
     ("services/auth_notifications.py", "notify_admin_producer_resubmit", "send_text"): (
         1,
         BUS,

@@ -315,14 +315,18 @@ def notify_admin_claim_link_requested(
     )
     try:
         if settings.admin_whatsapp_to:
-            if not send_text(settings.admin_whatsapp_to, message, test_cause=test_cause):
+            if not send_text(
+                settings.admin_whatsapp_to, message, test_cause=test_cause
+            ):
                 logger.warning(
                     f"[WHATSAPP] Claim-link request NOT delivered for '{safe_name}'"
                 )
         else:
             logger.debug(f"[WHATSAPP] Would send: {message}")
     except Exception as e:  # noqa: BLE001 — fire-and-forget, log with context
-        logger.error(f"[NOTIFY] Claim-link request WhatsApp FAILED for '{safe_name}': {e}")
+        logger.error(
+            f"[NOTIFY] Claim-link request WhatsApp FAILED for '{safe_name}': {e}"
+        )
     try:
         if settings.admin_email:
             send_email(settings.admin_email, subject, message, test_cause=test_cause)
