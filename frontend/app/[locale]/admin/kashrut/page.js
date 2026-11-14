@@ -348,7 +348,7 @@ export default function AdminKashrutPage() {
               max={israelDateOffset(400)}
               value={approveDate}
               onChange={(e) => setApproveDate(e.target.value)}
-              className="w-full"
+              className="w-full min-h-touch"
             />
             <p className="text-xs text-fg-muted mt-2">{t("kashrut.approve_modal.hint")}</p>
             <div className="flex gap-3 mt-4">

@@ -463,7 +463,7 @@ function Field({ id, label, value, onChange, type = "text", dir, placeholder }) 
       <label className="block text-sm text-muted mb-1" htmlFor={id}>
         {label}
       </label>
-      <Input inline size="md"
+      <Input inline size="sm"
         id={id}
         data-testid={id}
         type={type}
@@ -471,7 +471,7 @@ function Field({ id, label, value, onChange, type = "text", dir, placeholder }) 
         placeholder={placeholder}
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full"
+        className="w-full min-h-touch"
       />
     </div>
   );

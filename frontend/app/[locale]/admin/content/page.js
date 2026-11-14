@@ -205,7 +205,7 @@ function CategoryRow({ cat, onSave, onDelete, saving }) {
         readOnly={locked}
         title={locked ? t("content.categories.system_hint") : undefined}
         data-testid={`category-name-${cat.id}`}
-        className={`flex-1 min-w-[10rem] ${locked ? "bg-accent text-muted cursor-not-allowed" : ""}`.trim()}
+        className={`flex-1 min-w-[10rem] ${locked ? "!bg-accent !text-muted cursor-not-allowed" : ""}`.trim()}
       />
       {/* MEH-1034: per-row producer count (the editor is a list, not a table). */}
       <span className="text-xs text-muted whitespace-nowrap">
