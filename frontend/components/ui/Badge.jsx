@@ -45,6 +45,7 @@ const SIZE_CLASSES = {
   sm: "text-2xs px-1.5 py-0.5",
 };
 
+/** @param {{ variant?: string, size?: string, tooltip?: import("react").ReactNode, className?: string, children?: import("react").ReactNode }} props */
 export default function Badge({
   variant = "muted",
   size = "md",

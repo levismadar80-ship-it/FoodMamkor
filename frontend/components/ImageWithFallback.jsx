@@ -13,6 +13,22 @@ import { optimizeCloudinary } from "@/lib/cloudinary";
  * fails to load. Also auto-optimizes Cloudinary URLs (f_auto,q_auto).
  *
  * Props match next/image; `fill` and fixed sizes both supported.
+ *
+ * @param {{
+ *   src?: string,
+ *   alt?: string,
+ *   fill?: boolean,
+ *   width?: number,
+ *   height?: number,
+ *   sizes?: string,
+ *   className?: string,
+ *   style?: import("react").CSSProperties,
+ *   priority?: boolean,
+ *   aspectRatio?: string,
+ *   optimizeWidth?: number,
+ *   seedKey?: string | number,
+ *   [key: string]: unknown,
+ * }} props — every other prop is forwarded to next/image.
  */
 export default function ImageWithFallback({
   src,

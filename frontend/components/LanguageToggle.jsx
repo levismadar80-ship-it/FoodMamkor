@@ -38,6 +38,8 @@ import { useRouter, usePathname } from "@/i18n/navigation";
  *           LanguageProvider shim that was its only reader. That shim
  *           redirected on mount to the saved locale, which also bounced a
  *           visitor off a shared link in the other language).
+ *
+ * @param {{ variant?: string, className?: string, children?: import("react").ReactNode }} props
  */
 export default function LanguageToggle({ variant = "default", className = "", children }) {
   const t = useTranslations("nav");

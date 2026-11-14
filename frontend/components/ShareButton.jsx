@@ -32,6 +32,7 @@ const ARIA_LABEL_KEY = {
   organizer: "modal_title_organizer", // MEH-3018
 };
 
+/** @param {{ url?: string, title?: string, description?: string, city?: string, category?: string, variant?: "default"|"quiet"|"overlay"|"outline", subject?: "business"|"event"|"experience"|"recipe"|"organizer" }} props */
 export default function ShareButton({
   url,
   title,

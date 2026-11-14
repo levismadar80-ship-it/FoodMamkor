@@ -19,11 +19,12 @@ const LOCALE_TAG = { he: "he-IL", en: "en-US" };
 
 // Default = the event-card signature EventsClient renders for both events
 // and experiences (one EntryRow since the route-as-tab merge).
+/** @type {Intl.DateTimeFormatOptions} */
 const DEFAULT_OPTIONS = { weekday: "long", day: "numeric", month: "long" };
 
 /**
  * Format an ISO date string in the active locale.
- * @param {string} iso - ISO date string (or empty/nullish → "").
+ * @param {string | Date} iso - ISO date string or a Date (empty/nullish → "").
  * @param {string} locale - next-intl locale from useLocale() ("he" | "en").
  * @param {Intl.DateTimeFormatOptions} [options] - defaults to weekday/day/month long.
  * @returns {string}
@@ -38,7 +39,8 @@ export function formatEventDate(iso, locale, options = DEFAULT_OPTIONS) {
     if (Number.isNaN(d.getTime())) return "";
     return d.toLocaleDateString(LOCALE_TAG[locale] ?? "he-IL", options);
   } catch {
-    return iso;
+    // A Date input must still come back as a string, per @returns.
+    return String(iso);
   }
 }
 
@@ -48,6 +50,7 @@ export function formatEventDate(iso, locale, options = DEFAULT_OPTIONS) {
 //   dayMonth → 5 בנובמבר        (vacation return, special opening days)
 //   long     → יום חמישי, 5 בנובמבר (event signature)
 //   dateTime → 05.11.2026, 10:07 (admin "waiting since" tooltips)
+/** @type {Record<string, Intl.DateTimeFormatOptions>} */
 const STYLES = {
   numeric: { day: "2-digit", month: "2-digit", year: "numeric" },
   dayMonth: { day: "numeric", month: "long" },

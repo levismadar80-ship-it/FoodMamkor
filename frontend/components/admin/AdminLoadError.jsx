@@ -27,6 +27,8 @@ import { useTranslations } from "next-intl";
  * Copy is deliberately REUSED, not minted: `admin.common.error_loading` and
  * `error.retry` are both existing approved strings, so this ships no new Hebrew
  * copy and needs no copy ruling.
+ *
+ * @param {{ onRetry?: () => void, testId?: string, message?: import("react").ReactNode }} props
  */
 export default function AdminLoadError({ onRetry, testId = "admin-load-error", message }) {
   const t = useTranslations();

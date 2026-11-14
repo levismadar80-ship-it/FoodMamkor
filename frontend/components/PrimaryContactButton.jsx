@@ -23,6 +23,7 @@ import { trackPrimaryCtaClick } from "@/lib/contact-tracking";
 // MEH-2813: colour + icon per method live in ContactCtaVariants.jsx, shared
 // with the sticky bar so the two CTAs cannot drift apart again.
 
+/** @param {{ producer: import("@/types/entities").ProducerSummary, onClick?: (e: import("react").MouseEvent) => void }} props */
 export default function PrimaryContactButton({ producer, onClick }) {
   const t = useTranslations();
   const method = getPrimaryMethod(producer);
