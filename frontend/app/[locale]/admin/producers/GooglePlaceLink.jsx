@@ -28,6 +28,7 @@
 import { useState } from "react";
 import api from "@/lib/api";
 import InlineMessage from "@/components/ui/InlineMessage";
+import Input from "@/components/ui/Input";
 
 // Mirrors routers/google_rating.py MIN_REVIEWS and ProducerForm.jsx.
 const GOOGLE_MIN_REVIEWS = 20;
@@ -141,13 +142,13 @@ export default function GooglePlaceLink({ producerId, placeId, onLinked }) {
               <label className="sr-only" htmlFor={`gpl-manual-${producerId}`}>
                 השם בגוגל או place_id
               </label>
-              <input
+              <Input inline size="md"
                 id={`gpl-manual-${producerId}`}
                 value={manual}
                 onChange={(e) => setManual(e.target.value)}
                 placeholder="השם בגוגל או place_id"
                 dir="auto"
-                className="min-w-0 flex-1 rounded-sm border border-border px-2.5 py-1.5 text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                className="min-w-0 flex-1"
               />
               <button
                 type="submit"

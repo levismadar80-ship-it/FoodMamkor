@@ -219,11 +219,11 @@ export default function AdminOutreachPage() {
 
       {/* Filters + add */}
       <div className="flex flex-col md:flex-row gap-3">
-        <input
+        <Input inline size="md"
           placeholder={t("outreach.filters.city_placeholder")}
           value={cityFilter}
           onChange={(e) => setCityFilter(e.target.value)}
-          className="flex-1 border border-border rounded-sm px-3 py-2 focus-ring"
+          className="flex-1"
         />
         <Button
           type="button"

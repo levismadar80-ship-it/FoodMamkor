@@ -12,6 +12,7 @@ import AdminRowMenu from "@/components/admin/AdminRowMenu";
 import AdminLoadError from "@/components/admin/AdminLoadError";
 import { SkeletonTable } from "@/components/Skeleton";
 import Button from "@/components/ui/Button";
+import Input from "@/components/ui/Input";
 
 export default function AdminUsersPage() {
   const t = useTranslations("admin");
@@ -128,12 +129,12 @@ export default function AdminUsersPage() {
       </div>
 
       <div className="flex flex-col md:flex-row gap-3">
-        <input
+        <Input inline size="md"
           placeholder={t("users.search_placeholder")}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && searchUsers()}
-          className="flex-1 border border-border rounded-sm px-3 py-2 focus-ring"
+          className="flex-1"
         />
         <select
           value={role}
