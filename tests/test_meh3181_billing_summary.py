@@ -484,3 +484,23 @@ class TestGalleryCapability:
 
     def test_no_images_is_not_full(self):
         assert gallery_is_full(_Biz("free", None)) is False
+
+
+def test_the_start_billing_rule_in_the_price_doc_equals_the_code():
+    """docs/PRICING.md states the rule for people; the code owns the numbers.
+
+    Without this the doc (or a sentence copied from it) keeps the old numbers
+    when the rule changes: the mistake of 14/11, «חודשיים» typed into copy.
+    """
+    import re
+    from pathlib import Path
+
+    doc = (Path(__file__).resolve().parents[1] / "docs" / "PRICING.md").read_text(
+        encoding="utf-8"
+    )
+    found = re.search(r"כש-(\d+) בתי עסק מגיעים לסף התוצאות (\d+) חודשים ברצף", doc)
+    assert found, "the start-billing rule line is missing from docs/PRICING.md"
+    assert (int(found.group(1)), int(found.group(2))) == (
+        billing_summary.START_BILLING_BUSINESSES,
+        billing_summary.START_BILLING_MONTHS,
+    )

@@ -5,6 +5,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
 import he from "../messages/he.json";
+import en from "../messages/en.json";
 
 // A plain function, not vi.fn: vitest tracks a spy's returned promise, and a
 // rejected one then fails the test even though the page catches it.
@@ -115,6 +116,40 @@ describe("AdminBillingPage (MEH-3182)", () => {
       "כרגע: 0 מתוך 10 בתי עסק",
     );
   });
+
+  it("every number in the rule comes from the server: other values give another sentence", async () => {
+    // Guards the mistake of 14/11: «חודשיים ברצף» was typed into the copy, so
+    // changing the rule on the server would have left the screen saying two.
+    get.mockResolvedValue({
+      data: {
+        ...overview([]),
+        threshold_agorot: 150000,
+        start_billing_businesses: 7,
+        start_billing_months: 3,
+      },
+    });
+    show();
+    await screen.findByTestId("admin-billing");
+    expect(screen.getByTestId("admin-billing-threshold").textContent).toBe(
+      "מתחילים לגבות כש-7 בתי עסק מקבלים דרך האתר הזמנות בתשלום של 1,500₪ ומעלה בחודש, 3 חודשים ברצף.",
+    );
+    expect(screen.getByTestId("admin-billing-two-months").textContent).toBe(
+      "כרגע: 0 מתוך 7 בתי עסק",
+    );
+  });
+
+  it.each(["he", "en"])(
+    "no digit is typed into a billing sentence (%s): numbers arrive as values",
+    (locale) => {
+      const messages = locale === "he" ? he : en;
+      const typed = Object.entries(messages.admin.billing).filter(([, text]) =>
+        /\d/.test(String(text)),
+      );
+      expect(typed).toEqual([]);
+      // The check sees a digit when one is there.
+      expect(/\d/.test("10 בתי עסק")).toBe(true);
+    },
+  );
 
   it("no screen sentence uses the word «סף»: a new admin reads amounts, not jargon", () => {
     // The check itself sees the word when it is there.

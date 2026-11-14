@@ -64,7 +64,7 @@ class BillingOverviewOut(BaseModel):
     threshold_agorot: int
     businesses_over_threshold: int
     businesses_over_two_months: int
-    # How many businesses two months in a row is the signal to start billing.
+    # How many businesses, that many months in a row, is the signal to start billing.
     start_billing_businesses: int
     # ...and how many months in a row each of them has to reach the amount.
     start_billing_months: int
