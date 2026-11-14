@@ -4,6 +4,7 @@ import ProducersClient from "@/components/ProducersClient";
 import { SkeletonProducerGrid } from "@/components/Skeleton";
 import { clampPage } from "@/lib/pagination";
 import { API_URL, SITE_URL } from "@/lib/env";
+import { serverFetch } from "@/lib/server-fetch";
 import { buildAlternates, buildEntityTitle, OG_LOCALE } from "@/lib/i18n-seo";
 import { BRAND_NAME } from "@/lib/constants";
 import { RATING_SORT_THRESHOLD, isRatingSortEnabled } from "@/lib/rating-gate";
@@ -30,20 +31,21 @@ const PER_PAGE = 24;
 // stayed publicly visible. Changing either side alone re-opens the gap.
 const CATALOG_REVALIDATE_SECONDS = 30;
 
+// MEH-3193: a backend failure is an error, not an empty catalogue. Returning
+// {items: [], total: 0} here served "0 businesses" with a 200 — cached for
+// CATALOG_REVALIDATE_SECONDS and indexable — the class MEH-2101 removed from
+// the business page. Throwing reaches app/[locale]/error.js instead.
+// serverFetch adds the timeout + transient retry plain fetch lacked.
 async function fetchPage(page) {
   const offset = (page - 1) * PER_PAGE;
-  try {
-    const res = await fetch(
-      `${API_URL}/producers?limit=${PER_PAGE}&offset=${offset}`,
-      { next: { revalidate: CATALOG_REVALIDATE_SECONDS } },
-    );
-    if (!res.ok) return { items: [], total: 0 };
-    const total = Number(res.headers.get("x-total-count") || 0);
-    const items = await res.json();
-    return { items: Array.isArray(items) ? items : [], total };
-  } catch {
-    return { items: [], total: 0 };
-  }
+  const res = await serverFetch(
+    `${API_URL}/producers?limit=${PER_PAGE}&offset=${offset}`,
+    { next: { revalidate: CATALOG_REVALIDATE_SECONDS } },
+  );
+  if (!res.ok) throw new Error(`GET /producers ${res.status}`);
+  const total = Number(res.headers.get("x-total-count") || 0);
+  const items = await res.json();
+  return { items: Array.isArray(items) ? items : [], total };
 }
 
 /**

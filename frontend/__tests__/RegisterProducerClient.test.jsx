@@ -1869,3 +1869,46 @@ describe("STORY step — card preview (MEH-3074)", () => {
     expect(producer.images).toEqual([]);
   });
 });
+
+// MEH-3193: a failed GET /categories used to leave step 3 with no tiles and a
+// required choice nobody could make, with no message. Now step 3 says the list
+// did not load and offers a retry that refetches it.
+// DISCRIMINATION: against the old `.then(...)` with no catch, the failed block
+// never renders (and the rejection is unhandled), so the first findBy fails.
+describe("RegisterProducerClient — categories load failure (MEH-3193)", () => {
+  async function walkToCategory() {
+    await renderWizard();
+    await fillAccountToDetails();
+    fireEvent.change(ph("producer_name"), { target: { value: "העסק שלי" } });
+    fireEvent.change(ph("phone"), { target: { value: "0501234567" } });
+    fireEvent.change(screen.getByTestId("city"), { target: { value: "תל אביב" } });
+    fireEvent.click(screen.getByTestId("register-fulfilment-onsite"));
+    fireEvent.click(nextBtn()); // → CATEGORY
+  }
+
+  it("shows the load error + retry, and the retry refetches", async () => {
+    let failCategories = true;
+    api.get.mockImplementation((url) =>
+      url === "/categories" && failCategories
+        ? Promise.reject(new Error("network"))
+        : Promise.resolve({ data: [{ id: 1, name: "ביצים" }] }),
+    );
+    await walkToCategory();
+    const failed = await screen.findByTestId("register-categories-failed");
+    expect(within(failed).getByText("registration.list.load_error")).toBeInTheDocument();
+    const before = api.get.mock.calls.filter(([u]) => u === "/categories").length;
+    failCategories = false;
+    fireEvent.click(within(failed).getByText("errors.boundary.retry"));
+    await waitFor(() =>
+      expect(screen.queryByTestId("register-categories-failed")).not.toBeInTheDocument(),
+    );
+    expect(api.get.mock.calls.filter(([u]) => u === "/categories").length).toBe(before + 1);
+    expect(await screen.findByTestId("pick-category")).toBeInTheDocument();
+  });
+
+  it("no error block when the list loads", async () => {
+    await walkToCategory();
+    await screen.findByTestId("pick-category");
+    expect(screen.queryByTestId("register-categories-failed")).not.toBeInTheDocument();
+  });
+});

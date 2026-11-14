@@ -9,6 +9,10 @@ const api = axios.create({
   // parsing reads repeated bare keys; the bracketed form is silently ignored,
   // which would drop a multi-id category filter. Applies to every array param.
   paramsSerializer: { indexes: null },
+  // MEH-3193: no request waits forever. Before this, a stalled backend left
+  // /events, /experiences and /map on skeletons with no message (measured
+  // 20 s stall, 14/11); after 15 s the page's own error state takes over.
+  timeout: 15000,
 });
 
 // Attach JWT token to requests

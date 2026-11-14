@@ -303,6 +303,13 @@ function RegisterProducerPageBody({ routeKind }) {
   // photos) and its «what happens after» are about a business.
   const [showPreflight, setShowPreflight] = useState(!routeIsOrganizer);
   const [categories, setCategories] = useState([]);
+  // MEH-3193: a failed /categories left step 3 with no tiles and a required
+  // choice nobody could make. Now it says so and offers a retry.
+  const [categoriesFailed, setCategoriesFailed] = useState(false);
+  const loadCategories = () => {
+    setCategoriesFailed(false);
+    api.get("/categories").then((r) => setCategories(r.data)).catch(() => setCategoriesFailed(true));
+  };
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   // MEH-1769: false on the server AND on the first client render, raised only
@@ -526,7 +533,7 @@ function RegisterProducerPageBody({ routeKind }) {
   // submit. The producer case joins it (409 already_has_producer at submit).
 
   useEffect(() => {
-    api.get("/categories").then((r) => setCategories(r.data));
+    loadCategories();
     try {
       const saved = localStorage.getItem(DRAFT_KEY);
       if (saved) {
@@ -1463,6 +1470,14 @@ function RegisterProducerPageBody({ routeKind }) {
               aria-describedby={fieldErrors.category_ids ? "register-category-error" : undefined}
               className="focus-ring rounded-md"
             >
+              {categoriesFailed && (
+                <div data-testid="register-categories-failed" className="flex items-center gap-3 mb-3">
+                  <InlineMessage size="xs" className="text-start">{t("registration.list.load_error")}</InlineMessage>
+                  <Button type="button" variant="secondary" size="sm" onClick={loadCategories}>
+                    {t("errors.boundary.retry")}
+                  </Button>
+                </div>
+              )}
               <CategorySelector
                 categories={categories}
                 selectedIds={form.category_ids}
