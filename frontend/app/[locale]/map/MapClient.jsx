@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { cloneElement, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { CaretDown, MapPin, MapPinLine, Rows, X } from "@phosphor-icons/react";
 
@@ -352,8 +352,7 @@ export default function MapPage() {
     setMapMoved: filters.setMapMoved,
     setCommittedBounds: filters.setCommittedBounds,
     categories: feed.categories,
-    setAllProducers: feed.setAllProducers,
-    reportLoadFailure: feed.reportLoadFailure,
+    loadArea: feed.loadArea,
     setSheetSnap: hints.setSheetSnap,
   });
 
@@ -890,8 +889,10 @@ export default function MapPage() {
   // not an empty result. The condition is city-only on purpose — with a chip
   // also on, "the filters did this" is the true story and MEH-2425's
   // filtered-zero row (with its way out) is the right one.
+  // MEH-3198: a failed load is not a town with no businesses.
   const cityZero =
     !feed.loading &&
+    !feed.loadError &&
     filters.cityFilter.trim() !== "" &&
     !filters.hasNonCityFilters &&
     filters.visibleProducers.length === 0 &&
@@ -1214,7 +1215,9 @@ export default function MapPage() {
           loadError={feed.loadError}
           onRetry={feed.retry}
         >
-          {cardList}
+          {/* MEH-3198: the peek row above already shows the error + «נסו שוב»;
+              the list inside the sheet must not repeat them. */}
+          {cloneElement(cardList, { loadError: false, onRetry: null })}
         </MapBottomSheet>
       </div>
 

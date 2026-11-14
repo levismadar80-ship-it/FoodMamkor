@@ -15,11 +15,11 @@ import { cityParams } from "@/lib/map-city-params";
  * :129-133 (initial fetch effect that hydrates both producers and
  * categories), :217-227 (loadProducers helper with toast on error).
  *
- * The geo-search refetch in handleSearchThisArea (useMapSync) does
- * NOT route through loadProducers — it calls api.get("/producers", …)
- * directly because it needs to bypass the toast-on-error flow when
- * the geo bounds are degenerate. This is preserved verbatim from the
- * source (:423-426).
+ * The geo-search refetch in handleSearchThisArea (useMapSync) goes
+ * through loadArea below, not loadProducers: it never re-arms the
+ * loading flag (MAP-16), but it takes the same latest-wins ticket,
+ * the same schema check and the same failure path (MEH-3198). The
+ * degenerate-bounds guard (toast.info, no fetch) stays in useMapSync.
  */
 export function useProducersFeed({ readInitialParams = null } = {}) {
   const t = useTranslations();
@@ -28,9 +28,9 @@ export function useProducersFeed({ readInitialParams = null } = {}) {
   // MEH-1054 (MAP-16): additive loading flag so the bottom sheet can render
   // a skeleton instead of flashing "0 businesses" on first paint. Starts
   // true — the mount effect fires loadProducers immediately. NOTE: the
-  // geo-search refetch in useMapSync bypasses loadProducers (documented
-  // above) and deliberately does NOT toggle this flag — MAP-16 covers the
-  // initial-load flicker, not area re-queries over an already-drawn list.
+  // geo-search refetch (loadArea, documented above) deliberately never SETS
+  // this flag — MAP-16 covers the initial-load flicker, not area re-queries
+  // over an already-drawn list. It only clears it as the newest call.
   const [loading, setLoading] = useState(true);
   // MEH-2170: the mount catalog, captured ONCE from the first fetch — the
   // only request that is both unfiltered and not viewport-bounded. Never
@@ -46,8 +46,9 @@ export function useProducersFeed({ readInitialParams = null } = {}) {
   // shows an error with «נסו שוב» instead of "no businesses found", which
   // would read as "there are none". Cleared by the next successful load.
   const [loadError, setLoadError] = useState(false);
-  // MEH-3198: the params of the newest call, so «נסו שוב» repeats exactly it.
-  const lastParams = useRef({});
+  // MEH-3198: the newest list call (chip load or area search), so «נסו שוב»
+  // repeats exactly it.
+  const lastLoad = useRef(() => loadProducers({}));
 
   // MEH-779: a malformed payload degrades to the same state as a network
   // failure — empty list + toast — so the map never crashes on bad data.
@@ -67,7 +68,7 @@ export function useProducersFeed({ readInitialParams = null } = {}) {
 
   const loadProducers = (params = {}, { snapshot = false, then = null } = {}) => {
     const requestId = ++latestRequest.current;
-    if (!then) lastParams.current = params;
+    if (!then) lastLoad.current = () => loadProducers(params);
     const isLatest = () => requestId === latestRequest.current;
     setLoading(true);
     api
@@ -120,6 +121,36 @@ export function useProducersFeed({ readInitialParams = null } = {}) {
       });
   };
 
+  // MEH-3198: «חפשו באזור זה» (useMapSync). Takes a ticket like
+  // loadProducers, so an older area search can't overwrite a newer load's
+  // rows or error, and a newer area search supersedes an older chip load.
+  // It does not set `loading` (MAP-16: an area re-query over a drawn list
+  // shows no skeleton), but as the newest call it clears it, or a chip load
+  // it superseded would leave the skeleton on.
+  const loadArea = (params) => {
+    const requestId = ++latestRequest.current;
+    lastLoad.current = () => loadArea(params);
+    const isLatest = () => requestId === latestRequest.current;
+    api
+      .get("/producers", { params })
+      .then((r) => {
+        if (!isLatest()) return;
+        const parsed = ProducersResponseSchema.safeParse(r.data);
+        if (!parsed.success) {
+          handleLoadFailure(parsed.error.issues);
+          return;
+        }
+        setAllProducers(parsed.data);
+        setLoadError(false);
+      })
+      .catch((reason) => {
+        if (isLatest()) handleLoadFailure(reason);
+      })
+      .finally(() => {
+        if (isLatest()) setLoading(false);
+      });
+  };
+
   useEffect(() => {
     // MEH-2598: /map?has_delivery=1… (from the list's «הצגה במפה») — the
     // snapshot stays unfiltered; the filtered list follows it. Read from
@@ -151,21 +182,15 @@ export function useProducersFeed({ readInitialParams = null } = {}) {
 
   return {
     allProducers,
-    // MEH-3198: a list written from outside (the «חפשו באזור זה» refetch in
-    // useMapSync) is a new answer, so it ends the error state too.
-    setAllProducers: (next) => {
-      setLoadError(false);
-      setAllProducers(next);
-    },
+    setAllProducers,
     categories,
     loadProducers,
+    loadArea,
     loading,
     catalogSnapshot,
     snapshotPending,
     loadError,
-    // MEH-3198: a failed «חפשו באזור זה» refetch (useMapSync) is a failed load
-    // too, not "no businesses". «נסו שוב» then repeats the last list load.
-    reportLoadFailure: (reason) => handleLoadFailure(reason),
-    retry: () => loadProducers(lastParams.current),
+    // MEH-3198: «נסו שוב» repeats the newest list call, area search included.
+    retry: () => lastLoad.current(),
   };
 }

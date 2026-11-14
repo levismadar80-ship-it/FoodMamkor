@@ -1,7 +1,6 @@
 import { useCallback, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 
-import api from "@/lib/api";
 import { showToast } from "@/lib/toast";
 import { GeoSearchSchema, GEO_SEARCH_ERROR_KEYS } from "@/lib/schemas";
 import { boundsToCenterRadius } from "@/lib/map-chips";
@@ -61,8 +60,7 @@ export function useMapSync({
   setCommittedBounds,
   // from useProducersFeed
   categories,
-  setAllProducers,
-  reportLoadFailure,
+  loadArea,
   // from useFirstVisitHints
   setSheetSnap,
 }) {
@@ -295,11 +293,9 @@ export function useMapSync({
     if (process.env.NODE_ENV !== "production") {
       console.log("[חפשי באזור זה] GET /producers", params);
     }
-    api
-      .get("/producers", { params })
-      .then((r) => setAllProducers(r.data))
-      // MEH-3198: a failure shows the error + «נסו שוב», not "no businesses".
-      .catch((err) => (reportLoadFailure ? reportLoadFailure(err) : setAllProducers([])));
+    // MEH-3198: through the feed — latest-wins ticket, schema check, and a
+    // failure shows the error + «נסו שוב» (which repeats this query).
+    loadArea(params);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mapBounds, chipState, categories, cityFilter]);
 

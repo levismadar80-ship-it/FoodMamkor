@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { renderHook, act } from "@testing-library/react";
+import { renderHook, act, waitFor } from "@testing-library/react";
 import { useMapSync } from "@/app/[locale]/map/state/useMapSync";
 
 // MEH-1298: lock the desktop half of the tap-target fix — handleCardClick must
@@ -271,27 +271,28 @@ describe("useMapSync — a marker tap on a phone keeps the sheet at PEEK (MEH-31
   });
 });
 
-// MEH-3198: a failed «חפשו באזור זה» fetch is a failed load, not "no
-// businesses": it reports the failure (error + «נסו שוב») instead of writing
-// an empty list. Red on the pre-fix hook, which called setAllProducers([]).
-describe("useMapSync — a failed search-this-area fetch (MEH-3198)", () => {
-  it("reports the failure and does not write an empty list", async () => {
+// MEH-3198: «חפשו באזור זה» hands its query to the feed (loadArea), which
+// owns the latest-wins ticket, the schema check, the error flag and «נסו שוב»
+// (useProducersFeed.test.js covers those). This hook must not fetch the list
+// itself. Red on the pre-fix hook, which called api.get directly and never
+// called loadArea.
+describe("useMapSync — search-this-area goes through the feed (MEH-3198)", () => {
+  it("calls loadArea with the area query and require_physical, never api.get", async () => {
     const api = (await import("@/lib/api")).default;
-    api.get.mockImplementationOnce(() => Promise.reject(new Error("network")));
-    const reportLoadFailure = vi.fn();
+    api.get.mockClear();
+    const loadArea = vi.fn();
     const props = {
-      chipState: {}, cityFilter: null, buildParams: () => ({}),
+      chipState: {}, cityFilter: null, buildParams: () => ({ category: 3, delivery_city: "חיפה" }),
       setActiveProducerId: vi.fn(), setSelectedProducer: vi.fn(), setHoveredProducerId: vi.fn(),
       setMapMoved: vi.fn(), setCommittedBounds: vi.fn(), categories: [],
-      setAllProducers: vi.fn(), reportLoadFailure, setSheetSnap: vi.fn(),
+      loadArea, setSheetSnap: vi.fn(),
     };
     const { result } = renderHook(() => useMapSync(props));
-    await act(async () => {
-      result.current.handleSearchThisArea();
-      await Promise.resolve();
-      await Promise.resolve();
-    });
-    expect(reportLoadFailure).toHaveBeenCalledTimes(1);
-    expect(props.setAllProducers).not.toHaveBeenCalled();
+    act(() => result.current.handleSearchThisArea());
+    await waitFor(() => expect(loadArea).toHaveBeenCalledTimes(1));
+    // The mocked GeoSearchSchema returns data {}; the chip param rides along,
+    // delivery_city is dropped (a city answer, not "physically here").
+    expect(loadArea).toHaveBeenCalledWith({ category: 3, require_physical: true });
+    expect(api.get).not.toHaveBeenCalled();
   });
 });
