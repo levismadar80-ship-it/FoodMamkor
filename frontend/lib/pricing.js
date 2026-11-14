@@ -179,3 +179,18 @@ export const PRICING_COPY_KEYS = Object.freeze([
   "terms.sections.pricing.unpaid",
   "terms.sections.pricing.vat",
 ]);
+
+/**
+ * MEH-3219 (B16): pricing sentences that mention rescue bags each have a twin
+ * without them, used while the rescue-bag pilot is off. PricingCopyGuard
+ * fails when a `pricing.page` sentence mentions bags and is not listed here.
+ */
+export const RESCUE_COPY_KEYS = Object.freeze(["sub_fee", "counted_body", "early_body"]);
+
+/**
+ * @param {string} key a key under `pricing.page`
+ * @param {boolean} bagsOn `rescueBagsEnabled()`
+ */
+export function pricingCopyKey(key, bagsOn) {
+  return !bagsOn && RESCUE_COPY_KEYS.includes(key) ? `${key}_no_rescue` : key;
+}
