@@ -32,7 +32,7 @@ from __future__ import annotations
 
 import json
 from decimal import Decimal
-from typing import Any
+from typing import Any, cast
 
 import structlog
 
@@ -40,6 +40,7 @@ from app.config import AI_FAST_MODEL, ai_fast_request_kwargs, settings
 from app.services.moderation_prompt import wrap_submission
 from app.services.moderation_fail_open import classify_failure, report_fail_open
 from app.services.moderation_schemas import MODERATION_VERDICT_SCHEMA
+
 
 logger = structlog.get_logger(__name__)
 
@@ -51,10 +52,10 @@ VALID_STATUSES = {"APPROVED", "FLAGGED", "REJECTED"}
 
 # Module-level lazy-constructed client — the anthropic package may not even
 # be importable in some dev/test environments, so we defer the import.
-_client = None
+_client: Any = None
 
 
-def _get_client():
+def _get_client() -> Any:
     global _client
     if _client is not None:
         return _client
@@ -138,7 +139,7 @@ REJECTED אם:
     return system, user_content
 
 
-def _parse_response_text(text: str) -> dict:
+def _parse_response_text(text: str) -> dict[str, Any]:
     """Extract JSON from a Claude response. Tolerates whitespace, markdown
     code fences, and accidental prose around the JSON block."""
     text = text.strip()
@@ -151,10 +152,10 @@ def _parse_response_text(text: str) -> dict:
     end = text.rfind("}")
     if start >= 0 and end > start:
         text = text[start : end + 1]
-    return json.loads(text)
+    return cast(dict[str, Any], json.loads(text))
 
 
-def _safe_decimal(value) -> float | None:
+def _safe_decimal(value: object) -> float | None:
     if value is None:
         return None
     try:
@@ -166,7 +167,7 @@ def _safe_decimal(value) -> float | None:
         return None
 
 
-def validate_experience(payload: dict[str, Any]) -> dict:
+def validate_experience(payload: dict[str, Any]) -> dict[str, Any]:
     """Run the moderation check for a single experience submission.
 
     Returns a dict with keys:
