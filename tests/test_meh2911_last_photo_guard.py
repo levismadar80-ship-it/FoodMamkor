@@ -353,7 +353,8 @@ def test_the_client_pre_check_guards_exactly_the_same_statuses():
         / "producer"
         / "dashboard"
         / "edit"
-        / "cards.jsx"
+        / "cards"
+        / "ImagesCard.jsx"
     )
     source = card.read_text(encoding="utf-8")
 
@@ -364,7 +365,7 @@ def test_the_client_pre_check_guards_exactly_the_same_statuses():
         r"const LAST_PHOTO_GUARDED_STATUSES\s*=[^\[]*\[([^\]]*)\]", source
     )
     assert match, (
-        "cards.jsx no longer declares LAST_PHOTO_GUARDED_STATUSES with a "
+        "ImagesCard.jsx no longer declares LAST_PHOTO_GUARDED_STATUSES with a "
         "bracketed member list — either it was renamed (then the card may "
         "have lost the status condition entirely) or reformatted (then fix "
         "this regex)"
@@ -374,6 +375,6 @@ def test_the_client_pre_check_guards_exactly_the_same_statuses():
 
     assert from_card == set(LAST_PHOTO_GUARDED_STATUSES), (
         "the click-time guard and the API guard cover different statuses:\n"
-        f"  cards.jsx:      {sorted(from_card)}\n"
+        f"  ImagesCard.jsx: {sorted(from_card)}\n"
         f"  producer_me.py: {sorted(LAST_PHOTO_GUARDED_STATUSES)}"
     )
