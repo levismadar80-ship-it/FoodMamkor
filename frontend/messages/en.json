@@ -2436,7 +2436,12 @@
         "license_rename_error": "This category carries a Ministry of Health licensing requirement that is matched by name. Renaming it would drop that requirement for the businesses in it, so the rename belongs in a migration rather than the admin screen. The symbol can still be updated.",
         "name_taken_error": "A category with this name already exists",
         "system_badge": "System category",
-        "system_hint": "A system category's name and removal are set in code and change in a migration, not in the admin screen."
+        "system_hint": "A system category's name and removal are set in code and change in a migration, not in the admin screen.",
+        "license_question": "Does this category need a Ministry of Health manufacturer licence?",
+        "license_yes": "Yes, licence required",
+        "license_no": "No, not required",
+        "license_choose": "Choose whether this category needs a licence",
+        "license_badge": "Licence required"
       },
       "page_editor": {
         "title_placeholder": "Title",

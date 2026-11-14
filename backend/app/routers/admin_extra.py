@@ -45,6 +45,7 @@ from app.models.models import (
     ProducerRecipe,
 )
 from app.schemas.schemas import (
+    CategoryCreate,
     CategoryIn,
     CategoryOut,
     RiskScoreResponse,
@@ -311,7 +312,7 @@ def list_categories_admin(
 
 @router.post("/categories", response_model=CategoryOut, status_code=201)
 def create_category(
-    data: CategoryIn,
+    data: CategoryCreate,
     user: User = Depends(require_admin),
     db: Session = Depends(get_db),
 ) -> CategoryOut | Category:
@@ -327,6 +328,7 @@ def create_category(
         name=data.name,
         emoji=data.emoji,
         slug=resolve_unique_slug(db, data.name),
+        requires_license=data.requires_license,  # MEH-3255
     )
     db.add(cat)
     # MEH-2139: `resolve_unique_slug` above is a SELECT and this is the INSERT,

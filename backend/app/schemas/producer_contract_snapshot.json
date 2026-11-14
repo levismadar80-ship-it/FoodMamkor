@@ -193,6 +193,7 @@
       "is_system",
       "name",
       "producer_count",
+      "requires_license",
       "slug"
     ],
     "ProducerDetailOut.delivery_areas": [
@@ -254,6 +255,7 @@
       "is_system",
       "name",
       "producer_count",
+      "requires_license",
       "slug"
     ],
     "ProducerListOut.delivery_areas": [
