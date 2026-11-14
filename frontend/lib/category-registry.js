@@ -153,7 +153,7 @@ export function categoryGlyphKey(category) {
  * bare index happened to return `undefined`.
  *
  * @param {string|{name?: string, slug?: string}|null|undefined} category
- * @returns {{glyph: Function, isFallback: boolean}}
+ * @returns {{glyph: import("react").ElementType, isFallback: boolean}}
  */
 export function resolveCategoryGlyph(category) {
   const key = categoryGlyphKey(category);
