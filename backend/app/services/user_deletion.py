@@ -27,6 +27,7 @@ from app.models.models import (
     Report,
 )
 from app.services import retired_slugs  # MEH-2528
+from app.services.rescue_no_show import record_tombstones  # MEH-3225
 from app.services.group_buy_delist import (  # MEH-2503
     cancel_live_group_buys,
     withdraw_user_commits,
@@ -46,6 +47,8 @@ def delete_user_and_data(
     (``auth.delete_account`` / ``admin.delete_user``).
     """
     producer_id = user.producer_id
+    # MEH-3225: the no-show block outlives the account (hashed email only).
+    record_tombstones(db, user)
 
     # MEH-1150: capture the OTHER businesses this user has reviewed BEFORE the
     # cascade runs. ProducerReview.user_id is ondelete=CASCADE (models.py), so

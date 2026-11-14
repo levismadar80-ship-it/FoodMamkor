@@ -47,6 +47,7 @@ from app.models.models import (
     StaticPage,
     User,
 )
+from app.models.rescue_no_show_tombstone import RescueNoShowTombstone  # MEH-3225
 
 __all__ = [
     "Producer",
@@ -72,6 +73,7 @@ __all__ = [
     "RESCUE_MAX_QTY_PER_OFFER",
     "RESCUE_MAX_QTY_PER_ORDER",
     "RetiredSlug",
+    "RescueNoShowTombstone",
     "SavedItem",
     "SAVED_ITEM_TYPES",
     "StaticPage",
