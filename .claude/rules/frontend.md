@@ -77,6 +77,33 @@ by `next dev` and gitignored, so a fresh clone does not have it.
 
 ---
 
+## Shared helpers — search `frontend/lib` before you write one
+
+Formatting, links and validation each have ONE owner. Import it; a second
+`toLocaleDateString`, `wa.me/` builder or phone regex is the bug. When none
+fits, extend the owner. `SharedHelpersTableGuard.test.js` fails when a file or
+export named here no longer exists.
+
+| Need | Owner (`frontend/lib/`) | Exports |
+|---|---|---|
+| Print a date | `format-date.js` | `formatDate`, `formatEventDate` |
+| "Today" in Israel time | `israel-date.js` | `israelToday` |
+| Price, price range | `utils.js` | `formatPrice`, `formatPriceRange` |
+| Phone: normalise · validate | `utils.js` · `validators.js` | `normalizePhone` · `validateIsraeliPhone` |
+| Email / password rules | `validators.js` | `validateEmail`, `passwordRules` |
+| WhatsApp link | `utils.js` | `getWhatsAppHref` |
+| A business's contact button (href, label) | `contact-method.js` | `getPrimaryContactHref`, `getPrimaryContactLabel` |
+| Opening hours: parse, open-now | `hours.js` | `parseHours`, `computeStatus` |
+| Distance in km | `distance.js` | `haversineKm`, `formatDistance` |
+| Share / copy a link | `share-link.js` · `clipboard.js` | `shareOrCopy` · `copyText` |
+| API error → Hebrew message / toast | `errors.js` | `detailToMessage`, `showErrorToast` |
+| Toast | `toast.js` | `showToast` |
+| Login link that returns here · safe redirect target | `safe-redirect.js` | `loginHrefBackHere`, `safeInternalRedirect` |
+| Image URL / ratio | `cloudinary.js` | `optimizeCloudinary`, `IMAGE_RATIOS` |
+| Fetch in a server component | `server-fetch.js` | `serverFetch` |
+
+---
+
 ## Cloudinary
 
 All image URLs go through `lib/cloudinary.js`. The helper injects
