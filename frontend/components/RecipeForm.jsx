@@ -59,7 +59,7 @@ function toInt(v) {
 
 // MEH-3138: emailUnverified (from the page's useAuth) shows the verify notice
 // up front, before the form is filled — same pattern as EventForm (MEH-2918).
-/** @param {{ mode?: "create"|"edit", initial?: any, onSaved?: (...args: any[]) => any, onCancel?: (...args: any[]) => any, emailUnverified?: boolean }} props */
+/** @param {{ mode?: "create"|"edit", initial?: Record<string, unknown>, onSaved?: (recipe: object) => void, onCancel?: () => void, emailUnverified?: boolean }} props */
 export default function RecipeForm({ mode = "create", initial, onSaved, onCancel, emailUnverified = false }) {
   const t = useTranslations("recipes.form");
   // MEH-848: shared generic error copy (collapsed from recipes.form.errors.generic).

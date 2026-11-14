@@ -56,7 +56,7 @@ import {
  *   label?: string,
  *   value: string,
  *   onChange: (text: string) => void,
- *   onSelect?: (picked: any) => void,
+ *   onSelect?: (picked: { street?: string, neighborhood?: string, city?: string, postcode?: string, lat?: number, lng?: number, displayName?: string }) => void,
  *   placeholder?: string,
  *   className?: string,
  *   inputTestId?: string,

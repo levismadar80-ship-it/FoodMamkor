@@ -27,8 +27,8 @@ import { optimizeCloudinary } from "@/lib/cloudinary";
  *   aspectRatio?: string,
  *   optimizeWidth?: number,
  *   seedKey?: string | number,
- *   [key: string]: any,
- * }} props — any other prop is forwarded to next/image.
+ *   [key: string]: unknown,
+ * }} props — every other prop is forwarded to next/image.
  */
 export default function ImageWithFallback({
   src,

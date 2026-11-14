@@ -65,7 +65,7 @@ const SKELETON_TONES = {
  *   tone="page"    bg-background — the /map pane placeholder
  *   tone="none"    no fill — a pulsing container that carries its own content
  *
- * @param {{ as?: import("react").ElementType, tone?: "neutral"|"brand"|"page"|"none", className?: string, children?: import("react").ReactNode, [key: string]: any }} props
+ * @param {{ as?: import("react").ElementType, tone?: "neutral"|"brand"|"page"|"none", className?: string, children?: import("react").ReactNode, [key: string]: unknown }} props
  */
 export function SkeletonBlock({ as: Tag = "span", tone = "neutral", className = "", children, ...rest }) {
   return (

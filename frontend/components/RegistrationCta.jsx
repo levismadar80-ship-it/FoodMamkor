@@ -183,7 +183,7 @@ function SignupForm({ kind, itemId, onDone }) {
  * sticky phone bar (MEH-3043), so the two can never disagree. `null` = no
  * channel reaches anyone, so nothing renders anywhere.
  *
- * @param {{ method: string, phone?: string | null, url?: string | null, isFull?: boolean, waitlistHref?: string, title?: string, t: (key: string, values?: Record<string, any>) => string }} props
+ * @param {{ method: string, phone?: string | null, url?: string | null, isFull?: boolean, waitlistHref?: string, title?: string, t: (key: string, values?: Record<string, string | number>) => string }} props
  */
 function resolveAction({ method, phone, url, isFull, waitlistHref, title, t }) {
   const mobile = normalizePhone(phone);

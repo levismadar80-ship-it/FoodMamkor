@@ -310,7 +310,7 @@ function singlePointHandlers({ draggableMarker, onMarkerDragEnd, onExpand }) {
 // competes with that button in the parent's stacking context and wins: the
 // button stayed visible only over the grey not-yet-loaded area, and vanished as
 // soon as a pan or zoom put tiles under it — the overlay lost its only exit.
-/** @param {{ interactive?: boolean, onExpand?: (...args: any[]) => any, mapKey?: string, center: any, points?: any[], lat?: any, lng?: any, name?: string, fallbackLabel?: string, producer?: any, zoom?: number, draggableMarker?: boolean, onMarkerDragEnd?: (...args: any[]) => any }} props */
+/** @param {{ interactive?: boolean, onExpand?: () => void, mapKey?: string, center: { lat: number | string, lng: number | string }, points?: object[], lat?: number | string, lng?: number | string, name?: string, fallbackLabel?: string, producer?: import("@/types/entities").ProducerSummary, zoom?: number, draggableMarker?: boolean, onMarkerDragEnd?: (pos: { lat: number, lng: number }) => void }} props */
 function MapSurface({ interactive, onExpand, mapKey, center, points, lat, lng, name, fallbackLabel, producer, zoom, draggableMarker, onMarkerDragEnd }) {
   return (
     <MapContainer
@@ -398,7 +398,7 @@ function MapSurface({ interactive, onExpand, mapKey, center, points, lat, lng, n
  * opens a fullscreen overlay where every gesture works. All three consumers
  * (producer / events / experiences) get this through the unchanged props API.
  *
- * @param {{ lat?: number|string, lng?: number|string, name?: string, locations?: any[], producer?: any, zoom?: number, showNavigation?: boolean, draggableMarker?: boolean, onMarkerDragEnd?: (...args: any[]) => any }} props
+ * @param {{ lat?: number|string, lng?: number|string, name?: string, locations?: object[], producer?: import("@/types/entities").ProducerSummary, zoom?: number, showNavigation?: boolean, draggableMarker?: boolean, onMarkerDragEnd?: (pos: { lat: number, lng: number }) => void }} props
  */
 export default function MiniMap({
   lat,

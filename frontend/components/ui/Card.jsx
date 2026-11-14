@@ -45,7 +45,7 @@ const VARIANT_BORDER = {
   flat: "border-transparent",
 };
 
-/** @param {{ active?: boolean, onClick?: (...args: any[]) => any, href?: string, variant?: string, media?: import("react").ReactNode, overlay?: import("react").ReactNode, footer?: import("react").ReactNode, className?: string, children?: import("react").ReactNode }} props */
+/** @param {{ active?: boolean, onClick?: (e: import("react").MouseEvent) => void, href?: string, variant?: string, media?: import("react").ReactNode, overlay?: import("react").ReactNode, footer?: import("react").ReactNode, className?: string, children?: import("react").ReactNode }} props */
 export default function Card({
   active = false,
   onClick,

@@ -154,7 +154,7 @@ export default function CategorySelector({ categories, selectedIds, onChange, on
   // food / home-and-care groups with presentational subheaders. Every other
   // state (popular-6, active search) stays a flat grid with no headers.
   const grouped = !q && expanded;
-  /** @type {{ header?: string, key?: string, cat?: any }[]} */
+  /** @type {{ header?: string, key?: string, cat?: import("@/types/entities").CategoryRow }[]} */
   const gridItems = grouped
     ? [
         { header: t("group_food"), key: "grp-food" },

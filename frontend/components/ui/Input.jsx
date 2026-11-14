@@ -66,8 +66,10 @@ import { fieldClasses, FieldShell } from "./field";
  *   className?: string,
  *   disabled?: boolean,
  *   required?: boolean,
- *   [key: string]: any,
- * }} props — any other prop is forwarded to the native <input>.
+ *   size?: "xs" | "sm" | "md",
+ *   inline?: boolean,
+ *   [key: string]: unknown,
+ * }} props — every other prop is forwarded to the native <input>.
  */
 export default function Input({
   type = "text",

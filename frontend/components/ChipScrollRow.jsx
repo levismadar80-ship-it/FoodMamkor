@@ -102,7 +102,7 @@ const CHIP_ARROW_DELTA = { ArrowLeft: 1, ArrowRight: -1 };
  * which is the bug class MEH-1545 hit on the arrow side; sharing the hook's
  * filler-discounted math fixes both at once.
  *
- * @param {{ chips: any[], variant?: string, activeKey?: any, activeKeys?: any, onChipClick?: (...args: any[]) => any, className?: string, trailing?: import("react").ReactNode, trailingActive?: boolean }} props
+ * @param {{ chips: object[], variant?: string, activeKey?: string, activeKeys?: Set<string> | Record<string, boolean>, onChipClick?: (key: string) => void, className?: string, trailing?: import("react").ReactNode, trailingActive?: boolean }} props
  */
 export default function ChipScrollRow({
   chips,
