@@ -72,17 +72,22 @@ def send_no_show_email(
     producer_name: str,
     date_text: str,
     *,
-    blocked: bool,
+    active: int,
     test_cause: bool = False,
 ) -> None:
-    """One mail per no-show. ``blocked`` = this mark reached the block."""
+    """One mail per no-show; ``active`` = no-shows counting after this one.
+    Below the block: the warning. Exactly at it: the block is on. Past it (a
+    buyer who held several bags before the block): the rule sentence only —
+    «השנייה» would be wrong, and no new copy (stronger-model ruling 14/11)."""
     name = " ".join((producer_name or "").split())
     contact = f"{settings.frontend_url}/contact"
     lines = [f"בית העסק {name} סימן שהסל ששריינתם ל-{date_text} לא נאסף בזמן האיסוף."]
-    if blocked:
+    if active == NO_SHOW_BLOCK_AT:
         lines.append(
             "זו אי-ההגעה השנייה ב-30 הימים האחרונים, ולכן כרגע אי אפשר לשריין סלים חדשים."
         )
+    elif active > NO_SHOW_BLOCK_AT:
+        lines.append("שתי אי-הגעות בתוך 30 יום חוסמות שריון של סלים חדשים.")
     else:
         lines.append(
             "שתי אי-הגעות בתוך 30 יום חוסמות שריון של סלים חדשים. אם אי אפשר להגיע, "
@@ -108,7 +113,7 @@ def queue_no_show_email(
     background_tasks: BackgroundTasks,
     order: RescueOrder,
     *,
-    blocked: bool,
+    active: int,
 ) -> None:
     """Read the plain values now, send after the response. Fail-open."""
     buyer = order.user
@@ -121,6 +126,6 @@ def queue_no_show_email(
         str(buyer.email),
         str(business.name or "") if business else "",
         offer.date.strftime("%d.%m.%Y") if offer.date else "",
-        blocked=blocked,
+        active=active,
         test_cause=bool((business and business.is_test) or buyer.is_test),
     )

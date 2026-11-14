@@ -29,7 +29,13 @@ def mails(monkeypatch):
     monkeypatch.setattr(
         "app.services.rescue_no_show.send_email",
         lambda to, subject, body, html=None, test_cause=False: out.append(
-            {"to": to, "subject": subject, "body": body, "html": html, "test": test_cause}
+            {
+                "to": to,
+                "subject": subject,
+                "body": body,
+                "html": html,
+                "test": test_cause,
+            }
         ),
     )
     return out
@@ -140,3 +146,47 @@ class TestAdminUsersList:
         )
         row = self._list(client, db)["twice@example.com"]
         assert (row["rescue_active_no_shows"], row["rescue_blocked"]) == (0, False)
+
+
+class TestReviewCells:
+    """Cells the stronger-model review named (MEH-3226)."""
+
+    def test_a_third_no_show_does_not_say_second(
+        self, client, db, shop, rescue_on, mails
+    ):
+        buyer = make_user(db, email="buyer@example.com")
+        orders = [_ended_order(db, shop, buyer, f"000{i}") for i in range(3)]
+        for o in orders:
+            _mark(client, shop, o)
+        third = mails[-1]["body"]
+        assert SECOND not in third
+        assert "שתי אי-הגעות בתוך 30 יום חוסמות שריון של סלים חדשים." in third
+        assert "אפשר לבטל בחינם" not in third
+
+    def test_a_test_buyer_or_business_marks_the_mail_as_test(
+        self, client, db, shop, rescue_on, mails
+    ):
+        tester = make_user(db, email="tester@example.com")
+        tester.is_test = True
+        real = make_user(db, email="real@example.com")
+        db.commit()
+        _mark(client, shop, _ended_order(db, shop, tester, "0001"))
+        _mark(client, shop, _ended_order(db, shop, real, "0002"))
+        assert [(m["to"], m["test"]) for m in mails] == [
+            ("tester@example.com", True),
+            ("real@example.com", False),
+        ]
+
+    def test_the_html_escapes_the_business_name(self, monkeypatch):
+        from app.services import rescue_no_show
+
+        out = []
+        monkeypatch.setattr(
+            rescue_no_show,
+            "send_email",
+            lambda to, subject, body, **k: out.append(k["html"]),
+        )
+        rescue_no_show.send_no_show_email(
+            "b@example.com", "<b>מאפייה</b>", "14.11.2026", active=1
+        )
+        assert "<b>" not in out[0] and "&lt;b&gt;" in out[0]

@@ -1033,8 +1033,11 @@ def mark_no_show(  # noqa: PLR0913 — FastAPI-injected; MEH-3226 added backgrou
     )
     db.commit()
     db.refresh(order)
-    blocked = _active_no_shows(db, order.user) >= NO_SHOW_BLOCK_AT
-    queue_no_show_email(background_tasks, order, blocked=blocked)  # MEH-3226
+    try:  # MEH-3226: the mark is committed; a mail-side failure must not 500 it
+        active = _active_no_shows(db, order.user)
+        queue_no_show_email(background_tasks, order, active=active)
+    except Exception as exc:  # noqa: BLE001 — fail-open, like the MEH-2715 email
+        capture_background_exception(exc, task="rescue_no_show_email")
     return order
 
 
