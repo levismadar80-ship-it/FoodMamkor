@@ -670,19 +670,30 @@ async function grantGps(context: BrowserContext, fix: { latitude: number; longit
 
 // ════════════════════════════════════════════════════════════════════════════
 test.describe("manual › /map multi-location epic (MEH-1388)", () => {
-  // MT:MEH-1388:5 — the SECONDARY pins (pickup / market_stand) always draw next
-  //   to the primary pins. The layer toggle that could hide them was removed
-  //   (Sapir 13/11): a new user could not tell what it did, and turning it off
-  //   made pickup-only businesses vanish. Rows 1-4 are COVERED
-  //   by 24-producer-locations.spec.ts (:264 same card from every pin, :159
+  // MT:MEH-1388:5, revised by MEH-3054 (option ה׳, Sapir 13/11) — one pin per
+  //   business: the SECONDARY pins (pickup / market_stand) are not drawn until
+  //   their business is selected, or the «איסוף עצמי» chip is on. There is no
+  //   layer toggle (MEH-3045). Rows 1-4 are COVERED by
+  //   24-producer-locations.spec.ts (:264 same card from every pin, :159
   //   unique-business cluster badge, :319 nearest location, :344 delivery-only
   //   + pickup visible) and are not repeated here.
-  test("the secondary pins draw with the primary pins, and there is no toggle to hide them", async ({ page }, info) => {
+  test("one pin per business; selecting it adds its pickup point, and no toggle exists", async ({ page }, info) => {
     await fitFixtureSpread(page, info);
     const { shell } = await gotoWithCatalog(page, info);
     await expect(primaryMarkers(shell)).toHaveCount(PRODUCERS.length, FIRST_PAINT);
-    await expect(secondaryMarkers(shell)).toHaveCount(1);
+    await expect(secondaryMarkers(shell)).toHaveCount(0);
     await expect(page.locator('[data-testid^="pickup-layer-"]')).toHaveCount(0);
+
+    await markerOf(shell, P_HAIFA).click();
+    await expect(secondaryMarkers(shell)).toHaveCount(1);
+    await expect(primaryMarkers(shell)).toHaveCount(PRODUCERS.length);
+  });
+
+  test("the «איסוף עצמי» chip draws every pickup point", async ({ page }, info) => {
+    await fitFixtureSpread(page, info);
+    const { shell } = await gotoWithCatalog(page, info, "/map?pickup_points=1");
+    await expect(serviceChip(shell, "pickup_points")).toHaveAttribute("aria-pressed", "true");
+    await expect(secondaryMarkers(shell)).toHaveCount(1, FIRST_PAINT);
   });
 });
 
