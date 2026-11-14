@@ -839,6 +839,7 @@ POST   /auth/check-password      public  — MEH-306 stateless policy preview (3
 POST   /auth/forgot-password     public  — MEH-306: 10/15min IP + 5/15min email
 POST   /auth/reset-password      public  — MEH-306: 10/15min IP, full policy + reuse check, stamps password_changed_at
 PATCH  /users/me/password        auth    — MEH-306: full policy + reuse, stamps password_changed_at, returns 204
+PATCH  /users/me                 auth    — MEH-3095: a changed email resets email_verified, issues a new verify token and mails the link to the NEW address; a Google/Apple account cannot change its email (400 EMAIL_CHANGE_UNSUPPORTED); a lost race on the unique index is 409
 ```
 
 ### Owner-claim link (`app/routers/producer_claim.py`) — MEH-2322 (MEH-2321 chunk A)

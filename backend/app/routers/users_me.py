@@ -8,9 +8,19 @@ MEH-460 Pkg 2: Pydantic schemas live in app.schemas.schemas per ADR-006 R1.
 """
 
 import asyncio
-from datetime import datetime, timezone
+import secrets
+from datetime import datetime, timedelta, timezone
 
-from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
+from fastapi import (
+    APIRouter,
+    BackgroundTasks,
+    Depends,
+    HTTPException,
+    Request,
+    Response,
+    status,
+)
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.auth import (
@@ -32,9 +42,37 @@ from app.rate_limit import limiter
 # move both helpers to app/auth_cookies.py.
 from app.routers.auth import _set_fingerprint_cookie, _set_refresh_cookie
 from app.schemas.schemas import PasswordChange, ProfileUpdate, UserOut
+from app.services.auth_emails import send_verify_email
 from app.services.password_policy import validate_password
+from app.utils.clock import utc_now
 
 router = APIRouter(prefix="/users/me", tags=["users"])
+
+
+def _change_email(db: Session, user: User, new_email: str) -> bool:
+    """Move the account to `new_email`. True when the address really changed.
+
+    MEH-3095: `email_verified` vouches for the address, not for the account.
+    Keeping it across a change let a verified account move to an address nobody
+    proved and keep every verified-only action. A new token also kills any link
+    still pending for the old address.
+    """
+    if new_email == user.email:
+        return False
+    # An account that signs in with Google or Apple keeps the provider's
+    # address (the settings page already says so). The OAuth sign-in falls back
+    # to matching by email, so an OAuth account parked on someone else's
+    # address would catch that person's first sign-in.
+    if user.google_id or user.apple_id:
+        raise HTTPException(status_code=400, detail="EMAIL_CHANGE_UNSUPPORTED")
+    existing = db.query(User).filter(User.email == new_email).first()
+    if existing and existing.id != user.id:
+        raise HTTPException(status_code=409, detail="האימייל כבר בשימוש")
+    user.email = new_email
+    user.email_verified = False
+    user.email_verify_token = secrets.token_urlsafe(32)
+    user.email_verify_expires = utc_now() + timedelta(hours=24)
+    return True
 
 
 @router.patch("", response_model=UserOut)
@@ -42,6 +80,7 @@ router = APIRouter(prefix="/users/me", tags=["users"])
 def update_profile(
     request: Request,
     data: ProfileUpdate,
+    background_tasks: BackgroundTasks,
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
@@ -49,6 +88,8 @@ def update_profile(
 
     - Name is trimmed and must be non-empty.
     - Email uniqueness is re-checked; collisions are rejected with 409.
+    - MEH-3095: a changed email is an unproved one. The account goes back to
+      unverified and a fresh link is mailed to the NEW address.
     """
     # MEH-375: snapshot avatar BEFORE mutation so we can destroy the
     # prior Cloudinary asset AFTER db.commit succeeds. The destroy site
@@ -69,6 +110,7 @@ def update_profile(
     # a value that sanitizes away, so `name: "   "` is a 422 from the schema —
     # louder than the old handler-side check, and it can no longer be swallowed.
     sent = data.model_fields_set
+    email_changed = False
 
     if "name" in sent and data.name is not None:
         user.name = data.name
@@ -83,18 +125,28 @@ def update_profile(
         user.phone = data.phone
 
     if data.email is not None:
-        new_email = data.email.lower()
-        if new_email != user.email:
-            existing = db.query(User).filter(User.email == new_email).first()
-            if existing and existing.id != user.id:
-                raise HTTPException(
-                    status_code=409,
-                    detail="האימייל כבר בשימוש",
-                )
-            user.email = new_email
+        email_changed = _change_email(db, user, data.email.lower())
 
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError:
+        # Two changes to one address at once: the unique index decides, and
+        # the loser gets the same 409 as the check above, not a 500.
+        db.rollback()
+        if not email_changed:
+            raise
+        raise HTTPException(status_code=409, detail="האימייל כבר בשימוש")
     db.refresh(user)
+
+    if email_changed and user.email_verify_token:
+        # After the commit, to the new address only, off the request path.
+        background_tasks.add_task(
+            send_verify_email,
+            user.email,
+            user.name,
+            user.email_verify_token,
+            test_cause=bool(user.is_test),
+        )
 
     # MEH-375: post-commit destroy of the prior avatar when its value
     # changed, regardless of how the change happened (PATCH swap or
