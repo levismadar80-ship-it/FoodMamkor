@@ -7,8 +7,6 @@ import Image from "next/image";
 import {
   UserCircle,
   Lock,
-  Eye,
-  EyeSlash,
   Camera,
   CheckCircle,
   HourglassSimple,
@@ -21,6 +19,7 @@ import { useUserCity } from "@/lib/use-user-city";
 import useTabsKeyboard from "@/hooks/useTabsKeyboard";
 import CitySearch from "@/components/CitySearch";
 import Input from "@/components/ui/Input";
+import PasswordField from "@/components/ui/PasswordField";
 import PasswordInput from "@/components/PasswordInput";
 import { firstFailureMessage } from "@/lib/passwordMessages";
 import { validateIsraeliPhone } from "@/lib/validators";
@@ -376,14 +375,13 @@ export function ProfileTab() {
           </p>
         </div>
         <div>
-          <label htmlFor="profile-email" className="block text-sm font-medium mb-1">{t("field_email_label")}</label>
-          <input
+          <Input
             id="profile-email"
             type="email"
+            label={t("field_email_label")}
             value={user.email || ""}
             readOnly
             disabled
-            className="w-full border border-border rounded-sm px-3 py-2 bg-background-alt text-fg-muted cursor-not-allowed focus-ring"
             dir="ltr"
           />
           <p className="text-xs text-fg-muted mt-1 text-right">
@@ -467,8 +465,6 @@ function PasswordChangeCard({ isOAuth }) {
   const [current, setCurrent] = useState("");
   const [next, setNext] = useState("");
   const [confirm, setConfirm] = useState("");
-  const [showCurrent, setShowCurrent] = useState(false);
-  const [showConfirm, setShowConfirm] = useState(false);
   const [nextOk, setNextOk] = useState(false);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState(null);
@@ -538,36 +534,15 @@ function PasswordChangeCard({ isOAuth }) {
 
       <form onSubmit={handleSubmit} className="space-y-4">
         {/* Current password */}
-        <div>
-          <label htmlFor="sec-current" className="block text-sm font-medium mb-1">
-            {t("current_label")}{" "}
-            <span className="text-error" aria-hidden="true">
-              *
-            </span>
-          </label>
-          <div className="relative">
-            <input
-              id="sec-current"
-              type={showCurrent ? "text" : "password"}
-              value={current}
-              onChange={(e) => setCurrent(e.target.value)}
-              required
-              // eslint-disable-next-line no-restricted-syntax -- rtl-ok: eye toggle inside dir="ltr" input
-              className="w-full border border-border rounded-sm pr-11 pl-3 py-2 outline-none focus-visible:ring-2 focus-visible:ring-primary transition"
-              dir="ltr"
-            />
-            <button
-              type="button"
-              onClick={() => setShowCurrent((v) => !v)}
-              // eslint-disable-next-line no-restricted-syntax -- rtl-ok
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-fg-muted hover:text-text transition rounded-full p-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-              aria-label={showCurrent ? t("eye_hide_current") : t("eye_show_current")}
-              aria-pressed={showCurrent}
-            >
-              {showCurrent ? <EyeSlash size={18} aria-hidden="true" /> : <Eye size={18} aria-hidden="true" />}
-            </button>
-          </div>
-        </div>
+        <PasswordField
+          id="sec-current"
+          label={t("current_label")}
+          required
+          value={current}
+          onChange={(e) => setCurrent(e.target.value)}
+          showLabel={t("eye_show_current")}
+          hideLabel={t("eye_hide_current")}
+        />
 
         {/* New password — MEH-306: PasswordInput owns input + eye toggle
             + live policy preview. showCurrentPasswordReuse renders a
@@ -594,35 +569,16 @@ function PasswordChangeCard({ isOAuth }) {
 
         {/* Confirm password */}
         <div>
-          <label htmlFor="sec-confirm" className="block text-sm font-medium mb-1">
-            {t("confirm_label")}{" "}
-            <span className="text-error" aria-hidden="true">
-              *
-            </span>
-          </label>
-          <div className="relative">
-            <input
-              id="sec-confirm"
-              type={showConfirm ? "text" : "password"}
-              value={confirm}
-              onChange={(e) => setConfirm(e.target.value)}
-              required
-              aria-invalid={mismatch || undefined}
-              // rtl-ok
-              className={`w-full border rounded-sm pr-11 pl-3 py-2 outline-none focus-visible:ring-2 focus-visible:ring-primary transition ${mismatch ? "border-danger-400" : "border-border"}`}
-              dir="ltr"
-            />
-            <button
-              type="button"
-              onClick={() => setShowConfirm((v) => !v)}
-              // eslint-disable-next-line no-restricted-syntax -- rtl-ok
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-fg-muted hover:text-text transition rounded-full p-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-              aria-label={showConfirm ? t("eye_hide_confirm") : t("eye_show_confirm")}
-              aria-pressed={showConfirm}
-            >
-              {showConfirm ? <EyeSlash size={18} aria-hidden="true" /> : <Eye size={18} aria-hidden="true" />}
-            </button>
-          </div>
+          <PasswordField
+            id="sec-confirm"
+            label={t("confirm_label")}
+            required
+            value={confirm}
+            onChange={(e) => setConfirm(e.target.value)}
+            invalid={mismatch}
+            showLabel={t("eye_show_confirm")}
+            hideLabel={t("eye_hide_confirm")}
+          />
           {mismatch && (
             <InlineMessage size="xs" className="mt-1 text-right">{t("mismatch_error")}</InlineMessage>
           )}
@@ -790,13 +746,12 @@ function DangerZoneCard() {
           <label htmlFor="danger-email" className="block text-sm font-medium text-danger-700">
             {t("confirm_email_label")}
           </label>
-          <input
+          <Input
             id="danger-email"
             type="email"
             value={emailInput}
             onChange={(e) => setEmailInput(e.target.value)}
             placeholder={user.email || ""}
-            className="w-full border border-danger-300 rounded-sm px-3 py-2 outline-none focus-visible:ring-2 focus-visible:ring-danger-400/40 transition"
             dir="ltr"
             autoComplete="off"
           />

@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { MagnifyingGlass, Heart, ArrowRight, Leaf } from "@phosphor-icons/react";
 import { Button, Input, Card, Badge, Heading, Link } from "@/components/ui";
 import ShowMore from "@/components/ui/ShowMore";
+import PasswordField from "@/components/ui/PasswordField";
 import Select from "@/components/ui/Select";
 import Textarea from "@/components/ui/Textarea";
 import { useTranslations } from "next-intl";
@@ -135,6 +136,9 @@ export default function DevComponentsPage() {
           </Select>
           <Textarea label="הערה" placeholder="כמה מילים" helperText="עד 300 תווים" />
           <Textarea label="הערה שגויה" defaultValue="…" error="ארוך מדי" />
+          {/* MEH-3141: current / repeat password with the eye toggle. */}
+          <PasswordField label="Current password" required showLabel="Show password" hideLabel="Hide password" />
+          <PasswordField label="Repeat password" defaultValue="abc" error="Passwords do not match" showLabel="Show password" hideLabel="Hide password" />
           {/* MEH-1128 D1: startAdornment (currency + icon) and success state. */}
           <Input type="number" dir="ltr" className="text-end" label="מחיר" placeholder="49" startAdornment="₪" />
           <Input type="search" label="יישוב" placeholder="חפשו עיר…" startAdornment={<MagnifyingGlass size={16} aria-hidden="true" />} />
