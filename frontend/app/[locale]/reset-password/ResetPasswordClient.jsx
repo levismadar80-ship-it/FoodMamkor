@@ -5,13 +5,13 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Link } from "@/i18n/navigation";
 import AuthSplitLayout from "@/components/auth/AuthSplitLayout";
 import { useTranslations } from "next-intl";
-import { Eye, EyeSlash } from "@phosphor-icons/react";
 import api from "@/lib/api";
 import PasswordInput from "@/components/PasswordInput";
 import { firstFailureMessage } from "@/lib/passwordMessages";
 import { PASSWORD_MIN_LENGTH } from "@/lib/validators";
 import BrandLoader from "@/components/BrandLoader";
 import Button from "@/components/ui/Button";
+import PasswordField from "@/components/ui/PasswordField";
 import InlineMessage from "@/components/ui/InlineMessage";
 
 export default function ResetPasswordClient() {
@@ -37,9 +37,6 @@ function ResetPasswordForm() {
 
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
-  // showConfirm only — the new-password's eye toggle now lives inside
-  // <PasswordInput> (MEH-306 sub-B).
-  const [showConfirm, setShowConfirm] = useState(false);
   const [error, setError] = useState("");
   // MEH-474: separate flag for "show request-new-link" replaces the prior
   // error.includes("קישור") substring check so behavior survives locale switch.
@@ -156,29 +153,15 @@ function ResetPasswordForm() {
           showCurrentPasswordReuse={true}
         />
 
-        <div className="relative">
-          <input
-            type={showConfirm ? "text" : "password"}
-            value={confirm}
-            onChange={(e) => setConfirm(e.target.value)}
-            placeholder={t("auth.passwordRecovery.reset.confirm_placeholder")}
-            required
-            dir="ltr"
-            className="w-full min-h-touch border border-border rounded-sm ps-4 py-3 bg-surface focus-visible:ring-2 focus-visible:ring-primary outline-none transition focus:border-primary pr-12" // rtl-ok: pr-12 reserves the 44px eye toggle inside the dir="ltr" input (MEH-2554 PasswordInput fix)
-          />
-          <button
-            type="button"
-            onClick={() => setShowConfirm((v) => !v)}
-            className="absolute right-0.5 top-1/2 -translate-y-1/2 flex h-11 w-11 items-center justify-center text-fg-muted hover:text-text" // rtl-ok: eye toggle inside dir="ltr" input
-            aria-label={
-              showConfirm
-                ? t("auth.passwordRecovery.reset.toggle_hide")
-                : t("auth.passwordRecovery.reset.toggle_show")
-            }
-          >
-            {showConfirm ? <EyeSlash size={18} /> : <Eye size={18} />}
-          </button>
-        </div>
+        <PasswordField
+          value={confirm}
+          onChange={(e) => setConfirm(e.target.value)}
+          placeholder={t("auth.passwordRecovery.reset.confirm_placeholder")}
+          aria-label={t("auth.passwordRecovery.reset.confirm_placeholder")}
+          required
+          showLabel={t("auth.passwordRecovery.reset.toggle_show")}
+          hideLabel={t("auth.passwordRecovery.reset.toggle_hide")}
+        />
 
         {error && (
           <InlineMessage as="div" className="text-center">
