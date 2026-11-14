@@ -1,6 +1,6 @@
 "use client";
 
-import { useId } from "react";
+import { forwardRef, useId } from "react";
 import { Check } from "@phosphor-icons/react";
 import { fieldClasses, FieldShell } from "./field";
 
@@ -55,8 +55,22 @@ import { fieldClasses, FieldShell } from "./field";
  * @example
  * <Input type="email" label="אימייל" helperText="לא נשתף עם אף אחד" />
  * <Input type="text" label="שם" error="שדה חובה" />
+ *
+ * `ref` reaches the native <input> (MEH-3146), for a caller that focuses it.
+ *
+ * @type {import("react").ForwardRefExoticComponent<{
+ *   label?: import("react").ReactNode,
+ *   helperText?: import("react").ReactNode,
+ *   error?: import("react").ReactNode,
+ *   success?: boolean,
+ *   successText?: import("react").ReactNode,
+ *   startAdornment?: import("react").ReactNode,
+ *   size?: "md" | "sm" | "xs",
+ *   inline?: boolean,
+ *   invalid?: boolean,
+ * } & Omit<import("react").InputHTMLAttributes<HTMLInputElement>, "size"> & import("react").RefAttributes<HTMLInputElement>>}
  */
-export default function Input({
+const Input = forwardRef(function Input({
   type = "text",
   label,
   helperText,
@@ -84,7 +98,7 @@ export default function Input({
   inline = false,
   invalid = false,
   ...rest
-}) {
+}, ref) {
   const autoId = useId();
   const inputId = id || autoId;
   const describedById = `${inputId}-desc`;
@@ -103,6 +117,7 @@ export default function Input({
     const compactMessage = error || helperText;
     const compact = (
       <input
+        ref={ref}
         id={inputId}
         type={type}
         disabled={disabled}
@@ -123,6 +138,7 @@ export default function Input({
 
   const inputEl = (
     <input
+      ref={ref}
       id={inputId}
       type={type}
       disabled={disabled}
@@ -199,4 +215,6 @@ export default function Input({
         ))}
     </div>
   );
-}
+});
+
+export default Input;

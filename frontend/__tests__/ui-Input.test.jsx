@@ -152,4 +152,14 @@ describe("ui/Input", () => {
       expect(container.querySelector(".text-error")).toBeNull();
     }
   });
+
+  // MEH-3146: a caller that focuses the field (LocationsEditor) needs the node.
+  it("ref reaches the native input, md and inline", () => {
+    for (const props of [{ label: "תווית" }, { inline: true, size: "sm", "aria-label": "תווית" }]) {
+      const ref = { current: null };
+      const { unmount } = render(<Input ref={ref} {...props} />);
+      expect(ref.current).toBe(screen.getByLabelText("תווית"));
+      unmount();
+    }
+  });
 });

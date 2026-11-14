@@ -53,6 +53,7 @@ import CitySearch from "@/components/CitySearch";
 import AddressSearch from "@/components/AddressSearch";
 import Button from "@/components/ui/Button";
 import { SkeletonBlock } from "@/components/Skeleton";
+import Input from "@/components/ui/Input";
 
 // Leaflet touches `window` at import time, so the confirmation map is loaded
 // client-side only. REUSES: RegisterProducerClient.jsx:24 — same dynamic import
@@ -1129,7 +1130,7 @@ const TextInput = forwardRef(function TextInput(
   ref,
 ) {
   return (
-    <input
+    <Input inline size="sm"
       ref={ref}
       type={type}
       inputMode={inputMode}
@@ -1137,7 +1138,7 @@ const TextInput = forwardRef(function TextInput(
       onChange={onChange}
       placeholder={placeholder}
       data-testid={testid}
-      className="w-full rounded-sm border border-border bg-surface px-3 py-2 text-sm focus-ring"
+      className="w-full"
     />
   );
 });

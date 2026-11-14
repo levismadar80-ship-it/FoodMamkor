@@ -10,19 +10,10 @@
     "app/[locale]/admin/users/page.js": 1,
     "app/[locale]/login/LoginClient.jsx": 2,
     "app/[locale]/producer/dashboard/edit/LocationHoursField.jsx": 2,
-    "app/[locale]/producer/dashboard/edit/LocationsEditor.jsx": 1,
-    "app/[locale]/producer/dashboard/edit/OrderWindowEditor.jsx": 2,
-    "app/[locale]/producer/dashboard/edit/PaymentInfoEditor.jsx": 1,
-    "app/[locale]/producer/dashboard/edit/SpecialHoursEditor.jsx": 4,
-    "app/[locale]/producer/dashboard/edit/cards.jsx": 9,
-    "app/[locale]/producer/dashboard/experiences/page.js": 1,
-    "app/[locale]/producer/dashboard/page.js": 1,
     "components/DeliveryWaitlistForm.jsx": 1,
     "components/PasswordInput.jsx": 1,
-    "components/ProductOrganizer.jsx": 2,
     "components/admin/ClaimLinkPanel.jsx": 1,
-    "components/admin/OwnerInvitePanel.jsx": 2,
-    "components/dashboard/RescueTab.jsx": 6
+    "components/admin/OwnerInvitePanel.jsx": 2
   },
   "infoTooltipImporters": [
     "app/[locale]/admin/experiences/page.js",
