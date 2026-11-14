@@ -27,9 +27,10 @@ import { X } from "@phosphor-icons/react";
 // card (EventDetailClient / ExperienceDetailClient `lg:grid`).
 const DESKTOP_QUERY = "(min-width: 1024px)";
 
-// Room at the page end while the bar is up, on a page with no site footer
-// (pill 60px + 8px gap + breathing space).
-const BAR_ROOM = "76px";
+// Room at the page end while the bar is up, on a page with no site footer:
+// the layout's own bottom inset (it clears the nav pill) + pill 60px + 8px gap.
+// Inline padding replaces the layout's pb class, so the inset is added back.
+export const BAR_ROOM = "calc(var(--bottom-inset, 5rem) + 68px)";
 
 const FOCUSABLE = 'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
 
@@ -96,24 +97,27 @@ function useFooterInView() {
  * and the room it reserved at the page end showed as a cream band under the
  * footer (Sapir, 14/11). The footer starts right after the content, so once
  * the bar hides nothing is left under it — the body padding is only needed on
- * a page with no site footer.
+ * a page with no site footer. While the cookie banner is up the pill sits
+ * above it (`--cookie-banner-h`, as ChatWidget / BackToTop do).
  */
 export function StickyRegistrationBar({ note, children }) {
   const footerInView = useFooterInView();
-  const hasFooter = footerInView !== null;
   useEffect(() => {
-    if (hasFooter || isDesktop()) return undefined;
+    // Decided in the effect itself, not from footerInView: that starts null,
+    // and a first-commit write would paint the room for a frame (review).
+    if (isDesktop() || document.querySelector("footer[data-site-footer]")) return undefined;
     const prev = document.body.style.paddingBottom;
     document.body.style.paddingBottom = BAR_ROOM;
+    const ours = document.body.style.paddingBottom;
     return () => {
       // Only undo our own write — never put back a value someone else replaced.
-      if (document.body.style.paddingBottom === BAR_ROOM) document.body.style.paddingBottom = prev;
+      if (document.body.style.paddingBottom === ours) document.body.style.paddingBottom = prev;
     };
-  }, [hasFooter]);
+  }, []);
   if (footerInView) return null;
   return (
     <div
-      className="vv-pin lg:hidden fixed inset-x-0 bottom-[calc(var(--bottom-nav-clearance,calc(env(safe-area-inset-bottom)+72px))+8px)] z-[598] flex px-[14px] pointer-events-none"
+      className="vv-pin lg:hidden fixed inset-x-0 bottom-[calc(var(--bottom-nav-clearance,calc(env(safe-area-inset-bottom)+72px))+8px+var(--cookie-banner-h,0px))] z-[598] flex px-[14px] pointer-events-none"
       data-testid="registration-bar"
       data-chat-hide=""
     >

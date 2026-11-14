@@ -384,6 +384,8 @@ describe("MEH-3109 — the bar is a floating pill that steps aside at the footer
     const pill = screen.getByTestId("registration-bar-pill");
     expect(pill.className).toMatch(/\brounded-full\b/);
     expect(pill.className).toMatch(/\bpointer-events-auto\b/);
+    // Above the cookie banner while it is up (same offset var as ChatWidget).
+    expect(bar.className).toContain("var(--cookie-banner-h,0px)");
   });
 
   it("hides while the site footer is on screen and comes back after it", () => {
@@ -396,9 +398,24 @@ describe("MEH-3109 — the bar is a floating pill that steps aside at the footer
     expect(screen.getByTestId("registration-bar")).toBeInTheDocument();
   });
 
-  it("with a site footer the page end gets no extra room (that room was the cream band under the footer)", () => {
+  it("with a site footer the page end gets no extra room, not even for one commit (that room was the cream band under the footer)", () => {
+    // Every write to <body style>, including one undone a commit later.
+    const mo = new MutationObserver(() => {});
+    mo.observe(document.body, { attributes: true, attributeFilter: ["style"], attributeOldValue: true });
     cta({ method: "site_form", phone: null });
     fireFor(inline(), false);
+    const writes = mo.takeRecords().map(() => document.body.getAttribute("style") || "");
+    mo.disconnect();
+    expect(screen.getByTestId("registration-bar")).toBeInTheDocument();
+    expect(writes).toEqual([]);
+  });
+
+  it("with no site footer the page end gets room while the bar is up, and loses it when the bar goes", () => {
+    footer.remove();
+    cta({ method: "site_form", phone: null });
+    fireFor(inline(), false);
+    expect(document.body.style.paddingBottom).not.toBe("");
+    fireFor(inline(), true);
     expect(document.body.style.paddingBottom).toBe("");
   });
 });
