@@ -81,12 +81,16 @@ function subscriptionBreakEven(list) {
 }
 
 /**
- * Bookings a month, at the example price, from which the subscription has
- * paid for itself: monthly / (what a subscriber saves on one booking).
+ * Monthly commissions (₪) from which the subscription is the cheaper choice
+ * for EVERY kind of booking: a subscriber pays monthly + a share of the plain
+ * commission (2/5 on a percent booking, 1/2 on a bag), so the amount is
+ * monthly / (1 − the larger share), rounded up to the next 10.
  */
-function subscriptionBreakEvenBookings(list) {
-  const saved = list.commission.paidBookingPercent - list.subscriberCommission.paidBookingPercent;
-  return Math.ceil((list.subscription.monthly * 100) / (list.exampleBookingPrice * saved));
+function subscriptionBreakEvenFees(list) {
+  const percentShare = list.subscriberCommission.paidBookingPercent / list.commission.paidBookingPercent;
+  const bagShare = list.subscriberCommission.rescueBagFee / list.commission.rescueBagFee;
+  const exact = list.subscription.monthly / (1 - Math.max(percentShare, bagShare));
+  return Math.ceil(exact / 10) * 10;
 }
 
 /**
@@ -110,8 +114,8 @@ export function pricingCopyValues(list = currentPriceList()) {
     // Monthly paid bookings (₪) above which the subscription costs less than
     // the plain commission, rounded up to the next 50. Computed, never typed.
     breakEven: String(subscriptionBreakEven(list)),
-    // «עם 9 הרשמות בחודש»: bookings, at the example price, that cover the subscription.
-    breakEvenBookings: String(subscriptionBreakEvenBookings(list)),
+    // «כשהעמלות מגיעות ל-100 ₪ בחודש»: true for percent bookings and for bags alike.
+    breakEvenFees: String(subscriptionBreakEvenFees(list)),
     threshold: String(list.thresholdBookingsPerMonth),
     noticeDays: String(list.noticeDays),
   };

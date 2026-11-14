@@ -6712,7 +6712,7 @@
       "back_link": "Back to the join page",
       "or": "or",
       "sub_fit": "A fit for a business with many paid bookings.",
-      "sub_example": "For example: with {breakEvenBookings} bookings a month for a ₪{examplePrice} workshop, the subscription already pays off.",
+      "sub_example": "Once commissions reach ₪{breakEvenFees} a month, the subscription already costs less.",
       "fee_fit": "You pay only in a month that has bookings.",
       "fee_example": "For example: a workshop sign-up at ₪{examplePrice} is a ₪{exampleFee} fee.",
       "tools_link": "See the full list of tools",

@@ -6708,7 +6708,7 @@
       "back_link": "חזרה לעמוד ההצטרפות",
       "or": "או",
       "sub_fit": "מתאים לבית עסק עם הרבה הזמנות בתשלום.",
-      "sub_example": "לדוגמה: עם {breakEvenBookings} הרשמות בחודש לסדנה של {examplePrice} ₪, המנוי כבר משתלם.",
+      "sub_example": "כשהעמלות מגיעות ל-{breakEvenFees} ₪ בחודש, המנוי כבר זול יותר.",
       "fee_fit": "משלמים רק בחודש שיש בו הזמנות.",
       "fee_example": "לדוגמה: הרשמה לסדנה ב-{examplePrice} ₪ היא {exampleFee} ₪ עמלה.",
       "tools_link": "לרשימת הכלים המלאה",
