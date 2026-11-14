@@ -1,7 +1,7 @@
 """meh3079_weekly_owner_summary
 
 Revision ID: 0cfa83f0f53e
-Revises: c3e7a1f5d829
+Revises: e4b8d2f6a913
 Create Date: 2026-11-14 12:00:00.000000+00:00
 
 MEH-3079 (weekly summary email for business owners): adds two columns to
@@ -28,8 +28,8 @@ import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
 revision: str = "0cfa83f0f53e"
-# Single head on staging when authored (14/11): c3e7a1f5d829 (MEH-3117).
-down_revision: Union[str, None] = "c3e7a1f5d829"
+# Single head on staging when re-pointed (14/11): e4b8d2f6a913 (MEH-2642).
+down_revision: Union[str, None] = "e4b8d2f6a913"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
