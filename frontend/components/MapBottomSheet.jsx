@@ -6,6 +6,7 @@ import { ArrowLeft } from "@phosphor-icons/react";
 import { Link } from "@/i18n/navigation";
 
 import { SkeletonStyles } from "@/components/Skeleton";
+import InlineMessage from "@/components/ui/InlineMessage";
 
 // S5 FINAL (MEH-763): split-view sheet — TWO snap points, peek + 45vh open.
 // PEEK/HALF export names kept (useFirstVisitHints and useMapSync import PEEK —
@@ -312,9 +313,9 @@ export default function MapBottomSheet({
           />
         ) : loadError && count === 0 && onRetry ? (
           <div className="flex items-center justify-between gap-3 w-full">
-            <p className="text-sm font-medium text-accent" data-testid="sheet-load-error" role="alert">
+            <InlineMessage className="font-medium" data-testid="sheet-load-error">
               {tRoot("map.errors.load_failed")}
-            </p>
+            </InlineMessage>
             <button
               type="button"
               onClick={onRetry}
