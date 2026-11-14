@@ -873,7 +873,31 @@ export default function ProducerDashboardPage() {
           Overview analytics for the lean KPI strip and moved the deep charts
           to the insights tab. */}
 
-      {/* MEH-1355: shared support modal for the rejected + inactive banners. */}
+      {/* MEH-3106: a permanent way to reach the team. Until now the support
+          modal opened only from the rejected / inactive banners, so a live
+          business that got stuck had no way in (Shopify «Help», Wolt support
+          chat, Google «Support» are always one tap away). Last on the page, so
+          on a phone it sits right above the layout's «יציאה מהחשבון». */}
+      <div
+        data-testid="dashboard-help-row"
+        className="bg-surface border border-border rounded-lg p-4 mb-6 flex items-center justify-between gap-3"
+      >
+        <div className="min-w-0">
+          <p className="font-semibold text-text text-sm">{t("help_row.title")}</p>
+          <p className="text-sm text-fg-muted">{t("help_row.body")}</p>
+        </div>
+        <button
+          type="button"
+          data-testid="dashboard-help-cta"
+          onClick={() => setSupportOpen(true)}
+          className="text-sm text-primary font-medium underline decoration-[1.5px] underline-offset-[5px] decoration-primary/35 hover:decoration-current shrink-0"
+        >
+          {t("help_row.cta")}
+        </button>
+      </div>
+
+      {/* MEH-1355: shared support modal for the rejected + inactive banners
+          (and, MEH-3106, the help row above). */}
       {supportOpen && <StatusSupportModal onClose={() => setSupportOpen(false)} />}
     </div>
   );
