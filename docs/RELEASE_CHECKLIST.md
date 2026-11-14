@@ -24,6 +24,7 @@
 - [ ] «Post-deploy checks» (`post-deploy-checks.yml`) ירוק אחרי ה-deploy האחרון של staging. ‏`staging-smoke` לא רץ מאז 05/2026 (MEH-2846)
 - [ ] Sentry: אין issues חדשים מה-deploy של staging
 - [ ] תיאור ה-PR מפרט כל שינוי התנהגות שנכנס מאז הגרסה הקודמת
+- [ ] «מה חדש» לבתי עסק: רשומה לגרסה הזו ב-`frontend/lib/whats-new.js`, בנוסח שספיר אישרה, או `items: 0` כשאין שינוי שבית עסק מרגיש ([release/whats-new.md](./release/whats-new.md)). `whats-new-release-guard.sh` חוסם PR ל-main בלעדיה
 
 ## ב׳ — סיבוב על staging (ה-thread, Playwright ב-375 וב-1440)
 

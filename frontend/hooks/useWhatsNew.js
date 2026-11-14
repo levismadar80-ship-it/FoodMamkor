@@ -1,0 +1,99 @@
+// @ts-check
+"use client";
+
+/**
+ * Module:   hooks/useWhatsNew
+ * Purpose:  Two small client-only state holders for the dashboard home
+ *           (MEH-3200): the newest «מה חדש» release the owner has not seen,
+ *           and whether the one-time welcome card is still due.
+ * Touches:  window.localStorage via lib/whats-new.js; a same-tab window event
+ *           so the top card and the bottom row agree after a dismiss.
+ * Does NOT: render anything (components/producer/WhatsNew*.jsx,
+ *           OwnerWelcomeCard.jsx), or store anything on the server — seen
+ *           state is per browser on purpose (no schema change, approved 14/11).
+ * History:  MEH-3200 (creation).
+ */
+
+import { useCallback, useEffect, useState } from "react";
+import { markSeen, readSeenVersion, unseenRelease } from "@/lib/whats-new";
+
+const SEEN_EVENT = "mehamakor:whats-new-seen";
+export const WELCOME_DISMISSED_KEY = "mehamakor.owner_welcome.dismissed";
+const DAY_MS = 24 * 60 * 60 * 1000;
+/** A business older than this never sees the welcome card. */
+export const WELCOME_WINDOW_DAYS = 30;
+
+/**
+ * @returns {{ release: import("@/lib/whats-new").WhatsNewRelease | null, dismiss: () => void }}
+ *   release is null on the server and before mount, so SSR and the first
+ *   client render agree.
+ */
+export function useUnseenRelease() {
+  const [release, setRelease] = useState(
+    /** @type {import("@/lib/whats-new").WhatsNewRelease | null} */ (null),
+  );
+
+  useEffect(() => {
+    const sync = () => setRelease(unseenRelease(readSeenVersion()));
+    sync();
+    window.addEventListener(SEEN_EVENT, sync);
+    return () => window.removeEventListener(SEEN_EVENT, sync);
+  }, []);
+
+  const dismiss = useCallback(() => {
+    if (!release) return;
+    markSeen(release.version);
+    window.dispatchEvent(new Event(SEEN_EVENT));
+  }, [release]);
+
+  return { release, dismiss };
+}
+
+/** Mark every release as seen — the archive page calls this on open. */
+export function markAllSeen() {
+  const r = unseenRelease(readSeenVersion());
+  if (!r) return;
+  markSeen(r.version);
+  window.dispatchEvent(new Event(SEEN_EVENT));
+}
+
+/**
+ * Is the business new enough for the welcome card?
+ * @param {string | null | undefined} createdAt ISO instant of the business.
+ * @param {number} now epoch ms.
+ */
+export function isNewBusiness(createdAt, now) {
+  if (!createdAt) return false;
+  const t = new Date(createdAt).getTime();
+  if (Number.isNaN(t)) return false;
+  return now - t < WELCOME_WINDOW_DAYS * DAY_MS;
+}
+
+/**
+ * @param {string | null | undefined} createdAt
+ * @returns {{ show: boolean, dismiss: () => void }}
+ */
+export function useOwnerWelcome(createdAt) {
+  const [show, setShow] = useState(false);
+
+  useEffect(() => {
+    let dismissed = false;
+    try {
+      dismissed = window.localStorage.getItem(WELCOME_DISMISSED_KEY) === "1";
+    } catch {
+      dismissed = false;
+    }
+    setShow(!dismissed && isNewBusiness(createdAt, Date.now()));
+  }, [createdAt]);
+
+  const dismiss = useCallback(() => {
+    try {
+      window.localStorage.setItem(WELCOME_DISMISSED_KEY, "1");
+    } catch {
+      // blocked storage: hidden for this visit only
+    }
+    setShow(false);
+  }, []);
+
+  return { show, dismiss };
+}

@@ -4426,6 +4426,33 @@
         "body": "Write to us and we'll get back to you by the end of the business day.",
         "cta": "Contact the team"
       },
+      "whats_new": {
+        "card_title": "New on Mehamakor",
+        "card_all": "All updates",
+        "card_close": "Close",
+        "row_title": "What's new on Mehamakor",
+        "row_body": "What changed on the site and in your dashboard",
+        "row_cta": "Read",
+        "row_unread": "New update",
+        "page_title": "What's new on Mehamakor",
+        "page_subtitle": "What changed for businesses, newest first",
+        "latest_label": "New",
+        "empty": "No updates yet. When something changes, it will show up here.",
+        "releases": {
+          "v1_5_1": {
+            "i0": "Your dashboard home now shows «Waiting for you»: reviews you haven't answered yet and new sign-ups.",
+            "i1": "You can reorder the products on your page by dragging them, and sort them into groups.",
+            "i2": "The «Share» button sends the link to your page straight to an Instagram story or WhatsApp."
+          }
+        }
+      },
+      "welcome_card": {
+        "title": "Welcome to Mehamakor",
+        "body": "I'm Sapir. I started Mehamakor so people can find businesses like yours. I approve every page personally, and everything you need to make your page work for you is here.",
+        "whatsapp": "Questions? I answer on WhatsApp.",
+        "cta": "Complete your page",
+        "close": "Close"
+      },
       "section_errors": {
         "analytics": "We couldn't load your stats",
         "profile": "We couldn't load your business details",
