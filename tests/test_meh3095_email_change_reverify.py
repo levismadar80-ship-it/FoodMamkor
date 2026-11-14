@@ -21,7 +21,7 @@ SEND = "app.routers.users_me.send_verify_email"
 
 # MEH-3104: a real address change also needs the current password; this is
 # make_user's default one (tests/conftest.py).
-PASSWORD = "Zx7Yp9Mq2Lr4"
+PASSWORD = "Zx7Yp9Mq2Lr4"  # guard-ok: test fixture password (conftest make_user default), not a credential
 
 
 def _patch_email(client, user, email):

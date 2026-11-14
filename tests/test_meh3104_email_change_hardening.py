@@ -25,7 +25,7 @@ from app.utils.clock import utc_now
 from conftest import auth_header, make_user
 
 SEND = "app.routers.users_me.send_verify_email"
-PASSWORD = "Zx7Yp9Mq2Lr4"  # make_user's default
+PASSWORD = "Zx7Yp9Mq2Lr4"  # guard-ok: test fixture, make_user default password, not a credential
 
 
 def _patch(client, user, body):
@@ -55,7 +55,7 @@ class TestEmailChangeNeedsThePassword:
 
     def test_right_password_changes_it_and_kills_a_pending_reset(self, client, db):
         user = make_user(db, email="pw3@example.com", email_verified=True)
-        user.reset_token = "pending-reset-token"
+        user.reset_token = "example-pending-reset-token"
         user.reset_token_expires_at = utc_now() + timedelta(hours=1)
         db.commit()
         res, send = _patch(
