@@ -51,7 +51,7 @@ import ButtonSpinner from "@/components/ButtonSpinner";
 
 const HIBP_DEBOUNCE_MS = 500;
 
-/** @param {{ name?: string, id?: string, value?: string, onChange?: (...args: any[]) => any, showCurrentPasswordReuse?: boolean, placeholder?: string, ariaLabel?: string, required?: boolean, autoComplete?: string, onValidityChange?: (...args: any[]) => any, testId?: string }} props */
+/** @param {{ name?: string, id?: string, value?: string, onChange?: (e: import("react").ChangeEvent<HTMLInputElement>) => void, showCurrentPasswordReuse?: boolean, placeholder?: string, ariaLabel?: string, required?: boolean, autoComplete?: string, onValidityChange?: (valid: boolean) => void, testId?: string }} props */
 export default function PasswordInput({
   name = "password",
   id,

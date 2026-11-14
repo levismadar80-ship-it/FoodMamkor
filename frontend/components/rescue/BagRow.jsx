@@ -43,7 +43,7 @@ function worthAgorot(offer) {
  *           render this), lib/rescue.js (every unit it formats)
  * History:  MEH-2648 (creation) · rescue-home redesign (events-row language)
  *
- * @param {{ offer: any, headingTag?: "h2" | "h3" }} props
+ * @param {{ offer: import("@/types/entities").RescueOffer, headingTag?: "h2" | "h3" }} props
  */
 export default function BagRow({ offer, headingTag = "h3" }) {
   const t = useTranslations("rescue");

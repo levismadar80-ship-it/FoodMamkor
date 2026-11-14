@@ -92,7 +92,7 @@ function CertModal({ src, expiryText, onClose, t }) {
  *   strip (ProfileCompletenessCard); "quiet" (MEH-1334) renders the producer
  *   header's single quiet kosher line: icon + labels joined on one row. Both
  *   variants share the MEH-1260 expiry gate + CODE_TO_KEY contract — one owner.
- * @param {any[]} [props.badges] the producer's kashrut badge codes.
+ * @param {string[]} [props.badges] the producer's kashrut badge codes.
  * @param {string} [props.verified_at]
  * @param {string} [props.expires_at] - MEH-1260 expiry gate.
  * @param {{badge_code: string}[]} [props.certs=[]] - MEH-1672, badges whose approved

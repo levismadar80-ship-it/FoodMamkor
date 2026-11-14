@@ -61,7 +61,7 @@ function categoryTint(hex, alpha) {
  *           (uniform template); MEH-1210 (price removed); MEH-1211 (broken-img
  *           fallback); MEH-1243 (Direction B + 🔒 Pin-Echo redesign).
  *
- * @param {{ producer: any, active?: boolean, onClick?: (...args: any[]) => any }} props
+ * @param {{ producer: import("@/types/entities").ProducerSummary, active?: boolean, onClick?: (producer: import("@/types/entities").ProducerSummary) => void }} props
  */
 export default function MapProducerCard({ producer, active, onClick }) {
   const t = useTranslations("map.producer_card");

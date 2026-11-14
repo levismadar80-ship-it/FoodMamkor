@@ -82,7 +82,7 @@ function cityKey(name) {
 }
 const STATIC_KEYS = new Set(STATIC_CITIES_SORTED.map(cityKey));
 
-/** @param {{ value?: string, onChange?: (...args: any[]) => any, placeholder?: string, label?: import("react").ReactNode, labelVisible?: boolean, id?: string, onSubmit?: (...args: any[]) => any, onKnownChange?: (...args: any[]) => any, useBackend?: boolean, className?: string, pill?: boolean, required?: boolean, "aria-describedby"?: string, "aria-invalid"?: boolean }} props */
+/** @param {{ value?: string, onChange?: (value: string, meta: { known: boolean }) => void, placeholder?: string, label?: import("react").ReactNode, labelVisible?: boolean, id?: string, onSubmit?: (value: string) => void, onKnownChange?: (known: boolean) => void, useBackend?: boolean, className?: string, pill?: boolean, required?: boolean, "aria-describedby"?: string, "aria-invalid"?: boolean }} props */
 export default function CitySearch({
   value,
   onChange,

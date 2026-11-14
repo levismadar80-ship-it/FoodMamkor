@@ -183,9 +183,9 @@ function capSections(sections, limit) {
 /**
  * @param {{
  *   label: import("react").ReactNode,
- *   rows: any[],
- *   t: (key: string, values?: Record<string, any>) => string,
- *   feeOf?: (da: any) => number | null,
+ *   rows: object[],
+ *   t: (key: string, values?: Record<string, string | number>) => string,
+ *   feeOf?: (da: object) => number | null,
  * }} props
  */
 function AreaGroup({ label, rows, t, feeOf = () => null }) {

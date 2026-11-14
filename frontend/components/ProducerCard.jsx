@@ -284,7 +284,7 @@ function useBadgesThatFit(lineRef, earned) {
   return Math.min(shown, cap);
 }
 
-/** @param {{ producer: any, active?: boolean, onClick?: (...args: any[]) => any, referrer?: string, highlightQuery?: string, startCornerControl?: import("react").ReactNode }} props */
+/** @param {{ producer: import("@/types/entities").ProducerSummary, active?: boolean, onClick?: (producer: import("@/types/entities").ProducerSummary) => void, referrer?: string, highlightQuery?: string, startCornerControl?: import("react").ReactNode }} props */
 export default function ProducerCard({ producer, active, onClick, referrer, highlightQuery = null, startCornerControl = false }) {
   const t = useTranslations();
   const cardFee = resolveDeliveryFee(producer.delivery_fee, producer.delivery_areas);
