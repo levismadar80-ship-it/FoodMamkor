@@ -282,8 +282,8 @@ export default function ExperienceForm({ mode = "create", initial = null, onSucc
       const res = await api.post("/upload/image", formData);
       setForm((f) => ({ ...f, image_url: res.data.url }));
     } catch (err) {
-      // The endpoint's own Hebrew detail when it has one (the free-plan 3-image
-      // cap, upload.py:105, is a real sentence the owner needs) — otherwise ours.
+      // The endpoint's own Hebrew detail when it has one (file too large,
+      // wrong type: a real sentence the owner needs) — otherwise ours.
       const detail = err?.response?.data?.detail;
       setFieldErrors((errs) => ({
         ...errs,

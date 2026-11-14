@@ -26391,7 +26391,7 @@
     },
     "/upload/image": {
       "post": {
-        "description": "Upload image to Cloudinary. Validates size and real content type.\nEnforces free plan limit (3 images) for producers.",
+        "description": "Upload image to Cloudinary. Validates size and real content type.\nThe free-plan gallery cap is NOT here (MEH-3220, services/gallery_cap.py).",
         "operationId": "upload_image_upload_image_post",
         "requestBody": {
           "content": {

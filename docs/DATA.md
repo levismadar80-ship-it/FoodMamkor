@@ -1609,6 +1609,8 @@ POST /chat                       public — one-shot Claude Haiku Q&A about the 
 
 ```
 POST /upload/image               auth — Cloudinary direct upload with magic-byte validation
+                                 (no plan cap: the free-plan 3-photo cap is a GALLERY cap, enforced on
+                                 PUT /producers/me `images` → 403, services/gallery_cap.py — MEH-3220)
 POST /upload/owner-photo         auth+producer — MEH-1335 owner photo; no freemium gate, square crop,
                                  folder mehamakor/owner, public_id=owner_{producer_id} overwrite=True,
                                  writes producers.owner_photo_url atomically
