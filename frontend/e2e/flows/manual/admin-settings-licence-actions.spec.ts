@@ -270,7 +270,10 @@ test.describe("checklist editor — /admin/settings", () => {
     const sent = (puts(writes, "/admin/checklist-items")[0].body as { items: { label: string }[] }).items;
     expect(sent[0].label).toBe("פרטים בסיסיים תקינים — כולל תיאור");
     expect(sent).toHaveLength(7);
-    await page.reload();
+    // MEH-3153: openSettings() is itself a full document load (page.goto), so it is
+    // the reload. A page.reload() right before it raced two navigations: on
+    // WebKit the reloaded page's in-flight /auth/me was aborted by the goto,
+    // and the layout pushed /login over it (MEH-3172).
     await openSettings(page);
     await expect(labelInputs(page).first()).toHaveValue("פרטים בסיסיים תקינים — כולל תיאור");
   });
@@ -317,7 +320,10 @@ test.describe("checklist editor — /admin/settings", () => {
     await expect(savedMark(page)).toBeVisible();
     const sent = (puts(writes, "/admin/checklist-items")[0].body as { items: { label: string }[] }).items.map((i) => i.label);
     expect(sent.slice(0, 2)).toEqual([second, first]);
-    await page.reload();
+    // MEH-3153: openSettings() is itself a full document load (page.goto), so it is
+    // the reload. A page.reload() right before it raced two navigations: on
+    // WebKit the reloaded page's in-flight /auth/me was aborted by the goto,
+    // and the layout pushed /login over it (MEH-3172).
     await openSettings(page);
     await expect(labelInputs(page).nth(0)).toHaveValue(second);
     await expect(labelInputs(page).nth(1)).toHaveValue(first);
@@ -354,7 +360,10 @@ test.describe("checklist editor — /admin/settings", () => {
     const sent = (puts(writes, "/admin/checklist-items")[0].body as { items: { id: string | null; label: string }[] }).items;
     expect(sent).toHaveLength(8);
     expect(sent[7]).toMatchObject({ id: null, label: "שיחת וידאו קצרה עם בעלת העסק" });
-    await page.reload();
+    // MEH-3153: openSettings() is itself a full document load (page.goto), so it is
+    // the reload. A page.reload() right before it raced two navigations: on
+    // WebKit the reloaded page's in-flight /auth/me was aborted by the goto,
+    // and the layout pushed /login over it (MEH-3172).
     await openSettings(page);
     await expect(labelInputs(page)).toHaveCount(8);
     await expect(labelInputs(page).nth(7)).toHaveValue("שיחת וידאו קצרה עם בעלת העסק");
@@ -387,7 +396,10 @@ test.describe("checklist editor — /admin/settings", () => {
     await expect(savedMark(page)).toBeVisible();
     const sent = (puts(writes, "/admin/checklist-items")[0].body as { items: { label: string; active: boolean }[] }).items;
     expect(sent[1]).toMatchObject({ label: gone, active: false });
-    await page.reload();
+    // MEH-3153: openSettings() is itself a full document load (page.goto), so it is
+    // the reload. A page.reload() right before it raced two navigations: on
+    // WebKit the reloaded page's in-flight /auth/me was aborted by the goto,
+    // and the layout pushed /login over it (MEH-3172).
     await openSettings(page);
     await expect(labelInputs(page)).toHaveCount(7);
     await expect(labelInputs(page).nth(1)).toHaveValue(gone);

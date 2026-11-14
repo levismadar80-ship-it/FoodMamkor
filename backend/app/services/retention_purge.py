@@ -42,11 +42,12 @@ timestamp is below that instant has an Israel day below the boundary day.
 
 from __future__ import annotations
 
+from typing import Any, cast
 import logging
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta, timezone
 
-from sqlalchemy import delete, select
+from sqlalchemy import CursorResult, delete, select
 from sqlalchemy.orm import Session
 
 from app.models.models import (
@@ -111,7 +112,7 @@ def raw_boundary_day(db: Session, today: date) -> date | None:
     return min(retention_boundary, watermark + timedelta(days=1))
 
 
-def _delete_in_batches(db: Session, model, time_col, cutoff: datetime) -> int:
+def _delete_in_batches(db: Session, model: Any, time_col: Any, cutoff: datetime) -> int:
     """Delete `model` rows with `time_col < cutoff`, BATCH_SIZE at a time,
     committing each batch. Rolls back and re-raises on failure, so the
     session stays usable for the caller (MEH-1824 invariant)."""
@@ -128,7 +129,7 @@ def _delete_in_batches(db: Session, model, time_col, cutoff: datetime) -> int:
         except Exception:
             db.rollback()
             raise
-        deleted = result.rowcount or 0
+        deleted = cast("CursorResult[Any]", result).rowcount or 0
         total += deleted
         if deleted < BATCH_SIZE:
             return total
@@ -156,7 +157,7 @@ def _purge_registrations(db: Session, today: date) -> int:
         except Exception:
             db.rollback()
             raise
-        total += result.rowcount or 0
+        total += cast("CursorResult[Any]", result).rowcount or 0
     return total
 
 

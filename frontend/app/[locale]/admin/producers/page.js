@@ -9,7 +9,7 @@ import QueueSlaSummary from "./QueueSlaSummary";
 import ProducerDecisionModal from "./ProducerDecisionModal";
 import { useAdminProducers } from "./use-admin-producers";
 import { useReviewChecklist } from "./use-review-checklist";
-import { ADMIN_REVIEW_APPROVE_CONFIRM } from "@/lib/admin-review-checklist";
+import { approveConfirmMessage } from "@/lib/admin-review-checklist";
 import { SkeletonTable } from "@/components/Skeleton";
 import Button from "@/components/ui/Button";
 
@@ -81,6 +81,7 @@ function DeleteConfirmDialog({ confirmDelete, deleting, onConfirm, onCancel }) {
 // (MEH-1023/MEH-1027 dialog contract); affirmative button is primary (not
 // destructive) since this confirms an approval. Escape cancels.
 function ApproveConfirmDialog({ approveConfirm, onConfirm, onCancel }) {
+  const t = useTranslations("admin.producers.review.approve_confirm");
   if (!approveConfirm) return null;
   return (
     <Dialog
@@ -90,20 +91,20 @@ function ApproveConfirmDialog({ approveConfirm, onConfirm, onCancel }) {
       className="space-y-4"
     >
         <p id="approve-confirm-title" className="font-medium text-base">
-          {ADMIN_REVIEW_APPROVE_CONFIRM.message(approveConfirm.count)}
+          {approveConfirmMessage(t, approveConfirm.count)}
         </p>
         <div className="flex gap-3 justify-start">
           <Button
             onClick={onConfirm}
             variant="primary" size="sm"
           >
-            {ADMIN_REVIEW_APPROVE_CONFIRM.confirmLabel}
+            {t("confirm")}
           </Button>
           <button data-autofocus
             onClick={onCancel}
             className="px-4 py-2 rounded-full text-sm border border-border text-muted hover:bg-gray-50 transition"
           >
-            {ADMIN_REVIEW_APPROVE_CONFIRM.cancelLabel}
+            {t("cancel")}
           </button>
         </div>
     </Dialog>

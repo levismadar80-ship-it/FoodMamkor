@@ -18,7 +18,7 @@ History:  MEH-2139 chunk 2 (creation).
 
 import hashlib
 import re
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, Any, cast
 
 # MEH-2139: the `Session` import is TYPE_CHECKING-only, and that is load-bearing
 # rather than stylistic. This module imports `hashlib` and `re` and nothing else,
@@ -152,7 +152,7 @@ def resolve_unique_slug(db: "Session", name: str) -> str:
     return candidate
 
 
-def _column_default(context) -> str:
+def _column_default(context: Any) -> str:
     """SQLAlchemy column default — reads `name` from the row being inserted.
 
     Covers **ORM inserts**: `Category(name=…, emoji=…)` with no slug, which is

@@ -94,7 +94,7 @@ ORGANIZER_SUBMISSION_REQUIREMENTS: tuple[str, ...] = (
 )
 
 
-def _is_usable_coord(value) -> bool:
+def _is_usable_coord(value: object) -> bool:
     """A coordinate is usable only when it is a real, non-NaN number.
 
     Mirrors producerPoints.js:20's `isUsableCoord`. `bool` is excluded
@@ -125,7 +125,7 @@ def _has_location(producer: Producer) -> bool:
     registration path, so reading it here would evaluate empty for every
     business and silently block every delivery-only submission.
     """
-    delivery_only = producer.has_physical_location is False and bool(
+    delivery_only = producer.has_physical_location is False and bool(  # type: ignore[comparison-overlap]
         producer.offers_delivery
     )
     if delivery_only:
@@ -230,7 +230,7 @@ def attach_upcoming_events_count(producer: Producer) -> None:
     (the client gate mirror reads it). Organizers only — a business never
     reads it, so it keeps the schema default 0 without an extra query."""
     if getattr(producer, "kind", "producer") == "organizer":
-        producer.upcoming_events_count = upcoming_events_count(producer)
+        producer.upcoming_events_count = upcoming_events_count(producer)  # type: ignore[attr-defined]  # transient, read by ProducerOwnerOut
 
 
 def _organizer_missing_items(producer: Producer) -> list[str]:

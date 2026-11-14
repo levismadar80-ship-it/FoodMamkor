@@ -78,7 +78,7 @@ export default function NewEventPage() {
         {t("info_paragraph")}
       </p>
 
-      <EventForm mode="create" onSuccess={handleSuccess} cancelHref="/producer/dashboard/events" />
+      <EventForm mode="create" onSuccess={handleSuccess} cancelHref="/producer/dashboard/events" emailUnverified={user?.email_verified === false} />
     </div>
   );
 }

@@ -1,3 +1,4 @@
+from typing import Any
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Request
@@ -21,7 +22,7 @@ OPEN_STATUS = "open"
 AUTO_FLAG_THRESHOLD = 3
 
 
-@router.post("/producers/{producer_id}/report", status_code=201)
+@router.post("/producers/{producer_id}/report", status_code=201, response_model=None)
 @limiter.limit("5/hour")
 def report_producer(
     request: Request,
@@ -29,7 +30,7 @@ def report_producer(
     data: ReportCreate,
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
-):
+) -> dict[str, Any]:
     producer = db.query(Producer).filter(Producer.id == producer_id).first()
     if not producer:
         raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
@@ -78,11 +79,11 @@ def report_producer(
     return {"detail": "Report submitted", "flagged_for_review": flagged}
 
 
-@router.get("/admin/reports", response_model=list[dict])
+@router.get("/admin/reports", response_model=list[dict[str, Any]])
 def get_flagged_producers(
     user: User = Depends(require_admin),
     db: Session = Depends(get_db),
-):
+) -> list[dict[str, Any]]:
     """MEH-1266: every producer with >=1 OPEN report (not only 3+).
 
     Each group carries `report_count` (open only) and `auto_flagged`
@@ -129,7 +130,9 @@ def get_flagged_producers(
     return flagged
 
 
-def _close_report(report_id: UUID, new_status: str, admin: User, db: Session) -> dict:
+def _close_report(
+    report_id: UUID, new_status: str, admin: User, db: Session
+) -> dict[str, Any]:
     """Shared resolve/dismiss transition. 404 if missing, 409 if already
     closed (idempotency guard against a double-close race)."""
     report = db.query(Report).filter(Report.id == report_id).first()
@@ -137,28 +140,28 @@ def _close_report(report_id: UUID, new_status: str, admin: User, db: Session) ->
         raise HTTPException(status_code=404, detail="דיווח לא נמצא")
     if report.status != OPEN_STATUS:
         raise HTTPException(status_code=409, detail="הדיווח כבר טופל")
-    report.status = new_status
-    report.resolved_at = utc_now()
+    report.status = new_status  # type: ignore[assignment]
+    report.resolved_at = utc_now()  # type: ignore[assignment]
     report.resolved_by = admin.id
     db.commit()
     return {"detail": "Report closed", "status": new_status}
 
 
-@router.post("/admin/reports/{report_id}/resolve")
+@router.post("/admin/reports/{report_id}/resolve", response_model=None)
 def resolve_report(
     report_id: UUID,
     user: User = Depends(require_admin),
     db: Session = Depends(get_db),
-):
+) -> dict[str, Any]:
     """Mark a report resolved (action taken)."""
     return _close_report(report_id, "resolved", user, db)
 
 
-@router.post("/admin/reports/{report_id}/dismiss")
+@router.post("/admin/reports/{report_id}/dismiss", response_model=None)
 def dismiss_report(
     report_id: UUID,
     user: User = Depends(require_admin),
     db: Session = Depends(get_db),
-):
+) -> dict[str, Any]:
     """Dismiss a report (no action needed / false alarm)."""
     return _close_report(report_id, "dismissed", user, db)

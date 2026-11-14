@@ -18,8 +18,8 @@ const node = (ld) => ld["@graph"].find((n) => n["@type"] === "Event");
 describe("buildEventJsonLd — endDate (MEH-2469)", () => {
   it("start + end → startDate and endDate on the same day", () => {
     const ev = node(buildEventJsonLd({ ...BASE, event_time: "09:30:00", end_time: "15:00:00" }));
-    expect(ev.startDate).toBe("2026-11-07T09:30");
-    expect(ev.endDate).toBe("2026-11-07T15:00");
+    expect(ev.startDate).toBe("2026-11-07T09:30+02:00"); // MEH-3177: Israel offset, winter time in November
+    expect(ev.endDate).toBe("2026-11-07T15:00+02:00");
   });
 
   it("start only → no endDate", () => {

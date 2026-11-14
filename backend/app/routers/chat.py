@@ -23,6 +23,7 @@ Design notes:
     rather than crashing the widget.
 """
 
+from typing import Any
 import json
 import logging
 
@@ -34,6 +35,7 @@ from app.rate_limit import limiter
 # MEH-460 Pkg 4: schemas relocated to app.schemas.schemas per ADR-006 R1.
 from app.schemas.schemas import ChatRequest, ChatResponse
 from app.services import chat_db_tools, chat_intent_router
+
 
 logger = logging.getLogger(__name__)
 
@@ -100,7 +102,7 @@ SYSTEM_PROMPT = """את העוזרת הווירטואלית של מהמקור �
 מהמקור זה אתר שמחבר בין אנשים שמחפשים אוכל אמיתי ומקומי לבין בתי עסק מקומיים — בשר במרעה, לחם מחמצת, גבינות, ירקות אורגניים ועוד. אפשר לחפש לפי קטגוריה, לפי עיר, או על המפה לפי קרבה אליכם, ולדבר ישירות עם בית העסק.
 
 **האם האתר בחינם**
-כן, לגמרי חינם — גם לגולשים שמחפשים אוכל, וגם לבתי עסק שרוצים להירשם ולהופיע באתר. אין עמלות על עסקאות. הדף הבסיסי חינם — תמיד. — הלקוחות פונים ישירות לבית העסק, והתשלום עובר ביניהם בלבד.
+לגולשים שמחפשים אוכל האתר חינם. לבתי עסק: ההרשמה והעמוד באתר חינם, ובתקופת ההשקה כל הכלים חינם. בהמשך חלק מהכלים יהיו בתשלום, רק לבית עסק שכבר מקבל הזמנות דרך האתר, ועם הודעה מראש. אל תנקבי במחירים: המחירון המלא מופיע באתר, בעמוד «מחירון» שמקושר מעמוד ההצטרפות לבתי עסק. הלקוחות פונים ישירות לבית העסק, והתשלום עובר ביניהם בלבד.
 
 **איך נרשמים כבית עסק**
 נרשמים דרך טופס קצר — חינם לגמרי! אחרי ההרשמה משלימים את הפרופיל בלוח הבקרה (תמונה, מוצר ראשון), שולחים לבדיקה — והצוות שלנו בודק ומאשר את העסק שלך עד 3 ימי עסקים, ואז הוא מופיע באתר.
@@ -163,10 +165,10 @@ def _strip_markdown(text: str) -> str:
 
 # ---------- Anthropic client (lazy, mirrors home_product_moderation) ----------
 
-_client = None
+_client: Any = None
 
 
-def _get_client():
+def _get_client() -> Any:
     global _client
     if _client is not None:
         return _client
@@ -281,7 +283,7 @@ def _db_query_allowed(request: Request) -> bool:
 
 
 def _live_data_context(
-    client, request: Request, api_messages: list[dict]
+    client: Any, request: Request, api_messages: list[dict[str, Any]]
 ) -> str | None:
     """Route the latest user message; on db_query run the bounded tool and
     return a system-prompt addendum with the JSON result. None on any

@@ -29,11 +29,15 @@ MEH-440-followup hardening on top of the verbatim port:
      accumulated size exceeds MAX_AVATAR_BYTES.
 """
 
+from typing import Any, cast, TYPE_CHECKING
 import logging
 import time
 import uuid
 
 from app.config import settings
+
+if TYPE_CHECKING:
+    from cryptography.hazmat.primitives.asymmetric.rsa import RSAPublicKey
 
 logger = logging.getLogger(__name__)
 
@@ -46,7 +50,7 @@ _AVATAR_CHUNK_SIZE = 8192
 
 # Apple JWKS cache: 1-hour TTL. Apple rotates keys on the order of
 # weeks / months, so an in-process cache keyed off the module is fine.
-_APPLE_JWKS_CACHE: dict = {"keys": None, "fetched_at": None}
+_APPLE_JWKS_CACHE: dict[str, Any] = {"keys": None, "fetched_at": None}
 _APPLE_JWKS_TTL_SECONDS = 3600
 
 
@@ -93,7 +97,7 @@ def upload_google_avatar_or_none(picture_url: str | None) -> str | None:
                 {"width": 400, "height": 400, "crop": "fill", "gravity": "face"}
             ],
         )
-        return result["secure_url"]
+        return cast(str | None, result["secure_url"])
     except Exception:
         logger.exception(
             "Failed to re-host Google avatar from %s — login continues without avatar",
@@ -102,7 +106,9 @@ def upload_google_avatar_or_none(picture_url: str | None) -> str | None:
         return None
 
 
-def _fetch_apple_jwks_or_fallback(now: float, cached_keys: list | None) -> list | None:
+def _fetch_apple_jwks_or_fallback(
+    now: float, cached_keys: list[Any] | None
+) -> list[Any] | None:
     """Fetch fresh JWKS from Apple, falling back to cached keys on any
     failure. Re-raises only when no cached keys exist AND the fetch
     raises (so the outer except returns None).
@@ -118,7 +124,7 @@ def _fetch_apple_jwks_or_fallback(now: float, cached_keys: list | None) -> list 
         if apple_keys:
             _APPLE_JWKS_CACHE["keys"] = apple_keys
             _APPLE_JWKS_CACHE["fetched_at"] = now
-            return apple_keys
+            return cast(list[Any], apple_keys)
         if cached_keys is not None:
             logger.warning("[APPLE AUTH] Fresh JWKS empty; using cached keys")
             return cached_keys
@@ -133,7 +139,7 @@ def _fetch_apple_jwks_or_fallback(now: float, cached_keys: list | None) -> list 
         raise
 
 
-def _refetch_apple_jwks_for_kid_miss() -> list | None:
+def _refetch_apple_jwks_for_kid_miss() -> list[Any] | None:
     """MEH-468-followup: refetch Apple's JWKS once when a token's kid is
     missing from the cached keyset (Apple may have rotated keys mid-TTL).
 
@@ -155,7 +161,7 @@ def _refetch_apple_jwks_for_kid_miss() -> list | None:
         return None
 
 
-def verify_apple_token(id_token: str) -> dict | None:
+def verify_apple_token(id_token: str) -> dict[str, Any] | None:
     """Verify Apple ID token and return user info."""
     if not settings.apple_client_id:
         logger.debug("[APPLE AUTH] No client ID configured, skipping verification")
@@ -197,7 +203,7 @@ def verify_apple_token(id_token: str) -> dict | None:
         public_key = pyjwt.algorithms.RSAAlgorithm.from_jwk(key)
         payload = pyjwt.decode(
             id_token,
-            public_key,
+            cast("RSAPublicKey", public_key),
             algorithms=["RS256"],
             audience=settings.apple_client_id,
             issuer="https://appleid.apple.com",
@@ -208,7 +214,7 @@ def verify_apple_token(id_token: str) -> dict | None:
         return None
 
 
-def verify_google_token(id_token: str) -> dict | None:
+def verify_google_token(id_token: str) -> dict[str, Any] | None:
     """Verify Google ID token and return user info."""
     if not settings.google_client_id:
         # Fallback for development: decode without verification
@@ -218,10 +224,10 @@ def verify_google_token(id_token: str) -> dict | None:
         from google.oauth2 import id_token as google_id_token
         from google.auth.transport import requests
 
-        info = google_id_token.verify_oauth2_token(
+        info = google_id_token.verify_oauth2_token(  # type: ignore[no-untyped-call]
             id_token, requests.Request(), settings.google_client_id
         )
-        return info
+        return cast(dict[str, Any], info)
     except Exception as e:
         logger.warning(f"[GOOGLE AUTH] Verification failed: {e}")
         return None

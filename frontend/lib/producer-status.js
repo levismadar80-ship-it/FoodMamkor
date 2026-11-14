@@ -4,20 +4,14 @@
 // in MEH-2124. This module wraps rendering so UI never shows a raw code.
 // Never mutate DB values here.
 //
-// Hebrew נקבה. Voice = warm + factual (not punitive); see CLAUDE.md.
+// MEH-3170: the labels live in messages/{he,en}.json under
+// `admin.producers.status_label.<code>` (Hebrew נקבה; voice = warm + factual,
+// not punitive). MEH-2126: `draft` is where every new registration starts
+// since MEH-2100; its label «טיוטה» matches the «טיוטות» filter tab.
 
-export const PRODUCER_STATUS_LABELS = {
-  // MEH-2126: `draft` has been where every new registration starts since
-  // MEH-2100, and it was the ONLY status value missing from this map — so the
-  // admin chip fell through to the `?? status` fallback and rendered the raw
-  // English code in a Hebrew table. Copy is Sapir's (rule 22): "טיוטה",
-  // matching the "טיוטות" filter tab so the chip and the tab name agree.
-  draft: "טיוטה",
-  pending: "ממתינה לאישור האדמין",
-  approved: "מאושר",
-  rejected: "נדחה",
-  inactive: "לא פעילה",
-};
+// Every status code that has a label. A code outside this list renders raw
+// (the `?? status` net for a status added to the backend before the UI).
+export const PRODUCER_STATUSES = ["draft", "pending", "approved", "rejected", "inactive"];
 
 // Color tokens — verbatim from admin/producers/page.js:139-143 (pre-MEH-294).
 // Single source of truth — admin chip imports these instead of inlining.
@@ -33,8 +27,12 @@ export const PRODUCER_STATUS_COLORS = {
   inactive: "bg-gray-200 text-gray-700",
 };
 
-export function getProducerStatusLabel(status) {
-  return PRODUCER_STATUS_LABELS[status] ?? status;
+/**
+ * @param {string} status — raw DB code
+ * @param {(key: string) => string} t — translator scoped to `admin`
+ */
+export function getProducerStatusLabel(status, t) {
+  return PRODUCER_STATUSES.includes(status) ? t(`producers.status_label.${status}`) : status;
 }
 
 // The colour a status the map does not know falls back to. Named and exported

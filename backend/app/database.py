@@ -1,3 +1,4 @@
+from typing import Any
 import logging
 import os
 from collections.abc import Iterator
@@ -64,7 +65,7 @@ class _ObservableQueuePool(QueuePool):
     unchanged — we log and re-raise the identical exception.
     """
 
-    def _do_get(self):
+    def _do_get(self) -> Any:
         try:
             return super()._do_get()
         except PoolTimeoutError:
@@ -80,7 +81,7 @@ class _ObservableQueuePool(QueuePool):
             raise
 
 
-def _engine_kwargs_for(database_url: str) -> dict:
+def _engine_kwargs_for(database_url: str) -> dict[str, Any]:
     """MEH-770 (SEN-001): assemble ``create_engine`` kwargs.
 
     Pool sizing + the observable pool apply only to the psycopg2/Postgres path
@@ -93,7 +94,7 @@ def _engine_kwargs_for(database_url: str) -> dict:
     idled out. All pool values come from env with conservative defaults — see
     the capacity math in the PR body.
     """
-    kwargs: dict = {"pool_pre_ping": True}
+    kwargs: dict[str, Any] = {"pool_pre_ping": True}
     if database_url.startswith(("postgresql", "postgres")):
         kwargs.update(
             connect_args={"connect_timeout": 10},
