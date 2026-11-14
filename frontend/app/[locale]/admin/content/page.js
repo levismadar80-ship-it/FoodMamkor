@@ -10,6 +10,7 @@ import { showToast } from "@/lib/toast";
 // in-flight lock (and create/update/page-save swallowed errors silently).
 import { useAdminAction } from "@/lib/use-admin-action";
 import Button from "@/components/ui/Button";
+import InlineMessage from "@/components/ui/InlineMessage";
 
 export default function AdminContentPage() {
   const t = useTranslations("admin");
@@ -151,9 +152,9 @@ function CategoriesEditor() {
             ))}
           </div>
           {licenseMissing && (
-            <p role="alert" className="text-danger-600 text-xs mt-1">
+            <InlineMessage size="xs" className="mt-1">
               {t("content.categories.license_choose")}
-            </p>
+            </InlineMessage>
           )}
         </fieldset>
       </form>
