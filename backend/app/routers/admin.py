@@ -1111,6 +1111,17 @@ def toggle_producer_status(
             detail="לא ניתן לשנות סטטוס במצב הנוכחי — יש לאשר או לדחות את העסק דרך מסלול האישור.",
         )
     was_approved = producer.status == "approved"
+    if not was_approved:
+        # MEH-2945 (Sapir 11/11: block): un-pausing puts the page back on the
+        # site, so it passes the same content gates as approval — photo,
+        # licence, verified WhatsApp. Without this, a business edited (or whose
+        # licence lapsed) while paused came back live with content no gate saw.
+        # Only this direction: hiding a page is never gated. No overrides here
+        # on purpose — an admin who means to publish past a gate uses the
+        # approve flow, which takes the explicit overrides and logs them.
+        # MEH-769's "no side-effects" rule is untouched: this adds a check, not
+        # the approval email/WhatsApp.
+        _assert_approvable(db, producer, ApprovalOverrides(), user.id)
     producer.status = "inactive" if was_approved else "approved"
     if was_approved:
         # MEH-2974: suspending a live page REVOKES any outstanding owner
