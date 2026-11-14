@@ -4,6 +4,18 @@
 > Standing procedures live in [`docs/runbooks/`](./docs/runbooks/) — e.g. the [uptime alert runbook](./docs/runbooks/UPTIME.md).
 > Decision capture is proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-11-14 — כרטיסי ההשקה של «לפני ההשקה»: הצהרת המגדל ועוד ארבעה
+
+**שורה אחת:** #4488, #4493, #4486, #4500 ו-#4496 מוזגו ל-staging. #4496 נכנס עם revision ‏`d4f8b2c6e135`.
+
+**מה צריך לדעת לפני עבודה:**
+- **שרשרת Alembic:** ‏`e4b8d2f6a913` → ‏`d4f8b2c6e135` (הצהרת המגדל) → ‏`d5b8f2a6c341` (#4546, כשיעבור re-point). ספיר אישרה את הקובץ בכתב (14/11 12:22Z). מאז השתנה בו רק ה-`down_revision`.
+- **פריסה ל-production:** frontend לפני backend. אם השרת עולה ראשון, הרשמת ירקות מקבלת 422 עד שהלקוח החדש שולח את הדגל.
+- **עסק מגדל ישן בלי שורה רשומה:** ‏`farmer_declared_at` הוא NULL. בשמירת קטגוריות הבאה הוא יתבקש לאשר. שמירה בלי `category_ids` לא נחסמת.
+- **פתוח אצל ספיר:** ‏SUPER_ADMIN_EMAIL ב-Railway production, ‏MEH-2877 (5 הגדרות ספקים), ‏MEH-409 (10 העסקים הראשונים), וההחלטה ב-MEH-2208.
+
+---
+
 ## 2026-11-12 — רצועת הבית בכרטיסי תמונה, ו«אירועים» בסרגל התחתון של הנייד
 
 **שורה אחת:** #4334, #4340 ו-#4347 מוזגו ל-staging. שלושתם עם E2E מלא ירוק על ה-PR.
