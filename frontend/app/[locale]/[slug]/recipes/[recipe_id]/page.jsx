@@ -182,7 +182,10 @@ export default async function PublicRecipePage(props) {
           dangerouslySetInnerHTML={{ __html: serializeJsonLd(breadcrumbLd) }}
         />
       )}
+      {/* MEH-3121: keyed by recipe, so the servings the reader chose and the
+          crossed-off lines never carry over to another recipe. */}
       <RecipeDetail
+        key={recipe.id}
         recipe={recipe}
         producer={producer}
         relatedProducts={relatedProducts}
