@@ -95,5 +95,5 @@ describe("MEH-3092 — form field look", () => {
     }
     expect(seen.fields, "corpus control: the walker sees bordered fields").toBeGreaterThan(80);
     expect(offenders).toEqual([]);
-  });
+  }, 60_000); // walks every file in app/ + components/; timed out at 5 s on a loaded CI shard
 });

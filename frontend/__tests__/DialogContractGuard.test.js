@@ -96,7 +96,7 @@ describe("MEH-3093 — modal dialog contract", () => {
     }
     expect(dialogs, "corpus control: the walker sees modal dialogs").toBeGreaterThan(20);
     expect(offenders).toEqual([]);
-  });
+  }, 60_000); // walks every file in app/ + components/; timed out at 5 s on a loaded CI shard
 });
 
 // MEH-3096 — a centred modal is a <Dialog>, not a hand-built overlay. A class
@@ -145,5 +145,5 @@ describe("MEH-3096 — centred modals use ui/Dialog", () => {
     // corpus control: every named owner still has its overlay (a stale entry reds)
     expect(owners).toBe(OVERLAY_OWNERS.size);
     expect(offenders).toEqual([]);
-  });
+  }, 60_000); // walks every file in app/ + components/; timed out at 5 s on a loaded CI shard
 });

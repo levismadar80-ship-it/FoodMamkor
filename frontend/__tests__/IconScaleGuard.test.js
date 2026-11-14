@@ -93,5 +93,5 @@ describe("MEH-3089 — icon size scale and weights", () => {
     }
     expect(seen.icons, "corpus control: the walker sees phosphor icons").toBeGreaterThan(500);
     expect(offenders).toEqual([]);
-  });
+  }, 60_000); // walks every file in app/ + components/; timed out at 5 s on a loaded CI shard
 });
