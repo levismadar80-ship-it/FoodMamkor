@@ -139,6 +139,21 @@
             ],
             "title": "Body"
           },
+          "conflict": {
+            "anyOf": [
+              {
+                "enum": [
+                  "owner",
+                  "competitor"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Conflict"
+          },
           "created_at": {
             "title": "Created At",
             "type": "string"

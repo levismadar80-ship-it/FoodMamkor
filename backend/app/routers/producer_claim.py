@@ -63,6 +63,7 @@ from app.services.auth_notifications import (
     notify_producer_registered,
 )
 from app.services.producer_risk import score_producer
+from app.services.review_conflicts import recompute_after_owner_linked  # MEH-3258
 
 logger = structlog.get_logger(__name__)
 
@@ -322,6 +323,9 @@ def claim_producer(
     user.terms_accepted_at = now  # type: ignore[assignment]
     user.terms_version = TERMS_VERSION  # type: ignore[assignment]
     db.commit()
+    # MEH-3258: reviews she wrote (on this business, or on a competitor) leave
+    # the rating now that she owns one.
+    recompute_after_owner_linked(db, user.id)
 
     # Capture before the session closes — background tasks run after it.
     p_id, p_name, p_phone = producer.id, producer.name, producer.phone

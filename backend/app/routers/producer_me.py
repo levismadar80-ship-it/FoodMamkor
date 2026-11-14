@@ -71,6 +71,7 @@ from app.services.submission_confirmation import send_submission_confirmation
 from app.services.producer_risk import score_producer  # MEH-2602
 from app.services import indexnow  # MEH-2852
 from app.services.owner_attention import owner_attention  # MEH-3108
+from app.services.review_conflicts import recompute_after_categories_changed  # MEH-3258
 from app.services.submission_gate import (
     attach_upcoming_events_count,
     submission_missing_items,
@@ -976,6 +977,8 @@ def update_my_producer(
 
     db.commit()
     db.refresh(producer)
+    # MEH-3258: a category write can move competitor conflicts (no-op on None).
+    recompute_after_categories_changed(db, producer.id, category_ids)
 
     # MEH-375: best-effort destroy of Cloudinary assets the producer
     # dropped from the gallery, AFTER db.commit so a constraint failure
