@@ -518,9 +518,9 @@ class TestReviewCells:
             "c@example.com",
         ]
 
-    def test_a_recurring_experience_with_a_past_first_date_counts(
-        self, client, db, sent
-    ):
+    def test_a_recurring_experience_with_a_past_date_is_left(self, client, db, sent):
+        # Sign-up closes once event_date passes, even for a recurring item
+        # (registrations.py), so a sign-up there was for a date gone by.
         producer, owner = _business(db)
         ex = _experience(db, owner, days=-10, is_recurring=True)
         reg = _signup(db, ex, "weekly@example.com")
@@ -528,8 +528,8 @@ class TestReviewCells:
             f"/admin/producers/{producer.id}/toggle-status",
             headers=auth_header(_admin(db)),
         )
-        assert _statuses(db, Registration, [reg.id]) == [("cancelled",)]
-        assert ("send_registrant_delisted", "weekly@example.com") in _kinds(sent)
+        assert _statuses(db, Registration, [reg.id]) == [("registered",)]
+        assert _kinds(sent) == [("send_owner_delisted", owner.email)]
 
     def test_a_test_business_marks_every_mail_as_test(self, client, db, sent):
         producer, owner = _business(db)

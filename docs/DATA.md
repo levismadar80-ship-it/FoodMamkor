@@ -799,7 +799,7 @@ via `slowapi` — see `backend/app/rate_limit.py` and
 > pickup has not ended → `cancelled`, its `reserved` orders → `cancelled`, one
 > email per buyer («הסל ב{name} בוטל» / «…כבר לא מופיע במהמקור, ולכן השריון
 > שלכם לסל בוטל»); every `registered` sign-up to its events from today on and to
-> experiences its owner hosts (today on, or recurring) → `cancelled`, one email
+> experiences its owner hosts (today on) → `cancelled`, one email
 > each («ההרשמה ל-"{title}" בוטלה»). Suspend and admin delete also mail the
 > owner («הדף של {name} הוסתר מהאתר» / «…הוסר», with a /contact link); reject
 > already sends its own email, and the account deletion is her own act. Past

@@ -178,8 +178,8 @@ def _cancel_upcoming_signups(
     db: Session, producer: Producer, background_tasks: BackgroundTasks
 ) -> int:
     """Sign-ups to this business's events, and to experiences its owner
-    hosts, from today on (a recurring experience counts whatever its first
-    date) → cancelled, one email each."""
+    hosts, from today on → cancelled, one email each. A recurring experience
+    is dated too: sign-up closes once its date passes (registrations.py)."""
     today = israel_today()
     events = (
         db.query(Event)
@@ -190,7 +190,7 @@ def _cancel_upcoming_signups(
         db.query(Experience)
         .join(User, Experience.host_user_id == User.id)
         .filter(User.producer_id == producer.id)
-        .filter((Experience.event_date >= today) | Experience.is_recurring.is_(True))
+        .filter(Experience.event_date >= today)
         .all()
     )
     by_event = {e.id: e for e in events}
@@ -321,8 +321,6 @@ def _column_for(item: Event | Experience) -> Any:
 
 
 def _is_upcoming(item: Event | Experience) -> bool:
-    if isinstance(item, Experience) and item.is_recurring:
-        return True
     return bool(item.event_date and item.event_date >= israel_today())
 
 
@@ -404,8 +402,6 @@ def after_item_edit(
     moved = (item.event_date, item.event_time) != (old_date, old_time)
     # A past item moved forward: its registrants were for the old, past date.
     was_upcoming = bool(old_date and old_date >= israel_today())
-    if isinstance(item, Experience) and item.is_recurring:
-        was_upcoming = True
     if item.is_active and moved and was_upcoming:
         return notify_item_moved(db, item, background_tasks, test_cause)
     return 0
