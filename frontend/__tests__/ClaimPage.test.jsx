@@ -330,7 +330,14 @@ describe("submitting", () => {
     fireEvent.click(screen.getByTestId("claim-farmer"));
     fireEvent.click(screen.getByTestId("claim-submit"));
     await waitFor(() => expect(push).toHaveBeenCalledWith("/producer/dashboard"));
-    expect(claimCall()[1]).toEqual({ token: TOKEN, declaration_accepted: true, terms_accepted: true });
+    // MEH-3137: the grower line is ALSO sent on its own, so the server can
+    // record it apart (farmer_declared_at), as registration does.
+    expect(claimCall()[1]).toEqual({
+      token: TOKEN,
+      declaration_accepted: true,
+      terms_accepted: true,
+      farmer_declaration_accepted: true,
+    });
   });
 
   it.each([

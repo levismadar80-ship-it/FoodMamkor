@@ -49,6 +49,8 @@ import { resolveStoreHours } from "@/lib/hours";
 // descriptions MEH-1354, popular-6 + search, ≤3 cap MEH-1297, primary-first)
 // instead of its own flat checkbox grid. Same selection contract (category_ids).
 import CategorySelector from "@/components/CategorySelector";
+import { requiresFarmerDeclaration } from "@/lib/farmer-declaration";
+import FarmerDeclarationCheckbox from "@/components/FarmerDeclarationCheckbox";
 import CategoryRequestModal from "@/components/CategoryRequestModal";
 import Input from "@/components/ui/Input";
 import CitiesAutocomplete from "@/components/CitiesAutocomplete";
@@ -109,6 +111,7 @@ export function ViewOnPageLink({ producerId, anchor, testId }) {
 // directly — the default page export is unchanged.
 export function CategoriesCard({ profile, onSave, reportDirty = () => {} }) {
   const t = useTranslations("dashboard.producer.categories");
+  const [farmerConfirmed, setFarmerConfirmed] = useState(false);
   const [allCategories, setAllCategories] = useState([]);
   const seedIds = (profile?.categories || []).map((c) => c.id);
   const [selected, setSelected] = useState(seedIds);
@@ -159,6 +162,11 @@ export function CategoriesCard({ profile, onSave, reportDirty = () => {} }) {
     return () => reportDirty("categories", false);
   }, [dirty, reportDirty]);
 
+  // MEH-3137: ask only when she never recorded it (null). Absent = unknown
+  // (an older payload) — the server still guards, so the card does not guess.
+  const farmerAsk = profile?.farmer_declared_at === null &&
+    requiresFarmerDeclaration(allCategories.filter((c) => selected.includes(c.id)).map((c) => c.name));
+
   const toggle = (id) => {
     setSaved(false);
     setErrorMsg(null);
@@ -172,7 +180,10 @@ export function CategoriesCard({ profile, onSave, reportDirty = () => {} }) {
     setSaved(false);
     setErrorMsg(null);
     try {
-      await api.put("/producers/me", { category_ids: selected });
+      await api.put("/producers/me", {
+        category_ids: selected,
+        ...(farmerAsk && { farmer_declaration_accepted: farmerConfirmed }),
+      });
       // Keep the parent profile in sync so a re-render reseeds correctly.
       onSave({ categories: allCategories.filter((c) => selected.includes(c.id)) });
       setSaved(true);
@@ -203,6 +214,10 @@ export function CategoriesCard({ profile, onSave, reportDirty = () => {} }) {
           onChange={toggle}
           onRequestCategory={() => setShowCategoryModal(true)}
         />
+      )}
+
+      {farmerAsk && (
+        <FarmerDeclarationCheckbox checked={farmerConfirmed} onChange={setFarmerConfirmed} />
       )}
 
       <CategoryRequestModal

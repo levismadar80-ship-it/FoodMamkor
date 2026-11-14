@@ -624,7 +624,9 @@ def upsert_primary_branch_location(
     return existing
 
 
-def create_producer_with_relations(db: Session, data: ProducerCreate) -> Producer:
+def create_producer_with_relations(
+    db: Session, data: ProducerCreate, farmer_stamp: dict | None = None
+) -> Producer:
     """Create a DRAFT producer row plus its category and delivery-area
     join rows in a single transaction. Returns the refreshed instance.
 
@@ -660,6 +662,8 @@ def create_producer_with_relations(db: Session, data: ProducerCreate) -> Produce
         producer_license_number=data.producer_license_number,
         # MEH-2100: draft, not pending — see the docstring above.
         status="draft",
+        # MEH-3137: grower declaration columns, {} when not a grower category.
+        **(farmer_stamp or {}),
     )
     db.add(producer)
     db.flush()

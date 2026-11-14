@@ -111,6 +111,7 @@ from app.schemas.schemas import (
 )
 from app.services import indexnow  # MEH-2852
 from app.services.email import send_email
+from app.services.farmer_declaration import farmer_declaration_stamp_for_existing
 from app.services.auth_notifications import notify_admin_owner_invite_accepted
 from app.services.auth_emails import (
     send_owner_invite_code_email,
@@ -795,6 +796,11 @@ async def accept_owner_invite(
     producer = _live_invite(db, body.token)
     if producer is None:
         raise HTTPException(status_code=404, detail=_LINK_INVALID)
+    # MEH-3137: the grower line is a consent, checked with the other consents —
+    # before the code is spent, so a 422 leaves both the link and the code live.
+    farmer_stamp = farmer_declaration_stamp_for_existing(
+        db, producer, [c.id for c in producer.categories], body.farmer_declaration_accepted
+    )
 
     invited_name = producer.owner_invite_name
 
@@ -868,6 +874,8 @@ async def accept_owner_invite(
                 # both NULL) — this is the moment it becomes signed.
                 Producer.declared_at: now,
                 Producer.declaration_version: DECLARATION_VERSION,
+                # MEH-3137: {} unless a grower category needed the line.
+                **{getattr(Producer, k): v for k, v in farmer_stamp.items()},
                 # v3: the page goes live in the SAME statement that claims the
                 # token. Set unconditionally rather than only when the row
                 # read `inactive`: both invitable statuses END at `approved`,

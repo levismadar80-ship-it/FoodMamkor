@@ -4,13 +4,13 @@ Purpose:  Server-side gate + record for the grower declaration («גידלתי
           בחלקתי בלבד») at producer registration, apart from the licensing
           declaration (declared_at / declaration_version).
 Touches:  categories (read by id + name).
-Does NOT: stamp the licensing declaration (routers/auth.py) or the claim /
-          owner-invite paths (routers/producer_claim.py,
-          producer_owner_invite.py) — those still fold the grower line into
-          declaration_accepted; follow-up card.
+Does NOT: stamp the licensing declaration (declared_at — each route does
+          that itself). Callers: routers/auth.py (registration),
+          producer_claim.py, producer_owner_invite.py, producer_me.py (PUT
+          category change), producers.py (POST /producers).
 Related:  constants.py FARMER_DECLARATION_CATEGORIES / _VERSION,
           frontend/lib/farmer-declaration.js (the client mirror).
-History:  MEH-2923 (creation).
+History:  MEH-2923 (creation); MEH-3137 (claim, invite, PUT, POST paths).
 """
 
 from datetime import datetime, timezone
@@ -54,3 +54,25 @@ def farmer_declaration_stamp(
         "farmer_declared_at": datetime.now(timezone.utc),
         "farmer_declaration_version": FARMER_DECLARATION_VERSION,
     }
+
+
+def farmer_declaration_stamp_for_existing(
+    db: Session, producer: Any, category_ids: list[int] | None, accepted: bool
+) -> dict[str, Any]:
+    """MEH-3137: the same gate for a row that already exists (a category
+    change, a claim, an owner invite). A business that already recorded the
+    grower declaration is not asked again, and nothing is re-stamped; a
+    request that does not set categories (None) is not a category write."""
+    if category_ids is None or producer.farmer_declared_at is not None:
+        return {}
+    return farmer_declaration_stamp(db, category_ids, accepted)
+
+
+def apply_farmer_declaration_on_update(
+    db: Session, producer: Any, category_ids: list[int] | None, accepted: bool
+) -> None:
+    """PUT /producers/me: the gate above, written onto the row."""
+    for field, value in farmer_declaration_stamp_for_existing(
+        db, producer, category_ids, accepted
+    ).items():
+        setattr(producer, field, value)

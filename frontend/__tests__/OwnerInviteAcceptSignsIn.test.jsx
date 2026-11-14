@@ -210,3 +210,32 @@ describe("owner invite — a reload after the code was sent keeps the code usabl
     expect(screen.getByTestId("owner-invite-email").value).toBe(ADDRESS);
   });
 });
+
+
+// MEH-3137 — the grower line is sent on its own, so the server can record it
+// apart from the licensing declaration (farmer_declared_at).
+describe("owner invite — the grower declaration is sent on its own", () => {
+  const acceptBody = () =>
+    api.post.mock.calls.find(([url]) => url === "/auth/owner-invite/accept")?.[1];
+
+  it("a grower business sends farmer_declaration_accepted: true", async () => {
+    api.get.mockResolvedValue({ data: { ...INVITE, requires_farmer_declaration: true } });
+    window.sessionStorage.setItem("mehamakor.ownerInviteToken", TOKEN);
+    wrap(<OwnerInviteClient />);
+    fireEvent.click(await screen.findByTestId("owner-invite-send-code"));
+    fireEvent.change(await screen.findByTestId("owner-invite-code"), { target: { value: "123456" } });
+    fireEvent.change(screen.getByTestId("pw"), { target: { value: "Abcdefgh1234!" } });
+    fireEvent.click(screen.getByTestId("owner-invite-terms"));
+    fireEvent.click(screen.getByTestId("owner-invite-declaration"));
+    fireEvent.click(screen.getByTestId("owner-invite-farmer"));
+    fireEvent.submit(screen.getByTestId("owner-invite-form"));
+    await waitFor(() => expect(acceptBody()).toBeTruthy());
+    expect(acceptBody().farmer_declaration_accepted).toBe(true);
+    expect(acceptBody().declaration_accepted).toBe(true);
+  });
+
+  it("any other business does not send the key", async () => {
+    await fillAndSubmit();
+    expect(acceptBody()).not.toHaveProperty("farmer_declaration_accepted");
+  });
+});

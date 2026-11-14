@@ -237,6 +237,8 @@ export default function OwnerInviteClient({ tokenFromPath = null }) {
         // ONE licensing declaration the server stamps (MEH-759 Chunk C).
         declaration_accepted: declarationConfirmed && (!farmerRequired || farmerConfirmed),
         terms_accepted: agreedToTerms,
+        // MEH-3137: and on its own, so the server records it apart.
+        ...(farmerRequired && { farmer_declaration_accepted: farmerConfirmed }),
       });
       // Hold the loading view until the dashboard opens: refreshUser returns
       // her as an owner, and any intermediate view would flash in between.
