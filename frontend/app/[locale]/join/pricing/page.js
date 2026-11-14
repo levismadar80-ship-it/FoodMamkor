@@ -180,7 +180,12 @@ export default async function PricingPage({ params }) {
             <OptionCard label={t("sub_title")} price={t("sub_price", v)} testId="pricing-subscription">
               <p className="leading-relaxed text-text/85">{t("sub_note", v)}</p>
               <p className="leading-relaxed text-text">{t("sub_fee", v)}</p>
-              <p className="mt-auto border-t border-border pt-3 font-medium text-text">{t("sub_fit", v)}</p>
+              <div className="mt-auto border-t border-border pt-3">
+                <p className="font-medium text-text">{t("sub_fit", v)}</p>
+                <p className="mt-1 text-sm leading-relaxed text-fg-muted" data-testid="pricing-subscription-example">
+                  {t("sub_example", v)}
+                </p>
+              </div>
             </OptionCard>
             <p className="self-center text-center font-headline-md text-lg font-bold text-fg-muted" aria-hidden="true">
               {t("or")}

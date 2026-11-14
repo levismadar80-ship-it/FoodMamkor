@@ -129,6 +129,12 @@ describe("PricingCopyGuard (MEH-3166)", () => {
     const subscribed = list.subscription.monthly + (breakEven * list.subscriberCommission.paidBookingPercent) / 100;
     expect(subscribed).toBeLessThanOrEqual(plain);
     expect(breakEven % 50).toBe(0);
+    // «עם N הרשמות … המנוי כבר משתלם»: true at N bookings, false at N − 1.
+    const bookings = Number(pricingCopyValues(list).breakEvenBookings);
+    const savedPerBooking =
+      (list.exampleBookingPrice * (list.commission.paidBookingPercent - list.subscriberCommission.paidBookingPercent)) / 100;
+    expect(bookings * savedPerBooking).toBeGreaterThanOrEqual(list.subscription.monthly);
+    expect((bookings - 1) * savedPerBooking).toBeLessThan(list.subscription.monthly);
     const [year, month, day] = list.effectiveFrom.split("-");
     expect(doc, "docs/PRICING.md as-of date").toContain(`נכון ל-${Number(day)}/${Number(month)}/${year}`);
     expect(pick(/\*\*הודעה מראש:\*\* (\d+) יום/, "notice days")).toBe(list.noticeDays);
