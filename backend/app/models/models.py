@@ -1642,6 +1642,9 @@ class FavoriteAlert(Base):
     # buy. Nullable + server_default true, exactly like MEH-1361; unlike the
     # siblings, the code reads NULL as ON (alerts.py, Sapir 08/11).
     notify_new_group_buy = Column(Boolean, default=True)
+    # MEH-3117: 6th alert type — fires when a favorited producer publishes
+    # rescue bags for TODAY. Same shape as notify_new_group_buy (NULL = ON).
+    notify_new_rescue = Column(Boolean, default=True)
     push_subscription = Column(JSON, nullable=True)
     whatsapp_opt_in = Column(Boolean, default=False)
     created_at = Column(DateTime, default=utc_now)
