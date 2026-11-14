@@ -110,10 +110,12 @@ const row = (category, city = "חיפה") => ({
 });
 const setUrl = (url) => window.history.replaceState(null, "", url);
 // Derived from the DOM: the chip keys actually drawn, «הכל» included.
+// The date shortcuts (MEH-3118, `when:*`) share the row and are never gated by
+// category results, so they are left out here: this file is about categories.
 const drawn = () =>
-  [...(screen.queryByTestId("chip-row")?.querySelectorAll("[data-key]") ?? [])].map(
-    (el) => el.dataset.key,
-  );
+  [...(screen.queryByTestId("chip-row")?.querySelectorAll("[data-key]") ?? [])]
+    .map((el) => el.dataset.key)
+    .filter((k) => !k.startsWith("when:"));
 const settle = () => waitFor(() => expect(screen.queryByRole("status")).toBeNull());
 
 beforeEach(() => {
@@ -140,11 +142,15 @@ describe("category chips show only categories with results (MEH-3124)", () => {
     await waitFor(() => expect(drawn()).toEqual(["all", MARKET, TASTING]));
   });
 
-  it("one category → no category chip, and «הכל» alone draws no row", async () => {
+  it("one category → no category chip; the row keeps only «הכל» and the date shortcuts", async () => {
     db = [row(MARKET), row(MARKET)];
     render(<EventsClient />);
     await settle();
-    await waitFor(() => expect(screen.queryByTestId("chip-row")).toBeNull());
+    // Before the date shortcuts (MEH-3118) «הכל» alone drew no row at all. The
+    // shortcuts are always drawn, so the row stays; what must hold is that the
+    // single category is not offered as a chip.
+    await waitFor(() => expect(drawn()).toEqual(["all"]));
+    expect(screen.getByTestId("chip-row").querySelector(`[data-key="${MARKET}"]`)).toBeNull();
     expect(screen.getAllByRole("heading", { level: 3 })).toHaveLength(2); // the list stays
   });
 

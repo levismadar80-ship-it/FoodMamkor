@@ -266,8 +266,10 @@ describe("/events — empty dataset vs filtered to zero (MEH-1865)", () => {
       expect(screen.queryByTestId("events-empty-dataset")).toBeNull();
       expect(screen.queryByTestId("events-no-results")).toBeNull();
       // MEH-3124: one row = one category, and a lone category chip filters
-      // nothing — so only the city search is drawn.
-      expect(filterControlCount()).toBe(1);
+      // nothing, so no category chip is drawn. The chip row itself stays for
+      // the date shortcuts (MEH-3118): city search + that row = 2 controls.
+      expect(filterControlCount()).toBe(2);
+      expect(document.querySelector(`[data-key="${row(1).category}"]`)).toBeNull();
       expect(screen.getByText("event 1")).toBeInTheDocument();
     });
 
