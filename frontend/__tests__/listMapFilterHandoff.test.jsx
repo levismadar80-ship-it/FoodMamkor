@@ -17,7 +17,7 @@ const apiGet = vi.fn();
 vi.mock("@/lib/api", () => ({ default: { get: (...a) => apiGet(...a) } }));
 vi.mock("@/lib/toast", () => ({ showToast: { error: vi.fn() } }));
 
-import { chipsFromQuery, chipsToQuery } from "@/lib/filter-url";
+import { chipsFromQuery, chipsToQuery, producersToMapQuery, mapFiltersFromQuery } from "@/lib/filter-url";
 import { useMapFilters } from "@/app/[locale]/map/state/useMapFilters";
 import { useProducersFeed } from "@/app/[locale]/map/state/useProducersFeed";
 import { TOGGLE_CHIPS } from "@/lib/map-chips";
@@ -145,5 +145,30 @@ describe("/map feed with filters from the URL", () => {
     const { result } = renderHook(() => useProducersFeed({ readInitialParams: () => ({}) }));
     await waitFor(() => expect(result.current.allProducers.map((p) => p.id)).toEqual(["a"]));
     expect(calls).toHaveLength(1);
+  });
+});
+
+describe("producersToMapQuery (MEH-3075)", () => {
+  it("is empty with nothing on", () => {
+    expect(producersToMapQuery({})).toBe("");
+  });
+
+  it("carries chips and the category GROUP keys, dropping keys /map does not know", () => {
+    const q = producersToMapQuery({ chips: { on_site: true }, categoryKeys: new Set(["bread", "123"]) });
+    const sp = new URLSearchParams(q.slice(1));
+    expect(sp.get("on_site")).toBe("1");
+    expect(sp.getAll("category_group")).toEqual(["bread"]);
+  });
+
+  it("sends a city with has_delivery=1 — /producers' city asks who delivers there", () => {
+    const sp = new URLSearchParams(producersToMapQuery({ city: "זכרון יעקב" }).slice(1));
+    expect(sp.get("city")).toBe("זכרון יעקב");
+    expect(sp.get("has_delivery")).toBe("1");
+  });
+
+  it("round-trips through what /map reads", () => {
+    const q = producersToMapQuery({ categoryKeys: ["meat"], city: "חדרה" }).slice(1);
+    expect(mapFiltersFromQuery(new URLSearchParams(q))).toEqual({ categoryKeys: ["meat"], city: "חדרה" });
+    expect(chipsFromQuery(new URLSearchParams(q), MAP_KEYS)).toEqual({ has_delivery: true });
   });
 });

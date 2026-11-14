@@ -44,6 +44,36 @@ export function SkeletonStyles() {
   );
 }
 
+/**
+ * MEH-3068: SkeletonBlock — the one loading bar / box outside the shaped
+ * skeletons below. Callers pass only SHAPE (size, radius, margin) in
+ * `className`; the colour comes from `tone`, the pulse from here
+ * (motion-safe, so reduced-motion users get a still bar). Display (block,
+ * inline-block, flex) stays the caller's, as before. Before 13/11 there
+ * were 35 hand-written `animate-pulse` bars in four colours.
+ * Guard: __tests__/LoadingGuard.test.js.
+ *   tone="neutral" (default) bg-border/60 — every text / card bar
+ *   tone="brand"   bg-green-50 — map placeholders and image slots on green UI
+ *   tone="page"    bg-background — the /map pane placeholder
+ *   tone="none"    no fill — a pulsing container that carries its own content
+ *
+ * @param {{ as?: string, tone?: "neutral"|"brand"|"page"|"none", className?: string, children?: import("react").ReactNode, [key: string]: any }} props
+ */
+const SKELETON_TONES = {
+  neutral: "bg-border/60",
+  brand: "bg-green-50",
+  page: "bg-background",
+  none: "",
+};
+
+export function SkeletonBlock({ as: Tag = "span", tone = "neutral", className = "", children, ...rest }) {
+  return (
+    <Tag className={`motion-safe:animate-pulse ${SKELETON_TONES[tone]} ${className}`} {...rest}>
+      {children}
+    </Tag>
+  );
+}
+
 export function SkeletonCard({ className = "" }) {
   return (
     <div

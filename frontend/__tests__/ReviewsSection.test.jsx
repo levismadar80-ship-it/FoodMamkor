@@ -880,3 +880,71 @@ describe("ReviewsSection — rating distribution (MEH-1337)", () => {
     expect(first.getAttribute("aria-label")).toBe("star_aria · summary_count");
   });
 });
+
+// MEH-3053 (Sapir, 13/11): at zero reviews the invite row is the FIRST thing in
+// the section, so its own top margin + hairline (meant to separate it from the
+// reviews above) framed an empty band under the products list. Asserted per
+// cell: 0 × (guest, contact, write row, open form) drop it; 1+ keeps it.
+describe("ReviewsSection — no empty band above the invite row at zero reviews (MEH-3053)", () => {
+  const RULE = /\bborder-t\b/;
+  const GAP = /\bmt-8\b/;
+  const one = [
+    {
+      id: "rev-1", user_id: "u-2", user_name: "לקוח", stars: 4, body: "טעים",
+      created_at: "2026-07-01T11:00:00", reply: null, reply_at: null,
+    },
+  ];
+
+  beforeEach(() => localStorage.clear());
+
+  it("0 reviews, guest: the login row has no hairline and no top gap", async () => {
+    mockReviews([]);
+    render(<ReviewsSection producerId="p-1" isOwner={false} />);
+    const row = await screen.findByTestId("reviews-write-hint");
+    expect(row.className).not.toMatch(RULE);
+    expect(row.className).not.toMatch(GAP);
+  });
+
+  it("0 reviews, signed in, not contacted: the contact row has no hairline and no top gap", async () => {
+    authState.user = { id: "u-9", producer_id: null };
+    mockReviews([]);
+    render(<ReviewsSection producerId="p-1" isOwner={false} />);
+    const row = await screen.findByTestId("reviews-write-hint");
+    expect(row.dataset.mode).toBe("contact");
+    expect(row.className).not.toMatch(RULE);
+    expect(row.className).not.toMatch(GAP);
+  });
+
+  it("0 reviews, may write: the write row and the opened form have no hairline and no top gap", async () => {
+    authState.user = { id: "u-9", producer_id: null };
+    localStorage.setItem("wa_clicked_p-3053", "1");
+    mockReviews([]);
+    render(<ReviewsSection producerId="p-3053" isOwner={false} />);
+    const row = await screen.findByTestId("reviews-write-row");
+    expect(row.className).not.toMatch(RULE);
+    expect(row.className).not.toMatch(GAP);
+    fireEvent.click(screen.getByTestId("reviews-star-4"));
+    const form = await screen.findByTestId("reviews-form");
+    expect(form.className).not.toMatch(RULE);
+    expect(form.className).not.toMatch(GAP);
+  });
+
+  it("1 review, guest: the login row keeps its hairline and top gap under the list", async () => {
+    mockReviews(one);
+    render(<ReviewsSection producerId="p-1" isOwner={false} />);
+    const row = await screen.findByTestId("reviews-write-hint");
+    expect(row.className).toMatch(RULE);
+    expect(row.className).toMatch(GAP);
+  });
+
+  it("1 review, may write: the opened form keeps its hairline and top gap", async () => {
+    authState.user = { id: "u-9", producer_id: null };
+    localStorage.setItem("wa_clicked_p-3053", "1");
+    mockReviews(one);
+    render(<ReviewsSection producerId="p-3053" isOwner={false} />);
+    fireEvent.click(await screen.findByTestId("reviews-star-4"));
+    const form = await screen.findByTestId("reviews-form");
+    expect(form.className).toMatch(RULE);
+    expect(form.className).toMatch(GAP);
+  });
+});

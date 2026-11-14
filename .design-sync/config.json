@@ -84,7 +84,6 @@
     "ReviewsSection": "components/ReviewsSection.jsx",
     "ShareButton": "components/ShareButton.jsx",
     "SmoothScrollProvider": "components/SmoothScrollProvider.jsx",
-    "StarRating": "components/StarRating.jsx",
     "StarSelector": "components/StarSelector.jsx",
     "StoryCardCanvas": "components/StoryCardCanvas.jsx",
     "Toaster": "components/Toaster.jsx",

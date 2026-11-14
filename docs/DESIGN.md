@@ -332,6 +332,22 @@ home) and `SectionHeadingRatchet.test.js` (a public file may not gain a
 hand-sized h2; the allowance list only shrinks). Bands (the green «היכרות»
 band, the closing CTA band) keep their own h2.
 
+**Section headings are text only; icons lead fact lines (MEH-3028, 13/11/2026).**
+No icon inside a `<SectionHeading>`, anywhere on the site. An icon marks one
+*kind* of fact on the line that states it, and goes through
+`components/ui/FactLine.jsx` (14px, `text-fg-muted`, fixed gap). Business page
+kinds: delivery fee → Truck · order cutoff / hours → Clock · city → MapPin ·
+self-pickup → Package. Repeated labels of the same kind (the gold day labels
+«ימי חמישי», the one-day «יוצאים בימי …» line, the «משלוחים לכל הארץ» chip)
+carry no icon — one truck per section, not one per day. The icon sits in a
+one-line-tall box, so a wrapped line keeps it beside its first line. Sapir
+chose this over «an icon on every heading» (research artifact
+FGymGHjHMLDCstmSEDP2Bm: Google Maps, Airbnb, Wolt, Etsy all keep section titles
+plain and put the icon on the fact row). Buttons, links, answer states, chips
+and card titles keep their own icons. Guard: `FactLineIconGuard.test.js` (no
+icon in any SectionHeading; on the business-page files a raw icon only as
+listed, with its reason).
+
 **Headings never strand one word on the last line** — `h1, h2, h3` carry
 `text-wrap: balance` in `globals.css` (MEH-2488). **Hebrew is never
 letter-spaced** (no `tracking-*` on Hebrew; MEH-2488 removed the last two:
@@ -624,6 +640,11 @@ front matter for the normative token bindings.
   **לחמים ואפייה** (growers are the core of "from the source"; bakeries are the
   largest share of the Wave 1 leads). Captions are the name only — no 01–10
   numerals.
+- **On/off switch (MEH-3065):** every `role="switch"` draws its track from
+  `components/ui/Switch.jsx` — `<Switch>` for a standalone toggle (44px tap
+  target), `<SwitchTrack>` inside a row that is itself the switch button.
+  One size (40×24, 16px knob); the knob moves by logical inset (`start-1` off →
+  `end-1` on), never `translate-x`. Guard: `__tests__/SwitchGuard.test.js`.
 
 ## Action hierarchy
 
@@ -675,6 +696,11 @@ reads as a rendering bug (the ghost-strip class). Rules:
   below another measures the layer above at runtime. `Header` publishes its
   live height as the `--chrome-top` CSS var (ResizeObserver); downstream sticky
   chrome offsets off `var(--chrome-top, …)`, never a frozen `top-[82px]`.
+- **Person avatar (MEH-3069):** the signed-in person's circle is
+  `components/ui/Avatar.jsx` — photo, else ONE initial from `avatarInitial()`
+  (first code point, upper-cased, «?» when empty). Header 34px, BottomNav 24px,
+  account sheet 40px (`tone="none"` inside its own ring), settings 64px.
+  Guard: `__tests__/AvatarGuard.test.js`.
 
 ## Do's and Don'ts
 

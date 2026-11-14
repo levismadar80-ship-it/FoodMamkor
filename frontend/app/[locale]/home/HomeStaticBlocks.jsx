@@ -10,6 +10,7 @@ import ClosingCtaBand from "@/components/ClosingCtaBand";
 import { optimizeCloudinary, IMAGE_RATIOS } from "@/lib/cloudinary";
 import useScrollAffordance, { ScrollArrows } from "@/hooks/useScrollAffordance";
 import SectionHeading from "@/components/ui/SectionHeading";
+import { SkeletonBlock } from "@/components/Skeleton";
 
 /**
  * RECENTLY VIEWED (task 13) — horizontal scroll strip of producers
@@ -145,7 +146,7 @@ function HomeProducerStrip({
                   aria-hidden="true"
                   className={STRIP_CARD}
                 >
-                  <div className={`${STRIP_CARD_IMAGE} animate-pulse`} />
+                  <SkeletonBlock as="div" tone="brand" className="w-full h-[100px]" />
                   <div className="p-2.5">
                     <p className={`${STRIP_CARD_NAME} invisible`}>&nbsp;</p>
                     <p className={`${STRIP_CARD_CITY} invisible`}>&nbsp;</p>

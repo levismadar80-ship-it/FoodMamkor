@@ -1,7 +1,7 @@
 import RescueSection from "@/components/rescue/RescueSection";
 import { useCallback, useEffect, useState } from "react";
 import Image from "next/image";
-import { CaretLeft, Info, MapPin } from "@phosphor-icons/react";
+import { CaretLeft, Clock, Info, MapPin } from "@phosphor-icons/react";
 import Seed from "@/components/brand/Seed";
 import { seedColorFor } from "@/lib/brand-seeds";
 import dynamic from "next/dynamic";
@@ -32,6 +32,8 @@ import RecipeCard from "@/components/public/RecipeCard";
 // MEH-1901: the full product detail (long description, per-product diet flags)
 // as an overlay — no route, no marketplace.
 import ProductSheet, { productDietKeys } from "@/components/public/ProductSheet";
+import ProductGroupChips, { UNGROUPED } from "@/components/public/ProductGroupChips";
+import { chipGroups, hasUngrouped, orderProducts } from "@/lib/product-order";
 import ReportButton from "@/components/ReportButton";
 // MEH-1460: the "טעות בפרטים?" correction link relocated here from
 // ContactCard — its modal/email logic (v1, MEH-1443) is unchanged.
@@ -41,6 +43,8 @@ import ReviewsSection from "@/components/ReviewsSection";
 // from) the native reviews block, only for producers an admin mapped.
 import GoogleRatingLine from "@/components/GoogleRatingLine";
 import SectionHeading from "@/components/ui/SectionHeading";
+import ShowMore from "@/components/ui/ShowMore";
+import FactLine from "@/components/ui/FactLine";
 
 // MEH-1853: `loading:` placeholder REVERTED 06/08 — it measurably made CLS
 // WORSE, and the measurement is on the ticket. Reserving a 356px box that
@@ -85,6 +89,12 @@ export function parseHasLocation(producer, pin) {
 // "signatureProduct may be null" (see the MEH-1233 B4 note on the derivation).
 // MEH-2592 C: a medium feature card — a 112px photo (144px on md+), a soft gold
 // border, rounder corners. Sapir rejected a full-width photo as too big (30/10).
+// MEH-3021: how many product rows a long list shows before «הצגת כל N
+// המוצרים» — 6 on the phone, 8 from md (two columns × 4). The signature
+// product is outside the count and always shows.
+const PRODUCTS_PREVIEW_MOBILE = 6;
+const PRODUCTS_PREVIEW_DESKTOP = 8;
+
 const SIGNATURE_SHELL_CLASS =
   "mb-5 flex items-center gap-4 bg-surface-card border border-accent/40 rounded-2xl p-3.5 shadow-sm";
 
@@ -177,6 +187,10 @@ export default function ProducerSections({
   // are, and keeping the position here (rather than a second copy inside the
   // sheet) leaves ProductSheet fully prop-derived. null = closed.
   const [openIndex, setOpenIndex] = useState(null);
+  // MEH-3021: whether a long product list is expanded past its first rows.
+  const [showAllProducts, setShowAllProducts] = useState(false);
+  // MEH-3055: the visitor's group filter — null = «הכל».
+  const [activeGroup, setActiveGroup] = useState(null);
   // MEH-591: producer recipes (chunk 4/4). Fetched client-side via the
   // public read endpoint added in chunk 2 — backend already filters to
   // published+approved, so an empty array means "no recipes to show"
@@ -236,9 +250,32 @@ export default function ProducerSections({
   const signatureImg = signatureProduct?.image_url
     ? optimizeCloudinary(signatureProduct.image_url, { aspectRatio: "1:1", width: 320 })
     : null;
-  const gridProducts = signatureProduct
+  // MEH-3021 / MEH-3055: the order is lib/product-order.js — the owner's
+  // order when she set one, else photos first; grouped products laid out
+  // group by group. The signature product stays out of the grid.
+  const productGroups = producer.product_groups || [];
+  const gridUnsorted = signatureProduct
     ? (producer.products || []).filter((p) => p.id !== signatureProduct.id)
     : producer.products || [];
+  const gridAll = orderProducts(gridUnsorted, productGroups);
+  // MEH-3055: chips only when 2+ groups actually hold products (Etsy shows its
+  // sections as filters; one group is no choice at all). Counted over the GRID
+  // (signature product excluded): a group whose only product is the signature
+  // card would be a chip that empties the list.
+  const filterGroups = chipGroups(gridUnsorted, productGroups);
+  const showGroupChips = filterGroups.length >= 2;
+  const liveGroupIds = new Set(productGroups.map((g) => g.id));
+  const gridProducts =
+    !showGroupChips || activeGroup == null
+      ? gridAll
+      : activeGroup === UNGROUPED
+        ? gridAll.filter((p) => p.group_id == null || !liveGroupIds.has(p.group_id))
+        : gridAll.filter((p) => p.group_id === activeGroup);
+  // MEH-3021: a long list collapses to 6 rows on the phone, 8 from md (two
+  // columns × 4). Up to 8 rows there is no button and everything shows, on
+  // both — one threshold, so a list never collapses on one screen size only.
+  const collapsible = gridProducts.length > PRODUCTS_PREVIEW_DESKTOP;
+  const productsCollapsed = collapsible && !showAllProducts;
 
   // MEH-2045: the list the sheet pages through — the same products this section
   // renders, in the order it renders them: the signature highlight first (which
@@ -283,13 +320,26 @@ export default function ProducerSections({
   // window.location — not useSearchParams, which would force a Suspense
   // boundary onto a server-rendered page for a one-shot read. An id that
   // matches nothing opens nothing (the page just loads normally).
-  const productIds = sheetProducts.map((p) => p.id).join(",");
+  // MEH-3055: keyed on the UNFILTERED list (signature + every grid row), so
+  // tapping a group chip — which changes the visible list but never removes
+  // `?product=` from the URL — does not re-open the sheet. The deep link also
+  // clears any chip, so its product is always in the list it opens into.
+  const productIds = (signatureProduct ? [signatureProduct, ...gridAll] : gridAll)
+    .map((p) => p.id)
+    .join(",");
   useEffect(() => {
     if (typeof window === "undefined") return;
     const wanted = new URLSearchParams(window.location.search).get("product");
     if (!wanted) return;
     const i = productIds.split(",").indexOf(wanted);
-    if (i >= 0) setOpenIndex(i);
+    if (i < 0) return;
+    setActiveGroup(null);
+    // MEH-3021: a deep link to a product that sits in the collapsed part of
+    // the list opens the list too, so closing the sheet lands next to it.
+    const gridPos = signatureProduct ? i - 1 : i;
+    if (gridPos >= PRODUCTS_PREVIEW_MOBILE) setShowAllProducts(true);
+    setOpenIndex(i);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- one-shot read per product set
   }, [productIds]);
 
   // MEH-1463: when the signature product was deduped out of the grid and
@@ -444,9 +494,22 @@ export default function ProducerSections({
               asymmetric card grid). Prices via formatPriceRange (MEH-1140) with
               dir="ltr" bidi isolation (regression baseline:
               qa-artifacts/MEH-1168-p1/price-cell-zoom.webp). */}
+          {showGroupChips && (
+            <ProductGroupChips
+              groups={filterGroups}
+              withUngrouped={hasUngrouped(gridUnsorted, productGroups)}
+              active={activeGroup}
+              onChange={(id) => {
+                setActiveGroup(id);
+                setShowAllProducts(false);
+              }}
+            />
+          )}
           {gridProducts.length > 0 && (
             <div className="grid grid-cols-1 md:grid-cols-2 md:gap-x-6 border-t border-border">
-              {gridProducts.map((product) => {
+              {(productsCollapsed ? gridProducts.slice(0, PRODUCTS_PREVIEW_DESKTOP) : gridProducts).map((product, idx) => {
+                // MEH-3021: rows 7–8 exist for the desktop preview only.
+                const desktopOnly = productsCollapsed && idx >= PRODUCTS_PREVIEW_MOBILE;
                 // Cloudinary 1:1 square when a photo exists; otherwise the
                 // canonical no-photo state (MEH-1138) — never a package icon.
                 const img = product.image_url
@@ -476,7 +539,7 @@ export default function ProducerSections({
                       name: product.name,
                     })}
                     data-testid="product-row"
-                    className="w-full text-start flex items-center gap-3 py-2 min-h-[96px] border-b border-border transition-colors hover:bg-primary/[0.03] focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent/40"
+                    className={`${desktopOnly ? "hidden md:flex" : "flex"} w-full text-start items-center gap-3 py-2 min-h-[96px] border-b border-border transition-colors hover:bg-primary/[0.03] focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent/40`}
                   >
                     <div className="relative w-20 h-20 flex-shrink-0 rounded-md overflow-hidden bg-background">
                       {img ? (
@@ -536,6 +599,30 @@ export default function ProducerSections({
                 );
               })}
             </div>
+          )}
+          {/* MEH-3021: same look as «הצגת כל האירועים» (ProducerActivities). */}
+          {collapsible && (
+            <ShowMore
+              data-testid="products-toggle"
+              expanded={showAllProducts}
+              onClick={() => {
+                if (showAllProducts) {
+                  setShowAllProducts(false);
+                  // Back to the top of the section, or the reader is left
+                  // deep below a list that just got shorter.
+                  sectionRefs.current.products?.scrollIntoView({ block: "start" });
+                } else {
+                  setShowAllProducts(true);
+                }
+              }}
+              className="mt-4"
+              label={showAllProducts
+                ? t("producer.detail.sections.products.show_less")
+                : t("producer.detail.sections.products.show_all", {
+                    // MEH-3055: with a chip on, «all N» means all N in that group.
+                    count: !showGroupChips || activeGroup == null ? sheetTotal : gridProducts.length,
+                  })}
+            />
           )}
 
           {/* PR #3974: the gluten production-facility sentence lives with the
@@ -723,18 +810,19 @@ export default function ProducerSections({
           </div>
           {/* Address line — city-only fallback, never empty (revision-1 #5). */}
           {producer.city && (
-            <p className="flex items-center gap-1.5 text-sm text-muted mb-3">
-              <MapPin size={14} aria-hidden="true" />
+            <FactLine icon={MapPin} className="text-sm text-fg-muted mb-3">
               {producer.city}
-            </p>
+            </FactLine>
           )}
           {/* MEH-2438 follow-up: a place to visit with no hours would otherwise
               show only the map and the Waze/Google buttons — an invitation to
               turn up unannounced at a home producer. */}
+          {/* MEH-3028: a fact line like the city above it, so it leads with
+              its kind's icon (clock) — the city had a pin and this had none. */}
           {!storeHours && (
-            <p data-testid="location-no-hours" className="text-sm text-fg-muted mb-3">
+            <FactLine icon={Clock} data-testid="location-no-hours" className="text-sm text-fg-muted mb-3">
               {t("producer.detail.sections.location_no_hours")}
-            </p>
+            </FactLine>
           )}
           {/* MEH-1611 chunk 2: the map now shows every point this business has
               — its branch plus each pickup / market stand — not just the primary

@@ -7,6 +7,7 @@ import { useTranslations } from "next-intl";
 import HeroSearch from "@/components/HeroSearch";
 import EnSearchNotice from "@/components/EnSearchNotice";
 import { optimizeCloudinary } from "@/lib/cloudinary";
+import ButtonSpinner from "@/components/ButtonSpinner";
 
 // MEH-788: Cloudinary produce photo (4032×3024 4:3 original). Smart-cropped to
 // a wide 16:9 band via g_auto (c_fill,g_auto,ar_16:9 — Cloudinary's saliency
@@ -321,7 +322,7 @@ export function HomeHero({
             disabled={geoLoading}
             className={CHIP_CLASS}
           >
-            <Crosshair size={18} weight="bold" className={geoLoading ? "animate-spin" : ""} aria-hidden="true" />
+            {geoLoading ? <ButtonSpinner size={18} /> : <Crosshair size={18} weight="bold" aria-hidden="true" />}
             {geoLoading ? t("home.hero.searching") : t("home.hero.near_me")}
           </button>
 

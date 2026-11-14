@@ -34,6 +34,8 @@ import { showToast } from "@/lib/toast";
 // MEH-1140: canonical shekel format ("35₪") — one owner in lib/utils.
 import { formatPriceRange } from "@/lib/utils";
 import EmptyState from "@/components/ui/EmptyState";
+import ProductOrganizer from "@/components/ProductOrganizer";
+import { orderProducts } from "@/lib/product-order";
 import Input from "@/components/ui/Input";
 import Button from "@/components/ui/Button";
 
@@ -244,7 +246,7 @@ export default function ProductsSection({
     setLoading(true);
     setLoadError(false);
     api.get("/producers/me/products")
-      .then((r) => setProducts(r.data))
+      .then((r) => setProducts(orderProducts(r.data || []))) // MEH-3055: owner order
       .catch(() => setLoadError(true))
       .finally(() => setLoading(false));
   }, [reloadKey]);
@@ -840,6 +842,12 @@ export default function ProductsSection({
           )
         ))}
       </div>
+
+      {/* MEH-3055: order + groups, under the rows they act on. Hidden while a
+          row is being edited or added, so two forms never compete. */}
+      {products && !adding && editingId == null && (
+        <ProductOrganizer products={products} onProductsChange={setProducts} />
+      )}
 
       {adding && (
         <form onSubmit={handleAdd} noValidate className="border border-border rounded-md p-4 space-y-5 bg-green-50">
