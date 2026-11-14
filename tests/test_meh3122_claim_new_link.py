@@ -37,13 +37,14 @@ CLAIM = "/producer-claim"
 EXPECTED_BODY = {"ok": True}
 
 
-def _mint(producer_id, *, exp_delta, scope=PRODUCER_CLAIM_SCOPE, with_exp=True, key=None, exp=None):
+def _mint(producer_id, *, exp_delta, scope=PRODUCER_CLAIM_SCOPE, key=None, exp=None):
+    """`exp`: None = now + exp_delta, False = no exp claim, else the raw value."""
     now = datetime.now(timezone.utc)
     payload = {"producer_id": str(producer_id), "iat": int(now.timestamp()), "scope": scope}
-    if exp is not None:
-        payload["exp"] = exp
-    elif with_exp:
+    if exp is None:
         payload["exp"] = now + exp_delta
+    elif exp is not False:
+        payload["exp"] = exp
     return jose_jwt.encode({"alg": settings.algorithm}, payload, key or _jwt_key())
 
 
@@ -111,7 +112,7 @@ class TestDecodeLapsed:
     def test_token_without_exp_is_refused(self, db):
         p = _draft(db)
         assert decode_lapsed_producer_claim_token(
-            _mint(p.id, exp_delta=timedelta(0), with_exp=False)
+            _mint(p.id, exp_delta=timedelta(0), exp=False)
         ) is None
 
     def test_string_exp_is_refused(self, db):
