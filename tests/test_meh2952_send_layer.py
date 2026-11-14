@@ -1282,6 +1282,12 @@ PINNED: dict[tuple[str, str, str], tuple[int, str, str]] = {
         OWN,
         "wrapper param ← owner producer.is_test / host_test_cause(host)",
     ),
+    # MEH-3226 (D4): the buyer's mail on each no-show.
+    ("services/rescue_no_show.py", "send_no_show_email", "send_email"): (
+        1,
+        CON,
+        "wrapper param ← producer.is_test or user.is_test",
+    ),
     ("services/rescue_emails.py", "send_reservation_email", "send_email"): (
         1,
         CON,
