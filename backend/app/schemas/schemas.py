@@ -2083,8 +2083,17 @@ class ProductOut(BaseModel):
     is_low_carb: bool = False  # MEH-1934
     ingredients: str | None = None  # MEH-2662
     allergens: list[str] | None = None  # MEH-2662
+    position: int | None = None  # MEH-3055: owner order, NULL = never ordered
+    group_id: str | None = None  # MEH-3055: id in producers.product_groups
 
     model_config = {"from_attributes": True}
+
+
+class ProductGroupOut(BaseModel):
+    """MEH-3055: one owner-defined product group (producers.product_groups)."""
+
+    id: str
+    name: str
 
 
 # --- Producer ---
@@ -3236,6 +3245,14 @@ class ProducerDetailOut(ProducerListOut):
     # that matters here is the feature vanishing, not it appearing.
     coverage_cta_enabled: bool = True
     products: list[ProductOut] = []
+    # MEH-3055: ordered groups; a NULL column reads as no groups.
+    product_groups: list[ProductGroupOut] = []
+
+    @field_validator("product_groups", mode="before")
+    @classmethod
+    def _null_groups_are_empty(cls, v):
+        return v or []
+
     delivery_areas: list[DeliveryAreaOut] = []
     report_count: int = 0
     created_at: datetime | None = None
@@ -5932,3 +5949,18 @@ class SavedItemsOut(BaseModel):
     recipes: list[SavedRecipeOut]
     events: list[SavedEventOut]
     experiences: list[SavedExperienceOut]
+
+
+class NameMatch(BaseModel):
+    """One live business whose name equals the name being registered."""
+
+    id: str
+    slug: str | None
+    name: str
+    city: str | None
+
+
+class NameCheckOut(BaseModel):
+    """GET /producer-name-check (MEH-3086) — at most three matches."""
+
+    matches: list[NameMatch]

@@ -56,7 +56,7 @@ export default function RescueReview({ orderId, onDone }) {
             aria-label={t("review.star", { n })}
             onClick={() => setRating(n)}
             data-testid={`rescue-review-star-${n}`}
-            className={`w-11 h-11 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${
+            className={`w-11 h-11 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
               n <= rating ? "text-gold-deep" : "text-fg-muted"
             }`}
           >
@@ -74,7 +74,7 @@ export default function RescueReview({ orderId, onDone }) {
             aria-pressed={tags.includes(tag)}
             onClick={() => toggle(tag)}
             data-testid={`rescue-review-tag-${tag}`}
-            className={`px-3 py-1 rounded-full border font-body-sm text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${
+            className={`px-3 py-1 rounded-full border font-body-sm text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
               tags.includes(tag) ? "border-primary text-primary" : "border-border text-fg-muted"
             }`}
           >

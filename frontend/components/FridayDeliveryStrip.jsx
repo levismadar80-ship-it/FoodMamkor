@@ -9,6 +9,7 @@ import { optimizeCloudinary, IMAGE_RATIOS } from "@/lib/cloudinary";
 import api from "@/lib/api";
 import { DELIVERY_DAYS } from "@/lib/delivery-days";
 import useScrollAffordance, { ScrollArrows } from "@/hooks/useScrollAffordance";
+import { SkeletonBlock } from "@/components/Skeleton";
 
 function ProducerMiniCard({ producer }) {
   // Strings live under group_buys.friday_delivery (today/title/title_alt) —
@@ -44,7 +45,7 @@ function ProducerMiniCard({ producer }) {
           </div>
         )}
         <span className="absolute top-1.5 end-1.5 inline-flex items-center gap-0.5 bg-primary text-white text-2xs font-bold px-1.5 py-0.5 rounded-full leading-none">
-          <ShoppingCart size={11} weight="fill" aria-hidden="true" />{t("today")}
+          <ShoppingCart size={12} weight="fill" aria-hidden="true" />{t("today")}
         </span>
       </div>
       <div className="px-2 py-1.5">
@@ -68,12 +69,12 @@ function FridayStripSkeleton() {
     >
       <div className="max-w-6xl mx-auto">
         <div className="flex items-center gap-2 mb-3">
-          <div className="h-6 w-48 rounded bg-border/60 animate-pulse" />
+          <SkeletonBlock as="div" className="h-6 w-48 rounded" />
         </div>
         <div className="flex gap-3 overflow-hidden pb-2">
           {Array.from({ length: SKELETON_CARDS }, (_, i) => (
             <div key={i} className="flex-shrink-0 w-36 rounded-md overflow-hidden border border-border bg-surface">
-              <div className="h-24 bg-green-50 animate-pulse" />
+              <SkeletonBlock as="div" tone="brand" className="h-24" />
               <div className="px-2 py-1.5 space-y-1">
                 <div className="h-4 w-24 rounded bg-border/60" />
                 <div className="h-3 w-16 rounded bg-border/40" />

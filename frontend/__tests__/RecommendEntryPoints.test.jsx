@@ -137,6 +137,14 @@ describe("home grid", () => {
     expect(link.getAttribute("href")).toBe("/recommend");
     expect(screen.queryByTestId("recommend-link-home-empty")).toBeNull();
   });
+
+  it("the line comes after «הפתיעו אותי», the last thing in the section (Sapir 13/11)", () => {
+    const one = [{ id: 1, name: "א" }];
+    render(<HomeProducersGrid {...baseProps} producers={one} visibleProducers={one} filters={noFilters} hasProducers onSurprise={() => {}} />);
+    const line = screen.getByTestId("home-recommend-line");
+    const surprise = screen.getByRole("button", { name: "הפתיעו אותי" });
+    expect(surprise.compareDocumentPosition(line) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
 });
 
 describe("RecommendClient prefill from the query", () => {

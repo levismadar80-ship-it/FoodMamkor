@@ -279,7 +279,7 @@ export default function OrderWindowEditor({
             onClick={revertChanges}
             disabled={saving}
             data-testid="order-window-revert"
-            className="border border-border text-fg-muted px-4 py-2 rounded-full text-sm font-medium hover:border-primary hover:text-text transition disabled:opacity-60"
+            className="border border-border text-fg-muted px-4 py-2 rounded-full text-sm font-medium hover:border-primary hover:text-text transition disabled:opacity-50"
           >
             {t("revert_cta")}
           </button>
@@ -290,7 +290,7 @@ export default function OrderWindowEditor({
             onClick={clearAll}
             disabled={saving}
             data-testid="order-window-clear"
-            className="text-xs font-medium text-primary underline underline-offset-2 hover:text-primary-dark transition disabled:opacity-60"
+            className="text-xs font-medium text-primary underline underline-offset-2 hover:text-primary-dark transition disabled:opacity-50"
           >
             {t("clear_cta")}
           </button>

@@ -63,7 +63,7 @@ function scrollToContactCard() {
 }
 
 const STAR_TAP =
-  "inline-flex min-h-touch min-w-touch items-center justify-center rounded-lg transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40";
+  "inline-flex min-h-touch min-w-touch items-center justify-center rounded-lg transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary";
 
 function InviteStar({ value, lit, mode, loginHref, producerId, ariaLabel, onHover, onPick, pressed }) {
   const icon = (
@@ -117,16 +117,19 @@ function InviteStar({ value, lit, mode, loginHref, producerId, ariaLabel, onHove
  * @param {"login"|"contact"|"write"} p.mode  write = may write: a star calls
  *   onPick (opens the form / sets the rating); value = the chosen rating.
  * @param {boolean} [p.bare]  inside the form, which draws the hairline itself.
+ * @param {boolean} [p.first]  nothing above it in the section (zero reviews):
+ *   no hairline and no top gap — they separate the row from reviews that
+ *   are not there (MEH-3053).
  */
 export default function ReviewInviteCard(p) {
-  const { mode, loginHref, producerId, producerName, value = 0, onPick, bare, testId } = p;
+  const { mode, loginHref, producerId, producerName, value = 0, onPick, bare, first, testId } = p;
   const t = useTranslations("reviews");
   const [hovered, setHovered] = useState(0);
   const title = t("invite_title", { name: producerName || "" });
   const shown = hovered || (mode === "write" ? value : 0);
   return (
     <div
-      className={bare ? "" : "mt-8 border-t border-border pt-5"}
+      className={bare || first ? "" : "mt-8 border-t border-border pt-5"}
       data-testid={testId || "reviews-write-hint"}
       data-mode={mode}
     >
@@ -135,7 +138,7 @@ export default function ReviewInviteCard(p) {
           className="flex h-12 w-12 flex-none items-center justify-center rounded-full bg-background-alt text-fg-muted"
           aria-hidden="true"
         >
-          <User size={26} />
+          <User size={24} />
         </span>
         <div className="min-w-0">
           <p className="font-body-md text-base font-bold text-text">{title}</p>

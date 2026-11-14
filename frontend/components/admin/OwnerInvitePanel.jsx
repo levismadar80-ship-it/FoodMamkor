@@ -6,6 +6,7 @@ import api from "@/lib/api";
 import { detailToMessage } from "@/lib/errors";
 import { OwnerInviteCreatedSchema } from "@/lib/api-schemas";
 import Button from "@/components/ui/Button";
+import { formatDate } from "@/lib/format-date";
 
 /**
  * Module:   OwnerInvitePanel
@@ -115,16 +116,7 @@ export default function OwnerInvitePanel({ producerId, producer, onChanged }) {
       : localInvite || { email: null, name: null, sent_at: null, expires_at: null };
   const pending = Boolean(invite.sent_at) && !acceptedAt && !owner;
 
-  const fmtDate = (value) =>
-    value
-      ? new Intl.DateTimeFormat(locale === "he" ? "he-IL" : locale, {
-          // guard-ok: display formatting of a server-issued stamp, not a "today" decision (MEH-2383)
-          timeZone: "Asia/Jerusalem",
-          day: "2-digit",
-          month: "2-digit",
-          year: "numeric",
-        }).format(new Date(value))
-      : "";
+  const fmtDate = (value) => formatDate(value, locale);
 
   // Every request shares this shape: clear the previous link FIRST (after a
   // refusal the link on screen may belong to an invite that no longer exists,
@@ -340,7 +332,7 @@ export default function OwnerInvitePanel({ producerId, producer, onChanged }) {
               target="_blank"
               rel="noopener noreferrer"
               data-testid="owner-invite-whatsapp"
-              className="min-h-touch inline-flex items-center justify-center bg-surface border border-primary text-primary rounded-md px-4 py-2 text-sm font-medium hover:bg-background transition"
+              className="min-h-touch inline-flex items-center justify-center bg-surface border border-primary text-primary rounded-full px-4 py-2 text-sm font-medium hover:bg-background transition"
             >
               {t("send_whatsapp")}
             </a>

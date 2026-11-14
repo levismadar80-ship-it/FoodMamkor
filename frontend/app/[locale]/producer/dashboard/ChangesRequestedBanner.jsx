@@ -23,6 +23,7 @@ import { useTranslations } from "next-intl";
 import { ClipboardText, CheckCircle, Warning } from "@phosphor-icons/react";
 import api from "@/lib/api";
 import { detailToMessage } from "@/lib/errors";
+import { formatDate } from "@/lib/format-date";
 
 export default function ChangesRequestedBanner({ profile }) {
   const t = useTranslations("dashboard.producer.changes_requested");
@@ -49,7 +50,7 @@ export default function ChangesRequestedBanner({ profile }) {
   // dir="ltr" so the RTL page doesn't flip the date segments (MEH-1011 Ch2
   // precedent, AdminProducersTable.jsx:45). he-IL formatting to match.
   const date = profile.changes_requested_at
-    ? new Date(profile.changes_requested_at).toLocaleDateString("he-IL")
+    ? formatDate(profile.changes_requested_at, "he")
     : null;
 
   // MEH-1270: once resubmitted, the still-to-complete nag would contradict the
@@ -115,7 +116,7 @@ export default function ChangesRequestedBanner({ profile }) {
               onClick={resubmit}
               disabled={status === "sending"}
               data-testid="resubmit-button"
-              className="inline-block border border-accent/40 text-accent px-4 py-2 rounded-full text-xs font-medium hover:bg-accent/10 transition disabled:opacity-60"
+              className="inline-block border border-accent/40 text-accent px-4 py-2 rounded-full text-xs font-medium hover:bg-accent/10 transition disabled:opacity-50"
             >
               {status === "sending" ? t("resubmit_sending") : t("resubmit_cta")}
             </button>
@@ -123,7 +124,7 @@ export default function ChangesRequestedBanner({ profile }) {
 
           {status === "error" && errorMsg && (
             <p className="mt-2 flex items-center gap-1.5 text-xs text-error" role="alert">
-              <Warning size={15} weight="fill" aria-hidden="true" className="shrink-0" />
+              <Warning size={16} weight="fill" aria-hidden="true" className="shrink-0" />
               {errorMsg}
             </p>
           )}

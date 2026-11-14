@@ -85,5 +85,5 @@ describe("MEH-3091 — card and panel radius", () => {
     }
     expect(offenders).toEqual([]);
     for (const rel of EXEMPT) expect(fs.existsSync(path.join(ROOT, rel)), `stale exemption ${rel}`).toBe(true);
-  });
+  }, 60_000); // walks every file in app/ + components/; timed out at 5 s on a loaded CI shard
 });

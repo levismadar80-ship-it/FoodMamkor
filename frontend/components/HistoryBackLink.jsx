@@ -12,7 +12,7 @@
  *           the answer is read from the browser on mount.
  * Related:  components/Breadcrumb.jsx; messages producer.detail.back_label /
  *           producer.detail.aria.back (existing copy).
- * History:  MEH-2857 (creation).
+ * History:  MEH-2857 (creation); MEH-3057 (always its own row).
  */
 
 import { useEffect, useLayoutEffect, useState } from "react";
@@ -69,10 +69,13 @@ export default function HistoryBackLink({ className = "" }) {
       // Next's app-router `router.back()` is exactly this call; using it
       // directly keeps the link free of the router context, so every page
       // (and its tests) can render it as-is.
+      // MEH-3057: a row of its own (`flex w-fit`, not inline-flex) — as an
+      // inline box the next inline item (the category chip) sat on the same
+      // line, touching it. Block-level here, so no page can put it back.
       onClick={() => window.history.back()}
       aria-label={t("aria.back")}
       data-testid="history-back"
-      className={`inline-flex items-center min-h-touch text-sm text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 rounded ${className}`}
+      className={`flex w-fit items-center min-h-touch text-sm text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 rounded ${className}`}
     >
       {t("back_label")}
     </button>

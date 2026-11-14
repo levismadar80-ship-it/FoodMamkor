@@ -71,7 +71,7 @@ export default function AdminHelpPage() {
   return (
     <div className="max-w-3xl mx-auto">
       <div className="flex items-center gap-3 mb-2">
-        <Lifebuoy size={28} weight="fill" className="text-primary shrink-0" aria-hidden="true" />
+        <Lifebuoy size={24} weight="fill" className="text-primary shrink-0" aria-hidden="true" />
         <h1 className="text-2xl font-bold">{t("layout.nav.help")}</h1>
       </div>
       <p className="text-sm text-muted mb-4">{t("help.intro")}</p>

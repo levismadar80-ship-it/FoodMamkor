@@ -4,9 +4,9 @@ import SeedBurst from "@/components/brand/SeedBurst";
 import { useEffect, useRef, useState } from "react";
 import * as Sentry from "@sentry/nextjs";
 import { useRouter } from "next/navigation";
-import { Link } from "@/i18n/navigation";
 import Breadcrumb from "@/components/Breadcrumb";
 import HistoryBackLink from "@/components/HistoryBackLink";
+import BackLink from "@/components/ui/BackLink";
 import { MagnifyingGlass, MapPin, Clock, ShoppingCart, Truck, ShareNetwork, Check } from "@phosphor-icons/react";
 import Image from "next/image";
 import OwnerRow from "@/components/OwnerRow";
@@ -254,9 +254,7 @@ export default function GroupBuyDetailClient({ id }) {
       <div className="max-w-2xl mx-auto px-4 py-20 text-center">
         <MagnifyingGlass size={40} className="text-fg-muted mx-auto mb-4" aria-hidden="true" />
         <p className="text-lg font-medium text-text">{t("not_found_title")}</p>
-        <Link href="/group-buys" className="text-primary underline decoration-[1.5px] underline-offset-[5px] decoration-primary/35 hover:decoration-current mt-4 inline-block">
-          {t("back_to_list")}
-        </Link>
+        <BackLink href="/group-buys" label={t("back_to_list")} className="mt-4" />
       </div>
     );
   }
@@ -482,7 +480,7 @@ export default function GroupBuyDetailClient({ id }) {
                 />
               ) : (
                 <div className="absolute inset-0 grid place-items-center" data-testid="group-buy-image-missing">
-                  <ShoppingCart size={56} weight="light" className="text-primary/70" aria-hidden="true" />
+                  <ShoppingCart size={64} weight="regular" className="text-primary/70" aria-hidden="true" />
                 </div>
               )}
               {/* MEH-2827 PR 7: no -% pill on the photo — the price tiles say it. */}
@@ -563,7 +561,7 @@ export default function GroupBuyDetailClient({ id }) {
                         // layout is the same: icon column, then label over note.
                         <div key={kind} className="relative ps-[34px] min-w-0" data-testid={`group-buy-${kind}-note`}>
                           <dt className="text-sm font-bold text-text">
-                            <Icon size={22} className="text-primary absolute start-0 top-0.5" aria-hidden="true" />
+                            <Icon size={24} className="text-primary absolute start-0 top-0.5" aria-hidden="true" />
                             {t(`${kind}_label`)}
                           </dt>
                           <dd className="text-base text-text whitespace-pre-line">{note}</dd>
@@ -573,7 +571,7 @@ export default function GroupBuyDetailClient({ id }) {
                 ) : (
                   gb.fulfillment_note && (
                     <p className="flex gap-3 text-base text-text whitespace-pre-line" data-testid="group-buy-fulfillment-note">
-                      <MapPin size={22} className="text-primary shrink-0 mt-0.5" aria-hidden="true" />
+                      <MapPin size={24} className="text-primary shrink-0 mt-0.5" aria-hidden="true" />
                       <span>{gb.fulfillment_note}</span>
                     </p>
                   )
