@@ -114,7 +114,6 @@ def _queue_email_change_mails(
     background_tasks.add_task(
         send_email_changed_notice,
         old_email,
-        user.name,
         user.email,
         test_cause=test_cause,
     )

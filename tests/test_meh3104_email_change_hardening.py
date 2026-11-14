@@ -144,40 +144,67 @@ class TestOldAddressIsTold:
     """MEH-3104: the old address hears about the change, so a takeover is not silent."""
 
     def _run(self, client, user, body):
-        with patch(SEND), patch(NOTICE) as notice:
+        with patch(SEND) as verify, patch(NOTICE) as notice:
             res = client.patch("/users/me", json=body, headers=auth_header(user))
-        return res, notice
+        return res, verify, notice
 
     def test_a_real_change_mails_the_old_address(self, client, db):
         user = make_user(db, email="old1@example.com", email_verified=True)
-        res, notice = self._run(
+        res, verify, notice = self._run(
             client, user, {"email": "new1@example.com", "current_password": PASSWORD}
         )
         assert res.status_code == 200, res.text
         assert notice.call_count == 1
-        assert notice.call_args.args[0] == "old1@example.com"
+        assert notice.call_args.args[:2] == ("old1@example.com", "new1@example.com")
+        assert notice.call_args.kwargs["test_cause"] is False
+        # The verify link still goes to the new address only.
+        assert [c.args[0] for c in verify.call_args_list] == ["new1@example.com"]
+
+    def test_a_name_sent_with_the_change_never_reaches_the_notice(self, client, db):
+        user = make_user(db, email="old4@example.com")
+        res, _, notice = self._run(
+            client,
+            user,
+            {"email": "new4@example.com", "current_password": PASSWORD, "name": "זה עדכון שגרתי"},
+        )
+        assert res.status_code == 200, res.text
+        assert "זה עדכון שגרתי" not in repr(notice.call_args)
+
+    def test_a_test_account_marks_the_notice_as_test(self, client, db):
+        user = make_user(db, email="old5@example.com")
+        user.is_test = True
+        db.commit()
+        res, _, notice = self._run(
+            client, user, {"email": "new5@example.com", "current_password": PASSWORD}
+        )
+        assert res.status_code == 200, res.text
+        assert notice.call_args.kwargs["test_cause"] is True
 
     def test_same_address_mails_nobody(self, client, db):
         user = make_user(db, email="old2@example.com")
-        res, notice = self._run(client, user, {"email": "old2@example.com"})
+        res, _, notice = self._run(client, user, {"email": "old2@example.com"})
         assert res.status_code == 200, res.text
         assert notice.call_count == 0
 
-    def test_a_refused_change_mails_nobody(self, client, db):
+    def test_an_address_already_taken_mails_nobody(self, client, db):
+        make_user(db, email="taken@example.com")
         user = make_user(db, email="old3@example.com")
-        res, notice = self._run(client, user, {"email": "new3@example.com"})
-        assert res.status_code == 403, res.text
+        res, _, notice = self._run(
+            client, user, {"email": "taken@example.com", "current_password": PASSWORD}
+        )
+        assert res.status_code == 409, res.text
         assert notice.call_count == 0
 
-    def test_the_notice_names_the_new_address_only_in_part(self, monkeypatch):
+    def test_the_notice_shows_the_new_address_only_in_part(self, monkeypatch):
         from app.services import auth_emails
 
         sent = {}
         monkeypatch.setattr(
             auth_emails, "send_email", lambda to, subject, body, **kw: sent.update(to=to, body=body)
         )
-        auth_emails.send_email_changed_notice("old@example.com", "נועה", "noa.new@example.org")
+        auth_emails.send_email_changed_notice("old@example.com", "noa.new@noa-cohen.me")
         assert sent["to"] == "old@example.com"
-        assert "n***@example.org" in sent["body"]
+        assert "n***@n***.me" in sent["body"]
         assert "noa.new" not in sent["body"]
+        assert "noa-cohen" not in sent["body"]
         assert "/contact" in sent["body"]
