@@ -35,7 +35,7 @@
 
 ## ג׳ — דגלים ומשתני סביבה (ה-thread, טבלה ב-PR)
 
-- [ ] לכל פיצ'ר שנכנס מאז הגרסה הקודמת ותלוי בדגל, במשתנה סביבה או בתבנית Meta: המצב הרצוי בפרודקשן (דולק/כבוי) מול המצב בפועל. דוגמאות נכון ל-07/11: `RESCUE_BAGS_ENABLED` + `NEXT_PUBLIC_RESCUE_BAGS_ENABLED` + `RESCUE_BAGS_CITIES`, `RESCUE_DIGEST_ENABLED` + תבנית `rescue_codes_digest_v1`, `WATCHDOG_ENABLED`
+- [ ] לכל פיצ'ר שנכנס מאז הגרסה הקודמת ותלוי בדגל, במשתנה סביבה או בתבנית Meta: המצב הרצוי בפרודקשן (דולק/כבוי) מול המצב בפועל. דוגמאות נכון ל-07/11: `RESCUE_BAGS_ENABLED` + `NEXT_PUBLIC_RESCUE_BAGS_ENABLED` + `RESCUE_BAGS_CITIES`, `RESCUE_DIGEST_ENABLED` + תבנית `rescue_codes_digest_v1`, `WATCHDOG_ENABLED`, תבנית `admin_business_pending_v1` (התראת וואטסאפ למנהלת על עסק שמחכה לאישור, MEH-3147 — עד ש-Meta מאשרת רק המייל מגיע)
 - [ ] משתנה סביבה חדש בפרודקשן? רק אחרי אישור של ספיר (כלל רגרסיה 8)
 - [ ] `SUPER_ADMIN_EMAIL` מוגדר ב-Railway **production** לפני המיזוג ל-main. בלעדיו הבקאנד לא עולה (MEH-2890). הערך: האימייל של חשבון הבעלים בדיוק כפי שהוא מופיע ב-`/admin/users`
 
