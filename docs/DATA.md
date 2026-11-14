@@ -880,10 +880,11 @@ POST   /admin/producers/{id}/owner-invite          admin — 10/hour. Body {name
                                                      mailed and the admin copies the link into WhatsApp or Instagram herself.
                                                      consent_confirmed != true, or a blank/whitespace note → 422 (schema-level: a statement about the body, so it leaks nothing).
                                                      Status neither "approved" nor "inactive" → 409 · already has an owner → 409 · the email, if given, already belongs to a user → 409 (v1 does NOT link an existing account).
+                                                     MEH-3246: no photo, or a licence-required category with no licence number → 422 Hebrew (services/invite_gate.py), because acceptance publishes the page.
                                                      404 if missing. A second call REPLACES the invite, token and all. → {invite_url, email, name, sent_at, expires_at} — the ONE response
                                                      that carries the raw token. There is no GET that re-reads it; the DB holds only the hash.
 POST   /admin/producers/{id}/owner-invite/resend   admin — 10/hour. No body: resending to a DIFFERENT address is a different consent and goes through create.
-                                                     New token, previous one dead. 404 when there is no invite, 409 once accepted. Same response shape.
+                                                     New token, previous one dead. 404 when there is no invite, 409 once accepted, 422 when the page lost its photo/licence (MEH-3246). Same response shape.
 DELETE /admin/producers/{id}/owner-invite          admin — 30/hour. Withdraws an unaccepted invite and clears the invitee's email + name with the token (PII of a
                                                      non-user, MEH-2208's תיקון 13 class). Keeps owner_invite_created_by + the consent note — the record that an invite WAS sent.
                                                      404 when there is nothing to cancel, 409 once accepted. v3: a resend and a cancel each clear the three code columns too.
