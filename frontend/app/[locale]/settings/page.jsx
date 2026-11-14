@@ -27,6 +27,9 @@ import { validateIsraeliPhone } from "@/lib/validators";
 import Button from "@/components/ui/Button";
 import { loginHrefBackHere } from "@/lib/safe-redirect";
 import InlineMessage from "@/components/ui/InlineMessage";
+import Avatar from "@/components/ui/Avatar";
+import { SkeletonBlock } from "@/components/Skeleton";
+import ButtonSpinner from "@/components/ButtonSpinner";
 
 function SettingsLoadingFallback() {
   const tCommon = useTranslations("settings.common");
@@ -54,12 +57,12 @@ function SettingsSkeleton({ label }) {
     >
       <span className="sr-only">{label}</span>
       {/* h1: text-3xl line ≈ h-9, mb-6 — same slot as the real heading */}
-      <div className="h-9 w-48 bg-border rounded-md animate-pulse mb-6" />
+      <SkeletonBlock as="div" className="h-9 w-48 rounded-md mb-6" />
       {/* tab bar: p-1 pill + py-2 buttons ≈ 46px, mb-8 */}
-      <div className="h-[46px] w-full max-w-xs bg-border rounded-full animate-pulse mb-8" />
+      <SkeletonBlock as="div" className="h-[46px] w-full max-w-xs rounded-full mb-8" />
       <div className="space-y-4">
-        <div className="h-28 bg-border rounded-lg animate-pulse" />
-        <div className="h-28 bg-border rounded-lg animate-pulse" />
+        <SkeletonBlock as="div" className="h-28 rounded-lg" />
+        <SkeletonBlock as="div" className="h-28 rounded-lg" />
       </div>
     </div>
   );
@@ -312,8 +315,6 @@ export function ProfileTab() {
     }
   };
 
-  const initial = (user.name || user.email || "?").trim().charAt(0).toUpperCase();
-
   return (
     // MEH-2565: card from md up only. On a phone the profile form uses the full
     // width; the security tab keeps its cards (three separate sections).
@@ -326,16 +327,8 @@ export function ProfileTab() {
           className="relative w-16 h-16 rounded-full cursor-pointer group shrink-0"
           aria-label={t("avatar_aria")}
         >
-          {user.avatar_url ? (
-            // raw img: OAuth provider avatar — host not in remotePatterns
-            // (frozen this ticket).
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={user.avatar_url} alt="" className="w-16 h-16 rounded-full object-cover" />
-          ) : (
-            <div className="w-16 h-16 rounded-full flex items-center justify-center text-white text-2xl font-semibold bg-primary">
-              {initial}
-            </div>
-          )}
+          {/* MEH-3069: the shared circle; email initial when there is no name. */}
+          <Avatar src={user.avatar_url} name={user.name || user.email} size={64} />
           {/* MEH-222: camera overlay — always visible on mobile (opacity-30) so the tap target is discoverable; desktop hides it until hover.
               MEH-2418: the md+ hide is gated to hover-capable pointers — with hoverOnlyWhenSupported a touch tablet never fires group-hover, so a bare md:opacity-0 left the overlay invisible there. */}
           <div className="absolute inset-0 rounded-full bg-black/40 flex items-center justify-center opacity-30 md:[@media(hover:hover)_and_(pointer:fine)]:opacity-0 md:group-hover:opacity-100 transition-opacity">
@@ -343,10 +336,7 @@ export function ProfileTab() {
           </div>
           {uploading && (
             <div className="absolute inset-0 rounded-full bg-black/50 flex items-center justify-center">
-              <svg className="animate-spin w-6 h-6 text-white" viewBox="0 0 24 24" fill="none">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
-              </svg>
+              <ButtonSpinner size={24} className="text-white" />
             </div>
           )}
         </label>

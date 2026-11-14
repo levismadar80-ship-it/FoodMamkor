@@ -82,7 +82,10 @@ async function recenterOnSeededProducer(
     longitude: secondaryLoc.lng!,
   });
 
-  await page.goto("/map");
+  // MEH-3054: one pin per business — pickup / market_stand pins are drawn only
+  // for the selected business, or for all while «איסוף עצמי» is on. These
+  // tests are about those pins, so they open /map with the chip on.
+  await page.goto("/map?pickup_points=1");
   await page.waitForLoadState("domcontentloaded");
   await page.waitForFunction(MAP_MOUNT, { timeout: 45_000 });
 

@@ -8,6 +8,7 @@ import { useFocusReturn } from "@/lib/use-focus-return";
 import { setUserLocation } from "@/lib/user-location";
 import Button from "@/components/ui/Button";
 import InlineMessage from "@/components/ui/InlineMessage";
+import ButtonSpinner from "@/components/ButtonSpinner";
 
 // City keys → HE values are the API/canonical names (Hebrew). Display labels
 // resolve via t(`modals.location.popular_cities.${key}`) so /en/ shows the
@@ -286,7 +287,7 @@ export default function LocationModal({ open, onClose, onSelectCity }) {
           disabled={geoLoading}
           variant="outlined" className="w-full mb-3"
         >
-          <Crosshair size={18} weight="bold" className={geoLoading ? "animate-spin" : ""} aria-hidden="true" />
+          {geoLoading ? <ButtonSpinner size={18} /> : <Crosshair size={18} weight="bold" aria-hidden="true" />}
           {geoLoading ? t("geo_loading") : t("geo_button")}
         </Button>
 

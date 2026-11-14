@@ -43,7 +43,7 @@ const FAR_AWAY = {
 
 const BOUNDS = { south: 32.4, north: 32.7, west: 34.8, east: 35.1 };
 
-function setup(allProducers, showSecondaryLayer = true) {
+function setup(allProducers) {
   const { result } = renderHook(() =>
     useMapFilters({
       allProducers,
@@ -52,7 +52,6 @@ function setup(allProducers, showSecondaryLayer = true) {
       userCity: null,
       setUserCity: vi.fn(),
       setShowCityPicker: vi.fn(),
-      showSecondaryLayer,
     }),
   );
   return result;
@@ -86,19 +85,33 @@ describe("useMapFilters — viewport bounds derive from locations[] (MEH-1670)",
     expect(result.current.viewportCategoryCounts[BAKERY.name]).toBe(2);
   });
 
-  // MEH-1670 adversarial finding (PR #2347 review): the unit test on
-  // producerInBounds() (producerPoints.test.js:114-118) proves the primitive
-  // honours includeSecondary; it does NOT prove this HOOK actually wires
-  // showSecondaryLayer through to it. A refactor that hardcoded
-  // `includeSecondary: true` at either call site would break "pickup-only
-  // business leaves the list when the layer is toggled off" with nothing here
-  // going red — this closes that gap at the integration level.
-  it("showSecondaryLayer=false removes a pickup-only business from BOTH outputs", () => {
-    const result = setup([DELIVERY_ONLY, FAR_AWAY], false);
-    act(() => result.current.setCommittedBounds(BOUNDS));
+  // MEH-3054: the list tests the pins the map DRAWS (mapPinPoints). A business
+  // whose branch is out of view but whose pickup point is in view is not drawn
+  // there by default, so it is not in the list; the «איסוף עצמי» chip draws
+  // every pickup point, and then it is. Replaces MEH-1670's layer-toggle case
+  // (the toggle left on 13/11, MEH-3045).
+  const BRANCH_FAR_PICKUP_NEAR = {
+    id: "branch-far",
+    categories: [BAKERY],
+    locations: [
+      { kind: "branch", is_primary: true, lat: 33.5, lng: 35.5 },
+      { kind: "pickup", is_primary: false, lat: 32.5, lng: 34.9 },
+    ],
+  };
 
-    const ids = result.current.visibleProducers.map((p) => p.id);
-    expect(ids).not.toContain("delivery-only");
+  it("a pickup point in view does not pull in a business whose pin is out of view (chip off)", () => {
+    const result = setup([BRANCH_FAR_PICKUP_NEAR, FAR_AWAY]);
+    act(() => result.current.setCommittedBounds(BOUNDS));
+    expect(result.current.visibleProducers.map((p) => p.id)).not.toContain("branch-far");
     expect(result.current.viewportCategoryCounts[BAKERY.name]).toBeUndefined();
+  });
+
+  it("with the «איסוף עצמי» chip on, that pickup point counts, in BOTH outputs", () => {
+    const result = setup([BRANCH_FAR_PICKUP_NEAR, FAR_AWAY]);
+    act(() => result.current.setCommittedBounds(BOUNDS));
+    act(() => result.current.setChipState((s) => ({ ...s, pickup_points: true })));
+    expect(result.current.showAllPickupPoints).toBe(true);
+    expect(result.current.visibleProducers.map((p) => p.id)).toContain("branch-far");
+    expect(result.current.viewportCategoryCounts[BAKERY.name]).toBe(1);
   });
 });

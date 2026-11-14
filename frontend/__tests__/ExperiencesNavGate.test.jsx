@@ -34,6 +34,8 @@ vi.mock("next/image", () => ({ default: (props) => <img alt={props.alt ?? ""} {.
 // context the key-echo next-intl mock above does not provide. Stubbed as in
 // FooterNavGroups.test.jsx — the link is CollectionNotice.test.jsx's job.
 vi.mock("@/i18n/navigation", () => ({
+  // MEH-3059: Footer prefetches «כל בתי העסק» on intent via router.prefetch.
+  useRouter: () => ({ prefetch: () => {} }),
   Link: ({ href, children, ...rest }) => (
     <a href={typeof href === "string" ? href : "#"} {...rest}>
       {children}

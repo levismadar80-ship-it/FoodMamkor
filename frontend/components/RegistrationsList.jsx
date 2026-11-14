@@ -24,6 +24,7 @@ import { useTranslations } from "next-intl";
 import { CaretDown } from "@phosphor-icons/react";
 import api from "@/lib/api";
 import InlineMessage from "@/components/ui/InlineMessage";
+import { SkeletonBlock } from "@/components/Skeleton";
 
 /**
  * @param {"events"|"experiences"} kind
@@ -61,7 +62,7 @@ export default function RegistrationsList({ kind, itemId, count = 0 }) {
             {t("load_error")}
           </InlineMessage>
         ) : rows === null ? (
-          <div className="h-5 w-40 rounded bg-border/60 animate-pulse" aria-busy="true" />
+          <SkeletonBlock as="div" className="h-5 w-40 rounded" aria-busy="true" />
         ) : rows.length === 0 ? (
           <p className="text-fg-muted" data-testid="registrations-empty">
             {t("empty")}

@@ -80,9 +80,6 @@ frontend/app/[locale]/admin/reviews/page.jsx:bg-gray-50
 frontend/app/[locale]/admin/reviews/page.jsx:bg-yellow-100
 frontend/app/[locale]/admin/reviews/page.jsx:text-yellow-500
 frontend/app/[locale]/admin/reviews/page.jsx:text-yellow-800
-frontend/app/[locale]/admin/settings/page.js:bg-gray-200
-frontend/app/[locale]/admin/settings/page.js:bg-gray-200
-frontend/app/[locale]/admin/settings/page.js:bg-gray-200
 frontend/app/[locale]/admin/users/page.js:bg-gray-100
 frontend/app/[locale]/admin/users/page.js:bg-gray-50
 frontend/app/[locale]/admin/users/page.js:bg-gray-50
@@ -282,7 +279,6 @@ frontend/components/ReviewCardCanvas.jsx:hex:#f5f0e8
 frontend/components/ReviewCardCanvas.jsx:hex:#ffffff
 frontend/components/ReviewsSection.jsx:hex:#896714
 frontend/components/ReviewsSection.jsx:hex:#e5dfd3
-frontend/components/StarRating.jsx:text-yellow-500
 frontend/components/StoryCardCanvas.jsx:arb:#1f4a3a
 frontend/components/StoryCardCanvas.jsx:bg-gray-100
 frontend/components/StoryCardCanvas.jsx:hex:#1f4a3a

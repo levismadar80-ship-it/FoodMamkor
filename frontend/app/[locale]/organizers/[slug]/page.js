@@ -34,6 +34,7 @@ import HistoryBackLink from "@/components/HistoryBackLink";
 import ShareButton from "@/components/ShareButton";
 import OwnerCard from "@/app/[locale]/producer/[id]/components/OwnerCard";
 import SectionHeading from "@/components/ui/SectionHeading";
+import { avatarInitial } from "@/components/ui/Avatar";
 
 const ROUTE = "/[locale]/organizers/[slug]";
 
@@ -169,7 +170,7 @@ export default async function OrganizerPage(props) {
   const tCta = await getTranslations({ locale, namespace: "contact_cta" });
   const events = organizer.upcoming_events || [];
   const image = organizer.images?.[0];
-  const initial = Array.from((organizer.name || "").trim())[0] ?? "";
+  const initial = avatarInitial(organizer.name, "");
   // MEH-3018: the canonical URL, built on the server, so the share button
   // carries the same value in the HTML and after hydration.
   const pageUrl = buildAlternates(`/organizers/${slug}`, locale).canonical;

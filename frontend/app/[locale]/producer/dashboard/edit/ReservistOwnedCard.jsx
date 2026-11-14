@@ -10,6 +10,7 @@ import { BADGE_CONFIG } from "@/lib/badges";
 import { useBadgeCopy } from "@/lib/use-badge-copy";
 import { badgeIcon } from "@/lib/chip-icons";
 import InlineMessage from "@/components/ui/InlineMessage";
+import Switch from "@/components/ui/Switch";
 
 /**
  * Module:   ReservistOwnedCard
@@ -78,10 +79,8 @@ export default function ReservistOwnedCard({ profile, onSave }) {
             {t("scope_helper")}
           </p>
         </div>
-        <button
-          type="button"
-          role="switch"
-          aria-checked={checked}
+        <Switch
+          checked={checked}
           aria-labelledby="reservist-owned-label"
           aria-describedby="reservist-owned-helper"
           // aria-disabled, not disabled: a disabled button drops keyboard /
@@ -90,19 +89,7 @@ export default function ReservistOwnedCard({ profile, onSave }) {
           aria-disabled={saving}
           onClick={toggle}
           data-testid="reservist-owned-switch"
-          className="group relative shrink-0 inline-flex items-center justify-center min-h-touch min-w-touch -my-2.5 focus-visible:outline-none"
-        >
-          <span
-            aria-hidden="true"
-            className={`relative block w-10 h-6 rounded-full transition-colors group-focus-visible:ring-2 group-focus-visible:ring-primary/40 ${checked ? "bg-primary" : "bg-border"}`}
-          >
-            <span
-              className={`absolute top-1 w-4 h-4 rounded-full bg-surface shadow transition-all ${
-                checked ? "end-1" : "start-1"
-              }`}
-            />
-          </span>
-        </button>
+        />
       </div>
 
       {checked && (
