@@ -5,7 +5,9 @@ import api from "@/lib/api";
 
 // MEH-2827 PR 5: the owner line under the subtitle is a BusinessCtaLink,
 // which reads the auth context. A guest sees the join link.
-vi.mock("@/lib/auth-context", () => ({ useAuth: () => ({ user: null, loading: false }) }));
+vi.mock("@/lib/auth-context", () => ({
+  // MEH-3112 prefill hook: a guest here, so the forms open empty as before.
+  useOptionalAuth: () => null, useAuth: () => ({ user: null, loading: false }) }));
 vi.mock("@/lib/api", () => ({
   default: { post: vi.fn(() => Promise.resolve({ data: { ok: true } })) },
 }));

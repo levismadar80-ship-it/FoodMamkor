@@ -6,6 +6,7 @@ import { useTranslations } from "next-intl";
 
 import api from "@/lib/api";
 import { useOptionalAuth } from "@/lib/auth-context";
+import { useAccountPrefillValue } from "@/lib/use-account-prefill";
 import { JoinDeliveryWaitlistProducersProducerIdDeliveryWaitlistPostResponse as WaitlistOut } from "@/lib/generated/api.zod";
 import Button from "@/components/ui/Button";
 import InlineMessage from "@/components/ui/InlineMessage";
@@ -53,6 +54,8 @@ export default function DeliveryWaitlistForm({ producer = null, city = "", descr
   const [phase, setPhase] = useState("idle");
   // Prefilled for a signed-in visitor — she can still change it.
   const [email, setEmail] = useState(user?.email ?? "");
+  // MEH-3112: also when the account loads after the form is on screen.
+  useAccountPrefillValue(setEmail, "email");
   const [wantsToHost, setWantsToHost] = useState(false);
   // MEH-2674: the server's word on the confirmation mail (null = box unticked
   // or an older backend that does not answer host_confirm).
