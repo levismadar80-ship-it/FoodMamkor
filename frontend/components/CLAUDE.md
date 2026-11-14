@@ -16,7 +16,7 @@ behavior see `frontend/components/Header.jsx`.
 Search before you create: a button, field, dialog, message, heading, toggle,
 avatar, loading state or "back" link already has ONE owner below. Build from it
 (`className` for layout only); never copy its classes into a new file. Import
-by path (`@/components/ui/Dialog`) — `ui/index.js` re-exports only some.
+by path (`@/components/ui/Dialog`) or from the barrel `@/components/ui`.
 The last column is the guard that pins the owner or its look; some cover only
 part (noted in the row) — read the guard's header. Full rules: `docs/DESIGN.md`.
 `ComponentCatalogGuard.test.js` fails when a `ui/` file is missing from this table.
@@ -24,7 +24,7 @@ part (noted in the row) — read the guard's header. Full rules: `docs/DESIGN.md
 | Need | Owner | Guard |
 |---|---|---|
 | Filled / outlined / destructive action | `ui/Button.jsx` | `ButtonPrimitiveGuard`, `ActionShapeGuard` (pill shape) |
-| Text field with label + error | `ui/Input.jsx` | `FieldLookGuard` (look of a raw field only) |
+| Text field with label + error | `ui/Input.jsx` | `HandWrittenRatchet` (no new raw text field), `FieldLookGuard` (look) |
 | Centred modal (focus trap: `hooks/useDialogFocus.js`) | `ui/Dialog.jsx` | `DialogContractGuard` |
 | Error / «נשמר» message inside a page or form | `ui/InlineMessage.jsx` | `InlineMessageGuard` |
 | Transient toast (`showToast.*`) | `lib/toast.js`, `Toaster.jsx` | — |
@@ -37,7 +37,7 @@ part (noted in the row) — read the guard's header. Full rules: `docs/DESIGN.md
 | Fact line with its icon (business page) | `ui/FactLine.jsx` | `FactLineIconGuard` |
 | Empty list / no results | `ui/EmptyState.jsx` | — |
 | Rich click-opened bubble · sheet on phone | `ui/Popover.jsx` | — |
-| Short hover/tap explainer | `ui/Tooltip.jsx` | — |
+| Short hover/tap explainer (not the older `InfoTooltip.jsx`) | `ui/Tooltip.jsx` | `HandWrittenRatchet` |
 | Icon button on a photo (heart, share) | `ui/overlay-icon-button.js` | — |
 | Styled text link · pill · h1–h4 · card shell | `ui/Link.jsx`, `ui/Badge.jsx`, `ui/Heading.jsx`, `ui/Card.jsx` | `CardRadiusGuard` (radius only) |
 | Loading bar / box · spinner in a button | `Skeleton.jsx` (`SkeletonBlock`), `ButtonSpinner.jsx` | `LoadingGuard` |
