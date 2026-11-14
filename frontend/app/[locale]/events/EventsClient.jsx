@@ -19,12 +19,16 @@ import { useTranslations, useLocale } from "next-intl";
 import api from "@/lib/api";
 import { formatEventDate } from "@/lib/format-date";
 import CitySearch from "@/components/CitySearch";
+import { WHEN_CHIP_PREFIX, WHEN_KEYS, matchesWhen } from "@/lib/event-date-filter";
+import { israelToday } from "@/lib/israel-date";
 import ChipScrollRow from "@/components/ChipScrollRow";
 import CalendarView from "@/components/CalendarView";
 // MEH-2497: the date-rail row (and its row normalizer) now lives in one shared
 // component, so the home «אירועים קרובים» preview renders the same row.
 import EventEntryRow, { toEventEntry } from "@/components/EventEntryRow";
 import { EVENT_CATEGORIES, EXPERIENCE_CATEGORIES, withAll } from "@/lib/event-categories";
+// MEH-3124: a category chip shows only when it has results in this city.
+import { presentCategories, visibleCategoryChips } from "@/lib/event-category-gate";
 // MEH-2199 chunk 3: this page shipped the tablist keyboard layer inline in
 // chunk 2; /settings then needed the identical behaviour, so it was lifted to
 // a shared hook and this file retrofitted onto it. Two copies of the RTL arrow
@@ -101,6 +105,9 @@ export default function EventsPage({ initialTab = "events", titles = null }) {
   // pending must not let that earlier request's late result overwrite the
   // newer one. Each load() takes a ticket; only the latest ticket may commit.
   const loadTicket = useRef(0);
+  // MEH-3124: the categories that have at least one result for {tab, city},
+  // read from a category-less list. cats === null = unknown → all chips show.
+  const [present, setPresent] = useState({ tab: null, city: null, cats: null });
   // MEH-1085 (DISC-08): city + category are deep-linkable — seeded from the
   // URL on mount. A URL category is accepted only when it
   // belongs to the initial tab's vocabulary, so a cross-tab share link can't
@@ -120,6 +127,9 @@ export default function EventsPage({ initialTab = "events", titles = null }) {
   // are read, so a deep link still costs exactly one request.
   const [city, setCity] = useState("");
   const [categories, setCategories] = useState([]);
+  // MEH-3118: date shortcut — null | "today" | "tomorrow" | "weekend". One at
+  // a time; filters the rows already loaded (no refetch).
+  const [when, setWhen] = useState(null);
   const [urlReady, setUrlReady] = useState(false);
   useEffect(() => {
     const p = new URLSearchParams(window.location.search);
@@ -148,6 +158,7 @@ export default function EventsPage({ initialTab = "events", titles = null }) {
   const applyTab = (next) => {
     setTab(next);
     setCategories(clearCategories);
+    setWhen(null);
     setCity("");
     // The old remount reset the view; keep that (MEH-2980 AC: states unchanged).
     setView("list");
@@ -179,6 +190,7 @@ export default function EventsPage({ initialTab = "events", titles = null }) {
     const p = new URLSearchParams(window.location.search);
     setTab(urlTab);
     setView("list");
+    setWhen(null); // MEH-3118: a history move across tabs clears the shortcut too
     setCity(p.get("city") || "");
     setCategories(categoriesFor(urlTab, p.getAll("category")));
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -231,10 +243,16 @@ export default function EventsPage({ initialTab = "events", titles = null }) {
       const r = await api.get(endpoint, { params, timeout: 15000 });
       if (ticket !== loadTicket.current) return; // superseded
       setRows(r.data);
+      // MEH-3124: with no category picked, the list IS the category-less set
+      // for {tab, city}. No second request for the other case (MEH-2984: a
+      // deep link costs one request) — an unknown set shows every chip.
+      if (!categories.length) setPresent({ tab, city, cats: presentCategories(r.data) });
     } catch {
       if (ticket !== loadTicket.current) return; // superseded
       setRows([]);
       setLoadError(true);
+      // MEH-3124: a failed load forgets the set — every chip, not last city's.
+      setPresent({ tab, city, cats: null });
     } finally {
       if (ticket === loadTicket.current) setLoading(false);
     }
@@ -243,7 +261,15 @@ export default function EventsPage({ initialTab = "events", titles = null }) {
   const isExp = tab === "experiences";
   // Backward-compatibility alias so the render code keeps using `events`
   // even when the tab is experiences.
-  const events = rows;
+  // MEH-3118: the date shortcut narrows the loaded rows on the Israel calendar.
+  const events = useMemo(
+    () => {
+      if (!when) return rows;
+      const today = israelToday(); // once per filter, not once per row
+      return rows.filter((row) => matchesWhen(row.event_date, when, today));
+    },
+    [rows, when],
+  );
   const activeCategories = isExp ? EXPERIENCE_CATEGORY_KEYS : CATEGORY_KEYS;
   const categoryLabel = (entry) =>
     isExp ? tExpCat(entry.labelKey) : tCat(entry.labelKey);
@@ -251,15 +277,36 @@ export default function EventsPage({ initialTab = "events", titles = null }) {
   // Chips → shared ChipScrollRow. The wire value for "all" is "" but
   // ChipScrollRow's reset sentinel is "all" — bridge the two so its
   // scroll-pinning behaves like /producers + /map.
-  const chips = activeCategories.map((c) => ({
+  // MEH-3118: «הכל» stays first (it clears everything), then the three date
+  // shortcuts, then the categories — one row, no second strip (Eventbrite and
+  // Meetup lead with the date pills).
+  const categoryChips = activeCategories.map((c) => ({
     key: c.key || "all",
     label: categoryLabel(c),
   }));
+  const whenChips = WHEN_KEYS.map((k) => ({ key: `${WHEN_CHIP_PREFIX}${k}`, label: t(`when_${k}`) }));
+  const chips = [
+    ...categoryChips.filter((c) => c.key === "all"),
+    ...whenChips,
+    ...categoryChips.filter((c) => c.key !== "all"),
+  ];
   // MEH-2847: multi-select, as on /producers (ProducersClient.jsx:498-509).
   // «הכל» clears the set (and is the active chip while it is empty); tapping
   // a selected chip removes it; any other chip is added.
-  const activeChipKeys = useMemo(() => new Set(categories), [categories]);
+  const activeChipKeys = useMemo(
+    () => new Set(when ? [...categories, `${WHEN_CHIP_PREFIX}${when}`] : categories),
+    [categories, when],
+  );
   const onChipClick = (k) => {
+    if (k.startsWith(WHEN_CHIP_PREFIX)) {
+      const next = k.slice(WHEN_CHIP_PREFIX.length);
+      setWhen((prev) => (prev === next ? null : next)); // tap again = off
+      // The calendar opens on the current month; a weekend that crosses into
+      // next month would show an empty grid. A shortcut reads as a list.
+      setView("list");
+      return;
+    }
+    if (k === "all") setWhen(null);
     setCategories((prev) => {
       if (k === "all") return clearCategories(prev);
       return prev.includes(k) ? prev.filter((c) => c !== k) : [...prev, k];
@@ -294,6 +341,7 @@ export default function EventsPage({ initialTab = "events", titles = null }) {
   const resetFilters = () => {
     setCity("");
     setCategories(clearCategories);
+    setWhen(null);
   };
 
   // MEH-1865: a zero row count means two different things, and the page used
@@ -306,12 +354,26 @@ export default function EventsPage({ initialTab = "events", titles = null }) {
   // The reverse mistake (hiding the filters on a filtered-to-zero) is the one
   // that traps the reader with no way back but editing the URL, and it cannot
   // happen here.
-  const filtersActive = Boolean(city || categories.length);
+  const filtersActive = Boolean(city || categories.length || when);
   // MEH-2396: an error is not a zero. Neither zero surface may render on a
   // failed load, or the page claims a dataset it never received.
   const isZero = !loading && !loadError && events.length === 0;
   const datasetEmpty = isZero && !filtersActive;
   const filteredToZero = isZero && filtersActive;
+
+  // MEH-3124: hide a category chip with no results here (a picked one stays).
+  // With nothing picked, the last set for this tab stands in while a new city
+  // loads (no flicker); with a category picked, only this city's set counts.
+  const presentKnown =
+    present.tab === tab && (!categories.length || present.city === city);
+  const shownChips = visibleCategoryChips({
+    chips,
+    vocabulary: new Set((isExp ? EXPERIENCE_CATEGORIES : EVENT_CATEGORIES).map((c) => c.key)),
+    present: presentKnown ? present.cats : null,
+    active: activeChipKeys,
+  });
+  // «הכל» alone filters nothing — then the row is not drawn at all.
+  const showChipRow = shownChips.some((c) => c.key !== "all");
 
   return (
     <div>
@@ -403,14 +465,16 @@ export default function EventsPage({ initialTab = "events", titles = null }) {
           </div>
 
           {/* Category chips — shared ChipScrollRow (rounded-md, MEH-764). */}
-          <div className="max-w-5xl mx-auto px-4 pt-3">
-            <ChipScrollRow
-              variant="category"
-              chips={chips}
-              activeKeys={activeChipKeys}
-              onChipClick={onChipClick}
-            />
-          </div>
+          {showChipRow && (
+            <div className="max-w-5xl mx-auto px-4 pt-3">
+              <ChipScrollRow
+                variant="category"
+                chips={shownChips}
+                activeKeys={activeChipKeys}
+                onChipClick={onChipClick}
+              />
+            </div>
+          )}
         </>
       )}
 

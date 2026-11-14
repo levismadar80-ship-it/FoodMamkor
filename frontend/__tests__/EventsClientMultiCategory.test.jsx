@@ -51,22 +51,17 @@ vi.mock("@phosphor-icons/react", () => {
     ].map((name) => [name, Stub]),
   );
 });
-// One row on every call: an EMPTY unfiltered dataset withholds the chip row
-// altogether (MEH-1865), and these cases need the chips after «הכל» too.
-vi.mock("@/lib/api", () => ({
-  default: {
-    get: vi.fn(() =>
-      Promise.resolve({
-        data: [
-          {
-            id: 1, title: "event 1", event_date: "2026-12-01", event_time: "10:00",
-            city: "חיפה", category: "שוק", price: 0, producer_name: "בית עסק", description: "",
-          },
-        ],
-      }),
-    ),
-  },
-}));
+// One row PER CATEGORY of both tabs on every call: an EMPTY unfiltered dataset
+// withholds the chip row altogether (MEH-1865), and MEH-3124 hides a chip whose
+// category has no row — these cases need every chip, after «הכל» too.
+vi.mock("@/lib/api", async () => {
+  const { EVENT_CATEGORIES: E, EXPERIENCE_CATEGORIES: X } = await import("@/lib/event-categories");
+  const data = [...E, ...X].map((c, i) => ({
+    id: i + 1, title: `event ${i + 1}`, event_date: "2026-12-01", event_time: "10:00",
+    city: "חיפה", category: c.key, price: 0, producer_name: "בית עסק", description: "",
+  }));
+  return { default: { get: vi.fn(() => Promise.resolve({ data })) } };
+});
 // The row's save heart reads the auth context; not the subject here.
 vi.mock("@/components/SaveButton", () => ({ default: () => null }));
 vi.mock("@/lib/cloudinary", () => ({ optimizeCloudinary: (u) => u }));

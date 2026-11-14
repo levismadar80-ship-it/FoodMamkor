@@ -2,6 +2,11 @@
 
 import { useTranslations } from "next-intl";
 import { ShareNetwork, Check } from "@phosphor-icons/react";
+import {
+  OVERLAY_ICON_BUTTON,
+  OVERLAY_ICON_FACE,
+  OVERLAY_ICON_SIZE,
+} from "@/components/ui/overlay-icon-button";
 import { BRAND_NAME } from "@/lib/constants";
 import { labelInName } from "@/lib/label-in-name";
 import Button from "@/components/ui/Button";
@@ -73,9 +78,8 @@ export default function ShareButton({
     return (
       <button
         onClick={handleShare}
-        // Mirrors FavoriteButton's gallery circle so the hero corner control
-        // swap (heart → share, MEH-1334 decision 6) is visually seamless.
-        className="bg-surface/95 hover:bg-surface rounded-full w-11 h-11 flex items-center justify-center shadow-lg hover:scale-105 transition focus-visible:ring-2 focus-visible:ring-primary"
+        // MEH-3115: the shared photo-button anatomy (44px hit, 32px face).
+        className={OVERLAY_ICON_BUTTON}
         // MEH-2964: a locator, as the `outline` variant below already has. The
         // preview-gating test needs to count this button, and every other
         // attribute it carries is a translated string — matching on one would
@@ -84,7 +88,9 @@ export default function ShareButton({
         title={t("copy_link")}
         aria-label={ariaLabel}
       >
-        <ShareNetwork size={20} className="text-text" aria-hidden="true" />
+        <span className={OVERLAY_ICON_FACE}>
+          <ShareNetwork size={OVERLAY_ICON_SIZE} className="text-text" aria-hidden="true" />
+        </span>
       </button>
     );
   }
