@@ -82,8 +82,8 @@ def report_producer(  # noqa: PLR0913 — all args are FastAPI-injected; MEH-322
     # values only: the task runs after the Session closes.
     background_tasks.add_task(
         notify_admin_new_report,
-        producer.name or "",
-        data.reason,
+        str(producer.name or ""),
+        str(data.reason),
         int(count or 0),
         test_cause=bool(producer.is_test),  # MEH-2952
     )

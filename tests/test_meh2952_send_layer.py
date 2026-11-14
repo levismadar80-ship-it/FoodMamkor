@@ -1282,6 +1282,12 @@ PINNED: dict[tuple[str, str, str], tuple[int, str, str]] = {
         OWN,
         "wrapper param ← owner producer.is_test / host_test_cause(host)",
     ),
+    # MEH-3223: one email to the admin per new report.
+    ("services/report_notifications.py", "notify_admin_new_report", "send_email"): (
+        1,
+        BUS,
+        "wrapper param ← producer.is_test",
+    ),
     ("services/rescue_emails.py", "send_reservation_email", "send_email"): (
         1,
         CON,
