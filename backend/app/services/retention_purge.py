@@ -46,7 +46,7 @@ import logging
 from dataclasses import dataclass
 from datetime import date, datetime, time, timedelta, timezone
 
-from sqlalchemy import CursorResult, delete, select
+from sqlalchemy import ColumnElement, CursorResult, delete, select
 from sqlalchemy.orm import Session
 
 from app.models.models import (
@@ -147,7 +147,7 @@ def _purge_registrations(db: Session, today: date) -> int:
             # own created_at instead; without this a sign-up made 30 days
             # after the first occasion was purged on the next run.
             old_items = old_items.where(Experience.is_recurring.isnot(True))
-        stale = fk.in_(old_items.scalar_subquery())
+        stale: ColumnElement[bool] = fk.in_(old_items.scalar_subquery())
         if model is Experience:
             recurring = select(Experience.id).where(Experience.is_recurring.is_(True))
             stale = stale | (
