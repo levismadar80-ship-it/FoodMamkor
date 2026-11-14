@@ -4,7 +4,7 @@ Workflow rule 37b ([.claude/rules/workflow.md](../../.claude/rules/workflow.md))
 every new page under `frontend/app/[locale]/` gets this full review before
 code (smaller UI changes get the light check in the PR body, same rule).
 This file says which pages have had it, where the decision lives, and what is
-still open. As of 14/11/2026 (MEH-3110). Linear is the live status; this is
+still open. As of 14/11/2026, 20:40Z (MEH-3110). Linear is the live status; this is
 the index.
 
 ## Method
@@ -29,22 +29,20 @@ the index.
 | Business signup | `/join`, `/register/producer` | Post-launch ideas in MEH-3080 |
 | Business dashboard | `/producer/dashboard/**` | MEH-3106, MEH-3107, MEH-3108; post-launch MEH-3079 |
 | Event page | `/events/[id]` | Own thread (14/11) |
+| Hub tabs | `/events`, `/rescue`, `/group-buys`, `/experiences` | Shorter head, first item ~120px higher (MEH-3113, PR #4469) · «היום / מחר / סוף השבוע» chips (MEH-3118, PR #4474) · empty-state line + «לבתי העסק» on rescue and group buys, and a follower alert for rescue bags (MEH-3117, PR #4472). Post-launch: MEH-3111 |
+| Login and register | `/login`, `/register`, `/forgot-password`, `/reset-password` | No pre-launch gap. A line above login when arriving from favorites (MEH-3120, PR #4475) |
+| Category and diet landing | `/producers/[category]/[region]`, `/producers/diet/[dietSlug]` | No pre-launch gap; post-launch in MEH-3111 |
+| Favorites | `/favorites` | A type with nothing saved gets no tab (MEH-3174, PR #4534). Checked signed in on staging. Post-launch: undo on unfavorite |
+| Messages, settings | `/messages`, `/settings` | Checked signed in on staging, no pre-launch gap. Post-launch: self-serve email change, one alerts screen (MEH-3116) |
+| Recipe | `/[slug]/recipes/[recipe_id]` | Servings scaler (MEH-3121, PR #4477) |
+| Organizer | `/organizers/[slug]` | No pre-launch gap; post-launch in MEH-3116 |
+| About family, contact, recommend | `/about/**`, `/contact`, `/recommend` | `/about/process` matrix as compact rows (MEH-3114, PR #4470); the rest post-launch in MEH-3116 |
+| Transition pages | `/claim/**`, `/owner-invite/**`, `/registration/[token]`, `/verify-email`, `/business-gone`, `/newsletter/unsubscribe`, `/delivery-waitlist/**`, `/register/organizer` | «שלחו לי קישור חדש» on a claim link that no longer works (MEH-3122, PR #4481). Verify-email already has resend. No other gap |
 
-## Not yet reviewed (14/11) — in order of user impact
+## Not yet reviewed
 
-**Wave 1 — high traffic:** `/events` · `/rescue` · `/group-buys` + `/group-buys/[id]` ·
-`/experiences` + `/experiences/[id]` · `/login`, `/register`, `/forgot-password`,
-`/reset-password` · `/producers/[category]/[region]`, `/producers/diet/[dietSlug]`.
-
-**Wave 2 — signed-in users:** `/favorites` · `/messages` · `/settings` ·
-`/organizers/[slug]` · `/[slug]/recipes/[recipe_id]`.
-
-**Wave 3 — content and trust:** `/about` and its sub-pages (`badges`, `process`,
-`why-local`, `for-businesses`, three guides) · `/contact` · `/recommend`.
-
-**Wave 4 — short transition pages (quick check):** `/claim`, `/claim/[token]`,
-`/owner-invite/**`, `/registration/[token]`, `/verify-email`, `/business-gone`,
-`/newsletter/unsubscribe`, `/delivery-waitlist/**`, `/register/organizer`.
+None as of 14/11/2026: every route outside the out-of-scope list has a row
+above. A new page gets its row in the PR that adds it (rule 37b).
 
 **Out of scope:** `/terms`, `/privacy`, `/accessibility` (legal text) ·
 `/admin/**` (Sapir only) · `/dev/components`.
