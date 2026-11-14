@@ -44,14 +44,6 @@ describe("components/CLAUDE.md shared-component table", () => {
     expect(missing, `add a row to components/CLAUDE.md «${HEADING}» for`).toEqual([]);
   });
 
-  it("ui/index.js re-exports every component in the folder", () => {
-    const barrel = fs.readFileSync(path.join(ROOT, "components", "ui", "index.js"), "utf8");
-    const components = uiFiles().filter((f) => f.endsWith(".jsx")).map((f) => f.replace(/\.jsx$/, ""));
-    expect(components.length).toBeGreaterThan(0);
-    const missing = components.filter((n) => !new RegExp(`default as ${n} \\} from "\\./${n}"`).test(barrel));
-    expect(missing, "add to components/ui/index.js").toEqual([]);
-  });
-
   it("names only files that exist", () => {
     const owners = rows.map((r) => r.split("|")[2] || "");
     const named = owners.flatMap((o) => [...o.matchAll(/`([^`(]+\.(?:jsx?|tsx?))`/g)].map((m) => m[1].trim()));

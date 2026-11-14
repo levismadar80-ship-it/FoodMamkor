@@ -16,7 +16,8 @@ behavior see `frontend/components/Header.jsx`.
 Search before you create: a button, field, dialog, message, heading, toggle,
 avatar, loading state or "back" link already has ONE owner below. Build from it
 (`className` for layout only); never copy its classes into a new file. Import
-by path (`@/components/ui/Dialog`) or from the barrel `@/components/ui`.
+by path (`@/components/ui/Dialog`), not from the `ui/index.js` barrel: an
+export nobody imports there fails the Knip dead-code ratchet.
 The last column is the guard that pins the owner or its look; some cover only
 part (noted in the row) — read the guard's header. Full rules: `docs/DESIGN.md`.
 `ComponentCatalogGuard.test.js` fails when a `ui/` file is missing from this table.
