@@ -60,6 +60,10 @@ class TestEmailChangeNeedsANewVerification:
         db.refresh(user)
         res = client.get(f"/auth/verify-email?token={user.email_verify_token}")
         assert res.status_code == 200
+        # The link proves the address. It never signs anyone in: no browser
+        # holds a signup marker for this token.
+        assert "access_token" not in res.json()
+        assert "refresh_token" not in res.cookies
         db.refresh(user)
         assert user.email_verified is True
         assert user.email == "new3@test.com"
@@ -101,7 +105,40 @@ class TestEmailChangeNeedsANewVerification:
         user.email_verify_token = "example-token-changeme"
         db.commit()
         with patch(SEND):
-            _patch_email(client, user, "new4@test.com")
+            assert _patch_email(client, user, "new4@test.com").status_code == 200
         res = client.get("/auth/verify-email?token=example-token-changeme")
         assert res.status_code == 404
         assert db.query(User).filter(User.id == user.id).one().email_verified is False
+
+    def test_a_google_account_cannot_move_to_another_address(self, client, db):
+        user = make_user(db, email="g@test.com", email_verified=True)
+        user.google_id = "google-sub-1"
+        db.commit()
+        with patch(SEND) as send:
+            res = _patch_email(client, user, "victim@test.com")
+        assert res.status_code == 400
+        db.refresh(user)
+        assert user.email == "g@test.com"
+        assert user.email_verified is True
+        assert send.call_count == 0
+
+    def test_an_apple_account_cannot_move_to_another_address(self, client, db):
+        user = make_user(db, email="a@test.com", email_verified=True)
+        user.apple_id = "apple-sub-1"
+        db.commit()
+        with patch(SEND):
+            res = _patch_email(client, user, "victim2@test.com")
+        assert res.status_code == 400
+        db.refresh(user)
+        assert user.email == "a@test.com"
+
+    def test_a_google_account_can_still_change_its_name(self, client, db):
+        user = make_user(db, email="g2@test.com")
+        user.google_id = "google-sub-2"
+        db.commit()
+        res = client.patch(
+            "/users/me",
+            json={"name": "שם חדש", "email": "g2@test.com"},
+            headers=auth_header(user),
+        )
+        assert res.status_code == 200

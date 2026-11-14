@@ -11,7 +11,16 @@ import asyncio
 import secrets
 from datetime import datetime, timedelta, timezone
 
-from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
+from fastapi import (
+    APIRouter,
+    BackgroundTasks,
+    Depends,
+    HTTPException,
+    Request,
+    Response,
+    status,
+)
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.auth import (
@@ -40,11 +49,38 @@ from app.utils.clock import utc_now
 router = APIRouter(prefix="/users/me", tags=["users"])
 
 
+def _change_email(db: Session, user: User, new_email: str) -> bool:
+    """Move the account to `new_email`. True when the address really changed.
+
+    MEH-3095: `email_verified` vouches for the address, not for the account.
+    Keeping it across a change let a verified account move to an address nobody
+    proved and keep every verified-only action. A new token also kills any link
+    still pending for the old address.
+    """
+    if new_email == user.email:
+        return False
+    # An account that signs in with Google or Apple keeps the provider's
+    # address (the settings page already says so). The OAuth sign-in falls back
+    # to matching by email, so an OAuth account parked on someone else's
+    # address would catch that person's first sign-in.
+    if user.google_id or user.apple_id:
+        raise HTTPException(status_code=400, detail="EMAIL_CHANGE_UNSUPPORTED")
+    existing = db.query(User).filter(User.email == new_email).first()
+    if existing and existing.id != user.id:
+        raise HTTPException(status_code=409, detail="האימייל כבר בשימוש")
+    user.email = new_email
+    user.email_verified = False
+    user.email_verify_token = secrets.token_urlsafe(32)
+    user.email_verify_expires = utc_now() + timedelta(hours=24)
+    return True
+
+
 @router.patch("", response_model=UserOut)
 @limiter.limit("10/hour")
 def update_profile(
     request: Request,
     data: ProfileUpdate,
+    background_tasks: BackgroundTasks,
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
@@ -89,30 +125,23 @@ def update_profile(
         user.phone = data.phone
 
     if data.email is not None:
-        new_email = data.email.lower()
-        if new_email != user.email:
-            existing = db.query(User).filter(User.email == new_email).first()
-            if existing and existing.id != user.id:
-                raise HTTPException(
-                    status_code=409,
-                    detail="האימייל כבר בשימוש",
-                )
-            user.email = new_email
-            # MEH-3095: `email_verified` vouches for the address, not for the
-            # account. Keeping it across a change let a verified account move
-            # to an address nobody proved and keep every verified-only action.
-            # A new token also kills any link still pending for the old address.
-            user.email_verified = False
-            user.email_verify_token = secrets.token_urlsafe(32)
-            user.email_verify_expires = utc_now() + timedelta(hours=24)
-            email_changed = True
+        email_changed = _change_email(db, user, data.email.lower())
 
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError:
+        # Two changes to one address at once: the unique index decides, and
+        # the loser gets the same 409 as the check above, not a 500.
+        db.rollback()
+        if not email_changed:
+            raise
+        raise HTTPException(status_code=409, detail="האימייל כבר בשימוש")
     db.refresh(user)
 
     if email_changed and user.email_verify_token:
-        # After the commit, to the new address only (same call as resend-verify).
-        send_verify_email(
+        # After the commit, to the new address only, off the request path.
+        background_tasks.add_task(
+            send_verify_email,
             user.email,
             user.name,
             user.email_verify_token,
