@@ -49,6 +49,7 @@ remembering.
 
 - [ ] `/adversarial-review` ran on all changed files — every REFEREE verdict fixed
 - [ ] `.claude/rules/` updated if this PR changed a dependency's behaviour or a build/test/deploy command (a stale rule line is injected into every session — see `.claude/rules/frontend.md` § Maintenance)
+- [ ] Used an existing shared component for every button, field, dialog, heading and empty state this PR adds — checked against the «Shared components» table in `frontend/components/CLAUDE.md`; where none fits, the PR says why
 - [ ] Tested on mobile: iOS Safari + Android Chrome (skip for docs-only)
 - [ ] Tested on desktop
 - [ ] CHANGELOG.md updated (skip for docs-only PRs)
@@ -60,7 +61,7 @@ remembering.
   - `docs/SECURITY.md` if auth or permissions changed
   - `docs/SECURITY-CHECKLIST.md` — run the trap checklist if touching auth, rate limit, IDOR, or mutation endpoints
   - `docs/DEPLOYMENT.md` if env vars or infra changed
-  - `docs/MANUAL_TESTING.md` if new user-facing flows added
+  - `docs/RELEASE_CHECKLIST.md` only if the change needs a real-device / third-party-console check (otherwise: an automated test)
 
 ## Database Checklist (skip only when truthfully not relevant)
 
