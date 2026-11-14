@@ -4,6 +4,7 @@ import { Leaf } from "@phosphor-icons/react";
 import MapProducerCard from "@/components/MapProducerCard";
 import { SkeletonStyles } from "@/components/Skeleton";
 import Button from "@/components/ui/Button";
+import InlineMessage from "@/components/ui/InlineMessage";
 
 /**
  * Vertical list of producer cards. Verbatim move of the `cardList`
@@ -74,7 +75,7 @@ export default function MapCardList({
   if (loadError && visibleProducers.length === 0) {
     return (
       <div data-testid="map-card-list-error" className="text-center py-12">
-        <p className="text-text mb-3">{t("map.errors.load_failed")}</p>
+        <InlineMessage size="inherit" className="mb-3">{t("map.errors.load_failed")}</InlineMessage>
         {onRetry && (
           <Button variant="outlined" onClick={onRetry} data-testid="map-card-list-retry">
             {t("error.retry")}

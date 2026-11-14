@@ -88,6 +88,16 @@ describe("MapBottomSheet peek row — failed load (MEH-3198)", () => {
     expect(onRetry).toHaveBeenCalledTimes(1);
   });
 
+  // Review finding 4: «נסו שוב» is the shared ui/Button (its focus-ring and
+  // ≥44px touch class), not a raw <button>. Red on the hand-written button.
+  it("load failed: «נסו שוב» is the shared Button", () => {
+    render(<MapBottomSheet {...base} count={0} loadError onRetry={vi.fn()} />);
+    const retry = screen.getByTestId("sheet-retry");
+    expect(retry.tagName).toBe("BUTTON");
+    expect(retry).toHaveAttribute("type", "button");
+    expect(retry).toHaveClass("focus-ring", "min-h-touch", "text-primary");
+  });
+
   it("load failed but rows are still on screen → the normal count", () => {
     render(<MapBottomSheet {...base} count={4} loadError onRetry={vi.fn()} />);
     expect(screen.queryByTestId("sheet-load-error")).toBeNull();

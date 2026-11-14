@@ -90,6 +90,15 @@ describe("MapCardList — MEH-3198 load error", () => {
     expect(onRetry).toHaveBeenCalledTimes(1);
   });
 
+  // Review finding 4: the message is the shared InlineMessage (role="alert",
+  // the one error red), not a hand-written <p>. Red on the raw <p text-text>.
+  it("error + empty: the message is the shared InlineMessage (alert, error red)", () => {
+    render(<MapCardList {...base} visibleProducers={[]} loadError onRetry={() => {}} />);
+    const msg = screen.getByRole("alert");
+    expect(msg).toHaveTextContent("map.errors.load_failed");
+    expect(msg).toHaveClass("text-error");
+  });
+
   it("error while loading again: the skeleton, not the error", () => {
     render(<MapCardList {...base} visibleProducers={[]} loadError loading onRetry={() => {}} />);
     expect(screen.getByTestId("sidebar-list-skeleton")).toBeInTheDocument();

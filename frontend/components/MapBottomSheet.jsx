@@ -6,6 +6,7 @@ import { ArrowLeft } from "@phosphor-icons/react";
 import { Link } from "@/i18n/navigation";
 
 import { SkeletonStyles } from "@/components/Skeleton";
+import Button from "@/components/ui/Button";
 import InlineMessage from "@/components/ui/InlineMessage";
 
 // S5 FINAL (MEH-763): split-view sheet — TWO snap points, peek + 45vh open.
@@ -316,14 +317,9 @@ export default function MapBottomSheet({
             <InlineMessage className="font-medium" data-testid="sheet-load-error">
               {tRoot("map.errors.load_failed")}
             </InlineMessage>
-            <button
-              type="button"
-              onClick={onRetry}
-              data-testid="sheet-retry"
-              className="inline-flex items-center min-h-touch -my-2.5 shrink-0 text-sm font-medium text-primary underline decoration-[1.5px] underline-offset-[5px] decoration-primary/35 hover:decoration-current"
-            >
+            <Button variant="text" size="sm" onClick={onRetry} data-testid="sheet-retry" className="-my-2.5 shrink-0">
               {tRoot("error.retry")}
-            </button>
+            </Button>
           </div>
         ) : zeroCity ? (
           // MEH-2639: a town with no businesses is not an empty result. The
