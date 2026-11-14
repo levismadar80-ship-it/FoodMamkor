@@ -313,9 +313,13 @@ describe("MEH-3173 concurrent 401s end the session ONCE", () => {
     };
   }
 
+  // Template paths, not literals: scripts/check_api_contract.py matches
+  // `/producers/${…}` to GET /producers/{id}; a literal "/producers/1" reads
+  // as an orphan route.
+  const ids = [1, 2, 3, 4, 5];
+
   it("5 parallel GETs → 5×401 → one failed refresh → exactly ONE auth:expired", async () => {
     installConcurrent();
-    const ids = [1, 2, 3, 4, 5];
     const results = await Promise.all(ids.map((id) => api.get(`/producers/${id}`)));
 
     expect(results.every((r) => r.data.ok)).toBe(true); // page still renders
@@ -326,14 +330,14 @@ describe("MEH-3173 concurrent 401s end the session ONCE", () => {
 
   it("1 failing GET → exactly one auth:expired (single case unchanged)", async () => {
     installConcurrent();
-    await api.get("/producers/1");
+    await api.get(`/producers/${ids[0]}`);
     expect(expiredEvents).toBe(1);
   });
 
   it("guest with no stored session → failed refresh fires NO auth:expired", async () => {
     localStorage.clear();
     installConcurrent();
-    await Promise.all([api.get("/producers/1"), api.get("/producers/2")]);
+    await Promise.all([api.get(`/producers/${ids[0]}`), api.get(`/producers/${ids[1]}`)]);
     expect(expiredEvents).toBe(0);
   });
 });
