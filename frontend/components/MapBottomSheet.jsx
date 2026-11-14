@@ -11,10 +11,9 @@ import { SkeletonStyles } from "@/components/Skeleton";
 // PEEK/HALF export names kept (useFirstVisitHints and useMapSync import PEEK —
 // a marker tap leaves the sheet collapsed since MEH-3119; MapClient imports
 // both) — only HALF's value moved 55→45.
-// FULL is retained as an exported constant but no longer a snap stop.
+// FULL (92vh) was dropped as a snap stop and, unused, removed (MEH-3161).
 const PEEK = 14;
 const HALF = 45;
-const FULL = 92;
 const SNAPS = [PEEK, HALF];
 
 // MEH-2510: PEEK is 14vh, but the nav pill floating over the sheet is a FIXED
