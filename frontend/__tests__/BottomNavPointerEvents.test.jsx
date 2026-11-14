@@ -50,6 +50,7 @@ vi.mock("@phosphor-icons/react", () => ({
   MapTrifold: (props) => <span data-testid="icon-map" {...props} />,
   Flower: (props) => <span data-testid="icon-flower" {...props} />,
   CalendarBlank: (props) => <span data-testid="icon-calendar" {...props} />,
+  Basket: (props) => <span data-testid="icon-basket" {...props} />,
   User: (props) => <span data-testid="icon-user" {...props} />,
 }));
 

@@ -159,8 +159,14 @@ def accept_invite(client, token, email=INVITE_EMAIL, **over):
     )
 
 
+# MEH-3246: an invite needs a photo (and a licence where the category needs
+# one), so the invitable factories carry one photo unless a test says otherwise.
+_PHOTO = ["https://res.cloudinary.com/demo/image/upload/v1/invite.jpg"]
+
+
 def approved(db, **kw):
     """An approved business with no owner — the only shape invitable."""
+    kw.setdefault("images", _PHOTO)
     return make_producer(db, status="approved", **kw)
 
 
@@ -345,7 +351,7 @@ class TestAdminCreate:
     def test_409_when_the_business_is_neither_approved_nor_hidden(
         self, client, db, status
     ):
-        p = make_producer(db, status=status)
+        p = make_producer(db, status=status, images=_PHOTO)
         clean = _snapshot(db, p)
         r, _ = invite(client, db, p)
         assert r.status_code == 409, r.text
@@ -357,7 +363,7 @@ class TestAdminCreate:
         """(v3) The card's own flow: the admin builds the page HIDDEN, hands it
         over, and the owner's acceptance is what puts it in front of anyone.
         `inactive` was a 409 until v3 — this is the test that says it is not."""
-        p = make_producer(db, status="inactive")
+        p = make_producer(db, status="inactive", images=_PHOTO)
         r, token = invite(client, db, p)
         assert r.status_code == 200, r.text
         assert client.get(_lookup_url(token)).json()["will_publish"] is True
@@ -1875,7 +1881,7 @@ class TestAcceptPublishes:
         monkeypatch.setattr(
             poi.indexnow, "notify", lambda urls: pinged.append(list(urls))
         )
-        p = make_producer(db, status="inactive")
+        p = make_producer(db, status="inactive", images=_PHOTO)
         # The slug is what the announced URL is built from, so it is set
         # explicitly rather than left to the factory — the assertion below
         # names it.
@@ -1910,7 +1916,7 @@ class TestAcceptPublishes:
             "notify_admin_owner_invite_accepted",
             lambda *a, **k: calls.append((a, k)),
         )
-        hidden = make_producer(db, status="inactive")
+        hidden = make_producer(db, status="inactive", images=_PHOTO)
         _, t1 = invite(client, db, hidden)
         assert accept_invite(client, t1).status_code == 200
 
@@ -2157,7 +2163,7 @@ class TestExposure:
         the before-assertion while being broken, and one present in both would
         satisfy the after-assertion while leaking.
         """
-        p = make_producer(db, status="inactive")
+        p = make_producer(db, status="inactive", images=_PHOTO)
         _, token = invite(client, db, p)
 
         detail = client.get(f"/producers/{p.id}")

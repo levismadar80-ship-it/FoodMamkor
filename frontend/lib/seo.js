@@ -29,6 +29,8 @@ import en from "../messages/en.json";
 import { parseHours, resolveStoreHours } from "./hours";
 import { primaryPoint } from "./producerPoints.js";
 import { instagramUrl } from "./social-links";
+// MEH-3160: the Israel calendar date has one owner (israel-clock-guard).
+import { israelToday } from "./israel-date";
 import { PAYMENT_METHODS } from "./payment-info";
 // Review #3726: deadlines are naive UTC — parse as UTC, never as local time.
 import { parseNaiveUtc } from "./dates";
@@ -688,6 +690,7 @@ export function israelOffset(date, time = "12:00") {
   // is right on DST days too (01:30 on the spring-forward Friday is still +02).
   const read = (d) => {
     const name = new Intl.DateTimeFormat("en-US", {
+      // guard-ok: reads the UTC offset of a given event date, not today or the time now.
       timeZone: "Asia/Jerusalem",
       timeZoneName: "longOffset",
     })
@@ -889,11 +892,6 @@ export function isGroupBuyLive(groupBuy, now = new Date()) {
   return deadline != null && deadline > now;
 }
 
-/** The Israel calendar date ("YYYY-MM-DD") of an instant. */
-function israelDate(d) {
-  return new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Jerusalem" }).format(d);
-}
-
 /** Review #3726: commits at the cap — joining is refused, so it is not InStock. */
 function isGroupBuyFull(groupBuy) {
   const max = Number(groupBuy?.max_participants);
@@ -930,7 +928,7 @@ export function buildGroupBuyJsonLd(groupBuy, locale = "he", now = new Date()) {
   // Review #3726: the deadline's ISRAEL date — a naive-UTC 22:30 on 1 Nov is
   // 2 Nov here, and slicing the string would state the day before.
   const deadline = parseNaiveUtc(groupBuy.deadline);
-  if (deadline) offer.priceValidUntil = israelDate(deadline);
+  if (deadline) offer.priceValidUntil = israelToday(deadline);
   if (groupBuy.producer_name) {
     offer.seller = { "@type": "Organization", name: groupBuy.producer_name };
     if (producerUrl) offer.seller.url = producerUrl;

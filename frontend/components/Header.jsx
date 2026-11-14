@@ -21,7 +21,7 @@ import { MagnifyingGlass, SealCheck } from "@phosphor-icons/react";
 import { BRAND_NAME } from "@/lib/constants";
 import { useEventsNavGate } from "@/lib/use-events-nav-gate";
 import { useExperiencesNavGate } from "@/lib/use-experiences-nav-gate";
-import { hubLandingHref, isHubHref, isHubPath } from "@/lib/hub-landing";
+import { HUB_GROUPS, hubLandingHref, isHubHref, isHubPath } from "@/lib/hub-landing";
 import { useHubNavGate } from "@/lib/use-hub-nav-gate";
 import { itemsForSurface } from "@/lib/nav-registry";
 import LanguageToggle from "@/components/LanguageToggle";
@@ -42,7 +42,13 @@ import Avatar from "@/components/ui/Avatar";
  * __tests__/NavRegistryParity.test.jsx compares the rendered link set against
  * the registry for every auth state.
  */
-const HEADER_NAV_ORDER = ["home", "map", "whatsOn", "about"];
+// MEH-3125: «הזדמנויות» sits right after «אירועים», before «אודות».
+const HEADER_NAV_ORDER = ["home", "map", "whatsOn", "opportunities", "about"];
+// MEH-3125: which hub group each gated link opens (lib/hub-landing.js).
+const HUB_GROUP_BY_GATE = {
+  "listing-supply": HUB_GROUPS.whatsOn,
+  "opportunity-supply": HUB_GROUPS.opportunities,
+};
 const HEADER_MENU_ORDER = [
   "producerDashboard",
   "producerPublicPage",
@@ -237,7 +243,13 @@ export default function Header() {
   const showExperiences = useExperiencesNavGate();
   const showGroupBuys = useHubNavGate("groupBuys");
   const showRescue = useHubNavGate("rescue");
-  const showWhatsOn = showEvents || showExperiences || showGroupBuys || showRescue;
+  // MEH-3125: one gate per group — «אירועים» answers to events + experiences,
+  // «הזדמנויות» to group buys + rescue bags.
+  const supply = { events: showEvents, experiences: showExperiences, groupBuys: showGroupBuys, rescue: showRescue };
+  const gateOpen = {
+    "listing-supply": showEvents || showExperiences,
+    "opportunity-supply": showGroupBuys || showRescue,
+  };
   const NAV_ITEMS = orderedForSurface(
     "header",
     { signedIn: !!user, role: user?.role ?? null },
@@ -245,7 +257,7 @@ export default function Header() {
   )
     // The data gate stays here: the registry records THAT the item is gated on
     // supply, not what the current supply is.
-    .filter(({ item }) => item.dataGate !== "listing-supply" || showWhatsOn)
+    .filter(({ item }) => !(item.dataGate in HUB_GROUP_BY_GATE) || gateOpen[item.dataGate])
     .map(({ item, surface }) => ({
       // Stable across a href change: the hub link's href can move after mount
       // as the four gates answer, and a key that moved with it would remount
@@ -254,13 +266,8 @@ export default function Header() {
       // MEH-2975: the hub link lands on the first tab that has something in
       // it, not on an empty «אירועים» when the supply is elsewhere.
       href:
-        item.dataGate === "listing-supply"
-          ? hubLandingHref({
-              events: showEvents,
-              experiences: showExperiences,
-              groupBuys: showGroupBuys,
-              rescue: showRescue,
-            })
+        item.dataGate in HUB_GROUP_BY_GATE
+          ? hubLandingHref(supply, HUB_GROUP_BY_GATE[item.dataGate])
           : item.href,
       label: t(surface.labelKey),
     }));
@@ -293,7 +300,10 @@ export default function Header() {
     // MEH-2975: the hub link's href is whichever hub route has supply, and the
     // hub is four routes under one tab row — so it is current on all four, as
     // on the pill (BottomNav.jsx), not only on the one its href names.
-    if (isHubHref(href)) return isHubPath(pathname);
+    // MEH-3125: per group — on /rescue «הזדמנויות» is current, not «אירועים».
+    for (const group of Object.values(HUB_GROUPS)) {
+      if (isHubHref(href, group)) return isHubPath(pathname, group);
+    }
     return pathname === href || pathname.startsWith(`${href}/`);
   };
 
@@ -459,7 +469,12 @@ export default function Header() {
               switching (was gap-11 at rest → gap-9 at y=60) per Sapir 09/07 +
               NAV-01. Fixed compact geometry, scroll-independent, matches the
               frozen end-cap/gap above. start of the row (visual right in RTL). */}
-          <div className="flex items-center gap-9">
+          {/* MEH-3125: five links (with «הזדמנויות») outgrow 92vw at 768px with
+              150% text (and 1024 at 200%) — «אודות» landed at x -172. The lead
+              group and the links wrap at md+, like the pill itself (MEH-2522),
+              and the link gap is gap-6 below lg so 768 at 100% stays one row.
+              lg+ geometry (gap-9) is unchanged. */}
+          <div className="flex md:flex-wrap md:min-w-0 items-center gap-9 md:gap-y-1">
             <Link prefetch={false} href="/" onClick={handleHomeClick} className="shrink-0 inline-flex items-center min-h-touch" aria-label={BRAND_NAME}>
               <Image
                 src="/logo.png"
@@ -479,7 +494,7 @@ export default function Header() {
             </Link>
 
             {/* NAV LINKS — desktop only, part of the lead group. */}
-            <div className="hidden md:flex items-center gap-9">
+            <div className="hidden md:flex md:flex-wrap items-center gap-x-6 lg:gap-x-9 gap-y-1">
               {NAV_ITEMS.map((item) => (
                 <NavLink
                   key={item.id}

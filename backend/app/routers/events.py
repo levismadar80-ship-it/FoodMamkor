@@ -34,6 +34,7 @@ from app.schemas.schemas import (
     event_end_time_problem,
 )
 from app.services import indexnow  # MEH-2852
+from app.services.date_rules import refuse_past_date  # MEH-3224
 from app.services.producer_listing import (  # MEH-2952
     is_live_owner_row,
     not_test_producer,
@@ -283,6 +284,9 @@ def create_event(
         )
     if not user.producer_id:
         raise HTTPException(status_code=403, detail="Producer account required")
+    # MEH-3224 (D6): a past date would publish a dead event and fire the
+    # new-event alert to every follower.
+    refuse_past_date(data.event_date)
     # MEH-3022: cap on UPCOMING events — past ones are history and never count.
     enforce_cap(
         db.query(Event)
@@ -401,6 +405,9 @@ def update_event(  # noqa: PLR0913 — all args are FastAPI-injected; MEH-3022 a
         raise HTTPException(status_code=404, detail="Event not found")
 
     changes = data.model_dump(exclude_unset=True)
+    # MEH-3224 (D6): moving an event INTO the past is refused; an edit that
+    # leaves the stored date alone is not.
+    refuse_past_date(changes.get("event_date"), event.event_date)  # type: ignore[arg-type]
     # MEH-2469: a PUT may carry only one of the pair, so the end-time rule is
     # checked against the values the row will hold after the update — never
     # against the payload alone.
