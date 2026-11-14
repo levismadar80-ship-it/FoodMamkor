@@ -378,7 +378,8 @@ test.describe("manual › /about/process (MEH-534)", () => {
       await expect(item.locator("svg:not([data-seed-color])")).toHaveCount(1);
       boxes.push(await box(item));
     }
-    if (testInfo.project.name === "mobile") {
+    // MEH-3153: isMobile, not the project name — webkit-iphone13 is a phone too.
+    if (testInfo.project.use.isMobile) {
       // Vertical list: each step starts below the previous one, sharing the same start edge.
       for (let i = 1; i < boxes.length; i += 1) {
         expect(boxes[i].y, `step ${i + 1} must sit below step ${i}`).toBeGreaterThanOrEqual(
