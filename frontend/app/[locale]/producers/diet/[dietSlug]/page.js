@@ -31,6 +31,7 @@ import {
   isDietPageBacked,
 } from "@/lib/diet-pages";
 import SectionHeading from "@/components/ui/SectionHeading";
+import BackLink from "@/components/ui/BackLink";
 
 // How many businesses the SSR'd grid renders. The ItemList JSON-LD mirrors
 // exactly this set, so a crawler sees the same businesses in the markup and in
@@ -337,9 +338,7 @@ export default async function DietLandingPage({ params }) {
       </section>
 
       <p className="mt-10">
-        <Link href="/producers" className="text-primary underline">
-          {t("back_to_hub")}
-        </Link>
+        <BackLink href="/producers" label={t("back_to_hub")} />
       </p>
     </main>
   );

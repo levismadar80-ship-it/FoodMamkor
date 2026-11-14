@@ -1,12 +1,12 @@
 "use client";
 
 import SeedBurst from "@/components/brand/SeedBurst";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import * as Sentry from "@sentry/nextjs";
 import { useRouter } from "next/navigation";
-import { Link } from "@/i18n/navigation";
 import Breadcrumb from "@/components/Breadcrumb";
 import HistoryBackLink from "@/components/HistoryBackLink";
+import BackLink from "@/components/ui/BackLink";
 import { MagnifyingGlass, MapPin, Clock, ShoppingCart, Truck, ShareNetwork, Check } from "@phosphor-icons/react";
 import Image from "next/image";
 import OwnerRow from "@/components/OwnerRow";
@@ -27,6 +27,7 @@ import api from "@/lib/api";
 import { GroupBuyProducerDeliverySchema } from "@/lib/api-schemas";
 import { SkeletonDetail } from "@/components/Skeleton";
 import Button from "@/components/ui/Button";
+import Dialog from "@/components/ui/Dialog";
 import { shareOrCopyText } from "@/lib/share-link";
 import SectionHeading from "@/components/ui/SectionHeading";
 import InlineMessage from "@/components/ui/InlineMessage";
@@ -68,19 +69,6 @@ export default function GroupBuyDetailClient({ id }) {
   const [cancelling, setCancelling] = useState(false);
   // MEH-1250: destructive cancel-commitment confirm dialog (replaces native confirm()).
   const [confirmCancelOpen, setConfirmCancelOpen] = useState(false);
-  // MEH-2199: the dialog below declares aria-modal="true" and delivered none of
-  // what that promises — no Escape, no focus trap, no focus-return. A keyboard
-  // user could Tab straight out into the page behind it, which is worse than a
-  // non-modal dialog: the ARIA tells the screen reader the rest of the page is
-  // inert while it is not.
-  const cancelDialogRef = useRef(null);
-  // MEH-2199 follow-up: the focus-return target is captured when the dialog is
-  // OPENED, not read out of document.activeElement inside the effect. Reading
-  // it in the effect is correct under React's current synchronous commit — no
-  // script runs between the click and the effect — but that is a property of
-  // today's scheduler, not of this component. Capturing at the interaction is
-  // what focus-trap-react and react-aria do, and it costs one line.
-  const cancelTriggerRef = useRef(null);
   const [error, setError] = useState("");
   // MEH-2453: the business's delivery data, for «מגיעים אלייך?». Null until
   // fetched and valid; on any failure the checker simply stays away. (The
@@ -164,68 +152,11 @@ export default function GroupBuyDetailClient({ id }) {
     }
   };
 
-  // MEH-2199: the modal keyboard layer, mounted only while the dialog is open.
-  // REUSES: frontend/components/Lightbox.jsx:92-112 — same Escape + Tab-cycle
-  // mechanism, so the two modals on this site behave identically.
-  //
-  // Escape CLOSES and never confirms. MEH-1250 replaced a native
-  // window.confirm() with this dialog precisely so the DELETE stays deliberate;
-  // a key that dismissed and deleted would defeat the ticket that built it.
-  //
-  // Focus-return rides the effect CLEANUP rather than each close path. There
-  // are three ways to close this (Escape, the dismiss button, the overlay), and
-  // hanging a restore off each one is three places to forget. The cleanup runs
-  // whenever `confirmCancelOpen` goes false — or the component unmounts — so it
-  // covers all three and any future fourth by construction.
-  useEffect(() => {
-    if (!confirmCancelOpen) return undefined;
-    const FOCUSABLE =
-      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
-    // Captured at open time by handleCancel; the activeElement read is only a
-    // fallback for a future path that opens the dialog without going through it.
-    // Cleared straight after the read, or that fallback could never fire: the
-    // ref would still hold the PREVIOUS open's trigger and win the ?? every
-    // time, so the documented fallback would be dead by accident rather than
-    // by there being no such path yet.
-    const trigger = cancelTriggerRef.current ?? document.activeElement;
-    cancelTriggerRef.current = null;
-    const focusables = () =>
-      Array.from(cancelDialogRef.current?.querySelectorAll(FOCUSABLE) ?? []);
-    focusables()[0]?.focus();
-
-    const onKey = (e) => {
-      if (e.key === "Escape") {
-        setConfirmCancelOpen(false);
-        return;
-      }
-      if (e.key !== "Tab") return;
-      const els = focusables();
-      if (!els.length) return;
-      const first = els[0];
-      const last = els.at(-1);
-      if (e.shiftKey && document.activeElement === first) {
-        e.preventDefault();
-        last.focus();
-      } else if (!e.shiftKey && document.activeElement === last) {
-        e.preventDefault();
-        first.focus();
-      }
-    };
-    window.addEventListener("keydown", onKey);
-    return () => {
-      window.removeEventListener("keydown", onKey);
-      // document.contains guards the node having been unmounted while the
-      // dialog was open — focusing a detached element silently does nothing and
-      // would leave focus on <body>.
-      if (trigger instanceof HTMLElement && document.contains(trigger)) {
-        trigger.focus();
-      }
-    };
-  }, [confirmCancelOpen]);
+  // MEH-2199 → MEH-3096: the keyboard layer (Tab trap, Escape closes and
+  // never confirms, focus back to the trigger) lives in ui/Dialog.
 
   // MEH-1250: open the confirm modal instead of the native window.confirm().
   const handleCancel = () => {
-    cancelTriggerRef.current = document.activeElement;
     setConfirmCancelOpen(true);
   };
 
@@ -255,9 +186,7 @@ export default function GroupBuyDetailClient({ id }) {
       <div className="max-w-2xl mx-auto px-4 py-20 text-center">
         <MagnifyingGlass size={40} className="text-fg-muted mx-auto mb-4" aria-hidden="true" />
         <p className="text-lg font-medium text-text">{t("not_found_title")}</p>
-        <Link href="/group-buys" className="text-primary underline decoration-[1.5px] underline-offset-[5px] decoration-primary/35 hover:decoration-current mt-4 inline-block">
-          {t("back_to_list")}
-        </Link>
+        <BackLink href="/group-buys" label={t("back_to_list")} className="mt-4" />
       </div>
     );
   }
@@ -301,11 +230,11 @@ export default function GroupBuyDetailClient({ id }) {
   const showRemaining = !expired && open && remaining > 0;
 
   const joinCard = (
-    <div className="rounded-2xl border border-border bg-surface-card p-5 md:p-6" data-testid="group-buy-join-card">
+    <div className="rounded-lg border border-border bg-surface-card p-5 md:p-6" data-testid="group-buy-join-card">
       {/* MEH-2827 PR 7 (FinalGroupBuyFlow): two price tiles — the group price
           framed in primary, the regular price beside it, struck through. */}
       <div className="grid grid-cols-2 gap-2">
-        <div className="rounded-xl border-2 border-primary bg-background px-3 py-2.5" data-testid="group-buy-price-group">
+        <div className="rounded-lg border-2 border-primary bg-background px-3 py-2.5" data-testid="group-buy-price-group">
           <p className="text-xs font-semibold text-primary">{tForm("price_group_label")}</p>
           <p className="mt-0.5 flex items-baseline gap-1">
             <span dir="ltr" className="font-headline-md text-4xl font-black text-primary leading-none">
@@ -314,7 +243,7 @@ export default function GroupBuyDetailClient({ id }) {
             {gb.unit && <span className="text-xs text-fg-muted">{t("unit_suffix", { unit: gb.unit })}</span>}
           </p>
         </div>
-        <div className="rounded-xl border border-border px-3 py-2.5" data-testid="group-buy-price-regular">
+        <div className="rounded-lg border border-border px-3 py-2.5" data-testid="group-buy-price-regular">
           <p className="text-xs font-medium text-fg-muted">{tForm("price_regular_label")}</p>
           <p className="mt-0.5">
             <span dir="ltr" className="text-2xl text-fg-muted line-through leading-none">
@@ -325,7 +254,7 @@ export default function GroupBuyDetailClient({ id }) {
       </div>
       {discount > 0 && <p className="mt-2 text-sm font-semibold text-gold-deep">{t("discount_hint", { discount })}</p>}
 
-      <div className="mt-4 rounded-xl bg-background-alt px-3 py-3" data-testid="group-buy-progress">
+      <div className="mt-4 rounded-lg bg-background-alt px-3 py-3" data-testid="group-buy-progress">
         {stacked ? (
           <>
             <div className="text-end mb-2">
@@ -483,7 +412,7 @@ export default function GroupBuyDetailClient({ id }) {
                 />
               ) : (
                 <div className="absolute inset-0 grid place-items-center" data-testid="group-buy-image-missing">
-                  <ShoppingCart size={56} weight="light" className="text-primary/70" aria-hidden="true" />
+                  <ShoppingCart size={64} weight="regular" className="text-primary/70" aria-hidden="true" />
                 </div>
               )}
               {/* MEH-2827 PR 7: no -% pill on the photo — the price tiles say it. */}
@@ -511,7 +440,7 @@ export default function GroupBuyDetailClient({ id }) {
             {/* MEH-2544: how a group buy works, while it can still be joined —
                 copy approved by Sapir 29/10. */}
             {open && (
-              <section className="mt-6 rounded-xl bg-background-alt p-4" data-testid="group-buy-how">
+              <section className="mt-6 rounded-lg bg-background-alt p-4" data-testid="group-buy-how">
                 <SectionHeading size="content" className="mb-3">{t("how_title")}</SectionHeading>
                 <ol className="space-y-2">
                   {[t("how_join"), t("how_unlock", { min: gb.min_participants }), t("how_no_commit")].map((line, i) => (
@@ -564,7 +493,7 @@ export default function GroupBuyDetailClient({ id }) {
                         // layout is the same: icon column, then label over note.
                         <div key={kind} className="relative ps-[34px] min-w-0" data-testid={`group-buy-${kind}-note`}>
                           <dt className="text-sm font-bold text-text">
-                            <Icon size={22} className="text-primary absolute start-0 top-0.5" aria-hidden="true" />
+                            <Icon size={24} className="text-primary absolute start-0 top-0.5" aria-hidden="true" />
                             {t(`${kind}_label`)}
                           </dt>
                           <dd className="text-base text-text whitespace-pre-line">{note}</dd>
@@ -574,7 +503,7 @@ export default function GroupBuyDetailClient({ id }) {
                 ) : (
                   gb.fulfillment_note && (
                     <p className="flex gap-3 text-base text-text whitespace-pre-line" data-testid="group-buy-fulfillment-note">
-                      <MapPin size={22} className="text-primary shrink-0 mt-0.5" aria-hidden="true" />
+                      <MapPin size={24} className="text-primary shrink-0 mt-0.5" aria-hidden="true" />
                       <span>{gb.fulfillment_note}</span>
                     </p>
                   )
@@ -613,30 +542,12 @@ export default function GroupBuyDetailClient({ id }) {
 
       {/* MEH-1250: destructive cancel-commitment confirm — dedicated modal
           replacing native confirm() (error-idiom unification, MEH-999
-          JUDGMENT). z-[9500] matches LoginPromptModal so it clears the sticky
-          header (z-1050) + BottomNav (z-1000) on this consumer page; the admin
-          feedback-modal idiom (z-50) is unsafe here. */}
+          JUDGMENT). MEH-3096: on the shared ui/Dialog (ordinary modal tier,
+          above the sticky header z-1050 and BottomNav z-1000). Initial
+          focus stays on the first button (MEH-2199 test); no dismiss while
+          the DELETE is in flight. */}
       {confirmCancelOpen && (
-        <div
-          className="fixed inset-0 bg-black/40 z-[9500] flex items-center justify-center p-4"
-          onClick={() => setConfirmCancelOpen(false)}
-        >
-          <div
-            ref={cancelDialogRef}
-            // MEH-2199 follow-up: the dialog role belongs on the CARD, not on
-            // the full-screen backdrop it used to sit on. The backdrop covers
-            // the viewport, so declaring it the dialog made the accessible
-            // dialog the whole screen — and put the ARIA boundary on a
-            // different element from the focus trap, which lives on this ref.
-            // Two boundaries that are meant to be one: a focusable control
-            // added between the backdrop and this card would have been inside
-            // the ARIA dialog and outside the trap.
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="gb-cancel-title"
-            className="bg-background rounded-lg p-6 max-w-sm w-full border border-border"
-            onClick={(e) => e.stopPropagation()}
-          >
+        <Dialog labelledBy="gb-cancel-title" size="sm" dismissible={!cancelling} onClose={() => setConfirmCancelOpen(false)}>
             <h2
               id="gb-cancel-title"
               className="font-headline-md text-lg font-bold text-text mb-4"
@@ -652,14 +563,14 @@ export default function GroupBuyDetailClient({ id }) {
                 {cancelling ? t("cancelling") : t("cancel_cta")}
               </Button>
               <button
+                disabled={cancelling}
                 onClick={() => setConfirmCancelOpen(false)}
                 className="flex-1 bg-surface border border-border text-text py-2.5 rounded-full hover:bg-green-50 transition text-sm font-medium"
               >
                 {t("cancel_dismiss")}
               </button>
             </div>
-          </div>
-        </div>
+        </Dialog>
       )}
     </>
   );

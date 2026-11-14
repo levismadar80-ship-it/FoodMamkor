@@ -1,5 +1,6 @@
 "use client";
 
+import Dialog from "@/components/ui/Dialog";
 import { useEffect, useState } from "react";
 import { useTranslations, useLocale } from "next-intl";
 import { formatEventDate } from "@/lib/format-date";
@@ -36,17 +37,6 @@ export default function AdminReportsPage() {
   useEffect(() => {
     loadReports();
   }, []);
-
-  // Escape closes the dialog (unless its mutation is mid-flight).
-  useEffect(() => {
-    if (!dismissTarget) return undefined;
-    const onKey = (e) => {
-      if (e.key !== "Escape") return;
-      if (dismissTarget && !isBusy(`dismiss:${dismissTarget.producer_id}`)) setDismissTarget(null);
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [dismissTarget, isBusy]);
 
   const suspendProducer = (id) =>
     run(`suspend:${id}`, async () => {
@@ -140,13 +130,13 @@ export default function AdminReportsPage() {
 
       {/* MEH-1266: dismiss-all confirm dialog (content/page.js precedent) */}
       {dismissTarget && (
-        <div className="fixed inset-0 z-[9000] flex items-center justify-center bg-black/40">
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="dismiss-title"
-            className="bg-surface rounded-lg shadow-xl p-6 max-w-sm w-full mx-4 text-start space-y-4"
-          >
+        <Dialog
+          labelledBy="dismiss-title"
+          size="sm"
+          dismissible={!isBusy(`dismiss:${dismissTarget.producer_id}`)}
+          onClose={() => setDismissTarget(null)}
+          className="space-y-4"
+        >
             <p id="dismiss-title" className="font-medium text-base">
               {t("reports.actions.dismiss_confirm", { name: dismissTarget.producer_name })}
             </p>
@@ -160,7 +150,7 @@ export default function AdminReportsPage() {
                   ? t("reports.actions.dismissing")
                   : t("reports.actions.ignore")}
               </Button>
-              <button
+              <button data-autofocus
                 disabled={isBusy(`dismiss:${dismissTarget.producer_id}`)}
                 onClick={() => setDismissTarget(null)}
                 className="px-4 py-2 rounded-full text-sm border border-border text-muted hover:bg-gray-50 transition disabled:opacity-50"
@@ -168,8 +158,7 @@ export default function AdminReportsPage() {
                 {t("common.cancel")}
               </button>
             </div>
-          </div>
-        </div>
+        </Dialog>
       )}
     </div>
   );

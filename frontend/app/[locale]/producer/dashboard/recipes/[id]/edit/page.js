@@ -8,7 +8,7 @@
  * recipes list.
  */
 
-import { Link, useRouter } from "@/i18n/navigation";
+import { useRouter } from "@/i18n/navigation";
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { useTranslations } from "next-intl";
@@ -16,6 +16,7 @@ import api from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import RecipeForm from "@/components/RecipeForm";
 import { SkeletonForm } from "@/components/Skeleton";
+import BackLink from "@/components/ui/BackLink";
 
 export default function EditRecipePage() {
   const t = useTranslations("recipes.edit");
@@ -44,12 +45,7 @@ export default function EditRecipePage() {
   if (error) {
     return (
       <div className="max-w-3xl mx-auto px-4 py-10">
-        <Link
-          href="/producer/dashboard/recipes"
-          className="text-sm text-primary hover:underline"
-        >
-          {t("back")}
-        </Link>
+        <BackLink href="/producer/dashboard/recipes" label={t("back")} />
         <p className="mt-4 text-fg-muted">{error}</p>
       </div>
     );
@@ -57,12 +53,7 @@ export default function EditRecipePage() {
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-10">
-      <Link
-        href="/producer/dashboard/recipes"
-        className="text-sm text-primary hover:underline"
-      >
-        {t("back")}
-      </Link>
+      <BackLink href="/producer/dashboard/recipes" label={t("back")} />
       <h1 className="font-headline-md text-2xl font-bold text-text mt-1 mb-6">
         {t("heading")}
       </h1>

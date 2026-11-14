@@ -30,7 +30,7 @@ import { usePreviewMode } from "@/lib/preview-mode"; // MEH-2916
  */
 // MEH-3027: the BottomNav pill's lift shadow (BottomNav.jsx nav className),
 // darker alpha because this pill is solid, not glass. rgba — no shadow token.
-const PILL_SHADOW = "shadow-[0_8px_30px_rgba(46,104,83,0.22)]";
+const PILL_SHADOW = "shadow-lg";
 
 export default function StickyContactBar({
   producer,

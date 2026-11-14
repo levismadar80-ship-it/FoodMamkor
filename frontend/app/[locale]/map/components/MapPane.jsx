@@ -157,7 +157,7 @@ export default function MapPane({
       {mapMoved && (
         <div className="absolute top-4 inset-x-0 z-[1000] px-4 flex flex-col items-center gap-2 pointer-events-none">
           <div className="pointer-events-auto">
-            <button type="button" data-testid="map-search-this-area" onClick={(e) => { e.stopPropagation(); onSearchThisArea(); }} className="bg-surface-floating border border-border rounded-full px-5 py-2.5 text-sm font-medium hover:bg-green-50 transition flex items-center gap-2 focus-visible:ring-2 focus-visible:ring-primary/40">
+            <button type="button" data-testid="map-search-this-area" onClick={(e) => { e.stopPropagation(); onSearchThisArea(); }} className="bg-surface-floating border border-border rounded-full px-5 py-2.5 text-sm font-medium hover:bg-green-50 transition flex items-center gap-2 focus-visible:ring-2 focus-visible:ring-primary">
                 <MagnifyingGlass size={16} weight="bold" className="text-primary" />
                 {t("map.pane.search_this_area")}
               </button>
@@ -167,7 +167,7 @@ export default function MapPane({
       {!mapMoved && visibleProducers.length === 0 && allProducers.length > 0 && (
         // eslint-disable-next-line no-restricted-syntax -- rtl-ok: horizontal centering idiom
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[1000] bg-surface-floating rounded-lg border border-border p-6 text-center max-w-[280px]" role="status">
-          <Leaf size={44} className="text-primary mx-auto mb-3" aria-hidden="true" />
+          <Leaf size={48} className="text-primary mx-auto mb-3" aria-hidden="true" />
           {/* MEH-2425: this overlay fires when the loaded set is non-empty but
               nothing survives the client-side filters — i.e. mostly BECAUSE of
               a filter. "אין עסקים באזור זה עדיין" + "הוסיפו עסק" read as an
@@ -176,7 +176,7 @@ export default function MapPane({
           {filtered && onResetFilters ? (
             <>
               <h3 className="font-headline-md text-lg font-bold text-text mb-4" data-testid="map-pane-filtered-empty">{t("map.bottom_sheet.count_filtered_zero")}</h3>
-              <button type="button" onClick={onResetFilters} className="inline-block bg-primary text-white px-4 py-2 rounded-sm text-sm hover:bg-primary-dark transition">{t("map.bottom_sheet.reset_filters")}</button>
+              <button type="button" onClick={onResetFilters} className="inline-block bg-primary text-white px-4 py-2 rounded-full text-sm hover:bg-primary-dark transition">{t("map.bottom_sheet.reset_filters")}</button>
             </>
           ) : (
             // MEH-2639: the body and the «הוסיפו עסק» link are gone. This
@@ -204,7 +204,7 @@ export default function MapPane({
         data-testid="map-gps-button"
         aria-label={t("map.pane.aria.center_on_me")}
         // eslint-disable-next-line no-restricted-syntax -- rtl-ok: geographic map control; physical right keeps it opposite the physical-left legend in every locale
-        className="hidden lg:flex absolute bottom-24 right-4 w-11 h-11 rounded-full bg-surface-floating border border-border shadow-md items-center justify-center text-primary hover:bg-green-50 transition-colors z-[1000] focus-visible:ring-2 focus-visible:ring-primary/40 disabled:opacity-60"
+        className="hidden lg:flex absolute bottom-24 right-4 w-11 h-11 rounded-full bg-surface-floating border border-border shadow-lg items-center justify-center text-primary hover:bg-green-50 transition-colors z-[1000] focus-visible:ring-2 focus-visible:ring-primary disabled:opacity-50"
       >
         {gpsLoading
           ? <ButtonSpinner size={20} />
@@ -269,7 +269,7 @@ export default function MapPane({
           data-testid="map-legend-toggle"
           aria-label={t("map.pane.aria.categories")}
           aria-expanded={legendOpen}
-          className="w-8 h-8 rounded-full bg-surface-floating border border-border flex items-center justify-center hover:bg-green-50 transition focus-visible:ring-2 focus-visible:ring-primary/40"
+          className="w-8 h-8 rounded-full bg-surface-floating border border-border flex items-center justify-center hover:bg-green-50 transition focus-visible:ring-2 focus-visible:ring-primary"
         >
           <SquaresFour size={16} weight="bold" className="text-text" />
         </button>

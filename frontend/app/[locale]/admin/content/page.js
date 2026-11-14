@@ -1,5 +1,6 @@
 "use client";
 
+import Dialog from "@/components/ui/Dialog";
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import api from "@/lib/api";
@@ -104,18 +105,6 @@ function CategoriesEditor() {
       () => showToast.error(t("content.categories.delete_error")),
     );
 
-  // Escape closes the dialog (unless a delete is mid-flight). Mirrors the
-  // AdminRowMenu (Chunk A) dismissal contract; the users/page.js modal we
-  // otherwise mirror predates it.
-  useEffect(() => {
-    if (!confirmDelete) return undefined;
-    const onKey = (e) => {
-      if (e.key === "Escape" && !deleting) setConfirmDelete(null);
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [confirmDelete, deleting]);
-
   return (
     <div className="bg-surface border border-border rounded-md p-5 space-y-4">
       <form onSubmit={create} className="flex gap-2">
@@ -123,7 +112,7 @@ function CategoriesEditor() {
           placeholder={t("content.categories.name_placeholder")}
           value={name}
           onChange={(e) => setName(e.target.value)}
-          className="flex-1 min-w-0 border border-border rounded-md px-3 py-2"
+          className="flex-1 min-w-0 border border-border rounded-sm px-3 py-2 focus-ring"
         />
         <Button
           type="submit"
@@ -152,13 +141,13 @@ function CategoriesEditor() {
 
       {/* Confirmation modal — mirrors users/page.js confirm dialog pattern (MEH-1023 Chunk B) */}
       {confirmDelete && (
-        <div className="fixed inset-0 z-[9000] flex items-center justify-center bg-black/40">
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="category-delete-title"
-            className="bg-surface rounded-lg shadow-xl p-6 max-w-sm w-full mx-4 text-start space-y-4"
-          >
+        <Dialog
+          labelledBy="category-delete-title"
+          size="sm"
+          dismissible={!deleting}
+          onClose={() => setConfirmDelete(null)}
+          className="space-y-4"
+        >
             <p id="category-delete-title" className="font-medium text-base">
               {t("content.categories.confirm_delete", {
                 name: confirmDelete.name,
@@ -173,7 +162,7 @@ function CategoriesEditor() {
               >
                 {deleting ? t("content.categories.deleting") : t("content.categories.delete")}
               </Button>
-              <button
+              <button data-autofocus
                 disabled={deleting}
                 onClick={() => setConfirmDelete(null)}
                 className="px-4 py-2 rounded-full text-sm border border-border text-muted hover:bg-gray-50 transition disabled:opacity-50"
@@ -181,8 +170,7 @@ function CategoriesEditor() {
                 {t("common.cancel")}
               </button>
             </div>
-          </div>
-        </div>
+        </Dialog>
       )}
     </div>
   );
@@ -214,7 +202,7 @@ function CategoryRow({ cat, onSave, onDelete, saving }) {
         readOnly={locked}
         title={locked ? t("content.categories.system_hint") : undefined}
         data-testid={`category-name-${cat.id}`}
-        className={`flex-1 min-w-[10rem] border border-border rounded-lg px-2 py-1 ${locked ? "bg-accent text-muted cursor-not-allowed" : ""}`}
+        className={`flex-1 min-w-[10rem] border border-border rounded-sm px-2 py-1 focus-ring ${locked ? "bg-accent text-muted cursor-not-allowed" : ""}`}
       />
       {/* MEH-1034: per-row producer count (the editor is a list, not a table). */}
       <span className="text-xs text-muted whitespace-nowrap">
@@ -239,7 +227,7 @@ function CategoryRow({ cat, onSave, onDelete, saving }) {
             onClick={() => onSave(cat.id, name)}
             disabled={!dirty || saving}
             data-testid={`category-save-${cat.id}`}
-            className="text-xs bg-primary text-white px-3 py-1 rounded-lg disabled:opacity-30"
+            className="text-xs bg-primary text-white px-3 py-1 rounded-full disabled:opacity-50"
           >
             {t("content.categories.save")}
           </button>
@@ -282,14 +270,14 @@ function PageEditor({ slug }) {
         value={page.title}
         onChange={(e) => { setPage({ ...page, title: e.target.value }); setSaved(false); }}
         placeholder={t("content.page_editor.title_placeholder")}
-        className="w-full border border-border rounded-md px-3 py-2 font-semibold"
+        className="w-full border border-border rounded-sm px-3 py-2 font-semibold focus-ring"
       />
       <textarea
         value={page.body}
         onChange={(e) => { setPage({ ...page, body: e.target.value }); setSaved(false); }}
         placeholder={t("content.page_editor.body_placeholder")}
         rows={16}
-        className="w-full border border-border rounded-md px-3 py-2 font-mono text-sm"
+        className="w-full border border-border rounded-sm px-3 py-2 font-mono text-sm focus-ring"
       />
       <div className="flex items-center gap-3">
         <Button onClick={save} disabled={saving} variant="primary" size="sm">

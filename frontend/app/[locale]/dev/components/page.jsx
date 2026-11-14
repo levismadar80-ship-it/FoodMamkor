@@ -3,6 +3,8 @@
 import { notFound } from "next/navigation";
 import { MagnifyingGlass, Heart, ArrowRight, Leaf } from "@phosphor-icons/react";
 import { Button, Input, Card, Badge, Heading, Link } from "@/components/ui";
+import ShowMore from "@/components/ui/ShowMore";
+import { useTranslations } from "next-intl";
 
 /**
  * /dev/components — Storybook-style gallery for the MEH-602 atomic layer.
@@ -45,6 +47,7 @@ function Swatch({ label, children }) {
 }
 
 export default function DevComponentsPage() {
+  const t = useTranslations();
   if (process.env.NODE_ENV === "production") notFound();
 
   return (
@@ -89,6 +92,21 @@ export default function DevComponentsPage() {
               <Button variant="primary" loading>
                 שמירה
               </Button>
+            </div>
+          </Swatch>
+        </div>
+      </Section>
+
+      {/* MEH-3052: the one "show more" control — block ends a list, inline sits in a box. */}
+      <Section title="ShowMore">
+        <div className="flex flex-col gap-6">
+          <Swatch label='size: block'>
+            <ShowMore onClick={() => {}} label={t("reviews.show_more")} />
+          </Swatch>
+          <Swatch label="size: inline (closed / open)">
+            <div className="flex flex-wrap items-center gap-6">
+              <ShowMore size="inline" expanded={false} onClick={() => {}} label={t("group_buys.delivery.show_all_cities", { count: 6 })} />
+              <ShowMore size="inline" expanded onClick={() => {}} label={t("group_buys.delivery.show_less")} />
             </div>
           </Swatch>
         </div>
@@ -147,7 +165,7 @@ export default function DevComponentsPage() {
               href="/dev/components"
               media={
                 <div className="relative w-full aspect-[4/3] bg-background flex items-center justify-center">
-                  <Leaf size={36} weight="light" className="text-primary/70" aria-hidden="true" />
+                  <Leaf size={32} weight="regular" className="text-primary/70" aria-hidden="true" />
                 </div>
               }
               overlay={

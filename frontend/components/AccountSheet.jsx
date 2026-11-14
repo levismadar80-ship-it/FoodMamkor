@@ -132,7 +132,7 @@ export default function AccountSheet({ open, onClose, user, logout }) {
         // MEH-868: clear the floating pill AND the safe-area inset (the pill
         // itself rides above safe-area via calc(env(safe-area-inset-bottom)+16px),
         // so a flat 88px overlapped it on notched devices).
-        className="vv-pin fixed inset-x-4 bottom-[calc(env(safe-area-inset-bottom)+88px)] z-[1002] rounded-xl bg-green-900 border border-white/10 p-[22px] shadow-[0_12px_40px_rgba(20,50,40,0.45)]"
+        className="vv-pin fixed inset-x-4 bottom-[calc(env(safe-area-inset-bottom)+88px)] z-[1002] rounded-xl bg-green-900 border border-white/10 p-[22px] shadow-xl"
       >
         {/* Head — avatar · name · state */}
         <div className="flex items-center gap-3 pb-4 border-b border-white/10">
@@ -160,7 +160,7 @@ export default function AccountSheet({ open, onClose, user, logout }) {
           {row("login") && (
             <li className={liCls}>
               <Link href={loginHref} onClick={onClose} className={rowCls}>
-                <SignIn size={19} weight="regular" className={iconCls} aria-hidden="true" />
+                <SignIn size={20} weight="regular" className={iconCls} aria-hidden="true" />
                 {t(row("login").surface.labelKey)}
               </Link>
             </li>
@@ -173,7 +173,7 @@ export default function AccountSheet({ open, onClose, user, logout }) {
           {row("admin") && (
             <li className={liCls}>
               <Link href={row("admin").item.href} onClick={onClose} className={rowCls}>
-                <Lock size={19} weight="regular" className={iconCls} aria-hidden="true" />
+                <Lock size={20} weight="regular" className={iconCls} aria-hidden="true" />
                 {t(row("admin").surface.labelKey)}
               </Link>
             </li>
@@ -184,7 +184,7 @@ export default function AccountSheet({ open, onClose, user, logout }) {
           {row("producerDashboard") && (
             <li className={liCls}>
               <Link href={row("producerDashboard").item.href} onClick={onClose} className={rowCls}>
-                <Gauge size={19} weight="regular" className={iconCls} aria-hidden="true" />
+                <Gauge size={20} weight="regular" className={iconCls} aria-hidden="true" />
                 {t(row("producerDashboard").surface.labelKey)}
               </Link>
             </li>
@@ -195,7 +195,7 @@ export default function AccountSheet({ open, onClose, user, logout }) {
           {row("favorites") && (
             <li className={liCls}>
               <Link href={row("favorites").item.href} onClick={onClose} className={rowCls}>
-                <Heart size={19} weight="regular" className={iconCls} aria-hidden="true" />
+                <Heart size={20} weight="regular" className={iconCls} aria-hidden="true" />
                 {t(row("favorites").surface.labelKey)}
               </Link>
             </li>
@@ -203,7 +203,7 @@ export default function AccountSheet({ open, onClose, user, logout }) {
           {row("settings") && (
             <li className={liCls}>
               <Link href={row("settings").item.href} onClick={onClose} className={rowCls}>
-                <Gear size={19} weight="regular" className={iconCls} aria-hidden="true" />
+                <Gear size={20} weight="regular" className={iconCls} aria-hidden="true" />
                 {t(row("settings").surface.labelKey)}
               </Link>
             </li>
@@ -213,7 +213,7 @@ export default function AccountSheet({ open, onClose, user, logout }) {
               {/* Quiet "for businesses" entry — gold icon + outbound arrow. MEH-669-gated. */}
               <Link href={row("registerProducer").item.href} onClick={onClose} className={rowCls}>
                 {/* MEH-730: gold-on-dark token replaces the amber-200 stopgap. */}
-                <Storefront size={19} weight="regular" className="text-gold-on-dark" aria-hidden="true" />
+                <Storefront size={20} weight="regular" className="text-gold-on-dark" aria-hidden="true" />
                 {t(row("registerProducer").surface.labelKey)}
                 {/* MEH-868: raw "↗" dingbat → Phosphor ArrowUpLeft (RTL-correct
                     onward diagonal; ms-auto pins it to the row end).
@@ -265,7 +265,7 @@ export default function AccountSheet({ open, onClose, user, logout }) {
                 }}
                 className={rowCls + " text-background/65 text-sm"}
               >
-                <SignOut size={19} weight="regular" className={iconCls} aria-hidden="true" />
+                <SignOut size={20} weight="regular" className={iconCls} aria-hidden="true" />
                 {/* MEH-908: gerund "התנתקות" (ADR-014) via the shared
                     account.menu.logout key — neutral, aligns with the
                     noun-based sheet items, and fixes desktop UserMenu in one

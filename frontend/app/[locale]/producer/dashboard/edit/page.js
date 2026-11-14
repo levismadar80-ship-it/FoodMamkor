@@ -707,7 +707,7 @@ function EditPageInner() {
       type="button"
       onClick={backToHub}
       data-testid="hub-back"
-      className="inline-flex items-center gap-1.5 min-h-touch text-sm font-medium text-primary hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 rounded"
+      className="inline-flex items-center gap-1.5 min-h-touch text-sm font-medium text-primary hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded"
     >
       <CaretLeft size={16} aria-hidden="true" className="rtl:rotate-180" />
       {tAcc("hub_back")}

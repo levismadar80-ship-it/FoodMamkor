@@ -297,7 +297,7 @@ export default function RescueSection({ producer }) {
           <div className="grid gap-3 min-w-0">
             <div className="flex items-center gap-2.5">
               <span aria-hidden="true" className="w-11 h-11 rounded-md bg-green-50 text-primary grid place-items-center shrink-0">
-                <Basket size={24} weight="duotone" />
+                <Basket size={24} weight="regular" />
               </span>
               {/* The only gold on the card, as on the home row: the stock is what makes someone hurry. */}
               <span className="text-xs font-bold text-gold-deep bg-gold-deep/10 rounded-full px-2.5 py-0.5 whitespace-nowrap" data-testid="rescue-section-stock">

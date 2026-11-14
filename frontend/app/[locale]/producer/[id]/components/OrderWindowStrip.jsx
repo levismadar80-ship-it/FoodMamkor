@@ -89,8 +89,8 @@ import {
   normalizeDayEntries,
 } from "@/lib/orderWindow";
 import SectionHeading from "@/components/ui/SectionHeading";
+import { formatDate } from "@/lib/format-date";
 
-const NOON_UTC = 12;
 
 /**
  * "21 בספטמבר" for an ISO date, in the page locale. Built from a UTC-noon
@@ -99,15 +99,7 @@ const NOON_UTC = 12;
  * midnight, which is still "yesterday" for the first hours of an Israel day).
  */
 function formatSpecialDate(isoDate, locale) {
-  const [y, m, d] = isoDate.split("-").map(Number);
-  // DISPLAY formatter for a stored ISO date — israelToday()/israelNowParts()
-  // still own "now"; this only prints a calendar day in the page locale.
-  // guard-ok: display formatting of a stored date, not a clock read
-  return new Intl.DateTimeFormat(locale, {
-    day: "numeric",
-    month: "long",
-    timeZone: "Asia/Jerusalem", // guard-ok: display formatting of a stored date, not a clock read
-  }).format(new Date(Date.UTC(y, m - 1, d, NOON_UTC)));
+  return formatDate(isoDate, locale, "dayMonth");
 }
 
 // MEH-1875: index-aligned with lib/orderWindow.js ORDER_DAY_KEYS, so index 0 is
@@ -283,7 +275,7 @@ export function OrderWindowScheduleBlock({
               // (qa-meh1917-order-window.mjs P6), which is under the tap target.
               // The floor is explicit rather than tuned via padding so a future
               // font-size change cannot quietly drop it back under.
-              className="flex min-h-touch w-full items-center justify-center gap-1 border-t border-border px-3.5 py-2.5 text-sm text-fg-muted transition hover:text-text focus-visible:ring-2 focus-visible:ring-primary/40"
+              className="flex min-h-touch w-full items-center justify-center gap-1 border-t border-border px-3.5 py-2.5 text-sm text-fg-muted transition hover:text-text focus-visible:ring-2 focus-visible:ring-primary"
             >
               {expanded ? t("hide_week") : t("show_week")}
               <CaretDown

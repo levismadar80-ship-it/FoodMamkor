@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { Link as LocaleLink } from "@/i18n/navigation";
 
 import api from "@/lib/api";
+import { israelToday } from "@/lib/israel-date";
 import { ALLERGEN_CODES, toggleAllergen } from "@/lib/allergens";
 import { detailToMessage, errorMessage } from "@/lib/errors";
 import { israelTime, leftoverGroupUrl, shekels } from "@/lib/rescue";
@@ -23,11 +24,6 @@ import { shareOrCopyText } from "@/lib/share-link";
  * History:  MEH-2649 (creation, chunk 5 of the rescue-bags pilot MEH-2643)
  */
 const MAX_QTY = 20;
-
-// The calendar date in Israel, YYYY-MM-DD. `toISOString()` is UTC, which is
-// still yesterday between midnight and 02:00/03:00 Israel time, and the server
-// refuses a bag dated in the past (MEH-2678).
-const ISRAEL_DATE = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Jerusalem" });
 
 const ORDER_RANK = { reserved: 0, handed: 1, no_show: 2, cancelled: 3 };
 // Minutes before pickup_start that free cancellation ends, and the message key.
@@ -234,7 +230,7 @@ export default function RescueTab() {
     try {
       await api.post("/rescue/offers", {
         producer_location_id: location.id,
-        date: ISRAEL_DATE.format(day),
+        date: israelToday(day), // Israel calendar day, not UTC (MEH-2678)
         qty_total: Number(form.qty_total),
         price_agorot: Number(form.price) * 100,
         pickup_start: iso(form.from),
@@ -374,7 +370,7 @@ export default function RescueTab() {
             placeholder={t("code_placeholder")}
             aria-label={t("code_label")}
             data-testid="rescue-code-input"
-            className="flex-1 border border-border rounded-md px-3 py-2 text-center tracking-[0.3em]"
+            className="flex-1 border border-border rounded-sm px-3 py-2 text-center tracking-[0.3em] focus-ring"
           />
           <Button
             type="button"
@@ -424,7 +420,7 @@ export default function RescueTab() {
                       disabled={busyId === o.id}
                       onClick={() => act(o, "handed")}
                       data-testid="rescue-order-hand"
-                      className="whitespace-nowrap bg-primary text-white px-3 py-1 rounded-md font-body-sm text-sm disabled:opacity-50"
+                      className="whitespace-nowrap bg-primary text-white px-3 py-1 rounded-full font-body-sm text-sm disabled:opacity-50"
                     >
                       {t("hand_over")}
                     </button>
@@ -434,7 +430,7 @@ export default function RescueTab() {
                       title={windowClosed ? undefined : t("no_show_too_early")}
                       onClick={() => act(o, "no_show")}
                       data-testid="rescue-order-noshow"
-                      className="whitespace-nowrap border border-border px-3 py-1 rounded-md font-body-sm text-sm disabled:opacity-40"
+                      className="whitespace-nowrap border border-border px-3 py-1 rounded-md font-body-sm text-sm disabled:opacity-50"
                     >
                       {t("no_show")}
                     </button>
@@ -551,7 +547,7 @@ export default function RescueTab() {
                 value={form.qty_total}
                 onChange={(e) => setForm({ ...form, qty_total: e.target.value })}
                 data-testid="rescue-publish-qty"
-                className="w-full border border-border rounded-md px-2 py-1 mt-1"
+                className="w-full border border-border rounded-sm px-2 py-1 mt-1 focus-ring"
               />
             </label>
             <label className="font-body-sm text-sm">
@@ -562,7 +558,7 @@ export default function RescueTab() {
                 value={form.price}
                 onChange={(e) => setForm({ ...form, price: e.target.value })}
                 data-testid="rescue-publish-price"
-                className="w-full border border-border rounded-md px-2 py-1 mt-1"
+                className="w-full border border-border rounded-sm px-2 py-1 mt-1 focus-ring"
               />
             </label>
             <label className="font-body-sm text-sm min-w-0">
@@ -575,7 +571,7 @@ export default function RescueTab() {
                 value={form.from}
                 onChange={(e) => setForm({ ...form, from: e.target.value })}
                 data-testid="rescue-publish-from"
-                className="block w-full min-w-0 border border-border rounded-md px-2 py-1 mt-1"
+                className="block w-full min-w-0 border border-border rounded-sm px-2 py-1 mt-1 focus-ring"
               />
             </label>
             <label className="font-body-sm text-sm min-w-0">
@@ -586,7 +582,7 @@ export default function RescueTab() {
                 value={form.to}
                 onChange={(e) => setForm({ ...form, to: e.target.value })}
                 data-testid="rescue-publish-to"
-                className="block w-full min-w-0 border border-border rounded-md px-2 py-1 mt-1"
+                className="block w-full min-w-0 border border-border rounded-sm px-2 py-1 mt-1 focus-ring"
               />
             </label>
             <label className="font-body-sm text-sm col-span-2">
@@ -595,7 +591,7 @@ export default function RescueTab() {
                 value={form.cancelMin}
                 onChange={(e) => setForm({ ...form, cancelMin: Number(e.target.value) })}
                 data-testid="rescue-publish-cancel"
-                className="w-full border border-border rounded-md px-2 py-1 mt-1 bg-surface-card text-text"
+                className="w-full border border-border rounded-sm px-2 py-1 mt-1 bg-surface-card text-text focus-ring"
               >
                 {CANCEL_CUTOFFS.map(([minutes, key]) => (
                   <option key={minutes} value={minutes}>
@@ -633,7 +629,7 @@ export default function RescueTab() {
           onChange={(e) => setItems(e.target.value)}
           aria-label={t("items_title")}
           data-testid="rescue-items-input"
-          className="w-full border border-border rounded-md px-3 py-2"
+          className="w-full border border-border rounded-sm px-3 py-2 focus-ring"
         />
 
         {/* MEH-2752: what this business declares about ITS bag. Before this,
@@ -702,7 +698,7 @@ export default function RescueTab() {
                 type="button"
                 onClick={shareLeftover}
                 data-testid="rescue-leftover-share"
-                className="block w-full text-center bg-primary text-background py-2 rounded-md font-medium"
+                className="block w-full text-center bg-primary text-background py-2 rounded-full font-medium"
               >
                 {tShare("trigger")}
               </button>
@@ -712,7 +708,7 @@ export default function RescueTab() {
               target="_blank"
               rel="noopener noreferrer"
               data-testid="rescue-leftover-link"
-              className="block text-center border border-primary text-primary py-2 rounded-md font-medium"
+              className="block text-center border border-primary text-primary py-2 rounded-full font-medium"
             >
               {t("leftover_link")}
             </a>
@@ -725,7 +721,7 @@ export default function RescueTab() {
                 onClick={() => markDonated(0)}
                 disabled={donating}
                 data-testid="rescue-leftover-undo"
-                className="underline text-primary font-medium disabled:opacity-60"
+                className="underline text-primary font-medium disabled:opacity-50"
               >
                 {t("leftover_undo")}
               </button>
@@ -741,7 +737,7 @@ export default function RescueTab() {
                   value={chosenQty}
                   onChange={(e) => setDonateQty(Number(e.target.value))}
                   data-testid="rescue-leftover-qty"
-                  className="border border-border rounded-md px-2 py-1 bg-surface text-text"
+                  className="border border-border rounded-sm px-2 py-1 bg-surface text-text focus-ring"
                 >
                   {Array.from({ length: leftoverTotal }, (_, i) => i + 1).map((n) => (
                     <option key={n} value={n}>

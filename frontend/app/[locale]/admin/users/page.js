@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Dialog from "@/components/ui/Dialog";
 import { Heart, Lock } from "@phosphor-icons/react";
 import { useTranslations, useLocale } from "next-intl";
 import { formatEventDate } from "@/lib/format-date";
@@ -36,19 +37,6 @@ export default function AdminUsersPage() {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
 
-  // MEH-2268 — Escape closes the role-confirm dialog, guarded while the role
-  // change is in flight. Same shape as admin/reviews/page.jsx's delete dialog,
-  // which is the mirror this one was always described as: the guard is what
-  // stops a mid-flight PATCH from losing the dialog that explains what it is
-  // doing, so it is not decoration on the listener.
-  useEffect(() => {
-    if (!confirm) return undefined;
-    const onKey = (e) => {
-      if (e.key === "Escape" && !isBusy(confirmKey(confirm))) setConfirm(null);
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [confirm, isBusy]);
 
   useEffect(() => {
     setPage(1); // role filter changed (or first mount — already 1)
@@ -145,13 +133,13 @@ export default function AdminUsersPage() {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && searchUsers()}
-          className="flex-1 border border-border rounded-md px-3 py-2"
+          className="flex-1 border border-border rounded-sm px-3 py-2 focus-ring"
         />
         <select
           value={role}
           onChange={(e) => setRole(e.target.value)}
           aria-label={t("users.columns.role")}
-          className="border border-border rounded-md px-3 py-2 bg-surface"
+          className="border border-border rounded-sm px-3 py-2 bg-surface focus-ring"
         >
           <option value="all">{t("users.role_filter.all")}</option>
           <option value="consumer">{t("users.role_filter.consumer")}</option>
@@ -330,7 +318,7 @@ export default function AdminUsersPage() {
             <select
               value={pageSize}
               onChange={(e) => changePageSize(Number(e.target.value))}
-              className="border border-border rounded-md px-2 py-1 bg-surface"
+              className="border border-border rounded-sm px-2 py-1 bg-surface focus-ring"
             >
               <option value={25}>25</option>
               <option value={50}>50</option>
@@ -341,7 +329,7 @@ export default function AdminUsersPage() {
             <button
               onClick={() => setPage(currentPage - 1)}
               disabled={currentPage === 1}
-              className="px-3 py-1.5 rounded-md border border-border disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-50 transition"
+              className="px-3 py-1.5 rounded-md border border-border disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition"
             >
               {t("users.pagination.prev")}
             </button>
@@ -351,7 +339,7 @@ export default function AdminUsersPage() {
             <button
               onClick={() => setPage(currentPage + 1)}
               disabled={currentPage === totalPages}
-              className="px-3 py-1.5 rounded-md border border-border disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-50 transition"
+              className="px-3 py-1.5 rounded-md border border-border disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition"
             >
               {t("users.pagination.next")}
             </button>
@@ -368,14 +356,15 @@ export default function AdminUsersPage() {
           announced nothing here and the 12e spec had to reach this modal
           through its Hebrew copy while reaching the other two by role. */}
       {confirm && (
-        <div className="fixed inset-0 z-[9000] flex items-center justify-center bg-black/40">
-          {/* MEH-1023: text-start aligns the Hebrew dialog copy to the start edge in RTL */}
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="role-confirm-title"
-            className="bg-surface rounded-lg shadow-xl p-6 max-w-sm w-full mx-4 text-start space-y-4"
-          >
+        // MEH-3096: the shared Dialog owns overlay, focus trap and Escape;
+        // Escape / overlay click stay guarded while the change is in flight.
+        <Dialog
+          labelledBy="role-confirm-title"
+          size="sm"
+          dismissible={!isBusy(confirmKey(confirm))}
+          onClose={() => setConfirm(null)}
+          className="space-y-4"
+        >
             <p id="role-confirm-title" className="font-medium text-base">
               {confirm.action === "delete"
                 ? t("users.confirm.delete", { name: confirm.userName, email: confirm.userEmail })
@@ -406,15 +395,14 @@ export default function AdminUsersPage() {
               {/* Deliberately NOT guarded by isBusy: an explicit cancel stays
                   available while the PUT is open. The guard belongs on the
                   ambiguous dismissal (Escape), not on the deliberate one. */}
-              <button
+              <button data-autofocus
                 onClick={() => setConfirm(null)}
                 className="px-4 py-2 rounded-full text-sm border border-border text-muted hover:bg-gray-50 transition"
               >
                 {t("common.cancel")}
               </button>
             </div>
-          </div>
-        </div>
+        </Dialog>
       )}
     </div>
   );

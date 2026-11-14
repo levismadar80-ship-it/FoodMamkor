@@ -24,9 +24,9 @@ import { Link } from "@/i18n/navigation";
  *           `children` renders between the body and the actions.
  */
 const PRIMARY =
-  "min-h-touch w-full sm:w-auto inline-flex items-center justify-center bg-primary text-white px-6 py-3 rounded-full hover:bg-primary-dark transition font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2";
+  "min-h-touch w-full sm:w-auto inline-flex items-center justify-center bg-primary text-white px-6 py-3 rounded-full hover:bg-primary-dark transition font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2";
 const SECONDARY =
-  "min-h-touch w-full sm:w-auto inline-flex items-center justify-center border border-primary text-primary px-6 py-3 rounded-full hover:bg-green-50 transition font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2";
+  "min-h-touch w-full sm:w-auto inline-flex items-center justify-center border border-primary text-primary px-6 py-3 rounded-full hover:bg-green-50 transition font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2";
 
 function Action({ action, className }) {
   if (!action) return null;

@@ -474,7 +474,7 @@ function EmptyState({ tab, t }) {
   return (
     <div data-testid="events-empty-dataset" className="flex flex-col items-center text-center px-6 py-16">
       <div className="grid place-items-center w-[76px] h-[76px] rounded-full bg-accent/10 border border-accent/25 text-accent">
-        <Icon size={36} />
+        <Icon size={32} />
       </div>
       {/* MEH-858 F4: empty-state title is h2 (was h4) — only heading under the
           page h1 when the feed is empty, so h1 → h2 with no skip. */}
@@ -488,7 +488,7 @@ function EmptyState({ tab, t }) {
         {isExp && (
           <Link
             href="/producer/dashboard/experiences/new"
-            className="w-full max-w-[260px] inline-flex items-center justify-center gap-2 bg-primary text-white text-sm font-semibold px-5 py-3 rounded-sm"
+            className="w-full max-w-[260px] inline-flex items-center justify-center gap-2 bg-primary text-white text-sm font-semibold px-5 py-3 rounded-full"
           >
             <Plus size={18} weight="bold" />
             {t("empty_experiences_cta")}

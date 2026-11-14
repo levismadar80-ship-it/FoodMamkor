@@ -331,7 +331,7 @@ export default function Footer() {
                 type="submit"
                 disabled={status === "loading"}
                 aria-label={t("nav.footer.newsletter_submit")}
-                className="absolute end-0 top-1/2 -translate-y-1/2 flex h-11 w-11 items-center justify-center text-white/60 hover:text-white transition disabled:opacity-40"
+                className="absolute end-0 top-1/2 -translate-y-1/2 flex h-11 w-11 items-center justify-center text-white/60 hover:text-white transition disabled:opacity-50"
               >
                 {status === "loading" ? (
                   <ButtonSpinner />
@@ -368,7 +368,7 @@ export default function Footer() {
                 likely to pass the site on. One «שתפו» (the phone's own share
                 sheet), on-dark colours; shares the site URL. */}
             {status === "success" && (
-              <div className="mt-4 rounded-xl border border-background/15 bg-background/5 p-4" data-testid="newsletter-share">
+              <div className="mt-4 rounded-lg border border-background/15 bg-background/5 p-4" data-testid="newsletter-share">
                 <p className="text-sm font-semibold text-background">{t("share_page.h1")}</p>
                 <ShareSiteActions layout="compact" tone="dark" className="mt-3" />
               </div>

@@ -49,7 +49,7 @@ const MiniMap = dynamic(() => import("@/components/MiniMap"), { ssr: false });
 // MEH-3043: short, for the sticky phone bar beside the sign-up button.
 const BAR_DATE_OPTIONS = { weekday: "short", day: "numeric", month: "numeric" };
 
-function formatDate(iso, locale) {
+function longDate(iso, locale) {
   if (!iso) return "";
   return formatEventDate(iso, locale, { weekday: "long", day: "numeric", month: "long", year: "numeric" });
 }
@@ -205,7 +205,7 @@ export default function ExperienceDetailClient() {
   const infoRow = "flex items-center gap-3 px-4 py-3";
   const infoIcon = "shrink-0 w-9 h-9 rounded-md bg-surface-card text-accent grid place-items-center";
   const actionBtn =
-    "flex-1 inline-flex items-center justify-center gap-2 min-h-[46px] px-3 rounded-full border border-primary text-primary text-sm font-semibold hover:bg-green-50 transition focus-visible:ring-2 focus-visible:ring-primary/40";
+    "flex-1 inline-flex items-center justify-center gap-2 min-h-[46px] px-3 rounded-full border border-primary text-primary text-sm font-semibold hover:bg-green-50 transition focus-visible:ring-2 focus-visible:ring-primary";
 
   return (
     <div className="pb-12" data-testid="experience-detail">
@@ -300,7 +300,7 @@ export default function ExperienceDetailClient() {
         </div>
 
         <aside className="mt-6 lg:mt-0 lg:col-start-2 lg:row-start-1 lg:row-span-2 lg:sticky lg:top-24">
-          <div className="bg-surface border border-border rounded-lg overflow-hidden lg:shadow-md" data-testid="experience-info">
+          <div className="bg-surface border border-border rounded-lg overflow-hidden lg:shadow-lg" data-testid="experience-info">
             {/* MEH-2476: a recurring experience leads with its schedule, so the
                 date below reads as a start, not as the only occasion. */}
             {ex.is_recurring && (
@@ -322,7 +322,7 @@ export default function ExperienceDetailClient() {
                     row shows the weekday only; «starts from» keeps the full
                     date, which is its content. */}
                 {ex.is_recurring
-                  ? t("starts_from", { date: formatDate(ex.event_date, locale) })
+                  ? t("starts_from", { date: longDate(ex.event_date, locale) })
                   : formatEventDate(ex.event_date, locale, { weekday: "long" })}
                 {ex.event_time && ` · ${formatTime(ex.event_time)}`}
               </p>

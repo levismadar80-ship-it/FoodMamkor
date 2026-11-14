@@ -46,7 +46,7 @@ export default async function MessagesPage({ params }) {
       <div className="flex flex-col sm:flex-row gap-3 justify-center">
         <Link
           href="/map"
-          className="bg-primary text-white px-6 py-3 rounded-full hover:bg-primary-dark transition font-medium focus-visible:ring-2 focus-visible:ring-primary/40 inline-flex items-center justify-center gap-1"
+          className="bg-primary text-white px-6 py-3 rounded-full hover:bg-primary-dark transition font-medium focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 inline-flex items-center justify-center gap-1"
         >
           <MapPin size={14} className="text-current" />
           {t("cta_map")}

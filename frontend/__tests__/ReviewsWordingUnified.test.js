@@ -30,7 +30,7 @@ describe("he.json — reviews are «ביקורות», never «חוות דעת»"
   it("the business-page review count and show-more say «ביקורות»", () => {
     expect(he.reviews.summary_count).toContain("ביקורות");
     expect(he.reviews.summary_count).toContain("ביקורת אחת");
-    expect(he.reviews.show_more).toBe("הצג עוד ביקורות");
+    expect(he.reviews.show_more).toBe("הצגת עוד ביקורות");
   });
 });
 

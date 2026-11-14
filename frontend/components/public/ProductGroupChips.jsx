@@ -16,7 +16,7 @@ import { useTranslations } from "next-intl";
 export const UNGROUPED = "__ungrouped";
 
 const PILL =
-  "shrink-0 inline-flex items-center min-h-touch px-3.5 rounded-full border text-sm transition focus-visible:ring-2 focus-visible:ring-primary/40";
+  "shrink-0 inline-flex items-center min-h-touch px-3.5 rounded-full border text-sm transition focus-visible:ring-2 focus-visible:ring-primary";
 
 /**
  * @param {{

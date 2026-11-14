@@ -35,7 +35,7 @@ export default function OtherBusinesses({ producer, similarProducers = [], nearb
   return (
     <div
       data-testid="other-businesses"
-      className="mt-12 -mx-4 px-4 py-8 bg-background-alt md:mx-0 md:px-6 md:rounded-2xl"
+      className="mt-12 -mx-4 px-4 py-8 bg-background-alt md:mx-0 md:px-6 md:rounded-lg"
     >
       {showSimilar && (
         <FadeInSection as="section" {...REVEAL_PRESET}>

@@ -57,8 +57,9 @@ const SHARE_TONE = {
   dark: "bg-background text-primary hover:bg-surface-card",
 };
 
+// MEH-3058: secondary actions are outlined pills, same shape as «שתפו» above them.
 const CARD_CLASSES =
-  "flex flex-col items-center justify-center gap-1.5 rounded-xl border border-border bg-surface-card px-2 py-3 min-h-[72px] text-xs font-medium text-text text-center leading-tight hover:border-primary transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40";
+  "flex items-center justify-center gap-2 rounded-full border border-primary bg-surface-card px-3 min-h-touch text-sm font-semibold text-primary text-center leading-tight hover:bg-primary/5 active:bg-primary/10 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary";
 
 /**
  * @param {object} props
@@ -131,7 +132,7 @@ export default function ShareSiteActions({
       type="button"
       onClick={share}
       data-testid="share-native"
-      className={`flex w-full items-center justify-center gap-2 rounded-lg ${SHARE_TONE[tone] ?? SHARE_TONE.light} ${layout === "full" ? "min-h-[52px] text-base" : "min-h-touch text-sm"} px-4 font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40`}
+      className={`flex w-full items-center justify-center gap-2 rounded-full ${SHARE_TONE[tone] ?? SHARE_TONE.light} ${layout === "full" ? "min-h-[52px] text-base" : "min-h-touch text-sm"} px-4 font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary`}
     >
       <ShareNetwork size={18} aria-hidden="true" />
       {tShare("trigger")}
@@ -149,11 +150,11 @@ export default function ShareSiteActions({
       {shareButton}
       <div className="mt-3 grid grid-cols-2 gap-2.5">
         <button type="button" onClick={copyLink} className={CARD_CLASSES} data-testid="share-copy">
-          <LinkSimple size={22} aria-hidden="true" className="text-primary" />
+          <LinkSimple size={18} aria-hidden="true" />
           {t("copy")}
         </button>
         <a href={mailHref} onClick={handleEmailClick} className={CARD_CLASSES} data-testid="share-email">
-          <EnvelopeSimple size={22} aria-hidden="true" className="text-primary" />
+          <EnvelopeSimple size={18} aria-hidden="true" />
           {t("email")}
         </a>
       </div>

@@ -1,6 +1,7 @@
 "use client";
 
-import { Suspense, useEffect } from "react";
+import Dialog from "@/components/ui/Dialog";
+import { Suspense } from "react";
 import { useTranslations } from "next-intl";
 import AdminProducersToolbar from "./AdminProducersToolbar";
 import AdminProducersTable from "./AdminProducersTable";
@@ -43,24 +44,15 @@ function PageHeader({ count }) {
 function DeleteConfirmDialog({ confirmDelete, deleting, onConfirm, onCancel }) {
   const t = useTranslations("admin");
 
-  useEffect(() => {
-    if (!confirmDelete) return undefined;
-    const onKey = (e) => {
-      if (e.key === "Escape" && !deleting) onCancel();
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [confirmDelete, deleting, onCancel]);
-
   if (!confirmDelete) return null;
   return (
-    <div className="fixed inset-0 z-[9000] flex items-center justify-center bg-black/40">
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="producer-delete-title"
-        className="bg-surface rounded-lg shadow-xl p-6 max-w-sm w-full mx-4 text-start space-y-4"
-      >
+    <Dialog
+      labelledBy="producer-delete-title"
+      size="sm"
+      dismissible={!deleting}
+      onClose={onCancel}
+      className="space-y-4"
+    >
         <p id="producer-delete-title" className="font-medium text-base">
           {t("producers.table.confirm_delete", { name: confirmDelete.name })}
         </p>
@@ -72,7 +64,7 @@ function DeleteConfirmDialog({ confirmDelete, deleting, onConfirm, onCancel }) {
           >
             {deleting ? t("producers.table.deleting") : t("common.delete")}
           </Button>
-          <button
+          <button data-autofocus
             disabled={deleting}
             onClick={onCancel}
             className="px-4 py-2 rounded-full text-sm border border-border text-muted hover:bg-gray-50 transition disabled:opacity-50"
@@ -80,8 +72,7 @@ function DeleteConfirmDialog({ confirmDelete, deleting, onConfirm, onCancel }) {
             {t("common.cancel")}
           </button>
         </div>
-      </div>
-    </div>
+    </Dialog>
   );
 }
 
@@ -90,24 +81,14 @@ function DeleteConfirmDialog({ confirmDelete, deleting, onConfirm, onCancel }) {
 // (MEH-1023/MEH-1027 dialog contract); affirmative button is primary (not
 // destructive) since this confirms an approval. Escape cancels.
 function ApproveConfirmDialog({ approveConfirm, onConfirm, onCancel }) {
-  useEffect(() => {
-    if (!approveConfirm) return undefined;
-    const onKey = (e) => {
-      if (e.key === "Escape") onCancel();
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [approveConfirm, onCancel]);
-
   if (!approveConfirm) return null;
   return (
-    <div className="fixed inset-0 z-[9000] flex items-center justify-center bg-black/40">
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="approve-confirm-title"
-        className="bg-surface rounded-lg shadow-xl p-6 max-w-sm w-full mx-4 text-start space-y-4"
-      >
+    <Dialog
+      labelledBy="approve-confirm-title"
+      size="sm"
+      onClose={onCancel}
+      className="space-y-4"
+    >
         <p id="approve-confirm-title" className="font-medium text-base">
           {ADMIN_REVIEW_APPROVE_CONFIRM.message(approveConfirm.count)}
         </p>
@@ -118,15 +99,14 @@ function ApproveConfirmDialog({ approveConfirm, onConfirm, onCancel }) {
           >
             {ADMIN_REVIEW_APPROVE_CONFIRM.confirmLabel}
           </Button>
-          <button
+          <button data-autofocus
             onClick={onCancel}
             className="px-4 py-2 rounded-full text-sm border border-border text-muted hover:bg-gray-50 transition"
           >
             {ADMIN_REVIEW_APPROVE_CONFIRM.cancelLabel}
           </button>
         </div>
-      </div>
-    </div>
+    </Dialog>
   );
 }
 
