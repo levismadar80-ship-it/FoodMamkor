@@ -96,7 +96,7 @@ graph TD
 
     Favorites[/favorites page] --> ListFavs[GET /users/me/favorites<br/>🔑 skips not-live businesses MEH-2513]
     Favorites --> AddFav[POST /users/me/favorites/{id}<br/>🔑 404 for an organizer MEH-2465<br/>or a not-live business MEH-2513]
-    Favorites --> DelFav[DELETE /users/me/favorites/{id}<br/>🔑]
+    Favorites --> DelFav[DELETE /users/me/favorites/{id}<br/>🔑 also deletes her FavoriteAlert row · MEH-3222]
     Favorites --> ListSaved[GET /users/me/saved<br/>🔑 recipes/events/experiences, public only MEH-2557]
     Favorites --> SavedIds[GET /users/me/saved/ids<br/>🔑 hearts cache]
     Favorites --> AddSaved[POST /users/me/saved/{type}/{id}<br/>🔑 404 unless public]
