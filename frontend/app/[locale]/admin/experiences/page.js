@@ -11,6 +11,7 @@ import { showToast } from "@/lib/toast";
 import InfoTooltip from "@/components/InfoTooltip";
 import { SkeletonTable } from "@/components/Skeleton";
 import { STATUS_CLASSES } from "@/lib/dashboard-status-classes";
+import Dialog from "@/components/ui/Dialog";
 
 // Tab values map to admin.experiences.tabs.* keys; labels resolved in render
 const TAB_VALUES = ["pending", "changes_requested", "approved", "rejected", "all"];
@@ -195,9 +196,13 @@ export default function AdminExperiencesPage() {
 
       {/* Feedback modal */}
       {modalEx && (
-        <div className="fixed inset-0 bg-black/40 z-[9000] flex items-center justify-center p-4">
-          <div className="bg-background rounded-lg p-6 max-w-lg w-full border border-border">
-            <h2 className="font-headline-md text-xl font-bold text-text mb-2">
+        <Dialog
+          labelledBy="experience-feedback-title"
+          size="lg"
+          dismissible={!busy}
+          onClose={closeModal}
+        >
+            <h2 id="experience-feedback-title" className="font-headline-md text-xl font-bold text-text mb-2">
               {modalAction === "changes" ? t("experiences.modal.changes_title") : t("experiences.modal.reject_title")}
             </h2>
             <p className="text-fg-muted text-sm mb-4">
@@ -237,8 +242,7 @@ export default function AdminExperiencesPage() {
                 {busy ? t("common.sending") : t("experiences.modal.submit")}
               </button>
             </div>
-          </div>
-        </div>
+        </Dialog>
       )}
     </div>
   );

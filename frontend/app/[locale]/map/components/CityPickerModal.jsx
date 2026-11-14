@@ -1,7 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
-import useDialogFocus from "@/hooks/useDialogFocus";
+import Dialog from "@/components/ui/Dialog";
 import { useTranslations } from "next-intl";
 import { X } from "@phosphor-icons/react";
 
@@ -36,21 +35,11 @@ const POPULAR_CITIES = [
 export default function CityPickerModal({ open, onClose, onSelectCity }) {
   const t = useTranslations();
 
-  // MEH-230: restore focus to the trigger on close + WCAG 2.1 §2.1.2 ESC-to-close.
-  // MEH-3093: useDialogFocus (trap + return) replaces the return-only hook.
-  const dialogRef = useRef(null);
-  useDialogFocus(dialogRef, open);
-  useEffect(() => {
-    if (!open) return;
-    const handleKey = (e) => { if (e.key === "Escape") onClose(); };
-    document.addEventListener("keydown", handleKey);
-    return () => document.removeEventListener("keydown", handleKey);
-  }, [open, onClose]);
-
+  // MEH-230 / MEH-3093 / MEH-3096: focus return, Tab trap and Escape come
+  // from ui/Dialog.
   if (!open) return null;
   return (
-    <div ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby="city-picker-title" className="fixed inset-0 z-[9000] flex items-center justify-center bg-black/40 px-4" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
-      <div className="bg-surface-floating rounded-lg border border-border w-full max-w-sm p-5 relative">
+    <Dialog labelledBy="city-picker-title" size="sm" onClose={onClose} className="relative">
         <button type="button" onClick={onClose} className="absolute top-2 end-2 w-11 h-11 rounded-full hover:bg-green-50 flex items-center justify-center text-fg-muted" aria-label={t("common.aria.close")}>
           <X size={20} weight="bold" />
         </button>
@@ -66,7 +55,6 @@ export default function CityPickerModal({ open, onClose, onSelectCity }) {
         </div>
         <CitySearch id="city-picker-search" label={t("map.city_picker.other.label")} value="" onChange={(v) => { if (v.trim()) onSelectCity(v.trim()); }} placeholder={t("map.city_picker.other.placeholder")} />
         <button type="button" onClick={onClose} className="w-full mt-3 text-center text-sm text-fg-muted hover:text-text transition py-2">{t("map.city_picker.skip")}</button>
-      </div>
-    </div>
+    </Dialog>
   );
 }

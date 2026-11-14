@@ -1,7 +1,7 @@
 "use client";
 
-import { useRef, useState } from "react";
-import useDialogFocus, { useDialogEscape } from "@/hooks/useDialogFocus";
+import { useState } from "react";
+import Dialog from "@/components/ui/Dialog";
 import { useTranslations } from "next-intl";
 import { useAuth } from "@/lib/auth-context";
 import api from "@/lib/api";
@@ -15,9 +15,6 @@ export default function ReportButton({ producerId, quiet = false }) {
   const t = useTranslations("report");
   const { user } = useAuth();
   const [showModal, setShowModal] = useState(false);
-  const reportDialogRef = useRef(null);
-  useDialogFocus(reportDialogRef, showModal && !!user);
-  useDialogEscape(showModal, () => setShowModal(false));
   const [reason, setReason] = useState("");
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState("");
@@ -54,13 +51,7 @@ export default function ReportButton({ producerId, quiet = false }) {
       </button>
 
       {showModal && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-[9000] p-4">
-          <div ref={reportDialogRef}
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="report-dialog-title"
-            className="bg-surface rounded-md p-6 max-w-md w-full"
-          >
+        <Dialog labelledBy="report-dialog-title" onClose={() => setShowModal(false)}>
             {submitted ? (
               <div className="text-center">
                 <p className="text-lg font-semibold mb-2">{t("success_title")}</p>
@@ -98,8 +89,7 @@ export default function ReportButton({ producerId, quiet = false }) {
                 </div>
               </form>
             )}
-          </div>
-        </div>
+        </Dialog>
       )}
     </>
   );

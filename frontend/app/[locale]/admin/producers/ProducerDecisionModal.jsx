@@ -26,7 +26,7 @@
  */
 
 import { useEffect, useRef } from "react";
-import useDialogFocus from "@/hooks/useDialogFocus";
+import Dialog from "@/components/ui/Dialog";
 import { useTranslations } from "next-intl";
 import Button from "@/components/ui/Button";
 
@@ -253,23 +253,9 @@ export default function ProducerDecisionModal({
   onClose, onSubmit, submitting,
 }) {
   const t = useTranslations("admin");
-  const dialogRef = useRef(null);
-  useDialogFocus(dialogRef, !!producer);
-
-  // Escape closes — but never mid-send, mirroring DeleteConfirmDialog's
-  // "Escape-unless-deleting" contract (page.js:48). A dismissal during the
-  // request would strand the admin with no idea whether the email went out.
-  useEffect(() => {
-    if (!producer) return undefined;
-    const onKey = (e) => {
-      if (e.key !== "Escape" || submitting) return;
-      if (confirming) onCancelConfirm();
-      else onClose();
-    };
-    globalThis.addEventListener("keydown", onKey);
-    return () => globalThis.removeEventListener("keydown", onKey);
-  }, [producer, submitting, confirming, onCancelConfirm, onClose]);
-
+  // Escape / overlay click close — never mid-send (a dismissal during the
+  // request would strand the admin with no idea whether the email went out),
+  // and from the confirm step they step back to the form first.
   if (!producer) return null;
 
   // The completion path is not terminal, so it sends straight away; only the
@@ -277,14 +263,13 @@ export default function ProducerDecisionModal({
   const handlePrimary = () => (groupOf(value) === REJECT ? onRequestConfirm() : onSubmit());
 
   return (
-    <div className="fixed inset-0 bg-black/40 z-[9000] flex items-center justify-center p-4">
-      <div ref={dialogRef}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="producer-decision-title"
-        className="bg-background rounded-lg p-6 max-w-lg w-full border border-border text-start max-h-[90vh] overflow-y-auto"
-        data-testid="decision-modal"
-      >
+    <Dialog
+      labelledBy="producer-decision-title"
+      size="lg"
+      dismissible={!submitting}
+      onClose={confirming ? onCancelConfirm : onClose}
+      testId="decision-modal"
+    >
         <h2 id="producer-decision-title" className="font-headline-md text-xl font-bold text-text mb-4">
           {t("producers.decision.modal_title", { name: producer.name })}
         </h2>
@@ -304,7 +289,6 @@ export default function ProducerDecisionModal({
             onSubmit={handlePrimary}
           />
         )}
-      </div>
-    </div>
+    </Dialog>
   );
 }

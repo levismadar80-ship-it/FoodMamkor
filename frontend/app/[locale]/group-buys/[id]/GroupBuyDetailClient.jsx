@@ -1,7 +1,7 @@
 "use client";
 
 import SeedBurst from "@/components/brand/SeedBurst";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import * as Sentry from "@sentry/nextjs";
 import { useRouter } from "next/navigation";
 import { Link } from "@/i18n/navigation";
@@ -27,6 +27,7 @@ import api from "@/lib/api";
 import { GroupBuyProducerDeliverySchema } from "@/lib/api-schemas";
 import { SkeletonDetail } from "@/components/Skeleton";
 import Button from "@/components/ui/Button";
+import Dialog from "@/components/ui/Dialog";
 import { shareOrCopyText } from "@/lib/share-link";
 import SectionHeading from "@/components/ui/SectionHeading";
 
@@ -67,19 +68,6 @@ export default function GroupBuyDetailClient({ id }) {
   const [cancelling, setCancelling] = useState(false);
   // MEH-1250: destructive cancel-commitment confirm dialog (replaces native confirm()).
   const [confirmCancelOpen, setConfirmCancelOpen] = useState(false);
-  // MEH-2199: the dialog below declares aria-modal="true" and delivered none of
-  // what that promises — no Escape, no focus trap, no focus-return. A keyboard
-  // user could Tab straight out into the page behind it, which is worse than a
-  // non-modal dialog: the ARIA tells the screen reader the rest of the page is
-  // inert while it is not.
-  const cancelDialogRef = useRef(null);
-  // MEH-2199 follow-up: the focus-return target is captured when the dialog is
-  // OPENED, not read out of document.activeElement inside the effect. Reading
-  // it in the effect is correct under React's current synchronous commit — no
-  // script runs between the click and the effect — but that is a property of
-  // today's scheduler, not of this component. Capturing at the interaction is
-  // what focus-trap-react and react-aria do, and it costs one line.
-  const cancelTriggerRef = useRef(null);
   const [error, setError] = useState("");
   // MEH-2453: the business's delivery data, for «מגיעים אלייך?». Null until
   // fetched and valid; on any failure the checker simply stays away. (The
@@ -163,68 +151,11 @@ export default function GroupBuyDetailClient({ id }) {
     }
   };
 
-  // MEH-2199: the modal keyboard layer, mounted only while the dialog is open.
-  // REUSES: frontend/components/Lightbox.jsx:92-112 — same Escape + Tab-cycle
-  // mechanism, so the two modals on this site behave identically.
-  //
-  // Escape CLOSES and never confirms. MEH-1250 replaced a native
-  // window.confirm() with this dialog precisely so the DELETE stays deliberate;
-  // a key that dismissed and deleted would defeat the ticket that built it.
-  //
-  // Focus-return rides the effect CLEANUP rather than each close path. There
-  // are three ways to close this (Escape, the dismiss button, the overlay), and
-  // hanging a restore off each one is three places to forget. The cleanup runs
-  // whenever `confirmCancelOpen` goes false — or the component unmounts — so it
-  // covers all three and any future fourth by construction.
-  useEffect(() => {
-    if (!confirmCancelOpen) return undefined;
-    const FOCUSABLE =
-      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
-    // Captured at open time by handleCancel; the activeElement read is only a
-    // fallback for a future path that opens the dialog without going through it.
-    // Cleared straight after the read, or that fallback could never fire: the
-    // ref would still hold the PREVIOUS open's trigger and win the ?? every
-    // time, so the documented fallback would be dead by accident rather than
-    // by there being no such path yet.
-    const trigger = cancelTriggerRef.current ?? document.activeElement;
-    cancelTriggerRef.current = null;
-    const focusables = () =>
-      Array.from(cancelDialogRef.current?.querySelectorAll(FOCUSABLE) ?? []);
-    focusables()[0]?.focus();
-
-    const onKey = (e) => {
-      if (e.key === "Escape") {
-        setConfirmCancelOpen(false);
-        return;
-      }
-      if (e.key !== "Tab") return;
-      const els = focusables();
-      if (!els.length) return;
-      const first = els[0];
-      const last = els.at(-1);
-      if (e.shiftKey && document.activeElement === first) {
-        e.preventDefault();
-        last.focus();
-      } else if (!e.shiftKey && document.activeElement === last) {
-        e.preventDefault();
-        first.focus();
-      }
-    };
-    window.addEventListener("keydown", onKey);
-    return () => {
-      window.removeEventListener("keydown", onKey);
-      // document.contains guards the node having been unmounted while the
-      // dialog was open — focusing a detached element silently does nothing and
-      // would leave focus on <body>.
-      if (trigger instanceof HTMLElement && document.contains(trigger)) {
-        trigger.focus();
-      }
-    };
-  }, [confirmCancelOpen]);
+  // MEH-2199 → MEH-3096: the keyboard layer (Tab trap, Escape closes and
+  // never confirms, focus back to the trigger) lives in ui/Dialog.
 
   // MEH-1250: open the confirm modal instead of the native window.confirm().
   const handleCancel = () => {
-    cancelTriggerRef.current = document.activeElement;
     setConfirmCancelOpen(true);
   };
 
@@ -616,26 +547,7 @@ export default function GroupBuyDetailClient({ id }) {
           header (z-1050) + BottomNav (z-1000) on this consumer page; the admin
           feedback-modal idiom (z-50) is unsafe here. */}
       {confirmCancelOpen && (
-        <div
-          className="fixed inset-0 bg-black/40 z-[9500] flex items-center justify-center p-4"
-          onClick={() => setConfirmCancelOpen(false)}
-        >
-          <div
-            ref={cancelDialogRef}
-            // MEH-2199 follow-up: the dialog role belongs on the CARD, not on
-            // the full-screen backdrop it used to sit on. The backdrop covers
-            // the viewport, so declaring it the dialog made the accessible
-            // dialog the whole screen — and put the ARIA boundary on a
-            // different element from the focus trap, which lives on this ref.
-            // Two boundaries that are meant to be one: a focusable control
-            // added between the backdrop and this card would have been inside
-            // the ARIA dialog and outside the trap.
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="gb-cancel-title"
-            className="bg-background rounded-lg p-6 max-w-sm w-full border border-border"
-            onClick={(e) => e.stopPropagation()}
-          >
+        <Dialog labelledBy="gb-cancel-title" size="sm" onClose={() => setConfirmCancelOpen(false)}>
             <h2
               id="gb-cancel-title"
               className="font-headline-md text-lg font-bold text-text mb-4"
@@ -657,8 +569,7 @@ export default function GroupBuyDetailClient({ id }) {
                 {t("cancel_dismiss")}
               </button>
             </div>
-          </div>
-        </div>
+        </Dialog>
       )}
     </>
   );

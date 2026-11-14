@@ -8,6 +8,7 @@ import api from "@/lib/api";
 import { detailToMessage } from "@/lib/errors";
 import { showToast } from "@/lib/toast";
 import { SkeletonTable } from "@/components/Skeleton";
+import Dialog from "@/components/ui/Dialog";
 
 /**
  * Admin recipes moderation queue (MEH-997 seed fix).
@@ -194,12 +195,14 @@ export default function AdminRecipesPage() {
 
       {/* Feedback modal */}
       {modalRecipe && (
-        <div className="fixed inset-0 bg-black/40 z-[9000] flex items-center justify-center p-4">
-          <div
-            data-testid="admin-recipes-feedback-modal"
-            className="bg-background rounded-lg p-6 max-w-lg w-full border border-border"
-          >
-            <h2 className="font-headline-md text-xl font-bold text-text mb-2">
+        <Dialog
+          labelledBy="recipe-feedback-title"
+          size="lg"
+          dismissible={!busy}
+          onClose={closeModal}
+          testId="admin-recipes-feedback-modal"
+        >
+            <h2 id="recipe-feedback-title" className="font-headline-md text-xl font-bold text-text mb-2">
               {modalAction === "changes" ? t("recipes.modal.changes_title") : t("recipes.modal.reject_title")}
             </h2>
             <p className="text-fg-muted text-sm mb-4">
@@ -239,8 +242,7 @@ export default function AdminRecipesPage() {
                 {busy ? t("common.sending") : t("recipes.modal.submit")}
               </button>
             </div>
-          </div>
-        </div>
+        </Dialog>
       )}
     </div>
   );

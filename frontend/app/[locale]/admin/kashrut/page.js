@@ -17,6 +17,7 @@ import InfoTooltip from "@/components/InfoTooltip";
 import { CODE_TO_KEY } from "@/components/KashrutBadgeStrip";
 import { SkeletonTable } from "@/components/Skeleton";
 import Button from "@/components/ui/Button";
+import Dialog from "@/components/ui/Dialog";
 
 function formatDate(iso, locale) {
   if (!iso) return "—";
@@ -329,9 +330,12 @@ export default function AdminKashrutPage() {
 
       {/* MEH-2518: approve modal — the expiry printed on the certificate. */}
       {approveModal && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-[9000] p-4">
-          <div className="bg-surface rounded-lg p-6 w-full max-w-md shadow-xl" dir="rtl">
-            <h2 className="font-semibold text-lg mb-3">{t("kashrut.approve_modal.title")}</h2>
+        <Dialog
+          labelledBy="kashrut-approve-title"
+          dismissible={!busy}
+          onClose={() => setApproveModal(null)}
+        >
+            <h2 id="kashrut-approve-title" className="font-semibold text-lg mb-3">{t("kashrut.approve_modal.title")}</h2>
             <label htmlFor="kashrut-expires-on" className="text-sm font-medium block mb-1.5">
               {t("kashrut.approve_modal.date_label")}
             </label>
@@ -361,15 +365,17 @@ export default function AdminKashrutPage() {
                 {busy ? t("kashrut.approve_modal.submitting") : t("kashrut.approve_modal.submit")}
               </Button>
             </div>
-          </div>
-        </div>
+        </Dialog>
       )}
 
       {/* MEH-2518: revoke modal — takes an approved badge down. */}
       {revokeModal && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-[9000] p-4">
-          <div className="bg-surface rounded-lg p-6 w-full max-w-md shadow-xl" dir="rtl">
-            <h2 className="font-semibold text-lg mb-3">{t("kashrut.revoke_modal.title")}</h2>
+        <Dialog
+          labelledBy="kashrut-revoke-title"
+          dismissible={!busy}
+          onClose={() => setRevokeModal(null)}
+        >
+            <h2 id="kashrut-revoke-title" className="font-semibold text-lg mb-3">{t("kashrut.revoke_modal.title")}</h2>
             <p className="text-sm text-fg-muted mb-3">{t("kashrut.revoke_modal.body")}</p>
             <textarea
               value={revokeNotes}
@@ -392,15 +398,17 @@ export default function AdminKashrutPage() {
                 {busy ? t("kashrut.revoke_modal.submitting") : t("kashrut.revoke_modal.submit")}
               </button>
             </div>
-          </div>
-        </div>
+        </Dialog>
       )}
 
       {/* Reject modal */}
       {rejectModal && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-[9000] p-4">
-          <div className="bg-surface rounded-lg p-6 w-full max-w-md shadow-xl" dir="rtl">
-            <h2 className="font-semibold text-lg mb-3">{t("kashrut.reject_modal.title")}</h2>
+        <Dialog
+          labelledBy="kashrut-reject-title"
+          dismissible={!busy}
+          onClose={() => setRejectModal(null)}
+        >
+            <h2 id="kashrut-reject-title" className="font-semibold text-lg mb-3">{t("kashrut.reject_modal.title")}</h2>
             <textarea
               value={rejectNotes}
               onChange={(e) => setRejectNotes(e.target.value)}
@@ -422,8 +430,7 @@ export default function AdminKashrutPage() {
                 {busy ? t("kashrut.reject_modal.submitting") : t("kashrut.reject_modal.submit")}
               </button>
             </div>
-          </div>
-        </div>
+        </Dialog>
       )}
     </div>
   );

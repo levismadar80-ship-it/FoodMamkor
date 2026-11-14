@@ -1,7 +1,7 @@
 // @ts-check
 "use client";
 
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 import useDialogFocus, { useDialogEscape } from "@/hooks/useDialogFocus";
 
 /**
@@ -21,6 +21,9 @@ import useDialogFocus, { useDialogEscape } from "@/hooks/useDialogFocus";
  * History:  MEH-3093 (the contract, per dialog); MEH-3096 (this shell —
  *           13/11/2026, 28 hand-built overlays before it).
  *
+ * `fallbackFocus` returns the element to focus on close when the opener is
+ * gone (e.g. its row was removed). The page behind does not scroll while open.
+ *
  * Mark the safe button `data-autofocus` («ביטול»), so Enter never confirms a
  * destructive action by accident.
  *
@@ -35,6 +38,7 @@ import useDialogFocus, { useDialogEscape } from "@/hooks/useDialogFocus";
  *   onSubmit?: (e: any) => void,
  *   className?: string,
  *   testId?: string,
+ *   fallbackFocus?: () => HTMLElement | null | undefined,
  *   children?: any,
  * }} props
  */
@@ -49,11 +53,21 @@ export default function Dialog({
   onSubmit,
   className = "",
   testId,
+  fallbackFocus,
   children,
 }) {
   const ref = useRef(null);
-  useDialogFocus(ref, open);
+  useDialogFocus(ref, open, fallbackFocus);
   useDialogEscape(open && dismissible, onClose);
+  // The page behind a modal does not scroll (same as Radix / Headless UI).
+  useEffect(() => {
+    if (!open) return undefined;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [open]);
   if (!open) return null;
 
   const dismiss = () => {
@@ -62,6 +76,7 @@ export default function Dialog({
   const Panel = as;
   return (
     <div
+      role="presentation"
       className="fixed inset-0 z-[9000] flex items-center justify-center bg-black/40 p-4"
       onClick={(e) => {
         if (e.target === e.currentTarget) dismiss();

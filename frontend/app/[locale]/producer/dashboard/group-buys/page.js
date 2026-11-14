@@ -23,7 +23,7 @@ import BackLink from "@/components/ui/BackLink";
 // MEH-1640: shared status colours across the four tools spokes.
 import { STATUS_CLASSES } from "@/lib/dashboard-status-classes";
 // MEH-2491: focus trap + return for the confirm dialog (shared with ProductsSection).
-import useDialogFocus from "@/hooks/useDialogFocus";
+import Dialog from "@/components/ui/Dialog";
 import { GroupBuyStatusResultSchema, OwnerGroupBuySchema } from "@/lib/api-schemas";
 import { SkeletonList } from "@/components/Skeleton";
 import Button from "@/components/ui/Button";
@@ -344,33 +344,23 @@ function ownerActions(gb, deadlinePassed) {
 // when it closes (useDialogFocus).
 function GroupBuyActionDialog({ pending, busy, stale, error, onConfirm, onClose }) {
   const t = useTranslations("group_buys.dashboard.actions");
-  const dialogRef = useRef(null);
   // A confirmed cancel/deliver ends in a state with no action row, so the
   // button that opened this is gone by close time; focus goes to its card.
-  useDialogFocus(dialogRef, true, () =>
-    document.querySelector(`[data-group-buy-card="${CSS.escape(String(pending.gb.id))}"]`),
-  );
-
-  useEffect(() => {
-    const onKey = (e) => {
-      if (e.key === "Escape" && !busy) onClose();
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [busy, onClose]);
+  const cardFallback = () =>
+    document.querySelector(`[data-group-buy-card="${CSS.escape(String(pending.gb.id))}"]`);
 
   const { gb, action } = pending;
   const destructive = action !== "deliver";
   return (
-    <div className="fixed inset-0 z-[9000] flex items-center justify-center bg-black/40 px-4">
-      <div
-        ref={dialogRef}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="group-buy-action-title"
-        data-testid="group-buy-action-dialog"
-        className="bg-surface rounded-lg shadow-xl p-6 max-w-sm w-full text-start space-y-3"
-      >
+    <Dialog
+      labelledBy="group-buy-action-title"
+      size="sm"
+      dismissible={!busy}
+      onClose={onClose}
+      fallbackFocus={cardFallback}
+      testId="group-buy-action-dialog"
+      className="space-y-3"
+    >
         <p id="group-buy-action-title" className="font-medium text-base text-text">
           {t(`${action}_title`)}
         </p>
@@ -411,8 +401,7 @@ function GroupBuyActionDialog({ pending, busy, stale, error, onConfirm, onClose 
             {t("back")}
           </button>
         </div>
-      </div>
-    </div>
+    </Dialog>
   );
 }
 

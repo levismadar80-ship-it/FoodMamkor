@@ -846,8 +846,17 @@ Every modal (`aria-modal="true"`) keeps one contract: an accessible name
 (`aria-label` / `aria-labelledby`), focus moves in, Tab stays inside and focus
 returns to what opened it (`hooks/useDialogFocus.js`; mark the safe button
 `data-autofocus`), and Escape closes it (each dialog owns its Escape rule, e.g.
-not mid-request). `DialogContractGuard.test.js` enforces it. One shared
-`Dialog` component for the look (overlay, radius, close button) is post-launch.
+not mid-request). `DialogContractGuard.test.js` enforces it.
+
+**One shell (MEH-3096).** A centred modal is `components/ui/Dialog.jsx`:
+`bg-black/40` scrim at `z-[9000]`, `rounded-xl` `bg-surface` panel (`sm` /
+`md` / `lg` widths, `max-h-[90dvh]` scroll), the focus contract above, a body
+scroll lock, backdrop + Escape dismiss unless `dismissible={false}` (pass it
+while a request is in flight), and `as="form"` for a dialog that submits. The
+guard fails on a new hand-built centred overlay; the four that stay on their
+own shell (LoginPromptModal interrupt tier, Lightbox, ProductsSection's
+confirms, and the phone bottom sheets) are listed with their reason in
+`OVERLAY_OWNERS`.
 
 ## Interactive sizing minimums
 
