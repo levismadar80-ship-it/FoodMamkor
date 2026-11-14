@@ -6133,6 +6133,7 @@
       "thanks": "Thank you! Your review is saved."
     },
     "errors": {
+      "unverified": "Please verify your email address first.",
       "blocked": "Reservations are blocked after two no-shows. Please write to us.",
       "sold_out": "That bag is gone. There are others nearby.",
       "max_two": "You can reserve up to two bags.",

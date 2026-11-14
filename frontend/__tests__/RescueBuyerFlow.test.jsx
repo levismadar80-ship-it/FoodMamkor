@@ -591,6 +591,21 @@ describe("every error the API actually returns", () => {
     expect(err.textContent).toBe(lookup(key));
   });
 
+  it("403 email_unverified → the resend notice with the reserve wording (MEH-3225)", async () => {
+    reserveBag.mockRejectedValue({
+      response: {
+        status: 403,
+        data: { detail: { code: "email_unverified", message: "יש לאמת את כתובת האימייל תחילה" } },
+      },
+    });
+    render(<RescueSection producer={PRODUCER} />);
+    fireEvent.click(await screen.findByTestId("rescue-reserve"));
+    const notice = await screen.findByTestId("unverified-email-notice");
+    expect(notice.textContent).toContain(lookup("rescue.errors.unverified"));
+    expect(notice.textContent).not.toContain(lookup("auth.verify.publish_gate"));
+    expect(screen.queryByTestId("rescue-section-error")).toBeNull();
+  });
+
   it("the block message is the backend's string, verbatim", () => {
     // If these two ever diverge the buyer is told one thing by the API and
     // another by the page. routers/rescue.py BLOCKED_DETAIL is the source.
