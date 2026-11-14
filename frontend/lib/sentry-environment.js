@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Module:   sentry-environment
  * Purpose:  Label every Sentry event with where it really ran.
@@ -27,15 +28,28 @@ export function clientSentryEnvironment(hostname) {
   return "development";
 }
 
-/** Server / edge: decide by Vercel's own deployment environment and branch. */
-export function serverSentryEnvironment(vercelEnv, gitRef) {
+/**
+ * Server / edge: decide by Vercel's own deployment environment and branch.
+ * VERCEL_ENV missing (system env vars not exposed, or not on Vercel) falls
+ * back to the old NODE_ENV label, so production is never relabelled.
+ */
+export function serverSentryEnvironment(vercelEnv, gitRef, nodeEnv) {
   if (vercelEnv === "production") return "production";
-  if (gitRef === "staging") return "staging";
-  if (vercelEnv === "preview") return "preview";
-  return "development";
+  if (vercelEnv === "preview") return gitRef === "staging" ? "staging" : "preview";
+  if (vercelEnv === "development") return "development";
+  return nodeEnv === "production" ? "production" : "development";
 }
 
 /** True when the browser is driven by automation (navigator.webdriver). */
 export function isAutomatedBrowser(nav) {
   return Boolean(nav && nav.webdriver === true);
+}
+
+/**
+ * Browser beforeSend / beforeSendTransaction guard: true = do not send.
+ * Local dev and automated browsers (our E2E runs and QA probes) send nothing,
+ * errors or traces.
+ */
+export function shouldDropClientEvent(nodeEnv, nav) {
+  return nodeEnv === "development" || isAutomatedBrowser(nav);
 }

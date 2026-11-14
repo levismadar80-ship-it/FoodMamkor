@@ -12,7 +12,7 @@ if (dsn) {
     // Where the code runs, not NODE_ENV (which is "production" on staging too).
     environment:
       process.env.SENTRY_ENV ||
-      serverSentryEnvironment(process.env.VERCEL_ENV, process.env.VERCEL_GIT_COMMIT_REF),
+      serverSentryEnvironment(process.env.VERCEL_ENV, process.env.VERCEL_GIT_COMMIT_REF, process.env.NODE_ENV),
     // MEH-2887: 0.1 in production, 0.01 on staging / previews (span quota).
     tracesSampleRate: serverTracesSampleRate(process.env.VERCEL_ENV),
     // MEH-2324: the owner-claim link is a bearer credential in its path

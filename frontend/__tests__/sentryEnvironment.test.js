@@ -9,6 +9,7 @@ import {
   clientSentryEnvironment,
   serverSentryEnvironment,
   isAutomatedBrowser,
+  shouldDropClientEvent,
 } from "@/lib/sentry-environment";
 
 describe("Sentry environment label", () => {
@@ -21,18 +22,38 @@ describe("Sentry environment label", () => {
     expect(clientSentryEnvironment("")).toBe("development");
   });
 
-  it("server / edge: production only when VERCEL_ENV is production", () => {
-    expect(serverSentryEnvironment("production", "main")).toBe("production");
-    expect(serverSentryEnvironment("preview", "staging")).toBe("staging");
-    expect(serverSentryEnvironment("preview", "feature/meh-1-x")).toBe("preview");
-    expect(serverSentryEnvironment("preview", undefined)).toBe("preview");
-    expect(serverSentryEnvironment(undefined, undefined)).toBe("development");
+  it("server / edge: by VERCEL_ENV, staging by branch", () => {
+    expect(serverSentryEnvironment("production", "main", "production")).toBe("production");
+    expect(serverSentryEnvironment("production", "staging", "production")).toBe("production");
+    expect(serverSentryEnvironment("preview", "staging", "production")).toBe("staging");
+    expect(serverSentryEnvironment("preview", "feature/meh-1-x", "production")).toBe("preview");
+    expect(serverSentryEnvironment("preview", undefined, "production")).toBe("preview");
+    expect(serverSentryEnvironment("development", undefined, "development")).toBe("development");
+  });
+
+  it("server / edge: VERCEL_ENV not exposed keeps the old NODE_ENV label (production never relabelled)", () => {
+    expect(serverSentryEnvironment(undefined, undefined, "production")).toBe("production");
+    expect(serverSentryEnvironment(undefined, undefined, "development")).toBe("development");
+    expect(serverSentryEnvironment(undefined, undefined, undefined)).toBe("development");
+  });
+
+  it("browser: lookalike hosts are not production", () => {
+    for (const h of ["evilmehamakor.co.il", "mehamakor.co.il.evil.com", "mehamakor.co.il."]) {
+      expect(clientSentryEnvironment(h)).not.toBe("production");
+    }
   });
 
   it("an automated browser (navigator.webdriver) is recognised", () => {
     expect(isAutomatedBrowser({ webdriver: true })).toBe(true);
     expect(isAutomatedBrowser({ webdriver: false })).toBe(false);
     expect(isAutomatedBrowser(undefined)).toBe(false);
+  });
+
+  it("client guard drops dev and automated browsers, keeps real users", () => {
+    expect(shouldDropClientEvent("production", { webdriver: true })).toBe(true);
+    expect(shouldDropClientEvent("development", { webdriver: false })).toBe(true);
+    expect(shouldDropClientEvent("production", { webdriver: false })).toBe(false);
+    expect(shouldDropClientEvent("production", undefined)).toBe(false);
   });
 
   it("all three Sentry inits use the helpers, none NODE_ENV for the environment", () => {
@@ -42,6 +63,8 @@ describe("Sentry environment label", () => {
       expect(src, f).not.toMatch(/environment:[^\n]*NODE_ENV/);
     }
     const client = readFileSync(path.resolve(__dirname, "..", "instrumentation-client.js"), "utf8");
-    expect(client).toMatch(/isAutomatedBrowser\(/);
+    // Both errors and transactions go through the guard.
+    expect(client).toMatch(/beforeSend\(event\) \{\s*\/\/[^\n]*\n\s*\/\/[^\n]*\n\s*if \(shouldDropClientEvent\(/);
+    expect(client).toMatch(/beforeSendTransaction: \(event\) =>\s*shouldDropClientEvent\(/);
   });
 });

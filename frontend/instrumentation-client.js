@@ -8,7 +8,9 @@
 import * as Sentry from "@sentry/nextjs";
 import { scrubClaimTokens } from "./lib/claim-token";
 import { clientTracesSampleRate } from "./lib/sentry-sampling";
-import { clientSentryEnvironment, isAutomatedBrowser } from "./lib/sentry-environment";
+import { clientSentryEnvironment, shouldDropClientEvent } from "./lib/sentry-environment";
+
+const currentNavigator = () => (typeof navigator !== "undefined" ? navigator : undefined);
 
 const dsn = process.env.NEXT_PUBLIC_SENTRY_DSN;
 
@@ -40,15 +42,15 @@ if (dsn) {
           }),
         ],
     beforeSend(event) {
-      if (process.env.NODE_ENV === "development") return null;
-      // Our own E2E runs and QA probes (Playwright) stub API failures on
-      // purpose; their events are noise, not user errors.
-      if (typeof navigator !== "undefined" && isAutomatedBrowser(navigator)) return null;
+      // Local dev, and our own E2E runs / QA probes (navigator.webdriver),
+      // which stub API failures on purpose: noise, not user errors.
+      if (shouldDropClientEvent(process.env.NODE_ENV, currentNavigator())) return null;
       // MEH-2324: the owner-claim link is a bearer credential in its path
       // (/claim/<token>). Redact it from the URL, breadcrumbs and context.
       return scrubClaimTokens(event);
     },
-    beforeSendTransaction: (event) => scrubClaimTokens(event),
+    beforeSendTransaction: (event) =>
+      shouldDropClientEvent(process.env.NODE_ENV, currentNavigator()) ? null : scrubClaimTokens(event),
   });
 }
 
