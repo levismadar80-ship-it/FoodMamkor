@@ -104,7 +104,9 @@ def _tombstone_counts(
         .filter(User.id.in_(user_ids), User.email.isnot(None))
         .all()
     )
-    by_hash = {email_hash(str(email)): (uid, cleared) for uid, email, cleared in users}
+    by_hash: dict[str, list[tuple[Any, Any]]] = {}
+    for uid, email, cleared in users:
+        by_hash.setdefault(email_hash(str(email)), []).append((uid, cleared))
     if not by_hash:
         return {}
     stones = (
@@ -117,9 +119,9 @@ def _tombstone_counts(
     )
     out: dict[Any, int] = {}
     for h, pickup_end in stones:
-        uid, cleared = by_hash[h]
-        if cleared is None or pickup_end > cleared:
-            out[uid] = out.get(uid, 0) + 1
+        for uid, cleared in by_hash[h]:
+            if cleared is None or pickup_end > cleared:
+                out[uid] = out.get(uid, 0) + 1
     return out
 
 

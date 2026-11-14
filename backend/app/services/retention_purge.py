@@ -58,8 +58,8 @@ from app.models.models import (
     ProducerPageView,
     ProducerWhatsAppClick,
     Registration,
+    RescueNoShowTombstone,
 )
-from app.models.rescue_no_show_tombstone import RescueNoShowTombstone
 from app.services.rescue_no_show import NO_SHOW_WINDOW_DAYS
 from app.services.analytics_rollup import RAW_RETENTION_DAYS, rollup_watermark
 from app.utils.clock import ISRAEL_TZ, israel_today

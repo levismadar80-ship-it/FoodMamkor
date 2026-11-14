@@ -22,7 +22,9 @@ Expand-only per ADR-007: a new, empty table no existing read path depends on
 — the previous container keeps serving unchanged while this runs. No
 backfill: accounts deleted before this revision left nothing to hash.
 
-Adds one table → EXPECTED_TABLES 50 -> 51 (pr-checks.yml).
+Adds one table → EXPECTED_TABLES 50 -> 51 (pr-checks.yml). The model lives in
+models.py on purpose: scripts/ci/backup-restore-verify.sh derives its table
+list from that file alone.
 
 downgrade() drops the table — the block is forgotten on deletion again,
 which is the pre-MEH-3225 state.

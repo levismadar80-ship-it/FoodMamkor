@@ -69,10 +69,27 @@ def test_a_new_account_with_the_same_email_is_still_blocked(client, db, shop, re
     assert r.status_code == 422, r.text
 
 
-def test_case_and_spaces_do_not_lift_it(client, db, shop, rescue_on):
+def test_case_does_not_lift_it(client, db, shop, rescue_on):
     _delete_with_two_no_shows(client, db, shop)
     again = make_user(db, email="Gone@Example.com")
     assert active_no_show_counts(db, [again.id]) == {again.id: 2}
+
+
+def test_the_hash_ignores_case_and_outer_spaces():
+    assert email_hash("  Gone@Example.COM ") == email_hash(EMAIL)
+    assert email_hash("other@example.com") != email_hash(EMAIL)
+
+
+def test_the_admin_delete_door_keeps_them_too(client, db, shop, rescue_on):
+    old = make_user(db, email=EMAIL)
+    _no_show(db, shop, old, "0001")
+    _no_show(db, shop, old, "0002")
+    admin = make_user(db, email="admin@example.com", role="admin")
+    r = client.delete(f"/admin/users/{old.id}", headers=auth_header(admin))
+    assert r.status_code in (200, 204), r.text
+    db.expire_all()
+    again = make_user(db, email=EMAIL)
+    assert _reserve(client, db, shop, again).status_code == 422
 
 
 def test_another_email_is_not_blocked(client, db, shop, rescue_on):

@@ -36,6 +36,7 @@ from app.models.models import (
     RESCUE_MAX_QTY_PER_ORDER,
     RESCUE_OFFER_STATUSES,
     RESCUE_ORDER_STATUSES,
+    RescueNoShowTombstone,
     RescueOffer,
     RescueOrder,
     RescueReview,
@@ -47,7 +48,6 @@ from app.models.models import (
     StaticPage,
     User,
 )
-from app.models.rescue_no_show_tombstone import RescueNoShowTombstone  # MEH-3225
 
 __all__ = [
     "Producer",
