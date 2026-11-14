@@ -5689,9 +5689,12 @@
         "confirm_email_label": "Type your email to confirm",
         "submit_cta": "Confirm deletion",
         "submit_deleting": "Deleting…",
-        "grace_heading": "Deletion request received",
-        "grace_body": "Your account will be disconnected within 30 days. Until then, you can cancel the request by logging in again.",
-        "back_to_login": "Back to login"
+        "business_warning": "Deleting your account also deletes {name}: the page, products, events, reviews and photos. Open group buys will be cancelled and participants notified. The page address will not be reused. This cannot be undone.",
+        "pause_offer": "Just need a break? Switch to \"On break\" until a date you choose. Your page stays up, marked as on break, and is hidden from search until you return.",
+        "pause_cta": "Go on break",
+        "admin_blocked": "A system admin account can't be deleted from here. Another admin must first remove its admin permission.",
+        "super_admin_blocked": "This is the site's main account and it can't be deleted.",
+        "reauth_prompt": "To confirm the deletion, sign in again with {provider}."
       }
     }
   },
@@ -6819,5 +6822,9 @@
       "stay_body": "No paid tools and nothing to pay. Your page stays on the site, as it is today.",
       "cta": "Join, free"
     }
+  },
+  "account_deleted": {
+    "heading": "Account deleted",
+    "body": "Your account has been deleted, along with your profile, favorites and the reviews you wrote. A confirmation email is on its way."
   }
 }

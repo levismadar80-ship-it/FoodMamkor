@@ -1,6 +1,37 @@
 {
   "components": {
     "schemas": {
+      "AccountDeleteRequest": {
+        "description": "Body of POST /auth/me/delete. A session alone is not enough to delete\nan account (D15, same threat as MEH-3104's email change): an account with\na password sends it; an account that signs in only with Google or Apple\nsends a fresh id_token from that provider.",
+        "properties": {
+          "id_token": {
+            "anyOf": [
+              {
+                "maxLength": 8192,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Id Token"
+          },
+          "password": {
+            "anyOf": [
+              {
+                "maxLength": 256,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Password"
+          }
+        },
+        "title": "AccountDeleteRequest",
+        "type": "object"
+      },
       "AdminChecklistItemIn": {
         "description": "One item in a full-list PUT.\n\n`id` is optional: present = update that row, absent = create a new item.\nThat is what lets the settings screen add, edit and reorder in one request\nwithout a separate POST — the admin drags three rows and saves once.\n\nThere is deliberately NO delete. Retirement is `active: false`, and the DB\nenforces it (`producer_review_checks.item_id` is ON DELETE RESTRICT), so a\ndelete endpoint would only ever produce a 500 on any item with history.",
         "properties": {
@@ -15307,9 +15338,25 @@
             "title": "Is Producer",
             "type": "boolean"
           },
+          "is_super_admin": {
+            "default": false,
+            "title": "Is Super Admin",
+            "type": "boolean"
+          },
           "name": {
             "title": "Name",
             "type": "string"
+          },
+          "oauth_provider": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Oauth Provider"
           },
           "phone": {
             "anyOf": [
@@ -19999,29 +20046,6 @@
       }
     },
     "/auth/me": {
-      "delete": {
-        "description": "Delete user account and all associated data.\n\nRequired by Apple App Store Guidelines; also closes the GDPR /\nחוק הגנת הפרטיות gap in MEH-249 — before this fix, a producer who\ndeleted her account left the Producer row behind in the public\ndirectory (the /producers list, /map, and search), with reviews,\nfollowers, and page-view analytics still referencing her.\n\nNow, if the user owns a Producer, that Producer is hard-deleted\nbefore the user row. Producer-linked tables cascade via the FKs\ndefined in models.py (all have ondelete=CASCADE):\n  - ProducerCategory, DeliveryArea, Product\n  - ProducerReview, Favorite\n  - ProducerPageView, ProducerWhatsAppClick\n  - Report (on producer), Event, Experience\n\nMEH-1150: the user's ProducerReview rows on THIRD-PARTY businesses also\ncascade on the user delete. Those businesses' denormalized avg_rating /\nreviews_count (maintained only in reviews.py) are recomputed after the\ndeletion commits so they don't keep counting reviews that no longer exist.",
-        "operationId": "delete_account_auth_me_delete",
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            },
-            "description": "Successful Response"
-          }
-        },
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ],
-        "summary": "Delete Account",
-        "tags": [
-          "auth"
-        ]
-      },
       "get": {
         "description": "Return current user, enriched with producer status/rejection_reason.",
         "operationId": "get_me_auth_me_get",
@@ -20043,6 +20067,51 @@
           }
         ],
         "summary": "Get Me",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/auth/me/delete": {
+      "post": {
+        "description": "Delete user account and all associated data.\n\nMEH-3248: refused for admin accounts (account_guards.assert_deletable,\nchecked first), then the caller proves she owns the account: password, or\na fresh Google/Apple id_token for an account without one\n(account_guards.verify_deletion_credentials).\n\nRequired by Apple App Store Guidelines; also closes the GDPR /\nחוק הגנת הפרטיות gap in MEH-249 — before this fix, a producer who\ndeleted her account left the Producer row behind in the public\ndirectory (the /producers list, /map, and search), with reviews,\nfollowers, and page-view analytics still referencing her.\n\nNow, if the user owns a Producer, that Producer is hard-deleted\nbefore the user row. Producer-linked tables cascade via the FKs\ndefined in models.py (all have ondelete=CASCADE):\n  - ProducerCategory, DeliveryArea, Product\n  - ProducerReview, Favorite\n  - ProducerPageView, ProducerWhatsAppClick\n  - Report (on producer), Event, Experience\n\nMEH-1150: the user's ProducerReview rows on THIRD-PARTY businesses also\ncascade on the user delete. Those businesses' denormalized avg_rating /\nreviews_count (maintained only in reviews.py) are recomputed after the\ndeletion commits so they don't keep counting reviews that no longer exist.",
+        "operationId": "delete_account_auth_me_delete_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AccountDeleteRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Delete Account",
         "tags": [
           "auth"
         ]

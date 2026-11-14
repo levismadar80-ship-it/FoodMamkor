@@ -800,9 +800,9 @@ via `slowapi` — see `backend/app/rate_limit.py` and
 > declares the inherited field; the route refuses it. No schema change.
 >
 > **MEH-2503 — deleting a business or an account with group buys.** `DELETE
-> /admin/producers/{id}` and the owner's `DELETE /auth/me` first run the same
+> /admin/producers/{id}` and the owner's `POST /auth/me/delete` first run the same
 > cancel + delisted email on the business's `open` / `funded` group buys, then
-> the DB cascade removes them. A participant's `DELETE /auth/me` removes her
+> the DB cascade removes them. A participant's `POST /auth/me/delete` removes her
 > commits (DB cascade) and reverts any `funded` group that drops below
 > `min_participants` to `open`, as leaving does
 > (`group_buy_delist.withdraw_user_commits`). Before this all three deletes
@@ -834,7 +834,7 @@ POST   /auth/login               public  — email+password → JWT (no policy v
 GET    /auth/me                  auth    — current user; producer_kind (MEH-2460) beside producer_status
 POST   /auth/google              public  — Google OAuth ID token exchange
 POST   /auth/apple               public  — Apple Sign In ID token (App Store)
-DELETE /auth/me                  auth    — account deletion (App Store)
+POST   /auth/me/delete           auth    — account deletion (App Store). MEH-3248: 403 for admins / super-admin (account_guards.assert_deletable); body {password} or, for an account without one, {id_token} — a Google/Apple token for THIS account, issued ≤5 min ago; 5/hour. Replaces the bodyless DELETE /auth/me (removed)
 POST   /auth/check-password      public  — MEH-306 stateless policy preview (30/min/IP), no DB write
 POST   /auth/forgot-password     public  — MEH-306: 10/15min IP + 5/15min email
 POST   /auth/reset-password      public  — MEH-306: 10/15min IP, full policy + reuse check, stamps password_changed_at
@@ -1354,7 +1354,7 @@ DELETE /admin/home-products/{id}               admin
 GET    /admin/users                            admin — search
 PUT    /admin/users/{id}/role                  admin
 POST   /admin/users/{id}/block                 admin
-DELETE /admin/users/{id}                       admin — hard delete + same cascade as DELETE /auth/me, no email; 403 on admins/super-admin, 400 on self (MEH-2585)
+DELETE /admin/users/{id}                       admin — hard delete + same cascade as POST /auth/me/delete, no email; 403 on admins/super-admin, 400 on self (MEH-2585)
 GET    /admin/users/{id}/favorites             admin
 
 # Content
@@ -1746,7 +1746,7 @@ See [DEPLOYMENT.md](./DEPLOYMENT.md) §1 for the full setup matrix.
 
 ## Apple App Store compliance
 
-- `DELETE /auth/me` — deletes the user row + cascaded rows (favorites,
+- `POST /auth/me/delete` (MEH-3248; was `DELETE /auth/me`) — after the password / provider re-check, deletes the user row + cascaded rows (favorites,
   home_products, home_product_ratings, producer_reviews, experiences,
   group_buy_commits — MEH-2503).
   Events hosted by the user's producer are NOT

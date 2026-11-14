@@ -3,6 +3,7 @@
   "routes": [
     "about",
     "accessibility",
+    "account-deleted",
     "admin",
     "business-gone",
     "claim",

@@ -40,7 +40,7 @@ from app.rate_limit import limiter
 # boundary, but the alternative is duplicating refresh + fingerprint
 # cookie attributes — the single-source-of-truth wins. Future refactor:
 # move both helpers to app/auth_cookies.py.
-from app.routers.admin_extra import is_super_admin  # MEH-3104
+from app.services.account_guards import is_super_admin  # MEH-3104, MEH-3248
 from app.routers.auth import _set_fingerprint_cookie, _set_refresh_cookie
 from app.schemas.schemas import PasswordChange, ProfileUpdate, UserOut
 from app.services.auth_emails import send_verify_email

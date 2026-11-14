@@ -82,7 +82,7 @@ def test_deleting_the_account_deletes_its_saves(client, db):
     _save(db, keeper, "recipe")
     user_id = user.id
 
-    resp = client.delete("/auth/me", headers=auth_header(user))
+    resp = client.post("/auth/me/delete", json={"password": "Zx7Yp9Mq2Lr4"}, headers=auth_header(user))
     assert resp.status_code == 200, resp.text
 
     db.expire_all()

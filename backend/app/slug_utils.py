@@ -38,6 +38,8 @@ RESERVED_SLUGS: frozenset[str] = frozenset(
         "organizers",
         # MEH-2576: the frontend rewrites a deleted business's URL here.
         "business-gone",
+        # MEH-3248: the confirmation page after an account deletion.
+        "account-deleted",
         # Admin
         "admin",
         # Content/legal

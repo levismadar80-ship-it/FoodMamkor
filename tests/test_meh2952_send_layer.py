@@ -408,7 +408,7 @@ def test_group_own_auth_account_deletion_reads_the_flag_before_the_row_goes(
     user.is_test = is_test
     db.commit()
 
-    r = client.delete("/auth/me", headers=auth_header(user))
+    r = client.post("/auth/me/delete", json={"password": "Zx7Yp9Mq2Lr4"}, headers=auth_header(user))
 
     assert r.status_code == 200, r.text
     assert _to(transport.emails) == ([] if is_test else ["leaving@sample.co.il"])

@@ -2859,7 +2859,44 @@ export const LogoutAllDevicesAuthLogoutAllDevicesPostResponse = /*#__PURE__*/ zo
 
 
 /**
+ * Return current user, enriched with producer status/rejection_reason.
+ * @summary Get Me
+ */
+export const getMeAuthMeGetResponseEmailVerifiedDefault = false;
+export const getMeAuthMeGetResponseIsOauthDefault = false;
+export const getMeAuthMeGetResponseIsProducerDefault = false;
+export const getMeAuthMeGetResponseIsSuperAdminDefault = false;
+export const getMeAuthMeGetResponseProducerResubmissionCountDefault = 0;
+
+export const GetMeAuthMeGetResponse = /*#__PURE__*/ zod.object({
+  "avatar_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "city": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "email": /*#__PURE__*/ zod.string(),
+  "email_verified": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), getMeAuthMeGetResponseEmailVerifiedDefault),
+  "id": /*#__PURE__*/ zod.uuid(),
+  "is_oauth": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), getMeAuthMeGetResponseIsOauthDefault),
+  "is_producer": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), getMeAuthMeGetResponseIsProducerDefault),
+  "is_super_admin": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), getMeAuthMeGetResponseIsSuperAdminDefault),
+  "name": /*#__PURE__*/ zod.string(),
+  "oauth_provider": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "phone": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "producer_id": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.uuid(),/*#__PURE__*/ zod.null()])),
+  "producer_kind": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "producer_rejection_reason": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "producer_rejection_reason_code": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "producer_resubmission_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), getMeAuthMeGetResponseProducerResubmissionCountDefault),
+  "producer_status": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "role": /*#__PURE__*/ zod.string()
+})
+
+
+/**
  * Delete user account and all associated data.
+ *
+ * MEH-3248: refused for admin accounts (account_guards.assert_deletable,
+ * checked first), then the caller proves she owns the account: password, or
+ * a fresh Google/Apple id_token for an account without one
+ * (account_guards.verify_deletion_credentials).
  *
  * Required by Apple App Store Guidelines; also closes the GDPR /
  * חוק הגנת הפרטיות gap in MEH-249 — before this fix, a producer who
@@ -2881,36 +2918,7 @@ export const LogoutAllDevicesAuthLogoutAllDevicesPostResponse = /*#__PURE__*/ zo
  * deletion commits so they don't keep counting reviews that no longer exist.
  * @summary Delete Account
  */
-export const DeleteAccountAuthMeDeleteResponse = /*#__PURE__*/ zod.unknown()
-
-
-/**
- * Return current user, enriched with producer status/rejection_reason.
- * @summary Get Me
- */
-export const getMeAuthMeGetResponseEmailVerifiedDefault = false;
-export const getMeAuthMeGetResponseIsOauthDefault = false;
-export const getMeAuthMeGetResponseIsProducerDefault = false;
-export const getMeAuthMeGetResponseProducerResubmissionCountDefault = 0;
-
-export const GetMeAuthMeGetResponse = /*#__PURE__*/ zod.object({
-  "avatar_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
-  "city": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
-  "email": /*#__PURE__*/ zod.string(),
-  "email_verified": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), getMeAuthMeGetResponseEmailVerifiedDefault),
-  "id": /*#__PURE__*/ zod.uuid(),
-  "is_oauth": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), getMeAuthMeGetResponseIsOauthDefault),
-  "is_producer": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), getMeAuthMeGetResponseIsProducerDefault),
-  "name": /*#__PURE__*/ zod.string(),
-  "phone": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
-  "producer_id": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.uuid(),/*#__PURE__*/ zod.null()])),
-  "producer_kind": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
-  "producer_rejection_reason": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
-  "producer_rejection_reason_code": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
-  "producer_resubmission_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), getMeAuthMeGetResponseProducerResubmissionCountDefault),
-  "producer_status": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
-  "role": /*#__PURE__*/ zod.string()
-})
+export const DeleteAccountAuthMeDeletePostResponse = /*#__PURE__*/ zod.unknown()
 
 
 /**
@@ -6811,6 +6819,7 @@ export const UploadOwnerPhotoUploadOwnerPhotoPostResponse = /*#__PURE__*/ zod.un
 export const updateProfileUsersMePatchResponseEmailVerifiedDefault = false;
 export const updateProfileUsersMePatchResponseIsOauthDefault = false;
 export const updateProfileUsersMePatchResponseIsProducerDefault = false;
+export const updateProfileUsersMePatchResponseIsSuperAdminDefault = false;
 export const updateProfileUsersMePatchResponseProducerResubmissionCountDefault = 0;
 
 export const UpdateProfileUsersMePatchResponse = /*#__PURE__*/ zod.object({
@@ -6821,7 +6830,9 @@ export const UpdateProfileUsersMePatchResponse = /*#__PURE__*/ zod.object({
   "id": /*#__PURE__*/ zod.uuid(),
   "is_oauth": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), updateProfileUsersMePatchResponseIsOauthDefault),
   "is_producer": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), updateProfileUsersMePatchResponseIsProducerDefault),
+  "is_super_admin": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), updateProfileUsersMePatchResponseIsSuperAdminDefault),
   "name": /*#__PURE__*/ zod.string(),
+  "oauth_provider": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "phone": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "producer_id": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.uuid(),/*#__PURE__*/ zod.null()])),
   "producer_kind": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),

@@ -975,6 +975,18 @@ class User(Base):
         """
         return not self.password_hash
 
+    @property
+    def oauth_provider(self) -> str | None:
+        """MEH-3248: which provider an account without a password signs in
+        with, so /settings knows which button confirms a deletion. Google
+        wins when both are linked — verify_deletion_credentials checks the
+        same order."""
+        if self.google_id:
+            return "google"
+        if self.apple_id:
+            return "apple"
+        return None
+
 
 class RetiredSlug(Base):
     """MEH-2528 — a public business URL that must never pass to another row.

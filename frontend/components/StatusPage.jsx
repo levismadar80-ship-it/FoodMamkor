@@ -50,6 +50,16 @@ function Action({ action, className }) {
 const SEED_ICON = "seed";
 const SEED_MARK_PX = 76;
 
+/**
+ * MEH-3248: every prop is optional — typed so a `// @ts-check` caller
+ * (account-deleted/AccountDeletedClient.jsx) need not pass the ones it skips.
+ * @param {{
+ *   icon?: any, eyebrow?: string, title?: string, body?: any, bodyRole?: string,
+ *   primary?: { label: string, href?: string, onClick?: () => void, testid?: string },
+ *   secondary?: { label: string, href?: string, onClick?: () => void, testid?: string },
+ *   children?: any, testid?: string,
+ * }} props
+ */
 export default function StatusPage({
   icon: Icon,
   eyebrow,
