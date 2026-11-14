@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 import { useEffect, useRef, useState } from "react";
@@ -223,7 +224,9 @@ export default function ChatWidget({ hideOnMobile = false } = {}) {
       return;
     }
     root.style.setProperty(CHAT_FAB_CLEARANCE_VAR, CHAT_FAB_CLEARANCE);
-    return () => root.style.removeProperty(CHAT_FAB_CLEARANCE_VAR);
+    return () => {
+      root.style.removeProperty(CHAT_FAB_CLEARANCE_VAR);
+    };
   }, [launcherOnMobile]);
 
   // ── "chatWasOpened" — shrink desktop pill to icon after first use ──
@@ -309,6 +312,7 @@ export default function ChatWidget({ hideOnMobile = false } = {}) {
   // MEH-1135: logical inline-end (was physical `right`). Distances (16/24) and
   // the MEH-850 vertical calc are unchanged — only the horizontal axis flips
   // from physical to logical, so the FAB tracks the inline-END corner per locale.
+  /** @type {import("react").CSSProperties} */
   const launcherStyle = {
     position: "fixed", zIndex: 9999,
     insetInlineEnd: isDesktop ? 24 : 16,
@@ -331,6 +335,7 @@ export default function ChatWidget({ hideOnMobile = false } = {}) {
   // MEH-1135: desktop 360px box anchors to the same bottom-END corner as the
   // launcher (insetInlineEnd:24, insetInlineStart:auto); mobile stays full-width
   // (both inline insets 0 → spans edge-to-edge in either direction).
+  /** @type {import("react").CSSProperties} */
   const panelStyle = {
     position: "fixed", zIndex: 9999,
     bottom: isDesktop ? 24 : 0,

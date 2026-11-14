@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
@@ -52,11 +53,11 @@ const POSITION_CLASSES = {
  * @param {import("react").ReactNode} props.content — bubble content.
  * @param {import("react").ReactNode} props.children — the trigger.
  * @param {"top"|"bottom"|"bottom-start"|"right"|"left"} [props.position="top"]
- * @param {boolean} [props.overlay=false] — MEH-1593. Render the bubble in an
+ * @param {boolean} [props.overlay=false] - MEH-1593. Render the bubble in an
  *   overlay layer (portal → document.body, `position: fixed`) placed against
  *   the viewport instead of absolutely inside the wrapper. Use when the default
  *   bubble would overlap siblings or be clipped by an ancestor's overflow.
- * @param {import("react").RefObject<HTMLElement>} [props.avoidRef] — overlay
+ * @param {import("react").RefObject<HTMLElement>} [props.avoidRef] - overlay
  *   only. The bubble clears THIS element's box (above it, flipping below when
  *   there is no room). Defaults to the trigger, which clears only the trigger.
  */

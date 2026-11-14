@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 import { useState } from "react";
@@ -57,7 +58,9 @@ export function takeDraftStars(producerId) {
 
 /** The contact card renders twice (inline on phones, sidebar on desktop). */
 function scrollToContactCard() {
-  const cards = [...document.querySelectorAll('[data-testid="contact-card"]')];
+  const cards = [
+    .../** @type {NodeListOf<HTMLElement>} */ (document.querySelectorAll('[data-testid="contact-card"]')),
+  ];
   const visible = cards.find((el) => el.offsetParent !== null) || cards[0];
   visible?.scrollIntoView({ behavior: "smooth", block: "center" });
 }

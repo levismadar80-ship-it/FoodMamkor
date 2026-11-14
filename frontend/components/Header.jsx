@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 import Image from "next/image";
@@ -65,7 +66,7 @@ function orderedForSurface(surface, state, order) {
  * auth-aware behavior the bar carried (MEH-39 UserMenu, MEH-669 CTA role
  * gate, MEH-475 LanguageToggle, "/" search shortcut). The email-verify
  * banner was extracted to VerifyBanner.jsx (MEH-731) so it no longer grows
- * the floating band. usePathname comes from @/i18n/navigation (locale-
+ * the floating band. usePathname comes from `@/i18n/navigation` (locale-
  * stripped: "/" on /he and /en) — next/navigation's is locale-prefixed and
  * broke isHomepage/isActive on the homepage (MEH-731).
  *
@@ -202,7 +203,8 @@ export default function Header() {
       if (e.key !== "/") return;
       const tag = document.activeElement?.tagName?.toLowerCase();
       if (tag === "input" || tag === "textarea" || tag === "select") return;
-      if (document.activeElement?.isContentEditable) return;
+      const active = document.activeElement;
+      if (active instanceof HTMLElement && active.isContentEditable) return;
       e.preventDefault();
       router.push("/producers?focus=1");
     };

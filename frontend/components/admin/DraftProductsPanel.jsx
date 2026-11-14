@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 import { useState } from "react";
@@ -30,6 +31,7 @@ import InlineMessage from "@/components/ui/InlineMessage";
 const EMPTY_FORM = { name: "", description: "", price_min: "", price_max: "" };
 
 function validate(f, tErr) {
+  /** @type {Record<string, string>} */
   const errors = {};
   if (!f.name.trim()) errors.name = tErr("name_required");
   const min = Number(f.price_min);

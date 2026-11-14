@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 /**
@@ -118,6 +119,7 @@ function isNativeValidUrl(value) {
 const isWholeNumber = (value) => Number.isInteger(Number(value));
 
 function validateEventForm(f, t, tReg) {
+  /** @type {Record<string, string>} */
   const errors = {};
   if (!f.title.trim()) errors.title = t("error_title_required");
   if (!f.event_date) errors.event_date = t("error_date_required");

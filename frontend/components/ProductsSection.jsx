@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Module:   ProductsSection
  * Purpose:  Producer-self CRUD editor for their product catalog (name, price
@@ -78,6 +79,7 @@ const PRODUCT_FIELD_ORDER = ["name", "price_min", "price_max"];
 const PRODUCT_FIELD_ID_SUFFIX = { name: "name", price_min: "price-min", price_max: "price-max" };
 
 function validateProductForm(f, tErr) {
+  /** @type {Record<string, string>} */
   const errors = {};
   if (!f.name.trim()) errors.name = tErr("name_required");
   if (f.price_min === "") {
@@ -124,6 +126,24 @@ function clearFieldError(setErrors, field) {
 // (page.js:596/:627/:866). Driving the toggle from the prop and patching upward
 // keeps one owner, so marking a product updates the checklist in the same tick
 // instead of leaving it stale until reload.
+/**
+ * @typedef {{
+ *   name: string, description: string, image_url: string,
+ *   price_min: string | number, price_max: string | number,
+ *   is_gluten_free: boolean, is_vegan: boolean, is_vegetarian: boolean,
+ *   is_lactose_free: boolean, is_no_added_sugar: boolean,
+ *   ingredients: string, allergens: string[],
+ * }} ProductForm
+ */
+/**
+ * @param {{
+ *   embedded?: boolean,
+ *   onCountChange?: (count: number) => void,
+ *   topProductName?: string | null,
+ *   topProductId?: string | number | null,
+ *   onTopProductChange?: ((product: any) => void) | null,
+ * }} [props]
+ */
 export default function ProductsSection({
   embedded = false,
   onCountChange,
@@ -148,7 +168,7 @@ export default function ProductsSection({
   const [error, setError] = useState("");
   const [formErrors, setFormErrors] = useState(/** @type {Record<string, string>} */ ({}));
   const [editingId, setEditingId] = useState(null);
-  const [editForm, setEditForm] = useState({});
+  const [editForm, setEditForm] = useState(/** @type {Partial<ProductForm>} */ ({}));
   const [editFormErrors, setEditFormErrors] = useState(/** @type {Record<string, string>} */ ({}));
   const [savingEdit, setSavingEdit] = useState(false);
   // UIS-026 (MEH-776): in-flight delete guard — blocks rapid-click

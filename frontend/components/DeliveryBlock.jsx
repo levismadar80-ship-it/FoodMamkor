@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 import { useState } from "react";
@@ -179,6 +180,14 @@ function capSections(sections, limit) {
 // MEH-1772 chunk 3: `feeOf` resolves a row's effective fee (or null when fees
 // don't vary) — threaded through rather than recomputed here so the variance
 // decision is made exactly once, in the component below.
+/**
+ * @param {{
+ *   label: import("react").ReactNode,
+ *   rows: any[],
+ *   t: (key: string, values?: Record<string, any>) => string,
+ *   feeOf?: (da: any) => number | null,
+ * }} props
+ */
 function AreaGroup({ label, rows, t, feeOf = () => null }) {
   return (
     <div>

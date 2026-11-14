@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 import { useMemo, useRef, useState } from "react";
@@ -19,6 +20,7 @@ function dateKey(date) {
   return `${y}-${m}-${d}`;
 }
 
+/** @type {Intl.DateTimeFormatOptions} */
 const LONG_DATE = { weekday: "long", day: "numeric", month: "long" };
 
 // MEH-1988 — Phase 0 asked whether this component should be moved onto the

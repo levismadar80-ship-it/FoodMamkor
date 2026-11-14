@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -414,8 +415,8 @@ export default function JoinFeatures() {
 
   /** A TAP: select, then centre the card (phone) and bring the panel into view. */
   const select = useCallback(
-    (group, index) => {
-      if (!applySelection(group, index)) return;
+    (group) => {
+      if (!applySelection(group)) return;
       tapScrollingRef.current = true;
       const behavior = reducedMotion ? "auto" : "smooth";
       if (isDesktop) {

@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 import { useState, useCallback, useEffect, useRef } from "react";
@@ -962,7 +963,7 @@ export default function ProducersClient({
           )}
         </h1>
         <Link
-          href={`/map${producersToMapQuery({ chips, categoryKeys: activeCategoryKeys, city: cityFilter || "" })}`}
+          href={`/map${producersToMapQuery({ chips, categoryKeys: [...activeCategoryKeys], city: cityFilter || "" })}`}
           data-testid="producers-map-link"
           className="shrink-0 text-primary hover:underline flex items-center gap-1 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
         >

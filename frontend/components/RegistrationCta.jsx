@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 /**
@@ -43,6 +44,7 @@ const BTN =
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 // form field → account field (MEH-3112).
+/** @type {Record<string, import("@/lib/use-account-prefill").AccountField>} */
 const SIGNUP_PREFILL = { name: "name", phone: "phone", email: "email" };
 
 const telHref = (phone) => `tel:${String(phone).replace(/[^\d+]/g, "")}`;
@@ -63,7 +65,7 @@ function SignupForm({ kind, itemId, onDone }) {
   const t = useTranslations("registration.signup");
   // Same namespace EventForm.jsx:165 reads it from — one owner for the label.
   const tPrivacyLink = useTranslations("auth.register.consumer.terms");
-  const [form, setForm] = useState({ name: "", phone: "", email: "" });
+  const [form, setForm] = useState(/** @type {Record<string, string>} */ ({ name: "", phone: "", email: "" }));
   // MEH-3112: a signed-in visitor finds her own details already in place.
   useAccountPrefill(setForm, SIGNUP_PREFILL);
   const [errors, setErrors] = useState(/** @type {Record<string, string>} */ ({}));
@@ -82,6 +84,7 @@ function SignupForm({ kind, itemId, onDone }) {
   };
 
   const validate = () => {
+    /** @type {Record<string, string>} */
     const errs = {};
     for (const f of ["name", "phone", "email"]) if (!form[f].trim()) errs[f] = t("required");
     if (!errs.name && (form.name.match(LETTERS_RE) || []).length < 2) errs.name = t("name_short");
@@ -179,6 +182,8 @@ function SignupForm({ kind, itemId, onDone }) {
  * Which action the CTA offers — one answer for the inline block AND the
  * sticky phone bar (MEH-3043), so the two can never disagree. `null` = no
  * channel reaches anyone, so nothing renders anywhere.
+ *
+ * @param {{ method: string, phone?: string | null, url?: string | null, isFull?: boolean, waitlistHref?: string, title?: string, t: (key: string, values?: Record<string, any>) => string }} props
  */
 function resolveAction({ method, phone, url, isFull, waitlistHref, title, t }) {
   const mobile = normalizePhone(phone);

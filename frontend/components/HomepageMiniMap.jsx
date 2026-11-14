@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 /**
@@ -47,11 +48,13 @@ import { SkeletonBlock } from "@/components/Skeleton";
 // are known. Historical note — MEH-939: /map's default has since moved to the
 // MEH-932 producer band [32.4, 34.95]; this pre-fit fallback is independent of
 // that change and stays [32.0853, 34.7818].)
+/** @type {[number, number]} */
 const ISRAEL_CENTER = [32.0853, 34.7818];
 const ISRAEL_ZOOM = 8;
 
 // MEH-856: fitBounds tuning — padding (px) around the marker cluster + a zoom
 // cap so a single/few producers don't over-zoom to street level.
+/** @type {[number, number]} */
 const FIT_PADDING = [40, 40];
 const FIT_MAX_ZOOM = 11;
 
@@ -126,6 +129,7 @@ function FitToBusinesses({ points }) {
   const map = useMap();
   useEffect(() => {
     if (!points || points.length === 0) return;
+    /** @type {[number, number][]} */
     const latlngs = points.map((p) => [p.lat, p.lng]);
     map.fitBounds(L.latLngBounds(latlngs), { padding: FIT_PADDING, maxZoom: FIT_MAX_ZOOM });
   }, [map, points]);

@@ -1,3 +1,4 @@
+// @ts-check
 /// <reference path="../types/browser-globals.d.ts" />
 "use client";
 
@@ -75,6 +76,7 @@ const SIDE = 90;
 // -60 -60 120 120. [rotation°, opacity, petal fill, seed fill, seed opacity]
 const MARK_PETAL_D =
   "M 0,-44 C 10,-44 13,-32 11,-20 C 9,-12 5,-8 0,-6 C -5,-8 -9,-12 -11,-20 C -13,-32 -10,-44 0,-44 Z";
+/** @type {[number, number, string, string, number][]} */
 const MARK_PETALS = [
   [36, 0.96, "#F5F0E8", "#1F4A3A", 0.3],
   [108, 0.96, "#E8823A", "#F5F0E8", 0.45],

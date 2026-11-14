@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 import { useEffect, useState } from "react";
@@ -25,7 +26,10 @@ export default function Toaster() {
   useEffect(() => {
     const update = () => setToasts([...getToasts()]);
     update();
-    return subscribe(update);
+    const unsubscribe = subscribe(update);
+    return () => {
+      unsubscribe();
+    };
   }, []);
 
   if (toasts.length === 0) return null;

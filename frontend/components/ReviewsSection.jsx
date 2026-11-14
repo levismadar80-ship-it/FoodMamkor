@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 import { useEffect, useRef, useState } from "react";
@@ -60,6 +61,7 @@ export function ReviewInitial({ seedKey, letter }) {
 // HOT-018 (MEH-782): numeric short date (e.g. 7.6.2026) — preserves the prior
 // `toLocaleDateString` default while routing through the Invalid-Date-guarded,
 // locale-aware helper so /en no longer renders Hebrew review dates.
+/** @type {Intl.DateTimeFormatOptions} */
 export const REVIEW_DATE_OPTIONS = { year: "numeric", month: "numeric", day: "numeric" };
 
 // "Sapir L." — first name + last initial (privacy)

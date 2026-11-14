@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -75,7 +76,15 @@ export default function RescueTab() {
   // empty selection into null on the wire; see allergens.py for why [] must
   // never persist.
   const [allergens, setAllergens] = useState([]);
-  const [form, setForm] = useState({ qty_total: 4, price: 15, from: "18:00", to: "20:00", cancelMin: 30 });
+  const [form, setForm] = useState(
+    /** @type {{ qty_total: number | string, price: number | string, from: string, to: string, cancelMin: number | string }} */ ({
+      qty_total: 4,
+      price: 15,
+      from: "18:00",
+      to: "20:00",
+      cancelMin: 30,
+    }),
+  );
   // MEH-2678: the tab loads its own pickup points. It used to take them as a
   // prop that the only page rendering it never passed, so every publish
   // answered «צריך נקודת איסוף». The API lists the primary first.

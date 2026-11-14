@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -342,6 +343,7 @@ export default function ChipScrollRow({
   // depths. A side with nothing hidden past it publishes 0px, which collapses
   // that end of the mask to fully opaque — so a non-overflowing row shows no
   // fade at all, exactly as the MEH-1340 conditional divs did.
+  /** @type {import("react").CSSProperties & Record<`--${string}`, string>} */
   const fadeVars = {
     "--chip-fade-start": `${canScrollStart ? START_FADE_PX : 0}px`,
     "--chip-fade-end": `${canScrollEnd ? END_FADE_PX : 0}px`,

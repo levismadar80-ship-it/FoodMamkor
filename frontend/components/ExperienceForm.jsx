@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 /**
@@ -165,6 +166,7 @@ function isUrl(value) {
 }
 
 function validateExperienceForm(f, t, tReg) {
+  /** @type {Record<string, string>} */
   const errors = {};
   if (f.title.trim().length < 4) errors.title = t("error_title_short");
   if (f.description.trim().length < 20) errors.description = t("error_description_short");
