@@ -60,7 +60,9 @@ def test_hook_fails_open_on_malformed_event():
     assert before_send_transaction(event, {}) is event
 
 
-def _run_real_sdk(with_hook: bool) -> list[dict]:
+def _run_real_sdk(
+    with_hook: bool, real_app: bool = False, db=None
+) -> list[dict]:
     sentry_sdk = pytest.importorskip("sentry_sdk")
     from fastapi import FastAPI
     from fastapi.testclient import TestClient
@@ -78,11 +80,16 @@ def _run_real_sdk(with_hook: bool) -> list[dict]:
                 if payload:
                     captured.append(payload)
 
-    app = FastAPI()
+    if real_app:
+        # The production app, so middleware.py's `request_info` context and
+        # the Referer header are in the event exactly as in prod.
+        from app.main import app
+    else:
+        app = FastAPI()
 
-    @app.get("/auth/owner-invite/{token}")
-    def _preview(token: str) -> dict:
-        return {"ok": True}
+        @app.get("/auth/owner-invite/{token}")
+        def _preview(token: str) -> dict:
+            return {"ok": True}
 
     kwargs = {
         "dsn": "https://public@example.com/1",
@@ -95,7 +102,17 @@ def _run_real_sdk(with_hook: bool) -> list[dict]:
         kwargs["before_send_transaction"] = before_send_transaction
     sentry_sdk.init(**kwargs)
     try:
-        TestClient(app).get(f"/auth/owner-invite/{TOKEN}?token={TOKEN}")
+        path = (
+            f"/auth/verify-email?token={TOKEN}"
+            if real_app
+            else f"/auth/owner-invite/{TOKEN}?token={TOKEN}"
+        )
+        TestClient(app, raise_server_exceptions=False).get(
+            path,
+            headers={
+                "Referer": f"https://mehamakor.co.il/he/reset-password?token={TOKEN}"
+            },
+        )
         sentry_sdk.flush()
     finally:
         sentry_sdk.init(dsn=None)
@@ -115,3 +132,41 @@ def test_real_sdk_transaction_does_not_carry_token():
     assert len(transactions) == 1
     assert "/auth/owner-invite/" in transactions[0]["request"]["url"]
     assert TOKEN not in str(transactions[0])
+
+
+def test_control_real_app_without_hook_ships_the_token(db):
+    """Premise for the next test: on the real app, the query token and the
+    Referer reach a trace when the hook is absent."""
+    transactions = _run_real_sdk(with_hook=False, real_app=True, db=db)
+    assert len(transactions) == 1
+    assert TOKEN in str(transactions[0])
+
+
+def test_real_app_trace_carries_no_token_anywhere(db):
+    transactions = _run_real_sdk(with_hook=True, real_app=True, db=db)
+    assert len(transactions) == 1
+    event = transactions[0]
+    assert TOKEN not in str(event)
+    # The fields that carried it are still there, redacted — not dropped.
+    assert "token=[token]" in event["request"]["query_string"]
+    referer = {k.lower(): v for k, v in event["request"]["headers"].items()}
+    assert referer["referer"].endswith("reset-password?token=[token]")
+
+
+@pytest.mark.parametrize(
+    "raw, expected",
+    [
+        (f"/register/producer/prefill/{TOKEN}", "/register/producer/prefill/[token]"),
+        (f"/home-products/rate/{TOKEN}", "/home-products/rate/[token]"),
+        (f"https://x.example/he/verify-email?token={TOKEN}&a=1", "https://x.example/he/verify-email?token=[token]&a=1"),
+        (f"lang=he&reset_token={TOKEN}", "lang=he&reset_token=[token]"),
+        # 40-char floor: a build artifact is left alone.
+        ("/rate/page-8f21c0.js", "/rate/page-8f21c0.js"),
+        # a param that merely contains "token" mid-name after ? is still a token
+        ("/p?page=2", "/p?page=2"),
+    ],
+)
+def test_redact_url_tokens_new_shapes(raw, expected):
+    from app.utils.pii import redact_url_tokens
+
+    assert redact_url_tokens(raw) == expected

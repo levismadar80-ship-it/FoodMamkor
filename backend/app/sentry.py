@@ -20,7 +20,6 @@ import contextlib
 import hashlib
 import logging
 import os
-import re
 import threading
 import time
 from collections.abc import Iterator
@@ -361,20 +360,24 @@ def _scrub_event_urls(event: dict[str, Any]) -> None:
             request["url"] = redact_url_tokens(request["url"])
         if isinstance(event.get("transaction"), str):
             event["transaction"] = redact_url_tokens(event["transaction"])
-        # MEH-3273: `?token=` (GET /auth/verify-email) rides in the query
-        # string, which the SDK copies verbatim beside the URL.
-        if isinstance(request, dict) and isinstance(
-            request.get("query_string"), str
-        ):
-            request["query_string"] = _QUERY_TOKEN_RE.sub(
-                r"\1[token]", request["query_string"]
-            )
+        # MEH-3273: `?token=` rides in the query string, which the SDK copies
+        # verbatim beside the URL; and a page URL carrying a token reaches us
+        # again as the Referer of its same-origin /api calls.
+        if isinstance(request, dict):
+            if isinstance(request.get("query_string"), str):
+                request["query_string"] = redact_url_tokens(request["query_string"])
+            headers = request.get("headers")
+            if isinstance(headers, dict):
+                for key in list(headers):
+                    if key.lower() == "referer" and isinstance(headers[key], str):
+                        headers[key] = redact_url_tokens(headers[key])
+        # Our own `request_info` context (middleware.py) is already redacted
+        # at write time; redact again so the event is safe on its own.
+        info = (event.get("contexts") or {}).get("request_info")
+        if isinstance(info, dict) and isinstance(info.get("url"), str):
+            info["url"] = redact_url_tokens(info["url"])
     except Exception:  # noqa: BLE001 — never break reporting over a scrub
         return
-
-
-# MEH-3273: any `token=` / `*_token=` query parameter value.
-_QUERY_TOKEN_RE = re.compile(r"((?:^|&)[\w-]*token=)[^&]*", re.IGNORECASE)
 
 
 def before_send_transaction(
