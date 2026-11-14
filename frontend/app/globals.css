@@ -75,7 +75,10 @@
 }
 @supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
   .nav-pill-glass {
-    background: rgba(255, 254, 251, 0.62);
+    /* MEH-3191: was 0.62 — the active label measured 2.9:1 over /rescue
+       content scrolling under it (axe, 390px). 0.9 keeps the frost and
+       holds ≥4.5:1 over any content (worst case: black under the pill). */
+    background: rgba(255, 254, 251, 0.9);
     -webkit-backdrop-filter: blur(16px) saturate(150%);
     backdrop-filter: blur(16px) saturate(150%);
     border: 1px solid rgba(255, 255, 255, 0.6);
