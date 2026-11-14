@@ -84,7 +84,8 @@ def _new_signups(db: Session, producer_id: UUID, host_user_id: Any) -> list[Sign
             .all()
         )
         items += [
-            {"kind": "experience", "title": str(t), "count": int(c)} for t, c in workshops
+            {"kind": "experience", "title": str(t), "count": int(c)}
+            for t, c in workshops
         ]
     # Most sign-ups first, title as the tie-break so the card's top row is
     # stable between loads.
@@ -102,7 +103,9 @@ def _funded_group_buys(db: Session, producer_id: UUID) -> int:
     return int(n or 0)
 
 
-def owner_attention(db: Session, producer_id: UUID, host_user_id: Any) -> OwnerAttention:
+def owner_attention(
+    db: Session, producer_id: UUID, host_user_id: Any
+) -> OwnerAttention:
     """Counts for the card. `host_user_id` is the owner's user id — a
     workshop is keyed on its host user, not on the business (models.py
     Experience).
