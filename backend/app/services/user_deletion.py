@@ -15,17 +15,25 @@ whether a confirmation email is sent. This function commits.
 
 from uuid import UUID
 from fastapi import BackgroundTasks
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.models import Producer, Product, User
 from app.models.models import (
+    ContactMessage,
+    DeliveryWaitlistEntry,
     Favorite,
     HomeProduct,
     HomeProductRating,
     HomeProductWhatsAppClick,
+    InboundMessage,
+    NewsletterSubscriber,
+    OutboundMessage,
+    OutreachLead,
     ProducerReview,
     Report,
 )
+from app.utils.phone import canonical_il_msisdn
 from app.services import retired_slugs  # MEH-2528
 from app.services.group_buy_delist import (  # MEH-2503
     cancel_live_group_buys,
@@ -93,6 +101,12 @@ def delete_user_and_data(
     db.query(HomeProduct).filter(HomeProduct.user_id == user.id).delete()
     db.query(Favorite).filter(Favorite.user_id == user.id).delete()
     db.query(Report).filter(Report.reporter_id == user.id).delete()
+
+    # MEH-3219 B4: rows keyed by her email / phone, not by user_id. The
+    # privacy policy says every identifiable record goes at deletion
+    # («עם מחיקת חשבון נמחקים כל הנתונים המזוהים מיידית»), so they go here,
+    # before the producer (whose phone counts as hers) is deleted.
+    _erase_contact_trail(db, user, producer_id)
 
     # 2. If this user owns a Producer, remove the FK reference from the user
     #    row first (User.producer_id has no ondelete, so deleting the
@@ -186,3 +200,68 @@ def _delete_own_producer(
         # re-add one — passive_deletes already pre-empts the NotNullViolation
         # the old MEH-755 bulk-delete guarded.
         db.delete(producer)
+
+
+def _phone_forms(phone: str | None) -> set[str]:
+    """Every stored notation of one IL mobile number: the canonical
+    ``972…`` (what Meta sends and the outbound log keeps), ``+972…`` and
+    the local ``05…``. A number that does not canonicalise is matched as is."""
+    if not phone or not phone.strip():
+        return set()
+    canonical = canonical_il_msisdn(phone)
+    if canonical is None:
+        return {phone.strip()}
+    return {canonical, "+" + canonical, "0" + canonical[3:]}
+
+
+def _erase_contact_trail(db: Session, user: User, producer_id: UUID | None) -> None:
+    """MEH-3219 B4: delete the email/phone-keyed rows that do not cascade.
+
+    - newsletter_subscribers, contact_messages, delivery_waitlist: by email
+      (case-insensitive) — delivery_waitlist also by user_id, whose FK is
+      SET NULL and would otherwise leave the email behind.
+    - inbound_messages / outbound_messages (the WhatsApp inbox): by her
+      phone and, when her business goes with her, the business phone.
+    - outreach_leads: the lead is about a business and stays; only the
+      suggester's name and email are cleared, with her update consent.
+    """
+    email = (user.email or "").strip().lower()
+    if email:
+        db.query(NewsletterSubscriber).filter(
+            func.lower(NewsletterSubscriber.email) == email
+        ).delete(synchronize_session=False)
+        db.query(ContactMessage).filter(
+            func.lower(ContactMessage.email) == email
+        ).delete(synchronize_session=False)
+        db.query(OutreachLead).filter(
+            func.lower(OutreachLead.suggested_by_email) == email
+        ).update(
+            {
+                OutreachLead.suggested_by_email: None,
+                OutreachLead.suggested_by_name: None,
+                OutreachLead.suggester_wants_update: False,
+            },
+            synchronize_session=False,
+        )
+    waitlist = db.query(DeliveryWaitlistEntry).filter(
+        DeliveryWaitlistEntry.user_id == user.id
+    )
+    if email:
+        waitlist = db.query(DeliveryWaitlistEntry).filter(
+            (DeliveryWaitlistEntry.user_id == user.id)
+            | (func.lower(DeliveryWaitlistEntry.email) == email)
+        )
+    waitlist.delete(synchronize_session=False)
+
+    phones = _phone_forms(user.phone)  # type: ignore[arg-type]
+    if producer_id is not None:
+        producer = db.query(Producer).filter(Producer.id == producer_id).first()
+        if producer is not None:
+            phones |= _phone_forms(producer.phone)  # type: ignore[arg-type]
+    if phones:
+        db.query(InboundMessage).filter(InboundMessage.from_phone.in_(phones)).delete(
+            synchronize_session=False
+        )
+        db.query(OutboundMessage).filter(OutboundMessage.to_phone.in_(phones)).delete(
+            synchronize_session=False
+        )
