@@ -6778,6 +6778,7 @@ export const UploadOwnerPhotoUploadOwnerPhotoPostResponse = /*#__PURE__*/ zod.un
  * - Email uniqueness is re-checked; collisions are rejected with 409.
  * - MEH-3095: a changed email is an unproved one. The account goes back to
  *   unverified and a fresh link is mailed to the NEW address.
+ * - MEH-3104: the OLD address gets a notice that the address changed.
  * @summary Update Profile
  */
 export const updateProfileUsersMePatchResponseEmailVerifiedDefault = false;
