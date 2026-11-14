@@ -3,9 +3,9 @@ Module:   test_meh2122_otp_send_failure
 Purpose:  MEH-2122 B — when WhatsApp is set up but the code did not go out,
           the owner hears it (503 + Hebrew) instead of a false «קוד נשלח»
           and a wait for a message that never comes.
-Touches:  The test DB via `client` + `db`. The WhatsApp sender and the
+Touches:  The test DB via `client` + `db`. `send_template` and the
           "is it configured" check are replaced at the router's module
-          attributes — no network.
+          attributes — no network. The real `_send_whatsapp_otp` runs.
 Does NOT: test the confirm handler (tests/test_otp_confirm_*.py) or the
           send layer itself (tests/test_meh2952_send_layer.py).
 History:  MEH-2122 chunk B (creation, 14/11).
@@ -30,7 +30,7 @@ def _owner(db, *, is_test=False):
 
 
 def _send(client, monkeypatch, user, *, sent, configured=True):
-    monkeypatch.setattr(producer_me, "_send_whatsapp_otp", lambda *a, **k: sent)
+    monkeypatch.setattr(producer_me, "send_template", lambda *a, **k: sent)
     monkeypatch.setattr(producer_me, "whatsapp_is_configured", lambda: configured)
     return client.post("/producers/me/verify-phone", headers=auth_header(user))
 
