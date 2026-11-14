@@ -155,6 +155,13 @@ export default async function sitemap() {
     // route), so emitting them here produced GSC "Submitted URL marked 'noindex'".
     // The sitemap lists indexable URLs only; the pages' noindex directives stay.
     { path: "/terms", priority: 0.2, changeFrequency: "yearly" },
+    // MEH-3177: indexable pages that were never offered.
+    { path: "/privacy", priority: 0.2, changeFrequency: "yearly" },
+    { path: "/accessibility", priority: 0.2, changeFrequency: "yearly" },
+    { path: "/about/for-businesses/guides", priority: 0.4, changeFrequency: "monthly" },
+    { path: "/about/for-businesses/guides/business-story", priority: 0.4, changeFrequency: "monthly" },
+    { path: "/about/for-businesses/guides/customer-messages", priority: 0.4, changeFrequency: "monthly" },
+    { path: "/about/for-businesses/guides/product-photography", priority: 0.4, changeFrequency: "monthly" },
   ];
   // MEH-2369: /events, /experiences and /group-buys used to sit in staticDefs
   // unconditionally — three empty pages offered to Google daily while
