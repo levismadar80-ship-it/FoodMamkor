@@ -32,6 +32,7 @@ def checkins(monkeypatch):
         return "cid-1"
 
     monkeypatch.setattr(job_heartbeat, "_capture_checkin", spy)
+    monkeypatch.setenv("ENV", "production")
     import app.database
 
     monkeypatch.setattr(app.database, "SessionLocal", lambda: _NoopSession())
@@ -96,10 +97,15 @@ def test_job_sends_checkins(monkeypatch, checkins, job):
     _stub_services(monkeypatch)
     getattr(startup, func_name)()
 
-    assert [c["status"] for c in checkins] == ["in_progress", "ok"]
+    # Daily jobs open with in_progress (hung-run detection); 5-minute jobs
+    # send only the closing check-in.
+    if kind == "crontab":
+        assert [c["status"] for c in checkins] == ["in_progress", "ok"]
+        assert checkins[1]["check_in_id"] == "cid-1"
+    else:
+        assert [c["status"] for c in checkins] == ["ok"]
     assert {c["monitor_slug"] for c in checkins} == {slug}
-    assert checkins[1]["check_in_id"] == "cid-1"
-    schedule = checkins[0]["monitor_config"]["schedule"]
+    schedule = checkins[-1]["monitor_config"]["schedule"]
     assert schedule["type"] == kind
     assert schedule["value"] == value
 
@@ -121,7 +127,7 @@ def test_failed_checkin_never_breaks_the_job(monkeypatch):
 
 
 def test_job_exception_reports_error_and_propagates(monkeypatch, checkins):
-    @job_heartbeat.heartbeat("x", job_heartbeat.interval_monitor_config(5))
+    @job_heartbeat.heartbeat("x", job_heartbeat.cron_monitor_config("0 10 * * *"))
     def job() -> None:
         raise ValueError("job bug")
 
@@ -130,15 +136,64 @@ def test_job_exception_reports_error_and_propagates(monkeypatch, checkins):
     assert [c["status"] for c in checkins] == ["in_progress", "error"]
 
 
-def test_triggers_built_from_the_same_constants():
-    """The trigger and the monitor config read one value (no drift)."""
-    src = open(startup.__file__, encoding="utf-8").read()
-    for name in (
-        "FOLLOWUP_CRON",
-        "ANALYTICS_ROLLUP_CRON",
-        "RETENTION_PURGE_CRON",
-        "WATCHDOG_INTERVAL_MINUTES",
-        "RESCUE_DIGEST_INTERVAL_MINUTES",
-    ):
-        # once in the @heartbeat decorator, once in the add_job trigger
-        assert src.count(name) >= 2, name
+def test_no_checkins_outside_production(monkeypatch, checkins):
+    monkeypatch.setenv("ENV", "staging")
+    _stub_services(monkeypatch)
+    startup._run_analytics_rollup_job()
+    assert checkins == []
+
+
+def test_real_sdk_builds_a_check_in_event(monkeypatch):
+    """The real capture_checkin accepts our kwargs and emits a check_in event
+    carrying the monitor config (guards an SDK rename that the spies miss)."""
+    import sentry_sdk
+
+    events: list[dict] = []
+    monkeypatch.setattr(sentry_sdk, "capture_event", lambda e, **_: events.append(e))
+    cfg = job_heartbeat.cron_monitor_config(job_heartbeat.FOLLOWUP_CRON)
+    job_heartbeat._capture_checkin(
+        monitor_slug="s", status="ok", duration=1.0, monitor_config=cfg
+    )
+    assert events[0]["type"] == "check_in"
+    assert events[0]["monitor_slug"] == "s"
+    assert events[0]["monitor_config"] == cfg
+
+
+def _registered(monkeypatch, *, flags_on: bool):
+    from apscheduler.schedulers.background import BackgroundScheduler
+
+    from app.services import rescue_digest
+
+    monkeypatch.setattr(startup.settings, "watchdog_enabled", flags_on)
+    monkeypatch.setattr(startup.settings, "rescue_bags_enabled", flags_on)
+    monkeypatch.setattr(rescue_digest, "digest_enabled", lambda: flags_on)
+    sched = BackgroundScheduler(timezone="UTC")
+    startup.register_scheduler_jobs(sched)  # never started
+    return {j.func.__name__: j.trigger for j in sched.get_jobs()}
+
+
+def test_registered_triggers_match_monitor_configs(monkeypatch, checkins):
+    """Each REGISTERED trigger fires on the schedule its monitor announces."""
+    from apscheduler.triggers.cron import CronTrigger
+
+    triggers = _registered(monkeypatch, flags_on=True)
+    _stub_services(monkeypatch)
+    assert set(triggers) == {j[0] for j in JOBS}
+    for func_name, _slug, kind, _value in JOBS:
+        checkins.clear()
+        getattr(startup, func_name)()
+        schedule = checkins[-1]["monitor_config"]["schedule"]
+        trig = triggers[func_name]
+        if kind == "crontab":
+            expected = CronTrigger.from_crontab(schedule["value"], timezone="UTC")
+            assert str(trig) == str(expected), func_name
+        else:
+            assert trig.interval.total_seconds() == schedule["value"] * 60, func_name
+
+
+def test_flagged_jobs_absent_when_flags_off(monkeypatch):
+    """No registration, so no check-in, so no monitor and no false alert."""
+    triggers = _registered(monkeypatch, flags_on=False)
+    assert "_run_watchdog_job" not in triggers
+    assert "_run_rescue_digest_job" not in triggers
+    assert len(triggers) == 3

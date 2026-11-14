@@ -1,5 +1,6 @@
 import asyncio
 import os
+from typing import Any
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 from urllib.parse import urlparse
@@ -439,6 +440,109 @@ def _run_rescue_digest_job() -> None:
         db.close()
 
 
+def register_scheduler_jobs(followup_scheduler: Any) -> None:
+    """Add every background job to the scheduler (not started here).
+
+    MEH-3155: extracted from lifespan so a test can build the real scheduler
+    and compare each registered trigger with the job's Sentry monitor config.
+    """
+    from apscheduler.triggers.cron import CronTrigger
+
+    followup_scheduler.add_job(
+        _run_followup_job,
+        CronTrigger.from_crontab(FOLLOWUP_CRON, timezone="UTC"),
+        id="meh_539_onboarding_followups_daily",
+        replace_existing=True,
+    )
+    # MEH-509 PR2b: register the after-hours watchdog on the same
+    # scheduler. Gated by WATCHDOG_ENABLED (default False) so the empty-
+    # table cron does not spin until PR2c webhook receiver ships.
+    # max_instances=1 + coalesce=True defend against tick overlap if a
+    # single run ever exceeds the 5-min interval; misfire_grace_time
+    # tolerates short pauses (e.g. brief DB hiccup) without skipping.
+    if settings.watchdog_enabled:
+        from apscheduler.triggers.interval import IntervalTrigger
+
+        followup_scheduler.add_job(
+            _run_watchdog_job,
+            IntervalTrigger(minutes=WATCHDOG_INTERVAL_MINUTES),
+            id="meh_509_pr2b_after_hours_watchdog",
+            replace_existing=True,
+            max_instances=1,
+            coalesce=True,
+            misfire_grace_time=60,
+        )
+        log.info(
+            "[WATCHDOG] job registered — every %d minutes", WATCHDOG_INTERVAL_MINUTES
+        )
+    else:
+        log.info("[WATCHDOG] disabled (WATCHDOG_ENABLED=false) — PR2c gate")
+    # MEH-1828's weekly full_this_week reset was removed with the state itself
+    # (MEH-2782): nothing can hold full_this_week any more.
+    # MEH-2079 chunk B2 (MEH-2283): daily analytics roll-up. 01:30 UTC is
+    # 03:30/04:30 Israel — safely past Israel midnight all year, so "yesterday"
+    # (the last day the job may roll) is a complete Israel day by the time it
+    # fires. Israel-day semantics live in the service; the trigger only has
+    # to be late enough. coalesce + a 6h grace: a pause spanning the fire
+    # time runs it once, late, instead of skipping — and a fully missed day
+    # costs nothing, since the next run recomputes the range from the
+    # watermark and rolls both days.
+    followup_scheduler.add_job(
+        _run_analytics_rollup_job,
+        CronTrigger.from_crontab(ANALYTICS_ROLLUP_CRON, timezone="UTC"),
+        id="meh_2283_analytics_rollup_daily",
+        replace_existing=True,
+        max_instances=1,
+        coalesce=True,
+        misfire_grace_time=6 * 3600,
+    )
+    # MEH-2303 (MEH-2079 chunk C): daily retention purge, one hour after the
+    # roll-up so a day rolled at 01:30 is already owned by the aggregate. The
+    # service only deletes days <= the watermark, so a late or failed roll-up
+    # makes this a no-op for those days rather than a loss.
+    followup_scheduler.add_job(
+        _run_retention_purge_job,
+        CronTrigger.from_crontab(RETENTION_PURGE_CRON, timezone="UTC"),
+        id="meh_2303_retention_purge_daily",
+        replace_existing=True,
+        max_instances=1,
+        coalesce=True,
+        misfire_grace_time=6 * 3600,
+    )
+    # MEH-2756: the rescue pickup-code digest. Registered only when the pilot
+    # AND the digest gate are both on — the digest cannot work before Meta
+    # approves `rescue_codes_digest_v1`, so RESCUE_DIGEST_ENABLED defaults
+    # False and merging the feature sends nothing. Interval rather than cron
+    # because pickup_start is per-offer; see _run_rescue_digest_job. The
+    # watchdog's guards, for the same reason it has them: max_instances=1 +
+    # coalesce so a slow run cannot overlap the next tick, and a 60s grace so
+    # a brief pause runs it late instead of skipping a window.
+    from app.services.rescue_digest import digest_enabled as _digest_enabled
+
+    if settings.rescue_bags_enabled and _digest_enabled():
+        from apscheduler.triggers.interval import IntervalTrigger
+
+        followup_scheduler.add_job(
+            _run_rescue_digest_job,
+            IntervalTrigger(minutes=RESCUE_DIGEST_INTERVAL_MINUTES),
+            id="meh_2756_rescue_codes_digest",
+            replace_existing=True,
+            max_instances=1,
+            coalesce=True,
+            misfire_grace_time=60,
+        )
+        log.info(
+            "[RESCUE-DIGEST] job registered — every %d minutes",
+            RESCUE_DIGEST_INTERVAL_MINUTES,
+        )
+    else:
+        log.info(
+            "[RESCUE-DIGEST] disabled (pilot=%s, digest=%s) — no job registered",
+            settings.rescue_bags_enabled,
+            _digest_enabled(),
+        )
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     log.info("=" * 60)
@@ -515,104 +619,19 @@ async def lifespan(app: FastAPI):
     # emails. Single-replica Railway → no DB lock needed (Phase 2A decision).
     # 10:00 UTC = 13:00 Israel — after business start, before peak hours.
     from apscheduler.schedulers.background import BackgroundScheduler
-    from apscheduler.triggers.cron import CronTrigger
 
     followup_scheduler = BackgroundScheduler(timezone="UTC")
-    followup_scheduler.add_job(
-        _run_followup_job,
-        CronTrigger.from_crontab(FOLLOWUP_CRON, timezone="UTC"),
-        id="meh_539_onboarding_followups_daily",
-        replace_existing=True,
-    )
-    # MEH-509 PR2b: register the after-hours watchdog on the same
-    # scheduler. Gated by WATCHDOG_ENABLED (default False) so the empty-
-    # table cron does not spin until PR2c webhook receiver ships.
-    # max_instances=1 + coalesce=True defend against tick overlap if a
-    # single run ever exceeds the 5-min interval; misfire_grace_time
-    # tolerates short pauses (e.g. brief DB hiccup) without skipping.
-    if settings.watchdog_enabled:
-        from apscheduler.triggers.interval import IntervalTrigger
-
-        followup_scheduler.add_job(
-            _run_watchdog_job,
-            IntervalTrigger(minutes=WATCHDOG_INTERVAL_MINUTES),
-            id="meh_509_pr2b_after_hours_watchdog",
-            replace_existing=True,
-            max_instances=1,
-            coalesce=True,
-            misfire_grace_time=60,
-        )
-        log.info("[WATCHDOG] job registered — every 5 minutes")
-    else:
-        log.info("[WATCHDOG] disabled (WATCHDOG_ENABLED=false) — PR2c gate")
-    # MEH-1828's weekly full_this_week reset was removed with the state itself
-    # (MEH-2782): nothing can hold full_this_week any more.
-    # MEH-2079 chunk B2 (MEH-2283): daily analytics roll-up. 01:30 UTC is
-    # 03:30/04:30 Israel — safely past Israel midnight all year, so "yesterday"
-    # (the last day the job may roll) is a complete Israel day by the time it
-    # fires. Israel-day semantics live in the service; the trigger only has
-    # to be late enough. coalesce + a 6h grace: a pause spanning the fire
-    # time runs it once, late, instead of skipping — and a fully missed day
-    # costs nothing, since the next run recomputes the range from the
-    # watermark and rolls both days.
-    followup_scheduler.add_job(
-        _run_analytics_rollup_job,
-        CronTrigger.from_crontab(ANALYTICS_ROLLUP_CRON, timezone="UTC"),
-        id="meh_2283_analytics_rollup_daily",
-        replace_existing=True,
-        max_instances=1,
-        coalesce=True,
-        misfire_grace_time=6 * 3600,
-    )
-    # MEH-2303 (MEH-2079 chunk C): daily retention purge, one hour after the
-    # roll-up so a day rolled at 01:30 is already owned by the aggregate. The
-    # service only deletes days <= the watermark, so a late or failed roll-up
-    # makes this a no-op for those days rather than a loss.
-    followup_scheduler.add_job(
-        _run_retention_purge_job,
-        CronTrigger.from_crontab(RETENTION_PURGE_CRON, timezone="UTC"),
-        id="meh_2303_retention_purge_daily",
-        replace_existing=True,
-        max_instances=1,
-        coalesce=True,
-        misfire_grace_time=6 * 3600,
-    )
-    # MEH-2756: the rescue pickup-code digest. Registered only when the pilot
-    # AND the digest gate are both on — the digest cannot work before Meta
-    # approves `rescue_codes_digest_v1`, so RESCUE_DIGEST_ENABLED defaults
-    # False and merging the feature sends nothing. Interval rather than cron
-    # because pickup_start is per-offer; see _run_rescue_digest_job. The
-    # watchdog's guards, for the same reason it has them: max_instances=1 +
-    # coalesce so a slow run cannot overlap the next tick, and a 60s grace so
-    # a brief pause runs it late instead of skipping a window.
-    from app.services.rescue_digest import digest_enabled as _digest_enabled
-
-    if settings.rescue_bags_enabled and _digest_enabled():
-        from apscheduler.triggers.interval import IntervalTrigger
-
-        followup_scheduler.add_job(
-            _run_rescue_digest_job,
-            IntervalTrigger(minutes=RESCUE_DIGEST_INTERVAL_MINUTES),
-            id="meh_2756_rescue_codes_digest",
-            replace_existing=True,
-            max_instances=1,
-            coalesce=True,
-            misfire_grace_time=60,
-        )
-        log.info("[RESCUE-DIGEST] job registered — every 5 minutes")
-    else:
-        log.info(
-            "[RESCUE-DIGEST] disabled (pilot=%s, digest=%s) — no job registered",
-            settings.rescue_bags_enabled,
-            _digest_enabled(),
-        )
+    register_scheduler_jobs(followup_scheduler)
     followup_scheduler.start()
     app.state.followup_scheduler = followup_scheduler
+    # MEH-3155: read from the schedule constants (the weekly full-week expiry
+    # this line used to list was removed in MEH-2782).
     log.info(
-        "[FOLLOWUP] scheduler started — daily 10:00 UTC"
-        " + weekly full-week expiry Sun 00:10 Asia/Jerusalem (MEH-1828)"
-        " + daily analytics roll-up 01:30 UTC (MEH-2283)"
-        " + daily retention purge 02:30 UTC (MEH-2303)"
+        "[FOLLOWUP] scheduler started (UTC crontabs) — follow-ups %r"
+        " + analytics roll-up %r (MEH-2283) + retention purge %r (MEH-2303)",
+        FOLLOWUP_CRON,
+        ANALYTICS_ROLLUP_CRON,
+        RETENTION_PURGE_CRON,
     )
 
     yield
