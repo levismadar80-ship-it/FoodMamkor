@@ -40,6 +40,7 @@ from app.services.auth_notifications import (
     notify_producer_registered,
 )
 from app.services.user_deletion import delete_user_and_data  # MEH-2585
+from app.services import resend_verify_cap  # MEH-2906
 from app.services.verify_session import (  # MEH-3087
     set_signup_marker,
     verify_email_session,
@@ -1549,9 +1550,11 @@ def resend_verify(
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """Re-send verification email. Rate-limited to 3/hour per IP."""
+    """Re-send verification email. 3/hour per IP, plus 3/hour and 10/day
+    per account (MEH-2906, services/resend_verify_cap.py)."""
     if user.email_verified:
         return {"detail": "האימייל כבר מאומת"}
+    resend_verify_cap.enforce_per_account_cap(user.id)  # MEH-2906
     token = secrets.token_urlsafe(32)
     expires = utc_now() + timedelta(hours=24)
     user.email_verify_token = token
