@@ -14,13 +14,13 @@
  * History:  MEH-3200 (creation).
  */
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { markSeen, readSeenVersion, unseenRelease } from "@/lib/whats-new";
 
 const SEEN_EVENT = "mehamakor:whats-new-seen";
 export const WELCOME_DISMISSED_KEY = "mehamakor.owner_welcome.dismissed";
 const DAY_MS = 24 * 60 * 60 * 1000;
-/** A business older than this never sees the welcome card. */
+/** A business older than this (day 30 still counts) never sees the welcome card. */
 export const WELCOME_WINDOW_DAYS = 30;
 
 /**
@@ -66,7 +66,7 @@ export function isNewBusiness(createdAt, now) {
   if (!createdAt) return false;
   const t = new Date(createdAt).getTime();
   if (Number.isNaN(t)) return false;
-  return now - t < WELCOME_WINDOW_DAYS * DAY_MS;
+  return now - t <= WELCOME_WINDOW_DAYS * DAY_MS;
 }
 
 /**
@@ -75,18 +75,21 @@ export function isNewBusiness(createdAt, now) {
  */
 export function useOwnerWelcome(createdAt) {
   const [show, setShow] = useState(false);
+  // Holds the dismissal for this visit even when storage is blocked.
+  const closed = useRef(false);
 
   useEffect(() => {
-    let dismissed = false;
+    let dismissed = closed.current;
     try {
-      dismissed = window.localStorage.getItem(WELCOME_DISMISSED_KEY) === "1";
+      dismissed = dismissed || window.localStorage.getItem(WELCOME_DISMISSED_KEY) === "1";
     } catch {
-      dismissed = false;
+      // blocked storage: rely on the in-memory flag
     }
     setShow(!dismissed && isNewBusiness(createdAt, Date.now()));
   }, [createdAt]);
 
   const dismiss = useCallback(() => {
+    closed.current = true;
     try {
       window.localStorage.setItem(WELCOME_DISMISSED_KEY, "1");
     } catch {

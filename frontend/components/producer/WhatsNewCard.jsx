@@ -49,7 +49,7 @@ export default function WhatsNewCard() {
           onClick={dismiss}
           aria-label={t("card_close")}
           data-testid="whats-new-close"
-          className="w-11 h-11 -me-2 -mt-1 inline-flex items-center justify-center rounded-full text-fg-muted hover:text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary shrink-0"
+          className="w-11 h-11 -me-2 -mt-1 inline-flex items-center justify-center rounded-full text-fg-muted hover:text-text focus-ring shrink-0"
         >
           <X size={20} aria-hidden="true" />
         </button>

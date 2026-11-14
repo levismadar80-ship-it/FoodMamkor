@@ -55,7 +55,7 @@ export default function OwnerWelcomeCard({ onClose }) {
           type="button"
           onClick={onClose}
           data-testid="owner-welcome-close"
-          className="min-h-touch inline-flex items-center px-2 text-sm text-fg-muted hover:text-text"
+          className="min-h-touch inline-flex items-center px-2 rounded text-sm text-fg-muted hover:text-text focus-ring"
         >
           {t("close")}
         </button>

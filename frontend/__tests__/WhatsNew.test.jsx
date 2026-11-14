@@ -5,6 +5,7 @@
  *   releases 0 / 1 / many  ×  seen / unseen   (pure helpers, synthetic lists)
  *   card: unseen → open; × → closed and remembered; seen → absent
  *   row: dot while unseen, no dot once seen, gone with 0 releases
+ *   card: «לכל העדכונים» also marks seen; storage that throws never breaks it
  *   archive page: many (newest flagged «חדש») / 0 (empty line)
  *   welcome: new business → shown; dismissed / old / no date → not shown
  * Plus the data contract: every release line exists in he AND en, nothing extra.
@@ -20,12 +21,13 @@ vi.mock("@/i18n/navigation", () => ({
   Link: ({ children, href, ...p }) => <a href={href} {...p}>{children}</a>,
 }));
 
-const releasesMock = vi.hoisted(() => ({ empty: false }));
+// `list` overrides what visibleReleases() returns: [] = zero, two entries = many.
+const releasesMock = vi.hoisted(() => ({ list: null }));
 vi.mock("@/lib/whats-new", async (importOriginal) => {
   const real = await importOriginal();
   return {
     ...real,
-    visibleReleases: (...a) => (releasesMock.empty ? [] : real.visibleReleases(...a)),
+    visibleReleases: (...a) => releasesMock.list ?? real.visibleReleases(...a),
   };
 });
 
@@ -51,7 +53,8 @@ const R = (version, items) => ({ version, key: `v${version.replaceAll(".", "_")}
 
 beforeEach(() => {
   window.localStorage.clear();
-  releasesMock.empty = false;
+  releasesMock.list = null;
+  vi.restoreAllMocks();
 });
 
 describe("lib/whats-new — pure helpers", () => {
@@ -123,6 +126,20 @@ describe("WhatsNewCard (placement א׳)", () => {
     expect(window.localStorage.getItem(WHATS_NEW_SEEN_KEY)).toBe(newest.version);
   });
 
+  it("«לכל העדכונים» marks the release seen too", () => {
+    wrap(<WhatsNewCard />);
+    fireEvent.click(screen.getByRole("link", { name: "לכל העדכונים" }));
+    expect(window.localStorage.getItem(WHATS_NEW_SEEN_KEY)).toBe(newest.version);
+  });
+
+  it("storage that throws: the card still renders and closes without an error", () => {
+    vi.spyOn(Storage.prototype, "getItem").mockImplementation(() => { throw new Error("blocked"); });
+    vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => { throw new Error("blocked"); });
+    wrap(<WhatsNewCard />);
+    expect(screen.getByTestId("whats-new-card")).toBeInTheDocument();
+    expect(() => fireEvent.click(screen.getByRole("button", { name: "סגירה" }))).not.toThrow();
+  });
+
   it("seen: renders nothing", () => {
     window.localStorage.setItem(WHATS_NEW_SEEN_KEY, newest.version);
     const { container } = wrap(<WhatsNewCard />);
@@ -137,6 +154,12 @@ describe("WhatsNewRow (placement ג׳)", () => {
     expect(row).toHaveTextContent("מה חדש במהמקור");
     expect(within(row).getByTestId("whats-new-dot")).toHaveTextContent("יש עדכון חדש");
     expect(within(row).getByRole("link", { name: "לקריאה" })).toHaveAttribute("href", "/producer/dashboard/whats-new");
+  });
+
+  it("0 releases: no row at all", () => {
+    releasesMock.list = [];
+    const { container } = wrap(<WhatsNewRow />);
+    expect(container.innerHTML).toBe("");
   });
 
   it("closing the card clears the row's dot on the same page", () => {
@@ -154,18 +177,28 @@ describe("WhatsNewRow (placement ג׳)", () => {
 });
 
 describe("archive page", () => {
-  it("many/1: lists each release with month + year, the newest marked «חדש», and marks it seen", () => {
+  it("1: lists the release with month + year, labelled «חדש», and marks it seen", () => {
     wrap(<WhatsNewPage />);
     const items = screen.getAllByTestId("whats-new-release");
     expect(items).toHaveLength(visibleReleases().length);
-    expect(items[0]).toHaveTextContent("חדש");
+    expect(within(items[0]).getByTestId("whats-new-latest")).toHaveTextContent("חדש");
     expect(items[0]).toHaveTextContent("נובמבר 2026");
     expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("מה חדש במהמקור");
     expect(window.localStorage.getItem(WHATS_NEW_SEEN_KEY)).toBe(newest.version);
   });
 
+  it("many: only the newest carries the «חדש» label, each with its own month", () => {
+    releasesMock.list = [newest, { ...newest, version: "1.5.0", date: "2026-10-01" }];
+    wrap(<WhatsNewPage />);
+    const items = screen.getAllByTestId("whats-new-release");
+    expect(items).toHaveLength(2);
+    expect(within(items[0]).getByTestId("whats-new-latest")).toBeInTheDocument();
+    expect(within(items[1]).queryByTestId("whats-new-latest")).toBeNull();
+    expect(items[1]).toHaveTextContent("אוקטובר 2026");
+  });
+
   it("0: shows the empty line instead of a list", () => {
-    releasesMock.empty = true;
+    releasesMock.list = [];
     wrap(<WhatsNewPage />);
     expect(screen.getByTestId("whats-new-empty")).toHaveTextContent("עוד אין עדכונים. כשמשהו ישתנה, הוא יופיע כאן.");
     expect(screen.queryByTestId("whats-new-release")).toBeNull();
@@ -176,12 +209,26 @@ describe("welcome card", () => {
   const DAY = 24 * 60 * 60 * 1000;
   const now = Date.UTC(2026, 10, 15, 12);
 
-  it("isNewBusiness: day 0 and day 29 yes; day 31, missing or bad date no", () => {
+  it("isNewBusiness: day 0, 29 and 30 yes; day 31, missing or bad date no", () => {
     expect(isNewBusiness(new Date(now).toISOString(), now)).toBe(true);
     expect(isNewBusiness(new Date(now - 29 * DAY).toISOString(), now)).toBe(true);
+    expect(isNewBusiness(new Date(now - 30 * DAY).toISOString(), now)).toBe(true);
     expect(isNewBusiness(new Date(now - 31 * DAY).toISOString(), now)).toBe(false);
     expect(isNewBusiness(null, now)).toBe(false);
     expect(isNewBusiness("not a date", now)).toBe(false);
+  });
+
+  it("useOwnerWelcome with storage that throws: shown, and dismiss hides it without an error", () => {
+    vi.spyOn(Storage.prototype, "getItem").mockImplementation(() => { throw new Error("blocked"); });
+    vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => { throw new Error("blocked"); });
+    const created = new Date().toISOString();
+    const h = renderHook(({ c }) => useOwnerWelcome(c), { initialProps: { c: created } });
+    expect(h.result.current.show).toBe(true);
+    act(() => h.result.current.dismiss());
+    expect(h.result.current.show).toBe(false);
+    // A later re-read (new created_at value) must not bring it back this visit.
+    h.rerender({ c: new Date(Date.parse(created) - 1000).toISOString() });
+    expect(h.result.current.show).toBe(false);
   });
 
   it("useOwnerWelcome: shown for a new business until dismissed, then never again", () => {

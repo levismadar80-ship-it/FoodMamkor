@@ -53,7 +53,7 @@ export default function ProducerDashboardWhatsNewPage() {
                 {i === 0 && (
                   <>
                     {" · "}
-                    <span className="text-primary font-semibold">{t("latest_label")}</span>
+                    <span data-testid="whats-new-latest" className="text-primary font-semibold">{t("latest_label")}</span>
                   </>
                 )}
               </p>

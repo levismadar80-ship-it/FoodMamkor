@@ -4,9 +4,10 @@
 
 ## מתי
 
-בכל PR של גרסה (`staging → main`). `scripts/checks/whats-new-release-guard.sh` חוסם PR ל-main
-כשהרשומה החדשה ביותר ב-`frontend/lib/whats-new.js` לא חדשה מהתג האחרון. הכל נעשה על ידי
-ה-thread של הגרסה. שום דבר לא תלוי בזיכרון של ספיר.
+בכל PR ל-main: גרסה (`staging → main`) וגם hotfix. `scripts/checks/whats-new-release-guard.sh` חוסם PR ל-main
+כשהרשומה החדשה ביותר ב-`frontend/lib/whats-new.js` לא חדשה מהרשומה החדשה ביותר בעותק של main
+(ורק כשאין עותק כזה, מהתג האחרון). hotfix מוסיף רשומת patch עם `items: 0`, אלא אם התיקון
+משנה משהו שבית עסק רואה. הכל נעשה על ידי ה-thread של הגרסה. שום דבר לא תלוי בזיכרון של ספיר.
 
 ## איך
 
