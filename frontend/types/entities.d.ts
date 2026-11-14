@@ -2,7 +2,7 @@
  * Module:   entities.d.ts
  * Purpose:  The loose shapes of API rows that several components take as a
  *           prop, so a JSDoc prop can name the fields it reads instead of
- *           `any`. Only the fields components read are listed; the index
+ *           an untyped value. Only the fields components read are listed; the index
  *           signature keeps every other field of the API row allowed.
  * Usage:    JSDoc `import("@/types/entities").ProducerSummary` (no reference
  *           line needed — an import type resolves the module itself).
