@@ -228,6 +228,24 @@ def thank_suggester(
         raise HTTPException(status_code=409, detail="אין כתובת אימייל בהמלצה הזו")
     if not lead.suggester_wants_update:
         raise HTTPException(status_code=409, detail="לא ביקשו עדכון על ההמלצה הזו")
+    # MEH-2642 (M2): since MEH-2642 the address is only ever taken from a
+    # verified account, but rows from before it hold whatever someone typed —
+    # possibly a stranger's address. Mail goes only to an address that belongs
+    # to a verified account today. No data is changed: an old row whose owner
+    # later signs up and verifies becomes thankable on its own.
+    owner_verified = (
+        db.query(User.id)
+        .filter(
+            func.lower(User.email) == lead.suggested_by_email.strip().lower(),
+            User.email_verified.is_(True),
+        )
+        .first()
+    )
+    if owner_verified is None:
+        raise HTTPException(
+            status_code=409,
+            detail="האימייל בהמלצה הזו לא שייך לחשבון מאומת, אז לא נשלח אליו",
+        )
     if lead.suggester_thanked_at is not None:
         raise HTTPException(status_code=409, detail="תודה כבר נשלחה")
     if lead.status != THANKABLE_STATUS:

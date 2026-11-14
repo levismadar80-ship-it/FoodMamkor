@@ -650,7 +650,10 @@ class TestMetricsCommunityCount:
 # ---------- thank the suggester ----------
 
 
-def _thankable_lead(db, **overrides) -> OutreachLead:
+def _thankable_lead(db, *, account: str | None = "verified", **overrides) -> OutreachLead:
+    """MEH-2642: a thank-you goes only to an address that belongs to a verified
+    account. `account` builds that owner: "verified" (default), "unverified",
+    or None (a typed address with no account, as rows from before MEH-2642)."""
     fields = {
         "name": "מעדניית הזיתים",
         "city": "חיפה",
@@ -661,6 +664,12 @@ def _thankable_lead(db, **overrides) -> OutreachLead:
         "suggester_wants_update": True,
     }
     fields.update(overrides)
+    if account is not None and fields.get("suggested_by_email"):
+        make_user(
+            db,
+            email=fields["suggested_by_email"],
+            email_verified=(account == "verified"),
+        )
     lead = OutreachLead(**fields)
     db.add(lead)
     db.commit()
@@ -714,6 +723,40 @@ class TestThankSuggester:
         assert r.status_code == 409
         assert "לא ביקשו" in r.json()["detail"]
         send.assert_not_called()
+
+    def test_409_when_the_address_has_no_account(self, client, db, monkeypatch):
+        """MEH-2642 M2: rows from before MEH-2642 carry an address someone
+        typed, never verified. Those must not get mail from us."""
+        send = _mock_send_email(monkeypatch)
+        lead = _thankable_lead(db, account=None)
+        r = client.post(
+            f"/admin/outreach/{lead.id}/thank-suggester", headers=_admin_headers(db)
+        )
+        assert r.status_code == 409
+        assert "חשבון מאומת" in r.json()["detail"]
+        send.assert_not_called()
+
+    def test_409_when_the_account_is_not_verified(self, client, db, monkeypatch):
+        send = _mock_send_email(monkeypatch)
+        lead = _thankable_lead(db, account="unverified")
+        r = client.post(
+            f"/admin/outreach/{lead.id}/thank-suggester", headers=_admin_headers(db)
+        )
+        assert r.status_code == 409
+        assert "חשבון מאומת" in r.json()["detail"]
+        send.assert_not_called()
+
+    def test_account_match_ignores_case(self, client, db, monkeypatch):
+        send = _mock_send_email(monkeypatch)
+        make_user(db, email="dana@example-suggester.co.il", email_verified=True)
+        lead = _thankable_lead(
+            db, account=None, suggested_by_email="Dana@Example-Suggester.co.il"
+        )
+        r = client.post(
+            f"/admin/outreach/{lead.id}/thank-suggester", headers=_admin_headers(db)
+        )
+        assert r.status_code == 200
+        send.assert_called_once()
 
     def test_409_when_the_business_is_not_registered_yet(self, client, db, monkeypatch):
         send = _mock_send_email(monkeypatch)

@@ -113,7 +113,7 @@ export default function AdminOutreachPage() {
 
   // MEH-2633. Deliberately no success toast: `load()` refreshes and the row
   // then shows the thanked date, which is the feedback. A failure surfaces the
-  // backend's own Hebrew `detail` (the four 409 rules each have their own
+  // backend's own Hebrew `detail` (the 409 rules each have their own
   // sentence in admin_outreach.thank_suggester), so this adds no frontend copy
   // and cannot drift from what the server actually enforced.
   const handleThankSuggester = async (id) => {
