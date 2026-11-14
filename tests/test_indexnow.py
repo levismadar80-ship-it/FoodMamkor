@@ -269,7 +269,8 @@ class TestProducerWritePoints:
 
     @pytest.mark.parametrize("start", ["approved", "inactive"])
     def test_toggle_hide_and_unhide_both_ping(self, client, db, posts, start):
-        p = make_producer(db, status=start)
+        # MEH-2945: un-pausing runs the approval gates, so the row passes them.
+        p = make_producer(db, status=start, images=[TEST_IMAGE], phone_verified=True)
         resp = client.post(f"/admin/producers/{p.id}/toggle-status", headers=_admin(db))
         assert resp.status_code == 200, resp.text
         assert _urls(posts) == _both(f"/producer/{p.id}")
