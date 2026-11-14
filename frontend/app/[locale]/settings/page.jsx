@@ -398,6 +398,7 @@ export function ProfileTab() {
         <Input
           id="profile-phone"
           type="tel"
+          autoComplete="tel"
           label={
             <>
               {t("field_phone_label")}{" "}

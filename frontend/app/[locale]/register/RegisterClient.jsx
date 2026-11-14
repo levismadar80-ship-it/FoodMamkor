@@ -390,6 +390,7 @@ function RegisterPageBody() {
           <Input
             id="register-name"
             data-testid="register-name"
+            autoComplete="name"
             label={t("auth.register.consumer.fields.name")}
             value={form.name}
             onChange={set("name")}
@@ -402,6 +403,7 @@ function RegisterPageBody() {
             id="register-email"
             data-testid="register-email"
             type="email"
+            autoComplete="email"
             label={t("auth.register.consumer.fields.email")}
             value={form.email}
             onChange={set("email")}

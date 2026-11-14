@@ -319,6 +319,7 @@ export default function Footer() {
               <input
                 id="footer-newsletter-email"
                 type="email"
+                autoComplete="email"
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
