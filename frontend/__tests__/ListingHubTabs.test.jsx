@@ -1,6 +1,6 @@
 /**
  * MEH-2859 — the shared hub tab row. MEH-3125 — split into two groups: the
- * row shows only the active tab's group, and draws nothing with one tab.
+ * row shows only the active tab's group.
  *
  * What a green here is supposed to mean: the row shows «אירועים» ·
  * «חוויות» · «קבוצות רכישה» · «סלי הפתעה» in that order, the last two appear
@@ -67,17 +67,19 @@ describe("ListingHubTabs — which tabs exist (MEH-3125: two groups)", () => {
     expect(labels()).toEqual(["events.list.tab_group_buys", "events.list.tab_rescue"]);
   });
 
-  // 0 / 1 / many: a group with ONE tab draws no row (the H1 already names the
-  // page), and the action — when one is passed — still renders.
+  // 0 / 1 / many: a group with ONE tab still draws the row, holding the page's
+  // own tab — so a sibling gate that opens after paint adds a tab inside an
+  // existing row instead of mounting the row and shifting the page (CLS).
   for (const [active, other] of [
     ["groupBuys", "rescue"],
     ["rescue", "groupBuys"],
   ]) {
-    it(`/${active} with no ${other} supply: no tab row at all`, () => {
+    it(`/${active} with no ${other} supply: the row holds only its own tab, selected`, () => {
       expect(gates[other], "control: the sibling's gate is off").toBe(false);
       render(<ListingHubTabs active={active} action={<a href="/x">פעולה</a>} />);
-      expect(screen.queryByRole("tablist")).toBeNull();
-      expect(screen.queryAllByRole("tab")).toHaveLength(0);
+      expect(screen.getByRole("tablist")).toBeTruthy();
+      expect(values()).toEqual([active]);
+      expect(screen.getByRole("tab").getAttribute("aria-selected")).toBe("true");
       expect(screen.getAllByText("פעולה")).toHaveLength(1);
     });
 
