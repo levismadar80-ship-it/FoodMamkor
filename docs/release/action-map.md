@@ -21,12 +21,12 @@
 | Internal routes (allowlisted) | 10 + 4 docs | — | — | — | — |
 | Business tools | 51 | 49 | 1 | 1 | 0 |
 | Pages — public | 52 | 49 | 0 | 3 | 0 |
-| Pages — dashboard | 18 | 15 | 0 | 3 | 0 |
+| Pages — dashboard | 19 | 16 | 0 | 3 | 0 |
 | Pages — admin | 19 | 17 | 0 | 2 | 0 |
 | State-machine rows (audit, every non-exempt section) | 45 | 40 | 0 | 4 | 1 |
 | Mandatory extra rows (§B.3) | 25 | 22 | 1 | 2 | 0 |
 
-Pages opened by a CI-run Playwright spec: **40 / 89** — the rest are covered only by a Vitest import (which may test no more than the page's metadata).
+Pages opened by a CI-run Playwright spec: **40 / 90** — the rest are covered only by a Vitest import (which may test no more than the page's metadata).
 
 **GAP cells in total: 85** (route positive 6 · route negative 64 · tools 1 · pages 8 · machine rows 4 · extra rows 2). Not a gate yet — the plan's gate is "no *new* GAP" (a ratchet), later.
 
@@ -374,7 +374,7 @@ Registration order of the app. Actor from the dependency tree: `require_admin` �
 | `kashrut_verified` | trust | live | — | n/a | `frontend/__tests__/AdminKashrutPage.test.jsx:5` | GAP | covered |
 | `editor_pick` | trust | live | — | n/a | `frontend/__tests__/featuredProducer.test.js:2` | n/a | covered |
 | `reservist_diet_tags` | trust | live | — | n/a | `frontend/__tests__/ReservistBadgeLine.test.jsx:18` | n/a | covered |
-| `reviews_contacted` | trust | live | — | `tests/test_api.py:2699` (8/8 routes in file) | `frontend/__tests__/ReviewsSection.test.jsx:3` | n/a | covered |
+| `reviews_contacted` | trust | live | `/producer/dashboard/reviews` | `tests/test_api.py:2699` (8/8 routes in file) | `frontend/__tests__/ReviewsSection.test.jsx:3` | GAP | covered |
 | `review_request` | trust | live | — | n/a | `frontend/__tests__/RequestReviewCard.test.jsx:18` | n/a | covered |
 | `views` | insights | live | — | `tests/test_api.py:3918` (21/21 routes in file) | `frontend/__tests__/DashboardInsightsFollowersCopy.test.jsx:24` | `frontend/e2e/flows/manual/dashboard-shell.spec.ts:613` | covered |
 | `search_impressions` | insights | live | — | `tests/test_api.py:3918` (21/21 routes in file) | `frontend/__tests__/DashboardInsightsFollowersCopy.test.jsx:24` | `frontend/e2e/flows/manual/dashboard-shell.spec.ts:613` | covered |
@@ -466,6 +466,7 @@ Registration order of the app. Actor from the dependency tree: `require_admin` �
 | `/producer/dashboard/recipes` | GAP | `frontend/__tests__/DashboardEmptyStateFormExclusive.test.jsx:65` | covered |
 | `/producer/dashboard/rescue/counter-card` | GAP | `frontend/__tests__/RescueCounterCardLink.test.jsx:19` | covered |
 | `/producer/dashboard/rescue` | GAP | `frontend/__tests__/RescueCounterCardLink.test.jsx:18` | covered |
+| `/producer/dashboard/reviews` | GAP | `frontend/__tests__/DashboardReviewsPage.test.jsx:9` | covered |
 | `/producer/dashboard/tools` | `frontend/e2e/flows/manual/dashboard-manage-events.spec.ts:149` | `frontend/__tests__/DashboardSharePlacement.test.jsx:13` | covered |
 
 ### Admin
