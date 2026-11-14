@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { ShieldCheck, Star, User } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import LoginPromptModal from "@/components/LoginPromptModal";
@@ -39,6 +39,8 @@ import { showToast } from "@/lib/toast";
 
 const STAR_COUNT = 5;
 const STAR_SIZE = 28;
+// One «contact first» toast per burst of taps (toasts last ~4 s).
+const TOAST_GAP_MS = 4000;
 const DRAFT_KEY = (producerId) => `review_draft_stars_${producerId}`;
 
 /** Remember the star a reader tapped before they were allowed to write. */
@@ -124,6 +126,8 @@ export default function ReviewInviteCard(p) {
   const t = useTranslations("reviews");
   const [hovered, setHovered] = useState(0);
   const [loginOpen, setLoginOpen] = useState(false);
+  // The toast layer does not dedupe: fast repeat taps would stack copies.
+  const lastToastRef = useRef(0);
   // MEH-3130: a star the reader may not use yet says why. Guest → the shared
   // login prompt; signed in without a contact → contact card + a toast.
   const onAsk =
@@ -131,6 +135,9 @@ export default function ReviewInviteCard(p) {
       ? () => setLoginOpen(true)
       : () => {
           scrollToContactCard();
+          const now = Date.now();
+          if (now - lastToastRef.current < TOAST_GAP_MS) return;
+          lastToastRef.current = now;
           showToast.info(t("contact_first_toast"));
         };
   const title = t("invite_title", { name: producerName || "" });

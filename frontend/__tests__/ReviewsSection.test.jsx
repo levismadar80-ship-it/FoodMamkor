@@ -975,7 +975,7 @@ describe("ReviewsSection — the star says why (MEH-3130)", () => {
     expect(await screen.findByRole("dialog")).toBeInTheDocument();
   });
 
-  it("signed in, not contacted: each star tap scrolls AND toasts why", async () => {
+  it("signed in, not contacted: a star tap scrolls AND toasts why, once per burst", async () => {
     const { showToast } = await import("@/lib/toast");
     showToast.info.mockClear();
     authState.user = { id: "u-9", producer_id: null };
@@ -985,5 +985,9 @@ describe("ReviewsSection — the star says why (MEH-3130)", () => {
     expect(showToast.info).toHaveBeenCalledTimes(1);
     expect(showToast.info).toHaveBeenCalledWith("contact_first_toast");
     expect(screen.queryByRole("dialog")).toBeNull();
+    // A burst of taps does not stack copies of the same toast.
+    fireEvent.click(screen.getByTestId("reviews-star-3"));
+    fireEvent.click(screen.getByTestId("reviews-star-4"));
+    expect(showToast.info).toHaveBeenCalledTimes(1);
   });
 });
