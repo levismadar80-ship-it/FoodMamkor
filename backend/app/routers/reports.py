@@ -1,7 +1,7 @@
 from typing import Any
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
 from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
@@ -11,6 +11,7 @@ from app.database import get_db
 from app.models import Producer, Report, User
 from app.rate_limit import limiter
 from app.schemas.schemas import ReportCreate
+from app.services.report_notifications import notify_admin_new_report
 from app.utils.clock import utc_now
 
 router = APIRouter(tags=["reports"])
@@ -24,10 +25,11 @@ AUTO_FLAG_THRESHOLD = 3
 
 @router.post("/producers/{producer_id}/report", status_code=201, response_model=None)
 @limiter.limit("5/hour")
-def report_producer(
+def report_producer(  # noqa: PLR0913 — all args are FastAPI-injected; MEH-3223 added background_tasks
     request: Request,
     producer_id: UUID,
     data: ReportCreate,
+    background_tasks: BackgroundTasks,
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> dict[str, Any]:
@@ -75,6 +77,16 @@ def report_producer(
         .scalar()
     )
     flagged = count >= AUTO_FLAG_THRESHOLD
+    # MEH-3223 (D12): the admin hears about every report, by email. Queued only
+    # here, after the commit — a duplicate (409) above never reaches it. Plain
+    # values only: the task runs after the Session closes.
+    background_tasks.add_task(
+        notify_admin_new_report,
+        producer.name or "",
+        data.reason,
+        int(count or 0),
+        test_cause=bool(producer.is_test),  # MEH-2952
+    )
 
     return {"detail": "Report submitted", "flagged_for_review": flagged}
 

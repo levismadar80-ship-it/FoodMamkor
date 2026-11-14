@@ -1461,7 +1461,7 @@ preserved (admin → 200).
 ### Reports (`app/routers/reports.py`)
 
 ```
-POST /producers/{id}/report                auth  — 3 OPEN reports auto-flag for admin; 409 if already reported (MEH-773)
+POST /producers/{id}/report                auth  — 3 OPEN reports auto-flag for admin; 409 if already reported (MEH-773); every new report emails settings.admin_email (MEH-3223)
 GET  /admin/reports                        admin — every producer with >=1 OPEN report; report_count (open) + auto_flagged (>=3). Closed excluded (MEH-1266)
 POST /admin/reports/{report_id}/resolve    admin — status→resolved + resolved_at/by; 409 if already closed (MEH-1266)
 POST /admin/reports/{report_id}/dismiss    admin — status→dismissed + resolved_at/by; 409 if already closed (MEH-1266)
