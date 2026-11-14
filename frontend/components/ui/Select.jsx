@@ -22,7 +22,7 @@ import { fieldClasses, FieldShell } from "./field";
  *   label?: import("react").ReactNode,
  *   helperText?: import("react").ReactNode,
  *   error?: import("react").ReactNode,
- *   size?: "sm" | "xs",
+ *   size?: "md" | "sm" | "xs",
  *   inline?: boolean,
  *   id?: string,
  *   className?: string,

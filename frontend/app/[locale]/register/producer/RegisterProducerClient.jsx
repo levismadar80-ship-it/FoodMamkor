@@ -17,6 +17,7 @@ import PasswordStrength from "@/components/PasswordStrength";
 import ProducerOAuthButtons from "@/components/ProducerOAuthButtons";
 import RegisterCardPreview from "@/components/RegisterCardPreview";
 import Input from "@/components/ui/Input";
+import Select from "@/components/ui/Select";
 import RegisterNameCheck from "@/components/RegisterNameCheck";
 import RegisterPreflight from "./RegisterPreflight";
 // MEH-1808: Leaflet touches `window` at import time, so the confirmation map is
@@ -1183,7 +1184,7 @@ function RegisterProducerPageBody({ routeKind }) {
                   *
                 </span>
               </label>
-              <input
+              <Input
                 id="producer-account-password"
                 type="password"
                 data-testid="register-account-password"
@@ -1191,7 +1192,6 @@ function RegisterProducerPageBody({ routeKind }) {
                 value={form.password}
                 onChange={set("password")}
                 required
-                className="w-full border rounded-sm px-3 py-2 min-h-touch focus-ring"
                 dir="ltr"
                 minLength={12}
                 autoComplete="new-password"
@@ -1275,18 +1275,15 @@ function RegisterProducerPageBody({ routeKind }) {
                   *
                 </span>
               </label>
-              <input
+              <Input
                 id="producer-phone"
                 data-testid="register-details-phone"
                 placeholder={t("auth.register.producer.fields.phone")}
                 value={form.phone}
                 onChange={set("phone")}
                 required
-                aria-invalid={phoneErrorMessage ? "true" : undefined}
+                invalid={!!phoneErrorMessage}
                 aria-describedby={phoneErrorMessage ? "register-phone-error" : undefined}
-                className={`w-full border rounded-sm px-3 py-2 min-h-touch focus-ring ${
-                  phoneErrorMessage ? "border-danger-400" : ""
-                }`}
                 dir="ltr"
               />
               {phoneErrorMessage && (
@@ -1503,7 +1500,7 @@ function RegisterProducerPageBody({ routeKind }) {
                 <p className="text-xs text-fg-muted mb-2 text-start">
                   {t("auth.register.producer.fields.license_what_is_it")}
                 </p>
-                <input
+                <Input
                   id="producer-license-required"
                   data-testid="register-category-license"
                   value={form.producer_license_number}
@@ -1516,7 +1513,7 @@ function RegisterProducerPageBody({ routeKind }) {
                   maxLength={20}
                   inputMode="numeric"
                   // text-right kept: dir="ltr" numeric license — physical right = start side in the RTL form; logical text-start would follow the field's own ltr direction instead
-                  className="w-full border rounded-sm ps-3 pe-3 py-2 min-h-touch text-right focus-ring"
+                  className="text-right"
                   dir="ltr"
                 />
                 {licenseWarning && (
@@ -1591,14 +1588,14 @@ function RegisterProducerPageBody({ routeKind }) {
                 >
                   {t("auth.register.producer.fields.license_optional_label")}
                 </label>
-                <input
+                <Input
                   id="producer-license-optional"
                   value={form.producer_license_number}
                   onChange={set("producer_license_number")}
                   maxLength={20}
                   inputMode="numeric"
                   // text-right kept: dir="ltr" numeric license — physical right = start side in the RTL form; logical text-start would follow the field's own ltr direction instead
-                  className="w-full border rounded-sm ps-3 pe-3 py-2 min-h-touch text-right focus-ring"
+                  className="text-right"
                   dir="ltr"
                 />
                 {licenseWarning && (
@@ -1796,7 +1793,8 @@ function RegisterProducerPageBody({ routeKind }) {
               >
                 {t("auth.register.producer.fields.referral_source.optional_hint")}
               </p>
-              <select
+              <Select
+                size="md"
                 id="register-referral-source"
                 data-testid="register-referral-source"
                 value={form.referral_source}
@@ -1810,7 +1808,7 @@ function RegisterProducerPageBody({ routeKind }) {
                       value === "other" ? prev.referral_source_other : "",
                   }));
                 }}
-                className="w-full border rounded-sm px-3 py-2 min-h-touch bg-surface text-start focus-ring"
+                className="text-start"
               >
                 <option value="" disabled>
                   {t("auth.register.producer.fields.referral_source.placeholder")}
@@ -1822,9 +1820,9 @@ function RegisterProducerPageBody({ routeKind }) {
                     )}
                   </option>
                 ))}
-              </select>
+              </Select>
               {form.referral_source === "other" && (
-                <input
+                <Input
                   id="register-referral-source-other"
                   data-testid="register-referral-source-other"
                   type="text"
@@ -1840,7 +1838,7 @@ function RegisterProducerPageBody({ routeKind }) {
                   aria-label={t(
                     "auth.register.producer.fields.referral_source.other_placeholder",
                   )}
-                  className="w-full border rounded-sm px-3 py-2 min-h-touch mt-2 text-start focus-ring"
+                  className="mt-2 text-start"
                 />
               )}
             </div>
