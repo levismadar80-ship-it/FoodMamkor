@@ -8,8 +8,9 @@ import { Link } from "@/i18n/navigation";
 import { SkeletonStyles } from "@/components/Skeleton";
 
 // S5 FINAL (MEH-763): split-view sheet — TWO snap points, peek + 45vh open.
-// PEEK/HALF export names kept (useFirstVisitHints imports PEEK; useMapSync
-// imports HALF for the marker-tap open) — only HALF's value moved 55→45.
+// PEEK/HALF export names kept (useFirstVisitHints and useMapSync import PEEK —
+// a marker tap leaves the sheet collapsed since MEH-3119; MapClient imports
+// both) — only HALF's value moved 55→45.
 // FULL is retained as an exported constant but no longer a snap stop.
 const PEEK = 14;
 const HALF = 45;
@@ -108,6 +109,8 @@ export default function MapBottomSheet({
   nearMeEmpty = false,
   // MEH-2639: the count line names an area only when one is actually set.
   hasOrigin = false,
+  // MEH-3119: px the picked-business card adds above the sheet's top edge.
+  rideExtraPx = 0,
 }) {
   const t = useTranslations("map.bottom_sheet");
   // MEH-1054: existing key reused for the skeleton's AT label (no new copy).
@@ -148,11 +151,18 @@ export default function MapBottomSheet({
   // instead of teleporting to the target while the sheet is still animating (that
   // teleport briefly floated the pill over the collapsing cards on a button/marker
   // HALF→PEEK collapse — the very overlap class this ticket fixes).
+  //
+  // MEH-3119: `--map-sheet-own-h` is the sheet alone; `--map-sheet-h` is the
+  // edge the map controls ride. They differ only while the picked-business
+  // card floats on top of the sheet (`rideExtraPx` = its height + gap), so the
+  // controls and the attribution clear the card with no change of their own.
   useEffect(() => {
     const root = document.documentElement;
-    root.style.setProperty("--map-sheet-h", sheetHeight(heightVh));
+    const own = sheetHeight(heightVh);
+    root.style.setProperty("--map-sheet-own-h", own);
+    root.style.setProperty("--map-sheet-h", rideExtraPx > 0 ? `calc(${own} + ${rideExtraPx}px)` : own);
     root.style.setProperty("--map-sheet-anim", transient != null ? "0ms" : "300ms");
-  }, [heightVh, transient]);
+  }, [heightVh, transient, rideExtraPx]);
   // Clean up ONLY on unmount so a non-/map page never inherits a stale offset
   // (mirrors CookieBanner.jsx:50). Kept separate from the publish effect so the
   // per-frame drag updates don't churn a remove/re-add cycle.
@@ -160,6 +170,7 @@ export default function MapBottomSheet({
     return () => {
       const root = document.documentElement;
       root.style.removeProperty("--map-sheet-h");
+      root.style.removeProperty("--map-sheet-own-h");
       root.style.removeProperty("--map-sheet-anim");
     };
   }, []);
@@ -264,7 +275,17 @@ export default function MapBottomSheet({
       {/* Drag handle — MEH-1029 (MAP-11): S5 chrome 44×5 (was 32×4). Warm tan
           (#D4C5A9) kept as-is — tokenization is a separate token-additions issue.
           `justify-center` is the direction-neutral centering idiom (no physical prop). */}
-      <div className="flex justify-center py-2 cursor-grab shrink-0" aria-hidden="true">
+      {/* MEH-3119: a click on the handle toggles the sheet. A marker tap used to
+          be the only non-touch way to open it; it now leaves the sheet at
+          PEEK, so without this a mouse (narrow window, tablet with a pointer)
+          could not open the list at all. A touch DRAG does not end in a
+          click (a moved finger is not a tap), so the two do not fight. */}
+      <div
+        className="flex justify-center py-2 cursor-grab shrink-0"
+        aria-hidden="true"
+        data-testid="map-sheet-handle"
+        onClick={() => onSnapChange(snap === PEEK ? HALF : PEEK)}
+      >
         <div className="w-11 h-[5px] rounded-full bg-[#D4C5A9]" />
       </div>
 
@@ -333,13 +354,11 @@ export default function MapBottomSheet({
           breathing room under the peek header (the header's `pb-2` alone left the
           first card's top edge visually touching the count row). Small so it
           doesn't eat the already-short PEEK content area.
-          MEH-1298: `[overflow-anchor:none]` disables the browser's scroll
-          anchoring for this container so the MobileSheetSelectedCard mount ->
-          scrollTop compensation (MobileSheetSelectedCard.jsx) is deterministic
-          across browsers. Chromium anchors natively (so the manual comp would
-          double-shift); iOS Safari's anchoring is weaker (so it would shift with
-          no comp). Turning anchoring OFF makes the manual comp the single,
-          consistent mechanism -> zero list shift everywhere. */}
+          MEH-1298: `[overflow-anchor:none]` was set for the pinned selected
+          card's mount -> scrollTop compensation. MEH-3119 moved that card out
+          of the sheet (it floats over the map), so nothing mounts above the
+          list any more; the class stays so a list that re-sorts under a
+          finger does not get the browser's own anchoring shift. */}
       {/* MEH-2148: `[overscroll-behavior-y:contain]` stops a scroll that reaches
           either end of this list from chaining to the document underneath —
           the effect visible in the 21/08 captures as the page itself moving
