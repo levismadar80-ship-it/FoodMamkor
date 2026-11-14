@@ -34,7 +34,7 @@
  * renders exactly like "דרך שרה matched nothing". The caller needs to tell
  * them apart to log something actionable.
  */
-export class ProviderError extends Error {
+class ProviderError extends Error {
   constructor(provider, status, detail) {
     super(`${provider} address lookup rejected (HTTP ${status})`);
     this.name = "ProviderError";

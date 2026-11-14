@@ -203,7 +203,7 @@ const SAFE_HEX_COLOR = /^#([0-9a-fA-F]{3,4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/;
  * @returns {string} `value` when it is a plain hex colour, else the primary
  *   token. Exported for the guard test; consumers get it via styleForProducer.
  */
-export function safeCategoryColor(value) {
+function safeCategoryColor(value) {
   const asString = String(value ?? "");
   return SAFE_HEX_COLOR.test(asString) ? asString : DEFAULT_CATEGORY_STYLE.color;
 }

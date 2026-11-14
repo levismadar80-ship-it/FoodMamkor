@@ -387,4 +387,4 @@ export default function MapBottomSheet({
   );
 }
 
-export { PEEK, HALF, FULL };
+export { PEEK, HALF };

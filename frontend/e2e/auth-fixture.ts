@@ -54,7 +54,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { isStale } from "./token-freshness";
 
-export const AUTH_DIR = path.join(__dirname, ".auth");
+const AUTH_DIR = path.join(__dirname, ".auth");
 
 export const fixturePath = (role: string): string =>
   path.join(AUTH_DIR, `${role}.json`);
@@ -63,7 +63,7 @@ export const fixtureExists = (role: string): boolean =>
   fs.existsSync(fixturePath(role));
 
 /** The JWT global-setup injected into localStorage["token"] for this role. */
-export function tokenFromFixture(role: string): string {
+function tokenFromFixture(role: string): string {
   const file = fixturePath(role);
   if (!fs.existsSync(file)) {
     throw new Error(

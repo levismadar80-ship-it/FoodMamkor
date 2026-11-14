@@ -28,8 +28,8 @@ export const ORDER_WINDOW_DAYS = [
   "saturday",
 ];
 
-export const DEFAULT_ORDER_OPEN = "09:00";
-export const DEFAULT_ORDER_CLOSE = "14:00";
+const DEFAULT_ORDER_OPEN = "09:00";
+const DEFAULT_ORDER_CLOSE = "14:00";
 
 // Zero-padded 24h — mirrors the backend regex so the client rejects the same
 // strings the API would 422 on. `<input type="time">` already emits this shape;

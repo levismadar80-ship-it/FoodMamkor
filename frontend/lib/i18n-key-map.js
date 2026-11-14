@@ -3,7 +3,7 @@
 // so downstream consumers of useLanguage().t can keep passing old keys
 // until Wave 2 migrates each call site to useTranslations() directly.
 // DELETE THIS FILE when language-context.js is removed in Wave 2.
-export const OLD_TO_NEW = {
+const OLD_TO_NEW = {
   nav_discover: "nav.discover",
   nav_map: "nav.map",
   nav_events: "nav.events",

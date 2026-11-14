@@ -167,7 +167,3 @@ export function submissionMissingItems(producer) {
   return missing;
 }
 
-/** Convenience predicate — one definition of ready, no second condition. */
-export function isReadyForReview(producer) {
-  return submissionMissingItems(producer).length === 0;
-}

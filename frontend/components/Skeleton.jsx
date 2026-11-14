@@ -74,7 +74,7 @@ export function SkeletonBlock({ as: Tag = "span", tone = "neutral", className = 
   );
 }
 
-export function SkeletonCard({ className = "" }) {
+function SkeletonCard({ className = "" }) {
   return (
     <div
       className={`skeleton-box rounded-lg ${className}`}
@@ -84,7 +84,7 @@ export function SkeletonCard({ className = "" }) {
   );
 }
 
-export function SkeletonLine({ width = "100%", height = "14px", className = "" }) {
+function SkeletonLine({ width = "100%", height = "14px", className = "" }) {
   return (
     <div
       className={`skeleton-box rounded-lg ${className}`}
