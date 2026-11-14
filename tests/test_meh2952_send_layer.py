@@ -997,6 +997,12 @@ PINNED: dict[tuple[str, str, str], tuple[int, str, str]] = {
         AUTH,
         "wrapper param ← user.is_test captured before delete",
     ),
+    # MEH-3104: the notice to the OLD address after an email change.
+    ("services/auth_emails.py", "send_email_changed_notice", "send_email"): (
+        1,
+        AUTH,
+        "wrapper param ← user.is_test (users_me._queue_email_change_mails)",
+    ),
     # MEH-2974: the invite itself. There is no `users` row yet — the whole
     # point of the flow — so the only is_test signal available is the
     # BUSINESS's, which is what the caller passes.
