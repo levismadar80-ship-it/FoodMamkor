@@ -275,6 +275,11 @@ async def validate_and_upload_image(file: UploadFile) -> str:
     return result["secure_url"]
 ```
 
+**מחיקת תמונה ישנה (MEH-3247):** ניקוי תמונה מ-Cloudinary בודק קודם שאף שורה
+אחרת לא משתמשת באותו public_id (`services/image_refs.py`), ואם הבדיקה נכשלת —
+לא מוחקים. בלי זה, בעלת עסק יכלה להכניס לגלריה שלה כתובת של תמונה של עסק אחר,
+להסיר אותה, ולמחוק לו את התמונה. פירוט: DATA.md, סעיף Upload.
+
 ### 7. CORS — אל תאפשרי לכולם
 
 ```python
@@ -1153,6 +1158,7 @@ Combined, a credential-stuffing list filtered to "emails actually at Mehamakor" 
 - **Timing equalised by reorder** (option (iii) from the Phase 0 plan): `validate_password` (HIBP) and `hash_password` (bcrypt) run **before** the existence check on both branches. The discarded hash on the collision branch is the equaliser. End-to-end timing delta post-bcrypt is ~5–30 ms vs ~100 ms of equalised work — acceptable per MEH-191 reference pattern.
 - **Server-side out-of-band notification:** the collision branches dispatch `send_duplicate_attempt_email(to, name, provider)` to the legitimate owner. Two body variants — `provider="password"` ("את כבר רשומה אצלנו עם סיסמה") or `provider="google"/"apple"` ("את כבר רשומה אצלנו דרך {Google|Apple}"). Both subject lines identical (`"ניסיון רישום במהמקור — את כבר רשומה"`) so a 3rd party scanning Subject headers cannot distinguish provider.
 - **`/auth/email-exists` deleted entirely.** No 30/min oracle. Frontend caller in `register/producer/page.js` removed.
+- **Account deletion needs proof, not just a session (MEH-3248).** `POST /auth/me/delete` (5/hour) requires the current password; an account without one sends a fresh Google/Apple `id_token` whose `sub` is this account's linked id and whose `iat` is ≤5 min old (`services/account_guards.verify_deletion_credentials`). A provider token never stands in for a password. Admins and the super-admin are refused (403) before any credential check, on the self door and on `DELETE /admin/users/{id}` (`assert_deletable`). The bodyless `DELETE /auth/me` is gone (405).
 - **No auto-login on register.** `lib/auth-context.js::register()` returns the ack to the caller; no `localStorage.setItem("token")`, no `/auth/me` chain. Users verify via the email link. Since MEH-3087 a valid link also signs in **the browser that registered**: every register reply (all branches, same shape) sets an HttpOnly `signup_marker` cookie = HMAC(secret, verify token); `GET /auth/verify-email` returns an access token and sets the refresh + fingerprint cookies only when that cookie matches the link, the user is not blocked and the browser carries no session. Any other holder of the link is verified and logs in with a password — so registering another person's email with your own password never leaves you inside the account they are signed in to. The register response still carries no token and no session cookie. Password login at `/auth/login` works before verification too. Frontend success screens show a unified "בדקי את תיבת המייל שלך 📬" inbox-check UI on both `/register` and `/register/producer` non-upgrade.
 - **Upgrade path preserved** (authenticated user adding producer to existing account): still returns `ProducerRegistrationResponse {access_token, whatsapp_sent}`, still stores token, still renders the existing dashboard CTA on step 3. No enumeration vector — caller already proved control of the email via JWT.
 

@@ -10,6 +10,8 @@ Touches:  DB tables `producer_page_views`, `producer_whatsapp_clicks`,
           MEH-3171: also `phone_otp_tokens`, one day after `expires_at`.
           MEH-3244: `producer_contact_clicks` past 90 days are UPDATEd —
           ip_hash and user_id set to NULL, the row kept.
+          MEH-3225: also `rescue_no_show_tombstones`, 30 days after the
+          bag's pickup_end (the no-show rule's own window).
           Reads the roll-up watermark through analytics_rollup — never
           the aggregate table directly (the MEH-2079 single-reader guard).
 Does NOT: roll anything up (analytics_rollup.py owns that); decide WHEN to
@@ -47,9 +49,9 @@ from __future__ import annotations
 from typing import Any, cast
 import logging
 from dataclasses import dataclass
-from datetime import date, datetime, timedelta, timezone
+from datetime import date, datetime, time, timedelta, timezone
 
-from sqlalchemy import CursorResult, delete, or_, select, update
+from sqlalchemy import ColumnElement, CursorResult, delete, or_, select, update
 from sqlalchemy.orm import Session
 
 from app.models.models import (
@@ -61,7 +63,9 @@ from app.models.models import (
     ProducerPageView,
     ProducerWhatsAppClick,
     Registration,
+    RescueNoShowTombstone,
 )
+from app.services.rescue_no_show import NO_SHOW_WINDOW_DAYS
 from app.services.analytics_rollup import RAW_RETENTION_DAYS, rollup_watermark
 from app.utils.clock import ISRAEL_TZ, israel_today
 
@@ -95,6 +99,7 @@ class PurgeResult:
     registrations_deleted: int = 0
     otps_deleted: int = 0
     contact_clicks_anonymized: int = 0
+    tombstones_deleted: int = 0
 
 
 def _israel_day_start_utc(day: date) -> datetime:
@@ -151,10 +156,24 @@ def _purge_registrations(db: Session, today: date) -> int:
         (Registration.experience_id, Experience),
     ):
         old_items = select(model.id).where(model.event_date < boundary)
+        if model is Experience:
+            # MEH-3219 B12: a recurring experience's event_date is its FIRST
+            # occasion and it stays open after it, so its date says nothing
+            # about when a sign-up's occasion was. Those rows age out by their
+            # own created_at instead; without this a sign-up made 30 days
+            # after the first occasion was purged on the next run.
+            old_items = old_items.where(Experience.is_recurring.isnot(True))
+        stale: ColumnElement[bool] = fk.in_(old_items.scalar_subquery())
+        if model is Experience:
+            recurring = select(Experience.id).where(Experience.is_recurring.is_(True))
+            stale = stale | (
+                fk.in_(recurring.scalar_subquery())
+                & (Registration.created_at < datetime.combine(boundary, time.min))
+            )
         try:
             result = db.execute(
                 delete(Registration)
-                .where(fk.in_(old_items.scalar_subquery()))
+                .where(stale)
                 .execution_options(synchronize_session=False)
             )
             db.commit()
@@ -242,6 +261,17 @@ def run_purge(
         now - OTP_RETENTION_AFTER_EXPIRY,
     )
 
-    result = PurgeResult(boundary, views, clicks, alerts, registrations, otps, contacts)
+    # MEH-3225: a deleted account's no-show stops counting after the window,
+    # so its hashed row has no reason to stay.
+    tombstones = _delete_in_batches(
+        db,
+        RescueNoShowTombstone,
+        RescueNoShowTombstone.pickup_end,
+        now - timedelta(days=NO_SHOW_WINDOW_DAYS),
+    )
+
+    result = PurgeResult(
+        boundary, views, clicks, alerts, registrations, otps, contacts, tombstones
+    )
     logger.info("[RETENTION-PURGE] %s", result)
     return result

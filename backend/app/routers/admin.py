@@ -32,7 +32,7 @@ from app.services.delivery_validation import (
     ensure_nationwide_requires_delivery,
 )
 from app.services.email import send_email
-from app.services.group_buy_delist import cancel_live_group_buys  # MEH-2498
+from app.services.booking_cancellations import delist_business  # MEH-2498, MEH-3227
 from app.services.availability_validation import (  # MEH-2758
     AvailabilityValidationError,
     validate_transition,
@@ -1077,6 +1077,7 @@ def admin_update_producer(
             old_images,
             producer.images or [],  # type: ignore[arg-type]
             context="admin.admin_update_producer images",
+            db=db,  # MEH-3247
         )
 
     if indexnow.is_public_owner(producer):  # MEH-2852
@@ -1168,7 +1169,7 @@ def toggle_producer_status(
         # mailed. Folded into the block above rather than left as a second
         # `if was_approved:` immediately after it: two consecutive identical
         # conditions read as though one of them guards something else.
-        cancel_live_group_buys(db, producer, background_tasks)
+        delist_business(db, producer, background_tasks, "hidden")  # MEH-3227
     db.commit()
     # MEH-2852: hidden or back on the site — either way the page changed.
     indexnow.schedule(background_tasks, indexnow.producer_urls(producer))
@@ -1215,7 +1216,7 @@ def admin_delete_producer(
     # MEH-2503: a live group buy's participants are told before the cascade
     # removes it — same delisted email as a suspension (MEH-2498). Runs before
     # the unlink below: it reads User.producer_id to skip the owner herself.
-    cancel_live_group_buys(db, producer, background_tasks)
+    delist_business(db, producer, background_tasks, "deleted")  # MEH-3227
 
     # MEH-747: unlink any user pointing at this producer BEFORE db.delete.
     # User.producer_id has no ondelete (models.py), so deleting the producer
@@ -1254,19 +1255,21 @@ def admin_delete_producer(
     from app.cloudinary_utils import destroy_image
 
     for url in old_image_urls:
-        destroy_image(url, context="admin.admin_delete_producer images")
+        destroy_image(url, context="admin.admin_delete_producer images", db=db)
     for url in old_product_urls:
-        destroy_image(url, context="admin.admin_delete_producer product_image")  # type: ignore[arg-type]
+        destroy_image(url, context="admin.admin_delete_producer product_image", db=db)  # type: ignore[arg-type]
     # MEH-510: bypass_reserved=True — the producer is gone, the slot is now an orphan.
     destroy_image(
         old_story_card_url,  # type: ignore[arg-type]
         bypass_reserved=True,
         context="admin.admin_delete_producer story_card",
+        db=db,  # MEH-3247
     )
     # MEH-1335: owner photo — non-reserved namespace, default reject list OK.
     destroy_image(
         old_owner_photo_url,  # type: ignore[arg-type]
         context="admin.admin_delete_producer owner_photo",
+        db=db,  # MEH-3247
     )
 
     return {"detail": "Producer deleted"}
@@ -1570,8 +1573,8 @@ def reject_producer(
     # MEH-2498: rejecting a business that was live takes it off the site — its
     # live group buys are cancelled in the same commit, participants mailed.
     was_live = producer.status == "approved"
-    if was_live:
-        cancel_live_group_buys(db, producer, background_tasks)
+    if was_live:  # MEH-3227: + bags and sign-ups; the rejection email tells her
+        delist_business(db, producer, background_tasks)
     # MEH-2974: a rejection revokes an outstanding owner invite, for the same
     # reason a suspension does — a page rejected for cause and re-approved
     # within the link's week must not come back with the old link still live.

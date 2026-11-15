@@ -1,7 +1,7 @@
 """Hard-delete a user and everything that belongs to her.
 
 One implementation for both doors (MEH-2585): the self-service
-``DELETE /auth/me`` (auth.delete_account) and the admin action
+``POST /auth/me/delete`` (auth.delete_account) and the admin action
 ``DELETE /admin/users/{id}`` (admin_extra.admin_delete_user). Before this
 module the logic lived inline in auth.delete_account. It moved here with the same
 steps in the same order (two helpers split out to satisfy ruff's complexity
@@ -35,10 +35,9 @@ from app.models.models import (
 )
 from app.utils.phone import canonical_il_msisdn
 from app.services import retired_slugs  # MEH-2528
-from app.services.group_buy_delist import (  # MEH-2503
-    cancel_live_group_buys,
-    withdraw_user_commits,
-)
+from app.services.booking_cancellations import delist_business  # MEH-3227
+from app.services.group_buy_delist import withdraw_user_commits  # MEH-2503
+from app.services.rescue_no_show import record_tombstones  # MEH-3225
 
 
 def delete_user_and_data(
@@ -54,6 +53,8 @@ def delete_user_and_data(
     (``auth.delete_account`` / ``admin.delete_user``).
     """
     producer_id = user.producer_id
+    # MEH-3225: the no-show block outlives the account (hashed email only).
+    record_tombstones(db, user)
 
     # MEH-1150: capture the OTHER businesses this user has reviewed BEFORE the
     # cascade runs. ProducerReview.user_id is ondelete=CASCADE (models.py), so
@@ -144,7 +145,7 @@ def delete_user_and_data(
     from app.cloudinary_utils import destroy_image
 
     for url in captured_urls:
-        destroy_image(url, context=context)
+        destroy_image(url, context=context, db=db)  # MEH-3247
     # MEH-513: story_card needs bypass_reserved=True — the producer is gone,
     # the slot is now an orphan (the cleanup script reject list is for live
     # story-cards; this is explicitly not one).
@@ -152,6 +153,7 @@ def delete_user_and_data(
         old_story_card_url,
         bypass_reserved=True,
         context=f"{context} story_card",
+        db=db,  # MEH-3247
     )
 
 
@@ -187,7 +189,7 @@ def _delete_own_producer(
         # MEH-2503: her own live group buys are cancelled and their
         # participants told, as on a suspension (MEH-2498) — before the
         # unlink, since the helper skips users linked to this producer.
-        cancel_live_group_buys(db, producer, background_tasks)
+        delist_business(db, producer, background_tasks)  # MEH-3227: + bags, sign-ups
         # MEH-2528: her business's URL stays reserved after she leaves, so
         # the next business with that name cannot inherit her links.
         retired_slugs.retire_slug(db, producer, "deleted")

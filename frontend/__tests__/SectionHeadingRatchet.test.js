@@ -44,7 +44,8 @@ const ALLOWED = {
   "app/[locale]/producers/[category]/[region]/page.js": 2, // chip-row labels
   "app/[locale]/register/producer/RegisterPreflight.jsx": 1, // form step
   "app/[locale]/register/producer/RegisterProducerClient.jsx": 6, // form steps
-  "app/[locale]/settings/page.jsx": 5, // account settings cards
+  "app/[locale]/settings/page.jsx": 3, // account settings cards
+  "components/AccountDeleteCard.jsx": 2, // the settings delete card, moved out of settings/page.jsx (MEH-3248): same 2 h2s, not new ones
   "components/CategoryRequestModal.jsx": 1, // dialog title
   "components/ClosingCtaBand.jsx": 1, // closing band
   "components/EditAccordionCard.jsx": 1, // accordion card title
@@ -56,6 +57,7 @@ const ALLOWED = {
   "components/ReportInfoModal.jsx": 1, // dialog title
   "components/producer/BusinessQrCard.jsx": 1, // owner card title
   "components/producer/OwnerAttentionCard.jsx": 1, // owner card title (MEH-3108, dashboard home)
+  "components/producer/FirstMomentCard.jsx": 1, // owner card title (MEH-3200 part 2, dashboard home)
   "components/producer/OwnerWelcomeCard.jsx": 1, // owner card title (MEH-3200, dashboard home)
   "components/producer/WhatsNewCard.jsx": 1, // owner card title (MEH-3200, dashboard home)
   "components/ProducersClient.jsx": 2, // empty-state titles

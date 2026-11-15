@@ -4,7 +4,7 @@ import "server-only";
 /**
  * Module:   listing-supply
  * Purpose:  MEH-2369 — how many public items each "something happening" hub
- *           (/events, /experiences, /group-buys) would list right now, so the
+ *           (/events, /experiences, /group-buys, /rescue) would list right now, so the
  *           sitemap and each hub's metadata can tell an empty shelf from a
  *           real one.
  * Touches:  Railway backend over HTTP via serverFetch (no DB).
@@ -33,6 +33,19 @@ export const HUBS = Object.freeze({
   events: { path: "/events", endpoint: "/events" },
   experiences: { path: "/experiences", endpoint: "/experiences/count" },
   groupBuys: { path: "/group-buys", endpoint: "/group-buys" },
+  // MEH-3265: /rescue was never in the sitemap. It joins on the same rule as
+  // the other hubs (known supply >= 1), and only while the pilot flag is on:
+  // the page notFound()s and the API 404s with it off. Same-day bags make the
+  // entry flap between sitemap builds; that is accepted — an empty rescue
+  // list offered to Google every morning is the MEH-2369 fault.
+  // REUSES: lib/rescue.js rescueBagsEnabled() — read inline, as
+  // lib/use-hub-nav-gate.js does, so this module stays free of the generated
+  // rescue schemas.
+  rescue: {
+    path: "/rescue",
+    endpoint: "/rescue/offers",
+    enabled: () => process.env.NEXT_PUBLIC_RESCUE_BAGS_ENABLED === "true",
+  },
 });
 
 /** Turns one response body into a count, or null when the shape is wrong. */
@@ -46,6 +59,8 @@ export function countFromBody(hubKey, body) {
 
 async function fetchCount(hubKey) {
   try {
+    const { enabled } = HUBS[hubKey];
+    if (enabled && !enabled()) return null;
     // Short timeout, no retry: this count sits in front of each hub's
     // generateMetadata, so a slow backend must not hold the page's first byte
     // for serverFetch's default 8s x 3 attempts. Unknown is a safe answer.
@@ -66,11 +81,11 @@ export function getHubCount(hubKey) {
   return fetchCount(hubKey);
 }
 
-/** @returns {Promise<{events: number|null, experiences: number|null, groupBuys: number|null}>} */
+/** @returns {Promise<{events: number|null, experiences: number|null, groupBuys: number|null, rescue: number|null}>} */
 export async function getAllHubCounts() {
   const keys = Object.keys(HUBS);
   const counts = await Promise.all(keys.map(fetchCount));
-  return /** @type {{events: number|null, experiences: number|null, groupBuys: number|null}} */ (
+  return /** @type {{events: number|null, experiences: number|null, groupBuys: number|null, rescue: number|null}} */ (
     Object.fromEntries(keys.map((k, i) => [k, counts[i]]))
   );
 }

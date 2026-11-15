@@ -162,3 +162,83 @@ def send_owner_cancellation(
     e = html_escape
     html = _shell(e(subject), f"<b>שם:</b> {e(m.name)}", _button(m.manage_url, title))
     send_email(to, subject, body, html=html, test_cause=test_cause)
+
+
+# ---------- MEH-3227 (D1): the visitor's sign-up was cancelled or moved ----------
+# Copy approved by Sapir on 14/11/2026 (copy doc «קופי לאישור — ביטולים
+# והודעות ללקוחות», «מאשרת הכל»). Gender-neutral (ADR-037).
+
+
+@dataclass(frozen=True)
+class RegistrantEmail:
+    """One visitor whose sign-up changed — read while the Session was open."""
+
+    title: str
+    date_text: str
+    time_text: str
+    place: str
+    host_name: str
+    cancel_url: str  # used only by the «moved» email
+
+
+def send_registrant_delisted(
+    to: str, m: RegistrantEmail, test_cause: bool = False
+) -> None:
+    """The site took the business off, so its sign-ups were cancelled."""
+    title = _one_line(m.title)
+    host = _one_line(m.host_name)
+    subject = f'ההרשמה ל-"{title}" בוטלה'
+    lines = [
+        f"בית העסק {host} כבר לא מופיע במהמקור, ולכן ההרשמה שלכם "
+        f'ל-"{title}" ב-{m.date_text} בוטלה.',
+        "אם סיכמתם משהו ישירות מול בית העסק, אפשר להמשיך מולו כרגיל.",
+    ]
+    _send_lines(to, subject, lines, test_cause=test_cause)
+
+
+def send_registrant_cancelled(
+    to: str, m: RegistrantEmail, test_cause: bool = False
+) -> None:
+    """The business cancelled or deleted the event, so the sign-up went with it."""
+    title = _one_line(m.title)
+    host = _one_line(m.host_name)
+    subject = f'"{title}" בוטל'
+    lines = [
+        f'{host} ביטל את "{title}" שתוכנן ל-{m.date_text}, ולכן ההרשמה שלכם '
+        "בוטלה. אין צורך להגיע.",
+        f"לשאלות אפשר לפנות ישירות ל{host}.",
+    ]
+    _send_lines(to, subject, lines, test_cause=test_cause)
+
+
+def send_registrant_moved(
+    to: str, m: RegistrantEmail, test_cause: bool = False
+) -> None:
+    """The business moved the date or time; the sign-up stays."""
+    title = _one_line(m.title)
+    host = _one_line(m.host_name)
+    subject = f'המועד של "{title}" השתנה'
+    when = m.date_text + (f", {m.time_text}" if m.time_text else "")
+    rows = [("מתי", when), ("איפה", m.place)]
+    rows = [(k, v) for k, v in rows if v]
+    intro = f'{host} שינה את המועד של "{title}".'
+    outro = "ההרשמה שלכם נשארת בתוקף. אם המועד החדש לא מתאים, אפשר לבטל כאן:"
+    body = (
+        f"{subject}\n\n{intro}\n"
+        + "\n".join(f"{k}: {v}" for k, v in rows)
+        + f"\n\n{outro}\nביטול ההרשמה: {m.cancel_url}\n\nצוות מהמקור"
+    )
+    e = html_escape
+    rows_html = f"{e(intro)}<br>\n" + "<br>\n".join(
+        f"<b>{e(k)}:</b> {e(v)}" for k, v in rows
+    )
+    rows_html += f"<br><br>\n{e(outro)}"
+    html = _shell(e(subject), rows_html, _button(m.cancel_url, "ביטול ההרשמה"))
+    send_email(to, subject, body, html=html, test_cause=test_cause)
+
+
+def _send_lines(to: str, subject: str, lines: list[str], *, test_cause: bool) -> None:
+    body = f"{subject}\n\n" + "\n".join(lines) + "\n\nצוות מהמקור"
+    e = html_escape
+    html = _shell(e(subject), "<br>\n".join(e(x) for x in lines))
+    send_email(to, subject, body, html=html, test_cause=test_cause)

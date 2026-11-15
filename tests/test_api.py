@@ -1993,7 +1993,7 @@ class TestAdminFlows:
         # Create
         resp = client.post(
             "/admin/categories",
-            json={"name": "חדש", "emoji": "✨"},
+            json={"name": "חדש", "emoji": "✨", "requires_license": False},
             headers=auth_header(admin),
         )
         assert resp.status_code in (200, 201)

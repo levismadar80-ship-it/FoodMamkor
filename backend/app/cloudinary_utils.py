@@ -31,8 +31,12 @@ must NOT touch live story-cards.
 
 import logging
 import re
+from typing import TYPE_CHECKING
 
 from app.config import settings
+
+if TYPE_CHECKING:
+    from sqlalchemy.orm import Session
 
 log = logging.getLogger("app.upload")
 
@@ -121,10 +125,50 @@ def extract_public_id(url: str | None, bypass_reserved: bool = False) -> str | N
     return public_id
 
 
+def _still_referenced(
+    db: "Session", public_ids: set[str], context: str
+) -> set[str] | None:
+    """MEH-3247: the public_ids some row still stores, or None when the check
+    itself failed. Never raises: a failed check rolls the session back (so the
+    caller's response is not turned into a 500) and the caller skips every
+    destroy — fail closed, the orphan sweep picks up a real orphan later."""
+    from app.services.image_refs import referenced_public_ids
+
+    try:
+        return referenced_public_ids(db, public_ids)
+    except Exception as exc:
+        log.error(
+            "Cloudinary reference check failed [%s], destroy skipped: %s", context, exc
+        )
+        try:
+            db.rollback()
+        except Exception:  # noqa: BLE001 — best effort, never raise from cleanup
+            pass
+        return None
+
+
+def _reference_verdict(db: "Session", public_id: str, context: str) -> bool | None:
+    """None = safe to destroy; otherwise the value destroy_image returns.
+
+    False when the check itself failed (fail closed), True when a row still
+    references the asset (skipped, nothing to retry).
+    """
+    still = _still_referenced(db, {public_id}, context)
+    if still is None:
+        return False
+    if public_id in still:
+        log.info(
+            "Cloudinary destroy skipped [%s], still referenced: %s", context, public_id
+        )
+        return True
+    return None
+
+
 def destroy_image(
     url: str | None,
     bypass_reserved: bool = False,
     context: str = "",
+    db: "Session | None" = None,
 ) -> bool:
     """Best-effort destroy of the Cloudinary asset behind `url`. Never raises.
 
@@ -143,10 +187,19 @@ def destroy_image(
     in failure log lines so post-incident debugging can pinpoint which
     cascade hook dropped a destroy. Empty default preserves the existing
     log format minimally (the bracketed slot just appears empty).
+
+    `db` (MEH-3247): every caller passes its session, AFTER its own commit.
+    An asset some row still references is someone else's live photo and is
+    not destroyed. tests/test_meh3247_shared_image_destroy.py fails on a call
+    site in backend/app that leaves it out.
     """
     public_id = extract_public_id(url, bypass_reserved=bypass_reserved)
     if public_id is None:
         return True
+    if db is not None:
+        verdict = _reference_verdict(db, public_id, context)
+        if verdict is not None:
+            return verdict
     if not settings.cloudinary_cloud_name:
         # Dev fallback: Cloudinary unwired, nothing remote to destroy.
         return True
@@ -186,6 +239,7 @@ def destroy_removed_images(
     old: list[str] | None,
     new: list[str] | None,
     context: str = "",
+    db: "Session | None" = None,
 ) -> None:
     """Best-effort destroy every URL in `old` not present in `new`.
 
@@ -197,5 +251,14 @@ def destroy_removed_images(
     direct destroy_image cascades.
     """
     new_set = set(new or [])
-    for url in set(old or []) - new_set:
+    removed = set(old or []) - new_set
+    if db is not None and removed:
+        # MEH-3247: one reference check for the whole set, then destroy the
+        # rest without asking again (db=None below on purpose).
+        ids = {pid for pid in (extract_public_id(u) for u in removed) if pid}
+        still = _still_referenced(db, ids, context) if ids else set()
+        if still is None:
+            return
+        removed = {u for u in removed if extract_public_id(u) not in still}
+    for url in removed:
         destroy_image(url, context=context)

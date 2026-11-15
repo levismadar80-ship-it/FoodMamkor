@@ -37,6 +37,7 @@
       "about": "About",
       "process": "Our process",
       "faq_businesses": "FAQ for Businesses",
+      "guides": "Guides for businesses",
       "add_business": "Add Your Business",
       "login": "Sign In",
       "terms": "Terms of Service",
@@ -59,6 +60,7 @@
       "group_business_heading": "For businesses",
       "producers": "All businesses",
       "why_local": "Why local?",
+      "badges": "What the badges mean",
       "newsletter_heading": "Good food is meant to be shared",
       "newsletter_label": "Newsletter email",
       "newsletter_placeholder": "Your email, please",
@@ -1147,7 +1149,7 @@
       "status_funded": "Reached the goal",
       "status_fulfilled": "Fulfilled",
       "status_hint_open": "Join now without paying. Once the minimum is reached, the group price unlocks.",
-      "status_hint_funded": "These groups reached the minimum. Joining is closed and the business is in touch with the participants.",
+      "status_hint_funded": "These groups reached the minimum. Joining is closed, and participants contact the business to arrange their order.",
       "status_hint_fulfilled": "The orders were delivered to the participants.",
       "empty_title": "No active group-buys yet",
       "empty_subtitle": "When businesses open group-buys, you'll find them here"
@@ -1183,7 +1185,7 @@
       "delivery_label": "Delivery",
       "how_title": "How it works",
       "how_join": "Join now. You pay nothing through the site",
-      "how_unlock": "Once {min} people join, the group price unlocks and the business gets in touch",
+      "how_unlock": "Once {min} people join, the group price unlocks and you contact the business to arrange your order",
       "how_no_commit": "Didn't reach the goal by the deadline? Nobody is committed",
       "quantity_label": "Quantity",
       "submitting": "Joining...",
@@ -1221,6 +1223,10 @@
       "empty_description": "You set the minimum participants and the deadline. If the minimum isn't reached, no one pays. Perfect for a weekly neighborhood veggie box, a family cheese bundle, or a group order of harvest olive oil.",
       "empty_cta": "+ Create first group",
       "progress_label": "{commits} / {min} participants",
+      "units_ordered": "{count, plural, one {Total ordered: 1 unit} other {Total ordered: # units}}",
+      "units_ordered_with_unit": "Total ordered: {count} (unit: {unit})",
+      "units_requested": "{count, plural, one {Requested so far: 1 unit} other {Requested so far: # units}}",
+      "units_requested_with_unit": "Requested so far: {count} (unit: {unit})",
       "deadline_prefix": "Deadline: {date}",
       "view_public": "View public page →",
       "form": {
@@ -1546,6 +1552,7 @@
         "category_requests": "Category requests",
         "whatsapp_failures": "Undelivered messages",
         "analytics": "Analytics",
+        "billing": "Billing",
         "settings": "Settings",
         "help": "Help",
         "name_change_requests": "Name changes"
@@ -1981,7 +1988,8 @@
         "menu_aria": "More actions",
         "unblock": "Unblock",
         "block": "Block",
-        "delete": "Delete"
+        "delete": "Delete",
+        "clear_rescue_block": "Release bag block"
       },
       "favorites": {
         "of": "Favorites of {name}:",
@@ -1999,6 +2007,10 @@
         "prev": "Previous",
         "next": "Next",
         "page_of": "Page {page} of {total}"
+      },
+      "rescue": {
+        "blocked_badge": "Blocked from bags ({count} no-shows)",
+        "cleared": "Block released"
       }
     },
     "recipes": {
@@ -2436,7 +2448,12 @@
         "license_rename_error": "This category carries a Ministry of Health licensing requirement that is matched by name. Renaming it would drop that requirement for the businesses in it, so the rename belongs in a migration rather than the admin screen. The symbol can still be updated.",
         "name_taken_error": "A category with this name already exists",
         "system_badge": "System category",
-        "system_hint": "A system category's name and removal are set in code and change in a migration, not in the admin screen."
+        "system_hint": "A system category's name and removal are set in code and change in a migration, not in the admin screen.",
+        "license_question": "Does this category need a Ministry of Health manufacturer licence?",
+        "license_yes": "Yes, licence required",
+        "license_no": "No, not required",
+        "license_choose": "Choose whether this category needs a licence",
+        "license_badge": "Licence required"
       },
       "page_editor": {
         "title_placeholder": "Title",
@@ -2511,6 +2528,34 @@
       "until": "until {date}",
       "change_status": "Change status:",
       "view_page": "View page →"
+    },
+    "billing": {
+      "title": "Billing",
+      "lead": "This screen shows whether it is time to start charging businesses, and how much that would bring in.",
+      "switch_off_title": "Billing is off",
+      "switch_off_body": "No business pays the site right now. This screen only shows numbers; it charges nothing.",
+      "switch_on_title": "Billing is on",
+      "switch_on_body": "Businesses that reached the amount are charged once a month.",
+      "ready_title": "Is it time to start charging?",
+      "ready_no": "Not yet",
+      "ready_yes": "Yes, it is time",
+      "ready_rule": "Charging starts when {goal} businesses get paid bookings of <amount></amount> or more a month through the site, {months, plural, one {for one month} other {# months in a row}}.",
+      "ready_progress": "Now: {count} of {goal} businesses",
+      "month_title": "This month: {month}",
+      "month_over_label": "Businesses that got paid bookings of <amount></amount> or more this month",
+      "month_would_label": "What they would pay the site this month, if billing were on",
+      "rows_title": "Businesses with bookings this month",
+      "empty": "No business has had a booking through the site this month yet.",
+      "load_error": "We could not load the billing data. Try refreshing the page.",
+      "row_bookings": "{count, plural, one {# booking through the site} other {# bookings through the site}}, worth <amount></amount>",
+      "row_over": "Reached <amount></amount> this month. {months, plural, one {This is the first month in a row} other {# months in a row so far}}.",
+      "row_under": "Has not reached <amount></amount> this month, so would not pay.",
+      "row_would_pay": "Would pay the site this month: <amount></amount>",
+      "history_title": "Earlier months",
+      "history_lead": "What would have happened each month if billing had been on. None of it was charged.",
+      "history_line": "{over, plural, one {# business would have paid} other {# businesses would have paid}}, <amount></amount> in total",
+      "history_nobody": "No business reached <amount></amount>",
+      "history_none": "No bookings through the site"
     },
     "analytics": {
       "title": "Analytics",
@@ -2708,6 +2753,13 @@
           "q": "Where do I see numbers about the site?",
           "steps": [
             "On “Analytics”: monthly growth, popular categories, top cities, most-favourited businesses and a map."
+          ]
+        },
+        "billing": {
+          "q": "Where do I see whether it is time to start charging businesses?",
+          "steps": [
+            "On “Billing”: whether it is time to start charging, which businesses got bookings through the site this month, and what each would pay.",
+            "The screen is read-only. While it says “Billing is off”, nothing is charged."
           ]
         },
         "group_buys": {
@@ -3445,6 +3497,16 @@
     "error_body": "The link may have expired or opened only partway. Try again from the email, or get in touch.",
     "cta_home": "Back to home"
   },
+  "weekly_summary_unsubscribe": {
+    "meta_title": "Stop the weekly summary",
+    "loading": "Updating…",
+    "success_title": "The weekly summary is off",
+    "success_body": "We won't send this business's weekly summary any more. All the numbers are still on your dashboard, under Insights.",
+    "error_title": "This link isn't valid",
+    "error_body": "The link may have opened only partway. Try again from the email, or get in touch.",
+    "cta_insights": "Go to Insights",
+    "cta_home": "Back to home"
+  },
   "delivery_waitlist_host_confirm": {
     "meta_title": "Pickup point confirmation",
     "loading": "Confirming…",
@@ -3813,7 +3875,7 @@
       "eyebrow": "Common questions",
       "q_cost": "How much does it cost?",
       "q_price": "Who sets the price?",
-      "a_cost": "Joining and your page are free. During the launch period every tool is free too. Later, a business that gets {threshold} or more bookings a month through the site will choose between a subscription of ₪{monthly} a month with a reduced commission, and a small commission on each booking with no subscription. We will tell you {noticeDays} days ahead, in writing.",
+      "a_cost": "Joining and your page are free. During the launch period every tool is free too. Later, a business whose paid bookings through the site reach ₪{threshold} in a month will choose how to go on: a subscription of ₪{monthly} a month with a reduced commission, a small commission on each booking with no subscription, or just the page, free and without paid tools. We will tell you {noticeDays} days ahead, in writing.",
       "a_price": "You do. The price on your page is yours.",
       "all_link": "All the questions",
       "heading": "What businesses ask",
@@ -3822,7 +3884,7 @@
       "a_google": "Google is good for being found in search, and it's worth keeping. Here you get a page of your own in an article style, a contact button on the channel you chose (on WhatsApp, with a ready-made message too), and reviews only from people who contacted you. You can also put the link to your Mehamakor page on your Google profile. Keep your Instagram as usual and link to it from your page; here the customer also sees prices, delivery areas and hours without asking.",
       "a_updates": "Hardly. There is no stock to keep up to date on the site, so when something runs out, customers just ask you. You only update when something permanent changes.",
       "q_revenue": "If everything is free, how do you make money?",
-      "a_revenue": "Right now we don't. Later, income will come from a tools subscription and a small commission on bookings that came through the site, and only from a business that already sees results. Not from selling a place at the top of the list, not from ads and not from selling data.",
+      "a_revenue": "Right now we don't. Later, income will come from a subscription and a small commission on bookings that came through the site, and only from a business that already sees results. Not from selling a place at the top of the list, not from ads and not from selling data.",
       "q_customers": "Who gets the customers?",
       "a_customers": "You do. Every enquiry reaches you directly, and the relationship stays yours even if you decide to leave."
     },
@@ -3878,11 +3940,11 @@
     "faq": {
       "cost": {
         "q": "How much does it cost — and what happens when you start charging?",
-        "a": "Your page is free. During the launch period every tool is free too. When you get {threshold} or more bookings a month through the site, I will tell you in writing {noticeDays} days ahead, and then you choose: a subscription of ₪{monthly} a month with a reduced commission, or a small commission on each booking with no subscription. If neither suits you, your page stays yours, free."
+        "a": "Your page is free. During the launch period every tool is free too. When your paid bookings through the site reach ₪{threshold} in a month, I will tell you in writing {noticeDays} days ahead, and then you choose: a subscription of ₪{monthly} a month with a reduced commission, or a small commission on each booking with no subscription. If neither suits you, your page stays yours, free."
       },
       "revenue_model": {
         "q": "If everything is free — how does Mehamakor make money?",
-        "a": "Right now it doesn't. Mehamakor is a young project, and I'm building it because I believe real, local food deserves a home. Later, income will come from a tools subscription and a small commission on bookings, and only from a business the site already brings results to. Not from selling a spot at the top of the list. That way the site earns only if it works for you."
+        "a": "Right now it doesn't. Mehamakor is a young project, and I'm building it because I believe real, local food deserves a home. Later, income will come from a subscription and a small commission on bookings, and only from a business the site already brings results to. Not from selling a spot at the top of the list. That way the site earns only if it works for you."
       },
       "customer_ownership": {
         "q": "Who gets the customers — you or me?",
@@ -4094,7 +4156,7 @@
       },
       "retention": {
         "title": "7. Data retention and security",
-        "body": "We retain your data for as long as your account is active or as needed to provide the service, comply with the law, resolve disputes, and enforce our terms. Raw page-view data for business pages (which includes a hashed identifier of the network address) is kept for 90 days and then deleted automatically; after that only anonymous daily summaries are kept. Internal alert logs are deleted after 30 days. When an account is deleted, all identifiable data is deleted immediately. We apply reasonable security measures including encryption, secure storage, access control, and backups."
+        "body": "We retain your data for as long as your account is active or as needed to provide the service, comply with the law, resolve disputes, and enforce our terms. Raw page-view data for business pages (which includes a hashed identifier of the network address) is kept for 90 days and then deleted automatically; after that only anonymous daily summaries are kept. Internal alert logs are deleted after 30 days. When an account is deleted, all identifiable data is deleted immediately. Billing records of the business, with no personal details, are kept after the account is deleted, as the law requires. One exception: if the account had no-shows for rescue-bag pickups in the last 30 days, only a hashed identifier of the email address and the no-show dates are kept, so that deleting and reopening the account does not lift the block. They are deleted automatically within 30 days. We apply reasonable security measures including encryption, secure storage, access control, and backups."
       },
       "minors": {
         "title": "8. Minors",
@@ -4176,8 +4238,23 @@
         "title": "10. Privacy",
         "body": "Use of the platform is also subject to the <privacylink>privacy policy</privacylink>, which forms an integral part of these terms."
       },
+      "pricing": {
+        "title": "11. Prices and payment for businesses",
+        "free": "Joining the site and the business page are free. The prices of the paid tools are published on <pricinglink>the price list</pricinglink>.",
+        "launch": "During the launch period businesses are not charged. A business is charged only after written notice, {noticeDays} days ahead. A business may choose to keep the page only, without paid tools: the page stays on the site free, with no time limit, also after the notice.",
+        "scope": "The commission applies only to bookings recorded in the site's tools. Direct contact between a business and its customers, on WhatsApp, by phone or by email, is not charged. Customers pay the business directly. The commission is a payment from the business to the site for using the tools, and does not change the section «Nature of the service»: the site is not a party to the transaction between a business and its customers.",
+        "dispute": "Once a month, before the charge, the business receives a summary of the bookings that were counted. The business may tell us, within {disputeDays} days of receiving the summary, about a booking that did not take place. Such a booking is not charged until it is checked, and if it did not take place it is removed from the charge.",
+        "early": "A business that registered on the site before the end of the launch period pays, without a subscription, the reduced commission that subscribers pay, as published on the price list (currently {subPercent}% of a paid booking), for the first {earlyMonths} months in which it is charged. After that the regular price list applies. The launch period lasts until the site starts charging businesses. Its end date will be published on the price list {priceChangeDays} days ahead.",
+        "change": "Despite the section «Changes to these terms», a change to the price list is published on the price list and sent in writing to businesses, and takes effect only {priceChangeDays} days after the notice. A yearly subscription keeps the price it was bought at until it renews.",
+        "threshold": "A business is charged a commission only for a calendar month in which the paid bookings recorded in the site's tools totalled ₪{threshold} or more. A free registration is not counted.",
+        "nochoice": "A business that has not picked a track by the end of the notice period keeps the page only. Paid tools close to new bookings, and bookings made earlier go ahead as usual.",
+        "trial": "A business that registers on the site after the end of the launch period is not charged a commission in its first {trialDays} days on the site, and is not asked for a payment method in that period.",
+        "cancel": "A subscription can be cancelled at any time. A monthly subscription stays in force until the end of the paid month. When a yearly subscription is cancelled, the share of the full months that remain is refunded.",
+        "unpaid": "A reminder is sent for a charge that was not paid. If the charge is not settled, paid tools close to new bookings until it is. The page stays on the site, and bookings made earlier go ahead as usual.",
+        "vat": "Prices include VAT, if it applies."
+      },
       "contact": {
-        "title": "11. Contact",
+        "title": "12. Contact",
         "intro": "For any question or inquiry regarding the terms of use:"
       }
     }
@@ -4550,6 +4627,33 @@
         "body": "I'm Sapir. I started Mehamakor so people can find businesses like yours. I approve every page personally, and everything you need to make your page work for you is here.",
         "whatsapp": "Questions? I answer on WhatsApp.",
         "cta": "Complete your page",
+        "close": "Close"
+      },
+      "new_tool": {
+        "pill": "New",
+        "dot": "There is a new tool"
+      },
+      "first_moments": {
+        "first_review": {
+          "title": "Your first review is here",
+          "body": "Someone took the time to write about you. A short reply shows others that you care.",
+          "cta": "Read and reply"
+        },
+        "first_whatsapp": {
+          "title": "Your first WhatsApp tap",
+          "body": "Someone tapped the button on your page to message you. It's worth checking whether a message arrived.",
+          "cta": "See all stats"
+        },
+        "views_100": {
+          "title": "100 views of your page",
+          "body": "A hundred times, someone stopped to read about you. Sharing your link will bring more.",
+          "cta": "See all stats"
+        },
+        "first_follower": {
+          "title": "Your first follower",
+          "body": "Someone saved your business, and updates on what you post will reach them.",
+          "cta": "See all stats"
+        },
         "close": "Close"
       },
       "section_errors": {
@@ -5722,9 +5826,12 @@
         "confirm_email_label": "Type your email to confirm",
         "submit_cta": "Confirm deletion",
         "submit_deleting": "Deleting…",
-        "grace_heading": "Deletion request received",
-        "grace_body": "Your account will be disconnected within 30 days. Until then, you can cancel the request by logging in again.",
-        "back_to_login": "Back to login"
+        "business_warning": "Deleting your account also deletes {name}: the page, products, events, reviews and photos. Open group buys will be cancelled and participants notified. The page address will not be reused. This cannot be undone.",
+        "pause_offer": "Just need a break? Switch to \"On break\" until a date you choose. Your page stays up, marked as on break, and is hidden from search until you return.",
+        "pause_cta": "Go on break",
+        "admin_blocked": "A system admin account can't be deleted from here. Another admin must first remove its admin permission.",
+        "super_admin_blocked": "This is the site's main account and it can't be deleted.",
+        "reauth_prompt": "To confirm the deletion, sign in again with {provider}."
       }
     }
   },
@@ -6168,7 +6275,8 @@
     "login_prompt_title": "Reserve a bag",
     "login_prompt_message": "To reserve a bag, sign in to your account.",
     "errors": {
-      "blocked": "Reservations are blocked after two no-shows. Please write to us.",
+      "unverified": "Please verify your email address first.",
+      "blocked": "Reservations are blocked after two no-shows. <contact>Write to us</contact>",
       "sold_out": "That bag is gone. There are others nearby.",
       "max_two": "You can reserve up to two bags.",
       "sign_in": "Sign in to reserve a bag.",
@@ -6802,6 +6910,7 @@
   "pricing": {
     "link_full": "See the full price list",
     "link_short": "Price list",
+    "link_footer": "Price list",
     "page": {
       "eyebrow": "Price list for businesses",
       "h1": "Free to join. You pay only once there are bookings.",
@@ -6814,11 +6923,12 @@
       "free_item_found": "A place on the map and in search",
       "free_item_verified": "Licence verification and its badge",
       "results_title": "Once there are results",
-      "results_lead": "A business that gets {threshold} or more bookings a month through the site chooses how to continue:",
-      "sub_title": "Tools subscription",
+      "results_lead": "A business whose paid bookings through the site reach ₪{threshold} in a month chooses how to continue:",
+      "sub_title": "Reduced-commission subscription",
       "sub_price": "₪{monthly} a month",
       "sub_note": "Or ₪{yearly} a year.",
       "sub_fee": "Plus a reduced commission on bookings: {subPercent}% instead of {percent}%, and ₪{subBagFee} a bag instead of ₪{bagFee}.",
+      "sub_fee_no_rescue": "Plus a reduced commission on bookings: {subPercent}% instead of {percent}%.",
       "fee_title": "No subscription",
       "fee_price": "A commission per booking",
       "fee_item_booking": "{percent}% of a paid registration to an event, experience or workshop",
@@ -6826,9 +6936,25 @@
       "fee_item_bag": "₪{bagFee} per rescue bag collected",
       "fee_item_free": "Free registration: no commission",
       "counted_title": "What counts as a booking",
-      "counted_body": "A registration that was not cancelled, an order in a group buy that closed, and a bag that was collected. A cancellation or a no-show is not counted. A message on WhatsApp, a phone call or an email is not counted and costs nothing.",
+      "counted_body": "A registration that was not cancelled, an order in a group buy that closed, and a bag that was collected. A cancellation or a no-show is not counted. A free registration is not counted. A message on WhatsApp, a phone call or an email is not counted and costs nothing.",
+      "counted_body_no_rescue": "A registration that was not cancelled and an order in a group buy that closed. A cancellation or a no-show is not counted. A free registration is not counted. A message on WhatsApp, a phone call or an email is not counted and costs nothing.",
       "notice_title": "Before the first charge",
-      "notice_body": "We will tell you {noticeDays} days ahead, in writing. If you would rather not continue with paid tools, you keep your page, free.",
+      "notice_body": "We will tell you {noticeDays} days ahead, in writing. If you do not pick a track you keep your page, free: paid tools close to new bookings, and bookings already made go ahead as usual.",
+      "early_title": "If you join during the launch period",
+      "early_body": "A reduced commission without a subscription: {subPercent}% and ₪{subBagFee} a bag, for the first {earlyMonths} months of billing. After that, the price list applies.",
+      "early_body_no_rescue": "A reduced commission without a subscription: {subPercent}%, for the first {earlyMonths} months of billing. After that, the price list applies.",
+      "dispute_title": "If a booking that did not happen was counted",
+      "dispute_body": "Before each charge we send a summary of the bookings. You have {disputeDays} days from receiving it to write to us, and we do not charge for that booking until we have checked.",
+      "change_title": "If the price list changes",
+      "change_body": "We will tell you {priceChangeDays} days ahead, in writing. A yearly subscription keeps its price until it renews.",
+      "trial_title": "Joining after the launch period?",
+      "trial_body": "Your first {trialDays} days carry no commission and need no credit card.",
+      "cancel_title": "Cancelling a subscription",
+      "cancel_body": "You can cancel at any time. A monthly subscription stays active until the end of the paid month. On a yearly one we refund the share of the full months that remain.",
+      "unpaid_title": "If a charge is not paid",
+      "unpaid_body": "We send a reminder. If it is still unpaid, paid tools close to new bookings until it is settled. Your page stays on the site.",
+      "compare_body": "Delivery apps take tens of percent of every order. Here, enquiries to you are free, and the commission is {percent}% only on a booking recorded in the site's tools.",
+      "vat": "Prices include VAT, if it applies.",
       "money_title": "Your customers' money",
       "money_body": "Goes straight to you. Mehamakor does not charge your customers and does not hold your money.",
       "never_title": "What is not for sale",
@@ -6840,13 +6966,13 @@
       "sub_fit": "A fit for a business with many paid bookings.",
       "sub_example": "After a few bookings a month the subscription pays for itself: once commissions reach ₪{breakEvenFees}.",
       "fee_fit": "A fit for a business that is starting out or has few bookings.",
-      "fee_note": "You pay only in a month that has bookings.",
-      "fee_example": "For example: on a ₪{examplePrice} booking, the fee is ₪{exampleFee}.",
+      "fee_note": "You pay only for a month in which paid bookings reached ₪{threshold}.",
+      "fee_example": "For example: on a ₪{examplePrice} booking, the fee is ₪{exampleFee} and you keep ₪{exampleKeep}.",
       "tools_link": "See the full list of tools",
       "as_of": "Price list as of {asOf}.",
       "steps_label": "How it works",
       "step2_title": "When the site brings you bookings",
-      "step2_body": "From {threshold} bookings a month through the site, we tell you in writing {noticeDays} days ahead.",
+      "step2_body": "When paid bookings through the site reach ₪{threshold} in a month, we tell you in writing {noticeDays} days ahead.",
       "step3_title": "You choose",
       "step3_body": "A subscription, a commission per booking, or just the page, free.",
       "stay_title": "Just the page",
@@ -6854,5 +6980,9 @@
       "stay_body": "No paid tools and nothing to pay. Your page stays on the site, as it is today.",
       "cta": "Join, free"
     }
+  },
+  "account_deleted": {
+    "heading": "Account deleted",
+    "body": "Your account has been deleted, along with your profile, favorites and the reviews you wrote. A confirmation email is on its way."
   }
 }
