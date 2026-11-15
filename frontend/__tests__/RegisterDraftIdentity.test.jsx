@@ -194,7 +194,8 @@ describe("MEH-2915 · the draft stops carrying the person", () => {
   it("every EMPTY_FORM key is either omitted from the draft or explicitly kept", () => {
     const here = path.dirname(fileURLToPath(import.meta.url));
     const src = readFileSync(
-      path.join(here, "../app/[locale]/register/producer/RegisterProducerClient.jsx"),
+      // MEH-3294: EMPTY_FORM moved with the wizard constants.
+      path.join(here, "../app/[locale]/register/producer/registerProducerShared.js"),
       "utf8",
     );
     const start = src.indexOf("const EMPTY_FORM = {");

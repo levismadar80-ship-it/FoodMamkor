@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 
 import he from "../messages/he.json";
@@ -23,11 +23,17 @@ import en from "../messages/en.json";
  * The pre-fix tree reds here and nowhere else in the suite.
  */
 const ROOT = path.resolve(__dirname, "..");
-const SOURCE = "app/[locale]/register/producer/RegisterProducerClient.jsx";
+// MEH-3294: the wizard's frames live in ./steps/*, so the form is the main
+// file plus every step file.
+const SOURCE_DIR = "app/[locale]/register/producer";
+const SOURCES = [
+  `${SOURCE_DIR}/RegisterProducerClient.jsx`,
+  ...readdirSync(path.join(ROOT, SOURCE_DIR, "steps")).map((f) => `${SOURCE_DIR}/steps/${f}`),
+];
 
 /** Every `t("…")` literal the component reads, deduped. */
-function keysReadBy(relPath) {
-  const src = readFileSync(path.join(ROOT, relPath), "utf8");
+function keysReadBy(relPaths) {
+  const src = relPaths.map((p) => readFileSync(path.join(ROOT, p), "utf8")).join("\n");
   return [...new Set([...src.matchAll(/\bt\(\s*"([a-zA-Z0-9_.]+)"/g)].map((m) => m[1]))];
 }
 
@@ -35,7 +41,7 @@ const lookup = (messages, dotted) =>
   dotted.split(".").reduce((node, part) => (node == null ? undefined : node[part]), messages);
 
 describe("MEH-2795 — the signup form never renders a raw key", () => {
-  const keys = keysReadBy(SOURCE);
+  const keys = keysReadBy(SOURCES);
 
   it("control: the scan actually found keys to check", () => {
     // Without this, "0 missing" would also be the answer if the regex broke.

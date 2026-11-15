@@ -43,7 +43,13 @@ const ALLOWED = {
   "app/[locale]/messages/page.js": 1, // small aside label
   "app/[locale]/producers/[category]/[region]/page.js": 2, // chip-row labels
   "app/[locale]/register/producer/RegisterPreflight.jsx": 1, // form step
-  "app/[locale]/register/producer/RegisterProducerClient.jsx": 6, // form steps
+  // MEH-3294: the six form-step h2s moved with their frames, one per file.
+  "app/[locale]/register/producer/steps/AccountStep.jsx": 1,
+  "app/[locale]/register/producer/steps/CategoryStep.jsx": 1,
+  "app/[locale]/register/producer/steps/ConfirmInboxStep.jsx": 1,
+  "app/[locale]/register/producer/steps/ConfirmUpgradedStep.jsx": 1,
+  "app/[locale]/register/producer/steps/DetailsStep.jsx": 1,
+  "app/[locale]/register/producer/steps/StoryStep.jsx": 1,
   "app/[locale]/settings/page.jsx": 3, // account settings cards
   "components/AccountDeleteCard.jsx": 2, // the settings delete card, moved out of settings/page.jsx (MEH-3248): same 2 h2s, not new ones
   "components/CategoryRequestModal.jsx": 1, // dialog title
