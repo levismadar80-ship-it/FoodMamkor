@@ -393,7 +393,7 @@ test.describe("producer_locations — multi-location E2E (MEH-1388)", () => {
     if (typeof hit?.distance_km === "number") {
       // At most ~0.73km to the nearest pin (rounding) — under 1km, proving MIN-distance
       // (its primary is farther away).
-      expect(hit.distance_km, "distance should equal the NEAREST location (~0.3km)").toBeLessThan(1);
+      expect(hit.distance_km, "distance should equal the NEAREST location (≤ ~0.73km after rounding)").toBeLessThan(1);
     }
   });
 
