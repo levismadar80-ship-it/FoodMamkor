@@ -330,6 +330,8 @@ async def add_security_headers(request, call_next):
 
 > **שגיאת שרת (500) — MEH-2761.** ה-500 של חריגה לא מטופלת נבנה ב-ServerErrorMiddleware של Starlette, שיושב מחוץ לכל ה-middleware, ולכן עד 06/11 יצא בלי אף אחת מהכותרות. התיקון: `app.add_exception_handler(Exception, server_error_with_headers)` ב-`backend/app/middleware.py`, שמחיל את אותה `apply_security_headers`. החריגה עדיין נזרקת הלאה (לוגים ו-Sentry). הקוד העדכני הוא ב-`middleware.py`, לא בדוגמה שלמעלה. טסט: `tests/test_meh2761_error_security_headers.py` (גם 429).
 
+> **דוגמה היסטורית.** ה-CSP למטה הוא הגרסה המקורית; המדיניות העדכנית (כולל `'unsafe-eval'`, PostHog, Sentry ו-Report-Only) נמצאת ב-`frontend/next.config.js`, ראו 8-CSP למטה.
+
 ```js
 // frontend: next.config.js
 const securityHeaders = [

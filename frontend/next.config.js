@@ -130,6 +130,10 @@ const securityHeaders = [
 // enforced policy drops 'unsafe-eval' (stage 2); a nonce-based policy that
 // also drops 'unsafe-inline' is stage 3 (Google's strict-CSP rollout order).
 // Derived from the enforced value, so the two can never drift apart.
+// With no NEXT_PUBLIC_SENTRY_DSN neither header carries report-uri, so the
+// twin is inert (console only) — harmless, and the same as the enforced one.
+// Sentry quota: watch security reports for the first day after release; if
+// they flood, drop the twin rather than widen the enforced policy.
 const enforcedCsp = securityHeaders.find(
   (h) => h.key === "Content-Security-Policy",
 ).value;

@@ -18,7 +18,9 @@ const out = execFileSync(process.execPath, ["-e", SCRIPT], {
     ...process.env,
     NEXT_PUBLIC_API_URL: "https://example.test/api",
     NEXT_PUBLIC_SENTRY_DSN: "https://k@o1.ingest.sentry.io/123",
+    VERCEL_ENV: "",
   },
+  timeout: 60000,
   stdio: ["ignore", "pipe", "ignore"],
 }).toString();
 const headers = JSON.parse(out.slice(out.indexOf("@@") + 2));
