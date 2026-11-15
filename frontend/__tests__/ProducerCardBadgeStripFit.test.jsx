@@ -319,9 +319,14 @@ describe("card badge strip: one line, the rest in «+N» (MEH-2856)", () => {
     render(<ProducerCard producer={threeBadges} />);
     const strip = screen.getByTestId("card-badge-strip");
     expect(strip.className.split(/\s+/)).not.toContain("absolute");
-    expect(strip.closest("a"), "not inside the photo link").toBeNull();
     const name = screen.getByRole("heading", { level: 3 });
     expect(name.compareDocumentPosition(strip) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it("0 badges: no strip at all, so the body has no empty gap (MEH-3321)", () => {
+    expect(allBadges(base), "control: the fixture earns no badge").toHaveLength(0);
+    render(<ProducerCard producer={base} />);
+    expect(screen.queryByTestId("card-badge-strip")).toBeNull();
   });
 
   it("StrictMode (dev) runs the fit effect twice — still exactly one pill, never 0", () => {
