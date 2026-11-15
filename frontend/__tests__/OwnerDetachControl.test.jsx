@@ -39,6 +39,8 @@ describe("OwnerDetachControl", () => {
     const form = screen.getByTestId("owner-detach-form");
     expect(form.textContent).toContain("דנה כהן");
     expect(form.textContent).toContain("dana@example.com");
+    // The address sits inside a Hebrew sentence: isolated, so «ל-» stays put.
+    expect(form.textContent).toContain("\u2068dana@example.com\u2069");
   });
 
   it("the confirm button stays off until the business name is typed", () => {

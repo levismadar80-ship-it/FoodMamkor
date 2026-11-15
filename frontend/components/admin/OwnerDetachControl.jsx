@@ -27,6 +27,12 @@ import InlineMessage from "@/components/ui/InlineMessage";
  *   owner: { id?: string | null, name: string, email: string },
  *   onDetached: () => void }} props
  */
+// An address is a left-to-right run inside a Hebrew sentence; without an
+// isolate its leading letters and the «ל-» prefix trade places (seen at 390 on
+// the preview). FSI…PDI is the plain-text twin of <bdi>.
+/** @param {string|null|undefined} s */
+const isolate = (s) => `\u2068${s || ""}\u2069`;
+
 export default function OwnerDetachControl({ producerId, business, owner, onDetached }) {
   const t = useTranslations("admin.producers.owner_invite.detach");
   const [open, setOpen] = useState(false);
@@ -72,7 +78,7 @@ export default function OwnerDetachControl({ producerId, business, owner, onDeta
 
   return (
     <div className="mt-3 space-y-3" data-testid="owner-detach-form">
-      <p className="text-sm text-text">{t("explain", { name: owner.name, email: owner.email })}</p>
+      <p className="text-sm text-text">{t("explain", { name: isolate(owner.name), email: isolate(owner.email) })}</p>
       <Input
         label={t("confirm_label", { business })}
         id="owner-detach-name"
