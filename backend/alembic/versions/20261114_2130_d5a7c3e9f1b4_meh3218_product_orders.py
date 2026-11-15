@@ -1,7 +1,7 @@
 """meh3218_product_orders
 
 Revision ID: d5a7c3e9f1b4
-Revises: e4b8d2f6a913
+Revises: f7d1b4c8e563
 Create Date: 2026-11-14 21:30:00.000000+00:00
 
 MEH-3218 (stage 1 of MEH-3216, on-site ordering «בקשת הזמנה»). Additive only:
@@ -38,8 +38,8 @@ from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
 revision: str = "d5a7c3e9f1b4"
-# Single head on staging when authored (14/11): e4b8d2f6a913 (MEH-2642).
-down_revision: Union[str, None] = "e4b8d2f6a913"
+# Single head on staging when authored (14/11): f7d1b4c8e563 (MEH-2642).
+down_revision: Union[str, None] = "f7d1b4c8e563"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
