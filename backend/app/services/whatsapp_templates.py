@@ -292,3 +292,94 @@ class AdminBusinessPendingV1(WhatsAppTemplate):
     name: ClassVar[str] = "admin_business_pending_v1"
     producer_name: str
     city: str
+
+
+# --- MEH-3296: on-site product orders ---------------------------------------
+#
+# UTILITY category, no buttons. Bodies are the approved copy table of 14/11
+# (/mnt/project-files/product-ordering/copy-table-he.md), one {{n}} per field
+# in field order. None is registered with Meta yet (a Chrome hands task);
+# until it is, a send answers 132001 and the outbox marks the row failed.
+# DO NOT put a newline or a tab in a parameter — Meta rejects the send
+# (132000). The outbox passes `wa_param()` output.
+
+
+class ProductOrderNewV1(WhatsAppTemplate):
+    """To the business.
+
+    הזמנה חדשה ממהמקור: {{1}}, {{2}} פריטים, {{3}} ₪, {{4}} ב{{5}} {{6}}–{{7}}. לאישור: {{8}}
+    """
+
+    name: ClassVar[str] = "product_order_new_v1"
+    customer_name: str
+    count: str
+    total: str
+    fulfilment: str
+    day: str
+    starts: str
+    ends: str
+    link: str
+
+
+class ProductOrderWaitingV1(WhatsAppTemplate):
+    """To the business, after 4 active hours with no answer.
+
+    הזמנה מחכה לתשובה כבר {{1}} שעות. אם לא תענו עד {{2}}, היא תתבטל. {{3}}
+    """
+
+    name: ClassVar[str] = "product_order_waiting_v1"
+    hours: str
+    deadline: str
+    link: str
+
+
+class ProductOrderConfirmedV1(WhatsAppTemplate):
+    """To the buyer.
+
+    ההזמנה שלכם מ{{1}} אושרה. {{2}} ב{{3}} {{4}}–{{5}}. לתשלום לבית העסק: {{6}} ₪. פרטים: {{7}}
+    """
+
+    name: ClassVar[str] = "product_order_confirmed_v1"
+    business_name: str
+    fulfilment: str
+    day: str
+    starts: str
+    ends: str
+    total: str
+    link: str
+
+
+class ProductOrderChangeV1(WhatsAppTemplate):
+    """To the buyer.
+
+    {{1}} מציעים שינוי בהזמנה. לצפייה ולאישור: {{2}}
+    """
+
+    name: ClassVar[str] = "product_order_change_v1"
+    business_name: str
+    link: str
+
+
+class ProductOrderClosedV1(WhatsAppTemplate):
+    """To the buyer: declined, cancelled by the business, or expired.
+
+    ההזמנה מ{{1}} בוטלה. פרטים: {{2}}
+    """
+
+    name: ClassVar[str] = "product_order_closed_v1"
+    business_name: str
+    link: str
+
+
+class ProductOrderTomorrowV1(WhatsAppTemplate):
+    """To the buyer, the day before.
+
+    תזכורת: מחר {{1}} מ{{2}}, {{3}}–{{4}}. לא מסתדר? אפשר לבטל כאן: {{5}}
+    """
+
+    name: ClassVar[str] = "product_order_tomorrow_v1"
+    fulfilment: str
+    business_name: str
+    starts: str
+    ends: str
+    link: str

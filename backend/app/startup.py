@@ -1,4 +1,5 @@
 from collections.abc import AsyncIterator
+from typing import TYPE_CHECKING
 import asyncio
 import os
 from contextlib import asynccontextmanager
@@ -10,6 +11,9 @@ from fastapi import FastAPI
 
 from app.config import settings
 from app.sentry import capture_background_exception
+
+if TYPE_CHECKING:
+    from apscheduler.schedulers.background import BackgroundScheduler
 
 log = structlog.get_logger("mehamakor.startup")
 
@@ -437,6 +441,56 @@ def _run_rescue_digest_job() -> None:
         db.close()
 
 
+def _run_product_order_jobs() -> None:
+    """MEH-3296: one 2-minute tick for on-site orders — expire the requests
+    nobody answered, then send the messages that are due.
+
+    Same shape as _run_rescue_digest_job: fresh session, exceptions swallowed
+    so the scheduler thread never dies. Expiry runs first so the buyer's
+    «expired» message goes out on the same tick. Both services commit per row,
+    so a crash costs at most the row it was on.
+    """
+    from app.database import SessionLocal
+    from app.services.product_order_outbox import dispatch_due
+    from app.services.product_order_sweeper import expire_due
+
+    # Each step on its own session and its own guard: an expiry that keeps
+    # failing must not stop every message.
+    for step in (expire_due, dispatch_due):
+        db = SessionLocal()
+        try:
+            step(db)
+        except Exception as exc:
+            capture_background_exception(exc, task="product_orders")
+            log.error("[PRODUCT-ORDERS] %s crashed", step.__name__, exc_info=True)
+        finally:
+            db.close()
+
+
+def _with_product_order_job(scheduler: "BackgroundScheduler") -> "BackgroundScheduler":
+    """MEH-3296: adds the on-site order tick, only while ordering is on, so a
+    dark feature runs no job at all. Same guards as the rescue digest.
+    Returns the scheduler so the lifespan can start it in the same line (the
+    lifespan is at its statement budget)."""
+    from app.routers.product_orders import product_orders_enabled
+
+    if not product_orders_enabled():
+        return scheduler
+    from apscheduler.triggers.interval import IntervalTrigger
+
+    scheduler.add_job(
+        _run_product_order_jobs,
+        IntervalTrigger(minutes=2),
+        id="meh_3296_product_orders",
+        replace_existing=True,
+        max_instances=1,
+        coalesce=True,
+        misfire_grace_time=60,
+    )
+    log.info("[PRODUCT-ORDERS] job registered — every 2 minutes")
+    return scheduler
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     log.info("=" * 60)
@@ -616,7 +670,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
             settings.rescue_bags_enabled,
             _digest_enabled(),
         )
-    followup_scheduler.start()
+    _with_product_order_job(followup_scheduler).start()
     app.state.followup_scheduler = followup_scheduler
     log.info(
         "[FOLLOWUP] scheduler started — daily 10:00 UTC"

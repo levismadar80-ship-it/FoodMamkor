@@ -58,6 +58,7 @@ from app.models.product_orders import (
     ProductOrder,
     ProductOrderEvent,
     ProductOrderItem,
+    ProductOrderNotification,
     ProductOrderPhoneCode,
 )
 
@@ -120,6 +121,7 @@ __all__ = [
     "ProductOrder",
     "ProductOrderItem",
     "ProductOrderEvent",
+    "ProductOrderNotification",
     "ProductOrderPhoneCode",
     "PRODUCT_ORDER_STATUSES",
     "PRODUCT_ORDER_FULFILMENTS",

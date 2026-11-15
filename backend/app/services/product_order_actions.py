@@ -32,6 +32,7 @@ from app.models.product_orders import (
     ProducerOrderSettings,
     ProductOrder,
 )
+from app.services.product_order_clock import active_deadline
 from app.services.product_order_menu import offered_slots
 from app.services.product_order_state import (
     Actor,
@@ -188,10 +189,12 @@ def buyer_accept_change(db: Session, order: ProductOrder, actor: Actor) -> Produ
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT, detail=PROPOSAL_PASSED_DETAIL
         )
-    _move(db, order, "confirmed", actor, None)
+    # MEH-3296: the agreed slot is copied BEFORE the move, so the «מחר»
+    # reminder the move writes is timed off the slot the buyer accepted.
     if order.proposed_slot_start is not None:
         order.slot_start = order.proposed_slot_start
         order.slot_end = order.proposed_slot_end
+    _move(db, order, "confirmed", actor, None)
     order.final_total_agorot = (
         order.proposed_total_agorot
         if order.proposed_total_agorot is not None
@@ -289,7 +292,9 @@ def business_propose_change(  # noqa: PLR0913 — one argument per proposal fiel
     _move(db, order, "change_proposed", actor, note)
     order.proposed_total_agorot = total_agorot  # type: ignore[assignment]
     order.proposal_note = note  # type: ignore[assignment]
-    order.expires_at = now + PROPOSAL_ANSWER_WINDOW  # type: ignore[assignment]
+    order.expires_at = active_deadline(  # type: ignore[assignment]
+        now, PROPOSAL_ANSWER_WINDOW.total_seconds() / 3600
+    )
     return order
 
 

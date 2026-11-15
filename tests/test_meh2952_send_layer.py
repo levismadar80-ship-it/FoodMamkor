@@ -693,6 +693,9 @@ SEND_NAMES = frozenset(
         "send_email",
         "send_text",
         "send_template",
+        # MEH-3296: the outcome-returning twins the order outbox uses.
+        "send_template_result",
+        "send_email_result",
         "_send_email",
         "_send_notification_email",
         "_send_whatsapp",
@@ -950,6 +953,17 @@ PINNED: dict[tuple[str, str, str], tuple[int, str, str]] = {
         1,
         NONE,
         "public contact form",
+    ),
+    # --- MEH-3296: the on-site order outbox (business and buyer alike) ---
+    ("services/product_order_outbox.py", "_wa.send", "send_template_result"): (
+        1,
+        BUS,
+        "producer.is_test or owner.is_test or buyer.is_test (_compose)",
+    ),
+    ("services/product_order_outbox.py", "_mail.send", "send_email_result"): (
+        1,
+        OWN,
+        "producer.is_test or owner.is_test or buyer.is_test (_compose)",
     ),
     ("routers/producer_me.py", "_send_whatsapp_otp", "send_template"): (
         1,

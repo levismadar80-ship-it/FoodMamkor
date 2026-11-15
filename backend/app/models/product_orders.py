@@ -87,6 +87,18 @@ PRODUCT_ORDER_MAX_WINDOWS = 28
 PRODUCT_ORDER_OPEN_STATUSES = ("pending", "change_proposed", "confirmed", "ready")
 PRODUCT_ORDER_CODE_STATUSES = ("confirmed", "ready")
 PRODUCT_ORDER_MAX_LINES = 30
+# MEH-3296: the messages an order sends, and how each one ends.
+PRODUCT_ORDER_NOTICE_KINDS = (
+    "new_order",  # to the business: a request came in
+    "business_reminder",  # to the business: still unanswered after 4 active hours
+    "confirmed",  # to the buyer
+    "change_proposed",  # to the buyer
+    "closed",  # to the buyer: declined, cancelled by the business, or expired
+    "buyer_cancelled",  # to the business
+    "day_before",  # to the buyer: tomorrow's hand-over
+)
+PRODUCT_ORDER_NOTICE_CHANNELS = ("whatsapp", "email")
+PRODUCT_ORDER_NOTICE_STATUSES = ("pending", "sent", "failed", "skipped")
 
 
 def _check_in(column: str, values: tuple[str, ...]) -> str:
@@ -487,4 +499,64 @@ class ProductOrderPhoneCode(Base):
     expires_at = Column(DateTime, nullable=False)
     attempts = Column(Integer, default=0, nullable=False, server_default=text("0"))
     used_at = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, default=utc_now, nullable=False)
+
+
+class ProductOrderNotification(Base):
+    """One message an order owes someone, written in the same transaction as
+    the status move that caused it (services/product_order_outbox.py).
+
+    A row is the promise; the dispatcher keeps it. `send_after` holds a
+    reminder until its time, and holds any message to a Shabbat-observant
+    business until the rest window ends. One row per (order, kind, channel):
+    a message is never owed twice.
+    """
+
+    __tablename__ = "product_order_notifications"
+    __table_args__ = (
+        CheckConstraint(
+            _check_in("kind", PRODUCT_ORDER_NOTICE_KINDS),
+            name="product_order_notifications_kind_check",
+        ),
+        CheckConstraint(
+            _check_in("channel", PRODUCT_ORDER_NOTICE_CHANNELS),
+            name="product_order_notifications_channel_check",
+        ),
+        CheckConstraint(
+            _check_in("outcome", PRODUCT_ORDER_NOTICE_STATUSES),
+            name="product_order_notifications_outcome_check",
+        ),
+        Index(
+            "uq_product_order_notifications_once",
+            "order_id",
+            "kind",
+            "channel",
+            unique=True,
+        ),
+        Index(
+            "ix_product_order_notifications_due",
+            "send_after",
+            postgresql_where=text("outcome = 'pending'"),
+        ),
+    )
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    order_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("product_orders.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    kind = Column(String(20), nullable=False)
+    channel = Column(String(10), nullable=False)
+    # Named `outcome`, not `status`: only an order has a status, and only
+    # product_order_state writes it (the single-writer probe reads `.status`).
+    outcome = Column(
+        String(10), default="pending", nullable=False, server_default=text("'pending'")
+    )
+    send_after = Column(DateTime, nullable=False)
+    attempts = Column(Integer, default=0, nullable=False, server_default=text("0"))
+    # A short code, never a message body or an address: "unconfigured",
+    # "provider", "no_address", "stale".
+    last_error = Column(String(20), nullable=True)
+    sent_at = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=utc_now, nullable=False)

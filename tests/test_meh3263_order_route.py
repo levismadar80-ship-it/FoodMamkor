@@ -1207,9 +1207,14 @@ def _status_assignments(path: Path) -> list[int]:
             targets = node.targets
         elif isinstance(node, ast.AugAssign | ast.AnnAssign):
             targets = [node.target]
+        # MEH-3296: a tuple target (`row.status, row.x = ...`) slipped past
+        # the plain check; its elements are targets too.
+        flat = []
+        for t in targets:
+            flat += t.elts if isinstance(t, ast.Tuple | ast.List) else [t]
         lines += [
             t.lineno
-            for t in targets
+            for t in flat
             if isinstance(t, ast.Attribute) and t.attr == "status"
         ]
         if isinstance(node, ast.Call) and getattr(node.func, "attr", "") == "update":
@@ -1275,6 +1280,7 @@ def test_the_status_probe_catches_each_way_of_writing_a_status(tmp_path):
         "order = ProductOrder(producer_id=1, status='confirmed')\n",
         "setattr(order, 'status', 'confirmed')\n",
         "db.execute(update(ProductOrder).values(status='x'))\n",
+        "order.status, order.note = 'x', None\n",
     ):
         probe = tmp_path / "probe.py"
         probe.write_text(source, encoding="utf-8")

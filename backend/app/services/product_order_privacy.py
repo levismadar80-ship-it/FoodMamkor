@@ -22,10 +22,12 @@ from sqlalchemy.orm import Session
 
 from app.models.product_orders import PRODUCT_ORDER_OPEN_STATUSES, ProductOrder
 from app.services.product_order_actions import clear_proposal
+from app.services.product_order_outbox import ACCOUNT_DELETED_NOTE as outbox_note
 from app.services.product_order_state import SYSTEM, apply_transition
 
 DELETED_BUYER_NAME = "חשבון שנמחק"
-ACCOUNT_DELETED_NOTE = "החשבון נמחק"
+# The note the outbox recognises: no message goes to a buyer who left.
+ACCOUNT_DELETED_NOTE = outbox_note
 
 
 def release_buyer_orders(db: Session, user_id: Any) -> int:

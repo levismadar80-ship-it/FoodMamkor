@@ -175,6 +175,34 @@ def send_email(  # noqa: PLR0913 — +test_cause, the MEH-2952 send-layer switch
         )
         return
 
+    _deliver(to, subject, body, html, reply_to)
+
+
+def send_email_result(  # noqa: PLR0913 — the same arguments as send_email
+    to: str,
+    subject: str,
+    body: str,
+    html: str | None = None,
+    reply_to: str | None = None,
+    test_cause: bool = False,
+) -> str:
+    """MEH-3296: `send_email`, answering what happened, for a caller that
+    retries (the order outbox): "sent", "failed" (worth another try),
+    "skipped_test", "unconfigured", "no_address" or "skipped" (a reserved
+    test domain). Same fail-open contract: it never raises."""
+    if test_cause:
+        logger.info(
+            "[EMAIL] skipped: caused by a test row (to=%s, subject=%r)",
+            _mask(to),
+            subject[:80],
+        )
+        return "skipped_test"
+    return _deliver(to, subject, body, html, reply_to)
+
+
+def _deliver(
+    to: str, subject: str, body: str, html: str | None, reply_to: str | None
+) -> str:
     # MEH-1613 swallow point 1/3 — empty recipient. Was a bare `return` with
     # ZERO logging: a caller passing an unset settings.admin_email produced no
     # trace anywhere. Almost always a config or caller bug, so it is reported
@@ -186,7 +214,7 @@ def send_email(  # noqa: PLR0913 — +test_cause, the MEH-2952 send-layer switch
             subject=subject,
             stage="empty-recipient",
         )
-        return
+        return "no_address"
 
     # MEH-1613 swallow point 2/3 — no API key. THE headline outage: this was
     # logger.debug, invisible at the INFO default, so an unset/rotated key
@@ -209,7 +237,7 @@ def send_email(  # noqa: PLR0913 — +test_cause, the MEH-2952 send-layer switch
                 _mask(to),
                 subject[:80],
             )
-        return
+        return "unconfigured"
 
     # MEH-2550: a reserved test domain (RFC 2606 / 6761) can never receive
     # mail, and Resend rejects it with a ValidationError that swallow point 3
@@ -217,7 +245,7 @@ def send_email(  # noqa: PLR0913 — +test_cause, the MEH-2952 send-layer switch
     # real delivery failures. Skipped before the API call, logged at INFO.
     if _is_reserved_domain(to):
         logger.info("[EMAIL] Skipped reserved test domain %s", _mask(to))
-        return
+        return "skipped"
     try:
         # MEH-2886 chunk 4: key + 10 s HTTP timeout (the SDK default is 30 s).
         resend = configure_resend(settings.resend_api_key)
@@ -247,9 +275,11 @@ def send_email(  # noqa: PLR0913 — +test_cause, the MEH-2952 send-layer switch
         # MEH-1613: was `to.split("@")[0] + "***"` — that masks the DOMAIN and
         # prints the local part, the wrong half. _mask does the inverse.
         logger.info("[EMAIL] Sent to %s", _mask(to))
+        return "sent"
     except Exception as e:  # noqa: BLE001 — fail-open by design
         # MEH-1613 swallow point 3/3 — the real delivery failure (expired key,
         # Resend 5xx, network). Was logger.warning WITH THE FULL ADDRESS and no
         # Sentry event. Reported every time: it fires only on actual failures,
         # so there is no flood to latch against.
         _report(e, to=to, subject=subject, stage="send-failed")
+        return "failed"

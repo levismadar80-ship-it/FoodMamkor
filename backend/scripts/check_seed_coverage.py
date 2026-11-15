@@ -319,6 +319,7 @@ EXEMPT_TABLES = {
     "product_order_items": "MEH-3218 on-site ordering — lines of a visitor's order, runtime only",
     "product_order_events": "MEH-3218 on-site ordering — status log of an order, runtime only",
     "product_order_phone_codes": "MEH-3263 on-site ordering — one-time phone codes, ten minutes each, runtime only",
+    "product_order_notifications": "MEH-3296 on-site ordering — messages an order owes, written at runtime only",
     "delivery_waitlist": "MEH-2618 «תודיעו לי כשתגיעו» entries — written only by a visitor's own form submit, like favorites clicks; the demo seed has no visitors",
     # `cities` is EMPTY after a full local seed — measured, not assumed. It is
     # owned by backend/scripts/seed_cities.py, not by seed_data.py, so it is
