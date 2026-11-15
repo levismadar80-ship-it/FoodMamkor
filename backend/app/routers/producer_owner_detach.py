@@ -23,14 +23,18 @@ from uuid import UUID
 
 import structlog
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
+from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
 from app.auth import require_admin
 from app.database import get_db
 from app.models import Producer, User
+from app.models.events import Experience
 from app.rate_limit import limiter
 from app.schemas.owner_detach import OwnerDetachIn
+from app.services.account_guards import is_super_admin
 from app.services.owner_detach import send_owner_detached_email
+from app.utils.clock import israel_today
 
 logger = structlog.get_logger(__name__)
 
@@ -41,6 +45,33 @@ _NO_OWNER = "לבית העסק הזה אין בעלים מחוברים"
 _STALE = "הבעלים של בית העסק השתנו מאז שהדף נטען. כדאי לרענן ולנסות שוב."
 _NAME_MISMATCH = "השם שהוקלד לא תואם לשם בית העסק"
 _ADMIN_TARGET = "אי אפשר לנתק חשבון של מנהלת מערכת"
+_TWO_OWNERS = "לבית העסק הזה מחוברים כמה חשבונות. צריך לסדר את זה ידנית לפני הניתוק."
+_LIVE_EXPERIENCES = (
+    "לבעלים יש חוויות פעילות באתר, והן רשומות על החשבון שלהם. "
+    "צריך לבטל אותן או לחכות שיסתיימו, ואז לנתק."
+)
+
+
+def _hosts_live_experiences(db: Session, owner_id: Any) -> bool:
+    """MEH-3256 review: an experience belongs to its HOST USER
+    (`experiences.host_user_id`), not to the business. Detaching would leave
+    the former owner holding the business's upcoming experiences and their
+    sign-ups, while the public pages (which join through users.producer_id)
+    drop them. So a detach waits until none is live."""
+    return (
+        db.query(Experience.id)
+        .filter(
+            Experience.host_user_id == owner_id,
+            Experience.is_active.is_(True),
+            Experience.status.in_(("approved", "pending")),
+            or_(
+                Experience.event_date >= israel_today(),
+                Experience.is_recurring.is_(True),
+            ),
+        )
+        .first()
+        is not None
+    )
 
 
 def _first_name(full_name: str | None) -> str:
@@ -60,13 +91,18 @@ def detach_owner(  # noqa: PLR0913 — six FastAPI-injected parameters, none dro
 ) -> dict[str, Any]:
     # Lock order users → producers, the claim route's order
     # (producer_claim.claim), so the two cannot deadlock.
-    owner = (
+    owners = (
         db.query(User)
         .filter(User.producer_id == producer_id)
         .with_for_update()
         .populate_existing()
-        .first()
+        .all()
     )
+    # users.producer_id is not UNIQUE: legacy rows could link two accounts.
+    # Detaching one would answer ok and leave the business owned.
+    if len(owners) > 1:
+        raise HTTPException(status_code=409, detail=_TWO_OWNERS)
+    owner = owners[0] if owners else None
     producer = (
         db.query(Producer).filter(Producer.id == producer_id).with_for_update().first()
     )
@@ -80,14 +116,16 @@ def detach_owner(  # noqa: PLR0913 — six FastAPI-injected parameters, none dro
         raise HTTPException(status_code=422, detail=_NAME_MISMATCH)
     # DO NOT detach an admin — demoting her to consumer would lock her out of
     # /admin. An admin linked to a business is fixed by hand, not by this.
-    if owner.role == "admin":
+    if owner.role == "admin" or is_super_admin(owner):
         raise HTTPException(status_code=403, detail=_ADMIN_TARGET)
+    if _hosts_live_experiences(db, owner.id):
+        raise HTTPException(status_code=409, detail=_LIVE_EXPERIENCES)
 
     owner.producer_id = None  # type: ignore[assignment]
     owner.role = "consumer"  # type: ignore[assignment]
     owner.is_producer = False  # type: ignore[assignment]
     # Retires every access AND refresh token she holds (auth._check_token_version).
-    owner.token_version = (owner.token_version or 1) + 1  # type: ignore[assignment]
+    owner.token_version = (owner.token_version or 0) + 1  # type: ignore[assignment]
     # The invite's "already handed over" stamp; cleared so the row is
     # invitable again and the next owner's onboarding clock starts on her day.
     producer.owner_invite_accepted_at = None  # type: ignore[assignment]

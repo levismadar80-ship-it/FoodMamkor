@@ -163,3 +163,83 @@ def test_the_admin_payload_names_the_owner_id(client, db):
     r = client.get(f"/admin/producers/{producer.id}", headers=auth_header(admin))
     assert r.status_code == 200, r.text
     assert r.json()["owner"]["id"] == str(owner.id)
+
+
+def test_the_old_refresh_token_stops_working(client, db):
+    """Review: the bump must retire the 14-day refresh token too, not only the
+    15-minute access token."""
+    from app.auth import create_refresh_token
+
+    producer, owner, admin = _setup(db)
+    refresh = create_refresh_token(owner.id, owner.token_version)
+    r, _ = _detach(client, producer, owner, admin)
+    assert r.status_code == 200
+    res = client.post("/auth/refresh", cookies={"refresh_token": refresh})
+    assert res.status_code == 401
+
+
+def test_surrounding_spaces_in_the_typed_name_are_ignored(client, db):
+    producer, owner, admin = _setup(db)
+    r, _ = _detach(client, producer, owner, admin, confirm_name=f"  {producer.name}  ")
+    assert r.status_code == 200, r.text
+
+
+def test_the_protected_super_admin_is_never_detached(client, db, monkeypatch):
+    """Review: role alone is not the whole guard — the SUPER_ADMIN_EMAIL
+    account is protected even when its role row says something else."""
+    from app.services import account_guards
+
+    producer, owner, admin = _setup(db)
+    monkeypatch.setattr(account_guards.settings, "super_admin_email", owner.email)
+    r, sent = _detach(client, producer, owner, admin)
+    assert r.status_code == 403
+    db.expire_all()
+    assert db.get(User, owner.id).producer_id == producer.id
+    assert sent == []
+
+
+def test_two_linked_accounts_are_refused(client, db):
+    """users.producer_id is not unique; detaching one of two would answer ok
+    and leave the business still owned."""
+    producer, owner, admin = _setup(db)
+    second = make_user(db, role="producer", email="second-owner@example.com")
+    second.producer_id = producer.id
+    db.commit()
+    r, sent = _detach(client, producer, owner, admin)
+    assert r.status_code == 409
+    db.expire_all()
+    assert db.get(User, owner.id).producer_id == producer.id
+    assert db.get(User, second.id).producer_id == producer.id
+    assert sent == []
+
+
+def test_an_owner_hosting_a_live_experience_is_not_detached(client, db):
+    """Review: an experience belongs to its host USER. Detaching would leave
+    the former owner holding the business's upcoming experience and its
+    sign-ups, so the detach waits until none is live."""
+    from test_experiences import _make_experience
+
+    producer, owner, admin = _setup(db)
+    _make_experience(db, owner, status="approved")
+    r, sent = _detach(client, producer, owner, admin)
+    assert r.status_code == 409
+    assert "חוויות" in r.json()["detail"]
+    db.expire_all()
+    assert db.get(User, owner.id).producer_id == producer.id
+    assert sent == []
+
+
+def test_a_past_or_cancelled_experience_does_not_block(client, db):
+    from datetime import timedelta
+
+    from app.utils.clock import israel_today
+    from test_experiences import _make_experience
+
+    producer, owner, admin = _setup(db)
+    _make_experience(
+        db, owner, status="approved", event_date=israel_today() - timedelta(days=3)
+    )
+    _make_experience(db, owner, status="approved", is_active=False)
+    _make_experience(db, owner, status="rejected")
+    r, _ = _detach(client, producer, owner, admin)
+    assert r.status_code == 200, r.text
