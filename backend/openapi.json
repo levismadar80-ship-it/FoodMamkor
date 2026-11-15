@@ -916,6 +916,36 @@
         "title": "BusinessSuggestionCreate",
         "type": "object"
       },
+      "CategoryCreate": {
+        "description": "MEH-3255 (D10): a NEW category must answer «דורשת רישיון?» — no\ndefault, so a create without an explicit choice is a 422, not a silent\n«no». PUT keeps CategoryIn: the flag is not editable through rename.",
+        "properties": {
+          "emoji": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Emoji"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "requires_license": {
+            "title": "Requires License",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "name",
+          "requires_license"
+        ],
+        "title": "CategoryCreate",
+        "type": "object"
+      },
       "CategoryHit": {
         "properties": {
           "emoji": {
@@ -1017,6 +1047,10 @@
             ],
             "title": "Producer Count"
           },
+          "requires_license": {
+            "title": "Requires License",
+            "type": "boolean"
+          },
           "slug": {
             "anyOf": [
               {
@@ -1031,7 +1065,8 @@
         },
         "required": [
           "id",
-          "name"
+          "name",
+          "requires_license"
         ],
         "title": "CategoryOut",
         "type": "object"
@@ -16202,7 +16237,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CategoryIn"
+                "$ref": "#/components/schemas/CategoryCreate"
               }
             }
           },

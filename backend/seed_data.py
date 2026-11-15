@@ -7,6 +7,7 @@ from sqlalchemy.dialects.postgresql import insert as pg_insert
 
 from app.auth import hash_password
 from app.config import settings
+from app.constants import LICENSE_REQUIRED_CATEGORIES
 from app.database import SessionLocal
 from app.models import (
     Category,
@@ -342,7 +343,15 @@ def seed_categories(db: Session) -> None:
                 # migration-only backfill would leave every seeded row False.
                 # Insert-only + ON CONFLICT DO NOTHING means an existing row's
                 # flag is never touched from here — the migration owns that.
-                {"name": name, "emoji": emoji, "slug": _slugs[name], "is_system": True}
+                {
+                    "name": name,
+                    "emoji": emoji,
+                    "slug": _slugs[name],
+                    "is_system": True,
+                    # MEH-3255: fresh DBs get the licence flag on INSERT, for
+                    # the same reason as is_system above.
+                    "requires_license": name in LICENSE_REQUIRED_CATEGORIES,
+                }
                 for name, emoji in CATEGORIES
             ]
         )

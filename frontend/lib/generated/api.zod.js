@@ -61,6 +61,7 @@ export const ListCategoriesAdminAdminCategoriesGetResponseItem = /*#__PURE__*/ z
   "is_system": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), listCategoriesAdminAdminCategoriesGetResponseIsSystemDefault),
   "name": /*#__PURE__*/ zod.string(),
   "producer_count": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "requires_license": /*#__PURE__*/ zod.boolean(),
   "slug": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
 })
 export const ListCategoriesAdminAdminCategoriesGetResponse = /*#__PURE__*/ zod.array(ListCategoriesAdminAdminCategoriesGetResponseItem)
@@ -77,6 +78,7 @@ export const CreateCategoryAdminCategoriesPostResponse = /*#__PURE__*/ zod.objec
   "is_system": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), createCategoryAdminCategoriesPostResponseIsSystemDefault),
   "name": /*#__PURE__*/ zod.string(),
   "producer_count": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "requires_license": /*#__PURE__*/ zod.boolean(),
   "slug": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
 })
 
@@ -114,6 +116,7 @@ export const UpdateCategoryAdminCategoriesCategoryIdPutResponse = /*#__PURE__*/ 
   "is_system": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), updateCategoryAdminCategoriesCategoryIdPutResponseIsSystemDefault),
   "name": /*#__PURE__*/ zod.string(),
   "producer_count": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "requires_license": /*#__PURE__*/ zod.boolean(),
   "slug": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
 })
 
@@ -945,6 +948,7 @@ export const ListProducersAdminProducersGetResponseItem = /*#__PURE__*/ zod.obje
   "is_system": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), listProducersAdminProducersGetResponseCategoriesItemIsSystemDefault),
   "name": /*#__PURE__*/ zod.string(),
   "producer_count": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "requires_license": /*#__PURE__*/ zod.boolean(),
   "slug": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
 })), listProducersAdminProducersGetResponseCategoriesDefault),
   "changes_requested_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()])),
@@ -1195,6 +1199,7 @@ export const AdminCreateProducerAdminProducersPostResponse = /*#__PURE__*/ zod.o
   "is_system": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminCreateProducerAdminProducersPostResponseCategoriesItemIsSystemDefault),
   "name": /*#__PURE__*/ zod.string(),
   "producer_count": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "requires_license": /*#__PURE__*/ zod.boolean(),
   "slug": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
 })), adminCreateProducerAdminProducersPostResponseCategoriesDefault),
   "changes_requested_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()])),
@@ -1442,6 +1447,7 @@ export const PendingProducersAdminProducersPendingGetResponseItem = /*#__PURE__*
   "is_system": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), pendingProducersAdminProducersPendingGetResponseCategoriesItemIsSystemDefault),
   "name": /*#__PURE__*/ zod.string(),
   "producer_count": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "requires_license": /*#__PURE__*/ zod.boolean(),
   "slug": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
 })), pendingProducersAdminProducersPendingGetResponseCategoriesDefault),
   "changes_requested_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()])),
@@ -1752,6 +1758,7 @@ export const AdminGetProducerAdminProducersProducerIdGetResponse = /*#__PURE__*/
   "is_system": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminGetProducerAdminProducersProducerIdGetResponseCategoriesItemIsSystemDefault),
   "name": /*#__PURE__*/ zod.string(),
   "producer_count": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "requires_license": /*#__PURE__*/ zod.boolean(),
   "slug": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
 })), adminGetProducerAdminProducersProducerIdGetResponseCategoriesDefault),
   "changes_requested_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()])),
@@ -1999,6 +2006,7 @@ export const AdminUpdateProducerAdminProducersProducerIdPutResponse = /*#__PURE_
   "is_system": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminUpdateProducerAdminProducersProducerIdPutResponseCategoriesItemIsSystemDefault),
   "name": /*#__PURE__*/ zod.string(),
   "producer_count": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "requires_license": /*#__PURE__*/ zod.boolean(),
   "slug": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
 })), adminUpdateProducerAdminProducersProducerIdPutResponseCategoriesDefault),
   "changes_requested_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()])),
@@ -3174,6 +3182,7 @@ export const ListCategoriesCategoriesGetResponseItem = /*#__PURE__*/ zod.object(
   "is_system": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), listCategoriesCategoriesGetResponseIsSystemDefault),
   "name": /*#__PURE__*/ zod.string(),
   "producer_count": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "requires_license": /*#__PURE__*/ zod.boolean(),
   "slug": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
 })
 export const ListCategoriesCategoriesGetResponse = /*#__PURE__*/ zod.array(ListCategoriesCategoriesGetResponseItem)
@@ -4246,6 +4255,7 @@ export const ListProducersProducersGetResponseItem = /*#__PURE__*/ zod.object({
   "is_system": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), listProducersProducersGetResponseCategoriesItemIsSystemDefault),
   "name": /*#__PURE__*/ zod.string(),
   "producer_count": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "requires_license": /*#__PURE__*/ zod.boolean(),
   "slug": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
 })), listProducersProducersGetResponseCategoriesDefault),
   "city": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -4432,6 +4442,7 @@ export const CreateProducerProducersPostResponse = /*#__PURE__*/ zod.object({
   "is_system": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), createProducerProducersPostResponseCategoriesItemIsSystemDefault),
   "name": /*#__PURE__*/ zod.string(),
   "producer_count": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "requires_license": /*#__PURE__*/ zod.boolean(),
   "slug": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
 })), createProducerProducersPostResponseCategoriesDefault),
   "city": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -4643,6 +4654,7 @@ export const GetProducerBySlugProducersBySlugSlugGetResponse = /*#__PURE__*/ zod
   "is_system": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), getProducerBySlugProducersBySlugSlugGetResponseCategoriesItemIsSystemDefault),
   "name": /*#__PURE__*/ zod.string(),
   "producer_count": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "requires_license": /*#__PURE__*/ zod.boolean(),
   "slug": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
 })), getProducerBySlugProducersBySlugSlugGetResponseCategoriesDefault),
   "city": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -4891,6 +4903,7 @@ export const GetMyProducerProducersMeGetResponse = /*#__PURE__*/ zod.object({
   "is_system": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), getMyProducerProducersMeGetResponseCategoriesItemIsSystemDefault),
   "name": /*#__PURE__*/ zod.string(),
   "producer_count": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "requires_license": /*#__PURE__*/ zod.boolean(),
   "slug": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
 })), getMyProducerProducersMeGetResponseCategoriesDefault),
   "changes_requested_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()])),
@@ -5114,6 +5127,7 @@ export const UpdateMyProducerProducersMePutResponse = /*#__PURE__*/ zod.object({
   "is_system": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), updateMyProducerProducersMePutResponseCategoriesItemIsSystemDefault),
   "name": /*#__PURE__*/ zod.string(),
   "producer_count": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "requires_license": /*#__PURE__*/ zod.boolean(),
   "slug": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
 })), updateMyProducerProducersMePutResponseCategoriesDefault),
   "changes_requested_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()])),
@@ -6117,6 +6131,7 @@ export const GetProducerProducersProducerIdGetResponse = /*#__PURE__*/ zod.objec
   "is_system": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), getProducerProducersProducerIdGetResponseCategoriesItemIsSystemDefault),
   "name": /*#__PURE__*/ zod.string(),
   "producer_count": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "requires_license": /*#__PURE__*/ zod.boolean(),
   "slug": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
 })), getProducerProducersProducerIdGetResponseCategoriesDefault),
   "city": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -7038,6 +7053,7 @@ export const GetFavoritesUsersMeFavoritesGetResponseItem = /*#__PURE__*/ zod.obj
   "is_system": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), getFavoritesUsersMeFavoritesGetResponseProducerCategoriesItemIsSystemDefault),
   "name": /*#__PURE__*/ zod.string(),
   "producer_count": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "requires_license": /*#__PURE__*/ zod.boolean(),
   "slug": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
 })), getFavoritesUsersMeFavoritesGetResponseProducerCategoriesDefault),
   "city": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),

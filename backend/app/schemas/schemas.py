@@ -1604,6 +1604,9 @@ class CategoryOut(BaseModel):
     # `False` default (not Optional) because the column is NOT NULL two-state.
     # Deliberately NOT on CategoryHit: a search hit never gates an edit.
     is_system: bool = False
+    # MEH-3255 (D10): manufacturer licence required for this category. Same
+    # ADR-006 R1 reasoning as `is_system` — the new column rides CategoryOut.
+    requires_license: bool
     # MEH-1034: query-time count over producer_categories, populated only by
     # GET /admin/categories. Optional so public consumers (GET /categories,
     # ProducerOut.categories) serialize unchanged — NOT a DB column.
@@ -5502,6 +5505,14 @@ class UserRoleUpdate(BaseModel):
 class CategoryIn(BaseModel):
     name: SanitizedLabelField
     emoji: str | None = None
+
+
+class CategoryCreate(CategoryIn):
+    """MEH-3255 (D10): a NEW category must answer «דורשת רישיון?» — no
+    default, so a create without an explicit choice is a 422, not a silent
+    «no». PUT keeps CategoryIn: the flag is not editable through rename."""
+
+    requires_license: bool
 
 
 # Admin: Static Pages

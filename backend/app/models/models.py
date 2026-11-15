@@ -1168,6 +1168,13 @@ class Category(Base):
     is_system = Column(
         Boolean, nullable=False, default=False, server_default=text("false")
     )
+    # MEH-3255 (D10): the manufacturer-licence requirement lives on the row,
+    # answered when the category is created. EXPAND step — the readers still
+    # use constants.LICENSE_REQUIRED_CATEGORIES until the contract PR, and
+    # tests/test_meh3255_requires_license_parity.py holds the two equal.
+    requires_license = Column(
+        Boolean, nullable=False, default=False, server_default=text("false")
+    )
 
     producers = relationship(
         "Producer", secondary="producer_categories", back_populates="categories"
