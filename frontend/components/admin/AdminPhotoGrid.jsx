@@ -57,14 +57,14 @@ export default function AdminPhotoGrid({ images, onChange, onRemove }) {
             </button>
           </div>
           {i === 0 ? (
-            <span className="text-xs font-medium text-action-primary min-h-[44px] inline-flex items-center" data-testid="admin-photo-main">
+            <span className="text-xs font-medium text-action-primary min-h-touch inline-flex items-center" data-testid="admin-photo-main">
               {t("producers.form.photos.main_label")}
             </span>
           ) : (
             <button
               type="button"
               onClick={() => onChange(promoteToMain(images, url))}
-              className="text-xs text-action-primary underline underline-offset-2 min-h-[44px] text-start focus-ring rounded-sm"
+              className="text-xs text-action-primary underline underline-offset-2 min-h-touch text-start focus-ring rounded-sm"
             >
               {t("producers.form.photos.make_main")}
             </button>
