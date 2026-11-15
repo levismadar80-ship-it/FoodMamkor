@@ -88,8 +88,9 @@ def test_no_owner_with_an_email_still_reserves(
 def test_a_test_business_flags_test_cause(client, db, shop, rescue_on, monkeypatch):
     _capture(monkeypatch)
     offer = _seed_offer(db, shop["location"])
-    # is_test rows are 404 to reserve (MEH-2952), so flip it after the seed
-    # only on the email path: call the queue helper directly.
+    # A test business's bag is 404 to reserve (MEH-2952), so this branch is
+    # unreachable through the route today. It is pinned on the helper alone,
+    # as a guard should that 404 ever be lifted.
     producer = db.get(Producer, shop["producer"].id)
     producer.is_test = True
     db.commit()
