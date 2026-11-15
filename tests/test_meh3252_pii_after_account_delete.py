@@ -67,7 +67,9 @@ def test_delete_account_erases_contact_trail(client, db):
         user_id=other.id,
     )
 
-    r = client.delete("/auth/me", headers=auth_header(user))
+    r = client.post(
+        "/auth/me/delete", json={"password": "Zx7Yp9Mq2Lr4"}, headers=auth_header(user)
+    )
     assert r.status_code in (200, 204), r.text
     db.expire_all()
 
@@ -108,7 +110,9 @@ def test_owner_delete_erases_business_phone_inbox(client, db):
     db.add(InboundMessage(from_phone="972541112222", body="שאלה לעסק"))
     db.commit()
 
-    r = client.delete("/auth/me", headers=auth_header(owner))
+    r = client.post(
+        "/auth/me/delete", json={"password": "Zx7Yp9Mq2Lr4"}, headers=auth_header(owner)
+    )
     assert r.status_code in (200, 204), r.text
     db.expire_all()
     assert db.query(InboundMessage).filter_by(from_phone="972541112222").count() == 0

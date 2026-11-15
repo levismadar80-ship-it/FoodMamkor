@@ -678,6 +678,13 @@ class Producer(Base):
     # which is what holds the send to EXACTLY ONE email.
     # See migration d3b7f1a92c64.
     email_pending_nudge_sent_at = Column(DateTime(timezone=True), nullable=True)
+    # MEH-3079: weekly summary email. opt_out is set by the signed unsubscribe
+    # link; sent_at is the idempotency stamp (skip if < 6 days old). Expand-only
+    # (ADR-007), migration 0cfa83f0f53e. Sender: services/weekly_owner_summary.
+    weekly_summary_opt_out = Column(
+        Boolean, nullable=False, default=False, server_default=text("false")
+    )
+    weekly_summary_sent_at = Column(DateTime(timezone=True), nullable=True)
 
     # MEH-1297: order_by position so categories[0] is deterministic (the
     # producer's primary/first-selected category), not an arbitrary row.
@@ -987,6 +994,18 @@ class User(Base):
         """
         return not self.password_hash
 
+    @property
+    def oauth_provider(self) -> str | None:
+        """MEH-3248: which provider an account without a password signs in
+        with, so /settings knows which button confirms a deletion. Google
+        wins when both are linked — verify_deletion_credentials checks the
+        same order."""
+        if self.google_id:
+            return "google"
+        if self.apple_id:
+            return "apple"
+        return None
+
 
 class RetiredSlug(Base):
     """MEH-2528 — a public business URL that must never pass to another row.
@@ -1095,6 +1114,13 @@ class Category(Base):
     is_system = Column(
         Boolean, nullable=False, default=False, server_default=text("false")
     )
+    # MEH-3255 (D10): the manufacturer-licence requirement lives on the row,
+    # answered when the category is created. EXPAND step — the readers still
+    # use constants.LICENSE_REQUIRED_CATEGORIES until the contract PR, and
+    # tests/test_meh3255_requires_license_parity.py holds the two equal.
+    requires_license = Column(
+        Boolean, nullable=False, default=False, server_default=text("false")
+    )
 
     producers = relationship(
         "Producer", secondary="producer_categories", back_populates="categories"
@@ -1182,9 +1208,19 @@ from app.models.rescue import (  # noqa: E402
     RESCUE_MAX_QTY_PER_ORDER as RESCUE_MAX_QTY_PER_ORDER,
     RESCUE_OFFER_STATUSES as RESCUE_OFFER_STATUSES,
     RESCUE_ORDER_STATUSES as RESCUE_ORDER_STATUSES,
+    RescueNoShowTombstone as RescueNoShowTombstone,
     RescueOffer as RescueOffer,
     RescueOrder as RescueOrder,
     RescueReview as RescueReview,
     RescueTypicalItems as RescueTypicalItems,
     _check_in as _check_in,
 )
+
+
+# MEH-3218: the on-site ordering tables live in their own module (this file was
+# on the file-size baseline then). Imported here, at the end, so that everything
+# importing models.py — Alembic's env.py included — registers them on
+# Base.metadata. It sits at the end only to keep the model definitions above
+# free of a mid-file import; product_orders.py imports nothing from this file,
+# so there is no cycle either way.
+import app.models.product_orders  # noqa: E402,F401

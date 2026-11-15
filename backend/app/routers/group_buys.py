@@ -20,6 +20,8 @@ from app.auth import (
 from app.database import get_db
 from app.models.models import GroupBuy, GroupBuyCommit, Producer, User
 from app.rate_limit import limiter
+from app.services import billing_ledger  # MEH-3179
+from app.services import capabilities  # MEH-3180
 from app.schemas.schemas import (
     GroupBuyCommitRequest,
     GroupBuyCreate,
@@ -185,7 +187,12 @@ def list_my_group_buys(
         .order_by(GroupBuy.created_at.desc())
         .all()
     )
-    return [_enrich(gb) for gb in items]
+    # MEH-3254 (D7): the business learns how many units to prepare — a sum,
+    # never who asked for them (MEH-1651). Owner-only: this route, not _enrich.
+    return [
+        {**_enrich(gb), "units_total": sum(c.quantity or 0 for c in gb.commits)}
+        for gb in items
+    ]
 
 
 @router.get("/{group_buy_id}", response_model=GroupBuyDetail)
@@ -410,6 +417,8 @@ def create_group_buy(
         raise HTTPException(
             status_code=403, detail="מארגן שווקים ואירועים לא יכול לפתוח קבוצת רכישה"
         )
+    # MEH-3180: a paid tool. Open to everyone while billing is off.
+    capabilities.require_paid_tool(db, producer.id, "group_buy")
 
     # MEH-3022: cap on group buys still running (open or funded).
     enforce_cap(
@@ -588,6 +597,8 @@ def update_group_buy_status(  # noqa: PLR0913 — all 6 args are FastAPI-injecte
     is_public = indexnow.is_public_business(gb.producer)  # MEH-2852
 
     gb.status = data.status  # type: ignore[assignment]
+    if data.status == "fulfilled":  # MEH-3179: each participant's order counts
+        billing_ledger.record_group_buy_fulfilled(db, gb, gb.commits)
     db.commit()
     # MEH-2852: cancelled / fulfilled — the public page changed.
     if is_public:
@@ -652,6 +663,8 @@ def admin_update_status(  # noqa: PLR0913 — FastAPI-injected args (path, 2 que
     is_public = indexnow.is_public_business(gb.producer)  # MEH-2852
 
     gb.status = status  # type: ignore[assignment]
+    if status == "fulfilled":  # MEH-3179
+        billing_ledger.record_group_buy_fulfilled(db, gb, gb.commits)
     db.commit()
     if is_public:
         indexnow.schedule(background_tasks, indexnow.group_buy_urls(gb.id))

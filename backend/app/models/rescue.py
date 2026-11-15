@@ -155,6 +155,27 @@ class RescueOffer(Base):
     )
 
 
+class RescueNoShowTombstone(Base):
+    """MEH-3225 — one no-show of a deleted account, so the two-no-shows block
+    survives deleting the account. Only a keyed hash of the email
+    (services/rescue_no_show.py::email_hash) and the bag's pickup_end: no
+    email, name, business or order, and no FK. Kept 30 days from
+    ``pickup_end`` (the rule's own window), then deleted by
+    services/retention_purge.py."""
+
+    __tablename__ = "rescue_no_show_tombstones"
+    __table_args__ = (
+        Index("ix_rescue_no_show_tombstones_email_hash", "email_hash"),
+        Index("ix_rescue_no_show_tombstones_pickup_end", "pickup_end"),
+    )
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    # hex HMAC-SHA256 of the normalised email, keyed with settings.secret_key
+    email_hash = Column(String(64), nullable=False)
+    pickup_end = Column(DateTime, nullable=False)
+    created_at = Column(DateTime, nullable=False, default=utc_now)
+
+
 class RescueOrder(Base):
     """MEH-2644 — one buyer's reservation of one offer's bags.
 

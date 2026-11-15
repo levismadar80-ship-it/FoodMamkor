@@ -124,6 +124,7 @@ const TERMS_SECTIONS = [
   "changes",
   "law",
   "privacy",
+  "pricing",
   "contact",
 ] as const;
 const A11Y_SECTIONS = ["commitment", "standard", "features", "gaps", "contact", "authority"] as const;

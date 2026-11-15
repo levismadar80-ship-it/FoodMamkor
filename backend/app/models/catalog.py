@@ -103,6 +103,22 @@ class Product(Base):
     position = Column(Integer, nullable=True)
     group_id = Column(String(36), nullable=True)
     allergens: Column[list[str]] = Column(ARRAY(Text), nullable=True)
+    # MEH-3218: on-site ordering (parent MEH-3216). The PRICE stays where it
+    # is: `price_min == price_max` is an exact price, a real range means the
+    # final price is set at confirmation. No second price column, so one owner
+    # of what a product costs.
+    price_unit = Column(
+        String(10), default="unit", nullable=False, server_default=text("'unit'")
+    )
+    is_orderable = Column(
+        Boolean, default=True, nullable=False, server_default=text("true")
+    )
+    in_stock = Column(
+        Boolean, default=True, nullable=False, server_default=text("true")
+    )
+    contains_alcohol = Column(
+        Boolean, default=False, nullable=False, server_default=text("false")
+    )
 
     # MEH-2137: the other half of the same disambiguation — see the comment on
     # Producer.products. Without it this side raises the same error.
@@ -128,6 +144,9 @@ class Product(Base):
     # marked ONLY low-carb falls outside the partial index and the ?low_carb
     # EXISTS subquery seq-scans products.
     __table_args__ = (
+        CheckConstraint(
+            "price_unit IN ('unit', 'kg', '100g')", name="products_price_unit_check"
+        ),
         Index(
             "idx_products_dietary",
             "producer_id",

@@ -40,6 +40,12 @@ from app.services.auth_emails import (
 from app.services.auth_notifications import (
     notify_producer_registered,
 )
+from app.services.account_guards import (  # MEH-3248
+    AccountDeleteRequest,
+    assert_deletable,
+    is_super_admin,
+    verify_deletion_credentials,
+)
 from app.services.user_deletion import delete_user_and_data  # MEH-2585
 from app.services import resend_verify_cap  # MEH-2906
 from app.services.verify_session import (  # MEH-3087
@@ -1163,7 +1169,10 @@ def register_producer_oauth(
         if user:
             # Email registered via password or the *other* OAuth provider.
             # Refuse silent link — same rule as /auth/google and /auth/apple.
-            if not getattr(user, sub_field):
+            # MEH-3272: compare the provider id itself (MEH-3104 fixed the
+            # two siblings). `if not getattr(...)` let an account linked to a
+            # DIFFERENT Google/Apple identity through with a full session.
+            if getattr(user, sub_field) != oauth_sub:
                 raise HTTPException(
                     status_code=409,
                     detail="אימייל זה כבר רשום עם סיסמה. התחברו עם סיסמה במקום.",
@@ -1321,6 +1330,8 @@ def get_me(
 ) -> UserOut:
     """Return current user, enriched with producer status/rejection_reason."""
     out = UserOut.model_validate(user)
+    # MEH-3248: /settings explains instead of offering a delete button.
+    out.is_super_admin = is_super_admin(user)
     if user.producer_id:
         producer = db.query(Producer).filter(Producer.id == user.producer_id).first()
         if producer:
@@ -1614,15 +1625,24 @@ def resend_verify(
     return {"detail": "אימייל אימות נשלח"}
 
 
-@router.delete("/me", response_model=None)
-@limiter.limit("3/hour")
+# MEH-3248: POST with a body replaces the bodyless DELETE /auth/me, which let
+# any live session delete the account (admins included) with no re-check.
+# DO NOT add the DELETE back as an alias — it would reopen that door.
+@router.post("/me/delete", response_model=None)
+@limiter.limit("5/hour")
 def delete_account(
     request: Request,
+    body: AccountDeleteRequest,
     background_tasks: BackgroundTasks,
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> dict[str, Any]:
     """Delete user account and all associated data.
+
+    MEH-3248: refused for admin accounts (account_guards.assert_deletable,
+    checked first), then the caller proves she owns the account: password, or
+    a fresh Google/Apple id_token for an account without one
+    (account_guards.verify_deletion_credentials).
 
     Required by Apple App Store Guidelines; also closes the GDPR /
     חוק הגנת הפרטיות gap in MEH-249 — before this fix, a producer who
@@ -1643,6 +1663,8 @@ def delete_account(
     reviews_count (maintained only in reviews.py) are recomputed after the
     deletion commits so they don't keep counting reviews that no longer exist.
     """
+    assert_deletable(user, door="self")
+    verify_deletion_credentials(user, body)
     user_email = user.email
     user_name = user.name
     # MEH-2952: captured BEFORE the row is deleted — a test account's

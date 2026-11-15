@@ -49,6 +49,7 @@ def _stub_services(monkeypatch):
         pending_nudge,
         rescue_digest,
         retention_purge,
+        weekly_owner_summary,
     )
 
     monkeypatch.setattr(onboarding_followup, "send_due_followups", lambda db: {})
@@ -60,6 +61,9 @@ def _stub_services(monkeypatch):
     monkeypatch.setattr(analytics_rollup, "run_rollup", lambda db: {})
     monkeypatch.setattr(retention_purge, "run_purge", lambda db: {})
     monkeypatch.setattr(rescue_digest, "send_rescue_digests", lambda db: {})
+    monkeypatch.setattr(
+        weekly_owner_summary, "send_weekly_summaries", lambda db, now=None: {}
+    )
 
 
 JOBS = [
@@ -98,6 +102,12 @@ JOBS = [
         "rescue-codes-digest",
         "interval",
         job_heartbeat.RESCUE_DIGEST_INTERVAL_MINUTES,
+    ),
+    (
+        "_run_weekly_owner_summary_job",
+        "weekly-owner-summary",
+        "crontab",
+        job_heartbeat.WEEKLY_OWNER_SUMMARY_CRON,
     ),
 ]
 
@@ -179,6 +189,12 @@ def _registered(monkeypatch, *, flags_on: bool):
     monkeypatch.setattr(startup.settings, "watchdog_enabled", flags_on)
     monkeypatch.setattr(startup.settings, "rescue_bags_enabled", flags_on)
     monkeypatch.setattr(rescue_digest, "digest_enabled", lambda: flags_on)
+    from app.services import weekly_owner_summary
+
+    monkeypatch.setattr(weekly_owner_summary, "summary_enabled", lambda: flags_on)
+    # The boot catch-up is a one-off DateTrigger, not the schedule the monitor
+    # announces; keep it out so this test sees only the recurring jobs.
+    monkeypatch.setattr(weekly_owner_summary, "catchup_due", lambda now: False)
     sched = BackgroundScheduler(timezone="UTC")
     startup.register_scheduler_jobs(sched)  # never started
     return {j.func.__name__: j.trigger for j in sched.get_jobs()}
@@ -197,7 +213,9 @@ def test_registered_triggers_match_monitor_configs(monkeypatch, checkins):
         schedule = checkins[-1]["monitor_config"]["schedule"]
         trig = triggers[func_name]
         if kind == "crontab":
-            expected = CronTrigger.from_crontab(schedule["value"], timezone="UTC")
+            expected = CronTrigger.from_crontab(
+                schedule["value"], timezone=checkins[-1]["monitor_config"]["timezone"]
+            )
             assert str(trig) == str(expected), func_name
         else:
             assert trig.interval.total_seconds() == schedule["value"] * 60, func_name
@@ -208,5 +226,10 @@ def test_flagged_jobs_absent_when_flags_off(monkeypatch):
     triggers = _registered(monkeypatch, flags_on=False)
     assert "_run_watchdog_job" not in triggers
     assert "_run_rescue_digest_job" not in triggers
-    flagged = {"_run_watchdog_job", "_run_rescue_digest_job"}
+    assert "_run_weekly_owner_summary_job" not in triggers
+    flagged = {
+        "_run_watchdog_job",
+        "_run_rescue_digest_job",
+        "_run_weekly_owner_summary_job",
+    }
     assert set(triggers) == {j[0] for j in JOBS} - flagged

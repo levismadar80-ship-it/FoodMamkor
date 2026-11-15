@@ -43,7 +43,15 @@ from app.schemas.schemas import (
     ExperienceValidateRequest,
     ExperienceValidateResult,
 )
+from app.services import billing_ledger  # MEH-3179
+from app.services import capabilities  # MEH-3180
 from app.services import indexnow  # MEH-2852
+from app.services.booking_cancellations import (  # MEH-3227
+    after_item_edit,
+    cancel_item_signups,
+    is_test_item,
+    item_state,
+)
 from app.services.date_rules import refuse_past_date  # MEH-3224
 from app.services.experience_moderation import validate_experience
 from app.services.experience_notifications import (
@@ -197,8 +205,9 @@ def _publicly_visible_query(db: Session) -> OrmQuery[Experience]:
 
     Deliberately NOT included here, because both are route-specific and
     predate this gate:
-      * ``event_date >= today`` — the listing hides past experiences; the
-        detail route still serves them by direct link.
+      * ``event_date >= today`` — the listing hides past experiences (a
+        recurring one stays listed, MEH-3250); the detail route still serves
+        them by direct link.
       * ``is_active`` — MEH-1419 drops host-cancelled ones from the feed only.
     """
     return (
@@ -231,7 +240,10 @@ def _public_listing_query(db: Session) -> OrmQuery[Experience]:
         # MEH-1883: Israel calendar day — same reasoning as events.py. A UTC
         # "today" drops an experience from the public feed at 21:00 the
         # evening before it happens.
-        Experience.event_date >= israel_today(),
+        # MEH-3219 B12: a recurring experience's event_date is its FIRST
+        # occasion, so it stays listed after it — the same rule the host cap
+        # below (create) already applies.
+        (Experience.event_date >= israel_today()) | Experience.is_recurring.is_(True),
         # MEH-1419: a host-cancelled experience drops from the public feed
         # (mirrors events.py:73). It stays visible on GET /experiences/mine.
         Experience.is_active.is_(True),
@@ -264,9 +276,9 @@ def list_experiences(
     producer_id: UUID | None = None,
     db: Session = Depends(get_db),
 ) -> list[ExperienceListOut] | list[dict[str, Any]]:
-    """Only approved + upcoming (event_date >= today), and only from an
-    approved business (MEH-1749). Past experiences drop out of the public
-    feed automatically."""
+    """Only approved + upcoming (event_date >= today, or recurring —
+    MEH-3250), and only from an approved business (MEH-1749). Past one-off
+    experiences drop out of the public feed automatically."""
     q = _public_listing_query(db)
     if producer_id:
         q = q.filter(Producer.id == producer_id)
@@ -429,6 +441,13 @@ def submit_experience(
     )
     if problem:
         raise HTTPException(status_code=422, detail=problem)
+    # MEH-3180: a priced sign-up through the site's form is a paid tool.
+    capabilities.require_paid_signup(
+        db,
+        user.producer_id,
+        price=data.price_per_person,
+        method=data.registration_method,
+    )
 
     verdict = validate_experience(data.model_dump(mode="json"))
     if verdict["status"] == "REJECTED":
@@ -581,8 +600,27 @@ def update_experience(  # noqa: PLR0913 — all args are FastAPI-injected; MEH-3
     if touches_range and _min_above_max(new_min, new_max):
         raise HTTPException(status_code=422, detail=_MIN_ABOVE_MAX_DETAIL)
     _check_method_edit(db, ex, payload)
+    # MEH-3180: only an edit that MAKES it a paid site sign-up asks.
+    capabilities.require_paid_signup(
+        db,
+        user.producer_id,
+        price=payload.get("price_per_person", ex.price_per_person),
+        method=payload.get("registration_method", ex.registration_method),
+        running=capabilities.is_running(
+            payload.get("is_active", ex.is_active),
+            payload.get("event_date", ex.event_date),
+        ),
+        was_price=ex.price_per_person,
+        was_method=ex.registration_method,
+        was_running=capabilities.is_running(ex.is_active, ex.event_date),
+        date=payload.get("event_date", ex.event_date),
+        was_date=ex.event_date,
+    )
+    before = item_state(ex)
     for field, value in payload.items():
         setattr(ex, field, value)
+    # MEH-3227: cancelled → sign-ups cancelled; moved → registrants told.
+    after_item_edit(db, ex, before, background_tasks, is_test_item(ex))
 
     # MEH-2663: the sign-up tally is a counter, never NULL, and never above
     # the cap — the dashboard clamps, and a direct PUT is clamped the same way.
@@ -673,6 +711,10 @@ def delete_experience(
         raise HTTPException(status_code=404, detail="Experience not found")
     # MEH-2852: only a page that was public has anything to take down.
     removed_urls = indexnow.experience_urls(ex.id) if _is_public(ex) else []
+    # MEH-3227: registrants are told before the cascade removes their rows.
+    cancel_item_signups(db, ex, background_tasks, is_test_item(ex))
+    # MEH-3179: sign-ups for an upcoming experience that is deleted never happen.
+    billing_ledger.void_item_registrations(db, ex, kind="experience_registration")
     db.delete(ex)
     db.commit()
     indexnow.schedule(background_tasks, removed_urls)

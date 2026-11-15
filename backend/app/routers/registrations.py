@@ -36,6 +36,7 @@ from app.config import settings
 from app.database import get_db
 from app.models import Event, Experience, Producer, Registration, User
 from app.rate_limit import limiter
+from app.services import billing_ledger  # MEH-3179
 from app.services.producer_listing import is_live_owner_row  # MEH-2952
 from app.routers.experiences import _publicly_visible_query
 from app.schemas.schemas import (
@@ -97,7 +98,9 @@ def _experience_for_signup(db: Session, experience_id: UUID) -> Experience:
     # the past between the visibility query and the lock.
     if ex is None:
         raise HTTPException(status_code=404, detail="Experience not found")
-    if not ex.is_active or ex.event_date < israel_today():
+    # MEH-3219 B12: a recurring experience's event_date is its first
+    # occasion, not its last — it stays open after it (experiences.py feed).
+    if not ex.is_active or (ex.event_date < israel_today() and not ex.is_recurring):
         raise HTTPException(status_code=409, detail=_CLOSED)
     if ex.registration_method != "site_form":
         raise HTTPException(status_code=409, detail=_CLOSED)
@@ -117,6 +120,13 @@ def _date_text(d: date) -> str:
 
 def _time_text(t: time | None) -> str:
     return t.strftime("%H:%M") if t else ""
+
+
+def _experience_when(ex: Experience) -> str:
+    if ex.is_recurring:
+        schedule = (ex.recurring_schedule or "").strip()
+        return f"מתקיימת באופן קבוע: {schedule}" if schedule else "מתקיימת באופן קבוע"
+    return _date_text(ex.event_date)  # type: ignore[arg-type]
 
 
 # ---------- sign-up ----------
@@ -173,6 +183,9 @@ def register_for_event(
 
     reg = _new_registration(data, event_id=event.id)
     db.add(reg)
+    db.flush()
+    # MEH-3179: counted in the same transaction; never fails the sign-up.
+    billing_ledger.record_event_registration(db, reg, event)
     db.commit()
 
     producer = db.get(Producer, event.producer_id)
@@ -244,6 +257,12 @@ def register_for_experience(
 
     reg = _new_registration(data, experience_id=ex.id)
     db.add(reg)
+    db.flush()
+    # MEH-3179: counted for the host's business, if the host has one.
+    ledger_host = db.get(User, ex.host_user_id)
+    billing_ledger.record_experience_registration(
+        db, reg, ex, ledger_host.producer_id if ledger_host else None
+    )
     db.commit()
 
     host = db.get(User, ex.host_user_id)
@@ -259,8 +278,11 @@ def register_for_experience(
         reg.email,  # type: ignore[arg-type]
         VisitorEmail(
             title=ex.title,  # type: ignore[arg-type]
-            date_text=_date_text(ex.event_date),  # type: ignore[arg-type]
-            time_text=_time_text(ex.event_time),  # type: ignore[arg-type]
+            # MEH-3250: a recurring experience's event_date is its FIRST
+            # occasion, often long past — the email gives the host's schedule
+            # (approved page copy «מתקיימת באופן קבוע» when she left none).
+            date_text=_experience_when(ex),
+            time_text="" if ex.is_recurring else _time_text(ex.event_time),  # type: ignore[arg-type]
             place=place,  # type: ignore[arg-type]
             host_name=host_name,  # type: ignore[arg-type]
             item_url=f"{settings.frontend_url}/experiences/{ex.id}",
@@ -395,10 +417,24 @@ def cancel_registration(
     if was_active:
         reg.status = "cancelled"  # type: ignore[assignment]
         reg.cancelled_at = utc_now()  # type: ignore[assignment]
+        # MEH-3179: a cancel before the item took place is not a booking the
+        # business got. A late cancel of a past item stays counted.
+        if item.event_date >= israel_today():
+            billing_ledger.void(
+                db,
+                kind=(
+                    "event_registration" if reg.event_id else "experience_registration"
+                ),
+                source_id=reg.id,
+            )
     db.commit()
 
     # A late cancel of a past item changes nothing for the owner — no email.
-    if was_active and item.event_date >= israel_today():
+    # MEH-3250: a recurring experience is never past by its first date.
+    is_upcoming = item.event_date >= israel_today() or bool(
+        getattr(item, "is_recurring", False)
+    )
+    if was_active and is_upcoming:
         if reg.event_id:
             owner_email = _owner_email_for_event(db, item)
             owner = db.get(Producer, item.producer_id)
