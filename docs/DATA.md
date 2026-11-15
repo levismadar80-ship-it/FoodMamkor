@@ -6,8 +6,8 @@
 >
 > The codebase is the source of truth — when this file drifts, fix this
 > file. Code lives at:
-> - Models: `backend/app/models/models.py`
-> - Schemas: `backend/app/schemas/schemas.py`
+> - Models: `backend/app/models/` — core tables in `models.py`, the rest one file per area (`catalog`, `engagement`, `home_products`, `events`, `analytics`, `admin_ops`, `recipes`, `rescue`); every name is importable from `app.models.models`
+> - Schemas: `backend/app/schemas/` — shared field validators in `schemas.py`, the models one file per area (`registration`, `catalog`, `producer`, `producer_out`, `admin_review`, `community`, `experiences`, `recipes_outreach`, `group_buys_requests`, `events`, `reviews`, `site`); every name is importable from `app.schemas.schemas`
 > - Routers: `backend/app/routers/`
 >
 > **Database:** PostgreSQL on Railway, **no PostGIS**. Distance queries
@@ -1692,7 +1692,7 @@ POST /contact                    public — { name, email, message, topic? } →
                                  (Hebrew detail), missing/None → "general". No DB column —
                                  the Hebrew label is prepended to the stored message
                                  ("נושא: <label>") and to the email subject. Single source:
-                                 CONTACT_TOPIC_LABELS in schemas.py:2074.
+                                 CONTACT_TOPIC_LABELS in schemas/site.py.
 GET  /cities                     public — canonical cities table (data.gov.il seed,
                                  MEH-1343) ∪ live producer/delivery cities; static
                                  list only as unseeded-env fallback (MEH-1349).

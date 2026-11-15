@@ -1,7 +1,8 @@
 # מהמקור — DB schema
 
 > Mermaid ER diagram for the main tables + relationships. **Source of
-> truth is `backend/app/models/models.py`** — if this drifts, update
+> truth is `backend/app/models/` (`models.py` for users, businesses and
+> categories; one sibling file per area since MEH-3269)** — if this drifts, update
 > the diagram in the same PR (workflow rule 11).
 >
 > Grouped into four logical clusters to keep the diagram legible:

@@ -40,7 +40,11 @@ cd "$REPO_ROOT" || exit 1
 CARDS_DIR="frontend/app/[locale]/producer/dashboard/edit/cards"
 OWNER_STORY="$CARDS_DIR/OwnerStoryCard.jsx"
 DESCRIPTION="$CARDS_DIR/DescriptionCard.jsx"
-SCHEMAS="backend/app/schemas/schemas.py"
+# Every schema module: the models were split out of schemas.py by area
+# (MEH-3270), so a cap can sit in any of them. SCHEMAS is the label printed in
+# messages; SCHEMA_FILES is what is read.
+SCHEMAS="backend/app/schemas/*.py"
+SCHEMA_FILES=(backend/app/schemas/*.py)
 
 status=0
 
@@ -62,10 +66,10 @@ client_const() {
 server_caps() {
   local field="$1"
   # sanitize_text(v, max_length=N) inside the validator registered for $field
-  grep -A 3 "field_validator(\"$field\")" "$SCHEMAS" \
+  grep -h -A 3 "field_validator(\"$field\")" "${SCHEMA_FILES[@]}" \
     | sed -n 's/.*max_length=\([0-9][0-9]*\).*/\1/p'
   # Field(..., max_length=N) on the declaration itself
-  grep "^\s*$field:.*max_length=\([0-9]\)" "$SCHEMAS" \
+  grep -h "^\s*$field:.*max_length=\([0-9]\)" "${SCHEMA_FILES[@]}" \
     | sed -n 's/.*max_length=\([0-9][0-9]*\).*/\1/p'
 }
 
