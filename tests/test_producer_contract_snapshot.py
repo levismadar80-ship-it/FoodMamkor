@@ -54,7 +54,7 @@ _HEADER = [
     "GENERATED FILE — do not hand-edit.",
     f"Regenerate with: {REGEN_COMMAND}",
     "Owner of this fact: classes ProducerListOut and ProducerDetailOut in",
-    "backend/app/schemas/schemas.py. Deliberately no line numbers — they moved",
+    "backend/app/schemas/producer_out.py. Deliberately no line numbers — they moved",
     "twice on 2026-08-03 alone; grep the class names, or just run the command",
     "above. This file is a committed copy of their field names so frontend",
     "vitest can check Zod against them without importing Python.",
