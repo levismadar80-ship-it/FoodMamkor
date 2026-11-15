@@ -123,6 +123,21 @@ const securityHeaders = [
   },
 ];
 
+// MEH-3304 stage 1: measure before enforcing. The enforced CSP above still
+// allows 'unsafe-eval'; this Report-Only twin is the same policy without it,
+// so any script that really needs eval shows up in Sentry (via the same
+// report-uri) without blocking anything for users. After a clean week the
+// enforced policy drops 'unsafe-eval' (stage 2); a nonce-based policy that
+// also drops 'unsafe-inline' is stage 3 (Google's strict-CSP rollout order).
+// Derived from the enforced value, so the two can never drift apart.
+const enforcedCsp = securityHeaders.find(
+  (h) => h.key === "Content-Security-Policy",
+).value;
+securityHeaders.push({
+  key: "Content-Security-Policy-Report-Only",
+  value: enforcedCsp.replace(" 'unsafe-eval'", ""),
+});
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   // Perf: barrel-optimize large icon/animation packages so a named import

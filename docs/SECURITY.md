@@ -359,6 +359,14 @@ module.exports = {
 
 ---
 
+#### 8-CSP. Report-Only בלי `'unsafe-eval'` (MEH-3304, 15/11/2026)
+
+ה-CSP הנאכף (`frontend/next.config.js`) עדיין מתיר `'unsafe-inline'` ו-`'unsafe-eval'`.
+שלב 1: כותרת `Content-Security-Policy-Report-Only` נגזרת ממנו בלי `'unsafe-eval'` ומדווחת
+ל-Sentry דרך אותו report-uri. שלב 2 (אחרי שבוע נקי): להוריד `'unsafe-eval'` מהנאכף.
+שלב 3: nonce + `'strict-dynamic'` במקום `'unsafe-inline'`. `CspReportOnly.test.js` שומר
+ששתי הכותרות זהות פרט ל-`'unsafe-eval'`.
+
 ### ✅ 8a. Analytics privacy (feature/producer-analytics, April 2026)
 
 Two new invariants shipped with the analytics feature. Both are guarded
