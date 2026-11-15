@@ -227,10 +227,10 @@ function icu(msg: string, count: number): string {
 // those keys, and lib/map-chips.js resolves the «בשר ודגים» / «חלב וגבינות» /
 // «ירקות ופירות» / «לחמים ואפייה» chips by matching these DB names. «דבש» is a
 // legend row NO fixture business carries — the MEH-722 empty-category case.
-const CAT_MEAT = { id: 1, name: "בשר" };
-const CAT_DAIRY = { id: 2, name: "חלב וגבינות" };
-const CAT_PRODUCE = { id: 3, name: "ירקות ופירות" };
-const CAT_BREAD = { id: 4, name: "לחם ומאפה" };
+const CAT_MEAT = { id: 1, name: "בשר", requires_license: false };
+const CAT_DAIRY = { id: 2, name: "חלב וגבינות", requires_license: false };
+const CAT_PRODUCE = { id: 3, name: "ירקות ופירות", requires_license: false };
+const CAT_BREAD = { id: 4, name: "לחם ומאפה", requires_license: false };
 const CATEGORIES = [CAT_MEAT, CAT_DAIRY, CAT_PRODUCE, CAT_BREAD];
 const EMPTY_LEGEND_NAME = "דבש";
 

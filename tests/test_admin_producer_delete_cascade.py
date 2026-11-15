@@ -33,7 +33,7 @@ def test_admin_delete_producer_cascades_story_card_destroy(client, db, monkeypat
 
     calls: list[dict] = []
 
-    def fake_destroy(url, bypass_reserved=False, context=""):
+    def fake_destroy(url, bypass_reserved=False, context="", db=None):
         calls.append({"url": url, "bypass_reserved": bypass_reserved})
         return True
 
@@ -78,7 +78,7 @@ def test_admin_delete_producer_with_no_story_card_still_calls_destroy(
 
     calls: list[dict] = []
 
-    def fake_destroy(url, bypass_reserved=False, context=""):
+    def fake_destroy(url, bypass_reserved=False, context="", db=None):
         calls.append({"url": url, "bypass_reserved": bypass_reserved})
         return True
 
@@ -119,7 +119,7 @@ def test_admin_delete_producer_cascades_owner_photo_destroy(client, db, monkeypa
 
     calls: list[dict] = []
 
-    def fake_destroy(url, bypass_reserved=False, context=""):
+    def fake_destroy(url, bypass_reserved=False, context="", db=None):
         calls.append({"url": url, "bypass_reserved": bypass_reserved})
         return True
 

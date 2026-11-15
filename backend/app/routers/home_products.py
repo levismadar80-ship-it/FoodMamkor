@@ -309,7 +309,11 @@ def update_home_product(
     if "photo" in payload and old_photo and old_photo != hp.photo:
         from app.cloudinary_utils import destroy_image
 
-        destroy_image(old_photo, context="home_products.update_home_product photo")  # type: ignore[arg-type]
+        destroy_image(
+            old_photo,  # type: ignore[arg-type]
+            context="home_products.update_home_product photo",
+            db=db,  # MEH-3247
+        )
     if "images" in payload:
         from app.cloudinary_utils import destroy_removed_images
 
@@ -317,6 +321,7 @@ def update_home_product(
             old_images,
             hp.images or [],  # type: ignore[arg-type]
             context="home_products.update_home_product images",
+            db=db,  # MEH-3247
         )
 
     return _enrich_home_product(hp, db)
