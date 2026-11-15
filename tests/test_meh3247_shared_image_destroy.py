@@ -22,6 +22,7 @@ import re
 import pytest
 
 from app import cloudinary_utils
+from app.auth import hash_password
 from app.models.models import Base, HomeProduct, Product
 from app.services import image_refs
 
@@ -113,9 +114,16 @@ def test_account_deletion_still_destroys_own_unshared_photos(client, db, destroy
     a, owner_a, b = _two_businesses(db)
     a.images = [_A_EXTRA, _B_PHOTO]
     b.images = [_B_PHOTO]
+    # The delete route re-authenticates (MEH-3248); the factory's placeholder
+    # hash is not a real bcrypt hash.
+    owner_a.password_hash = hash_password("Zx7Yp9Mq2Lr4")
     db.commit()
 
-    resp = client.delete("/auth/me", headers=auth_header(owner_a))
+    resp = client.post(
+        "/auth/me/delete",
+        json={"password": "Zx7Yp9Mq2Lr4"},
+        headers=auth_header(owner_a),
+    )
     assert resp.status_code == 200, resp.text
 
     assert _A_EXTRA_PUBLIC_ID in destroyed, "own unshared photo was not destroyed"
