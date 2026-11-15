@@ -82,6 +82,27 @@ def test_an_overlay_transform_is_refused(two_users):
     assert not io.is_allowed_new_url(a, url)
 
 
+@pytest.mark.parametrize("transform", ["q_auto", "e_grayscale", "t_thumb", "w_400"])
+def test_a_leading_transformation_is_refused(two_users, transform):
+    """Reviewer (rule 5a): `q_auto/` made the id look outside our namespace."""
+    a, b = two_users
+    url = f"{_CLOUD}/{transform}/v1/mehamakor/u/{io.owner_key(b.id)}/{'b' * 32}.jpg"
+    assert not io.is_allowed_new_url(a, url)
+    legacy = f"{_CLOUD}/{transform}/mehamakor/{'b' * 32}.jpg"
+    assert not io.is_allowed_new_url(a, legacy)
+
+
+@pytest.mark.parametrize(
+    "host", ["res.cloudinar%79.com", "res.\uff43loudinary.com", "RES.CLOUDINARY.COM"]
+)
+def test_a_disguised_cloudinary_host_is_refused(two_users, host):
+    a, b = two_users
+    url = (
+        f"https://{host}/test-cloud/image/upload/mehamakor/u/{io.owner_key(b.id)}/x.jpg"
+    )
+    assert not io.is_allowed_new_url(a, url)
+
+
 def test_a_longer_key_with_your_key_as_prefix_is_refused(two_users):
     a, _b = two_users
     url = f"{_CLOUD}/mehamakor/u/{io.owner_key(a.id)}5/{'a' * 32}.jpg"
@@ -230,20 +251,43 @@ def _image_routes():
     for methods, path, endpoint, dep in am._iter_api_routes(am.load_app()):
         for bp in dep.body_params:
             fields = getattr(bp.field_info.annotation, "model_fields", {})
-            if IMAGE_FIELDS & set(fields):
-                found.append((sorted(methods), path, endpoint))
+            hit = IMAGE_FIELDS & set(fields)
+            if hit:
+                found.append((sorted(methods), path, endpoint, sorted(hit)))
     return found
+
+
+def _checked_fields(source: str) -> set[str]:
+    """Image field names that appear inside an assert_own_new_images(...) call.
+
+    Reviewer (rule 5a): a bare substring search passed a comment, or a call on
+    the wrong field. The call's own text (up to its closing paren) must name
+    each image field the route's body carries.
+    """
+    checked: set[str] = set()
+    for chunk in source.split("assert_own_new_images(")[1:]:
+        depth, end = 1, 0
+        for i, ch in enumerate(chunk):
+            depth += ch == "("
+            depth -= ch == ")"
+            if depth == 0:
+                end = i
+                break
+        call = chunk[:end]
+        checked |= {f for f in IMAGE_FIELDS if f in call}
+    return checked
 
 
 def test_every_route_that_stores_an_image_checks_ownership():
     routes = _image_routes()
     assert len(routes) >= 12, f"control: route walk found only {len(routes)}"
-    missing = [
-        f"{m} {p} ({ep.__name__})"
-        for m, p, ep in routes
-        if ep.__name__ not in _EXEMPT
-        and "assert_own_new_images(" not in inspect.getsource(ep)
-    ]
+    missing = []
+    for m, p, ep, fields in routes:
+        if ep.__name__ in _EXEMPT:
+            continue
+        unchecked = set(fields) - _checked_fields(inspect.getsource(ep))
+        if unchecked:
+            missing.append(f"{m} {p} ({ep.__name__}): {sorted(unchecked)}")
     assert missing == [], (
         f"stores an image URL without assert_own_new_images: {missing}"
     )

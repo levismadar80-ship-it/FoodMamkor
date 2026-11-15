@@ -18,11 +18,14 @@ History:  MEH-3247 part 2 (grill B2 follow-up). Folder ownership instead of an
 import hashlib
 import hmac
 import re
+import unicodedata
 from collections.abc import Iterable
 from typing import Any
+from urllib.parse import unquote
 
 from fastapi import HTTPException
 
+from app.cloudinary_utils import extract_public_id
 from app.config import settings
 
 # Our assets all live under this namespace. A Cloudinary URL whose public_id is
@@ -73,13 +76,25 @@ def _is_owned(pid: str, owned: tuple[str, ...]) -> bool:
     return False
 
 
+def _mentions_cloudinary(url: str) -> bool:
+    # Reviewer (rule 5a): `res.cloudinar%79.com` and a full-width `ｃ` both
+    # resolve to res.cloudinary.com in a browser, so decode and fold first.
+    folded = unicodedata.normalize("NFKC", unquote(unquote(url))).casefold()
+    return "cloudinary" in folded
+
+
 def is_allowed_new_url(user: Any, url: object) -> bool:
-    if not isinstance(url, str) or "cloudinary" not in url.lower():
+    if not isinstance(url, str) or not _mentions_cloudinary(url):
         return True  # not a Cloudinary asset: today's behaviour
     match = _CANONICAL.match(url)
     if match is None:
         return False
     pid = match.group("pid")
+    # Reviewer (rule 5a): a leading transformation (`q_auto/`, `t_thumb/`)
+    # passes the character class but is not part of the asset id. The id must
+    # be exactly what the destroy path would parse, so no segment is skipped.
+    if extract_public_id(url, bypass_reserved=True) != pid:
+        return False
     if not pid.startswith(OUR_NAMESPACE):
         return True  # outside our namespace: cannot be one of our assets
     return _is_owned(pid, own_prefixes(user))

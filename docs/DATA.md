@@ -1825,17 +1825,23 @@ POST /upload/owner-photo         auth+producer — MEH-1335 owner photo; no free
 > `mehamakor/kashrut/u/<owner_key>/` (`owner_key` = HMAC of the user id, so the
 > id is not in the URL). Every non-admin write that stores an image URL
 > (gallery + owner photo on PUT /producers/me, products, events, experiences,
-> recipes, PATCH /users/me avatar, rescue review photo, kashrut request,
-> home products) calls `services/image_ownership.assert_own_new_images`: a NEW
-> URL that mentions Cloudinary must be the canonical upload shape (no query,
-> transform or `..`), and if its public_id is in `mehamakor/` it must be in the
+> recipes, PATCH /users/me avatar, rescue review photo, kashrut request; also
+> home products, whose router is not mounted today) calls `services/image_ownership.assert_own_new_images`: a NEW
+> URL that mentions Cloudinary (host percent-decoded and Unicode-folded first)
+> must be the canonical upload shape (no query, transformation segment or `..`;
+> the id must equal what `extract_public_id` parses), and if its public_id is in `mehamakor/` it must be in the
 > caller's own folder or her fixed avatar / owner-photo id → else **403**
 > «אפשר להוסיף רק תמונה שהעליתם בעצמכם. העלו את התמונה מחדש.». URLs already
 > on the row are not re-checked (old rows still save; an old flat-folder photo
 > moved into a different field is refused). `tests/test_meh3247_own_uploads_only.py`
 > fails on a route whose body carries an image field without the check.
-> Limits: no scrub on account deletion (no hot-links can be created any more,
-> and prod had no businesses before this); photos a former owner uploaded stay
+> Limits: no scrub on account deletion (a non-admin write can no longer create
+> a hot-link, and prod had no businesses before this); a photo from ANOTHER
+> Cloudinary account outside `mehamakor/` is still accepted, and removing it
+> asks our cloud to destroy that public_id (harmless: our assets all live
+> under `mehamakor/`); Google sign-in avatars (`mehamakor/avatars/<uuid>`) are
+> not in the caller's own set, so they re-save in place but cannot move to
+> another field; photos a former owner uploaded stay
 > on a business that changed owner (invite flow), by design. Never add a blind
 > delete-by-folder on account deletion — `destroy_image(db=)` already skips an
 > asset another row uses.
