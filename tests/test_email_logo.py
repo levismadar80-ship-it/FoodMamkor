@@ -242,4 +242,7 @@ def test_no_html_email_in_the_backend_without_the_logo():
     # MEH-3079 moved the total by one: the weekly owner summary
     # (services/weekly_owner_summary.py) is a new HTML document with its logo.
     assert checked.get("services/weekly_owner_summary.py") == (1, 1), checked
-    assert sum(d for d, _ in checked.values()) == 15, checked
+    # MEH-3300 moved it by one more: the newsletter confirm-link email in
+    # routers/marketing.py is a second HTML document there, with its logo.
+    assert checked.get("routers/marketing.py") == (2, 2), checked
+    assert sum(d for d, _ in checked.values()) == 16, checked

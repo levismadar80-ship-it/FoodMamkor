@@ -6,6 +6,7 @@ import { LinkBreak } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import StatusPage from "@/components/StatusPage";
 import api from "@/lib/api";
+import { ConfirmNewsletterNewsletterConfirmPostResponse as ConfirmOut } from "@/lib/generated/api.zod";
 
 // The backend's verdict that the TOKEN is bad (400 = refused or expired,
 // 422 = malformed): retrying cannot help. 429 / 5xx / network may pass on retry.
@@ -42,7 +43,11 @@ export default function ConfirmClient({ token }) {
     setStatus("sending");
     api
       .post("/newsletter/confirm", { token })
-      .then(() => setStatus("success"))
+      // Rule 19: parse before consuming; the body is not read further.
+      .then((r) => {
+        ConfirmOut.parse(r.data);
+        setStatus("success");
+      })
       .catch((/** @type {any} */ error) => {
         setStatus(INVALID_LINK_STATUSES.has(error?.response?.status) ? "invalid" : "retry");
       });

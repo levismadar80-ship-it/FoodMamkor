@@ -946,6 +946,11 @@ PINNED: dict[tuple[str, str, str], tuple[int, str, str]] = {
         NONE,
         "newsletter sign-up — no business or account",
     ),
+    ("routers/marketing.py", "_send_newsletter_confirm", "send_email"): (
+        1,
+        NONE,
+        "newsletter double opt-in confirm link (MEH-3300) — no business or account",
+    ),
     ("routers/marketing.py", "_send_contact_email", "send_email"): (
         1,
         NONE,
