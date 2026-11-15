@@ -10,6 +10,8 @@ Touches:  DB tables `producer_page_views`, `producer_whatsapp_clicks`,
           MEH-3171: also `phone_otp_tokens`, one day after `expires_at`.
           MEH-3244: `producer_contact_clicks` past 90 days are UPDATEd —
           ip_hash and user_id set to NULL, the row kept.
+          MEH-3225: also `rescue_no_show_tombstones`, 30 days after the
+          bag's pickup_end (the no-show rule's own window).
           Reads the roll-up watermark through analytics_rollup — never
           the aggregate table directly (the MEH-2079 single-reader guard).
 Does NOT: roll anything up (analytics_rollup.py owns that); decide WHEN to
@@ -61,7 +63,9 @@ from app.models.models import (
     ProducerPageView,
     ProducerWhatsAppClick,
     Registration,
+    RescueNoShowTombstone,
 )
+from app.services.rescue_no_show import NO_SHOW_WINDOW_DAYS
 from app.services.analytics_rollup import RAW_RETENTION_DAYS, rollup_watermark
 from app.utils.clock import ISRAEL_TZ, israel_today
 
@@ -95,6 +99,7 @@ class PurgeResult:
     registrations_deleted: int = 0
     otps_deleted: int = 0
     contact_clicks_anonymized: int = 0
+    tombstones_deleted: int = 0
 
 
 def _israel_day_start_utc(day: date) -> datetime:
@@ -256,6 +261,17 @@ def run_purge(
         now - OTP_RETENTION_AFTER_EXPIRY,
     )
 
-    result = PurgeResult(boundary, views, clicks, alerts, registrations, otps, contacts)
+    # MEH-3225: a deleted account's no-show stops counting after the window,
+    # so its hashed row has no reason to stay.
+    tombstones = _delete_in_batches(
+        db,
+        RescueNoShowTombstone,
+        RescueNoShowTombstone.pickup_end,
+        now - timedelta(days=NO_SHOW_WINDOW_DAYS),
+    )
+
+    result = PurgeResult(
+        boundary, views, clicks, alerts, registrations, otps, contacts, tombstones
+    )
     logger.info("[RETENTION-PURGE] %s", result)
     return result

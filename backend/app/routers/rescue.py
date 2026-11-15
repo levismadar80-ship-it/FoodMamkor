@@ -78,6 +78,7 @@ from app.models.models import (
     User,
 )
 from app.rate_limit import limiter
+from app.services import billing_ledger, capabilities  # MEH-3179 · MEH-3180
 from app.schemas.rescue import (
     RescueNoShowStateOut,
     RescueOfferCreate,
@@ -105,6 +106,12 @@ from app.services.rescue_emails import (
     send_reservation_email,
 )
 from app.services.producer_listing import not_test_producer  # MEH-2952
+from app.services.rescue_no_show import (  # MEH-3226
+    NO_SHOW_BLOCK_AT,
+    NO_SHOW_WINDOW_DAYS,  # noqa: F401 — re-exported for tests/test_rescue.py
+    active_no_show_counts,
+    queue_no_show_email,
+)
 from app.utils.clock import israel_today, utc_now
 
 logger = logging.getLogger(__name__)
@@ -116,17 +123,14 @@ RESERVE_CLOSES_BEFORE_END = timedelta(minutes=15)
 
 router = APIRouter(prefix="/rescue", tags=["rescue"])
 admin_router = APIRouter(prefix="/admin/rescue", tags=["admin-rescue"])
-# The business's own view lives under /producers/me, beside
-# /producers/me/group-buys (MEH-2437), so it needs a router without the
-# /rescue prefix.
+# The business's own view lives under /producers/me, beside /producers/me/group-buys
+# (MEH-2437), so it needs a router without the /rescue prefix.
 me_router = APIRouter(tags=["rescue"])
 
-# The pilot's no-show rule: the SECOND no-show inside this window blocks new
-# reservations. Both numbers are here rather than inline so the test asserts
-# the same constants the handler reads.
-NO_SHOW_BLOCK_AT = 2
-NO_SHOW_WINDOW_DAYS = 30
-BLOCKED_DETAIL = "ההזמנות חסומות אחרי שתי אי-הגעות. כתבו לנו"
+# The pilot's no-show rule (NO_SHOW_BLOCK_AT inside NO_SHOW_WINDOW_DAYS) lives
+# in services/rescue_no_show.py since MEH-3226, so /admin/users reads the same
+# numbers; imported above and re-exported here for the tests.
+BLOCKED_DETAIL = "השריונים חסומים אחרי שתי אי-הגעות. כתבו לנו"
 
 # How many times to retry a colliding pickup code before giving up. The code
 # is unique per OFFER and an offer holds at most 20 bags, so a collision is
@@ -224,19 +228,7 @@ def _active_no_shows(db: Session, user: User) -> int:
     whose pickup window ended AFTER that moment are counted, so one write
     releases the block and nothing in the history is deleted.
     """
-    cutoff = utc_now() - timedelta(days=NO_SHOW_WINDOW_DAYS)
-    q = (
-        db.query(func.count(RescueOrder.id))
-        .join(RescueOffer, RescueOrder.offer_id == RescueOffer.id)
-        .filter(
-            RescueOrder.user_id == user.id,
-            RescueOrder.status == "no_show",
-            RescueOffer.pickup_end >= cutoff,
-        )
-    )
-    if user.rescue_block_cleared_at is not None:
-        q = q.filter(RescueOffer.pickup_end > user.rescue_block_cleared_at)
-    return int(q.scalar() or 0)
+    return active_no_show_counts(db, [user.id]).get(user.id, 0)  # type: ignore[list-item]
 
 
 def _owns(user: User, producer_id: UUID) -> bool:
@@ -339,7 +331,7 @@ def _order_or_404(db: Session, order_id: UUID) -> RescueOrder:
     "/offers",
     response_model=RescueOfferOut,
     status_code=status.HTTP_201_CREATED,
-    dependencies=[Depends(require_rescue_enabled)],
+    dependencies=[Depends(require_rescue_enabled), Depends(capabilities.bags_open)],
 )
 @limiter.limit("20/minute")
 def create_offer(
@@ -988,7 +980,7 @@ def mark_handed(
     order.status = "handed"  # type: ignore[assignment]
     order.handed_at = utc_now()  # type: ignore[assignment]
     order.handed_by = current_user.id
-    db.commit()
+    billing_ledger.count_bag_and_commit(db, order)  # MEH-3179: ledger row, then commit
     db.refresh(order)
     return order
 
@@ -999,17 +991,16 @@ def mark_handed(
     dependencies=[Depends(require_rescue_enabled)],
 )
 @limiter.limit("60/minute")
-def mark_no_show(
+def mark_no_show(  # noqa: PLR0913 — FastAPI-injected; MEH-3226 added background_tasks
     request: Request,
     order_id: UUID,
+    background_tasks: BackgroundTasks,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> RescueOrderOut | RescueOrder:
-    """The business records that nobody came for the bag.
-
-    Only after `pickup_end` — before that the buyer may still be on their way,
-    and a no-show is what blocks them from reserving again.
-    """
+    """The business records that nobody came for the bag — only after
+    `pickup_end`: before that the buyer may still be on their way, and a
+    no-show blocks reserving again. The buyer is mailed each time (MEH-3226)."""
     order = _order_or_404(db, order_id)
     _require_offer_owner(current_user, order.offer)
 
@@ -1023,9 +1014,8 @@ def mark_no_show(
             status_code=status.HTTP_409_CONFLICT, detail="ההזמנה אינה פעילה"
         )
 
-    # Same locks, same order, same re-read as cancel_order (MEH-2865): a cancel
-    # landing between the read above and this write would otherwise leave a
-    # cancelled order AND a no-show on the buyer.
+    # Same locks + re-read as cancel_order (MEH-2865): a cancel landing between
+    # the read above and this write would leave a cancel AND a no-show.
     _offer_for_update(db, order.offer_id)  # type: ignore[arg-type]
     db.refresh(order, with_for_update=True)
     if order.status != "reserved":
@@ -1034,16 +1024,20 @@ def mark_no_show(
         )
 
     order.status = "no_show"  # type: ignore[assignment]
-    # Display/metrics counter. The 422 gate reads the windowed count from the
-    # orders, not this — see _active_no_shows. One SQL increment, not a Python
-    # read-modify-write: two no-shows for one buyer at once each read the same
-    # value and one count was lost (MEH-2865).
+    # Display/metrics counter; the 422 gate reads _active_no_shows. One SQL
+    # increment, not a Python read-modify-write: two no-shows for one buyer at
+    # once each read the same value and one count was lost (MEH-2865).
     db.query(User).filter(User.id == order.user_id).update(
         {User.rescue_no_show_count: func.coalesce(User.rescue_no_show_count, 0) + 1},
         synchronize_session=False,
     )
     db.commit()
     db.refresh(order)
+    try:  # MEH-3226: the mark is committed; a mail-side failure must not 500 it
+        active = _active_no_shows(db, order.user)
+        queue_no_show_email(background_tasks, order, active=active)
+    except Exception as exc:  # noqa: BLE001 — fail-open, like the MEH-2715 email
+        capture_background_exception(exc, task="rescue_no_show_email")
     return order
 
 

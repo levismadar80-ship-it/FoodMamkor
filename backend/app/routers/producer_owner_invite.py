@@ -11,9 +11,9 @@ Touches:  producers (the eleven `owner_invite_*` columns; `declared_at` /
           business-approved email, to the new owner.
 Does NOT: create a `users` row at invite time (closed decision 2 — that is what
           keeps forgot-password from becoming a way around the declaration
-          step), link an EXISTING account to a business (v1: 409 — the fix for
-          an owner who already has an account is to edit and approve the draft
-          she already started), publish anything (the business is already
+          step), link an EXISTING account to a business (that is
+          producer_owner_invite_existing.py since MEH-3256 — she signs in and
+          accepts there; this module's `/accept` still 409s a taken address), publish anything (the business is already
           approved — that is the precondition, not the effect), verify a phone
           (`phone_verified` stays false; she can verify from the dashboard), or
           touch the `/claim` flow for DRAFT businesses (routers/producer_claim.py
@@ -753,6 +753,60 @@ def _verify_email_code(
         raise HTTPException(status_code=422, detail=_BAD_CODE)
 
 
+def _claim_invite(
+    db: Session,
+    producer_id: UUID,
+    token: str,
+    now: datetime,
+    farmer_stamp: dict[str, Any],
+) -> int:
+    """The one conditional UPDATE that spends an invite (MEH-1820). Shared by
+    `/accept` (new account) and `/accept-existing` (MEH-3256, signed-in
+    account) so the claim — and every column it clears — has ONE owner.
+    Returns the affected-row count; 0 means another request won or the link
+    died. The comments inside are the original `/accept` ones."""
+    affected: int = (
+        db.query(Producer)
+        .filter(
+            Producer.id == producer_id,
+            Producer.owner_invite_token_hash == _hash_token(token),
+            Producer.owner_invite_accepted_at.is_(None),
+            Producer.owner_invite_expires_at > now,
+            Producer.status.in_(_INVITABLE_STATUSES),
+        )
+        .update(
+            {
+                # The token dies here, in the same statement that claims it.
+                Producer.owner_invite_token_hash: None,
+                Producer.owner_invite_accepted_at: now,
+                # MEH-759 (ADR-022 gate 2): the licensing declaration is HERS,
+                # stamped from her own click. An admin created this page and
+                # deliberately did NOT sign this (admin_create_producer leaves
+                # both NULL) — this is the moment it becomes signed.
+                Producer.declared_at: now,
+                Producer.declaration_version: DECLARATION_VERSION,
+                # MEH-3137: {} unless a grower category needed the line.
+                **{getattr(Producer, k): v for k, v in farmer_stamp.items()},
+                # v3: the page goes live in the SAME statement that claims the
+                # token. Set unconditionally rather than only when the row
+                # read `inactive`: both invitable statuses END at `approved`,
+                # so writing the end state needs no read to be still true —
+                # which is the whole point of doing it here and not after a
+                # second SELECT.
+                Producer.status: _LIVE_STATUS,
+                # The code is spent with the token. Nothing may be accepted
+                # twice, and a code left behind would outlive the invite it
+                # belonged to.
+                Producer.owner_invite_code_hash: None,
+                Producer.owner_invite_code_expires_at: None,
+                Producer.owner_invite_code_attempts: None,
+            },
+            synchronize_session=False,
+        )
+    )
+    return affected
+
+
 @public_router.post("/accept", response_model=Token)
 # 10 per 15 minutes, matching `reset_password` — the other unauthenticated
 # endpoint that consumes a single-use token and sets a password. The token
@@ -864,45 +918,7 @@ async def accept_owner_invite(
     # belt-and-braces — the read above is NOT under a lock, so its answer is
     # already stale by the time we get here, and this clause is the only one
     # whose verdict counts.
-    claimed = (
-        db.query(Producer)
-        .filter(
-            Producer.id == producer.id,
-            Producer.owner_invite_token_hash == _hash_token(body.token),
-            Producer.owner_invite_accepted_at.is_(None),
-            Producer.owner_invite_expires_at > now,
-            Producer.status.in_(_INVITABLE_STATUSES),
-        )
-        .update(
-            {
-                # The token dies here, in the same statement that claims it.
-                Producer.owner_invite_token_hash: None,
-                Producer.owner_invite_accepted_at: now,
-                # MEH-759 (ADR-022 gate 2): the licensing declaration is HERS,
-                # stamped from her own click. An admin created this page and
-                # deliberately did NOT sign this (admin_create_producer leaves
-                # both NULL) — this is the moment it becomes signed.
-                Producer.declared_at: now,
-                Producer.declaration_version: DECLARATION_VERSION,
-                # MEH-3137: {} unless a grower category needed the line.
-                **{getattr(Producer, k): v for k, v in farmer_stamp.items()},
-                # v3: the page goes live in the SAME statement that claims the
-                # token. Set unconditionally rather than only when the row
-                # read `inactive`: both invitable statuses END at `approved`,
-                # so writing the end state needs no read to be still true —
-                # which is the whole point of doing it here and not after a
-                # second SELECT.
-                Producer.status: _LIVE_STATUS,
-                # The code is spent with the token. Nothing may be accepted
-                # twice, and a code left behind would outlive the invite it
-                # belonged to.
-                Producer.owner_invite_code_hash: None,
-                Producer.owner_invite_code_expires_at: None,
-                Producer.owner_invite_code_attempts: None,
-            },
-            synchronize_session=False,
-        )
-    )
+    claimed = _claim_invite(db, producer.id, body.token, now, farmer_stamp)  # type: ignore[arg-type]
     if not claimed:
         db.rollback()
         raise HTTPException(status_code=404, detail=_LINK_INVALID)
