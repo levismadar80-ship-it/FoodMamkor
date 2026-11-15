@@ -309,6 +309,13 @@ EXEMPT_TABLES = {
     "rescue_offers": "MEH-2644 rescue-bags pilot — dark behind a flag; offers are posted by an owner at runtime",
     "rescue_orders": "MEH-2644 rescue-bags pilot — a visitor's reservation, runtime only",
     "registrations": "MEH-2763 on-site sign-up — a visitor's name/phone/email, runtime only",
+    # MEH-3179: written only by services/billing_ledger.py when a real booking
+    # is stored, fulfilled or handed. The bookings it counts (registrations,
+    # rescue_orders) are runtime-only above, so the seed has nothing to count.
+    "billable_events": "MEH-3179 billing ledger — one row per booking a visitor made, written at runtime by billing_ledger; the tables it counts from are runtime only too",
+    # MEH-3180: a business with no row is in the launch state (every tool
+    # open), and nothing writes a row until billing starts.
+    "business_billing": "MEH-3180 billing state per business — no row means the launch state; a row is written only once billing starts, so a full seed leaves it empty",
     "rescue_reviews": "MEH-2644 rescue-bags pilot — written only after a handed order, runtime only",
     "rescue_typical_items": "MEH-2644 rescue-bags pilot — child rows of rescue_offers, runtime only",
     "delivery_waitlist": "MEH-2618 «תודיעו לי כשתגיעו» entries — written only by a visitor's own form submit, like favorites clicks; the demo seed has no visitors",

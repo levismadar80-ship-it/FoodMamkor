@@ -430,6 +430,113 @@ Only items whose owner picked `registration_method = 'site_form'` take rows.
 PII is returned to the owner/admin only. Purged 30 days after the item's
 date (`retention_purge._purge_registrations`, the promise under the form).
 
+### Billable events (ledger of bookings through the site — MEH-3179, migration `d5b8f2a6c341`; kept after the business is deleted — MEH-3208, migration `e6c9a3b7d452`)
+
+```sql
+billable_events (
+  id uuid PK,
+  producer_id FK producers ON DELETE SET NULL,  -- NULL once the business is deleted; the row stays (MEH-3208)
+  producer_ref uuid NOT NULL,     -- the same business id, kept after the delete; NOT a FK. Fills itself from producer_id
+  kind: event_registration|experience_registration|group_buy_order|rescue_bag|product_order,  -- product_order (MEH-3216): no writer yet
+  source_id uuid,                 -- the registration / group-buy commit / rescue order; NOT a FK (outlives it)
+  occurred_at timestamptz,
+  quantity int >= 1,              -- units in a group-buy order, bags in a rescue order
+  base_amount_agorot bigint,      -- the price of the booking (0 = free)
+  fee_agorot bigint,              -- the NON-subscriber fee of that price list; a subscriber's reduced fee is computed at summary time. Nothing is charged in the launch phase
+  price_list_version int,         -- app/pricing.py
+  status: counted|voided, voided_at,
+  created_at,
+  UNIQUE (kind, source_id)        -- a booking is counted once
+)
+```
+
+Rows are never deleted, by a business delete or by any job: they are the
+record of what a business was, or would be, billed (bookkeeping records are
+kept seven years from the end of the tax year, or six from the yearly report,
+the later; source: secondary guides, the regulation text itself was not read).
+The admin screen lists only businesses that still exist.
+
+No personal data. Written only by `app/services/billing_ledger.py`, in the
+booking's own transaction behind a SAVEPOINT (a ledger error never fails the
+booking): on a sign-up (`registrations.py`), when a group buy becomes
+`fulfilled` — one row per participant's order (`group_buys.py`), and when a
+rescue order is marked handed (`rescue.py`). A sign-up cancelled before the
+item's date is `voided`, and so are the rows of an upcoming event / experience
+that is deleted (`events.py`, `experiences.py`); a late cancel and a past item
+stay counted. Test businesses (`is_test`) are recorded like any other and left
+out where the numbers are read (the admin view, MEH-3181). The numbers come from `app/pricing.py`, held
+equal to `frontend/lib/pricing.js` and `docs/PRICING.md` by
+`tests/test_meh3179_pricing_mirror.py`. Adds one table →
+**`EXPECTED_TABLES` 50 → 51**.
+
+**Monthly summary (MEH-3181, `routers/billing.py` → `services/billing_summary.py`).**
+Read-only; nothing is charged (`phase: "launch"`, `charged_agorot: 0`). A month is
+an Israel calendar month (`?month=YYYY-MM`, default the current one; a malformed
+value → 422). Voided rows are never counted. A rescue order counts one booking
+per bag; every other row counts one. The threshold is an AMOUNT: a month is
+over it when the value of its paid bookings reaches `threshold_agorot`.
+
+- 👤 `GET /producers/me/billing/summary` (60/minute) — the caller's own business
+  only (the id comes from the session). `{month, phase, bookings, value_agorot,
+  by_kind[{kind, bookings, value_agorot}], threshold_agorot, over_threshold,
+  fee_without_subscription_agorot, fee_with_subscription_agorot, charged_agorot,
+  price_list_version}`. The two fee figures are what the month WOULD cost on each
+  track of the current price list: plain commission, or subscription + reduced
+  commission. The plain figure is the fee stored on each row (its own price
+  list); the subscriber figure is recomputed per booking with the current list.
+  One list exists today; a month that spans a price change will need both
+  figures taken from the row's list.
+- 🔒 `GET /admin/billing/overview` (60/minute) — every real business (test
+  businesses excluded) with a counted booking that month, highest value first:
+  `{month, threshold_agorot, businesses_over_threshold, businesses_over_two_months,
+  start_billing_businesses, start_billing_months, would_pay_total_agorot, phase,
+  history[{month, businesses, businesses_over_threshold, value_agorot,
+  would_pay_total_agorot}],
+  rows[{producer_id, name, bookings, value_agorot, over_threshold,
+  months_over_in_a_row, would_pay_agorot}]}`. `months_over_in_a_row` looks back at
+  most 6 months. `would_pay_agorot` is the month's stored fees for a business at
+  or over the threshold and 0 under it; nothing is charged. `phase` is `launch`
+  until billing is switched on. `history` is the month and the five before it,
+  newest first, each as it would have been billed (shadow billing; computed on
+  read, nothing stored). Read by `/admin/billing` (MEH-3182).
+
+**Capabilities (MEH-3181, `services/capabilities.py`).** What a business may do is
+asked of this module, not read off `producers.plan`. Today it owns one rule, moved
+from `upload.py` unchanged: a business whose `plan` is exactly `free` may hold 3
+gallery images.
+
+**Billing state and paid tools (MEH-3180), switched off.**
+
+```sql
+business_billing (                -- migration f7d1b4c8e563; one row per business that left the launch default
+  producer_id uuid PK FK producers ON DELETE CASCADE,
+  state: launch|notice|active|page_only|unpaid,   -- no row = launch
+  state_since timestamptz,
+  price_list_version int NULL,    -- the list the business joined billing under (app/pricing.py)
+  subscribed bool NOT NULL DEFAULT false,
+  created_at, updated_at
+)
+```
+
+Its own table, not columns on `producers`: the page and the billing account are
+separate things. No payment details, no personal data. Read only through
+`services/capabilities.py`. The state and the switch `app.pricing.BILLING_PHASE` (`launch` today; a
+code constant, not an env var). While the switch is `launch` every state is
+open. Once it is `billing`, a business in `page_only` or `unpaid` gets **403**
+(`capabilities.PAID_TOOL_CLOSED_DETAIL`) on a NEW paid booking:
+
+| Tool | Routes that ask |
+|---|---|
+| paid sign-up (price > 0 **and** `registration_method = site_form`) | `POST /events`, `PUT /events/{id}`, `POST /experiences`, `PUT /experiences/{id}` — an edit asks only when it OPENS one: makes the item a paid site sign-up, reactivates a cancelled one, or moves a past one forward |
+| group buy | `POST /group-buys` |
+| rescue bags | `POST /rescue/offers` (route dependency `capabilities.bags_open`) |
+| product orders (MEH-3216) | none yet — the route that turns ordering on joins the list with that work |
+
+Never closed: the page, WhatsApp / link / free sign-ups, editing or running an
+item that already exists. Nothing moves a business between states yet (the
+billing stage). `tests/test_meh3180_billing_state.py` fails when a route listed
+in `capabilities.PAID_TOOL_ROUTES` stops asking.
+
 ### Experiences (community workshops — **admin-moderated**)
 
 ```sql

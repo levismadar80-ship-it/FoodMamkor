@@ -78,6 +78,7 @@ from app.models.models import (
     User,
 )
 from app.rate_limit import limiter
+from app.services import billing_ledger, capabilities  # MEH-3179 · MEH-3180
 from app.schemas.rescue import (
     RescueNoShowStateOut,
     RescueOfferCreate,
@@ -116,9 +117,8 @@ RESERVE_CLOSES_BEFORE_END = timedelta(minutes=15)
 
 router = APIRouter(prefix="/rescue", tags=["rescue"])
 admin_router = APIRouter(prefix="/admin/rescue", tags=["admin-rescue"])
-# The business's own view lives under /producers/me, beside
-# /producers/me/group-buys (MEH-2437), so it needs a router without the
-# /rescue prefix.
+# The business's own view lives under /producers/me, beside /producers/me/group-buys
+# (MEH-2437), so it needs a router without the /rescue prefix.
 me_router = APIRouter(tags=["rescue"])
 
 # The pilot's no-show rule: the SECOND no-show inside this window blocks new
@@ -339,7 +339,7 @@ def _order_or_404(db: Session, order_id: UUID) -> RescueOrder:
     "/offers",
     response_model=RescueOfferOut,
     status_code=status.HTTP_201_CREATED,
-    dependencies=[Depends(require_rescue_enabled)],
+    dependencies=[Depends(require_rescue_enabled), Depends(capabilities.bags_open)],
 )
 @limiter.limit("20/minute")
 def create_offer(
@@ -988,7 +988,7 @@ def mark_handed(
     order.status = "handed"  # type: ignore[assignment]
     order.handed_at = utc_now()  # type: ignore[assignment]
     order.handed_by = current_user.id
-    db.commit()
+    billing_ledger.count_bag_and_commit(db, order)  # MEH-3179: ledger row, then commit
     db.refresh(order)
     return order
 
