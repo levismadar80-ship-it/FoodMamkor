@@ -201,6 +201,14 @@ its comment. `auth.py` / `upload.py` / permissions / `backend/app/routers/**` al
 the built-in `/security-review`, and `auth.py` / `upload.py` / permissions a
 web-search CVE check ([security.md](./security.md)).
 
+**RED-tier PRs: the fresh reviewer runs on Fable (Sapir 15/11, MEH-3271).** For a
+RED-tier PR (auth, schema/Alembic, security, central components, prod — ADR-016)
+the rule-5a reviewer subagent is started with `model: "fable"`. If Fable is
+refused or its usage is exhausted, run the same reviewer on Opus and say so in
+the PR body — never skip the review. YELLOW/GREEN keep the default reviewer.
+Measured cost (14/11): ~120k tokens for a small PR, ~165–215k for a whole area;
+on 14/11 every Fable pass found a bug the earlier passes missed.
+
 **Round cap (MEH-2334):** if a 3rd adversarial round on one PR still produces new
 findings, stop the fix loop and hand Sapir the remaining findings as one list.
 They are reported, never dropped. Past round 3 the finder mostly surfaces
