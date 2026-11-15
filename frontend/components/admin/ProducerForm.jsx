@@ -1,11 +1,11 @@
 // @ts-check
 "use client";
 
-import AdminPhotoGrid from "@/components/admin/AdminPhotoGrid";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { ArrowSquareOut, Cow, Medal } from "@phosphor-icons/react";
+import AdminPhotoGrid from "@/components/admin/AdminPhotoGrid";
 import api from "@/lib/api";
 import { HEALTH_MINISTRY_FOOD_REGISTRY_URL } from "@/lib/official-registries";
 import { useAdminAction } from "@/lib/use-admin-action";
