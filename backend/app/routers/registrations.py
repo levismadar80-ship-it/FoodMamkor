@@ -19,6 +19,9 @@ Rules:
   - Registrant PII is returned only to the owner or an admin (IDOR rule);
     the visitor's only credential is the cancel token in her email.
   - Emails are queued after the commit, as plain values (rescue.py MEH-2715).
+  - MEH-3314: a full item takes a waitlist through the same form
+    (services/registration_waitlist.py); a cancel offers the freed spot to
+    the first one waiting.
 """
 
 from __future__ import annotations
@@ -53,7 +56,10 @@ from app.services.registration_emails import (
     send_owner_cancellation,
     send_owner_new_registration,
     send_visitor_confirmation,
+    send_waitlist_confirmation,
+    send_waitlist_offer,
 )
+from app.services import registration_waitlist as waitlist  # MEH-3314
 from app.services.registrations import registered_counts
 from app.utils.clock import israel_today, utc_now
 
@@ -132,29 +138,50 @@ def _experience_when(ex: Experience) -> str:
 # ---------- sign-up ----------
 
 
-def _existing(
-    db: Session, column: Any, item_id: UUID, email: str
-) -> Registration | None:
-    return (
-        db.query(Registration)
-        .filter(
-            column == item_id,
-            Registration.email == email,
-            Registration.status == "registered",
-        )
-        .first()
-    )
-
-
-def _new_registration(data: RegistrationCreate, **item: Any) -> Registration:
+def _new_registration(
+    data: RegistrationCreate, status: str = "registered", **item: Any
+) -> Registration:
     return Registration(
         name=data.name,
         phone=data.phone,
         email=data.email,
         cancel_token=secrets.token_urlsafe(32),
-        status="registered",
+        status=status,
         **item,
     )
+
+
+def _signup_row(
+    db: Session, data: RegistrationCreate, column: Any, item_id: UUID, *, full: bool
+) -> Registration | None:
+    """MEH-3314: the row this submit writes, or None when it writes nothing.
+
+    Full → a new waitlisted row (None if she is already on either list).
+    Free → her waitlisted row promoted, else a new registered row (None if
+    she is already registered). Capacity is decided before this, so the
+    answer never depends on who else is on the list."""
+    existing = waitlist.active_row(db, column, item_id, data.email)
+    item: dict[str, Any] = {column.key: item_id}
+    if existing is not None and (full or existing.status == "registered"):
+        db.rollback()  # releases the FOR UPDATE lock on the item row
+        return None
+    if full:
+        waitlist.refuse_if_waitlist_full(db, column, item_id)
+        reg = _new_registration(data, status="waitlisted", **item)
+        db.add(reg)
+        return reg
+    if existing is not None:
+        existing.status = "registered"  # type: ignore[assignment]
+        return existing
+    reg = _new_registration(data, **item)
+    db.add(reg)
+    return reg
+
+
+def _gate(data: RegistrationCreate, *, full: bool) -> None:
+    """A full item refuses a plain sign-up; the waitlist is opt-in."""
+    if full and not data.waitlist:
+        raise HTTPException(status_code=409, detail=_FULL)
 
 
 @router.post(
@@ -175,24 +202,22 @@ def register_for_event(
     # email already signed up and 409 for a new one on a full item, which
     # tells a stranger whether that address is on the list.
     taken = registered_counts(db, event_ids=[event.id]).get(event.id, 0)  # type: ignore[call-overload,list-item]
-    if event.max_participants is not None and taken >= event.max_participants:
-        raise HTTPException(status_code=409, detail=_FULL)
-    if _existing(db, Registration.event_id, event.id, data.email):  # type: ignore[arg-type]
-        db.rollback()  # releases the FOR UPDATE lock on the event row
-        return RegistrationCreatedOut()
-
-    reg = _new_registration(data, event_id=event.id)
-    db.add(reg)
+    full = event.max_participants is not None and taken >= event.max_participants
+    _gate(data, full=full)
+    reg = _signup_row(db, data, Registration.event_id, event.id, full=full)  # type: ignore[arg-type]
+    if reg is None:
+        return waitlist.WAITLISTED if full else RegistrationCreatedOut()
     db.flush()
-    # MEH-3179: counted in the same transaction; never fails the sign-up.
-    billing_ledger.record_event_registration(db, reg, event)
+    if not full:
+        # MEH-3179: counted in the same transaction; never fails the sign-up.
+        billing_ledger.record_event_registration(db, reg, event)
     db.commit()
 
     producer = db.get(Producer, event.producer_id)
     place = ", ".join(p for p in (event.location, event.city) if p)  # type: ignore[misc]
     item_url = f"{settings.frontend_url}/events/{event.id}"
     background_tasks.add_task(
-        send_visitor_confirmation,
+        send_waitlist_confirmation if full else send_visitor_confirmation,
         reg.email,  # type: ignore[arg-type]
         VisitorEmail(
             title=event.title,  # type: ignore[arg-type]
@@ -206,6 +231,8 @@ def register_for_event(
         # MEH-2952: caused by the business that runs the event.
         test_cause=bool(producer and producer.is_test),
     )
+    if full:
+        return waitlist.WAITLISTED  # the owner reads the waitlist in her list
     owner_email = _owner_email_for_event(db, event)
     if owner_email:
         spots = (
@@ -249,20 +276,18 @@ def register_for_experience(
     taken = registered_counts(db, experience_ids=[ex.id]).get(ex.id, 0)  # type: ignore[call-overload,list-item]
     # The host's own tally (WhatsApp / phone sign-ups) shares the cap.
     occupied = (ex.participants_count or 0) + taken
-    if ex.max_participants is not None and occupied >= ex.max_participants:
-        raise HTTPException(status_code=409, detail=_FULL)
-    if _existing(db, Registration.experience_id, ex.id, data.email):  # type: ignore[arg-type]
-        db.rollback()  # releases the FOR UPDATE lock on the experience row
-        return RegistrationCreatedOut()
-
-    reg = _new_registration(data, experience_id=ex.id)
-    db.add(reg)
+    full = ex.max_participants is not None and occupied >= ex.max_participants
+    _gate(data, full=full)
+    reg = _signup_row(db, data, Registration.experience_id, ex.id, full=full)  # type: ignore[arg-type]
+    if reg is None:
+        return waitlist.WAITLISTED if full else RegistrationCreatedOut()
     db.flush()
-    # MEH-3179: counted for the host's business, if the host has one.
-    ledger_host = db.get(User, ex.host_user_id)
-    billing_ledger.record_experience_registration(
-        db, reg, ex, ledger_host.producer_id if ledger_host else None
-    )
+    if not full:
+        # MEH-3179: counted for the host's business, if the host has one.
+        ledger_host = db.get(User, ex.host_user_id)
+        billing_ledger.record_experience_registration(
+            db, reg, ex, ledger_host.producer_id if ledger_host else None
+        )
     db.commit()
 
     host = db.get(User, ex.host_user_id)
@@ -274,7 +299,7 @@ def register_for_experience(
     if ex.location_type == "public" and ex.address:
         place = ", ".join(p for p in (ex.address, ex.city) if p)  # type: ignore[misc]
     background_tasks.add_task(
-        send_visitor_confirmation,
+        send_waitlist_confirmation if full else send_visitor_confirmation,
         reg.email,  # type: ignore[arg-type]
         VisitorEmail(
             title=ex.title,  # type: ignore[arg-type]
@@ -291,6 +316,8 @@ def register_for_experience(
         # MEH-2952: caused by the host (or her business).
         test_cause=host_test_cause(host),
     )
+    if full:
+        return waitlist.WAITLISTED
     if host and host.email:
         spots = (
             ex.max_participants - (occupied + 1)
@@ -414,9 +441,11 @@ def cancel_registration(
     reg = _by_token(db, token, lock=True)
     item = _item(reg)
     was_active = reg.status == "registered"
-    if was_active:
+    # MEH-3314: a waitlisted visitor leaves the list with the same link.
+    if was_active or reg.status == "waitlisted":
         reg.status = "cancelled"  # type: ignore[assignment]
         reg.cancelled_at = utc_now()  # type: ignore[assignment]
+    if was_active:
         # MEH-3179: a cancel before the item took place is not a booking the
         # business got. A late cancel of a past item stays counted.
         if item.event_date >= israel_today():
@@ -427,13 +456,21 @@ def cancel_registration(
                 ),
                 source_id=reg.id,
             )
-    db.commit()
-
     # A late cancel of a past item changes nothing for the owner — no email.
     # MEH-3250: a recurring experience is never past by its first date.
     is_upcoming = item.event_date >= israel_today() or bool(
         getattr(item, "is_recurring", False)
     )
+    # MEH-3314: the freed spot goes to the first one waiting (stamped here,
+    # mailed after the commit).
+    offer = waitlist.offer_next(db, item) if was_active and is_upcoming else None
+    db.commit()
+    if offer:
+        to, message, url, test_offer = offer
+        background_tasks.add_task(
+            send_waitlist_offer, to, message, url, test_cause=test_offer
+        )
+
     if was_active and is_upcoming:
         if reg.event_id:
             owner_email = _owner_email_for_event(db, item)

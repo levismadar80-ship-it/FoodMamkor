@@ -295,6 +295,7 @@ files = [
     "app/services/push.py",
     "app/services/rating_dispatcher.py",
     "app/services/registration_emails.py",
+    "app/services/registration_waitlist.py",
     "app/services/registrations.py",
     "app/services/report_notifications.py",
     "app/services/rescue_digest.py",

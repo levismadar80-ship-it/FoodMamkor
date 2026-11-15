@@ -101,7 +101,8 @@ def _active_registrations(
         return []
     return (
         db.query(Registration)
-        .filter(column.in_(ids), Registration.status == "registered")
+        # MEH-3314: a waitlisted visitor is told the item is off too.
+        .filter(column.in_(ids), Registration.status.in_(("registered", "waitlisted")))
         .with_for_update()
         .all()
     )
