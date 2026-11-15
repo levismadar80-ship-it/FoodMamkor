@@ -64,8 +64,8 @@ Score: see «Risk score» at the end. Routes whose verdict is not `covered` or w
 | 26 | 9 | `GET /admin/users/{user_id}/favorites` | admin | no test, no 401/403 test | pos GAP · neg GAP |
 | 27 | 9 | `PATCH /admin/group-buys/{group_buy_id}/status` | admin | sends email/WhatsApp, no 401/403 test | pos `tests/test_group_buys_api.py:1573` · neg GAP |
 | 28 | 9 | `POST /auth/logout-all-devices` | registered user | auth, no 401/403 test | pos `tests/test_api.py:4383` · neg GAP |
-| 29 | 9 | `POST /producers/me/locations` | business/organizer | sends email/WhatsApp, no 401/403 test | pos `tests/test_meh1938_ch5_strict_followup.py:64` · neg GAP |
-| 30 | 9 | `PUT /producers/me/products/{product_id}/group` | business/organizer | object id in path (IDOR-shaped), no 401/403 test | pos `tests/test_meh3055_product_organize.py:71` · neg GAP |
+| 29 | 9 | `PUT /producers/me/products/{product_id}/group` | business/organizer | object id in path (IDOR-shaped), no 401/403 test | pos `tests/test_meh3055_product_organize.py:71` · neg GAP |
+| 30 | 9 | `PUT /producers/me/products/{product_id}` | business/organizer | object id in path (IDOR-shaped), no 401/403 test | pos `tests/test_meh2662_product_ingredients_allergens.py:103` · neg GAP |
 
 ## API routes
 
@@ -95,23 +95,23 @@ Registration order of the app. Actor from the dependency tree: `require_admin` �
 | 20 | PUT | `/producers/me` | `producer_me.update_my_producer` | business/organizer | `tests/test_api.py:2987` | `tests/test_api.py:3102` | e2e-mock `frontend/e2e/flows/34-draft-submit-review.spec.ts:193` | 7 |
 | 21 | POST | `/producers/me/availability-state` | `producer_me.set_availability_state` | business/organizer | `tests/test_api.py:3343` | `tests/test_expansion_availability.py:192` | e2e-mock `frontend/e2e/flows/manual/dashboard-availability.spec.ts:65` | 5 |
 | 22 | GET | `/producers/me/dashboard` | `producer_me.dashboard` | business/organizer | `tests/test_api.py:2672` | `tests/test_expansion_auth_jwt.py:56` | e2e-mock `frontend/e2e/flows/34-draft-submit-review.spec.ts:165` | 3 |
-| 23 | GET | `/producers/me/analytics` | `producer_me.producer_analytics` | business/organizer | `tests/test_analytics.py:449` | `tests/test_analytics.py:429` | e2e-mock `frontend/e2e/flows/34-draft-submit-review.spec.ts:182` | 3 |
-| 24 | POST | `/producers/me/verify-phone` | `producer_me.send_phone_otp` | business/organizer | `tests/test_meh2122_otp_send_failure.py:35` | GAP | e2e-mock `frontend/e2e/flows/manual/dashboard-draft-submit.spec.ts:123` | 12 |
-| 25 | POST | `/producers/me/verify-phone/confirm` | `producer_me.confirm_phone_otp` | business/organizer | `tests/test_meh2231_otp_test_numbers.py:113` | GAP | e2e-mock `frontend/e2e/flows/manual/dashboard-draft-submit.spec.ts:123` | 10 |
-| 26 | POST | `/producers/me/kashrut-request` | `producer_me.request_kashrut_badge` | business/organizer | `tests/test_trust_ladder.py:214` | GAP | e2e-mock `frontend/e2e/flows/manual/dashboard-trust-cards.spec.ts:103` | 7 |
-| 27 | GET | `/producers/me/kashrut-requests` | `producer_me.list_kashrut_requests` | business/organizer | `tests/test_api.py:5156` | `tests/test_api.py:5192` | e2e-mock `frontend/e2e/flows/manual/dashboard-delivery.spec.ts:122` | 3 |
-| 28 | GET | `/producers/me/review-link` | `producer_me.get_review_invite_link` | business/organizer | `tests/test_reviews.py:931` | `tests/test_reviews.py:921` | e2e-mock `frontend/e2e/flows/manual/dashboard-manage-events.spec.ts:92` | 3 |
-| 29 | POST | `/producers/me/request-review` | `producer_me.request_producer_review` | business/organizer | `tests/test_api.py:2245` | `tests/test_api.py:2270` | e2e-mock `frontend/e2e/flows/manual/home.spec.ts:502` | 7 |
-| 30 | POST | `/producers/me/submit-for-review` | `producer_me.submit_for_review` | business/organizer | `tests/test_meh2100_draft_submit.py:196` | `tests/test_meh2100_draft_submit.py:399` | e2e-mock `frontend/e2e/flows/34-draft-submit-review.spec.ts:309` | 7 |
-| 31 | POST | `/producers/me/bio/generate` | `producer_me.generate_bio_endpoint` | business/organizer | `tests/test_api.py:2161` | `tests/test_api.py:2171` | e2e-mock `frontend/e2e/flows/manual/dashboard-edit-cards.spec.ts:117` | 5 |
-| 32 | GET | `/producers/me/products` | `producer_me.list_my_products` | business/organizer | `tests/test_product_image.py:39` | GAP | e2e-mock `frontend/e2e/flows/manual/dashboard-delivery.spec.ts:122` | 5 |
-| 33 | POST | `/producers/me/products` | `producer_me.create_my_product` | business/organizer | `tests/test_meh2662_product_ingredients_allergens.py:35` | GAP | e2e-mock `frontend/e2e/flows/manual/dashboard-delivery.spec.ts:122` | 7 |
-| 34 | PUT | `/producers/me/products/{product_id}` | `producer_me.update_my_product` | business/organizer | `tests/test_meh2662_product_ingredients_allergens.py:103` | GAP | e2e-mock `frontend/e2e/flows/manual/dashboard-delivery.spec.ts:122` | 9 |
-| 35 | DELETE | `/producers/me/products/{product_id}` | `producer_me.delete_my_product` | business/organizer | `tests/test_product_image.py:109` | GAP | e2e-mock `frontend/e2e/flows/manual/dashboard-delivery.spec.ts:122` | 10 |
-| 36 | GET | `/producers/me/locations` | `producer_me.list_my_locations` | business/organizer | `tests/test_producer_locations_crud.py:69` | `tests/test_producer_locations_crud.py:181` | e2e-mock `frontend/e2e/flows/manual/dashboard-delivery.spec.ts:122` | 3 |
-| 37 | POST | `/producers/me/locations` | `producer_me.create_my_location` | business/organizer | `tests/test_meh1938_ch5_strict_followup.py:64` | GAP | e2e-mock `frontend/e2e/flows/manual/dashboard-delivery.spec.ts:122` | 9 |
-| 38 | PUT | `/producers/me/locations/{location_id}` | `producer_me.update_my_location` | business/organizer | `tests/test_meh1938_ch5_strict_followup.py:221` | `tests/test_producer_locations_crud.py:150` | e2e-mock `frontend/e2e/flows/manual/dashboard-delivery.spec.ts:122` | 9 |
-| 39 | DELETE | `/producers/me/locations/{location_id}` | `producer_me.delete_my_location` | business/organizer | `tests/test_meh1938_ch5_strict_followup.py:151` | `tests/test_producer_locations_crud.py:165` | e2e-mock `frontend/e2e/flows/manual/dashboard-delivery.spec.ts:122` | 10 |
+| 23 | POST | `/producers/me/bio/generate` | `producer_me.generate_bio_endpoint` | business/organizer | `tests/test_api.py:2161` | `tests/test_api.py:2171` | e2e-mock `frontend/e2e/flows/manual/dashboard-edit-cards.spec.ts:117` | 5 |
+| 24 | GET | `/producers/me/products` | `producer_me.list_my_products` | business/organizer | `tests/test_product_image.py:39` | GAP | e2e-mock `frontend/e2e/flows/manual/dashboard-delivery.spec.ts:122` | 5 |
+| 25 | POST | `/producers/me/products` | `producer_me.create_my_product` | business/organizer | `tests/test_meh2662_product_ingredients_allergens.py:35` | GAP | e2e-mock `frontend/e2e/flows/manual/dashboard-delivery.spec.ts:122` | 7 |
+| 26 | PUT | `/producers/me/products/{product_id}` | `producer_me.update_my_product` | business/organizer | `tests/test_meh2662_product_ingredients_allergens.py:103` | GAP | e2e-mock `frontend/e2e/flows/manual/dashboard-delivery.spec.ts:122` | 9 |
+| 27 | DELETE | `/producers/me/products/{product_id}` | `producer_me.delete_my_product` | business/organizer | `tests/test_product_image.py:109` | GAP | e2e-mock `frontend/e2e/flows/manual/dashboard-delivery.spec.ts:122` | 10 |
+| 28 | GET | `/producers/me/analytics` | `producer_me_analytics.producer_analytics` | business/organizer | `tests/test_analytics.py:449` | `tests/test_analytics.py:429` | e2e-mock `frontend/e2e/flows/34-draft-submit-review.spec.ts:182` | 3 |
+| 29 | POST | `/producers/me/verify-phone` | `producer_me_review.send_phone_otp` | business/organizer | `tests/test_meh2122_otp_send_failure.py:35` | GAP | e2e-mock `frontend/e2e/flows/manual/dashboard-draft-submit.spec.ts:123` | 12 |
+| 30 | POST | `/producers/me/verify-phone/confirm` | `producer_me_review.confirm_phone_otp` | business/organizer | `tests/test_meh2231_otp_test_numbers.py:113` | GAP | e2e-mock `frontend/e2e/flows/manual/dashboard-draft-submit.spec.ts:123` | 10 |
+| 31 | POST | `/producers/me/kashrut-request` | `producer_me_review.request_kashrut_badge` | business/organizer | `tests/test_trust_ladder.py:214` | GAP | e2e-mock `frontend/e2e/flows/manual/dashboard-trust-cards.spec.ts:103` | 7 |
+| 32 | GET | `/producers/me/kashrut-requests` | `producer_me_review.list_kashrut_requests` | business/organizer | `tests/test_api.py:5156` | `tests/test_api.py:5192` | e2e-mock `frontend/e2e/flows/manual/dashboard-delivery.spec.ts:122` | 3 |
+| 33 | GET | `/producers/me/review-link` | `producer_me_review.get_review_invite_link` | business/organizer | `tests/test_reviews.py:931` | `tests/test_reviews.py:921` | e2e-mock `frontend/e2e/flows/manual/dashboard-manage-events.spec.ts:92` | 3 |
+| 34 | POST | `/producers/me/request-review` | `producer_me_review.request_producer_review` | business/organizer | `tests/test_api.py:2245` | `tests/test_api.py:2270` | e2e-mock `frontend/e2e/flows/manual/home.spec.ts:502` | 7 |
+| 35 | POST | `/producers/me/submit-for-review` | `producer_me_review.submit_for_review` | business/organizer | `tests/test_meh2100_draft_submit.py:196` | `tests/test_meh2100_draft_submit.py:399` | e2e-mock `frontend/e2e/flows/34-draft-submit-review.spec.ts:309` | 7 |
+| 36 | GET | `/producers/me/locations` | `producer_me_locations.list_my_locations` | business/organizer | `tests/test_producer_locations_crud.py:69` | `tests/test_producer_locations_crud.py:181` | e2e-mock `frontend/e2e/flows/manual/dashboard-delivery.spec.ts:122` | 3 |
+| 37 | POST | `/producers/me/locations` | `producer_me_locations.create_my_location` | business/organizer | `tests/test_meh1938_ch5_strict_followup.py:64` | GAP | e2e-mock `frontend/e2e/flows/manual/dashboard-delivery.spec.ts:122` | 7 |
+| 38 | PUT | `/producers/me/locations/{location_id}` | `producer_me_locations.update_my_location` | business/organizer | `tests/test_meh1938_ch5_strict_followup.py:221` | `tests/test_producer_locations_crud.py:150` | e2e-mock `frontend/e2e/flows/manual/dashboard-delivery.spec.ts:122` | 7 |
+| 39 | DELETE | `/producers/me/locations/{location_id}` | `producer_me_locations.delete_my_location` | business/organizer | `tests/test_meh1938_ch5_strict_followup.py:151` | `tests/test_producer_locations_crud.py:165` | e2e-mock `frontend/e2e/flows/manual/dashboard-delivery.spec.ts:122` | 8 |
 | 40 | GET | `/producers/me/product-groups` | `product_organize.list_my_product_groups` | business/organizer | `tests/test_meh3055_product_organize.py:43` | GAP | e2e-mock `frontend/e2e/flows/manual/home.spec.ts:502` | 5 |
 | 41 | PUT | `/producers/me/product-groups` | `product_organize.replace_my_product_groups` | business/organizer | `tests/test_meh3055_product_organize.py:50` | `tests/test_meh3055_product_organize.py:160` | e2e-mock `frontend/e2e/flows/manual/home.spec.ts:502` | 5 |
 | 42 | PUT | `/producers/me/product-order` | `product_organize.set_my_product_order` | business/organizer | `tests/test_meh3055_product_organize.py:170` | GAP | e2e-mock `frontend/e2e/flows/manual/home.spec.ts:502` | 7 |
@@ -309,7 +309,7 @@ Registration order of the app. Actor from the dependency tree: `require_admin` �
 | 244 | POST | `/rescue/orders/{order_id}/no_show` | `rescue.mark_no_show` | registered user · flag: rescue | `tests/test_meh2943_rescue_idor.py:342` | `tests/test_meh2943_rescue_idor.py:325` | — | 9 |
 | 245 | POST | `/rescue/orders/{order_id}/cancel` | `rescue.cancel_order` | registered user · flag: rescue | `tests/test_meh2680_rescue_my_orders.py:88` | `tests/test_meh2943_rescue_idor.py:178` | — | 11 |
 | 246 | POST | `/rescue/orders/{order_id}/review` | `rescue.create_review` | registered user · flag: rescue | `tests/test_meh2680_rescue_my_orders.py:71` | `tests/test_meh2943_rescue_idor.py:425` | — | 9 |
-| 247 | POST | `/admin/rescue/users/{user_id}/clear-block` | `rescue.clear_no_show_block` | admin · flag: rescue | `tests/test_meh3225_no_show_tombstones.py:124` | `tests/test_rescue.py:749` | — | 5 |
+| 247 | POST | `/admin/rescue/users/{user_id}/clear-block` | `rescue.clear_no_show_block` | admin · flag: rescue | `tests/test_meh3225_no_show_tombstones.py:132` | `tests/test_rescue.py:749` | — | 5 |
 | 248 | GET | `/admin/rescue/metrics` | `rescue.pilot_metrics` | admin · flag: rescue | `tests/test_meh2703_rescue_donated.py:143` | `tests/test_rescue_pilot.py:317` | — | 3 |
 | 249 | GET | `/producers/me/rescue/orders` | `rescue.list_my_orders` | business/organizer · flag: rescue | `tests/test_meh2679_rescue_utc_times.py:84` | `tests/test_rescue_pilot.py:250` | e2e-mock `frontend/e2e/flows/manual/home.spec.ts:502` | 3 |
 | 250 | GET | `/producers/me/rescue/offers` | `rescue.list_my_offers` | business/organizer · flag: rescue | `tests/test_meh2703_rescue_donated.py:43` | GAP | e2e-mock `frontend/e2e/flows/manual/home.spec.ts:502` | 5 |
@@ -385,11 +385,11 @@ Registration order of the app. Actor from the dependency tree: `require_admin` �
 | `reservist_diet_tags` | trust | live | — | n/a | `frontend/__tests__/ReservistBadgeLine.test.jsx:18` | n/a | covered |
 | `reviews_contacted` | trust | live | `/producer/dashboard/reviews` | `tests/test_api.py:2699` (8/8 routes in file) | `frontend/__tests__/ReviewsSection.test.jsx:3` | GAP | covered |
 | `review_request` | trust | live | — | n/a | `frontend/__tests__/RequestReviewCard.test.jsx:18` | n/a | covered |
-| `views` | insights | live | — | `tests/test_api.py:3913` (21/21 routes in file) | `frontend/__tests__/DashboardInsightsFollowersCopy.test.jsx:24` | `frontend/e2e/flows/manual/dashboard-shell.spec.ts:622` | covered |
-| `search_impressions` | insights | live | — | `tests/test_api.py:3913` (21/21 routes in file) | `frontend/__tests__/DashboardInsightsFollowersCopy.test.jsx:24` | `frontend/e2e/flows/manual/dashboard-shell.spec.ts:622` | covered |
-| `contact_clicks` | insights | live | — | `tests/test_api.py:3913` (21/21 routes in file) | `frontend/__tests__/DashboardInsightsFollowersCopy.test.jsx:24` | `frontend/e2e/flows/manual/dashboard-shell.spec.ts:622` | covered |
-| `favorites_rating` | insights | live | — | `tests/test_api.py:3913` (21/21 routes in file) | n/a | n/a | covered |
-| `top_cities` | insights | live | — | `tests/test_api.py:3913` (21/21 routes in file) | `frontend/__tests__/DashboardInsightsFollowersCopy.test.jsx:24` | `frontend/e2e/flows/manual/dashboard-shell.spec.ts:622` | covered |
+| `views` | insights | live | — | `tests/test_api.py:3913` (9/9 routes in file) | `frontend/__tests__/DashboardInsightsFollowersCopy.test.jsx:24` | `frontend/e2e/flows/manual/dashboard-shell.spec.ts:622` | covered |
+| `search_impressions` | insights | live | — | `tests/test_api.py:3913` (9/9 routes in file) | `frontend/__tests__/DashboardInsightsFollowersCopy.test.jsx:24` | `frontend/e2e/flows/manual/dashboard-shell.spec.ts:622` | covered |
+| `contact_clicks` | insights | live | — | `tests/test_api.py:3913` (9/9 routes in file) | `frontend/__tests__/DashboardInsightsFollowersCopy.test.jsx:24` | `frontend/e2e/flows/manual/dashboard-shell.spec.ts:622` | covered |
+| `favorites_rating` | insights | live | — | `tests/test_api.py:3913` (9/9 routes in file) | n/a | n/a | covered |
+| `top_cities` | insights | live | — | `tests/test_api.py:3913` (9/9 routes in file) | `frontend/__tests__/DashboardInsightsFollowersCopy.test.jsx:24` | `frontend/e2e/flows/manual/dashboard-shell.spec.ts:622` | covered |
 | `demand_cities` | insights | live | — | n/a | `frontend/__tests__/DashboardInsightsFollowersCopy.test.jsx:24` | `frontend/e2e/flows/manual/dashboard-shell.spec.ts:622` | covered |
 | `drop_point_hosts` | insights | live | — | `tests/test_delivery_waitlist.py:21` (imports module) | `frontend/__tests__/DashboardInsightsFollowersCopy.test.jsx:24` | `frontend/e2e/flows/manual/dashboard-shell.spec.ts:622` | covered |
 | `email_alerts` | insights | live | — | `tests/test_meh1613_email_failure_visibility.py:31` (imports module) | n/a | n/a | covered |
@@ -514,8 +514,8 @@ A site `file:line` is mapped to the route whose handler contains it (or reaches 
 | § | Transition / write | Site | Routes reached | Verdict | Note |
 |---|---|---|---|---|---|
 | 1 | ∅ → `draft` | auth.py:571, auth.py:781, producer_queries.py:662, admin.py:657 | `POST /auth/register/producer`, `POST /admin/producers` | `tests/test_admin_delete_producer.py:46` | — |
-| 1 | `draft` → `pending` | producer_me.py:1942 | `POST /producers/me/submit-for-review` | `tests/test_meh2100_draft_submit.py:196` | nearest function — audit line may have drifted |
-| 1 | `rejected` → `pending` | producer_me.py:1856 | `POST /producers/me/request-review` | `tests/test_api.py:2245` | — |
+| 1 | `draft` → `pending` | producer_me_review.py:596 | `POST /producers/me/submit-for-review` | `tests/test_meh2100_draft_submit.py:196` | — |
+| 1 | `rejected` → `pending` | producer_me_review.py:506 | `POST /producers/me/request-review` | `tests/test_api.py:2245` | — |
 | 1 | `pending`/`rejected` → `approved` | admin.py:199 | `POST /admin/producers/{producer_id}/approve` | `tests/test_admin_approval_transitions.py:121` | — |
 | 1 | `pending`/`approved` → `rejected` | admin.py:1457 | `GET /admin/producers/rejection-presets` | `tests/test_meh226_rejection_reason.py:303` | — |
 | 1 | `approved` ⇄ `inactive` | admin.py:1056 | `PUT /admin/producers/{producer_id}` | `tests/test_admin_approval_transitions.py:530` | — |

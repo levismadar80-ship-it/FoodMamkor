@@ -1113,7 +1113,7 @@ POST   /auth/owner-invite/accept                   public — 10/15 min. Body {t
                                                      Issues the same access token + refresh/fingerprint cookies as /auth/login. Background: the EXISTING
                                                      business-approved email (admin.py's two builders, by import) — no welcome mail, no WhatsApp template.
 ```
-### Producers (`app/routers/producers.py`, `producer_me.py`)
+### Producers (`app/routers/producers.py`, `producer_me.py` + `producer_me_analytics.py`, `producer_me_review.py`, `producer_me_locations.py`)
 
 ```
 GET    /producers                                 public — filters: lat+lng+radius_km, require_physical, category, delivery_city,

@@ -82,8 +82,8 @@ the main path would have refused.
 | From → To | Site | Guarded? |
 |---|---|---|
 | ∅ → `draft` | `auth.py:571`, `auth.py:781`, `producer_queries.py:662`, `admin.py:657` | n/a (creation) |
-| `draft` → `pending` | `producer_me.py:1942` (`POST /producers/me/submit-for-review`) | ✅ draft-only 409 + `submission_missing_items` 422 |
-| `rejected` → `pending` | `producer_me.py:1856` (`POST .../request-review`) | ✅ `FOR UPDATE`, cap, gate |
+| `draft` → `pending` | `producer_me_review.py:596` (`POST /producers/me/submit-for-review`) | ✅ draft-only 409 + `submission_missing_items` 422 |
+| `rejected` → `pending` | `producer_me_review.py:506` (`POST .../request-review`) | ✅ `FOR UPDATE`, cap, gate |
 | `pending`/`rejected` → `approved` | `admin.py:199` via `_apply_approval_state` | ✅ draft 409 + photo/licence/phone gates, re-asserted on retry |
 | `pending`/`approved` → `rejected` | `admin.py:1457` | ✅ draft 409, preset validated before mutation |
 | `approved` ⇄ `inactive` | `admin.py:1056` | ✅ `_TOGGLEABLE_STATUSES` (MEH-769) |
@@ -93,7 +93,7 @@ the main path would have refused.
 ### Findings
 
 **1.1 — The SLA clock is never reset on resubmission. `pre-launch`.**
-`producer_me.py:1856-1858` writes `status="pending"`, `resubmission_count`, and
+`producer_me_review.py:506-508` writes `status="pending"`, `resubmission_count`, and
 `resubmitted_at` — but **not** `submitted_for_review_at`. `_attach_aging`
 (`admin.py:453-456`) measures `business_days_waiting` from
 `submitted_for_review_at or created_at`, and the queue sort (`admin.py:561`) uses the

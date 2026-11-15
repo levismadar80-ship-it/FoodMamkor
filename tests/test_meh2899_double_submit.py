@@ -116,7 +116,7 @@ def _patch_side_effects(monkeypatch) -> dict[str, list]:
     }
     for name in calls:
         monkeypatch.setattr(
-            f"app.routers.producer_me.{name}",
+            f"app.routers.producer_me_review.{name}",
             (lambda bucket: lambda *args, **kwargs: bucket.append(args))(calls[name]),
         )
     return calls
