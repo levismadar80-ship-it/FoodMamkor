@@ -152,6 +152,7 @@ frontend/app/globals.css:hex:#7201
 frontend/app/globals.css:hex:#e9e3d6
 frontend/app/globals.css:hex:#e9e3d6
 frontend/app/globals.css:hex:#ffffff
+frontend/components/AccountDeleteCard.jsx:bg-black
 frontend/components/AccountSheet.jsx:bg-white
 frontend/components/AccountSheet.jsx:bg-white
 frontend/components/AccountSheet.jsx:border-white

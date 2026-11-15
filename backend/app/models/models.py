@@ -670,6 +670,13 @@ class Producer(Base):
     # which is what holds the send to EXACTLY ONE email.
     # See migration d3b7f1a92c64.
     email_pending_nudge_sent_at = Column(DateTime(timezone=True), nullable=True)
+    # MEH-3079: weekly summary email. opt_out is set by the signed unsubscribe
+    # link; sent_at is the idempotency stamp (skip if < 6 days old). Expand-only
+    # (ADR-007), migration 0cfa83f0f53e. Sender: services/weekly_owner_summary.
+    weekly_summary_opt_out = Column(
+        Boolean, nullable=False, default=False, server_default=text("false")
+    )
+    weekly_summary_sent_at = Column(DateTime(timezone=True), nullable=True)
 
     # MEH-1297: order_by position so categories[0] is deterministic (the
     # producer's primary/first-selected category), not an arbitrary row.
@@ -978,6 +985,18 @@ class User(Base):
         password-change form for accounts that have no password_hash.
         """
         return not self.password_hash
+
+    @property
+    def oauth_provider(self) -> str | None:
+        """MEH-3248: which provider an account without a password signs in
+        with, so /settings knows which button confirms a deletion. Google
+        wins when both are linked — verify_deletion_credentials checks the
+        same order."""
+        if self.google_id:
+            return "google"
+        if self.apple_id:
+            return "apple"
+        return None
 
 
 class RetiredSlug(Base):

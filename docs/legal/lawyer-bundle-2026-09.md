@@ -60,7 +60,7 @@
 |---|---|---|
 | `producer_page_views` · `producer_whatsapp_clicks` | **90 יום** → מחיקה אוטומטית | סיכום יומי אנונימי (בלי IP, בלי hash, בלי user), שלוש עמודות ספירה — ללא הגבלה |
 | `alert_log` | **30 יום** → מחיקה | — |
-| מחיקת חשבון | CASCADE מיידי (קיים: `DELETE /auth/me`) | האגרגט נופל עם העסק (FK CASCADE) |
+| מחיקת חשבון | CASCADE מיידי (קיים: `POST /auth/me/delete`, MEH-3248) | האגרגט נופל עם העסק (FK CASCADE) |
 
 **הנוסח שנכנס ל-`privacy.sections.retention.body` (he), כפי שאושר:**
 

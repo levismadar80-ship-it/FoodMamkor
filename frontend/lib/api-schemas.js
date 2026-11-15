@@ -284,6 +284,9 @@ export const OwnerGroupBuySchema = z.object({
   price_per_unit_group: z.union([z.string(), z.number()]),
   min_participants: z.number(),
   commits_count: z.number(),
+  // MEH-3254 (D7): the units line. Declared, or z.object strips them (MEH-826).
+  unit: z.string().nullable().optional(),
+  units_total: z.number().int().nonnegative().nullable().optional(),
   deadline: z.string(),
   status: z.enum(["open", "funded", "cancelled", "fulfilled"]),
 });

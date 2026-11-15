@@ -18,6 +18,9 @@ from app.config import settings
 from app.services.email_branding import email_logo_html
 from app.services.email import send_email
 from app.services.newsletter_sync import sync_subscribe, sync_unsubscribe
+from app.services.weekly_owner_summary import (
+    decode_unsubscribe_token as decode_weekly_unsubscribe_token,
+)
 from app.services.producer_listing import (
     catalog_default_availability_condition,
     is_business,  # MEH-2459
@@ -38,6 +41,7 @@ from app.schemas.schemas import (
     ContactIn,
     NewsletterIn,
     NewsletterUnsubscribeIn,
+    WeeklySummaryUnsubscribeIn,
     StatsOut,
 )
 
@@ -229,6 +233,36 @@ def unsubscribe_newsletter(
     db.commit()
     background_tasks.add_task(sync_unsubscribe, email.lower().strip())
     return {"detail": "הוסרת מרשימת התפוצה. 🌿"}
+
+
+# ============================================================
+# WEEKLY OWNER SUMMARY UNSUBSCRIBE (MEH-3079)
+# ============================================================
+
+
+@router.post("/weekly-summary/unsubscribe", status_code=200)
+@limiter.limit("20/hour")
+def unsubscribe_weekly_summary(
+    request: Request,
+    data: WeeklySummaryUnsubscribeIn,
+    db: Session = Depends(get_db),
+) -> dict[str, str]:
+    """Stop the weekly summary email for the business named in the token.
+
+    The token is the authorization (subject = producer id, scope
+    `weekly_summary_unsubscribe`), so the link works from the email without
+    logging in and can only opt out its own business. Idempotent.
+    """
+    # REUSES: unsubscribe_newsletter above — signed token, idempotent 200,
+    # gentle Hebrew 400, never reveals whether the business exists.
+    producer_id = decode_weekly_unsubscribe_token(data.token)
+    if producer_id is None:
+        raise HTTPException(status_code=400, detail="הקישור אינו תקין או שפג תוקפו.")
+    producer = db.query(Producer).filter(Producer.id == producer_id).first()
+    if producer is not None and not producer.weekly_summary_opt_out:
+        producer.weekly_summary_opt_out = True  # type: ignore[assignment]
+        db.commit()
+    return {"detail": "הסיכום השבועי לא יישלח עוד."}
 
 
 # MEH-1349: the duplicate GET /cities that lived here (producer ∪ delivery-area

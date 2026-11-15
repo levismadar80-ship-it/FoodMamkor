@@ -75,7 +75,7 @@ graph TD
     WaitlistMail -.->|link in the email| WaitlistUnsub[POST /delivery-waitlist/unsubscribe<br/>🌐 signed token → deletes the entry<br/>idempotent 200 · 400 bad token]
 
     GProducer --> GReviews[GET /producers/{id}/reviews<br/>🌐 paginated · JWT optional · MEH-3221<br/>no user_id · server-shortened user_name · is_mine]
-    GProducer --> Reports_post[POST /producers/{id}/report<br/>🔑 rate-limited]
+    GProducer --> Reports_post[POST /producers/{id}/report<br/>🔑 rate-limited<br/>MEH-3223: emails admin_email (open count)]
     GProducer --> ReportInfo[POST /reports/producer-info<br/>🌐 rate-limited 5/day<br/>MEH-1443 email-only, no persist<br/>404 for an organizer MEH-2465]
 ```
 
@@ -93,7 +93,7 @@ graph TD
     Login[/login page] --> LoginPost[POST /auth/login<br/>🌐 rate-limited 5/min]
 
     Account[/settings page] --> Me[GET /auth/me<br/>🔑 current user]
-    Account --> Delete[DELETE /users/me<br/>🔑 cascade delete<br/>App Store requirement]
+    Account --> Delete[POST /auth/me/delete<br/>🔑 password or fresh Google/Apple token<br/>403 for admins MEH-3248<br/>cascade delete, App Store requirement]
 
     Favorites[/favorites page] --> ListFavs[GET /users/me/favorites<br/>🔑 skips not-live businesses MEH-2513]
     Favorites --> AddFav[POST /users/me/favorites/{id}<br/>🔑 404 for an organizer MEH-2465<br/>or a not-live business MEH-2513]
@@ -128,6 +128,7 @@ graph TD
     Events[/events + /experiences] --> EventCreate[POST /events<br/>✅👤 verified producer — MEH-1164 F5;<br/>MEH-1161: pending producer's events stay hidden;<br/>MEH-3224: past event_date → 422 (PUT too)]
     Events --> EventReads[GET /events + /upcoming + /id<br/>🌐 approved producers only — MEH-1161:<br/>pending filtered from lists, detail 404,<br/>owner/admin bypass;<br/>MEH-2459: organizer-owned events included,<br/>EventOut.owner_kind + owner_slug;<br/>MEH-2546: + owner_image_url;<br/>MEH-2847: ?category repeats → IN,<br/>checked against VALID_CATEGORIES<br/>(same on GET /experiences)]
     Events --> OrganizerPage[GET /organizers/{slug} + GET /organizers<br/>🌐 MEH-2461: approved organizers only,<br/>upcoming events; sitemap source<br/>MEH-2475: + owner story, contact channels]
+    Events --> ItemChange[PUT / DELETE /events/{id} + /experiences/{id}<br/>MEH-3227: cancel (is_active→false) or delete → sign-ups cancelled, registrants mailed;<br/>new date/time → registrants mailed, sign-ups kept]
     Events --> EventMine[GET /events/mine<br/>👤 producer — own events, all states<br/>incl. inactive — MEH-1405 manage list]
     Events --> ExpCreate[POST /experiences<br/>✅👤 verified producer — MEH-2246: same gate as<br/>POST /events, since MEH-1749 hides a<br/>non-business experience from every read path;<br/>then Claude Haiku pre-check + admin approval queue;<br/>MEH-3224: past event_date → 422 (PUT too)]
     Events --> ExpCount[GET /experiences/count<br/>public — MEH-1918<br/>same predicate as GET /experiences;<br/>gates the nav link at >= 3]
@@ -142,10 +143,10 @@ graph TD
 
     Producers[/admin/producers page] --> AdminPList[GET /admin/producers/pending<br/>🛡️]
     Producers --> Approve[POST /admin/producers/{id}/approve<br/>🛡️]
-    Producers --> Reject[POST /admin/producers/{id}/reject<br/>🛡️ MEH-226 preset_key + reason, persists rejection_reason with the status flip, 400 before mutating, email post-commit;<br/>MEH-2210 also persists rejection_reason_code = preset_key;<br/>MEH-2498 from approved: the business's open/funded group buys → cancelled, participants get the delisted-cancel email]
+    Producers --> Reject[POST /admin/producers/{id}/reject<br/>🛡️ MEH-226 preset_key + reason, persists rejection_reason with the status flip, 400 before mutating, email post-commit;<br/>MEH-2210 also persists rejection_reason_code = preset_key;<br/>MEH-2498 from approved: the business's open/funded group buys → cancelled, participants get the delisted-cancel email;<br/>MEH-3227 + live rescue bags and upcoming event/experience sign-ups cancelled, holders mailed]
     Producers --> RejectPresets[GET /admin/producers/rejection-presets<br/>🛡️ MEH-226 the 5 canonical reasons — backend owns the labels]
     Producers --> ProdChanges[POST /admin/producers/{id}/request-changes<br/>🛡️ MEH-1011 feedback required, pending-only 409, email + WA, non-terminal]
-    Producers --> Toggle[POST /admin/producers/{id}/toggle-status<br/>🛡️ MEH-2498 approved→inactive also cancels the business's open/funded group buys + delisted-cancel email<br/>🛡️ MEH-2945 inactive→approved runs the approval gates (422)]
+    Producers --> Toggle[POST /admin/producers/{id}/toggle-status<br/>🛡️ MEH-2498 approved→inactive also cancels the business's open/funded group buys + delisted-cancel email<br/>🛡️ MEH-3227 + live rescue bags and upcoming sign-ups, holders mailed, owner mailed<br/>🛡️ MEH-2945 inactive→approved runs the approval gates (422)]
     Producers --> ClaimLink[POST /admin/producers/{id}/claim-link<br/>🛡️ MEH-2322 signed owner-claim URL for an ownerless draft, 14 days, 409 if owned / not draft;<br/>MEH-2495 also minted from the drafts-list row «העתקת הודעה עם קישור»;<br/>MEH-2496 locks the draft FOR UPDATE and stamps producers.claim_link_sent_at on success only]
     Producers --> AdminPListAll[GET /admin/producers<br/>🛡️ ProducerAdminOut rows; MEH-2495 has_owner derived per row in ONE batched query]
     Producers --> OwnerInviteAdmin[POST /admin/producers/{id}/owner-invite · …/resend · DELETE …<br/>🛡️ MEH-2974 invite the owner of an APPROVED or INACTIVE ownerless business, 10/hour;<br/>422 without the recorded written consent · 409 wrong status / already owned / email already a user;<br/>v3 the email is OPTIONAL — with none nothing is mailed and the admin copies the link;<br/>a resend drops a taken address rather than refusing; the raw link is returned ONCE — the DB keeps only its sha256]
@@ -204,6 +205,7 @@ graph LR
     Footer[Footer newsletter form] --> Newsletter[POST /newsletter<br/>🌐 5/hour per IP<br/>idempotent — returns 201 whether<br/>already subscribed or not]
     Newsletter -.->|background, fail-open| ResendContacts[Resend Contacts<br/>segment newsletter · MEH-2611<br/>sent from Resend Broadcasts]
     Unsub[POST /newsletter/unsubscribe<br/>signed token] -.->|delete contact| ResendContacts
+    WeeklyUnsub[POST /weekly-summary/unsubscribe<br/>🌐 20/hour · signed token, MEH-3079] -->|weekly_summary_opt_out = true| ProducersTable[(producers)]
 
     ContactForm[/contact page form] --> Contact[POST /contact<br/>🌐 5/hour per IP<br/>persists to contact_messages +<br/>SMTP email to CONTACT_EMAIL,<br/>fail-open on SMTP errors]
     RecommendForm[/recommend page form] --> BizSuggestion[POST /business-suggestions<br/>🌐 5/hour per IP<br/>MEH-2633 · outreach_leads row, source=community<br/>response is ALWAYS ok:true — no id, no echo<br/>honeypot filled → 201, nothing stored<br/>duplicate → note appended, no second row]
@@ -227,7 +229,7 @@ graph LR
 
     List[/rescue list · chunk 4] --> Browse[GET /rescue/offers?city=&lat=&lng=<br/>🌐 today's active bags with stock<br/>distance is to THE pickup point, not the nearest branch<br/>+ producer summary + typical_items]
 
-    Buyer[buyer] --> Reserve[POST /rescue/orders<br/>🔑 qty 1..2 · SELECT … FOR UPDATE on the offer MEH-773<br/>returns a 4-digit pickup_code, UNIQUE per offer<br/>422 when 2 no-shows in 30 days are on record<br/>after commit: confirmation email to the buyer, BackgroundTask MEH-2715]
+    Buyer[buyer] --> Reserve[POST /rescue/orders<br/>🔑 verified email only, else 403 email_unverified MEH-3225<br/>qty 1..2 · SELECT … FOR UPDATE on the offer MEH-773<br/>returns a 4-digit pickup_code, UNIQUE per offer<br/>422 when 2 no-shows in 30 days are on record<br/>after commit: confirmation email to the buyer, BackgroundTask MEH-2715]
     Buyer --> BuyerCancel[POST /rescue/orders/:id/cancel<br/>🔑 own order, only before cancel_until<br/>locks the offer, then the order, re-reads its status MEH-2737<br/>returns the bag once · emails the buyer a cancel confirmation]
     Buyer --> Mine[GET /rescue/orders/mine<br/>🔑 own reserved/handed orders on today's bags<br/>+ reviewed, producer_id — restores the code after a reload MEH-2680<br/>+ business-cancelled ones, cancelled_by_business MEH-2738]
     Buyer --> Review[POST /rescue/orders/:id/review<br/>🔑 own order, only after handed, once<br/>uq_rescue_reviews_order]

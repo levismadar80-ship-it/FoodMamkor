@@ -38,6 +38,7 @@ the index.
 | Organizer | `/organizers/[slug]` | No pre-launch gap; post-launch in MEH-3116 |
 | About family, contact, recommend | `/about/**`, `/contact`, `/recommend` | `/about/process` matrix as compact rows (MEH-3114, PR #4470); the rest post-launch in MEH-3116 |
 | Transition pages | `/claim/**`, `/owner-invite/**`, `/registration/[token]`, `/verify-email`, `/business-gone`, `/newsletter/unsubscribe`, `/delivery-waitlist/**`, `/register/organizer` | «שלחו לי קישור חדש» on a claim link that no longer works (MEH-3122, PR #4481). Verify-email already has resend. No other gap |
+| Account deleted | `/account-deleted` | MEH-3248. Airbnb ([help 240](https://www.airbnb.com/help/article/240)) and Etsy ([help 115015693707](https://help.etsy.com/hc/articles/115015693707)) say a deleted account cannot be reopened, and ask for the password before account changes; the page says the same (deleted, confirmation by email, no undo) and the delete asks for the password or a fresh Google/Apple sign-in ([Userflow on deletion UX](https://medium.com/userflow/user-friendly-ways-to-handle-account-deletion-3290133169c9)). One button home, noindex. No pre-launch gap. Screenshots `qa-artifacts/MEH-3248/` |
 
 ## Not yet reviewed
 

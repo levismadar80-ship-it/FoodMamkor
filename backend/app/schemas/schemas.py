@@ -3876,6 +3876,10 @@ class UserOut(BaseModel):
     # hide the password-change form for OAuth-only accounts (they have
     # no password_hash to verify against).
     is_oauth: bool = False
+    # MEH-3248: "google" | "apple" | None — the re-auth button for deletion.
+    oauth_provider: str | None = None
+    # MEH-3248: set by GET /auth/me only (account_guards.is_super_admin).
+    is_super_admin: bool = False
     # MEH-143: True once the user has a linked producer profile.
     is_producer: bool = False
     # MEH-138: profile photo URL (Cloudinary or Google picture).
@@ -4885,6 +4889,10 @@ class GroupBuyOut(BaseModel):
     delivery_note: str | None = None
     status: str
     commits_count: int = 0
+    # MEH-3254 (grill retro D7): total units the participants asked for — a
+    # number, never a roster (MEH-1651). Filled only on the business's own list
+    # (GET /producers/me/group-buys); null on every public reader.
+    units_total: int | None = None
     created_at: datetime
 
     model_config = {"from_attributes": True}
@@ -5715,6 +5723,12 @@ class NewsletterIn(BaseModel):
 # subscriber's email in a scoped JWT) — no DB column, no raw email in the URL.
 class NewsletterUnsubscribeIn(BaseModel):
     token: str = Field(..., min_length=1)
+
+
+# MEH-3079: the weekly owner summary's unsubscribe link — same shape, its own
+# token scope (services/weekly_owner_summary.py).
+class WeeklySummaryUnsubscribeIn(BaseModel):
+    token: str = Field(..., min_length=1, max_length=2048)
 
 
 # MEH-1113: contact-form topic whitelist → Hebrew label. Single source of

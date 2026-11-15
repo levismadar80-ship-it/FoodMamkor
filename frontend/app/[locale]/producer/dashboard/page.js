@@ -22,6 +22,8 @@ import WhatsNewRow from "@/components/producer/WhatsNewRow";
 import OwnerWelcomeCard from "@/components/producer/OwnerWelcomeCard";
 import { useOwnerWelcome } from "@/hooks/useWhatsNew";
 import PhoneVerifyCard from "@/components/PhoneVerifyCard";
+import { useFirstMoment } from "@/hooks/useFirstMoment";
+import FirstMomentCard from "@/components/producer/FirstMomentCard";
 import DraftSubmitBanner from "@/components/producer/DraftSubmitBanner";
 import ChangesRequestedBanner from "./ChangesRequestedBanner";
 import RejectedBanner from "./RejectedBanner";
@@ -336,6 +338,16 @@ export default function ProducerDashboardPage() {
 
   // MEH-3200: a hook — above the early returns.
   const welcome = useOwnerWelcome(profile?.created_at);
+  // Organizers get no moments; the counts are stored per business. Wait for
+  // the profile (or its error) so an organizer is known before anything is stored.
+  const momentsOff = !(profile || profileError) || (profile?.kind ?? user?.producer_kind) === "organizer";
+  const firstMoment = useFirstMoment(momentsOff ? null : analytics, user?.producer_id ?? profile?.id);
+  // Latch: if the top slot opened without analytics (fetch failed), a moment
+  // found after a retry waits for the next visit instead of swapping cards.
+  // State, not a ref: it is read while rendering (react-hooks/refs).
+  const [slotOpenedWithAnalytics, setSlotOpenedWithAnalytics] = useState(
+    /** @type {boolean | null} */ (null),
+  );
   if (authLoading || !user || user.role !== "producer") return null;
   // MEH-956: graceful state on a failed dashboard fetch (404 / non-2xx).
   // Mirrors the status-banner cards in the main return. Must precede the
@@ -428,6 +440,13 @@ export default function ProducerDashboardPage() {
   // Review #3711 F9: fall back to /auth/me while /producers/me is loading (or
   // failed), so business-only cards never flash for an organizer.
   const isOrganizer = (profile?.kind ?? user?.producer_kind) === "organizer";
+  // MEH-3200: the top slot opens once profile (created_at), the welcome
+  // decision for it, and analytics (moment counts) are all settled.
+  const slotOpen =
+    !isOrganizer && Boolean(profile || profileError) && welcome.ready && Boolean(analytics || analyticsError);
+  if (slotOpen && slotOpenedWithAnalytics === null) setSlotOpenedWithAnalytics(Boolean(analytics));
+  // `??` covers the render that sets the latch, before the new state is read.
+  const slotMoment = (slotOpenedWithAnalytics ?? (slotOpen && Boolean(analytics))) ? firstMoment.moment : null;
 
   return (
     <div
@@ -481,10 +500,17 @@ export default function ProducerDashboardPage() {
           under the greeting. Renders nothing when nothing is waiting. */}
       {/* MEH-3200: a new business's one-time welcome, else the newest unseen
           «מה חדש» release — never both. Not for an organizer (business copy). */}
-      {/* Wait for /producers/me (it carries created_at) so the welcome card
-          never replaces a «חדש במהמקור» card already on screen. */}
-      {!isOrganizer && (profile || profileError) &&
-        (welcome.show ? <OwnerWelcomeCard onClose={welcome.dismiss} /> : <WhatsNewCard />)}
+      {/* Wait for /producers/me (created_at) and the analytics (the moment
+          counts) so no card replaces another one already on screen. One card
+          in the slot: welcome → first moment (part 2) → «חדש במהמקור». */}
+      {slotOpen &&
+        (welcome.show ? (
+          <OwnerWelcomeCard onClose={welcome.dismiss} />
+        ) : slotMoment ? (
+          <FirstMomentCard moment={slotMoment} onClose={firstMoment.dismiss} />
+        ) : (
+          <WhatsNewCard />
+        ))}
       <OwnerAttentionCard attention={data?.attention} />
 
       {/* MEH-1025 Chunk B: admin completion-request banner. Renders only when
