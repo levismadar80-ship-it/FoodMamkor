@@ -517,7 +517,7 @@ export default function ProducerCard({ producer, active, onClick, referrer, high
         <CardHeart producer={producer} onCountChange={(delta) => setLocalFavCount((c) => Math.max(0, c + delta))} />
       </div>
 
-      <div ref={cardBodyRef} className="p-4 flex flex-col gap-2">
+      <div ref={cardBodyRef} className="p-4 flex flex-col gap-2" data-testid="card-body">
         {/* Eyebrow = PLACE (MEH-2440, Sapir 27/10): the city leads, in gold,
             with the distance beside it — a directory of where food comes from
             names the place first. The category moved to the line under the
