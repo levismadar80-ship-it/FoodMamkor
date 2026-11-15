@@ -97,3 +97,18 @@ class TestExperienceStartTime:
         )
         r = client.post(f"/experiences/{ex.id}/registrations", json=_signup())
         assert r.status_code == 201, r.text
+
+
+class TestBoundaries:
+    def test_exactly_at_start_time_is_closed(self, client, db, sent, at):
+        # Pins `>=`: the minute it starts, it is closed.
+        at(10, 0)
+        ev = _event(db, _owner(db), event_date=TODAY, event_time=time(10, 0))
+        r = client.post(f"/events/{ev.id}/registrations", json=_signup())
+        assert r.status_code == 409, r.text
+
+    def test_a_past_day_is_closed_even_without_a_time(self, client, db, sent, at):
+        at(8)
+        ev = _event(db, _owner(db), event_date=date(2026, 11, 15))
+        r = client.post(f"/events/{ev.id}/registrations", json=_signup())
+        assert r.status_code == 409, r.text
