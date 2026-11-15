@@ -1719,6 +1719,10 @@
         "uploading": "Uploading...",
         "category_cap_hint": "Your first pick shows on the business card · up to 3 categories",
         "primary_badge": "Primary",
+        "photos": {
+          "main_label": "Main photo",
+          "make_main": "Make main photo"
+        },
         "sections": {
           "basic": "Basic details",
           "categories_tags": "Categories and tags",
