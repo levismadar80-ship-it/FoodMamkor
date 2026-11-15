@@ -6,6 +6,8 @@ Now the first is refused (409) and the second keeps every sign-up and mails
 each registrant once.
 """
 
+from datetime import timedelta
+
 import pytest
 
 import app.services.booking_cancellations as bc
@@ -101,6 +103,20 @@ class TestPlacesBelowSignups:
         )
         assert r.status_code == 409, r.text
         assert r.json()["detail"]["code"] == "max_below_registrations"
+        db.refresh(ex)
+        assert ex.max_participants == 8
+
+    def test_cancelling_and_cutting_together_is_allowed(self, client, db, sent):
+        producer, owner = _business(db)
+        ev = _event(db, producer, max_participants=10)
+        _signup(db, ev, "a@example.com")
+        r = client.put(
+            f"/events/{ev.id}",
+            json={"max_participants": 0, "is_active": False},
+            headers=auth_header(owner),
+        )
+        assert r.status_code == 200, r.text
+        assert _kinds(sent) == [("send_registrant_cancelled", "a@example.com")]
 
 
 class TestLeavingTheSiteForm:
@@ -143,6 +159,19 @@ class TestLeavingTheSiteForm:
         assert r.status_code == 200, r.text
         assert sent == []
 
+    def test_move_and_switch_together_send_one_email(self, client, db, sent):
+        producer, owner = _business(db)
+        ev = _event(db, producer)
+        _signup(db, ev, "a@example.com")
+        new_date = ev.event_date + timedelta(days=3)
+        r = client.put(
+            f"/events/{ev.id}",
+            json={**EXTERNAL, "event_date": new_date.isoformat()},
+            headers=auth_header(owner),
+        )
+        assert r.status_code == 200, r.text
+        assert _kinds(sent) == [("send_registrant_moved", "a@example.com")]
+
     def test_switch_and_cancel_together_only_cancels(self, client, db, sent):
         producer, owner = _business(db)
         ev = _event(db, producer)
@@ -175,6 +204,6 @@ def test_the_method_changed_copy(monkeypatch):
     )
     to, subject, body = out[0][:3]
     assert subject == 'עדכון על ההרשמה ל"יום פתוח"'
-    assert 'מאפיית הגליל כבר לא מקבל הרשמות ל"יום פתוח" דרך מהמקור.' in body
+    assert 'ההרשמות ל"יום פתוח" אצל מאפיית הגליל כבר לא נעשות דרך מהמקור.' in body
     assert "ההרשמה שלכם נשארת בתוקף" in body
     assert "https://mehamakor.co.il/registration/t" in body

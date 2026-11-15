@@ -245,8 +245,8 @@ def send_registrant_method_changed(
     host = _one_line(m.host_name)
     subject = f'עדכון על ההרשמה ל"{title}"'
     lines = [
-        f'{host} כבר לא מקבל הרשמות ל"{title}" דרך מהמקור.',
-        f"ההרשמה שלכם נשארת בתוקף, ו{host} רואה אותה ברשימת הנרשמים.",
+        f'ההרשמות ל"{title}" אצל {host} כבר לא נעשות דרך מהמקור.',
+        "ההרשמה שלכם נשארת בתוקף, ובית העסק רואה אותה ברשימת הנרשמים.",
         f"לשאלות אפשר לפנות ישירות ל{host}. אם כבר לא מתאים לכם, אפשר לבטל כאן: {m.cancel_url}",
     ]
     _send_lines(to, subject, lines, test_cause=test_cause)

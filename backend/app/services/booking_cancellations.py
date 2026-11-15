@@ -419,7 +419,9 @@ def after_item_edit(
     left_site_form = (
         old_method == "site_form" and item.registration_method != "site_form"
     )
-    if item.is_active and left_site_form:
+    # A move already mailed each registrant her kept sign-up and cancel link;
+    # one email per edit, not two.
+    if item.is_active and left_site_form and not sent:
         sent += notify_item_moved(
             db, item, background_tasks, test_cause, send_registrant_method_changed
         )

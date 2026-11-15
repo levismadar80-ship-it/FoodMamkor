@@ -112,7 +112,9 @@ def refuse_cap_below_signups(
 ) -> None:
     """MEH-3310: 409 when an edit's ``max_participants`` is below the active
     on-site sign-ups. An edit that does not touch the cap is never checked."""
-    if "max_participants" not in payload:
+    # An edit that also cancels the item cancels every sign-up with it
+    # (MEH-3227), so its places no longer have anyone to strand.
+    if "max_participants" not in payload or payload.get("is_active") is False:
         return
     problem = cap_below_signups_problem(
         db,

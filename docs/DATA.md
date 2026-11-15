@@ -973,13 +973,14 @@ via `slowapi` — see `backend/app/rate_limit.py` and
 > business).
 >
 > **MEH-3310 — the same two PUTs, for places and the sign-up method.** A
-> `max_participants` below the item's active on-site sign-ups → **409**
+> `max_participants` below the item's active on-site sign-ups (unless the same
+> PUT cancels the item) → **409**
 > `{code: "max_below_registrations", message: «כבר נרשמו N דרך האתר, ולכן מספר
 > המקומות לא יכול להיות קטן מ-N», params: {registered: N}}`, nothing written
 > (`services/registrations.refuse_cap_below_signups`). Switching
 > `registration_method` away from `site_form` on an active item keeps every
 > sign-up and mails each registrant once («עדכון על ההרשמה ל"{title}"», with the
-> cancel link). Both dashboards keep showing the list while `registered_count`
+> cancel link). A PUT that also moves the date sends only the «moved» email. Both dashboards keep showing the list while `registered_count`
 > > 0. No schema change.
 >
 > **MEH-2502 — the admin edit cannot change status.** `PUT
