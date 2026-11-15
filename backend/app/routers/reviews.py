@@ -33,7 +33,12 @@ from app.services.experience_moderation import _parse_response_text
 from app.services.moderation_prompt import wrap_submission
 from app.services.moderation_fail_open import classify_failure, report_fail_open
 from app.services.moderation_schemas import REVIEW_VERDICT_SCHEMA
-from app.auth import decode_review_invite_token, get_current_user, require_admin
+from app.auth import (
+    decode_review_invite_token,
+    get_current_user,
+    get_current_user_optional,
+    require_admin,
+)
 from app.database import get_db
 from app.models import (
     ContactClick,
@@ -214,12 +219,36 @@ def _recompute_producer_rating(producer_id: UUID, db: Session) -> None:
         db.commit()
 
 
-def _serialize(review: ProducerReview) -> ReviewOut:
+def public_reviewer_name(full_name: str | None) -> str | None:
+    """MEH-3221 (B10): «שם פרטי + אות של משפחה» — shortened on the SERVER.
+
+    The public payload used to carry ``user.name`` in full and the browser
+    shortened it (``ReviewsSection.jsx`` ``formatName``), so anyone reading
+    the API got every reviewer's full name. Same rule as ``formatName``
+    (MEH-2705): the initial is the first LETTER of the last word that has
+    one; a single word is returned as is.
+    """
+    if not full_name or not full_name.strip():
+        return None
+    parts = full_name.split()
+    if len(parts) == 1:
+        return parts[0]
+    for word in reversed(parts[1:]):
+        letter = next((ch for ch in word if ch.isalpha()), None)
+        if letter:
+            return f"{parts[0]} {letter}."
+    return parts[0]
+
+
+def _serialize(review: ProducerReview, viewer: User | None = None) -> ReviewOut:
+    # MEH-3221 (B10): no user_id in the public payload — it linked every
+    # review by one person across businesses. The client only ever needed
+    # "is this one mine", so the server answers exactly that.
     return ReviewOut(
         id=review.id,
         producer_id=review.producer_id,
-        user_id=review.user_id,
-        user_name=review.user.name if review.user else None,
+        is_mine=viewer is not None and str(review.user_id) == str(viewer.id),
+        user_name=public_reviewer_name(review.user.name if review.user else None),
         stars=review.stars,
         body=review.body,
         created_at=review.created_at.isoformat() if review.created_at else "",
@@ -240,6 +269,7 @@ def list_reviews_nested(
     request: Request,
     producer_id: UUID,
     page: int = Query(1, ge=1),
+    viewer: User | None = Depends(get_current_user_optional),
     db: Session = Depends(get_db),
 ) -> ReviewsPage:
     """Paginated visible reviews for a producer (10 per page, newest first)."""
@@ -272,7 +302,7 @@ def list_reviews_nested(
         )
     )
     return ReviewsPage(
-        reviews=[_serialize(r) for r in rows],
+        reviews=[_serialize(r, viewer) for r in rows],
         total=total,
         page=page,
         pages=max(1, math.ceil(total / PAGE_SIZE)),
@@ -286,6 +316,7 @@ def list_reviews_nested(
 def list_reviews(
     request: Request,
     producer_id: UUID,
+    viewer: User | None = Depends(get_current_user_optional),
     db: Session = Depends(get_db),
 ) -> list[ReviewOut]:
     reviews = (
@@ -301,7 +332,7 @@ def list_reviews(
         .order_by(ProducerReview.created_at.desc())
         .all()
     )
-    return [_serialize(r) for r in reviews]
+    return [_serialize(r, viewer) for r in reviews]
 
 
 # ---------------------------------------------------------------------------
@@ -562,7 +593,7 @@ def create_review_nested(  # noqa: PLR0913 — all 6 args are FastAPI-injected (
         .filter(ProducerReview.id == review.id)
         .first()
     )
-    return _serialize(review)
+    return _serialize(review, user)
 
 
 # ---------------------------------------------------------------------------

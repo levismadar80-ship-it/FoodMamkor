@@ -253,6 +253,15 @@ async function stubSession(page: Page, opts: SessionOpts = {}): Promise<void> {
   // An approved business gets the «בקשו ביקורת מלקוחה» card on the tools tab
   // (RequestReviewCard), which reads this on mount. Unstubbed, the fake token
   // draws a 401 → failed refresh → api.js expires the session mid-test.
+  // MEH-3221: the reviews read now takes an optional login, so a fake token
+  // draws a 401 there too — same session expiry as the review-link read below.
+  await page.route("**/producers/*/reviews**", (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ reviews: [], total: 0, page: 1, pages: 0, rating_counts: { "1": 0, "2": 0, "3": 0, "4": 0, "5": 0 } }),
+    }),
+  );
   await page.route("**/producers/me/review-link", (route) =>
     route.fulfill({
       status: 200,

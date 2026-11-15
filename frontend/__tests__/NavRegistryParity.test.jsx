@@ -118,7 +118,7 @@ vi.mock("@phosphor-icons/react", () => {
     Compass: stub("Compass"),
     MapTrifold: stub("MapTrifold"),
     Flower: stub("Flower"),
-    CalendarBlank: stub("CalendarBlank"),
+    CalendarBlank: stub("CalendarBlank"), Basket: stub("Basket"),
     User: stub("User"),
     // AccountSheet
     Heart: stub("Heart"),
@@ -204,10 +204,11 @@ function expectedLinks(surfaceName, state, gates = {}) {
     })
     .map(({ item, surface }) => ({
       // MEH-2975: the hub link's href is the first hub route with supply, so
-      // a case that opens one gate names the route it expects (`hubHref`).
+      // a case that opens one gate names the route it expects (`hubHrefs`,
+      // per gate — MEH-3125 split the hub into two links).
       href:
-        item.dataGate === "listing-supply" && gates.hubHref
-          ? gates.hubHref
+        item.dataGate && gates.hubHrefs?.[item.dataGate]
+          ? gates.hubHrefs[item.dataGate]
           : item.id === "login" && surfaceName === "header"
             ? // MEH-3026 (F2): the header's «כניסה» returns her to the page
               // she is on, so the expected href is derived the same way the
@@ -345,20 +346,22 @@ describe("MEH-1703 — Header link row matches the registry", () => {
   // MEH-2859: FOUR hooks can clear this one gate, and each is asserted on its
   // own. A single "gates on" case would pass while three of the four were
   // wired to nothing — which is the shape of gate this item replaced.
-  for (const [name, turnOn, hubHref] of [
-    ["events", () => { eventsGateRef.current = true; }, "/events"],
-    ["experiences", () => { experiencesGateRef.current = true; }, "/experiences"],
-    ["group buys", () => { hubGateRefs.groupBuys = true; }, "/group-buys"],
-    ["surprise baskets", () => { hubGateRefs.rescue = true; }, "/rescue"],
+  // MEH-3125: events + experiences clear `listing-supply` («אירועים»); group
+  // buys + rescue bags clear `opportunity-supply` («הזדמנויות»).
+  for (const [name, turnOn, hubHref, gate] of [
+    ["events", () => { eventsGateRef.current = true; }, "/events", "listing-supply"],
+    ["experiences", () => { experiencesGateRef.current = true; }, "/experiences", "listing-supply"],
+    ["group buys", () => { hubGateRefs.groupBuys = true; }, "/group-buys", "opportunity-supply"],
+    ["surprise baskets", () => { hubGateRefs.rescue = true; }, "/rescue", "opportunity-supply"],
   ]) {
-    it(`header surface picks up «מה קורה» when ${name} alone clears the gate`, () => {
+    it(`header surface picks up the ${gate} link when ${name} alone clears it`, () => {
       turnOn();
       userRef.current = null;
       const { container } = render(<Header />);
       const rendered = sortLinks(renderedLinks(container));
 
       expect(rendered).toEqual(
-        sortLinks(expectedLinks("header", STATES.guest, { "listing-supply": true, hubHref })),
+        sortLinks(expectedLinks("header", STATES.guest, { [gate]: true, hubHrefs: { [gate]: hubHref } })),
       );
       // Belt and braces: the gate really did add a link, so the case above is
       // not passing because both sides are missing it. MEH-2975: it lands on
@@ -368,19 +371,26 @@ describe("MEH-1703 — Header link row matches the registry", () => {
     });
   }
 
-  // MEH-2975: the hub is four routes under one tab row, so «מה קורה» is the
-  // current link on all of them — wherever its own href points. Before, with
-  // the href fixed at /events, a visitor on /group-buys saw no current link.
-  for (const path of ["/events", "/events/12", "/experiences", "/group-buys", "/rescue"]) {
-    it(`a hub link that lands on /group-buys is current on ${path}`, () => {
-      hubGateRefs.groupBuys = true;
+  // MEH-2975 / MEH-3125: each hub link is current on every route of its own
+  // group, wherever its href points, and on no route of the other group.
+  for (const [path, expected] of [
+    ["/events", "/experiences"],
+    ["/events/12", "/experiences"],
+    ["/experiences", "/experiences"],
+    ["/group-buys", "/rescue"],
+    ["/group-buys/7", "/rescue"],
+    ["/rescue", "/rescue"],
+  ]) {
+    it(`on ${path} the current hub link is ${expected}`, () => {
+      experiencesGateRef.current = true;
+      hubGateRefs.rescue = true;
       userRef.current = null;
       pathnameRef.current = path;
       const { container } = render(<Header />);
       const current = [...container.querySelectorAll('a[aria-current="page"]')].map((a) =>
         a.getAttribute("href"),
       );
-      expect(current).toEqual(["/group-buys"]);
+      expect(current).toEqual([expected]);
     });
   }
 
@@ -513,24 +523,26 @@ describe("MEH-1703 — BottomNav matches the registry", () => {
   // MEH-2965: the pill's third slot. Each of the four hooks is asserted on its
   // own, as for the Header above — and the swap is checked from both sides:
   // the hub link arrives AND «אודות» leaves.
-  for (const [name, turnOn, hubHref] of [
-    ["events", () => { eventsGateRef.current = true; }, "/events"],
-    ["experiences", () => { experiencesGateRef.current = true; }, "/experiences"],
-    ["group buys", () => { hubGateRefs.groupBuys = true; }, "/group-buys"],
-    ["surprise baskets", () => { hubGateRefs.rescue = true; }, "/rescue"],
+  // MEH-3125: only the events group takes «אודות»'s slot; the opportunities
+  // group adds a tab and leaves «אודות» in place.
+  for (const [name, turnOn, hubHref, gate, aboutStays] of [
+    ["events", () => { eventsGateRef.current = true; }, "/events", "listing-supply", false],
+    ["experiences", () => { experiencesGateRef.current = true; }, "/experiences", "listing-supply", false],
+    ["group buys", () => { hubGateRefs.groupBuys = true; }, "/group-buys", "opportunity-supply", true],
+    ["surprise baskets", () => { hubGateRefs.rescue = true; }, "/rescue", "opportunity-supply", true],
   ]) {
-    it(`bottomNav surface swaps «אודות» for the hub when ${name} alone clears the gate`, () => {
+    it(`bottomNav surface, ${name} alone clears ${gate} (about stays: ${aboutStays})`, () => {
       turnOn();
       userRef.current = null;
       const { container } = render(<BottomNav />);
       const rendered = sortLinks(renderedLinks(container));
 
       expect(rendered).toEqual(
-        sortLinks(expectedLinks("bottomNav", STATES.guest, { "listing-supply": true, hubHref })),
+        sortLinks(expectedLinks("bottomNav", STATES.guest, { [gate]: true, hubHrefs: { [gate]: hubHref } })),
       );
       const hrefs = rendered.map((l) => l.href);
       expect(hrefs.filter((h) => HUB_HREFS.includes(h))).toEqual([hubHref]);
-      expect(hrefs).not.toContain("/about");
+      expect(hrefs.includes("/about")).toBe(aboutStays);
     });
   }
 

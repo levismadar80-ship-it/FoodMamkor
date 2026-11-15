@@ -86,6 +86,9 @@ async function stubManage(page: Page, events: Row[], experiences: Row[], writes:
   // tab (RequestReviewCard), which reads this on mount. Left unstubbed it hits
   // the real backend with the fake token → 401 → failed refresh → api.js
   // expires the session, and the next page renders for nobody.
+  // MEH-3221: the reviews read takes an optional login; a fake token draws a 401.
+  await page.route("**/producers/*/reviews**", (r) =>
+    json(r, 200, { reviews: [], total: 0, page: 1, pages: 0, rating_counts: { "1": 0, "2": 0, "3": 0, "4": 0, "5": 0 } }));
   await page.route("**/producers/me/review-link", (r) =>
     json(r, 200, { url: "https://mehamakor.co.il/p/shaked?rt=e2e-review-invite" }));
   // The event/experience forms' «איך נרשמים?» field (RegistrationMethodField,
