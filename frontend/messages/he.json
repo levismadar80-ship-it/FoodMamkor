@@ -1719,6 +1719,10 @@
         "uploading": "בהעלאה...",
         "category_cap_hint": "הקטגוריה הראשונה שתבחרי תוצג בכרטיס העסק · עד 3 קטגוריות",
         "primary_badge": "ראשית",
+        "photos": {
+          "main_label": "תמונה ראשית",
+          "make_main": "הפיכה לתמונה ראשית"
+        },
         "sections": {
           "basic": "פרטי בסיס",
           "categories_tags": "קטגוריות ותגיות",
