@@ -227,6 +227,7 @@ files = [
     "app/schemas/experiences.py",
     "app/schemas/group_buy_counts.py",
     "app/schemas/group_buys_requests.py",
+    "app/schemas/owner_detach.py",
     "app/schemas/owner_invite_existing.py",
     "app/schemas/password.py",
     "app/schemas/producer.py",

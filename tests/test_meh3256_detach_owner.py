@@ -32,7 +32,9 @@ def _detach(client, producer, owner, admin, **over):
     body = {"confirm_name": producer.name, "expected_owner_user_id": str(owner.id)}
     sent = []
     with mock.patch.object(
-        pod, "send_owner_detached_email", side_effect=lambda *a, **k: sent.append((a, k))
+        pod,
+        "send_owner_detached_email",
+        side_effect=lambda *a, **k: sent.append((a, k)),
     ):
         r = client.post(_url(producer.id), json=body | over, headers=auth_header(admin))
     return r, sent
@@ -81,7 +83,9 @@ def test_a_stale_owner_id_is_refused(client, db):
     """The page was loaded before someone else detached and re-invited."""
     producer, owner, admin = _setup(db)
     other = make_user(db, role="consumer", email="someone-else@example.com")
-    r, sent = _detach(client, producer, owner, admin, expected_owner_user_id=str(other.id))
+    r, sent = _detach(
+        client, producer, owner, admin, expected_owner_user_id=str(other.id)
+    )
     assert r.status_code == 409
     db.expire_all()
     assert db.get(User, owner.id).producer_id == producer.id
@@ -126,7 +130,9 @@ def test_the_old_session_stops_working(client, db):
     from app.auth import create_access_token
 
     producer, owner, admin = _setup(db)
-    old = {"Authorization": f"Bearer {create_access_token(owner.id, owner.token_version)}"}
+    old = {
+        "Authorization": f"Bearer {create_access_token(owner.id, owner.token_version)}"
+    }
     assert client.get("/auth/me", headers=old).status_code == 200
     r, _ = _detach(client, producer, owner, admin)
     assert r.status_code == 200

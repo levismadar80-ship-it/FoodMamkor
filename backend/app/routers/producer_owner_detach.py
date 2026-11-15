@@ -23,13 +23,13 @@ from uuid import UUID
 
 import structlog
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
-from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 from app.auth import require_admin
 from app.database import get_db
 from app.models import Producer, User
 from app.rate_limit import limiter
+from app.schemas.owner_detach import OwnerDetachIn
 from app.services.owner_detach import send_owner_detached_email
 
 logger = structlog.get_logger(__name__)
@@ -41,15 +41,6 @@ _NO_OWNER = "לבית העסק הזה אין בעלים מחוברים"
 _STALE = "הבעלים של בית העסק השתנו מאז שהדף נטען. כדאי לרענן ולנסות שוב."
 _NAME_MISMATCH = "השם שהוקלד לא תואם לשם בית העסק"
 _ADMIN_TARGET = "אי אפשר לנתק חשבון של מנהלת מערכת"
-
-
-class OwnerDetachIn(BaseModel):
-    # The business name, typed. The same friction GitHub puts on deleting a
-    # repository: an action that removes someone's access is not one click.
-    confirm_name: str = Field(..., min_length=1, max_length=200)
-    # The owner the admin SAW. If the row changed hands since the page loaded,
-    # the action refuses instead of detaching someone she did not mean.
-    expected_owner_user_id: UUID
 
 
 def _first_name(full_name: str | None) -> str:
