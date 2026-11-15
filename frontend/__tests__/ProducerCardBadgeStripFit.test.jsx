@@ -311,6 +311,19 @@ describe("card badge strip: one line, the rest in «+N» (MEH-2856)", () => {
     expect(list.className).toContain("[&>*]:shrink-0");
   });
 
+  // MEH-3321 (Sapir 15/11): the badges sat on the photo and covered it. The
+  // strip now lives in the card body, after the category line, and is in the
+  // normal flow — not positioned over the image.
+  it("the badge strip is off the photo: in flow, after the business name", () => {
+    room = 400;
+    render(<ProducerCard producer={threeBadges} />);
+    const strip = screen.getByTestId("card-badge-strip");
+    expect(strip.className.split(/\s+/)).not.toContain("absolute");
+    expect(strip.closest("a"), "not inside the photo link").toBeNull();
+    const name = screen.getByRole("heading", { level: 3 });
+    expect(name.compareDocumentPosition(strip) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
   it("StrictMode (dev) runs the fit effect twice — still exactly one pill, never 0", () => {
     const [first, second] = allBadges(twoBadges).map((b) => b.key);
     px = { [first]: 90, [second]: 90 };

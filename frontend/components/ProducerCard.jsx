@@ -304,28 +304,13 @@ export default function ProducerCard({ producer, active, onClick, referrer, high
   // MEH-1592: collision boundary handed to the +N Popover — see the badge strip
   // below. The panel must clear the whole strip, not just the +N chip.
   const badgeStripRef = useRef(null);
-  // MEH-2584: the no-photo name plate's pb-12 clears ONE line of badges. When
-  // the strip wraps (narrow cards, long labels, iconed pills) the plate grows
-  // its bottom padding to the strip's real height so the name never sits under
-  // a badge. Single-line strips keep the class padding (stripLift stays 0).
-  const STRIP_ONE_LINE_MAX = 32; // px — one pill row is ~25px
-  const PLATE_CLEARANCE = 24; // px — strip's bottom-3 offset + breathing room
-  const [stripLift, setStripLift] = useState(0);
+  // MEH-3321: the MEH-2584 plate lift (stripLift) is gone — the badge strip
+  // no longer sits on the photo, so the no-photo plate has nothing to clear.
   // MEH-2856: the badge pills + «+N» sit in this one-line group.
   const badgeLineRef = useRef(null);
   const earnedBadges = badgeCount(producer);
   const shownBadges = useBadgesThatFit(badgeLineRef, earnedBadges);
   const hiddenBadges = earnedBadges - shownBadges;
-  useEffect(() => {
-    const el = badgeStripRef.current;
-    if (!el || typeof ResizeObserver === "undefined") return undefined;
-    const ro = new ResizeObserver(() => {
-      const h = el.getBoundingClientRect().height;
-      setStripLift(h > STRIP_ONE_LINE_MAX ? Math.ceil(h) + PLATE_CLEARANCE : 0);
-    });
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, []);
   useEffect(() => {
     setLocalFavCount(producer.favorites_count ?? 0);
   }, [producer.favorites_count]);
@@ -482,7 +467,6 @@ export default function ProducerCard({ producer, active, onClick, referrer, high
                 // MEH-2837: pt clears the heart (34px at top-2 → 42px; 44px
                 // at sm:top-3 → 56px), so a 3-line name never reaches it.
                 className="absolute inset-0 flex flex-col justify-end bg-background-alt p-4 pt-12 pb-12 sm:p-5 sm:pt-16 sm:pb-14"
-                style={stripLift ? { paddingBottom: stripLift } : undefined}
                 role="img"
                 aria-label={t("producer.card.aria.image_missing", { name: producer.name })}
               >
@@ -522,7 +506,75 @@ export default function ProducerCard({ producer, active, onClick, referrer, high
           </div>
         </Link>
 
-        {/* Badge row — bottom-start over the image (Assembly v2), max 2.
+        <CardHeart producer={producer} onCountChange={(delta) => setLocalFavCount((c) => Math.max(0, c + delta))} />
+      </div>
+
+      <div className="p-4 flex flex-col gap-2">
+        {/* Eyebrow = PLACE (MEH-2440, Sapir 27/10): the city leads, in gold,
+            with the distance beside it — a directory of where food comes from
+            names the place first. The category moved to the line under the
+            name. MEH-1073 T10 / MEH-867: no uppercase, no letter-spacing. */}
+        {producer.city && (
+          <p className="text-xs font-semibold text-accent truncate flex items-center gap-1.5 min-w-0" data-testid="card-place">
+            <span className="truncate">
+              {producer.city}
+              {distanceLabel && (
+                <>
+                  {" · "}
+                  <span data-testid="distance-pill">{distanceLabel}</span>
+                </>
+              )}
+            </span>
+          </p>
+        )}
+
+        {/* MEH-2837: below sm the rating sits UNDER the name (stacked) — side
+            by side in a 2-column grid at 390 it cut names early («חוות ערוגו…»).
+            sm and up unchanged. */}
+        <div className="grid grid-cols-1 gap-y-0.5 sm:grid-cols-[1fr_auto] sm:gap-3 items-baseline">
+          <Link href={producerHref} className="block min-w-0 focus-ring">
+            {/* MEH-1028 (CARD-27): mobile density — 16px name on <640px, 20px sm: up. */}
+            <h3 className="font-headline-md font-bold text-base sm:text-xl text-text group-hover:text-primary transition-colors duration-base ease-quart leading-snug line-clamp-2">
+              {highlightQuery
+                ? highlightMatch(producer.name, highlightQuery)
+                : producer.name}
+            </h3>
+          </Link>
+          {hasRating && (
+            // MEH-1243 (🔒 §7) Google format ★ X.X (N) — the shared RatingCompact (MEH-3071).
+            <RatingCompact
+              avg={producer.avg_rating}
+              count={producer.reviews_count}
+              className="shrink-0 justify-self-start sm:justify-self-auto"
+              data-testid="card-rating"
+            />
+          )}
+        </div>
+
+        {hasLocationText && (
+        <p
+          className="text-sm text-fg-muted truncate flex items-center gap-1.5"
+          data-testid="location-line"
+        >
+          <span className="truncate">
+            {category}
+            {/* No city → no place line above, so the distance stays here. */}
+            {!producer.city && distanceLabel && (
+              <>
+                {category ? " · " : null}
+                <span data-testid="distance-pill">{distanceLabel}</span>
+              </>
+            )}
+          </span>
+        </p>
+        )}
+
+        {/* MEH-3321 (Sapir 15/11 «שלא יתפוס את כל המסך»): the badge row moved
+            OFF the photo to the card body, under the category line, so the
+            photo shows the food. mt-0.5 + the body's gap-2 = 10px = the +N's
+            -m-2.5 pull-back, so its hit area never covers the name link above.
+            Everything below is unchanged.
+            Badge row — was bottom-start over the image (Assembly v2), max 2.
             MEH-76 chunk 4 (S12 §04-B): list density — verified renders the
             icon-only seal; declared shows nothing (no placeholder). */}
         {/* MEH-1547: the z-[2] that used to sit here was REMOVED. `z-index` on
@@ -557,7 +609,8 @@ export default function ProducerCard({ producer, active, onClick, referrer, high
             room, instead of being clipped by the card's overflow-hidden. */}
         <div
           ref={badgeStripRef}
-          className="absolute bottom-3 start-3 flex flex-wrap items-center gap-x-1 gap-y-2.5 max-w-[calc(100%-1.25rem)]"
+          className="mt-0.5 flex flex-wrap items-center gap-x-1 gap-y-2.5 max-w-full"
+          data-testid="card-badge-strip"
         >
           <div
             ref={badgeLineRef}
@@ -703,69 +756,6 @@ export default function ProducerCard({ producer, active, onClick, referrer, high
             </span>
           )}
         </div>
-
-        <CardHeart producer={producer} onCountChange={(delta) => setLocalFavCount((c) => Math.max(0, c + delta))} />
-      </div>
-
-      <div className="p-4 flex flex-col gap-2">
-        {/* Eyebrow = PLACE (MEH-2440, Sapir 27/10): the city leads, in gold,
-            with the distance beside it — a directory of where food comes from
-            names the place first. The category moved to the line under the
-            name. MEH-1073 T10 / MEH-867: no uppercase, no letter-spacing. */}
-        {producer.city && (
-          <p className="text-xs font-semibold text-accent truncate flex items-center gap-1.5 min-w-0" data-testid="card-place">
-            <span className="truncate">
-              {producer.city}
-              {distanceLabel && (
-                <>
-                  {" · "}
-                  <span data-testid="distance-pill">{distanceLabel}</span>
-                </>
-              )}
-            </span>
-          </p>
-        )}
-
-        {/* MEH-2837: below sm the rating sits UNDER the name (stacked) — side
-            by side in a 2-column grid at 390 it cut names early («חוות ערוגו…»).
-            sm and up unchanged. */}
-        <div className="grid grid-cols-1 gap-y-0.5 sm:grid-cols-[1fr_auto] sm:gap-3 items-baseline">
-          <Link href={producerHref} className="block min-w-0 focus-ring">
-            {/* MEH-1028 (CARD-27): mobile density — 16px name on <640px, 20px sm: up. */}
-            <h3 className="font-headline-md font-bold text-base sm:text-xl text-text group-hover:text-primary transition-colors duration-base ease-quart leading-snug line-clamp-2">
-              {highlightQuery
-                ? highlightMatch(producer.name, highlightQuery)
-                : producer.name}
-            </h3>
-          </Link>
-          {hasRating && (
-            // MEH-1243 (🔒 §7) Google format ★ X.X (N) — the shared RatingCompact (MEH-3071).
-            <RatingCompact
-              avg={producer.avg_rating}
-              count={producer.reviews_count}
-              className="shrink-0 justify-self-start sm:justify-self-auto"
-              data-testid="card-rating"
-            />
-          )}
-        </div>
-
-        {hasLocationText && (
-        <p
-          className="text-sm text-fg-muted truncate flex items-center gap-1.5"
-          data-testid="location-line"
-        >
-          <span className="truncate">
-            {category}
-            {/* No city → no place line above, so the distance stays here. */}
-            {!producer.city && distanceLabel && (
-              <>
-                {category ? " · " : null}
-                <span data-testid="distance-pill">{distanceLabel}</span>
-              </>
-            )}
-          </span>
-        </p>
-        )}
 
         {/* MEH-1880: rendered ONLY when the declared window is open right now.
             Closed, absent, or pre-mount → this whole node is absent, so a card
