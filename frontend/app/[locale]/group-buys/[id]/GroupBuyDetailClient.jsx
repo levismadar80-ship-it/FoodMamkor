@@ -234,7 +234,7 @@ export default function GroupBuyDetailClient({ id }) {
   // MEH-3289: a funded group still takes joiners until it is full or the
   // deadline passes (group_buys.py commit route); leaving stays open the same way.
   const joinable = (open || funded) && !expired;
-  const full = gb.max_participants != null && gb.commits_count >= gb.max_participants;
+  const full = typeof gb.max_participants === "number" && gb.commits_count >= gb.max_participants;
   const discount = groupBuyDiscountPct(gb.price_per_unit_regular, gb.price_per_unit_group);
   const heroSrc = gb.producer_image_url
     ? optimizeCloudinary(gb.producer_image_url, { aspectRatio: IMAGE_RATIOS.banner, width: 1200 })
