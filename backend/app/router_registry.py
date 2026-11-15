@@ -29,6 +29,7 @@ from app.routers import (
     producer_name_check,
     producer_name_requests,
     producer_owner_invite,
+    producer_owner_invite_existing,
     producer_recipes,
     billing,
     product_organize,
@@ -93,6 +94,7 @@ def register_routers(app: FastAPI) -> None:
     # Same split, same reason, as admin_outreach's `prefill_router` below.
     app.include_router(producer_owner_invite.router)
     app.include_router(producer_owner_invite.public_router)
+    app.include_router(producer_owner_invite_existing.router)  # MEH-3256
     app.include_router(producers.router)
     app.include_router(organizers.router)  # MEH-2461
     app.include_router(favorites.router)

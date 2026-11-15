@@ -979,6 +979,17 @@ PINNED: dict[tuple[str, str, str], tuple[int, str, str]] = {
         OWN,
         "p_test — producer.is_test or user.is_test, captured pre-commit",
     ),
+    # MEH-3256: the same acceptance for a signed-in existing account — same
+    # mail, same flag (producer.is_test or the locked user's is_test).
+    (
+        "routers/producer_owner_invite_existing.py",
+        "accept_owner_invite_existing",
+        "add_task(send_email)",
+    ): (
+        1,
+        OWN,
+        "p_test — producer.is_test or user.is_test, captured pre-commit",
+    ),
     # --- auth_emails: a user's own auth action ---
     ("services/auth_emails.py", "send_reset_email", "send_email"): (
         1,

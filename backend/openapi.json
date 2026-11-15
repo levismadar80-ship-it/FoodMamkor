@@ -5440,6 +5440,58 @@
         "title": "OwnerInviteEmailCodeRequest",
         "type": "object"
       },
+      "OwnerInviteExistingAccept": {
+        "properties": {
+          "code": {
+            "maxLength": 12,
+            "minLength": 1,
+            "title": "Code",
+            "type": "string"
+          },
+          "declaration_accepted": {
+            "title": "Declaration Accepted",
+            "type": "boolean"
+          },
+          "farmer_declaration_accepted": {
+            "default": false,
+            "title": "Farmer Declaration Accepted",
+            "type": "boolean"
+          },
+          "terms_accepted": {
+            "title": "Terms Accepted",
+            "type": "boolean"
+          },
+          "token": {
+            "maxLength": 512,
+            "minLength": 1,
+            "title": "Token",
+            "type": "string"
+          }
+        },
+        "required": [
+          "token",
+          "code",
+          "terms_accepted",
+          "declaration_accepted"
+        ],
+        "title": "OwnerInviteExistingAccept",
+        "type": "object"
+      },
+      "OwnerInviteExistingCodeRequest": {
+        "properties": {
+          "token": {
+            "maxLength": 512,
+            "minLength": 1,
+            "title": "Token",
+            "type": "string"
+          }
+        },
+        "required": [
+          "token"
+        ],
+        "title": "OwnerInviteExistingCodeRequest",
+        "type": "object"
+      },
       "OwnerInvitePublicOut": {
         "description": "What the acceptance page may know before anyone has authenticated.\n\nDeliberately three fields. The business NAME is already public on its own\npage, and the EMAIL is the address the link was sent to — so a holder of\nthe link learns nothing about the business they did not already have. No\nphone, no address, no license, no ids, and no token echo.",
         "properties": {
@@ -20774,6 +20826,52 @@
         ]
       }
     },
+    "/auth/owner-invite/accept-existing": {
+      "post": {
+        "operationId": "accept_owner_invite_existing_auth_owner_invite_accept_existing_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OwnerInviteExistingAccept"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Token"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Accept Owner Invite Existing",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
     "/auth/owner-invite/email-code": {
       "post": {
         "description": "Send a verification code to the address she typed.\n\nTHE RESPONSE IS THE SAME WHATEVER HAPPENS — same status, same bytes —\nfor an address that is free, one that already belongs to an account, and\none whose send fails. The reason is specific: this endpoint takes an\narbitrary address from anyone holding the link, so a different answer for\n\"already registered\" would turn it into an account-existence oracle for\nany address an attacker cares to try.\n\nWhat DOES differ is invisible from here: a registered address is not\nmailed and no code is stored, so the acceptance it would lead to fails at\nthe 409 it was always going to fail at.\n\nAn invalid link still 404s — that is a fact about the LINK, which the\ncaller already holds, not about any address.",
@@ -20809,6 +20907,51 @@
           }
         },
         "summary": "Send Owner Invite Email Code",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/auth/owner-invite/email-code-existing": {
+      "post": {
+        "description": "Mail a code to the signed-in account's own address. The address is\nnot an input, so there is no existence oracle to keep closed here.",
+        "operationId": "send_owner_invite_code_existing_auth_owner_invite_email_code_existing_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OwnerInviteExistingCodeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Send Owner Invite Code Existing",
         "tags": [
           "auth"
         ]
