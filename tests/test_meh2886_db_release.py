@@ -182,7 +182,9 @@ def test_register_new_email_releases_connection_before_background_tasks(
     verify_probe = _PoolProbe()
     welcome_probe = _PoolProbe()
     monkeypatch.setattr("app.routers.auth._send_verify_email", verify_probe)
+    monkeypatch.setattr("app.routers.auth_register_producer._send_verify_email", verify_probe)
     monkeypatch.setattr("app.routers.auth._send_welcome_email", welcome_probe)
+    monkeypatch.setattr("app.routers.auth_register_producer._send_welcome_email", welcome_probe)
     _assert_pool_idle_before_request()
 
     resp = client.post(
@@ -205,6 +207,7 @@ def test_register_existing_email_releases_connection_before_background_tasks(
     db.close()  # the seed session's post-refresh transaction holds a conn
     probe = _PoolProbe()
     monkeypatch.setattr("app.routers.auth._send_duplicate_attempt_email", probe)
+    monkeypatch.setattr("app.routers.auth_register_producer._send_duplicate_attempt_email", probe)
     _assert_pool_idle_before_request()
 
     resp = client.post(

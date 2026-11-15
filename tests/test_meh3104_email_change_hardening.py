@@ -20,6 +20,7 @@ import pytest
 from app.config import settings
 from app.models.models import User
 from app.routers import auth as auth_router
+import app.routers.auth_register_producer as reg_router  # MEH-3293
 from app.utils.clock import utc_now
 from conftest import auth_header, make_user
 
@@ -102,10 +103,19 @@ def oauth_ok(monkeypatch):
         "_verify_google_token",
         lambda token: {"sub": "g-attacker", "email": EMAIL, "name": "x"},
     )
+    monkeypatch.setattr(
+        reg_router,
+        "_verify_google_token",
+        lambda token: {"sub": "g-attacker", "email": EMAIL, "name": "x"},
+    )
     monkeypatch.setattr(auth_router, "_upload_google_avatar_or_none", lambda url: None)
+    monkeypatch.setattr(reg_router, "_upload_google_avatar_or_none", lambda url: None)
     monkeypatch.setattr(settings, "apple_client_id", "dummy-apple-id")
     monkeypatch.setattr(
         auth_router, "_verify_apple_token", lambda token: {"sub": "a-attacker", "email": EMAIL}
+    )
+    monkeypatch.setattr(
+        reg_router, "_verify_apple_token", lambda token: {"sub": "a-attacker", "email": EMAIL}
     )
 
 

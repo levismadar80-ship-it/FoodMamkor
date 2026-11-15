@@ -1007,7 +1007,7 @@ via `slowapi` — see `backend/app/rate_limit.py` and
 
 > **MEH-3254 (grill retro D7, 2026-11-14):** `GroupBuyOut.units_total: int | null` — the sum of `group_buy_commits.quantity`. Filled **only** on `GET /producers/me/group-buys` (the owner's own list), `null` on every public reader. A count, never a roster (MEH-1651). No schema change.
 
-### Auth (`app/routers/auth.py`)
+### Auth (`app/routers/auth.py`; `/auth/register/producer` and `/auth/register/producer/oauth` live in `app/routers/auth_register_producer.py` since MEH-3293)
 
 ```
 POST   /auth/register            public  — consumer signup → RegisterAck {detail} (MEH-328 OWASP anti-enum; no auto-login; verify via email)

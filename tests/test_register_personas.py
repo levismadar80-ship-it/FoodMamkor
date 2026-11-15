@@ -35,6 +35,7 @@ import pytest
 from app.config import settings
 from app.models.models import Producer, ProducerCategory, User
 from app.routers import auth as auth_router
+import app.routers.auth_register_producer as reg_router  # MEH-3293
 from conftest import (
     auth_header,
     make_category,
@@ -248,6 +249,11 @@ def google_verified(monkeypatch):
     monkeypatch.setattr(settings, "google_client_id", "dummy-google-id")
     monkeypatch.setattr(
         auth_router,
+        "_verify_google_token",
+        lambda token: {"sub": _G_SUB, "email": _G_EMAIL, "name": _G_NAME},
+    )
+    monkeypatch.setattr(
+        reg_router,
         "_verify_google_token",
         lambda token: {"sub": _G_SUB, "email": _G_EMAIL, "name": _G_NAME},
     )

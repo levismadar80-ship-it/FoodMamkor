@@ -1,3 +1,2 @@
 # lines path — files over 1500 lines when the guard was born (13/11/2026). Lower a number when the file shrinks; remove the line when it drops under 1500. Never raise one.
 2087 frontend/app/[locale]/register/producer/RegisterProducerClient.jsx
-1588 backend/app/routers/auth.py
