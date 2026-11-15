@@ -74,7 +74,10 @@ def test_removing_another_business_gallery_photo_does_not_destroy_it(
     db.commit()
     a_own = list(a.images)
 
-    _put_images(client, owner_a, a_own + [_B_PHOTO])
+    # Seeded as stored rows: since MEH-3247 part 2 a PUT refuses a photo
+    # the caller did not upload, so this is the pre-existing-data case.
+    a.images = a_own + [_B_PHOTO]
+    db.commit()
     _put_images(client, owner_a, a_own)
 
     assert _B_PUBLIC_ID not in destroyed, "B's live gallery photo was destroyed"
@@ -88,7 +91,10 @@ def test_removing_another_business_product_photo_does_not_destroy_it(
     db.commit()
     a_own = list(a.images)
 
-    _put_images(client, owner_a, a_own + [_B_PHOTO])
+    # Seeded as stored rows: since MEH-3247 part 2 a PUT refuses a photo
+    # the caller did not upload, so this is the pre-existing-data case.
+    a.images = a_own + [_B_PHOTO]
+    db.commit()
     _put_images(client, owner_a, a_own)
 
     assert _B_PUBLIC_ID not in destroyed, "B's live product photo was destroyed"
@@ -99,7 +105,10 @@ def test_removing_own_unshared_photo_still_destroys_it(client, db, destroyed):
     a, owner_a, _b = _two_businesses(db)
     a_own = list(a.images)
 
-    _put_images(client, owner_a, a_own + [_A_EXTRA])
+    # Seeded as stored rows: since MEH-3247 part 2 a PUT refuses a photo
+    # the caller did not upload, so this is the pre-existing-data case.
+    a.images = a_own + [_A_EXTRA]
+    db.commit()
     _put_images(client, owner_a, a_own)
 
     assert destroyed == [_A_EXTRA_PUBLIC_ID]

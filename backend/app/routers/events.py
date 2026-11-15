@@ -43,6 +43,7 @@ from app.services.booking_cancellations import (  # MEH-3227
     item_state,
 )
 from app.services.date_rules import refuse_past_date  # MEH-3224
+from app.services.image_ownership import assert_own_new_images  # MEH-3247
 from app.services.producer_listing import (  # MEH-2952
     is_live_owner_row,
     not_test_producer,
@@ -295,6 +296,7 @@ def create_event(
     # MEH-3224 (D6): a past date would publish a dead event and fire the
     # new-event alert to every follower.
     refuse_past_date(data.event_date)
+    assert_own_new_images(user, data.image_url)  # MEH-3247
     # MEH-3022: cap on UPCOMING events — past ones are history and never count.
     enforce_cap(
         db.query(Event)
@@ -421,6 +423,7 @@ def update_event(  # noqa: PLR0913 — all args are FastAPI-injected; MEH-3022 a
     # MEH-3224 (D6): moving an event INTO the past is refused; an edit that
     # leaves the stored date alone is not.
     refuse_past_date(changes.get("event_date"), event.event_date)  # type: ignore[arg-type]
+    assert_own_new_images(user, changes.get("image_url"), event.image_url)  # MEH-3247
     # MEH-2469: a PUT may carry only one of the pair, so the end-time rule is
     # checked against the values the row will hold after the update — never
     # against the payload alone.

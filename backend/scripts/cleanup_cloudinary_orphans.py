@@ -46,7 +46,9 @@ from app.services.image_refs import (  # noqa: E402
 
 logger = logging.getLogger("scripts.cleanup_cloudinary_orphans")
 
-DEFAULT_PREFIXES = ("mehamakor", "mehamakor/avatars")
+# MEH-3247: uploads now land in per-uploader folders (mehamakor/u/<key>/),
+# which the bare scan's depth-1 filter skips, so they get their own prefix.
+DEFAULT_PREFIXES = ("mehamakor", "mehamakor/avatars", "mehamakor/u")
 # Cloudinary's delete_resources accepts up to 100 public_ids per call per the
 # Admin API guidance: https://cloudinary.com/documentation/admin_api#delete_resources
 BATCH_SIZE_HARD_CAP = 100

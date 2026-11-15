@@ -53,6 +53,7 @@ from app.services.booking_cancellations import (  # MEH-3227
     item_state,
 )
 from app.services.date_rules import refuse_past_date  # MEH-3224
+from app.services.image_ownership import assert_own_new_images  # MEH-3247
 from app.services.experience_moderation import validate_experience
 from app.services.experience_notifications import (
     host_test_cause,
@@ -433,6 +434,7 @@ def submit_experience(
     if _min_above_max(data.min_participants, data.max_participants):
         raise HTTPException(status_code=422, detail=_MIN_ABOVE_MAX_DETAIL)
     refuse_past_date(data.event_date)  # MEH-3224 (D6)
+    assert_own_new_images(user, data.image_url)  # MEH-3247
     # MEH-2763: the method's prerequisite (mobile / phone / URL).
     problem = method_problem(
         data.registration_method,
@@ -592,6 +594,7 @@ def update_experience(  # noqa: PLR0913 — all args are FastAPI-injected; MEH-3
     payload = data.model_dump(exclude_unset=True)
     # MEH-3224 (D6): same rule as events.update_event.
     refuse_past_date(payload.get("event_date"), ex.event_date)  # type: ignore[arg-type]
+    assert_own_new_images(user, payload.get("image_url"), ex.image_url)  # MEH-3247
     # Only an edit that touches min or max is checked, so a stored pair that
     # is somehow already inverted never blocks an unrelated edit.
     touches_range = "min_participants" in payload or "max_participants" in payload

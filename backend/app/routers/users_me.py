@@ -130,6 +130,9 @@ def update_profile(
     # louder than the old handler-side check, and it can no longer be swallowed.
     sent = data.model_fields_set
     email_changed = False
+    from app.services.image_ownership import assert_own_new_images  # MEH-3247
+
+    assert_own_new_images(user, data.avatar_url, old_avatar)
 
     if "name" in sent and data.name is not None:
         user.name = data.name  # type: ignore[assignment]

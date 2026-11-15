@@ -1818,10 +1818,27 @@ POST /upload/owner-photo         auth+producer — MEH-1335 owner photo; no free
 > skips the destroy when one does (another business's photo, or the same photo
 > still in a gallery). A failed check skips too (fail closed). The column list
 > (`SCALAR_URL_SOURCES` / `ARRAY_URL_SOURCES`) is the same one the orphan sweep
-> `backend/scripts/cleanup_cloudinary_orphans.py` uses. Consequence: a photo
-> another row hot-links outlives the uploader's account deletion until that row
-> drops it (follow-up card). No upload ledger exists, so PUT still accepts a
-> foreign Cloudinary URL (follow-up card).
+> `backend/scripts/cleanup_cloudinary_orphans.py` uses.
+>
+> **Only your own photos (MEH-3247 part 2).** `POST /upload/image` stores into
+> `mehamakor/u/<owner_key>/` and `POST /upload/kashrut-cert` into
+> `mehamakor/kashrut/u/<owner_key>/` (`owner_key` = HMAC of the user id, so the
+> id is not in the URL). Every non-admin write that stores an image URL
+> (gallery + owner photo on PUT /producers/me, products, events, experiences,
+> recipes, PATCH /users/me avatar, rescue review photo, kashrut request,
+> home products) calls `services/image_ownership.assert_own_new_images`: a NEW
+> URL that mentions Cloudinary must be the canonical upload shape (no query,
+> transform or `..`), and if its public_id is in `mehamakor/` it must be in the
+> caller's own folder or her fixed avatar / owner-photo id → else **403**
+> «אפשר להוסיף רק תמונה שהעליתם בעצמכם. העלו את התמונה מחדש.». URLs already
+> on the row are not re-checked (old rows still save; an old flat-folder photo
+> moved into a different field is refused). `tests/test_meh3247_own_uploads_only.py`
+> fails on a route whose body carries an image field without the check.
+> Limits: no scrub on account deletion (no hot-links can be created any more,
+> and prod had no businesses before this); photos a former owner uploaded stay
+> on a business that changed owner (invite flow), by design. Never add a blind
+> delete-by-folder on account deletion — `destroy_image(db=)` already skips an
+> asset another row uses.
 
 ### Health (`app/routers/health.py`)
 

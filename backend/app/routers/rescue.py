@@ -1119,6 +1119,9 @@ def create_review(
             detail="אפשר לדרג רק אחרי שקיבלתם את הסל",
         )
 
+    from app.services.image_ownership import assert_own_new_images  # MEH-3247
+
+    assert_own_new_images(current_user, body.photo_url)
     review = RescueReview(
         order_id=order.id,
         rating=body.rating,

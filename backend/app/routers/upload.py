@@ -23,6 +23,7 @@ from app.config import settings
 from app.database import get_db
 from app.models import Producer, User
 from app.rate_limit import limiter
+from app.services.image_ownership import owner_key  # MEH-3247
 
 log = logging.getLogger("app.upload")
 
@@ -120,7 +121,9 @@ async def upload_image(
         result = await asyncio.to_thread(
             cloudinary.uploader.upload,
             contents,
-            folder="mehamakor",
+            # MEH-3247: per-uploader folder. image_ownership refuses a NEW
+            # image URL outside the caller's own folder on every write.
+            folder=f"mehamakor/u/{owner_key(user.id)}",
             public_id=uuid.uuid4().hex,
             resource_type="image",
             transformation=[{"width": 1200, "crop": "limit"}],
@@ -347,7 +350,7 @@ async def upload_kashrut_cert(
         result = await asyncio.to_thread(
             cloudinary.uploader.upload,
             contents,
-            folder="mehamakor/kashrut",
+            folder=f"mehamakor/kashrut/u/{owner_key(user.id)}",  # MEH-3247
             public_id=uuid.uuid4().hex,
             resource_type="image",
             transformation=[{"width": 1200, "crop": "limit"}],

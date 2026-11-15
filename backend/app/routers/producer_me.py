@@ -46,6 +46,7 @@ from app.services.auth_notifications import (
 from app.services import indexnow  # MEH-2852
 from app.services.owner_attention import owner_attention  # MEH-3108
 from app.services.gallery_cap import assert_free_gallery_cap  # MEH-3220
+from app.services.image_ownership import assert_own_new_images  # MEH-3247
 from app.services.phone_reverify import reset_verification_if_phone_changed  # grill B8
 from app.services.submission_gate import (
     attach_upcoming_events_count,
@@ -929,6 +930,12 @@ def update_my_producer(
     _assert_keeps_a_photo(producer, payload, old_images)
     # MEH-3220: the free-plan 3-photo cap belongs to the gallery write.
     assert_free_gallery_cap(producer, payload, old_images)
+    # MEH-3247: a business stores only photos she uploaded herself.
+    assert_own_new_images(
+        user,
+        [*(payload.get("images") or []), payload.get("owner_photo_url")],
+        [*old_images, producer.owner_photo_url],
+    )
 
     for field, value in payload.items():
         if field in _PRODUCER_WRITABLE_FIELDS:
@@ -1189,6 +1196,7 @@ def create_my_product(
         db.query(Product).filter(Product.producer_id == user.producer_id).count(),
         "products",
     )
+    assert_own_new_images(user, data.image_url)  # MEH-3247
     product = Product(producer_id=user.producer_id, **data.model_dump())
     db.add(product)
     db.commit()
@@ -1236,7 +1244,9 @@ def update_my_product(
     )
     if not product:
         raise HTTPException(status_code=404, detail="מוצר לא נמצא")
-    for field, value in data.model_dump(exclude_unset=True).items():
+    changes = data.model_dump(exclude_unset=True)
+    assert_own_new_images(user, changes.get("image_url"), product.image_url)  # MEH-3247
+    for field, value in changes.items():
         setattr(product, field, value)
     db.commit()
     db.refresh(product)
