@@ -6,7 +6,7 @@ import { Crosshair, X } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import CitySearch from "@/components/CitySearch";
 import { useFocusReturn } from "@/lib/use-focus-return";
-import { setUserLocation } from "@/lib/user-location";
+import { roundCoord, setUserLocation } from "@/lib/user-location";
 import Button from "@/components/ui/Button";
 import InlineMessage from "@/components/ui/InlineMessage";
 import ButtonSpinner from "@/components/ButtonSpinner";
@@ -128,9 +128,12 @@ export default function LocationModal({ open, onClose, onSelectCity }) {
         // resolves a city name for the filter), so persistence never depends on
         // Nominatim succeeding. Third and last geolocate flow after MEH-1230.
         setUserLocation(pos.coords.latitude, pos.coords.longitude);
+        // MEH-3219 (B17): OpenStreetMap gets the rounded point, never the raw fix.
+        const lat = roundCoord(pos.coords.latitude);
+        const lng = roundCoord(pos.coords.longitude);
         try {
           const res = await fetch(
-            `https://nominatim.openstreetmap.org/reverse?lat=${pos.coords.latitude}&lon=${pos.coords.longitude}&format=json&accept-language=he`,
+            `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=he`,
           );
           const data = await res.json();
           const city =

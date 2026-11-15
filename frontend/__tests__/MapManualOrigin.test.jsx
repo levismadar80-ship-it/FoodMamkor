@@ -235,8 +235,8 @@ describe("MEH-2014 PR 2 — a picked city becomes the sort origin", () => {
 
     expect(geocodeCity).toHaveBeenCalledWith("חיפה");
     expect(stored()).toEqual({
-      lat: 32.794,
-      lng: 34.9896,
+      lat: 32.79, // stored rounded to ~1 km (MEH-3219 B17)
+      lng: 34.99,
       source: "city",
       city: "חיפה",
     });

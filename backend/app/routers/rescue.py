@@ -113,6 +113,7 @@ from app.services.rescue_no_show import (  # MEH-3226
     queue_no_show_email,
 )
 from app.utils.clock import israel_today, utc_now
+from app.utils.pii import round_coord
 
 logger = logging.getLogger(__name__)
 
@@ -491,6 +492,8 @@ def list_offers(
     Sold-out and cancelled offers are omitted rather than greyed out: the list
     is "what you can still get tonight", and chunk 4 has no empty-stock state.
     """
+    # MEH-3219 (B17): never use a visitor's exact point — ~1 km is enough.
+    lat, lng = round_coord(lat), round_coord(lng)
     today = israel_today()
     q = (
         db.query(RescueOffer)

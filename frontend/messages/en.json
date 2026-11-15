@@ -4069,7 +4069,7 @@
           },
           "location": {
             "label": "Location data:",
-            "value": "Approximate location (only if you grant browser permission), to display nearby businesses on the map."
+            "value": "Approximate location (only if you allowed it in your browser), used to show nearby businesses. It is rounded to about one kilometre before it is saved on your device or sent to our server. On the map itself, the area shown is loaded directly from the map provider."
           },
           "cookies": {
             "label": "Cookies and behavioral data:",
@@ -4111,7 +4111,8 @@
         "intro": "We use external service providers to operate the platform. Each is subject to its own privacy policy:",
         "items": {
           "cloudinary": "<b>Cloudinary</b> — storage and processing of images uploaded by users.",
-          "google": "<b>Google</b> — Google OAuth for sign-in and Google Fonts.",
+          "google": "<b>Google</b> — Google OAuth for sign-in, Google Fonts, and address search (Google Places) in forms.",
+          "osm": "<b>OpenStreetMap</b> — the site's maps, and address search when no other provider is available. When a map loads, your browser contacts OpenStreetMap's servers and they see which area is shown. When you allow location, a rounded location is sent to them to find the name of your town.",
           "anthropic": "<b>Anthropic</b> — artificial-intelligence services (Claude). Some of the content you provide is sent to Anthropic's models in order to operate the service: (1) messages you write in the support chat — to provide a response; (2) content you submit for publication (product, recipe, and experience listings, and reviews) — for automated content moderation before publication; (3) business-registration details — for automated risk screening and to generate a business description (if you requested it). The content is sent solely to operate the service, is not sold, and is not used to train Anthropic's models.",
           "meta": "<b>Meta (WhatsApp Cloud API)</b> — operational WhatsApp messages (signup confirmations, status updates, notifications).",
           "resend": "<b>Resend</b> — operational email (account verification, password reset, updates).",

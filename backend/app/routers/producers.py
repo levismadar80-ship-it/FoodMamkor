@@ -77,6 +77,7 @@ from app.services.producer_queries import (
     get_producer_or_404,
 )
 from app.utils.clock import utc_now
+from app.utils.pii import round_coord
 
 logger = structlog.get_logger(__name__)
 router = APIRouter(tags=["producers"])
@@ -236,6 +237,8 @@ def list_producers(
     response: Response = None,  # type: ignore[assignment]  # FastAPI injects it; widening the annotation would change param parsing
     db: Session = Depends(get_db),
 ) -> list[ProducerListOut] | list[Producer]:
+    # MEH-3219 (B17): never use a visitor's exact point — ~1 km is enough.
+    lat, lng = round_coord(lat), round_coord(lng)
     # MEH-1483: validate the sort axis explicitly (the router's manual-422
     # pattern, cf. record_contact_click). None/"newest" = default created_at
     # DESC; "rating" = avg_rating DESC nulls-last. An unknown value 422s rather
