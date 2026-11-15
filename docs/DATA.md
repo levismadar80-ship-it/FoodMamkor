@@ -1385,7 +1385,8 @@ POST   /registrations/{token}/cancel      public — idempotent; first cancel em
 
 Emails (`services/registration_emails.py`, fail-open, queued after commit):
 visitor confirmation with the cancel link; owner «הרשמה חדשה» with name,
-phone, email and «נשארו N מקומות»; owner «ביטול הרשמה». A home experience's
+phone, email and «נשארו N מקומות»; owner «ביטול הרשמה»; visitor «תזכורת:
+"…" מחר» the evening before (MEH-3312, daily job). A home experience's
 address never goes in the visitor email (city only, MEH-1417).
 
 No per-event moderation. An **approved** producer publishes and it's live;

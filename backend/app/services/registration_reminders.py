@@ -16,6 +16,7 @@ History:  MEH-3312 (creation)
 
 from __future__ import annotations
 
+import logging
 from datetime import date, timedelta
 from typing import Any
 
@@ -25,6 +26,8 @@ from app.models.models import Event, Experience, Registration
 from app.services.booking_cancellations import is_test_item, registrant_message
 from app.services.registration_emails import send_registration_reminder
 from app.utils.clock import israel_today, utc_now
+
+logger = logging.getLogger(__name__)
 
 
 def _due(db: Session, tomorrow: date) -> list[tuple[Registration, Event | Experience]]:
@@ -75,7 +78,14 @@ def send_registration_reminders(db: Session, today: date | None = None) -> int:
             )
     db.commit()
     # After the commit: a crash mid-send never re-sends the rows already
-    # stamped, and send_email is fail-open, so one bad address stops nothing.
+    # stamped (a lost reminder beats a doubled one).
+    sent = 0
     for to, message, test_cause in queued:
-        send_registration_reminder(to, message, test_cause=test_cause)
-    return len(queued)
+        # MEH-3312: one row that fails to build or send never drops the rest
+        # of the evening — every row is already stamped, nothing retries.
+        try:
+            send_registration_reminder(to, message, test_cause=test_cause)
+            sent += 1
+        except Exception:  # noqa: BLE001 — logged; the next row still goes out
+            logger.exception("registration reminder failed")
+    return sent

@@ -80,6 +80,46 @@ def test_one_off_workshop_is_reminded_recurring_is_not(db, sent):
     assert sent[0][1].place == "בנימינה"  # a home address stays private
 
 
+def test_unapproved_or_inactive_workshop_is_skipped(db, sent):
+    _, owner = _business(db)
+    pending = _on(db, _experience(db, owner), TOMORROW)
+    pending.status = "pending"
+    _signup(db, pending, "pending@example.com")
+    off = _on(db, _experience(db, owner), TOMORROW)
+    off.is_active = False
+    _signup(db, off, "off@example.com")
+    db.commit()
+    assert mod.send_registration_reminders(db, today=TODAY) == 0
+    assert sent == []
+
+
+def test_a_test_business_mails_the_test_sink(db, sent):
+    producer, _ = _business(db)
+    producer.is_test = True
+    db.commit()
+    _signup(db, _on(db, _event(db, producer), TOMORROW), "a@example.com")
+    mod.send_registration_reminders(db, today=TODAY)
+    assert [tc for _, _, tc in sent] == [True]
+
+
+def test_one_failing_row_does_not_drop_the_rest(db, monkeypatch):
+    producer, _ = _business(db)
+    ev = _on(db, _event(db, producer), TOMORROW)
+    _signup(db, ev, "a@example.com")
+    _signup(db, ev, "b@example.com")
+    got = []
+
+    def flaky(to, m, test_cause=False):
+        if not got:
+            got.append("boom")
+            raise RuntimeError("render failed")
+        got.append(to)
+
+    monkeypatch.setattr(mod, "send_registration_reminder", flaky)
+    assert mod.send_registration_reminders(db, today=TODAY) == 1
+    assert len(got) == 2
+
+
 def test_rows_are_stamped(db, sent):
     producer, _ = _business(db)
     ev = _on(db, _event(db, producer), TOMORROW)
