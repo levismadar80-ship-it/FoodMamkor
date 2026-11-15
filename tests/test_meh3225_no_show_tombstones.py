@@ -37,7 +37,11 @@ def _no_show(db, shop, buyer, code, *, hours_ago=1):
     )
     db.add(
         RescueOrder(
-            offer_id=offer.id, user_id=buyer.id, qty=1, pickup_code=code, status="no_show"
+            offer_id=offer.id,
+            user_id=buyer.id,
+            qty=1,
+            pickup_code=code,
+            status="no_show",
         )
     )
     db.commit()
@@ -57,12 +61,16 @@ def _delete_with_two_no_shows(client, db, shop, **kw):
     old = make_user(db, email=EMAIL)
     _no_show(db, shop, old, "0001", **kw)
     _no_show(db, shop, old, "0002", **kw)
-    r = client.delete("/auth/me", headers=auth_header(old))
+    r = client.post(
+        "/auth/me/delete", json={"password": "Zx7Yp9Mq2Lr4"}, headers=auth_header(old)
+    )
     assert r.status_code == 200, r.text
     db.expire_all()
 
 
-def test_a_new_account_with_the_same_email_is_still_blocked(client, db, shop, rescue_on):
+def test_a_new_account_with_the_same_email_is_still_blocked(
+    client, db, shop, rescue_on
+):
     _delete_with_two_no_shows(client, db, shop)
     again = make_user(db, email=EMAIL)
     r = _reserve(client, db, shop, again)

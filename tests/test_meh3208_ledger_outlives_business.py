@@ -57,7 +57,9 @@ def test_an_owner_deleting_her_account_keeps_the_ledger_rows(client, db):
     producer_id = producer.id
     row_id = _counted(db, producer)
 
-    r = client.delete("/auth/me", headers=auth_header(owner))
+    r = client.post(
+        "/auth/me/delete", json={"password": "Zx7Yp9Mq2Lr4"}, headers=auth_header(owner)
+    )
     assert r.status_code == 200, r.text
     assert db.query(Producer).filter(Producer.id == producer_id).first() is None
 
