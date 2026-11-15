@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 /**
@@ -55,4 +56,3 @@ export function useLaunchCohortTag(user) {
   }, [user]);
 }
 
-export { LAUNCH_START, LAUNCH_END };

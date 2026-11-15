@@ -311,6 +311,33 @@ class TestMyGroupBuys:
         resp = client.get(self.URL)
         assert resp.status_code == 401
 
+    def test_units_total_is_the_sum_of_quantities_and_owner_only(self, client, db):
+        """MEH-3254 (grill retro D7): the business sees how many units to
+        prepare — a number, never a roster (MEH-1651). Public readers keep
+        `units_total` null."""
+        producer, owner = _producer_user(db, email="mine6@test.com")
+        gb = _make_group_buy(db, producer, status="funded")
+        empty = _make_group_buy(db, producer)
+        for i, qty in enumerate((3, 5)):
+            buyer = make_user(db, role="consumer", email=f"units{i}@example.com")
+            db.add(GroupBuyCommit(group_buy_id=gb.id, user_id=buyer.id, quantity=qty))
+        db.commit()
+        resp = client.get(self.URL, headers=auth_header(owner))
+        rows = {r["id"]: r for r in resp.json()}
+        assert rows[str(gb.id)]["units_total"] == 8
+        assert rows[str(empty.id)]["units_total"] == 0
+        public = client.get(f"/group-buys/{gb.id}").json()
+        assert public.get("units_total") is None
+        # Another business's commits never reach this owner's rows.
+        other, _ = _producer_user(db, email="other6@test.com")
+        theirs = _make_group_buy(db, other, status="funded")
+        stranger = make_user(db, role="consumer", email="units9@example.com")
+        db.add(GroupBuyCommit(group_buy_id=theirs.id, user_id=stranger.id, quantity=40))
+        db.commit()
+        rows = {r["id"]: r for r in client.get(self.URL, headers=auth_header(owner)).json()}
+        assert set(rows) == {str(gb.id), str(empty.id)}
+        assert rows[str(gb.id)]["units_total"] == 8
+
 
 # ---------- create ----------
 class TestCreate:
@@ -852,7 +879,7 @@ class TestFundedNotificationPrivacy:
     def test_producer_body_has_no_contact_details_and_pins_content(self):
         sent = {}
 
-        def _capture(to, subject, body, html=None):
+        def _capture(to, subject, body, html=None, test_cause=False):
             sent.update(to=to, subject=subject, body=body)
 
         with mock.patch(
@@ -873,7 +900,7 @@ class TestFundedNotificationPrivacy:
     def test_participant_body_has_no_contact_details_and_pins_content(self):
         sent = {}
 
-        def _capture(to, subject, body, html=None):
+        def _capture(to, subject, body, html=None, test_cause=False):
             sent.update(to=to, subject=subject, body=body)
 
         with mock.patch(
@@ -906,7 +933,7 @@ class TestFundedNotificationDispatch:
         sends = []
         monkeypatch.setattr(
             "app.services.group_buy_notifications.send_email",
-            lambda to, subject, body, html=None: sends.append(
+            lambda to, subject, body, html=None, test_cause=False: sends.append(
                 {"to": to, "subject": subject, "body": body}
             ),
         )
@@ -1382,7 +1409,7 @@ class TestCancelNotification:
         sends = []
         monkeypatch.setattr(
             "app.services.group_buy_notifications.send_email",
-            lambda to, subject, body, html=None: sends.append(
+            lambda to, subject, body, html=None, test_cause=False: sends.append(
                 {"to": to, "subject": subject, "body": body}
             ),
         )
@@ -1409,7 +1436,7 @@ class TestCancelNotification:
     def test_template_wording_and_no_contact_details(self):
         sent = {}
 
-        def _capture(to, subject, body, html=None):
+        def _capture(to, subject, body, html=None, test_cause=False):
             sent.update(to=to, subject=subject, body=body)
 
         with mock.patch("app.services.group_buy_notifications.send_email", _capture):

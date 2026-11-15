@@ -155,7 +155,7 @@ class TestSubmitFiresNotification:
 
         resp = client.post("/category-requests", json={"requested_name": "מותססים"})
         assert resp.status_code == 201
-        notify.assert_called_once_with("מותססים", None)
+        notify.assert_called_once_with("מותססים", None, test_cause=False)
 
     def test_producer_submission_notifies_with_business_name(
         self, client, db, monkeypatch
@@ -173,7 +173,7 @@ class TestSubmitFiresNotification:
             headers=auth_header(owner),
         )
         assert resp.status_code == 201
-        notify.assert_called_once_with("מותססים", producer.name)
+        notify.assert_called_once_with("מותססים", producer.name, test_cause=False)
 
     def test_invalid_request_does_not_notify(self, client, monkeypatch):
         notify = _capture_notify(monkeypatch)

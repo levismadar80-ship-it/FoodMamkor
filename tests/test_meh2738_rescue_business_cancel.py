@@ -25,8 +25,8 @@ def _capture(monkeypatch):
     sent = []
     monkeypatch.setattr(
         "app.services.rescue_emails.send_email",
-        lambda to, subject, body, html=None, reply_to=None: sent.append(
-            {"to": to, "subject": subject, "body": body, "html": html}
+        lambda to, subject, body, html=None, reply_to=None, test_cause=False: (
+            sent.append({"to": to, "subject": subject, "body": body, "html": html})
         ),
     )
     return sent

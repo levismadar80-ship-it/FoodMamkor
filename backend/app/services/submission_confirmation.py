@@ -9,7 +9,7 @@ Does NOT: decide whether the submission was valid (submission_gate.py owns
           that), notify the admin (auth_notifications.notify_admin_new_producer,
           fired from the same endpoint), or nudge a business that has NOT
           submitted (pending_nudge.py).
-Related:  app/routers/producer_me.py submit_for_review (the only caller),
+Related:  app/routers/producer_me_review.py submit_for_review (the only caller),
           app/utils/clock.py (Israel-local date), MEH-2110's badge — the same
           promise, rendered on the admin's side of the queue.
 History:  MEH-2112 (creation); MEH-2113 (reply-to moved to the published
@@ -96,7 +96,10 @@ def build_submission_confirmation(
 
 
 def send_submission_confirmation(
-    to: str, business_name: str, submitted_at: datetime
+    to: str,
+    business_name: str,
+    submitted_at: datetime,
+    test_cause: bool = False,
 ) -> None:
     """Email the owner that her profile is in the review queue.
 
@@ -106,4 +109,5 @@ def send_submission_confirmation(
     — and cannot — turn a successful submit into an error for the owner.
     """
     subject, body = build_submission_confirmation(business_name, submitted_at)
-    send_email(to, subject, body, reply_to=SUPPORT_REPLY_TO)
+    # MEH-2952: `test_cause` — the submitting business is a test row.
+    send_email(to, subject, body, reply_to=SUPPORT_REPLY_TO, test_cause=test_cause)

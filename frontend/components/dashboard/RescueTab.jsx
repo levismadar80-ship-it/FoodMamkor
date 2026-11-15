@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -5,11 +6,16 @@ import { useTranslations } from "next-intl";
 import { Link as LocaleLink } from "@/i18n/navigation";
 
 import api from "@/lib/api";
+import { israelToday } from "@/lib/israel-date";
 import { ALLERGEN_CODES, toggleAllergen } from "@/lib/allergens";
-import { detailToMessage, errorMessage } from "@/lib/errors";
+import { detailToMessage, errorMessage, isUnverifiedEmailError } from "@/lib/errors";
 import { israelTime, leftoverGroupUrl, shekels } from "@/lib/rescue";
 import Button from "@/components/ui/Button";
+import UnverifiedEmailNotice from "@/components/UnverifiedEmailNotice";
+import { useOptionalAuth } from "@/lib/auth-context";
 import { showToast } from "@/lib/toast";
+import { shareOrCopyText } from "@/lib/share-link";
+import Input from "@/components/ui/Input";
 
 /**
  * Module:   RescueTab
@@ -22,11 +28,6 @@ import { showToast } from "@/lib/toast";
  * History:  MEH-2649 (creation, chunk 5 of the rescue-bags pilot MEH-2643)
  */
 const MAX_QTY = 20;
-
-// The calendar date in Israel, YYYY-MM-DD. `toISOString()` is UTC, which is
-// still yesterday between midnight and 02:00/03:00 Israel time, and the server
-// refuses a bag dated in the past (MEH-2678).
-const ISRAEL_DATE = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Jerusalem" });
 
 const ORDER_RANK = { reserved: 0, handed: 1, no_show: 2, cancelled: 3 };
 // Minutes before pickup_start that free cancellation ends, and the message key.
@@ -41,6 +42,8 @@ const AT = { code: "code", orders: "orders", cancel: "cancel", publish: "publish
 
 export default function RescueTab() {
   const t = useTranslations("rescue.dashboard");
+  const emailUnverified = useOptionalAuth()?.user?.email_verified === false; // MEH-2918
+  const [unverifiedHits, setUnverifiedHits] = useState(0);
   const tShare = useTranslations("share");
   const tCopied = useTranslations("dashboard.producer.vanity_link");
   // The allergen LABELS are the product sheet's, not a second copy: one
@@ -78,7 +81,15 @@ export default function RescueTab() {
   // empty selection into null on the wire; see allergens.py for why [] must
   // never persist.
   const [allergens, setAllergens] = useState([]);
-  const [form, setForm] = useState({ qty_total: 4, price: 15, from: "18:00", to: "20:00", cancelMin: 30 });
+  const [form, setForm] = useState(
+    /** @type {{ qty_total: number | string, price: number | string, from: string, to: string, cancelMin: number | string }} */ ({
+      qty_total: 4,
+      price: 15,
+      from: "18:00",
+      to: "20:00",
+      cancelMin: 30,
+    }),
+  );
   // MEH-2678: the tab loads its own pickup points. It used to take them as a
   // prop that the only page rendering it never passed, so every publish
   // answered «צריך נקודת איסוף». The API lists the primary first.
@@ -233,7 +244,7 @@ export default function RescueTab() {
     try {
       await api.post("/rescue/offers", {
         producer_location_id: location.id,
-        date: ISRAEL_DATE.format(day),
+        date: israelToday(day), // Israel calendar day, not UTC (MEH-2678)
         qty_total: Number(form.qty_total),
         price_agorot: Number(form.price) * 100,
         pickup_start: iso(form.from),
@@ -243,7 +254,11 @@ export default function RescueTab() {
       setNotice("publish", t("published"), false);
       await load();
     } catch (err) {
-      setNotice("publish", reason(err));
+      // MEH-2918: one email notice, not the 403 text beside it a second time.
+      if (isUnverifiedEmailError(err)) {
+        clearNotice();
+        setUnverifiedHits((h) => h + 1);
+      } else setNotice("publish", reason(err));
     }
   }
 
@@ -294,22 +309,9 @@ export default function RescueTab() {
     city: exactLocation?.city || "",
   });
   async function shareLeftover() {
-    if (typeof navigator !== "undefined" && navigator.share) {
-      try {
-        await navigator.share({ text: leftoverText });
-        return;
-      } catch (err) {
-        // Cancelled is her answer; any other failure falls through to the
-        // copy below, so the tap still does something (review of #4178).
-        if (err?.name === "AbortError") return;
-      }
-    }
-    try {
-      await navigator.clipboard.writeText(leftoverText);
-      showToast.success(tCopied("copied"));
-    } catch {
-      // no clipboard either
-    }
+    // MEH-2996: the site's one share sequence (lib/share-link.js).
+    const outcome = await shareOrCopyText({ data: { text: leftoverText }, copyText: leftoverText });
+    if (outcome === "copied") showToast.success(tCopied("copied"));
   }
 
   // `total` bags spread over today's offers in order, each capped at its own
@@ -377,7 +379,7 @@ export default function RescueTab() {
 
       <div className="space-y-2" data-notice-scope="code">
         <div className="flex gap-2">
-          <input
+          <Input inline size="sm"
             value={code}
             onChange={(e) => setCode(e.target.value)}
             inputMode="numeric"
@@ -386,7 +388,7 @@ export default function RescueTab() {
             placeholder={t("code_placeholder")}
             aria-label={t("code_label")}
             data-testid="rescue-code-input"
-            className="flex-1 border border-border rounded-md px-3 py-2 text-center tracking-[0.3em]"
+            className="flex-1 text-center tracking-[0.3em]"
           />
           <Button
             type="button"
@@ -436,7 +438,7 @@ export default function RescueTab() {
                       disabled={busyId === o.id}
                       onClick={() => act(o, "handed")}
                       data-testid="rescue-order-hand"
-                      className="whitespace-nowrap bg-primary text-white px-3 py-1 rounded-md font-body-sm text-sm disabled:opacity-50"
+                      className="whitespace-nowrap bg-primary text-white px-3 py-1 rounded-full font-body-sm text-sm disabled:opacity-50"
                     >
                       {t("hand_over")}
                     </button>
@@ -446,7 +448,7 @@ export default function RescueTab() {
                       title={windowClosed ? undefined : t("no_show_too_early")}
                       onClick={() => act(o, "no_show")}
                       data-testid="rescue-order-noshow"
-                      className="whitespace-nowrap border border-border px-3 py-1 rounded-md font-body-sm text-sm disabled:opacity-40"
+                      className="whitespace-nowrap border border-border px-3 py-1 rounded-md font-body-sm text-sm disabled:opacity-50"
                     >
                       {t("no_show")}
                     </button>
@@ -553,28 +555,30 @@ export default function RescueTab() {
       ) : (
         <section className="border border-border rounded-md px-4 py-4 space-y-3" data-notice-scope="publish">
           <h3 className="font-headline-md text-base font-black text-text">{t("publish_title")}</h3>
+          {/* MEH-2918: say it before the fields — publish 403s without it (rescue.py:340). */}
+          {(emailUnverified || unverifiedHits > 0) && <UnverifiedEmailNotice key={unverifiedHits} live={unverifiedHits > 0} focusOnMount={unverifiedHits > 0} />}
           <div className="grid grid-cols-2 gap-3">
             <label className="font-body-sm text-sm">
               {t("field.qty")}
-              <input
+              <Input inline size="xs"
                 type="number"
                 min={1}
                 max={MAX_QTY}
                 value={form.qty_total}
                 onChange={(e) => setForm({ ...form, qty_total: e.target.value })}
                 data-testid="rescue-publish-qty"
-                className="w-full border border-border rounded-md px-2 py-1 mt-1"
+                className="w-full mt-1"
               />
             </label>
             <label className="font-body-sm text-sm">
               {t("field.price")}
-              <input
+              <Input inline size="xs"
                 type="number"
                 min={0}
                 value={form.price}
                 onChange={(e) => setForm({ ...form, price: e.target.value })}
                 data-testid="rescue-publish-price"
-                className="w-full border border-border rounded-md px-2 py-1 mt-1"
+                className="w-full mt-1"
               />
             </label>
             <label className="font-body-sm text-sm min-w-0">
@@ -582,23 +586,23 @@ export default function RescueTab() {
               {/* MEH-2730: iOS Safari draws a time input wider than its grid
                   column (it overflowed the card on Sapir's iPhone); min-w-0
                   on both the grid item and the input lets it shrink. */}
-              <input
+              <Input inline size="xs"
                 type="time"
                 value={form.from}
                 onChange={(e) => setForm({ ...form, from: e.target.value })}
                 data-testid="rescue-publish-from"
-                className="block w-full min-w-0 border border-border rounded-md px-2 py-1 mt-1"
+                className="block w-full min-w-0 mt-1"
               />
             </label>
             <label className="font-body-sm text-sm min-w-0">
               {t("field.to")}
               {/* MEH-2730: min-w-0 for iOS, see the «from» field above. */}
-              <input
+              <Input inline size="xs"
                 type="time"
                 value={form.to}
                 onChange={(e) => setForm({ ...form, to: e.target.value })}
                 data-testid="rescue-publish-to"
-                className="block w-full min-w-0 border border-border rounded-md px-2 py-1 mt-1"
+                className="block w-full min-w-0 mt-1"
               />
             </label>
             <label className="font-body-sm text-sm col-span-2">
@@ -607,7 +611,7 @@ export default function RescueTab() {
                 value={form.cancelMin}
                 onChange={(e) => setForm({ ...form, cancelMin: Number(e.target.value) })}
                 data-testid="rescue-publish-cancel"
-                className="w-full border border-border rounded-md px-2 py-1 mt-1 bg-surface-card text-text"
+                className="w-full border border-border rounded-sm px-2 py-1 mt-1 bg-surface-card text-text focus-ring"
               >
                 {CANCEL_CUTOFFS.map(([minutes, key]) => (
                   <option key={minutes} value={minutes}>
@@ -640,12 +644,12 @@ export default function RescueTab() {
       <section className="border border-border rounded-md px-4 py-4 space-y-2" data-notice-scope="items">
         <h3 className="font-headline-md text-base font-black text-text">{t("items_title")}</h3>
         <p className="font-body-sm text-sm text-fg-muted">{t("items_help")}</p>
-        <input
+        <Input inline size="sm"
           value={items}
           onChange={(e) => setItems(e.target.value)}
           aria-label={t("items_title")}
           data-testid="rescue-items-input"
-          className="w-full border border-border rounded-md px-3 py-2"
+          className="w-full"
         />
 
         {/* MEH-2752: what this business declares about ITS bag. Before this,
@@ -714,7 +718,7 @@ export default function RescueTab() {
                 type="button"
                 onClick={shareLeftover}
                 data-testid="rescue-leftover-share"
-                className="block w-full text-center bg-primary text-background py-2 rounded-md font-medium"
+                className="block w-full text-center bg-primary text-background py-2 rounded-full font-medium"
               >
                 {tShare("trigger")}
               </button>
@@ -724,7 +728,7 @@ export default function RescueTab() {
               target="_blank"
               rel="noopener noreferrer"
               data-testid="rescue-leftover-link"
-              className="block text-center border border-primary text-primary py-2 rounded-md font-medium"
+              className="block text-center border border-primary text-primary py-2 rounded-full font-medium"
             >
               {t("leftover_link")}
             </a>
@@ -737,7 +741,7 @@ export default function RescueTab() {
                 onClick={() => markDonated(0)}
                 disabled={donating}
                 data-testid="rescue-leftover-undo"
-                className="underline text-primary font-medium disabled:opacity-60"
+                className="underline text-primary font-medium disabled:opacity-50"
               >
                 {t("leftover_undo")}
               </button>
@@ -753,7 +757,7 @@ export default function RescueTab() {
                   value={chosenQty}
                   onChange={(e) => setDonateQty(Number(e.target.value))}
                   data-testid="rescue-leftover-qty"
-                  className="border border-border rounded-md px-2 py-1 bg-surface text-text"
+                  className="border border-border rounded-sm px-2 py-1 bg-surface text-text focus-ring"
                 >
                   {Array.from({ length: leftoverTotal }, (_, i) => i + 1).map((n) => (
                     <option key={n} value={n}>

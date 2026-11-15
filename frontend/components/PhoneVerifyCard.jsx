@@ -1,12 +1,15 @@
+// @ts-check
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ChatCircleText } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import api from "@/lib/api";
 import { detailToMessage } from "@/lib/errors";
 import { showToast } from "@/lib/toast";
 import Button from "@/components/ui/Button";
+import InlineMessage from "@/components/ui/InlineMessage";
+import Input from "@/components/ui/Input";
 
 /**
  * PhoneVerifyCard — producer-facing WhatsApp OTP flow.
@@ -57,7 +60,14 @@ function forgetOtpSent() {
   }
 }
 
-export default function PhoneVerifyCard({ onVerified }) {
+/**
+ * @param {{ onVerified?: () => void, variant?: "submit" | "reverify" }} props
+ * `reverify` (grill B8): a live business whose number changed. Its own title,
+ * no "before review" description, and the server's own success sentence
+ * (the submit-flow toast talks about sending for review).
+ */
+export default function PhoneVerifyCard({ onVerified, variant = "submit" }) {
+  const reverify = variant === "reverify";
   const t = useTranslations("dashboard.producer.phone_verify");
   const [codeSent, setCodeSent] = useState(false);
   const [code, setCode] = useState("");
@@ -65,6 +75,10 @@ export default function PhoneVerifyCard({ onVerified }) {
   const [confirming, setConfirming] = useState(false);
   const [error, setError] = useState("");
   const [cooldown, setCooldown] = useState(0);
+  // MEH-3126: the last code sent on its own at 6 digits. A wrong code is not
+  // re-sent until it changes, so a failed auto-verify can't loop or burn the
+  // rate limit; the confirm button still sends it on purpose.
+  const lastAutoRef = useRef("");
 
   // MEH-2481: a reload used to hide the code box, so the seller asked for a
   // NEW code — which invalidated the one already on her phone (measured on
@@ -90,6 +104,7 @@ export default function PhoneVerifyCard({ onVerified }) {
     setError("");
     try {
       await api.post("/producers/me/verify-phone");
+      lastAutoRef.current = ""; // a new code: anything typed may auto-send again
       setCodeSent(true);
       setCooldown(RESEND_COOLDOWN_SECONDS);
       rememberOtpSent();
@@ -97,28 +112,46 @@ export default function PhoneVerifyCard({ onVerified }) {
       const sc = err.response?.status;
       if (sc === 400) setError(t("error_no_phone"));
       else if (sc === 429) showToast.error(detailToMessage(err.response?.data?.detail) || t("error_rate_limited"));
+      // MEH-2122 B: the WhatsApp send itself failed — say so, not "something".
+      else if (sc === 503) setError(t("error_send_failed"));
       else setError(t("error_generic"));
     } finally {
       setSending(false);
     }
   };
 
-  const handleConfirm = async () => {
-    if (confirming || code.length !== OTP_LENGTH) return;
+  const handleConfirm = async (value = code) => {
+    if (confirming || value.length !== OTP_LENGTH) return;
     setConfirming(true);
     setError("");
     try {
-      await api.post("/producers/me/verify-phone/confirm", { code });
+      const res = await api.post("/producers/me/verify-phone/confirm", { code: value });
       forgetOtpSent();
-      showToast.success(t("success"));
+      showToast.success(reverify && res?.data?.detail ? res.data.detail : t("success"));
       onVerified?.();
     } catch (err) {
       const sc = err.response?.status;
       if (sc === 400) setError(t("error_invalid"));
       else if (sc === 429) showToast.error(detailToMessage(err.response?.data?.detail) || t("error_rate_limited"));
       else setError(t("error_generic"));
+      // MEH-3126: a server/network failure says nothing about the code, so
+      // retyping it may auto-send again. A wrong code (400) or a rate limit
+      // (429) stays blocked until it changes; the button still sends.
+      if (sc !== 400 && sc !== 429) lastAutoRef.current = "";
     } finally {
       setConfirming(false);
+    }
+  };
+
+  // MEH-3126: typing or pasting the 6th digit verifies on its own (no tap).
+  // Digits are filtered BEFORE the length cap, so a pasted «123 456» or
+  // «123-456» keeps all six (a maxLength attribute would cut it at the space).
+  const handleCodeChange = (e) => {
+    const next = e.target.value.replace(/\D/g, "").slice(0, OTP_LENGTH);
+    setCode(next);
+    if (next.length === OTP_LENGTH && next !== lastAutoRef.current && !confirming) {
+      lastAutoRef.current = next;
+      handleConfirm(next);
     }
   };
 
@@ -129,12 +162,12 @@ export default function PhoneVerifyCard({ onVerified }) {
       : t("send_cta");
 
   return (
-    <div className="mt-3 bg-surface border border-primary/20 rounded-md p-4">
-      <p className="font-semibold text-text mb-1 inline-flex items-center gap-1.5">
+    <div data-testid={reverify ? "phone-reverify-card" : undefined} className="mt-3 bg-surface border border-primary/20 rounded-md p-4">
+      <p className={`font-semibold text-text flex items-center gap-1.5 ${reverify ? "mb-3" : "mb-1"}`}>
         <ChatCircleText size={18} className="text-primary" aria-hidden="true" />
-        {t("title")}
+        {reverify ? t("reverify_title") : t("title")}
       </p>
-      <p className="text-xs text-fg-muted mb-3">{t("description")}</p>
+      {!reverify && <p className="text-xs text-fg-muted mb-3">{t("description")}</p>}
 
       {/* MEH-1103: send + confirm gain min-h-touch (WCAG 2.5.5). */}
       <button
@@ -152,21 +185,22 @@ export default function PhoneVerifyCard({ onVerified }) {
             {t("code_label")}
           </label>
           <div className="flex flex-wrap items-center gap-2">
-            <input
+            <Input
+              inline
+              size="sm"
               id="otp-code"
               type="text"
               inputMode="numeric"
               autoComplete="one-time-code"
-              maxLength={OTP_LENGTH}
               dir="ltr"
               value={code}
-              onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, OTP_LENGTH))}
+              onChange={handleCodeChange}
               placeholder={t("code_placeholder")}
-              className="w-40 text-center tracking-[0.3em] border border-border rounded-sm px-3 py-2 text-sm focus:border-primary outline-none"
+              className="w-40 text-center tracking-[0.3em]"
             />
             <Button
               type="button"
-              onClick={handleConfirm}
+              onClick={() => handleConfirm()}
               disabled={confirming || code.length !== OTP_LENGTH}
               variant="primary" size="sm"
             >
@@ -177,9 +211,9 @@ export default function PhoneVerifyCard({ onVerified }) {
       )}
 
       {error && (
-        <p className="text-error text-xs font-medium mt-3" role="alert">
+        <InlineMessage size="xs" className="font-medium mt-3">
           {error}
-        </p>
+        </InlineMessage>
       )}
     </div>
   );

@@ -76,7 +76,7 @@ def test_approved_producer_editing_phone_pings_admin(client, db):
         resp = _put(client, user, {"phone": NEW_PHONE})
 
     assert resp.status_code == 200, resp.text
-    ping.assert_called_once_with("משק הפינג", ["phone"])
+    ping.assert_called_once_with("משק הפינג", ["phone"], test_cause=False)
     db.refresh(producer)
     assert producer.phone == NEW_PHONE, "the save itself must be unaffected"
 
@@ -105,7 +105,7 @@ def test_dietary_scope_edit_pings(client, db):
         resp = _put(client, user, {"vegan_scope": "all"})
 
     assert resp.status_code == 200, resp.text
-    ping.assert_called_once_with("משק הפינג", ["vegan_scope"])
+    ping.assert_called_once_with("משק הפינג", ["vegan_scope"], test_cause=False)
 
 
 # --- the ping stays quiet ---------------------------------------------------
@@ -217,7 +217,7 @@ def test_sensitive_fields_are_all_writable(client, db):
         with patch(PATCH_TARGET) as ping:
             resp = _put(client, user, {field: new_value})
         assert resp.status_code == 200, f"{field}: {resp.text}"
-        ping.assert_called_once_with(f"משק {field}", [field]), field
+        ping.assert_called_once_with(f"משק {field}", [field], test_cause=False), field
 
 
 # --- MEH-1938 chunk 5a, ruling A (02/09): city is neither writable nor sensitive
@@ -308,7 +308,7 @@ def test_first_location_in_another_city_pings_admin(client, db):
         )
 
     assert resp.status_code == 201, resp.text
-    ping.assert_called_once_with("משק המיקום", ["city"])
+    ping.assert_called_once_with("משק המיקום", ["city"], test_cause=False)
     db.refresh(producer)
     assert producer.city == "חיפה"
 
@@ -325,7 +325,7 @@ def test_moving_the_primary_location_to_another_city_pings_admin(client, db):
         )
 
     assert resp.status_code == 200, resp.text
-    ping.assert_called_once_with("משק המעבר", ["city"])
+    ping.assert_called_once_with("משק המעבר", ["city"], test_cause=False)
     db.refresh(producer)
     assert producer.city == "רעננה"
 
@@ -345,7 +345,7 @@ def test_promoting_a_location_in_another_city_pings_admin(client, db):
         )
 
     assert resp.status_code == 200, resp.text
-    ping.assert_called_once_with("משק הקידום", ["city"])
+    ping.assert_called_once_with("משק הקידום", ["city"], test_cause=False)
     db.refresh(producer)
     assert producer.city == "רעננה"
 
@@ -368,7 +368,7 @@ def test_deleting_the_last_location_pings_admin(client, db):
         )
 
     assert resp.status_code == 204, resp.text
-    ping.assert_called_once_with("משק הריק", ["primary_location_removed"])
+    ping.assert_called_once_with("משק הריק", ["primary_location_removed"], test_cause=False)
     db.refresh(producer)
     assert producer.city == "חיפה", "the column keeps its last value (MEH-2141)"
     assert producer.status == "approved", "notification-only — no status flip"

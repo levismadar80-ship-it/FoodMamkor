@@ -14,13 +14,15 @@ Related:  backend/app/routers/events.py (_serialize — the EventOut shape the
 History:  MEH-2461 (creation); MEH-2475 (profile + contact fields).
 """
 
+from typing import Any
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import joinedload, Query, Session
 
 from app.database import get_db
 from app.models import Event, Producer
 from app.rate_limit import limiter
 from app.routers.events import _serialize as serialize_event
+from app.services.producer_listing import not_test_producer  # MEH-2952
 from app.services.registrations import registered_counts
 from app.schemas.schemas import OrganizerPublicOut, OrganizerSlugOut
 from app.utils.clock import israel_today
@@ -32,11 +34,14 @@ router = APIRouter(tags=["organizers"])
 _PUBLIC_CACHE = "public, s-maxage=30, stale-while-revalidate=30"
 
 
-def _public_organizer_query(db: Session):
+def _public_organizer_query(db: Session) -> Query[Producer]:
     """The one rule for "this organizer is public": approved AND
-    kind='organizer'. The mirror image of is_business()."""
+    kind='organizer'. The mirror image of is_business(), test rows excluded
+    the same way (MEH-2952)."""
     return db.query(Producer).filter(
-        Producer.status == "approved", Producer.kind == "organizer"
+        Producer.status == "approved",
+        Producer.kind == "organizer",
+        not_test_producer(),
     )
 
 
@@ -44,7 +49,7 @@ def _public_organizer_query(db: Session):
 @limiter.limit("120/minute")
 def list_organizer_slugs(
     request: Request, response: Response, db: Session = Depends(get_db)
-):
+) -> list[OrganizerSlugOut]:
     """Slugs of every public organizer — the sitemap's source for
     /organizers/{slug} (MEH-2461: organizer pages are public, so they are
     listed; never under /producers)."""
@@ -62,7 +67,7 @@ def list_organizer_slugs(
 @limiter.limit("120/minute")
 def get_organizer(
     slug: str, request: Request, response: Response, db: Session = Depends(get_db)
-):
+) -> Any:
     """An approved organizer's page: profile + its upcoming events.
 
     404 for a business slug, a pending organizer and an unknown slug alike —
@@ -83,7 +88,7 @@ def get_organizer(
         .order_by(Event.event_date.asc(), Event.event_time.asc())
         .all()
     )
-    counts = registered_counts(db, event_ids=[ev.id for ev in events])
+    counts = registered_counts(db, event_ids=[ev.id for ev in events])  # type: ignore[misc]
     response.headers["Cache-Control"] = _PUBLIC_CACHE
     return OrganizerPublicOut(
         id=organizer.id,
@@ -106,5 +111,5 @@ def get_organizer(
         contact_email=organizer.contact_email,
         whatsapp_group=organizer.whatsapp_group,
         external_order_form=organizer.external_order_form,
-        upcoming_events=[serialize_event(ev, counts.get(ev.id, 0)) for ev in events],
+        upcoming_events=[serialize_event(ev, counts.get(ev.id, 0)) for ev in events],  # type: ignore[call-overload]
     )

@@ -39,6 +39,8 @@ import {
   canAddSpecialRange,
 } from "@/lib/special-hours";
 import Button from "@/components/ui/Button";
+import InlineMessage from "@/components/ui/InlineMessage";
+import Input from "@/components/ui/Input";
 
 export default function SpecialHoursEditor({ profile, onSave, reportDirty = () => {} }) {
   const t = useTranslations("dashboard.producer.special_hours");
@@ -227,14 +229,14 @@ export default function SpecialHoursEditor({ profile, onSave, reportDirty = () =
               data-date={row.date || undefined}
             >
               <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-                <input
+                <Input inline size="xs"
                   type="date"
                   value={row.date}
                   min={today ?? undefined}
                   onChange={(e) => patchRow(i, { date: e.target.value })}
                   aria-label={t("date_label")}
                   data-testid={`special-hours-date-${i}`}
-                  className="numeric text-sm border border-border rounded-sm px-2 py-1 bg-surface"
+                  className="numeric"
                 />
                 <label className="flex items-center gap-2 text-sm cursor-pointer min-h-[34px]">
                   <input
@@ -263,20 +265,20 @@ export default function SpecialHoursEditor({ profile, onSave, reportDirty = () =
                     <div key={rangeIdx} className="flex items-center gap-2">
                       {/* Time range is inherently LTR numeric (HH:MM–HH:MM). rtl-ok */}
                       <div className="flex items-center gap-2" dir="ltr">
-                        <input
+                        <Input inline size="xs"
                           type="time"
                           value={range.from}
                           onChange={(e) => patchRange(i, rangeIdx, { from: e.target.value })}
                           aria-label={`${row.date} ${tRange("from_label")} ${rangeIdx + 1}`}
-                          className="numeric text-sm border border-border rounded-sm px-2 py-1 bg-surface"
+                          className="numeric"
                         />
                         <span aria-hidden="true" className="text-fg-muted">–</span>
-                        <input
+                        <Input inline size="xs"
                           type="time"
                           value={range.to}
                           onChange={(e) => patchRange(i, rangeIdx, { to: e.target.value })}
                           aria-label={`${row.date} ${tRange("to_label")} ${rangeIdx + 1}`}
-                          className="numeric text-sm border border-border rounded-sm px-2 py-1 bg-surface"
+                          className="numeric"
                         />
                       </div>
                       {row.ranges.length > 1 && (
@@ -306,7 +308,7 @@ export default function SpecialHoursEditor({ profile, onSave, reportDirty = () =
                 </div>
               )}
 
-              <input
+              <Input inline size="xs"
                 type="text"
                 value={row.note}
                 maxLength={MAX_SPECIAL_NOTE_LENGTH}
@@ -314,13 +316,13 @@ export default function SpecialHoursEditor({ profile, onSave, reportDirty = () =
                 aria-label={t("note_label")}
                 placeholder={t("note_placeholder")}
                 data-testid={`special-hours-note-${i}`}
-                className="mt-2 w-full text-sm border border-border rounded-sm px-2 py-1 bg-surface"
+                className="mt-2 w-full"
               />
 
               {issueReason && (
-                <span className="mt-1 block text-xs text-error" role="alert">
+                <InlineMessage as="span" size="xs" className="mt-1 block">
                   {reasonText(issueReason)}
-                </span>
+                </InlineMessage>
               )}
             </div>
           );
@@ -340,10 +342,10 @@ export default function SpecialHoursEditor({ profile, onSave, reportDirty = () =
       )}
 
       {errorMsg && (
-        <p className="mt-4 flex items-center gap-1.5 text-xs text-error" role="alert">
+        <InlineMessage size="xs" className="mt-4 flex items-center gap-1.5">
           <Warning size={16} weight="fill" aria-hidden="true" className="shrink-0" />
           {errorMsg}
-        </p>
+        </InlineMessage>
       )}
 
       <div className="mt-4 flex flex-wrap items-center gap-3">
@@ -361,7 +363,7 @@ export default function SpecialHoursEditor({ profile, onSave, reportDirty = () =
             onClick={revertChanges}
             disabled={saving}
             data-testid="special-hours-revert"
-            className="border border-border text-fg-muted px-4 py-2 rounded-full text-sm font-medium hover:border-primary hover:text-text transition disabled:opacity-60"
+            className="border border-border text-fg-muted px-4 py-2 rounded-full text-sm font-medium hover:border-primary hover:text-text transition disabled:opacity-50"
           >
             {tRange("revert_cta")}
           </button>

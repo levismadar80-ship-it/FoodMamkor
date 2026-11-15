@@ -3,6 +3,7 @@
   "routes": [
     "about",
     "accessibility",
+    "account-deleted",
     "admin",
     "business-gone",
     "claim",
@@ -21,6 +22,7 @@
     "messages",
     "newsletter",
     "organizers",
+    "owner-invite",
     "p",
     "privacy",
     "producer",
@@ -33,6 +35,7 @@
     "settings",
     "share",
     "terms",
+    "unsubscribe",
     "verify-email"
   ]
 }

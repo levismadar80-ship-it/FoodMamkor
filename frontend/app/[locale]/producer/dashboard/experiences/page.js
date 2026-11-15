@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 /**
@@ -31,6 +32,7 @@ import BackLink from "@/components/ui/BackLink";
 import { STATUS_CLASSES } from "@/lib/dashboard-status-classes";
 import { SkeletonList } from "@/components/Skeleton";
 import RegistrationsList from "@/components/RegistrationsList";
+import Input from "@/components/ui/Input";
 
 const STATUS_STYLE = {
   approved: STATUS_CLASSES.success,
@@ -89,7 +91,7 @@ function SignupCountField({ ex, t, onSaved, label, max }) {
         {label}
       </label>
       <div className="flex items-center gap-2">
-        <input
+        <Input inline size="md"
           id={id}
           type="number"
           inputMode="numeric"
@@ -106,7 +108,7 @@ function SignupCountField({ ex, t, onSaved, label, max }) {
           onKeyDown={(e) => {
             if (e.key === "Enter") e.currentTarget.blur();
           }}
-          className="w-20 min-h-touch border border-border rounded-sm px-3 text-center numeric focus-ring disabled:opacity-50"
+          className="w-20 text-center numeric"
         />
         <span className="text-sm text-fg-muted numeric" aria-hidden="true">/ {ex.max_participants}</span>
         {state === "saved" && <Check size={18} weight="bold" className="text-primary" aria-hidden="true" />}
@@ -192,7 +194,7 @@ export default function ManageExperiencesPage() {
         {Array.isArray(items) && items.length > 0 && (
           <Link
             href="/producer/dashboard/experiences/new"
-            className="inline-flex items-center gap-1.5 bg-primary text-white px-4 py-2 min-h-touch rounded-sm text-sm font-medium hover:bg-primary-dark transition"
+            className="inline-flex items-center gap-1.5 bg-primary text-white px-4 py-2 min-h-touch rounded-full text-sm font-medium hover:bg-primary-dark transition"
           >
             <Sparkle size={18} weight="bold" aria-hidden="true" />
             {t("create_cta")}

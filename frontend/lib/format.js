@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Module:   lib/format
  * Purpose:  Locale-aware number formatting helpers shared across pages.

@@ -24,10 +24,14 @@ History:  MEH-2756 (creation; the digest MEH-2646 deliberately left out).
 
 from __future__ import annotations
 
+from typing import cast
+from uuid import UUID
+from collections.abc import Callable
 import logging
 from dataclasses import dataclass
-from datetime import timedelta
+from datetime import datetime, timedelta
 
+from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
 from app.models import (
@@ -92,7 +96,7 @@ def build_window_param(offer: RescueOffer) -> str:
     copy.
     """
     return _clean_param(
-        f"{israel_hhmm(offer.pickup_start)}–{israel_hhmm(offer.pickup_end)}"
+        f"{israel_hhmm(offer.pickup_start)}–{israel_hhmm(offer.pickup_end)}"  # type: ignore[arg-type]
     )
 
 
@@ -113,19 +117,22 @@ def digest_enabled() -> bool:
     return bool(getattr(settings, "rescue_digest_enabled", False))
 
 
-def _recently_sent(db: Session, user_id, producer_id) -> bool:
+def _recently_sent(db: Session, user_id: UUID, producer_id: UUID) -> bool:
     """True if a digest already went to (owner, business) on this channel in 24h."""
     cutoff = utc_now() - _CAP_WINDOW
-    return db.query(
-        db.query(AlertLog)
-        .filter(
-            AlertLog.user_id == user_id,
-            AlertLog.producer_id == producer_id,
-            AlertLog.channel == CHANNEL_DIGEST,
-            AlertLog.sent_at >= cutoff,
-        )
-        .exists()
-    ).scalar()
+    return cast(
+        bool,
+        db.query(
+            db.query(AlertLog)
+            .filter(
+                AlertLog.user_id == user_id,
+                AlertLog.producer_id == producer_id,
+                AlertLog.channel == CHANNEL_DIGEST,
+                AlertLog.sent_at >= cutoff,
+            )
+            .exists()
+        ).scalar(),
+    )
 
 
 @dataclass(frozen=True)
@@ -139,7 +146,9 @@ class _Target:
     reserved: list[RescueOrder]
 
 
-def _resolve_target(db: Session, offer: RescueOffer, city_in_pilot) -> _Target | str:
+def _resolve_target(
+    db: Session, offer: RescueOffer, city_in_pilot: Callable[[str | None], bool]
+) -> _Target | str:
     """The recipient and the payload, or the counter key saying why not.
 
     Split from `_digest_one` so that one owns "can this be sent" and the other
@@ -194,7 +203,12 @@ def _resolve_target(db: Session, offer: RescueOffer, city_in_pilot) -> _Target |
     return _Target(producer=producer, owner=owner, phone=phone, reserved=reserved)
 
 
-def _digest_one(db: Session, offer: RescueOffer, now, city_in_pilot) -> str:
+def _digest_one(
+    db: Session,
+    offer: RescueOffer,
+    now: datetime,
+    city_in_pilot: Callable[[str | None], bool],
+) -> str:
     """Send ONE offer's digest. Returns the counter key to increment.
 
     Raises nothing it can help; the caller is the fail-isolation boundary.
@@ -203,14 +217,14 @@ def _digest_one(db: Session, offer: RescueOffer, now, city_in_pilot) -> str:
     if isinstance(target, str):
         return target
 
-    if _recently_sent(db, target.owner.id, target.producer.id):
+    if _recently_sent(db, target.owner.id, target.producer.id):  # type: ignore[arg-type]
         # Stamped, unlike every other skip: the cap is a decision about this
         # offer, not a "not yet". Leaving it NULL would make every later tick
         # re-evaluate and re-log it for the rest of the window. See the PR
         # description — for a business with two pickup points publishing on the
         # same day this suppresses the second one's codes, and the cap's key
         # cannot express "per offer".
-        offer.codes_sent_at = now
+        offer.codes_sent_at = now  # type: ignore[assignment]
         db.commit()
         logger.info(
             "[RESCUE-DIGEST] offer_id=%s capped (24h, channel=%s) — stamped",
@@ -220,11 +234,18 @@ def _digest_one(db: Session, offer: RescueOffer, now, city_in_pilot) -> str:
         return "skipped_capped"
 
     template = RescueCodesDigestV1(
-        producer_name=_clean_param(target.producer.name or ""),
+        producer_name=_clean_param(target.producer.name or ""),  # type: ignore[arg-type]
         window=build_window_param(offer),
         codes=build_codes_param(target.reserved),
     )
-    if not send_template(target.phone, template):
+    # MEH-2952: test businesses never reach here (excluded from the candidate
+    # set above); the flag still covers a test OWNER account, and the send
+    # layer is the backstop for both.
+    if not send_template(
+        target.phone,
+        template,
+        test_cause=bool(target.producer.is_test or target.owner.is_test),
+    ):
         # Unstamped: a Meta rejection or an unconfigured client is a "not sent",
         # and the next tick retries inside the window.
         logger.warning(
@@ -234,7 +255,7 @@ def _digest_one(db: Session, offer: RescueOffer, now, city_in_pilot) -> str:
         )
         return "failed"
 
-    offer.codes_sent_at = now
+    offer.codes_sent_at = now  # type: ignore[assignment]
     db.add(
         AlertLog(
             user_id=target.owner.id,
@@ -332,6 +353,19 @@ def send_rescue_digests(db: Session) -> dict[str, int]:
             RescueOffer.codes_sent_at.is_(None),
             RescueOffer.pickup_start <= now_naive,
             RescueOffer.pickup_end > now_naive,
+            # MEH-2952: a seeded test business's bags are not digested at all —
+            # nobody should receive its codes, and a dropped send would count
+            # as "failed" and be retried every tick. Excluded here, so no
+            # counter moves for it. An offer with no location row stays in the
+            # set (it is still counted as skipped_no_location below).
+            or_(
+                RescueOffer.producer_location_id.is_(None),
+                ~RescueOffer.producer_location_id.in_(
+                    db.query(ProducerLocation.id)
+                    .join(Producer, Producer.id == ProducerLocation.producer_id)
+                    .filter(Producer.is_test.is_(True))
+                ),
+            ),
         )
         .all()
     )

@@ -1,0 +1,19 @@
+{
+  "rawTextFields": {
+    "app/[locale]/login/LoginClient.jsx": 2,
+    "app/[locale]/producer/dashboard/edit/LocationHoursField.jsx": 2,
+    "components/DeliveryWaitlistForm.jsx": 1,
+    "components/PasswordInput.jsx": 1
+  },
+  "infoTooltipImporters": [
+    "app/[locale]/admin/experiences/page.js",
+    "app/[locale]/admin/kashrut/page.js",
+    "app/[locale]/admin/producers/AdminProducersTable.jsx",
+    "app/[locale]/admin/reviews/page.jsx",
+    "app/[locale]/admin/settings/page.js",
+    "app/[locale]/producer/dashboard/edit/cards/CustomQuestionsCard.jsx",
+    "app/[locale]/producer/dashboard/group-buys/page.js",
+    "app/[locale]/producer/dashboard/insights/page.js",
+    "components/admin/ProducerForm.jsx"
+  ]
+}

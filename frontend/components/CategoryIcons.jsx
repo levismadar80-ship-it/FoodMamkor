@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 /**
@@ -80,7 +81,7 @@ export function Meat(props) {
 }
 
 // פירות · Tabler `apple` (MIT).
-export function Apple(props) {
+function Apple(props) {
   return (
     <TablerGlyph {...props}>
       <path d="M4 11.319c0 3.102 .444 5.319 2.222 7.978c1.351 1.797 3.156 2.247 5.08 .988c.426 -.268 .97 -.268 1.397 0c1.923 1.26 3.728 .809 5.079 -.988c1.778 -2.66 2.222 -4.876 2.222 -7.977c0 -2.661 -1.99 -5.32 -4.444 -5.32c-1.267 0 -2.41 .693 -3.22 1.44a.5 .5 0 0 1 -.672 0c-.809 -.746 -1.953 -1.44 -3.22 -1.44c-2.454 0 -4.444 2.66 -4.444 5.319" />
@@ -91,7 +92,7 @@ export function Apple(props) {
 }
 
 // שוקולד וממתקים בוטיק · Tabler `chocolate` (MIT).
-export function Chocolate(props) {
+function Chocolate(props) {
   return (
     <TablerGlyph {...props}>
       <path d="M12 21v-16" />
@@ -103,7 +104,7 @@ export function Chocolate(props) {
 }
 
 // קוסמטיקה טבעית · Tabler `perfume` (MIT).
-export function Perfume(props) {
+function Perfume(props) {
   return (
     <TablerGlyph {...props}>
       <path d="M10 6v3" />
@@ -116,7 +117,7 @@ export function Perfume(props) {
 }
 
 // נרות וארומה · Tabler `candle` (MIT) — Sapir's pick (MEH-683, 21/07).
-export function Candle(props) {
+function Candle(props) {
   return (
     <TablerGlyph {...props}>
       <path d="M9 21h6v-10a1 1 0 0 0 -1 -1h-4a1 1 0 0 0 -1 1l0 10" />
@@ -163,19 +164,7 @@ export function OliveOil(props) {
 
 // Phosphor re-exports — the 11 base glyphs, surfaced from this single module so
 // consumers import the whole family from one place (MEH-683 V1).
-export {
-  FishSimple,
-  Carrot,
-  Cheese,
-  Bread,
-  Egg,
-  Jar,
-  CookingPot,
-  Pepper,
-  Wine,
-  HandSoap,
-  FlowerLotus,
-};
+export { FishSimple, Cheese, Bread };
 
 /**
  * CATEGORY_ICONS — canonical DB category name → glyph component. Keys are the

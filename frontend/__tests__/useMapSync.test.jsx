@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { renderHook, act } from "@testing-library/react";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { renderHook, act, waitFor } from "@testing-library/react";
 import { useMapSync } from "@/app/[locale]/map/state/useMapSync";
 
 // MEH-1298: lock the desktop half of the tap-target fix — handleCardClick must
@@ -11,7 +11,7 @@ vi.mock("@/lib/api", () => ({ default: { get: vi.fn(() => Promise.resolve({ data
 vi.mock("@/lib/toast", () => ({ showToast: { info: vi.fn() } }));
 vi.mock("@/lib/schemas", () => ({ GEO_SEARCH_ERROR_KEYS: [], GeoSearchSchema: { safeParse: () => ({ success: true, data: {} }) } }));
 vi.mock("@/lib/map-chips", () => ({ boundsToCenterRadius: () => ({ lat: 0, lng: 0, radius_km: 5 }) }));
-vi.mock("@/components/MapBottomSheet", () => ({ HALF: 45 }));
+vi.mock("@/components/MapBottomSheet", () => ({ PEEK: 14, HALF: 45 }));
 
 function setup() {
   const props = {
@@ -234,5 +234,65 @@ describe("useMapSync — selectedLocation (MEH-1412)", () => {
       result.current.handleCardClick({ id: "pB", lat: 32, lng: 34 });
     });
     expect(result.current.selectedLocation).toBeNull();
+  });
+});
+
+// MEH-3119: on a phone a marker tap leaves the sheet collapsed, so the picked
+// business shows once (the card floating over the map), not pinned above a
+// list that also holds it. Before: setSheetSnap(HALF) + a list scroll.
+describe("useMapSync — a marker tap on a phone keeps the sheet at PEEK (MEH-3119)", () => {
+  const width = window.innerWidth;
+  afterEach(() => { window.innerWidth = width; });
+
+  it("phone: the sheet goes to PEEK and no list row is scrolled", () => {
+    window.innerWidth = 390;
+    const { result, props } = setup();
+    const row = document.createElement("div");
+    row.scrollIntoView = vi.fn();
+    result.current.cardRefs.current.set("p1", new Set([row]));
+    act(() => { result.current.handleMarkerClick({ id: "p1" }); });
+    expect(props.setSheetSnap).toHaveBeenCalledTimes(1);
+    expect(props.setSheetSnap).toHaveBeenCalledWith(14);
+    expect(row.scrollIntoView).not.toHaveBeenCalled();
+  });
+
+  it("phone: coming back from a business page restores to PEEK too", () => {
+    window.innerWidth = 390;
+    const { result, props } = setup();
+    act(() => { result.current.restoreSelection({ id: "p1" }); });
+    expect(props.setSheetSnap).toHaveBeenCalledWith(14);
+  });
+
+  it("desktop: the sheet is not touched", () => {
+    window.innerWidth = 1440;
+    const { result, props } = setup();
+    act(() => { result.current.handleMarkerClick({ id: "p1" }); });
+    expect(props.setSheetSnap).not.toHaveBeenCalled();
+  });
+});
+
+// MEH-3198: «חפשו באזור זה» hands its query to the feed (loadArea), which
+// owns the latest-wins ticket, the schema check, the error flag and «נסו שוב»
+// (useProducersFeed.test.js covers those). This hook must not fetch the list
+// itself. Red on the pre-fix hook, which called api.get directly and never
+// called loadArea.
+describe("useMapSync — search-this-area goes through the feed (MEH-3198)", () => {
+  it("calls loadArea with the area query and require_physical, never api.get", async () => {
+    const api = (await import("@/lib/api")).default;
+    api.get.mockClear();
+    const loadArea = vi.fn();
+    const props = {
+      chipState: {}, cityFilter: null, buildParams: () => ({ category: 3, delivery_city: "חיפה" }),
+      setActiveProducerId: vi.fn(), setSelectedProducer: vi.fn(), setHoveredProducerId: vi.fn(),
+      setMapMoved: vi.fn(), setCommittedBounds: vi.fn(), categories: [],
+      loadArea, setSheetSnap: vi.fn(),
+    };
+    const { result } = renderHook(() => useMapSync(props));
+    act(() => result.current.handleSearchThisArea());
+    await waitFor(() => expect(loadArea).toHaveBeenCalledTimes(1));
+    // The mocked GeoSearchSchema returns data {}; the chip param rides along,
+    // delivery_city is dropped (a city answer, not "physically here").
+    expect(loadArea).toHaveBeenCalledWith({ category: 3, require_physical: true });
+    expect(api.get).not.toHaveBeenCalled();
   });
 });

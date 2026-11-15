@@ -53,6 +53,7 @@ vi.mock("leaflet", () => {
         const m = {
           latlng,
           on: () => m,
+          bindTooltip: () => m, // MEH-3066: the name label beside the pin
           setIcon: (icon) => {
             recorder.icons.push(icon);
             return m;

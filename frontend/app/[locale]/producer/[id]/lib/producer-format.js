@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Display-format helpers for ProducerDetail.
  *
@@ -6,6 +7,8 @@
  * `producer` argument (matches the pre-refactor IIFE behavior, which
  * ran after the null-check at ProducerDetail.jsx:168-174).
  */
+
+import { formatDate } from "@/lib/format-date";
 
 /**
  * MEH-2406: the one target for a business page's category links — the
@@ -52,8 +55,8 @@ export function getRenderableImages(images) {
 export function getVacationReturnDate(producer, locale) {
   if (!producer.vacation_until) return null;
   try {
-    const [y, m, d] = producer.vacation_until.split("-").map(Number);
-    const date = new Date(y, m - 1, d).toLocaleDateString(locale, { day: "numeric", month: "long" });
+    const date = formatDate(producer.vacation_until, locale, "dayMonth");
+    if (!date) return null;
     return `\u2068${date}\u2069`;
   } catch {
     return null;

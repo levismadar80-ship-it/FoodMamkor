@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Public recipe detail page — MEH-591 chunk 4/4 of the producer-recipes epic.
  *
@@ -58,6 +59,7 @@ async function getJson(path, slug) {
   // MEH-2534: 410 = the business was deleted; its recipes are gone with it.
   if (res.status === 404 || res.status === 410) return null;
   if (!res.ok) {
+    /** @type {Error & { status?: number, slug?: string }} */
     const err = new Error(
       `recipe page lookup failed: ${res.status} ${res.statusText} (path=${path})`
     );
@@ -182,7 +184,10 @@ export default async function PublicRecipePage(props) {
           dangerouslySetInnerHTML={{ __html: serializeJsonLd(breadcrumbLd) }}
         />
       )}
+      {/* MEH-3121: keyed by recipe, so the servings the reader chose and the
+          crossed-off lines never carry over to another recipe. */}
       <RecipeDetail
+        key={recipe.id}
         recipe={recipe}
         producer={producer}
         relatedProducts={relatedProducts}

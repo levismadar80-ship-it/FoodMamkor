@@ -124,3 +124,21 @@ it says private, tell Sapir CI is waiting on it and stop.
 changes: <https://github.com/settings/security-log?q=action%3Arepo.access>.
 Claude Code cannot read it (account-level), and the repo events API records only
 the private → public direction.
+
+## 9. Expiry dates (read by the weekly health scan)
+
+Everything that stops working on a date unless someone acts. The weekly repo
+health scan (Thursdays) runs `scripts/checks/expiry-register-check.sh`, which
+reads the table between the two markers and warns **60 days ahead**, and also
+warns about every row whose date is still `unknown`. A date is `YYYY-MM-DD`.
+When an item is renewed, change its date here in a docs-only PR.
+
+<!-- expiry-register:start -->
+| Item | Expires | Who renews | How |
+|---|---|---|---|
+| Domain `mehamakor.co.il` | unknown | Sapir (registrar account) | Turn on auto-renew at the registrar; DNS stays in Cloudflare (§5) |
+| Domain `mehamakor.online` | unknown | Sapir (registrar account) | Turn on auto-renew at the registrar |
+| Classic token `git-bash` (§3) | 2027-05-02 | Sapir | GitHub → Settings → Developer settings → Tokens → Regenerate |
+| `CLAUDE_CODE_OAUTH_TOKEN` (§4, rotated 2026-10-26) | unknown | Sapir | `claude setup-token`, then replace the Actions secret |
+| עוסק פטור yearly ceiling (support page / payments) | 2027-01-01 | Claude | Each January, read the new ceiling from the Tax Authority site and update the copy that cites it |
+<!-- expiry-register:end -->

@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 import { useState, useEffect } from "react";
@@ -5,12 +6,20 @@ import { CheckCircle, Leaf, Envelope, Timer } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import Input from "@/components/ui/Input";
+import InlineMessage from "@/components/ui/InlineMessage";
 import CollectionNotice from "@/components/CollectionNotice";
 import api from "@/lib/api";
 import { detailToMessage } from "@/lib/errors";
 import { CONTACT_EMAIL } from "@/lib/env.client";
 import Button from "@/components/ui/Button";
 import { CONTACT_TOPICS, DEFAULT_CONTACT_TOPIC, contactTopicFrom } from "@/lib/contact-topics";
+import SectionHeading from "@/components/ui/SectionHeading";
+import EmailTypoHint from "@/components/EmailTypoHint";
+import { useAccountPrefill } from "@/lib/use-account-prefill";
+
+// form field → account field (MEH-3112).
+/** @type {Record<string, import("@/lib/use-account-prefill").AccountField>} */
+const CONTACT_PREFILL = { name: "name", email: "email" };
 
 // MEH-653: CONTACT_EMAIL now read from NEXT_PUBLIC_CONTACT_EMAIL (lib/env.client)
 // with a "contact@mehamakor.co.il" fallback. Must still match the backend
@@ -27,6 +36,8 @@ export default function ContactClient() {
   const tNotice = useTranslations("privacy.collection_notice");
   const tPrivacyLink = useTranslations("auth.register.consumer.terms");
   const [form, setForm] = useState(EMPTY_FORM);
+  // MEH-3112: a signed-in visitor finds her own name and email in place.
+  const refillFromAccount = useAccountPrefill(setForm, CONTACT_PREFILL);
   // MEH-2832 (moved from /about, MEH-1113): every «כתבו לנו» on the site links
   // here with ?topic=. A whitelisted value preselects the topic; anything else
   // falls back to "general" silently. Read once on mount, client-side only
@@ -38,17 +49,47 @@ export default function ContactClient() {
   }, []);
   const [status, setStatus] = useState("idle"); // idle | loading | success | error
   const [errorMsg, setErrorMsg] = useState("");
+  // MEH-3191: our own field errors instead of the browser's bubbles, which
+  // speak the browser's language and set no aria-invalid. Strings reuse the
+  // approved required / email-invalid copy (registration.signup.*).
+  const tField = useTranslations("registration.signup");
+  const [fieldErrors, setFieldErrors] = useState(
+    /** @type {{ name?: string, email?: string, message?: string }} */ ({})
+  );
 
-  const set = (field) => (e) => setForm({ ...form, [field]: e.target.value });
+  // MEH-3191: editing a field clears its own error, so a fixed field stops
+  // announcing aria-invalid before the next submit.
+  const set = (field) => (e) => {
+    setForm({ ...form, [field]: e.target.value });
+    if (fieldErrors[field]) setFieldErrors({ ...fieldErrors, [field]: undefined });
+  };
+
+  const validate = () => {
+    const errs = {};
+    if (!form.name.trim()) errs.name = tField("required");
+    if (!form.email.trim()) errs.email = tField("required");
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) errs.email = tField("email_invalid");
+    if (!form.message.trim()) errs.message = tField("required");
+    return errs;
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    const errs = validate();
+    setFieldErrors(errs);
+    const first = ["name", "email", "message"].find((k) => errs[k]);
+    if (first) {
+      document.getElementById(`contact-${first}`)?.focus();
+      return;
+    }
     setStatus("loading");
     setErrorMsg("");
     try {
       await api.post("/contact", form);
       setStatus("success");
       setForm(EMPTY_FORM);
+      // «שלחו הודעה נוספת» opens the form again with her details in place.
+      refillFromAccount();
     } catch (err) {
       setStatus("error");
       setErrorMsg(detailToMessage(err.response?.data?.detail) || t("error_default"));
@@ -65,7 +106,7 @@ export default function ContactClient() {
     <section className="min-h-screen">
       <div className="max-w-2xl mx-auto px-4 py-16">
         {/* MEH-2565: card from md up only — on a phone the form uses the full width. */}
-        <div className="md:bg-surface md:rounded-lg md:p-8 md:border md:border-border md:shadow-[0_2px_12px_rgba(46,104,83,0.04)]">
+        <div className="md:bg-surface md:rounded-lg md:p-8 md:border md:border-border md:shadow-sm">
           {/* MEH-2827 (FinalContact): the standard page title, start-aligned. */}
           <h1 className="font-headline-lg mb-3 text-primary-dark text-[clamp(28px,6vw,44px)] leading-[1.15] font-black text-start">
             {t("title")}
@@ -97,11 +138,11 @@ export default function ContactClient() {
           {status === "success" ? (
             <div className="text-center py-8">
               <div className="mb-4 flex justify-center">
-                <CheckCircle size={56} weight="fill" className="text-primary" aria-hidden="true" />
+                <CheckCircle size={64} weight="fill" className="text-primary" aria-hidden="true" />
               </div>
-              <h2 className="font-headline-md text-2xl font-bold text-text mb-2">
+              <SectionHeading size="content" className="mb-2">
                 {t("success_title")}
-              </h2>
+              </SectionHeading>
               <p className="text-fg-muted inline-flex items-center gap-1.5">
                 {t("success_message")}
                 <Leaf size={14} className="text-primary" aria-hidden="true" />
@@ -115,26 +156,31 @@ export default function ContactClient() {
               </button>
             </div>
           ) : (
-            <form onSubmit={handleSubmit} data-chat-hide="" className="space-y-4">
+            <form onSubmit={handleSubmit} data-chat-hide="" noValidate className="space-y-4">
               {/* MEH-1145 Wave E2: plain labeled fields → ui/Input (canon 44px
                   boxed recipe; value/onChange/required pass through unchanged). */}
               <Input
                 id="contact-name"
                 type="text"
+                autoComplete="name"
                 label={t("field_name_label")}
                 value={form.name}
                 onChange={set("name")}
                 required
+                error={fieldErrors.name}
               />
               <Input
                 id="contact-email"
                 type="email"
+                autoComplete="email"
                 label={t("field_email_label")}
                 value={form.email}
                 onChange={set("email")}
                 required
                 dir="ltr"
+                error={fieldErrors.email}
               />
+              <EmailTypoHint fieldId="contact-email" value={form.email} onAccept={(email) => set("email")({ target: { value: email } })} />
               {/* MEH-2832: topic select (moved from the /about form, MEH-1113).
                   Sent in the POST body; the backend prepends «נושא: <label>». */}
               <div>
@@ -146,7 +192,7 @@ export default function ContactClient() {
                   data-testid="contact-topic"
                   value={form.topic}
                   onChange={set("topic")}
-                  className="w-full min-h-touch bg-surface-card border border-border rounded-md px-3 py-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                  className="w-full min-h-touch bg-surface-card border border-border rounded-sm px-3 py-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                 >
                   {CONTACT_TOPICS.map((key) => (
                     <option key={key} value={key}>
@@ -168,8 +214,15 @@ export default function ContactClient() {
                   onChange={set("message")}
                   required
                   rows={5}
-                  className="w-full border border-border rounded-md px-3 py-2 resize-none focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                  aria-invalid={fieldErrors.message ? true : undefined}
+                  aria-describedby={fieldErrors.message ? "contact-message-error" : undefined}
+                  className="w-full border border-border rounded-sm px-3 py-2 resize-none focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                 />
+                {fieldErrors.message && (
+                  <InlineMessage id="contact-message-error" size="xs" className="text-start mt-1">
+                    {fieldErrors.message}
+                  </InlineMessage>
+                )}
               </div>
 
               {/* MEH-1981: notice-at-collection (Privacy Law Amendment 13 §11)

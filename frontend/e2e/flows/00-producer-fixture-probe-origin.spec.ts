@@ -45,7 +45,9 @@ import { assertDetailRendered, watchPageErrors } from "./_producer-fixture";
 
 // Nothing listens here. The page is served from this origin via page.route(),
 // so a probe addressed at the PAGE's origin dies locally instead of travelling.
-const DEAD_ORIGIN = "http://localhost:9";
+// Not port 9: WebKit refuses "restricted" ports (9 = discard) before any route
+// handler runs, so page.goto hung there on the webkit project (MEH-3153).
+const DEAD_ORIGIN = "http://localhost:39009";
 
 const ERROR_DOC =
   `<!doctype html><html id="__next_error__"><head><meta charset="utf-8"></head>` +

@@ -57,7 +57,7 @@ def test_availability_state_is_a_code(client, db):
 
 
 def test_kashrut_badge_code_is_a_code(client, db):
-    from app.routers.producer_me import VALID_BADGE_CODES
+    from app.routers.producer_me_review import VALID_BADGE_CODES
 
     user = _owner(db)
     r = client.post(

@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, afterEach } from "vitest";
 import { render, screen, within } from "@testing-library/react";
 
 // MEH-2592 (30/10/2026, supersedes MEH-2403's two-line block): ONE facts line
@@ -317,5 +317,73 @@ describe("ProducerHeader status tag (MEH-2596)", () => {
     const tag = screen.getByTestId("status-vacation");
     expect(tag.className).toContain("bg-[color-mix(in_srgb,currentColor_10%,transparent)]");
     expect(tag.className).toMatch(/\btext-gold-deep\b/);
+  });
+});
+
+// MEH-3033 (Sapir chose א, 13/11): the distance is its own fact after the
+// city — «עיר · 3.2 ק"מ» — the same label as the cards (formatDistance, no
+// «ממך», MEH-1307), measured to the NEAREST location row (producerPoints),
+// and only when the visitor's location is already cached. Never asks.
+describe("ProducerHeader distance fact (MEH-3033)", () => {
+  const LOC_KEY = "user_location";
+  // Haifa → the business's two rows: ~850 m (not primary) and ~20 km (primary).
+  const near = { id: 1, kind: "branch", is_primary: false, lat: 32.8100, lng: 34.9950 };
+  const far = { id: 2, kind: "branch", is_primary: true, lat: 32.6500, lng: 35.1000 };
+  const withLocs = { ...baseProducer, locations: [far, near] };
+  afterEach(() => localStorage.removeItem(LOC_KEY));
+
+  it("no cached location: no distance, nothing asks for one", () => {
+    const getCurrentPosition = vi.fn();
+    const watchPosition = vi.fn();
+    const prev = navigator.geolocation;
+    Object.defineProperty(navigator, "geolocation", { value: { getCurrentPosition, watchPosition }, configurable: true });
+    try {
+      render(<ProducerHeader producer={withLocs} primaryCategory={category} hasImages />);
+      expect(screen.queryByTestId("producer-header-distance")).toBeNull();
+      expect(getCurrentPosition).not.toHaveBeenCalled();
+      expect(watchPosition).not.toHaveBeenCalled();
+    } finally {
+      Object.defineProperty(navigator, "geolocation", { value: prev, configurable: true });
+    }
+  });
+
+  it("delivery-only (has_physical_location false) with a pickup row: no distance", () => {
+    localStorage.setItem(LOC_KEY, JSON.stringify({ lat: 32.8040, lng: 34.9890 }));
+    const pickup = { id: 3, kind: "pickup", is_primary: false, lat: 32.8100, lng: 34.9950 };
+    render(<ProducerHeader producer={{ ...baseProducer, has_physical_location: false, locations: [pickup] }} primaryCategory={category} hasImages />);
+    expect(screen.queryByTestId("producer-header-distance")).toBeNull();
+  });
+
+  it("server render with a cached location: no distance in the HTML (it appears after mount)", async () => {
+    localStorage.setItem(LOC_KEY, JSON.stringify({ lat: 32.8040, lng: 34.9890 }));
+    const { renderToString } = await import("react-dom/server");
+    const html = renderToString(<ProducerHeader producer={withLocs} primaryCategory={category} hasImages />);
+    expect(html).not.toContain("producer-header-distance");
+    expect(html).toContain("יקנעם עילית");
+  });
+
+  it("cached location: the distance follows the city, to the NEAREST row, with no «ממך»", () => {
+    localStorage.setItem(LOC_KEY, JSON.stringify({ lat: 32.8040, lng: 34.9890 }));
+    render(<ProducerHeader producer={withLocs} primaryCategory={category} hasImages />);
+    const meta = screen.getByTestId("producer-header-meta");
+    const d = within(meta).getByTestId("producer-header-distance");
+    // 850 m to the near (non-primary) row — not the ~20 km primary row.
+    expect(d.textContent).toBe("850 מ'");
+    expect(d.textContent).not.toContain("ממך");
+    expect(meta.textContent.indexOf("יקנעם עילית")).toBeLessThan(meta.textContent.indexOf(d.textContent));
+  });
+
+  it("cached location but no usable location row (delivery-only): no distance", () => {
+    localStorage.setItem(LOC_KEY, JSON.stringify({ lat: 32.8040, lng: 34.9890 }));
+    render(<ProducerHeader producer={{ ...baseProducer, locations: [] }} primaryCategory={category} hasImages />);
+    expect(screen.queryByTestId("producer-header-distance")).toBeNull();
+  });
+
+  it("the distance is its own fact, not inside the city span (MEH-1694 links the city)", () => {
+    localStorage.setItem(LOC_KEY, JSON.stringify({ lat: 32.8040, lng: 34.9890 }));
+    render(<ProducerHeader producer={withLocs} primaryCategory={category} hasImages />);
+    const d = screen.getByTestId("producer-header-distance");
+    expect(d.textContent).not.toContain("יקנעם");
+    expect(d.getAttribute("dir")).toBe("rtl");
   });
 });

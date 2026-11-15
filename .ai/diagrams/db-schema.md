@@ -1,7 +1,8 @@
 # מהמקור — DB schema
 
 > Mermaid ER diagram for the main tables + relationships. **Source of
-> truth is `backend/app/models/models.py`** — if this drifts, update
+> truth is `backend/app/models/` (`models.py` for users, businesses and
+> categories; one sibling file per area since MEH-3269)** — if this drifts, update
 > the diagram in the same PR (workflow rule 11).
 >
 > Grouped into four logical clusters to keep the diagram legible:
@@ -42,6 +43,7 @@ erDiagram
         string google_id UK
         string apple_id UK
         boolean is_blocked
+        boolean is_test "MEH-2952 — NOT NULL default false; seeded test identity; never in a response"
         timestamp created_at
         timestamp last_active_at "indexed, feeds DAU chart"
         timestamp terms_accepted_at "nullable, tz-aware — MEH-1995 ToS consent; NULL = no record held, never 'refused'"
@@ -62,6 +64,7 @@ erDiagram
         float lng
         string status "pending|approved|rejected"
         string kind "MEH-2459 — producer|organizer; NOT NULL default producer; CHECK producer_kind_values (ADR-036)"
+        boolean is_test "MEH-2952 — NOT NULL default false; hidden by is_business(); never in a response"
         float avg_rating "cached aggregate"
         int reviews_count "cached aggregate"
         boolean is_available_today "legacy — unread, unwritten, in no response (MEH-2272); MEH-2273 drops it"
@@ -72,6 +75,8 @@ erDiagram
         text recommended_note "nullable — MEH-1494 chunk A; the editor's reason. ADMIN-ONLY, never on a public serializer (guard test asserts absence by name)"
         date in_season_until "nullable — MEH-1287 chunk A, revision f5b8d2c7a3e9; date-bounded editorial curation for the seasonal homepage module (in season UNTIL, Israel day). NULL = not curated. Admin-only, not on ProducerUpdate"
         json special_hours "nullable JSONB — MEH-1889 chunk A, migration c4e81b7a2f96; per-DATE overrides keyed YYYY-MM-DD, ranges:[] = closed. ORDER-AXIS ONLY: overrides order_window (itself absent from this diagram — pre-existing drift since MEH-1543), never the free-text opening_hours; note is display-only"
+        json payment_info "nullable JSONB — MEH-3035, migration e3a5c1d7f904; {methods ⊆ bit/paybox/bank_transfer/cash/credit_card, timing ∈ advance/on_pickup/deposit, note ≤80}; all-empty stored as NULL; owner-writable via PUT /producers/me"
+        json product_groups "nullable JSONB — MEH-3055, migration b7d4e2a9c615; ordered [{id, name}] ≤20"
         string plan "free|premium"
         boolean grass_fed
         boolean reservist_owned "NOT NULL default false — owner-declared «עסק של מילואימניקים», badge only (migration f1c7a2b9d4e6)"
@@ -83,6 +88,8 @@ erDiagram
         text risk_reasoning "nullable — one-sentence Hebrew explanation, truncated to 500 chars"
         timestamp declared_at "nullable — MEH-759, tz-aware; binding tier-2 declaration timestamp"
         string declaration_version "nullable — MEH-759, VARCHAR(10); declaration text version (e.g. 2026-06-v1)"
+        timestamp farmer_declared_at "nullable — MEH-2923, TIMESTAMPTZ; grower declaration, separate from declared_at"
+        string farmer_declaration_version "nullable — MEH-2923, VARCHAR(10); grower wording version (constants.FARMER_DECLARATION_VERSION)"
         timestamp verified_at "nullable — MEH-762, tz-aware; admin tier-1 document-check timestamp (public at date granularity)"
         string verification_doc_type "nullable — MEH-762, VARCHAR(20); license|exemption|cosmetics (S12 badge source)"
         date license_expires_at "nullable — MEH-2072, DATE not TIMESTAMP (a licence is valid through a calendar day; compared against israel_today()); admin-only (ProducerAdminOut), never owner-writable; NULL = not captured yet, NEVER no-expiry; feeds GET /admin/license-expiry-reminders (30d window), no enforcement"
@@ -92,6 +99,17 @@ erDiagram
         int resubmission_count "NOT NULL DEFAULT 0 — MEH-2210, rejected→pending resubmissions used; history, never reset; cap constants.MAX_PRODUCER_RESUBMISSIONS=3"
         timestamp resubmitted_at "nullable — MEH-2210, tz-aware; latest resubmission"
         timestamp claim_link_sent_at "nullable — MEH-2496, tz-aware; latest owner-claim link minted (no backfill)"
+        string owner_invite_email "nullable — MEH-2974, VARCHAR(200); where the owner invite was sent (cleared on cancel)"
+        string owner_invite_name "nullable — MEH-2974, VARCHAR(200); the addressee (cleared on cancel)"
+        string owner_invite_token_hash "nullable — MEH-2974, VARCHAR(64) INDEXED; sha256 HEX of the link token. NEVER the token; on no response schema"
+        timestamp owner_invite_expires_at "nullable — MEH-2974, tz-aware; mint + 7 days"
+        timestamp owner_invite_sent_at "nullable — MEH-2974, tz-aware; latest invite sent"
+        timestamp owner_invite_accepted_at "nullable — MEH-2974, tz-aware; set once. Also the onboarding-sequence clock: COALESCE(this, created_at)"
+        text owner_invite_consent_note "nullable — MEH-2974; the admin's record of the written consent. Kept on cancel — it is the audit trail"
+        string owner_invite_created_by "nullable — MEH-2974, UUID FK users.id ON DELETE SET NULL, named + use_alter (users<->producers cycle)"
+        string owner_invite_code_hash "nullable — MEH-2974 v3, VARCHAR(64); sha256 HEX of the 6-digit email code. NEVER the code; on no response schema"
+        timestamp owner_invite_code_expires_at "nullable — MEH-2974 v3, tz-aware; send + 10 minutes"
+        int owner_invite_code_attempts "nullable — MEH-2974 v3; wrong guesses against the CURRENT code, capped at 5. The only write a failed accept makes"
         timestamp created_at
         timestamp updated_at "nullable — MEH-1291, tz-aware; onupdate=func.now() stamp, no backfill; public freshness signal (ProducerDetailOut)"
         text owner_bio "nullable — MEH-1335, app-capped 300; public OwnerCard story (NULL = compact variant)"
@@ -102,6 +120,8 @@ erDiagram
         string referral_source "nullable — MEH-1471, VARCHAR(40); self-reported attribution English key (admin-only, ProducerAdminOut)"
         string referral_source_other "nullable — MEH-1471, VARCHAR(120); free-text 'other' answer, bleach-sanitised"
         timestamp email_pending_nudge_sent_at "nullable — MEH-1818, tz-aware; day-1 pending-nudge stamp. NULL = not yet nudged. Stamped even when nothing was missing (no email sent), which is what holds the send to exactly once"
+        boolean weekly_summary_opt_out "NOT NULL default false — MEH-3079; set by the signed unsubscribe link of the weekly summary email"
+        timestamp weekly_summary_sent_at "nullable — MEH-3079, tz-aware; weekly summary idempotency stamp (skip if < 6 days old)"
         timestamp submitted_for_review_at "nullable — MEH-2100, tz-aware; stamped when the owner submits for review (draft→pending). NULL = never submitted, and stays NULL for a draft. No backfill: readers use submitted_for_review_at or created_at; the admin SLA (MEH-2869) uses resubmitted_at or submitted_for_review_at or created_at"
     }
 
@@ -111,6 +131,7 @@ erDiagram
         string slug UK "MEH-2139, VARCHAR(50) NOT NULL UNIQUE. The STABLE identity: matching keys on this, `name` is display text and `id` is autoincrement with environment-specific holes. Nullable in a7c3e91d5f28, NOT NULL in c9f2a41e8b03 once a column default (services/category_slug) made every writer produce one. A rename never re-derives it"
         string emoji
         boolean is_system "NOT NULL, server_default false — MEH-1456 chunk A, revision b7d3e5a9c1f4; TRUE for the 18 seed_data.CATEGORIES rows (backfilled by name + written by the seed), FALSE for admin-created rows. Chunk 2b refuses rename/delete on TRUE"
+        boolean requires_license "NOT NULL, server_default false — MEH-3255 expand, revision f1a7c3e9b5d2; TRUE for licence-required categories (backfilled from the constants name list; required on admin create)"
     }
 
     products {
@@ -130,6 +151,74 @@ erDiagram
         boolean is_low_carb "MEH-1934: 6th dietary axis; independent of every other flag"
         text ingredients "MEH-2662: owner-declared, nullable"
         text_array allergens "MEH-2662: codes from app/allergens.py, nullable"
+        int position "MEH-3055: owner order, NULL = never ordered"
+        varchar group_id "MEH-3055: id in producers.product_groups, no FK, nullable"
+        varchar price_unit "MEH-3218: unit|kg|100g, default unit"
+        boolean is_orderable "MEH-3218: default false, the owner opts each product in"
+        boolean in_stock "MEH-3218: default true"
+        boolean contains_alcohol "MEH-3218: default false"
+    }
+
+    producer_order_settings {
+        uuid producer_id PK "FK producers, CASCADE; one row per business"
+        boolean enabled "default false"
+        boolean auto_confirm
+        int auto_confirm_slot_cap "required when auto_confirm"
+        int cancel_cutoff_hours "0..168, default 24"
+        boolean shabbat_observant
+        int min_order_agorot "nullable"
+        boolean alcohol_licensed "admin only"
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    product_orders {
+        uuid id PK
+        uuid producer_id FK
+        uuid user_id FK "nullable, SET NULL; guest orders have none"
+        string customer_name
+        string customer_phone
+        string fulfilment "pickup|delivery"
+        string delivery_address "nullable"
+        timestamp slot_start
+        timestamp slot_end
+        text note
+        int estimated_total_agorot
+        int final_total_agorot "nullable until the business confirms"
+        int delivery_fee_agorot
+        string status "pending|confirmed|change_proposed|ready|handed|declined|cancelled|expired|no_show"
+        string payment_status "direct_to_business only"
+        string pickup_code
+        boolean age_declared
+        timestamp expires_at
+        timestamp confirmed_at
+        timestamp handed_at
+        timestamp closed_at
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    product_order_items {
+        uuid id PK
+        uuid order_id FK "CASCADE"
+        uuid product_id FK "nullable, SET NULL; the line outlives the product"
+        string name "copied at order time"
+        int unit_price_agorot "copied at order time"
+        boolean price_is_estimate
+        string price_unit "unit|kg|100g"
+        int qty "1..99"
+        boolean contains_alcohol
+    }
+
+    product_order_events {
+        uuid id PK
+        uuid order_id FK "CASCADE"
+        string from_status "NULL on the first row"
+        string to_status
+        string actor "customer|business|admin|system"
+        uuid actor_user_id FK "nullable, SET NULL"
+        text note
+        timestamp created_at
     }
 
     delivery_areas {
@@ -206,6 +295,8 @@ erDiagram
     users ||--o{ experiences : "hosts (producer)"
     events ||--o{ registrations : "on-site sign-ups (MEH-2763)"
     experiences ||--o{ registrations : "on-site sign-ups (MEH-2763)"
+    producers ||--o{ billable_events : "bookings counted (MEH-3179)"
+    producers ||--o| business_billing : "billing state (MEH-3180)"
     home_products ||--o{ home_product_whatsapp_clicks : "gets clicks"
     home_product_whatsapp_clicks ||--o| home_product_ratings : "optional 1:1"
 
@@ -273,6 +364,32 @@ erDiagram
         string status "registered|cancelled"
         timestamp created_at
         timestamp cancelled_at
+    }
+
+    business_billing {
+        uuid producer_id PK "FK producers, CASCADE"
+        string state "launch|notice|active|page_only|unpaid"
+        timestamp state_since
+        int price_list_version
+        boolean subscribed
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    billable_events {
+        uuid id PK
+        uuid producer_id FK "SET NULL when the business is deleted"
+        uuid producer_ref "the same id, kept; not a FK (MEH-3208)"
+        string kind "event_registration|experience_registration|group_buy_order|rescue_bag|product_order"
+        uuid source_id "not a FK: outlives the booking row"
+        timestamp occurred_at
+        int quantity
+        int base_amount_agorot
+        int fee_agorot "computed, not charged"
+        int price_list_version
+        string status "counted|voided"
+        timestamp voided_at
+        timestamp created_at
     }
 
     experiences {
@@ -421,6 +538,13 @@ erDiagram
         timestamp updated_at
     }
 
+    rescue_no_show_tombstones {
+        uuid id PK "MEH-3225 — no FK, survives the account"
+        string email_hash "HMAC-SHA256 of the email, app secret"
+        timestamp pickup_end "purged 30 days after"
+        timestamp created_at
+    }
+
     retired_slugs {
         string slug PK "MEH-2528 tombstone"
         uuid producer_id FK "SET NULL — owner of a renamed slug"
@@ -475,6 +599,12 @@ erDiagram
     rescue_orders ||--o| rescue_reviews : "one review each"
     users ||--o{ rescue_orders : "reserves"
     producers ||--o| rescue_typical_items : "usual contents"
+    producers ||--o| producer_order_settings : "ordering on/off + rules (MEH-3218)"
+    producers ||--o{ product_orders : "order requests (MEH-3218)"
+    users |o--o{ product_orders : "buyer, when logged in"
+    product_orders ||--o{ product_order_items : "lines, name+price copied"
+    product_orders ||--o{ product_order_events : "status log"
+    products |o--o{ product_order_items : "SET NULL on delete"
 
     rescue_offers {
         uuid id PK "MEH-2644"
@@ -526,6 +656,11 @@ erDiagram
         timestamp created_at
         timestamp updated_at
     }
+
+    alembic_lineage {
+        string revision PK "MEH-2903 — every revision a booted image applied"
+        timestamp recorded_at "NOT NULL, default now()"
+    }
 ```
 
 > **MEH-1338 — `alert_log` frequency cap:** append-only ledger backing the
@@ -553,6 +688,24 @@ erDiagram
 > `pickup_end` is AFTER this stamp — so one write releases a buyer and the
 > no-show rows stay in the history for the chunk-5 metrics. Adds no table →
 > `EXPECTED_TABLES` unchanged. Migration `b2e6d4a17c93`.
+
+> **MEH-3179 — `billable_events` (14/11/2026):** the ledger ADR-042's monthly
+> billing will count from: one row per booking a business got through the site,
+> no personal data, written by `services/billing_ledger.py`. Nothing is charged.
+> Adds one table → **`EXPECTED_TABLES` 50 → 51** (`pr-checks.yml`). Migration
+> `d5b8f2a6c341`.
+
+> **MEH-3208 — the ledger outlives the business (14/11/2026):** `producer_id`
+> ON DELETE CASCADE → SET NULL (nullable) + new `producer_ref` (the same id,
+> no FK). Deleting a business no longer deletes its rows. Adds no table →
+> `EXPECTED_TABLES` unchanged. Migration `e6c9a3b7d452`.
+
+> **MEH-3180 — `business_billing` (14/11/2026):** billing state per business
+> (no row = launch), read only through `services/capabilities.py`. Nothing
+> closes while `app.pricing.BILLING_PHASE` is `launch`. Also adds
+> `product_order` to the `billable_events.kind` CHECK (MEH-3216). Adds one
+> table → **`EXPECTED_TABLES` 51 → 52**, edited once on the merge train together
+> with the product-orders tables. Migration `f7d1b4c8e563`.
 
 > **MEH-2763 — `registrations` + `registration_method` (06/11/2026):** the
 > owner picks «איך נרשמים?» per event / experience; `site_form` stores one row

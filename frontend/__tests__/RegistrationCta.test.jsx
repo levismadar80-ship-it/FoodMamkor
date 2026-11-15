@@ -3,14 +3,17 @@
  * the channel-missing cells (the recipient-less wa.me that started MEH-2762)
  * and the on-site form's submit / 409 / 422 paths.
  */
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { render, screen, fireEvent, waitFor, act } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
 import he from "../messages/he.json";
 import api from "@/lib/api";
 import RegistrationCta from "@/components/RegistrationCta";
 
 vi.mock("@/lib/api", () => ({ default: { post: vi.fn() } }));
+// MEH-3112: the signed-in account the sign-up form prefills from (null = guest).
+let mockAuth = null;
+vi.mock("@/lib/auth-context", () => ({ useOptionalAuth: () => mockAuth }));
 
 const C = he.registration.cta;
 const S = he.registration.signup;
@@ -212,5 +215,232 @@ describe("RegistrationCta — the on-site form", () => {
     fill("נועה כהן", "050-1112233", "noa@example.com");
     send();
     await waitFor(() => expect(screen.getByRole("alert").textContent).toBe(S.generic));
+  });
+});
+
+/**
+ * MEH-3043 — the form could be opened and never closed again (Sapir's
+ * screenshot, 13/11). Option ב: × in the card on a desktop width, a
+ * full-screen sheet with × on a phone, and a sticky phone bar while the
+ * inline action is off screen.
+ */
+describe("MEH-3043 — open and close", () => {
+  // The window width the sheet decision reads (matchMedia "(min-width: 1024px)").
+  const realMm = window.matchMedia;
+  const width = (desktop) => {
+    window.matchMedia = (q) => ({ matches: desktop, media: q, addEventListener() {}, removeEventListener() {} });
+  };
+  const phoneWidth = () => width(false);
+  beforeEach(() => width(true));
+  afterEach(() => { window.matchMedia = realMm; });
+
+  it("desktop: × closes the form and brings the button back, focused", async () => {
+    cta({ method: "site_form", phone: null });
+    fireEvent.click(screen.getByTestId("registration-open"));
+    expect(screen.getByTestId("registration-form")).toBeInTheDocument();
+    expect(screen.queryByTestId("registration-sheet")).toBeNull();
+    const close = screen.getByTestId("registration-close");
+    expect(close.getAttribute("aria-label")).toBe(he.common.aria.close);
+    fireEvent.click(close);
+    expect(screen.queryByTestId("registration-form")).toBeNull();
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByTestId("registration-open")));
+  });
+
+  it("phone: the form opens in a full-screen dialog; × closes it and unlocks the page", () => {
+    phoneWidth();
+    cta({ method: "site_form", phone: "050-1234567" });
+    fireEvent.click(screen.getByTestId("registration-open"));
+    const sheet = screen.getByTestId("registration-sheet");
+    expect(sheet.getAttribute("role")).toBe("dialog");
+    expect(sheet.getAttribute("aria-modal")).toBe("true");
+    expect(sheet.querySelector('[data-testid="registration-form"]')).not.toBeNull();
+    expect(sheet.querySelector('[data-testid="registration-question"]')).not.toBeNull();
+    expect(document.body.style.overflow).toBe("hidden");
+    fireEvent.click(screen.getByTestId("registration-sheet-close"));
+    expect(screen.queryByTestId("registration-sheet")).toBeNull();
+    expect(document.body.style.overflow).toBe("");
+  });
+
+  it("phone: Escape closes the sheet", () => {
+    phoneWidth();
+    cta({ method: "site_form", phone: null });
+    fireEvent.click(screen.getByTestId("registration-open"));
+    expect(screen.getByTestId("registration-sheet")).toBeInTheDocument();
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(screen.queryByTestId("registration-sheet")).toBeNull();
+    expect(document.body.style.overflow).toBe("");
+  });
+
+  it("phone: Tab stays inside the sheet, both ways, and pulls a lost focus back in", () => {
+    phoneWidth();
+    cta({ method: "site_form", phone: "050-1234567" });
+    fireEvent.click(screen.getByTestId("registration-open"));
+    const sheet = screen.getByTestId("registration-sheet");
+    const close = screen.getByTestId("registration-sheet-close");
+    const last = screen.getByTestId("registration-question");
+    last.focus();
+    fireEvent.keyDown(document, { key: "Tab" });
+    expect(document.activeElement).toBe(close);
+    fireEvent.keyDown(document, { key: "Tab", shiftKey: true });
+    expect(document.activeElement).toBe(last);
+    document.body.focus();
+    document.activeElement.blur();
+    fireEvent.keyDown(document, { key: "Tab" });
+    expect(sheet.contains(document.activeElement)).toBe(true);
+  });
+
+  it("phone: a sign-up inside the sheet confirms there, and the card keeps it after closing", async () => {
+    phoneWidth();
+    api.post.mockResolvedValueOnce({ data: {} });
+    cta({ method: "site_form", phone: null });
+    fireEvent.click(screen.getByTestId("registration-open"));
+    fireEvent.change(document.getElementById("signup-name"), { target: { value: "נועה" } });
+    fireEvent.change(document.getElementById("signup-phone"), { target: { value: "0521234567" } });
+    fireEvent.change(document.getElementById("signup-email"), { target: { value: "a@example.com" } });
+    fireEvent.click(screen.getByTestId("registration-submit"));
+    const ok = await screen.findByTestId("registration-success");
+    expect(screen.getByTestId("registration-sheet").contains(ok)).toBe(true);
+    fireEvent.click(screen.getByTestId("registration-sheet-close"));
+    expect(screen.getAllByTestId("registration-success")).toHaveLength(1);
+    expect(screen.queryByTestId("registration-open")).toBeNull();
+  });
+});
+
+describe("MEH-3043 — sticky phone bar", () => {
+  let fire;
+  beforeEach(() => {
+    window.IntersectionObserver = class {
+      constructor(cb) { fire = (isIntersecting) => act(() => cb([{ isIntersecting }])); }
+      observe() {}
+      disconnect() {}
+    };
+  });
+  afterEach(() => { delete window.IntersectionObserver; });
+
+  it("shows only while the inline action is off screen, with the date note", () => {
+    cta({ method: "site_form", phone: null, barNote: "ו׳, 21.11 · 10:00" });
+    expect(screen.queryByTestId("registration-bar")).toBeNull();
+    fire(false);
+    const bar = screen.getByTestId("registration-bar");
+    expect(bar.textContent).toContain("ו׳, 21.11 · 10:00");
+    expect(screen.getByTestId("registration-bar-action").textContent).toBe(C.signup_experience);
+    fire(true);
+    expect(screen.queryByTestId("registration-bar")).toBeNull();
+  });
+
+  it("site_form: the bar's button opens the sheet", () => {
+    cta({ method: "site_form", phone: null });
+    fire(false);
+    fireEvent.click(screen.getByTestId("registration-bar-action"));
+    expect(screen.getByTestId("registration-sheet")).toBeInTheDocument();
+    expect(screen.queryByTestId("registration-bar")).toBeNull();
+  });
+
+  it("whatsapp: the bar carries the same link as the card", () => {
+    cta({ method: "whatsapp", phone: "050-1234567" });
+    fire(false);
+    expect(screen.getByTestId("registration-bar-action").getAttribute("href")).toBe(
+      screen.getByTestId("registration-whatsapp").getAttribute("href"),
+    );
+  });
+
+  it("full with no waitlist, or no channel at all → no bar", () => {
+    const { unmount } = cta({ method: "site_form", phone: null, isFull: true });
+    fire(false);
+    expect(screen.queryByTestId("registration-bar")).toBeNull();
+    unmount();
+    cta({ method: "whatsapp", phone: null });
+    expect(screen.queryByTestId("registration-bar")).toBeNull();
+  });
+});
+
+describe("MEH-3109 — the bar is a floating pill that steps aside at the footer", () => {
+  // One callback per observed node: the inline action and the site footer.
+  let observers;
+  let footer;
+  const fireFor = (node, isIntersecting) => act(() => observers.get(node)([{ isIntersecting }]));
+  beforeEach(() => {
+    observers = new Map();
+    window.IntersectionObserver = class {
+      constructor(cb) { this.cb = cb; }
+      observe(el) { observers.set(el, this.cb); }
+      disconnect() {}
+    };
+    footer = document.createElement("footer");
+    footer.setAttribute("data-site-footer", "");
+    document.body.appendChild(footer);
+  });
+  afterEach(() => {
+    delete window.IntersectionObserver;
+    footer.remove();
+    document.body.style.paddingBottom = "";
+  });
+  const inline = () => [...observers.keys()].find((n) => n !== footer);
+
+  it("is a rounded pill in a transparent shell, not a full-width white strip", () => {
+    cta({ method: "site_form", phone: null, barNote: "ו׳, 21.11 · 10:00" });
+    fireFor(inline(), false);
+    const bar = screen.getByTestId("registration-bar");
+    expect(bar.className).not.toMatch(/\bbg-surface\b/);
+    expect(bar.className).not.toMatch(/\bborder-t\b/);
+    expect(bar.className).toMatch(/\bpointer-events-none\b/);
+    const pill = screen.getByTestId("registration-bar-pill");
+    expect(pill.className).toMatch(/\brounded-full\b/);
+    expect(pill.className).toMatch(/\bpointer-events-auto\b/);
+    // Above the cookie banner while it is up (same offset var as ChatWidget).
+    expect(bar.className).toContain("var(--cookie-banner-h,0px)");
+  });
+
+  it("hides while the site footer is on screen and comes back after it", () => {
+    cta({ method: "site_form", phone: null });
+    fireFor(inline(), false);
+    expect(screen.getByTestId("registration-bar")).toBeInTheDocument();
+    fireFor(footer, true);
+    expect(screen.queryByTestId("registration-bar")).toBeNull();
+    fireFor(footer, false);
+    expect(screen.getByTestId("registration-bar")).toBeInTheDocument();
+  });
+
+  it("with a site footer the page end gets no extra room, not even for one commit (that room was the cream band under the footer)", () => {
+    // Every write to <body style>, including one undone a commit later.
+    const mo = new MutationObserver(() => {});
+    mo.observe(document.body, { attributes: true, attributeFilter: ["style"], attributeOldValue: true });
+    cta({ method: "site_form", phone: null });
+    fireFor(inline(), false);
+    const writes = mo.takeRecords().map(() => document.body.getAttribute("style") || "");
+    mo.disconnect();
+    expect(screen.getByTestId("registration-bar")).toBeInTheDocument();
+    expect(writes).toEqual([]);
+  });
+
+  it("with no site footer the page end gets room while the bar is up, and loses it when the bar goes", () => {
+    footer.remove();
+    cta({ method: "site_form", phone: null });
+    fireFor(inline(), false);
+    expect(document.body.style.paddingBottom).not.toBe("");
+    fireFor(inline(), true);
+    expect(document.body.style.paddingBottom).toBe("");
+  });
+});
+
+describe("MEH-3112 — a signed-in visitor finds her details in the sign-up form", () => {
+  afterEach(() => { mockAuth = null; });
+
+  it("signed in: name, phone and email are already filled and still editable", () => {
+    mockAuth = { user: { id: 3, name: "נועה כהן", phone: "052-1234567", email: "noa@example.com" } };
+    cta({ method: "site_form", phone: null });
+    fireEvent.click(screen.getByTestId("registration-open"));
+    expect(document.getElementById("signup-name").value).toBe("נועה כהן");
+    expect(document.getElementById("signup-phone").value).toBe("052-1234567");
+    expect(document.getElementById("signup-email").value).toBe("noa@example.com");
+    fireEvent.change(document.getElementById("signup-phone"), { target: { value: "0547654321" } });
+    expect(document.getElementById("signup-phone").value).toBe("0547654321");
+  });
+
+  it("guest: the form opens empty", () => {
+    cta({ method: "site_form", phone: null });
+    fireEvent.click(screen.getByTestId("registration-open"));
+    expect(document.getElementById("signup-name").value).toBe("");
+    expect(document.getElementById("signup-email").value).toBe("");
   });
 });

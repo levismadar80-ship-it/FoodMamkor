@@ -207,4 +207,22 @@ describe("EventForm — the city asterisk is enforced (MEH-2013)", () => {
     expect(body.city).toBe("תל אביב");
     expect(body.category).toBe("שוק");
   });
+
+  // MEH-3213: the page may still be asking for the business status after the
+  // POST; the button must stay disabled, or a second press creates a twin event.
+  it("while the page decides where to land, a second press does not POST again", async () => {
+    api.get.mockRejectedValueOnce(new Error("load failed")).mockImplementation(() => new Promise(() => {}));
+    const { container } = await renderNewEventPage();
+    fillEverythingElse(container);
+    fireEvent.change(container.querySelector("#category"), { target: { value: "שוק" } });
+    fireEvent.change(screen.getByLabelText("city"), { target: { value: "תל אביב" } });
+
+    submit(container);
+    await waitFor(() => expect(api.post).toHaveBeenCalledTimes(1));
+    await new Promise((r) => setTimeout(r, 0));
+    expect(container.querySelector('button[type="submit"]').disabled).toBe(true);
+    submit(container);
+    await new Promise((r) => setTimeout(r, 0));
+    expect(api.post).toHaveBeenCalledTimes(1);
+  });
 });

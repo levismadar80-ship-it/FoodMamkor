@@ -1,3 +1,4 @@
+// @ts-check
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import {
@@ -12,12 +13,13 @@ import {
 
 import PrimaryContactButton from "@/components/PrimaryContactButton";
 import WhatsAppQuestionChips from "@/components/WhatsAppQuestionChips";
-import { getPrimaryMethod } from "@/lib/contact-method";
-import { instagramHandle, instagramUrl } from "@/lib/social-links";
+import { contactHref, getPrimaryMethod } from "@/lib/contact-method";
+import { instagramHandle } from "@/lib/social-links";
 import { withReferralParams } from "@/lib/utils";
 import { whatsappUpdatesHref } from "@/components/WhatsAppUpdatesPill";
-import { markWhatsAppClickedLocal, pingWhatsAppBeacon, trackContactClick } from "@/lib/contact-tracking";
+import { trackContactClick } from "@/lib/contact-tracking";
 import { showToast } from "@/lib/toast";
+import { usePreviewMode } from "@/lib/preview-mode"; // MEH-2916
 
 // MEH-1221: silent-mailto fallback window. mailto: fails silently on desktops
 // with no mail handler (no error, no navigation). The email circle is a bare
@@ -29,6 +31,7 @@ import { showToast } from "@/lib/toast";
 // — same detection mechanics + MEH-1223 real-success flag (a double failure
 // shows the failure toast, never a false "copied").
 const MAIL_FALLBACK_MS = 1200;
+import { copyText } from "@/lib/clipboard";
 
 function armMailtoFallback(email, t) {
   if (!email) return;
@@ -48,23 +51,7 @@ function armMailtoFallback(email, t) {
   document.addEventListener("visibilitychange", onVisibility);
   timer = setTimeout(async () => {
     removeListeners();
-    let copied = false;
-    try {
-      await navigator.clipboard.writeText(email);
-      copied = true;
-    } catch {
-      const ta = document.createElement("textarea");
-      ta.value = email;
-      document.body.appendChild(ta);
-      ta.select();
-      try {
-        copied = document.execCommand("copy");
-      } catch {
-        copied = false;
-      } finally {
-        document.body.removeChild(ta);
-      }
-    }
+    const copied = await copyText(email);
     showToast.error(
       copied
         ? t("producer.detail.contact_card.email_fallback_toast")
@@ -97,9 +84,9 @@ function armMailtoFallback(email, t) {
  *           MEH-2626 (whatsapp_group circle → tracked «עדכונים» bell).
  */
 
-// Secondary contact channels rendered as the quiet icon row. Each entry
-// resolves its own href from the producer with the trim/prefix guards the
-// prior ContactSidebar tiles carried. The channel equal to the primary
+// Secondary contact channels rendered as the quiet icon row. Each entry's
+// href comes from the one table in lib/contact-method.js (contactHref,
+// MEH-2991) — the organizer page reads the same table. The channel equal to the primary
 // method is filtered out so it never duplicates the big CTA.
 //
 // MEH-2775: `display` is what the SOLE-channel info row shows instead of the
@@ -111,13 +98,13 @@ const CHANNELS = [
   {
     key: "phone",
     Icon: Phone,
-    href: (p) => (p.phone?.trim() ? `tel:${p.phone.trim()}` : null),
+    href: (p) => contactHref("phone", p),
     display: (p) => p.phone?.trim() || null,
   },
   {
     key: "instagram",
     Icon: InstagramLogo,
-    href: (p) => instagramUrl(p.instagram),
+    href: (p) => contactHref("instagram", p),
     display: (p) => {
       const handle = instagramHandle(p.instagram);
       // A legacy row stored as a full URL is not a handle — keep the label
@@ -130,17 +117,17 @@ const CHANNELS = [
   {
     key: "website",
     Icon: Globe,
-    href: (p) => withReferralParams(httpUrl(p.website)),
+    href: (p) => withReferralParams(contactHref("website", p)),
     display: (p) => websiteHost(p.website),
   },
   {
     key: "email",
     Icon: EnvelopeSimple,
-    href: (p) => (p.contact_email?.trim() ? `mailto:${p.contact_email.trim()}` : null),
+    href: (p) => contactHref("email", p),
     display: (p) => p.contact_email?.trim() || null,
   },
-  { key: "facebook", Icon: FacebookLogo, href: (p) => httpUrl(p.facebook) },
-  { key: "external_order", Icon: Receipt, href: (p) => httpUrl(p.external_order_form) },
+  { key: "facebook", Icon: FacebookLogo, href: (p) => contactHref("facebook", p) },
+  { key: "external_order", Icon: Receipt, href: (p) => contactHref("external_order", p) },
   // MEH-2626: the WhatsApp updates link (group or channel) — the «עדכונים»
   // bell. REPLACES the untracked WhatsappLogo circle that sat here: a neutral
   // Bell so it never reads as a second «שליחת הודעה» (MEH-1466 / MEH-1049),
@@ -154,13 +141,6 @@ const CHANNELS = [
     ariaKey: "producer.detail.whatsapp_updates.full",
   },
 ];
-
-/** Coerce a bare/whitespace/protocol-less URL field into a safe https href. */
-function httpUrl(raw) {
-  const v = (raw || "").trim();
-  if (!v) return null;
-  return v.startsWith("http") ? v : `https://${v}`;
-}
 
 /** MEH-2775: "https://www.x.co.il/shop/" → "x.co.il" — the host people know. */
 function websiteHost(raw) {
@@ -232,7 +212,19 @@ export default function ContactCard({ producer, isVacation }) {
 
   // Shared by both affordances (circle + single row) so the tracking and the
   // desktop phone-reveal behave identically whichever one is rendered.
+  // MEH-2916: in the owner's preview every contact channel stays VISIBLE —
+  // she is looking at how her page reads — but none of them acts. No href, so
+  // no WhatsApp app switch and no dialler; out of the tab order; announced as
+  // disabled. Sapir's ruling, 11/11.
+  const isPreview = usePreviewMode();
+  const linkTarget = (value) =>
+    isPreview ? { "aria-disabled": /** @type {const} */ ("true"), tabIndex: -1 } : { href: value };
+
   const onChannelClick = (e, { key }) => {
+    if (isPreview) {
+      e.preventDefault(); // MEH-2916
+      return;
+    }
     // MEH-1334: on desktop a phone tap reveals the number inline (no dialer)
     // — swallow the tel: navigation and show the pill.
     // MEH-2775: a SOLE phone already shows its number, so there is nothing to
@@ -269,21 +261,8 @@ export default function ContactCard({ producer, isVacation }) {
 
         {/* The one primary CTA — color/label driven by primary_contact_method
             (WhatsApp green only on WhatsApp). */}
-        <PrimaryContactButton
-          producer={producer}
-          onClick={() => {
-            // MEH-1426: attribution + unlock fire together, and ONLY on a
-            // WhatsApp primary CTA. Previously markWhatsAppClickedLocal ran
-            // unconditionally, so a phone/email/website primary still unlocked
-            // the review form — a click that never created an attributed WA row,
-            // so the reviews gate (reviews.py guard 3) would 403 anyway.
-            // Invariant: every WhatsApp click = attribution + unlock; non-WA = neither.
-            if (primaryMethod === "whatsapp") {
-              pingWhatsAppBeacon(producer.id);
-              markWhatsAppClickedLocal(producer.id);
-            }
-          }}
-        />
+        {/* MEH-2999: the button records its own click (any channel). */}
+        <PrimaryContactButton producer={producer} />
 
         {/* MEH-1652: the closed-window context line that used to sit here is
             GONE, not reworded. It said the message "תמתין לבית העסק" — a claim
@@ -312,7 +291,8 @@ export default function ContactCard({ producer, isVacation }) {
                 ? "flex flex-col gap-1 mt-4 pt-3 border-t border-border"
                 : "grid grid-cols-4 gap-x-1 gap-y-3 mt-4 pt-4 border-t border-border"
             }
-            role="list"
+            // MEH-3191: no list roles — a listitem role on an <a> replaces the
+            // link role (axe aria-allowed-role), so a screen reader lost "link".
           >
             {channels.map((channel) => {
               const { key, Icon, href } = channel;
@@ -325,9 +305,8 @@ export default function ContactCard({ producer, isVacation }) {
                 return (
                   <a
                     key={key}
-                    href={href(producer)}
+                    {...linkTarget(href(producer))}
                     {...linkAttrs(key)}
-                    role="listitem"
                     data-testid="contact-single-row"
                     // MEH-2775: a bare value ("0501234567") says nothing to a
                     // screen reader — prefix the channel's existing aria name.
@@ -338,7 +317,7 @@ export default function ContactCard({ producer, isVacation }) {
                         : undefined
                     }
                     onClick={(e) => onChannelClick(e, channel)}
-                    className={`${ROW_ANATOMY} text-primary-dark hover:text-primary hover:underline underline-offset-2 transition focus-visible:ring-2 focus-visible:ring-primary/40`}
+                    className={`${ROW_ANATOMY} text-primary-dark hover:text-primary hover:underline underline-offset-2 transition focus-visible:ring-2 focus-visible:ring-primary`}
                   >
                     <Icon size={18} className="shrink-0" aria-hidden="true" />
                     {value ? (
@@ -360,9 +339,8 @@ export default function ContactCard({ producer, isVacation }) {
               return (
                 <a
                   key={key}
-                  href={href(producer)}
+                  {...linkTarget(href(producer))}
                   {...linkAttrs(key)}
-                  role="listitem"
                   // MEH-1583: stable locator for the VRT reveal shot — the
                   // circle's only other handle is its Hebrew aria-label, and
                   // E2E must not key on copy (docs/E2E-LOCATORS.md).
@@ -371,7 +349,7 @@ export default function ContactCard({ producer, isVacation }) {
                   // the accessible name is the name alone, not "name + icon".
                   aria-label={t(channel.ariaKey ?? `producer.detail.contact_card.aria.${key}`)}
                   onClick={(e) => onChannelClick(e, channel)}
-                  className="group flex flex-col items-center gap-1.5 text-center text-xs leading-tight text-text rounded-lg focus-visible:ring-2 focus-visible:ring-primary/40"
+                  className="group flex flex-col items-center gap-1.5 text-center text-xs leading-tight text-text rounded-lg focus-visible:ring-2 focus-visible:ring-primary"
                 >
                   <span className="flex items-center justify-center w-11 h-11 rounded-full bg-background text-primary-dark transition group-hover:bg-green-50 group-hover:text-primary">
                     <Icon size={18} aria-hidden="true" />
@@ -391,10 +369,9 @@ export default function ContactCard({ producer, isVacation }) {
                 tel: link so a desktop softphone / click-to-call can act on it. */}
             {revealed && (
               <a
-                href={`tel:${producer.phone.trim()}`}
+                {...linkTarget(contactHref("phone", producer))}
                 data-testid="revealed-phone"
-                role="listitem"
-                className={`${ROW_ANATOMY} ${single ? "" : "col-span-4"} text-primary-dark focus-visible:ring-2 focus-visible:ring-primary/40`}
+                className={`${ROW_ANATOMY} ${single ? "" : "col-span-4"} text-primary-dark focus-visible:ring-2 focus-visible:ring-primary`}
               >
                 <Phone size={18} className="shrink-0" aria-hidden="true" />
                 <span dir="ltr" className="numeric">

@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 import { useMemo } from "react";
@@ -7,6 +8,7 @@ import { useTranslations } from "next-intl";
 import HeroSearch from "@/components/HeroSearch";
 import EnSearchNotice from "@/components/EnSearchNotice";
 import { optimizeCloudinary } from "@/lib/cloudinary";
+import ButtonSpinner from "@/components/ButtonSpinner";
 
 // MEH-788: Cloudinary produce photo (4032×3024 4:3 original). Smart-cropped to
 // a wide 16:9 band via g_auto (c_fill,g_auto,ar_16:9 — Cloudinary's saliency
@@ -43,6 +45,7 @@ export { HERO_IMAGE };
 // MEH-643: ease-quart curve mirrored for Framer (JS) — same as the .ease-quart
 // CSS utility (MEH-136, globals.css). Reduced-motion honored globally via
 // <MotionConfig reducedMotion="user"> at the layout root (#1053).
+/** @type {[number, number, number, number]} cubic-bezier control points */
 const EASE_QUART = [0.25, 1, 0.5, 1];
 
 // MEH-1690: headline scrim reinforcement — REQUIRED by this ticket's own
@@ -214,14 +217,15 @@ export function HomeHero({
           // locale), so /en never matches it and keeps --hero-bg.
           className="kenburns-right absolute [background-image:var(--hero-bg)] max-[639px]:[html[lang=he]_&]:[background-image:var(--hero-phone)]"
           data-testid="hero-image-layer"
-          style={{
+          // CSS custom properties are not in React's CSSProperties type.
+          style={/** @type {import("react").CSSProperties} */ ({
             inset: "-5%",
             "--hero-bg": `url(${HERO_IMAGE})`,
             "--hero-phone": HERO_IMAGE_SET_PHONE,
             backgroundSize: "cover",
             backgroundPosition: "center",
             backgroundRepeat: "no-repeat",
-          }}
+          })}
         />
         {/* --scrim-ink (globals.css) — warm-ink bottom band. It carried H1 +
             subtitle alone before MEH-1690; it now also underlies the pill and
@@ -321,7 +325,7 @@ export function HomeHero({
             disabled={geoLoading}
             className={CHIP_CLASS}
           >
-            <Crosshair size={18} weight="bold" className={geoLoading ? "animate-spin" : ""} aria-hidden="true" />
+            {geoLoading ? <ButtonSpinner size={18} /> : <Crosshair size={18} weight="bold" aria-hidden="true" />}
             {geoLoading ? t("home.hero.searching") : t("home.hero.near_me")}
           </button>
 

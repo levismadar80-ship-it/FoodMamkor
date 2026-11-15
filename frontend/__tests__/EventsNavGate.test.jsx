@@ -10,7 +10,7 @@ import { render, screen, waitFor } from "@testing-library/react";
 const get = vi.fn();
 vi.mock("@/lib/api", () => ({ default: { get: (...a) => get(...a), post: vi.fn() } }));
 
-import { useEventsNavGate } from "@/lib/use-events-nav-gate";
+import { useEventsNavGate, resetEventsNavGateRequest } from "@/lib/use-events-nav-gate";
 
 function Probe() {
   const visible = useEventsNavGate();
@@ -20,6 +20,7 @@ const gate = () => screen.getByTestId("gate").textContent;
 const events = (n) => Promise.resolve({ data: Array.from({ length: n }, (_, i) => ({ id: `e${i}` })) });
 
 beforeEach(() => {
+  resetEventsNavGateRequest();
   get.mockReset();
   sessionStorage.clear();
 });

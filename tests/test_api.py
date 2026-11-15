@@ -30,6 +30,20 @@ _REGISTER_ACK_DETAIL = (
 )
 
 
+
+def _signup_cookie_shape(resp):
+    """(name, value length, attributes) of the reply's ONLY Set-Cookie.
+
+    MEH-3087 — used by the register anti-enumeration tests: the marker's
+    value is random-looking by design, everything else must be identical.
+    """
+    cookies = resp.headers.get_list("set-cookie")
+    assert len(cookies) == 1, cookies
+    pair, _, attrs = cookies[0].partition(";")
+    name, _, value = pair.partition("=")
+    return name, len(value), attrs.lower()
+
+
 class TestAuth:
     def test_register_new_email_creates_user_and_returns_ack(self, client, db):
         # MEH-328: OWASP-strict anti-enumeration. No access_token in body;
@@ -380,7 +394,7 @@ class TestAuth:
         make_user(db, email="dup_pw@test.com", name="Dana")
         captured = {}
 
-        def fake_dup(to, name, provider):
+        def fake_dup(to, name, provider, test_cause=False):
             captured["to"] = to
             captured["name"] = name
             captured["provider"] = provider
@@ -427,7 +441,7 @@ class TestAuth:
         captured = {}
         monkeypatch.setattr(
             "app.routers.auth._send_duplicate_attempt_email",
-            lambda to, name, provider, flow="consumer": captured.update(
+            lambda to, name, provider, flow="consumer", test_cause=False: captured.update(
                 to=to, name=name, provider=provider, flow=flow
             ),
         )
@@ -525,13 +539,13 @@ class TestAuth:
         # Content (the response body the attacker sees) must be byte-identical.
         assert r_new.content == r_pw.content == r_g.content == r_a.content
         # Defensive: also no Set-Cookie divergence between branches.
-        assert (
-            r_new.headers.get_list("set-cookie")
-            == r_pw.headers.get_list("set-cookie")
-            == r_g.headers.get_list("set-cookie")
-            == r_a.headers.get_list("set-cookie")
-            == []
-        )
+        # MEH-3087: every branch now sets ONE signup-marker cookie. Its value
+        # is an HMAC that differs per request (also between two new-email
+        # replies), so the comparison is on everything but the value: one
+        # cookie, same name, same attributes, same value length.
+        shapes = [_signup_cookie_shape(r) for r in (r_new, r_pw, r_g, r_a)]
+        assert shapes[0] == shapes[1] == shapes[2] == shapes[3]
+        assert shapes[0][0] == "signup_marker"
 
     def test_login_returns_jwt(self, client, db):
         make_user(db, email="bob@test.com", password="Zx7Yp9Mq2Lr4")
@@ -798,7 +812,7 @@ class TestAuth:
         captured = {}
         monkeypatch.setattr(
             "app.routers.auth._send_duplicate_attempt_email",
-            lambda to, name, provider, flow="consumer": captured.update(
+            lambda to, name, provider, flow="consumer", test_cause=False: captured.update(
                 to=to, name=name, provider=provider, flow=flow
             ),
         )
@@ -835,7 +849,7 @@ class TestAuth:
         captured = {}
         monkeypatch.setattr(
             "app.routers.auth._send_duplicate_attempt_email",
-            lambda to, name, provider, flow="consumer": captured.update(
+            lambda to, name, provider, flow="consumer", test_cause=False: captured.update(
                 to=to, name=name, provider=provider, flow=flow
             ),
         )
@@ -943,13 +957,13 @@ class TestAuth:
         for r in (r_new, r_pw, r_g, r_a):
             assert r.status_code == 200
         assert r_new.content == r_pw.content == r_g.content == r_a.content
-        assert (
-            r_new.headers.get_list("set-cookie")
-            == r_pw.headers.get_list("set-cookie")
-            == r_g.headers.get_list("set-cookie")
-            == r_a.headers.get_list("set-cookie")
-            == []
-        )
+        # MEH-3087: every branch now sets ONE signup-marker cookie. Its value
+        # is an HMAC that differs per request (also between two new-email
+        # replies), so the comparison is on everything but the value: one
+        # cookie, same name, same attributes, same value length.
+        shapes = [_signup_cookie_shape(r) for r in (r_new, r_pw, r_g, r_a)]
+        assert shapes[0] == shapes[1] == shapes[2] == shapes[3]
+        assert shapes[0][0] == "signup_marker"
 
     def test_register_producer_collision_creates_no_producer_row(
         self, client, db, monkeypatch
@@ -1173,7 +1187,7 @@ class TestRegistrationCoverageGaps:
         captured = {}
         monkeypatch.setattr(
             "app.routers.auth._send_duplicate_attempt_email",
-            lambda to, name, provider, flow="consumer": captured.update(
+            lambda to, name, provider, flow="consumer", test_cause=False: captured.update(
                 to=to, name=name, provider=provider, flow=flow
             ),
         )
@@ -1208,7 +1222,7 @@ class TestRegistrationCoverageGaps:
         captured = {}
         monkeypatch.setattr(
             "app.routers.auth._send_duplicate_attempt_email",
-            lambda to, name, provider, flow="consumer": captured.update(
+            lambda to, name, provider, flow="consumer", test_cause=False: captured.update(
                 to=to, name=name, provider=provider, flow=flow
             ),
         )
@@ -1417,7 +1431,7 @@ class TestRegistrationCoverageGaps:
         )
         assert resp.status_code == 200
         welcome.assert_called_once_with(
-            "welcome_c@example.com", "צרכנית", "consumer"
+            "welcome_c@example.com", "צרכנית", "consumer", test_cause=False
         )
 
     def test_register_producer_dispatches_producer_welcome(
@@ -1439,7 +1453,7 @@ class TestRegistrationCoverageGaps:
         )
         assert resp.status_code == 200
         welcome.assert_called_once_with(
-            "welcome_p@example.com", "יצרנית", "producer"
+            "welcome_p@example.com", "יצרנית", "producer", test_cause=False
         )
 
     def test_register_collision_dispatches_no_welcome(
@@ -1979,7 +1993,7 @@ class TestAdminFlows:
         # Create
         resp = client.post(
             "/admin/categories",
-            json={"name": "חדש", "emoji": "✨"},
+            json={"name": "חדש", "emoji": "✨", "requires_license": False},
             headers=auth_header(admin),
         )
         assert resp.status_code in (200, 201)
@@ -2222,7 +2236,7 @@ class TestMeh1236RequestReview:
         called = {}
         import app.services.auth_notifications as an
 
-        def _fake(name, city):
+        def _fake(name, city, test_cause=False):
             called["args"] = (name, city)
 
         monkeypatch.setattr(an, "notify_admin_producer_resubmit", _fake)
@@ -3065,8 +3079,7 @@ class TestCloudinaryHebrewErrors:
     """Upload error responses must be Hebrew (MEH-153)."""
 
     def test_freemium_limit_returns_hebrew(self, client, db):
-        """A producer on free plan with 3+ images gets a Hebrew 403."""
-        import io
+        """A free-plan producer growing the gallery past 3 gets a Hebrew 403."""
 
         user = make_user(db, role="producer", email="upload_limit@test.com")
         producer = make_producer(db)
@@ -3080,10 +3093,10 @@ class TestCloudinaryHebrewErrors:
         ]
         db.commit()
 
-        fake_jpg = b"\xff\xd8\xff" + b"\x00" * 100
-        resp = client.post(
-            "/upload/image",
-            files={"file": ("photo.jpg", io.BytesIO(fake_jpg), "image/jpeg")},
+        # MEH-3220: the cap is enforced on the gallery write, not the upload.
+        resp = client.put(
+            "/producers/me",
+            json={"images": [f"https://res.cloudinary.com/test/img/{i}.jpg" for i in range(4)]},
             headers=auth_header(user),
         )
         assert resp.status_code == 403
@@ -3233,14 +3246,10 @@ class TestOwnerStoryFields:
             email="owner_upload_cap@test.com",
         )
         fake_jpg = b"\xff\xd8\xff" + b"\x00" * 100
-        # Control: the gallery endpoint IS capped for this exact user…
-        blocked = client.post(
-            "/upload/image",
-            files={"file": ("photo.jpg", io.BytesIO(fake_jpg), "image/jpeg")},
-            headers=auth_header(user),
-        )
-        assert blocked.status_code == 403
-        # …but the owner-photo endpoint is not (no freemium gate).
+        # MEH-3220: the gallery cap moved off /upload/image to the gallery
+        # write (PUT /producers/me), so there is no upload 403 to contrast
+        # with any more; the owner-photo endpoint must still accept a full
+        # gallery's owner.
         resp = client.post(
             "/upload/owner-photo",
             files={"file": ("me.jpg", io.BytesIO(fake_jpg), "image/jpeg")},
@@ -4129,7 +4138,7 @@ class TestAuthEmailHtmlEscape:
     def test_email_escapes_html_in_name(self, monkeypatch):
         captured = {}
 
-        def fake_send(email, subject, body, html=None):
+        def fake_send(email, subject, body, html=None, test_cause=False):
             captured["body"] = body
             captured["html"] = html
 
@@ -5216,12 +5225,8 @@ class TestMeh1167KashrutCard:
             ],
         )
         fake_jpg = b"\xff\xd8\xff" + b"\x00" * 100
-        blocked = client.post(
-            "/upload/image",
-            files={"file": ("g.jpg", io.BytesIO(fake_jpg), "image/jpeg")},
-            headers=auth_header(user),
-        )
-        assert blocked.status_code == 403
+        # MEH-3220: /upload/image no longer carries the gallery cap (it moved
+        # to PUT /producers/me), so the old 403 control is gone.
         ok = client.post(
             "/upload/kashrut-cert",
             files={"file": ("cert.jpg", io.BytesIO(fake_jpg), "image/jpeg")},

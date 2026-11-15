@@ -21,7 +21,7 @@ from __future__ import annotations
 
 import logging
 from datetime import UTC, timedelta
-from typing import Literal
+from typing import Any, Literal
 from uuid import UUID
 
 from joserfc import jwt as jose_jwt
@@ -85,7 +85,7 @@ HOST_CONFIRM_ADDRESS_CAP = 3
 
 
 def _encode(entry_id: UUID, scope: str, ttl: timedelta | None = None) -> str:
-    payload = {"sub": str(entry_id), "scope": scope}
+    payload: dict[str, Any] = {"sub": str(entry_id), "scope": scope}
     if ttl is not None:
         payload["exp"] = int((utc_now() + ttl).replace(tzinfo=UTC).timestamp())
     return jose_jwt.encode({"alg": settings.algorithm}, payload, _key())
@@ -177,7 +177,7 @@ def add_entry(
     )
     db.add(entry)
     if user is not None and not (user.city or "").strip():
-        user.city = city.strip()
+        user.city = city.strip()  # type: ignore[assignment]
     return entry
 
 
@@ -193,7 +193,9 @@ def _unsubscribe_url(entry_id: UUID) -> str:
     )
 
 
-def _email_copy(producer_name: str, city: str, producer_id: UUID, entry_id: UUID):
+def _email_copy(
+    producer_name: str, city: str, producer_id: UUID, entry_id: UUID
+) -> tuple[str, str]:
     # Copy approved by Sapir 30/10 («מאשרת הכל», thread «בירור הודעה כשקבוצת
     # רכש לא מגיעה לעיר»). {city} is the VISITOR's spelling — it is her city.
     subject = f"{producer_name} מגיעים עכשיו גם ל{city}"
@@ -242,15 +244,17 @@ def notify_cities(db: Session, producer_id: UUID, cities: list[str]) -> None:
         .all()
     )
     for entry in entries:
-        subject, body = _email_copy(producer.name, entry.city, producer.id, entry.id)
+        subject, body = _email_copy(producer.name, entry.city, producer.id, entry.id)  # type: ignore[arg-type]
         try:
-            send_email(entry.email, subject, body)
+            # MEH-2952: is_business() above already drops a test row; the
+            # flag is the send layer's own guard for the same rule.
+            send_email(entry.email, subject, body, test_cause=bool(producer.is_test))  # type: ignore[arg-type]
         except Exception as exc:  # noqa: BLE001 — defence only; see docstring
             logger.warning(
                 "delivery_waitlist: send failed for entry %s: %s", entry.id, exc
             )
             continue
-        entry.notified_at = utc_now()
+        entry.notified_at = utc_now()  # type: ignore[assignment]
         db.commit()
 
 
@@ -261,7 +265,9 @@ def _host_confirm_url(entry_id: UUID) -> str:
     )
 
 
-def _host_confirm_copy(producer_name: str, city: str, entry_id: UUID):
+def _host_confirm_copy(
+    producer_name: str, city: str, entry_id: UUID
+) -> tuple[str, str]:
     # MEH-2673 — copy approved word for word by Sapir 05/11 («מאשרת», thread
     # «בדיקת פתרון לניהול נקודות איסוף לבתי עסק»). Neutral reader address
     # per ADR-037.
@@ -277,7 +283,11 @@ def _host_confirm_copy(producer_name: str, city: str, entry_id: UUID):
 
 
 def send_host_confirmation(
-    entry_id: UUID, email: str, city: str, producer_name: str
+    entry_id: UUID,
+    email: str,
+    city: str,
+    producer_name: str,
+    test_cause: bool = False,
 ) -> None:
     """MEH-2673: mail the «אשמח לארח» confirmation link to the address that
     ticked the box. Until the link is clicked `wants_to_host` stays False, so
@@ -285,7 +295,9 @@ def send_host_confirmation(
     BackgroundTask and reads nothing from the DB — the caller passes what the
     copy needs. Fail-open like every mail (send_email never raises)."""
     subject, body = _host_confirm_copy(producer_name, city, entry_id)
-    send_email(email, subject, body)
+    # MEH-2952: `test_cause` — the business or the signed-in visitor is a
+    # seeded test row.
+    send_email(email, subject, body, test_cause=test_cause)
 
 
 HostConfirmVerdict = Literal["send", "already_sent", "limit_reached"]
@@ -338,5 +350,5 @@ def claim_host_confirm_send(
     )
     if sent_to_address >= HOST_CONFIRM_ADDRESS_CAP:
         return "limit_reached"
-    entry.host_confirm_sent_at = now
+    entry.host_confirm_sent_at = now  # type: ignore[assignment]
     return "send"

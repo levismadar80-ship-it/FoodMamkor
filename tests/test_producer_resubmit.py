@@ -125,7 +125,12 @@ class TestResubmitFromRejected:
         assert row.rejection_reason == "חסר רישיון"
         assert row.rejection_reason_code == "missing_image"
         # The admin ping carries the count, so the queue reads "שליחה חוזרת #1".
-        assert called == [((producer.name, producer.city), {"resubmission_count": 1})]
+        assert called == [
+            (
+                (producer.name, producer.city),
+                {"resubmission_count": 1, "test_cause": False},
+            )
+        ]
 
     def test_unverified_phone_is_422_from_the_shared_gate(
         self, client, db, monkeypatch
@@ -263,7 +268,7 @@ class TestResubmitFromRejected:
         assert row.status == "pending"
         assert row.resubmission_count == 0
         assert row.resubmitted_at is None
-        assert called == [((producer.name, producer.city), {})]
+        assert called == [((producer.name, producer.city), {"test_cause": False})]
 
 
 # --- 3. approve clears the trail, keeps the history --------------------------
@@ -325,11 +330,11 @@ class TestRejectionEmailPointsAtTheLoop:
     def test_reject_sends_both_parts_with_the_dashboard_link(
         self, client, db, monkeypatch
     ):
-        from app.routers import admin as admin_module
+        from app.routers import admin_decisions as admin_module
 
         sent = {}
 
-        def _capture(to_email, subject, body, html=None):
+        def _capture(to_email, subject, body, html=None, test_cause=False):
             sent.update(to=to_email, subject=subject, body=body, html=html)
 
         monkeypatch.setattr(admin_module, "_send_notification_email", _capture)
@@ -360,13 +365,15 @@ class TestRejectionEmailPointsAtTheLoop:
     def test_reason_free_reject_has_no_dangling_reason_line_in_either_part(
         self, client, db, monkeypatch
     ):
-        from app.routers import admin as admin_module
+        from app.routers import admin_decisions as admin_module
 
         sent = {}
         monkeypatch.setattr(
             admin_module,
             "_send_notification_email",
-            lambda to, subject, body, html=None: sent.update(body=body, html=html),
+            lambda to, subject, body, html=None, test_cause=False: sent.update(
+                body=body, html=html
+            ),
         )
         producer = make_producer(db, status="pending")
         owner = make_user(db, email="rejected-owner-2@example.com", role="producer")
@@ -383,7 +390,7 @@ class TestRejectionEmailPointsAtTheLoop:
         assert "/producer/dashboard" in sent["html"]
 
     def test_html_escapes_a_crafted_business_name(self):
-        from app.routers import admin as admin_module
+        from app.routers import admin_decisions as admin_module
 
         html = admin_module._producer_rejected_html("<b>x</b> & co", "r", "https://x/d")
         assert "<b>x</b>" not in html

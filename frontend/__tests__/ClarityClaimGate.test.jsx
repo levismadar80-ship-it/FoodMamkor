@@ -16,13 +16,19 @@ beforeEach(() => {
 });
 
 describe("ClarityScript on the claim link", () => {
-  it.each([["/claim/abc.def.ghi"], ["/en/claim/abc.def.ghi"]])("%s: not loaded", (path) => {
+  it.each([
+    ["/claim/abc.def.ghi"],
+    ["/en/claim/abc.def.ghi"],
+    // MEH-2974: the owner-invite link carries a bearer token in the same place.
+    ["/owner-invite/abcDEF123_-xyz"],
+    ["/en/owner-invite/abcDEF123_-xyz"],
+  ])("%s: not loaded", (path) => {
     pathname = path;
     render(<ClarityScript projectId="p1" />);
     expect(screen.queryByTestId("ms-clarity")).not.toBeInTheDocument();
   });
 
-  it.each([["/claim"], ["/"], ["/producer/dashboard"]])("%s: loaded", (path) => {
+  it.each([["/claim"], ["/owner-invite"], ["/"], ["/producer/dashboard"]])("%s: loaded", (path) => {
     pathname = path;
     render(<ClarityScript projectId="p1" />);
     expect(screen.getByTestId("ms-clarity")).toBeInTheDocument();

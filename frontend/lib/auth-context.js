@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 import { createContext, useContext, useEffect, useState } from "react";
@@ -16,6 +17,7 @@ import {
 } from "./favorites-cache";
 import { resetSavedCache } from "./saved-cache"; // MEH-2558
 import { useLaunchCohortTag } from "./launch-cohort";
+import { DRAFT_KEY } from "./register-draft"; // MEH-2915
 import {
   USER_CITY_CHANGED_EVENT,
   readUserCity,
@@ -52,19 +54,24 @@ async function replayPostLoginAction(t) {
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  // MEH-3172: a token is stored but /auth/me never answered (network, 5xx, a
+  // request aborted by a navigation). Not "signed out": the layouts that gate
+  // on `user` show a retry state for this instead of pushing /login.
+  const [authUnreachable, setAuthUnreachable] = useState(false);
   const t = useTranslations("auth.toasts");
 
   // MEH-434 — keep the Sentry launch_cohort tag in sync with the signed-in
   // user (derived client-side from user.created_at). Observability only.
   useLaunchCohortTag(user);
 
-  useEffect(() => {
+  const loadSession = () => {
     const token = localStorage.getItem("token");
     if (token) {
       api
         .get("/auth/me")
         .then((res) => {
           setUser(res.data);
+          setAuthUnreachable(false);
           // MEH-1485: seed localStorage user_city from the profile city so
           // the personalization stores stop diverging (no-op when
           // localStorage already holds a recent explicit choice).
@@ -83,13 +90,25 @@ export function AuthProvider({ children }) {
           if (status === 401 || status === 403) {
             localStorage.removeItem("token");
             localStorage.removeItem("user");
+          } else {
+            setAuthUnreachable(true);
           }
         })
         .finally(() => setLoading(false));
     } else {
       setLoading(false);
     }
-  }, []);
+  };
+
+  // Mount only, as before: a re-run on every render would refetch /auth/me.
+  useEffect(() => loadSession(), []);
+
+  // MEH-3172: the retry button of that state. Back to loading, ask again.
+  const retrySession = () => {
+    setAuthUnreachable(false);
+    setLoading(true);
+    loadSession();
+  };
 
   // MEH-156: listen for JWT expiry events fired by the API interceptor.
   // setUser/resetFavoritesCache/showToast are all stable refs — empty deps is correct.
@@ -98,8 +117,11 @@ export function AuthProvider({ children }) {
       resetFavoritesCache();
       resetSavedCache();
       setUser(null);
+      setAuthUnreachable(false);
       const redirect = encodeURIComponent(window.location.pathname);
       showToast.info(t("sessionExpired"), {
+        // MEH-3173: fixed id — however many times expiry is announced, one toast.
+        id: "session-expired",
         duration: 5000,
         action: { label: t("loginAgainCta"), href: `/login?redirect=${redirect}` },
       });
@@ -177,22 +199,44 @@ export function AuthProvider({ children }) {
     return afterLogin(me.data);
   };
 
-  const deleteAccount = async () => {
-    await api.delete("/auth/me");
+  // MEH-3248: `body` is { password } or { id_token } — the server re-checks
+  // who asks (D15) and refuses admins (B7). On success the browser leaves for
+  // the public /account-deleted page BEFORE auth state is cleared: clearing it
+  // first made /settings redirect to /login and the confirmation never showed
+  // (B3). A full navigation, so no stale in-memory user survives either.
+  const deleteAccount = async (body = {}) => {
+    await api.post("/auth/me/delete", body);
     localStorage.removeItem("token");
     localStorage.removeItem("user");
+    // MEH-2915: same reasoning as logout below, and more plainly so — an
+    // account that has just been deleted must not leave an unfinished
+    // registration draft behind on the device.
+    try { localStorage.removeItem(DRAFT_KEY); } catch {}
     resetFavoritesCache();
     resetSavedCache();
-    setUser(null);
-    api.post("/auth/logout").catch(() => {});
+    await api.post("/auth/logout").catch(() => {});
+    const onEnglish = /^\/en(\/|$)/.test(window.location.pathname);
+    window.location.replace(`${onEnglish ? "/en" : ""}/account-deleted`);
   };
 
   const logout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
+    // MEH-2915: an unfinished registration draft belongs to the session that
+    // was signing out, not to whoever uses the device next — the resume
+    // banner would otherwise offer one person's fill back to another.
+    //
+    // DELIBERATELY NOT on the expiry paths, which end in the same signed-out
+    // state: `_expireSession` (lib/api.js) and the 401/403 arm of the
+    // bootstrap `/auth/me` above. Those fire while the same person is still
+    // sitting in front of the wizard — a token that lapsed mid-fill would eat
+    // her work, which is the opposite of what the draft is for. Signing out is
+    // a deliberate "I am done here"; an expiry is not.
+    try { localStorage.removeItem(DRAFT_KEY); } catch {}
     resetFavoritesCache();
     resetSavedCache();
     setUser(null);
+    setAuthUnreachable(false);
     api.post("/auth/logout").catch(() => {});
   };
 
@@ -235,6 +279,8 @@ export function AuthProvider({ children }) {
       value={{
         user,
         loading,
+        authUnreachable,
+        retrySession,
         login,
         register,
         loginWithGoogle,

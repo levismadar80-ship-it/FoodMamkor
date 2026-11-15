@@ -1,8 +1,9 @@
+// @ts-check
 "use client";
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
-import { CaretDown, ChatCircle } from "@phosphor-icons/react";
+import { CaretDown, ChatCircle, Wallet } from "@phosphor-icons/react";
 import { normalizePhone, getWhatsAppHref, formatPrice } from "@/lib/utils";
 import { buildDeliveryAnswer, buildOrderingAnswer } from "@/lib/quickAnswers";
 import { ownerQuestionLabels } from "@/lib/resolvedQuestions";
@@ -14,6 +15,7 @@ import {
 } from "@/lib/contact-method";
 import { markWhatsAppClickedLocal, pingWhatsAppBeacon } from "@/lib/contact-tracking";
 import { useUserCity } from "@/lib/use-user-city";
+import { paymentAnswer } from "@/lib/payment-info";
 
 /**
  * Quick Answers under the primary CTA in the producer contact card.
@@ -89,7 +91,7 @@ import { useUserCity } from "@/lib/use-user-city";
 // MEH-2592 C: ready-made questions are pills (like WhatsApp Business quick
 // replies) rather than accordion rows, so they read as tappable at a glance.
 const QUESTION_PILL =
-  "inline-flex items-center gap-1.5 min-h-touch px-3.5 rounded-full border font-body-md text-sm transition focus-visible:ring-2 focus-visible:ring-primary/40";
+  "inline-flex items-center gap-1.5 min-h-touch px-3.5 rounded-full border font-body-md text-sm transition focus-visible:ring-2 focus-visible:ring-primary";
 
 /** Collapsible answer row: button + aria-expanded + CaretDown (rotates open). */
 function Disclosure({ question, children }) {
@@ -124,17 +126,46 @@ function Disclosure({ question, children }) {
   );
 }
 
+// MEH-3035 chunk 3: «איך משלמים?» — what the business entered in its
+// dashboard («איך משלמים לך?»), as text under ONE Wallet line icon (design
+// option א, Sapir 13/11: per-method icons live only in the dashboard picker).
+// paymentAnswer (lib/payment-info.js) returns null when nothing usable is set.
+
+function PaymentContent({ answer, t }) {
+  return (
+    <div className="flex items-start gap-2" data-testid="payment-answer">
+      <Wallet size={18} weight="regular" aria-hidden="true" className="mt-0.5 flex-shrink-0 text-primary" />
+      <div className="space-y-0.5">
+        {answer.methods.length > 0 && (
+          <p data-testid="payment-methods">
+            {answer.methods.map((m) => t(`payment_methods.${m}`)).join(" · ")}
+          </p>
+        )}
+        {answer.timing && (
+          <p data-testid="payment-timing" className="text-fg-muted">
+            {t(`payment_timing.${answer.timing}`)}
+          </p>
+        )}
+        {answer.note && (
+          <p data-testid="payment-note" className="text-fg-muted">{answer.note}</p>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // MEH-2634: every row WaItem renders is a wa.me deep link that leaves the site —
 // the Q1/Q2 fallbacks AND the owner's custom questions, which have no
 // answer-first branch at all. The chip looked like the Disclosure rows beside
 // it, which open in place, so the suffix names the destination before the tap.
 // It is appended here rather than at each call site precisely because this
 // component IS the wa.me branch: a row that renders in-page answers is a
-// Disclosure, never a WaItem.
-export const WA_SUFFIX = " (וואטסאפ)";
+// Disclosure, never a WaItem. MEH-3170: the suffix copy is
+// `whatsapp.question_chips.wa_suffix` in messages/*.json (leading space kept).
 
 /** WhatsApp deep-link row (unchanged idiom: ChatCircle glyph + quiet link). */
 function WaItem({ href, question, onTrack }) {
+  const t = useTranslations("whatsapp.question_chips");
   return (
     <li>
       <a
@@ -147,7 +178,7 @@ function WaItem({ href, question, onTrack }) {
       >
         <ChatCircle size={16} weight="regular" className="flex-shrink-0" aria-hidden="true" />
         {question}
-        {WA_SUFFIX}
+        {t("wa_suffix")}
       </a>
     </li>
   );
@@ -333,6 +364,18 @@ export default function WhatsAppQuestionChips({ producer }) {
   } else if (!ordering && waEnabled) {
     items.push(
       <WaItem key="ordering" href={waHref(orderingQ)} question={orderingQ} onTrack={trackWhatsAppOpen} />,
+    );
+  }
+
+  // MEH-3035: «איך משלמים?» — answer-first, from her dashboard. No WhatsApp
+  // fallback when unset: the question simply does not appear (the escalation
+  // row still covers it), so a business that said nothing is not shown asking.
+  const payment = paymentAnswer(producer?.payment_info);
+  if (payment) {
+    items.push(
+      <Disclosure key="payment" question={t("payment_q")}>
+        <PaymentContent answer={payment} t={t} />
+      </Disclosure>,
     );
   }
 

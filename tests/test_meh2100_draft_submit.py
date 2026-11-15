@@ -368,8 +368,8 @@ def test_submit_pings_the_admin_with_the_business_identity(client, db, monkeypat
     """
     calls: list[tuple] = []
     monkeypatch.setattr(
-        "app.routers.producer_me.notify_admin_new_producer",
-        lambda name, city: calls.append((name, city)),
+        "app.routers.producer_me_review.notify_admin_new_producer",
+        lambda name, city, test_cause=False: calls.append((name, city)),
     )
 
     producer, user = _complete_draft(db)

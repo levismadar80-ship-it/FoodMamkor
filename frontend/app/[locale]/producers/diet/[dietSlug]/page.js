@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Module:   producers-diet-landing
  * Purpose:  /producers/diet/[dietSlug] — the six indexable diet landing pages
@@ -30,6 +31,8 @@ import {
   getDietPage,
   isDietPageBacked,
 } from "@/lib/diet-pages";
+import SectionHeading from "@/components/ui/SectionHeading";
+import BackLink from "@/components/ui/BackLink";
 
 // How many businesses the SSR'd grid renders. The ItemList JSON-LD mirrors
 // exactly this set, so a crawler sees the same businesses in the markup and in
@@ -53,6 +56,7 @@ async function fetchDietProducers(filterParam, limit) {
   const url = `${API_URL}/producers?${filterParam}=true&limit=${limit}&offset=0`;
   const res = await serverFetch(url, { next: { revalidate: 60 } });
   if (!res.ok) {
+    /** @type {Error & { status?: number, filterParam?: string }} */
     const err = new Error(
       `diet listing failed: ${res.status} ${res.statusText} (filter=${filterParam})`,
     );
@@ -70,6 +74,7 @@ async function fetchDietProducers(filterParam, limit) {
   const rawTotal = res.headers.get("x-total-count");
   const total = Number(rawTotal);
   if (rawTotal === null || !Number.isFinite(total)) {
+    /** @type {Error & { status?: number, filterParam?: string }} */
     const err = new Error(
       `diet listing missing X-Total-Count (filter=${filterParam}) — refusing to infer an empty result`,
     );
@@ -318,7 +323,7 @@ export default async function DietLandingPage({ params }) {
       <p className="mt-6 text-sm text-fg-muted">{t("honesty")}</p>
 
       <section className="mt-12 max-w-3xl">
-        <h2 className="text-xl font-bold text-fg">{t("faq_heading")}</h2>
+        <SectionHeading size="content" className="text-fg">{t("faq_heading")}</SectionHeading>
         <dl className="mt-4 space-y-6">
           {/*
             Keyed by index, not by question text: the copy contract only
@@ -336,9 +341,7 @@ export default async function DietLandingPage({ params }) {
       </section>
 
       <p className="mt-10">
-        <Link href="/producers" className="text-primary underline">
-          {t("back_to_hub")}
-        </Link>
+        <BackLink href="/producers" label={t("back_to_hub")} />
       </p>
     </main>
   );

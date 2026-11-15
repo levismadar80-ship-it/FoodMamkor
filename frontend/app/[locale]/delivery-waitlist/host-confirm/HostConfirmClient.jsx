@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 import { useEffect, useState } from "react";
@@ -26,8 +27,9 @@ const GoneSchema = z.object({ resent: z.boolean().optional() });
 
 export default function HostConfirmClient({ token }) {
   const t = useTranslations("delivery_waitlist_host_confirm");
-  const [state, setState] = useState(() =>
-    token ? { kind: "loading" } : { kind: "error" },
+  const [state, setState] = useState(
+    /** @returns {{ kind: string, producer?: string, resent?: boolean }} */
+    () => (token ? { kind: "loading" } : { kind: "error" }),
   );
 
   useEffect(() => {

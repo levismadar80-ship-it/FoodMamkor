@@ -1,6 +1,7 @@
+// @ts-check
 import { notFound } from "next/navigation";
 import ProducerDetail from "@/app/[locale]/producer/[id]/ProducerDetail";
-import { buildProducerMetadata, buildJsonLd, serializeJsonLd } from "@/lib/seo";
+import { buildProducerMetadata, buildJsonLd, buildTitleNoBrand, serializeJsonLd } from "@/lib/seo";
 import { API_URL } from "@/lib/env";
 import { serverFetch } from "@/lib/server-fetch"; // MEH-977: timeout + transient-retry
 import { buildAlternates, buildEntityTitle, OG_LOCALE } from "@/lib/i18n-seo";
@@ -38,6 +39,7 @@ async function getProducerBySlug(slug) {
   // MEH-2534: the business existed and was deleted — its own page, not a 404.
   if (res.status === 410) return GONE;
   if (!res.ok) {
+    /** @type {Error & { status?: number, slug?: string }} */
     const err = new Error(
       `producer by-slug lookup failed: ${res.status} ${res.statusText} (slug=${slug})`
     );
@@ -82,8 +84,11 @@ export async function generateMetadata(props) {
   const base = buildProducerMetadata(producer, locale);
   return {
     ...base,
-    // MEH-2853: plain title — the layout template `%s | <brand>` adds the brand.
-    title: producer.name,
+    // MEH-3177: «{name} — {category} ב{city}» (the approved seo.producer.title_*
+    // keys, brand stripped — the layout template `%s | <brand>` adds it,
+    // MEH-2853). MEH-2853 had reduced this to the bare name, dropping the
+    // category + city that local searches match on.
+    title: buildTitleNoBrand(producer, locale),
     openGraph: {
       ...base.openGraph,
       // MEH-2594: the page's own canonical — buildProducerMetadata's url is

@@ -83,7 +83,7 @@ UNDELIVERED_WINDOW_DAYS = 7
 STUCK_ACCEPTED_AFTER = timedelta(days=1)
 
 
-def undelivered_predicate(model, now: datetime):
+def undelivered_predicate(model: Any, now: datetime) -> Any:
     """The one SQL filter for "did not reach the recipient", last 7 days:
     failed / window_expired, OR accepted for longer than STUCK_ACCEPTED_AFTER.
     Shared by the admin list (routers/admin_whatsapp.py) and the admin-home
@@ -131,6 +131,12 @@ def _graph_api_base() -> str:
 
 def _is_configured() -> bool:
     return bool(settings.whatsapp_phone_number_id and settings.whatsapp_access_token)
+
+
+def is_configured() -> bool:
+    """Public read of the same check, for callers that must tell "nothing could
+    be sent here" (dev / CI) from "the send failed" (MEH-2122 B)."""
+    return _is_configured()
 
 
 def _safe_json(response: Any) -> dict[str, Any] | None:
@@ -305,12 +311,26 @@ def _post_result(payload: dict[str, Any], *, kind: str, to: str) -> WhatsAppSend
     return result
 
 
-def send_text(to: str, body: str) -> bool:
+def _skip_test_cause(kind: str, to: str) -> bool:
+    """MEH-2952: log the drop of a send caused by a test business/user."""
+    logger.info(
+        "[WHATSAPP] skipped: caused by a test row (%s to=%s)", kind, mask_phone(to)
+    )
+    return False
+
+
+def send_text(to: str, body: str, test_cause: bool = False) -> bool:
     """Send a free-form WhatsApp text message.
 
     Only works inside the 24h customer-service window per Meta policy;
     business-initiated messages must use `send_template` instead.
+
+    MEH-2952: `test_cause=True` (the send was caused by a test business or a
+    test user) drops the message before the config check and before any
+    HTTP — staging and production alike — and returns False.
     """
+    if test_cause:
+        return _skip_test_cause("text", to)
     if not _is_configured():
         logger.debug("[WHATSAPP] Would send text to %s", mask_phone(to))
         return False
@@ -323,7 +343,9 @@ def send_text(to: str, body: str) -> bool:
     return _post(payload, kind="text", to=to)
 
 
-def send_template(to: str, template: WhatsAppTemplate) -> bool:
+def send_template(
+    to: str, template: WhatsAppTemplate, test_cause: bool = False
+) -> bool:
     """Send a pre-approved WhatsApp template message (MEH-672).
 
     `template` is a typed `WhatsAppTemplate` instance — the template name,
@@ -332,7 +354,11 @@ def send_template(to: str, template: WhatsAppTemplate) -> bool:
     Meta 400 at runtime. `template.to_components()` emits an empty list
     for a zero-parameter template (no `components` block), preserving the
     pre-MEH-672 empty-params output byte-for-byte.
+
+    MEH-2952: `test_cause=True` drops the send exactly as in `send_text`.
     """
+    if test_cause:
+        return _skip_test_cause(f"template[{template.name}]", to)
     if not _is_configured():
         logger.debug(
             "[WHATSAPP] Would send template %s to %s", template.name, mask_phone(to)

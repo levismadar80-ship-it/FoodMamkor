@@ -233,6 +233,10 @@ def test_producer_register_validated_field_count():
        self-declaration, so an omitted or False flag is a schema 422). 14 + 1
        = 15.
 
+    5. MEH-3022 capped `delivery_areas` and `delivery_cities` with a Hebrew
+       mode="before" validator (`_cap_delivery_meh3022`) so an over-long
+       list is refused in Hebrew. 15 + 2 = 17.
+
     Bumping the constant is only legitimate BECAUSE a field was added to the
     validated set; it must never be bumped to chase a red test.
 
@@ -246,7 +250,8 @@ def test_producer_register_validated_field_count():
     assert "name" in fields, sorted(fields)
     assert "city" in fields, sorted(fields)
     assert "terms_accepted" in fields, sorted(fields)
-    assert len(fields) == 15, sorted(fields)
+    assert "delivery_areas" in fields and "delivery_cities" in fields, sorted(fields)
+    assert len(fields) == 17, sorted(fields)
 
 
 def test_producer_name_is_validated_by_type_not_decorator():

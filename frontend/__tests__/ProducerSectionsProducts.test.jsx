@@ -9,6 +9,8 @@ import { render, screen, fireEvent } from "@testing-library/react";
 vi.mock("next-intl", () => ({
   useTranslations: () => (key, vars) => {
     if (key === "producer.card.aria.image_missing") return `${vars?.name ?? ""} — תמונה חסרה`;
+    // MEH-3055: the «show all N» count is asserted, so it is rendered.
+    if (key === "producer.detail.sections.products.show_all") return `${key}:${vars?.count}`;
     return key;
   },
   useFormatter: () => ({ dateTime: () => "" }),
@@ -35,9 +37,13 @@ vi.mock("@/lib/cloudinary", async (importOriginal) => ({
 }));
 
 vi.mock("@phosphor-icons/react", () => ({
+  Info: () => <span />, // MEH-2999: fine-print icon
   Leaf: (props) => <span data-testid="leaf-icon" data-weight={props.weight} className={props.className} />,
   // MEH-1901: the grid row + signature card gained a forward chevron (CaretLeft,
   // LEFT in RTL) and the sheet's own icons load through this same mock.
+  // MEH-3052: the products toggle is the shared ShowMore, which draws a caret.
+  CaretDown: () => <span />,
+  CaretUp: () => <span />,
   CaretLeft: (props) => <span data-testid="row-chevron" className={props.className} />,
   // MEH-2045: the sheet's "previous" chevron in RTL. Loaded through this mock
   // for the same reason CaretLeft is — paging itself is asserted in
@@ -789,5 +795,234 @@ describe("MEH-2654 — ?product=<id> opens that product's sheet on arrival", () 
     withSearch("");
     render(<ProducerSections {...baseProps} producer={producerWith(products)} />);
     expect(screen.queryByTestId("product-sheet")).toBeNull();
+  });
+});
+
+// MEH-3021: a long product list collapses to 6 rows (phone) / 8 (md+), with
+// «הצגת כל N המוצרים». Counts are derived from the fixture, never stated.
+describe("MEH-3021 — long product lists collapse", () => {
+  const make = (n, { photoEvery = 0 } = {}) =>
+    Array.from({ length: n }, (_, i) => ({
+      id: 100 + i,
+      name: `מוצר ${i}`,
+      image_url: photoEvery && i % photoEvery === 0 ? `https://res.cloudinary.com/x/p${i}.jpg` : null,
+    }));
+  const rows = () => screen.queryAllByTestId("product-row");
+  const desktopOnly = () => rows().filter((r) => r.className.includes("hidden md:flex"));
+
+  it("1 product: one row, no toggle", () => {
+    render(<ProducerSections {...baseProps} producer={producerWith(make(1))} />);
+    expect(rows()).toHaveLength(1);
+    expect(screen.queryByTestId("products-toggle")).not.toBeInTheDocument();
+  });
+
+  it("8 products: every row shows on both sizes, no toggle", () => {
+    render(<ProducerSections {...baseProps} producer={producerWith(make(8))} />);
+    expect(rows()).toHaveLength(8);
+    expect(desktopOnly()).toHaveLength(0);
+    expect(screen.queryByTestId("products-toggle")).not.toBeInTheDocument();
+  });
+
+  it("9+ closed: 8 rows rendered, rows 7–8 desktop-only, toggle names the total", () => {
+    const products = make(12);
+    render(<ProducerSections {...baseProps} producer={producerWith(products)} />);
+    expect(rows()).toHaveLength(8);
+    expect(desktopOnly()).toHaveLength(8 - 6);
+    const toggle = screen.getByTestId("products-toggle");
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+    expect(toggle.textContent).toBe("producer.detail.sections.products.show_all:12");
+  });
+
+  it("9+ open: every row, toggle becomes «show less», and closing scrolls to the section", () => {
+    const products = make(12);
+    const section = { scrollIntoView: vi.fn() };
+    const refs = { current: {} };
+    render(<ProducerSections {...baseProps} sectionRefs={refs} producer={producerWith(products)} />);
+    fireEvent.click(screen.getByTestId("products-toggle"));
+    expect(rows()).toHaveLength(products.length);
+    expect(desktopOnly()).toHaveLength(0);
+    const toggle = screen.getByTestId("products-toggle");
+    expect(toggle).toHaveAttribute("aria-expanded", "true");
+    expect(toggle.textContent).toBe("producer.detail.sections.products.show_less");
+    refs.current.products.scrollIntoView = section.scrollIntoView;
+    fireEvent.click(toggle);
+    expect(rows()).toHaveLength(8);
+    expect(section.scrollIntoView).toHaveBeenCalledTimes(1);
+  });
+
+  it("products with a photo come first, each group keeps its order", () => {
+    const products = make(5, { photoEvery: 2 }); // photos on 0, 2, 4
+    render(<ProducerSections {...baseProps} producer={producerWith(products)} />);
+    const imgs = rows().map((r) => !!r.querySelector("[data-testid='product-image']"));
+    expect(imgs).toEqual([true, true, true, false, false]);
+  });
+
+  it("0 products: no rows and no toggle", () => {
+    render(<ProducerSections {...baseProps} producer={producerWith([])} />);
+    expect(rows()).toHaveLength(0);
+    expect(screen.queryByTestId("products-toggle")).not.toBeInTheDocument();
+  });
+
+  it("9 products (the first count past the threshold): toggle appears", () => {
+    render(<ProducerSections {...baseProps} producer={producerWith(make(9))} />);
+    expect(rows()).toHaveLength(8);
+    expect(screen.getByTestId("products-toggle")).toBeInTheDocument();
+  });
+
+  it("photo-first order keeps API order inside each group, and a row opens ITS product", () => {
+    const products = make(5, { photoEvery: 2 }); // photos on 0, 2, 4
+    render(<ProducerSections {...baseProps} producer={producerWith(products)} />);
+    const names = rows().map((r) => r.textContent);
+    const expected = ["מוצר 0", "מוצר 2", "מוצר 4", "מוצר 1", "מוצר 3"];
+    expected.forEach((n, i) => expect(names[i]).toContain(n));
+    // Row 4 is API item 1 — the sheet must open on it, not on API item 3.
+    fireEvent.click(rows()[3]);
+    expect(screen.getByTestId("product-sheet")).toHaveAttribute("aria-label", "מוצר 1");
+  });
+
+  it("with a featured product: it stays out of the count, and a deep link still lands on the right row", () => {
+    const products = make(10);
+    const producer = { ...producerWith(products), top_product_id: products[0].id, top_product_name: products[0].name };
+    window.history.replaceState({}, "", `/?product=${products[9].id}`);
+    try {
+      render(<ProducerSections {...baseProps} producer={producer} />);
+      expect(screen.getByTestId("product-sheet")).toHaveAttribute("aria-label", "מוצר 9");
+      // 9 grid products (featured excluded) → list opened by the deep link.
+      expect(rows()).toHaveLength(products.length - 1);
+    } finally {
+      window.history.replaceState({}, "", "/");
+    }
+  });
+
+  it("with a featured product and exactly 9 products, the grid has 8 and there is no toggle", () => {
+    const products = make(9);
+    const producer = { ...producerWith(products), top_product_id: products[0].id, top_product_name: products[0].name };
+    render(<ProducerSections {...baseProps} producer={producer} />);
+    expect(rows()).toHaveLength(8);
+    expect(screen.queryByTestId("products-toggle")).not.toBeInTheDocument();
+  });
+
+  it("the sheet pages into the collapsed rows", () => {
+    render(<ProducerSections {...baseProps} producer={producerWith(make(10))} />);
+    fireEvent.click(rows()[5]);
+    // Paging forward past the visible rows still reaches the 10th product.
+    const counter = () => screen.getByTestId("product-sheet").getAttribute("aria-label");
+    for (let i = 0; i < 4; i++) fireEvent.keyDown(window, { key: "ArrowLeft" });
+    expect(counter()).toBe("מוצר 9");
+  });
+
+  it("a deep link to a collapsed product opens the list and the sheet", () => {
+    const products = make(10);
+    window.history.replaceState({}, "", `/?product=${products[9].id}`);
+    try {
+      render(<ProducerSections {...baseProps} producer={producerWith(products)} />);
+      expect(screen.getByTestId("product-sheet")).toHaveAttribute("aria-label", "מוצר 9");
+      expect(rows()).toHaveLength(products.length);
+    } finally {
+      window.history.replaceState({}, "", "/");
+    }
+  });
+});
+
+// MEH-3055: owner order and group chips on the public page. 5-state matrix for
+// the chips: 0 groups / 1 group with products / 2+ groups, × chip on/off.
+describe("MEH-3055 — owner order and group chips", () => {
+  const rows = () => screen.queryAllByTestId("product-row");
+  const chips = () => screen.queryAllByTestId("product-group-chip");
+  const groups = [{ id: "g1", name: "לחמים" }, { id: "g2", name: "עוגות" }];
+  const prod = (i, extra = {}) => ({ id: 300 + i, name: `פריט ${i}`, image_url: null, ...extra });
+
+  it("the owner's order beats photos-first", () => {
+    const products = [prod(0, { image_url: "https://res.cloudinary.com/x/a.jpg", position: 2 }), prod(1, { position: 0 }), prod(2, { position: 1 })];
+    render(<ProducerSections {...baseProps} producer={producerWith(products)} />);
+    expect(rows().map((r) => r.textContent.match(/פריט \d/)[0])).toEqual(["פריט 1", "פריט 2", "פריט 0"]);
+  });
+
+  it("0 groups: no chips", () => {
+    render(<ProducerSections {...baseProps} producer={producerWith([prod(0), prod(1)])} />);
+    expect(screen.queryByTestId("product-group-chips")).not.toBeInTheDocument();
+  });
+
+  it("only 1 group holds products: no chips (one group is no choice)", () => {
+    const products = [prod(0, { group_id: "g1" }), prod(1, { group_id: "g1" })];
+    render(<ProducerSections {...baseProps} producer={{ ...producerWith(products), product_groups: groups }} />);
+    expect(screen.queryByTestId("product-group-chips")).not.toBeInTheDocument();
+  });
+
+  it("2+ groups: «all» + each group + «more»; a chip filters, «all» restores", () => {
+    const products = [prod(0, { group_id: "g2" }), prod(1, { group_id: "g1" }), prod(2), prod(3, { group_id: "g1" })];
+    render(<ProducerSections {...baseProps} producer={{ ...producerWith(products), product_groups: groups }} />);
+    expect(chips().map((c) => c.textContent)).toEqual([
+      "groups_all",
+      "לחמים",
+      "עוגות",
+      "groups_other",
+    ]);
+    expect(chips()[0]).toHaveAttribute("aria-pressed", "true");
+    // «all» lays the grid out group by group: לחמים (1, 3), עוגות (0), then ungrouped (2)
+    expect(rows().map((r) => r.textContent.match(/פריט \d/)[0])).toEqual(["פריט 1", "פריט 3", "פריט 0", "פריט 2"]);
+
+    fireEvent.click(chips()[2]); // עוגות
+    expect(chips()[2]).toHaveAttribute("aria-pressed", "true");
+    expect(rows().map((r) => r.textContent.match(/פריט \d/)[0])).toEqual(["פריט 0"]);
+
+    fireEvent.click(chips()[3]); // more
+    expect(rows().map((r) => r.textContent.match(/פריט \d/)[0])).toEqual(["פריט 2"]);
+
+    fireEvent.click(chips()[0]);
+    expect(rows()).toHaveLength(products.length);
+  });
+
+  it("a group whose only product is the featured card is not a chip (it would empty the list)", () => {
+    const products = [prod(0, { group_id: "g1" }), prod(1, { group_id: "g2" }), prod(2, { group_id: "g2" })];
+    const producer = { ...producerWith(products), product_groups: groups, top_product_id: products[0].id, top_product_name: products[0].name };
+    render(<ProducerSections {...baseProps} producer={producer} />);
+    // Grid holds only g2 → one group → no chips at all.
+    expect(screen.queryByTestId("product-group-chips")).not.toBeInTheDocument();
+  });
+
+  it("featured card is the only ungrouped product: no «more» chip", () => {
+    const products = [prod(0), prod(1, { group_id: "g1" }), prod(2, { group_id: "g2" })];
+    const producer = { ...producerWith(products), product_groups: groups, top_product_id: products[0].id, top_product_name: products[0].name };
+    render(<ProducerSections {...baseProps} producer={producer} />);
+    expect(chips().map((c) => c.textContent)).toEqual(["groups_all", "לחמים", "עוגות"]);
+  });
+
+  it("deep link: tapping a chip after closing the sheet does not re-open it; the link clears a chip", () => {
+    const products = [prod(0, { group_id: "g1" }), prod(1, { group_id: "g2" }), prod(2, { group_id: "g1" })];
+    window.history.replaceState({}, "", `/?product=${products[2].id}`);
+    try {
+      render(<ProducerSections {...baseProps} producer={{ ...producerWith(products), product_groups: groups }} />);
+      expect(screen.getByTestId("product-sheet")).toHaveAttribute("aria-label", "פריט 2");
+      fireEvent.keyDown(window, { key: "Escape" });
+      expect(screen.queryByTestId("product-sheet")).not.toBeInTheDocument();
+      fireEvent.click(chips()[1]); // לחמים — holds the linked product
+      expect(screen.queryByTestId("product-sheet")).not.toBeInTheDocument();
+      fireEvent.click(chips()[0]);
+      expect(screen.queryByTestId("product-sheet")).not.toBeInTheDocument();
+    } finally {
+      window.history.replaceState({}, "", "/");
+    }
+  });
+
+  it("with a chip on, «show all N» counts that group only", () => {
+    const products = [
+      ...Array.from({ length: 10 }, (_, i) => prod(i, { group_id: "g1" })),
+      prod(10, { group_id: "g2" }),
+      prod(11, { group_id: "g2" }),
+    ];
+    // The featured card (in g2) is outside the grid: it must not inflate a group's N.
+    const producer = { ...producerWith(products), product_groups: groups, top_product_id: products[11].id, top_product_name: products[11].name };
+    render(<ProducerSections {...baseProps} producer={producer} />);
+    const toggle = () => screen.getByTestId("products-toggle").textContent;
+    expect(toggle()).toBe("producer.detail.sections.products.show_all:12"); // «all»: the business's 12
+    fireEvent.click(chips()[1]);
+    expect(toggle()).toBe("producer.detail.sections.products.show_all:10");
+  });
+
+  it("no «more» chip when every product is in a group", () => {
+    const products = [prod(0, { group_id: "g2" }), prod(1, { group_id: "g1" })];
+    render(<ProducerSections {...baseProps} producer={{ ...producerWith(products), product_groups: groups }} />);
+    expect(chips()).toHaveLength(3);
   });
 });

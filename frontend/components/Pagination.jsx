@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 import { useTranslations } from "next-intl";
@@ -19,6 +20,8 @@ import { buildPageRange, clampPage } from "@/lib/pagination";
  *   role="navigation", aria-label="Pagination" (translated)
  *   aria-current="page" on the active button
  *   Disabled prev/next when at boundaries.
+ *
+ * @param {{ page: number, totalPages: number, onChange: (page: number) => void, perPage?: number, onPerPageChange?: (perPage: number) => void, perPageOptions?: number[] }} props
  */
 export default function Pagination({
   page,
@@ -51,7 +54,7 @@ export default function Pagination({
           <select
             value={perPage}
             onChange={(e) => onPerPageChange(Number(e.target.value))}
-            className="border border-border rounded-sm px-2 py-1 bg-surface text-text"
+            className="border border-border rounded-sm px-2 py-1 bg-surface text-text focus-ring"
             aria-label={t("per_page_aria")}
           >
             {perPageOptions.map((opt) => (
@@ -71,7 +74,7 @@ export default function Pagination({
           onClick={() => go(safePage - 1)}
           disabled={safePage <= 1}
           aria-label={t("prev_aria")}
-          className="px-3 py-1.5 rounded-sm text-sm border border-border bg-surface hover:bg-green-50 disabled:opacity-40 disabled:cursor-not-allowed"
+          className="px-3 py-1.5 rounded-sm text-sm border border-border bg-surface hover:bg-green-50 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {t("prev")}
         </button>
@@ -112,7 +115,7 @@ export default function Pagination({
           onClick={() => go(safePage + 1)}
           disabled={safePage >= totalPages}
           aria-label={t("next_aria")}
-          className="px-3 py-1.5 rounded-sm text-sm border border-border bg-surface hover:bg-green-50 disabled:opacity-40 disabled:cursor-not-allowed"
+          className="px-3 py-1.5 rounded-sm text-sm border border-border bg-surface hover:bg-green-50 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {t("next")}
         </button>

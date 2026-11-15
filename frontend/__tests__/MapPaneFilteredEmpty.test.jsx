@@ -28,8 +28,6 @@ const base = {
   onMapCanvasClick: () => {},
   registerApi: () => {},
   mapRef: { current: null },
-  showSecondaryLayer: true,
-  onToggleSecondaryLayer: () => {},
   focusedProducerId: null,
   onSearchThisArea: () => {},
   visibleProducers: [],

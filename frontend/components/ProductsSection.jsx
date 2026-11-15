@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Module:   ProductsSection
  * Purpose:  Producer-self CRUD editor for their product catalog (name, price
@@ -34,6 +35,8 @@ import { showToast } from "@/lib/toast";
 // MEH-1140: canonical shekel format ("35₪") — one owner in lib/utils.
 import { formatPriceRange } from "@/lib/utils";
 import EmptyState from "@/components/ui/EmptyState";
+import ProductOrganizer from "@/components/ProductOrganizer";
+import { orderProducts } from "@/lib/product-order";
 import Input from "@/components/ui/Input";
 import Button from "@/components/ui/Button";
 
@@ -76,6 +79,7 @@ const PRODUCT_FIELD_ORDER = ["name", "price_min", "price_max"];
 const PRODUCT_FIELD_ID_SUFFIX = { name: "name", price_min: "price-min", price_max: "price-max" };
 
 function validateProductForm(f, tErr) {
+  /** @type {Record<string, string>} */
   const errors = {};
   if (!f.name.trim()) errors.name = tErr("name_required");
   if (f.price_min === "") {
@@ -122,6 +126,24 @@ function clearFieldError(setErrors, field) {
 // (page.js:596/:627/:866). Driving the toggle from the prop and patching upward
 // keeps one owner, so marking a product updates the checklist in the same tick
 // instead of leaving it stale until reload.
+/**
+ * @typedef {{
+ *   name: string, description: string, image_url: string,
+ *   price_min: string | number, price_max: string | number,
+ *   is_gluten_free: boolean, is_vegan: boolean, is_vegetarian: boolean,
+ *   is_lactose_free: boolean, is_no_added_sugar: boolean,
+ *   ingredients: string, allergens: string[],
+ * }} ProductForm
+ */
+/**
+ * @param {{
+ *   embedded?: boolean,
+ *   onCountChange?: (count: number) => void,
+ *   topProductName?: string | null,
+ *   topProductId?: string | number | null,
+ *   onTopProductChange?: ((change: { top_product_id: string | number | null, top_product_name: string | null }) => void) | null,
+ * }} [props]
+ */
 export default function ProductsSection({
   embedded = false,
   onCountChange,
@@ -144,10 +166,10 @@ export default function ProductsSection({
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
-  const [formErrors, setFormErrors] = useState({});
+  const [formErrors, setFormErrors] = useState(/** @type {Record<string, string>} */ ({}));
   const [editingId, setEditingId] = useState(null);
-  const [editForm, setEditForm] = useState({});
-  const [editFormErrors, setEditFormErrors] = useState({});
+  const [editForm, setEditForm] = useState(/** @type {Partial<ProductForm>} */ ({}));
+  const [editFormErrors, setEditFormErrors] = useState(/** @type {Record<string, string>} */ ({}));
   const [savingEdit, setSavingEdit] = useState(false);
   // UIS-026 (MEH-776): in-flight delete guard — blocks rapid-click
   // double-delete of the same product and disables the row's trash button.
@@ -244,7 +266,7 @@ export default function ProductsSection({
     setLoading(true);
     setLoadError(false);
     api.get("/producers/me/products")
-      .then((r) => setProducts(r.data))
+      .then((r) => setProducts(orderProducts(r.data || []))) // MEH-3055: owner order
       .catch(() => setLoadError(true))
       .finally(() => setLoading(false));
   }, [reloadKey]);
@@ -342,8 +364,13 @@ export default function ProductsSection({
       setForm({ name: "", description: "", image_url: "", price_min: "", price_max: "", is_gluten_free: false, is_vegan: false, is_vegetarian: false, is_lactose_free: false, is_no_added_sugar: false, ingredients: "", allergens: [] });
       setAdding(false);
       showToast.success(t("toast_added")); // MEH-1446
-    } catch {
-      setError(tErr("save_failed"));
+    } catch (err) {
+      // MEH-3022: the per-business cap answers 409 with the approved Hebrew
+      // sentence — show it instead of the generic "save failed".
+      setError(
+        (err?.response?.status === 409 && detailToMessage(err.response.data?.detail)) ||
+          tErr("save_failed"),
+      );
     } finally {
       setSaving(false);
     }
@@ -590,7 +617,7 @@ export default function ProductsSection({
               <p className="text-2xs text-fg-muted mb-1">{t("empty.sample_label")}</p>
               <div className="border border-border rounded-md p-3 bg-surface-card flex items-center gap-3">
                 <div className="w-14 h-14 rounded-sm bg-green-50 flex items-center justify-center shrink-0">
-                  <Package size={22} className="text-fg-muted" aria-hidden="true" />
+                  <Package size={24} className="text-fg-muted" aria-hidden="true" />
                 </div>
                 <div className="min-w-0">
                   <p className="text-sm font-medium text-text">{t("empty.sample_name")}</p>
@@ -803,7 +830,7 @@ export default function ProductsSection({
                       : "card.top_product_mark_aria_template",
                     { name: product.name },
                   )}
-                  className={`p-1.5 rounded-full transition disabled:opacity-40 ${
+                  className={`p-1.5 rounded-full transition disabled:opacity-50 ${
                     isTopProduct(product)
                       ? "text-primary hover:bg-primary/10"
                       : "text-fg-muted hover:text-primary hover:bg-primary/5"
@@ -827,7 +854,7 @@ export default function ProductsSection({
                 onClick={() => { setError(""); setConfirmDelete({ id: product.id, name: product.name }); }}
                 disabled={deletingId === product.id}
                 aria-label={t("card.delete_aria_template", { name: product.name })}
-                className="p-1.5 rounded-full text-fg-muted hover:text-error hover:bg-danger-50 transition disabled:opacity-40"
+                className="p-1.5 rounded-full text-fg-muted hover:text-error hover:bg-danger-50 transition disabled:opacity-50"
               >
                 <Trash size={16} aria-hidden="true" />
               </button>
@@ -835,6 +862,12 @@ export default function ProductsSection({
           )
         ))}
       </div>
+
+      {/* MEH-3055: order + groups, under the rows they act on. Hidden while a
+          row is being edited or added, so two forms never compete. */}
+      {products && !adding && editingId == null && (
+        <ProductOrganizer products={products} onProductsChange={setProducts} />
+      )}
 
       {adding && (
         <form onSubmit={handleAdd} noValidate className="border border-border rounded-md p-4 space-y-5 bg-green-50">
@@ -959,7 +992,7 @@ export default function ProductsSection({
           aria-modal, Escape closes, buttons disabled while busy, failure keeps
           the dialog open with the error shown. */}
       {confirmDelete && (
-        <div className="fixed inset-0 z-[9000] flex items-center justify-center bg-black/40 px-4">
+        <div className="fixed inset-0 z-modal flex items-center justify-center bg-black/40 px-4">
           <div
             ref={deleteDialogRef}
             role="dialog"
@@ -1000,7 +1033,7 @@ export default function ProductsSection({
           busy). Confirming adds the product as-is; declining sends nothing and
           leaves the form filled so the name can be changed. */}
       {confirmDuplicate && (
-        <div className="fixed inset-0 z-[9000] flex items-center justify-center bg-black/40 px-4">
+        <div className="fixed inset-0 z-modal flex items-center justify-center bg-black/40 px-4">
           <div
             ref={duplicateDialogRef}
             role="dialog"
@@ -1053,6 +1086,7 @@ export default function ProductsSection({
 // like every other field in the card. Plain number, no ₪ — the currency glyph
 // is already rendered inside the input below, and products are numeric since
 // MEH-295.
+/** @param {{ id: string, label: import("react").ReactNode, optionalSuffix?: import("react").ReactNode, value: string | number, onChange: (e: import("react").ChangeEvent<HTMLInputElement>) => void, placeholder?: string, required?: boolean, error?: import("react").ReactNode }} props */
 function PriceField({ id, label, optionalSuffix, value, onChange, placeholder, required = false, error }) {
   return (
     <Input
@@ -1170,6 +1204,7 @@ function IngredientsAllergensFields({ idPrefix, ingredients, allergens, onIngred
 // REUSES: components/CategorySelector.jsx:163-200 selected idiom
 // (border-primary bg-green-50 vs border-border hover:border-primary) — ADR-019
 // states via the primary/cream family, no new state token.
+/** @param {{ label: import("react").ReactNode, pressed: boolean, onToggle: () => void, iconKey?: string }} props */
 function DietChip({ label, pressed, onToggle, iconKey }) {
   // MEH-1472: leading Phosphor glyph from the canonical chip-icon map. null for
   // keys without an icon (e.g. vegetarian) → the chip stays text-only, matching
@@ -1211,7 +1246,7 @@ function UploadZone({ imageUrl, uploading, onUpload, onRemove, tForm }) {
             display:none removes it and the wrapping label is not natively
             focusable (WCAG 2.1.1). Ring on focus-within is the keyboard
             affordance; this label has no border, so the ring alone carries it. */}
-        <label className="cursor-pointer text-sm text-primary underline decoration-[1.5px] underline-offset-[5px] decoration-primary/35 hover:decoration-current rounded focus-within:ring-2 focus-within:ring-primary/30">
+        <label className="cursor-pointer text-sm text-primary underline decoration-[1.5px] underline-offset-[5px] decoration-primary/35 hover:decoration-current rounded focus-within:ring-2 focus-within:ring-primary">
           {uploading ? tForm("image_uploading") : tForm("image_replace")}
           <input
             type="file"
@@ -1230,7 +1265,7 @@ function UploadZone({ imageUrl, uploading, onUpload, onRemove, tForm }) {
   // MEH-2033: sr-only + focus-within — same keyboard-reachability fix as
   // EventForm (MEH-2031) / ExperienceForm (MEH-2012), word for word.
   return (
-    <label className="flex flex-col items-center justify-center gap-1 text-center text-sm text-fg-muted border border-dashed border-border rounded-sm px-4 py-6 cursor-pointer hover:bg-green-50 transition focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/30">
+    <label className="flex flex-col items-center justify-center gap-1 text-center text-sm text-fg-muted border border-dashed border-border rounded-sm px-4 py-6 cursor-pointer hover:bg-green-50 transition focus-within:border-primary focus-within:ring-2 focus-within:ring-primary">
       <Package size={20} className="text-fg-muted" aria-hidden="true" />
       <span>{uploading ? tForm("image_uploading") : tForm("image_upload_cta")}</span>
       <input

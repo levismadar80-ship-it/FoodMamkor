@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 import { useEffect, useId, useRef, useState } from "react";
@@ -10,6 +11,7 @@ const POSITION_CLASSES = {
   end: "start-full top-1/2 -translate-y-1/2 ms-2",
 };
 
+/** @param {{ content: import("react").ReactNode, label?: string, position?: "top"|"bottom"|"start"|"end" }} props */
 export default function InfoTooltip({
   content,
   label,
@@ -90,7 +92,7 @@ export default function InfoTooltip({
           openBeforeHoverRef.current = false;
           setOpen(false);
         }}
-        className="inline-flex items-center justify-center w-4 h-4 mx-1 rounded-full border border-fg-muted/40 text-fg-muted text-2xs leading-none hover:bg-fg-muted/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 transition"
+        className="inline-flex items-center justify-center w-4 h-4 mx-1 rounded-full border border-fg-muted/40 text-fg-muted text-2xs leading-none hover:bg-fg-muted/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary transition"
       >
         <span aria-hidden="true">i</span>
       </button>
@@ -98,7 +100,7 @@ export default function InfoTooltip({
         <span
           id={tooltipId}
           role="tooltip"
-          className={`pointer-events-none absolute z-[9999] whitespace-normal w-56 bg-text text-white text-2xs leading-relaxed rounded-sm px-[10px] py-[6px] shadow-lg ${POSITION_CLASSES[position] ?? POSITION_CLASSES.top}`}
+          className={`pointer-events-none absolute z-tooltip whitespace-normal w-56 bg-text text-white text-2xs leading-relaxed rounded-sm px-[10px] py-[6px] shadow-lg ${POSITION_CLASSES[position] ?? POSITION_CLASSES.top}`}
         >
           {content}
         </span>

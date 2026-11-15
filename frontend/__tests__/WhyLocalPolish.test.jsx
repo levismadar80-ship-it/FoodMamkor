@@ -54,7 +54,7 @@ describe("/about/why-local — FinalWhyLocal", () => {
   it("«מה שמשתנה בדרך»: h2 + the three lines as a gold-dot list inside a card", async () => {
     const { container } = render(await WhyLocalPage(params));
     const card = container.querySelector('[data-testid="why-local-changes"]');
-    expect(classes(card)).toEqual(expect.arrayContaining(["rounded-xl", "bg-background-alt", "p-5"]));
+    expect(classes(card)).toEqual(expect.arrayContaining(["rounded-lg", "bg-background-alt", "p-5"]));
     expect(card.querySelector("h2").textContent).toBe(W.changes_h);
     const items = [...card.querySelectorAll("ul > li")];
     expect(items.map((li) => li.textContent)).toEqual([W.changes_1, W.changes_2, W.changes_3]);

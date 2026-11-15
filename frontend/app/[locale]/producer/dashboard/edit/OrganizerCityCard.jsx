@@ -18,6 +18,7 @@ import CitySearch from "@/components/CitySearch";
 import api from "@/lib/api";
 import { showToast } from "@/lib/toast";
 import Button from "@/components/ui/Button";
+import InlineMessage from "@/components/ui/InlineMessage";
 
 export default function OrganizerCityCard({ profile, onSave, reportDirty = () => {} }) {
   const t = useTranslations("dashboard.producer.organizer_city");
@@ -62,9 +63,9 @@ export default function OrganizerCityCard({ profile, onSave, reportDirty = () =>
       />
       <p className="text-xs text-fg-muted">{t("hint")}</p>
       {error && (
-        <p className="text-sm text-danger-600" role="alert">
+        <InlineMessage>
           {error}
-        </p>
+        </InlineMessage>
       )}
       <Button
         type="button"

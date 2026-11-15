@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 import { useState } from "react";
@@ -8,6 +9,7 @@ import { DraftProductSchema } from "@/lib/api-schemas";
 import { formatPriceRange } from "@/lib/utils";
 import Input from "@/components/ui/Input";
 import Button from "@/components/ui/Button";
+import InlineMessage from "@/components/ui/InlineMessage";
 
 /**
  * Module:   DraftProductsPanel
@@ -29,6 +31,7 @@ import Button from "@/components/ui/Button";
 const EMPTY_FORM = { name: "", description: "", price_min: "", price_max: "" };
 
 function validate(f, tErr) {
+  /** @type {Record<string, string>} */
   const errors = {};
   if (!f.name.trim()) errors.name = tErr("name_required");
   const min = Number(f.price_min);
@@ -51,7 +54,7 @@ export default function DraftProductsPanel({ producerId, initialProducts = [] })
   const tProducts = useTranslations("settings.products");
   const [products, setProducts] = useState(initialProducts);
   const [form, setForm] = useState(EMPTY_FORM);
-  const [fieldErrors, setFieldErrors] = useState({});
+  const [fieldErrors, setFieldErrors] = useState(/** @type {Record<string, string>} */ ({}));
   const [error, setError] = useState(null);
   const [saving, setSaving] = useState(false);
   const [confirmId, setConfirmId] = useState(null);
@@ -168,9 +171,9 @@ export default function DraftProductsPanel({ producerId, initialProducts = [] })
       )}
 
       {error && (
-        <p className="text-sm text-error mb-4" role="alert" data-testid="draft-products-error">
+        <InlineMessage className="mb-4" data-testid="draft-products-error">
           {error}
-        </p>
+        </InlineMessage>
       )}
 
       <form onSubmit={add} noValidate data-testid="draft-product-form" className="space-y-3">

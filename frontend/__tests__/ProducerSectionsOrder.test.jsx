@@ -23,6 +23,7 @@ vi.mock("@/lib/cloudinary", async (importOriginal) => ({
 // MEH-1901: CaretLeft joins the set — the product grid row and signature card
 // carry a forward chevron (LEFT in RTL) now that they open the detail sheet.
 vi.mock("@phosphor-icons/react", () => ({
+  Info: () => <span />, // MEH-2999: fine-print icon
   Leaf: () => <span />,
   // MEH-2654: ProducerSections now loads lib/chip-icons (diet glyphs on rows).
   SealCheck: () => <span />,
@@ -294,12 +295,17 @@ describe("ProducerSections last-updated line (MEH-1291)", () => {
     reviewsVisible: false,
   });
 
-  it("renders the freshness line, after the report, when updated_at is set", () => {
+  // MEH-2999 (Sapir chose A, 12/11): one quiet meta row under the disclaimer —
+  // last-updated · correction link · report. Was three stacked lines.
+  it("renders the freshness line first in the one meta row, under the disclaimer, when updated_at is set", () => {
     render(<ProducerSections {...freshnessProps({ updated_at: "2026-07-18T10:00:00Z" })} />);
     const line = screen.getByText("producer.detail.last_updated");
     const report = screen.getByTestId("report");
-    expect(line).toBeInTheDocument();
-    expect(before(report, line)).toBe(true); // page-end footnote, below the report
+    const row = screen.getByTestId("producer-fine-print-meta");
+    expect(row).toContainElement(line);
+    expect(row).toContainElement(report);
+    expect(before(line, report)).toBe(true);
+    expect(before(screen.getByTestId("disclaimer"), row)).toBe(true);
   });
 
   it("renders nothing when updated_at is null (untouched producer)", () => {

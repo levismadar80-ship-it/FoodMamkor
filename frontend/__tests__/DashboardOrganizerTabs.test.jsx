@@ -16,7 +16,7 @@ const logout = vi.fn();
 vi.mock("@/lib/auth-context", () => ({
   useAuth: () => ({ user: authState.user, loading: false, logout }),
 }));
-vi.mock("next-intl", () => ({ useTranslations: (scope) => (key) => `${scope}.${key}` }));
+vi.mock("next-intl", () => ({ useTranslations: (scope) => (key) => `${scope}.${key}`, useLocale: () => "he" }));
 vi.mock("@/i18n/navigation", () => ({
   useRouter: () => ({ push: vi.fn(), replace: vi.fn() }),
   usePathname: () => nav.pathname,

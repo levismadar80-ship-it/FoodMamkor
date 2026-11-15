@@ -12,6 +12,8 @@ Does NOT: touch the DB, decide whether to send (the route does), or retry.
           reservation.
 Related:  app/routers/rescue.py::create_order, app/services/auth_emails.py
           (same HTML conventions), app/services/email.py
+          MEH-2952: each sender takes `test_cause` (the business or the buyer
+          is a seeded test row) and send_email then sends nothing.
 History:  MEH-2715 (creation)
 """
 
@@ -54,7 +56,9 @@ class ReservationEmail:
     cancel_until: str | None
 
 
-def send_reservation_email(to: str, m: ReservationEmail) -> None:
+def send_reservation_email(
+    to: str, m: ReservationEmail, test_cause: bool = False
+) -> None:
     # A name with a line break would break the Subject header; collapse all
     # whitespace runs to one space (the body keeps the same, cleaned name).
     name = " ".join(m.producer_name.split())
@@ -128,10 +132,10 @@ def send_reservation_email(to: str, m: ReservationEmail) -> None:
 </table>
 </body>
 </html>"""
-    send_email(to, subject, body, html=html_body)
+    send_email(to, subject, body, html=html_body, test_cause=test_cause)
 
 
-def send_cancel_email(to: str, producer_name: str) -> None:
+def send_cancel_email(to: str, producer_name: str, test_cause: bool = False) -> None:
     """MEH-2737 — the buyer cancelled; confirm it. Copy approved word for word
     by Sapir on 6/11 (text 4). No code in it: the code is no longer valid."""
     name = " ".join(producer_name.split())
@@ -162,19 +166,12 @@ def send_cancel_email(to: str, producer_name: str) -> None:
 </table>
 </body>
 </html>"""
-    send_email(to, subject, body, html=html_body)
+    send_email(to, subject, body, html=html_body, test_cause=test_cause)
 
 
-def send_business_cancel_email(to: str, producer_name: str) -> None:
-    """MEH-2738 — the business cancelled today's bag, so the buyer's
-    reservation went with it. Copy approved word for word by Sapir on 6/11
-    (text 7). Links to today's bags elsewhere; no code, nothing to pay."""
-    name = " ".join(producer_name.split())
+def _send_bag_cancelled(to: str, name: str, line1: str, test_cause: bool) -> None:
+    """The «הסל ב… בוטל» card: one reason line, then the link to today's bags."""
     subject = f"הסל ב{name} בוטל"
-    line1 = (
-        f"בית העסק {name} ביטל את סל ההפתעה של היום, ולכן גם השריון שלכם בוטל. "
-        "אין צורך להגיע ואין מה לשלם."
-    )
     line2 = "מצטערים. אולי יש סל אחר באזור:"
     link_text = "לסלים של היום"
     list_url = f"{settings.frontend_url}/rescue"
@@ -203,4 +200,33 @@ def send_business_cancel_email(to: str, producer_name: str) -> None:
 </table>
 </body>
 </html>"""
-    send_email(to, subject, body, html=html_body)
+    send_email(to, subject, body, html=html_body, test_cause=test_cause)
+
+
+def send_business_cancel_email(
+    to: str, producer_name: str, test_cause: bool = False
+) -> None:
+    """MEH-2738 — the business cancelled today's bag, so the buyer's
+    reservation went with it. Copy approved word for word by Sapir on 6/11
+    (text 7). Links to today's bags elsewhere; no code, nothing to pay."""
+    name = " ".join(producer_name.split())
+    line1 = (
+        f"בית העסק {name} ביטל את סל ההפתעה של היום, ולכן גם השריון שלכם בוטל. "
+        "אין צורך להגיע ואין מה לשלם."
+    )
+    _send_bag_cancelled(to, name, line1, test_cause=test_cause)
+
+
+def send_delisted_cancel_email(
+    to: str, producer_name: str, test_cause: bool = False
+) -> None:
+    """MEH-3227 (D1) — the SITE took the business off (suspended, rejected,
+    deleted), so its live bags went with it. «בית העסק ביטל» would be false
+    here, so the reason line says the business is no longer listed — and no
+    more (the group-buy precedent, MEH-2498). Copy approved by Sapir 14/11."""
+    name = " ".join(producer_name.split())
+    line1 = (
+        f"בית העסק {name} כבר לא מופיע במהמקור, ולכן השריון שלכם לסל בוטל. "
+        "אין צורך להגיע ואין מה לשלם."
+    )
+    _send_bag_cancelled(to, name, line1, test_cause=test_cause)

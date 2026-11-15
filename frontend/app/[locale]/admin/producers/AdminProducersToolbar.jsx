@@ -1,9 +1,11 @@
+// @ts-check
 "use client";
 
 import { Link } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
 import { Star, Warning } from "@phosphor-icons/react";
 import Button from "@/components/ui/Button";
+import Input from "@/components/ui/Input";
 
 // Phosphor icon size used in this toolbar.
 const ICON_SIZE_SM = 16;
@@ -11,12 +13,12 @@ const ICON_SIZE_SM = 16;
 function SearchInput({ value, onChange, onSearch }) {
   const t = useTranslations("admin");
   return (
-    <input
+    <Input inline size="md"
       placeholder={t("producers.toolbar.search_placeholder")}
       value={value}
       onChange={(e) => onChange(e.target.value)}
       onKeyDown={(e) => e.key === "Enter" && onSearch()}
-      className="flex-1 border border-border rounded-md px-3 py-2"
+      className="flex-1"
     />
   );
 }
@@ -28,7 +30,7 @@ function StatusSelect({ value, onChange }) {
       value={value}
       onChange={(e) => onChange(e.target.value)}
       aria-label={t("producers.table.columns.status")}
-      className="border border-border rounded-md px-3 py-2 bg-surface"
+      className="border border-border rounded-sm px-3 py-2 bg-surface focus-ring"
     >
       <option value="all">{t("producers.toolbar.all_statuses")}</option>
       <option value="approved">{t("producers.toolbar.active")}</option>
@@ -99,7 +101,7 @@ function ToolbarActions({ onExport }) {
       </button>
       <Link
         href="/admin/producers/new"
-        className="bg-primary text-white px-4 py-2 rounded-md text-sm whitespace-nowrap text-center"
+        className="bg-primary text-white px-4 py-2 rounded-full text-sm whitespace-nowrap text-center"
       >
         {t("producers.toolbar.new_producer")}
       </Link>

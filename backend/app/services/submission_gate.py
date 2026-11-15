@@ -18,7 +18,7 @@ Does NOT: decide APPROVABILITY. That is a different question with a different
           the product wants open. Opening hours are likewise absent: MEH-1895
           counts them toward completeness, but they are RECOMMENDED, not
           required (Google precedent, Sapir 16/08).
-Related:  backend/app/routers/producer_me.py (POST /producers/me/submit-for-review),
+Related:  backend/app/routers/producer_me_review.py (POST /producers/me/submit-for-review),
           backend/app/services/pending_nudge.py (maps these codes to email copy),
           frontend/lib/producer-completeness.js:48 (the frontend mirror this
           deliberately parallels — see "Why this is not that" below).
@@ -94,7 +94,7 @@ ORGANIZER_SUBMISSION_REQUIREMENTS: tuple[str, ...] = (
 )
 
 
-def _is_usable_coord(value) -> bool:
+def _is_usable_coord(value: object) -> bool:
     """A coordinate is usable only when it is a real, non-NaN number.
 
     Mirrors producerPoints.js:20's `isUsableCoord`. `bool` is excluded
@@ -125,7 +125,7 @@ def _has_location(producer: Producer) -> bool:
     registration path, so reading it here would evaluate empty for every
     business and silently block every delivery-only submission.
     """
-    delivery_only = producer.has_physical_location is False and bool(
+    delivery_only = producer.has_physical_location is False and bool(  # type: ignore[comparison-overlap]
         producer.offers_delivery
     )
     if delivery_only:
@@ -198,7 +198,7 @@ def submission_missing_items(producer: Producer) -> list[str]:
     # registration (it was removed outright in MEH-2124), so keying on it would
     # have reported every draft as phone-verified and opened the gate for
     # nobody's benefit. The column is written by
-    # producer_me.py:confirm_phone_otp independently of status, which is what
+    # producer_me_review.py:confirm_phone_otp independently of status, which is what
     # makes it correct for a draft.
     if not producer.phone_verified:
         missing.append(MISSING_PHONE_VERIFIED)
@@ -230,7 +230,7 @@ def attach_upcoming_events_count(producer: Producer) -> None:
     (the client gate mirror reads it). Organizers only — a business never
     reads it, so it keeps the schema default 0 without an extra query."""
     if getattr(producer, "kind", "producer") == "organizer":
-        producer.upcoming_events_count = upcoming_events_count(producer)
+        producer.upcoming_events_count = upcoming_events_count(producer)  # type: ignore[attr-defined]  # transient, read by ProducerOwnerOut
 
 
 def _organizer_missing_items(producer: Producer) -> list[str]:

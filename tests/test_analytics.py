@@ -398,6 +398,14 @@ class TestInternalViewerNotTracked:
         assert r.status_code == 204
         assert db.query(ContactClick).count() == 1
 
+    @pytest.mark.parametrize("method", ["facebook", "external_order"])
+    def test_contact_click_facebook_and_external_order_record(self, client, db, method):
+        """MEH-2999: both are primary-CTA channels (MEH-296); they used to 422."""
+        p = make_producer(db)
+        r = client.post(f"/producers/{p.id}/contact-click", json={"method": method})
+        assert r.status_code == 204
+        assert db.query(ContactClick).one().method == method
+
     def test_owner_contact_click_invalid_method_still_422(self, client, db):
         """422 is raised BEFORE the skip — validation is unchanged for owners."""
         p = make_producer(db)

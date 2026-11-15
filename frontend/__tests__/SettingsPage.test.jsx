@@ -78,7 +78,6 @@ vi.mock("@phosphor-icons/react", () => ({
   EyeSlash: (props) => <span data-testid="icon-eye-slash" {...props} />,
   Camera: (props) => <span data-testid="icon-camera" {...props} />,
   CheckCircle: (props) => <span data-testid="icon-check-circle" {...props} />,
-  HourglassSimple: (props) => <span data-testid="icon-hourglass" {...props} />,
 }));
 
 // Mock PasswordStrength so we don't pull its CSS bits.
@@ -240,6 +239,17 @@ describe("SettingsPage", () => {
     mockDeleteAccount.mockClear();
     paramsRef.current = new URLSearchParams("");
     userRef.current = consumer;
+  });
+
+  it("MEH-2982: a guest is sent to /login with a redirect back to /settings", () => {
+    userRef.current = null;
+    window.history.pushState({}, "", "/en/settings?tab=security");
+    render(<SettingsPage />);
+    expect(mockPush).toHaveBeenCalledTimes(1);
+    expect(mockPush).toHaveBeenCalledWith(
+      "/en/login?redirect=%2Fen%2Fsettings%3Ftab%3Dsecurity",
+    );
+    window.history.pushState({}, "", "/");
   });
 
   // MEH-1355: the business tab was removed — producers and consumers now see
@@ -405,10 +415,14 @@ describe("SettingsPage", () => {
     // Case-insensitive, trimmed (page.jsx:689) — assert the real contract, not
     // a byte-identical echo, or a future `.trim()` removal would go unnoticed.
     fireEvent.change(emailField, { target: { value: `  ${consumer.email.toUpperCase()}  ` } });
+    // MEH-3248 (D15): the right email alone no longer arms it — the server
+    // also wants the password, so the button waits for one.
+    expect(confirmBtn).toBeDisabled();
+    fireEvent.change(document.getElementById("danger-password"), { target: { value: "example-pass-123" } });
     expect(confirmBtn).not.toBeDisabled();
 
     fireEvent.click(confirmBtn);
-    await waitFor(() => expect(mockDeleteAccount).toHaveBeenCalled());
+    await waitFor(() => expect(mockDeleteAccount).toHaveBeenCalledWith({ password: "example-pass-123" }));
   });
 
   // MEH-1355: the "business" tab was removed — its status/support surface is

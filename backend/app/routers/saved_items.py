@@ -22,11 +22,13 @@ later stops being public drops out of GET on its own; its row stays, so it
 comes back if the item is reinstated (the MEH-2513 rule for businesses).
 """
 
+from collections.abc import Callable
+from typing import Any
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import joinedload, Query, Session
 
 from app.auth import get_current_user
 from app.database import get_db
@@ -43,13 +45,13 @@ from app.rate_limit import limiter
 from app.routers.events import _serialize as serialize_event
 from app.routers.experiences import _publicly_visible_query, _serialize_list
 from app.schemas.schemas import SavedItemRefOut, SavedItemsOut, SavedItemType
-from app.services.producer_listing import is_business
+from app.services.producer_listing import is_business, not_test_producer
 from app.services.registrations import registered_counts
 
 router = APIRouter(prefix="/users/me/saved", tags=["saved"])
 
 
-def _visible_recipes(db: Session):
+def _visible_recipes(db: Session) -> Query[ProducerRecipe]:
     return (
         db.query(ProducerRecipe)
         .options(joinedload(ProducerRecipe.producer))
@@ -62,24 +64,24 @@ def _visible_recipes(db: Session):
     )
 
 
-def _visible_events(db: Session):
+def _visible_events(db: Session) -> Query[Event]:
     return (
         db.query(Event)
         .options(joinedload(Event.producer))
         .join(Producer, Event.producer_id == Producer.id)
-        .filter(Producer.status == "approved")
+        .filter(Producer.status == "approved", not_test_producer())  # MEH-2952
     )
 
 
 # type → (its one "public" query, its model). The model gives the id column.
-_VISIBLE = {
+_VISIBLE: dict[str, tuple[Callable[[Session], Query[Any]], Any]] = {
     "recipe": (_visible_recipes, ProducerRecipe),
     "event": (_visible_events, Event),
     "experience": (_publicly_visible_query, Experience),
 }
 
 
-def _visible_by_ids(db: Session, item_type: str, ids: list[UUID]):
+def _visible_by_ids(db: Session, item_type: str, ids: list[UUID]) -> Query[Any]:
     build, model = _VISIBLE[item_type]
     return build(db).filter(model.id.in_(ids))
 
@@ -87,7 +89,7 @@ def _visible_by_ids(db: Session, item_type: str, ids: list[UUID]):
 @router.get("/ids", response_model=list[SavedItemRefOut])
 def get_saved_ids(
     user: User = Depends(get_current_user), db: Session = Depends(get_db)
-):
+) -> list[SavedItemRefOut] | list[dict[str, Any]]:
     """Every saved (type, id) of the current user, for the hearts' cache.
 
     Not filtered by visibility: a heart only ever renders on a page the viewer
@@ -103,7 +105,9 @@ def get_saved_ids(
 
 
 @router.get("", response_model=SavedItemsOut)
-def get_saved(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+def get_saved(
+    user: User = Depends(get_current_user), db: Session = Depends(get_db)
+) -> SavedItemsOut | dict[str, list[Any]]:
     rows = (
         db.query(SavedItem)
         .filter(SavedItem.user_id == user.id)
@@ -112,13 +116,13 @@ def get_saved(user: User = Depends(get_current_user), db: Session = Depends(get_
     )
     by_type: dict[str, list[SavedItem]] = {t: [] for t in SAVED_ITEM_TYPES}
     for row in rows:
-        by_type[row.item_type].append(row)
+        by_type[row.item_type].append(row)  # type: ignore[index]
 
-    def _load(item_type: str) -> dict:
+    def _load(item_type: str) -> dict[Any, Any]:
         ids = [r.item_id for r in by_type[item_type]]
         if not ids:
             return {}
-        items = _visible_by_ids(db, item_type, ids).all()
+        items = _visible_by_ids(db, item_type, ids).all()  # type: ignore[arg-type]
         return {item.id: item for item in items}
 
     recipes = _load("recipe")
@@ -128,7 +132,7 @@ def get_saved(user: User = Depends(get_current_user), db: Session = Depends(get_
     event_counts = registered_counts(db, event_ids=list(events))
     experience_counts = registered_counts(db, experience_ids=list(experiences))
 
-    out = {"recipes": [], "events": [], "experiences": []}
+    out: dict[str, list[Any]] = {"recipes": [], "events": [], "experiences": []}
     for row in by_type["recipe"]:
         recipe = recipes.get(row.item_id)
         if recipe:
@@ -176,7 +180,7 @@ def get_saved(user: User = Depends(get_current_user), db: Session = Depends(get_
 
 # Per-route limits (security.md): generous for a person tapping hearts, a
 # ceiling for a script filling saved_items.
-@router.post("/{item_type}/{item_id}", status_code=201)
+@router.post("/{item_type}/{item_id}", status_code=201, response_model=None)
 @limiter.limit("60/minute")
 def save_item(
     request: Request,
@@ -184,7 +188,7 @@ def save_item(
     item_id: UUID,
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
-):
+) -> dict[str, Any]:
     exists = _visible_by_ids(db, item_type, [item_id]).first()
     if not exists:
         raise HTTPException(status_code=404, detail="הפריט לא נמצא")
@@ -211,7 +215,7 @@ def save_item(
     return {"detail": "Saved"}
 
 
-@router.delete("/{item_type}/{item_id}")
+@router.delete("/{item_type}/{item_id}", response_model=None)
 @limiter.limit("60/minute")
 def unsave_item(
     request: Request,
@@ -219,7 +223,7 @@ def unsave_item(
     item_id: UUID,
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
-):
+) -> dict[str, Any]:
     # No visibility check: removing a save of an item that has since been
     # hidden must still work. The user_id filter is the ownership check — a
     # row of another user is never matched, so it is a 404 like a missing one.

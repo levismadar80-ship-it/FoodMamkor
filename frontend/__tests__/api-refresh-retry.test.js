@@ -293,3 +293,51 @@ describe("MEH-2467 transient refresh failure keeps the session", () => {
     expect(expiredEvents).toBe(0);
   });
 });
+
+// MEH-3173: the home page fires several authed GETs at once. With a stale
+// token every one of them 401s, they share ONE refresh (MEH-326), and when
+// that refresh 401s each waiter used to call _expireSession() itself — five
+// auth:expired events, five stacked «פג תוקף ההתחברות» toasts (staging,
+// 14/11 16:01Z: 5× GET /producers/{id} 401 → 1× /auth/refresh 401).
+describe("MEH-3173 concurrent 401s end the session ONCE", () => {
+  function installConcurrent() {
+    api.defaults.adapter = (config) => {
+      const url = config.url ?? "";
+      if (url.startsWith("/auth/refresh")) {
+        refreshCalls.push(config);
+        return reject401(config);
+      }
+      protectedCalls.push(config);
+      // Authenticated → 401; the anonymous replay (MEH-1627) → 200.
+      return config._noAuth ? resolve200(config, { ok: true }) : reject401(config);
+    };
+  }
+
+  // Template paths, not literals: scripts/check_api_contract.py matches
+  // `/producers/${…}` to GET /producers/{id}; a literal "/producers/1" reads
+  // as an orphan route.
+  const ids = [1, 2, 3, 4, 5];
+
+  it("5 parallel GETs → 5×401 → one failed refresh → exactly ONE auth:expired", async () => {
+    installConcurrent();
+    const results = await Promise.all(ids.map((id) => api.get(`/producers/${id}`)));
+
+    expect(results.every((r) => r.data.ok)).toBe(true); // page still renders
+    expect(refreshCalls).toHaveLength(1);
+    expect(expiredEvents).toBe(1);
+    expect(localStorage.getItem("token")).toBeNull();
+  });
+
+  it("1 failing GET → exactly one auth:expired (single case unchanged)", async () => {
+    installConcurrent();
+    await api.get(`/producers/${ids[0]}`);
+    expect(expiredEvents).toBe(1);
+  });
+
+  it("guest with no stored session → failed refresh fires NO auth:expired", async () => {
+    localStorage.clear();
+    installConcurrent();
+    await Promise.all([api.get(`/producers/${ids[0]}`), api.get(`/producers/${ids[1]}`)]);
+    expect(expiredEvents).toBe(0);
+  });
+});

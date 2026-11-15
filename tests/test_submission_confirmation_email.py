@@ -183,8 +183,8 @@ def test_a_raising_transport_does_not_escape(monkeypatch):
 def test_sent_on_successful_submit(client, db, monkeypatch):
     calls: list[tuple] = []
     monkeypatch.setattr(
-        "app.routers.producer_me.send_submission_confirmation",
-        lambda to, name, when: calls.append((to, name, when)),
+        "app.routers.producer_me_review.send_submission_confirmation",
+        lambda to, name, when, test_cause=False: calls.append((to, name, when)),
     )
     producer, user = make_submit_ready_producer(db)
     resp = client.post("/producers/me/submit-for-review", headers=auth_header(user))
@@ -200,7 +200,7 @@ def test_sent_on_successful_submit(client, db, monkeypatch):
 def test_not_sent_when_the_gate_rejects_422(client, db, monkeypatch):
     calls: list[tuple] = []
     monkeypatch.setattr(
-        "app.routers.producer_me.send_submission_confirmation",
+        "app.routers.producer_me_review.send_submission_confirmation",
         lambda *a: calls.append(a),
     )
     producer, user = make_submit_ready_producer(db)
@@ -216,7 +216,7 @@ def test_not_sent_when_the_gate_rejects_422(client, db, monkeypatch):
 def test_not_sent_on_409_non_draft(client, db, monkeypatch, status):
     calls: list[tuple] = []
     monkeypatch.setattr(
-        "app.routers.producer_me.send_submission_confirmation",
+        "app.routers.producer_me_review.send_submission_confirmation",
         lambda *a: calls.append(a),
     )
     producer, user = make_submit_ready_producer(db, status=status)

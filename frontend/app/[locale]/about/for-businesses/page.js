@@ -1,3 +1,4 @@
+// @ts-check
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import {
   Camera,
@@ -17,6 +18,8 @@ import { buildAlternates, buildEntityTitle, OG_LOCALE } from "@/lib/i18n-seo";
 // MEH-1113: unify inbound routing — the bottom line points business owners at
 // the contact form + email instead of an Instagram DM (untracked, no record).
 import { CONTACT_EMAIL } from "@/lib/env.client";
+import SectionHeading from "@/components/ui/SectionHeading";
+import { PRICING_PATH, pricingCopyValues } from "@/lib/pricing";
 
 // MEH-475 PR-C4b/chunk-4: for-businesses FAQ i18n. First production
 // pattern for JSON-LD that consumes translation keys via a t() pass.
@@ -64,7 +67,9 @@ const CATEGORIES = [
   {
     key: "money_value",
     items: [
-      { key: "cost", open: true },
+      // MEH-3003 (Sapir, 12/11): every question starts closed — this one
+      // used to open on load. Same as /join (MEH-2799).
+      { key: "cost" },
       { key: "revenue_model" },
     ],
   },
@@ -90,7 +95,8 @@ const CATEGORIES = [
   },
   {
     key: "difference",
-    items: [{ key: "difference" }],
+    // MEH-3000: appended after Q10 (not inserted), so Q1..Q10 keep their order.
+    items: [{ key: "difference" }, { key: "organizers" }],
   },
 ];
 
@@ -106,7 +112,7 @@ function buildFaqJsonLd(t) {
       name: t(`faq.${k}.q`),
       acceptedAnswer: {
         "@type": "Answer",
-        text: t(`faq.${k}.a`).replace(/\*\*/g, ""),
+        text: t(`faq.${k}.a`, pricingCopyValues()).replace(/\*\*/g, ""),
       },
     })),
   };
@@ -138,6 +144,8 @@ export default async function FaqForBusinessesPage({ params }) {
   const t = await getTranslations({ locale, namespace: "about_business" });
   const tHome = await getTranslations({ locale, namespace: "home" });
   const tJoin = await getTranslations({ locale, namespace: "join" });
+  const tPricing = await getTranslations({ locale, namespace: "pricing" });
+  const pricingValues = pricingCopyValues();
   const jsonLd = buildFaqJsonLd(t);
   return (
     <>
@@ -187,10 +195,9 @@ export default async function FaqForBusinessesPage({ params }) {
                 {cat.items.map((item) => (
                   <li key={item.key}>
                     <details
-                      open={item.open || undefined}
                       className="group rounded-lg border border-border bg-surface transition-colors"
                     >
-                      <summary className="cursor-pointer list-none flex items-start justify-between gap-4 px-5 py-4 font-headline-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 rounded-lg text-text text-lg font-semibold">
+                      <summary className="cursor-pointer list-none flex items-start justify-between gap-4 px-5 py-4 font-headline-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-lg text-text text-lg font-semibold">
                         <span>{t(`faq.${item.key}.q`)}</span>
                         <CaretDown
                           aria-hidden="true"
@@ -200,7 +207,20 @@ export default async function FaqForBusinessesPage({ params }) {
                         />
                       </summary>
                       <div className="px-5 pb-5 pt-1 text-base leading-relaxed text-text/90">
-                        {renderAnswer(t(`faq.${item.key}.a`))}
+                        {/* MEH-3166: price numbers come from lib/pricing.js; the
+                            cost answer links to the full price list. */}
+                        {renderAnswer(t(`faq.${item.key}.a`, pricingValues))}
+                        {item.key === "cost" && (
+                          <p className="mt-3">
+                            <Link
+                              href={PRICING_PATH}
+                              className="font-semibold text-primary underline underline-offset-2 hover:no-underline rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                              data-testid="for-businesses-pricing-link"
+                            >
+                              {tPricing("link_full")}
+                            </Link>
+                          </p>
+                        )}
                       </div>
                     </details>
                   </li>
@@ -220,12 +240,12 @@ export default async function FaqForBusinessesPage({ params }) {
           className="mt-14 sm:mt-16"
         >
           <div className="flex items-center gap-3 mb-4">
-            <h2
+            <SectionHeading
               id="showcase-heading"
-              className="font-headline-md text-primary text-xl font-bold"
+              size="content" className="text-primary"
             >
               {t("showcase.heading")}
-            </h2>
+            </SectionHeading>
             <span className="shrink-0 rounded-full border border-accent/50 bg-accent/10 px-3 py-0.5 text-xs font-semibold text-primary-dark">
               {t("showcase.label")}
             </span>
@@ -246,7 +266,7 @@ export default async function FaqForBusinessesPage({ params }) {
               </p>
             </figcaption>
             <ul className="grid gap-4 sm:grid-cols-2">
-              {[
+              {/** @type {Array<[string, import("@phosphor-icons/react").Icon]>} */ ([
                 ["photos", Camera],
                 ["story", BookOpen],
                 // MEH-1285 legal-gated: restore after lawyer decision on
@@ -254,11 +274,11 @@ export default async function FaqForBusinessesPage({ params }) {
                 ["products", Basket],
                 ["delivery", Truck],
                 ["reviews", ChatCircleText],
-              ].map(([key, Icon]) => (
+              ]).map(([key, Icon]) => (
                 <li key={key} className="flex items-start gap-3">
                   <Icon
-                    size={22}
-                    weight="duotone"
+                    size={24}
+                    weight="regular"
                     className="mt-0.5 shrink-0 text-primary"
                     aria-hidden="true"
                   />

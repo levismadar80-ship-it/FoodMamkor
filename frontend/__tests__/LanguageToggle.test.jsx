@@ -17,7 +17,7 @@ vi.mock("@/i18n/navigation", () => ({ Link: ({ href, children, prefetch, ...p })
 }));
 
 // Render the Globe as an inspectable stub so we can assert the size prop
-// (19 bare vs 20 default) without reaching into Phosphor's SVG internals.
+// (20 in both variants since MEH-3089 — 19 was off the icon scale) without reaching into Phosphor's SVG internals.
 vi.mock("@phosphor-icons/react", () => ({
   Globe: ({ size }) => <span data-testid="globe" data-size={size} />,
 }));
@@ -33,13 +33,13 @@ describe("LanguageToggle", () => {
     expect(btn).toHaveAttribute("aria-label");
   });
 
-  it('MEH-1279 variant="bare": no circle chip, Globe size 19', () => {
+  it('MEH-1279 variant="bare": no circle chip, Globe size 20 (MEH-3089 scale)', () => {
     render(<LanguageToggle variant="bare" />);
     const btn = screen.getByTestId("language-toggle");
     expect(btn.className).not.toContain("w-9");
     expect(btn.className).not.toContain("h-9");
     expect(btn.className).not.toContain("rounded-full");
-    expect(screen.getByTestId("globe")).toHaveAttribute("data-size", "19");
+    expect(screen.getByTestId("globe")).toHaveAttribute("data-size", "20");
   });
 
   it('variant="bare": caller className is applied and children render after the Globe', () => {

@@ -163,10 +163,17 @@ def test_nothing_reads_or_writes_it_in_chunk_a():
     # exact thing `unique_views_count`'s docstring warns about for readers.
     assert files == {
         "backend/app/models/models.py",
+        # MEH-3269: the class itself lives here; models.py re-exports it.
+        "backend/app/models/analytics.py",
         "backend/app/models/__init__.py",
         "backend/app/services/analytics_rollup.py",
-        "backend/app/routers/producer_me.py",
+        # MEH-3079: the reader moved out of routers/producer_me.py into the
+        # shared counting service — the same one reader, not a second.
+        "backend/app/services/producer_insights.py",
         "backend/app/startup.py",
+        # MEH-3022: names the table in OWNED_TABLE_EXEMPT (why it needs no
+        # per-business cap). A registry entry — neither reads nor writes rows.
+        "backend/app/limits.py",
     }, files
 
 

@@ -7,6 +7,8 @@ import { render, screen } from "@testing-library/react";
 // different route, which is the exact thing the slot discriminates on.
 let mockPathname = "/";
 vi.mock("@/i18n/navigation", () => ({
+  // MEH-3059: Footer prefetches «כל בתי העסק» on intent via router.prefetch.
+  useRouter: () => ({ prefetch: () => {} }),
   usePathname: () => mockPathname,
   // MEH-1981: the consumer Footer now carries a CollectionNotice whose
   // /privacy link is this module's locale-aware Link; without the stub the

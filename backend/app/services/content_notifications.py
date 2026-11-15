@@ -8,6 +8,10 @@ module gives the other surfaces the same courtesy and copies its tone.
 
 All sends are best-effort through send_email() (Resend, fail-open). Callers
 queue them as background tasks, so a mail problem never fails a request.
+
+MEH-2952: every notifier takes `test_cause` — True when the business (or, for
+`notify_reviewer_reply`, the business that replied) is a test row — and hands
+it to send_email, which then sends nothing.
 """
 
 from __future__ import annotations
@@ -29,7 +33,9 @@ def _link(path: str) -> str:
 # --- Recipes (admin_recipes.py) ---
 
 
-def notify_recipe_approved(to_email: str, title: str, path: str) -> None:
+def notify_recipe_approved(
+    to_email: str, title: str, path: str, test_cause: bool = False
+) -> None:
     subject = f'מהמקור — המתכון "{_one_line(title)}" אושר ופורסם 🌿'
     body = (
         f"שלום,\n\n"
@@ -37,10 +43,12 @@ def notify_recipe_approved(to_email: str, title: str, path: str) -> None:
         f"לצפייה: {_link(path)}\n\n"
         f"בברכה,\nצוות מהמקור"
     )
-    send_email(to_email, subject, body)
+    send_email(to_email, subject, body, test_cause=test_cause)
 
 
-def notify_recipe_changes_requested(to_email: str, title: str, feedback: str) -> None:
+def notify_recipe_changes_requested(
+    to_email: str, title: str, feedback: str, test_cause: bool = False
+) -> None:
     subject = f'מהמקור — נדרשים שינויים במתכון "{_one_line(title)}"'
     body = (
         f"שלום,\n\n"
@@ -50,10 +58,12 @@ def notify_recipe_changes_requested(to_email: str, title: str, feedback: str) ->
         f"לעריכה: {_link('/producer/dashboard/recipes')}\n\n"
         f"בברכה,\nצוות מהמקור"
     )
-    send_email(to_email, subject, body)
+    send_email(to_email, subject, body, test_cause=test_cause)
 
 
-def notify_recipe_rejected(to_email: str, title: str, reason: str | None) -> None:
+def notify_recipe_rejected(
+    to_email: str, title: str, reason: str | None, test_cause: bool = False
+) -> None:
     subject = f'מהמקור — עדכון לגבי המתכון "{_one_line(title)}"'
     reason_line = f"\nסיבה: {_one_line(reason)}\n" if _one_line(reason) else ""
     body = (
@@ -63,14 +73,18 @@ def notify_recipe_rejected(to_email: str, title: str, reason: str | None) -> Non
         f"{_link('/producer/dashboard/recipes')}\n\n"
         f"בברכה,\nצוות מהמקור"
     )
-    send_email(to_email, subject, body)
+    send_email(to_email, subject, body, test_cause=test_cause)
 
 
 # --- Kashrut (admin_kashrut.py) ---
 
 
 def notify_kashrut_approved(
-    to_email: str, producer_name: str, expires_on: str, path: str
+    to_email: str,
+    producer_name: str,
+    expires_on: str,
+    path: str,
+    test_cause: bool = False,
 ) -> None:
     subject = "מהמקור — תעודת הכשרות אושרה ✓"
     body = (
@@ -82,11 +96,11 @@ def notify_kashrut_approved(
         f"לצפייה: {_link(path)}\n\n"
         f"בברכה,\nצוות מהמקור"
     )
-    send_email(to_email, subject, body)
+    send_email(to_email, subject, body, test_cause=test_cause)
 
 
 def notify_kashrut_rejected(
-    to_email: str, producer_name: str, notes: str | None
+    to_email: str, producer_name: str, notes: str | None, test_cause: bool = False
 ) -> None:
     subject = "מהמקור — עדכון לגבי תעודת הכשרות"
     reason_line = f"\nהערות מהצוות: {_one_line(notes)}\n" if _one_line(notes) else ""
@@ -100,14 +114,14 @@ def notify_kashrut_rejected(
         f"{_link('/producer/dashboard/edit#kashrut')}\n\n"
         f"בברכה,\nצוות מהמקור"
     )
-    send_email(to_email, subject, body)
+    send_email(to_email, subject, body, test_cause=test_cause)
 
 
 # --- Reviews (reviews.py) ---
 
 
 def notify_owner_new_review(
-    to_email: str, producer_name: str, stars: int, path: str
+    to_email: str, producer_name: str, stars: int, path: str, test_cause: bool = False
 ) -> None:
     subject = f"מהמקור — ביקורת חדשה על {_one_line(producer_name)}"
     body = (
@@ -117,10 +131,12 @@ def notify_owner_new_review(
         f"לביקורת: {_link(path)}\n\n"
         f"בברכה,\nצוות מהמקור"
     )
-    send_email(to_email, subject, body)
+    send_email(to_email, subject, body, test_cause=test_cause)
 
 
-def notify_reviewer_reply(to_email: str, producer_name: str, path: str) -> None:
+def notify_reviewer_reply(
+    to_email: str, producer_name: str, path: str, test_cause: bool = False
+) -> None:
     subject = f"מהמקור — {_one_line(producer_name)} הגיבו לביקורת שלך"
     body = (
         f"שלום,\n\n"
@@ -128,4 +144,4 @@ def notify_reviewer_reply(to_email: str, producer_name: str, path: str) -> None:
         f"לקריאת התגובה: {_link(path)}\n\n"
         f"בברכה,\nצוות מהמקור"
     )
-    send_email(to_email, subject, body)
+    send_email(to_email, subject, body, test_cause=test_cause)

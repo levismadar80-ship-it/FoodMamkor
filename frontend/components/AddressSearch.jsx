@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 import { useEffect, useRef, useState } from "react";
@@ -49,6 +50,18 @@ import {
  *     caller already knows. OPT-IN: omit it and the query is composed exactly
  *     as before, so all five existing consumers are byte-identical. Same
  *     opt-in shape as MiniMap's zoom/showNavigation (MEH-1808).
+ *
+ * @param {{
+ *   id: string,
+ *   label?: string,
+ *   value: string,
+ *   onChange: (text: string) => void,
+ *   onSelect?: (picked: { street?: string, neighborhood?: string, city?: string, postcode?: string, lat?: number, lng?: number, displayName?: string }) => void,
+ *   placeholder?: string,
+ *   className?: string,
+ *   inputTestId?: string,
+ *   city?: string,
+ * }} props
  */
 export default function AddressSearch({
   id,
@@ -230,7 +243,7 @@ export default function AddressSearch({
           {label}
         </label>
       )}
-      <div className="flex items-center gap-2 bg-surface border border-border rounded-sm px-3 py-2 min-w-0 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/30 transition">
+      <div className="flex items-center gap-2 bg-surface border border-border rounded-sm px-3 py-2 min-w-0 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary transition">
         <svg
           className="w-4 h-4 text-fg-muted shrink-0"
           fill="none"
@@ -300,7 +313,7 @@ export default function AddressSearch({
           // 1010 clears panes:400, controls:1000 and the attribution:1001, and stays
           // BELOW the global header (Header.jsx:321, z-[1050]) so the header still
           // wins — matching the ledger in .claude/rules/rtl.md.
-          className="absolute z-[1010] mt-1 w-full bg-surface border border-border rounded-sm shadow-lg max-h-72 overflow-auto"
+          className="absolute z-autocomplete mt-1 w-full bg-surface border border-border rounded-sm shadow-lg max-h-72 overflow-auto"
         >
           {suggestions.map((s, idx) => (
             <li

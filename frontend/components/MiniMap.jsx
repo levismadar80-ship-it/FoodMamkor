@@ -1,3 +1,5 @@
+// @ts-check
+/// <reference path="../types/leaflet-plugins.d.ts" />
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -11,6 +13,7 @@ import { styleForProducer } from "@/lib/category-registry";
 import { categoryGlyphSvg } from "@/lib/marker-glyph";
 import { useFocusReturn } from "@/lib/use-focus-return";
 import { WazeGlyph, GoogleMapsGlyph } from "@/components/NavAppGlyphs";
+import { coordsNavLinks } from "@/lib/nav-links";
 
 // Fix Leaflet's broken default icon paths in Next.js/webpack builds.
 // MEH-1834: served from /public/leaflet instead of a third-party CDN — three
@@ -62,7 +65,7 @@ const MAP_BUTTON_POSITION = "absolute top-3 right-3"; // rtl-ok: map control lay
 // `isolate`, the overlay is `fixed … z-[1150]` — so a LOCAL value is sufficient
 // and cannot reach the page scale again.
 const MAP_BUTTON_STYLE =
-  "z-10 flex h-11 w-11 items-center justify-center rounded-full border border-border bg-surface text-primary shadow-md transition hover:bg-green-50 focus-visible:ring-2 focus-visible:ring-primary/40";
+  "z-10 flex h-11 w-11 items-center justify-center rounded-full border border-border bg-surface text-primary shadow-lg transition hover:bg-green-50 focus-visible:ring-2 focus-visible:ring-primary";
 
 // pickup / market_stand are the business's satellite points; a branch (and any
 // unknown kind) is the business itself. Same split as the /map fan-out
@@ -307,6 +310,7 @@ function singlePointHandlers({ draggableMarker, onMarkerDragEnd, onExpand }) {
 // competes with that button in the parent's stacking context and wins: the
 // button stayed visible only over the grey not-yet-loaded area, and vanished as
 // soon as a pan or zoom put tiles under it — the overlay lost its only exit.
+/** @param {{ interactive?: boolean, onExpand?: () => void, mapKey?: string, center: { lat: number | string, lng: number | string }, points?: object[], lat?: number | string, lng?: number | string, name?: string, fallbackLabel?: string, producer?: import("@/types/entities").ProducerSummary, zoom?: number, draggableMarker?: boolean, onMarkerDragEnd?: (pos: { lat: number, lng: number }) => void }} props */
 function MapSurface({ interactive, onExpand, mapKey, center, points, lat, lng, name, fallbackLabel, producer, zoom, draggableMarker, onMarkerDragEnd }) {
   return (
     <MapContainer
@@ -333,7 +337,7 @@ function MapSurface({ interactive, onExpand, mapKey, center, points, lat, lng, n
           legal text, never translated.
           REUSES: frontend/components/HomepageMiniMap.jsx:233,236 */}
       <TileLayer
-        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+        url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
       />
       {/* MEH-1611: one pin per point of THIS business — branch → filled
@@ -393,6 +397,8 @@ function MapSurface({ interactive, onExpand, mapKey, center, points, lat, lng, n
  * MEH-1659: the inline map gains +/− and stops being frozen, and any tap on it
  * opens a fullscreen overlay where every gesture works. All three consumers
  * (producer / events / experiences) get this through the unchanged props API.
+ *
+ * @param {{ lat?: number|string, lng?: number|string, name?: string, locations?: object[], producer?: import("@/types/entities").ProducerSummary, zoom?: number, showNavigation?: boolean, draggableMarker?: boolean, onMarkerDragEnd?: (pos: { lat: number, lng: number }) => void }} props
  */
 export default function MiniMap({
   lat,
@@ -517,8 +523,8 @@ export default function MiniMap({
   const primaryPoint = points.find((point) => point.is_primary === true) ?? null;
   const centerPoint = hasCoords ? { lat: Number(lat), lng: Number(lng) } : primaryPoint;
   if (!centerPoint) return null;
-  const wazeUrl = `https://waze.com/ul?ll=${centerPoint.lat},${centerPoint.lng}&navigate=yes`;
-  const gmapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${centerPoint.lat},${centerPoint.lng}`;
+  // MEH-2994: one builder for nav links (lib/nav-links.js).
+  const { waze: wazeUrl, google: gmapsUrl } = coordsNavLinks(centerPoint.lat, centerPoint.lng) ?? {};
 
   const surfaceProps = {
     center: centerPoint,
@@ -563,7 +569,7 @@ export default function MiniMap({
           aria-label={t("expand_aria")}
           className={`${MAP_BUTTON_POSITION} ${MAP_BUTTON_STYLE}`}
         >
-          <ArrowsOut size={22} weight="bold" aria-hidden="true" />
+          <ArrowsOut size={24} weight="bold" aria-hidden="true" />
         </button>
       </div>
 
@@ -578,7 +584,7 @@ export default function MiniMap({
           role="dialog"
           aria-modal="true"
           aria-label={t("expanded_aria")}
-          className="fixed inset-0 z-[1150] bg-surface"
+          className="fixed inset-0 z-minimap-fullscreen bg-surface"
         >
           {/* MEH-2182: `surfaceProps` carries `draggableMarker` / `onMarkerDragEnd`
               here too, so the overlay marker is draggable as well — deliberately.
@@ -598,7 +604,7 @@ export default function MiniMap({
             aria-label={t("close_aria")}
             className={`${MAP_BUTTON_POSITION} ${MAP_BUTTON_STYLE}`}
           >
-            <X size={22} weight="bold" aria-hidden="true" />
+            <X size={24} weight="bold" aria-hidden="true" />
           </button>
         </div>
       )}
@@ -615,7 +621,7 @@ export default function MiniMap({
           target="_blank"
           rel="noopener noreferrer"
           aria-label={t("open_in_waze_aria")}
-          className="flex-1 flex items-center justify-center gap-2 border border-border bg-surface text-text px-4 py-2 min-h-touch rounded-full text-sm font-medium hover:bg-green-50 transition focus-visible:ring-2 focus-visible:ring-primary/40"
+          className="flex-1 flex items-center justify-center gap-2 border border-border bg-surface text-text px-4 py-2 min-h-touch rounded-full text-sm font-medium hover:bg-green-50 transition focus-visible:ring-2 focus-visible:ring-primary"
         >
           <WazeGlyph />
           {t("open_in_waze")}
@@ -627,7 +633,7 @@ export default function MiniMap({
           // MEH-2308: no aria-label — the visible "מפות Google" is the name.
           // The old "פתיחה במפות Google" did not contain it as a word
           // (axe label-content-name-mismatch, WCAG 2.5.3).
-          className="flex-1 flex items-center justify-center gap-2 border border-border bg-surface text-text px-4 py-2 min-h-touch rounded-full text-sm font-medium hover:bg-green-50 transition focus-visible:ring-2 focus-visible:ring-primary/40"
+          className="flex-1 flex items-center justify-center gap-2 border border-border bg-surface text-text px-4 py-2 min-h-touch rounded-full text-sm font-medium hover:bg-green-50 transition focus-visible:ring-2 focus-visible:ring-primary"
         >
           <GoogleMapsGlyph />
           {t("open_in_google")}

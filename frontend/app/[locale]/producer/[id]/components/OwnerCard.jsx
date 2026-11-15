@@ -1,7 +1,10 @@
+// @ts-check
 import { useTranslations } from "next-intl";
 
 import ImageWithFallback from "@/components/ImageWithFallback";
 import { IMAGE_RATIOS } from "@/lib/cloudinary";
+import SectionHeading from "@/components/ui/SectionHeading";
+import { avatarInitial } from "@/components/ui/Avatar";
 
 /**
  * Module:   OwnerCard
@@ -32,6 +35,8 @@ import { IMAGE_RATIOS } from "@/lib/cloudinary";
  *   the business" pattern): a small h3 heading, no white card, a smaller
  *   green-50 avatar. The standalone card stays for the organizer page and for
  *   a business with no description (no «אודות» section to sit in).
+ *
+ * @param {{ producer: object, heading?: string, nested?: boolean }} props
  */
 export default function OwnerCard({ producer, heading, nested = false }) {
   const t = useTranslations("producer.detail.owner_card");
@@ -47,7 +52,7 @@ export default function OwnerCard({ producer, heading, nested = false }) {
   // Single-letter initials always — never two letters in Hebrew (revision-2 #12).
   // Array.from: the first CODE POINT, so a name opening with an emoji or any
   // astral character does not split its surrogate pair (CI review, MEH-2592).
-  const initial = name ? Array.from(name)[0] : null;
+  const initial = name ? avatarInitial(name) : null;
   const avatarSize = nested ? 48 : bio ? 88 : 56;
 
   if (nested) {
@@ -90,7 +95,7 @@ export default function OwnerCard({ producer, heading, nested = false }) {
 
   return (
     <section className="mt-12" data-testid="owner-card">
-      <h2 className="font-headline-md text-2xl font-bold text-text mb-4">{heading || t("heading")}</h2>
+      <SectionHeading size="content" className="mb-4">{heading || t("heading")}</SectionHeading>
       <div className="bg-surface border border-border rounded-lg p-5 flex flex-col gap-3">
         {/* Avatar at the inline-start on ALL viewports (mockup lock). */}
         {/* MEH-2471: the avatar/name row only when it has something in it —

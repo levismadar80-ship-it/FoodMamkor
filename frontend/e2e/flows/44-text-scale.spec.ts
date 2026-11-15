@@ -41,13 +41,18 @@ import { test, expect, type Page } from "./_cloudinary-stub";
  *        windows it hit is inferred, not reproduced: the sandbox cannot serve
  *        /producers with server-rendered cards (no backend). So the
  *        two control checks read the first sample, and the two layout checks
- *        poll until the layout has settled, bounded by SETTLE_MS: a control
- *        that stays outside the viewport still fails, with its name, and a
- *        layout that only reaches the viewport after the bound fails too.
+ *        retry until the layout has settled, bounded by SETTLE_MS. Settled
+ *        means two probes STABLE_MS apart agree and the second is clean, so a
+ *        layout that oscillates between a clean and a broken state cannot
+ *        pass on one lucky sample. A control that stays outside the viewport
+ *        still fails, with its name, and a layout that only reaches the
+ *        viewport after the bound fails too.
  */
 
 /** How long a JS-fitted layout may take to reach its final state. */
 const SETTLE_MS = 5_000;
+/** Gap between the two probes of one settle attempt; both must agree. */
+const STABLE_MS = 250;
 
 const ROUTES = ["/", "/producers", "/group-buys", "/events", "/about/process", "/join"];
 
@@ -113,22 +118,32 @@ test.describe("text scale: 200% text without lost controls (MEH-2522)", () => {
         const r = await probe(page);
         expect(r.rootPx, `control (${tag}): the root font size scaled`).toBe(16 * (parseFloat(p.scale) / 100));
         expect(r.controls, `control (${tag}): the probe measured controls`).toBeGreaterThan(3);
-        // Polled, not sampled once — see "Settle" in the header. The last
-        // sample's list is what a failure prints.
-        await expect
-          .soft
-          .poll(async () => (await probe(page)).offscreen, {
-            message: `control outside the viewport width (${tag})`,
-            timeout: SETTLE_MS,
-          })
-          .toEqual([]);
-        await expect
-          .soft
-          .poll(async () => (await probe(page)).overflowX, {
-            message: `horizontal page scroll (${tag}, px)`,
-            timeout: SETTLE_MS,
-          })
-          .toBeLessThanOrEqual(0);
+        // Settled, not sampled once — see "Settle" in the header. One attempt
+        // is two probes STABLE_MS apart: the second must be clean AND equal to
+        // the first. Two independent polls would each pass on the first clean
+        // sample, so a fit that oscillates (2 → 1 → 2 pills, MEH-2856) passed
+        // whenever one sample landed on the clean phase; here a layout still
+        // moving between the probes fails the attempt. On timeout the last
+        // attempt's error is what prints, and every check in it carries the
+        // off-screen list, so a control that never comes back is named.
+        await expect(async () => {
+          const first = await probe(page);
+          await page.waitForTimeout(STABLE_MS);
+          const second = await probe(page);
+          expect(second.offscreen, `control outside the viewport width (${tag})`).toEqual([]);
+          expect(
+            second.overflowX,
+            `horizontal page scroll (${tag}, px); off-screen: ${JSON.stringify(second.offscreen)}`,
+          ).toBeLessThanOrEqual(0);
+          expect(
+            first.offscreen,
+            `layout still moving (${tag}): off-screen controls ${STABLE_MS} ms before a clean sample`,
+          ).toEqual(second.offscreen);
+          expect(
+            first.overflowX,
+            `layout still moving (${tag}): page scroll (px) ${STABLE_MS} ms before a clean sample; off-screen then: ${JSON.stringify(first.offscreen)}`,
+          ).toBe(second.overflowX);
+        }).toPass({ timeout: SETTLE_MS });
       }
     });
   }

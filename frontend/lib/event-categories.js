@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Module:   event-categories
  * Purpose:  Single source of truth for the /events (4) and /experiences (7)
@@ -40,6 +41,10 @@ export const EVENT_CATEGORIES = Object.freeze([
   { key: "טעימות", labelKey: "tasting" },
   { key: "אחר", labelKey: "other" },
 ]);
+
+// MEH-2989: the catch-all key — the event and experience pages show no chip
+// for it. Read off the list, not re-typed (HebrewLiteralRatchet).
+export const OTHER_CATEGORY = EVENT_CATEGORIES.find((c) => c.labelKey === "other").key;
 
 // Narrower set for community experiences — different vocabulary than the
 // producer-farm events above.

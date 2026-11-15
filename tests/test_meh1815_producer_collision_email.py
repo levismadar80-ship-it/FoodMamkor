@@ -21,7 +21,7 @@ def sent(monkeypatch):
     """Capture (to, subject, body) instead of hitting Resend."""
     captured = {}
 
-    def _fake_send_email(to, subject, body, html=None):
+    def _fake_send_email(to, subject, body, html=None, test_cause=False):
         captured.update(to=to, subject=subject, body=body, html=html)
 
     monkeypatch.setattr(auth_emails, "send_email", _fake_send_email)

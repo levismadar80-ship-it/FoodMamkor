@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Module:   slug
  * Purpose:  Cheap slug-shape guard for the root catch-all route — reject bot
@@ -29,6 +30,7 @@ const RESERVED = new Set([
   "upgrade", "messages", "discover", "publish", "newsletter",
   "api", "_next", "favicon.ico", "manifest.json",
   "robots.txt", "sitemap.xml", "sw.js",
+  "monitoring", // MEH-2976: Sentry tunnel (next.config.js tunnelRoute)
   // MEH-2148: real `app/[locale]/` route directories that were absent.
   "accessibility", "contact", "dev", "events", "experiences",
   "forgot-password", "group-buys", "home", "join", "privacy",
@@ -36,6 +38,14 @@ const RESERVED = new Set([
   "verify-email",
   // MEH-2324: the owner-claim page.
   "claim",
+  // MEH-2974: the owner-invite page — the approved-business sibling of
+  // /claim, and reserved for the same two reasons: a business whose slug is
+  // "owner-invite" would collide with it, and `isProducerDetail` would
+  // otherwise read the path as a business page and unmount the site chrome on
+  // it. Caught by the MEH-2148 drift test in ProducerRouteGate.test.jsx,
+  // which is the second registry this route needs — `lib/static-routes.json`
+  // is the first.
+  "owner-invite",
   // MEH-2461: public organizer pages (/organizers/{slug}).
   "organizers",
   // MEH-2576: where the middleware rewrites a deleted business's URL.
@@ -56,6 +66,10 @@ const RESERVED = new Set([
   "rescue",
   // MEH-2768: the sign-up cancel link (/registration/{token}).
   "registration",
+  // MEH-3079: the weekly-summary unsubscribe page (/unsubscribe/weekly).
+  "unsubscribe",
+  // MEH-3248: the confirmation after an account deletion.
+  "account-deleted",
 ]);
 
 // Real slugs are produced by backend _slugify

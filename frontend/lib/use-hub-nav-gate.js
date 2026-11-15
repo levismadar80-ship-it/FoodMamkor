@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 /**
@@ -21,7 +22,7 @@
  * two copies of cache-plus-fetch would be two owners of one shape.
  */
 
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useState } from "react";
 import { z } from "zod";
 
 import api from "@/lib/api";
@@ -45,6 +46,10 @@ const HUB_NAV_GATES = Object.freeze({
 // Rule 19: validate before consuming. Only the length matters here.
 const ListSchema = z.array(z.unknown());
 
+// REUSES: lib/use-favorite-producers.js:15 — layout effect in the browser,
+// plain effect on the server (where React 18 warns about layout effects).
+const useIsomorphicLayoutEffect = typeof window === "undefined" ? useEffect : useLayoutEffect;
+
 function readCache(key, ttlMs) {
   try {
     const raw = sessionStorage.getItem(key);
@@ -66,9 +71,53 @@ function writeCache(key, any) {
   }
 }
 
+// MEH-3125: once a hub's link has been shown in this page's lifetime it stays
+// shown until a full reload. Rescue bags sell out within the evening; without
+// this the «הזדמנויות» nav tab (and the tab row's sibling tab) would appear and
+// vanish between two client navigations of the same visit. A reader who taps
+// it after the supply ran out gets the page's empty state (MEH-3117), which
+// says how to hear about the next one. Module state, so a reload clears it.
+const seenThisVisit = new Set();
+
+// MEH-2965: one request per hub per page load, however many consumers mount
+// (Header, Footer, BottomNav and ListingHubTabs can all ask in one commit).
+// Shared while in flight, dropped when settled; the session cache owns the
+// rest. Resolves to the answer, or null when there is none to give.
+const inFlight = new Map();
+/** Test seam: forget a request still in flight (a suite's never-settling stub
+ *  would otherwise answer every later case in the same module instance), and
+ *  what this page lifetime has already shown (MEH-3125, above). */
+export function resetHubNavGateRequests() {
+  inFlight.clear();
+  seenThisVisit.clear();
+}
+function loadAny(gate) {
+  if (!inFlight.has(gate.cacheKey)) {
+    inFlight.set(
+      gate.cacheKey,
+      api
+        .get(gate.endpoint)
+        .then((res) => {
+          const parsed = ListSchema.safeParse(res?.data);
+          if (!parsed.success) return null; // stays hidden
+          const any = parsed.data.length > 0;
+          writeCache(gate.cacheKey, any);
+          return any;
+        })
+        // Deliberately silent — a hidden nav link is not a user-facing error.
+        .catch(() => null)
+        .finally(() => {
+          inFlight.delete(gate.cacheKey);
+        }),
+    );
+  }
+  return inFlight.get(gate.cacheKey);
+}
+
 /**
  * @param {"groupBuys" | "rescue"} hub
- * @returns {boolean} whether the footer should show that hub's link.
+ * @returns {boolean} whether the nav should show that hub's link (Footer, the
+ * hub tab row, and the Header's and BottomNav's hub link).
  * FAIL-CLOSED like the events/experiences gates: starts false (no hydration
  * flash), stays false on any error, 404 or malformed body, and ignores a
  * response that arrives after unmount. A pilot that is off asks nothing.
@@ -76,31 +125,35 @@ function writeCache(key, any) {
 export function useHubNavGate(hub) {
   const [visible, setVisible] = useState(false);
 
-  useEffect(() => {
+  // MEH-3049: a LAYOUT effect, so a cached answer lands before the browser
+  // paints. Every hub tab is its own route, so ListingHubTabs mounts fresh on
+  // each switch; with a passive effect the first frame drew the row without
+  // «סלי הפתעה» / «קבוצות רכישה» and the next one added it — the row jumped
+  // on every tab change (measured on staging 13/11, CLS 0.049). The initial
+  // state stays false, so the server HTML and hydration still agree.
+  useIsomorphicLayoutEffect(() => {
     const gate = HUB_NAV_GATES[hub];
     if (!gate || !gate.enabled()) return undefined;
     let alive = true;
 
+    if (seenThisVisit.has(gate.cacheKey)) {
+      setVisible(true);
+      return undefined;
+    }
+
     const cached = readCache(gate.cacheKey, gate.ttlMs);
     if (cached !== null) {
+      if (cached) seenThisVisit.add(gate.cacheKey);
       setVisible(cached);
       return () => {
         alive = false;
       };
     }
 
-    api
-      .get(gate.endpoint)
-      .then((res) => {
-        const parsed = ListSchema.safeParse(res?.data);
-        if (!parsed.success) return; // stays hidden
-        const any = parsed.data.length > 0;
-        writeCache(gate.cacheKey, any);
-        if (alive) setVisible(any);
-      })
-      .catch(() => {
-        // Deliberately silent — a hidden footer link is not a user-facing error.
-      });
+    loadAny(gate).then((any) => {
+      if (any) seenThisVisit.add(gate.cacheKey);
+      if (alive && any !== null) setVisible(any);
+    });
 
     return () => {
       alive = false;

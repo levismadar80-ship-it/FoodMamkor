@@ -12,6 +12,9 @@ import { test, expect, type Page } from "./_cloudinary-stub";
  *             C — a draft whose every value is an empty string earns nothing.
  *             D — "לא" stays dismissed across a reload.
  *             E — "כן, המשיכו" restores the stored fields.
+ *           MEH-2915: D and E used to seed `name` + `email`. The draft does
+ *           not carry those any more (DRAFT_OMITTED_FIELDS), so both now seed
+ *           and assert the business fields. Same subjects, live fields.
  * Touches:  localStorage["producer_registration_draft"] only. No backend — the
  *           wizard's GET /categories is allowed to fail; none of these
  *           assertions depend on the category list, so the spec runs against a
@@ -143,7 +146,11 @@ test.describe("MEH-1769 — draft-resume banner render condition", () => {
   test('D — "לא" stays dismissed across a reload', async ({ page }) => {
     // MEH-1769 discriminator: dismissal used to be component state only, so
     // the banner came straight back on the next load. RED before the fix.
-    await seedDraftAndEnter(page, { name: "ספיר בודקת", email: "sapir.qa@example.com" });
+    // MEH-2915: seeded with business fields. `name` and `email` are in
+    // DRAFT_OMITTED_FIELDS now, so a draft holding only those is stripped to
+    // {} on read and earns no banner at all — which would make this cell pass
+    // for the wrong reason (nothing to dismiss).
+    await seedDraftAndEnter(page, { producer_name: "הבית של ספיר", city: "חיפה" });
     await expect(banner(page)).toBeVisible();
 
     await page.getByTestId("register-draft-dismiss").click();
@@ -155,13 +162,29 @@ test.describe("MEH-1769 — draft-resume banner render condition", () => {
   });
 
   test('E — "כן, המשיכו" restores the stored fields', async ({ page }) => {
-    await seedDraftAndEnter(page, { name: "ספיר בודקת", email: "sapir.qa@example.com" });
+    // MEH-2915: the restored fields are the BUSINESS ones. The draft no longer
+    // carries `name` / `email` (DRAFT_OMITTED_FIELDS), so this cell asserts on
+    // `producer_name` and `city`, which live on frame 02 — hence the walk
+    // through frame 01. The subject is unchanged: pressing «כן, המשיכו» puts
+    // the stored values back in their fields.
+    await seedDraftAndEnter(page, { producer_name: "הבית של ספיר", city: "חיפה" });
     await expect(banner(page)).toBeVisible();
 
     await page.getByTestId("register-draft-continue").click();
     await expect(banner(page)).toHaveCount(0);
-    await expect(page.getByTestId("register-account-name")).toHaveValue("ספיר בודקת");
-    await expect(page.getByTestId("register-account-email")).toHaveValue("sapir.qa@example.com");
+
+    // Frame 01 is crossed on foot: a seeded draft carries no token, so the
+    // wizard cannot resume past it (safeResumeStep).
+    await page.getByTestId("register-account-name").fill("ספיר בודקת");
+    await page
+      .getByTestId("register-account-email")
+      .fill(`sapir.qa+${Date.now()}@example.com`);
+    await page.getByTestId("register-account-password").fill("Abcdefgh1234");
+    await page.getByTestId("register-account-next").click();
+
+    await expect(page.getByTestId("register-frame-details")).toBeVisible();
+    await expect(page.getByTestId("register-details-name")).toHaveValue("הבית של ספיר");
+    await expect(page.locator("#producer-city")).toHaveValue("חיפה");
   });
 });
 

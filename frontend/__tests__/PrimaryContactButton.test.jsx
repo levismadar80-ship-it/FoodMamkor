@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, fireEvent } from "@testing-library/react";
+import { trackPrimaryCtaClick } from "@/lib/contact-tracking";
 import PrimaryContactButton from "@/components/PrimaryContactButton";
 
 // MEH-729: keep the real getWhatsAppHref (PrimaryContactButton uses it) via
@@ -17,6 +18,9 @@ vi.mock("next-intl", async (importOriginal) => {
   const t = orig.createTranslator({ locale: "he", messages: he });
   return { ...orig, useTranslations: () => t };
 });
+
+// MEH-2999: the button records its own click — every mount site gets it.
+vi.mock("@/lib/contact-tracking", () => ({ trackPrimaryCtaClick: vi.fn() }));
 
 vi.mock("@phosphor-icons/react", () => ({
   WhatsappLogo: (props) => <span data-testid="icon-whatsapp" {...props} />,
@@ -99,4 +103,30 @@ describe("PrimaryContactButton", () => {
     const { container } = render(<PrimaryContactButton producer={null} />);
     expect(container.innerHTML).toBe("");
   });
+
+  // MEH-2999: the recipe page mounted this button with no onClick and recorded
+  // nothing; a non-WhatsApp primary unlocked no review. The button now tracks
+  // itself, for every channel, and still calls the caller's onClick.
+  it.each(["whatsapp", "phone", "facebook", "external_order"])(
+    "%s: a click records the channel and still runs the caller's onClick",
+    (method) => {
+      trackPrimaryCtaClick.mockClear();
+      const onClick = vi.fn();
+      render(
+        <PrimaryContactButton
+          producer={{
+            ...base,
+            id: "p-9",
+            facebook: "https://facebook.com/x",
+            external_order_form: "https://order.example.com",
+            primary_contact_method: method,
+          }}
+          onClick={onClick}
+        />,
+      );
+      fireEvent.click(screen.getByTestId("primary-contact-button"));
+      expect(trackPrimaryCtaClick).toHaveBeenCalledWith("p-9", method);
+      expect(onClick).toHaveBeenCalledTimes(1);
+    },
+  );
 });

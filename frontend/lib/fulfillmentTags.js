@@ -1,3 +1,4 @@
+// @ts-check
 import { Truck, Package, Storefront } from "@phosphor-icons/react";
 
 // MEH-2561: moved here verbatim from MapProducerCard.jsx so the owner dashboard

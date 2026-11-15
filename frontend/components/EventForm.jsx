@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 /**
@@ -14,10 +15,12 @@
  * History:  MEH-1405 (extraction); MEH-1404 (AddressSearch + lat/lng, moved here);
  *           MEH-1809 (client-side required/range validation, inline per field
  *           via ui/Input + focus to the first invalid one — the top banner now
- *           carries server/network errors only).
+ *           carries server/network errors only);
+ *           MEH-2932 (pick one of the business's SAVED locations instead of
+ *           retyping it — see the saved-locations block below).
  */
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
 import { X } from "@phosphor-icons/react";
@@ -32,6 +35,7 @@ import CollectionNotice from "@/components/CollectionNotice";
 import { EVENT_CATEGORIES as CATEGORY_KEYS } from "@/lib/event-categories";
 import Button from "@/components/ui/Button";
 import RegistrationMethodField from "@/components/RegistrationMethodField";
+import InlineMessage from "@/components/ui/InlineMessage";
 
 const DEFAULTS = {
   title: "",
@@ -115,6 +119,7 @@ function isNativeValidUrl(value) {
 const isWholeNumber = (value) => Number.isInteger(Number(value));
 
 function validateEventForm(f, t, tReg) {
+  /** @type {Record<string, string>} */
   const errors = {};
   if (!f.title.trim()) errors.title = t("error_title_required");
   if (!f.event_date) errors.event_date = t("error_date_required");
@@ -151,22 +156,81 @@ function validateEventForm(f, t, tReg) {
 }
 
 /**
- * @param {"create"|"edit"} mode
- * @param {object|null} initial  event (EventOut) to prefill in edit mode
- * @param {(data:object)=>void} onSuccess  called with the created/updated event
- * @param {string} cancelHref  where the cancel link points
+ * @param {object} props
+ * @param {"create"|"edit"} [props.mode]
+ * @param {object|null} [props.initial]  event (EventOut) to prefill in edit mode
+ * @param {(data:object)=>void} props.onSuccess  called with the created/updated event
+ * @param {string} [props.cancelHref]  where the cancel link points
+ * @param {boolean} [props.emailUnverified]  MEH-2918: show the verify notice up front
  */
-export default function EventForm({ mode = "create", initial = null, onSuccess, cancelHref = "/producer/dashboard" }) {
+// MEH-2918: emailUnverified (from the page's useAuth) shows the verify notice
+// up front; a 403 still shows it (and re-mounts it focused) when the prop is stale.
+export default function EventForm({ mode = "create", initial = null, onSuccess, cancelHref = "/producer/dashboard", emailUnverified = false }) {
   const t = useTranslations("sweep_tail.event_new");
   const tReg = useTranslations("registration.form");
   const tCat = useTranslations("events.categories");
   // MEH-1981: notice-at-collection (copy approved verbatim 02/09, rule 22).
   const tNotice = useTranslations("privacy.collection_notice");
   const tPrivacyLink = useTranslations("auth.register.consumer.terms");
+
+  // MEH-2932: the business's own selling points, so an event at one of them is
+  // a choice rather than a retype. Read-only here — the rows are owned by the
+  // dashboard's LocationsEditor, and this form never writes them.
+  //
+  // Deliberately fail-OPEN and silent: the picker is an addition to a form that
+  // worked without it, so a failed read (or a business with none saved) leaves
+  // exactly the fields that were always there. An error banner here would be
+  // about a convenience the seller never asked for.
+  const [savedLocations, setSavedLocations] = useState([]);
+  // "" = nothing chosen (the seller chooses; the form does not choose for her),
+  // a row id = that saved point, "other" = she is typing an address herself.
+  const [locationChoice, setLocationChoice] = useState("");
+
+  useEffect(() => {
+    let cancelled = false;
+    api
+      .get("/producers/me/locations")
+      .then((r) => {
+        if (!cancelled) setSavedLocations(Array.isArray(r.data) ? r.data : []);
+      })
+      .catch(() => {
+        if (!cancelled) setSavedLocations([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // label · address · city, skipping whatever the row does not carry. Built
+  // from the row rather than from a copy string, so a business that named her
+  // point «הדוכן בשוק» sees that name and not a generic "location 2".
+  const describeLocation = (loc) =>
+    [loc.label, loc.address, loc.city].filter((part) => part && part.trim()).join(" · ");
+
+  const chooseSavedLocation = (loc) => {
+    setLocationChoice(loc.id);
+    setForm((f) => ({
+      ...f,
+      location: loc.address || loc.label || f.location,
+      city: loc.city || f.city,
+      // Cleared, not kept: a point with no pin must not inherit the previous
+      // point's coordinates and put the event somewhere it is not.
+      lat: loc.lat ?? null,
+      lng: loc.lng ?? null,
+    }));
+    setFieldErrors((errs) => (errs.city ? { ...errs, city: undefined } : errs));
+  };
+
+  // Typing over a filled address means it is no longer that saved point. Moving
+  // the radio keeps the control honest; leaving it checked would claim an
+  // address the fields no longer hold.
+  const markAddressEdited = () => {
+    setLocationChoice((choice) => (choice && choice !== "other" ? "other" : choice));
+  };
   const [form, setForm] = useState(() => seed(initial));
   const [error, setError] = useState("");
-  const [fieldErrors, setFieldErrors] = useState({});
-  const [unverified, setUnverified] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState(/** @type {Record<string, string>} */ ({}));
+  const [unverifiedHits, setUnverifiedHits] = useState(0); // MEH-2918: 403 count, re-mounts the notice
   const [submitting, setSubmitting] = useState(false);
   const [uploading, setUploading] = useState(false);
 
@@ -199,7 +263,7 @@ export default function EventForm({ mode = "create", initial = null, onSuccess, 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
-    setUnverified(false);
+    setUnverifiedHits(0);
 
     const errors = validateEventForm(form, t, tReg);
     if (Object.keys(errors).length > 0) {
@@ -228,10 +292,12 @@ export default function EventForm({ mode = "create", initial = null, onSuccess, 
       const r = isEdit
         ? await api.put(`/events/${initial.id}`, payload)
         : await api.post("/events", payload);
-      onSuccess?.(r.data);
+      // MEH-3213: awaited, so the button stays disabled while the page decides
+      // where to land (events/new may still be asking for the business status).
+      await onSuccess?.(r.data);
     } catch (err) {
       if (isUnverifiedEmailError(err)) {
-        setUnverified(true);
+        setUnverifiedHits((h) => h + 1);
       } else {
         setError(detailToMessage(err.response?.data?.detail) || t("error_generic"));
       }
@@ -242,11 +308,11 @@ export default function EventForm({ mode = "create", initial = null, onSuccess, 
 
   return (
     <>
-      {unverified && <UnverifiedEmailNotice className="mb-4" />}
+      {(unverifiedHits > 0 || emailUnverified) && <UnverifiedEmailNotice key={unverifiedHits} live={unverifiedHits > 0} focusOnMount={unverifiedHits > 0} className="mb-4" />}
       {error && (
-        <div className="bg-danger-50 border border-danger-200 text-danger-700 rounded-sm p-3 mb-4 text-sm" role="alert">
+        <InlineMessage as="div" variant="box" className="rounded-sm p-3 mb-4">
           {error}
-        </div>
+        </InlineMessage>
       )}
 
       <form onSubmit={handleSubmit} noValidate className="space-y-5">
@@ -300,6 +366,53 @@ export default function EventForm({ mode = "create", initial = null, onSuccess, 
           />
         </div>
 
+        {/* MEH-2932: only when there is something to choose. A business with no
+            saved points sees the form exactly as it was — no empty picker, no
+            «כתובת אחרת» with nothing to be other than (CLAUDE.md, 5-state rule:
+            the 0-item cell is its own state, not a degenerate list). */}
+        {savedLocations.length > 0 && (
+          <fieldset className="space-y-2" data-testid="event-saved-locations">
+            <legend className="block text-sm font-medium text-text mb-1 text-start">
+              {t("saved_location_legend")}
+            </legend>
+            {savedLocations.map((loc) => (
+              <label
+                key={loc.id}
+                htmlFor={`saved-location-${loc.id}`}
+                className="flex items-center gap-3 min-h-touch cursor-pointer"
+              >
+                <input
+                  type="radio"
+                  id={`saved-location-${loc.id}`}
+                  name="saved-location"
+                  data-testid={`event-saved-location-${loc.id}`}
+                  checked={locationChoice === loc.id}
+                  onChange={() => chooseSavedLocation(loc)}
+                  className="w-5 h-5 accent-primary shrink-0"
+                />
+                <span className="text-sm text-text">{describeLocation(loc)}</span>
+              </label>
+            ))}
+            <label
+              htmlFor="saved-location-other"
+              className="flex items-center gap-3 min-h-touch cursor-pointer"
+            >
+              <input
+                type="radio"
+                id="saved-location-other"
+                name="saved-location"
+                data-testid="event-saved-location-other"
+                checked={locationChoice === "other"}
+                // Chosen, not cleared: she may already have typed something,
+                // and "I'll write my own" is no reason to throw it away.
+                onChange={() => setLocationChoice("other")}
+                className="w-5 h-5 accent-primary shrink-0"
+              />
+              <span className="text-sm text-text">{t("saved_location_other")}</span>
+            </label>
+          </fieldset>
+        )}
+
         <div>
           <label htmlFor="location" className="block text-sm font-medium text-text mb-1">
             {t("field_location_label")}
@@ -311,15 +424,19 @@ export default function EventForm({ mode = "create", initial = null, onSuccess, 
           <AddressSearch
             id="location"
             value={form.location}
-            onChange={(val) => setForm((f) => ({ ...f, location: val }))}
-            onSelect={(picked) =>
+            onChange={(val) => {
+              markAddressEdited(); // MEH-2932
+              setForm((f) => ({ ...f, location: val }));
+            }}
+            onSelect={(picked) => {
+              markAddressEdited(); // MEH-2932
               setForm((f) => ({
                 ...f,
                 location: picked.street || picked.displayName || f.location,
                 lat: picked.lat ?? null,
                 lng: picked.lng ?? null,
-              }))
-            }
+              }));
+            }}
             placeholder={t("field_location_simple_placeholder")}
           />
         </div>
@@ -337,6 +454,7 @@ export default function EventForm({ mode = "create", initial = null, onSuccess, 
             label={t("field_city_label")}
             value={form.city}
             onChange={(val) => {
+              markAddressEdited(); // MEH-2932
               setForm((f) => ({ ...f, city: val }));
               // MEH-2013: CitySearch reports a value, not an event, so it does
               // not go through `update()` — clear its error the same way.
@@ -452,7 +570,7 @@ export default function EventForm({ mode = "create", initial = null, onSuccess, 
                :811/:829, RecipeForm:290, dashboard/edit/cards.jsx:382) — inventory
                on MEH-2031, deliberately out of this diff.
                REUSES: components/ExperienceForm.jsx:499-514 (MEH-2012). */
-            <label className="flex flex-col items-center justify-center text-center text-sm text-fg-muted border border-dashed border-border rounded-sm px-4 py-6 cursor-pointer hover:bg-green-50 transition focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/30">
+            <label className="flex flex-col items-center justify-center text-center text-sm text-fg-muted border border-dashed border-border rounded-sm px-4 py-6 cursor-pointer hover:bg-green-50 transition focus-within:border-primary focus-within:ring-2 focus-within:ring-primary">
               <input
                 type="file"
                 accept="image/*"
@@ -522,6 +640,7 @@ export default function EventForm({ mode = "create", initial = null, onSuccess, 
 // (the category <select>) can carry an inline message instead of the raw 422
 // that noValidate left as the only failure path. The asterisk mechanism above
 // is untouched on purpose — MEH-2015 owns consolidating it.
+/** @param {{ id?: string, label: import("react").ReactNode, required?: boolean, error?: import("react").ReactNode, children?: import("react").ReactNode }} props */
 function Field({ id, label, required, error, children }) {
   return (
     <div>

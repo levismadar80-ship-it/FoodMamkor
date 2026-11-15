@@ -186,6 +186,7 @@ describe("home: the closing business section is the shared band", () => {
     const links = screen.getByTestId("home-cta").querySelectorAll("a");
     expect(links).toHaveLength(1);
     expect(links[0].textContent).toBe(J.cta);
-    expect(links[0].getAttribute("href")).toMatch(/\/register\/producer$/);
+    // MEH-2983: the home band leads to /join (the main door), not the wizard.
+    expect(links[0].getAttribute("href")).toMatch(/\/join$/);
   });
 });

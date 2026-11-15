@@ -41,7 +41,10 @@ const FOCUSABLE =
 
 export default function useDialogFocus(ref, open, fallback) {
   useEffect(() => {
-    if (!open) return undefined;
+    // MEH-3093: `open` true with nothing mounted (the caller returned null)
+    // must not install a Tab trap over an empty set — it would swallow every
+    // Tab on the page until reload.
+    if (!open || !ref.current) return undefined;
     const trigger = document.activeElement;
     const focusables = () => Array.from(ref.current?.querySelectorAll(FOCUSABLE) ?? []);
     const initial = ref.current?.querySelector("[data-autofocus]:not([disabled])") ?? focusables()[0];
@@ -80,4 +83,21 @@ export default function useDialogFocus(ref, open, fallback) {
     // inline arrow from re-running the trap (and re-focusing) on every render.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ref, open]);
+}
+
+/**
+ * MEH-3093: the Escape half, for dialogs that have no rule of their own.
+ * On the window, not the panel — content that swaps (a "sent" state) unmounts
+ * the focused button and a panel onKeyDown would stop hearing Escape.
+ * Pass `open = false` while a request is in flight to hold the dialog.
+ */
+export function useDialogEscape(open, onClose) {
+  useEffect(() => {
+    if (!open) return undefined;
+    const onKey = (e) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open, onClose]);
 }

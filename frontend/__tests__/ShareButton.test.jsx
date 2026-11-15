@@ -2,9 +2,8 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import ShareButton from "@/components/ShareButton";
 
-// MEH-1290: producer-page share fallback moved from silent clipboard-copy to
-// wa.me (the product's viral loop). navigator.share stays the primary path on
-// mobile; wa.me only fires when the native sheet is unavailable.
+// MEH-1290: navigator.share is the primary path on mobile. MEH-2996: with no
+// sheet the link is copied (with a toast) — the wa.me fallback is gone.
 
 vi.mock("next-intl", () => ({
   useTranslations: () => {
@@ -51,18 +50,30 @@ describe("ShareButton (MEH-1290)", () => {
     expect(openSpy).not.toHaveBeenCalled();
   });
 
-  it("falls back to wa.me (not clipboard) when navigator.share is unavailable", () => {
+  // MEH-2996: no sheet (desktop) → copy the link, never a WhatsApp-only link
+  // (replaces the MEH-1290 wa.me fallback; Sapir 12/11).
+  it("copies the link (no wa.me) when navigator.share is unavailable", async () => {
     const openSpy = vi.spyOn(window, "open").mockImplementation(() => null);
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, "clipboard", { value: { writeText }, configurable: true });
 
     render(<ShareButton url="https://x/y" title="חוות השקמה" />);
     fireEvent.click(screen.getByRole("button"));
+    await vi.waitFor(() => expect(writeText).toHaveBeenCalledWith("https://x/y"));
 
-    expect(openSpy).toHaveBeenCalledTimes(1);
-    const href = openSpy.mock.calls[0][0];
-    expect(href).toContain("wa.me/?text=");
-    const decoded = decodeURIComponent(href);
-    expect(decoded).toContain("חוות השקמה"); // business name
-    expect(decoded).toContain("https://x/y"); // URL
+    expect(openSpy).not.toHaveBeenCalled();
+  });
+
+  it("the sheet gets the link only as `url`, never inside `text`", async () => {
+    const shareSpy = vi.fn().mockResolvedValue(undefined);
+    navigator.share = shareSpy;
+    render(<ShareButton url="https://x/y" title="חוות השקמה" description="גבינות" city="חדרה" />);
+    fireEvent.click(screen.getByRole("button"));
+    await vi.waitFor(() => expect(shareSpy).toHaveBeenCalledTimes(1));
+    const data = shareSpy.mock.calls[0][0];
+    expect(data.url).toBe("https://x/y");
+    expect(data.text).toContain("חוות השקמה");
+    expect(data.text).not.toContain("https://");
   });
 
   it("does nothing without a url", () => {

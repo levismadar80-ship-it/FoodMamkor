@@ -298,8 +298,14 @@ export const REQUIREMENTS = {
     matches: (p: FeedProducer) => Boolean(p.phone || p.contact_email),
   },
   whatsappPrimary: {
-    label: 'primary_contact_method === "whatsapp" (the beacon fires only for that method)',
-    matches: (p: FeedProducer) => p.primary_contact_method === "whatsapp",
+    // MEH-2979: the declared method alone is not enough. A business that
+    // declared WhatsApp but has no phone resolves to another channel (or none)
+    // since MEH-2836 (lib/contact-method.js getResolvedMethod), so the CTA is
+    // correctly absent. The PR E2E backend reseeds with fresh UUIDs every run
+    // (MEH-2973), so the lexicographic pick below can land on such a row —
+    // seed_demo_business.py's demo-delivery-pickup has no phone.
+    label: 'primary_contact_method === "whatsapp" AND has a phone (the beacon fires only for a resolved WhatsApp CTA)',
+    matches: (p: FeedProducer) => p.primary_contact_method === "whatsapp" && Boolean(p.phone),
   },
   hasGalleryImage: {
     label: "has at least one gallery image (the lightbox only exists with a photo)",

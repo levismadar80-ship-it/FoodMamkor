@@ -1,3 +1,5 @@
+// @ts-check
+/// <reference path="../types/browser-globals.d.ts" />
 "use client";
 
 /**
@@ -47,6 +49,8 @@ import frankRuhlLibreLatinUrl from "@/app/fonts/frank-ruhl-libre-latin.woff2";
 import heeboHebrewUrl from "@/app/fonts/heebo-hebrew.woff2";
 import heeboLatinUrl from "@/app/fonts/heebo-latin.woff2";
 import Button from "@/components/ui/Button";
+import { copyOrThrow } from "@/lib/clipboard";
+import { COLOR } from "@/lib/color-tokens";
 
 const W = 1080;
 const H = 1920;
@@ -58,9 +62,9 @@ const SITE_HOST = SITE_URL.replace(/^https?:\/\//, "");
 export const STORY_SAFE_TOP = 250;
 export const STORY_SAFE_BOTTOM = H - 340;
 
-const GREEN = "#2e6853";
+const GREEN = COLOR.primary;
 const GREEN_DEEP = "#1f4a3a";
-const CREAM = "#F5F0E8";
+const CREAM = COLOR.background;
 const SERIF = `"Frank Ruhl Libre", serif`;
 const SANS = `"Heebo", sans-serif`;
 const PHOTO_H = 1500;
@@ -73,12 +77,13 @@ const SIDE = 90;
 // -60 -60 120 120. [rotation°, opacity, petal fill, seed fill, seed opacity]
 const MARK_PETAL_D =
   "M 0,-44 C 10,-44 13,-32 11,-20 C 9,-12 5,-8 0,-6 C -5,-8 -9,-12 -11,-20 C -13,-32 -10,-44 0,-44 Z";
+/** @type {[number, number, string, string, number][]} */
 const MARK_PETALS = [
-  [36, 0.96, "#F5F0E8", "#1F4A3A", 0.3],
-  [108, 0.96, "#E8823A", "#F5F0E8", 0.45],
-  [180, 0.96, "#E0B266", "#F5F0E8", 0.45],
+  [36, 0.96, COLOR.background, "#1F4A3A", 0.3],
+  [108, 0.96, "#E8823A", COLOR.background, 0.45],
+  [180, 0.96, "#E0B266", COLOR.background, 0.45],
   [252, 0.92, "#D9C8B0", "#1F4A3A", 0.25],
-  [324, 0.96, "#8FB89F", "#F5F0E8", 0.5],
+  [324, 0.96, "#8FB89F", COLOR.background, 0.5],
 ];
 
 // Same ranges app/fonts.js declares for these families' next/font/local
@@ -328,7 +333,7 @@ export async function drawCard(canvas, producer, strings) {
       .join(" · ") || "";
   const metaLine = [producer.city, categories].filter(Boolean).join("  ·  ");
   if (metaLine) {
-    ctx.fillStyle = "#EAF3DE";
+    ctx.fillStyle = COLOR["green-50"];
     ctx.font = `400 44px ${SANS}`;
     ctx.fillText(metaLine, right, y + 12);
   }
@@ -410,7 +415,7 @@ export default function StoryCardCanvas({ producer, mode = "admin", onUploaded, 
     }
   };
 
-  const caption = `${t("caption_prefix")}\n${producer.name} מ${producer.city || t("default_country")} — ${
+  const caption = `${t("caption_prefix")}\n${t("caption_from", { name: producer.name, city: producer.city || t("default_country") })} — ${
     producer.categories?.map((c) => c.name).join(", ") || ""
   }\n${producer.short_description || producer.description?.slice(0, 100) || ""}\n👉 ${SITE_HOST}/p/${producer.slug || ""}`;
 
@@ -421,10 +426,7 @@ export default function StoryCardCanvas({ producer, mode = "admin", onUploaded, 
     // button that silently did nothing. Same class as the null-context crash
     // fixed on the draw path above. REUSES:
     // components/producer/RequestReviewCard.jsx:62-71.
-    const write = navigator.clipboard?.writeText
-      ? navigator.clipboard.writeText(caption)
-      : Promise.reject(new Error("clipboard unavailable"));
-    write
+    copyOrThrow(caption)
       .then(() => {
         setCaptionCopied(true);
         setTimeout(() => setCaptionCopied(false), 2500);
@@ -477,7 +479,7 @@ export default function StoryCardCanvas({ producer, mode = "admin", onUploaded, 
           onClick={download}
           disabled={!rendered}
           data-testid="story-card-download"
-          className="text-sm border border-border px-4 py-2 rounded-sm hover:border-primary transition disabled:opacity-40"
+          className="text-sm border border-border px-4 py-2 rounded-sm hover:border-primary transition disabled:opacity-50"
         >
           <DownloadSimple size={16} className="inline align-[-2px]" aria-hidden="true" />{" "}
           {downloadLabel}

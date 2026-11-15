@@ -13,6 +13,8 @@ import { NextIntlClientProvider } from "next-intl";
 import he from "../messages/he.json";
 
 vi.mock("@/lib/auth-context", () => ({
+  // MEH-3112 prefill hook: a guest here, so the forms open empty as before.
+  useOptionalAuth: () => null,
   useAuth: () => ({
     user: { id: 1, name: "דנה", email: "d@example.com" },
     loading: false,
@@ -43,7 +45,7 @@ const wrap = (ui) =>
 
 function expectCardFromMdOnly(el) {
   const cls = el.className.split(/\s+/);
-  for (const c of ["bg-surface", "border", "p-6", "p-8", "shadow-[0_2px_12px_rgba(46,104,83,0.04)]"]) {
+  for (const c of ["bg-surface", "border", "p-6", "p-8", "shadow-sm"]) {
     expect(cls, `unprefixed ${c} paints the card on phones`).not.toContain(c);
   }
   expect(cls).toContain("md:bg-surface");

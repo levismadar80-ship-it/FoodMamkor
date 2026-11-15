@@ -21,7 +21,9 @@ vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: vi.fn(), replace: vi.fn() }),
 }));
 vi.mock("@/components/CitySearch", () => ({ default: () => <input aria-label="city" /> }));
-vi.mock("@/lib/auth-context", () => ({ useAuth: () => ({ user: null, loading: false }) }));
+vi.mock("@/lib/auth-context", () => ({
+  // MEH-3112 prefill hook: a guest here, so the forms open empty as before.
+  useOptionalAuth: () => null, useAuth: () => ({ user: null, loading: false }) }));
 vi.mock("next-intl/server", () => {
   const make = (ns) => {
     const look = (key) => `${ns}.${key}`.split(".").reduce((o, k) => o?.[k], he);
@@ -75,7 +77,7 @@ describe("/about/for-businesses/guides (FinalGuides)", () => {
       expect(classes(a)).not.toContain("bg-surface");
     }
     const end = container.querySelector("footer");
-    expect(classes(end)).toEqual(expect.arrayContaining(["rounded-xl", "bg-background-alt", "p-5"]));
+    expect(classes(end)).toEqual(expect.arrayContaining(["rounded-lg", "bg-background-alt", "p-5"]));
     expect(classes(container.querySelector("section"))).not.toContain("min-h-screen");
   });
 });

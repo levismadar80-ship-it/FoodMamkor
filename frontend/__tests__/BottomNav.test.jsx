@@ -31,6 +31,8 @@ vi.mock("next-intl", () => ({
       "nav.discover": "גלו",
       "nav.map": "מפה",
       "nav.about": "אודות",
+      "nav.events": "אירועים",
+      "nav.opportunities": "הזדמנויות",
       "nav.account": "חשבון",
       "nav.mobile_label": "ניווט מובייל",
       "account.menu.aria": "תפריט חשבון",
@@ -51,8 +53,21 @@ vi.mock("@phosphor-icons/react", () => ({
   Compass: (props) => <span data-testid="icon-compass" {...props} />,
   MapTrifold: (props) => <span data-testid="icon-map" {...props} />,
   Flower: (props) => <span data-testid="icon-flower" {...props} />,
+  CalendarBlank: (props) => <span data-testid="icon-calendar" {...props} />,
+  Basket: (props) => <span data-testid="icon-basket" {...props} />,
   User: (props) => <span data-testid="icon-user" {...props} />,
 }));
+
+// MEH-2965: the third slot is «אירועים» → /events while events or
+// experiences have supply, and «אודות» otherwise. MEH-3125: group buys and
+// rescue bags open a separate «הזדמנויות» tab. One ref per hook so a
+// case can say WHICH type cleared the gate.
+const gates = { events: false, experiences: false, groupBuys: false, rescue: false };
+vi.mock("@/lib/use-events-nav-gate", () => ({ useEventsNavGate: () => gates.events }));
+vi.mock("@/lib/use-experiences-nav-gate", () => ({
+  useExperiencesNavGate: () => gates.experiences,
+}));
+vi.mock("@/lib/use-hub-nav-gate", () => ({ useHubNavGate: (hub) => gates[hub] ?? false }));
 
 // The account tab toggles AccountSheet — stub it so this suite stays scoped to
 // BottomNav's own structure (the sheet has its own focus/close tests).
@@ -64,6 +79,7 @@ describe("BottomNav", () => {
   beforeEach(() => {
     pathnameRef.current = "/";
     userRef.current = null;
+    for (const key of Object.keys(gates)) gates[key] = false;
   });
 
   // MEH-789: 3 destination links (discover/map/about) + an account *button*
@@ -80,11 +96,128 @@ describe("BottomNav", () => {
     expect(hrefs).toEqual(["/", "/map", "/about"]);
   });
 
-  it("does NOT render an events or favorites link", () => {
+  // MEH-2965 (Sapir 12/11) reverses the events half of this case: with no
+  // supply the pill still carries no /events link, and it never carries
+  // /favorites.
+  it("with nothing to show: no events link, and never a favorites link", () => {
     render(<BottomNav />);
     const hrefs = screen.getAllByRole("link").map((a) => a.getAttribute("href"));
     expect(hrefs).not.toContain("/events");
     expect(hrefs).not.toContain("/favorites");
+  });
+
+  // MEH-2965 / MEH-3125: each hook clears ITS group's gate on its own. Events
+  // and experiences put «אירועים» in the third slot in place of «אודות»;
+  // group buys and rescue bags add «הזדמנויות» as a tab of its own and leave
+  // «אודות» where it is.
+  it.each([
+    ["events", "/events"],
+    ["experiences", "/experiences"],
+  ])("%s alone puts «אירועים» → %s in the third slot, in place of «אודות»", (hub, href) => {
+    gates[hub] = true;
+    render(<BottomNav />);
+    const links = screen.getAllByRole("link");
+    expect(links.map((a) => a.textContent)).toEqual(["גלו", "מפה", "אירועים"]);
+    expect(links.map((a) => a.getAttribute("href"))).toEqual(["/", "/map", href]);
+    expect(screen.getByTestId("icon-calendar")).toBeInTheDocument();
+    expect(screen.queryByTestId("icon-flower")).toBeNull();
+    expect(screen.queryByTestId("icon-basket")).toBeNull();
+  });
+
+  it.each([
+    ["groupBuys", "/group-buys"],
+    ["rescue", "/rescue"],
+  ])("%s alone adds «הזדמנויות» → %s and keeps «אודות»", (hub, href) => {
+    gates[hub] = true;
+    render(<BottomNav />);
+    const links = screen.getAllByRole("link");
+    expect(links.map((a) => a.textContent)).toEqual(["גלו", "מפה", "אודות", "הזדמנויות"]);
+    expect(links.map((a) => a.getAttribute("href"))).toEqual(["/", "/map", "/about", href]);
+    expect(screen.getByTestId("icon-basket")).toBeInTheDocument();
+    expect(screen.queryByTestId("icon-calendar")).toBeNull();
+  });
+
+  it("both groups in supply: five tabs, גלו · מפה · אירועים · הזדמנויות · חשבון", () => {
+    gates.events = true;
+    gates.rescue = true;
+    render(<BottomNav />);
+    const links = screen.getAllByRole("link");
+    expect(links.map((a) => a.textContent)).toEqual(["גלו", "מפה", "אירועים", "הזדמנויות"]);
+    expect(links.map((a) => a.getAttribute("href"))).toEqual(["/", "/map", "/events", "/rescue"]);
+    // The fifth tab is the account control, a button.
+    expect(screen.getAllByRole("button").length).toBeGreaterThan(0);
+  });
+
+  // The gates start closed and open in an effect, so on a real page the slot
+  // swaps AFTER mount. Same pathname, same slot index, different tenant.
+  it("swaps the slot when a gate opens after mount, and moves the current tab with it", () => {
+    pathnameRef.current = "/about";
+    const { rerender } = render(<BottomNav />);
+    const current = () =>
+      screen.getAllByRole("link").filter((a) => a.getAttribute("aria-current") === "page")
+        .map((a) => a.getAttribute("href"));
+    expect(current()).toEqual(["/about"]);
+
+    gates.experiences = true;
+    rerender(<BottomNav />);
+    expect(screen.getAllByRole("link").map((a) => a.textContent)).toEqual(["גלו", "מפה", "אירועים"]);
+    // «אודות» left the pill, so on /about nothing is current any more.
+    expect(current()).toEqual([]);
+
+    gates.experiences = false;
+    rerender(<BottomNav />);
+    expect(screen.getAllByRole("link").map((a) => a.textContent)).toEqual(["גלו", "מפה", "אודות"]);
+    expect(current()).toEqual(["/about"]);
+  });
+
+  // MEH-2975: within a group, tab order decides — the first one with supply
+  // wins. MEH-3125: and never across groups.
+  it.each([
+    [["events", "rescue"], ["/", "/map", "/events", "/rescue"]],
+    [["experiences", "groupBuys", "rescue"], ["/", "/map", "/experiences", "/group-buys"]],
+    [["groupBuys", "rescue"], ["/", "/map", "/about", "/group-buys"]],
+  ])("with %j open the tabs land on %j", (open, hrefs) => {
+    for (const hub of open) gates[hub] = true;
+    render(<BottomNav />);
+    expect(screen.getAllByRole("link").map((a) => a.getAttribute("href"))).toEqual(hrefs);
+  });
+
+  // MEH-3125: each tab is current on its OWN group's routes only. Before, on
+  // /rescue the calendar tab «אירועים» lit up (MEH-3125's "why").
+  const currentHrefs = () =>
+    screen
+      .getAllByRole("link")
+      .filter((a) => a.getAttribute("aria-current") === "page")
+      .map((a) => a.getAttribute("href"));
+
+  it.each(["/events", "/events/12", "/experiences"])("«אירועים» is the current tab on %s", (path) => {
+    gates.events = true;
+    gates.groupBuys = true;
+    pathnameRef.current = path;
+    render(<BottomNav />);
+    expect(currentHrefs()).toEqual(["/events"]);
+  });
+
+  it.each(["/group-buys", "/group-buys/7", "/rescue", "/rescue/3"])(
+    "«הזדמנויות» — not «אירועים» — is the current tab on %s",
+    (path) => {
+      gates.events = true;
+      gates.rescue = true;
+      pathnameRef.current = path;
+      render(<BottomNav />);
+      expect(currentHrefs()).toEqual(["/rescue"]);
+    },
+  );
+
+  // Control for the case above: off the hub the tab is not current. (A path
+  // that merely shares a prefix, like /eventsx, is a business slug and renders
+  // no pill at all, so it cannot be the control here.)
+  it.each(["/favorites", "/about"])("no tab is current on %s", (path) => {
+    gates.events = true;
+    pathnameRef.current = path;
+    render(<BottomNav />);
+    const current = screen.getAllByRole("link").filter((a) => a.getAttribute("aria-current") === "page");
+    expect(current).toEqual([]);
   });
 
   // MEH-1202: on the public producer detail page the StickyContactBar is the
@@ -107,12 +240,29 @@ describe("BottomNav", () => {
     },
   );
 
+  // MEH-2927 (pilot B3c): the registration flow is a form with one primary
+  // action at the end of it, and the pill is fixed chrome over that action.
+  // Measured at the iPhone VISUAL viewport, not the device height: at 375x667
+  // only 1px of the 48px «מתחילים» button was visible and unobstructed, and
+  // at 390x664 only 16px. Sapir's call (11/11) is to take the nav off the
+  // whole flow rather than lift the button over it.
+  it.each([
+    "/register",
+    "/register/producer",
+    "/register/organizer",
+  ])("renders null on the registration flow (%s)", (path) => {
+    pathnameRef.current = path;
+    const { container } = render(<BottomNav />);
+    expect(container).toBeEmptyDOMElement();
+  });
+
   // Controls: consumer routes keep the nav, so a gate that hides it
   // everywhere cannot pass.
   // `/producer/dashboardx/foo` only shares the prefix: it is neither the
   // dashboard nor a producer leaf, so a bare startsWith("/producer/dashboard")
-  // would hide the nav there by mistake.
-  it.each(["/", "/map", "/favorites", "/producer/dashboardx/foo"])("still renders on %s", (path) => {
+  // would hide the nav there by mistake. `/registerx/foo` is the same trap for
+  // the MEH-2927 gate above.
+  it.each(["/", "/map", "/favorites", "/producer/dashboardx/foo", "/registerx/foo"])("still renders on %s", (path) => {
     pathnameRef.current = path;
     render(<BottomNav />);
     expect(screen.getAllByRole("link")).toHaveLength(3);
@@ -178,7 +328,18 @@ describe("bottom clearance on routes without a pill (MEH-2490)", () => {
     document.documentElement.style.removeProperty("--bottom-nav-clearance");
   });
 
-  it.each(["/producer/dashboard", "/producer/dashboard/group-buys", "/admin", "/admin/reviews"])(
+  it.each([
+    "/producer/dashboard",
+    "/producer/dashboard/group-buys",
+    "/admin",
+    "/admin/reviews",
+    // MEH-2927: the registration flow joins the no-pill set, so it must also
+    // publish the no-pill clearance. A gate that hides the pill without
+    // publishing leaves every consumer of --bottom-nav-clearance reserving
+    // 72px for a bar that is not there.
+    "/register",
+    "/register/producer",
+  ])(
     "%s publishes the safe area + gutter, not the pill fallback",
     (path) => {
       pathnameRef.current = path;

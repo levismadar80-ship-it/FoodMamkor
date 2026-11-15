@@ -33,7 +33,8 @@ const CLOUDINARY = "https://res.cloudinary.com/demo/image/upload/v1/hero.jpg";
 // site; asserted here so a silent change to any of them fails loudly.
 const EXPECTED = {
   producerCard: 828,
-  recipeCard: 750,
+  // MEH-3006: strip/grid card, widest box ~320px (md, W=1023) × DPR 2.
+  recipeCard: 640,
   mapMarker: 72,
 };
 
@@ -140,6 +141,7 @@ vi.mock("leaflet", () => {
         const m = {
           latlng,
           on: () => m,
+          bindTooltip: () => m, // MEH-3066: the name label beside the pin
           setIcon: (icon) => {
             recorder.icons.push(icon);
             return m;

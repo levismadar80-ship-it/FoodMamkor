@@ -1,7 +1,9 @@
+// @ts-check
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
+import { Link } from "@/i18n/navigation";
 import { Basket, Clock, MapPin, Bread } from "@phosphor-icons/react";
 
 import { useOptionalAuth } from "@/lib/auth-context";
@@ -20,6 +22,12 @@ import {
   shekels,
 } from "@/lib/rescue";
 import Button from "@/components/ui/Button";
+import { RESCUE_SECTION_ID } from "@/lib/producer-path";
+import SectionHeading from "@/components/ui/SectionHeading";
+import InlineMessage from "@/components/ui/InlineMessage";
+import LoginPromptModal from "@/components/LoginPromptModal";
+import UnverifiedEmailNotice from "@/components/UnverifiedEmailNotice";
+import { isUnverifiedEmailError } from "@/lib/errors";
 
 /**
  * Module:   RescueSection
@@ -45,6 +53,9 @@ function worthAgorot(offer) {
   if (typeof v !== "number" || typeof offer?.price_agorot !== "number") return null;
   return v > offer.price_agorot ? v : null;
 }
+
+const UNVERIFIED_KEY = "errors.unverified";
+
 export default function RescueSection({ producer }) {
   const t = useTranslations("rescue");
   // Allergen labels come from the product sheet's vocabulary (MEH-2662), so
@@ -54,11 +65,28 @@ export default function RescueSection({ producer }) {
   const [order, setOrder] = useState(null);
   const [busy, setBusy] = useState(false);
   const [errorKey, setErrorKey] = useState(null);
+  // MEH-3130: a guest's tap opens the shared login prompt (title + why +
+  // «היכנסו» back to this page). It was an inline line with no way to sign in.
+  const [loginOpen, setLoginOpen] = useState(false);
   const [reviewed, setReviewed] = useState(false);
   // MEH-2737: shown once the cancel went through, until the next reserve.
   const [cancelled, setCancelled] = useState(false);
   // MEH-2738: the business cancelled today's bag, and hers with it.
   const [businessCancelled, setBusinessCancelled] = useState(false);
+  const landedOnHash = useRef(false);
+
+  // A bag row / home bag card links here as `/{slug}#section-rescue`. This
+  // section mounts only after its own offer fetch, i.e. after both the
+  // browser's native hash scroll and ProducerDetail's MEH-1306 re-apply have
+  // run against a DOM without it. Scroll once when the bag appears.
+  useEffect(() => {
+    if (!offer || landedOnHash.current) return;
+    landedOnHash.current = true;
+    if (window.location.hash !== `#${RESCUE_SECTION_ID}`) return;
+    requestAnimationFrame(() => {
+      document.getElementById(RESCUE_SECTION_ID)?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  }, [offer]);
 
   useEffect(() => {
     let alive = true;
@@ -139,7 +167,8 @@ export default function RescueSection({ producer }) {
     // request would 401, and the refresh interceptor would then add its
     // "session expired" toast — wrong for someone who never signed in.
     if (auth && !auth.loading && !auth.user) {
-      setErrorKey("errors.sign_in");
+      setErrorKey(null);
+      setLoginOpen(true);
       return;
     }
     setBusy(true);
@@ -149,7 +178,8 @@ export default function RescueSection({ producer }) {
     try {
       setOrder(await reserveBag({ offerId: offer.id }));
     } catch (err) {
-      setErrorKey(reserveErrorKey(err));
+      // MEH-3225: an unverified account gets the resend notice, not a dead end.
+      setErrorKey(isUnverifiedEmailError(err) ? UNVERIFIED_KEY : reserveErrorKey(err));
     } finally {
       setBusy(false);
     }
@@ -217,21 +247,43 @@ export default function RescueSection({ producer }) {
   const worth = shekels(worthAgorot(offer));
   const cancelUntil = israelTime(offer?.cancel_until);
   const cutoffPassed = offer?.cancel_until ? new Date(offer.cancel_until) <= new Date() : false;
-  const errorLine = errorKey && (
-    <p className="font-body-sm text-sm text-error" role="alert" data-testid="rescue-section-error">
-      {t(errorKey)}
-    </p>
+  const errorLine = errorKey === UNVERIFIED_KEY ? (
+    <UnverifiedEmailNotice className="mt-3" text={t(UNVERIFIED_KEY)} />
+  ) : errorKey && (
+    <InlineMessage className="font-body-sm" data-testid="rescue-section-error">
+      {/* MEH-3226: «כתבו לנו» on the block message is a real link to /contact. */}
+      {errorKey === "errors.blocked"
+        ? t.rich(errorKey, {
+            contact: (chunks) => (
+              <Link href="/contact" className="underline" data-testid="rescue-blocked-contact">
+                {chunks}
+              </Link>
+            ),
+          })
+        : t(errorKey)}
+    </InlineMessage>
   );
   const from = israelTime(offer?.pickup_start);
   const until = israelTime(offer?.pickup_end);
 
   return (
     <section
-      id="section-rescue"
+      id={RESCUE_SECTION_ID}
       data-testid="rescue-section"
       className="mt-12 scroll-mt-[calc(var(--chrome-top,82px)_+_var(--section-nav-h,68px))] md:scroll-mt-24"
     >
-      <h2 className="font-headline-md text-lg font-black text-text">{t("section.title")}</h2>
+      <SectionHeading size="content">{t("section.title")}</SectionHeading>
+      <LoginPromptModal
+        open={loginOpen}
+        onClose={() => setLoginOpen(false)}
+        title={t("login_prompt_title")}
+        message={t("login_prompt_message")}
+        nextPath={
+          typeof window !== "undefined"
+            ? `${window.location.pathname}${window.location.search}#${RESCUE_SECTION_ID}`
+            : "/"
+        }
+      />
 
       {cancelled && (
         <p
@@ -280,7 +332,7 @@ export default function RescueSection({ producer }) {
           <div className="grid gap-3 min-w-0">
             <div className="flex items-center gap-2.5">
               <span aria-hidden="true" className="w-11 h-11 rounded-md bg-green-50 text-primary grid place-items-center shrink-0">
-                <Basket size={24} weight="duotone" />
+                <Basket size={24} weight="regular" />
               </span>
               {/* The only gold on the card, as on the home row: the stock is what makes someone hurry. */}
               <span className="text-xs font-bold text-gold-deep bg-gold-deep/10 rounded-full px-2.5 py-0.5 whitespace-nowrap" data-testid="rescue-section-stock">

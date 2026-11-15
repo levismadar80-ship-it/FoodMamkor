@@ -50,6 +50,8 @@ vi.mock("@/i18n/navigation", () => ({
   usePathname: () => "/",
 }));
 vi.mock("@/lib/auth-context", () => ({
+  // MEH-3112 prefill hook: a guest here, so the forms open empty as before.
+  useOptionalAuth: () => null,
   useAuth: () => ({ user: { id: "u1", role: "producer" }, loading: false }),
 }));
 vi.mock("@/components/CitySearch", () => ({

@@ -39,7 +39,7 @@ new router:
   unrecoverable 422.
 - **Rate limiting**: always via `from app.rate_limit import limiter`;
   per-route limits, never inline (`.claude/rules/security.md`).
-- **Schemas**: pure-Pydantic models in `backend/app/schemas/schemas.py`
+- **Schemas**: pure-Pydantic models in `backend/app/schemas/` (one module per area; shared validators in `schemas.py`, which re-exports every name)
   per ADR-006 R1. Do not declare request/response models inline in router
   files — relocate via the same package.
 - **Hebrew errors**: `raise HTTPException(status_code=…, detail="<עברית>")`.
@@ -59,4 +59,4 @@ new router:
 - `backend/app/router_registry.py` — central registration site.
 - `backend/app/auth.py` — JWT, fingerprint binding, deps.
 - `backend/app/rate_limit.py` — slowapi limiter instance.
-- `.ai/diagrams/api-routes.md` — keep in sync (Workflow rule 12).
+- `.ai/diagrams/api-routes.md` — the route map (Workflow rule 12). The full path list is `docs/DATA.md`, enforced against `backend/openapi.json` by `scripts/checks/api-docs-route-guard.sh` (MEH-3192).

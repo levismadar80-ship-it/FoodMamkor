@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -5,6 +6,7 @@ import { useTranslations } from "next-intl";
 import { Check } from "@phosphor-icons/react";
 import useScrollAffordance, { ScrollArrows } from "@/hooks/useScrollAffordance";
 import { useChipCopy } from "@/lib/use-chip-copy";
+import { COLOR } from "@/lib/color-tokens";
 
 // Firefox mouse wheels report deltaMode=DOM_DELTA_LINE (units = lines,
 // ~3/notch) — normalize to px or the wheel-scroll crawls. 16px/line is
@@ -15,7 +17,7 @@ const WHEEL_LINE_PX = 16;
 // carries no iconColor (an admin category with no CATEGORY_STYLES entry). The
 // DEFAULT category green (= primary / DEFAULT_CATEGORY_STYLE.color) — never a
 // new palette colour (MEH-763 lock).
-const DEFAULT_CAT_RING = "#2e6853";
+const DEFAULT_CAT_RING = COLOR.primary;
 
 // MEH-1545/MEH-1572: the row's trailing NON-CONTENT scroll extent while the
 // end spacer is mounted — the w-12 spacer (48px, fade clearance) + its gap-2
@@ -100,6 +102,8 @@ const CHIP_ARROW_DELTA = { ArrowLeft: 1, ArrowRight: -1 };
  * "real chip overflow" from "only my own trailing spacer is off-screen",
  * which is the bug class MEH-1545 hit on the arrow side; sharing the hook's
  * filler-discounted math fixes both at once.
+ *
+ * @param {{ chips: object[], variant?: string, activeKey?: string, activeKeys?: Set<string> | Record<string, boolean>, onChipClick?: (key: string) => void, className?: string, trailing?: import("react").ReactNode, trailingActive?: boolean }} props
  */
 export default function ChipScrollRow({
   chips,
@@ -108,6 +112,15 @@ export default function ChipScrollRow({
   activeKeys = {},
   onChipClick,
   className = "",
+  // MEH-3062: extra controls that ride the SAME scroller after the chips (the
+  // /map phone row puts the promoted service chips here). They scroll, fade and
+  // take the arrows / wheel with the row, but they are NOT part of the roving
+  // tab stop below — only this component's own chips rove (data-roving-chip).
+  trailing = null,
+  // MEH-3062: true while a control inside `trailing` is lit. The mount pin to
+  // the inline-start would otherwise undo the caller's scroll to that control
+  // (the pin re-runs one frame later, after the caller's effect).
+  trailingActive = false,
 }) {
   // MEH-2748: registry chips arrive without words; a chip that already has a
   // label (DB category, city, translated "all") passes through untouched.
@@ -176,7 +189,9 @@ export default function ChipScrollRow({
     // The DOM is the single authority for chip ORDER — a parallel array beside
     // the JSX would be a second owner of the same fact and would desync on any
     // reorder, silently (workflow.md Smell #1). Same reasoning as the hook.
-    const buttons = Array.from(e.currentTarget.querySelectorAll("button"));
+    // MEH-3062: only this row's own chips — a `trailing` control is its own
+    // tab stop and must not shift the index into `chips` below.
+    const buttons = Array.from(e.currentTarget.querySelectorAll("button[data-roving-chip]"));
     const from = buttons.indexOf(e.target.closest?.("button"));
     if (from === -1) return;
 
@@ -254,7 +269,7 @@ export default function ChipScrollRow({
       variant === "category"
         ? categorySet.size > 0
         : Object.values(activeKeys).some(Boolean);
-    if (hasActiveFilter || userMovedRowRef.current) return undefined;
+    if (hasActiveFilter || trailingActive || userMovedRowRef.current) return undefined;
     // Re-checks the touch flag: the deferred pin fires one frame later, and a
     // touch can land inside that frame on a slow device.
     const pinStart = () => {
@@ -329,6 +344,7 @@ export default function ChipScrollRow({
   // depths. A side with nothing hidden past it publishes 0px, which collapses
   // that end of the mask to fully opaque — so a non-overflowing row shows no
   // fade at all, exactly as the MEH-1340 conditional divs did.
+  /** @type {import("react").CSSProperties & Record<`--${string}`, string>} */
   const fadeVars = {
     "--chip-fade-start": `${canScrollStart ? START_FADE_PX : 0}px`,
     "--chip-fade-end": `${canScrollEnd ? END_FADE_PX : 0}px`,
@@ -414,13 +430,14 @@ export default function ChipScrollRow({
                 else chipRefs.current.delete(chip.key);
               }}
               type="button"
+              data-roving-chip=""
               onClick={() => onChipClick(chip.key)}
               aria-pressed={active}
               // MEH-2199 chunk 1: roving tabindex — the row is ONE tab stop.
               tabIndex={chip.key === tabStopKey ? 0 : -1}
               // MEH-764: chips are rounded-md on ALL surfaces (/home, /producers,
               // /map) per DESIGN §Shapes / BRAND §3 (no pill on rectangles).
-              className={`inline-flex items-center gap-1.5 whitespace-nowrap px-4 py-2.5 rounded-md text-sm font-medium border transition shrink-0 snap-start ${stateClass}`}
+              className={`inline-flex items-center gap-1.5 whitespace-nowrap px-4 min-h-11 py-2.5 rounded-md text-sm font-medium border transition shrink-0 snap-start ${stateClass}`}
               style={stateStyle}
             >
               {/* MEH-2500: a SELECTED category chip swaps its glyph for a ✓.
@@ -454,6 +471,7 @@ export default function ChipScrollRow({
             the last real chip clears the fade instead of sitting 16px under it.
             MEH-1572: conditional — a row whose chips all fit reserves nothing,
             which is the 48px of trailing dead space this ticket removes. */}
+        {trailing}
         {hasOverflow && <div className="shrink-0 w-12" aria-hidden="true" />}
       </div>
     </div>

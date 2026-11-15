@@ -43,8 +43,10 @@ from app.services.email import send_email
 logger = logging.getLogger(__name__)
 
 
-def _send_email(to_email: str, subject: str, body: str) -> None:
-    send_email(to_email, subject, body)
+def _send_email(
+    to_email: str, subject: str, body: str, test_cause: bool = False
+) -> None:
+    send_email(to_email, subject, body, test_cause=test_cause)
 
 
 def _group_buy_url(group_buy_id: str) -> str:
@@ -61,7 +63,11 @@ def _producer_url(producer_id: str) -> str:
 
 
 def notify_producer_funded(
-    producer_email: str, title: str, participant_count: int, group_buy_id: str
+    producer_email: str,
+    title: str,
+    participant_count: int,
+    group_buy_id: str,
+    test_cause: bool = False,
 ) -> None:
     """Fired on the open->funded transition, to the business account email.
 
@@ -76,15 +82,16 @@ def notify_producer_funded(
         f"לצפייה בקבוצה: {_group_buy_url(group_buy_id)}\n\n"
         f"בברכה,\nצוות מהמקור"
     )
-    _send_email(producer_email, subject, body)
+    _send_email(producer_email, subject, body, test_cause=test_cause)
 
 
-def notify_participant_funded(
+def notify_participant_funded(  # noqa: PLR0913 — +test_cause, the MEH-2952 send-layer switch
     participant_email: str,
     title: str,
     producer_name: str,
     group_buy_id: str,
     producer_id: str,
+    test_cause: bool = False,
 ) -> None:
     """Fired on the open->funded transition, once per participant.
 
@@ -103,7 +110,7 @@ def notify_participant_funded(
         f"לצפייה בקבוצה ובפרטי ההזמנה: {_group_buy_url(group_buy_id)}\n\n"
         f"בברכה,\nצוות מהמקור"
     )
-    _send_email(participant_email, subject, body)
+    _send_email(participant_email, subject, body, test_cause=test_cause)
 
 
 # noqa below: a BackgroundTasks entry point takes plain data only (no DB access,
@@ -115,8 +122,12 @@ def send_funded_notifications(  # noqa: PLR0913
     producer_name: str,
     group_buy_id: str,
     producer_id: str,
+    test_cause: bool = False,
 ) -> None:
     """BackgroundTasks entry point — dispatches both sides, never raises.
+
+    MEH-2952: `test_cause` — the business is a seeded test row; every mail
+    this group buy causes (business and participants) is dropped and logged.
 
     MEH-1533: Sentry has no capture_exception wired into background tasks, so an
     exception escaping here would vanish with no trace anywhere. send_email() is
@@ -127,7 +138,11 @@ def send_funded_notifications(  # noqa: PLR0913
     if producer_email:
         try:
             notify_producer_funded(
-                producer_email, title, len(participant_emails), group_buy_id
+                producer_email,
+                title,
+                len(participant_emails),
+                group_buy_id,
+                test_cause=test_cause,
             )
         except Exception:  # noqa: BLE001 — best-effort; router already returned
             logger.exception(
@@ -146,7 +161,12 @@ def send_funded_notifications(  # noqa: PLR0913
             continue
         try:
             notify_participant_funded(
-                participant_email, title, producer_name, group_buy_id, producer_id
+                participant_email,
+                title,
+                producer_name,
+                group_buy_id,
+                producer_id,
+                test_cause=test_cause,
             )
         except Exception:  # noqa: BLE001 — one failure must not stop the rest
             logger.exception(
@@ -160,7 +180,7 @@ def send_funded_notifications(  # noqa: PLR0913
 
 
 def notify_participant_cancelled(
-    participant_email: str, title: str, producer_name: str
+    participant_email: str, title: str, producer_name: str, test_cause: bool = False
 ) -> None:
     """Fired when the business cancels or closes its group buy, once per participant.
 
@@ -175,11 +195,11 @@ def notify_participant_cancelled(
         f"לשאלות צרו קשר עם {producer_name}.\n\n"
         f"בברכה,\nצוות מהמקור"
     )
-    _send_email(participant_email, subject, body)
+    _send_email(participant_email, subject, body, test_cause=test_cause)
 
 
 def notify_participant_cancelled_delisted(
-    participant_email: str, title: str, producer_name: str
+    participant_email: str, title: str, producer_name: str, test_cause: bool = False
 ) -> None:
     """MEH-2498: the group was cancelled because the SITE took the business off.
 
@@ -197,16 +217,17 @@ def notify_participant_cancelled_delisted(
         f"אם סיכמתם משהו ישירות מול בית העסק, אפשר להמשיך מולו כרגיל.\n\n"
         f"בברכה,\nצוות מהמקור"
     )
-    _send_email(participant_email, subject, body)
+    _send_email(participant_email, subject, body, test_cause=test_cause)
 
 
-def send_cancelled_notifications(
+def send_cancelled_notifications(  # noqa: PLR0913 — +test_cause, the MEH-2952 send-layer switch
     participant_emails: list[str],
     title: str,
     producer_name: str,
     group_buy_id: str,
     *,
     delisted: bool = False,
+    test_cause: bool = False,
 ) -> None:
     """BackgroundTasks entry point for the cancel email — never raises.
 
@@ -225,7 +246,7 @@ def send_cancelled_notifications(
         if not participant_email:
             continue
         try:
-            notify(participant_email, title, producer_name)
+            notify(participant_email, title, producer_name, test_cause=test_cause)
         except Exception:  # noqa: BLE001 — one failure must not stop the rest
             logger.exception(
                 "[group-buy] cancel notification to a participant failed "

@@ -15,10 +15,12 @@
  * not a `fixed inset-0` overlay (ADR-023) and is not seen here; blur is guarded
  * by the sibling ModalOverlayNoBlur.test.js.
  *
- * Two `fixed inset-0` surfaces are NOT scrims and are exempt by value:
+ * Three `fixed inset-0` surfaces are NOT scrims and are exempt by value:
  *   - components/Lightbox.jsx  bg-black/95 — the immersive photo viewer
  *   - components/MiniMap.jsx   bg-surface    — the full-screen map surface
- * They double as the positive control: the walk must find both, so a regex
+ *   - components/RegistrationOverlays.jsx bg-surface — the full-screen phone
+ *     sign-up sheet (MEH-3043); it covers the page, nothing shows through
+ * They double as the positive control: the walk must find all, so a regex
  * that sees nothing cannot pass as clean.
  */
 import { describe, it, expect } from "vitest";
@@ -30,6 +32,7 @@ const SCRIM = "bg-black/40";
 const EXEMPT = {
   "components/Lightbox.jsx": "bg-black/95",
   "components/MiniMap.jsx": "bg-surface",
+  "components/RegistrationOverlays.jsx": "bg-surface",
 };
 
 function walk(dir, out = []) {
@@ -52,6 +55,7 @@ describe("MEH-1687 D — every modal scrim is bg-black/40", () => {
     const files = ["app", "components"].flatMap((d) => walk(path.join(ROOT, d)));
     let scrims = 0;
     const exemptSeen = new Set();
+    const scrimFiles = new Set();
     const offenders = [];
     for (const f of files) {
       const rel = path.relative(ROOT, f).split(path.sep).join("/");
@@ -63,11 +67,16 @@ describe("MEH-1687 D — every modal scrim is bg-black/40", () => {
           continue;
         }
         scrims += 1;
+        scrimFiles.add(rel);
         if (bgs.length !== 1 || bgs[0] !== SCRIM) offenders.push(`${rel}: ${bgs.join(" ")}`);
       }
     }
-    expect(scrims, "corpus control: scrims must be found").toBeGreaterThanOrEqual(15);
-    expect([...exemptSeen].sort(), "positive control: both exempt surfaces seen").toEqual(Object.keys(EXEMPT).sort());
+    // MEH-3096 moved the centred dialogs onto the one shell components/ui/Dialog.jsx,
+    // so the raw count fell from ~23 to 11. The floor follows it, and the shared
+    // shell itself must be among the scrims seen — that is the anchor now.
+    expect(scrims, "corpus control: scrims must be found").toBeGreaterThanOrEqual(8);
+    expect(scrimFiles.has("components/ui/Dialog.jsx"), "anchor: the shared Dialog scrim is walked").toBe(true);
+    expect([...exemptSeen].sort(), "positive control: every exempt surface seen").toEqual(Object.keys(EXEMPT).sort());
     expect(offenders).toEqual([]);
   });
 });

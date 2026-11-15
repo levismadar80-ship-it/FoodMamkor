@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 import { useEffect, useId, useRef, useState, useSyncExternalStore } from "react";
@@ -155,7 +156,7 @@ function ManualCopyBox({ text, tClaim }) {
         onFocus={(e) => e.target.setSelectionRange(0, e.target.value.length)}
         // No min-width: the producers table keeps its columns at 375
         // (MEH-2070), and a wide box would push the actions column off-screen.
-        className="w-full border border-border rounded-md px-3 py-2 text-xs bg-background"
+        className="w-full border border-border rounded-sm px-3 py-2 text-xs bg-background focus-ring"
       />
     </>
   );

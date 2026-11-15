@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Module:   israel-date
  * Purpose:  One owner for "what calendar day is it in Israel" on the client,

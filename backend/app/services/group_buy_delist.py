@@ -58,15 +58,16 @@ def cancel_live_group_buys(
             .filter((User.producer_id.is_(None)) | (User.producer_id != producer.id))
             .all()
         ]
-        gb.status = "cancelled"
+        gb.status = "cancelled"  # type: ignore[assignment]
         if emails:
             background_tasks.add_task(
                 send_cancelled_notifications,
                 emails,
-                gb.title,
-                producer.name,
+                gb.title,  # type: ignore[arg-type]
+                producer.name,  # type: ignore[arg-type]
                 str(gb.id),
                 delisted=True,
+                test_cause=bool(producer.is_test),  # MEH-2952
             )
     return len(live)
 
@@ -99,4 +100,4 @@ def withdraw_user_commits(db: Session, user: User) -> None:
             .scalar()
         )
         if remaining < gb.min_participants:
-            gb.status = "open"
+            gb.status = "open"  # type: ignore[assignment]

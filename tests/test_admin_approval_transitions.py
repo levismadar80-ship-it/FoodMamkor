@@ -24,7 +24,7 @@ path, zero on a blocked toggle).
 """
 import pytest
 
-import app.routers.admin as admin_module
+import app.routers.admin_decisions as admin_module
 from app.models.models import Producer
 from app.constants import LICENSE_REQUIRED_CATEGORIES
 from conftest import auth_header, make_category, make_producer, make_user
@@ -55,7 +55,9 @@ def test_toggle_approved_to_inactive(client, db):
 
 
 def test_toggle_inactive_to_approved(client, db):
-    producer = make_producer(db, status="inactive")
+    # MEH-2945: un-pausing runs the approval gates, so the row passes them
+    # (the gated cases live in test_meh2945_unpause_gate.py).
+    producer = make_producer(db, status="inactive", images=[TEST_IMAGE], phone_verified=True)
     resp = _toggle(client, producer.id, _admin(db))
     assert resp.status_code == 200, resp.text
     assert resp.json()["status"] == "approved"
@@ -284,7 +286,7 @@ def test_approval_email_subject_is_the_welcome_headline(client, db, monkeypatch)
         # a ticket that never mentions it. Deliberately not captured: this test
         # asserts the SUBJECT (MEH-2113), and the HTML part's own contract lives
         # in tests/test_meh2151_approval_email_cta.py.
-        lambda to, subject, body, html=None: sent.append((to, subject, body)),
+        lambda to, subject, body, html=None, test_cause=False: sent.append((to, subject, body)),
     )
     monkeypatch.setattr(admin_module, "notify_producer_approved", lambda *a, **k: None)
 
@@ -469,7 +471,7 @@ def test_the_phone_override_is_audited_like_the_license_one(
         db, status="pending", images=[TEST_IMAGE], phone_verified=False
     )
 
-    with caplog.at_level("WARNING", logger="app.routers.admin"):
+    with caplog.at_level("WARNING", logger="app.services.producer_approval"):
         resp = client.post(
             f"/admin/producers/{producer.id}/approve?allow_unverified_phone=true",
             headers=auth_header(admin),
@@ -502,7 +504,7 @@ def test_no_audit_line_when_the_override_is_not_needed(client, db, monkeypatch, 
         db, status="pending", images=[TEST_IMAGE], phone_verified=True
     )
 
-    with caplog.at_level("WARNING", logger="app.routers.admin"):
+    with caplog.at_level("WARNING", logger="app.services.producer_approval"):
         resp = client.post(
             f"/admin/producers/{producer.id}/approve?allow_unverified_phone=true",
             headers=auth_header(_admin(db)),

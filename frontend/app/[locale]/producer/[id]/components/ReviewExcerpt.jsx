@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 import { useEffect, useState } from "react";
@@ -70,7 +71,7 @@ export default function ReviewExcerpt({ producerId, reviewsCount = 0 }) {
   return (
     <a
       href="#reviews"
-      className="mt-6 block border-s-[3px] border-accent ps-4 py-1 rounded-none transition-colors hover:bg-primary/[0.03] focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent/40"
+      className="mt-6 block border-s-[3px] border-accent ps-4 py-1 rounded-none transition-colors hover:bg-primary/[0.03] focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary"
       data-testid="review-excerpt"
     >
       <span className="block font-headline-md text-xl leading-normal text-text">

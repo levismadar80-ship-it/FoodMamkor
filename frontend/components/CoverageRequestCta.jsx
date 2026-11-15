@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 import { ChatCircle } from "@phosphor-icons/react";
@@ -64,7 +65,7 @@ export default function CoverageRequestCta({ producer = null, city = "", describ
         onClick={() => pingWhatsAppBeacon(producer?.id, value)}
         data-testid="coverage-request-link"
         aria-describedby={describedBy}
-        className="inline-flex items-center gap-1.5 min-h-touch rounded-full border border-primary/20 bg-surface px-3 text-sm font-medium text-primary transition hover:bg-green-50 focus-visible:ring-2 focus-visible:ring-primary/40"
+        className="inline-flex items-center gap-1.5 min-h-touch rounded-full border border-primary/20 bg-surface px-3 text-sm font-medium text-primary transition hover:bg-green-50 focus-visible:ring-2 focus-visible:ring-primary"
       >
         <ChatCircle size={16} weight="regular" className="flex-shrink-0" aria-hidden="true" />
         {t("coverage_cta.known_city")}

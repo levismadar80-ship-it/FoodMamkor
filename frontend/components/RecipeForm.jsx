@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 /**
@@ -31,11 +32,12 @@ import { Leaf } from "@phosphor-icons/react";
 import Input from "@/components/ui/Input";
 import UnverifiedEmailNotice from "@/components/UnverifiedEmailNotice";
 import Button from "@/components/ui/Button";
+import InlineMessage from "@/components/ui/InlineMessage";
 
 // MEH-1128 Wave B: single-line fields render via ui/Input; baseInput remains
 // for the textareas only (no textarea primitive yet — epic Wave D+).
 const baseInput =
-  "w-full border border-border rounded-sm px-3 py-2 bg-surface text-start focus-visible:ring-2 focus-visible:ring-primary/40 outline-none";
+  "w-full border border-border rounded-sm px-3 py-2 bg-surface text-start focus-visible:ring-2 focus-visible:ring-primary outline-none";
 
 const EMPTY = {
   title: "",
@@ -55,7 +57,10 @@ function toInt(v) {
   return Number.isFinite(n) ? Math.trunc(n) : null;
 }
 
-export default function RecipeForm({ mode = "create", initial, onSaved, onCancel }) {
+// MEH-3138: emailUnverified (from the page's useAuth) shows the verify notice
+// up front, before the form is filled — same pattern as EventForm (MEH-2918).
+/** @param {{ mode?: "create"|"edit", initial?: Record<string, unknown>, onSaved?: (recipe: object) => void, onCancel?: () => void, emailUnverified?: boolean }} props */
+export default function RecipeForm({ mode = "create", initial, onSaved, onCancel, emailUnverified = false }) {
   const t = useTranslations("recipes.form");
   // MEH-848: shared generic error copy (collapsed from recipes.form.errors.generic).
   const tError = useTranslations("error");
@@ -69,9 +74,11 @@ export default function RecipeForm({ mode = "create", initial, onSaved, onCancel
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   // MEH-1164 B: verified-email 403 → resend CTA notice instead of a dead-end.
-  // Create-only concern (the edit PATCH is not verified-gated), but the flag is
-  // harmless in edit mode since that path never sets it.
-  const [unverified, setUnverified] = useState(false);
+  // Create-only concern (the edit PATCH is not verified-gated), but the count is
+  // harmless in edit mode since that path never raises it.
+  // MEH-3138: used as the notice's `key`. Submit resets it to 0 and a 403 sets
+  // it to 1, so every 403 re-mounts the notice as a fresh, focused alert.
+  const [unverifiedHits, setUnverifiedHits] = useState(0);
 
   // Producer's own products for the multi-select picker.
   useEffect(() => {
@@ -124,7 +131,7 @@ export default function RecipeForm({ mode = "create", initial, onSaved, onCancel
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
-    setUnverified(false);
+    setUnverifiedHits(0);
     setSubmitting(true);
     try {
       const payload = {
@@ -150,7 +157,7 @@ export default function RecipeForm({ mode = "create", initial, onSaved, onCancel
     } catch (err) {
       const detail = err.response?.data?.detail;
       if (isUnverifiedEmailError(err)) {
-        setUnverified(true);
+        setUnverifiedHits((h) => h + 1);
       } else if (detail?.error === "recipe_rejected") {
         setError(detail.reason || t("errors.rejected_default"));
       } else if (typeof detail === "string") {
@@ -175,6 +182,10 @@ export default function RecipeForm({ mode = "create", initial, onSaved, onCancel
       <h2 className="font-headline-md text-lg font-bold text-text">
         {mode === "edit" ? t("heading_edit") : t("heading_create")}
       </h2>
+      {/* The up-front notice is create-only: the edit PATCH is not gated. */}
+      {(unverifiedHits > 0 || (emailUnverified && mode === "create")) && (
+        <UnverifiedEmailNotice key={unverifiedHits} live={unverifiedHits > 0} focusOnMount={unverifiedHits > 0} />
+      )}
 
       {/* MEH-2015: the literal span in `label` is GONE — Input's required
           prop renders the marker. Keeping both is exactly the double-asterisk
@@ -303,7 +314,7 @@ export default function RecipeForm({ mode = "create", initial, onSaved, onCancel
             </button>
           </div>
         ) : (
-          <label className="inline-flex items-center text-sm border border-dashed border-border rounded-sm px-4 py-3 cursor-pointer hover:bg-green-50 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/30">
+          <label className="inline-flex items-center text-sm border border-dashed border-border rounded-sm px-4 py-3 cursor-pointer hover:bg-green-50 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary">
             {/* MEH-2033: sr-only + focus-within — keyboard reachability, the
                 MEH-2031 pattern. */}
             <input
@@ -353,11 +364,10 @@ export default function RecipeForm({ mode = "create", initial, onSaved, onCancel
         )}
       </div>
 
-      {unverified && <UnverifiedEmailNotice />}
       {error && (
-        <p className="text-sm text-error" role="alert">
+        <InlineMessage>
           {error}
-        </p>
+        </InlineMessage>
       )}
 
       <div className="flex items-center gap-3">

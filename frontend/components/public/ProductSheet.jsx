@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 import { useEffect, useRef, useState } from "react";
@@ -30,7 +31,7 @@ import {
   getPrimaryMethod,
   isPrimaryExternal,
 } from "@/lib/contact-method";
-import { markWhatsAppClickedLocal, pingWhatsAppBeacon } from "@/lib/contact-tracking";
+import { markWhatsAppClickedLocal, pingWhatsAppBeacon, trackPrimaryCtaClick } from "@/lib/contact-tracking";
 
 /**
  * Module:   ProductSheet
@@ -308,7 +309,7 @@ export default function ProductSheet({
 
   const img = product.image_url
     ? optimizeCloudinary(product.image_url, {
-        aspectRatio: IMAGE_RATIOS.square,
+        aspectRatio: IMAGE_RATIOS.card, // MEH-3021: 4:3, so a photo never fills the screen
         width: 640,
       })
     : null;
@@ -412,7 +413,7 @@ export default function ProductSheet({
 
   return (
     <div
-      className="fixed inset-0 z-[1060] flex items-end justify-center bg-black/40 md:items-center"
+      className="fixed inset-0 z-product-sheet flex items-end justify-center bg-black/40 md:items-center"
       onClick={onClose}
       role="presentation"
       data-testid="product-sheet-backdrop"
@@ -454,7 +455,7 @@ export default function ProductSheet({
               ~60% of the panel. It collapses to a short band instead. */}
           <div
             className={`relative w-full overflow-hidden rounded-t-2xl bg-background ${
-              hasPhoto ? "aspect-square" : "h-28"
+              hasPhoto ? "aspect-[4/3]" : "h-28"
             }`}
             onTouchStart={canPage ? onTouchStart : undefined}
             onTouchEnd={canPage ? onTouchEnd : undefined}
@@ -676,14 +677,11 @@ export default function ProductSheet({
               // id. `data-method` is the stable discriminator either way.
               data-testid={waIsPrimary ? "product-sheet-wa-cta" : "product-sheet-cta"}
               data-method={primaryMethod}
-              // MEH-1426 invariant, unchanged: every WhatsApp click both
-              // attributes (pingWhatsAppBeacon) and unlocks the review form
-              // (markWhatsAppClickedLocal) — and a non-WhatsApp primary fires
-              // NEITHER, exactly as StickyContactBar.jsx:123-128 gates it.
-              // Fired at the call site as ContactCard.jsx:228-239 does; there is
-              // no shared CTA component, so this reuses the helpers rather than
-              // forking or editing them.
-              {...(waIsPrimary ? { onClick: fireWaTracking } : {})}
+              // MEH-1426 → MEH-2999: same handler as ContactCard and the
+              // sticky bar — any primary channel is recorded + unlocks reviews.
+              // MEH-2999: a non-WhatsApp primary is recorded too (any channel
+              // opens the server's review gate, MEH-2204).
+              onClick={() => trackPrimaryCtaClick(producer?.id, primaryMethod)}
               className={`${variant.className} flex min-h-touch items-center justify-center gap-2 rounded-md px-4 py-3 font-medium transition focus-visible:ring-2`}
             >
               <PrimaryIcon size={20} weight="fill" aria-hidden="true" />

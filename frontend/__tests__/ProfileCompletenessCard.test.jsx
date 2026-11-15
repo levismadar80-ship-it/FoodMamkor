@@ -25,6 +25,7 @@ vi.mock("next-intl", () => ({
       "steps.contact": "פרטי קשר",
       "steps.phone_verified": "אימות וואטסאפ",
       "steps.hours": "שעות פתיחה",
+      "steps.owner_photo": "תמונה שלך",
     };
     const raw = flat[key] ?? key;
     return raw.replace(/\{(\w+)\}/g, (_, k) => vars[k] ?? `{${k}}`);
@@ -57,6 +58,9 @@ const base = {
   // reason hours needed declaring when it became step 5. Without it every
   // green case below silently reads 5/6.
   phone_verified: true,
+  // MEH-3032: the owner's own photo joined as a recommended 7th step, so a
+  // "complete" fixture declares it too — same reason as hours and phone above.
+  owner_photo_url: "https://res.cloudinary.com/x/owner.jpg",
   products: [{ id: "p1" }, { id: "p2" }, { id: "p3" }],
 };
 
@@ -90,16 +94,16 @@ describe("ProfileCompletenessCard (MEH-1106 checklist; MEH-1895 5th step)", () =
     expect(screen.getByText("הפרופיל מלא")).toBeInTheDocument();
   });
 
-  it("missing photo → 5/6 = 83% (yellow-high), 6-row checklist, deep-links to #profile-images", () => {
+  it("missing photo → 6/7 = 86% (yellow-high), 7-row checklist, deep-links to #profile-images", () => {
     const { container } = render(
       <ProfileCompletenessCard producer={{ ...base, images: [] }} />,
     );
-    expect(screen.getByText("כמעט שם — 83% מוכן")).toBeInTheDocument();
-    expect(screen.getByRole("progressbar")).toHaveAttribute("aria-valuenow", "83");
+    expect(screen.getByText("כמעט שם — 86% מוכן")).toBeInTheDocument();
+    expect(screen.getByRole("progressbar")).toHaveAttribute("aria-valuenow", "86");
 
     const list = screen.getByRole("list", { name: "התקדמות השלמת הפרופיל" });
-    expect(within(list).getAllByRole("listitem")).toHaveLength(6);
-    expect(within(list).getAllByText("הושלם")).toHaveLength(5);
+    expect(within(list).getAllByRole("listitem")).toHaveLength(7);
+    expect(within(list).getAllByText("הושלם")).toHaveLength(6);
     expect(within(list).getAllByText("עדיין חסר")).toHaveLength(1);
 
     // Photo is the top-remaining step → echoed in the next-step box + CTA target.
@@ -109,15 +113,17 @@ describe("ProfileCompletenessCard (MEH-1106 checklist; MEH-1895 5th step)", () =
     expect(cta).toHaveAttribute("href", `${EDIT}#profile-images`);
   });
 
-  it("missing 2 steps → 67% (yellow-low, calm progress headline)", () => {
-    // images + contact missing → 4 of 6 done → 67%.
+  it("missing 3 steps → 57% (yellow-low, calm progress headline)", () => {
+    // images + contact + hours missing → 4 of 7 done → 57%. MEH-3032: with
+    // seven steps, two missing is 71% — already past the >70 "almost there"
+    // line — so the low-headline case needs a third gap.
     render(
       <ProfileCompletenessCard
-        producer={{ ...base, images: [], phone: null, instagram: null }}
+        producer={{ ...base, images: [], phone: null, instagram: null, opening_hours: null }}
       />,
     );
-    expect(screen.getByText("הפרופיל שלך 67% מוכן")).toBeInTheDocument();
-    expect(screen.getByRole("progressbar")).toHaveAttribute("aria-valuenow", "67");
+    expect(screen.getByText("הפרופיל שלך 57% מוכן")).toBeInTheDocument();
+    expect(screen.getByRole("progressbar")).toHaveAttribute("aria-valuenow", "57");
   });
 
   // MEH-1238: one product now completes the checklist step (badge still needs 3).
@@ -134,8 +140,8 @@ describe("ProfileCompletenessCard (MEH-1106 checklist; MEH-1895 5th step)", () =
       <ProfileCompletenessCard producer={{ ...base, products: [] }} />,
     );
     // image/location/contact/phone_verified/hours done, products todo →
-    // 5 of 6 → 83%.
-    expect(screen.getByRole("progressbar")).toHaveAttribute("aria-valuenow", "83");
+    // 6 of 7 → 86%.
+    expect(screen.getByRole("progressbar")).toHaveAttribute("aria-valuenow", "86");
     const cta = screen.getByRole("link", { name: "השלימו את הפרופיל שלך" });
     expect(cta).toHaveAttribute("href", `${EDIT}#profile-products`);
     // Every checklist row is a deep-link to an editor section.
@@ -177,7 +183,7 @@ describe("ProfileCompletenessCard (MEH-1106 checklist; MEH-1895 5th step)", () =
     void products;
     render(<ProfileCompletenessCard producer={noArray} />);
     expect(screen.queryByText("הפרופיל מלא")).not.toBeInTheDocument();
-    expect(screen.getByRole("progressbar")).toHaveAttribute("aria-valuenow", "83");
+    expect(screen.getByRole("progressbar")).toHaveAttribute("aria-valuenow", "86");
   });
 
   it("missing contact → contact step todo, CTA → #profile-contact", () => {
@@ -201,6 +207,7 @@ describe("ProfileCompletenessCard (MEH-1106 checklist; MEH-1895 5th step)", () =
           phone_verified: true,
           categories: ["dairy"],
           images: ["img1"],
+          owner_photo_url: "https://res.cloudinary.com/x/owner.jpg",
           products: [{ id: "p1" }, { id: "p2" }, { id: "p3" }],
         }}
       />,
@@ -222,12 +229,13 @@ describe("ProfileCompletenessCard (MEH-1106 checklist; MEH-1895 5th step)", () =
           phone_verified: true,
           categories: ["dairy"],
           images: ["img1"],
+          owner_photo_url: "https://res.cloudinary.com/x/owner.jpg",
           products: [{ id: "p1" }, { id: "p2" }, { id: "p3" }],
         }}
       />,
     );
-    // location todo → 5/6 → 83%, and the location step is the top remaining.
-    expect(screen.getByRole("progressbar")).toHaveAttribute("aria-valuenow", "83");
+    // location todo → 6/7 → 86%, and the location step is the top remaining.
+    expect(screen.getByRole("progressbar")).toHaveAttribute("aria-valuenow", "86");
     const cta = screen.getByRole("link", { name: "השלימו את הפרופיל שלך" });
     // MEH-1165 item 4 / MEH-2058: the location step's CTA lands on LocationsEditor.
     expect(cta).toHaveAttribute("href", `${EDIT}#locations`);
@@ -246,17 +254,17 @@ describe("ProfileCompletenessCard (MEH-1106 checklist; MEH-1895 5th step)", () =
 describe("MEH-1895 — hours is the fifth step", () => {
   const noHours = { ...base, opening_hours: "" };
 
-  it("missing ONLY hours → card mounts at 83% with the hours row unchecked", () => {
+  it("missing ONLY hours → card mounts at 86% with the hours row unchecked", () => {
     // Pre-MEH-1895 this producer rendered "הפרופיל מלא" — mounted, complete,
     // and silent about the field that mounted it.
     render(<ProfileCompletenessCard producer={noHours} />);
 
     expect(screen.queryByText("הפרופיל מלא")).not.toBeInTheDocument();
-    expect(screen.getByRole("progressbar")).toHaveAttribute("aria-valuenow", "83");
+    expect(screen.getByRole("progressbar")).toHaveAttribute("aria-valuenow", "86");
 
     const list = screen.getByRole("list", { name: "התקדמות השלמת הפרופיל" });
-    expect(within(list).getAllByRole("listitem")).toHaveLength(6);
-    expect(within(list).getAllByText("הושלם")).toHaveLength(5);
+    expect(within(list).getAllByRole("listitem")).toHaveLength(7);
+    expect(within(list).getAllByText("הושלם")).toHaveLength(6);
     expect(within(list).getAllByText("עדיין חסר")).toHaveLength(1);
 
     // Hours is the only remaining step → it drives the next-step box + CTA.
@@ -271,7 +279,7 @@ describe("MEH-1895 — hours is the fifth step", () => {
 
   it("whitespace-only hours count as missing — the same trim the heuristic uses", () => {
     render(<ProfileCompletenessCard producer={{ ...base, opening_hours: "   " }} />);
-    expect(screen.getByRole("progressbar")).toHaveAttribute("aria-valuenow", "83");
+    expect(screen.getByRole("progressbar")).toHaveAttribute("aria-valuenow", "86");
   });
 
   it("hours filled + another field missing → hours row is checked, not the other", () => {
@@ -307,6 +315,7 @@ describe("MEH-1895 — hours is the fifth step", () => {
       "פרטי קשר",
       "אימות וואטסאפ",
       "שעות פתיחה",
+      "תמונה שלך",
     ]);
   });
 
@@ -369,5 +378,44 @@ describe("MEH-1895 — hours is the fifth step", () => {
     render(<ProfileCompletenessCard producer={base} />);
     expect(screen.getByText("הפרופיל מלא")).toBeInTheDocument();
     expect(screen.queryByRole("progressbar")).not.toBeInTheDocument();
+  });
+});
+
+// MEH-3032 — «תמונה שלך»: the owner's face behind the public OwnerCard
+// (Airbnb «meet your host», Etsy «meet the owner»). Card-only, like products
+// (MEH-1106 B1): the shared heuristic is untouched, so the admin list, the
+// QR-card gate and the dashboard's isComplete do not move.
+describe("MEH-3032 — owner photo is a recommended 7th step", () => {
+  const noOwnerPhoto = { ...base, owner_photo_url: null };
+
+  it.each([
+    ["null", null],
+    ["empty string", ""],
+    ["whitespace only", "   "],
+  ])("owner_photo_url %s → card mounts, row unchecked", (_l, value) => {
+    render(<ProfileCompletenessCard producer={{ ...base, owner_photo_url: value }} />);
+    expect(screen.queryByText("הפרופיל מלא")).toBeNull();
+    const list = screen.getByRole("list", { name: "התקדמות השלמת הפרופיל" });
+    const row = within(list).getByText("תמונה שלך").closest("a");
+    expect(row.textContent).toContain("עדיין חסר");
+  });
+
+  it("owner photo present → row checked and the card can collapse to complete", () => {
+    render(<ProfileCompletenessCard producer={base} />);
+    expect(screen.getByText("הפרופיל מלא")).toBeTruthy();
+  });
+
+  it("is recommended, not required — the submit gate does not block on it", () => {
+    render(<ProfileCompletenessCard producer={noOwnerPhoto} />);
+    expect(screen.getByTestId("completeness-chip-owner_photo").textContent).toBe(
+      "chip_recommended",
+    );
+  });
+
+  it("deep-links to the owner-story editor card", () => {
+    render(<ProfileCompletenessCard producer={noOwnerPhoto} />);
+    const list = screen.getByRole("list", { name: "התקדמות השלמת הפרופיל" });
+    const row = within(list).getByText("תמונה שלך").closest("a");
+    expect(row.getAttribute("href")).toBe(`${EDIT}#owner-story`);
   });
 });

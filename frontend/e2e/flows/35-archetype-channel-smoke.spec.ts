@@ -269,6 +269,17 @@ test.describe("MEH-2189 — archetype x channel primary-CTA matrix", () => {
       waChip,
       "CONTROL: a visible WhatsApp escalation row must exist on the whatsapp-primary page"
     ).toBeVisible();
+    // MEH-2985: wait until React has attached its handlers to THIS element.
+    // The page is opened at domcontentloaded, and a click that lands before
+    // hydration follows the bare href, so no beacon fires (CI run 43283502922,
+    // passed on retry). React stores the props on the node under a
+    // `__reactProps$…` key once it owns it; the product cannot move that.
+    await expect
+      .poll(() => waChip.evaluate((el) => Object.keys(el).some((k) => k.startsWith("__reactProps"))), {
+        message: "the WhatsApp escalation row never hydrated",
+        timeout: 15_000,
+      })
+      .toBe(true);
     await waChip.evaluate((el) => el.setAttribute("target", "_blank"));
     await waChip.click({ noWaitAfter: true });
     await expect
@@ -285,6 +296,14 @@ test.describe("MEH-2189 — archetype x channel primary-CTA matrix", () => {
     await page.goto(url("beit-habad-sivan"), { waitUntil: "domcontentloaded" });
     const mailCta = visibleCta(page);
     await expect(mailCta).toHaveAttribute("data-method", "email");
+    // Same hydration wait as the control: a click before hydration fires no
+    // beacon whatever the product does, so the 0 below would prove nothing.
+    await expect
+      .poll(() => mailCta.evaluate((el) => Object.keys(el).some((k) => k.startsWith("__reactProps"))), {
+        message: "the email CTA never hydrated",
+        timeout: 15_000,
+      })
+      .toBe(true);
     await mailCta.click({ noWaitAfter: true });
     // Give any stray beacon a bounded window to arrive (inverted wait — the
     // spec asserts something did NOT happen, so it must not depend on quiet).

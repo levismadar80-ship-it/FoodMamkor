@@ -1,12 +1,14 @@
+from typing import Any
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, joinedload
 
+from app.rate_limit import limiter
 from app.auth import get_current_user
 from app.database import get_db
-from app.models import Favorite, Producer, User
+from app.models import Favorite, FavoriteAlert, Producer, User
 from app.schemas.schemas import FavoriteOut
 from app.services.producer_listing import is_business
 from app.services.producer_queries import (
@@ -21,7 +23,7 @@ router = APIRouter(prefix="/users/me/favorites", tags=["favorites"])
 @router.get("", response_model=list[FavoriteOut])
 def get_favorites(
     user: User = Depends(get_current_user), db: Session = Depends(get_db)
-):
+) -> list[FavoriteOut] | list[Favorite]:
     # MEH-248 — inner-join against producers so any orphaned favorite
     # (producer row gone but FK cascade didn't fire on a pre-ondelete
     # migration, or a historical hard-delete that bypassed the cascade)
@@ -64,12 +66,14 @@ def get_favorites(
     return favorites
 
 
-@router.post("/{producer_id}", status_code=201)
+@router.post("/{producer_id}", status_code=201, response_model=None)
+@limiter.limit("60/minute")  # MEH-3022
 def add_favorite(
+    request: Request,  # required by slowapi (MEH-3022)
     producer_id: UUID,
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
-):
+) -> dict[str, Any]:
     # MEH-2465: an organizer cannot be saved as a business (ADR-036).
     # MEH-2513: nor can a business that is not live (suspended, rejected,
     # draft, pending) — same 404 as a missing one.
@@ -96,12 +100,14 @@ def add_favorite(
     return {"detail": "Added to favorites"}
 
 
-@router.delete("/{producer_id}")
+@router.delete("/{producer_id}", response_model=None)
+@limiter.limit("60/minute")  # MEH-3022
 def remove_favorite(
+    request: Request,  # required by slowapi (MEH-3022)
     producer_id: UUID,
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
-):
+) -> dict[str, Any]:
     fav = (
         db.query(Favorite)
         .filter(Favorite.user_id == user.id, Favorite.producer_id == producer_id)
@@ -110,5 +116,13 @@ def remove_favorite(
     if not fav:
         raise HTTPException(status_code=404, detail="Not in favorites")
     db.delete(fav)
+    # MEH-3222 (B6): alerts require a favorite (alerts.py set_alert_prefs
+    # refuses without one). Unfavoriting used to leave the FavoriteAlert row,
+    # so WhatsApp/push alerts kept firing for a business she had removed.
+    # Re-favoriting starts with alerts off, as for a first favorite.
+    db.query(FavoriteAlert).filter(
+        FavoriteAlert.user_id == user.id,
+        FavoriteAlert.producer_id == producer_id,
+    ).delete(synchronize_session=False)
     db.commit()
     return {"detail": "Removed from favorites"}

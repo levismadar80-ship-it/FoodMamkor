@@ -116,7 +116,7 @@ def _mock_channels(monkeypatch):
         "app.services.push.send_push_notification",
         lambda sub, **kw: pushes.append({"sub": sub, **kw}),
     )
-    monkeypatch.setattr("app.routers.alerts.send_template", lambda to, tmpl: True)
+    monkeypatch.setattr("app.routers.alerts.send_template", lambda to, tmpl, **kw: True)
     return pushes
 
 

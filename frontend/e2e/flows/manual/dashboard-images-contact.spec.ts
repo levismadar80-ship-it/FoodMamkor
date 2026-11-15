@@ -74,6 +74,8 @@ const BASE = {
   categories: [{ id: 2, name: "לחמים ואפייה" }], images: [IMG], products: [{ id: 1, name: "חלה" }],
   short_description: "מאפייה שכונתית", description: "מאפייה שכונתית קטנה בלב חיפה",
   locations: [LOC_WITH_HOURS], plan: "free", kosher: null as string | null, kashrut_verified_at: null as string | null, kashrut_badges: [] as unknown[],
+  // MEH-3032: the owner photo step, done, so hours stays the one open step.
+  owner_photo_url: "https://res.cloudinary.com/demo/image/upload/owner.jpg",
 };
 
 type Rec = { method: string; url: string; body: unknown };
@@ -287,9 +289,9 @@ test.describe("hours in the completeness card", () => {
   }
 
   // MT:MEH-1884:1 — everything but hours → the card, with hours the one open step.
-  test("a full profile without hours shows the card at 83% with «שעות פתיחה» open", async ({ page }) => {
+  test("a full profile without hours shows the card at 86% with «שעות פתיחה» open", async ({ page }) => {
     await overview(page, { ...BASE, locations: [LOC_NO_HOURS] }, "pending");
-    await expect(ring(page)).toHaveAttribute("aria-valuenow", "83");
+    await expect(ring(page)).toHaveAttribute("aria-valuenow", "86");
     await expect(cardRoot(page).getByTestId("completeness-chip-hours")).toBeVisible();
     await expect(cardRoot(page)).toContainText("שעות פתיחה");
   });
@@ -302,9 +304,9 @@ test.describe("hours in the completeness card", () => {
   });
 
   // MT:MEH-1884:3 — drift D2: the ring DOES move — hours is a counted sixth step.
-  test("filling hours moves the ring from 83% to complete — hours is a counted step", async ({ page }) => {
+  test("filling hours moves the ring from 86% to complete — hours is a counted step", async ({ page }) => {
     await overview(page, { ...BASE, locations: [LOC_NO_HOURS] }, "pending");
-    await expect(ring(page)).toHaveAttribute("aria-valuenow", "83");
+    await expect(ring(page)).toHaveAttribute("aria-valuenow", "86");
     await page.unrouteAll({ behavior: "ignoreErrors" });
     await overview(page, { ...BASE, locations: [LOC_WITH_HOURS] }, "pending");
     await expect(cardRoot(page)).toContainText("הפרופיל מלא");

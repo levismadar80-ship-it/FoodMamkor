@@ -129,7 +129,7 @@ test.describe.serial("Password policy wire-up (MEH-306 sub-B)", () => {
     // MEH-328 Chunk D: success path lands on the OWASP-aligned inbox-check
     // screen. Identical body across new-email / collision branches; no
     // access_token in response, no auto-login.
-    await expect(page.getByText(/בדקו את תיבת האימייל שלך/)).toBeVisible({
+    await expect(page.getByText(/בדקו את תיבת האימייל שלכם/)).toBeVisible({
       timeout: 20_000,
     });
   });
@@ -142,9 +142,13 @@ test.describe.serial("Password policy wire-up (MEH-306 sub-B)", () => {
     // post-MEH-306 wiring; we cannot exercise the full happy path
     // without a backend-issued token.
     await page.goto("/reset-password");
-    await expect(
-      page.getByText(/קישור האיפוס לא תקין/),
-    ).toBeVisible();
+    // MEH-2951: the page streams. Until React's reveal script runs, the
+    // server copy sits in a hidden `S:n` div next to the client-rendered one,
+    // so a strict getByText can see two. Wait for the visible message, then
+    // for exactly one: a second message that stays still fails.
+    const invalid = page.getByText(/קישור האיפוס לא תקין/);
+    await expect(invalid.filter({ visible: true })).toBeVisible();
+    await expect(invalid).toHaveCount(1);
   });
 
   test("Reset: short password is rejected at the 12-char floor", async ({

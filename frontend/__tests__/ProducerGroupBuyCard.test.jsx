@@ -129,12 +129,12 @@ describe("business page — the small card", () => {
     expect(screen.getByTestId("group-buy-progress-line").textContent).toBe("המחיר נפתח!");
   });
 
-  it("3 group buys → 2 cards and «הצגת כל קבוצות הרכישה» → all 3; 2 → no button", async () => {
+  it("3 group buys → 2 cards and «הצגת כל 3 קבוצות הרכישה» → all 3; 2 → no button", async () => {
     answerList([GB, { ...GB, id: "gb-2" }, { ...GB, id: "gb-3" }]);
     const { unmount } = render(<ProducerActivities producerId="p-1" />);
     await waitFor(() => expect(screen.getAllByTestId("producer-group-buy-row")).toHaveLength(2));
     const more = screen.getByTestId("group-buys-show-all");
-    expect(more.textContent).toBe("הצגת כל קבוצות הרכישה");
+    expect(more.textContent).toBe("הצגת כל 3 קבוצות הרכישה");
     fireEvent.click(more);
     expect(screen.getAllByTestId("producer-group-buy-row")).toHaveLength(3);
     expect(screen.queryByTestId("group-buys-show-all")).toBeNull();

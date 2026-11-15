@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 import { useTranslations } from "next-intl";
@@ -9,6 +10,7 @@ import {
 } from "@/lib/contact-method";
 import { withReferralParams } from "@/lib/utils";
 import { getCtaVariant } from "@/components/ContactCtaVariants";
+import { trackPrimaryCtaClick } from "@/lib/contact-tracking";
 
 /**
  * Primary CTA button on ProducerDetail — color + icon + Hebrew label
@@ -21,6 +23,7 @@ import { getCtaVariant } from "@/components/ContactCtaVariants";
 // MEH-2813: colour + icon per method live in ContactCtaVariants.jsx, shared
 // with the sticky bar so the two CTAs cannot drift apart again.
 
+/** @param {{ producer: import("@/types/entities").ProducerSummary, onClick?: (e: import("react").MouseEvent) => void }} props */
 export default function PrimaryContactButton({ producer, onClick }) {
   const t = useTranslations();
   const method = getPrimaryMethod(producer);
@@ -46,7 +49,13 @@ export default function PrimaryContactButton({ producer, onClick }) {
   return (
     <a
       href={href}
-      onClick={onClick}
+      // MEH-2999: the button records its own click, every channel, so no
+      // mount site can forget it again (the recipe page recorded nothing,
+      // and a non-WhatsApp primary never unlocked the review form).
+      onClick={(e) => {
+        trackPrimaryCtaClick(producer?.id, method);
+        onClick?.(e);
+      }}
       {...(external
         ? { target: "_blank", rel: isWebsite ? "noopener" : "noopener noreferrer" }
         : {})}

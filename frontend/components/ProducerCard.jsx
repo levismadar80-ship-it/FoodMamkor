@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
@@ -5,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { useTranslations, useLocale } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import Image from "next/image";
-import { HeartStraight, Star, Truck } from "@phosphor-icons/react";
+import { HeartStraight, Truck } from "@phosphor-icons/react";
 import BadgeRow, { resolveBadgeLabel } from "./BadgeRow";
 import TrustBadge from "./TrustBadge";
 import OfferBadge, { freeDeliveryThreshold } from "./OfferBadge";
@@ -42,6 +43,8 @@ import api from "@/lib/api";
 import Seed from "@/components/brand/Seed";
 import { seedColorFor } from "@/lib/brand-seeds";
 import { humanTime } from "@/lib/time-format";
+import RatingCompact from "@/components/ui/RatingCompact";
+import { hasCardRating } from "@/lib/rating-gate";
 
 // MEH-1678: bidi-safe amount interpolation, mirroring the pattern
 // DeliveryBlock.jsx's AreaRow already uses for the identical problem — the
@@ -173,7 +176,7 @@ function CardHeart({ producer, onCountChange }) {
   // MEH-991 (CARD-05): cream circle per Populated frame.
   // MEH-1028 (CARD-27): mobile density variant — 34px box + 8px inset on <640px;
   // desktop keeps the 44px touch-target box + 12px inset (sm: up). The mobile 34px
-  // is below the 44px WCAG touch floor per the v4 design lock (deliberate trade-off).
+  // circle stays (v4 design lock); MEH-3195 gives it a 44px hit area (below).
   return (
     <button
       type="button"
@@ -182,11 +185,13 @@ function CardHeart({ producer, onCountChange }) {
       aria-pressed={filled}
       title={t("producer.card.favorites.aria")}
       data-testid="card-heart"
-      className="absolute top-2 end-2 sm:top-3 sm:end-3 z-10 w-[34px] h-[34px] sm:w-11 sm:h-11 bg-background/90 hover:bg-background border border-border shadow-sm rounded-full flex items-center justify-center transition-colors duration-base ease-quart focus-ring"
+      className="absolute top-2 end-2 sm:top-3 sm:end-3 z-10 w-[34px] h-[34px] sm:w-11 sm:h-11 bg-background/90 hover:bg-background border border-border shadow-sm rounded-full flex items-center justify-center transition-colors duration-base ease-quart focus-ring before:absolute before:-inset-[6px] before:content-['']"
+      // MEH-3195: the 34px circle (1px border, 32px padding box) gets a 44px
+      // tap area: the ::before is placed from the padding box, so 32 + 2×6.
     >
       {/* Green ink, never red (MEH-636): outline default, green fill when saved. */}
       <HeartStraight
-        size={22}
+        size={24}
         weight={filled ? "fill" : "regular"}
         className="text-primary"
         aria-hidden="true"
@@ -281,6 +286,7 @@ function useBadgesThatFit(lineRef, earned) {
   return Math.min(shown, cap);
 }
 
+/** @param {{ producer: import("@/types/entities").ProducerSummary, active?: boolean, onClick?: (producer: import("@/types/entities").ProducerSummary) => void, referrer?: string, highlightQuery?: string, startCornerControl?: import("react").ReactNode }} props */
 export default function ProducerCard({ producer, active, onClick, referrer, highlightQuery = null, startCornerControl = false }) {
   const t = useTranslations();
   const cardFee = resolveDeliveryFee(producer.delivery_fee, producer.delivery_areas);
@@ -368,12 +374,8 @@ export default function ProducerCard({ producer, active, onClick, referrer, high
         )
       : null;
 
-  const hasRating =
-    typeof producer.reviews_count === "number" &&
-    producer.reviews_count >= 3 &&
-    producer.avg_rating != null &&
-    Number.isFinite(Number(producer.avg_rating)) &&
-    Number(producer.avg_rating) > 0;
+  // MEH-3071: the ≥3-reviews card rule lives in lib/rating-gate.js.
+  const hasRating = hasCardRating(producer);
 
   const rawDescription =
     (producer.short_description || producer.top_product_name || "").trim();
@@ -455,7 +457,7 @@ export default function ProducerCard({ producer, active, onClick, referrer, high
             outward .focus-ring box-shadow on this edge-flush link (ImageGallery.jsx:100 idiom). */}
         <Link
           href={producerHref}
-          className="block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/40"
+          className="block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary"
         >
           <div className="relative w-full aspect-square lg:aspect-[4/3] overflow-hidden bg-background">
             {imgSrc && !imgError ? (
@@ -525,8 +527,8 @@ export default function ProducerCard({ producer, active, onClick, referrer, high
             icon-only seal; declared shows nothing (no placeholder). */}
         {/* MEH-1547: the z-[2] that used to sit here was REMOVED. `z-index` on
             an absolutely-positioned element creates a stacking context, which
-            trapped the +N Popover's mobile bottom sheet (z-[1210]) at level 2 —
-            BottomNav (z-[1000], BottomNav.jsx:237) painted over it and the
+            trapped the +N Popover's mobile bottom sheet (the popover-sheet token, 1210) at level 2 —
+            BottomNav (the bottom-nav token, 1000, BottomNav.jsx:237) painted over it and the
             disclosed labels were unreadable (caught in self-QA, not by tests).
             The strip is a LATER sibling of the image <Link> in the same
             stacking context, so plain `absolute` already paints it above the
@@ -605,7 +607,7 @@ export default function ProducerCard({ producer, active, onClick, referrer, high
                   dir="ltr"
                   className="group inline-flex shrink-0 items-center justify-center min-h-touch min-w-touch -m-2.5 focus:outline-none"
                 >
-                  <span className="inline-flex items-center rounded-full bg-surface-card/95 border border-border text-fg-muted px-1.5 py-0.5 text-2xs font-medium group-focus-visible:ring-2 group-focus-visible:ring-primary/40">
+                  <span className="inline-flex items-center rounded-full bg-surface-card/95 border border-border text-fg-muted px-1.5 py-0.5 text-2xs font-medium group-focus-visible:ring-2 group-focus-visible:ring-primary">
                     +{hiddenBadges}
                   </span>
                 </button>
@@ -737,14 +739,13 @@ export default function ProducerCard({ producer, active, onClick, referrer, high
             </h3>
           </Link>
           {hasRating && (
-            <span
-              className="text-sm text-fg-muted shrink-0 whitespace-nowrap justify-self-start sm:justify-self-auto"
-              dir="ltr"
+            // MEH-1243 (🔒 §7) Google format ★ X.X (N) — the shared RatingCompact (MEH-3071).
+            <RatingCompact
+              avg={producer.avg_rating}
+              count={producer.reviews_count}
+              className="shrink-0 justify-self-start sm:justify-self-auto"
               data-testid="card-rating"
-            >
-              {/* MEH-1243 (🔒 §7): unify to Google format ★ X.X (N) across surfaces. */}
-              <Star size={13} weight="fill" className="text-accent inline align-[-1px]" aria-hidden="true" /> {Number(producer.avg_rating).toFixed(1)} ({producer.reviews_count})
-            </span>
+            />
           )}
         </div>
 

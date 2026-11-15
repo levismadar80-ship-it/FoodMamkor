@@ -38,6 +38,8 @@ vi.mock("next-intl", () => ({
       // would then read as a channel-gate failure.
       ordering_q: "איך מזמינים?",
       greeting_template: `שלום ${vars?.name ?? ""}, ${vars?.q ?? ""}`,
+      // MEH-3170: the wa.me suffix is catalog copy now; asserted against he.json below.
+      wa_suffix: " (וואטסאפ)",
       source_line: "הגעתי דרך מהמקור",
       escalation: "שאלה אחרת? צרו איתנו קשר",
       escalation_email_subject: "שאלה דרך מהמקור",
@@ -62,7 +64,10 @@ vi.mock("@phosphor-icons/react", () => {
   return { CaretDown: Stub, ChatCircle: Stub };
 });
 
-import WhatsAppQuestionChips, { WA_SUFFIX } from "@/components/WhatsAppQuestionChips";
+import WhatsAppQuestionChips from "@/components/WhatsAppQuestionChips";
+import he from "@/messages/he.json";
+
+const WA_SUFFIX = he.whatsapp.question_chips.wa_suffix;
 import { pingWhatsAppBeacon, markWhatsAppClickedLocal } from "@/lib/contact-tracking";
 
 const PHONE = "0501234567";

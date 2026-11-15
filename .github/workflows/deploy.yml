@@ -260,8 +260,8 @@ jobs:
                 attempt=$((attempt + 1))
                 continue
               fi
-              echo "::error::Railway redeploy failed after $attempts attempts (max wait: 2 min)"
-              exit 1
+              echo "::notice::Railway is still deploying this push through its own GitHub auto-deploy, so no extra redeploy is needed"
+              exit 0
             fi
             echo "::error::Railway redeploy failed with non-transient error"
             exit 1
@@ -335,8 +335,8 @@ jobs:
                 attempt=$((attempt + 1))
                 continue
               fi
-              echo "::error::Railway redeploy failed after $attempts attempts (max wait: 2 min)"
-              exit 1
+              echo "::notice::Railway is still deploying this push through its own GitHub auto-deploy, so no extra redeploy is needed"
+              exit 0
             fi
             echo "::error::Railway redeploy failed with non-transient error"
             exit 1

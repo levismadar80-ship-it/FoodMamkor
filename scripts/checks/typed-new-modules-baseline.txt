@@ -1,0 +1,10 @@
+# Files that existed untyped when typed-new-modules.sh was born (13/11/2026). Only remove lines (when a file gets typed or deleted); never add.
+frontend/app/[locale]/about/process/AboutProcessClient.jsx
+frontend/app/[locale]/producer/dashboard/edit/LocationHoursField.jsx
+frontend/app/[locale]/producer/dashboard/edit/LocationsEditor.jsx
+frontend/app/[locale]/producer/dashboard/edit/OrderWindowEditor.jsx
+frontend/app/[locale]/producer/dashboard/edit/OrganizerCityCard.jsx
+frontend/app/[locale]/producer/dashboard/edit/SpecialHoursEditor.jsx
+frontend/app/[locale]/producer/dashboard/edit/TagsCard.jsx
+frontend/app/[locale]/producer/dashboard/edit/page.js
+frontend/app/[locale]/register/producer/RegisterProducerClient.jsx

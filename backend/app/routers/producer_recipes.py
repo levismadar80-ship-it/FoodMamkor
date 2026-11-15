@@ -13,11 +13,13 @@ Related:  app/routers/experiences.py:1-350 (canonical analog);
 History:  MEH-589 (creation; chunk 1 = MEH-588 schema; chunks 3-4 = UI).
 """
 
+from typing import Any, cast
 from uuid import UUID
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
 from sqlalchemy.orm import Session, joinedload
 
+from app.limits import enforce_cap
 from app.auth import require_producer, require_verified_producer
 from app.database import get_db
 from app.services.producer_listing import is_business  # MEH-2459
@@ -38,7 +40,17 @@ router = APIRouter(tags=["producer-recipes"])
 # ---------- Serialization ----------
 
 
-def _serialize(recipe: ProducerRecipe) -> dict:
+def _recipe_test_cause(db: Session, user: User) -> bool:
+    """MEH-2952: the submitting business or account is a seeded test row, so
+    the admin ping it causes is dropped and logged."""
+    if getattr(user, "is_test", False):
+        return True
+    return bool(
+        db.query(Producer.is_test).filter(Producer.id == user.producer_id).scalar()
+    )
+
+
+def _serialize(recipe: ProducerRecipe) -> dict[str, Any]:
     """Pure dict shape — Pydantic ProducerRecipeOut consumes this.
     `product_ids` is filled from the loaded M2M; callers must eager-load
     `ProducerRecipe.products` first via joinedload."""
@@ -117,7 +129,7 @@ def create_my_recipe(
     background_tasks: BackgroundTasks,
     user: User = Depends(require_verified_producer),
     db: Session = Depends(get_db),
-):
+) -> ProducerRecipeOut | dict[str, Any]:
     """Submit a new recipe. Mirrors experiences.py:201-272:
     1. Hand off to Claude Haiku via validate_producer_recipe
     2. REJECTED → HTTP 400 (blocked, nothing persisted)
@@ -129,7 +141,15 @@ def create_my_recipe(
     if not user.producer_id:
         raise HTTPException(status_code=403, detail="לא נמצא עסק מקושר")
 
-    products = _validate_product_ids(db, user.producer_id, data.product_ids)
+    # MEH-3022: per-business cap (app/limits.py), before the moderation call
+    # so a capped business does not spend an Anthropic request.
+    enforce_cap(
+        db.query(ProducerRecipe)
+        .filter(ProducerRecipe.producer_id == user.producer_id)
+        .count(),
+        "recipes",
+    )
+    products = _validate_product_ids(db, user.producer_id, data.product_ids)  # type: ignore[arg-type]
 
     verdict = validate_producer_recipe(data.model_dump(mode="json"))
     if verdict["status"] == "REJECTED":
@@ -169,10 +189,15 @@ def create_my_recipe(
     producer_name = (
         db.query(Producer.name).filter(Producer.id == user.producer_id).scalar() or ""
     )
-    background_tasks.add_task(notify_admin_new_recipe, producer_name, recipe.title)
+    background_tasks.add_task(
+        notify_admin_new_recipe,
+        producer_name,
+        recipe.title,  # type: ignore[arg-type]
+        test_cause=_recipe_test_cause(db, user),  # MEH-2952
+    )
 
     recipe = (
-        db.query(ProducerRecipe)
+        db.query(ProducerRecipe)  # type: ignore[assignment]
         .options(joinedload(ProducerRecipe.products))
         .filter(ProducerRecipe.id == recipe.id)
         .first()
@@ -187,7 +212,7 @@ def create_my_recipe(
 def list_my_recipes(
     user: User = Depends(require_producer),
     db: Session = Depends(get_db),
-):
+) -> list[ProducerRecipeOut] | list[dict[str, Any]]:
     if not user.producer_id:
         raise HTTPException(status_code=403, detail="לא נמצא עסק מקושר")
     rows = (
@@ -208,7 +233,7 @@ def get_my_recipe(
     recipe_id: UUID,
     user: User = Depends(require_producer),
     db: Session = Depends(get_db),
-):
+) -> ProducerRecipeOut | dict[str, Any]:
     if not user.producer_id:
         raise HTTPException(status_code=403, detail="לא נמצא עסק מקושר")
     recipe = (
@@ -254,7 +279,7 @@ def update_my_recipe(  # noqa: PLR0913 — all 6 args are FastAPI-injected (slow
     background_tasks: BackgroundTasks,
     user: User = Depends(require_producer),
     db: Session = Depends(get_db),
-):
+) -> ProducerRecipeOut | dict[str, Any]:
     if not user.producer_id:
         raise HTTPException(status_code=403, detail="לא נמצא עסק מקושר")
 
@@ -282,7 +307,7 @@ def update_my_recipe(  # noqa: PLR0913 — all 6 args are FastAPI-injected (slow
         if field == "product_ids":
             # None means "no change"; an explicit empty list clears links.
             if value is not None:
-                recipe.products = _validate_product_ids(db, user.producer_id, value)
+                recipe.products = _validate_product_ids(db, user.producer_id, value)  # type: ignore[arg-type]
             continue
         if field in _CONTENT_FIELDS and value != getattr(recipe, field):
             content_changed = True
@@ -292,8 +317,8 @@ def update_my_recipe(  # noqa: PLR0913 — all 6 args are FastAPI-injected (slow
         # Re-moderate and reset the publish flag. The admin queue gets
         # a fresh card; existing published state is dropped because the
         # content the admin previously saw is no longer current.
-        recipe.published = False
-        recipe.moderation_status = "pending"
+        recipe.published = False  # type: ignore[assignment]
+        recipe.moderation_status = "pending"  # type: ignore[assignment]
         verdict = validate_producer_recipe(
             {
                 "title": recipe.title,
@@ -310,7 +335,7 @@ def update_my_recipe(  # noqa: PLR0913 — all 6 args are FastAPI-injected (slow
                     "reason": verdict.get("reason") or "התוכן לא מתאים לפלטפורמה",
                 },
             )
-        recipe.moderation_notes = verdict.get("reason")
+        recipe.moderation_notes = verdict.get("reason")  # type: ignore[assignment]
 
     db.commit()
     db.refresh(recipe)
@@ -323,13 +348,19 @@ def update_my_recipe(  # noqa: PLR0913 — all 6 args are FastAPI-injected (slow
             db.query(Producer.name).filter(Producer.id == user.producer_id).scalar()
             or ""
         )
-        background_tasks.add_task(notify_admin_new_recipe, producer_name, recipe.title)
+        background_tasks.add_task(
+            notify_admin_new_recipe,
+            producer_name,
+            recipe.title,  # type: ignore[arg-type]
+            test_cause=_recipe_test_cause(db, user),  # MEH-2952
+        )
 
-    recipe = (
+    recipe = cast(  # re-read of the row just committed
+        ProducerRecipe,
         db.query(ProducerRecipe)
         .options(joinedload(ProducerRecipe.products))
         .filter(ProducerRecipe.id == recipe.id)
-        .first()
+        .first(),
     )
     # MEH-2852: queued after the admin email — background tasks run in
     # order, so the ping's 5s timeout never holds the email. The page
@@ -338,13 +369,15 @@ def update_my_recipe(  # noqa: PLR0913 — all 6 args are FastAPI-injected (slow
     return _serialize(recipe)
 
 
-@router.delete("/producers/me/recipes/{recipe_id}")
+@router.delete("/producers/me/recipes/{recipe_id}", response_model=None)
+@limiter.limit("60/hour")  # MEH-3022
 def delete_my_recipe(
+    request: Request,  # required by slowapi (MEH-3022)
     recipe_id: UUID,
     background_tasks: BackgroundTasks,
     user: User = Depends(require_producer),
     db: Session = Depends(get_db),
-):
+) -> dict[str, Any]:
     if not user.producer_id:
         raise HTTPException(status_code=403, detail="לא נמצא עסק מקושר")
     recipe = db.query(ProducerRecipe).filter(ProducerRecipe.id == recipe_id).first()
@@ -382,7 +415,7 @@ def list_public_recipes(
     request: Request,
     slug: str,
     db: Session = Depends(get_db),
-):
+) -> list[ProducerRecipeOut] | list[dict[str, Any]]:
     """Only published + approved recipes for an approved producer.
     Matches the partial index on (published, moderation_status) WHERE
     published=true from migration f4c8a91e2b07.
@@ -412,7 +445,7 @@ def get_public_recipe(
     slug: str,
     recipe_id: UUID,
     db: Session = Depends(get_db),
-):
+) -> ProducerRecipeOut | dict[str, Any]:
     producer = _resolve_producer_by_slug(db, slug)
     recipe = (
         db.query(ProducerRecipe)

@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 /**
@@ -34,6 +35,7 @@ import InfoTooltip from "@/components/InfoTooltip";
 import { SITE_URL } from "@/lib/env";
 import { showToast } from "@/lib/toast";
 import { shareOrCopy } from "@/lib/share-link";
+import { copyOrThrow } from "@/lib/clipboard";
 
 export default function ProducerDashboardInsightsPage() {
   const router = useRouter();
@@ -169,12 +171,7 @@ function DeepAnalyticsSection({ analytics, profile }) {
   const shareUrl =
     profile?.status === "approved" && profile?.slug ? `${SITE_URL}/p/${profile.slug}` : null;
   const copyShareUrl = () => {
-    if (!navigator.clipboard?.writeText) {
-      showToast.error(tFollowers("share_error"));
-      return;
-    }
-    navigator.clipboard
-      .writeText(shareUrl)
+    copyOrThrow(shareUrl)
       .then(() => showToast.success(tFollowers("share_toast")))
       .catch(() => showToast.error(tFollowers("share_error")));
   };
@@ -220,7 +217,7 @@ function DeepAnalyticsSection({ analytics, profile }) {
             aria-pressed={period === p}
             data-testid={`insights-period-${p}`}
             onClick={() => setPeriod(p)}
-            className={`min-h-touch px-4 rounded-full text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${
+            className={`min-h-touch px-4 rounded-full text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
               period === p ? "bg-primary text-white" : "text-text hover:bg-green-50"
             }`}
           >
@@ -453,6 +450,9 @@ function WindowedMetricCard({ label, icon: Icon, windows, tooltip, period }) {
   );
 }
 
+/**
+ * @param {{ label: string, icon: import("react").ElementType, value: import("react").ReactNode, sub: import("react").ReactNode, empty?: import("react").ReactNode, action?: import("react").ReactNode }} props
+ */
 function SimpleCard({ label, icon: Icon, value, sub, empty, action = null }) {
   return (
     <div className="bg-surface border border-border rounded-lg p-5">

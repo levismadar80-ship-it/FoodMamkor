@@ -30,7 +30,12 @@ vi.mock("@/i18n/navigation", () => ({
   ),
 }));
 vi.mock("@/lib/api", () => ({
-  default: { get: vi.fn(), post: vi.fn(), put: vi.fn() },
+  // MEH-2932: EventForm now reads /producers/me/locations on mount, so `get`
+  // has to return a promise. Resolving to an empty list keeps this file's
+  // subject untouched — no saved locations means the saved-location picker
+  // does not render and the form is exactly the one these cases were written
+  // against.
+  default: { get: vi.fn(() => Promise.resolve({ data: [] })), post: vi.fn(), put: vi.fn() },
 }));
 
 // Both are autocomplete widgets with their own network paths — irrelevant here,

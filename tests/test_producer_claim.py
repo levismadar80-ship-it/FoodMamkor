@@ -91,7 +91,7 @@ def _quiet_side_effects(monkeypatch):
     calls = []
     monkeypatch.setattr(
         "app.routers.producer_claim.notify_producer_registered",
-        lambda name, phone: calls.append(("whatsapp", name, phone)),
+        lambda name, phone, test_cause=False: calls.append(("whatsapp", name, phone)),
     )
     monkeypatch.setattr(
         "app.routers.producer_claim.score_producer",
@@ -99,7 +99,9 @@ def _quiet_side_effects(monkeypatch):
     )
     monkeypatch.setattr(
         "app.routers.producer_claim.send_welcome_email",
-        lambda email, name, role: calls.append(("email", email, role)),
+        lambda email, name, role, test_cause=False: calls.append(
+            ("email", email, role)
+        ),
     )
     return calls
 
@@ -646,3 +648,45 @@ def test_claim_is_a_reserved_slug():
     from app.slug_utils import RESERVED_SLUGS
 
     assert "claim" in RESERVED_SLUGS
+
+
+# ---------- MEH-3137: the grower declaration is recorded on its own ----------
+
+
+class TestClaimGrowerDeclaration:
+    """The claim page shows the grower box for ירקות/פירות (ClaimClient.jsx).
+    The server used to fold it into `declaration_accepted`; now it requires
+    and records it apart, like registration (MEH-2923)."""
+
+    def test_veg_draft_without_the_grower_flag_is_422_and_unlinked(self, client, db):
+        p = _draft(db, category=make_category(db, name="ירקות"))
+        user = make_user(db, email="grower3137@example.com")
+        r = client.post(CLAIM, json=_body(_token(p)), headers=auth_header(user))
+        assert r.status_code == 422, r.text
+        assert r.json()["detail"] == "יש לאשר את הצהרת המגדל כדי להמשיך"
+        db.expire_all()
+        assert db.get(User, user.id).producer_id is None
+
+    def test_veg_draft_with_the_flag_stamps_the_grower_columns(self, client, db):
+        from app.constants import FARMER_DECLARATION_VERSION
+
+        p = _draft(db, category=make_category(db, name="פירות"))
+        user = make_user(db, email="grower3137b@example.com")
+        r = client.post(
+            CLAIM,
+            json=_body(_token(p), farmer_declaration_accepted=True),
+            headers=auth_header(user),
+        )
+        assert r.status_code == 200, r.text
+        db.expire_all()
+        row = db.get(Producer, p.id)
+        assert row.farmer_declared_at is not None
+        assert row.farmer_declaration_version == FARMER_DECLARATION_VERSION
+
+    def test_non_grower_draft_stamps_nothing(self, client, db):
+        p = _draft(db)
+        user = make_user(db, email="grower3137c@example.com")
+        r = client.post(CLAIM, json=_body(_token(p)), headers=auth_header(user))
+        assert r.status_code == 200, r.text
+        db.expire_all()
+        assert db.get(Producer, p.id).farmer_declared_at is None

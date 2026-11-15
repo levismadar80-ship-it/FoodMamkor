@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * WCAG 2.5.3 Label in Name (axe `label-content-name-mismatch`).
  *

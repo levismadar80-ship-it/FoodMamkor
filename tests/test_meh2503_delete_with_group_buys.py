@@ -69,7 +69,9 @@ def _capture(monkeypatch):
     sent = []
     monkeypatch.setattr(
         "app.services.group_buy_notifications.send_email",
-        lambda to, subject, body, html=None: sent.append((to, subject, body)),
+        lambda to, subject, body, html=None, test_cause=False: sent.append(
+            (to, subject, body)
+        ),
     )
     return sent
 
@@ -137,7 +139,7 @@ class TestOwnerSelfDelete:
         _join(db, gb, "buyer3@example.com")
         pid, gid = producer.id, gb.id
 
-        resp = client.delete("/auth/me", headers=auth_header(owner))
+        resp = client.post("/auth/me/delete", json={"password": "Zx7Yp9Mq2Lr4"}, headers=auth_header(owner))
         assert resp.status_code == 200
         assert _gone(db, Producer, pid) and _gone(db, GroupBuy, gid)
         assert [to for to, _, _ in sent] == ["buyer3@example.com"]
@@ -150,7 +152,7 @@ class TestOwnerSelfDelete:
             )
         )
         db.commit()
-        assert client.delete("/auth/me", headers=auth_header(owner)).status_code == 200
+        assert client.post("/auth/me/delete", json={"password": "Zx7Yp9Mq2Lr4"}, headers=auth_header(owner)).status_code == 200
 
 
 class TestParticipantSelfDelete:
@@ -161,7 +163,7 @@ class TestParticipantSelfDelete:
         other = _join(db, gb, "buyer5@example.com")
         user_id = user.id
 
-        assert client.delete("/auth/me", headers=auth_header(user)).status_code == 200
+        assert client.post("/auth/me/delete", json={"password": "Zx7Yp9Mq2Lr4"}, headers=auth_header(user)).status_code == 200
         db.expire_all()
         assert _gone(db, User, user_id)
         left = (
@@ -176,7 +178,7 @@ class TestParticipantSelfDelete:
         user = _join(db, gb, "buyer6@example.com")
         _join(db, gb, "buyer7@example.com")
 
-        assert client.delete("/auth/me", headers=auth_header(user)).status_code == 200
+        assert client.post("/auth/me/delete", json={"password": "Zx7Yp9Mq2Lr4"}, headers=auth_header(user)).status_code == 200
         db.expire_all()
         assert db.query(GroupBuy).filter(GroupBuy.id == gb.id).one().status == "open"
 
@@ -187,7 +189,7 @@ class TestParticipantSelfDelete:
         _join(db, gb, "buyer9@example.com")
         _join(db, gb, "buyer10@example.com")
 
-        assert client.delete("/auth/me", headers=auth_header(user)).status_code == 200
+        assert client.post("/auth/me/delete", json={"password": "Zx7Yp9Mq2Lr4"}, headers=auth_header(user)).status_code == 200
         db.expire_all()
         assert db.query(GroupBuy).filter(GroupBuy.id == gb.id).one().status == "funded"
 
@@ -196,7 +198,7 @@ class TestParticipantSelfDelete:
         gb = _group(db, producer, status="fulfilled", min_participants=2)
         user = _join(db, gb, "buyer11@example.com")
 
-        assert client.delete("/auth/me", headers=auth_header(user)).status_code == 200
+        assert client.post("/auth/me/delete", json={"password": "Zx7Yp9Mq2Lr4"}, headers=auth_header(user)).status_code == 200
         db.expire_all()
         assert (
             db.query(GroupBuy).filter(GroupBuy.id == gb.id).one().status == "fulfilled"

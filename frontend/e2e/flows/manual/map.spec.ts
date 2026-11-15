@@ -76,7 +76,7 @@ import { ISRAEL_CITIES } from "../../../data/cities.js";
  *
  * Locators: `getByTestId` first (docs/E2E-LOCATORS.md). Existing ids used:
  *           `map-card`, `map-distance-pill`, `map-rating`, `sort-origin-label`,
- *           `pickup-layer-toggle-desktop/-mobile`, `chip-<key>`,
+ *           `chip-<key>`,
  *           `filter-sheet-apply-footer`. Added under this chunk (attribute-only):
  *           MapClient.jsx `map-list-count` · `map-list-subhead` ·
  *           `map-sort-select` · `map-desktop-shell` · `map-mobile-shell` ·
@@ -227,10 +227,10 @@ function icu(msg: string, count: number): string {
 // those keys, and lib/map-chips.js resolves the «בשר ודגים» / «חלב וגבינות» /
 // «ירקות ופירות» / «לחמים ואפייה» chips by matching these DB names. «דבש» is a
 // legend row NO fixture business carries — the MEH-722 empty-category case.
-const CAT_MEAT = { id: 1, name: "בשר" };
-const CAT_DAIRY = { id: 2, name: "חלב וגבינות" };
-const CAT_PRODUCE = { id: 3, name: "ירקות ופירות" };
-const CAT_BREAD = { id: 4, name: "לחם ומאפה" };
+const CAT_MEAT = { id: 1, name: "בשר", requires_license: false };
+const CAT_DAIRY = { id: 2, name: "חלב וגבינות", requires_license: false };
+const CAT_PRODUCE = { id: 3, name: "ירקות ופירות", requires_license: false };
+const CAT_BREAD = { id: 4, name: "לחם ומאפה", requires_license: false };
 const CATEGORIES = [CAT_MEAT, CAT_DAIRY, CAT_PRODUCE, CAT_BREAD];
 const EMPTY_LEGEND_NAME = "דבש";
 
@@ -330,7 +330,8 @@ type TileLog = Array<{ z: number; t: number }>;
 /** Stub the two incidental external hosts; record which zoom each tile request asked for. */
 async function stubExternal(page: Page): Promise<TileLog> {
   const tiles: TileLog = [];
-  // A RegExp, not a glob: the tile host carries a subdomain (`a.tile.…`), which
+  // A RegExp, not a glob: the tile host used to carry a subdomain (`a.tile.…`,
+  // single host since MEH-3077), which
   // a `**/tile.openstreetmap.org/**` glob does not match (measured — it recorded
   // nothing, and a null log is also the reassuring answer, testing.md).
   await page.route(/tile\.openstreetmap\.org\//, (route: Route) => {
@@ -473,11 +474,17 @@ async function panMap(page: Page, shell: Locator): Promise<void> {
   await expect(shell.getByTestId("map-search-this-area"), "control: the drag must register as a user move").toBeVisible();
 }
 
-/** Tap a marker on the mobile shell — the sheet opens to HALF (45vh, MapBottomSheet.jsx) with the selected card pinned. */
-async function tapMarkerOpensSheet(page: Page, shell: Locator, p: Producer): Promise<void> {
+/**
+ * Tap a marker on the mobile shell. MEH-3119: the sheet STAYS at PEEK and the
+ * picked business shows once, as a card floating over the map. (Until then the
+ * tap opened the sheet to HALF with the card pinned above a list that also
+ * held the same business.)
+ */
+async function tapMarkerShowsCard(page: Page, shell: Locator, p: Producer): Promise<void> {
   await markerOf(shell, p).click();
   await expect(shell.getByTestId("map-selected-card")).toBeVisible();
-  await sheetSettledAt(page, shell, 0.45); // HALF (MapBottomSheet.jsx)
+  await settleSheet(shell);
+  await expectAtPeek(page, shell);
 }
 
 /**
@@ -670,24 +677,30 @@ async function grantGps(context: BrowserContext, fix: { latitude: number; longit
 
 // ════════════════════════════════════════════════════════════════════════════
 test.describe("manual › /map multi-location epic (MEH-1388)", () => {
-  // MT:MEH-1388:5 — the pickup-points layer toggle hides / shows the SECONDARY
-  //   pins (pickup / market_stand); the primary pins stay. Rows 1-4 are COVERED
-  //   by 24-producer-locations.spec.ts (:264 same card from every pin, :159
+  // MT:MEH-1388:5, revised by MEH-3054 (option ה׳, Sapir 13/11) — one pin per
+  //   business: the SECONDARY pins (pickup / market_stand) are not drawn until
+  //   their business is selected, or the «איסוף עצמי» chip is on. There is no
+  //   layer toggle (MEH-3045). Rows 1-4 are COVERED by
+  //   24-producer-locations.spec.ts (:264 same card from every pin, :159
   //   unique-business cluster badge, :319 nearest location, :344 delivery-only
   //   + pickup visible) and are not repeated here.
-  test("the layer toggle hides only the secondary pins, and shows them again", async ({ page }, info) => {
+  test("one pin per business; selecting it adds its pickup point, and no toggle exists", async ({ page }, info) => {
     await fitFixtureSpread(page, info);
     const { shell } = await gotoWithCatalog(page, info);
     await expect(primaryMarkers(shell)).toHaveCount(PRODUCERS.length, FIRST_PAINT);
-    await expect(secondaryMarkers(shell)).toHaveCount(1);
-    const toggle = shell.getByTestId(isDesktop(info) ? "pickup-layer-toggle-desktop" : "pickup-layer-toggle-mobile");
-    await expect(toggle).toHaveAttribute("aria-pressed", "true");
-    await toggle.click();
-    await expect(toggle).toHaveAttribute("aria-pressed", "false");
     await expect(secondaryMarkers(shell)).toHaveCount(0);
-    await expect(primaryMarkers(shell)).toHaveCount(PRODUCERS.length);
-    await toggle.click();
+    await expect(page.locator('[data-testid^="pickup-layer-"]')).toHaveCount(0);
+
+    await markerOf(shell, P_HAIFA).click();
     await expect(secondaryMarkers(shell)).toHaveCount(1);
+    await expect(primaryMarkers(shell)).toHaveCount(PRODUCERS.length);
+  });
+
+  test("the «איסוף עצמי» chip draws every pickup point", async ({ page }, info) => {
+    await fitFixtureSpread(page, info);
+    const { shell } = await gotoWithCatalog(page, info, "/map?pickup_points=1");
+    await expect(serviceChip(shell, "pickup_points")).toHaveAttribute("aria-pressed", "true");
+    await expect(secondaryMarkers(shell)).toHaveCount(1, FIRST_PAINT);
   });
 });
 
@@ -1171,7 +1184,10 @@ test.describe("manual › filter chips two-row layout — scroll + geo fallback"
     const row = shell.getByRole("toolbar", { name: he.map.chip_scroll.category_aria });
     const overflow = await row.evaluate((el) => el.scrollWidth - el.clientWidth);
     expect(overflow, "control: the row must overflow for the spacer to matter").toBeGreaterThan(8);
+    // MEH-3062: on the phone the rail ends with the service chips, so the
+    // last button is «איסוף עצמי» — the chip the end spacer must now clear.
     const last = row.getByRole("button").last();
+    await expect(last).toHaveAttribute("data-testid", "map-service-chip-pickup_points");
     await row.evaluate((el) => el.scrollTo({ left: -el.scrollWidth, behavior: "auto" }));
     await expect.poll(async () => inside(await box(last), await box(row))).toBe(true);
   });
@@ -1184,7 +1200,7 @@ test.describe("manual › filter chips two-row layout — scroll + geo fallback"
     mobileOnly(info, "the category row overflows at 393px; on desktop it fits");
     const { shell } = await gotoWithCatalog(page, info);
     const row = shell.getByRole("toolbar", { name: he.map.chip_scroll.category_aria });
-    const last = row.getByRole("button").last();
+    const last = row.locator("button[data-roving-chip]").last();
     expect(inside(await box(last), await box(row)), "control: the edge chip starts partly out of view").toBe(false);
     await last.dispatchEvent("click");
     await expect(last).toHaveAttribute("aria-pressed", "true");
@@ -1313,21 +1329,87 @@ test.describe("manual › map city search width + dropdown z-index", () => {
 
 // ════════════════════════════════════════════════════════════════════════════
 test.describe("manual › map z-index token system + UI bugfixes", () => {
+  // MT:MEH-1010:6 · MT:z:b4 — MEH-3119: a marker tap on a phone shows the picked
+  //   business ONCE: a card floating over the map, above the collapsed sheet.
+  //   The X is in its own row (it used to cover the photo) and closes the card.
+  //   The controls that ride the sheet edge clear the card too.
+  test("mobile: a marker tap shows one floating card above the PEEK sheet; controls clear it; the X closes it", async ({ page }, info) => {
+    mobileOnly(info, "the floating card is the mobile shell's selection");
+    const { shell } = await gotoWithCatalog(page, info);
+    await tapMarkerShowsCard(page, shell, P_TLV);
+    const card = shell.getByTestId("map-selected-card");
+    await expect(card).toHaveCount(1);
+    await expect(card).toContainText(P_TLV.name);
+    await expect(shell.getByTestId("map-legend-toggle")).toBeHidden();
+    // Outside the sheet, and sitting on its top edge.
+    await expect(bottomSheet(shell).getByTestId("map-selected-card")).toHaveCount(0);
+    const cardBox = await box(card);
+    const sheet = await box(bottomSheet(shell));
+    expect(cardBox.y + cardBox.height, "the card ends above the sheet's top edge").toBeLessThanOrEqual(sheet.y);
+    expect(sheet.y - (cardBox.y + cardBox.height), "…and close to it, not adrift up the map").toBeLessThanOrEqual(16);
+
+    // The X: its own row above the business card, never over the photo.
+    const close = shell.getByTestId("map-selected-card-close");
+    const closeBox = await box(close);
+    const inner = await box(card.getByTestId("map-card"));
+    expect(closeBox.width, "44px tap target").toBeGreaterThanOrEqual(44);
+    expect(closeBox.height, "44px tap target").toBeGreaterThanOrEqual(44);
+    expect(await hitTestIsSelf(close), "the X takes its own tap").toBe(true);
+    // Its painted circle (32px, centred in the 44px target) ends above the card.
+    expect(closeBox.y + closeBox.height / 2 + 16, "the X's circle ends above the business card").toBeLessThanOrEqual(inner.y + 1);
+
+    // Controls that ride the sheet edge now ride the card's top instead. Polled:
+    // the pill's `bottom` animates for 300ms after the card reports its height.
+    // (No hit test here: the pill is z-1000 over a z-598 card, so it would win
+    // one even while sitting on the card.)
+    const pill = shell.getByTestId("map-near-me-pill");
+    await expect
+      .poll(async () => {
+        const pillBox = await box(pill);
+        return pillBox.y + pillBox.height <= (await box(card)).y;
+      }, { message: "near-me sits above the card" })
+      .toBe(true);
+    // The attribution lifts with the same edge. Measured against the map
+    // container's spill below the fold (see attributionRide): it may sit that
+    // many px lower than the card's real top, never more.
+    await expect
+      .poll(async () => {
+        const attr = await box(attribution(shell));
+        const container = await box(mapCanvas(shell));
+        const vh = await page.evaluate(() => window.innerHeight);
+        const spill = Math.max(0, container.y + container.height - vh);
+        return attr.y + attr.height - spill <= (await box(card)).y;
+      }, { message: "the attribution rides above the card" })
+      .toBe(true);
+
+    await close.click();
+    await expect(card).toHaveCount(0);
+    await expectAtPeek(page, shell);
+  });
+
   // MT:z:b1 · MT:z:r4 — mobile, sheet open: the zoom +/- control is still
   //   clickable above it, and zooming works (tiles at z+1 are fetched).
   // MT:z:r2 — «קרוב אליי» is clickable with the sheet open.
-  // MT:z:b4 — the selected card's X is reachable and closes it.
   // MT:z:b3 — the sheet content scrolls to its end (the last card is fully
   //   reachable above the nav band). DRIFT: the «מידע נוסף» CTA is gone.
   // MT:z:a2 — sheet at HALF: the attribution rides ABOVE the sheet edge.
-  // MT:MEH-1010:6 — mobile: a marker tap opens the sheet with the pinned card;
-  //   no legend.
-  test("mobile with the sheet open: zoom + near-me still take clicks, the X closes the pinned card, the list scrolls to its end", async ({ page }, info) => {
+  // MEH-3119 — with the sheet open the floating card is gone: the picked
+  //   business is its own row in the list, marked active, once.
+  test("mobile with the sheet open: zoom + near-me still take clicks, the picked business is one list row, the list scrolls to its end", async ({ page }, info) => {
     mobileOnly(info, "the bottom sheet is the mobile shell's list");
     await installGeo(page, 1);
     const { shell, tiles } = await gotoWithCatalog(page, info);
-    await tapMarkerOpensSheet(page, shell, P_TLV);
-    await expect(shell.getByTestId("map-selected-card")).toContainText(P_TLV.name);
+    // The LAST business in the list, so its row is below the fold when the
+    // sheet opens and only the scroll-into-view can put it on screen.
+    const picked = PRODUCERS[PRODUCERS.length - 1];
+    await tapMarkerShowsCard(page, shell, picked);
+    // Since MEH-3119 a marker tap no longer opens the sheet; the handle does
+    // (a click toggles it — the drag is covered by the MEH-2510 test below).
+    await shell.getByTestId("map-sheet-handle").click();
+    await sheetSettledAt(page, shell, 0.45); // HALF (MapBottomSheet.jsx)
+    await expect(shell.getByTestId("map-selected-card"), "no second copy of the picked business with the list open").toHaveCount(0);
+    await expect(cardOf(shell, picked), "the picked business is exactly one list row").toHaveCount(1);
+    await expect(cardOf(shell, picked), "its row is brought fully into view").toBeInViewport({ ratio: 1 });
     await expect(shell.getByTestId("map-legend-toggle")).toBeHidden();
     // MT:z:a2 — the attribution rides the HALF edge: its bottom sits at
     // `container bottom − sheet height − 6px` (the MEH-1365 rule), and it
@@ -1355,24 +1437,26 @@ test.describe("manual › map z-index token system + UI bugfixes", () => {
       const c = await box(content);
       return last.y + last.height <= c.y + c.height + 1;
     }, "the last card must be fully reachable").toBe(true);
-
-    await content.evaluate((el) => el.scrollTo({ top: 0, behavior: "auto" }));
-    const close = shell.getByTestId("map-selected-card-close");
-    await expect(close).toBeVisible();
-    await close.click();
-    await expect(shell.getByTestId("map-selected-card")).toHaveCount(0);
   });
 
   // MT:z:b2 — desktop: hovering a marker yields exactly ONE tooltip source — the
   //   native `title` (MapComponent.jsx `title: markerLabel`); no Leaflet tooltip
   //   is bound (MEH-30 #8), so no duplicate.
+  //   MEH-3066: each primary pin now carries a permanent name label, which is a
+  //   Leaflet tooltip (`.mehamakor-pin-label`) shown only from zoom 13. It is
+  //   not a hover tooltip, so the hover check excludes it, and at this
+  //   default zoom every label must still be hidden — no second name on hover.
   test("desktop: a hovered marker has one tooltip source (native title), no Leaflet tooltip, and highlights its card", async ({ page }, info) => {
     desktopOnly(info, "hover is a pointer affordance; the mobile path is tap → sheet");
     const { shell } = await gotoWithCatalog(page, info);
     const marker = markerOf(shell, P_TLV);
     await expect(marker).toHaveAttribute("title", P_TLV.name);
     await marker.hover();
-    await expect(shell.locator(".leaflet-tooltip")).toHaveCount(0);
+    await expect(shell.locator(".leaflet-tooltip:not(.mehamakor-pin-label)")).toHaveCount(0);
+    const labels = shell.locator(".leaflet-tooltip.mehamakor-pin-label");
+    const shownLabels = await labels.evaluateAll((els) =>
+      els.filter((e) => getComputedStyle(e).visibility !== "hidden").length);
+    expect(shownLabels, "below zoom 13 no pin label may show on hover").toBe(0);
     await expect(cardOf(shell, P_TLV).locator("xpath=..")).toHaveClass(/ring-2/);
   });
 
@@ -1533,7 +1617,7 @@ test.describe("manual › /map list heading + subhead (MEH-826 Gap 3)", () => {
 test.describe("manual › /map service row fits narrow phones (MEH-2514)", () => {
   for (const width of [320, 340, 360, 374]) {
     for (const withCount of [false, true]) {
-      test(`${width}px${withCount ? " with «סינון · 2»" : ""}: all three buttons sit inside the row and the screen`, async ({ page }, info) => {
+      test(`${width}px${withCount ? " with «סינון · 2»" : ""}: «סינון» on screen, each service chip reachable on the rail, no page side-scroll`, async ({ page }, info) => {
         mobileOnly(info, "the service row's narrow-phone geometry");
         await page.setViewportSize({ width, height: 700 });
         const { shell } = await gotoWithCatalog(page, info);
@@ -1558,11 +1642,28 @@ test.describe("manual › /map service row fits narrow phones (MEH-2514)", () =>
         // 38px next to 42px chips before the min-h.
         const chipH = (await box(serviceChip(shell, "has_delivery"))).height;
         expect(Math.abs((await box(filtersButton(shell))).height - chipH), "«סינון» height vs the service chips").toBeLessThanOrEqual(0.5);
-        for (const btn of [serviceChip(shell, "has_delivery"), serviceChip(shell, "pickup_points"), filtersButton(shell)]) {
-          const b = await box(btn);
-          expect(b.x, `${await btn.textContent()} left edge ${b.x} vs row ${row.x}`).toBeGreaterThanOrEqual(Math.max(0, row.x) - 0.5);
-          expect(b.x + b.width, `${await btn.textContent()} right edge`).toBeLessThanOrEqual(Math.min(width, row.x + row.width) + 0.5);
+        // MEH-3062: the phone row is ONE sideways rail now — «סינון», the
+        // categories, then the service chips. «סינון» sits outside the
+        // scroller, so it is fully on screen as loaded; each service chip is
+        // reachable by scrolling the rail and then sits fully on screen; and
+        // the PAGE never scrolls sideways (the rail's overflow stays inside it).
+        const fb = await box(filtersButton(shell));
+        expect(fb.x, `«סינון» left edge ${fb.x}`).toBeGreaterThanOrEqual(Math.max(0, row.x) - 0.5);
+        expect(fb.x + fb.width, "«סינון» right edge").toBeLessThanOrEqual(Math.min(width, row.x + row.width) + 0.5);
+        for (const btn of [serviceChip(shell, "has_delivery"), serviceChip(shell, "pickup_points")]) {
+          await btn.scrollIntoViewIfNeeded();
+          // Inside the row's box (and so the screen), and clear of «סינון» —
+          // a chip sliding under it (the round-1 sticky overlap) goes red here.
+          await expect.poll(async () => {
+            const b = await box(btn);
+            const f = await box(filtersButton(shell));
+            const inRow = b.x >= Math.max(0, row.x) - 0.5 && b.x + b.width <= Math.min(width, row.x + row.width) + 0.5;
+            const clearOfFilters = b.x + b.width <= f.x + 0.5 || b.x >= f.x + f.width - 0.5;
+            return inRow && clearOfFilters;
+          }, `${await btn.textContent()} fully inside the row and clear of «סינון» once the rail is scrolled to it`).toBe(true);
         }
+        const pageOverflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+        expect(pageOverflow, "the page itself never scrolls sideways").toBeLessThanOrEqual(0);
       });
     }
   }
@@ -1668,18 +1769,17 @@ const SHELL_ONLY: Record<string, { shell: "desktop" | "phone"; why: string }> = 
   // desktop
   "map-gps-button": { shell: "desktop", why: "desktop GPS circle; the phone uses map-near-me-pill (MEH-970)" },
   "map-key-toggle-desktop": { shell: "desktop", why: "per-shell twin of map-key-toggle-mobile (MapPane.jsx)" },
-  "pickup-layer-toggle-desktop": { shell: "desktop", why: "per-shell twin of pickup-layer-toggle-mobile (MapPane.jsx)" },
   "map-legend": { shell: "desktop", why: "desktop legend panel (MapPane.jsx hidden lg:block, MEH-979)" },
   "map-legend-toggle": { shell: "desktop", why: "lives inside map-legend" },
   "map-list-count": { shell: "desktop", why: "desktop list count; the phone shows sheet-count in the bottom sheet" },
   "map-sort-select": { shell: "desktop", why: "the phone has no sort control and never did (MEH-1864)" },
   // mobile
   "map-key-toggle-mobile": { shell: "phone", why: "per-shell twin of map-key-toggle-desktop" },
-  "pickup-layer-toggle-mobile": { shell: "phone", why: "per-shell twin of pickup-layer-toggle-desktop" },
   "map-near-me-pill": { shell: "phone", why: "phone GPS control; desktop uses map-gps-button" },
   "map-mobile-bar": { shell: "phone", why: "the phone's top bar container" },
   "map-bottom-sheet": { shell: "phone", why: "the phone's card list container" },
   "map-sheet-content": { shell: "phone", why: "inside map-bottom-sheet" },
+  "map-sheet-handle": { shell: "phone", why: "the bottom sheet's handle (click toggles it, MEH-3119); desktop has no sheet" },
   "sheet-count": { shell: "phone", why: "phone count; desktop shows map-list-count" },
 };
 // Shown by state, not by shell: «חפשו באזור זה» (MapPane.jsx, both shells)
@@ -1779,7 +1879,13 @@ test.describe("manual › /map categories + city live in the URL (MEH-2049 PR 2)
         .poll(() => catalog.seen.some((u) => u.searchParams.getAll("category").includes(String(CAT_MEAT.id)) && u.searchParams.get("near_city") === cityName), { timeout: 15_000 })
         .toBe(true);
       await expect(shellOf(page, info).getByTestId("map-card"), `${step}: only the meat producers`).toHaveCount(MEAT.length, FIRST_PAINT);
-      await expect(cityInput, `${step}: the city is back in the field`).toHaveValue(cityName);
+      // MEH-2951: /map streams. Until React's reveal script runs, the server
+      // copy of the page (field still empty) sits in a hidden `S:n` div next
+      // to the client-rendered one, so a strict id locator can see two. Read
+      // the visible field, then wait for the DOM to settle on exactly one: a
+      // second field that stays still fails.
+      await expect(cityInput.filter({ visible: true }), `${step}: the city is back in the field`).toHaveValue(cityName);
+      await expect(cityInput, `${step}: one city field once the page settles`).toHaveCount(1);
       const url = new URL(page.url());
       expect(url.searchParams.getAll("category_group"), `${step}: URL keeps the category`).toEqual(["meat"]);
       expect(url.searchParams.get("city"), `${step}: URL keeps the city`).toBe(cityName);

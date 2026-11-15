@@ -1,7 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { StrictMode } from "react";
 import {
-  render,
   screen,
   fireEvent,
   renderHook,
@@ -12,10 +11,18 @@ import AdminReviewChecklist from "@/app/[locale]/admin/producers/AdminReviewChec
 import { useReviewChecklist } from "@/app/[locale]/admin/producers/use-review-checklist";
 import {
   ADMIN_REVIEW_CHECKLIST,
-  ADMIN_REVIEW_CHECKLIST_TITLE,
-  ADMIN_REVIEW_APPROVE_CONFIRM,
+  approveConfirmMessage,
 } from "@/lib/admin-review-checklist";
 import api from "@/lib/api";
+import he from "@/messages/he.json";
+import { renderHe as render } from "./helpers/render-with-he";
+
+// MEH-3170: the title + confirm copy moved to messages/he.json. Read from the
+// catalog the app ships, through a translator built the way next-intl's is.
+const ADMIN_REVIEW_CHECKLIST_TITLE = he.admin.producers.review.checklist.title;
+const confirmT = (key, values = {}) =>
+  he.admin.producers.review.approve_confirm[key].replace(/\{(\w+)\}/g, (_, k) => values[k]);
+const confirmMessage = (count) => approveConfirmMessage(confirmT, count);
 
 /**
  * MEH-1396 shipped this as a static config with session-local ticks.
@@ -73,8 +80,8 @@ beforeEach(() => {
 describe("admin-review-checklist config (still the seed + shared copy)", () => {
   it("exposes 7 seed items and the confirm copy interpolates the count", () => {
     expect(ADMIN_REVIEW_CHECKLIST).toHaveLength(7);
-    expect(ADMIN_REVIEW_APPROVE_CONFIRM.message(3)).toContain("3");
-    expect(ADMIN_REVIEW_APPROVE_CONFIRM.message(3)).toContain("לאשר בכל זאת");
+    expect(confirmMessage(3)).toContain("3");
+    expect(confirmMessage(3)).toContain("לאשר בכל זאת");
   });
 });
 
@@ -407,13 +414,13 @@ describe("useReviewChecklist — persistence + the soft approve gate", () => {
 
   it("says the list is unavailable instead of reporting a count", () => {
     // The copy has to branch, or the dialog reads "נשארו null סעיפים".
-    const unavailable = ADMIN_REVIEW_APPROVE_CONFIRM.message(null);
+    const unavailable = confirmMessage(null);
     expect(unavailable).toBe(
       "רשימת הבדיקה לא נטענה — לא ניתן לוודא שכל הסעיפים נבדקו.",
     );
     expect(unavailable).not.toMatch(/null|\d/);
     // …and the counted case is untouched.
-    expect(ADMIN_REVIEW_APPROVE_CONFIRM.message(3)).toContain("3");
+    expect(confirmMessage(3)).toContain("3");
   });
 
   it("a double click still collapses, and costs ONE GET — not two", async () => {

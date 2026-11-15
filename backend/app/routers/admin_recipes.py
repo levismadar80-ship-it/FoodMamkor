@@ -18,6 +18,7 @@ Related:  app/routers/admin_experiences.py:1-148 (canonical analog);
 History:  MEH-589 (creation); MEH-1361 (new_recipe favorite alert).
 """
 
+from typing import Any
 from uuid import UUID
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query
@@ -41,11 +42,17 @@ from app.services.content_notifications import (
 router = APIRouter(prefix="/admin/recipes", tags=["admin-recipes"])
 
 
-def _owner_email(db: Session, producer_id) -> str | None:
+def _producer_is_test(db: Session, producer_id: UUID) -> bool:
+    """MEH-2952: the business is a seeded test row — its mail is dropped."""
+    producer = db.query(Producer).filter(Producer.id == producer_id).first()
+    return bool(producer and producer.is_test)
+
+
+def _owner_email(db: Session, producer_id: UUID) -> str | None:
     """MEH-2602: the account that owns the business — the same lookup the
     producer-approval mail uses (admin.py, `User.producer_id`)."""
     owner = db.query(User).filter(User.producer_id == producer_id).first()
-    return owner.email if owner and owner.email else None
+    return owner.email if owner and owner.email else None  # type: ignore[return-value]
 
 
 # ---------- List ----------
@@ -59,7 +66,7 @@ def admin_list_recipes(
     ),
     user: User = Depends(require_admin),
     db: Session = Depends(get_db),
-):
+) -> list[ProducerRecipeOut] | list[dict[str, Any]]:
     """REUSES: admin_experiences.py:37-50 — same status filter shape.
     Default (no filter) returns all moderation states; `all` is the
     explicit equivalent. Newest first so fresh submissions are at the
@@ -76,7 +83,7 @@ def admin_list_recipes(
 def admin_list_pending_recipes(
     user: User = Depends(require_admin),
     db: Session = Depends(get_db),
-):
+) -> list[ProducerRecipeOut] | list[dict[str, Any]]:
     rows = (
         db.query(ProducerRecipe)
         .options(joinedload(ProducerRecipe.products))
@@ -121,7 +128,7 @@ def approve_recipe(
     background_tasks: BackgroundTasks,
     user: User = Depends(require_admin),
     db: Session = Depends(get_db),
-):
+) -> ProducerRecipeOut | dict[str, Any]:
     """Approve and publish. published=True flips the recipe onto the
     public producer page (and into the partial index from MEH-588).
 
@@ -135,9 +142,9 @@ def approve_recipe(
     """
     recipe = _load_or_404(db, recipe_id)
     was_published = bool(recipe.published)
-    recipe.moderation_status = "approved"
-    recipe.moderation_notes = None
-    recipe.published = True
+    recipe.moderation_status = "approved"  # type: ignore[assignment]
+    recipe.moderation_notes = None  # type: ignore[assignment]
+    recipe.published = True  # type: ignore[assignment]
     db.commit()
     db.refresh(recipe)
 
@@ -166,7 +173,7 @@ def approve_recipe(
         background_tasks.add_task(
             fire_alerts,
             db,
-            recipe.producer_id,
+            recipe.producer_id,  # type: ignore[arg-type]
             "new_recipe",
             AlertContent(
                 title=f"🍲 מתכון חדש: {recipe.title}",
@@ -176,7 +183,7 @@ def approve_recipe(
         )
 
     # MEH-2602: tell the owner. Every moderation outcome mails, as experiences do.
-    owner_email = _owner_email(db, recipe.producer_id)
+    owner_email = _owner_email(db, recipe.producer_id)  # type: ignore[arg-type]
     if owner_email:
         producer = db.query(Producer).filter(Producer.id == recipe.producer_id).first()
         path = (
@@ -185,13 +192,17 @@ def approve_recipe(
             else f"/producer/{recipe.producer_id}"
         )
         background_tasks.add_task(
-            notify_recipe_approved, owner_email, recipe.title, path
+            notify_recipe_approved,
+            owner_email,
+            recipe.title,  # type: ignore[arg-type]
+            path,
+            test_cause=bool(producer and producer.is_test),  # MEH-2952
         )
     # MEH-2852: queued last — background tasks run in order, so a slow ping
     # (5s timeout) never holds the owner's email or the alerts.
     _ping_recipe(background_tasks, db, recipe)
 
-    recipe = _load_or_404(db, recipe.id)
+    recipe = _load_or_404(db, recipe.id)  # type: ignore[arg-type]
     return _serialize(recipe)
 
 
@@ -208,7 +219,7 @@ def request_recipe_changes(
     background_tasks: BackgroundTasks,
     user: User = Depends(require_admin),
     db: Session = Depends(get_db),
-):
+) -> ProducerRecipeOut | dict[str, Any]:
     """REUSES: admin_experiences.py:90-118 — `feedback` is required for
     request-changes (admins must tell the producer what to fix)."""
     if not action.feedback:
@@ -216,19 +227,23 @@ def request_recipe_changes(
 
     recipe = _load_or_404(db, recipe_id)
     was_published = bool(recipe.published)  # MEH-2852
-    recipe.moderation_status = "needs_revision"
-    recipe.moderation_notes = action.feedback
-    recipe.published = False
+    recipe.moderation_status = "needs_revision"  # type: ignore[assignment]
+    recipe.moderation_notes = action.feedback  # type: ignore[assignment]
+    recipe.published = False  # type: ignore[assignment]
     db.commit()
     db.refresh(recipe)
-    owner_email = _owner_email(db, recipe.producer_id)
+    owner_email = _owner_email(db, recipe.producer_id)  # type: ignore[arg-type]
     if owner_email:
         background_tasks.add_task(
-            notify_recipe_changes_requested, owner_email, recipe.title, action.feedback
+            notify_recipe_changes_requested,
+            owner_email,
+            recipe.title,  # type: ignore[arg-type]
+            action.feedback,
+            test_cause=_producer_is_test(db, recipe.producer_id),  # type: ignore[arg-type]  # MEH-2952
         )
     if was_published:  # MEH-2852: unpublished — queued after the email
         _ping_recipe(background_tasks, db, recipe)
-    recipe = _load_or_404(db, recipe.id)
+    recipe = _load_or_404(db, recipe.id)  # type: ignore[arg-type]
     return _serialize(recipe)
 
 
@@ -245,23 +260,27 @@ def reject_recipe(
     background_tasks: BackgroundTasks,
     user: User = Depends(require_admin),
     db: Session = Depends(get_db),
-):
+) -> ProducerRecipeOut | dict[str, Any]:
     """Reject is terminal — the producer can still submit a new recipe,
     but this one is closed. `feedback` becomes moderation_notes (may be
     empty if the admin doesn't want to give a reason)."""
     recipe = _load_or_404(db, recipe_id)
     was_published = bool(recipe.published)  # MEH-2852
-    recipe.moderation_status = "rejected"
-    recipe.moderation_notes = action.feedback or ""
-    recipe.published = False
+    recipe.moderation_status = "rejected"  # type: ignore[assignment]
+    recipe.moderation_notes = action.feedback or ""  # type: ignore[assignment]
+    recipe.published = False  # type: ignore[assignment]
     db.commit()
     db.refresh(recipe)
-    owner_email = _owner_email(db, recipe.producer_id)
+    owner_email = _owner_email(db, recipe.producer_id)  # type: ignore[arg-type]
     if owner_email:
         background_tasks.add_task(
-            notify_recipe_rejected, owner_email, recipe.title, action.feedback
+            notify_recipe_rejected,
+            owner_email,
+            recipe.title,  # type: ignore[arg-type]
+            action.feedback,
+            test_cause=_producer_is_test(db, recipe.producer_id),  # type: ignore[arg-type]  # MEH-2952
         )
     if was_published:  # MEH-2852: unpublished — queued after the email
         _ping_recipe(background_tasks, db, recipe)
-    recipe = _load_or_404(db, recipe.id)
+    recipe = _load_or_404(db, recipe.id)  # type: ignore[arg-type]
     return _serialize(recipe)

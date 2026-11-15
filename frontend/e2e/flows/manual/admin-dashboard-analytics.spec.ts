@@ -187,6 +187,10 @@ async function stubAdmin(page: Page, opts: StubOpts = {}): Promise<Stub> {
   await page.route("**/experiences/count", (r) => json(r, { count: 0 }));
   // MEH-2369: the footer's «אירועים» link is gated on this public feed (use-events-nav-gate).
   await page.route((u) => /\/api\/events\/upcoming\/?$/.test(u.pathname), (r) => json(r, []));
+  // MEH-2858 / MEH-2859: the footer's «קבוצות רכישה» / «סלי הפתעה» links and the header's «מה קורה»
+  // link are gated on these two public feeds (lib/use-hub-nav-gate.js). Empty, so the links stay hidden.
+  await page.route((u) => /\/api\/group-buys\/?$/.test(u.pathname), (r) => json(r, []));
+  await page.route((u) => /\/api\/rescue\/offers\/?$/.test(u.pathname), (r) => json(r, []));
   await page.route("**/categories", (r) => json(r, [{ id: 2, name: "פירות וירקות", slug: "veg" }]));
   await page.route("**/admin/dashboard", (r) => {
     dashboardCalls += 1;
@@ -341,7 +345,10 @@ test.describe("/admin/settings — vacation mode", () => {
     await vacationSave(page).click();
     await expect(page.getByText("מצב חופשה הופעל עד 2026-10-01")).toBeVisible();
     expect(writes).toEqual([{ method: "POST", url: "/admin/settings/vacation", body: { active: true, return_date: "2026-10-01" } }]);
-    await page.reload();
+    // MEH-3153: open*() is itself a full document load (page.goto), so it is
+    // the reload. A page.reload() right before it raced two navigations: on
+    // WebKit the reloaded page's in-flight /auth/me was aborted by the goto,
+    // AdminShell saw no user and pushed /login over the goto.
     await openSettings(page);
     await expect(vacationSwitch(page), "the reload reads the persisted state back").toHaveAttribute("aria-checked", "true");
     await expect(returnDate(page)).toHaveValue("2026-10-01");
@@ -350,7 +357,10 @@ test.describe("/admin/settings — vacation mode", () => {
     await vacationSave(page).click();
     await expect(page.getByText("מצב חופשה בוטל")).toBeVisible();
     expect(writes[1]).toEqual({ method: "POST", url: "/admin/settings/vacation", body: { active: false, return_date: null } });
-    await page.reload();
+    // MEH-3153: open*() is itself a full document load (page.goto), so it is
+    // the reload. A page.reload() right before it raced two navigations: on
+    // WebKit the reloaded page's in-flight /auth/me was aborted by the goto,
+    // AdminShell saw no user and pushed /login over the goto.
     await openSettings(page);
     await expect(vacationSwitch(page)).toHaveAttribute("aria-checked", "false");
     await expect(returnDate(page)).toHaveCount(0);
@@ -454,7 +464,10 @@ test.describe("admin nav — the pending-businesses pill, the queue filter, «ע
     await openDashboard(page);
     await expect(pill(page, 1)).toHaveCount(2);
     stub.setDashboard(dashboard({ stats: { pending_producers: 0, open_reports: 0 }, pending_producers: [] }));
-    await page.reload();
+    // MEH-3153: openDashboard() is itself a full document load (page.goto), so it is
+    // the reload. A page.reload() right before it raced two navigations: on
+    // WebKit the reloaded page's in-flight /auth/me was aborted by the goto,
+    // and the layout pushed /login over it (MEH-3172).
     await openDashboard(page);
     await expect(navLink(page, "מה מחכה לטיפול"), "the nav is rendered").toBeVisible();
     await expect(page.locator('[aria-label$="פריטים לאישור"]')).toHaveCount(0);

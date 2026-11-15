@@ -7,6 +7,9 @@ rules were condensed (the rules diet, MEH-2333, 26/10/2026).
 |---|---|---|
 | [workflow.md](./workflow.md) | [`.claude/rules/workflow.md`](../../.claude/rules/workflow.md) | `be037494` (MEH-2338) |
 | [testing.md](./testing.md) | [`.claude/rules/testing.md`](../../.claude/rules/testing.md) | `be037494` (MEH-2339) |
+| [2026-11-13/workflow.md](./2026-11-13/workflow.md) | [`.claude/rules/workflow.md`](../../.claude/rules/workflow.md) | `cd6032d` (second trim, 13/11) |
+| [2026-11-13/testing.md](./2026-11-13/testing.md) | [`.claude/rules/testing.md`](../../.claude/rules/testing.md) | `cd6032d` (second trim, 13/11) |
+| [2026-11-13/security.md](./2026-11-13/security.md) | [`.claude/rules/security.md`](../../.claude/rules/security.md) | `cd6032d` (second trim, 13/11) |
 
 **Why this split exists.** Everything in `.claude/rules/` without a `paths:`
 frontmatter is loaded into every session before the first word of work. The

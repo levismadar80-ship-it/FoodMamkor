@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 import { useEffect, useRef, useState } from "react";
@@ -7,6 +8,8 @@ import CitySearch from "@/components/CitySearch";
 import { useFocusReturn } from "@/lib/use-focus-return";
 import { setUserLocation } from "@/lib/user-location";
 import Button from "@/components/ui/Button";
+import InlineMessage from "@/components/ui/InlineMessage";
+import ButtonSpinner from "@/components/ButtonSpinner";
 
 // City keys → HE values are the API/canonical names (Hebrew). Display labels
 // resolve via t(`modals.location.popular_cities.${key}`) so /en/ shows the
@@ -160,7 +163,7 @@ export default function LocationModal({ open, onClose, onSelectCity }) {
   return (
     <div
       ref={overlayRef}
-      className="fixed inset-0 z-[9000] flex items-end sm:items-center justify-center bg-black/40 sm:px-4"
+      className="fixed inset-0 z-modal flex items-end sm:items-center justify-center bg-black/40 sm:px-4"
       onClick={(e) => { if (e.target === overlayRef.current) onClose(); }}
     >
       {/* MEH-2039: aria-label -> aria-labelledby. The panel HAS a visible <h2>,
@@ -173,7 +176,7 @@ export default function LocationModal({ open, onClose, onSelectCity }) {
       <div
         ref={panelRef}
         tabIndex={-1}
-        className="bg-background rounded-t-3xl sm:rounded-lg shadow-[0_8px_40px_rgba(0,0,0,0.15)] w-full sm:max-w-md px-6 pt-3 pb-[max(1.5rem,env(safe-area-inset-bottom))] sm:p-6 relative overflow-hidden animate-[slide-up_0.2s_ease-out] focus:outline-none"
+        className="bg-background rounded-t-xl sm:rounded-lg shadow-xl w-full sm:max-w-md px-6 pt-3 pb-[max(1.5rem,env(safe-area-inset-bottom))] sm:p-6 relative overflow-hidden animate-[slide-up_0.2s_ease-out] focus:outline-none"
         role="dialog"
         aria-modal="true"
         aria-labelledby="location-modal-title"
@@ -250,9 +253,9 @@ export default function LocationModal({ open, onClose, onSelectCity }) {
         />
 
         {geoError && (
-          <p role="alert" className="text-sm text-danger-600 -mt-2 mb-4">
+          <InlineMessage className="-mt-2 mb-4">
             {geoError}
-          </p>
+          </InlineMessage>
         )}
 
         {/* MEH-910: 2×2 grid on mobile balances the 4 city chips (was
@@ -285,7 +288,7 @@ export default function LocationModal({ open, onClose, onSelectCity }) {
           disabled={geoLoading}
           variant="outlined" className="w-full mb-3"
         >
-          <Crosshair size={18} weight="bold" className={geoLoading ? "animate-spin" : ""} aria-hidden="true" />
+          {geoLoading ? <ButtonSpinner size={18} /> : <Crosshair size={18} weight="bold" aria-hidden="true" />}
           {geoLoading ? t("geo_loading") : t("geo_button")}
         </Button>
 

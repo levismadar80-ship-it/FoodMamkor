@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 /**
@@ -29,7 +30,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { Leaf, Clock, CookingPot, Users, Check, CaretLeft } from "@phosphor-icons/react";
+import { Leaf, Clock, CookingPot, Users, Check, CaretLeft, Minus, Plus } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation"; // MEH-2543: next/link dropped the /en prefix
 import { optimizeCloudinary, IMAGE_RATIOS } from "@/lib/cloudinary";
@@ -42,10 +43,13 @@ import Seed from "@/components/brand/Seed"; // MEH-2844
 import HistoryBackLink from "@/components/HistoryBackLink"; // MEH-2857
 import { seedColorFor } from "@/lib/brand-seeds";
 import { splitRecipeLines } from "@/lib/recipe-lines"; // MEH-2540
+import { MAX_SERVINGS, MIN_SERVINGS, clampServings, scaleRecipeLine } from "@/lib/recipe-scale"; // MEH-3121
 import { formatPriceRange } from "@/lib/utils";
+import SectionHeading from "@/components/ui/SectionHeading";
+import BackLink from "@/components/ui/BackLink";
 
 const LINK_FOCUS =
-  "rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40";
+  "rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary";
 
 // Tailwind needs the literal class names — never build `grid-cols-${n}`.
 const FACT_COLS = { 1: "grid-cols-1", 2: "grid-cols-2", 3: "grid-cols-3" };
@@ -57,9 +61,53 @@ const tileLabel = (label) => label.replace(/:\s*$/, "");
 function FactTile({ icon: Icon, label, value }) {
   return (
     <div className="flex flex-col items-center gap-1 px-2 py-3 text-center">
-      <Icon size={22} className="text-primary" aria-hidden="true" />
+      <Icon size={24} className="text-primary" aria-hidden="true" />
       <span className="text-sm text-fg-muted">{label}</span>
       <span className="text-base font-bold text-text">{value}</span>
+    </div>
+  );
+}
+
+// MEH-3121: − n + for the number of servings. 44px buttons; the number is
+// announced when it changes.
+function ServingsStepper({ value, onChange, t }) {
+  const btn =
+    "w-11 h-11 grid place-items-center rounded-full border border-border text-text hover:border-primary focus-ring aria-disabled:opacity-50 aria-disabled:hover:border-border aria-disabled:cursor-default";
+  // aria-disabled, not disabled: a button that disables itself under the
+  // finger drops keyboard focus to the page.
+  const step = (next, blocked) => () => !blocked && onChange(clampServings(next));
+  const atMin = value <= MIN_SERVINGS;
+  const atMax = value >= MAX_SERVINGS;
+  return (
+    <div className="mb-2 flex items-center justify-between gap-3" data-testid="servings-stepper">
+      <span className="text-base font-medium text-text">{t("servings_stepper_label")}</span>
+      <div className="flex items-center gap-2">
+        <button
+          type="button"
+          className={btn}
+          aria-label={t("servings_less")}
+          aria-disabled={atMin}
+          onClick={step(value - 1, atMin)}
+        >
+          <Minus size={18} weight="bold" aria-hidden="true" />
+        </button>
+        <span
+          className="min-w-8 text-center text-lg font-bold text-text tabular-nums"
+          aria-live="polite"
+          data-testid="servings-value"
+        >
+          {value}
+        </span>
+        <button
+          type="button"
+          className={btn}
+          aria-label={t("servings_more")}
+          aria-disabled={atMax}
+          onClick={step(value + 1, atMax)}
+        >
+          <Plus size={18} weight="bold" aria-hidden="true" />
+        </button>
+      </div>
     </div>
   );
 }
@@ -83,6 +131,14 @@ export default function RecipeDetail({ recipe, producer, relatedProducts }) {
       : `${window.location.origin}${window.location.pathname}`;
 
   const [checked, setChecked] = useState(() => new Set());
+  // MEH-3121: the reader can change the number of servings; the amount each
+  // line starts with follows. Only when the recipe states its servings.
+  const baseServings = recipe.servings ? clampServings(recipe.servings) : null;
+  const [servings, setServings] = useState(baseServings);
+  const scaled = baseServings !== null && servings !== baseServings;
+  const shownIngredients = scaled
+    ? ingredients.map((line) => scaleRecipeLine(line, servings / baseServings))
+    : ingredients;
   const toggleIngredient = (i) =>
     setChecked((prev) => {
       const next = new Set(prev);
@@ -211,11 +267,14 @@ export default function RecipeDetail({ recipe, producer, relatedProducts }) {
         <div className="mt-8 grid gap-10 lg:grid-cols-[340px_1fr] lg:items-start">
           {ingredients.length > 0 && (
             <section className="lg:sticky lg:top-24 bg-surface-card border border-border rounded-lg p-5">
-              <h2 className="font-headline-md text-2xl font-bold text-text mb-3">
+              <SectionHeading size="content" className="mb-3">
                 {t("ingredients_heading")}
-              </h2>
+              </SectionHeading>
+              {baseServings !== null && (
+                <ServingsStepper value={servings} onChange={setServings} t={t} />
+              )}
               <ul className="divide-y divide-border">
-                {ingredients.map((line, i) => {
+                {shownIngredients.map((line, i) => {
                   const on = checked.has(i);
                   return (
                     <li key={i}>
@@ -241,15 +300,20 @@ export default function RecipeDetail({ recipe, producer, relatedProducts }) {
                   );
                 })}
               </ul>
+              {scaled && (
+                <p className="mt-3 text-sm text-fg-muted" data-testid="servings-note">
+                  {t("servings_note", { n: servings })}
+                </p>
+              )}
             </section>
           )}
 
           <div className="min-w-0">
             {steps.length > 0 && (
               <section>
-                <h2 className="font-headline-md text-2xl font-bold text-text mb-4">
+                <SectionHeading size="content" className="mb-4">
                   {t("instructions_heading")}
-                </h2>
+                </SectionHeading>
                 <ol className="space-y-6">
                   {steps.map((step, i) => (
                     <li key={i} className="flex gap-4">
@@ -271,9 +335,9 @@ export default function RecipeDetail({ recipe, producer, relatedProducts }) {
             {/* Related products — silent when empty per spec. */}
             {relatedProducts && relatedProducts.length > 0 && (
               <section className="mt-10">
-                <h2 className="font-headline-md text-2xl font-bold text-text mb-3">
+                <SectionHeading size="content" className="mb-3">
                   {t("related_products_heading")}
-                </h2>
+                </SectionHeading>
                 <ul className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {/* PR #3972 (Sapir 31/10: «קישור לרכישת המוצרים»): each row
                       opens that product's sheet on the business page, where the
@@ -331,9 +395,9 @@ export default function RecipeDetail({ recipe, producer, relatedProducts }) {
                 PrimaryContactButton self-collapses to null for a contactless
                 producer, so the profile link renders alone. */}
             <section className="mt-10 rounded-lg bg-green-50 p-5 md:p-6">
-              <h2 className="font-headline-md text-xl md:text-2xl font-bold text-text mb-4">
+              <SectionHeading size="content" className="mb-4">
                 {t("producer_cta_heading", { name: producer.name })}
-              </h2>
+              </SectionHeading>
               <div className="flex flex-col items-start gap-2 w-full sm:max-w-xs">
                 <div className="w-full">
                   <PrimaryContactButton producer={producer} />
@@ -347,12 +411,7 @@ export default function RecipeDetail({ recipe, producer, relatedProducts }) {
               </div>
             </section>
 
-            <Link
-              href={`/${producer.slug}`}
-              className={`mt-8 inline-block text-sm text-primary hover:underline ${LINK_FOCUS}`}
-            >
-              {t("back_to_producer")}
-            </Link>
+            <BackLink href={`/${producer.slug}`} label={t("back_to_producer")} className="mt-8" />
           </div>
         </div>
       </div>

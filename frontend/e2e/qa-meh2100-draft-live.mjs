@@ -622,10 +622,10 @@ try {
     check(await cta.count() === 1, `${vp.name}: submit CTA rendered`);
     check(await cta.isDisabled(), `${vp.name}: submit CTA is DISABLED with items missing`);
 
-    // Six checklist rows, chips on each.
+    // Seven checklist rows (MEH-3032 added the owner photo), chips on each.
     const chips = page.locator('[data-testid^="completeness-chip-"]');
     const chipCount = await chips.count();
-    check(chipCount === 6, `${vp.name}: completeness checklist has 6 chipped rows (got ${chipCount})`);
+    check(chipCount === 7, `${vp.name}: completeness checklist has 7 chipped rows (got ${chipCount})`);
     const verifyChip = page.locator('[data-testid="completeness-chip-phone_verified"]');
     check(
       await verifyChip.count() === 1 && (await verifyChip.innerText()).trim() === "חובה",

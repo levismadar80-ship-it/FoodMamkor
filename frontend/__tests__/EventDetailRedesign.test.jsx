@@ -42,8 +42,9 @@ vi.mock("@phosphor-icons/react", () => {
 vi.mock("@/components/ShareButton", () => ({ default: () => <span data-testid="share-button" /> }));
 vi.mock("@/lib/api", () => ({ default: { get: vi.fn() } }));
 vi.mock("@/lib/cloudinary", () => ({ optimizeCloudinary: (u) => u, IMAGE_RATIOS: {} }));
-vi.mock("@/lib/format-date", () => ({ formatEventDate: () => "DATE" }));
-vi.mock("@/components/Breadcrumb", () => ({ default: () => null }));
+vi.mock("@/components/Breadcrumb", () => ({
+  default: ({ className }) => <nav data-testid="breadcrumb" className={className} />,
+}));
 vi.mock("@/lib/israel-date", () => ({ israelToday: () => "2026-10-29" }));
 
 const base = {
@@ -249,5 +250,61 @@ describe("MEH-2675 — category chip", () => {
     const chip = screen.getByTestId("event-category");
     expect(chip.tagName).toBe("SPAN");
     expect(chip.textContent).toBe("סדנה");
+  });
+});
+
+/**
+ * MEH-2989 — the page says each thing once (Luma / Eventbrite / Meetup).
+ */
+describe("MEH-2989 — no repeated information", () => {
+  it("the date tile is the date row's icon inside the details card, not on the cover", async () => {
+    await renderEvent();
+    const tile = screen.getByTestId("event-date-tile");
+    expect(screen.getByTestId("event-info").contains(tile)).toBe(true);
+    expect(screen.getByTestId("event-cover-band").parentElement.contains(tile)).toBe(false);
+    expect(screen.getAllByTestId("event-date-tile")).toHaveLength(1);
+  });
+
+  // MEH-3057: the tile already says «נובמבר 20» — the row's text is the
+  // weekday + time, never the day / month / year again.
+  it("the date row's text is the weekday and time, not the date again", async () => {
+    await renderEvent({ event_time: "17:00:00" });
+    const row = screen.getByTestId("event-date-tile").parentElement;
+    const text = row.querySelector("p").textContent;
+    expect(text).toBe("יום שישי · 17:00");
+    expect(text).not.toMatch(/20|נובמבר|2026/);
+  });
+
+  it.each([
+    ["no time → the weekday alone", {}, "יום שישי"],
+    ["an end time → the range", { event_time: "09:30:00", end_time: "15:00:00" }, "יום שישי · 09:30–15:00"],
+  ])("date row: %s", async (_, extra, expected) => {
+    await renderEvent(extra);
+    expect(screen.getByTestId("event-date-tile").parentElement.querySelector("p").textContent).toBe(expected);
+  });
+
+  it("the breadcrumb is desktop only — «חזרה» covers the phone", async () => {
+    await renderEvent();
+    const crumb = screen.getByTestId("breadcrumb");
+    expect(crumb.className.split(" ")).toEqual(expect.arrayContaining(["hidden", "lg:block"]));
+  });
+
+  it("category «אחר» → no chip", async () => {
+    await renderEvent({ category: "אחר" });
+    expect(screen.queryByTestId("event-category")).toBeNull();
+  });
+
+  it("the description comes before the map", async () => {
+    await renderEvent({ description: "על האירוע", lat: 32.1, lng: 34.8 });
+    const desc = screen.getByTestId("event-description");
+    const map = screen.getByTestId("minimap");
+    expect(desc.compareDocumentPosition(map) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it("no owner card and no «כל האירועים» link at the end", async () => {
+    await renderEvent({ owner_kind: "producer" });
+    expect(screen.queryByTestId("event-business-line")).toBeNull();
+    expect(screen.queryByTestId("event-organizer-line")).toBeNull();
+    expect(screen.queryByText("events.detail.all_events")).toBeNull();
   });
 });

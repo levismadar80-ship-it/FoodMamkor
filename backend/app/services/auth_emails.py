@@ -5,6 +5,11 @@ All four functions wrap app.services.email.send_email with a complete
 RTL Hebrew text body + matching HTML body. No security logic, no DB
 writes — pure body construction + send. Lifted verbatim from
 backend/app/routers/auth.py during the MEH-440 refactor.
+
+MEH-2952: each sender takes `test_cause` — True when the account the email is
+about (`users.is_test`, or for a producer welcome its business's
+`producers.is_test`) is a seeded test row — and passes it to send_email,
+which then sends nothing.
 """
 
 import logging
@@ -17,7 +22,9 @@ from app.services.email_branding import email_logo_html
 logger = logging.getLogger(__name__)
 
 
-def send_reset_email(email: str, name: str, reset_link: str) -> None:
+def send_reset_email(
+    email: str, name: str, reset_link: str, test_cause: bool = False
+) -> None:
     # MEH-440-followup: escape name in HTML body. Plain-text body keeps
     # raw name (text rendering doesn't interpret markup).
     name_html = html_escape(name or "")
@@ -64,10 +71,18 @@ def send_reset_email(email: str, name: str, reset_link: str) -> None:
   </table>
 </body>
 </html>"""
-    send_email(email, "מהמקור - איפוס סיסמה", body, html=html_body)
+    send_email(
+        email,
+        "מהמקור - איפוס סיסמה",
+        body,
+        html=html_body,
+        test_cause=test_cause,
+    )
 
 
-def send_verify_email(email: str, name: str, token: str) -> bool:
+def send_verify_email(
+    email: str, name: str, token: str, test_cause: bool = False
+) -> bool:
     """Send email-verification link via Resend. Returns True when attempted with valid config."""
     if not settings.resend_api_key:
         logger.error(
@@ -121,11 +136,19 @@ def send_verify_email(email: str, name: str, token: str) -> bool:
   </table>
 </body>
 </html>"""
-    send_email(email, "מהמקור - אימות האימייל שלך", body, html=html_body)
+    send_email(
+        email,
+        "מהמקור - אימות האימייל שלך",
+        body,
+        html=html_body,
+        test_cause=test_cause,
+    )
     return True
 
 
-def send_welcome_email(email: str, name: str, role: str = "consumer") -> bool:
+def send_welcome_email(
+    email: str, name: str, role: str = "consumer", test_cause: bool = False
+) -> bool:
     if not settings.resend_api_key:
         logger.error(
             "[EMAIL] welcome email SKIPPED for '%s' — missing: RESEND_API_KEY", email
@@ -239,7 +262,13 @@ def send_welcome_email(email: str, name: str, role: str = "consumer") -> bool:
         body, html_body = producer_body, producer_html
     else:
         body, html_body = consumer_body, consumer_html
-    send_email(email, "ברוכים הבאים למהמקור 🌿", body, html=html_body)
+    send_email(
+        email,
+        "ברוכים הבאים למהמקור 🌿",
+        body,
+        html=html_body,
+        test_cause=test_cause,
+    )
     return True
 
 
@@ -250,7 +279,11 @@ _PRODUCER_REGISTER_PATH = "/register/producer"
 
 
 def send_duplicate_attempt_email(
-    email: str, name: str, provider: str, flow: str = "consumer"
+    email: str,
+    name: str,
+    provider: str,
+    flow: str = "consumer",
+    test_cause: bool = False,
 ) -> None:
     """MEH-328: notify an existing account that someone tried to register
     with their email. Triggered from the anti-enumeration branch in
@@ -299,7 +332,12 @@ def send_duplicate_attempt_email(
             f"בברכה,\n"
             f"צוות מהמקור"
         )
-        send_email(email, "ניסיון רישום עסק במהמקור — יש לך כבר חשבון", body)
+        send_email(
+            email,
+            "ניסיון רישום עסק במהמקור — יש לך כבר חשבון",
+            body,
+            test_cause=test_cause,
+        )
         return
     subject = "ניסיון רישום במהמקור — יש לך כבר חשבון"
     if provider == "password":
@@ -323,10 +361,10 @@ def send_duplicate_attempt_email(
             f"בברכה,\n"
             f"צוות מהמקור"
         )
-    send_email(email, subject, body)
+    send_email(email, subject, body, test_cause=test_cause)
 
 
-def send_deletion_email(email: str, name: str) -> None:
+def send_deletion_email(email: str, name: str, test_cause: bool = False) -> None:
     body = (
         f"שלום {name},\n\n"
         f"החשבון שלך במהמקור נמחק בהצלחה.\n"
@@ -337,4 +375,164 @@ def send_deletion_email(email: str, name: str) -> None:
         f"אם לא ביקשת למחוק את החשבון, צרו איתנו קשר מיידית.\n\n"
         f"בברכה,\nצוות מהמקור"
     )
-    send_email(email, "מהמקור - החשבון שלך נמחק", body)
+    send_email(email, "מהמקור - החשבון שלך נמחק", body, test_cause=test_cause)
+
+
+# ---------------------------------------------------------------------------
+# MEH-2974 — owner invite for a business an admin built end to end
+# ---------------------------------------------------------------------------
+
+# The one place the privacy-policy address is built for this email. Sapir's
+# copy ends with «איך אנחנו שומרים על המידע: {privacy_url}», and MEH-2208
+# (תיקון 13) is the open card for covering invitee PII in the policy itself —
+# the link is this feature's half of that, so it must never silently drop.
+_PRIVACY_PATH = "/privacy"
+
+
+def send_owner_invite_email(
+    email: str,
+    first_name: str,
+    business: str,
+    link: str,
+    test_cause: bool = False,
+) -> None:
+    """The invite Sapir sends after building a business's page herself.
+
+    Copy is LOCKED (MEH-2974 <hebrew_copy> v3, approved 12/11 under the layer-3
+    voice of docs/BRAND.md §לשון פנייה: fully neutral, addressed by name, no
+    slash forms). It is reproduced verbatim in both parts — do not "improve" a
+    word here without a new approval.
+
+    `first_name` may legitimately be empty (an admin who recorded only a
+    business contact), and the greeting degrades to «היי,» rather than
+    rendering «היי ,» — the same fallback shape as
+    `onboarding_followup._greeting`.
+
+    Fail-open like every other sender: `send_email` returns None on every path
+    and raises nothing, so a Resend outage cannot turn an invite into a 500
+    after the token has already been stored. The admin still holds the link in
+    the response and can send it by WhatsApp, which is the whole reason the
+    response carries it.
+    """
+    greeting = f"היי {first_name}," if (first_name or "").strip() else "היי,"
+    privacy_url = f"{settings.frontend_url}{_PRIVACY_PATH}"
+    subject = f"הדף של {business} במהמקור מוכן, נשאר רק לאשר"
+    body = (
+        f"{greeting}\n\n"
+        f"כמו שסיכמנו, הכנתי את הדף של {business} במהמקור.\n\n"
+        f"נשאר צעד אחד: לבדוק את הדף, לקבוע סיסמה ולאשר את התקנון ואת הצהרת "
+        f"הרישוי. אחרי האישור הדף באוויר, ואפשר לנהל אותו ישירות.\n\n"
+        f"[בדיקה ואישור הדף]\n"
+        f"{link}\n\n"
+        f"הקישור תקף ל-7 ימים ונועד לשימוש אישי.\n\n"
+        f"המייל הגיע בטעות, או שהדף כבר לא רלוונטי? אפשר להשיב למייל הזה והדף יוסר.\n\n"
+        f"איך אנחנו שומרים על המידע: {privacy_url}\n\n"
+        f"ספיר שנפ\n"
+        f"מייסדת | מהמקור"
+    )
+    # MEH-440-followup: escape anything that reaches the HTML part. `business`
+    # is an admin-entered business name and `first_name` an admin-entered
+    # person name — both bleached at the API boundary, but this template
+    # interpolates into raw markup, so the escape is the layer that belongs
+    # here. The plain-text part keeps the raw values (text rendering
+    # interprets no markup).
+    greeting_html = html_escape(greeting)
+    business_html = html_escape(business)
+    html_body = f"""\
+<!DOCTYPE html>
+<html dir="rtl" lang="he">
+<head><meta charset="UTF-8"></head>
+<body style="margin:0;padding:0;background:#F5F0E8;font-family:Arial,Helvetica,sans-serif;direction:rtl;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#F5F0E8;padding:32px 0;">
+    <tr>
+      <td align="center">
+        <table width="100%" cellpadding="40" cellspacing="0" style="background:#ffffff;border-radius:12px;text-align:right;direction:rtl;max-width:560px;margin:0 auto;">
+          <tr>
+            <td style="text-align:right;direction:rtl;">
+              {email_logo_html()}
+              <h1 style="font-size:20px;color:#1C1A17;margin:0 0 12px;">{greeting_html}</h1>
+              <p style="color:#3a3a3a;font-size:15px;line-height:1.7;margin:0 0 12px;">כמו שסיכמנו, הכנתי את הדף של {business_html} במהמקור.</p>
+              <p style="color:#3a3a3a;font-size:15px;line-height:1.7;margin:0 0 24px;">נשאר צעד אחד: לבדוק את הדף, לקבוע סיסמה ולאשר את התקנון ואת הצהרת הרישוי. אחרי האישור הדף באוויר, ואפשר לנהל אותו ישירות.</p>
+              <div style="text-align:center;margin:0 0 28px;">
+                <a href="{link}"
+                   style="display:inline-block;background:#2e6853;color:#ffffff;text-decoration:none;
+                          font-size:15px;font-weight:bold;padding:14px 36px;border-radius:10px;">
+                  בדיקה ואישור הדף
+                </a>
+              </div>
+              <p style="color:#666;font-size:13px;line-height:1.6;margin:0 0 12px;">הקישור תקף ל-7 ימים ונועד לשימוש אישי.</p>
+              <p style="color:#666;font-size:13px;line-height:1.6;margin:0 0 24px;">המייל הגיע בטעות, או שהדף כבר לא רלוונטי? אפשר להשיב למייל הזה והדף יוסר.</p>
+              <p style="color:#666;font-size:13px;line-height:1.6;margin:0 0 24px;">איך אנחנו שומרים על המידע: <a href="{privacy_url}" style="color:#2e6853;">{privacy_url}</a></p>
+              <hr style="border:none;border-top:1px solid #eee;margin:0 0 16px;">
+              <p style="color:#999;font-size:11px;word-break:break-all;margin:0 0 16px;">
+                אם הכפתור לא עובד, אפשר להעתיק את הקישור לדפדפן:<br>
+                <a href="{link}" style="color:#2e6853;">{link}</a>
+              </p>
+              <p style="color:#3a3a3a;font-size:14px;line-height:1.6;margin:0;">ספיר שנפ<br>מייסדת | מהמקור</p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>"""
+    send_email(email, subject, body, html=html_body, test_cause=test_cause)
+
+
+def send_owner_invite_code_email(
+    email: str,
+    business: str,
+    code: str,
+    test_cause: bool = False,
+) -> None:
+    """The 6-digit code that proves the address typed on the acceptance page.
+
+    v3 of the card made the invite link work with NO email on it — most
+    businesses reach us on Instagram or WhatsApp — so the owner types her
+    address on the page, and this is what turns a typed string into a proven
+    one before any account exists.
+
+    Deliberately short and unsigned: no name, no link, no privacy paragraph,
+    no «ספיר שנפ» signature. It can be sent to an address nobody has verified
+    yet, including one entered by mistake, so it says as little as possible
+    about who is inviting whom. Copy is LOCKED (<hebrew_copy> v3).
+
+    The code is passed in, never generated here — `producer_owner_invite.py`
+    mints it, keeps only its sha256, and this function is the one place the
+    raw value is allowed to exist besides that response path.
+    """
+    business_html = html_escape(business)
+    code_html = html_escape(code)
+    subject = f"קוד האימות לדף של {business} במהמקור"
+    body = (
+        f"קוד האימות: {code}\n\n"
+        f"הקוד תקף ל-10 דקות ומשמש לאישור הדף של {business} במהמקור.\n\n"
+        f"המייל הגיע בטעות? אפשר להתעלם ממנו.\n\n"
+        f"מהמקור"
+    )
+    html_body = f"""\
+<!DOCTYPE html>
+<html dir="rtl" lang="he">
+<head><meta charset="UTF-8"></head>
+<body style="margin:0;padding:0;background:#F5F0E8;font-family:Arial,Helvetica,sans-serif;direction:rtl;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#F5F0E8;padding:32px 0;">
+    <tr>
+      <td align="center">
+        <table width="100%" cellpadding="40" cellspacing="0" style="background:#ffffff;border-radius:12px;text-align:right;direction:rtl;max-width:560px;margin:0 auto;">
+          <tr>
+            <td style="text-align:right;direction:rtl;">
+              {email_logo_html()}
+              <p style="color:#3a3a3a;font-size:15px;line-height:1.7;margin:0 0 12px;">קוד האימות:</p>
+              <p style="font-size:30px;font-weight:bold;letter-spacing:6px;color:#1C1A17;margin:0 0 24px;" dir="ltr">{code_html}</p>
+              <p style="color:#666;font-size:13px;line-height:1.6;margin:0 0 12px;">הקוד תקף ל-10 דקות ומשמש לאישור הדף של {business_html} במהמקור.</p>
+              <p style="color:#666;font-size:13px;line-height:1.6;margin:0;">המייל הגיע בטעות? אפשר להתעלם ממנו.</p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>"""
+    send_email(email, subject, body, html=html_body, test_cause=test_cause)

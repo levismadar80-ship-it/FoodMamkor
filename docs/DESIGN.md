@@ -314,6 +314,40 @@ the locked sentence at every count, plus «N בתי עסק שהצטרפו עד �
 the numeral in the line's own face, semibold, `text-primary`; a three-column
 fact row was tried and rejected (07/11). See [ADR-039](./decisions/ADR-039-display-numerals.md).
 
+**Section headings are `<SectionHeading>`, by role (MEH-3020, 13/11/2026).**
+`components/ui/SectionHeading.jsx` owns the size of a section's h2; the call
+site picks a role, never a size:
+- `size="page"` (default) — a row on a front / landing page: home, `/about`,
+  `/about/process`, `/join`. `headline-lg`, Frank Ruhl 900, 32px.
+- `size="content"` — a section inside a content page: business page, event,
+  experience, group buy, recipe, favourites, legal pages. Frank Ruhl 700, 24px.
+
+Its `className` takes layout (margin, alignment, width, leading) and an optional
+colour, never a size, weight or family. Card, sheet, dialog, empty-state and
+form-step titles are not section headings and keep their own classes. Until
+13/11 each section chose its own size (home 24 / 32 / 48 and a 20px sans
+caption, «גלו לפי קטגוריה» at the h1 display size; elsewhere 18 / 20 / 24 and
+four clamp() ranges). Guards: `HomeSectionHeadingGuard.test.js` (no raw h2 on
+home) and `SectionHeadingRatchet.test.js` (a public file may not gain a
+hand-sized h2; the allowance list only shrinks). Bands (the green «היכרות»
+band, the closing CTA band) keep their own h2.
+
+**Section headings are text only; icons lead fact lines (MEH-3028, 13/11/2026).**
+No icon inside a `<SectionHeading>`, anywhere on the site. An icon marks one
+*kind* of fact on the line that states it, and goes through
+`components/ui/FactLine.jsx` (14px, `text-fg-muted`, fixed gap). Business page
+kinds: delivery fee → Truck · order cutoff / hours → Clock · city → MapPin ·
+self-pickup → Package. Repeated labels of the same kind (the gold day labels
+«ימי חמישי», the one-day «יוצאים בימי …» line, the «משלוחים לכל הארץ» chip)
+carry no icon — one truck per section, not one per day. The icon sits in a
+one-line-tall box, so a wrapped line keeps it beside its first line. Sapir
+chose this over «an icon on every heading» (research artifact
+FGymGHjHMLDCstmSEDP2Bm: Google Maps, Airbnb, Wolt, Etsy all keep section titles
+plain and put the icon on the fact row). Buttons, links, answer states, chips
+and card titles keep their own icons. Guard: `FactLineIconGuard.test.js` (no
+icon in any SectionHeading; on the business-page files a raw icon only as
+listed, with its reason).
+
 **Headings never strand one word on the last line** — `h1, h2, h3` carry
 `text-wrap: balance` in `globals.css` (MEH-2488). **Hebrew is never
 letter-spaced** (no `tracking-*` on Hebrew; MEH-2488 removed the last two:
@@ -394,6 +428,24 @@ lift on hover** (that is a SaaS pattern, off-brand). Cards are white surfaces on
 cream with a `border #E5DFD3` hairline; that tonal contrast is the entire
 elevation language.
 
+**Three shadows, for things that float (MEH-3067, 13/11/2026).** `shadow-sm` =
+a resting float (sticky bar, toggle knob); `shadow-lg` = menus, popovers,
+floating buttons; `shadow-xl` = modals and sheets. Nothing else — no bare
+`shadow`, no `shadow-md`/`2xl`, no arbitrary `shadow-[…]` (the cookie banner's
+upward shadow is the one design exemption). Cards stay flat.
+
+**One disabled look, one focus look (MEH-3067).** Disabled = `opacity-50` on
+every disabled variant (`disabled:`, `aria-disabled:`, `group-disabled:`).
+Keyboard focus = a 2px ring on `focus-visible` (or `focus-within` on an input
+wrapper; never plain `focus:`), **solid** `primary` on cream/white — the old 40%
+ring measured ~1.8:1 on cream, under WCAG 1.4.11's 3:1 — with
+`ring-offset-2` when the element itself is green; `gold-on-dark` on the green
+bands, `white/70` on photos, `black/40` on the Apple button, `danger-400/40` on
+a destructive action. `.focus-ring` is the same look as a class. Files other
+open PRs own on 13/11 (ProductSheet, ProducerSections, HistoryBackLink) are
+exempt until those land.
+`StateTokensGuard.test.js` reds anything else.
+
 ### State management — opacity-on-cream + fg-muted (ADR-019)
 
 This is the load-bearing rule for all component states, and it is why the
@@ -429,6 +481,21 @@ in-between for smaller cards and chips; modals use `rounded.xl` (20px). **No
 actions, full rounding is reserved for genuinely circular elements (avatars,
 icon buttons).
 
+**One radius per surface kind (MEH-3091, 13/11/2026).** A content card or
+panel (bordered, or a tinted `bg-background-alt` box) is `rounded-lg`; a small
+row or chip is `rounded-md`; a field is `rounded-sm`; a dialog, a sheet and
+large media are `rounded-xl`, and a bottom sheet rounds its top only
+(`rounded-t-xl`). ProducerCard and the listing cards stay square (Assembly v2,
+`ui/Card.jsx`). `rounded-2xl` / `rounded-3xl` are not on the token scale and are
+banned. `CardRadiusGuard.test.js` enforces both halves.
+
+**Fields look the same everywhere (MEH-3092, 13/11/2026).** Every bordered
+`input` / `textarea` / `select` — the shared `ui/Input.jsx` included — is
+`rounded-sm` and carries `focus-ring` (or an explicit focus-visible ring), so no
+browser draws its own outline. `FieldLookGuard.test.js` enforces it. Moving the
+hand-written fields onto `ui/Input.jsx` (one label / error / describedby owner)
+is post-launch.
+
 **No off-scale radius (MEH-1687 phase 5, 06/11/2026).** Radius is a scale step,
 never `rounded-[Npx]`. The 140 off-scale sites (107 of them 10px) were placed by
 the rule above: buttons and primary/outline link-actions → `rounded-full`;
@@ -441,6 +508,13 @@ primary, destructive or outlined action is `components/ui/Button.jsx`
 (`variant="primary" | "danger" | "outlined"`, `size="sm" | "md" | "lg"`), never a
 hand-styled `<button>`; layout classes (`w-full`, `flex-1`, margins) go in
 `className`. `ButtonPrimitiveGuard.test.js` ratchets the hand-styled remainder.
+
+**Every action is a pill, on every element (MEH-3058, 13/11/2026).** A `<Link>` or
+`<a>` that looks like an action (green fill + white text, or green outline + green
+text) is `rounded-full` too (`<Button>` has no `href` yet). Secondary actions
+next to a primary one (copy link, email) are outlined pills, not cards.
+`ActionShapeGuard.test.js` reds a new off-shape action written as a class string on `<button>`, `<Link>`
+or `<a>` (classes kept in a const or `cn()` are not seen) and ratchets the existing ones (shrink only).
 
 _As-of 03/11: the front-matter `button-primary` binding still reads
 `{rounded.sm}`, because the token scale has no `full` step. Adding one changes
@@ -535,8 +609,12 @@ front matter for the normative token bindings.
   שמירה·מעקב·שיתוף(lg+) beside the title (borderless icon+label, ≥44px);
   guests see them and get the login prompt; the intended action auto-completes
   after sign-in with scroll restore (`lib/pending-action.js`). **Mobile hero
-  overlay = share** (`lg:hidden`; the heart's one home is the actions row);
-  desktop hero clean. **Verified popover** (hero seal): locked dateless copy +
+  overlay = heart · share · bell** (`lg:hidden`; hidden in the owner's
+  preview; MEH-1693 returned the heart, MEH-2671 put the group top-end).
+  Every icon-only button on a photo shares one anatomy: a 32px white face
+  inside a 44px hit area, text-ink icon, green only when on
+  (`components/ui/overlay-icon-button.js`, MEH-3115); desktop hero clean.
+  **Verified popover** (hero seal): locked dateless copy +
   link to `/about#verification`; mobile = bottom sheet with focus trap
   (`ui/Popover` `sheetOnMobile`). **Contact card:** one CTA + quick answers
   (3 visible + "עוד שאלות", MEH-1302 behavior intact) + circular hairline icon
@@ -599,6 +677,11 @@ front matter for the normative token bindings.
   **לחמים ואפייה** (growers are the core of "from the source"; bakeries are the
   largest share of the Wave 1 leads). Captions are the name only — no 01–10
   numerals.
+- **On/off switch (MEH-3065):** every `role="switch"` draws its track from
+  `components/ui/Switch.jsx` — `<Switch>` for a standalone toggle (44px tap
+  target), `<SwitchTrack>` inside a row that is itself the switch button.
+  One size (40×24, 16px knob); the knob moves by logical inset (`start-1` off →
+  `end-1` on), never `translate-x`. Guard: `__tests__/SwitchGuard.test.js`.
 
 ## Action hierarchy
 
@@ -637,6 +720,12 @@ reads as a rendering bug (the ghost-strip class). Rules:
 - **Bottom:** `StickyContactBar` and `BottomNav` must not co-stack. On
   `/producer/[id]` mobile the contact bar is the sole bottom layer and
   `BottomNav` is gated off by route (`isProducerDetail`, `lib/producer-route.js`).
+  Since MEH-3027 the contact bar takes the pill's shape in its place: a
+  floating `rounded-full` CTA with the BottomNav shell's gutters (14px sides,
+  safe-area + 16px bottom), no full-width strip and no rating beside it — a
+  small-radius rectangle flush to the bottom was clipped by iPhone's rounded
+  screen corners, because `env(safe-area-inset-bottom)` is 0 without
+  `viewport-fit=cover`.
   `BottomNav` is also off on `/admin/*` and `/producer/dashboard/*` (MEH-2431):
   both have their own tab nav, and the pill covered list rows at 375. On mobile
   the way back to the account sheet there is the header logo, then the nav.
@@ -644,6 +733,11 @@ reads as a rendering bug (the ghost-strip class). Rules:
   below another measures the layer above at runtime. `Header` publishes its
   live height as the `--chrome-top` CSS var (ResizeObserver); downstream sticky
   chrome offsets off `var(--chrome-top, …)`, never a frozen `top-[82px]`.
+- **Person avatar (MEH-3069):** the signed-in person's circle is
+  `components/ui/Avatar.jsx` — photo, else ONE initial from `avatarInitial()`
+  (first code point, upper-cased, «?» when empty). Header 34px, BottomNav 24px,
+  account sheet 40px (`tone="none"` inside its own ring), settings 64px.
+  Guard: `__tests__/AvatarGuard.test.js`.
 
 ## Do's and Don'ts
 
@@ -816,6 +910,38 @@ utility layer, **not** a parallel `:root` token authority (MEH-686 removed
 
 No component is restyled in MEH-136; consumption is MEH-639 / MEH-602.
 
+## Dialogs (MEH-3093)
+
+Every modal (`aria-modal="true"`) keeps one contract: an accessible name
+(`aria-label` / `aria-labelledby`), focus moves in, Tab stays inside and focus
+returns to what opened it (`hooks/useDialogFocus.js`; mark the safe button
+`data-autofocus`), and Escape closes it (each dialog owns its Escape rule, e.g.
+not mid-request). `DialogContractGuard.test.js` enforces it.
+
+**One shell (MEH-3096).** A centred modal is `components/ui/Dialog.jsx`:
+`bg-black/40` scrim at `z-[9000]`, `rounded-xl` `bg-surface` panel (`sm` /
+`md` / `lg` widths, `max-h-[90dvh]` scroll), the focus contract above, a body
+scroll lock, backdrop + Escape dismiss unless `dismissible={false}` (pass it
+while a request is in flight), and `as="form"` for a dialog that submits. The
+guard fails on a new hand-built centred overlay; the four that stay on their
+own shell (LoginPromptModal interrupt tier, Lightbox, ProductsSection's
+confirms, and the phone bottom sheets) are listed with their reason in
+`OVERLAY_OWNERS`.
+
+## Icons (MEH-3089)
+
+Phosphor only (`@phosphor-icons/react`). One scale and three weights, so two
+icons doing the same job look the same anywhere on the site.
+
+- **Size:** 12 · 14 · 16 · 18 · 20 · 24 in the UI (16 inline with body text,
+  18–20 inside buttons, 24 for a stand-alone icon button); 32 · 40 · 48 · 64
+  for display icons (empty states, page heads). Nothing in between.
+- **Weight:** `regular` by default, `bold` for small icons that must hold up
+  at 12–14 px, `fill` for a selected or active state (a saved heart, the
+  current tab). No `duotone`, `light` or `thin`.
+- Enforced by `frontend/__tests__/IconScaleGuard.test.js` on literal `size`
+  and `weight` props.
+
 ## Interactive sizing minimums
 
 Interactive elements — anything a user reads to act on or taps — carry two
@@ -893,6 +1019,25 @@ hover-only underline (or none):
 Colour alone (`text-primary`) is **not** a cue: on a page whose headings are
 already green it does not read as "tap me".
 
+## Back links (MEH-3085, 13/11/2026)
+
+A link back to a parent page is `components/ui/BackLink` — it draws the arrow
+(pointing back in both directions), the colour, the focus ring; `tone="onDark"`
+on the admin sidebar. Never type «→» into a back label: screen readers read it
+aloud and it cannot flip per locale. `BackLinkGuard.test.js` reds a `<Link>`/`<a>`
+whose text is a `back*` key, and a back label with a typed arrow. A link dressed
+as a button that goes home is an action (ActionShapeGuard), not a back link.
+
+## Dates (MEH-3070, 13/11/2026)
+
+A date on screen is printed by `formatDate(value, locale, style)` or
+`formatEventDate` from `lib/format-date.js` — Israel time, the page locale, and
+an empty string (never «Invalid Date») for a bad value. Styles: `numeric`
+(05.11.2026: tables, dashboards, expiry lines), `dayMonth` (5 בנובמבר), `long`
+(יום חמישי, 5 בנובמבר). «Today» comes from `lib/israel-date.js`.
+`DateFormatGuard.test.js` reds `toLocaleDateString` / `toLocaleTimeString` /
+`new Intl.DateTimeFormat` in a page or component.
+
 ## Required-field marking (MEH-2015)
 
 **The rule: an asterisk is an enforced gate, always.** A field showing `*`
@@ -939,6 +1084,18 @@ location_type group instead carry the marker as `sr-only` text inside the
 element supplying the group's accessible name (the `aria-label`/
 `aria-labelledby` target) — same "(חובה)" wording as `license_required_label`,
 audible once, never announced as "star".
+
+## In-place messages (MEH-3072)
+
+A form-level or page-level message that appears in place (a submit error,
+«נשמר», a row's load error) is `components/ui/InlineMessage.jsx`:
+`tone` error (role alert) / success / info (role status), `size` sm / xs /
+inherit, `variant` text / box. **One red: `text-error` (#b3261e, 5.8:1 on the
+cream page).** `text-danger-600` (#dc2626) measures 4.26:1 there, under AA for
+small text, so it is not used for message text. A field's own error under its
+input belongs to the form-field primitives (MEH-3060). Guard:
+`__tests__/InlineMessageGuard.test.js` (per-file ratchet on hand-written
+`role="alert"`).
 
 ## References
 

@@ -133,7 +133,7 @@ const mark = (type: "covered-by-stub" | "superseded" | "not-applicable", descrip
 // messages/he.json → auth.register.consumer.*  (locked copy — see header)
 const HEADING = "הצטרפו לקהילה";
 const EMAIL_INVALID = "האימייל לא תקין";
-const INBOX_TITLE = "בדקו את תיבת האימייל שלך";
+const INBOX_TITLE = "בדקו את תיבת האימייל שלכם";
 
 // lib/validators.js:25 — mirrored, not imported (the "@/" alias does not
 // resolve inside Playwright's spec transpile).

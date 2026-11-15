@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 import { useEffect, useState } from "react";
@@ -11,6 +12,8 @@ import { detailToMessage } from "@/lib/errors";
 import { formatPrice } from "@/lib/utils";
 import { SkeletonList } from "@/components/Skeleton";
 import { ADMIN_NEXT_STATUSES } from "@/lib/group-buy-transitions";
+import BackLink from "@/components/ui/BackLink";
+import { parseNaiveUtc } from "@/lib/dates";
 
 // Status class map; labels resolved via t() in render
 const STATUS_CLS = {
@@ -74,9 +77,7 @@ export default function AdminGroupBuysPage() {
     <div>
       <div className="flex items-center justify-between mb-6">
         <div>
-          <Link href="/admin" className="text-sm text-primary hover:underline">
-            {t("common.back_to_dashboard")}
-          </Link>
+          <BackLink href="/admin" label={t("common.back_to_dashboard")} />
           <h1 className="font-headline-md text-2xl font-bold text-text mt-1">
             {t("group_buys.title")}
           </h1>
@@ -116,7 +117,7 @@ export default function AdminGroupBuysPage() {
         <SkeletonList count={4} label={t("common.loading_f")} />
       ) : items.length === 0 ? (
         <div className="text-center py-16 text-fg-muted">
-          <ShoppingCart size={36} className="text-fg-muted mx-auto mb-3" aria-hidden="true" />
+          <ShoppingCart size={32} className="text-fg-muted mx-auto mb-3" aria-hidden="true" />
           <p>{t("group_buys.empty")}</p>
         </div>
       ) : (
@@ -145,7 +146,7 @@ export default function AdminGroupBuysPage() {
                   </span>
                   <span className="text-fg-muted">|</span>
                   <span className="text-fg-muted text-xs">
-                    {t("group_buys.until", { date: formatEventDate(gb.deadline, locale, { day: "numeric", month: "numeric", year: "numeric" }) })}
+                    {t("group_buys.until", { date: formatEventDate(parseNaiveUtc(gb.deadline), locale, { day: "numeric", month: "numeric", year: "numeric" }) })}
                   </span>
                 </div>
 
@@ -165,7 +166,7 @@ export default function AdminGroupBuysPage() {
                     </button>
                   ))}
                   <Link
-                    href={`/group-buys/${gb.id}`}
+                    href={`/group-buys/${gb.id}?preview=1`}
                     target="_blank"
                     className="text-xs text-primary hover:underline ms-auto"
                   >

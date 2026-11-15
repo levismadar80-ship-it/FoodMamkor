@@ -81,9 +81,15 @@ vi.mock("@/components/CitySearch", () => ({
   ),
 }));
 vi.mock("@/components/ChipScrollRow", () => ({ default: () => null }));
+// MEH-2859: the row grew to four tabs, two of them gated on supply. This
+// file's subject is the KEYBOARD contract, so the gates are pinned OFF and it
+// keeps exercising the original events/experiences pair unchanged. The
+// four-tab row — order, gating, where each tab goes — is
+// __tests__/ListingHubTabs.test.jsx.
+vi.mock("@/lib/use-hub-nav-gate", () => ({ useHubNavGate: () => false }));
 
 const TAB_EVENTS = "events.list.tab_events";
-const TAB_EXPERIENCES = "events.list.tab_experiences";
+const TAB_EXPERIENCES = "events.list.tab_experiences_short";
 const VIEW_LIST = "events.list.view_list";
 const VIEW_CALENDAR = "events.list.view_calendar";
 

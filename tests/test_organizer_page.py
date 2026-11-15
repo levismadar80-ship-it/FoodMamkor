@@ -224,7 +224,7 @@ class TestOrganizerCityIsEditable:
 
         calls = []
         monkeypatch.setattr(
-            pm, "_sensitive_edit_task", lambda name, changed: calls.append(changed)
+            pm, "_sensitive_edit_task", lambda name, changed, test_cause=False: calls.append(changed)
         )
         org = _organizer(db)
         owner = _owner_of(db, org, "meh2475-ping@example.com")

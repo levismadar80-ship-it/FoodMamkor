@@ -51,7 +51,9 @@ vi.mock("@/lib/contact-tracking", () => ({
   trackContactClick: vi.fn(),
 }));
 
-import WhatsAppQuestionChips, { WA_SUFFIX } from "@/components/WhatsAppQuestionChips";
+import WhatsAppQuestionChips from "@/components/WhatsAppQuestionChips";
+
+const WA_SUFFIX = he.whatsapp.question_chips.wa_suffix;
 import { resolveProducerQuestions } from "@/lib/resolvedQuestions";
 
 const chips = he.whatsapp.question_chips;
@@ -62,6 +64,7 @@ const chips = he.whatsapp.question_chips;
 const labelsFor = () => ({
   deliveryQuestion: chips.delivery_to_my_area,
   orderingQuestion: chips.ordering_q,
+  paymentQuestion: chips.payment_q,
   escalationQuestion: chips.escalation,
 });
 
@@ -165,6 +168,32 @@ const FIXTURES = [
       delivery_nationwide: true,
     },
   },
+  {
+    name: "(g) whatsapp-primary WITH payment_info (MEH-3035)",
+    producer: {
+      id: 5,
+      name: "מאפיית השקמה",
+      city: "זכרון יעקב",
+      phone: "0501234567",
+      primary_contact_method: "whatsapp",
+      categories: [{ name: "לחמים ואפייה" }],
+      delivery_nationwide: true,
+      payment_info: { methods: ["bit", "cash"], timing: "on_pickup", note: null },
+    },
+  },
+  {
+    name: "(h) email-primary, payment timing only (MEH-3035)",
+    producer: {
+      id: 6,
+      name: "מאפיית השקמה",
+      city: "זכרון יעקב",
+      phone: "0501234567",
+      primary_contact_method: "email",
+      contact_email: "hi@shikma.example.com",
+      categories: [{ name: "לחמים ואפייה" }],
+      payment_info: { methods: [], timing: "deposit", note: null },
+    },
+  },
 ];
 
 describe("MEH-2155 — resolveProducerQuestions mirrors WhatsAppQuestionChips", () => {
@@ -189,7 +218,7 @@ describe("MEH-2155 — resolveProducerQuestions mirrors WhatsAppQuestionChips", 
         return n;
       },
     );
-    expect(counts.length).toBe(5); // (a) (b) (c) (e) (c2)
+    expect(counts.length).toBe(7); // (a) (b) (c) (e) (c2) (g) (h)
     for (const n of counts) expect(n).toBeGreaterThan(0);
   });
 

@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Module:   producers-category-region-landing
  * Purpose:  /producers/[category]/[region] — a landing page per category x
@@ -30,6 +31,7 @@ import {
   regionCities,
   regionPagePath,
 } from "@/lib/region-pages";
+import BackLink from "@/components/ui/BackLink";
 
 const PER_PAGE = 24;
 
@@ -55,6 +57,7 @@ async function fetchCell(categoryId, regionKey, limit) {
   const url = `${API_URL}/producers?category=${encodeURIComponent(categoryId)}&${citiesQuery(regionKey)}&limit=${limit}&offset=0`;
   const res = await serverFetch(url, { next: { revalidate: 60 } });
   if (!res.ok) {
+    /** @type {Error & { status?: number }} */
     const err = new Error(
       `region listing failed: ${res.status} ${res.statusText} (category=${categoryId}, region=${regionKey})`,
     );
@@ -68,6 +71,7 @@ async function fetchCell(categoryId, regionKey, limit) {
   const rawTotal = res.headers.get("x-total-count");
   const total = Number(rawTotal);
   if (rawTotal === null || !Number.isFinite(total)) {
+    /** @type {Error & { status?: number }} */
     const err = new Error(
       `region listing missing X-Total-Count (category=${categoryId}, region=${regionKey}) — refusing to infer an empty result`,
     );
@@ -82,6 +86,7 @@ async function fetchCell(categoryId, regionKey, limit) {
 async function fetchCategories() {
   const res = await serverFetch(`${API_URL}/categories`, { next: { revalidate: 300 } });
   if (!res.ok) {
+    /** @type {Error & { status?: number }} */
     const err = new Error(`categories lookup failed: ${res.status} ${res.statusText}`);
     err.status = res.status;
     throw err;
@@ -273,9 +278,7 @@ export default async function RegionLandingPage({ params }) {
       )}
 
       <p className="mt-10">
-        <Link href="/producers" className="text-primary underline">
-          {t("back_to_hub")}
-        </Link>
+        <BackLink href="/producers" label={t("back_to_hub")} />
       </p>
     </main>
   );

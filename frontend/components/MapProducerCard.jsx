@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 import { useState } from "react";
@@ -5,19 +6,22 @@ import { Link } from "@/i18n/navigation";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { Star, CaretRight } from "@phosphor-icons/react";
+import { CaretRight } from "@phosphor-icons/react";
 import { optimizeCloudinary } from "@/lib/cloudinary";
 import { MAP_REFERRER } from "@/lib/map-view-state";
 import { styleForProducer } from "@/lib/category-registry";
 import { useUserLocation } from "@/lib/user-location";
 import { haversineKm, formatDistance } from "@/lib/distance";
 import { producerPoints } from "@/lib/producerPoints";
+import RatingCompact from "@/components/ui/RatingCompact";
+import { hasCardRating } from "@/lib/rating-gate";
 import {
   fulfillmentTags,
   FULFILLMENT_WASH_GREEN,
   FULFILLMENT_WASH_NEUTRAL,
   FULFILLMENT_ICON_PX,
 } from "@/lib/fulfillmentTags";
+import { COLOR } from "@/lib/color-tokens";
 
 // MEH-1133: aspect at/above which a thumbnail source is treated as "logo-like"
 // (wide banner/logo) and letterboxed (object-contain) instead of cropped
@@ -57,6 +61,8 @@ function categoryTint(hex, alpha) {
  * History:  MEH-826 (client distance); MEH-1133 (logo letterbox); MEH-1178
  *           (uniform template); MEH-1210 (price removed); MEH-1211 (broken-img
  *           fallback); MEH-1243 (Direction B + 🔒 Pin-Echo redesign).
+ *
+ * @param {{ producer: import("@/types/entities").ProducerSummary, active?: boolean, onClick?: (producer: import("@/types/entities").ProducerSummary) => void }} props
  */
 export default function MapProducerCard({ producer, active, onClick }) {
   const t = useTranslations("map.producer_card");
@@ -80,9 +86,8 @@ export default function MapProducerCard({ producer, active, onClick }) {
 
   // MEH-1243 (🔒 rating): Google format ★ X.X (N), shown only at ≥3 reviews. Below
   // the threshold the row still reserves its height so every card is equal-height.
-  const reviewsCount = p.reviews_count || 0;
-  const rating = Number(p.avg_rating || 0);
-  const showRating = reviewsCount >= 3 && Number.isFinite(rating) && rating > 0;
+  // MEH-3071: the ≥3-reviews card rule lives in lib/rating-gate.js.
+  const showRating = hasCardRating(p);
 
   // MEH-826: client-side distance — haversine(user GPS, producer lat/lng). GPS is
   // read from sessionStorage (useUserLocation); shows only for GPS users (null
@@ -142,7 +147,7 @@ export default function MapProducerCard({ producer, active, onClick }) {
       {/* Thumbnail — START (right in RTL, first child). #EAF3DE placeholder tile. */}
       <div
         className="shrink-0 self-stretch w-[88px] min-[1180px]:w-[88px] max-[1179px]:w-[72px] relative rounded overflow-hidden"
-        style={{ backgroundColor: "#EAF3DE" }}
+        style={{ backgroundColor: COLOR["green-50"] }}
         data-testid="map-thumb"
       >
         {imgSrc && !imgError ? (
@@ -163,7 +168,7 @@ export default function MapProducerCard({ producer, active, onClick }) {
         ) : (
           // MEH-1243 (🔒 placeholder): category glyph at 70% of the pin color.
           <div className="w-full h-full flex items-center justify-center" aria-hidden="true">
-            <CategoryIcon size={32} weight="light" style={{ color: categoryColor, opacity: 0.7 }} />
+            <CategoryIcon size={32} weight="regular" style={{ color: categoryColor, opacity: 0.7 }} />
           </div>
         )}
       </div>
@@ -197,11 +202,8 @@ export default function MapProducerCard({ producer, active, onClick }) {
             reviews (uniform-height guarantee, 🔒 §5). MEH-1296: below the meta line. */}
         <div className="h-[18px] flex items-center" data-testid="map-rating-row">
           {showRating && (
-            <span className="inline-flex items-center gap-0.5 text-xs text-fg-muted" data-testid="map-rating">
-              <Star size={12} weight="fill" className="text-accent" aria-hidden="true" />
-              {/* 🔒 §7: ★ X.X (N), whole numeric block dir="ltr". */}
-              <bdi dir="ltr">{rating.toFixed(1)} ({reviewsCount})</bdi>
-            </span>
+            // 🔒 §7: ★ X.X (N), whole block dir="ltr" — the shared RatingCompact (MEH-3071).
+            <RatingCompact avg={p.avg_rating} count={p.reviews_count} size="xs" data-testid="map-rating" />
           )}
         </div>
 

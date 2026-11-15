@@ -26,6 +26,7 @@ from conftest import auth_header, make_producer, make_user
 
 from app.models.models import (
     AlertLog,
+    ContactClick,
     ProducerAnalyticsDaily,
     ProducerPageView,
     ProducerWhatsAppClick,
@@ -192,12 +193,80 @@ def test_the_owners_totals_do_not_move_across_a_purge(client, db):
     assert totals() == before, "the owner's numbers must not move"
 
 
+def _contact(db, pid, uid, day):
+    db.add(
+        ContactClick(
+            producer_id=pid,
+            user_id=uid,
+            method="phone",
+            ip_hash="f" * 64,
+            clicked_at=_utc(day),
+        )
+    )
+
+
+def test_contact_clicks_past_retention_lose_ip_hash_and_user_id(db):
+    # MEH-3244: anonymised, not deleted — the table has no aggregate column,
+    # so deleting rows would shrink the owner's all-time contact count.
+    # No roll-up has run: anonymising loses no count, so it needs no watermark.
+    p = make_producer(db)
+    user = make_user(db, email="contact-purge@example.com")
+    for n in (91, 90, 1):
+        _contact(db, p.id, user.id, D[n])
+    db.commit()
+
+    result = run_purge(db, today=ANCHOR, now=NOW)
+
+    assert result.contact_clicks_anonymized == 1
+    rows = sorted(
+        db.query(
+            israel_day_of(ContactClick.clicked_at),
+            ContactClick.ip_hash,
+            ContactClick.user_id,
+        ).all()
+    )
+    assert len(rows) == 3, "no contact-click row is deleted"
+    assert rows[0] == (D[91], None, None)
+    assert rows[1] == (D[90], "f" * 64, user.id), "the window edge is kept as-is"
+    assert rows[2] == (D[1], "f" * 64, user.id)
+
+    again = run_purge(db, today=ANCHOR, now=NOW)
+    assert again.contact_clicks_anonymized == 0
+
+
+def test_contact_click_total_does_not_move_across_a_purge(client, db):
+    p = make_producer(db)
+    owner = make_user(db, email="contact-owner@example.com", role="producer")
+    owner.producer_id = p.id
+    db.commit()
+    _contact(db, p.id, None, D[100])
+    _contact(db, p.id, None, D[2])
+    db.commit()
+
+    def total():
+        body = client.get("/producers/me/analytics", headers=auth_header(owner)).json()
+        return body["contact_clicks"]["total"]
+
+    assert total() == 2  # CONTROL
+    assert run_purge(db, today=ANCHOR, now=NOW).contact_clicks_anonymized == 1
+    assert total() == 2, "the owner's contact total must not move"
+
+
 def test_scheduler_registration_and_crash_isolation(monkeypatch, db):
+    from apscheduler.triggers.cron import CronTrigger
+
     from app import startup
 
     src = inspect.getsource(startup)
     assert "meh_2303_retention_purge_daily" in src
-    assert "_run_retention_purge_job,\n        CronTrigger(hour=2, minute=30)" in src
+    # MEH-3155: the trigger is built from a shared crontab constant now, so
+    # assert the REGISTERED trigger fires when CronTrigger(hour=2, minute=30)
+    # did, instead of grepping the source for one spelling of it.
+    _assert_registered_fires_like(
+        startup,
+        "meh_2303_retention_purge_daily",
+        CronTrigger(hour=2, minute=30, timezone="UTC"),
+    )
 
     captured: list[str] = []
 
@@ -220,3 +289,21 @@ def test_scheduler_registration_and_crash_isolation(monkeypatch, db):
     monkeypatch.setattr("app.database.SessionLocal", lambda: _NonClosing(db))
     startup._run_retention_purge_job()  # must not raise
     assert captured == ["retention_purge"]
+
+
+def _assert_registered_fires_like(startup, job_id, expected):
+    from datetime import datetime, timezone
+
+    from apscheduler.schedulers.background import BackgroundScheduler
+
+    sched = BackgroundScheduler(timezone="UTC")
+    startup.register_scheduler_jobs(sched)  # never started
+    trig = sched.get_job(job_id).trigger
+    t = datetime(2026, 3, 26, 23, 0, tzinfo=timezone.utc)  # spans the DST switch
+    for _ in range(5):
+        got, want = (
+            trig.get_next_fire_time(None, t),
+            expected.get_next_fire_time(None, t),
+        )
+        assert got == want, (job_id, got, want)
+        t = got

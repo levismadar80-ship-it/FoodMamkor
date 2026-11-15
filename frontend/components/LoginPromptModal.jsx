@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 import { useEffect, useRef } from "react";
@@ -13,6 +14,9 @@ import { useFocusReturn } from "@/lib/use-focus-return";
  * Props:
  *   - open: boolean
  *   - onClose: () => void
+ *   - title: string (default: modals.login_prompt.title, «רוצה לשמור?»)
+ *            MEH-3130: the reviews / updates / rescue-bag hand-offs name
+ *            their own action; the save hearts keep the default.
  *   - message: string (default: modals.login_prompt.default_message)
  *   - nextPath: string (the URL to redirect back to after login)
  *
@@ -45,10 +49,18 @@ import { useFocusReturn } from "@/lib/use-focus-return";
  *
  * Z-index: z-[9500] — below chat widget (9999) + cookie banner (9998),
  * above everything else (map legend 800, controls 1000).
+ *
+ * @param {object} p
+ * @param {boolean} p.open
+ * @param {() => void} p.onClose
+ * @param {string} [p.title]
+ * @param {string} [p.message]
+ * @param {string} [p.nextPath]
  */
 export default function LoginPromptModal({
   open,
   onClose,
+  title,
   message,
   nextPath = "/",
 }) {
@@ -104,7 +116,7 @@ export default function LoginPromptModal({
 
   const overlay = (
     <div
-      className="fixed inset-0 z-[9500] flex items-center justify-center p-4 bg-black/40"
+      className="fixed inset-0 z-modal-interrupt flex items-center justify-center p-4 bg-black/40"
       onClick={onClose}
       role="presentation"
     >
@@ -120,7 +132,7 @@ export default function LoginPromptModal({
           type="button"
           onClick={onClose}
           aria-label={t("close_aria")}
-          className="absolute top-3 end-3 w-11 h-11 flex items-center justify-center text-fg-muted hover:text-text transition rounded-lg focus-visible:ring-2 focus-visible:ring-primary/40"
+          className="absolute top-3 end-3 w-11 h-11 flex items-center justify-center text-fg-muted hover:text-text transition rounded-lg focus-visible:ring-2 focus-visible:ring-primary"
         >
           <X size={20} weight="bold" aria-hidden="true" />
         </button>
@@ -137,21 +149,21 @@ export default function LoginPromptModal({
           id="login-prompt-title"
           className="font-headline-md text-xl font-bold text-text mb-3 px-8"
         >
-          {t("title")}
+          {title ?? t("title")}
         </h2>
         <p className="text-text mb-6 leading-relaxed">{promptMessage}</p>
 
         <a
           ref={primaryRef}
           href={loginHref}
-          className="block w-full bg-primary text-white py-3 rounded-md hover:bg-primary-dark transition font-medium focus-visible:ring-2 focus-visible:ring-primary/40"
+          className="block w-full bg-primary text-white py-3 rounded-full hover:bg-primary-dark transition font-medium focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
         >
           {t("login_cta")}
         </a>
         <button
           type="button"
           onClick={onClose}
-          className="block w-full mt-2 text-sm text-fg-muted hover:text-text transition py-2 rounded-lg focus-visible:ring-2 focus-visible:ring-primary/40"
+          className="block w-full mt-2 text-sm text-fg-muted hover:text-text transition py-2 rounded-lg focus-visible:ring-2 focus-visible:ring-primary"
         >
           {t("dismiss_cta")}
         </button>

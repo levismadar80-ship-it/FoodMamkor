@@ -17,7 +17,7 @@ Pure HTTP/DB tests, mirroring tests/test_admin_approval_transitions.py. The
 email/WhatsApp side-effects fail-open in the test config; we monkeypatch
 _send_notification_email to assert it fires with the producer's own address.
 """
-import app.routers.admin as admin_module
+import app.routers.admin_decisions as admin_module
 from app.config import settings
 from conftest import auth_header, make_producer, make_user
 
@@ -148,7 +148,7 @@ def test_request_changes_sends_email_to_producer(client, db, monkeypatch):
     monkeypatch.setattr(
         admin_module,
         "_send_notification_email",
-        lambda to, subject, body: calls.append((to, subject, body)),
+        lambda to, subject, body, test_cause=False: calls.append((to, subject, body)),
     )
     producer = make_producer(db, status="pending")
     # link a user to the producer so the email branch runs

@@ -42,9 +42,8 @@ vi.mock("@/components/HolidayBanner", () => ({ default: () => null }));
 vi.mock("@/components/FridayDeliveryStrip", () => ({ default: () => null }));
 vi.mock("@/components/BackToTop", () => ({ default: () => null }));
 vi.mock("@/components/HomepageMiniMapSkeleton", () => ({ default: () => null }));
-vi.mock("@/app/[locale]/home/UpcomingEventsPreview", () => ({
-  UpcomingEventsPreview: () => null,
-}));
+// MEH-2859: the events-only preview became the four-type HomeWhatsOn strip.
+vi.mock("@/components/HomeWhatsOn", () => ({ default: () => null }));
 vi.mock("@/app/[locale]/home/HomeStaticBlocks", () => ({
   HomeFeaturedProducer: () => null,
   HomeRecentlyViewed: () => null,

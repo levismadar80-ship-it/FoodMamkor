@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 import { useEffect, useState } from "react";
@@ -25,6 +26,8 @@ import {
   requiresProducerLicense,
 } from "@/lib/license-required-categories";
 import Button from "@/components/ui/Button";
+import { formatDate } from "@/lib/format-date";
+import InlineMessage from "@/components/ui/InlineMessage";
 
 // MEH-1297: a producer may hold at most 3 categories; the first-selected is the
 // primary (drives categories[0] on the card/map pin). Mirrors the backend cap
@@ -225,6 +228,7 @@ const EMPTY = {
 // Focus-retention fix: Section + Field live at MODULE scope. Defining them
 // inside ProducerForm recreated their component identity on every render, so
 // React remounted the whole subtree and dropped input focus mid-typing.
+/** @param {{ title: import("react").ReactNode, children?: import("react").ReactNode, testId?: string }} props */
 function Section({ title, children, testId }) {
   return (
     <div className="bg-surface rounded-md border border-border p-6" data-testid={testId}>
@@ -696,9 +700,9 @@ export default function ProducerForm({ initial = null, producerId = null }) {
                   </p>
                 )}
                 {placeSearchState === "error" && (
-                  <p className="mt-2 text-sm text-error" role="alert">
+                  <InlineMessage className="mt-2">
                     {t("producers.form.fields.google_place_error")}
-                  </p>
+                  </InlineMessage>
                 )}
                 {placeCandidates?.length > 0 && (
                   <ul className="mt-2 space-y-1.5">
@@ -911,9 +915,7 @@ export default function ProducerForm({ initial = null, producerId = null }) {
             {form.is_recommended && (
               <p className="text-xs text-fg-muted mt-1">
                 {initial?.recommended_at
-                  ? `${t("producers.form.fields.recommended_at")} ${new Date(
-                      initial.recommended_at
-                    ).toLocaleDateString("he-IL")}`
+                  ? `${t("producers.form.fields.recommended_at")} ${formatDate(initial.recommended_at, "he")}`
                   : t("producers.form.fields.recommended_at_never")}
               </p>
             )}

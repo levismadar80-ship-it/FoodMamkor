@@ -4,6 +4,7 @@ These are used by the public site (hero social-proof bar, footer newsletter,
 about page contact form). All endpoints are anonymous — no auth required.
 """
 
+from typing import Any
 import logging
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
@@ -17,6 +18,9 @@ from app.config import settings
 from app.services.email_branding import email_logo_html
 from app.services.email import send_email
 from app.services.newsletter_sync import sync_subscribe, sync_unsubscribe
+from app.services.weekly_owner_summary import (
+    decode_unsubscribe_token as decode_weekly_unsubscribe_token,
+)
 from app.services.producer_listing import (
     catalog_default_availability_condition,
     is_business,  # MEH-2459
@@ -37,6 +41,7 @@ from app.schemas.schemas import (
     ContactIn,
     NewsletterIn,
     NewsletterUnsubscribeIn,
+    WeeklySummaryUnsubscribeIn,
     StatsOut,
 )
 
@@ -92,7 +97,7 @@ def decode_unsubscribe_token(token: str) -> str | None:
 
 @router.get("/stats", response_model=StatsOut)
 @limiter.limit("60/minute")
-def get_stats(request: Request, db: Session = Depends(get_db)):
+def get_stats(request: Request, db: Session = Depends(get_db)) -> StatsOut:
     # MEH-1986: same default-hide rule as the catalog. This is the count the
     # home page publishes as "how many businesses are on the site"
     # (use-home-page.js:258), so it has to be the number a visitor can then
@@ -119,14 +124,14 @@ def get_stats(request: Request, db: Session = Depends(get_db)):
 # ============================================================
 
 
-@router.post("/newsletter", status_code=201)
+@router.post("/newsletter", status_code=201, response_model=None)
 @limiter.limit("5/hour")  # SECURITY FIX #2: prevent mailbombing
 def subscribe_newsletter(
     request: Request,
     data: NewsletterIn,
     background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
-):
+) -> dict[str, Any]:
     email = data.email.lower().strip()
     # MEH-2611: Resend Contacts is where the list is managed and sent from.
     # Runs on BOTH paths so a row that predates the sync still reaches Resend;
@@ -202,14 +207,14 @@ def _send_newsletter_welcome(email: str) -> None:
     send_email(email, "ברוכים הבאים למהמקור 🌿", plain, html=html_body)
 
 
-@router.post("/newsletter/unsubscribe", status_code=200)
+@router.post("/newsletter/unsubscribe", status_code=200, response_model=None)
 @limiter.limit("20/hour")
 def unsubscribe_newsletter(
     request: Request,
     data: NewsletterUnsubscribeIn,
     background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
-):
+) -> dict[str, Any]:
     """One-click newsletter unsubscribe via the signed token in the email link.
 
     Idempotent: a valid token whose address is already gone still returns 200
@@ -230,6 +235,36 @@ def unsubscribe_newsletter(
     return {"detail": "הוסרת מרשימת התפוצה. 🌿"}
 
 
+# ============================================================
+# WEEKLY OWNER SUMMARY UNSUBSCRIBE (MEH-3079)
+# ============================================================
+
+
+@router.post("/weekly-summary/unsubscribe", status_code=200)
+@limiter.limit("20/hour")
+def unsubscribe_weekly_summary(
+    request: Request,
+    data: WeeklySummaryUnsubscribeIn,
+    db: Session = Depends(get_db),
+) -> dict[str, str]:
+    """Stop the weekly summary email for the business named in the token.
+
+    The token is the authorization (subject = producer id, scope
+    `weekly_summary_unsubscribe`), so the link works from the email without
+    logging in and can only opt out its own business. Idempotent.
+    """
+    # REUSES: unsubscribe_newsletter above — signed token, idempotent 200,
+    # gentle Hebrew 400, never reveals whether the business exists.
+    producer_id = decode_weekly_unsubscribe_token(data.token)
+    if producer_id is None:
+        raise HTTPException(status_code=400, detail="הקישור אינו תקין או שפג תוקפו.")
+    producer = db.query(Producer).filter(Producer.id == producer_id).first()
+    if producer is not None and not producer.weekly_summary_opt_out:
+        producer.weekly_summary_opt_out = True  # type: ignore[assignment]
+        db.commit()
+    return {"detail": "הסיכום השבועי לא יישלח עוד."}
+
+
 # MEH-1349: the duplicate GET /cities that lived here (producer ∪ delivery-area
 # union) was DEAD CODE — routers/cities.py registers first in router_registry.py,
 # so this route never matched. Removed per the single-authority rule
@@ -237,9 +272,11 @@ def unsubscribe_newsletter(
 # backend/app/routers/cities.py.
 
 
-@router.post("/contact", status_code=200)
+@router.post("/contact", status_code=200, response_model=None)
 @limiter.limit("5/hour")  # SECURITY FIX #2: cap contact form abuse
-def submit_contact(request: Request, data: ContactIn, db: Session = Depends(get_db)):
+def submit_contact(
+    request: Request, data: ContactIn, db: Session = Depends(get_db)
+) -> dict[str, Any]:
     # MEH-1113: unify inbound routing — every submission carries a topic
     # (None → "general"). No DB column: the Hebrew label is prepended to the
     # stored message and used in the email subject so admins can eyeball the

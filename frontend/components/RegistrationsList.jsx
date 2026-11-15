@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 /**
@@ -23,11 +24,14 @@ import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { CaretDown } from "@phosphor-icons/react";
 import api from "@/lib/api";
+import InlineMessage from "@/components/ui/InlineMessage";
+import { SkeletonBlock } from "@/components/Skeleton";
 
 /**
- * @param {"events"|"experiences"} kind
- * @param {string} itemId
- * @param {number} count  active sign-ups (registered_count from the list route)
+ * @param {object} props
+ * @param {"events"|"experiences"} props.kind
+ * @param {string} props.itemId
+ * @param {number} [props.count]  active sign-ups (registered_count from the list route)
  */
 export default function RegistrationsList({ kind, itemId, count = 0 }) {
   const t = useTranslations("registration.list");
@@ -56,11 +60,11 @@ export default function RegistrationsList({ kind, itemId, count = 0 }) {
       </summary>
       <div className="mt-2">
         {failed ? (
-          <p className="text-danger-700" role="alert">
+          <InlineMessage size="inherit">
             {t("load_error")}
-          </p>
+          </InlineMessage>
         ) : rows === null ? (
-          <div className="h-5 w-40 rounded bg-border/60 animate-pulse" aria-busy="true" />
+          <SkeletonBlock as="div" className="h-5 w-40 rounded" aria-busy="true" />
         ) : rows.length === 0 ? (
           <p className="text-fg-muted" data-testid="registrations-empty">
             {t("empty")}

@@ -1,12 +1,15 @@
+// @ts-check
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
-import { useFocusReturn } from "@/lib/use-focus-return";
 import { showToast } from "@/lib/toast";
 import api from "@/lib/api";
 import CollectionNotice from "@/components/CollectionNotice";
 import Button from "@/components/ui/Button";
+import Input from "@/components/ui/Input";
+import Textarea from "@/components/ui/Textarea";
+import Dialog from "@/components/ui/Dialog";
 
 function countLetters(s) {
   return (s.match(/[א-תa-zA-Z]/g) || []).length;
@@ -20,47 +23,6 @@ export default function CategoryRequestModal({ open, onClose, producerId }) {
   const [name, setName] = useState("");
   const [examples, setExamples] = useState("");
   const [loading, setLoading] = useState(false);
-
-  // MEH-2039: trap scopes to the PANEL, never the fixed inset-0 overlay.
-  const panelRef = useRef(null);
-
-  useFocusReturn(open);
-
-  // WCAG 2.1 §2.1.2 — Escape closes the dialog.
-  // MEH-2039: + Tab trap and body scroll lock. No initial-focus call — the name
-  // input already carries autoFocus below, and a second focus call would fight it.
-  // REUSES: LoginPromptModal.jsx:42-77.
-  useEffect(() => {
-    if (!open) return;
-    const handleKey = (e) => {
-      if (e.key === "Escape") { onClose(); return; }
-      if (e.key !== "Tab") return;
-
-      const focusables = panelRef.current?.querySelectorAll(
-        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
-      );
-      if (!focusables?.length) return;
-      const first = focusables[0];
-      const last = focusables[focusables.length - 1];
-
-      if (e.shiftKey && document.activeElement === first) {
-        e.preventDefault();
-        last.focus();
-      } else if (!e.shiftKey && document.activeElement === last) {
-        e.preventDefault();
-        first.focus();
-      }
-    };
-    document.addEventListener("keydown", handleKey);
-
-    const prevOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-
-    return () => {
-      document.removeEventListener("keydown", handleKey);
-      document.body.style.overflow = prevOverflow;
-    };
-  }, [open, onClose]);
 
   if (!open) return null;
 
@@ -93,47 +55,35 @@ export default function CategoryRequestModal({ open, onClose, producerId }) {
   // `e.target === e.currentTarget` guard still separates backdrop from panel.
   // REUSES: LoginPromptModal.jsx:87 for the role="presentation" wrapper.
   return (
-    <div
-      role="presentation"
-      className="fixed inset-0 z-[9000] flex items-center justify-center p-4 bg-black/40"
-      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
-    >
-      <div
-        ref={panelRef}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="cat-req-title"
-        className="bg-surface rounded-lg shadow-xl w-full max-w-sm p-6 text-start"
-      >
+    <Dialog labelledBy="cat-req-title" size="sm" onClose={onClose}>
         <h2 id="cat-req-title" className="font-headline-md text-lg font-bold text-text mb-4">
           {t("title")}
         </h2>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <input
-              autoFocus
-              required
-              maxLength={100}
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder={t("name_placeholder")}
-              className="w-full border rounded-md px-3 py-2 text-sm text-start"
-            />
-            <p className="text-xs text-fg-muted mt-1">{t("name_example")}</p>
-          </div>
+          <Input
+            size="sm"
+            type="text"
+            autoFocus
+            data-autofocus
+            required
+            maxLength={100}
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder={t("name_placeholder")}
+            helperText={t("name_example")}
+            className="text-start"
+          />
 
-          <div>
-            <textarea
-              maxLength={300}
-              rows={3}
-              value={examples}
-              onChange={(e) => setExamples(e.target.value)}
-              placeholder={t("examples_placeholder")}
-              className="w-full border rounded-md px-3 py-2 text-sm text-start resize-none"
-            />
-            <p className="text-xs text-fg-muted mt-1">{t("examples_hint")}</p>
-          </div>
+          <Textarea
+            maxLength={300}
+            rows={3}
+            value={examples}
+            onChange={(e) => setExamples(e.target.value)}
+            placeholder={t("examples_placeholder")}
+            helperText={t("examples_hint")}
+            className="text-start resize-none"
+          />
 
           <CollectionNotice
             message={tNotice("category_request")}
@@ -158,7 +108,6 @@ export default function CategoryRequestModal({ open, onClose, producerId }) {
             </button>
           </div>
         </form>
-      </div>
-    </div>
+    </Dialog>
   );
 }

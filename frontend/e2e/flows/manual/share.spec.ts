@@ -1,4 +1,5 @@
 import { test, expect, type Page } from "../_cloudinary-stub";
+import type { BrowserContext } from "@playwright/test";
 import he from "../../../messages/he.json";
 
 /**
@@ -71,6 +72,29 @@ async function readClipboard(page: Page): Promise<string> {
   return page.evaluate(() => navigator.clipboard.readText().catch(() => "<clipboard read failed>"));
 }
 
+/**
+ * MEH-3153: Chromium grants clipboard permissions; WebKit has no such
+ * permission in Playwright (newPage/grantPermissions throw "Unknown
+ * permission: clipboard-write"). There an in-memory clipboard stands in, so
+ * the assertion still checks what the APP wrote, on the Safari engine too.
+ */
+async function enableClipboard(page: Page, context: BrowserContext, browserName: string): Promise<void> {
+  if (browserName === "chromium") {
+    await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+    return;
+  }
+  await page.addInitScript(() => {
+    let text = "";
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: {
+        writeText: async (t: string) => { text = String(t); },
+        readText: async () => text,
+      },
+    });
+  });
+}
+
 test.describe("manual › /share → /recommend#share (MEH-1160 · MEH-2827)", () => {
   // MT:MEH-1160:1 — the old /share link still works and lands on the share section.
   test("/share redirects to /recommend#share with exactly three share actions", async ({ page }) => {
@@ -88,8 +112,8 @@ test.describe("manual › /share → /recommend#share (MEH-1160 · MEH-2827)", (
   });
 
   // MT:MEH-1160:3 — "העתיקו קישור" copies the site URL (paste shows the site address).
-  test("copy link puts the site URL on the clipboard", async ({ page, context }) => {
-    await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+  test("copy link puts the site URL on the clipboard", async ({ page, context, browserName }) => {
+    await enableClipboard(page, context, browserName);
     await page.goto("/recommend#share");
     await expect(scope(page).getByTestId("share-copy")).toBeVisible(FIRST_PAINT);
     const siteUrl = await advertisedSiteUrl(page);
@@ -129,8 +153,9 @@ test.describe("manual › /share → /recommend#share (MEH-1160 · MEH-2827)", (
   test("«שתפו» falls back to copying the site URL when navigator.share is absent", async ({
     page,
     context,
+    browserName,
   }) => {
-    await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+    await enableClipboard(page, context, browserName);
     await page.addInitScript(() => {
       Object.defineProperty(navigator, "share", { configurable: true, value: undefined });
     });

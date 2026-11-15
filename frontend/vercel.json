@@ -4,7 +4,7 @@
   "regions": [
     "fra1"
   ],
-  "ignoreCommand": "case \"$VERCEL_GIT_COMMIT_REF\" in staging|main) exit 1 ;; esac; case \"$VERCEL_GIT_COMMIT_MESSAGE\" in *\"[preview]\"*) exit 1 ;; *) echo \"skip: previews off unless [preview] in commit msg (MEH-1044/MEH-1378)\"; exit 0 ;; esac",
+  "ignoreCommand": "case \"$VERCEL_GIT_COMMIT_REF\" in main) exit 1 ;; staging) bash ../scripts/vercel-ignore-build.sh; exit $? ;; esac; case \"$VERCEL_GIT_COMMIT_MESSAGE\" in *\"[preview]\"*) exit 1 ;; esac; echo \"skip: no [preview] in commit msg (MEH-1378)\"; exit 0",
   "git": {
     "deploymentEnabled": {
       "staging": true,

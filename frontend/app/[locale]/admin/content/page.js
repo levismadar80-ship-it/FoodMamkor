@@ -1,5 +1,7 @@
+// @ts-check
 "use client";
 
+import Dialog from "@/components/ui/Dialog";
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import api from "@/lib/api";
@@ -9,6 +11,8 @@ import { showToast } from "@/lib/toast";
 // in-flight lock (and create/update/page-save swallowed errors silently).
 import { useAdminAction } from "@/lib/use-admin-action";
 import Button from "@/components/ui/Button";
+import InlineMessage from "@/components/ui/InlineMessage";
+import Input from "@/components/ui/Input";
 
 export default function AdminContentPage() {
   const t = useTranslations("admin");
@@ -47,6 +51,9 @@ function CategoriesEditor() {
   const { run, isBusy } = useAdminAction();
   const [items, setItems] = useState([]);
   const [name, setName] = useState("");
+  // MEH-3255 (D10): «דורשת רישיון?» has no default — null until she picks.
+  const [requiresLicense, setRequiresLicense] = useState(null);
+  const [licenseMissing, setLicenseMissing] = useState(false);
   // MEH-1023 Chunk B: replaces the native browser confirm with a modal dialog showing
   // the category name. { id, name } while a delete is pending; null otherwise.
   const [confirmDelete, setConfirmDelete] = useState(null);
@@ -61,9 +68,14 @@ function CategoriesEditor() {
   const create = (e) => {
     e.preventDefault();
     if (!name.trim()) return;
+    if (requiresLicense === null) {
+      setLicenseMissing(true);
+      return;
+    }
     run("category-create", async () => {
-      await api.post("/admin/categories", { name });
+      await api.post("/admin/categories", { name, requires_license: requiresLicense });
       setName("");
+      setRequiresLicense(null);
       load();
     });
   };
@@ -104,34 +116,49 @@ function CategoriesEditor() {
       () => showToast.error(t("content.categories.delete_error")),
     );
 
-  // Escape closes the dialog (unless a delete is mid-flight). Mirrors the
-  // AdminRowMenu (Chunk A) dismissal contract; the users/page.js modal we
-  // otherwise mirror predates it.
-  useEffect(() => {
-    if (!confirmDelete) return undefined;
-    const onKey = (e) => {
-      if (e.key === "Escape" && !deleting) setConfirmDelete(null);
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [confirmDelete, deleting]);
-
   return (
     <div className="bg-surface border border-border rounded-md p-5 space-y-4">
-      <form onSubmit={create} className="flex gap-2">
-        <input
-          placeholder={t("content.categories.name_placeholder")}
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          className="flex-1 min-w-0 border border-border rounded-md px-3 py-2"
-        />
-        <Button
-          type="submit"
-          disabled={isBusy("category-create")}
-          variant="primary" size="sm"
-        >
-          {t("content.categories.add")}
-        </Button>
+      <form onSubmit={create} className="space-y-2">
+        <div className="flex gap-2">
+          <Input inline size="md"
+            placeholder={t("content.categories.name_placeholder")}
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            className="flex-1 min-w-0"
+          />
+          <Button
+            type="submit"
+            disabled={isBusy("category-create")}
+            variant="primary" size="sm"
+          >
+            {t("content.categories.add")}
+          </Button>
+        </div>
+        {/* MEH-3255 (D10): the licence answer is required on create. */}
+        <fieldset className="text-sm" data-testid="category-license-choice">
+          <legend className="mb-1">{t("content.categories.license_question")}</legend>
+          <div className="flex flex-wrap gap-x-4 gap-y-1">
+            {[true, false].map((value) => (
+              <label key={String(value)} className="inline-flex items-center gap-2 min-h-11">
+                <input
+                  type="radio"
+                  name="requires_license"
+                  checked={requiresLicense === value}
+                  onChange={() => {
+                    setRequiresLicense(value);
+                    setLicenseMissing(false);
+                  }}
+                />
+                {t(value ? "content.categories.license_yes" : "content.categories.license_no")}
+              </label>
+            ))}
+          </div>
+          {licenseMissing && (
+            <InlineMessage size="xs" className="mt-1">
+              {t("content.categories.license_choose")}
+            </InlineMessage>
+          )}
+        </fieldset>
       </form>
 
       <ul className="space-y-2">
@@ -152,13 +179,13 @@ function CategoriesEditor() {
 
       {/* Confirmation modal — mirrors users/page.js confirm dialog pattern (MEH-1023 Chunk B) */}
       {confirmDelete && (
-        <div className="fixed inset-0 z-[9000] flex items-center justify-center bg-black/40">
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="category-delete-title"
-            className="bg-surface rounded-lg shadow-xl p-6 max-w-sm w-full mx-4 text-start space-y-4"
-          >
+        <Dialog
+          labelledBy="category-delete-title"
+          size="sm"
+          dismissible={!deleting}
+          onClose={() => setConfirmDelete(null)}
+          className="space-y-4"
+        >
             <p id="category-delete-title" className="font-medium text-base">
               {t("content.categories.confirm_delete", {
                 name: confirmDelete.name,
@@ -173,7 +200,7 @@ function CategoriesEditor() {
               >
                 {deleting ? t("content.categories.deleting") : t("content.categories.delete")}
               </Button>
-              <button
+              <button data-autofocus
                 disabled={deleting}
                 onClick={() => setConfirmDelete(null)}
                 className="px-4 py-2 rounded-full text-sm border border-border text-muted hover:bg-gray-50 transition disabled:opacity-50"
@@ -181,8 +208,7 @@ function CategoriesEditor() {
                 {t("common.cancel")}
               </button>
             </div>
-          </div>
-        </div>
+        </Dialog>
       )}
     </div>
   );
@@ -208,14 +234,24 @@ function CategoryRow({ cat, onSave, onDelete, saving }) {
     // intrinsic width pushed the count and the save/delete buttons past the
     // card's edge; now they drop to a second line instead.
     <li className="flex flex-wrap gap-2 items-center border border-border rounded-md p-2">
-      <input
+      <Input
+        inline
+        size="md"
         value={name}
         onChange={(e) => setName(e.target.value)}
         readOnly={locked}
         title={locked ? t("content.categories.system_hint") : undefined}
         data-testid={`category-name-${cat.id}`}
-        className={`flex-1 min-w-[10rem] border border-border rounded-lg px-2 py-1 ${locked ? "bg-accent text-muted cursor-not-allowed" : ""}`}
+        className={`flex-1 min-w-[10rem] ${locked ? "!bg-background !text-fg-muted cursor-not-allowed" : ""}`.trim()}
       />
+      {cat.requires_license === true && (
+        <span
+          data-testid={`category-license-badge-${cat.id}`}
+          className="text-xs text-muted whitespace-nowrap border border-border rounded-lg px-2 py-1"
+        >
+          {t("content.categories.license_badge")}
+        </span>
+      )}
       {/* MEH-1034: per-row producer count (the editor is a list, not a table). */}
       <span className="text-xs text-muted whitespace-nowrap">
         {t("content.categories.producer_count", { count: cat.producer_count ?? 0 })}
@@ -239,7 +275,7 @@ function CategoryRow({ cat, onSave, onDelete, saving }) {
             onClick={() => onSave(cat.id, name)}
             disabled={!dirty || saving}
             data-testid={`category-save-${cat.id}`}
-            className="text-xs bg-primary text-white px-3 py-1 rounded-lg disabled:opacity-30"
+            className="text-xs bg-primary text-white px-3 py-1 rounded-full disabled:opacity-50"
           >
             {t("content.categories.save")}
           </button>
@@ -278,18 +314,18 @@ function PageEditor({ slug }) {
 
   return (
     <div className="bg-surface border border-border rounded-md p-5 space-y-3">
-      <input
+      <Input inline size="md"
         value={page.title}
         onChange={(e) => { setPage({ ...page, title: e.target.value }); setSaved(false); }}
         placeholder={t("content.page_editor.title_placeholder")}
-        className="w-full border border-border rounded-md px-3 py-2 font-semibold"
+        className="w-full font-semibold"
       />
       <textarea
         value={page.body}
         onChange={(e) => { setPage({ ...page, body: e.target.value }); setSaved(false); }}
         placeholder={t("content.page_editor.body_placeholder")}
         rows={16}
-        className="w-full border border-border rounded-md px-3 py-2 font-mono text-sm"
+        className="w-full border border-border rounded-sm px-3 py-2 font-mono text-sm focus-ring"
       />
       <div className="flex items-center gap-3">
         <Button onClick={save} disabled={saving} variant="primary" size="sm">

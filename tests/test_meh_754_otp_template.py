@@ -77,11 +77,11 @@ def test_otp_components_body_and_button_both_carry_same_code():
 
 def test_send_whatsapp_otp_uses_send_template(monkeypatch):
     """Wrapper sends the OTP as a template (not free-form text)."""
-    from app.routers import producer_me
+    from app.routers import producer_me_review as producer_me
 
     captured = {}
 
-    def fake_send_template(to, template):
+    def fake_send_template(to, template, test_cause=False):
         captured["to"] = to
         captured["template"] = template
         return True
@@ -103,7 +103,7 @@ def test_send_whatsapp_otp_fail_open_when_config_missing(monkeypatch):
     Default test env has empty WHATSAPP_* settings, so this exercises the
     real fail-open path through send_template (caller still returns 200).
     """
-    from app.routers import producer_me
+    from app.routers import producer_me_review as producer_me
     from app.services import whatsapp as whatsapp_module
 
     monkeypatch.setattr(whatsapp_module.settings, "whatsapp_phone_number_id", "")

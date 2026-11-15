@@ -29,7 +29,13 @@ test.describe("Lightbox", () => {
 
     // Gallery image button — the producer was selected for having ≥1 photo, so
     // its absence is a rendering regression, not a data state.
-    const imageBtn = page.locator('[aria-label^="הגדלו תמונה"]').first();
+    // MEH-2983: `:visible` — a business with 2+ photos renders the md+ grid
+    // (`hidden md:grid`, ImageGallery.jsx:280) BEFORE the phone banner in DOM
+    // order, so `.first()` alone picks the hidden grid hero on [mobile]. Which
+    // business pickProducer lands on varies run to run since the PR backend
+    // reseeds with fresh ids (MEH-2973). Same locator as
+    // e2e/qa-meh1931-lightbox-visibility.mjs:237.
+    const imageBtn = page.locator('[aria-label^="הגדלו תמונה"]:visible').first();
     await expect(
       imageBtn,
       `no gallery image button on ${detailPath(producer)}, which the API reports as having ` +

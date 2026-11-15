@@ -15,6 +15,8 @@
 # Related:  docs/rules-history/README.md, .claude/rules/workflow.md (header),
 #           workflow rule 32 (monotonic constraints).
 # History:  MEH-2338 (creation — the rules diet, parent MEH-2333).
+#           13/11/2026 — also reads dated snapshot folders
+#           docs/rules-history/<date>/<name>.md (second trim).
 #
 # THE INVENTORY, per archive (text after its first `---` line, code fences
 # skipped):
@@ -84,7 +86,8 @@ check_pair() {
 
 run_all() {
   local fail=0 pairs=0 archive name live out total missing
-  for archive in "$HIST_DIR"/*.md; do
+  for archive in "$HIST_DIR"/*.md "$HIST_DIR"/*/*.md; do
+    [ -f "$archive" ] || continue
     name="$(basename "$archive")"
     [ "$name" = "README.md" ] && continue
     live="$RULES_DIR/$name"

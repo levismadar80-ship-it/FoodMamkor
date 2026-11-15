@@ -35,7 +35,6 @@ vi.mock("next/navigation", () => ({
   usePathname: () => "/about",
   useRouter: () => ({ push: vi.fn(), replace: vi.fn(), back: vi.fn() }),
 }));
-vi.mock("@/lib/language-context", () => ({ useLanguage: () => ({ lang: "he" }) }));
 vi.mock("next-intl", () => {
   const DICT = {
     "nav.explore": "גלו",

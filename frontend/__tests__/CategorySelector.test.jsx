@@ -20,7 +20,7 @@ vi.mock("next-intl", () => ({
 
 vi.mock("@phosphor-icons/react", () => {
   const Stub = (props) => <span data-testid="icon" {...props} />;
-  return { Check: Stub, Leaf: Stub, MagnifyingGlass: Stub };
+  return { Check: Stub, Leaf: Stub, MagnifyingGlass: Stub, CaretDown: Stub, CaretUp: Stub };
 });
 
 // MEH-683 #4: CATEGORY_ICONS re-keyed by canonical DB name (was english slug),

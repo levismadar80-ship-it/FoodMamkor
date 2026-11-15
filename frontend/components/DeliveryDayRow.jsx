@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 import { useEffect, useId, useRef, useState } from "react";
@@ -230,7 +231,12 @@ export function DeliveryDayRow({ cityActive, daysActive, onSelectDay, onClearDay
   const portalOr = (node) => (panelHost ? createPortal(node, panelHost) : node);
   // In a row the chip matches the row's other controls (py-2.5); alone it
   // keeps its compact pill height.
-  const chipPadY = inRow ? "py-2.5" : "py-1";
+  // MEH-3195: in a chip row the wrapper's 1px border + 42px = the 44px of the
+  // other filter chips. The border is not clickable, so each button's ::before
+  // reaches 1px over it: the tap target is the full 44px.
+  const chipPadY = inRow
+    ? "py-2.5 min-h-[42px] relative before:absolute before:-inset-y-px before:inset-x-0 before:content-['']"
+    : "py-1";
 
   const handleClearClick = (e) => {
     // The ✕ sits INSIDE the chip's visual pill but is its own <button> (a
@@ -278,7 +284,7 @@ export function DeliveryDayRow({ cityActive, daysActive, onSelectDay, onClearDay
           aria-controls={open ? panelId : undefined}
           aria-label={chipAriaLabel}
           data-testid="delivery-day-chip"
-          className={`inline-flex items-center gap-1.5 ${chipPadY} rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${
+          className={`inline-flex items-center gap-1.5 ${chipPadY} rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
             hasDays ? "ps-3 pe-1" : "ps-3 pe-3"
           }`}
         >
@@ -296,7 +302,7 @@ export function DeliveryDayRow({ cityActive, daysActive, onSelectDay, onClearDay
             onClick={handleClearClick}
             aria-label={t("home.producers.day_chip_clear_aria")}
             data-testid="delivery-day-clear"
-            className={`inline-flex items-center ps-1 pe-2 ${chipPadY} rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60`}
+            className={`inline-flex items-center justify-center min-w-11 ps-1 pe-2 ${chipPadY} rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70`}
           >
             <X size={12} weight="bold" aria-hidden="true" />
           </button>
@@ -318,7 +324,7 @@ export function DeliveryDayRow({ cityActive, daysActive, onSelectDay, onClearDay
           // pills wrap instead. MEH-2537: on home the panel sits under the
           // whole filter row (portalled), starting at the row's inline-start,
           // not under the chip itself — it opens as the row's own panel.
-          className={`${inRow ? "" : "mt-2 "}w-fit max-w-full rounded-2xl border border-border bg-surface p-3`}
+          className={`${inRow ? "" : "mt-2 "}w-fit max-w-full rounded-lg border border-border bg-surface p-3`}
         >
           {/* MEH-2186: what MEH-2173's inline hint became. It names the city
               because the panel is the one place where "which city am I
@@ -341,7 +347,7 @@ export function DeliveryDayRow({ cityActive, daysActive, onSelectDay, onClearDay
                   aria-pressed={active}
                   aria-label={t("home.producers.day_option_aria", { day })}
                   data-testid={`delivery-day-pill-${day}`}
-                  className={`px-3 py-1 rounded-full text-sm border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${
+                  className={`px-3 py-1 rounded-full text-sm border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
                     active
                       ? "bg-primary text-white border-primary"
                       : "bg-surface text-text border-border hover:bg-green-50"

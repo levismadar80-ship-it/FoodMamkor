@@ -67,6 +67,13 @@ vi.mock("@phosphor-icons/react", () => ({
 vi.mock("@/lib/contact-tracking", () => ({
   pingWhatsAppBeacon: (...a) => pingWhatsAppBeacon(...a),
   markWhatsAppClickedLocal: (...a) => markWhatsAppClickedLocal(...a),
+  // MEH-2999: the primary CTA calls the one handler; WhatsApp = beacon + unlock.
+  trackPrimaryCtaClick: (id, m) => {
+    if (m === "whatsapp") {
+      pingWhatsAppBeacon(id);
+      markWhatsAppClickedLocal(id);
+    }
+  },
 }));
 
 import ProductSheet from "@/components/public/ProductSheet";
@@ -383,14 +390,17 @@ describe("ProductSheet — CTA follows primary_contact_method (MEH-1916)", () =>
 });
 
 describe("ProductSheet — image", () => {
-  it("a Cloudinary photo is requested at w_640", () => {
+  // MEH-3021: 4:3, approved by Sapir 13/11 (was a 1:1 square that filled a
+  // phone screen). The frame and the crop must agree, or object-cover trims it.
+  it("a Cloudinary photo is requested at w_640, cropped 4:3 in a 4:3 frame", () => {
     renderSheet({
       ...baseProduct,
       image_url: "https://res.cloudinary.com/demo/image/upload/granola.jpg",
     });
     const img = screen.getByTestId("sheet-image");
     expect(img.getAttribute("src")).toContain("w_640");
-    expect(img.getAttribute("src")).toContain("ar_1:1");
+    expect(img.getAttribute("src")).toContain("ar_4:3");
+    expect(screen.getByTestId("product-sheet-media").className).toContain("aspect-[4/3]");
   });
 
   it("no photo → the typographic no-photo cell (product initial), no next/image", () => {

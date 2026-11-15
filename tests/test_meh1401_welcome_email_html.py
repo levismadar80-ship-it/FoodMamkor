@@ -25,7 +25,7 @@ def capture(monkeypatch):
     early-return guard doesn't short-circuit before the send."""
     rec = {}
 
-    def fake_send(email, subject, body, html=None):
+    def fake_send(email, subject, body, html=None, test_cause=False):
         rec.update(email=email, subject=subject, body=body, html=html)
 
     monkeypatch.setattr("app.services.auth_emails.send_email", fake_send)

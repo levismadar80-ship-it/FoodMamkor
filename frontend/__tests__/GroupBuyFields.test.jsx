@@ -34,6 +34,10 @@ vi.mock("next/link", () => ({
 }));
 vi.mock("@/lib/format-date", () => ({ formatEventDate: () => "1 בינואר 2099" }));
 vi.mock("@/components/CitySearch", () => ({ default: () => null }));
+// MEH-2859: /group-buys now renders the shared hub tab row. It is not this
+// file's subject (and it owns a router + its own supply gates), so it is
+// stubbed here; its behaviour is __tests__/ListingHubTabs.test.jsx.
+vi.mock("@/components/ListingHubTabs", () => ({ default: () => null }));
 vi.mock("@/lib/api", () => ({ default: { get: vi.fn(), post: vi.fn(), delete: vi.fn() } }));
 
 const GB = {

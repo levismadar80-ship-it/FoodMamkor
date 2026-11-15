@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Module:   css-url
  * Purpose:  A quoted, escaped CSS `url()` for an inline background-image. The

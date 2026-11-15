@@ -166,7 +166,9 @@ class TestNewRecipeFanOut:
             "app.services.push.send_push_notification",
             lambda sub, **kw: pushes.append({"sub": sub, **kw}),
         )
-        monkeypatch.setattr("app.routers.alerts.send_template", lambda to, tmpl: True)
+        monkeypatch.setattr(
+            "app.routers.alerts.send_template", lambda to, tmpl, **kw: True
+        )
         return pushes
 
     def test_opted_in_follower_receives_push_on_approve(self, client, db, monkeypatch):

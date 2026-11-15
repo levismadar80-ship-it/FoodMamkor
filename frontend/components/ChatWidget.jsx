@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 import { useEffect, useRef, useState } from "react";
@@ -6,6 +7,7 @@ import { useTranslations } from "next-intl";
 import api from "@/lib/api";
 import CollectionNotice from "@/components/CollectionNotice";
 import { INERT_PRESENT } from "@/lib/inert-attr";
+import { COLOR } from "@/lib/color-tokens";
 
 /**
  * ChatWidget — floating Q&A bot, all screen sizes.
@@ -223,7 +225,9 @@ export default function ChatWidget({ hideOnMobile = false } = {}) {
       return;
     }
     root.style.setProperty(CHAT_FAB_CLEARANCE_VAR, CHAT_FAB_CLEARANCE);
-    return () => root.style.removeProperty(CHAT_FAB_CLEARANCE_VAR);
+    return () => {
+      root.style.removeProperty(CHAT_FAB_CLEARANCE_VAR);
+    };
   }, [launcherOnMobile]);
 
   // ── "chatWasOpened" — shrink desktop pill to icon after first use ──
@@ -309,8 +313,9 @@ export default function ChatWidget({ hideOnMobile = false } = {}) {
   // MEH-1135: logical inline-end (was physical `right`). Distances (16/24) and
   // the MEH-850 vertical calc are unchanged — only the horizontal axis flips
   // from physical to logical, so the FAB tracks the inline-END corner per locale.
+  /** @type {import("react").CSSProperties} */
   const launcherStyle = {
-    position: "fixed", zIndex: 9999,
+    position: "fixed", zIndex: "var(--z-chat)",
     insetInlineEnd: isDesktop ? 24 : 16,
     bottom: isDesktop ? 24 : MOBILE_LAUNCHER_BOTTOM,
   };
@@ -319,7 +324,7 @@ export default function ChatWidget({ hideOnMobile = false } = {}) {
   // corner — CookieBanner 1100, FilterSheet 1200, Toaster 2000, InstallPrompt
   // 9997. At 9999 it painted over the open filter sheet's end corner. The
   // panel keeps 9999 (it is the sheet here).
-  if (!isDesktop) Object.assign(launcherStyle, { zIndex: 1050 });
+  if (!isDesktop) Object.assign(launcherStyle, { zIndex: "var(--z-chat-launcher-mobile)" });
   // MEH-2835 PR 2: stepping aside = a 150ms fade, no pointer events, inert.
   if (!isDesktop) {
     Object.assign(launcherStyle, {
@@ -331,8 +336,9 @@ export default function ChatWidget({ hideOnMobile = false } = {}) {
   // MEH-1135: desktop 360px box anchors to the same bottom-END corner as the
   // launcher (insetInlineEnd:24, insetInlineStart:auto); mobile stays full-width
   // (both inline insets 0 → spans edge-to-edge in either direction).
+  /** @type {import("react").CSSProperties} */
   const panelStyle = {
-    position: "fixed", zIndex: 9999,
+    position: "fixed", zIndex: "var(--z-chat)",
     bottom: isDesktop ? 24 : 0,
     insetInlineEnd: isDesktop ? 24 : 0,
     insetInlineStart: isDesktop ? "auto" : 0,
@@ -372,7 +378,7 @@ export default function ChatWidget({ hideOnMobile = false } = {}) {
           // reads on green surfaces (footer, closing bands). Focus keeps the
           // cream ring and adds a dark outline outside it — the old
           // ring-primary/40 vanished on green and replaced the cream ring.
-          "vv-pin print:hidden flex items-center justify-center bg-primary text-white rounded-full ring-2 ring-background shadow-[0_4px_24px_rgba(46,104,83,0.25)] hover:bg-primary-dark transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text",
+          "vv-pin print:hidden flex items-center justify-center bg-primary text-white rounded-full ring-2 ring-background shadow-lg hover:bg-primary-dark transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text",
           showPillText ? "gap-2 px-4 py-3" : "w-12 h-12",
         ].join(" ")}
         // MEH-2308: when the pill text is showing it IS the accessible name. An
@@ -384,7 +390,7 @@ export default function ChatWidget({ hideOnMobile = false } = {}) {
         }
         aria-expanded={open}
       >
-        {open ? <X size={22} weight="bold" /> : <ChatCircleDots size={22} />}
+        {open ? <X size={24} weight="bold" /> : <ChatCircleDots size={24} />}
         {showPillText && !open && <span className="font-body-md text-sm">{t("launcher_pill")}</span>}
       </button>
 
@@ -392,7 +398,7 @@ export default function ChatWidget({ hideOnMobile = false } = {}) {
       {open && (
         <div
           style={panelStyle}
-          className="vv-pin print:hidden flex flex-col bg-background border border-border shadow-[0_8px_32px_rgba(46,104,83,0.18)] overflow-hidden"
+          className="vv-pin print:hidden flex flex-col bg-background border border-border shadow-lg overflow-hidden"
           role="dialog"
           aria-modal="false"
           aria-label={t("panel_label")}
@@ -406,7 +412,7 @@ export default function ChatWidget({ hideOnMobile = false } = {}) {
             <button
               type="button"
               onClick={() => setOpen(false)}
-              className="p-2 rounded-full hover:bg-white/10 transition focus-visible:ring-2 focus-visible:ring-white/40"
+              className="p-2 rounded-full hover:bg-white/10 transition focus-visible:ring-2 focus-visible:ring-white/70"
               aria-label={t("panel_close_label")}
             >
               <X size={18} weight="bold" />
@@ -450,7 +456,7 @@ export default function ChatWidget({ hideOnMobile = false } = {}) {
                   const label = t(`prompts.${id}`);
                   return (
                     <button key={id} type="button" onClick={() => sendMessage(label, id)}
-                      className="text-start text-xs text-primary bg-green-50 hover:bg-green-50/70 border border-border rounded-sm px-3 py-2 transition focus-visible:ring-2 focus-visible:ring-primary/40"
+                      className="text-start text-xs text-primary bg-green-50 hover:bg-green-50/70 border border-border rounded-sm px-3 py-2 transition focus-visible:ring-2 focus-visible:ring-primary"
                     >{label}</button>
                   );
                 })}
@@ -465,13 +471,13 @@ export default function ChatWidget({ hideOnMobile = false } = {}) {
               ref={inputRef} id="chat-input" type="text"
               value={input} onChange={(e) => setInput(e.target.value)}
               placeholder={t("input_placeholder")} maxLength={500} disabled={sending}
-              className="flex-1 min-w-0 bg-transparent outline-none focus-visible:ring-2 focus-visible:ring-primary/40 rounded text-sm text-text placeholder:text-fg-muted disabled:opacity-60"
-              style={{ caretColor: "#2e6853" }}
+              className="flex-1 min-w-0 bg-transparent outline-none focus-visible:ring-2 focus-visible:ring-primary rounded text-sm text-text placeholder:text-fg-muted disabled:opacity-50"
+              style={{ caretColor: COLOR.primary }}
               autoComplete="off"
             />
             <button
               type="submit" disabled={sending || !input.trim()}
-              className="bg-primary text-white p-2 rounded-full hover:bg-primary-dark transition disabled:opacity-50 disabled:cursor-not-allowed focus-visible:ring-2 focus-visible:ring-primary/40"
+              className="bg-primary text-white p-2 rounded-full hover:bg-primary-dark transition disabled:opacity-50 disabled:cursor-not-allowed focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
               aria-label={t("send_label")}
             >
               <PaperPlaneTilt size={16} weight="fill" style={{ transform: "scaleX(-1)" }} />

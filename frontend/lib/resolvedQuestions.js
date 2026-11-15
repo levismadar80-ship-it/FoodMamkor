@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Module:   resolvedQuestions
  * Purpose:  Resolve WHICH ready-made questions a producer's public page shows
@@ -51,6 +52,7 @@
  */
 import { normalizePhone } from "@/lib/utils";
 import { buildDeliveryAnswer, buildOrderingAnswer } from "@/lib/quickAnswers";
+import { paymentAnswer } from "@/lib/payment-info";
 import {
   getPrimaryContactHref,
   getPrimaryMethod,
@@ -84,22 +86,32 @@ export function ownerQuestionLabels(producer, { city = "", deliveryQuestion, ord
 }
 
 /**
+ * Labels are resolved by the caller from `whatsapp.question_chips`:
+ * `deliveryQuestion` = t("delivery_to_city", { city }), `orderingQuestion` =
+ * t("ordering_q"), `escalationQuestion` = t("escalation"), `paymentQuestion` =
+ * t("payment_q") (MEH-3035).
+ *
+ * In each returned item, `answered` is true when the row is answered in-page
+ * from her own data, and `channel` is the primary_contact_method the row
+ * opens, if any. `usesCustom` = she wrote custom questions (MEH-2385: there is
+ * no default set to replace any more).
+ *
  * @param {object|null|undefined} producer — public ProducerDetailOut shape
  * @param {{
- *   deliveryQuestion: string,   // t("delivery_to_city", { city })
- *   orderingQuestion: string,   // t("ordering_q")
- *   escalationQuestion: string, // t("escalation")
- * }} labels — resolved by the caller from `whatsapp.question_chips`
+ *   deliveryQuestion: string,
+ *   orderingQuestion: string,
+ *   escalationQuestion: string,
+ *   paymentQuestion?: string,
+ * }} labels
  * @returns {{
  *   items: Array<{
  *     id: string,
  *     label: string,
- *     answered: boolean,        // true = answered in-page from her own data
- *     channel: string|null,     // primary_contact_method the row opens, if any
- *     source: "delivery"|"ordering"|"custom"|"escalation",
+ *     answered: boolean,
+ *     channel: string|null,
+ *     source: "delivery"|"ordering"|"payment"|"custom"|"escalation",
  *   }>,
- *   usesCustom: boolean,        // she wrote custom questions (MEH-2385: there
- *                               // is no default set to replace any more)
+ *   usesCustom: boolean,
  *   customCount: number,
  * }}
  */
@@ -113,6 +125,7 @@ export function resolveProducerQuestions(producer, labels) {
   const custom = (producer?.custom_questions || []).filter(Boolean);
   const usesCustom = custom.length > 0;
 
+  /** @type {Array<{id: string, label: string, answered: boolean, channel: string|null, source: "delivery"|"ordering"|"payment"|"custom"|"escalation"}>} */
   const items = [];
 
   // Q1 — answered from her delivery data, else a WhatsApp row, else absent.
@@ -152,6 +165,18 @@ export function resolveProducerQuestions(producer, labels) {
       answered: false,
       channel: "whatsapp",
       source: "ordering",
+    });
+  }
+
+  // MEH-3035: «איך משלמים?» — answered from her payment_info, after Q2 and
+  // before her custom questions, exactly where the page puts it.
+  if (paymentAnswer(producer?.payment_info)) {
+    items.push({
+      id: "payment",
+      label: labels.paymentQuestion,
+      answered: true,
+      channel: null,
+      source: "payment",
     });
   }
 

@@ -45,7 +45,10 @@ describe("route loading fallback (MEH-2754)", () => {
  * Shown failing: on the pre-MEH-2754 pages the scan lists all three files.
  */
 const MIN_ROUTE_PAGES = 20;
-const MIN_DIV_FALLBACKS = 3;
+// MEH-2984: /events and /experiences dropped their <Suspense> (the routes are
+// ISR now and read the query string after mount), so experiences/[id] is the
+// one div fallback left. The control still reds if the regex matches nothing.
+const MIN_DIV_FALLBACKS = 1;
 const read = (file) => fs.readFileSync(file, "utf8"); // eslint-disable-line security/detect-non-literal-fs-filename -- test walks app/ only
 
 function pageFiles(dir) {
@@ -66,8 +69,8 @@ describe("page-level Suspense fallbacks (MEH-2754 siblings)", () => {
   it("control: the scan sees the route pages and their div fallbacks", () => {
     expect(files.length).toBeGreaterThan(MIN_ROUTE_PAGES);
     const withDivFallback = files.filter((file) => /fallback=\{\s*<div\b/.test(read(file)));
-    // events, experiences, experiences/[id] at least — the count can grow,
-    // never silently drop to zero (a broken regex would).
+    // experiences/[id] at least — the count can grow, never silently drop to
+    // zero (a broken regex would).
     expect(withDivFallback.length).toBeGreaterThanOrEqual(MIN_DIV_FALLBACKS);
   });
 

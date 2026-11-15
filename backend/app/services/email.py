@@ -25,6 +25,8 @@ separate product decision (MEH-1613 §7), deliberately not taken here.
 
 from __future__ import annotations
 
+from typing import Any
+
 import logging
 
 from app.config import settings
@@ -137,12 +139,13 @@ def _report(exc: BaseException, *, to: str | None, subject: str, stage: str) -> 
         pass
 
 
-def send_email(
+def send_email(  # noqa: PLR0913 — +test_cause, the MEH-2952 send-layer switch
     to: str,
     subject: str,
     body: str,
     html: str | None = None,
     reply_to: str | None = None,
+    test_cause: bool = False,
 ) -> None:
     """Send a plain-text (+ optional HTML) email via Resend. Always fail-open.
 
@@ -156,7 +159,22 @@ def send_email(
     confirmation's "אפשר פשוט להשיב למייל הזה" does — is making a promise the
     default sender cannot keep, and a bounced reply from a business owner is
     worse than never having invited one.
+
+    MEH-2952: `test_cause=True` means the send was caused by a test business
+    or a test user (`producers.is_test` / `users.is_test`). Nothing is sent —
+    staging and production alike, no allowlist — and one INFO line records
+    the drop. Checked FIRST, before the recipient/key checks and before any
+    API call. Defaults to False so every caller that does not pass it is
+    unchanged.
     """
+    if test_cause:
+        logger.info(
+            "[EMAIL] skipped: caused by a test row (to=%s, subject=%r)",
+            _mask(to),
+            subject[:80],
+        )
+        return
+
     # MEH-1613 swallow point 1/3 — empty recipient. Was a bare `return` with
     # ZERO logging: a caller passing an unset settings.admin_email produced no
     # trace anywhere. Almost always a config or caller bug, so it is reported
@@ -203,7 +221,7 @@ def send_email(
     try:
         # MEH-2886 chunk 4: key + 10 s HTTP timeout (the SDK default is 30 s).
         resend = configure_resend(settings.resend_api_key)
-        params: dict = {
+        params: dict[str, Any] = {
             "from": settings.email_from_address,
             "to": to,
             "subject": subject,

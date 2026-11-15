@@ -51,7 +51,9 @@ vi.mock("@/components/CitySearch", () => ({
 }));
 vi.mock("@/lib/api", () => ({ default: { get: vi.fn(() => Promise.resolve({ data: [] })), post: vi.fn() } }));
 // RecommendClient's owner line (MEH-2827 PR 5) is a BusinessCtaLink, which reads auth.
-vi.mock("@/lib/auth-context", () => ({ useAuth: () => ({ user: null, loading: false }) }));
+vi.mock("@/lib/auth-context", () => ({
+  // MEH-3112 prefill hook: a guest here, so the forms open empty as before.
+  useOptionalAuth: () => null, useAuth: () => ({ user: null, loading: false }) }));
 
 import { FilterEmptyState } from "@/components/ProducersClient";
 import MapBottomSheet from "@/components/MapBottomSheet";
@@ -136,6 +138,14 @@ describe("home grid", () => {
     expect(link).toHaveTextContent(LABEL);
     expect(link.getAttribute("href")).toBe("/recommend");
     expect(screen.queryByTestId("recommend-link-home-empty")).toBeNull();
+  });
+
+  it("the line comes after «הפתיעו אותי», the last thing in the section (Sapir 13/11)", () => {
+    const one = [{ id: 1, name: "א" }];
+    render(<HomeProducersGrid {...baseProps} producers={one} visibleProducers={one} filters={noFilters} hasProducers onSurprise={() => {}} />);
+    const line = screen.getByTestId("home-recommend-line");
+    const surprise = screen.getByRole("button", { name: "הפתיעו אותי" });
+    expect(surprise.compareDocumentPosition(line) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 });
 

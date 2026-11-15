@@ -1,19 +1,20 @@
+// @ts-check
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { cloneElement, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { CaretDown, MapPin, MapPinLine, Rows, X } from "@phosphor-icons/react";
 
 import CitySearch from "@/components/CitySearch";
 import LocationModal from "@/components/LocationModal";
-import MapBottomSheet from "@/components/MapBottomSheet";
+import MapBottomSheet, { HALF, PEEK } from "@/components/MapBottomSheet";
 import { haversineKm } from "@/lib/distance";
 import { defaultsForKeys } from "@/lib/filter-taxonomy";
 import { TOGGLE_CHIPS, chipStateToParams } from "@/lib/map-chips";
 import { chipsFromQuery } from "@/lib/filter-url";
 import { readMapSelection, writeMapSelection } from "@/lib/map-view-state";
 import { geocodeCity } from "@/lib/places";
-import { producerPoints, hiddenWhenSecondaryOff } from "@/lib/producerPoints";
+import { mapPinPoints, producerPoints } from "@/lib/producerPoints";
 import { isRatingSortEnabled, mapRatingGateSource } from "@/lib/rating-gate";
 import { showToast } from "@/lib/toast";
 import { useUserCity } from "@/lib/use-user-city";
@@ -44,8 +45,9 @@ import { useProducersFeed } from "./state/useProducersFeed";
 const NEAR_ME_RADIUS_KM = 25;
 const NEAR_ME_DEFAULT_CENTER = [32.4, 34.95];
 const NEAR_ME_DEFAULT_ZOOM = 8;
-// MEH-2843: wait for the bottom sheet to settle at HALF (--map-sheet-anim is
-// 300ms) before measuring whether the tapped marker sits under it.
+// MEH-2843: wait for the bottom sheet (and, since MEH-3119, the picked card
+// riding its edge) to settle (--map-sheet-anim is 300ms) before measuring
+// whether the tapped marker sits under it.
 const MOBILE_PICK_PAN_DELAY_MS = 350;
 // MEH-2639: the zoom a city flyTo lands on. Same value handleGpsClick already
 // uses for a GPS fix (:~470), so "the map moved to where I said I am" looks
@@ -97,9 +99,6 @@ export default function MapPage() {
   const [showCityPicker, setShowCityPicker] = useState(false);
   const [locationModalOpen, setLocationModalOpen] = useState(false);
   const [gpsLoading, setGpsLoading] = useState(false);
-  // MEH-1412 (MEH-1388 chunk 3): pickup/market_stand marker layer visibility.
-  // Default on — all points show; the MapPane toggle flips it.
-  const [showSecondaryLayer, setShowSecondaryLayer] = useState(true);
   // Sort state for the desktop dropdown — consumed by sortedProducers below
   // (until this batch the select wrote state nothing read). `null` = "auto":
   // nearest when the visitor has a GPS fix, newest otherwise. GPS comes from
@@ -343,9 +342,6 @@ export default function MapPage() {
     userCity: userCityCtx.city,
     setUserCity: userCityCtx.setCity,
     setShowCityPicker,
-    // MEH-1670: the viewport filter derives points the same way the marker layer
-    // does, so it needs the same layer-toggle state.
-    showSecondaryLayer,
   });
   const sync = useMapSync({
     chipState: filters.chipState,
@@ -357,7 +353,7 @@ export default function MapPage() {
     setMapMoved: filters.setMapMoved,
     setCommittedBounds: filters.setCommittedBounds,
     categories: feed.categories,
-    setAllProducers: feed.setAllProducers,
+    loadArea: feed.loadArea,
     setSheetSnap: hints.setSheetSnap,
   });
 
@@ -570,8 +566,10 @@ export default function MapPage() {
         // Producer.lat/lng directly — was Producer.lat/lng-only, whose 07/08
         // citation (MapClient.jsx:348-350) had already drifted to this site
         // by the time this chunk landed; re-verified live via grep.
+        // MEH-3054: the pins the map DRAWS (one per business unless the
+        // «איסוף עצמי» chip is on), so "nothing near you" matches the screen.
         const hasNearby = feed.allProducers.some((p) =>
-          producerPoints(p).some(
+          mapPinPoints(p, { expanded: filters.showAllPickupPoints }).some(
             (pt) => haversineKm(lat, lng, pt.lat, pt.lng) <= NEAR_ME_RADIUS_KM
           )
         );
@@ -586,7 +584,7 @@ export default function MapPage() {
         }
       }
     );
-  }, [sync.mapApiRef, feed.allProducers]);
+  }, [sync.mapApiRef, feed.allProducers, filters.showAllPickupPoints]);
 
   // MEH-970: the 800ms first-visit auto-open of LocationModal was removed
   // here — /map now renders immediately on the MEH-932 producer-band default
@@ -696,7 +694,8 @@ export default function MapPage() {
 
   // MEH-2506 / MEH-2769: each shell passes its origin tag in, so it shares one row
   // with the active-filter tags instead of opening a row of its own.
-  const renderFilterChipsBar = (originTag = null) => (
+  // MEH-3062: the phone shell passes singleRow — categories join the service rail.
+  const renderFilterChipsBar = (originTag = null, singleRow = false) => (
     <FilterChipsBar
       visibleCategoryChips={filters.visibleCategoryChips}
       chipState={filters.chipState}
@@ -710,6 +709,7 @@ export default function MapPage() {
       resetAllFilters={filters.resetAllFilters}
       cityFilter={filters.cityFilter}
       originTag={originTag}
+      singleRow={singleRow}
     />
   );
 
@@ -761,11 +761,12 @@ export default function MapPage() {
   }, [selectedProducer, selectedLocation, mapRef]);
 
   // MEH-2843: after a pick on a phone, the tapped marker must not sit under
-  // the sheet that just opened over it. Once the sheet has settled (its
-  // --map-sheet-anim, 300ms), if the marker's BOTTOM edge is below — or within
-  // 16px of — the sheet's top edge (the card lives inside the sheet, whose
-  // header above the card is opaque too), pan up so that edge sits 24px above
-  // it. The icons are centre-anchored, so the latlng point is the marker's
+  // what covers the bottom of the map: the picked card floating above the
+  // collapsed sheet (MEH-3119), or the open sheet when there is no card. Once
+  // that has settled (--map-sheet-anim, 300ms), if the marker's BOTTOM edge is
+  // below — or within 16px of — the cover's top edge, pan up so that edge sits
+  // 24px above it. Re-measured when the sheet changes snap with a business
+  // picked, since the cover changes with it. The icons are centre-anchored, so the latlng point is the marker's
   // middle: measured at 390×844, panning the point left the lower half of a
   // 36px marker 6px from the card. The rendered icon nearest the point gives
   // the real bottom; no icon found → the point itself.
@@ -778,6 +779,7 @@ export default function MapPage() {
   // moveend raised the banner. So: if the map is moving when the sheet has
   // settled, measure and pan once that move has ended.
   const { mapApiRef } = sync;
+  const { sheetSnap } = hints;
   useEffect(() => {
     if (!selectedProducer || typeof window === "undefined") return undefined;
     if (window.matchMedia?.("(min-width: 1024px)")?.matches) return undefined;
@@ -796,7 +798,10 @@ export default function MapPage() {
       const sheet = document.querySelector('[data-testid="map-bottom-sheet"]');
       if (!map?.latLngToContainerPoint || !api?.panBy || !sheet) return;
       const mapTop = map.getContainer().getBoundingClientRect().top;
-      const edge = sheet.getBoundingClientRect().top - mapTop;
+      // MEH-3119: the picked card floats above the sheet, so ITS top is the
+      // edge the marker must clear; the sheet's top when no card is up.
+      const cover = document.querySelector('[data-testid="map-selected-card"]') ?? sheet;
+      const edge = cover.getBoundingClientRect().top - mapTop;
       const { x, y } = map.latLngToContainerPoint([target.lat, target.lng]);
       const box = map.getContainer().getBoundingClientRect();
       let bottom = y;
@@ -823,16 +828,29 @@ export default function MapPage() {
       live?.off?.("moveend", onMoveEnd);
       live?.off?.("moveend", afterMove);
     };
-  }, [selectedProducer, selectedLocation, mapRef, mapApiRef]);
+  }, [selectedProducer, selectedLocation, mapRef, mapApiRef, sheetSnap]);
 
-  // MEH-2046: is the layer toggle currently costing the user businesses? Read
-  // off the SAME list the pane draws (`filteredByCategory`), so the notice can
-  // never claim something the visible map contradicts. Short-circuits while the
-  // layer is on, which is the default and the common case.
-  const secondaryHidden = useMemo(
-    () => !showSecondaryLayer && filters.filteredByCategory.some(hiddenWhenSecondaryOff),
-    [showSecondaryLayer, filters.filteredByCategory],
-  );
+  // MEH-3119: one card per picked business on a phone. `showPickCard` is the
+  // whole rule; `pickCardHeight` is what the card reports so the sheet-edge
+  // controls ride above it.
+  const [pickCardHeight, setPickCardHeight] = useState(0);
+  const showPickCard = !!selectedProducer && sheetSnap === PEEK;
+  // Opening the sheet with a business picked: bring its row into view, since
+  // the floating card that showed it has just left.
+  const selectedId = selectedProducer?.id ?? null;
+  const { cardRefs } = sync;
+  useEffect(() => {
+    if (sheetSnap !== HALF || selectedId == null) return undefined;
+    const timer = window.setTimeout(() => {
+      for (const n of cardRefs.current.get(selectedId) ?? []) {
+        if (n.isConnected && n.offsetParent !== null) n.scrollIntoView?.({ block: "nearest" });
+      }
+    }, MOBILE_PICK_PAN_DELAY_MS);
+    return () => window.clearTimeout(timer);
+    // Only a snap change scrolls: picking a row while the sheet is open must
+    // leave the list still (the MEH-1243 tap-again-to-open gesture).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sheetSnap]);
 
   const mapPane = (
     <MapPane
@@ -844,10 +862,8 @@ export default function MapPage() {
       onMapCanvasClick={sync.handleMapCanvasClick}
       registerApi={sync.registerMapApi}
       mapRef={sync.mapRef}
-      showSecondaryLayer={showSecondaryLayer}
-      onToggleSecondaryLayer={() => setShowSecondaryLayer((v) => !v)}
-      secondaryHidden={secondaryHidden}
       focusedProducerId={focusedProducerId}
+      showAllPickupPoints={filters.showAllPickupPoints}
       mapMoved={filters.mapMoved}
       onSearchThisArea={sync.handleSearchThisArea}
       visibleProducers={filters.visibleProducers}
@@ -874,8 +890,10 @@ export default function MapPage() {
   // not an empty result. The condition is city-only on purpose — with a chip
   // also on, "the filters did this" is the true story and MEH-2425's
   // filtered-zero row (with its way out) is the right one.
+  // MEH-3198: a failed load is not a town with no businesses.
   const cityZero =
     !feed.loading &&
+    !feed.loadError &&
     filters.cityFilter.trim() !== "" &&
     !filters.hasNonCityFilters &&
     filters.visibleProducers.length === 0 &&
@@ -906,6 +924,9 @@ export default function MapPage() {
       // too is a no-op there (the sheet swaps children for its own skeleton
       // while loading) and makes the sidebar mount safe.
       loading={feed.loading}
+      // MEH-3198: a failed load shows an error with «נסו שוב», not "none found".
+      loadError={feed.loadError}
+      onRetry={feed.retry}
       visibleProducers={sortedProducers}
       hoveredProducerId={filters.hoveredProducerId}
       activeProducerId={filters.activeProducerId}
@@ -970,7 +991,8 @@ export default function MapPage() {
                     style={{ width: "120px", height: "12px" }}
                     aria-hidden="true"
                   />
-                ) : (
+                ) : feed.loadError && filters.visibleProducers.length === 0 ? null : (
+                  // MEH-3198: a failed load is not «אין בתי עסק» — the list below says what happened.
                   <p className="text-xs text-fg-muted" data-testid="map-list-count">
                     {/* MEH-2425: zero under active filters names the filters as
                         the cause, same as the mobile sheet's peek row. */}
@@ -999,7 +1021,7 @@ export default function MapPage() {
                   disabled={geoSortPending}
                   aria-label={t("map.client.sort.aria_label")}
                   aria-busy={geoSortPending || undefined}
-                  className="appearance-none bg-transparent border-0 text-sm font-medium text-primary min-h-touch ps-1 pe-6 cursor-pointer rounded-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1 disabled:opacity-60"
+                  className="appearance-none bg-transparent border-0 text-sm font-medium text-primary min-h-touch ps-1 pe-6 cursor-pointer rounded-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1 disabled:opacity-50"
                 >
                   {/* MEH-2014: never `disabled`. Choosing it without a known
                       location ASKS for one (handleSortChange) instead of
@@ -1044,7 +1066,7 @@ export default function MapPage() {
       </div>
 
       {/* =================== MOBILE (below lg) — full map + sheet =================== */}
-      <div ref={mobileShellRef} data-testid="map-mobile-shell" data-chat-hide="" data-map-shell="mobile" className="lg:hidden" style={{ height: `calc(100dvh - ${mobileTopOffset}px)`, position: "relative" }}>
+      <div ref={mobileShellRef} data-testid="map-mobile-shell" data-chat-hide="" data-map-shell="mobile" data-pick={showPickCard ? "on" : undefined} className="group/mapshell lg:hidden" style={{ height: `calc(100dvh - ${mobileTopOffset}px)`, position: "relative" }}>
         {/* Sticky filter bar — MEH-933 R2: sits at top-0 of the mobile shell.
             The shell is in normal flow AFTER the sticky <Header> (layout.js:221),
             so it already begins below the header band — the bar needs NO header
@@ -1057,7 +1079,7 @@ export default function MapPage() {
             search-this-area pill + zoom control.
             MEH-1133: surface was `bg-background/95 backdrop-blur` — the 5% map
             bleed-through behind the category chips read as the chips "floating"
-            over the tiles. Now fully-opaque cream (`bg-background` = #F5F0E8), so
+            over the tiles. Now fully-opaque cream (`bg-background`, F5F0E8), so
             the bar is a solid band the map starts cleanly below (the blur becomes
             moot once nothing shows through).
 
@@ -1112,7 +1134,7 @@ export default function MapPage() {
               "explicit clear" requirement exists to prevent. MEH-2506: a compact
               tag on the active-filter row under the chips (FilterChipsBar),
               not a full row above them. */}
-          {renderFilterChipsBar(mobileOriginTag)}
+          {renderFilterChipsBar(mobileOriginTag, true)}
         </div>
 
         {/* Map fills the rest — MEH-933 R2: pt = the bar's live MEASURED height
@@ -1162,6 +1184,19 @@ export default function MapPage() {
             (same goToMyLocation path as the filter-bar crosshair). */}
         <NearMePill onClick={handleGoToMyLocation} />
 
+        {/* MEH-3119: the picked business, once. Sheet at PEEK → this card floats
+            over the map; sheet open → the list's own active row is the
+            selection and this card is not mounted. Mounted BEFORE the
+            sheet so keyboard / screen-reader order reaches it before the list
+            (it is `fixed`, so the order is not visual). */}
+        {showPickCard && (
+          <MobileSheetSelectedCard
+            selectedProducer={filters.selectedProducer}
+            selectedLocation={sync.selectedLocation}
+            onClose={() => filters.setSelectedProducer(null)}
+            onHeight={setPickCardHeight}
+          />
+        )}
         {/* Bottom sheet. MEH-1054 (MAP-16): loading rides the feed's initial
             fetch so the sheet shows a list skeleton instead of flashing an
             empty "0" state before the first /producers response lands. */}
@@ -1177,13 +1212,13 @@ export default function MapPage() {
           zeroCity={cityZero ? filters.cityFilter.trim() : ""}
           nearMeEmpty={nearMeEmpty}
           hasOrigin={!!userLoc || filters.cityFilter.trim() !== ""}
+          rideExtraPx={showPickCard ? pickCardHeight : 0}
+          loadError={feed.loadError}
+          onRetry={feed.retry}
         >
-          <MobileSheetSelectedCard
-            selectedProducer={filters.selectedProducer}
-            selectedLocation={sync.selectedLocation}
-            onClose={() => filters.setSelectedProducer(null)}
-          />
-          {cardList}
+          {/* MEH-3198: the peek row above already shows the error + «נסו שוב»;
+              the list inside the sheet must not repeat them. */}
+          {cloneElement(cardList, { loadError: false, onRetry: null })}
         </MapBottomSheet>
       </div>
 

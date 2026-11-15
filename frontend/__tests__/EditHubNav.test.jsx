@@ -230,7 +230,7 @@ describe("Edit hub-and-spoke navigation (MEH-1408)", () => {
     // MEH-2729: one «תגים» card in place of dietary-scope + grass-fed.
     ["products", ["products", "pricing", "offer", "tags"]],
     ["location", ["locations", "delivery", "order-window", "special-hours"]],
-    ["contact", ["contact-channels", "questions"]],
+    ["contact", ["contact-channels", "questions", "payment-info"]], // MEH-3035
     ["trust", ["trust"]],
   ])("the %s group holds exactly %j", async (g, cards) => {
     mount();

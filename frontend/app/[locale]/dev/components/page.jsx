@@ -1,8 +1,14 @@
+// @ts-check
 "use client";
 
 import { notFound } from "next/navigation";
 import { MagnifyingGlass, Heart, ArrowRight, Leaf } from "@phosphor-icons/react";
 import { Button, Input, Card, Badge, Heading, Link } from "@/components/ui";
+import ShowMore from "@/components/ui/ShowMore";
+import PasswordField from "@/components/ui/PasswordField";
+import Select from "@/components/ui/Select";
+import Textarea from "@/components/ui/Textarea";
+import { useTranslations } from "next-intl";
 
 /**
  * /dev/components — Storybook-style gallery for the MEH-602 atomic layer.
@@ -45,6 +51,7 @@ function Swatch({ label, children }) {
 }
 
 export default function DevComponentsPage() {
+  const t = useTranslations();
   if (process.env.NODE_ENV === "production") notFound();
 
   return (
@@ -94,6 +101,21 @@ export default function DevComponentsPage() {
         </div>
       </Section>
 
+      {/* MEH-3052: the one "show more" control — block ends a list, inline sits in a box. */}
+      <Section title="ShowMore">
+        <div className="flex flex-col gap-6">
+          <Swatch label='size: block'>
+            <ShowMore onClick={() => {}} label={t("reviews.show_more")} />
+          </Swatch>
+          <Swatch label="size: inline (closed / open)">
+            <div className="flex flex-wrap items-center gap-6">
+              <ShowMore size="inline" expanded={false} onClick={() => {}} label={t("group_buys.delivery.show_all_cities", { count: 6 })} />
+              <ShowMore size="inline" expanded onClick={() => {}} label={t("group_buys.delivery.show_less")} />
+            </div>
+          </Swatch>
+        </div>
+      </Section>
+
       <Section title="Input">
         <div className="grid gap-5 sm:grid-cols-2 max-w-[640px]">
           <Input type="text" label="שם" placeholder="שם מלא" helperText="כפי שיופיע בפרופיל" />
@@ -101,6 +123,23 @@ export default function DevComponentsPage() {
           <Input type="search" label="חיפוש" placeholder="מה בא לך לאכול?" />
           <Input type="text" label="שדה שגוי" defaultValue="??" error="יש להזין לפחות 3 אותיות" />
           <Input type="text" label="מושבת" placeholder="לא ניתן לעריכה" disabled />
+          {/* MEH-3136: compact sizes, the inline form, Select and Textarea. */}
+          <Input size="sm" type="text" label="Small field (sm)" placeholder="Product name" />
+          <Input size="sm" type="text" label="Small field, invalid" defaultValue="?" error="At least 3 letters" />
+          <div className="flex items-center gap-2">
+            <Input inline size="xs" type="time" aria-label="From" className="numeric" defaultValue="08:00" />
+            <Input inline size="xs" type="time" aria-label="Until" className="numeric" defaultValue="14:00" />
+            <Input inline size="xs" type="number" aria-label="Quantity" className="w-20" defaultValue="3" />
+          </div>
+          <Select label="Region" defaultValue="center" helperText="Pick one">
+            <option value="north">North</option>
+            <option value="center">Centre</option>
+          </Select>
+          {/* MEH-3141: current / repeat password with the eye toggle. */}
+          <PasswordField label="Current password" required showLabel="Show password" hideLabel="Hide password" />
+          <PasswordField label="Repeat password" defaultValue="abc" error="Passwords do not match" showLabel="Show password" hideLabel="Hide password" />
+          <Textarea label="Note" placeholder="A few words" helperText="Up to 300 characters" />
+          <Textarea label="Note, invalid" defaultValue="…" error="Too long" />
           {/* MEH-1128 D1: startAdornment (currency + icon) and success state. */}
           <Input type="number" dir="ltr" className="text-end" label="מחיר" placeholder="49" startAdornment="₪" />
           <Input type="search" label="יישוב" placeholder="חפשו עיר…" startAdornment={<MagnifyingGlass size={16} aria-hidden="true" />} />
@@ -147,11 +186,11 @@ export default function DevComponentsPage() {
               href="/dev/components"
               media={
                 <div className="relative w-full aspect-[4/3] bg-background flex items-center justify-center">
-                  <Leaf size={36} weight="light" className="text-primary/70" aria-hidden="true" />
+                  <Leaf size={32} weight="regular" className="text-primary/70" aria-hidden="true" />
                 </div>
               }
               overlay={
-                <div className="absolute bottom-3 start-3 z-[2]">
+                <div className="absolute bottom-3 start-3 z-dev-badge">
                   <Badge variant="primary" size="sm">
                     {c.label}
                   </Badge>

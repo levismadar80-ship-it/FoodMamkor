@@ -316,6 +316,14 @@ test.describe("P2 — producer OAuth 409 surfaces a toast (MEH-1274)", () => {
 test.describe("P5 — abandon mid-wizard keeps the draft (MEH-1274)", () => {
   const DRAFT_KEY = "producer_registration_draft";
 
+  // MEH-2915: the draft carries the BUSINESS half only — `name`, `email` and
+  // `password` are in DRAFT_OMITTED_FIELDS, so a fill that stops at frame 01
+  // now leaves nothing resumable behind and there would be no draft to assert
+  // on. The business name is typed on frame 02, and that is what these cells
+  // follow across the reload / back-navigation. Subject unchanged: abandoning
+  // mid-wizard keeps the draft.
+  const BUSINESS_NAME = "משק הפרסונה";
+
   async function fillAccountAndAdvance(page: import("@playwright/test").Page, email: string) {
     await page.goto("/register/producer");
     await page.getByTestId("register-preflight-start").click();
@@ -325,6 +333,7 @@ test.describe("P5 — abandon mid-wizard keeps the draft (MEH-1274)", () => {
     await page.getByTestId("register-account-password").fill("Abcdefgh1234");
     await page.getByTestId("register-account-next").click();
     await expect(page.getByTestId("register-frame-details")).toBeVisible();
+    await page.getByTestId("register-details-name").fill(BUSINESS_NAME);
   }
 
   test("refresh mid-wizard: draft persists in localStorage and the pre-flight entry returns", async ({
@@ -342,7 +351,8 @@ test.describe("P5 — abandon mid-wizard keeps the draft (MEH-1274)", () => {
     // …but the draft survived the reload with the entered email.
     const draft = await page.evaluate((k) => localStorage.getItem(k), DRAFT_KEY);
     expect(draft, "draft must persist across a mid-wizard reload").toBeTruthy();
-    expect(draft as string).toContain(email);
+    expect(draft as string).toContain(BUSINESS_NAME);
+    expect(draft as string, "and it does not carry the person").not.toContain(email);
   });
 
   test("back after leaving: returning to the wizard still shows the entry with the draft intact", async ({
@@ -359,6 +369,7 @@ test.describe("P5 — abandon mid-wizard keeps the draft (MEH-1274)", () => {
     // Pre-flight entry is shown again (fresh mount) and the draft is still there.
     await expect(page.getByTestId("register-preflight-start")).toBeVisible();
     const draft = await page.evaluate((k) => localStorage.getItem(k), DRAFT_KEY);
-    expect(draft as string).toContain(email);
+    expect(draft as string).toContain(BUSINESS_NAME);
+    expect(draft as string, "and it does not carry the person").not.toContain(email);
   });
 });

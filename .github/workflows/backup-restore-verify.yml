@@ -119,11 +119,11 @@ jobs:
   # refused CREATE TABLE. If it is not refused, the job fails loudly and names the
   # cleanup; the drill never runs on a role that can write.
   #
-  # Known race (read before acting on a red): the script compares each table's row
-  # count in the restored copy with the LIVE source after the restore. A write to
-  # staging between the dump and that count (an E2E run, a QA session) shows as
-  # "row count differs" on that one busy table. Re-run before treating it as a
-  # lossy backup; a MISSING table or a large difference is never this race.
+  # Row counts are not a race (#4304): the script counts the source inside the
+  # same REPEATABLE READ snapshot that pg_dump dumps, so writes to staging during
+  # the drill (an E2E run, a QA session) cannot show as "row count differs".
+  # A difference is a real loss in the dump or the restore. Investigate it; do
+  # not re-run it away.
   # ─────────────────────────────────────────────────────────────────────────
   staging-drill:
     name: Restore drill — real staging database (read-only)
@@ -188,7 +188,8 @@ jobs:
             *) echo "$REFUSE"; exit 1 ;;
           esac
 
-      # pg_dump must not be older than the server (18); the runner ships 16.
+      # pg_dump must not be older than the server (18). Installed explicitly
+      # rather than taken from the runner image, so an image change can't move it.
       - name: PostgreSQL 18 client
         run: |
           sudo install -d /usr/share/postgresql-common/pgdg

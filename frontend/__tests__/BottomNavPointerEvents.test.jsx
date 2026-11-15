@@ -39,10 +39,18 @@ vi.mock("framer-motion", () => ({
   motion: { div: ({ initial, animate, transition, ...props }) => <div {...props} /> },
 }));
 
+// MEH-2965: BottomNav reads the listing-supply gates; closed here, so the pill
+// keeps «אודות» and this suite stays about its own subject.
+vi.mock("@/lib/use-events-nav-gate", () => ({ useEventsNavGate: () => false }));
+vi.mock("@/lib/use-experiences-nav-gate", () => ({ useExperiencesNavGate: () => false }));
+vi.mock("@/lib/use-hub-nav-gate", () => ({ useHubNavGate: () => false }));
+
 vi.mock("@phosphor-icons/react", () => ({
   Compass: (props) => <span data-testid="icon-compass" {...props} />,
   MapTrifold: (props) => <span data-testid="icon-map" {...props} />,
   Flower: (props) => <span data-testid="icon-flower" {...props} />,
+  CalendarBlank: (props) => <span data-testid="icon-calendar" {...props} />,
+  Basket: (props) => <span data-testid="icon-basket" {...props} />,
   User: (props) => <span data-testid="icon-user" {...props} />,
 }));
 
@@ -68,7 +76,7 @@ describe("BottomNav pointer-events shield (MEH-1253)", () => {
     expect(wrapper.className).toMatch(/\bpointer-events-none\b/);
     // Guardrail: pointer-events only — the fixed / z tokens are untouched.
     expect(wrapper.className).toMatch(/\bfixed\b/);
-    expect(wrapper.className).toMatch(/z-\[1000\]/);
+    expect(wrapper.className).toMatch(/(^|\s)z-bottom-nav(\s|$)/);
   });
 
   it("re-enables events on the <nav> pill with pointer-events-auto", () => {

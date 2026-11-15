@@ -26,6 +26,7 @@ History:  MEH-509 PR2c (creation; flip Railway env to WATCHDOG_ENABLED=true
 
 from __future__ import annotations
 
+from typing import Any, cast
 import hashlib
 import hmac
 import json
@@ -264,7 +265,7 @@ async def webhook_receive(
     return Response(status_code=200)
 
 
-def _process_entries(db: Session, entries) -> dict[str, int]:
+def _process_entries(db: Session, entries: Any) -> dict[str, int]:
     """Walk Meta's ``entry[].changes[].value`` tree and persist each message.
 
     Extracted from `webhook_receive` so the handler stays under the
@@ -300,7 +301,7 @@ def _process_entries(db: Session, entries) -> dict[str, int]:
     return counters
 
 
-def _process_one_entry(db: Session, entry, counters: dict[str, int]) -> None:
+def _process_one_entry(db: Session, entry: Any, counters: dict[str, int]) -> None:
     """Single-entry walker — extracted to keep `_process_entries` under the
     McCabe / PLR0912 caps after the MEH-509 PR2c hardening pass."""
     if not isinstance(entry, dict):
@@ -318,7 +319,7 @@ def _process_one_entry(db: Session, entry, counters: dict[str, int]) -> None:
         _process_one_change(db, change, counters)
 
 
-def _process_one_change(db: Session, change, counters: dict[str, int]) -> None:
+def _process_one_change(db: Session, change: Any, counters: dict[str, int]) -> None:
     """Single-change walker — same extraction rationale as `_process_one_entry`.
 
     MEH-771 Chunk B: a single Meta change can carry `messages[]` (inbound)
@@ -361,7 +362,9 @@ def _process_one_change(db: Session, change, counters: dict[str, int]) -> None:
         _process_statuses(db, statuses, counters)
 
 
-def _process_messages(db: Session, messages: list, counters: dict[str, int]) -> None:
+def _process_messages(
+    db: Session, messages: list[Any], counters: dict[str, int]
+) -> None:
     """Per-message persister loop — extracted to keep `_process_one_change`
     under the McCabe ceiling after the MEH-509 PR2c isinstance hardening."""
     for message in messages:
@@ -392,7 +395,7 @@ _OPTOUT_CONFIRMATION = (
 )
 
 
-def _maybe_process_optout(db: Session, message: dict) -> None:
+def _maybe_process_optout(db: Session, message: dict[str, Any]) -> None:
     """MEH-1339: honor a WhatsApp "הסר" reply by turning off every
     `whatsapp_opt_in` flag for the sender.
 
@@ -425,7 +428,7 @@ def _maybe_process_optout(db: Session, message: dict) -> None:
         users = [
             u
             for u in db.query(User).filter(User.phone.isnot(None)).all()
-            if canonical_il_msisdn(u.phone) == canonical
+            if canonical_il_msisdn(u.phone) == canonical  # type: ignore[arg-type]
         ]
         if not users:
             logger.info("[WEBHOOK] opt-out: no user matches sender — no-op")
@@ -448,13 +451,13 @@ def _maybe_process_optout(db: Session, message: dict) -> None:
             flipped,
         )
         # In-window free-form reply is allowed — she just messaged us.
-        send_text(from_phone, _OPTOUT_CONFIRMATION)
+        send_text(cast(str, from_phone), _OPTOUT_CONFIRMATION)
     except Exception as exc:  # noqa: BLE001 — webhook must never 5xx Meta
         db.rollback()
         logger.warning("[WEBHOOK] opt-out processing failed: %s", exc)
 
 
-def _persist_message(db: Session, message: dict) -> str:
+def _persist_message(db: Session, message: dict[str, Any]) -> str:
     """Insert one Meta WhatsApp message into `inbound_messages`.
 
     Returns one of: ``"persisted"`` (new row), ``"duplicate"`` (UNIQUE
@@ -534,7 +537,9 @@ def _persist_message(db: Session, message: dict) -> str:
 # ---- MEH-771 Chunk B — outbound status reconciliation ---------------------
 
 
-def _process_statuses(db: Session, statuses: list, counters: dict[str, int]) -> None:
+def _process_statuses(
+    db: Session, statuses: list[Any], counters: dict[str, int]
+) -> None:
     """Per-status reconciler loop — mirrors `_process_messages`.
 
     Walks `value.statuses[]` and reconciles each Meta delivery receipt
@@ -552,7 +557,9 @@ def _process_statuses(db: Session, statuses: list, counters: dict[str, int]) -> 
         _reconcile_status(db, status_obj, counters)
 
 
-def _reconcile_status(db: Session, status_obj: dict, counters: dict[str, int]) -> None:
+def _reconcile_status(
+    db: Session, status_obj: dict[str, Any], counters: dict[str, int]
+) -> None:
     """Reconcile one Meta status receipt against `outbound_messages`.
 
     Mapping (see `_build_status_update`):
@@ -590,7 +597,7 @@ def _reconcile_status(db: Session, status_obj: dict, counters: dict[str, int]) -
                 OutboundMessage.meta_message_id == wamid,
                 OutboundMessage.status == "accepted",
             )
-            .update(update_payload, synchronize_session=False)
+            .update(update_payload, synchronize_session=False)  # type: ignore[arg-type]
         )
         db.commit()
     except Exception as exc:  # noqa: BLE001 — webhook must never 5xx Meta
@@ -609,7 +616,7 @@ def _reconcile_status(db: Session, status_obj: dict, counters: dict[str, int]) -
     _log_zero_rowcount(db, wamid, status_obj, counters)
 
 
-def _build_status_update(status_obj: dict) -> dict | None:
+def _build_status_update(status_obj: dict[str, Any]) -> dict[str, Any] | None:
     """Map a Meta status receipt to the column changes for the UPDATE.
 
     Returns `None` when no update should be applied (`sent`, unknown
@@ -643,7 +650,7 @@ def _build_status_update(status_obj: dict) -> dict | None:
 
 
 def _log_zero_rowcount(
-    db: Session, wamid: str, status_obj: dict, counters: dict[str, int]
+    db: Session, wamid: str, status_obj: dict[str, Any], counters: dict[str, int]
 ) -> None:
     """Cold-path branch for `_reconcile_status` when the UPDATE matched 0
     rows. Either the wamid is unknown (no matching outbound row at all)
@@ -671,7 +678,7 @@ def _log_zero_rowcount(
     )
 
 
-def _extract_first_error(errors) -> dict:
+def _extract_first_error(errors: Any) -> dict[str, Any]:
     """Pull `{code, message}` from Meta's `errors[]`, defensively.
 
     Returns `{"code": int|None, "message": str|None}` and never raises:

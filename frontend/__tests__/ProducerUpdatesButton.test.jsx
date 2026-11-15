@@ -45,8 +45,13 @@ vi.mock("@/lib/toast", () => {
 // LoginPromptModal is FavoriteButton's logged-out path; stub it to an
 // observable open flag so the test asserts the hand-off, not the modal.
 vi.mock("@/components/LoginPromptModal", () => ({
-  default: ({ open, message }) =>
-    open ? <div data-testid="login-prompt">{message}</div> : null,
+  default: ({ open, title, message }) =>
+    open ? (
+      <div data-testid="login-prompt">
+        <span data-testid="login-prompt-title">{title}</span>
+        {message}
+      </div>
+    ) : null,
 }));
 
 import api from "@/lib/api";
@@ -62,6 +67,7 @@ const OFF = {
   notify_delivery_area: false,
   notify_new_recipe: false,
   notify_new_group_buy: false,
+  notify_new_rescue: false,
   whatsapp_opt_in: false,
   has_push: false,
 };
@@ -111,8 +117,15 @@ describe("MEH-2526 · ProducerUpdatesButton", () => {
 
     fireEvent.click(button());
 
+    // MEH-3130: the prompt names updates, not the save hearts' «רוצה לשמור?».
     expect(screen.getByTestId("login-prompt")).toHaveTextContent(
+      he.favorites.updates_button.login_prompt_message,
+    );
+    expect(screen.getByTestId("login-prompt")).not.toHaveTextContent(
       he.favorites.button.login_prompt_message,
+    );
+    expect(screen.getByTestId("login-prompt-title")).toHaveTextContent(
+      he.favorites.updates_button.login_prompt_title,
     );
     expect(JSON.parse(sessionStorage.getItem("pending_action"))).toMatchObject({
       type: "updates",
@@ -368,6 +381,15 @@ describe("MEH-2562 · variants", () => {
     expect(button()).toHaveTextContent("קבלת עדכונים");
     expect(button()).not.toHaveAttribute("aria-label");
     expect(button().className).toMatch(/min-h-touch/);
+  });
+
+  // MEH-3115: the bell read green while OFF next to a dark heart and share.
+  it("gallery: the bell is text-ink while off, like the heart beside it", () => {
+    renderButton({ variant: "gallery" });
+    const icon = button().querySelector("svg");
+    expect(icon.getAttribute("class")).toContain("text-text");
+    expect(icon.getAttribute("class")).not.toContain("text-primary");
+    expect(button().querySelector(".w-8")).toBeTruthy();
   });
 
   it("gallery reports ON through aria-pressed like the pill", async () => {

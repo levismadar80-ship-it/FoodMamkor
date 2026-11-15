@@ -25,7 +25,11 @@ import type { Route } from "@playwright/test";
  * Does NOT: re-assert what flows/34 already pins (A: every required row
  *           missing + OTP card mounted; B: POST once + review banner takes
  *           over; C: the 422 wins, and C-org the organizer's 422 list; D:
- *           pending gets no draft surface) — those rows are pointed at 34.
+ *           pending gets no draft surface; A-<code>: each gate rule alone keeps
+ *           the CTA disabled) — those rows are pointed at 34. The row counts
+ *           below come from the completeness card, which never reads
+ *           lib/submission-gate.js: they pin what the owner is shown, not the
+ *           gate's rules — A-<code> in 34 is where a dropped rule goes red.
  *           Does not touch the registration screen (chunk for /register), the
  *           admin queue (chunk 12), or the RTL/touch-target rows (not converted
  *           in any chunk). Does not reach the "confirm open, profile reloads
@@ -58,7 +62,7 @@ import type { Route } from "@playwright/test";
 
 const IMG = "https://res.cloudinary.com/demo/image/upload/a.jpg";
 
-/** Every gate item AND every checklist step satisfied: 6/6, ready to submit. */
+/** Every gate item AND every checklist step satisfied: 7/7, ready to submit. */
 const ALL_DONE = {
   id: 7,
   name: "מאפיית שקד",
@@ -77,9 +81,11 @@ const ALL_DONE = {
   offers_delivery: false,
   delivery_areas: [],
   phone_verified: true,
+  // MEH-3032: the owner's photo, the 7th («מומלץ») step.
+  owner_photo_url: "https://res.cloudinary.com/demo/image/upload/owner.jpg",
 };
 
-/** The one cell the doc calls out: a typed phone, never verified. 5/6 → 83%. */
+/** The one cell the doc calls out: a typed phone, never verified. 6/7 → 86%. */
 const PHONE_UNVERIFIED = { ...ALL_DONE, phone_verified: false };
 
 /** Fails every gate item — flows/34's INCOMPLETE shape. */
@@ -141,7 +147,7 @@ const checklistRows = (page: Page) => checklist(page).getByRole("list", { name: 
 /** Rows whose screen-reader status reads «עדיין חסר» (checklist_todo). */
 const missingRows = (page: Page) => checklistRows(page).filter({ hasText: "עדיין חסר" });
 
-const STEP_LABELS = ["תמונה ראשית", "קטגוריות ומיקום", "מוצר ראשון בקטלוג", "פרטי קשר", "אימות וואטסאפ", "שעות פתיחה"];
+const STEP_LABELS = ["תמונה ראשית", "קטגוריות ומיקום", "מוצר ראשון בקטלוג", "פרטי קשר", "אימות וואטסאפ", "שעות פתיחה", "תמונה שלך"];
 
 // ── the banner's state matrix — the cells flows/34 leaves open ─────────────
 
@@ -154,7 +160,7 @@ test.describe("draft banner — matrix cells and the cancel path", () => {
     await expect(cta(page)).toBeDisabled();
     // The one checklist names it: exactly ONE row reads missing, and it is the
     // WhatsApp row (row 5, chip-anchored so the label is not the only witness).
-    await expect(checklistRows(page)).toHaveCount(6);
+    await expect(checklistRows(page)).toHaveCount(7);
     const rows = missingRows(page);
     await expect(rows).toHaveCount(1);
     await expect(rows).toContainText("אימות וואטסאפ");
@@ -206,26 +212,27 @@ test.describe("draft banner — matrix cells and the cancel path", () => {
   });
 });
 
-// ── MT:MEH-2100:3-7 — the completeness checklist, six rows ─────────────────
+// ── MT:MEH-2100:3-7 — the completeness checklist, seven rows (MEH-3032) ─────────────────
 
-test.describe("completeness checklist — six rows", () => {
-  // MT:MEH-2100:3 — six rows, this order.
-  test("the checklist shows six rows in the locked order", async ({ page }) => {
+test.describe("completeness checklist — seven rows", () => {
+  // MT:MEH-2100:3 — seven rows, this order (MEH-3032 appended the owner photo).
+  test("the checklist shows seven rows in the locked order", async ({ page }) => {
     await stubOverview(page, PHONE_UNVERIFIED);
     await openOverview(page);
-    await expect(checklistRows(page)).toHaveCount(6);
+    await expect(checklistRows(page)).toHaveCount(7);
     for (const [i, label] of STEP_LABELS.entries()) {
       await expect(checklistRows(page).nth(i)).toContainText(label);
     }
   });
 
-  // MT:MEH-2100:4 — «אימות וואטסאפ» is חובה; «שעות פתיחה» is the ONLY מומלץ.
-  test("«אימות וואטסאפ» carries חובה and «שעות פתיחה» is the only מומלץ", async ({ page }) => {
+  // MT:MEH-2100:4 — «אימות וואטסאפ» is חובה; «שעות פתיחה» and «תמונה שלך» (MEH-3032) are the ONLY מומלץ.
+  test("«אימות וואטסאפ» carries חובה and only hours and the owner photo are מומלץ", async ({ page }) => {
     await stubOverview(page, PHONE_UNVERIFIED);
     await openOverview(page);
     await expect(page.getByTestId("completeness-chip-phone_verified")).toHaveText("חובה");
     await expect(page.getByTestId("completeness-chip-hours")).toHaveText("מומלץ");
-    await expect(checklist(page).getByText("מומלץ", { exact: true })).toHaveCount(1);
+    await expect(page.getByTestId("completeness-chip-owner_photo")).toHaveText("מומלץ");
+    await expect(checklist(page).getByText("מומלץ", { exact: true })).toHaveCount(2);
     await expect(checklist(page).getByText("חובה", { exact: true })).toHaveCount(5);
   });
 
@@ -253,12 +260,12 @@ test.describe("completeness checklist — six rows", () => {
     await expect(checklist(page).getByTestId("draft-phone-verify")).toBeVisible();
   });
 
-  // MT:MEH-2100:7 — six is the divisor: one missing = 83%, not 80%.
-  test("one missing step is 83%, computed over six", async ({ page }) => {
+  // MT:MEH-2100:7 — seven is the divisor (MEH-3032): one missing = 86%, not 83%.
+  test("one missing step is 86%, computed over seven", async ({ page }) => {
     await stubOverview(page, PHONE_UNVERIFIED);
     await openOverview(page);
-    await expect(checklist(page).getByRole("progressbar")).toHaveAttribute("aria-valuenow", "83");
-    await expect(checklist(page).getByRole("heading", { level: 2 })).toHaveText("כמעט שם — 83% מוכן");
+    await expect(checklist(page).getByRole("progressbar")).toHaveAttribute("aria-valuenow", "86");
+    await expect(checklist(page).getByRole("heading", { level: 2 })).toHaveText("כמעט שם — 86% מוכן");
   });
 });
 
@@ -275,8 +282,9 @@ test.describe("WhatsApp verification from the draft", () => {
     await expect(cta(page)).toBeDisabled();
 
     await card.getByRole("button", { name: "שלחו קוד אימות" }).click();
+    // MEH-3126: the 6th digit verifies on its own — no tap on «אמתו». The
+    // single confirm POST is asserted below (posts has exactly two entries).
     await card.getByLabel("קוד אימות").fill("123456");
-    await card.getByRole("button", { name: "אמתו" }).click();
 
     // MEH-2305: verifying is one step, not the submission — the toast points at the button.
     await expect(page.getByText('הטלפון אומת! כשכל השלבים מוכנים, לחצו "שליחה לבדיקה" כדי שנכיר את העסק.')).toBeVisible();
@@ -286,7 +294,7 @@ test.describe("WhatsApp verification from the draft", () => {
     await expect(card).toHaveCount(0);
     await expect(banner(page)).toHaveAttribute("data-state-ready", "true");
     await expect(cta(page)).toBeEnabled();
-    // The checklist saw the same flip: 6/6 collapses to the single confirmation
+    // The checklist saw the same flip: 7/7 collapses to the single confirmation
     // line — no row is left reading missing (the item is gone) — and the
     // actions stay at its foot.
     await expect(checklist(page)).toContainText("הפרופיל מלא");

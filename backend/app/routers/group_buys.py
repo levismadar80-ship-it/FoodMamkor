@@ -1,12 +1,15 @@
 """MEH-52: Group buy endpoints — commit counter + price unlock."""
 
+from typing import Any
 from decimal import Decimal
 from uuid import UUID
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, Request
 from sqlalchemy import func
-from sqlalchemy.orm import Session, selectinload
+from sqlalchemy.orm import Query as OrmQuery
+from sqlalchemy.orm import selectinload, Session
 
+from app.limits import enforce_cap
 from app.auth import (
     get_current_user,
     get_current_user_optional,
@@ -17,6 +20,8 @@ from app.auth import (
 from app.database import get_db
 from app.models.models import GroupBuy, GroupBuyCommit, Producer, User
 from app.rate_limit import limiter
+from app.services import billing_ledger  # MEH-3179
+from app.services import capabilities  # MEH-3180
 from app.schemas.schemas import (
     GroupBuyCommitRequest,
     GroupBuyCreate,
@@ -25,6 +30,7 @@ from app.schemas.schemas import (
     GroupBuyStatusOut,
     GroupBuyStatusUpdate,
 )
+from app.schemas.group_buy_counts import GroupBuyStatusCountsOut
 from app.services.group_buy_notifications import (
     send_cancelled_notifications,
     send_funded_notifications,
@@ -40,7 +46,7 @@ admin_router = APIRouter(prefix="/admin/group-buys", tags=["admin-group-buys"])
 me_router = APIRouter(tags=["group-buys"])
 
 
-def _enrich(gb: GroupBuy, current_user: User | None = None) -> dict:
+def _enrich(gb: GroupBuy, current_user: User | None = None) -> dict[str, Any]:
     commits_count = len(gb.commits)
     base = {
         "id": gb.id,
@@ -79,7 +85,7 @@ def _enrich(gb: GroupBuy, current_user: User | None = None) -> dict:
     return base
 
 
-def _public_group_buys(db: Session):
+def _public_group_buys(db: Session) -> OrmQuery[GroupBuy]:
     """The ONE definition of "this group buy is public" (MEH-2484).
 
     LOCK (בתי עסק מאושרים בלבד): a group buy reaches the public only while its
@@ -107,6 +113,10 @@ def _is_public(db: Session, group_buy_id: UUID) -> bool:
     )
 
 
+# MEH-3128: the three tabs /group-buys shows (GroupBuysClient.jsx chips).
+PUBLIC_STATUS_TABS = ("open", "funded", "fulfilled")
+
+
 @router.get("", response_model=list[GroupBuyOut])
 @limiter.limit("120/minute")
 def list_group_buys(
@@ -116,10 +126,18 @@ def list_group_buys(
     # MEH-2602: the business page lists that business's own open group buys.
     producer_id: UUID | None = Query(None),
     db: Session = Depends(get_db),
-):
-    q = _public_group_buys(db).filter(GroupBuy.status == status)  # MEH-2484
+) -> list[GroupBuyOut] | list[dict[str, Any]]:
+    q = _status_tab_query(db, status, city)
     if producer_id:
         q = q.filter(GroupBuy.producer_id == producer_id)
+    items = q.order_by(GroupBuy.deadline.asc()).all()
+    return [_enrich(gb) for gb in items]
+
+
+def _status_tab_query(db: Session, status: str, city: str | None) -> OrmQuery[GroupBuy]:
+    """The rows one public status tab lists — shared by the list and the
+    counts, so a tab's count and its list can never disagree (MEH-3128)."""
+    q = _public_group_buys(db).filter(GroupBuy.status == status)  # MEH-2484
     if status == "open":
         # MEH-2540: nothing closes an open group buy past its deadline (see
         # OWNER_TRANSITIONS), so the «פתוחות» tab listed it next to a join
@@ -128,8 +146,24 @@ def list_group_buys(
         q = q.filter(GroupBuy.deadline >= utc_now())
     if city:
         q = q.filter(GroupBuy.city == city)
-    items = q.order_by(GroupBuy.deadline.asc()).all()
-    return [_enrich(gb) for gb in items]
+    return q
+
+
+# DO NOT move this below `/{group_buy_id}` — FastAPI matches in declaration
+# order, and "counts" would then fail UUID parsing (same trap as
+# experiences.py /count).
+@router.get("/counts", response_model=GroupBuyStatusCountsOut)
+@limiter.limit("60/minute")
+def count_group_buys_by_status(
+    request: Request,
+    city: str | None = Query(None, max_length=100),
+    db: Session = Depends(get_db),
+) -> GroupBuyStatusCountsOut:
+    """MEH-3128: how many group buys each status tab would list, so the page
+    hides a tab that would open on an empty state. Numbers only."""
+    return GroupBuyStatusCountsOut(
+        **{s: _status_tab_query(db, s, city).count() for s in PUBLIC_STATUS_TABS}
+    )
 
 
 @me_router.get("/producers/me/group-buys", response_model=list[GroupBuyOut])
@@ -138,7 +172,7 @@ def list_my_group_buys(
     request: Request,
     current_user: User = Depends(require_producer),
     db: Session = Depends(get_db),
-):
+) -> list[GroupBuyOut] | list[dict[str, Any]]:
     """MEH-2437: the business's own group buys, every status, newest first.
 
     Replaces the dashboard's four site-wide GET /group-buys calls that were
@@ -153,7 +187,12 @@ def list_my_group_buys(
         .order_by(GroupBuy.created_at.desc())
         .all()
     )
-    return [_enrich(gb) for gb in items]
+    # MEH-3254 (D7): the business learns how many units to prepare — a sum,
+    # never who asked for them (MEH-1651). Owner-only: this route, not _enrich.
+    return [
+        {**_enrich(gb), "units_total": sum(c.quantity or 0 for c in gb.commits)}
+        for gb in items
+    ]
 
 
 @router.get("/{group_buy_id}", response_model=GroupBuyDetail)
@@ -163,7 +202,7 @@ def get_group_buy(
     group_buy_id: UUID,
     db: Session = Depends(get_db),
     current_user: User | None = Depends(get_current_user_optional),
-):
+) -> GroupBuyDetail | dict[str, Any]:
     gb = db.query(GroupBuy).filter(GroupBuy.id == group_buy_id).first()
     if not gb:
         raise HTTPException(status_code=404, detail="קבוצת הרכישה לא נמצאה")
@@ -175,7 +214,7 @@ def get_group_buy(
         and current_user.producer_id == gb.producer_id
     )
     is_admin = bool(current_user and current_user.role == "admin")
-    if not (is_owner or is_admin) and not _is_public(db, gb.id):
+    if not (is_owner or is_admin) and not _is_public(db, gb.id):  # type: ignore[arg-type]
         raise HTTPException(status_code=404, detail="קבוצת הרכישה לא נמצאה")
     return _enrich(gb, current_user)
 
@@ -228,17 +267,21 @@ def _maybe_notify_funded(
         gb.producer.name if gb.producer else "",
         str(gb.id),
         str(gb.producer_id),
+        # MEH-2952: a test business's group buy mails nobody.
+        test_cause=bool(gb.producer and gb.producer.is_test),
     )
 
 
-@router.post("/{group_buy_id}/commit", status_code=201)
-def commit_to_group_buy(
+@router.post("/{group_buy_id}/commit", status_code=201, response_model=None)
+@limiter.limit("20/minute")  # MEH-3022
+def commit_to_group_buy(  # noqa: PLR0913 — all args are FastAPI-injected; MEH-3022 added the slowapi request
+    request: Request,  # required by slowapi (MEH-3022)
     group_buy_id: UUID,
     data: GroupBuyCommitRequest,
     background_tasks: BackgroundTasks,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
-):
+) -> dict[str, Any]:
     # MEH-773: lock the group_buy row so concurrent commits serialize.
     # Without the lock two requests can both read commits < max_participants
     # and both insert, overshooting capacity (no unique constraint guards it).
@@ -246,7 +289,7 @@ def commit_to_group_buy(
         db.query(GroupBuy).filter(GroupBuy.id == group_buy_id).with_for_update().first()
     )
     # MEH-2484: a group buy whose page is 404 cannot be joined via a held link.
-    if not gb or not _is_public(db, gb.id):
+    if not gb or not _is_public(db, gb.id):  # type: ignore[arg-type]
         raise HTTPException(status_code=404, detail="קבוצת הרכישה לא נמצאה")
     if gb.status != "open":
         raise HTTPException(status_code=400, detail="קבוצת הרכישה אינה פתוחה להצטרפות")
@@ -292,7 +335,7 @@ def commit_to_group_buy(
     # Auto-fund when min_participants reached
     new_count = current_count + 1
     if new_count >= gb.min_participants:
-        gb.status = "funded"
+        gb.status = "funded"  # type: ignore[assignment]
         _maybe_notify_funded(gb, db, background_tasks)
 
     db.commit()
@@ -300,12 +343,14 @@ def commit_to_group_buy(
     return {"detail": "הצטרפת בהצלחה", "status": gb.status, "commits_count": new_count}
 
 
-@router.delete("/{group_buy_id}/commit", status_code=200)
+@router.delete("/{group_buy_id}/commit", status_code=200, response_model=None)
+@limiter.limit("20/minute")  # MEH-3022
 def cancel_commit(
+    request: Request,  # required by slowapi (MEH-3022)
     group_buy_id: UUID,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
-):
+) -> dict[str, Any]:
     # MEH-2436: lock the row like /commit and the owner's status change do.
     # Unlocked, a leave that read "funded" could write "open" over an owner's
     # cancel or fulfil committed in between, reopening a closed group buy.
@@ -337,7 +382,7 @@ def cancel_commit(
     # Revert to open if we drop below min_participants
     remaining = len(gb.commits) - 1
     if gb.status == "funded" and remaining < gb.min_participants:
-        gb.status = "open"
+        gb.status = "open"  # type: ignore[assignment]
         # DO NOT clear gb.funded_notified_at here (MEH-1651) — the status is
         #        allowed to flap, the notification is not. Clearing it re-arms
         #        the send, so re-crossing the threshold would re-spam every
@@ -346,13 +391,15 @@ def cancel_commit(
     return {"detail": "ההצטרפות בוטלה"}
 
 
-@router.post("", status_code=201)
+@router.post("", status_code=201, response_model=None)
+@limiter.limit("10/hour")  # MEH-3022
 def create_group_buy(
+    request: Request,  # required by slowapi (MEH-3022)
     data: GroupBuyCreate,
     background_tasks: BackgroundTasks,
     current_user: User = Depends(require_verified_producer),
     db: Session = Depends(get_db),
-):
+) -> dict[str, Any]:
     producer = (
         db.query(Producer).filter(Producer.id == current_user.producer_id).first()
     )
@@ -370,6 +417,19 @@ def create_group_buy(
         raise HTTPException(
             status_code=403, detail="מארגן שווקים ואירועים לא יכול לפתוח קבוצת רכישה"
         )
+    # MEH-3180: a paid tool. Open to everyone while billing is off.
+    capabilities.require_paid_tool(db, producer.id, "group_buy")
+
+    # MEH-3022: cap on group buys still running (open or funded).
+    enforce_cap(
+        db.query(GroupBuy)
+        .filter(
+            GroupBuy.producer_id == producer.id,
+            GroupBuy.status.in_(("open", "funded")),
+        )
+        .count(),
+        "group_buys",
+    )
 
     if data.price_per_unit_group >= data.price_per_unit_regular:
         raise HTTPException(
@@ -408,13 +468,13 @@ def create_group_buy(
     background_tasks.add_task(
         fire_alerts,
         db,
-        producer.id,
+        producer.id,  # type: ignore[arg-type]
         "new_group_buy",
         AlertContent(
             title=f"🛒 קבוצת רכישה חדשה: {gb.title}",
             body=(
-                f"{producer.name} — {format_price(gb.price_per_unit_group)} "
-                f"במקום {format_price(gb.price_per_unit_regular)}"
+                f"{producer.name} — {format_price(gb.price_per_unit_group)} "  # type: ignore[arg-type]
+                f"במקום {format_price(gb.price_per_unit_regular)}"  # type: ignore[arg-type]
             ),
             url=f"/group-buys/{gb.id}",
         ),
@@ -455,7 +515,7 @@ _REFUSED_TRANSITION = "אי אפשר לשנות את קבוצת הרכישה ל�
 
 
 def _refuse_unless_allowed(
-    gb: GroupBuy, new_status: str, expected_status: str | None, table
+    gb: GroupBuy, new_status: str, expected_status: str | None, table: Any
 ) -> None:
     """Under the row lock: the state the caller saw, then the transition table.
 
@@ -468,7 +528,7 @@ def _refuse_unless_allowed(
         raise HTTPException(status_code=409, detail=_REFUSED_TRANSITION)
 
 
-def _cancel_recipients(db: Session, gb: GroupBuy, actor_id) -> list[str]:
+def _cancel_recipients(db: Session, gb: GroupBuy, actor_id: UUID) -> list[str]:
     """Every participant's email, resolved while the session is open.
 
     The actor is left out: she cancelled it, so she is not told that the
@@ -494,7 +554,7 @@ def update_group_buy_status(  # noqa: PLR0913 — all 6 args are FastAPI-injecte
     background_tasks: BackgroundTasks,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
-):
+) -> Any:
     # Owner-only. An admin changes status through the admin route, so this
     # table is the one path a business has, and there is no second unchecked
     # one here. Same role and email gates, in the same order, as creating a
@@ -529,13 +589,16 @@ def update_group_buy_status(  # noqa: PLR0913 — all 6 args are FastAPI-injecte
     # An admin's cancel (admin route) sends the same email since MEH-2866.
     participant_emails: list[str] = []
     if data.status == "cancelled":
-        participant_emails = _cancel_recipients(db, gb, current_user.id)
+        participant_emails = _cancel_recipients(db, gb, current_user.id)  # type: ignore[arg-type]
 
     title = gb.title
     producer_name = gb.producer.name if gb.producer else ""
+    producer_is_test = bool(gb.producer and gb.producer.is_test)  # MEH-2952
     is_public = indexnow.is_public_business(gb.producer)  # MEH-2852
 
-    gb.status = data.status
+    gb.status = data.status  # type: ignore[assignment]
+    if data.status == "fulfilled":  # MEH-3179: each participant's order counts
+        billing_ledger.record_group_buy_fulfilled(db, gb, gb.commits)
     db.commit()
     # MEH-2852: cancelled / fulfilled — the public page changed.
     if is_public:
@@ -545,9 +608,10 @@ def update_group_buy_status(  # noqa: PLR0913 — all 6 args are FastAPI-injecte
         background_tasks.add_task(
             send_cancelled_notifications,
             participant_emails,
-            title,
+            title,  # type: ignore[arg-type]
             producer_name,
             str(group_buy_id),
+            test_cause=producer_is_test,
         )
     return {"detail": "סטטוס עודכן", "status": gb.status}
 
@@ -557,7 +621,7 @@ def admin_list_group_buys(
     status: str | None = Query(None),
     _admin: User = Depends(require_admin),
     db: Session = Depends(get_db),
-):
+) -> list[GroupBuyDetail] | list[dict[str, Any]]:
     q = db.query(GroupBuy)
     if status:
         q = q.filter(GroupBuy.status == status)
@@ -565,7 +629,7 @@ def admin_list_group_buys(
     return [_enrich(gb) for gb in items]
 
 
-@admin_router.patch("/{group_buy_id}/status")
+@admin_router.patch("/{group_buy_id}/status", response_model=None)
 def admin_update_status(  # noqa: PLR0913 — FastAPI-injected args (path, 2 queries, BackgroundTasks, auth, db)
     group_buy_id: UUID,
     status: str,
@@ -573,7 +637,7 @@ def admin_update_status(  # noqa: PLR0913 — FastAPI-injected args (path, 2 que
     expected_status: str | None = Query(None),
     admin: User = Depends(require_admin),
     db: Session = Depends(get_db),
-):
+) -> dict[str, Any]:
     # MEH-2866: the owner route's rules, from the admin's side — the same
     # transition table, the row lock, expected_status, and the same cancel
     # email to every participant. `status` stays a query param (the admin
@@ -592,12 +656,15 @@ def admin_update_status(  # noqa: PLR0913 — FastAPI-injected args (path, 2 que
 
     participant_emails: list[str] = []
     if status == "cancelled":
-        participant_emails = _cancel_recipients(db, gb, admin.id)
+        participant_emails = _cancel_recipients(db, gb, admin.id)  # type: ignore[arg-type]
     title = gb.title
     producer_name = gb.producer.name if gb.producer else ""
+    producer_is_test = bool(gb.producer and gb.producer.is_test)  # MEH-2952
     is_public = indexnow.is_public_business(gb.producer)  # MEH-2852
 
-    gb.status = status
+    gb.status = status  # type: ignore[assignment]
+    if status == "fulfilled":  # MEH-3179
+        billing_ledger.record_group_buy_fulfilled(db, gb, gb.commits)
     db.commit()
     if is_public:
         indexnow.schedule(background_tasks, indexnow.group_buy_urls(gb.id))
@@ -605,8 +672,9 @@ def admin_update_status(  # noqa: PLR0913 — FastAPI-injected args (path, 2 que
         background_tasks.add_task(
             send_cancelled_notifications,
             participant_emails,
-            title,
+            title,  # type: ignore[arg-type]
             producer_name,
             str(group_buy_id),
+            test_cause=producer_is_test,
         )
     return {"detail": "סטטוס עודכן", "status": gb.status}

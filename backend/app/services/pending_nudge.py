@@ -334,11 +334,11 @@ def _sequence_start(producer: Producer) -> datetime:
     DO NOT anchor on `users.terms_accepted_at` instead: it is per-account and
     moves on a terms re-acceptance, which would restart the sequence.
     """
-    created = _as_utc(producer.created_at)
+    created = _as_utc(producer.created_at)  # type: ignore[arg-type]
     declared = producer.declared_at
     if declared is None:
         return created
-    return max(created, _as_utc(declared))
+    return max(created, _as_utc(declared))  # type: ignore[arg-type]
 
 
 def _due_mark(producer: Producer, now: datetime) -> int | None:
@@ -367,7 +367,7 @@ def _due_mark(producer: Producer, now: datetime) -> int | None:
     # is the claim moment for a claimed draft (_sequence_start, MEH-2340).
     created = _sequence_start(producer)
     sent = producer.email_pending_nudge_sent_at
-    sent = _as_utc(sent) if sent is not None else None
+    sent = _as_utc(sent) if sent is not None else None  # type: ignore[arg-type,assignment]
 
     for days in reversed(marks):
         if now - created < timedelta(days=days):
@@ -498,7 +498,7 @@ def send_pending_nudges(db: Session) -> dict[str, int]:
             items = _missing_items(p)
             if not items:
                 # Nothing to nudge about — stamp and move on, no email.
-                p.email_pending_nudge_sent_at = datetime.now(timezone.utc)
+                p.email_pending_nudge_sent_at = datetime.now(timezone.utc)  # type: ignore[assignment]
                 db.commit()
                 counts["stamped_nothing_missing"] += 1
                 logger.info(
@@ -519,10 +519,19 @@ def send_pending_nudges(db: Session) -> dict[str, int]:
             parts = (user.name or "").strip().split()
             first_name = parts[0] if parts else ""
             subject, body = _build_email(
-                first_name, items, mark, organizer=p.kind == "organizer"
+                first_name,
+                items,
+                mark,
+                organizer=p.kind == "organizer",  # type: ignore[arg-type]
             )
-            send_email(user.email, subject, body)
-            p.email_pending_nudge_sent_at = datetime.now(timezone.utc)
+            # MEH-2952: a test business / test owner → dropped and logged.
+            send_email(
+                user.email,  # type: ignore[arg-type]
+                subject,
+                body,
+                test_cause=bool(p.is_test or user.is_test),
+            )
+            p.email_pending_nudge_sent_at = datetime.now(timezone.utc)  # type: ignore[assignment]
             db.commit()
             counts["sent"] += 1
             logger.info(

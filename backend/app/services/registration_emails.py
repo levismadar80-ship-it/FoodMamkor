@@ -15,6 +15,8 @@ Does NOT: touch the DB, decide whether to send (the router does), or retry.
           No copy here says what the owner WILL do (ADR-031).
 Related:  app/routers/registrations.py, app/services/rescue_emails.py (same
           HTML shell), app/services/email.py
+          MEH-2952: each sender takes `test_cause` (the business/host the
+          sign-up is for is a test row) and send_email then sends nothing.
 History:  MEH-2763 (creation)
 """
 
@@ -81,7 +83,9 @@ class VisitorEmail:
     cancel_url: str
 
 
-def send_visitor_confirmation(to: str, m: VisitorEmail) -> None:
+def send_visitor_confirmation(
+    to: str, m: VisitorEmail, test_cause: bool = False
+) -> None:
     title = _one_line(m.title)
     subject = f'ההרשמה ל-"{title}" נקלטה'
     when = m.date_text + (f", {m.time_text}" if m.time_text else "")
@@ -106,7 +110,7 @@ def send_visitor_confirmation(to: str, m: VisitorEmail) -> None:
         f'<br>\n<a href="{e(m.item_url)}" style="color:#2e6853;">{e(title)}</a>'
     )
     html = _shell(e(subject), rows_html, _button(m.cancel_url, "ביטול ההרשמה"))
-    send_email(to, subject, body, html=html)
+    send_email(to, subject, body, html=html, test_cause=test_cause)
 
 
 @dataclass(frozen=True)
@@ -119,7 +123,9 @@ class OwnerNewEmail:
     manage_url: str
 
 
-def send_owner_new_registration(to: str, m: OwnerNewEmail) -> None:
+def send_owner_new_registration(
+    to: str, m: OwnerNewEmail, test_cause: bool = False
+) -> None:
     title = _one_line(m.title)
     subject = f'הרשמה חדשה ל-"{title}"'
     lines = [("שם", m.name), ("טלפון", m.phone), ("אימייל", m.email)]
@@ -137,7 +143,7 @@ def send_owner_new_registration(to: str, m: OwnerNewEmail) -> None:
     if spots:
         rows_html += f"<br>\n<b>{e(spots)}</b>"
     html = _shell(e(subject), rows_html, _button(m.manage_url, title))
-    send_email(to, subject, body, html=html)
+    send_email(to, subject, body, html=html, test_cause=test_cause)
 
 
 @dataclass(frozen=True)
@@ -147,10 +153,92 @@ class OwnerCancelEmail:
     manage_url: str
 
 
-def send_owner_cancellation(to: str, m: OwnerCancelEmail) -> None:
+def send_owner_cancellation(
+    to: str, m: OwnerCancelEmail, test_cause: bool = False
+) -> None:
     title = _one_line(m.title)
     subject = f'ביטול הרשמה ל-"{title}"'
     body = f"{subject}\n\nשם: {m.name}\n\n{m.manage_url}\n\nצוות מהמקור"
     e = html_escape
     html = _shell(e(subject), f"<b>שם:</b> {e(m.name)}", _button(m.manage_url, title))
-    send_email(to, subject, body, html=html)
+    send_email(to, subject, body, html=html, test_cause=test_cause)
+
+
+# ---------- MEH-3227 (D1): the visitor's sign-up was cancelled or moved ----------
+# Copy approved by Sapir on 14/11/2026 (copy doc «קופי לאישור — ביטולים
+# והודעות ללקוחות», «מאשרת הכל»). Gender-neutral (ADR-037).
+
+
+@dataclass(frozen=True)
+class RegistrantEmail:
+    """One visitor whose sign-up changed — read while the Session was open."""
+
+    title: str
+    date_text: str
+    time_text: str
+    place: str
+    host_name: str
+    cancel_url: str  # used only by the «moved» email
+
+
+def send_registrant_delisted(
+    to: str, m: RegistrantEmail, test_cause: bool = False
+) -> None:
+    """The site took the business off, so its sign-ups were cancelled."""
+    title = _one_line(m.title)
+    host = _one_line(m.host_name)
+    subject = f'ההרשמה ל-"{title}" בוטלה'
+    lines = [
+        f"בית העסק {host} כבר לא מופיע במהמקור, ולכן ההרשמה שלכם "
+        f'ל-"{title}" ב-{m.date_text} בוטלה.',
+        "אם סיכמתם משהו ישירות מול בית העסק, אפשר להמשיך מולו כרגיל.",
+    ]
+    _send_lines(to, subject, lines, test_cause=test_cause)
+
+
+def send_registrant_cancelled(
+    to: str, m: RegistrantEmail, test_cause: bool = False
+) -> None:
+    """The business cancelled or deleted the event, so the sign-up went with it."""
+    title = _one_line(m.title)
+    host = _one_line(m.host_name)
+    subject = f'"{title}" בוטל'
+    lines = [
+        f'{host} ביטל את "{title}" שתוכנן ל-{m.date_text}, ולכן ההרשמה שלכם '
+        "בוטלה. אין צורך להגיע.",
+        f"לשאלות אפשר לפנות ישירות ל{host}.",
+    ]
+    _send_lines(to, subject, lines, test_cause=test_cause)
+
+
+def send_registrant_moved(
+    to: str, m: RegistrantEmail, test_cause: bool = False
+) -> None:
+    """The business moved the date or time; the sign-up stays."""
+    title = _one_line(m.title)
+    host = _one_line(m.host_name)
+    subject = f'המועד של "{title}" השתנה'
+    when = m.date_text + (f", {m.time_text}" if m.time_text else "")
+    rows = [("מתי", when), ("איפה", m.place)]
+    rows = [(k, v) for k, v in rows if v]
+    intro = f'{host} שינה את המועד של "{title}".'
+    outro = "ההרשמה שלכם נשארת בתוקף. אם המועד החדש לא מתאים, אפשר לבטל כאן:"
+    body = (
+        f"{subject}\n\n{intro}\n"
+        + "\n".join(f"{k}: {v}" for k, v in rows)
+        + f"\n\n{outro}\nביטול ההרשמה: {m.cancel_url}\n\nצוות מהמקור"
+    )
+    e = html_escape
+    rows_html = f"{e(intro)}<br>\n" + "<br>\n".join(
+        f"<b>{e(k)}:</b> {e(v)}" for k, v in rows
+    )
+    rows_html += f"<br><br>\n{e(outro)}"
+    html = _shell(e(subject), rows_html, _button(m.cancel_url, "ביטול ההרשמה"))
+    send_email(to, subject, body, html=html, test_cause=test_cause)
+
+
+def _send_lines(to: str, subject: str, lines: list[str], *, test_cause: bool) -> None:
+    body = f"{subject}\n\n" + "\n".join(lines) + "\n\nצוות מהמקור"
+    e = html_escape
+    html = _shell(e(subject), "<br>\n".join(e(x) for x in lines))
+    send_email(to, subject, body, html=html, test_cause=test_cause)

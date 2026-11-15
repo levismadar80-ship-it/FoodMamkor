@@ -34,17 +34,19 @@ def sent(monkeypatch):
     import app.routers.registrations as r
 
     monkeypatch.setattr(
-        r, "send_visitor_confirmation", lambda to, m: calls.append(("visitor", to, m))
+        r,
+        "send_visitor_confirmation",
+        lambda to, m, test_cause=False: calls.append(("visitor", to, m)),
     )
     monkeypatch.setattr(
         r,
         "send_owner_new_registration",
-        lambda to, m: calls.append(("owner_new", to, m)),
+        lambda to, m, test_cause=False: calls.append(("owner_new", to, m)),
     )
     monkeypatch.setattr(
         r,
         "send_owner_cancellation",
-        lambda to, m: calls.append(("owner_cancel", to, m)),
+        lambda to, m, test_cause=False: calls.append(("owner_cancel", to, m)),
     )
     return calls
 

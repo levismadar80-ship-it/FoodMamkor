@@ -211,6 +211,53 @@ def canonical_city(value: str | None) -> str | None:
     return _ALIAS_BY_KEY.get(key) or STATIC_SPELLING_BY_KEY.get(key) or cleaned
 
 
+def alias_targets(value: str | None) -> list[str]:
+    """MEH-2919 (C5): official names whose everyday alias STARTS WITH `value`.
+
+    `canonical_city` above answers "what is this city's one spelling?" and needs
+    a complete name to do it. A search box is the other question: the seller is
+    partway through typing, and «גבעת ע» has to already be reaching
+    «בנימינה-גבעת עדה». Matching the alias by prefix is what makes the alias
+    table usable by an autocomplete at all — `CITY_ALIASES` maps names that are
+    NOT prefixes of their official form, which is exactly why
+    `routers/cities.py`'s prefix search could never find them (pilot A5).
+
+    Returns `[]` for an empty or unknown value, so a caller can always add the
+    result to its pattern set without a guard. The alias table itself stays in
+    one place; callers get the mapping, never a copy of it.
+    """
+    key = city_key(value)
+    if not key:
+        return []
+    return sorted(
+        {
+            canon
+            for alias_key, canon in _ALIAS_BY_KEY.items()
+            if alias_key.startswith(key)
+        }
+    )
+
+
+def alias_like_patterns(value: str | None) -> list[str]:
+    """MEH-2919 (C5): `alias_targets` as SQL LIKE prefixes.
+
+    Matching an official name LITERALLY finds nothing on the rows production
+    actually holds. The separator notation drifts between our static list and
+    the data.gov export — «תל אביב-יפו» here, «תל אביב - יפו» in the table (see
+    `_CITY_SEPARATORS` above, and `TA_TABLE` in
+    tests/test_meh2456_cities_one_spelling.py, measured off production 25/10) —
+    and five of the eight aliases that are not already plain prefixes point at a
+    hyphenated name. So each separator run becomes `%`: «בנימינה%גבעת עדה»
+    matches the row whichever way its hyphen is written, maqaf and dashes
+    included, because `_CITY_SEPARATORS` is the same class that folds them.
+
+    The pattern still begins with a literal, so it remains an index-usable
+    prefix. Callers that compare literally (the unseeded static fallback) want
+    `alias_targets`, not this.
+    """
+    return [_CITY_SEPARATORS.sub("%", t) for t in alias_targets(value)]
+
+
 def city_variants(value: str) -> list[str]:
     """MEH-2602: every lower-cased spelling a stored row may hold for the same
     city as `value` — for a SQL `lower(city) IN (...)`. Rows written before

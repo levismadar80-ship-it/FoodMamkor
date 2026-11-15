@@ -1,16 +1,26 @@
 """User self-service endpoints (MEH-16).
 
 Sits at prefix /users/me and handles profile update + password change.
-Account deletion is already served by DELETE /auth/me — not duplicated
+Account deletion is already served by POST /auth/me/delete — not duplicated
 here to avoid two code paths on the same destructive action.
 
 MEH-460 Pkg 2: Pydantic schemas live in app.schemas.schemas per ADR-006 R1.
 """
 
 import asyncio
-from datetime import datetime, timezone
+import secrets
+from datetime import datetime, timedelta, timezone
 
-from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
+from fastapi import (
+    APIRouter,
+    BackgroundTasks,
+    Depends,
+    HTTPException,
+    Request,
+    Response,
+    status,
+)
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.auth import (
@@ -30,11 +40,58 @@ from app.rate_limit import limiter
 # boundary, but the alternative is duplicating refresh + fingerprint
 # cookie attributes — the single-source-of-truth wins. Future refactor:
 # move both helpers to app/auth_cookies.py.
+from app.services.account_guards import is_super_admin  # MEH-3104, MEH-3248
 from app.routers.auth import _set_fingerprint_cookie, _set_refresh_cookie
 from app.schemas.schemas import PasswordChange, ProfileUpdate, UserOut
+from app.services.auth_emails import send_verify_email
 from app.services.password_policy import validate_password
+from app.utils.clock import utc_now
 
 router = APIRouter(prefix="/users/me", tags=["users"])
+
+
+def _change_email(
+    db: Session, user: User, new_email: str, current_password: str | None
+) -> bool:
+    """Move the account to `new_email`. True when the address really changed.
+
+    MEH-3095: `email_verified` vouches for the address, not for the account.
+    Keeping it across a change let a verified account move to an address nobody
+    proved and keep every verified-only action. A new token also kills any link
+    still pending for the old address.
+    """
+    if new_email == user.email:
+        return False
+    # An account that signs in with Google or Apple keeps the provider's
+    # address (the settings page already says so). The OAuth sign-in falls back
+    # to matching by email, so an OAuth account parked on someone else's
+    # address would catch that person's first sign-in.
+    if user.google_id or user.apple_id:
+        raise HTTPException(status_code=400, detail="EMAIL_CHANGE_UNSUPPORTED")
+    # MEH-3104: the protected owner account is matched by exact email
+    # (admin_extra.is_super_admin); moving it would drop the protection.
+    if is_super_admin(user):
+        raise HTTPException(status_code=400, detail="EMAIL_CHANGE_UNSUPPORTED")
+    # MEH-3104: a session alone is not enough to move the account. Without
+    # this, a stolen session could change the address, ask for a password
+    # reset there and take the account. Same check and copy as change_password.
+    if (
+        not current_password
+        or not user.password_hash
+        or not verify_password(current_password, user.password_hash)  # type: ignore[arg-type]
+    ):
+        raise HTTPException(status_code=403, detail="הסיסמה הנוכחית שגויה")
+    existing = db.query(User).filter(User.email == new_email).first()
+    if existing and existing.id != user.id:
+        raise HTTPException(status_code=409, detail="האימייל כבר בשימוש")
+    user.email = new_email  # type: ignore[assignment]
+    user.email_verified = False  # type: ignore[assignment]
+    user.email_verify_token = secrets.token_urlsafe(32)  # type: ignore[assignment]
+    user.email_verify_expires = utc_now() + timedelta(hours=24)  # type: ignore[assignment]
+    # MEH-3104: a reset link mailed to the old address must not outlive it.
+    user.reset_token = None  # type: ignore[assignment]
+    user.reset_token_expires_at = None  # type: ignore[assignment]
+    return True
 
 
 @router.patch("", response_model=UserOut)
@@ -42,13 +99,16 @@ router = APIRouter(prefix="/users/me", tags=["users"])
 def update_profile(
     request: Request,
     data: ProfileUpdate,
+    background_tasks: BackgroundTasks,
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
-):
+) -> UserOut | User:
     """Update the current user's name and/or email.
 
     - Name is trimmed and must be non-empty.
     - Email uniqueness is re-checked; collisions are rejected with 409.
+    - MEH-3095: a changed email is an unproved one. The account goes back to
+      unverified and a fresh link is mailed to the NEW address.
     """
     # MEH-375: snapshot avatar BEFORE mutation so we can destroy the
     # prior Cloudinary asset AFTER db.commit succeeds. The destroy site
@@ -69,32 +129,45 @@ def update_profile(
     # a value that sanitizes away, so `name: "   "` is a 422 from the schema —
     # louder than the old handler-side check, and it can no longer be swallowed.
     sent = data.model_fields_set
+    email_changed = False
 
     if "name" in sent and data.name is not None:
-        user.name = data.name
+        user.name = data.name  # type: ignore[assignment]
 
     if data.avatar_url is not None:
-        user.avatar_url = data.avatar_url
+        user.avatar_url = data.avatar_url  # type: ignore[assignment]
 
     if data.city is not None:
-        user.city = data.city.strip() or None
+        user.city = data.city.strip() or None  # type: ignore[assignment]
 
     if "phone" in sent:
-        user.phone = data.phone
+        user.phone = data.phone  # type: ignore[assignment]
 
     if data.email is not None:
-        new_email = data.email.lower()
-        if new_email != user.email:
-            existing = db.query(User).filter(User.email == new_email).first()
-            if existing and existing.id != user.id:
-                raise HTTPException(
-                    status_code=409,
-                    detail="האימייל כבר בשימוש",
-                )
-            user.email = new_email
+        email_changed = _change_email(
+            db, user, data.email.lower(), data.current_password
+        )
 
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError:
+        # Two changes to one address at once: the unique index decides, and
+        # the loser gets the same 409 as the check above, not a 500.
+        db.rollback()
+        if not email_changed:
+            raise
+        raise HTTPException(status_code=409, detail="האימייל כבר בשימוש")
     db.refresh(user)
+
+    if email_changed and user.email_verify_token:
+        # After the commit, to the new address only, off the request path.
+        background_tasks.add_task(
+            send_verify_email,
+            user.email,  # type: ignore[arg-type]
+            user.name,  # type: ignore[arg-type]
+            user.email_verify_token,  # type: ignore[arg-type]
+            test_cause=bool(user.is_test),
+        )
 
     # MEH-375: post-commit destroy of the prior avatar when its value
     # changed, regardless of how the change happened (PATCH swap or
@@ -104,7 +177,7 @@ def update_profile(
     if old_avatar and old_avatar != user.avatar_url:
         from app.cloudinary_utils import destroy_image
 
-        destroy_image(old_avatar, context="users_me.update_profile avatar")
+        destroy_image(old_avatar, context="users_me.update_profile avatar", db=db)  # type: ignore[arg-type]
 
     return user
 
@@ -117,7 +190,7 @@ async def change_password(
     response: Response,
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
-):
+) -> None:
     """Change the current user's password.
 
     Rejects OAuth-only accounts (no existing password_hash) with a
@@ -141,7 +214,9 @@ async def change_password(
     # MEH-306: bcrypt verify blocks ~50-200ms; offload to a thread
     # so the async handler doesn't block the event loop.
     if not await asyncio.to_thread(
-        verify_password, data.current_password, user.password_hash
+        verify_password,
+        data.current_password,
+        user.password_hash,  # type: ignore[arg-type]
     ):
         raise HTTPException(
             status_code=403,
@@ -152,15 +227,15 @@ async def change_password(
     # but don't want to remember a new one. HIBP fail-open is internal.
     # Order matters: verify_password (above) runs first so a wrong-current
     # caller gets 403, not 422. Per workflow rule 6 (guard test invariant).
-    result = await validate_password(data.new_password, current_hash=user.password_hash)
+    result = await validate_password(data.new_password, current_hash=user.password_hash)  # type: ignore[arg-type]
     if not result.ok:
         raise HTTPException(status_code=422, detail={"failures": result.failures})
     # MEH-306: bcrypt hash also blocks; offload.
-    user.password_hash = await asyncio.to_thread(hash_password, data.new_password)
+    user.password_hash = await asyncio.to_thread(hash_password, data.new_password)  # type: ignore[arg-type]
     # MEH-306: stamp the column → MEH-305 invalidates all sessions whose
     # iat predates this timestamp, including this device's current access
     # token. Set-Cookie below re-arms only the caller's device.
-    user.password_changed_at = datetime.now(timezone.utc)
+    user.password_changed_at = datetime.now(timezone.utc)  # type: ignore[assignment]
     db.commit()
     db.refresh(user)
     # MEH-306: Set-Cookie on the 204 response. Body stays empty (frontend

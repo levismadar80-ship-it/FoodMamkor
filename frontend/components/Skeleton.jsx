@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 import { useTranslations } from "next-intl";
@@ -44,7 +45,38 @@ export function SkeletonStyles() {
   );
 }
 
-export function SkeletonCard({ className = "" }) {
+const SKELETON_TONES = {
+  neutral: "bg-border/60",
+  brand: "bg-green-50",
+  page: "bg-background",
+  none: "",
+};
+
+/**
+ * MEH-3068: SkeletonBlock — the one loading bar / box outside the shaped
+ * skeletons below. Callers pass only SHAPE (size, radius, margin) in
+ * `className`; the colour comes from `tone`, the pulse from here
+ * (motion-safe, so reduced-motion users get a still bar). Display (block,
+ * inline-block, flex) stays the caller's, as before. Before 13/11 there
+ * were 35 hand-written `animate-pulse` bars in four colours.
+ * Guard: __tests__/LoadingGuard.test.js.
+ *   tone="neutral" (default) bg-border/60 — every text / card bar
+ *   tone="brand"   bg-green-50 — map placeholders and image slots on green UI
+ *   tone="page"    bg-background — the /map pane placeholder
+ *   tone="none"    no fill — a pulsing container that carries its own content
+ *
+ * @param {{ as?: import("react").ElementType, tone?: "neutral"|"brand"|"page"|"none", className?: string, children?: import("react").ReactNode, [key: string]: unknown }} props
+ */
+export function SkeletonBlock({ as: Tag = "span", tone = "neutral", className = "", children, ...rest }) {
+  return (
+    <Tag className={`motion-safe:animate-pulse ${SKELETON_TONES[tone]} ${className}`} {...rest}>
+      {children}
+    </Tag>
+  );
+}
+
+/** @param {{ className?: string }} props */
+function SkeletonCard({ className = "" }) {
   return (
     <div
       className={`skeleton-box rounded-lg ${className}`}
@@ -54,7 +86,8 @@ export function SkeletonCard({ className = "" }) {
   );
 }
 
-export function SkeletonLine({ width = "100%", height = "14px", className = "" }) {
+/** @param {{ width?: string, height?: string, className?: string }} props */
+function SkeletonLine({ width = "100%", height = "14px", className = "" }) {
   return (
     <div
       className={`skeleton-box rounded-lg ${className}`}
@@ -95,6 +128,8 @@ function SkeletonProducerCard() {
 
 /**
  * Grid of skeleton cards — matches the producer grid layout.
+ *
+ * @param {{ count?: number }} props
  */
 export function SkeletonProducerGrid({ count = 8 }) {
   const t = useTranslations("common.skeleton");
@@ -121,6 +156,7 @@ export function SkeletonProducerGrid({ count = 8 }) {
    the screen's existing loading copy sr-only, so specs that wait for that
    copy to leave the DOM keep working and no new copy enters the UI. */
 
+/** @param {{ label?: string, className?: string, testId?: string, children?: import("react").ReactNode }} props */
 function SkeletonStatus({ label, className, testId, children }) {
   return (
     <div className={className} role="status" aria-busy="true" data-testid={testId}>
@@ -132,6 +168,7 @@ function SkeletonStatus({ label, className, testId, children }) {
 }
 
 /** Rows of thumbnail + title + meta line — recipe / event / follower lists. */
+/** @param {{ count?: number, label?: string, className?: string, testId?: string }} props */
 export function SkeletonList({ count = 4, label, className = "", testId }) {
   return (
     <SkeletonStatus label={label} className={`space-y-3 ${className}`} testId={testId}>
@@ -156,6 +193,8 @@ export function SkeletonList({ count = 4, label, className = "", testId }) {
  * Admin data table. md and up: a header line + `rows` lines of `cols` cells.
  * Below md: one card per row, three label/value lines — the same shape the
  * `.table-stack` tables (MEH-2426) collapse to, so nothing scrolls sideways.
+ *
+ * @param {{ rows?: number, cols?: number, label?: string, className?: string, testId?: string }} props
  */
 export function SkeletonTable({ rows = 5, cols = 4, label, className = "", testId }) {
   const widths = ["70%", "45%", "55%", "35%", "60%", "40%", "50%"];
@@ -206,7 +245,9 @@ export function SkeletonTable({ rows = 5, cols = 4, label, className = "", testI
   );
 }
 
-/** Label + field pairs — the edit pages, settings, the dashboard edit cards. */
+/** Label + field pairs — the edit pages, settings, the dashboard edit cards. *
+ * @param {{ fields?: number, label?: string, className?: string, testId?: string }} props
+ */
 export function SkeletonForm({ fields = 5, label, className = "", testId }) {
   return (
     <SkeletonStatus label={label} className={`space-y-5 ${className}`} testId={testId}>
@@ -220,7 +261,9 @@ export function SkeletonForm({ fields = 5, label, className = "", testId }) {
   );
 }
 
-/** A row of stat tiles — the admin home and analytics. */
+/** A row of stat tiles — the admin home and analytics. *
+ * @param {{ count?: number, label?: string, className?: string, testId?: string }} props
+ */
 export function SkeletonTiles({ count = 4, label, className = "", testId }) {
   return (
     <SkeletonStatus
@@ -244,6 +287,8 @@ export function SkeletonTiles({ count = 4, label, className = "", testId }) {
  * MEH-858 skeleton draws, so the page does not jump on hydrate. `width` is the
  * loaded page's own container class (group buy max-w-6xl, experience
  * max-w-[1100px]) so the placeholder column matches the content column.
+ *
+ * @param {{ hero?: boolean, width?: string, label?: string, className?: string, testId?: string }} props
  */
 export function SkeletonDetail({ hero = true, width = "max-w-3xl", label, className = "", testId }) {
   return (

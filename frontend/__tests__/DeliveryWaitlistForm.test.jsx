@@ -49,6 +49,7 @@ vi.mock("@phosphor-icons/react", () => {
     XCircle: Stub,
     ChatCircle: Stub,
     BellRinging: Stub,
+    X: Stub,
   };
 });
 
@@ -175,6 +176,19 @@ describe("DeliveryWaitlistForm on the checker's negative verdict (MEH-2618)", ()
     );
     // A guest has no favorite-alert panel to be pointed at.
     expect(screen.queryByTestId("delivery-waitlist-whatsapp-hint")).toBeNull();
+  });
+
+  it("MEH-3112: the account loads after the page — her email still arrives in the form", async () => {
+    authState.value = { user: null, loading: true };
+    const view = setup();
+    commitCity("נתניה");
+    await waitFor(() => expect(form()).toBeTruthy());
+    authState.value = { user: { id: "u1", email: "late@example.com" }, loading: false };
+    view.rerender(
+      <DeliveryChecker offersDelivery nationwide={false} excluded={[]} areas={AREAS} producer={PRODUCER} />,
+    );
+    fireEvent.click(screen.getByTestId("delivery-waitlist-cta"));
+    expect(screen.getByTestId("delivery-waitlist-email").value).toBe("late@example.com");
   });
 
   it("signed-in: prefills her email and points at WhatsApp alerts after", async () => {
@@ -343,4 +357,32 @@ describe("DeliveryWaitlistForm host checkbox (MEH-2674)", () => {
     await waitFor(() => expect(second.getByTestId("delivery-waitlist-done")).toBeTruthy());
     expect(second.queryByTestId("delivery-waitlist-host-status")).toBeNull();
   });
+});
+
+// MEH-3044 — the open form could not be closed (Sapir 13/11).
+describe("MEH-3044 — × closes the open form", () => {
+  it("open → × → back to the chip, focused, nothing sent", async () => {
+    authState.value = null;
+    render(<DeliveryWaitlistForm producer={PRODUCER} city="נתניה" />);
+    fireEvent.click(screen.getByTestId("delivery-waitlist-cta"));
+    expect(screen.getByTestId("delivery-waitlist").getAttribute("data-phase")).toBe("open");
+    const close = screen.getByTestId("delivery-waitlist-close");
+    expect(close.getAttribute("aria-label")).toBeTruthy();
+    fireEvent.click(close);
+    expect(screen.getByTestId("delivery-waitlist").getAttribute("data-phase")).toBe("idle");
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByTestId("delivery-waitlist-cta")));
+    expect(post).not.toHaveBeenCalled();
+  });
+});
+
+it("MEH-3044: × is disabled while the address is being sent", async () => {
+  authState.value = null;
+  let resolve;
+  post.mockImplementationOnce(() => new Promise((r) => { resolve = r; }));
+  render(<DeliveryWaitlistForm producer={PRODUCER} city="נתניה" />);
+  fireEvent.click(screen.getByTestId("delivery-waitlist-cta"));
+  fireEvent.change(screen.getByTestId("delivery-waitlist-email"), { target: { value: "a@example.com" } });
+  fireEvent.submit(screen.getByTestId("delivery-waitlist"));
+  await waitFor(() => expect(screen.getByTestId("delivery-waitlist-close").disabled).toBe(true));
+  resolve({ status: 201, data: { status: "added" } });
 });

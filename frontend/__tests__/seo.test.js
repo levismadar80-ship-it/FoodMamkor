@@ -282,6 +282,26 @@ describe("buildJsonLd", () => {
     expect(business.priceRange).toBeUndefined();
   });
 
+  // MEH-3035: schema.org paymentAccepted is free Text; methods in the fixed
+  // list order, English names (a language-neutral reader), note never leaks.
+  it("includes paymentAccepted from payment_info methods", () => {
+    const business = getBusiness(
+      buildJsonLd({
+        ...fullProducer,
+        payment_info: { methods: ["cash", "bit"], timing: "advance", note: "מקדמה" },
+      }),
+    );
+    expect(business.paymentAccepted).toBe("Bit, Cash");
+  });
+
+  it("omits paymentAccepted when no methods are set", () => {
+    expect(getBusiness(buildJsonLd({ ...fullProducer, payment_info: null })).paymentAccepted).toBeUndefined();
+    expect(
+      getBusiness(buildJsonLd({ ...fullProducer, payment_info: { methods: [], timing: "advance", note: null } }))
+        .paymentAccepted,
+    ).toBeUndefined();
+  });
+
   it("includes aggregateRating when avg_rating + reviews_count > 0", () => {
     const business = getBusiness(buildJsonLd(fullProducer));
     expect(business.aggregateRating).toEqual({

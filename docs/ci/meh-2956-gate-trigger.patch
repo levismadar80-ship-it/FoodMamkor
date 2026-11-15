@@ -1,0 +1,148 @@
+--- a/.github/workflows/e2e.yml
++++ b/.github/workflows/e2e.yml
+@@ -84,6 +84,9 @@
+       runs-on: ubuntu-latest
+       outputs:
+         frontend: ${{ steps.filter.outputs.frontend }}
++        # MEH-2956: backend/app is a second trigger path. The gate below reads
++        # it too, so a PR that only touches the API still runs the suite.
++        backend: ${{ steps.filter.outputs.backend }}
+       steps:
+         - uses: actions/checkout@v7
+           with:
+@@ -97,6 +100,8 @@
+                 - 'public/**'
+                 - 'package.json'
+                 - 'package-lock.json'
++              backend:
++                - 'backend/app/**'
+ 
+   e2e:
+     # NOTE (MEH-1044): job name kept verbatim although the target is now
+@@ -147,14 +152,21 @@
+     # (measured 4–6/11/2026) and were mostly cancelled unseen. A labeled
+     # event for any other label does not start it. Push to staging and
+     # workflow_dispatch are unchanged.
++    # MEH-2956: the PATH decides, not the label. A PR touching frontend/** or
++    # backend/app/** runs the suite whether or not anyone remembered the
++    # label; `run-e2e` stays as a manual override for a PR the paths miss
++    # (e.g. a workflow-only change). MEH-2779's label gate is replaced here,
++    # not weakened: every PR the paths catch now runs MORE often, not less.
++    # The `labeled` guard is kept so adding some OTHER label to a PR does not
++    # start a fresh suite. schedule/workflow_dispatch are unchanged.
+     if: |
+       (needs.filter.outputs.frontend == 'true' ||
++       needs.filter.outputs.backend == 'true' ||
++       contains(github.event.pull_request.labels.*.name, 'run-e2e') ||
+        github.event_name == 'workflow_dispatch' ||
+        github.event_name == 'schedule') &&
+       github.actor != 'dependabot[bot]' &&
+-      (github.event_name != 'pull_request' ||
+-       (contains(github.event.pull_request.labels.*.name, 'run-e2e') &&
+-        (github.event.action != 'labeled' || github.event.label.name == 'run-e2e')))
++      (github.event.action != 'labeled' || github.event.label.name == 'run-e2e')
+ 
+     steps:
+       - uses: actions/checkout@v7
+@@ -853,11 +865,28 @@
+         env:
+           R_FILTER: ${{ needs.filter.result }}
+           R_E2E: ${{ needs.e2e.result }}
++          FRONTEND_TOUCHED: ${{ needs.filter.outputs.frontend }}
++          BACKEND_TOUCHED: ${{ needs.filter.outputs.backend }}
+         run: |
+           set -euo pipefail
+           fail=0
+           ok() { case "$1" in success|skipped) return 0 ;; *) return 1 ;; esac; }
++          strict_ok() { case "$1" in success) return 0 ;; *) return 1 ;; esac; }
+           check() { if ok "$2"; then echo "  OK  $1: $2"; else echo "  FAIL $1: $2"; fail=1; fi; }
++          check_ran() {
++            if strict_ok "$2"; then
++              echo "  OK  $1: $2"
++            elif [ "$2" = "cancelled" ]; then
++              # MEH-2956: a cancelled job reached NO VERDICT. It is not a test
++              # failure and must not be reported as one — but it is not a pass
++              # either, so the gate still blocks.
++              echo "  NO VERDICT  $1: cancelled (suite did not finish — not a test failure)"
++              fail=1
++            else
++              echo "  FAIL $1: $2 (required job did not run — 'skipped' is not a pass)"
++              fail=1
++            fi
++          }
+ 
+           # Guard the paths-filter result first — mirrors ci-gate's R_CHANGES
+           # guard. If the filter itself broke we can't trust the e2e skip
+@@ -867,10 +896,16 @@
+             exit 1
+           fi
+ 
+-          # success = mobile Pixel 5 + VRT specs green.
+-          # skipped  = docs-only PR (paths-filter) or dependabot — pass.
+-          # failure/cancelled = block.
+-          check "Playwright E2E (Vercel preview)" "$R_E2E"
++          # MEH-1742: a skip with no known cause is not the same as a skip
++          # paths-filter intended. Only "nothing this suite covers was touched"
++          # is a legitimate reason to accept `skipped`; every other case, `e2e`
++          # was supposed to run and must show `success`.
++          # MEH-2956 adds backend/app to that condition.
++          if [ "$FRONTEND_TOUCHED" = "true" ] || [ "$BACKEND_TOUCHED" = "true" ]; then
++            check_ran "Playwright E2E (Vercel preview)" "$R_E2E"
++          else
++            check "Playwright E2E (Vercel preview)" "$R_E2E"
++          fi
+ 
+           if [ "$fail" -ne 0 ]; then
+             echo "::error::E2E gate failed — Playwright E2E (mobile Pixel 5 + VRT) did not pass."
+--- a/.github/workflows/deploy.yml
++++ b/.github/workflows/deploy.yml
+@@ -394,19 +394,47 @@
+           R_CHANGES: ${{ needs.changes.result }}
+           R_LINT: ${{ needs.lint.result }}
+           R_API_CONTRACT: ${{ needs.api-contract-static.result }}
++          FRONTEND_TOUCHED: ${{ needs.changes.outputs.frontend }}
++          BACKEND_TOUCHED: ${{ needs.changes.outputs.backend }}
++          WORKFLOWS_TOUCHED: ${{ needs.changes.outputs.workflows }}
++          IS_DRAFT: ${{ github.event_name == 'pull_request' && github.event.pull_request.draft == true }}
+         run: |
+           set -euo pipefail
+           fail=0
+           ok() { case "$1" in success|skipped) return 0 ;; *) return 1 ;; esac; }
++          # MEH-1742 (second instance of MEH-1582's skip-green): a job this gate
++          # is actively enforcing must have RUN. `skipped` is an absence of
++          # evidence, not a pass — the reason has to come from the paths filter.
++          strict_ok() { case "$1" in success) return 0 ;; *) return 1 ;; esac; }
+           check() { if ok "$2"; then echo "  OK  $1: $2"; else echo "  FAIL $1: $2"; fail=1; fi; }
++          check_ran() {
++            if strict_ok "$2"; then echo "  OK  $1: $2"
++            elif [ "$2" = "cancelled" ]; then
++              # MEH-2956: cancelled = no verdict, never a test failure.
++              echo "  NO VERDICT  $1: cancelled (did not finish — not a failure)"; fail=1
++            else echo "  FAIL $1: $2 (required job did not run — 'skipped' is not a pass)"; fail=1; fi
++          }
+ 
+           if ! ok "$R_CHANGES"; then
+             echo "::error::Paths-filter job did not succeed (result=$R_CHANGES)."
+             exit 1
+           fi
+ 
+-          check "Frontend lint (RTL + Next.js rules)" "$R_LINT"
+-          check "API contract audit (static)" "$R_API_CONTRACT"
++          echo "Stack touched -> frontend=$FRONTEND_TOUCHED backend=$BACKEND_TOUCHED workflows=$WORKFLOWS_TOUCHED draft=$IS_DRAFT"
++          # Mirror each job's own `if:` (deploy.yml lint:124, api-contract-static:161).
++          # On a draft the jobs are suppressed by design and the gate stays
++          # lenient — the same posture pr-checks takes; a draft's green is
++          # already documented as skip-green (workflow.md rule 21).
++          if [ "$IS_DRAFT" != "true" ] && { [ "$FRONTEND_TOUCHED" = "true" ] || [ "$WORKFLOWS_TOUCHED" = "true" ]; }; then
++            check_ran "Frontend lint (RTL + Next.js rules)" "$R_LINT"
++          else
++            check "Frontend lint (RTL + Next.js rules)" "$R_LINT"
++          fi
++          if [ "$IS_DRAFT" != "true" ] && { [ "$FRONTEND_TOUCHED" = "true" ] || [ "$BACKEND_TOUCHED" = "true" ] || [ "$WORKFLOWS_TOUCHED" = "true" ]; }; then
++            check_ran "API contract audit (static)" "$R_API_CONTRACT"
++          else
++            check "API contract audit (static)" "$R_API_CONTRACT"
++          fi
+ 
+           if [ "$fail" -ne 0 ]; then
+             echo "::error::Deploy gate failed — a deploy-side required check failed."

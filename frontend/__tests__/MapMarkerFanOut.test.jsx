@@ -65,6 +65,7 @@ vi.mock("leaflet", () => {
       latlng,
       on: () => marker,
       setIcon: () => marker,
+      bindTooltip: () => marker, // MEH-3066: the name label beside the pin
       getLatLng: () => ({ lat: latlng[0], lng: latlng[1] }),
       getElement: () => null,
     };
@@ -145,7 +146,7 @@ describe("MEH-1424 — marker fan-out load invariants", () => {
   });
 
   it("creates one marker per renderable location — and NO duplicate producer pin when locations[] is non-empty", () => {
-    render(<MapComponent producers={[multiLocationProducer]} />);
+    render(<MapComponent showAllPickupPoints producers={[multiLocationProducer]} />);
     // 3 usable location rows → exactly 3 markers; the p.lat/lng fallback must
     // NOT fire on top of them (that would be 4 and a double pin at 32.1/34.9).
     expect(recorder.markers).toHaveLength(3);
@@ -158,12 +159,12 @@ describe("MEH-1424 — marker fan-out load invariants", () => {
   // MEH-1938 chunk 5a — THE INVERSION. Until 02/09 this producer got one
   // synthesised pin at its column coordinates; the rows are now the only source.
   it("does NOT pin a producer whose coordinates live only on the columns (MEH-1938 chunk 5a)", () => {
-    render(<MapComponent producers={[noRowsProducer]} />);
+    render(<MapComponent showAllPickupPoints producers={[noRowsProducer]} />);
     expect(recorder.markers).toHaveLength(0);
   });
 
   it("cluster badge counts unique businesses, not markers", () => {
-    render(<MapComponent producers={[multiLocationProducer, singleRowProducer]} />);
+    render(<MapComponent showAllPickupPoints producers={[multiLocationProducer, singleRowProducer]} />);
     expect(typeof recorder.iconCreateFunction).toBe("function");
     // Fake cluster containing all 4 markers (3 fan-out + 1 single row) — the
     // badge must read 2 (unique producerIds), not 4.
@@ -178,7 +179,7 @@ describe("MEH-1424 — marker fan-out load invariants", () => {
   });
 
   it("adds markers via ONE bulk addLayers() call — never per-marker addLayer (the O(N²) load path)", () => {
-    render(<MapComponent producers={[multiLocationProducer, singleRowProducer]} />);
+    render(<MapComponent showAllPickupPoints producers={[multiLocationProducer, singleRowProducer]} />);
     expect(recorder.addLayerCalls).toBe(0);
     expect(recorder.addLayersBatches).toHaveLength(1);
     expect(recorder.addLayersBatches[0]).toHaveLength(4);
@@ -206,7 +207,7 @@ describe("MEH-1568 — cluster dead-zone guards", () => {
   });
 
   it("never sets disableClusteringAtZoom — clustering (and therefore spiderfy) stays live at every zoom", () => {
-    render(<MapComponent producers={[multiLocationProducer]} />);
+    render(<MapComponent showAllPickupPoints producers={[multiLocationProducer]} />);
     expect(recorder.clusterOptions).toBeTruthy();
     expect(recorder.clusterOptions.disableClusteringAtZoom).toBeUndefined();
     // spiderfyOnMaxZoom defaults to true (leaflet.markercluster-src.js:25) —
@@ -217,7 +218,7 @@ describe("MEH-1568 — cluster dead-zone guards", () => {
   });
 
   it("scales maxClusterRadius by zoom — 60 wide, 40 from zoom 11 in", () => {
-    render(<MapComponent producers={[multiLocationProducer]} />);
+    render(<MapComponent showAllPickupPoints producers={[multiLocationProducer]} />);
     const radius = recorder.clusterOptions.maxClusterRadius;
     expect(typeof radius).toBe("function");
     expect(radius(8)).toBe(60);
@@ -227,7 +228,7 @@ describe("MEH-1568 — cluster dead-zone guards", () => {
   });
 
   it("renders a single-business cluster as the category marker + POINT count, not a badge reading '1'", () => {
-    render(<MapComponent producers={[multiLocationProducer]} />);
+    render(<MapComponent showAllPickupPoints producers={[multiLocationProducer]} />);
     // All 3 markers belong to one business — the unique-business count is 1,
     // which is what used to render and looked like a broken badge.
     const ownMarkers = recorder.markers.map((m) => m.marker);
@@ -245,7 +246,7 @@ describe("MEH-1568 — cluster dead-zone guards", () => {
   });
 
   it("leaves the multi-business cluster badge untouched (MEH-1412 unique-business count)", () => {
-    render(<MapComponent producers={[multiLocationProducer, singleRowProducer]} />);
+    render(<MapComponent showAllPickupPoints producers={[multiLocationProducer, singleRowProducer]} />);
     const icon = recorder.iconCreateFunction({
       getAllChildMarkers: () => recorder.markers.map((m) => m.marker),
       getChildCount: () => recorder.markers.length,

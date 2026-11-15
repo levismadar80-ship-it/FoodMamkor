@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 import { useEffect, useState } from "react";
@@ -5,6 +6,7 @@ import { Link } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
 import { CaretDown, Lifebuoy, MagnifyingGlass } from "@phosphor-icons/react";
 import { HELP_GROUPS, HELP_TOPICS, topicMatches } from "./topics";
+import Input from "@/components/ui/Input";
 
 /**
  * /admin/help — «איך עושים…» (MEH-2591; replaces the MEH-21 handbook).
@@ -71,26 +73,22 @@ export default function AdminHelpPage() {
   return (
     <div className="max-w-3xl mx-auto">
       <div className="flex items-center gap-3 mb-2">
-        <Lifebuoy size={28} weight="fill" className="text-primary shrink-0" aria-hidden="true" />
+        <Lifebuoy size={24} weight="fill" className="text-primary shrink-0" aria-hidden="true" />
         <h1 className="text-2xl font-bold">{t("layout.nav.help")}</h1>
       </div>
       <p className="text-sm text-muted mb-4">{t("help.intro")}</p>
 
-      <label className="relative block mb-6">
-        <span className="sr-only">{t("help.search_label")}</span>
-        <MagnifyingGlass
-          size={18}
-          className="absolute top-1/2 -translate-y-1/2 start-3 text-muted pointer-events-none"
-          aria-hidden="true"
-        />
-        <input
+      <div className="mb-6">
+        <Input
           type="search"
+          aria-label={t("help.search_label")}
           value={query}
           onChange={(e) => onSearch(e.target.value)}
           placeholder={t("help.search_placeholder")}
-          className="w-full bg-surface border border-border rounded-md ps-10 pe-3 py-2.5 text-base"
+          startAdornment={<MagnifyingGlass size={18} aria-hidden="true" />}
+          className="text-base"
         />
-      </label>
+      </div>
 
       {matches.length === 0 ? (
         <p className="text-sm text-muted" role="status">{t("help.no_results")}</p>

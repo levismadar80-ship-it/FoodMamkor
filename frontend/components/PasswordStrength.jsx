@@ -1,8 +1,10 @@
+// @ts-check
 "use client";
 
 import { useTranslations } from "next-intl";
 import { Check, Circle } from "@phosphor-icons/react";
 import { passwordRules } from "@/lib/validators";
+import { COLOR } from "@/lib/color-tokens";
 
 /**
  * Live password strength indicator + rule checklist.
@@ -29,6 +31,7 @@ import { passwordRules } from "@/lib/validators";
  */
 export default function PasswordStrength({ password }) {
   const t = useTranslations("forms.password.strength");
+  const tRule = useTranslations("forms.password");
   if (!password) return null;
 
   const passed = passwordRules.reduce(
@@ -52,15 +55,15 @@ export default function PasswordStrength({ password }) {
   if (passed >= total) {
     tierLabel = t("strong");
     tierTextClass = "text-primary";
-    tierBarColor = "#2e6853";
+    tierBarColor = COLOR.primary;
   } else if (passed === 1) {
     tierLabel = t("weak");
     tierTextClass = "text-danger-500";
-    tierBarColor = "#ef4444"; // tailwind red-500
+    tierBarColor = COLOR["danger-500"]; // tailwind red-500
   } else if (passed === 2) {
     tierLabel = t("medium");
     tierTextClass = "text-warning-500";
-    tierBarColor = "#f59e0b"; // tailwind amber-500
+    tierBarColor = COLOR["warning-500"]; // tailwind amber-500
   }
 
   return (
@@ -102,11 +105,11 @@ export default function PasswordStrength({ password }) {
               }`}
             >
               {ok ? (
-                <Check size={13} weight="bold" aria-hidden="true" />
+                <Check size={14} weight="bold" aria-hidden="true" />
               ) : (
-                <Circle size={13} aria-hidden="true" />
+                <Circle size={14} aria-hidden="true" />
               )}
-              {rule.label}
+              {tRule(rule.labelKey, rule.labelValues)}
             </li>
           );
         })}

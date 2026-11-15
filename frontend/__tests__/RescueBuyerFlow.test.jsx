@@ -12,7 +12,7 @@
  * orphan the rule exists for is (many × reserved) — covered below.
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor, within } from "@testing-library/react";
 
 import heMessages from "../messages/he.json";
 
@@ -36,8 +36,30 @@ function format(raw, values = {}) {
   return out;
 }
 
+// MEH-3226: t.rich splits <tag>…</tag> and hands each chunk to its renderer.
+function rich(raw, values = {}) {
+  const parts = [];
+  const re = /<(\w+)>([^<]*)<\/\1>/g;
+  let last = 0;
+  let m;
+  while ((m = re.exec(raw)) !== null) {
+    parts.push(raw.slice(last, m.index), values[m[1]](m[2]));
+    last = m.index + m[0].length;
+  }
+  parts.push(raw.slice(last));
+  return parts;
+}
+
+function plain(key) {
+  return lookup(key).replace(/<\/?\w+>/g, "");
+}
+
 vi.mock("next-intl", () => ({
-  useTranslations: (ns) => (key, values) => format(lookup(ns ? `${ns}.${key}` : key), values),
+  useTranslations: (ns) => {
+    const t = (key, values) => format(lookup(ns ? `${ns}.${key}` : key), values);
+    t.rich = (key, values) => rich(lookup(ns ? `${ns}.${key}` : key), values);
+    return t;
+  },
 }));
 
 vi.mock("@/i18n/navigation", () => ({
@@ -385,8 +407,40 @@ describe("the row", () => {
   it("links to the business page, where the only reserve button lives", async () => {
     render(<RescueList />);
     const row = await screen.findByTestId("rescue-bag-row");
-    expect(row.getAttribute("href")).toBe("/producer/hatzala");
+    // /{slug}, never /producer/{slug}: that route takes a UUID only and shows
+    // «בית העסק הזה לא נמצא» for a slug. Anchored at the bag section.
+    expect(row.getAttribute("href")).toBe("/hatzala#section-rescue");
     expect(screen.queryByTestId("rescue-reserve")).toBeNull();
+  });
+});
+
+describe("the business-page section — landing from a bag link", () => {
+  // A bag row links `/{slug}#section-rescue`, but the section mounts only after
+  // its own fetch, so the browser's hash scroll has nothing to hit. The
+  // section scrolls itself into view once — and only for that hash.
+  let scrolled;
+  beforeEach(() => {
+    scrolled = vi.fn();
+    Element.prototype.scrollIntoView = scrolled;
+    vi.spyOn(window, "requestAnimationFrame").mockImplementation((cb) => { cb(0); return 0; });
+  });
+  afterEach(() => {
+    window.history.replaceState(null, "", "/");
+  });
+
+  it("scrolls to the bag when the URL carries #section-rescue", async () => {
+    window.history.replaceState(null, "", "/hatzala#section-rescue");
+    render(<RescueSection producer={PRODUCER} />);
+    await screen.findByTestId("rescue-reserve");
+    // MEH-3217: the scroll runs in an effect after the bag renders — wait for it.
+    await waitFor(() => expect(scrolled).toHaveBeenCalledTimes(1));
+  });
+
+  it("does not scroll on an ordinary visit", async () => {
+    window.history.replaceState(null, "", "/hatzala");
+    render(<RescueSection producer={PRODUCER} />);
+    await screen.findByTestId("rescue-reserve");
+    expect(scrolled).not.toHaveBeenCalled();
   });
 });
 
@@ -557,15 +611,47 @@ describe("every error the API actually returns", () => {
     render(<RescueSection producer={PRODUCER} />);
     fireEvent.click(await screen.findByTestId("rescue-reserve"));
     const err = await screen.findByTestId("rescue-section-error");
-    expect(err.textContent).toBe(lookup(key));
+    expect(err.textContent).toBe(plain(key));
+  });
+
+  it("403 email_unverified → the resend notice with the reserve wording (MEH-3225)", async () => {
+    reserveBag.mockRejectedValue({
+      response: {
+        status: 403,
+        data: { detail: { code: "email_unverified", message: "יש לאמת את כתובת האימייל תחילה" } },
+      },
+    });
+    render(<RescueSection producer={PRODUCER} />);
+    fireEvent.click(await screen.findByTestId("rescue-reserve"));
+    const notice = await screen.findByTestId("unverified-email-notice");
+    expect(notice.textContent).toContain(lookup("rescue.errors.unverified"));
+    expect(notice.textContent).not.toContain(lookup("auth.verify.publish_gate"));
+    expect(screen.queryByTestId("rescue-section-error")).toBeNull();
   });
 
   it("the block message is the backend's string, verbatim", () => {
     // If these two ever diverge the buyer is told one thing by the API and
     // another by the page. routers/rescue.py BLOCKED_DETAIL is the source.
-    expect(lookup("rescue.errors.blocked")).toBe(
-      "ההזמנות חסומות אחרי שתי אי-הגעות. כתבו לנו",
+    expect(plain("rescue.errors.blocked")).toBe(
+      "השריונים חסומים אחרי שתי אי-הגעות. כתבו לנו",
     );
+  });
+
+  it("«כתבו לנו» on the block message links to the contact page (MEH-3226)", async () => {
+    reserveBag.mockRejectedValue({ response: { status: 422, data: {} } });
+    render(<RescueSection producer={PRODUCER} />);
+    fireEvent.click(await screen.findByTestId("rescue-reserve"));
+    const link = await screen.findByTestId("rescue-blocked-contact");
+    expect(link.getAttribute("href")).toBe("/contact");
+    expect(link.textContent).toBe("כתבו לנו");
+  });
+
+  it("no other error carries the contact link", async () => {
+    reserveBag.mockRejectedValue({ response: { status: 409, data: {} } });
+    render(<RescueSection producer={PRODUCER} />);
+    fireEvent.click(await screen.findByTestId("rescue-reserve"));
+    await screen.findByTestId("rescue-section-error");
+    expect(screen.queryByTestId("rescue-blocked-contact")).toBeNull();
   });
 });
 
@@ -812,12 +898,19 @@ describe("the confirmation after the counter or the cutoff (MEH-2694)", () => {
 });
 
 describe("a guest taps reserve (MEH-2700)", () => {
-  it("gets the sign-in line and no request is sent, so no 'session expired' toast", async () => {
+  // MEH-3130: the inline line had no way to sign in — the shared login prompt
+  // now says why AND offers «היכנסו» back to this section.
+  it("gets the login prompt (title, why, a way to sign in) and no request is sent", async () => {
     authUser = null;
     render(<RescueSection producer={PRODUCER} />);
     fireEvent.click(await screen.findByTestId("rescue-reserve"));
-    const err = await screen.findByTestId("rescue-section-error");
-    expect(err.textContent).toBe(lookup("rescue.errors.sign_in"));
+    const dialog = await screen.findByRole("dialog");
+    expect(within(dialog).getByRole("heading").textContent).toBe(lookup("rescue.login_prompt_title"));
+    expect(dialog).toHaveTextContent(lookup("rescue.login_prompt_message"));
+    expect(within(dialog).getByRole("link").getAttribute("href")).toMatch(
+      /^\/login\?redirect=.*section-rescue/,
+    );
+    expect(screen.queryByTestId("rescue-section-error")).toBeNull();
     expect(reserveBag).not.toHaveBeenCalled();
   });
 });

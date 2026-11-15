@@ -52,7 +52,7 @@ def sent(monkeypatch):
     calls = _Sent()
     calls.ok = {"ok": True}
 
-    def _fake(to, template):
+    def _fake(to, template, test_cause=False):
         calls.append((to, template))
         return calls.ok["ok"]
 

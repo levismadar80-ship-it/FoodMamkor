@@ -80,7 +80,7 @@ def _capture(monkeypatch):
     sent = []
     monkeypatch.setattr(
         "app.services.group_buy_notifications.send_email",
-        lambda to, subject, body, html=None: sent.append((to, subject, body)),
+        lambda to, subject, body, html=None, test_cause=False: sent.append((to, subject, body)),
     )
     return sent
 
@@ -152,6 +152,10 @@ class TestSuspendCancelsLiveGroupBuys:
     def test_reactivating_does_not_touch_group_buys(self, client, db, monkeypatch):
         sent = _capture(monkeypatch)
         producer, _ = _business(db, status="inactive")
+        # MEH-2945: un-pausing runs the approval gates, so the row passes them.
+        producer.images = ["https://res.cloudinary.com/demo/image/upload/v1/test.jpg"]
+        producer.phone_verified = True
+        db.commit()
         # Inserted directly: an inactive business cannot open one through the API.
         gb = _group(db, producer, "open")
         admin = make_user(db, role="admin", email="admin4@example.com")
@@ -265,7 +269,7 @@ class TestDelistedEmailCopy:
     def test_wording_is_pinned_and_carries_no_contact_details(self):
         sent = {}
 
-        def _cap(to, subject, body, html=None):
+        def _cap(to, subject, body, html=None, test_cause=False):
             sent.update(to=to, subject=subject, body=body)
 
         with mock.patch("app.services.group_buy_notifications.send_email", _cap):

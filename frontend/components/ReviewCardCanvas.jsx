@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 /**
@@ -49,6 +50,8 @@ import {
   loadFonts,
   wrapText,
 } from "@/components/StoryCardCanvas";
+import { copyOrThrow } from "@/lib/clipboard";
+import { COLOR } from "@/lib/color-tokens";
 
 const W = 1080;
 const H = 1920;
@@ -60,9 +63,9 @@ const SITE_HOST = SITE_URL.replace(/^https?:\/\//, "");
 // this file-pair's, and StoryCardCanvas already duplicates its own
 // unicode-range literals (:83-92) for the adjacent reason: a constant shared
 // between exactly two call sites buys less than the comment explaining it.
-const GREEN = "#2e6853";
+const GREEN = COLOR.primary;
 const GREEN_DEEP = "#1f4a3a";
-const CREAM = "#F5F0E8";
+const CREAM = COLOR.background;
 // The amber petal from the mark (StoryCardCanvas.jsx:78) — the brand's own
 // gold, so the stars and the rule are not a new colour on the card.
 const GOLD = "#E0B266";
@@ -258,7 +261,7 @@ export async function drawReviewCard(canvas, producer, review, strings) {
   }
 
   // Fitted, then cut: a long business name used to run off the inline end.
-  ctx.fillStyle = "#EAF3DE";
+  ctx.fillStyle = COLOR["green-50"];
   const nameFont = (size) => `600 ${size}px ${SANS}`;
   const rawName = producer?.name || "";
   fitOneLine(ctx, rawName, { maxWidth: column, max: NAME_MAX, min: NAME_MIN, font: nameFont });
@@ -383,10 +386,7 @@ export default function ReviewCardCanvas({ producer }) {
     ]
       .filter(Boolean)
       .join("\n");
-    const write = navigator.clipboard?.writeText
-      ? navigator.clipboard.writeText(caption)
-      : Promise.reject(new Error("clipboard unavailable"));
-    write
+    copyOrThrow(caption)
       .then(() => {
         setCaptionCopied(true);
         clearTimeout(copiedTimer.current);
@@ -454,7 +454,7 @@ export default function ReviewCardCanvas({ producer }) {
                 data-testid="review-card-pick"
                 value={index}
                 onChange={(e) => setIndex(Number(e.target.value))}
-                className="w-full max-w-sm border border-border rounded-sm px-3 py-2 text-sm bg-surface focus:outline-none focus:ring-2 focus:ring-primary/40"
+                className="w-full max-w-sm border border-border rounded-sm px-3 py-2 text-sm bg-surface focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
               >
                 {reviews.map((rv, i) => (
                   <option key={rv.id} value={i}>
@@ -499,7 +499,7 @@ export default function ReviewCardCanvas({ producer }) {
               onClick={download}
               disabled={!rendered}
               data-testid="review-card-download"
-              className="text-sm border border-border px-4 py-2 rounded-sm hover:border-primary transition disabled:opacity-40"
+              className="text-sm border border-border px-4 py-2 rounded-sm hover:border-primary transition disabled:opacity-50"
             >
               <DownloadSimple size={16} className="inline align-[-2px]" aria-hidden="true" />{" "}
               {t("owner.download_review")}

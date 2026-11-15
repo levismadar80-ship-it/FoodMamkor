@@ -922,6 +922,43 @@ def _seed_group_buy(db, producer) -> None:
         )
 
 
+def seed_open_group_buy(db) -> bool:
+    """MEH-2981 — keep ONE live demo group buy without `--refresh`.
+
+    `_seed_group_buy` runs only when the demo business is CREATED, and its
+    deadline is relative (`days_ahead`), so on staging it expires and
+    `GET /group-buys` (open + `deadline >= now`, routers/group_buys.py:120-128)
+    goes empty — which also hides the «קבוצות רכישה» hub tab (supply gate,
+    frontend/lib/use-hub-nav-gate.js). The only way back was `--refresh`, which
+    deletes and recreates the demo business and every test row hanging off it.
+
+    Same contract as `seed_marketing_fixtures`: add only if missing, never
+    delete. Expired / closed group buys stay exactly as they are.
+
+    Returns True when it seeded one, so the caller prints a derived line.
+    """
+    producer = db.query(Producer).filter(Producer.slug == DEMO_SLUG).first()
+    if producer is None:
+        print(f"Demo producer /{DEMO_SLUG} not found — skipping the open group buy.")
+        return False
+    live = (
+        db.query(GroupBuy)
+        .filter(
+            GroupBuy.producer_id == producer.id,
+            GroupBuy.status == "open",
+            GroupBuy.deadline >= utc_now(),
+        )
+        .first()
+    )
+    if live is not None:
+        print(f"Open demo group buy already live for /{DEMO_SLUG} — skipping.")
+        return False
+    _seed_group_buy(db, producer)
+    db.commit()
+    print(f"Seeded a fresh open demo group buy for /{DEMO_SLUG}.")
+    return True
+
+
 def _israel_wall_to_utc(day: date, hour: int) -> datetime:
     """An Israel wall-clock hour on `day`, as the NAIVE UTC instant the column holds.
 
@@ -2497,6 +2534,9 @@ def main() -> None:
             # MEH-2794: same contract again — the /join screenshot fixtures
             # (offer, rescue bag, insight numbers), added only if missing.
             seed_marketing_fixtures(db)
+            # MEH-2981: same contract — a live demo group buy, added only if
+            # none is open, so a plain run (no --refresh) restores the tab.
+            seed_open_group_buy(db)
     finally:
         db.close()
 

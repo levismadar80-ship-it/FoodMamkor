@@ -14,16 +14,18 @@ Fail-open: returns "" if ANTHROPIC_API_KEY is missing or any step fails.
 
 from __future__ import annotations
 
+from typing import Any
 import logging
 
 from app.config import ai_fast_request_kwargs, settings
 
+
 logger = logging.getLogger(__name__)
 
-_client = None
+_client: Any = None
 
 
-def _get_client():
+def _get_client() -> Any:
     global _client
     if _client is not None:
         return _client

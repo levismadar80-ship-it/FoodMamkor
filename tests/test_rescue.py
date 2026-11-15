@@ -675,7 +675,7 @@ class TestNoShowBlock:
             headers=auth_header(buyer),
         )
         assert r.status_code == 422
-        assert r.json()["detail"] == "ההזמנות חסומות אחרי שתי אי-הגעות. כתבו לנו"
+        assert r.json()["detail"] == "השריונים חסומים אחרי שתי אי-הגעות. כתבו לנו"
 
     def test_two_no_shows_outside_the_window_do_not_block(
         self, client, db, shop, rescue_on
@@ -905,7 +905,7 @@ class TestReserveEmail:
         sent = []
         monkeypatch.setattr(
             "app.services.rescue_emails.send_email",
-            lambda to, subject, body, html=None, reply_to=None: sent.append(
+            lambda to, subject, body, html=None, reply_to=None, test_cause=False: sent.append(
                 {"to": to, "subject": subject, "body": body, "html": html}
             ),
         )
@@ -1041,7 +1041,7 @@ class TestBuyerCancelHardening:
         sent = []
         monkeypatch.setattr(
             "app.services.rescue_emails.send_email",
-            lambda to, subject, body, html=None, reply_to=None: sent.append(
+            lambda to, subject, body, html=None, reply_to=None, test_cause=False: sent.append(
                 {"to": to, "subject": subject, "body": body, "html": html}
             ),
         )

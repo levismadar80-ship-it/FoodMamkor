@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 import { useEffect, useRef, useState } from "react";
@@ -6,6 +7,10 @@ import api from "@/lib/api";
 import { detailToMessage } from "@/lib/errors";
 import { ProducerClaimLinkSchema } from "@/lib/api-schemas";
 import Button from "@/components/ui/Button";
+import { formatDate } from "@/lib/format-date";
+import InlineMessage from "@/components/ui/InlineMessage";
+import { copyOrThrow } from "@/lib/clipboard";
+import Input from "@/components/ui/Input";
 
 /**
  * Module:   ClaimLinkPanel
@@ -60,10 +65,7 @@ export default function ClaimLinkPanel({ producerId }) {
 
   const copy = () => {
     if (!link) return;
-    const write = navigator.clipboard?.writeText
-      ? navigator.clipboard.writeText(link.url)
-      : Promise.reject(new Error("clipboard unavailable"));
-    write
+    copyOrThrow(link.url)
       .then(() => {
         setCopyFailed(false);
         setCopied(true);
@@ -74,13 +76,7 @@ export default function ClaimLinkPanel({ producerId }) {
   };
 
   const expires = link
-    ? new Intl.DateTimeFormat(locale === "he" ? "he-IL" : locale, {
-        // guard-ok: display formatting of a server-issued expiry, not a "today" decision (MEH-2383)
-        timeZone: "Asia/Jerusalem",
-        day: "2-digit",
-        month: "2-digit",
-        year: "numeric",
-      }).format(new Date(link.expires_at))
+    ? formatDate(link.expires_at, locale)
     : null;
 
   return (
@@ -97,14 +93,14 @@ export default function ClaimLinkPanel({ producerId }) {
             {t("url_label")}
           </label>
           <div className="flex flex-col sm:flex-row gap-2">
-            <input
+            <Input inline size="sm"
               id="claim-link-url"
               data-testid="claim-link-url"
               readOnly
               dir="ltr"
               value={link.url}
               onFocus={(e) => e.target.select()}
-              className="flex-1 min-w-0 border border-border rounded-md px-3 py-2 text-sm bg-background"
+              className="flex-1 min-w-0"
             />
             <Button
               type="button"
@@ -119,17 +115,17 @@ export default function ClaimLinkPanel({ producerId }) {
             {t("expires", { date: expires })}
           </p>
           {copyFailed && (
-            <p className="text-sm text-error mt-2" role="alert" data-testid="claim-link-copy-failed">
+            <InlineMessage className="mt-2" data-testid="claim-link-copy-failed">
               {t("copy_failed")}
-            </p>
+            </InlineMessage>
           )}
         </div>
       )}
 
       {error && (
-        <p className="text-sm text-error mb-4" role="alert" data-testid="claim-link-error">
+        <InlineMessage className="mb-4" data-testid="claim-link-error">
           {error}
-        </p>
+        </InlineMessage>
       )}
 
       <button
@@ -137,7 +133,7 @@ export default function ClaimLinkPanel({ producerId }) {
         data-testid="claim-link-create"
         onClick={create}
         disabled={busy}
-        className="min-h-touch bg-surface border border-primary text-primary rounded-md px-6 py-2 text-sm font-medium hover:bg-background transition disabled:opacity-50"
+        className="min-h-touch bg-surface border border-primary text-primary rounded-full px-6 py-2 text-sm font-medium hover:bg-background transition disabled:opacity-50"
       >
         {busy ? t("creating") : t("create")}
       </button>

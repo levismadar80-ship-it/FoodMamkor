@@ -23,8 +23,8 @@ Mirrors tests/test_producer_request_changes.py: pure HTTP/DB, with
 composed string that landed in the column (the two must not drift).
 """
 
-import app.routers.admin as admin_module
-from app.routers.admin import PRODUCER_REJECTION_PRESETS
+import app.routers.admin_decisions as admin_module
+from app.routers.admin_decisions import PRODUCER_REJECTION_PRESETS
 from conftest import auth_header, make_producer, make_user
 
 FREE_TEXT = "הרישיון שהועלה פג תוקף ביוני"
@@ -167,7 +167,7 @@ def test_email_body_carries_the_same_string_that_was_persisted(client, db, monke
     # MEH-2210 chunk C: the rejection mail gained an HTML twin (same shape the
     # approval mail took in MEH-2151), so the capture accepts the keyword the
     # handler now passes. The assertion below is still about the TEXT body.
-    def _capture(to_email, subject, body, html=None):
+    def _capture(to_email, subject, body, html=None, test_cause=False):
         sent["to"] = to_email
         sent["body"] = body
 

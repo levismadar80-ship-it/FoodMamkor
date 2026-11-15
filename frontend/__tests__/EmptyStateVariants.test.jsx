@@ -164,8 +164,8 @@ describe("EmptyState — `size` variant (MEH-1630 decision 1)", () => {
       <EmptyState size="lg" icon={ShoppingCart} title="ריק" />,
     );
     expect(container.querySelector(".rounded-full")).toBeNull();
-    // Still the bare 56px icon every existing call site renders.
-    expect(container.querySelector("svg").getAttribute("width")).toBe("56");
+    // Still the bare 64px icon (56 until MEH-3089) every existing call site renders.
+    expect(container.querySelector("svg").getAttribute("width")).toBe("64");
   });
 });
 

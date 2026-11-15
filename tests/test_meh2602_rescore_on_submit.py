@@ -9,9 +9,9 @@ from conftest import auth_header, make_submit_ready_producer
 
 def test_submit_for_review_rescores_the_producer(client, db, monkeypatch):
     calls: list = []
-    monkeypatch.setattr("app.routers.producer_me.score_producer", calls.append)
+    monkeypatch.setattr("app.routers.producer_me_review.score_producer", calls.append)
     monkeypatch.setattr(
-        "app.routers.producer_me.send_submission_confirmation", lambda *a: None
+        "app.routers.producer_me_review.send_submission_confirmation", lambda *a, **k: None
     )
     producer, user = make_submit_ready_producer(db)
 
@@ -23,7 +23,7 @@ def test_submit_for_review_rescores_the_producer(client, db, monkeypatch):
 
 def test_a_rejected_submit_does_not_rescore(client, db, monkeypatch):
     calls: list = []
-    monkeypatch.setattr("app.routers.producer_me.score_producer", calls.append)
+    monkeypatch.setattr("app.routers.producer_me_review.score_producer", calls.append)
     producer, user = make_submit_ready_producer(db, status="pending")
 
     resp = client.post("/producers/me/submit-for-review", headers=auth_header(user))

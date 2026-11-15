@@ -7,6 +7,11 @@ Purpose:  Enforce the retention windows the privacy policy promises (Sapir's
 Touches:  DB tables `producer_page_views`, `producer_whatsapp_clicks`,
           `alert_log` — DELETE only, in batches, committing per batch.
           MEH-2763: also `registrations`, 30 days after the item's date.
+          MEH-3171: also `phone_otp_tokens`, one day after `expires_at`.
+          MEH-3244: `producer_contact_clicks` past 90 days are UPDATEd —
+          ip_hash and user_id set to NULL, the row kept.
+          MEH-3225: also `rescue_no_show_tombstones`, 30 days after the
+          bag's pickup_end (the no-show rule's own window).
           Reads the roll-up watermark through analytics_rollup — never
           the aggregate table directly (the MEH-2079 single-reader guard).
 Does NOT: roll anything up (analytics_rollup.py owns that); decide WHEN to
@@ -41,21 +46,26 @@ timestamp is below that instant has an Israel day below the boundary day.
 
 from __future__ import annotations
 
+from typing import Any, cast
 import logging
 from dataclasses import dataclass
-from datetime import date, datetime, timedelta, timezone
+from datetime import date, datetime, time, timedelta, timezone
 
-from sqlalchemy import delete, select
+from sqlalchemy import ColumnElement, CursorResult, delete, or_, select, update
 from sqlalchemy.orm import Session
 
 from app.models.models import (
     AlertLog,
+    ContactClick,
     Event,
     Experience,
+    PhoneOtpToken,
     ProducerPageView,
     ProducerWhatsAppClick,
     Registration,
+    RescueNoShowTombstone,
 )
+from app.services.rescue_no_show import NO_SHOW_WINDOW_DAYS
 from app.services.analytics_rollup import RAW_RETENTION_DAYS, rollup_watermark
 from app.utils.clock import ISRAEL_TZ, israel_today
 
@@ -67,6 +77,10 @@ ALERT_LOG_RETENTION_DAYS = 30
 #: MEH-2763 — the sign-up form promises «נמחקים 30 יום אחרי המועד»
 #: (approved 6/11). Counted from the event's / experience's own date.
 REGISTRATION_RETENTION_DAYS = 30
+# MEH-3171: an OTP row is useless once it expires but carries a phone number
+# (PII). Keep it one day past expiry (support can still see a failed attempt),
+# then delete it.
+OTP_RETENTION_AFTER_EXPIRY = timedelta(days=1)
 
 #: Rows per DELETE statement. Small enough that one batch never holds a long
 #: lock on a table the request path writes to; the loop runs until empty.
@@ -83,6 +97,9 @@ class PurgeResult:
     clicks_deleted: int
     alerts_deleted: int
     registrations_deleted: int = 0
+    otps_deleted: int = 0
+    contact_clicks_anonymized: int = 0
+    tombstones_deleted: int = 0
 
 
 def _israel_day_start_utc(day: date) -> datetime:
@@ -104,7 +121,7 @@ def raw_boundary_day(db: Session, today: date) -> date | None:
     return min(retention_boundary, watermark + timedelta(days=1))
 
 
-def _delete_in_batches(db: Session, model, time_col, cutoff: datetime) -> int:
+def _delete_in_batches(db: Session, model: Any, time_col: Any, cutoff: datetime) -> int:
     """Delete `model` rows with `time_col < cutoff`, BATCH_SIZE at a time,
     committing each batch. Rolls back and re-raises on failure, so the
     session stays usable for the caller (MEH-1824 invariant)."""
@@ -121,7 +138,7 @@ def _delete_in_batches(db: Session, model, time_col, cutoff: datetime) -> int:
         except Exception:
             db.rollback()
             raise
-        deleted = result.rowcount or 0
+        deleted = cast("CursorResult[Any]", result).rowcount or 0
         total += deleted
         if deleted < BATCH_SIZE:
             return total
@@ -139,18 +156,73 @@ def _purge_registrations(db: Session, today: date) -> int:
         (Registration.experience_id, Experience),
     ):
         old_items = select(model.id).where(model.event_date < boundary)
+        if model is Experience:
+            # MEH-3219 B12: a recurring experience's event_date is its FIRST
+            # occasion and it stays open after it, so its date says nothing
+            # about when a sign-up's occasion was. Those rows age out by their
+            # own created_at instead; without this a sign-up made 30 days
+            # after the first occasion was purged on the next run.
+            old_items = old_items.where(Experience.is_recurring.isnot(True))
+        stale: ColumnElement[bool] = fk.in_(old_items.scalar_subquery())
+        if model is Experience:
+            recurring = select(Experience.id).where(Experience.is_recurring.is_(True))
+            stale = stale | (
+                fk.in_(recurring.scalar_subquery())
+                & (Registration.created_at < datetime.combine(boundary, time.min))
+            )
         try:
             result = db.execute(
                 delete(Registration)
-                .where(fk.in_(old_items.scalar_subquery()))
+                .where(stale)
                 .execution_options(synchronize_session=False)
             )
             db.commit()
         except Exception:
             db.rollback()
             raise
-        total += result.rowcount or 0
+        total += cast("CursorResult[Any]", result).rowcount or 0
     return total
+
+
+def _anonymize_contact_clicks(db: Session, today: date) -> int:
+    """MEH-3244 (Sapir 14/11: «90 יום כמו וואטסאפ»): contact clicks older
+    than RAW_RETENTION_DAYS lose `ip_hash` and `user_id`; the row stays.
+
+    Not a DELETE: this table has no aggregate column (producer_me.py
+    `windowed(ContactClick, …)` counts raw rows on every arm, `total` too), so
+    deleting would shrink the owner's all-time count. Clearing the two
+    identifying columns keeps the count and drops the personal data, which is
+    why no watermark guard is needed here. Same side effect as the WhatsApp
+    purge: past 90 days a click no longer proves contact for a review
+    (reviews.py, the user_id lookup). Batched; rolls back and re-raises."""
+    cutoff = _israel_day_start_utc(today - timedelta(days=RAW_RETENTION_DAYS))
+    total = 0
+    while True:
+        ids = (
+            select(ContactClick.id)
+            .where(
+                ContactClick.clicked_at < cutoff,
+                or_(
+                    ContactClick.ip_hash.is_not(None), ContactClick.user_id.is_not(None)
+                ),
+            )
+            .limit(BATCH_SIZE)
+        )
+        try:
+            result = db.execute(
+                update(ContactClick)
+                .where(ContactClick.id.in_(ids.scalar_subquery()))
+                .values(ip_hash=None, user_id=None)
+                .execution_options(synchronize_session=False)
+            )
+            db.commit()
+        except Exception:
+            db.rollback()
+            raise
+        changed = cast("CursorResult[Any]", result).rowcount or 0
+        total += changed
+        if changed < BATCH_SIZE:
+            return total
 
 
 def run_purge(
@@ -180,7 +252,26 @@ def run_purge(
     )
 
     registrations = _purge_registrations(db, today)
+    contacts = _anonymize_contact_clicks(db, today)
 
-    result = PurgeResult(boundary, views, clicks, alerts, registrations)
+    otps = _delete_in_batches(
+        db,
+        PhoneOtpToken,
+        PhoneOtpToken.expires_at,
+        now - OTP_RETENTION_AFTER_EXPIRY,
+    )
+
+    # MEH-3225: a deleted account's no-show stops counting after the window,
+    # so its hashed row has no reason to stay.
+    tombstones = _delete_in_batches(
+        db,
+        RescueNoShowTombstone,
+        RescueNoShowTombstone.pickup_end,
+        now - timedelta(days=NO_SHOW_WINDOW_DAYS),
+    )
+
+    result = PurgeResult(
+        boundary, views, clicks, alerts, registrations, otps, contacts, tombstones
+    )
     logger.info("[RETENTION-PURGE] %s", result)
     return result

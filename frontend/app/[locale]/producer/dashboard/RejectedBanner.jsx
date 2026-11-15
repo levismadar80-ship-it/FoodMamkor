@@ -1,3 +1,4 @@
+// @ts-check
 "use client";
 
 /**
@@ -31,6 +32,7 @@ import api from "@/lib/api";
 import { detailToMessage } from "@/lib/errors";
 import { showToast } from "@/lib/toast";
 import Button from "@/components/ui/Button";
+import InlineMessage from "@/components/ui/InlineMessage";
 
 // Mirrors constants.MAX_PRODUCER_RESUBMISSIONS. The server is the authority
 // (409 past it); this only decides whether to draw the button at all, so a
@@ -147,9 +149,9 @@ export default function RejectedBanner({
       )}
 
       {status === "error" && errorMsg && (
-        <p role="alert" className="text-danger-700" data-testid="status-rejected-error">
+        <InlineMessage size="inherit" data-testid="status-rejected-error">
           {errorMsg}
-        </p>
+        </InlineMessage>
       )}
 
       <button
