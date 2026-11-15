@@ -1299,6 +1299,7 @@
         "properties": {
           "email": {
             "format": "email",
+            "maxLength": 200,
             "title": "Email",
             "type": "string"
           },
@@ -1458,6 +1459,7 @@
           },
           "email": {
             "format": "email",
+            "maxLength": 200,
             "title": "Email",
             "type": "string"
           },
@@ -3330,6 +3332,7 @@
         "properties": {
           "email": {
             "format": "email",
+            "maxLength": 200,
             "title": "Email",
             "type": "string"
           }
@@ -4444,6 +4447,7 @@
         "properties": {
           "email": {
             "format": "email",
+            "maxLength": 200,
             "title": "Email",
             "type": "string"
           },
@@ -4523,6 +4527,7 @@
         "properties": {
           "email": {
             "format": "email",
+            "maxLength": 200,
             "title": "Email",
             "type": "string"
           }
@@ -5300,6 +5305,7 @@
           },
           "email": {
             "format": "email",
+            "maxLength": 200,
             "title": "Email",
             "type": "string"
           },
@@ -5354,6 +5360,7 @@
             "anyOf": [
               {
                 "format": "email",
+                "maxLength": 200,
                 "type": "string"
               },
               {
@@ -5423,6 +5430,7 @@
         "properties": {
           "email": {
             "format": "email",
+            "maxLength": 200,
             "title": "Email",
             "type": "string"
           },
@@ -11651,6 +11659,7 @@
             "anyOf": [
               {
                 "format": "email",
+                "maxLength": 200,
                 "type": "string"
               },
               {
@@ -13323,6 +13332,7 @@
             "anyOf": [
               {
                 "format": "email",
+                "maxLength": 200,
                 "type": "string"
               },
               {
@@ -15995,6 +16005,7 @@
           },
           "email": {
             "format": "email",
+            "maxLength": 200,
             "title": "Email",
             "type": "string"
           },
