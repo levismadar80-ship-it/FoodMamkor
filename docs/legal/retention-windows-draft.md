@@ -31,7 +31,7 @@
 | `producer_whatsapp_clicks` | `:1774` | `user_id` (nullable), `clicked_at`, `city` | **אין** |
 | `alert_log` | `:1295` | `user_id`, `producer_id`, `channel`, `alert_type`, `sent_at` | **אין** — ה-docstring אומר זאת במפורש: *«Append-only: nothing prunes this table yet — a retention/purge policy is a separate follow-up»* (`:1290-1292`) |
 
-**מה כן קיים ואינו תחליף:** מחיקה **ביוזמת המשתמשת** — `DELETE /auth/me` (`auth.py:1484`) מפילה ב-CASCADE את הצפיות והלחיצות של העסק (FK `ondelete="CASCADE"`, `models.py:1733-1738`, `:1778-1783`). זו זכות מחיקה לפי בקשה, **לא** שמירה מוגבלת בזמן.
+**מה כן קיים ואינו תחליף:** מחיקה **ביוזמת המשתמשת** — `POST /auth/me/delete` (`auth.py`, MEH-3248) מפילה ב-CASCADE את הצפיות והלחיצות של העסק (FK `ondelete="CASCADE"`, `models.py:1733-1738`, `:1778-1783`). זו זכות מחיקה לפי בקשה, **לא** שמירה מוגבלת בזמן.
 
 **מה המדיניות מבטיחה היום:** `privacy.sections.retention.body` — «כל עוד החשבון פעיל או כל עוד נדרש…». **אין מספר.** כל מספר שייכתב יהיה הראשון, ומרגע פרסומו הוא התחייבות שהקוד חייב לקיים.
 

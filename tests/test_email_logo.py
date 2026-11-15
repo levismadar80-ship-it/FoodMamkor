@@ -239,4 +239,7 @@ def test_no_html_email_in_the_backend_without_the_logo():
     # v3 of the same card added a sixth: `send_owner_invite_code_email`, the
     # 6-digit code mail, which carries the logo too.
     assert checked.get("services/auth_emails.py") == (6, 6), checked
-    assert sum(d for d, _ in checked.values()) == 14, checked
+    # MEH-3079 moved the total by one: the weekly owner summary
+    # (services/weekly_owner_summary.py) is a new HTML document with its logo.
+    assert checked.get("services/weekly_owner_summary.py") == (1, 1), checked
+    assert sum(d for d, _ in checked.values()) == 15, checked

@@ -37,6 +37,7 @@
       "about": "About",
       "process": "Our process",
       "faq_businesses": "FAQ for Businesses",
+      "guides": "Guides for businesses",
       "add_business": "Add Your Business",
       "login": "Sign In",
       "terms": "Terms of Service",
@@ -59,6 +60,7 @@
       "group_business_heading": "For businesses",
       "producers": "All businesses",
       "why_local": "Why local?",
+      "badges": "What the badges mean",
       "newsletter_heading": "Good food is meant to be shared",
       "newsletter_label": "Newsletter email",
       "newsletter_placeholder": "Your email, please",
@@ -1147,7 +1149,7 @@
       "status_funded": "Reached the goal",
       "status_fulfilled": "Fulfilled",
       "status_hint_open": "Join now without paying. Once the minimum is reached, the group price unlocks.",
-      "status_hint_funded": "These groups reached the minimum. Joining is closed and the business is in touch with the participants.",
+      "status_hint_funded": "These groups reached the minimum. Joining is closed, and participants contact the business to arrange their order.",
       "status_hint_fulfilled": "The orders were delivered to the participants.",
       "empty_title": "No active group-buys yet",
       "empty_subtitle": "When businesses open group-buys, you'll find them here"
@@ -1183,7 +1185,7 @@
       "delivery_label": "Delivery",
       "how_title": "How it works",
       "how_join": "Join now. You pay nothing through the site",
-      "how_unlock": "Once {min} people join, the group price unlocks and the business gets in touch",
+      "how_unlock": "Once {min} people join, the group price unlocks and you contact the business to arrange your order",
       "how_no_commit": "Didn't reach the goal by the deadline? Nobody is committed",
       "quantity_label": "Quantity",
       "submitting": "Joining...",
@@ -1221,6 +1223,10 @@
       "empty_description": "You set the minimum participants and the deadline. If the minimum isn't reached, no one pays. Perfect for a weekly neighborhood veggie box, a family cheese bundle, or a group order of harvest olive oil.",
       "empty_cta": "+ Create first group",
       "progress_label": "{commits} / {min} participants",
+      "units_ordered": "{count, plural, one {Total ordered: 1 unit} other {Total ordered: # units}}",
+      "units_ordered_with_unit": "Total ordered: {count} (unit: {unit})",
+      "units_requested": "{count, plural, one {Requested so far: 1 unit} other {Requested so far: # units}}",
+      "units_requested_with_unit": "Requested so far: {count} (unit: {unit})",
       "deadline_prefix": "Deadline: {date}",
       "view_public": "View public page →",
       "form": {
@@ -3445,6 +3451,16 @@
     "error_body": "The link may have expired or opened only partway. Try again from the email, or get in touch.",
     "cta_home": "Back to home"
   },
+  "weekly_summary_unsubscribe": {
+    "meta_title": "Stop the weekly summary",
+    "loading": "Updating…",
+    "success_title": "The weekly summary is off",
+    "success_body": "We won't send this business's weekly summary any more. All the numbers are still on your dashboard, under Insights.",
+    "error_title": "This link isn't valid",
+    "error_body": "The link may have opened only partway. Try again from the email, or get in touch.",
+    "cta_insights": "Go to Insights",
+    "cta_home": "Back to home"
+  },
   "delivery_waitlist_host_confirm": {
     "meta_title": "Pickup point confirmation",
     "loading": "Confirming…",
@@ -4550,6 +4566,33 @@
         "body": "I'm Sapir. I started Mehamakor so people can find businesses like yours. I approve every page personally, and everything you need to make your page work for you is here.",
         "whatsapp": "Questions? I answer on WhatsApp.",
         "cta": "Complete your page",
+        "close": "Close"
+      },
+      "new_tool": {
+        "pill": "New",
+        "dot": "There is a new tool"
+      },
+      "first_moments": {
+        "first_review": {
+          "title": "Your first review is here",
+          "body": "Someone took the time to write about you. A short reply shows others that you care.",
+          "cta": "Read and reply"
+        },
+        "first_whatsapp": {
+          "title": "Your first WhatsApp tap",
+          "body": "Someone tapped the button on your page to message you. It's worth checking whether a message arrived.",
+          "cta": "See all stats"
+        },
+        "views_100": {
+          "title": "100 views of your page",
+          "body": "A hundred times, someone stopped to read about you. Sharing your link will bring more.",
+          "cta": "See all stats"
+        },
+        "first_follower": {
+          "title": "Your first follower",
+          "body": "Someone saved your business, and updates on what you post will reach them.",
+          "cta": "See all stats"
+        },
         "close": "Close"
       },
       "section_errors": {
@@ -5722,9 +5765,12 @@
         "confirm_email_label": "Type your email to confirm",
         "submit_cta": "Confirm deletion",
         "submit_deleting": "Deleting…",
-        "grace_heading": "Deletion request received",
-        "grace_body": "Your account will be disconnected within 30 days. Until then, you can cancel the request by logging in again.",
-        "back_to_login": "Back to login"
+        "business_warning": "Deleting your account also deletes {name}: the page, products, events, reviews and photos. Open group buys will be cancelled and participants notified. The page address will not be reused. This cannot be undone.",
+        "pause_offer": "Just need a break? Switch to \"On break\" until a date you choose. Your page stays up, marked as on break, and is hidden from search until you return.",
+        "pause_cta": "Go on break",
+        "admin_blocked": "A system admin account can't be deleted from here. Another admin must first remove its admin permission.",
+        "super_admin_blocked": "This is the site's main account and it can't be deleted.",
+        "reauth_prompt": "To confirm the deletion, sign in again with {provider}."
       }
     }
   },
@@ -6168,6 +6214,7 @@
     "login_prompt_title": "Reserve a bag",
     "login_prompt_message": "To reserve a bag, sign in to your account.",
     "errors": {
+      "unverified": "Please verify your email address first.",
       "blocked": "Reservations are blocked after two no-shows. Please write to us.",
       "sold_out": "That bag is gone. There are others nearby.",
       "max_two": "You can reserve up to two bags.",
@@ -6854,5 +6901,9 @@
       "stay_body": "No paid tools and nothing to pay. Your page stays on the site, as it is today.",
       "cta": "Join, free"
     }
+  },
+  "account_deleted": {
+    "heading": "Account deleted",
+    "body": "Your account has been deleted, along with your profile, favorites and the reviews you wrote. A confirmation email is on its way."
   }
 }

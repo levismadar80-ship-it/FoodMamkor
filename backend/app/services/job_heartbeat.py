@@ -39,6 +39,10 @@ RETENTION_PURGE_CRON = "30 2 * * *"  # MEH-2303
 ADMIN_PENDING_REMINDER_CRON = "0 5 * * *"  # 07:00/08:00 Israel (MEH-3147)
 WATCHDOG_INTERVAL_MINUTES = 5  # MEH-509
 RESCUE_DIGEST_INTERVAL_MINUTES = 5  # MEH-2756
+# Sunday 08:00 on the Israel clock (MEH-3079); the zone travels with the
+# schedule so DST moves the UTC fire time, in the trigger and the monitor alike.
+WEEKLY_OWNER_SUMMARY_CRON = "0 8 * * sun"
+WEEKLY_OWNER_SUMMARY_TZ = "Asia/Jerusalem"
 
 # How late a check-in may be before Sentry calls it missed, and how long a
 # run may take before Sentry calls it timed out. Daily jobs get two hours:
@@ -50,10 +54,10 @@ _INTERVAL_MARGIN_MIN = 5
 _MAX_RUNTIME_MIN = 30
 
 
-def cron_monitor_config(crontab: str) -> dict[str, Any]:
+def cron_monitor_config(crontab: str, timezone: str = "UTC") -> dict[str, Any]:
     return {
         "schedule": {"type": "crontab", "value": crontab},
-        "timezone": "UTC",
+        "timezone": timezone,
         "checkin_margin": _DAILY_MARGIN_MIN,
         "max_runtime": _MAX_RUNTIME_MIN,
     }

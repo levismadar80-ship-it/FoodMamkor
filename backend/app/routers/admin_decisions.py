@@ -46,7 +46,7 @@ from app.services.auth_notifications import (
     notify_producer_changes_requested,
 )
 from app.services.email import send_email
-from app.services.group_buy_delist import cancel_live_group_buys  # MEH-2498
+from app.services.booking_cancellations import delist_business  # MEH-2498, MEH-3227
 from app.services.producer_approval import (
     ApprovalOverrides,
     _apply_approval_state,
@@ -285,8 +285,8 @@ def reject_producer(
     # MEH-2498: rejecting a business that was live takes it off the site — its
     # live group buys are cancelled in the same commit, participants mailed.
     was_live = producer.status == "approved"
-    if was_live:
-        cancel_live_group_buys(db, producer, background_tasks)
+    if was_live:  # MEH-3227: + bags and sign-ups; the rejection email tells her
+        delist_business(db, producer, background_tasks)
     # MEH-2974: a rejection revokes an outstanding owner invite, for the same
     # reason a suspension does — a page rejected for cause and re-approved
     # within the link's week must not come back with the old link still live.

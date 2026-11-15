@@ -360,8 +360,42 @@ def _scrub_event_urls(event: dict[str, Any]) -> None:
             request["url"] = redact_url_tokens(request["url"])
         if isinstance(event.get("transaction"), str):
             event["transaction"] = redact_url_tokens(event["transaction"])
+        # MEH-3273: `?token=` rides in the query string, which the SDK copies
+        # verbatim beside the URL; and a page URL carrying a token reaches us
+        # again as the Referer of its same-origin /api calls.
+        if isinstance(request, dict):
+            if isinstance(request.get("query_string"), str):
+                request["query_string"] = redact_url_tokens(request["query_string"])
+            headers = request.get("headers")
+            if isinstance(headers, dict):
+                for key in list(headers):
+                    if key.lower() == "referer" and isinstance(headers[key], str):
+                        headers[key] = redact_url_tokens(headers[key])
+        # Our own `request_info` context (middleware.py) is already redacted
+        # at write time; redact again so the event is safe on its own.
+        info = (event.get("contexts") or {}).get("request_info")
+        if isinstance(info, dict) and isinstance(info.get("url"), str):
+            info["url"] = redact_url_tokens(info["url"])
     except Exception:  # noqa: BLE001 — never break reporting over a scrub
         return
+
+
+def before_send_transaction(
+    event: dict[str, Any], hint: dict[str, Any] | None = None
+) -> dict[str, Any] | None:
+    """Sentry ``before_send_transaction`` hook — URL scrub for traces.
+
+    MEH-3273. ``before_send`` never sees transaction events (sentry-sdk
+    2.73.0 ``client.py`` routes ``type == "transaction"`` to this hook
+    instead), yet the ASGI integration fills ``request.url`` from the raw
+    path on traces too. Without this hook every sampled
+    ``GET /auth/owner-invite/<token>`` shipped the live token. Scrub only —
+    no budget or drop logic, traces have their own sample rate. Fails open
+    (TRAP 1 in ``before_send``): ``_scrub_event_urls`` swallows its own
+    errors, and the event is always returned.
+    """
+    _scrub_event_urls(event)
+    return event
 
 
 def before_send(
@@ -526,6 +560,8 @@ def init_sentry() -> None:
             "integrations": [FastApiIntegration()],
             # MEH-2114 event budget — see the header block for the arithmetic.
             "before_send": before_send,
+            # MEH-3273: transactions bypass before_send; scrub them here.
+            "before_send_transaction": before_send_transaction,
             "error_sampler": error_sampler,
         }
         try:

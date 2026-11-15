@@ -175,6 +175,7 @@ const ROUTES = [
   ["/rescue", () => import("@/app/[locale]/rescue/page"), p()],
   ["/newsletter/unsubscribe", () => import("@/app/[locale]/newsletter/unsubscribe/page"), p()],
   ["/delivery-waitlist/unsubscribe", () => import("@/app/[locale]/delivery-waitlist/unsubscribe/page"), p()],
+  ["/unsubscribe/weekly", () => import("@/app/[locale]/unsubscribe/weekly/page"), p()],
   ["/delivery-waitlist/host-confirm", () => import("@/app/[locale]/delivery-waitlist/host-confirm/page"), p()],
   ["/registration/[token]", () => import("@/app/[locale]/registration/[token]/page"), p({ token: "t" })],
   ["/about/for-businesses/guides", () => import("@/app/[locale]/about/for-businesses/guides/page"), p()],
