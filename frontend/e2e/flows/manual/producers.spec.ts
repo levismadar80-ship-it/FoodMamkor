@@ -195,9 +195,9 @@ function icu(msg: string, count: number): string {
 // MEH-2783: the row shows the /map department GROUPS (he.map_category_chips),
 // matched by name or by the stable slug — so the fixture carries slugs, as
 // CategoryOut does. «ביצים» now sits in the dairy group («חלב וביצים»).
-const CAT_MEAT = { id: 1, name: "בשר", slug: "meat" };
-const CAT_DAIRY = { id: 2, name: "חלב וגבינות", slug: "dairy" };
-const CAT_EGGS = { id: 3, name: "ביצים", slug: "eggs" };
+const CAT_MEAT = { id: 1, name: "בשר", slug: "meat", requires_license: false };
+const CAT_DAIRY = { id: 2, name: "חלב וגבינות", slug: "dairy", requires_license: false };
+const CAT_EGGS = { id: 3, name: "ביצים", slug: "eggs", requires_license: false };
 const G_HE = he.map_category_chips;
 const DAIRY_TINT = "rgb(59, 114, 173)"; // #3b72ad, CATEGORY_CHIPS dairy iconColor
 const CATEGORIES = [CAT_MEAT, CAT_DAIRY, CAT_EGGS];
