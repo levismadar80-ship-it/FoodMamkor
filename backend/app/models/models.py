@@ -956,6 +956,15 @@ class User(Base):
     password_changed_at = Column(DateTime(timezone=True), nullable=True, default=None)
     # MEH-192: email verification. Token is cleared on successful verify.
     email_verified = Column(Boolean, default=False)
+    # MEH-3301 (D14): WhatsApp alerts go only to a phone the user verified
+    # with a code (user_phone_otp_tokens). `phone_verified_at` is when THIS
+    # `phone` was verified — a phone change clears it. `whatsapp_consent_at`
+    # is when she agreed to WhatsApp updates; «הסר» clears it. Both nullable,
+    # no backfill: NULL = no evidence, which is the truth for every existing
+    # row (same reasoning as terms_accepted_at above). Not in any response
+    # schema yet; MEH-3302 decides what the profile shows.
+    phone_verified_at = Column(DateTime(timezone=True), nullable=True)
+    whatsapp_consent_at = Column(DateTime(timezone=True), nullable=True)
     email_verify_token = Column(String(64), nullable=True, index=True)
     email_verify_expires = Column(DateTime, nullable=True)
     # MEH-2644: rescue-bag no-shows. The pilot blocks new reservations after
@@ -1158,6 +1167,7 @@ from app.models.admin_ops import (  # noqa: E402
     OutboundMessage as OutboundMessage,
     OutreachLead as OutreachLead,
     PhoneOtpToken as PhoneOtpToken,
+    UserPhoneOtpToken as UserPhoneOtpToken,
     ProducerNameChangeRequest as ProducerNameChangeRequest,
     ProducerReviewCheck as ProducerReviewCheck,
 )
