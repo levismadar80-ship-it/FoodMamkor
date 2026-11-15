@@ -2214,6 +2214,26 @@ export const GrantVerifiedAdminProducersProducerIdGrantVerifiedPostResponse = /*
 
 
 /**
+ * Mark a business as licensed to sell alcohol (or take the mark away).
+ *
+ * Sapir's decision of 14/11: alcohol can be ordered only from a business an
+ * admin has marked. The mark does not switch ordering on — `enabled` is the
+ * owner's own choice and a row created here starts with it off.
+ * @summary Set Alcohol Licensed
+ */
+export const SetAlcoholLicensedAdminProducersProducerIdOrderSettingsAlcoholPutResponse = /*#__PURE__*/ zod.object({
+  "alcohol_licensed": /*#__PURE__*/ zod.boolean(),
+  "auto_confirm": /*#__PURE__*/ zod.boolean(),
+  "auto_confirm_slot_cap": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()]),
+  "cancel_cutoff_hours": /*#__PURE__*/ zod.int(),
+  "enabled": /*#__PURE__*/ zod.boolean(),
+  "min_order_agorot": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()]),
+  "producer_id": /*#__PURE__*/ zod.uuid(),
+  "shabbat_observant": /*#__PURE__*/ zod.boolean()
+})
+
+
+/**
  * Withdraw an invite that has not been accepted.
  *
  * Clears the PII too, not only the token. The address and the name belong to
@@ -5472,6 +5492,39 @@ export const RequestNameChangeProducersMeNameChangeRequestsPostResponse = /*#__P
   "requested_name": /*#__PURE__*/ zod.string(),
   "reviewed_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()])),
   "status": /*#__PURE__*/ zod.string()
+})
+
+
+/**
+ * The business's ordering settings; the defaults (off) if never saved.
+ * @summary Get My Order Settings
+ */
+export const GetMyOrderSettingsProducersMeOrderSettingsGetResponse = /*#__PURE__*/ zod.object({
+  "alcohol_licensed": /*#__PURE__*/ zod.boolean(),
+  "auto_confirm": /*#__PURE__*/ zod.boolean(),
+  "auto_confirm_slot_cap": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()]),
+  "cancel_cutoff_hours": /*#__PURE__*/ zod.int(),
+  "enabled": /*#__PURE__*/ zod.boolean(),
+  "min_order_agorot": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()]),
+  "producer_id": /*#__PURE__*/ zod.uuid(),
+  "shabbat_observant": /*#__PURE__*/ zod.boolean()
+})
+
+
+/**
+ * Save the whole settings form. `alcohol_licensed` is not in the body and
+ * is never touched here — only the admin route writes it.
+ * @summary Put My Order Settings
+ */
+export const PutMyOrderSettingsProducersMeOrderSettingsPutResponse = /*#__PURE__*/ zod.object({
+  "alcohol_licensed": /*#__PURE__*/ zod.boolean(),
+  "auto_confirm": /*#__PURE__*/ zod.boolean(),
+  "auto_confirm_slot_cap": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()]),
+  "cancel_cutoff_hours": /*#__PURE__*/ zod.int(),
+  "enabled": /*#__PURE__*/ zod.boolean(),
+  "min_order_agorot": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()]),
+  "producer_id": /*#__PURE__*/ zod.uuid(),
+  "shabbat_observant": /*#__PURE__*/ zod.boolean()
 })
 
 

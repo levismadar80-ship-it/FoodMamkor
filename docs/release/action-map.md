@@ -16,8 +16,8 @@
 
 | Rows | Count | covered | weak | GAP | n/a |
 |---|---|---|---|---|---|
-| API routes (actor actions) | 241 | 228 | 7 | 6 | 0 |
-| — negative cell of gated routes (401/403) | 172 | 110 | 0 | 62 | 0 |
+| API routes (actor actions) | 244 | 231 | 7 | 6 | 0 |
+| — negative cell of gated routes (401/403) | 175 | 113 | 0 | 62 | 0 |
 | Internal routes (allowlisted) | 10 + 4 docs | — | — | — | — |
 | Business tools | 51 | 49 | 1 | 1 | 0 |
 | Pages — public | 55 | 51 | 0 | 4 | 0 |
@@ -314,6 +314,9 @@ Registration order of the app. Actor from the dependency tree: `require_admin` �
 | 249 | PUT | `/producers/me/rescue/offers/{offer_id}/donated` | `rescue.set_donated` | business/organizer · flag: rescue | `tests/test_meh2703_rescue_donated.py:82` | GAP | e2e-mock `frontend/e2e/flows/manual/home.spec.ts:502` | 9 |
 | 250 | GET | `/producers/me/rescue/typical-items` | `rescue.get_typical_items` | business/organizer · flag: rescue | `tests/test_meh2752_rescue_allergens.py:78` | GAP | e2e-mock `frontend/e2e/flows/manual/home.spec.ts:502` | 5 |
 | 251 | PUT | `/producers/me/rescue/typical-items` | `rescue.set_typical_items` | business/organizer · flag: rescue | `tests/test_meh2752_rescue_allergens.py:68` | GAP | e2e-mock `frontend/e2e/flows/manual/home.spec.ts:502` | 7 |
+| 252 | GET | `/producers/me/order-settings` | `product_orders.get_my_order_settings` | business/organizer | `tests/test_meh3218_product_orders.py:357` | `tests/test_meh3218_product_orders.py:415` | e2e-mock `frontend/e2e/flows/manual/home.spec.ts:502` | 3 |
+| 253 | PUT | `/producers/me/order-settings` | `product_orders.put_my_order_settings` | business/organizer | `tests/test_meh3218_product_orders.py:380` | `tests/test_meh3218_product_orders.py:413` | e2e-mock `frontend/e2e/flows/manual/home.spec.ts:502` | 5 |
+| 254 | PUT | `/admin/producers/{producer_id}/order-settings/alcohol` | `product_orders.set_alcohol_licensed` | admin | `tests/test_meh3218_product_orders.py:447` | `tests/test_meh3218_product_orders.py:438` | — | 5 |
 
 ### Internal routes (allowlisted — not actor actions)
 

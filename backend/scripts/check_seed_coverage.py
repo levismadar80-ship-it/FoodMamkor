@@ -318,6 +318,12 @@ EXEMPT_TABLES = {
     "business_billing": "MEH-3180 billing state per business — no row means the launch state; a row is written only once billing starts, so a full seed leaves it empty",
     "rescue_reviews": "MEH-2644 rescue-bags pilot — written only after a handed order, runtime only",
     "rescue_typical_items": "MEH-2644 rescue-bags pilot — child rows of rescue_offers, runtime only",
+    # MEH-3218 on-site ordering — dark behind product_orders_enabled; a seed
+    # row would show an order no visitor sent and a setting no owner chose.
+    "producer_order_settings": "MEH-3218 on-site ordering — dark behind a flag; saved by an owner at runtime",
+    "product_orders": "MEH-3218 on-site ordering — a visitor's order request, runtime only",
+    "product_order_items": "MEH-3218 on-site ordering — lines of a visitor's order, runtime only",
+    "product_order_events": "MEH-3218 on-site ordering — status log of an order, runtime only",
     "delivery_waitlist": "MEH-2618 «תודיעו לי כשתגיעו» entries — written only by a visitor's own form submit, like favorites clicks; the demo seed has no visitors",
     # `cities` is EMPTY after a full local seed — measured, not assumed. It is
     # owned by backend/scripts/seed_cities.py, not by seed_data.py, so it is

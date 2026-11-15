@@ -118,6 +118,8 @@ OWNED_TABLE_EXEMPT = {
     "producer_review_checks": "admin-only checklist rows, bounded by the checklist item count",
     "retired_slugs": "one row per rename; renames go through the pending name-change request",
     "users": "the owner's own account row(s)",
+    "producer_order_settings": "one row per business (producer_id is the primary key; PUT replaces it)",
+    "product_orders": "written by no route yet (MEH-3218 ships the table only); the order route of MEH-3216 adds its per-phone and per-business caps before it writes here",
     "producer_reviews": "one review per user per business (upsert in reviews.py ~495), rate-limited",
     "favorites": "one row per user per business (existing-row check in favorites.py ~85), rate-limited",
     "favorite_alerts": "one row per favorite",

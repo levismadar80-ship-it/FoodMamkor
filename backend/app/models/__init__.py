@@ -47,6 +47,17 @@ from app.models.models import (
     StaticPage,
     User,
 )
+from app.models.product_orders import (
+    PRODUCT_ORDER_ACTORS,
+    PRODUCT_ORDER_FULFILMENTS,
+    PRODUCT_ORDER_PAYMENT_STATUSES,
+    PRODUCT_ORDER_STATUSES,
+    PRODUCT_PRICE_UNITS,
+    ProducerOrderSettings,
+    ProductOrder,
+    ProductOrderEvent,
+    ProductOrderItem,
+)
 
 # MEH-3179: its own module (models.py is at its size baseline). Imported here
 # so Base.metadata — and with it Alembic and the test schema — sees the table.
@@ -116,4 +127,14 @@ __all__ = [
     "ProducerLocation",
     # MEH-1823 (chunk 1) — one typed, expiring offer per business
     "ProducerOffer",
+    # MEH-3218 — on-site ordering (stage 1 of MEH-3216)
+    "ProducerOrderSettings",
+    "ProductOrder",
+    "ProductOrderItem",
+    "ProductOrderEvent",
+    "PRODUCT_ORDER_STATUSES",
+    "PRODUCT_ORDER_FULFILMENTS",
+    "PRODUCT_ORDER_PAYMENT_STATUSES",
+    "PRODUCT_ORDER_ACTORS",
+    "PRODUCT_PRICE_UNITS",
 ]
