@@ -16,7 +16,7 @@ From a local machine (where the internal host is unreachable), override `DATABAS
 
     DATABASE_URL="<DATABASE_PUBLIC_URL value>" python -m scripts.cleanup_cloudinary_orphans
 
-Default behavior: lists Cloudinary assets under prefixes `mehamakor/` and `mehamakor/avatars/`, queries 8 DB image sources (`User.avatar_url`, `Producer.story_card_url`, `Product.image_url`, `HomeProduct.photo`, `Event.image_url`, `Experience.image_url`, `Producer.images[]`, `HomeProduct.images[]`), computes orphans via `secure_url` string equality, and prints a summary block to stdout.
+Default behavior: lists Cloudinary assets under prefixes `mehamakor/` and `mehamakor/avatars/`, queries the 12 DB image sources registered in `backend/app/services/image_refs.py` (`SCALAR_URL_SOURCES` + `ARRAY_URL_SOURCES`; MEH-3247 added `Producer.owner_photo_url`, `ProducerRecipe.image_url`, `RescueReview.photo_url`, `KashrutBadgeRequest.cert_url`, which the sweep used to miss), computes orphans via `secure_url` string equality, and prints a summary block to stdout.
 
 Expected stdout output:
 

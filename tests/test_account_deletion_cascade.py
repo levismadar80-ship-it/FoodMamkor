@@ -148,7 +148,7 @@ def test_delete_account_cascades_story_card_destroy(client, db, monkeypatch):
 
     calls: list[dict] = []
 
-    def fake_destroy(url, bypass_reserved=False, context=""):
+    def fake_destroy(url, bypass_reserved=False, context="", db=None):
         calls.append({"url": url, "bypass_reserved": bypass_reserved})
         return True
 
@@ -177,7 +177,7 @@ def test_delete_account_with_no_story_card_still_calls_destroy(
 
     calls: list[dict] = []
 
-    def fake_destroy(url, bypass_reserved=False, context=""):
+    def fake_destroy(url, bypass_reserved=False, context="", db=None):
         calls.append({"url": url, "bypass_reserved": bypass_reserved})
         return True
 

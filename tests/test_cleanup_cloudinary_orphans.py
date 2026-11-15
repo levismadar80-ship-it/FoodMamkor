@@ -192,7 +192,7 @@ class TestPrefixDefaultPostFill:
 class TestSourceConstants:
     """Lock the 8-source list. Drift in either tuple = silent miss in cleanup."""
 
-    def test_scalar_sources_is_six_specific_columns(self):
+    def test_scalar_sources_is_the_shared_registry(self):
         # Compare on InstrumentedAttribute identity via .key attribute, which
         # is the column name on the parent model. SQLA InstrumentedAttribute
         # __eq__ produces a SQL expression, not a bool — never compare those
@@ -205,6 +205,11 @@ class TestSourceConstants:
             ("HomeProduct", "photo"),
             ("Event", "image_url"),
             ("Experience", "image_url"),
+            # MEH-3247: added when the registry moved to services/image_refs.py.
+            ("Producer", "owner_photo_url"),
+            ("ProducerRecipe", "image_url"),
+            ("RescueReview", "photo_url"),
+            ("KashrutBadgeRequest", "cert_url"),
         ]
 
     def test_array_sources_is_two_specific_columns(self):
@@ -214,9 +219,9 @@ class TestSourceConstants:
             ("HomeProduct", "images"),
         ]
 
-    def test_total_source_count_is_eight(self):
-        # Phase 1 spec lock: 6 scalar + 2 array = 8 referenced-set sources.
-        assert len(SCALAR_URL_SOURCES) + len(ARRAY_URL_SOURCES) == 8
+    def test_total_source_count_is_twelve(self):
+        # MEH-3247: 10 scalar + 2 array = 12 referenced-set sources (was 8).
+        assert len(SCALAR_URL_SOURCES) + len(ARRAY_URL_SOURCES) == 12
 
 
 class TestAddScalarUrls:
@@ -378,8 +383,9 @@ class TestBuildReferencedUrlSet:
             table[col] = [(None,), ([],), ([None, _url(col), ""],)]
         db = self._stub_session(table)
         result = build_referenced_url_set(db)
-        # 6 scalar sources + 2 array sources, each contributing exactly 1 URL.
-        assert len(result) == 8
+        # Every scalar and array source contributes exactly 1 URL (derived,
+        # not stated: 10 + 2 since MEH-3247).
+        assert len(result) == len(SCALAR_URL_SOURCES) + len(ARRAY_URL_SOURCES)
         for col in SCALAR_URL_SOURCES + ARRAY_URL_SOURCES:
             assert _url(col) in result
 

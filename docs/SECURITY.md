@@ -275,6 +275,11 @@ async def validate_and_upload_image(file: UploadFile) -> str:
     return result["secure_url"]
 ```
 
+**מחיקת תמונה ישנה (MEH-3247):** ניקוי תמונה מ-Cloudinary בודק קודם שאף שורה
+אחרת לא משתמשת באותו public_id (`services/image_refs.py`), ואם הבדיקה נכשלת —
+לא מוחקים. בלי זה, בעלת עסק יכלה להכניס לגלריה שלה כתובת של תמונה של עסק אחר,
+להסיר אותה, ולמחוק לו את התמונה. פירוט: DATA.md, סעיף Upload.
+
 ### 7. CORS — אל תאפשרי לכולם
 
 ```python

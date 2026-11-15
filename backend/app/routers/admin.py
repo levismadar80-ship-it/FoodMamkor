@@ -1077,6 +1077,7 @@ def admin_update_producer(
             old_images,
             producer.images or [],  # type: ignore[arg-type]
             context="admin.admin_update_producer images",
+            db=db,  # MEH-3247
         )
 
     if indexnow.is_public_owner(producer):  # MEH-2852
@@ -1254,19 +1255,21 @@ def admin_delete_producer(
     from app.cloudinary_utils import destroy_image
 
     for url in old_image_urls:
-        destroy_image(url, context="admin.admin_delete_producer images")
+        destroy_image(url, context="admin.admin_delete_producer images", db=db)
     for url in old_product_urls:
-        destroy_image(url, context="admin.admin_delete_producer product_image")  # type: ignore[arg-type]
+        destroy_image(url, context="admin.admin_delete_producer product_image", db=db)  # type: ignore[arg-type]
     # MEH-510: bypass_reserved=True — the producer is gone, the slot is now an orphan.
     destroy_image(
         old_story_card_url,  # type: ignore[arg-type]
         bypass_reserved=True,
         context="admin.admin_delete_producer story_card",
+        db=db,  # MEH-3247
     )
     # MEH-1335: owner photo — non-reserved namespace, default reject list OK.
     destroy_image(
         old_owner_photo_url,  # type: ignore[arg-type]
         context="admin.admin_delete_producer owner_photo",
+        db=db,  # MEH-3247
     )
 
     return {"detail": "Producer deleted"}

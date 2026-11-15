@@ -1624,6 +1624,17 @@ POST /upload/owner-photo         auth+producer — MEH-1335 owner photo; no free
                                  writes producers.owner_photo_url atomically
 ```
 
+> **Destroying an old photo (MEH-3247).** Every post-commit cleanup
+> (`cloudinary_utils.destroy_image` / `destroy_removed_images`) first asks
+> `services/image_refs.py` whether ANY row still stores that public_id, and
+> skips the destroy when one does (another business's photo, or the same photo
+> still in a gallery). A failed check skips too (fail closed). The column list
+> (`SCALAR_URL_SOURCES` / `ARRAY_URL_SOURCES`) is the same one the orphan sweep
+> `backend/scripts/cleanup_cloudinary_orphans.py` uses. Consequence: a photo
+> another row hot-links outlives the uploader's account deletion until that row
+> drops it (follow-up card). No upload ledger exists, so PUT still accepts a
+> foreign Cloudinary URL (follow-up card).
+
 ### Health (`app/routers/health.py`)
 
 Three surfaces, one owner. All public, all unrate-limited. Undocumented since
