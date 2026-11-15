@@ -78,7 +78,7 @@ The **tagline** is specced for: footer brand line, OpenGraph card, `/about` narr
 Hybrid Hebrew policy — surface determines grammatical form:
 
 - **UI strings** (buttons, loading, errors, hero H1 + subtitle): gerund (`"טעינה"`) or plural (`"גלו"`, `"הוסיפו"`)
-- **Brand voice** (`/about` narrative, founder letter, below-the-fold editorial): reader address is neutral too (ADR-037, 04/11/2026). Feminine stays only in the founder's first-person voice (`"אנחנו מכירות"`) and on admin screens
+- **Brand voice** (`/about` narrative, founder letter, below-the-fold editorial): reader address is neutral too (ADR-037, 04/11/2026). Feminine stays only in the founders' first-person voice (two founders, Sapir + Topaz — MEH-3323) (`"אנחנו מכירות"`) and on admin screens
 - **Forbidden across all surfaces:** slash form (`"טוענ/ת"`), pure masculine (`"המשתמש שלך"`), `"יצרן"`/`"יצרנית"`
 - **Surface-function taxonomy (ADR-024, amended by ADR-037):** every reader-facing surface → neutral (plural / verbal noun / impersonal; masculine plural as unmarked). הבהרה: "pure masculine" forbidden = פנייה זכרית לקוראת (`"המשתמש שלך"`), NOT the owner noun (`"בעלי עסקים"` is permitted — סתמי/unmarked)
 

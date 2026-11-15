@@ -262,7 +262,7 @@ describe("welcome card", () => {
     const card = screen.getByTestId("owner-welcome");
     expect(within(card).getByRole("heading")).toHaveTextContent("ברוכים הבאים למהמקור");
     expect(card).toHaveTextContent(he.dashboard.producer.welcome_card.body);
-    expect(card).toHaveTextContent("שאלה? אני עונה בוואטסאפ.");
+    expect(card).toHaveTextContent("שאלה? אנחנו עונות בוואטסאפ."); // MEH-3323: two founders
     expect(within(card).getByRole("link", { name: "להשלמת העמוד" })).toHaveAttribute("href", "/producer/dashboard/edit");
     fireEvent.click(within(card).getByRole("button", { name: "סגירה" }));
     expect(onClose).toHaveBeenCalledOnce();
