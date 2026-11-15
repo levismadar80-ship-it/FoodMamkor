@@ -167,7 +167,7 @@ def test_both_doors_destroy_every_owned_image(client, db, monkeypatch):
         monkeypatch.setattr(
             cloudinary_utils,
             "destroy_image",
-            lambda url, bypass_reserved=False, context="": calls.append((url, bypass_reserved)) or True,
+            lambda url, bypass_reserved=False, context="", db=None: calls.append((url, bypass_reserved)) or True,
         )
         owner = seed(tag)
         r = call(owner)
