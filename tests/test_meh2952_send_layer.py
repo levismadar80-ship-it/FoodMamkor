@@ -979,6 +979,17 @@ PINNED: dict[tuple[str, str, str], tuple[int, str, str]] = {
         OWN,
         "p_test — producer.is_test or user.is_test, captured pre-commit",
     ),
+    # MEH-3256: the same acceptance for a signed-in existing account — same
+    # mail, same flag (producer.is_test or the locked user's is_test).
+    (
+        "routers/producer_owner_invite_existing.py",
+        "accept_owner_invite_existing",
+        "add_task(send_email)",
+    ): (
+        1,
+        OWN,
+        "p_test — producer.is_test or user.is_test, captured pre-commit",
+    ),
     # --- auth_emails: a user's own auth action ---
     ("services/auth_emails.py", "send_reset_email", "send_email"): (
         1,
@@ -1294,6 +1305,12 @@ PINNED: dict[tuple[str, str, str], tuple[int, str, str]] = {
         1,
         BUS,
         "wrapper param ← producer.is_test",
+    ),
+    # MEH-3226 (D4): the buyer's mail on each no-show.
+    ("services/rescue_no_show.py", "send_no_show_email", "send_email"): (
+        1,
+        CON,
+        "wrapper param ← producer.is_test or user.is_test",
     ),
     ("services/rescue_emails.py", "send_reservation_email", "send_email"): (
         1,
