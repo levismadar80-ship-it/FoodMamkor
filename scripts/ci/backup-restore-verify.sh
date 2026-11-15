@@ -28,7 +28,7 @@
 #           verification queries at :84-98) ·
 #           $WORKFLOW_FILE:360 (EXPECTED_TABLES, the live source of truth for
 #           the table count) ·
-#           backend/app/models/models.py (`__tablename__` + module-level
+#           backend/app/models/*.py (`__tablename__` + module-level
 #           `Table(` — the table list is DERIVED from here at run time, never
 #           typed; 38 → 40 → 42 in five weeks is why, MEH-1517 Phase 0 §2).
 # History:  MEH-1517 (creation — replaces the manual drill of MEH-1442 chunk 2
@@ -47,8 +47,8 @@
 #                              must contain zero public base tables
 #   --compare-only             skip dump + restore; run only the assertions
 #                              against two databases that already exist
-#   --models PATH              models file to derive the table list from
-#                              (default: backend/app/models/models.py)
+#   --models PATH              models file, or a directory of them, to derive
+#                              the table list from (default: backend/app/models)
 #   --expect-table-count N|auto
 #                              BACKUPS.md אימות א': the target's base-table
 #                              count (excluding alembic_version) must equal N.
@@ -74,7 +74,7 @@
 #   Three measurements of EXPECTED_TABLES in five weeks gave three values
 #   (38 · 40 · 42). A list typed into this file would be stale within weeks and
 #   would then PASS a restore that silently lost the newest table — the exact
-#   false green a drill exists to catch. Reading models.py at run time means a
+#   false green a drill exists to catch. Reading the model modules at run time means a
 #   new table is covered the day it lands. The self-test anchors this: it
 #   asserts the derived count equals the live EXPECTED_TABLES, so the two
 #   sources of truth cannot drift apart unnoticed either (MEH-1909: a probe
@@ -100,7 +100,9 @@ set -euo pipefail
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 cd "$REPO_ROOT" || exit 2
 
-MODELS_FILE="backend/app/models/models.py"
+# A directory: every *.py in it is read (see derive_tables). `--models` also
+# accepts a single file, which is what the self-test fixtures pass.
+MODELS_FILE="backend/app/models"
 # rtl-ok: a workflow FILENAME, not a padding class (same false positive dnm-matcher-guard.sh documents)
 WORKFLOW_FILE=".github/workflows/pr-checks.yml"
 DB_PREFIX="meh1517_"              # every throwaway database name starts with this
@@ -141,19 +143,31 @@ need_tools() {
   done
 }
 
-# The list of tables the models define. Two forms exist in models.py and BOTH
+# The list of tables the models define. Two forms exist in the model modules and BOTH
 # are read, because EXPECTED_TABLES=42 while there are only 41 `__tablename__`
 # lines — the 42nd is the module-level association table
-# `producer_recipe_products = Table("producer_recipe_products", …)` at
-# models.py:2073. A derivation that read only `__tablename__` would be off by
+# `producer_recipe_products = Table("producer_recipe_products", …)` in
+# models/recipes.py. A derivation that read only `__tablename__` would be off by
 # one and would never notice a lost association table.
 derive_tables() {
   local f="$1"
-  [ -r "$f" ] || die "models file not readable: $f"
+  local -a files
+  # A directory means "every model module in it": the models were split out of
+  # models.py into one file per area (MEH-3269), and a derivation that kept
+  # reading models.py alone would compare 8 tables and report success.
+  if [ -d "$f" ]; then
+    files=("$f"/*.py)
+  else
+    files=("$f")
+  fi
+  local x
+  for x in "${files[@]}"; do
+    [ -r "$x" ] || die "models file not readable: $x"
+  done
   {
-    grep -oE '__tablename__[[:space:]]*=[[:space:]]*"[A-Za-z0-9_]+"' "$f" | grep -oE '"[A-Za-z0-9_]+"' || true
+    grep -ohE '__tablename__[[:space:]]*=[[:space:]]*"[A-Za-z0-9_]+"' "${files[@]}" | grep -oE '"[A-Za-z0-9_]+"' || true
     # `name = Table(` on one line, the table name string on the next.
-    grep -A1 -E '=[[:space:]]*Table\([[:space:]]*$' "$f" | grep -oE '^[[:space:]]*"[A-Za-z0-9_]+"' || true
+    grep -h -A1 -E '=[[:space:]]*Table\([[:space:]]*$' "${files[@]}" | grep -oE '^[[:space:]]*"[A-Za-z0-9_]+"' || true
   } | tr -d '" \t' | grep . | LC_ALL=C sort -u || true   # strip quotes + indent, keep the newlines
 }
 
@@ -473,7 +487,7 @@ self_test() {
   note "admin: $ADMIN_URL   throwaway databases: $src_db, $tgt_db"
   trap 'drop_dbs 2>/dev/null || true' EXIT
 
-  # (a) REAL-REPO ANCHOR — the derivation must recognise this repo's models.py,
+  # (a) REAL-REPO ANCHOR — the derivation must recognise this repo's model modules,
   #     not just a fixture (MEH-1909). It must also agree with the live
   #     EXPECTED_TABLES; if those two ever disagree, one of them is stale and
   #     a drill built on the stale one would pass a lossy restore.
@@ -484,7 +498,7 @@ self_test() {
   out="derived=$n_derived live EXPECTED_TABLES=$live"
   if [ "$n_derived" -ge 30 ] && printf '%s\n' "$derived" | grep -qx producers && printf '%s\n' "$derived" | grep -qx users \
      && printf '%s\n' "$derived" | grep -qx producer_recipe_products; then rc=0; else rc=1; fi
-  check "real models.py: >=30 tables derived, incl. producers/users and the Table() form ($out)" 0 "$rc"
+  check "real models dir: >=30 tables derived, incl. producers/users and the Table() form ($out)" 0 "$rc"
   [ "$n_derived" = "$live" ] && rc=0 || rc=1
   check "real anchor: derived table count ($n_derived) == live EXPECTED_TABLES ($live)" 0 "$rc"
 
