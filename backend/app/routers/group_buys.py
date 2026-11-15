@@ -272,6 +272,28 @@ def _maybe_notify_funded(
     )
 
 
+def _notify_late_joiner(
+    gb: GroupBuy, user: User, background_tasks: BackgroundTasks
+) -> None:
+    """MEH-3289: a join to an already-funded group gets the existing funded
+    email, to her alone. The group-wide send is latched (funded_notified_at,
+    MEH-1651) and never fires again, so without this she would never get the
+    «how to arrange your order» email the others got."""
+    if not user.email:
+        return
+    background_tasks.add_task(
+        send_funded_notifications,
+        None,
+        [str(user.email)],
+        str(gb.title),
+        gb.producer.name if gb.producer else "",
+        str(gb.id),
+        str(gb.producer_id),
+        test_cause=bool(gb.producer and gb.producer.is_test),  # MEH-2952
+        late_joiner=True,
+    )
+
+
 @router.post("/{group_buy_id}/commit", status_code=201, response_model=None)
 @limiter.limit("20/minute")  # MEH-3022
 def commit_to_group_buy(  # noqa: PLR0913 — all args are FastAPI-injected; MEH-3022 added the slowapi request
@@ -291,7 +313,9 @@ def commit_to_group_buy(  # noqa: PLR0913 — all args are FastAPI-injected; MEH
     # MEH-2484: a group buy whose page is 404 cannot be joined via a held link.
     if not gb or not _is_public(db, gb.id):  # type: ignore[arg-type]
         raise HTTPException(status_code=404, detail="קבוצת הרכישה לא נמצאה")
-    if gb.status != "open":
+    # MEH-3289: a funded group keeps taking joins until full or past deadline.
+    was_funded = gb.status == "funded"
+    if gb.status not in ("open", "funded"):
         raise HTTPException(status_code=400, detail="קבוצת הרכישה אינה פתוחה להצטרפות")
     if gb.deadline < utc_now():
         raise HTTPException(status_code=400, detail="המועד האחרון חלף")
@@ -334,7 +358,9 @@ def commit_to_group_buy(  # noqa: PLR0913 — all args are FastAPI-injected; MEH
 
     # Auto-fund when min_participants reached
     new_count = current_count + 1
-    if new_count >= gb.min_participants:
+    if was_funded:
+        _notify_late_joiner(gb, current_user, background_tasks)
+    elif new_count >= gb.min_participants:
         gb.status = "funded"  # type: ignore[assignment]
         _maybe_notify_funded(gb, db, background_tasks)
 

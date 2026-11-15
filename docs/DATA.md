@@ -1007,6 +1007,8 @@ via `slowapi` — see `backend/app/rate_limit.py` and
 
 > **MEH-3254 (grill retro D7, 2026-11-14):** `GroupBuyOut.units_total: int | null` — the sum of `group_buy_commits.quantity`. Filled **only** on `GET /producers/me/group-buys` (the owner's own list), `null` on every public reader. A count, never a roster (MEH-1651). No schema change.
 
+> **MEH-3289 — joining continues after the minimum (2026-11-15):** `POST /group-buys/{id}/commit` accepts status `open` **or** `funded` (was `open` only), still refused past the deadline (400) and at `max_participants` (400 «קבוצת הרכישה מלאה»). A join into a `funded` group leaves it `funded` and emails **only the joiner** the funded email (`send_funded_notifications(..., late_joiner=True)`: no business email, no re-send to earlier participants). Before this, `max_participants` could never be reached, because the first commit at the minimum closed joining. `DELETE /group-buys/{id}/commit` already allowed `funded`. No schema change.
+
 ### Auth (`app/routers/auth.py`)
 
 ```

@@ -113,7 +113,10 @@ function GroupBuyCard({ gb }) {
             <div className="h-2.5 rounded-full bg-primary" style={{ width: `${pct}%` }} />
           </div>
           <p className="mt-1.5 text-sm font-medium text-text" data-testid="group-buy-progress-line">
-            {funded || remaining === 0
+            {/* MEH-3289: past the minimum, the count alone (see detail page). */}
+            {gb.commits_count > gb.min_participants
+              ? t("progress_joined", { commits: gb.commits_count })
+              : funded || remaining === 0
               ? t("progress_label", { commits: gb.commits_count, min: gb.min_participants })
               : td("remaining_to_open", { n: remaining })}
           </p>
@@ -249,9 +252,9 @@ export default function GroupBuysClient() {
         </div>
 
         {/* MEH-2620: one line under the chips says what the selected tab
-            holds. «הגיעו ליעד» alone does not tell a first-timer that those
-            groups can no longer be joined (commit 400s once funded,
-            group_buys.py:247) — copy approved by Sapir 30/10. */}
+            holds — copy approved by Sapir 30/10. MEH-3289: a funded group
+            takes joiners until it is full or the deadline passes, and the
+            funded line says so. */}
         <p className="text-sm text-fg-muted mb-6" aria-live="polite" data-testid="group-buys-status-hint">
           {t(`status_hint_${statusFilter}`)}
         </p>
