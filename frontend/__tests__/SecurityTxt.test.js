@@ -2,7 +2,8 @@
  * MEH-3303 — /.well-known/security.txt (RFC 9116) must exist, name a contact,
  * and carry an Expires that is in the future and less than a year ahead.
  * A lapsed file tells researchers the contact is stale, so this goes red the
- * day it expires; docs/ACCESS.md §9 warns 60 days before that.
+ * day it expires. That red blocks CI on purpose: docs/ACCESS.md §9 makes the
+ * Thursday scan (expiry-register-check.sh) warn 60 days before, so renew then.
  */
 import { describe, it, expect } from "vitest";
 import fs from "node:fs";
@@ -10,7 +11,7 @@ import path from "node:path";
 
 const FILE = path.join(process.cwd(), "public/.well-known/security.txt");
 
-export function parseSecurityTxt(text) {
+function parseSecurityTxt(text) {
   const fields = {};
   for (const line of text.split(/\r?\n/)) {
     if (!line || line.startsWith("#")) continue;
@@ -20,7 +21,7 @@ export function parseSecurityTxt(text) {
   return fields;
 }
 
-export function expiryProblem(fields, now) {
+function expiryProblem(fields, now) {
   const raw = fields.expires;
   if (!raw || raw.length !== 1) return "exactly one Expires is required";
   const t = Date.parse(raw[0]);
@@ -35,6 +36,10 @@ describe("security.txt (MEH-3303)", () => {
 
   it("names a mailto contact", () => {
     expect(fields.contact?.[0]).toMatch(/^mailto:\S+@\S+$/);
+  });
+
+  it("lists Hebrew and English as preferred languages", () => {
+    expect(fields["preferred-languages"]?.[0]).toBe("he, en");
   });
 
   it("points Canonical at the production URL and Policy at SECURITY.md", () => {
