@@ -59,7 +59,10 @@ from app.constants import TERMS_VERSION
 from app.database import get_db
 from app.models import User
 from app.rate_limit import limiter
-from app.routers.admin import _producer_approved_body, _producer_approved_html
+from app.services.admin_producer_emails import (  # moved out of routers.admin (MEH-3267)
+    _producer_approved_body,
+    _producer_approved_html,
+)
 from app.services.account_guards import is_super_admin
 from app.routers.auth import _set_fingerprint_cookie, _set_refresh_cookie
 from app.routers.producer_owner_invite import (

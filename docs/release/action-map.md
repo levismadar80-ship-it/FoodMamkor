@@ -156,20 +156,20 @@ Registration order of the app. Actor from the dependency tree: `require_admin` �
 | 81 | GET | `/users/me/saved` | `saved_items.get_saved` | registered user | `tests/test_meh2557_saved_items_api.py:110` | `tests/test_meh2557_saved_items_api.py:94` | — | 2 |
 | 82 | POST | `/users/me/saved/{item_type}/{item_id}` | `saved_items.save_item` | registered user | `tests/test_meh2557_saved_items_api.py:107` | `tests/test_meh2557_saved_items_api.py:96` | — | 4 |
 | 83 | DELETE | `/users/me/saved/{item_type}/{item_id}` | `saved_items.unsave_item` | registered user | `tests/test_meh2557_saved_items_api.py:255` | `tests/test_meh2557_saved_items_api.py:97` | — | 5 |
-| 84 | GET | `/admin/producers` | `admin.list_producers` | admin | `tests/test_admin_queue_sla_aging.py:124` | `tests/test_meh2495_admin_draft_owner.py:206` | e2e-mock `frontend/e2e/flows/manual/admin-dashboard-analytics.spec.ts:204` | 3 |
-| 85 | POST | `/admin/producers` | `admin.admin_create_producer` | admin | `tests/test_admin_producer_blank_names.py:15` | GAP | e2e-mock `frontend/e2e/flows/manual/admin-dashboard-analytics.spec.ts:204` | 7 |
-| 86 | GET | `/admin/license-expiry-reminders` | `admin.license_expiry_reminders` | admin | `tests/test_license_expiry.py:223` | `tests/test_license_expiry.py:328` | — | 3 |
-| 87 | PUT | `/admin/producers/{producer_id}` | `admin.admin_update_producer` | admin | `tests/test_admin_approval_transitions.py:530` | GAP | — | 7 |
-| 88 | POST | `/admin/producers/{producer_id}/toggle-status` | `admin.toggle_producer_status` | admin | `tests/test_admin_approval_transitions.py:38` | `tests/test_expansion_admin_authz.py:29` (table row) | e2e-mock `frontend/e2e/flows/manual/admin-recipes-kebab.spec.ts:201` | 7 |
-| 89 | DELETE | `/admin/producers/{producer_id}` | `admin.admin_delete_producer` | admin | `tests/test_account_deletion_cascade.py:255` | `tests/test_expansion_admin_authz.py:30` (table row) | — | 6 |
-| 90 | GET | `/admin/producers/pending` | `admin.pending_producers` | admin | `tests/test_admin_queue_sla_aging.py:226` | GAP | — | 5 |
-| 91 | POST | `/admin/producers/{producer_id}/approve` | `admin.approve_producer` | admin | `tests/test_admin_approval_transitions.py:121` | `tests/test_expansion_admin_authz.py:77` | e2e-mock `frontend/e2e/flows/manual/admin-producers-decisions.spec.ts:210` | 9 |
-| 92 | GET | `/admin/producers/rejection-presets` | `admin.list_rejection_presets` | admin | `tests/test_meh226_rejection_reason.py:303` | `tests/test_meh226_rejection_reason.py:332` | e2e-mock `frontend/e2e/flows/manual/admin-dashboard-analytics.spec.ts:202` | 6 |
-| 93 | GET | `/admin/producers/{producer_id}` | `admin.admin_get_producer` | admin | `tests/test_license_expiry.py:364` | `tests/test_license_expiry.py:393` | — | 3 |
-| 94 | POST | `/admin/producers/{producer_id}/reject` | `admin.reject_producer` | admin | `tests/test_admin_approval_transitions.py:398` | `tests/test_expansion_admin_authz.py:28` (table row) | e2e-mock `frontend/e2e/flows/manual/admin-producers-decisions.spec.ts:216` | 9 |
-| 95 | POST | `/admin/producers/{producer_id}/request-changes` | `admin.request_producer_changes` | admin | `tests/test_changes_requested_whatsapp.py:59` | `tests/test_producer_request_changes.py:105` | e2e-mock `frontend/e2e/flows/manual/admin-producers-decisions.spec.ts:217` | 9 |
-| 96 | POST | `/admin/producers/{producer_id}/grant-verified` | `admin.grant_verified` | admin | `tests/test_meh_762_verification_stamping.py:34` | `tests/test_meh_762_verification_stamping.py:149` | — | 7 |
-| 97 | POST | `/admin/producers/{producer_id}/revoke-verified` | `admin.revoke_verified` | admin | `tests/test_meh_762_verification_stamping.py:118` | `tests/test_meh_762_verification_stamping.py:159` | — | 7 |
+| 84 | GET | `/admin/producers/pending` | `admin_decisions.pending_producers` | admin | `tests/test_admin_queue_sla_aging.py:226` | GAP | — | 5 |
+| 85 | POST | `/admin/producers/{producer_id}/approve` | `admin_decisions.approve_producer` | admin | `tests/test_admin_approval_transitions.py:121` | `tests/test_expansion_admin_authz.py:77` | e2e-mock `frontend/e2e/flows/manual/admin-producers-decisions.spec.ts:210` | 9 |
+| 86 | GET | `/admin/producers/rejection-presets` | `admin_decisions.list_rejection_presets` | admin | `tests/test_meh226_rejection_reason.py:303` | `tests/test_meh226_rejection_reason.py:332` | e2e-mock `frontend/e2e/flows/manual/admin-dashboard-analytics.spec.ts:202` | 6 |
+| 87 | POST | `/admin/producers/{producer_id}/reject` | `admin_decisions.reject_producer` | admin | `tests/test_admin_approval_transitions.py:398` | `tests/test_expansion_admin_authz.py:28` (table row) | e2e-mock `frontend/e2e/flows/manual/admin-producers-decisions.spec.ts:216` | 9 |
+| 88 | POST | `/admin/producers/{producer_id}/request-changes` | `admin_decisions.request_producer_changes` | admin | `tests/test_changes_requested_whatsapp.py:59` | `tests/test_producer_request_changes.py:105` | e2e-mock `frontend/e2e/flows/manual/admin-producers-decisions.spec.ts:217` | 9 |
+| 89 | POST | `/admin/producers/{producer_id}/grant-verified` | `admin_decisions.grant_verified` | admin | `tests/test_meh_762_verification_stamping.py:34` | `tests/test_meh_762_verification_stamping.py:149` | — | 7 |
+| 90 | POST | `/admin/producers/{producer_id}/revoke-verified` | `admin_decisions.revoke_verified` | admin | `tests/test_meh_762_verification_stamping.py:118` | `tests/test_meh_762_verification_stamping.py:159` | — | 7 |
+| 91 | GET | `/admin/producers` | `admin.list_producers` | admin | `tests/test_admin_queue_sla_aging.py:124` | `tests/test_meh2495_admin_draft_owner.py:206` | e2e-mock `frontend/e2e/flows/manual/admin-dashboard-analytics.spec.ts:204` | 3 |
+| 92 | POST | `/admin/producers` | `admin.admin_create_producer` | admin | `tests/test_admin_producer_blank_names.py:15` | GAP | e2e-mock `frontend/e2e/flows/manual/admin-dashboard-analytics.spec.ts:204` | 7 |
+| 93 | GET | `/admin/license-expiry-reminders` | `admin.license_expiry_reminders` | admin | `tests/test_license_expiry.py:223` | `tests/test_license_expiry.py:328` | — | 3 |
+| 94 | PUT | `/admin/producers/{producer_id}` | `admin.admin_update_producer` | admin | `tests/test_admin_approval_transitions.py:530` | GAP | — | 7 |
+| 95 | POST | `/admin/producers/{producer_id}/toggle-status` | `admin.toggle_producer_status` | admin | `tests/test_admin_approval_transitions.py:38` | `tests/test_expansion_admin_authz.py:29` (table row) | e2e-mock `frontend/e2e/flows/manual/admin-recipes-kebab.spec.ts:201` | 7 |
+| 96 | DELETE | `/admin/producers/{producer_id}` | `admin.admin_delete_producer` | admin | `tests/test_account_deletion_cascade.py:255` | `tests/test_expansion_admin_authz.py:30` (table row) | — | 6 |
+| 97 | GET | `/admin/producers/{producer_id}` | `admin.admin_get_producer` | admin | `tests/test_license_expiry.py:364` | `tests/test_license_expiry.py:393` | — | 3 |
 | 98 | POST | `/admin/producers/{producer_id}/story-card` | `admin.upload_story_card` | admin | weak `tests/test_admin_error_no_leak.py:52` (only error-path calls) | GAP | — | 11 |
 | 99 | GET | `/admin/stats` | `admin.get_stats` | admin | `tests/test_meh2952_is_test_exclusion.py:204` | GAP | — | 5 |
 | 100 | POST | `/admin/seed-cities` | `admin.seed_cities` | admin | `tests/test_meh2241_admin_seed_cities.py:55` | GAP | — | 7 |
@@ -196,7 +196,7 @@ Registration order of the app. Actor from the dependency tree: `require_admin` �
 | 121 | GET | `/admin/reports` | `reports.get_flagged_producers` | admin | `tests/test_report_lifecycle.py:31` | GAP | e2e-mock `frontend/e2e/flows/manual/admin-settings-licence-actions.spec.ts:207` | 5 |
 | 122 | POST | `/admin/reports/{report_id}/resolve` | `reports.resolve_report` | admin | `tests/test_report_lifecycle.py:67` | `tests/test_report_lifecycle.py:107` | — | 5 |
 | 123 | POST | `/admin/reports/{report_id}/dismiss` | `reports.dismiss_report` | admin | `tests/test_report_lifecycle.py:55` | GAP | e2e-mock `frontend/e2e/flows/manual/admin-settings-licence-actions.spec.ts:208` | 7 |
-| 124 | POST | `/reports/producer-info` | `report_info.report_producer_info` | anonymous | `tests/test_email_logo.py:124` | n/a | — | 6 |
+| 124 | POST | `/reports/producer-info` | `report_info.report_producer_info` | anonymous | `tests/test_email_logo.py:125` | n/a | — | 6 |
 | 125 | POST | `/upload/image` | `upload.upload_image` | registered user | `tests/test_meh2551_upload_off_event_loop.py:48` | GAP | e2e-mock `frontend/e2e/flows/manual/dashboard-images-contact.spec.ts:93` | 6 |
 | 126 | POST | `/upload/avatar` | `upload.upload_avatar` | registered user | `tests/test_avatar_upload.py:30` | `tests/test_api.py:2820` | — | 4 |
 | 127 | POST | `/upload/owner-photo` | `upload.upload_owner_photo` | registered user | `tests/test_api.py:3253` | `tests/test_api.py:3278` | — | 4 |
@@ -355,7 +355,7 @@ Registration order of the app. Actor from the dependency tree: `require_admin` �
 | `guides` | page | live | — | n/a | `frontend/__tests__/TitlesGuidesCopy.test.jsx:47` | GAP | covered |
 | `social_signup` | page | live | — | `tests/test_api.py:4281` (16/16 routes in file) | `frontend/__tests__/AuthPagesAuthedRedirect.test.jsx:4` | n/a | covered |
 | `wa_approval` | page | live | — | `tests/test_expansion_whatsapp.py:24` (imports module) | n/a | n/a | covered |
-| `onboarding_emails` | page | live | — | `tests/test_meh1965_email_copy_contract.py:81` (imports module) | n/a | n/a | covered |
+| `onboarding_emails` | page | live | — | `tests/test_meh1965_email_copy_contract.py:82` (imports module) | n/a | n/a | covered |
 | `vanity_link` | found | live | — | n/a | `frontend/__tests__/Dashboard1025Banner.test.jsx:14` | `frontend/e2e/flows/22-register-personas.spec.ts:232` | covered |
 | `discovery` | found | live | — | n/a | `frontend/__tests__/DietLandingPage.test.jsx:88` | GAP | covered |
 | `similar_businesses` | found | live | — | n/a | `frontend/__tests__/ProducerHoursSection.test.jsx:53` | n/a | covered |
@@ -513,14 +513,14 @@ A site `file:line` is mapped to the route whose handler contains it (or reaches 
 
 | § | Transition / write | Site | Routes reached | Verdict | Note |
 |---|---|---|---|---|---|
-| 1 | ∅ → `draft` | auth.py:571, auth.py:781, producer_queries.py:662, admin.py:657 | `POST /auth/register/producer`, `POST /admin/producers` | `tests/test_admin_delete_producer.py:46` | — |
+| 1 | ∅ → `draft` | auth.py:571, auth.py:781, producer_queries.py:662, admin.py:391 | `POST /auth/register/producer`, `POST /admin/producers` | `tests/test_admin_delete_producer.py:46` | — |
 | 1 | `draft` → `pending` | producer_me_review.py:596 | `POST /producers/me/submit-for-review` | `tests/test_meh2100_draft_submit.py:196` | — |
 | 1 | `rejected` → `pending` | producer_me_review.py:506 | `POST /producers/me/request-review` | `tests/test_api.py:2245` | — |
-| 1 | `pending`/`rejected` → `approved` | admin.py:199 | `POST /admin/producers/{producer_id}/approve` | `tests/test_admin_approval_transitions.py:121` | — |
-| 1 | `pending`/`approved` → `rejected` | admin.py:1457 | `GET /admin/producers/rejection-presets` | `tests/test_meh226_rejection_reason.py:303` | — |
-| 1 | `approved` ⇄ `inactive` | admin.py:1056 | `PUT /admin/producers/{producer_id}` | `tests/test_admin_approval_transitions.py:530` | — |
+| 1 | `pending`/`rejected` → `approved` | admin_decisions.py:146, producer_approval.py:122 | `POST /admin/producers/{producer_id}/approve` | `tests/test_admin_approval_transitions.py:121` | — |
+| 1 | `pending`/`approved` → `rejected` | admin_decisions.py:300 | `POST /admin/producers/{producer_id}/reject` | `tests/test_admin_approval_transitions.py:398` | — |
+| 1 | `approved` ⇄ `inactive` | admin.py:810 | `POST /admin/producers/{producer_id}/toggle-status` | `tests/test_admin_approval_transitions.py:38` | — |
 | 1 | `pending` → `pending` + feedback | — | `POST /admin/producers/{producer_id}/request-changes` | `tests/test_changes_requested_whatsapp.py:59` | — |
-| 1 | any → any via admin PUT | admin.py:916 | `PUT /admin/producers/{producer_id}` | `tests/test_admin_approval_transitions.py:530` | — |
+| 1 | any → any via admin PUT | admin.py:655 | `PUT /admin/producers/{producer_id}` | `tests/test_admin_approval_transitions.py:530` | — |
 | 2 | ∅ → `open` | group_buys.py:396 | `POST /group-buys` | `tests/test_group_buys_api.py:346` | — |
 | 2 | `open` → `funded` | group_buys.py:295 | `POST /group-buys/{group_buy_id}/commit` | `tests/test_group_buys_api.py:243` | — |
 | 2 | `funded` → `open` | group_buys.py:340 | `POST /group-buys/{group_buy_id}/commit` | `tests/test_group_buys_api.py:243` | — |

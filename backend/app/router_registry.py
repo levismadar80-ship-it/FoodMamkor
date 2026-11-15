@@ -2,6 +2,7 @@ from fastapi import FastAPI
 
 from app.routers import (
     admin,
+    admin_decisions,
     admin_experiences,
     admin_checklist,
     admin_extra,
@@ -60,6 +61,14 @@ def _include_producer_me(app: FastAPI) -> None:
     app.include_router(producer_me_locations.router)
 
 
+def _include_admin(app: FastAPI) -> None:
+    """admin_decisions FIRST: its static GET /admin/producers/pending and
+    /admin/producers/rejection-presets must match before admin.router's
+    GET /admin/producers/{producer_id} (the order they had in one file)."""
+    app.include_router(admin_decisions.router)
+    app.include_router(admin.router)
+
+
 def _register_flagged_features(app: FastAPI) -> None:
     """Features behind a switch that is off by default. Split out of
     register_routers only to keep that function under the statement limit
@@ -110,7 +119,7 @@ def register_routers(app: FastAPI) -> None:
     app.include_router(organizers.router)  # MEH-2461
     app.include_router(favorites.router)
     app.include_router(saved_items.router)  # MEH-2557
-    app.include_router(admin.router)
+    _include_admin(app)
     app.include_router(admin_extra.router)
     # MEH-1406: home_products.router disabled per brand LOCK (licensed
     # businesses only — the consumer home-cook / "from-the-neighbor's-kitchen"

@@ -39,9 +39,9 @@ import re
 
 import pytest
 
-import app.routers.admin as admin_module
+import app.routers.admin_decisions as admin_module
 from app.config import settings
-from app.routers.admin import (
+from app.services.admin_producer_emails import (
     _APPROVED_COMMUNITY_BLOCK,
     _APPROVED_DASHBOARD_LABEL,
     _APPROVED_HTML_BUTTON_LABEL,

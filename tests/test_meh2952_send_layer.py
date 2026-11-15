@@ -893,38 +893,38 @@ BUS, OWN, CON, AUTH, NONE = "business", "owner", "consumer", "auth", "none"
 # (file, enclosing function, callee) → (count, group, where test_cause comes from)
 PINNED: dict[tuple[str, str, str], tuple[int, str, str]] = {
     # --- admin.py: business moderation (owner mail + admin WhatsApp ping) ---
-    ("routers/admin.py", "approve_producer", "_send_notification_email"): (
+    ("routers/admin_decisions.py", "approve_producer", "_send_notification_email"): (
         1,
         OWN,
         "producer.is_test or owner.is_test (p_test)",
     ),
-    ("routers/admin.py", "approve_producer", "_send_whatsapp"): (
+    ("routers/admin_decisions.py", "approve_producer", "_send_whatsapp"): (
         1,
         BUS,
         "p_test — admin ping about the business",
     ),
-    ("routers/admin.py", "reject_producer", "_send_notification_email"): (
+    ("routers/admin_decisions.py", "reject_producer", "_send_notification_email"): (
         1,
         OWN,
         "p_test",
     ),
-    ("routers/admin.py", "reject_producer", "_send_whatsapp"): (1, BUS, "p_test"),
-    ("routers/admin.py", "request_producer_changes", "_send_notification_email"): (
+    ("routers/admin_decisions.py", "reject_producer", "_send_whatsapp"): (1, BUS, "p_test"),
+    ("routers/admin_decisions.py", "request_producer_changes", "_send_notification_email"): (
         1,
         OWN,
         "p_test",
     ),
-    ("routers/admin.py", "request_producer_changes", "_send_whatsapp"): (
+    ("routers/admin_decisions.py", "request_producer_changes", "_send_whatsapp"): (
         1,
         BUS,
         "p_test",
     ),
-    ("routers/admin.py", "_send_notification_email", "send_email"): (
+    ("routers/admin_decisions.py", "_send_notification_email", "send_email"): (
         1,
         OWN,
         "wrapper param",
     ),
-    ("routers/admin.py", "_send_whatsapp", "send_text"): (1, BUS, "wrapper param"),
+    ("routers/admin_decisions.py", "_send_whatsapp", "send_text"): (1, BUS, "wrapper param"),
     # --- other routers ---
     ("routers/admin_kashrut.py", "kashrut_expiry_reminders", "send_template"): (
         1,
@@ -1460,9 +1460,9 @@ def queues_send_by_value_ok(bt, producer):
 
 
 def test_inventory_classifier_anchored_to_a_real_repo_file():
-    """Run against routers/admin.py as it is on disk: the approval site and the
+    """Run against routers/admin_decisions.py as it is on disk: the approval site and the
     admin-ping wrapper must be found, flagged with a non-constant value."""
-    rel = "routers/admin.py"
+    rel = "routers/admin_decisions.py"
     src = (APP_DIR / rel).read_text(encoding="utf-8")
     sites = collect_sites(src, rel)
     approve = [s for s in sites if s.func == "approve_producer"]
