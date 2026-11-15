@@ -2184,6 +2184,12 @@ export const CreateClaimLinkAdminProducersProducerIdClaimLinkPostResponse = /*#_
 
 
 /**
+ * @summary Detach Owner
+ */
+export const DetachOwnerAdminProducersProducerIdDetachOwnerPostResponse = /*#__PURE__*/ zod.unknown()
+
+
+/**
  * Admin-only: up to 3 Google Place candidates for a producer, or 204.
  *
  * Builds the query from the producer's own name + city — or from `q` when the

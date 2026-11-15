@@ -18,7 +18,7 @@ app/fonts.js	exports	6
 components/ui/index.js	exports	4
 eslint.config.mjs	unlisted	1
 lib/env.server.js	files	1
-lib/generated/api.zod.js	exports	1193
+lib/generated/api.zod.js	exports	1194
 lib/schemas.js	duplicates	1
 package.json	dependencies	1
 package.json	devDependencies	2

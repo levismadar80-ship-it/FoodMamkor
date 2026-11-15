@@ -990,6 +990,14 @@ PINNED: dict[tuple[str, str, str], tuple[int, str, str]] = {
         OWN,
         "p_test — producer.is_test or user.is_test, captured pre-commit",
     ),
+    # MEH-3256 (D9): «ניתוק בעלים» tells the former owner. Its one caller,
+    # detach_owner, passes producer.is_test or the owner's is_test (the
+    # wrapper-caller walk below holds it to passing test_cause).
+    ("services/owner_detach.py", "send_owner_detached_email", "send_email"): (
+        1,
+        OWN,
+        "wrapper param ← detach_owner's test_cause",
+    ),
     # --- auth_emails: a user's own auth action ---
     ("services/auth_emails.py", "send_reset_email", "send_email"): (
         1,
