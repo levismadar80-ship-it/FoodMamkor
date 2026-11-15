@@ -18,6 +18,7 @@ import {
   Users,
   Note,
   ChartLineUp,
+  Receipt,
   GearSix,
   Star,
   Megaphone,
@@ -76,6 +77,8 @@ const NAV_SECTIONS = [
       { href: "/admin/outreach", key: "outreach", Icon: Megaphone },
       { href: "/admin/reviews", key: "reviews", Icon: Star },
       { href: "/admin/analytics", key: "analytics", Icon: ChartLineUp },
+      // MEH-3182: read-only billing view (placement: Sapir's card, 14/11).
+      { href: "/admin/billing", key: "billing", Icon: Receipt },
       { href: "/admin/settings", key: "settings", Icon: GearSix },
       { href: "/admin/help", key: "help", Icon: Question },
     ],

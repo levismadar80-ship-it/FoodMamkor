@@ -670,6 +670,13 @@ class Producer(Base):
     # which is what holds the send to EXACTLY ONE email.
     # See migration d3b7f1a92c64.
     email_pending_nudge_sent_at = Column(DateTime(timezone=True), nullable=True)
+    # MEH-3079: weekly summary email. opt_out is set by the signed unsubscribe
+    # link; sent_at is the idempotency stamp (skip if < 6 days old). Expand-only
+    # (ADR-007), migration 0cfa83f0f53e. Sender: services/weekly_owner_summary.
+    weekly_summary_opt_out = Column(
+        Boolean, nullable=False, default=False, server_default=text("false")
+    )
+    weekly_summary_sent_at = Column(DateTime(timezone=True), nullable=True)
 
     # MEH-1297: order_by position so categories[0] is deterministic (the
     # producer's primary/first-selected category), not an arbitrary row.
@@ -979,6 +986,18 @@ class User(Base):
         """
         return not self.password_hash
 
+    @property
+    def oauth_provider(self) -> str | None:
+        """MEH-3248: which provider an account without a password signs in
+        with, so /settings knows which button confirms a deletion. Google
+        wins when both are linked — verify_deletion_credentials checks the
+        same order."""
+        if self.google_id:
+            return "google"
+        if self.apple_id:
+            return "apple"
+        return None
+
 
 class RetiredSlug(Base):
     """MEH-2528 — a public business URL that must never pass to another row.
@@ -1149,6 +1168,13 @@ class Category(Base):
     is_system = Column(
         Boolean, nullable=False, default=False, server_default=text("false")
     )
+    # MEH-3255 (D10): the manufacturer-licence requirement lives on the row,
+    # answered when the category is created. EXPAND step — the readers still
+    # use constants.LICENSE_REQUIRED_CATEGORIES until the contract PR, and
+    # tests/test_meh3255_requires_license_parity.py holds the two equal.
+    requires_license = Column(
+        Boolean, nullable=False, default=False, server_default=text("false")
+    )
 
     producers = relationship(
         "Producer", secondary="producer_categories", back_populates="categories"
@@ -1244,6 +1270,22 @@ class Product(Base):
     position = Column(Integer, nullable=True)
     group_id = Column(String(36), nullable=True)
     allergens: Column[list[str]] = Column(ARRAY(Text), nullable=True)
+    # MEH-3218: on-site ordering (parent MEH-3216). The PRICE stays where it
+    # is: `price_min == price_max` is an exact price, a real range means the
+    # final price is set at confirmation. No second price column, so one owner
+    # of what a product costs.
+    price_unit = Column(
+        String(10), default="unit", nullable=False, server_default=text("'unit'")
+    )
+    is_orderable = Column(
+        Boolean, default=True, nullable=False, server_default=text("true")
+    )
+    in_stock = Column(
+        Boolean, default=True, nullable=False, server_default=text("true")
+    )
+    contains_alcohol = Column(
+        Boolean, default=False, nullable=False, server_default=text("false")
+    )
 
     # MEH-2137: the other half of the same disambiguation — see the comment on
     # Producer.products. Without it this side raises the same error.
@@ -1269,6 +1311,9 @@ class Product(Base):
     # marked ONLY low-carb falls outside the partial index and the ?low_carb
     # EXISTS subquery seq-scans products.
     __table_args__ = (
+        CheckConstraint(
+            "price_unit IN ('unit', 'kg', '100g')", name="products_price_unit_check"
+        ),
         Index(
             "idx_products_dietary",
             "producer_id",
@@ -3112,6 +3157,27 @@ class RescueOffer(Base):
     )
 
 
+class RescueNoShowTombstone(Base):
+    """MEH-3225 — one no-show of a deleted account, so the two-no-shows block
+    survives deleting the account. Only a keyed hash of the email
+    (services/rescue_no_show.py::email_hash) and the bag's pickup_end: no
+    email, name, business or order, and no FK. Kept 30 days from
+    ``pickup_end`` (the rule's own window), then deleted by
+    services/retention_purge.py."""
+
+    __tablename__ = "rescue_no_show_tombstones"
+    __table_args__ = (
+        Index("ix_rescue_no_show_tombstones_email_hash", "email_hash"),
+        Index("ix_rescue_no_show_tombstones_pickup_end", "pickup_end"),
+    )
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    # hex HMAC-SHA256 of the normalised email, keyed with settings.secret_key
+    email_hash = Column(String(64), nullable=False)
+    pickup_end = Column(DateTime, nullable=False)
+    created_at = Column(DateTime, nullable=False, default=utc_now)
+
+
 class RescueOrder(Base):
     """MEH-2644 — one buyer's reservation of one offer's bags.
 
@@ -3284,3 +3350,12 @@ class AlembicLineage(Base):
     recorded_at = Column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )
+
+
+# MEH-3218: the on-site ordering tables live in their own module (this file is
+# on the file-size baseline). Imported here, at the end, so that everything
+# importing models.py — Alembic's env.py included — registers them on
+# Base.metadata. It sits at the end only to keep the model definitions above
+# free of a mid-file import; product_orders.py imports nothing from this file,
+# so there is no cycle either way.
+import app.models.product_orders  # noqa: E402,F401

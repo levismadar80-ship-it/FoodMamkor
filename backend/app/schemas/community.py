@@ -34,6 +34,10 @@ class UserOut(BaseModel):
     # hide the password-change form for OAuth-only accounts (they have
     # no password_hash to verify against).
     is_oauth: bool = False
+    # MEH-3248: "google" | "apple" | None — the re-auth button for deletion.
+    oauth_provider: str | None = None
+    # MEH-3248: set by GET /auth/me only (account_guards.is_super_admin).
+    is_super_admin: bool = False
     # MEH-143: True once the user has a linked producer profile.
     is_producer: bool = False
     # MEH-138: profile photo URL (Cloudinary or Google picture).

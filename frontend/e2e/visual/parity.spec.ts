@@ -1260,6 +1260,9 @@ test.describe("Visual parity — MEH-991", () => {
   // MEH-1113: the contact form gains a "נושא הפנייה" topic select above the
   // message field — another intentional /about visual change, so the baselines
   // regenerate again on this branch via the same vrt-update re-ride.
+  // 15/11/2026 (merge trains 15+16): the footer's business group gained two
+  // rows (guides, MEH-3265; price list, MEH-3219), so the about / login /
+  // register desktop baselines were regenerated at e7b31e13e and each PNG read.
   test("about", async ({ page }) => {
     await preparePage(page);
     await page.goto("/about");

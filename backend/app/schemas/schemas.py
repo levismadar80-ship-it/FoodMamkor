@@ -1051,6 +1051,7 @@ from app.schemas.site import (  # noqa: E402
     CONTACT_TOPIC_LABELS as CONTACT_TOPIC_LABELS,
     COVERAGE_CITY_MAX_LENGTH as COVERAGE_CITY_MAX_LENGTH,
     CategoryHit as CategoryHit,
+    CategoryCreate as CategoryCreate,
     CategoryIn as CategoryIn,
     ChatMessage as ChatMessage,
     ChatRequest as ChatRequest,
@@ -1086,6 +1087,7 @@ from app.schemas.site import (  # noqa: E402
     UserAdminOut as UserAdminOut,
     UserRoleUpdate as UserRoleUpdate,
     VacationModeState as VacationModeState,
+    WeeklySummaryUnsubscribeIn as WeeklySummaryUnsubscribeIn,
     WhatsAppClickIn as WhatsAppClickIn,
     _CITY_URLISH_REGEX as _CITY_URLISH_REGEX,
 )

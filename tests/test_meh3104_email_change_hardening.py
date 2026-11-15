@@ -19,7 +19,6 @@ import pytest
 
 from app.config import settings
 from app.models.models import User
-from app.routers import admin_extra
 from app.routers import auth as auth_router
 from app.utils.clock import utc_now
 from conftest import auth_header, make_user
@@ -81,7 +80,7 @@ class TestEmailChangeNeedsThePassword:
 
 class TestTheOwnerAccountKeepsItsAddress:
     def test_super_admin_cannot_change_email(self, client, db, monkeypatch):
-        monkeypatch.setattr(admin_extra.settings, "super_admin_email", "owner@example.com")
+        monkeypatch.setattr(settings, "super_admin_email", "owner@example.com")
         owner = make_user(db, email="owner@example.com", role="admin", email_verified=True)
         res, send = _patch(
             client, owner, {"email": "elsewhere@example.com", "current_password": PASSWORD}

@@ -11,6 +11,7 @@ import { showToast } from "@/lib/toast";
 // in-flight lock (and create/update/page-save swallowed errors silently).
 import { useAdminAction } from "@/lib/use-admin-action";
 import Button from "@/components/ui/Button";
+import InlineMessage from "@/components/ui/InlineMessage";
 import Input from "@/components/ui/Input";
 
 export default function AdminContentPage() {
@@ -50,6 +51,9 @@ function CategoriesEditor() {
   const { run, isBusy } = useAdminAction();
   const [items, setItems] = useState([]);
   const [name, setName] = useState("");
+  // MEH-3255 (D10): «דורשת רישיון?» has no default — null until she picks.
+  const [requiresLicense, setRequiresLicense] = useState(null);
+  const [licenseMissing, setLicenseMissing] = useState(false);
   // MEH-1023 Chunk B: replaces the native browser confirm with a modal dialog showing
   // the category name. { id, name } while a delete is pending; null otherwise.
   const [confirmDelete, setConfirmDelete] = useState(null);
@@ -64,9 +68,14 @@ function CategoriesEditor() {
   const create = (e) => {
     e.preventDefault();
     if (!name.trim()) return;
+    if (requiresLicense === null) {
+      setLicenseMissing(true);
+      return;
+    }
     run("category-create", async () => {
-      await api.post("/admin/categories", { name });
+      await api.post("/admin/categories", { name, requires_license: requiresLicense });
       setName("");
+      setRequiresLicense(null);
       load();
     });
   };
@@ -109,20 +118,47 @@ function CategoriesEditor() {
 
   return (
     <div className="bg-surface border border-border rounded-md p-5 space-y-4">
-      <form onSubmit={create} className="flex gap-2">
-        <Input inline size="md"
-          placeholder={t("content.categories.name_placeholder")}
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          className="flex-1 min-w-0"
-        />
-        <Button
-          type="submit"
-          disabled={isBusy("category-create")}
-          variant="primary" size="sm"
-        >
-          {t("content.categories.add")}
-        </Button>
+      <form onSubmit={create} className="space-y-2">
+        <div className="flex gap-2">
+          <Input inline size="md"
+            placeholder={t("content.categories.name_placeholder")}
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            className="flex-1 min-w-0"
+          />
+          <Button
+            type="submit"
+            disabled={isBusy("category-create")}
+            variant="primary" size="sm"
+          >
+            {t("content.categories.add")}
+          </Button>
+        </div>
+        {/* MEH-3255 (D10): the licence answer is required on create. */}
+        <fieldset className="text-sm" data-testid="category-license-choice">
+          <legend className="mb-1">{t("content.categories.license_question")}</legend>
+          <div className="flex flex-wrap gap-x-4 gap-y-1">
+            {[true, false].map((value) => (
+              <label key={String(value)} className="inline-flex items-center gap-2 min-h-11">
+                <input
+                  type="radio"
+                  name="requires_license"
+                  checked={requiresLicense === value}
+                  onChange={() => {
+                    setRequiresLicense(value);
+                    setLicenseMissing(false);
+                  }}
+                />
+                {t(value ? "content.categories.license_yes" : "content.categories.license_no")}
+              </label>
+            ))}
+          </div>
+          {licenseMissing && (
+            <InlineMessage size="xs" className="mt-1">
+              {t("content.categories.license_choose")}
+            </InlineMessage>
+          )}
+        </fieldset>
       </form>
 
       <ul className="space-y-2">
@@ -208,6 +244,14 @@ function CategoryRow({ cat, onSave, onDelete, saving }) {
         data-testid={`category-name-${cat.id}`}
         className={`flex-1 min-w-[10rem] ${locked ? "!bg-background !text-fg-muted cursor-not-allowed" : ""}`.trim()}
       />
+      {cat.requires_license === true && (
+        <span
+          data-testid={`category-license-badge-${cat.id}`}
+          className="text-xs text-muted whitespace-nowrap border border-border rounded-lg px-2 py-1"
+        >
+          {t("content.categories.license_badge")}
+        </span>
+      )}
       {/* MEH-1034: per-row producer count (the editor is a list, not a table). */}
       <span className="text-xs text-muted whitespace-nowrap">
         {t("content.categories.producer_count", { count: cat.producer_count ?? 0 })}

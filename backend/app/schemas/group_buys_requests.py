@@ -57,6 +57,10 @@ class GroupBuyOut(BaseModel):
     delivery_note: str | None = None
     status: str
     commits_count: int = 0
+    # MEH-3254 (grill retro D7): total units the participants asked for — a
+    # number, never a roster (MEH-1651). Filled only on the business's own list
+    # (GET /producers/me/group-buys); null on every public reader.
+    units_total: int | None = None
     created_at: datetime
 
     model_config = {"from_attributes": True}

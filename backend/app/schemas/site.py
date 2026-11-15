@@ -43,6 +43,10 @@ class UserAdminOut(BaseModel):
     is_super_admin: bool = False
     producer_id: UUID | None = None
     favorites_count: int = 0
+    # MEH-3226: no-shows still counting against her, and whether that blocks
+    # rescue-bag reservations — drives the badge and «שחרור חסימת סלים».
+    rescue_active_no_shows: int = 0
+    rescue_blocked: bool = False
     created_at: datetime
 
     model_config = {"from_attributes": True}
@@ -56,6 +60,14 @@ class UserRoleUpdate(BaseModel):
 class CategoryIn(BaseModel):
     name: SanitizedLabelField
     emoji: str | None = None
+
+
+class CategoryCreate(CategoryIn):
+    """MEH-3255 (D10): a NEW category must answer «דורשת רישיון?» — no
+    default, so a create without an explicit choice is a 422, not a silent
+    «no». PUT keeps CategoryIn: the flag is not editable through rename."""
+
+    requires_license: bool
 
 
 # Admin: Static Pages
@@ -277,6 +289,12 @@ class NewsletterIn(BaseModel):
 # subscriber's email in a scoped JWT) — no DB column, no raw email in the URL.
 class NewsletterUnsubscribeIn(BaseModel):
     token: str = Field(..., min_length=1)
+
+
+# MEH-3079: the weekly owner summary's unsubscribe link — same shape, its own
+# token scope (services/weekly_owner_summary.py).
+class WeeklySummaryUnsubscribeIn(BaseModel):
+    token: str = Field(..., min_length=1, max_length=2048)
 
 
 # MEH-1113: contact-form topic whitelist → Hebrew label. Single source of

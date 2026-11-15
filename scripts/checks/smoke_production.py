@@ -71,7 +71,7 @@ TIMEOUT_S = 25
 # A path that must never exist. Used by the control, and by nothing else.
 CONTROL_404_PATH = "/__smoke-control-must-404__"
 
-# Static routes frontend/app/sitemap.js:49-67 emits. Used ONLY to label which
+# Static routes the sitemap emits (frontend/lib/sitemap-static.js since MEH-3265). Used ONLY to label which
 # sitemap URLs are producer pages in the printout — every sitemap URL is
 # fetched and 404-checked regardless, so a wrong label here cannot turn a
 # broken URL into a pass.
