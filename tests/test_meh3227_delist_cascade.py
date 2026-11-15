@@ -306,7 +306,11 @@ class TestOwnerDeletesAccount:
         _bag(db, producer, ["b1@example.com"])
         _signup(db, _event(db, producer), "e1@example.com")
 
-        r = client.delete("/auth/me", headers=auth_header(owner))
+        r = client.post(
+            "/auth/me/delete",
+            json={"password": "Zx7Yp9Mq2Lr4"},
+            headers=auth_header(owner),
+        )
         assert r.status_code == 200, r.text
         assert _kinds(sent) == [
             ("send_delisted_cancel_email", "b1@example.com"),

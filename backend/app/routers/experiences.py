@@ -43,6 +43,8 @@ from app.schemas.schemas import (
     ExperienceValidateRequest,
     ExperienceValidateResult,
 )
+from app.services import billing_ledger  # MEH-3179
+from app.services import capabilities  # MEH-3180
 from app.services import indexnow  # MEH-2852
 from app.services.booking_cancellations import (  # MEH-3227
     after_item_edit,
@@ -439,6 +441,13 @@ def submit_experience(
     )
     if problem:
         raise HTTPException(status_code=422, detail=problem)
+    # MEH-3180: a priced sign-up through the site's form is a paid tool.
+    capabilities.require_paid_signup(
+        db,
+        user.producer_id,
+        price=data.price_per_person,
+        method=data.registration_method,
+    )
 
     verdict = validate_experience(data.model_dump(mode="json"))
     if verdict["status"] == "REJECTED":
@@ -591,6 +600,22 @@ def update_experience(  # noqa: PLR0913 — all args are FastAPI-injected; MEH-3
     if touches_range and _min_above_max(new_min, new_max):
         raise HTTPException(status_code=422, detail=_MIN_ABOVE_MAX_DETAIL)
     _check_method_edit(db, ex, payload)
+    # MEH-3180: only an edit that MAKES it a paid site sign-up asks.
+    capabilities.require_paid_signup(
+        db,
+        user.producer_id,
+        price=payload.get("price_per_person", ex.price_per_person),
+        method=payload.get("registration_method", ex.registration_method),
+        running=capabilities.is_running(
+            payload.get("is_active", ex.is_active),
+            payload.get("event_date", ex.event_date),
+        ),
+        was_price=ex.price_per_person,
+        was_method=ex.registration_method,
+        was_running=capabilities.is_running(ex.is_active, ex.event_date),
+        date=payload.get("event_date", ex.event_date),
+        was_date=ex.event_date,
+    )
     before = item_state(ex)
     for field, value in payload.items():
         setattr(ex, field, value)
@@ -688,6 +713,8 @@ def delete_experience(
     removed_urls = indexnow.experience_urls(ex.id) if _is_public(ex) else []
     # MEH-3227: registrants are told before the cascade removes their rows.
     cancel_item_signups(db, ex, background_tasks, is_test_item(ex))
+    # MEH-3179: sign-ups for an upcoming experience that is deleted never happen.
+    billing_ledger.void_item_registrations(db, ex, kind="experience_registration")
     db.delete(ex)
     db.commit()
     indexnow.schedule(background_tasks, removed_urls)

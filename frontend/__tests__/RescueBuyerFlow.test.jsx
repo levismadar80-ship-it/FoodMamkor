@@ -36,8 +36,30 @@ function format(raw, values = {}) {
   return out;
 }
 
+// MEH-3226: t.rich splits <tag>…</tag> and hands each chunk to its renderer.
+function rich(raw, values = {}) {
+  const parts = [];
+  const re = /<(\w+)>([^<]*)<\/\1>/g;
+  let last = 0;
+  let m;
+  while ((m = re.exec(raw)) !== null) {
+    parts.push(raw.slice(last, m.index), values[m[1]](m[2]));
+    last = m.index + m[0].length;
+  }
+  parts.push(raw.slice(last));
+  return parts;
+}
+
+function plain(key) {
+  return lookup(key).replace(/<\/?\w+>/g, "");
+}
+
 vi.mock("next-intl", () => ({
-  useTranslations: (ns) => (key, values) => format(lookup(ns ? `${ns}.${key}` : key), values),
+  useTranslations: (ns) => {
+    const t = (key, values) => format(lookup(ns ? `${ns}.${key}` : key), values);
+    t.rich = (key, values) => rich(lookup(ns ? `${ns}.${key}` : key), values);
+    return t;
+  },
 }));
 
 vi.mock("@/i18n/navigation", () => ({
@@ -589,7 +611,7 @@ describe("every error the API actually returns", () => {
     render(<RescueSection producer={PRODUCER} />);
     fireEvent.click(await screen.findByTestId("rescue-reserve"));
     const err = await screen.findByTestId("rescue-section-error");
-    expect(err.textContent).toBe(lookup(key));
+    expect(err.textContent).toBe(plain(key));
   });
 
   it("403 email_unverified → the resend notice with the reserve wording (MEH-3225)", async () => {
@@ -610,9 +632,26 @@ describe("every error the API actually returns", () => {
   it("the block message is the backend's string, verbatim", () => {
     // If these two ever diverge the buyer is told one thing by the API and
     // another by the page. routers/rescue.py BLOCKED_DETAIL is the source.
-    expect(lookup("rescue.errors.blocked")).toBe(
-      "ההזמנות חסומות אחרי שתי אי-הגעות. כתבו לנו",
+    expect(plain("rescue.errors.blocked")).toBe(
+      "השריונים חסומים אחרי שתי אי-הגעות. כתבו לנו",
     );
+  });
+
+  it("«כתבו לנו» on the block message links to the contact page (MEH-3226)", async () => {
+    reserveBag.mockRejectedValue({ response: { status: 422, data: {} } });
+    render(<RescueSection producer={PRODUCER} />);
+    fireEvent.click(await screen.findByTestId("rescue-reserve"));
+    const link = await screen.findByTestId("rescue-blocked-contact");
+    expect(link.getAttribute("href")).toBe("/contact");
+    expect(link.textContent).toBe("כתבו לנו");
+  });
+
+  it("no other error carries the contact link", async () => {
+    reserveBag.mockRejectedValue({ response: { status: 409, data: {} } });
+    render(<RescueSection producer={PRODUCER} />);
+    fireEvent.click(await screen.findByTestId("rescue-reserve"));
+    await screen.findByTestId("rescue-section-error");
+    expect(screen.queryByTestId("rescue-blocked-contact")).toBeNull();
   });
 });
 

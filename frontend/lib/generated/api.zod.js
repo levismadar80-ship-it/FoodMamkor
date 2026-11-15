@@ -20,6 +20,37 @@ export const GetAnalyticsAdminAnalyticsGetResponse = /*#__PURE__*/ zod.unknown()
 
 
 /**
+ * @summary Admin Billing Overview
+ */
+export const AdminBillingOverviewAdminBillingOverviewGetResponse = /*#__PURE__*/ zod.object({
+  "businesses_over_threshold": /*#__PURE__*/ zod.int(),
+  "businesses_over_two_months": /*#__PURE__*/ zod.int(),
+  "history": /*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
+  "businesses": /*#__PURE__*/ zod.int(),
+  "businesses_over_threshold": /*#__PURE__*/ zod.int(),
+  "month": /*#__PURE__*/ zod.string(),
+  "value_agorot": /*#__PURE__*/ zod.int(),
+  "would_pay_total_agorot": /*#__PURE__*/ zod.int()
+}).check(/*#__PURE__*/ zod.describe('One past month as it would have been billed (shadow billing).'))),
+  "month": /*#__PURE__*/ zod.string(),
+  "phase": /*#__PURE__*/ zod.enum(['launch', 'billing']),
+  "rows": /*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
+  "bookings": /*#__PURE__*/ zod.int(),
+  "months_over_in_a_row": /*#__PURE__*/ zod.int(),
+  "name": /*#__PURE__*/ zod.string(),
+  "over_threshold": /*#__PURE__*/ zod.boolean(),
+  "producer_id": /*#__PURE__*/ zod.uuid(),
+  "value_agorot": /*#__PURE__*/ zod.int(),
+  "would_pay_agorot": /*#__PURE__*/ zod.int()
+})),
+  "start_billing_businesses": /*#__PURE__*/ zod.int(),
+  "start_billing_months": /*#__PURE__*/ zod.int(),
+  "threshold_agorot": /*#__PURE__*/ zod.int(),
+  "would_pay_total_agorot": /*#__PURE__*/ zod.int()
+})
+
+
+/**
  * @summary List Categories Admin
  */
 export const listCategoriesAdminAdminCategoriesGetResponseIsSystemDefault = false;
@@ -30,6 +61,7 @@ export const ListCategoriesAdminAdminCategoriesGetResponseItem = /*#__PURE__*/ z
   "is_system": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), listCategoriesAdminAdminCategoriesGetResponseIsSystemDefault),
   "name": /*#__PURE__*/ zod.string(),
   "producer_count": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "requires_license": /*#__PURE__*/ zod.boolean(),
   "slug": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
 })
 export const ListCategoriesAdminAdminCategoriesGetResponse = /*#__PURE__*/ zod.array(ListCategoriesAdminAdminCategoriesGetResponseItem)
@@ -46,6 +78,7 @@ export const CreateCategoryAdminCategoriesPostResponse = /*#__PURE__*/ zod.objec
   "is_system": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), createCategoryAdminCategoriesPostResponseIsSystemDefault),
   "name": /*#__PURE__*/ zod.string(),
   "producer_count": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "requires_license": /*#__PURE__*/ zod.boolean(),
   "slug": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
 })
 
@@ -83,6 +116,7 @@ export const UpdateCategoryAdminCategoriesCategoryIdPutResponse = /*#__PURE__*/ 
   "is_system": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), updateCategoryAdminCategoriesCategoryIdPutResponseIsSystemDefault),
   "name": /*#__PURE__*/ zod.string(),
   "producer_count": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "requires_license": /*#__PURE__*/ zod.boolean(),
   "slug": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
 })
 
@@ -914,6 +948,7 @@ export const ListProducersAdminProducersGetResponseItem = /*#__PURE__*/ zod.obje
   "is_system": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), listProducersAdminProducersGetResponseCategoriesItemIsSystemDefault),
   "name": /*#__PURE__*/ zod.string(),
   "producer_count": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "requires_license": /*#__PURE__*/ zod.boolean(),
   "slug": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
 })), listProducersAdminProducersGetResponseCategoriesDefault),
   "changes_requested_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()])),
@@ -1164,6 +1199,7 @@ export const AdminCreateProducerAdminProducersPostResponse = /*#__PURE__*/ zod.o
   "is_system": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminCreateProducerAdminProducersPostResponseCategoriesItemIsSystemDefault),
   "name": /*#__PURE__*/ zod.string(),
   "producer_count": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "requires_license": /*#__PURE__*/ zod.boolean(),
   "slug": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
 })), adminCreateProducerAdminProducersPostResponseCategoriesDefault),
   "changes_requested_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()])),
@@ -1411,6 +1447,7 @@ export const PendingProducersAdminProducersPendingGetResponseItem = /*#__PURE__*
   "is_system": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), pendingProducersAdminProducersPendingGetResponseCategoriesItemIsSystemDefault),
   "name": /*#__PURE__*/ zod.string(),
   "producer_count": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "requires_license": /*#__PURE__*/ zod.boolean(),
   "slug": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
 })), pendingProducersAdminProducersPendingGetResponseCategoriesDefault),
   "changes_requested_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()])),
@@ -1721,6 +1758,7 @@ export const AdminGetProducerAdminProducersProducerIdGetResponse = /*#__PURE__*/
   "is_system": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminGetProducerAdminProducersProducerIdGetResponseCategoriesItemIsSystemDefault),
   "name": /*#__PURE__*/ zod.string(),
   "producer_count": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "requires_license": /*#__PURE__*/ zod.boolean(),
   "slug": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
 })), adminGetProducerAdminProducersProducerIdGetResponseCategoriesDefault),
   "changes_requested_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()])),
@@ -1968,6 +2006,7 @@ export const AdminUpdateProducerAdminProducersProducerIdPutResponse = /*#__PURE_
   "is_system": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminUpdateProducerAdminProducersProducerIdPutResponseCategoriesItemIsSystemDefault),
   "name": /*#__PURE__*/ zod.string(),
   "producer_count": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "requires_license": /*#__PURE__*/ zod.boolean(),
   "slug": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
 })), adminUpdateProducerAdminProducersProducerIdPutResponseCategoriesDefault),
   "changes_requested_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()])),
@@ -2180,6 +2219,26 @@ export const PutGooglePlaceIdAdminProducersProducerIdGooglePlaceIdPutResponse = 
  * @summary Grant Verified
  */
 export const GrantVerifiedAdminProducersProducerIdGrantVerifiedPostResponse = /*#__PURE__*/ zod.unknown()
+
+
+/**
+ * Mark a business as licensed to sell alcohol (or take the mark away).
+ *
+ * Sapir's decision of 14/11: alcohol can be ordered only from a business an
+ * admin has marked. The mark does not switch ordering on — `enabled` is the
+ * owner's own choice and a row created here starts with it off.
+ * @summary Set Alcohol Licensed
+ */
+export const SetAlcoholLicensedAdminProducersProducerIdOrderSettingsAlcoholPutResponse = /*#__PURE__*/ zod.object({
+  "alcohol_licensed": /*#__PURE__*/ zod.boolean(),
+  "auto_confirm": /*#__PURE__*/ zod.boolean(),
+  "auto_confirm_slot_cap": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()]),
+  "cancel_cutoff_hours": /*#__PURE__*/ zod.int(),
+  "enabled": /*#__PURE__*/ zod.boolean(),
+  "min_order_agorot": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()]),
+  "producer_id": /*#__PURE__*/ zod.uuid(),
+  "shabbat_observant": /*#__PURE__*/ zod.boolean()
+})
 
 
 /**
@@ -2697,6 +2756,8 @@ export const GetStatsAdminStatsGetResponse = /*#__PURE__*/ zod.unknown()
 export const listUsersAdminUsersGetResponseFavoritesCountDefault = 0;
 export const listUsersAdminUsersGetResponseIsBlockedDefault = false;
 export const listUsersAdminUsersGetResponseIsSuperAdminDefault = false;
+export const listUsersAdminUsersGetResponseRescueActiveNoShowsDefault = 0;
+export const listUsersAdminUsersGetResponseRescueBlockedDefault = false;
 
 export const ListUsersAdminUsersGetResponseItem = /*#__PURE__*/ zod.object({
   "city": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -2709,6 +2770,8 @@ export const ListUsersAdminUsersGetResponseItem = /*#__PURE__*/ zod.object({
   "name": /*#__PURE__*/ zod.string(),
   "phone": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "producer_id": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.uuid(),/*#__PURE__*/ zod.null()])),
+  "rescue_active_no_shows": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), listUsersAdminUsersGetResponseRescueActiveNoShowsDefault),
+  "rescue_blocked": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), listUsersAdminUsersGetResponseRescueBlockedDefault),
   "role": /*#__PURE__*/ zod.string()
 })
 export const ListUsersAdminUsersGetResponse = /*#__PURE__*/ zod.array(ListUsersAdminUsersGetResponseItem)
@@ -2965,6 +3028,17 @@ export const AcceptOwnerInviteAuthOwnerInviteAcceptPostResponse = /*#__PURE__*/ 
 
 
 /**
+ * @summary Accept Owner Invite Existing
+ */
+export const acceptOwnerInviteExistingAuthOwnerInviteAcceptExistingPostResponseTokenTypeDefault = `bearer`;
+
+export const AcceptOwnerInviteExistingAuthOwnerInviteAcceptExistingPostResponse = /*#__PURE__*/ zod.object({
+  "access_token": /*#__PURE__*/ zod.string(),
+  "token_type": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), acceptOwnerInviteExistingAuthOwnerInviteAcceptExistingPostResponseTokenTypeDefault)
+})
+
+
+/**
  * Send a verification code to the address she typed.
  *
  * THE RESPONSE IS THE SAME WHATEVER HAPPENS — same status, same bytes —
@@ -2983,6 +3057,14 @@ export const AcceptOwnerInviteAuthOwnerInviteAcceptPostResponse = /*#__PURE__*/ 
  * @summary Send Owner Invite Email Code
  */
 export const SendOwnerInviteEmailCodeAuthOwnerInviteEmailCodePostResponse = /*#__PURE__*/ zod.unknown()
+
+
+/**
+ * Mail a code to the signed-in account's own address. The address is
+ * not an input, so there is no existence oracle to keep closed here.
+ * @summary Send Owner Invite Code Existing
+ */
+export const SendOwnerInviteCodeExistingAuthOwnerInviteEmailCodeExistingPostResponse = /*#__PURE__*/ zod.unknown()
 
 
 /**
@@ -3123,6 +3205,7 @@ export const ListCategoriesCategoriesGetResponseItem = /*#__PURE__*/ zod.object(
   "is_system": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), listCategoriesCategoriesGetResponseIsSystemDefault),
   "name": /*#__PURE__*/ zod.string(),
   "producer_count": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "requires_license": /*#__PURE__*/ zod.boolean(),
   "slug": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
 })
 export const ListCategoriesCategoriesGetResponse = /*#__PURE__*/ zod.array(ListCategoriesCategoriesGetResponseItem)
@@ -4195,6 +4278,7 @@ export const ListProducersProducersGetResponseItem = /*#__PURE__*/ zod.object({
   "is_system": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), listProducersProducersGetResponseCategoriesItemIsSystemDefault),
   "name": /*#__PURE__*/ zod.string(),
   "producer_count": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "requires_license": /*#__PURE__*/ zod.boolean(),
   "slug": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
 })), listProducersProducersGetResponseCategoriesDefault),
   "city": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -4381,6 +4465,7 @@ export const CreateProducerProducersPostResponse = /*#__PURE__*/ zod.object({
   "is_system": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), createProducerProducersPostResponseCategoriesItemIsSystemDefault),
   "name": /*#__PURE__*/ zod.string(),
   "producer_count": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "requires_license": /*#__PURE__*/ zod.boolean(),
   "slug": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
 })), createProducerProducersPostResponseCategoriesDefault),
   "city": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -4592,6 +4677,7 @@ export const GetProducerBySlugProducersBySlugSlugGetResponse = /*#__PURE__*/ zod
   "is_system": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), getProducerBySlugProducersBySlugSlugGetResponseCategoriesItemIsSystemDefault),
   "name": /*#__PURE__*/ zod.string(),
   "producer_count": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "requires_license": /*#__PURE__*/ zod.boolean(),
   "slug": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
 })), getProducerBySlugProducersBySlugSlugGetResponseCategoriesDefault),
   "city": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -4840,6 +4926,7 @@ export const GetMyProducerProducersMeGetResponse = /*#__PURE__*/ zod.object({
   "is_system": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), getMyProducerProducersMeGetResponseCategoriesItemIsSystemDefault),
   "name": /*#__PURE__*/ zod.string(),
   "producer_count": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "requires_license": /*#__PURE__*/ zod.boolean(),
   "slug": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
 })), getMyProducerProducersMeGetResponseCategoriesDefault),
   "changes_requested_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()])),
@@ -5063,6 +5150,7 @@ export const UpdateMyProducerProducersMePutResponse = /*#__PURE__*/ zod.object({
   "is_system": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), updateMyProducerProducersMePutResponseCategoriesItemIsSystemDefault),
   "name": /*#__PURE__*/ zod.string(),
   "producer_count": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "requires_license": /*#__PURE__*/ zod.boolean(),
   "slug": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
 })), updateMyProducerProducersMePutResponseCategoriesDefault),
   "changes_requested_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()])),
@@ -5223,6 +5311,29 @@ export const ProducerAnalyticsProducersMeAnalyticsGetResponse = /*#__PURE__*/ zo
  * @summary Set Availability State
  */
 export const SetAvailabilityStateProducersMeAvailabilityStatePostResponse = /*#__PURE__*/ zod.unknown()
+
+
+/**
+ * The caller's own business only — the id comes from the session, never the URL.
+ * @summary My Billing Summary
+ */
+export const MyBillingSummaryProducersMeBillingSummaryGetResponse = /*#__PURE__*/ zod.object({
+  "bookings": /*#__PURE__*/ zod.int(),
+  "by_kind": /*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
+  "bookings": /*#__PURE__*/ zod.int(),
+  "kind": /*#__PURE__*/ zod.string(),
+  "value_agorot": /*#__PURE__*/ zod.int()
+})),
+  "charged_agorot": /*#__PURE__*/ zod.int(),
+  "fee_with_subscription_agorot": /*#__PURE__*/ zod.int(),
+  "fee_without_subscription_agorot": /*#__PURE__*/ zod.int(),
+  "month": /*#__PURE__*/ zod.string(),
+  "over_threshold": /*#__PURE__*/ zod.boolean(),
+  "phase": /*#__PURE__*/ zod.enum(['launch', 'billing']),
+  "price_list_version": /*#__PURE__*/ zod.int(),
+  "threshold_agorot": /*#__PURE__*/ zod.int(),
+  "value_agorot": /*#__PURE__*/ zod.int()
+})
 
 
 /**
@@ -5418,6 +5529,39 @@ export const RequestNameChangeProducersMeNameChangeRequestsPostResponse = /*#__P
   "requested_name": /*#__PURE__*/ zod.string(),
   "reviewed_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()])),
   "status": /*#__PURE__*/ zod.string()
+})
+
+
+/**
+ * The business's ordering settings; the defaults (off) if never saved.
+ * @summary Get My Order Settings
+ */
+export const GetMyOrderSettingsProducersMeOrderSettingsGetResponse = /*#__PURE__*/ zod.object({
+  "alcohol_licensed": /*#__PURE__*/ zod.boolean(),
+  "auto_confirm": /*#__PURE__*/ zod.boolean(),
+  "auto_confirm_slot_cap": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()]),
+  "cancel_cutoff_hours": /*#__PURE__*/ zod.int(),
+  "enabled": /*#__PURE__*/ zod.boolean(),
+  "min_order_agorot": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()]),
+  "producer_id": /*#__PURE__*/ zod.uuid(),
+  "shabbat_observant": /*#__PURE__*/ zod.boolean()
+})
+
+
+/**
+ * Save the whole settings form. `alcohol_licensed` is not in the body and
+ * is never touched here — only the admin route writes it.
+ * @summary Put My Order Settings
+ */
+export const PutMyOrderSettingsProducersMeOrderSettingsPutResponse = /*#__PURE__*/ zod.object({
+  "alcohol_licensed": /*#__PURE__*/ zod.boolean(),
+  "auto_confirm": /*#__PURE__*/ zod.boolean(),
+  "auto_confirm_slot_cap": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()]),
+  "cancel_cutoff_hours": /*#__PURE__*/ zod.int(),
+  "enabled": /*#__PURE__*/ zod.boolean(),
+  "min_order_agorot": /*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()]),
+  "producer_id": /*#__PURE__*/ zod.uuid(),
+  "shabbat_observant": /*#__PURE__*/ zod.boolean()
 })
 
 
@@ -6010,6 +6154,7 @@ export const GetProducerProducersProducerIdGetResponse = /*#__PURE__*/ zod.objec
   "is_system": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), getProducerProducersProducerIdGetResponseCategoriesItemIsSystemDefault),
   "name": /*#__PURE__*/ zod.string(),
   "producer_count": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "requires_license": /*#__PURE__*/ zod.boolean(),
   "slug": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
 })), getProducerProducersProducerIdGetResponseCategoriesDefault),
   "city": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -6621,10 +6766,9 @@ export const MarkHandedRescueOrdersOrderIdHandedPostResponse = /*#__PURE__*/ zod
 
 
 /**
- * The business records that nobody came for the bag.
- *
- * Only after `pickup_end` — before that the buyer may still be on their way,
- * and a no-show is what blocks them from reserving again.
+ * The business records that nobody came for the bag — only after
+ * `pickup_end`: before that the buyer may still be on their way, and a
+ * no-show blocks reserving again. The buyer is mailed each time (MEH-3226).
  * @summary Mark No Show
  */
 export const markNoShowRescueOrdersOrderIdNoShowPostResponsePickupCodeMin = 4;
@@ -6931,6 +7075,7 @@ export const GetFavoritesUsersMeFavoritesGetResponseItem = /*#__PURE__*/ zod.obj
   "is_system": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), getFavoritesUsersMeFavoritesGetResponseProducerCategoriesItemIsSystemDefault),
   "name": /*#__PURE__*/ zod.string(),
   "producer_count": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "requires_license": /*#__PURE__*/ zod.boolean(),
   "slug": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
 })), getFavoritesUsersMeFavoritesGetResponseProducerCategoriesDefault),
   "city": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
