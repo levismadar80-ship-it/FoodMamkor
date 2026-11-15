@@ -175,7 +175,7 @@ column and use staging's `SECTIONS`-array layout with `font-headline` + `site-te
 
 | Status | Version | Feature | Where |
 |---|---|---|---|
-| ✅ | v1 | Newsletter signup (footer) — POST /newsletter, rate-limited 5/hour per IP | `backend/app/routers/marketing.py` |
+| ✅ | v1 | Newsletter signup (footer) — POST /newsletter, rate-limited 5/hour per IP + 3/hour per email; double opt-in via POST /newsletter/confirm from /newsletter/confirm (MEH-3300) | `backend/app/routers/marketing.py` |
 | ✅ | v1 | Contact form — standalone `/contact` page (migrated out of `/about`), POST /contact persists to `contact_messages` + sends SMTP email to CONTACT_EMAIL, fail-open if SMTP unconfigured, rate-limited 5/hour per IP, 12 pytest cases | `frontend/app/contact/page.js`, `backend/app/routers/marketing.py::submit_contact`, `tests/test_api.py::TestContact` |
 | ✅ | v1 | WhatsApp share button on every producer page (viral loop) | `frontend/components/WhatsAppShareButton.jsx` |
 | ✅ | v1 | WhatsApp click tracking on home products | `home_products.py` |

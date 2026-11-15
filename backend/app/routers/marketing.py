@@ -4,6 +4,7 @@ These are used by the public site (hero social-proof bar, footer newsletter,
 about page contact form). All endpoints are anonymous — no auth required.
 """
 
+from datetime import datetime, timedelta, timezone
 from typing import Any
 import logging
 
@@ -11,7 +12,9 @@ from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
 from joserfc import jwt as jose_jwt
 from joserfc.errors import JoseError
 from joserfc.jwk import OctKey
+from joserfc.jwt import JWTClaimsRegistry
 from sqlalchemy import func
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.config import settings
@@ -32,13 +35,14 @@ from app.models import (
     NewsletterSubscriber,
     Producer,
 )
-from app.rate_limit import limiter
+from app.rate_limit import email_from_body, limiter
 from app.sentry import capture_background_exception
 
 # MEH-460 Pkg 5 (FINAL): schemas relocated to app.schemas.schemas per ADR-006 R1.
 from app.schemas.schemas import (
     CONTACT_TOPIC_LABELS,
     ContactIn,
+    NewsletterConfirmIn,
     NewsletterIn,
     NewsletterUnsubscribeIn,
     WeeklySummaryUnsubscribeIn,
@@ -91,6 +95,43 @@ def decode_unsubscribe_token(token: str) -> str | None:
 
 
 # ============================================================
+# NEWSLETTER CONFIRM TOKEN (MEH-3300 / D13 — double opt-in)
+# ============================================================
+# Same key and shape as the unsubscribe token, but its own scope (so neither
+# link can do the other's job) and an `exp` 48 h out, which is required: a
+# token without one is refused. `_utcnow` is a seam for the expiry tests.
+_CONFIRM_SCOPE = "newsletter_confirm"
+CONFIRM_TTL = timedelta(hours=48)
+
+
+def _utcnow() -> datetime:
+    return datetime.now(timezone.utc)
+
+
+def create_confirm_token(email: str) -> str:
+    exp = int((_utcnow() + CONFIRM_TTL).timestamp())
+    payload = {"sub": email, "scope": _CONFIRM_SCOPE, "exp": exp}
+    return jose_jwt.encode({"alg": settings.algorithm}, payload, _unsubscribe_key())
+
+
+def decode_confirm_token(token: str) -> str | None:
+    """Return the email for a valid, unexpired confirm token, else None. Never raises."""
+    try:
+        token_obj = jose_jwt.decode(
+            token, _unsubscribe_key(), algorithms=[settings.algorithm]
+        )
+        JWTClaimsRegistry(
+            now=int(_utcnow().timestamp()), leeway=0, exp={"essential": True}
+        ).validate(token_obj.claims)
+    except (JoseError, ValueError):
+        return None
+    if token_obj.claims.get("scope") != _CONFIRM_SCOPE:
+        return None
+    sub = token_obj.claims.get("sub")
+    return sub if isinstance(sub, str) and sub else None
+
+
+# ============================================================
 # STATS — GET /stats
 # ============================================================
 
@@ -126,31 +167,110 @@ def get_stats(request: Request, db: Session = Depends(get_db)) -> StatsOut:
 
 @router.post("/newsletter", status_code=201, response_model=None)
 @limiter.limit("5/hour")  # SECURITY FIX #2: prevent mailbombing
+@limiter.limit("3/hour", key_func=email_from_body)  # MEH-3300: per address
 def subscribe_newsletter(
     request: Request,
     data: NewsletterIn,
     background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
 ) -> dict[str, Any]:
+    """MEH-3300 (D13): double opt-in. Nothing is written here.
+
+    A new address gets a confirmation email; the row, the Resend sync and the
+    welcome email wait for POST /newsletter/confirm. An address already on the
+    list gets no email (grandfathered) and the same answer, so the response
+    never reveals who is subscribed.
+    """
     email = data.email.lower().strip()
-    # MEH-2611: Resend Contacts is where the list is managed and sent from.
-    # Runs on BOTH paths so a row that predates the sync still reaches Resend;
-    # it never clears an existing opt-out (see newsletter_sync.sync_subscribe).
-    background_tasks.add_task(sync_subscribe, email)
     existing = (
         db.query(NewsletterSubscriber)
         .filter(NewsletterSubscriber.email == email)
         .first()
     )
     if existing:
-        # Return 201 either way — don't reveal whether email was already subscribed
-        return {"detail": "נרשמת! 🌱"}
+        # MEH-2611: a row that predates the Resend sync still reaches Resend;
+        # sync_subscribe never clears an existing opt-out.
+        background_tasks.add_task(sync_subscribe, email)
+    else:
+        _send_newsletter_confirm(email)
+    return {"detail": "שלחנו מייל לאישור. ההרשמה תושלם אחרי לחיצה על הקישור שבו."}
 
-    sub = NewsletterSubscriber(email=email)
-    db.add(sub)
-    db.commit()
-    _send_newsletter_welcome(email)
-    return {"detail": "נרשמת! 🌱"}
+
+@router.post("/newsletter/confirm", status_code=200, response_model=None)
+@limiter.limit("20/hour")
+def confirm_newsletter(
+    request: Request,
+    data: NewsletterConfirmIn,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
+) -> dict[str, Any]:
+    """MEH-3300: the confirm page POSTs the token from a button click (a GET
+    from a mail scanner confirms nothing). Idempotent: a second click is 200
+    and sends no second welcome."""
+    email = decode_confirm_token(data.token)
+    if not email:
+        raise HTTPException(status_code=400, detail="הקישור אינו תקין או שפג תוקפו.")
+    email = email.lower().strip()
+    exists = (
+        db.query(NewsletterSubscriber.id)
+        .filter(NewsletterSubscriber.email == email)
+        .first()
+    )
+    created = False
+    if not exists:
+        db.add(NewsletterSubscriber(email=email))
+        try:
+            db.commit()
+            created = True
+        except IntegrityError:  # a parallel click won the insert
+            db.rollback()
+    background_tasks.add_task(sync_subscribe, email)
+    if created:
+        _send_newsletter_welcome(email)
+    return {"detail": "ההרשמה אושרה. נכתוב כשיש משהו ששווה לספר."}
+
+
+def _send_newsletter_confirm(email: str) -> None:
+    """Strings 9-11 (approved 14/11). Fail-open like every send_email call."""
+    token = create_confirm_token(email)
+    confirm_url = f"{settings.frontend_url}/newsletter/confirm?token={token}"
+    subject = "אישור הרשמה לעדכונים ממהמקור"
+    body = (
+        "קיבלנו בקשה לשלוח עדכונים ממהמקור לכתובת הזו. כדי לאשר, לחצו על הכפתור. "
+        "הקישור תקף ל-48 שעות. לא ביקשתם? אפשר להתעלם מהמייל, והכתובת לא תצורף."
+    )
+    html_body = f"""\
+<!DOCTYPE html>
+<html dir="rtl" lang="he">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#F5F0E8;font-family:Arial,Helvetica,sans-serif;direction:rtl;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#F5F0E8;padding:32px 0;">
+    <tr>
+      <td align="center">
+        <table width="100%" cellpadding="40" cellspacing="0"
+               style="background:#ffffff;border-radius:12px;text-align:right;direction:rtl;max-width:560px;margin:0 auto;">
+          <tr>
+            <td style="text-align:right;direction:rtl;">
+              {email_logo_html()}
+              <h1 style="font-size:20px;color:#1C1A17;margin:0 0 16px;">{subject}</h1>
+              <p style="color:#3a3a3a;font-size:15px;line-height:1.8;margin:0 0 24px;">{body}</p>
+              <p style="margin:0 0 24px;">
+                <a href="{confirm_url}" style="display:inline-block;background:#2e6853;color:#ffffff;text-decoration:none;font-weight:bold;padding:12px 28px;border-radius:999px;">אישור הרשמה</a>
+              </p>
+              <hr style="border:none;border-top:1px solid #e5e0d8;margin:0 0 20px;">
+              <p style="color:#888;font-size:12px;line-height:1.6;margin:0;">
+                מהמקור — בתי עסק מקומיים, כולם במקום אחד.
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>"""
+    plain = f"{subject}\n\n{body}\n\nאישור הרשמה: {confirm_url}\n\nמהמקור — בתי עסק מקומיים, כולם במקום אחד."
+    send_email(email, subject, plain, html=html_body)
 
 
 def _send_newsletter_welcome(email: str) -> None:

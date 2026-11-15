@@ -34,9 +34,15 @@ def calls(monkeypatch):
 
 
 class TestRouterHandsOffToSync:
-    def test_new_signup_syncs(self, client, calls):
+    def test_new_signup_syncs_only_on_confirm(self, client, calls):
+        # MEH-3300 (D13): double opt-in — the signup itself syncs nothing; the
+        # address reaches Resend when the confirm link is clicked.
         resp = client.post("/newsletter", json={"email": "New.Reader@Gmail.com"})
         assert resp.status_code == 201, resp.text
+        assert calls == []
+        token = marketing.create_confirm_token("new.reader@gmail.com")
+        resp = client.post("/newsletter/confirm", json={"token": token})
+        assert resp.status_code == 200, resp.text
         assert calls == [("sub", "new.reader@gmail.com")]
 
     def test_repeat_signup_still_syncs(self, client, db, calls):

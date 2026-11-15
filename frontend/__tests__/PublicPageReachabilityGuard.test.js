@@ -109,6 +109,7 @@ const ROUTES = {
   "/forgot-password": { kind: "noindex" },
   "/login": { kind: "noindex" },
   "/messages": { kind: "noindex" },
+  "/newsletter/confirm": { kind: "noindex" }, // MEH-3300
   "/newsletter/unsubscribe": { kind: "noindex" },
   "/owner-invite": { kind: "noindex" },
   "/owner-invite/[token]": { kind: "noindex" },

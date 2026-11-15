@@ -1065,6 +1065,7 @@ from app.schemas.site import (  # noqa: E402
     NameCheckOut as NameCheckOut,
     NameMatch as NameMatch,
     NewsletterIn as NewsletterIn,
+    NewsletterConfirmIn as NewsletterConfirmIn,
     NewsletterUnsubscribeIn as NewsletterUnsubscribeIn,
     OutboundMessageAdminOut as OutboundMessageAdminOut,
     PasswordChange as PasswordChange,
