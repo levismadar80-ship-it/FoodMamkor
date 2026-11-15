@@ -537,6 +537,13 @@ erDiagram
         timestamp updated_at
     }
 
+    rescue_no_show_tombstones {
+        uuid id PK "MEH-3225 — no FK, survives the account"
+        string email_hash "HMAC-SHA256 of the email, app secret"
+        timestamp pickup_end "purged 30 days after"
+        timestamp created_at
+    }
+
     retired_slugs {
         string slug PK "MEH-2528 tombstone"
         uuid producer_id FK "SET NULL — owner of a renamed slug"
